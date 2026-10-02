@@ -11,6 +11,8 @@ export interface ChangeRow {
   field: string;
   before?: unknown;
   after?: unknown;
+  /** `after` holds items added to the end of the list at `field`, whatever else the list holds by then */
+  append?: boolean;
 }
 
 export interface Proposal {

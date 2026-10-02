@@ -187,6 +187,15 @@ describe("fromChatResponse", () => {
     expect(String((call as { input: Record<string, unknown> }).input.invalidArguments)).toContain("not valid JSON");
   });
 
+  it("marks a reply cut off at the output limit", () => {
+    expect(fromChatResponse({ choices: [{ message: { content: null }, finish_reason: "length" }] }).truncated).toBe(
+      true
+    );
+    expect(fromChatResponse({ choices: [{ message: { content: "ok" }, finish_reason: "stop" }] }).truncated).toBe(
+      false
+    );
+  });
+
   it("reads DeepSeek's cache-hit token field", () => {
     const completion = fromChatResponse({
       choices: [{ message: { content: "ok" } }],

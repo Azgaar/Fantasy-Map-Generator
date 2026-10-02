@@ -217,7 +217,7 @@ class CulturesGenerator {
           shield: "round"
         },
         {
-          name: "Berberan",
+          name: "Amazi",
           base: 17,
           odd: 0.2,
           sort: (i: number) => (n(i) / td(i, 19) / bd(i, [1, 2, 3], 7)) * t[i],
@@ -680,7 +680,7 @@ class CulturesGenerator {
           shield: "round"
         },
         {
-          name: "Berberan",
+          name: "Amazi",
           base: 17,
           odd: 0.05,
           sort: (i: number) => (n(i) / td(i, 19) / bd(i, [1, 2, 3], 7)) * t[i],
@@ -918,7 +918,7 @@ class CulturesGenerator {
         shield: "round"
       },
       {
-        name: "Berberan",
+        name: "Amazi",
         base: 17,
         odd: 0.1,
         sort: (i: number) => (n(i) / td(i, 19) / bd(i, [1, 2, 3], 7)) * t[i],

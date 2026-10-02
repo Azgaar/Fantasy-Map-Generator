@@ -75,6 +75,7 @@ export function toChatTools(tools: ToolDefinition[]): ChatMessage[] {
 export function fromChatResponse(json: {
   choices?: {
     message?: { content?: string | null; tool_calls?: { id: string; function: { name: string; arguments: string } }[] };
+    finish_reason?: string | null;
   }[];
   usage?: {
     prompt_tokens?: number;
@@ -100,6 +101,7 @@ export function fromChatResponse(json: {
 
   return {
     content,
+    truncated: json.choices?.[0]?.finish_reason === "length",
     usage: { input: (json.usage?.prompt_tokens ?? 0) - cached, output: json.usage?.completion_tokens ?? 0, cached }
   };
 }

@@ -51,14 +51,16 @@ it("shows values as the app does: people, money, names and the chronicle", () =>
     { key: "burg:2", entity: "Burg: Sarester", field: "treasury", before: 10, after: 12.5 },
     { key: "state:5", entity: "State: Kahor", field: "diplomacy.7", before: "Unknown", after: "Ally" },
     { key: "state:5", entity: "State: Kahor", field: "capital", before: 3, after: 9 },
-    { key: "state:0", entity: "State: Neutrals", field: "diplomacy", before: [[], [], []], after: [[], [], [], []] }
+    { key: "state:0", entity: "State: Neutrals", field: "diplomacy", before: [[], [], []], after: [[], [], [], []] },
+    { key: "state:0", entity: "State: Neutrals", field: "diplomacy", after: [["Peace", "Signed"]], append: true }
   ]);
   expect(text.split("\n")).toEqual([
     "Burg: Sarester · Population: 50K → 100",
     "Burg: Sarester · Treasury: 🟡 10 → 🟡 12.5",
     "State: Kahor · Relation to Orwin: Unknown → Ally",
     "State: Kahor · Capital: Vel → 9",
-    "Chronicle · Entries: 3 → 4"
+    "Chronicle · Entries: 3 → 4",
+    "Chronicle · Entries: + Peace"
   ]);
   expect(
     card([{ key: "state:0", entity: "State: Neutrals", field: "diplomacy", before: [], after: [[]] }]).textContent

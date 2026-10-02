@@ -121,12 +121,14 @@ const isContainer = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !ArrayBuffer.isView(value);
 const same = (a: unknown, b: unknown) => a === b || JSON.stringify(a) === JSON.stringify(b);
 
-/** Changed paths between two values; records and same-length arrays are compared field by field */
-function diff(
-  before: unknown,
-  after: unknown,
-  path: string[] = []
-): { field: string; before: unknown; after: unknown }[] {
+type Difference = Omit<ChangeRow, "key" | "entity">;
+
+/** Changed paths between two values; records and same-length arrays are compared field by field, a list that only
+ * grew at its end records the added items */
+function diff(before: unknown, after: unknown, path: string[] = []): Difference[] {
+  if (Array.isArray(before) && Array.isArray(after) && after.length > before.length)
+    if (before.every((item, index) => same(item, after[index])))
+      return [{ field: path.join("."), after: after.slice(before.length), append: true }];
   const nested =
     isContainer(before) &&
     isContainer(after) &&
@@ -193,7 +195,15 @@ function read(row: ChangeRow, side: Side): boolean {
   if (!row.field) return Boolean(found) && same(root, expected);
   if (!root) return false;
   const value = row.field.split(".").reduce<unknown>((node, key) => (isContainer(node) ? node[key] : undefined), root);
+  if (row.append) return Array.isArray(value) && (side === "before" || lastRun(value, expected as unknown[]) >= 0);
   return same(value, expected);
+}
+
+/** Where `items` last stand in a row in `list`, or -1 */
+function lastRun(list: unknown[], items: unknown[]): number {
+  for (let at = list.length - items.length; at >= 0; at--)
+    if (items.every((item, offset) => same(list[at + offset], item))) return at;
+  return -1;
 }
 
 function write(row: ChangeRow, side: Side): void {
@@ -221,6 +231,12 @@ function write(row: ChangeRow, side: Side): void {
   for (const key of keys) {
     if (!isContainer(node[key])) node[key] = {};
     node = node[key] as Record<string, unknown>;
+  }
+  if (row.append) {
+    const [list, items] = [node[last] as unknown[], row.after as unknown[]];
+    if (side === "after") list.push(...structuredClone(items));
+    else list.splice(lastRun(list, items), items.length);
+    return;
   }
   if (value === undefined) delete node[last];
   else node[last] = structuredClone(value);
@@ -282,13 +298,7 @@ function propose(summary: string, operations: unknown, number: number, mapId: nu
     enter(live);
   }
   if (!rows.length) return "These operations change nothing";
-  const change = rows.map(({ key, field, before, after }) => ({
-    key,
-    entity: label(key, names.get(key)!),
-    field,
-    before,
-    after
-  }));
+  const change = rows.map(row => ({ ...row, entity: label(row.key, names.get(row.key)!) }));
   return { number, mapId, summary, operations: batch, change, state: "proposed" };
 }
 

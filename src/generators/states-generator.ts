@@ -855,7 +855,7 @@ class StatesModule {
           if (base === 5 && (form === "Empire" || form === "Kingdom")) return "Tsardom"; // Ruthenian
           if (base === 16 && (form === "Empire" || form === "Kingdom")) return "Khaganate"; // Turkic
           if (base === 12 && (form === "Kingdom" || form === "Grand Duchy")) return "Shogunate"; // Japanese
-          if ([18, 17].includes(base) && form === "Empire") return "Caliphate"; // Arabic, Berber
+          if ([18, 17].includes(base) && form === "Empire") return "Caliphate"; // Arabic, Amazigh
           if (base === 18 && (form === "Grand Duchy" || form === "Duchy")) return "Emirate"; // Arabic
           if (base === 7 && (form === "Grand Duchy" || form === "Duchy")) return "Despotate"; // Greek
           if (base === 31 && (form === "Grand Duchy" || form === "Duchy")) return "Ulus"; // Mongolian
@@ -893,7 +893,7 @@ class StatesModule {
             if (tier > 2) return "Patriarchate";
           }
           if (P(0.9) && [21, 16].includes(base)) return "Imamah"; // Nigerian, Turkish
-          if (tier > 2 && P(0.8) && [18, 17, 28].includes(base)) return "Caliphate"; // Arabic, Berber, Swahili
+          if (tier > 2 && P(0.8) && [18, 17, 28].includes(base)) return "Caliphate"; // Arabic, Amazigh, Swahili
           return rw(theocracy);
         }
       };

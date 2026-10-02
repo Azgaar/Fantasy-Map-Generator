@@ -62,6 +62,7 @@ export interface Usage {
 export interface Completion {
   content: (TextBlock | ToolUseBlock)[];
   usage: Usage;
+  truncated?: boolean; // stopped at the output limit; reasoning models can spend all of it before a word
 }
 
 export interface ProviderSpec {
@@ -174,6 +175,7 @@ async function completeAnthropic({
   const json = await response.json();
   return {
     content: json.content ?? [],
+    truncated: json.stop_reason === "max_tokens",
     usage: {
       input: (json.usage?.input_tokens ?? 0) + (json.usage?.cache_creation_input_tokens ?? 0),
       output: json.usage?.output_tokens ?? 0,

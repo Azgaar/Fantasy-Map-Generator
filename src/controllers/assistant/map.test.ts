@@ -96,6 +96,19 @@ it("names the first key that is not a live entity, and shows nothing", async () 
   }
 });
 
+it("names vassals with their suzerains in per-question context", async () => {
+  vi.stubGlobal("pack", {
+    cells: { i: [0] },
+    burgs: [0],
+    states: [
+      { i: 0, name: "Neutrals" },
+      { i: 1, name: "Shan", diplomacy: ["x", "x", "Suzerain"] },
+      { i: 2, name: "Kami", diplomacy: ["x", "Vassal", "x"] }
+    ]
+  });
+  expect(await AssistantMap.context(chat)).toContain("- vassals: Kami (state:2) of Shan (state:1)");
+});
+
 it("includes the open note and selection in per-question context", async () => {
   notesEditor.selection = "Old text";
   const context = await AssistantMap.context(chat);
@@ -130,6 +143,20 @@ it("numbers proposals of one step apart and shows the model their change", async
   await tool.handle({ summary: "B", operations: [] });
   expect(propose.mock.calls.map(call => call[2])).toEqual([1, 2]);
   expect(first.content).toContain("Burg Vel · Name: Vel → Saltmere");
+});
+
+it("refuses a population leaping 100-fold, as from points given for people, until it is sent again", async () => {
+  const units = { ...mapOptions.map.units, population: { scale: 1, urbanization: { rate: 1 } } };
+  vi.stubGlobal("options", { map: { ...mapOptions.map, units } });
+  const leap = { key: "burg:1", entity: "Burg Vel", field: "population", before: 51.325, after: 0.154 };
+  propose.mockReturnValue({ ...proposal(1, "proposed"), change: [leap] });
+  const tool = mapTool("propose_change");
+  const refused = await tool.handle({ summary: "Triple", operations: [] });
+  expect(refused).toMatchObject({ isError: true });
+  expect(refused.content).toContain("Nothing proposed: these populations change 100-fold");
+  expect((await tool.handle({ summary: "Triple", operations: [] })).item?.kind).toBe("proposal");
+  propose.mockReturnValue({ ...proposal(1, "proposed"), change: [{ ...leap, after: 153.975 }] });
+  expect((await tool.handle({ summary: "Triple", operations: [] })).isError).toBeUndefined();
 });
 
 it("returns a proposal error to the model without a card", async () => {

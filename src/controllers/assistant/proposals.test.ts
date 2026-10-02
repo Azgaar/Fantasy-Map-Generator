@@ -92,6 +92,22 @@ it("applies and undoes property edits, including a field that was absent", () =>
   expect("hidden" in pack.zones[0]).toBe(false);
 });
 
+it("adds chronicle entries from proposals made side by side, and undoes each alone", () => {
+  const chronicle = [["Old War"]];
+  pack.states[0].diplomacy = chronicle as unknown as string[];
+  const entry = (title: string) => propose(title, [{ op: "States.setChronicleEntry", args: [-1, [title]] }], 1, MAP);
+  const [peace, treaty] = [entry("Peace"), entry("Treaty")] as Proposal[];
+  expect(peace.change).toEqual([
+    { key: "state:0", entity: "State: Neutrals", field: "diplomacy", after: [["Peace"]], append: true }
+  ]);
+  expect(apply(peace, MAP)).toBe(true);
+  expect(apply(treaty, MAP)).toBe(true);
+  expect(chronicle).toEqual([["Old War"], ["Peace"], ["Treaty"]]);
+  expect(undo(peace, MAP)).toBe(true);
+  expect(chronicle).toEqual([["Old War"], ["Treaty"]]);
+  expect(undo(peace, MAP)).toBe(false);
+});
+
 it("refreshes the Population layer when a burg's population changes", () => {
   vi.stubGlobal("options", { map: { units: { population: { scale: 1000, urbanization: { rate: 1 } } } } });
   const proposal = proposeOk([{ op: "Burgs.setPopulation", args: [1, 5000] }]);

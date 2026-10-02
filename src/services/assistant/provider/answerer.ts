@@ -64,6 +64,14 @@ const IMAGE_SIZE = 1_000; // characters
 const NO_VISION = "[The image is not available: this model cannot see images]";
 // Text beside a lookup ("Let me check…") or a failed call is a preamble, shown only when no answer follows it
 const LOOKUP = /^(read|view)_/;
+const CUT_OFF =
+  "Your reply was cut off at the output limit. Think briefly and keep calls small: split a large batch into several propose_change calls.";
+// Models sometimes describe a proposal they never sent
+const CLAIM =
+  /\bI(?:'ve| have)? (?:proposed|prepared|submitted)\b|\b(?:proposal|batch|card)\b[^.\n]{0,40}\b(?:is waiting|waiting for|pending|above)\b/i;
+const DECLINED = /\bproposed nothing\b|\bnothing (?:to propose|proposed)\b/i;
+const UNPROPOSED =
+  "Your answer says something was proposed, but no propose_change call succeeded in this question, so the user sees no card. Call propose_change now, or say plainly that nothing was proposed.";
 
 export interface ProviderOptions {
   tools: Tool[]; // map tools, beside the knowledge ones
@@ -87,6 +95,9 @@ export async function askProvider(
   let rollbackTo = start;
   let sentContext = "";
   let preamble = "";
+  let said = ""; // answers shown for this question
+  let proposed = false;
+  let nudged = false;
   try {
     // Earlier questions keep only their answers
     for (const result of toolResults(chat.messages.slice(0, start))) result.content = TRIMMED;
@@ -125,8 +136,20 @@ export async function askProvider(
         .join("\n\n")
         .trim();
       const calls = completion.content.filter(block => block.type === "tool_use");
+      if (!calls.length && completion.truncated) {
+        chat.messages.push({ role: "user", content: [{ type: "text", text: CUT_OFF }] });
+        continue;
+      }
       if (!calls.length) {
+        said += answer;
         if (answer || preamble) onItem({ kind: "answer", text: answer || preamble });
+        if (!nudged && byName.has("propose_change") && !proposed && CLAIM.test(said) && !DECLINED.test(said)) {
+          nudged = true;
+          preamble = "";
+          chat.messages.push({ role: "user", content: [{ type: "text", text: UNPROPOSED }] });
+          continue;
+        }
+        if (!answer && !preamble) onItem({ kind: "notice", text: "The model ended without an answer. Ask again." });
         return;
       }
       const responses: ToolResultBlock[] = [];
@@ -152,9 +175,11 @@ export async function askProvider(
       if (answer && (calls.some(call => LOOKUP.test(call.name)) || responses.some(result => result.is_error)))
         preamble = answer;
       else if (answer) {
+        said += answer;
         onItem({ kind: "answer", text: answer });
         preamble = "";
       }
+      if (items.some(item => item.kind === "proposal")) proposed = true;
       for (const item of items) onItem(item);
       chat.messages.push({ role: "user", content: responses });
       rollbackTo = chat.messages.length;

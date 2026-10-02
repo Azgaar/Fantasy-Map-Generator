@@ -1,6 +1,6 @@
 import { type EntityType, MapEntities } from "@/components/map-entities";
 import { Controllers } from "@/controllers";
-import type { ChartRow, Chat, Choice, Widget } from "@/services/assistant/chats";
+import type { ChangeRow, ChartRow, Chat, Choice, Widget } from "@/services/assistant/chats";
 import type { Tool } from "@/services/assistant/provider/answerer";
 import type { ToolDefinition, ToolInput } from "@/services/assistant/provider/providers";
 import { runScript } from "@/services/assistant/provider/runtime";
@@ -13,7 +13,6 @@ import {
   formatSpeed,
   getArea,
   getAreaUnit,
-  getCellPopulation,
   getDistance,
   getDistanceUnit,
   getHeight,
@@ -45,7 +44,7 @@ async function context(chat: Chat): Promise<string> {
     items?.filter(item => item.i && !item.removed).length ?? 0;
   const { distance, height, temperature } = options.map.units;
   const facts = [
-    `name: ${name()}`,
+    `name: ${name()} (the world itself, not an entity: never link it)`,
     `seed: ${options.map.seed}`,
     `size: ${rn(options.map.graph.width * distance.scale)} × ${rn(options.map.graph.height * distance.scale)} ${distance.unit}`,
     `units: 1 map unit = ${distance.scale} ${distance.unit}; 1 map unit² = ${rn(getArea(1), 4)} ${getAreaUnit()}; elevation in ${height.unit}; temperature in ${temperature.unit}`,
@@ -57,8 +56,17 @@ async function context(chat: Chat): Promise<string> {
     `religions: ${live(pack.religions)}`,
     `rivers: ${pack.rivers?.length ?? 0}`,
     `markers: ${pack.markers?.length ?? 0}`,
-    `chronicle entries: ${pack.states[0]?.diplomacy?.length ?? 0} (read with \`States.getChronicle()\`)`
+    `chronicle entries: ${pack.states[0]?.diplomacy?.length ?? 0} (\`States.getChronicle()\`: entries as text lines, the first the title; HTML-escaped)`
   ];
+  // The only one-sided relation; models read a bare "Vassal" the wrong way round
+  const vassals = pack.states.flatMap(state =>
+    state.i && !state.removed
+      ? (state.diplomacy ?? []).flatMap((relation, j) =>
+          relation === "Vassal" ? [`${state.name} (state:${state.i}) of ${pack.states[j]?.name} (state:${j})`] : []
+        )
+      : []
+  );
+  if (vassals.length) facts.push(`vassals: ${vassals.join("; ")}`);
   const sections = [
     `# Current map\n\n${facts.map(fact => `- ${fact}`).join("\n")}`,
     await noteContext(),
@@ -124,7 +132,6 @@ const UNITS = {
   getPrecipitation,
   formatSpeed,
   formatPrice,
-  getCellPopulation,
   getPeople
 };
 
@@ -204,8 +211,19 @@ const OPERATIONS_SCHEMA = {
   }
 };
 
+// Operations take people but store points: a unit slip shows as a 1000-fold leap
+const POPULATION_FIELDS = new Set(["population", "rural", "urban"]);
+const isLeap = ({ field, before, after }: ChangeRow) =>
+  POPULATION_FIELDS.has(field) &&
+  typeof before === "number" &&
+  typeof after === "number" &&
+  before > 0 &&
+  after > 0 &&
+  Math.max(after / before, before / after) >= 100;
+
 function proposeChange(chat: Chat): Tool {
   let last = 0; // a step's proposals reach chat.items only after all its calls ran
+  let confirmed = ""; // a refused batch the model may send again to mean it
   return {
     status: "Preparing a change",
     definition: {
@@ -226,6 +244,15 @@ function proposeChange(chat: Chat): Tool {
       const summary = typeof input.summary === "string" && input.summary.trim() ? input.summary.trim() : "Change";
       const proposal = Proposals.propose(summary, input.operations, number, id());
       if (typeof proposal === "string") return { content: proposal, isError: true };
+      const leaps = proposal.change.filter(isLeap);
+      const batch = JSON.stringify(proposal.operations);
+      if (leaps.length && batch !== confirmed) {
+        confirmed = batch;
+        return {
+          content: `Nothing proposed: these populations change 100-fold or more, as if given in points instead of people. Fix the amounts, or send the same batch again if this is meant:\n${changeText(leaps)}`,
+          isError: true
+        };
+      }
       last = number;
       const count = proposal.change.length;
       return {

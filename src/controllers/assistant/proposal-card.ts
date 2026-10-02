@@ -69,6 +69,12 @@ function valueText(row: ChangeRow, value: unknown): string | null {
 
 const entityLabel = (row: ChangeRow) => (isChronicle(row) ? "Chronicle" : row.entity);
 
+/** Items an append row adds: chronicle entries by their titles */
+const addedText = (row: ChangeRow) => {
+  const items = row.after as unknown[];
+  return isChronicle(row) ? items.map(entry => (entry as string[])[0]).join(", ") : plural(items.length, "item");
+};
+
 /** An added or removed entity shows as one row, not as every field it had */
 function displayRows(change: ChangeRow[]): ChangeRow[] {
   const whole = new Map<string, ChangeRow>();
@@ -165,6 +171,11 @@ function changeHtml(row: ChangeRow): string {
     </div>`;
   }
   const label = escapeHtml(fieldLabel(row));
+  if (row.append)
+    return /* html */ `<div class="assistantChangeField">
+      <span>${label}</span>
+      <span><ins>+ ${escapeHtml(addedText(row))}</ins></span>
+    </div>`;
   if (field === "note") {
     const size = (value: unknown) => (typeof value === "string" && value ? plural(value.length, "character") : "empty");
     return /* html */ `<div class="assistantChangeField">
@@ -191,6 +202,7 @@ export function changeText(change: ChangeRow[], limit = 20): string {
     if (row.key === "cells")
       return `Cells · ${CELL_LABELS[row.field] ?? row.field}: ${plural(Object.keys(row.after as object).length, "cell")}`;
     if (row.field === "note") return `${row.entity} · Note: rewritten`;
+    if (row.append) return `${entityLabel(row)} · ${fieldLabel(row)}: + ${addedText(row)}`;
     return `${entityLabel(row)} · ${fieldLabel(row)}: ${valueText(row, row.before) ?? "none"} → ${valueText(row, row.after) ?? "none"}`;
   });
   const more = shown.length - limit;

@@ -200,6 +200,72 @@ it("keeps no empty turn in history when the model ends without a word", async ()
   expect(chat.messages.map(message => message.role)).toEqual(["user"]);
 });
 
+it("tells the user when the model ends without an answer", async () => {
+  completeMock.mockResolvedValueOnce({ content: [], usage: { input: 1, output: 0, cached: 0 } });
+  const items: TranscriptItem[] = [];
+  await askProvider(newChat(), "Pick", item => items.push(item), new AbortController().signal, {
+    tools: [],
+    context: async () => "map"
+  });
+  expect(items.at(-1)).toEqual({ kind: "notice", text: "The model ended without an answer. Ask again." });
+});
+
+it("asks again, for smaller calls, when a reply is cut off at the output limit", async () => {
+  completeMock
+    .mockResolvedValueOnce({ content: [], truncated: true, usage: { input: 1, output: 4096, cached: 0 } })
+    .mockResolvedValueOnce({ content: [{ type: "text", text: "Done." }], usage: { input: 1, output: 1, cached: 0 } });
+  const chat = newChat();
+  const items: TranscriptItem[] = [];
+  await askProvider(chat, "Add markers", item => items.push(item), new AbortController().signal, {
+    tools: [],
+    context: async () => "map"
+  });
+  expect(items.map(item => item.kind)).toEqual(["question", "answer"]);
+  expect(JSON.stringify(chat.messages[1])).toContain("cut off at the output limit");
+});
+
+it("asks once for the proposal an answer claims but never sent", async () => {
+  const proposal = { number: 1, mapId: 1, summary: "War", operations: [], change: [], state: "proposed" as const };
+  const tool = {
+    status: "Preparing a change",
+    definition: { name: "propose_change", description: "Propose", input_schema: {} },
+    handle: vi.fn(async () => ({ content: "Proposal #1 is waiting", item: { kind: "proposal" as const, proposal } }))
+  };
+  const reply = (text: string) => ({ content: [{ type: "text", text }], usage: { input: 1, output: 1, cached: 0 } });
+  completeMock
+    .mockResolvedValueOnce(reply("Your declaration batch is waiting in the card above."))
+    .mockResolvedValueOnce({
+      content: [{ type: "tool_use", id: "p", name: "propose_change", input: {} }],
+      usage: { input: 1, output: 1, cached: 0 }
+    })
+    .mockResolvedValueOnce(reply("The card is there now."));
+  const chat = newChat();
+  const items: TranscriptItem[] = [];
+  await askProvider(chat, "Declare war", item => items.push(item), new AbortController().signal, {
+    tools: [tool],
+    context: async () => "map"
+  });
+  expect(items.map(item => item.kind)).toEqual(["question", "answer", "proposal", "answer"]);
+  expect(JSON.stringify(chat.messages[2])).toContain("no propose_change call succeeded");
+});
+
+it("does not ask for a proposal the answer says it did not make", async () => {
+  const tool = {
+    status: "Preparing a change",
+    definition: { name: "propose_change", description: "Propose", input_schema: {} },
+    handle: vi.fn()
+  };
+  completeMock.mockResolvedValueOnce({
+    content: [{ type: "text", text: "It is already a vassal, so I've proposed nothing." }],
+    usage: { input: 1, output: 1, cached: 0 }
+  });
+  await askProvider(newChat(), "Make it a vassal", () => {}, new AbortController().signal, {
+    tools: [tool],
+    context: async () => "map"
+  });
+  expect(completeMock).toHaveBeenCalledTimes(1);
+});
+
 it("keeps this question's tool results whole until they outgrow the budget", async () => {
   const read = (id: string) => ({ type: "tool_use", id, name: "big", input: {} });
   completeMock

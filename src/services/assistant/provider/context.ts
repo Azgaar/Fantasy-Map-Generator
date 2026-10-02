@@ -46,7 +46,7 @@ Answer in the map's units only (e.g. "152K mi²"); never mention map units, coor
 have \`units\`, the app's own formatters: \`si(n)\` → "1.4M"; \`rn(n, decimals = 0)\`; \`getArea(mapUnits²)\` with
 \`getAreaUnit()\`; \`getDistance(mapUnits)\` → "92 mi" for every distance you state, e.g. of \`Math.hypot(dx, dy)\`;
 \`getHeight(h)\` → "1640ft"; \`convertTemperature(°C)\`; \`getPrecipitation(prec)\`; \`formatSpeed(km/h)\`;
-\`formatPrice(n)\` for money; \`getCellPopulation(cellId, pack)\` → [rural, urban] people (no \`getPeople\`).
+\`formatPrice(n)\` for money.
 Example: \`units.si(units.getArea(state.area)) + " " + units.getAreaUnit()\`.`;
 
 const GOTCHAS = `# Gotchas
@@ -63,7 +63,9 @@ const GOTCHAS = `# Gotchas
   cell id; capitals are \`state.capital\`, \`province.burg\`.
 - Cell arrays are typed: \`filter\` and \`map\` on them stay typed and wrap negatives (-1 → 4294967295). Use
   \`Array.from(cells)\` before mapping to other values.
-- \`state.diplomacy[j]\`: relation to state j (${Object.keys(RELATIONS).join(", ")}); \`Enemy\` is war.
+- \`state.diplomacy[j]\`: relation to state j (${Object.keys(RELATIONS).join(", ")}); \`Enemy\` is war,
+  \`Vassal\` of j, \`Suzerain\` over j.
+- States have no religion: read their cells' \`cells.religion\`.
 - \`burg.type\` is the culture type (Generic, River, Naval…), never rank: capital is \`burg.capital\` (1/0),
   size class is \`burg.group\`.
 - Land is \`pack.cells.h[i] >= 20\` (heights 0–100). Water body: \`pack.features[pack.cells.f[i]]\`, type ocean/lake/island.
@@ -72,7 +74,7 @@ const GOTCHAS = `# Gotchas
 - Population fields are points, not people: \`burg.population\`, \`cells.pop\`, \`rural\`/\`urban\`. Never show, compare or
   chart points: convert with \`units.getPeople(rural, urban)\`, e.g. \`units.getPeople(0, burg.population)\`, then \`si\`.
   Only states keep \`rural\`/\`urban\`/\`area\` current. For provinces, cultures and religions sum their cells'
-  \`getCellPopulation\` and \`pack.cells.area[i]\`.
+  points (\`cells.pop[i]\` rural, burg \`cells.burg[i]\` urban) and \`pack.cells.area[i]\`.
 - Areas (\`state.area\`, \`pack.cells.area[i]\`) are map units². Coordinates (\`cells.p[i]\` is [x, y]) are map units within
   \`options.map.graph.width\` × \`height\`; \`Pack.findCell(x, y)\` gives the cell. \`cells.b\` is 0/1, not boolean.`;
 
@@ -97,8 +99,8 @@ Otherwise prose, rendered as Markdown: a list for several findings, \`code\` for
 A one-line answer needs no formatting. No raw JSON unless asked.
 
 Link every map entity you name by its key, \`[Vel](burg:12)\`: the user clicks to see it on the map. Key types: ${KEY_TYPES}
-(\`i\` for most; the array index for cells, relief and measurers; \`regiment:stateId-regimentId\`). Use only ids you
-have read; include them in read_map results for anything you will name, or leave the name unlinked. Link the editor
+(\`i\` for most; the array index for cells, relief and measurers). Use only ids you
+have read (return them from read_map), else leave the name unlinked. Link the editor
 or dialog that answers a how-to, \`[Heightmap editor](command:editHeightmapButton)\`; ids come from
 \`read_docs(["Commands"])\`, never guess one.`;
 
