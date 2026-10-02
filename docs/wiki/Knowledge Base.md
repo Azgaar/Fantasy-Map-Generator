@@ -160,6 +160,10 @@ If there is no version conflict, use https://github.com/Azgaar/Fantasy-Map-Gener
 
 Sure, there are a number of available options. Save to machine: .map file that can be directly loaded back to the Generator. Save to Dropbox: the same file stored in your cloud. Save to storage: map data is saved to the browser's internal database and can be loaded on page refresh; bear in mind that saving to the machine is safer since browser storage can be accidentally cleared. Export .svg: save a full map as a scalable vector image, you can open the file in a browser or edit it in a vector graphics editor. Export .png or .jpeg: save the currently displayed map fragment as a raster image, up to 8x resolution. Export to tiles as .zip: split the map into .png chunks and save them as a single archive, it allows to save giant raster images once chunks are combined. Export to GeoJSON: save cells, routes, rivers, markers or zones to be used in GIS software. Export to JSON: save the raw map data (full, minimal, pack cells or grid cells) for your own tooling
 
+### Can I export a PNG with a transparent background?
+
+There is no transparent background option: the PNG and JPEG exports always include the ocean, and Style -> Ocean sets only its color, pattern, outlines and waves, not its transparency. To get only the land, use Export .svg, open the file in a vector graphics editor such as Inkscape, delete the `ocean` group (and `lakes` if you want those gone too) and export a PNG from there. Alternatively remove the ocean color from an exported PNG in an image editor
+
 ### Can I choose where the map file is saved?
 
 Yes, in browsers that support it, such as Chrome and Edge. The first Save to machine asks for a file name and location; after that Save and Ctrl + S write straight to the same file, until you generate or load another map. Shift-click the Save to machine button, press Ctrl + Shift + S or use the "Save Map As…" command in the Omnibar to save a copy under another name or location. Firefox and Safari have no such picker, so the map is downloaded to the folder set in the browser's download settings
@@ -580,53 +584,57 @@ No. Risk mode tries to keep the data, but rivers, lakes and biomes directly depe
 
 Not really. The size mostly depends on the points number and cannot be changed for an existing map; turning off some layers can help a bit. You can gzip the file with an external tool: the Generator loads gzip-compressed files (.gz) directly, so there is no need to unpack it before loading
 
-### How to clean this chat dialog? How can I remove the chat history?
+### How do I start or delete an Assistant chat?
 
-The assistant remembers the conversation for the current browser tab only, and the service forgets it two hours after the last question. Close the tab or open the Generator in a new one to start fresh; the assistant marks the boundary with a 'new conversation' line
+Open Chats in the Azgaar Assistant title bar. New chat starts an empty chat for the open map. Each chat stays in this browser until you delete it with the trash button. A chat from another map or answerer can be read, but you must start a new chat to continue.
 
-### How can I toggle you off? How can I hide the Assistant?
+### How can I hide Azgaar Assistant?
 
-To hide the Assistant, go to Options -> Interface settings and set `Azgaar assistant` to Hide
+Go to Options -> Interface settings and set Azgaar Assistant to Hide. This hides the call bubble.
 
-### The assistant says 'No questions left today'. What now?
+### The Assistant says 'No questions left today'. What now?
 
-Questions are budgeted per day to keep the shared service affordable. Anonymous use gets a small allowance; click 'Sign in' at the bottom of the assistant panel to sign in with Discord for a larger one. The wiki and the Discord server hold the same knowledge the assistant answers from
+The free daily allowance is set by the Azgaar server. A Guest can sign in with Discord for a larger allowance, or connect an AI key or local model for unlimited questions.
 
-### What does the assistant send, and where?
+### What does Azgaar Assistant send, and where?
 
-Only the question you type and a conversation id go to the project's help gateway at ask.azgaarsfmg.com; nothing from your map or browser is sent. Answers are drawn from the wiki and Discord knowledge. Signing in with Discord stores a token in this browser, and 'Sign out' removes it. Questions are kept for 90 days to improve the documentation; the 'Policy' link at the bottom of the panel opens the full details at https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Policy That is the Help tab; the This map tab is covered below.
+Guest and Member questions send only your question and the server chat id to the Azgaar server. Nothing from the open map is sent. A connected key or local model sends your questions, chat history, a map summary, and results of map reads directly to that Provider. The Policy page has details.
 
-### Can the assistant answer questions about my own map? What is the 'This map' tab?
+### Can Azgaar Assistant answer questions about my map?
 
-Yes, in the assistant panel's second tab. 'Help' explains how the Generator works and never sees your map; 'This map' reads the world you have open and answers questions about it, such as which states have no ports or how the land is split between biomes. It runs on your own AI provider and your own API key, so it works anywhere, including a self-hosted copy. You can also open it from Tools -> Assistant
+Yes, with a connected AI key or local model. Ask in the same panel you use for Generator questions. The Assistant can read the open map to answer exact questions, and can download CSV or JSON built from it. Guests and Members can ask documentation questions but the Azgaar server cannot see their map.
 
-### Do I need an API key for the assistant?
+### Do I need an API key for Azgaar Assistant?
 
-Only for the 'This map' tab. 'Help' is free and needs nothing. 'This map' talks to an AI provider of your choice, so it needs a key from that provider, or a local server such as Ollama, which needs no key at all. Open the settings with the cog under the message box, pick a provider, pick a model, and paste the key. It is stored in this browser only and is sent only to that provider
+Guests and Members on the official site can ask documentation questions without a key. Connect a key to ask about your map, edit it and remove the daily limit. A local model needs no key. On a self-hosted copy or in the desktop app, connect a key or local model to use the Assistant.
 
-### Which AI providers and models can the assistant use?
+### Which AI providers and models can Azgaar Assistant use?
 
-Anthropic, OpenAI, Mistral, Qwen, DeepSeek, and any OpenAI-compatible local server (Ollama, llama.cpp, LM Studio). Choose the provider first and the model list narrows to that provider's models. If your key can use models newer than the built-in list, they are fetched from the provider and added automatically. Bigger models reason better and cost more; you pay the provider directly
+Anthropic, OpenAI, Mistral, Qwen, DeepSeek, and an OpenAI-compatible local server such as Ollama. Choose a Provider in the key sheet. The Assistant discovers models available to the key and also accepts any typed model id. One default is offered while discovery is pending.
 
-### What is sent to the AI provider by the 'This map' tab?
+### What is sent to my AI Provider?
 
-Your messages, and whatever the assistant reads from the open map to answer them. It answers by writing small scripts that read the map, and what those scripts return goes back to the provider as part of the conversation: burg names, state statistics, the text of a note. Treat it as you would pasting that material into any AI chat. Nothing goes to the project, and a local server keeps everything on your own machine
+Your question, earlier messages in the chat, the Assistant's instructions, a summary of the open map, the open note and selection if any, and results of the map reads the Assistant performs. Those results can include names, statistics or note text. Your key and data go directly to the Provider, never through the Azgaar server.
 
-### Can the AI change my map? Can it write my notes?
+### Can Azgaar Assistant change my map?
 
-It can write notes, and nothing else. Open the Notes Editor on any element, then open the assistant and ask for a description, a rewrite or a change of tone. The note updates in the editor and in the notes box as soon as the assistant writes it. Every edit shows in the chat with an Undo button that restores the previous text. The rest of the map is read-only to the assistant
+With a connected key or local model, it can propose most edits the entity editors make: renaming, recoloring and retyping entities; writing notes; setting full names, forms, cultures, deities, expansionism, locks and burg details (population, group, buildings, port, capital, treasury); setting diplomatic relations, chronicle entries, state taxes and treasuries; creating states, provinces, burgs, cultures, religions, rivers, routes, markers, zones, labels, regiments, journeys and custom biomes, and declaring a province independent; removing them; moving burgs, markers, regiments and emblems; giving cells to states, provinces, cultures and religions; giving a province to another state, merging states or provinces and recalculating state, culture or religion borders; splitting and joining routes; setting culture and religion origins, label groups and layout, marker looks, emblems, lake types and coastlines, goods' names, prices and production rules, and market names; painting and restoring biomes; setting the rural and urban population of states, provinces, cultures, religions and zones, and a state's war alert; and setting the map's name, year, era and description. When a request is missing a detail it needs, such as where to put a new state, it asks a short follow-up question first, often with clickable options. It never changes the map by itself: each proposal is a card listing every change before → after, and nothing happens until you press Apply. Discard drops it. Many changes, such as renaming all coastal burgs, arrive as one card. It cannot edit the heightmap, relief icons, ice, name bases, transport types, the placement of goods and markets, styles or settings, and it should tell you when it has no operation for a request.
 
-### How do I undo something the assistant wrote?
+### How do I undo an Assistant change?
 
-Each edit appears in the transcript as its own line with an Undo button next to it; pressing it puts the note back exactly as it was, and removes the note entirely if the assistant had created it. The button greys out once used. Undo stays available for as long as the chat is kept, so you can reverse an edit after asking further questions
+Use Undo on the applied proposal's card in the chat; it restores the whole batch. Undo is available only while the map still has exactly what Apply wrote. If you edited those entities later, applied an overlapping proposal or opened another map, the button reads Changed since. Apply has the same check against the values before the proposal. Both work in read-only chats and in any tier.
 
-### How much does the 'This map' assistant cost?
+### How much does a Key-tier Assistant chat cost?
 
-You pay your chosen provider for what you send; the project charges nothing and runs no server for it. The line under the message box shows the tokens spent on the current chat. Every earlier turn is re-sent with each new message, so a long chat costs more per message than a fresh one — the button beside the chat list starts a fresh one
+The project charges nothing; your chosen Provider may bill you. The footer shows the tokens used by this chat. Each question resends the chat's earlier messages, so long chats cost more and take longer. When a chat gets long, start a new one from the notice.
 
 ### How to make a river?
 
 There are two ways to create a new river. Open the Rivers Overview (Tools -> Rivers), click on the Add River button and then click on a map cell to spawn a river from it, the river will be created automatically. Another way is to draw a river manually with the 'Create a new river selecting river cells' button. The same automatic placement is available as Tools -> Add -> River (Shift + 4)
+
+### How do I make a river wider or narrower?
+
+Click the river to open the River Editor and change Source width (extra width at the source, 0 by default) or Width modifier (a multiplier for the whole river width, 1 by default). The mouth width follows
 
 ### Is it possible to raise the amount of cells without affecting the coastline?
 

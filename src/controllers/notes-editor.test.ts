@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
+import Quill from "quill";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/renderers/overlays/highlight", () => ({ highlightElement: () => {} }));
 vi.mock("@/components/tooltips", () => ({ tip: () => {} }));
 
-import { Notes } from "@/components/notes";
+import { Notes } from "@/generators/notes";
 import { NotesEditor } from "./notes-editor";
 
 const w = globalThis as unknown as Record<string, unknown>;
@@ -30,31 +31,17 @@ describe("NotesEditor bridge", () => {
     expect(NotesEditor.getSelectionHtml()).toBeNull();
   });
 
-  it("writes to the entity while the editor is closed", () => {
-    const note = NotesEditor.write("burg:1", "<p>new</p>");
-    expect(note).toEqual({ id: "burg:1", name: "Kelmora", legend: "<p>new</p>" });
-    expect(Notes.get(burg)).toBe("<p>new</p>");
+  it("does nothing on refresh while the editor is closed", () => {
+    Notes.set(burg, "<p>new</p>");
+    NotesEditor.refresh();
     expect(document.getElementById("notesEditor")).toBeNull();
-  });
-
-  it("creates a note on a zero-id entity without changing its name", () => {
-    expect(NotesEditor.write("marker:0", "<p>x</p>")).toEqual({
-      id: "marker:0",
-      name: "Old Well",
-      legend: "<p>x</p>"
-    });
-  });
-
-  it("rejects missing and deleted entities instead of creating orphan notes", () => {
-    expect(() => NotesEditor.write("marker:3", "<p>x</p>")).toThrow("not found");
-    pack.burgs[1].removed = true;
-    expect(() => NotesEditor.write("burg:1", "<p>x</p>")).toThrow("not found");
   });
 
   it("refreshes Quill and the note box while preserving the entity name", () => {
     NotesEditor.open(burg);
     expect(NotesEditor.current()?.id).toBe("burg:1");
-    NotesEditor.write("burg:1", "<p>rewritten</p>");
+    Notes.set(burg, "<p>rewritten</p>");
+    NotesEditor.refresh();
     expect(document.querySelector("#notesLegend .ql-editor")?.innerHTML).toBe("<p>rewritten</p>");
     expect(document.getElementById("notesBody")?.innerHTML).toBe("<p>rewritten</p>");
     expect(document.getElementById("notesName")?.textContent).toBe("Kelmora");
@@ -62,15 +49,17 @@ describe("NotesEditor bridge", () => {
 
   it("lists newly written notes without moving the open editor", () => {
     NotesEditor.open(burg);
-    NotesEditor.write("burg:2", "<p>b</p>");
+    Notes.set({ type: "burg", id: 2 }, "<p>b</p>");
+    NotesEditor.refresh();
     const options = [...(document.getElementById("notesSelect") as HTMLSelectElement).options].map(o => o.value);
     expect(options).toEqual(["burg:1", "burg:2"]);
     expect(NotesEditor.current()?.id).toBe("burg:1");
   });
 
-  it("removes a note while keeping the selected entity editable", () => {
+  it("shows a removed note while keeping the selected entity editable", () => {
     NotesEditor.open(burg);
-    NotesEditor.remove("burg:1");
+    Notes.set(burg, "");
+    NotesEditor.refresh();
     expect(Notes.get(burg)).toBeUndefined();
     expect(NotesEditor.current()).toEqual({ id: "burg:1", name: "Kelmora", legend: "" });
     expect(document.getElementById("notesBody")?.innerHTML).toBe("");
@@ -83,8 +72,44 @@ describe("NotesEditor bridge", () => {
     expect(source.hidden).toBe(false);
     source.setSelectionRange(0, 7);
     expect(NotesEditor.getSelectionHtml()).toBe("<iframe");
-    NotesEditor.write("burg:1", "<p>rewritten</p>");
+    Notes.set(burg, "<p>rewritten</p>");
+    NotesEditor.refresh();
     expect(source.hidden).toBe(true);
     expect(document.querySelector("#notesLegend .ql-editor")?.innerHTML).toBe("<p>rewritten</p>");
   });
+});
+
+it("keeps the selected note excerpt after focus moves to the Assistant and clears it on refresh", () => {
+  NotesEditor.open(burg);
+  const editor = Quill.find(document.getElementById("notesLegend")!) as Quill;
+  editor.setSelection(0, 3);
+  editor.blur();
+  expect(NotesEditor.getSelectionHtml()).toBe("old");
+  Notes.set(burg, "<p>New</p>");
+  NotesEditor.refresh();
+  expect(NotesEditor.getSelectionHtml()).toBeNull();
+});
+
+it("announces note context changes when selecting and closing notes", () => {
+  const changed = vi.fn();
+  window.addEventListener("notes:context-changed", changed);
+  let close: (() => void) | undefined;
+  window.$ = vi.fn(() => ({
+    dialog: (options: unknown) => {
+      if (options && typeof options === "object" && "close" in options) close = options.close as () => void;
+    }
+  })) as unknown as typeof window.$;
+  NotesEditor.open(burg);
+  expect(changed).toHaveBeenCalledTimes(1);
+  Notes.set({ type: "burg", id: 2 }, "<p>Other</p>");
+  NotesEditor.refresh();
+  expect(changed).toHaveBeenCalledTimes(2);
+  const select = document.getElementById("notesSelect") as HTMLSelectElement;
+  select.value = "burg:2";
+  select.dispatchEvent(new Event("change"));
+  expect(changed).toHaveBeenCalledTimes(3);
+  close!();
+  expect(changed).toHaveBeenCalledTimes(4);
+  expect(NotesEditor.current()).toBeNull();
+  window.removeEventListener("notes:context-changed", changed);
 });

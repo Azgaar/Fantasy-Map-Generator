@@ -1,7 +1,6 @@
 import { mean, min, polygonLength, type Selection, select } from "d3";
-import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog, noteButton } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
-import { Notes } from "@/components/notes";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { type Feature, LAKE_SUBTYPES } from "@/generators/features-generator";
@@ -96,7 +95,7 @@ function renderDialog(): void {
       </div>
     </div>
     <div id="lakeBottom">
-      ${Notes.getButton("lakeLegend", "this lake")}
+      ${noteButton("lakeLegend", "this lake")}
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -165,7 +164,7 @@ function generateNameRandom(): void {
 }
 
 function changeLakeSubtype(this: HTMLSelectElement): void {
-  getLake().subtype = this.value; // subtype is domain data, the rendering group is left alone
+  Features.setSubtype(getLake().i, this.value); // subtype is domain data, the rendering group is left alone
 }
 
 const isStockGroup = (group: string) => group in Styles.defaults.lakes.groups;

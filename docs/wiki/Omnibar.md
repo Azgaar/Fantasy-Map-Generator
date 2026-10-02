@@ -16,7 +16,7 @@ Commands are marked with **>**. Type a tool, layer or action name, or start the 
 - `> wrap` finds the Wrap Tool.
 - `> heightmap` finds heightmap-related actions.
 
-Commands can open editors, toggle layers, create map objects, regenerate data, save, load and export. Read the action's name before selecting it: a regeneration command changes the map. Typing a question also offers **Ask AI**, which opens the Azgaar Assistant, where you can enter your question.
+Commands can open editors, toggle layers, create map objects, regenerate data, save, load and export. Read the action's name before selecting it: a regeneration command changes the map. Typing a question also offers **Open Azgaar Assistant**, where you can enter your question.
 
 The empty search shows recently used commands. The last ten are remembered in your browser; map search results are not kept in that history.
 

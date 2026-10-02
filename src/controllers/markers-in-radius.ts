@@ -141,20 +141,14 @@ function onMarkerListClick(event: MouseEvent): void {
 }
 
 function togglePin(marker: Marker, el: HTMLElement): void {
-  if (marker.pinned) delete marker.pinned;
-  else marker.pinned = true;
+  Markers.setPinned(marker.i, !marker.pinned);
   el.classList.toggle("inactive");
   Layers.draw("markers"); // the renderer reads the flag off the markers themselves
 }
 
 function toggleLock(marker: Marker, el: HTMLElement): void {
-  if (marker.lock) {
-    delete marker.lock;
-    el.className = "locks pointer icon-lock-open inactive";
-  } else {
-    marker.lock = true;
-    el.className = "locks pointer icon-lock";
-  }
+  Markers.setLocked(marker.i, !marker.lock);
+  el.className = marker.lock ? "locks pointer icon-lock" : "locks pointer icon-lock-open inactive";
 }
 
 function confirmRemove(marker: Marker): void {
@@ -163,7 +157,7 @@ function confirmRemove(marker: Marker): void {
     message: "Are you sure you want to remove this marker? The action cannot be reverted",
     confirm: "Remove",
     onConfirm: () => {
-      Markers.deleteMarker(marker.i);
+      Markers.remove(marker.i);
       document.getElementById(`marker${marker.i}`)?.remove();
       refreshEditors();
       applyRadius(getRadius());

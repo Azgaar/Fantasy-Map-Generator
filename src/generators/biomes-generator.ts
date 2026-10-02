@@ -1,5 +1,7 @@
 import { mean } from "d3";
 import type { ReliefPool } from "@/generators/relief-generator";
+import { requireColor } from "@/utils/colorUtils";
+import { requireName } from "@/utils/validationUtils";
 import { rn } from "../utils";
 
 export interface Biome {
@@ -125,6 +127,74 @@ class BiomesGenerator {
       const temperature = temp[gridReference[cellId]];
       pack.cells.biome[cellId] = this.getId(moisture, temperature, height, Boolean(riverIds[cellId]));
     }
+  }
+
+  /** Rename a biome */
+  rename(biomeId: number, name: string): void {
+    this.living(biomeId).name = requireName(name);
+  }
+
+  /** Set a biome's color */
+  recolor(biomeId: number, color: string): void {
+    this.living(biomeId).color = requireColor(color);
+  }
+
+  /** Set a biome's habitability, in percent */
+  setHabitability(biomeId: number, percent: number): void {
+    if (!Number.isFinite(percent) || percent < 0) throw new Error("The habitability must be a non-negative number");
+    this.living(biomeId).habitability = percent;
+  }
+
+  /** Add a custom biome for painting; returns its id. There can be at most 255 biomes */
+  add(name: string, color: string, habitability: number): number {
+    const biomes = pack.biomes;
+    if (biomes.length > 254) throw new Error("There can be at most 255 biomes");
+    if (!Number.isFinite(habitability) || habitability < 0)
+      throw new Error("The habitability must be a non-negative number");
+    const i = biomes.length;
+    biomes.push({
+      i,
+      name: requireName(name),
+      color: requireColor(color),
+      habitability,
+      iconsDensity: 0,
+      icons: {},
+      cost: 50
+    });
+    return i;
+  }
+
+  /** Remove a custom biome that no cell uses; the generated biomes stay */
+  remove(biomeId: number): void {
+    this.living(biomeId);
+    if (biomeId <= 12) throw new Error(`Biome ${biomeId} is a generated biome and cannot be removed`);
+    if (pack.cells.biome.includes(biomeId)) throw new Error(`Biome ${biomeId} still has cells; paint them over first`);
+    pack.biomes[biomeId].removed = true;
+  }
+
+  /** Paint land cells with a biome; a cell's rural population does not follow until population is regenerated */
+  setCells(biomeId: number, cellIds: number[]): void {
+    this.living(biomeId);
+    if (!biomeId) throw new Error("Biome 0 is the water biome; land cannot take it");
+    const { cells } = pack;
+    if (!Array.isArray(cellIds) || !cellIds.length) throw new Error("Name at least one cell");
+    for (const cell of cellIds) {
+      if (!Number.isInteger(cell) || cell < 0 || cell >= cells.i.length) throw new Error(`Cell ${cell} does not exist`);
+      if (cells.h[cell] < this.MIN_LAND_HEIGHT) throw new Error(`Cell ${cell} is water; biomes are painted on land`);
+    }
+    for (const cell of cellIds) cells.biome[cell] = biomeId;
+  }
+
+  /** Restore the generated biomes: their default names, colors and habitability, and the cells they cover. Custom biomes are removed */
+  restore(): void {
+    pack.biomes = this.getDefault();
+    this.define();
+  }
+
+  private living(biomeId: number): Biome {
+    const biome = pack.biomes[biomeId];
+    if (!biome || biome.removed) throw new Error(`Biome ${biomeId} does not exist`);
+    return biome;
   }
 
   getId(moisture: number, temperature: number, height: number, hasRiver: boolean) {

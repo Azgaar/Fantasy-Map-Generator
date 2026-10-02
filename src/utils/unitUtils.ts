@@ -88,6 +88,12 @@ export function getFriendlyHeight([x, y]: [number, number], pack: PackedGraph, g
   return getHeight(packH < 20 ? gridH : packH);
 }
 
+/** People from population points: rural points plus urban points, which count urbanization */
+export function getPeople(rural = 0, urban = 0): number {
+  const { scale, urbanization } = options.map.units.population;
+  return Math.round(rural * scale + urban * scale * urbanization.rate);
+}
+
 /** Get [rural, urban] real-world population of a cell */
 export function getCellPopulation(cellId: number, pack: PackedGraph): [number, number] {
   const rural = pack.cells.pop[cellId] * options.map.units.population.scale;
@@ -173,6 +179,11 @@ const KM_IN_DISTANCE_UNIT: Record<string, number> = {
 /** The distance unit selected in the Units editor, e.g. "mi" */
 export function getDistanceUnit(): string {
   return options.map.units.distance.unit || "km";
+}
+
+/** A length in map units in the user distance unit, e.g. "92 mi" */
+export function getDistance(length: number): string {
+  return `${rn(length * options.map.units.distance.scale)} ${getDistanceUnit()}`;
 }
 
 /** Kilometers in one user distance unit, 0 for an unrecognized (custom) unit */

@@ -1,9 +1,9 @@
 // Save the whole .map project to storage, machine or cloud
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
-import { Notes } from "@/components/notes";
 import { tip } from "@/components/tooltips";
 import { GraphOverride } from "@/generators/graph-override";
+import { Notes } from "@/generators/notes";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
 import { isElectron, savedMessage } from "@/services/platform";

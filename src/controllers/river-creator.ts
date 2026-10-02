@@ -4,8 +4,7 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import type { Point } from "@/generators/voronoi";
-import { ensureEl, getPointer, last, rn } from "../utils";
+import { ensureEl, getPointer } from "../utils";
 
 let creatorCells: number[] = [];
 
@@ -102,56 +101,11 @@ function drawCells(cells: number[]): void {
 }
 
 function addRiver(): void {
-  const { rivers: packRivers, cells } = pack;
-  const riverCells = creatorCells;
-  if (riverCells.length < 2) {
+  if (creatorCells.length < 2) {
     tip("Add at least 2 cells", false, "error");
     return;
   }
-
-  const riverId = Rivers.getNextId(packRivers);
-  const parent = cells.r[last(riverCells)] || riverId;
-
-  riverCells.forEach(cell => {
-    if (!cells.r[cell]) cells.r[cell] = riverId;
-  });
-
-  const source = riverCells[0];
-  const mouth = parent === riverId ? last(riverCells) : riverCells[riverCells.length - 2];
-  const sourceWidth = Rivers.getSourceWidth(cells.fl[source]);
-  const defaultWidthFactor = rn(1 / (options.map.graph.points / 10000) ** 0.25, 2);
-  const widthFactor = 1.2 * defaultWidthFactor;
-
-  const meanderedPoints = Rivers.addMeandering(riverCells);
-
-  const discharge = cells.fl[mouth]; // m3 in second
-  const length = Rivers.getApproximateLength(meanderedPoints as unknown as Point[]);
-  const width = Rivers.getWidth(
-    Rivers.getOffset({
-      flux: discharge,
-      pointIndex: meanderedPoints.length,
-      widthFactor,
-      startingWidth: sourceWidth
-    })
-  );
-  const name = Rivers.getName(mouth);
-  const basin = Rivers.getBasin(parent);
-
-  packRivers.push({
-    i: riverId,
-    source,
-    mouth,
-    discharge,
-    length,
-    width,
-    widthFactor,
-    sourceWidth,
-    parent,
-    cells: riverCells,
-    basin,
-    name,
-    type: "River"
-  });
+  const riverId = Rivers.create(creatorCells);
   Layers.draw("rivers");
   void Controllers.RiverEditor.open(`river${riverId}`);
 }

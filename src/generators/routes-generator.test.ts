@@ -583,7 +583,7 @@ describe("RoutesModule.remove", () => {
     // asymmetric index: forward link 10->20 exists but cell 20 has no reverse entry
     globalThis.pack.cells.routes = { 10: { 20: 1 } } as any;
 
-    expect(() => Routes.remove(globalThis.pack.routes[0])).not.toThrow();
+    expect(() => Routes.remove(globalThis.pack.routes[0].i)).not.toThrow();
     expect(globalThis.pack.routes).toHaveLength(0);
     expect(globalThis.pack.cells.routes[10][20]).toBeUndefined();
   });

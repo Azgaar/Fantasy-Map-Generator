@@ -394,7 +394,7 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
               Line ${id}:
               <span style="color:#8b0000">${escapeHtml(error)}.</span> Data:
             </div>
-            <div style="margin-top:0.35em;font-family:var(--font-monospace,monospace);font-size:0.95em;line-height:1.4;word-break:break-word;color:#333;">
+            <div style="margin-top:0.35em;font-family:var(--font-monospace,monospace);line-height:1.4;word-break:break-word;color:#333;">
               ${escapeHtml(line) || "<empty line>"}
             </div>
           </li>`

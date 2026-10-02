@@ -1,6 +1,10 @@
 import { max, quadtree, range } from "d3";
 import { Emblems } from "@/generators/emblems-generator";
+import type { Emblem } from "@/types/emblems";
+import { requireColor } from "@/utils/colorUtils";
+import { requireCode, requireName, requireOneOf, requireOrigins } from "@/utils/validationUtils";
 import { abbreviate, biased, getColors, getRandomColor, minmax, P, rand, rn, rw } from "../utils";
+import { Population } from "./population-generator";
 
 /** The named culture sets the user picks from: how many cultures each holds and how often it is rolled */
 export const CULTURE_SETS: Record<string, { name: string; max: number; probability: number }> = {
@@ -213,7 +217,7 @@ class CulturesGenerator {
           shield: "round"
         },
         {
-          name: "Berberan",
+          name: "Amazi",
           base: 17,
           odd: 0.2,
           sort: (i: number) => (n(i) / td(i, 19) / bd(i, [1, 2, 3], 7)) * t[i],
@@ -676,7 +680,7 @@ class CulturesGenerator {
           shield: "round"
         },
         {
-          name: "Berberan",
+          name: "Amazi",
           base: 17,
           odd: 0.05,
           sort: (i: number) => (n(i) / td(i, 19) / bd(i, [1, 2, 3], 7)) * t[i],
@@ -914,7 +918,7 @@ class CulturesGenerator {
         shield: "round"
       },
       {
-        name: "Berberan",
+        name: "Amazi",
         base: 17,
         odd: 0.1,
         sort: (i: number) => (n(i) / td(i, 19) / bd(i, [1, 2, 3], 7)) * t[i],
@@ -1218,7 +1222,12 @@ class CulturesGenerator {
     });
   }
 
-  add(center: number) {
+  /** Found a culture centered at a map point; it takes land when cultures are recalculated. Returns its id */
+  add(x: number, y: number): number {
+    const center = Pack.requireCell(x, y);
+    if (pack.cells.h[center] < 20) throw new Error("A culture center cannot be placed in the water");
+    if (pack.cultures.some(c => c.i && !c.removed && c.center === center))
+      throw new Error(`Cell ${center} is already a culture center`);
     const defaultCultures = this.getDefault();
     let culture: number, base: number, name: string;
 
@@ -1254,6 +1263,7 @@ class CulturesGenerator {
       code,
       shield: Emblems.shape === "random" ? this.getRandomShield() : ""
     });
+    return i;
   }
 
   expand() {
@@ -1346,6 +1356,139 @@ class CulturesGenerator {
         }
       });
     }
+  }
+
+  /** Rename a culture; its code is recomputed */
+  rename(cultureId: number, name: string): void {
+    const culture = pack.cultures[cultureId];
+    if (!culture || culture.removed) throw new Error(`Culture ${cultureId} does not exist`);
+    culture.name = requireName(name);
+    culture.code = abbreviate(
+      culture.name,
+      pack.cultures.flatMap(other => (other !== culture && other.code ? [other.code] : []))
+    );
+  }
+
+  /** Set a culture's color */
+  recolor(cultureId: number, color: string): void {
+    this.living(cultureId).color = requireColor(color);
+  }
+
+  /** Set a culture's type: Generic, Hunting, Highland, River, Lake, Naval or Nomadic */
+  setType(cultureId: number, type: string): void {
+    this.living(cultureId).type = requireOneOf(type, CULTURE_TYPES, "The type");
+  }
+
+  /** Set the name base a culture takes its names from, by index in Names.nameBases */
+  setBase(cultureId: number, baseId: number): void {
+    if (!Names.nameBases[baseId]) throw new Error(`Name base ${baseId} does not exist`);
+    this.living(cultureId).base = baseId;
+  }
+
+  /** Set how strongly a culture expands when cultures are recalculated, from 0 to 99 */
+  setExpansionism(cultureId: number, expansionism: number): void {
+    if (typeof expansionism !== "number" || !(expansionism >= 0 && expansionism <= 99))
+      throw new Error("The expansionism must be a number from 0 to 99");
+    this.living(cultureId).expansionism = expansionism;
+  }
+
+  /** Redraw culture borders from their centers, types and expansionism; burgs take their cell's culture */
+  recalculate(): void {
+    this.expand();
+    for (const burg of pack.burgs) if (burg?.i && !burg.removed) burg.culture = pack.cells.culture[burg.cell];
+  }
+
+  /** Remove a culture; its lands, burgs and states fall to the wildlands */
+  remove(cultureId: number): void {
+    const culture = this.living(cultureId);
+    if (!cultureId) throw new Error("The wildlands cannot be removed");
+    const { burgs, states, cells, cultures } = pack;
+    for (const burg of burgs) if (burg?.i && burg.culture === cultureId) burg.culture = 0;
+    for (const state of states) if (state.culture === cultureId) state.culture = 0;
+    cells.culture.forEach((owner, cell) => {
+      if (owner === cultureId) cells.culture[cell] = 0;
+    });
+    culture.removed = true;
+    for (const other of cultures) {
+      if (!other.i || other.removed || !other.origins) continue;
+      other.origins = other.origins.filter(origin => origin !== cultureId);
+      if (!other.origins.length) other.origins = [0];
+    }
+  }
+
+  /** Set a culture's rural and urban population, in people: its cells and burgs scale to the totals */
+  setPopulation(cultureId: number, rural: number, urban: number): void {
+    this.living(cultureId);
+    const { cells } = pack;
+    Population.setArea(
+      Population.landCells(cell => cells.culture[cell] === cultureId),
+      Population.burgIds(burg => burg.culture === cultureId),
+      rural,
+      urban
+    );
+  }
+
+  /** Lock a culture so regeneration keeps it, or unlock it */
+  setLocked(cultureId: number, locked: boolean): void {
+    const culture = this.living(cultureId);
+    if (locked) culture.lock = true;
+    else delete culture.lock;
+  }
+
+  /** Set a culture's origins, as the Hierarchy tree does: the first is primary (0 = top level), the rest secondary */
+  setOrigins(cultureId: number, originIds: number[]): void {
+    this.living(cultureId).origins = requireOrigins(pack.cultures, cultureId, originIds);
+  }
+
+  /** Set a culture's short code, 1 to 3 characters */
+  setCode(cultureId: number, code: string): void {
+    this.living(cultureId).code = requireCode(code);
+  }
+
+  /** Move a culture's center to a land cell at a map point; it takes effect when cultures are recalculated */
+  moveCenter(cultureId: number, x: number, y: number): void {
+    const culture = this.living(cultureId);
+    if (!cultureId) throw new Error("The wildlands have no center");
+    const cell = Pack.requireCell(x, y);
+    if (pack.cells.h[cell] < 20) throw new Error("A culture center cannot be placed in the water");
+    const other = pack.cultures.find(item => item.i && !item.removed && item !== culture && item.center === cell);
+    if (other) throw new Error(`Cell ${cell} is already the center of culture ${other.i}`);
+    culture.center = cell;
+  }
+
+  /** Give land cells to a culture, or to the wildlands with id 0; burgs there take it too */
+  setCells(cultureId: number, cellIds: number[]): void {
+    this.living(cultureId);
+    const { cells } = pack;
+    if (!Array.isArray(cellIds) || !cellIds.length) throw new Error("Name at least one cell");
+    for (const cell of cellIds) {
+      if (!Number.isInteger(cell) || cell < 0 || cell >= cells.i.length) throw new Error(`Cell ${cell} does not exist`);
+      if (cells.h[cell] < 20) throw new Error(`Cell ${cell} is water; cultures hold land only`);
+    }
+    for (const cell of cellIds) {
+      cells.culture[cell] = cultureId;
+      if (cells.burg[cell]) pack.burgs[cells.burg[cell]].culture = cultureId;
+    }
+  }
+
+  /** Set a culture's emblem shape; emblems of its states, provinces and burgs take it, except icon emblems */
+  setEmblemShape(cultureId: number, shape: string): void {
+    const culture = this.living(cultureId);
+    const shapes = Object.keys(Emblems.shields.types).flatMap(type => Object.keys(Emblems.shields[type]));
+    culture.shield = requireOneOf(shape, shapes, "The shape");
+    const reshape = (coa: Emblem | undefined) => {
+      if (coa && !("icon" in coa)) coa.shield = culture.shield;
+    };
+    for (const state of pack.states) if (state.i && !state.removed && state.culture === cultureId) reshape(state.coa);
+    for (const province of pack.provinces)
+      if (province.i && !province.removed && pack.cells.culture[province.center] === cultureId) reshape(province.coa);
+    for (const burg of pack.burgs) if (burg?.i && !burg.removed && burg.culture === cultureId) reshape(burg.coa);
+  }
+
+  private living(cultureId: number): Culture {
+    const culture = pack.cultures[cultureId];
+    if (!culture || culture.removed) throw new Error(`Culture ${cultureId} does not exist`);
+    return culture;
   }
 
   regenerate(): void {

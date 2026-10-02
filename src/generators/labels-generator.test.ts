@@ -38,13 +38,13 @@ describe("LabelsModule", () => {
   });
 
   it("restores an entity label to defaults", () => {
-    labels.resetOverride("state", 1);
+    labels.reset("state", 1);
     expect(pack.states[1].label).toBeUndefined();
   });
 
   it("preserves an added label's base data on reset", () => {
     pack.addedLabels[0].label.dx = 2;
-    labels.resetOverride("added", 1);
+    labels.reset("added", 1);
     expect(pack.addedLabels[0].label).toEqual({ text: "Aldor", group: "added" });
   });
 });

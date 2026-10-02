@@ -285,18 +285,8 @@ function renderMilitaryPage(view: TableView<MilitaryRow>): void {
 }
 
 function changeAlert(state: number, alert: number): void {
-  const s = pack.states[state];
-  const prevAlert = s.alert ?? 1;
-  const dif = prevAlert ? alert / prevAlert : 0; // modifier
-  s.alert = alert;
-  (s.military || []).forEach(r => {
-    Object.keys(r.u).forEach(u => {
-      r.u[u] = rn(r.u[u] * dif);
-    });
-    r.a = sum(Object.values(r.u)); // change total
-    select<SVGGElement, unknown>(`#armies > g > g#regiment${s.i}-${r.i} > text`).text(Military.getTotal(r)); // change icon text
-  });
-
+  if (alert >= 0) Military.setAlert(state, alert);
+  Layers.draw("military");
   militaryTable.refresh();
 }
 

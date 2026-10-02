@@ -28,7 +28,7 @@ vi.mock("@/services/autosave", () => ({ toggleSaveReminder: vi.fn() }));
 vi.mock("@/services/url-params", () => ({ copyMapURL: vi.fn() }));
 vi.mock("@/services/versioning", () => ({ cleanupData: vi.fn() }));
 
-import { MAP_COMMANDS } from "./map-commands";
+import { isLinkable, MAP_COMMANDS } from "./map-commands";
 
 beforeEach(() => {
   document.body.innerHTML = '<div id="alert"><div id="alertMessage"></div></div>';
@@ -82,5 +82,15 @@ describe("shared regeneration commands", () => {
 
   it("has unique persistent command IDs", () => {
     expect(new Set(MAP_COMMANDS.map(command => command.id)).size).toBe(MAP_COMMANDS.length);
+  });
+});
+
+describe("linkable commands", () => {
+  it("only open things, never generate, load or reset", () => {
+    const linkable = MAP_COMMANDS.filter(isLinkable).map(({ id }) => id);
+    expect(linkable).toContain("editHeightmapButton");
+    expect(linkable).not.toContain("assistant");
+    for (const id of ["newMap", "quickLoad", "regenerateStates", "optionsReset", "layer:toggleRivers"])
+      expect(linkable).not.toContain(id);
   });
 });

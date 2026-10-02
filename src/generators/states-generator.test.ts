@@ -200,3 +200,64 @@ describe("StatesModule.generateDiplomacy", () => {
     expect(states[4].diplomacy).toEqual(["x", "x", "Neutral", "Neutral", "x"]);
   });
 });
+
+describe("StatesModule.rename", () => {
+  const state = (fields: object) => ({ i: 1, name: "Old", formName: "Empire", ...fields });
+
+  beforeEach(async () => {
+    await import("./states-generator");
+  });
+
+  it("keeps a custom full name and label containing the whole old name", () => {
+    globalThis.pack = {
+      states: [{ i: 0 }, state({ fullName: "United Realms of Old", label: { text: "Old|Realms" } })]
+    } as any;
+    States.rename(1, "New");
+    expect(pack.states[1]).toMatchObject({
+      name: "New",
+      fullName: "United Realms of New",
+      label: { text: "New|Realms" }
+    });
+  });
+
+  it("rebuilds a generated full name that holds the old name only inside another word", () => {
+    globalThis.pack = { states: [{ i: 0 }, state({ fullName: "Oldish Empire" })] } as any;
+    States.rename(1, "Nova");
+    expect(pack.states[1].fullName).toBe(States.getFullName(pack.states[1]));
+    expect(pack.states[1].fullName).not.toContain("Oldish");
+  });
+
+  it("rejects removed states", () => {
+    globalThis.pack = { states: [{ i: 0 }, state({ removed: true })] } as any;
+    expect(() => States.rename(1, "New")).toThrow("State 1 does not exist");
+  });
+});
+
+describe("StatesModule.setCells", () => {
+  beforeEach(async () => {
+    await import("./states-generator");
+  });
+
+  it("refreshes the statistics of both states", () => {
+    globalThis.pack = {
+      cells: {
+        i: [0, 1, 2],
+        h: [30, 30, 30],
+        area: [10, 20, 40],
+        pop: [1, 2, 4],
+        burg: [0, 1, 0],
+        state: Uint16Array.from([1, 1, 2]),
+        province: Uint16Array.from([0, 0, 0])
+      },
+      states: [{ i: 0 }, { i: 1, center: 0 }, { i: 2, center: 2 }],
+      burgs: [0, { i: 1, state: 1, population: 5 }]
+    } as any;
+    const states = States as any;
+    vi.spyOn(states, "getPoles").mockImplementation(() => {});
+    vi.spyOn(states, "findNeighbors").mockImplementation(() => {});
+    vi.spyOn(states, "adjustProvinces").mockImplementation(() => {});
+    States.setCells(2, [1]);
+    expect(pack.states[1]).toMatchObject({ cells: 1, area: 10, rural: 1, urban: 0, burgs: 0 });
+    expect(pack.states[2]).toMatchObject({ cells: 2, area: 60, rural: 6, urban: 5, burgs: 1 });
+  });
+});

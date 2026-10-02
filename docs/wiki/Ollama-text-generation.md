@@ -89,16 +89,15 @@ That's It! You can now generate text using your local AI model.
 
 ## Using Ollama with the Assistant
 
-The AI text generator writes a single block of prose. The Assistant's _This map_ tab is the other way to use a local model: it reads the map you have open, answers questions about it, and can write your notes. It talks to Ollama through the OpenAI-compatible endpoint rather than `/api/generate`.
+The AI text generator writes a single block of prose. Azgaar Assistant uses a local model to answer questions about the Generator and the open map, and to propose note and name changes that you apply. It talks to Ollama through the OpenAI-compatible endpoint rather than `/api/generate`.
 
-1. With `ollama serve` running, open the Assistant — the bubble in the bottom right corner, or _Tools → Assistant_ — and switch to **This map**.
-2. Open the settings with the cog under the message box and choose **Local** as the provider.
-3. Leave the model as **custom model…** and type the model name, `llama3.2` or whatever `ollama list` reports. Models Ollama already has are also offered in the list directly.
-4. Leave the API key empty. A local server needs none.
+1. With `ollama serve` running, open Azgaar Assistant and select **Use key**.
+2. Choose **Local** as the provider and enter the model name reported by `ollama list`.
+3. Check the server address and select **Connect**. A local server needs no key.
 
 The server address defaults to `http://localhost:11434/v1`, which is Ollama's OpenAI-compatible endpoint. If Ollama runs on another machine or port, put its address in the server field and allow the Generator's origin on the Ollama side with `OLLAMA_ORIGINS`.
 
-Note that the Assistant answers by writing small scripts that read the map, which asks more of a model than plain prose does. Smaller local models often cannot manage it; if answers come back empty or malformed, try a larger one.
+Set the local server's context window to at least 8,192 tokens, for example by starting Ollama with `OLLAMA_CONTEXT_LENGTH=8192 ollama serve`; use 16,384 for long chats. The Assistant writes small scripts to read the map, which asks more of a model than plain prose does. If answers are empty or malformed, try a larger model.
 
 ## Troubleshooting
 

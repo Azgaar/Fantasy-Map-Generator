@@ -2,7 +2,7 @@ import { curveCatmullRom, curveCatmullRomClosed, line, polygonArea, select } fro
 import polylabel from "polylabel";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
-import { getArea, getAreaUnit, last, rn, round, si } from "@/utils";
+import { getArea, getAreaUnit, getDistance, last, rn, round, si } from "@/utils";
 
 const openCurveGen = line<Point>().curve(curveCatmullRom.alpha(0.5));
 const closedCurveGen = line<Point>().curve(curveCatmullRomClosed.alpha(0.5));
@@ -14,9 +14,6 @@ function getMeasurerStyle(): MeasurerStyle {
   const { attrs } = styles.rulers;
   return { strokeWidth: attrs["stroke-width"] ?? 1, dasharray: attrs["stroke-dasharray"] ?? "none" };
 }
-
-const getDistance = (length: number): string =>
-  `${rn(length * options.map.units.distance.scale)} ${options.map.units.distance.unit}`;
 
 export function drawMeasurers(): void {
   select("#ruler").selectAll("*").remove();

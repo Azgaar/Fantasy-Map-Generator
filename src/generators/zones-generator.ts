@@ -1,5 +1,8 @@
 import { max, mean } from "d3";
+import { requireColor } from "@/utils/colorUtils";
+import { requireName } from "@/utils/validationUtils";
 import { gauss, getAdjective, P, ra, rand, rw } from "../utils";
+import { Population } from "./population-generator";
 
 declare global {
   var Zones: ZonesModule;
@@ -39,6 +42,72 @@ class ZonesModule {
       flood: { quantity: 1, generate: u => this.addFlood(u) },
       tsunami: { quantity: 1, generate: u => this.addTsunami(u) }
     };
+  }
+
+  /** Rename a zone; its name is its description */
+  rename(zoneId: number, name: string): void {
+    this.living(zoneId).name = requireName(name);
+  }
+
+  /** Set a zone's color */
+  recolor(zoneId: number, color: string): void {
+    this.living(zoneId).color = requireColor(color);
+  }
+
+  /** Set a zone's type, a free label such as Invasion or Disease */
+  setType(zoneId: number, type: string): void {
+    this.living(zoneId).type = requireName(type);
+  }
+
+  /** Hide or show a zone */
+  setHidden(zoneId: number, hidden: boolean): void {
+    const zone = this.living(zoneId);
+    if (hidden) zone.hidden = true;
+    else delete zone.hidden;
+  }
+
+  /** Add a zone over a list of cell ids; returns its id */
+  add(name: string, type: string, cells: number[]): number {
+    const i = pack.zones.length ? Math.max(...pack.zones.map(zone => zone.i)) + 1 : 0;
+    const zone = { i, name: requireName(name), type: requireName(type), color: `url(#hatch${i % 42})`, cells: [] };
+    pack.zones.push(zone);
+    this.setCells(i, cells);
+    return i;
+  }
+
+  /** Set the cells a zone covers, as a list of cell ids */
+  setCells(zoneId: number, cells: number[]): void {
+    const count = pack.cells.i.length;
+    if (
+      !Array.isArray(cells) ||
+      !cells.length ||
+      cells.some(cell => !Number.isInteger(cell) || cell < 0 || cell >= count)
+    )
+      throw new Error(`The cells must be a non-empty list of cell ids from 0 to ${count - 1}`);
+    this.living(zoneId).cells = [...new Set(cells)];
+  }
+
+  /** Set the rural and urban population of a zone's land, in people: its cells and burgs scale to the totals */
+  setPopulation(zoneId: number, rural: number, urban: number): void {
+    const cells = new Set(this.living(zoneId).cells);
+    Population.setArea(
+      Population.landCells(cell => cells.has(cell)),
+      Population.burgIds(burg => cells.has(burg.cell)),
+      rural,
+      urban
+    );
+  }
+
+  /** Remove a zone */
+  remove(zoneId: number): void {
+    this.living(zoneId);
+    pack.zones = pack.zones.filter(zone => zone.i !== zoneId);
+  }
+
+  private living(zoneId: number): Zone {
+    const zone = pack.zones.find(({ i }) => i === zoneId);
+    if (!zone) throw new Error(`Zone ${zoneId} does not exist`);
+    return zone;
   }
 
   regenerate(globalModifier = 1): void {

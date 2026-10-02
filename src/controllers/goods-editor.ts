@@ -3,6 +3,7 @@ import {
   closeDialogs,
   confirmationDialog,
   destroyDialog,
+  noteIcon,
   refreshEditors,
   updateDialog
 } from "@/components/dialog/dialog-helpers";
@@ -19,7 +20,6 @@ import {
 } from "@/components/dialog/table";
 import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
-import { Notes } from "@/components/notes";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -238,7 +238,7 @@ function renderGoodsPage(view: TableView<Good>) {
           <div style="display: inline-block; width: 0.4em; font-size: 1.2em;">⛁</div>
         </div>
         <div data-col="price" data-tip="Base (initial) price. Click to compare prices across markets" class="goodBasePrice pointer">🟡 ${good.value}</div>
-        ${Notes.getIcon("this good")}
+        ${noteIcon("this good")}
         <span data-col="edit" data-tip="Edit good" class="icon-pencil goodEdit"></span>
         <span data-col="remove" data-tip="Remove good" class="icon-trash-empty goodRemove"></span>
       </div>`;

@@ -1,5 +1,11 @@
 import { csvParse, drag, easeSinIn, select, transition } from "d3";
-import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
+import {
+  closeDialogs,
+  confirmationDialog,
+  destroyDialog,
+  noteIcon,
+  updateDialog
+} from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
@@ -12,7 +18,6 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
-import { Notes } from "@/components/notes";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -23,7 +28,8 @@ import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import type { Emblem } from "@/types/emblems";
-import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
+import { downloadFile, getArea, getAreaUnit, getFileName, groupByValue } from "@/utils";
+import { errorText } from "@/utils/stringUtils";
 import {
   abbreviate,
   capitalize,
@@ -352,7 +358,7 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
           <div data-tip="${populationTip}" class="culturePopulation pointer">${si(population)}</div>
         </div>
         <div data-col="emblems">${getShapeOptions(Emblems.isDiversiform, c.shield)}</div>
-        ${Notes.getIcon("this culture")}
+        ${noteIcon("this culture")}
         <span data-col="locate" data-tip="Locate the culture" class="icon-target"></span>
         <span data-col="lock" data-tip="Lock culture" class="icon-lock${c.lock ? "" : "-open"}"></span>
         <span data-col="remove" data-tip="Remove culture" class="icon-trash-empty"></span>
@@ -506,12 +512,7 @@ function cultureChangeName(this: HTMLInputElement): void {
   const row = this.closest(".states") as HTMLElement;
   const culture = +row.dataset.id!;
   row.dataset.name = this.value;
-  const cultures = pack.cultures;
-  cultures[culture].name = this.value;
-  cultures[culture].code = abbreviate(
-    this.value,
-    cultures.flatMap(c => (c.code ? [c.code] : []))
-  );
+  if (this.value.trim()) Cultures.rename(culture, this.value);
 }
 
 function cultureRegenerateName(this: HTMLElement): void {
@@ -524,14 +525,15 @@ function cultureRegenerateName(this: HTMLElement): void {
 
   const name = Names.getCultureShort(cultureId);
   (this.parentNode as HTMLElement).querySelector<HTMLInputElement>("input.cultureName")!.value = name;
-  pack.cultures[cultureId].name = name;
+  Cultures.rename(cultureId, name);
 }
 
 function cultureChangeExpansionism(this: HTMLInputElement): void {
   const row = this.closest(".states") as HTMLElement;
   const culture = +row.dataset.id!;
   row.dataset.expansionism = this.value;
-  pack.cultures[culture].expansionism = +this.value;
+  if (!(+this.value >= 0 && +this.value <= 99)) return;
+  Cultures.setExpansionism(culture, +this.value);
   recalculateCultures();
 }
 
@@ -547,50 +549,28 @@ function cultureChangeBase(this: HTMLSelectElement): void {
   const row = this.closest(".states") as HTMLElement;
   const culture = +row.dataset.id!;
   const v = +this.value;
-  pack.cultures[culture].base = v;
+  Cultures.setBase(culture, v);
   row.dataset.base = String(v);
 }
 
 function cultureChangeEmblemsShape(this: HTMLSelectElement): void {
   const row = this.closest(".states") as HTMLElement;
   const culture = +row.dataset.id!;
-  const shape = this.value;
-  row.dataset.emblems = pack.cultures[culture].shield = shape;
+  Cultures.setEmblemShape(culture, this.value);
+  row.dataset.emblems = pack.cultures[culture].shield;
 
-  const rerenderCOA = (id: string, coa: Emblem) => {
+  const rerenderCOA = (id: string, coa: Emblem | undefined) => {
     const $coa = document.getElementById(id);
-    if (!$coa) return; // not rendered
+    if (!$coa || !coa) return; // not rendered
     $coa.remove();
     EmblemRenderer.trigger(id, coa);
   };
-
-  pack.states.forEach(state => {
-    if (state.culture !== culture || !state.i || state.removed || !state.coa || "icon" in state.coa) return;
-    if (shape === state.coa.shield) return;
-    state.coa.shield = shape;
-    rerenderCOA(`stateCOA${state.i}`, state.coa);
-  });
-
-  pack.provinces.forEach(province => {
-    if (
-      pack.cells.culture[province.center] !== culture ||
-      !province.i ||
-      province.removed ||
-      !province.coa ||
-      "icon" in province.coa
-    )
-      return;
-    if (shape === province.coa.shield) return;
-    province.coa.shield = shape;
-    rerenderCOA(`provinceCOA${province.i}`, province.coa);
-  });
-
-  pack.burgs.forEach(burg => {
-    if (burg.culture !== culture || !burg.i || burg.removed || !burg.coa || "icon" in burg.coa) return;
-    if (shape === burg.coa.shield) return;
-    burg.coa.shield = shape;
-    rerenderCOA(`burgCOA${burg.i}`, burg.coa);
-  });
+  for (const state of pack.states)
+    if (state.i && state.culture === culture) rerenderCOA(`stateCOA${state.i}`, state.coa);
+  for (const province of pack.provinces)
+    if (province.i && pack.cells.culture[province.center] === culture)
+      rerenderCOA(`provinceCOA${province.i}`, province.coa);
+  for (const burg of pack.burgs) if (burg?.i && burg.culture === culture) rerenderCOA(`burgCOA${burg.i}`, burg.coa);
 }
 
 function changePopulation(this: HTMLElement): void {
@@ -642,7 +622,9 @@ function changePopulation(this: HTMLElement): void {
     width: "24em",
     buttons: {
       Apply: function (this: HTMLElement) {
-        applyPopulationChange(rural, urban, +ruralPop.value, +urbanPop.value, cultureId);
+        Cultures.setPopulation(cultureId, +ruralPop.value || 0, +urbanPop.value || 0);
+        Layers.draw("population");
+        refreshCulturesEditor();
         $(this).dialog("close");
       },
       Cancel: function (this: HTMLElement) {
@@ -651,48 +633,6 @@ function changePopulation(this: HTMLElement): void {
     },
     position: { my: "center", at: "center", of: "svg" }
   });
-}
-
-function applyPopulationChange(
-  oldRural: number,
-  oldUrban: number,
-  newRural: number,
-  newUrban: number,
-  culture: number
-): void {
-  const ruralChange = newRural / oldRural;
-  if (Number.isFinite(ruralChange) && ruralChange !== 1) {
-    const cells = (pack.cells.i as unknown as number[]).filter(i => pack.cells.culture[i] === culture);
-    cells.forEach(i => {
-      pack.cells.pop[i] *= ruralChange;
-    });
-  }
-  if (!Number.isFinite(ruralChange) && +newRural > 0) {
-    const points = newRural / options.map.units.population.scale;
-    const cells = (pack.cells.i as unknown as number[]).filter(i => pack.cells.culture[i] === culture);
-    const pop = rn(points / cells.length);
-    cells.forEach(i => {
-      pack.cells.pop[i] = pop;
-    });
-  }
-
-  const burgs = pack.burgs.filter(b => !b.removed && b.culture === culture);
-  const urbanChange = newUrban / oldUrban;
-  if (Number.isFinite(urbanChange) && urbanChange !== 1) {
-    burgs.forEach(b => {
-      b.population = rn((b.population ?? 0) * urbanChange, 4);
-    });
-  }
-  if (!Number.isFinite(urbanChange) && +newUrban > 0) {
-    const points = newUrban / options.map.units.population.scale / options.map.units.population.urbanization.rate;
-    const population = rn(points / burgs.length, 4);
-    burgs.forEach(b => {
-      b.population = population;
-    });
-  }
-
-  Layers.draw("population");
-  refreshCulturesEditor();
 }
 
 function cultureRegenerateBurgs(this: HTMLElement): void {
@@ -717,27 +657,7 @@ function removeCulture(cultureId: number): void {
   select("#cults").select(`#culture${cultureId}`).remove();
   select("#debug").select(`#cultureCenter${cultureId}`).remove();
 
-  const { burgs, states, cells, cultures } = pack as any;
-
-  burgs
-    .filter((b: any) => b.culture === cultureId)
-    .forEach((b: any) => {
-      b.culture = 0;
-    });
-  states.forEach((s: any) => {
-    if (s.culture === cultureId) s.culture = 0;
-  });
-  cells.culture.forEach((c: number, i: number) => {
-    if (c === cultureId) cells.culture[i] = 0;
-  });
-  cultures[cultureId].removed = true;
-
-  cultures
-    .filter((c: any) => c.i && !c.removed)
-    .forEach((c: any) => {
-      c.origins = (c.origins ?? []).filter((origin: number) => origin !== cultureId);
-      if (!c.origins.length) c.origins = [0];
-    });
+  Cultures.remove(cultureId);
   refreshCulturesEditor();
 }
 
@@ -811,7 +731,11 @@ function cultureCenterDrag(this: any, event: any): void {
     const cell = Pack.findCell(x, y);
     if (cell == null || pack.cells.h[cell] < 20) return; // ignore dragging on water
 
-    pack.cultures[cultureId].center = cell;
+    try {
+      Cultures.moveCenter(cultureId, x, y);
+    } catch {
+      return; // another center is there
+    }
     recalculateCultures();
   }
 
@@ -890,12 +814,8 @@ async function showHierarchy(): Promise<void> {
 
 function recalculateCultures(force?: boolean): void {
   if (force || ensureEl<HTMLInputElement>("culturesAutoChange").checked) {
-    Cultures.expand();
+    Cultures.recalculate();
     Layers.draw("cultures");
-    pack.burgs.forEach(b => {
-      if (!b.i || b.removed) return;
-      b.culture = pack.cells.culture[b.cell];
-    });
     refreshCulturesEditor();
   }
 }
@@ -918,10 +838,7 @@ function openPaintEditor(): void {
 }
 
 function applyCulturePaint(changes: ReadonlyMap<number, number>): void {
-  for (const [cell, culture] of changes) {
-    pack.cells.culture[cell] = culture;
-    if (pack.cells.burg[cell]) pack.burgs[pack.cells.burg[cell]].culture = culture;
-  }
+  for (const [culture, cells] of groupByValue(changes)) Cultures.setCells(culture, cells);
   if (changes.size) {
     Layers.draw("cultures");
     if (document.getElementById(dialogId)) refreshCulturesEditor();
@@ -959,22 +876,14 @@ function exitAddCultureMode(): void {
 }
 
 function addCulture(this: SVGElement, event: MouseEvent): void {
-  const point = getPointer(event, this);
-  const center = Pack.findCell(point[0], point[1])!;
-
-  if (pack.cells.h[center] < 20) {
-    tip("You cannot place culture center into the water. Please click on a land cell", false, "error");
+  const [x, y] = getPointer(event, this);
+  try {
+    Cultures.add(x, y);
+  } catch (error) {
+    tip(errorText(error), false, "error");
     return;
   }
-
-  const occupied = pack.cultures.some(c => !c.removed && c.center === center);
-  if (occupied) {
-    tip("This cell is already a culture center. Please select a different cell", false, "error");
-    return;
-  }
-
   if (event.shiftKey === false) exitAddCultureMode();
-  Cultures.add(center);
 
   drawCultureCenters();
   culturesTable.refresh();
@@ -1057,15 +966,12 @@ async function uploadCulturesData(this: HTMLInputElement): Promise<void> {
     let current: any;
     if (culture.i < cultures.length) {
       current = cultures[culture.i];
+      current.removed = false;
 
-      const ratio = current.urban / (current.rural + current.urban);
-      applyPopulationChange(
-        current.rural,
-        current.urban,
-        culture.population * (1 - ratio),
-        culture.population * ratio,
-        culture.i
-      );
+      const urban = current.urban * options.map.units.population.urbanization.rate; // in rural terms
+      const ratio = current.rural + urban ? urban / (current.rural + urban) : 0;
+      if (culture.population >= 0)
+        Cultures.setPopulation(culture.i, culture.population * (1 - ratio), culture.population * ratio);
     } else {
       current = { i: cultures.length, center: ra(populated), area: 0, cells: 0, origins: [0], rural: 0, urban: 0 };
       cultures.push(current);
@@ -1123,8 +1029,7 @@ function updateLockStatus(this: HTMLElement): void {
 
   const cultureId = +(this.closest(".states") as HTMLElement).dataset.id!;
   const classList = this.classList;
-  const c = pack.cultures[cultureId];
-  c.lock = !c.lock;
+  Cultures.setLocked(cultureId, !pack.cultures[cultureId].lock);
 
   classList.toggle("icon-lock-open");
   classList.toggle("icon-lock");

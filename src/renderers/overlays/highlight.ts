@@ -13,8 +13,23 @@ function getBBox(element: Element): DOMRect {
 export function highlightElement(target: Element | null, zoom?: number): void {
   const element = target as SVGGraphicsElement | null;
   if (!element) return;
-  const box = element.tagName === "svg" ? getBBox(element) : element.getBBox();
-  highlightArea(box, zoom, element.getAttribute("transform"));
+  const nested = element.tagName === "svg"; // its box is in its parent's space
+  const box = nested ? getBBox(element) : element.getBBox();
+  // Ancestors move elements too (burg icon groups centre their icons by CSS): map the box into the outline's layer
+  const space = (nested ? element.parentElement : element) as SVGGraphicsElement | null;
+  const layerMatrix = debugLayer().node()?.getScreenCTM?.();
+  const spaceMatrix = space?.getScreenCTM?.();
+  if (!layerMatrix || !spaceMatrix) {
+    highlightArea(box, zoom, element.getAttribute("transform"));
+    return;
+  }
+
+  const matrix = layerMatrix.inverse().multiply(spaceMatrix);
+  const { a, b, c, d, e, f } = matrix;
+  highlightArea(box, undefined, `matrix(${a} ${b} ${c} ${d} ${e} ${f})`);
+  if (!zoom) return;
+  const center = new DOMPoint(box.x + box.width / 2, box.y + box.height / 2).matrixTransform(matrix);
+  zoomTo(center.x, center.y, viewport.scale > 2 ? viewport.scale : zoom, 1600);
 }
 
 type Box = Pick<DOMRect, "x" | "y" | "width" | "height">;

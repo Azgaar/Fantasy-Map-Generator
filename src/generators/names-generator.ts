@@ -264,7 +264,7 @@ class NamesGenerator {
     else if (base === 14) suffix = rnd < 0.5 && l < 6 ? "tlan" : "co";
     // Nahuatl
     else if (base === 17 && rnd < 0.8) suffix = "a";
-    // Berber
+    // Amazigh
     else if (base === 18 && rnd < 0.8) suffix = "a"; // Arabic
 
     return this.validateSuffix(name, suffix);

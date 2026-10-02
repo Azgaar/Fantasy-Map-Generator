@@ -3,6 +3,7 @@ import {
   closeDialogs,
   confirmationDialog,
   destroyDialog,
+  noteIcon,
   refreshEditors,
   updateDialog
 } from "@/components/dialog/dialog-helpers";
@@ -16,7 +17,6 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
-import { Notes } from "@/components/notes";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -237,7 +237,7 @@ function renderMarketRow(
     <div data-col="sales" data-tip="Total gross sales revenue" class="marketSales">${format("sales", sales, true)}</div>
     <div data-col="buys" data-tip="Total purchase spending" class="marketBuysCol">${format("buys", buys, true)}</div>
     <div data-col="value" data-tip="Market value: net trading flow plus unsold inventory value minus tax" class="marketValue">${format("value", value, true)}</div>
-    ${Notes.getIcon("this market")}
+    ${noteIcon("this market")}
     <span data-col="remove" data-tip="Remove this market" class="icon-trash-empty hiddenIcon" style="visibility:hidden"></span>
   </div>`;
 }
@@ -351,7 +351,7 @@ function marketChangeFill(fillBox: FillBoxElement, marketId: number): void {
 
   const callback = (newFill: string) => {
     fillBox.fill = newFill;
-    market.color = newFill;
+    Markets.recolor(marketId, newFill);
     Layers.draw("markets");
   };
 

@@ -476,3 +476,25 @@ describe("BurgsModule.parseStoredGroups", () => {
     expect(groups.filter((group: any) => group.isDefault).length).toBe(1);
   });
 });
+
+describe("BurgModule.rename", () => {
+  it("renames a burg and its label, and rejects missing burgs and empty names", async () => {
+    await import("./burgs-generator");
+    const burgs = (globalThis as any).Burgs;
+    globalThis.pack = {
+      burgs: [
+        0,
+        { i: 1, name: "Vel", label: { text: "Vel" } },
+        { i: 2, name: "Orn", removed: true },
+        { i: 3, name: "Ash" }
+      ]
+    } as any;
+    burgs.rename(1, " Saltmere ");
+    expect(pack.burgs[1]).toMatchObject({ name: "Saltmere", label: { text: "Saltmere" } });
+    burgs.rename(3, "Elm");
+    expect(pack.burgs[3]).toEqual({ i: 3, name: "Elm" });
+    expect(() => burgs.rename(2, "X")).toThrow("Burg 2 does not exist");
+    expect(() => burgs.rename(0, "X")).toThrow("does not exist");
+    expect(() => burgs.rename(1, "  ")).toThrow("must not be empty");
+  });
+});

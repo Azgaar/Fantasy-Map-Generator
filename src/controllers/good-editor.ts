@@ -136,18 +136,21 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
         }
 
         if (editedGood) {
-          editedGood.name = name;
-          editedGood.tags = tags;
-          editedGood.icon = icon;
-          editedGood.color = color;
-          editedGood.value = value;
-          editedGood.chance = chance;
-          editedGood.unit = unit;
-          editedGood.demandCoverage = demandCoverageState;
-          editedGood.multipliers = buildFinalMultipliers();
-          editedGood.distribution = distribution || undefined;
-          editedGood.biomeOutput = Object.keys(biomeOutputState).length ? biomeOutputState : undefined;
-          editedGood.recipes = recipes.length ? recipes : undefined;
+          const id = editedGood.i;
+          Goods.rename(id, name);
+          Goods.setTags(id, tags);
+          Goods.setIcon(id, icon);
+          Goods.recolor(id, color);
+          Goods.setPrice(id, value);
+          Goods.setUnit(id, unit);
+          Goods.setProduction(id, {
+            chance,
+            demandCoverage: demandCoverageState,
+            multipliers: buildFinalMultipliers() ?? null,
+            biomeOutput: Object.keys(biomeOutputState).length ? biomeOutputState : null,
+            recipes: recipes.length ? recipes : null
+          });
+          editedGood.distribution = distribution || undefined; // code the user typed, checked above; never an operation
 
           // opt-out: by default re-place the good and recompute the economy to reflect the change
           if (ensureEl<HTMLInputElement>("goodRegenerateEconomy").checked) {

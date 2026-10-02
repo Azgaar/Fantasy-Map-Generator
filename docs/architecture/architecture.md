@@ -333,7 +333,8 @@ classic needs it.
 - Generates or simulates world data → `generators/`
 - Serializes, saves, loads, or exports state → `services/io/`
 - Manages browser/app lifecycle, a platform asset, or app preferences → `services/`
-- Talks to the project's help gateway on the user's behalf → `services/help/`
+- Talks to the Azgaar server on the user's behalf → `services/assistant/azgaar-server/`
+- Talks to the user's own AI provider → `services/assistant/provider/`
 - A constant list or template, no behavior → `data/`
 - A helper that reads no ambient state and has ≥2 consumers → `utils/`
 - A shared type / interface → `types/`
@@ -385,6 +386,10 @@ A generator turns inputs into world data.
   never depend on wall-clock time or unspecified iteration order.
 - **No view, no UI.** A generator never reads the DOM, builds SVG, or opens a dialog. If it
   needs to _show_ something, that is a renderer's or controller's job.
+- **Model classes own their edits.** An edit to an entity (`Burgs.rename`, `States.recolor`,
+  `Notes.write`…) is a public method of the class that owns the data. It validates its arguments,
+  keeps dependent data consistent (labels, full names, codes, cell ownership) and never redraws. Editors and the
+  Assistant call the same method, so there is one implementation of each edit.
 - **Keep the data out.** Lookup tables, recipes, and tuning constants are _data_, not
   algorithm. Fixed properties of the domain stay co-located reference data
   ([Configurations and data](#configurations-and-data)); any parameter a user might want to
@@ -480,10 +485,22 @@ Static content: lookup tables, templates, tuning constants, reference lists.
 - **IO is a service.** Save/load/export live in `src/services/io/`. Like controllers, each
   service/io module exports a single named object (`Save`, `Load`, `ExportMap`, …) reached
   through the `Services` registry (`Services.Save.toMachine()`).
-- **The help gateway client is a service.** `src/services/help/` (api, auth, conversation) is the
-  only code that talks to ask.azgaarsfmg.com; `controllers/help-assistant.ts` is the UI over it. The
-  client keeps the Discord sign-in token in `localStorage` and only the server-issued conversation id
-  in `sessionStorage`, never conversation content.
+- **Azgaar Assistant** lives in `src/controllers/assistant/`. `index.ts` is its one controller, for the panel, chat list, key sheet and transcript.
+  `map.ts` is the open map as the Assistant sees it — one `AssistantMap` object with its id,
+  per-question context and its map tools: `read_map`, `propose_change`, `view_emblem` and one `show_*` tool per
+  widget (`entities`, `card`, `chart`, `choices`, `inset`). Changes go through
+  `operations.ts`, a plain registry of model-class methods, and `proposals.ts`, which dry-runs a
+  batch on a draft of the map into a Change and applies, undoes or discards it on the user's click.
+  `redraw.ts` derives the layers to redraw from the data a Change touched. Services in
+  `src/services/assistant/` do not access world data or the DOM: `chats.ts` persists map-bound chats in IndexedDB;
+  `azgaar-server/` answers Guest and Member questions from the documentation and handles Discord sign-in; `provider/`
+  serves the Key tier: `connection.ts` stores provider settings and keys in localStorage, `answerer.ts` runs the tool
+  loop through `providers.ts` and `openai.ts`, `models.ts` discovers a key's models, `context.ts` builds the system
+  prompt, `docs.ts` and `knowledge.ts` serve `read_docs` and `read_help`, and `runtime.ts` runs `read_map` scripts.
+  The Azgaar server receives only the question and its server chat id. A connected Provider receives the open-map context
+  and tool results directly from the browser. The Assistant never stores chats in `.map` files.
+  `read_map` runs model-written JavaScript in page scope with the app's full access, stored keys included. This is an
+  accepted, disclosed risk (see the PRD's Further Notes and the Policy wiki page): users load only map files they trust.
 
 ## Lazy module registry
 
@@ -740,7 +757,8 @@ reason a session can climb toward gigabytes. The target:
 - **Destroy on close — always.** `close()` removes the generated subtree (`element.remove()`),
   drops its listeners, cancels timers/observers/animation loops, and releases references.
   **Hiding is not closing**: a hidden panel still costs its full DOM, listeners, and retained
-  closures.
+  closures. The one exception is the Azgaar Assistant panel: it is built once and hidden on close,
+  so an answer in flight, the draft and the scroll survive.
 - **Symmetric ownership.** Every `build` has a matching `teardown` in the same controller. If
   `open` created it, `close` destroys it — no orphaned subtrees, no half-freed state.
 - **Bound large lists.** A panel over N entities must not materialize N rows when N is large:

@@ -1,5 +1,5 @@
 import { select } from "d3";
-import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog, noteButton, updateDialog } from "@/components/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
   type EditorColumn,
@@ -11,7 +11,6 @@ import {
 } from "@/components/dialog/table";
 import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
-import { Notes } from "@/components/notes";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
@@ -108,7 +107,7 @@ function renderDialog(): void {
       <div id="marketOverviewBottom">
         <button id="marketOverviewRefresh" data-tip="Refresh the Overview screen" class="icon-cw"></button>
         <button id="marketOverviewOpenDeals" data-tip="View market deals" class="icon-list-bullet"></button>
-        ${Notes.getButton("marketOverviewLegend", "this market")}
+        ${noteButton("marketOverviewLegend", "this market")}
         <button
           id="marketOverviewRelocate"
           data-tip="Relocate market. Click on a burg on the map to move the market center"
@@ -150,15 +149,14 @@ function editMarketNote(): void {
 function onRenameInput(this: HTMLInputElement): void {
   const market = Markets.get(activeMarketId);
   if (!market) return;
-  const value = this.value.trim();
-  market.name = value || undefined;
+  Markets.rename(market.i, this.value);
   $("#marketOverview").dialog("option", "title", `Market Stock: ${Markets.getName(market)}`);
 }
 
 function resetMarketName(): void {
   const market = Markets.get(activeMarketId);
   if (!market) return;
-  market.name = undefined;
+  Markets.rename(market.i, "");
   ensureEl<HTMLInputElement>("marketOverviewName").value = "";
   $("#marketOverview").dialog("option", "title", `Market Stock: ${Markets.getName(market)}`);
 }

@@ -1,6 +1,50 @@
 import { mean } from "d3";
 import { Icons } from "@/components/icons";
+import {
+  BRIDGE_ADJECTIVES,
+  BRIDGE_DECLINE_REASONS,
+  BRIGAND_ANIMALS,
+  BRIGAND_TYPES,
+  CAVE_FORMATIONS,
+  CAVE_STATUSES,
+  CIRCUS_ADJECTIVES,
+  DANCE_GUESTS,
+  DANCE_TYPES,
+  ENCOUNTER_KINDS,
+  HILL_MONSTER_ADJECTIVES,
+  HILL_MONSTER_HABITS,
+  HILL_MONSTER_SPECIES,
+  INN_ADJECTIVES,
+  INN_ANIMALS,
+  INN_COLORS,
+  INN_COMMON_COURSES,
+  INN_COMMON_DRINKS,
+  INN_COOKING_METHODS,
+  INN_COURSES_BY_GOOD,
+  INN_DRINK_KINDS,
+  INN_DRINKS_BY_GOOD,
+  INN_WARM_COURSES,
+  JOUST_TYPES,
+  JOUST_VIRTUES,
+  LIBRARY_TYPES,
+  MARKER_PINS,
+  MIGRATING_ANIMALS,
+  MIRAGE_ADJECTIVES,
+  NECROPOLIS_LEGENDS,
+  NECROPOLIS_TYPES,
+  RIFT_EFFECTS,
+  RIFT_TYPES,
+  RUIN_TYPES,
+  RUMOR_SOURCES,
+  STATUE_SCRIPTS,
+  STATUE_VARIANTS,
+  WATER_SOURCE_TYPES,
+  WATERFALL_DESCRIPTIONS
+} from "@/data/markers";
+import { Notes } from "@/generators/notes";
 import type { PackedGraph } from "@/types/PackedGraph";
+import { requireColor } from "@/utils/colorUtils";
+import { requireName, requireOneOf } from "@/utils/validationUtils";
 import {
   capitalize,
   convertTemperature,
@@ -9,12 +53,15 @@ import {
   getAdjective,
   getFriendlyHeight,
   last,
+  list,
   P,
   ra,
   rand,
   rn,
   rw
 } from "../utils";
+import type { Good } from "./goods-generator";
+import { isDealRecord, isMfgRecord } from "./production-generator";
 
 declare global {
   var Markers: MarkersModule;
@@ -64,6 +111,31 @@ type MarkerConfig = {
   multiplier: number;
   list: (pack: PackedGraph) => number[];
   add: (marker: Marker, cell: number) => void;
+};
+
+export type MarkerDetails = { name?: string; note?: string; icon?: string };
+
+export type MarkerAppearance = Partial<
+  Record<"size" | "px" | "dx" | "dy", number | null> &
+    Record<"pin" | "fill" | "stroke" | "iconFill" | "iconStroke", string | null>
+>;
+
+const requireNumber = (min: number, max: number) => (value: unknown) => {
+  if (typeof value !== "number" || !(value >= min && value <= max))
+    throw new Error(`Expected a number from ${min} to ${max}`);
+  return value;
+};
+
+const APPEARANCE: Record<keyof MarkerAppearance, (value: unknown) => unknown> = {
+  size: requireNumber(1, 500),
+  px: requireNumber(1, 50),
+  dx: requireNumber(0, 100),
+  dy: requireNumber(0, 100),
+  pin: value => requireOneOf(value, MARKER_PINS, "The pin"),
+  fill: requireColor,
+  stroke: requireColor,
+  iconFill: requireColor,
+  iconStroke: requireColor
 };
 
 class MarkersModule {
@@ -121,7 +193,96 @@ class MarkersModule {
     return added;
   }
 
-  deleteMarker(markerId: number) {
+  /** Rename a marker */
+  rename(markerId: number, name: string): void {
+    const marker = pack.markers.find(m => m.i === markerId);
+    if (!marker) throw new Error(`Marker ${markerId} does not exist`);
+    marker.name = requireName(name);
+  }
+
+  /** Set a marker's icon: an emoji or an icon id */
+  setIcon(markerId: number, icon: string): void {
+    this.living(markerId).icon = Icons.reference(icon);
+  }
+
+  /** Set a marker's type, a free label such as volcano or ruins */
+  setType(markerId: number, type: string): void {
+    this.living(markerId).type = requireName(type);
+  }
+
+  /** Hide or show a marker */
+  setHidden(markerId: number, hidden: boolean): void {
+    const marker = this.living(markerId);
+    if (hidden) marker.hidden = true;
+    else delete marker.hidden;
+  }
+
+  /** Move a marker to a map point */
+  move(markerId: number, x: number, y: number): void {
+    const marker = this.living(markerId);
+    const cell = Pack.requireCell(x, y);
+    Object.assign(marker, { x: rn(x, 1), y: rn(y, 1), cell });
+  }
+
+  /** Pin a marker so it shows even when its type is filtered out, or unpin it */
+  setPinned(markerId: number, pinned: boolean): void {
+    const marker = this.living(markerId);
+    if (pinned) marker.pinned = true;
+    else delete marker.pinned;
+  }
+
+  /** Lock a marker so regeneration keeps it, or unlock it */
+  setLocked(markerId: number, locked: boolean): void {
+    const marker = this.living(markerId);
+    if (locked) marker.lock = true;
+    else delete marker.lock;
+  }
+
+  /** Set how a marker looks: size (marker), px (icon size), dx and dy (icon shift, %), pin shape, fill and stroke (pin), iconFill and iconStroke. null restores a default */
+  setAppearance(markerId: number, appearance: MarkerAppearance): void {
+    const marker = this.living(markerId);
+    if (typeof appearance !== "object" || appearance === null) throw new Error("The appearance must be an object");
+    const checked: Partial<Record<keyof MarkerAppearance, unknown>> = {};
+    for (const [key, value] of Object.entries(appearance)) {
+      if (!(key in APPEARANCE))
+        throw new Error(`Unknown marker appearance ${key}; known: ${Object.keys(APPEARANCE).join(", ")}`);
+      checked[key as keyof MarkerAppearance] = value === null ? null : APPEARANCE[key as keyof MarkerAppearance](value);
+    }
+    for (const [key, value] of Object.entries(checked)) {
+      if (value === null) delete marker[key as keyof MarkerAppearance];
+      else Object.assign(marker, { [key]: value });
+    }
+  }
+
+  private living(markerId: number): Marker {
+    const marker = pack.markers.find(m => m.i === markerId);
+    if (!marker) throw new Error(`Marker ${markerId} does not exist`);
+    return marker;
+  }
+
+  /** Place a marker at a map point with details: its name, legend note (HTML, as Notes.write takes) and icon (an emoji or icon id). A type from the markers config, such as volcanoes or ruins, generates all three, each replaced by the one given; any other type needs a note. Returns its id */
+  place(x: number, y: number, type: string, details: MarkerDetails = {}): number {
+    if (typeof details !== "object" || details === null || Array.isArray(details))
+      throw new Error("The marker details must be an object: { name, note, icon }");
+    const unknown = Object.keys(details).find(key => !["name", "note", "icon"].includes(key));
+    if (unknown) throw new Error(`Unknown marker detail ${unknown}; known: name, note, icon`);
+    const { name, note, icon } = details;
+    const cell = Pack.requireCell(x, y);
+    const marker = { x: rn(x, 2), y: rn(y, 2), cell, type: requireName(type) } as Marker;
+    const configured = this.config.some(config => config.type === marker.type);
+    if (!configured && !note) throw new Error(`Marker type ${marker.type} generates no legend; give the marker a note`);
+    if (name !== undefined) marker.name = requireName(name);
+    if (icon !== undefined) marker.icon = Icons.reference(icon);
+    else if (!configured) marker.icon = Icons.glyph("❓");
+    const added = this.add(marker);
+    if (marker.name) added.name = marker.name; // the config type names the marker as it adds it
+    if (note) Notes.write(`marker:${added.i}`, note);
+    return added.i;
+  }
+
+  /** Remove a marker */
+  remove(markerId: number) {
+    this.living(markerId);
     pack.markers = pack.markers.filter(m => m.i !== markerId);
   }
 
@@ -602,17 +763,7 @@ class MarkersModule {
   private addWaterSource(marker: Marker, cell: number) {
     const { cells } = pack;
 
-    const type = rw({
-      "Healing Spring": 5,
-      "Purifying Well": 2,
-      "Enchanted Reservoir": 1,
-      "Creek of Luck": 1,
-      "Fountain of Youth": 1,
-      "Wisdom Spring": 1,
-      "Spring of Life": 1,
-      "Spring of Youth": 1,
-      "Healing Stream": 1
-    });
+    const type = rw(WATER_SOURCE_TYPES);
 
     const proper = Names.getCulture(cells.culture[cell]);
     const name = `${proper} ${type}`;
@@ -623,23 +774,41 @@ class MarkersModule {
     marker.note = legend;
   }
 
+  /** The ore or mineral the cell's burg extracts in the last production run */
+  private getMinedGood(cell: number): Good | undefined {
+    const good = Goods.get(pack.cells.good[cell]);
+    if (!good?.tags.some(tag => tag === "ore" || tag === "mineral")) return;
+    const burg = pack.burgs[pack.cells.burg[cell]];
+    const extracts = burg?.production?.some(
+      record => !isDealRecord(record) && !isMfgRecord(record) && record.goodId === good.i
+    );
+    return extracts ? good : undefined;
+  }
+
+  /** Names of the goods the cell's market had in stock or traded in the last production run */
+  private getMarketGoods(cell: number): Set<string> {
+    const marketId = pack.cells.market?.[cell];
+    const market = Markets.get(marketId);
+    if (!market) return new Set();
+
+    const goodIds = Object.keys(market.goods)
+      .filter(id => market.goods[+id].stock > 0)
+      .map(Number);
+    for (const { good, seller, sellerType, buyer, buyerType } of pack.deals ?? []) {
+      if ((sellerType === "market" && seller === marketId) || (buyerType === "market" && buyer === marketId))
+        goodIds.push(good);
+    }
+    return new Set(goodIds.map(id => Goods.get(id)?.name).filter(name => name !== undefined));
+  }
+
   private listMines({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.h[i] > 47 && cells.burg[i]);
+    return cells.i.filter(i => !this.occupied[i] && cells.burg[i] && this.getMinedGood(i));
   }
 
   private addMine(marker: Marker, cell: number) {
     const { cells } = pack;
 
-    const resources = {
-      salt: 5,
-      gold: 2,
-      silver: 4,
-      copper: 2,
-      iron: 3,
-      lead: 1,
-      tin: 1
-    };
-    const resource = rw(resources);
+    const resource = this.getMinedGood(cell)?.name.toLowerCase() ?? "ore";
     const burg = pack.burgs[cells.burg[cell]];
     const name = `${burg.name} — ${resource} mining town`;
     const population = rn(
@@ -670,25 +839,9 @@ class MarkersModule {
     const river = pack.rivers.find(r => r.i === pack.cells.r[cell]);
     const riverName = river ? `${river.name} ${river.type}` : "river";
     const name = river && P(0.2) ? `${river.name} Bridge` : `${burg.name} Bridge`;
-    const weightedAdjectives = {
-      stone: 10,
-      wooden: 1,
-      lengthy: 2,
-      formidable: 2,
-      rickety: 1,
-      beaten: 1,
-      weathered: 1
-    };
-    const barriers = [
-      "its collapse during the flood",
-      "being rumoured to attract trolls",
-      "the drying up of local trade",
-      "banditry infested the area",
-      "the old waypoints crumbled"
-    ];
     const legend = P(0.7)
-      ? `A ${rw(weightedAdjectives)} bridge spans over the ${riverName} near ${burg.name}.`
-      : `An old crossing of the ${riverName}, rarely used since ${ra(barriers)}.`;
+      ? `A ${rw(BRIDGE_ADJECTIVES)} bridge spans over the ${riverName} near ${burg.name}.`
+      : `An old crossing of the ${riverName}, rarely used since ${ra(BRIDGE_DECLINE_REASONS)}.`;
 
     marker.name = name;
     marker.note = legend;
@@ -698,260 +851,29 @@ class MarkersModule {
     return cells.i.filter(i => !this.occupied[i] && cells.pop[i] > 5 && Routes.isCrossroad(i));
   }
 
-  private addInn(marker: Marker) {
-    const colors = [
-      "Dark",
-      "Light",
-      "Bright",
-      "Golden",
-      "White",
-      "Black",
-      "Red",
-      "Pink",
-      "Purple",
-      "Blue",
-      "Green",
-      "Yellow",
-      "Amber",
-      "Orange",
-      "Brown",
-      "Grey"
-    ];
-    const animals = [
-      "Antelope",
-      "Ape",
-      "Badger",
-      "Bear",
-      "Beaver",
-      "Bison",
-      "Boar",
-      "Buffalo",
-      "Cat",
-      "Crane",
-      "Crocodile",
-      "Crow",
-      "Deer",
-      "Dog",
-      "Eagle",
-      "Elk",
-      "Fox",
-      "Goat",
-      "Goose",
-      "Hare",
-      "Hawk",
-      "Heron",
-      "Horse",
-      "Hyena",
-      "Ibis",
-      "Jackal",
-      "Jaguar",
-      "Lark",
-      "Leopard",
-      "Lion",
-      "Mantis",
-      "Marten",
-      "Moose",
-      "Mule",
-      "Narwhal",
-      "Owl",
-      "Panther",
-      "Rat",
-      "Raven",
-      "Rook",
-      "Scorpion",
-      "Shark",
-      "Sheep",
-      "Snake",
-      "Spider",
-      "Swan",
-      "Tiger",
-      "Turtle",
-      "Wolf",
-      "Wolverine",
-      "Camel",
-      "Falcon",
-      "Hound",
-      "Ox"
-    ];
-    const adjectives = [
-      "New",
-      "Good",
-      "High",
-      "Old",
-      "Great",
-      "Big",
-      "Major",
-      "Happy",
-      "Main",
-      "Huge",
-      "Far",
-      "Beautiful",
-      "Fair",
-      "Prime",
-      "Ancient",
-      "Golden",
-      "Proud",
-      "Lucky",
-      "Fat",
-      "Honest",
-      "Giant",
-      "Distant",
-      "Friendly",
-      "Loud",
-      "Hungry",
-      "Magical",
-      "Superior",
-      "Peaceful",
-      "Frozen",
-      "Divine",
-      "Favorable",
-      "Brave",
-      "Sunny",
-      "Flying"
-    ];
-    const methods = [
-      "Boiled",
-      "Grilled",
-      "Roasted",
-      "Spit-roasted",
-      "Stewed",
-      "Stuffed",
-      "Jugged",
-      "Mashed",
-      "Baked",
-      "Braised",
-      "Poached",
-      "Marinated",
-      "Pickled",
-      "Smoked",
-      "Dried",
-      "Dry-aged",
-      "Corned",
-      "Fried",
-      "Pan-fried",
-      "Deep-fried",
-      "Dressed",
-      "Steamed",
-      "Cured",
-      "Syrupped",
-      "Flame-Broiled"
-    ];
-    const courses = [
-      "beef",
-      "pork",
-      "bacon",
-      "chicken",
-      "lamb",
-      "chevon",
-      "hare",
-      "rabbit",
-      "hart",
-      "deer",
-      "antlers",
-      "bear",
-      "buffalo",
-      "badger",
-      "beaver",
-      "turkey",
-      "pheasant",
-      "duck",
-      "goose",
-      "teal",
-      "quail",
-      "pigeon",
-      "seal",
-      "carp",
-      "bass",
-      "pike",
-      "catfish",
-      "sturgeon",
-      "escallop",
-      "pie",
-      "cake",
-      "pottage",
-      "pudding",
-      "onions",
-      "carrot",
-      "potato",
-      "beet",
-      "garlic",
-      "cabbage",
-      "eggplant",
-      "eggs",
-      "broccoli",
-      "zucchini",
-      "pepper",
-      "olives",
-      "pumpkin",
-      "spinach",
-      "peas",
-      "chickpea",
-      "beans",
-      "rice",
-      "pasta",
-      "bread",
-      "apples",
-      "peaches",
-      "pears",
-      "melon",
-      "oranges",
-      "mango",
-      "tomatoes",
-      "cheese",
-      "corn",
-      "rat tails",
-      "pig ears"
-    ];
-    const types = [
-      "hot",
-      "cold",
-      "fire",
-      "ice",
-      "smoky",
-      "misty",
-      "shiny",
-      "sweet",
-      "bitter",
-      "salty",
-      "sour",
-      "sparkling",
-      "smelly"
-    ];
-    const drinks = [
-      "wine",
-      "brandy",
-      "gin",
-      "whisky",
-      "rom",
-      "beer",
-      "cider",
-      "mead",
-      "liquor",
-      "spirits",
-      "vodka",
-      "tequila",
-      "absinthe",
-      "nectar",
-      "milk",
-      "kvass",
-      "kumis",
-      "tea",
-      "water",
-      "juice",
-      "sap"
-    ];
-
+  private addInn(marker: Marker, cell: number) {
     const typeName = P(0.3) ? "inn" : "tavern";
     const isAnimalThemed = P(0.7);
-    const animal = ra(animals);
+    const animal = ra(INN_ANIMALS);
     const name = isAnimalThemed
       ? P(0.6)
-        ? `${ra(colors)} ${animal}`
-        : `${ra(adjectives)} ${animal}`
-      : `${ra(adjectives)} ${capitalize(typeName)}`;
-    const meal = isAnimalThemed && P(0.3) ? animal : ra(courses);
-    const course = `${ra(methods)} ${meal}`.toLowerCase();
-    const drink = `${P(0.5) ? ra(types) : ra(colors)} ${ra(drinks)}`.toLowerCase();
+        ? `${ra(INN_COLORS)} ${animal}`
+        : `${ra(INN_ADJECTIVES)} ${animal}`
+      : `${ra(INN_ADJECTIVES)} ${capitalize(typeName)}`;
+    const local = this.getMarketGoods(cell);
+    const localFare = (byGood: Record<string, string[]>) =>
+      Object.entries(byGood).flatMap(([good, fare]) => (local.has(good) ? fare : []));
+    const pick = (localItems: string[], common: string[]) =>
+      localItems.length && P(0.7) ? ra(localItems) : ra(common);
+
+    const isWarm = grid.cells.temp[pack.cells.g[cell]] >= 18;
+    const courses = isWarm ? [...INN_COMMON_COURSES, ...INN_WARM_COURSES] : INN_COMMON_COURSES;
+    const localCourses = localFare(INN_COURSES_BY_GOOD);
+    const isAnimalServed = [...courses, ...localCourses].includes(animal.toLowerCase());
+    const meal = isAnimalThemed && isAnimalServed && P(0.5) ? animal : pick(localCourses, courses);
+    const course = `${ra(INN_COOKING_METHODS)} ${meal}`.toLowerCase();
+    const drink =
+      `${P(0.5) ? ra(INN_DRINK_KINDS) : ra(INN_COLORS)} ${pick(localFare(INN_DRINKS_BY_GOOD), INN_COMMON_DRINKS)}`.toLowerCase();
     const legend = `A big and famous roadside ${typeName}. Delicious ${course} with ${drink} is served here.`;
     marker.name = `The ${name}`;
     marker.note = legend;
@@ -980,18 +902,9 @@ class MarkersModule {
   private addWaterfall(marker: Marker, cell: number) {
     const { cells } = pack;
 
-    const descriptions = [
-      "A gorgeous waterfall flows here.",
-      "The rapids of an exceptionally beautiful waterfall.",
-      "An impressive waterfall has cut through the land.",
-      "The cascades of a stunning waterfall.",
-      "A river drops down from a great height forming a wondrous waterfall.",
-      "A breathtaking waterfall cuts through the landscape."
-    ];
-
     const proper = cells.burg[cell] ? pack.burgs[cells.burg[cell]].name! : Names.getCulture(cells.culture[cell]);
     marker.name = `${getAdjective(proper)} Waterfall`;
-    marker.note = ra(descriptions);
+    marker.note = ra(WATERFALL_DESCRIPTIONS);
   }
 
   private listBattlefields({ cells }: PackedGraph) {
@@ -1042,18 +955,7 @@ class MarkersModule {
 
     const name = `${lake.name} Monster`;
     const length = gauss(10, 5, 5, 100);
-    const subjects = [
-      "Locals",
-      "Elders",
-      "Inscriptions",
-      "Tipplers",
-      "Legends",
-      "Whispers",
-      "Rumors",
-      "Journeying folk",
-      "Tales"
-    ];
-    const legend = `${ra(subjects)} say a relic monster of ${length} ${options.map.units.height.unit} long inhabits ${
+    const legend = `${ra(RUMOR_SOURCES)} say a relic monster of ${length} ${options.map.units.height.unit} long inhabits ${
       lake.name
     } Lake. Truth or lie, folks are afraid to fish in the lake.`;
     marker.name = name;
@@ -1081,71 +983,11 @@ class MarkersModule {
   private addHillMonster(marker: Marker, cell: number) {
     const { cells } = pack;
 
-    const adjectives = [
-      "great",
-      "big",
-      "huge",
-      "prime",
-      "golden",
-      "proud",
-      "lucky",
-      "fat",
-      "giant",
-      "hungry",
-      "magical",
-      "superior",
-      "terrifying",
-      "horrifying",
-      "feared"
-    ];
-    const subjects = [
-      "Locals",
-      "Elders",
-      "Inscriptions",
-      "Tipplers",
-      "Legends",
-      "Whispers",
-      "Rumors",
-      "Journeying folk",
-      "Tales"
-    ];
-    const species = [
-      "Ogre",
-      "Troll",
-      "Cyclops",
-      "Giant",
-      "Monster",
-      "Beast",
-      "Dragon",
-      "Undead",
-      "Ghoul",
-      "Vampire",
-      "Hag",
-      "Banshee",
-      "Bearded Devil",
-      "Roc",
-      "Hydra",
-      "Warg"
-    ];
-    const modusOperandi = [
-      "steals cattle at night",
-      "prefers eating children",
-      "doesn't mind human flesh",
-      "keeps the region at bay",
-      "eats kids whole",
-      "abducts young women",
-      "terrorizes the region",
-      "harasses travelers in the area",
-      "snatches people from homes",
-      "attacks anyone who dares to approach its lair",
-      "attacks unsuspecting victims"
-    ];
-
-    const monster = ra(species);
+    const monster = ra(HILL_MONSTER_SPECIES);
     const toponym = Names.getCulture(cells.culture[cell]);
     const name = `${toponym} ${monster}`;
-    const legend = `${ra(subjects)} speak of a ${ra(adjectives)} ${monster} who inhabits ${toponym} hills and ${ra(
-      modusOperandi
+    const legend = `${ra(RUMOR_SOURCES)} speak of a ${ra(HILL_MONSTER_ADJECTIVES)} ${monster} who inhabits ${toponym} hills and ${ra(
+      HILL_MONSTER_HABITS
     )}.`;
     marker.name = name;
     marker.note = legend;
@@ -1166,10 +1008,11 @@ class MarkersModule {
     const { cells, religions } = pack;
 
     const culture = cells.c[cell].map(c => cells.culture[c]).find(c => c)!;
-    const religion = cells.religion[cell];
+    const religion = cells.religion[cell] || cells.c[cell].map(c => cells.religion[c]).find(r => r);
     const name = `${Names.getCulture(culture)} Mountain`;
     const height = getFriendlyHeight(cells.p[cell], pack, grid);
-    const legend = `A sacred mountain of ${religions[religion].name}. Height: ${height}.`;
+    const sacredTo = religion ? ` of ${religions[religion].name}` : "";
+    const legend = `A sacred mountain${sacredTo}. Height: ${height}.`;
     marker.name = name;
     marker.note = legend;
   }
@@ -1239,40 +1082,6 @@ class MarkersModule {
   private addBrigands(marker: Marker, cell: number) {
     const { cells } = pack;
 
-    const animals = [
-      "Apes",
-      "Badgers",
-      "Bears",
-      "Beavers",
-      "Bisons",
-      "Boars",
-      "Cats",
-      "Crows",
-      "Dogs",
-      "Foxes",
-      "Hares",
-      "Hawks",
-      "Hyenas",
-      "Jackals",
-      "Jaguars",
-      "Leopards",
-      "Lions",
-      "Owls",
-      "Panthers",
-      "Rats",
-      "Ravens",
-      "Rooks",
-      "Scorpions",
-      "Sharks",
-      "Snakes",
-      "Spiders",
-      "Tigers",
-      "Wolfs",
-      "Wolverines",
-      "Falcons"
-    ];
-    const types = { brigands: 4, bandits: 3, robbers: 1, highwaymen: 1 };
-
     const culture = cells.culture[cell];
     const biome = cells.biome[cell];
     const height = cells.h[cell];
@@ -1286,8 +1095,8 @@ class MarkersModule {
       return "angry";
     })(height, biome);
 
-    const name = `${Names.getCulture(culture)} ${ra(animals)}`;
-    const legend = `A gang of ${locality} ${rw(types)}.`;
+    const name = `${Names.getCulture(culture)} ${ra(BRIGAND_ANIMALS)}`;
+    const legend = `A gang of ${locality} ${rw(BRIGAND_TYPES)}.`;
     marker.name = name;
     marker.note = legend;
   }
@@ -1311,33 +1120,11 @@ class MarkersModule {
   private addStatue(marker: Marker, cell: number) {
     const { cells } = pack;
 
-    const variants = [
-      "Statue",
-      "Obelisk",
-      "Monument",
-      "Column",
-      "Monolith",
-      "Pillar",
-      "Megalith",
-      "Stele",
-      "Runestone",
-      "Sculpture",
-      "Effigy",
-      "Idol"
-    ];
-    const scripts = {
-      cypriot: "𐠁𐠂𐠃𐠄𐠅𐠈𐠊𐠋𐠌𐠍𐠎𐠏𐠐𐠑𐠒𐠓𐠔𐠕𐠖𐠗𐠘𐠙𐠚𐠛𐠜𐠝𐠞𐠟𐠠𐠡𐠢𐠣𐠤𐠥𐠦𐠧𐠨𐠩𐠪𐠫𐠬𐠭𐠮𐠯𐠰𐠱𐠲𐠳𐠴𐠵𐠷𐠸𐠼𐠿      ",
-      geez: "ሀለሐመሠረሰቀበተኀነአከወዐዘየደገጠጰጸፀፈፐ   ",
-      coptic: "ⲲⲴⲶⲸⲺⲼⲾⳀⳁⳂⳃⳄⳆⳈⳊⳌⳎⳐⳒⳔⳖⳘⳚⳜⳞⳠⳢⳤ⳥⳧⳩⳪ⳫⳬⳭⳲ⳹⳾   ",
-      tibetan: "ༀ༁༂༃༄༅༆༇༈༉༊་༌༐༑༒༓༔༕༖༗༘༙༚༛༜༠༡༢༣༤༥༦༧༨༩༪༫༬༭༮༯༰༱༲༳༴༵༶༷༸༹༺༻༼༽༾༿",
-      mongolian: "᠀᠐᠑᠒ᠠᠡᠦᠧᠨᠩᠪᠭᠮᠯᠰᠱᠲᠳᠵᠻᠼᠽᠾᠿᡀᡁᡆᡍᡎᡏᡐᡑᡒᡓᡔᡕᡖᡗᡙᡜᡝᡞᡟᡠᡡᡭᡮᡯᡰᡱᡲᡳᡴᢀᢁᢂᢋᢏᢐᢑᢒᢓᢛᢜᢞᢟᢠᢡᢢᢤᢥᢦ"
-    };
-
     const culture = cells.culture[cell];
 
-    const variant = ra(variants);
+    const variant = ra(STATUE_VARIANTS);
     const name = `${Names.getCulture(culture)} ${variant}`;
-    const script = scripts[ra(Object.keys(scripts)) as keyof typeof scripts] as string;
+    const script = STATUE_SCRIPTS[ra(Object.keys(STATUE_SCRIPTS)) as keyof typeof STATUE_SCRIPTS] as string;
     const inscription = Array(rand(40, 100))
       .fill(null)
       .map(() => ra(script.split("")))
@@ -1353,23 +1140,7 @@ class MarkersModule {
   }
 
   private addRuins(marker: Marker, _cell: number) {
-    const types = [
-      "City",
-      "Town",
-      "Settlement",
-      "Pyramid",
-      "Fort",
-      "Stronghold",
-      "Temple",
-      "Sacred site",
-      "Mausoleum",
-      "Outpost",
-      "Fortification",
-      "Fortress",
-      "Castle"
-    ];
-
-    const ruinType = ra(types);
+    const ruinType = ra(RUIN_TYPES);
     const name = `Ruined ${ruinType}`;
     const legend = `Ruins of an ancient ${ruinType.toLowerCase()}. Untold riches may lie within.`;
     marker.name = name;
@@ -1383,7 +1154,7 @@ class MarkersModule {
   private addLibrary(marker: Marker, cell: number) {
     const { cells } = pack;
 
-    const type = rw({ Library: 3, Archive: 1, Collection: 1 });
+    const type = rw(LIBRARY_TYPES);
     const name = `${Names.getCulture(cells.culture[cell])} ${type}`;
     const legend = "A vast collection of knowledge, including many rare and ancient tomes.";
 
@@ -1396,18 +1167,7 @@ class MarkersModule {
   }
 
   private addCircus(marker: Marker, _cell: number) {
-    const adjectives = [
-      "Fantastical",
-      "Wondrous",
-      "Incomprehensible",
-      "Magical",
-      "Extraordinary",
-      "Unmissable",
-      "World-famous",
-      "Breathtaking"
-    ];
-
-    const adjective = ra(adjectives);
+    const adjective = ra(CIRCUS_ADJECTIVES);
     const name = `Travelling ${adjective} Circus`;
     const legend = `Roll up, roll up, this ${adjective.toLowerCase()} circus is here for a limited time only.`;
     marker.name = name;
@@ -1420,13 +1180,11 @@ class MarkersModule {
 
   private addJoust(marker: Marker, cell: number) {
     const { cells, burgs } = pack;
-    const types = ["Joust", "Competition", "Melee", "Tournament", "Contest"];
-    const virtues = ["cunning", "might", "speed", "the greats", "acumen", "brutality"];
 
     if (!cells.burg[cell]) return;
     const burgName = burgs[cells.burg[cell]].name;
-    const type = ra(types);
-    const virtue = ra(virtues);
+    const type = ra(JOUST_TYPES);
+    const virtue = ra(JOUST_VIRTUES);
 
     const name = `${burgName} ${type}`;
     const legend = `Warriors from around the land gather for a ${type.toLowerCase()} of ${virtue} in ${burgName}, with fame, fortune and favour on offer to the victor.`;
@@ -1448,11 +1206,22 @@ class MarkersModule {
     const { cells, burgs } = pack;
     if (!cells.burg[cell]) return;
 
-    const burgName = burgs[cells.burg[cell]].name;
+    const burg = burgs[cells.burg[cell]];
+    const burgName = burg.name;
     const type = "Fair";
 
+    const made = (burg.production ?? [])
+      .flatMap(record => (isDealRecord(record) ? [] : [record]))
+      .sort((a, b) => b.units - a.units)
+      .map(record => Goods.get(record.goodId)?.name.toLowerCase())
+      .filter(name => name !== undefined);
+    const wares = [...new Set(made)].slice(0, 3);
+    const offer = wares.length
+      ? `offering local ${list(wares)} alongside foreign goods and services`
+      : "with all manner of local and foreign goods and services on offer";
+
     const name = `${burgName} ${type}`;
-    const legend = `A fair is being held in ${burgName}, with all manner of local and foreign goods and services on offer.`;
+    const legend = `A fair is being held in ${burgName}, ${offer}.`;
     marker.name = name;
     marker.note = legend;
   }
@@ -1472,64 +1241,13 @@ class MarkersModule {
   }
 
   private listMigrations({ cells }: PackedGraph) {
-    return cells.i.filter(i => !this.occupied[i] && cells.h[i] >= 20 && cells.pop[i] <= 2);
+    return cells.i.filter(
+      i => !this.occupied[i] && cells.h[i] >= 20 && cells.pop[i] <= 2 && MIGRATING_ANIMALS[cells.biome[i]]
+    );
   }
 
-  private addMigration(marker: Marker, _cell: number) {
-    const animals = [
-      "Antelopes",
-      "Apes",
-      "Badgers",
-      "Bears",
-      "Beavers",
-      "Bisons",
-      "Boars",
-      "Buffalo",
-      "Cats",
-      "Cranes",
-      "Crocodiles",
-      "Crows",
-      "Deer",
-      "Dogs",
-      "Eagles",
-      "Elk",
-      "Foxes",
-      "Goats",
-      "Geese",
-      "Hares",
-      "Hawks",
-      "Herons",
-      "Horses",
-      "Hyenas",
-      "Ibises",
-      "Jackals",
-      "Jaguars",
-      "Larks",
-      "Leopards",
-      "Lions",
-      "Mantises",
-      "Martens",
-      "Mooses",
-      "Mules",
-      "Owls",
-      "Panthers",
-      "Rats",
-      "Ravens",
-      "Rooks",
-      "Scorpions",
-      "Sharks",
-      "Sheep",
-      "Snakes",
-      "Spiders",
-      "Tigers",
-      "Wolves",
-      "Wolverines",
-      "Camels",
-      "Falcons",
-      "Hounds",
-      "Oxen"
-    ];
-    const animalChoice = ra(animals);
+  private addMigration(marker: Marker, cell: number) {
+    const animalChoice = ra(MIGRATING_ANIMALS[pack.cells.biome[cell]] ?? ["Birds"]);
 
     const name = `${animalChoice} migration`;
     const legend = `A huge group of ${animalChoice.toLowerCase()} are migrating, whether part of their annual routine, or something more extraordinary.`;
@@ -1544,34 +1262,11 @@ class MarkersModule {
   private addDances(marker: Marker, cell: number) {
     const { cells, burgs } = pack;
     const burgName = burgs[cells.burg[cell]].name;
-    const socialTypes = [
-      "gala",
-      "dance",
-      "performance",
-      "ball",
-      "soiree",
-      "jamboree",
-      "exhibition",
-      "carnival",
-      "festival",
-      "jubilee",
-      "celebration",
-      "gathering",
-      "fete"
-    ];
-    const people = [
-      "great and the good",
-      "nobility",
-      "local elders",
-      "foreign dignitaries",
-      "spiritual leaders",
-      "suspected revolutionaries"
-    ];
-    const socialType = ra(socialTypes);
+    const socialType = ra(DANCE_TYPES);
 
     const name = `${burgName} ${socialType}`;
     const legend = `A ${socialType} has been organised at ${burgName} as a chance to gather the ${ra(
-      people
+      DANCE_GUESTS
     )} of the area together to be merry, make alliances and scheme around the crisis.`;
     marker.name = name;
     marker.note = legend;
@@ -1582,9 +1277,7 @@ class MarkersModule {
   }
 
   private addMirage(marker: Marker, _cell: number) {
-    const adjectives = ["Entrancing", "Diaphanous", "Illusory", "Distant", "Peculiar"];
-
-    const mirageAdjective = ra(adjectives);
+    const mirageAdjective = ra(MIRAGE_ADJECTIVES);
     const name = `${mirageAdjective} mirage`;
     const legend = `This ${mirageAdjective.toLowerCase()} mirage has been luring travellers out of their way for eons.`;
     marker.name = name;
@@ -1598,33 +1291,13 @@ class MarkersModule {
   private addCave(marker: Marker, cell: number) {
     const { cells } = pack;
 
-    const formations = {
-      Cave: 10,
-      Cavern: 8,
-      Chasm: 6,
-      Ravine: 6,
-      Fracture: 5,
-      Grotto: 4,
-      Pit: 4,
-      Sinkhole: 2,
-      Hole: 2
-    };
-    const status = {
-      "a good spot to hid treasure": 5,
-      "the home of strange monsters": 5,
-      "totally empty": 4,
-      "endlessly deep and unexplored": 4,
-      "completely flooded": 2,
-      "slowly filling with lava": 1
-    };
-
-    let formation = rw(formations);
+    let formation = rw(CAVE_FORMATIONS);
     const toponym = Names.getCulture(cells.culture[cell]);
     if (cells.biome[cell] === 11) {
       formation = `Glacial ${formation}`;
     }
     const name = `${toponym} ${formation}`;
-    const legend = `The ${name}. Locals claim that it is ${rw(status)}.`;
+    const legend = `The ${name}. Locals claim that it is ${rw(CAVE_STATUSES)}.`;
     marker.name = name;
     marker.note = legend;
   }
@@ -1643,7 +1316,7 @@ class MarkersModule {
     const burgName = burgs[cells.burg[cell]].name;
 
     const name = `${burgName} Portal`;
-    const legend = `An element of the magic portal system connecting major city. The portals were installed centuries ago, but still work fine.`;
+    const legend = `An element of the magic portal system connecting major cities. The portals were installed centuries ago, but still work fine.`;
     marker.name = name;
     marker.note = legend;
   }
@@ -1653,19 +1326,9 @@ class MarkersModule {
   }
 
   private addRift(marker: Marker, _cell: number) {
-    const types = ["Demonic", "Interdimensional", "Abyssal", "Cosmic", "Cataclysmic", "Subterranean", "Ancient"];
-
-    const descriptions = [
-      "all known nearby beings to flee in terror",
-      "cracks in reality itself to form",
-      "swarms of foes to spill forth",
-      "nearby plants to wither and decay",
-      "an emmissary to step through with an all-powerful relic"
-    ];
-
-    const riftType = ra(types);
+    const riftType = ra(RIFT_TYPES);
     const name = `${riftType} Rift`;
-    const legend = `A rumoured ${riftType.toLowerCase()} rift in this area is causing ${ra(descriptions)}.`;
+    const legend = `A rumoured ${riftType.toLowerCase()} rift in this area is causing ${ra(RIFT_EFFECTS)}.`;
     marker.name = name;
     marker.note = legend;
   }
@@ -1689,29 +1352,10 @@ class MarkersModule {
     const { cells } = pack;
 
     const toponym = Names.getCulture(cells.culture[cell]);
-    const type = rw({
-      Necropolis: 5,
-      Crypt: 2,
-      Tomb: 2,
-      Graveyard: 1,
-      Cemetery: 2,
-      Mausoleum: 1,
-      Sepulchre: 1
-    });
+    const type = rw(NECROPOLIS_TYPES);
 
     const name = `${toponym} ${type}`;
-    const legend = ra([
-      "A foreboding necropolis shrouded in perpetual darkness, where eerie whispers echo through the winding corridors and spectral guardians stand watch over the tombs of long-forgotten souls.",
-      "A towering necropolis adorned with macabre sculptures and guarded by formidable undead sentinels. Its ancient halls house the remains of fallen heroes, entombed alongside their cherished relics.",
-      "This ethereal necropolis seems suspended between the realms of the living and the dead. Wisps of mist dance around the tombstones, while haunting melodies linger in the air, commemorating the departed.",
-      "Rising from the desolate landscape, this sinister necropolis is a testament to necromantic power. Its skeletal spires cast ominous shadows, concealing forbidden knowledge and arcane secrets.",
-      "An eerie necropolis where nature intertwines with death. Overgrown tombstones are entwined by thorny vines, and mournful spirits wander among the fading petals of once-vibrant flowers.",
-      "A labyrinthine necropolis where each step echoes with haunting murmurs. The walls are adorned with ancient runes, and restless spirits guide or hinder those who dare to delve into its depths.",
-      "This cursed necropolis is veiled in perpetual twilight, perpetuating a sense of impending doom. Dark enchantments shroud the tombs, and the moans of anguished souls resound through its crumbling halls.",
-      "A sprawling necropolis built within a labyrinthine network of catacombs. Its halls are lined with countless alcoves, each housing the remains of the departed, while the distant sound of rattling bones fills the air.",
-      "A desolate necropolis where an eerie stillness reigns. Time seems frozen amidst the decaying mausoleums, and the silence is broken only by the whispers of the wind and the rustle of tattered banners.",
-      "A foreboding necropolis perched atop a jagged cliff, overlooking a desolate wasteland. Its towering walls harbor restless spirits, and the imposing gates bear the marks of countless battles and ancient curses."
-    ]);
+    const legend = ra(NECROPOLIS_LEGENDS);
 
     marker.name = name;
     marker.note = legend;
@@ -1735,19 +1379,7 @@ class MarkersModule {
     const cultureName = Names.getCulture(cells.culture[cell]);
     const biomeName = (pack.biomes[cells.biome[cell]]?.name || "wilderness").toLowerCase();
 
-    const kinds = [
-      { subject: "Bandits", verb: "have set an ambush" },
-      { subject: "Wild beasts", verb: "have been sighted" },
-      { subject: "A lone traveler", verb: "was seen wandering" },
-      { subject: "Cultists", verb: "gather in secret" },
-      { subject: "A pilgrim", verb: "walks the road" },
-      { subject: "Refugees", verb: "have made camp" },
-      { subject: "Smugglers", verb: "move under cover of night" },
-      { subject: "A hermit", verb: "dwells alone" },
-      { subject: "Mercenaries", verb: "ride through" },
-      { subject: "Poachers", verb: "have been active" }
-    ];
-    const { subject, verb } = ra(kinds);
+    const { subject, verb } = ra(ENCOUNTER_KINDS);
 
     const name = `${subject} of ${cultureName}`;
     const legend = `${subject} ${verb} in the ${biomeName} of ${cultureName} lands.`;

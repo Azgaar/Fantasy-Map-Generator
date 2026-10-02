@@ -1,6 +1,5 @@
 import { type D3DragEvent, drag, select } from "d3";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
-import { IconSets } from "@/components/icon-sets";
 import { CustomIcons, Icons, IMAGE_FRAME } from "@/components/icons";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { tinctures } from "@/data/emblems";
@@ -12,10 +11,10 @@ import { type EmblemType, redrawEmblem, subscribeToEmblemReconciliation } from "
 import { colors } from "@/renderers/emblems/colors";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
-import { inlineLinkedImages } from "@/services/io/export";
+import { cloneEmblem, emblemURL, loadEmblemIcons } from "@/services/io/emblem-image";
 import type { Emblem, EmblemCharge, HeraldicEmblem } from "@/types/emblems";
 import { capitalize, downloadFile, escapeHtml, getFileName, openURL } from "@/utils";
-import { ensureEl, rn } from "../utils";
+import { ensureEl, minmax, rn } from "../utils";
 import { ARMORIA_API, ARMORIA_GUI, armoriaRenderUrl, parseArmoria } from "./emblems/armoria";
 import { ArmoriaSessions } from "./emblems/armoria-sessions";
 import { isDrawable } from "./emblems/drawability";
@@ -540,24 +539,14 @@ function changeSize(ev: Event): void {
   ensureEl<HTMLInputElement>("emblemSizeSlider").value = String(size);
   ensureEl<HTMLInputElement>("emblemSizeNumber").value = String(size);
 
-  currentEl.coa.size = size;
+  const { x, y } = currentEl.coa;
+  Emblems.place(`${currentType}:${currentEl.i}`, x ?? null, y ?? null, size);
   redrawEmblem(currentType, currentEl.i);
 }
 
 function regenerate(): void {
-  const el = currentEl;
-  let parent: EmblemEl | undefined;
-  if (currentType === "province") parent = pack.states[el.state!];
-  else if (currentType === "burg") {
-    const province = pack.cells.province[el.cell!];
-    parent = province ? pack.provinces[province] : pack.states[el.state!];
-  }
-
-  const shield = el.coa.shield || Emblems.getShield(el.culture || parent?.culture || 0, el.state);
-  const { size, x, y } = el.coa;
-  el.coa = { ...Emblems.generate(parent ? parent.coa : null, 0.3, 0.1, undefined), shield, size, x, y };
-
-  EmblemRenderer.trigger(currentId, el.coa);
+  Emblems.regenerateOne(`${currentType}:${currentEl.i}`);
+  EmblemRenderer.trigger(currentId, currentEl.coa);
   redrawEmblem(currentType, currentEl.i);
   updateEmblemData();
 }
@@ -704,7 +693,7 @@ async function download(format: string): Promise<void> {
   const coa = document.getElementById(currentId)!;
   await loadEmblemIcons([coa]);
   const size = +ensureEl<HTMLInputElement>("emblemsDownloadSize").value;
-  const url = await getURL(coa, size, format !== "svg");
+  const url = await emblemURL(coa, size, format !== "svg");
   const link = document.createElement("a");
   link.download = `${getFileName(`Emblem ${currentEl.fullName || currentEl.name}`)}.${format}`;
 
@@ -739,58 +728,8 @@ function downloadRaster(format: string, url: string, link: HTMLAnchorElement, si
   };
 }
 
-async function getURL(svg: Element, size: number, raster: boolean): Promise<string> {
-  const clone = cloneEmblem(svg, size);
-  if (raster) await inlineLinkedImages(clone);
-  const serialized = new XMLSerializer().serializeToString(clone);
-  const blob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
-  const url = window.URL.createObjectURL(blob);
-  window.setTimeout(() => window.URL.revokeObjectURL(url), 6000);
-  return url;
-}
-
 function getSVG(svg: Element, size: number): string {
   return new XMLSerializer().serializeToString(cloneEmblem(svg, size));
-}
-
-function cloneEmblem(svg: Element, size: number): SVGSVGElement {
-  const clone = svg.cloneNode(true) as SVGSVGElement;
-  clone.setAttribute("width", String(size));
-  clone.setAttribute("height", String(size));
-  const defs =
-    clone.querySelector("defs") ??
-    clone.insertBefore(document.createElementNS("http://www.w3.org/2000/svg", "defs"), clone.firstChild);
-  const visited = new Set<string>();
-  const follow = (id: string): void => {
-    if (visited.has(id)) return;
-    visited.add(id);
-    let definition = clone.querySelector(`[id="${CSS.escape(id)}"]`);
-    if (!definition) {
-      const original = document.getElementById(id);
-      if (!original) return; // removed art draws nothing on the map either
-      definition = defs.appendChild(original.cloneNode(true) as Element);
-    }
-    for (const use of definition.querySelectorAll("use")) {
-      const href = use.getAttribute("href") ?? use.getAttribute("xlink:href");
-      if (href?.startsWith("#")) follow(href.slice(1));
-    }
-  };
-  for (const use of [...clone.querySelectorAll("use")]) {
-    const href = use.getAttribute("href") ?? use.getAttribute("xlink:href");
-    if (href?.startsWith("#")) follow(href.slice(1));
-  }
-  return clone;
-}
-
-function loadEmblemIcons(emblems: Element[]): Promise<void> {
-  const sets = emblems.flatMap(emblem =>
-    [...emblem.querySelectorAll("use")].flatMap(use => {
-      const href = use.getAttribute("href") ?? use.getAttribute("xlink:href");
-      const set = href?.startsWith("#") ? IconSets.setForId(href.slice(1)) : null;
-      return set ? [set] : [];
-    })
-  );
-  return Icons.require(sets);
 }
 
 async function downloadGallery(): Promise<void> {
@@ -932,8 +871,10 @@ function dragEmblem(this: SVGUseElement, event: EmblemDragEvent): void {
     const entity = type && Number.isInteger(i) ? getEmblemEntity(type, i) : undefined;
     if (!type || !entity) return;
 
-    entity.coa.x = rn(x + endEvent.x + shift, 2);
-    entity.coa.y = rn(y + endEvent.y + shift, 2);
+    const { width, height } = options.map.graph;
+    const cx = minmax(rn(x + endEvent.x + shift, 2), 0, width);
+    const cy = minmax(rn(y + endEvent.y + shift, 2), 0, height);
+    Emblems.place(`${type}:${i}`, cx, cy, entity.coa.size ?? null);
     redrawEmblem(type, i);
   });
 }

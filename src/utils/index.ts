@@ -1,4 +1,4 @@
-import { last, TYPED_ARRAY_MAX, unique } from "./arrayUtils";
+import { groupByValue, last, TYPED_ARRAY_MAX, unique } from "./arrayUtils";
 import { abbreviate, getAdjective, isVowel, list, nth, trimVowels } from "./languageUtils";
 import { lerp, lim, minmax, normalize, rn } from "./numberUtils";
 import "./polyfills";
@@ -58,6 +58,7 @@ import {
   getArea,
   getAreaUnit,
   getCellPopulation,
+  getDistance,
   getDistanceUnit,
   getDistanceUnitRatio,
   getFriendlyHeight,
@@ -179,6 +180,7 @@ export {
   getColors,
   getComposedPath,
   getCoordinates,
+  getDistance,
   getDistanceUnit,
   getDistanceUnitRatio,
   getFileName,
@@ -200,6 +202,7 @@ export {
   getSegmentId,
   getTemperatureLikeness,
   getVertexPath,
+  groupByValue,
   initializePrompt,
   isCtrlClick,
   isImageIcon,

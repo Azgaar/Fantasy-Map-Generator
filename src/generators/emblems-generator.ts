@@ -520,6 +520,101 @@ export class EmblemsGenerator {
     });
   }
 
+  /** Set the emblem of a state, province or burg, keyed like "state:3": a heraldic emblem in the generator's vocabulary, or { icon } for a picture. Its size and position stay */
+  set(key: string, coa: Emblem): void {
+    const entity = this.owner(key);
+    if (typeof coa !== "object" || coa === null || Array.isArray(coa)) throw new Error("The emblem must be an object");
+    if ("icon" in coa) {
+      if (!Icons.kind(coa.icon)) throw new Error(`Icon ${coa.icon} does not exist`);
+    } else this.requireHeraldic(coa);
+    const { size, x, y } = entity.coa ?? {};
+    entity.coa = { ...structuredClone(coa), size, x, y };
+  }
+
+  /** Draw a new emblem for a state, province or burg, akin to its overlord's; its shield, size and position stay */
+  regenerateOne(key: string): void {
+    const entity = this.owner(key);
+    const [type] = key.split(":");
+    const { cells, states, provinces } = pack;
+    let parent: { coa?: Emblem; culture?: number } | undefined;
+    if (type === "province") parent = states[entity.state ?? 0];
+    else if (type === "burg") {
+      const province = cells.province[entity.cell ?? 0];
+      parent = province ? provinces[province] : states[entity.state ?? 0];
+    }
+    const shield = entity.coa?.shield || this.getShield(entity.culture || parent?.culture || 0, entity.state);
+    const { size, x, y } = entity.coa ?? {};
+    entity.coa = { ...this.generate(parent?.coa ?? null, 0.3, 0.1, undefined), shield, size, x, y };
+  }
+
+  /** Place an emblem on the map: x and y in map units, size from 0 to 5. null returns a value to automatic */
+  place(key: string, x: number | null, y: number | null, size: number | null): void {
+    const entity = this.owner(key);
+    if (!entity.coa) throw new Error(`${key} has no emblem`);
+    const { width, height } = options.map.graph;
+    const check = (value: number | null, max: number, label: string) => {
+      if (value !== null && (typeof value !== "number" || !(value >= 0 && value <= max)))
+        throw new Error(`The ${label} must be a number from 0 to ${max}, or null`);
+    };
+    check(x, width, "x");
+    check(y, height, "y");
+    check(size, 5, "size");
+    for (const [field, value] of [
+      ["x", x],
+      ["y", y],
+      ["size", size]
+    ] as const) {
+      if (value === null) delete entity.coa[field];
+      else entity.coa[field] = Math.round(value * 100) / 100;
+    }
+  }
+
+  private owner(key: string): { coa?: Emblem; state?: number; cell?: number; culture?: number } {
+    const [type, id] = typeof key === "string" ? key.split(":") : [];
+    const list = { state: pack.states, province: pack.provinces, burg: pack.burgs }[type as "state"] as
+      | { i: number; removed?: boolean }[]
+      | undefined;
+    const entity = list?.[Number(id)];
+    if (!list || !entity?.i || entity.removed || entity.i !== Number(id))
+      throw new Error(`${key} is not a state, province or burg with an emblem; use keys like "state:3"`);
+    return entity as { coa?: Emblem };
+  }
+
+  private isTincture(value: unknown): boolean {
+    const plain = (name: string) => name in tinctures.metals || name in tinctures.colours || name in tinctures.stains;
+    if (typeof value !== "string") return false;
+    if (plain(value)) return true;
+    const [pattern, first, second] = value.split("-");
+    if (!first || !second || !plain(first) || !plain(second)) return false;
+    return pattern in tinctures.patterns || (pattern.startsWith("semy_of_") && !!this.chargeArt(pattern.slice(8)));
+  }
+
+  private requireHeraldic(coa: HeraldicEmblem): void {
+    const fail = (what: string) => {
+      throw new Error(`The emblem's ${what} is not one the generator knows`);
+    };
+    const line = (name: unknown) => name === undefined || (typeof name === "string" && name in lineWeights);
+    const shapes = Object.keys(shields.types).flatMap(type => Object.keys(shields[type]));
+    if (!this.isTincture(coa.t1)) fail("field tincture t1");
+    if (coa.shield !== undefined && !shapes.includes(coa.shield)) fail("shield");
+    const { division } = coa;
+    if (
+      division &&
+      (!(division.division in divisions.variants) || !this.isTincture(division.t) || !line(division.line))
+    )
+      fail("division");
+    for (const item of coa.ordinaries ?? [])
+      if (
+        !(item.ordinary in ordinaries.lined || item.ordinary in ordinaries.straight) ||
+        !this.isTincture(item.t) ||
+        !line(item.line)
+      )
+        fail(`ordinary ${item.ordinary}`);
+    for (const item of coa.charges ?? [])
+      if (!this.chargeArt(item.charge) || !this.isTincture(item.t) || typeof item.p !== "string")
+        fail(`charge ${item.charge}`);
+  }
+
   getShield(culture: number, state?: number, emblemShape = this.emblemShape): string {
     if (!DIVERSIFORM_SHAPES.includes(emblemShape)) return emblemShape;
 

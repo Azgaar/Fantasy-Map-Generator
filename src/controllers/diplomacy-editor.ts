@@ -7,7 +7,7 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { getInverseRelation, RELATIONS } from "@/data/diplomacy";
 import { removeRelationsMark, showRelations } from "@/renderers/overlays/diplomacy";
 import type { Point } from "@/types/global";
-import { ensureEl, findEl, getAdjective } from "@/utils";
+import { ensureEl, findEl } from "@/utils";
 import { createBrushStroke } from "@/utils/brushUtils";
 
 interface EditorOptions {
@@ -196,31 +196,12 @@ function apply(): void {
   for (const [subjectId, objectId] of pairs.values()) {
     const oldRelation = original.get(subjectId)?.[objectId];
     const newRelation = pack.states[subjectId].diplomacy![objectId];
-    if (newRelation !== oldRelation) chronicle.push(getChronicleRecord(subjectId, objectId, oldRelation, newRelation));
+    if (newRelation !== oldRelation)
+      chronicle.push(States.getRelationRecord(subjectId, objectId, oldRelation, newRelation));
   }
 
   strokes = [];
   close();
-}
-
-function getChronicleRecord(
-  subjectId: number,
-  objectId: number,
-  oldRelation: string | undefined,
-  newRelation: string
-): string[] {
-  const subject = pack.states[subjectId].name;
-  const object = pack.states[objectId].name;
-  const { title, text } = RELATIONS[newRelation].event ?? {
-    title: "Relations change",
-    text: () => `${subject}-${getAdjective(object)} relations changed to ${newRelation.toLowerCase()}`
-  };
-  if (oldRelation !== "Enemy") return [title, text(subject, object)];
-  return [
-    "War termination",
-    `${subject} and ${object} agreed to cease fire and signed a peace treaty`,
-    text(subject, object)
-  ];
 }
 
 function undo(): void {

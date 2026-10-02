@@ -1,4 +1,6 @@
 import { quadtree } from "d3";
+import { requireColor } from "@/utils/colorUtils";
+import { requireCode, requireName, requireOneOf, requireOrigins } from "@/utils/validationUtils";
 import {
   abbreviate,
   each,
@@ -12,6 +14,7 @@ import {
   rw,
   trimVowels
 } from "../utils";
+import { Population } from "./population-generator";
 
 declare global {
   var Religions: ReligionsModule;
@@ -30,8 +33,11 @@ export interface Religion extends NamedReligion {
   note?: string;
 }
 
+const RELIGION_TYPES = ["Folk", "Organized", "Cult", "Heresy"] as const;
+const RELIGION_EXPANSIONS = ["global", "state", "culture"] as const;
+
 interface ReligionBase {
-  type: "Folk" | "Organized" | "Cult" | "Heresy";
+  type: (typeof RELIGION_TYPES)[number];
   form: string;
   culture: number;
   center: number;
@@ -1201,6 +1207,7 @@ class ReligionsModule {
     });
   }
 
+  /** Redraw religion borders from their centers, expansion and expansionism */
   recalculate() {
     const newReligionIds = this.expandReligions(pack.religions);
     const heresies = this.normalizeHeresiesForExpansion(pack.religions, newReligionIds);
@@ -1210,8 +1217,131 @@ class ReligionsModule {
     this.checkCenters();
   }
 
-  add(center: number) {
+  /** Rename a religion; its code is recomputed */
+  rename(religionId: number, name: string): void {
+    const religion = pack.religions[religionId];
+    if (!religion || religion.removed) throw new Error(`Religion ${religionId} does not exist`);
+    religion.name = requireName(name);
+    religion.code = abbreviate(
+      religion.name,
+      pack.religions.flatMap(other => (other !== religion && other.code ? [other.code] : []))
+    );
+  }
+
+  /** Set a religion's color */
+  recolor(religionId: number, color: string): void {
+    this.living(religionId).color = requireColor(color);
+  }
+
+  /** Set the deity a religion worships; empty clears it */
+  setDeity(religionId: number, deity: string): void {
+    this.living(religionId).deity = String(deity ?? "").trim() || null;
+  }
+
+  /** Set a religion's type: Folk, Organized, Cult or Heresy */
+  setType(religionId: number, type: string): void {
+    this.living(religionId).type = requireOneOf(type, RELIGION_TYPES, "The type");
+  }
+
+  /** Set a religion's form, a free label such as Polytheism or Dualism */
+  setForm(religionId: number, form: string): void {
+    this.living(religionId).form = requireName(form);
+  }
+
+  /** Set how far a religion may expand: global, state or culture */
+  setExpansion(religionId: number, expansion: string): void {
+    this.living(religionId).expansion = requireOneOf(expansion, RELIGION_EXPANSIONS, "The expansion");
+  }
+
+  /** Set how strongly a religion expands when religions are recalculated, from 0 to 99 */
+  setExpansionism(religionId: number, expansionism: number): void {
+    if (typeof expansionism !== "number" || !(expansionism >= 0 && expansionism <= 99))
+      throw new Error("The expansionism must be a number from 0 to 99");
+    this.living(religionId).expansionism = expansionism;
+  }
+
+  /** Remove a religion; its believers lose their faith */
+  remove(religionId: number): void {
+    const religion = this.living(religionId);
+    if (!religionId) throw new Error("No religion cannot be removed");
+    pack.cells.religion.forEach((owner, cell) => {
+      if (owner === religionId) pack.cells.religion[cell] = 0;
+    });
+    religion.removed = true;
+    for (const other of pack.religions) {
+      if (!other.i || other.removed || !other.origins) continue;
+      other.origins = other.origins.filter(origin => origin !== religionId);
+      if (!other.origins.length) other.origins = [0];
+    }
+  }
+
+  /** Set a religion's rural and urban population, in people: its cells and burgs scale to the totals */
+  setPopulation(religionId: number, rural: number, urban: number): void {
+    this.living(religionId);
+    const { cells } = pack;
+    Population.setArea(
+      Population.landCells(cell => cells.religion[cell] === religionId),
+      Population.burgIds(burg => cells.religion[burg.cell] === religionId),
+      rural,
+      urban
+    );
+  }
+
+  /** Lock a religion so regeneration keeps it, or unlock it */
+  setLocked(religionId: number, locked: boolean): void {
+    const religion = this.living(religionId);
+    if (locked) religion.lock = true;
+    else delete religion.lock;
+  }
+
+  /** Set a religion's origins, as the Hierarchy tree does: the first is primary (0 = top level), the rest secondary */
+  setOrigins(religionId: number, originIds: number[]): void {
+    this.living(religionId).origins = requireOrigins(pack.religions, religionId, originIds);
+  }
+
+  /** Set a religion's short code, 1 to 3 characters */
+  setCode(religionId: number, code: string): void {
+    this.living(religionId).code = requireCode(code);
+  }
+
+  /** Move a religion's center to a land cell at a map point; it takes effect when religions are recalculated */
+  moveCenter(religionId: number, x: number, y: number): void {
+    const religion = this.living(religionId);
+    if (!religionId) throw new Error("Lands without religion have no center");
+    const cell = Pack.requireCell(x, y);
+    if (pack.cells.h[cell] < 20) throw new Error("A religion center cannot be placed in the water");
+    const other = pack.religions.find(item => item.i && !item.removed && item !== religion && item.center === cell);
+    if (other) throw new Error(`Cell ${cell} is already the center of religion ${other.i}`);
+    religion.center = cell;
+  }
+
+  /** Give land cells to a religion, or to no religion with id 0 */
+  setCells(religionId: number, cellIds: number[]): void {
+    this.living(religionId);
+    const { cells } = pack;
+    if (!Array.isArray(cellIds) || !cellIds.length) throw new Error("Name at least one cell");
+    for (const cell of cellIds) {
+      if (!Number.isInteger(cell) || cell < 0 || cell >= cells.i.length) throw new Error(`Cell ${cell} does not exist`);
+      if (cells.h[cell] < 20) throw new Error(`Cell ${cell} is water; religions hold land only`);
+    }
+    for (const cell of cellIds) {
+      cells.religion[cell] = religionId;
+    }
+  }
+
+  private living(religionId: number): Religion {
+    const religion = pack.religions[religionId];
+    if (!religion || religion.removed) throw new Error(`Religion ${religionId} does not exist`);
+    return religion;
+  }
+
+  /** Found a religion centered at a map point, its type and name drawn from the local culture and faith. Returns its id */
+  add(x: number, y: number): number {
     const { cells, cultures, religions } = pack;
+    const center = Pack.requireCell(x, y);
+    if (cells.h[center] < 20) throw new Error("A religion center cannot be placed in the water");
+    if (religions.some(r => r.i && !r.removed && r.center === center))
+      throw new Error(`Cell ${center} is already a religion center`);
     const religionId = cells.religion[center];
     const i = religions.length;
 
@@ -1231,7 +1361,7 @@ class ReligionsModule {
     if (type === "Heresy") {
       religions.push(this.createHeresy(parentReligion, center, i, codes));
       cells.religion[center] = i;
-      return;
+      return i;
     }
 
     const color = missingFolk ? cultures[cultureId].color! : getMixedColor(parentReligion.color!, 0.3, 0);
@@ -1239,7 +1369,7 @@ class ReligionsModule {
     const deity: string | null =
       form === "Non-theism" || form === "Animism" ? null : (this.getDeityName(cultureId) ?? null);
 
-    const [name, expansion] = this.generateReligionName(type, form, deity!, center);
+    const [name, expansion] = this.generateReligionName(type, form, deity ?? "", center);
 
     const code = abbreviate(name, codes);
     const influences = this.getReligionsInRadius(
@@ -1273,6 +1403,7 @@ class ReligionsModule {
       code
     });
     cells.religion[center] = i;
+    return i;
   }
 
   // get supreme deity name

@@ -162,7 +162,7 @@ user last set.
 | Layer presets | `preset`/`presets`                      | no             |
 | Style presets | `fmgStyle_*`                            | no             |
 | App flags     | `version`, `debug`, and other bare keys | no             |
-| Credentials   | cloud, AI and help-assistant tokens     | no             |
+| Credentials   | cloud, AI and Assistant tokens     | no             |
 
 **One key holds all three sections.** A preference does not get a `localStorage` key of its own,
 however small it is: a key beside the object is a second source of truth for a control the object

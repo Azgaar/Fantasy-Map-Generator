@@ -1,4 +1,6 @@
 // Generic ordered-steps runner
+import { errorText } from "@/utils/stringUtils";
+
 export interface PipelineStep<Id extends string = string, TContext = void> {
   id: Id;
   run: (context: TContext) => unknown;
@@ -23,7 +25,7 @@ export class Pipeline<Id extends string = string, TContext = void> {
         try {
           await step.run(context);
         } catch (error) {
-          const reason = error instanceof Error ? error.message : String(error);
+          const reason = errorText(error);
           throw new Error(`${this.name} failed at step "${step.id}": ${reason}`, { cause: error });
         } finally {
           TIME && console.timeEnd(step.id);

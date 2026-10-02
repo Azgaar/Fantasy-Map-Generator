@@ -3,6 +3,16 @@
 import { dialogState } from "@/components/dialog/state";
 import { ensureEl, findEl, minmax } from "@/utils";
 
+/** The note button every entity dialog puts in its toolbar. `subject` completes "notes (legend) for ..." */
+export function noteButton(id: string, subject: string): string {
+  return `<button id="${id}" data-tip="Edit free text notes (legend) for ${subject}" class="icon-book"></button>`;
+}
+
+/** The same button as a table row action, in the `note` column every editor table gives it */
+export function noteIcon(subject: string): string {
+  return `<span data-col="note" data-tip="Edit free text notes (legend) for ${subject}" class="icon-book pointer"></span>`;
+}
+
 /** Close all open dialogs except the stated one */
 export function closeDialogs(except = "#except"): void {
   $(".dialog:visible")

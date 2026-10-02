@@ -377,18 +377,9 @@ function syncGeometry(seg: JourneySegment, syncEndpoints = false): void {
 
 /** Re-run the pathfinder for a segment, reporting any domain problem to the user */
 export function recomputeSegment(seg: JourneySegment): void {
-  if (seg.custom) return; // never overwrite a custom-drawn path silently
-  if (seg.from === undefined || seg.to === undefined) return;
-
+  const result = Journeys.routeSegment(seg); // never overwrites a custom-drawn path
+  if (!result?.warning) return;
   const domain = Transports.getDomain(seg.transport);
-  // a stay has no movement: a direct line anchors it between its endpoints
-  const result = Journeys.findPath(seg.from, seg.to, domain === "stay" ? "air" : domain, {
-    avoidRoads: domain === "land" && !!seg.avoidRoads
-  });
-  seg.points = result.points;
-  seg.distance = result.distance;
-
-  if (!result.warning) return;
   if (result.errorCode) {
     alertDialog({
       title: `Can't use ${seg.transport} here`,
