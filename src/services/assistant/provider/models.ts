@@ -1,9 +1,6 @@
 // Discover the chat models a key can use
-
 import { anthropicHeaders, bearerHeaders, endpoint, type ProviderSpec, readError } from "./providers";
 
-// What counts as a chat model: the endpoints also list embeddings, audio, image and moderation
-// variants that cannot drive the tool loop
 const FILTERS: Partial<Record<ProviderSpec["id"], { include?: RegExp; exclude?: RegExp }>> = {
   anthropic: { include: /^claude/ },
   openai: {
@@ -22,23 +19,33 @@ export function filterChatModels(providerId: ProviderSpec["id"], ids: string[]):
 }
 
 /** `localUrl` is the local server's address, used only by the local provider */
-export async function listModels(providerId: ProviderSpec["id"], key: string, localUrl = ""): Promise<string[]> {
-  return filterChatModels(providerId, await fetchModelIds(providerId, key, localUrl));
+export async function listModels(
+  providerId: ProviderSpec["id"],
+  key: string,
+  localUrl = "",
+  signal?: AbortSignal
+): Promise<string[]> {
+  return filterChatModels(providerId, await fetchModelIds(providerId, key, localUrl, signal));
 }
 
-async function fetchModelIds(providerId: ProviderSpec["id"], key: string, localUrl: string): Promise<string[]> {
-  if (providerId === "qwen") return fetchQwenModelIds(key);
-  const response = await fetch(modelsUrl(providerId, localUrl), { headers: authHeaders(providerId, key) });
+async function fetchModelIds(
+  providerId: ProviderSpec["id"],
+  key: string,
+  localUrl: string,
+  signal?: AbortSignal
+): Promise<string[]> {
+  if (providerId === "qwen") return fetchQwenModelIds(key, signal);
+  const response = await fetch(modelsUrl(providerId, localUrl), { headers: authHeaders(providerId, key), signal });
   if (!response.ok) throw new Error(await readError(response));
   const json = await response.json();
   return (json.data ?? []).map((model: { id: string }) => model.id);
 }
 
-async function fetchQwenModelIds(key: string): Promise<string[]> {
+async function fetchQwenModelIds(key: string, signal?: AbortSignal): Promise<string[]> {
   const models: string[] = [];
   for (let page = 1; ; page++) {
     const url = `https://dashscope-intl.aliyuncs.com/api/v1/models?providers=qwen&features=function-calling&page_no=${page}&page_size=100`;
-    const response = await fetch(url, { headers: authHeaders("qwen", key) });
+    const response = await fetch(url, { headers: authHeaders("qwen", key), signal });
     if (!response.ok) throw new Error(await readError(response));
     const json = await response.json();
     const batch: { model: string }[] = json.output?.models ?? [];

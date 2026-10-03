@@ -22,7 +22,7 @@ import {
   si
 } from "@/utils/unitUtils";
 import type { Note } from "../notes-editor";
-import { changeText } from "./proposal-card";
+import { ProposalCard } from "./proposal-card";
 import { Proposals } from "./proposals";
 
 // The open map as the Assistant sees it: identity, per-question context and tools
@@ -250,14 +250,14 @@ function proposeChange(chat: Chat): Tool {
       if (leaps.length && batch !== confirmed) {
         confirmed = batch;
         return {
-          content: `Nothing proposed: these populations change 100-fold or more, as if given in points instead of people. Fix the amounts, or send the same batch again if this is meant:\n${changeText(leaps)}`,
+          content: `Nothing proposed: these populations change 100-fold or more, as if given in points instead of people. Fix the amounts, or send the same batch again if this is meant:\n${ProposalCard.text(leaps)}`,
           isError: true
         };
       }
       last = number;
       const count = proposal.change.length;
       return {
-        content: `Proposal #${number} (${count} change${count === 1 ? "" : "s"}) is waiting for the user to apply or discard it. Nothing has changed yet. Check its change does what was asked, as the user sees it:\n${changeText(proposal.change)}`,
+        content: `Proposal #${number} (${count} change${count === 1 ? "" : "s"}) is waiting for the user to apply or discard it. Nothing has changed yet. Check its change does what was asked, as the user sees it:\n${ProposalCard.text(proposal.change)}`,
         item: { kind: "proposal", proposal }
       };
     }

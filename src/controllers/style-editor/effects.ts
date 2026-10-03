@@ -1,10 +1,10 @@
 // What happens after a style value changes: the schema names the effect, this runs it
 import { Layers } from "@/components/layers";
-import { SchemaForm } from "@/components/shared/schema-form";
 import { invokeActiveZooming } from "@/components/zoom";
 import { Styles } from "@/generators/styles";
 import { styleMeta, stylesSchema } from "@/generators/styles-schema";
 import type { StyleEffect, StyleSelection } from "@/types/styles";
+import { SchemaForm } from "./schema-form";
 
 const writeAttr = (path: string[]): void => {
   if (path.includes("attrs")) Styles.writeAttr(path);

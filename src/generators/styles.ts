@@ -1,6 +1,7 @@
 // The style store: the record every layer reads, and the SVG projection written from it
 import { type LayerId, Layers } from "@/components/layers";
 import { NODE_KEYS, type StyleElement, type StylesData } from "@/types/styles";
+import { getPath } from "@/utils/objectUtils";
 import { parseSections, type TemplateLookup } from "@/utils/schemaUtils";
 import defaultStyles from "./default-styles.json";
 import { stylesSchema } from "./styles-schema";
@@ -36,6 +37,31 @@ class StylesStore {
   set(data: StylesData): void {
     this.data = data;
     globalThis.styles = data;
+  }
+
+  /** Set one value of `styles` by its path, such as "ocean.groups.base.attrs.fill"; null unsets an attr. Draws nothing */
+  setValue(path: string, value: unknown): void {
+    const keys = String(path).split(".");
+    const [element, name] = [keys[0] as StyleElement, keys.at(-1)!];
+    const schema = stylesSchema.shape[element];
+    if (!schema) throw new Error(`No style element "${element}". Elements: ${Object.keys(this.data).join(", ")}`);
+    if (!keys.includes("attrs") && !keys.includes("options"))
+      throw new Error(
+        'A style path names one value in an attrs or options bag, such as "ocean.groups.base.attrs.fill"'
+      );
+    if (value === undefined) throw new Error("Pass a value; null unsets an attr");
+    const parent = getPath(this.data, keys.slice(0, -1));
+    if (typeof parent !== "object" || parent === null || Array.isArray(parent))
+      throw new Error(`The style has no ${keys.slice(0, -1).join(".")}; read \`styles\` for its paths`);
+
+    const copy = structuredClone(this.data[element]);
+    (getPath(copy, keys.slice(1, -1)) as Record<string, unknown>)[name] = value;
+    const result = schema.safeParse(copy);
+    if (!result.success)
+      throw new Error(
+        result.error.issues.map(issue => `${[element, ...issue.path].join(".")}: ${issue.message}`).join("; ")
+      );
+    (parent as Record<string, unknown>)[name] = value;
   }
 
   /** Put the attrs of the named style elements onto their DOM elements */

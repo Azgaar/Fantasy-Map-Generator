@@ -18,6 +18,13 @@ it("returns data-model sections and extra topics, ignoring case and field-index 
   expect(result).toContain("var pack: PackedGraph;");
 });
 
+it("describes the style record and its paths", async () => {
+  const result = await readDocs(["styles"]);
+  expect(result).toContain("Styles.setValue");
+  expect(result).toContain("`attrs`");
+  expect(result).not.toContain("## The store");
+});
+
 it("lists the commands a command link may name", async () => {
   const commands = await readDocs(["commands"]);
   expect(commands).toContain("editHeightmapButton: Edit Heightmap");

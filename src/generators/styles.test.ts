@@ -428,3 +428,18 @@ describe("port icon styles", () => {
     expect(icons).toEqual(new Set(["ports-anchor", "ports-harbor"])); // shifted anchors on big burgs, harbors on small
   });
 });
+
+describe("setValue", () => {
+  test("sets one value the schema accepts and refuses others, leaving the record as it was", () => {
+    Styles.set(Styles.parse(Styles.defaults));
+    Styles.setValue("ocean.groups.base.attrs.fill", "#0d2240");
+    expect(styles.ocean.groups.base.attrs.fill).toBe("#0d2240");
+    const record = JSON.stringify(styles);
+    expect(() => Styles.setValue("ocean.groups.base.attrs.fill", 12)).toThrow(/ocean\.groups\.base\.attrs\.fill/);
+    expect(() => Styles.setValue("ocean.groups.base.attrs.glow", 1)).toThrow();
+    expect(() => Styles.setValue("sea.attrs.fill", "#000000")).toThrow(/No style element/);
+    expect(() => Styles.setValue("ocean.groups.base", {})).toThrow(/attrs or options/);
+    expect(() => Styles.setValue("ocean.groups.nowhere.attrs.fill", "#000000")).toThrow(/no ocean\.groups\.nowhere/);
+    expect(JSON.stringify(styles)).toBe(record);
+  });
+});

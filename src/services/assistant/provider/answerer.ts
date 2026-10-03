@@ -44,7 +44,7 @@ const KNOWLEDGE: Tool[] = [
     definition: {
       name: "read_docs",
       description:
-        "Read reference docs by topic: data-model sections, Configuration, Globals, Registries, PackedGraph, Operations, Commands.",
+        "Read reference docs by topic: data-model sections, Configuration, Styles, Globals, Registries, PackedGraph, Operations, Commands.",
       input_schema: {
         type: "object",
         properties: { topics: { type: "array", items: { type: "string" } } },
@@ -63,7 +63,7 @@ const TRIMMED = "[Earlier tool result shortened]";
 const IMAGE_SIZE = 1_000; // characters
 const NO_VISION = "[The image is not available: this model cannot see images]";
 const IMAGE_REJECTED = /image|vision|multimodal/i; // how providers word a model without vision; a 429 or outage is not retried
-// Text beside a lookup ("Let me check…") or a failed call is a preamble, shown only when no answer follows it
+// Text beside only lookups ("Let me check…") or a failed call is a preamble, shown only when no answer follows it
 const LOOKUP = /^(read|view)_/;
 const CUT_OFF =
   "Your reply was cut off at the output limit. Think briefly and keep calls small: split a large batch into several propose_change calls.";
@@ -173,7 +173,7 @@ export async function askProvider(
           is_error: outcome.isError ?? false
         });
       }
-      if (answer && (calls.some(call => LOOKUP.test(call.name)) || responses.some(result => result.is_error)))
+      if (answer && (calls.every(call => LOOKUP.test(call.name)) || responses.some(result => result.is_error)))
         preamble = answer;
       else if (answer) {
         said += answer;

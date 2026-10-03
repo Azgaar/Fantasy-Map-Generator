@@ -2,15 +2,6 @@
 // and the composed ones call `set` with the whole string the schema format expects
 
 import { Icons } from "@/components/icons";
-import {
-  type ControlFactory,
-  type FieldSpec,
-  inline,
-  row,
-  rows,
-  STANDARD_CONTROLS,
-  unsetValue
-} from "@/components/shared/schema-form";
 import { Controllers } from "@/controllers";
 import { TEXTURES } from "@/data/textures";
 import { FORMATS, isLabelStyle } from "@/generators/styles-formats";
@@ -25,6 +16,7 @@ import {
   openTextureUrlDialog,
   trackControlDialog
 } from "./dialogs";
+import { type ControlFactory, type FieldSpec, inline, row, rows, STANDARD_CONTROLS, unsetValue } from "./schema-form";
 
 const selectOf = (entries: [string, string][], value: string): HTMLSelectElement => {
   const select = htmlEl("select");

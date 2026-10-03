@@ -62,7 +62,9 @@ it("does not save a draft local address when the key sheet is cancelled", async 
   const server = document.getElementById("assistantLocalUrl") as HTMLInputElement;
   server.value = "http://localhost:9000/v1";
   server.dispatchEvent(new Event("input"));
-  await vi.waitFor(() => expect(discovery.list).toHaveBeenCalledWith("local", "", "http://localhost:9000/v1"));
+  await vi.waitFor(() =>
+    expect(discovery.list).toHaveBeenCalledWith("local", "", "http://localhost:9000/v1", expect.any(AbortSignal))
+  );
   click("Cancel");
   expect(localStorage.getItem("fmg-ai-local-url")).toBe("http://localhost:8080/v1");
 });

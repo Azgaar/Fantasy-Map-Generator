@@ -35,7 +35,7 @@ import { capitalize, errorText, escapeHtml } from "@/utils/stringUtils";
 import { si } from "@/utils/unitUtils";
 import { KeySheet } from "./key-sheet";
 import { AssistantMap } from "./map";
-import { proposalHtml } from "./proposal-card";
+import { ProposalCard } from "./proposal-card";
 import { Proposals } from "./proposals";
 import { AssistantWidgets, type WidgetContext } from "./widgets";
 
@@ -43,7 +43,7 @@ type View = "chat" | "chats" | "key";
 type Notice = { text: string; item?: TranscriptItem; retry?: () => void };
 
 const dialogId = "assistant";
-const MAX_QUESTION_LENGTH = 1000;
+const MAX_QUESTION_LENGTH = 2000;
 const POLICY = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Policy";
 const DISCORD = "https://discordapp.com/invite/X7E84HU";
 const PATREON = "https://www.patreon.com/azgaar";
@@ -174,6 +174,7 @@ const STYLES = /* html */ `
     #assistant .assistantChangeField i { margin: 0 .35em; font-style: normal; opacity: .45; }
     #assistant .assistantChangeField ins { font-weight: 600; text-decoration: none; }
     #assistant .assistantChangeField em { opacity: .6; }
+    #assistant .assistantSwatch { display: inline-block; width: .8em; height: .8em; margin-right: .3em; border: 1px solid rgb(0 0 0 / 25%); border-radius: 2px; vertical-align: -.1em; }
     #assistant .assistantChangeMore { opacity: .6; font-size: .9em; }
     #assistant .assistantNotePreview { contain: paint; grid-column: 1 / -1; max-height: 10em; overflow: auto; margin-top: .35em; padding: .35em .6em; border-radius: .35em; background: rgb(0 0 0 / 4%); }
     #assistant .assistantNotePreview p { margin: .3em 0; }
@@ -577,7 +578,7 @@ function itemHtml(item: TranscriptItem, context: WidgetContext): string {
       <pre>${escapeHtml(item.code)}</pre>${output ? `<pre>${escapeHtml(output)}</pre>` : ""}
     </details>`;
   }
-  if (item.kind === "proposal") return proposalHtml(item.proposal, index, AssistantMap.id());
+  if (item.kind === "proposal") return ProposalCard.html(item.proposal, index, AssistantMap.id());
   if (item.kind === "divider") return `<div class="assistantDivider">New memory</div>`;
   if (item.kind === "widget") return AssistantWidgets.html(item.widget, context);
   return `<div class="assistantItem assistantNoticeItem">${renderMarkdown(item.text)}</div>`;

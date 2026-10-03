@@ -2,7 +2,7 @@
 // a change reaches onChange(path, value), a gate folds its section, null round-trips, flatten holds
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { z } from "zod";
-import "./slider-input";
+import "@/components/shared/slider-input";
 import type { FieldMeta } from "@/types/styles";
 import { row, rows, SchemaForm } from "./schema-form";
 

@@ -57,6 +57,12 @@ export interface EntityDisplay {
   previewNote?: boolean;
 }
 
+interface EntityCollection {
+  field: string;
+  indexed: boolean;
+  references?: Record<string, EntityType>; // fields holding the id (or ids) of another entity, by that entity's type
+}
+
 interface EntityDefinition {
   label: string;
   kind: string | ((id: number) => string);
@@ -65,7 +71,7 @@ interface EntityDefinition {
   layers: LayerId[] | ((id: number) => LayerId[]);
   previewNote?: boolean;
   /** the `pack` list holding the type, keyed by `i`; an indexed list keeps `i` equal to the array index */
-  collection?: { field: string; indexed: boolean };
+  collection?: EntityCollection;
   entity?: (id: number, sub?: number) => MapEntity | undefined; // for types without a collection
   name: (id: number, sub?: number) => string;
   refs: () => EntityRef[];
@@ -105,7 +111,11 @@ class EntityLookup {
       icon: "icon-crown",
       scale: 2,
       layers: ["states"],
-      collection: { field: "states", indexed: true },
+      collection: {
+        field: "states",
+        indexed: true,
+        references: { culture: "culture", capital: "burg", provinces: "province" }
+      },
       name: id => this.byId(pack.states, id)?.fullName || this.byId(pack.states, id)?.name || "",
       refs: () => this.refsOf("state", pack.states, true),
       element: id => `stateLabel${id}`,
@@ -127,7 +137,7 @@ class EntityLookup {
       icon: "icon-flag",
       scale: 4,
       layers: ["provinces"],
-      collection: { field: "provinces", indexed: true },
+      collection: { field: "provinces", indexed: true, references: { state: "state", burg: "burg" } },
       name: id => this.byId(pack.provinces, id)?.fullName || this.byId(pack.provinces, id)?.name || "",
       refs: () => this.refsOf("province", pack.provinces, true),
       element: id => `provinceLabel${id}`,
@@ -145,7 +155,11 @@ class EntityLookup {
       icon: "icon-home",
       scale: 8,
       layers: ["burgIcons", "labels"],
-      collection: { field: "burgs", indexed: true },
+      collection: {
+        field: "burgs",
+        indexed: true,
+        references: { culture: "culture", state: "state", port: "feature" }
+      },
       name: id => this.byId(pack.burgs, id)?.name || "",
       refs: () => this.refsOf("burg", pack.burgs, true),
       element: id => `burg${id}`,
@@ -177,7 +191,7 @@ class EntityLookup {
       icon: "icon-bezier-curve",
       scale: 4,
       layers: ["rivers"],
-      collection: { field: "rivers", indexed: false },
+      collection: { field: "rivers", indexed: false, references: { parent: "river", basin: "river" } },
       name: id => {
         const river = this.byId(pack.rivers, id);
         return river ? `${river.name} ${river.type}` : "";
@@ -279,7 +293,7 @@ class EntityLookup {
       icon: "icon-store",
       scale: 6,
       layers: ["markets"],
-      collection: { field: "markets", indexed: false },
+      collection: { field: "markets", indexed: false, references: { centerBurgId: "burg" } },
       name: id =>
         this.byId(pack.markets, id)?.name ||
         this.byId(pack.burgs, this.byId(pack.markets, id)?.centerBurgId ?? -1)?.name ||
@@ -338,7 +352,7 @@ class EntityLookup {
       icon: "icon-users",
       scale: 2,
       layers: ["cultures"],
-      collection: { field: "cultures", indexed: true },
+      collection: { field: "cultures", indexed: true, references: { origins: "culture" } },
       name: id => this.byId(pack.cultures, id)?.name || "",
       refs: () => this.refsOf("culture", pack.cultures, true),
       highlight: id => `#culture${id}`,
@@ -351,7 +365,11 @@ class EntityLookup {
       icon: "icon-place-of-worship",
       scale: 2,
       layers: ["religions"],
-      collection: { field: "religions", indexed: true },
+      collection: {
+        field: "religions",
+        indexed: true,
+        references: { culture: "culture", origins: "religion" }
+      },
       name: id => this.byId(pack.religions, id)?.name || "",
       refs: () => this.refsOf("religion", pack.religions, true),
       highlight: id => `#religion${id}`,
@@ -511,10 +529,15 @@ class EntityLookup {
   }
 
   /** The types kept in a `pack` list, with that list */
-  collections(): { type: EntityType; field: string; indexed: boolean }[] {
+  collections(): ({ type: EntityType } & EntityCollection)[] {
     return Object.entries(this.types).flatMap(([type, { collection }]) =>
       collection ? [{ type: type as EntityType, ...collection }] : []
     );
+  }
+
+  /** The type of entity a field of the type refers to, such as a burg's `state` */
+  referenceType(type: string, field: string): EntityType | undefined {
+    return isEntityType(type) ? this.types[type].collection?.references?.[field] : undefined;
   }
 
   /** A `pack` list by its field, of the live map or another one such as a proposal's draft */

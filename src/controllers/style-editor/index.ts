@@ -3,7 +3,6 @@ import "@/components/shared/slider-input";
 import type { z } from "zod";
 import { type LayerId, Layers } from "@/components/layers";
 import { openTab } from "@/components/options/options-panel";
-import { type FieldSpec, row, SchemaForm, STANDARD_CONTROLS } from "@/components/shared/schema-form";
 import { invokeActiveZooming } from "@/components/zoom";
 import { layerLabel } from "@/data/layer-labels";
 import { VIGNETTE_PRESETS } from "@/data/vignette-presets";
@@ -20,6 +19,7 @@ import { destroyControlDialogs, ElementsDialog, PresetSelector } from "./dialogs
 import { runEffect } from "./effects";
 import { elementFor, type GroupEntry, groupEntriesFor, hasGroups, listElements } from "./elements";
 import { cardPreview, NEUTRAL, type PreviewValues, sampleColor } from "./preview";
+import { type FieldSpec, row, SchemaForm, STANDARD_CONTROLS } from "./schema-form";
 
 class StyleEditorController {
   private wired = false;

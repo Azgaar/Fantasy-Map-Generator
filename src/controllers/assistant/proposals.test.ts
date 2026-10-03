@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/components/layers", () => ({ Layers: { draw: vi.fn() } }));
+vi.mock("@/components/layers", () => ({ Layers: { draw: vi.fn(), has: () => true } }));
+vi.mock("@/components/zoom", () => ({ invokeActiveZooming: vi.fn() }));
 vi.mock("@/components/dialog/dialog-helpers", () => ({ refreshEditors: vi.fn() }));
 vi.mock("@/controllers", () => ({ Controllers: { NotesEditor: { refresh: vi.fn() } } }));
 vi.mock("@/components/options-model", () => ({ Options: { save: vi.fn() } }));
@@ -11,7 +12,8 @@ import { Options } from "@/components/options-model";
 import type { Proposal } from "@/services/assistant/chats";
 import { Proposals } from "./proposals";
 
-const { propose, discard } = Proposals;
+const propose: typeof Proposals.propose = (...args) => Proposals.propose(...args);
+const discard = (proposal: Proposal) => Proposals.discard(proposal);
 const apply = (proposal: Proposal, mapId: number) => Proposals.run("apply", proposal, mapId);
 const undo = (proposal: Proposal, mapId: number) => Proposals.run("undo", proposal, mapId);
 const canApply = (proposal: Proposal, mapId: number) => Proposals.can("apply", proposal, mapId);
@@ -152,6 +154,34 @@ it("previews, applies and undoes lore edits", () => {
   vi.unstubAllGlobals();
 });
 
+it("previews, applies and undoes style edits, writing the attr onto its element", async () => {
+  const { Styles } = await import("@/generators/styles");
+  Styles.set(Styles.parse(Styles.defaults));
+  vi.stubGlobal("CSS", { escape: (name: string) => name });
+  document.body.innerHTML = `<g data-layer="ocean"><g data-group="base"></g></g>`;
+  const was = styles.ocean.groups.base.attrs.fill;
+  const proposal = proposeOk([{ op: "Styles.setValue", args: ["ocean.groups.base.attrs.fill", "#0d2240"] }]);
+  expect(proposal.change).toEqual([
+    { key: "style", entity: "Style", field: "ocean.groups.base.attrs.fill", before: was, after: "#0d2240" }
+  ]);
+  expect(styles.ocean.groups.base.attrs.fill).toBe(was);
+  const base = document.querySelector("[data-group=base]")!;
+  expect(apply(proposal, MAP)).toBe(true);
+  expect(base.getAttribute("fill")).toBe("#0d2240");
+  expect(undo(proposal, MAP)).toBe(true);
+  expect(styles.ocean.groups.base.attrs.fill).toBe(was);
+  expect(base.getAttribute("fill")).toBe(was);
+});
+
+it("refuses a style value that regenerates the relief, which Undo cannot restore", async () => {
+  const { Styles } = await import("@/generators/styles");
+  Styles.set(Styles.parse(Styles.defaults));
+  const density = styles.relief.options.density === 0.5 ? 0.6 : 0.5;
+  expect(propose("Relief", [{ op: "Styles.setValue", args: ["relief.options.density", density] }], 1, MAP)).toMatch(
+    /relief\.options\.density regenerates/
+  );
+});
+
 it("lists the registered operations for an unknown one", () => {
   const result = propose("Paint", [{ op: "Burgs.paint", args: [] }], 1, MAP);
   expect(result).toContain('Unknown operation "Burgs.paint"');
@@ -220,6 +250,7 @@ it.each(["apply", "undo", "redo"] as const)("refuses %s when its destination cul
   pack.cultures[action === "undo" ? 1 : 2].removed = true;
   const before = JSON.stringify(pack);
 
+  expect(Proposals.ready(action, proposal, MAP)).toBe(true); // the card's check leaves references to the click
   expect(Proposals.can(action, proposal, MAP)).toBe(false);
   expect(Proposals.run(action, proposal, MAP)).toBe(false);
   expect(JSON.stringify(pack)).toBe(before);

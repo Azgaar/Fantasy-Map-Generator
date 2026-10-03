@@ -2,7 +2,7 @@
 // editor can build or is marked hidden. Fails in the PR that adds the field
 import { describe, expect, test } from "vitest";
 import type { z } from "zod";
-import { SchemaForm } from "@/components/shared/schema-form";
+import { SchemaForm } from "@/controllers/style-editor/schema-form";
 import type { StandardControl, StyleControl } from "@/types/styles";
 import { styleMeta, stylesSchema } from "./styles-schema";
 

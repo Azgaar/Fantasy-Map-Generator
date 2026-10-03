@@ -336,7 +336,7 @@ function removeSelectedNote(): void {
   const ref = selectedRef();
   if (!ref) return;
 
-  Notes.remove(ref);
+  Notes.set(ref, "");
 
   const [first] = Notes.list();
   if (!first) {

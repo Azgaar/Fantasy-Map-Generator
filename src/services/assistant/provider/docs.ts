@@ -5,9 +5,10 @@ import { GLOBAL_DECLARATIONS, OPERATION_TYPES, OPERATIONS, REGISTRY_KEYS } from 
 let topics: Map<string, { title: string; text: string }> | null = null; // by lowercase title
 
 async function load(): Promise<Map<string, { title: string; text: string }>> {
-  const [dataModel, configuration, packedGraph, heraldry, { MAP_COMMANDS, isLinkable }] = await Promise.all([
+  const [dataModel, configuration, style, packedGraph, heraldry, { MAP_COMMANDS, isLinkable }] = await Promise.all([
     import("../../../../docs/architecture/data-model.md?raw"),
     import("../../../../docs/architecture/configuration.md?raw"),
+    import("../../../../docs/architecture/style.md?raw"),
     import("../../../types/PackedGraph.ts?raw"),
     import("@/data/emblems"),
     import("@/components/map-commands")
@@ -18,6 +19,8 @@ async function load(): Promise<Map<string, { title: string; text: string }>> {
     if (heading) map.set(heading, part.trim());
   }
   map.set("Configuration", configuration.default as string);
+  const record = (style.default as string).match(/^## The record\n([\s\S]*?)(?=^## )/m)?.[1];
+  if (record) map.set("Styles", `The map style, \`styles\`, edited with \`Styles.setValue\`:\n${record.trim()}`);
   map.set("Globals", `\`\`\`ts\n${GLOBAL_DECLARATIONS}\n\`\`\``);
   map.set(
     "Registries",

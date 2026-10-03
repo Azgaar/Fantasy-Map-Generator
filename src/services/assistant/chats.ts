@@ -4,10 +4,15 @@ import type { RunResult } from "./provider/runtime";
 /** Who asks: a Guest or Member of the Azgaar server, or the user's own key */
 export type Tier = "guest" | "member" | "key";
 
-/** One recorded value a proposal changes: an entity field before and after */
+/** One value a proposal changes, before and after. `key` and `field` tell what it is:
+ * - an entity's field: `burg:12` · `name` (nested fields as `label.text`)
+ * - a whole entity added or removed: `burg:12` · "" with `before` or `after` left undefined
+ * - per-cell data: `cells` · `state`, its values keyed by cell id
+ * - the map's lore: `lore` · `calendar.year`
+ * - the map's style: `style` · `ocean.groups.base.attrs.fill` */
 export interface ChangeRow {
   key: string;
-  entity: string;
+  entity: string; // how the card names it, "Burg: Vel"
   field: string;
   before?: unknown;
   after?: unknown;

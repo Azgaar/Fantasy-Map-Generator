@@ -158,6 +158,7 @@ Styles.set(record); // replace the global wholesale
 Styles.write(...elements); // walk the element's tree and put every attr on its data-layer/data-group element
 Styles.writeAll(); // write every element
 Styles.writeAttr(path); // set or remove the one attribute at [element, …, "attrs", name]
+Styles.setValue("ocean.groups.base.attrs.fill", "#0d2240"); // set one value the schema accepts; draws nothing
 Styles.apply(...elements); // write + Layers.draw
 ```
 
@@ -274,7 +275,7 @@ card inside the group.
 
 ### The form engine — `SchemaForm`
 
-`src/components/shared/schema-form.ts` is generic: it takes any zod object schema, a value, a meta
+`src/controllers/style-editor/schema-form.ts` is generic: it takes any zod object schema, a value, a meta
 registry, an `onChange`, and optional extra controls. It knows nothing of `styles`, `Layers` or
 `pack` and is tested in jsdom against a mini schema.
 

@@ -348,9 +348,10 @@ it("counts an image by its billed size, so it outlives the reads after it", asyn
   expect(image.content).not.toBe("[Earlier tool result shortened]");
 });
 
-it("shows text beside a lookup or a failed call only when no answer follows it", async () => {
+it("shows text beside only lookups or a failed call only when no answer follows it", async () => {
   const read = { type: "tool_use", id: "r", name: "read_map", input: {} };
   const broken = { type: "tool_use", id: "b", name: "show_card", input: {} };
+  const source = { type: "tool_use", id: "s", name: "show_source", input: {} };
   const reply = (text: string, ...calls: unknown[]) => ({
     content: [...(text ? [{ type: "text", text }] : []), ...calls],
     usage: { input: 1, output: 1, cached: 0 }
@@ -360,12 +361,17 @@ it("shows text beside a lookup or a failed call only when no answer follows it",
     definition: { name: "read_map", description: "", input_schema: {} },
     handle: async () => ({ content: "42" })
   };
+  const showSource = {
+    status: "Showing",
+    definition: { name: "show_source", description: "", input_schema: {} },
+    handle: async () => ({ content: "Shown" })
+  };
   const answers = async (...replies: ReturnType<typeof reply>[]) => {
     completeMock.mockReset();
     for (const next of replies) completeMock.mockResolvedValueOnce(next);
     const items: TranscriptItem[] = [];
     await askProvider(newChat(), "How many?", item => items.push(item), new AbortController().signal, {
-      tools: [readMap],
+      tools: [readMap, showSource],
       context: async () => "map"
     });
     return items.flatMap(item => (item.kind === "answer" ? [item.text] : []));
@@ -373,6 +379,8 @@ it("shows text beside a lookup or a failed call only when no answer follows it",
   expect(await answers(reply("Let me check.", read), reply("42."))).toEqual(["42."]);
   expect(await answers(reply("It is 42.", read), reply(""))).toEqual(["It is 42."]);
   expect(await answers(reply("Here it is:", broken), reply("It is 42."))).toEqual(["It is 42."]);
+  // beside a widget the text is the answer, even with a lookup in the same step
+  expect(await answers(reply("It is 42.", read, source), reply("Also 43."))).toEqual(["It is 42.", "Also 43."]);
 });
 
 it("sends a changed map context with the newest message and leaves the question untouched", async () => {

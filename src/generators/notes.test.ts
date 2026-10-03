@@ -39,7 +39,7 @@ describe("note access", () => {
   });
 
   it("removes the field rather than storing an empty note", () => {
-    Notes.remove({ type: "burg", id: 1 });
+    Notes.set({ type: "burg", id: 1 }, "");
     expect("note" in pack.burgs[1]).toBe(false);
   });
 

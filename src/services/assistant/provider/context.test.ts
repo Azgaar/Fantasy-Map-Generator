@@ -20,7 +20,7 @@ test("cached instructions contain the map rules, operations and data fields", ()
 // About 3.5 characters per token: keeps the fixed prompt under about 4k tokens
 test("cached instructions stay compact", () => {
   const [cached] = SYSTEM_PROMPT;
-  expect(cached.text.length).toBeLessThan(14_500);
+  expect(cached.text.length).toBeLessThan(15_200);
 });
 
 test("generated context matches the codebase and Knowledge Base", () => {

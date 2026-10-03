@@ -17,7 +17,7 @@ vi.mock("./map", () => ({
   }
 }));
 const proposals = vi.hoisted(() => ({
-  can: vi.fn(() => true),
+  ready: vi.fn(() => true),
   run: vi.fn(() => true),
   discard: vi.fn(),
   propose: vi.fn()
@@ -90,7 +90,7 @@ it("opens one Assistant panel with one composer and no mode tabs", async () => {
     expect(document.getElementById("assistantStatus")?.textContent).toBe("5 questions left today")
   );
   const input = document.getElementById("assistantQuestion") as HTMLTextAreaElement;
-  for (const blank of ["  \n ", "a".repeat(1001)]) {
+  for (const blank of ["  \n ", "a".repeat(2001)]) {
     input.value = blank;
     document.getElementById("assistantAsk")!.click();
   }
@@ -269,7 +269,7 @@ it("applies, undoes and discards proposals even in a read-only chat", async () =
   expect(proposals.run).toHaveBeenCalledWith("apply", pending, state.mapId);
   button("Discard").click();
   expect(proposals.discard).toHaveBeenCalledWith(pending);
-  proposals.can.mockReturnValueOnce(false);
+  proposals.ready.mockReturnValueOnce(false);
   document.getElementById("assistantOpenChats")!.click();
   document.getElementById("assistantOpenChats")!.click();
   expect(button("Changed since").disabled).toBe(true);

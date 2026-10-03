@@ -194,6 +194,7 @@ A card is **Proposed**, **Applied**, **Undone** or **Discarded**. Discarded is f
 - Apply is allowed only while the map id matches and every "before" value still holds.
 - Undo is allowed only while every "after" value still holds, and Redo only while every "before" value does.
 - Otherwise the button reads **Changed since** and is disabled. This protects the user's own later edits, another saved version of the map, and other proposals that touched the same data.
+- On click, the action is also refused when it would break a reference between entities: a burg given a culture that has since been removed, or an entity removed while something else still refers to it. The notice says the map changed since.
 - Apply and Undo need no model, so they work in any tier and in read-only chats.
 
 The model learns what happened. The `propose_change` result says the proposal is waiting for the user, so the model never claims a change was made. The next question's map context lists the outcome of the chat's earlier proposals ("#3 applied, #4 discarded"). The map context itself always describes the applied map, never pending proposals.
@@ -717,6 +718,12 @@ The rows above hold `Biomes.setReliefPool`, which waits on relief icons; goods a
 | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ---------- |
 | Map name, year, era and its short form, description (Lore editor) | `Lore.rename(name)`, `setYear(year)`, `setEra(era, eraShort?)`, `setDescription(text)` | Registered |
 
+**Style.** The snapshot records `styles` as one record, keyed `style`, its rows by store path (`ocean.groups.base.attrs.fill`). Apply and Undo run each value's declared effect, as the Style tab does. A value whose effect regenerates the relief (`relief.options.density`) is refused: Undo cannot restore the icons.
+
+| Edit (where)                                    | Operation                      | Status     |
+| ----------------------------------------------- | ------------------------------ | ---------- |
+| Any value the style schema declares (Style tab) | `Styles.setValue(path, value)` | Registered |
+
 **Not operations.** These change what is shown, the files, the settings, or the whole map. The Assistant answers them with a command link to the right dialog or by naming the button.
 
 | Kind                 | Actions                                                                                                                                                                                                                                        | Why                                                                                         |
@@ -725,7 +732,7 @@ The rows above hold `Biomes.setReliefPool`, which waits on relief icons; goods a
 | Files                | save, load, export (SVG, PNG, JPEG, tiles, GeoJSON, JSON), every editor's CSV or JSON download and upload, custom emblem and icon uploads, heightmap templates, style presets                                                                  | a file the user asks for is built with `read_map`; uploads need the user's file             |
 | Regeneration         | Tools › Regenerate (burgs, cultures, economy, emblems, goods, ice, markers, markets, military, population, production, provinces, relief, religions, rivers, routes, states, state labels, zones), regenerate relations, recalculate military  | replaces a whole layer with random results; a batch of specific edits says what will change |
 | Terrain and new maps | Heightmap editor (brushes, templates, image converter), Wrap tool, World configurator, Submap, Transform, new map                                                                                                                              | rebuilds the graph, heights or climate, and everything generated from them                  |
-| Settings and style   | Options, Units editor, Style editor and presets, burg, label, lake and route group definitions, marker generation settings, military unit types, relief rules, coastline defaults, trade animation                                             | configuration, not map data                                                                 |
+| Settings             | Options, Units editor, style presets, burg, label, lake and route group definitions, marker generation settings, military unit types, relief rules, coastline defaults, trade animation                                                        | configuration, not map data                                                                 |
 | Hand-drawn geometry  | river, route, label and journey path points, measurers                                                                                                                                                                                         | shapes drawn with the mouse; the model has no sensible coordinates for them                 |
 | Code                 | a good's distribution function (Good and Distribution editors)                                                                                                                                                                                 | JavaScript the app runs; the Assistant never writes code into the map                       |
 | Row order            | dragging zones into another drawing order                                                                                                                                                                                                      | presentation only                                                                           |

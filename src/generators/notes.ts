@@ -45,10 +45,6 @@ class NotesStore {
     return this.set(ref, existing ? `${existing}${note}` : note);
   }
 
-  remove(ref: EntityRef): void {
-    this.set(ref, "");
-  }
-
   /** Every note on the map, grouped by entity type in ENTITY_TYPES order */
   list(): NoteEntry[] {
     return ENTITY_TYPES.flatMap(type =>

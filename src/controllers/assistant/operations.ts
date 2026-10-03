@@ -17,6 +17,7 @@ import { Religions } from "@/generators/religions-generator";
 import { Rivers } from "@/generators/river-generator";
 import { Routes } from "@/generators/routes-generator";
 import { States } from "@/generators/states-generator";
+import { Styles } from "@/generators/styles";
 import { Zones } from "@/generators/zones-generator";
 
 const MODELS = {
@@ -39,6 +40,7 @@ const MODELS = {
   Rivers,
   Routes,
   States,
+  Styles,
   Zones
 };
 
@@ -183,7 +185,8 @@ export const METHODS = {
   Goods: ["rename", "setIcon", "recolor", "setPrice", "setUnit", "setTags", "setProduction"],
   Markets: ["rename", "recolor"],
   Lore: ["rename", "setYear", "setEra", "setDescription"],
-  Notes: ["write"]
+  Notes: ["write"],
+  Styles: ["setValue"]
 } satisfies { [K in keyof Models]?: (keyof Models[K])[] };
 
 export const OPERATIONS = new Set(
