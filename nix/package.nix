@@ -3,14 +3,12 @@
   buildNpmPackage,
   copyDesktopItems,
   electron_43,
-  fetchNpmDeps,
-  jq,
+  importNpmLock,
   makeDesktopItem,
   makeWrapper,
-  runCommand,
 }:
 
-buildNpmPackage (finalAttrs: {
+buildNpmPackage {
   pname = "fantasy-map-generator";
   version = (lib.importJSON ../package.json).version;
 
@@ -29,26 +27,11 @@ buildNpmPackage (finalAttrs: {
     ];
   };
 
-  # Hashing the lock file as-is would tie this hash to the app version, because
-  # `sync-version.js` rewrites the root version in package-lock.json on every bump —
-  # a pre-commit hook, so it happens constantly. Nothing but the dependency set should
-  # move this hash, so the version is flattened out before it is taken.
-  npmDeps = fetchNpmDeps {
-    name = "${finalAttrs.pname}-npm-deps";
-    src = runCommand "${finalAttrs.pname}-package-lock" { nativeBuildInputs = [ jq ]; } ''
-      mkdir -p $out
-      jq '(.version, .packages."".version) |= "0.0.0"' \
-        ${../package-lock.json} > $out/package-lock.json
-    '';
-    # Refresh alongside dependency changes: set lib.fakeHash, build, then use the reported hash.
-    hash = "sha256-nbXQ0qHJxZ66wl2hUpD/X/8/5UX2jqk62dIXkOroqj8=";
+  # Use the lockfile's integrity hashes so dependency updates need no separate Nix hash.
+  npmDeps = importNpmLock {
+    npmRoot = ../.;
   };
-
-  # the lock file is hashed with its version flattened, so the copy npm checks must match
-  postPatch = ''
-    ${lib.getExe jq} '(.version, .packages."".version) |= "0.0.0"' package-lock.json > lock.tmp
-    mv lock.tmp package-lock.json
-  '';
+  npmConfigHook = importNpmLock.npmConfigHook;
 
   # `prepare` installs git hooks, and electron's postinstall downloads a browser we do not use
   npmFlags = [ "--ignore-scripts" ];
@@ -114,4 +97,4 @@ buildNpmPackage (finalAttrs: {
     # the wrapper starts a bare Electron; macOS wants a real .app bundle, so use the dmg release there
     platforms = lib.platforms.linux;
   };
-})
+}
