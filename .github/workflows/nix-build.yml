@@ -1,20 +1,12 @@
 name: Nix package
 
 on:
-  # Nothing else builds the flake, so a stale npmDepsHash or a broken derivation would
-  # otherwise reach main unnoticed: the npm lock file carries the app version, and a
-  # version bump alone is enough to invalidate the hash
+  # Run on every PR so nix-build can be required without skipped-check deadlocks.
   pull_request:
     branches: [master]
-    paths:
-      - "flake.nix"
-      - "flake.lock"
-      - "nix/**"
-      - "package.json"
-      - "package-lock.json"
-      - "electron/**"
-      - "scripts/electron.mjs"
-      - "vite.config.ts"
+
+  push:
+    branches: [master]
 
   workflow_dispatch:
 
