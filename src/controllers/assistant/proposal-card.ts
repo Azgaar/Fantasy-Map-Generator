@@ -58,7 +58,7 @@ class ProposalCardView {
       `<button type="button" class="assistantButton${primary ? " assistantPrimary" : ""}" data-action="${action}" data-index="${index}" ${enabled ? "" : "disabled"}>${label}</button>`;
     const next = NEXT[state];
     const enabled = Boolean(next && Proposals.ready(next, proposal, mapId));
-    const main = next ? button(next, enabled ? capitalize(next) : "Changed since", enabled, state === "proposed") : "";
+    const main = next ? button(next, enabled ? capitalize(next) : "Stale", enabled, state === "proposed") : "";
     const proposed = state === "proposed";
 
     // a waiting proposal shows its changes with the actions below; a settled one folds them away

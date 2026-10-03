@@ -120,6 +120,9 @@ function parseArguments(raw: string): ToolInput {
   }
 }
 
+// DeepSeek counts its reasoning against the limit, so a large batch would be cut off at 4096
+const outputLimit = (baseUrl: string) => (baseUrl.includes("deepseek.com") ? 8192 : 4096);
+
 export async function completeOpenAI(
   baseUrl: string,
   { key, model, system, messages, tools, signal }: CompletionRequest
@@ -133,7 +136,7 @@ export async function completeOpenAI(
       model,
       messages: toChatMessages(system, messages),
       tools: toChatTools(tools),
-      ...(openAI ? { max_completion_tokens: 4096 } : { max_tokens: 4096 }),
+      ...(openAI ? { max_completion_tokens: 4096 } : { max_tokens: outputLimit(baseUrl) }),
       ...(openAI && /^gpt-6-(sol|luna)$/.test(model) ? { reasoning_effort: "none" } : {})
     })
   });

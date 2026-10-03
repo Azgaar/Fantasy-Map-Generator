@@ -19,6 +19,7 @@ import { Routes } from "@/generators/routes-generator";
 import { States } from "@/generators/states-generator";
 import { Styles } from "@/generators/styles";
 import { Zones } from "@/generators/zones-generator";
+import { StylePresets } from "./style-presets";
 
 const MODELS = {
   AddedLabels,
@@ -41,6 +42,7 @@ const MODELS = {
   Routes,
   States,
   Styles,
+  StylePresets,
   Zones
 };
 
@@ -186,7 +188,8 @@ export const METHODS = {
   Markets: ["rename", "recolor"],
   Lore: ["rename", "setYear", "setEra", "setDescription"],
   Notes: ["write"],
-  Styles: ["setValue"]
+  Styles: ["setValue"],
+  StylePresets: ["apply"]
 } satisfies { [K in keyof Models]?: (keyof Models[K])[] };
 
 export const OPERATIONS = new Set(

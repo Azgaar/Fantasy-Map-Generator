@@ -9,6 +9,11 @@ vi.mock("@/components/map-commands", () => ({
   isLinkable: ({ name }: { name: string }) => name.startsWith("Edit ")
 }));
 
+vi.mock("@/controllers/assistant/style-reference", () => ({
+  styleOverview: () => "overview",
+  styleFields: (elements: string[]) => `fields of ${elements}`
+}));
+
 import { readDocs } from "./docs";
 
 it("returns data-model sections and extra topics, ignoring case and field-index suffixes", async () => {
@@ -18,11 +23,9 @@ it("returns data-model sections and extra topics, ignoring case and field-index 
   expect(result).toContain("var pack: PackedGraph;");
 });
 
-it("describes the style record and its paths", async () => {
-  const result = await readDocs(["styles"]);
-  expect(result).toContain("Styles.setValue");
-  expect(result).toContain("`attrs`");
-  expect(result).not.toContain("## The store");
+it("serves the style overview, or the fields of the elements named", async () => {
+  expect(await readDocs(["styles"])).toBe("overview");
+  expect(await readDocs(["Styles: ocean, labels"])).toBe("fields of ocean,labels");
 });
 
 it("lists the commands a command link may name", async () => {

@@ -53,13 +53,19 @@ export function describe(target: unknown): unknown {
   if (typeof target === "string") {
     try {
       const resolved = new Function(`return (${target})`)();
-      return { path: target, ...inspect(resolved) };
+      return { path: target, ...inspect(resolved), ...styleHint(/^styles\b/.test(target)) };
     } catch {
       // not a resolvable expression — fall through and describe the string itself
     }
   }
-  return inspect(target);
+  return { ...inspect(target), ...styleHint(target === globalThis.styles) };
 }
+
+// the style record is better read from its schema, with every path, type and choice
+const styleHint = (isStyle: boolean) =>
+  isStyle
+    ? { hint: 'read_docs(["Styles"]) lists the elements and choices, ["Styles: ocean"] every path and value' }
+    : {};
 
 function inspect(value: unknown): Record<string, unknown> {
   if (value === null) return { type: "null" };

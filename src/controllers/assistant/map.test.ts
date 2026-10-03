@@ -14,7 +14,7 @@ vi.mock("@/controllers", () => ({
   }
 }));
 const propose = vi.hoisted(() => vi.fn());
-vi.mock("./proposals", () => ({ Proposals: { propose } }));
+vi.mock("./proposals", () => ({ Proposals: { prepare: async () => {}, propose } }));
 vi.mock("@/services/io/emblem-image", () => ({ emblemPng: async () => "data:image/png;base64,QUJD" }));
 
 import type { Chat, Proposal } from "@/services/assistant/chats";

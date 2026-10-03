@@ -20,6 +20,7 @@ const proposals = vi.hoisted(() => ({
   ready: vi.fn(() => true),
   run: vi.fn(() => true),
   discard: vi.fn(),
+  prepare: vi.fn(async () => {}),
   propose: vi.fn()
 }));
 vi.mock("./proposals", () => ({ Proposals: proposals }));
@@ -386,7 +387,7 @@ it("turns a picked choice into a proposal, or into the next question", async () 
       button => button.textContent === label
     )!;
   choice("Saltmere").click();
-  expect(proposals.propose).toHaveBeenCalledWith("Saltmere", operations, 1, state.mapId);
+  await vi.waitFor(() => expect(proposals.propose).toHaveBeenCalledWith("Saltmere", operations, 1, state.mapId));
   expect(active.items.at(-1)).toMatchObject({ kind: "proposal", proposal: { summary: "Saltmere" } });
   expect(choice("Tell me more").disabled).toBe(true);
 

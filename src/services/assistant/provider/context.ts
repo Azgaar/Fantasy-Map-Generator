@@ -121,8 +121,9 @@ new to this chat, and \`read_docs(["Emblems"])\` for the heraldry \`Emblems.set\
 ${OPERATION_INDEX}
 
 The map's look is \`styles\`, a record by layer (\`attrs\` SVG attributes, \`options\` renderer inputs, \`groups\` nested
-nodes): \`Styles.setValue("ocean.groups.base.attrs.fill", "#0d2240")\`, one op per value; read \`styles\` for paths and
-values first. Heightmap, relief icons and ice have no operations: link their editor and stop.
+nodes): \`Styles.setValue("ocean.groups.base.attrs.fill", "#0d2240")\`, one op per value; a whole new look starts with
+\`StylePresets.apply(name)\` of the closest preset. Read \`read_docs(["Styles"])\` for presets and choices, then
+\`["Styles: ocean, labels"]\` for paths and values; never fetch source files. Heightmap, relief icons and ice have no operations: link their editor and stop.
 
 A marker's story is its note: place every marker with a name, a fitting note and an emoji icon,
 \`Markers.place(x, y, type, { name, note, icon })\`; prefer a configured type, \`Markers.configuration.map(c => c.type)\`.

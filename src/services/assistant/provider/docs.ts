@@ -5,10 +5,9 @@ import { GLOBAL_DECLARATIONS, OPERATION_TYPES, OPERATIONS, REGISTRY_KEYS } from 
 let topics: Map<string, { title: string; text: string }> | null = null; // by lowercase title
 
 async function load(): Promise<Map<string, { title: string; text: string }>> {
-  const [dataModel, configuration, style, packedGraph, heraldry, { MAP_COMMANDS, isLinkable }] = await Promise.all([
+  const [dataModel, configuration, packedGraph, heraldry, { MAP_COMMANDS, isLinkable }] = await Promise.all([
     import("../../../../docs/architecture/data-model.md?raw"),
     import("../../../../docs/architecture/configuration.md?raw"),
-    import("../../../../docs/architecture/style.md?raw"),
     import("../../../types/PackedGraph.ts?raw"),
     import("@/data/emblems"),
     import("@/components/map-commands")
@@ -19,8 +18,6 @@ async function load(): Promise<Map<string, { title: string; text: string }>> {
     if (heading) map.set(heading, part.trim());
   }
   map.set("Configuration", configuration.default as string);
-  const record = (style.default as string).match(/^## The record\n([\s\S]*?)(?=^## )/m)?.[1];
-  if (record) map.set("Styles", `The map style, \`styles\`, edited with \`Styles.setValue\`:\n${record.trim()}`);
   map.set("Globals", `\`\`\`ts\n${GLOBAL_DECLARATIONS}\n\`\`\``);
   map.set(
     "Registries",
@@ -55,11 +52,23 @@ function operationsOf(topic: string): { title: string; text: string } | undefine
   return { title: topic, text: `Operations for \`propose_change\`:\n\`\`\`ts\n${text}\n\`\`\`${types}` };
 }
 
+/** "Styles" gives the elements, formats and choices; "Styles: ocean, labels" those elements' paths and values. Built
+ * when asked, as they read the live map */
+async function stylesOf(topic: string): Promise<{ title: string; text: string } | undefined> {
+  const match = topic.match(/^styles\s*(?::(.*))?$/i);
+  if (!match) return undefined;
+  const { styleFields, styleOverview } = await import("@/controllers/assistant/style-reference");
+  const elements = match[1]?.split(/[\s,]+/).filter(Boolean);
+  return { title: topic, text: elements?.length ? styleFields(elements) : styleOverview() };
+}
+
 /** Topics match case-insensitively; a "(pack)"-style suffix from the field index is ignored */
 export async function readDocs(requested: string[]): Promise<string> {
   topics ??= await load();
+  const styles = await Promise.all(requested.map(topic => stylesOf(topic.trim())));
   const found = requested.map(
-    topic =>
+    (topic, index) =>
+      styles[index] ??
       operationsOf(topic.trim()) ??
       topics!.get(
         topic
@@ -72,7 +81,7 @@ export async function readDocs(requested: string[]): Promise<string> {
   const unknown = requested.filter((_, index) => !found[index]);
   if (unknown.length)
     texts.push(
-      `Unknown topics: ${unknown.join(", ")}. Available: ${[...topics.values()].map(topic => topic.title).join(", ")}, "Operations: <Model>, <Model>"`
+      `Unknown topics: ${unknown.join(", ")}. Available: ${[...topics.values()].map(topic => topic.title).join(", ")}, "Operations: <Model>, <Model>", Styles, "Styles: <element>, <element>"`
     );
   return texts.join("\n\n");
 }

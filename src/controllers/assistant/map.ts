@@ -243,6 +243,7 @@ function proposeChange(chat: Chat): Tool {
     async handle(input) {
       const number = Math.max(last, chat.items.filter(item => item.kind === "proposal").length) + 1;
       const summary = typeof input.summary === "string" && input.summary.trim() ? input.summary.trim() : "Change";
+      await Proposals.prepare(input.operations);
       const proposal = Proposals.propose(summary, input.operations, number, id());
       if (typeof proposal === "string") return { content: proposal, isError: true };
       const leaps = proposal.change.filter(isLeap);
@@ -447,6 +448,7 @@ const showTools: Tool[] = Object.entries(WIDGET_TOOLS).map(([type, { parse, ...d
   definition: { name: `show_${type}`, ...definition },
   status: "Preparing a widget",
   async handle(input) {
+    await Proposals.prepare(input);
     const widget = parse(input);
     if (typeof widget === "string") return { content: widget, isError: true };
     const content =

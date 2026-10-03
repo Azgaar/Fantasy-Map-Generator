@@ -416,7 +416,7 @@ function handleClick(event: MouseEvent): void {
   else if (action === "entity" && id) AssistantWidgets.openEntity(id);
   else if (action === "command" && id) AssistantWidgets.runCommand(id);
   else if (action === "mark") toggleMarks(Number(index));
-  else if (action === "choose") choose(Number(index), Number(target.dataset.choice));
+  else if (action === "choose") void choose(Number(index), Number(target.dataset.choice));
   else if (action === "inset") revealInset(Number(index));
 }
 
@@ -720,7 +720,7 @@ function revealInset(index: number): void {
 }
 
 /** A choice with operations becomes a proposal card; one without is sent as the user's next question */
-function choose(index: number, number: number): void {
+async function choose(index: number, number: number): Promise<void> {
   const owner = chat;
   const item = owner?.items[index];
   if (!owner || item?.kind !== "widget" || item.widget.type !== "choices" || item.widget.picked !== undefined) return;
@@ -734,6 +734,8 @@ function choose(index: number, number: number): void {
     void send();
     return;
   }
+  await Proposals.prepare(choice.operations);
+  if (widget.picked !== undefined) return; // picked while the presets loaded
   const count = owner.items.filter(entry => entry.kind === "proposal").length;
   const proposal = Proposals.propose(choice.label, choice.operations, count + 1, AssistantMap.id());
   if (typeof proposal === "string") {

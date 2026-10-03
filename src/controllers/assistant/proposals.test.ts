@@ -3,6 +3,21 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/components/layers", () => ({ Layers: { draw: vi.fn(), has: () => true } }));
 vi.mock("@/components/zoom", () => ({ invokeActiveZooming: vi.fn() }));
+vi.mock("@/controllers/style-preset", () => ({ ensureGroupStyles: vi.fn() }));
+vi.mock("@/services/style-presets", () => ({
+  StylePresetsService: {
+    isSystem: (name: string) => name === "ink",
+    listCustom: () => [],
+    load: async (name: string) => {
+      const { Styles } = await import("@/generators/styles");
+      const record = Styles.parse(Styles.defaults);
+      record.ocean.groups.base.attrs.fill = "#000000";
+      record.relief.options.density = 0.7;
+      return { name, styles: record };
+    },
+    parse: (record: unknown) => record
+  }
+}));
 vi.mock("@/components/dialog/dialog-helpers", () => ({ refreshEditors: vi.fn() }));
 vi.mock("@/controllers", () => ({ Controllers: { NotesEditor: { refresh: vi.fn() } } }));
 vi.mock("@/components/options-model", () => ({ Options: { save: vi.fn() } }));
@@ -180,6 +195,24 @@ it("refuses a style value that regenerates the relief, which Undo cannot restore
   expect(propose("Relief", [{ op: "Styles.setValue", args: ["relief.options.density", density] }], 1, MAP)).toMatch(
     /relief\.options\.density regenerates/
   );
+});
+
+it("applies a whole style preset once loaded, keeping the relief density, and undoes it", async () => {
+  const { Styles } = await import("@/generators/styles");
+  Styles.set(Styles.parse(Styles.defaults));
+  vi.stubGlobal("CSS", { escape: (name: string) => name });
+  const [was, density] = [styles.ocean.groups.base.attrs.fill, styles.relief.options.density];
+  const operations = [{ op: "StylePresets.apply", args: ["ink"] }];
+  expect(propose("Ink", operations, 1, MAP)).toMatch(/No style preset "ink"/);
+  await Proposals.prepare(operations);
+  const proposal = proposeOk(operations);
+  expect(proposal.change.map(row => [row.key, row.field, row.after])).toEqual([
+    ["style", "ocean.groups.base.attrs.fill", "#000000"]
+  ]);
+  expect(apply(proposal, MAP)).toBe(true);
+  expect([styles.ocean.groups.base.attrs.fill, styles.relief.options.density]).toEqual(["#000000", density]);
+  expect(undo(proposal, MAP)).toBe(true);
+  expect(styles.ocean.groups.base.attrs.fill).toBe(was);
 });
 
 it("lists the registered operations for an unknown one", () => {

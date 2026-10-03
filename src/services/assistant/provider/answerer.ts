@@ -44,7 +44,7 @@ const KNOWLEDGE: Tool[] = [
     definition: {
       name: "read_docs",
       description:
-        "Read reference docs by topic: data-model sections, Configuration, Styles, Globals, Registries, PackedGraph, Operations, Commands.",
+        'Read reference docs by topic: data-model sections, Configuration, Globals, Registries, PackedGraph, Operations, Commands, Styles (elements and choices), "Styles: ocean, labels" (their paths and values).',
       input_schema: {
         type: "object",
         properties: { topics: { type: "array", items: { type: "string" } } },

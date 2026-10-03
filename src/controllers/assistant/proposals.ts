@@ -6,10 +6,13 @@ import { invokeActiveZooming } from "@/components/zoom";
 import { Controllers } from "@/controllers";
 import { effectAt } from "@/controllers/style-editor/effects";
 import { Styles } from "@/generators/styles";
+import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import type { ChangeRow, Proposal } from "@/services/assistant/chats";
+import { getPath } from "@/utils/objectUtils";
 import { errorText } from "@/utils/stringUtils";
 import { Change, type Side } from "./change";
 import { OPERATIONS, runOperation } from "./operations";
+import { StylePresets } from "./style-presets";
 import { World } from "./world";
 
 type Batch = Proposal["operations"];
@@ -26,6 +29,11 @@ const ACTIONS: Record<Action, { from: Proposal["state"]; expects: Side; writes: 
 /** A proposal is a batch of operations the Assistant wants to run, shown to the user as a card before anything
  * changes: Preview → Apply → Undo → Redo, or Discard. See docs/prd/assistant.md */
 class ProposalLifecycle {
+  /** Load what operations read from files, such as a style preset; call before `propose` */
+  prepare(operations: unknown): Promise<void> {
+    return StylePresets.preload(operations);
+  }
+
   /** Try the operations on a draft of the map and record what they change. The live map is never touched, and one
    * failing operation fails the whole batch. Returns the proposal, or the reason there is none */
   propose(summary: string, operations: unknown, number: number, mapId: number): Proposal | string {
@@ -145,6 +153,7 @@ class ProposalLifecycle {
     for (const path of paths) {
       const effect = effectAt(path);
       if (path.includes("attrs")) Styles.writeAttr(path);
+      if (path.at(-1) === "scheme") HeightmapColorSchemes.ensure(getPath(styles, path) as string); // a custom gradient
       if (effect === "zoom") zoom = true;
       if (effect === "draw" && Layers.has(path[0])) layers.add(path[0]);
     }
