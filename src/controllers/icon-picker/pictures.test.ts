@@ -37,6 +37,22 @@ test("an uploaded svg keeps its root paint, is scoped to the icon and loses its 
   expect(picture.content).not.toContain("onclick");
 });
 
+test.each(["#root", "svg"])("an uploaded svg keeps paint applied by its %s root selector", async selector => {
+  const picture = await IconPictures.fromFile(
+    svgFile(`<svg id="root" viewBox="0 0 20 20"><style>${selector} {fill:red}</style><path d="M0 0h20v20z"/></svg>`),
+    "custom-1a2b3c4d"
+  );
+  const host = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  host.innerHTML = picture.content;
+  const sheet = new CSSStyleSheet();
+  sheet.replaceSync(host.querySelector("style")!.textContent!);
+  const rule = sheet.cssRules[0] as CSSStyleRule;
+
+  expect(rule.style.fill).toBe("red");
+  expect(host.firstElementChild!.matches(rule.selectorText)).toBe(true);
+  expect(host.matches(rule.selectorText)).toBe(false);
+});
+
 test("the fitted frame is a padded square around the visible content", async () => {
   const getBBox = vi.fn(() => ({ x: 10, y: 20, width: 40, height: 20 }));
   Object.defineProperty(SVGElement.prototype, "getBBox", { value: getBBox, configurable: true });

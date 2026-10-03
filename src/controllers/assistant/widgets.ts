@@ -11,9 +11,9 @@ import type { Emblem } from "@/types/emblems";
 import type { Point } from "@/types/global";
 import { type LinkResolver, renderMarkdown } from "@/utils/markdown";
 import { rn } from "@/utils/numberUtils";
-import { getBounds } from "@/utils/pathUtils";
 import { escapeHtml } from "@/utils/stringUtils";
 import { formatPrice, getArea, getAreaUnit, getPeople, si } from "@/utils/unitUtils";
+import { frameRegion } from "./region";
 
 // Widgets: links in answers and the items the show tool places. See docs/prd/assistant.md
 
@@ -29,7 +29,6 @@ export interface WidgetContext {
 const NOTE_PREVIEW = 240;
 const MONEY = "money"; // the chart unit of prices, treasuries and taxes
 const INSET = { width: 480, height: 300 };
-const INSET_MIN_SPAN = 80; // map units shown around a point-like entity
 
 // Inset pictures are drawn once per widget and session; a chat keeps only the reference
 interface Inset {
@@ -308,25 +307,7 @@ function insetPoints(widget: Of<"inset">): Point[] {
   return ref ? MapEntities.getPoints(ref) : [];
 }
 
-/** The inset's box, padded around an entity and widened to the picture's proportions */
-function insetRegion(widget: Of<"inset">): Region | undefined {
-  const points = insetPoints(widget);
-  if (!points.length) return undefined;
-  const [x0, y0, x1, y1] = getBounds(points);
-  const pad = widget.box ? 1 : 1.3;
-  let span = [
-    Math.max(x1 - x0, widget.box ? 1 : INSET_MIN_SPAN) * pad,
-    Math.max(y1 - y0, widget.box ? 1 : INSET_MIN_SPAN) * pad
-  ];
-  const ratio = INSET.width / INSET.height;
-  span = span[0] / span[1] < ratio ? [span[1] * ratio, span[1]] : [span[0], span[0] / ratio];
-  // kept inside the map where it fits, so an entity by the edge is not framed by emptiness
-  const within = (center: number, size: number, limit: number) =>
-    size >= limit ? limit / 2 : Math.min(Math.max(center, size / 2), limit - size / 2);
-  const cx = within((x0 + x1) / 2, span[0], options.map.graph.width);
-  const cy = within((y0 + y1) / 2, span[1], options.map.graph.height);
-  return { x0: cx - span[0] / 2, y0: cy - span[1] / 2, x1: cx + span[0] / 2, y1: cy + span[1] / 2, ...INSET };
-}
+const insetRegion = (widget: Of<"inset">) => frameRegion(insetPoints(widget), INSET, Boolean(widget.box));
 
 /** A ring on the entity: the picture shows the map's current layers, which may not include it */
 function insetMark(widget: Of<"inset">, { x0, y0, x1, y1 }: Region): string {
@@ -404,4 +385,12 @@ function clearMarks(): void {
   clearEntityMarks();
 }
 
-export const AssistantWidgets = { answer, html, openEntity, runCommand, revealInset, toggleMarks, clearMarks };
+export const AssistantWidgets = {
+  answer,
+  html,
+  openEntity,
+  runCommand,
+  revealInset,
+  toggleMarks,
+  clearMarks
+};

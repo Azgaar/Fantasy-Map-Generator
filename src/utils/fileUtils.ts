@@ -72,7 +72,7 @@ export function sanitizeSvgIcon(svgText: string): SVGElement | null {
  * `prefix` class, so it neither collides with the document nor styles it */
 export function scopeSvgIcon(svg: Element, prefix: string): void {
   const descendants = Array.from(svg.querySelectorAll("*"));
-  const ids = new Set(descendants.map(element => element.id).filter(Boolean));
+  const ids = new Set([svg, ...descendants].map(element => element.id).filter(Boolean));
   const classes = new Set([svg, ...descendants].flatMap(element => Array.from(element.classList)));
   const scoped = (name: string) => `${prefix}-${name}`;
   const pattern = (sigil: string, names: Set<string>) =>
@@ -82,31 +82,40 @@ export function scopeSvgIcon(svg: Element, prefix: string): void {
     );
   const idRef = ids.size ? pattern("#", ids) : null;
   const classRef = classes.size ? pattern("\\.", classes) : null;
+  const urls = (value: string) =>
+    value.replace(/url\(\s*(['"]?)#([^)'"\s]+)\1\s*\)/gi, (match, _quote, id) =>
+      ids.has(id) ? match.replace(`#${id}`, `#${scoped(id)}`) : match
+    );
+  const selector = (value: string) => {
+    if (idRef) value = value.replace(idRef, (_, id) => `#${scoped(id)}`);
+    if (classRef) value = value.replace(classRef, (_, name) => `.${scoped(name)}`);
+    return value.replace(/(^|[\s>+~,(])svg(?=[.#:[\s>+~),]|$)/gi, `$1:is(svg, .${prefix})`);
+  };
 
   for (const element of [svg, ...descendants]) {
-    if (element !== svg && element.id) element.id = scoped(element.id);
+    if (element.id) element.id = scoped(element.id);
     if (element.classList.length) element.setAttribute("class", Array.from(element.classList, scoped).join(" "));
-    if (idRef)
-      for (const attr of Array.from(element.attributes))
-        attr.value = attr.value.replace(idRef, (_, id) => `#${scoped(id)}`);
+    for (const attr of Array.from(element.attributes)) {
+      const id = attr.value.trim().slice(1);
+      const isHref = attr.name === "href" || attr.name.endsWith(":href");
+      attr.value = isHref && attr.value.trim().startsWith("#") && ids.has(id) ? `#${scoped(id)}` : urls(attr.value);
+    }
     if (element.localName === "style" && element.textContent) {
-      let css = element.textContent;
-      if (idRef) css = css.replace(idRef, (_, id) => `#${scoped(id)}`);
-      if (classRef) css = css.replace(classRef, (_, name) => `.${scoped(name)}`);
-      element.textContent = scopeCss(css, `.${prefix}`);
+      element.textContent = scopeCss(urls(element.textContent), `.${prefix}`, selector);
     }
   }
   svg.classList.add(prefix);
 }
 
 /** Confine a stylesheet's rules to `scope` and its descendants; at-rules other than @media and @supports are dropped */
-function scopeCss(css: string, scope: string): string {
+function scopeCss(css: string, scope: string, selector: (value: string) => string): string {
   const sheet = new CSSStyleSheet();
   sheet.replaceSync(css);
   const confine = (group: CSSStyleSheet | CSSGroupingRule) => {
     for (let index = group.cssRules.length - 1; index >= 0; index--) {
       const rule = group.cssRules[index];
-      if (rule instanceof CSSStyleRule) rule.selectorText = `:is(${scope}, ${scope} *):is(${rule.selectorText})`;
+      if (rule instanceof CSSStyleRule)
+        rule.selectorText = `:is(${scope}, ${scope} *):is(${selector(rule.selectorText)})`;
       else if (rule instanceof CSSMediaRule || rule instanceof CSSSupportsRule) confine(rule);
       else group.deleteRule(index);
     }

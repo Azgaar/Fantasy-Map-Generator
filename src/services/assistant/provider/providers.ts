@@ -23,7 +23,14 @@ export interface ToolUseBlock {
 
 export interface ImageBlock {
   type: "image";
-  source: { type: "base64"; media_type: "image/png"; data: string };
+  source: { type: "base64"; media_type: "image/png" | "image/jpeg"; data: string };
+}
+
+/** A PNG or JPEG data URL as an image block */
+export function imageBlock(dataUrl: string): ImageBlock {
+  const comma = dataUrl.indexOf(",");
+  const media_type = dataUrl.startsWith("data:image/jpeg") ? "image/jpeg" : "image/png";
+  return { type: "image", source: { type: "base64", media_type, data: dataUrl.slice(comma + 1) } };
 }
 
 export interface ToolResultBlock {
@@ -33,7 +40,7 @@ export interface ToolResultBlock {
   is_error?: boolean;
 }
 
-export type ContentBlock = TextBlock | ToolUseBlock | ToolResultBlock;
+export type ContentBlock = TextBlock | ImageBlock | ToolUseBlock | ToolResultBlock;
 
 export interface Message {
   role: "user" | "assistant";

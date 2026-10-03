@@ -188,6 +188,45 @@ it("keeps the images and does not retry a failure unrelated to them", async () =
   expect(JSON.stringify(chat.messages)).toContain("QUJD");
 });
 
+it("sends the user's images before the question and shows them with it", async () => {
+  completeMock.mockResolvedValueOnce({
+    content: [{ type: "text", text: "A sketch." }],
+    usage: { input: 1, output: 1, cached: 0 }
+  });
+  const chat = newChat();
+  const items: TranscriptItem[] = [];
+  const images = ["data:image/jpeg;base64,SlBH"];
+  await askProvider(chat, "", item => items.push(item), new AbortController().signal, {
+    tools: [],
+    context: async () => "map",
+    images
+  });
+  expect(items[0]).toEqual({ kind: "question", text: "", images });
+  expect(chat.messages[0].content).toEqual([
+    { type: "text", text: "map" },
+    { type: "text", text: "The user attached these images to the question:" },
+    { type: "image", source: { type: "base64", media_type: "image/jpeg", data: "SlBH" } }
+  ]);
+});
+
+it("replaces the user's images with a note when the model cannot see them", async () => {
+  completeMock.mockRejectedValueOnce(new Error("Image input is not supported")).mockResolvedValueOnce({
+    content: [{ type: "text", text: "I cannot see it." }],
+    usage: { input: 1, output: 1, cached: 0 }
+  });
+  const chat = newChat();
+  const items: TranscriptItem[] = [];
+  await askProvider(chat, "What is this?", item => items.push(item), new AbortController().signal, {
+    tools: [],
+    context: async () => "map",
+    images: ["data:image/jpeg;base64,SlBH"]
+  });
+  expect(completeMock).toHaveBeenCalledTimes(2);
+  expect(JSON.stringify(chat.messages)).not.toContain("SlBH");
+  expect(JSON.stringify(chat.messages[0])).toContain("never guess it from the map");
+  expect(items.map(item => item.kind)).toEqual(["question", "notice", "answer"]);
+});
+
 it("does not retry a failure when no image was sent", async () => {
   completeMock.mockRejectedValue(new Error("No credit"));
   await expect(

@@ -1,10 +1,12 @@
 import { type EntityType, MapEntities } from "@/components/map-entities";
+import { viewport } from "@/components/viewport";
 import { Controllers } from "@/controllers";
 import type { ChangeRow, ChartRow, Chat, Choice, Widget } from "@/services/assistant/chats";
 import type { Tool } from "@/services/assistant/provider/answerer";
 import { WIKI_PAGES } from "@/services/assistant/provider/knowledge";
-import type { ToolDefinition, ToolInput } from "@/services/assistant/provider/providers";
+import { imageBlock, type ToolDefinition, type ToolInput } from "@/services/assistant/provider/providers";
 import { runScript } from "@/services/assistant/provider/runtime";
+import type { Region } from "@/services/io/export";
 import type { Emblem } from "@/types/emblems";
 import { rn } from "@/utils/numberUtils";
 import { getBounds } from "@/utils/pathUtils";
@@ -24,6 +26,7 @@ import {
 import type { Note } from "../notes-editor";
 import { ProposalCard } from "./proposal-card";
 import { Proposals } from "./proposals";
+import { frameRegion } from "./region";
 
 // The open map as the Assistant sees it: identity, per-question context and tools
 
@@ -481,18 +484,63 @@ const viewEmblem: Tool = {
     const { emblemPng } = await import("@/services/io/emblem-image");
     const png = await emblemPng(`${ref.type}COA${ref.id}`, coa, EMBLEM_SIZE);
     return {
-      content: [
-        { type: "text", text: `The emblem of ${MapEntities.getName(ref)}` },
-        { type: "image", source: { type: "base64", media_type: "image/png", data: png.slice(png.indexOf(",") + 1) } }
-      ],
+      content: [{ type: "text", text: `The emblem of ${MapEntities.getName(ref)}` }, imageBlock(png)],
       item: { kind: "widget", widget: { type: "emblem", entity: key } }
     };
   }
 };
 
+const VIEW_SIDE = 1024; // pixels on the picture's longer side
+
+/** A picture of `width` × `height` map units, its longer side VIEW_SIDE */
+const fitView = (width: number, height: number) => {
+  const scale = VIEW_SIDE / Math.max(width, height);
+  return { width: Math.round(width * scale), height: Math.round(height * scale) };
+};
+
+function viewRegion(target: string): Region | string {
+  const { width, height } = options.map.graph;
+  if (target === "map") return { x0: 0, y0: 0, x1: width, y1: height, ...fitView(width, height) };
+  if (target === "view") {
+    const { scale, x, y } = viewport;
+    const [x0, y0] = [-x / scale, -y / scale];
+    const [x1, y1] = [x0 + viewport.width / scale, y0 + viewport.height / scale];
+    return { x0, y0, x1, y1, ...fitView(x1 - x0, y1 - y0) };
+  }
+  const ref = MapEntities.resolveKey(target);
+  if (!ref) return missing(target);
+  const region = frameRegion(MapEntities.getPoints(ref), fitView(16, 10)); // the inset's proportions
+  return region ?? `${target} has no place on the map`;
+}
+
+const viewMap: Tool = {
+  status: "Looking at the map",
+  definition: {
+    name: "view_map",
+    description:
+      'See the map as the user sees it, in its current style and visible layers: an entity framed, "view" for what the user has on screen, or "map" for the whole map. For looks, shapes and layout; read names and numbers with read_map.',
+    input_schema: {
+      type: "object",
+      properties: { target: { type: "string", description: 'An entity key, "view" or "map"' } },
+      required: ["target"]
+    }
+  },
+  async handle(input) {
+    const target = text(input.target) || "view";
+    const region = viewRegion(target);
+    if (typeof region === "string") return { content: region, isError: true };
+    const { ExportMap } = await import("@/services/io/export");
+    const image = await ExportMap.getRegionImage(region, 1, "image/jpeg");
+    const subject =
+      target === "map" ? "The whole map" : target === "view" ? "The user's view" : `The map around ${target}`;
+    const layers = typeof Layers === "undefined" ? "" : ` Visible layers: ${Layers.state.active.join(", ")}.`;
+    return { content: [{ type: "text", text: `${subject}.${layers}` }, imageBlock(image)] };
+  }
+};
+
 // A map change stops the answer (map:generated), so no tool outlives the map it was given for
 function tools(chat: Chat): Tool[] {
-  return [readMap, proposeChange(chat), ...showTools, viewEmblem];
+  return [readMap, proposeChange(chat), ...showTools, viewEmblem, viewMap];
 }
 
 export const AssistantMap = { id, name, context, tools };

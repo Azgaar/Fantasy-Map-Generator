@@ -13,7 +13,7 @@ const LIMITS = {
 const PADDING = 0.05; // of the content's longer side, on every side of the fitted frame
 const OPAQUE = 8; // the alpha a pixel needs to count as content
 const LOAD_TIMEOUT = 15_000;
-const ROOT_FRAME_ATTRIBUTES = new Set(["id", "width", "height", "viewbox", "x", "y", "preserveaspectratio", "version"]);
+const ROOT_FRAME_ATTRIBUTES = new Set(["width", "height", "viewbox", "x", "y", "preserveaspectratio", "version"]);
 
 /** A sanitised svg as a picture: its frame, and its art in a group that keeps the root's paint */
 function fromSvg(svg: Element): IconPicture {

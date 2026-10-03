@@ -52,6 +52,36 @@ describe("sanitizeSvgIcon", () => {
 });
 
 describe("scopeSvgIcon", () => {
+  it("preserves paint colors matching an id while scoping fragment references", () => {
+    const svg = sanitizeSvgIcon(
+      '<svg xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="fff"/></defs>' +
+        '<path fill="#fff" stroke="#fff" style="fill:#fff;stroke:url(#fff)"/><use href="#fff"/></svg>'
+    )!;
+    scopeSvgIcon(svg, "custom-12345678");
+
+    const path = svg.querySelector("path")!;
+    expect(path.getAttribute("fill")).toBe("#fff");
+    expect(path.getAttribute("stroke")).toBe("#fff");
+    expect(path.style.fill).toBe("rgb(255, 255, 255)");
+    expect(path.style.stroke).toContain("#custom-12345678-fff");
+    expect(svg.querySelector("use")?.getAttribute("href")).toBe("#custom-12345678-fff");
+  });
+
+  it("distinguishes stylesheet colors from matching id selectors and URL references", () => {
+    const svg = sanitizeSvgIcon(
+      '<svg xmlns="http://www.w3.org/2000/svg"><style>#fff {fill:#fff;stroke:url(#fff)}</style>' +
+        '<path id="fff"/></svg>'
+    )!;
+    scopeSvgIcon(svg, "custom-12345678");
+
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(svg.querySelector("style")!.textContent!);
+    const rule = sheet.cssRules[0] as CSSStyleRule;
+    expect(rule.selectorText).toContain("#custom-12345678-fff");
+    expect(rule.style.fill).toBe("rgb(255, 255, 255)");
+    expect(rule.style.stroke).toContain("#custom-12345678-fff");
+  });
+
   it("prefixes inner ids and classes and every reference to them", () => {
     const svg = sanitizeSvgIcon(
       '<svg xmlns="http://www.w3.org/2000/svg" id="root" class="cls-1"><defs><style>.cls-1{fill:url(#a)} #ab{stroke:#abc}</style>' +
@@ -59,7 +89,7 @@ describe("scopeSvgIcon", () => {
         '<path fill="url(\'#a\')" stroke="#abc"/></svg>'
     )!;
     scopeSvgIcon(svg, "custom-goods-x");
-    expect(svg.id).toBe("root");
+    expect(svg.id).toBe("custom-goods-x-root");
     expect(svg.getAttribute("class")).toBe("custom-goods-x-cls-1 custom-goods-x");
     expect(svg.querySelector("linearGradient")?.id).toBe("custom-goods-x-a");
     const scope = ":is(.custom-goods-x, .custom-goods-x *)";
@@ -85,7 +115,7 @@ describe("scopeSvgIcon", () => {
     const scope = ":is(.custom-1, .custom-1 *)";
     expect(svg.querySelector("style")?.textContent?.replace(/\s+/g, " ")).toBe(
       `${scope}:is(path, g > :is(rect, circle)) { fill: red; }` +
-        `@media (min-width: 1px) { ${scope}:is(*) { stroke: blue; } }${scope}:is(svg) { opacity: 0; }`
+        `@media (min-width: 1px) { ${scope}:is(*) { stroke: blue; } }${scope}:is(:is(svg, .custom-1)) { opacity: 0; }`
     );
   });
 });

@@ -114,17 +114,26 @@ async function exportToPng(): Promise<void> {
   }
 }
 
-/** A PNG data URL of the map region at twice its pixel size, as the map is styled and layered now */
-async function getRegionImage(region: Region): Promise<string> {
+/** A data URL of the map region at `scale` times its pixel size, as the map is styled and layered now */
+async function getRegionImage(
+  region: Region,
+  scale = 2,
+  type: "image/png" | "image/jpeg" = "image/png"
+): Promise<string> {
   const url = await getMapURL("png", { region, noScaleBar: true, noVignette: true });
   const canvas = document.createElement("canvas");
-  canvas.width = region.width * 2;
-  canvas.height = region.height * 2;
+  canvas.width = region.width * scale;
+  canvas.height = region.height * scale;
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
-      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL("image/png"));
+      const ctx = canvas.getContext("2d")!;
+      if (type === "image/jpeg") {
+        ctx.fillStyle = "#fff"; // JPEG has no transparency
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL(type, 0.85));
     };
     img.onerror = () => reject(new Error("Cannot draw the map region"));
     img.src = url;

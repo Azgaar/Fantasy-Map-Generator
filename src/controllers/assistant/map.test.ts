@@ -16,7 +16,10 @@ vi.mock("@/controllers", () => ({
 const propose = vi.hoisted(() => vi.fn());
 vi.mock("./proposals", () => ({ Proposals: { prepare: async () => {}, propose } }));
 vi.mock("@/services/io/emblem-image", () => ({ emblemPng: async () => "data:image/png;base64,QUJD" }));
+const regionImage = vi.hoisted(() => vi.fn(async () => "data:image/jpeg;base64,SlBH"));
+vi.mock("@/services/io/export", () => ({ ExportMap: { getRegionImage: regionImage } }));
 
+import { viewport } from "@/components/viewport";
 import type { Chat, Proposal } from "@/services/assistant/chats";
 import { AssistantMap } from "./map";
 
@@ -65,7 +68,7 @@ beforeEach(() => {
   vi.stubGlobal("pack", { cells: { i: [0] }, states: [], burgs: [0, { i: 1, name: "Vel" }, { i: 2, removed: true }] });
 });
 
-it("offers read_map, propose_change, one tool per widget and view_emblem", () => {
+it("offers read_map, propose_change, one tool per widget, view_emblem and view_map", () => {
   expect(AssistantMap.tools(chat).map(tool => tool.definition.name)).toEqual([
     "read_map",
     "propose_change",
@@ -75,7 +78,8 @@ it("offers read_map, propose_change, one tool per widget and view_emblem", () =>
     "show_choices",
     "show_inset",
     "show_source",
-    "view_emblem"
+    "view_emblem",
+    "view_map"
   ]);
 });
 
@@ -339,4 +343,31 @@ it("returns an emblem as an image for the model and shows it to the user", async
   expect(outcome.item).toEqual({ kind: "widget", widget: { type: "emblem", entity: "state:1" } });
   expect((await mapTool("view_emblem").handle({ entity: "state:2" })).content).toBe("state:2 has no emblem");
   expect((await mapTool("view_emblem").handle({ entity: "river:1" })).isError).toBe(true);
+});
+
+it("shows the model the whole map, the user's view or an entity, as a JPEG", async () => {
+  vi.stubGlobal("Layers", { state: { active: ["states", "rivers"] } });
+  const outcome = await mapTool("view_map").handle({ target: "map" });
+  expect(regionImage).toHaveBeenLastCalledWith(
+    { x0: 0, y0: 0, x1: 100, y1: 50, width: 1024, height: 512 },
+    1,
+    "image/jpeg"
+  );
+  expect(outcome.content).toEqual([
+    { type: "text", text: "The whole map. Visible layers: states, rivers." },
+    { type: "image", source: { type: "base64", media_type: "image/jpeg", data: "SlBH" } }
+  ]);
+
+  Object.assign(viewport, { width: 400, height: 200, scale: 4, x: -40, y: -20 });
+  await mapTool("view_map").handle({ target: "view" });
+  expect(regionImage).toHaveBeenLastCalledWith(
+    { x0: 10, y0: 5, x1: 110, y1: 55, width: 1024, height: 512 },
+    1,
+    "image/jpeg"
+  );
+
+  pack.burgs[1] = { ...pack.burgs[1], x: 50, y: 25 } as (typeof pack.burgs)[number];
+  await mapTool("view_map").handle({ target: "burg:1" });
+  expect(regionImage).toHaveBeenLastCalledWith(expect.objectContaining({ width: 1024, height: 640 }), 1, "image/jpeg");
+  expect((await mapTool("view_map").handle({ target: "burg:9" })).isError).toBe(true);
 });

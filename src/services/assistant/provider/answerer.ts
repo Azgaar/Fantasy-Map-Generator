@@ -7,6 +7,7 @@ import { searchHelp } from "./knowledge";
 import {
   complete,
   INVALID_ARGUMENTS,
+  imageBlock,
   type Message,
   type ToolDefinition,
   type ToolInput,
@@ -62,6 +63,11 @@ const TRIMMED = "[Earlier tool result shortened]";
 // Providers bill an image by its pixels, not its base64 length: an emblem costs about as much as this much text
 const IMAGE_SIZE = 1_000; // characters
 const NO_VISION = "[The image is not available: this model cannot see images]";
+const UNSEEN_ATTACHMENT =
+  "[The user attached an image, but this model cannot see images. Tell the user; never guess it from the map]";
+const ATTACHED = "The user attached these images to the question:";
+const BLIND =
+  "This model cannot see images, so it answered without yours. Connect a model with vision to ask about images.";
 const IMAGE_REJECTED = /image|vision|multimodal/i; // how providers word a model without vision; a 429 or outage is not retried
 // Text beside only lookups ("Let me check…") or a failed call is a preamble, shown only when no answer follows it
 const LOOKUP = /^(read|view)_/;
@@ -78,6 +84,7 @@ export interface ProviderOptions {
   tools: Tool[]; // map tools, beside the knowledge ones
   context: () => Promise<string>;
   onStatus?: (status: string) => void;
+  images?: string[]; // data URLs the user attached to the question
 }
 
 export async function askProvider(
@@ -85,13 +92,13 @@ export async function askProvider(
   question: string,
   onItem: (item: TranscriptItem) => void,
   signal: AbortSignal,
-  { tools: mapTools, context, onStatus }: ProviderOptions
+  { tools: mapTools, context, onStatus, images = [] }: ProviderOptions
 ): Promise<void> {
   const tools = [...KNOWLEDGE, ...mapTools];
   const definitions = tools.map(tool => tool.definition);
   const byName = new Map(tools.map(tool => [tool.definition.name, tool]));
 
-  onItem({ kind: "question", text: question });
+  onItem(images.length ? { kind: "question", text: question, images } : { kind: "question", text: question });
   const start = chat.messages.length;
   let rollbackTo = start;
   let sentContext = "";
@@ -114,7 +121,8 @@ export async function askProvider(
           role: "user",
           content: [
             { type: "text", text: mapContext },
-            { type: "text", text: question }
+            ...(images.length ? [{ type: "text" as const, text: ATTACHED }, ...images.map(imageBlock)] : []),
+            ...(question ? [{ type: "text" as const, text: question }] : [])
           ]
         });
       else if (mapContext !== sentContext) chat.messages.at(-1)!.content.push({ type: "text", text: mapContext });
@@ -123,7 +131,9 @@ export async function askProvider(
       const request = { ...get(), system: SYSTEM_PROMPT, messages: chat.messages, tools: definitions, signal };
       // A model without vision rejects images: tell it they are unavailable and ask once more
       const completion = await complete(request).catch(error => {
-        if (signal.aborted || !IMAGE_REJECTED.test(errorText(error)) || !dropImages(chat.messages)) throw error;
+        const dropped = !signal.aborted && IMAGE_REJECTED.test(errorText(error)) && dropImages(chat.messages);
+        if (!dropped) throw error;
+        if (dropped === "attached") onItem({ kind: "notice", text: BLIND });
         return complete(request);
       });
       if (signal.aborted) throw signal.reason;
@@ -213,14 +223,20 @@ function trimToBudget(messages: Message[]): void {
   }
 }
 
-/** Replace every image in the history with a note; false when there was none */
-function dropImages(messages: Message[]): boolean {
-  let dropped = false;
+/** Replace every image in the history with a note; "attached" when the user's were among them, false when none */
+function dropImages(messages: Message[]): "attached" | "tool" | false {
+  let dropped: "attached" | "tool" | false = false;
+  for (const message of messages)
+    message.content = message.content.map(block => {
+      if (block.type !== "image") return block;
+      dropped = "attached";
+      return { type: "text", text: UNSEEN_ATTACHMENT };
+    });
   for (const result of toolResults(messages)) {
     if (typeof result.content === "string") continue;
     result.content = result.content.map(part => {
       if (part.type !== "image") return part;
-      dropped = true;
+      dropped ||= "tool";
       return { type: "text", text: NO_VISION };
     });
   }

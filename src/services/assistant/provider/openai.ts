@@ -7,6 +7,7 @@ import {
   bearerHeaders,
   type Completion,
   type CompletionRequest,
+  type ImageBlock,
   INVALID_ARGUMENTS,
   type Message,
   readError,
@@ -46,17 +47,13 @@ export function toChatMessages(system: SystemBlock[], messages: Message[]): Chat
     const images: ChatMessage[] = [];
     for (const block of message.content) {
       if (block.type === "text") chat.push({ role: "user", content: block.text });
+      else if (block.type === "image") chat.push({ role: "user", content: [imageUrl(block)] });
       else if (block.type === "tool_result") {
         const parts =
           typeof block.content === "string" ? [{ type: "text" as const, text: block.content }] : block.content;
         const text = parts.flatMap(part => (part.type === "text" ? [part.text] : [])).join("\n");
         chat.push({ role: "tool", tool_call_id: block.tool_use_id, content: text || "The image follows." });
-        for (const part of parts)
-          if (part.type === "image")
-            images.push({
-              type: "image_url",
-              image_url: { url: `data:${part.source.media_type};base64,${part.source.data}` }
-            });
+        for (const part of parts) if (part.type === "image") images.push(imageUrl(part));
       }
     }
     if (images.length)
@@ -65,6 +62,11 @@ export function toChatMessages(system: SystemBlock[], messages: Message[]): Chat
 
   return chat;
 }
+
+const imageUrl = ({ source }: ImageBlock): ChatMessage => ({
+  type: "image_url",
+  image_url: { url: `data:${source.media_type};base64,${source.data}` }
+});
 
 export function toChatTools(tools: ToolDefinition[]): ChatMessage[] {
   return tools.map(tool => ({

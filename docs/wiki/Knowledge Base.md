@@ -616,9 +616,13 @@ Guests and Members on the official site can ask documentation questions without 
 
 Anthropic, OpenAI, Mistral, Qwen, DeepSeek, and an OpenAI-compatible local server such as Ollama. Choose a Provider in the key sheet. The Assistant discovers models available to the key and also accepts any typed model id. One default is offered while discovery is pending.
 
+### Can Azgaar Assistant see my map or images?
+
+Yes, with a connected key or local model that supports images (vision). The Assistant can look at the map, a place on it or your current view, as currently styled, for example to judge a style or describe terrain. You can also paste up to four images into the question box, such as a sketch or a style reference; remove one with its ✕ before sending. Guests and Members cannot attach images. A model without vision answers without seeing them.
+
 ### What is sent to my AI Provider?
 
-Your question, earlier messages in the chat, the Assistant's instructions, a summary of the open map, the open note and selection if any, and results of the map reads the Assistant performs. Those results can include names, statistics or note text. Your key and data go directly to the Provider, never through the Azgaar server.
+Your question and any images you paste, earlier messages in the chat, the Assistant's instructions, a summary of the open map, the open note and selection if any, and results of the map reads the Assistant performs. Those results can include names, statistics, note text or pictures of the map. Your key and data go directly to the Provider, never through the Azgaar server.
 
 ### Can Azgaar Assistant change my map?
 

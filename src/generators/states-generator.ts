@@ -1355,12 +1355,12 @@ class StatesModule {
         const owned = provinceCells.filter(i => cells.state[i] === stateId);
         if (stateId === centerOwner) {
           if (stateId === previous.i) continue;
+          previous.provinces = (previous.provinces ?? []).filter(id => id !== provinceId);
           if (!stateId) {
             provinces[provinceId] = { i: provinceId, removed: true } as Province;
             for (const cell of owned) cells.province[cell] = 0;
             continue;
           }
-          previous.provinces = (previous.provinces ?? []).filter(id => id !== provinceId);
           province.state = stateId;
           province.color = getMixedColor(states[stateId].color!);
           states[stateId].provinces = [...(states[stateId].provinces ?? []), provinceId];

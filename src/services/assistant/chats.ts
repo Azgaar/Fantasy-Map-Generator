@@ -54,7 +54,7 @@ export type Widget =
   | { type: "source"; page: string };
 
 export type TranscriptItem =
-  | { kind: "question"; text: string }
+  | { kind: "question"; text: string; images?: string[] } // images as data URLs
   | { kind: "answer"; text: string; ratingId?: number | null; rating?: "up" | "down" }
   | { kind: "step"; code: string; result?: RunResult }
   | { kind: "proposal"; proposal: Proposal }
@@ -141,7 +141,8 @@ export function remove(id: string): void {
 
 export function append(chat: Chat, item: TranscriptItem): void {
   if (item.kind === "question" && !chat.items.some(entry => entry.kind === "question")) {
-    chat.title = item.text.length > TITLE_LENGTH ? `${item.text.slice(0, TITLE_LENGTH).trimEnd()}…` : item.text;
+    const text = item.text || "Image";
+    chat.title = text.length > TITLE_LENGTH ? `${text.slice(0, TITLE_LENGTH).trimEnd()}…` : text;
   }
   chat.items.push(item);
   touch(chat);

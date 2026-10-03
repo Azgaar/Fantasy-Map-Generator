@@ -487,7 +487,7 @@ Static content: lookup tables, templates, tuning constants, reference lists.
   through the `Services` registry (`Services.Save.toMachine()`).
 - **Azgaar Assistant** lives in `src/controllers/assistant/`. `index.ts` is its one controller, for the panel, chat list, key sheet and transcript.
   `map.ts` is the open map as the Assistant sees it — one `AssistantMap` object with its id,
-  per-question context and its map tools: `read_map`, `propose_change`, `view_emblem` and one `show_*` tool per
+  per-question context and its map tools: `read_map`, `propose_change`, `view_emblem`, `view_map` and one `show_*` tool per
   widget (`entities`, `card`, `chart`, `choices`, `inset`). Changes go through
   `operations.ts`, a plain registry of model-class methods, and `proposals.ts`, which dry-runs a
   batch on a draft of the map into a Change and applies, undoes or discards it on the user's click.

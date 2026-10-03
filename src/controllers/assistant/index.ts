@@ -33,6 +33,7 @@ import { ensureEl } from "@/utils";
 import { renderMarkdown } from "@/utils/markdown";
 import { capitalize, errorText, escapeHtml } from "@/utils/stringUtils";
 import { si } from "@/utils/unitUtils";
+import { AssistantImages } from "./images";
 import { KeySheet } from "./key-sheet";
 import { AssistantMap } from "./map";
 import { ProposalCard } from "./proposal-card";
@@ -44,6 +45,7 @@ type Notice = { text: string; item?: TranscriptItem; retry?: () => void };
 
 const dialogId = "assistant";
 const MAX_QUESTION_LENGTH = 2000;
+const MAX_IMAGES = 4;
 const POLICY = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Policy";
 const DISCORD = "https://discordapp.com/invite/X7E84HU";
 const PATREON = "https://www.patreon.com/azgaar";
@@ -59,6 +61,7 @@ let openMap = 0; // the map id last seen: reloading the same map keeps the selec
 let observedTier: Tier | null = null; // null when no answerer is available
 let noteLabel: string | null = null;
 let answerStatus = "Thinking";
+let attached: string[] = []; // images pasted for the next question, as data URLs
 
 const tier = (): Tier | null => {
   if (Connection.isConnected()) return "key";
@@ -147,6 +150,9 @@ const STYLES = /* html */ `
     #assistant .assistantItem th { background: rgb(0 0 0 / 5%); }
 
     #assistant .assistantQuestion { width: fit-content; margin-left: auto; padding: .45em .7em; border-radius: .8em .8em .2em .8em; background: var(--header); color: #fff; white-space: pre-wrap; }
+    #assistant .assistantQuestionImages { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .3em; }
+    #assistant .assistantQuestionImages:not(:last-child) { margin-bottom: .35em; }
+    #assistant .assistantQuestionImages img { max-width: 100%; max-height: 8em; border-radius: .4em; }
     #assistant .assistantAnswer { padding: .1em .1em 0; }
     #assistant .assistantWelcome { padding: .6em .75em; border-radius: .5em; background: rgb(0 0 0 / 5%); }
 
@@ -253,13 +259,18 @@ const STYLES = /* html */ `
     #assistantNotice { flex: none; max-height: 30%; overflow-y: auto; padding: .45em .6em; border-left: 3px solid var(--header); border-radius: .25em; background: rgb(0 0 0 / 5%); font-size: .9em; }
     #assistantNotice p { margin: 0 0 .3em; }
 
-    #assistantComposer { flex: none; display: flex; align-items: flex-end; gap: .4em; padding: .3em .3em .3em .6em; border: 1px solid rgb(0 0 0 / 20%); border-radius: .6em; background: rgb(255 255 255 / 70%); }
+    #assistantComposer { flex: none; display: flex; flex-wrap: wrap; align-items: flex-end; gap: .4em; padding: .3em .3em .3em .6em; border: 1px solid rgb(0 0 0 / 20%); border-radius: .6em; background: rgb(255 255 255 / 70%); }
     #assistantComposer:focus-within { border-color: var(--header); }
     #assistantQuestion { flex: 1; min-width: 0; height: 1.7em; max-height: 108px; padding: .2em 0; border: 0; outline: none; background: none; resize: none; font: inherit; line-height: 1.4; }
     #assistantAsk { flex: none; display: flex; align-items: center; justify-content: center; width: 1.9em; height: 1.9em; padding: 0; border: 0; border-radius: .45em; background: var(--header); color: #fff; }
     #assistantAsk::before { margin: 0; }
     #assistantAsk:hover { background: var(--header-active); }
     #assistantQuestion:placeholder-shown + #assistantAsk:not(.busy) { opacity: .45; }
+    #assistantAttachments { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: .4em; padding-top: .3em; }
+    #assistantAttachments:not([hidden]) ~ #assistantAsk:not(.busy) { opacity: 1; }
+    #assistant .assistantAttachment { position: relative; }
+    #assistant .assistantAttachment img { display: block; max-width: 6em; height: 3.2em; object-fit: cover; border-radius: .3em; }
+    #assistant .assistantAttachment button { position: absolute; top: -.4em; right: -.4em; width: 1.4em; height: 1.4em; padding: 0; border: 0; border-radius: 50%; background: rgb(0 0 0 / 65%); color: #fff; font-size: .8em; line-height: 1; }
 
     #assistant .assistantFooter { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .2em .8em; padding-top: .4em; border-top: 1px solid rgb(0 0 0 / 10%); font-size: .9em; }
     #assistant .assistantFooter > span { display: flex; flex-wrap: wrap; align-items: center; gap: .2em .7em; }
@@ -342,6 +353,7 @@ function renderDialog(): void {
     </div>
 
     <div id="assistantComposer">
+      <div id="assistantAttachments" hidden></div>
       <textarea id="assistantQuestion" rows="1" maxlength="${MAX_QUESTION_LENGTH}" aria-label="Your question" placeholder="Ask a question…"></textarea>
       <button id="assistantAsk" type="button"></button>
     </div>
@@ -372,6 +384,12 @@ function renderDialog(): void {
     if (!busy) void send();
   });
   input.addEventListener("input", () => fitInput(input));
+  input.addEventListener("paste", event => {
+    const files = Array.from(event.clipboardData?.files ?? []).filter(file => file.type.startsWith("image/"));
+    if (!files.length) return;
+    event.preventDefault();
+    void attach(files);
+  });
   el("assistantKey").addEventListener("submit", event => {
     event.preventDefault();
     connect();
@@ -418,6 +436,7 @@ function handleClick(event: MouseEvent): void {
   else if (action === "mark") toggleMarks(Number(index));
   else if (action === "choose") void choose(Number(index), Number(target.dataset.choice));
   else if (action === "inset") revealInset(Number(index));
+  else if (action === "detach") detach(Number(index));
 }
 
 async function initialize(): Promise<void> {
@@ -556,7 +575,12 @@ function welcomeHtml(now: Tier | null): string {
 
 function itemHtml(item: TranscriptItem, context: WidgetContext): string {
   const { index, live } = context;
-  if (item.kind === "question") return `<div class="assistantItem assistantQuestion">${escapeHtml(item.text)}</div>`;
+  if (item.kind === "question") {
+    const images = item.images?.length
+      ? `<div class="assistantQuestionImages">${item.images.map(src => `<img src="${escapeHtml(src)}" alt="Attached image" />`).join("")}</div>`
+      : "";
+    return `<div class="assistantItem assistantQuestion">${images}${escapeHtml(item.text)}</div>`;
+  }
   if (item.kind === "answer") {
     const feedback =
       item.ratingId == null
@@ -789,10 +813,14 @@ function disconnect(): void {
 async function send(): Promise<void> {
   if (busy || !writable(chat)) return;
   const input = el<HTMLTextAreaElement>("assistantQuestion");
-  const question = normalizeQuestion(input.value);
-  if (!question) return;
+  const images = attached;
+  const question = normalizeQuestion(input.value) ?? (images.length && !input.value.trim() ? "" : null);
+  if (question === null) return;
+  if (images.length && chat.tier !== "key") return showNotice({ text: IMAGES_NEED_KEY });
   input.value = "";
   fitInput(input);
+  attached = [];
+  renderAttachments();
   clearNotice();
   busy = true;
   answerStatus = "Thinking";
@@ -821,14 +849,15 @@ async function send(): Promise<void> {
       await askProvider(active, question, onItem, request.signal, {
         tools: AssistantMap.tools(active),
         context: () => AssistantMap.context(active),
-        onStatus
+        onStatus,
+        images
       });
     else await askServer(active, question, onItem, request.signal);
   } catch (error) {
     if (!request.signal.aborted) {
       const item: TranscriptItem = { kind: "notice", text: errorText(error) };
       append(active, item);
-      if (chat === active) showNotice({ text: item.text, item, retry: () => resend(active, question, from) });
+      if (chat === active) showNotice({ text: item.text, item, retry: () => resend(active, question, images, from) });
     }
   } finally {
     busy = false;
@@ -841,13 +870,47 @@ async function send(): Promise<void> {
 }
 
 /** Ask the failed question again; a failure before any step leaves nothing of it behind */
-function resend(owner: Chat, question: string, from: number): void {
+function resend(owner: Chat, question: string, images: string[], from: number): void {
   if (busy || chat !== owner) return;
   const tail = owner.items.slice(from);
   if (tail.every(item => item.kind === "question" || item.kind === "notice")) owner.items.splice(from);
   else if (tail.at(-1)?.kind === "notice") owner.items.pop();
   el<HTMLTextAreaElement>("assistantQuestion").value = question;
+  attached = images;
   void send();
+}
+
+const IMAGES_NEED_KEY = "Images need your own AI key with a vision model: the free Assistant reads text only.";
+
+async function attach(files: File[]): Promise<void> {
+  if (tier() !== "key") return showNotice({ text: IMAGES_NEED_KEY });
+  const room = MAX_IMAGES - attached.length;
+  if (files.length > room) showNotice({ text: `Up to ${MAX_IMAGES} images per question.` });
+  for (const file of files.slice(0, Math.max(room, 0))) {
+    try {
+      attached.push(await AssistantImages.read(file));
+    } catch (error) {
+      showNotice({ text: errorText(error) });
+    }
+  }
+  renderAttachments();
+}
+
+function detach(index: number): void {
+  attached.splice(index, 1);
+  renderAttachments();
+  el("assistantQuestion").focus();
+}
+
+function renderAttachments(): void {
+  const list = el("assistantAttachments");
+  list.hidden = !attached.length;
+  list.innerHTML = attached
+    .map(
+      (src, index) =>
+        `<span class="assistantAttachment"><img src="${escapeHtml(src)}" alt="Attached image ${index + 1}" /><button type="button" data-action="detach" data-index="${index}" aria-label="Remove image ${index + 1}">✕</button></span>`
+    )
+    .join("");
 }
 
 function stop(): void {

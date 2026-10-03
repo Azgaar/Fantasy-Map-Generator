@@ -47,6 +47,24 @@ describe("toChatMessages", () => {
     });
   });
 
+  it("sends an image the user attached in its place among the question's messages", () => {
+    const messages: Message[] = [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "map" },
+          { type: "image", source: { type: "base64", media_type: "image/jpeg", data: "SlBH" } },
+          { type: "text", text: "Match this style" }
+        ]
+      }
+    ];
+    expect(toChatMessages(system, messages).slice(1)).toEqual([
+      { role: "user", content: "map" },
+      { role: "user", content: [{ type: "image_url", image_url: { url: "data:image/jpeg;base64,SlBH" } }] },
+      { role: "user", content: "Match this style" }
+    ]);
+  });
+
   it("flattens system blocks into one system message without cache markers", () => {
     const result = toChatMessages(system, []);
     expect(result).toEqual([{ role: "system", content: "static prefix\n\ncurrent map" }]);
