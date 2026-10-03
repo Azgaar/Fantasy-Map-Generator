@@ -134,18 +134,18 @@ describe("relief alias resolution", () => {
         });
     }
   });
-  test("an added exact slot replaces its alias", () => {
+  test("an alias copies its target's art, and an added exact slot replaces it", () => {
     const descriptor = { type: "mount", variant: 4, set: "illustrated" } as const;
     const id = Relief.symbolId(descriptor, "gray");
     const complete = Object.fromEntries(Relief.types.map(({ type }) => [`${type}-1`, svg]));
-    expect(
-      IconSets.symbols(illustrated, { ...complete, ...files }).includes(`id="${id}" viewBox="0 0 100 100"><use`)
-    ).toBe(true);
-    expect(
-      IconSets.symbols(illustrated, { ...complete, ...files, "mount-4": svg }).includes(
-        `id="${id}" viewBox="0 0 100 100"><path`
-      )
-    ).toBe(true);
+    const target = svg.replace("M0 0", "M1 1");
+    const own = svg.replace("M0 0", "M4 4");
+    const aliased = IconSets.symbols(illustrated, { ...complete, ...files, "mount-1": target });
+    expect(aliased).toContain(`id="${id}" viewBox="0 0 100 100"><path d="M1 1"/>`);
+    expect(aliased).not.toContain("<use");
+    expect(IconSets.symbols(illustrated, { ...complete, ...files, "mount-4": own })).toContain(
+      `id="${id}" viewBox="0 0 100 100"><path d="M4 4"/>`
+    );
   });
   test("rejects unavailable fallback targets and cycles without real artwork", () => {
     expect(() => Relief.aliasSlots("simple", [], [{ type: "mountSnow", variants: 1, fallback: "mount" }])).toThrow(

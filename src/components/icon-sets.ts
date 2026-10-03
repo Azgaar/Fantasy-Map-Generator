@@ -62,16 +62,17 @@ export class IconSetRegistry {
     return this.symbols(set, Object.fromEntries(await Promise.all(entries)));
   }
 
-  /** Every set converts its files the same way; a set with `aliases` additionally emits a symbol per missing name */
+  /** Every set converts its files the same way; a set with `aliases` additionally emits a symbol per missing name,
+   * a copy of its target's art: a nested `<use>` costs every drawn instance a second shadow tree */
   symbols(set: IconSet, files: Record<string, string>): string {
-    const names = Object.keys(files);
-    const symbols = names.map(name => {
-      const id = this.symbolId(set.id, name);
-      const symbol = this.svgToSymbol(set.prepare ? set.prepare(files[name], id) : files[name], id);
+    const toSymbol = (file: string, id: string) => {
+      const symbol = this.svgToSymbol(set.prepare ? set.prepare(files[file], id) : files[file], id);
       return set.em ? this.anchorSymbol(symbol) : symbol;
-    });
+    };
+    const names = Object.keys(files);
+    const symbols = names.map(name => toSymbol(name, this.symbolId(set.id, name)));
     const aliases = (set.aliases?.(names) ?? []).map(({ name, target }) =>
-      this.aliasSymbol(this.symbolId(set.id, name), this.symbolId(set.id, target))
+      toSymbol(target, this.symbolId(set.id, name))
     );
     return symbols.concat(aliases).join("");
   }
@@ -90,10 +91,6 @@ export class IconSetRegistry {
     if (!/^<symbol\b[^>]*?\sviewBox="-?[\d.]+ -?[\d.]+ [\d.]+ [\d.]+"/.test(symbol))
       throw new Error(`Anchored art needs a plain "x y w h" viewBox: ${symbol.slice(0, 80)}`);
     return symbol.replace(/^<symbol\b/, '<symbol overflow="visible"');
-  }
-
-  private aliasSymbol(id: string, target: string): string {
-    return `<symbol id="${id}" viewBox="0 0 100 100"><use href="#${target}" width="100" height="100"/></symbol>`;
   }
 
   /** a set's files by name (the path within its folder without `.svg`), each with its lazy source loader */

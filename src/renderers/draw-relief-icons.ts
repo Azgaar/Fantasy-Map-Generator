@@ -40,9 +40,12 @@ function reconcileRelief(context: ViewportRenderContext): void {
 
   const { x0, y0, x1, y1 } = context.bounds;
   const { set, size } = styles.relief.options; // size is a render multiplier: the stored size stays as it is
+  const relief = pack.relief ?? [];
+  const hrefs = new Map<string, string>(); // a map draws a handful of symbols thousands of times
   const markup: string[] = [];
 
-  for (const [index, icon] of (pack.relief ?? []).entries()) {
+  for (let index = 0; index < relief.length; index++) {
+    const icon = relief[index];
     const { x, y, s } = icon;
     const drawn = s * size;
     const shift = (drawn - s) / 2; // scale around the icon's anchor, so the drawn centre and the z-order hold
@@ -50,9 +53,12 @@ function reconcileRelief(context: ViewportRenderContext): void {
     const top = y - shift;
     if (left > x1 || top > y1 || left + drawn < x0 || top + drawn < y0) continue;
     const symbol = Relief.symbolId(icon, set);
-    markup.push(
-      `<use href="${escapeHtml(Icons.href(symbol))}" data-id="${index}" x="${left}" y="${top}" width="${drawn}" height="${drawn}"/>`
-    );
+    let href = hrefs.get(symbol);
+    if (href === undefined) {
+      href = escapeHtml(Icons.href(symbol));
+      hrefs.set(symbol, href);
+    }
+    markup.push(`<use href="${href}" data-id="${index}" x="${left}" y="${top}" width="${drawn}" height="${drawn}"/>`);
   }
 
   terrain.innerHTML = markup.join("");

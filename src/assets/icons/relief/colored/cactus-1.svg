@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" stroke-linejoin="round" viewBox="-37.5 -28.5 90 90">
-<ellipse stroke="none" fill="#999999" opacity=".5" cx="8.747" cy="22.901" rx="8.442" ry="0.989" />
+<ellipse stroke="none" fill="#999999" fill-opacity=".5" cx="8.747" cy="22.901" rx="8.442" ry="0.989" />
 <polygon stroke="none"
 fill="#E85051"
 points="7.911,0 7.716,0.673 6.736,0.132 7.371,1.399 8.45,1.399 9.085,0.132 8.105,0.673"
