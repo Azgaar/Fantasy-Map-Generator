@@ -1,5 +1,5 @@
 import { easeSinIn, select, sum, transition } from "d3";
-import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog, noteIcon, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
@@ -11,15 +11,16 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
-import { Notes } from "@/components/notes";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
+import { ReliefPoolEditor } from "@/controllers/relief-pool-editor";
+import { fitReliefArt, poolPreviewHtml } from "@/controllers/relief-previews";
 import type { Biome } from "@/generators/biomes-generator";
 import { Population } from "@/generators/population-generator";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import type { PackedGraph } from "@/types/PackedGraph";
-import { downloadFile, getArea, getAreaUnit, getFileName, openURL } from "@/utils";
+import { downloadFile, getArea, getAreaUnit, getFileName, groupByValue, openURL } from "@/utils";
 import { ensureEl, getRandomColor, isLand, rn, si } from "../utils";
 
 const dialogId = "biomesEditor" as const;
@@ -40,6 +41,12 @@ const columns: EditorColumn<Biome>[] = [
     label: "Habitability",
     width: "6.5em",
     sortBy: biome => biome.habitability
+  },
+  {
+    key: "relief",
+    label: "Relief",
+    width: "6.5em",
+    sortBy: biome => biome.iconsDensity
   },
   {
     key: "cells",
@@ -127,6 +134,7 @@ function renderDialog(): void {
           data-tip="Manually re-assign biomes to not follow the default moisture/temperature pattern"
           class="icon-brush"
         ></button>
+        <button id="biomesReliefRules" data-tip="Edit the relief rules: hills, mountains and other relief placed by elevation" class="icon-mountain"></button>
         <button id="biomesAdd" data-tip="Add a custom biome" class="icon-plus"></button>
         <button
           id="biomesRestore"
@@ -148,11 +156,12 @@ function renderDialog(): void {
   });
 
   ensureEl("biomesEditorRefresh").addEventListener("click", refreshBiomesEditor);
-  ensureEl("biomesEditStyle").addEventListener("click", () => editStyle("biomes"));
+  ensureEl("biomesEditStyle").addEventListener("click", () => void Controllers.StyleEditor.open("biomes"));
   ensureEl("biomesLegend").addEventListener("click", toggleLegend);
   ensureEl("biomesPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("biomesManually").addEventListener("click", openPaintEditor);
   ensureEl("biomesRestore").addEventListener("click", restoreInitialBiomes);
+  ensureEl("biomesReliefRules").addEventListener("click", () => void Controllers.ReliefRulesEditor.open());
   ensureEl("biomesAdd").addEventListener("click", addCustomBiome);
   ensureEl("biomesExport").addEventListener("click", downloadBiomesData);
 
@@ -166,6 +175,7 @@ function renderDialog(): void {
     else if (cl.contains("icon-book")) editBiomeNote(el);
     else if (cl.contains("icon-info-circled")) openWiki(el);
     else if (cl.contains("icon-trash-empty")) removeCustomBiomeLine(el);
+    else if (el.closest(".biomeRelief")) editReliefPool(el);
   });
 
   ensureEl("biomesBody").addEventListener("change", ev => {
@@ -243,10 +253,11 @@ function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistic
           <span data-tip="Biome habitability percent">%</span>
           <input data-tip="Biome habitability percent. Click and set new value to change" type="number" min="0" max="9999" class="biomeHabitability" value=${habitability} />
         </div>
+        <div data-col="relief" class="hide">${reliefPoolHtml(biome)}</div>
         <div data-col="cells" class="hide"><span data-tip="Cells count" class="icon-check-empty"></span><span data-tip="Cells count" class="biomeCells">${cells}</span></div>
         <div data-col="area" class="hide"><span data-tip="Biome area" class="icon-map-o" style="padding-right: 2px"></span><span data-tip="Biome area" class="biomeArea">${si(area) + unit}</span></div>
         <div data-col="population" class="hide"><span data-tip="${populationTip}" class="icon-male"></span><span data-tip="${populationTip}" class="biomePopulation">${si(population)}</span></div>
-        ${Notes.getIcon("this biome")}
+        ${noteIcon("this biome")}
         <span data-col="wiki" data-tip="Open Wikipedia article about the biome" class="icon-info-circled pointer"></span>
         <span data-col="remove" ${
           i > 12 && !cells ? 'data-tip="Remove the custom biome" class="icon-trash-empty"' : ""
@@ -256,6 +267,7 @@ function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistic
   }
   const body = ensureEl("biomesBody");
   body.innerHTML = lines;
+  void fitReliefArt(body, styles.relief.options.set);
 
   // update footer
   for (const biome of view.all) {
@@ -292,6 +304,15 @@ function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistic
   updateDialog(dialogId, { width: "fit-content", position });
 }
 
+function reliefPoolHtml({ icons, iconsDensity }: Biome): string {
+  return poolPreviewHtml(icons, iconsDensity, "biomeRelief");
+}
+
+function editReliefPool(el: HTMLElement): void {
+  const biome = Number(el.closest<HTMLElement>(".biomes")!.dataset.id);
+  ReliefPoolEditor.open({ biome, onApply: refreshBiomesEditor });
+}
+
 function biomeHighlightOn(event: Event): void {
   if (customization === 6) return;
   const biome = +(event.target as HTMLElement).dataset.id!;
@@ -322,8 +343,12 @@ function biomeChangeColor(fillBox: FillBoxElement): void {
 function biomeChangeName(el: HTMLInputElement): void {
   const line = el.closest<HTMLElement>(".biomes")!;
   const biome = +line.dataset.id!;
-  line.dataset.name = el.value;
-  pack.biomes[biome].name = el.value;
+  if (!el.value.trim()) {
+    el.value = pack.biomes[biome].name;
+    return;
+  }
+  Biomes.rename(biome, el.value);
+  line.dataset.name = pack.biomes[biome].name;
 }
 
 function biomeChangeHabitability(el: HTMLInputElement): void {
@@ -335,7 +360,7 @@ function biomeChangeHabitability(el: HTMLInputElement): void {
     tip("Please provide a valid number in range 0-9999", false, "error");
     return;
   }
-  pack.biomes[biome].habitability = +el.value;
+  Biomes.setHabitability(biome, +el.value);
   line.dataset.habitability = el.value;
   regeneratePopulation();
   refreshBiomesEditor();
@@ -411,38 +436,10 @@ function togglePercentageMode(): void {
   }
 }
 
-export function createCustomBiome(biomes: Biome[], color: string): Biome | null {
-  const i = biomes.length;
-  if (i > 254) return null;
-
-  const biome = {
-    i,
-    name: "Custom",
-    color,
-    habitability: 50,
-    iconsDensity: 0,
-    icons: [],
-    cost: 50
-  };
-  biomes.push(biome);
-  return biome;
-}
-
-export function removeCustomBiome(biomes: Biome[], cellBiomes: ArrayLike<number>, biomeId: number): boolean {
-  const biome = biomes[biomeId];
-  if (biomeId <= 12 || !biome || biome.removed) return false;
-
-  for (let cellId = 0; cellId < cellBiomes.length; cellId++) {
-    if (cellBiomes[cellId] === biomeId) return false;
-  }
-
-  biome.removed = true;
-  return true;
-}
-
 function addCustomBiome(): void {
-  const biome = createCustomBiome(pack.biomes, getRandomColor());
-  if (!biome) {
+  try {
+    Biomes.add("Custom", getRandomColor(), 50);
+  } catch {
     tip("Maximum number of biomes reached (255), data cleansing is required", false, "error");
     return;
   }
@@ -454,7 +451,11 @@ function addCustomBiome(): void {
 function removeCustomBiomeLine(el: HTMLElement): void {
   const line = el.closest<HTMLElement>(".biomes")!;
   const biome = +line.dataset.id!;
-  if (!removeCustomBiome(pack.biomes, pack.cells.biome, biome)) return;
+  try {
+    Biomes.remove(biome);
+  } catch {
+    return;
+  }
   currentBiomeStatistics = biomesCollectStatistics();
   biomesTable.refresh();
 }
@@ -494,7 +495,7 @@ function openPaintEditor(): void {
 }
 
 function applyBiomesChange(changes: ReadonlyMap<number, number>): void {
-  for (const [cell, biome] of changes) pack.cells.biome[cell] = biome;
+  for (const [biome, cells] of groupByValue(changes)) Biomes.setCells(biome, cells);
   if (changes.size) {
     Layers.draw("biomes");
     if (document.getElementById(dialogId)) refreshBiomesEditor();
@@ -502,8 +503,7 @@ function applyBiomesChange(changes: ReadonlyMap<number, number>): void {
 }
 
 function restoreInitialBiomes(): void {
-  pack.biomes = Biomes.getDefault();
-  Biomes.define();
+  Biomes.restore();
   Layers.draw("biomes");
   regeneratePopulation();
   refreshBiomesEditor();

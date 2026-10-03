@@ -22,7 +22,7 @@ export const shields: {
     renaissance: 2,
     baroque: 2
   },
-  specific: { targe: 1, targe2: 0, pavise: 5, wedged: 10 },
+  specific: { targe: 1, targe2: 0, pavise: 5, wedged: 10, embowed: 0 },
   banner: {
     flag: 1,
     pennon: 0,
@@ -32,7 +32,7 @@ export const shields: {
     gonfalon: 5,
     pennant: 0
   },
-  simple: { round: 12, oval: 6, vesicaPiscis: 1, square: 1, diamond: 2, no: 0 },
+  simple: { round: 12, oval: 6, vesicaPiscis: 1, square: 1, diamond: 2, hexagon: 0, no: 0 },
   fantasy: { fantasy1: 2, fantasy2: 2, fantasy3: 1, fantasy4: 1, fantasy5: 3 },
   middleEarth: {
     noldor: 1,

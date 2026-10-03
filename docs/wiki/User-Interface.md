@@ -190,7 +190,7 @@ Saving a file in .map format, which contains the current state of the map, so th
 
 #### Machine
 
-Save to local PC.
+Save to local PC. The first save asks for a file name and location; later saves (<kbd>Ctrl</kbd> + <kbd>S</kbd>) write straight to that file until another map is generated or loaded. Shift-click the button or press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> to save a copy elsewhere. Browsers without a save-location picker (e.g. Firefox and Safari) download the file instead, to the folder set in the browser's download settings.
 
 #### Dropbox
 
@@ -284,13 +284,15 @@ Default biomes, in generator order:
 - Glacier
 - Wetland
 
-Biomes, their colors, habitability and movement cost can be edited in the Biomes Editor (<kbd>Shift</kbd> + <kbd>B</kbd>).
+Biomes, their colors, habitability and movement cost can be edited in the Biomes Editor (<kbd>Shift</kbd> + <kbd>B</kbd>). Its Relief column opens a biome's relief pool: the relief types and icons (including your own custom icons) its lowland relief is generated from, their weights and sizes, and the relief density. The sample at the top of the dialog shows the pool as the map draws it and follows every edit; the shuffle button draws another sample. An entry's size multiplies its icons, so palms can stand taller than the grass around them.
+
+Hills, mountains and any other relief placed by elevation follow the relief rules, opened with the mountain button in the Biomes Editor or the Relief Editor. Each rule has a height range, an optional temperature range in °C (an empty bound is open), the biomes it applies to (all by default, so e.g. desert hills can differ from forest hills), an icon size that grows with height, and its own relief pool. A land cell takes the first rule it matches, top to bottom (drag a rule by its handle to reorder); a cell no rule claims takes its biome's pool. Click a rule's relief to edit its pool, the size of each entry and the rule's size range; its sample grows the icons from the rule's lowest height on the left to its highest on the right. Rules are kept when a new map is generated. Editing them changes nothing on the map until you press the re-place button, which re-places the relief on every cell a rule claims.
 
 In general, the biomes are derived from the topographical map (which can be edited in tools or options), and from the temperature (which can be edited in configure world).
 
 ## Icons
 
-This layer shows the icons of the burgs. When this layer is on, when hovering a burg icon, an offer to edit it will be displayed, along with its name and its population will be displayed in the tooltip.
+This layer shows the icons of the burgs. When this layer is on, when hovering a burg icon, an offer to edit it will be displayed, along with its name and its population will be displayed in the tooltip. Each burg group's icon is set in the Style tab; see [Icons](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Icons) for choosing icons and adding your own.
 
 ## Heightmap
 
@@ -304,17 +306,27 @@ The style tab allows applying design settings, both in general to the entire map
 
 This is the final stage in the preparation of the map, after all its logic is ready.
 
-After choosing an element for design (eg Anchor Icons or biomes), you can customize its design with a variety of controls.
+After choosing an element for design (e.g. Icons or Biomes), you can customize its design with a variety of controls. The controls are built from the element's style definition, so every stored value has a row. The rows are grouped into cards: the element's own rows in a card titled by the selection (e.g. _Labels · capital_), and the element's named parts (the states body and halo, the land and ocean heights, the scale bar background, the ocean bands and embellishments) in a card each. A card folds by its header; a card that can be switched on or off carries its switch in the header. The header also shows a live preview of what the card's own values produce: a text sample for a font, a color swatch for a fill, a line for a stroke and the filter name when a filter is set.
+
+### Changed values and reset
+
+Every value is compared with the current style preset. A value that differs is marked with a red bar on the left of its row and gets a ↺ button that resets it to the preset's value. To discard every change, select the preset again. Values the preset does not define (a label or burg group added after the preset was applied) are never marked. Color rows accept a typed hex value (`#rrggbb`) next to the swatch; an invalid value reverts.
+
+### Style elements dialog
+
+The button next to the Element dropdown opens the **Style elements** dialog: a list of every element with its layer visibility (green: on, hollow: off, grey: always shown or not a layer), and, for elements with groups, a fold-out list of the groups with how many things use each. Clicking a name selects it in the editor and the dialog stays open; clicking the dot turns the layer on or off, like the Layers tab does; the filter box narrows the list by element or group name.
 
 For many of the elements there are the same design controls with the same functionality, below is their breakdown:
 
 ![image](https://github.com/user-attachments/assets/f4277f5d-e45a-440c-83f6-52f2e02cab71)
 
-Sometimes, elements are divided into groups. For example, by default, lakes are divided into 6 groups: fresh water, salt water, dry, etc.
+Sometimes, elements are divided into groups. For example, by default, lakes are divided into 6 groups: fresh water, salt water, dry, etc. Labels, Icons, Routes and Lakes have a Group dropdown; the burg icon and the port icon of a burg group are styled together, the port icon in the Anchors section.
 
 You can customize the display of each of the groups separately, for example, a freshwater lake can be drawn in blue, and a saltwater lake can be drawn in red.
 
 Note that next to the group, there is a number that records how many elements there are from the group.
+
+If the layer of the selected element is hidden, a notice above the controls offers to turn it on.
 
 ### Opacity
 
@@ -340,13 +352,13 @@ This is known as a filter, because you put a "lens" over the object that makes a
 
 Filters: none, Blur 0.2, Blur 1, Blur 3, Blur 5, Blur 7, Blur 10, Splotch, Blurred Splotch, Shadow 2, Shadow 0.1, Shadow 0.5, Outline, Pencil, Turbulence, Paper, Crumpled, Grayscale, Sepia, Dingy and Tint.
 
-### Clipping
+### Clip
 
 ![image](https://github.com/user-attachments/assets/333f4c01-e7b6-4282-9518-b7f2da6433a2)
 
 Dropdown that allows you to choose whether the layer will apply to the land, the sea, or both.
 
-#### No clipping
+#### Inherit (no clipping)
 
 The layer will apply to the entire map, including the sea and including the land.
 
@@ -396,17 +408,15 @@ Determines the font of the text relevant to the element.
 
 ### Common style controls (dotted lines related)
 
-#### Stroke dash
+#### Stroke dasharray and Stroke linecap
 
 ![image](https://github.com/user-attachments/assets/6d467a97-a379-4e5a-9d69-d775ab850b23)
 
-This style control contains 2 parts of data.
+Two rows describe a dashed line.
 
-The number determines the spacing between the dash marks that make up the dashed line.
+The dasharray is a list of numbers, e.g. `5 2`: the dash length and the spacing between the dashes. Leave it empty for a solid line.
 
-Value 0 determines that there will be no spaces. The higher the value, the greater the distance between dashes.
-
-The dropdown allows you to determine the appearance of the ends of the dash endcaps that make up the dashed line.
+The linecap dropdown allows you to determine the appearance of the ends of the dashes that make up the dashed line.
 
 Butt – The dashes have no effect. The line ends exactly at the ends of its starting and ending points, without extending the line beyond these ends.
 
@@ -414,19 +424,19 @@ Square - There is a small addition along the line. More precisely, adds a rectan
 
 Round - Expand the line at its end using a semicircle, whose diameter is equal to the width of the line.
 
-Inherit - takes the varian of its parent elements, basically a default value.
+Inherit - takes the variant of its parent elements, basically a default value. Every dropdown with an "inherit" entry works this way: the value is left unset.
 
 ## Style presets
 
 ![image](https://github.com/user-attachments/assets/0fd99cd1-5e52-4d70-b137-379bda19ecb3)
 
-Dropdown that allows you to choose a set of design settings for all elements.
+The preset button shows the current preset and allows you to choose a set of design settings for all elements.
 
 Each of those sets defines its design settings for each of the elements, for example the ancient preset defines the texture of the land to be with the image setting to be ancient small, and the Clipping setting to be No clipping.
 
-Available presets: default, ancient, gloom, pale, light, watercolor, clean, atlas, darkSeas, cyberpunk, night, monochrome, ink, cinderwood and frostbite. The **+** button saves the current style as a custom preset, and the **−** button removes the selected custom preset.
+Available presets: default, ancient, gloom, pale, light, watercolor, clean, atlas, darkSeas, cyberpunk, night, monochrome, ink, cinderwood and frostbite. The **+** button saves the current style as a custom preset.
 
-For Ink, Cinderwood and Frostbite, and the hachures, ocean waves, coastal bands, lake ripples, illustrated icons and label controls they use, see [Map embellishments](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Map-embellishments).
+Clicking the preset button opens the **Style presets** dialog: a gallery with a screenshot of every system preset (all rendered from the same map), the current one outlined. Clicking a card applies the preset, and the dialog stays open. Custom presets are listed with a neutral tile; hover one and click its trash button to remove it.
 
 **+ button** Allows you to add your own set of settings.
 
@@ -550,7 +560,7 @@ Below the map settings, the Options tab holds settings that apply immediately an
 - Theme color and Transparency: the color and opacity of the dialogs.
 - Autosave interval: how often the map is saved to browser storage.
 - On load: generate a new map or load the last saved one when the page opens.
-- Azgaar assistant: show or hide the help bubble in the bottom right corner, which answers questions about the Generator from the wiki and Discord knowledge.
+- Azgaar Assistant: show or hide the call bubble in the bottom right corner. The panel answers questions about the Generator and, with your own key or local model, the open map.
 - Speaker voice: the voice used by the speaker buttons next to names.
 - Emblem shape: the default coat of arms shield shape.
 - Viewport size: the size of the map window on screen, in pixels. It is independent of the map size above: it is how much of the map you see at once. The button on the left fits it back to the browser window, which is what it follows until you set a size by hand.

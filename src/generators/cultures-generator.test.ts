@@ -25,3 +25,16 @@ it("uses the requested culture set when regenerating an existing map", () => {
   expect(Cultures.getDefault).toHaveBeenCalledWith(16);
   expect(names.includes("Quenian (Elfish)")).toBe(true);
 });
+
+it("recomputes a renamed culture's code without clashing with other cultures", () => {
+  vi.stubGlobal("pack", {
+    cultures: [
+      { i: 0, name: "Wildlands", code: "Wi" },
+      { i: 1, name: "Old", code: "Ol" },
+      { i: 2, name: "Salt", code: "Sa" }
+    ]
+  });
+  Cultures.rename(1, "Saltmere");
+  expect(pack.cultures[1]).toMatchObject({ name: "Saltmere", code: "SA" });
+  expect(() => Cultures.rename(5, "X")).toThrow("Culture 5 does not exist");
+});

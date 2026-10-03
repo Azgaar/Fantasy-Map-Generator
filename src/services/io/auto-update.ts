@@ -1,32 +1,38 @@
 // Update an old map file to the current version
+
 import { color, min, select } from "d3";
 import { confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { CustomIcons, IMAGE_FRAME } from "@/components/icons";
 import { type LayerId, Layers, type LayersState } from "@/components/layers";
 import { type EntityRef, MapEntities } from "@/components/map-entities";
-import { Notes } from "@/components/notes";
 import { normalizeLegacyBurgGroupFilters } from "@/components/options-legacy";
 import type { MapData } from "@/components/options-schema";
-import { RELIEF_SETS } from "@/data/relief-icons";
+import { IconPictures } from "@/controllers/icon-picker/pictures";
 import { Emblems } from "@/generators/emblems-generator";
 import { type Feature, LAKE_SUBTYPES, OCEAN_SUBTYPES } from "@/generators/features-generator";
 import type { GraphOverrides } from "@/generators/graph-override";
 import { type Label, type LabelNameMode, Labels as LabelsGenerator } from "@/generators/labels-generator";
 import { getDefaultMarkerName, type Marker } from "@/generators/markers-generator";
 import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
+import { Notes } from "@/generators/notes";
+import { Relief, type ReliefIcon, type ReliefIconType, type ReliefSet } from "@/generators/relief-generator";
+import { Styles } from "@/generators/styles";
 import {
+  adoptLegacyIconSlots,
   labelGroupFromLegacy,
   lakeGroupFromSvg,
   migrateStyles,
+  normalizeStyles,
   restoreStrippedLayerStyles,
   stripDisplay,
   stylesFromMap
 } from "@/generators/styles-legacy";
-import type { Styles } from "@/generators/styles-schema";
 import type { Point } from "@/generators/voronoi";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
+import { StylePresetsService } from "@/services/style-presets";
 import { compareVersions } from "@/services/versioning";
-import type { ReliefSet } from "@/types/relief";
+import type { StylesData } from "@/types/styles";
 import {
   downloadFile,
   ensureEl,
@@ -37,6 +43,8 @@ import {
   rn,
   rw,
   safeParseJSON,
+  sanitizeSvgIcon,
+  scopeSvgIcon,
   unique
 } from "@/utils";
 import { parsePathPoints } from "@/utils/pathUtils";
@@ -86,6 +94,8 @@ const LEGACY_LAYER_IDS: Record<string, LayerId> = {
 export async function resolveVersionConflicts(mapVersion: string, data: string[]): Promise<void> {
   const isOlderThan = (tagVersion: string) => compareVersions(mapVersion, tagVersion).isOlder;
   const noteRenames = new Map<string, string>(); // legacy element id -> the id the element has now
+  type LegacyReliefIcon = { icon: string; x: number; y: number; s: number };
+  let extractedRelief: LegacyReliefIcon[] | null = null; // read by the 1.154 relief step
 
   if (isOlderThan("1.139.0")) {
     // v1.139.0 moved biomes data from the legacy pipe-delimited format to pack.biomes.
@@ -381,7 +391,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
     // v1.3 added militry layer
     select("#viewbox")
-      .insert("g", "#icons")
+      .insert("g", "#burgIcons")
       .attr("id", "armies")
       .attr("opacity", 1)
       .attr("fill-opacity", 1)
@@ -725,13 +735,13 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   if (isOlderThan("1.91.0")) {
     // from 1.91.00 custom coa is moved to coa object
     pack.states.forEach(state => {
-      if ((state.coa as unknown) === "custom") state.coa = { custom: true } as typeof state.coa;
+      if ((state.coa as unknown) === "custom") state.coa = { custom: true } as unknown as typeof state.coa;
     });
     pack.provinces.forEach(province => {
-      if ((province.coa as unknown) === "custom") province.coa = { custom: true } as typeof province.coa;
+      if ((province.coa as unknown) === "custom") province.coa = { custom: true } as unknown as typeof province.coa;
     });
     pack.burgs.forEach(burg => {
-      if ((burg.coa as unknown) === "custom") burg.coa = { custom: true } as typeof burg.coa;
+      if ((burg.coa as unknown) === "custom") burg.coa = { custom: true } as unknown as typeof burg.coa;
     });
 
     // from 1.91.00 emblems don't have transform attribute
@@ -921,8 +931,10 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
     if (!select("#compass").selectAll("*").size()) {
       select("#compass").style("display", "none");
-      select("#compass").append("use").attr("xlink:href", "#defs-compass-rose");
-      shiftCompass();
+      select("#compass")
+        .append("use")
+        .attr("xlink:href", "#defs-compass-rose")
+        .attr("transform", styles.compass.groups.compassRose.attrs.transform);
     }
   }
 
@@ -1015,7 +1027,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.105.0")) {
     // v1.104.0 introduced some bugs with layers visibility
-    select("#viewbox").select("#icons").style("display", null);
+    select("#viewbox").select("#burgIcons").style("display", null);
     select("#viewbox").select("#ice").style("display", null);
     select("#viewbox").select("#regions").style("display", null);
     select("#viewbox").select("#armies").style("display", null);
@@ -1098,13 +1110,6 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       .each(function () {
         if (!this.dataset.dy) this.dataset.dy = "-0.4";
       });
-
-    const anchorSymbol = ensureEl("icon-anchor");
-    if (anchorSymbol) {
-      anchorSymbol.outerHTML = /* html */ `<symbol id="icon-anchor" viewBox="0 0 30 30" width="1em" height="1em" overflow="visible">
-        <path d="m 1.003,-9.873 c 0,-0.547 -0.453,-1 -1,-1 -0.547,0 -1,0.453 -1,1 0,0.547 0.453,1 1,1 0.547,0 1,-0.453 1,-1 z m 13,14.5 v 5.5 c 0,0.203 -0.125,0.391 -0.313,0.469 -0.063,0.016 -0.125,0.031 -0.187,0.031 -0.125,0 -0.25,-0.047 -0.359,-0.141 L 11.691,9.033 c -2.453,2.953 -6.859,4.844 -11.688,4.844 -4.829,0 -9.234,-1.891 -11.688,-4.844 l -1.453,1.453 c -0.094,0.094 -0.234,0.141 -0.359,0.141 -0.063,0 -0.125,-0.016 -0.187,-0.031 -0.187,-0.078 -0.313,-0.266 -0.313,-0.469 v -5.5 c 0,-0.281 0.219,-0.5 0.5,-0.5 h 5.5 c 0.203,0 0.391,0.125 0.469,0.313 0.078,0.188 0.031,0.391 -0.109,0.547 L -9.2,6.55 c 1.406,1.891 4.109,3.266 7.203,3.687 V 0.128 h -3 c -0.547,0 -1,-0.453 -1,-1 v -2 c 0,-0.547 0.453,-1 1,-1 h 3 v -2.547 c -1.188,-0.688 -2,-1.969 -2,-3.453 0,-2.203 1.797,-4 4,-4 2.203,0 4,1.797 4,4 0,1.484 -0.812,2.766 -2,3.453 v 2.547 h 3 c 0.547,0 1,0.453 1,1 v 2 c 0,0.547 -0.453,1 -1,1 h -3 V 10.237 C 5.097,9.815 7.8,8.44 9.206,6.55 L 7.643,4.987 C 7.502,4.831 7.456,4.628 7.534,4.44 7.612,4.252 7.8,4.127 8.003,4.127 h 5.5 c 0.281,0 0.5,0.219 0.5,0.5 z"/>
-      </symbol>`;
-    }
 
     const validBurgs = pack.burgs.filter(b => b.i && !b.removed);
     const populations = validBurgs.map(b => b.population ?? 0).sort((a, b) => a - b);
@@ -1527,7 +1532,8 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       // v1.142.0 moved the relief style from the #terrain attributes to the style store
       const set = terrainEl.getAttribute("set");
       styles.relief.options = {
-        set: set && set in RELIEF_SETS ? (set as ReliefSet) : "simple",
+        ...styles.relief.options,
+        set: set && Relief.sets.includes(set as ReliefSet) ? (set as ReliefSet) : "simple",
         size: Number(terrainEl.getAttribute("size")) || 1,
         density: Number(terrainEl.getAttribute("density")) || 0.4
       };
@@ -1535,7 +1541,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
       const iconElements = Array.from(terrainEl.querySelectorAll("use"));
       if (iconElements.length) {
-        pack.relief = iconElements.map(useEl => ({
+        extractedRelief = iconElements.map(useEl => ({
           icon: (useEl.getAttribute("href") || useEl.getAttribute("xlink:href") || "").replace("#", ""),
           x: rn(Number(useEl.getAttribute("x")), 2),
           y: rn(Number(useEl.getAttribute("y")), 2),
@@ -1790,9 +1796,6 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
           <rect x="0" y="0" width="100%" height="100%" fill="white" stroke="none"></rect>
         </mask>
       </g>
-      <pattern id="oceanic" width="100" height="100" patternUnits="userSpaceOnUse">
-        <image id="oceanicPattern" href="./images/pattern1.png" opacity="0.2"></image>
-      </pattern>
       <mask id="vignette-mask">
         <rect x="0" y="0" width="100%" height="100%" fill="white"></rect>
         <rect id="vignette-rect" fill="black" x="0.3%" y="0.4%" width="99.4%" height="99.2%" rx="5%" ry="5%" filter="blur(20px)"></rect>
@@ -1826,7 +1829,10 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.150.0")) {
     // v1.145-1.147 stripped the layer style from saved maps; the migration harvest reads what this re-seeds
-    if (!isOlderThan("1.145.0") && isOlderThan("1.148.0")) await restoreStrippedLayerStyles();
+    if (!isOlderThan("1.145.0") && isOlderThan("1.148.0")) {
+      const { styles: preset } = await StylePresetsService.load(options.map.style.preset || "default");
+      restoreStrippedLayerStyles(preset as Record<string, unknown>);
+    }
     // v1.150.0 made the styles store the source of truth
     data[48] = await migrateStyles(data[48]);
   }
@@ -1949,7 +1955,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     const record = data[48] ? safeParseJSON(data[48]) : undefined;
     if (record?.lakes) {
       if (!record.lakes.groups) record.lakes = { groups: record.lakes };
-      const groups: Styles["lakes"]["groups"] = record.lakes.groups;
+      const groups: StylesData["lakes"]["groups"] = record.lakes.groups;
       const template = groups.freshwater || Object.values(groups)[0];
       for (const el of Array.from(document.querySelectorAll<SVGGElement>("#lakes > g"))) {
         if (!el.id) continue;
@@ -1962,8 +1968,16 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       return groups && !Object.keys(groups).length;
     });
     if (empty.length) {
+      // the harvest is already the merged shape; split it back into the two records this version keeps
       const harvested = stylesFromMap();
-      for (const type of empty) record.burgIcons[type].groups = harvested.burgIcons[type].groups;
+      for (const type of empty) {
+        record.burgIcons[type].groups = Object.fromEntries(
+          Object.entries(harvested.burgIcons.groups).map(([name, entry]) => [
+            name,
+            type === "burgIcons" ? entry.groups.icons : entry.groups.anchors
+          ])
+        );
+      }
     }
     if (record) data[48] = JSON.stringify(record);
   }
@@ -1979,9 +1993,206 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       data[48] = JSON.stringify(record);
     }
   }
+
+  if (isOlderThan("1.154.0")) {
+    // v1.154.0 pinned the string attr formats and folded the fields that mirrored an attr into the attr
+    const record = data[48] ? safeParseJSON(data[48]) : undefined;
+    if (record) {
+      // anchors ignored their icon before ports became stylable (a pre-1.150 record is already renamed)
+      for (const group of Object.values(record.burgIcons?.anchors?.groups ?? {}) as { options?: { icon?: string } }[]) {
+        if (group?.options?.icon === "#icon-circle" || group?.options?.icon === "#burgs-atlas-circle") {
+          group.options.icon = "#ports-anchor";
+        }
+      }
+      normalizeStyles(record);
+      // these icons were drawn at half scale, outline included; their files are now at the set's scale
+      const halfScale = [
+        "burgs-atlas-circle-dotted",
+        "burgs-atlas-circle-rayed",
+        "burgs-atlas-diamond-dotted",
+        "ports-harbor"
+      ];
+      type Part = { attrs?: Record<string, unknown>; options?: { icon?: string } };
+      for (const entry of Object.values(record.burgIcons?.groups ?? {}) as { groups?: Record<string, Part> }[]) {
+        for (const part of Object.values(entry?.groups ?? {})) {
+          if (!part?.attrs || !halfScale.includes(part.options?.icon ?? "")) continue;
+          part.attrs["stroke-width"] = ((part.attrs["stroke-width"] as number | null) ?? 1) / 2;
+        }
+      }
+      data[48] = JSON.stringify(record);
+    }
+    // the ocean pattern tile lives in its layer now, and an id clash would shadow it
+    for (const tile of document.querySelectorAll("pattern#oceanic")) if (!tile.closest("#oceanPattern")) tile.remove();
+    // a burg group element hangs directly off the layer now, with its anchor part inside it
+    document.getElementById("anchors")?.remove();
+    document.getElementById("burgIcons")?.remove();
+    document.getElementById("icons")?.remove(); // the layer group itself: it is #burgIcons now
+    document.getElementById("labels")?.removeAttribute("font-size"); // the zoom sets the layer font the groups size from
+
+    // v1.154.0 changed the relief icons data format
+    const { set: incomingSet, size: incomingSize } = Styles.parse(data[48] ? safeParseJSON(data[48]) : undefined).relief
+      .options;
+    function migrateReliefIcon(icon: LegacyReliefIcon, styleSet: ReliefSet, styleSize: number): ReliefIcon {
+      const match = icon.icon.match(/^relief-(\w+)-(\d+)(-bw|-illustrated)?$/);
+      if (!match) throw new Error(`Invalid legacy relief icon: ${icon.icon}`);
+      const [, type, number, suffix] = match;
+      if (!Relief.isType(type)) throw new Error(`Unknown legacy relief type: ${type}`);
+      const shared = ["mount", "hill", "dune", "deciduous", "conifer", "acacia", "palm", "grass", "swamp"].includes(
+        type
+      );
+      const n = Number(number);
+      const set =
+        suffix === "-bw"
+          ? "gray"
+          : suffix === "-illustrated"
+            ? "illustrated"
+            : shared && n === 1
+              ? "simple"
+              : "colored";
+      const variant = suffix !== "-illustrated" && shared && n > 1 ? n - 1 : n;
+      let { x, y, s } = icon;
+      if (icon.icon === "relief-grass-1") {
+        // the extracted art carries the old 1.2 scale in its viewBox: shrink the drawn box around its center
+        const drawn = s / 1.2;
+        x += (s - drawn) / 2;
+        y += (s - drawn) / 2;
+        s = drawn;
+      }
+      // size is a render multiplier now and the renderer anchors it at the icon's centre, so the stored
+      // base is drawn / size and x/y move to keep that centre — the array's z-order key — in place
+      const base = s / styleSize;
+      x += (s - base) / 2;
+      y += (s - base) / 2;
+      return { ...Relief.ref(type as ReliefIconType, variant, set !== styleSet ? set : undefined), x, y, s: base };
+    }
+
+    const storedRelief: (ReliefIcon | LegacyReliefIcon)[] = extractedRelief ?? pack.relief ?? [];
+    const isLegacyReliefIcon = (icon: ReliefIcon | LegacyReliefIcon): icon is LegacyReliefIcon => "icon" in icon;
+    pack.relief = storedRelief.flatMap(icon => {
+      if (!isLegacyReliefIcon(icon)) return [icon];
+      try {
+        return [migrateReliefIcon(icon, incomingSet, incomingSize || 1)];
+      } catch {
+        console.warn(`Skipping unknown legacy relief icon: ${icon.icon}`);
+        return [];
+      }
+    });
+    // the migration resizes boxes about their centre, which moves their bottoms
+    pack.relief.sort(Relief.byBottom);
+
+    // v1.154.0 stores a biome's relief pool as weighted entries, not as a list of repeated entries
+    for (const biome of pack.biomes ?? []) {
+      const pool: unknown = biome.icons;
+      if (!Array.isArray(pool)) continue;
+      biome.icons = {};
+      for (const entry of pool) biome.icons[entry] = { weight: (biome.icons[entry]?.weight ?? 0) + 1 };
+    }
+
+    // v1.154.0 derives symbol ids from the icon set directories: good-<name> is goods-<name>, uploads are custom-goods-<id>
+    const goodIconId = (icon: string): string =>
+      icon.replace(/^good-custom-/, "custom-goods-").replace(/^good-/, `${Goods.iconSet.id}-`);
+    for (const good of pack.goods ?? []) if (good.icon) good.icon = goodIconId(good.icon);
+
+    // v1.154.0 made every icon slot a bare symbol id: goods uploads (data[45], written empty since) and inline
+    // images become custom icons, text becomes glyphs. The style record is converted by normalizeStyles above
+    const kept = new Set(CustomIcons.all.map(icon => icon.id));
+    if (data[45]) adoptGoodsUploads(data[45]);
+    adoptLegacyIconSlots([
+      ...(pack.goods ?? []),
+      ...(pack.markers ?? []),
+      ...(pack.states ?? []).flatMap(state => state?.military ?? []),
+      ...options.map.military.units
+    ]);
+
+    const emblemIcons = migrateLegacyCustomEmblems();
+    /** custom emblems as picture emblems; the icons they use */
+    function migrateLegacyCustomEmblems(): Set<string> {
+      const used = new Set<string>();
+      const pictures = new Map(
+        CustomIcons.all.filter(icon => icon.kind === "image").map(icon => [icon.content, icon.id])
+      );
+      for (const [type, entities] of [
+        ["state", pack.states ?? []],
+        ["province", pack.provinces ?? []],
+        ["burg", pack.burgs ?? []]
+      ] as const) {
+        for (const entity of entities) {
+          const coa = entity.coa as typeof entity.coa & { custom?: boolean };
+          if (!coa?.custom) continue;
+          const definition = document.getElementById(`${type}COA${entity.i}`);
+          // a removed entity is never drawn again, so its picture would only clutter the Custom icons
+          const icon = entity.removed ? "" : legacyEmblemIcon(definition, pictures);
+          entity.coa = { icon, size: coa.size, x: coa.x, y: coa.y };
+          definition?.remove();
+          if (icon) used.add(icon);
+        }
+      }
+      return used;
+
+      /** A custom emblem's picture as a custom icon, one per distinct image; none when its definition is gone.
+       * Uploads are an svg holding one image since v1.89.21; earlier SVG uploads were kept as their own markup */
+      function legacyEmblemIcon(definition: Element | null, pictures: Map<string, string>): string {
+        if (!definition) return "";
+        const image =
+          definition.children.length === 1 && definition.firstElementChild?.tagName === "image"
+            ? definition.firstElementChild
+            : null;
+        const content = image?.getAttribute("href") ?? image?.getAttribute("xlink:href") ?? "";
+        if (/^(data:image\/|https?:\/\/)/.test(content)) {
+          let icon = pictures.get(content);
+          if (!icon) {
+            icon = CustomIcons.add({ kind: "image", content, viewBox: IMAGE_FRAME }).id;
+            pictures.set(content, icon);
+          }
+          return icon;
+        }
+        const svg = sanitizeSvgIcon(definition.outerHTML);
+        if (!svg) return "";
+        const id = CustomIcons.newId();
+        scopeSvgIcon(svg, id);
+        return CustomIcons.add({ id, ...IconPictures.fromSvg(svg) }).id;
+      }
+    }
+
+    // old uploads were stored at full size: adopted rasters shrink to today's upload limits, emblems' to theirs
+    for (const icon of CustomIcons.all) {
+      if (kept.has(icon.id) || icon.kind !== "image") continue;
+      const content = await IconPictures.shrink(icon.content, emblemIcons.has(icon.id) ? "emblem" : "icon");
+      if (content !== icon.content) CustomIcons.update(icon.id, { content });
+    }
+
+    function adoptGoodsUploads(markup: string): void {
+      const roots = new DOMParser().parseFromString(markup, "text/html").querySelectorAll("body > svg[id]");
+      for (const root of roots) {
+        const id = root.id.replace(/^good-custom-/, "custom-goods-");
+        if (CustomIcons.get(id)) continue;
+
+        const images = root.querySelectorAll("image");
+        const href = images[0]?.getAttribute("href") ?? images[0]?.getAttribute("xlink:href") ?? "";
+        if (images.length === 1 && root.children.length === 1 && href.startsWith("data:image/")) {
+          CustomIcons.add({ id, kind: "image", content: href, viewBox: IMAGE_FRAME });
+          continue;
+        }
+
+        const svg = sanitizeSvgIcon(root.outerHTML);
+        if (!svg) continue;
+        scopeSvgIcon(svg, id);
+        CustomIcons.add({ id, ...IconPictures.fromSvg(svg) });
+      }
+    }
+  }
 }
 
 export function migrateLegacySettings(mapVersion: string, data: string[]): void {
+  if (compareVersions(mapVersion, "1.154.0").isOlder && data[1]?.trimStart().startsWith("{")) {
+    const settings = safeParseJSON(data[1]);
+    if (settings) {
+      // v1.154.0 sizes the zoomed layers' fonts with the zoom always, so the labels flag is gone
+      if (settings.labels) delete settings.labels.resizeOnZoom;
+      settings.relief ??= { rules: Relief.getDefaultRules() }; // v1.154.0 made the fixed hills and mountains rules
+      data[1] = JSON.stringify(settings);
+    }
+  }
   if (!compareVersions(mapVersion, "1.152.0").isOlder || data[1]?.trimStart().startsWith("{")) return;
 
   // v1.152.0 replaced the legacy pipe-delimited settings string with the map's settings object
@@ -2008,7 +2219,7 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
       temperature: { unit: "\u00B0C" },
       population: { scale: 1000, urbanization: { rate: 1, density: 10 } }
     },
-    labels: { resizeOnZoom: true, groups: [] as MapData["labels"]["groups"] },
+    labels: { groups: [] as MapData["labels"]["groups"] },
     style: { preset: "default" },
     military: { units: [] as MapData["military"]["units"] },
     transports: [] as MapData["transports"],
@@ -2024,7 +2235,8 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
       roughnessScale: 60,
       lakeSmoothThreshMult: 2.0,
       variant: 0
-    }
+    },
+    relief: { rules: Relief.getDefaultRules() }
   };
 
   const oldHeader = data[0].split("|");
@@ -2062,7 +2274,10 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
   if (Array.isArray(oldSettings19)) migrated.climate.winds = oldSettings19;
   const oldOptions = (Array.isArray(oldSettings19) ? null : oldSettings19) ?? {};
 
-  if (oldOptions.labels) migrated.labels = oldOptions.labels;
+  if (oldOptions.labels) {
+    const { resizeOnZoom: _, ...labels } = oldOptions.labels; // the zoom sizes all text since v1.154.0
+    migrated.labels = labels;
+  }
   if (oldOptions.military) migrated.military.units = oldOptions.military;
   if (oldOptions.transports) migrated.transports = oldOptions.transports;
   if (oldOptions.coastline) migrated.coastline = oldOptions.coastline;
@@ -2094,7 +2309,6 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
   if (oldOptions.eraShort) migrated.lore.calendar.eraShort = oldOptions.eraShort;
 
   // v1.140.0 moved the label settings into the labels section and the naming mode onto the state group
-  if (oldSettings[23]) migrated.labels.resizeOnZoom = Boolean(Number(oldSettings[23]));
   // a pre-1.140 map carries no groups at all, so there is usually nothing here to write the mode onto
   if (oldOptions.stateLabelsMode) {
     const stateGroup = migrated.labels.groups.find(group => group.type === "state");

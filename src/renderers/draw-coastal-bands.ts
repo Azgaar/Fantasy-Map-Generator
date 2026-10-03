@@ -1,7 +1,7 @@
-import type { Styles } from "@/generators/styles-schema";
+import type { StylesData } from "@/types/styles";
 import { createEl, ensureEl } from "@/utils/nodeUtils";
 
-type CoastalBands = Styles["ocean"]["options"]["bands"];
+type CoastalBands = StylesData["ocean"]["options"]["bands"];
 
 export function getCoastalBandReach(bands: CoastalBands): number {
   return bands.render && bands.opacity > 0 ? bandRadius(bands, bands.count) : 0;
@@ -52,10 +52,11 @@ export function drawCoastalBands(): void {
   // Draw each width across all islands before the next, so bands merge in narrow straits.
   for (let i = bands.count; i >= 1; i--) {
     const radius = bandRadius(bands, i);
-    const edge = Math.min(bands.width, bands.spacing * 0.45);
+    // the dark line is the band's outer edge, so it cannot be wider than the band itself
+    const edge = Math.min(bands.width, radius);
     strokes.push(
       `<g stroke="white" stroke-width="${2 * radius}">${uses}</g>`,
-      `<g stroke="black" stroke-width="${2 * (radius - edge)}">${uses}</g>`
+      `<g stroke="black" stroke-width="${2 * Math.max(radius - edge, 0)}">${uses}</g>`
     );
     const lightness = Math.round(255 * (1 - (i - 1) / bands.count));
     shades.push(`<g stroke="rgb(${lightness},${lightness},${lightness})" stroke-width="${2 * radius}">${uses}</g>`);

@@ -12,7 +12,7 @@ export function drawCoordinates(): void {
   const goal = lonT / viewport.scale / 10;
   const step = STEPS.reduce((prev, curr) => (Math.abs(curr - goal) < Math.abs(prev - goal) ? curr : prev));
 
-  const desiredSize = styles.coordinates.options.fontSize;
+  const desiredSize = Number.parseFloat(styles.coordinates.attrs["font-size"]);
   coordinates.attr("font-size", Math.max(rn(desiredSize / viewport.scale ** 0.8, 2), 0.1));
 
   const graticule = geoGraticule()

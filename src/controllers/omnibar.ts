@@ -2,12 +2,9 @@ import type { LayerId } from "@/components/layers";
 import { Layers } from "@/components/layers";
 import { MAP_COMMANDS, type MapCommand } from "@/components/map-commands";
 import { ENTITY_TYPES, type EntityDisplay, type EntityTarget, MapEntities } from "@/components/map-entities";
+import { reveal, revealEntity } from "@/components/reveal";
 import { tip } from "@/components/tooltips";
-import { viewport } from "@/components/viewport";
-import { zoomTo } from "@/components/zoom";
 import { getLabelsIndex, type LabelIndexEntry } from "@/renderers/labels/label-data";
-import { highlightArea, highlightElement } from "@/renderers/overlays/highlight";
-import type { Point } from "@/types/global";
 import { findEl } from "@/utils";
 
 interface SearchFields {
@@ -580,7 +577,7 @@ class OmnibarController {
       } else {
         const opened = MapEntities.open(result.target.ref);
         if (opened) await opened;
-        else this.navigate(result.target, { display: result.display }); // the entity has no editor, so reveal it instead
+        else this.navigate(result.target); // the entity has no editor, so reveal it instead
       }
     } catch {
       tip("Could not open the search result. Please try again.", false, "error");
@@ -594,46 +591,20 @@ class OmnibarController {
     return MapEntities.get(result.target.ref) === result.target.entity;
   }
 
-  private navigate(
-    target: EntityTarget,
-    { label, display }: { label?: LabelIndexEntry; display?: EntityDisplay } = {}
-  ): void {
-    const layers: LayerId[] = label ? ["labels"] : display?.layers || [];
-    const points = label
-      ? [[label.anchor[0] + (label.dx || 0), label.anchor[1] + (label.dy || 0)] as Point]
-      : MapEntities.getPoints(target.ref);
-    if (!points.length) {
-      this.report("This element has no map location", "warn");
-      return;
-    }
-
-    Layers.show(...layers);
-    const group = label && options.map.labels.groups.find(group => group.name === label.group);
-    if (group?.layerDependency && Layers.has(group.layerDependency)) Layers.show(group.layerDependency);
-
-    let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity]; // a loop: a territory can have too many cells to spread
-    for (const [x, y] of points)
-      [x0, y0, x1, y1] = [Math.min(x0, x), Math.min(y0, y), Math.max(x1, x), Math.max(y1, y)];
-    const cap = label ? 8 : (display?.scale ?? 8);
-    const fit = Math.min(
-      cap,
-      (viewport.width * 0.65) / Math.max(1, x1 - x0),
-      (viewport.height * 0.65) / Math.max(1, y1 - y0)
-    );
-    let scale = Math.max(1, fit);
-    if (group) scale = Math.max(group.zoom.min ?? 1, Math.min(group.zoom.max ?? 20, scale));
-
-    zoomTo((x0 + x1) / 2, (y0 + y1) / 2, scale, 1500);
-    // the outline animates in while the view is still moving; a culled element (a river, a label) is not drawn yet,
-    // so its own geometry stands in for it
-    setTimeout(() => {
-      const elementId = label ? label.id : MapEntities.getElementId(target.ref);
-      const element = label
-        ? findEl(label.id)
-        : (display?.highlight && document.querySelector(display.highlight)) || (elementId ? findEl(elementId) : null);
-      if (element) highlightElement(element);
-      else highlightArea({ x: x0, y: y0, width: x1 - x0, height: y1 - y0 });
-    }, 750);
+  private navigate(target: EntityTarget, { label }: { label?: LabelIndexEntry } = {}): void {
+    let shown: boolean;
+    if (label) {
+      const group = options.map.labels.groups.find(group => group.name === label.group);
+      const layers: LayerId[] = ["labels"];
+      if (group?.layerDependency && Layers.has(group.layerDependency)) layers.push(group.layerDependency);
+      shown = reveal([[label.anchor[0] + (label.dx || 0), label.anchor[1] + (label.dy || 0)]], {
+        layers,
+        maxScale: 8,
+        zoom: group?.zoom,
+        element: () => findEl(label.id)
+      });
+    } else shown = revealEntity(target.ref);
+    if (!shown) this.report("This element has no map location", "warn");
   }
 
   private remember(id: string): void {

@@ -176,7 +176,8 @@ export const charges = {
     talbotSejant: 1,
     wolfPassant: 1,
     wolfRampant: 1,
-    wolfStatant: 1
+    wolfStatant: 1,
+    camelBactrian: 0
   },
   beastHeads: {
     boarHeadErased: 1,
@@ -206,7 +207,8 @@ export const charges = {
     raven: 2,
     swallow: 1,
     swan: 2,
-    swanErased: 1
+    swanErased: 1,
+    stork: 0
   },
   reptiles: {
     crocodile: 1,
@@ -223,7 +225,9 @@ export const charges = {
     fly: 1,
     ladybird: 1,
     scorpion: 1,
-    wasp: 1
+    wasp: 1,
+    ant: 0,
+    spider: 0
   },
   fishes: {
     pike: 1,
@@ -232,7 +236,9 @@ export const charges = {
   },
   molluscs: {
     escallop: 4,
-    snail: 1
+    snail: 1,
+    kraken: 0,
+    polypus: 0
   },
   plants: {
     apple: 1,
@@ -268,7 +274,8 @@ export const charges = {
     serpent: 1,
     unicornRampant: 1,
     wyvern: 1,
-    wyvernWithWingsDisplayed: 1
+    wyvernWithWingsDisplayed: 1,
+    seahorse: 0
   },
   agriculture: {
     garb: 2,
@@ -312,7 +319,9 @@ export const charges = {
     sabresCrossed: 1,
     shield: 1,
     spear: 1,
-    sword: 4
+    sword: 4,
+    gladius: 0,
+    trident: 0
   },
   bodyparts: {
     armEmbowedHoldingSabre: 1,
@@ -332,7 +341,8 @@ export const charges = {
     archer: 1,
     cavalier: 3,
     cossack: 1,
-    monk: 1
+    monk: 1,
+    hermit: 0
   },
   architecture: {
     bridge: 1,
@@ -345,7 +355,8 @@ export const charges = {
     pillar: 1,
     portcullis: 1,
     tower: 2,
-    windmill: 1
+    windmill: 1,
+    church: 0
   },
   seafaring: {
     anchor: 6,
@@ -415,7 +426,12 @@ export const charges = {
     stirrup: 2,
     wheel: 3,
     wing: 2,
-    wingSword: 1
+    wingSword: 1,
+    amphora: 0,
+    caduceus: 0,
+    chalice2: 0,
+    crancelin: 0,
+    violin: 0
   },
   inescutcheon: {
     inescutcheonHeater: 1,
@@ -460,7 +476,9 @@ export const charges = {
     inescutcheonErebor: 1,
     inescutcheonIronHills: 1,
     inescutcheonUrukHai: 1,
-    inescutcheonMoriaOrc: 1
+    inescutcheonMoriaOrc: 1,
+    inescutcheonEmbowed: 0,
+    inescutcheonHexagon: 0
   },
   ornaments: {
     mantle: 0,

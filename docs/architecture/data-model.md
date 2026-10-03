@@ -143,7 +143,7 @@ Cultures (races, language zones) data is stored as an array of objects with stri
 
 ## Burgs
 
-Burgs (settlements) data is stored as an array of objects with strict element order. Element 0 is an empty object. If burg is removed, the element is not getting removed, but instead a `removed` attribute is added. Object structure:
+Burgs (settlements) data is stored as an array of objects with strict element order. Element 0 is the number `0`, not an object. If burg is removed, the element is not getting removed, but instead a `removed` attribute is added. Object structure:
 
 - `i`: `number` - burg id, always equal to the array index
 - `name`: `string` - burg name
@@ -154,10 +154,10 @@ Burgs (settlements) data is stored as an array of objects with strict element or
 - `state`: `number` - burg state id
 - `feature`: `number` - burg feature id (id of a landmass)
 - `population`: `number` - burg population in population points
-- `type`: `string` - burg type, see [culture types](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-types)
+- `type`: `string` - the burg's culture type (Generic, River, Lake, Naval, Nomadic, Hunting, Highland), which is about geography, not rank. Capital status is `capital`; size class is `group`. See [culture types](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-types)
 - `group`: `string` - Burg classification and rendering group. It is also the default Label Group for the Burg label
 - `label`: `Label` - optional Burg-label overrides. Burg labels use the Burg name, coordinates, and `burg.group` by default; `label.group` can override only the label group
-- `coa`: `object` - emblem object, data model is the same as in [Armoria](https://github.com/Azgaar/Armoria) and covered in [API documentation](https://github.com/Azgaar/armoria-api#readme). The only additional fields are optional `size`: `number`, `x`: `number` and `y`: `number` that controls the emblem position on the map (if it's not default). If emblem is loaded by user, then the value is `{ custom: true }` and cannot be displayed in Armoria
+- `coa`: `object` - heraldic emblem in [Armoria's COA format](https://github.com/Azgaar/armoria-api#readme), or picture emblem `{ icon: string, shield?: string }` referring to an icon in the library. Both forms may have optional `size`, `x` and `y` fields for map placement. A picture emblem can be clipped to a shield, but cannot be edited as heraldry in Armoria
 - `MFCG`: `number` - burg seed in [Medieval Fantasy City Generator](https://watabou.github.io/city-generator) (MFCG). If not provided, seed is combined from map seed and burg id
 - `link`: `string` - custom link to burg in MFCG. `MFCG` seed is not used if link is provided
 - `capital`: `number` - `1` if burg is a capital, `0` if not (each state has only 1 capital)
@@ -197,12 +197,12 @@ States (countries) data is stored as an array of objects with strict element ord
 - `urban`: `number` - urban (burg) population of state cells. In population points
 - `neighbors`: `number[]` - ids of neighboring (bordering by land) states
 - `provinces`: `number[]` - ids of state provinces
-- `diplomacy`: `string[]` - diplomatic relations status for all states. 'x' for self and neutrals. Element 0 (neutrals) `diplomacy` is used differently and contains wars story as `string[][]`
+- `diplomacy`: `string[]` - relation to each state by its id: `Ally`, `Friendly`, `Neutral`, `Suspicion`, `Enemy` (at war), `Unknown`, `Rival`, `Vassal` (of that state) or `Suzerain` (to that state); both sides hold the same relation except a vassal pair. 'x' for self and neutrals. Element 0 (neutrals) `diplomacy` is used differently and contains wars story as `string[][]`
 - `campaigns`: `object[]` - wars the state participated in. The was is defined as `start`: `number` (year), `end`: `number` (year), `name`: `string`
 - `alert`: `number` - state war alert, see [military forces page](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Military-Forces)
 - `military`: `Regiment[]` - list of state regiments, see [military forces page](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Military-Forces)
 - `label`: `Label` - optional state-label data. If absent, the renderer derives the text, path, and relative size from the State data and label mode
-- `coa`: `object` - emblem object, data model is the same as in [Armoria](https://github.com/Azgaar/Armoria) and covered in [API documentation](https://github.com/Azgaar/armoria-api#readme). The only additional fields are optional `size`: `number`, `x`: `number` and `y`: `number` that controls the emblem position on the map (if it's not default). If emblem is loaded by user, then the value is `{ custom: true }` and cannot be displayed in Armoria
+- `coa`: `object` - heraldic emblem in [Armoria's COA format](https://github.com/Azgaar/armoria-api#readme), or picture emblem `{ icon: string, shield?: string }` referring to an icon in the library. Both forms may have optional `size`, `x` and `y` fields for map placement. A picture emblem can be clipped to a shield, but cannot be edited as heraldry in Armoria
 - `salesTax`: `number` - sales tax rate `0..1` charged on deals where this state is the seller. Generated from `form` (Monarchy 0.15, Theocracy 0.25, Union 0.07, Republic 0.05, Anarchy 0), jittered per state. Always `0` for neutrals
 - `pollTax`: `number` - flat poll tax per population point (rural + urban), credited to the treasury once per cycle. Generated from `form` (Monarchy 0.20, Theocracy 0.10, Union 0.13, Republic 0.15, Anarchy 0), jittered per state. Always `0` for neutrals
 - `treasury`: `number` - accumulated state currency balance. Reset and refilled by `States.collectTaxes()` from `deal.tax` (sales tax) plus `pollTax × (rural + urban)`. Always `0` for neutrals
@@ -218,7 +218,7 @@ States (countries) data is stored as an array of objects with strict element ord
 - `bx`: `number` - regiment base x coordinate
 - `by`: `number` - regiment base y coordinate
 - `angle`: `number` - regiment rotation angle degree
-- `icon`: `number` - Unicode character to serve as an icon
+- `icon`: `string` - icon reference: a bare symbol id such as `glyph-2694-fe0f` or `custom-1a2b3c4d` (see [Icons](icons.md)); empty for none
 - `cell`: `number` - original regiment cell id
 - `state`: `number` - regiment state id
 - `name`: `string` - regiment name
@@ -243,7 +243,7 @@ Provinces data is stored as an array of objects with strict element order. Eleme
 - `cells`: `number` - number of cells within the province
 - `rural`: `number` - rural (non-burg) population of province cells. In population points
 - `urban`: `number` - urban (burg) population of state province. In population points
-- `coa`: `object` - emblem object, data model is the same as in [Armoria](https://github.com/Azgaar/Armoria) and covered in [API documentation](https://github.com/Azgaar/armoria-api#readme). The only additional fields are optional `size`: `number`, `x`: `number` and `y`: `number` that controls the emblem position on the map (if it's not default). If emblem is loaded by user, then the value is `{ custom: true }` and cannot be displayed in Armoria
+- `coa`: `object` - heraldic emblem in [Armoria's COA format](https://github.com/Azgaar/armoria-api#readme), or picture emblem `{ icon: string, shield?: string }` referring to an icon in the library. Both forms may have optional `size`, `x` and `y` fields for map placement. A picture emblem can be clipped to a shield, but cannot be edited as heraldry in Armoria
 - `label`: `Label` - optional Province-label overrides. If absent, the renderer derives the text and path from Province data
 - `lock`: `boolean` - `true` if province is locked (not affected by regeneration)
 - `removed`: `boolean` - `true` if province is removed
@@ -298,7 +298,7 @@ Markers data is stored as an unordered array of objects (so element id is _not_ 
 
 - `i`: `number` - marker id. `'marker' + i` is used as svg element id
 - `name`: `string` - marker name, shown in the notes box header and the markers overview
-- `icon`: `number` - Unicode character (usually an [emoji](https://emojipedia.org/)) to serve as an icon
+- `icon`: `string` - icon reference: a bare symbol id such as `glyph-1f30b` or `goods-wine` (see [Icons](icons.md)); empty for none
 - `x`: `number` - marker x coordinate
 - `y`: `number` - marker y coordinate
 - `cell`: `number` - cell id, used to prevent multiple markers generation in the same cell
@@ -306,11 +306,12 @@ Markers data is stored as an unordered array of objects (so element id is _not_ 
 - `size`: `number` - marker size in pixels. Optional, default value is `30` (30px)
 - `fill`: `string` - marker pin fill color. Optional, default is `#fff` (white)
 - `stroke`: `string` - marker pin stroke color. Optional, default is `#000` (black)
+- `iconFill`, `iconStroke`: `string` - colors of the parts the icon leaves open. Optional, default is the icon's paint (see [Icons](icons.md#icon-paint))
 - `pin`: `string`: pin element type. Optional, default is `bubble`. Pin is not rendered if value is set to `no`
 - `pinned`: `boolean`: if any marker is pinned, then only markers with `pinned = true` will be rendered. Optional
 - `dx`: `number` - icon x shift percent. Optional, default is `50` (50%, center)
 - `dy`: `number` - icon y shift percent. Optional, default s `50` (50%, center)
-- `px`: `number` - icon font-size in pixels. Optional, default is `12` (12px)
+- `px`: `number` - icon box size in pixels. Optional, default is `12` (12px)
 - `lock`: `boolean` - `true` if marker is locked (not affected by regeneration). Optional
 - `note`: `string` - optional. The user's note (legend) about the marker, as html. Removed with it
 
@@ -354,7 +355,6 @@ the Label Editor lets the user switch for any label regardless of its type. The 
 
 Ordered Label Group policy is stored in `options.map.labels`, so it travels with the `.map` file:
 
-- `resizeOnZoom`: `boolean` - whether the parent `#labels` font size scales with map zoom
 - `groups`: `LabelGroupOptions[]` - ordered group definitions
 
 `showAll`, the override for per-group active state, zoom bounds and layer dependencies, is a
@@ -382,9 +382,10 @@ are implementation-safe `labels-${name}` values; the logical id is always read f
 Optional group-level `data-dx` and `data-dy` values are retained in style data. Rendering derives one CSS
 translation on the parent SVG group, so the offset applies uniformly to every label in that group.
 
-Burg port symbols are styled per Burg group in `style.burgIcons.anchors.groups`. Their `options.icon`
-selects the SVG symbol, `size` sets its scale, and optional `dx` / `dy` offsets move it relative to the
-Burg in icon-size units (positive right / down). Absent offsets mean zero.
+Burg port symbols are styled per Burg group in `styles.burgIcons.groups.<name>.groups.anchors`. Their
+`options.icon` selects the SVG symbol, `size` sets its scale, and optional `dx` / `dy` offsets move it
+relative to the Burg in icon-size units (positive right / down). Absent offsets mean zero. The same
+group entry's `groups.icons` holds the Burg icon's own attrs and options.
 
 ## Routes
 
@@ -423,18 +424,28 @@ Ice data is stored as an array of objects with `i` not necessary equal to the el
 
 ## Relief
 
-Relief (terrain) icons are stored in `pack.relief: ReliefIcon[]`. The array order defines the rendering order: icons are sorted by their bottom edge, so the closer ones are drawn on top. Object structure:
+Relief icons are stored in `pack.relief: ReliefIcon[]`. Array order determines drawing
+order; generation sorts by the box bottom (`y + s`), so a lower icon covers the foot of the ones behind it. Each icon is
+`{ type, variant?, set?, x, y, s }` or `{ icon, x, y, s }`, stored as
+plain JSON with no parse/serialize step. `Relief.ref` builds every descriptor, so a default `variant`
+of 1 is never written. `type` names a logical relief type and `variant` a permanent
+variant slot; the renderer resolves an absent `variant` to 1, so stored and drawn data never differ.
+`set` is an optional explicit pin; absent means follow the style. `icon` is any icon reference (a Custom
+icon, a glyph, another set's art) drawn in place of a type slot; it ignores the style's set.
 
-- `icon`: `string` - id of the symbol in `#defs-relief`, without the leading `#`, e.g. `relief-mount-3`
-- `x`: `number` - left edge position
-- `y`: `number` - top edge position
-- `s`: `number` - icon size, used as both width and height
-
-Generation settings live in the global style object as `style.relief`, serialized with the rest of the style at data index 48. Before v1.142.0 they were `set`, `size` and `density` attributes on the `#terrain` group:
-
-- `set`: `string` - icons set: `simple`, `colored` or `gray`
-- `size`: `number` - base icon size multiplier
-- `density`: `number` - how densely icons are placed
+`styles.relief.options` holds `set` (`simple`, `colored`, `gray`, `illustrated`, `stickers`), `size` and `density`,
+serialized with the style store in field 48. `s` is the base size; `size` is a render multiplier that
+scales the icon about its anchor at draw time, so neither a set nor a size change edits `pack.relief`
+and the array order stays a valid z-order.
+`options.map.relief.rules` decides which pool places a land cell's relief: the first **relief rule**
+whose inclusive `height` (0–100) and `temperature` (°C, a `null` bound is open) ranges hold the cell,
+and whose optional `biomes` ids include the cell's biome (absent: every biome), claims it, else the cell
+takes its biome's pool. A rule is `{ name, height, temperature, biomes?, icons, density, size }`: `icons` and `density` as a biome's pool, `size` the icon size at the rule's lowest height,
+growing 0.8 per height unit up to `size.max`, before each entry's `size` multiplier. A biome pool's icons are 8–10 units before it. A rule picks one entry and variant per cell, and spends no
+roll where it has no choice, so the default rules reproduce the older fixed hills and mountains. Maps
+older than v1.154.0 get the default rules.
+Every union slot resolves in every set via real artwork or deterministic aliases. See [Icons](icons.md)
+for layout, fallback resolution and migration conventions.
 
 ## Measurers
 
@@ -445,14 +456,14 @@ Measurers (rulers and other measuring tools drawn on top of the map) are stored 
 
 ## Goods
 
-Goods (tradable resources and products) are stored in `pack.goods: Good[]`, where `i` equals the array index. The default catalogue is built from `GOODS_DATA`. Stored in .map file. A good is _raw_ if it has a `distribution`, _manufactured_ if it has `recipes`, or _hybrid_ if it has both. Object structure:
+Goods (tradable resources and products) are stored in `pack.goods: Good[]`. Good `i` starts at `1` and is **not** the array index — use `Goods.get(i)` (backed by a sparse `goodById`) for lookups. The default catalogue is built from `GOODS_DATA`. Stored in .map file. A good is _raw_ if it has a `distribution`, _manufactured_ if it has `recipes`, or _hybrid_ if it has both. Object structure:
 
-- `i`: `number` - good id, always equal to the array index
+- `i`: `number` - good id (starts at 1, not the array index)
 - `name`: `string` - good name
 - `tags`: `string[]` - free-form classification tags (used for filtering in the Goods Editor)
 - `value`: `number` - base price per unit; the anchor for all market pricing
 - `unit`: `string` - unit of measure label (e.g. `kg`, `barrel`)
-- `icon`: `string` - id of the SVG symbol used for the good's map/UI icon
+- `icon`: `string` - icon reference used for the good's map/UI icon: usually `goods-<file>` from the goods icon set, or any other icon, including a custom one (see `icons.md`)
 - `color`: `string` - good color in hex
 - `chance`: `number` - placement chance (0–100) for raw/hybrid goods. Manufactured-only goods are `0`. Optional
 - `distribution`: `string` - JS expression evaluated per cell to decide where the raw good is placed (uses the distribution method table; see [goods_schema.md](../domain/goods_schema.md)). Optional
@@ -482,8 +493,8 @@ Biome definitions are stored in `pack.biomes: Biome[]`, where `i` equals the arr
 - `color`: `string` - biome color in hex (e.g. `#45ff12`) or link to a hatching pattern
 - `cost`: `number` - non-negative movement cost used during culture, state and religion growth
 - `habitability`: `number` - non-negative suitability value; `0` means uninhabitable
-- `icons`: `string[]` - non-weighted relief icon pool; repeated values increase an icon's selection weight
-- `iconsDensity`: `number` - defines how packed icons can be for the biome. An integer from `0` to `150`
+- `icons`: `Record<string, { weight: number; size?: number }>` - the relief pool: lowland relief entries in insertion order, each with a positive weight and an optional positive `size`, a multiplier of the pool's icon size (absent is 1). A key is a relief type (`dune`) or an icon reference (`custom-1a2b3c4d`). Before v1.154.0 a list of repeated entries
+- `iconsDensity`: `number` - how packed the biome's lowland relief is. An integer from `0` (none) to `250`
 - `removed`: `boolean` - optional marker for a removed custom biome
 - `note`: `string` - optional. The user's note (legend) about the biome, as html. Removed with it
 
@@ -493,7 +504,7 @@ The temperature and moisture lookup matrix used to assign default biome ids is g
 
 Trade transaction log stored in `pack.deals: Deal[]`. Append-only within a production cycle, rebuilt on regeneration. Object structure:
 
-- `i`: `number` - deal id, equal to the array index
+- `i`: `number` - deal id; equals the array index until deals are dropped with a removed market, so look up by `i`
 - `seller`: `number` - burg id or market id of the seller
 - `sellerType`: `"burg" | "market"` - what `seller` refers to
 - `buyer`: `number` - burg id or market id of the buyer

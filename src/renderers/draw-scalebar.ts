@@ -95,7 +95,7 @@ export function drawScaleBar(
       left: paddingLeft,
       right: paddingRight,
       bottom: paddingBottom
-    } = styles.scaleBar.back.options;
+    } = styles.scaleBar.groups.back.options;
 
     scaleBar
       .select("#scaleBarBack")

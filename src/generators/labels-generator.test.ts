@@ -23,6 +23,32 @@ beforeEach(() => {
 });
 
 describe("LabelsModule", () => {
+  it("regroups inherited burg labels without changing explicit overrides", () => {
+    pack.burgs = [
+      0,
+      { i: 1, group: "village" },
+      { i: 2, group: "village", label: { group: "custom", dx: 2 } },
+      { i: 3, group: "village", removed: true }
+    ] as unknown as typeof pack.burgs;
+    labels.regroup("village", "settlement");
+    expect(pack.burgs[1].label).toEqual({ group: "settlement" });
+    expect(pack.burgs[1].group).toBe("village");
+    expect(pack.burgs[2].label).toEqual({ group: "custom", dx: 2 });
+    expect(pack.burgs[3].label).toBeUndefined();
+    labels.regroup("custom", "burg");
+    expect(pack.burgs[2].label).toEqual({ group: "burg", dx: 2 });
+  });
+
+  it("regroups route zero and leaves sentinel entities alone", () => {
+    pack.routes = [{ i: 0, label: { group: "custom", dx: 3 } }] as typeof pack.routes;
+    pack.states[0].label = { group: "custom" };
+    labels.regroup("custom", "renamed");
+    expect(pack.routes[0].label).toEqual({ group: "renamed", dx: 3 });
+    expect(pack.states[0].label).toEqual({ group: "custom" });
+    labels.regroup("renamed", "route");
+    expect(pack.routes[0].label).toEqual({ group: "route", dx: 3 });
+  });
+
   it("detects entity label overrides", () => {
     expect(labels.hasOverride("state", 1)).toBe(true);
     expect(labels.hasOverride("state", 2)).toBe(false);
@@ -38,13 +64,13 @@ describe("LabelsModule", () => {
   });
 
   it("restores an entity label to defaults", () => {
-    labels.resetOverride("state", 1);
+    labels.reset("state", 1);
     expect(pack.states[1].label).toBeUndefined();
   });
 
   it("preserves an added label's base data on reset", () => {
     pack.addedLabels[0].label.dx = 2;
-    labels.resetOverride("added", 1);
+    labels.reset("added", 1);
     expect(pack.addedLabels[0].label).toEqual({ text: "Aldor", group: "added" });
   });
 });
@@ -111,8 +137,7 @@ describe("parseStoredOptions", () => {
   });
 
   it("keeps stored flags but repairs ones of the wrong type", () => {
-    const parsed = labels.parseStoredOptions(JSON.stringify({ resizeOnZoom: false, showAll: "yes" }));
-    expect(parsed.resizeOnZoom).toBe(false);
+    const parsed = labels.parseStoredOptions(JSON.stringify({ showAll: "yes" }));
     expect(parsed.showAll).toBe(labels.getDefaultOptions().showAll);
   });
 });

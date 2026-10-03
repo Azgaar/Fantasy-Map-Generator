@@ -15,7 +15,12 @@ document.addEventListener("keyup", handleKeyup);
 function handleKeydown(event: KeyboardEvent): void {
   if (!allowHotkeys()) return; // in some cases (e.g. in a textarea) hotkeys are not allowed
 
-  const { code, ctrlKey, altKey, shiftKey } = event;
+  const { code, ctrlKey, metaKey, altKey, shiftKey } = event;
+  if ((ctrlKey || metaKey) && code === "KeyS") {
+    event.preventDefault();
+    if (!event.repeat) Services.Save.toMachine(shiftKey); // keydown supplies the file picker's user activation
+    return;
+  }
   if (altKey && !ctrlKey && !shiftKey) event.preventDefault(); // disallow plain alt key combinations
   if (ctrlKey && ["KeyS", "KeyC"].includes(code)) event.preventDefault(); // disallow CTRL + S and CTRL + C
   if (["F1", "F2", "F6", "F9", "Tab"].includes(code)) event.preventDefault(); // disallow default Fn and Tab
@@ -28,6 +33,7 @@ function handleKeyup(event: KeyboardEvent): void {
 
   const { code, key, ctrlKey, metaKey, shiftKey, altKey } = event;
   const ctrl = ctrlKey || metaKey || key === "Control";
+  if (ctrl && code === "KeyS") return; // handled on keydown; don't toggle the states layer on release
   const shift = (shiftKey || key === "Shift") && !altKey;
   const altShift = altKey && (shiftKey || key === "Shift") && !ctrl;
   const layer = getLayerByShortcut(code);
@@ -45,7 +51,6 @@ function handleKeyup(event: KeyboardEvent): void {
   } else if (code === "Delete") removeElementOnKey();
   else if (code === "KeyO" && findEl("canvas3d")) Controllers.View3d.toggleOptions();
   else if (ctrl && code === "KeyQ") toggleSaveReminder();
-  else if (ctrl && code === "KeyS") Services.Save.toMachine();
   else if (ctrl && code === "KeyC") Services.Save.toDropbox();
   else if (ctrl && code === "KeyZ") findEl("undo")?.click();
   else if (ctrl && code === "KeyY") findEl("redo")?.click();
@@ -53,7 +58,7 @@ function handleKeyup(event: KeyboardEvent): void {
   else if ((shift || altShift) && code === "KeyB") Controllers.BiomesEditor.open();
   else if ((shift || altShift) && code === "KeyS") Controllers.StatesEditor.open();
   else if ((shift || altShift) && code === "KeyP") Controllers.ProvincesEditor.open();
-  else if ((shift || altShift) && code === "KeyD") Controllers.DiplomacyEditor.open();
+  else if ((shift || altShift) && code === "KeyD") Controllers.DiplomacyOverview.open();
   else if ((shift || altShift) && code === "KeyL") Controllers.LabelsOverview.open();
   else if ((shift || altShift) && code === "KeyC") Controllers.CulturesEditor.open();
   else if ((shift || altShift) && code === "KeyN") Controllers.NamesbaseEditor.open();

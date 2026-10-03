@@ -56,18 +56,48 @@ describe("applyStyles", () => {
     expect(() => Styles.apply("labels")).not.toThrow();
   });
 
-  test("burg icon and anchor groups are addressed through their containers", () => {
-    const el = mount("burgIcons", ["burgIcons", "anchors"]);
-    for (const container of el.children) {
+  test("burg icon and anchor parts are addressed through their group element", () => {
+    const el = mount("burgIcons");
+    const group = document.createElementNS(SVG, "g");
+    group.setAttribute("data-group", "capital");
+    for (const part of ["icons", "anchors"]) {
       const g = document.createElementNS(SVG, "g");
-      g.setAttribute("data-group", "capital");
-      container.append(g);
+      g.setAttribute("data-group", part);
+      group.append(g);
     }
-    styles.burgIcons.burgIcons.groups.capital.attrs.fill = "#111111";
-    styles.burgIcons.anchors.groups.capital.attrs.fill = "#222222";
+    el.append(group);
+    styles.burgIcons.groups.capital.groups.icons.attrs.fill = "#111111";
+    styles.burgIcons.groups.capital.groups.anchors.attrs.fill = "#222222";
     Styles.apply("burgIcons");
-    expect(el.querySelector('[data-group="burgIcons"] > [data-group="capital"]')?.getAttribute("fill")).toBe("#111111");
-    expect(el.querySelector('[data-group="anchors"] > [data-group="capital"]')?.getAttribute("fill")).toBe("#222222");
+    expect(el.querySelector('[data-group="capital"] > [data-group="icons"]')?.getAttribute("fill")).toBe("#111111");
+    expect(el.querySelector('[data-group="capital"] > [data-group="anchors"]')?.getAttribute("fill")).toBe("#222222");
+  });
+
+  test("a burg group named icons is not confused with another group's icons part", () => {
+    const el = mount("burgIcons");
+    const town = document.createElementNS(SVG, "g");
+    town.setAttribute("data-group", "town");
+    const townIcons = document.createElementNS(SVG, "g");
+    townIcons.setAttribute("data-group", "icons");
+    town.append(townIcons);
+    el.append(town);
+
+    const namedIcons = document.createElementNS(SVG, "g");
+    namedIcons.setAttribute("data-group", "icons"); // a burg group carrying the part's own name
+    const iconsPart = document.createElementNS(SVG, "g");
+    iconsPart.setAttribute("data-group", "icons");
+    const anchorsPart = document.createElementNS(SVG, "g");
+    anchorsPart.setAttribute("data-group", "anchors");
+    namedIcons.append(iconsPart, anchorsPart);
+    el.append(namedIcons);
+
+    styles.burgIcons.groups.icons = structuredClone(styles.burgIcons.groups.town);
+    styles.burgIcons.groups.icons.groups.icons.attrs.fill = "#123123";
+    styles.burgIcons.groups.town.groups.icons.attrs.fill = "#456456";
+    Styles.apply("burgIcons");
+
+    expect(townIcons.getAttribute("fill")).toBe("#456456"); // the town group's own part
+    expect(iconsPart.getAttribute("fill")).toBe("#123123"); // the group named icons, not the town part
   });
 
   test("a missing layer element is a no-op, the rest still apply", () => {
@@ -82,6 +112,30 @@ describe("applyStyles", () => {
     styles.rivers.attrs.fill = "hotpink";
     Styles.write("rivers");
     expect(el.getAttribute("fill")).toBe("hotpink");
+    expect(Layers.draw).not.toHaveBeenCalled();
+  });
+});
+
+describe("writeAttr", () => {
+  test("sets or removes the one attribute at a store path, through groups and records", () => {
+    const rivers = mount("rivers");
+    styles.rivers.attrs.fill = "#abcdef";
+    Styles.writeAttr(["rivers", "attrs", "fill"]);
+    expect(rivers.getAttribute("fill")).toBe("#abcdef");
+    styles.rivers.attrs.filter = null;
+    rivers.setAttribute("filter", "url(#stale)");
+    Styles.writeAttr(["rivers", "attrs", "filter"]);
+    expect(rivers.hasAttribute("filter")).toBe(false);
+
+    const routes = mount("routes", ["roads"]);
+    styles.routes.groups.roads.attrs.stroke = "#111111";
+    Styles.writeAttr(["routes", "groups", "roads", "attrs", "stroke"]);
+    expect(routes.querySelector('[data-group="roads"]')?.getAttribute("stroke")).toBe("#111111");
+
+    const states = mount("states", ["statesHalo"]);
+    styles.states.groups.statesHalo.attrs.opacity = 0.3;
+    Styles.writeAttr(["states", "groups", "statesHalo", "attrs", "opacity"]);
+    expect(states.querySelector('[data-group="statesHalo"]')?.getAttribute("opacity")).toBe("0.3");
     expect(Layers.draw).not.toHaveBeenCalled();
   });
 });

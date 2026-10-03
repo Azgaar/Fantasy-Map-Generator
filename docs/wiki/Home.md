@@ -38,6 +38,8 @@ To report a problem or propose a feature, see [Reporting bugs and suggesting ide
 
 **Appearance and performance**
 [Map embellishments](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Map-embellishments) ·
+[Icons](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Icons) ·
+[Emblems](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Emblems) ·
 [Performance settings](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Performance-settings)
 
 **World building**

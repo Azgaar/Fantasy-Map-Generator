@@ -2,7 +2,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 import type { Religion } from "./religions-generator";
 
 interface TestableReligionsModule {
-  add(center: number): void;
+  add(x: number, y: number): number;
   combineReligions(namedReligions: Religion[], lockedReligions: Religion[]): Religion[];
   createHeresy(parent: Religion, center: number, i: number, codes: string[]): Religion;
   defineOrigins(religionIds: Uint16Array, indexedReligions: Religion[]): Religion[];
@@ -346,9 +346,11 @@ describe("ReligionsModule origins", () => {
       return randomIndex++ % 2 ? 0.25 : 0.75;
     });
     globalThis.Names = { getCulture: () => "Test" } as any;
+    vi.stubGlobal("Pack", { requireCell: () => 0 });
     globalThis.pack = {
       cells: {
         c: [[]],
+        h: [30],
         culture: Uint16Array.from([1]),
         religion: Uint16Array.from([2])
       },
@@ -369,7 +371,7 @@ describe("ReligionsModule origins", () => {
       ]
     } as any;
 
-    Religions.add(0);
+    Religions.add(5, 5);
 
     expect(globalThis.pack.religions[3]).toMatchObject({
       type: "Heresy",
@@ -377,5 +379,20 @@ describe("ReligionsModule origins", () => {
       deity: "The Parent Deity",
       origins: [2]
     });
+  });
+});
+
+describe("ReligionsModule.rename", () => {
+  it("recomputes a renamed religion's code", async () => {
+    await import("./religions-generator");
+    globalThis.pack = {
+      religions: [
+        { i: 0, name: "No religion" },
+        { i: 1, name: "Old Faith", code: "OF" }
+      ]
+    } as any;
+    globalThis.Religions.rename(1, "Sun Cult");
+    expect(pack.religions[1]).toMatchObject({ name: "Sun Cult", code: "SC" });
+    expect(() => globalThis.Religions.rename(2, "X")).toThrow("Religion 2 does not exist");
   });
 });

@@ -1,34 +1,35 @@
 // Save the whole .map project to storage, machine or cloud
-
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
-import { Notes } from "@/components/notes";
 import { tip } from "@/components/tooltips";
 import { GraphOverride } from "@/generators/graph-override";
+import { Notes } from "@/generators/notes";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
-import { savedMessage } from "@/services/platform";
+import { isElectron, savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
-import { ensureEl, getFileName, link, parseError, rn } from "@/utils";
+import { ensureEl, escapeHtml, getFileName, link, parseError, rn } from "@/utils";
+import { type SaveOutcome, saveToFileSystem } from "./save-to-file";
 
-type Writer = (mapData: string, filename: string) => void | Promise<void>;
+type Writer = () => Promise<void>;
 
-const toStorage = (): Promise<void> => save(mapData => writeToStorage(mapData, true));
-const toMachine = (): Promise<void> => save(writeToMachine);
-const toDropbox = (): Promise<void> => save(writeToDropbox);
+const toStorage = (): Promise<void> => save(() => writeToStorage(prepareMapData(), true));
+const toMachine = (saveAs = false): Promise<void> => save(() => writeToMachine(saveAs));
+const toDropbox = (): Promise<void> => save(() => writeToDropbox(prepareMapData(), `${getFileName()}.map`));
 
 async function save(write: Writer): Promise<void> {
   if (customization) return tip("Map cannot be saved in EDIT mode, please complete the edit and retry", false, "error");
   closeDialogs("#alert");
 
   try {
-    await write(prepareMapData(), `${getFileName()}.map`);
+    await write();
   } catch (error) {
     ERROR && console.error(error);
+    const saveError = error instanceof Error ? error : new Error(String(error));
     alertMessage.innerHTML = /* html */ `An error occurred while saving the map. If the issue persists, please copy the message below and report it on ${link(
       "https://github.com/Azgaar/Fantasy-Map-Generator/issues",
       "GitHub"
-    )}. <p id="errorBox">${parseError(error as Error)}</p>`;
+    )}. <p id="errorBox">${parseError(saveError)}</p>`;
 
     $("#alert").dialog({
       resizable: false,
@@ -119,13 +120,6 @@ function prepareMapData(): string {
   const labels = JSON.stringify(pack.addedLabels || []);
   const styleData = JSON.stringify(styles);
 
-  // store custom good icons
-  const goodIconsEl = ensureEl("good-icons");
-  const customGoodIcons = Array.from(goodIconsEl.querySelectorAll('[id^="good-custom-"]') || [])
-    .map(el => el.outerHTML)
-    .join("")
-    .replace(/[\r\n]+/g, " "); // map data is split by CRLF on load
-
   // store name array only if not the same as default
   const defaultNameBases = Names.getNameBases();
   const namesData = Names.nameBases
@@ -185,7 +179,7 @@ function prepareMapData(): string {
     markets,
     deals,
     pack.cells.market,
-    customGoodIcons,
+    "", // deprecated custom good icons, now options.map.customIcons
     measurers,
     labels,
     styleData,
@@ -204,18 +198,31 @@ async function writeToStorage(mapData: string, showTip = false): Promise<void> {
   showTip && tip("Map is saved to the browser storage", false, "success");
 }
 
-// download map file
-function writeToMachine(mapData: string, filename: string): void {
-  const blob = new Blob([mapData], { type: "text/plain" });
-  const URL = window.URL.createObjectURL(blob);
+async function writeToMachine(saveAs: boolean): Promise<void> {
+  notifySaveOutcome(await saveToFileSystem(prepareMapData, `${getFileName()}.map`, saveAs));
+}
 
-  const link = document.createElement("a");
-  link.download = filename;
-  link.href = URL;
-  link.click();
+export function notifySaveOutcome(outcome: SaveOutcome): void {
+  if (outcome.type === "cancelled") return;
+  if (outcome.type === "saved") {
+    tip(`Map is saved to "${escapeHtml(outcome.filename)}"`, true, "success", 8000);
+    return;
+  }
 
-  tip(savedMessage("Map"), true, "success", 8000);
-  setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
+  let message = savedMessage("Map");
+  if (!isElectron()) {
+    const noticeKey = "savePickerFallbackNoticeShown";
+    try {
+      if (!localStorage.getItem(noticeKey)) {
+        message +=
+          ". A save-location picker is unavailable here; your browser's download settings control the location.";
+        localStorage.setItem(noticeKey, "true");
+      }
+    } catch {
+      // Storage preferences must never prevent a download.
+    }
+  }
+  tip(message, true, "success", 12000);
 }
 
 async function writeToDropbox(mapData: string, filename: string): Promise<void> {

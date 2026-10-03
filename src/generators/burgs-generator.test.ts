@@ -428,22 +428,21 @@ describe("ensureBurgGroupStyles", () => {
     const Burgs = (globalThis as any).Burgs;
 
     options.map.burgs.groups = [{ name: "town" }, { name: "fortresses" }] as never;
-    const town = { attrs: { fill: "#aaa" }, options: { size: 1, icon: "#icon-burg" } };
+    const town = { attrs: { fill: "#aaa" }, options: { size: 1, icon: "#burgs-burg" } };
     const townAnchor = { attrs: { fill: "#bbb" }, options: { size: 2 } };
     (globalThis as any).styles = {
       burgIcons: {
-        burgIcons: { groups: { town: structuredClone(town) } },
-        anchors: { groups: { town: structuredClone(townAnchor) } }
+        groups: { town: { groups: { icons: structuredClone(town), anchors: structuredClone(townAnchor) } } }
       }
     };
 
     Burgs.ensureBurgGroupStyles();
 
-    const { burgIcons, anchors } = (globalThis as any).styles.burgIcons;
-    expect(burgIcons.groups.town).toEqual(town);
-    expect(burgIcons.groups.fortresses).toEqual(town);
-    expect(burgIcons.groups.fortresses).not.toBe(burgIcons.groups.town);
-    expect(anchors.groups.fortresses).toEqual(townAnchor);
+    const { groups } = (globalThis as any).styles.burgIcons;
+    expect(groups.town.groups.icons).toEqual(town);
+    expect(groups.fortresses.groups.icons).toEqual(town);
+    expect(groups.fortresses.groups.icons).not.toBe(groups.town.groups.icons);
+    expect(groups.fortresses.groups.anchors).toEqual(townAnchor);
   });
 });
 
@@ -475,5 +474,27 @@ describe("BurgsModule.parseStoredGroups", () => {
   it("always leaves a default group for burg assignment to fall back on", () => {
     const groups = Burgs.parseStoredGroups(JSON.stringify([{ name: "outpost", order: 3 }]));
     expect(groups.filter((group: any) => group.isDefault).length).toBe(1);
+  });
+});
+
+describe("BurgModule.rename", () => {
+  it("renames a burg and its label, and rejects missing burgs and empty names", async () => {
+    await import("./burgs-generator");
+    const burgs = (globalThis as any).Burgs;
+    globalThis.pack = {
+      burgs: [
+        0,
+        { i: 1, name: "Vel", label: { text: "Vel" } },
+        { i: 2, name: "Orn", removed: true },
+        { i: 3, name: "Ash" }
+      ]
+    } as any;
+    burgs.rename(1, " Saltmere ");
+    expect(pack.burgs[1]).toMatchObject({ name: "Saltmere", label: { text: "Saltmere" } });
+    burgs.rename(3, "Elm");
+    expect(pack.burgs[3]).toEqual({ i: 3, name: "Elm" });
+    expect(() => burgs.rename(2, "X")).toThrow("Burg 2 does not exist");
+    expect(() => burgs.rename(0, "X")).toThrow("does not exist");
+    expect(() => burgs.rename(1, "  ")).toThrow("must not be empty");
   });
 });

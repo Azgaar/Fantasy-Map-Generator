@@ -1,4 +1,5 @@
 import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { type LimitationItem, pickLimitation } from "@/components/dialog/limitation-picker";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
@@ -161,62 +162,16 @@ function createRow(group: BurgGroup): string {
     </tr>`;
 }
 
-function selectLimitation(
-  el: HTMLElement,
-  data: { i: number; name: string; fullName?: string; color?: string; removed?: boolean }[]
-): void {
-  const value = (el.previousElementSibling as HTMLInputElement).value;
-  const initial = value ? value.split(",").map(v => +v) : [];
-
-  const filtered = data.filter(datum => datum.i && !datum.removed);
-  const rows = filtered.map(
-    ({ i, name, fullName, color }) => /* html */ `
-        <tr data-tip="${name}">
-          <td>
-            <span style="color:${color}">⬤</span>
-          </td>
-          <td>
-            <input data-i="${i}" id="el${i}" type="checkbox" class="checkbox" ${
-              !initial.length || initial.includes(i) ? "checked" : ""
-            } >
-            <label for="el${i}" class="checkbox-label">${fullName || name}</label>
-          </td>
-        </tr>`
-  );
-
-  alertMessage.innerHTML = /* html */ `<b>Limit group by ${el.getAttribute("name")}:</b>
-      <table style="margin-top:.3em">
-        <tbody>
-          ${rows.join("")}
-        </tbody>
-      </table>`;
-
-  $("#alert").dialog({
-    width: "fit-content",
+function selectLimitation(el: HTMLElement, items: LimitationItem[]): void {
+  const input = el.previousElementSibling as HTMLInputElement;
+  pickLimitation({
     title: "Limit group",
-    buttons: {
-      Invert: () => {
-        alertMessage.querySelectorAll<HTMLInputElement>("input").forEach(input => {
-          input.checked = !input.checked;
-        });
-      },
-      Apply: function (this: HTMLElement) {
-        const inputs = Array.from(alertMessage.querySelectorAll<HTMLInputElement>("input"));
-        const selected = inputs.reduce<string[]>((acc, input) => {
-          if (input.checked) acc.push(input.dataset.i!);
-          return acc;
-        }, []);
-
-        if (!selected.length) return tip("Select at least one element", false, "error");
-
-        const allAreSelected = selected.length === inputs.length;
-        (el.previousElementSibling as HTMLInputElement).value = allAreSelected ? "" : selected.join(",");
-        el.innerHTML = allAreSelected ? "all" : "some";
-        $(this).dialog("close");
-      },
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
+    heading: `Limit group by ${el.getAttribute("name")}`,
+    items,
+    allowed: input.value ? input.value.split(",").map(Number) : [],
+    onApply: allowed => {
+      input.value = allowed.join(",");
+      el.innerHTML = allowed.length ? "some" : "all";
     }
   });
 }

@@ -14,7 +14,8 @@ General:
 - <kbd>Delete</kbd> - remove selected element
 - <kbd>+</kbd>, <kbd>=</kbd>, or <kbd>-</kbd> - change the active brush size (heightmap, paint or Wrap); otherwise zoom the map
 - <kbd>[</kbd> or <kbd>]</kbd> - change the active brush size. With no active brush, <kbd>[</kbd> toggles the Vignette layer
-- <kbd>Ctrl</kbd> + <kbd>S</kbd> - download .map file
+- <kbd>Ctrl</kbd> + <kbd>S</kbd> - save .map file to machine; after the first save it updates the chosen file
+- <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> - save a copy of the .map file under another name or location
 - <kbd>Ctrl</kbd> + <kbd>C</kbd> - save .map file to Dropbox
 - <kbd>Ctrl</kbd> + <kbd>Q</kbd> - toggle the save reminder
 - <kbd>Ctrl</kbd> + <kbd>Z</kbd> / <kbd>Ctrl</kbd> + <kbd>Y</kbd> - undo / redo in supported editors

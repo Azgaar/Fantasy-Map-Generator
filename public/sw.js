@@ -161,18 +161,6 @@ registerRoute(
 );
 
 registerRoute(
-  new RegExp(".svg$"),
-  new CacheFirst({
-    cacheName: "fmg-charges",
-    plugins: [
-      new CacheableResponsePlugin({statuses: [0, 200]}),
-      new ExpirationPlugin({maxEntries: 100, maxAgeSeconds: 60 * DAY}),
-      retainedAssets
-    ]
-  })
-);
-
-registerRoute(
   ({request}) => request.destination === "font",
   new CacheFirst({
     cacheName: "fmg-fonts",

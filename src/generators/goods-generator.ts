@@ -1,7 +1,11 @@
 import Alea from "alea";
 import { color, shuffler } from "d3";
+import { Icons } from "@/components/icons";
+import { requireColor } from "@/utils/colorUtils";
+import { requireName } from "@/utils/validationUtils";
+import type { IconSet } from "../types/icons";
 import type { PackedGraph } from "../types/PackedGraph";
-import type { CultureType } from "./cultures-generator";
+import { CULTURE_TYPES, type CultureType } from "./cultures-generator";
 
 export interface Good {
   i: number;
@@ -39,6 +43,14 @@ export interface Good {
   note?: string;
 }
 
+export type ProductionRules = Partial<{
+  chance: number | null;
+  recipes: Record<number, number>[] | null;
+  biomeOutput: Partial<Record<number, number>> | null;
+  multipliers: Good["multipliers"] | null;
+  demandCoverage: Good["demandCoverage"] | null;
+}>;
+
 export const DEMAND_PRIORITY = ["food", "utilities", "construction", "military", "luxury"] as const;
 export type DemandCategory = (typeof DEMAND_PRIORITY)[number];
 export const DEMAND_TARGET_FACTORS: Record<DemandCategory, number> = {
@@ -65,7 +77,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Wood",
     tags: ["construction", "fuel"],
-    icon: "good-wood",
+    icon: "goods-wood",
     color: "#966F33",
     value: 1,
     chance: 4,
@@ -78,7 +90,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Stone",
     tags: ["construction"],
-    icon: "good-stone",
+    icon: "goods-stone",
     color: "#979EA2",
     value: 2,
     chance: 4,
@@ -91,7 +103,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Marble",
     tags: ["construction", "luxury"],
-    icon: "good-marble",
+    icon: "goods-marble",
     color: "#d6d0bf",
     value: 6,
     chance: 1,
@@ -103,7 +115,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Iron",
     tags: ["ore", "military"],
-    icon: "good-iron",
+    icon: "goods-iron",
     color: "#5D686E",
     value: 3,
     chance: 5,
@@ -115,7 +127,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Copper",
     tags: ["ore"],
-    icon: "good-copper",
+    icon: "goods-copper",
     color: "#b87333",
     value: 4,
     chance: 2,
@@ -126,7 +138,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Tin",
     tags: ["ore"],
-    icon: "good-tin",
+    icon: "goods-tin",
     color: "#454343",
     value: 4,
     chance: 2,
@@ -137,7 +149,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Silver",
     tags: ["ore", "luxury"],
-    icon: "good-silver",
+    icon: "goods-silver",
     color: "#C0C0C0",
     value: 8,
     chance: 2,
@@ -148,7 +160,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Gold",
     tags: ["ore", "luxury"],
-    icon: "good-gold",
+    icon: "goods-gold",
     color: "#ffd700",
     value: 15,
     chance: 2,
@@ -159,7 +171,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Grain",
     tags: ["food"],
-    icon: "good-grain",
+    icon: "goods-grain",
     color: "#F5DEB3",
     value: 1,
     chance: 4,
@@ -172,7 +184,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Cattle",
     tags: ["food"],
-    icon: "good-cattle",
+    icon: "goods-cattle",
     color: "#56b000",
     value: 2,
     chance: 4,
@@ -185,7 +197,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Fish",
     tags: ["food", "aquatic"],
-    icon: "good-fish",
+    icon: "goods-fish",
     color: "#7fcdff",
     value: 1,
     chance: 4,
@@ -197,7 +209,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Game",
     tags: ["food"],
-    icon: "good-game",
+    icon: "goods-game",
     color: "#c38a8a",
     value: 2,
     chance: 3,
@@ -210,7 +222,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Wine",
     tags: ["food", "luxury"],
-    icon: "good-wine",
+    icon: "goods-wine",
     color: "#963e48",
     value: 2,
     chance: 3,
@@ -223,7 +235,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Olives",
     tags: ["food"],
-    icon: "good-olives",
+    icon: "goods-olives",
     color: "#BDBD7D",
     value: 2,
     chance: 3,
@@ -236,7 +248,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Honey",
     tags: ["food", "preservative"],
-    icon: "good-honey",
+    icon: "goods-honey",
     color: "#DCBC66",
     value: 2,
     chance: 3,
@@ -249,7 +261,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Salt",
     tags: ["preservative", "mineral"],
-    icon: "good-salt",
+    icon: "goods-salt",
     color: "#E5E4E5",
     value: 2,
     chance: 3,
@@ -262,7 +274,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Dates",
     tags: ["food"],
-    icon: "good-dates",
+    icon: "goods-dates",
     color: "#dbb2a3",
     value: 2,
     chance: 2,
@@ -275,7 +287,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Horses",
     tags: ["supply", "military"],
-    icon: "good-horses",
+    icon: "goods-horses",
     color: "#ba7447",
     value: 5,
     chance: 4,
@@ -288,7 +300,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Elephants",
     tags: ["supply", "military"],
-    icon: "good-elephants",
+    icon: "goods-elephants",
     color: "#C5CACD",
     value: 7,
     chance: 2,
@@ -300,7 +312,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Camels",
     tags: ["supply", "military"],
-    icon: "good-camels",
+    icon: "goods-camels",
     color: "#C19A6B",
     value: 5,
     chance: 3,
@@ -313,7 +325,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Hemp",
     tags: ["clothing", "naval"],
-    icon: "good-hemp",
+    icon: "goods-hemp",
     color: "#069a06",
     value: 1,
     chance: 3,
@@ -325,7 +337,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Pearls",
     tags: ["luxury", "aquatic"],
-    icon: "good-pearls",
+    icon: "goods-pearls",
     color: "#EAE0C8",
     value: 13,
     chance: 2,
@@ -337,7 +349,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Gemstones",
     tags: ["luxury", "mineral"],
-    icon: "good-gemstones",
+    icon: "goods-gemstones",
     color: "#e463e4",
     value: 15,
     chance: 2,
@@ -349,7 +361,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Dyes",
     tags: ["luxury"],
-    icon: "good-dyes",
+    icon: "goods-dyes",
     color: "#fecdea",
     value: 5,
     chance: 1,
@@ -360,7 +372,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Incense",
     tags: ["luxury", "ritual"],
-    icon: "good-incense",
+    icon: "goods-incense",
     color: "#ebe5a7",
     value: 10,
     chance: 2,
@@ -371,7 +383,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Silk",
     tags: ["luxury", "clothing"],
-    icon: "good-silk",
+    icon: "goods-silk",
     color: "#e0f0f8",
     value: 9,
     chance: 1,
@@ -383,7 +395,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Spices",
     tags: ["luxury"],
-    icon: "good-spices",
+    icon: "goods-spices",
     color: "#e99c75",
     value: 15,
     chance: 2,
@@ -395,7 +407,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Amber",
     tags: ["luxury"],
-    icon: "good-amber",
+    icon: "goods-amber",
     color: "#e68200",
     value: 7,
     chance: 2,
@@ -407,7 +419,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Furs",
     tags: ["clothing", "luxury"],
-    icon: "good-furs",
+    icon: "goods-furs",
     color: "#8a5e51",
     value: 4,
     chance: 2,
@@ -420,7 +432,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Sheep",
     tags: ["clothing"],
-    icon: "good-sheep",
+    icon: "goods-sheep",
     color: "#53b574",
     value: 2,
     chance: 3,
@@ -433,7 +445,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Slaves",
     tags: ["supply"],
-    icon: "good-slaves",
+    icon: "goods-slaves",
     color: "#757575",
     value: 8,
     chance: 2,
@@ -445,7 +457,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Tar",
     tags: ["naval"],
-    icon: "good-tar",
+    icon: "goods-tar",
     color: "#727272",
     value: 3,
     chance: 0,
@@ -457,7 +469,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Saltpeter",
     tags: ["military", "mineral"],
-    icon: "good-saltpeter",
+    icon: "goods-saltpeter",
     color: "#e6e3e3",
     value: 2,
     chance: 3,
@@ -467,8 +479,8 @@ const GOODS_DATA: GoodData[] = [
   },
   {
     name: "Coal",
-    tags: ["fuel"],
-    icon: "good-coal",
+    tags: ["fuel", "mineral"],
+    icon: "goods-coal",
     color: "#5a6a75",
     value: 3,
     chance: 3,
@@ -480,7 +492,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Oil",
     tags: ["fuel"],
-    icon: "good-oil",
+    icon: "goods-oil",
     color: "#565656",
     value: 3,
     chance: 2,
@@ -492,7 +504,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Mahogany",
     tags: ["luxury"],
-    icon: "good-tropicalTimber",
+    icon: "goods-tropicalTimber",
     color: "#a45a52",
     value: 7,
     chance: 1,
@@ -503,7 +515,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Whales",
     tags: ["food", "aquatic", "fuel"],
-    icon: "good-whales",
+    icon: "goods-whales",
     color: "#7fcdff",
     value: 1,
     chance: 3,
@@ -515,7 +527,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Sugarcane",
     tags: ["preservative", "food"],
-    icon: "good-sugar",
+    icon: "goods-sugar",
     color: "#7abf87",
     value: 4,
     chance: 3,
@@ -526,7 +538,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Tea",
     tags: ["luxury"],
-    icon: "good-tea",
+    icon: "goods-tea",
     color: "#d0f0c0",
     value: 5,
     chance: 2,
@@ -538,7 +550,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Tobacco",
     tags: ["luxury"],
-    icon: "good-tobacco",
+    icon: "goods-tobacco",
     color: "#6D5843",
     value: 5,
     chance: 1,
@@ -549,7 +561,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Clay",
     tags: ["mineral", "construction"],
-    icon: "good-clay",
+    icon: "goods-clay",
     color: "#b07c60",
     value: 1,
     chance: 5,
@@ -561,7 +573,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "White sand",
     tags: ["mineral"],
-    icon: "good-sand",
+    icon: "goods-sand",
     color: "#e6d69c",
     value: 1,
     chance: 4,
@@ -572,7 +584,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Leather",
     tags: ["clothing", "military"],
-    icon: "good-leather",
+    icon: "goods-leather",
     color: "#8b5a2b",
     value: 4,
     chance: 0,
@@ -583,7 +595,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Cloth",
     tags: ["clothing"],
-    icon: "good-cloth",
+    icon: "goods-cloth",
     color: "#e8e69c",
     value: 4,
     chance: 0,
@@ -594,7 +606,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Garments",
     tags: ["clothing"],
-    icon: "good-garments",
+    icon: "goods-garments",
     color: "#bd21ec",
     value: 9,
     chance: 0,
@@ -608,7 +620,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Ceramics",
     tags: ["storage", "construction"],
-    icon: "good-ceramics",
+    icon: "goods-ceramics",
     color: "#c1440e",
     value: 6,
     chance: 0,
@@ -619,7 +631,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Glass",
     tags: ["storage", "construction"],
-    icon: "good-glass",
+    icon: "goods-glass",
     color: "#a0c8e8",
     value: 7,
     chance: 0,
@@ -631,7 +643,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Ropes",
     tags: ["naval", "construction"],
-    icon: "good-ropes",
+    icon: "goods-ropes",
     color: "#ba9773",
     value: 4,
     chance: 0,
@@ -642,7 +654,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Paper",
     tags: ["ritual", "educational"],
-    icon: "good-paper",
+    icon: "goods-paper",
     color: "#f5f5dc",
     value: 5,
     chance: 0,
@@ -653,7 +665,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Ink",
     tags: ["ritual", "educational"],
-    icon: "good-ink",
+    icon: "goods-ink",
     color: "#000000",
     value: 5,
     chance: 0,
@@ -664,7 +676,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Books",
     tags: ["ritual", "educational"],
-    icon: "good-books",
+    icon: "goods-books",
     color: "#deb887",
     value: 13,
     chance: 0,
@@ -679,7 +691,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Sails",
     tags: ["naval"],
-    icon: "good-sails",
+    icon: "goods-sails",
     color: "#ffffff",
     value: 7,
     chance: 0,
@@ -690,7 +702,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Ships",
     tags: ["naval"],
-    icon: "good-ships",
+    icon: "goods-ships",
     color: "#654321",
     value: 50,
     chance: 0,
@@ -702,7 +714,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Boots",
     tags: ["clothing", "military"],
-    icon: "good-boots",
+    icon: "goods-boots",
     color: "#654321",
     value: 6,
     chance: 0,
@@ -713,7 +725,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Harnesses",
     tags: ["military"],
-    icon: "good-harnesses",
+    icon: "goods-harnesses",
     color: "#a0522d",
     value: 8,
     chance: 0,
@@ -729,7 +741,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Barrels",
     tags: ["naval", "storage"],
-    icon: "good-barrels",
+    icon: "goods-barrels",
     color: "#b46e3b",
     value: 3,
     chance: 0,
@@ -740,7 +752,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Bronze",
     tags: ["military"],
-    icon: "good-bronze",
+    icon: "goods-bronze",
     color: "#e46f21",
     value: 9,
     chance: 0,
@@ -754,7 +766,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Tools",
     tags: ["construction", "military"],
-    icon: "good-tools",
+    icon: "goods-tools",
     color: "#808080",
     value: 17,
     chance: 0,
@@ -768,7 +780,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Arms",
     tags: ["military"],
-    icon: "good-arms",
+    icon: "goods-arms",
     color: "#333333",
     value: 25,
     chance: 0,
@@ -782,7 +794,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Gunpowder",
     tags: ["military"],
-    icon: "good-gunpowder",
+    icon: "goods-gunpowder",
     color: "#b0c4de",
     value: 10,
     chance: 0,
@@ -793,7 +805,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Artillery",
     tags: ["military"],
-    icon: "good-artillery",
+    icon: "goods-artillery",
     color: "#cd7f32",
     value: 21,
     chance: 0,
@@ -807,7 +819,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Coins",
     tags: ["currency"],
-    icon: "good-coins",
+    icon: "goods-coins",
     color: "#ffd700",
     value: 25,
     chance: 0,
@@ -821,7 +833,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Jewelry",
     tags: ["luxury"],
-    icon: "good-jewelry",
+    icon: "goods-jewelry",
     color: "#34861b",
     value: 34,
     chance: 0,
@@ -839,7 +851,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Preserved food",
     tags: ["food"],
-    icon: "good-salted-fish",
+    icon: "goods-salted-fish",
     color: "#c2b280",
     value: 4,
     chance: 0,
@@ -860,7 +872,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Vinegar",
     tags: ["food", "preservative"],
-    icon: "good-vinegar",
+    icon: "goods-vinegar",
     color: "#9b111e",
     value: 2,
     chance: 0,
@@ -871,7 +883,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Cheese",
     tags: ["food"],
-    icon: "good-cheese",
+    icon: "goods-cheese",
     color: "#f5e1a4",
     value: 4,
     chance: 0,
@@ -887,7 +899,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Beer",
     tags: ["food"],
-    icon: "good-beer",
+    icon: "goods-beer",
     color: "#fbb117",
     value: 7,
     chance: 0,
@@ -901,7 +913,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Liquor",
     tags: ["food", "luxury"],
-    icon: "good-liquor",
+    icon: "goods-liquor",
     color: "#8a0303",
     value: 9,
     chance: 0,
@@ -919,7 +931,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Candles",
     tags: ["luxury", "ritual"],
-    icon: "good-candles",
+    icon: "goods-candles",
     color: "#fffacd",
     value: 8,
     chance: 0,
@@ -930,7 +942,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Soap",
     tags: ["luxury", "ritual"],
-    icon: "good-soap",
+    icon: "goods-soap",
     color: "#e0e4cc",
     value: 5,
     chance: 0,
@@ -941,7 +953,7 @@ const GOODS_DATA: GoodData[] = [
   {
     name: "Perfume",
     tags: ["luxury", "ritual"],
-    icon: "good-perfume",
+    icon: "goods-perfume",
     color: "#ff69b4",
     value: 17,
     chance: 0,
@@ -956,6 +968,12 @@ const GOODS_DATA: GoodData[] = [
 ];
 
 export class GoodsModule {
+  readonly iconSet = {
+    id: "goods",
+    group: "Goods",
+    paint: { stroke: "#000000", strokeWidth: 2 } // the linework of the default goods style
+  } as const satisfies IconSet;
+
   private cells!: PackedGraph["cells"];
   private cellId: number = 0;
   private goodById: Good[] = [];
@@ -1100,6 +1118,113 @@ export class GoodsModule {
     return this.goodById[i];
   }
 
+  /** Rename a good */
+  rename(goodId: number, name: string): void {
+    this.living(goodId).name = requireName(name);
+  }
+
+  /** Set a good's icon: an emoji or an icon id */
+  setIcon(goodId: number, icon: string): void {
+    this.living(goodId).icon = Icons.reference(icon);
+  }
+
+  /** Set a good's color on the Goods layer */
+  recolor(goodId: number, color: string): void {
+    this.living(goodId).color = requireColor(color);
+  }
+
+  /** Set a good's base value per unit, in the map's currency; markets price it from this on the next economy run */
+  setPrice(goodId: number, value: number): void {
+    if (typeof value !== "number" || !(value >= 0 && Number.isFinite(value)))
+      throw new Error("The value must be a non-negative number");
+    this.living(goodId).value = value;
+  }
+
+  /** Set the unit a good is counted in, such as "barrel"; empty for none */
+  setUnit(goodId: number, unit: string): void {
+    if (typeof unit !== "string") throw new Error("The unit must be text");
+    this.living(goodId).unit = unit.trim();
+  }
+
+  /** Set a good's tags, such as "food, luxury" */
+  setTags(goodId: number, tags: string[]): void {
+    if (!Array.isArray(tags) || tags.some(tag => typeof tag !== "string")) throw new Error("Tags are a list of words");
+    this.living(goodId).tags = [...new Set(tags.map(tag => tag.trim().toLocaleLowerCase()).filter(Boolean))];
+  }
+
+  /** Set how a good is produced: chance (0–100), recipes ([{ goodId: amount }]), biomeOutput ({ biomeId: amount }), multipliers ({ cultureType | culture | state | religion | biome | zone: { key: factor } }), demandCoverage ({ category: share }). A key set to null clears it. Takes effect on the next economy run */
+  setProduction(goodId: number, rules: ProductionRules): void {
+    const good = this.living(goodId);
+    if (typeof rules !== "object" || rules === null) throw new Error("The production rules must be an object");
+    const nonNegative = (value: unknown, label: string) => {
+      if (typeof value !== "number" || !(value >= 0 && Number.isFinite(value)))
+        throw new Error(`${label} must be a non-negative number`);
+    };
+    const record = (value: unknown, label: string, key: (id: string) => boolean) => {
+      if (typeof value !== "object" || value === null || Array.isArray(value))
+        throw new Error(`${label} must be an object`);
+      for (const [id, amount] of Object.entries(value)) {
+        if (!key(id)) throw new Error(`${label} names an unknown ${id}`);
+        nonNegative(amount, `${label} ${id}`);
+      }
+    };
+    const isId = (id: string) => /^\d+$/.test(id); // ids of other entities; stale ones are harmless
+    const next: Partial<Good> = {};
+    for (const [key, value] of Object.entries(rules)) {
+      if (value === null) {
+        next[key as keyof ProductionRules] = undefined;
+        continue;
+      }
+      if (key === "chance") {
+        nonNegative(value, "The chance");
+        if ((value as number) > 100) throw new Error("The chance must be from 0 to 100");
+      } else if (key === "recipes") {
+        if (!Array.isArray(value)) throw new Error("Recipes are a list of { goodId: amount }");
+        for (const recipe of value) {
+          record(recipe, "A recipe", id => Boolean(this.findGood(+id)));
+          if (!Object.keys(recipe).length) throw new Error("Each recipe needs at least one ingredient");
+          if (Object.values(recipe).some(amount => !amount)) throw new Error("Recipe amounts must be positive");
+        }
+      } else if (key === "biomeOutput") record(value, "The biome output", isId);
+      else if (key === "demandCoverage")
+        record(value, "The demand coverage", id => (DEMAND_PRIORITY as readonly string[]).includes(id));
+      else if (key === "multipliers") {
+        const dimensions: Record<string, (id: string) => boolean> = {
+          cultureType: id => (CULTURE_TYPES as readonly string[]).includes(id),
+          culture: isId,
+          state: isId,
+          religion: isId,
+          biome: isId,
+          zone: isId
+        };
+        if (typeof value !== "object" || Array.isArray(value)) throw new Error("Multipliers must be an object");
+        for (const [dimension, factors] of Object.entries(value)) {
+          if (!dimensions[dimension])
+            throw new Error(`Unknown multiplier ${dimension}; known: ${Object.keys(dimensions).join(", ")}`);
+          record(factors, `The ${dimension} multiplier`, dimensions[dimension]);
+        }
+      } else
+        throw new Error(
+          `Unknown production rule ${key}; known: chance, recipes, biomeOutput, multipliers, demandCoverage`
+        );
+      next[key as keyof ProductionRules] = structuredClone(value) as never;
+    }
+    for (const [key, value] of Object.entries(next)) {
+      if (value === undefined) delete good[key as keyof ProductionRules];
+      else Object.assign(good, { [key]: value });
+    }
+  }
+
+  private findGood(goodId: number): Good | undefined {
+    return pack.goods?.find(good => good.i === goodId);
+  }
+
+  private living(goodId: number): Good {
+    const good = this.findGood(goodId);
+    if (!good) throw new Error(`Good ${goodId} does not exist`);
+    return good;
+  }
+
   sync() {
     this.goodById = [];
     for (const good of pack.goods) this.goodById[good.i] = good;
@@ -1126,4 +1251,6 @@ declare global {
   var Goods: GoodsModule;
 }
 
-window.Goods = new GoodsModule();
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const Goods = new GoodsModule();
+window.Goods = Goods;

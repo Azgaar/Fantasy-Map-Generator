@@ -1,6 +1,7 @@
 // Browser-mode test (vitest.browser.config.ts): the coordinates renderer takes its base label
 // size from the store, not the retired data-size attribute.
 import { beforeEach, expect, test } from "vitest";
+import "@/components/options-model"; // installs the options global
 import "@/generators/styles";
 import { setViewportTransform } from "@/components/viewport";
 import { drawCoordinates } from "./draw-coordinates";
@@ -15,7 +16,7 @@ beforeEach(() => {
 });
 
 test("drawCoordinates sizes labels from the store, ignoring data-size", () => {
-  styles.coordinates.options.fontSize = 20;
+  styles.coordinates.attrs["font-size"] = "20px";
   document.getElementById("coordinates")!.setAttribute("data-size", "99");
 
   drawCoordinates();

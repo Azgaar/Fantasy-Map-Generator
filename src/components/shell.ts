@@ -18,7 +18,7 @@ export function initShell(): void {
   document.addEventListener("touchstart", onTitlebarButtonTouch, { capture: true, passive: true });
   addDragToUpload();
   initTourPromptButton();
-  initHelpAssistantBubble();
+  initAssistantBubble();
 
   if (!isLocalhost() && !isElectron()) window.onbeforeunload = () => "Are you sure you want to navigate away?";
   if (isElectron()) removeWebOnlyControls();
@@ -34,11 +34,11 @@ function onResize(): void {
 }
 
 /** The assistant's call button: always in the markup, shown only when the preference says so */
-function initHelpAssistantBubble(): void {
-  const bubble = findEl("helpAssistantBubble");
+function initAssistantBubble(): void {
+  const bubble = findEl("assistantBubble");
   if (!bubble) return;
 
-  bubble.addEventListener("click", () => Controllers.HelpAssistant.toggle());
+  bubble.addEventListener("click", () => Controllers.Assistant.toggle());
   bubble.addEventListener("mouseover", showDataTip);
 }
 
@@ -48,8 +48,7 @@ function initHelpAssistantBubble(): void {
  */
 function onTitlebarButtonTouch(event: TouchEvent): void {
   const target = event.target as HTMLElement | null;
-  if (target?.closest?.(".ui-dialog-titlebar-close, .ui-dialog-titlebar-collapse, .ui-dialog-titlebar-reset"))
-    event.stopPropagation();
+  if (target?.closest?.(".ui-dialog-titlebar button")) event.stopPropagation();
 }
 
 /**
@@ -160,7 +159,6 @@ export function warnIfServerless(): boolean {
 
 function removeWebOnlyControls(): void {
   findEl("getAppButton")?.remove();
-  findEl("azgaarAssistant")?.closest("tr")?.remove();
   findEl("saveToDropboxButton")?.remove();
   findEl("loadFromDropbox")?.remove();
 }

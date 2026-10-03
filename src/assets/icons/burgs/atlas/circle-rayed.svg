@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-6 -6 12 12">
+<circle r="3.5" />
+<circle r=".5" fill="none" />
+<path d="M0-6V-4.5M0 4.5V6M-6 0H-4.5M4.5 0H6" fill="none" />
+</svg>

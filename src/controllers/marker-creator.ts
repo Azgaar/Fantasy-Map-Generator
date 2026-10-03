@@ -1,5 +1,6 @@
 import { pointer } from "d3";
 import { refreshEditors } from "@/components/dialog/dialog-helpers";
+import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import type { Marker } from "@/generators/markers-generator";
@@ -31,7 +32,7 @@ function addOnClick(event: MouseEvent, baseMarker?: Marker): void {
 
   const selectedType = ensureEl<HTMLSelectElement>("addedMarkerType").value;
   const selectedConfig = Markers.getConfig().find(({ type }) => type === selectedType);
-  const template = baseMarker || selectedConfig || { icon: "❓", type: "custom" };
+  const template = baseMarker || selectedConfig || { icon: Icons.glyph("❓"), type: "custom" };
   const marker = Markers.add({ ...template, x: rn(point[0], 2), y: rn(point[1], 2), cell } as Marker);
   selectedConfig?.add(marker, cell);
 

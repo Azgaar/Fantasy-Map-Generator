@@ -10,7 +10,9 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Pack**: The main data object containing all world data (cells, burgs, states, cultures, etc.), created after 'repacking' the grid to discard most of ocean cells and add more cells along the coasts.
 - **Layer**: A visual or logical overlay on the map (e.g., rivers, biomes, elevation).
 - **SVG Layer**: A named group of SVG elements for a specific map feature.
-- **Seed**: The value used for random number generation (reproducibility).
+- **Style element**: One top-level entry of the style store (`StyleElement`, a key of `stylesSchema`): a Layer's style, or `map` for whole-map filters. It is what the Style tab edits one at a time. Close to Layer, not equal: `map` is not a Layer, and parts of a Layer (burg anchors, the states halo) are not Style elements.
+- **Seed**: The value used for random number generation (reproducibility). Not an identity: regenerating with the same seed makes a different Map.
+- **Map id**: The identity of a Map: the moment it was generated. Carried in the `.map` file, so a saved map keeps its id when loaded again; every new generation gets a new one. _Avoid_: seed (as an identifier)
 
 ## Separation of Concerns
 
@@ -20,7 +22,7 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Overview**: A read-only Controller that presents world data without mutating it (e.g., production-overview, market-overview, charts-overview).
 - **Renderer**: The system that visualizes world data as SVG or WebGL graphics (`src/renderers/`).
 - **Service**: App-shell / platform & asset infrastructure, unrelated to map domain state (e.g., PWA installation, auto-update, the font catalog & loading). Cross-cutting (may be consumed by IO, UI, and rendering alike) but owns no world data. Lives in `src/services/`.
-- **IO**: Serialization and persistence — save, load, export, cloud storage (`src/io/`, legacy `public/modules/io/`).
+- **IO**: Serialization and persistence — save, load, export, cloud storage (`src/services/io/`).
 
 ## World Data & State
 
@@ -52,9 +54,24 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Trade Batch**: All deals sharing the same ordered `(seller burg, buyer burg)` endpoints, animated as one flow on the map.
 - **Demand Category**: One of `food | utilities | construction | military | luxury`, evaluated in `DEMAND_PRIORITY` order during production and demand fill.
 - **Namesbase**: A collection of linguistic rules, prefixes, and suffixes used to procedurally generate names for map entities.
-- **Emblem**: A heraldic shield or flag representing a State, Province, or Burg.
+- **Emblem**: The sign of a State, Province or Burg: either a Heraldic emblem or a Picture emblem.
+- **Heraldic emblem**: A blazon drawn from its field, divisions, ordinaries and Charges; editable in Armoria and recoloured by its tinctures.
+- **Picture emblem**: An Emblem that holds an Icon reference and shows it whole, with no field: a pasted image or Armoria render, or a Charge shown without a shield.
+- **Charge**: A figure placed on a field, tinted by its tincture: a built-in charge by name, or any Icon Library icon by its Icon reference. Built-in Charges also form the Heraldry Icon Sets and can be used in any Icon slot.
 - **Note**: User-defined html text describing a map entity, stored on the entity as `note?: string`. Shown in the notes box when the entity's element is hovered, and edited from that entity's editor or from the Notes Editor. A note cannot exist without an entity to own it.
-- **Icon**: A small graphic representing a good, biome, or feature.
+- **Icon**: A small picture drawn for a map entity or a style — a good, burg, marker, regiment, unit type, relief feature.
+- **Icon Library**: Every icon a slot can use, in three sources: the Icon Sets, Glyphs and the map's Custom icons. What the icon picker shows, listed by source.
+- **Icon Set**: A catalogue of icons the app ships, such as `goods`, `burgs` or a relief set. _Avoid_: collection
+- **Glyph**: Short text drawn as an icon — an emoji, a symbol such as `⟱`, or letters such as `XIV`. Glyphs form a virtual Icon Set: derived from the text, never stored. _Avoid_: emoji (only one kind of glyph), text icon
+- **Custom icon**: A picture the map carries — SVG art, a raster image or a link to an image hosted elsewhere — known by an id rather than a name. Part of the map's setup, like transport types: saved with the map, replaced when another map is loaded, carried over to a new map. Replacing its picture keeps the id, so every slot follows; identical pictures added twice are two icons. _Avoid_: upload, user icon
+- **Icon reference**: The bare symbol id (`goods-wood`, `glyph-1f3f0`, `custom-1a2b3c4d`) through which a slot points at an icon from any source. An empty reference means no icon; a reference to an icon that no longer exists draws nothing. _Avoid_: image URL, inline image
+- **Icon slot**: A place that holds one icon reference: a good's icon, a marker's icon, a regiment's or unit type's icon, a burg group's icon, the market marker style, a relief icon, a relief pool entry, a Charge or a Picture emblem. Every slot accepts every source. Removing a Custom icon reports how many slots use it.
+- **Relief pool**: A weighted list of what relief is generated from: a biome's for its lowland relief, a relief rule's for the cells it claims. Each entry is a relief type, drawn in the style's relief set, or an icon reference, with a positive weight and a size relative to the pool's icon size. _Avoid_: weighted icons, icon list
+- **Relief density**: How packed a pool's relief is; 0 places none.
+- **Relief rule**: A height range, an optional temperature range and an optional set of biomes that claim land cells for a relief pool, with an icon size that grows with height. Rules are checked in order and the first match wins; the defaults are snowy mountains, mountains and hills. Part of the map's setup, kept across regeneration. _Avoid_: highland zone, elevation band
+- **Lowland relief**: The relief a biome's pool places, on land no relief rule claims — below height 50 with the default rules.
+- **Icon frame**: The box around an icon's visible content, owned by the picture: fixing it fixes every use at once. Only Custom icons can be repositioned. Size and placement at a use (a marker's pin, a good's circle, a burg's anchor) belong to that use, never to the frame. _Avoid_: viewBox (the implementation), crop
+- **Anchored icon**: An icon drawn around a point rather than inside its frame — the burg and port sets, whose art stands on the burg. Any other icon on a burg is centred on the point.
 - **Label**: Display text owned by a map entity — a State, Province, Burg, River, Route, or Added Label. Every label is anchored at its entity's position and drawn as positioned text there, unless it has path points — then the text is curved along them. Any label can be switched between the two in the Label Editor.
 - **Added Label**: A free-standing map entity created by the user, whose only purpose is to carry a Label. It supplies the position that other label owners get from their own geometry.
 - **Label Group**: An ordered, reusable label policy and visual style. Policy fields live in `options.map.labels.groups`; typography and offsets live in `style.labels.groups`. Any label type can use any Label Group without changing how that entity is rendered.
@@ -69,3 +86,18 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Overview Tool**: A summary UI for a particular system (e.g., production-overview, market-overview).
 - **Configurator**: A UI for setting up world generation parameters.
 - **Submap**: A tool to generate a new, more detailed map strictly from a selected area of the current map.
+
+## Azgaar Assistant
+
+- **Azgaar Assistant**: The in-app chat that answers questions about the generator and about the open Map. "The Assistant" for short. _Avoid_: Azgaar Bot, Azgaar Agent, AI Chat, Help assistant, Map assistant
+- **Chat**: One exchange of questions and answers with the Assistant. It belongs to exactly one Map (by Map id) from the moment it is created and is kept only in this browser, never in the `.map` file. _Avoid_: conversation, session, thread
+- **Tier**: The Assistant's level of access for this user: Guest, Member or Key. Derived from two independent facts — signed in or not, key connected or not — never chosen. Where none applies (a self-hosted copy or the desktop app without a key) the Assistant asks for a key. _Avoid_: mode, plan
+- **Guest**: The Tier of a user who is neither signed in nor has a key connected: a small daily allowance of documentation answers. _Avoid_: free, anonymous
+- **Member**: The Tier of a user signed in with Discord and without a key: a larger daily allowance. Guest and Member together are the free tiers.
+- **Key**: The Tier of a user with their own AI provider key (or a local model) connected. "Connected" means set and not disconnected; a key the provider rejects keeps the Tier. Wins over sign-in; disconnecting the key returns the user to Guest or Member. _Avoid_: own key, BYOK, Pro
+- **Operation**: A named, well-scoped edit a model class owns as a public method (e.g. `Burgs.rename`, `Notes.write`) and that is registered for the Assistant. The editors call the same methods, so an edit follows the same rules whoever makes it.
+- **Proposal**: A batch of Operations the Assistant asks for, shown in the Chat as one card and applied, undone or discarded as a whole by the user. The Assistant never changes the Map without one. _Avoid_: suggestion, pending edit
+- **Change**: A Proposal's recorded before and after values of everything it touches, side effects included. Apply is allowed only while every "before" value still holds, Undo only while every "after" value does.
+- **Widget**: An interactive part of an Assistant answer tied to the Map: an entity or command link written in its Markdown, or an item (an entity list, a card, a chart, an inset…) the Assistant places in the Chat. Widgets hold references, never copies, and work only while their Map is open. _Avoid_: embed, attachment
+- **Azgaar server**: The project's own server (ask.azgaarsfmg.com) that answers Guest and Member questions from the documentation. Owns the daily allowance, Discord sign-in and its own Chat memory; cannot see the Map. _Avoid_: gateway, hosted engine, documentation service, help service
+- **Provider**: The AI company (Anthropic, OpenAI, …) or local model server that answers Key-tier questions with the user's own key. _Avoid_: engine, agent

@@ -48,7 +48,7 @@ test.describe("Burgs.add", () => {
 
       // Add a new burg at this inland location
       const Burgs = (window as any).Burgs;
-      const burgId = Burgs.add([x, y]);
+      const burgId = Burgs.add(x, y);
       const burg = burgs[burgId];
 
       return {
@@ -84,7 +84,7 @@ test.describe("Burgs.add", () => {
         const hasNoBurg = !cells.burg[i];
         if (isLand && hasNoHarbor && hasNoBurg) {
           const [x, y] = cells.p[i];
-          return (window as any).Burgs.add([x, y]);
+          return (window as any).Burgs.add(x, y);
         }
       }
       return null;

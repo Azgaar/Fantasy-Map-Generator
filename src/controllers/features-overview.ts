@@ -1,5 +1,5 @@
 import { select } from "d3";
-import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog, noteIcon, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import { dialogState } from "@/components/dialog/state";
@@ -13,7 +13,6 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
-import { Notes } from "@/components/notes";
 import { Controllers } from "@/controllers";
 import {
   type Feature,
@@ -275,7 +274,7 @@ function renderFeaturesPage(view: TableView<Feature>): void {
           ? `<span data-col="coastline" class="placeholder"></span>`
           : `<span data-tip="Edit the feature's own coastline settings" data-col="coastline" class="icon-draw-polygon pointer featureCoastline" style="${feature.coastline ? "" : "opacity:.7"}"></span>`
       }
-      ${Notes.getIcon("this feature")}
+      ${noteIcon("this feature")}
     </div>`;
   }
   body.insertAdjacentHTML("beforeend", lines);
@@ -367,22 +366,25 @@ function zoomToFeature(element: HTMLElement): void {
 }
 
 function changeName(input: HTMLElement): void {
-  getFeature(input).name = (input as HTMLInputElement).value.trim();
+  const feature = getFeature(input);
+  const name = (input as HTMLInputElement).value.trim();
+  if (name) Features.rename(feature.i, name);
+  else feature.name = "";
 }
 
 function changeSubtype(select: HTMLElement): void {
-  getFeature(select).subtype = (select as HTMLSelectElement).value; // no cascade: generators pick it up on the next run
+  Features.setSubtype(getFeature(select).i, (select as HTMLSelectElement).value); // no cascade: generators pick it up on the next run
 }
 
 function changeGroup(select: HTMLElement): void {
-  getFeature(select).group = (select as HTMLSelectElement).value;
+  Features.setGroup(getFeature(select).i, (select as HTMLSelectElement).value);
   Layers.draw("lakes");
 }
 
 // lakes are styled by #lakes > g, islands by #coastline > g
 function editGroupStyle(element: HTMLElement): void {
   const feature = getFeature(element);
-  editStyle(feature.type === "lake" ? "lakes" : "coastline", feature.group);
+  void Controllers.StyleEditor.open(feature.type === "lake" ? "lakes" : "coastline", feature.group);
 }
 
 function editNote(element: HTMLElement): void {

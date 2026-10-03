@@ -34,23 +34,25 @@ const zones = [["zone1", "#0000ff", "Gamma"]];
 const boxOf = (name: string) => document.querySelector(`#legend > g[data-legend="${name}"]`);
 
 describe("drawLegend", () => {
-  it("sizes the legend from the store and stamps the group font-size", () => {
-    styles.legend.options.fontSize = 20;
+  it("lays the box out from the store font size", () => {
+    styles.legend.attrs["font-size"] = "20px";
     drawLegend("States", items);
-    expect(document.getElementById("legend")!.getAttribute("font-size")).toBe("20");
-    styles.legend.options.fontSize = 13;
+    const tall = boxOf("States")!.querySelector(".legendBox")!.getAttribute("height");
+    styles.legend.attrs["font-size"] = "13px";
+    drawLegend("States", items);
+    expect(Number(tall)).toBeGreaterThan(Number(boxOf("States")!.querySelector(".legendBox")!.getAttribute("height")));
   });
 
   it("takes the styling from the store when the legend is drawn anew", () => {
     styles.legend.options.columns = 4;
-    styles.legend.box.attrs.fill = "#123456";
+    styles.legend.groups.box.attrs.fill = "#123456";
     drawLegend("States", items);
 
     const box = boxOf("States")!.querySelector(".legendBox")!;
     expect(box.getAttribute("data-columns")).toBe("4");
     expect(box.getAttribute("fill")).toBe("#123456");
     styles.legend.options.columns = 8;
-    styles.legend.box.attrs.fill = "#ffffff";
+    styles.legend.groups.box.attrs.fill = "#ffffff";
   });
 
   it("redraws the box from the store, not from the attrs the drawn box carried", () => {
@@ -58,8 +60,8 @@ describe("drawLegend", () => {
 
     const box = boxOf("States")!.querySelector(".legendBox")!;
     box.setAttribute("fill", "#f0e0c0"); // a stale DOM value the store never learned about
-    styles.legend.box.attrs.fill = "#abcdef";
-    styles.legend.box.attrs["fill-opacity"] = 0.6;
+    styles.legend.groups.box.attrs.fill = "#abcdef";
+    styles.legend.groups.box.attrs["fill-opacity"] = 0.6;
     styles.legend.options.columns = 1;
 
     redrawLegend();
@@ -71,20 +73,17 @@ describe("drawLegend", () => {
     expect(boxOf("States")!.querySelector(".legendLabel")?.textContent).toBe("States");
     expect(document.querySelectorAll("#legend text")).toHaveLength(3); // 2 items + the label
     styles.legend.options.columns = 8;
-    styles.legend.box.attrs.fill = "#ffffff";
+    styles.legend.groups.box.attrs.fill = "#ffffff";
   });
 
-  it("fitLegendBox positions from the store, ignoring the retired data attrs", () => {
-    styles.legend.options.x = 50;
-    styles.legend.options.y = 50;
+  it("fitLegendBox positions from the remembered spot, ignoring the retired data attrs", () => {
+    legendPositions.set("States", { x: 50, y: 50, dragged: true });
     drawLegend("States", items);
     fitLegendBox();
 
     const transform = boxOf("States")!.getAttribute("transform");
     // viewport 800 * 0.5 - bbox width 60 = 340; 600 * 0.5 - bbox height 40 = 260
     expect(transform).toBe("translate(340,260)");
-    styles.legend.options.x = 99;
-    styles.legend.options.y = 93;
   });
 
   it("dragLegendBox stores the dragged position of the dragged box alone", () => {
@@ -101,7 +100,6 @@ describe("drawLegend", () => {
 
     // (100+60+60)/800*100 = 27.5 ; (100+20+40)/600*100 = 26.67
     expect(legendPositions.get("States")).toEqual({ x: 27.5, y: 26.67, dragged: true });
-    expect(styles.legend.options.x).toBe(99); // the anchor stays where the preset put it
   });
 });
 
@@ -126,32 +124,21 @@ describe("several legend boxes", () => {
     expect(boxOf("Zones")!.getAttribute("transform")).toBe("translate(732,468)");
   });
 
-  it("places the new box below when the legend is anchored to the top of the canvas", () => {
-    // a map whose legend was dragged to the top-left has no room above it or to its left
-    styles.legend.options.x = 10;
-    styles.legend.options.y = 8;
+  it("a box dragged away from the anchor leaves it to the next box", () => {
+    legendPositions.set("States", { x: 10, y: 8, dragged: true });
     drawLegend("States", items);
     drawLegend("Zones", zones);
-
-    // states box bottom sits at 600 * 0.08 = 48, so the zones box goes below it, not on top of it
-    expect(legendPositions.get("States")).toEqual({ x: 10, y: 8 });
-    expect(legendPositions.get("Zones")).not.toEqual(legendPositions.get("States"));
-    expect(legendPositions.get("Zones")).toEqual({ x: 10, y: 16.33 }); // (48 + 10 + 40) / 600
-    styles.legend.options.x = 99;
-    styles.legend.options.y = 93;
+    expect(legendPositions.get("Zones")).toEqual({ x: 99, y: 93 });
   });
 
   it("never auto-places a box partly outside the canvas", () => {
-    styles.legend.options.x = 2; // right edge at 16px, narrower than the 60px box
-    styles.legend.options.y = 8;
+    legendPositions.set("States", { x: 2, y: 8, dragged: true }); // right edge at 16px, narrower than the 60px box
     drawLegend("States", items);
     drawLegend("Zones", zones);
 
     const { x, y } = legendPositions.get("Zones")!;
     expect(800 * (x / 100) - 60).toBeGreaterThanOrEqual(0); // left edge on canvas
     expect(600 * (y / 100) - 40).toBeGreaterThanOrEqual(0); // top edge on canvas
-    styles.legend.options.x = 99;
-    styles.legend.options.y = 93;
   });
 
   it("redraws every shown box and leaves the placement alone", () => {

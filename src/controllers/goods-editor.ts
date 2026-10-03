@@ -3,6 +3,7 @@ import {
   closeDialogs,
   confirmationDialog,
   destroyDialog,
+  noteIcon,
   refreshEditors,
   updateDialog
 } from "@/components/dialog/dialog-helpers";
@@ -17,11 +18,12 @@ import {
   setModeHiddenColumns,
   type TableView
 } from "@/components/dialog/table";
+import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
-import { Notes } from "@/components/notes";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { goodBadge } from "@/renderers/draw-goods";
 import { downloadFile, getFileName, rn } from "@/utils";
 import type { Good } from "../generators/goods-generator";
 import { isDealRecord, isMfgRecord } from "../generators/production-generator";
@@ -83,7 +85,8 @@ const columns: EditorColumn<Good>[] = [
 const goodsTable = initEditorTable<Good>({ getData: getGoodsData, onUpdate: renderGoodsPage });
 
 /** With a good id, the Goods layer shows only that good */
-function open(goodId?: number) {
+function open(goodId?: number): void {
+  void Icons.retry("goods");
   if (customization) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ visibleTags: [] as string[] }));
   closeDialogs("#goodsEditor, .stable");
@@ -222,8 +225,7 @@ function renderGoodsPage(view: TableView<Good>) {
       return /*html*/ `<div class="states goods" data-id=${good.i} data-produced="${produced}" data-stock="${stock}">
         <div data-col="display"><input type="checkbox" data-tip="Toggle this good on the Goods map" class="native goodDisplayed" style="margin: 0; width: 1.2em;" ${good.visible ? "checked" : ""} /></div>
         <div data-col="name" style="display:flex; align-items:center"><svg data-tip="Good icon" width="2em" height="2em" class="goodIcon">
-          <circle cx="50%" cy="50%" r="42%" fill="${good.color}" stroke="${Goods.getStroke(good.color)}"/>
-          <use href="#${good.icon}" x="10%" y="10%" width="80%" height="80%"/>
+          ${goodBadge(good)}
         </svg><span data-tip="Good name" class="goodName">${good.name}</span></div>
         <div data-col="type" data-tip="Good types" class="goodType">${types.map(renderTypeBadge).join(" ")}</div>
         <div data-col="unit" data-tip="Unit of production" class="goodUnit">${good.unit ?? ""}</div>
@@ -236,7 +238,7 @@ function renderGoodsPage(view: TableView<Good>) {
           <div style="display: inline-block; width: 0.4em; font-size: 1.2em;">⛁</div>
         </div>
         <div data-col="price" data-tip="Base (initial) price. Click to compare prices across markets" class="goodBasePrice pointer">🟡 ${good.value}</div>
-        ${Notes.getIcon("this good")}
+        ${noteIcon("this good")}
         <span data-col="edit" data-tip="Edit good" class="icon-pencil goodEdit"></span>
         <span data-col="remove" data-tip="Remove good" class="icon-trash-empty goodRemove"></span>
       </div>`;
@@ -699,10 +701,6 @@ function removeGood(good: Good) {
     }
 
     pack.goods = pack.goods.filter(g => g.i !== good.i);
-    // custom icons live outside the map svg and are never saved with the pack, drop the orphan
-    if (good.icon.startsWith("good-custom-") && !pack.goods.some(g => g.icon === good.icon)) {
-      document.getElementById(good.icon)?.remove();
-    }
     Goods.sync();
     goodsTable.refresh();
     Layers.draw("goods");

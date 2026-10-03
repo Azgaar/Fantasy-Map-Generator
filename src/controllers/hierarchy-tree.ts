@@ -47,6 +47,7 @@ const dragLine = viewbox.select("path#hierarchyTree_dragLine");
 
 // properties
 let dataElements: HierarchyElement[]; // {i, name, type, origins}[], e.g. path.religions
+let model: typeof Cultures | typeof Religions; // owns the origin and code edits
 let validElements: HierarchyElement[]; // not-removed dataElements
 let onNodeEnter: (d: any) => void;
 let onNodeLeave: (d: any) => void;
@@ -57,6 +58,7 @@ function open(props: OpenProps): void {
   closeDialogs("#hierarchyTree, .stable");
 
   dataElements = props.data;
+  model = props.type === "cultures" ? Cultures : Religions;
   validElements = cleanupOrigins(dataElements);
   if (validElements.length < 3) {
     tip(`Not enough ${props.type} to show hierarchy`, false, "error");
@@ -428,8 +430,8 @@ function selectElement(d: any): void {
     if (input.value.length > 3) return tip("Abbreviation must be 3 characters or less", false, "error", 3000);
     if (!input.value.length) return tip("Abbreviation cannot be empty", false, "error", 3000);
 
-    node.select("text").text(input.value);
-    dataElement.code = input.value;
+    model.setCode(dataElement.i, input.value);
+    node.select("text").text(dataElement.code || "");
   };
 
   const createOriginButtons = () => {
@@ -447,8 +449,8 @@ function selectElement(d: any): void {
       const target = event.target as HTMLElement;
       if (target.tagName !== "BUTTON") return;
       const origin = Number(target.dataset.id);
-      const filtered = dataElement.origins.filter(elementOrigin => elementOrigin !== origin);
-      dataElement.origins = filtered.length ? filtered : [0];
+      const filtered = dataElement.origins.filter(elementOrigin => elementOrigin !== origin) as number[];
+      model.setOrigins(dataElement.i, filtered.length ? filtered : [0]);
       target.remove();
       updateTree();
     };
@@ -508,7 +510,7 @@ function selectElement(d: any): void {
             .map(input => Number(input.dataset.id))
             .filter(origin => origin !== primary);
 
-          dataElement.origins = [primary, ...secondary];
+          model.setOrigins(dataElement.i, [primary, ...secondary]);
 
           updateTree();
           createOriginButtons();
@@ -568,8 +570,8 @@ function dragToReorigin(event: D3DragEvent<SVGGElement, unknown, unknown>, from:
     const element = dataElements.find(({ i }) => i === elementId);
     if (!element) return;
 
-    if (element.origins[0] === 0) element.origins = [];
-    element.origins.push(newOrigin);
+    const origins = (element.origins[0] === 0 ? [] : element.origins) as number[];
+    model.setOrigins(elementId, [...origins, newOrigin]);
 
     selectElement(from);
     updateTree();

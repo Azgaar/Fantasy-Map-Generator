@@ -1,14 +1,14 @@
-import { type D3DragEvent, drag, easeSinInOut, select, sum, transition } from "d3";
-import { closeDialogs, destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { type D3DragEvent, drag, easeSinInOut, select, transition } from "d3";
+import { closeDialogs, destroyDialog, noteButton, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
-import { Notes } from "@/components/notes";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { drawRegiment, moveRegiment } from "@/renderers/draw-military";
-import { escapeHtml, isImageIcon, speak } from "@/utils";
+import { drawRegiment, moveRegiment, regimentIconBox, updateRegimentIcon } from "@/renderers/draw-military";
+import { speak } from "@/utils";
 import type { Regiment } from "../generators/military-generator";
-import { capitalize, ensureEl, getPointer, last, rn } from "../utils";
+import { capitalize, ensureEl, getPointer, rn } from "../utils";
 
 let selectedRegiment: SVGGElement | null = null;
 
@@ -62,7 +62,7 @@ function renderDialog(): void {
       </div>
       <div data-tip="Regiment icon" style="display: flex; align-items: center">
         <div class="label">Icon:</div>
-        <div id="regimentIcon" translate="no" style="font-size: 1.5em; width: 3.7em"></div>
+        <div id="regimentIcon" translate="no" style="font-size: 1.5em; width: 3.7em; display: flex"></div>
         <button id="regimentIconChange" style="padding: 0; width: 4.5em">change</button>
       </div>
       <div id="regimentComposition" class="table"></div>
@@ -77,7 +77,7 @@ function renderDialog(): void {
         class="icon-attach"
       ></button>
       <button id="regimentRegenerateLegend" data-tip="Regenerate legend for this regiment" class="icon-retweet"></button>
-      ${Notes.getButton("regimentLegend", "this regiment")}
+      ${noteButton("regimentLegend", "this regiment")}
       <button
         id="regimentRemove"
         data-tip="Remove regiment"
@@ -113,9 +113,7 @@ function getRegiment(): Regiment | undefined {
 function updateRegimentData(regiment: Regiment): void {
   ensureEl("regimentType").className = regiment.n ? "icon-anchor" : "icon-users";
   ensureEl<HTMLInputElement>("regimentName").value = regiment.name;
-  ensureEl("regimentIcon").innerHTML = isImageIcon(regiment.icon!)
-    ? `<img src="${escapeHtml(regiment.icon!)}" style="width: 1em; height: 1em;">`
-    : escapeHtml(regiment.icon!);
+  ensureEl("regimentIcon").innerHTML = Icons.html(regiment.icon ?? "");
 
   const composition = ensureEl("regimentComposition");
   composition.innerHTML = options.map.military.units
@@ -193,52 +191,55 @@ function rotateRegiment(this: SVGCircleElement, event: D3DragEvent<SVGCircleElem
     const angle = rn(Math.atan2(y - reg.y, x - reg.x) * (180 / Math.PI), 2);
     selectedRegiment!.setAttribute("transform", `rotate(${angle})`);
     this.setAttribute("transform", `rotate(${angle})`);
-    reg.angle = rn(angle, 2);
+    Military.rotate(reg.state, reg.i, angle);
   });
 }
 
 function changeType(): void {
   const reg = getRegiment();
   if (!reg || !selectedRegiment) return;
-  reg.n = +!reg.n;
+  Military.setNaval(reg.state, reg.i, !reg.n);
   ensureEl("regimentType").className = reg.n ? "icon-anchor" : "icon-users";
 
   const size = styles.military.options.boxSize;
   const baseRect = selectedRegiment.querySelectorAll("rect")[0];
   const iconRect = selectedRegiment.querySelectorAll("rect")[1];
-  const icon = selectedRegiment.querySelector(".regimentIcon")!;
   const x = reg.n ? reg.x - size * 2 : reg.x - size * 3;
   baseRect.setAttribute("x", String(x));
   baseRect.setAttribute("width", String(reg.n ? size * 4 : size * 6));
   iconRect.setAttribute("x", String(x - size * 2));
-  icon.setAttribute("x", String(x - size));
+  updateRegimentIcon(selectedRegiment.querySelector<SVGUseElement>(".regimentIcon")!, reg);
   selectedRegiment.querySelector("text")!.innerHTML = String(Military.getTotal(reg));
 }
 
 function changeName(this: HTMLInputElement): void {
   const reg = getRegiment();
   if (!reg || !selectedRegiment) return;
-  selectedRegiment.dataset.name = reg.name = this.value;
+  if (!this.value.trim()) return;
+  Military.rename(reg.state, reg.i, this.value);
+  selectedRegiment.dataset.name = reg.name;
 }
 
 function restoreName(): void {
   const reg = getRegiment();
   if (!reg || !selectedRegiment) return;
   const regs = pack.states[+selectedRegiment.dataset.state!].military!;
-  const name = Military.getName(reg, regs);
-  selectedRegiment.dataset.name = reg.name = ensureEl<HTMLInputElement>("regimentName").value = name;
+  Military.rename(reg.state, reg.i, Military.getName(reg, regs));
+  selectedRegiment.dataset.name = ensureEl<HTMLInputElement>("regimentName").value = reg.name;
 }
 
 function changeIcon(): void {
   const regiment = getRegiment();
   if (!regiment || !selectedRegiment) return;
 
-  Controllers.IconSelector.open(regiment.icon ?? "", value => {
-    regiment.icon = value;
-    const isExternal = isImageIcon(value);
-    ensureEl("regimentIcon").innerHTML = isExternal ? `<img src="${value}" style="width: 1em; height: 1em;">` : value;
-    selectedRegiment!.querySelector(".regimentIcon")!.textContent = isExternal ? "" : value;
-    selectedRegiment!.querySelector(".regimentImage")!.setAttribute("href", isExternal ? value : "");
+  Controllers.IconPicker.open({
+    current: regiment.icon ?? "",
+    live: true,
+    onPick: icon => {
+      Military.setIcon(regiment.state, regiment.i, icon);
+      ensureEl("regimentIcon").innerHTML = Icons.html(icon);
+      updateRegimentIcon(selectedRegiment!.querySelector<SVGUseElement>(".regimentIcon")!, regiment);
+    }
   });
 }
 
@@ -246,8 +247,7 @@ function changeUnit(this: HTMLInputElement): void {
   const u = this.dataset.u!;
   const reg = getRegiment();
   if (!reg || !selectedRegiment) return;
-  reg.u[u] = +this.value || 0;
-  reg.a = sum(Object.values(reg.u));
+  Military.setUnits(reg.state, reg.i, { ...reg.u, [u]: Math.max(0, Math.round(+this.value || 0)) });
   selectedRegiment.querySelector("text")!.innerHTML = String(Military.getTotal(reg));
 
   refreshEditors();
@@ -256,63 +256,22 @@ function changeUnit(this: HTMLInputElement): void {
 function splitRegiment(): void {
   const reg = getRegiment();
   if (!reg || !selectedRegiment) return;
-  const u1 = reg.u;
   const state = +selectedRegiment.dataset.state!;
-  const military = pack.states[state].military!;
-  const i = last(military).i + 1;
-  const u2 = { ...u1 };
-
-  Object.keys(u2).forEach(u => {
-    u2[u] = Math.floor(u2[u] / 2);
-  }); // halved new reg
-  const a = sum(Object.values(u2)); // new reg total
-  if (!a) {
+  let newId: number;
+  try {
+    newId = Military.split(state, reg.i);
+  } catch {
     tip("Not enough forces to split", false, "error");
     return;
   }
 
-  // update old regiment
-  Object.keys(u1).forEach(u => {
-    u1[u] = Math.ceil(u1[u] / 2);
-  }); // halved old reg
-  reg.a = sum(Object.values(u1)); // old reg total
   ensureEl("regimentComposition")
     .querySelectorAll<HTMLInputElement>("input")
     .forEach(el => {
       el.value = String(reg.u[el.dataset.u!] || 0);
     });
   selectedRegiment.querySelector("text")!.innerHTML = String(Military.getTotal(reg));
-
-  // create new regiment
-  const shift = styles.military.options.boxSize * 2;
-  const findY = (x: number, startY: number): number => {
-    let y = startY;
-    do {
-      y += shift;
-    } while (military.find(r => r.x === x && r.y === y));
-    return y;
-  };
-  const newReg: Regiment = {
-    a,
-    cell: reg.cell,
-    i,
-    n: reg.n,
-    u: u2,
-    x: reg.x,
-    y: findY(reg.x, reg.y),
-    bx: reg.bx,
-    by: reg.by,
-    state,
-    icon: reg.icon,
-    name: "",
-    t: 0,
-    s: 0,
-    type: reg.type
-  };
-  newReg.name = Military.getName(newReg, military);
-  military.push(newReg);
-  Military.generateNote(newReg, pack.states[state]); // add legend
-  drawRegiment(newReg, state); // draw new reg below
+  drawRegiment(pack.states[state].military!.find(r => r.i === newId)!, state); // draw new reg below
 
   refreshEditors();
 }
@@ -331,35 +290,11 @@ function toggleAdd(): void {
 
 function addRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
   if (!selectedRegiment) return;
-  const point = getPointer(event, this);
-  const cell = Pack.findCell(point[0], point[1]);
-  if (cell === undefined) return;
-  const [x, y] = pack.cells.p[cell];
+  const [x, y] = getPointer(event, this);
+  if (Pack.findCell(x, y) === undefined) return;
   const state = +selectedRegiment.dataset.state!;
-  const military = pack.states[state].military!;
-  const i = military.length ? last(military).i + 1 : 0;
-  const n = +(pack.cells.h[cell] < 20); // naval or land
-  const reg: Regiment = {
-    a: 0,
-    cell,
-    i,
-    n,
-    u: {},
-    x,
-    y,
-    bx: x,
-    by: y,
-    state,
-    icon: "🛡️",
-    name: "",
-    t: 0,
-    s: 0,
-    type: ""
-  };
-  reg.name = Military.getName(reg, military);
-  military.push(reg);
-  Military.generateNote(reg, pack.states[state]); // add legend
-  drawRegiment(reg, state);
+  const i = Military.add(state, x, y);
+  drawRegiment(pack.states[state].military!.find(r => r.i === i)!, state);
 
   refreshEditors();
   toggleAdd();
@@ -473,17 +408,8 @@ function attachRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
   const sel = pack.states[newState].military!.find(r => r.i === +regSelected.dataset.id!);
   if (!sel) return;
 
-  for (const unit of options.map.military.units) {
-    const u = unit.name;
-    if (reg.u[u]) sel.u[u] = sel.u[u] ? sel.u[u] + reg.u[u] : reg.u[u];
-  }
-  sel.a = sum(Object.values(sel.u)); // reg total
+  Military.attach(+selectedRegiment.dataset.state!, reg.i, newState, sel.i);
   regSelected.querySelector("text")!.innerHTML = String(Military.getTotal(sel)); // update selected reg total text
-
-  // remove attached regiment
-  const oldState = +selectedRegiment.dataset.state!;
-  const military = pack.states[oldState].military!;
-  military.splice(military.indexOf(reg), 1);
   selectedRegiment.remove();
 
   refreshEditors();
@@ -513,11 +439,9 @@ function removeRegiment(): void {
       Remove: function () {
         $(this).dialog("close");
         if (!selectedRegiment) return;
-        const military = pack.states[+selectedRegiment.dataset.state!].military!;
         const reg = getRegiment();
-        const regIndex = reg ? military.indexOf(reg) : -1;
-        if (regIndex === -1) return;
-        military.splice(regIndex, 1);
+        if (!reg) return;
+        Military.remove(+selectedRegiment.dataset.state!, reg.i);
         selectedRegiment.remove();
 
         refreshEditors();
@@ -544,7 +468,6 @@ function dragRegiment(this: SVGGElement, event: D3DragEvent<SVGGElement, unknown
   const text = this.querySelector("text")!;
   const iconRect = this.querySelectorAll("rect")[1];
   const icon = this.querySelector(".regimentIcon")!;
-  const image = this.querySelector(".regimentImage")!;
 
   const self = selectedRegiment === this;
   const baseLine = select<SVGGElement, unknown>("#viewbox").select("g#regimentBase > line");
@@ -552,8 +475,8 @@ function dragRegiment(this: SVGGElement, event: D3DragEvent<SVGGElement, unknown
 
   event.on("drag", function (this: SVGGElement, dragEvent: D3DragEvent<SVGGElement, unknown, unknown>) {
     const { x, y } = dragEvent;
-    reg.x = x;
-    reg.y = y;
+    if (!isInMap(x, y)) return;
+    Military.move(reg.state, reg.i, x, y);
     const x1 = rn(x - w / 2, 2);
     const y1 = rn(y - size, 2);
 
@@ -564,10 +487,9 @@ function dragRegiment(this: SVGGElement, event: D3DragEvent<SVGGElement, unknown
     text.setAttribute("y", String(y));
     iconRect.setAttribute("x", String(x1 - h));
     iconRect.setAttribute("y", String(y1));
-    icon.setAttribute("x", String(x1 - size));
-    icon.setAttribute("y", String(y));
-    image.setAttribute("x", String(x1 - h));
-    image.setAttribute("y", String(y1));
+    const box = regimentIconBox(x1, y1, h, reg.icon);
+    icon.setAttribute("x", String(box.x));
+    icon.setAttribute("y", String(box.y));
     if (self) {
       baseLine.attr("x2", x).attr("y2", y);
       rotationControl
@@ -590,10 +512,12 @@ function dragBase(this: SVGCircleElement, event: D3DragEvent<SVGCircleElement, u
   });
 
   event.on("end", (dragEvent: D3DragEvent<SVGCircleElement, unknown, unknown>) => {
-    reg.bx = dragEvent.x;
-    reg.by = dragEvent.y;
+    if (isInMap(dragEvent.x, dragEvent.y)) Military.setBase(reg.state, reg.i, dragEvent.x, dragEvent.y);
   });
 }
+
+const isInMap = (x: number, y: number) =>
+  x >= 0 && y >= 0 && x <= options.map.graph.width && y <= options.map.graph.height;
 
 function closeEditor(): void {
   select<SVGGElement, unknown>("#debug").selectAll("*").remove();

@@ -3,8 +3,12 @@ import { describe, expect, it, vi } from "vitest";
 
 // fonts populates the font selector at import time, which needs the real app dom
 vi.mock("@/services/fonts", () => ({ getUsedFonts: vi.fn(), loadFontsAsDataURI: vi.fn() }));
+vi.mock("@/utils", async original => ({ ...(await original<typeof import("@/utils")>()), getBase64: vi.fn() }));
 
-import { flattenSymbolReferences, relocateRootFilter } from "./export";
+import "@/generators/relief-generator"; // the models own the set namespaces a custom icon id is told apart from
+import "@/generators/burgs-generator";
+import "@/generators/goods-generator";
+import { flattenSymbolReferences, inlineLinkedImages, relocateRootFilter } from "./export";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -119,6 +123,35 @@ describe("relocateRootFilter", () => {
 describe("flattenSymbolReferences", () => {
   const iconSymbol = { viewBox: "0 0 10 10", width: "1em", height: "1em", overflow: "visible" };
 
+  it("preserves a cropped custom icon's viewport for differently sized uses", () => {
+    const svg = makeSymbolSvg({ viewBox: "25 25 50 50" }, { x: "100", y: "100", width: "20", height: "20" });
+    const symbol = svg.querySelector("symbol")!;
+    symbol.innerHTML = '<rect width="100" height="100"/>';
+    const second = svg.querySelector("use")!.cloneNode(true) as SVGUseElement;
+    second.setAttribute("width", "40");
+    second.setAttribute("height", "40");
+    svg.append(second);
+
+    flattenSymbolReferences(svg);
+
+    const clipped = svg.querySelector("[clip-path]")!;
+    expect(clipped).not.toBeNull();
+    const clipId = clipped.getAttribute("clip-path")!.slice(5, -1);
+    const rect = svg.getElementById(clipId)!.querySelector("rect")!;
+    expect(["x", "y", "width", "height"].map(attr => rect.getAttribute(attr))).toEqual(["25", "25", "50", "50"]);
+    expect([...svg.querySelectorAll("use")].map(use => use.getAttribute("transform"))).toEqual([
+      "translate(90,90) scale(0.4)",
+      "translate(80,80) scale(0.8)"
+    ]);
+    expect(clipped.querySelector('rect[width="100"]')).not.toBeNull();
+  });
+
+  it("keeps overflowing anchored art unclipped", () => {
+    const svg = makeSymbolSvg(iconSymbol, { width: "20", height: "20" });
+    flattenSymbolReferences(svg);
+    expect(svg.querySelector("clipPath")).toBeNull();
+  });
+
   it("converts an em-sized symbol use into a transform scaled by the group font-size", () => {
     const svg = makeSymbolSvg(iconSymbol, { x: "100", y: "50" }, { "font-size": "4" });
     flattenSymbolReferences(svg);
@@ -132,6 +165,19 @@ describe("flattenSymbolReferences", () => {
     const svg = makeSymbolSvg(iconSymbol, { x: "10", y: "10" }, { style: 'font:0.5px "Times New Roman";' });
     flattenSymbolReferences(svg);
     expect(svg.querySelector("use")!.getAttribute("transform")).toBe("translate(10,10) scale(0.05)");
+  });
+
+  it.each([
+    [{ "font-size": "3%" }, "0.15"],
+    [{ "font-size": "3%", style: "font-size: 2px" }, "0.2"],
+    [{ style: "font-size: 6%" }, "0.3"]
+  ])("resolves relative icon font sizes against the zoomed layer: %j", (attrs, scale) => {
+    const svg = makeSymbolSvg(iconSymbol, {}, attrs);
+    svg.setAttribute("font-size", "50px");
+
+    flattenSymbolReferences(svg);
+
+    expect(svg.querySelector("use")!.getAttribute("transform")).toBe(`translate(0,0) scale(${scale})`);
   });
 
   it("replaces the symbol with a plain group without sizing attributes", () => {
@@ -189,5 +235,27 @@ describe("flattenSymbolReferences", () => {
     flattenSymbolReferences(svg);
     expect(use.getAttribute("x")).toBe("5");
     expect(use.getAttribute("transform")).toBeNull();
+  });
+});
+
+describe("inlineLinkedImages", () => {
+  it("inlines linked custom icons the host serves and drops those it does not, leaving other images alone", async () => {
+    const { getBase64 } = await import("@/utils");
+    const svg = document.createElementNS(SVG_NS, "svg");
+    svg.innerHTML = `<defs>
+        <symbol id="custom-a"><image href="https://ok.test/a.png"/></symbol>
+        <symbol id="custom-b"><image href="https://blocked.test/b.png"/></symbol>
+        <symbol id="custom-c"><image href="data:image/png;base64,AAAA"/></symbol>
+        <symbol id="goods-wood"><image href="https://ok.test/a.png"/></symbol>
+      </defs>`;
+    vi.mocked(getBase64).mockImplementation((url, callback) =>
+      callback(url.startsWith("https://ok") ? "data:image/png;base64,OK" : null)
+    );
+
+    await inlineLinkedImages(svg);
+    expect(svg.querySelector("#custom-a image")?.getAttribute("href")).toBe("data:image/png;base64,OK");
+    expect(svg.querySelector("#custom-b image")).toBeNull();
+    expect(svg.querySelector("#custom-c image")?.getAttribute("href")).toBe("data:image/png;base64,AAAA");
+    expect(svg.querySelector("#goods-wood image")?.getAttribute("href")).toBe("https://ok.test/a.png");
   });
 });

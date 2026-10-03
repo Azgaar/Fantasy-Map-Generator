@@ -1,4 +1,5 @@
 import { closeDialogs, confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
@@ -7,7 +8,7 @@ import type { Marker } from "@/generators/markers-generator";
 import { clearMarkerRadius, drawMarkerRadius } from "@/renderers/draw-marker-radius";
 import { setMarkersFilter } from "@/renderers/draw-markers";
 import { highlightElement } from "@/renderers/overlays/highlight";
-import { downloadFile, ensureEl, escapeHtml, getFileName, getLatitude, getLongitude, isImageIcon } from "@/utils";
+import { downloadFile, ensureEl, getFileName, getLatitude, getLongitude } from "@/utils";
 
 let center: Marker | null = null;
 let lastRadius = 0;
@@ -100,11 +101,9 @@ function renderMarkersList(inRange: Marker[]): void {
   ensureEl("markersRadiusCount").textContent = String(inRangeMarkers.length);
 
   ensureEl("markersRadiusList").innerHTML = inRangeMarkers
-    .map(({ i, type, icon, pinned, lock, name: markerName }) => {
+    .map(({ i, type, icon, iconFill, iconStroke, pinned, lock, name: markerName }) => {
       const name = markerName || type;
-      const iconHtml = isImageIcon(icon)
-        ? `<img src="${escapeHtml(icon)}" style="width:1.2em; height:1.2em; vertical-align:middle">`
-        : `<span style="width:1.3em">${escapeHtml(icon)}</span>`;
+      const iconHtml = `<span style="width:1.3em; display:flex">${Icons.html(icon, { fill: iconFill, stroke: iconStroke })}</span>`;
       return /* html */ `
         <div class="states" data-id="${i}" style="display:flex; align-items:center; gap:.15em">
           ${iconHtml}
@@ -142,20 +141,14 @@ function onMarkerListClick(event: MouseEvent): void {
 }
 
 function togglePin(marker: Marker, el: HTMLElement): void {
-  if (marker.pinned) delete marker.pinned;
-  else marker.pinned = true;
+  Markers.setPinned(marker.i, !marker.pinned);
   el.classList.toggle("inactive");
   Layers.draw("markers"); // the renderer reads the flag off the markers themselves
 }
 
 function toggleLock(marker: Marker, el: HTMLElement): void {
-  if (marker.lock) {
-    delete marker.lock;
-    el.className = "locks pointer icon-lock-open inactive";
-  } else {
-    marker.lock = true;
-    el.className = "locks pointer icon-lock";
-  }
+  Markers.setLocked(marker.i, !marker.lock);
+  el.className = marker.lock ? "locks pointer icon-lock" : "locks pointer icon-lock-open inactive";
 }
 
 function confirmRemove(marker: Marker): void {
@@ -164,7 +157,7 @@ function confirmRemove(marker: Marker): void {
     message: "Are you sure you want to remove this marker? The action cannot be reverted",
     confirm: "Remove",
     onConfirm: () => {
-      Markers.deleteMarker(marker.i);
+      Markers.remove(marker.i);
       document.getElementById(`marker${marker.i}`)?.remove();
       refreshEditors();
       applyRadius(getRadius());
@@ -187,7 +180,9 @@ function exportInRange(): void {
     const cultureName = culture ? quote(culture.name) : "";
     const lat = getLatitude(y, options.map.geography.coordinates, options.map.graph.height, 2);
     const lon = getLongitude(x, options.map.geography.coordinates, options.map.graph.width, 2);
-    return [i, type, icon, name, legend, stateName, cultureName, x, y, lat, lon].join(",");
+    return [i, type, quote(Icons.glyphText(icon) ?? icon), name, legend, stateName, cultureName, x, y, lat, lon].join(
+      ","
+    );
   });
 
   downloadFile(headers + body.join("\n"), `${getFileName("Markers in radius")}.csv`);

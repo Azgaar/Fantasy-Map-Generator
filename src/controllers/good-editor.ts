@@ -1,18 +1,16 @@
 import { destroyDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
+import { goodIconLines } from "@/renderers/draw-goods";
 import { capitalize, rn } from "@/utils";
 import { CULTURE_TYPES } from "../generators/cultures-generator";
 import type { DemandCategory, Good } from "../generators/goods-generator";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "../generators/goods-generator";
-import { createFileInput, ensureEl, getRandomColor, sanitizeSvgIcon, unique } from "../utils";
+import { ensureEl, escapeHtml, getRandomColor, unique } from "../utils";
 
-let iconImageInput: HTMLInputElement | null = null;
-let iconSvgInput: HTMLInputElement | null = null;
-
-function open(editedGood?: Good, onUpdate?: () => void) {
-  const icons = Array.from(ensureEl("good-icons").querySelectorAll("symbol")).map(el => el.id);
+function open(editedGood?: Good, onUpdate?: () => void): void {
   const demandCoverageState: Partial<Record<DemandCategory, number>> = { ...(editedGood?.demandCoverage || {}) };
   const biomeOutputState: Partial<Record<number, number>> = { ...(editedGood?.biomeOutput || {}) };
 
@@ -52,9 +50,12 @@ function open(editedGood?: Good, onUpdate?: () => void) {
       </div>`;
 
   const recipes: Record<number, number>[] = editedGood?.recipes || [];
+  let icon = editedGood?.icon || "goods-unknown";
 
   let dialog: HTMLElement;
   renderDialog();
+
+  void Icons.retry(Goods.iconSet.id); // the previews resolve once the symbols land
 
   $(dialog!).dialog({
     width: "30em",
@@ -87,7 +88,6 @@ function open(editedGood?: Good, onUpdate?: () => void) {
         const value = +ensureEl<HTMLInputElement>("newGoodValue").value;
         const chance = +ensureEl<HTMLInputElement>("newGoodChance").value;
         const unit = ensureEl<HTMLInputElement>("newGoodUnit").value.trim();
-        const icon = ensureEl<HTMLSelectElement>("newGoodIcon").value;
         const color = ensureEl<HTMLInputElement>("newGoodColor").value;
         const distribution = ensureEl("newGoodDistribution").textContent?.trim() ?? "";
 
@@ -136,18 +136,21 @@ function open(editedGood?: Good, onUpdate?: () => void) {
         }
 
         if (editedGood) {
-          editedGood.name = name;
-          editedGood.tags = tags;
-          editedGood.icon = icon;
-          editedGood.color = color;
-          editedGood.value = value;
-          editedGood.chance = chance;
-          editedGood.unit = unit;
-          editedGood.demandCoverage = demandCoverageState;
-          editedGood.multipliers = buildFinalMultipliers();
-          editedGood.distribution = distribution || undefined;
-          editedGood.biomeOutput = Object.keys(biomeOutputState).length ? biomeOutputState : undefined;
-          editedGood.recipes = recipes.length ? recipes : undefined;
+          const id = editedGood.i;
+          Goods.rename(id, name);
+          Goods.setTags(id, tags);
+          Goods.setIcon(id, icon);
+          Goods.recolor(id, color);
+          Goods.setPrice(id, value);
+          Goods.setUnit(id, unit);
+          Goods.setProduction(id, {
+            chance,
+            demandCoverage: demandCoverageState,
+            multipliers: buildFinalMultipliers() ?? null,
+            biomeOutput: Object.keys(biomeOutputState).length ? biomeOutputState : null,
+            recipes: recipes.length ? recipes : null
+          });
+          editedGood.distribution = distribution || undefined; // code the user typed, checked above; never an operation
 
           // opt-out: by default re-place the good and recompute the economy to reflect the change
           if (ensureEl<HTMLInputElement>("goodRegenerateEconomy").checked) {
@@ -206,7 +209,7 @@ function open(editedGood?: Good, onUpdate?: () => void) {
       .ge-field           { width:100%; }
       input.ge-num        { width:6em; }
       .ge-inline          { display:flex; align-items:center; gap:.4em; }
-      .ge-icon-select     { flex:1; min-width:0; }
+      .ge-icon-select     { flex:1; min-width:0; display:flex; align-items:center; gap:.4em; margin:0; }
       .ge-icon-preview    { flex-shrink:0; }
       .ge-color           { width:2.4em; height:1.4em; padding:0; border:none; flex-shrink:0; }
       .ge-edit-row        { display:flex; align-items:flex-start; justify-content:space-between; gap:6px; }
@@ -244,13 +247,13 @@ function open(editedGood?: Good, onUpdate?: () => void) {
 
           <label for="newGoodIcon">Icon*</label>
           <div class="ge-inline">
-            <select id="newGoodIcon" class="ge-icon-select">${icons.map(icon => `<option value="${icon}" ${editedGood?.icon === icon ? "selected" : ""}>${icon}</option>`).join("")}</select>
-            <svg class="ge-icon-preview" width="2em" height="2em">
-              <circle id="newGoodIconCircle" cx="50%" cy="50%" r="42%" fill="${editedGood?.color || "#ff5959"}" stroke="${Goods.getStroke(editedGood?.color || "#ff5959")}"/>
-              <use id="newGoodIconPreview" href="#${editedGood?.icon || "good-unknown"}" x="10%" y="10%" width="80%" height="80%"/>
-            </svg>
-            <button id="newGoodUploadIconRaster" class="icon-upload" data-tip="Upload raster icon"></button>
-            <button id="newGoodUploadIconVector" class="icon-upload-cloud" data-tip="Upload vector (SVG) icon"></button>
+            <button id="newGoodIcon" type="button" class="ge-icon-select" data-tip="Select the good's icon">
+              <svg class="ge-icon-preview" width="2em" height="2em">
+                <circle id="newGoodIconCircle" cx="50%" cy="50%" r="42%" fill="${editedGood?.color || "#ff5959"}" stroke="${Goods.getStroke(editedGood?.color || "#ff5959")}"/>
+                <use id="newGoodIconPreview" href="${escapeHtml(Icons.href(icon))}" x="10%" y="10%" width="80%" height="80%"${goodIconLines()}/>
+              </svg>
+              <span id="newGoodIconName">${escapeHtml(Icons.name(icon))}</span>
+            </button>
             <input id="newGoodColor" class="ge-color" type="color" data-tip="Set a stroke color" value="${editedGood?.color || "#ff5959"}" />
           </div>
 
@@ -469,8 +472,16 @@ function open(editedGood?: Good, onUpdate?: () => void) {
       }, distEl.textContent?.trim() ?? "");
     });
 
-    const iconSelect = ensureEl<HTMLSelectElement>("newGoodIcon");
-    iconSelect.onchange = () => ensureEl("newGoodIconPreview").setAttribute("href", `#${iconSelect.value}`);
+    const setIcon = (id: string) => {
+      icon = id;
+      ensureEl("newGoodIconPreview").setAttribute("href", Icons.href(id));
+      ensureEl("newGoodIconName").textContent = Icons.name(id);
+    };
+    ensureEl("newGoodIcon").onclick = () =>
+      Controllers.IconPicker.open({
+        current: icon,
+        onPick: setIcon
+      });
 
     const colorInput = ensureEl<HTMLInputElement>("newGoodColor");
     colorInput.oninput = () => {
@@ -478,19 +489,6 @@ function open(editedGood?: Good, onUpdate?: () => void) {
       circle.setAttribute("fill", colorInput.value);
       circle.setAttribute("stroke", Goods.getStroke(colorInput.value));
     };
-
-    const onIconUpload = (_type: string, id: string) => {
-      ensureEl("newGoodIconPreview").setAttribute("href", `#${id}`);
-      iconSelect.innerHTML += `<option value="${id}">${id}</option>`;
-      iconSelect.value = id;
-    };
-    const pickIcon = (type: "image" | "svg") => {
-      const input = getIconInput(type);
-      input.onchange = () => uploadImage(type, onIconUpload);
-      input.click();
-    };
-    ensureEl("newGoodUploadIconRaster").onclick = () => pickIcon("image");
-    ensureEl("newGoodUploadIconVector").onclick = () => pickIcon("svg");
   }
 }
 
@@ -503,65 +501,6 @@ function getMultiplierEntityName(dim: MultiplierDimKey, id: string): string {
   if (dim === "religion") return pack.religions[+id]?.name ?? `Religion ${id}`;
   if (dim === "zone") return pack.zones.find(z => z.i === +id)?.name ?? `Zone ${id}`;
   return pack.biomes[+id]?.name ?? `Biome ${id}`;
-}
-
-/** Own the icon file inputs here so reopen never binds a second listener on a shared element */
-function getIconInput(type: "image" | "svg"): HTMLInputElement {
-  if (type === "image") {
-    iconImageInput ??= createFileInput("image/*");
-    return iconImageInput;
-  }
-  iconSvgInput ??= createFileInput(".svg");
-  return iconSvgInput;
-}
-
-function uploadImage(type: "image" | "svg", callback: (type: string, id: string) => void) {
-  const input = getIconInput(type);
-  const file = input.files![0];
-  input.value = "";
-
-  if (file.size > 200000) {
-    tip(
-      `File is too big, please optimize file size up to 200kB and re-upload. Recommended size is 48x48 px and up to 10kB`,
-      true,
-      "error",
-      5000
-    );
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = readerEvent => {
-    const target = readerEvent.target;
-    if (!target) return;
-
-    const result = target.result as string;
-    const id = `good-custom-${Math.random().toString(36).slice(-6)}`;
-    const goodIcons = ensureEl("good-icons");
-
-    if (type === "image") {
-      const svg = /*html*/ `<svg id="${id}" xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><image x="0" y="0" width="200" height="200" href="${result}"/></svg>`;
-      goodIcons.insertAdjacentHTML("beforeend", svg);
-    } else {
-      const svg = sanitizeSvgIcon(result);
-      if (!svg)
-        return void tip(
-          "The file should be prepared for load to FMG. If you don't know why it's happening, try to upload raster image",
-          false,
-          "error"
-        );
-
-      const icon = goodIcons.appendChild(svg);
-      icon.id = id;
-      icon.setAttribute("width", "200");
-      icon.setAttribute("height", "200");
-    }
-
-    callback(type, id);
-  };
-
-  if (type === "image") reader.readAsDataURL(file);
-  else reader.readAsText(file);
 }
 
 function openMultiplierPopup(

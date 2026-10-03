@@ -24,6 +24,21 @@ export const findEl = <T extends Element = HTMLElement>(id: string): T | null =>
   return document.getElementById(id) as unknown as T | null;
 };
 
+type HtmlProps<K extends keyof HTMLElementTagNameMap> = Partial<Omit<HTMLElementTagNameMap[K], "style">> & {
+  style?: string;
+};
+
+/** Create an html element with properties; `style` is css text */
+export const htmlEl = <K extends keyof HTMLElementTagNameMap>(
+  tag: K,
+  props: HtmlProps<K> = {}
+): HTMLElementTagNameMap[K] => {
+  const { style, ...rest } = props;
+  const node = Object.assign(document.createElement(tag), rest);
+  if (style) node.style.cssText = style;
+  return node;
+};
+
 /**
  * Create an svg element
  * @param tag - The svg element name, e.g. "g" or "use"

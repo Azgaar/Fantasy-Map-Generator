@@ -4,6 +4,7 @@ export interface ChargeDataEntry {
   reversed?: boolean;
   positions?: Record<string, number>;
   natural?: string;
+  layered?: boolean; // has a foreground a layered charge redraws
 }
 
 export const chargeData: Record<string, ChargeDataEntry> = {
@@ -14,6 +15,9 @@ export const chargeData: Record<string, ChargeDataEntry> = {
   angel: {
     colors: 2,
     positions: { e: 1 }
+  },
+  ant: {
+    reversed: true
   },
   anvil: {
     sinister: true
@@ -34,7 +38,8 @@ export const chargeData: Record<string, ChargeDataEntry> = {
     sinister: true
   },
   armEmbowedVambraced: {
-    sinister: true
+    sinister: true,
+    layered: true
   },
   armEmbowedVambracedHoldingSword: {
     colors: 3,
@@ -72,7 +77,8 @@ export const chargeData: Record<string, ChargeDataEntry> = {
   },
   bearRampant: {
     colors: 3,
-    sinister: true
+    sinister: true,
+    layered: true
   },
   bee: {
     colors: 3,
@@ -133,7 +139,14 @@ export const chargeData: Record<string, ChargeDataEntry> = {
     colors: 3,
     reversed: true
   },
+  caduceus: {
+    colors: 3
+  },
   camel: {
+    colors: 2,
+    sinister: true
+  },
+  camelBactrian: {
     colors: 2,
     sinister: true
   },
@@ -170,6 +183,9 @@ export const chargeData: Record<string, ChargeDataEntry> = {
   chalice: {
     colors: 2
   },
+  church: {
+    colors: 3
+  },
   cinquefoil: {
     reversed: true
   },
@@ -180,11 +196,11 @@ export const chargeData: Record<string, ChargeDataEntry> = {
   comet: {
     reversed: true
   },
-  cowStatant: {
+  cossack: {
     colors: 3,
     sinister: true
   },
-  cossack: {
+  cowStatant: {
     colors: 3,
     sinister: true
   },
@@ -278,7 +294,8 @@ export const chargeData: Record<string, ChargeDataEntry> = {
   },
   dragonRampant: {
     colors: 3,
-    sinister: true
+    sinister: true,
+    layered: true
   },
   drakkar: {
     colors: 3,
@@ -352,21 +369,14 @@ export const chargeData: Record<string, ChargeDataEntry> = {
   garb: {
     colors: 2,
     natural: "or",
-    positions: {
-      e: 1,
-      def: 3,
-      abc: 2,
-      beh: 1,
-      kn: 1,
-      jln: 3,
-      jleh: 1,
-      abcpqh: 1,
-      joe: 1,
-      lme: 1
-    }
+    positions: { e: 1, def: 3, abc: 2, beh: 1, kn: 1, jln: 3, jleh: 1, abcpqh: 1, joe: 1, lme: 1 }
   },
   gauntlet: {
     sinister: true,
+    reversed: true
+  },
+  gladius: {
+    colors: 2,
     reversed: true
   },
   goat: {
@@ -395,6 +405,7 @@ export const chargeData: Record<string, ChargeDataEntry> = {
   greyhoundRampant: {
     colors: 2,
     sinister: true,
+    layered: true,
     positions: { e: 10, def: 1, abc: 1, bdefh: 1, jlh: 1, abcpqh: 1 }
   },
   greyhoundSejant: {
@@ -409,6 +420,7 @@ export const chargeData: Record<string, ChargeDataEntry> = {
   griffinRampant: {
     colors: 3,
     sinister: true,
+    layered: true,
     positions: { e: 10, def: 1, abc: 1, bdefh: 1, jlh: 1, abcpqh: 1 }
   },
   hand: {
@@ -451,6 +463,9 @@ export const chargeData: Record<string, ChargeDataEntry> = {
   helmetZischagge: {
     sinister: true
   },
+  hermit: {
+    colors: 3
+  },
   heron: {
     colors: 2,
     sinister: true
@@ -471,7 +486,8 @@ export const chargeData: Record<string, ChargeDataEntry> = {
   },
   horseRampant: {
     colors: 3,
-    sinister: true
+    sinister: true,
+    layered: true
   },
   horseSalient: {
     colors: 2,
@@ -482,6 +498,10 @@ export const chargeData: Record<string, ChargeDataEntry> = {
   },
   hourglass: {
     colors: 3
+  },
+  kraken: {
+    colors: 2,
+    reversed: true
   },
   ladybird: {
     colors: 3,
@@ -524,6 +544,7 @@ export const chargeData: Record<string, ChargeDataEntry> = {
   lionRampant: {
     colors: 3,
     sinister: true,
+    layered: true,
     positions: { e: 10, def: 2, abc: 2, bdefh: 1, kn: 1, jlh: 2, abcpqh: 1 }
   },
   lionSejant: {
@@ -638,7 +659,8 @@ export const chargeData: Record<string, ChargeDataEntry> = {
   },
   pegasus: {
     colors: 3,
-    sinister: true
+    sinister: true,
+    layered: true
   },
   pike: {
     colors: 2,
@@ -658,6 +680,10 @@ export const chargeData: Record<string, ChargeDataEntry> = {
   ploughshare: {
     sinister: true
   },
+  polypus: {
+    colors: 2,
+    reversed: true
+  },
   porcupine: {
     colors: 2,
     sinister: true
@@ -672,11 +698,6 @@ export const chargeData: Record<string, ChargeDataEntry> = {
   rake: {
     reversed: true
   },
-  rapier: {
-    colors: 2,
-    sinister: true,
-    reversed: true
-  },
   ramHeadErased: {
     colors: 3,
     sinister: true
@@ -684,6 +705,11 @@ export const chargeData: Record<string, ChargeDataEntry> = {
   ramPassant: {
     colors: 3,
     sinister: true
+  },
+  rapier: {
+    colors: 2,
+    sinister: true,
+    reversed: true
   },
   ratRampant: {
     colors: 2,
@@ -751,6 +777,11 @@ export const chargeData: Record<string, ChargeDataEntry> = {
   scythe2: {
     sinister: true
   },
+  seahorse: {
+    colors: 2,
+    sinister: true,
+    layered: true
+  },
   serpent: {
     colors: 2,
     sinister: true
@@ -776,6 +807,9 @@ export const chargeData: Record<string, ChargeDataEntry> = {
     colors: 2,
     reversed: true
   },
+  spider: {
+    reversed: true
+  },
   spiral: {
     sinister: true,
     reversed: true
@@ -793,6 +827,10 @@ export const chargeData: Record<string, ChargeDataEntry> = {
   },
   stirrup: {
     colors: 2
+  },
+  stork: {
+    colors: 2,
+    sinister: true
   },
   swallow: {
     colors: 2,
@@ -834,7 +872,8 @@ export const chargeData: Record<string, ChargeDataEntry> = {
   },
   unicornRampant: {
     colors: 3,
-    sinister: true
+    sinister: true,
+    layered: true
   },
   wasp: {
     colors: 3,
@@ -865,7 +904,8 @@ export const chargeData: Record<string, ChargeDataEntry> = {
   },
   wolfRampant: {
     colors: 3,
-    sinister: true
+    sinister: true,
+    layered: true
   },
   wolfStatant: {
     colors: 3,

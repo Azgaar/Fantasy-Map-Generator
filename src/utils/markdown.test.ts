@@ -62,6 +62,15 @@ describe("renderMarkdown", () => {
     expect(renderMarkdown("[bad](javascript:alert(1))")).toBe("<p>[bad](javascript:alert(1))</p>");
   });
 
+  it("hands other links to the resolver in every block, leaving the rest as text", () => {
+    const link = (label: string, href: string) => (href === "burg:1" ? `<b>${label}</b>` : null);
+    expect(renderMarkdown("[<Vel>](burg:1) [x](burg:2)", link)).toBe("<p><b>&lt;Vel&gt;</b> [x](burg:2)</p>");
+    expect(renderMarkdown("- [Vel](burg:1)\n\n| a |\n| - |\n| [Vel](burg:1) |", link)).toBe(
+      "<ul><li><b>Vel</b></li></ul><table><thead><tr><th>a</th></tr></thead><tbody><tr><td><b>Vel</b></td></tr></tbody></table>"
+    );
+    expect(renderMarkdown("[Vel](burg:1)")).toBe("<p>[Vel](burg:1)</p>");
+  });
+
   it("cannot break out of the href attribute to inject a second attribute", () => {
     const output = renderMarkdown('[t](https://a"onmouseover=alert(1))');
     expect(output).toBe(

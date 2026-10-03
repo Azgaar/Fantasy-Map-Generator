@@ -30,7 +30,6 @@ function open(): void {
       },
       Restore: () => {
         const defaults = Labels.getDefaultOptions();
-        ensureEl<HTMLInputElement>("labelsResizeOnZoom").checked = defaults.resizeOnZoom;
         ensureEl<HTMLInputElement>("labelsShowAll").checked = defaults.showAll;
         addRows(defaults.groups);
       },
@@ -78,7 +77,6 @@ function renderDialog(): void {
         <label data-tip="Groups referenced by labels but not defined here. Such labels are not rendered until they are reassigned to an existing group"><strong>Missing groups:</strong> <span id="labelGroupsMissing"></span></label>
       </div>
       <div style="display:flex; gap:1.2em; align-items:center; margin:.6em 0 0">
-        <label data-tip="Automatically scale label font size as you zoom in or out"><input id="labelsResizeOnZoom" class="checkbox" type="checkbox" ${options.map.labels.resizeOnZoom ? "checked" : ""}><span class="checkbox-label">Resize labels on zoom</span></label>
         <label data-tip="Ignore zoom bounds and show all labels regardless of the current zoom level"><input id="labelsShowAll" class="checkbox" type="checkbox" ${options.app.labels.showAll ? "checked" : ""}><span class="checkbox-label">Show all labels <small>[slow]</small></span></label>
         <div style="padding: 0.5em 0; font-style: italic;">To change Burg Groups open <a id="labelGroupsBurgGroupsLink" style="text-decoration: underline;">Burg Group Configurator</a>.</div>
       </div>
@@ -201,7 +199,7 @@ function onBodyClick(event: Event): void {
   }
   if (button.name === "style") {
     const name = row.querySelector<HTMLInputElement>('[name="name"]')!.value.trim();
-    if (name) editStyle("labels", name);
+    if (name) void Controllers.StyleEditor.open("labels", name);
     return;
   }
   if (button.name === "list") {
@@ -275,7 +273,7 @@ function submitForm(event: Event): void {
     if (newGroup.name !== oldName) {
       if (oldName) {
         // group is renamed
-        replaceGroupInEntities(oldName, newGroup.name);
+        Labels.regroup(oldName, newGroup.name);
         styles.labels.groups[newGroup.name] = styles.labels.groups[oldName];
         delete styles.labels.groups[oldName];
       } else {
@@ -289,12 +287,11 @@ function submitForm(event: Event): void {
     if (newGroupNames.has(group.name)) return;
     // group is removed
     const fallback = Labels.getFallbackGroup(group.type);
-    replaceGroupInEntities(group.name, fallback.name);
+    Labels.regroup(group.name, fallback.name);
     delete styles.labels.groups[group.name];
   });
 
   options.map.labels.groups = rows.map(rowToGroup); // this map's set, and what the next map starts from
-  options.map.labels.resizeOnZoom = ensureEl<HTMLInputElement>("labelsResizeOnZoom").checked;
   Options.set(o => (o.app.labels.showAll = ensureEl<HTMLInputElement>("labelsShowAll").checked));
 
   for (const group of options.map.labels.groups) styles.labels.groups[group.name] ??= getGroupStyle(group);
@@ -321,13 +318,6 @@ function rowToGroup(row: HTMLTableRowElement): LabelGroup {
   if (Layers.has(dependency)) group.layerDependency = dependency;
   if (row.dataset.isDefault === "1") group.isDefault = true;
   return group;
-}
-
-function replaceGroupInEntities(oldName: string, newName: string): void {
-  const labels = getLabelsIndex();
-  for (const { type, entityId, group } of labels) {
-    if (group === oldName) Labels.setGroup({ type, entityId, group: newName });
-  }
 }
 
 function close(): void {

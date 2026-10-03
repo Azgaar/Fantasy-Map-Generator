@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 90">
+<g transform="translate(18 27) scale(.6)" stroke-linecap="round" stroke-linejoin="round">
+<path stroke="none" d="M22.5 63Q22.5 54 15.75 49.5Q24.75 51.75 24.75 63ZM24.75 63Q27 51.75 22.5 42.75Q31.5 51.75 27 63ZM27 63Q29.25 54 38.25 51.75Q31.5 56.25 29.25 63ZM54 72Q51.75 63 45 58.5Q56.25 60.75 56.25 72ZM56.25 72Q58.5 60.75 54 51.75Q63 58.5 58.5 72ZM58.5 72Q63 63 69.75 60.75Q63 67.5 60.75 72Z" fill="#838060" />
+<path d="M11.25 67.5H38.25M47.25 76.5H69.75" fill="none" />
+</g>
+</svg>
