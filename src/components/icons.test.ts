@@ -112,7 +112,11 @@ test("every slot kind's uses of an icon are counted", () => {
       { icon: "custom-a", x: 0, y: 0, s: 1 },
       { type: "mount", x: 0, y: 0, s: 1 }
     ],
-    biomes: [{ icons: {} }, { icons: { grass: 3, "custom-a": 1 } }, { icons: { "custom-a": 2, "custom-b": 1 } }]
+    biomes: [
+      { icons: {} },
+      { icons: { grass: { weight: 3 }, "custom-a": { weight: 1 } } },
+      { icons: { "custom-a": { weight: 2 }, "custom-b": { weight: 1 } } }
+    ]
   } as unknown as typeof pack;
 
   expect(Icons.uses("custom-a")).toEqual({

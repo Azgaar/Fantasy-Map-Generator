@@ -241,6 +241,31 @@ describe("StatesModule.setCells", () => {
 
   afterEach(() => vi.restoreAllMocks());
 
+  it("drops a split province from its owner's list when its center becomes neutral", () => {
+    globalThis.pack = {
+      cells: {
+        i: [0, 1, 2],
+        h: [30, 30, 30],
+        state: Uint16Array.from([1, 1, 1]),
+        province: Uint16Array.from([1, 1, 2]),
+        c: [[1], [0, 2], [1]],
+        burg: [0, 0, 0]
+      },
+      provinces: [0, { i: 1, state: 1, center: 0 }, { i: 2, state: 1, center: 2 }],
+      states: [{ i: 0 }, { i: 1, center: 2, provinces: [1, 2] }],
+      burgs: []
+    } as unknown as typeof pack;
+    vi.spyOn(States, "getPoles").mockImplementation(() => {});
+    vi.spyOn(States, "findNeighbors").mockImplementation(() => {});
+    vi.spyOn(States, "collectStatistics").mockImplementation(() => {});
+
+    States.setCells(0, [0]);
+
+    expect(pack.provinces[1].removed).toBe(true);
+    expect(pack.states[1].provinces).toEqual([2]);
+    expect([...pack.cells.province]).toEqual([0, 2, 2]);
+  });
+
   it.each([0, 1])("joins an annexed fragment at cell %s to a province of its new state", cell => {
     const center = cell === 0 ? 1 : 0;
     globalThis.pack = {

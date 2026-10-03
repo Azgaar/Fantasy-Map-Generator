@@ -48,7 +48,7 @@ function reconcileRelief(context: ViewportRenderContext): void {
     const icon = relief[index];
     const { x, y, s } = icon;
     const drawn = s * size;
-    const shift = (drawn - s) / 2; // scale around the icon's anchor, so the drawn centre and the z-order hold
+    const shift = (drawn - s) / 2; // scale around the icon's centre, so it stays on its cell point
     const left = x - shift;
     const top = y - shift;
     if (left > x1 || top > y1 || left + drawn < x0 || top + drawn < y0) continue;

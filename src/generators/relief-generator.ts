@@ -40,8 +40,10 @@ export type ReliefIconRef = { type: ReliefIconType; variant?: number; set?: Reli
 /** a feature drawn with any Icon Library icon instead of a type slot */
 export type ReliefLibraryRef = { icon: string };
 export type ReliefIcon = (ReliefIconRef | ReliefLibraryRef) & { x: number; y: number; s: number };
-/** a biome's relief pool: relief types and icon references, each with its weight */
-export type ReliefPool = Record<string, number>;
+/** how often a pool entry is picked, relative to the others, and its icon size as a multiple of the pool's (absent is 1) */
+export type ReliefPoolEntry = { weight: number; size?: number };
+/** a biome's relief pool: relief types and icon references, each with its weight and size */
+export type ReliefPool = Record<string, ReliefPoolEntry>;
 
 const SIZE_GROWTH = 0.8; // what a rule's icon size gains per height unit above the rule's lowest height
 
@@ -57,14 +59,31 @@ export class ReliefModel {
   }));
 
   getDefaultRules(): ReliefRule[] {
-    const any = { min: null, max: null };
-    const peaks = { height: { min: 71, max: 100 }, density: 100, size: { min: 20.8, max: 44 } };
-    const hills = { height: { min: 50, max: 70 }, density: 100, size: { min: 8, max: 12 } };
-    // cloned, so the rules share no bounds the editor would change together
     return structuredClone<ReliefRule[]>([
-      { name: "Snowy mountains", ...peaks, temperature: { min: null, max: -1 }, icons: { mountSnow: 1 } },
-      { name: "Mountains", ...peaks, temperature: any, icons: { mount: 1 } },
-      { name: "Hills", ...hills, temperature: any, icons: { hill: 1 } }
+      {
+        name: "Snowy mountains",
+        height: { min: 71, max: 100 },
+        density: 100,
+        size: { min: 20, max: 30 },
+        temperature: { min: null, max: -1 },
+        icons: { mountSnow: { weight: 1 } }
+      },
+      {
+        name: "Mountains",
+        height: { min: 71, max: 100 },
+        density: 100,
+        size: { min: 20, max: 30 },
+        temperature: { min: null, max: null },
+        icons: { mount: { weight: 1 } }
+      },
+      {
+        name: "Hills",
+        height: { min: 50, max: 70 },
+        density: 140,
+        size: { min: 8, max: 14 },
+        temperature: { min: null, max: null },
+        icons: { hill: { weight: 1 } }
+      }
     ]);
   }
 
@@ -74,8 +93,8 @@ export class ReliefModel {
     const relief: ReliefIcon[] = [];
     for (const i of pack.cells.i) this.placeCell(i, relief);
 
-    // an icon placed lower draws on top; see byAnchor for why the key is the centre, not the box bottom
-    relief.sort(this.byAnchor);
+    // an icon whose box ends lower draws on top
+    relief.sort(this.byBottom);
     pack.relief = relief;
 
     TIME && console.timeEnd("generateRelief");
@@ -116,26 +135,26 @@ export class ReliefModel {
     const replaced = new Set(this.iconsOn(covers));
     const placed: ReliefIcon[] = [];
     for (const i of pack.cells.i) if (covers(i)) this.placeCell(i, placed);
-    placed.sort(this.byAnchor);
+    placed.sort(this.byBottom);
     // merged, not re-sorted: the kept icons may be in a hand-set order
     const merged: ReliefIcon[] = [];
     let next = 0;
     for (const kept of pack.relief) {
       if (replaced.has(kept)) continue;
-      while (next < placed.length && this.byAnchor(placed[next], kept) < 0) merged.push(placed[next++]);
+      while (next < placed.length && this.byBottom(placed[next], kept) < 0) merged.push(placed[next++]);
       merged.push(kept);
     }
     pack.relief = merged.concat(placed.slice(next));
   }
 
-  /** add an icon where its anchor puts it in the drawing order */
+  /** add an icon where its box bottom puts it in the drawing order */
   insert(icon: ReliefIcon): void {
-    const anchor = this.anchorY(icon);
+    const bottom = this.bottomY(icon);
     let low = 0;
     let high = pack.relief.length;
     while (low < high) {
       const mid = (low + high) >> 1;
-      if (this.anchorY(pack.relief[mid]) <= anchor) low = mid + 1;
+      if (this.bottomY(pack.relief[mid]) <= bottom) low = mid + 1;
       else high = mid;
     }
     pack.relief.splice(low, 0, icon);
@@ -144,10 +163,10 @@ export class ReliefModel {
   /** a pool entry for a roll in [0, 1): the cumulative weights split the range, so a default pool picks
    * exactly as its older list of repeated entries did */
   pickEntry(pool: ReliefPool, roll: number): string | undefined {
-    const entries = Object.entries(pool).filter(([, weight]) => weight > 0);
-    const target = roll * entries.reduce((total, [, weight]) => total + weight, 0);
+    const entries = Object.entries(pool).filter(([, { weight }]) => weight > 0);
+    const target = roll * entries.reduce((total, [, { weight }]) => total + weight, 0);
     let cumulative = 0;
-    for (const [entry, weight] of entries) {
+    for (const [entry, { weight }] of entries) {
       cumulative += weight;
       if (target < cumulative) return entry;
     }
@@ -182,31 +201,48 @@ export class ReliefModel {
     const biome = pack.biomes[pack.cells.biome[i]];
     if (!biome.iconsDensity || !this.pickEntry(biome.icons, 0)) return; // no icons for this biome
 
-    const iconsDensity = biome.iconsDensity / 100;
-    const radius = 2 / iconsDensity / styles.relief.options.density;
-    if (Math.random() > iconsDensity * 10) return;
+    if (Math.random() > (biome.iconsDensity / 100) * 10) return;
 
-    for (const [cx, cy] of this.samplePoints(i, radius)) {
-      const half = (4 + Math.random()) * 2; // styles.relief.options.size scales it at draw time
-      const icon = this.entryIcon(this.pickEntry(biome.icons, Math.random())!);
-      relief.push({ ...icon, x: rn(cx - half, 2), y: rn(cy - half, 2), s: rn(half * 2, 2) });
+    for (const [cx, cy] of this.samplePoints(i, this.spacing(biome.iconsDensity))) {
+      const base = this.poolSize(Math.random());
+      const entry = this.pickEntry(biome.icons, Math.random())!;
+      const s = base * (biome.icons[entry].size ?? 1);
+      relief.push({ ...this.entryIcon(entry), x: rn(cx - s / 2, 2), y: rn(cy - s / 2, 2), s: rn(s, 2) });
     }
   }
 
   /** one entry and variant per cell, so a cell's relief is uniform; no roll is spent where there is no choice */
   private placeRule(i: number, rule: ReliefRule, relief: ReliefIcon[]): void {
-    const entries = Object.keys(rule.icons).filter(entry => rule.icons[entry] > 0);
+    const entries = Object.keys(rule.icons).filter(entry => rule.icons[entry].weight > 0);
     if (!rule.density || !entries.length) return;
     if (rule.density < 10 && Math.random() > rule.density / 10) return;
 
     const entry = entries.length > 1 ? this.pickEntry(rule.icons, Math.random())! : entries[0];
     const icon = this.entryIcon(entry);
-    const { height, size } = rule;
-    const s = minmax(size.min + SIZE_GROWTH * (pack.cells.h[i] - height.min), size.min, size.max);
-    const radius = 2 / (rule.density / 100) / styles.relief.options.density;
-    for (const [cx, cy] of this.samplePoints(i, radius)) {
+    const s = this.ruleSize(rule, pack.cells.h[i]) * (rule.icons[entry].size ?? 1);
+    for (const [cx, cy] of this.samplePoints(i, this.spacing(rule.density))) {
       relief.push({ ...icon, x: rn(cx - s / 2, 2), y: rn(cy - s / 2, 2), s: rn(s, 2) });
     }
+  }
+
+  /** a biome pool's icon size for a roll in [0, 1), before its entry's size; styles.relief.options.size scales it at draw time */
+  poolSize(roll: number): number {
+    return (4 + roll) * 2;
+  }
+
+  /** a rule's icon size at a height, before its entry's size */
+  ruleSize({ height, size }: ReliefRule, h: number): number {
+    return minmax(size.min + SIZE_GROWTH * (h - height.min), size.min, size.max);
+  }
+
+  /** the least distance between the icons of a pool at a density */
+  spacing(density: number): number {
+    return 2 / (density / 100) / styles.relief.options.density;
+  }
+
+  /** Poisson-disc points over a box, to preview what a pool places */
+  samplePatch(width: number, height: number, radius: number, random: () => number): Generator<[number, number]> {
+    return poissonDiscSampler(0, 0, width, height, radius, 3, random);
   }
 
   /** Poisson-disc points inside the cell polygon */
@@ -289,15 +325,12 @@ export class ReliefModel {
     return TYPES.some(entry => entry.type === type);
   }
 
-  anchorY(icon: ReliefIcon): number {
-    return icon.y + icon.s / 2;
+  bottomY(icon: ReliefIcon): number {
+    return icon.y + icon.s;
   }
 
-  /**
-   * z-order: an icon placed lower draws later. The key is the anchor, the sampled cell point the box is
-   * centred on — not the box bottom, which would add half the size and float big icons to the front.
-   */
-  readonly byAnchor = (a: ReliefIcon, b: ReliefIcon): number => this.anchorY(a) - this.anchorY(b);
+  /** z-order: an icon whose box ends lower draws later, so it covers the foot of the icons behind it */
+  readonly byBottom = (a: ReliefIcon, b: ReliefIcon): number => this.bottomY(a) - this.bottomY(b);
 }
 
 declare global {
@@ -317,9 +350,10 @@ window.Relief = Relief;
  * @param {number} y1 - The maximum y coordinate of the rectangle
  * @param {number} r - The minimum distance between points
  * @param {number} k - The number of attempts before rejection (default is 3)
+ * @param {function} random - The random source (default is Math.random)
  * @yields {Array} - An array containing the x and y coordinates of a generated point
  */
-function* poissonDiscSampler(x0: number, y0: number, x1: number, y1: number, r: number, k = 3) {
+function* poissonDiscSampler(x0: number, y0: number, x1: number, y1: number, r: number, k = 3, random = Math.random) {
   if (!(x1 >= x0) || !(y1 >= y0) || !(r > 0)) throw new Error();
 
   const width = x1 - x0;
@@ -363,12 +397,12 @@ function* poissonDiscSampler(x0: number, y0: number, x1: number, y1: number, r: 
   yield sample(width / 2, height / 2);
 
   pick: while (queue.length) {
-    const i = (Math.random() * queue.length) | 0;
+    const i = (random() * queue.length) | 0;
     const parent = queue[i];
 
     for (let j = 0; j < k; ++j) {
-      const a = 2 * Math.PI * Math.random();
-      const r = Math.sqrt(Math.random() * r2_3 + r2);
+      const a = 2 * Math.PI * random();
+      const r = Math.sqrt(random() * r2_3 + r2);
       const x = parent[0] + r * Math.cos(a);
       const y = parent[1] + r * Math.sin(a);
       if (0 <= x && x < width && 0 <= y && y < height && far(x, y)) {

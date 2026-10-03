@@ -9,6 +9,7 @@ import "@/generators/relief-generator";
 import "@/generators/burgs-generator";
 import "@/generators/goods-generator";
 import "@/components/shared/slider-input";
+import Alea from "alea";
 
 const pictures = vi.hoisted(() => ({ fromLink: vi.fn(), fromFile: vi.fn(), fit: vi.fn() }));
 vi.mock("./pictures", () => ({ IconPictures: pictures }));
@@ -20,6 +21,7 @@ const dialogs = new Map<HTMLElement, DialogSettings>();
 const PICTURE: IconPicture = { kind: "image", content: "https://example.com/icon.png", viewBox: "0 0 100 100" };
 
 beforeEach(() => {
+  vi.stubGlobal("aleaPRNG", Alea);
   dialogs.clear();
   vi.clearAllMocks();
   vi.spyOn(Icons, "syncCustom").mockImplementation(() => {}); // the fixture's symbols stand for the synced ones
@@ -56,9 +58,9 @@ function deferred<T>() {
 test("a pool picker previews one addition, applies a double click once and undoes cancellation", () => {
   vi.spyOn(Icons, "retry").mockResolvedValue(undefined);
   Object.assign(SVGElement.prototype, { getBBox: () => ({ x: 0, y: 0, width: 0, height: 0 }) });
-  globalThis.styles = { relief: { options: { set: "simple" }, attrs: {} } } as typeof styles;
+  globalThis.styles = { relief: { options: { set: "simple", size: 1, density: 0.4 }, attrs: {} } } as typeof styles;
   globalThis.pack = {
-    biomes: [{ i: 0, name: "Forest", iconsDensity: 120, icons: { "custom-a": 2 } }]
+    biomes: [{ i: 0, name: "Forest", iconsDensity: 120, icons: { "custom-a": { weight: 2 } } }]
   } as unknown as typeof pack;
   ReliefPoolEditor.open({ biome: 0 });
   const add = () => {
@@ -93,7 +95,7 @@ test("a pool picker previews one addition, applies a double click once and undoe
   expect(weight(Icons.glyph("XI"))).toBeUndefined();
   expect(weight(Icons.glyph("XIV"))).toBe("1");
   press("reliefPoolEditor", "Apply");
-  expect(pack.biomes[0].icons).toEqual({ "custom-a": 3, [Icons.glyph("XIV")]: 1 });
+  expect(pack.biomes[0].icons).toEqual({ "custom-a": { weight: 3 }, [Icons.glyph("XIV")]: { weight: 1 } });
 });
 
 test("an active picker can add and replace a picture", async () => {

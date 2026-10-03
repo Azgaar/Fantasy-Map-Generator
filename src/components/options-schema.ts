@@ -103,7 +103,7 @@ export const reliefRule = z.strictObject({
   height: z.strictObject({ min: percent.int(), max: percent.int() }),
   temperature: z.strictObject({ min: z.number().int().nullable(), max: z.number().int().nullable() }), // °C, null is open
   biomes: ids, // absent or empty claims every biome
-  icons: z.record(z.string(), positive),
+  icons: z.record(z.string(), z.strictObject({ weight: positive, size: positive.optional() })),
   density: count.max(250),
   size: z.strictObject({ min: positive, max: positive }) // at the rule's lowest height, growing with height to max
 });

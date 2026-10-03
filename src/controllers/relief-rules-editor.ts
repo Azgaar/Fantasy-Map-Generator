@@ -16,7 +16,12 @@ const columns: EditorColumn[] = [
   { key: "height", label: "Height", width: "7em", tip: "Height range, 20 (sea level) to 100", permanent: true },
   { key: "temperature", label: "Temperature", width: "7em", tip: "Temperature range in °C" },
   { key: "biomes", label: "Biomes", width: "7em", tip: "Biomes the rule claims" },
-  { key: "size", label: "Size", width: "7em", tip: "Icon size at the lowest height, growing with height" },
+  {
+    key: "size",
+    label: "Size",
+    width: "7em",
+    tip: "Icon size at the lowest height, growing with height. Each pool entry scales it"
+  },
   { key: "relief", label: "Relief", width: "8em", permanent: true },
   { key: "remove", width: "1.2em", permanent: true }
 ];
@@ -184,7 +189,7 @@ function addRule(): void {
     name: "New rule",
     height: { min: 50, max: 100 },
     temperature: { min: null, max: null },
-    icons: { hill: 1 },
+    icons: { hill: { weight: 1 } },
     density: 100,
     size: { min: 8, max: 12 }
   });

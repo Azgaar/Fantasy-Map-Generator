@@ -50,7 +50,7 @@ function getDefaultBiomes(): Biome[] {
   ];
   const habitability = [0, 4, 10, 22, 30, 50, 100, 80, 90, 12, 4, 0, 12];
   const iconsDensity = [0, 3, 2, 120, 120, 120, 120, 150, 150, 100, 5, 0, 250];
-  const icons: ReliefPool[] = [
+  const weights: Record<string, number>[] = [
     {},
     { dune: 3, cactus: 6, deadTree: 1 },
     { dune: 9, deadTree: 1 },
@@ -65,6 +65,9 @@ function getDefaultBiomes(): Biome[] {
     {},
     { swamp: 1 }
   ];
+  const icons = weights.map(
+    (pool): ReliefPool => Object.fromEntries(Object.entries(pool).map(([entry, weight]) => [entry, { weight }]))
+  );
   const cost = [10, 200, 150, 60, 50, 70, 70, 80, 90, 200, 1000, 5000, 150];
 
   return name.map((name, i) => ({

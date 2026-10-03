@@ -425,7 +425,7 @@ Ice data is stored as an array of objects with `i` not necessary equal to the el
 ## Relief
 
 Relief icons are stored in `pack.relief: ReliefIcon[]`. Array order determines drawing
-order; generation sorts by the icon's anchor (the sampled cell point, its box centre). Each icon is
+order; generation sorts by the box bottom (`y + s`), so a lower icon covers the foot of the ones behind it. Each icon is
 `{ type, variant?, set?, x, y, s }` or `{ icon, x, y, s }`, stored as
 plain JSON with no parse/serialize step. `Relief.ref` builds every descriptor, so a default `variant`
 of 1 is never written. `type` names a logical relief type and `variant` a permanent
@@ -441,7 +441,7 @@ and the array order stays a valid z-order.
 whose inclusive `height` (0–100) and `temperature` (°C, a `null` bound is open) ranges hold the cell,
 and whose optional `biomes` ids include the cell's biome (absent: every biome), claims it, else the cell
 takes its biome's pool. A rule is `{ name, height, temperature, biomes?, icons, density, size }`: `icons` and `density` as a biome's pool, `size` the icon size at the rule's lowest height,
-growing 0.8 per height unit up to `size.max`. A rule picks one entry and variant per cell, and spends no
+growing 0.8 per height unit up to `size.max`, before each entry's `size` multiplier. A biome pool's icons are 8–10 units before it. A rule picks one entry and variant per cell, and spends no
 roll where it has no choice, so the default rules reproduce the older fixed hills and mountains. Maps
 older than v1.154.0 get the default rules.
 Every union slot resolves in every set via real artwork or deterministic aliases. See [Icons](icons.md)
@@ -493,7 +493,7 @@ Biome definitions are stored in `pack.biomes: Biome[]`, where `i` equals the arr
 - `color`: `string` - biome color in hex (e.g. `#45ff12`) or link to a hatching pattern
 - `cost`: `number` - non-negative movement cost used during culture, state and religion growth
 - `habitability`: `number` - non-negative suitability value; `0` means uninhabitable
-- `icons`: `Record<string, number>` - the relief pool: lowland relief entries and their positive weights, in insertion order. A key is a relief type (`dune`) or an icon reference (`custom-1a2b3c4d`). Before v1.154.0 a list of repeated entries
+- `icons`: `Record<string, { weight: number; size?: number }>` - the relief pool: lowland relief entries in insertion order, each with a positive weight and an optional positive `size`, a multiplier of the pool's icon size (absent is 1). A key is a relief type (`dune`) or an icon reference (`custom-1a2b3c4d`). Before v1.154.0 a list of repeated entries
 - `iconsDensity`: `number` - how packed the biome's lowland relief is. An integer from `0` (none) to `250`
 - `removed`: `boolean` - optional marker for a removed custom biome
 - `note`: `string` - optional. The user's note (legend) about the biome, as html. Removed with it

@@ -1010,10 +1010,18 @@ describe("v1.154 relief descriptors", () => {
     data[48] = stylesPayload("colored");
     globalThis.pack = {
       relief: [],
-      biomes: [{ icons: [] }, { icons: ["dune", "cactus", "dune", "deadTree", "dune"] }, { icons: { grass: 1 } }]
+      biomes: [
+        { icons: [] },
+        { icons: ["dune", "cactus", "dune", "deadTree", "dune"] },
+        { icons: { grass: { weight: 1 } } }
+      ]
     } as unknown as typeof pack;
     await runMigration("1.153.1", data, ["1.154.0"]);
-    expect(pack.biomes.map(biome => biome.icons)).toEqual([{}, { dune: 3, cactus: 1, deadTree: 1 }, { grass: 1 }]);
+    expect(pack.biomes.map(biome => biome.icons)).toEqual([
+      {},
+      { dune: { weight: 3 }, cactus: { weight: 1 }, deadTree: { weight: 1 } },
+      { grass: { weight: 1 } }
+    ]);
     expect(Object.keys(pack.biomes[1].icons)).toEqual(["dune", "cactus", "deadTree"]);
   });
 

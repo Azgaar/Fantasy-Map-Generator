@@ -2,20 +2,18 @@ import { readdirSync } from "node:fs";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import "./relief-generator"; // installs the Relief global
 
-type ReliefIcon = Parameters<typeof Relief.anchorY>[0];
+type ReliefIcon = Parameters<typeof Relief.bottomY>[0];
 type ReliefSet = (typeof Relief.sets)[number];
 
 beforeEach(() => vi.stubGlobal("options", { map: { relief: { rules: Relief.getDefaultRules() } } }));
 afterEach(() => vi.unstubAllGlobals());
 
-test("z-order follows the icon anchor, not the box bottom", () => {
-  // the art is padded differently inside each box, so the box bottom adds half the size to the key:
-  // by bottom the big icon would sort last and cover the smaller hill placed below it
-  const bigAbove: ReliefIcon = { type: "mount", x: 0, y: 0, s: 40 }; // anchor 20, box bottom 40
-  const smallBelow: ReliefIcon = { type: "hill", x: 0, y: 20, s: 12 }; // anchor 26, box bottom 32
+test("z-order follows the box bottom, not the centre", () => {
+  const bigMount: ReliefIcon = { type: "mount", x: 0, y: 0, s: 40 }; // centre 20, box bottom 40
+  const smallHill: ReliefIcon = { type: "hill", x: 0, y: 20, s: 12 }; // centre 26, box bottom 32
 
-  expect(Relief.byAnchor(bigAbove, smallBelow)).toBeLessThan(0); // the big icon draws first
-  expect([smallBelow, bigAbove].sort(Relief.byAnchor)).toEqual([bigAbove, smallBelow]);
+  expect(Relief.byBottom(smallHill, bigMount)).toBeLessThan(0); // the hill draws first, behind the mountain
+  expect([bigMount, smallHill].sort(Relief.byBottom)).toEqual([smallHill, bigMount]);
 });
 
 test("a stored descriptor carries no default value", () => {
@@ -63,7 +61,7 @@ test("the style size is not baked into generated icons", () => {
 
   const icons = Relief.generate();
   expect(icons.length).toBeGreaterThan(0);
-  for (const icon of icons) expect(icon.s).toBe(28); // (80 - 45) * 0.4 * 2, independent of the size multiplier
+  for (const icon of icons) expect(icon.s).toBe(27.2); // 20 + (80 - 71) * 0.8, independent of the style multiplier
 });
 
 test("a style switch redraws unpinned icons and leaves the descriptors untouched", () => {
@@ -101,12 +99,12 @@ test("a library icon draws itself, a type its slot in its pinned or the style's 
 });
 
 test("a pool picks as its list of repeated entries did, at every roll", () => {
-  const pool = { dune: 3, cactus: 6, deadTree: 1 };
-  const repeated = Object.entries(pool).flatMap(([entry, weight]) => Array<string>(weight).fill(entry));
+  const pool = { dune: { weight: 3 }, cactus: { weight: 6 }, deadTree: { weight: 1 } };
+  const repeated = Object.entries(pool).flatMap(([entry, { weight }]) => Array<string>(weight).fill(entry));
   for (let roll = 0; roll < 1; roll += 0.001) {
     expect(Relief.pickEntry(pool, roll)).toBe(repeated[Math.floor(roll * repeated.length)]);
   }
-  expect(Relief.pickEntry({ grass: 0 }, 0.5)).toBeUndefined();
+  expect(Relief.pickEntry({ grass: { weight: 0 } }, 0.5)).toBeUndefined();
   expect(Relief.pickEntry({}, 0.5)).toBeUndefined();
 });
 
@@ -123,7 +121,11 @@ test("a pool places its types and its icon references; an empty pool places noth
   vi.stubGlobal("Pack", { getPolygon: square });
   vi.stubGlobal("pack", {
     cells: { i: [0, 1], h: [30, 30], r: [0, 0], g: [0, 1], biome: [1, 2] },
-    biomes: [{}, { iconsDensity: 250, icons: { grass: 1, "custom-a": 1 } }, { iconsDensity: 250, icons: {} }]
+    biomes: [
+      {},
+      { iconsDensity: 250, icons: { grass: { weight: 1 }, "custom-a": { weight: 1 } } },
+      { iconsDensity: 250, icons: {} }
+    ]
   });
 
   const icons = Relief.generate();
@@ -150,7 +152,11 @@ test.each([false, true])("re-placing preserves unaffected icons, including manua
   vi.stubGlobal("Pack", { getPolygon: square, findCell: (x: number) => (x < 20 ? 0 : 1) });
   vi.stubGlobal("pack", {
     cells: { i: [0, 1], h: [30, 30], r: [0, 0], g: [0, 1], biome: [1, 2] },
-    biomes: [{}, { iconsDensity: 250, icons: { "custom-a": 1 } }, { iconsDensity: 250, icons: { grass: 1 } }],
+    biomes: [
+      {},
+      { iconsDensity: 250, icons: { "custom-a": { weight: 1 } } },
+      { iconsDensity: 250, icons: { grass: { weight: 1 } } }
+    ],
     relief: [kept[0], replaced, kept[1]]
   });
 
@@ -163,8 +169,8 @@ test.each([false, true])("re-placing preserves unaffected icons, including manua
   const added = pack.relief.filter(icon => !kept.includes(icon));
   expect(added.length).toBeGreaterThan(0);
   for (const icon of added) expect(icon).toMatchObject({ icon: "custom-a" });
-  const anchors = pack.relief.map(Relief.anchorY);
-  if (!manualOrder) expect(anchors).toEqual([...anchors].sort((a, b) => a - b));
+  const bottoms = pack.relief.map(Relief.bottomY);
+  if (!manualOrder) expect(bottoms).toEqual([...bottoms].sort((a, b) => a - b));
 });
 
 test("a land cell takes the first rule it matches, with a null bound open", () => {
@@ -198,7 +204,7 @@ test("a rule places one entry per cell, sized by height; a cell no rule claims t
             name: "Peaks",
             height: { min: 60, max: 100 },
             temperature: { min: null, max: null },
-            icons: { vulcan: 1, "custom-a": 1 },
+            icons: { vulcan: { weight: 1 }, "custom-a": { weight: 1 } },
             density: 100,
             size: { min: 10, max: 14 }
           }
@@ -208,7 +214,7 @@ test("a rule places one entry per cell, sized by height; a cell no rule claims t
   });
   vi.stubGlobal("pack", {
     cells: { i: [0, 1, 2], h: [62, 90, 55], r: [0, 0, 0], g: [0, 1, 2], biome: [1, 1, 1] },
-    biomes: [{}, { iconsDensity: 250, icons: { grass: 1 } }]
+    biomes: [{}, { iconsDensity: 250, icons: { grass: { weight: 1 } } }]
   });
   const random = vi.spyOn(Math, "random").mockReturnValue(0.75); // every peak picks "custom-a"
 
@@ -220,6 +226,29 @@ test("a rule places one entry per cell, sized by height; a cell no rule claims t
   expect(icons.filter(icon => "icon" in icon).map(icon => icon.s)).toEqual(expect.arrayContaining([11.6, 14]));
 });
 
+test("an entry's size scales the icons of a biome's pool and of a rule", () => {
+  vi.stubGlobal("styles", { relief: { options: { size: 1, density: 1, set: "simple" } } });
+  vi.stubGlobal("grid", { cells: { temp: [10, 10] } });
+  vi.stubGlobal("Pack", { getPolygon: square });
+  const [, , hills] = Relief.getDefaultRules();
+  vi.stubGlobal("options", {
+    map: { relief: { rules: [{ ...hills, icons: { hill: { weight: 1, size: 0.5 } } }] } }
+  });
+  vi.stubGlobal("pack", {
+    cells: { i: [0, 1], h: [30, 50], r: [0, 0], g: [0, 1], biome: [1, 1] },
+    biomes: [{}, { iconsDensity: 250, icons: { grass: { weight: 1, size: 2 } } }]
+  });
+  const random = vi.spyOn(Math, "random").mockReturnValue(0.5);
+
+  const icons = Relief.generate();
+  random.mockRestore();
+
+  const sizes = (type: string) =>
+    new Set(icons.filter(icon => "type" in icon && icon.type === type).map(icon => icon.s));
+  expect(sizes("grass")).toEqual(new Set([18])); // (4 + 0.5) * 2, doubled
+  expect(sizes("hill")).toEqual(new Set([4])); // the rule's 8 at its lowest height, halved
+});
+
 test("a rule with an empty pool claims its cells and places nothing there", () => {
   vi.stubGlobal("styles", { relief: { options: { size: 1, density: 1, set: "simple" } } });
   vi.stubGlobal("grid", { cells: { temp: [10] } });
@@ -228,7 +257,7 @@ test("a rule with an empty pool claims its cells and places nothing there", () =
   vi.stubGlobal("options", { map: { relief: { rules: [{ ...hills, icons: {} }] } } });
   vi.stubGlobal("pack", {
     cells: { i: [0], h: [60], r: [0], g: [0], biome: [1] },
-    biomes: [{}, { iconsDensity: 250, icons: { grass: 1 } }]
+    biomes: [{}, { iconsDensity: 250, icons: { grass: { weight: 1 } } }]
   });
 
   expect(Relief.generate()).toEqual([]);

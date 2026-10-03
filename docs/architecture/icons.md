@@ -87,15 +87,16 @@ A biome's **relief pool** (`pack.biomes[].icons`) weighs relief types and icon r
 relief; a relief rule (`options.map.relief.rules`, see [the data model](data-model.md#relief)) carries its
 own pool for the cells it claims. Generation picks an entry with one roll against the cumulative weights in record order — the same
 entry the older list of repeated entries gave, so seeds reproduce — and a type entry then rolls its
-variant. Interface previews of relief art — the Relief Editor tiles, the pool dialog, the Biomes Editor
+variant. An entry's `size` multiplies the icon size and spends no roll, so it never shifts a seed. Interface previews of relief art — the Relief Editor tiles, the pool dialog, the Biomes Editor
 column — are painted in the relief style and cropped to the drawn art (`controllers/relief-previews.ts`),
-since relief art sits small in its frame.
+since relief art sits small in its frame. The pool dialog also draws an uncropped sample patch at the map's sizes and spacing,
+from its own seeded rolls, three a point, so resizing or reweighting one entry leaves the other icons in place.
 
 `Relief.types` declares the union of `type`/`variant` slots every set is measured against; a stored
 descriptor `{ type, variant?, set? }` resolves in every set, pinned or not, and a style change never
 edits `pack.relief`. The renderer resolves the absent `variant` to 1 and the absent `set` to
 `styles.relief.options.set`; `s` is the base size and `styles.relief.options.size` a render multiplier
-anchored at the icon's centre (the z-order key).
+anchored at the icon's centre; the z-order key is the box bottom.
 
 Each set resolves all 34 union slots. `Relief.aliasSlots` owns the rule: exact files win. For a missing
 slot, collect real files of the same type in numeric variant order; if there are none, follow the
