@@ -235,7 +235,46 @@ describe("StatesModule.rename", () => {
 
 describe("StatesModule.setCells", () => {
   beforeEach(async () => {
+    vi.restoreAllMocks();
     await import("./states-generator");
+  });
+
+  afterEach(() => vi.restoreAllMocks());
+
+  it.each([0, 1])("joins an annexed fragment at cell %s to a province of its new state", cell => {
+    const center = cell === 0 ? 1 : 0;
+    globalThis.pack = {
+      cells: {
+        i: [0, 1, 2, 3],
+        h: [30, 30, 30, 30],
+        state: Uint16Array.from([1, 1, 3, 2]),
+        province: Uint16Array.from([1, 1, 2, 3]),
+        c: cell === 0 ? [[2, 3], [], [0], [0]] : [[], [2, 3], [1], [1]],
+        burg: [0, 0, 0, 0]
+      },
+      provinces: [
+        { i: 0, state: 0 },
+        { i: 1, state: 1, center },
+        { i: 2, state: 3, center: 2 },
+        { i: 3, state: 2, center: 3 }
+      ],
+      states: [
+        { i: 0 },
+        { i: 1, center, provinces: [1] },
+        { i: 2, center: 3, provinces: [3] },
+        { i: 3, center: 2, provinces: [2] }
+      ],
+      burgs: []
+    } as unknown as typeof pack;
+    vi.spyOn(States, "getPoles").mockImplementation(() => {});
+    vi.spyOn(States, "findNeighbors").mockImplementation(() => {});
+    vi.spyOn(States, "collectStatistics").mockImplementation(() => {});
+
+    States.setCells(2, [cell]);
+
+    expect(pack.cells.province[cell]).toBe(3);
+    expect(pack.provinces[pack.cells.province[cell]].state).toBe(pack.cells.state[cell]);
+    expect(pack.states[2].provinces).toEqual([3]);
   });
 
   it("refreshes the statistics of both states", () => {

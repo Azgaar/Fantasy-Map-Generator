@@ -1310,10 +1310,13 @@ class StatesModule {
     };
 
     const findClosest = (provinceId: number, stateId: number, sourceCells: number[]) => {
-      const border = sourceCells.find(i =>
-        cells.c[i].some(c => cells.state[c] === stateId && cells.province[c] && cells.province[c] !== provinceId)
-      );
-      return border && cells.c[border].map(c => cells.province[c]).find(p => p && p !== provinceId);
+      for (const cell of sourceCells) {
+        const neighbor = cells.c[cell].find(
+          c => cells.state[c] === stateId && cells.province[c] && cells.province[c] !== provinceId
+        );
+        if (neighbor !== undefined) return cells.province[neighbor];
+      }
+      return undefined;
     };
 
     const create = (old: Province, stateId: number, provinceCells: number[]) => {

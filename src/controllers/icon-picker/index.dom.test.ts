@@ -16,6 +16,7 @@ const confirm = vi.hoisted(() => ({
 }));
 
 beforeEach(() => {
+  vi.spyOn(Icons, "load");
   (globalThis as Record<string, unknown>).options = { map: { customIcons: [] } };
   (globalThis as Record<string, unknown>).Options = { save: vi.fn(), iconsChanged: vi.fn() };
   document.body.innerHTML =
@@ -29,7 +30,11 @@ beforeEach(() => {
   });
 });
 
-afterEach(() => document.body.replaceChildren());
+afterEach(async () => {
+  await Promise.all(vi.mocked(Icons.load).mock.results.map(result => result.value));
+  vi.restoreAllMocks();
+  document.body.replaceChildren();
+});
 
 const open = (current: string, onPick = vi.fn()) => {
   IconPicker.open({ current, onPick, live: true });
@@ -123,7 +128,8 @@ test("search finds built-in icons by name across the sets, and clearing it retur
   search.dispatchEvent(new Event("input"));
   expect(source()).toBeUndefined();
   expect([...dialog.querySelectorAll<HTMLElement>(".panel [data-icon]")].map(b => b.dataset.icon)).toEqual([
-    "ports-anchor"
+    "ports-anchor",
+    "charges-seafaring-anchor"
   ]);
   search.value = "Timber"; // names keep their file's case
   search.dispatchEvent(new Event("input"));

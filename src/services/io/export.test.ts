@@ -167,6 +167,19 @@ describe("flattenSymbolReferences", () => {
     expect(svg.querySelector("use")!.getAttribute("transform")).toBe("translate(10,10) scale(0.05)");
   });
 
+  it.each([
+    [{ "font-size": "3%" }, "0.15"],
+    [{ "font-size": "3%", style: "font-size: 2px" }, "0.2"],
+    [{ style: "font-size: 6%" }, "0.3"]
+  ])("resolves relative icon font sizes against the zoomed layer: %j", (attrs, scale) => {
+    const svg = makeSymbolSvg(iconSymbol, {}, attrs);
+    svg.setAttribute("font-size", "50px");
+
+    flattenSymbolReferences(svg);
+
+    expect(svg.querySelector("use")!.getAttribute("transform")).toBe(`translate(0,0) scale(${scale})`);
+  });
+
   it("replaces the symbol with a plain group without sizing attributes", () => {
     const svg = makeSymbolSvg(iconSymbol, { x: "0", y: "0" }, { "font-size": "4" });
     flattenSymbolReferences(svg);

@@ -563,14 +563,20 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
 
 // resolve the font-size an em-sized symbol would inherit at this node
 function getInheritedFontSize(el: Element | null): number {
+  let ratio = 1;
   for (; el; el = el.parentElement) {
-    const attr = el.getAttribute("font-size");
-    if (attr && Number.isFinite(parseFloat(attr))) return parseFloat(attr);
     const style = el.getAttribute("style");
-    const match = style?.match(/font(?:-size)?\s*:\s*([\d.]+)px/);
-    if (match) return parseFloat(match[1]);
+    const value =
+      style?.match(/font-size\s*:\s*([\d.]+(?:px|%|em)?)/)?.[1] ||
+      style?.match(/font\s*:[^;]*?([\d.]+(?:px|%|em))/)?.[1] ||
+      el.getAttribute("font-size");
+    if (!value || !Number.isFinite(parseFloat(value))) continue;
+    const size = parseFloat(value);
+    if (value.endsWith("%")) ratio *= size / 100;
+    else if (value.endsWith("em")) ratio *= size;
+    else return ratio * size;
   }
-  return 16;
+  return ratio * 16;
 }
 
 // Inkscape (and other non-browser renderers) don't size use->symbol references reliably,

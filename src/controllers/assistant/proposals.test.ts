@@ -211,6 +211,85 @@ it("refuses Apply after a manual edit and on another map", () => {
   expect(pack.burgs[1].name).toBe("Manual");
 });
 
+it.each(["apply", "undo", "redo"] as const)("refuses %s when its destination culture has been removed", action => {
+  pack.cultures = [{ i: 0 }, { i: 1 }, { i: 2 }, { i: 3 }] as typeof pack.cultures;
+  pack.burgs[1].culture = 1;
+  const proposal = proposeOk([{ op: "Burgs.setCulture", args: [1, 2] }]);
+  if (action !== "apply") expect(apply(proposal, MAP)).toBe(true);
+  if (action === "redo") expect(undo(proposal, MAP)).toBe(true);
+  pack.cultures[action === "undo" ? 1 : 2].removed = true;
+  const before = JSON.stringify(pack);
+
+  expect(Proposals.can(action, proposal, MAP)).toBe(false);
+  expect(Proposals.run(action, proposal, MAP)).toBe(false);
+  expect(JSON.stringify(pack)).toBe(before);
+});
+
+it("keeps a proposal applicable after an unrelated culture is removed", () => {
+  pack.cultures = [{ i: 0 }, { i: 1 }, { i: 2 }, { i: 3 }] as typeof pack.cultures;
+  pack.burgs[1].culture = 1;
+  const proposal = proposeOk([{ op: "Burgs.setCulture", args: [1, 2] }]);
+  pack.cultures[3].removed = true;
+
+  expect(apply(proposal, MAP)).toBe(true);
+  expect(pack.burgs[1].culture).toBe(2);
+});
+
+it("accepts a reference to a culture added by the same batch and restores both sides", () => {
+  pack.cultures = [{ i: 0 }, { i: 1 }] as typeof pack.cultures;
+  pack.burgs[1].culture = 1;
+  const proposal: Proposal = {
+    number: 1,
+    mapId: MAP,
+    summary: "New culture",
+    operations: [],
+    state: "proposed",
+    change: [
+      { key: "culture:2", entity: "New culture", field: "", after: { i: 2, name: "New culture", origins: [1] } },
+      { key: "burg:1", entity: "Vel", field: "culture", before: 1, after: 2 }
+    ]
+  };
+
+  expect(apply(proposal, MAP)).toBe(true);
+  expect(pack.burgs[1].culture).toBe(2);
+  expect(undo(proposal, MAP)).toBe(true);
+  expect(pack.burgs[1].culture).toBe(1);
+  expect(pack.cultures).toHaveLength(2);
+  expect(Proposals.run("redo", proposal, MAP)).toBe(true);
+  expect(pack.cultures[2].origins).toEqual([1]);
+});
+
+it("refuses Undo of an added culture after another burg starts using it", () => {
+  pack.cultures = [{ i: 0 }, { i: 1 }] as typeof pack.cultures;
+  pack.burgs[1].culture = 1;
+  const proposal: Proposal = {
+    number: 1,
+    mapId: MAP,
+    summary: "New culture",
+    operations: [],
+    state: "proposed",
+    change: [
+      { key: "culture:2", entity: "New culture", field: "", after: { i: 2, name: "New culture", origins: [1] } },
+      { key: "burg:1", entity: "Vel", field: "culture", before: 1, after: 2 }
+    ]
+  };
+  expect(apply(proposal, MAP)).toBe(true);
+  pack.burgs[2].culture = 2;
+  const before = JSON.stringify(pack);
+
+  expect(undo(proposal, MAP)).toBe(false);
+  expect(JSON.stringify(pack)).toBe(before);
+});
+
+it("refuses a property edit after its target was removed without changing that property", () => {
+  const proposal = proposeOk([rename(2, "Gull")]);
+  pack.burgs[2].removed = true;
+
+  expect(canApply(proposal, MAP)).toBe(false);
+  expect(apply(proposal, MAP)).toBe(false);
+  expect(pack.burgs[2].name).toBe("Orn");
+});
+
 it("refuses Undo after an overlapping proposal was applied", () => {
   const first = proposeOk([rename(1, "Saltmere")]);
   apply(first, MAP);
@@ -358,6 +437,7 @@ describe("entities and cells", () => {
   });
 
   it("records per-cell changes as one row per field", () => {
+    pack.states.push({ i: 2, name: "New state" } as (typeof pack.states)[number]);
     const proposal = proposeOk([{ op: "Zones.setCells", args: [0, [1, 2]] }]);
     expect(proposal.change.map(row => row.field)).toEqual(["cells"]);
 

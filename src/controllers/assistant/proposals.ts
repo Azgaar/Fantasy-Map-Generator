@@ -32,6 +32,25 @@ const CELL_FIELDS = [
 ] as const;
 const CELLS = "cells";
 
+const REFERENCES: Record<string, Record<string, string>> = {
+  burg: { culture: "culture", state: "state", port: "feature" },
+  state: { culture: "culture", capital: "burg", provinces: "province" },
+  province: { state: "state", burg: "burg" },
+  culture: { origins: "culture" },
+  religion: { culture: "culture", origins: "religion" },
+  river: { parent: "river", basin: "river" },
+  market: { centerBurgId: "burg" },
+  cells: {
+    burg: "burg",
+    state: "state",
+    province: "province",
+    culture: "culture",
+    religion: "religion",
+    biome: "biome",
+    r: "river"
+  }
+};
+
 /** The map's lore, recorded field by field under this key */
 const LORE = "lore";
 const lore = () => globalThis.options?.map.lore as unknown as Record<string, unknown> | undefined;
@@ -249,6 +268,72 @@ function holds(change: ChangeRow[], from: Side): boolean {
   });
 }
 
+/** References must still exist on the destination side, including entities the same batch restores or adds */
+function referencesHold(change: ChangeRow[], side: Side): boolean {
+  const changes = new Map<string, ChangeRow[]>();
+  for (const row of change) changes.set(row.key, [...(changes.get(row.key) ?? []), row]);
+  const destination = (key: string): Item | undefined => {
+    const rows = changes.get(key) ?? [];
+    const whole = rows.find(row => !row.field);
+    const item = whole ? (whole[side] as Item | undefined) : find(key)?.item;
+    const removed = rows.find(row => row.field === "removed");
+    return item && !(removed ? removed[side] : item.removed) ? item : undefined;
+  };
+  const valid = (type: string, value: unknown): boolean => {
+    if (Array.isArray(value)) return value.every(id => valid(type, id));
+    return !value || typeof value !== "number" || !!destination(`${type}:${value}`);
+  };
+  const validRows = change.every(row => {
+    const type = row.key.split(":")[0];
+    const value = row[side];
+    if (row.key === LORE) return true;
+    if (row.key === CELLS) {
+      const reference = REFERENCES.cells[row.field];
+      return !reference || Object.values(value as Cells).every(id => valid(reference, id));
+    }
+    if (!destination(row.key)) {
+      return changes
+        .get(row.key)!
+        .some(
+          row =>
+            (row.field === "removed" && row[side] === true) ||
+            (!row.field && (!row[side] || (row[side] as Item).removed))
+        );
+    }
+    const refs = REFERENCES[type] ?? {};
+    if (!row.field) return Object.entries(refs).every(([field, reference]) => valid(reference, (value as Item)[field]));
+    const reference = refs[row.field.split(".")[0]];
+    return !reference || valid(reference, value);
+  });
+  if (!validRows) return false;
+  const removed = new Set([...changes.keys()].filter(key => MapEntities.parseKey(key) && !destination(key)));
+  return !removed.size || noIncomingReferences(removed, change, side);
+}
+
+function noIncomingReferences(removed: Set<string>, change: ChangeRow[], side: Side): boolean {
+  const live: World = { pack, lore: lore() };
+  const scratch = draft();
+  const valid = (type: string, value: unknown): boolean =>
+    Array.isArray(value) ? value.every(id => valid(type, id)) : !removed.has(`${type}:${value}`);
+  try {
+    enter(scratch);
+    put(change, side);
+    for (const { type, field } of MapEntities.collections()) {
+      const refs = Object.entries(REFERENCES[type] ?? {});
+      if (!refs.length) continue;
+      for (const item of itemsOf(field) ?? []) {
+        if (!isItem(item) || item.removed) continue;
+        if (refs.some(([field, reference]) => !valid(reference, item[field]))) return false;
+      }
+    }
+    for (const [field, reference] of Object.entries(REFERENCES.cells))
+      if (Object.values(cellData(field) ?? {}).some(value => !valid(reference, value))) return false;
+    return true;
+  } finally {
+    enter(live);
+  }
+}
+
 /** Rows go forward in order and back in reverse, so added items leave in the order they came */
 function put(change: ChangeRow[], side: Side): void {
   const rows = side === "after" ? change : [...change].reverse();
@@ -304,7 +389,12 @@ const ACTIONS: Record<Action, { from: Proposal["state"]; to: Proposal["state"]; 
 function can(action: Action, proposal: Proposal, mapId: number): boolean {
   const { from, write } = ACTIONS[action];
   const expected = write === "after" ? "before" : "after";
-  return proposal.state === from && proposal.mapId === mapId && holds(proposal.change, expected);
+  return (
+    proposal.state === from &&
+    proposal.mapId === mapId &&
+    holds(proposal.change, expected) &&
+    referencesHold(proposal.change, write)
+  );
 }
 
 function run(action: Action, proposal: Proposal, mapId: number): boolean {
