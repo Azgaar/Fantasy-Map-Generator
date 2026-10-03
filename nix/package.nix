@@ -40,7 +40,7 @@ buildNpmPackage (finalAttrs: {
       jq '(.version, .packages."".version) |= "0.0.0"' \
         ${../package-lock.json} > $out/package-lock.json
     '';
-    hash = "sha256-KFtKrsCgFELV1WkVsdE25ZaW2wdX/07NiuD/mJWy3x8=";
+    hash = "sha256-2sjnf2cur+lac9YUZDz6Po1EpC2MIhdkh1iIfeAFDVc=";
   };
 
   # the lock file is hashed with its version flattened, so the copy npm checks must match
