@@ -1,29 +1,17 @@
-// Every dialog the Style tab opens, plus the element and group listings the dialogs and the editor share
+// Every dialog the Style tab opens
 import { interpolateRgb, interpolateRgbBasis, scaleSequential } from "d3";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import { layerLabel } from "@/data/layer-labels";
-import { stylesSchema } from "@/generators/styles-schema";
 import { drawHeights } from "@/renderers/draw-heightmap";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
-import { getLabelsData } from "@/renderers/labels/label-data";
 import { addGoogleFont, addLocalFont, addWebFont } from "@/services/fonts";
 import { StylePresetsService, SYSTEM_PRESETS } from "@/services/style-presets";
 import { VERSION } from "@/services/versioning";
 import type { StyleElement, StyleSelection } from "@/types/styles";
-import { ensureEl, escapeHtml, findEl, toHEX } from "@/utils";
-
-type Props<K extends keyof HTMLElementTagNameMap> = Partial<Omit<HTMLElementTagNameMap[K], "style">> & {
-  style?: string;
-};
-export const el = <K extends keyof HTMLElementTagNameMap>(tag: K, props: Props<K> = {}): HTMLElementTagNameMap[K] => {
-  const { style, ...rest } = props;
-  const node = Object.assign(document.createElement(tag), rest);
-  if (style) node.style.cssText = style;
-  return node;
-};
+import { ensureEl, escapeHtml, findEl, htmlEl, toHEX } from "@/utils";
+import { groupEntriesFor, hasGroups, listElements } from "./elements";
 
 const controlDialogs = new Set<string>(); // opened by a form control: they go with the form
 
@@ -37,76 +25,6 @@ export function destroyControlDialogs(): void {
   for (const id of controlDialogs) destroyDialog(id);
   controlDialogs.clear();
 }
-
-export function listElements(): { id: StyleElement; label: string }[] {
-  return (Object.keys(stylesSchema.shape) as StyleElement[])
-    .map(id => ({ id, label: layerLabel(id) }))
-    .sort((a, b) => a.label.localeCompare(b.label));
-}
-
-// The editors name elements by their svg group id
-const ELEMENT_BY_DOM_ID: ReadonlyMap<string, StyleElement> = new Map(
-  Layers.all.flatMap(layer => {
-    if (!(layer.id in stylesSchema.shape)) return [];
-    const ids = [layer.id, layer.elementId, ...layer.children.map(child => child.id)];
-    return ids.map(id => [id, layer.id as StyleElement] as const);
-  })
-);
-
-/** The style element an editor's id addresses: a legacy svg group id, a layer id, or the id itself */
-export const elementFor = (id: string): StyleElement => ELEMENT_BY_DOM_ID.get(id) ?? (id as StyleElement);
-
-/** Whether the element keeps a record of user-named groups, even while the record is empty */
-export const hasGroups = (element: StyleElement): boolean => element in GROUP_SOURCES;
-
-export type GroupEntry = { id: string; label: string; count?: string };
-export const groupEntriesFor = (element: StyleElement): GroupEntry[] => GROUP_SOURCES[element]?.() ?? [];
-
-const countBy = <T>(items: readonly T[], key: (item: T) => string | undefined): Map<string, number> => {
-  const counts = new Map<string, number>();
-  for (const item of items) {
-    const k = key(item);
-    if (k !== undefined) counts.set(k, (counts.get(k) ?? 0) + 1);
-  }
-  return counts;
-};
-
-// labels and burgs list top-down: the group drawn on top (states, capitals) is the one most often styled
-const GROUP_SOURCES: Partial<Record<StyleElement, () => GroupEntry[]>> = {
-  labels: () => {
-    // count from the label data: the culled DOM only holds labels rendered at this zoom
-    const counts = countBy(getLabelsData(), label => label.group);
-    return options.map.labels.groups
-      .map(({ name }) => ({ id: name, label: name, count: String(counts.get(name) ?? 0) }))
-      .reverse();
-  },
-  burgIcons: () => {
-    const burgs = pack.burgs.filter(burg => burg.i && !burg.removed);
-    const all = countBy(burgs, burg => burg.group);
-    const ports = countBy(
-      burgs.filter(burg => burg.port),
-      burg => burg.group
-    );
-    return [...options.map.burgs.groups]
-      .sort((a, b) => b.order - a.order)
-      .map(({ name }) => ({
-        id: name,
-        label: name,
-        count: `${all.get(name) ?? 0} burgs, ${ports.get(name) ?? 0} ports`
-      }));
-  },
-  routes: () => {
-    const counts = countBy(pack.routes ?? [], route => route.group);
-    return Object.keys(styles.routes.groups).map(id => ({ id, label: id, count: String(counts.get(id) ?? 0) }));
-  },
-  lakes: () => {
-    const counts = countBy(
-      (pack.features ?? []).filter(feature => feature?.type === "lake"),
-      feature => (feature as { group?: string }).group
-    );
-    return Object.keys(styles.lakes.groups).map(id => ({ id, label: id, count: String(counts.get(id) ?? 0) }));
-  }
-};
 
 const ELEMENTS_ID = "styleElements";
 const ELEMENTS_STYLE = /* css */ `
@@ -310,7 +228,7 @@ export class PresetSelector {
       const name = target.closest<HTMLElement>(".pc")?.dataset.name;
       if (!name) return;
       if (target.closest(".remove")) void Controllers.StylePresetsEditor.remove(name);
-      else if (name !== this.current()) void Controllers.StylePresetsEditor.requestChange(name);
+      else if (name !== StylePresetsService.current()) void Controllers.StylePresetsEditor.requestChange(name);
     });
 
     $(dialog).dialog({
@@ -332,10 +250,6 @@ export class PresetSelector {
     destroyDialog(PRESETS_ID);
   }
 
-  private current(): string {
-    return options.map.style.preset || "default";
-  }
-
   private render(): void {
     const grid = findEl(PRESETS_ID)?.querySelector(".grid");
     if (!grid) return;
@@ -348,7 +262,7 @@ export class PresetSelector {
     card.className = "pc";
     card.dataset.name = name;
     card.dataset.tip = `Apply the ${StylePresetsService.displayName(name)} preset`;
-    card.classList.toggle("on", name === this.current());
+    card.classList.toggle("on", name === StylePresetsService.current());
 
     const image = document.createElement("div");
     image.className = "img";
@@ -469,7 +383,7 @@ export function openFontDialog({ selected, sample, onPick, onAdd }: FontDialogOp
 export function openAddFontDialog(onAdded: (family: string) => void): void {
   destroyDialog("addFontDialog");
   trackControlDialog("addFontDialog");
-  const dialog = el("div", { id: "addFontDialog", className: "dialog", style: "display: none" });
+  const dialog = htmlEl("div", { id: "addFontDialog", className: "dialog", style: "display: none" });
   dialog.innerHTML = /* html */ `
     <span>There are 3 ways to add a custom font:</span>
     <p>
@@ -546,7 +460,7 @@ export function openAddFontDialog(onAdded: (family: string) => void): void {
 export function openSchemeBuilder(current: string, onCreate: (stops: string) => void): void {
   destroyDialog("heightmapSchemeDialog");
   trackControlDialog("heightmapSchemeDialog");
-  const dialog = el("div", { id: "heightmapSchemeDialog", className: "dialog", style: "display: none" });
+  const dialog = htmlEl("div", { id: "heightmapSchemeDialog", className: "dialog", style: "display: none" });
   dialog.innerHTML = /* html */ `<div>
     <i>Define heightmap gradient colors from high to low altitude</i>
     <img id="heightmapSchemePreview" alt="heightmap preview" style="margin-top: 0.5em; width: 100%;" />
@@ -576,7 +490,7 @@ export function openSchemeBuilder(current: string, onCreate: (stops: string) => 
     container.replaceChildren();
     stops.forEach((stop, index) => {
       if (index) {
-        const add = el("button", {
+        const add = htmlEl("button", {
           className: "add",
           textContent: "+",
           style: "margin-top: 0.3em; height: max-content"
@@ -588,7 +502,12 @@ export function openSchemeBuilder(current: string, onCreate: (stops: string) => 
         });
         container.append(add);
       }
-      const input = el("input", { type: "color", className: "stop", value: stop, style: "width: 2.5em; border: none" });
+      const input = htmlEl("input", {
+        type: "color",
+        className: "stop",
+        value: stop,
+        style: "width: 2.5em; border: none"
+      });
       input.dataset.tip = "Click to set the color";
       input.addEventListener("input", () => {
         stops[index] = input.value;
@@ -597,7 +516,7 @@ export function openSchemeBuilder(current: string, onCreate: (stops: string) => 
       });
       container.append(input);
       if (index && index < stops.length - 1) {
-        const remove = el("button", {
+        const remove = htmlEl("button", {
           className: "remove",
           textContent: "x",
           style: "margin-top: 0.3em; height: max-content"
@@ -641,7 +560,7 @@ export function openSchemeBuilder(current: string, onCreate: (stops: string) => 
 export function openTextureUrlDialog(onApply: (url: string) => void): void {
   destroyDialog("textureUrlDialog");
   trackControlDialog("textureUrlDialog");
-  const dialog = el("div", { id: "textureUrlDialog", className: "dialog", style: "display: none" });
+  const dialog = htmlEl("div", { id: "textureUrlDialog", className: "dialog", style: "display: none" });
   dialog.innerHTML = /* html */ `Provide a texture image URL:
     <input id="textureURL" type="url" style="width: 100%" placeholder="http://www.example.com/image.jpg" />
     <canvas id="texturePreview" width="256px" height="144px"></canvas>`;

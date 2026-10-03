@@ -4,6 +4,7 @@
 import { errorText } from "@/utils/stringUtils";
 import type { SystemBlock } from "./context";
 import {
+  bearerHeaders,
   type Completion,
   type CompletionRequest,
   INVALID_ARGUMENTS,
@@ -123,15 +124,11 @@ export async function completeOpenAI(
   baseUrl: string,
   { key, model, system, messages, tools, signal }: CompletionRequest
 ): Promise<Completion> {
-  // Local servers commonly run without auth, so the header is only sent when there is a key
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (key) headers.Authorization = `Bearer ${key}`;
-
   const openAI = baseUrl === "https://api.openai.com/v1";
   const response = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
     signal,
-    headers,
+    headers: { "Content-Type": "application/json", ...bearerHeaders(key) },
     body: JSON.stringify({
       model,
       messages: toChatMessages(system, messages),

@@ -1,8 +1,8 @@
 import type { Message, Usage } from "./provider/providers";
 import type { RunResult } from "./provider/runtime";
 
-/** Who asks: a Guest or Member of the Azgaar server, or the user's own key; null when no answerer is available */
-export type Tier = "guest" | "member" | "key" | null;
+/** Who asks: a Guest or Member of the Azgaar server, or the user's own key */
+export type Tier = "guest" | "member" | "key";
 
 /** One recorded value a proposal changes: an entity field before and after */
 export interface ChangeRow {
@@ -61,7 +61,7 @@ export interface Chat {
   id: string;
   title: string;
   updated: number;
-  tier: NonNullable<Tier>;
+  tier: Tier;
   mapId: number;
   mapName: string;
   items: TranscriptItem[];
@@ -108,7 +108,7 @@ export function select(id: string): Chat | undefined {
   return selected;
 }
 
-export function create(tier: NonNullable<Tier>, mapId: number, mapName: string): Chat {
+export function create(tier: Tier, mapId: number, mapName: string): Chat {
   const chat: Chat = {
     id: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`,
     title: "New chat",
@@ -147,7 +147,7 @@ export function touch(chat: Chat): void {
   persist();
 }
 
-export function canContinue(chat: Chat, tier: Tier, mapId: number): boolean {
+export function canContinue(chat: Chat, tier: Tier | null, mapId: number): boolean {
   // Guest and Member share the Azgaar server's answerer
   return Boolean(tier) && (chat.tier === "key") === (tier === "key") && chat.mapId === mapId;
 }

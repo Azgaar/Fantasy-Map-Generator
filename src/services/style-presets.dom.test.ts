@@ -2,8 +2,8 @@ import { expect, test, vi } from "vitest";
 import "@/generators/relief-generator"; // the models own the icon sets that tell references from text
 import "@/generators/burgs-generator";
 import "@/generators/goods-generator";
-import { parsePreset } from "@/controllers/style-preset";
 import { Styles } from "@/generators/styles";
+import { StylePresetsService } from "./style-presets";
 
 /** A preset in the v1.150-1.153 store layout: fixed children flat, the two burg records side by side */
 function legacyStorePreset(): Record<string, any> {
@@ -29,7 +29,7 @@ function legacyStorePreset(): Record<string, any> {
 test("a store-format preset saved before v1.154.0 still parses after the fold", () => {
   const warn = vi.spyOn(console, "warn");
 
-  const parsed = parsePreset(legacyStorePreset());
+  const parsed = StylePresetsService.parse(legacyStorePreset());
 
   expect(parsed?.burgIcons.groups.custom.groups.icons.attrs.fill).toBe("#abcdef");
   expect(parsed?.burgIcons.groups.town.groups.icons.attrs.fill).toBe("#123456");
@@ -42,7 +42,7 @@ test("a store-format preset saved before v1.154.0 still parses after the fold", 
 test("parsing the bundled default preset leaves the shared defaults untouched", () => {
   const before = JSON.stringify(Styles.defaults);
 
-  parsePreset(Styles.defaults);
+  StylePresetsService.parse(Styles.defaults);
 
   expect(JSON.stringify(Styles.defaults)).toBe(before);
 });

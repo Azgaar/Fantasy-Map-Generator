@@ -1,8 +1,8 @@
 // Executes model-authored JavaScript against the live map. The script body becomes an async
-import { errorText } from "@/utils/stringUtils";
-
 // function evaluated in page scope, so every global (pack, grid, Burgs, Layers, Controllers…)
 // resolves without being injected. Only the returned value and console output travel back.
+
+import { errorText } from "@/utils/stringUtils";
 
 const MAX_RESULT_CHARS = 8000;
 const MAX_ARRAY_ITEMS = 200;

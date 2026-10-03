@@ -28,12 +28,12 @@ import {
 } from "@/services/assistant/chats";
 import { askProvider } from "@/services/assistant/provider/answerer";
 import * as Connection from "@/services/assistant/provider/connection";
-import { listModels } from "@/services/assistant/provider/models";
-import { DEFAULT_PROVIDER, PROVIDERS, type ProviderSpec, providerById } from "@/services/assistant/provider/providers";
+import { PROVIDERS } from "@/services/assistant/provider/providers";
 import { ensureEl } from "@/utils";
 import { renderMarkdown } from "@/utils/markdown";
 import { capitalize, errorText, escapeHtml } from "@/utils/stringUtils";
 import { si } from "@/utils/unitUtils";
+import { KeySheet } from "./key-sheet";
 import { AssistantMap } from "./map";
 import { proposalHtml } from "./proposal-card";
 import { Proposals } from "./proposals";
@@ -56,13 +56,11 @@ let limits: Limits | null = null;
 let notice: Notice | null = null;
 let initialized = false;
 let openMap = 0; // the map id last seen: reloading the same map keeps the selected chat
-let observedTier: Tier = null;
+let observedTier: Tier | null = null; // null when no answerer is available
 let noteLabel: string | null = null;
 let answerStatus = "Thinking";
-let discoveryTimer: ReturnType<typeof setTimeout> | null = null;
-let discoveryId = 0;
 
-const tier = (): Tier => {
+const tier = (): Tier | null => {
   if (Connection.isConnected()) return "key";
   if (!isOfficial()) return null;
   return getToken() ? "member" : "guest";
@@ -377,9 +375,7 @@ function renderDialog(): void {
     event.preventDefault();
     connect();
   });
-  el("assistantProvider").addEventListener("change", fillProvider);
-  el("assistantApiKey").addEventListener("input", scheduleDiscovery);
-  el("assistantLocalUrl").addEventListener("input", scheduleDiscovery);
+  KeySheet.wire();
 }
 
 // The titlebar only exists once jQuery UI has built the dialog
@@ -478,7 +474,7 @@ function deleteChat(id: string): void {
 }
 
 function showView(next: View): void {
-  if (view === "key" && next !== "key") cancelDiscovery();
+  if (view === "key" && next !== "key") KeySheet.cancelDiscovery();
   view = next;
   render();
 }
@@ -529,7 +525,7 @@ function renderTranscript(keepScroll = false): void {
   log.scrollTop = keepScroll ? top : log.scrollHeight;
 }
 
-function welcomeHtml(now: Tier): string {
+function welcomeHtml(now: Tier | null): string {
   const note = noteLabel ? escapeHtml(noteLabel) : "";
   const paragraphs = !now
     ? [
@@ -770,83 +766,13 @@ async function rateItem(index: number, rating: "up" | "down"): Promise<void> {
 
 function openKeySheet(): void {
   if (busy) return;
-  const connection = Connection.get();
-  el<HTMLSelectElement>("assistantProvider").value = connection.provider;
-  el<HTMLInputElement>("assistantLocalUrl").value = connection.localUrl;
-  el("assistantDisconnect").hidden = !Connection.isConnected();
   showView("key");
-  fillProvider();
-}
-
-function cancelDiscovery(): void {
-  discoveryId++;
-  if (discoveryTimer) clearTimeout(discoveryTimer);
-  discoveryTimer = null;
-}
-
-function selectedProvider(): ProviderSpec {
-  return providerById(el<HTMLSelectElement>("assistantProvider").value) ?? DEFAULT_PROVIDER;
-}
-
-function fillProvider(): void {
-  const provider = selectedProvider();
-  const local = provider.id === "local";
-  const draft = Connection.get(provider.id);
-  el<HTMLInputElement>("assistantModel").value = draft.model;
-  el<HTMLInputElement>("assistantApiKey").value = draft.key;
-  el("assistantModelLabel").textContent = local ? "Model name" : "Model";
-  el<HTMLAnchorElement>("assistantKeyLink").href = provider.keyLink;
-  for (const node of el("assistantKey").querySelectorAll<HTMLElement>("[data-remote]")) node.hidden = local;
-  for (const node of el("assistantKey").querySelectorAll<HTMLElement>("[data-local]")) node.hidden = !local;
-  setModels(provider.fallbackModel ? [provider.fallbackModel] : []);
-  void discover();
-}
-
-function setModels(models: string[]): void {
-  el("assistantModels").replaceChildren(...models.map(model => new Option(model)));
-}
-
-function scheduleDiscovery(): void {
-  cancelDiscovery();
-  el("assistantDiscoveryError").textContent = "";
-  setModels([]);
-  discoveryTimer = setTimeout(() => void discover(), 350);
-}
-
-// Discovery doubles as the key check: a failure shows the provider's error but never blocks Connect
-async function discover(): Promise<void> {
-  const provider = selectedProvider();
-  const key = el<HTMLInputElement>("assistantApiKey").value.trim();
-  const url = el<HTMLInputElement>("assistantLocalUrl").value.trim();
-  const request = ++discoveryId;
-  const error = el("assistantDiscoveryError");
-  error.textContent = "";
-  if (provider.id !== "local" && !key) return setModels([]);
-  const stale = () => request !== discoveryId || view !== "key";
-  try {
-    const found = await listModels(provider.id, key, url);
-    if (!stale()) setModels(found);
-  } catch (failure) {
-    if (!stale()) error.textContent = errorText(failure);
-  }
+  KeySheet.fill();
 }
 
 function connect(): void {
-  const provider = selectedProvider().id;
-  const local = provider === "local";
-  const model = el<HTMLInputElement>("assistantModel").value.trim();
-  const key = el<HTMLInputElement>("assistantApiKey").value.trim();
-  if (!model || (!local && !key)) {
-    el("assistantDiscoveryError").textContent = local ? "Enter a model name." : "Enter a model and API key.";
-    return;
-  }
   const wasConnected = Connection.isConnected();
-  Connection.save({
-    provider,
-    model,
-    key: local ? "" : key,
-    localUrl: el<HTMLInputElement>("assistantLocalUrl").value.trim() || Connection.get().localUrl
-  });
+  if (!KeySheet.save()) return;
   if (wasConnected) showView("chat");
   else newChat();
 }

@@ -1,6 +1,6 @@
 import { refreshEditors } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
-import { type EntityType, MapEntities } from "@/components/map-entities";
+import { MapEntities } from "@/components/map-entities";
 import { Options } from "@/components/options-model";
 import { Controllers } from "@/controllers";
 import type { ChangeRow, Proposal } from "@/services/assistant/chats";
@@ -15,25 +15,6 @@ type Side = "before" | "after";
 export type Action = "apply" | "undo" | "redo";
 type Item = { i: number } & Record<string, unknown>;
 type Cells = Record<number, unknown>;
-
-/** Entity collections a proposal records, by their `pack` field and keyed by `i`. Indexed ones keep `i` equal to the array index */
-const COLLECTIONS: [type: EntityType, field: string, indexed: boolean][] = [
-  ["burg", "burgs", true],
-  ["state", "states", true],
-  ["province", "provinces", true],
-  ["culture", "cultures", true],
-  ["religion", "religions", true],
-  ["biome", "biomes", true],
-  ["feature", "features", true],
-  ["marker", "markers", false],
-  ["zone", "zones", false],
-  ["river", "rivers", false],
-  ["route", "routes", false],
-  ["addedLabel", "addedLabels", false],
-  ["journey", "journeys", false],
-  ["market", "markets", false],
-  ["good", "goods", false]
-];
 
 /** Per-cell data a proposal records; a change to any of them is one row per field */
 const CELL_FIELDS = [
@@ -55,7 +36,7 @@ const CELLS = "cells";
 const LORE = "lore";
 const lore = () => globalThis.options?.map.lore as unknown as Record<string, unknown> | undefined;
 
-const itemsOf = (field: string, map = pack) => (map as unknown as Record<string, Item[] | undefined>)[field];
+const itemsOf = (field: string, map = pack) => MapEntities.list(field, map) as Item[] | undefined;
 const isItem = (value: unknown): value is Item =>
   typeof value === "object" && value !== null && Number.isInteger((value as Item).i);
 const cellData = (field: string, map = pack) =>
@@ -146,7 +127,7 @@ function compare(live: World, draft: World): Omit<ChangeRow, "entity">[] {
   const rows: Omit<ChangeRow, "entity">[] = [];
   const byId = (map: typeof pack, field: string) =>
     new Map((itemsOf(field, map) ?? []).filter(isItem).map(item => [item.i, item]));
-  for (const [type, field, indexed] of COLLECTIONS) {
+  for (const { type, field, indexed } of MapEntities.collections()) {
     const [was, now] = [byId(live.pack, field), byId(draft.pack, field)];
     for (const i of new Set([...was.keys(), ...now.keys()])) {
       const key = `${type}:${i}`;
@@ -184,13 +165,13 @@ function compare(live: World, draft: World): Omit<ChangeRow, "entity">[] {
 }
 
 function find(key: string): { list: Item[]; indexed: boolean; i: number; item: Item | undefined } | undefined {
-  const [type, id] = key.split(":");
-  const collection = COLLECTIONS.find(([name]) => name === type);
-  const list = collection && itemsOf(collection[1]);
-  if (!collection || !list) return undefined;
-  const i = Number(id);
+  const ref = MapEntities.parseKey(key);
+  const collection = MapEntities.collections().find(({ type }) => type === ref?.type);
+  const list = collection && itemsOf(collection.field);
+  if (!ref || !collection || !list) return undefined;
+  const i = ref.id;
   const item = isItem(list[i]) && list[i].i === i ? list[i] : list.find(entry => isItem(entry) && entry.i === i);
-  return { list, indexed: collection[2], i, item };
+  return { list, indexed: collection.indexed, i, item };
 }
 
 function read(row: ChangeRow, side: Side): boolean {

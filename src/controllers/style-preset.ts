@@ -4,11 +4,9 @@ import { tip } from "@/components/tooltips";
 import { invokeActiveZooming } from "@/components/zoom";
 import { Controllers } from "@/controllers";
 import { Styles } from "@/generators/styles";
-import { isLegacyPreset, isStoreStyles, normalizeStyles, presetFromLegacy } from "@/generators/styles-legacy";
 import { applyVignetteOptions } from "@/renderers/draw-vignette";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { CUSTOM_PREFIX, StylePresetsService } from "@/services/style-presets";
-import type { StylesData } from "@/types/styles";
 import { downloadFile, ensureEl, isValidJSON, openURL, uploadFile } from "@/utils";
 
 let wired = false;
@@ -22,33 +20,15 @@ function init(): void {
   syncLabel();
 }
 
-const isKnown = (name: string): boolean =>
-  StylePresetsService.isSystem(name) || StylePresetsService.listCustom().includes(name);
-
-// the label follows options.map.style.preset: a preset this browser doesn't have shows as default
 function syncLabel(): void {
-  const preset = options.map.style.preset || "default";
   const label = document.createElement("span");
-  label.textContent = StylePresetsService.displayName(isKnown(preset) ? preset : "default");
+  label.textContent = StylePresetsService.displayName(StylePresetsService.current());
   ensureEl("stylePreset").replaceChildren(label);
-}
-
-const isKnownStyleFormat = (json: unknown): boolean =>
-  typeof json === "object" && json !== null && (isLegacyPreset(json) || isStoreStyles(json));
-
-/** A preset record in store shape, whichever format it was saved in; undefined for what is not a preset */
-export function parsePreset(presetJson: unknown): StylesData | undefined {
-  if (!isKnownStyleFormat(presetJson)) return undefined;
-  if (isLegacyPreset(presetJson as object))
-    return presetFromLegacy(presetJson as Record<string, Record<string, unknown>>, { onUnknown: "skip" });
-  // a preset file saved before v1.154.0 is store-shaped but in an older layout; normalize a copy, the
-  // default preset is the shared record
-  return Styles.parse(normalizeStyles(structuredClone(presetJson)));
 }
 
 /** Put a preset record into the store and onto the map. Used by load and by every UI path */
 function applyPreset(presetJson: unknown): void {
-  const parsed = parsePreset(presetJson);
+  const parsed = StylePresetsService.parse(presetJson);
   if (!parsed) {
     tip("The file is not a style preset - the current style is kept", false, "error", 5000);
     return;
@@ -168,8 +148,7 @@ function openSaver(): void {
   fileInput.style.display = "none";
   dialog.append(fileInput);
 
-  const current = options.map.style.preset || "default";
-  nameInput.value = (isKnown(current) ? current : "default").replace(CUSTOM_PREFIX, "");
+  nameInput.value = StylePresetsService.current().replace(CUSTOM_PREFIX, "");
   jsonInput.value = JSON.stringify(styles, null, 2);
 
   // whether the name would save over a system preset, an existing custom one, or a new one
@@ -188,7 +167,7 @@ function openSaver(): void {
     const desiredName = nameInput.value;
     if (!json) return tip("Please provide a style JSON", false, "error");
     if (!isValidJSON(json)) return tip("JSON string is not valid, please check the format", false, "error");
-    if (!isKnownStyleFormat(JSON.parse(json)))
+    if (!StylePresetsService.isPreset(JSON.parse(json)))
       return tip("The JSON is not a style preset - nothing was saved", false, "error", 5000);
     if (!desiredName) return tip("Please provide a preset name", false, "error");
     if (nameStatus() === "default")

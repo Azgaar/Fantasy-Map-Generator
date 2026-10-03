@@ -19,8 +19,33 @@ import { Routes } from "@/generators/routes-generator";
 import { States } from "@/generators/states-generator";
 import { Zones } from "@/generators/zones-generator";
 
+const MODELS = {
+  AddedLabels,
+  Biomes,
+  Burgs,
+  Cultures,
+  Emblems,
+  Features,
+  Goods,
+  Journeys,
+  Labels,
+  Lore,
+  Markers,
+  Markets,
+  Military,
+  Notes,
+  Provinces,
+  Religions,
+  Rivers,
+  Routes,
+  States,
+  Zones
+};
+
+type Models = typeof MODELS;
+
 // Model methods the Assistant may propose
-export const METHODS: Record<string, string[]> = {
+export const METHODS = {
   Burgs: [
     "rename",
     "setPopulation",
@@ -159,38 +184,14 @@ export const METHODS: Record<string, string[]> = {
   Markets: ["rename", "recolor"],
   Lore: ["rename", "setYear", "setEra", "setDescription"],
   Notes: ["write"]
-};
+} satisfies { [K in keyof Models]?: (keyof Models[K])[] };
 
 export const OPERATIONS = new Set(
-  Object.entries(METHODS).flatMap(([model, methods]) => methods.map(m => `${model}.${m}`))
+  Object.entries(METHODS).flatMap(([model, methods]) => methods.map(method => `${model}.${method}`))
 );
-
-type Model = Record<string, (...args: unknown[]) => unknown>;
-
-const MODELS: Record<string, unknown> = {
-  AddedLabels,
-  Biomes,
-  Burgs,
-  Cultures,
-  Emblems,
-  Features,
-  Goods,
-  Journeys,
-  Labels,
-  Lore,
-  Markers,
-  Markets,
-  Military,
-  Notes,
-  Provinces,
-  Religions,
-  Rivers,
-  Routes,
-  States,
-  Zones
-};
 
 export function runOperation(op: string, args: unknown[]): unknown {
   const [name, method] = op.split(".");
-  return (MODELS[name] as Model)[method](...args);
+  const model = MODELS[name as keyof Models] as unknown as Record<string, (...args: unknown[]) => unknown>;
+  return model[method](...args);
 }

@@ -64,7 +64,9 @@ interface EntityDefinition {
   scale: number;
   layers: LayerId[] | ((id: number) => LayerId[]);
   previewNote?: boolean;
-  entity: (id: number, sub?: number) => MapEntity | undefined;
+  /** the `pack` list holding the type, keyed by `i`; an indexed list keeps `i` equal to the array index */
+  collection?: { field: string; indexed: boolean };
+  entity?: (id: number, sub?: number) => MapEntity | undefined; // for types without a collection
   name: (id: number, sub?: number) => string;
   refs: () => EntityRef[];
   element?: (id: number, sub?: number) => string;
@@ -103,7 +105,7 @@ class EntityLookup {
       icon: "icon-crown",
       scale: 2,
       layers: ["states"],
-      entity: id => this.byId(pack.states, id),
+      collection: { field: "states", indexed: true },
       name: id => this.byId(pack.states, id)?.fullName || this.byId(pack.states, id)?.name || "",
       refs: () => this.refsOf("state", pack.states, true),
       element: id => `stateLabel${id}`,
@@ -125,7 +127,7 @@ class EntityLookup {
       icon: "icon-flag",
       scale: 4,
       layers: ["provinces"],
-      entity: id => this.byId(pack.provinces, id),
+      collection: { field: "provinces", indexed: true },
       name: id => this.byId(pack.provinces, id)?.fullName || this.byId(pack.provinces, id)?.name || "",
       refs: () => this.refsOf("province", pack.provinces, true),
       element: id => `provinceLabel${id}`,
@@ -143,7 +145,7 @@ class EntityLookup {
       icon: "icon-home",
       scale: 8,
       layers: ["burgIcons", "labels"],
-      entity: id => this.byId(pack.burgs, id),
+      collection: { field: "burgs", indexed: true },
       name: id => this.byId(pack.burgs, id)?.name || "",
       refs: () => this.refsOf("burg", pack.burgs, true),
       element: id => `burg${id}`,
@@ -160,7 +162,7 @@ class EntityLookup {
       scale: 6,
       layers: ["markers"],
       previewNote: true,
-      entity: id => this.byId(pack.markers, id),
+      collection: { field: "markers", indexed: false },
       name: id => this.byId(pack.markers, id)?.name || "",
       refs: () => this.refsOf("marker", pack.markers),
       element: id => `marker${id}`,
@@ -175,7 +177,7 @@ class EntityLookup {
       icon: "icon-bezier-curve",
       scale: 4,
       layers: ["rivers"],
-      entity: id => this.byId(pack.rivers, id),
+      collection: { field: "rivers", indexed: false },
       name: id => {
         const river = this.byId(pack.rivers, id);
         return river ? `${river.name} ${river.type}` : "";
@@ -196,7 +198,7 @@ class EntityLookup {
       icon: "icon-map-signs",
       scale: 4,
       layers: ["routes"],
-      entity: id => this.byId(pack.routes, id),
+      collection: { field: "routes", indexed: false },
       name: id => this.byId(pack.routes, id)?.name || "",
       refs: () => this.refsOf("route", pack.routes),
       element: id => `route${id}`,
@@ -223,7 +225,7 @@ class EntityLookup {
       icon: "icon-globe",
       scale: 3,
       layers: id => [this.byId(pack.features, id)?.type === "lake" ? "lakes" : "coastline"],
-      entity: id => this.byId(pack.features, id),
+      collection: { field: "features", indexed: true },
       name: id => {
         const feature = this.byId(pack.features, id);
         return feature ? feature.name || `${feature.subtype || feature.type} ${id}` : "";
@@ -241,7 +243,7 @@ class EntityLookup {
       icon: "icon-draw-polygon",
       scale: 3,
       layers: ["zones"],
-      entity: id => this.byId(pack.zones, id),
+      collection: { field: "zones", indexed: false },
       name: id => this.byId(pack.zones, id)?.name || "",
       refs: () => this.refsOf("zone", pack.zones),
       element: id => `zone${id}`,
@@ -255,7 +257,7 @@ class EntityLookup {
       icon: "icon-compass",
       scale: 4,
       layers: ["journeys"],
-      entity: id => this.byId(pack.journeys, id),
+      collection: { field: "journeys", indexed: false },
       name: id => this.byId(pack.journeys, id)?.name || "",
       refs: () => this.refsOf("journey", pack.journeys), // the first journey is 0
       element: id => `journey${id}`,
@@ -277,7 +279,7 @@ class EntityLookup {
       icon: "icon-store",
       scale: 6,
       layers: ["markets"],
-      entity: id => this.byId(pack.markets, id),
+      collection: { field: "markets", indexed: false },
       name: id =>
         this.byId(pack.markets, id)?.name ||
         this.byId(pack.burgs, this.byId(pack.markets, id)?.centerBurgId ?? -1)?.name ||
@@ -320,7 +322,7 @@ class EntityLookup {
       icon: "icon-font",
       scale: 8,
       layers: ["labels"],
-      entity: id => this.byId(pack.addedLabels, id),
+      collection: { field: "addedLabels", indexed: false },
       name: id => this.byId(pack.addedLabels, id)?.label?.text || "",
       refs: () => this.refsOf("addedLabel", pack.addedLabels, true),
       element: id => `addedLabel${id}`,
@@ -336,7 +338,7 @@ class EntityLookup {
       icon: "icon-users",
       scale: 2,
       layers: ["cultures"],
-      entity: id => this.byId(pack.cultures, id),
+      collection: { field: "cultures", indexed: true },
       name: id => this.byId(pack.cultures, id)?.name || "",
       refs: () => this.refsOf("culture", pack.cultures, true),
       highlight: id => `#culture${id}`,
@@ -349,7 +351,7 @@ class EntityLookup {
       icon: "icon-place-of-worship",
       scale: 2,
       layers: ["religions"],
-      entity: id => this.byId(pack.religions, id),
+      collection: { field: "religions", indexed: true },
       name: id => this.byId(pack.religions, id)?.name || "",
       refs: () => this.refsOf("religion", pack.religions, true),
       highlight: id => `#religion${id}`,
@@ -366,7 +368,7 @@ class EntityLookup {
       icon: "icon-leaf",
       scale: 2,
       layers: ["biomes"],
-      entity: id => this.byId(pack.biomes, id),
+      collection: { field: "biomes", indexed: true },
       name: id => this.byId(pack.biomes, id)?.name || "",
       refs: () => this.refsOf("biome", pack.biomes),
       highlight: id => `#biome${id}`,
@@ -378,7 +380,7 @@ class EntityLookup {
       icon: "icon-tags",
       scale: 6,
       layers: ["goods"],
-      entity: id => this.byId(pack.goods, id),
+      collection: { field: "goods", indexed: false },
       name: id => this.byId(pack.goods, id)?.name || "",
       refs: () => this.refsOf("good", pack.goods, true),
       position: id => {
@@ -503,8 +505,21 @@ class EntityLookup {
   };
 
   get(ref: EntityRef): MapEntity | undefined {
-    const entity = this.types[ref.type].entity(ref.id, ref.sub);
+    const { collection, entity: find } = this.types[ref.type];
+    const entity = collection ? this.byId(this.list(collection.field), ref.id) : find?.(ref.id, ref.sub);
     return entity && !entity.removed ? entity : undefined;
+  }
+
+  /** The types kept in a `pack` list, with that list */
+  collections(): { type: EntityType; field: string; indexed: boolean }[] {
+    return Object.entries(this.types).flatMap(([type, { collection }]) =>
+      collection ? [{ type: type as EntityType, ...collection }] : []
+    );
+  }
+
+  /** A `pack` list by its field, of the live map or another one such as a proposal's draft */
+  list(field: string, map = pack): MapEntity[] | undefined {
+    return (map as unknown as Record<string, MapEntity[] | undefined>)[field];
   }
 
   /** Every live entity of the type; `located` keeps only those with a place on the map or an editor to open */

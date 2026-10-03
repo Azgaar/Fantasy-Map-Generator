@@ -10,22 +10,15 @@ import { VIGNETTE_PRESETS } from "@/data/vignette-presets";
 import { Styles } from "@/generators/styles";
 import { styleMeta, stylesSchema } from "@/generators/styles-schema";
 import { applyVignetteOptions } from "@/renderers/draw-vignette";
+import { StylePresetsService } from "@/services/style-presets";
 import type { StyleElement, StyleSelection } from "@/types/styles";
 import { ensureEl, findEl } from "@/utils";
 import { getPath } from "@/utils/objectUtils";
 import { Baseline } from "./baseline";
 import { CUSTOM_CONTROLS, fontSample, updateGridSizeReadout } from "./controls";
-import {
-  destroyControlDialogs,
-  ElementsDialog,
-  elementFor,
-  type GroupEntry,
-  groupEntriesFor,
-  hasGroups,
-  listElements,
-  PresetSelector
-} from "./dialogs";
+import { destroyControlDialogs, ElementsDialog, PresetSelector } from "./dialogs";
 import { runEffect } from "./effects";
+import { elementFor, type GroupEntry, groupEntriesFor, hasGroups, listElements } from "./elements";
 import { cardPreview, NEUTRAL, type PreviewValues, sampleColor } from "./preview";
 
 class StyleEditorController {
@@ -96,7 +89,7 @@ class StyleEditorController {
 
   // the marks compare with the current preset; until it is loaded the form renders plain, then gets decorated
   private ensureBaseline(): void {
-    const name = options.map.style.preset || "default";
+    const name = StylePresetsService.current();
     if (name === this.baselineName) return;
     this.baselineName = name;
     this.decoration?.setBaseline(undefined);

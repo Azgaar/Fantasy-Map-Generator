@@ -17,9 +17,8 @@ import { FORMATS, isLabelStyle } from "@/generators/styles-formats";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { getLabelsIndex } from "@/renderers/labels/label-data";
 import type { StandardControl, StyleControl } from "@/types/styles";
-import { ensureEl, escapeHtml, findEl, rn } from "@/utils";
+import { ensureEl, escapeHtml, findEl, htmlEl, rn } from "@/utils";
 import {
-  el,
   openAddFontDialog,
   openFontDialog,
   openSchemeBuilder,
@@ -28,13 +27,13 @@ import {
 } from "./dialogs";
 
 const selectOf = (entries: [string, string][], value: string): HTMLSelectElement => {
-  const select = el("select");
+  const select = htmlEl("select");
   for (const [v, label] of entries) select.add(new Option(label, v));
   select.value = value;
   return select;
 };
 const sideButton = (icon: string, tipText: string): HTMLButtonElement => {
-  const button = el("button", { className: `${icon} sideButton`, style: "flex: none; margin-block: 0" });
+  const button = htmlEl("button", { className: `${icon} sideButton`, style: "flex: none; margin-block: 0" });
   button.dataset.tip = tipText;
   return button;
 };
@@ -100,7 +99,7 @@ const blur: ControlFactory = (spec, value, set) => {
 
 // a dash array the schema pins the format of, so a half-typed value never reaches the store
 const dash: ControlFactory = (spec, value, set) => {
-  const input = el("input", {
+  const input = htmlEl("input", {
     type: "text",
     value: value == null || value === "none" ? "" : String(value),
     placeholder: "none"
@@ -170,7 +169,7 @@ function composeLabelStyle({ shadow, transform, dx, dy, rest }: LabelStyle): str
 // text shadow, letter case and the label shift, kept in one cssText: a row each
 const labelStyle: ControlFactory = (spec, value, set) => {
   const parsed = parseLabelStyle(value);
-  const shadow = el("input", { type: "text", value: parsed.shadow, placeholder: "none" });
+  const shadow = htmlEl("input", { type: "text", value: parsed.shadow, placeholder: "none" });
   const transform = selectOf(
     [
       ["", "As is"],
@@ -244,7 +243,7 @@ const texture: ControlFactory = (_spec, value, set) => {
 };
 
 // a button that opens a picker dialog: the current value drawn, and a caret
-const pickButton = (): HTMLButtonElement => el("button", { type: "button", className: "pick" });
+const pickButton = (): HTMLButtonElement => htmlEl("button", { type: "button", className: "pick" });
 
 // an icon slot of a style
 const icon: ControlFactory = (_spec, value, set) => {

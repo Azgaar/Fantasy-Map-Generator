@@ -1,6 +1,6 @@
 // Browser-mode tests (vitest.browser.config.ts): the registry-derived lookup
 import { expect, test } from "vitest";
-import { elementFor } from "./dialogs";
+import { elementFor } from "./elements";
 
 test("a legacy svg group id resolves to its layer's style element", () => {
   expect(elementFor("regions")).toBe("states");

@@ -128,6 +128,9 @@ export const keyStorageForProvider = (providerId: ProviderSpec["id"]): string =>
 export const endpoint = (providerId: ProviderSpec["id"], localUrl = ""): string =>
   ((providerId === "local" && localUrl) || providerById(providerId)?.baseUrl || "").replace(/\/+$/, "");
 
+/** Local servers commonly run without auth, so the header is only sent when there is a key */
+export const bearerHeaders = (key: string): Record<string, string> => (key ? { Authorization: `Bearer ${key}` } : {});
+
 export const anthropicHeaders = (key: string): Record<string, string> => ({
   "x-api-key": key,
   "anthropic-version": "2023-06-01",

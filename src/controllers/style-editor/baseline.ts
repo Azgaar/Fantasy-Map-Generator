@@ -1,7 +1,6 @@
 // The preset the store is compared with: a row whose value differs from the current preset's is
 // "changed" and can be reset to it. The preset must define the path; what it never had is never marked
 
-import { parsePreset } from "@/controllers/style-preset";
 import { StylePresetsService } from "@/services/style-presets";
 import type { StylesData } from "@/types/styles";
 import { getPath } from "@/utils/objectUtils";
@@ -18,7 +17,7 @@ export class Baseline {
     const pending = StylePresetsService.load(name).then(({ name: resolved, styles }) => {
       if (resolved !== name) return undefined;
       try {
-        const record = parsePreset(styles);
+        const record = StylePresetsService.parse(styles);
         return record && new Baseline(record);
       } catch (error) {
         ERROR && console.error(`Cannot parse style preset ${name} for comparison`, error);

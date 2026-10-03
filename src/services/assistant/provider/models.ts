@@ -1,6 +1,6 @@
 // Discover the chat models a key can use
 
-import { anthropicHeaders, endpoint, type ProviderSpec, readError } from "./providers";
+import { anthropicHeaders, bearerHeaders, endpoint, type ProviderSpec, readError } from "./providers";
 
 // What counts as a chat model: the endpoints also list embeddings, audio, image and moderation
 // variants that cannot drive the tool loop
@@ -52,7 +52,5 @@ function modelsUrl(providerId: ProviderSpec["id"], localUrl: string): string {
   return `${endpoint(providerId, localUrl)}/models`;
 }
 
-function authHeaders(providerId: ProviderSpec["id"], key: string): Record<string, string> {
-  if (providerId === "anthropic") return anthropicHeaders(key);
-  return key ? { Authorization: `Bearer ${key}` } : {};
-}
+const authHeaders = (providerId: ProviderSpec["id"], key: string): Record<string, string> =>
+  providerId === "anthropic" ? anthropicHeaders(key) : bearerHeaders(key);

@@ -1,14 +1,13 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
-vi.mock("@/controllers/style-preset", () => ({ parsePreset: vi.fn((json: unknown) => json) }));
 vi.mock("@/services/style-presets", () => ({
   StylePresetsService: {
     load: vi.fn(),
+    parse: vi.fn((json: unknown) => json),
     isSystem: (name: string) => name === "ink" || name === "default"
   }
 }));
 
-import { parsePreset } from "@/controllers/style-preset";
 import { StylePresetsService } from "@/services/style-presets";
 import { Baseline } from "./baseline";
 
@@ -100,13 +99,13 @@ describe("Baseline.load", () => {
     await Baseline.load("fmgStyle_mine");
     await Baseline.load("fmgStyle_mine");
     expect(StylePresetsService.load).toHaveBeenCalledTimes(3);
-    expect(parsePreset).toHaveBeenCalledWith({ map: {} });
+    expect(StylePresetsService.parse).toHaveBeenCalledWith({ map: {} });
   });
 
   test("is undefined when the name resolves to another preset or is not a preset", async () => {
     vi.mocked(StylePresetsService.load).mockResolvedValue({ name: "default", styles: {} });
     expect(await Baseline.load("fmgStyle_gone")).toBeUndefined();
-    vi.mocked(parsePreset).mockReturnValueOnce(undefined);
+    vi.mocked(StylePresetsService.parse).mockReturnValueOnce(undefined);
     vi.mocked(StylePresetsService.load).mockResolvedValue({ name: "fmgStyle_junk", styles: 42 });
     expect(await Baseline.load("fmgStyle_junk")).toBeUndefined();
   });
