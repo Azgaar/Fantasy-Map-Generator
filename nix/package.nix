@@ -40,7 +40,8 @@ buildNpmPackage (finalAttrs: {
       jq '(.version, .packages."".version) |= "0.0.0"' \
         ${../package-lock.json} > $out/package-lock.json
     '';
-    hash = "sha256-2sjnf2cur+lac9YUZDz6Po1EpC2MIhdkh1iIfeAFDVc=";
+    # Refresh alongside dependency changes: set lib.fakeHash, build, then use the reported hash.
+    hash = "sha256-nbXQ0qHJxZ66wl2hUpD/X/8/5UX2jqk62dIXkOroqj8=";
   };
 
   # the lock file is hashed with its version flattened, so the copy npm checks must match
