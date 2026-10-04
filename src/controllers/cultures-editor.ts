@@ -621,7 +621,12 @@ function changePopulation(this: HTMLElement): void {
     width: "24em",
     buttons: {
       Apply: function (this: HTMLElement) {
-        Cultures.setPopulation(cultureId, +ruralPop.value || 0, +urbanPop.value || 0);
+        try {
+          Cultures.setPopulation(cultureId, +ruralPop.value || 0, +urbanPop.value || 0);
+        } catch (error) {
+          tip(errorText(error), false, "error");
+          return;
+        }
         Layers.draw("population");
         refreshCulturesEditor();
         $(this).dialog("close");
@@ -967,8 +972,13 @@ async function uploadCulturesData(this: HTMLInputElement): Promise<void> {
 
       const urban = current.urban * options.map.units.population.urbanization.rate; // in rural terms
       const ratio = current.rural + urban ? urban / (current.rural + urban) : 0;
-      if (culture.population >= 0)
-        Cultures.setPopulation(culture.i, culture.population * (1 - ratio), culture.population * ratio);
+      if (culture.population >= 0) {
+        try {
+          Cultures.setPopulation(culture.i, culture.population * (1 - ratio), culture.population * ratio);
+        } catch {
+          // a culture without land or burgs cannot hold the population
+        }
+      }
     } else {
       current = { i: cultures.length, center: ra(populated), area: 0, cells: 0, origins: [0], rural: 0, urban: 0 };
       cultures.push(current);

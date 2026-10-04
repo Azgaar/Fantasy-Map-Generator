@@ -24,6 +24,7 @@ import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { zonesFilter } from "@/renderers/draw-zones";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
+import { errorText } from "@/utils/stringUtils";
 import { ensureEl, rn, si, unique } from "../utils";
 
 const dialogId = "zonesEditor" as const;
@@ -459,7 +460,12 @@ function changePopulation(zone: Zone): void {
   });
 
   function applyPopulationChange(): void {
-    Zones.setPopulation(zone.i, +ruralPop.value || 0, +urbanPop.value || 0);
+    try {
+      Zones.setPopulation(zone.i, +ruralPop.value || 0, +urbanPop.value || 0);
+    } catch (error) {
+      tip(errorText(error), false, "error");
+      return;
+    }
     Layers.draw("population");
     zonesTable.refresh();
   }

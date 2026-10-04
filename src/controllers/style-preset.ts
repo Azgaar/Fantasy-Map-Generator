@@ -8,7 +8,7 @@ import { Styles } from "@/generators/styles";
 import { applyVignetteOptions } from "@/renderers/draw-vignette";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { IconsArchive } from "@/services/io/icons-archive";
-import { CUSTOM_PREFIX, StylePresetsService } from "@/services/style-presets";
+import { CUSTOM_PREFIX, LEGACY_PREFIX, StylePresetsService } from "@/services/style-presets";
 import { downloadFile, ensureEl, isValidJSON, openURL, uploadFile } from "@/utils";
 
 let wired = false;
@@ -150,14 +150,15 @@ function openSaver(): void {
   fileInput.style.display = "none";
   dialog.append(fileInput);
 
-  nameInput.value = StylePresetsService.current().replace(CUSTOM_PREFIX, "");
+  nameInput.value = StylePresetsService.current().replace(CUSTOM_PREFIX, "").replace(LEGACY_PREFIX, "");
   jsonInput.value = JSON.stringify(styles, null, 2);
 
   // whether the name would save over a system preset, an existing custom one, or a new one
   const nameStatus = (): "default" | "existing" | "new" => {
     const name = CUSTOM_PREFIX + nameInput.value;
     if (StylePresetsService.isSystem(name) || StylePresetsService.isSystem(nameInput.value)) return "default";
-    return StylePresetsService.listCustom().includes(name) ? "existing" : "new";
+    const custom = StylePresetsService.listCustom();
+    return custom.includes(name) || custom.includes(LEGACY_PREFIX + nameInput.value) ? "existing" : "new";
   };
   const checkName = () => {
     nameTip.textContent = nameStatus();
@@ -179,6 +180,7 @@ function openSaver(): void {
     options.map.style.preset = name;
     Options.save();
     StylePresetsService.saveCustom(name, json);
+    StylePresetsService.removeCustom(LEGACY_PREFIX + desiredName); // the saved preset replaces a legacy one
     applyWithUiRefresh(JSON.parse(json));
     tip("Style preset is saved and applied", false, "success", 4000);
     $(dialog).dialog("close");

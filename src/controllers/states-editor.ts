@@ -745,7 +745,12 @@ function changePopulation(stateId: number): void {
   });
 
   function applyPopulationChange() {
-    States.setPopulation(stateId, +ruralPop.value || 0, +urbanPop.value || 0);
+    try {
+      States.setPopulation(stateId, +ruralPop.value || 0, +urbanPop.value || 0);
+    } catch (error) {
+      tip(errorText(error), false, "error");
+      return;
+    }
     Layers.draw("population");
     refreshStatesEditor();
   }

@@ -60,6 +60,7 @@ export const IMAGE_FRAME = "0 0 100 100";
 
 const GLYPH_PREFIX = "glyph-";
 const CUSTOM_PREFIX = "custom-";
+const SAFE_ID = /^[\w-]+$/; // ids go into markup unescaped
 
 /** The pictures a map carries: part of its setup like the transport types, saved in `options.map.customIcons` */
 class CustomIconList {
@@ -121,6 +122,7 @@ class IconLibrary {
   private readonly settled = new Map<IconSetId, "loaded" | "failed">(); // the latest attempt's outcome
 
   kind(id: string): IconKind | null {
+    if (!SAFE_ID.test(id)) return null;
     if (id.startsWith(GLYPH_PREFIX)) return "glyph";
     if (id.startsWith(CUSTOM_PREFIX)) return "custom";
     return IconSets.setForId(id) ? "set" : null;
@@ -170,7 +172,7 @@ class IconLibrary {
   /** The `<use>` href of an icon reference: a glyph symbol is built on first use, a set starts loading.
    * `<use>` resolves an id that appears later, so a caller draws at once and the icon shows when it lands */
   href(id: string): string {
-    if (!id) return "";
+    if (!id || !SAFE_ID.test(id)) return "";
     const kind = this.kind(id);
     if (kind === "glyph") this.ensureGlyph(id);
     else if (kind === "set") {

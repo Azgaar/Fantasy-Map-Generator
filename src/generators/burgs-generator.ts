@@ -842,6 +842,11 @@ class BurgModule {
       newBurgs.push(centerBurg);
       burgsTree.add([centerBurg.x, centerBurg.y]);
       cells.burg[centerBurg.cell] = newId;
+
+      if (centerBurg.capital && centerBurg.state !== undefined) {
+        states[centerBurg.state].capital = newId;
+        states[centerBurg.state].center = centerBurg.cell;
+      }
     }
 
     const score = new Int16Array(cells.s.map(value => value * Math.random()));

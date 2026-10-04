@@ -616,7 +616,12 @@ function changePopulation(this: HTMLElement): void {
   });
 
   function applyPopulationChange() {
-    Religions.setPopulation(religionId, +ruralPop.value || 0, +urbanPop.value || 0);
+    try {
+      Religions.setPopulation(religionId, +ruralPop.value || 0, +urbanPop.value || 0);
+    } catch (error) {
+      tip(errorText(error), false, "error");
+      return;
+    }
     Layers.draw("population");
     refreshReligionsEditor();
   }

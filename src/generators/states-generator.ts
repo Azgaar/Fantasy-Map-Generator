@@ -999,11 +999,11 @@ class StatesModule {
     if (!subject.i || !object.i || subject === object) throw new Error("Relations are between two different states");
     requireOneOf(relation, Object.keys(RELATIONS), "The relation");
     const old = subject.diplomacy?.[otherId];
-    if (old === relation) return;
     subject.diplomacy ??= [];
     object.diplomacy ??= [];
     subject.diplomacy[otherId] = relation;
-    object.diplomacy[stateId] = getInverseRelation(relation);
+    object.diplomacy[stateId] = getInverseRelation(relation); // an unchanged relation still repairs its inverse
+    if (old === relation) return;
     this.getChronicle().push(this.getRelationRecord(stateId, otherId, old, relation));
   }
 
@@ -1129,8 +1129,7 @@ class StatesModule {
     const removedProvinces = new Set(state.provinces ?? []);
     for (const province of removedProvinces) provinces[province] = { i: province, removed: true } as Province;
     cells.state.forEach((owner, cell) => {
-      if (owner !== stateId) return;
-      cells.state[cell] = 0;
+      if (owner === stateId) cells.state[cell] = 0;
       if (removedProvinces.has(cells.province[cell])) cells.province[cell] = 0;
     });
     for (const other of pack.states)

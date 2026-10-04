@@ -522,7 +522,12 @@ function changePopulation(province: number): void {
   });
 
   function applyPopulationChange(): void {
-    Provinces.setPopulation(province, +ruralPop.value || 0, +urbanPop.value || 0);
+    try {
+      Provinces.setPopulation(province, +ruralPop.value || 0, +urbanPop.value || 0);
+    } catch (error) {
+      tip(errorText(error), false, "error");
+      return;
+    }
     Layers.draw("population");
     refreshProvincesEditor();
   }

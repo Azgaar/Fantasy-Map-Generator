@@ -447,16 +447,7 @@
             tiles
           </button>
           <span data-tip="Check to not allow system to automatically hide labels">
-            <input
-              id="showLabels"
-              class="checkbox"
-              type="checkbox"
-              onchange="
-                const showAll = this.checked;
-                Options.set(options => (options.labels.showAll = showAll));
-                invokeActiveZooming();
-              "
-            />
+            <input id="showLabels" class="checkbox" type="checkbox" />
             <label for="showLabels" class="checkbox-label">Show all labels</label>
           </span>
         </div>

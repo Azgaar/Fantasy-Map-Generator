@@ -203,11 +203,13 @@ export class ReliefModel {
 
     if (Math.random() > (biome.iconsDensity / 100) * 10) return;
 
+    const cold = grid.cells.temp[pack.cells.g[i]] < 0;
     for (const [cx, cy] of this.samplePoints(i, this.spacing(biome.iconsDensity))) {
       const base = this.poolSize(Math.random());
       const entry = this.pickEntry(biome.icons, Math.random())!;
       const s = base * (biome.icons[entry].size ?? 1);
-      relief.push({ ...this.entryIcon(entry), x: rn(cx - s / 2, 2), y: rn(cy - s / 2, 2), s: rn(s, 2) });
+      const icon = this.entryIcon(entry === "conifer" && cold ? "coniferSnow" : entry);
+      relief.push({ ...icon, x: rn(cx - s / 2, 2), y: rn(cy - s / 2, 2), s: rn(s, 2) });
     }
   }
 

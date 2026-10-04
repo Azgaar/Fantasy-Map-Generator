@@ -752,6 +752,7 @@ function importBurgNames(dataLoaded: string): void {
   const data = dataLoaded
     .replace(/\r\n|\r/g, "\n")
     .split("\n")
+    .map(line => line.trim())
     .filter(Boolean);
   if (!data.length) {
     tip("Cannot parse the list, please check the file format", false, "error");

@@ -23,7 +23,7 @@ export const SYSTEM_PRESETS = [
 ] as readonly string[];
 
 export const CUSTOM_PREFIX = "fmg-style-";
-const LEGACY_PREFIX = "fmgStyle_";
+export const LEGACY_PREFIX = "fmgStyle_";
 
 const isSystem = (name: string): boolean => SYSTEM_PRESETS.includes(name);
 
