@@ -303,7 +303,7 @@ function changeSourceWidth(this: HTMLInputElement): void {
 
 function changeWidthFactor(this: HTMLInputElement): void {
   const river = getRiver();
-  Rivers.setWidth(river.i, river.sourceWidth, Math.max(0, +this.value || 0));
+  Rivers.setWidth(river.i, river.sourceWidth ?? 0, Math.max(0, +this.value || 0)); // very old rivers have no source width
   showRiverWidth(river);
   redrawRiver();
 }

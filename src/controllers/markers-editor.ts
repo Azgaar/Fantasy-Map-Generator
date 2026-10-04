@@ -12,7 +12,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Marker, MarkerAppearance } from "@/generators/markers-generator";
 import { drawMarkers, setEditedMarker } from "@/renderers/draw-markers";
-import { ensureEl, findEl, rn } from "../utils";
+import { ensureEl, findEl, minmax, rn } from "../utils";
 
 let selectedElement: SVGSVGElement;
 let selectedMarker: Marker;
@@ -161,11 +161,13 @@ function dragMarker(this: SVGElement, event: D3DragEvent<SVGElement, unknown, un
   });
 
   event.on("end", function (this: SVGElement, dragEvent: D3DragEvent<SVGElement, unknown, unknown>) {
-    const { x, y } = dragEvent;
-    this.setAttribute("x", String(rn(dx + x, 2)));
-    this.setAttribute("y", String(rn(dy + y, 2)));
+    const { width, height } = options.map.graph;
+    const x = minmax(dragEvent.x + dx, 0, width); // the box sits at the marker point
+    const y = minmax(dragEvent.y + dy, 0, height);
+    this.setAttribute("x", String(rn(x, 2)));
+    this.setAttribute("y", String(rn(y, 2)));
 
-    Markers.move(selectedMarker.i, x + dx, y + dy); // the box sits at the marker point
+    Markers.move(selectedMarker.i, x, y);
     drawMarkers();
   });
 }

@@ -228,7 +228,9 @@ export class PresetSelector {
       const name = target.closest<HTMLElement>(".pc")?.dataset.name;
       if (!name) return;
       if (target.closest(".remove")) void Controllers.StylePresetsEditor.remove(name);
-      else if (name !== StylePresetsService.current()) void Controllers.StylePresetsEditor.requestChange(name);
+      // the raw preset: one this browser lacks shows as default, yet picking default must still apply it
+      else if (name !== (options.map.style.preset || "default"))
+        void Controllers.StylePresetsEditor.requestChange(name);
     });
 
     $(dialog).dialog({

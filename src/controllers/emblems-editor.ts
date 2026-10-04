@@ -534,7 +534,7 @@ function showArea(): void {
 }
 
 function changeSize(ev: Event): void {
-  const size = +(ev.currentTarget as HTMLInputElement).value;
+  const size = minmax(+(ev.currentTarget as HTMLInputElement).value || 0, 0, 5); // the number input takes any typing
 
   ensureEl<HTMLInputElement>("emblemSizeSlider").value = String(size);
   ensureEl<HTMLInputElement>("emblemSizeNumber").value = String(size);

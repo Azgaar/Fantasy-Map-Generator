@@ -455,6 +455,10 @@ function triggerBurgRemove(this: HTMLElement): void {
     tip("You cannot remove the capital. Please change the state capital first", false, "error");
     return;
   }
+  if (pack.markets?.some(m => m.centerBurgId === burgId)) {
+    tip("You cannot remove a market center burg. Please remove the market first", false, "error");
+    return;
+  }
 
   confirmationDialog({
     title: "Remove burg",
@@ -785,20 +789,21 @@ function importBurgNames(dataLoaded: string): void {
 }
 
 function triggerAllBurgsRemove(): void {
-  const number = pack.burgs.filter(b => b.i && !b.removed && !b.capital && !b.lock).length;
+  const removable = () =>
+    pack.burgs.filter(
+      b => b.i && !b.removed && !(b.capital || b.lock) && !pack.markets?.some(m => m.centerBurgId === b.i)
+    );
   confirmationDialog({
-    title: `Remove ${number} burgs`,
+    title: `Remove ${removable().length} burgs`,
     message: `
-        Are you sure you want to remove all <i>unlocked</i> burgs except for capitals?
+        Are you sure you want to remove all <i>unlocked</i> burgs except for capitals and market centers?
         <br><i>To remove a capital you have to remove its state first</i>`,
     confirm: "Remove",
     onConfirm: () => {
-      pack.burgs
-        .filter(b => b.i && !b.removed && !(b.capital || b.lock) && !pack.markets?.some(m => m.centerBurgId === b.i))
-        .forEach(b => {
-          Burgs.remove(b.i);
-          removeEmblem("burg", b.i);
-        });
+      for (const burg of removable()) {
+        Burgs.remove(burg.i);
+        removeEmblem("burg", burg.i);
+      }
       burgsTable.refresh();
       Layers.draw("burgIcons", "labels");
     }

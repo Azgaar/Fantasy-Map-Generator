@@ -121,7 +121,7 @@ test("a relief set offers every variant it has art for, and no fallback slots", 
   expect(simple).not.toContain("relief-simple-mount-6"); // an alias drawn through another file
 });
 
-test("search finds built-in icons by name across the sets, and clearing it returns to the source", () => {
+test("search finds built-in icons and emoji by name across the sets, and clearing it returns to the source", () => {
   const { dialog, source } = open("goods-wood");
   const search = dialog.querySelector<HTMLInputElement>(".search")!;
   search.value = "anchor";

@@ -64,7 +64,7 @@ export class ReliefModel {
         name: "Snowy mountains",
         height: { min: 71, max: 100 },
         density: 100,
-        size: { min: 20, max: 30 },
+        size: { min: 20.8, max: 44 },
         temperature: { min: null, max: -1 },
         icons: { mountSnow: { weight: 1 } }
       },
@@ -72,15 +72,15 @@ export class ReliefModel {
         name: "Mountains",
         height: { min: 71, max: 100 },
         density: 100,
-        size: { min: 20, max: 30 },
+        size: { min: 20.8, max: 44 },
         temperature: { min: null, max: null },
         icons: { mount: { weight: 1 } }
       },
       {
         name: "Hills",
         height: { min: 50, max: 70 },
-        density: 140,
-        size: { min: 8, max: 14 },
+        density: 100,
+        size: { min: 8, max: 12 },
         temperature: { min: null, max: null },
         icons: { hill: { weight: 1 } }
       }
@@ -227,7 +227,7 @@ export class ReliefModel {
 
   /** a biome pool's icon size for a roll in [0, 1), before its entry's size; styles.relief.options.size scales it at draw time */
   poolSize(roll: number): number {
-    return (4 + roll) * 2;
+    return (4 + roll) * 4;
   }
 
   /** a rule's icon size at a height, before its entry's size */

@@ -181,7 +181,7 @@ references in each.
 `Icons.html(id)` draws an icon in the interface — editors, overviews, the picker: an inline svg boxing the
 icon in its own frame, in its paint (below). The icon picker (`controllers/icon-picker/`) takes only the current icon
 and a callback. Its header shows the selected icon, with Position, Replace and Remove when it is a custom
-icon, and a search over the built-in names; a side list holds Custom, then sections — Emoji by theme,
+icon, and a search over the built-in and emoji names (`data/icons-list.ts` names each offered emoji); a side list holds Custom, then sections — Emoji by theme,
 Settlements, Goods, Relief, Heraldry — whose entries are sets or a set's subdirectories; a section heading shows all
 its entries. It opens on the current icon's entry, else on the first built-in section; a double click picks
 and applies.
@@ -212,7 +212,11 @@ share.
 
 The Custom tab adds by link or upload and picks the new icon; Replace gives an icon a new picture under
 its id, so every slot follows; Remove confirms with the uses `Icons.uses` counts and leaves the
-references to draw nothing. The positioner (`controllers/icon-picker/positioner.ts`) zooms and pans a square
+references to draw nothing. `IconsArchive` (`services/io/icons-archive.ts`) packs custom icons into a zip whose
+`icons.json` restores them under their ids (the picture files are for people); an id the map uses for another
+picture is replaced only on confirmation. The Custom tab exports and imports it,
+and the Style Saver offers it when a downloaded preset references custom icons, since presets carry ids only.
+The positioner (`controllers/icon-picker/positioner.ts`) zooms and pans a square
 frame, writing the symbol's `viewBox` as it moves so the map and the previews follow; Cancel restores
 it and Apply stores it. Replace and Remove cancel a positioner open on that icon.
 
@@ -223,12 +227,12 @@ referenced definitions a chunk does not own (glyphs, custom icons), and derives 
 the remaining references through `setForId`. It then waits for the sets and walks local
 `href`/`xlink:href` dependencies, copying by id regardless of tag and deduplicating cycles. Only loaded
 groups may be read after waiting, so the export reflects the map as it was when it started. Failed sets
-fail the export. A raster export draws the SVG as an image, which fetches no external files, so linked
-custom images are inlined as base64 where the host allows it and dropped where it does not; an SVG
-export keeps its links. Flattening symbols for SVG export preserves their frame clipping; anchored art
-and glyphs that explicitly overflow their frame remain unclipped. Emblem definitions are added before
-collecting icon references, so nested charge and picture references join the export. Emblem downloads
-copy their referenced icon definitions as well.
+fail the export; a symbol a loaded set lacks is skipped with a warning. A raster export draws the SVG as
+an image, which fetches no external files, so linked custom images are inlined as base64 where the host
+allows it and dropped where it does not; an SVG export keeps its links. Flattening symbols for SVG export
+preserves their frame clipping; anchored art and glyphs that explicitly overflow their frame remain
+unclipped. Emblem definitions are added before collecting icon references, so nested charge and picture
+references join the export. Emblem downloads copy their referenced icon definitions as well.
 
 ## Emblems and Armoria
 

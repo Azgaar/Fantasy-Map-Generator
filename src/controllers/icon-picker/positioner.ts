@@ -8,14 +8,16 @@ import { IconPictures } from "./pictures";
 
 const DIALOG = "iconPositioner";
 const MARGIN = 0.25; // the stage shows this much of the frame's side around it, dimmed
-const ZOOM_RANGE = 3; // the slider spans 2^-3 … 2^3 of the frame the dialog opened with
+const [MIN_ZOOM, MAX_ZOOM] = [25, 400]; // percent of the frame the dialog opened with
 
 const STYLE = /* css */ `
+  #${DIALOG} > div { width: auto; }
   #${DIALOG} .stage { width: 16em; height: 16em; margin: 0 auto; background: repeating-conic-gradient(#e8e8e8 0 25%, #fff 0 50%) 0 0 / 1em 1em; cursor: grab; touch-action: none; }
   #${DIALOG} .stage:active { cursor: grabbing; }
   #${DIALOG} .stage svg { display: block; width: 100%; height: 100%; }
   #${DIALOG} .controls { display: flex; align-items: center; gap: .4em; margin-top: .5em; }
-  #${DIALOG} .controls input { flex: 1; }
+  #${DIALOG} .controls slider-input { flex: 1; min-width: 0; }
+  #${DIALOG} .controls input[type=range] { flex: 1; min-width: 0; }
   #${DIALOG} .previews { display: flex; justify-content: center; align-items: center; gap: 1em; margin-top: .5em; }
   #${DIALOG} .previews svg { width: 2em; height: 2em; }
   #${DIALOG} .previews .circle svg { border-radius: 50%; background: #d4c7a1; }
@@ -51,7 +53,7 @@ export function openPositioner(id: string): void {
       </div>
       <div class="controls">
         <span>Zoom</span>
-        <input type="range" min="${-ZOOM_RANGE}" max="${ZOOM_RANGE}" step="0.01" value="0" />
+        <slider-input min="${MIN_ZOOM}" max="${MAX_ZOOM}" value="100"></slider-input>
         <button type="button" class="fit" data-tip="Fit the frame to the picture's visible content">Fit</button>
       </div>
       <div class="previews" data-tip="The icon at map sizes">
@@ -63,10 +65,11 @@ export function openPositioner(id: string): void {
   );
   const dialog = ensureEl(DIALOG);
   const stage = dialog.querySelector<SVGSVGElement>(".stage svg")!;
-  const slider = dialog.querySelector<HTMLInputElement>(".controls input")!;
+  const slider = dialog.querySelector<HTMLInputElement>("slider-input")!;
 
   // every use of the symbol, on the map and in the previews, follows as the frame moves
-  const show = (next: Frame) => {
+  // `typed` leaves the zoom field alone: rewriting it with the clamped value would break typing
+  const show = (next: Frame, typed = false) => {
     frame = next;
     const { x, y, side } = frame;
     const margin = side * MARGIN;
@@ -82,16 +85,22 @@ export function openPositioner(id: string): void {
     const edge = stage.querySelector(".edge")!;
     for (const [name, value] of Object.entries({ x: frameLeft, y: frameTop, width: side, height: side }))
       edge.setAttribute(name, String(value));
-    slider.value = String(Math.log2(reference.side / side));
+    if (!typed) slider.value = String(Math.round((reference.side / side) * 100));
     setSymbolFrame(toViewBox(frame));
   };
   show(frame);
 
-  const zoomTo = (side: number) => {
-    const [smallest, largest] = [reference.side / 2 ** ZOOM_RANGE, reference.side * 2 ** ZOOM_RANGE];
-    show({ ...frame, side: Math.min(largest, Math.max(smallest, side)) });
+  const zoomTo = (side: number, typed = false) => {
+    const [smallest, largest] = [(reference.side * 100) / MAX_ZOOM, (reference.side * 100) / MIN_ZOOM];
+    show({ ...frame, side: Math.min(largest, Math.max(smallest, side)) }, typed);
   };
-  slider.addEventListener("input", () => zoomTo(reference.side / 2 ** +slider.value));
+  // slider-input re-dispatches a bubbling event from its inner controls; ignore those duplicates
+  slider.addEventListener("input", event => {
+    if (event.target === slider) zoomTo((reference.side * 100) / slider.valueAsNumber, true);
+  });
+  slider.addEventListener("change", event => {
+    if (event.target === slider) show(frame); // the committed field shows the zoom it got
+  });
   stage.addEventListener("wheel", event => {
     event.preventDefault();
     zoomTo(frame.side * 1.1 ** Math.sign(event.deltaY));

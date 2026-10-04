@@ -1,7 +1,7 @@
 import { DEFAULT_JOURNEY_TYPE } from "@/data/journey-lore";
 import type { Journey, JourneyPoint, JourneySegment } from "@/types/Journey";
 import { getDistanceUnitRatio, isLand } from "@/utils";
-import { getCardinalColor, requireColor } from "@/utils/colorUtils";
+import { getCardinalColor, requireFill } from "@/utils/colorUtils";
 import { requireName } from "@/utils/validationUtils";
 import type { Burg } from "../burgs-generator";
 import type { Route } from "../routes-generator";
@@ -110,7 +110,7 @@ class JourneysModule {
 
   /** Set a journey's color; segments without their own color take it */
   recolor(journeyId: number, color: string): void {
-    this.living(journeyId).color = requireColor(color);
+    this.living(journeyId).color = requireFill(color);
   }
 
   /** Hide or show a journey on the map */
@@ -154,7 +154,7 @@ class JourneysModule {
 
     if (name !== undefined) segment.name = requireName(name);
     if (color === null) delete segment.color;
-    else if (color !== undefined) segment.color = requireColor(color);
+    else if (color !== undefined) segment.color = requireFill(color);
     if (hidden !== undefined) {
       if (hidden) segment.visible = false;
       else delete segment.visible;
@@ -182,9 +182,11 @@ class JourneysModule {
         throw new Error(`Cell ${cell} does not exist`);
       segment[endpoint] = cell;
     }
+    // only a change of transport or endpoint is checked: an edited heightmap may leave older endpoints invalid
+    const movesEndpoints = transport !== undefined || from !== undefined || to !== undefined;
     for (const endpoint of ["from", "to"] as const) {
       const cell = segment[endpoint];
-      if (domain !== "stay" && cell !== undefined && !this.isValidEndpoint(cell, domain))
+      if (movesEndpoints && domain !== "stay" && cell !== undefined && !this.isValidEndpoint(cell, domain))
         throw new Error(
           `The ${endpoint} endpoint is a ${this.describeCell(cell)}, which ${segment.transport} cannot use`
         );

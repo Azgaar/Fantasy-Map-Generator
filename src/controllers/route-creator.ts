@@ -6,7 +6,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { setTempRoute } from "@/renderers/draw-routes";
-import { ensureEl, getPointer, rn } from "../utils";
+import { ensureEl, getPointer, minmax, rn } from "../utils";
 
 let creatorPoints: number[][] = [];
 
@@ -79,7 +79,9 @@ function onBodyClick(ev: Event): void {
 }
 
 function onClick(this: any, event: any): void {
-  const [x, y] = getPointer(event, this);
+  const [px, py] = getPointer(event, this);
+  const x = minmax(px, 0, options.map.graph.width); // a route point must be on the map
+  const y = minmax(py, 0, options.map.graph.height);
   const cellId = Pack.findCell(x, y);
   const point = [rn(x, 2), rn(y, 2), cellId!];
   creatorPoints.push(point);

@@ -242,7 +242,7 @@ const icon: ControlFactory = (_spec, value, set) => {
   const button = pickButton();
   let current = typeof value === "string" ? value : "";
   const show = () => {
-    const name = Icons.kind(current) === "glyph" ? "" : Icons.name(current); // a glyph is its own name
+    const name = Icons.name(current) === Icons.glyphText(current) ? "" : Icons.name(current); // unnamed text is its own name
     button.innerHTML = `${Icons.html(current)}<span>${escapeHtml(name)}</span>`;
   };
   show();

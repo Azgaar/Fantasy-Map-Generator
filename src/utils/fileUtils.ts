@@ -137,6 +137,23 @@ export function isImageIcon(icon: string): boolean {
   return /^(https?:\/\/|data:image\/)/.test(icon);
 }
 
+/** Load a classic library bundle that registers a runtime global (e.g. window.JSZip) */
+export function loadScript(src: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.onload = () => {
+      script.remove();
+      resolve();
+    };
+    script.onerror = () => {
+      script.remove();
+      reject(new Error(`Cannot load script ${src}`));
+    };
+    document.head.append(script);
+  });
+}
+
 /** A hidden file input owned by the calling module: bind `onchange` on it, then click it */
 export function createFileInput(accept: string): HTMLInputElement {
   const input = document.createElement("input");

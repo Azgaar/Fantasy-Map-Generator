@@ -27,7 +27,9 @@ class StylePresetOperations {
     ]);
     this.ensureGroupStyles = ensureGroupStyles;
     for (const name of names) {
-      if (this.loaded.has(name) || !(service.isSystem(name) || service.listCustom().includes(name))) continue;
+      const custom = !service.isSystem(name);
+      if (custom) this.loaded.delete(name); // Style Saver can overwrite or remove it; system files are fixed
+      if (this.loaded.has(name) || (custom && !service.listCustom().includes(name))) continue;
       const { styles, error } = await service.load(name);
       const record = !error && service.parse(styles);
       if (record) this.loaded.set(name, record);

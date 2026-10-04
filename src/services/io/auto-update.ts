@@ -391,7 +391,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
     // v1.3 added militry layer
     select("#viewbox")
-      .insert("g", "#burgIcons")
+      .insert("g", "#icons") // the pre-1.154 layer group; #burgIcons is nested inside it
       .attr("id", "armies")
       .attr("opacity", 1)
       .attr("fill-opacity", 1)
@@ -485,8 +485,8 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         river.discharge = pack.cells.fl[river.mouth] || 1;
         river.width = rn(river.length / 100, 2);
         river.sourceWidth = 0.1;
-      } else {
-        Rivers.remove(river.i);
+      } else if (pack.rivers.some(r => r.i === river.i)) {
+        Rivers.remove(river.i); // a tributary may already be gone with its parent
       }
     }
 
@@ -1027,7 +1027,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.105.0")) {
     // v1.104.0 introduced some bugs with layers visibility
-    select("#viewbox").select("#burgIcons").style("display", null);
+    select("#viewbox").select("#icons").style("display", null);
     select("#viewbox").select("#ice").style("display", null);
     select("#viewbox").select("#regions").style("display", null);
     select("#viewbox").select("#armies").style("display", null);
@@ -2092,6 +2092,19 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     const goodIconId = (icon: string): string =>
       icon.replace(/^good-custom-/, "custom-goods-").replace(/^good-/, `${Goods.iconSet.id}-`);
     for (const good of pack.goods ?? []) if (good.icon) good.icon = goodIconId(good.icon);
+
+    // merging states kept the merged regiments' old state and could repeat an id; regiments are addressed by
+    // their state and id since v1.154.0
+    for (const state of pack.states ?? []) {
+      const military = state?.military ?? [];
+      const ids = new Set<number>();
+      let next = Math.max(-1, ...military.map(({ i }) => i)) + 1;
+      for (const regiment of military) {
+        regiment.state = state.i;
+        if (ids.has(regiment.i)) regiment.i = next++;
+        ids.add(regiment.i);
+      }
+    }
 
     // v1.154.0 made every icon slot a bare symbol id: goods uploads (data[45], written empty since) and inline
     // images become custom icons, text becomes glyphs. The style record is converted by normalizeStyles above

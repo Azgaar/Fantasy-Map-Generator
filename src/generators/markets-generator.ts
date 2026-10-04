@@ -2,7 +2,7 @@ import Alea from "alea";
 import { quadtree } from "d3-quadtree";
 import { rn } from "@/utils";
 import { minmax } from "../utils";
-import { getColors, getRandomColor, requireColor } from "../utils/colorUtils";
+import { getColors, getRandomColor, requireFill } from "../utils/colorUtils";
 import type { Burg } from "./burgs-generator";
 import type { DemandCategory, Good } from "./goods-generator";
 import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "./goods-generator";
@@ -260,7 +260,7 @@ export class MarketsModule {
 
   /** Set a market's color on the Markets layer */
   recolor(marketId: number, color: string): void {
-    this.living(marketId).color = requireColor(color);
+    this.living(marketId).color = requireFill(color);
   }
 
   private living(marketId: number): Market {

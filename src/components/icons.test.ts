@@ -82,6 +82,8 @@ test("an icon is named by its glyph or its file", () => {
   expect(Icons.name("relief-simple-mount-1")).toBe("mount");
   expect(Icons.name("goods-salted-fish")).toBe("salted fish");
   expect(Icons.name("glyph-58-49-56")).toBe("XIV");
+  expect(Icons.name(Icons.glyph("⚔️"))).toBe("crossed swords");
+  expect(Icons.name(Icons.glyph("⚔"))).toBe("crossed swords"); // typed without the variation selector
   expect(Icons.name("custom-1a2b3c4d")).toBe("custom icon");
   expect(Icons.name("")).toBe("none");
 });

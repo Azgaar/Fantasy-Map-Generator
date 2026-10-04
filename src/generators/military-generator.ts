@@ -609,7 +609,7 @@ class MilitaryModule {
       throw new Error("Units are an object of unit names and troop numbers");
     const names = options.map.military.units.map(({ name }) => name);
     for (const [name, count] of Object.entries(units)) {
-      requireOneOf(name, names, "The unit");
+      if (!(name in regiment.u)) requireOneOf(name, names, "The unit"); // troops of a unit type since removed stay
       if (!Number.isInteger(count) || count < 0)
         throw new Error(`The number of ${name} must be a non-negative integer`);
     }

@@ -146,8 +146,8 @@ test("a pending replacement cannot change an icon after cancellation", async () 
 });
 
 function zoom(): void {
-  const slider = document.querySelector<HTMLInputElement>("#iconPositioner input")!;
-  slider.value = "1";
+  const slider = document.querySelector<HTMLInputElement>("#iconPositioner input[type=range]")!;
+  slider.value = "200";
   slider.dispatchEvent(new Event("input"));
 }
 

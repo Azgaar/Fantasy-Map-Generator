@@ -240,6 +240,8 @@ function handleControlPointClick(this: any): void {
   else removeControlPoint(controlPoint);
 
   function splitRoute(): void {
+    if (index < 1 || index > route.points.length - 2)
+      return void tip("A route cannot be split at its end point", false, "error");
     const newRouteId = Routes.split(route.i, index);
     drawControlPoints(route.points);
     drawCells(route.points);

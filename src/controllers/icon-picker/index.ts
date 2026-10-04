@@ -1,11 +1,12 @@
 // The icon picker: one dialog for every icon slot, the Icon Library's sources in a side list
 import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { type IconSetId, IconSets } from "@/components/icon-sets";
-import { CustomIcons, type IconPicture, Icons } from "@/components/icons";
+import { type CustomIcon, CustomIcons, type IconPicture, Icons } from "@/components/icons";
 import { tip } from "@/components/tooltips";
 import { ICON_GROUPS } from "@/data/icons-list";
+import { IconsArchive } from "@/services/io/icons-archive";
 import type { IconSet } from "@/types/icons";
-import { capitalize, createFileInput, ensureEl, escapeHtml } from "@/utils";
+import { capitalize, createFileInput, downloadFile, ensureEl, escapeHtml, getFileName } from "@/utils";
 import { IconPictures, type PictureProfile } from "./pictures";
 import { closePositioner, openPositioner } from "./positioner";
 
@@ -63,12 +64,14 @@ const STYLE = /* css */ `
   #${ICON_PICKER} .customAdd { display: flex; gap: .3em; margin-bottom: .5em; }
   #${ICON_PICKER} .customAdd input { flex: 1; min-width: 0; }
   #${ICON_PICKER} .customAdd button { margin: 0; white-space: nowrap; }
+  #${ICON_PICKER} .customArchive { display: flex; gap: .3em; margin-top: .5em; }
+  #${ICON_PICKER} .customArchive button { margin: 0; }
   #${ICON_PICKER} .replacing { margin: -.2em 0 .5em; padding: .3em .5em; border-radius: 4px; background: #ffd70033; }
   #${ICON_PICKER} .replacing a { cursor: pointer; text-decoration: underline; }
   #${ICON_PICKER} .note { margin: .6em 0 0; font-size: .85em; opacity: .7; }
   #${ICON_PICKER} .empty { margin: 1em 0; font-style: italic; opacity: .7; }
   #${ICON_PICKER}.busy { cursor: progress; }
-  #${ICON_PICKER}.busy .customAdd { pointer-events: none; opacity: .5; }
+  #${ICON_PICKER}.busy :is(.customAdd, .customArchive) { pointer-events: none; opacity: .5; }
   @media (max-width: 600px) {
     #${ICON_PICKER} .head { flex-wrap: wrap; }
     #${ICON_PICKER} .search { width: 100%; }
@@ -98,7 +101,7 @@ function open({ current, onPick, live = false, preferCustom, profile = "icon" }:
       <style>${STYLE}</style>
       <div class="head">
         <div class="current"></div>
-        <input type="search" class="search" placeholder="Search built-in icons" data-tip="Find a built-in icon by name" />
+        <input type="search" class="search" placeholder="Search built-in icons" data-tip="Find a built-in icon or emoji by name" />
       </div>
       <div class="body">
         <nav></nav>
@@ -193,14 +196,56 @@ function open({ current, onPick, live = false, preferCustom, profile = "icon" }:
   };
 
   const linkValue = () => panel.querySelector<HTMLInputElement>(".customAdd input")?.value ?? "";
-  const upload = () => {
-    fileInput ??= createFileInput("image/*,.svg");
+  const pickFile = (accept: string, onFile: (file: File) => void) => {
+    fileInput ??= createFileInput(accept);
+    fileInput.accept = accept;
     fileInput.onchange = () => {
       const file = fileInput!.files?.[0];
       fileInput!.value = "";
-      if (file) void addPicture(id => IconPictures.fromFile(file, id, profile));
+      if (file) onFile(file);
     };
     fileInput.click();
+  };
+  const upload = () =>
+    pickFile("image/*,.svg", file => void addPicture(id => IconPictures.fromFile(file, id, profile)));
+
+  const exportAll = async () => {
+    const blob = await IconsArchive.pack();
+    downloadFile(blob, `${getFileName("Custom icons")}.zip`, "application/zip");
+  };
+  const importArchive = (file: File) => {
+    if (!isOpen() || dialog.classList.contains("busy")) return;
+    dialog.classList.add("busy");
+    closePositioner(current);
+    IconsArchive.unpack(file)
+      .then(({ added, unchanged, conflicts, invalid }) => {
+        if (!isOpen()) return;
+        refreshCustom();
+        const counts = [
+          `${added} added`,
+          unchanged && `${unchanged} already here`,
+          invalid && `${invalid} invalid skipped`
+        ];
+        tip(`Custom icons imported: ${counts.filter(Boolean).join(", ")}`, false, "success", 5000);
+        if (conflicts.length) askToReplace(conflicts);
+      })
+      .catch(error => isOpen() && tip((error as Error).message, false, "error", 6000))
+      .finally(() => dialog.classList.remove("busy"));
+  };
+  const askToReplace = (conflicts: CustomIcon[]) => {
+    const count = conflicts.length === 1 ? "1 archived icon has" : `${conflicts.length} archived icons have`;
+    confirmationDialog({
+      title: "Import custom icons",
+      message: `${count} the id of a different icon on this map. Replace the map's pictures with the archived ones? Everything using them will change`,
+      confirm: "Replace",
+      cancel: "Keep the map's",
+      onConfirm: () => {
+        for (const { id } of conflicts) closePositioner(id);
+        IconsArchive.replace(conflicts);
+        if (isOpen()) refreshCustom();
+        tip(`${conflicts.length} custom icon(s) replaced`, false, "success", 4000);
+      }
+    });
   };
 
   const remove = () => {
@@ -225,6 +270,8 @@ function open({ current, onPick, live = false, preferCustom, profile = "icon" }:
   const actions: Record<string, () => void> = {
     link: () => void addPicture(() => IconPictures.fromLink(linkValue())),
     upload,
+    exportAll: () => void exportAll().catch(error => tip((error as Error).message, false, "error", 6000)),
+    importArchive: () => pickFile(".zip,application/zip", importArchive),
     stopReplacing: () => setReplacing(null),
     position: () => openPositioner(current),
     replace: () => setReplacing(replacing === current ? null : current),
@@ -292,7 +339,7 @@ function catalog(): Entry[] {
     key: `glyph/${label}`,
     group: "Emoji",
     label,
-    icons: glyphs.map(glyph => Icons.glyph(glyph))
+    icons: Object.keys(glyphs).map(glyph => Icons.glyph(glyph))
   }));
   return [...emoji, ...IconSets.sets().flatMap(setEntries)];
 }
@@ -390,10 +437,9 @@ function load(entries: Entry[]): void {
   for (const set of new Set(entries.map(entry => entry.set))) if (set) void Icons.retry(set);
 }
 
-/** the built-in icons whose name holds the query, entry by entry */
+/** the built-in icons and emoji whose name holds the query, entry by entry */
 function renderResults(entries: Entry[], query: string, current: string): string {
   const found = entries
-    .filter(entry => entry.set)
     .map(entry => ({
       ...entry,
       label: entryLabel(entry),
@@ -421,6 +467,10 @@ function renderCustom(current: string, replacing: string | null, profile: Pictur
     </div>
     <div class="replacing" ${replacing ? "" : "hidden"}>Link or upload the new picture of the selected icon. <a data-action="stopReplacing">Cancel</a></div>
     ${icons.length ? `<div class="choices">${icons.join("")}</div>` : `<p class="empty">This map carries no custom icons yet.</p>`}
+    <div class="customArchive">
+      ${icons.length ? `<button type="button" data-action="exportAll" data-tip="Download all custom icons as a zip archive, to import them into another map">Download all</button>` : ""}
+      <button type="button" data-action="importArchive" data-tip="Import custom icons from a downloaded zip archive. An icon whose id the map uses for another picture is replaced only on confirmation">Import zip</button>
+    </div>
     <p class="note">Free icons: <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>,
       <a href="https://thenounproject.com" target="_blank" rel="noopener">The Noun Project</a>,
       <a href="https://openmoji.org" target="_blank" rel="noopener">OpenMoji</a>,

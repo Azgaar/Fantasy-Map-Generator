@@ -236,7 +236,8 @@ function changeIcon(): void {
     current: regiment.icon ?? "",
     live: true,
     onPick: icon => {
-      Military.setIcon(regiment.state, regiment.i, icon);
+      if (icon) Military.setIcon(regiment.state, regiment.i, icon);
+      else regiment.icon = icon; // cancelling restores a regiment that had no icon
       ensureEl("regimentIcon").innerHTML = Icons.html(icon);
       updateRegimentIcon(selectedRegiment!.querySelector<SVGUseElement>(".regimentIcon")!, regiment);
     }

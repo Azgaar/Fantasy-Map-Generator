@@ -4,6 +4,7 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { errorText } from "@/utils/stringUtils";
 import { ensureEl, getPointer } from "../utils";
 
 let creatorCells: number[] = [];
@@ -105,7 +106,13 @@ function addRiver(): void {
     tip("Add at least 2 cells", false, "error");
     return;
   }
-  const riverId = Rivers.create(creatorCells);
+  let riverId: number;
+  try {
+    riverId = Rivers.create(creatorCells);
+  } catch (error) {
+    tip(errorText(error), false, "error");
+    return;
+  }
   Layers.draw("rivers");
   void Controllers.RiverEditor.open(`river${riverId}`);
 }

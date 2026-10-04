@@ -1,11 +1,13 @@
 // Style presets: the preset row on the Style tab, applying a preset to the map, the Style Saver dialog
-import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { alertDialog, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { CustomIcons } from "@/components/icons";
 import { tip } from "@/components/tooltips";
 import { invokeActiveZooming } from "@/components/zoom";
 import { Controllers } from "@/controllers";
 import { Styles } from "@/generators/styles";
 import { applyVignetteOptions } from "@/renderers/draw-vignette";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
+import { IconsArchive } from "@/services/io/icons-archive";
 import { CUSTOM_PREFIX, StylePresetsService } from "@/services/style-presets";
 import { downloadFile, ensureEl, isValidJSON, openURL, uploadFile } from "@/utils";
 
@@ -189,6 +191,7 @@ function openSaver(): void {
     if (!isValidJSON(json)) return tip("JSON string is not valid, please check the format", false, "error");
     if (!name) return tip("Please provide a preset name", false, "error");
     downloadFile(json, `${name}.json`, "application/json");
+    offerCustomIcons(json, name);
   };
 
   const upload = () => {
@@ -217,6 +220,33 @@ function openSaver(): void {
     width: "26em",
     position: { my: "center", at: "center", of: "svg" },
     close: () => destroyDialog("styleSaver")
+  });
+}
+
+// a preset keeps only the ids of custom icons; their pictures are the map's, so they travel as a separate zip
+function offerCustomIcons(json: string, name: string): void {
+  const ids = new Set(Array.from(json.matchAll(/"(custom-[\w-]+)"/g), match => match[1]));
+  if (!ids.size) return;
+  const icons = CustomIcons.all.filter(icon => ids.has(icon.id));
+
+  const count = ids.size === 1 ? "1 custom icon" : `${ids.size} custom icons`;
+  const missing = ids.size - icons.length;
+  const absent = missing ? ` ${missing} of them ${missing === 1 ? "is" : "are"} not on this map.` : "";
+  const message = `The style uses ${count}. Custom icons are stored in the map, not in the style, so they must be re-uploaded on the target map.${absent}`;
+  if (!icons.length) return void alertDialog({ title: "Custom icons", message });
+
+  confirmationDialog({
+    title: "Custom icons",
+    message: `${message}<br><br>Download the icons as a zip? Import it on the target map via the icon picker: <i>Custom → Import zip</i>`,
+    confirm: "Download icons",
+    cancel: "Skip",
+    onConfirm: async () => {
+      try {
+        downloadFile(await IconsArchive.pack(icons), `${name} icons.zip`, "application/zip");
+      } catch (error) {
+        tip((error as Error).message, false, "error", 6000);
+      }
+    }
   });
 }
 

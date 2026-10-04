@@ -441,7 +441,7 @@ and the array order stays a valid z-order.
 whose inclusive `height` (0–100) and `temperature` (°C, a `null` bound is open) ranges hold the cell,
 and whose optional `biomes` ids include the cell's biome (absent: every biome), claims it, else the cell
 takes its biome's pool. A rule is `{ name, height, temperature, biomes?, icons, density, size }`: `icons` and `density` as a biome's pool, `size` the icon size at the rule's lowest height,
-growing 0.8 per height unit up to `size.max`, before each entry's `size` multiplier. A biome pool's icons are 8–10 units before it. A rule picks one entry and variant per cell, and spends no
+growing 0.8 per height unit up to `size.max`, before each entry's `size` multiplier. A biome pool's icons are 16–20 units before it. A rule picks one entry and variant per cell, and spends no
 roll where it has no choice, so the default rules reproduce the older fixed hills and mountains. Maps
 older than v1.154.0 get the default rules.
 Every union slot resolves in every set via real artwork or deterministic aliases. See [Icons](icons.md)

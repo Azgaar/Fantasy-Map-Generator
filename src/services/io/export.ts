@@ -21,6 +21,7 @@ import {
   getCoordinates,
   getFileName,
   getFriendlyHeight,
+  loadScript,
   rn,
   unique
 } from "@/utils";
@@ -334,8 +335,9 @@ function captureIconDefinitions(clone: SVGSVGElement, source: SVGSVGElement): ()
       const original = source.getElementById(id);
       return Icons.group(set)?.contains(original) ? original : null;
     },
+    // the set loaded but has no such symbol (a stale reference): its uses draw nothing, as in the app
     id => {
-      if (IconSets.setForId(id)) throw new Error(`Missing icon definition: ${id}`);
+      if (IconSets.setForId(id)) WARN && console.warn(`Export: missing icon definition ${id}`);
     }
   );
 
@@ -964,23 +966,6 @@ function saveGeoJsonZones(): void {
 
   const fileName = `${getFileName("Zones")}.geojson`;
   downloadFile(JSON.stringify(json), fileName, "application/json");
-}
-
-// load a classic library bundle that registers a runtime global (e.g. window.JSZip)
-function loadScript(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = src;
-    script.onload = () => {
-      script.remove();
-      resolve();
-    };
-    script.onerror = () => {
-      script.remove();
-      reject(new Error(`Cannot load script ${src}`));
-    };
-    document.head.append(script);
-  });
 }
 
 // reached lazily via Services.ExportMap

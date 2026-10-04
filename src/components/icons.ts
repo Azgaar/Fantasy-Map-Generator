@@ -1,6 +1,7 @@
 // The Icon Library: every icon a slot can reference — the built-in sets, glyphs and the map's custom icons
 import { type IconSetId, IconSets } from "@/components/icon-sets";
 import { tip } from "@/components/tooltips";
+import { emojiName } from "@/data/icons-list";
 import type { IconPaint } from "@/types/icons";
 import { sanitizeSvgIcon } from "@/utils/fileUtils";
 import { escapeHtml } from "@/utils/stringUtils";
@@ -148,11 +149,14 @@ class IconLibrary {
     return points.every(point => point >= 0 && point <= 0x10ffff) ? String.fromCodePoint(...points) : null;
   }
 
-  /** the human name of an icon: a glyph's text, a set icon's file name */
+  /** the human name of an icon: an offered emoji's name, other glyphs' text, a set icon's file name */
   name(id: string): string {
     if (!id) return "none";
     const kind = this.kind(id);
-    if (kind === "glyph") return this.glyphText(id) ?? id;
+    if (kind === "glyph") {
+      const text = this.glyphText(id);
+      return text === null ? id : (emojiName(text) ?? text);
+    }
     if (kind === "custom") return "custom icon";
     const file = IconSets.fileOf(id)?.file;
     const set = IconSets.setForId(id);

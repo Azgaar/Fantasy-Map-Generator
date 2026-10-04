@@ -61,7 +61,7 @@ test("the style size is not baked into generated icons", () => {
 
   const icons = Relief.generate();
   expect(icons.length).toBeGreaterThan(0);
-  for (const icon of icons) expect(icon.s).toBe(27.2); // 20 + (80 - 71) * 0.8, independent of the style multiplier
+  for (const icon of icons) expect(icon.s).toBe(28); // 20.8 + (80 - 71) * 0.8, independent of the style multiplier
 });
 
 test("a style switch redraws unpinned icons and leaves the descriptors untouched", () => {
@@ -245,7 +245,7 @@ test("an entry's size scales the icons of a biome's pool and of a rule", () => {
 
   const sizes = (type: string) =>
     new Set(icons.filter(icon => "type" in icon && icon.type === type).map(icon => icon.s));
-  expect(sizes("grass")).toEqual(new Set([18])); // (4 + 0.5) * 2, doubled
+  expect(sizes("grass")).toEqual(new Set([36])); // (4 + 0.5) * 4, doubled
   expect(sizes("hill")).toEqual(new Set([4])); // the rule's 8 at its lowest height, halved
 });
 

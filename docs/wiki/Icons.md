@@ -33,7 +33,7 @@ Each of these is an **icon slot**, and every slot accepts every source.
 Every slot above opens the same _Select icon_ dialog.
 
 - **The header** shows the icon currently selected and where it comes from. For a custom icon it also has the _Position_, _Replace_ and remove buttons.
-- **The search box** finds built-in icons by name, e.g. `castle`, `wine` or `mount`.
+- **The search box** finds built-in icons and emoji by name, e.g. `castle`, `wine` or `mount`.
 - **The side list** holds _Custom_ (the map's own icons), then _Emoji_ by theme, _Settlements_, _Goods_, _Relief_ and _Heraldry_. Heraldry lists charges by category. Click a group to see its art; search also finds charges by name.
 - **The tiles** — click one to select it. The map updates at once, so you can try icons before deciding.
 
@@ -43,7 +43,7 @@ The picker opens where the current icon is, so you can see its neighbours. On a 
 
 ### Emoji and text
 
-Open any _Emoji_ group and pick an emoji, or type into the _Type any short text_ field above the tiles: whatever you type becomes the icon as you type it. Short text works best — a letter, a number, a Roman numeral, a symbol. Emoji keep their own colors; text takes the color of the place it is drawn in.
+Open any _Emoji_ group and pick an emoji — there are over 500, from weapons and creatures to zodiac signs, colored markers and trade goods — or type into the _Type any short text_ field above the tiles: whatever you type becomes the icon as you type it. Short text works best — a letter, a number, a Roman numeral, a symbol. Emoji keep their own colors; text takes the color of the place it is drawn in.
 
 ## Custom icons
 
@@ -108,7 +108,11 @@ Custom icons are part of the map's setup, like military units and transport type
 
 The browser keeps a limited amount of data. If the icons outgrow it, a message says the latest settings are not kept in this browser. Nothing is lost: save the map and its icons are in the file. Linking instead of uploading, or uploading smaller images, avoids the limit.
 
-Style presets can reference custom icons too. A preset applied to a map that does not carry the icon draws nothing in that place; built-in icons and emoji work on every map.
+### Moving icons to another map
+
+_Download all_ in the _Custom_ tab saves the map's custom icons as a zip archive: one file per picture to look at, plus `icons.json` that restores them. On another map, _Import zip_ adds them back under the same identity, so goods, markers or style presets referencing them show them again. If the map uses an archived icon's identity for a different picture, you choose whether to replace it or keep the map's.
+
+Style presets can reference custom icons too, but a preset stores only which icon to use, not the picture. A preset applied to a map that does not carry the icon draws nothing in that place; built-in icons and emoji work on every map. When you download a style preset that uses custom icons, the Style Saver offers to download them as a zip to import on the target map.
 
 ## Icon colors
 
