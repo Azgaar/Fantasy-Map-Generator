@@ -128,6 +128,7 @@ test("search finds built-in icons and emoji by name across the sets, and clearin
   search.dispatchEvent(new Event("input"));
   expect(source()).toBeUndefined();
   expect([...dialog.querySelectorAll<HTMLElement>(".panel [data-icon]")].map(b => b.dataset.icon)).toEqual([
+    "glyph-2693", // ⚓, found by its emoji name
     "ports-anchor",
     "charges-seafaring-anchor"
   ]);

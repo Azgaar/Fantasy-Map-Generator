@@ -578,14 +578,17 @@ function getInheritedFontSize(el: Element | null): number {
   for (; el; el = el.parentElement) {
     const style = el.getAttribute("style");
     const value =
-      style?.match(/font-size\s*:\s*([\d.]+(?:px|%|em)?)/)?.[1] ||
-      style?.match(/font\s*:[^;]*?([\d.]+(?:px|%|em))/)?.[1] ||
+      style?.match(/font-size\s*:\s*([\d.]+[a-z%]*)/i)?.[1] ||
+      style?.match(/font\s*:[^;]*?([\d.]+(?:px|pt|r?em|%))/i)?.[1] ||
       el.getAttribute("font-size");
-    if (!value || !Number.isFinite(parseFloat(value))) continue;
-    const size = parseFloat(value);
-    if (value.endsWith("%")) ratio *= size / 100;
-    else if (value.endsWith("em")) ratio *= size;
-    else return ratio * size;
+    const match = value?.trim().match(/^([\d.]+)([a-z%]*)$/i);
+    if (!match || !Number.isFinite(parseFloat(match[1]))) continue;
+    const [size, unit] = [parseFloat(match[1]), match[2].toLowerCase()];
+    if (unit === "%") ratio *= size / 100;
+    else if (unit === "em") ratio *= size;
+    else if (unit === "rem") return ratio * size * 16;
+    else if (unit === "pt") return (ratio * size * 4) / 3;
+    else return ratio * size; // px or unitless
   }
   return ratio * 16;
 }

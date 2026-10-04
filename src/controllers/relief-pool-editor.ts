@@ -224,7 +224,9 @@ function open(request: ReliefPoolEditorOptions): void {
     seed++;
     drawPatch();
   });
-  density.addEventListener("input", () => {
+  // slider-input re-dispatches a bubbling event from its inner controls; ignore those duplicates
+  density.addEventListener("input", event => {
+    if (event.target !== density) return;
     draft.density = minmax(Math.round(density.valueAsNumber) || 0, 0, MAX_DENSITY);
     drawPatch();
   });

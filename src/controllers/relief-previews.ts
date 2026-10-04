@@ -76,7 +76,7 @@ export function reliefPatchHtml(pool: ReliefPool, density: number, rule: ReliefR
       : entry;
     return { symbol, x: rn(x - s / 2, 2), y: rn(y - s / 2, 2), s: rn(s, 2) };
   });
-  icons.sort((a, b) => a.y + a.s / 2 - (b.y + b.s / 2));
+  icons.sort((a, b) => a.y + a.s - (b.y + b.s)); // as on the map: the box ending lower draws on top
 
   const { stroke, "stroke-width": strokeWidth, opacity } = styles.relief.attrs;
   const paint = [

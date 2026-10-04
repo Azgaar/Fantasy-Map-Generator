@@ -199,13 +199,16 @@ describe("ReliefPoolEditor", () => {
     size.value = "2";
     size.dispatchEvent(new Event("input", { bubbles: true }));
 
-    const after = uses();
+    // bigger boxes end lower, so they may draw later, as on the map: compare placements, not drawing order
+    const placed = (list: ReturnType<typeof uses>) =>
+      list
+        .map(use => ({ ...use, cx: Math.round(use.cx) }))
+        .sort((a, b) => a.cx - b.cx || a.href!.localeCompare(b.href!));
+    const [was, now] = [placed(before), placed(uses())];
     const conifer = (href: string | null) => href?.includes("conifer");
-    expect(after.map(({ href, cx }) => ({ href, cx: Math.round(cx) }))).toEqual(
-      before.map(({ href, cx }) => ({ href, cx: Math.round(cx) }))
-    );
-    for (const [i, use] of after.entries()) {
-      expect(use.s).toBeCloseTo(conifer(use.href) ? before[i].s * 2 : before[i].s, 1);
+    expect(now.map(({ href, cx }) => ({ href, cx }))).toEqual(was.map(({ href, cx }) => ({ href, cx })));
+    for (const [i, use] of now.entries()) {
+      expect(use.s).toBeCloseTo(conifer(use.href) ? was[i].s * 2 : was[i].s, 1);
     }
     expect(biome().icons.conifer).toEqual({ weight: 1 }); // a live edit stays in the draft
   });

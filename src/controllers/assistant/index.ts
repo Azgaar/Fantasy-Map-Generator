@@ -884,11 +884,14 @@ const IMAGES_NEED_KEY = "Images need your own AI key with a vision model: the fr
 
 async function attach(files: File[]): Promise<void> {
   if (tier() !== "key") return showNotice({ text: IMAGES_NEED_KEY });
-  const room = MAX_IMAGES - attached.length;
-  if (files.length > room) showNotice({ text: `Up to ${MAX_IMAGES} images per question.` });
-  for (const file of files.slice(0, Math.max(room, 0))) {
+  const full = () => showNotice({ text: `Up to ${MAX_IMAGES} images per question.` });
+  if (files.length > MAX_IMAGES - attached.length) full();
+  for (const file of files.slice(0, Math.max(MAX_IMAGES - attached.length, 0))) {
     try {
-      attached.push(await AssistantImages.read(file));
+      const image = await AssistantImages.read(file);
+      // checked again after reading: another paste may have filled the room meanwhile
+      if (attached.length < MAX_IMAGES) attached.push(image);
+      else full();
     } catch (error) {
       showNotice({ text: errorText(error) });
     }
