@@ -1,5 +1,6 @@
 // All app configuration options, options.map saved to `.map` file as settings; docs/architecture/configuration.md
 import { z } from "zod";
+import { Icons } from "@/components/icons";
 import type { LayerId } from "@/components/layers";
 import { MAX_DENSITY, MIN_DENSITY } from "@/data/graph-density";
 import { CULTURE_SETS } from "@/generators/cultures-generator";
@@ -67,6 +68,21 @@ export const transport = z.strictObject({
   icon: z.string().optional()
 });
 
+export const customIcon = z.strictObject({
+  id: z.string().regex(/^custom-[\w-]+$/),
+  kind: z.enum(["svg", "image"]),
+  content: z.string(),
+  viewBox: z.string().refine(viewBox => Icons.parseFrame(viewBox) !== null)
+});
+
+/** a broken icon is dropped on its own, so it never costs the map its other icons; absent in older maps */
+const customIcons = z.preprocess(value => {
+  if (!Array.isArray(value)) return [];
+  const valid = value.filter(icon => customIcon.safeParse(icon).success);
+  if (valid.length < value.length) console.warn(`Dropped ${value.length - valid.length} invalid custom icon(s)`);
+  return valid;
+}, z.array(customIcon));
+
 /** read at render time to build every feature outline */
 export const coastlineSettings = z.strictObject({
   enabled: z.boolean(),
@@ -79,6 +95,17 @@ export const coastlineSettings = z.strictObject({
   roughnessScale: nonNegative,
   lakeSmoothThreshMult: nonNegative,
   variant: count
+});
+
+/** a relief rule: which land cells it claims, and the relief it places there */
+export const reliefRule = z.strictObject({
+  name: z.string(),
+  height: z.strictObject({ min: percent.int(), max: percent.int() }),
+  temperature: z.strictObject({ min: z.number().int().nullable(), max: z.number().int().nullable() }), // °C, null is open
+  biomes: ids, // absent or empty claims every biome
+  icons: z.record(z.string(), z.strictObject({ weight: positive, size: positive.optional() })),
+  density: count.max(250),
+  size: z.strictObject({ min: positive, max: positive }) // at the rule's lowest height, growing with height to max
 });
 
 /** where the map sits on the globe */
@@ -136,10 +163,12 @@ export const mapSchema = z.strictObject({
   units,
   style: z.strictObject({ preset: z.string().min(1) }),
   burgs: z.strictObject({ groups: z.array(burgGroup) }),
-  labels: z.strictObject({ resizeOnZoom: z.boolean(), groups: z.array(labelGroup) }),
+  labels: z.strictObject({ groups: z.array(labelGroup) }),
   military: z.strictObject({ units: z.array(militaryUnit) }),
   transports: z.array(transport),
-  coastline: coastlineSettings
+  customIcons,
+  coastline: coastlineSettings,
+  relief: z.strictObject({ rules: z.array(reliefRule) })
 });
 
 export const optionsSchema = z.strictObject({
@@ -245,6 +274,7 @@ export type OptionsSection = keyof OptionsData;
 
 /** What a `.map` file stores, and what every generator, renderer and editor reads */
 export type MapData = z.infer<typeof mapSchema>;
+export type ReliefRule = z.infer<typeof reliefRule>;
 
 // Stable lock ids use the same validators as the options they pin.
 const generation = optionsSchema.shape.generation.shape;

@@ -1,7 +1,8 @@
 import { DEFAULT_JOURNEY_TYPE } from "@/data/journey-lore";
 import type { Journey, JourneyPoint, JourneySegment } from "@/types/Journey";
 import { getDistanceUnitRatio, isLand } from "@/utils";
-import { getCardinalColor } from "@/utils/colorUtils";
+import { getCardinalColor, requireFill } from "@/utils/colorUtils";
+import { requireName } from "@/utils/validationUtils";
 import type { Burg } from "../burgs-generator";
 import type { Route } from "../routes-generator";
 import { MAX_HOURS_PER_DAY, type TransportDomain } from "../transports-generator";
@@ -22,6 +23,30 @@ export interface PathfindingResult {
   warning?: string;
   errorCode?: "no-water" | "no-land" | "no-water-path" | "no-land-path";
 }
+
+export type SegmentFields = Partial<{
+  name: string;
+  color: string | null;
+  hidden: boolean;
+  transport: string;
+  speed: number;
+  duration: number | null;
+  from: number;
+  to: number;
+  avoidRoads: boolean;
+}>;
+
+const SEGMENT_FIELDS: (keyof SegmentFields)[] = [
+  "name",
+  "color",
+  "hidden",
+  "transport",
+  "speed",
+  "duration",
+  "from",
+  "to",
+  "avoidRoads"
+];
 
 class JourneysModule {
   generate(): void {
@@ -60,16 +85,176 @@ class JourneysModule {
     if (!pack.journeys) pack.journeys = [];
   }
 
+  /** Add a journey, empty or a random story between burgs; returns its id */
+  add(random = false): number {
+    const journey = random ? this.addRandom() : this.addEmpty();
+    if (!journey) throw new Error("No random journey fits this map");
+    return journey.i;
+  }
+
+  /** Remove a journey */
   remove(journeyId: number): void {
+    this.living(journeyId);
     pack.journeys = pack.journeys.filter(journey => journey.i !== journeyId);
+  }
+
+  /** Rename a journey */
+  rename(journeyId: number, name: string): void {
+    this.living(journeyId).name = requireName(name);
+  }
+
+  /** Set a journey's type, a free label such as Quest, Raid or Pilgrimage */
+  setType(journeyId: number, type: string): void {
+    this.living(journeyId).type = requireName(type);
+  }
+
+  /** Set a journey's color; segments without their own color take it */
+  recolor(journeyId: number, color: string): void {
+    this.living(journeyId).color = requireFill(color);
+  }
+
+  /** Hide or show a journey on the map */
+  setHidden(journeyId: number, hidden: boolean): void {
+    const journey = this.living(journeyId);
+    if (hidden) journey.visible = false;
+    else delete journey.visible;
+  }
+
+  /** Lock a journey so regeneration keeps it, or unlock it */
+  setLocked(journeyId: number, locked: boolean): void {
+    const journey = this.living(journeyId);
+    if (locked) journey.lock = true;
+    else delete journey.lock;
+  }
+
+  /** Remove a segment of a journey */
+  removeSegment(journeyId: number, segmentId: number): void {
+    const journey = this.living(journeyId);
+    this.segmentOf(journey, segmentId);
+    journey.segments = journey.segments.filter(segment => segment.i !== segmentId);
+  }
+
+  /** Move a segment to a position in its journey, counted from 0 */
+  moveSegment(journeyId: number, segmentId: number, index: number): void {
+    const journey = this.living(journeyId);
+    const segment = this.segmentOf(journey, segmentId);
+    if (!Number.isInteger(index) || index < 0 || index >= journey.segments.length)
+      throw new Error(`Position ${index} is outside the journey's ${journey.segments.length} segments`);
+    journey.segments.splice(journey.segments.indexOf(segment), 1);
+    journey.segments.splice(index, 0, segment);
+  }
+
+  /** Change a segment: name, color (null = the journey's), hidden, transport, speed (km/h), duration (hours, null = from distance and speed), from and to (cells), avoidRoads. A changed transport, endpoint or road choice reroutes it */
+  setSegment(journeyId: number, segmentId: number, fields: SegmentFields): void {
+    const segment = this.segmentOf(this.living(journeyId), segmentId);
+    if (typeof fields !== "object" || fields === null) throw new Error("The segment fields must be an object");
+    const unknown = Object.keys(fields).find(key => !SEGMENT_FIELDS.includes(key as keyof SegmentFields));
+    if (unknown) throw new Error(`Unknown segment field ${unknown}; known: ${SEGMENT_FIELDS.join(", ")}`);
+    const { name, color, hidden, transport, speed, duration, from, to, avoidRoads } = fields;
+
+    if (name !== undefined) segment.name = requireName(name);
+    if (color === null) delete segment.color;
+    else if (color !== undefined) segment.color = requireFill(color);
+    if (hidden !== undefined) {
+      if (hidden) segment.visible = false;
+      else delete segment.visible;
+    }
+
+    const previous = Transports.getDomain(segment.transport);
+    if (transport !== undefined) {
+      const type = Transports.get(transport);
+      if (!type)
+        throw new Error(`Transport ${transport} does not exist; known: ${Transports.all.map(t => t.name).join(", ")}`);
+      segment.transport = type.name;
+      segment.speed = type.domain === "stay" ? 0 : type.speed;
+      if (type.domain === "stay") {
+        segment.duration ??= 1;
+        segment.avoidRoads = false;
+      } else if (previous === "stay") delete segment.duration;
+    }
+    const domain = Transports.getDomain(segment.transport);
+    for (const [endpoint, cell] of [
+      ["from", from],
+      ["to", to]
+    ] as const) {
+      if (cell === undefined) continue;
+      if (!Number.isInteger(cell) || cell < 0 || cell >= pack.cells.i.length)
+        throw new Error(`Cell ${cell} does not exist`);
+      segment[endpoint] = cell;
+    }
+    // only a change of transport or endpoint is checked: an edited heightmap may leave older endpoints invalid
+    const movesEndpoints = transport !== undefined || from !== undefined || to !== undefined;
+    for (const endpoint of ["from", "to"] as const) {
+      const cell = segment[endpoint];
+      if (movesEndpoints && domain !== "stay" && cell !== undefined && !this.isValidEndpoint(cell, domain))
+        throw new Error(
+          `The ${endpoint} endpoint is a ${this.describeCell(cell)}, which ${segment.transport} cannot use`
+        );
+    }
+    if (avoidRoads !== undefined) segment.avoidRoads = Boolean(avoidRoads) && domain === "land";
+    if (speed !== undefined) {
+      if (typeof speed !== "number" || !(speed >= 0 && Number.isFinite(speed)))
+        throw new Error("The speed must be a non-negative number");
+      segment.speed = speed;
+    }
+    if (duration === null) delete segment.duration;
+    else if (duration !== undefined) {
+      if (typeof duration !== "number" || !(duration >= 0 && Number.isFinite(duration)))
+        throw new Error("The duration must be a non-negative number of hours, or null");
+      segment.duration = duration;
+    }
+
+    const reroute = transport !== undefined || from !== undefined || to !== undefined || avoidRoads !== undefined;
+    if (!reroute) return;
+    if (from !== undefined || to !== undefined || !this.isValidPath(segment.points, domain)) segment.custom = false;
+    const result = this.routeSegment(segment);
+    if (result?.errorCode) throw new Error(result.warning);
+  }
+
+  /** Drop a segment's manual overrides, color, speed, duration and drawn path, and route it again */
+  resetSegment(journeyId: number, segmentId: number): void {
+    const segment = this.segmentOf(this.living(journeyId), segmentId);
+    delete segment.color;
+    segment.speed = Transports.get(segment.transport)?.speed ?? segment.speed;
+    if (Transports.getDomain(segment.transport) === "stay") segment.duration = 1;
+    else delete segment.duration;
+    segment.custom = false;
+    const result = this.routeSegment(segment);
+    if (result?.errorCode) throw new Error(result.warning);
+  }
+
+  /** Find a segment's path between its endpoints, unless it was drawn by hand; the result carries any warning */
+  routeSegment(segment: JourneySegment): PathfindingResult | undefined {
+    if (segment.custom || segment.from === undefined || segment.to === undefined) return undefined;
+    const domain = Transports.getDomain(segment.transport);
+    // a stay has no movement: a direct line anchors it between its endpoints
+    const result = this.findPath(segment.from, segment.to, domain === "stay" ? "air" : domain, {
+      avoidRoads: domain === "land" && !!segment.avoidRoads
+    });
+    segment.points = result.points;
+    segment.distance = result.distance;
+    return result;
+  }
+
+  private living(journeyId: number): Journey {
+    const journey = pack.journeys?.find(({ i }) => i === journeyId);
+    if (!journey) throw new Error(`Journey ${journeyId} does not exist`);
+    return journey;
+  }
+
+  private segmentOf(journey: Journey, segmentId: number): JourneySegment {
+    const segment = journey.segments.find(({ i }) => i === segmentId);
+    if (!segment) throw new Error(`Segment ${segmentId} of journey ${journey.i} does not exist`);
+    return segment;
   }
 
   private getNextId(items: { i: number }[]): number {
     return items.length ? Math.max(...items.map(({ i }) => i)) + 1 : 0;
   }
 
-  /** Append an empty segment, starting where the previous one ended */
-  addSegment(journey: Journey): JourneySegment {
+  /** Append an empty segment to a journey, starting where the previous one ended; returns its id */
+  addSegment(journeyId: number): number {
+    const journey = this.living(journeyId);
     const i = this.getNextId(journey.segments);
     const transport = Transports.all.find(type => type.domain !== "stay") ?? Transports.all[0];
 
@@ -83,13 +268,7 @@ class JourneysModule {
       points: []
     };
     journey.segments.push(segment);
-    return segment;
-  }
-
-  /** An absent flag means visible, so only hiding stores anything */
-  toggleVisibility(target: { visible?: boolean }): void {
-    if (target.visible === false) delete target.visible;
-    else target.visible = false;
+    return i;
   }
 
   /** A halt, not a slow leg: decided by the transport's domain, never by a speed the user typed */
@@ -564,4 +743,6 @@ declare global {
   var Journeys: JourneysModule;
 }
 
-window.Journeys = new JourneysModule();
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const Journeys = new JourneysModule();
+window.Journeys = Journeys;

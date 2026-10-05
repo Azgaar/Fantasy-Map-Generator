@@ -7,10 +7,11 @@ After map generation the markers are randomly generated according to a set of cr
 To edit a marker, click its icon. A small window with the marker properties appears, where you can change:
 
 * **Type** — style changes apply to all markers of the same type. Leave it blank to make the marker unique
-* **Icon** — a Unicode character or an image URL / data URI
+* **Icon** — any icon from the icon picker: a built-in icon, an emoji or short text, or a custom icon (a linked or uploaded image). See [Icons](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Icons)
 * **Size** — the marker element size in pixels and the icon size separately
 * **Icon shift** — the icon offset by X and Y as a percentage; 50 centers the icon
 * **Pin shape** and its **fill** and **stroke** colors
+* **Icon colors** — fill and stroke for the parts of a built-in icon left uncolored; the arrow restores the icon's defaults. Emoji and custom icons keep their own colors
 
 The buttons at the bottom let you edit the legend, show all markers within a radius of this one, lock the marker so regeneration does not touch it, add another marker of the same type and remove the marker.
 

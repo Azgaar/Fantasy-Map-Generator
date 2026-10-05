@@ -16,6 +16,10 @@ buildNpmPackage {
     root = ../.;
     fileset = lib.fileset.unions [
       ../build
+      # bundled into the assistant via ?raw imports
+      ../docs/architecture/configuration.md
+      ../docs/architecture/data-model.md
+      ../docs/wiki
       ../electron
       ../package.json
       ../package-lock.json

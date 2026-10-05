@@ -5,7 +5,7 @@ export const nonNegative = z.number().nonnegative();
 export const count = z.number().int().nonnegative();
 export const percent = z.number().min(0).max(100);
 export const ratio = z.number().min(0).max(1);
-export const hexColor = z.string().regex(/^#[0-9a-fA-F]{3,8}$/);
+export const hexColor = z.string().regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/);
 export const degrees = z.number().int().min(0).max(359);
 export const ids = z.array(count).optional();
 
@@ -16,17 +16,7 @@ const valueAt = (source: unknown, key: PropertyKey): unknown =>
   typeof source === "object" && source !== null ? (source as Record<PropertyKey, unknown>)[key] : undefined;
 
 const plainLookup: TemplateLookup = valueAt;
-
-/**
- * Adopt an untrusted object one section at a time: a section that validates is taken as is, a
- * section that fails is repaired value by value from the defaults, and only a section beyond
- * repair falls back whole. Every boundary an object crosses - `localStorage`, a `.map` file -
- * parses through this, so one stale field never costs the user the object around it.
- *
- * A repair strips unknown keys, which is how values from a newer or abandoned shape stop
- * travelling, and drops the single entry of a definition set that cannot be repaired rather than
- * the set around it. See docs/architecture/configuration.md#validation
- */
+/** Adopt an untrusted object one section at a time */
 export function parseSections<T extends Record<string, unknown>>(
   schema: z.ZodObject,
   defaults: Readonly<Record<string, unknown>>,

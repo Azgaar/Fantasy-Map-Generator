@@ -313,9 +313,7 @@ function toggleLabelVisibility(element: HTMLElement): void {
   const entity = Labels.getEntity(label.type, label.entityId);
   if (!entity) return;
 
-  if (entity.label?.hidden) delete entity.label.hidden;
-  else entity.label = { ...entity.label, hidden: true };
-
+  Labels.setLayout(label.type, label.entityId, { hidden: !entity.label?.hidden });
   Layers.draw("labels");
   labelsTable.refresh();
 }
@@ -327,7 +325,7 @@ function resetLabel(element: HTMLElement): void {
   const hasOverride = Labels.hasOverride(label.type, label.entityId);
   if (!hasOverride) return;
 
-  Labels.resetOverride(label.type, label.entityId);
+  Labels.reset(label.type, label.entityId);
   Layers.draw("labels");
   labelsTable.refresh();
 }
@@ -337,7 +335,7 @@ function assignGroup(labels: LabelData[], groupName: string): void {
   if (!group) return;
 
   const apply = () => {
-    for (const { type, entityId } of labels) Labels.setGroup({ type, entityId, group: groupName });
+    for (const { type, entityId } of labels) Labels.setGroup(type, entityId, groupName);
     Layers.draw("labels");
     refresh();
     tip(`${labels.length} label(s) assigned to the "${groupName}" group`, false, "success", 4000);
@@ -476,16 +474,8 @@ function restoreLabelSnapshot(): void {
 }
 
 function applySpreadPatches(patches: LabelSpreadPatch[]): void {
-  for (const patch of patches) {
-    const entity = Labels.getEntity(patch.type, patch.entityId);
-    if (!entity) continue;
-    const label = { ...entity.label };
-    if ("startOffset" in patch) label.startOffset = patch.startOffset;
-    else {
-      if (patch.dx !== undefined) label.dx = patch.dx;
-      if (patch.dy !== undefined) label.dy = patch.dy;
-    }
-    entity.label = label;
+  for (const { type, entityId, ...layout } of patches) {
+    if (Labels.getEntity(type, entityId)) Labels.setLayout(type, entityId, layout);
   }
 }
 

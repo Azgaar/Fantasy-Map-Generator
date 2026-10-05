@@ -244,7 +244,7 @@ function toggleLockStatus(this: HTMLElement): void {
   const route = pack.routes.find((route: Route) => route.i === routeId);
   if (!route) return;
 
-  route.lock = !route.lock;
+  Routes.setLocked(routeId, !route.lock);
   if (this.classList.contains("icon-lock")) {
     this.classList.remove("icon-lock");
     this.classList.add("icon-lock-open");
@@ -259,9 +259,7 @@ function toggleLockStatus(this: HTMLElement): void {
 function toggleLockAll(): void {
   const allLocked = pack.routes.every((route: Route) => route.lock);
 
-  pack.routes.forEach((route: Route) => {
-    route.lock = !allLocked;
-  });
+  for (const route of pack.routes) Routes.setLocked(route.i, !allLocked);
 
   routesTable.refresh();
   ensureEl("routesLockAll").className = allLocked ? "icon-lock" : "icon-lock-open";
@@ -275,7 +273,7 @@ function triggerRouteRemove(this: HTMLElement): void {
     confirm: "Remove",
     onConfirm: () => {
       const route = pack.routes.find((r: Route) => r.i === routeId) as Route;
-      Routes.remove(route);
+      Routes.remove(route.i);
       Layers.draw("routes", "labels");
       routesTable.refresh();
     }
@@ -315,7 +313,7 @@ function triggerAllRoutesRemove(): void {
           return;
         }
         for (const route of routesToRemove) {
-          Routes.remove(route);
+          Routes.remove(route.i);
         }
         pack.cells.routes = Routes.buildLinks(pack.routes);
         Layers.draw("routes", "labels");

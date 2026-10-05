@@ -30,10 +30,6 @@ export function drawPrecipitation(): void {
   TIME && console.timeEnd("drawPrecipitation");
 }
 
-export function removePrecipitation(): void {
-  select(ensureEl<SVGGElement>("prec")).selectAll("*").remove();
-}
-
 /** arrows showing where the prevailing winds enter the map */
 function drawWindDirections(): void {
   const { westerly, easterly, northerly, southerly } = Precipitation.getWinds();

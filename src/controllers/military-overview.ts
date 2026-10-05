@@ -1,6 +1,7 @@
 import { interpolateString, select, sum } from "d3";
 import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
+import { type LimitationItem, limitationTip, pickLimitation } from "@/components/dialog/limitation-picker";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
 import {
   type EditorColumn,
@@ -10,13 +11,14 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
+import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { State } from "@/generators/states-generator";
 import type { MilitaryUnit } from "@/types/Military";
-import { downloadFile, getFileName, isImageIcon } from "@/utils";
-import { capitalize, ensureEl, rn, sanitizeId, si, wiki } from "../utils";
+import { downloadFile, getFileName } from "@/utils";
+import { capitalize, ensureEl, escapeHtml, rn, sanitizeId, si, wiki } from "../utils";
 
 const dialogId = "militaryOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -283,18 +285,11 @@ function renderMilitaryPage(view: TableView<MilitaryRow>): void {
 }
 
 function changeAlert(state: number, alert: number): void {
-  const s = pack.states[state];
-  const prevAlert = s.alert ?? 1;
-  const dif = prevAlert ? alert / prevAlert : 0; // modifier
-  s.alert = alert;
-  (s.military || []).forEach(r => {
-    Object.keys(r.u).forEach(u => {
-      r.u[u] = rn(r.u[u] * dif);
-    });
-    r.a = sum(Object.values(r.u)); // change total
-    select<SVGGElement, unknown>(`#armies > g > g#regiment${s.i}-${r.i} > text`).text(Military.getTotal(r)); // change icon text
-  });
-
+  if (alert >= 0) Military.setAlert(state, alert);
+  for (const regiment of pack.states[state].military ?? []) {
+    const text = document.querySelector(`#armies #regiment${state}-${regiment.i} > text`);
+    if (text) text.textContent = String(Military.getTotal(regiment));
+  }
   militaryTable.refresh();
 }
 
@@ -374,7 +369,7 @@ function militaryCustomize(): void {
       Apply: applyMilitaryOptions,
       Add: () =>
         addUnitLine({
-          icon: "🛡️",
+          icon: Icons.glyph("🛡️"),
           name: `custom${ensureEl<HTMLTableElement>("militaryOptionsTable").rows.length}`,
           rural: 0.2,
           urban: 0.5,
@@ -407,7 +402,10 @@ function militaryCustomize(): void {
     const type = el.dataset.type;
 
     if (type === "icon") {
-      Controllers.IconSelector.open(el.dataset.icon || "", value => setIconButton(el, value));
+      Controllers.IconPicker.open({
+        current: el.dataset.icon || "",
+        onPick: icon => setIconButton(el, icon)
+      });
       return;
     }
 
@@ -435,10 +433,8 @@ function militaryCustomize(): void {
     return attr?.length ? "some" : "all";
   }
 
-  function getLimitTip(attr: number[] | undefined, data: { name?: string }[] | undefined): string {
-    if (!attr?.length) return "";
-    return attr.map(i => data?.[i]?.name || "").join(", ");
-  }
+  const getLimitTip = (attr: number[] | undefined, items: readonly LimitationItem[]): string =>
+    attr?.length ? limitationTip(attr, items) : "";
 
   function addUnitLine(unit: MilitaryUnit): void {
     const { type, icon, name, rural, urban, power, crew, separate } = unit;
@@ -446,11 +442,11 @@ function militaryCustomize(): void {
     const typeOptions = types.map(t => `<option ${type === t ? "selected" : ""} value="${t}">${t}</option>`).join(" ");
 
     const getLimitButton = (attr: "biomes" | "states" | "cultures" | "religions"): string => {
-      const data = attr === "biomes" ? [] : (pack[attr] as { name?: string }[]);
+      const data = pack[attr] as LimitationItem[];
       return `<button
           data-tip="Select allowed ${attr}"
           data-type="${attr}"
-          title="${getLimitTip(unit[attr], data)}"
+          title="${escapeHtml(getLimitTip(unit[attr], data))}"
           data-value="${getLimitValue(unit[attr])}">
           ${getLimitText(unit[attr])}
         </button>`;
@@ -488,16 +484,7 @@ function militaryCustomize(): void {
   // may be rewritten by the browser or extensions (e.g. Google Translate wrapping text nodes in <font>)
   function setIconButton(button: HTMLElement, icon: string): void {
     button.dataset.icon = icon;
-    button.textContent = "";
-
-    if (isImageIcon(icon)) {
-      const image = document.createElement("img");
-      image.src = icon;
-      image.style.cssText = "width: 1.2em; height: 1.2em; pointer-events: none";
-      button.appendChild(image);
-    } else {
-      button.textContent = icon;
-    }
+    button.innerHTML = Icons.html(icon);
   }
 
   function restoreDefaultUnits(): void {
@@ -505,66 +492,17 @@ function militaryCustomize(): void {
     Military.getDefaultOptions().map((unit: MilitaryUnit) => addUnitLine(unit));
   }
 
-  function selectLimitation(
-    el: HTMLElement,
-    data: { i: number; name?: string; fullName?: string; color?: string; removed?: boolean }[]
-  ): void {
+  function selectLimitation(el: HTMLElement, items: LimitationItem[]): void {
     const type = el.dataset.type!;
-    const value = el.dataset.value;
-    const initial = value ? value.split(",").map(v => +v) : [];
-
-    const filtered = data.filter(datum => datum.i && !datum.removed);
-    const lines = filtered.map(
-      ({ i, name, fullName, color }) => /* html */ `
-          <tr data-tip="${name}">
-            <td><span style="color:${color}">⬤</span></td>
-            <td>
-              <input data-i="${i}" id="el${i}" type="checkbox" class="checkbox"
-                ${!initial.length || initial.includes(i) ? "checked" : ""} >
-              <label for="el${i}" class="checkbox-label">${fullName || name}</label>
-            </td>
-          </tr>`
-    );
-
-    ensureEl("alertMessage").innerHTML = /* html */ `<b>Limit unit by ${type}:</b>
-        <table style="margin-top:.3em">
-          <tbody>
-            ${lines.join("")}
-          </tbody>
-        </table>`;
-
-    $("#alert").dialog({
-      width: "fit-content",
+    pickLimitation({
       title: "Limit unit",
-      // release the buttons closure that captures the live pack arrays
-      close: () => $("#alert").dialog("option", "buttons", {}),
-      buttons: {
-        Invert: () => {
-          alertMessage.querySelectorAll<HTMLInputElement>("input").forEach(el => {
-            el.checked = !el.checked;
-          });
-        },
-        Apply: function () {
-          const inputs = Array.from(alertMessage.querySelectorAll<HTMLInputElement>("input"));
-          const selected = inputs.reduce<string[]>((acc, input) => {
-            if (input.checked) acc.push(input.dataset.i!);
-            return acc;
-          }, []);
-
-          if (!selected.length) {
-            tip("Select at least one element", false, "error");
-            return;
-          }
-
-          const allAreSelected = selected.length === inputs.length;
-          el.dataset.value = allAreSelected ? "" : selected.join(",");
-          el.innerHTML = allAreSelected ? "all" : "some";
-          el.setAttribute("title", getLimitTip(selected.map(Number), data));
-          $(this).dialog("close");
-        },
-        Cancel: function () {
-          $(this).dialog("close");
-        }
+      heading: `Limit unit by ${type}`,
+      items,
+      allowed: el.dataset.value ? el.dataset.value.split(",").map(Number) : [],
+      onApply: allowed => {
+        el.dataset.value = allowed.join(",");
+        el.innerHTML = getLimitText(allowed);
+        el.setAttribute("title", getLimitTip(allowed, items));
       }
     });
   }
@@ -585,7 +523,7 @@ function militaryCustomize(): void {
       );
       const values = elements.map(el => {
         const { type, value } = (el as HTMLElement).dataset || {};
-        if (type === "icon") return (el as HTMLElement).dataset.icon?.trim() || "⠀";
+        if (type === "icon") return (el as HTMLElement).dataset.icon ?? "";
         if (type) return value ? value.split(",").map(v => parseInt(v, 10)) : null;
         if ((el as HTMLInputElement).type === "number") return +(el as HTMLInputElement).value || 0;
         if ((el as HTMLInputElement).type === "checkbox") return +(el as HTMLInputElement).checked || 0;

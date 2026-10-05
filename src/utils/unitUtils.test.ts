@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { convertSpeed, convertTemperature, formatSpeed, getDistanceUnitRatio, parseSpeed } from "./unitUtils";
+import {
+  convertSpeed,
+  convertTemperature,
+  formatSpeed,
+  getDistance,
+  getDistanceUnitRatio,
+  parseSpeed
+} from "./unitUtils";
 
 // The default (no targetScale) path reads options.map.units.temperature.unit and is
 // covered end-to-end in tests/e2e/temperature-units.spec.ts
@@ -58,5 +65,13 @@ describe("distance unit conversion", () => {
     setDistanceUnit("Marches");
     expect(getDistanceUnitRatio()).toBe(1);
     expect(formatSpeed(6)).toBe("6 Marches/h");
+  });
+
+  it("formats a map length in the user distance unit", () => {
+    setDistanceUnit("mi");
+    const { scale } = options.map.units.distance;
+    options.map.units.distance.scale = 3;
+    expect(getDistance(30.6)).toBe("92 mi");
+    options.map.units.distance.scale = scale;
   });
 });

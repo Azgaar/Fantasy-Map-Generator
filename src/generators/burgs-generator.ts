@@ -3,15 +3,22 @@ import { AUTO_BURG_LIMIT } from "@/components/options-schema";
 import { Emblems } from "@/generators/emblems-generator";
 import type { BurgGroup } from "@/types/burg-groups";
 import type { Emblem } from "@/types/emblems";
+import type { IconSet } from "@/types/icons";
 import { safeParseJSON } from "@/utils/stringUtils";
+import { requireName, requireOneOf } from "@/utils/validationUtils";
 import { each, gauss, minmax, normalize, P, rn } from "../utils";
-import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
+import { CULTURE_TYPES, type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import { NON_NAVIGABLE_LAKE_SUBTYPES } from "./features-generator";
 import type { Label } from "./labels-generator";
 import { Population } from "./population-generator";
 import type { ProductionRecord } from "./production-generator";
 import type { River } from "./river-generator";
 import type { Point } from "./voronoi";
+
+const BUILDINGS = ["citadel", "plaza", "shanty", "temple", "walls"] as const;
+
+/** the default burg style: white art with a dark outline */
+const BURG_PAINT = { fill: "#ffffff", stroke: "#3e3e4b" };
 
 export const isAutoBurgLimit = (): boolean => options.generation.burgs.limit === AUTO_BURG_LIMIT;
 
@@ -57,6 +64,13 @@ type PortCandidate = {
 };
 
 class BurgModule {
+  /** the burg icons (styled subdirectories included) and the port anchors, drawn around the anchor at
+   * 10 user units per em, so a `size` of 1 draws the plain circle 1em wide */
+  readonly iconSets = [
+    { id: "burgs", group: "Settlements", em: 10, paint: BURG_PAINT },
+    { id: "ports", group: "Settlements", em: 10, paint: BURG_PAINT }
+  ] as const satisfies readonly IconSet[];
+
   generate() {
     const { cells } = pack;
 
@@ -493,12 +507,14 @@ class BurgModule {
   /** burg groups can exist without a style entry (the Burg Groups editor, presets that don't
    * list them) - without one the renderer falls back to the default group and edits never persist */
   ensureBurgGroupStyles(): void {
-    const { burgIcons, anchors } = styles.burgIcons;
-    const iconTemplate = burgIcons.groups.town || Object.values(burgIcons.groups)[0];
-    const anchorTemplate = anchors.groups.town || Object.values(anchors.groups)[0];
+    const { groups } = styles.burgIcons;
+    const template = groups.town || Object.values(groups)[0];
+    if (!template) return;
     for (const { name } of options.map.burgs.groups) {
-      if (!burgIcons.groups[name] && iconTemplate) burgIcons.groups[name] = structuredClone(iconTemplate);
-      if (!anchors.groups[name] && anchorTemplate) anchors.groups[name] = structuredClone(anchorTemplate);
+      const entry = groups[name] ?? structuredClone(template);
+      groups[name] = entry;
+      entry.groups.icons ??= structuredClone(template.groups.icons);
+      entry.groups.anchors ??= structuredClone(template.groups.anchors);
     }
   }
 
@@ -742,25 +758,24 @@ class BurgModule {
     return previewGeneratorsMap[group.preview](burg);
   }
 
-  add([x, y]: [number, number]) {
+  /** Found a burg on a free land cell at a map point; returns its id */
+  add(x: number, y: number): number {
     const { cells } = pack;
+    const cellId = Pack.requireCell(x, y);
+    if (cells.h[cellId] < 20) throw new Error("A burg cannot be placed in the water");
+    if (cells.burg[cellId]) throw new Error(`Cell ${cellId} already has burg ${cells.burg[cellId]}`);
 
     const burgId = pack.burgs.length;
-    const cellId = Pack.findCell(x, y);
-    const culture = cells.culture[cellId as number];
-    const name = Names.getCulture(culture);
-    const state = cells.state[cellId as number];
-    const feature = cells.f[cellId as number];
-
+    const culture = cells.culture[cellId];
     const burg: Burg = {
-      cell: cellId as number,
+      cell: cellId,
       x,
       y,
       i: burgId,
-      state,
+      state: cells.state[cellId],
       culture,
-      name,
-      feature,
+      name: Names.getCulture(culture),
+      feature: cells.f[cellId],
       capital: 0,
       port: 0
     };
@@ -775,9 +790,9 @@ class BurgModule {
     this.defineGroup(burg, populations);
 
     pack.burgs.push(burg);
-    cells.burg[cellId as number] = burgId;
+    cells.burg[cellId] = burgId;
 
-    Routes.connect(cellId as number);
+    Routes.connect(cellId);
     return burgId;
   }
 
@@ -827,6 +842,11 @@ class BurgModule {
       newBurgs.push(centerBurg);
       burgsTree.add([centerBurg.x, centerBurg.y]);
       cells.burg[centerBurg.cell] = newId;
+
+      if (centerBurg.capital && centerBurg.state !== undefined) {
+        states[centerBurg.state].capital = newId;
+        states[centerBurg.state].center = centerBurg.cell;
+      }
     }
 
     const score = new Int16Array(cells.s.map(value => value * Math.random()));
@@ -865,8 +885,8 @@ class BurgModule {
     states
       .filter(state => state.i && !state.removed && !state.capital)
       .forEach(state => {
-        const [x, y] = cells.p[state.center];
-        const burgId = this.add([x, y]);
+        // a kept burg already on the center becomes the capital
+        const burgId = cells.burg[state.center] || this.add(...cells.p[state.center]);
         state.capital = burgId;
         state.center = pack.burgs[burgId].cell;
         const burg = pack.burgs[burgId];
@@ -889,17 +909,158 @@ class BurgModule {
     }
   }
 
-  remove(burgId: number) {
+  /** Rename a burg; its label text follows the name */
+  rename(burgId: number, name: string): void {
     const burg = pack.burgs[burgId];
-    if (!burg) return window.tip(`Burg ${burgId} not found`, false, "error");
+    if (!burg || burg.removed) throw new Error(`Burg ${burgId} does not exist`);
+    burg.name = requireName(name);
+    if (burg.label?.text !== undefined) burg.label.text = burg.name;
+  }
+
+  /** Set a burg's population as shown in the Burg Editor, in people */
+  setPopulation(burgId: number, people: number): void {
+    const burg = this.living(burgId);
+    const { scale, urbanization } = options.map.units.population;
+    if (!Number.isFinite(people) || people < 0) throw new Error("The population must be a non-negative number");
+    burg.population = rn(people / scale / urbanization.rate, 4);
+  }
+
+  /** Move a burg to an existing burg group */
+  setGroup(burgId: number, group: string): void {
+    const names = options.map.burgs.groups.filter(({ removed }) => !removed).map(({ name }) => name);
+    this.changeGroup(this.living(burgId), requireOneOf(group, names, "The group"));
+  }
+
+  /** Set a burg's culture type, which is about geography, not rank */
+  setType(burgId: number, type: string): void {
+    this.living(burgId).type = requireOneOf(type, CULTURE_TYPES, "The type");
+  }
+
+  /** Turn one of a burg's buildings on or off: citadel, plaza, shanty, temple or walls */
+  setBuilding(burgId: number, building: string, present: boolean): void {
+    const burg = this.living(burgId);
+    const name = requireOneOf(building, BUILDINGS, "The building");
+    if (name === "plaza" && !present && pack.markets?.some(market => market.centerBurgId === burgId))
+      throw new Error(`Burg ${burgId} is a market center and keeps its plaza; remove the market first`);
+    burg[name] = present ? 1 : 0;
+  }
+
+  /** Set the culture of a burg's people */
+  setCulture(burgId: number, cultureId: number): void {
+    const culture = pack.cultures[cultureId];
+    if (!culture || culture.removed) throw new Error(`Culture ${cultureId} does not exist`);
+    this.living(burgId).culture = cultureId;
+  }
+
+  /** Make a burg a port on the water body it faces or drains to, or stop it being one */
+  setPort(burgId: number, port: boolean): void {
+    const burg = this.living(burgId);
+    if (!port) {
+      burg.port = 0;
+      return;
+    }
+    const water = this.portWater(burg.cell);
+    if (!water) throw new Error(`Burg ${burgId} has no navigable water to be a port on`);
+    burg.port = water;
+  }
+
+  /** The water body a burg at a cell trades by: the one it faces or drains to, or 0 */
+  private portWater(cell: number): number {
+    const { cells, features } = pack;
+    const haven = cells.haven[cell];
+    const feature = haven ? features[cells.f[haven]] : undefined;
+    const water = !haven
+      ? Rivers.resolveDrainFeature(cell)
+      : feature?.type === "lake" && feature.outlet
+        ? (Rivers.resolveLakeDrainFeature(feature.i) ?? feature.i)
+        : cells.f[haven];
+    return water || 0;
+  }
+
+  /** Make a burg the capital of the state it is in; the old capital becomes an ordinary burg */
+  setCapital(burgId: number): void {
+    const burg = this.living(burgId);
+    const state = pack.states[burg.state ?? 0];
+    if (!burg.state || !state || state.removed)
+      throw new Error(`Burg ${burgId} is in neutral lands, which have no capital`);
+    if (burg.capital) return;
+    const old = pack.burgs[state.capital];
+    state.capital = burgId;
+    state.center = burg.cell;
+    burg.capital = 1;
+    this.changeGroup(burg);
+    if (old?.i && old.i !== burgId) {
+      old.capital = 0;
+      this.changeGroup(old);
+    }
+  }
+
+  /** Move a burg to a free land cell at a map point; a capital stays inside its state or province. A port trades by the water at its new place, if any */
+  move(burgId: number, x: number, y: number): void {
+    const burg = this.living(burgId);
+    const { cells } = pack;
+    const cell = Pack.requireCell(x, y);
+    if (cells.h[cell] < 20) throw new Error("A burg cannot be placed in the water");
+    if (cells.burg[cell] && cells.burg[cell] !== burgId)
+      throw new Error(`Cell ${cell} already has burg ${cells.burg[cell]}`);
+    const state = cells.state[cell];
+    if (burg.capital && state !== burg.state) throw new Error("A capital cannot be moved into another state");
+    const province = pack.provinces?.find(p => p.i && !p.removed && p.burg === burgId);
+    if (province && cells.province[cell] !== province.i)
+      throw new Error(`Burg ${burgId} is the capital of province ${province.i} and cannot leave it`);
+
+    cells.burg[burg.cell] = 0;
+    cells.burg[cell] = burgId;
+    Object.assign(burg, { cell, state, x: rn(x, 2), y: rn(y, 2), feature: cells.f[cell] });
+    if (burg.capital) pack.states[state].center = cell;
+    if (province) province.center = cell;
+    if (burg.port) burg.port = this.portWater(cell); // a port moved inland stops being one
+    if (burg.label) Object.assign(burg.label, { dx: 0, dy: 0, pathPoints: undefined }); // a custom path no longer fits
+  }
+
+  /** Set a burg's treasury, in the map's currency */
+  setTreasury(burgId: number, amount: number): void {
+    if (typeof amount !== "number" || !Number.isFinite(amount)) throw new Error("The treasury must be a number");
+    this.living(burgId).treasury = rn(amount, 2);
+  }
+
+  /** Lock a burg so regeneration keeps it, or unlock it */
+  setLocked(burgId: number, locked: boolean): void {
+    const burg = this.living(burgId);
+    if (locked) burg.lock = true;
+    else delete burg.lock;
+  }
+
+  /** Set the URL of a burg's map preview: a generator link or an image. Empty restores the default preview */
+  setLink(burgId: number, url: string): void {
+    const burg = this.living(burgId);
+    if (!url) {
+      delete burg.link;
+      return;
+    }
+    if (typeof url !== "string" || !/^https?:\/\//i.test(url.trim()))
+      throw new Error("The link must be an http(s) URL");
+    burg.link = url.trim();
+  }
+
+  private living(burgId: number): Burg {
+    const burg = pack.burgs[burgId];
+    if (!burg || burg.removed) throw new Error(`Burg ${burgId} does not exist`);
+    return burg;
+  }
+
+  /** Remove a burg that is neither a capital nor a market center */
+  remove(burgId: number): void {
+    const burg = this.living(burgId);
+    if (burg.capital) throw new Error(`Burg ${burgId} is a capital; make another burg the capital first`);
+    if (pack.markets?.some(market => market.centerBurgId === burgId))
+      throw new Error(`Burg ${burgId} is a market center; remove the market first`);
 
     pack.cells.burg[burg.cell] = 0;
     burg.removed = true;
     delete burg.note;
-
-    if (burg.coa) {
-      delete burg.coa;
-    }
+    delete burg.coa;
+    for (const province of pack.provinces ?? []) if (province.burg === burgId) province.burg = 0;
   }
 }
 
@@ -909,5 +1070,7 @@ declare global {
 
 // biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const Burgs = new BurgModule();
+
+export type BurgIconSetId = (typeof Burgs.iconSets)[number]["id"];
 
 window.Burgs = Burgs;

@@ -1,7 +1,6 @@
 import { drag, type Selection, select } from "d3";
-import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog, noteButton } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
-import { Notes } from "@/components/notes";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
@@ -34,6 +33,7 @@ function open(id: string): void {
   select("#debug").append("g").attr("id", "controlPoints");
 
   renderDialog();
+  ensureEl("riverEditor").dataset.entity = `river:${Number(id.slice(5))}`;
   updateRiverData();
 
   const river = getRiver();
@@ -99,7 +99,7 @@ function renderDialog(): void {
       <button id="riverCreateSelectingCells" data-tip="Create a new river selecting river cells" class="icon-map-pin"></button>
       <button id="riverEditStyle" data-tip="Edit style for all rivers in Style Editor" class="icon-brush"></button>
       <button id="riverElevationProfile" data-tip="Show the elevation profile for the river" class="icon-chart-area"></button>
-      ${Notes.getButton("riverLegend", "this river")}
+      ${noteButton("riverLegend", "this river")}
       <button id="riverRemove" data-tip="Remove river" data-shortcut="Delete" class="icon-trash fastDelete"></button>
     </div>
   </div>`;
@@ -126,7 +126,7 @@ function openRiverCreator(): void {
 }
 
 function openRiverStyle(): void {
-  editStyle("rivers");
+  void Controllers.StyleEditor.open("rivers");
 }
 
 function getRiver(): River {
@@ -155,7 +155,8 @@ function updateRiverData(): void {
   ensureEl<HTMLInputElement>("riverWidthFactor").value = String(r.widthFactor);
 
   updateRiverLength(r);
-  updateRiverWidth(r);
+  Rivers.updateWidth(r);
+  showRiverWidth(r);
 }
 
 function updateRiverLength(river: River): void {
@@ -164,18 +165,7 @@ function updateRiverLength(river: River): void {
   ensureEl<HTMLInputElement>("riverLength").value = lengthUI;
 }
 
-function updateRiverWidth(river: River): void {
-  const { cells, discharge, widthFactor, sourceWidth } = river;
-  const meanderedPoints = Rivers.addMeandering(cells);
-  river.width = Rivers.getWidth(
-    Rivers.getOffset({
-      flux: discharge,
-      pointIndex: meanderedPoints.length,
-      widthFactor,
-      startingWidth: sourceWidth
-    })
-  );
-
+function showRiverWidth(river: River): void {
   const width = `${rn(river.width * options.map.units.distance.scale, 3)} ${options.map.units.distance.unit}`;
   ensureEl<HTMLInputElement>("riverWidth").value = width;
 }
@@ -270,41 +260,51 @@ function removeControlPoint(this: any): void {
 }
 
 function changeName(this: HTMLInputElement): void {
-  getRiver().name = this.value;
+  if (this.value.trim()) Rivers.rename(getRiver().i, this.value);
 }
 
 function changeType(this: HTMLInputElement): void {
-  getRiver().type = this.value;
+  if (this.value.trim()) Rivers.setType(getRiver().i, this.value);
 }
 
 function generateNameCulture(): void {
   const r = getRiver();
-  r.name = ensureEl<HTMLInputElement>("riverName").value = Rivers.getName(r.mouth);
+  const name = Rivers.getName(r.mouth);
+  ensureEl<HTMLInputElement>("riverName").value = name;
+  Rivers.rename(r.i, name);
 }
 
 function generateNameRandom(): void {
   const r = getRiver();
-  if (r) r.name = ensureEl<HTMLInputElement>("riverName").value = Names.getBase(rand(Names.nameBases.length - 1));
+  if (!r) return;
+  const name = Names.getBase(rand(Names.nameBases.length - 1));
+  ensureEl<HTMLInputElement>("riverName").value = name;
+  Rivers.rename(r.i, name);
 }
 
 function changeParent(this: HTMLInputElement): void {
   const r = getRiver();
-  r.parent = +this.value;
-  r.basin = pack.rivers.find((river: River) => river.i === r.parent)!.basin;
+  try {
+    Rivers.setParent(r.i, +this.value);
+  } catch (error) {
+    tip((error as Error).message, false, "error");
+    this.value = String(r.parent || r.i);
+    return;
+  }
   ensureEl<HTMLInputElement>("riverBasin").value = pack.rivers.find((river: River) => river.i === r.basin)!.name;
 }
 
 function changeSourceWidth(this: HTMLInputElement): void {
   const river = getRiver();
-  river.sourceWidth = +this.value;
-  updateRiverWidth(river);
+  Rivers.setWidth(river.i, Math.max(0, +this.value || 0), river.widthFactor);
+  showRiverWidth(river);
   redrawRiver();
 }
 
 function changeWidthFactor(this: HTMLInputElement): void {
   const river = getRiver();
-  river.widthFactor = +this.value;
-  updateRiverWidth(river);
+  Rivers.setWidth(river.i, river.sourceWidth ?? 0, Math.max(0, +this.value || 0)); // very old rivers have no source width
+  showRiverWidth(river);
   redrawRiver();
 }
 

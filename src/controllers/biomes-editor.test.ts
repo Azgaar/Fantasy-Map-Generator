@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import type { Biome } from "@/generators/biomes-generator";
-import { collectBiomeStatistics, createCustomBiome, removeCustomBiome } from "./biomes-editor";
+import { collectBiomeStatistics } from "./biomes-editor";
 
 const createBiome = (i: number): Biome => ({
   i,
@@ -8,50 +8,11 @@ const createBiome = (i: number): Biome => ({
   color: `#00000${i}`,
   habitability: 50,
   iconsDensity: 0,
-  icons: [],
+  icons: {},
   cost: 50
 });
 
 describe("biome editor operations", () => {
-  test("creates a custom biome at the next stable index", () => {
-    const biomes = Array.from({ length: 13 }, (_, i) => createBiome(i));
-
-    const biome = createCustomBiome(biomes, "#123456");
-
-    expect(biome).toEqual({
-      i: 13,
-      name: "Custom",
-      color: "#123456",
-      habitability: 50,
-      iconsDensity: 0,
-      icons: [],
-      cost: 50
-    });
-    expect(biomes[13]).toBe(biome);
-    expect(biome).not.toHaveProperty("cells");
-    expect(biome).not.toHaveProperty("area");
-    expect(biome).not.toHaveProperty("rural");
-    expect(biome).not.toHaveProperty("urban");
-  });
-
-  test("does not create more than 255 indexed biomes", () => {
-    const biomes = Array.from({ length: 255 }, (_, i) => createBiome(i));
-
-    expect(createCustomBiome(biomes, "#123456")).toBeNull();
-    expect(biomes).toHaveLength(255);
-  });
-
-  test("removes only unassigned custom biomes", () => {
-    const biomes = Array.from({ length: 15 }, (_, i) => createBiome(i));
-    const assignments = Uint8Array.from([1, 13]);
-
-    expect(removeCustomBiome(biomes, assignments, 12)).toBe(false);
-    expect(removeCustomBiome(biomes, assignments, 13)).toBe(false);
-    expect(removeCustomBiome(biomes, assignments, 14)).toBe(true);
-    expect(biomes[14].removed).toBe(true);
-    expect(removeCustomBiome(biomes, assignments, 14)).toBe(false);
-  });
-
   test("calculates statistics without mutating biome definitions", () => {
     const biomes = [createBiome(0), createBiome(1), createBiome(2)];
     const originalBiomes = structuredClone(biomes);

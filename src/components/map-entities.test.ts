@@ -246,3 +246,75 @@ describe("map event targets", () => {
     expect(MapEntities.resolveTarget(null)).toBeUndefined();
   });
 });
+
+describe("records", () => {
+  beforeEach(() => {
+    Object.assign(pack, {
+      cells: {
+        i: [0, 1],
+        p: [
+          [0, 0],
+          [10, 20]
+        ],
+        biome: [0, 1]
+      },
+      biomes: [
+        { i: 0, name: "Marine" },
+        { i: 1, name: "Taiga" }
+      ],
+      ice: [
+        {
+          i: 0,
+          type: "iceberg",
+          points: [
+            [1, 1],
+            [3, 1]
+          ],
+          offset: [1, 2]
+        }
+      ],
+      relief: [{ type: "mount", x: 5, y: 6, s: 2 }],
+      measurers: [
+        {
+          type: "Ruler",
+          points: [
+            [0, 0],
+            [4, 4]
+          ]
+        }
+      ],
+      goods: [{ i: 0, name: "Salt" }],
+      deals: [{ i: 0, seller: 1, sellerType: "burg", buyer: 1, buyerType: "burg", good: 0, units: 1, price: 1 }]
+    });
+    globalThis.pack.burgs[1] = { ...globalThis.pack.burgs[1], x: 7, y: 8 } as (typeof pack.burgs)[number];
+    globalThis.options = {
+      map: { transports: [{ i: 2, name: "Galley", speed: 8, domain: "water" }] }
+    } as typeof options;
+    globalThis.Names = { nameBases: [{ i: 0, name: "German" }] } as unknown as typeof Names;
+  });
+
+  it("resolves every record type by key", () => {
+    const names = ["cell:1", "ice:0", "relief:0", "measurer:0", "deal:0", "transport:2", "nameBase:0"].map(key => {
+      const ref = MapEntities.parseKey(key)!;
+      expect(MapEntities.get(ref)).toBeDefined();
+      return MapEntities.getName(ref);
+    });
+    expect(names).toEqual(["Cell 1", "Iceberg 0", "Mount", "Ruler", "Salt deal", "Galley", "German"]);
+    expect(MapEntities.get({ type: "cell", id: 2 })).toBeUndefined();
+  });
+
+  it("locates the records that have a place on the map", () => {
+    expect(MapEntities.getPoints({ type: "cell", id: 1 })).toEqual([[10, 20]]);
+    expect(MapEntities.getPoints({ type: "ice", id: 0 })).toEqual([
+      [2, 3],
+      [4, 3]
+    ]);
+    expect(MapEntities.getPoints({ type: "relief", id: 0 })).toEqual([[5, 6]]);
+    expect(MapEntities.getPoints({ type: "deal", id: 0 })).toEqual([
+      [7, 8],
+      [7, 8]
+    ]);
+    expect(MapEntities.getPoints({ type: "transport", id: 2 })).toEqual([]);
+    expect(MapEntities.getContext({ type: "cell", id: 1 })).toBe("Taiga");
+  });
+});

@@ -14,13 +14,8 @@ const generationPipelineSteps = [
   { id: "mapSize", run: () => Coordinates.generate() },
   { id: "temperatures", run: () => Temperature.generate() },
   { id: "precipitation", run: () => Precipitation.generate() },
-  {
-    id: "clearPack",
-    run: () => {
-      Pack.clear();
-      GraphOverride.clear(); // the old graph is gone, do not pin its vertices
-    }
-  },
+  { id: "clearPack", run: () => Pack.clear() },
+  { id: "clearGraphOverride", run: () => GraphOverride.clear() },
   { id: "regraph", run: () => Pack.generate() },
   { id: "markupPack", run: () => Features.markupPack() },
   { id: "defaultRuler", run: () => Measurers.createDefaultRuler() },

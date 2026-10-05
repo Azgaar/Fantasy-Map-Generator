@@ -13,7 +13,7 @@ returning a Promise**. Callers never write `import()` or `.then(m => …)`. An `
 registers an already-imported value so lazy vs eager is invisible to callers.
 
 Two buckets are built from the factory, each in its own layer's eager entry, and exposed on `window`
-(so legacy `public/modules/**/*.js` and inline `onclick` handlers can reach them, mirroring the old
+(so inline `onclick` handlers and the `window`-bridge code can reach them, mirroring the old
 `window.lazy`):
 
 Both buckets use the **same contract**: every registered module exports a single named object whose
@@ -50,13 +50,14 @@ exist at startup. They hold only loader thunks, so the eager cost is a few bytes
    // Controllers: resolve to the module's single exported object
    MarketOverview: () => import("@/controllers/market-overview").then(m => m.MarketOverview),
    // Services: same contract — resolve to the module's single exported object
-   Save: () => import("@/services/io/save").then(m => m.Save),
+   Load: () => import("@/services/io/load").then(m => m.Load),
    ```
 
    Rollup sees the string literal inside `import()` and emits an independent chunk. Each entry keeps
    its exact resolved type, so call sites are fully typed and autocompleted.
 
-4. **Call it uniformly.** Migrated TS imports the bucket; legacy JS uses the `window` global:
+4. **Call it uniformly.** Migrated TS imports the bucket; other scripts reach the same bucket through
+   the `window` global:
 
    ```ts
    import { Controllers } from "@/controllers";
@@ -66,20 +67,19 @@ exist at startup. They hold only loader thunks, so the eager cost is a few bytes
    window.Controllers.MarketOverview.open(id);
    ```
 
-5. **Delete the old `.js` file** from `public/modules/` once ported.
-
 ## Lazy vs eager is invisible to callers
 
 A loader is just `() => Promise<resolved>`. To register an already-imported (eager) module, wrap it
 with `eager(value)` from `registry.ts` — it resolves on the next microtask, so callers can't tell it
 isn't lazy. Switching a module between lazy and eager is a one-line change in `index.ts`; no call
-site changes. (All controllers are currently lazy; `eager` exists for future tuning and Services.)
+site changes. All controllers are lazy. `Services.Save` is eager: the save-location picker needs the
+click's user activation, which a module download would outlive.
 
 ## Rules
 
 - Named exports only — no module-level `window.X = new Thing()` self-registration for lazy modules
   (that pattern is for eagerly-loaded generators like `markets-generator.ts`).
-- The registry buckets in `index.ts` contain only `() => import(...)` thunks — no logic. The moment
+- The registry buckets in `index.ts` contain only `() => import(...)` thunks and `eager(...)` wrappers — no logic. The moment
   a controller is imported statically there, it stops being lazy.
 - An entry must never be made thenable: the factory's per-entry proxy returns `undefined` for `then`
   and for symbol keys, so `await Registry.Name` is a no-op rather than a phantom method call. Keep

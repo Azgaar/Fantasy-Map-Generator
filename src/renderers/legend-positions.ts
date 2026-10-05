@@ -1,6 +1,6 @@
 // Where each legend box sits, remembered per browser rather than saved with the map - the same
-// treatment a dialog's position gets, in the same store. The map file carries the boxes and the
-// style carries the anchor they fall back to; where a viewer has dragged them is their own business.
+// treatment a dialog's position gets, in the same store. The map file carries the boxes; where a
+// viewer has dragged them is their own business.
 
 import { dialogState } from "@/components/dialog/state";
 

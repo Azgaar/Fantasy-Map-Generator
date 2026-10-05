@@ -22,6 +22,7 @@ import {
   range,
   select
 } from "d3";
+import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { tip } from "../components/tooltips";
 import { round } from "../utils";
 import { getHeightContours, smoothContourHeights } from "./heightmap-contours";
@@ -78,8 +79,8 @@ export const drawHeightmap = (): void => {
   const used = new Uint8Array(cells.i.length);
   const heights = Array.from(cells.i).sort((a, b) => cells.h[a] - cells.h[b]);
 
-  const landOptions = styles.heightmap.landHeights.options;
-  const oceanOptions = styles.heightmap.oceanHeights.options;
+  const landOptions = styles.heightmap.groups.landHeights.options;
+  const oceanOptions = styles.heightmap.groups.oceanHeights.options;
   const linesOnly = (o: typeof landOptions) => o.contours.mode === "only" || o.hachures.mode === "only";
   const landFillsVisible = !linesOnly(landOptions);
   const oceanFillsVisible = !linesOnly(oceanOptions);
@@ -143,7 +144,7 @@ export const drawHeightmap = (): void => {
     const heightOptions = height < 20 ? oceanOptions : landOptions;
     const fillsVisible = height < 20 ? oceanFillsVisible : landFillsVisible;
     if (!fillsVisible) continue;
-    const scheme = getColorScheme(heightOptions.scheme);
+    const scheme = HeightmapColorSchemes.get(heightOptions.scheme);
 
     if (height === 0 && renderOceanCells) {
       // draw base ocean layer
@@ -169,7 +170,7 @@ export const drawHeightmap = (): void => {
 
     if (paths[height] && paths[height]!.length >= 10) {
       const terracing = heightOptions.terracing / 10 || 0;
-      const fillColor = getColor(height, scheme);
+      const fillColor = HeightmapColorSchemes.getColor(height, scheme);
 
       if (terracing) {
         group
@@ -318,7 +319,7 @@ export const drawHeights = ({
   scheme,
   renderOcean
 }: {
-  heights: number[];
+  heights: Uint8Array<ArrayBufferLike>;
   width: number;
   height: number;
   scheme: (value: number) => string;
@@ -346,11 +347,3 @@ export const drawHeights = ({
   ctx.putImageData(imageData, 0, 0);
   return canvas.toDataURL("image/png");
 };
-
-declare global {
-  interface Window {
-    drawHeights: typeof drawHeights;
-  }
-}
-
-window.drawHeights = drawHeights; // classic public/modules/ui/style.js draws the 3d preview with it

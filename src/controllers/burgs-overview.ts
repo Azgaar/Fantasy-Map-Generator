@@ -431,8 +431,7 @@ function zoomIntoBurg(this: HTMLElement): void {
 function toggleBurgLockStatus(this: HTMLElement): void {
   const burgId = +(this.closest(".states") as HTMLElement).dataset.id!;
 
-  const burg = pack.burgs[burgId];
-  burg.lock = !burg.lock;
+  Burgs.setLocked(burgId, !pack.burgs[burgId].lock);
 
   if (this.classList.contains("icon-lock")) {
     this.classList.remove("icon-lock");
@@ -454,6 +453,10 @@ function triggerBurgRemove(this: HTMLElement): void {
   const burgId = +(this.closest(".states") as HTMLElement).dataset.id!;
   if (pack.burgs[burgId].capital) {
     tip("You cannot remove the capital. Please change the state capital first", false, "error");
+    return;
+  }
+  if (pack.markets?.some(m => m.centerBurgId === burgId)) {
+    tip("You cannot remove a market center burg. Please remove the market first", false, "error");
     return;
   }
 
@@ -749,6 +752,7 @@ function importBurgNames(dataLoaded: string): void {
   const data = dataLoaded
     .replace(/\r\n|\r/g, "\n")
     .split("\n")
+    .map(line => line.trim())
     .filter(Boolean);
   if (!data.length) {
     tip("Cannot parse the list, please check the file format", false, "error");
@@ -772,10 +776,7 @@ function importBurgNames(dataLoaded: string): void {
   alertMessage.innerHTML = message;
 
   const onConfirm = () => {
-    for (let i = 0; i < change.length; i++) {
-      const id = change[i].id;
-      pack.burgs[id].name = change[i].name;
-    }
+    for (const { id, name } of change) Burgs.rename(id, name);
     burgsTable.refresh();
     Layers.draw("labels");
   };
@@ -789,20 +790,21 @@ function importBurgNames(dataLoaded: string): void {
 }
 
 function triggerAllBurgsRemove(): void {
-  const number = pack.burgs.filter(b => b.i && !b.removed && !b.capital && !b.lock).length;
+  const removable = () =>
+    pack.burgs.filter(
+      b => b.i && !b.removed && !(b.capital || b.lock) && !pack.markets?.some(m => m.centerBurgId === b.i)
+    );
   confirmationDialog({
-    title: `Remove ${number} burgs`,
+    title: `Remove ${removable().length} burgs`,
     message: `
-        Are you sure you want to remove all <i>unlocked</i> burgs except for capitals?
+        Are you sure you want to remove all <i>unlocked</i> burgs except for capitals and market centers?
         <br><i>To remove a capital you have to remove its state first</i>`,
     confirm: "Remove",
     onConfirm: () => {
-      pack.burgs
-        .filter(b => b.i && !(b.capital || b.lock))
-        .forEach(b => {
-          Burgs.remove(b.i);
-          removeEmblem("burg", b.i);
-        });
+      for (const burg of removable()) {
+        Burgs.remove(burg.i);
+        removeEmblem("burg", burg.i);
+      }
       burgsTable.refresh();
       Layers.draw("burgIcons", "labels");
     }
@@ -813,9 +815,7 @@ function toggleLockAll(): void {
   const activeBurgs = pack.burgs.filter(b => b.i && !b.removed);
   const allLocked = activeBurgs.every(burg => burg.lock);
 
-  activeBurgs.forEach(burg => {
-    burg.lock = !allLocked;
-  });
+  for (const burg of activeBurgs) Burgs.setLocked(burg.i, !allLocked);
 
   burgsTable.refresh();
   ensureEl("burgsLockAll").className = allLocked ? "icon-lock" : "icon-lock-open";

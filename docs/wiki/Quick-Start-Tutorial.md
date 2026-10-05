@@ -81,7 +81,7 @@ Interface settings:
 * _Transparency_: opacity of the control panes.
 * _Autosave interval_: number of minutes the map should be auto-saved to browser memory. Set to `0` to disable the autosave.
 * _On load_: define what should be done when Generator is opened: a new map generated or a previously saved map auto-opened.
-* _Azgaar assistant_: show or hide the help bubble in the bottom right corner, which answers questions about using the Generator.
+* _Azgaar Assistant_: show or hide the call bubble in the bottom right corner. The Assistant answers questions about using the Generator. Connect your own AI key or local model to ask about the open map and get note and name changes proposed for you to apply.
 * _Speaker voice_: select the voice used to speak burg and other names. Voice synthesis is provided by the browser.
 * _Emblem shape_: defines shield shape used during emblems generation.
 * _Viewport size_: the size of the map window on screen in pixels. The button on the left fits it back to the browser window.

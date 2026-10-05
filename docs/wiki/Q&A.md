@@ -23,10 +23,14 @@ You. The Generator is licensed under [MIT license](https://github.com/Azgaar/Fan
 If there is no version conflict, please [report the problem](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas#report-a-bug) with the affected file and the versions used to save and load it. Compatible older maps are auto-updated when loaded. Maps older than `0.70.0`, maps from a newer version, and invalid files require the matching Generator version or a repair/recreation. The tool is under development and version conflicts are inevitable.
 
 ### Can I export a created map?
-Sure, there are a number of available options: 
-* Save to machine: save file can be directly loaded to the Generator.
+Open the menu with the upper-left triangle or press Tab. Click **Export** in the menu's bottom row to open the Export dialog. For SVG, click **.svg** in the **Download image** row. The separate **Save** dialog saves editable `.map` files; it does not contain image exports.
+
+The **Save** dialog offers:
+* Save to machine: save file can be directly loaded to the Generator. Where the browser supports it, you pick the file once and later saves update it; Shift-click saves a copy elsewhere.
 * Save to Dropbox: save file can be directly loaded to the Generator.
 * Save to storage: save map data to the browser's internal database. File will be loaded automatically on page refresh. Bear in mind that saving to desktop is safer since browser storage can be accidentally cleared
+
+The **Export** dialog offers:
 
 * Export .svg: save a full map as a scalable vector image. You can open the file in a browser or edit it using a vector graphics editor.
 * Export .png or .jpeg: save the currently displayed map fragment as a raster image, at up to 8× resolution. You can edit the file in any raster graphics editor.

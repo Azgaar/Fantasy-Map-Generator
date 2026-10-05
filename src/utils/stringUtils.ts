@@ -21,6 +21,9 @@ export const capitalize = (inputString: string) => {
   return inputString.charAt(0).toUpperCase() + inputString.slice(1);
 };
 
+/** The message of anything thrown */
+export const errorText = (error: unknown): string => (error instanceof Error ? error.message : String(error));
+
 /**
  * Escape a string for interpolation into generated HTML, in text and attribute positions alike
  * @param {string} inputString - The input string

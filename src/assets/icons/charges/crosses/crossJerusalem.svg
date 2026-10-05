@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="#d7374a" stroke="#000" viewBox="50 50 200 200">
+  <metadata author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0"/>
+  <g id="crossJerusalem" stroke-width=".5">
+    <path d="m 118,72 v 5 h -5 v 5 h 5 v 5 h 5 v -5 h 5 v -5 h -5 v -5 z m 0,41 v 5 h -5 v 5 h 5 v 5 h 5 v -5 h 5 v -5 h -5 v -5 z m -41,0 v 5 h -5 v 5 h 5 v 5 h 5 v -5 h 5 v -5 h -5 v -5 z m 0,-41 v 5 h -5 v 5 h 5 v 5 h 5 v -5 h 5 v -5 h -5 v -5 z M 89,60 h 22 v 7 h -6 v 28 h 28 v -6 h 7 v 22 h -7 v -6 h -28 v 28 h 6 v 7 h -22 v -7 h 6 v -28 h -28 v 6 h -7 v -22 h 7 v 6 h 28 v -28 h -6 z"/>
+  </g>
+</svg>

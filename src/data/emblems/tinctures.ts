@@ -3,7 +3,7 @@ export const tinctures = {
   division: { metals: 5, colours: 8, stains: 0.03, patterns: 1 },
   charge: { metals: 2, colours: 3, stains: 0.05, patterns: 0 },
   metals: { argent: 3, or: 2 },
-  colours: { gules: 5, azure: 4, sable: 3, purpure: 3, vert: 2 },
+  colours: { gules: 5, azure: 4, sable: 3, purpure: 3, vert: 2, carnation: 0, celeste: 0, cendrée: 0 },
   stains: { murrey: 1, sanguine: 1, tenné: 1 },
   patterns: {
     semy: 8,

@@ -87,6 +87,18 @@ If you are running FMG locally, you don't need this step. But if you want Ollama
 
 That's It! You can now generate text using your local AI model.
 
+## Using Ollama with the Assistant
+
+The AI text generator writes a single block of prose. Azgaar Assistant uses a local model to answer questions about the Generator and the open map, and to propose note and name changes that you apply. It talks to Ollama through the OpenAI-compatible endpoint rather than `/api/generate`.
+
+1. With `ollama serve` running, open Azgaar Assistant and select **Use key**.
+2. Choose **Local** as the provider and enter the model name reported by `ollama list`.
+3. Check the server address and select **Connect**. A local server needs no key.
+
+The server address defaults to `http://localhost:11434/v1`, which is Ollama's OpenAI-compatible endpoint. If Ollama runs on another machine or port, put its address in the server field and allow the Generator's origin on the Ollama side with `OLLAMA_ORIGINS`.
+
+Set the local server's context window to at least 8,192 tokens, for example by starting Ollama with `OLLAMA_CONTEXT_LENGTH=8192 ollama serve`; use 16,384 for long chats. The Assistant writes small scripts to read the map, which asks more of a model than plain prose does. If answers are empty or malformed, try a larger model.
+
 ## Troubleshooting
 
 **If it doesn't work:**

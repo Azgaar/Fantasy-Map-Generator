@@ -1,8 +1,13 @@
 import { mean, median, quadtree, sum } from "d3";
+import { getInverseRelation, RELATIONS } from "@/data/diplomacy";
 import { Emblems } from "@/generators/emblems-generator";
 import type { Emblem } from "@/types/emblems";
+import { requireColor } from "@/utils/colorUtils";
+import { replaceWholeWord } from "@/utils/languageUtils";
+import { requireName, requireOneOf } from "@/utils/validationUtils";
 import {
   each,
+  escapeHtml,
   gauss,
   generateSeed,
   getAdjective,
@@ -17,8 +22,11 @@ import {
   rw,
   trimVowels
 } from "../utils";
+import { CULTURE_TYPES } from "./cultures-generator";
 import type { Label } from "./labels-generator";
 import type { Regiment } from "./military-generator";
+import { Population } from "./population-generator";
+import type { Province } from "./provinces-generator";
 
 declare global {
   var States: StatesModule;
@@ -66,6 +74,87 @@ interface Campaign {
   start: number;
   end?: number;
 }
+
+/** Form names by the form of government they belong to, as the State name editor lists them */
+export const STATE_FORMS = {
+  Monarchy: [
+    "Beylik",
+    "Despotate",
+    "Dominion",
+    "Duchy",
+    "Emirate",
+    "Empire",
+    "Horde",
+    "Grand Duchy",
+    "Heptarchy",
+    "Khaganate",
+    "Khanate",
+    "Kingdom",
+    "Marches",
+    "Principality",
+    "Satrapy",
+    "Shogunate",
+    "Sultanate",
+    "Tsardom",
+    "Ulus",
+    "Viceroyalty"
+  ],
+  Republic: [
+    "Chancellery",
+    "City-state",
+    "Diarchy",
+    "Federation",
+    "Free City",
+    "Junta",
+    "Most Serene Republic",
+    "Oligarchy",
+    "Protectorate",
+    "Republic",
+    "Tetrarchy",
+    "Trade Company",
+    "Triumvirate"
+  ],
+  Union: [
+    "Confederacy",
+    "Confederation",
+    "Conglomerate",
+    "Commonwealth",
+    "League",
+    "Union",
+    "United Hordes",
+    "United Kingdom",
+    "United Provinces",
+    "United Republic",
+    "United States",
+    "United Tribes"
+  ],
+  Theocracy: [
+    "Bishopric",
+    "Brotherhood",
+    "Caliphate",
+    "Diocese",
+    "Divine Duchy",
+    "Divine Grand Duchy",
+    "Divine Principality",
+    "Divine Kingdom",
+    "Divine Empire",
+    "Eparchy",
+    "Exarchate",
+    "Holy State",
+    "Imamah",
+    "Patriarchate",
+    "See",
+    "Thearchy",
+    "Theocracy"
+  ],
+  Anarchy: ["Commune", "Community", "Council", "Free Territory", "Tribes"]
+} as const satisfies Record<string, readonly string[]>;
+export type StateForm = keyof typeof STATE_FORMS;
+const FORMS = Object.keys(STATE_FORMS) as StateForm[];
+
+/** The form of government a listed form name belongs to */
+export const getStateForm = (formName: string): StateForm | undefined =>
+  FORMS.find(form => (STATE_FORMS[form] as readonly string[]).includes(formName));
 
 type TaxBases = { salesTax: number; pollTax: number };
 
@@ -669,6 +758,12 @@ class StatesModule {
     TIME && console.timeEnd("generateDiplomacy");
   }
 
+  // state 0 stores the diplomacy chronicle (array of [title, ...messages])
+  // TODO: move to a better place
+  getChronicle(): string[][] {
+    return pack.states[0].diplomacy as unknown as string[][];
+  }
+
   // select a forms for listed or all valid states
   defineStateForms(list: number[] | null = null) {
     const states = pack.states.filter(s => s.i && !s.removed && !s.lock);
@@ -760,7 +855,7 @@ class StatesModule {
           if (base === 5 && (form === "Empire" || form === "Kingdom")) return "Tsardom"; // Ruthenian
           if (base === 16 && (form === "Empire" || form === "Kingdom")) return "Khaganate"; // Turkic
           if (base === 12 && (form === "Kingdom" || form === "Grand Duchy")) return "Shogunate"; // Japanese
-          if ([18, 17].includes(base) && form === "Empire") return "Caliphate"; // Arabic, Berber
+          if ([18, 17].includes(base) && form === "Empire") return "Caliphate"; // Arabic, Amazigh
           if (base === 18 && (form === "Grand Duchy" || form === "Duchy")) return "Emirate"; // Arabic
           if (base === 7 && (form === "Grand Duchy" || form === "Duchy")) return "Despotate"; // Greek
           if (base === 31 && (form === "Grand Duchy" || form === "Duchy")) return "Ulus"; // Mongolian
@@ -798,7 +893,7 @@ class StatesModule {
             if (tier > 2) return "Patriarchate";
           }
           if (P(0.9) && [21, 16].includes(base)) return "Imamah"; // Nigerian, Turkish
-          if (tier > 2 && P(0.8) && [18, 17, 28].includes(base)) return "Caliphate"; // Arabic, Berber, Swahili
+          if (tier > 2 && P(0.8) && [18, 17, 28].includes(base)) return "Caliphate"; // Arabic, Amazigh, Swahili
           return rw(theocracy);
         }
       };
@@ -847,6 +942,461 @@ class StatesModule {
     return adjName ? `${getAdjective(state.name)} ${state.formName}` : `${state.formName} of ${state.name}`;
   }
 
+  /** Rename a state; a custom full name or label keeps its pattern when the old name stands in it as a whole word */
+  rename(stateId: number, name: string): void {
+    const state = pack.states[stateId];
+    if (!state || state.removed) throw new Error(`State ${stateId} does not exist`);
+    const old = state.name;
+    state.name = requireName(name);
+    state.fullName = replaceWholeWord(state.fullName, old, state.name) ?? this.getFullName(state);
+    if (state.label?.text) state.label.text = replaceWholeWord(state.label.text, old, state.name) ?? state.label.text;
+  }
+
+  /** Set a state's color */
+  recolor(stateId: number, color: string): void {
+    this.living(stateId).color = requireColor(color);
+  }
+
+  /** Set a state's full name, such as "Grand Duchy of Orwin" */
+  setFullName(stateId: number, fullName: string): void {
+    this.living(stateId).fullName = requireName(fullName);
+  }
+
+  /** Set a state's form name, such as Kingdom or Free City; empty clears it. Its government (Monarchy, Republic, Union, Theocracy or Anarchy) follows a listed name, or `form` for a custom one. The full name is rebuilt */
+  setForm(stateId: number, formName: string, form?: string): void {
+    const state = this.living(stateId);
+    if (typeof formName !== "string") throw new Error("The form name must be text");
+    const name = formName.trim();
+    const government = form === undefined ? getStateForm(name) : requireOneOf(form, FORMS, "The form");
+    if (name) state.formName = name;
+    else delete state.formName;
+    if (government) state.form = government;
+    state.fullName = this.getFullName(state);
+  }
+
+  /** Set a state's dominant culture */
+  setCulture(stateId: number, cultureId: number): void {
+    const culture = pack.cultures[cultureId];
+    if (!culture || culture.removed) throw new Error(`Culture ${cultureId} does not exist`);
+    this.living(stateId).culture = cultureId;
+  }
+
+  /** Set a state's type, which steers its expansion: Generic, Hunting, Highland, River, Lake, Naval or Nomadic */
+  setType(stateId: number, type: string): void {
+    this.living(stateId).type = requireOneOf(type, CULTURE_TYPES, "The type");
+  }
+
+  /** Set how strongly a state expands when states are recalculated, from 0 to 99 */
+  setExpansionism(stateId: number, expansionism: number): void {
+    if (typeof expansionism !== "number" || !(expansionism >= 0 && expansionism <= 99))
+      throw new Error("The expansionism must be a number from 0 to 99");
+    this.living(stateId).expansionism = expansionism;
+  }
+
+  /** Set a state's relation towards another; the other takes the inverse and the chronicle records the change */
+  setRelation(stateId: number, otherId: number, relation: string): void {
+    const [subject, object] = [this.living(stateId), this.living(otherId)];
+    if (!subject.i || !object.i || subject === object) throw new Error("Relations are between two different states");
+    requireOneOf(relation, Object.keys(RELATIONS), "The relation");
+    const old = subject.diplomacy?.[otherId];
+    subject.diplomacy ??= [];
+    object.diplomacy ??= [];
+    subject.diplomacy[otherId] = relation;
+    object.diplomacy[stateId] = getInverseRelation(relation); // an unchanged relation still repairs its inverse
+    if (old === relation) return;
+    this.getChronicle().push(this.getRelationRecord(stateId, otherId, old, relation));
+  }
+
+  /** The chronicle record of a state taking up a relation towards another */
+  getRelationRecord(subjectId: number, objectId: number, oldRelation: string | undefined, newRelation: string) {
+    const subject = pack.states[subjectId].name;
+    const object = pack.states[objectId].name;
+    const { title, text } = RELATIONS[newRelation].event ?? {
+      title: "Relations change",
+      text: () => `${subject}-${getAdjective(object)} relations changed to ${newRelation.toLowerCase()}`
+    };
+    if (oldRelation !== "Enemy") return [title, text(subject, object)];
+    return [
+      "War termination",
+      `${subject} and ${object} agreed to cease fire and signed a peace treaty`,
+      text(subject, object)
+    ];
+  }
+
+  /** Redraw state borders from their capitals, types and expansionism; provinces are regenerated */
+  recalculate(): void {
+    this.expandStates();
+    Provinces.generate();
+    Provinces.getPoles();
+    this.getPoles();
+    this.findNeighbors();
+    this.collectStatistics();
+  }
+
+  /** Found a state at a map point with the burg there, or a new one, as its capital. It owns only that cell. Returns its id */
+  add(x: number, y: number): number {
+    const { cells, burgs, cultures } = pack;
+    const center = Pack.requireCell(x, y);
+    if (cells.h[center] < 20) throw new Error("A state cannot be placed in the water");
+    const existing = cells.burg[center];
+    if (existing && burgs[existing].capital) throw new Error(`Burg ${existing} is already a capital`);
+    const capital = existing || Burgs.add(x, y);
+    const culture = cells.culture[center];
+    const basename = center % 5 === 0 ? burgs[capital].name! : Names.getCulture(culture);
+    const coa = Emblems.generate(burgs[capital].coa, 0.4, null, cultures[culture].type);
+    coa.shield = Emblems.getShield(culture, undefined);
+    return this.found(Names.getState(basename, culture), capital, coa, [center]);
+  }
+
+  /** A new state around a capital burg, taking the given cells from their state and provinces. Returns its id */
+  found(name: string, capitalId: number, coa: Emblem, stateCells: number[]): number {
+    const { cells, states, burgs } = pack;
+    const i = states.length;
+    const capital = burgs[capitalId];
+    const overlord = cells.state[capital.cell];
+    const inverse: Record<string, string> = {
+      Ally: "Suspicion",
+      Friendly: "Suspicion",
+      Suspicion: "Neutral",
+      Enemy: "Friendly",
+      Rival: "Friendly",
+      Vassal: "Suspicion",
+      Suzerain: "Enemy"
+    };
+    const diplomacy = states.map(state => {
+      if (!state.i || state.removed) return "x";
+      const old = states[overlord].diplomacy?.[state.i] ?? "Neutral";
+      const relation = !overlord ? "Neutral" : state.i === overlord ? "Enemy" : (inverse[old] ?? old);
+      state.diplomacy ??= [];
+      state.diplomacy[i] = relation;
+      return relation;
+    });
+    diplomacy.push("x");
+    if (overlord)
+      this.getChronicle().push([
+        "Independence declaration",
+        `${name} declared its independence from ${states[overlord].name}`
+      ]);
+
+    const owned = new Set(stateCells);
+    for (const cell of owned) {
+      cells.state[cell] = i;
+      cells.province[cell] = 0;
+    }
+    for (const burg of burgs) if (burg?.i && !burg.removed && owned.has(burg.cell)) burg.state = i;
+    capital.capital = 1;
+    Burgs.changeGroup(capital, null);
+
+    states.push({
+      i,
+      name,
+      diplomacy,
+      provinces: [],
+      color: getRandomColor(),
+      expansionism: 0.5,
+      capital: capitalId,
+      type: "Generic",
+      center: capital.cell,
+      culture: capital.culture ?? cells.culture[capital.cell],
+      military: [],
+      alert: 1,
+      coa,
+      salesTax: 0,
+      pollTax: 0,
+      treasury: 0
+    });
+    this.getPoles();
+    this.findNeighbors();
+    this.collectStatistics();
+    this.defineStateForms([i]);
+    return i;
+  }
+
+  /** Remove a state with its provinces; its lands and burgs become neutral */
+  remove(stateId: number): void {
+    const state = this.living(stateId);
+    if (!stateId) throw new Error("Neutral lands cannot be removed");
+    const { cells, burgs, provinces } = pack;
+
+    for (const burg of burgs) {
+      if (!burg?.i || burg.state !== stateId) continue;
+      burg.state = 0;
+      if (burg.capital) {
+        burg.capital = 0;
+        Burgs.changeGroup(burg, null);
+      }
+    }
+    const removedProvinces = new Set(state.provinces ?? []);
+    for (const province of removedProvinces) provinces[province] = { i: province, removed: true } as Province;
+    cells.state.forEach((owner, cell) => {
+      if (owner === stateId) cells.state[cell] = 0;
+      if (removedProvinces.has(cells.province[cell])) cells.province[cell] = 0;
+    });
+    for (const other of pack.states)
+      if (other.i && !other.removed && other.neighbors) other.neighbors = other.neighbors.filter(n => n !== stateId);
+    pack.states[stateId] = { i: stateId, removed: true } as State;
+    this.collectStatistics();
+  }
+
+  /** Merge states into a ruling one, which takes their lands, burgs, provinces and regiments. With `asProvinces`, each merged state becomes one province of the ruling state instead of keeping its own provinces */
+  merge(rulingStateId: number, stateIds: number[], asProvinces = false): void {
+    const ruling = this.living(rulingStateId);
+    if (!rulingStateId) throw new Error("Neutral lands cannot rule");
+    if (!Array.isArray(stateIds) || !stateIds.length) throw new Error("Name at least one state to merge");
+    const merged = stateIds.filter(id => id !== rulingStateId).map(id => this.living(id));
+    if (merged.some(state => !state.i)) throw new Error("Neutral lands cannot be merged");
+    const ids = new Set(merged.map(state => state.i));
+    if (asProvinces) for (const state of merged) this.demoteToProvince(state, ruling);
+
+    ruling.military ??= [];
+    ruling.provinces ??= [];
+    for (const state of merged) {
+      state.removed = true;
+      delete state.label;
+      for (const regiment of state.military ?? [])
+        ruling.military.push({
+          ...regiment,
+          i: Math.max(-1, ...ruling.military.map(({ i }) => i)) + 1,
+          state: rulingStateId
+        });
+      ruling.provinces.push(...(state.provinces ?? []).filter(province => !pack.provinces[province]?.removed));
+      state.military = [];
+      state.provinces = [];
+    }
+    for (const burg of pack.burgs) {
+      if (!burg?.i || !ids.has(burg.state ?? 0)) continue;
+      burg.state = rulingStateId;
+      if (burg.capital) {
+        burg.capital = 0;
+        Burgs.changeGroup(burg, null);
+      }
+    }
+    for (const province of pack.provinces) if (ids.has(province.state)) province.state = rulingStateId;
+    pack.cells.state.forEach((owner, cell) => {
+      if (ids.has(owner)) pack.cells.state[cell] = rulingStateId;
+    });
+    this.findNeighbors();
+    this.collectStatistics();
+    this.getPoles();
+    if (asProvinces) Provinces.getPoles();
+  }
+
+  /** A state's lands become one new province of the ruling state; its own provinces are removed */
+  private demoteToProvince(state: State, ruling: State): void {
+    const { cells, provinces, burgs } = pack;
+    const provinceId = provinces.length;
+    for (const province of provinces)
+      if (province.state === state.i && !province.removed)
+        provinces[province.i] = { i: province.i, removed: true } as Province;
+    cells.state.forEach((owner, cell) => {
+      if (owner === state.i) cells.province[cell] = provinceId;
+    });
+
+    const burg = state.capital;
+    const formName = state.formName || "Province";
+    provinces.push({
+      i: provinceId,
+      state: ruling.i,
+      center: burg ? burgs[burg].cell : state.center,
+      burg,
+      name: state.name,
+      formName,
+      fullName: `${state.name} ${formName}`,
+      color: getMixedColor(state.color!),
+      coa: state.coa
+    } as Province);
+    ruling.provinces ??= [];
+    ruling.provinces.push(provinceId);
+  }
+
+  /** Set a state's rural and urban population, in people: its cells and burgs scale to the totals */
+  setPopulation(stateId: number, rural: number, urban: number): void {
+    this.living(stateId);
+    const { cells } = pack;
+    Population.setArea(
+      Population.landCells(cell => cells.state[cell] === stateId),
+      Population.burgIds(burg => burg.state === stateId),
+      rural,
+      urban
+    );
+    this.collectStatistics();
+  }
+
+  /** Set a state's sales tax (0 to 1, on deals it sells) and poll tax (per person); they take effect when production is regenerated */
+  setTaxes(stateId: number, salesTax: number, pollTax: number): void {
+    const state = this.ruled(stateId);
+    if (typeof salesTax !== "number" || !(salesTax >= 0 && salesTax <= 1))
+      throw new Error("The sales tax must be a number from 0 to 1");
+    if (typeof pollTax !== "number" || !(pollTax >= 0 && Number.isFinite(pollTax)))
+      throw new Error("The poll tax must be a non-negative number");
+    state.salesTax = rn(salesTax, 4);
+    state.pollTax = rn(pollTax, 4);
+  }
+
+  /** Set a state's treasury, in the map's currency */
+  setTreasury(stateId: number, amount: number): void {
+    if (typeof amount !== "number" || !Number.isFinite(amount)) throw new Error("The treasury must be a number");
+    this.ruled(stateId).treasury = rn(amount, 2);
+  }
+
+  /** Lock a state so regeneration keeps it, or unlock it */
+  setLocked(stateId: number, locked: boolean): void {
+    const state = this.ruled(stateId);
+    if (locked) state.lock = true;
+    else delete state.lock;
+  }
+
+  /** Replace a chronicle entry with text lines, the first being its title. Index -1 adds an entry after any the batch records before it (setRelation does); no lines removes it */
+  setChronicleEntry(index: number, lines: string[]): void {
+    pack.states[0].diplomacy ??= [];
+    const chronicle = this.getChronicle();
+    if (index === -1) index = chronicle.length;
+    if (!Number.isInteger(index) || index < 0 || index > chronicle.length)
+      throw new Error(
+        `Chronicle entry ${index} does not exist: there are ${chronicle.length}, counted from 0. Index -1 adds one`
+      );
+    if (!Array.isArray(lines) || lines.some(line => typeof line !== "string" || !line.trim()))
+      throw new Error("A chronicle entry is a list of non-empty text lines");
+    if (!lines.length) {
+      if (index < chronicle.length) chronicle.splice(index, 1);
+      return;
+    }
+    chronicle[index] = lines.map(line => escapeHtml(line.trim()));
+  }
+
+  /** Give land cells to a state, or to neutral lands with id 0, with their burgs. Provinces follow: a province wholly taken changes owner, a split one is divided */
+  setCells(stateId: number, cellIds: number[]): void {
+    this.living(stateId);
+    const { cells, states, burgs } = pack;
+    if (!Array.isArray(cellIds) || !cellIds.length) throw new Error("Name at least one cell");
+    const centers = new Set(states.filter(state => state.i && !state.removed).map(state => state.center));
+    for (const cell of cellIds) {
+      if (!Number.isInteger(cell) || cell < 0 || cell >= cells.i.length) throw new Error(`Cell ${cell} does not exist`);
+      if (cells.h[cell] < 20) throw new Error(`Cell ${cell} is water; states hold land only`);
+      if (centers.has(cell) && cells.state[cell] !== stateId)
+        throw new Error(`Cell ${cell} is the center of state ${cells.state[cell]} and cannot change hands`);
+    }
+
+    const affectedProvinces = new Set<number>();
+    for (const cell of cellIds) {
+      if (cells.state[cell] === stateId) continue;
+      affectedProvinces.add(cells.province[cell]);
+      cells.state[cell] = stateId;
+      if (cells.burg[cell]) burgs[cells.burg[cell]].state = stateId;
+    }
+    if (!affectedProvinces.size) return;
+    this.getPoles();
+    this.findNeighbors();
+    this.adjustProvinces([...affectedProvinces]);
+    this.collectStatistics();
+  }
+
+  /** Provinces whose cells changed state: wholly taken ones change owner, split ones divide or join a neighbor */
+  private adjustProvinces(affectedProvinces: number[]): void {
+    const { cells, provinces, states, burgs } = pack;
+
+    const changeOwner = (provinceId: number, ownerId: number, provinceCells: number[]) => {
+      const province = provinces[provinceId];
+      const previous = states[province.state];
+      previous.provinces = (previous.provinces ?? []).filter(id => id !== provinceId);
+      if (ownerId) {
+        province.state = ownerId;
+        states[ownerId].provinces = [...(states[ownerId].provinces ?? []), provinceId];
+      } else {
+        provinces[provinceId] = { i: provinceId, removed: true } as Province;
+        for (const cell of provinceCells) cells.province[cell] = 0;
+      }
+    };
+
+    const findClosest = (provinceId: number, stateId: number, sourceCells: number[]) => {
+      for (const cell of sourceCells) {
+        const neighbor = cells.c[cell].find(
+          c => cells.state[c] === stateId && cells.province[c] && cells.province[c] !== provinceId
+        );
+        if (neighbor !== undefined) return cells.province[neighbor];
+      }
+      return undefined;
+    };
+
+    const create = (old: Province, stateId: number, provinceCells: number[]) => {
+      const id = provinces.length;
+      const burgCell = provinceCells.find(i => cells.burg[i]);
+      const center = burgCell ?? provinceCells[0];
+      const burgId = burgCell ? cells.burg[burgCell] : 0;
+      const burg = burgId ? burgs[burgId] : null;
+      const culture = cells.culture[center];
+      const nameByBurg = burgCell && P(0.5);
+      const name = nameByBurg ? burg!.name! : old.name || Names.getState(Names.getCultureShort(culture), culture);
+      const formName = burgCell && old.formName ? old.formName : ra(["Zone", "Area", "Territory", "Province"]);
+      const type = Burgs.getType(center, burg?.port);
+      const coa = Emblems.generate(burg?.coa || states[stateId].coa, nameByBurg ? 0.8 : 0.4, burg ? null : 0.9, type);
+      coa.shield = Emblems.getShield(culture, stateId);
+      provinces.push({
+        i: id,
+        state: stateId,
+        center,
+        burg: burgId,
+        name,
+        formName,
+        fullName: `${name} ${formName}`,
+        color: getMixedColor(states[stateId].color!),
+        coa
+      } as Province);
+      for (const cell of provinceCells) cells.province[cell] = id;
+      states[stateId].provinces = [...(states[stateId].provinces ?? []), id];
+    };
+
+    const split = (provinceId: number, provinceStates: number[], provinceCells: number[]) => {
+      const province = provinces[provinceId];
+      const previous = states[province.state];
+      const centerOwner = cells.state[province.center];
+      for (const stateId of provinceStates) {
+        const owned = provinceCells.filter(i => cells.state[i] === stateId);
+        if (stateId === centerOwner) {
+          if (stateId === previous.i) continue;
+          previous.provinces = (previous.provinces ?? []).filter(id => id !== provinceId);
+          if (!stateId) {
+            provinces[provinceId] = { i: provinceId, removed: true } as Province;
+            for (const cell of owned) cells.province[cell] = 0;
+            continue;
+          }
+          province.state = stateId;
+          province.color = getMixedColor(states[stateId].color!);
+          states[stateId].provinces = [...(states[stateId].provinces ?? []), provinceId];
+          continue;
+        }
+        if (!stateId) {
+          for (const cell of owned) cells.province[cell] = 0;
+          continue;
+        }
+        const closest = owned.length < 20 && findClosest(provinceId, stateId, owned);
+        if (closest) for (const cell of owned) cells.province[cell] = closest;
+        else create(province, stateId, owned);
+      }
+    };
+
+    for (const provinceId of affectedProvinces) {
+      if (!provinces[provinceId] || provinces[provinceId].removed) continue;
+      const provinceCells = Array.from(cells.i).filter(i => cells.province[i] === provinceId);
+      const provinceStates = [...new Set(provinceCells.map(i => cells.state[i]))];
+      if (provinceId && provinceStates.length === 1) changeOwner(provinceId, provinceStates[0], provinceCells);
+      else split(provinceId, provinceStates, provinceCells);
+    }
+  }
+
+  /** A living state other than the neutral lands */
+  private ruled(stateId: number): State {
+    const state = this.living(stateId);
+    if (!stateId) throw new Error("Neutral lands have no government");
+    return state;
+  }
+
+  private living(stateId: number): State {
+    const state = pack.states[stateId];
+    if (!state || state.removed) throw new Error(`State ${stateId} does not exist`);
+    return state;
+  }
+
   collectTaxes() {
     const { states, burgs, deals } = pack;
     if (!states.length) return;
@@ -886,4 +1436,6 @@ class StatesModule {
   }
 }
 
-window.States = new StatesModule();
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const States = new StatesModule();
+window.States = States;

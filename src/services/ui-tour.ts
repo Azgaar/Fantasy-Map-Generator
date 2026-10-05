@@ -163,7 +163,7 @@ function start() {
         popover: {
           title: "Style Presets",
           description:
-            "Pick a color scheme preset for the map including Default, Ancient, Pale, and others. The entire map's color palette updates instantly.",
+            "Click to open the preset gallery and pick a color scheme for the map. The entire map's color palette updates instantly.",
           side: "bottom"
         }
       },

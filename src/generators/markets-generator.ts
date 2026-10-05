@@ -2,7 +2,7 @@ import Alea from "alea";
 import { quadtree } from "d3-quadtree";
 import { rn } from "@/utils";
 import { minmax } from "../utils";
-import { getColors, getRandomColor } from "../utils/colorUtils";
+import { getColors, getRandomColor, requireFill } from "../utils/colorUtils";
 import type { Burg } from "./burgs-generator";
 import type { DemandCategory, Good } from "./goods-generator";
 import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "./goods-generator";
@@ -248,6 +248,25 @@ export class MarketsModule {
   public get(marketId: number | undefined): Market | undefined {
     if (!marketId) return undefined;
     return this.marketById[marketId];
+  }
+
+  /** Rename a market; empty takes its center burg's name again */
+  rename(marketId: number, name: string): void {
+    const market = this.living(marketId);
+    if (typeof name !== "string") throw new Error("The name must be text");
+    if (name.trim()) market.name = name.trim();
+    else delete market.name;
+  }
+
+  /** Set a market's color on the Markets layer */
+  recolor(marketId: number, color: string): void {
+    this.living(marketId).color = requireFill(color);
+  }
+
+  private living(marketId: number): Market {
+    const market = pack.markets?.find(({ i }) => i === marketId);
+    if (!market) throw new Error(`Market ${marketId} does not exist`);
+    return market;
   }
 
   // Display name: the custom name if set, otherwise derived from the center burg.
@@ -617,4 +636,6 @@ declare global {
   var Markets: MarketsModule;
 }
 
-window.Markets = new MarketsModule();
+// biome-ignore lint/suspicious/noRedeclare: legacy seam
+export const Markets = new MarketsModule();
+window.Markets = Markets;

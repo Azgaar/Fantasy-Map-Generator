@@ -1,14 +1,14 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ open: vi.fn() }));
+const mocks = vi.hoisted(() => ({ open: vi.fn(), save: vi.fn(), getLayer: vi.fn() }));
 vi.mock("@/components/options/options-panel", () => ({ hideOptions: vi.fn() }));
 vi.mock("@/controllers", () => ({ Controllers: { Omnibar: { open: mocks.open } } }));
-vi.mock("@/services", () => ({ Services: {} }));
+vi.mock("@/services", () => ({ Services: { Save: { toMachine: mocks.save } } }));
 vi.mock("@/services/autosave", () => ({ toggleSaveReminder: vi.fn() }));
 vi.mock("./app-info", () => ({ showInfo: vi.fn() }));
 vi.mock("./dialog/dialog-helpers", () => ({ closeDialogs: vi.fn() }));
-vi.mock("./options/tabs/layers-tab", () => ({ getLayerByShortcut: () => undefined }));
+vi.mock("./options/tabs/layers-tab", () => ({ getLayerByShortcut: mocks.getLayer }));
 vi.mock("./zoom", () => ({ changeMapZoom: vi.fn(), panMap: vi.fn(), setMapZoom: vi.fn() }));
 
 import "./hotkeys";
@@ -30,6 +30,36 @@ function press(
 beforeEach(() => {
   document.body.innerHTML = '<button id="regenerateRivers">Regenerate</button><input id="field" />';
   mocks.open.mockClear();
+  mocks.save.mockClear();
+  mocks.getLayer.mockClear();
+});
+
+describe("save shortcut", () => {
+  it.each(["ctrlKey", "metaKey"])("saves on %s + S keydown and suppresses the browser save", modifier => {
+    const init = { code: "KeyS", key: "s", bubbles: true, cancelable: true, [modifier]: true };
+    const keydown = new KeyboardEvent("keydown", init);
+    document.body.dispatchEvent(keydown);
+    expect(mocks.save).toHaveBeenCalledOnce();
+    expect(mocks.save).toHaveBeenCalledWith(false);
+    expect(keydown.defaultPrevented).toBe(true);
+    document.body.dispatchEvent(new KeyboardEvent("keydown", { ...init, repeat: true }));
+    document.body.dispatchEvent(new KeyboardEvent("keyup", init));
+    expect(mocks.save).toHaveBeenCalledOnce();
+    expect(mocks.getLayer).not.toHaveBeenCalled();
+  });
+
+  it.each(["ctrlKey", "metaKey"])("uses Save As for %s + Shift + S", modifier => {
+    press(document.body, "KeyS", "S", { [modifier]: true, shiftKey: true });
+    expect(mocks.save).toHaveBeenCalledExactlyOnceWith(true);
+    expect(mocks.getLayer).not.toHaveBeenCalled();
+  });
+
+  it("leaves typing in a text field alone", () => {
+    const field = document.getElementById("field")!;
+    field.focus();
+    press(field, "KeyS", "s", { ctrlKey: true });
+    expect(mocks.save).not.toHaveBeenCalled();
+  });
 });
 
 describe("Space opens the search", () => {

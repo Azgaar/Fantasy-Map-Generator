@@ -152,7 +152,7 @@ function renderDialog(): void {
   });
   ensureEl("journeyCreateNew").addEventListener("click", createEmptyJourney);
   ensureEl("journeyGenerateStory").addEventListener("click", generateRandomJourney);
-  ensureEl("journeysEditStyle").addEventListener("click", () => editStyle("journeys"));
+  ensureEl("journeysEditStyle").addEventListener("click", () => void Controllers.StyleEditor.open("journeys"));
   ensureEl("journeysEditTransport").addEventListener("click", () => void Controllers.TransportEditor.open());
   ensureEl("journeysExport").addEventListener("click", downloadJourneysData);
   ensureEl("journeysLockAll").addEventListener("click", toggleLockAll);
@@ -304,7 +304,7 @@ function toggleVisibility(this: HTMLElement): void {
   const journey = getLineJourney(this);
   if (!journey) return;
 
-  Journeys.toggleVisibility(journey);
+  Journeys.setHidden(journey.i, journey.visible !== false);
   Layers.draw("journeys");
   journeysTable.refresh();
 }
@@ -312,13 +312,13 @@ function toggleVisibility(this: HTMLElement): void {
 function toggleLockStatus(this: HTMLElement): void {
   const journey = getLineJourney(this);
   if (!journey) return;
-  journey.lock = !journey.lock;
+  Journeys.setLocked(journey.i, !journey.lock);
   journeysTable.refresh();
 }
 
 function toggleLockAll(): void {
   const allLocked = pack.journeys.every(journey => journey.lock);
-  for (const journey of pack.journeys) journey.lock = !allLocked;
+  for (const journey of pack.journeys) Journeys.setLocked(journey.i, !allLocked);
   journeysTable.refresh();
 }
 

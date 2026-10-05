@@ -48,7 +48,7 @@ function closeRouteGroupsEditor(): void {
 function onBodyClick(ev: Event): void {
   const target = ev.target as HTMLElement;
   const group = target.closest<HTMLElement>(".states")?.dataset.id;
-  if (target.classList.contains("editStyle") && group) editStyle("routes", group);
+  if (target.classList.contains("editStyle") && group) void Controllers.StyleEditor.open("routes", group);
   else if (target.classList.contains("removeGroup") && group) removeGroup(group);
 }
 
@@ -114,7 +114,11 @@ function removeGroup(group: string): void {
       "Are you sure you want to remove the entire route group? All routes in this group will be removed.<br>This action can't be reverted",
     confirm: "Remove",
     onConfirm: () => {
-      pack.routes.filter((r: Route) => r.group === group).forEach(Routes.remove);
+      pack.routes
+        .filter((r: Route) => r.group === group)
+        .forEach(route => {
+          Routes.remove(route.i);
+        });
       if (!DEFAULT_GROUPS.includes(group)) {
         select("#routes").select(`#${group}`).remove();
         delete styles.routes.groups[group];

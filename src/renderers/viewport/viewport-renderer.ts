@@ -109,8 +109,10 @@ export class ViewportRenderer {
     this.renderLayers(context);
   }
 
-  renderTo(root: ParentNode): void {
-    const bounds = { scale: 1, x0: -Infinity, y0: -Infinity, x1: Infinity, y1: Infinity };
+  renderTo(
+    root: ParentNode,
+    bounds: ViewportBounds = { scale: 1, x0: -Infinity, y0: -Infinity, x1: Infinity, y1: Infinity }
+  ): void {
     this.renderLayers({ root, bounds });
   }
 

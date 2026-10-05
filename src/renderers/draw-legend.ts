@@ -27,16 +27,14 @@ export function drawLegend(name: string, data: LegendItem[]): void {
 
   // the store owns the box styling and the column count; the box is redrawn from it every time
   const itemsInCol = styles.legend.options.columns;
-  const backColor = styles.legend.box.attrs.fill;
-  const opacity = Number(styles.legend.box.attrs["fill-opacity"]);
-  const fontSize = styles.legend.options.fontSize;
+  const backColor = styles.legend.groups.box.attrs.fill;
+  const opacity = Number(styles.legend.groups.box.attrs["fill-opacity"]);
+  const fontSize = Number.parseFloat(styles.legend.attrs["font-size"]); // the texts size by inheritance
 
   // TODO: a renderer should not own controls. Move this to a proper legend component once one exists
   layer
     .on("mousemove", () => tip("Drag to change the position. Click to hide the legend box"))
     .on("click", event => onLegendClick(event));
-
-  layer.attr("font-size", fontSize); // the drawn texts size by inheritance
 
   const node = getBox(name) ?? (layer.append("g").attr("data-legend", name).node() as SVGGElement);
   const box = select(node);
@@ -165,19 +163,18 @@ export function clearLegend(name?: string): void {
   legendPositions.release(name); // an auto-placed box gives its slot back, a dragged one keeps it
 }
 
-// the remembered spot of a box, falling back to the anchor the style preset defines
-function positionOf(name: string): { x: number; y: number } {
-  const { x, y } = styles.legend.options;
-  return legendPositions.get(name) ?? { x, y };
-}
+// where a new box goes: its bottom-right corner, in % of the canvas
+const ANCHOR = { x: 99, y: 93 };
 
-// options.x/y anchors the bottom-right corner of a box in % of the canvas, so a new box is placed by
-// that corner alone. It is tried against the shown boxes on all four sides - a legend dragged into a
-// corner leaves room on only some of them - and aligned with the box it is placed against.
-// Only boxes whose spot is already settled count: during a redraw the DOM still holds the previous
+// the remembered spot of a box, falling back to the anchor
+const positionOf = (name: string): { x: number; y: number } => legendPositions.get(name) ?? ANCHOR;
+
+// the anchor places a new box by its bottom-right corner alone. It is tried against the shown boxes on
+// all four sides - a legend dragged into a corner leaves room on only some of them - and aligned with
+// the box it is placed against. Only boxes whose spot is already settled count: during a redraw the DOM still holds the previous
 // pass's transforms, so the rectangles are derived from the remembered positions, never read back
 function placeNewBox(node: SVGGElement): LegendPosition {
-  const { x: anchorX, y: anchorY } = styles.legend.options;
+  const { x: anchorX, y: anchorY } = ANCHOR;
   const boxes = getBoxes().flatMap(other => {
     if (other === node) return [];
     const position = legendPositions.get(other.dataset.legend ?? "");

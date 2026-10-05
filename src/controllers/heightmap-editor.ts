@@ -25,6 +25,7 @@ import { heightmapTemplates } from "@/data/heightmap-templates";
 import { ErasePipeline } from "@/generators/generation-pipeline";
 import { GraphOverride } from "@/generators/graph-override";
 import { removeEmblem } from "@/renderers/draw-emblems";
+import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { drawDrainage, removeDrainage } from "@/renderers/overlays/drainage";
 import { downloadFile, getFileName, uploadFile } from "@/utils";
@@ -569,6 +570,13 @@ export const createAvailableLandCellFinder = (cells: {
   };
 };
 
+// capitals and market centers stay: removing them would break their state or market
+function removeBurg(burg: (typeof pack.burgs)[number]): void {
+  if (burg.capital || pack.markets?.some(market => market.centerBurgId === burg.i)) return;
+  Burgs.remove(burg.i);
+  removeEmblem("burg", burg.i);
+}
+
 function restoreRiskedData(): void {
   INFO && console.group("Edit Heightmap");
   TIME && console.time("restoreRiskedData");
@@ -712,8 +720,11 @@ function restoreRiskedData(): void {
         console.error(
           `[Data integrity] Burg ${b.i} has no available land cell after Risk restoration. Removing the burg`
         );
-      Burgs.remove(b.i);
-      removeEmblem("burg", b.i);
+      // no land left for it: release its capital and market so it can go
+      if (b.capital) pack.states[b.state!].capital = b.capital = 0;
+      const market = pack.markets?.find(market => market.centerBurgId === b.i);
+      if (market) Markets.removeMarket(market.i);
+      removeBurg(b);
       continue;
     }
 
@@ -721,10 +732,7 @@ function restoreRiskedData(): void {
     b.feature = pack.cells.f[b.cell];
 
     pack.cells.burg[b.cell] = b.i;
-    if (!b.capital && pack.cells.h[b.cell] < 20) {
-      Burgs.remove(b.i);
-      removeEmblem("burg", b.i);
-    }
+    if (pack.cells.h[b.cell] < 20) removeBurg(b);
     if (b.capital) pack.states[b.state!].center = b.cell;
   }
 
@@ -833,9 +841,7 @@ function updateHeightmap(): void {
   updateHistory();
 }
 
-function getColor(value: number, scheme = getColorScheme("bright")): string {
-  return scheme(1 - (value < 20 ? value - 5 : value) / 100);
-}
+const getColor = (value: number): string => HeightmapColorSchemes.getColor(value);
 
 // draw or update heightmap
 function mockHeightmap(): void {

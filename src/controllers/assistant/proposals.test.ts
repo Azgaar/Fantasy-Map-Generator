@@ -1,0 +1,542 @@
+// @vitest-environment jsdom
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@/components/layers", () => ({ Layers: { draw: vi.fn(), has: () => true } }));
+vi.mock("@/components/zoom", () => ({ invokeActiveZooming: vi.fn() }));
+vi.mock("@/controllers/style-preset", () => ({ ensureGroupStyles: vi.fn() }));
+vi.mock("@/services/style-presets", () => ({
+  StylePresetsService: {
+    isSystem: (name: string) => name === "ink",
+    listCustom: () => [],
+    load: async (name: string) => {
+      const { Styles } = await import("@/generators/styles");
+      const record = Styles.parse(Styles.defaults);
+      record.ocean.groups.base.attrs.fill = "#000000";
+      record.relief.options.density = 0.7;
+      return { name, styles: record };
+    },
+    parse: (record: unknown) => record
+  }
+}));
+vi.mock("@/components/dialog/dialog-helpers", () => ({ refreshEditors: vi.fn() }));
+vi.mock("@/controllers", () => ({ Controllers: { NotesEditor: { refresh: vi.fn() } } }));
+vi.mock("@/components/options-model", () => ({ Options: { save: vi.fn() } }));
+
+import { Layers } from "@/components/layers";
+import { Options } from "@/components/options-model";
+import type { Proposal } from "@/services/assistant/chats";
+import { Proposals } from "./proposals";
+
+const propose: typeof Proposals.propose = (...args) => Proposals.propose(...args);
+const discard = (proposal: Proposal) => Proposals.discard(proposal);
+const apply = (proposal: Proposal, mapId: number) => Proposals.run("apply", proposal, mapId);
+const undo = (proposal: Proposal, mapId: number) => Proposals.run("undo", proposal, mapId);
+const canApply = (proposal: Proposal, mapId: number) => Proposals.can("apply", proposal, mapId);
+const MAP = 42;
+const rename = (id: number, name: string) => ({ op: "Burgs.rename", args: [id, name] });
+const proposeOk = (operations: unknown) => propose("Rename", operations, 1, MAP) as Proposal;
+
+beforeAll(async () => {
+  await import("@/generators/burgs-generator");
+  await import("@/generators/states-generator");
+  await import("@/generators/zones-generator");
+  await import("@/generators/markers-generator");
+});
+
+beforeEach(() => {
+  vi.mocked(Layers.draw).mockClear();
+  document.body.innerHTML = "";
+  globalThis.pack = {
+    burgs: [0, { i: 1, name: "Vel", label: { text: "Vel" }, note: "<p>Old</p>" }, { i: 2, name: "Orn" }],
+    states: [
+      { i: 0, name: "Neutrals" },
+      { i: 1, name: "Old", formName: "Kingdom", fullName: "United Realms of Old" }
+    ]
+  } as unknown as typeof pack;
+});
+
+it("previews a batch with its side effects and leaves the map untouched", () => {
+  const map = JSON.stringify(pack);
+  const proposal = proposeOk([rename(1, "Saltmere"), rename(2, "Gull")]);
+  expect(JSON.stringify(pack)).toBe(map);
+  expect(proposal.state).toBe("proposed");
+  expect(proposal.change).toEqual([
+    { key: "burg:1", entity: "Burg: Vel", field: "name", before: "Vel", after: "Saltmere" },
+    { key: "burg:1", entity: "Burg: Vel", field: "label.text", before: "Vel", after: "Saltmere" },
+    { key: "burg:2", entity: "Burg: Orn", field: "name", before: "Orn", after: "Gull" }
+  ]);
+});
+
+it("runs the batch on a draft, so even fields a proposal does not record stay untouched", () => {
+  const live = pack;
+  pack.zones = [{ i: 1, name: "War", cells: [] }] as unknown as typeof pack.zones;
+  const rename = vi.spyOn(Zones, "rename").mockImplementation(() => {
+    pack.zones[0].name = "Peace";
+    (pack as unknown as { deals: string[] }).deals = ["untracked"];
+  });
+  const proposal = proposeOk([{ op: "Zones.rename", args: [1, "Peace"] }]);
+  rename.mockRestore();
+  expect(pack).toBe(live);
+  expect(pack.zones[0].name).toBe("War");
+  expect("deals" in pack).toBe(false);
+  expect(proposal.change.map(row => [row.key, row.field, row.after])).toEqual([["zone:1", "name", "Peace"]]);
+});
+
+it("records a state's rebuilt full name", () => {
+  const proposal = proposeOk([{ op: "States.rename", args: [1, "New"] }]);
+  expect(proposal.change.map(row => [row.field, row.after])).toEqual([
+    ["name", "New"],
+    ["fullName", "United Realms of New"]
+  ]);
+});
+
+it("applies and undoes property edits, including a field that was absent", () => {
+  pack.zones = [{ i: 1, name: "War", type: "Invasion", color: "#000000", cells: [] }] as unknown as typeof pack.zones;
+  const proposal = proposeOk([
+    { op: "States.recolor", args: [1, "#ff0000"] },
+    { op: "Zones.setHidden", args: [1, true] }
+  ]);
+  expect(proposal.change.map(row => [row.key, row.field, row.before, row.after])).toEqual([
+    ["state:1", "color", undefined, "#ff0000"],
+    ["zone:1", "hidden", undefined, true]
+  ]);
+  expect(apply(proposal, MAP)).toBe(true);
+  expect(pack.states[1].color).toBe("#ff0000");
+  expect(pack.zones[0].hidden).toBe(true);
+  expect(Layers.draw).toHaveBeenCalledWith("states", "military", "zones");
+  expect(undo(proposal, MAP)).toBe(true);
+  expect(pack.states[1].color).toBeUndefined();
+  expect("hidden" in pack.zones[0]).toBe(false);
+});
+
+it("adds chronicle entries from proposals made side by side, and undoes each alone", () => {
+  const chronicle = [["Old War"]];
+  pack.states[0].diplomacy = chronicle as unknown as string[];
+  const entry = (title: string) => propose(title, [{ op: "States.setChronicleEntry", args: [-1, [title]] }], 1, MAP);
+  const [peace, treaty] = [entry("Peace"), entry("Treaty")] as Proposal[];
+  expect(peace.change).toEqual([
+    { key: "state:0", entity: "State: Neutrals", field: "diplomacy", after: [["Peace"]], append: true }
+  ]);
+  expect(apply(peace, MAP)).toBe(true);
+  expect(apply(treaty, MAP)).toBe(true);
+  expect(chronicle).toEqual([["Old War"], ["Peace"], ["Treaty"]]);
+  expect(undo(peace, MAP)).toBe(true);
+  expect(chronicle).toEqual([["Old War"], ["Treaty"]]);
+  expect(undo(peace, MAP)).toBe(false);
+});
+
+it("refreshes the Population layer when a burg's population changes", () => {
+  vi.stubGlobal("options", { map: { units: { population: { scale: 1000, urbanization: { rate: 1 } } } } });
+  const proposal = proposeOk([{ op: "Burgs.setPopulation", args: [1, 5000] }]);
+  expect(apply(proposal, MAP)).toBe(true);
+  expect(pack.burgs[1].population).toBe(5);
+  expect(Layers.draw).toHaveBeenCalledWith("population");
+  vi.mocked(Layers.draw).mockClear();
+  expect(undo(proposal, MAP)).toBe(true);
+  expect(Layers.draw).toHaveBeenCalledWith("population");
+  vi.unstubAllGlobals();
+});
+
+it("fails the whole batch and changes nothing when one operation fails", () => {
+  const map = JSON.stringify(pack);
+  expect(propose("Rename", [rename(1, "Saltmere"), rename(9, "X")], 1, MAP)).toBe("Burg 9 does not exist");
+  expect(JSON.stringify(pack)).toBe(map);
+});
+
+it("refuses args that are not a list", () => {
+  expect(propose("Rename", [{ op: "Burgs.rename", args: { id: 1, name: "X" } }], 1, MAP)).toBe(
+    "The args of Burgs.rename must be a list, in the order of its parameters"
+  );
+});
+
+it("previews, applies and undoes lore edits", () => {
+  const lore = { name: "Old Map", description: "", calendar: { year: 1000, era: "Winter Era", eraShort: "WE" } };
+  vi.stubGlobal("options", { map: { lore } });
+  const proposal = proposeOk([
+    { op: "Lore.rename", args: ["Saltmarsh"] },
+    { op: "Lore.setYear", args: [1204] }
+  ]);
+  expect(proposal.change).toEqual([
+    { key: "lore", entity: "Map lore", field: "name", before: "Old Map", after: "Saltmarsh" },
+    { key: "lore", entity: "Map lore", field: "calendar.year", before: 1000, after: 1204 }
+  ]);
+  expect(lore.name).toBe("Old Map");
+  expect(apply(proposal, MAP)).toBe(true);
+  expect(lore).toMatchObject({ name: "Saltmarsh", calendar: { year: 1204 } });
+  expect(Options.save).toHaveBeenCalled();
+  expect(undo(proposal, MAP)).toBe(true);
+  expect(lore).toMatchObject({ name: "Old Map", calendar: { year: 1000 } });
+  vi.unstubAllGlobals();
+});
+
+it("previews, applies and undoes style edits, writing the attr onto its element", async () => {
+  const { Styles } = await import("@/generators/styles");
+  Styles.set(Styles.parse(Styles.defaults));
+  vi.stubGlobal("CSS", { escape: (name: string) => name });
+  document.body.innerHTML = `<g data-layer="ocean"><g data-group="base"></g></g>`;
+  const was = styles.ocean.groups.base.attrs.fill;
+  const proposal = proposeOk([{ op: "Styles.setValue", args: ["ocean.groups.base.attrs.fill", "#0d2240"] }]);
+  expect(proposal.change).toEqual([
+    { key: "style", entity: "Style", field: "ocean.groups.base.attrs.fill", before: was, after: "#0d2240" }
+  ]);
+  expect(styles.ocean.groups.base.attrs.fill).toBe(was);
+  const base = document.querySelector("[data-group=base]")!;
+  expect(apply(proposal, MAP)).toBe(true);
+  expect(base.getAttribute("fill")).toBe("#0d2240");
+  expect(undo(proposal, MAP)).toBe(true);
+  expect(styles.ocean.groups.base.attrs.fill).toBe(was);
+  expect(base.getAttribute("fill")).toBe(was);
+});
+
+it("refuses a style value that regenerates the relief, which Undo cannot restore", async () => {
+  const { Styles } = await import("@/generators/styles");
+  Styles.set(Styles.parse(Styles.defaults));
+  const density = styles.relief.options.density === 0.5 ? 0.6 : 0.5;
+  expect(propose("Relief", [{ op: "Styles.setValue", args: ["relief.options.density", density] }], 1, MAP)).toMatch(
+    /relief\.options\.density regenerates/
+  );
+});
+
+it("applies a whole style preset once loaded, keeping the relief density, and undoes it", async () => {
+  const { Styles } = await import("@/generators/styles");
+  Styles.set(Styles.parse(Styles.defaults));
+  vi.stubGlobal("CSS", { escape: (name: string) => name });
+  const [was, density] = [styles.ocean.groups.base.attrs.fill, styles.relief.options.density];
+  const operations = [{ op: "StylePresets.apply", args: ["ink"] }];
+  expect(propose("Ink", operations, 1, MAP)).toMatch(/No style preset "ink"/);
+  await Proposals.prepare(operations);
+  const proposal = proposeOk(operations);
+  expect(proposal.change.map(row => [row.key, row.field, row.after])).toEqual([
+    ["style", "ocean.groups.base.attrs.fill", "#000000"]
+  ]);
+  expect(apply(proposal, MAP)).toBe(true);
+  expect([styles.ocean.groups.base.attrs.fill, styles.relief.options.density]).toEqual(["#000000", density]);
+  expect(undo(proposal, MAP)).toBe(true);
+  expect(styles.ocean.groups.base.attrs.fill).toBe(was);
+});
+
+it("lists the registered operations for an unknown one", () => {
+  const result = propose("Paint", [{ op: "Burgs.paint", args: [] }], 1, MAP);
+  expect(result).toContain('Unknown operation "Burgs.paint"');
+  expect(result).toContain("Burgs.rename, ");
+  expect(result).toContain("Zones.setHidden");
+});
+
+it("refuses a batch that changes nothing", () => {
+  expect(propose("Rename", [rename(1, "Vel")], 1, MAP)).toBe("These operations change nothing");
+});
+
+it("previews a note rewrite and rejects unsafe HTML", () => {
+  const proposal = proposeOk([{ op: "Notes.write", args: ["burg:1", "<p>New</p>"] }]);
+  expect(proposal.change).toEqual([
+    { key: "burg:1", entity: "Burg: Vel", field: "note", before: "<p>Old</p>", after: "<p>New</p>" }
+  ]);
+  expect(pack.burgs[1].note).toBe("<p>Old</p>");
+  expect(propose("Note", [{ op: "Notes.write", args: ["burg:1", "<script></script>"] }], 1, MAP)).toContain(
+    "notes subset"
+  );
+});
+
+it.each([
+  ["journey", "journeys", { i: 0, name: "Quest", segments: [] }],
+  ["market", "markets", { i: 3, name: "Fair" }],
+  ["good", "goods", { i: 5, name: "Salt" }]
+] as const)("records a note on a %s and leaves the map untouched", (type, collection, entity) => {
+  (pack as unknown as Record<string, unknown[]>)[collection] = [{ ...entity }];
+  const key = `${type}:${entity.i}`;
+  const proposal = proposeOk([{ op: "Notes.write", args: [key, "<p>Lore</p>"] }]);
+  const item = () => (pack as unknown as Record<string, { note?: string }[]>)[collection][0];
+  expect(item().note).toBeUndefined();
+  expect(proposal.change.map(row => [row.key, row.field, row.after])).toEqual([[key, "note", "<p>Lore</p>"]]);
+  expect(apply(proposal, MAP)).toBe(true);
+  expect(item().note).toBe("<p>Lore</p>");
+  expect(undo(proposal, MAP)).toBe(true);
+  expect(item().note).toBeUndefined();
+});
+
+it("applies the batch, redraws its layers and undoes it", () => {
+  const proposal = proposeOk([rename(2, "Gull")]);
+  expect(apply(proposal, MAP)).toBe(true);
+  expect(pack.burgs[2]).toEqual({ i: 2, name: "Gull" });
+  expect(Layers.draw).toHaveBeenCalledWith("labels");
+  expect(proposal.state).toBe("applied");
+  expect(undo(proposal, MAP)).toBe(true);
+  expect(pack.burgs[2]).toEqual({ i: 2, name: "Orn" });
+  expect(proposal.state).toBe("undone");
+  expect(apply(proposal, MAP)).toBe(false);
+});
+
+it("refuses Apply after a manual edit and on another map", () => {
+  const proposal = proposeOk([rename(1, "Saltmere")]);
+  expect(canApply(proposal, MAP + 1)).toBe(false);
+  pack.burgs[1].name = "Manual";
+  expect(apply(proposal, MAP)).toBe(false);
+  expect(pack.burgs[1].name).toBe("Manual");
+});
+
+it.each(["apply", "undo", "redo"] as const)("refuses %s when its destination culture has been removed", action => {
+  pack.cultures = [{ i: 0 }, { i: 1 }, { i: 2 }, { i: 3 }] as typeof pack.cultures;
+  pack.burgs[1].culture = 1;
+  const proposal = proposeOk([{ op: "Burgs.setCulture", args: [1, 2] }]);
+  if (action !== "apply") expect(apply(proposal, MAP)).toBe(true);
+  if (action === "redo") expect(undo(proposal, MAP)).toBe(true);
+  pack.cultures[action === "undo" ? 1 : 2].removed = true;
+  const before = JSON.stringify(pack);
+
+  expect(Proposals.ready(action, proposal, MAP)).toBe(true); // the card's check leaves references to the click
+  expect(Proposals.can(action, proposal, MAP)).toBe(false);
+  expect(Proposals.run(action, proposal, MAP)).toBe(false);
+  expect(JSON.stringify(pack)).toBe(before);
+});
+
+it("keeps a proposal applicable after an unrelated culture is removed", () => {
+  pack.cultures = [{ i: 0 }, { i: 1 }, { i: 2 }, { i: 3 }] as typeof pack.cultures;
+  pack.burgs[1].culture = 1;
+  const proposal = proposeOk([{ op: "Burgs.setCulture", args: [1, 2] }]);
+  pack.cultures[3].removed = true;
+
+  expect(apply(proposal, MAP)).toBe(true);
+  expect(pack.burgs[1].culture).toBe(2);
+});
+
+it("accepts a reference to a culture added by the same batch and restores both sides", () => {
+  pack.cultures = [{ i: 0 }, { i: 1 }] as typeof pack.cultures;
+  pack.burgs[1].culture = 1;
+  const proposal: Proposal = {
+    number: 1,
+    mapId: MAP,
+    summary: "New culture",
+    operations: [],
+    state: "proposed",
+    change: [
+      { key: "culture:2", entity: "New culture", field: "", after: { i: 2, name: "New culture", origins: [1] } },
+      { key: "burg:1", entity: "Vel", field: "culture", before: 1, after: 2 }
+    ]
+  };
+
+  expect(apply(proposal, MAP)).toBe(true);
+  expect(pack.burgs[1].culture).toBe(2);
+  expect(undo(proposal, MAP)).toBe(true);
+  expect(pack.burgs[1].culture).toBe(1);
+  expect(pack.cultures).toHaveLength(2);
+  expect(Proposals.run("redo", proposal, MAP)).toBe(true);
+  expect(pack.cultures[2].origins).toEqual([1]);
+});
+
+it("refuses Undo of an added culture after another burg starts using it", () => {
+  pack.cultures = [{ i: 0 }, { i: 1 }] as typeof pack.cultures;
+  pack.burgs[1].culture = 1;
+  const proposal: Proposal = {
+    number: 1,
+    mapId: MAP,
+    summary: "New culture",
+    operations: [],
+    state: "proposed",
+    change: [
+      { key: "culture:2", entity: "New culture", field: "", after: { i: 2, name: "New culture", origins: [1] } },
+      { key: "burg:1", entity: "Vel", field: "culture", before: 1, after: 2 }
+    ]
+  };
+  expect(apply(proposal, MAP)).toBe(true);
+  pack.burgs[2].culture = 2;
+  const before = JSON.stringify(pack);
+
+  expect(undo(proposal, MAP)).toBe(false);
+  expect(JSON.stringify(pack)).toBe(before);
+});
+
+it("refuses a property edit after its target was removed without changing that property", () => {
+  const proposal = proposeOk([rename(2, "Gull")]);
+  pack.burgs[2].removed = true;
+
+  expect(canApply(proposal, MAP)).toBe(false);
+  expect(apply(proposal, MAP)).toBe(false);
+  expect(pack.burgs[2].name).toBe("Orn");
+});
+
+it("refuses Undo after an overlapping proposal was applied", () => {
+  const first = proposeOk([rename(1, "Saltmere")]);
+  apply(first, MAP);
+  const second = proposeOk([rename(1, "Gullhaven")]);
+  apply(second, MAP);
+  expect(undo(first, MAP)).toBe(false);
+  expect(pack.burgs[1].name).toBe("Gullhaven");
+});
+
+it("redoes an undone proposal while the map still holds what it undid", () => {
+  const proposal = proposeOk([rename(1, "Saltmere")]);
+  expect(Proposals.can("redo", proposal, MAP)).toBe(false);
+  apply(proposal, MAP);
+  undo(proposal, MAP);
+  expect(Proposals.run("redo", proposal, MAP)).toBe(true);
+  expect(proposal.state).toBe("applied");
+  expect(pack.burgs[1]).toMatchObject({ name: "Saltmere" });
+  undo(proposal, MAP);
+  pack.burgs[1].name = "Manual";
+  expect(Proposals.run("redo", proposal, MAP)).toBe(false);
+  expect(proposal.state).toBe("undone");
+});
+
+it("makes Discard final", () => {
+  const proposal = proposeOk([rename(1, "Saltmere")]);
+  discard(proposal);
+  expect(proposal.state).toBe("discarded");
+  expect(apply(proposal, MAP)).toBe(false);
+  expect(pack.burgs[1].name).toBe("Vel");
+});
+
+describe("entities and cells", () => {
+  beforeEach(() => {
+    pack.cells = {
+      i: Uint32Array.from([0, 1, 2, 3]),
+      state: Uint16Array.from([0, 1, 1, 1])
+    } as unknown as typeof pack.cells;
+    pack.zones = [{ i: 0, name: "War", type: "Invasion", color: "#000000", cells: [1] }] as typeof pack.zones;
+    pack.markers = [
+      { i: 0, name: "Pit", type: "caves", icon: "🦇", x: 0, y: 0, cell: 0 },
+      { i: 1, name: "Peak", type: "volcanoes", icon: "🌋", x: 0, y: 0, cell: 1 }
+    ] as typeof pack.markers;
+  });
+
+  it("records a removed entity as one row and restores it in place on Undo", () => {
+    const proposal = proposeOk([{ op: "Markers.remove", args: [0] }]);
+    expect(pack.markers.map(({ i }) => i)).toEqual([0, 1]);
+    expect(proposal.change).toEqual([
+      expect.objectContaining({ key: "marker:0", entity: "Marker: Pit", field: "", after: undefined })
+    ]);
+    expect(apply(proposal, MAP)).toBe(true);
+    expect(pack.markers.map(({ i }) => i)).toEqual([1]);
+    expect(undo(proposal, MAP)).toBe(true);
+    expect(pack.markers.map(({ i }) => i)).toEqual([0, 1]);
+    expect(pack.markers[0].name).toBe("Pit");
+  });
+
+  it("records an added entity and removes it again on Undo", () => {
+    const proposal = proposeOk([{ op: "Zones.add", args: ["Plague", "Disease", [2, 3]] }]);
+    expect(pack.zones).toHaveLength(1);
+    expect(proposal.change).toEqual([
+      expect.objectContaining({ key: "zone:1", entity: "Zone: Plague", field: "", before: undefined })
+    ]);
+    apply(proposal, MAP);
+    expect(pack.zones[1]).toMatchObject({ i: 1, name: "Plague", cells: [2, 3] });
+    undo(proposal, MAP);
+    expect(pack.zones).toHaveLength(1);
+  });
+
+  it.each([{ ids: [0] }, { ids: [2, 0] }, { ids: [2, 0, 1] }])(
+    "restores zone drawing order after removing $ids",
+    ({ ids }) => {
+      pack.zones = [2, 0, 1].map(i => ({ i, name: `Zone ${i}`, cells: [1] })) as typeof pack.zones;
+      const before = structuredClone(pack.zones);
+      const proposal = structuredClone(proposeOk(ids.map(id => ({ op: "Zones.remove", args: [id] }))));
+      expect(apply(proposal, MAP)).toBe(true);
+      expect(pack.zones.map(({ i }) => i)).toEqual([2, 0, 1].filter(i => !ids.includes(i)));
+      expect(undo(proposal, MAP)).toBe(true);
+      expect(pack.zones).toEqual(before);
+      expect(Proposals.run("redo", proposal, MAP)).toBe(true);
+      expect(undo(proposal, MAP)).toBe(true);
+      expect(pack.zones).toEqual(before);
+    }
+  );
+
+  it("redoes several added zones in the order they were added", () => {
+    pack.zones = [{ i: 0, name: "Zone 0", cells: [1] }] as typeof pack.zones;
+    const proposal = proposeOk([
+      { op: "Zones.add", args: ["Plague", "Disease", [2]] },
+      { op: "Zones.add", args: ["Flood", "Flood", [3]] }
+    ]);
+    expect(apply(proposal, MAP)).toBe(true);
+    const added = pack.zones.map(({ i }) => i);
+    expect(undo(proposal, MAP)).toBe(true);
+    expect(Proposals.run("redo", proposal, MAP)).toBe(true);
+    expect(pack.zones.map(({ i }) => i)).toEqual(added);
+  });
+
+  it("passes what an earlier operation returned to a later one", () => {
+    const proposal = proposeOk([
+      { op: "Zones.add", args: ["Plague", "Disease", [2]] },
+      { op: "Zones.rename", args: [{ result: 0 }, "Red Death"] },
+      { op: "Zones.setCells", args: [{ result: 0 }, [2, 3]] }
+    ]);
+    expect(proposal.change).toEqual([
+      expect.objectContaining({ key: "zone:1", field: "", after: expect.objectContaining({ name: "Red Death" }) })
+    ]);
+    expect(proposal.change[0].after).toMatchObject({ cells: [2, 3] });
+    expect(pack.zones).toHaveLength(1);
+  });
+
+  it("passes the key of what an earlier operation returned", () => {
+    const proposal = proposeOk([
+      { op: "Zones.add", args: ["Plague", "Disease", [2]] },
+      { op: "Notes.write", args: [{ result: 0, type: "zone" }, "<p>Spreads by river</p>"] }
+    ]);
+    expect(proposal.change[0].after).toMatchObject({ i: 1, note: "<p>Spreads by river</p>" });
+  });
+
+  it("records rural population as a per-cell row", () => {
+    vi.stubGlobal("options", { map: { units: { population: { scale: 1000, urbanization: { rate: 1 } } } } });
+    Object.assign(pack.cells, { h: Uint8Array.from([10, 30, 30, 30]), pop: Float32Array.from([0, 2, 1, 1]) });
+    pack.zones[0].cells = [0, 1, 2];
+    const proposal = proposeOk([{ op: "Zones.setPopulation", args: [0, 6000, 0] }]);
+    expect(proposal.change).toEqual([
+      expect.objectContaining({ key: "cells", field: "pop", before: { 1: 2, 2: 1 }, after: { 1: 4, 2: 2 } })
+    ]);
+    expect(apply(proposal, MAP)).toBe(true);
+    expect([...pack.cells.pop]).toEqual([0, 4, 2, 1]);
+    expect(Layers.draw).toHaveBeenCalledWith("population");
+    vi.unstubAllGlobals();
+  });
+
+  it("refuses a reference to a later operation or to one that returns nothing", () => {
+    const map = JSON.stringify(pack);
+    expect(propose("Zone", [{ op: "Zones.rename", args: [{ result: 0 }, "X"] }], 1, MAP)).toContain(
+      "must name an earlier operation"
+    );
+    const nothing = [
+      { op: "Zones.rename", args: [0, "Pox"] },
+      { op: "Zones.rename", args: [{ result: 0 }, "X"] }
+    ];
+    expect(propose("Zone", nothing, 1, MAP)).toBe("Operation 0 returns nothing to refer to");
+    expect(JSON.stringify(pack)).toBe(map);
+  });
+
+  it("records per-cell changes as one row per field", () => {
+    pack.states.push({ i: 2, name: "New state" } as (typeof pack.states)[number]);
+    const proposal = proposeOk([{ op: "Zones.setCells", args: [0, [1, 2]] }]);
+    expect(proposal.change.map(row => row.field)).toEqual(["cells"]);
+
+    const state = { key: "cells", entity: "Cells", field: "state", before: { 2: 1, 3: 1 }, after: { 2: 2, 3: 2 } };
+    const manual: Proposal = {
+      number: 2,
+      mapId: MAP,
+      summary: "Cells",
+      operations: [],
+      change: [state],
+      state: "proposed"
+    };
+    expect(apply(manual, MAP)).toBe(true);
+    expect([...pack.cells.state]).toEqual([0, 1, 2, 2]);
+    pack.cells.state[3] = 1;
+    expect(Proposals.can("undo", manual, MAP)).toBe(false);
+    pack.cells.state[3] = 2;
+    expect(undo(manual, MAP)).toBe(true);
+    expect([...pack.cells.state]).toEqual([0, 1, 1, 1]);
+  });
+
+  it("undoes an added indexed entity only while nothing was added after it", () => {
+    const added: Proposal = {
+      number: 3,
+      mapId: MAP,
+      summary: "Add",
+      operations: [],
+      change: [{ key: "burg:3", entity: "Burg New", field: "", before: undefined, after: { i: 3, name: "New" } }],
+      state: "proposed"
+    };
+    expect(apply(added, MAP)).toBe(true);
+    pack.burgs.push({ i: 4, name: "Later" } as (typeof pack.burgs)[number]);
+    expect(Proposals.can("undo", added, MAP)).toBe(false);
+    pack.burgs.pop();
+    expect(undo(added, MAP)).toBe(true);
+    expect(pack.burgs).toHaveLength(3);
+  });
+});

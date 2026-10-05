@@ -5,9 +5,8 @@ import { stopMapPlacement } from "@/components/map-placement";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import type { Route } from "@/generators/routes-generator";
 import { setTempRoute } from "@/renderers/draw-routes";
-import { ensureEl, getPointer, rn } from "../utils";
+import { ensureEl, getPointer, minmax, rn } from "../utils";
 
 let creatorPoints: number[][] = [];
 
@@ -80,7 +79,9 @@ function onBodyClick(ev: Event): void {
 }
 
 function onClick(this: any, event: any): void {
-  const [x, y] = getPointer(event, this);
+  const [px, py] = getPointer(event, this);
+  const x = minmax(px, 0, options.map.graph.width); // a route point must be on the map
+  const y = minmax(py, 0, options.map.graph.height);
   const cellId = Pack.findCell(x, y);
   const point = [rn(x, 2), rn(y, 2), cellId!];
   creatorPoints.push(point);
@@ -133,28 +134,8 @@ function completeCreation(): void {
     return;
   }
 
-  const routeId = Routes.getNextId();
   const group = ensureEl<HTMLSelectElement>("routeCreatorGroupSelect").value;
-  const feature = pack.cells.f[points[0][2]];
-  const route = { points, group, feature, i: routeId } as Route;
-  pack.routes.push(route);
-
-  const links = pack.cells.routes;
-  for (let i = 0; i < points.length; i++) {
-    const point = points[i];
-    const nextPoint = points[i + 1];
-
-    if (nextPoint) {
-      const cellId = point[2];
-      const nextId = nextPoint[2];
-
-      if (!links[cellId]) links[cellId] = {};
-      links[cellId][nextId] = routeId;
-
-      if (!links[nextId]) links[nextId] = {};
-      links[nextId][cellId] = routeId;
-    }
-  }
+  const routeId = Routes.create(points, group);
 
   setTempRoute(null);
   Layers.draw("routes");

@@ -72,13 +72,13 @@ test.describe("layer teardown keeps user data", () => {
   });
 
   test("burg icons keep group styles edited while the layer is on", async ({ page }) => {
-    const capitals = page.locator("#burgIcons > #capital");
+    const capitals = page.locator('#burgIcons > #capital > [data-group="icons"]');
     await expect(capitals).toBeAttached();
 
     // the Style editor writes the store; the groups fully recreate from it on every draw
     await page.evaluate(() => {
-      styles.burgIcons.burgIcons.groups.capital.attrs.fill = "#123456";
-      document.querySelector("#burgIcons > #capital")!.setAttribute("fill", "#123456");
+      styles.burgIcons.groups.capital.groups.icons.attrs.fill = "#123456";
+      document.querySelector('#burgIcons > #capital > [data-group="icons"]')!.setAttribute("fill", "#123456");
     });
 
     await page.evaluate(() => (window as any).Layers.hide("burgIcons"));
@@ -177,14 +177,14 @@ test.describe("layer teardown keeps user data", () => {
     await expect(base).toBeAttached();
 
     await page.evaluate(() => {
-      styles.ocean.oceanLayers.options.outline = "none";
+      styles.ocean.groups.oceanLayers.options.outline = "none";
       (window as any).Layers.draw("ocean");
     });
     expect(await rings.count()).toBe(0); // the renderer clears its own content, style.js no longer does
     await expect(base).toBeAttached(); // the base rect is not outline content
 
     await page.evaluate(() => {
-      styles.ocean.oceanLayers.options.outline = "-6,-3,-1";
+      styles.ocean.groups.oceanLayers.options.outline = "-6,-3,-1";
       (window as any).Layers.draw("ocean");
     });
     expect(await rings.count()).toBe(drawn);
@@ -211,11 +211,13 @@ test.describe("layer teardown keeps user data", () => {
 
   // the rendered shields are cached in #coas by entity id, and regeneration reuses those ids
   test("reassigned arms replace the rendered shield, whether the layer was on or off", async ({ page }) => {
-    // the shield the cached def was actually rendered from, read off its clip path id
+    // the shield the cached def was actually rendered from, matched by its clip path outline
     const renderedShield = () =>
-      page.evaluate(
-        () => document.querySelector("#coas > #stateCOA1")?.querySelector("clipPath")?.id.split("_")[0] ?? null
-      );
+      page.evaluate(() => {
+        const d = document.querySelector("#coas > #stateCOA1 #shield_stateCOA1 path")?.getAttribute("d");
+        const paths: Record<string, string> = (window as any).EmblemRenderer.shieldPaths;
+        return d ? (Object.keys(paths).find(name => paths[name] === d) ?? null) : null;
+      });
     const setArms = (shield: string) =>
       page.evaluate((value: string) => {
         (window as any).pack.states[1].coa.shield = value;
@@ -241,15 +243,15 @@ test.describe("layer teardown keeps user data", () => {
     await expect.poll(renderedShield).toBe("swiss");
   });
 
-  // style.js used to call the renderers straight, drawing into layers the user has turned off
+  // the editor used to call the renderers straight, drawing into layers the user has turned off
   test("a style change does not render into a layer that is off", async ({ page }) => {
     expect(await page.evaluate(() => (window as any).Layers.isOn("goods"))).toBe(false);
 
-    await page.evaluate(() => {
-      const input = document.getElementById("styleGoodsSize") as HTMLInputElement;
-      input.value = "2";
-      input.dispatchEvent(new Event("change"));
-    });
+    await page.evaluate(() => (window as any).showOptions());
+    await page.locator("#styleTab").click();
+    await page.locator("#styleElementSelect").selectOption("goods");
+    await page.locator('#styleForm [data-field="groups.goodsIcons.options.size"] input[type=number]').fill("2");
+    await expect.poll(() => page.evaluate(() => (window as any).styles.goods.groups.goodsIcons.options.size)).toBe(2);
 
     expect(await page.locator("#goods > * > *").count()).toBe(0);
   });

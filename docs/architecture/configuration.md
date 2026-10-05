@@ -9,7 +9,10 @@ sections with one storage location, one schema and one model:
 | `options.generation` | what to ask the generators for next time | never                                   |
 | `options.app`        | how this browser behaves                 | never                                   |
 
-The whole object lives in `localStorage` under `fmg-options`. `options.map` is also, byte for
+The whole object lives in `localStorage` under `fmg-options`, except `options.map.customIcons`: pictures
+outgrow `localStorage`, so this browser keeps them in IndexedDB under `fmg-custom-icons`. `Options.restoreIcons`
+reads them at boot, after `Options.restore`, and no icons are written before that read succeeds, so a database that
+cannot open never loses the ones it holds. `options.map` is also, byte for
 byte, what a `.map` file stores in its settings block: saving writes that object and loading
 replaces it, so the two cannot drift apart. There is no second object and no conversion.
 
@@ -62,6 +65,7 @@ behaving like itself).
 | heightmap template   | the generators that raise the terrain, while they run  | `generation` |
 | `cultures.set`       | marker generation branches on it long after generation | `map`        |
 | `coastline`          | building a feature path at render time                 | `map`        |
+| `relief.rules`       | re-placing a pool's relief long after generation       | `map`        |
 | `graph.width/height` | every latitude, longitude and full-map cover           | `map`        |
 | 3D erosion detail    | the 3D renderer, this session only                     | `app`        |
 
@@ -77,7 +81,7 @@ template raised the terrain and is never consulted again.
 
 **`options.map`** is cell-independent map data: the seed, the graph extent, where the map sits on
 the globe and the climate that produced its per-cell values, the culture set, lore, units, the
-style preset, the definition sets, and the coastline settings the renderer reads. Everything keyed
+style preset, the definition sets, the coastline settings the renderer reads, and the relief rules. Everything keyed
 by cell lives in `data` instead.
 
 Some of it is **derived** — `geography.coordinates` is computed from `mapSize`, `latitude`,
@@ -96,8 +100,8 @@ land in `map.geography`, which keeps lock handling out of terrain generation.
 
 **`options.app`** is the preferences: they take effect immediately and generate nothing.
 Two rules keep the boundary sharp. **"Show all regardless of zoom" is a preference** —
-`labels.showAll` turns off zoom culling for this browser, while `labels.resizeOnZoom` decides how
-the map's own typography behaves and so belongs to `map`. And **a preference the user has not set
+`labels.showAll` turns off zoom culling for this browser; the map's own typography lives in the
+style record. And **a preference the user has not set
 is `null`, not a guess** — interface size follows the screen and the viewport follows the window
 until someone chooses otherwise, so a control's reset writes `null` rather than today's number.
 
@@ -118,14 +122,16 @@ value into the control still applies it, and it stands until the next fit re-der
 
 ### The definition sets
 
-Military unit types, transport types, burg groups, label groups and the coastline settings sit in
-`options.map` however much they look like user settings, because **entities point at them by
-name**: a set that travels separately from its entities opens a map with unresolved references.
+Military unit types, transport types, burg groups, label groups, the custom icons and the coastline
+settings sit in `options.map` however much they look like user settings, because **entities point at
+them by name or id**: a set that travels separately from its entities opens a map with unresolved
+references.
 
 They are also the set the **next** map starts from: they survive a refresh because they are in
 `options`, and `Options.randomize()` carries them across explicitly while resetting everything else
 in `options.map`. A set is never empty — the boundary repairs one that arrives empty from the
-module that owns it, because a label type with no group draws no labels.
+module that owns it, because a label type with no group draws no labels. The custom icons are the
+exception: a map may carry none.
 
 ### Locks
 
@@ -156,7 +162,7 @@ user last set.
 | Layer presets | `preset`/`presets`                      | no             |
 | Style presets | `fmgStyle_*`                            | no             |
 | App flags     | `version`, `debug`, and other bare keys | no             |
-| Credentials   | cloud, AI and help-assistant tokens     | no             |
+| Credentials   | cloud, AI and Assistant tokens     | no             |
 
 **One key holds all three sections.** A preference does not get a `localStorage` key of its own,
 however small it is: a key beside the object is a second source of truth for a control the object

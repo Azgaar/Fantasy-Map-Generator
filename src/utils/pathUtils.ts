@@ -562,6 +562,15 @@ function relaxAcuteAngles(points: Point[], anchorIndices: number[]): void {
   }
 }
 
+export type Box = [x0: number, y0: number, x1: number, y1: number];
+
+/** Bounding box of points; a loop, as a territory can have too many cells to spread into Math.min */
+export function getBounds(points: Point[]): Box {
+  let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity];
+  for (const [x, y] of points) [x0, y0, x1, y1] = [Math.min(x0, x), Math.min(y0, y), Math.max(x1, x), Math.max(y1, y)];
+  return [x0, y0, x1, y1];
+}
+
 // Snap a point to the closest edge of the [0,width]×[0,height] rectangle
 export function projectToNearestEdge(point: Point, width: number, height: number): Point {
   const [x, y] = point;

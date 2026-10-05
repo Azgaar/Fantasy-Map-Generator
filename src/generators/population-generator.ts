@@ -1,5 +1,6 @@
-import { max, mean, median } from "d3";
+import { max, mean, median, sum } from "d3";
 import { gauss, isWater, normalize, rn } from "@/utils";
+import type { Burg } from "./burgs-generator";
 
 // suitability bonus (or penalty) for a coastal cell, by what it is coastal to
 const COAST_SCORES: Record<string, number> = {
@@ -72,6 +73,46 @@ class PopulationModule {
       if (burg.port) burg.population *= 1.3;
       burg.population = rn(burg.population * gauss(2, 3, 0.6, 20, 3), 3);
     });
+  }
+
+  /** Land cells passing a test */
+  landCells(test: (cell: number) => boolean): number[] {
+    const { i, h } = pack.cells;
+    return Array.from(i).filter(cell => h[cell] >= 20 && test(cell));
+  }
+
+  /** Ids of the living burgs passing a test */
+  burgIds(test: (burg: Burg) => boolean): number[] {
+    return pack.burgs.filter(burg => burg?.i && !burg.removed && test(burg)).map(burg => burg.i);
+  }
+
+  /** Set an area's population in people: its cells' rural population scales to `rural`, its burgs' to `urban`; an area with none spreads it evenly */
+  setArea(cellIds: number[], burgIds: number[], rural: number, urban: number): void {
+    for (const [label, value] of [
+      ["rural", rural],
+      ["urban", urban]
+    ] as const) {
+      if (typeof value !== "number" || !(value >= 0 && Number.isFinite(value)))
+        throw new Error(`The ${label} population must be a non-negative number`);
+    }
+    if (rural && !cellIds.length) throw new Error("The area has no land cells to hold a rural population");
+    if (urban && !burgIds.length) throw new Error("The area has no burgs to hold an urban population");
+
+    const { cells, burgs } = pack;
+    const { scale, urbanization } = options.map.units.population;
+    const ruralPoints = rural / scale;
+    const ruralNow = sum(cellIds, cell => cells.pop[cell]);
+    for (const cell of cellIds)
+      cells.pop[cell] = ruralNow ? cells.pop[cell] * (ruralPoints / ruralNow) : ruralPoints / cellIds.length;
+
+    const urbanPoints = urban / scale / urbanization.rate;
+    const urbanNow = sum(burgIds, burg => burgs[burg].population ?? 0);
+    for (const burg of burgIds) {
+      burgs[burg].population = rn(
+        urbanNow ? (burgs[burg].population ?? 0) * (urbanPoints / urbanNow) : urbanPoints / burgIds.length,
+        4
+      );
+    }
   }
 }
 

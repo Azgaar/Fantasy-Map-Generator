@@ -87,7 +87,7 @@ hotkey `Shift + F`. Dialog title "Geographical Features Overview".
 | type | one column for type and subtype: `"{Subtype} lake"` for lakes, `Subtype \|\| type` otherwise, capitalized; select from the fixed subtype set | islands (except `lake_island`, shown as text), lakes, oceans |
 | group | select of existing `#lakes > g` ids | lakes only; islands show text, oceans blank |
 | area | estimated area + unit; a feature cut by the map border (`feature.border`) is extrapolated as map area / (map size / 100) and prefixed with `~`, the tooltip gives the on-map area | no |
-| note | `Notes.getIcon` → Notes Editor `{type:"feature", id}` | all |
+| note | `noteIcon` → Notes Editor `{type:"feature", id}` | all |
 | edit | opens the Lakes Editor on the lake's `<use>` | lakes only |
 
 Default sort: area desc. Footer: `n of total`, total estimated area of the filtered set. The CSV export adds the on-map area and the border flag.

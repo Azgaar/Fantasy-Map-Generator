@@ -1,5 +1,11 @@
 import { select, sum } from "d3";
-import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
+import {
+  closeDialogs,
+  confirmationDialog,
+  destroyDialog,
+  noteIcon,
+  updateDialog
+} from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import {
   type EditorColumn,
@@ -10,7 +16,6 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
-import { Notes } from "@/components/notes";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
@@ -19,6 +24,7 @@ import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { zonesFilter } from "@/renderers/draw-zones";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
+import { errorText } from "@/utils/stringUtils";
 import { ensureEl, rn, si, unique } from "../utils";
 
 const dialogId = "zonesEditor" as const;
@@ -110,7 +116,7 @@ function renderDialog(): void {
   ensureEl("zonesFilterType").addEventListener("click", updateFilters);
   ensureEl("zonesFilterType").addEventListener("change", filterZonesByType);
   ensureEl("zonesEditorRefresh").addEventListener("click", zonesTable.refresh);
-  ensureEl("zonesEditStyle").addEventListener("click", () => editStyle("zones"));
+  ensureEl("zonesEditStyle").addEventListener("click", () => void Controllers.StyleEditor.open("zones"));
   ensureEl("zonesLegend").addEventListener("click", toggleLegend);
   ensureEl("zonesPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("zonesManually").addEventListener("click", openPaintEditor);
@@ -211,7 +217,7 @@ function renderZonesPage(view: TableView<ZoneRow>): void {
       <div data-col="cells"><span data-tip="Cells count" class="icon-check-empty"></span><span data-tip="Cells count" class="stateCells">${percentage ? `${rn((cells.length / pack.cells.i.length) * 100, 2)}%` : cells.length}</span></div>
       <div data-col="area"><span data-tip="Zone area" class="icon-map-o" style="padding-right: 2px"></span><span data-tip="Zone area" class="biomeArea">${percentage ? `${rn((area / totalArea) * 100, 2)}%` : `${si(area)} ${getAreaUnit()}`}</span></div>
       <div data-col="population"><span data-tip="${populationTip}" class="icon-male"></span><span data-tip="${populationTip}" class="zonePopulation pointer">${percentage ? `${rn((population / totalPopulation) * 100, 2)}%` : si(population)}</span></div>
-      ${Notes.getIcon("this zone")}
+      ${noteIcon("this zone")}
       <span data-col="reorder" data-tip="Drag to raise or lower the zone" class="icon-resize-vertical"></span>
       <span data-col="focus" data-tip="Toggle zone focus" class="zoneFog icon-pin ${focused ? "" : "inactive"} ${cells.length ? "" : "placeholder"}"></span>
       <span data-col="visibility" data-tip="Toggle zone visibility" class="zoneHide icon-eye ${cells.length ? "" : " placeholder"}"></span>
@@ -392,13 +398,15 @@ function downloadZonesData(): void {
 }
 
 function changeDescription(zone: Zone, value: string): void {
-  zone.name = value;
-  select<SVGGElement, unknown>("#zones").select(`#zone${zone.i}`).attr("data-description", value);
+  if (!value.trim()) return;
+  Zones.rename(zone.i, value);
+  select<SVGGElement, unknown>("#zones").select(`#zone${zone.i}`).attr("data-description", zone.name);
 }
 
 function changeType(zone: Zone, value: string): void {
-  zone.type = value;
-  select<SVGGElement, unknown>("#zones").select(`#zone${zone.i}`).attr("data-type", value);
+  if (!value.trim()) return;
+  Zones.setType(zone.i, value);
+  select<SVGGElement, unknown>("#zones").select(`#zone${zone.i}`).attr("data-type", zone.type);
 }
 
 function changePopulation(zone: Zone): void {
@@ -452,35 +460,12 @@ function changePopulation(zone: Zone): void {
   });
 
   function applyPopulationChange(): void {
-    const ruralChange = +ruralPop.value / rural;
-    if (Number.isFinite(ruralChange) && ruralChange !== 1) {
-      landCells.forEach(i => {
-        pack.cells.pop[i] *= ruralChange;
-      });
+    try {
+      Zones.setPopulation(zone.i, +ruralPop.value || 0, +urbanPop.value || 0);
+    } catch (error) {
+      tip(errorText(error), false, "error");
+      return;
     }
-    if (!Number.isFinite(ruralChange) && +ruralPop.value > 0) {
-      const points = +ruralPop.value / options.map.units.population.scale;
-      const pop = rn(points / landCells.length);
-      landCells.forEach(i => {
-        pack.cells.pop[i] = pop;
-      });
-    }
-
-    const urbanChange = +urbanPop.value / urban;
-    if (Number.isFinite(urbanChange) && urbanChange !== 1) {
-      burgs.forEach(b => {
-        b.population = rn((b.population ?? 0) * urbanChange, 4);
-      });
-    }
-    if (!Number.isFinite(urbanChange) && +urbanPop.value > 0) {
-      const points =
-        +urbanPop.value / options.map.units.population.scale / options.map.units.population.urbanization.rate;
-      const population = rn(points / burgs.length, 4);
-      burgs.forEach(b => {
-        b.population = population;
-      });
-    }
-
     Layers.draw("population");
     zonesTable.refresh();
   }
@@ -492,7 +477,7 @@ function zoneRemove(zone: Zone): void {
     message: "Are you sure you want to remove the zone? <br>This action cannot be reverted",
     confirm: "Remove",
     onConfirm: () => {
-      pack.zones = pack.zones.filter(z => z.i !== zone.i);
+      Zones.remove(zone.i);
       select<SVGGElement, unknown>("#zones").select(`#zone${zone.i}`).remove();
       unfog(`focusZone${zone.i}`);
       zonesTable.refresh();

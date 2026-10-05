@@ -1,4 +1,5 @@
-import { hsl, select } from "d3";
+import { hsl } from "d3";
+import { toggleAssistant } from "@/components/assistant-bubble";
 import { applyZoomExtent, fitMapToScreen, setViewport } from "@/components/canvas";
 import { DEFAULT_THEME_COLOR } from "@/components/options-model";
 import type { OptionsData } from "@/components/options-schema";
@@ -21,7 +22,6 @@ import { isAutoBurgLimit } from "@/generators/burgs-generator";
 import { CULTURE_SETS, Cultures } from "@/generators/cultures-generator";
 import { Emblems } from "@/generators/emblems-generator";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
-import { toggleAssistant } from "@/services/assistant";
 import { copyMapURL } from "@/services/url-params";
 import { applyOption, ensureEl, findEl } from "@/utils/nodeUtils";
 import { minmax, rn } from "@/utils/numberUtils";
@@ -93,8 +93,7 @@ const OPTION_BINDINGS: Record<string, OptionBinding> = {
     read: o => o.generation.states.limit,
     write: (o, value) => (o.generation.states.limit = value),
     parse: Number,
-    pin: "statesNumber",
-    effect: changeStatesNumber
+    pin: "statesNumber"
   }),
   provincesRatio: option({
     read: o => o.generation.provinces.ratio,
@@ -456,7 +455,7 @@ const TEMPLATE = /* html */ `
     </tr>
     <tr data-tip="Toggle Azgaar Assistant (help bubble on the bottom right corner)">
       <td></td>
-      <td>Azgaar assistant</td>
+      <td>Azgaar Assistant</td>
       <td>
         <select id="azgaarAssistant" data-option="azgaarAssistant">
           <option value="show" selected>Show</option>
@@ -510,6 +509,7 @@ const TEMPLATE = /* html */ `
             <option value="targe2">Targe2</option>
             <option value="pavise">Pavise</option>
             <option value="wedged">Wedged</option>
+            <option value="embowed">Embowed</option>
           </optgroup>
           <optgroup label="Banner">
             <option value="flag">Flag</option>
@@ -526,6 +526,7 @@ const TEMPLATE = /* html */ `
             <option value="vesicaPiscis">Vesica Piscis</option>
             <option value="square">Square</option>
             <option value="diamond">Diamond</option>
+            <option value="hexagon">Hexagon</option>
           </optgroup>
           <optgroup label="Fantasy">
             <option value="fantasy1">Fantasy1</option>
@@ -813,18 +814,6 @@ export function changeCellsDensity(density: number): void {
 export const cellsDensityColor = (cells: number): string =>
   cells > 50000 ? "#b12117" : cells === 10000 ? "#053305" : "#dfdf12";
 
-/** More states means smaller labels, so they keep fitting the shrinking territories */
-function changeStatesNumber(count: number): void {
-  optionInput("statesNumber").style.color = count ? "" : "#b12117";
-
-  const capitalSize = Math.max(rn(6 - count / 20), 3);
-  const stateSize = Math.max(rn(18 - count / 6), 4);
-  if (styles.labels.groups.capital) styles.labels.groups.capital.attrs["font-size"] = `${capitalSize}%`;
-  if (styles.labels.groups.states) styles.labels.groups.states.attrs["font-size"] = `${stateSize}%`;
-  select("#labels").select("[data-group='capital']").attr("font-size", `${capitalSize}%`);
-  select("#labels").select("[data-group='states']").attr("font-size", `${stateSize}%`);
-}
-
 /** Re-shield every emblem that has not been customised, and re-render the ones on screen */
 function changeEmblemShape(shape: string): void {
   Emblems.setShape(shape);
@@ -840,7 +829,7 @@ function changeEmblemShape(shape: string): void {
     for (const culture of pack.cultures) if (!culture.removed) culture.shield = Cultures.getRandomShield();
 
   for (const state of pack.states) {
-    if (!state.i || state.removed || !state.coa || state.coa.custom) continue;
+    if (!state.i || state.removed || !state.coa || "icon" in state.coa) continue;
     const shield = specificShape || Emblems.getShield(state.culture ?? 0);
     if (shield === state.coa.shield) continue;
     state.coa.shield = shield;
@@ -848,7 +837,7 @@ function changeEmblemShape(shape: string): void {
   }
 
   for (const province of pack.provinces) {
-    if (!province.i || province.removed || !province.coa || province.coa.custom) continue;
+    if (!province.i || province.removed || !province.coa || "icon" in province.coa) continue;
     const shield = specificShape || Emblems.getShield(pack.cells.culture[province.center] ?? 0, province.state);
     if (shield === province.coa.shield) continue;
     province.coa.shield = shield;
@@ -856,7 +845,7 @@ function changeEmblemShape(shape: string): void {
   }
 
   for (const burg of pack.burgs) {
-    if (!burg.i || burg.removed || !burg.coa || burg.coa.custom) continue;
+    if (!burg.i || burg.removed || !burg.coa || "icon" in burg.coa) continue;
     const shield = specificShape || Emblems.getShield(burg.culture ?? 0, burg.state);
     if (shield === burg.coa.shield) continue;
     burg.coa.shield = shield;
@@ -1043,16 +1032,6 @@ function resetLanguage(): void {
  * Restore what the tab itself shows: the lock icons, the saved style presets and the interface
  * settings. The values themselves are restored by `Options.restore` before this runs
  */
-/**
- * Custom style presets predating the `fmgStyle_` prefix kept a `style<Name>` key of their own;
- * today's are listed by public/modules/ui/style-presets.js when it builds the select
- */
-function restoreLegacyStylePresets(): void {
-  for (const key of Object.keys(localStorage)) {
-    if (key.startsWith("style")) applyOption(stylePreset, key, key.slice(5));
-  }
-}
-
 const defaultUiSize = (): number => minmax(rn(window.innerWidth / 1280, 1), 1, maxUiSize());
 
 export function restoreUi(): void {
@@ -1063,7 +1042,6 @@ export function restoreUi(): void {
   }
 
   Pins.bindIcons(ensureEl("options"), currentValue);
-  restoreLegacyStylePresets();
 
   // `syncInputs` has already put every preference in its control; these are the ones that also do
   // something the moment they are read back. See docs/architecture/configuration.md
@@ -1071,7 +1049,6 @@ export function restoreUi(): void {
 
   Emblems.setShape(emblems.shape);
   changeTooltipSize(ui.tooltipSize);
-  changeStatesNumber(options.generation.states.limit); // state label sizes follow the number of states
 
   optionInput("uiSize").max = String(maxUiSize());
   changeUiSize(ui.size ?? defaultUiSize());
@@ -1081,8 +1058,8 @@ export function restoreUi(): void {
   applyZoomExtent();
 }
 
-// Legacy seam: the classic style.js reads the culture set cap, the submap and transform tools
-// set the cell density, and Google's script calls back into the page by name
+// Legacy seam: the submap and transform tools set the cell density, and Google's script calls
+// back into the page by name
 declare global {
   // biome-ignore lint/suspicious/noRedeclare: legacy seam
   var changeCellsDensity: (density: number) => void;

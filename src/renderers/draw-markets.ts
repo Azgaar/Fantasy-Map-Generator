@@ -1,9 +1,11 @@
 import { color, curveBasisClosed, line } from "d3";
+import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { boundsIntersect, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { rn } from "@/utils/numberUtils";
 import { getIsolines } from "@/utils/pathUtils";
+import { escapeHtml } from "@/utils/stringUtils";
 
 type Bounds = Omit<ViewportRenderContext["bounds"], "scale">;
 
@@ -56,11 +58,13 @@ function reconcileMarkets({ root, bounds }: ViewportRenderContext): void {
   if (!container || !Layers.isOn("markets")) return;
   if (sourcePack !== pack || sourceMarkets !== pack.cells.market) buildTerritories();
 
-  const { size, fontSize: baseFont, icon } = styles.markets.options;
+  const { size, iconSize: baseSize, icon } = styles.markets.options;
   const radius = Math.max(rn(size + 1 / bounds.scale, 2), 2);
-  const fontSize = Math.max(rn(baseFont + 1 / bounds.scale, 2), 2);
+  const iconSize = Math.max(rn(baseSize + 1 / bounds.scale, 2), 2);
   const strokeWidth = rn(radius / 8, 2);
-  const padding = Math.max(radius + strokeWidth / 2, fontSize);
+  const padding = Math.max(radius + strokeWidth / 2, iconSize);
+  const href = escapeHtml(Icons.href(icon));
+  const paint = Icons.paintAttributes(icon);
   const markup: string[] = [];
 
   for (const market of pack.markets) {
@@ -81,11 +85,11 @@ function reconcileMarkets({ root, bounds }: ViewportRenderContext): void {
     const territoryMarkup = showTerritory
       ? /*html*/ `<clipPath id="market-clip-${market.i}"><path d="${territory.path}"/></clipPath>
         <path class="fill" d="${territory.path}" fill="${fill}" stroke="none"/>
-        <path class="border" d="${territory.path}" fill="none" stroke="${stroke}" stroke-width="0.7" clip-path="url(#market-clip-${market.i})"/>`
+        <path class="border" d="${territory.path}" fill="none" stroke="${stroke}" clip-path="url(#market-clip-${market.i})"/>`
       : "";
     const centerMarkup = showCenter
       ? /*html*/ `<circle cx="${center.x}" cy="${center.y}" r="${radius}" fill="${fill}" fill-opacity="1" stroke="${stroke}" stroke-width="${strokeWidth}"/>
-        <text x="${center.x}" y="${center.y}" text-anchor="middle" dominant-baseline="central" font-size="${fontSize}px" fill-opacity="1">${icon}</text>`
+        ${href ? `<use href="${href}" x="${rn(center.x - iconSize / 2, 2)}" y="${rn(center.y - iconSize / 2, 2)}" width="${iconSize}" height="${iconSize}" fill-opacity="1"${paint}/>` : ""}`
       : "";
 
     const marker = /*html*/ `<g id="market${market.i}" data-id="${market.i}">${territoryMarkup}${centerMarkup}</g>`;

@@ -47,6 +47,7 @@ const dragLine = viewbox.select("path#hierarchyTree_dragLine");
 
 // properties
 let dataElements: HierarchyElement[]; // {i, name, type, origins}[], e.g. path.religions
+let model: typeof Cultures | typeof Religions; // owns the origin and code edits
 let validElements: HierarchyElement[]; // not-removed dataElements
 let onNodeEnter: (d: any) => void;
 let onNodeLeave: (d: any) => void;
@@ -57,6 +58,7 @@ function open(props: OpenProps): void {
   closeDialogs("#hierarchyTree, .stable");
 
   dataElements = props.data;
+  model = props.type === "cultures" ? Cultures : Religions;
   validElements = cleanupOrigins(dataElements);
   if (validElements.length < 3) {
     tip(`Not enough ${props.type} to show hierarchy`, false, "error");
@@ -234,8 +236,21 @@ function cleanupOrigins(elements: HierarchyElement[]): HierarchyElement[] {
       d.origins = [null]; // root element
     else if (!d.origins.length) d.origins = [0];
     else if (!existingElements.find(el => d.origins[0] === el.i)) d.origins = [0];
+    // secondary origins may point at removed elements in older maps
+    d.origins = d.origins.filter((origin, index) => !index || existingElements.some(el => el.i && el.i === origin));
     return d;
   });
+}
+
+/** Set origins, showing why they are refused, such as a loop through a secondary origin */
+function setOrigins(id: number, origins: number[]): boolean {
+  try {
+    model.setOrigins(id, origins);
+    return true;
+  } catch (error) {
+    tip(error instanceof Error ? error.message : String(error), false, "error", 4000);
+    return false;
+  }
 }
 
 function getRoot(): any {
@@ -428,8 +443,8 @@ function selectElement(d: any): void {
     if (input.value.length > 3) return tip("Abbreviation must be 3 characters or less", false, "error", 3000);
     if (!input.value.length) return tip("Abbreviation cannot be empty", false, "error", 3000);
 
-    node.select("text").text(input.value);
-    dataElement.code = input.value;
+    model.setCode(dataElement.i, input.value);
+    node.select("text").text(dataElement.code || "");
   };
 
   const createOriginButtons = () => {
@@ -447,8 +462,8 @@ function selectElement(d: any): void {
       const target = event.target as HTMLElement;
       if (target.tagName !== "BUTTON") return;
       const origin = Number(target.dataset.id);
-      const filtered = dataElement.origins.filter(elementOrigin => elementOrigin !== origin);
-      dataElement.origins = filtered.length ? filtered : [0];
+      const filtered = dataElement.origins.filter(elementOrigin => elementOrigin !== origin) as number[];
+      if (!setOrigins(dataElement.i, filtered.length ? filtered : [0])) return;
       target.remove();
       updateTree();
     };
@@ -508,7 +523,7 @@ function selectElement(d: any): void {
             .map(input => Number(input.dataset.id))
             .filter(origin => origin !== primary);
 
-          dataElement.origins = [primary, ...secondary];
+          if (!setOrigins(dataElement.i, [primary, ...secondary])) return;
 
           updateTree();
           createOriginButtons();
@@ -568,8 +583,8 @@ function dragToReorigin(event: D3DragEvent<SVGGElement, unknown, unknown>, from:
     const element = dataElements.find(({ i }) => i === elementId);
     if (!element) return;
 
-    if (element.origins[0] === 0) element.origins = [];
-    element.origins.push(newOrigin);
+    const origins = (element.origins[0] === 0 ? [] : element.origins) as number[];
+    if (!setOrigins(elementId, [...origins, newOrigin])) return;
 
     selectElement(from);
     updateTree();

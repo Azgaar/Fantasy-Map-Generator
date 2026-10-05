@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 let getUsedFonts: typeof import("./fonts").getUsedFonts;
 
 beforeAll(async () => {
-  document.body.innerHTML = '<select id="styleSelectFont"></select><svg id="map"><g id="provs"></g></svg>';
+  document.body.innerHTML = '<svg id="map"><g id="provs"></g></svg>';
   vi.stubGlobal("FontFace", class {});
   Object.defineProperty(document, "fonts", { configurable: true, value: { add: vi.fn() } });
   ({ getUsedFonts } = await import("./fonts"));

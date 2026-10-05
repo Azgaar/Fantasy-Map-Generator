@@ -16,6 +16,17 @@ export const unique = <T>(array: T[]): T[] => {
   return [...new Set(array)];
 };
 
+/** Keys grouped by their value, such as painted cells by the entity they go to */
+export const groupByValue = <K, V>(entries: ReadonlyMap<K, V>): Map<V, K[]> => {
+  const groups = new Map<V, K[]>();
+  for (const [key, value] of entries) {
+    const group = groups.get(value);
+    if (group) group.push(key);
+    else groups.set(value, [key]);
+  }
+  return groups;
+};
+
 export const TYPED_ARRAY_MAX = {
   INT8: 127,
   UINT8: 255,
