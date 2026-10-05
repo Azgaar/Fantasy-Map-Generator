@@ -37,7 +37,6 @@ test.each(["svg", "png"])(
   async type => {
     const terrain = document.querySelector("#terrain")!;
     terrain.setAttribute("stroke", "#aabbcc");
-    terrain.setAttribute("stroke-width", "0.3");
     let finish!: () => void;
     vi.mocked(Icons.retry).mockReturnValue(
       new Promise<void>(resolve => {
@@ -71,7 +70,6 @@ test.each(["svg", "png"])(
     expect(await pending).toBe("blob:export");
     const output = serialize.mock.results.at(-1)!.value as string;
     expect(output).toContain('stroke="#aabbcc"');
-    expect(output).toContain('stroke-width="0.3"');
     expect(output).toContain('id="relief-illustrated-mountSnow-3"');
     expect(output).toContain('id="relief-illustrated-mountSnow-6"');
     expect(output).toContain('id="relief-gray-hill-1"');

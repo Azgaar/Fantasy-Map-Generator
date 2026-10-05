@@ -120,7 +120,7 @@ Built-in art leaves some of its colors open so it can be recolored where it is d
 
 - **burg and port icons** take the burg group's fill and stroke (_Style_ → _Icons_). Illustrated icons keep their roofs, shadows and other painted details;
 - **goods** are drawn on a circle of the good's color, with the line color and width of _Style_ → _Goods_;
-- **relief** takes the stroke color and width of _Style_ → _Relief_;
+- **relief** takes the stroke color of _Style_ → _Relief_; each relief set has its own stroke width;
 - **markers** have _Icon colors_ in the marker editor: a fill and a stroke for the parts the icon leaves uncolored. The arrow button restores the icon's default colors. Emoji keep their own colors.
 
 Elsewhere, and when a place sets no colors of its own, a built-in icon shows in its default paint: burg art white with a dark outline, goods and relief in their default line style. Custom icons keep the colors of their own picture; only an SVG that leaves its colors unset takes them from the place it is drawn in, like built-in art.

@@ -1230,8 +1230,7 @@
       "opacity": null,
       "filter": null,
       "mask": null,
-      "stroke": "#5c5c70",
-      "stroke-width": 0.7
+      "stroke": "#5c5c70"
     },
     "options": {
       "set": "simple",

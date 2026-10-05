@@ -7,8 +7,7 @@ import { capitalize, escapeHtml, rn } from "@/utils";
 
 /** a relief set symbol in the relief style's stroke, as the map draws it, to be cropped by `fitReliefArt` */
 export function reliefArtHtml(id: string, attributes = ""): string {
-  const { stroke, "stroke-width": strokeWidth } = styles.relief.attrs;
-  return Icons.html(id, { stroke: stroke ?? undefined, strokeWidth: strokeWidth ?? 0 }, ` data-fit${attributes}`);
+  return Icons.html(id, { stroke: styles.relief.attrs.stroke ?? undefined }, ` data-fit${attributes}`);
 }
 
 /** a relief pool entry: a type in the given set, or any other icon as the library draws it */
@@ -78,10 +77,9 @@ export function reliefPatchHtml(pool: ReliefPool, density: number, rule: ReliefR
   });
   icons.sort((a, b) => a.y + a.s - (b.y + b.s)); // as on the map: the box ending lower draws on top
 
-  const { stroke, "stroke-width": strokeWidth, opacity } = styles.relief.attrs;
+  const { stroke, opacity } = styles.relief.attrs;
   const paint = [
     stroke && ` stroke="${escapeHtml(stroke)}"`,
-    strokeWidth !== null && strokeWidth !== undefined && ` stroke-width="${strokeWidth}"`,
     opacity !== null && opacity !== undefined && ` opacity="${opacity}"`
   ]
     .filter(Boolean)

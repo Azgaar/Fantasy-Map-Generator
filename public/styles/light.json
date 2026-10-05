@@ -1230,8 +1230,7 @@
       "opacity": 0.6,
       "filter": null,
       "mask": null,
-      "stroke": "#23343f",
-      "stroke-width": 0
+      "stroke": "#23343f"
     },
     "options": {
       "set": "colored",

@@ -119,17 +119,20 @@ Stickers uses hand-drawn paths and flat base and shadow colors. Its ground lines
 box for mountains, 62% for hills and trees, and 56–58% for low plants and dunes; keep this padding when
 editing artwork, as tight framing makes vegetation overwhelm the map.
 
-The relief Style Editor writes `stroke` and `stroke-width` on the relief group and every icon inherits
-them, so an icon's stroke unit is its viewBox. All icons of a type share one viewBox width, sized to the
-type's generated footprint so a width draws equally thick on every icon: 130 for mountains and volcanoes,
-50 for hills, 90 for everything else. Bring new art to that width by scaling its coordinates: a `scale()`
-wrapper keeps the art's old stroke unit.
-Every icon keeps at least one inheriting shape; fill-only shapes set `stroke="none"`. Where shading would
-cover the silhouette's stroke, a `fill="none"` copy of the silhouette is drawn over the art. Thin glyphs
-(grass, reeds, bare branches, palm fronds) sit in a `scale(k)` group with coordinates scaled by `1/k`, so
-their outline draws at `k` of the icon's weight instead of swallowing the shape. Keep structural details
-and accents, such as cattail heads and lava, as filled paths so they survive a zero width and a recolour.
-Presets set the width that restores each set's former linework: simple `1`, illustrated `1.2`, gray `0.4`.
+The relief Style Editor writes `stroke` on the relief group and every stroked shape inherits its colour.
+The width is baked into each file's root `<svg>`, restoring its set's former linework: simple `1`, gray
+`0.4`, stickers `1`; colored sets `stroke="none"` on the root and draws no lines. Illustrated keeps the
+old art's widths per type, converted to its viewBox (hills `0.81`, trees `1.24`, mountains `1.62`), with
+finer hatching and snow caps set on their shapes.
+A style-wide width would stroke every open shape of every instance, a raster cost on dense maps. An
+icon's stroke unit is its viewBox. All icons of a type share one viewBox width, sized to the type's
+generated footprint so a width draws equally thick on every icon: 130 for mountains and volcanoes, 50 for
+hills, 90 for everything else. Bring new art to that width by scaling its coordinates: a `scale()` wrapper
+keeps the art's old stroke unit.
+Fill-only shapes set `stroke="none"`; stroke only what the old art stroked (simple grass draws none). Where shading would cover the silhouette's stroke, a `fill="none"` copy of the silhouette is drawn
+over the art. Thin glyphs (reeds, bare branches, palm fronds) sit in a `scale(k)` group with coordinates
+scaled by `1/k`, so their outline draws at `k` of the icon's weight instead of swallowing the shape. Keep
+structural details and accents, such as cattail heads and lava, as filled paths so they survive a recolour.
 
 ## Goods linework
 

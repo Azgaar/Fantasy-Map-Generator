@@ -66,7 +66,7 @@ test("a library icon draws itself; a type draws its pinned or the style's set", 
   expect(hrefs).toEqual(["#relief-simple-mount-2", "#relief-gray-mount-1", "#custom-a"]);
 });
 
-test("relief stroke width and color are group attributes shared by mixed sets without replacing icons", async () => {
+test("relief stroke color is a group attribute shared by mixed sets without replacing icons", async () => {
   styles.relief.options.set = "stickers";
   pack.relief = [
     { type: "mount", x: 30, y: 30, s: 40 },
@@ -77,11 +77,8 @@ test("relief stroke width and color are group attributes shared by mixed sets wi
   const terrain = document.querySelector("#terrain")!;
   const uses = Array.from(terrain.querySelectorAll("use"));
   expect(uses).toHaveLength(3);
-  for (const width of [0, 2, 5, 0]) {
-    styles.relief.attrs["stroke-width"] = width;
-    Styles.writeAttr(["relief", "attrs", "stroke-width"]);
-    expect(terrain.getAttribute("stroke-width")).toBe(String(width));
-    styles.relief.attrs.stroke = width ? "#aabbcc" : "#23343f";
+  for (const color of ["#aabbcc", "#23343f"]) {
+    styles.relief.attrs.stroke = color;
     Styles.writeAttr(["relief", "attrs", "stroke"]);
     expect(terrain.getAttribute("stroke")).toBe(styles.relief.attrs.stroke);
     expect(Array.from(terrain.querySelectorAll("use"))).toEqual(uses);

@@ -52,22 +52,30 @@ test("symbol ids derive from the set and the file path; every set is a directory
   }
 });
 
-test("all relief artwork has linework inheriting stroke width and color while allowing fill-only shapes", () => {
-  // one viewBox width per type makes an inherited width draw equally thick at the generated sizes
+test("relief artwork bakes its stroke width on the root and inherits the stroke color", () => {
+  // one viewBox width per type makes a set's width draw equally thick at the generated sizes
   const strokeUnit = (type: string) => ({ mount: 130, mountSnow: 130, vulcan: 130, hill: 50 })[type] ?? 90;
+  // illustrated carries the old art's widths per type, with finer detail lines
+  const widths: Record<string, string | null | undefined> = { simple: "1", colored: null, gray: "0.4", stickers: "1" };
+  const unstroked = ["simple/grass-1"]; // as on the old maps
   for (const set of Relief.iconSets) {
+    const width = widths[set.id.replace("relief-", "")];
     for (const [file, source] of Object.entries(directory(IconSets.folder(set.id)))) {
-      const width = Number(source.match(/viewBox="\S+ \S+ (\S+)/)?.[1]);
-      expect(width, `${set.id}/${file} viewBox width`).toBe(strokeUnit(file.replace(/-\d+$/, "")));
-      expect(source, `${set.id}/${file}`).not.toMatch(/\bstroke-width=/);
-      for (const match of source.matchAll(/\bstroke="([^"]+)"/g)) {
-        expect(match[1], `${set.id}/${file}`).toBe("none");
+      const name = `${set.id}/${file}`;
+      const frame = Number(source.match(/viewBox="\S+ \S+ (\S+)/)?.[1]);
+      expect(frame, `${name} viewBox width`).toBe(strokeUnit(file.replace(/-\d+$/, "")));
+      const root = source.match(/^<svg\b[^>]*>/)![0];
+      const body = source.slice(root.length);
+      if (width !== undefined) expect(body, name).not.toMatch(/\bstroke-width=/);
+      for (const match of body.matchAll(/\bstroke="([^"]+)"/g)) expect(match[1], name).toBe("none");
+      if (width === null) {
+        expect(root, name).toMatch(/\bstroke="none"/);
+        continue;
       }
-      const shapes = source.match(/<(path|polygon|polyline|ellipse|circle|rect|line)\b[^>]*>/g) ?? [];
-      expect(
-        shapes.some(shape => !shape.includes('stroke="none"')),
-        `${set.id}/${file} has no stroked shape`
-      ).toBe(true);
+      expect(root, name).toMatch(width === undefined ? /\bstroke-width="[\d.]+"/ : `stroke-width="${width}"`);
+      const shapes = body.match(/<(path|polygon|polyline|ellipse|circle|rect|line)\b[^>]*>/g) ?? [];
+      const stroked = shapes.some(shape => !shape.includes('stroke="none"'));
+      expect(stroked, `${name} stroked`).toBe(!unstroked.includes(`${set.id.replace("relief-", "")}/${file}`));
     }
   }
 });

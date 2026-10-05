@@ -13,17 +13,12 @@ const cinderwood = readPreset("cinderwood");
 const ink = readPreset("ink");
 
 describe("stylesSchema", () => {
-  test("relief stroke width and color survive serialization with defaults for existing maps", () => {
+  test("relief stroke color survives serialization; a stored stroke width is dropped, the art carries its own", () => {
     const record = Styles.parse(Styles.defaults);
-    record.relief.attrs["stroke-width"] = 2;
     record.relief.attrs.stroke = "#aabbcc";
-    expect(Styles.parse(JSON.parse(JSON.stringify(record))).relief.attrs).toMatchObject({
-      "stroke-width": 2,
-      stroke: "#aabbcc"
-    });
-    const { "stroke-width": _width, ...oldAttrs } = record.relief.attrs;
-    expect(stylesSchema.shape.relief.parse({ ...record.relief, attrs: oldAttrs }).attrs["stroke-width"]).toBe(0);
-    expect(stylesSchema.shape.relief.shape.attrs.shape["stroke-width"].safeParse(-1).success).toBe(false);
+    expect(Styles.parse(JSON.parse(JSON.stringify(record))).relief.attrs.stroke).toBe("#aabbcc");
+    const stored = { ...record, relief: { ...record.relief, attrs: { ...record.relief.attrs, "stroke-width": 2 } } };
+    expect(Styles.parse(stored).relief.attrs).not.toHaveProperty("stroke-width");
   });
 
   test("the default styles are valid — defaults and schema cannot drift", () => {

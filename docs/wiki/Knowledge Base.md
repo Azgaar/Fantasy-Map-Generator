@@ -394,7 +394,7 @@ Open the Provinces Editor and click the 'Annex provinces' button (crown icon) at
 
 ### Can you colour in the relief icons?
 
-You cannot fill individual icons with a color, but Style -> Relief sets the outline color and width of all relief icons, and their opacity, so you can make them semi-transparent and color what is below. There are five icon sets to choose from - Simple, Colored, Gray, Illustrated and Stickers - select the set in Style -> Relief, or pin a single icon to a set in the Relief Editor. For fully custom colors, use your own art as custom icons: see the Icons wiki page https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Icons
+You cannot fill individual icons with a color, but Style -> Relief sets the outline color of all relief icons (each icon set has its own outline width), and their opacity, so you can make them semi-transparent and color what is below. There are five icon sets to choose from - Simple, Colored, Gray, Illustrated and Stickers - select the set in Style -> Relief, or pin a single icon to a set in the Relief Editor. For fully custom colors, use your own art as custom icons: see the Icons wiki page https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Icons
 
 ### My landmass color turned transparent (so it shows the ocean) and i don't know how can i do it back
 

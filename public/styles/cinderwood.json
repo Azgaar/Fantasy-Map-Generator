@@ -1248,8 +1248,7 @@
       "opacity": 0.95,
       "filter": null,
       "mask": "url(#land)",
-      "stroke": "#6d5a3d",
-      "stroke-width": 1.2
+      "stroke": "#6d5a3d"
     },
     "options": {
       "set": "illustrated",

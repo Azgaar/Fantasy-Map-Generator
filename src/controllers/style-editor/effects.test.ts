@@ -65,8 +65,6 @@ describe("effectAt", () => {
 
 describe("runEffect", () => {
   test("relief stroke edits only write the group attribute", () => {
-    run("relief.attrs.stroke-width");
-    expect(Styles.writeAttr).toHaveBeenCalledWith(["relief", "attrs", "stroke-width"]);
     run("relief.attrs.stroke");
     expect(Styles.writeAttr).toHaveBeenCalledWith(["relief", "attrs", "stroke"]);
     expect(Layers.draw).not.toHaveBeenCalled();

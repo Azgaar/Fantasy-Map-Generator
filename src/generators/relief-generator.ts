@@ -55,7 +55,7 @@ export class ReliefModel {
     id: this.iconSetId(set),
     group: "Relief",
     aliases: (names: readonly string[]) => this.aliasSlots(set, names),
-    paint: { stroke: "#5c5c70", strokeWidth: 1 } // the default relief style
+    paint: { stroke: "#5c5c70" } // the default relief style; the art carries its own width
   }));
 
   getDefaultRules(): ReliefRule[] {

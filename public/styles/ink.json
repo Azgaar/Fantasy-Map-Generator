@@ -1229,7 +1229,6 @@
     "attrs": {
       "opacity": 1,
       "stroke": "#5c5c70",
-      "stroke-width": 0.5,
       "filter": null,
       "mask": null
     },
