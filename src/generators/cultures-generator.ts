@@ -1398,13 +1398,14 @@ class CulturesGenerator {
     for (const burg of pack.burgs) if (burg?.i && !burg.removed) burg.culture = pack.cells.culture[burg.cell];
   }
 
-  /** Remove a culture; its lands, burgs and states fall to the wildlands */
+  /** Remove a culture; its lands, burgs, states and religions fall to the wildlands */
   remove(cultureId: number): void {
     const culture = this.living(cultureId);
     if (!cultureId) throw new Error("The wildlands cannot be removed");
-    const { burgs, states, cells, cultures } = pack;
+    const { burgs, states, religions, cells, cultures } = pack;
     for (const burg of burgs) if (burg?.i && burg.culture === cultureId) burg.culture = 0;
     for (const state of states) if (state.culture === cultureId) state.culture = 0;
+    for (const religion of religions) if (religion.culture === cultureId) religion.culture = 0;
     cells.culture.forEach((owner, cell) => {
       if (owner === cultureId) cells.culture[cell] = 0;
     });

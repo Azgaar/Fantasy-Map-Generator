@@ -32,8 +32,8 @@ const isValidState = (id: number): boolean => !!id && !!pack.states[id] && !pack
 
 /** Open the editor for the state; an open editor switches to it */
 function open(state = 0, editorOptions?: EditorOptions): void {
-  if (editorOptions) options = editorOptions;
   if (findEl(dialogId)) {
+    if (editorOptions) options = editorOptions;
     selectState(state);
     return;
   }
@@ -44,6 +44,7 @@ function open(state = 0, editorOptions?: EditorOptions): void {
     tip("There should be at least 2 states to edit the diplomacy", false, "error");
     return;
   }
+  if (editorOptions) options = editorOptions;
   stateId = isValidState(state) ? state : states[0].i;
 
   renderDialog(states);

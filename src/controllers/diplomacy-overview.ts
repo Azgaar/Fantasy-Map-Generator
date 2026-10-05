@@ -54,7 +54,7 @@ const diplomacyTable = initEditorTable<State>({
 });
 
 let selectedDiplomacyId = 0;
-let editing = false; // the Diplomacy Editor is open from here
+const isEditing = (): boolean => Boolean(findEl("diplomacyEditor"));
 
 function open(): void {
   if (customization) return;
@@ -141,11 +141,9 @@ function attachMapSelection(): void {
 }
 
 function editRelations(): void {
-  editing = true;
   void Controllers.DiplomacyEditor.open(selectedDiplomacyId, {
     onSelect: selectState,
     onClose: () => {
-      editing = false;
       if (!findEl(dialogId)) return;
       attachMapSelection();
       refreshDiplomacyOverview();
@@ -244,7 +242,7 @@ function selectState(stateId: number): void {
   if (!stateId || stateId === selectedDiplomacyId) return;
   selectedDiplomacyId = stateId;
   refreshDiplomacyOverview();
-  if (editing) void Controllers.DiplomacyEditor.open(stateId);
+  if (isEditing()) void Controllers.DiplomacyEditor.open(stateId);
 }
 
 function regenerateRelations(): void {
@@ -253,7 +251,7 @@ function regenerateRelations(): void {
     message: "Are you sure you want to regenerate relations of all states? <br>This action cannot be reverted",
     confirm: "Regenerate",
     onConfirm: async () => {
-      if (editing) await Controllers.DiplomacyEditor.close();
+      if (isEditing()) await Controllers.DiplomacyEditor.close();
       States.generateDiplomacy();
       refreshDiplomacyOverview();
     }
@@ -374,8 +372,7 @@ function exportCsv(): void {
 }
 
 function closeDiplomacyOverview(): void {
-  if (editing) void Controllers.DiplomacyEditor.close();
-  editing = false;
+  if (isEditing()) void Controllers.DiplomacyEditor.close();
   applyDefaultViewboxEvents();
   clearMainTip();
   const selected = ensureEl("diplomacyBodySection").querySelector("div.Self");

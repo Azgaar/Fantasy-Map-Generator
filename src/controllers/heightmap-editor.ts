@@ -720,6 +720,10 @@ function restoreRiskedData(): void {
         console.error(
           `[Data integrity] Burg ${b.i} has no available land cell after Risk restoration. Removing the burg`
         );
+      // no land left for it: release its capital and market so it can go
+      if (b.capital) pack.states[b.state!].capital = b.capital = 0;
+      const market = pack.markets?.find(market => market.centerBurgId === b.i);
+      if (market) Markets.removeMarket(market.i);
       removeBurg(b);
       continue;
     }

@@ -43,6 +43,10 @@ const SLOTS = {
     names: ["biome relief pool", "biome relief pools"],
     owners: () =>
       (pack.biomes ?? []).flatMap(biome => (biome.removed ? [] : Object.keys(biome.icons).map(icon => ({ icon }))))
+  },
+  reliefRule: {
+    names: ["relief rule", "relief rules"],
+    owners: () => options.map.relief.rules.flatMap(rule => Object.keys(rule.icons).map(icon => ({ icon })))
   }
 } satisfies Record<string, { names: readonly [string, string]; owners: () => readonly IconOwner[] }>;
 export type IconUseKind = keyof typeof SLOTS;

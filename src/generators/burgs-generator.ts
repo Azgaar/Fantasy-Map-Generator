@@ -885,8 +885,8 @@ class BurgModule {
     states
       .filter(state => state.i && !state.removed && !state.capital)
       .forEach(state => {
-        const [x, y] = cells.p[state.center];
-        const burgId = this.add(x, y);
+        // a kept burg already on the center becomes the capital
+        const burgId = cells.burg[state.center] || this.add(...cells.p[state.center]);
         state.capital = burgId;
         state.center = pack.burgs[burgId].cell;
         const burg = pack.burgs[burgId];

@@ -362,10 +362,10 @@ describe("Provinces", () => {
 });
 
 describe("Cultures and Religions removal", () => {
-  it("frees cells, burgs, states and origins", () => {
+  it("frees cells, burgs, states, religions and origins", () => {
     vi.stubGlobal("pack", {
       cultures: [{ i: 0 }, { i: 1 }, { i: 2, origins: [1] }],
-      religions: [{ i: 0 }, { i: 1 }, { i: 2, origins: [1, 0] }],
+      religions: [{ i: 0 }, { i: 1, culture: 1 }, { i: 2, culture: 1, origins: [1, 0] }],
       burgs: [0, { i: 1, culture: 1 }],
       states: [{ i: 0 }, { i: 1, culture: 1 }],
       cells: { culture: [0, 1, 2], religion: [1, 1, 2] }
@@ -376,6 +376,7 @@ describe("Cultures and Religions removal", () => {
     expect([...pack.cells.religion]).toEqual([0, 0, 2]);
     expect(pack.burgs[1].culture).toBe(0);
     expect(pack.states[1].culture).toBe(0);
+    expect(pack.religions[2].culture).toBe(0);
     expect(pack.cultures[2].origins).toEqual([0]);
     expect(pack.religions[2].origins).toEqual([0]);
     expect(() => Religions.setType(2, "Pantheon")).toThrow("The type must be one of");

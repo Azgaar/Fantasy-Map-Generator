@@ -90,7 +90,7 @@ stores it the same way: a bare symbol id.
     slot, so that I do not hunt through every set.
 21. As a map author, I want sets I do not open to cost nothing, so that the picker stays fast.
 22. As a map author, I want to remove a Custom icon after a confirmation that tells me how many goods,
-    markers, regiments, unit types and styles use it, so that I know what will lose its icon.
+    markers, regiments, unit types, styles, emblems and relief use it, so that I know what will lose its icon.
 23. As a map author, I want icons I have not used yet to stay in the Custom tab, so that I can prepare a
     set before I need it.
 24. As a map author, I want my Custom icons to survive generating a new map, so that I do not re-upload my

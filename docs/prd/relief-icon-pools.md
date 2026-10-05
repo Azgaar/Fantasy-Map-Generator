@@ -84,8 +84,8 @@ the right owner, because the pool is where generation already decides what grows
     on upgrade.
 19. As a map author, I want a map generated with the default pools to look exactly as it did before this
     change, so that seeds keep reproducing the same map.
-20. As a map author, I want removing a Custom icon to tell me how many relief icons and relief pools use
-    it, so that I know what will lose its art.
+20. As a map author, I want removing a Custom icon to tell me how many relief icons, relief pools and
+    relief rules use it, so that I know what will lose its art.
 21. As a map author, I want "Restore defaults" in the Biome Editor to restore the default pools and
     densities too, so that I can undo my relief setup.
 22. As a contributor, I want the relief type tiles to be one shared module used by the Relief Editor and
@@ -162,9 +162,10 @@ the right owner, because the pool is where generation already decides what grows
 
 ### Icon uses
 
-- `Icons.uses` adds a `biome` kind: the pools whose record has the reference as a key. The picker's removal
-  confirmation names them ("relief pool"/"relief pools"). A removed Custom icon's pool entries stay and draw
-  nothing, as references do in every other slot.
+- `Icons.uses` adds a `biome` kind: the pools whose record has the reference as a key, and a `reliefRule`
+  kind for the relief rules' icons. The picker's removal confirmation names them ("biome relief pool",
+  "relief rule"). A removed Custom icon's pool entries stay and draw nothing, as references do in every
+  other slot.
 
 ### Save, load and migration
 

@@ -94,7 +94,7 @@ Select a custom icon, press _Replace_, then link or upload the new picture. The 
 
 ### Removing an icon
 
-Select a custom icon and press the trash button. The confirmation tells you what uses it, e.g. _1 good, 12 markers_. Those places show no icon after the removal; pick them a new one if needed.
+Select a custom icon and press the trash button. The confirmation tells you what uses it, e.g. _1 good, 12 markers, 2 relief rules_: goods, markers, regiments, unit types, styles, emblems, relief icons, biome relief pools and relief rules all count. Those places show no icon after the removal; pick them a new one if needed.
 
 An icon you do not use yet stays in _Custom_, so you can prepare a set of pictures before placing them.
 

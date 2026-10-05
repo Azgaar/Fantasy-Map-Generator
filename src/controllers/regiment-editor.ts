@@ -248,7 +248,9 @@ function changeUnit(this: HTMLInputElement): void {
   const u = this.dataset.u!;
   const reg = getRegiment();
   if (!reg || !selectedRegiment) return;
-  Military.setUnits(reg.state, reg.i, { ...reg.u, [u]: Math.max(0, Math.round(+this.value || 0)) });
+  const count = (value: number) => Math.max(0, Math.round(value || 0)); // older maps may hold fractional troops
+  const units = Object.fromEntries(Object.entries(reg.u).map(([name, value]) => [name, count(value)]));
+  Military.setUnits(reg.state, reg.i, { ...units, [u]: count(+this.value) });
   selectedRegiment.querySelector("text")!.innerHTML = String(Military.getTotal(reg));
 
   refreshEditors();
