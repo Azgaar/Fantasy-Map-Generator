@@ -1,20 +1,12 @@
 name: Nix package
 
 on:
-  # Nothing else builds the flake, so a stale npmDepsHash or a broken derivation would
-  # otherwise reach main unnoticed: the npm lock file carries the app version, and a
-  # version bump alone is enough to invalidate the hash
+  # Run on every PR so nix-build can be required without skipped-check deadlocks.
   pull_request:
     branches: [master]
-    paths:
-      - "flake.nix"
-      - "flake.lock"
-      - "nix/**"
-      - "package.json"
-      - "package-lock.json"
-      - "electron/**"
-      - "scripts/electron.mjs"
-      - "vite.config.ts"
+
+  push:
+    branches: [master]
 
   workflow_dispatch:
 
@@ -45,7 +37,7 @@ jobs:
           for file in main.js preload.js icon.png renderer/index.html; do
             test -f "result/share/fantasy-map-generator/dist-electron/$file"
           done
-          # the app reads its version from the package.json shipped beside the bundle
+          # Dependency installation must restore the original manifest before packaging.
+          cmp package.json result/share/fantasy-map-generator/package.json
           version=$(jq -r .version result/share/fantasy-map-generator/package.json)
-          test "$version" = "$(jq -r .version package.json)"
           echo "built fantasy-map-generator $version"

@@ -25,6 +25,13 @@ import {
   rn,
   unique
 } from "@/utils";
+import {
+  convertBlurFilters,
+  getReferencedDefinitions,
+  normalizeSvgLinks,
+  resolveLabelCase,
+  splitLabelLines
+} from "./svg-export";
 
 type MapSelection = Selection<SVGSVGElement, unknown, null, undefined>;
 
@@ -417,12 +424,12 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
     if (customization && type === "mesh") updateMeshCells(clone);
     inlineStyle(clone);
 
+    const referencedDefinitions = getReferencedDefinitions(cloneEl);
     // remove unused filters
     const filters = cloneEl.querySelectorAll("filter");
     for (let i = 0; i < filters.length; i++) {
       const id = filters[i].id;
-      if (cloneEl.querySelector(`[filter='url(#${id})']`)) continue;
-      if (cloneEl.getAttribute("filter") === `url(#${id})`) continue;
+      if (referencedDefinitions.has(id)) continue;
       filters[i].remove();
     }
 
@@ -430,7 +437,7 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
     const patterns = cloneEl.querySelectorAll("pattern");
     for (let i = 0; i < patterns.length; i++) {
       const id = patterns[i].id;
-      if (cloneEl.querySelector(`[fill='url(#${id})']`)) continue;
+      if (referencedDefinitions.has(id)) continue;
       patterns[i].remove();
     }
 
@@ -464,10 +471,9 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
     await completeIcons();
 
     {
-      // replace ocean pattern href to base64; drop the image if it cannot be loaded,
-      // as an app-relative href is dead in an exported file
+      // Embed the ocean pattern; drop broken images.
       const image = cloneEl.getElementById("oceanicPattern");
-      const href = image?.getAttribute("href");
+      const href = image?.getAttribute("href") ?? image?.getAttribute("xlink:href");
       if (image && href) {
         await new Promise<void>(resolve => {
           getBase64(href, base64 => {
@@ -480,9 +486,9 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
     }
 
     {
-      // replace texture href to base64; drop the image if it cannot be loaded
+      // Embed the texture; drop broken images.
       const image = cloneEl.querySelector("#texture > image");
-      const href = image?.getAttribute("href");
+      const href = image?.getAttribute("href") ?? image?.getAttribute("xlink:href");
       if (image && href) {
         await new Promise<void>(resolve => {
           getBase64(href, base64 => {
@@ -524,15 +530,6 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
 
     if (type === "svg") flattenSymbolReferences(cloneEl);
 
-    // add xlink: for href to support svg 1.1
-    if (type === "svg") {
-      cloneEl.querySelectorAll("[href]").forEach(el => {
-        const href = el.getAttribute("href");
-        el.removeAttribute("href");
-        if (href) el.setAttribute("xlink:href", href);
-      });
-    }
-
     // add hatchings
     const hatchingUsers = cloneEl.querySelectorAll(`[fill^='url(#hatch']`);
     const hatchingFills = unique(Array.from(hatchingUsers).map(el => el.getAttribute("fill")));
@@ -554,10 +551,17 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
         })
         .join("\n");
 
-      const style = document.createElement("style");
+      const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
       style.setAttribute("type", "text/css");
       style.innerHTML = fontFaces;
       cloneEl.querySelector("defs")!.appendChild(style);
+    }
+
+    if (type === "svg") {
+      resolveLabelCase(cloneEl);
+      splitLabelLines(cloneEl);
+      convertBlurFilters(cloneEl);
+      normalizeSvgLinks(cloneEl);
     }
 
     clone.remove();
