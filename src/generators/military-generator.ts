@@ -624,8 +624,8 @@ class MilitaryModule {
     if (typeof alert !== "number" || !(alert >= 0 && Number.isFinite(alert)))
       throw new Error("The alert must be a non-negative number");
     const previous = state.alert ?? 1;
-    const change = previous ? alert / previous : 0;
     state.alert = rn(alert, 2);
+    const change = previous ? state.alert / previous : 0; // the stored value, so the next change divides by it
     for (const regiment of state.military ?? []) {
       for (const unit of Object.keys(regiment.u)) regiment.u[unit] = rn(regiment.u[unit] * change);
       regiment.a = sum(Object.values(regiment.u));

@@ -715,8 +715,9 @@ function religionCenterDrag(this: any, event: any): void {
 
     try {
       Religions.moveCenter(religionId, x, y);
-    } catch {
-      return; // another center is there
+    } catch (error) {
+      tip(error instanceof Error ? error.message : String(error), false, "error", 2000); // another center is there
+      return;
     }
     recalculateReligions();
   }

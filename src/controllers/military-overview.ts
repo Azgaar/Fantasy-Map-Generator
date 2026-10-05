@@ -286,7 +286,10 @@ function renderMilitaryPage(view: TableView<MilitaryRow>): void {
 
 function changeAlert(state: number, alert: number): void {
   if (alert >= 0) Military.setAlert(state, alert);
-  Layers.draw("military");
+  for (const regiment of pack.states[state].military ?? []) {
+    const text = document.querySelector(`#armies #regiment${state}-${regiment.i} > text`);
+    if (text) text.textContent = String(Military.getTotal(regiment));
+  }
   militaryTable.refresh();
 }
 

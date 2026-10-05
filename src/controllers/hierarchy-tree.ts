@@ -236,8 +236,21 @@ function cleanupOrigins(elements: HierarchyElement[]): HierarchyElement[] {
       d.origins = [null]; // root element
     else if (!d.origins.length) d.origins = [0];
     else if (!existingElements.find(el => d.origins[0] === el.i)) d.origins = [0];
+    // secondary origins may point at removed elements in older maps
+    d.origins = d.origins.filter((origin, index) => !index || existingElements.some(el => el.i && el.i === origin));
     return d;
   });
+}
+
+/** Set origins, showing why they are refused, such as a loop through a secondary origin */
+function setOrigins(id: number, origins: number[]): boolean {
+  try {
+    model.setOrigins(id, origins);
+    return true;
+  } catch (error) {
+    tip(error instanceof Error ? error.message : String(error), false, "error", 4000);
+    return false;
+  }
 }
 
 function getRoot(): any {
@@ -450,7 +463,7 @@ function selectElement(d: any): void {
       if (target.tagName !== "BUTTON") return;
       const origin = Number(target.dataset.id);
       const filtered = dataElement.origins.filter(elementOrigin => elementOrigin !== origin) as number[];
-      model.setOrigins(dataElement.i, filtered.length ? filtered : [0]);
+      if (!setOrigins(dataElement.i, filtered.length ? filtered : [0])) return;
       target.remove();
       updateTree();
     };
@@ -510,7 +523,7 @@ function selectElement(d: any): void {
             .map(input => Number(input.dataset.id))
             .filter(origin => origin !== primary);
 
-          model.setOrigins(dataElement.i, [primary, ...secondary]);
+          if (!setOrigins(dataElement.i, [primary, ...secondary])) return;
 
           updateTree();
           createOriginButtons();
@@ -571,7 +584,7 @@ function dragToReorigin(event: D3DragEvent<SVGGElement, unknown, unknown>, from:
     if (!element) return;
 
     const origins = (element.origins[0] === 0 ? [] : element.origins) as number[];
-    model.setOrigins(elementId, [...origins, newOrigin]);
+    if (!setOrigins(elementId, [...origins, newOrigin])) return;
 
     selectElement(from);
     updateTree();

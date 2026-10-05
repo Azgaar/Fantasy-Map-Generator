@@ -597,11 +597,11 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         p.removed = true;
       });
 
-      pack.routes.forEach(route => {
-        if (!route.points || route.points.length < 2) {
-          ERROR && console.error(`[Data integrity] Route ${route.i} has less than 2 points. Removing the route`);
-          Routes.remove(route.i);
-        }
+      // drop the broken route object only: a valid route may share its id. Its cell links are cleaned below
+      pack.routes = pack.routes.filter(route => {
+        if (route.points?.length >= 2) return true;
+        ERROR && console.error(`[Data integrity] Route ${route.i} has less than 2 points. Removing the route`);
+        return false;
       });
 
       for (const from in pack.cells.routes) {
