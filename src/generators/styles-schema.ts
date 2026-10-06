@@ -16,6 +16,7 @@ import {
   LINECAPS,
   LINEJOINS,
   MAP_FILTERS,
+  POPULATION_TYPES,
   RELIEF_SETS,
   WAVE_TYPES
 } from "@/data/style-choices";
@@ -610,6 +611,11 @@ export const stylesSchema = z.strictObject({
   }),
   population: z.strictObject({
     attrs: z.strictObject({ opacity, ...dashGroup, filter, mask: clip }),
+    options: z
+      .strictObject({
+        type: choice(POPULATION_TYPES, { tip: "Draw population as bars or as cells shaded by density" })
+      })
+      .default({ type: "bars" }),
     groups: z.strictObject({
       rural: z.strictObject({
         attrs: z.strictObject({ stroke })

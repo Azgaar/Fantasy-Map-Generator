@@ -365,7 +365,7 @@ const mapLayers = [
   new Layer({
     id: "population",
     parent: "viewbox",
-    children: ["rural", "urban"].map(id => ({ id, tag: "g" })),
+    children: ["rural", "urban", "populationCells"].map(id => ({ id, tag: "g" })),
     draw: drawPopulation
   }),
   new Layer({
