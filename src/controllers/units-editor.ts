@@ -3,6 +3,7 @@ import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers"
 import { Layers } from "@/components/layers";
 import { Pins } from "@/components/pins";
 import { updateGridSizeReadout } from "@/controllers/style-editor/controls";
+import { AltitudeLegend } from "@/renderers/altitude-legend";
 import { applyOption, ensureEl } from "../utils";
 import type { PromptOptions } from "../utils/commonUtils";
 
@@ -110,6 +111,7 @@ const TEMPLATE = /* html */ `
       </div>
     </div>
     <div id="unitsBottom">
+      <button id="unitsAltitudeLegend" data-tip="Toggle the Altitude legend box" class="icon-list-bullet"></button>
       <button id="unitsRestore" data-tip="Restore default units settings" class="icon-ccw"></button>
     </div>
 `;
@@ -185,6 +187,7 @@ function fillInputs(): void {
  */
 function addListeners(): void {
   ensureEl(DIALOG_ID).addEventListener("change", onUnitChange);
+  ensureEl("unitsAltitudeLegend").addEventListener("click", AltitudeLegend.toggle);
   ensureEl("unitsRestore").addEventListener("click", restoreDefaultUnits);
 }
 
@@ -257,6 +260,7 @@ function onUnitChange(event: Event): void {
       return;
   }
 
+  AltitudeLegend.refresh(); // reads the height unit and exponent
   Options.save();
 }
 
@@ -275,6 +279,7 @@ function askForCustomUnit(select: HTMLInputElement, kind: "distance" | "height")
     } else {
       options.map.units.height.unit = name;
       Pins.set("heightUnit", name);
+      AltitudeLegend.refresh();
     }
     Options.save();
   });
@@ -294,6 +299,7 @@ function restoreDefaultUnits(): void {
   fillInputs();
   Temperature.generate();
   redrawDistances();
+  AltitudeLegend.refresh();
 }
 
 export const UnitsEditor = { open };

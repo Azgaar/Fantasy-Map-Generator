@@ -57,18 +57,29 @@ export const getIntegerFromSI = (value: string): number => {
  * @returns {string} - The converted height with unit
  */
 export function getHeight(h: number, abs = false): string {
+  const meters = heightToMeters(h);
+  return `${rn((abs ? Math.abs(meters) : meters) * getHeightUnitRatio())}${options.map.units.height.unit}`;
+}
+
+/** How many user height units make a meter; custom units are counted in feet */
+export function getHeightUnitRatio(): number {
   const unit = options.map.units.height.unit;
-  let unitRatio = 3.281; // default calculations are in feet
-  if (unit === "m")
-    unitRatio = 1; // if meter
-  else if (unit === "f") unitRatio = 0.5468; // if fathom
+  if (unit === "m") return 1;
+  if (unit === "f") return 0.5468; // fathom
+  return 3.281; // foot
+}
 
-  let height = -990;
-  if (h >= 20) height = (h - 18) ** options.map.units.height.exponent;
-  else if (h < 20 && h > 0) height = ((h - 20) / h) * 50;
+/** Real-world height in meters of a generator height, negative below sea level */
+export function heightToMeters(h: number): number {
+  if (h >= 20) return (h - 18) ** options.map.units.height.exponent;
+  if (h > 0) return ((h - 20) / h) * 50;
+  return -990;
+}
 
-  if (abs) height = Math.abs(height);
-  return `${rn(height * unitRatio)}${unit}`;
+/** Generator height of a real-world height in meters, the inverse of heightToMeters */
+export function metersToHeight(meters: number): number {
+  if (meters >= 0) return 18 + meters ** (1 / options.map.units.height.exponent);
+  return 1000 / (50 - meters);
 }
 
 /** Format precipitation in millimeters */
