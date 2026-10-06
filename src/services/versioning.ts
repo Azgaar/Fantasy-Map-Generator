@@ -20,11 +20,12 @@ import { Pins } from "@/components/pins";
 import { tip } from "@/components/tooltips";
 import { isElectron } from "./platform";
 
-export const VERSION = "1.154.1";
+export const VERSION = "1.155.0";
 
 // new changes on top
 const latestPublicChanges = [
-  "Population layer: Cells style, darker for denser cells",
+  "Population layer: colored cells style",
+  // old ones
   "Azgaar Assistant can read map data and propose changes when your own AI key is provided",
   "Icons: unified icon picker and uploader for goods, markers, regiments, burgs and emblems",
   "Style: the Style tab is reworked",
