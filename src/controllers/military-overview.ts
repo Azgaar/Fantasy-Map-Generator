@@ -433,8 +433,9 @@ function militaryCustomize(): void {
     return attr?.length ? "some" : "all";
   }
 
-  const getLimitTip = (attr: number[] | undefined, items: readonly LimitationItem[]): string =>
-    attr?.length ? limitationTip(attr, items) : "";
+  function getLimitTip(attr: number[] | undefined, items: readonly LimitationItem[]): string {
+    return attr?.length ? limitationTip(attr, items) : "";
+  }
 
   function addUnitLine(unit: MilitaryUnit): void {
     const { type, icon, name, rural, urban, power, crew, separate } = unit;
