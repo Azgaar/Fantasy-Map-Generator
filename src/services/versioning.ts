@@ -124,7 +124,7 @@ function showUpdateWindow(storedVersion: string | null): void {
     "The Fantasy Map Generator is updated up to version <strong>{{version}}</strong>. This version is compatible with {{- previous}}, loaded save files will be auto-updated.",
     {
       version: VERSION,
-      previous: `<a href="${changelog}" target="_blank">${t("previous versions")}</a>`
+      previous: `<a href="${changelog}" target="_blank" style="white-space: nowrap">${t("previous versions")}</a>`
     }
   )}
     ${storedVersion ? `<span>${t("In case of errors reload the page to update the code.")}</span>` : ""}

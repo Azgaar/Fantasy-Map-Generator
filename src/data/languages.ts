@@ -10,7 +10,8 @@ export const LANGUAGES = {
   it: "Italiano",
   pt: "Português (Portugal)",
   nl: "Nederlands",
-  ja: "日本語"
+  ja: "日本語",
+  zh: "简体中文"
 } as const;
 
 export type Language = keyof typeof LANGUAGES;
