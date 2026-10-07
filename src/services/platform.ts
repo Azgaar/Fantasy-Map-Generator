@@ -33,12 +33,14 @@ export function registerServiceWorker(): void {
   standalone.addEventListener("change", () => cacheOffline());
   navigator.serviceWorker.addEventListener("controllerchange", () => cacheOffline());
 
-  window.addEventListener("load", () => {
+  const register = () =>
     navigator.serviceWorker
       .register("./sw.js")
       .then(() => cacheOffline())
       .catch(error => console.error("ServiceWorker registration failed: ", error));
-  });
+  // the app boots after the interface strings load, which may be after the page's load event
+  if (document.readyState === "complete") void register();
+  else window.addEventListener("load", () => void register());
 }
 
 declare global {

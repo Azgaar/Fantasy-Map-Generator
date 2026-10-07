@@ -10,6 +10,7 @@ import { tip } from "@/components/tooltips";
 import { zoomTo } from "@/components/zoom";
 import type { Burg } from "@/generators/burgs-generator";
 import { Services } from "@/services";
+import { takeReopenRequest } from "@/services/language";
 import { getRequestedMapSize } from "@/services/map-size";
 import { ensureEl } from "@/utils/nodeUtils";
 
@@ -23,6 +24,12 @@ export async function checkLoadParameters(): Promise<void> {
 
   // a linked map is generated at the size the link asks for, whatever the window measures
   const size = getRequestedMapSize(params);
+
+  // a language change reloads the page: reopen the map it kept, whatever the URL asks for
+  if (takeReopenRequest()) {
+    const blob = await ldb.get("lastMap").catch(() => null);
+    if (blob) return Services.Load.uploadMap(blob);
+  }
 
   const maplink = params.get("maplink");
   if (maplink) {

@@ -127,13 +127,6 @@ window.wiki = wiki;
 window.link = link;
 window.isCtrlClick = isCtrlClick;
 
-// Initialize prompt when DOM is ready
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initializePrompt);
-} else {
-  initializePrompt();
-}
-
 // console debugging aids: no caller in the codebase by design, they are typed at the devtools prompt
 window.drawCellsValue = drawCellsValue;
 window.drawPolygons = (data: any[]) => drawPolygons(data, (window as any).terrs, (window as any).grid);

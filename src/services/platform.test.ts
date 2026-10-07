@@ -23,6 +23,7 @@ describe("service worker registration", () => {
     vi.stubGlobal("window", page);
     vi.stubGlobal("navigator", browser);
     vi.stubGlobal("location", { hostname: "azgaar.github.io", search: "?source=pwa" });
+    vi.stubGlobal("document", { readyState: "loading" });
   });
 
   afterEach(() => vi.unstubAllGlobals());
@@ -40,6 +41,18 @@ describe("service worker registration", () => {
 
     expect(serviceWorker.register).toHaveBeenCalledWith("./sw.js");
     expect(postMessage).not.toHaveBeenCalled();
+  });
+
+  it("waits for the page load, or registers at once when the app boots after it", async () => {
+    registerServiceWorker();
+    expect(serviceWorker.register).not.toHaveBeenCalled();
+    await dispatch(page, "load");
+    expect(serviceWorker.register).toHaveBeenCalledOnce();
+
+    serviceWorker.register.mockClear();
+    vi.stubGlobal("document", { readyState: "complete" });
+    registerServiceWorker();
+    expect(serviceWorker.register).toHaveBeenCalledOnce();
   });
 
   it("requests the full download when launched standalone", async () => {

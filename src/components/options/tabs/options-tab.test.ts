@@ -5,6 +5,8 @@ import { toggleAssistant } from "@/components/assistant-bubble";
 import { Pins } from "@/components/pins";
 import { setMapZoom, setZoomExtent } from "@/components/zoom";
 import { Emblems } from "@/generators/emblems-generator";
+import { Services } from "@/services";
+import { reloadKeepingMap } from "@/services/language";
 
 vi.mock("@/components/layers", () => ({ Layers: { draw: vi.fn() } }));
 vi.mock("@/components/zoom", () => ({
@@ -26,6 +28,12 @@ vi.mock("@/components/options/io-panes", () => ({
 }));
 vi.mock("@/components/options/view-mode", () => ({ changeViewMode: vi.fn() }));
 vi.mock("@/services/url-params", () => ({ copyMapURL: vi.fn() }));
+vi.mock("@/services", () => ({ Services: { Save: { writeToStorage: vi.fn(), prepareMapData: vi.fn() } } }));
+vi.mock("@/services/language", () => ({ reloadKeepingMap: vi.fn() }));
+vi.mock("@/components/dialog/dialog-helpers", async importOriginal => ({
+  ...(await importOriginal<typeof import("@/components/dialog/dialog-helpers")>()),
+  confirmationDialog: vi.fn(({ onConfirm }) => onConfirm())
+}));
 vi.mock("@/components/assistant-bubble", () => ({ toggleAssistant: vi.fn() }));
 
 let tab: typeof import("./options-tab");
@@ -221,9 +229,11 @@ describe("options tab bindings", () => {
   });
 
   it("still pairs unbound legacy controls by ID", () => {
-    const input = document.getElementById("pngResolutionInput") as HTMLInputElement;
-    edit(input, "3");
-    expect((document.getElementById("pngResolutionOutput") as HTMLInputElement).value).toBe("3");
+    document
+      .getElementById("dialogs")!
+      .insertAdjacentHTML("beforeend", '<input id="legacyScaleInput" /><input id="legacyScaleOutput" />');
+    edit(document.getElementById("legacyScaleInput") as HTMLInputElement, "3");
+    expect((document.getElementById("legacyScaleOutput") as HTMLInputElement).value).toBe("3");
   });
 
   it("reads lock values from the binding config", () => {
@@ -231,5 +241,38 @@ describe("options tab bindings", () => {
     options.generation.states.limit = 42;
     document.getElementById("lock_statesNumber")!.click();
     expect(Pins.valueOr("statesNumber", 0)).toBe(42);
+  });
+});
+
+describe("interface language", () => {
+  const choose = (code: string) => {
+    const select = document.getElementById("interfaceLanguage") as HTMLSelectElement;
+    select.value = code;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    return select;
+  };
+  beforeEach(() => vi.stubGlobal("customization", 0));
+
+  const settle = async () => {
+    for (let i = 0; i < 3; i++) await Promise.resolve();
+  };
+
+  it("keeps the map in browser storage, stores the choice and reloads", async () => {
+    const select = choose("ru");
+    expect(select.value).toBe("en"); // the reload shows the new language
+    await settle();
+
+    expect(Services.Save.writeToStorage).toHaveBeenCalledOnce();
+    expect(JSON.parse(localStorage.getItem("fmg-options")!).app.language).toBe("ru");
+    expect(reloadKeepingMap).toHaveBeenCalledOnce();
+  });
+
+  it("changes nothing when the map cannot be kept", async () => {
+    vi.mocked(Services.Save.writeToStorage).mockRejectedValueOnce(new Error("quota"));
+    choose("ru");
+    await settle();
+
+    expect(options.app.language).toBe("");
+    expect(reloadKeepingMap).not.toHaveBeenCalled();
   });
 });

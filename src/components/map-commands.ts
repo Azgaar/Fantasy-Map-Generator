@@ -652,7 +652,7 @@ export const MAP_COMMANDS: MapCommand[] = [
   })),
   ...[...LAYER_TOGGLES].map(([id, layer]) => ({
     id: `layer:${id}`,
-    name: `Toggle ${layer.label.replace(/<\/?u>/g, "")}`,
+    name: `Toggle ${layer.label}`,
     aliases: "layer visibility show hide",
     layer: id,
     run: () => Layers.toggle(id)

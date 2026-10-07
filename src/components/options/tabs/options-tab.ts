@@ -1,6 +1,7 @@
 import { hsl } from "d3";
 import { toggleAssistant } from "@/components/assistant-bubble";
 import { applyZoomExtent, fitMapToScreen, setViewport } from "@/components/canvas";
+import { confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { DEFAULT_THEME_COLOR } from "@/components/options-model";
 import type { OptionsData } from "@/components/options-schema";
 import {
@@ -17,12 +18,16 @@ import { constrainZoom, setMapZoom, setTranslateExtent, setZoomExtent } from "@/
 import { Controllers } from "@/controllers";
 import { getPointsNumber } from "@/data/graph-density";
 import { heightmapTemplates } from "@/data/heightmap-templates";
+import { isLanguage, LANGUAGES, type Language } from "@/data/languages";
 import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
 import { isAutoBurgLimit } from "@/generators/burgs-generator";
 import { CULTURE_SETS, Cultures } from "@/generators/cultures-generator";
 import { Emblems } from "@/generators/emblems-generator";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
+import { Services } from "@/services";
+import { reloadKeepingMap } from "@/services/language";
 import { copyMapURL } from "@/services/url-params";
+import { Catalog } from "@/utils/i18n";
 import { applyOption, ensureEl, findEl } from "@/utils/nodeUtils";
 import { minmax, rn } from "@/utils/numberUtils";
 import { PerformanceSettings } from "../performance-settings";
@@ -602,13 +607,28 @@ const TEMPLATE = /* html */ `
         ></i>
       </td>
     </tr>
+    <tr data-tip="Select the interface language. Changing it reloads the app and reopens the current map">
+      <td></td>
+      <td>Language</td>
+      <td>
+        <select id="interfaceLanguage">
+          ${Object.entries(LANGUAGES)
+            .map(
+              ([code, name]) =>
+                `<option value="${code}" ${code === Catalog.language ? "selected" : ""}>${name}</option>`
+            )
+            .join("")}
+        </select>
+      </td>
+      <td></td>
+    </tr>
     <tr
-      data-tip="Load Google Translate and select a language. Automatic translation can break some page functions. If this happens, reset the language to English or refresh the page"
+      data-tip="Load Google Translate for a language not listed above. Automatic translation can break some page functions. If this happens, reset the translation or refresh the page"
     >
       <td>
-        <i data-tip="Reset language to English" id="resetLanguage" class="icon-ccw"></i>
+        <i data-tip="Reset the automatic translation" id="resetLanguage" class="icon-ccw"></i>
       </td>
-      <td>Language</td>
+      <td>Other languages</td>
       <td>
         <button id="loadGoogleTranslateButton">Load Google Translate</button>
         <div id="google_translate_element"></div>
@@ -654,6 +674,7 @@ function addListeners(): void {
   const root = ensureEl("options");
   root.addEventListener("input", onOptionInput);
   root.addEventListener("change", onOptionInput);
+  ensureEl("interfaceLanguage").addEventListener("change", event => changeLanguage(event.target as HTMLSelectElement));
 
   content.addEventListener("click", event => {
     const target = event.target as HTMLElement;
@@ -999,6 +1020,38 @@ function testSpeaker(): void {
   const voices = speechSynthesis.getVoices();
   if (voices.length) speech.voice = voices[Number(options.app.ui.speakerVoice)] ?? speech.voice;
   speechSynthesis.speak(speech);
+}
+
+/** Reload the app in another interface language; the current map is kept in browser storage and reopened */
+function changeLanguage(select: HTMLSelectElement): void {
+  const code = select.value;
+  select.value = Catalog.language; // until the reload shows the new one
+  if (!isLanguage(code) || code === Catalog.language) return;
+  if (customization) {
+    tip("Finish editing the heightmap before changing the language", false, "error");
+    return;
+  }
+
+  confirmationDialog({
+    title: "Change language",
+    message: `The app reloads in ${LANGUAGES[code]}. The current map is saved to the browser storage and reopened`,
+    confirm: "Reload",
+    onConfirm: () => void reloadIn(code)
+  });
+}
+
+async function reloadIn(code: Language): Promise<void> {
+  try {
+    await Services.Save.writeToStorage(await Services.Save.prepareMapData());
+  } catch (error) {
+    ERROR && console.error(error);
+    tip("The map could not be saved to the browser storage, the language is not changed", false, "error");
+    return;
+  }
+
+  Options.set(o => (o.app.language = code));
+  Options.persist();
+  reloadKeepingMap();
 }
 
 function loadGoogleTranslate(): void {

@@ -1,4 +1,4 @@
-// The Save, Export and Load dialogs behind the sticked menu, plus the tile-export screen
+// The Save, Export and Load dialogs behind the sticked menu, plus the tile-export screen; this module owns their markup
 import { select } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
@@ -7,6 +7,158 @@ import { Services } from "@/services";
 import { createFileInput } from "@/utils/fileUtils";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 import { rn } from "@/utils/numberUtils";
+
+const TEMPLATE = /* html */ `
+  <div id="exportMapData" style="display: none" class="dialog">
+    <div style="margin-bottom: 0.3em; font-weight: bold">Download image</div>
+    <div>
+      <button data-action="svg" data-tip="Download the map as vector image (open directly in browser or Inkscape)">.svg</button>
+      <button data-action="png" data-tip="Download visible part of the map as .png (lossless compressed)">.png</button>
+      <button data-action="jpeg" data-tip="Download visible part of the map as .jpeg (lossy compressed) image">.jpeg</button>
+      <button data-action="tiles" data-tip="Split map into smaller png tiles and download as zip archive">tiles</button>
+      <span data-tip="Check to not allow system to automatically hide labels">
+        <input id="showLabels" class="checkbox" type="checkbox" />
+        <label for="showLabels" class="checkbox-label">Show all labels</label>
+      </span>
+    </div>
+    <div
+      data-tip="Define scale of a saved png/jpeg image (e.g. 5x). Saving big images is slow and may cause a browser crash!"
+      style="margin-bottom: 0.3em"
+    >
+      PNG / JPEG scale:
+      <input id="pngResolutionInput" data-stored="pngResolution" type="range" min="1" max="8" value="1" style="width: 10em" />
+      <input id="pngResolutionOutput" data-stored="pngResolution" type="number" min="1" max="8" value="1" />
+    </div>
+    <p>Generator uses pop-up window to download files. Please ensure your browser does not block popups.</p>
+    <div style="margin: 1em 0 0.3em; font-weight: bold">Export to GeoJSON</div>
+    <div>
+      <button data-action="geojsonCells" data-tip="Download cells data in GeoJSON format">cells</button>
+      <button data-action="geojsonRoutes" data-tip="Download routes data in GeoJSON format">routes</button>
+      <button data-action="geojsonRivers" data-tip="Download rivers data in GeoJSON format">rivers</button>
+      <button data-action="geojsonMarkers" data-tip="Download markers data in GeoJSON format">markers</button>
+      <button data-action="geojsonZones" data-tip="Download zones data in GeoJSON format">zones</button>
+    </div>
+    <p>
+      GeoJSON format is used in GIS tools such as QGIS. Check out
+      <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export" target="_blank">wiki-page</a>
+      for guidance.
+    </p>
+    <div style="margin: 1em 0 0.3em; font-weight: bold">Export To JSON</div>
+    <div>
+      <button data-action="jsonFull" data-tip="Download full data in JSON">full</button>
+      <button data-action="jsonMinimal" data-tip="Download minimal data in JSON">minimal</button>
+      <button data-action="jsonPackCells" data-tip="Download map metadata and pack cells data in JSON">pack cells</button>
+      <button data-action="jsonGridCells" data-tip="Download map metadata and grid cells data in JSON">grid cells</button>
+    </div>
+    <p>Export in JSON format can be used as an API replacement.</p>
+  </div>
+
+  <div id="saveMapData" style="display: none" class="dialog">
+    <div style="margin-top: 0.3em">
+      <strong>Save map to</strong>
+      <button
+        data-action="saveToMachine"
+        data-tip="Save to the chosen file; Shift-click to choose another filename or location"
+        data-shortcut="Ctrl + S"
+        style="font-weight: 600"
+      >
+        machine
+      </button>
+      <button id="saveToDropboxButton" data-action="saveToDropbox" data-tip="Save map file to your Dropbox" data-shortcut="Ctrl + C">
+        dropbox
+      </button>
+      <button data-action="saveToStorage" data-tip="Save the project to browser storage only" data-shortcut="F6">browser</button>
+    </div>
+    <p>
+      When supported by your browser, Save updates the chosen file. Shift-click machine or press Ctrl + Shift + S
+      to save a separate copy.
+    </p>
+    <p>
+      Maps are saved in <i>.map</i> format, that can be loaded back via the <i>Load</i> in menu. There is no way to
+      restore the progress if file is lost. Please keep old save files on your machine or cloud storage as backups.
+    </p>
+  </div>
+
+  <div id="loadMapData" style="display: none" class="dialog">
+    <div>
+      <strong>Load map from</strong>
+      <button id="loadMapFromMachine" data-tip="Load map file (.map or .gz) from your local disk">machine</button>
+      <button data-action="loadFromURL" data-tip="Load map file (.map or .gz) file from URL. Note that the server should allow CORS">
+        URL
+      </button>
+      <button data-action="loadFromStorage" data-tip="Load map from browser storage (if saved before)">storage</button>
+    </div>
+    <p>Click on <i>storage</i> to open the last saved map.</p>
+    <div id="loadFromDropbox">
+      <p style="margin-bottom: 0.3em">
+        Or load from your Dropbox account
+        <button id="dropboxConnectButton" data-action="connectDropbox" data-tip="Connect your Dropbox account to be able to load maps from it">
+          Connect
+        </button>
+      </p>
+      <select id="loadFromDropboxSelect" style="width: 22em"></select>
+      <div id="loadFromDropboxButtons" style="margin-bottom: 0.6em">
+        <button data-action="loadFromDropbox" data-tip="Load map file (.map or .gz) from your Dropbox">Load</button>
+        <button data-action="shareDropboxLink" data-tip="Select file and create a link to share with your friends">Share</button>
+      </div>
+      <div style="margin-top: 0.3em">
+        <div id="sharableLinkContainer" style="display: none">
+          <a id="sharableLink" target="_blank"></a>
+          <i data-action="copyLink" data-tip="Copy link to the clipboard" class="icon-clone pointer"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="exportToPngTilesScreen" style="display: none" class="dialog">
+    <p>Map will be split into tiles and downloaded as a single zip file. Avoid saving too large images</p>
+    <div data-tip="Number of columns" style="margin-bottom: 0.3em">
+      <div class="label">Columns:</div>
+      <input id="tileColsInput" data-stored="tileCols" type="range" min="2" max="26" value="8" style="width: 10em" />
+      <input id="tileColsOutput" data-stored="tileCols" type="number" min="2" value="8" />
+    </div>
+    <div data-tip="Number of rows" style="margin-bottom: 0.3em">
+      <div class="label">Rows:</div>
+      <input id="tileRowsInput" data-stored="tileRows" type="range" min="2" max="26" value="8" style="width: 10em" />
+      <input id="tileRowsOutput" data-stored="tileRows" type="number" min="2" value="8" />
+    </div>
+    <div data-tip="Image scale relative to image size (e.g. 5x)" style="margin-bottom: 0.3em">
+      <div class="label">Scale:</div>
+      <input id="tileScaleInput" data-stored="tileScale" type="range" min="1" max="4" value="1" style="width: 10em" />
+      <input id="tileScaleOutput" data-stored="tileScale" type="number" min="1" value="1" />
+    </div>
+    <div data-tip="Calculated size of image if combined" style="margin-bottom: 0.3em">
+      <div class="label">Total size:</div>
+      <div id="tileSize" style="display: inline-block">1000 x 1000 px</div>
+    </div>
+    <div id="tileStatus" style="font-style: italic"></div>
+  </div>
+`;
+
+const ACTIONS: Record<string, (event: MouseEvent) => void> = {
+  svg: () => Services.ExportMap.exportToSvg(),
+  png: () => Services.ExportMap.exportToPng(),
+  jpeg: () => Services.ExportMap.exportToJpeg(),
+  tiles: () => openExportToPngTiles(),
+  geojsonCells: () => Services.ExportMap.saveGeoJsonCells(),
+  geojsonRoutes: () => Services.ExportMap.saveGeoJsonRoutes(),
+  geojsonRivers: () => Services.ExportMap.saveGeoJsonRivers(),
+  geojsonMarkers: () => Services.ExportMap.saveGeoJsonMarkers(),
+  geojsonZones: () => Services.ExportMap.saveGeoJsonZones(),
+  jsonFull: () => Services.ExportJson.exportToJson("Full"),
+  jsonMinimal: () => Services.ExportJson.exportToJson("Minimal"),
+  jsonPackCells: () => Services.ExportJson.exportToJson("PackCells"),
+  jsonGridCells: () => Services.ExportJson.exportToJson("GridCells"),
+  saveToMachine: event => Services.Save.toMachine(event.shiftKey),
+  saveToDropbox: () => Services.Save.toDropbox(),
+  saveToStorage: () => Services.Save.toStorage(),
+  loadFromURL: () => loadURL(),
+  loadFromStorage: () => Services.Load.quickLoad(),
+  connectDropbox: () => connectToDropbox(),
+  loadFromDropbox: () => Services.Load.loadFromDropbox(),
+  shareDropboxLink: () => Services.Load.createSharableDropboxLink(),
+  copyLink: () => copyLinkToClipboard()
+};
 
 const closeButton = {
   Close: function (this: HTMLElement) {
@@ -218,6 +370,14 @@ export function pickMapFile(): void {
 }
 
 function initialize(): void {
+  ensureEl("dialogs").insertAdjacentHTML("afterbegin", TEMPLATE);
+  for (const id of ["exportMapData", "saveMapData", "loadMapData"]) {
+    ensureEl(id).addEventListener("click", event => {
+      const action = (event.target as HTMLElement).closest<HTMLElement>("[data-action]")?.dataset.action;
+      if (action) ACTIONS[action]?.(event);
+    });
+  }
+
   // the image scale lives in the export dialog, and the tile controls wire themselves when it opens
   for (const input of document.querySelectorAll<HTMLInputElement>('[data-stored="pngResolution"]')) {
     input.addEventListener("input", () => {
@@ -239,19 +399,3 @@ function initialize(): void {
 initialize();
 
 export { loadURL, openExportToPngTiles, showExportPane, showLoadPane, showSavePane };
-
-// Legacy seam: the save/load/export dialogs still live in index.html and wire these inline
-declare global {
-  interface Window {
-    connectToDropbox: typeof connectToDropbox;
-    copyLinkToClipboard: typeof copyLinkToClipboard;
-    loadURL: typeof loadURL;
-    openExportToPngTiles: typeof openExportToPngTiles;
-    exportToJson: typeof import("@/services/io/export-json").ExportJson.exportToJson;
-  }
-}
-window.connectToDropbox = connectToDropbox;
-window.copyLinkToClipboard = copyLinkToClipboard;
-window.loadURL = loadURL;
-window.openExportToPngTiles = openExportToPngTiles;
-window.exportToJson = type => Services.ExportJson.exportToJson(type);

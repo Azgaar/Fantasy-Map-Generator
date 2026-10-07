@@ -15,7 +15,7 @@ vi.mock("@/components/layers", () => ({
   Layers: { draw: vi.fn(), show: mocks.show, toggle: mocks.toggle, has: () => true, isOn: () => false }
 }));
 vi.mock("@/components/options/tabs/layers-tab", () => ({
-  LAYER_TOGGLES: new Map([["rivers", { label: "Ri<u>v</u>ers" }]]),
+  LAYER_TOGGLES: new Map([["rivers", { label: "Rivers" }]]),
   LAYER_PRESETS: {}
 }));
 vi.mock("@/components/app-info", () => ({ showInfo: vi.fn() }));
