@@ -512,7 +512,7 @@ export const stylesSchema = z.strictObject({
             .default(null),
           "font-weight": meta(z.literal(FONT_WEIGHTS), {
             control: "select",
-            label: t("Weight"),
+            label: t("Weight", { context: "font" }),
             group: "Font",
             tip: t("Set font weight")
           })

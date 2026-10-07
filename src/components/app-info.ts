@@ -49,9 +49,7 @@ function render(): string {
         <li>${t("{{- armoria}}: a tool for creating heraldic coats of arms", { armoria: PROJECTS.armoria })}</li>
         <li>${t("{{- deorum}}: a vast gallery of customizable fantasy characters", { deorum: PROJECTS.deorum })}</li>
       </ul>
-    </p>
-
-    <p>${t("Chinese localization")}: <a href="https://www.8desk.top" target="_blank">8desk.top</a></p>`;
+    </p>`;
 }
 
 /** Show info about the generator in a popup */

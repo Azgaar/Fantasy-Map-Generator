@@ -79,9 +79,6 @@ const TEMPLATE = /* html */ `
     <div>• <a href="https://azgaar.github.io/Armoria" target="_blank">Armoria</a>: ${t("a tool for creating coats of arms")}</div>
     <div>• <a href="https://deorum.vercel.app" target="_blank">Deorum</a>: ${t("gallery of fantasy characters")}</div>
   </div>
-  <div style="text-align: left; margin-top: 0.5em">
-    ${t("Chinese localization")}: <a href="https://www.8desk.top" target="_blank">8desk.top</a>
-  </div>
   <ul class="share-buttons">
     <li>
       <a

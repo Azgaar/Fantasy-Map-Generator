@@ -20,13 +20,13 @@ describe("resolveLanguage", () => {
   });
 
   it("follows the browser's first shipped language when nothing valid is stored", () => {
-    browserLanguages(["de-DE", "ru-RU", "en-US"]);
+    browserLanguages(["ko-KR", "ru-RU", "en-US"]);
     localStorage.setItem(OPTIONS_STORAGE_KEY, JSON.stringify({ app: { language: "" } }));
     expect(resolveLanguage()).toBe("ru");
   });
 
   it("falls back to English for an unshipped browser language or unreadable options", () => {
-    browserLanguages(["de-DE"]);
+    browserLanguages(["ko-KR"]);
     localStorage.setItem(OPTIONS_STORAGE_KEY, "{not json");
     expect(resolveLanguage()).toBe("en");
   });

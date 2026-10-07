@@ -48,7 +48,7 @@ const columns: EditorColumn<Religion>[] = [
   {
     key: "type",
     label: t("Type"),
-    width: "6em",
+    width: "7.5em",
     defaultSort: "asc",
     sortBy: religion => religion.type || "",
     sortType: "alpha"
@@ -145,7 +145,7 @@ function renderDialog(): void {
 
     <div id="religionsFooter" class="totalLine">
       <div data-tip="${t("Total number of organized religions")}" style="margin-left: 12px">
-        ${t("Organized")}:&nbsp;<span id="religionsOrganized">0</span>
+        ${t("Organized", { context: "count" })}:&nbsp;<span id="religionsOrganized">0</span>
       </div>
       <div data-tip="${t("Total number of heresies")}" style="margin-left: 12px">
         ${t("Heresies")}:&nbsp;<span id="religionsHeresies">0</span>
@@ -154,7 +154,7 @@ function renderDialog(): void {
         ${t("Cults")}:&nbsp;<span id="religionsCults">0</span>
       </div>
       <div data-tip="${t("Total number of folk religions")}" style="margin-left: 12px">
-        ${t("Folk")}:&nbsp;<span id="religionsFolk">0</span>
+        ${t("Folk", { context: "count" })}:&nbsp;<span id="religionsFolk">0</span>
       </div>
       <div data-tip="${t("Total land area")}" style="margin-left: 12px" data-col="area">
         ${t("Land area")}:&nbsp;<span id="religionsFooterArea">0</span>

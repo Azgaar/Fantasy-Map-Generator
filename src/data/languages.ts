@@ -1,7 +1,15 @@
 /** The interface languages the app ships, each by its own name; a locale file `src/locales/<code>.json` backs each */
 export const LANGUAGES = {
   en: "English",
-  ru: "Русский"
+  ru: "Русский",
+  de: "Deutsch",
+  fr: "Français",
+  es: "Español",
+  af: "Afrikaans",
+  pl: "Polski",
+  it: "Italiano",
+  pt: "Português (Portugal)",
+  nl: "Nederlands"
 } as const;
 
 export type Language = keyof typeof LANGUAGES;

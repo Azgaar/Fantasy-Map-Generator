@@ -173,7 +173,7 @@ function open(request: ReliefPoolEditorOptions): void {
 
   const render = () => {
     entries.innerHTML = total()
-      ? /* html */ `<div class="head"><span></span><span></span><span>${t("Weight")}</span><span>${t("Size")}</span><span>${t("Share")}</span><span></span></div>` +
+      ? /* html */ `<div class="head"><span></span><span></span><span>${t("Weight")}</span><span>${t("Size")}</span><span>${t("Share", { context: "portion" })}</span><span></span></div>` +
         Object.entries(draft.icons)
           .map(
             ([entry, { weight, size = 1 }]) => /* html */ `<div class="entry" data-entry="${escapeHtml(entry)}">

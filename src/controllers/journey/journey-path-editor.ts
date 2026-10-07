@@ -4,6 +4,7 @@ import { alertDialog, confirmationDialog } from "@/components/dialog/dialog-help
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import type { CellKind } from "@/generators/journeys/journeys-generator";
 import type { TransportDomain } from "@/generators/transports-generator";
 import type { Journey, JourneyPoint, JourneySegment } from "@/types/Journey";
 import { ensureEl, findEl, getPointer, rn } from "@/utils";
@@ -402,13 +403,22 @@ export function recomputeSegment(seg: JourneySegment): void {
   } else tip(result.warning, true, "warn", 8000);
 }
 
+const CELL_KINDS: Record<CellKind, (cell: number) => string> = {
+  water: cell => t("water cell {{cell}}", { cell }),
+  river: cell => t("navigable river cell {{cell}}", { cell }),
+  coast: cell => t("coastal land cell {{cell}}", { cell }),
+  inland: cell => t("inland land cell {{cell}}", { cell })
+};
+
+const describeCell = (cellId: number) => CELL_KINDS[Journeys.cellKind(cellId)](cellId);
+
 /** Explain which endpoints clash with the segment's domain, or null when both fit */
 export function domainMismatchMessage(seg: JourneySegment, domain: TransportDomain): string | null {
   const bad: string[] = [];
   for (const endpoint of ["from", "to"] as const) {
     const cellId = seg[endpoint];
     if (cellId !== undefined && !Journeys.isValidEndpoint(cellId, domain)) {
-      const cell = Journeys.describeCell(cellId);
+      const cell = describeCell(cellId);
       bad.push(endpoint === "from" ? t("<b>from</b> is a {{cell}}", { cell }) : t("<b>to</b> is a {{cell}}", { cell }));
     }
   }
@@ -426,7 +436,7 @@ export function domainMismatchMessage(seg: JourneySegment, domain: TransportDoma
 type DragStart = D3DragEvent<SVGCircleElement, unknown, unknown>;
 
 function terrainRejection(cellId: number, domain: TransportDomain, transport: string): string {
-  const cell = Journeys.describeCell(cellId);
+  const cell = describeCell(cellId);
   return domain === "land"
     ? sentences(
         t("{{transport}} is a land transport — its path has to stay on land", { transport }),

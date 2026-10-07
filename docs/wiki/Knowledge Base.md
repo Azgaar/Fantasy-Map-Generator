@@ -198,7 +198,7 @@ You can, but I doubt you will enjoy the experience. The Generator GUI is not sui
 
 ### What about non-English localization?
 
-Localization is planned, but not ready from the coding side. Preparation can take a lot of time as it's not a current priority. As for now, open Options and click on the 'Init Google Translate' button in the Language row, then select a language. It's machine translation and it can break some of the page functionality; use the reset icon or refresh the page to get back to English. There is also a community-made Chinese localization at https://www.8desk.top
+The interface is available in English, Russian, German, French, Spanish, Portuguese, Italian, Polish, Chinese (Simplified), Japanese and Afrikaans. It starts in your browser's language when that is one of them; to change it, open Options, pick a language in the Language row and reload the page (save the map first). Only the interface is translated: generated names, legends and notes stay in English, and a map looks the same whatever interface language opens it. For other languages, the Other languages row loads Google Translate, which is machine translation and can break some page functions; use the reset icon or refresh the page to get back. Report a wrong translation in a GitHub issue or on Discord, quoting the text and the correction
 
 ### What does Azgaar mean?
 
@@ -678,7 +678,7 @@ Rivers, lakes, islands and oceans are named automatically, as well as states, pr
 
 ### How can I change the language on the Tool?
 
-In Options click on the "Init Google Translate" button. Then select a language of your choise. Please note that it's only a machine translation, it's not that good in terms of quality. You can ask here if you need a better translation
+In Options, pick a language in the Language row and reload the page. Supported languages: English, Russian, German, French, Spanish, Portuguese, Italian, Polish, Chinese (Simplified), Japanese and Afrikaans. Only the interface changes; map names stay as generated. For any other language, click "Load Google Translate" in the Other languages row: it is machine translation and can break some page functions
 
 ### Is there a way I can use the map generator to generate galactic maps?
 

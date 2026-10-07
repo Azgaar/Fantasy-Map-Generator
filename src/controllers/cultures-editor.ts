@@ -52,7 +52,7 @@ const columns: EditorColumn<Culture>[] = [
   {
     key: "type",
     label: t("Type"),
-    width: "6em",
+    width: "7.5em",
     mobileHidden: true,
     sortBy: culture => culture.type || "",
     sortType: "alpha"

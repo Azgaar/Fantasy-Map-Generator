@@ -115,7 +115,7 @@ function renderDialog(): void {
     <div id="journeysBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
 
     <div id="journeysFilters" class="editorFilters">
-      <label for="journeysSearch" data-tip="${t("Filter by journey name, type or endpoint")}" style="grid-template-columns: 4em 12em">${t("Search")}: <input id="journeysSearch" type="search" /></label>
+      <label for="journeysSearch" data-tip="${t("Filter by journey name, type or endpoint")}" style="grid-template-columns: 6em 12em">${t("Search")}: <input id="journeysSearch" type="search" /></label>
     </div>
 
     <div id="journeysFooter" class="totalLine">

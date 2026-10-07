@@ -21,7 +21,7 @@ import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/d
 import { tip } from "@/components/tooltips";
 import { downloadFile, getArea, getAreaUnit, getFileName, getHeight, getPrecipitation } from "@/utils";
 import { t } from "@/utils/i18n";
-import { capitalize, convertTemperature, ensureEl, formatPrice, isWater, rn, si } from "../utils";
+import { convertTemperature, ensureEl, formatPrice, isWater, rn, si } from "../utils";
 
 interface Dimension {
   label: string;
@@ -614,7 +614,13 @@ function renderChart({ id, entity, plotBy, groupBy, sorting, type, excludeNeutra
     ? cellId => getContributions(cellId, ctx!)
     : cellId => [{ value: quantize!(cellId) }];
 
-  const title = `${capitalize(entity)} by ${plotByLabel}${noGrouping ? "" : ` grouped by ${groupLabel}`}`;
+  const title = noGrouping
+    ? t("{{- metric}} by {{- entity}}", { metric: plotByLabel, entity: entityLabel })
+    : t("{{- metric}} by {{- entity}}, grouped by {{- group}}", {
+        metric: plotByLabel,
+        entity: entityLabel,
+        group: groupLabel
+      });
 
   const tooltip = (entityName: string, group: string, value: number, percentage: number) => {
     const entityTip = `${entityLabel}: ${entityName}`;
