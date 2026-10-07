@@ -3,6 +3,7 @@ import { type D3DragEvent, drag, hsl, rgb, select } from "d3";
 import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
 import { parseTransform, rn } from "@/utils";
+import { t } from "@/utils/i18n";
 
 type ColorSpace = "hsl" | "rgb" | "hex";
 
@@ -52,9 +53,9 @@ function renderPicker(): SVGSVGElement {
     ) + 1;
 
   const controls = [
-    { id: "pickerH", label: "H:", x: 4, x1: 18, x2: 107, cx: 75, tip: "Set palette hue" },
-    { id: "pickerS", label: "S:", x: 113, x1: 124, x2: 206, cx: 181.4, tip: "Set palette saturation" },
-    { id: "pickerL", label: "L:", x: 213, x1: 226, x2: 306, cx: 282, tip: "Set palette lightness" }
+    { id: "pickerH", label: "H:", x: 4, x1: 18, x2: 107, cx: 75, tip: t("Set palette hue") },
+    { id: "pickerS", label: "S:", x: 113, x1: 124, x2: 206, cx: 181.4, tip: t("Set palette saturation") },
+    { id: "pickerL", label: "L:", x: 213, x1: 226, x2: 306, cx: 282, tip: t("Set palette lightness") }
   ]
     .map(
       control => /* html */ `<g data-tip="${control.tip}">
@@ -120,7 +121,7 @@ function renderPicker(): SVGSVGElement {
         <g id="pickerColors" stroke="#333333">${colorRects}</g>
         <g id="pickerHatches" stroke="#333333">${hatchRects}</g>
         <rect id="pickerHeader" x="0" y="-30" width="${PICKER_WIDTH}" height="30"></rect>
-        <text id="pickerLabel" x="12" y="-10">Color Picker</text>
+        <text id="pickerLabel" x="12" y="-10">${t("Color Picker")}</text>
         <rect id="pickerCloseRect" x="${PICKER_WIDTH - 23}" y="-21" width="14" height="14"></rect>
         <text id="pickerCloseText" x="${PICKER_WIDTH - 20}" y="-10">✕</text>
       </g>
@@ -133,8 +134,8 @@ function renderPicker(): SVGSVGElement {
 function addListeners(container: SVGSVGElement, callback: (fill: string) => void): void {
   const picker = getSvgElement<SVGGElement>("picker");
   const closePicker = () => container.remove();
-  const tipClose = () => tip("Click to close the picker");
-  const tipDrag = () => tip("Drag to change the picker position");
+  const tipClose = () => tip(t("Click to close the picker"));
+  const tipDrag = () => tip(t("Drag to change the picker position"));
 
   getSvgElement("pickerOverlay").addEventListener("mousemove", tipClose);
   getSvgElement("pickerOverlay").addEventListener("click", closePicker);
@@ -157,10 +158,10 @@ function addListeners(container: SVGSVGElement, callback: (fill: string) => void
     input.addEventListener("change", event => onSpaceChanged(event, callback));
   });
   getSvgElement("pickerSpaces").addEventListener("mousemove", () =>
-    tip("Color value in different color spaces. Edit to change")
+    tip(t("Color value in different color spaces. Edit to change"))
   );
 
-  addFillListeners(getSvgElement("pickerColors"), callback, "Click to fill with the color");
+  addFillListeners(getSvgElement("pickerColors"), callback, t("Click to fill with the color"));
   addFillListeners(getSvgElement("pickerHatches"), callback);
 
   select(picker).call(
@@ -187,7 +188,7 @@ function addFillListeners(group: SVGGElement, callback: (fill: string) => void, 
   });
   group.addEventListener("mouseover", event => {
     const rect = (event.target as Element).closest<SVGRectElement>("rect");
-    if (rect) tip(hint || `Click to fill with the hatching ${rect.id}`);
+    if (rect) tip(hint || t("Click to fill with the hatching {{hatching}}", { hatching: rect.id }));
   });
 }
 
@@ -303,7 +304,7 @@ function onControlDrag(
 
 function onSpaceChanged(event: Event, callback: (fill: string) => void): void {
   const input = event.currentTarget as HTMLInputElement;
-  const invalid = () => tip("You must provide a correct value", false, "error");
+  const invalid = () => tip(t("You must provide a correct value"), false, "error");
   if (!input.checkValidity()) return void invalid();
 
   const space = input.dataset.space as ColorSpace;

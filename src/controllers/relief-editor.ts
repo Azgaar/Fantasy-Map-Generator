@@ -4,10 +4,12 @@ import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { RELIEF_SET_LABELS } from "@/data/style-choices";
 import type { ReliefIcon, ReliefIconRef, ReliefIconType, ReliefSet, ReliefType } from "@/generators/relief-generator";
 import { getReliefIcon, redrawRelief } from "@/renderers/draw-relief-icons";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
-import { capitalize, ensureEl, findAllInQuadtree, getPointer, rn } from "../utils";
+import { t } from "@/utils/i18n";
+import { ensureEl, findAllInQuadtree, getPointer, rn } from "../utils";
 import { createBrushStroke } from "../utils/brushUtils";
 import { fitReliefArt, reliefArtHtml } from "./relief-previews";
 
@@ -15,8 +17,8 @@ let selectedIcon: ReliefIcon | null = null;
 
 let previewRequest = 0;
 const setsHtml = (): string =>
-  '<option value="">Default (style)</option>' +
-  Relief.sets.map(set => `<option value="${set}">${capitalize(set)}</option>`).join("");
+  `<option value="">${t("Default (style)")}</option>` +
+  Relief.sets.map(set => `<option value="${set}">${RELIEF_SET_LABELS[set]}</option>`).join("");
 
 const setIconsHtml = (set: ReliefSet): string =>
   (Relief.types as readonly ReliefType[])
@@ -25,7 +27,7 @@ const setIconsHtml = (set: ReliefSet): string =>
         const id = Relief.symbolId({ type, variant }, set);
         return reliefArtHtml(
           id,
-          ` data-type="${type}" data-variant="${variant}" data-symbol="${id}" data-tip="Select ${label}"`
+          ` data-type="${type}" data-variant="${variant}" data-symbol="${id}" data-tip="${t("Select {{icon}}", { icon: label })}"`
         );
       })
     )
@@ -64,7 +66,7 @@ function open(element: SVGElement): void {
   updateReliefSizeInput();
 
   $("#reliefEditor").dialog({
-    title: "Edit Relief Icons",
+    title: t("Edit Relief Icons"),
     resizable: false,
     width: "27em",
     position: { my: "left top", at: "left+10 top+10", of: "#map" },
@@ -74,6 +76,11 @@ function open(element: SVGElement): void {
 
 function renderDialog(): void {
   destroyDialog("reliefEditor");
+  const SLIDER_LABELS: Record<string, string> = {
+    Size: `${t("Size")}:`,
+    Radius: `${t("Radius")}:`,
+    Spacing: `${t("Spacing")}:`
+  };
   const slider = (
     name: string,
     tipText: string,
@@ -83,38 +90,38 @@ function renderDialog(): void {
     hidden = false
   ) => /* html */ `
     <div id="relief${name}Div" class="reliefRow" data-tip="${tipText}"${hidden ? " hidden" : ""}>
-      <div class="reliefEditorLabel">${name}:</div>
+      <div class="reliefEditorLabel">${SLIDER_LABELS[name]}</div>
       <input id="relief${name}" oninput="relief${name}Number.value = this.value" type="range" min="${min}" max="${max}" value="${value}" />
       <input id="relief${name}Number" oninput="relief${name}.value = this.value" type="number" min="${min}" value="${value}" />
     </div>`;
   const html = /* html */ `<div id="reliefEditor" class="dialog">
     <div id="reliefTools" class="reliefRow">
-      <div class="reliefEditorLabel">Mode:</div>
-      <button id="reliefIndividual" data-tip="Edit individual selected icon" class="icon-info pressed"></button>
-      <button id="reliefBulkAdd" data-tip="Place icons in a bulk" class="icon-brush"></button>
-      <button id="reliefBulkRemove" data-tip="Remove icons in a bulk" class="icon-eraser"></button>
-      <label class="reliefSet" data-tip="Relief set the icons are drawn in: the style's, or one pinned for the icon">
-        <span class="reliefEditorLabel">Set:</span>
+      <div class="reliefEditorLabel">${t("Mode")}:</div>
+      <button id="reliefIndividual" data-tip="${t("Edit individual selected icon")}" class="icon-info pressed"></button>
+      <button id="reliefBulkAdd" data-tip="${t("Place icons in a bulk")}" class="icon-brush"></button>
+      <button id="reliefBulkRemove" data-tip="${t("Remove icons in a bulk")}" class="icon-eraser"></button>
+      <label class="reliefSet" data-tip="${t("Relief set the icons are drawn in: the style's, or one pinned for the icon")}">
+        <span class="reliefEditorLabel">${t("Set")}:</span>
         <select id="reliefEditorSet">${setsHtml()}</select>
       </label>
     </div>
-    ${slider("Size", "Set icon size for individual icon or for bulk placement", 2, 50, 5)}
-    ${slider("Radius", "Set brush radius for icons placement on deletion", 1, 100, 15, true)}
-    ${slider("Spacing", "Set spacing between relief icons", 2, 20, 5, true)}
-    <div id="reliefIconsDiv" data-tip="Select icon">
+    ${slider("Size", t("Set icon size for individual icon or for bulk placement"), 2, 50, 5)}
+    ${slider("Radius", t("Set brush radius for icons placement on deletion"), 1, 100, 15, true)}
+    ${slider("Spacing", t("Set spacing between relief icons"), 2, 20, 5, true)}
+    <div id="reliefIconsDiv" data-tip="${t("Select icon")}">
       <div id="reliefSetIcons"></div>
-      <svg id="reliefIconsSeletionAny" hidden viewBox="0 0 40 40" data-tip="Select any type of icons"><text x="20" y="20">Any</text></svg>
+      <svg id="reliefIconsSeletionAny" hidden viewBox="0 0 40 40" data-tip="${t("Select any type of icons")}"><text x="20" y="20">${t("Any")}</text></svg>
     </div>
     <div id="reliefBottom">
-      <button id="reliefEditStyle" data-tip="Edit Relief Icons style in Style Editor" class="icon-adjust"></button>
-      <button id="reliefEditRules" data-tip="Edit the relief rules: hills, mountains and other relief placed by elevation" class="icon-mountain"></button>
-      <button id="reliefPickIcon" data-tip="Select own your own relief icon" class="icon-plus"></button>
-      <button id="reliefCopy" data-tip="Copy selected relief icon" class="icon-clone"></button>
-      <button id="reliefMoveFront" data-tip="Move selected relief icon to front" class="icon-level-up"></button>
-      <button id="reliefMoveBack" data-tip="Move selected relief icon back" class="icon-level-down"></button>
+      <button id="reliefEditStyle" data-tip="${t("Edit style in Style Editor")}" class="icon-adjust"></button>
+      <button id="reliefEditRules" data-tip="${t("Edit the relief rules: hills, mountains and other relief placed by elevation")}" class="icon-mountain"></button>
+      <button id="reliefPickIcon" data-tip="${t("Select own your own relief icon")}" class="icon-plus"></button>
+      <button id="reliefCopy" data-tip="${t("Copy selected relief icon")}" class="icon-clone"></button>
+      <button id="reliefMoveFront" data-tip="${t("Move selected relief icon to front")}" class="icon-level-up"></button>
+      <button id="reliefMoveBack" data-tip="${t("Move selected relief icon back")}" class="icon-level-down"></button>
       <button
         id="reliefRemove"
-        data-tip="Remove selected relief icon or icon type"
+        data-tip="${t("Remove selected relief icon or icon type")}"
         data-shortcut="Delete"
         class="icon-trash fastDelete"
       ></button>
@@ -225,7 +232,7 @@ function enterBulkAddMode(): void {
     .style("cursor", "crosshair")
     .call(drag<SVGElement, unknown>().on("start", dragToAdd))
     .on("touchmove mousemove", moveBrush);
-  tip("Drag to place relief icons within radius", true);
+  tip(t("Drag to place relief icons within radius"), true);
 }
 
 function moveBrush(this: SVGElement, event: any): void {
@@ -239,7 +246,7 @@ function dragToAdd(this: SVGElement, event: any): void {
   const pressed = ensureEl("reliefIconsDiv").querySelector<SVGElement>("svg.pressed");
   const icon = pressed && pickedRef(pressed);
   if (!icon) {
-    tip("Please select an icon", false, "error");
+    tip(t("Select icon"), false, "error");
     return;
   }
   const r = +ensureEl<HTMLInputElement>("reliefRadiusNumber").value;
@@ -294,13 +301,13 @@ function enterBulkRemoveMode(): void {
     .style("cursor", "crosshair")
     .call(drag<SVGElement, unknown>().on("start", dragToRemove))
     .on("touchmove mousemove", moveBrush);
-  tip("Drag to remove relief icons in radius", true);
+  tip(t("Drag to remove relief icons in radius"), true);
 }
 
 function dragToRemove(this: SVGElement, event: any): void {
   const pressed = ensureEl("reliefIconsDiv").querySelector<SVGElement>("svg.pressed");
   if (!pressed) {
-    tip("Please select an icon", false, "error");
+    tip(t("Select icon"), false, "error");
     return;
   }
 
@@ -393,7 +400,7 @@ function changeIcon(this: SVGElement): void {
 }
 
 function pickAnyIcon(): void {
-  if (!selectedIcon) return void tip("Please select a relief icon on the map", false, "error");
+  if (!selectedIcon) return void tip(t("Please select a relief icon on the map"), false, "error");
   const original = selectedIcon;
   Controllers.IconPicker.open({
     current: "icon" in original ? original.icon : "",
@@ -450,24 +457,24 @@ function removeIcon(): void {
     ? new Set(selectedIcon ? [selectedIcon] : [])
     : new Set(pack.relief.filter(reliefIcon => matchesTypeTile(reliefIcon, icon)));
 
-  if (isIndividual) alertMessage.innerHTML = "Are you sure you want to remove the icon?";
+  if (isIndividual) alertMessage.innerHTML = t("Are you sure you want to remove the icon?");
   else
     alertMessage.innerHTML = icon
-      ? `Are you sure you want to remove all ${icon} icons (${doomed.size})?`
-      : `Are you sure you want to remove all icons (${doomed.size})?`;
+      ? t("Are you sure you want to remove all {{icon}} icons ({{icons}})?", { icon, icons: doomed.size })
+      : t("Are you sure you want to remove all icons ({{icons}})?", { icons: doomed.size });
 
   $("#alert").dialog({
     resizable: false,
-    title: "Remove relief icons",
+    title: t("Remove relief icons"),
     buttons: {
-      Remove: function (this: HTMLElement) {
+      [t("Remove")]: function (this: HTMLElement) {
         pack.relief = pack.relief.filter(reliefIcon => !doomed.has(reliefIcon));
         selectedIcon = null;
         redrawRelief();
         $(this).dialog("close");
         $("#reliefEditor").dialog("close");
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }

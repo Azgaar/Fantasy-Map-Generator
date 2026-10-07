@@ -1,7 +1,9 @@
 // A form built from a zod object schema
 import type { z } from "zod";
 import type { FieldMeta, StandardControl } from "@/types/styles";
+import { t } from "@/utils/i18n";
 import { getPath } from "@/utils/objectUtils";
+import { GROUP_LABELS, KEY_LABELS } from "./field-labels";
 
 export type FieldSpec = {
   path: string[]; // from the schema root passed in, e.g. ["attrs", "fill"]
@@ -126,7 +128,7 @@ function fieldSpec(key: string, schema: z.ZodType, meta: Meta, path: string[] = 
   return {
     path,
     kind: fieldMeta.control ?? derived,
-    label: fieldMeta.label ?? labelOf(key),
+    label: fieldMeta.label ?? KEY_LABELS[key] ?? labelOf(key),
     tip: fieldMeta.tip,
     min,
     max,
@@ -339,7 +341,7 @@ function group(name: string): HTMLElement {
   block.dataset.group = name;
   const caption = document.createElement("div");
   caption.className = "caption";
-  caption.textContent = name;
+  caption.textContent = GROUP_LABELS[name] ?? name;
   block.append(caption);
   return block;
 }
@@ -352,7 +354,7 @@ function renderSection(
   ctx: Ctx,
   meta: FieldMeta<string>
 ): HTMLElement {
-  const details = section(meta.label ?? labelOf(key), path.join("."));
+  const details = section(meta.label ?? KEY_LABELS[key] ?? labelOf(key), path.join("."));
   const summary = details.querySelector("summary")!;
   const preview = summary.querySelector(".preview")!;
   const body = details.querySelector<HTMLElement>(".body")!;
@@ -498,7 +500,7 @@ const select: ControlFactory = (spec, value, set) => {
   // "" is the unset sentinel only where the field has one: a real empty-string choice keeps its meaning
   const emptyChoice = spec.options?.some(option => String(option) === "") ?? false;
   const unsettable = (spec.nullable || spec.optional) && !emptyChoice;
-  if (unsettable) el.add(new Option("inherit", ""));
+  if (unsettable) el.add(new Option(t("inherit"), ""));
   for (const option of spec.options ?? []) {
     el.add(new Option(spec.choices?.[String(option)] ?? String(option), String(option)));
   }

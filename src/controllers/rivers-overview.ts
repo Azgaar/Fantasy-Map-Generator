@@ -17,6 +17,7 @@ import type { River } from "@/generators/river-generator";
 import { getRiverBox, toggleBasinHighlight } from "@/renderers/draw-rivers";
 import { highlightArea } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { ensureEl, rn } from "../utils";
 
 const dialogId = "riversOverview" as const;
@@ -27,7 +28,7 @@ const columns: EditorColumn<River>[] = [
   { key: "locate", width: "1.4em", permanent: true },
   {
     key: "name",
-    label: "River",
+    label: t("River"),
     width: "8em",
     permanent: true,
     sortBy: river => river.name || "",
@@ -35,7 +36,7 @@ const columns: EditorColumn<River>[] = [
   },
   {
     key: "type",
-    label: "Type",
+    label: t("Type"),
     width: "5em",
     mobileHidden: true,
     sortBy: river => river.type || "",
@@ -43,29 +44,29 @@ const columns: EditorColumn<River>[] = [
   },
   {
     key: "discharge",
-    label: "Discharge",
+    label: t("Discharge"),
     width: "7em",
     mobileHidden: true,
-    tip: "Click to sort by discharge (flux in m3/s)",
+    tip: t("Click to sort by discharge (flux in m3/s)"),
     sortBy: river => river.discharge,
     defaultSort: "desc"
   },
   {
     key: "length",
-    label: "Length",
+    label: t("Length"),
     width: "5em",
     sortBy: river => river.length
   },
   {
     key: "width",
-    label: "Width",
+    label: t("Width"),
     width: "5em",
     mobileHidden: true,
     sortBy: river => river.width
   },
   {
     key: "basin",
-    label: "Basin",
+    label: t("Basin"),
     width: "9em",
     sortBy: river => pack.rivers.find(({ i }) => i === river.basin)?.name || "",
     sortType: "alpha"
@@ -110,7 +111,7 @@ function open(): void {
   riversTable.reset();
 
   $(`#${dialogId}`).dialog({
-    title: "Rivers Overview",
+    title: t("Rivers Overview"),
     resizable: false,
     width: "fit-content",
     position,
@@ -124,21 +125,21 @@ function renderDialog(): void {
   const html = /* html */ `<div id="riversOverview" class="dialog stable editorDialog">
     <div id="riversBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
     <div id="riversFilters" class="editorFilters">
-      <label for="riversSearch" data-tip="Filter by name, type or basin">Search: <input id="riversSearch" type="search" /></label>
+      <label for="riversSearch" data-tip="${t("Filter by name, type or basin")}">${t("Search")}: <input id="riversSearch" type="search" /></label>
     </div>
     <div id="riversFooter" class="totalLine">
-      <div data-tip="Rivers number" style="margin-left: 4px">Rivers:&nbsp;<span id="riversFooterNumber">0</span></div>
-      <div data-tip="Average discharge" style="margin-left: 12px" data-col="discharge">Average discharge:&nbsp;<span id="riversFooterDischarge">0</span></div>
-      <div data-tip="Average length" style="margin-left: 12px" data-col="length">Length:&nbsp;<span id="riversFooterLength">0</span></div>
-      <div data-tip="Average mouth width" style="margin-left: 12px" data-col="width">Width:&nbsp;<span id="riversFooterWidth">0</span></div>
+      <div data-tip="${t("Rivers number")}" style="margin-left: 4px">${t("Rivers")}:&nbsp;<span id="riversFooterNumber">0</span></div>
+      <div data-tip="${t("Average discharge")}" style="margin-left: 12px" data-col="discharge">${t("Average discharge")}:&nbsp;<span id="riversFooterDischarge">0</span></div>
+      <div data-tip="${t("Average length")}" style="margin-left: 12px" data-col="length">${t("Length")}:&nbsp;<span id="riversFooterLength">0</span></div>
+      <div data-tip="${t("Average mouth width")}" style="margin-left: 12px" data-col="width">${t("Width")}:&nbsp;<span id="riversFooterWidth">0</span></div>
     </div>
     <div id="riversBottom" class="editorToolbar">
-      <button id="riversOverviewRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-      <button id="addNewRiver" data-tip="Automatically add river starting from clicked cell. Hold Shift to add multiple" class="icon-plus"></button>
-      <button id="riverCreateNew" data-tip="Create a new river selecting river cells" class="icon-map-pin"></button>
-      <button id="riversBasinHighlight" data-tip="Toggle basin highlight mode" class="icon-sitemap"></button>
-      <button id="riversExport" data-tip="Save rivers-related data as a text file (.csv)" class="icon-download"></button>
-      <button id="riversRemoveAll" data-tip="Remove all rivers" class="icon-trash"></button>
+      <button id="riversOverviewRefresh" data-tip="${t("Refresh the Editor")}" class="icon-cw"></button>
+      <button id="addNewRiver" data-tip="${sentences(t("Automatically add river starting from clicked cell"), t("Hold Shift to add multiple"))}" class="icon-plus"></button>
+      <button id="riverCreateNew" data-tip="${t("Create a new river selecting river cells")}" class="icon-map-pin"></button>
+      <button id="riversBasinHighlight" data-tip="${t("Toggle basin highlight mode")}" class="icon-sitemap"></button>
+      <button id="riversExport" data-tip="${t("Save rivers-related data as a text file (.csv)")}" class="icon-download"></button>
+      <button id="riversRemoveAll" data-tip="${t("Remove all rivers")}" class="icon-trash"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -205,20 +206,23 @@ function renderRiversPage(view: TableView<River>): void {
         data-width="${r.width}"
         data-basin="${basin}"
       >
-        <span data-tip="Locate the river" class="icon-target" data-col="locate"></span>
-        <div data-tip="River name" data-col="name">${r.name}</div>
-        <div data-tip="River type name" data-col="type">${r.type}</div>
-        <div data-tip="River discharge (flux power)" data-col="discharge">${discharge}</div>
-        <div data-tip="River length from source to mouth" data-col="length">${length}</div>
-        <div data-tip="River mouth width" data-col="width">${width}</div>
-        <input data-tip="River basin (name of the main stem)" class="stateName" value="${basin}" disabled data-col="basin" />
-        <span data-col="edit" data-tip="Edit river" class="icon-pencil"></span>
-        <span data-col="remove" data-tip="Remove river" class="icon-trash-empty"></span>
+        <span data-tip="${t("Locate the river")}" class="icon-target" data-col="locate"></span>
+        <div data-tip="${t("River name")}" data-col="name">${r.name}</div>
+        <div data-tip="${t("River type name")}" data-col="type">${r.type}</div>
+        <div data-tip="${t("River discharge (flux power)")}" data-col="discharge">${discharge}</div>
+        <div data-tip="${t("River length from source to mouth")}" data-col="length">${length}</div>
+        <div data-tip="${t("River mouth width")}" data-col="width">${width}</div>
+        <input data-tip="${t("River basin (name of the main stem)")}" class="stateName" value="${basin}" disabled data-col="basin" />
+        <span data-col="edit" data-tip="${t("Edit River")}" class="icon-pencil"></span>
+        <span data-col="remove" data-tip="${t("Remove river")}" class="icon-trash-empty"></span>
       </div>`;
   }
   body.insertAdjacentHTML("beforeend", lines);
 
-  ensureEl("riversFooterNumber").innerHTML = `${view.all.length} of ${pack.rivers.length}`;
+  ensureEl("riversFooterNumber").innerHTML = t("{{shown}} of {{total}}", {
+    shown: view.all.length,
+    total: pack.rivers.length
+  });
   const averageDischarge = rn(mean(view.all.map(r => r.discharge))!) || 0;
   ensureEl("riversFooterDischarge").innerHTML = `${averageDischarge} m³/s`;
   const averageLength = rn(mean(view.all.map(r => r.length))!) || 0;
@@ -284,20 +288,20 @@ function openRiverEditor(this: HTMLElement): void {
 
 function triggerRiverRemove(this: HTMLElement): void {
   const river = +(this.closest(".states") as HTMLElement).dataset.id!;
-  alertMessage.innerHTML = /* html */ `Are you sure you want to remove the river? All tributaries will be auto-removed`;
+  alertMessage.innerHTML = /* html */ `${t("Are you sure you want to remove the river? All tributaries will be auto-removed")}`;
 
   $("#alert").dialog({
     resizable: false,
     width: "22em",
-    title: "Remove river",
+    title: t("Remove river"),
     buttons: {
-      Remove: function (this: any) {
+      [t("Remove")]: function (this: any) {
         Rivers.remove(river);
         Layers.draw("rivers", "labels");
         riversTable.refresh();
         $(this).dialog("close");
       },
-      Cancel: function (this: any) {
+      [t("Cancel")]: function (this: any) {
         $(this).dialog("close");
       }
     }
@@ -305,16 +309,16 @@ function triggerRiverRemove(this: HTMLElement): void {
 }
 
 function triggerAllRiversRemove(): void {
-  alertMessage.innerHTML = /* html */ `Are you sure you want to remove all rivers?`;
+  alertMessage.innerHTML = /* html */ `${t("Are you sure you want to remove all rivers?")}`;
   $("#alert").dialog({
     resizable: false,
-    title: "Remove all rivers",
+    title: t("Remove all rivers"),
     buttons: {
-      Remove: function (this: any) {
+      [t("Remove")]: function (this: any) {
         $(this).dialog("close");
         removeAllRivers();
       },
-      Cancel: function (this: any) {
+      [t("Cancel")]: function (this: any) {
         $(this).dialog("close");
       }
     }

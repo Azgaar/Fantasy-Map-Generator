@@ -8,6 +8,7 @@ import { Biomes } from "@/generators/biomes-generator";
 import type { ReliefPool } from "@/generators/relief-generator";
 import { redrawRelief } from "@/renderers/draw-relief-icons";
 import { ensureEl, escapeHtml, getHeight, minmax, rn } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { fitReliefArt, poolEntryHtml, poolEntryName, reliefPatchHtml } from "./relief-previews";
 
 const DIALOG = "reliefPoolEditor";
@@ -80,8 +81,8 @@ function targetOf(request: ReliefPoolEditorOptions): PoolTarget {
     const only = rule.biomes?.length === 1 ? pack.biomes[rule.biomes[0]] : undefined;
     const preset = Relief.getDefaultRules().find(({ name }) => name === rule.name);
     return {
-      title: `Relief rule: ${rule.name}`,
-      place: `the cells the ${rule.name} rule claims`,
+      title: t("Relief rule: {{- rule}}", { rule: rule.name }),
+      place: t("the cells the {{- rule}} rule claims", { rule: rule.name }),
       draft: { icons: clonePool(rule.icons), density: rule.density, size: { ...rule.size } },
       rule,
       color: only?.color ?? LAND,
@@ -96,8 +97,8 @@ function targetOf(request: ReliefPoolEditorOptions): PoolTarget {
   }
   const biome = pack.biomes[request.biome];
   return {
-    title: `Relief pool: ${biome.name}`,
-    place: `${biome.name} lowland`,
+    title: t("Relief pool: {{- biome}}", { biome: biome.name }),
+    place: t("{{- biome}} lowland", { biome: biome.name }),
     draft: { icons: clonePool(biome.icons), density: biome.iconsDensity },
     color: biome.color ?? LAND,
     write: ({ icons, density }) => Object.assign(biome, { icons, iconsDensity: density }),
@@ -118,13 +119,13 @@ function open(request: ReliefPoolEditorOptions): void {
   let seed = 1;
 
   const sizeRange = draft.size
-    ? /* html */ `<div class="setting ruleSize" data-tip="Icon size at the rule's lowest height, growing with height up to the second value. Each entry's size scales it">
-        <span>Size</span>
+    ? /* html */ `<div class="setting ruleSize" data-tip="${t("Icon size at the rule's lowest height, growing with height up to the second value. Each entry's size scales it")}">
+        <span>${t("Size")}</span>
         <input type="number" data-bound="min" min="0.1" step="0.1" value="${draft.size.min}" />–<input type="number" data-bound="max" min="0.1" step="0.1" value="${draft.size.max}" />
       </div>`
     : "";
   const heights = rule
-    ? `<div class="heights"><span>${getHeight(rule.height.min)}</span><span>Height</span><span>${getHeight(rule.height.max)}</span></div>`
+    ? `<div class="heights"><span>${getHeight(rule.height.min)}</span><span>${t("Height")}</span><span>${getHeight(rule.height.max)}</span></div>`
     : "";
 
   destroyDialog(DIALOG);
@@ -132,27 +133,27 @@ function open(request: ReliefPoolEditorOptions): void {
     "beforeend",
     /* html */ `<div id="${DIALOG}" class="dialog">
       <style>${STYLE}</style>
-      <div class="patch" style="background: color-mix(in srgb, ${escapeHtml(target.color)} 55%, white)" data-tip="A sample of the relief the pool places, at the map's sizes and spacing">
+      <div class="patch" style="background: color-mix(in srgb, ${escapeHtml(target.color)} 55%, white)" data-tip="${t("A sample of the relief the pool places, at the map's sizes and spacing")}">
         <div class="art"></div>
-        <button type="button" class="shuffle icon-shuffle" data-tip="Draw another sample"></button>
+        <button type="button" class="shuffle icon-shuffle" data-tip="${t("Draw another sample")}"></button>
       </div>
       ${heights}
-      <div class="setting density" data-tip="How packed the relief is. 0 places none">
-        <span>Density</span>
+      <div class="setting density" data-tip="${t("How packed the relief is. 0 places none")}">
+        <span>${t("Density")}</span>
         <slider-input min="0" max="${MAX_DENSITY}" step="1" value="${draft.density}"></slider-input>
       </div>
       ${sizeRange}
       <div class="entries"></div>
-      <div class="caption">Add a relief type, drawn in the style's relief set</div>
+      <div class="caption">${t("Add a relief type, drawn in the style's relief set")}</div>
       <div class="types">${Relief.types
         .map(
           ({ type, label }) =>
-            `<button type="button" data-entry="${type}" data-tip="Add ${label}">${poolEntryHtml(type, set)}</button>`
+            `<button type="button" data-entry="${type}" data-tip="${t("Add {{icon}}", { icon: label })}">${poolEntryHtml(type, set)}</button>`
         )
         .join("")}</div>
       <div class="actions">
-        <button type="button" class="any" data-tip="Add your own icon, an emoji or another set's art">Add any icon…</button>
-        ${target.defaults ? `<button type="button" class="restore icon-ccw" data-tip="Restore the default pool, density${draft.size ? " and size" : ""}. Apply to keep it"></button>` : ""}
+        <button type="button" class="any" data-tip="${t("Add your own icon, an emoji or another set's art")}">${t("Add any icon…")}</button>
+        ${target.defaults ? `<button type="button" class="restore icon-ccw" data-tip="${draft.size ? sentences(t("Restore the default pool, density and size"), t("Apply to keep it")) : sentences(t("Restore the default pool and density"), t("Apply to keep it"))}"></button>` : ""}
       </div>
     </div>`
   );
@@ -165,27 +166,27 @@ function open(request: ReliefPoolEditorOptions): void {
     const sample = rule && draft.size ? { ...rule, size: draft.size } : undefined;
     art.innerHTML =
       reliefPatchHtml(draft.icons, draft.density, sample, seed) ||
-      `<p class="empty">No relief: ${escapeHtml(target.place)} stays bare</p>`;
+      `<p class="empty">${t("No relief: {{place}} stays bare", { place: target.place })}</p>`;
   };
   const total = () => Object.values(draft.icons).reduce((sum, { weight }) => sum + weight, 0);
   const share = (weight: number) => `${rn((weight / total()) * 100)}%`;
 
   const render = () => {
     entries.innerHTML = total()
-      ? /* html */ `<div class="head"><span></span><span></span><span>Weight</span><span>Size</span><span>Share</span><span></span></div>` +
+      ? /* html */ `<div class="head"><span></span><span></span><span>${t("Weight")}</span><span>${t("Size")}</span><span>${t("Share")}</span><span></span></div>` +
         Object.entries(draft.icons)
           .map(
             ([entry, { weight, size = 1 }]) => /* html */ `<div class="entry" data-entry="${escapeHtml(entry)}">
               <span class="preview">${poolEntryHtml(entry, set)}</span>
               <span class="name">${escapeHtml(poolEntryName(entry))}</span>
-              <input type="number" class="weight" min="1" step="1" value="${weight}" data-tip="Weight: how often the entry is picked, relative to the others" />
-              <input type="number" class="size" min="0.1" max="${MAX_SIZE}" step="0.1" value="${size}" data-tip="Size: the entry's icons as a multiple of the pool's size" />
-              <span class="share" data-tip="Share of the pool's relief">${share(weight)}</span>
-              <button type="button" class="icon-trash-empty" data-tip="Remove from the pool"></button>
+              <input type="number" class="weight" min="1" step="1" value="${weight}" data-tip="${t("Weight: how often the entry is picked, relative to the others")}" />
+              <input type="number" class="size" min="0.1" max="${MAX_SIZE}" step="0.1" value="${size}" data-tip="${t("Size: the entry's icons as a multiple of the pool's size")}" />
+              <span class="share" data-tip="${t("Share of the pool's relief")}">${share(weight)}</span>
+              <button type="button" class="icon-trash-empty" data-tip="${t("Remove from the pool")}"></button>
             </div>`
           )
           .join("")
-      : `<p class="empty">The pool is empty: ${escapeHtml(target.place)} gets no relief</p>`;
+      : `<p class="empty">${t("The pool is empty: {{place}} gets no relief", { place: target.place })}</p>`;
     void fitReliefArt(dialog, set);
     drawPatch();
   };
@@ -275,7 +276,8 @@ function open(request: ReliefPoolEditorOptions): void {
     request.onApply?.();
   };
   const close = () => $(dialog).dialog("close");
-  const gone = () => tip(`${target.title} no longer exists: nothing is applied`, false, "error");
+  const gone = () =>
+    tip(t("{{target}} no longer exists: nothing is applied", { target: target.title }), false, "error");
 
   $(dialog).dialog({
     title: target.title,
@@ -284,12 +286,12 @@ function open(request: ReliefPoolEditorOptions): void {
     position: { my: "center", at: "center", of: "svg" },
     close: () => destroyDialog(DIALOG),
     buttons: {
-      Apply: () => {
+      [t("Apply")]: () => {
         if (target.exists()) apply();
         else gone();
         close();
       },
-      "Apply and re-place": () => {
+      [t("Apply and re-place")]: () => {
         if (target.exists()) {
           confirmReplace(target.place, target.covers, () => {
             apply();
@@ -300,7 +302,7 @@ function open(request: ReliefPoolEditorOptions): void {
           close();
         }
       },
-      Cancel: close
+      [t("Cancel")]: close
     }
   });
 }
@@ -309,9 +311,12 @@ function open(request: ReliefPoolEditorOptions): void {
 export function confirmReplace(place: string, covers: (cell: number) => boolean, before?: () => void): void {
   const count = pack.relief?.length ? Relief.iconsOn(covers).length : 0;
   confirmationDialog({
-    title: "Re-place relief",
-    message: `Replace the ${count} relief icons on ${escapeHtml(place)} with new ones? Relief elsewhere is kept`,
-    confirm: "Re-place",
+    title: t("Re-place relief"),
+    message: sentences(
+      t("Replace relief icons on {{place}} with new ones ({{icons}})?", { place, icons: count }),
+      t("Relief elsewhere is kept")
+    ),
+    confirm: t("Re-place"),
     onConfirm: () => {
       before?.();
       // an ungenerated layer places everything when it is first drawn

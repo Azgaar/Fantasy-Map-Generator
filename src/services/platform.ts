@@ -1,3 +1,4 @@
+import { sentences, t } from "@/utils/i18n";
 export type ElectronBridge = {
   isElectron: true;
   platform: string;
@@ -13,7 +14,9 @@ export const isProduction = (): boolean => Boolean(location.hostname) && !isLoca
 export const isMobile = (): boolean => window.innerWidth < 600 || Boolean(navigator.userAgentData?.mobile);
 
 export const savedMessage = (name: string): string =>
-  isElectron() ? `${name} is saved` : `${name} is saved. Open "Downloads" screen (CTRL + J) to check`;
+  isElectron()
+    ? t("{{file}} is saved", { file: name })
+    : sentences(t("{{file}} is saved", { file: name }), t("Open “Downloads” screen (CTRL + J) to check"));
 
 export function registerServiceWorker(): void {
   if (!("serviceWorker" in navigator) || !isProduction() || isElectron()) return;

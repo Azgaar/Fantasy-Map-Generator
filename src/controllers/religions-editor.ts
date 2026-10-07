@@ -21,10 +21,12 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { labelOf, RELIGION_EXPANSION_LABELS, RELIGION_TYPE_LABELS } from "@/data/id-labels";
 import type { Religion } from "@/generators/religions-generator";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getArea, getAreaUnit, getFileName, groupByValue } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { errorText } from "@/utils/stringUtils";
 import { debounce, ensureEl, getPointer, isLand, parseTransform, rn, si } from "../utils";
 
@@ -37,7 +39,7 @@ const columns: EditorColumn<Religion>[] = [
   { key: "color", width: "1.2em", permanent: true },
   {
     key: "name",
-    label: "Religion",
+    label: t("Religion"),
     width: "14em",
     permanent: true,
     sortBy: religion => religion.name || "",
@@ -45,7 +47,7 @@ const columns: EditorColumn<Religion>[] = [
   },
   {
     key: "type",
-    label: "Type",
+    label: t("Type"),
     width: "6em",
     defaultSort: "asc",
     sortBy: religion => religion.type || "",
@@ -53,7 +55,7 @@ const columns: EditorColumn<Religion>[] = [
   },
   {
     key: "form",
-    label: "Form",
+    label: t("Form"),
     width: "7em",
     mobileHidden: true,
     sortBy: religion => religion.form || "",
@@ -61,7 +63,7 @@ const columns: EditorColumn<Religion>[] = [
   },
   {
     key: "deity",
-    label: "Deity",
+    label: t("Deity"),
     width: "14em",
     mobileHidden: true,
     sortBy: religion => religion.deity || "",
@@ -69,14 +71,14 @@ const columns: EditorColumn<Religion>[] = [
   },
   {
     key: "area",
-    label: "Area",
+    label: t("Area"),
     width: "7em",
     mobileHidden: true,
     sortBy: religion => religion.area || 0
   },
   {
     key: "population",
-    label: "Population",
+    label: t("Population"),
     width: "6em",
     sortBy: religion =>
       (religion.rural || 0) * options.map.units.population.scale +
@@ -84,7 +86,7 @@ const columns: EditorColumn<Religion>[] = [
   },
   {
     key: "expansion",
-    label: "Expansion",
+    label: t("Expansion"),
     width: "5em",
     hidden: true,
     mobileHidden: true,
@@ -93,7 +95,7 @@ const columns: EditorColumn<Religion>[] = [
   },
   {
     key: "expansionism",
-    label: "Expansionism",
+    label: t("Expansionism"),
     width: "5em",
     hidden: true,
     mobileHidden: true,
@@ -128,7 +130,7 @@ function open(): void {
   religionsTable.reset();
 
   $(`#${dialogId}`).dialog({
-    title: "Religions Editor",
+    title: t("Religions Editor"),
     resizable: false,
     width: "fit-content",
     close: closeReligionsEditor,
@@ -142,44 +144,44 @@ function renderDialog(): void {
     <div id="religionsBody" class="table" data-type="absolute">${renderEditorHeader({ dialogId, columns })}</div>
 
     <div id="religionsFooter" class="totalLine">
-      <div data-tip="Total number of organized religions" style="margin-left: 12px">
-        Organized:&nbsp;<span id="religionsOrganized">0</span>
+      <div data-tip="${t("Total number of organized religions")}" style="margin-left: 12px">
+        ${t("Organized")}:&nbsp;<span id="religionsOrganized">0</span>
       </div>
-      <div data-tip="Total number of heresies" style="margin-left: 12px">
-        Heresies:&nbsp;<span id="religionsHeresies">0</span>
+      <div data-tip="${t("Total number of heresies")}" style="margin-left: 12px">
+        ${t("Heresies")}:&nbsp;<span id="religionsHeresies">0</span>
       </div>
-      <div data-tip="Total number of cults" style="margin-left: 12px">
-        Cults:&nbsp;<span id="religionsCults">0</span>
+      <div data-tip="${t("Total number of cults")}" style="margin-left: 12px">
+        ${t("Cults")}:&nbsp;<span id="religionsCults">0</span>
       </div>
-      <div data-tip="Total number of folk religions" style="margin-left: 12px">
-        Folk:&nbsp;<span id="religionsFolk">0</span>
+      <div data-tip="${t("Total number of folk religions")}" style="margin-left: 12px">
+        ${t("Folk")}:&nbsp;<span id="religionsFolk">0</span>
       </div>
-      <div data-tip="Total land area" style="margin-left: 12px" data-col="area">
-        Land Area:&nbsp;<span id="religionsFooterArea">0</span>
+      <div data-tip="${t("Total land area")}" style="margin-left: 12px" data-col="area">
+        ${t("Land area")}:&nbsp;<span id="religionsFooterArea">0</span>
       </div>
-      <div data-tip="Total number of believers (population)" style="margin-left: 12px" data-col="population">
-        Believers:&nbsp;<span id="religionsFooterPopulation">0</span>
+      <div data-tip="${t("Total number of believers (population)")}" style="margin-left: 12px" data-col="population">
+        ${t("Believers")}:&nbsp;<span id="religionsFooterPopulation">0</span>
       </div>
     </div>
 
     <div id="religionsBottom" class="editorToolbar">
-      <button id="religionsEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-      <button id="religionsEditStyle" data-tip="Edit religions style in Style Editor" class="icon-adjust"></button>
-      <button id="religionsLegend" data-tip="Toggle Legend box" class="icon-list-bullet"></button>
-      <button id="religionsPercentage" data-tip="Toggle percentage / absolute values display mode" class="icon-percent"></button>
-      <button id="religionsHeirarchy" data-tip="Show religions hierarchy tree" class="icon-sitemap"></button>
-      <button id="religionsExtinct" data-tip="Show/hide extinct religions (religions without cells)" class="icon-eye-off"></button>
+      <button id="religionsEditorRefresh" data-tip="${t("Refresh the Editor")}" class="icon-cw"></button>
+      <button id="religionsEditStyle" data-tip="${t("Edit style in Style Editor")}" class="icon-adjust"></button>
+      <button id="religionsLegend" data-tip="${t("Toggle Legend box")}" class="icon-list-bullet"></button>
+      <button id="religionsPercentage" data-tip="${t("Toggle percentage / absolute values display mode")}" class="icon-percent"></button>
+      <button id="religionsHeirarchy" data-tip="${t("Show Religions Hierarchy")}" class="icon-sitemap"></button>
+      <button id="religionsExtinct" data-tip="${t("Show/hide extinct religions (religions without cells)")}" class="icon-eye-off"></button>
 
-      <button id="religionsManually" data-tip="Manually re-assign religions" class="icon-brush"></button>
-      <button id="religionsAdd" data-tip="Add a new religion. Hold Shift to add multiple" class="icon-plus"></button>
-      <button id="religionsExport" data-tip="Download religions-related data" class="icon-download"></button>
-      <button id="religionsRecalculate" data-tip="Recalculate religions based on current values of growth-related attributes" class="icon-retweet"></button>
+      <button id="religionsManually" data-tip="${t("Manually re-assign religions")}" class="icon-brush"></button>
+      <button id="religionsAdd" data-tip="${sentences(t("Add a new religion"), t("Hold Shift to add multiple"))}" class="icon-plus"></button>
+      <button id="religionsExport" data-tip="${t("Download religions-related data")}" class="icon-download"></button>
+      <button id="religionsRecalculate" data-tip="${t("Recalculate religions based on current values of growth-related attributes")}" class="icon-retweet"></button>
       <span
-        data-tip="Allow religion center, extent, and expansionism changes to take an immediate effect"
+        data-tip="${t("Allow religion center, extent, and expansionism changes to take an immediate effect")}"
         class="editorToolbarPanel"
       >
         <input id="religionsAutoChange" class="checkbox" type="checkbox" />
-        <label for="religionsAutoChange" class="checkbox-label"><i>auto-apply changes</i></label>
+        <label for="religionsAutoChange" class="checkbox-label"><i>${t("auto-apply changes")}</i></label>
       </span>
     </div>
   </div>`;
@@ -249,9 +251,14 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
     const rural = (r.rural ?? 0) * options.map.units.population.scale;
     const urban = (r.urban ?? 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     const population = rn(rural + urban);
-    const populationTip = `Believers: ${si(population)}; Rural areas: ${si(rural)}; Urban areas: ${si(
-      urban
-    )}. Click to change`;
+    const populationTip = sentences(
+      t("Believers: {{total}}; Rural areas: {{rural}}; Urban areas: {{urban}}", {
+        total: si(population),
+        rural: si(rural),
+        urban: si(urban)
+      }),
+      t("Click to change")
+    );
 
     if (!r.i) {
       // No religion (neutral) line
@@ -269,19 +276,19 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
         data-expansionism=""
       >
         <svg width="9" height="9" class="placeholder" data-col="color"></svg>
-        <input data-tip="Religion name. Click and type to change" class="religionName italic"
+        <input data-tip="${sentences(t("Religion name"), t("Click and type to change"))}" class="religionName italic"
           value="${r.name}" autocorrect="off" spellcheck="false" data-col="name" />
-        <select data-tip="Religion type" class="religionType placeholder" data-col="type">
+        <select data-tip="${t("Religion type")}" class="religionType placeholder" data-col="type">
           ${getTypeOptions(r.type)}
         </select>
-        <input data-tip="Religion form" class="religionForm placeholder" value="" autocorrect="off" spellcheck="false" data-col="form" />
+        <input data-tip="${t("Religion form")}" class="religionForm placeholder" value="" autocorrect="off" spellcheck="false" data-col="form" />
         <div data-col="deity">
           <span class="icon-arrows-cw placeholder"></span>
           <input class="religionDeity placeholder" value="" autocorrect="off" spellcheck="false" />
         </div>
         <div data-col="area">
-          <span data-tip="Religion area" style="padding-right: 4px" class="icon-map-o"></span>
-          <div data-tip="Religion area" class="religionArea">${si(area) + unit}</div>
+          <span data-tip="${t("Religion area")}" style="padding-right: 4px" class="icon-map-o"></span>
+          <div data-tip="${t("Religion area")}" class="religionArea">${si(area) + unit}</div>
         </div>
         <div data-col="population">
           <span data-tip="${populationTip}" class="icon-male"></span>
@@ -317,31 +324,31 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
       data-expansionism="${r.expansionism}"
     >
       <fill-box fill="${r.color}" data-col="color"></fill-box>
-      <input data-tip="Religion name. Click and type to change" class="religionName"
+      <input data-tip="${sentences(t("Religion name"), t("Click and type to change"))}" class="religionName"
         value="${r.name}" autocorrect="off" spellcheck="false" data-col="name" />
-      <select data-tip="Religion type" class="religionType" data-col="type">
+      <select data-tip="${t("Religion type")}" class="religionType" data-col="type">
         ${getTypeOptions(r.type)}
       </select>
-      <input data-tip="Religion form" class="religionForm"
+      <input data-tip="${t("Religion form")}" class="religionForm"
         value="${r.form}" autocorrect="off" spellcheck="false" data-col="form" />
       <div data-col="deity">
-        <span data-tip="Click to re-generate supreme deity" class="icon-arrows-cw pointer"></span>
-        <input data-tip="Religion supreme deity" class="religionDeity"
+        <span data-tip="${t("Click to re-generate supreme deity")}" class="icon-arrows-cw pointer"></span>
+        <input data-tip="${t("Religion supreme deity")}" class="religionDeity"
           value="${r.deity || ""}" autocorrect="off" spellcheck="false" />
       </div>
       <div data-col="area">
-        <span data-tip="Religion area" style="padding-right: 4px" class="icon-map-o"></span>
-        <div data-tip="Religion area" class="religionArea">${si(area) + unit}</div>
+        <span data-tip="${t("Religion area")}" style="padding-right: 4px" class="icon-map-o"></span>
+        <div data-tip="${t("Religion area")}" class="religionArea">${si(area) + unit}</div>
       </div>
       <div data-col="population">
         <span data-tip="${populationTip}" class="icon-male"></span>
         <div data-tip="${populationTip}" class="religionPopulation pointer">${si(population)}</div>
       </div>
       ${getExpansionColumns(r)}
-      ${noteIcon("this religion")}
-      <span data-col="locate" data-tip="Locate the religion" class="icon-target"></span>
-      <span data-col="lock" data-tip="Lock this religion" class="icon-lock${r.lock ? "" : "-open"}"></span>
-      <span data-col="remove" data-tip="Remove religion" class="icon-trash-empty"></span>
+      ${noteIcon(t("Edit free text notes (legend)"))}
+      <span data-col="locate" data-tip="${t("Locate the religion")}" class="icon-target"></span>
+      <span data-col="lock" data-tip="${t("Lock this religion")}" class="icon-lock${r.lock ? "" : "-open"}"></span>
+      <span data-col="remove" data-tip="${t("Remove religion")}" class="icon-trash-empty"></span>
     </div>`;
   }
   const body = ensureEl("religionsBody");
@@ -425,19 +432,20 @@ function getTypeOptions(type: string): string {
   let options = "";
   const types = ["Folk", "Organized", "Cult", "Heresy"];
   types.forEach(t => {
-    options += `<option ${type === t ? "selected" : ""} value="${t}">${t}</option>`;
+    options += `<option ${type === t ? "selected" : ""} value="${t}">${labelOf(RELIGION_TYPE_LABELS, t)}</option>`;
   });
   return options;
 }
 
 function getExpansionColumns(r: any): string {
   if (r.type === "Folk") {
-    const folkTip =
-      "Folk religions are not competitive and do not expand. Initially they cover all cells of their parent culture, but get ousted by organized religions when they expand";
+    const folkTip = t(
+      "Folk religions are not competitive and do not expand. Initially they cover all cells of their parent culture, but get ousted by organized religions when they expand"
+    );
     return /* html */ `
       <div data-col="expansion">
         <span data-tip="${folkTip}" class="icon-resize-full-alt" style="padding-right: 2px"></span>
-        <span data-tip="${folkTip}" class="religionExtent">culture</span>
+        <span data-tip="${folkTip}" class="religionExtent">${t("culture")}</span>
       </div>
       <div data-col="expansionism">
         <span data-tip="${folkTip}" class="icon-resize-full"></span>
@@ -447,15 +455,15 @@ function getExpansionColumns(r: any): string {
 
   return /* html */ `
     <div data-col="expansion">
-      <span data-tip="Potential religion extent" class="icon-resize-full-alt" style="padding-right: 2px"></span>
-      <select data-tip="Potential religion extent" class="religionExtent">
+      <span data-tip="${t("Potential religion extent")}" class="icon-resize-full-alt" style="padding-right: 2px"></span>
+      <select data-tip="${t("Potential religion extent")}" class="religionExtent">
         ${getExtentOptions(r.expansion)}
       </select>
     </div>
     <div data-col="expansionism">
-      <span data-tip="Religion expansionism. Defines competitive size" class="icon-resize-full"></span>
+      <span data-tip="${sentences(t("Religion expansionism"), t("Defines competitive size"))}" class="icon-resize-full"></span>
       <input
-        data-tip="Religion expansionism. Defines competitive size. Click to change, then click Recalculate to apply change"
+        data-tip="${sentences(t("Religion expansionism"), t("Defines competitive size"), t("Click to change, then click Recalculate to apply"))}"
         class="religionExpantion"
         type="number"
         min="0"
@@ -470,7 +478,7 @@ function getExtentOptions(type: string): string {
   let options = "";
   const types = ["global", "state", "culture"];
   types.forEach(t => {
-    options += `<option ${type === t ? "selected" : ""} value="${t}">${t}</option>`;
+    options += `<option ${type === t ? "selected" : ""} value="${t}">${labelOf(RELIGION_EXPANSION_LABELS, t)}</option>`;
   });
   return options;
 }
@@ -560,7 +568,7 @@ function changePopulation(this: HTMLElement): void {
   const religionId = +(this.closest(".states") as HTMLElement).dataset.id!;
   const religion = pack.religions[religionId];
   if (!religion.cells) {
-    tip("Religion does not have any cells, cannot change population", false, "error");
+    tip(t("No cells, cannot change population"), false, "error");
     return;
   }
 
@@ -573,13 +581,13 @@ function changePopulation(this: HTMLElement): void {
   const burgs = pack.burgs.filter(b => !b.removed && pack.cells.religion[b.cell] === religionId);
 
   alertMessage.innerHTML = /* html */ `<div>
-    <i>All population of religion territory is considered believers of this religion. It means believers number change will directly affect population</i>
+    <i>${t("All population of religion territory is considered believers of this religion. It means believers number change will directly affect population")}</i>
     <div style="margin: 0.5em 0">
-      Rural: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" />
-      Urban: <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em"
+      ${t("Rural")}: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" />
+      ${t("Urban")}: <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em"
         ${burgs.length ? "" : "disabled"} />
     </div>
-    <div>Total population: ${format(total)} ⇒ <span id="totalPop">${format(total)}</span>
+    <div>${t("Total population")}: ${format(total)} ⇒ <span id="totalPop">${format(total)}</span>
       (<span id="totalPopPerc">100</span>%)
     </div>
   </div>`;
@@ -601,14 +609,14 @@ function changePopulation(this: HTMLElement): void {
 
   $("#alert").dialog({
     resizable: false,
-    title: "Change believers number",
+    title: t("Change believers number"),
     width: "24em",
     buttons: {
-      Apply: function (this: HTMLElement) {
+      [t("Apply")]: function (this: HTMLElement) {
         applyPopulationChange();
         $(this).dialog("close");
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     },
@@ -649,9 +657,9 @@ function religionRemovePrompt(this: HTMLElement): void {
 
   const religionId = +(this.closest(".states") as HTMLElement).dataset.id!;
   confirmationDialog({
-    title: "Remove religion",
-    message: "Are you sure you want to remove the religion? <br>This action cannot be reverted",
-    confirm: "Remove",
+    title: t("Remove religion"),
+    message: `${t("Are you sure you want to remove the religion?")}<br>${t("This action cannot be reverted")}`,
+    confirm: t("Remove"),
     onConfirm: () => removeReligion(religionId)
   });
 }
@@ -691,7 +699,7 @@ function drawReligionCenters(): void {
     .attr("cx", (d: any) => pack.cells.p[d.center][0])
     .attr("cy", (d: any) => pack.cells.p[d.center][1])
     .on("mouseenter", (event: any, d: any) => {
-      tip(`${d.name}. Drag to move the religion center`, true);
+      tip(t("{{religion}}. Drag to move the religion center", { religion: d.name }), true);
       religionHighlightOn(event);
     })
     .on("mouseleave", (event: any) => {
@@ -736,7 +744,7 @@ function toggleLegend(): void {
     .filter(r => r.i && !r.removed && r.area)
     .sort((a, b) => (b.area ?? 0) - (a.area ?? 0))
     .map(r => [r.i, r.color, r.name]);
-  if (!data.length) return void tip("No religions to show", false, "error");
+  if (!data.length) return void tip(t("No religions to show"), false, "error");
   drawLegend(LEGEND_NAME, data);
 }
 
@@ -767,19 +775,19 @@ async function showHierarchy(): Promise<void> {
     const { name, type, form, rural, urban } = religion;
 
     const getTypeText = () => {
-      if (name.includes(type)) return "";
-      if (form.includes(type)) return "";
-      if (type === "Folk" || type === "Organized") return `. ${type} religion`;
-      return `. ${type}`;
+      if (name.includes(type) || form.includes(type)) return "";
+      if (type === "Folk") return t("Folk religion");
+      if (type === "Organized") return t("Organized religion");
+      return labelOf(RELIGION_TYPE_LABELS, type);
     };
 
-    const formText = form === type ? "" : `. ${form}`;
     const population =
       rural * options.map.units.population.scale +
       urban * options.map.units.population.scale * options.map.units.population.urbanization.rate;
-    const populationText = population > 0 ? `${si(rn(population))} people` : "Extinct";
+    const populationText =
+      population > 0 ? t("{{- population}} people", { population: si(rn(population)) }) : t("Extinct");
 
-    return `${name}${getTypeText()}${formText}. ${populationText}`;
+    return sentences(...[name, getTypeText(), form === type ? "" : form, populationText].filter(Boolean));
   };
 
   const getShape = ({ type }: any) => {
@@ -816,7 +824,7 @@ function openPaintEditor(): void {
   Layers.show("religions");
 
   void Controllers.PaintEditor.open({
-    title: "Paint Religions",
+    title: t("Paint Religions"),
     parentDialogId: dialogId,
     onClose: open,
     items: pack.religions
@@ -846,7 +854,7 @@ function enterAddReligionMode(this: HTMLElement): void {
 
   customization = 8;
   this.classList.add("pressed");
-  tip("Click on the map to add a new religion", true);
+  tip(t("Click on the map to add a new religion"), true);
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", addReligion);
   ensureEl("religionsBody")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")

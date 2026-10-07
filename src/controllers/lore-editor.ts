@@ -5,6 +5,7 @@ import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers"
 import { Pins } from "@/components/pins";
 import { Lore } from "@/generators/lore";
 import { Names } from "@/generators/names-generator";
+import { t } from "@/utils/i18n";
 import { ensureEl } from "../utils";
 
 const DIALOG_ID = "loreEditor";
@@ -24,41 +25,41 @@ const TEMPLATE = /* html */ `
 
   <div class="le">
     <i data-locked="0" id="lock_mapName" class="icon-lock-open"></i>
-    <label for="loreMapName">Map name:</label>
+    <label for="loreMapName">${t("Map name")}:</label>
     <input
       id="loreMapName"
-      data-tip="Name of the map. Used to name the files it is downloaded as"
+      data-tip="${t("Name of the map. Used to name the files it is downloaded as")}"
       autocorrect="off"
       spellcheck="false"
       type="text"
     />
-    <i data-tip="Generate a new map name" id="loreMapNameRegenerate" class="icon-arrows-cw"></i>
+    <i data-tip="${t("Generate a new map name")}" id="loreMapNameRegenerate" class="icon-arrows-cw"></i>
 
     <i data-locked="0" id="lock_year" class="icon-lock-open"></i>
-    <label for="loreYear">Year:</label>
+    <label for="loreYear">${t("Year")}:</label>
     <input
       id="loreYear"
-      data-tip="Current year. Dates state history and battle reports"
+      data-tip="${t("Current year. Dates state history and battle reports")}"
       type="number"
       step="1"
     />
     <span></span>
 
     <i data-locked="0" id="lock_era" data-ids="era,eraShort" class="icon-lock-open"></i>
-    <label for="loreEra">Era:</label>
-    <span class="le-era" data-tip="Name of the era the current year belongs to, and its abbreviation">
-      <input id="loreEra" autocorrect="off" spellcheck="false" type="text" placeholder="Winter Era" />
-      <input id="loreEraShort" autocorrect="off" spellcheck="false" type="text" placeholder="WE" />
+    <label for="loreEra">${t("Era")}:</label>
+    <span class="le-era" data-tip="${t("Name of the era the current year belongs to, and its abbreviation")}">
+      <input id="loreEra" autocorrect="off" spellcheck="false" type="text" placeholder="${t("Winter Era")}" />
+      <input id="loreEraShort" autocorrect="off" spellcheck="false" type="text" placeholder="${t("WE")}" />
     </span>
-    <i data-tip="Generate a new era" id="loreEraRegenerate" class="icon-arrows-cw"></i>
+    <i data-tip="${t("Generate a new era")}" id="loreEraRegenerate" class="icon-arrows-cw"></i>
 
     <span></span>
-    <label for="loreDescription">Description:</label>
+    <label for="loreDescription">${t("Description")}:</label>
     <textarea
       id="loreDescription"
       rows="5"
-      data-tip="Your own description of this world. Free text, carried in the map file"
-      placeholder="Describe the map, its age, its peoples – whatever the map should carry with it."
+      data-tip="${t("Your own description of this world. Free text, carried in the map file")}"
+      placeholder="${t("Describe the map, its age, its peoples – whatever the map should carry with it.")}"
     ></textarea>
     <span></span>
   </div>
@@ -69,7 +70,7 @@ function open(): void {
   renderDialog();
 
   $(`#${DIALOG_ID}`).dialog({
-    title: "Setup Lore",
+    title: t("Setup Lore"),
     width: "auto",
     minWidth: 340,
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },

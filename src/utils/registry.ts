@@ -1,5 +1,6 @@
 // The lazy module registry. Note it calls `tip`/`clearMainTip` through the window bridge, not an
 // import: utils sits below the UI layer and must never import from components/
+import { t } from "./i18n";
 
 type Loader<T> = () => Promise<T>;
 type DispatchFn = (...args: unknown[]) => unknown;
@@ -7,7 +8,7 @@ type DispatchFn = (...args: unknown[]) => unknown;
 let pendingLoads = 0;
 function trackLoad<T>(promise: Promise<T>): Promise<T> {
   pendingLoads++;
-  window.tip("Loading…", false, "info");
+  window.tip(t("Loading…"), false, "info");
   return promise.finally(() => {
     if (--pendingLoads <= 0) {
       pendingLoads = 0;

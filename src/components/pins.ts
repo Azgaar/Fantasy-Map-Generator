@@ -2,11 +2,12 @@
 
 import { pinSchemas } from "@/components/options-schema";
 import { tip } from "@/components/tooltips";
+import { t } from "@/utils/i18n";
 import { safeParseJSON } from "@/utils/stringUtils";
 
 const STORAGE_KEY = "fmg-locks";
-const LOCKED_TIP = "Click to lock the option and always use the current value on new map generation";
-const UNLOCKED_TIP = "Click to unlock the option and allow it to be randomized on new map generation";
+const LOCKED_TIP = t("Click to lock the option and always use the current value on new map generation");
+const UNLOCKED_TIP = t("Click to unlock the option and allow it to be randomized on new map generation");
 
 class PinStore {
   /** `?options=default` asks for the map a fresh browser would make, so every pin is ignored */

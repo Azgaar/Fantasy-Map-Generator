@@ -1,11 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { LANGUAGES } from "@/data/languages";
-import type { Strings } from "@/utils/i18n";
-import { lintCatalog } from "./lint-catalog";
 
-const files = import.meta.glob<Strings>("./*.json", { import: "default", eager: true });
-const catalog = (code: string) => files[`./${code}.json`];
-const english = catalog("en");
+// catalog rules are checked by scripts/lint-locales.mjs
+const files = import.meta.glob("./*.json");
 
 describe("locale files", () => {
   it("exist for exactly the shipped languages", () => {
@@ -14,9 +11,5 @@ describe("locale files", () => {
         .map(code => `./${code}.json`)
         .sort()
     );
-  });
-
-  it.each(Object.keys(LANGUAGES))("%s keeps the catalog rules", code => {
-    expect(lintCatalog(catalog(code), english)).toEqual([]);
   });
 });

@@ -15,7 +15,7 @@ export const LAYER_TOGGLES = new Map<LayerId, LayerButton>([
   ["lakes", { label: t("Lakes"), shortcut: "KeyQ" }],
   ["biomes", { label: t("Biomes"), shortcut: "KeyB" }],
   ["cells", { label: t("Cells"), shortcut: "KeyE" }],
-  ["grid", { label: t("Grid"), shortcut: "Semicolon", hint: "; (semicolon)" }],
+  ["grid", { label: t("Grid"), shortcut: "Semicolon", hint: t("; (semicolon)") }],
   ["coordinates", { label: t("Coordinates"), shortcut: "KeyO" }],
   ["compass", { label: t("Wind Rose"), shortcut: "KeyW" }],
   ["rivers", { label: t("Rivers"), shortcut: "KeyV" }],
@@ -31,7 +31,7 @@ export const LAYER_TOGGLES = new Map<LayerId, LayerButton>([
   ["ice", { label: t("Ice"), shortcut: "KeyJ" }],
   ["goods", { label: t("Goods"), shortcut: "KeyG" }],
   ["markets", { label: t("Markets") }],
-  ["trade", { label: t("Trade"), shortcut: "Backquote", hint: "` (backtick)" }],
+  ["trade", { label: t("Trade"), shortcut: "Backquote", hint: t("` (backtick)") }],
   ["precipitation", { label: t("Precipitation"), shortcut: "KeyA" }],
   ["population", { label: t("Population"), shortcut: "KeyN" }],
   ["emblems", { label: t("Emblems"), shortcut: "KeyY" }],
@@ -40,16 +40,25 @@ export const LAYER_TOGGLES = new Map<LayerId, LayerButton>([
   ["military", { label: t("Military"), shortcut: "KeyM" }],
   ["markers", { label: t("Markers"), shortcut: "KeyK" }],
   ["journeys", { label: t("Journeys") }],
-  ["rulers", { label: t("Rulers"), shortcut: "Equal", hint: "= (equal sign)" }],
-  ["scaleBar", { label: t("Scale Bar"), shortcut: "Slash", hint: "/ (slash sign)" }],
-  ["vignette", { label: t("Vignette"), shortcut: "BracketLeft", hint: "[ (left square bracket)" }]
+  ["rulers", { label: t("Rulers"), shortcut: "Equal", hint: t("= (equal sign)") }],
+  ["scaleBar", { label: t("Scale Bar"), shortcut: "Slash", hint: t("/ (slash sign)") }],
+  ["vignette", { label: t("Vignette"), shortcut: "BracketLeft", hint: t("[ (left square bracket)") }]
 ]);
+
+// the permanent layers have no button, the Style tab still names them
+const PERMANENT_LAYER_LABELS: Record<string, string> = {
+  coastline: t("Coastline"),
+  fogging: t("Fogging"),
+  landmass: t("Landmass"),
+  legend: t("Legend"),
+  ocean: t("Ocean")
+};
 
 /** The label of a layer; `map` is the whole-map style element */
 export function layerLabel(id: string): string {
   if (id === "map") return t("Map");
   const label = LAYER_TOGGLES.get(id as LayerId)?.label;
-  return label ?? id.charAt(0).toUpperCase() + id.slice(1); // the permanent layers have no button
+  return label ?? PERMANENT_LAYER_LABELS[id] ?? id.charAt(0).toUpperCase() + id.slice(1);
 }
 
 /** The button label as markup, its first occurrence of the hotkey letter underlined */

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { STORAGE_KEY } from "@/components/options-model";
-import { OPTIONS_STORAGE_KEY, resolveLanguage, takeReopenRequest } from "./language";
+import { OPTIONS_STORAGE_KEY, resolveLanguage } from "./language";
 
 const browserLanguages = (languages: string[]) => vi.spyOn(navigator, "languages", "get").mockReturnValue(languages);
 
@@ -29,13 +29,5 @@ describe("resolveLanguage", () => {
     browserLanguages(["de-DE"]);
     localStorage.setItem(OPTIONS_STORAGE_KEY, "{not json");
     expect(resolveLanguage()).toBe("en");
-  });
-});
-
-describe("reopen request", () => {
-  it("is taken once", () => {
-    sessionStorage.setItem("fmg-reopen-map", "1");
-    expect(takeReopenRequest()).toBe(true);
-    expect(takeReopenRequest()).toBe(false);
   });
 });

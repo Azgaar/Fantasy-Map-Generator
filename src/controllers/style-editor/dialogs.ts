@@ -11,6 +11,7 @@ import { StylePresetsService, SYSTEM_PRESETS } from "@/services/style-presets";
 import { VERSION } from "@/services/versioning";
 import type { StyleElement, StyleSelection } from "@/types/styles";
 import { ensureEl, escapeHtml, findEl, htmlEl, toHEX } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { groupEntriesFor, hasGroups, listElements } from "./elements";
 
 const controlDialogs = new Set<string>(); // opened by a form control: they go with the form
@@ -63,7 +64,7 @@ export class ElementsDialog {
     dialog.style.display = "none";
     dialog.innerHTML = /* html */ `
       <style>${ELEMENTS_STYLE}</style>
-      <input class="filter" type="text" placeholder="Filter…" data-tip="Filter elements and groups by name" />
+      <input class="filter" type="text" placeholder="${t("Filter")}…" data-tip="${t("Filter elements and groups by name")}" />
       <div class="tree"></div>`;
     ensureEl("dialogs").append(dialog);
 
@@ -77,7 +78,7 @@ export class ElementsDialog {
     this.unsubscribe = Layers.subscribe(() => this.render());
 
     $(dialog).dialog({
-      title: "Style elements",
+      title: t("Style elements"),
       width: "20em",
       height: "auto",
       maxHeight: Math.round(window.innerHeight * 0.7),
@@ -181,17 +182,19 @@ export class ElementsDialog {
     dot.className = "dot";
     if (!Layers.has(id)) {
       dot.classList.add("perm");
-      dot.dataset.tip = "Not a layer";
+      dot.dataset.tip = t("Not a layer");
       return dot;
     }
     if (Layers.get(id).params.permanent) {
       dot.classList.add("perm");
-      dot.dataset.tip = "Always shown";
+      dot.dataset.tip = t("Always shown");
       return dot;
     }
     const on = Layers.isOn(id);
     if (on) dot.classList.add("vis");
-    dot.dataset.tip = `Layer is ${on ? "on" : "off"}. Click to toggle`;
+    dot.dataset.tip = on
+      ? sentences(t("Layer is on"), t("Click to toggle"))
+      : sentences(t("Layer is off"), t("Click to toggle"));
     return dot;
   }
 }
@@ -234,7 +237,7 @@ export class PresetSelector {
     });
 
     $(dialog).dialog({
-      title: "Style presets",
+      title: t("Style Presets"),
       width: 480,
       maxHeight: Math.round(window.innerHeight * 0.75),
       position: { my: "left top", at: "right+10 top", of: "#options" },
@@ -263,7 +266,7 @@ export class PresetSelector {
     const card = document.createElement("div");
     card.className = "pc";
     card.dataset.name = name;
-    card.dataset.tip = `Apply the ${StylePresetsService.displayName(name)} preset`;
+    card.dataset.tip = t("Apply the {{preset}} preset", { preset: StylePresetsService.displayName(name) });
     card.classList.toggle("on", name === StylePresetsService.current());
 
     const image = document.createElement("div");
@@ -279,7 +282,7 @@ export class PresetSelector {
       image.textContent = "custom";
       const remove = document.createElement("button");
       remove.className = "remove icon-trash-empty";
-      remove.dataset.tip = "Remove this custom preset";
+      remove.dataset.tip = t("Remove this custom preset");
       image.append(remove);
     }
 
@@ -334,7 +337,7 @@ export function openFontDialog({ selected, sample, onPick, onAdd }: FontDialogOp
     "beforeend",
     /* html */ `<div id="${FONT_DIALOG}" class="dialog">
       <style>${FONT_STYLE}</style>
-      <input type="text" placeholder="Search fonts" />
+      <input type="text" placeholder="${t("Search fonts")}" />
       <div class="choices">${fontChoices(sample, selected)}</div>
     </div>`
   );
@@ -362,19 +365,19 @@ export function openFontDialog({ selected, sample, onPick, onAdd }: FontDialogOp
   });
 
   $(dialog).dialog({
-    title: "Select font",
+    title: t("Select font"),
     width: "24em",
     position: { my: "center", at: "center", of: "svg" },
     maxHeight: Math.round(window.innerHeight * 0.7),
     close: () => destroyDialog(FONT_DIALOG),
     buttons: {
-      "Add font": () =>
+      [t("Add font")]: () =>
         onAdd(family => {
           list.innerHTML = fontChoices(sample, family);
           filter();
           select(family);
         }),
-      Close: function (this: HTMLElement) {
+      [t("Close")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
@@ -387,33 +390,24 @@ export function openAddFontDialog(onAdded: (family: string) => void): void {
   trackControlDialog("addFontDialog");
   const dialog = htmlEl("div", { id: "addFontDialog", className: "dialog", style: "display: none" });
   dialog.innerHTML = /* html */ `
-    <span>There are 3 ways to add a custom font:</span>
+    <span>${t("There are 3 ways to add a custom font")}:</span>
     <p>
-      <strong>Google font</strong>. Open <a href="https://fonts.google.com/" target="_blank">Google Fonts</a>, find
-      a font you like and enter its name to the field below.
+      <strong>${t("Google font")}</strong>. ${t('Open <a href="https://fonts.google.com/" target="_blank">Google Fonts</a>, find a font you like and enter its name to the field below.')}
     </p>
     <p>
-      <strong>Local font</strong>. If you have a font
-      <a href="https://faqs.skillcrush.com/article/275-downloading-installing-a-font-on-your-computer" target="_blank">installed on your computer</a>,
-      just provide the font name. Make sure the browser is reloaded after the installation. The font won't work
-      on machines not having it installed. Good source of fonts are
-      <a href="https://fontesk.com" target="_blank">Fontdesk</a> and <a href="https://www.dafont.com" target="_blank">DaFont</a>.
+      <strong>${t("Local font")}</strong>. ${t('If you have a font <a href="https://faqs.skillcrush.com/article/275-downloading-installing-a-font-on-your-computer" target="_blank">installed on your computer</a>, just provide the font name. Make sure the browser is reloaded after the installation. The font won\'t work on machines not having it installed. Good source of fonts are <a href="https://fontesk.com" target="_blank">Fontdesk</a> and <a href="https://www.dafont.com" target="_blank">DaFont</a>.')}
     </p>
     <p>
-      <strong>Font URL</strong>. Provide font name and link to the font file hosted online. The best free font
-      hostings are <a href="https://fonts.google.com/" target="_blank">Google Fonts</a> and
-      <a target="_blank" href="https://www.cdnfonts.com">CDN Fonts</a>. To get font file open the link to css
-      provided by these services and manually copy the link to <code>woff2</code> of desired variant. To add another
-      variant (e.g. Cyrillic), add the font one more time under the same name, but with another URL
+      <strong>${t("Font URL")}</strong>. ${t('Provide font name and link to the font file hosted online. The best free font hostings are <a href="https://fonts.google.com/" target="_blank">Google Fonts</a> and <a target="_blank" href="https://www.cdnfonts.com">CDN Fonts</a>. To get font file open the link to css provided by these services and manually copy the link to <code>woff2</code> of desired variant. To add another variant (e.g. Cyrillic), add the font one more time under the same name, but with another URL')}
     </p>
-    <div style="margin-top: 0.3em" data-tip="Select font adding method">
+    <div style="margin-top: 0.3em" data-tip="${t("Select font adding method")}">
       <select id="addFontMethod">
-        <option value="googleFont" selected>Google font</option>
-        <option value="localFont">Local font</option>
-        <option value="fontURL">Font URL</option>
+        <option value="googleFont" selected>${t("Google font")}</option>
+        <option value="localFont">${t("Local font")}</option>
+        <option value="fontURL">${t("Font URL")}</option>
       </select>
-      <input id="addFontNameInput" placeholder="font family" style="width: 15em" />
-      <div><input id="addFontURLInput" placeholder="font file URL" style="width: 22.6em; margin-top: 0.1em; display: none" /></div>
+      <input id="addFontNameInput" placeholder="${t("Font family")}" style="width: 15em" />
+      <div><input id="addFontURLInput" placeholder="${t("font file URL")}" style="width: 22.6em; margin-top: 0.1em; display: none" /></div>
     </div>`;
   ensureEl("dialogs").append(dialog);
 
@@ -427,12 +421,12 @@ export function openAddFontDialog(onAdded: (family: string) => void): void {
   const add = async () => {
     const family = nameInput.value.trim();
     const src = urlInput.value.trim();
-    if (!family) return tip("Please provide a font name", false, "error");
+    if (!family) return tip(t("Please provide a font name"), false, "error");
     const exists =
       method.value === "fontURL"
         ? fonts.some(font => font.family === family && font.src === `url('${src}')`)
         : fonts.some(font => font.family === family);
-    if (exists) return tip("The font is already added", false, "error");
+    if (exists) return tip(t("The font is already added"), false, "error");
 
     const added =
       method.value === "fontURL"
@@ -445,14 +439,14 @@ export function openAddFontDialog(onAdded: (family: string) => void): void {
   };
 
   $(dialog).dialog({
-    title: "Add custom font",
+    title: t("Add custom font"),
     width: "26em",
     position: { my: "center", at: "center", of: "svg" },
     close: () => destroyDialog("addFontDialog"),
     buttons: {
       // jQuery 3.1 takes an async function for a props object, so the button handler stays sync
-      Add: () => void add(),
-      Cancel: function (this: HTMLElement) {
+      [t("Add")]: () => void add(),
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
@@ -464,8 +458,8 @@ export function openSchemeBuilder(current: string, onCreate: (stops: string) => 
   trackControlDialog("heightmapSchemeDialog");
   const dialog = htmlEl("div", { id: "heightmapSchemeDialog", className: "dialog", style: "display: none" });
   dialog.innerHTML = /* html */ `<div>
-    <i>Define heightmap gradient colors from high to low altitude</i>
-    <img id="heightmapSchemePreview" alt="heightmap preview" style="margin-top: 0.5em; width: 100%;" />
+    <i>${t("Define heightmap gradient colors from high to low altitude")}</i>
+    <img id="heightmapSchemePreview" alt="${t("heightmap preview")}" style="margin-top: 0.5em; width: 100%;" />
     <div id="heightmapSchemeStops" style="margin-block: 0.5em; display: flex; flex-wrap: wrap;"></div>
     <div id="heightmapSchemeGradient" style="height: 1.9em; border: 1px solid #767676;"></div>
   </div>`;
@@ -497,7 +491,7 @@ export function openSchemeBuilder(current: string, onCreate: (stops: string) => 
           textContent: "+",
           style: "margin-top: 0.3em; height: max-content"
         });
-        add.dataset.tip = "Add color stop in between";
+        add.dataset.tip = t("Add color stop in between");
         add.addEventListener("click", () => {
           stops.splice(index, 0, toHEX(interpolateRgb(stops[index - 1], stops[index])(0.5)));
           renderAll();
@@ -510,7 +504,7 @@ export function openSchemeBuilder(current: string, onCreate: (stops: string) => 
         value: stop,
         style: "width: 2.5em; border: none"
       });
-      input.dataset.tip = "Click to set the color";
+      input.dataset.tip = t("Click to set the color");
       input.addEventListener("input", () => {
         stops[index] = input.value;
         renderPreview();
@@ -523,7 +517,7 @@ export function openSchemeBuilder(current: string, onCreate: (stops: string) => 
           textContent: "x",
           style: "margin-top: 0.3em; height: max-content"
         });
-        remove.dataset.tip = "Remove color stop";
+        remove.dataset.tip = t("Remove color stop");
         remove.addEventListener("click", () => {
           stops.splice(index, 1);
           renderAll();
@@ -541,18 +535,18 @@ export function openSchemeBuilder(current: string, onCreate: (stops: string) => 
 
   $(dialog).dialog({
     resizable: false,
-    title: "Create heightmap color scheme",
+    title: t("Create heightmap color scheme"),
     position: { my: "center top+150", at: "center top", of: "svg" },
     close: () => destroyDialog("heightmapSchemeDialog"),
     buttons: {
-      Create: function (this: HTMLElement) {
+      [t("Create")]: function (this: HTMLElement) {
         const name = stops.join(",");
-        if (HeightmapColorSchemes.has(name)) return tip("This scheme already exists", false, "error");
+        if (HeightmapColorSchemes.has(name)) return tip(t("This scheme already exists"), false, "error");
         HeightmapColorSchemes.add(name);
         onCreate(name);
         $(this).dialog("close");
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
@@ -563,7 +557,7 @@ export function openTextureUrlDialog(onApply: (url: string) => void): void {
   destroyDialog("textureUrlDialog");
   trackControlDialog("textureUrlDialog");
   const dialog = htmlEl("div", { id: "textureUrlDialog", className: "dialog", style: "display: none" });
-  dialog.innerHTML = /* html */ `Provide a texture image URL:
+  dialog.innerHTML = /* html */ `${t("Provide a texture image URL")}:
     <input id="textureURL" type="url" style="width: 100%" placeholder="http://www.example.com/image.jpg" />
     <canvas id="texturePreview" width="256px" height="144px"></canvas>`;
   ensureEl("dialogs").append(dialog);
@@ -581,16 +575,16 @@ export function openTextureUrlDialog(onApply: (url: string) => void): void {
 
   $(dialog).dialog({
     resizable: false,
-    title: "Load custom texture",
+    title: t("Load custom texture"),
     width: "28em",
     close: () => destroyDialog("textureUrlDialog"),
     buttons: {
-      Apply: function (this: HTMLElement) {
-        if (!input.value) return tip("Please provide a valid URL", false, "error");
+      [t("Apply")]: function (this: HTMLElement) {
+        if (!input.value) return tip(t("Please provide a valid URL"), false, "error");
         onApply(input.value);
         $(this).dialog("close");
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }

@@ -5,7 +5,8 @@
  * See docs/prd/translation.md
  *
  * Usage:
- *   node scripts/lint-locales.mjs   # exit 1 on any problem (CI)
+ *   node scripts/lint-locales.mjs             # exit 1 on any problem (CI)
+ *   node scripts/lint-locales.mjs --missing   # list the English keys each language lacks, to translate
  */
 
 import fs from "node:fs";
@@ -42,6 +43,18 @@ export function lintCatalog(strings, english) {
   return problems;
 }
 
+/** The English keys a language lacks; an English plural needs the language's own plural forms */
+export function missingKeys(strings, english, code) {
+  const forms = new Intl.PluralRules(code).resolvedOptions().pluralCategories;
+  const needed = new Set();
+  for (const key of Object.keys(english)) {
+    const base = key.replace(PLURAL_SUFFIX, "");
+    if (base !== key && `${base}_other` in english) for (const form of forms) needed.add(`${base}_${form}`);
+    else needed.add(key);
+  }
+  return [...needed].filter(key => !(key in strings));
+}
+
 /** The English a key translates; a plural form English lacks (Russian `_few`) follows the English `_other` */
 function englishFor(key, english) {
   const base = key.replace(PLURAL_SUFFIX, "");
@@ -49,19 +62,24 @@ function englishFor(key, english) {
   return english[key];
 }
 
-const catalogs = dir =>
-  fs
-    .readdirSync(dir)
-    .filter(name => name.endsWith(".json"))
-    .map(name => path.join(dir, name));
-
 function main() {
   const read = file => JSON.parse(fs.readFileSync(file, "utf8"));
   const english = read(ENGLISH);
-  let failed = false;
+  const files = fs
+    .readdirSync(LOCALES)
+    .filter(name => name.endsWith(".json"))
+    .map(name => path.join(LOCALES, name));
 
-  // seeds: languages not offered yet, partial catalogs kept for translators
-  for (const file of [...catalogs(LOCALES), ...catalogs(`${LOCALES}/seeds`)]) {
+  if (process.argv.includes("--missing")) {
+    for (const file of files.filter(file => file !== ENGLISH)) {
+      const keys = missingKeys(read(file), english, path.basename(file, ".json"));
+      console.log(`${file}: ${keys.length} missing${keys.map(key => `\n  ${JSON.stringify(key)}`).join("")}`);
+    }
+    return;
+  }
+
+  let failed = false;
+  for (const file of files) {
     const strings = file === ENGLISH ? english : read(file);
     const problems = lintCatalog(strings, english);
     if (!problems.length) continue;

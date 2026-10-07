@@ -22,6 +22,7 @@ import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { CULTURE_TYPE_LABELS, labelOf } from "@/data/id-labels";
 import { STATE_FORMS, type State } from "@/generators/states-generator";
 import { redrawEmblem, removeEmblem } from "@/renderers/draw-emblems";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
@@ -29,6 +30,7 @@ import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement, highlightOutline } from "@/renderers/overlays/highlight";
 import { applyOption, downloadFile, getArea, getAreaUnit, getFileName, groupByValue, speak } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { errorText } from "@/utils/stringUtils";
 import { ensureEl, formatPrice, getAdjective, getPointer, isLand, rand, rn, si } from "../utils";
 
@@ -39,7 +41,7 @@ const columns: EditorColumn<State>[] = [
   { key: "color", width: "1.2em", permanent: true },
   {
     key: "name",
-    label: "State",
+    label: t("State"),
     width: "7em",
     permanent: true,
     sortBy: s => s.name || "",
@@ -48,7 +50,7 @@ const columns: EditorColumn<State>[] = [
   { key: "emblem", width: "1.4em" },
   {
     key: "form",
-    label: "Form",
+    label: t("Form"),
     width: "8em",
     mobileHidden: true,
     sortBy: s => (s.i ? s.formName || "" : ""),
@@ -56,14 +58,14 @@ const columns: EditorColumn<State>[] = [
   },
   {
     key: "capital",
-    label: "Capital",
+    label: t("Capital"),
     width: "7em",
     sortBy: s => (s.i ? pack.burgs[s.capital]?.name || "" : ""),
     sortType: "alpha"
   },
   {
     key: "culture",
-    label: "Culture",
+    label: t("Culture"),
     width: "10em",
     mobileHidden: true,
     sortBy: s => (s.i ? pack.cultures[s.culture]?.name || "" : ""),
@@ -71,14 +73,14 @@ const columns: EditorColumn<State>[] = [
   },
   {
     key: "burgs",
-    label: "Burgs",
+    label: t("Burgs"),
     width: "5em",
     mobileHidden: true,
     sortBy: s => s.burgs || 0
   },
   {
     key: "cells",
-    label: "Cells",
+    label: t("Cells"),
     width: "5em",
     hidden: true,
     mobileHidden: true,
@@ -86,7 +88,7 @@ const columns: EditorColumn<State>[] = [
   },
   {
     key: "area",
-    label: "Area",
+    label: t("Area"),
     width: "7em",
     mobileHidden: true,
     defaultSort: "desc",
@@ -94,7 +96,7 @@ const columns: EditorColumn<State>[] = [
   },
   {
     key: "population",
-    label: "Population",
+    label: t("Population"),
     width: "6em",
     sortBy: s =>
       rn(
@@ -104,15 +106,15 @@ const columns: EditorColumn<State>[] = [
   },
   {
     key: "treasury",
-    label: "Treasury",
+    label: t("Treasury"),
     width: "6em",
     mobileHidden: true,
-    tip: "Click to sort by state treasury. Click on a value to view and edit taxes",
+    tip: t("Click to sort by state treasury. Click on a value to view and edit taxes"),
     sortBy: s => s.treasury || 0
   },
   {
     key: "type",
-    label: "Type",
+    label: t("Type"),
     width: "5em",
     hidden: true,
     sortBy: s => (s.i ? s.type || "" : ""),
@@ -120,7 +122,7 @@ const columns: EditorColumn<State>[] = [
   },
   {
     key: "expansionism",
-    label: "Expansion",
+    label: t("Expansion"),
     width: "5em",
     hidden: true,
     sortBy: s => (s.i ? s.expansionism || 0 : 0)
@@ -154,7 +156,7 @@ function open(): void {
   statesTable.reset();
 
   $(`#${dialogId}`).dialog({
-    title: "States Editor",
+    title: t("States Editor"),
     resizable: false,
     position,
     close: closeStatesEditor
@@ -169,40 +171,40 @@ function renderDialog(): void {
     </div>
 
     <div id="statesFooter" class="totalLine">
-      <div data-tip="States number" style="margin-left: 5px">States:&nbsp;<span id="statesFooterStates">0</span></div>
-      <div data-tip="Total burgs number" style="margin-left: 12px" data-col="burgs">Burgs:&nbsp;<span id="statesFooterBurgs">0</span></div>
-      <div data-tip="Total land area" style="margin-left: 12px" data-col="area">Land Area:&nbsp;<span id="statesFooterArea">0</span></div>
-      <div data-tip="Total population" style="margin-left: 12px" data-col="population">Population:&nbsp;<span id="statesFooterPopulation">0</span></div>
+      <div data-tip="${t("States number")}" style="margin-left: 5px">${t("States")}:&nbsp;<span id="statesFooterStates">0</span></div>
+      <div data-tip="${t("Number of burgs")}" style="margin-left: 12px" data-col="burgs">${t("Burgs")}:&nbsp;<span id="statesFooterBurgs">0</span></div>
+      <div data-tip="${t("Total land area")}" style="margin-left: 12px" data-col="area">${t("Land area")}:&nbsp;<span id="statesFooterArea">0</span></div>
+      <div data-tip="${t("Total population")}" style="margin-left: 12px" data-col="population">${t("Population")}:&nbsp;<span id="statesFooterPopulation">0</span></div>
     </div>
 
     <div id="statesBottom" class="editorToolbar">
-      <button id="statesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-      <button id="statesEditStyle" data-tip="Edit states style in Style Editor" class="icon-adjust"></button>
-      <button id="statesLegend" data-tip="Toggle Legend box" class="icon-list-bullet"></button>
-      <button id="statesPercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
-      <button id="statesChart" data-tip="Show states bubble chart" class="icon-chart-area"></button>
+      <button id="statesEditorRefresh" data-tip="${t("Refresh the Editor")}" class="icon-cw"></button>
+      <button id="statesEditStyle" data-tip="${t("Edit style in Style Editor")}" class="icon-adjust"></button>
+      <button id="statesLegend" data-tip="${t("Toggle Legend box")}" class="icon-list-bullet"></button>
+      <button id="statesPercentage" data-tip="${t("Toggle percentage / absolute values views")}" class="icon-percent"></button>
+      <button id="statesChart" data-tip="${t("Show States Chart")}" class="icon-chart-area"></button>
 
-      <button id="statesRegenerate" data-tip="Show the regeneration menu and more data" class="icon-cog-alt"></button>
+      <button id="statesRegenerate" data-tip="${t("Show the regeneration menu and more data")}" class="icon-cog-alt"></button>
       <div id="statesRegenerateButtons" style="display: none">
-        <button id="statesRegenerateBack" data-tip="Hide the regeneration menu" class="icon-cog-alt"></button>
-        <button id="statesRandomize" data-tip="Randomize states Expansion value and re-calculate states and provinces" class="icon-shuffle"></button>
-        <button id="statesRecalculate" data-tip="Recalculate states based on current values of growth-related attributes" class="icon-retweet"></button>
-        <div data-tip="Allow states neutral distance, expansion and type changes to take an immediate effect" style="display: inline-block">
+        <button id="statesRegenerateBack" data-tip="${t("Hide the regeneration menu")}" class="icon-cog-alt"></button>
+        <button id="statesRandomize" data-tip="${t("Randomize states Expansion value and re-calculate states and provinces")}" class="icon-shuffle"></button>
+        <button id="statesRecalculate" data-tip="${t("Recalculate states based on current values of growth-related attributes")}" class="icon-retweet"></button>
+        <div data-tip="${t("Allow states neutral distance, expansion and type changes to take an immediate effect")}" style="display: inline-block">
           <input id="statesAutoChange" class="checkbox" type="checkbox" />
-          <label for="statesAutoChange" class="checkbox-label"><i>auto-apply changes</i></label>
+          <label for="statesAutoChange" class="checkbox-label"><i>${t("auto-apply changes")}</i></label>
         </div>
-        <div data-tip="Allow system to change state labels when states data is change" style="display: inline-block">
+        <div data-tip="${t("Allow system to change state labels when states data is change")}" style="display: inline-block">
           <input id="adjustLabels" class="checkbox" type="checkbox" />
-          <label for="adjustLabels" class="checkbox-label"><i>auto-change labels</i></label>
+          <label for="adjustLabels" class="checkbox-label"><i>${t("auto-change labels")}</i></label>
         </div>
       </div>
 
-      <button id="statesManually" data-tip="Manually re-assign states" class="icon-brush"></button>
+      <button id="statesManually" data-tip="${t("Manually re-assign states")}" class="icon-brush"></button>
 
-      <button id="statesAdd" data-tip="Add a new state. Hold Shift to add multiple" class="icon-plus"></button>
-      <button id="statesMerge" data-tip="Merge several states into one" class="icon-layer-group"></button>
-      <button id="statesAnnex" data-tip="Annex states: click the annexing state, then the states it absorbs. Hold Shift to keep annexing" class="icon-crown"></button>
-      <button id="statesExport" data-tip="Save state-related data as a text file (.csv)" class="icon-download"></button>
+      <button id="statesAdd" data-tip="${sentences(t("Add a new state"), t("Hold Shift to add multiple"))}" class="icon-plus"></button>
+      <button id="statesMerge" data-tip="${t("Merge several states into one")}" class="icon-layer-group"></button>
+      <button id="statesAnnex" data-tip="${sentences(t("Annex states: click the annexing state, then the states it absorbs"), t("Hold Shift to keep annexing"))}" class="icon-crown"></button>
+      <button id="statesExport" data-tip="${t("Save state-related data as a text file (.csv)")}" class="icon-download"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
@@ -301,11 +303,21 @@ function renderStatesPage(view: TableView<State>): void {
     const rural = (s.rural || 0) * options.map.units.population.scale;
     const urban = (s.urban || 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     const population = rn(rural + urban);
-    const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(
-      urban
-    )}. Click to change`;
+    const populationTip = sentences(
+      t("Total population: {{total}}", { total: si(population) }),
+      t("Rural population: {{rural}}", { rural: si(rural) }),
+      t("Urban population: {{urban}}", { urban: si(urban) }),
+      t("Click to edit")
+    );
     const focused = select("#deftemp").select(`#fog #focusState${s.i}`).size();
-    const treasuryTip = `Current treasury: 🟡 ${si(s.treasury)}. Sales Tax: ${rn((s.salesTax || 0) * 100, 1)}%. Poll Tax: ${rn((s.pollTax || 0) * 100, 1)}%. Click to view and edit taxes`;
+    const treasuryTip = t(
+      "Current treasury: 🟡 {{treasury}}. Sales Tax: {{salesTax}}%. Poll Tax: {{pollTax}}%. Click to view and edit taxes",
+      {
+        treasury: si(s.treasury),
+        salesTax: rn((s.salesTax || 0) * 100, 1),
+        pollTax: rn((s.pollTax || 0) * 100, 1)
+      }
+    );
 
     if (!s.i) {
       // Neutral line
@@ -326,7 +338,7 @@ function renderStatesPage(view: TableView<State>): void {
         data-expansionism=""
       >
         <svg width="1em" height="1em" class="placeholder" data-col="color"></svg>
-        <input data-tip="Neutral lands name. Click to change" class="stateName name pointer italic" value="${
+        <input data-tip="${sentences(t("Neutral lands name"), t("Click to change"))}" class="stateName name pointer italic" value="${
           s.name
         }" readonly data-col="name" />
         <svg class="coaIcon placeholder" viewBox="0 0 200 200" data-col="emblem"></svg>
@@ -337,22 +349,22 @@ function renderStatesPage(view: TableView<State>): void {
         </div>
         <select class="stateCulture placeholder" data-col="culture">${getCultureOptions(0)}</select>
         <div data-col="burgs">
-          <span data-tip="Click to overview neutral burgs" class="icon-dot-circled pointer" style="padding-right: 1px"></span>
-          <div data-tip="Burgs count" class="stateBurgs">${s.burgs}</div>
+          <span data-tip="${t("Click to overview neutral burgs")}" class="icon-dot-circled pointer" style="padding-right: 1px"></span>
+          <div data-tip="${t("Number of burgs")}" class="stateBurgs">${s.burgs}</div>
         </div>
         <div data-col="cells">
-          <span data-tip="Cells count" class="icon-check-empty"></span>
-          <div data-tip="Cells count" class="stateCells">${s.cells}</div>
+          <span data-tip="${t("Number of cells")}" class="icon-check-empty"></span>
+          <div data-tip="${t("Number of cells")}" class="stateCells">${s.cells}</div>
         </div>
         <div data-col="area">
-          <span data-tip="Neutral lands area" style="padding-right: 4px" class="icon-map-o"></span>
-          <div data-tip="Neutral lands area" class="stateArea">${si(area)} ${unit}</div>
+          <span data-tip="${t("Neutral lands area")}" style="padding-right: 4px" class="icon-map-o"></span>
+          <div data-tip="${t("Neutral lands area")}" class="stateArea">${si(area)} ${unit}</div>
         </div>
         <div data-col="population">
           <span data-tip="${populationTip}" class="icon-male"></span>
           <div data-tip="${populationTip}" class="statePopulation pointer">${si(population)}</div>
         </div>
-        <div data-tip="Neutrals collect no taxes" class="stateTreasury placeholder" data-col="treasury"></div>
+        <div data-tip="${t("Neutrals collect no taxes")}" class="stateTreasury placeholder" data-col="treasury"></div>
         <select class="cultureType placeholder" data-col="type">${getTypeOptions(0)}</select>
         <div data-col="expansionism">
           <span class="icon-resize-full placeholder"></span>
@@ -386,50 +398,50 @@ function renderStatesPage(view: TableView<State>): void {
       data-expansionism=${s.expansionism}
     >
       <fill-box fill="${s.color}" data-col="color"></fill-box>
-      <input data-tip="State name. Click to change" class="stateName name pointer" value="${s.name}" readonly data-col="name" />
-      <svg data-tip="Click to show and edit state emblem" class="coaIcon pointer" viewBox="0 0 200 200" data-col="emblem"><use href="#stateCOA${s.i}"></use></svg>
-      <input data-tip="State form name. Click to change" class="stateForm name pointer" value="${
+      <input data-tip="${sentences(t("State name"), t("Click to change"))}" class="stateName name pointer" value="${s.name}" readonly data-col="name" />
+      <svg data-tip="${t("Click to show and edit state emblem")}" class="coaIcon pointer" viewBox="0 0 200 200" data-col="emblem"><use href="#stateCOA${s.i}"></use></svg>
+      <input data-tip="${sentences(t("State form name"), t("Click to change"))}" class="stateForm name pointer" value="${
         s.formName
       }" readonly data-col="form" />
       <div data-col="capital">
-        <span data-tip="State capital. Click to zoom into view" class="icon-star-empty pointer"></span>
-        <div data-tip="Capital name" class="stateCapital">${capital}</div>
+        <span data-tip="${sentences(t("State capital"), t("Click to zoom into view"))}" class="icon-star-empty pointer"></span>
+        <div data-tip="${t("Capital name")}" class="stateCapital">${capital}</div>
       </div>
-      <select data-tip="Dominant culture. Click to change" class="stateCulture" data-col="culture">${getCultureOptions(
+      <select data-tip="${sentences(t("Dominant culture"), t("Click to change"))}" class="stateCulture" data-col="culture">${getCultureOptions(
         s.culture
       )}</select>
       <div data-col="burgs">
-        <span data-tip="Click to overview state burgs" style="padding-right: 1px" class="icon-dot-circled pointer"></span>
-        <div data-tip="Burgs count" class="stateBurgs">${s.burgs}</div>
+        <span data-tip="${t("Click to overview state burgs")}" style="padding-right: 1px" class="icon-dot-circled pointer"></span>
+        <div data-tip="${t("Number of burgs")}" class="stateBurgs">${s.burgs}</div>
       </div>
       <div data-col="cells">
-        <span data-tip="Cells count" class="icon-check-empty"></span>
-        <div data-tip="Cells count" class="stateCells">${s.cells}</div>
+        <span data-tip="${t("Number of cells")}" class="icon-check-empty"></span>
+        <div data-tip="${t("Number of cells")}" class="stateCells">${s.cells}</div>
       </div>
       <div data-col="area">
-        <span data-tip="State area" style="padding-right: 4px" class="icon-map-o"></span>
-        <div data-tip="State area" class="stateArea">${si(area)} ${unit}</div>
+        <span data-tip="${t("State area")}" style="padding-right: 4px" class="icon-map-o"></span>
+        <div data-tip="${t("State area")}" class="stateArea">${si(area)} ${unit}</div>
       </div>
       <div data-col="population">
         <span data-tip="${populationTip}" class="icon-male"></span>
         <div data-tip="${populationTip}" class="statePopulation pointer">${si(population)}</div>
       </div>
       <div data-tip="${treasuryTip}" class="stateTreasury pointer" data-col="treasury">🟡 ${si(s.treasury)}</div>
-      <select data-tip="State type. Defines growth model. Click to change" class="cultureType" data-col="type">${getTypeOptions(
+      <select data-tip="${sentences(t("State type"), t("Defines growth model"), t("Click to change"))}" class="cultureType" data-col="type">${getTypeOptions(
         s.type
       )}</select>
       <div data-col="expansionism">
-        <span data-tip="State expansionism" class="icon-resize-full"></span>
-        <input data-tip="Expansionism (defines competitive size). Change to re-calculate states based on new value"
+        <span data-tip="${t("State expansionism")}" class="icon-resize-full"></span>
+        <input data-tip="${t("Expansionism (defines competitive size). Change to re-calculate states based on new value")}"
           class="statePower" type="number" min="0" max="99" step=".1" value=${s.expansionism} />
       </div>
-      ${noteIcon("this state")}
-      <span data-col="locate" data-tip="Locate the state" class="icon-target"></span>
-      <span data-col="focus" data-tip="Toggle state focus" class="icon-pin ${focused ? "" : " inactive"}"></span>
-      <span data-col="lock" data-tip="Lock the state to protect it from re-generation" class="icon-lock${
+      ${noteIcon(t("Edit free text notes (legend)"))}
+      <span data-col="locate" data-tip="${t("Locate the state")}" class="icon-target"></span>
+      <span data-col="focus" data-tip="${t("Toggle state focus")}" class="icon-pin ${focused ? "" : " inactive"}"></span>
+      <span data-col="lock" data-tip="${t("Lock the state to protect it from re-generation")}" class="icon-lock${
         s.lock ? "" : "-open"
       }"></span>
-      <span data-col="remove" data-tip="Remove the state" class="icon-trash-empty"></span>
+      <span data-col="remove" data-tip="${t("Remove state")}" class="icon-trash-empty"></span>
     </div>`;
   }
   const body = ensureEl("statesBodySection");
@@ -477,7 +489,7 @@ function getTypeOptions(type: string | number): string {
   let options = "";
   const types = ["Generic", "River", "Lake", "Naval", "Nomadic", "Hunting", "Highland"];
   types.forEach(t => {
-    options += `<option ${type === t ? "selected" : ""} value="${t}">${t}</option>`;
+    options += `<option ${type === t ? "selected" : ""} value="${t}">${labelOf(CULTURE_TYPE_LABELS, t)}</option>`;
   });
   return options;
 }
@@ -534,13 +546,13 @@ function editStateName(state: number): void {
 
   $("#stateNameEditor").dialog({
     resizable: false,
-    title: "Change state name",
+    title: t("Change state name"),
     buttons: {
-      Apply: function (this: HTMLElement) {
+      [t("Apply")]: function (this: HTMLElement) {
         applyNameChange(s);
         $(this).dialog("close");
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     },
@@ -619,26 +631,26 @@ function renderNameEditor(): void {
   destroyDialog("stateNameEditor");
   const nameEditorHtml = /* html */ `<div id="stateNameEditor" class="dialog" data-state="0">
       <div>
-        <div data-tip="State short name" class="label">Short name:</div>
+        <div data-tip="${t("State short name")}" class="label">${t("Short name")}:</div>
         <input
           id="stateNameEditorShort"
-          data-tip="Type to change the short name"
+          data-tip="${t("Type to change the short name")}"
           autocorrect="off"
           spellcheck="false"
           style="width: 11em"
         />
-        <span id="stateNameEditorShortSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <span id="stateNameEditorShortSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
         <span
           id="stateNameEditorShortCulture"
-          data-tip="Generate culture-specific name"
+          data-tip="${t("Generate culture-specific name")}"
           class="icon-book pointer"
         ></span>
-        <span id="stateNameEditorShortRandom" data-tip="Generate random name" class="icon-globe pointer"></span>
+        <span id="stateNameEditorShortRandom" data-tip="${t("Generate random name")}" class="icon-globe pointer"></span>
       </div>
-      <div data-tip="Select form name">
-        <div data-tip="State form name" class="label">Form name:</div>
+      <div data-tip="${t("Select form name")}">
+        <div data-tip="${t("State form name")}" class="label">${t("Form name")}:</div>
         <select id="stateNameEditorSelectForm" style="width: 11em">
-          <option value="">blank</option>
+          <option value="">${t("blank")}</option>
           ${Object.entries(STATE_FORMS)
             .map(
               ([form, names]) =>
@@ -648,36 +660,36 @@ function renderNameEditor(): void {
         </select>
         <input
           id="stateNameEditorCustomForm"
-          placeholder="type form name"
-          data-tip="Enter custom form name"
+          placeholder="${t("Enter custom form name")}"
+          data-tip="${t("Enter custom form name")}"
           style="display: none; width: 11em"
         />
         <span
           id="stateNameEditorAddForm"
-          data-tip="Click to add custom state form name to the list"
+          data-tip="${t("Click to add custom state form name to the list")}"
           class="icon-plus pointer"
         ></span>
       </div>
       <div>
-        <div data-tip="State full name" class="label">Full name:</div>
+        <div data-tip="${t("State full name")}" class="label">${t("Full name")}:</div>
         <input
           id="stateNameEditorFull"
-          data-tip="Type to change the full name"
+          data-tip="${t("Type to change the full name")}"
           autocorrect="off"
           spellcheck="false"
           style="width: 11em"
         />
-        <span id="stateNameEditorFullSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <span id="stateNameEditorFullSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
         <span
           id="stateNameEditorFullRegenerate"
-          data-tip="Click to re-generate full name"
+          data-tip="${t("Click to re-generate full name")}"
           data-tick="0"
           class="icon-arrows-cw pointer"
         ></span>
       </div>
-      <div data-tip="Uncheck to not update state label on name change" style="padding-block: 0.2em">
+      <div data-tip="${t("Uncheck to not update state label on name change")}" style="padding-block: 0.2em">
         <input id="stateNameEditorUpdateLabel" class="checkbox" type="checkbox" checked />
-        <label for="stateNameEditorUpdateLabel" class="checkbox-label"><i>Update label on Apply</i></label>
+        <label for="stateNameEditorUpdateLabel" class="checkbox-label"><i>${t("Update label on Apply")}</i></label>
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", nameEditorHtml);
@@ -691,7 +703,7 @@ function closeStateNameEditor(): void {
 function changePopulation(stateId: number): void {
   const state = pack.states[stateId];
   if (!state.cells) {
-    tip("State does not have any cells, cannot change population", false, "error");
+    tip(t("No cells, cannot change population"), false, "error");
     return;
   }
 
@@ -703,12 +715,12 @@ function changePopulation(stateId: number): void {
   const format = (n: number) => Number(n).toLocaleString();
 
   alertMessage.innerHTML = /* html */ `<div>
-    <i>Change population of all cells assigned to the state</i>
+    <i>${t("Change population of all cells assigned to the state")}</i>
     <div style="margin: 0.5em 0">
-      Rural: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" />
-      Urban: <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em" />
+      ${t("Rural")}: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" />
+      ${t("Urban")}: <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em" />
     </div>
-    <div>Total population: ${format(total)} ⇒ <span id="totalPop">${format(total)}</span>
+    <div>${t("Total population")}: ${format(total)} ⇒ <span id="totalPop">${format(total)}</span>
       (<span id="totalPopPerc">100</span>%)
     </div>
   </div>`;
@@ -730,14 +742,14 @@ function changePopulation(stateId: number): void {
 
   $("#alert").dialog({
     resizable: false,
-    title: "Change state population",
+    title: t("Change state population"),
     width: "24em",
     buttons: {
-      Apply: function (this: HTMLElement) {
+      [t("Apply")]: function (this: HTMLElement) {
         applyPopulationChange();
         $(this).dialog("close");
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     },
@@ -774,21 +786,21 @@ function openTreasuryDialog(stateId: number): void {
     return sellerStateId === stateId ? sum + deal.tax : sum;
   }, 0);
 
-  alertMessage.innerHTML = /* html */ `<div data-tip="Sales tax is applied to deals with a seller from the state. Poll tax is applied to all population of the state. Tax changes take effect on Production regeneration" style="margin: 0.6em 0; display: grid; grid-template-columns: 7em auto auto; row-gap: 0.4em; align-items: center">
-      <label for="stateSalesTaxInput">Sales Tax:</label>
+  alertMessage.innerHTML = /* html */ `<div data-tip="${t("Sales tax is applied to deals with a seller from the state. Poll tax is applied to all population of the state. Tax changes take effect on Production regeneration")}" style="margin: 0.6em 0; display: grid; grid-template-columns: 7em auto auto; row-gap: 0.4em; align-items: center">
+      <label for="stateSalesTaxInput">${t("Sales Tax")}:</label>
       <input id="stateSalesTaxInput" type="number" min="0" max="1" step="0.01" value="${state.salesTax}" style="width: 6em"/> = ${formatPrice(salesTaxRevenue)}
-      <label for="statePollTaxInput">Poll Tax:</label>
+      <label for="statePollTaxInput">${t("Poll Tax")}:</label>
       <input id="statePollTaxInput" type="number" min="0" max="10" step="0.01" value="${state.pollTax}" style="width: 6em"/> = ${formatPrice(pollTaxRevenue)}
-      <label for="stateTreasuryInput">Treasury:</label>
+      <label for="stateTreasuryInput">${t("Treasury")}:</label>
       <input id="stateTreasuryInput" type="number" step="1" value="${state.treasury}" style="width: 6em" />
     </div>`;
 
   $("#alert").dialog({
     resizable: false,
-    title: `Taxes and Treasury: ${state.name}`,
+    title: t("Taxes and Treasury: {{- state}}", { state: state.name }),
     width: "26em",
     buttons: {
-      Apply: function (this: HTMLElement) {
+      [t("Apply")]: function (this: HTMLElement) {
         const salesInput = ensureEl<HTMLInputElement>("stateSalesTaxInput");
         const pollInput = ensureEl<HTMLInputElement>("statePollTaxInput");
         const treasuryInput = ensureEl<HTMLInputElement>("stateTreasuryInput");
@@ -804,7 +816,7 @@ function openTreasuryDialog(stateId: number): void {
         refreshStatesEditor();
         $(this).dialog("close");
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     },
@@ -849,9 +861,9 @@ function stateRemovePrompt(state: number): void {
   if (customization) return;
 
   confirmationDialog({
-    title: "Remove state",
-    message: "Are you sure you want to remove the state? <br>This action cannot be reverted",
-    confirm: "Remove",
+    title: t("Remove state"),
+    message: `${t("Are you sure you want to remove the state?")}<br>${t("This action cannot be reverted")}`,
+    confirm: t("Remove"),
     onConfirm: () => stateRemove(state)
   });
 }
@@ -877,7 +889,7 @@ function toggleLegend(): void {
     .filter(s => s.i && !s.removed && s.cells)
     .sort((a, b) => (b.area ?? 0) - (a.area ?? 0))
     .map(s => [s.i, s.color, s.name]);
-  if (!data.length) return void tip("No states to show", false, "error");
+  if (!data.length) return void tip(t("No states to show"), false, "error");
   drawLegend(LEGEND_NAME, data);
 }
 
@@ -909,7 +921,7 @@ function togglePercentageMode(): void {
 function showStatesChart(): void {
   const statesData = pack.states.filter(s => !s.removed);
   if (statesData.length < 2) {
-    tip("There are no states to show", false, "error");
+    tip(t("No states to show"), false, "error");
     return;
   }
 
@@ -927,11 +939,11 @@ function showStatesChart(): void {
 
   // prepare svg
   alertMessage.innerHTML = /* html */ `<select id="statesTreeType" style="display:block; margin-left:13px; font-size:11px">
-    <option value="area" selected>Area</option>
-    <option value="population">Total population</option>
-    <option value="rural">Rural population</option>
-    <option value="urban">Urban population</option>
-    <option value="burgs">Burgs number</option>
+    <option value="area" selected>${t("Area")}</option>
+    <option value="population">${t("Total population")}</option>
+    <option value="rural">${t("Rural population")}</option>
+    <option value="urban">${t("Urban population")}</option>
+    <option value="burgs">${t("Number of burgs")}</option>
   </select>`;
   alertMessage.innerHTML += `<div id='statesInfo' class='chartInfo'>&#8205;</div>`;
 
@@ -990,14 +1002,14 @@ function showStatesChart(): void {
     const option = ensureEl<HTMLSelectElement>("statesTreeType").value;
     const value =
       option === "area"
-        ? `Area: ${area}`
+        ? t("Area: {{area}}", { area })
         : option === "rural"
-          ? `Rural population: ${si(rural)}`
+          ? t("Rural population: {{rural}}", { rural: si(rural) })
           : option === "urban"
-            ? `Urban population: ${si(urban)}`
+            ? t("Urban population: {{urban}}", { urban: si(urban) })
             : option === "burgs"
-              ? `Burgs number: ${d.data.burgs}`
-              : `Population: ${si(rural + urban)}`;
+              ? t("Burgs number: {{burgs}}", { burgs: d.data.burgs })
+              : t("Population: {{population}}", { population: si(rural + urban) });
 
     ensureEl("statesInfo").innerHTML = /* html */ `${state}. ${value}`;
     stateHighlightOn(ev);
@@ -1042,7 +1054,7 @@ function showStatesChart(): void {
   }
 
   $("#alert").dialog({
-    title: "States bubble chart",
+    title: t("States bubble chart"),
     width: "fit-content",
     position: { my: "left bottom", at: "left+10 bottom-10", of: "svg" },
     buttons: {},
@@ -1103,7 +1115,7 @@ function openPaintEditor(): void {
   const adjustLabels = ensureEl<HTMLInputElement>("adjustLabels").checked;
 
   void Controllers.PaintEditor.open({
-    title: "Paint States",
+    title: t("Paint States"),
     parentDialogId: dialogId,
     onClose: open,
     items: pack.states
@@ -1139,7 +1151,7 @@ function enterAddStateMode(this: HTMLElement): void {
   }
   customization = 3;
   this.classList.add("pressed");
-  tip("Click on the map to create a new capital or promote an existing burg", true);
+  tip(t("Click on the map to create a new capital or promote an existing burg"), true);
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", addState);
   ensureEl("statesBodySection")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")
@@ -1201,9 +1213,7 @@ function openStateMergeDialog(): void {
   alertMessage.innerHTML = /* html */ `
     <form id='mergeStatesForm' style="overflow: hidden; display: flex; flex-direction: column; gap: 1em;">
       <p style="margin:0">
-        Check the <b>checkbox</b> next to each state you want to merge.
-        Use the <b>radio button</b> to pick the <em>ruling state</em> that will absorb all others (its name, color, and capital will be kept).
-        Hover over a row to highlight the state on the map.
+        ${t("Check the <b>checkbox</b> next to each state you want to merge. Use the <b>radio button</b> to pick the <em>ruling state</em> that will absorb all others (its name, color, and capital will be kept). Hover over a row to highlight the state on the map.")}
       </p>
       <main style='display: grid; grid-template-columns: 1fr 1fr; gap: .3em;'>
         ${statesSelector}
@@ -1232,15 +1242,15 @@ function openStateMergeDialog(): void {
 
   $("#alert").dialog({
     width: 600,
-    title: `Merge states`,
+    title: t("Merge states"),
     close: stateHighlightOff,
     buttons: {
-      Merge: function (this: HTMLElement) {
+      [t("Merge")]: function (this: HTMLElement) {
         const formData = new FormData(ensureEl<HTMLFormElement>("mergeStatesForm"));
 
         const rulingStateId = Number(formData.get("rulingState"));
         if (!rulingStateId) {
-          tip("Please select a state to merge into", false, "error");
+          tip(t("Please select a state to merge into"), false, "error");
           return;
         }
 
@@ -1249,13 +1259,13 @@ function openStateMergeDialog(): void {
           .map(Number)
           .filter(stateId => stateId !== rulingStateId);
         if (!statesToMerge.length) {
-          tip("Please select several states to merge", false, "error");
+          tip(t("Please select several states to merge"), false, "error");
           return;
         }
 
         confirmStatesMerge(statesToMerge, rulingStateId, () => $(this).dialog("close"));
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
@@ -1266,14 +1276,14 @@ function confirmStatesMerge(statesToMerge: number[], rulingStateId: number, onCo
   const rulingState = pack.states[rulingStateId];
   const ruler = `${stateEmblem(rulingState.i)}${rulingState.name}`;
   confirmationDialog({
-    title: "Merge states",
+    title: t("Merge states"),
     // prettier-ignore
     message: /* html */ `
-      <p>The following states will be <strong>removed</strong>: ${statesToMerge.map(stateId => `${stateEmblem(stateId)}${(pack.states)[stateId].name}`).join(", ")}.</p>
-      <p>Removed states data (burgs, provinces, regiments) will be assigned to ${ruler}.</p>
-      <label style="display: flex; align-items: center"><input id="mergeStatesAsProvinces" class="checkbox native" type="checkbox"> Keep each removed state as a province of ${ruler}, replacing its own provinces</label>
-      <p>Are you sure you want to merge states? This action cannot be reverted.</p>`,
-    confirm: "Merge",
+      <p>${t("The following states will be <strong>removed</strong>")}: ${statesToMerge.map(stateId => `${stateEmblem(stateId)}${(pack.states)[stateId].name}`).join(", ")}.</p>
+      <p>${t("Removed states data (burgs, provinces, regiments) will be assigned to {{- ruler}}.", { ruler })}</p>
+      <label style="display: flex; align-items: center"><input id="mergeStatesAsProvinces" class="checkbox native" type="checkbox"> ${t("Keep each removed state as a province of {{- ruler}}, replacing its own provinces", { ruler })}</label>
+      <p>${sentences(t("Are you sure you want to merge states?"), t("This action cannot be reverted"))}</p>`,
+    confirm: t("Merge"),
     onConfirm: () => {
       mergeStates(statesToMerge, rulingStateId, ensureEl<HTMLInputElement>("mergeStatesAsProvinces").checked);
       onConfirm?.();
@@ -1284,7 +1294,18 @@ function confirmStatesMerge(statesToMerge: number[], rulingStateId: number, onCo
 const statesAnnex = createAnnexMode({
   buttonId: "statesAnnex",
   bodySectionId: "statesBodySection",
-  noun: "state",
+  tips: {
+    start: sentences(t("Click the state that annexes, then the states it absorbs"), t("Hold Shift to keep annexing")),
+    pickLand: t("Click on a land cell to pick a state"),
+    nothingHere: t("There is no state here"),
+    annexing: name =>
+      sentences(
+        t("Annexing into {{state}}", { state: name }),
+        t("Click the states to annex"),
+        t("Hold Shift to keep annexing")
+      ),
+    isParent: name => t("{{state}} is the annexing state", { state: name })
+  },
   ownerOf: cellId => pack.cells.state[cellId],
   colorOf: stateId => pack.states[stateId].color ?? "#999999",
   nameOf: stateId => pack.states[stateId].name,

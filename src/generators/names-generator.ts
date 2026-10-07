@@ -1,5 +1,6 @@
 import { tip } from "@/components/tooltips";
 import { getDefaultNameBases, type NameBase } from "@/data/name-bases";
+import { sentences, t } from "@/utils/i18n";
 import { capitalize, isVowel, last, P, ra, rand } from "../utils";
 
 declare global {
@@ -87,7 +88,11 @@ class NamesGenerator {
 
     const data = this.chains[base];
     if (!data || data[""] === undefined) {
-      tip(`Namesbase ${base} is incorrect. Please check in namesbase editor`, false, "error");
+      tip(
+        sentences(t("Namesbase {{base}} is incorrect", { base }), t("Please check in namesbase editor")),
+        false,
+        "error"
+      );
       ERROR && console.error(`Namebase ${base} is incorrect!`);
       return "ERROR";
     }
@@ -274,7 +279,7 @@ class NamesGenerator {
   getMapName(): string {
     const base = P(0.7) ? 2 : P(0.5) ? rand(0, 6) : rand(0, 31);
     if (!this.nameBases[base]) {
-      tip("Namebase is not found", false, "error");
+      tip(t("Namebase is not found"), false, "error");
       return "";
     }
     const min = this.nameBases[base].min - 1;

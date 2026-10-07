@@ -3,6 +3,7 @@ import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
 import { globeResolutionFor, timeOfDayPresets } from "@/data/view-3d-options";
 import { ensureEl } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 
 // View3d controller: enters/exits the 3D view and owns the 3D settings dialog.
 // Configuration lives on the global `options.app.threeD` (not in this controller);
@@ -89,7 +90,7 @@ async function open(type: string): Promise<void> {
 
   canvas.style.display = "block";
   canvas.onmouseenter = () => {
-    const help = "Drag to pan • Scroll to zoom • Right-click drag to rotate • <b>O</b> to toggle options";
+    const help = t("Drag to pan • Scroll to zoom • Right-click drag to rotate • <b>O</b> to toggle options");
     +canvas.dataset.hovered! > 2 ? tip("") : tip(help);
     canvas.dataset.hovered = String((+canvas.dataset.hovered! | 0) + 1);
   };
@@ -98,7 +99,7 @@ async function open(type: string): Promise<void> {
     renderPreviewDialog();
     ensureEl("preview3d").appendChild(canvas);
     $("#preview3d").dialog({
-      title: "3D Preview",
+      title: t("3D Preview"),
       resizable: true,
       position: { my: "left bottom", at: "left+10 bottom-20", of: "svg" },
       resizeStop: resize3d,
@@ -140,7 +141,7 @@ function toggleOptions(): void {
   renderOptionsDialog();
 
   $("#options3d").dialog({
-    title: "3D mode settings",
+    title: t("3D mode settings"),
     resizable: false,
     width: "fit-content",
     position: { my: "right top", at: "right-30 top+10", of: "svg", collision: "fit" },
@@ -154,23 +155,23 @@ function renderOptionsDialog(): void {
   document.getElementById("options3d")?.remove();
   const editorHtml = /* html */ `<div id="options3d" class="dialog stable">
       <div id="options3dMesh" style="display: none">
-        <div data-tip="Set map rotation speed. Set to 0 is you want to toggle off the rotation">
-          <div>Rotation:</div>
+        <div data-tip="${sentences(t("Set map rotation speed"), t("Set to 0 is you want to toggle off the rotation"))}">
+          <div>${t("Rotation")}:</div>
           <input id="options3dMeshRotationRange" type="range" min="0" max="10" step=".1" />
           <input id="options3dMeshRotationNumber" type="number" min="0" max="10" step=".1" style="width: 4em" />
         </div>
-        <div data-tip="Set height scale">
-          <div>Height scale:</div>
+        <div data-tip="${t("Set height scale")}">
+          <div>${t("Height scale")}:</div>
           <input id="options3dScaleRange" type="range" min="0" max="100" />
           <input id="options3dScaleNumber" type="number" min="0" max="1000" style="width: 4em" />
         </div>
-        <div data-tip="Set scene lightness">
-          <div>Lightness:</div>
+        <div data-tip="${t("Set scene lightness")}">
+          <div>${t("Lightness")}:</div>
           <input id="options3dLightnessRange" type="range" min="0" max="100" />
           <input id="options3dLightnessNumber" type="number" min="0" max="500" style="width: 4em" />
         </div>
-        <div data-tip="Set mesh texture resolution">
-          <div>Texture resolution:</div>
+        <div data-tip="${t("Set mesh texture resolution")}">
+          <div>${t("Texture resolution")}:</div>
           <select id="options3dMeshSkinResolution" style="width: 10em">
             <option value="512">512x512px</option>
             <option value="1024">1024x1024px</option>
@@ -179,83 +180,83 @@ function renderOptionsDialog(): void {
             <option value="8192">8192x8192px</option>
           </select>
         </div>
-        <div data-tip="Quick preset lighting for different times of day" style="margin-top: 0.4em">
-          <label>Time of day:</label>
+        <div data-tip="${t("Quick preset lighting for different times of day")}" style="margin-top: 0.4em">
+          <label>${t("Time of day")}:</label>
           <select id="options3dTimeOfDay" style="width: 10em; margin-bottom: 0.3em">
-            <option value="custom">Custom</option>
-            <option value="dawn">Dawn</option>
-            <option value="noon" selected>Noon</option>
-            <option value="evening">Evening</option>
-            <option value="night">Night</option>
+            <option value="custom">${t("Custom")}</option>
+            <option value="dawn">${t("Dawn")}</option>
+            <option value="noon" selected>${t("Noon")}</option>
+            <option value="evening">${t("Evening")}</option>
+            <option value="night">${t("Night")}</option>
           </select>
         </div>
-        <div data-tip="Set sun position (x, y) and color" style="margin-top: 0.4em">
-          <label>Sun position and color:</label>
+        <div data-tip="${t("Set sun position (x, y) and color")}" style="margin-top: 0.4em">
+          <label>${t("Sun position and color")}:</label>
           <div style="display: flex; gap: 0.2em">
             <input id="options3dSunX" type="number" min="-2500" max="2500" step="100" style="width: 4.7em" />
             <input id="options3dSunY" type="number" min="0" max="5000" step="100" style="width: 4.7em" />
             <input id="options3dSunColor" type="color" style="padding: 0; height: 1.5em; border: none" />
           </div>
         </div>
-        <div data-tip="Toggle 3d labels" style="margin: 0.6em 0 0.3em -0.2em">
+        <div data-tip="${t("Toggle 3d labels")}" style="margin: 0.6em 0 0.3em -0.2em">
           <input id="options3dMeshLabels3d" class="checkbox" type="checkbox" />
-          <label for="options3dMeshLabels3d" class="checkbox-label"><i>Show 3D labels</i></label>
+          <label for="options3dMeshLabels3d" class="checkbox-label"><i>${t("Show 3D labels")}</i></label>
         </div>
-        <div data-tip="Toggle sky mode" style="margin: 0.6em 0 0.3em -0.2em">
+        <div data-tip="${t("Toggle sky mode")}" style="margin: 0.6em 0 0.3em -0.2em">
           <input id="options3dMeshSkyMode" class="checkbox" type="checkbox" />
-          <label for="options3dMeshSkyMode" class="checkbox-label"><i>Show sky and extend water</i></label>
+          <label for="options3dMeshSkyMode" class="checkbox-label"><i>${t("Show sky and extend water")}</i></label>
         </div>
         <div
-          data-tip="Increases the polygon count to smooth the sharp points. Please note that it can take some time to calculate"
+          data-tip="${t("Increases the polygon count to smooth the sharp points. Please note that it can take some time to calculate")}"
           style="margin: 0.6em 0 0.3em -0.2em"
         >
           <input id="options3dSubdivide" class="checkbox" type="checkbox" />
           <label for="options3dSubdivide" class="checkbox-label"
-            ><i>Smooth geometry <small style="color: darkred">[slow]</small></i></label
+            ><i>${t("Smooth geometry")} <small style="color: darkred">${t("[slow]")}</small></i></label
           >
         </div>
 
         <div
-          data-tip="Texture the terrain as a satellite image. Replaces the standard map texture"
+          data-tip="${t("Texture the terrain as a satellite image. Replaces the standard map texture")}"
           style="margin: 0.6em 0 0.3em -0.2em"
         >
           <input id="options3dSatellite" class="checkbox" type="checkbox" />
-          <label for="options3dSatellite" class="checkbox-label"><i>Satellite texture</i></label>
+          <label for="options3dSatellite" class="checkbox-label"><i>${t("Satellite texture")}</i></label>
         </div>
 
         <div
-          data-tip="Bake procedural erosion detail into the 3D terrain. Visual only, the map data is not changed"
+          data-tip="${t("Bake procedural erosion detail into the 3D terrain. Visual only, the map data is not changed")}"
           style="margin: 0.6em 0 0.3em -0.2em"
         >
           <input id="options3dErosion" class="checkbox" type="checkbox" />
-          <label for="options3dErosion" class="checkbox-label"><i>Erode terrain</i></label>
+          <label for="options3dErosion" class="checkbox-label"><i>${t("Erode terrain")}</i></label>
         </div>
 
         <div id="options3dErosionSection" style="display: none">
-          <div data-tip="Set eroded mesh detail level (vertices on the long side)">
-            <div>Mesh detail:</div>
+          <div data-tip="${t("Set eroded mesh detail level (vertices on the long side)")}">
+            <div>${t("Mesh detail")}:</div>
             <select id="options3dErosionDetail" style="width: 10em">
               <option value="256">256</option>
               <option value="512">512</option>
               <option value="1024" selected>1024</option>
-              <option value="2048">2048 [slow]</option>
+              <option value="2048">${t("2048 [slow]")}</option>
             </select>
           </div>
 
-          <div data-tip="Set the strength of erosion gullies and ridges">
-            <div>Gully strength:</div>
+          <div data-tip="${t("Set the strength of erosion gullies and ridges")}">
+            <div>${t("Gully strength")}:</div>
             <input id="options3dErosionStrengthRange" type="range" min="0" max="100" />
             <input id="options3dErosionStrengthNumber" type="number" min="0" max="100" style="width: 4em" />
           </div>
 
-          <div data-tip="Set how deep the valleys are carved along the rivers">
-            <div>River valleys:</div>
+          <div data-tip="${t("Set how deep the valleys are carved along the rivers")}">
+            <div>${t("River valleys")}:</div>
             <input id="options3dErosionRiverDepthRange" type="range" min="0" max="100" />
             <input id="options3dErosionRiverDepthNumber" type="number" min="0" max="100" style="width: 4em" />
           </div>
 
-          <div data-tip="Set the number of erosion detail layers. More octaves add finer gullies">
-            <div>Detail octaves:</div>
+          <div data-tip="${t("Set the number of erosion detail layers. More octaves add finer gullies")}">
+            <div>${t("Detail octaves")}:</div>
             <select id="options3dErosionOctaves" style="width: 6em">
               <option value="1">1</option>
               <option value="2" selected>2</option>
@@ -265,18 +266,18 @@ function renderOptionsDialog(): void {
           </div>
         </div>
 
-        <div data-tip="Toggle wireframe mode" style="margin: 0.6em 0 0.3em -0.2em">
+        <div data-tip="${t("Toggle wireframe mode")}" style="margin: 0.6em 0 0.3em -0.2em">
           <input id="options3dMeshWireframeMode" class="checkbox" type="checkbox" />
-          <label for="options3dMeshWireframeMode" class="checkbox-label"><i>Show wireframe</i></label>
+          <label for="options3dMeshWireframeMode" class="checkbox-label"><i>${t("Show wireframe")}</i></label>
         </div>
-        <div data-tip="Set sky and water color" id="options3dColorSection" style="display: none">
-          <span>Sky:</span
+        <div data-tip="${t("Set sky and water color")}" id="options3dColorSection" style="display: none">
+          <span>${t("Sky")}:</span
           ><input
             id="options3dMeshSky"
             type="color"
             style="width: 4.4em; height: 1em; border: 0; padding: 0; margin: 0 0.2em"
           />
-          <span>Water:</span
+          <span>${t("Water")}:</span
           ><input
             id="options3dMeshWater"
             type="color"
@@ -285,13 +286,13 @@ function renderOptionsDialog(): void {
         </div>
       </div>
       <div id="options3dGlobe" style="display: none">
-        <div data-tip="Set globe rotation speed. Set to 0 is you want to toggle off the rotation">
-          <div>Rotation:</div>
+        <div data-tip="${sentences(t("Set globe rotation speed"), t("Set to 0 is you want to toggle off the rotation"))}">
+          <div>${t("Rotation")}:</div>
           <input id="options3dGlobeRotationRange" type="range" min="0" max="10" step=".1" />
           <input id="options3dGlobeRotationNumber" type="number" min="0" max="10" step=".1" style="width: 4em" />
         </div>
-        <div data-tip="Set globe texture resolution">
-          <div>Texture resolution:</div>
+        <div data-tip="${t("Set globe texture resolution")}">
+          <div>${t("Texture resolution")}:</div>
           <select id="options3dGlobeResolution" style="width: 5em">
             <option value="0.5">0.5x</option>
             <option value="1">1x</option>
@@ -301,21 +302,21 @@ function renderOptionsDialog(): void {
           </select>
         </div>
         <div
-          data-tip="Equirectangular projection is used: distortion is maximum on poles. Use map with aspect ratio 2:1 for best result"
+          data-tip="${t("Equirectangular projection is used: distortion is maximum on poles. Use map with aspect ratio 2:1 for best result")}"
           style="font-style: italic; margin: 0.2em 0"
         >
-          Equirectangular projection is used
+          ${t("Equirectangular projection is used")}
         </div>
       </div>
       <div id="options3dBottom" style="margin-top: 0.2em">
-        <button id="options3dUpdate" data-tip="Update the scene" class="icon-cw"></button>
+        <button id="options3dUpdate" data-tip="${t("Update the scene")}" class="icon-cw"></button>
         <button
-          data-tip="Configure world and map size and climate settings"
+          data-tip="${t("Configure world and map size and climate settings")}"
           onclick="window.Controllers.WorldConfigurator.open()"
           class="icon-globe"
         ></button>
-        <button id="options3dSave" data-tip="Save screenshot of the 3d scene" class="icon-button-screenshot"></button>
-        <button id="options3dOBJSave" data-tip="Save OBJ file of the 3d scene" class="icon-download"></button>
+        <button id="options3dSave" data-tip="${t("Save screenshot of the 3d scene")}" class="icon-button-screenshot"></button>
+        <button id="options3dOBJSave" data-tip="${t("Save OBJ file of the 3d scene")}" class="icon-download"></button>
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
@@ -473,7 +474,7 @@ function onToggleErosion(): void {
   const enabled = !options.app.threeD.erosion;
   ensureEl("options3dErosionSection").style.display = enabled ? "block" : "none";
   ensureEl<HTMLInputElement>("options3dSubdivide").disabled = enabled; // dense geometry: subdivision ignored
-  if (enabled) tip("Baking eroded terrain...", false, "warn", 4000);
+  if (enabled) tip(t("Baking eroded terrain..."), false, "warn", 4000);
   void toggleErosion();
 }
 
@@ -494,7 +495,7 @@ function onChangeErosionRiverDepth(this: HTMLInputElement): void {
 }
 
 function onToggleSatellite(): void {
-  if (!options.app.threeD.satellite) tip("Baking satellite texture...", false, "warn", 4000);
+  if (!options.app.threeD.satellite) tip(t("Baking satellite texture..."), false, "warn", 4000);
   void toggleSatellite();
 }
 

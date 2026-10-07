@@ -21,6 +21,7 @@ import { Population } from "@/generators/population-generator";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { downloadFile, getArea, getAreaUnit, getFileName, groupByValue, openURL } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { ensureEl, getRandomColor, isLand, rn, si } from "../utils";
 
 const dialogId = "biomesEditor" as const;
@@ -30,7 +31,7 @@ let currentBiomeStatistics: BiomeStatistics[] = [];
 const columns: EditorColumn<Biome>[] = [
   {
     key: "name",
-    label: "Biome",
+    label: t("Biome"),
     width: "15em",
     permanent: true,
     sortBy: biome => biome.name,
@@ -38,33 +39,33 @@ const columns: EditorColumn<Biome>[] = [
   },
   {
     key: "habitability",
-    label: "Habitability",
+    label: t("Habitability"),
     width: "6.5em",
     sortBy: biome => biome.habitability
   },
   {
     key: "relief",
-    label: "Relief",
+    label: t("Relief"),
     width: "6.5em",
     sortBy: biome => biome.iconsDensity
   },
   {
     key: "cells",
-    label: "Cells",
+    label: t("Cells"),
     width: "5em",
     sortBy: biome => currentBiomeStatistics[biome.i]?.cells ?? 0,
     defaultSort: "desc"
   },
   {
     key: "area",
-    label: "Area",
+    label: t("Area"),
     width: "7em",
     mobileHidden: true,
     sortBy: biome => currentBiomeStatistics[biome.i]?.area ?? 0
   },
   {
     key: "population",
-    label: "Population",
+    label: t("Population"),
     width: "6.2em",
     mobileHidden: true,
     sortBy: biome => {
@@ -98,7 +99,7 @@ function open(): void {
   currentBiomeStatistics = biomesCollectStatistics();
   biomesTable.reset();
 
-  $(`#${dialogId}`).dialog({ title: "Biomes Editor", resizable: false, close: closeBiomesEditor, position });
+  $(`#${dialogId}`).dialog({ title: t("Biomes Editor"), resizable: false, close: closeBiomesEditor, position });
 }
 
 function renderDialog(): void {
@@ -107,43 +108,43 @@ function renderDialog(): void {
       ${renderEditorHeader({ dialogId, columns })}
       <div id="biomesBody" class="table" data-type="absolute"></div>
       <div id="biomesFooter" class="totalLine">
-        <div data-tip="Number of land biomes" style="margin-left: 12px">
-          Biomes:&nbsp;<span id="biomesFooterBiomes">0</span>
+        <div data-tip="${t("Number of land biomes")}" style="margin-left: 12px">
+          ${t("Biomes")}:&nbsp;<span id="biomesFooterBiomes">0</span>
         </div>
-        <div data-col="cells" data-tip="Total land cells number" style="margin-left: 12px">
-          Cells:&nbsp;<span id="biomesFooterCells">0</span>
+        <div data-col="cells" data-tip="${t("Number of land cells")}" style="margin-left: 12px">
+          ${t("Cells")}:&nbsp;<span id="biomesFooterCells">0</span>
         </div>
-        <div data-col="area" data-tip="Total land area" style="margin-left: 12px">
-          Land Area:&nbsp;<span id="biomesFooterArea">0</span>
+        <div data-col="area" data-tip="${t("Total land area")}" style="margin-left: 12px">
+          ${t("Land area")}:&nbsp;<span id="biomesFooterArea">0</span>
         </div>
-        <div data-col="population" data-tip="Total population" style="margin-left: 12px">
-          Population:&nbsp;<span id="biomesFooterPopulation">0</span>
+        <div data-col="population" data-tip="${t("Total population")}" style="margin-left: 12px">
+          ${t("Population")}:&nbsp;<span id="biomesFooterPopulation">0</span>
         </div>
       </div>
       <div id="biomesBottom">
-        <button id="biomesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-        <button id="biomesEditStyle" data-tip="Edit biomes style in Style Editor" class="icon-adjust"></button>
-        <button id="biomesLegend" data-tip="Toggle Legend box" class="icon-list-bullet"></button>
+        <button id="biomesEditorRefresh" data-tip="${t("Refresh the Editor")}" class="icon-cw"></button>
+        <button id="biomesEditStyle" data-tip="${t("Edit style in Style Editor")}" class="icon-adjust"></button>
+        <button id="biomesLegend" data-tip="${t("Toggle Legend box")}" class="icon-list-bullet"></button>
         <button
           id="biomesPercentage"
-          data-tip="Toggle percentage / absolute values views"
+          data-tip="${t("Toggle percentage / absolute values views")}"
           class="icon-percent"
         ></button>
         <button
           id="biomesManually"
-          data-tip="Manually re-assign biomes to not follow the default moisture/temperature pattern"
+          data-tip="${t("Manually re-assign biomes to not follow the default moisture/temperature pattern")}"
           class="icon-brush"
         ></button>
-        <button id="biomesReliefRules" data-tip="Edit the relief rules: hills, mountains and other relief placed by elevation" class="icon-mountain"></button>
-        <button id="biomesAdd" data-tip="Add a custom biome" class="icon-plus"></button>
+        <button id="biomesReliefRules" data-tip="${t("Edit the relief rules: hills, mountains and other relief placed by elevation")}" class="icon-mountain"></button>
+        <button id="biomesAdd" data-tip="${t("Add a custom biome")}" class="icon-plus"></button>
         <button
           id="biomesRestore"
-          data-tip="Restore the defaults and re-define biomes based on current moisture and temperature"
+          data-tip="${t("Restore the defaults and re-define biomes based on current moisture and temperature")}"
           class="icon-history"
         ></button>
         <button
           id="biomesExport"
-          data-tip="Save biomes-related data as a text file (.csv)"
+          data-tip="${t("Save biomes-related data as a text file (.csv)")}"
           class="icon-download"
         ></button>
       </div>
@@ -233,7 +234,11 @@ function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistic
     const rural = rawRural * options.map.units.population.scale;
     const urban = rawUrban * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     const population = rn(rural + urban);
-    const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}`;
+    const populationTip = t("Total population: {{total}}; Rural population: {{rural}}; Urban population: {{urban}}", {
+      total: si(population),
+      rural: si(rural),
+      urban: si(urban)
+    });
     lines += /* html */ `
       <div
         class="states biomes"
@@ -247,20 +252,20 @@ function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistic
       >
         <div data-col="name">
           <fill-box fill="${color}"></fill-box>
-          <input data-tip="Biome name. Click and type to change" class="biomeName" value="${name}" autocorrect="off" spellcheck="false" />
+          <input data-tip="${sentences(t("Biome name"), t("Click and type to change"))}" class="biomeName" value="${name}" autocorrect="off" spellcheck="false" />
         </div>
         <div data-col="habitability" class="hide">
-          <span data-tip="Biome habitability percent">%</span>
-          <input data-tip="Biome habitability percent. Click and set new value to change" type="number" min="0" max="9999" class="biomeHabitability" value=${habitability} />
+          <span data-tip="${t("Biome habitability percent")}">%</span>
+          <input data-tip="${sentences(t("Biome habitability percent"), t("Click and type to change"))}" type="number" min="0" max="9999" class="biomeHabitability" value=${habitability} />
         </div>
         <div data-col="relief" class="hide">${reliefPoolHtml(biome)}</div>
-        <div data-col="cells" class="hide"><span data-tip="Cells count" class="icon-check-empty"></span><span data-tip="Cells count" class="biomeCells">${cells}</span></div>
-        <div data-col="area" class="hide"><span data-tip="Biome area" class="icon-map-o" style="padding-right: 2px"></span><span data-tip="Biome area" class="biomeArea">${si(area) + unit}</span></div>
+        <div data-col="cells" class="hide"><span data-tip="${t("Number of cells")}" class="icon-check-empty"></span><span data-tip="${t("Number of cells")}" class="biomeCells">${cells}</span></div>
+        <div data-col="area" class="hide"><span data-tip="${t("Biome area")}" class="icon-map-o" style="padding-right: 2px"></span><span data-tip="${t("Biome area")}" class="biomeArea">${si(area) + unit}</span></div>
         <div data-col="population" class="hide"><span data-tip="${populationTip}" class="icon-male"></span><span data-tip="${populationTip}" class="biomePopulation">${si(population)}</span></div>
-        ${noteIcon("this biome")}
-        <span data-col="wiki" data-tip="Open Wikipedia article about the biome" class="icon-info-circled pointer"></span>
+        ${noteIcon(t("Edit free text notes (legend)"))}
+        <span data-col="wiki" data-tip="${t("Open Wikipedia article about the biome")}" class="icon-info-circled pointer"></span>
         <span data-col="remove" ${
-          i > 12 && !cells ? 'data-tip="Remove the custom biome" class="icon-trash-empty"' : ""
+          i > 12 && !cells ? `data-tip="${t("Remove the custom biome")}" class="icon-trash-empty"` : ""
         }></span>
       </div>
     `;
@@ -357,7 +362,7 @@ function biomeChangeHabitability(el: HTMLInputElement): void {
   const failed = Number.isNaN(+el.value) || +el.value < 0 || +el.value > 9999;
   if (failed) {
     el.value = String(pack.biomes[biome].habitability);
-    tip("Please provide a valid number in range 0-9999", false, "error");
+    tip(t("Please provide a valid number in range 0-9999"), false, "error");
     return;
   }
   Biomes.setHabitability(biome, +el.value);
@@ -374,7 +379,7 @@ function editBiomeNote(el: HTMLElement): void {
 function openWiki(el: HTMLElement): void {
   const biomeName = el.closest<HTMLElement>(".biomes")?.dataset.name;
   if (biomeName === "Custom" || !biomeName) {
-    tip("Please fill in the biome name", false, "error");
+    tip(t("Please fill in the biome name"), false, "error");
     return;
   }
 
@@ -408,7 +413,7 @@ function toggleLegend(): void {
     .filter(({ i }) => statistics[i].cells)
     .sort((a, b) => statistics[b.i].area - statistics[a.i].area)
     .map(({ i, color, name }) => [i, color, name]);
-  if (!data.length) return void tip("No biomes to show", false, "error");
+  if (!data.length) return void tip(t("No biomes to show"), false, "error");
   drawLegend(LEGEND_NAME, data);
 }
 
@@ -440,7 +445,7 @@ function addCustomBiome(): void {
   try {
     Biomes.add("Custom", getRandomColor(), 50);
   } catch {
-    tip("Maximum number of biomes reached (255), data cleansing is required", false, "error");
+    tip(t("Maximum number of biomes reached (255), data cleansing is required"), false, "error");
     return;
   }
 
@@ -482,7 +487,7 @@ function downloadBiomesData(): void {
 function openPaintEditor(): void {
   Layers.show("biomes");
   void Controllers.PaintEditor.open({
-    title: "Paint Biomes",
+    title: t("Paint Biomes"),
     parentDialogId: dialogId,
     onClose: open,
     items: pack.biomes

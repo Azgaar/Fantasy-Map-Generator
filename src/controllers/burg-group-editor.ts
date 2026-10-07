@@ -4,6 +4,7 @@ import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { BurgGroup } from "@/types/burg-groups";
+import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "../utils";
 
 const GROUP_NAME_REGEXP = /^[\p{L}_][\p{L}\p{N}_-]*$/u;
@@ -15,24 +16,24 @@ function editBurgGroups(): void {
   addRows();
 
   $("#burgGroupsEditor").dialog({
-    title: "Configure Burg groups",
+    title: t("Configure burg groups"),
     resizable: false,
     position: { my: "center", at: "center", of: "svg" },
     close: closeBurgGroupsEditor,
     buttons: {
-      Apply: () => {
+      [t("Apply")]: () => {
         ensureEl<HTMLFormElement>("burgGroupsForm").requestSubmit();
       },
-      Add: () => {
+      [t("Add")]: () => {
         const maxOrder = Math.max(0, ...options.map.burgs.groups.map(({ order }) => order));
         const group: BurgGroup = { name: "", order: maxOrder + 1, active: true };
         ensureEl("burgGroupsBody").insertAdjacentHTML("beforeend", createRow(group));
       },
-      Restore: () => {
+      [t("Restore")]: () => {
         // restore the form only, the changes are applied on Apply, so Cancel still discards them
         addRows(Burgs.getDefaultGroups());
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
@@ -47,19 +48,19 @@ function renderDialog(): void {
       <table class="table">
         <thead>
           <tr>
-            <th data-tip="Rendering order: higher values are rendered on top">Order</th>
-            <th data-tip="Type group name">Name</th>
-            <th data-tip="Burg preview generator">Preview generator</th>
-            <th data-tip="Set min and max population constraint in population points (see the multiplier in Units Editor)" colspan="3">Population</th>
-            <th data-tip="Select allowed biomes">Biomes</th>
-            <th data-tip="Select allowed states">States</th>
-            <th data-tip="Select allowed cultures">Cultures</th>
-            <th data-tip="Select allowed religions">Religions</th>
-            <th data-tip="Select allowed features">Features</th>
-            <th data-tip="Number of burgs in group">Count</th>
-            <th data-tip="Activate/deactivate group">Active</th>
-            <th data-tip="Select group to be assigned if burg doesn't pass the criteria for other groups">
-              Default
+            <th data-tip="${t("Rendering order: higher values are rendered on top")}">${t("Order")}</th>
+            <th data-tip="${t("Type group name")}">${t("Name")}</th>
+            <th data-tip="${t("Burg preview generator")}">${t("Preview generator")}</th>
+            <th data-tip="${t("Set min and max population constraint in population points (see the multiplier in Units Editor)")}" colspan="3">${t("Population")}</th>
+            <th data-tip="${t("Select allowed biomes")}">${t("Biomes")}</th>
+            <th data-tip="${t("Select allowed states")}">${t("States")}</th>
+            <th data-tip="${t("Select allowed cultures")}">${t("Cultures")}</th>
+            <th data-tip="${t("Select allowed religions")}">${t("Religions")}</th>
+            <th data-tip="${t("Select allowed features")}">${t("Features")}</th>
+            <th data-tip="${t("Number of burgs in group")}">${t("Count")}</th>
+            <th data-tip="${t("Activate/deactivate group")}">${t("Active")}</th>
+            <th data-tip="${t("Select group to be assigned if burg doesn't pass the criteria for other groups")}">
+              ${t("Default")}
             </th>
           </tr>
         </thead>
@@ -67,8 +68,8 @@ function renderDialog(): void {
       </table>
     </form>
     <div style="padding: 0.5em 0; font-style: italic;">
-      Burg population is calculated as <code style="font-size: smaller;">value * population_point * urbanization_rate</code>, see the <a style="text-decoration: underline;" id="burgGroupsUnitsEditorLink">Units Editor</a>.
-      <br>Applying changes reclassifies Burgs, but label groups are not affected. Reconcile label groups in <a id="burgGroupsLabelGroupsLink" style="text-decoration: underline;">Label Group Configurator</a>.
+      ${t('Burg population is calculated as <code style="font-size: smaller;">value * population_point * urbanization_rate</code>, see the')} <a style="text-decoration: underline;" id="burgGroupsUnitsEditorLink">${t("Units Editor")}</a>.
+      <br>${t("Applying changes reclassifies Burgs, but label groups are not affected. Reconcile label groups in")} <a id="burgGroupsLabelGroupsLink" style="text-decoration: underline;">${t("Label Group Configurator")}</a>.
     </div>
   </div>`;
 
@@ -120,58 +121,58 @@ function createRow(group: BurgGroup): string {
   const count = pack.burgs.filter(burg => !burg.removed && burg.group === group.name).length;
   // prettier-ignore
   return /* html */ `<tr name="${group.name}">
-      <td data-tip="Rendering order: higher values are rendered on top"><input type="number" name="order" min="1" max="999" step="1" required value="${group.order || ""}" /></td>
-      <td data-tip="Type group name. Must start with a letter or underscore, followed by letters, digits, underscores, or dashes. Spaces are not allowed"><input type="text" name="name" value="${group.name}" required /></td>
-      <td data-tip="Burg preview generator">
+      <td data-tip="${t("Rendering order: higher values are rendered on top")}"><input type="number" name="order" min="1" max="999" step="1" required value="${group.order || ""}" /></td>
+      <td data-tip="${sentences(t("Type group name"), t("Must start with a letter or underscore, followed by letters, digits, underscores, or dashes"), t("Spaces are not allowed"))}"><input type="text" name="name" value="${group.name}" required /></td>
+      <td data-tip="${t("Burg preview generator")}">
         <select name="preview">
-          <option value="" ${!group.preview ? "selected" : ""}>no</option>
+          <option value="" ${!group.preview ? "selected" : ""}>${t("No")}</option>
           <option value="watabou-city" ${group.preview === "watabou-city" ? "selected" : ""}>Watabou City</option>
           <option value="watabou-village" ${group.preview === "watabou-village" ? "selected" : ""}>Watabou Village</option>
           <option value="watabou-dwelling" ${group.preview === "watabou-dwelling" ? "selected" : ""}>Watabou Dwelling</option>
         </select>
       </td>
-      <td data-tip="Set min population constraint in population points (see the multiplier in Units Editor)"><input type="number" name="min" min="0" step="any" value="${group.min || ""}" /></td>
-      <td data-tip="Set max population constraint in population points (see the multiplier in Units Editor)"><input type="number" name="max" min="0" step="any" value="${group.max || ""}" /></td>
-      <td data-tip="Set population percentile: 0-100, where 90 means the burg must have a population higher than 90% of all burgs"><input type="number" name="percentile" min="0" max="100" step="any" value="${group.percentile || ""}" /></td>
-      <td data-tip="Select allowed biomes">
+      <td data-tip="${t("Set min population constraint in population points (see the multiplier in Units Editor)")}"><input type="number" name="min" min="0" step="any" value="${group.min || ""}" /></td>
+      <td data-tip="${t("Set max population constraint in population points (see the multiplier in Units Editor)")}"><input type="number" name="max" min="0" step="any" value="${group.max || ""}" /></td>
+      <td data-tip="${t("Set population percentile: 0-100, where 90 means the burg must have a population higher than 90% of all burgs")}"><input type="number" name="percentile" min="0" max="100" step="any" value="${group.percentile || ""}" /></td>
+      <td data-tip="${t("Select allowed biomes")}">
         <input type="hidden" name="biomes" value="${group.biomes || ""}">
-        <button type="button" name="biomes">${group.biomes ? "some" : "all"}</button>
+        <button type="button" name="biomes">${group.biomes ? t("Some") : t("All")}</button>
       </td>
-      <td data-tip="Select allowed states">
+      <td data-tip="${t("Select allowed states")}">
         <input type="hidden" name="states" value="${group.states || ""}">
-        <button type="button" name="states">${group.states ? "some" : "all"}</button>
+        <button type="button" name="states">${group.states ? t("Some") : t("All")}</button>
       </td>
-      <td data-tip="Select allowed cultures">
+      <td data-tip="${t("Select allowed cultures")}">
         <input type="hidden" name="cultures" value="${group.cultures || ""}">
-        <button type="button" name="cultures">${group.cultures ? "some" : "all"}</button>
+        <button type="button" name="cultures">${group.cultures ? t("Some") : t("All")}</button>
       </td>
-      <td data-tip="Select allowed religions">
+      <td data-tip="${t("Select allowed religions")}">
         <input type="hidden" name="religions" value="${group.religions || ""}">
-        <button type="button" name="religions">${group.religions ? "some" : "all"}</button>
+        <button type="button" name="religions">${group.religions ? t("Some") : t("All")}</button>
       </td>
-      <td data-tip="Select allowed features" >
+      <td data-tip="${t("Select allowed features")}" >
         <input type="hidden" name="features" value='${JSON.stringify(group.features || {})}'>
-        <button type="button" name="features">${Object.keys(group.features || {}).length ? "some" : "any"}</button>
+        <button type="button" name="features">${Object.keys(group.features || {}).length ? t("Some") : t("Any")}</button>
       </td>
-      <td data-tip="Number of burgs in group">${count}</td>
-      <td data-tip="Activate/deactivate group"><input type="checkbox" name="active" class="native" ${group.active && "checked"} /></td>
-      <td data-tip="Select group to be assigned if other groups are not passed"><input type="radio" name="isDefault" ${group.isDefault && "checked"}></td>
-      <td data-tip="Assignment order: move group up"><button type="button" name="up" class="icon-up-big"></button></td>
-      <td data-tip="Assignment order: move group down"><button type="button" name="down" class="icon-down-big"></button></td>
-      <td data-tip="Remove group"><button type="button" name="remove" class="icon-trash"></button></td>
+      <td data-tip="${t("Number of burgs in group")}">${count}</td>
+      <td data-tip="${t("Activate/deactivate group")}"><input type="checkbox" name="active" class="native" ${group.active && "checked"} /></td>
+      <td data-tip="${t("Select group to be assigned if other groups are not passed")}"><input type="radio" name="isDefault" ${group.isDefault && "checked"}></td>
+      <td data-tip="${t("Assignment order: move group up")}"><button type="button" name="up" class="icon-up-big"></button></td>
+      <td data-tip="${t("Assignment order: move group down")}"><button type="button" name="down" class="icon-down-big"></button></td>
+      <td data-tip="${t("Remove group")}"><button type="button" name="remove" class="icon-trash"></button></td>
     </tr>`;
 }
 
 function selectLimitation(el: HTMLElement, items: LimitationItem[]): void {
   const input = el.previousElementSibling as HTMLInputElement;
   pickLimitation({
-    title: "Limit group",
-    heading: `Limit group by ${el.getAttribute("name")}`,
+    title: t("Limit group"),
+    heading: t("Limit group by {{feature}}", { feature: el.getAttribute("name") }),
     items,
     allowed: input.value ? input.value.split(",").map(Number) : [],
     onApply: allowed => {
       input.value = allowed.join(",");
-      el.innerHTML = allowed.length ? "some" : "all";
+      el.innerHTML = allowed.length ? t("Some") : t("All");
     }
   });
 }
@@ -193,7 +194,7 @@ function selectFeaturesLimitation(el: HTMLElement): void {
   const rows = features.map(
     // prettier-ignore
     ({ name, icon }) => /* html */ `
-        <tr data-tip="Select limitation for burg feature: ${name}">
+        <tr data-tip="${t("Select limitation for burg feature: {{feature}}", { feature: name })}">
           <td>
             <span class="${icon}"></span>
             <span style="margin-left:.2em">${name}</span>
@@ -214,10 +215,10 @@ function selectFeaturesLimitation(el: HTMLElement): void {
       <form id="featuresLimitationForm">
         <table>
           <thead style="font-weight:bold">
-            <td style="width:6em">Features</td>
-            <td style="width:3em">True</td>
-            <td style="width:3em">False</td>
-            <td style="width:3em">Any</td>
+            <td style="width:6em">${t("Features")}</td>
+            <td style="width:3em">${t("True")}</td>
+            <td style="width:3em">${t("False")}</td>
+            <td style="width:3em">${t("Any")}</td>
           </thead>
           <tbody>
             ${rows.join("")}
@@ -227,9 +228,9 @@ function selectFeaturesLimitation(el: HTMLElement): void {
 
   $("#alert").dialog({
     width: "fit-content",
-    title: "Limit group by features",
+    title: t("Limit group by features"),
     buttons: {
-      Apply: function (this: HTMLElement) {
+      [t("Apply")]: function (this: HTMLElement) {
         const form = ensureEl<HTMLFormElement>("featuresLimitationForm");
         const values = features.reduce<Record<string, boolean>>((acc, { name }) => {
           const featureValue = (form[name] as RadioNodeList).value;
@@ -238,11 +239,11 @@ function selectFeaturesLimitation(el: HTMLElement): void {
         }, {});
 
         (el.previousElementSibling as HTMLInputElement).value = JSON.stringify(values);
-        el.innerHTML = Object.keys(values).length ? "some" : "any";
+        el.innerHTML = Object.keys(values).length ? t("Some") : t("Any");
 
         $(this).dialog("close");
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
@@ -252,15 +253,14 @@ function selectFeaturesLimitation(el: HTMLElement): void {
 function removeRow(row: HTMLElement): void {
   const rows = ensureEl("burgGroupsBody").children;
   if (rows.length < 2) {
-    tip("At least one group should be defined", false, "error");
+    tip(t("At least one group should be defined"), false, "error");
     return;
   }
 
   confirmationDialog({
-    title: "Remove group",
-    message:
-      "Are you sure you want to remove the group? <br>This WON'T change the burgs unless the changes are applied",
-    confirm: "Remove",
+    title: t("Remove group"),
+    message: `${t("Are you sure you want to remove the group?")}<br>${t("This WON'T change the burgs unless the changes are applied")}`,
+    confirm: t("Remove"),
     onConfirm: () => {
       row.remove();
       validateForm();
@@ -279,9 +279,11 @@ function validateForm(): boolean {
       const isFormatValid = GROUP_NAME_REGEXP.test(value);
       const isUnique = names.filter(n => n === value).length === 1;
       const message = !isFormatValid
-        ? "Group name must start with a letter or underscore and then contain only letters, digits, underscores, or dashes"
+        ? t(
+            "Group name must start with a letter or underscore and then contain only letters, digits, underscores, or dashes"
+          )
         : !isUnique
-          ? "Group name should be unique"
+          ? t("Group name should be unique")
           : "";
       nameInput.setCustomValidity(message);
     });
@@ -290,7 +292,9 @@ function validateForm(): boolean {
     const isFormatValid = GROUP_NAME_REGEXP.test(value);
     const message = isFormatValid
       ? ""
-      : "Group name must start with a letter or underscore and then contain only letters, digits, underscores, or dashes";
+      : t(
+          "Group name must start with a letter or underscore and then contain only letters, digits, underscores, or dashes"
+        );
     nameField.setCustomValidity(message);
   }
 
@@ -298,20 +302,20 @@ function validateForm(): boolean {
   if (activeField.length) {
     const active = Array.from(activeField).map(input => (input as HTMLInputElement).checked);
     (activeField[0] as HTMLInputElement).setCustomValidity(
-      active.includes(true) ? "" : "At least one group should be active"
+      active.includes(true) ? "" : t("At least one group should be active")
     );
   } else {
-    activeField.setCustomValidity(activeField.checked ? "" : "At least one group should be active");
+    activeField.setCustomValidity(activeField.checked ? "" : t("At least one group should be active"));
   }
 
   const isDefaultField = form.isDefault as unknown as HTMLInputElement & RadioNodeList;
   if (isDefaultField.length) {
     const checked = Array.from(isDefaultField).map(input => (input as HTMLInputElement).checked);
     (isDefaultField[0] as HTMLInputElement).setCustomValidity(
-      checked.includes(true) ? "" : "At least one group should be default"
+      checked.includes(true) ? "" : t("At least one group should be default")
     );
   } else {
-    isDefaultField.setCustomValidity(isDefaultField.checked ? "" : "At least one group should be default");
+    isDefaultField.setCustomValidity(isDefaultField.checked ? "" : t("At least one group should be default"));
   }
 
   const isValid = form.checkValidity();
@@ -363,7 +367,7 @@ function submitForm(event: Event): void {
 
   const rows = Array.from(ensureEl("burgGroupsBody").children);
   if (!rows.length) {
-    tip("At least one group should be defined", false, "error");
+    tip(t("At least one group should be defined"), false, "error");
     return;
   }
 

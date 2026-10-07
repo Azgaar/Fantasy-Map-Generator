@@ -1,5 +1,6 @@
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { viewport } from "@/components/viewport";
+import { t } from "@/utils/i18n";
 import { ensureEl, minmax, rn } from "../utils";
 
 function open(): void {
@@ -8,7 +9,7 @@ function open(): void {
   updateMinimap();
 
   $("#minimap").dialog({
-    title: "Minimap",
+    title: t("Minimap"),
     resizable: false,
     width: "auto",
     position: { my: "left bottom", at: "left+10 bottom-25", of: "svg", collision: "fit" },
@@ -23,7 +24,7 @@ function renderDialog(): void {
   destroyDialog("minimap");
   const html = /* html */ `<div id="minimap" class="dialog stable">
       <div id="minimapViewportWrap">
-        <svg id="minimapSurface" preserveAspectRatio="xMidYMid meet" aria-label="Map minimap">
+        <svg id="minimapSurface" preserveAspectRatio="xMidYMid meet" aria-label="${t("Map minimap")}">
           <use id="minimapMapUse" href="#viewbox"></use>
           <rect id="minimapViewport"></rect>
         </svg>

@@ -7,6 +7,7 @@ import { viewport } from "@/components/viewport";
 import { type Measurer, Measurers, type MeasurerType } from "@/generators/measurers-generator";
 import type { Point } from "@/generators/voronoi";
 import { highlightElement } from "@/renderers/overlays/highlight";
+import { sentences, t } from "@/utils/i18n";
 import { ensureEl, getSegmentId, last, rn } from "../utils";
 
 type MeasurerEl = Selection<SVGGElement, unknown, null, undefined>;
@@ -28,7 +29,7 @@ function open(): void {
   redraw();
 
   $("#measurersEditor").dialog({
-    title: "Measurers Editor",
+    title: t("Measurers Editor"),
     resizable: false,
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
     close: onClose
@@ -41,13 +42,13 @@ function renderDialog(): void {
   const html = /* html */ `<div id="measurersEditor" class="dialog">
     <div id="measurersBody" class="table" style="margin-bottom: 0.3em"></div>
     <div id="measurersBottom">
-      <button id="addLinearRuler" data-tip="Click to place a linear measurer (ruler)" class="icon-ruler"></button>
-      <button id="addOpisometer" data-tip="Drag to measure a curve length (opisometer)" class="icon-drafting-compass"></button>
-      <button id="addRouteOpisometer" data-tip="Drag to measure a curve length that sticks to routes (route opisometer)">
+      <button id="addLinearRuler" data-tip="${t("Click to place a linear measurer (ruler)")}" class="icon-ruler"></button>
+      <button id="addOpisometer" data-tip="${t("Drag to measure a curve length (opisometer)")}" class="icon-drafting-compass"></button>
+      <button id="addRouteOpisometer" data-tip="${t("Drag to measure a curve length that sticks to routes (route opisometer)")}">
         <svg viewBox="0 0 512 512" width="0.88em" height="0.88em"><path d="M416 320h-96c-17.6 0-32-14.4-32-32s14.4-32 32-32h96s96-107 96-160-43-96-96-96-96 43-96 96c0 25.5 22.2 63.4 45.3 96H320c-52.9 0-96 43.1-96 96s43.1 96 96 96h96c17.6 0 32 14.4 32 32s-14.4 32-32 32H185.5c-16 24.8-33.8 47.7-47.3 64H416c52.9 0 96-43.1 96-96s-43.1-96-96-96zm0-256c17.7 0 32 14.3 32 32s-14.3 32-32 32-32-14.3-32-32 14.3-32 32-32zM96 256c-53 0-96 43-96 96s96 160 96 160 96-107 96-160-43-96-96-96zm0 128c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32z"/></svg>
       </button>
-      <button id="addPlanimeter" data-tip="Drag to measure a polygon area (planimeter)" class="icon-draw-polygon"></button>
-      <button id="removeMeasurers" data-tip="Remove all measurers from the map" class="icon-trash"></button>
+      <button id="addPlanimeter" data-tip="${t("Drag to measure a polygon area (planimeter)")}" class="icon-draw-polygon"></button>
+      <button id="removeMeasurers" data-tip="${t("Remove all measurers from the map")}" class="icon-trash"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -82,8 +83,8 @@ function redraw(): void {
     return /* html */ `<div class="states" data-index="${index}" style="display: flex; align-items: center; gap: 0.4em; padding: 1px 0.2em">
       <div style="width: 9em">${measurer.type}</div>
       <div style="width: 6em">${value}</div>
-      <span data-tip="Zoom to the measurer" data-zoom class="icon-dot-circled pointer"></span>
-      <span data-tip="Remove the measurer" data-remove class="icon-trash-empty pointer"></span>
+      <span data-tip="${t("Zoom to the measurer")}" data-zoom class="icon-dot-circled pointer"></span>
+      <span data-tip="${t("Remove the measurer")}" data-remove class="icon-trash-empty pointer"></span>
     </div>`;
   });
   ensureEl("measurersBody").innerHTML = rows.join("");
@@ -109,18 +110,17 @@ function onListClick(event: Event): void {
 
 function removeAllMeasurers(): void {
   if (!pack.measurers.length) return;
-  alertMessage.innerHTML = /* html */ ` Are you sure you want to remove all placed measurers?
-    <br />If you just want to hide them, toggle the Rulers layer off in Menu`;
+  alertMessage.innerHTML = /* html */ `${t("Are you sure you want to remove all placed measurers?")}<br>${t("If you just want to hide them, toggle the Rulers layer off in Menu")}`;
   $("#alert").dialog({
     resizable: false,
-    title: "Remove all measurers",
+    title: t("Remove all measurers"),
     buttons: {
-      Remove: function (this: HTMLElement) {
+      [t("Remove")]: function (this: HTMLElement) {
         $(this).dialog("close");
         pack.measurers = [];
         redraw();
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
@@ -148,34 +148,42 @@ function addRuler(): void {
 }
 
 function toggleOpisometerMode(this: HTMLElement): void {
-  startDrawingMode(this, "Draw a curve to measure length. Hold Shift to disallow path optimization", (event: any) => {
-    const opisometer = Measurers.create("Opisometer", [[event.x, event.y]]);
-    redraw();
-    event.on("drag", (dragEvent: any) =>
-      addPoint(opisometer, [dragEvent.x, dragEvent.y], dragEvent.sourceEvent.shiftKey)
-    );
-    event.on("end", (endEvent: any) => finishStroke(opisometer, 2, endEvent));
-  });
+  startDrawingMode(
+    this,
+    sentences(t("Draw a curve to measure length"), t("Hold Shift to disallow path optimization")),
+    (event: any) => {
+      const opisometer = Measurers.create("Opisometer", [[event.x, event.y]]);
+      redraw();
+      event.on("drag", (dragEvent: any) =>
+        addPoint(opisometer, [dragEvent.x, dragEvent.y], dragEvent.sourceEvent.shiftKey)
+      );
+      event.on("end", (endEvent: any) => finishStroke(opisometer, 2, endEvent));
+    }
+  );
 }
 
 function togglePlanimeterMode(this: HTMLElement): void {
-  startDrawingMode(this, "Draw a curve to measure its area. Hold Shift to disallow path optimization", (event: any) => {
-    const planimeter = Measurers.create("Planimeter", [[event.x, event.y]]);
-    redraw();
-    event.on("drag", (dragEvent: any) =>
-      addPoint(planimeter, [dragEvent.x, dragEvent.y], dragEvent.sourceEvent.shiftKey)
-    );
-    event.on("end", (endEvent: any) => finishStroke(planimeter, 3, endEvent));
-  });
+  startDrawingMode(
+    this,
+    sentences(t("Draw a curve to measure its area"), t("Hold Shift to disallow path optimization")),
+    (event: any) => {
+      const planimeter = Measurers.create("Planimeter", [[event.x, event.y]]);
+      redraw();
+      event.on("drag", (dragEvent: any) =>
+        addPoint(planimeter, [dragEvent.x, dragEvent.y], dragEvent.sourceEvent.shiftKey)
+      );
+      event.on("end", (endEvent: any) => finishStroke(planimeter, 3, endEvent));
+    }
+  );
 }
 
 function toggleRouteOpisometerMode(this: HTMLElement): void {
-  const tipText = "Draw a curve along routes to measure length. Hold Shift to measure away from roads.";
+  const tipText = t("Draw a curve along routes to measure length. Hold Shift to measure away from roads.");
   startDrawingMode(this, tipText, (event: any) => {
     const cell = Pack.findCell(event.x, event.y)!;
     if (!Routes.isConnected(cell) && !event.sourceEvent.shiftKey) {
       exitDrawingMode();
-      tip("Must start in a cell with a route in it", false, "error");
+      tip(t("Must start in a cell with a route in it"), false, "error");
       return;
     }
 

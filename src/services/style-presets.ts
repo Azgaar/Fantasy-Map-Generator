@@ -1,7 +1,9 @@
+import { STYLE_PRESET_LABELS } from "@/data/id-labels";
 import { Styles } from "@/generators/styles";
 import { isLegacyPreset, isStoreStyles, normalizeStyles, presetFromLegacy } from "@/generators/styles-legacy";
 import { VERSION } from "@/services/versioning";
 import type { StylesData } from "@/types/styles";
+import { t } from "@/utils/i18n";
 import { isValidJSON } from "@/utils/stringUtils";
 
 export const SYSTEM_PRESETS = [
@@ -37,9 +39,9 @@ function current(): string {
 }
 
 function displayName(name: string): string {
-  if (name.startsWith(CUSTOM_PREFIX)) return `${name.slice(CUSTOM_PREFIX.length)} [custom]`;
-  if (name.startsWith(LEGACY_PREFIX)) return `${name.slice(LEGACY_PREFIX.length)} [custom]`;
-  return name;
+  if (name.startsWith(CUSTOM_PREFIX)) return t("{{- name}} [custom]", { name: name.slice(CUSTOM_PREFIX.length) });
+  if (name.startsWith(LEGACY_PREFIX)) return t("{{- name}} [custom]", { name: name.slice(LEGACY_PREFIX.length) });
+  return STYLE_PRESET_LABELS[name] ?? name;
 }
 
 const isPreset = (json: unknown): boolean =>
@@ -69,7 +71,7 @@ async function load(name: string): Promise<{ name: string; styles: unknown; erro
     try {
       return { name, styles: await fetchSystem(name) };
     } catch (error) {
-      const message = `Cannot fetch style preset ${name}`;
+      const message = t("Cannot fetch style preset {{- name}}", { name });
       ERROR && console.error(`${message}. Applying default style`, error);
       return { name: "default", styles: Styles.defaults, error: message };
     }
@@ -79,8 +81,8 @@ async function load(name: string): Promise<{ name: string; styles: unknown; erro
   if (stored && isValidJSON(stored)) return { name, styles: normalizeStyles(JSON.parse(stored)) };
 
   const error = stored
-    ? `Custom style ${name} stored in localStorage is not valid`
-    : `Custom style ${name} is not found in localStorage`;
+    ? t("Custom style {{- name}} stored in localStorage is not valid", { name })
+    : t("Custom style {{- name}} is not found in localStorage", { name });
   ERROR && console.error(error);
   return { name: "default", styles: await fetchSystem("default"), error };
 }

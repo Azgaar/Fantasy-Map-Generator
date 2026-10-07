@@ -1,6 +1,7 @@
 import Alea from "alea";
 import { quadtree } from "d3-quadtree";
 import { rn } from "@/utils";
+import { t } from "@/utils/i18n";
 import { minmax } from "../utils";
 import { getColors, getRandomColor, requireFill } from "../utils/colorUtils";
 import type { Burg } from "./burgs-generator";
@@ -279,7 +280,7 @@ export class MarketsModule {
     if (!burg || burg.removed) return null;
 
     if (pack.markets.some(m => m.centerBurgId === burgId)) {
-      window.tip("This burg is already a market center", false, "error");
+      window.tip(t("This burg is already a market center"), false, "error");
       return null;
     }
 

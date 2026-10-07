@@ -3,8 +3,10 @@ import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
+import { CULTURE_TYPE_LABELS, DEMAND_CATEGORY_LABELS, labelOf } from "@/data/id-labels";
 import { goodIconLines } from "@/renderers/draw-goods";
 import { capitalize, rn } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { CULTURE_TYPES } from "../generators/cultures-generator";
 import type { DemandCategory, Good } from "../generators/goods-generator";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "../generators/goods-generator";
@@ -16,13 +18,15 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
 
   const demandCoverageSummary = (): string => {
     const entries = DEMAND_PRIORITY.map(cat => [cat, demandCoverageState[cat] ?? 0] as const).filter(([, v]) => v > 0);
-    if (!entries.length) return "none";
-    return entries.map(([cat, v]) => `${DEMAND_CATEGORY_ICONS[cat]} ${capitalize(cat)}: ${v}`).join(", ");
+    if (!entries.length) return t("None");
+    return entries
+      .map(([cat, v]) => `${DEMAND_CATEGORY_ICONS[cat]} ${capitalize(labelOf(DEMAND_CATEGORY_LABELS, cat))}: ${v}`)
+      .join(", ");
   };
 
   const biomeOutputSummary = (): string => {
     const entries = Object.entries(biomeOutputState).filter(([, v]) => (v ?? 0) > 0);
-    if (!entries.length) return "none";
+    if (!entries.length) return t("None");
     return entries.map(([id, v]) => `${pack.biomes[Number(id)].name}: ${v}`).join(", ");
   };
 
@@ -38,15 +42,15 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
   const multiplierSummary = (dim: MultiplierDimKey): string => {
     const vals = multipliers[dim] ?? {};
     const entries = Object.entries(vals).filter(([, v]) => v !== 1);
-    if (!entries.length) return "none";
+    if (!entries.length) return t("None");
     return entries.map(([id, v]) => `${getMultiplierEntityName(dim, id)} ×${rn(v!, 2)}`).join(", ");
   };
 
   const renderMultiplierRow = (dim: MultiplierDimKey, label: string) => /*html*/ `
-      <label data-tip="Production multiplier by ${label.toLowerCase()}. 1 = no effect, 0 = fully suppressed.">${label}</label>
+      <label data-tip="${sentences(t("Production multiplier by {{dimension}}", { dimension: label.toLowerCase() }), t("1 = no effect, 0 = fully suppressed"))}">${label}</label>
       <div class="ge-edit-row">
         <span id="mSummary_${dim}">${multiplierSummary(dim)}</span>
-        <button class="mEdit icon-pencil ge-edit" data-dim="${dim}" data-tip="Edit ${label} multipliers"></button>
+        <button class="mEdit icon-pencil ge-edit" data-dim="${dim}" data-tip="${t("Edit {{dimension}} multipliers", { dimension: label })}"></button>
       </div>`;
 
   const recipes: Record<number, number>[] = editedGood?.recipes || [];
@@ -60,15 +64,15 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
   $(dialog!).dialog({
     width: "30em",
     resizable: false,
-    title: editedGood ? "Edit good" : "Add new good",
+    title: editedGood ? t("Edit good") : t("Add new good"),
     open: function (this: HTMLElement) {
       if (!editedGood) return; // only edits can recompute the economy
       const pane = this.parentElement?.querySelector(".ui-dialog-buttonpane");
       pane?.insertAdjacentHTML(
         "afterbegin",
-        /*html*/ `<div class="dontAsk" data-tip="Re-place this good and recompute production, trade and taxes. Uncheck to update the good only, without disturbing the current economy.">
+        /*html*/ `<div class="dontAsk" data-tip="${t("Re-place this good and recompute production, trade and taxes. Uncheck to update the good only, without disturbing the current economy.")}">
           <input id="goodRegenerateEconomy" class="checkbox" type="checkbox" checked />
-          <label for="goodRegenerateEconomy" class="checkbox-label"><i>regenerate economy on apply</i></label>
+          <label for="goodRegenerateEconomy" class="checkbox-label"><i>${t("regenerate economy on apply")}</i></label>
         </div>`
       );
     },
@@ -76,10 +80,10 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
       destroyDialog("goodEditor");
     },
     buttons: {
-      Cancel: function () {
+      [t("Cancel")]: function () {
         $(this).dialog("close");
       },
-      [editedGood ? "Apply" : "Add"]: () => {
+      [editedGood ? t("Apply") : t("Add")]: () => {
         const errors: string[] = [];
 
         const name = ensureEl<HTMLInputElement>("newGoodName").value.trim();
@@ -91,9 +95,9 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
         const color = ensureEl<HTMLInputElement>("newGoodColor").value;
         const distribution = ensureEl("newGoodDistribution").textContent?.trim() ?? "";
 
-        if (!name) errors.push("Name is required");
-        if (!Number.isFinite(value) || value < 0) errors.push("Value must be a valid non-negative number");
-        if (!Number.isFinite(chance) || chance < 0 || chance > 100) errors.push("Chance must be between 0 and 100");
+        if (!name) errors.push(t("Name is required"));
+        if (!Number.isFinite(value) || value < 0) errors.push(t("Value must be a valid non-negative number"));
+        if (!Number.isFinite(chance) || chance < 0 || chance > 100) errors.push(t("Chance must be between 0 and 100"));
 
         if (distribution) {
           try {
@@ -101,7 +105,9 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             const allMethods = `{${Object.keys(methods).join(", ")}}`;
             new Function(allMethods, `return ${distribution}`)(methods);
           } catch (err) {
-            errors.push(`Distribution function is invalid: ${(err as Error).message || err}`);
+            errors.push(
+              t("Distribution function is invalid: {{- error}}", { error: (err as Error).message || String(err) })
+            );
           }
         }
 
@@ -109,13 +115,13 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
           for (const [ingredientId, ingredientAmount] of Object.entries(recipe)) {
             const id = Number(ingredientId);
             const good = Goods.get(id);
-            if (!good) errors.push(`Recipe references unknown good id: ${id}`);
+            if (!good) errors.push(t("Recipe references unknown good id: {{- id}}", { id }));
             const amount = Number(ingredientAmount);
             if (Number.isNaN(amount) || !Number.isFinite(amount) || amount <= 0)
-              errors.push(`Invalid recipe amount for good ${good?.name}`);
+              errors.push(t("Invalid recipe amount for good {{- good}}", { good: good?.name }));
           }
 
-          if (!Object.keys(recipe).length) errors.push("Each recipe must have at least one ingredient");
+          if (!Object.keys(recipe).length) errors.push(t("Each recipe must have at least one ingredient"));
         }
 
         ensureEl("newGoodError").textContent = errors.join(". ");
@@ -187,7 +193,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
           Goods.sync();
         }
 
-        tip(editedGood ? "Good is updated" : "Good is added", false, "success", 5000);
+        tip(editedGood ? t("Good is updated") : t("Good is added"), false, "success", 5000);
         onUpdate?.();
         $(dialog).dialog("close");
       }
@@ -228,56 +234,56 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
 
     <div class="ge">
       <div>
-        <div class="ge-section-title">General</div>
+        <div class="ge-section-title">${t("General")}</div>
         <div class="ge-grid">
-          <label for="newGoodName">Name*</label>
+          <label for="newGoodName">${t("Name*")}</label>
           <input id="newGoodName" class="ge-field" value="${editedGood?.name || ""}" />
 
-          <label for="newGoodTags">Tags</label>
-          <input id="newGoodTags" class="ge-field" value="${editedGood?.tags.join(", ") || ""}" placeholder="comma separated" />
+          <label for="newGoodTags">${t("Tags")}</label>
+          <input id="newGoodTags" class="ge-field" value="${editedGood?.tags.join(", ") || ""}" placeholder="${t("comma separated")}" />
 
-          <label for="newGoodValue">Base Price*</label>
+          <label for="newGoodValue">${t("Base Price*")}</label>
           <span class="ge-inline"><input id="newGoodValue" class="ge-num" type="number" min="0" step="1" value="${editedGood?.value ?? 1}" /> 🟡</span>
 
-          <label for="newGoodChance">Chance</label>
+          <label for="newGoodChance">${t("Chance")}</label>
           <input id="newGoodChance" class="ge-num" type="number" min="0" max="100" step="0.1" value="${editedGood?.chance ?? 1}" />
 
-          <label for="newGoodUnit">Unit</label>
-          <input id="newGoodUnit" class="ge-field" placeholder="e.g. wagon, barrel" value="${editedGood?.unit || ""}" />
+          <label for="newGoodUnit">${t("Unit")}</label>
+          <input id="newGoodUnit" class="ge-field" placeholder="${t("e.g. wagon, barrel")}" value="${editedGood?.unit || ""}" />
 
-          <label for="newGoodIcon">Icon*</label>
+          <label for="newGoodIcon">${t("Icon*")}</label>
           <div class="ge-inline">
-            <button id="newGoodIcon" type="button" class="ge-icon-select" data-tip="Select the good's icon">
+            <button id="newGoodIcon" type="button" class="ge-icon-select" data-tip="${t("Select the good's icon")}">
               <svg class="ge-icon-preview" width="2em" height="2em">
                 <circle id="newGoodIconCircle" cx="50%" cy="50%" r="42%" fill="${editedGood?.color || "#ff5959"}" stroke="${Goods.getStroke(editedGood?.color || "#ff5959")}"/>
                 <use id="newGoodIconPreview" href="${escapeHtml(Icons.href(icon))}" x="10%" y="10%" width="80%" height="80%"${goodIconLines()}/>
               </svg>
               <span id="newGoodIconName">${escapeHtml(Icons.name(icon))}</span>
             </button>
-            <input id="newGoodColor" class="ge-color" type="color" data-tip="Set a stroke color" value="${editedGood?.color || "#ff5959"}" />
+            <input id="newGoodColor" class="ge-color" type="color" data-tip="${t("Set stroke color")}" value="${editedGood?.color || "#ff5959"}" />
           </div>
 
-          <label data-tip="How much of each demand category this good satisfies. Click the pencil icon to edit.">Demand Coverage</label>
+          <label data-tip="${t("How much of each demand category this good satisfies. Click the pencil icon to edit.")}">${t("Demand Coverage")}</label>
           <div class="ge-edit-row">
             <span id="demandCoverageSummary" >${demandCoverageSummary()}</span>
-            <button class="dcEdit icon-pencil ge-edit" data-tip="Edit demand coverage"></button>
+            <button class="dcEdit icon-pencil ge-edit" data-tip="${t("Edit demand coverage")}"></button>
           </div>
         </div>
       </div>
 
       <div>
-        <div class="ge-section-title">Raw Production</div>
+        <div class="ge-section-title">${t("Raw Production")}</div>
         <div class="ge-grid ge-grid--top">
-          <label data-tip="For raw resources: sets the baseline production per biome">Rural production</label>
+          <label data-tip="${t("For raw resources: sets the baseline production per biome")}">${t("Rural production")}</label>
           <div class="ge-edit-row">
             <span id="biomeProductionSummary">${biomeOutputSummary()}</span>
-            <button class="bpEdit icon-pencil ge-edit" data-tip="Edit biome baseline production"></button>
+            <button class="bpEdit icon-pencil ge-edit" data-tip="${t("Edit biome baseline production")}"></button>
           </div>
 
-          <label data-tip="For raw resources: controls where and how this good is produced directly from the environment (e.g. biome, elevation, temperature)">Bonus distribution</label>
+          <label data-tip="${t("For raw resources: controls where and how this good is produced directly from the environment (e.g. biome, elevation, temperature)")}">${t("Bonus distribution")}</label>
           <div class="ge-edit-row">
             <div id="newGoodDistribution" class="ge-dist">${editedGood?.distribution || ""}</div>
-            <button id="newGoodDistributionEditor" class="icon-pencil ge-edit" data-tip="Open the Distribution visual editor"></button>
+            <button id="newGoodDistributionEditor" class="icon-pencil ge-edit" data-tip="${t("Open the Distribution visual editor")}"></button>
           </div>
         </div>
         <div id="newGoodRawNote" class="ge-note"></div>
@@ -285,8 +291,8 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
 
       <div>
         <div class="ge-section-title">
-          <span data-tip="For manufactured goods: recipes define which other goods are required to produce this good">Recipes</span>
-          <button id="newGoodAddRecipe" class="icon-plus" data-tip="Add a recipe"></button>
+          <span data-tip="${t("For manufactured goods: recipes define which other goods are required to produce this good")}">${t("Recipes")}</span>
+          <button id="newGoodAddRecipe" class="icon-plus" data-tip="${t("Add a recipe")}"></button>
         </div>
         <div id="newGoodRecipeList" class="ge-recipe-list"></div>
         <div id="newGoodRecipeNote" class="ge-note"></div>
@@ -294,15 +300,15 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
 
       <div>
         <div class="ge-section-title">
-          <span data-tip="Per-dimension production multipliers. 1 = no effect, 0 = fully suppressed.">Multipliers</span>
+          <span data-tip="${sentences(t("Per-dimension production multipliers"), t("1 = no effect, 0 = fully suppressed"))}">${t("Multipliers")}</span>
         </div>
         <div class="ge-grid ge-grid--top">
-          ${renderMultiplierRow("cultureType", "Culture Type")}
-          ${renderMultiplierRow("culture", "Culture")}
-          ${renderMultiplierRow("state", "State")}
-          ${renderMultiplierRow("religion", "Religion")}
-          ${renderMultiplierRow("biome", "Biome")}
-          ${renderMultiplierRow("zone", "Zone")}
+          ${renderMultiplierRow("cultureType", MULTIPLIER_LABELS.cultureType)}
+          ${renderMultiplierRow("culture", MULTIPLIER_LABELS.culture)}
+          ${renderMultiplierRow("state", MULTIPLIER_LABELS.state)}
+          ${renderMultiplierRow("religion", MULTIPLIER_LABELS.religion)}
+          ${renderMultiplierRow("biome", MULTIPLIER_LABELS.biome)}
+          ${renderMultiplierRow("zone", MULTIPLIER_LABELS.zone)}
         </div>
       </div>
 
@@ -327,11 +333,11 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
       const recipesEmpty = recipes.length === 0;
 
       const recipeNote = ensureEl("newGoodRecipeNote");
-      recipeNote.textContent = "This good is raw-only: gathered from the environment.";
+      recipeNote.textContent = t("This good is raw-only: gathered from the environment.");
       recipeNote.style.display = recipesEmpty && !rawEmpty ? "" : "none";
 
       const rawNote = ensureEl("newGoodRawNote");
-      rawNote.textContent = "This good is manufactured-only: made from recipes in burgs.";
+      rawNote.textContent = t("This good is manufactured-only: made from recipes in burgs.");
       rawNote.style.display = rawEmpty && !recipesEmpty ? "" : "none";
     };
 
@@ -341,10 +347,10 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
           (recipe, recipeIndex) => /*html*/ `
           <div class="recipeOption ge-recipe" data-recipe-index="${recipeIndex}" >
             <div class="ge-recipe-head">
-              <span>Recipe ${recipeIndex + 1}</span>
+              <span>${t("Recipe {{number}}", { number: recipeIndex + 1 })}</span>
               <div class="ge-recipe-actions">
-                <span class="recipeAddIngredient icon-plus pointer" data-recipe-index="${recipeIndex}" data-tip="Add ingredient"></span>
-                <span class="recipeRemoveOption icon-trash-empty pointer" data-recipe-index="${recipeIndex}" data-tip="Remove recipe"></span>
+                <span class="recipeAddIngredient icon-plus pointer" data-recipe-index="${recipeIndex}" data-tip="${t("Add ingredient")}"></span>
+                <span class="recipeRemoveOption icon-trash-empty pointer" data-recipe-index="${recipeIndex}" data-tip="${t("Remove recipe")}"></span>
               </div>
             </div>
             <div class="recipeIngredients ge-recipe-ings">
@@ -354,7 +360,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
                     <div class="ge-recipe-ing" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}">
                       <select class="recipeGoodSelect" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}">${sortedGoods.map(good => `<option value="${good.i}" ${good.i === Number(ingredientId) ? "selected" : ""}>${good.name}</option>`).join("")}</select>
                       <input class="recipeAmountInput" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}" type="number" min="1" step="1" value="${amount}" />
-                      <span class="recipeRemoveIngredient icon-trash-empty pointer" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}" data-tip="Remove ingredient" />
+                      <span class="recipeRemoveIngredient icon-trash-empty pointer" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}" data-tip="${t("Remove ingredient")}" />
                     </div>`
                 )
                 .join("")}
@@ -494,8 +500,17 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
 
 type MultiplierDimKey = "cultureType" | "culture" | "state" | "religion" | "biome" | "zone";
 
+const MULTIPLIER_LABELS: Record<MultiplierDimKey, string> = {
+  cultureType: t("Culture type"),
+  culture: t("Culture"),
+  state: t("State"),
+  religion: t("Religion"),
+  biome: t("Biome"),
+  zone: t("Zone")
+};
+
 function getMultiplierEntityName(dim: MultiplierDimKey, id: string): string {
-  if (dim === "cultureType") return id;
+  if (dim === "cultureType") return labelOf(CULTURE_TYPE_LABELS, id);
   if (dim === "culture") return pack.cultures[+id]?.name ?? `Culture ${id}`;
   if (dim === "state") return pack.states[+id]?.name ?? `State ${id}`;
   if (dim === "religion") return pack.religions[+id]?.name ?? `Religion ${id}`;
@@ -515,37 +530,37 @@ function openMultiplierPopup(
 
   switch (dim) {
     case "cultureType":
-      entities = CULTURE_TYPES.map(ct => ({ id: ct, name: ct }));
-      label = "Culture Type";
+      entities = CULTURE_TYPES.map(ct => ({ id: ct, name: labelOf(CULTURE_TYPE_LABELS, ct) }));
+      label = MULTIPLIER_LABELS.cultureType;
       break;
     case "culture":
       entities = pack.cultures
         .filter(c => c.i && !c.removed)
         .map(c => ({ id: String(c.i), name: c.name, color: c.color }));
-      label = "Culture";
+      label = MULTIPLIER_LABELS.culture;
       break;
     case "state":
       entities = pack.states
         .filter(s => s.i && !s.removed)
         .map(s => ({ id: String(s.i), name: s.fullName || s.name, color: s.color }));
-      label = "State";
+      label = MULTIPLIER_LABELS.state;
       break;
     case "religion":
       entities = pack.religions
         .filter(r => r.i && !r.removed)
         .map(r => ({ id: String(r.i), name: r.name, color: r.color }));
-      label = "Religion";
+      label = MULTIPLIER_LABELS.religion;
       break;
     case "biome":
       entities = pack.biomes
         .filter(biome => !biome.removed)
         .map(({ i, name, color }) => ({ id: String(i), name, color }));
-      label = "Biome";
+      label = MULTIPLIER_LABELS.biome;
       break;
     case "zone":
       // zone colors are hatch pattern refs (url(#...)); fill-box renders them, a plain dot can't
       entities = pack.zones.map(z => ({ id: String(z.i), name: z.name, color: z.color }));
-      label = "Zone";
+      label = MULTIPLIER_LABELS.zone;
       break;
   }
 
@@ -559,18 +574,18 @@ function openMultiplierPopup(
   document.body.appendChild(popupEl);
   const body = rows.length
     ? `<div style="display:grid; grid-template-columns:auto 1fr 5em; gap:.3em .5em; align-items:center;">${rows.join("")}</div>`
-    : `<div style="color:#777; font-style:italic;">No ${label.toLowerCase()}s available</div>`;
+    : `<div style="color:#777; font-style:italic;">${t("No options available")}</div>`;
   popupEl.innerHTML = `<div style="max-height:320px; overflow-y:auto; padding:.2em;">${body}</div>`;
 
   $(popupEl).dialog({
-    title: `${label} multipliers`,
+    title: t("{{- dimension}} multipliers", { dimension: label }),
     width: "22em",
     resizable: false,
     buttons: {
-      Cancel: function () {
+      [t("Cancel")]: function () {
         $(this).dialog("close");
       },
-      Apply: function () {
+      [t("Apply")]: function () {
         const inputs = Array.from(popupEl.querySelectorAll<HTMLInputElement>(".mPopupInput"));
         const result: Partial<Record<string, number>> = {};
         for (const input of inputs) {
@@ -595,7 +610,7 @@ function openDemandCoveragePopup(
 ) {
   const rows = DEMAND_PRIORITY.map(cat => {
     const val = currentValues[cat] ?? 0;
-    return `<span>${DEMAND_CATEGORY_ICONS[cat]} ${capitalize(cat)}</span><input type="number" class="dcPopupInput" data-cat="${cat}" min="0" step="0.05" style="width:5em;" value="${val}" />`;
+    return `<span>${DEMAND_CATEGORY_ICONS[cat]} ${capitalize(labelOf(DEMAND_CATEGORY_LABELS, cat))}</span><input type="number" class="dcPopupInput" data-cat="${cat}" min="0" step="0.05" style="width:5em;" value="${val}" />`;
   }).join("");
 
   const popupEl = document.createElement("div");
@@ -603,14 +618,14 @@ function openDemandCoveragePopup(
   popupEl.innerHTML = `<div style="display:grid;grid-template-columns:1fr 5em;gap:.3em .5em;align-items:center;padding:.2em;">${rows}</div>`;
 
   $(popupEl).dialog({
-    title: "Demand Coverage",
+    title: t("Demand Coverage"),
     width: "18em",
     resizable: false,
     buttons: {
-      Cancel: function () {
+      [t("Cancel")]: function () {
         $(this).dialog("close");
       },
-      Apply: function () {
+      [t("Apply")]: function () {
         const result: Partial<Record<DemandCategory, number>> = {};
         popupEl.querySelectorAll<HTMLInputElement>(".dcPopupInput").forEach(input => {
           const cat = input.dataset.cat as DemandCategory;
@@ -645,14 +660,14 @@ function openBiomeProductionPopup(
   popupEl.innerHTML = `<div style="max-height:320px;overflow-y:auto;padding:.2em;"><div style="display:grid;grid-template-columns:1fr 5em;gap:.3em .5em;align-items:center;">${rows}</div></div>`;
 
   $(popupEl).dialog({
-    title: "Biome Baseline Production",
+    title: t("Biome Baseline Production"),
     width: "22em",
     resizable: false,
     buttons: {
-      Cancel: function () {
+      [t("Cancel")]: function () {
         $(this).dialog("close");
       },
-      Apply: function () {
+      [t("Apply")]: function () {
         const result: Partial<Record<number, number>> = {};
         popupEl.querySelectorAll<HTMLInputElement>(".bpPopupInput").forEach(input => {
           const id = Number(input.dataset.id!);

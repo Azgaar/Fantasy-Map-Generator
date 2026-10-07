@@ -1,21 +1,23 @@
 // Style tab shell: the preset row, the element and group selects and the form container. The rows are
 // rendered by Controllers.StyleEditor from the styles schema; the preset row is wired by StylePresetsEditor
+
+import { t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/nodeUtils";
 
 const TEMPLATE = /* html */ `
   <div class="head">
-    <p data-tip="Select a style preset. State labels may required regeneration if font is changed">Preset:</p>
-    <button type="button" id="stylePreset" data-tip="Click to select a style preset"></button>
-    <button id="addStyleButton" data-tip="Click to save current style as a new preset" class="icon-plus sideButton"></button>
+    <p data-tip="${t("Select a style preset. State labels may required regeneration if font is changed")}">${t("Preset")}:</p>
+    <button type="button" id="stylePreset" data-tip="${t("Click to select a style preset")}"></button>
+    <button id="addStyleButton" data-tip="${t("Click to save current style as a new preset")}" class="icon-plus sideButton"></button>
   </div>
   <div class="head">
-    <p data-tip="Select an element to edit its style">Element:</p>
-    <select data-tip="Select an element to edit its style (list is ordered alphabetically)" id="styleElementSelect"></select>
-    <button id="styleElementTreeButton" data-tip="Browse all elements and their groups" class="icon-sitemap sideButton"></button>
+    <p data-tip="${t("Select an element to edit its style")}">${t("Element")}:</p>
+    <select data-tip="${t("Select an element to edit its style (list is ordered alphabetically)")}" id="styleElementSelect"></select>
+    <button id="styleElementTreeButton" data-tip="${t("Browse all elements and their groups")}" class="icon-sitemap sideButton"></button>
   </div>
   <div class="head group-row" style="display: none">
-    <p data-tip="Select element group">Group:</p>
-    <select data-tip="Select element group" id="styleGroupSelect"></select>
+    <p data-tip="${t("Select element group")}">${t("Group")}:</p>
+    <select data-tip="${t("Select element group")}" id="styleGroupSelect"></select>
   </div>
   <div id="styleForm"></div>
 `;

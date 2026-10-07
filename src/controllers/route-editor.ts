@@ -6,6 +6,7 @@ import { Controllers } from "@/controllers";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
 import { redrawRoute as redrawRouteShape, setEditedRoute } from "@/renderers/draw-routes";
 import { speak } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl, getPointer, getSegmentId, rn } from "../utils";
 
 let selectedRoute: Selection<SVGElement, unknown, HTMLElement, unknown>;
@@ -25,7 +26,12 @@ function open(id: string): void {
   selectedRoute = select<SVGElement, unknown>(`#${id}`).on("click", addControlPoint);
 
   tip(
-    "Drag control points to change the route. Click on point to remove it. Click on the route to add additional control point. For major changes please create a new route instead",
+    sentences(
+      t("Drag control points to change the route"),
+      t("Click on point to remove it"),
+      t("Click on the route to add additional control point"),
+      t("For major changes please create a new route instead")
+    ),
     true
   );
   select("#debug").append("g").attr("id", "controlCells");
@@ -42,7 +48,7 @@ function open(id: string): void {
   }
 
   $("#routeEditor").dialog({
-    title: "Edit Route",
+    title: t("Edit Route"),
     resizable: false,
     position: { my: "left top", at: "left+10 top+10", of: "#map" },
     close: closeRouteEditor
@@ -55,30 +61,30 @@ function renderDialog(): void {
   const html = /* html */ `<div id="routeEditor" class="dialog">
     <div id="routeBody" style="padding-bottom: 0.3em">
       <div>
-        <div class="label">Name:</div>
-        <input id="routeName" data-tip="Type to rename the route" autocorrect="off" spellcheck="false" />
-        <span id="routeNameSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
-        <span id="routeGenerateName" data-tip="Generate route name" class="icon-globe pointer"></span>
+        <div class="label">${t("Name")}:</div>
+        <input id="routeName" data-tip="${t("Type to rename the route")}" autocorrect="off" spellcheck="false" />
+        <span id="routeNameSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
+        <span id="routeGenerateName" data-tip="${t("Generate route name")}" class="icon-globe pointer"></span>
       </div>
-      <div data-tip="Select route group">
-        <div class="label">Group:</div>
+      <div data-tip="${t("Select route group")}">
+        <div class="label">${t("Group")}:</div>
         <select id="routeGroup"></select>
-        <span id="routeGroupEdit" data-tip="Edit route groups" class="icon-pencil pointer"></span>
-        <span id="routeEditStyle" data-tip="Edit style for the route group" class="icon-brush pointer"></span>
+        <span id="routeGroupEdit" data-tip="${t("Edit route groups")}" class="icon-pencil pointer"></span>
+        <span id="routeEditStyle" data-tip="${t("Edit style for the route group")}" class="icon-brush pointer"></span>
       </div>
-      <div data-tip="Route length in selected units">
-        <div class="label">Length:</div>
+      <div data-tip="${t("Route length in selected units")}">
+        <div class="label">${t("Length")}:</div>
         <input id="routeLength" disabled />
       </div>
     </div>
     <div id="routeBottom">
-      <button id="routeCreateSelectingCells" data-tip="Create a new route selecting route cells" class="icon-map-pin"></button>
-      <button id="routeJoin" data-tip="Click to join the route to another route that starts or ends at the same cell" class="icon-link"></button>
-      <button id="routeSplit" data-tip="Click on a control point to split the route there" class="icon-unlink"></button>
-      <button id="routeElevationProfile" data-tip="Show the elevation profile for the route" class="icon-chart-area"></button>
-      ${noteButton("routeLegend", "this route")}
+      <button id="routeCreateSelectingCells" data-tip="${t("Create a new route selecting route cells")}" class="icon-map-pin"></button>
+      <button id="routeJoin" data-tip="${t("Click to join the route to another route that starts or ends at the same cell")}" class="icon-link"></button>
+      <button id="routeSplit" data-tip="${t("Click on a control point to split the route there")}" class="icon-unlink"></button>
+      <button id="routeElevationProfile" data-tip="${t("Show the elevation profile for the route")}" class="icon-chart-area"></button>
+      ${noteButton("routeLegend", t("Edit free text notes (legend)"))}
       <button id="routeLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
-      <button id="routeRemove" data-tip="Remove route" data-shortcut="Delete" class="icon-trash fastDelete"></button>
+      <button id="routeRemove" data-tip="${t("Remove route")}" data-shortcut="Delete" class="icon-trash fastDelete"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -241,7 +247,7 @@ function handleControlPointClick(this: any): void {
 
   function splitRoute(): void {
     if (index < 1 || index > route.points.length - 2)
-      return void tip("A route cannot be split at its end point", false, "error");
+      return void tip(t("A route cannot be split at its end point"), false, "error");
     const newRouteId = Routes.split(route.i, index);
     drawControlPoints(route.points);
     drawCells(route.points);
@@ -290,29 +296,34 @@ function openJoinRoutesDialog(): void {
       const length = `${rn(r.length * options.map.units.distance.scale)} ${options.map.units.distance.unit}`;
       return `<option value="${r.i}">${r.name} (${length})</option>`;
     });
-    alertMessage.innerHTML = /* html */ `<div>Route to join with:
+    alertMessage.innerHTML = /* html */ `<div>${t("Route to join with")}:
         <select>${routeOptions.join("")}</select>
       </div>`;
 
     $("#alert").dialog({
-      title: "Join routes",
+      title: t("Join routes"),
       width: "fit-content",
       position: { my: "left top", at: "left+10 top+150", of: "#map" },
       buttons: {
-        Cancel: () => {
+        [t("Cancel")]: () => {
           $("#alert").dialog("close");
         },
-        Join: () => {
+        [t("Join")]: () => {
           const selectedRouteId = +alertMessage.querySelector("select")!.value;
           const selectedRoute = pack.routes.find((r: Route) => r.i === selectedRouteId) as Route;
           joinRoutes(route, selectedRoute);
-          tip("Routes joined", false, "success", 5000);
+          tip(t("Routes joined"), false, "success", 5000);
           $("#alert").dialog("close");
         }
       }
     });
   } else {
-    tip("No routes to join with. Route must start or end at current route's start or end cell", false, "error", 4000);
+    tip(
+      t("No routes to join with. Route must start or end at current route's start or end cell"),
+      false,
+      "error",
+      4000
+    );
   }
 }
 
@@ -403,9 +414,9 @@ function updateLockIcon(): void {
 
 function removeRoute(): void {
   confirmationDialog({
-    title: "Remove route",
-    message: "Are you sure you want to remove the route? <br>This action cannot be reverted",
-    confirm: "Remove",
+    title: t("Remove route"),
+    message: `${t("Are you sure you want to remove the route?")}<br>${t("This action cannot be reverted")}`,
+    confirm: t("Remove"),
     onConfirm: () => {
       Routes.remove(getRoute().i);
       $("#routeEditor").dialog("close");

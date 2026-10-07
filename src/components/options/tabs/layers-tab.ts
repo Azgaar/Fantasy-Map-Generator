@@ -4,7 +4,7 @@ import { Layers } from "@/components/layers";
 import { LAYER_TOGGLES, underlineHotkey } from "@/data/layer-labels";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { isCtrlClick } from "@/utils";
-import { t } from "@/utils/i18n";
+import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 
 // built-in layer presets, in the order the select shows them; the layer sets live in layers-presets
@@ -30,7 +30,7 @@ export const getLayerByShortcut = (code: string): LayerId | undefined =>
   [...LAYER_TOGGLES].find(([, button]) => button.shortcut === code)?.[0];
 
 const TEMPLATE = /* html */ `
-  <p data-tip="${t("Select a map layers preset")}" style="display: inline-block">${t("Layers preset:")}</p>
+  <p data-tip="${t("Select a map layers preset")}" style="display: inline-block">${t("Layers preset")}:</p>
   <select data-tip="${t("Select a map layers preset")}" id="layersPreset" style="width: 45%">
     ${Object.entries(LAYER_PRESETS)
       .map(([id, label]) => `<option value="${id}">${label}</option>`)
@@ -45,30 +45,30 @@ const TEMPLATE = /* html */ `
   ></button>
   <button
     id="removePresetButton"
-    data-tip="${t("Click to remove current custom preset")}"
+    data-tip="${t("Remove this custom preset")}"
     class="icon-minus sideButton"
     style="display: none"
   ></button>
-  <p>${t("Displayed layers and layer order:")}</p>
+  <p>${t("Displayed layers and layer order")}:</p>
   <ul
-    data-tip="${t("Click to toggle a layer, drag to raise or lower a layer. Ctrl + click to edit layer style")}"
+    data-tip="${sentences(t("Click to toggle, drag to raise or lower the layer"), t("Ctrl + click to edit layer style"))}"
     id="mapLayers"
   >
   </ul>
   <div class="tip">${t("Click to toggle, drag to raise or lower the layer")}</div>
   <div class="tip">${t("Ctrl + click to edit layer style")}</div>
   <div id="viewMode" data-tip="${t("Set view mode")}">
-    <p>${t("View mode:")}</p>
+    <p>${t("View mode")}:</p>
     <button data-tip="${t("Standard view mode for editing the map")}" id="viewStandard" class="pressed">
       ${t("Standard")}
     </button>
     <button
-      data-tip="${t("Map presentation in 3D scene. Works best for heightmap. Cannot be used for editing")}"
+      data-tip="${sentences(t("Map presentation in 3D scene"), t("Works best for heightmap"), t("Cannot be used for editing"))}"
       id="viewMesh"
     >
       ${t("3D scene")}
     </button>
-    <button data-tip="${t("Project map on globe. Cannot be used for editing")}" id="viewGlobe">${t("Globe")}</button>
+    <button data-tip="${sentences(t("Project map on globe"), t("Cannot be used for editing"))}" id="viewGlobe">${t("Globe")}</button>
   </div>
 `;
 
@@ -82,11 +82,9 @@ function render(): void {
 
       const item = document.createElement("li");
       item.dataset.layer = layer.id;
-      item.dataset.tip = t(
-        "{{layer}}: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style",
-        {
-          layer: button.label
-        }
+      item.dataset.tip = sentences(
+        t("{{layer}}: click to toggle, drag to raise or lower the layer", { layer: button.label }),
+        t("Ctrl + click to edit layer style")
       );
       if (button.shortcut) item.dataset.shortcut = button.hint ?? button.shortcut.replace("Key", "");
       item.innerHTML = underlineHotkey(button);

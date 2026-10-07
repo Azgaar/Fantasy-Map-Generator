@@ -8,7 +8,8 @@ import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
 import { isElectron, savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
-import { ensureEl, escapeHtml, getFileName, link, parseError, rn } from "@/utils";
+import { ensureEl, getFileName, link, parseError, rn } from "@/utils";
+import { t } from "@/utils/i18n";
 import { type SaveOutcome, saveToFileSystem } from "./save-to-file";
 
 type Writer = () => Promise<void>;
@@ -18,7 +19,8 @@ const toMachine = (saveAs = false): Promise<void> => save(() => writeToMachine(s
 const toDropbox = (): Promise<void> => save(() => writeToDropbox(prepareMapData(), `${getFileName()}.map`));
 
 async function save(write: Writer): Promise<void> {
-  if (customization) return tip("Map cannot be saved in EDIT mode, please complete the edit and retry", false, "error");
+  if (customization)
+    return tip(t("Map cannot be saved in EDIT mode, please complete the edit and retry"), false, "error");
   closeDialogs("#alert");
 
   try {
@@ -26,21 +28,21 @@ async function save(write: Writer): Promise<void> {
   } catch (error) {
     ERROR && console.error(error);
     const saveError = error instanceof Error ? error : new Error(String(error));
-    alertMessage.innerHTML = /* html */ `An error occurred while saving the map. If the issue persists, please copy the message below and report it on ${link(
-      "https://github.com/Azgaar/Fantasy-Map-Generator/issues",
-      "GitHub"
-    )}. <p id="errorBox">${parseError(saveError)}</p>`;
+    alertMessage.innerHTML = /* html */ `${t(
+      "An error occurred while saving the map. If the issue persists, please copy the message below and report it on {{- github}}.",
+      { github: link("https://github.com/Azgaar/Fantasy-Map-Generator/issues", "GitHub") }
+    )} <p id="errorBox">${parseError(saveError)}</p>`;
 
     $("#alert").dialog({
       resizable: false,
-      title: "Saving error",
+      title: t("Saving error"),
       width: "28em",
       buttons: {
-        Retry: function (this: HTMLElement) {
+        [t("Retry")]: function (this: HTMLElement) {
           $(this).dialog("close");
           save(write);
         },
-        Close: function (this: HTMLElement) {
+        [t("Close")]: function (this: HTMLElement) {
           $(this).dialog("close");
         }
       },
@@ -52,7 +54,7 @@ async function save(write: Writer): Promise<void> {
 function prepareMapData(): string {
   const date = new Date();
   const dateString = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
-  const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
+  const license = t("File can be loaded in azgaar.github.io/Fantasy-Map-Generator");
   const params = [
     VERSION,
     license,
@@ -195,7 +197,7 @@ function prepareMapData(): string {
 async function writeToStorage(mapData: string, showTip = false): Promise<void> {
   const blob = new Blob([mapData], { type: "text/plain" });
   await ldb.set("lastMap", blob);
-  showTip && tip("Map is saved to the browser storage", false, "success");
+  showTip && tip(t("Map is saved to the browser storage"), false, "success");
 }
 
 async function writeToMachine(saveAs: boolean): Promise<void> {
@@ -205,17 +207,18 @@ async function writeToMachine(saveAs: boolean): Promise<void> {
 export function notifySaveOutcome(outcome: SaveOutcome): void {
   if (outcome.type === "cancelled") return;
   if (outcome.type === "saved") {
-    tip(`Map is saved to "${escapeHtml(outcome.filename)}"`, true, "success", 8000);
+    tip(t("Map is saved to “{{file}}”", { file: outcome.filename }), true, "success", 8000);
     return;
   }
 
-  let message = savedMessage("Map");
+  let message = savedMessage(t("Map"));
   if (!isElectron()) {
     const noticeKey = "savePickerFallbackNoticeShown";
     try {
       if (!localStorage.getItem(noticeKey)) {
-        message +=
-          ". A save-location picker is unavailable here; your browser's download settings control the location.";
+        message += t(
+          ". A save-location picker is unavailable here; your browser's download settings control the location."
+        );
         localStorage.setItem(noticeKey, "true");
       }
     } catch {
@@ -227,7 +230,7 @@ export function notifySaveOutcome(outcome: SaveOutcome): void {
 
 async function writeToDropbox(mapData: string, filename: string): Promise<void> {
   await Services.Cloud.save(filename, mapData);
-  tip("Map is saved to your Dropbox", true, "success", 8000);
+  tip(t("Map is saved to your Dropbox"), true, "success", 8000);
 }
 
 export const Save = { toStorage, toMachine, toDropbox, prepareMapData, writeToStorage };

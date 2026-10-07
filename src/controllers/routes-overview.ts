@@ -17,6 +17,7 @@ import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
 import { getRouteBox } from "@/renderers/draw-routes";
 import { highlightArea } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { ensureEl, rn } from "../utils";
 
 const dialogId = "routesOverview" as const;
@@ -27,7 +28,7 @@ const columns: EditorColumn<Route>[] = [
   { key: "locate", width: "1.4em", permanent: true },
   {
     key: "name",
-    label: "Route",
+    label: t("Route"),
     width: "15em",
     permanent: true,
     sortBy: route => route.name || "",
@@ -35,14 +36,14 @@ const columns: EditorColumn<Route>[] = [
   },
   {
     key: "group",
-    label: "Group",
+    label: t("Group"),
     width: "7em",
     sortBy: route => route.group || "",
     sortType: "alpha"
   },
   {
     key: "length",
-    label: "Length",
+    label: t("Length"),
     width: "6em",
     sortBy: route => route.length || 0,
     defaultSort: "desc"
@@ -85,7 +86,7 @@ function open(): void {
   routesTable.reset();
 
   $(`#${dialogId}`).dialog({
-    title: "Routes Overview",
+    title: t("Routes Overview"),
     resizable: false,
     width: "fit-content",
     position,
@@ -99,18 +100,18 @@ function renderDialog(): void {
   const html = /* html */ `<div id="routesOverview" class="dialog stable editorDialog">
     <div id="routesBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
     <div id="routesFilters" class="editorFilters">
-      <label for="routesSearch" data-tip="Filter by name or group">Search: <input id="routesSearch" type="search" /></label>
+      <label for="routesSearch" data-tip="${t("Filter by name or group")}">${t("Search")}: <input id="routesSearch" type="search" /></label>
     </div>
     <div id="routesFooter" class="totalLine">
-      <div data-tip="Routes number" style="margin-left: 4px">Routes:&nbsp;<span id="routesFooterNumber">0</span></div>
-      <div data-tip="Average length" style="margin-left: 12px" data-col="length">Average length:&nbsp;<span id="routesFooterLength">0</span></div>
+      <div data-tip="${t("Routes number")}" style="margin-left: 4px">${t("Routes")}:&nbsp;<span id="routesFooterNumber">0</span></div>
+      <div data-tip="${t("Average length")}" style="margin-left: 12px" data-col="length">${t("Average length")}:&nbsp;<span id="routesFooterLength">0</span></div>
     </div>
     <div id="routesBottom" class="editorToolbar">
-      <button id="routesOverviewRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-      <button id="routesCreateNew" data-tip="Create a new route selecting route cells" class="icon-map-pin"></button>
-      <button id="routesExport" data-tip="Save routes-related data as a text file (.csv)" class="icon-download"></button>
-      <button id="routesLockAll" data-tip="Lock or unlock all routes" class="icon-lock"></button>
-      <button id="routesRemoveAll" data-tip="Remove all unlocked routes (locked routes are kept)" class="icon-trash"></button>
+      <button id="routesOverviewRefresh" data-tip="${t("Refresh the Editor")}" class="icon-cw"></button>
+      <button id="routesCreateNew" data-tip="${t("Create a new route selecting route cells")}" class="icon-map-pin"></button>
+      <button id="routesExport" data-tip="${t("Save routes-related data as a text file (.csv)")}" class="icon-download"></button>
+      <button id="routesLockAll" data-tip="${t("Lock or unlock all routes")}" class="icon-lock"></button>
+      <button id="routesRemoveAll" data-tip="${t("Remove all unlocked routes (locked routes are kept)")}" class="icon-trash"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -164,20 +165,23 @@ function renderRoutesPage(view: TableView<Route>): void {
         data-group="${route.group}"
         data-length="${route.length}"
       >
-        <span data-tip="Locate the route" class="icon-target" data-col="locate"></span>
-        <div data-tip="Route name" data-col="name">${route.name}</div>
-        <div data-tip="Route group" data-col="group">${route.group}</div>
-        <div data-tip="Route length" data-col="length">${length}</div>
-        <span data-col="edit" data-tip="Edit route" class="icon-pencil"></span>
+        <span data-tip="${t("Locate the route")}" class="icon-target" data-col="locate"></span>
+        <div data-tip="${t("Route name")}" data-col="name">${route.name}</div>
+        <div data-tip="${t("Route group")}" data-col="group">${route.group}</div>
+        <div data-tip="${t("Route length")}" data-col="length">${length}</div>
+        <span data-col="edit" data-tip="${t("Edit Route")}" class="icon-pencil"></span>
         <span data-col="lock" class="locks pointer ${
           route.lock ? "icon-lock" : "icon-lock-open inactive"
         }" onmouseover="showElementLockTip(event)"></span>
-        <span data-col="remove" data-tip="Remove route" class="icon-trash-empty"></span>
+        <span data-col="remove" data-tip="${t("Remove route")}" class="icon-trash-empty"></span>
       </div>`;
   }
   body.insertAdjacentHTML("beforeend", lines);
 
-  ensureEl("routesFooterNumber").innerHTML = `${view.all.length} of ${pack.routes.length}`;
+  ensureEl("routesFooterNumber").innerHTML = t("{{shown}} of {{total}}", {
+    shown: view.all.length,
+    total: pack.routes.length
+  });
   const averageLength = rn(mean(view.all.map(r => r.length)) || 0) || 0;
   ensureEl("routesFooterLength").innerHTML =
     `${averageLength * options.map.units.distance.scale} ${options.map.units.distance.unit}`;
@@ -268,9 +272,9 @@ function toggleLockAll(): void {
 function triggerRouteRemove(this: HTMLElement): void {
   const routeId = +(this.closest(".states") as HTMLElement).dataset.id!;
   confirmationDialog({
-    title: "Remove route",
-    message: "Are you sure you want to remove the route? <br>This action cannot be reverted",
-    confirm: "Remove",
+    title: t("Remove route"),
+    message: `${t("Are you sure you want to remove the route?")}<br>${t("This action cannot be reverted")}`,
+    confirm: t("Remove"),
     onConfirm: () => {
       const route = pack.routes.find((r: Route) => r.i === routeId) as Route;
       Routes.remove(route.i);
@@ -284,9 +288,9 @@ function triggerAllRoutesRemove(): void {
   const toRemove = pack.routes.filter((route: Route) => !route.lock);
   if (!toRemove.length) {
     if (!pack.routes.length) {
-      tip("There are no routes to remove", false, "error");
+      tip(t("There are no routes to remove"), false, "error");
     } else {
-      tip("All routes are locked. Unlock routes to remove them, or use Lock all to unlock first.", false, "error");
+      tip(t("All routes are locked. Unlock routes to remove them, or use Lock all to unlock first."), false, "error");
     }
     return;
   }
@@ -294,20 +298,24 @@ function triggerAllRoutesRemove(): void {
   const lockedCount = pack.routes.length - toRemove.length;
   alertMessage.innerHTML =
     lockedCount > 0
-      ? /* html */ `Remove all <b>unlocked</b> routes (${toRemove.length})? <b>${lockedCount}</b> locked route(s) will be kept. This cannot be undone.`
-      : /* html */ `Are you sure you want to remove all routes? This action can't be undone`;
+      ? sentences(
+          t("Remove all <b>unlocked</b> routes ({{routes}})?", { routes: toRemove.length }),
+          t("Locked routes to keep: <b>{{locked}}</b>", { locked: lockedCount }),
+          t("This action cannot be reverted")
+        )
+      : sentences(t("Are you sure you want to remove all routes?"), t("This action cannot be reverted"));
 
   $("#alert").dialog({
     resizable: false,
-    title: lockedCount > 0 ? "Remove unlocked routes" : "Remove all routes",
+    title: lockedCount > 0 ? t("Remove unlocked routes") : t("Remove all routes"),
     buttons: {
-      Remove: function (this: any) {
+      [t("Remove")]: function (this: any) {
         const routesToRemove = pack.routes.filter((route: Route) => !route.lock);
         if (!routesToRemove.length) {
           if (!pack.routes.length) {
-            tip("There are no routes to remove", false, "error");
+            tip(t("There are no routes to remove"), false, "error");
           } else {
-            tip("All routes are now locked; nothing was removed.", false, "error");
+            tip(t("All routes are now locked; nothing was removed."), false, "error");
           }
           $(this).dialog("close");
           return;
@@ -320,7 +328,7 @@ function triggerAllRoutesRemove(): void {
         routesTable.refresh();
         $(this).dialog("close");
       },
-      Cancel: function (this: any) {
+      [t("Cancel")]: function (this: any) {
         $(this).dialog("close");
       }
     }

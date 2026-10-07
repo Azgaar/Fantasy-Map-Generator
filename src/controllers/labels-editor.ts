@@ -14,6 +14,7 @@ import { getLabelPath } from "@/renderers/labels/label-markup";
 import type { LabelData } from "@/renderers/labels/labels";
 import { getSceneLabel, redrawLabel } from "@/renderers/labels/labels-renderer";
 import { rn, speak } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { ensureEl, getPointer, round } from "../utils";
 
 let lastSelectedGroup = ""; // the default group for newly added labels
@@ -37,7 +38,7 @@ function open(type: LabelType, id: number): void {
   renderDialog();
 
   $("#labelEditor").dialog({
-    title: "Edit Label",
+    title: t("Edit Label"),
     resizable: false,
     width: "fit-content",
     position: { my: "center top+10", at: "bottom", of: textEl, collision: "fit" },
@@ -53,36 +54,36 @@ function open(type: LabelType, id: number): void {
 function renderDialog(): void {
   destroyDialog("labelEditor");
   const editorHtml = /* html */ `<div id="labelEditor" class="dialog">
-      <button id="labelGroupShow" data-tip="Show the group selection" class="icon-tags"></button>
+      <button id="labelGroupShow" data-tip="${t("Show the group selection")}" class="icon-tags"></button>
       <div id="labelGroupSection" style="display: none">
-        <button id="labelGroupHide" data-tip="Hide the group selection" class="icon-tags"></button>
-        <select id="labelGroupSelect" data-tip="Select a group for this label" style="width: 10em"></select>
+        <button id="labelGroupHide" data-tip="${t("Hide the group selection")}" class="icon-tags"></button>
+        <select id="labelGroupSelect" data-tip="${t("Select a group for this label")}" style="width: 10em"></select>
         <button
           id="labelGroupsConfigure"
-          data-tip="Open the Label Groups Configurator to create, edit and reorder groups"
+          data-tip="${t("Open the Label Groups Configurator to create, edit and reorder groups")}"
           class="icon-cog"
         ></button>
       </div>
-      <button id="labelTextShow" data-tip="Show the edit label text section" class="icon-pencil"></button>
+      <button id="labelTextShow" data-tip="${t("Show the edit label text section")}" class="icon-pencil"></button>
       <div id="labelTextSection" style="display: none">
-        <button id="labelTextHide" data-tip="Hide the edit label text section" class="icon-pencil"></button>
+        <button id="labelTextHide" data-tip="${t("Hide the edit label text section")}" class="icon-pencil"></button>
         <input
           id="labelText"
-          data-tip='Type to change the label. Enter "|" to move to a new line'
+          data-tip="${t("Type to change the label. Enter “|” to move to a new line")}"
           style="width: 12em"
         />
-        <span id="labelTextSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
-        <span id="labelTextRandom" data-tip="Generate random name" class="icon-shuffle pointer"></span>
+        <span id="labelTextSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
+        <span id="labelTextRandom" data-tip="${t("Generate random name")}" class="icon-shuffle pointer"></span>
       </div>
-      <button id="labelEditStyle" data-tip="Edit label group style in Style Editor" class="icon-brush"></button>
+      <button id="labelEditStyle" data-tip="${t("Edit label group style in Style Editor")}" class="icon-brush"></button>
       <button id="labelPathToggle"></button>
-      <button id="labelSizeShow" data-tip="Show the font size section" class="icon-text-height"></button>
+      <button id="labelSizeShow" data-tip="${t("Show the font size section")}" class="icon-text-height"></button>
       <div id="labelSizeSection" style="display: none">
-        <button id="labelSizeHide" data-tip="Hide the font size section" class="icon-text-height"></button>
-        <span data-tip="Set relative size for the particular label">Size:</span>
+        <button id="labelSizeHide" data-tip="${t("Hide the font size section")}" class="icon-text-height"></button>
+        <span data-tip="${t("Set relative size for the particular label")}">${t("Size")}:</span>
         <input
           id="labelRelativeSize"
-          data-tip="Set relative size for the particular label (% of group default)"
+          data-tip="${t("Set relative size for the particular label (% of group default)")}"
           type="number"
           min="30"
           max="300"
@@ -90,13 +91,13 @@ function renderDialog(): void {
           style="width: 4.5em"
         />
       </div>
-      <button id="labelOffsetShow" data-tip="Show the label offset section" class="icon-sliders"></button>
+      <button id="labelOffsetShow" data-tip="${t("Show the label offset section")}" class="icon-sliders"></button>
       <div id="labelOffsetSection" style="display: none">
-        <button id="labelOffsetHide" data-tip="Hide the label offset section" class="icon-sliders"></button>
-        <span data-tip="Set starting offset for the particular label">Offset:</span>
+        <button id="labelOffsetHide" data-tip="${t("Hide the label offset section")}" class="icon-sliders"></button>
+        <span data-tip="${t("Set starting offset for the particular label")}">${t("Offset")}:</span>
         <input
           id="labelStartOffset"
-          data-tip="Set starting offset for the particular label (% along the path)"
+          data-tip="${t("Set starting offset for the particular label (% along the path)")}"
           type="range"
           min="20"
           max="80"
@@ -109,20 +110,20 @@ function renderDialog(): void {
           max="80"
           step="1"
           style="width: 3.5em"
-          data-tip="Set starting offset numerically"
+          data-tip="${t("Set starting offset numerically")}"
         />
       </div>
-      <button id="labelLetterSpacingShow" data-tip="Show the letter spacing section" class="icon-text-width"></button>
+      <button id="labelLetterSpacingShow" data-tip="${t("Show the letter spacing section")}" class="icon-text-width"></button>
       <div id="labelLetterSpacingSection" style="display: none">
         <button
           id="labelLetterSpacingHide"
-          data-tip="Hide the letter spacing section"
+          data-tip="${t("Hide the letter spacing section")}"
           class="icon-text-width"
         ></button>
         <slider-input
           id="labelLetterSpacingSize"
           style="display: inline-block"
-          data-tip="Set the letter spacing size for this label"
+          data-tip="${t("Set the letter spacing size for this label")}"
           min="0"
           max="20"
           step=".01"
@@ -130,11 +131,11 @@ function renderDialog(): void {
         ></slider-input>
       </div>
       <button id="labelVisibility"></button>
-      ${noteButton("labelLegend", "this label")}
-      <button id="labelReset" data-tip="Restore the default label" class="icon-arrows-cw"></button>
+      ${noteButton("labelLegend", t("Edit free text notes (legend)"))}
+      <button id="labelReset" data-tip="${t("Restore the default label")}" class="icon-arrows-cw"></button>
       <button
         id="labelRemoveSingle"
-        data-tip="Remove the label"
+        data-tip="${t("Remove label")}"
         data-shortcut="Delete"
         class="icon-trash fastDelete"
       ></button>
@@ -196,14 +197,14 @@ function updateControls(): void {
   const pathToggle = ensureEl("labelPathToggle");
   pathToggle.className = hasPath ? "icon-resize-horizontal" : "icon-bezier-curve";
   pathToggle.dataset.tip = hasPath
-    ? "Remove the label path, render the label as a straight text"
-    : "Curve the label along a path";
+    ? t("Remove the label path, render the label as a straight text")
+    : t("Curve the label along a path");
 
   const visibility = ensureEl("labelVisibility");
   visibility.className = label.hidden ? "icon-eye-off" : "icon-eye";
   visibility.dataset.tip = label.hidden
-    ? "Show the label"
-    : "Hide the label. You can toggle it on later in Labels Overview";
+    ? t("Show the label")
+    : sentences(t("Hide the label"), t("You can toggle it on later in Labels Overview"));
 }
 
 function hasLabelPath(): boolean {
@@ -239,10 +240,10 @@ function showEditorTips(event: MouseEvent): void {
   const target = event.target as SVGElement;
   const parent = target.parentNode as Element | null;
   if (target.closest(`#${label.id}`)) {
-    tip("Drag to move the label");
+    tip(t("Drag to move the label"));
   } else if (parent?.id === "controlPoints") {
-    if (target.tagName === "circle") tip("Drag to move, click to delete the control point");
-    if (target.tagName === "path") tip("Click to add a control point");
+    if (target.tagName === "circle") tip(t("Drag to move, click to delete the control point"));
+    if (target.tagName === "path") tip(t("Click to add a control point"));
   }
 }
 
@@ -372,9 +373,16 @@ function changeGroup(this: HTMLSelectElement): void {
   if (targetType === label.type) return void apply();
 
   confirmationDialog({
-    title: "Assign cross-type Label Group",
-    message: `Assign this ${label.type} label to the ${targetType} group "${nextGroup}"? It's better to avoid such cross-type assignment.`,
-    confirm: "Assign",
+    title: t("Assign cross-type Label Group"),
+    message: sentences(
+      t("Assign this {{type}} label to the {{targetType}} group “{{group}}”?", {
+        type: label.type,
+        targetType,
+        group: nextGroup
+      }),
+      t("It's better to avoid such cross-type assignment")
+    ),
+    confirm: t("Assign"),
     onConfirm: apply,
     onCancel: () => {
       this.value = label.group;
@@ -396,9 +404,10 @@ function changeText(): void {
   const input = ensureEl<HTMLInputElement>("labelText").value;
   label.text = input;
   applyLabelChanges();
-  if (label.type === "state") tip("Use States Editor to change the actual state name, not just a label", false, "warn");
+  if (label.type === "state")
+    tip(t("Use States Editor to change the actual state name, not just a label"), false, "warn");
   if (label.type === "province")
-    tip("Use Provinces Editor to change the actual province name, not just a label", false, "warn");
+    tip(t("Use Provinces Editor to change the actual province name, not just a label"), false, "warn");
 }
 
 const nameGenerators: Record<LabelType, (label: LabelData) => string> = {
@@ -473,7 +482,7 @@ function changeStartOffset(this: HTMLInputElement): void {
 
   label.startOffset = +value;
   applyLabelChanges();
-  tip(`Label offset: ${value}%`);
+  tip(t("Label offset: {{value}}%", { value }));
 }
 
 function changeStartOffsetFromValue(this: HTMLInputElement): void {
@@ -484,19 +493,19 @@ function changeStartOffsetFromValue(this: HTMLInputElement): void {
 
   label.startOffset = value;
   applyLabelChanges();
-  tip(`Label offset: ${value}%`);
+  tip(t("Label offset: {{value}}%", { value }));
 }
 
 function changeRelativeSize(this: HTMLInputElement): void {
   label.fontSize = +this.value;
   applyLabelChanges();
-  tip(`Label relative size: ${this.value}%`);
+  tip(t("Label relative size: {{value}}%", { value: this.value }));
 }
 
 function changeLetterSpacingSize(this: HTMLInputElement): void {
   label.letterSpacing = +this.value;
   applyLabelChanges();
-  tip(`Label letter-spacing size: ${this.value}px`);
+  tip(t("Label letter-spacing size: {{value}}px", { value: this.value }));
 }
 
 // An empty path means the label is explicitly rendered as a plain text, so it won't fall back to the default geometry
@@ -518,19 +527,19 @@ function editLabelLegend(): void {
 }
 
 function removeSelectedLabel(): void {
-  alertMessage.innerHTML = "Are you sure you want to remove the label?";
+  alertMessage.innerHTML = t("Are you sure you want to remove the label?");
   $("#alert").dialog({
     resizable: false,
-    title: "Remove label",
+    title: t("Remove label"),
     buttons: {
-      Remove: function (this: HTMLElement) {
+      [t("Remove")]: function (this: HTMLElement) {
         $(this).dialog("close");
         if (label.type !== "added") return;
         AddedLabels.remove(label.entityId);
         Layers.draw("labels");
         $("#labelEditor").dialog("close");
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }

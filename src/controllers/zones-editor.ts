@@ -24,6 +24,7 @@ import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { zonesFilter } from "@/renderers/draw-zones";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { errorText } from "@/utils/stringUtils";
 import { ensureEl, rn, si, unique } from "../utils";
 
@@ -33,11 +34,11 @@ const position = { my: "right top", at: "right-10 top+10", of: "svg", collision:
 
 type ZoneRow = { zone: Zone; area: number; rural: number; urban: number; population: number };
 const columns: EditorColumn<ZoneRow>[] = [
-  { key: "description", label: "Description", width: "13em", permanent: true },
-  { key: "type", label: "Type", width: "7em" },
-  { key: "cells", label: "Cells", width: "5em" },
-  { key: "area", label: "Area", width: "7em" },
-  { key: "population", label: "Population", width: "6em" },
+  { key: "description", label: t("Description"), width: "13em", permanent: true },
+  { key: "type", label: t("Type"), width: "7em" },
+  { key: "cells", label: t("Cells"), width: "5em" },
+  { key: "area", label: t("Area"), width: "7em" },
+  { key: "population", label: t("Population"), width: "6em" },
   { key: "note", width: "1.1em" },
   { key: "reorder", width: "1.1em" },
   { key: "focus", width: "1.1em" },
@@ -55,7 +56,7 @@ function open(): void {
   zonesTable.reset();
 
   $("#zonesEditor").dialog({
-    title: "Zones Editor",
+    title: t("Zones Editor"),
     resizable: false,
     close: closeZonesEditor,
     position
@@ -68,35 +69,35 @@ function renderDialog(): void {
       ${renderEditorHeader({ dialogId, columns })}
       <div id="zonesBodySection" class="table" data-type="absolute"></div>
       <div id="zonesFooter" class="totalLine">
-        <div data-tip="Number of zones" style="margin-left: 5px">
-          Zones:&nbsp;<span id="zonesFooterNumber">0</span>
+        <div data-tip="${t("Number of zones")}" style="margin-left: 5px">
+          ${t("Zones")}:&nbsp;<span id="zonesFooterNumber">0</span>
         </div>
-        <div data-tip="Total cells number" style="margin-left: 12px">
-          Cells:&nbsp;<span id="zonesFooterCells">0</span>
+        <div data-tip="${t("Number of cells")}" style="margin-left: 12px">
+          ${t("Cells")}:&nbsp;<span id="zonesFooterCells">0</span>
         </div>
-        <div data-tip="Total map area" style="margin-left: 12px">Area:&nbsp;<span id="zonesFooterArea">0</span></div>
-        <div data-tip="Total map population" style="margin-left: 12px">
-          Population:&nbsp;<span id="zonesFooterPopulation">0</span>
+        <div data-tip="${t("Total map area")}" style="margin-left: 12px">${t("Area")}:&nbsp;<span id="zonesFooterArea">0</span></div>
+        <div data-tip="${t("Total map population")}" style="margin-left: 12px">
+          ${t("Population")}:&nbsp;<span id="zonesFooterPopulation">0</span>
         </div>
       </div>
       <div id="zonesBottom">
-        <button id="zonesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-        <button id="zonesEditStyle" data-tip="Edit zones style in Style Editor" class="icon-adjust"></button>
+        <button id="zonesEditorRefresh" data-tip="${t("Refresh the Editor")}" class="icon-cw"></button>
+        <button id="zonesEditStyle" data-tip="${t("Edit style in Style Editor")}" class="icon-adjust"></button>
         <button
           id="zonesLegend"
-          data-tip="Toggle Legend box (shows all non-hidden zones)"
+          data-tip="${t("Toggle Legend box (shows all non-hidden zones)")}"
           class="icon-list-bullet"
         ></button>
         <button
           id="zonesPercentage"
-          data-tip="Toggle percentage / absolute values views"
+          data-tip="${t("Toggle percentage / absolute values views")}"
           class="icon-percent"
         ></button>
-        <button id="zonesManually" data-tip="Re-assign zones" class="icon-brush"></button>
-        <button id="zonesAdd" data-tip="Add new zone layer" class="icon-plus"></button>
-        <button id="zonesExport" data-tip="Download zones-related data" class="icon-download"></button>
-        <div id="zonesFilters" data-tip="Show only zones of selected type" style="display: inline-block">
-          Type:
+        <button id="zonesManually" data-tip="${t("Re-assign zones")}" class="icon-brush"></button>
+        <button id="zonesAdd" data-tip="${t("Add new zone layer")}" class="icon-plus"></button>
+        <button id="zonesExport" data-tip="${t("Download zones-related data")}" class="icon-download"></button>
+        <div id="zonesFilters" data-tip="${t("Show only zones of selected type")}" style="display: inline-block">
+          ${t("Type")}:
           <select id="zonesFilterType"></select>
         </div>
       </div>
@@ -177,7 +178,7 @@ function updateFilters(): void {
     Layers.draw("zones"); // the filtered-out type is gone, the map must stop hiding zones
   }
 
-  filterSelect.innerHTML = `<option value='all'>all</option>${types
+  filterSelect.innerHTML = `<option value='all'>${t("All")}</option>${types
     .map(type => `<option value="${type}">${type}</option>`)
     .join("")}`;
   filterSelect.value = zonesFilter.type;
@@ -208,20 +209,25 @@ function renderZonesPage(view: TableView<ZoneRow>): void {
     options.map.units.population.scale;
   const percentage = body.dataset.type === "percentage";
   const lines = view.rows.map(({ zone: { i, name, type, cells, color, hidden }, area, rural, urban, population }) => {
-    const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}. Click to change`;
+    const populationTip = sentences(
+      t("Total population: {{total}}", { total: si(population) }),
+      t("Rural population: {{rural}}", { rural: si(rural) }),
+      t("Urban population: {{urban}}", { urban: si(urban) }),
+      t("Click to edit")
+    );
     const focused = select<SVGElement, unknown>("#deftemp").select(`#fog #focusZone${i}`).size();
 
     return /* html */ `<div class="states" data-id="${i}" style="${hidden ? "opacity: 0.5" : ""}">
-      <div data-col="description" style="display:flex; align-items:center"><fill-box fill="${color}"></fill-box><input data-tip="Zone description. Click and type to change" style="width: 11em" class="zoneName" value="${name}" autocorrect="off" spellcheck="false"></div>
-      <div data-col="type"><input data-tip="Zone type. Click and type to change" class="zoneType" value="${type}"></div>
-      <div data-col="cells"><span data-tip="Cells count" class="icon-check-empty"></span><span data-tip="Cells count" class="stateCells">${percentage ? `${rn((cells.length / pack.cells.i.length) * 100, 2)}%` : cells.length}</span></div>
-      <div data-col="area"><span data-tip="Zone area" class="icon-map-o" style="padding-right: 2px"></span><span data-tip="Zone area" class="biomeArea">${percentage ? `${rn((area / totalArea) * 100, 2)}%` : `${si(area)} ${getAreaUnit()}`}</span></div>
+      <div data-col="description" style="display:flex; align-items:center"><fill-box fill="${color}"></fill-box><input data-tip="${sentences(t("Zone description"), t("Click and type to change"))}" style="width: 11em" class="zoneName" value="${name}" autocorrect="off" spellcheck="false"></div>
+      <div data-col="type"><input data-tip="${sentences(t("Zone type"), t("Click and type to change"))}" class="zoneType" value="${type}"></div>
+      <div data-col="cells"><span data-tip="${t("Number of cells")}" class="icon-check-empty"></span><span data-tip="${t("Number of cells")}" class="stateCells">${percentage ? `${rn((cells.length / pack.cells.i.length) * 100, 2)}%` : cells.length}</span></div>
+      <div data-col="area"><span data-tip="${t("Zone area")}" class="icon-map-o" style="padding-right: 2px"></span><span data-tip="${t("Zone area")}" class="biomeArea">${percentage ? `${rn((area / totalArea) * 100, 2)}%` : `${si(area)} ${getAreaUnit()}`}</span></div>
       <div data-col="population"><span data-tip="${populationTip}" class="icon-male"></span><span data-tip="${populationTip}" class="zonePopulation pointer">${percentage ? `${rn((population / totalPopulation) * 100, 2)}%` : si(population)}</span></div>
-      ${noteIcon("this zone")}
-      <span data-col="reorder" data-tip="Drag to raise or lower the zone" class="icon-resize-vertical"></span>
-      <span data-col="focus" data-tip="Toggle zone focus" class="zoneFog icon-pin ${focused ? "" : "inactive"} ${cells.length ? "" : "placeholder"}"></span>
-      <span data-col="visibility" data-tip="Toggle zone visibility" class="zoneHide icon-eye ${cells.length ? "" : " placeholder"}"></span>
-      <span data-col="remove" data-tip="Remove zone" class="zoneRemove icon-trash-empty"></span>
+      ${noteIcon(t("Edit free text notes (legend)"))}
+      <span data-col="reorder" data-tip="${t("Drag to raise or lower the zone")}" class="icon-resize-vertical"></span>
+      <span data-col="focus" data-tip="${t("Toggle zone focus")}" class="zoneFog icon-pin ${focused ? "" : "inactive"} ${cells.length ? "" : "placeholder"}"></span>
+      <span data-col="visibility" data-tip="${t("Toggle zone visibility")}" class="zoneHide icon-eye ${cells.length ? "" : " placeholder"}"></span>
+      <span data-col="remove" data-tip="${t("Remove zone")}" class="zoneRemove icon-trash-empty"></span>
     </div>`;
   });
 
@@ -231,7 +237,10 @@ function renderZonesPage(view: TableView<ZoneRow>): void {
   const footerArea = ensureEl("zonesFooterArea");
   footerArea.dataset.area = String(totalArea);
   ensureEl("zonesFooterPopulation").dataset.population = String(totalPopulation);
-  ensureEl("zonesFooterNumber").innerHTML = `${view.all.length} of ${pack.zones.length}`;
+  ensureEl("zonesFooterNumber").innerHTML = t("{{shown}} of {{total}}", {
+    shown: view.all.length,
+    total: pack.zones.length
+  });
   ensureEl("zonesFooterCells").innerHTML = String(pack.cells.i.length);
   footerArea.innerHTML = `${si(totalArea)} ${getAreaUnit()}`;
   ensureEl("zonesFooterPopulation").innerHTML = si(totalPopulation);
@@ -295,12 +304,12 @@ function openPaintEditor(): void {
   }
 
   void Controllers.PaintEditor.open({
-    title: "Paint Zones",
+    title: t("Paint Zones"),
     parentDialogId: dialogId,
     onClose: open,
     mode: "multiple",
     items: [
-      { id: -1, name: "No zone", color: "#ffffff" },
+      { id: -1, name: t("No zone"), color: "#ffffff" },
       ...visibleZones.map(zone => ({ id: zone.i, name: zone.name, color: zone.color }))
     ],
     landOnlyControl: true,
@@ -363,7 +372,7 @@ function toggleLegend(): void {
   const isFiltered = filterBy !== "all";
   const visibleZones = pack.zones.filter(zone => !zone.hidden && (!isFiltered || zone.type === filterBy));
   const data = visibleZones.map(({ i, name, color }) => [`zone${i}`, color, name]);
-  if (!data.length) return void tip("No zones to show", false, "error");
+  if (!data.length) return void tip(t("No zones to show"), false, "error");
   drawLegend(LEGEND_NAME, data);
 }
 
@@ -412,7 +421,7 @@ function changeType(zone: Zone, value: string): void {
 function changePopulation(zone: Zone): void {
   const landCells = zone.cells.filter(i => pack.cells.h[i] >= 20);
   if (!landCells.length) {
-    tip("Zone does not have any land cells, cannot change population", false, "error");
+    tip(t("Zone does not have any land cells, cannot change population"), false, "error");
     return;
   }
 
@@ -426,9 +435,9 @@ function changePopulation(zone: Zone): void {
   const total = rural + urban;
   const l = (n: number): string => Number(n).toLocaleString();
 
-  alertMessage.innerHTML = /* html */ `Rural: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" /> Urban:
+  alertMessage.innerHTML = /* html */ `${t("Rural")}: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" /> ${t("Urban")}:
     <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em" ${burgs.length ? "" : "disabled"} />
-    <p>Total population: ${l(total)} ⇒ <span id="totalPop">${l(total)}</span> (<span id="totalPopPerc">100</span>%)</p>`;
+    <p>${t("Total population")}: ${l(total)} ⇒ <span id="totalPop">${l(total)}</span> (<span id="totalPopPerc">100</span>%)</p>`;
 
   const ruralPop = ensureEl<HTMLInputElement>("ruralPop");
   const urbanPop = ensureEl<HTMLInputElement>("urbanPop");
@@ -445,14 +454,14 @@ function changePopulation(zone: Zone): void {
 
   $("#alert").dialog({
     resizable: false,
-    title: "Change zone population",
+    title: t("Change zone population"),
     width: "24em",
     buttons: {
-      Apply: function (this: HTMLElement) {
+      [t("Apply")]: function (this: HTMLElement) {
         applyPopulationChange();
         $(this).dialog("close");
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     },
@@ -473,9 +482,9 @@ function changePopulation(zone: Zone): void {
 
 function zoneRemove(zone: Zone): void {
   confirmationDialog({
-    title: "Remove zone",
-    message: "Are you sure you want to remove the zone? <br>This action cannot be reverted",
-    confirm: "Remove",
+    title: t("Remove zone"),
+    message: `${t("Are you sure you want to remove the zone?")}<br>${t("This action cannot be reverted")}`,
+    confirm: t("Remove"),
     onConfirm: () => {
       Zones.remove(zone.i);
       select<SVGGElement, unknown>("#zones").select(`#zone${zone.i}`).remove();

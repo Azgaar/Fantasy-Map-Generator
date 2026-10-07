@@ -3,10 +3,12 @@ import { closeDialogs, destroyDialog, noteButton } from "@/components/dialog/dia
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
+import { FEATURE_SUBTYPE_LABELS, labelOf } from "@/data/id-labels";
 import { type Feature, LAKE_SUBTYPES } from "@/generators/features-generator";
 import { Styles } from "@/generators/styles";
 import { drawLakeEmbellishments } from "@/renderers/draw-lakes";
 import { getArea, getAreaUnit, speak } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl, rand, si } from "../utils";
 import { getHeight } from "../utils/unitUtils";
 
@@ -24,7 +26,7 @@ function open(element: SVGElement): void {
   selectLakeGroup();
 
   $("#lakeEditor").dialog({
-    title: "Edit Lake",
+    title: t("Edit Lake"),
     resizable: false,
     position: { my: "center top+20", at: "top", of: "svg", collision: "fit" },
     close: closeLakesEditor
@@ -37,65 +39,65 @@ function renderDialog(): void {
   const html = /* html */ `<div id="lakeEditor" class="dialog">
     <div id="lakeBody" style="padding-bottom: 0.3em">
       <div>
-        <div class="label" style="width: 4.8em">Name:</div>
-        <span id="lakeNameCulture" data-tip="Generate culture-specific name for the lake" class="icon-book pointer"></span>
-        <span id="lakeNameRandom" data-tip="Generate random name for the lake" class="icon-globe pointer"></span>
-        <input id="lakeName" data-tip="Type to rename the lake" autocorrect="off" spellcheck="false" />
-        <span id="lakeNameSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <div class="label" style="width: 4.8em">${t("Name")}:</div>
+        <span id="lakeNameCulture" data-tip="${t("Generate culture-specific name")}" class="icon-book pointer"></span>
+        <span id="lakeNameRandom" data-tip="${t("Generate random name")}" class="icon-globe pointer"></span>
+        <input id="lakeName" data-tip="${t("Type to rename the lake")}" autocorrect="off" spellcheck="false" />
+        <span id="lakeNameSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
       </div>
-      <div data-tip="Lake subtype. Generators read it: burgs cannot port on dry, frozen or lava lakes">
-        <div class="label" style="width: 7em">Subtype:</div>
-        <select id="lakeSubtype" data-tip="Select lake subtype">
-          ${LAKE_SUBTYPES.map(subtype => `<option value="${subtype}">${subtype}</option>`).join("")}
+      <div data-tip="${t("Lake subtype. Generators read it: burgs cannot port on dry, frozen or lava lakes")}">
+        <div class="label" style="width: 7em">${t("Subtype")}:</div>
+        <select id="lakeSubtype" data-tip="${t("Select lake subtype")}">
+          ${LAKE_SUBTYPES.map(subtype => `<option value="${subtype}">${labelOf(FEATURE_SUBTYPE_LABELS, subtype)}</option>`).join("")}
         </select>
       </div>
-      <div data-tip="Rendering group: the svg group the lake is drawn in. Does not affect generation">
-        <div class="label" style="width: 4.8em">Group:</div>
-        <span id="lakeGroupRemove" data-tip="Remove the group" class="icon-trash-empty pointer"></span>
-        <span id="lakeGroupAdd" data-tip="Create a new group for the lake" class="icon-plus pointer"></span>
-        <select id="lakeGroup" data-tip="Select lake rendering group"></select>
-        <input id="lakeGroupName" placeholder="group name" data-tip="Provide a name for the new group" style="display: none" />
-        <span id="lakeEditStyle" data-tip="Edit lake group style in Style Editor" class="icon-brush pointer"></span>
+      <div data-tip="${sentences(t("Rendering group: the svg group the lake is drawn in"), t("Does not affect generation"))}">
+        <div class="label" style="width: 4.8em">${t("Group")}:</div>
+        <span id="lakeGroupRemove" data-tip="${t("Remove group")}" class="icon-trash-empty pointer"></span>
+        <span id="lakeGroupAdd" data-tip="${t("Create a new group for the lake")}" class="icon-plus pointer"></span>
+        <select id="lakeGroup" data-tip="${t("Select lake rendering group")}"></select>
+        <input id="lakeGroupName" placeholder="${t("group name")}" data-tip="${t("Provide a name for the new group")}" style="display: none" />
+        <span id="lakeEditStyle" data-tip="${t("Edit lake group style in Style Editor")}" class="icon-brush pointer"></span>
       </div>
-      <div data-tip="Lake area in selected units">
-        <div class="label">Area:</div>
+      <div data-tip="${t("Lake area in selected units")}">
+        <div class="label">${t("Area")}:</div>
         <input id="lakeArea" disabled />
       </div>
-      <div data-tip="Lake shore length in selected units">
-        <div class="label">Shore length:</div>
+      <div data-tip="${t("Lake shore length in selected units")}">
+        <div class="label">${t("Shore length")}:</div>
         <input id="lakeShoreLength" disabled />
       </div>
-      <div data-tip="Lake elevation in selected units">
-        <div class="label">Elevation:</div>
+      <div data-tip="${t("Lake elevation in selected units")}">
+        <div class="label">${t("Elevation")}:</div>
         <input id="lakeElevation" disabled />
       </div>
-      <div data-tip="Lake average depth in selected units">
-        <div class="label">Average depth:</div>
+      <div data-tip="${t("Lake average depth in selected units")}">
+        <div class="label">${t("Average depth")}:</div>
         <input id="lakeAverageDepth" disabled />
       </div>
-      <div data-tip="Lake maximum depth in selected units">
-        <div class="label">Max depth:</div>
+      <div data-tip="${t("Lake maximum depth in selected units")}">
+        <div class="label">${t("Max depth")}:</div>
         <input id="lakeMaxDepth" disabled />
       </div>
-      <div data-tip="Lake water supply. If supply > evaporation and there is an outlet, the lake water is fresh. If supply is very low, the lake becomes dry">
-        <div class="label">Supply:</div>
+      <div data-tip="${t("Lake water supply. If supply > evaporation and there is an outlet, the lake water is fresh. If supply is very low, the lake becomes dry")}">
+        <div class="label">${t("Supply")}:</div>
         <input id="lakeFlux" disabled />
       </div>
-      <div data-tip="Evaporation from lake surface. If evaporation > supply, the lake water is saline. If difference is high, the lake becomes dry">
-        <div class="label">Evaporation:</div>
+      <div data-tip="${t("Evaporation from lake surface. If evaporation > supply, the lake water is saline. If difference is high, the lake becomes dry")}">
+        <div class="label">${t("Evaporation")}:</div>
         <input id="lakeEvaporation" disabled />
       </div>
-      <div data-tip="Number of lake inlet rivers">
-        <div class="label">Inlets:</div>
+      <div data-tip="${t("Number of lake inlet rivers")}">
+        <div class="label">${t("Inlets")}:</div>
         <input id="lakeInlets" disabled />
       </div>
-      <div data-tip="Lake outlet river">
-        <div class="label">Outlet:</div>
+      <div data-tip="${t("Lake outlet river")}">
+        <div class="label">${t("Outlet")}:</div>
         <input id="lakeOutlet" disabled />
       </div>
     </div>
     <div id="lakeBottom">
-      ${noteButton("lakeLegend", "this lake")}
+      ${noteButton("lakeLegend", t("Edit free text notes (legend)"))}
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -210,7 +212,7 @@ function toggleNewGroupInput(): void {
 
 function createNewGroup(this: HTMLInputElement): void {
   if (!this.value) {
-    tip("Please provide a valid group name");
+    tip(t("Please provide a valid group name"));
     return;
   }
   const group = this.value
@@ -219,12 +221,12 @@ function createNewGroup(this: HTMLInputElement): void {
     .replace(/[^\w\s]/gi, "");
 
   if (findEl(group)) {
-    tip("Element with this id already exists. Please provide a unique name", false, "error");
+    tip(t("Element with this id already exists. Please provide a unique name"), false, "error");
     return;
   }
 
   if (Number.isFinite(+group.charAt(0))) {
-    tip("Group name should start with a letter", false, "error");
+    tip(t("Group name should start with a letter"), false, "error");
     return;
   }
 
@@ -265,18 +267,21 @@ function createNewGroup(this: HTMLInputElement): void {
 function removeLakeGroup(): void {
   const group = (selectedLake.node()!.parentNode as SVGGElement).id;
   if (isStockGroup(group)) {
-    tip("This is one of the default groups, it cannot be removed", false, "error");
+    tip(t("This is one of the default groups, it cannot be removed"), false, "error");
     return;
   }
 
   const count = (selectedLake.node()!.parentNode as SVGGElement).querySelectorAll("use[data-f]").length;
-  alertMessage.innerHTML = /* html */ `Are you sure you want to remove the group? All lakes of the group (${count}) will be turned into Freshwater`;
+  alertMessage.innerHTML = sentences(
+    t("Are you sure you want to remove the group?"),
+    t("All lakes of the group ({{lakes}}) will be turned into Freshwater", { lakes: count })
+  );
   $("#alert").dialog({
     resizable: false,
-    title: "Remove lake group",
+    title: t("Remove lake group"),
     width: "26em",
     buttons: {
-      Remove: function (this: HTMLElement) {
+      [t("Remove")]: function (this: HTMLElement) {
         $(this).dialog("close");
         const freshwater = ensureEl("freshwater");
         const groupEl = ensureEl(group);
@@ -290,7 +295,7 @@ function removeLakeGroup(): void {
         ensureEl<HTMLSelectElement>("lakeGroup").selectedOptions[0].remove();
         ensureEl<HTMLSelectElement>("lakeGroup").value = "freshwater";
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }

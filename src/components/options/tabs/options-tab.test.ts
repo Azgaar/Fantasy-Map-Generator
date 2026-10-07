@@ -2,11 +2,10 @@
 import { readFileSync } from "node:fs";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { toggleAssistant } from "@/components/assistant-bubble";
+import { confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { Pins } from "@/components/pins";
 import { setMapZoom, setZoomExtent } from "@/components/zoom";
 import { Emblems } from "@/generators/emblems-generator";
-import { Services } from "@/services";
-import { reloadKeepingMap } from "@/services/language";
 
 vi.mock("@/components/layers", () => ({ Layers: { draw: vi.fn() } }));
 vi.mock("@/components/zoom", () => ({
@@ -28,11 +27,9 @@ vi.mock("@/components/options/io-panes", () => ({
 }));
 vi.mock("@/components/options/view-mode", () => ({ changeViewMode: vi.fn() }));
 vi.mock("@/services/url-params", () => ({ copyMapURL: vi.fn() }));
-vi.mock("@/services", () => ({ Services: { Save: { writeToStorage: vi.fn(), prepareMapData: vi.fn() } } }));
-vi.mock("@/services/language", () => ({ reloadKeepingMap: vi.fn() }));
 vi.mock("@/components/dialog/dialog-helpers", async importOriginal => ({
   ...(await importOriginal<typeof import("@/components/dialog/dialog-helpers")>()),
-  confirmationDialog: vi.fn(({ onConfirm }) => onConfirm())
+  confirmationDialog: vi.fn()
 }));
 vi.mock("@/components/assistant-bubble", () => ({ toggleAssistant: vi.fn() }));
 
@@ -187,7 +184,7 @@ describe("options tab bindings", () => {
     edit(control("manors"), "400");
     expect(output("manors").value).toBe("400");
     edit(control("manors"), "1000");
-    expect(output("manors").value).toBe("auto");
+    expect(output("manors").value).toBe("Auto");
     expect(Pins.valueOr("manors", 0)).toBe(1000);
   });
 
@@ -251,28 +248,20 @@ describe("interface language", () => {
     select.dispatchEvent(new Event("change", { bubbles: true }));
     return select;
   };
-  beforeEach(() => vi.stubGlobal("customization", 0));
-
-  const settle = async () => {
-    for (let i = 0; i < 3; i++) await Promise.resolve();
-  };
-
-  it("keeps the map in browser storage, stores the choice and reloads", async () => {
-    const select = choose("ru");
-    expect(select.value).toBe("en"); // the reload shows the new language
-    await settle();
-
-    expect(Services.Save.writeToStorage).toHaveBeenCalledOnce();
-    expect(JSON.parse(localStorage.getItem("fmg-options")!).app.language).toBe("ru");
-    expect(reloadKeepingMap).toHaveBeenCalledOnce();
+  beforeEach(() => {
+    vi.mocked(confirmationDialog).mockClear();
   });
 
-  it("changes nothing when the map cannot be kept", async () => {
-    vi.mocked(Services.Save.writeToStorage).mockRejectedValueOnce(new Error("quota"));
-    choose("ru");
-    await settle();
+  it("stores the choice and offers the reload that applies it", () => {
+    const select = choose("ru");
+    expect(select.value).toBe("ru");
+    expect(JSON.parse(localStorage.getItem("fmg-options")!).app.language).toBe("ru");
+    expect(confirmationDialog).toHaveBeenCalledWith(expect.objectContaining({ confirm: "Reload", cancel: "Not now" }));
+  });
 
-    expect(options.app.language).toBe("");
-    expect(reloadKeepingMap).not.toHaveBeenCalled();
+  it("stores a switch back to the current language without asking to reload", () => {
+    choose("en");
+    expect(options.app.language).toBe("en");
+    expect(confirmationDialog).not.toHaveBeenCalled();
   });
 });

@@ -9,17 +9,19 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { tip } from "@/components/tooltips";
+import { labelOf, TRANSPORT_DOMAIN_LABELS } from "@/data/id-labels";
 import { MAX_HOURS_PER_DAY, type Transport, type TransportDomain } from "@/generators/transports-generator";
 import { convertSpeed, ensureEl, escapeHtml, getDistanceUnit, parseSpeed } from "@/utils";
+import { t } from "@/utils/i18n";
 
 const dialogId = "transportEditor" as const;
 const position = { my: "center", at: "center", of: "svg", collision: "fit" };
 
 const columns: EditorColumn<Transport>[] = [
-  { key: "name", label: "Name", width: "14em", permanent: true },
-  { key: "speed", label: "Speed", width: "5em" },
-  { key: "hoursPerDay", label: "h/day", width: "4em", tip: "Hours of travel a day sustains with this transport" },
-  { key: "domain", label: "Domain", width: "5em" },
+  { key: "name", label: t("Name"), width: "14em", permanent: true },
+  { key: "speed", label: t("Speed"), width: "5em" },
+  { key: "hoursPerDay", label: t("h/day"), width: "4em", tip: t("Hours of travel a day sustains with this transport") },
+  { key: "domain", label: t("Domain"), width: "5em" },
   { key: "remove", width: "1.4em", permanent: true }
 ];
 
@@ -29,10 +31,10 @@ const typesTable = initEditorTable<Transport>({
 });
 
 const DOMAIN_LABEL: Record<TransportDomain, string> = {
-  land: "Land: walks, wheels and hooves. Endpoints must be on land",
-  water: "Water: boats and ships. Endpoints must be in water or on a coast touching water",
-  air: "Air: flight and magic. No restrictions, travels in a straight line",
-  stay: "Stay: no movement. For preparation, tavern rests and delays"
+  land: t("Land: walks, wheels and hooves. Endpoints must be on land"),
+  water: t("Water: boats and ships. Endpoints must be in water or on a coast touching water"),
+  air: t("Air: flight and magic. No restrictions, travels in a straight line"),
+  stay: t("Stay: no movement. For preparation, tavern rests and delays")
 };
 const DOMAINS = Object.keys(DOMAIN_LABEL) as TransportDomain[];
 
@@ -44,7 +46,7 @@ function open(): void {
   renderDialog();
   typesTable.reset();
 
-  $(`#${dialogId}`).dialog({ title: "Transport Types", position, close: onClose });
+  $(`#${dialogId}`).dialog({ title: t("Transport Types"), position, close: onClose });
 }
 
 function renderDialog(): void {
@@ -54,14 +56,14 @@ function renderDialog(): void {
     <div id="transportBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
 
     <div id="transportFooter" class="totalLine">
-      <div data-tip="Transport types number" style="margin-left: 4px">Types:&nbsp;<span id="transportFooterNumber">0</span></div>
-      <div style="margin-left: 12px"><i>Speed is in ${getDistanceUnit()}/h</i></div>
+      <div data-tip="${t("Transport types number")}" style="margin-left: 4px">${t("Types")}:&nbsp;<span id="transportFooterNumber">0</span></div>
+      <div style="margin-left: 12px"><i>${t("Speed is in {{unit}}/h", { unit: getDistanceUnit() })}</i></div>
     </div>
 
     <div id="transportBottom" class="editorToolbar">
-      <button id="transportRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-      <button id="transportAdd" data-tip="Add a new transport type" class="icon-plus"></button>
-      <button id="transportRestore" data-tip="Restore the default transport types, removing custom ones" class="icon-ccw"></button>
+      <button id="transportRefresh" data-tip="${t("Refresh the Editor")}" class="icon-cw"></button>
+      <button id="transportAdd" data-tip="${t("Add a new transport type")}" class="icon-plus"></button>
+      <button id="transportRestore" data-tip="${t("Restore the default transport types, removing custom ones")}" class="icon-ccw"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -88,17 +90,18 @@ function renderTypesPage(view: TableView<Transport>): void {
   for (const type of view.rows) {
     const isStay = type.domain === "stay";
     const options = DOMAINS.map(
-      domain => `<option value="${domain}" ${domain === type.domain ? "selected" : ""}>${domain}</option>`
+      domain =>
+        `<option value="${domain}" ${domain === type.domain ? "selected" : ""}>${labelOf(TRANSPORT_DOMAIN_LABELS, domain)}</option>`
     ).join("");
 
     lines += /* html */ `<div class="states" data-id="${type.i}">
-      <div data-col="name"><input class="ttName" value="${escapeHtml(type.name)}" data-tip="Transport type name" /></div>
+      <div data-col="name"><input class="ttName" value="${escapeHtml(type.name)}" data-tip="${t("Transport type name")}" /></div>
       <div data-col="speed"><input class="ttSpeed" type="number" min="0" step="0.5" value="${convertSpeed(type.speed)}" ${isStay ? "disabled" : ""}
-        data-tip="${isStay ? "Stay types have no speed" : `Sustained travel speed in ${unit}/h`}" /></div>
+        data-tip="${isStay ? t("Stay types have no speed") : t("Sustained travel speed in {{unit}}/h", { unit })}" /></div>
       <div data-col="hoursPerDay"><input class="ttHours" type="number" min="1" max="${MAX_HOURS_PER_DAY}" step="1" value="${Transports.resolveHoursPerDay(type)}"
-        data-tip="${isStay ? "Hours a day of waiting covers: 24 means a full day passes" : "Hours of travel a day sustains: a caravan walks ~8 h/day, a ship sails 24"}" /></div>
+        data-tip="${isStay ? t("Hours a day of waiting covers: 24 means a full day passes") : t("Hours of travel a day sustains: a caravan walks ~8 h/day, a ship sails 24")}" /></div>
       <div data-col="domain"><select class="ttDomain" data-tip="${DOMAIN_LABEL[type.domain]}">${options}</select></div>
-      <span data-col="remove" data-tip="Remove the transport type" class="ttDelete pointer icon-trash-empty"></span>
+      <span data-col="remove" data-tip="${t("Remove transport type")}" class="ttDelete pointer icon-trash-empty"></span>
     </div>`;
   }
   body.insertAdjacentHTML("beforeend", lines);
@@ -128,7 +131,7 @@ function onNameChange(this: HTMLInputElement): void {
   const isTaken = Transports.all.some(other => other.name === newName && other.i !== type.i);
   if (!newName || isTaken) {
     this.value = type.name;
-    tip(newName ? "A transport type with that name already exists" : "Name cannot be empty", true, "error", 8000);
+    tip(newName ? t("A transport type with that name already exists") : t("Name cannot be empty"), true, "error", 8000);
     return;
   }
 
@@ -154,7 +157,7 @@ function onHoursChange(this: HTMLInputElement): void {
   const hours = Math.round(+this.value);
   if (!Number.isFinite(hours) || hours < 1 || hours > MAX_HOURS_PER_DAY) {
     this.value = String(Transports.resolveHoursPerDay(type));
-    tip(`Travel hours per day must be between 1 and ${MAX_HOURS_PER_DAY}`, true, "error", 6000);
+    tip(t("Travel hours per day must be between 1 and {{max}}", { max: MAX_HOURS_PER_DAY }), true, "error", 6000);
     return;
   }
 
@@ -184,7 +187,7 @@ function addType(): void {
 
   const input = document.querySelector<HTMLInputElement>(`#transportBody [data-id="${nextId}"] .ttName`);
   input?.select();
-  tip("Transport type added — rename it and set the speed, travel hours and domain.", true, "success", 5000);
+  tip(t("Transport type added — rename it and set the speed, travel hours and domain."), true, "success", 5000);
 }
 
 function triggerTypeRemove(this: HTMLElement): void {
@@ -195,14 +198,19 @@ function triggerTypeRemove(this: HTMLElement): void {
     journey.segments.some(segment => segment.transport === type.name)
   );
   if (isUsed) {
-    tip(`'${escapeHtml(type.name)}' is used by existing segments. Reassign them first.`, true, "error", 8000);
+    tip(
+      t("“{{transport}}” is used by existing segments. Reassign them first.", { transport: type.name }),
+      true,
+      "error",
+      8000
+    );
     return;
   }
 
   confirmationDialog({
-    title: "Remove transport type",
-    message: `Remove transport type <b>${escapeHtml(type.name)}</b>?`,
-    confirm: "Remove",
+    title: t("Remove transport type"),
+    message: t("Remove transport type <b>{{transport}}</b>?", { transport: type.name }),
+    confirm: t("Remove"),
     onConfirm: () => {
       Transports.set(Transports.all.filter(other => other.i !== type.i));
       typesTable.refresh();
@@ -212,10 +220,11 @@ function triggerTypeRemove(this: HTMLElement): void {
 
 function triggerDefaultsRestore(): void {
   confirmationDialog({
-    title: "Restore default transport types",
-    message:
-      "Restore the default transport types? Custom ones will be removed. Segments referencing a removed type keep its name but will no longer resolve.",
-    confirm: "Restore",
+    title: t("Restore default transport types"),
+    message: t(
+      "Restore the default transport types? Custom ones will be removed. Segments referencing a removed type keep its name but will no longer resolve."
+    ),
+    confirm: t("Restore"),
     onConfirm: () => {
       Transports.set(Transports.getDefaults());
       typesTable.refresh();

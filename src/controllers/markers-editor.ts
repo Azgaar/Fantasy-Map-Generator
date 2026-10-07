@@ -12,6 +12,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Marker, MarkerAppearance } from "@/generators/markers-generator";
 import { drawMarkers, setEditedMarker } from "@/renderers/draw-markers";
+import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl, minmax, rn } from "../utils";
 
 let selectedElement: SVGSVGElement;
@@ -39,7 +40,7 @@ function open(markerI?: number, target?: Element): void {
   updateInputs();
 
   $("#markerEditor").dialog({
-    title: "Edit Marker",
+    title: t("Edit Marker"),
     resizable: false,
     position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" },
     close: closeMarkerEditor
@@ -51,65 +52,65 @@ function renderDialog(): void {
 
   const html = /* html */ `<div id="markerEditor" class="dialog">
     <div id="markerBody" style="padding-bottom: 0.3em">
-      <div data-tip="Marker name, shown in the notes editor and overviews">
-        <div class="label">Name:</div>
+      <div data-tip="${t("Marker name, shown in the notes editor and overviews")}">
+        <div class="label">${t("Name")}:</div>
         <input id="markerName" style="width: 10.3em" />
       </div>
-      <div data-tip="Marker type. Style changes will apply to all markers of the same type. Leave blank if the marker is unique">
-        <div class="label">Type:</div>
+      <div data-tip="${sentences(t("Marker type"), t("Style changes will apply to all markers of the same type"), t("Leave blank if the marker is unique"))}">
+        <div class="label">${t("Type")}:</div>
         <input id="markerType" style="width: 10.3em" />
       </div>
-      <div data-tip="Marker icon" style="display: flex; align-items: center">
-        <div class="label">Icon:</div>
+      <div data-tip="${t("Marker icon")}" style="display: flex; align-items: center">
+        <div class="label">${t("Icon")}:</div>
         <div id="markerIcon" style="font-size: 1.5em; width: 3.7em; display: flex"></div>
-        <button id="markerIconSelect" style="width: 5em">select</button>
+        <button id="markerIconSelect" style="width: 5em">${t("Select")}</button>
       </div>
-      <div data-tip="Marker marker element and icon sizes in pixels">
-        <div class="label">Size:</div>
-        <input data-tip="Marker element size in pixels" id="markerSize" type="number" min="1" max="500" style="width: 5em" />
-        <input data-tip="Marker icon sizes in pixels" id="markerIconSize" type="number" min="1" max="50" step="0.1" style="width: 5em" />
+      <div data-tip="${t("Marker marker element and icon sizes in pixels")}">
+        <div class="label">${t("Size")}:</div>
+        <input data-tip="${t("Marker element size in pixels")}" id="markerSize" type="number" min="1" max="500" style="width: 5em" />
+        <input data-tip="${t("Marker icon sizes in pixels")}" id="markerIconSize" type="number" min="1" max="50" step="0.1" style="width: 5em" />
       </div>
-      <div data-tip="Marker icon shift (by X and by Y axis), percent. Set to 50 to position icon in center">
-        <div class="label">Icon shift:</div>
+      <div data-tip="${t("Marker icon shift (by X and by Y axis), percent. Set to 50 to position icon in center")}">
+        <div class="label">${t("Icon shift")}:</div>
         <input id="markerIconShiftX" type="number" min="0" max="100" step="1" style="width: 5em" />
         <input id="markerIconShiftY" type="number" min="0" max="100" step="1" style="width: 5em" />
       </div>
-      <div data-tip="Marker pin shape">
-        <div class="label">Pin shape:</div>
+      <div data-tip="${t("Marker pin shape")}">
+        <div class="label">${t("Pin shape")}:</div>
         <select id="markerPin" style="width: 10.3em">
-          <option value="bubble">Bubble</option>
-          <option value="pin">Pin</option>
-          <option value="square">Square</option>
-          <option value="squarish">Squarish</option>
-          <option value="diamond">Diamond</option>
-          <option value="hex">Hex</option>
-          <option value="hexy">Hexy</option>
-          <option value="shieldy">Shieldy</option>
-          <option value="shield">Shield</option>
-          <option value="pentagon">Pentagon</option>
-          <option value="heptagon">Heptagon</option>
-          <option value="circle">Circle</option>
-          <option value="no">No</option>
+          <option value="bubble">${t("Bubble")}</option>
+          <option value="pin">${t("Pin")}</option>
+          <option value="square">${t("Square")}</option>
+          <option value="squarish">${t("Squarish")}</option>
+          <option value="diamond">${t("Diamond")}</option>
+          <option value="hex">${t("Hex")}</option>
+          <option value="hexy">${t("Hexy")}</option>
+          <option value="shieldy">${t("Shieldy")}</option>
+          <option value="shield">${t("Shield")}</option>
+          <option value="pentagon">${t("Pentagon")}</option>
+          <option value="heptagon">${t("Heptagon")}</option>
+          <option value="circle">${t("Circle")}</option>
+          <option value="no">${t("No")}</option>
         </select>
       </div>
-      <div data-tip="Pin fill and stroke colors">
-        <div class="label">Pin colors:</div>
+      <div data-tip="${t("Pin fill and stroke colors")}">
+        <div class="label">${t("Pin colors")}:</div>
         <input id="markerFill" type="color" style="width: 5em; height: 1.6em" />
         <input id="markerStroke" type="color" style="width: 5em; height: 1.6em" />
       </div>
-      <div data-tip="Icon fill and stroke colors: they paint the parts the icon leaves uncolored. Emoji keep their own colors">
-        <div class="label">Icon colors:</div>
+      <div data-tip="${t("Icon fill and stroke colors: they paint the parts the icon leaves uncolored. Emoji keep their own colors")}">
+        <div class="label">${t("Icon colors")}:</div>
         <input id="markerIconFill" type="color" style="width: 5em; height: 1.6em" />
         <input id="markerIconStroke" type="color" style="width: 5em; height: 1.6em" />
-        <i id="markerIconPaintReset" data-tip="Restore the icon's default colors" class="icon-ccw pointer"></i>
+        <i id="markerIconPaintReset" data-tip="${t("Restore the icon's default colors")}" class="icon-ccw pointer"></i>
       </div>
     </div>
     <div id="markerBottom">
-      ${noteButton("markerNotes", "this marker")}
-      <button id="markerRadius" data-tip="Show markers within a radius of this one" class="icon-dot-circled"></button>
+      ${noteButton("markerNotes", t("Edit free text notes (legend)"))}
+      <button id="markerRadius" data-tip="${t("Show markers within a radius of this one")}" class="icon-dot-circled"></button>
       <button id="markerLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
-      <button id="markerAdd" data-tip="Add additional marker of that type" class="icon-plus"></button>
-      <button id="markerRemove" data-tip="Remove the marker" data-shortcut="Delete" class="icon-trash fastDelete"></button>
+      <button id="markerAdd" data-tip="${t("Add additional marker of that type")}" class="icon-plus"></button>
+      <button id="markerRemove" data-tip="${t("Remove marker")}" data-shortcut="Delete" class="icon-trash fastDelete"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -295,9 +296,9 @@ function toggleAddMarker(): void {
 
 function confirmMarkerDeletion(): void {
   confirmationDialog({
-    title: "Remove marker",
-    message: "Are you sure you want to remove this marker? The action cannot be reverted",
-    confirm: "Remove",
+    title: t("Remove marker"),
+    message: sentences(t("Are you sure you want to remove this marker?"), t("This action cannot be reverted")),
+    confirm: t("Remove"),
     onConfirm: deleteMarker
   });
 }

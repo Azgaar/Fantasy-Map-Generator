@@ -7,6 +7,7 @@ import { Controllers } from "@/controllers";
 import { type NoteEntry, Notes } from "@/generators/notes";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName, speak, uploadFile } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { createFileInput, ensureEl, findEl } from "../utils";
 import {
   canEditAsRichText,
@@ -52,15 +53,16 @@ function open(ref?: EntityRef): void {
     showNote(selected);
   } else {
     ensureEl("notesName").textContent = "";
-    quill.root.dataset.placeholder =
-      "No notes yet. Click a burg, marker, state or other element on the map and add a note from its editor";
+    quill.root.dataset.placeholder = t(
+      "No notes yet. Click a burg, marker, state or other element on the map and add a note from its editor"
+    );
     quill.disable();
     lastSelection = null;
     window.dispatchEvent(new Event("notes:context-changed"));
   }
 
   $("#notesEditor").dialog({
-    title: "Notes Editor",
+    title: t("Notes Editor"),
     width: viewport.width * 0.8,
     height: viewport.height * 0.75,
     position: { my: "center", at: "center", of: "svg" },
@@ -162,23 +164,23 @@ function renderDialog(): void {
     ${STYLES}
     <div id="notesLayout">
       <div id="notesHead">
-        <strong>Element:</strong>
-        <select id="notesSelect" data-tip="Select the element the note belongs to"></select>
-        <strong id="notesName" data-tip="The element name, edited in the element's own editor"></strong>
-        <span id="notesNameSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <strong>${t("Element")}:</strong>
+        <select id="notesSelect" data-tip="${t("Select the element the note belongs to")}"></select>
+        <strong id="notesName" data-tip="${t("The element name, edited in the element's own editor")}"></strong>
+        <span id="notesNameSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
       </div>
       ${TOOLBAR_HTML}
       <div id="notesLegend"></div>
       <textarea id="notesSource" hidden spellcheck="false"></textarea>
       <div id="notesFooter">
-        <button id="notesFocus" data-tip="Focus on selected object" class="icon-target"></button>
-        <button id="notesGenerateWithAi" data-tip="Open Azgaar Assistant" class="icon-robot"></button>
-        <button id="notesPin" data-tip="Toggle notes box display: hide or do not hide the box on mouse move" class="icon-pin"></button>
-        <button id="notesSourceToggle" data-tip="Edit the note as HTML" class="icon-edit"></button>
-        <button id="notesFullscreen" data-tip="Toggle fullscreen" class="icon-resize-full"></button>
-        <button id="notesDownload" data-tip="Download notes to PC" class="icon-download"></button>
-        <button id="notesUpload" data-tip="Upload notes from PC" class="icon-upload"></button>
-        <button id="notesRemove" data-tip="Remove this note" class="icon-trash fastDelete"></button>
+        <button id="notesFocus" data-tip="${t("Focus on selected object")}" class="icon-target"></button>
+        <button id="notesGenerateWithAi" data-tip="${t("Open Azgaar Assistant")}" class="icon-robot"></button>
+        <button id="notesPin" data-tip="${t("Toggle notes box display: hide or do not hide the box on mouse move")}" class="icon-pin"></button>
+        <button id="notesSourceToggle" data-tip="${t("Edit the note as HTML")}" class="icon-edit"></button>
+        <button id="notesFullscreen" data-tip="${t("Toggle fullscreen")}" class="icon-resize-full"></button>
+        <button id="notesDownload" data-tip="${t("Download notes to PC")}" class="icon-download"></button>
+        <button id="notesUpload" data-tip="${t("Upload notes from PC")}" class="icon-upload"></button>
+        <button id="notesRemove" data-tip="${t("Remove note")}" class="icon-trash fastDelete"></button>
       </div>
     </div>
   </div>`;
@@ -209,7 +211,7 @@ function closeNotesEditor(): void {
 
 function selectedRef(): EntityRef | undefined {
   const ref = MapEntities.parseKey(ensureEl<HTMLSelectElement>("notesSelect").value);
-  if (!ref) tip("Note element is not found", true, "error", 4000);
+  if (!ref) tip(t("Note element is not found"), true, "error", 4000);
   return ref;
 }
 
@@ -250,7 +252,7 @@ function toggleSourceMode(): void {
     setEditorHtml(quill, source.value);
     setSourceMode(false);
   } else {
-    tip("The note has markup the rich text editor cannot keep, so it stays in HTML mode", false, "error", 4000);
+    tip(t("The note has markup the rich text editor cannot keep, so it stays in HTML mode"), false, "error", 4000);
   }
 }
 
@@ -313,9 +315,9 @@ function validateHighlightElement(): void {
 
   if (!MapEntities.get(ref)) {
     confirmationDialog({
-      title: "Element not found",
-      message: "Note element is not found. Would you like to remove the note?",
-      confirm: "Remove",
+      title: t("Element not found"),
+      message: sentences(t("Note element is not found"), t("Would you like to remove the note?")),
+      confirm: t("Remove"),
       onConfirm: removeSelectedNote
     });
     return;
@@ -329,7 +331,7 @@ function validateHighlightElement(): void {
   const position = MapEntities.getPosition(ref);
   if (position) return void zoomTo(position[0], position[1], 8, 1600);
 
-  tip("This element is not drawn on the map on its own", false, "warn", 4000);
+  tip(t("This element is not drawn on the map on its own"), false, "warn", 4000);
 }
 
 function removeSelectedNote(): void {
@@ -377,7 +379,7 @@ function pickLegendsFile(): void {
 function uploadLegends(dataLoaded: string): void {
   const rows = parseCsv(dataLoaded);
   if (!rows) {
-    tip("Cannot load the file. Please check the data format", false, "error");
+    tip(sentences(t("Cannot load the file"), t("Please check the data format")), false, "error");
     return;
   }
 
@@ -390,12 +392,14 @@ function uploadLegends(dataLoaded: string): void {
   }
 
   if (!applied) {
-    tip("No note matched an element on this map. Nothing was loaded", false, "error", 6000);
+    tip(t("No note matched an element on this map. Nothing was loaded"), false, "error", 6000);
     return;
   }
 
-  const rejectedText = rejected ? `, ${rejected} skipped as their element is not on the map` : "";
-  tip(`Loaded ${applied} note(s)${rejectedText}`, true, "success", 6000);
+  const message = rejected
+    ? t("Loaded {{applied}} note(s), {{rejected}} skipped as their element is not on the map", { applied, rejected })
+    : t("Loaded {{applied}} note(s)", { applied });
+  tip(message, true, "success", 6000);
 
   const [first] = Notes.list();
   if (first) open(first.ref);
@@ -446,9 +450,9 @@ function parseCsv(data: string): [string, string, string][] | null {
 
 function triggerNotesRemove(): void {
   confirmationDialog({
-    title: "Remove note",
-    message: "Are you sure you want to remove the selected note? There is no way to undo this action",
-    confirm: "Remove",
+    title: t("Remove note"),
+    message: t("Are you sure you want to remove the selected note? There is no way to undo this action"),
+    confirm: t("Remove"),
     onConfirm: removeSelectedNote
   });
 }

@@ -1,4 +1,5 @@
 import { tip } from "@/components/tooltips";
+import { t } from "@/utils/i18n";
 
 declare global {
   var fonts: FontDefinition[];
@@ -379,10 +380,10 @@ export function getUsedFonts(svg: SVGSVGElement, legends: string[] = []): FontDe
 export async function addGoogleFont(family: string): Promise<string | undefined> {
   const fontRanges = await fetchGoogleFont(family);
   if (!fontRanges) {
-    tip("Cannot fetch Google font for this value", true, "error", 4000);
+    tip(t("Cannot fetch Google font for this value"), true, "error", 4000);
     return undefined;
   }
-  tip(`Google font ${family} is loading...`, true, "warn", 4000);
+  tip(t("Google font {{family}} is loading...", { family }), true, "warn", 4000);
 
   const faces = fontRanges.map(
     ({ src, unicodeRange }) => new FontFace(family, src!, { unicodeRange, display: "block" })
@@ -390,12 +391,12 @@ export async function addGoogleFont(family: string): Promise<string | undefined>
   try {
     for (const fontFace of await Promise.all(faces.map(face => face.load()))) document.fonts.add(fontFace);
   } catch (error) {
-    tip(`Failed to load Google font ${family}`, true, "error", 4000);
+    tip(t("Failed to load Google font {{family}}", { family }), true, "error", 4000);
     ERROR && console.error(error);
     return undefined;
   }
   fonts.push(...fontRanges);
-  tip(`Google font ${family} is added to the list`, true, "success", 4000);
+  tip(t("Google font {{family}} is added to the list", { family }), true, "success", 4000);
   return family;
 }
 
@@ -403,7 +404,7 @@ export async function addGoogleFont(family: string): Promise<string | undefined>
 export function addLocalFont(family: string): string {
   fonts.push({ family });
   document.fonts.add(new FontFace(family, `local(${family})`, { display: "block" }));
-  tip(`Local font ${family} is added to the fonts list`, true, "success", 4000);
+  tip(t("Local font {{family}} is added to the fonts list", { family }), true, "success", 4000);
   return family;
 }
 
@@ -412,6 +413,6 @@ export function addWebFont(family: string, url: string): string {
   const src = `url('${url}')`;
   fonts.push({ family, src });
   document.fonts.add(new FontFace(family, src, { display: "block" }));
-  tip(`Font ${family} is added to the list`, true, "success", 4000);
+  tip(t("Font {{family}} is added to the list", { family }), true, "success", 4000);
   return family;
 }

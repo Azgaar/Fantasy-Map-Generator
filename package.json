@@ -27,6 +27,7 @@
     "stamp-assets": "node scripts/stamp-assets.js",
     "generate:assistant-context": "node scripts/generate-assistant-context.mjs",
     "extract-strings": "node scripts/extract-strings.mjs",
+    "lint-locales": "node scripts/lint-locales.mjs",
     "prepare": "simple-git-hooks"
   },
   "simple-git-hooks": {

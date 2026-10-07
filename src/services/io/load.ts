@@ -23,12 +23,13 @@ import { declareFont } from "@/services/fonts";
 import { logStats } from "@/services/logging";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
 import { ensureEl, escapeHtml, last, link, parseError, rn, safeParseJSON } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 
 async function quickLoad(): Promise<void> {
   const blob = await ldb.get("lastMap");
   if (blob) loadMapPrompt(blob);
   else {
-    tip("No map stored. Save map to browser storage first", true, "error", 2000);
+    tip(t("No map stored. Save map to browser storage first"), true, "error", 2000);
     ERROR && console.error("No map stored");
   }
 }
@@ -56,7 +57,7 @@ async function createSharableDropboxLink(): Promise<void> {
     sharableLinkContainer.style.display = "block";
   } catch (error) {
     ERROR && console.error(error);
-    return tip("Dropbox API error. Can not create link.", true, "error", 2000);
+    return tip(t("Dropbox API error. Can not create link."), true, "error", 2000);
   }
 }
 
@@ -68,16 +69,15 @@ function loadMapPrompt(blob: Blob): void {
     return;
   }
 
-  alertMessage.innerHTML = /* html */ `Are you sure you want to load saved map?<br />
-    All unsaved changes made to the current map will be lost`;
+  alertMessage.innerHTML = /* html */ `${t("Are you sure you want to load saved map?")}<br>${t("All unsaved changes made to the current map will be lost")}`;
   $("#alert").dialog({
     resizable: false,
-    title: "Load saved map",
+    title: t("Load saved map"),
     buttons: {
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       },
-      Load: function (this: HTMLElement) {
+      [t("Load")]: function (this: HTMLElement) {
         loadLastSavedMap();
         $(this).dialog("close");
       }
@@ -90,7 +90,7 @@ function loadMapPrompt(blob: Blob): void {
       uploadMap(blob);
     } catch (error) {
       ERROR && console.error(error);
-      tip("Cannot load last saved map", true, "error", 2000);
+      tip(t("Cannot load last saved map"), true, "error", 2000);
     }
   }
 }
@@ -110,7 +110,7 @@ async function loadMapFromURL(maplink: string, random?: boolean): Promise<void> 
   } catch (error) {
     const message =
       (error as Error)?.name === "AbortError"
-        ? "Cannot load map from URL: request timed out"
+        ? t("Cannot load map from URL: request timed out")
         : (error as Error).message;
     showUploadErrorMessage(message, maplink, random);
     if (random) generateMapOnLoad();
@@ -121,16 +121,23 @@ async function loadMapFromURL(maplink: string, random?: boolean): Promise<void> 
 
 function showUploadErrorMessage(error: string, maplink: string, random?: boolean): void {
   ERROR && console.error(error);
-  alertMessage.innerHTML = /* html */ `Cannot load map from the ${link(maplink, "link provided")}. ${
-    random ? `A new random map is generated. ` : ""
-  } Please ensure the
-  linked file is reachable and CORS is allowed on server side`;
+  const source = link(maplink, t("link provided"));
+  alertMessage.innerHTML = random
+    ? sentences(
+        t("Cannot load map from the {{- source}}", { source }),
+        t("A new random map is generated"),
+        t("Please ensure the linked file is reachable and CORS is allowed on server side")
+      )
+    : sentences(
+        t("Cannot load map from the {{- source}}", { source }),
+        t("Please ensure the linked file is reachable and CORS is allowed on server side")
+      );
   $("#alert").dialog({
-    title: "Loading error",
+    title: t("Loading error"),
     width: "32em",
     buttons: {
-      "Clear cache": () => clearCache(),
-      OK: function (this: HTMLElement) {
+      [t("Clear cache")]: () => clearCache(),
+      [t("OK")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
@@ -222,18 +229,18 @@ function showUploadMessage(type: string, mapData: string[] | null, mapVersion: s
   let title = "";
 
   if (type === "invalid") {
-    message = "The file does not look like a valid save file.<br>Please check the data format";
-    title = "Invalid file";
+    message = `${t("The file does not look like a valid save file.")}<br>${t("Please check the data format")}`;
+    title = t("Invalid file");
   } else if (type === "updated") {
     parseLoadedData(mapData!, mapVersion);
     return;
   } else if (type === "ancient") {
-    const archive = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", "archived version");
-    message = `The map version you are trying to load (${mapVersion}) is too old and cannot be updated to the current version.<br>Please keep using an ${archive}`;
-    title = "Ancient file";
+    const archive = link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog", t("archived version"));
+    message = `${t("The map version you are trying to load ({{version}}) is too old and cannot be updated to the current version.", { version: mapVersion })}<br>${t("Please keep using an {{- archive}}", { archive })}`;
+    title = t("Ancient file");
   } else if (type === "newer") {
-    message = `The map version you are trying to load (${mapVersion}) is newer than the current version.<br>Please load the file in the appropriate version`;
-    title = "Newer file";
+    message = `${t("The map version you are trying to load ({{version}}) is newer than the current version.", { version: mapVersion })}<br>${t("Please load the file in the appropriate version")}`;
+    title = t("Newer file");
   } else if (type === "outdated") {
     INFO && console.info(`Loading map. Auto-updating from ${mapVersion} to ${VERSION}`);
     parseLoadedData(mapData!, mapVersion);
@@ -244,8 +251,8 @@ function showUploadMessage(type: string, mapData: string[] | null, mapVersion: s
   $("#alert").dialog({
     title,
     buttons: {
-      "Clear cache": () => clearCache(),
-      OK: function (this: HTMLElement) {
+      [t("Clear cache")]: () => clearCache(),
+      [t("OK")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
@@ -395,10 +402,10 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     Journeys.sync();
 
     select("#scaleBar")
-      .on("mousemove", () => tip("Click to open Units Editor"))
+      .on("mousemove", () => tip(t("Open Units Editor")))
       .on("click", () => window.Controllers.UnitsEditor.open());
     select("#legend")
-      .on("mousemove", () => tip("Drag to change the position. Click to hide the legend box"))
+      .on("mousemove", () => tip(t("Drag to change the position. Click to hide the legend box")))
       .on("click", onLegendClick);
 
     // add custom heightmap color scheme if any
@@ -681,29 +688,29 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     const mapCreatedAt = +data[0].split("|")[6] || Date.now();
     registerMap(mapCreatedAt);
     logStats();
-    tip("Map is successfully loaded", true, "success", 7000);
+    tip(t("Map is successfully loaded"), true, "success", 7000);
   } catch (error) {
     ERROR && console.error(error);
     clearMainTip();
 
-    alertMessage.innerHTML = /* html */ `An error occurred while loading the map. Select a different file to load, <br>generate a new random map or cancel the loading.<br>Map version: ${mapVersion}. Generator version: ${VERSION}.
+    alertMessage.innerHTML = /* html */ `${t("An error occurred while loading the map. Select a different file to load, generate a new random map or cancel the loading.")}<br>${t("Map version: {{map}}. Generator version: {{generator}}.", { map: mapVersion, generator: VERSION })}
       <p id="errorBox">${parseError(error as Error)}</p>`;
 
     $("#alert").dialog({
       resizable: false,
-      title: "Loading error",
+      title: t("Loading error"),
       maxWidth: "40em",
       buttons: {
-        "Clear cache": () => clearCache(),
-        "Select file": function (this: HTMLElement) {
+        [t("Clear cache")]: () => clearCache(),
+        [t("Select file")]: function (this: HTMLElement) {
           $(this).dialog("close");
           pickMapFile();
         },
-        "New map": function (this: HTMLElement) {
+        [t("New Map")]: function (this: HTMLElement) {
           $(this).dialog("close");
           regenerateMap("loading error");
         },
-        Cancel: function (this: HTMLElement) {
+        [t("Cancel")]: function (this: HTMLElement) {
           $(this).dialog("close");
         }
       },

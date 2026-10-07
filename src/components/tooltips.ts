@@ -1,5 +1,6 @@
 import { isMobile } from "@/services/platform";
 import { debounce, ensureEl, findEl } from "@/utils";
+import { t } from "@/utils/i18n";
 
 type TipType = "info" | "success" | "warn" | "error";
 
@@ -75,8 +76,8 @@ export function showElementLockTip(event: Event): void {
   const locked = (event.target as HTMLElement | null)?.classList?.contains("icon-lock");
   tip(
     locked
-      ? "Locked. Click to unlock the element and allow it to be changed by regeneration tools"
-      : "Unlocked. Click to lock the element and prevent changes to it by regeneration tools"
+      ? t("Locked. Click to unlock the element and allow it to be changed by regeneration tools")
+      : t("Unlocked. Click to lock the element and prevent changes to it by regeneration tools")
   );
 }
 

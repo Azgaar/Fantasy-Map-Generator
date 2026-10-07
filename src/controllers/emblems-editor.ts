@@ -14,6 +14,7 @@ import { highlightEmblemElement } from "@/renderers/overlays/highlight";
 import { cloneEmblem, emblemURL, loadEmblemIcons } from "@/services/io/emblem-image";
 import type { Emblem, EmblemCharge, HeraldicEmblem } from "@/types/emblems";
 import { capitalize, downloadFile, escapeHtml, getFileName, openURL } from "@/utils";
+import { t } from "@/utils/i18n";
 import { ensureEl, minmax, rn } from "../utils";
 import { ARMORIA_API, ARMORIA_GUI, armoriaRenderUrl, parseArmoria } from "./emblems/armoria";
 import { ArmoriaSessions } from "./emblems/armoria-sessions";
@@ -23,7 +24,7 @@ import { IconPictures } from "./icon-picker/pictures";
 
 type EmblemEntity = State | Province | Burg;
 
-const SIZE_TIP = "Size of this emblem, 0 hides it. Change a whole category in Menu ⭢ Style ⭢ Emblems";
+const SIZE_TIP = t("Size of this emblem, 0 hides it. Change a whole category in Menu ⭢ Style ⭢ Emblems");
 
 const STYLE = /* css */ `
   #emblemEditor { padding: .5em .7em .6em; }
@@ -88,7 +89,7 @@ async function openDefault(): Promise<void> {
   const type = firstState ? "state" : "burg";
   const element = firstState ?? firstBurg;
   if (!element?.coa) {
-    tip("No emblems to edit, please generate states and burgs first", false, "error");
+    tip(t("No emblems to edit, please generate states and burgs first"), false, "error");
     return;
   }
 
@@ -116,7 +117,7 @@ function open(type?: EmblemType, id?: string, el?: EmblemEntity, target?: SVGEle
   updateElementSelectors();
 
   $("#emblemEditor").dialog({
-    title: "Edit Emblem",
+    title: t("Edit Emblem"),
     resizable: true,
     width: "22em",
     height: "auto",
@@ -132,120 +133,120 @@ function renderDialog(): void {
       <div class="preview"><svg viewBox="0 0 200 200"><use id="emblemImage"></use></svg></div>
       <b id="emblemArmiger"></b>
       <div class="fields">
-        <label for="emblemStates" data-tip="Select state">State</label>
-        <select id="emblemStates" data-tip="Select state"></select>
-        <label for="emblemProvinces" data-tip="Select province in state">Province</label>
-        <select id="emblemProvinces" data-tip="Select province in state"></select>
-        <label for="emblemBurgs" data-tip="Select burg in province or state">Burg</label>
-        <select id="emblemBurgs" data-tip="Select burg in province or state"></select>
+        <label for="emblemStates" data-tip="${t("Select state")}">${t("State")}</label>
+        <select id="emblemStates" data-tip="${t("Select state")}"></select>
+        <label for="emblemProvinces" data-tip="${t("Select province in state")}">${t("Province")}</label>
+        <select id="emblemProvinces" data-tip="${t("Select province in state")}"></select>
+        <label for="emblemBurgs" data-tip="${t("Select burg in province or state")}">${t("Burg")}</label>
+        <select id="emblemBurgs" data-tip="${t("Select burg in province or state")}"></select>
         <hr />
         <div id="emblemShapeRow" class="row">
-        <label for="emblemShapeSelector" data-tip="Select shape of the emblem">Shape</label>
-          <select id="emblemShapeSelector" data-tip="Select shape of the emblem">
-            <option value="">None</option>
-            <optgroup label="Basic">
-              <option value="heater">Heater</option>
-              <option value="spanish">Spanish</option>
-              <option value="french">French</option>
+        <label for="emblemShapeSelector" data-tip="${t("Select shape of the emblem")}">${t("Shape")}</label>
+          <select id="emblemShapeSelector" data-tip="${t("Select shape of the emblem")}">
+            <option value="">${t("None")}</option>
+            <optgroup label="${t("Basic")}">
+              <option value="heater">${t("Heater")}</option>
+              <option value="spanish">${t("Spanish")}</option>
+              <option value="french">${t("French")}</option>
             </optgroup>
-            <optgroup label="Regional">
-              <option value="horsehead">Horsehead</option>
-              <option value="horsehead2">Horsehead Edgy</option>
-              <option value="polish">Polish</option>
-              <option value="hessen">Hessen</option>
-              <option value="swiss">Swiss</option>
+            <optgroup label="${t("Regional")}">
+              <option value="horsehead">${t("Horsehead")}</option>
+              <option value="horsehead2">${t("Horsehead Edgy")}</option>
+              <option value="polish">${t("Polish")}</option>
+              <option value="hessen">${t("Hessen")}</option>
+              <option value="swiss">${t("Swiss")}</option>
             </optgroup>
-            <optgroup label="Historical">
-              <option value="boeotian">Boeotian</option>
-              <option value="roman">Roman</option>
-              <option value="kite">Kite</option>
-              <option value="oldFrench">Old French</option>
-              <option value="renaissance">Renaissance</option>
-              <option value="baroque">Baroque</option>
+            <optgroup label="${t("Historical")}">
+              <option value="boeotian">${t("Boeotian")}</option>
+              <option value="roman">${t("Roman")}</option>
+              <option value="kite">${t("Kite")}</option>
+              <option value="oldFrench">${t("Old French")}</option>
+              <option value="renaissance">${t("Renaissance")}</option>
+              <option value="baroque">${t("Baroque")}</option>
             </optgroup>
-            <optgroup label="Specific">
-              <option value="targe">Targe</option>
-              <option value="targe2">Targe2</option>
-              <option value="pavise">Pavise</option>
-              <option value="wedged">Wedged</option>
-              <option value="embowed">Embowed</option>
+            <optgroup label="${t("Specific")}">
+              <option value="targe">${t("Targe")}</option>
+              <option value="targe2">${t("Targe2")}</option>
+              <option value="pavise">${t("Pavise")}</option>
+              <option value="wedged">${t("Wedged")}</option>
+              <option value="embowed">${t("Embowed")}</option>
             </optgroup>
-            <optgroup label="Banner">
-              <option value="flag">Flag</option>
-              <option value="pennon">Pennon</option>
-              <option value="guidon">Guidon</option>
-              <option value="banner">Banner</option>
-              <option value="dovetail">Dovetail</option>
-              <option value="gonfalon">Gonfalon</option>
-              <option value="pennant">Pennant</option>
+            <optgroup label="${t("Banner")}">
+              <option value="flag">${t("Flag")}</option>
+              <option value="pennon">${t("Pennon")}</option>
+              <option value="guidon">${t("Guidon")}</option>
+              <option value="banner">${t("Banner")}</option>
+              <option value="dovetail">${t("Dovetail")}</option>
+              <option value="gonfalon">${t("Gonfalon")}</option>
+              <option value="pennant">${t("Pennant")}</option>
             </optgroup>
-            <optgroup label="Simple">
-              <option value="round">Round</option>
-              <option value="oval">Oval</option>
-              <option value="vesicaPiscis">Vesica Piscis</option>
-              <option value="square">Square</option>
-              <option value="diamond">Diamond</option>
-              <option value="hexagon">Hexagon</option>
+            <optgroup label="${t("Simple")}">
+              <option value="round">${t("Round")}</option>
+              <option value="oval">${t("Oval")}</option>
+              <option value="vesicaPiscis">${t("Vesica Piscis")}</option>
+              <option value="square">${t("Square")}</option>
+              <option value="diamond">${t("Diamond")}</option>
+              <option value="hexagon">${t("Hexagon")}</option>
             </optgroup>
-            <optgroup label="Fantasy">
-              <option value="fantasy1">Fantasy1</option>
-              <option value="fantasy2">Fantasy2</option>
-              <option value="fantasy3">Fantasy3</option>
-              <option value="fantasy4">Fantasy4</option>
-              <option value="fantasy5">Fantasy5</option>
+            <optgroup label="${t("Fantasy")}">
+              <option value="fantasy1">${t("Fantasy1")}</option>
+              <option value="fantasy2">${t("Fantasy2")}</option>
+              <option value="fantasy3">${t("Fantasy3")}</option>
+              <option value="fantasy4">${t("Fantasy4")}</option>
+              <option value="fantasy5">${t("Fantasy5")}</option>
             </optgroup>
-            <optgroup label="Middle Earth">
-              <option value="noldor">Noldor</option>
-              <option value="gondor">Gondor</option>
-              <option value="easterling">Easterling</option>
-              <option value="erebor">Erebor</option>
-              <option value="ironHills">Iron Hills</option>
-              <option value="urukHai">UrukHai</option>
-              <option value="moriaOrc">Moria Orc</option>
+            <optgroup label="${t("Middle Earth")}">
+              <option value="noldor">${t("Noldor")}</option>
+              <option value="gondor">${t("Gondor")}</option>
+              <option value="easterling">${t("Easterling")}</option>
+              <option value="erebor">${t("Erebor")}</option>
+              <option value="ironHills">${t("Iron Hills")}</option>
+              <option value="urukHai">${t("UrukHai")}</option>
+              <option value="moriaOrc">${t("Moria Orc")}</option>
             </optgroup>
           </select>
         </div>
         <div id="emblemFieldRow" class="row">
-          <label for="emblemField" data-tip="Tincture of the field">Field</label>
+          <label for="emblemField" data-tip="${t("Tincture of the field")}">${t("Field")}</label>
           <div class="tincture"><span class="swatch"></span><select id="emblemField"></select></div>
         </div>
         <div id="emblemChargeRows" class="row">
-          <label for="emblemChargeTincture" data-tip="Tincture of the main charge. A raster picture keeps its own colours">Charge</label>
+          <label for="emblemChargeTincture" data-tip="${t("Tincture of the main charge. A raster picture keeps its own colours")}">${t("Charge")}</label>
           <div class="tincture"><span class="swatch"></span><select id="emblemChargeTincture"></select></div>
-          <label for="emblemChargeSizeNumber" data-tip="Size of the main charge">Charge size</label>
-          <div class="size" data-tip="Size of the main charge">
+          <label for="emblemChargeSizeNumber" data-tip="${t("Size of the main charge")}">${t("Charge size")}</label>
+          <div class="size" data-tip="${t("Size of the main charge")}">
             <input id="emblemChargeSizeSlider" type="range" min=".2" max="3" step=".05" />
             <input id="emblemChargeSizeNumber" type="number" min=".2" max="3" step=".05" />
           </div>
         </div>
-        <label for="emblemSizeNumber" data-tip="${SIZE_TIP}">Map size</label>
+        <label for="emblemSizeNumber" data-tip="${SIZE_TIP}">${t("Map size")}</label>
         <div class="size" data-tip="${SIZE_TIP}">
           <input id="emblemSizeSlider" type="range" min="0" max="5" step=".1" />
           <input id="emblemSizeNumber" type="number" min="0" max="5" step=".1" />
         </div>
       </div>
       <div class="armoria">
-        <button id="emblemsArmoria" type="button" data-tip="Open the emblem in Armoria, the heraldry editor: your changes show on the map as you make them"><span class="icon-font"></span> Edit in Armoria</button>
+        <button id="emblemsArmoria" type="button" data-tip="${t("Open the emblem in Armoria, the heraldry editor: your changes show on the map as you make them")}"><span class="icon-font"></span> ${t("Edit in Armoria")}</button>
       </div>
       <div class="toolbar">
-        <button id="emblemsPaste" data-tip="Edit the COA string by hand, or paste an Armoria edit link, API link or COA string" class="icon-link"></button>
-        <button id="emblemsCharge" data-tip="Set the charge: choose, link or upload a picture to place on the field" class="icon-chess-knight"></button>
-        <button id="emblemsUpload" data-tip="Replace the whole emblem with a picture: choose, link or upload an image, such as a ready coat of arms" class="icon-shield-alt"></button>
-        <button id="emblemsDownload" data-tip="Download the emblem as an image" class="icon-download"></button>
-        <button id="emblemsGallery" data-tip="Download all emblems as an HTML gallery (open it in a browser; preparing takes a while)" class="icon-layer-group"></button>
-        <button id="emblemsRegenerate" data-tip="Regenerate the emblem" class="icon-shuffle"></button>
-        <button id="emblemsFocus" data-tip="Show the area or place of the emblem" class="icon-target"></button>
+        <button id="emblemsPaste" data-tip="${t("Edit the COA string by hand, or paste an Armoria edit link, API link or COA string")}" class="icon-link"></button>
+        <button id="emblemsCharge" data-tip="${t("Set the charge: choose, link or upload a picture to place on the field")}" class="icon-chess-knight"></button>
+        <button id="emblemsUpload" data-tip="${t("Replace the whole emblem with a picture: choose, link or upload an image, such as a ready coat of arms")}" class="icon-shield-alt"></button>
+        <button id="emblemsDownload" data-tip="${t("Download the emblem as an image")}" class="icon-download"></button>
+        <button id="emblemsGallery" data-tip="${t("Download all emblems as an HTML gallery (open it in a browser; preparing takes a while)")}" class="icon-layer-group"></button>
+        <button id="emblemsRegenerate" data-tip="${t("Regenerate the emblem")}" class="icon-shuffle"></button>
+        <button id="emblemsFocus" data-tip="${t("Show the area or place of the emblem")}" class="icon-target"></button>
       </div>
       <div id="emblemPasteControl" class="control hidden">
-        <input id="emblemPaste" type="text" placeholder="Armoria link or COA string" data-tip="The emblem's COA string: edit it, or replace it with an Armoria link or COA string, then Apply" />
-        <button id="emblemPasteApply" type="button" data-tip="Apply the pasted emblem">Apply</button>
+        <input id="emblemPaste" type="text" placeholder="${t("Armoria link or COA string")}" data-tip="${t("The emblem's COA string: edit it, or replace it with an Armoria link or COA string, then Apply")}" />
+        <button id="emblemPasteApply" type="button" data-tip="${t("Apply the pasted emblem")}">${t("Apply")}</button>
       </div>
       <div id="emblemDownloadControl" class="control hidden">
-        <input id="emblemsDownloadSize" data-tip="Image size in pixels" type="number" value="500" step="100" min="100" max="10000" />
+        <input id="emblemsDownloadSize" data-tip="${t("Image size in pixels")}" type="number" value="500" step="100" min="100" max="10000" />
         <span>px</span>
-        <button id="emblemsDownloadSVG" data-tip="Scalable vector image: best quality, opens in a browser or Inkscape">SVG</button>
-        <button id="emblemsDownloadPNG" data-tip="Lossless raster image with a transparent background">PNG</button>
-        <button id="emblemsDownloadJPG" data-tip="Compressed raster image on a white background">JPG</button>
+        <button id="emblemsDownloadSVG" data-tip="${t("Scalable vector image: best quality, opens in a browser or Inkscape")}">SVG</button>
+        <button id="emblemsDownloadPNG" data-tip="${t("Lossless raster image with a transparent background")}">PNG</button>
+        <button id="emblemsDownloadJPG" data-tip="${t("Compressed raster image on a white background")}">JPG</button>
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
@@ -355,7 +356,7 @@ function updateEmblemData(): void {
   if (!el.coa) return;
   ensureEl("emblemImage").setAttribute("href", `#${currentId}`);
   let name = el.fullName || el.name;
-  if (currentType === "burg") name = `Burg of ${name}`;
+  if (currentType === "burg") name = t("Burg of {{- burg}}", { burg: name });
   ensureEl("emblemArmiger").innerText = name ?? "";
 
   const emblemShapeSelector = ensureEl<HTMLSelectElement>("emblemShapeSelector");
@@ -432,7 +433,7 @@ function changeShape(): void {
     const icon = coa.charges?.[0] && Emblems.chargeArt(coa.charges[0].charge);
     if (!icon) {
       select.value = coa.shield ?? "heater";
-      tip("Only an emblem with a charge can show it without a shield", false, "warn");
+      tip(t("Only an emblem with a charge can show it without a shield"), false, "warn");
       return;
     }
     currentEl.coa = { icon, size: coa.size, x: coa.x, y: coa.y };
@@ -489,9 +490,9 @@ function rerenderEmblem(): void {
 }
 
 const TINCTURE_GROUPS = [
-  ["Metals", tinctures.metals],
-  ["Colours", tinctures.colours],
-  ["Stains", tinctures.stains]
+  [t("Metals"), tinctures.metals],
+  [t("Colours"), tinctures.colours],
+  [t("Stains"), tinctures.stains]
 ] as const;
 
 /** the tincture list with the current value selected, keeping a pattern or colour it does not list */
@@ -569,7 +570,7 @@ function armoriaCoa(emblem: Emblem): HeraldicEmblem | null {
 function openInArmoria(): void {
   const coa = armoriaCoa(currentEl.coa) ?? { t1: "sable" };
   if (coa.charges?.some(({ charge }) => !Emblems.chargeIcon(charge) && Icons.kind(charge)))
-    tip("Armoria cannot show pictures from the icon library: those charges are missing there", false, "warn", 6000);
+    tip(t("Armoria cannot show pictures from the icon library: those charges are missing there"), false, "warn", 6000);
   const session = armoriaSessions.start(
     { type: currentType, id: currentEl.i, entity: currentEl, queue: Promise.resolve() },
     `${currentType}:${currentEl.i}`,
@@ -622,7 +623,7 @@ async function applyInput(
     else CustomIcons.add({ id: iconId, ...art });
     entity.coa = { icon: iconId, size, x, y };
     shown = iconId;
-    if (!reused) tip("This COA uses art FMG cannot draw; it shows as Armoria's picture", false, "warn", 5000);
+    if (!reused) tip(t("This COA uses art FMG cannot draw; it shows as Armoria's picture"), false, "warn", 5000);
   }
   if (currentType === type && currentEl.i === id) {
     void EmblemRenderer.trigger(currentId, entity.coa);
@@ -740,9 +741,9 @@ async function downloadGallery(): Promise<void> {
   await renderAllEmblems(validStates, validProvinces, validBurgs);
   await loadEmblemIcons([...document.querySelectorAll("#coas > svg")]);
 
-  const back = `<a href="javascript:history.back()">Go Back</a>`;
+  const back = `<a href="javascript:history.back()">${t("Go Back")}</a>`;
 
-  const stateSection = `<div><h2>States</h2>${validStates
+  const stateSection = `<div><h2>${t("States")}</h2>${validStates
     .map(state => {
       const el = document.getElementById(`stateCOA${state.i}`)!;
       return `<figure id="state_${state.i}"><a href="#provinces_${state.i}"><figcaption>${state.fullName}</figcaption>${getSVG(el, 200)}</a></figure>`;
@@ -800,7 +801,7 @@ async function downloadGallery(): Promise<void> {
 
   const neutralBurgs = validBurgs.filter(b => !b.state);
   const neutralsSection = neutralBurgs.length
-    ? `<div><h2>Independent burgs</h2>${neutralBurgs
+    ? `<div><h2>${t("Independent burgs")}</h2>${neutralBurgs
         .map(burg => {
           const el = document.getElementById(`burgCOA${burg.i}`);
           if (!el) return "";
@@ -809,12 +810,12 @@ async function downloadGallery(): Promise<void> {
         .join("")}</div>`
     : "";
 
-  const FMG = `<a href="https://azgaar.github.io/Fantasy-Map-Generator" target="_blank">Azgaar's Fantasy Map Generator</a>`;
-  const license = `<a target="_blank" href="https://github.com/Azgaar/Armoria#license">the license</a>`;
+  const FMG = `<a href="https://azgaar.github.io/Fantasy-Map-Generator" target="_blank">${t("Azgaar's Fantasy Map Generator")}</a>`;
+  const license = `<a target="_blank" href="https://github.com/Azgaar/Armoria#license">${t("the license")}</a>`;
   const html = /* html */ `<!DOCTYPE html>
     <html>
       <head>
-        <title>${options.map.lore.name} Emblems Gallery</title>
+        <title>${t("{{map}} Emblems Gallery", { map: options.map.lore.name })}</title>
       </head>
       <style type="text/css">
         body { margin: 0; padding: 1em; font-family: serif; }
@@ -830,16 +831,16 @@ async function downloadGallery(): Promise<void> {
       </style>
       <link href="https://fonts.googleapis.com/css2?family=Forum&family=Overlock+SC" rel="stylesheet" />
       <body>
-        <div><h1>${options.map.lore.name} Emblems Gallery</h1></div>
+        <div><h1>${t("{{map}} Emblems Gallery", { map: options.map.lore.name })}</h1></div>
         ${stateSection} ${provinceSections} ${burgSections} ${neutralsSection}
-        <address>Generated by ${FMG}. The tool is free, but images may be copyrighted, see ${license}</address>
+        <address>${t("Generated by {{- generator}}. The tool is free, but images may be copyrighted, see {{- license}}", { generator: FMG, license })}</address>
       </body>
     </html>`;
   downloadFile(html, `${name}.html`, "text/plain");
 }
 
 async function renderAllEmblems(states: State[], provinces: Province[], burgs: Burg[]): Promise<void> {
-  tip("Preparing for download...", true, "warn");
+  tip(t("Preparing for download..."), true, "warn");
 
   const statePromises = states.map(state => EmblemRenderer.trigger(`stateCOA${state.i}`, state.coa));
   const provincePromises = provinces.map(province => EmblemRenderer.trigger(`provinceCOA${province.i}`, province.coa));

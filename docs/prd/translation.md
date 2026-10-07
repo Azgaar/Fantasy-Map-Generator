@@ -26,15 +26,14 @@ random draw sequence per language — the same seed produced a different world i
 Two independent language settings:
 
 - **UI language** — the language of menus, dialogs, tooltips and messages. A preference of this
-  browser. Changing it reloads the app in the new language.
+  browser. A change applies after a reload.
 - **Content language** — the language generated text is written in. A property of the Map: saved in
   the `.map` file, so a Russian map stays Russian when opened with an English interface. A new Map
   takes the UI language by default.
 
 Interface text is translated where it is rendered: every Controller writes its labels and tooltips
-through `t()`. Translations are contributed through Crowdin; anything not yet translated falls back
-to English, so a language can ship partially and improve over time. Google Translate stays available
-for languages FMG doesn't ship.
+through `t()`. Translations are written by AI alongside the code and corrected from user reports;
+anything not yet translated falls back to English, so a language can ship partially and improve over time. Google Translate stays available for languages FMG doesn't ship.
 
 Generated text is produced by a **Locale grammar** per content language — vocabulary for the terms
 the generators pick (state forms, burg types, …) plus the rules that compose them into names
@@ -118,14 +117,14 @@ transliterated. A design that handles Russian handles French and Chinese, which 
 
 ### Translators and contributors
 
-30. As a translator, I want to translate in Crowdin with the English text as source, so that I don't
-    need Git or code knowledge.
+30. As a user, I want to report a wrong translation in an issue, so that I can fix my language without
+    Git or code knowledge.
 31. As a translator, I want context for ambiguous words ("Close" the dialog vs. "close" distance), so
     that I translate the right meaning.
-32. As a translator, I want the existing French and Chinese work from the proof of concept reused, so
-    that it isn't lost.
-33. As a translator, I want a changed English string to show me my previous translation as a
-    suggestion, so that I review rather than retype.
+32. As a maintainer, I want a list of each language's untranslated keys, so that AI can translate them
+    in the pull request that adds them.
+33. As a maintainer, I want a changed English string to fail CI until its translations follow, so that
+    a copy edit never silently drops a language back to English.
 34. As a grammar contributor, I want one module per language implementing a small typed interface, so
     that adding a language's naming rules doesn't touch other languages.
 35. As a grammar contributor, I want the type checker to tell me which vocabulary terms my language is
@@ -152,7 +151,7 @@ transliterated. A design that handles Russian handles French and Chinese, which 
   `t(key, { context?, count?, ...values })`.
 - No library: a hand-written lookup of ~50 lines on top of `Intl.PluralRules`. The catalog files use
   the i18next v4 JSON shape (flat keys, `key_context`, `key_one`/`key_other`, `{{value}}`
-  placeholders) so that Crowdin works without adaptation.
+  placeholders), so that standard translation tools read them.
 - It lives in `utils/`: interface labels also sit in `data/` modules (layer names, presets), and
   `data/` may only import `utils/`. A `data/` module calling `t()` at import time is fine, because
   the catalog is loaded before any app module is evaluated.
@@ -172,9 +171,10 @@ transliterated. A design that handles Russian handles French and Chinese, which 
 **2. Language settings** — follow the configuration rules (`options.app` vs `options.map`).
 
 - UI language: `options.app.language`; `""` (the default) follows the browser's first shipped
-  language, else English. Changing it keeps the current map in browser storage and reloads the page,
-  which reopens that map whatever the URL asks for; Controllers never re-render for a language
-  change.
+  language, else English. A change is stored at once and applies after a reload, offered right
+  away or left for the next visit. The map isn't carried across: browser storage can fail and would
+  overwrite the user's stored map, so the user is told to save first. Controllers never re-render for
+  a language change.
 - Content language: `options.map.language`. Marker, name and state generation keep using it long
   after generation, so it is map config, not a generation request. A new Map takes the UI language
   (like the seed, it is carried into the new map); the validation boundary sets missing values to
@@ -194,13 +194,13 @@ selects it by `options.map.language`.
   agreement and word order live here, in code — not as formatter syntax inside catalog strings.
 - **Script**: `script(name)` writes a namebase name in the locale's script — identity for Latin
   locales, rule-based Latin→Cyrillic transliteration for Russian (digraphs first: *sh*→ш, *ch*→ч,
-  *zh*→ж, *kh*→х, *th*→т, *ph*→ф, *ts*→ц, then single letters; *y* and *j* by position). It is
+  *zh*→ж, *kh*→х, *th*→т, *ph*→ф, *ts*→ц, then single letters; _y_ and _j_ by position). It is
   applied where namebase output enters the Map, so every generated name is written once in the
   map's script. Pure, like everything else in the grammar.
 - **Pure**: no grammar function draws random numbers. Where variation is needed (adjective
   variants) the generator passes in the rolls.
 - The English grammar is today's code moved behind the interface, unchanged in output. Russian is
-  the first non-English grammar; French and Chinese follow, seeded from the proof of concept.
+  the first non-English grammar; French and Chinese follow, starting from the proof of concept's rules.
 
 **4. Generator integration** — the seed-invariance contract.
 
@@ -232,12 +232,13 @@ selects it by `options.map.language`.
   English values; `npm run extract-strings` writes it, and its `--check` mode fails CI when the
   catalog is stale. Chosen over `i18next-cli`, which would add a native-binary dependency tree for
   a job this narrow.
-- A locale lint, run as a unit test over every shipped catalog, rejects empty values, raw `"`
+- A locale lint script, run in CI over every shipped and seed catalog, rejects empty values, raw `"`
   (would break attribute markup), placeholders missing from or added to the source, and keys absent
   from the English catalog.
-- A Crowdin project (open-source licence) syncs the catalogs. The French and Chinese strings from
-  the proof of concept are imported as translation memory; they are keyed by English text, so they
-  match wherever the wording is unchanged.
+- Translations are written by AI in the pull request that changes the English, not through a
+  translation platform: a machine translation reviewed against the code is as good as a volunteer's
+  for most strings, and catalogs never lag behind the code. `lint-locales --missing` lists each
+  language's untranslated keys; user-reported mistakes are fixed in the catalog.
 
 ## Implementation Plan
 
@@ -262,7 +263,7 @@ changes along the way; a non-English language becomes visible only once its pick
 ### M1 — Catalog and bootstrap (tracer bullet: Layers tab in Russian)
 
 1. **Catalog module** with `load(locale)` and `t()` as specified above, plus its unit tests.
-2. **Language manifest**: shipped locales (`en`, `ru` first; `fr` and `zh` once M2 seeds them) with
+2. **Language manifest**: shipped locales (`en`, `ru` first; `fr` and `zh` in M5) with
    native names; each backed by a lazily loaded locale file.
 3. **Bootstrap split.** Many tabs and Controllers evaluate their templates at import time, before
    `boot()` runs, so `t()` must work before the app module graph is evaluated. The entry point
@@ -272,13 +273,13 @@ changes along the way; a non-English language becomes visible only once its pick
    it against the manifest. `Options.restore` later parses the same value through the schema as
    usual.
 4. **`options.app.language`** in the options schema (`""` or a manifest code). Picker in the
-   Options tab next to the Google Translate button; on change, after a confirmation, it keeps the
-   map in browser storage, persists the choice and reloads into that map.
+   Options tab next to the Google Translate button; on change it persists the choice and offers
+   a reload, reminding the user to save unsaved changes.
 5. **Extraction**: the extraction script and its `--check` step in CI.
-6. **Locale lint** with fixture tests, plus a test running it over every shipped catalog.
+6. **Locale lint** script with fixture tests, run in CI over every shipped catalog.
 7. Wrap the Layers tab and add its Russian strings.
 
-Done when: choosing Russian reloads the app into the same map, the Layers tab is Russian,
+Done when: choosing Russian and reloading shows the Layers tab in Russian,
 everything else is English, and the lint and catalog tests are green. Plural forms are proven by
 the catalog tests; the Layers tab has no counts.
 
@@ -286,21 +287,26 @@ the catalog tests; the Layers tab has no counts.
 
 ### M2 — Interface rollout
 
-1. **Seed the catalogs from the proof of concept.** A one-off script keeps the PR's French and
-   Chinese entries whose English key still appears in the extracted catalog and drops empty values.
-   The rest is imported into Crowdin as translation memory.
-2. **Crowdin**: apply for the open-source plan; project config and GitHub integration that opens
-   catalog PRs. Until approved, translations arrive as normal PRs.
-3. **Shell and shared components first** — the menu tab and sticky buttons, the loading screen and
+1. **Shell and shared components first** — the menu tab and sticky buttons, the loading screen and
    map overlay texts (set by the shell module), dialog buttons, table headers and column visibility, tooltips,
    alerts, prompts, confirmations — because one wrap there covers dozens of Controllers.
-4. **Then by reach**: the remaining menu tabs (Style, Options, Tools, About); the main editors and
+2. **Then by reach**: the remaining menu tabs (Style, Options, Tools, About); the main editors and
    overviews (states, provinces, burgs, cultures, religions, biomes, markers, notes, military); then
    the rest as they are touched. Run extraction in each PR.
-5. **Runtime strings**: messages built in code (`tip()` texts, alert bodies, generated table
+3. **Runtime strings**: messages built in code (`tip()` texts, alert bodies, generated table
    footers like "3 of 12") are wrapped with placeholders and `count`, never concatenated.
-6. **Contributor rules** (direct strings, context, explicit keys for prose, literal keys only) added to
+4. **Contributor rules** (direct strings, context, explicit keys for prose, literal keys only) added to
    the architecture docs.
+
+**Status: done.** All interface text was wrapped in one pass rather than "as touched": 3,454 strings,
+with a complete Russian catalog. `{{- value}}` was added for raw values (markup, or sinks that
+escape on their own). Contributor rules: `docs/architecture/translation.md`. A browser audit with
+every editor and Style element open found no untranslated interface text beyond map content
+(default goods, units, namebases, culture sets and user-named groups, left to M3), brand names and
+icon-picker category names. Labels for ids the data stores in English (feature subtypes, shields,
+filters, presets) live in `src/data/id-labels.ts`; Style tab labels derived from schema keys live in
+`controllers/style-editor/field-labels.ts`, with a test keeping every key listed. Known gap: long
+Russian labels wrap in the narrow menu tabs.
 
 ### M3 — Locale grammar seam (English only, no output change)
 
@@ -328,13 +334,13 @@ Done when: the golden English test from M0 passes untouched.
 ### M4 — Russian content (tracer bullet: a Russian map end to end)
 
 1. **Russian grammar**:
-   - Vocabulary with gender (m/f/n) for every form and reserved entity: *королевство* (n),
-     *империя* (f), *союз* (m), …
-   - Adjective-forms agree with the form's gender: *Ардалийская империя*, *Ардалийское
-     королевство*, *Ардалийский союз*. Adjective derivation by ending (*-ия* → *-ийский*, *-а* →
-     *-ский*, consonant → *-ский*), choosing between variants with the shared rolls.
-   - "Of"-forms use nominative apposition, which needs no declension of foreign names: *Королевство
-     Ардалия*, *Провинция Лорван*.
+   - Vocabulary with gender (m/f/n) for every form and reserved entity: _королевство_ (n),
+     _империя_ (f), _союз_ (m), …
+   - Adjective-forms agree with the form's gender: _Ардалийская империя_, _Ардалийское
+     королевство_, _Ардалийский союз_. Adjective derivation by ending (_-ия_ → _-ийский_, _-а_ →
+     _-ский_, consonant → _-ский_), choosing between variants with the shared rolls.
+   - "Of"-forms use nominative apposition, which needs no declension of foreign names: _Королевство
+     Ардалия_, _Провинция Лорван_.
    - `script()` transliterates Latin namebase output to Cyrillic.
 2. **Content-language picker** in the Options tab. It changes the Map's language for everything
    generated afterwards; a new map or regeneration applies it to the whole Map.
@@ -349,19 +355,21 @@ grammatical.
 
 ### M5 — French, Chinese and onward
 
-1. **French grammar**: gender, elision (*d'Ardalie* / *de Lorvan*), articles, noun–adjective order
+1. **French grammar**: gender, elision (_d'Ardalie_ / _de Lorvan_), articles, noun–adjective order
    and agreement. Start from the proof of concept's rules, with its bugs fixed (e.g. the `/e$/` rule
    that shadowed all later ones).
 2. **Chinese grammar**: no articles or "of", modifier-before-noun; `script()` needs a
    syllable-based transcription to Hanzi, which is a separate, harder piece of work — until then
    Chinese maps keep Latin names.
-3. Each further content language is one grammar module plus its vocabulary; the type checker lists
-   what is missing.
+3. **Interface catalogs**: `fr.json` and `zh.json` translated by AI in full and added to the
+   language manifest.
+4. Each further language is one grammar module plus its vocabulary, which the type checker lists
+   as missing, and an AI-translated catalog.
 
 ### M6 — Close-out
 
 1. Glossary terms (UI language, Content language, Locale grammar, Vocabulary).
-2. A wiki page for translators (Crowdin) and for grammar contributors.
+2. A wiki page for grammar contributors and for reporting a wrong translation.
 3. Close [Azgaar/Fantasy-Map-Generator#1354](https://github.com/Azgaar/Fantasy-Map-Generator/pull/1354)
    with thanks and a link here.
 
@@ -381,7 +389,7 @@ internally.
   when localizing seed drift.
 - **Locale grammar.** Table-driven unit tests per locale: adjectives, state and province full names,
   religion names, renames, script. Russian covers gender agreement across all three genders,
-  apposition and transliteration (digraphs, *y*/*j* by position); French covers elision; Chinese
+  apposition and transliteration (digraphs, _y_/_j_ by position); French covers elision; Chinese
   covers the absence of articles and "of"; English reproduces today's outputs.
   Prior art: the generator unit tests for states, provinces and religions.
 - **Catalog.** Fallback chain (locale → English → key), context, plural categories through
@@ -413,9 +421,8 @@ internally.
 
 - New glossary terms to add when this lands: **UI language**, **Content language**, **Locale
   grammar**, **Vocabulary**.
-- The proof-of-concept PR should be closed with thanks and a link to this PRD; its translations
-  are reused through Crowdin, not merged.
-- Crowdin's free open-source plan has to be applied for; until it is granted, catalogs can be edited
-  in pull requests.
+- The proof-of-concept PR should be closed with thanks and a link to this PRD; its grammar rules are
+  reused, its strings are not: AI translates the full catalog.
 - English-as-key means a copy edit orphans that string's translations. That's intended — the
-  translation really is stale — and Crowdin's translation memory offers the old one as a fuzzy match.
+  translation really is stale — and the lint fails on the orphaned key, so the same pull request
+  moves or redoes it.

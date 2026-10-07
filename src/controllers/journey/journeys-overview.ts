@@ -31,17 +31,18 @@ import {
   rn,
   toCsvField
 } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 
 const dialogId = "journeysOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let filterState: { search: string };
 
 const columns: EditorColumn<Journey>[] = [
-  { key: "name", label: "Journey", width: "16em", permanent: true, sortBy: j => j.name || "", sortType: "alpha" },
-  { key: "type", label: "Type", width: "8em", sortBy: j => j.type || "", sortType: "alpha" },
+  { key: "name", label: t("Journey"), width: "16em", permanent: true, sortBy: j => j.name || "", sortType: "alpha" },
+  { key: "type", label: t("Type"), width: "8em", sortBy: j => j.type || "", sortType: "alpha" },
   {
     key: "from",
-    label: "From",
+    label: t("From"),
     width: "7em",
     mobileHidden: true,
     sortBy: j => cellEndpointLabel(getStart(j)),
@@ -49,26 +50,26 @@ const columns: EditorColumn<Journey>[] = [
   },
   {
     key: "to",
-    label: "To",
+    label: t("To"),
     width: "7em",
     mobileHidden: true,
     sortBy: j => cellEndpointLabel(getEnd(j)),
     sortType: "alpha"
   },
-  { key: "distance", label: "Distance", width: "7em", sortBy: j => Journeys.getTotals(j).totalDistance },
+  { key: "distance", label: t("Distance"), width: "7em", sortBy: j => Journeys.getTotals(j).totalDistance },
   {
     key: "speed",
-    label: "Speed",
+    label: t("Speed"),
     width: "6em",
     mobileHidden: true,
-    tip: "Average speed",
+    tip: t("Average speed"),
     sortBy: j => Journeys.getTotals(j).avgSpeed
   },
   {
     key: "time",
-    label: "Total time",
+    label: t("Total time"),
     width: "5.6em",
-    tip: "Time from start to finish, travel days counted at each transport's travel hours",
+    tip: t("Time from start to finish, travel days counted at each transport's travel hours"),
     mobileHidden: true,
     sortBy: j => Journeys.getTotals(j).elapsedHours
   },
@@ -104,7 +105,7 @@ function open(): void {
   renderDialog();
   journeysTable.reset();
 
-  $(`#${dialogId}`).dialog({ title: "Journeys Overview", resizable: false, position, close: onClose });
+  $(`#${dialogId}`).dialog({ title: t("Journeys Overview"), resizable: false, position, close: onClose });
 }
 
 function renderDialog(): void {
@@ -114,25 +115,25 @@ function renderDialog(): void {
     <div id="journeysBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
 
     <div id="journeysFilters" class="editorFilters">
-      <label for="journeysSearch" data-tip="Filter by journey name, type or endpoint" style="grid-template-columns: 4em 12em">Search: <input id="journeysSearch" type="search" /></label>
+      <label for="journeysSearch" data-tip="${t("Filter by journey name, type or endpoint")}" style="grid-template-columns: 4em 12em">${t("Search")}: <input id="journeysSearch" type="search" /></label>
     </div>
 
     <div id="journeysFooter" class="totalLine">
-      <div data-tip="Journeys number" style="margin-left: 4px">Journeys:&nbsp;<span id="journeysFooterNumber">0</span></div>
-      <div data-tip="Total distance" style="margin-left: 12px" data-col="distance">Distance:&nbsp;<span id="journeysFooterDistance">0</span></div>
-      <div data-tip="Total time" style="margin-left: 12px" data-col="time">Total time:&nbsp;<span id="journeysFooterTime">0</span></div>
-      <div data-tip="Travel time" style="margin-left: 12px" data-col="time">Travel time:&nbsp;<span id="journeysFooterTravelTime">0</span></div>
+      <div data-tip="${t("Journeys number")}" style="margin-left: 4px">${t("Journeys")}:&nbsp;<span id="journeysFooterNumber">0</span></div>
+      <div data-tip="${t("Total distance")}" style="margin-left: 12px" data-col="distance">${t("Distance")}:&nbsp;<span id="journeysFooterDistance">0</span></div>
+      <div data-tip="${t("Total time")}" style="margin-left: 12px" data-col="time">${t("Total time")}:&nbsp;<span id="journeysFooterTime">0</span></div>
+      <div data-tip="${t("Travel time")}" style="margin-left: 12px" data-col="time">${t("Travel time")}:&nbsp;<span id="journeysFooterTravelTime">0</span></div>
     </div>
 
     <div id="journeysBottom" class="editorToolbar">
-      <button id="journeysOverviewRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-      <button id="journeyCreateNew" data-tip="Create a new journey" class="icon-plus"></button>
-      <button id="journeyGenerateStory" data-tip="Generate a random journey" class="icon-shuffle"></button>
-      <button id="journeysEditStyle" data-tip="Edit journeys style in Style Editor" class="icon-adjust"></button>
-      <button id="journeysEditTransport" data-tip="Edit transport types (add custom modes like Magic Carpet)" class="icon-cog"></button>
-      <button id="journeysExport" data-tip="Save journeys-related data as a text file (.csv)" class="icon-download"></button>
-      <button id="journeysLockAll" data-tip="Lock or unlock all journeys" class="icon-lock"></button>
-      <button id="journeysRemoveAll" data-tip="Remove all unlocked journeys" class="icon-trash"></button>
+      <button id="journeysOverviewRefresh" data-tip="${t("Refresh the Editor")}" class="icon-cw"></button>
+      <button id="journeyCreateNew" data-tip="${t("Create a new journey")}" class="icon-plus"></button>
+      <button id="journeyGenerateStory" data-tip="${t("Generate a random journey")}" class="icon-shuffle"></button>
+      <button id="journeysEditStyle" data-tip="${t("Edit style in Style Editor")}" class="icon-adjust"></button>
+      <button id="journeysEditTransport" data-tip="${t("Edit transport types (add custom modes like Magic Carpet)")}" class="icon-cog"></button>
+      <button id="journeysExport" data-tip="${t("Save journeys-related data as a text file (.csv)")}" class="icon-download"></button>
+      <button id="journeysLockAll" data-tip="${t("Lock or unlock all journeys")}" class="icon-lock"></button>
+      <button id="journeysRemoveAll" data-tip="${t("Remove all unlocked journeys")}" class="icon-trash"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -177,47 +178,62 @@ function renderJourneysPage(view: TableView<Journey>): void {
   for (const journey of view.rows) {
     const { totalDistance, totalHours, avgSpeed, elapsedHours, hiddenSegments } = Journeys.getTotals(journey);
     const hiddenNote = hiddenSegments
-      ? `. ${hiddenSegments} hidden segment${hiddenSegments > 1 ? "s" : ""} left out`
+      ? `. ${t("Hidden segments left out: {{segments}}", { segments: hiddenSegments })}`
       : "";
     lines += /* html */ `<div class="states" data-id="${journey.i}">
       <div data-col="name" style="width: 93%; overflow: hidden">
-        <fill-box class="journeyColor" fill="${journey.color}" size="0.8em" data-tip="Journey color. Click to change"></fill-box>
-        <span data-tip="Journey name: ${escapeHtml(journey.name)}">${escapeHtml(journey.name)}</span>
+        <fill-box class="journeyColor" fill="${journey.color}" size="0.8em" data-tip="${sentences(t("Journey color"), t("Click to change"))}"></fill-box>
+        <span data-tip="${t("Journey name: {{journey}}", { journey: journey.name })}">${escapeHtml(journey.name)}</span>
       </div>
-      <div data-tip="Kind of travel this is" data-col="type">${escapeHtml(journey.type)}</div>
+      <div data-tip="${t("Kind of travel this is")}" data-col="type">${escapeHtml(journey.type)}</div>
       ${renderEndpoint("from", getStart(journey))}
       ${renderEndpoint("to", getEnd(journey))}
-      <div data-tip="Total distance" data-col="distance">${rn(totalDistance)} ${unit}</div>
-      <div data-tip="Average speed, moving segments only" data-col="speed">${avgSpeed ? formatSpeed(avgSpeed) : "-"}</div>
-      <div data-tip="Total time: ${Journeys.formatTravelTimeFull(elapsedHours)}. Travel time: ${Journeys.formatHours(totalHours)}${hiddenNote}" data-col="time">${Journeys.formatTravelTime(elapsedHours)}</div>
-      <div data-col="edit"><span class="journeyEdit pointer icon-pencil" data-tip="Edit journey"></span></div>
-      <div data-col="locate"><span class="journeyZoom pointer icon-target" data-tip="Locate the journey"></span></div>
-      <div data-col="visible"><span class="journeyVisible pointer ${journey.visible === false ? "icon-eye-off" : "icon-eye"}" data-tip="Toggle journey visibility on the map"></span></div>
+      <div data-tip="${t("Total distance")}" data-col="distance">${rn(totalDistance)} ${unit}</div>
+      <div data-tip="${t("Average speed, moving segments only")}" data-col="speed">${avgSpeed ? formatSpeed(avgSpeed) : "-"}</div>
+      <div data-tip="${t("Total time: {{total}}. Travel time: {{travel}}", { total: Journeys.formatTravelTimeFull(elapsedHours), travel: Journeys.formatHours(totalHours) })}${hiddenNote}" data-col="time">${Journeys.formatTravelTime(elapsedHours)}</div>
+      <div data-col="edit"><span class="journeyEdit pointer icon-pencil" data-tip="${t("Edit Journey")}"></span></div>
+      <div data-col="locate"><span class="journeyZoom pointer icon-target" data-tip="${t("Locate the journey")}"></span></div>
+      <div data-col="visible"><span class="journeyVisible pointer ${journey.visible === false ? "icon-eye-off" : "icon-eye"}" data-tip="${t("Toggle journey visibility on the map")}"></span></div>
       <div data-col="lock"><span class="locks pointer ${journey.lock ? "icon-lock" : "icon-lock-open inactive"}" onmouseover="showElementLockTip(event)"></span></div>
-      <div data-col="remove"><span class="journeyRemove pointer icon-trash-empty" data-tip="Remove journey"></span></div>
+      <div data-col="remove"><span class="journeyRemove pointer icon-trash-empty" data-tip="${t("Remove journey")}"></span></div>
     </div>`;
   }
   body.insertAdjacentHTML("beforeend", lines);
 
   const totals = view.all.map(journey => Journeys.getTotals(journey));
   const sum = (values: number[]) => values.reduce((a, b) => a + b, 0);
-  ensureEl("journeysFooterNumber").innerHTML = `${view.all.length} of ${pack.journeys.length}`;
+  ensureEl("journeysFooterNumber").innerHTML = t("{{shown}} of {{total}}", {
+    shown: view.all.length,
+    total: pack.journeys.length
+  });
   ensureEl("journeysFooterDistance").innerHTML = `${rn(sum(totals.map(t => t.totalDistance)))} ${unit}`;
   const hiddenSegments = sum(totals.map(t => t.hiddenSegments));
   const hiddenNote = hiddenSegments
-    ? ` ${hiddenSegments} hidden segment${hiddenSegments > 1 ? "s" : ""} left out.`
+    ? ` ${t("Hidden segments left out: {{segments}}", { segments: hiddenSegments })}.`
     : "";
 
   // every journey is already in calendar hours, so the totals just add up
   const elapsedHours = sum(totals.map(t => t.elapsedHours));
   const footerTime = ensureEl("journeysFooterTime");
   footerTime.innerHTML = Journeys.formatTravelTime(elapsedHours);
-  footerTime.parentElement!.dataset.tip = `Time from start to finish: ${Journeys.formatTravelTimeFull(elapsedHours)}. A day of travel fills a whole day, however many hours the transport sustains.${hiddenNote}`;
+  footerTime.parentElement!.dataset.tip =
+    t(
+      "Time from start to finish: {{time}}. A day of travel fills a whole day, however many hours the transport sustains.",
+      {
+        time: Journeys.formatTravelTimeFull(elapsedHours)
+      }
+    ) + hiddenNote;
 
   const travelHours = sum(totals.map(t => t.totalHours));
   const footerTravelTime = ensureEl("journeysFooterTravelTime");
   footerTravelTime.innerHTML = Journeys.formatHours(travelHours);
-  footerTravelTime.parentElement!.dataset.tip = `Hours spent moving or waiting: ${rn(travelHours, 1)}h, the sum of the segment times. Rest between travel days is not counted.${hiddenNote}`;
+  footerTravelTime.parentElement!.dataset.tip =
+    t(
+      "Hours spent moving or waiting: {{hours}}h, the sum of the segment times. Rest between travel days is not counted.",
+      {
+        hours: rn(travelHours, 1)
+      }
+    ) + hiddenNote;
 
   body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseenter", journeyHighlightOn));
   body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseleave", stopJourneyTravel));
@@ -235,11 +251,11 @@ function renderJourneysPage(view: TableView<Journey>): void {
 function renderEndpoint(endpoint: "from" | "to", cellId: number | undefined): string {
   const label = escapeHtml(cellEndpointLabel(cellId)); // burg names are user-editable
   const isSet = cellId !== undefined;
-  const what = endpoint === "from" ? "Start of the first segment" : "End of the last segment";
+  const what = endpoint === "from" ? t("Start of the first segment") : t("End of the last segment");
 
   return /* html */ `<div data-tip="${what}" data-col="${endpoint}">
     <span class="journeyLocate icon-target ${isSet ? "pointer" : "inactive"}" data-cell="${cellId ?? ""}"
-      data-tip="${isSet ? `Zoom to ${label}` : "Endpoint is not set"}"></span>
+      data-tip="${isSet ? t("Zoom to {{place}}", { place: label }) : t("Endpoint is not set")}"></span>
     <span>${label}</span>
   </div>`;
 }
@@ -291,13 +307,18 @@ function createEmptyJourney(): void {
 function generateRandomJourney(): void {
   const journey = Journeys.addRandom();
   if (!journey) {
-    tip("Can't plot a journey: the map needs at least two burgs connected by land or sea", true, "error", 6000);
+    tip(t("Can't plot a journey: the map needs at least two burgs connected by land or sea"), true, "error", 6000);
     return;
   }
 
   Layers.draw("journeys");
   journeysTable.refresh();
-  tip(`Generated "${escapeHtml(journey.name)}": ${journey.segments.length} segments`, true, "success", 6000);
+  tip(
+    t("Generated “{{journey}}”, segments: {{segments}}", { journey: journey.name, segments: journey.segments.length }),
+    true,
+    "success",
+    6000
+  );
 }
 
 function toggleVisibility(this: HTMLElement): void {
@@ -325,9 +346,9 @@ function toggleLockAll(): void {
 function triggerJourneyRemove(this: HTMLElement): void {
   const journeyId = getRowId(this);
   confirmationDialog({
-    title: "Remove journey",
-    message: "Are you sure you want to remove the journey? <br>This action cannot be reverted.",
-    confirm: "Remove",
+    title: t("Remove journey"),
+    message: `${t("Are you sure you want to remove the journey?")}<br>${t("This action cannot be reverted")}`,
+    confirm: t("Remove"),
     onConfirm: () => {
       Journeys.remove(journeyId);
       Layers.draw("journeys");
@@ -339,14 +360,17 @@ function triggerJourneyRemove(this: HTMLElement): void {
 function triggerAllJourneysRemove(): void {
   const unlocked = pack.journeys.filter(journey => !journey.lock);
   if (!unlocked.length) {
-    tip("No unlocked journeys to remove", true, "error", 6000);
+    tip(t("No unlocked journeys to remove"), true, "error", 6000);
     return;
   }
 
   confirmationDialog({
-    title: "Remove all journeys",
-    message: `Remove all <b>unlocked</b> journeys (${unlocked.length})? Locked ones will be kept.`,
-    confirm: "Remove",
+    title: t("Remove all journeys"),
+    message: sentences(
+      t("Remove all <b>unlocked</b> journeys ({{journeys}})?", { journeys: unlocked.length }),
+      t("Locked ones will be kept")
+    ),
+    confirm: t("Remove"),
     onConfirm: () => {
       pack.journeys = pack.journeys.filter(journey => journey.lock);
       Layers.draw("journeys");

@@ -7,11 +7,13 @@ import { Controllers } from "@/controllers";
 import { Services } from "@/services";
 import { isElectron, isLocalhost } from "@/services/platform";
 import { ensureEl, findEl } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { fitMapToScreen } from "./canvas";
 
 /** Wire the window up: the svg layer scaffold and the browser-level behaviours around it. Called by boot() */
 export function initShell(): void {
   Layers.init(); // create the svg layer groups the renderers draw into
+  translateShell();
 
   window.addEventListener("resize", onResize);
   window.addEventListener("vite:preloadError", onChunkLoadError);
@@ -20,8 +22,47 @@ export function initShell(): void {
   initTourPromptButton();
   initAssistantBubble();
 
-  if (!isLocalhost() && !isElectron()) window.onbeforeunload = () => "Are you sure you want to navigate away?";
+  if (!isLocalhost() && !isElectron()) window.onbeforeunload = () => t("Are you sure you want to navigate away?");
   if (isElectron()) removeWebOnlyControls();
+}
+
+// the page template's own text: selector, text (null keeps it) and tooltip
+const SHELL_TEXT: [string, string | null, string | null][] = [
+  ["#optionsTrigger", null, t("Click to show the Menu")],
+  ["#regenerate", t("New Map!"), t("Click to generate a new map")],
+  ["#options .drag-trigger", null, t("Drag to move the Menu")],
+  ["#optionsHide", null, t("Click to hide the Menu")],
+  ["#layersTab", t("Layers"), t("Click to change map layers")],
+  ["#styleTab", t("Style"), t("Click to open style editor")],
+  ["#optionsTab", t("Options"), t("Click to change generation and UI options")],
+  ["#toolsTab", t("Tools"), t("Click to open tools menu")],
+  ["#aboutTab", t("About"), t("Click to see Generator info")],
+  ["#newMapButton", t("New Map"), t("Generate a new map based on options")],
+  ["#exportButton", t("Export"), t("Select format to download image or export map data")],
+  ["#saveButton", t("Save"), t("Save fully-functional map file")],
+  ["#loadButton", t("Load"), t("Load fully-functional map (.map or .gz formats)")],
+  ["#zoomReset", t("Zoom out"), t("Reset map zoom")],
+  ["#searchButton", t("Search"), t("Search map and commands")],
+  ["#exitCustomization > div", null, t("Drag to move the pane")],
+  ["#finalizeHeightmap", t("Exit Customization"), t("Finalize the heightmap and exit the edit mode")],
+  ["#assistantBubble", null, t("Open Azgaar Assistant")],
+  ["#mapOverlay", t("Drop a map file to open"), null],
+  ["#tourPromptButton", null, t("Take an interactive tour of the map generator")]
+];
+
+function translateShell(): void {
+  for (const [selector, text, tip] of SHELL_TEXT) {
+    const element = document.querySelector<HTMLElement>(selector);
+    if (!element) continue;
+    if (text !== null) element.textContent = text;
+    if (tip !== null) element.dataset.tip = tip;
+  }
+  findEl("assistantBubble")?.setAttribute("aria-label", t("Open Azgaar Assistant"));
+  document.querySelector("#tourPromptButton button")?.setAttribute("aria-label", t("Launch UI Tour"));
+  const tooltip = findEl("tooltip");
+  if (tooltip) tooltip.dataset.main = t("Click the arrow button for options. Zoom in to see the map in details");
+  const loading = findEl("loading-text")?.firstChild;
+  if (loading) loading.textContent = t("Loading").toUpperCase();
 }
 
 /** Keep the next unpinned map request in step with the browser window. */
@@ -60,18 +101,17 @@ function onTitlebarButtonTouch(event: TouchEvent): void {
 function onChunkLoadError(): void {
   if (!navigator.onLine) {
     alertDialog({
-      title: "You are offline",
-      message: "This part of the app was not downloaded before the connection was lost. Reconnect and try again"
+      title: t("You are offline"),
+      message: t("This part of the app was not downloaded before the connection was lost. Reconnect and try again")
     });
     return;
   }
 
   confirmationDialog({
-    title: "New version released",
-    message:
-      "This part of the app failed to load because a new version was released while the page was open.<br />Reload the page to get the new version. If you have unsaved changes, save the map first",
-    confirm: "Reload",
-    cancel: "Not now",
+    title: t("New version released"),
+    message: `${t("This part of the app failed to load because a new version was released while the page was open.")}<br>${sentences(t("Reload the page to get the new version"), t("If you have unsaved changes, save the map first"))}`,
+    confirm: t("Reload"),
+    cancel: t("Not now"),
     onConfirm: () => {
       window.onbeforeunload = null; // the user just confirmed the reload, don't ask again.
       location.reload();
@@ -107,17 +147,17 @@ function addDragToUpload(): void {
 
     if (!file.name.endsWith(".map") && !file.name.endsWith(".gz")) {
       return alertDialog({
-        title: "Invalid file format",
-        message: "Please upload a map file (<i>.map</i> or <i>.gz</i> formats) you have previously downloaded"
+        title: t("Invalid file format"),
+        message: t("Please upload a map file (<i>.map</i> or <i>.gz</i> formats) you have previously downloaded")
       });
     }
 
     mapOverlay.style.display = null as unknown as string;
-    mapOverlay.innerHTML = "Uploading<span>.</span><span>.</span><span>.</span>";
+    mapOverlay.innerHTML = `${t("Uploading")}<span>.</span><span>.</span><span>.</span>`;
     closeDialogs();
     Services.Load.uploadMap(file, () => {
       mapOverlay.style.display = "none";
-      mapOverlay.innerHTML = "Drop a map file to open";
+      mapOverlay.innerHTML = t("Drop a map file to open");
     });
   });
 }
@@ -150,9 +190,14 @@ export function warnIfServerless(): boolean {
 
   const wiki = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally";
   alertDialog({
-    title: "Loading error",
+    title: t("Loading error"),
     width: "28em",
-    message: /* html */ `Fantasy Map Generator cannot run serverless. Follow the <a href="${wiki}" target="_blank">instructions</a> on how you can easily run a local web-server`
+    message: t(
+      "Fantasy Map Generator cannot run serverless. Follow the {{- instructions}} on how you can easily run a local web-server",
+      {
+        instructions: `<a href="${wiki}" target="_blank">${t("instructions")}</a>`
+      }
+    )
   });
   return true;
 }

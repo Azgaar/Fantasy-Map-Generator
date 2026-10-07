@@ -29,6 +29,7 @@ import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { drawDrainage, removeDrainage } from "@/renderers/overlays/drainage";
 import { downloadFile, getFileName, getHeightUnitRatio, heightToMeters, uploadFile } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import {
   createFileInput,
   ensureEl,
@@ -79,77 +80,77 @@ function renderTemplateEditor(): void {
   destroyDialog("templateEditor");
   const html = /* html */ `<div id="templateEditor" class="dialog stable">
       <div id="templateTop">
-        <i>Select template: </i>
-        <select id="templateSelect" style="width: 16em" data-prev="templateCustom" data-tip="Select base template">
-          <option value="custom" selected>Custom</option>
-          <option value="volcano">Volcano</option>
-          <option value="highIsland">High Island</option>
-          <option value="lowIsland">Low Island</option>
-          <option value="continents">Continents</option>
-          <option value="archipelago">Archipelago</option>
-          <option value="atoll">Atoll</option>
-          <option value="mediterranean">Mediterranean</option>
-          <option value="peninsula">Peninsula</option>
-          <option value="pangea">Pangea</option>
-          <option value="isthmus">Isthmus</option>
-          <option value="shattered">Shattered</option>
-          <option value="taklamakan">Taklamakan</option>
-          <option value="oldWorld">Old World</option>
-          <option value="fractious">Fractious</option>
+        <i>${t("Select template")}: </i>
+        <select id="templateSelect" style="width: 16em" data-prev="templateCustom" data-tip="${t("Select base template")}">
+          <option value="custom" selected>${t("Custom")}</option>
+          <option value="volcano">${t("Volcano")}</option>
+          <option value="highIsland">${t("High Island")}</option>
+          <option value="lowIsland">${t("Low Island")}</option>
+          <option value="continents">${t("Continents")}</option>
+          <option value="archipelago">${t("Archipelago")}</option>
+          <option value="atoll">${t("Atoll")}</option>
+          <option value="mediterranean">${t("Mediterranean")}</option>
+          <option value="peninsula">${t("Peninsula")}</option>
+          <option value="pangea">${t("Pangea")}</option>
+          <option value="isthmus">${t("Isthmus")}</option>
+          <option value="shattered">${t("Shattered")}</option>
+          <option value="taklamakan">${t("Taklamakan")}</option>
+          <option value="oldWorld">${t("Old World")}</option>
+          <option value="fractious">${t("Fractious")}</option>
         </select>
       </div>
       <div id="templateTools">
-        <button data-type="Hill" data-tip="Hill: small blob">H</button>
-        <button data-type="Pit" data-tip="Pit: round depression">P</button>
-        <button data-type="Range" data-tip="Range: elongated elevation">R</button>
-        <button data-type="Trough" data-tip="Trough: elongated depression">T</button>
-        <button data-type="Strait" data-tip="Strait: centered vertical or horizontal depression">S</button>
-        <button data-type="Mask" data-tip="Mask: lower cells near edges or in map center">M</button>
-        <button data-type="Invert" data-tip="Invert heightmap along the axes">I</button>
-        <button data-type="Add" data-tip="Add or subtract value from all heights in range">+</button>
-        <button data-type="Multiply" data-tip="Multiply all heights in range by factor">*</button>
+        <button data-type="Hill" data-tip="${t("Hill: small blob")}">H</button>
+        <button data-type="Pit" data-tip="${t("Pit: round depression")}">P</button>
+        <button data-type="Range" data-tip="${t("Range: elongated elevation")}">R</button>
+        <button data-type="Trough" data-tip="${t("Trough: elongated depression")}">T</button>
+        <button data-type="Strait" data-tip="${t("Strait: centered vertical or horizontal depression")}">S</button>
+        <button data-type="Mask" data-tip="${t("Mask: lower cells near edges or in map center")}">M</button>
+        <button data-type="Invert" data-tip="${t("Invert heightmap along the axes")}">I</button>
+        <button data-type="Add" data-tip="${t("Add or subtract value from all heights in range")}">+</button>
+        <button data-type="Multiply" data-tip="${t("Multiply all heights in range by factor")}">*</button>
         <button
           data-type="Smooth"
-          data-tip="Smooth the map replacing cell heights by an average values of its neighbors"
+          data-tip="${t("Smooth the map replacing cell heights by an average values of its neighbors")}"
         >
           ~
         </button>
       </div>
       <div id="templateBody" data-changed="0" class="table" style="padding: 2px 0">
         <div data-type="Hill">
-          <div class="icon-check" data-tip="Click to skip the step"></div>
-          <div style="width: 4em">Hill</div>
-          <i class="icon-trash-empty pointer" data-tip="Remove the step"></i>
-          <i class="icon-resize-vertical" data-tip="Drag to reorder"></i>
+          <div class="icon-check" data-tip="${t("Click to skip the step")}"></div>
+          <div style="width: 4em">${t("Hill")}</div>
+          <i class="icon-trash-empty pointer" data-tip="${t("Remove the step")}"></i>
+          <i class="icon-resize-vertical" data-tip="${t("Drag to reorder")}"></i>
           <span
-            >y:<input class="templateY" data-tip="Y axis position in percentage (minY-maxY or Y)" value="47-53"
+            >y:<input class="templateY" data-tip="${t("Y axis position in percentage (minY-maxY or Y)")}" value="47-53"
           /></span>
           <span
-            >x:<input class="templateX" data-tip="X axis position in percentage (minX-maxX or X)" value="65-75"
+            >x:<input class="templateX" data-tip="${t("X axis position in percentage (minX-maxX or X)")}" value="65-75"
           /></span>
           <span
             >h:<input
               class="templateHeight"
-              data-tip="Blob maximum height, use hyphen to get a random number in range"
+              data-tip="${t("Blob maximum height, use hyphen to get a random number in range")}"
               value="90-100"
           /></span>
           <span
             >n:<input
               class="templateCount"
-              data-tip="Blobs to add, use hyphen to get a random number in range"
+              data-tip="${t("Blobs to add, use hyphen to get a random number in range")}"
               value="1"
           /></span>
         </div>
       </div>
       <div id="templateBottom">
-        <button id="templateRun" data-tip="Execute the template" class="icon-play-circled2"></button>
-        <button id="templateUndo" data-tip="Undo the latest action" class="icon-ccw" disabled></button>
-        <button id="templateRedo" data-tip="Redo the action" class="icon-cw" disabled></button>
-        <button id="templateSave" data-tip="Download the template as a text file" class="icon-download"></button>
-        <button id="templateLoad" data-tip="Open previously downloaded template" class="icon-upload"></button>
+        <button id="templateRun" data-tip="${t("Execute the template")}" class="icon-play-circled2"></button>
+        <button id="templateUndo" data-tip="${t("Undo the latest action")}" class="icon-ccw" disabled></button>
+        <button id="templateRedo" data-tip="${t("Redo the action")}" class="icon-cw" disabled></button>
+        <button id="templateSave" data-tip="${t("Download the template as a text file")}" class="icon-download"></button>
+        <button id="templateLoad" data-tip="${t("Open previously downloaded template")}" class="icon-upload"></button>
         <button
           id="templateCA"
-          data-tip="Find or share custom template on Cartography Assets portal"
+          data-tip="${t("Find or share custom template on Cartography Assets portal")}"
           class="icon-drafting-compass"
           onclick="
             openURL('https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/templates')
@@ -157,14 +158,14 @@ function renderTemplateEditor(): void {
         ></button>
         <button
           id="templateTutorial"
-          data-tip="Open Template Editor Tutorial"
+          data-tip="${t("Open Template Editor Tutorial")}"
           class="icon-info"
           onclick="wiki('Heightmap-template-editor')"
         ></button>
         <label
-          data-tip="Enter seed for template to generate the same heightmap each time"
+          data-tip="${t("Enter seed for template to generate the same heightmap each time")}"
         >
-          Seed: <input id="templateSeed" value="" type="number" min="1" max="999999999" step="1" style="width: 8em" />
+          ${t("Seed")}: <input id="templateSeed" value="" type="number" min="1" max="999999999" step="1" style="width: 8em" />
         </label>
       </div>
     </div>`;
@@ -219,56 +220,56 @@ function renderImageConverter(): void {
   destroyDialog("imageConverter");
   const editorHtml = /* html */ `<div id="imageConverter" class="dialog stable">
       <div id="convertImageButtons">
-        <button id="convertImageLoad" data-tip="Load image to convert" class="icon-upload"></button>
+        <button id="convertImageLoad" data-tip="${t("Load image to convert")}" class="icon-upload"></button>
         <button
           id="convertAutoLum"
-          data-tip="Auto-assign colors based on liminosity (good for monochrome images)"
+          data-tip="${t("Auto-assign colors based on liminosity (good for monochrome images)")}"
           class="icon-adjust"
         ></button>
         <button
           id="convertAutoHue"
-          data-tip="Auto-assign colors based on hue (good for colored images)"
+          data-tip="${t("Auto-assign colors based on hue (good for colored images)")}"
           class="icon-paint-roller"
         ></button>
         <button
           id="convertAutoFMG"
-          data-tip="Auto-assign colors using generator scheme (for exported colored heightmaps)"
+          data-tip="${t("Auto-assign colors using generator scheme (for exported colored heightmaps)")}"
           class="icon-layer-group"
         ></button>
-        <button id="convertColorsButton" data-tip="Set maximum number of colors" class="icon-signal"></button>
+        <button id="convertColorsButton" data-tip="${t("Set maximum number of colors")}" class="icon-signal"></button>
         <input id="convertColors" value="100" style="display: none" />
         <button
           id="convertCancel"
-          data-tip="Cancel the conversion. Previous heightmap will be restored"
+          data-tip="${t("Cancel the conversion. Previous heightmap will be restored")}"
           class="icon-cancel"
         ></button>
       </div>
-      <div data-tip="Set opacity of the loaded image" style="padding-top: 0.4em">
-        <i>Overlay opacity:</i><br />
+      <div data-tip="${t("Set opacity of the loaded image")}" style="padding-top: 0.4em">
+        <i>${t("Overlay opacity")}:</i><br />
         <input id="convertOverlay" type="range" min="0" max="1" step=".01" value="0" style="width: 12.6em" />
         <input id="convertOverlayNumber" type="number" min="0" max="1" step=".01" value="0" style="width: 4.2em" />
       </div>
-      <div data-tip="Select a color below and assign a height value for it" id="colorsSelect" style="display: none">
-        <i>Set height: </i>
+      <div data-tip="${t("Select a color below and assign a height value for it")}" id="colorsSelect" style="display: none">
+        <i>${t("Set height")}: </i>
         <span id="colorsSelectValue"></span>
         <span>(<span id="colorsSelectFriendly">0</span>)</span><br />
         <div id="imageConverterPalette"></div>
       </div>
-      <div data-tip="Select a color to re-assign the height value" id="colorsAssigned" style="display: none">
-        <i>Assigned colors (<span id="colorsAssignedNumber"></span>):</i>
+      <div data-tip="${t("Select a color to re-assign the height value")}" id="colorsAssigned" style="display: none">
+        <i>${t("Assigned colors (")}<span id="colorsAssignedNumber"></span>):</i>
         <div id="colorsAssignedContainer" class="colorsContainer"></div>
       </div>
-      <div data-tip="Select a color to assign a height value" id="colorsUnassigned" style="display: none">
-        <i>Unassigned colors (<span id="colorsUnassignedNumber"></span>):</i>
+      <div data-tip="${t("Select a color to assign a height value")}" id="colorsUnassigned" style="display: none">
+        <i>${t("Unassigned colors (")}<span id="colorsUnassignedNumber"></span>):</i>
         <div id="colorsUnassignedContainer" class="colorsContainer"></div>
       </div>
       <button
         id="convertComplete"
-        data-tip="Complete the conversion. All unassigned colors will be considered as ocean"
+        data-tip="${sentences(t("Complete the conversion"), t("All unassigned colors will be considered as ocean"))}"
         style="margin: 0.4em 0"
         class="glow"
       >
-        Complete the conversion
+        ${t("Complete the conversion")}
       </button>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
@@ -332,26 +333,26 @@ function redrawDrainage(): void {
 }
 
 function showModeDialog(tool?: string): void {
-  alertMessage.innerHTML = /* html */ `Heightmap is a core element on which all other data (rivers, burgs, states etc) is based. So the best edit approach is to
-    <i>erase</i> the secondary data and let the system automatically regenerate it on edit completion.
-    <p><i>Erase</i> mode also allows you Convert an Image into a heightmap or use Template Editor.</p>
-    <p>You can <i>keep</i> the data, but you won't be able to change the coastline.</p>
-    <p>Try <i>risk</i> mode to change the coastline and keep the data. The data will be restored as much as possible, but it can cause unpredictable errors.</p>
-    <p>Please <span class="pseudoLink" onclick="window.Services.Save.toMachine()">save the map</span> before editing the heightmap!</p>
-    <p style="margin-bottom: 0">Check out ${link(
-      "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization",
-      "wiki"
-    )} for guidance.</p>`;
+  alertMessage.innerHTML = /* html */ `${t("Heightmap is a core element on which all other data (rivers, burgs, states etc) is based. So the best edit approach is to <i>erase</i> the secondary data and let the system automatically regenerate it on edit completion.")}
+    <p>${t("<i>Erase</i> mode also allows you Convert an Image into a heightmap or use Template Editor.")}</p>
+    <p>${t("You can <i>keep</i> the data, but you won't be able to change the coastline.")}</p>
+    <p>${t("Try <i>risk</i> mode to change the coastline and keep the data. The data will be restored as much as possible, but it can cause unpredictable errors.")}</p>
+    <p>${t("Please {{- save}} before editing the heightmap!", {
+      save: `<span class="pseudoLink" onclick="window.Services.Save.toMachine()">${t("save the map")}</span>`
+    })}</p>
+    <p style="margin-bottom: 0">${t("Check out {{- wiki}} for guidance.", {
+      wiki: link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization", "wiki")
+    })}</p>`;
 
   $("#alert").dialog({
     resizable: false,
-    title: "Edit Heightmap",
+    title: t("Edit Heightmap"),
     width: "28em",
     buttons: {
-      Erase: () => enterHeightmapEditMode("erase", tool),
-      Keep: () => enterHeightmapEditMode("keep", tool),
-      Risk: () => enterHeightmapEditMode("risk", tool),
-      Cancel: function (this: HTMLElement) {
+      [t("Erase")]: () => enterHeightmapEditMode("erase", tool),
+      [t("Keep")]: () => enterHeightmapEditMode("keep", tool),
+      [t("Risk")]: () => enterHeightmapEditMode("risk", tool),
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
@@ -364,7 +365,7 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
 
   customization = 1;
   closeDialogs();
-  tip('Heightmap edit mode is active. Click on "Exit Customization" to finalize the heightmap', true);
+  tip(t("Heightmap edit mode is active. Click on “Exit Customization” to finalize the heightmap"), true);
 
   ensureEl("options")
     .querySelectorAll<HTMLElement>(".tabcontent")
@@ -470,11 +471,11 @@ function getFriendlyHeight(h: number): string {
 // Exit customization mode
 async function finalizeHeightmap(): Promise<void> {
   if (select<SVGElement, unknown>("#viewbox").select("#heights").selectAll("*").size() < 200) {
-    tip("Insufficient land area. There should be at least 200 land cells!", false, "error");
+    tip(t("Insufficient land area. There should be at least 200 land cells!"), false, "error");
     return;
   }
   if (findEl("imageConverter")) {
-    tip("Please exit the Image Conversion mode first", false, "error");
+    tip(t("Please exit the Image Conversion mode first"), false, "error");
     return;
   }
 
@@ -509,7 +510,12 @@ async function finalizeHeightmap(): Promise<void> {
   } catch (error) {
     // the map is left partially rebuilt, but the editor must still be exited, so the user isn't stuck in it
     ERROR && console.error(error);
-    tip(`Failed to apply the edited heightmap: ${(error as Error).message}`, false, "error", 6000);
+    tip(
+      t("Failed to apply the edited heightmap: {{error}}", { error: (error as Error).message }),
+      false,
+      "error",
+      6000
+    );
   }
 
   select<SVGElement, unknown>("#viewbox").selectAll("#heights").remove();
@@ -809,7 +815,7 @@ function restoreRiskedData(): void {
 function updateHeightmap(): void {
   const prev = last(edits);
   const changed = grid.cells.h.reduce((s: number, h: number, i: number) => (h !== prev[i] ? s + 1 : s), 0);
-  tip(`Cells changed: ${changed}`);
+  tip(t("Cells changed: {{cells}}", { cells: changed }));
   if (!changed) return;
 
   const cellTypeFilter = findEl<HTMLSelectElement>("cellTypeFilter")?.value ?? filterState.cellType;
@@ -938,7 +944,7 @@ function openBrushesPanel(): void {
   renderBrushesPanel();
 
   $("#brushesPanel").dialog({
-    title: "Paint Brushes",
+    title: t("Paint Brushes"),
     resizable: false,
     position: { my: "right top", at: "right-10 top+10", of: "svg" },
     close: closeBrushesPanel
@@ -950,104 +956,104 @@ function renderBrushesPanel(): void {
 
   const html = /* html */ `<div id="brushesPanel" class="dialog stable">
     <div id="brushesButtons" style="display: inline-block">
-      <button id="brushRaise" data-tip="Raise brush: increase height of cells in radius by Power value">
+      <button id="brushRaise" data-tip="${t("Raise brush: increase height of cells in radius by Power value")}">
         <svg viewBox="15 15 70 70" height="1em" width="1.6em">
           <path d="m20,39 h60 M50,85 v-35 l-12,8 m12,-8 l12,8" fill="none" stroke="#000" stroke-width="5" />
         </svg>
       </button>
-      <button id="brushElevate" data-tip="Elevate brush: drag to gradually increase height of cells in radius by Power value">
+      <button id="brushElevate" data-tip="${t("Elevate brush: drag to gradually increase height of cells in radius by Power value")}">
         <svg viewBox="15 15 70 70" height="1em" width="1.6em">
           <path d="m20,50 q30,-35 60,0 M50,85 v-35 l-12,8 m12,-8 l12,8" fill="none" stroke="#000" stroke-width="5" />
         </svg>
       </button>
-      <button id="brushLower" data-tip="Lower brush: drag to decrease height of cells in radius by Power value">
+      <button id="brushLower" data-tip="${t("Lower brush: drag to decrease height of cells in radius by Power value")}">
         <svg viewBox="15 15 70 70" height="1em" width="1.6em">
           <path d="M50,30 v35 l-12,-8 m12,8 l12,-8 M20,78 h60" fill="none" stroke="#000" stroke-width="5" />
         </svg>
       </button>
-      <button id="brushDepress" data-tip="Depress brush: drag to gradually decrease height of cells in radius by Power value">
+      <button id="brushDepress" data-tip="${t("Depress brush: drag to gradually decrease height of cells in radius by Power value")}">
         <svg viewBox="15 15 70 70" height="1em" width="1.6em">
           <path d="M50,30 v35 l-12,-8 m12,8 l12,-8 M20,63 q30,35 60,0" fill="none" stroke="#000" stroke-width="5" />
         </svg>
       </button>
-      <button id="brushAlign" data-tip="Align brush: drag to set height of cells in radius to height of the cell at mousepoint">
+      <button id="brushAlign" data-tip="${t("Align brush: drag to set height of cells in radius to height of the cell at mousepoint")}">
         <svg viewBox="15 15 70 70" height="1em" width="1.6em">
           <path d="m20,50 h56 m0,20 h-56" fill="none" stroke="#000" stroke-width="5" />
         </svg>
       </button>
-      <button id="brushSmooth" data-tip="Smooth brush: drag to level height of cells in radius to height of adjacent cells">
+      <button id="brushSmooth" data-tip="${t("Smooth brush: drag to level height of cells in radius to height of adjacent cells")}">
         <svg viewBox="15 15 70 70" height="1em" width="1.6em">
           <path d="m15,60 q15,-15 30,0 q15,15 35,0" fill="none" stroke="#000" stroke-width="5" />
         </svg>
       </button>
-      <button id="brushDisrupt" data-tip="Disrupt brush: drag to randomize height of cells in radius based on Power value">
+      <button id="brushDisrupt" data-tip="${t("Disrupt brush: drag to randomize height of cells in radius based on Power value")}">
         <svg viewBox="15 15 70 70" height="1em" width="1.6em">
           <path d="m15,63 l15,-13 15,20 15,-20 15,19 15,-14" fill="none" stroke="#000" stroke-width="5" />
         </svg>
       </button>
-      <button id="brushFill" data-tip="Fill: click enclosed water or same-height land area to create a cone blob">
+      <button id="brushFill" data-tip="${t("Fill: click enclosed water or same-height land area to create a cone blob")}">
         <svg viewBox="20 10 60 60" height="1em" width="1.6em">
           <path d="M30,70 h40 M30,70 q0,-20 20,-20 q20,0 20,20" fill="none" stroke="#000" stroke-width="5" />
           <path d="M50,20 v25 M50,20 l-10,8 M50,20 l10,8" fill="none" stroke="#000" stroke-width="5" />
         </svg>
       </button>
-      <button id="brushLine" data-tip="Line: select two points to change heights along the line">
+      <button id="brushLine" data-tip="${t("Line: select two points to change heights along the line")}">
         <svg viewBox="0 -5 100 100" height="1em" width="1.6em">
           <path d="M0 90 L100 10" fill="none" stroke="#000" stroke-width="7"></path>
         </svg>
       </button>
     </div>
     <div id="brushesSliders" style="display: none">
-      <div data-tip="Change brush size. Shortcut: + to increase; – to decrease">
+      <div data-tip="${sentences(t("Change brush size"), t("Shortcut: + to increase; – to decrease"))}">
         <slider-input id="heightmapBrushRadius" data-brush-size min="1" max="100" value="25">
-          <div style="width: 3.5em">Radius:</div>
+          <div style="width: 3.5em">${t("Radius")}:</div>
         </slider-input>
       </div>
-      <div data-tip="Change brush power">
+      <div data-tip="${t("Change brush power")}">
         <slider-input id="heightmapBrushPower" data-brush-size min="1" max="10" value="5">
-          <div style="width: 3.5em">Power:</div>
+          <div style="width: 3.5em">${t("Power")}:</div>
         </slider-input>
       </div>
     </div>
     <div id="lineSlider" style="display: none">
-      <div data-tip="Change tool power. Shortcut: + to increase; – to decrease">
+      <div data-tip="${sentences(t("Change tool power"), t("Shortcut: + to increase; – to decrease"))}">
         <slider-input id="heightmapLinePower" data-brush-size min="-100" max="100" value="30">
-          <div style="width: 5.5em">Power:</div>
+          <div style="width: 5.5em">${t("Power")}:</div>
         </slider-input>
       </div>
-      <div data-tip="Change line randomness. Zero makes the line as straight as possible">
+      <div data-tip="${t("Change line randomness. Zero makes the line as straight as possible")}">
         <slider-input id="heightmapLineRandomness" min="0" max="100" value="30">
-          <div style="width: 5.5em">Randomness:</div>
+          <div style="width: 5.5em">${t("Randomness")}:</div>
         </slider-input>
       </div>
     </div>
-    <div data-tip="Restrict brush to specific cell types" style="margin-bottom: 0.6em">
-      <label for="cellTypeFilter"><i>Cells to change:</i></label>
+    <div data-tip="${t("Restrict brush to specific cell types")}" style="margin-bottom: 0.6em">
+      <label for="cellTypeFilter"><i>${t("Cells to change")}:</i></label>
       <select id="cellTypeFilter">
-        <option value="all" ${filterState.cellType === "all" ? "selected" : ""}>all cells</option>
-        <option value="land" ${filterState.cellType === "land" ? "selected" : ""}>only land cells</option>
-        <option value="water" ${filterState.cellType === "water" ? "selected" : ""}>only water cells</option>
+        <option value="all" ${filterState.cellType === "all" ? "selected" : ""}>${t("all cells")}</option>
+        <option value="land" ${filterState.cellType === "land" ? "selected" : ""}>${t("only land cells")}</option>
+        <option value="water" ${filterState.cellType === "water" ? "selected" : ""}>${t("only water cells")}</option>
       </select>
     </div>
     <div id="modifyButtons">
-      <button id="undo" data-tip="Undo the latest action (Ctrl + Z)" class="icon-ccw" disabled></button>
-      <button id="redo" data-tip="Redo the action (Ctrl + Y)" class="icon-cw" disabled></button>
-      <button id="rescaleShow" data-tip="Show rescaler slider" class="icon-exchange"></button>
-      <button id="rescaleCondShow" data-tip="Rescaler: change height if condition is fulfilled" class="icon-if"></button>
-      <button id="smoothHeights" data-tip="Smooth all heights a bit" class="icon-smooth"></button>
-      <button id="disruptHeights" data-tip="Disrupt (randomize) heights a bit" class="icon-disrupt"></button>
-      <button id="brushClear" data-tip="Set height for all cells to 0 (erase the map)" class="icon-eraser"></button>
+      <button id="undo" data-tip="${t("Undo the latest action (Ctrl + Z)")}" class="icon-ccw" disabled></button>
+      <button id="redo" data-tip="${t("Redo the action (Ctrl + Y)")}" class="icon-cw" disabled></button>
+      <button id="rescaleShow" data-tip="${t("Show rescaler slider")}" class="icon-exchange"></button>
+      <button id="rescaleCondShow" data-tip="${t("Rescaler: change height if condition is fulfilled")}" class="icon-if"></button>
+      <button id="smoothHeights" data-tip="${t("Smooth all heights a bit")}" class="icon-smooth"></button>
+      <button id="disruptHeights" data-tip="${t("Disrupt (randomize) heights a bit")}" class="icon-disrupt"></button>
+      <button id="brushClear" data-tip="${t("Set height for all cells to 0 (erase the map)")}" class="icon-eraser"></button>
     </div>
     <div id="rescaleSection" style="display: none">
-      <button id="rescaleHide" data-tip="Hide rescaler slider" class="icon-exchange"></button>
-      <input id="rescaler" data-tip="Change height for all cells" type="range" min="-10" max="10" step="1" value="0" />
+      <button id="rescaleHide" data-tip="${t("Hide rescaler slider")}" class="icon-exchange"></button>
+      <input id="rescaler" data-tip="${t("Change height for all cells")}" type="range" min="-10" max="10" step="1" value="0" />
     </div>
     <div
       id="rescaleCondSection"
-      data-tip="If height is greater or equal to X and less or equal to Y, then perform an operation Z with operand V"
+      data-tip="${t("If height is greater or equal to X and less or equal to Y, then perform an operation Z with operand V")}"
       style="display: none"
     >
-      <button id="rescaleCondHide" data-tip="Hide rescaler" class="icon-if"></button>
+      <button id="rescaleCondHide" data-tip="${t("Hide rescaler")}" class="icon-if"></button>
       <label>h ≥</label>
       <input id="rescaleLower" value="20" type="number" min="0" max="100" />
       <label>≤</label>
@@ -1061,7 +1067,7 @@ function renderBrushesPanel(): void {
         <option value="exponent">^</option>
       </select>
       <input id="rescaleModifier" type="number" value="0.9" min="0" max="1.5" step="0.01" />
-      <button id="rescaleExecute" data-tip="Click to perform an operation" class="icon-play-circled2"></button>
+      <button id="rescaleExecute" data-tip="${t("Click to perform an operation")}" class="icon-play-circled2"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -1173,7 +1179,7 @@ function placeLinearFeature(this: SVGElement, event: any): void {
 
   const power = ensureEl<HTMLInputElement>("heightmapLinePower").valueAsNumber;
   if (power === 0) {
-    tip("Power should not be zero", false, "error");
+    tip(t("Power should not be zero"), false, "error");
     return;
   }
 
@@ -1212,21 +1218,21 @@ function applyFillBrush(this: SVGElement, event: any): void {
 
   const cellTypeFilter = ensureEl<HTMLSelectElement>("cellTypeFilter").value;
   if (cellTypeFilter === "water") {
-    tip("Fill brush is not available with 'only water cells' filter", false, "error");
+    tip(t("Fill brush is not available with 'only water cells' filter"), false, "error");
     return;
   }
   if (cellTypeFilter === "land" && isWaterFill) {
-    tip("Land filter is active, water areas cannot be filled", false, "error");
+    tip(t("Land filter is active, water areas cannot be filled"), false, "error");
     return;
   }
 
   const { selection, reachedBorder } = collectFillSelection(start, isWaterFill, startHeight);
   if (selection.length < MIN_FILL_CELLS) {
-    tip("No enclosed area found to fill", false, "error");
+    tip(t("No enclosed area found to fill"), false, "error");
     return;
   }
   if (isWaterFill && reachedBorder) {
-    tip("Selected water area is open to map border and is not enclosed", false, "error");
+    tip(t("Selected water area is open to map border and is not enclosed"), false, "error");
     return;
   }
 
@@ -1398,7 +1404,7 @@ function changeHeightForSelection(selection: number[], start: number): void {
 function cellTypeFilterChange(): void {
   const cellTypeFilter = ensureEl<HTMLSelectElement>("cellTypeFilter");
   if (cellTypeFilter.value === "land" && ensureEl("heightmapEditMode").innerHTML === "keep") {
-    tip("You cannot change the coastline in 'Keep' edit mode", false, "error");
+    tip(t("You cannot change the coastline in 'Keep' edit mode"), false, "error");
     cellTypeFilter.value = "all";
   }
   filterState.cellType = cellTypeFilter.value as typeof filterState.cellType;
@@ -1425,11 +1431,11 @@ function rescaleWithCondition(): void {
   const operator = ensureEl<HTMLSelectElement>("conditionSign").value;
   const operand = ensureEl<HTMLInputElement>("rescaleModifier").valueAsNumber;
   if (Number.isNaN(operand)) {
-    tip("Operand should be a number", false, "error");
+    tip(t("Operand should be a number"), false, "error");
     return;
   }
   if ((operator === "add" || operator === "subtract") && !Number.isInteger(operand)) {
-    tip("Operand should be an integer", false, "error");
+    tip(t("Operand should be an integer"), false, "error");
     return;
   }
 
@@ -1465,16 +1471,16 @@ function disruptAllHeights(): void {
 function startFromScratch(): void {
   const cellTypeFilter = ensureEl<HTMLSelectElement>("cellTypeFilter").value;
   if (cellTypeFilter === "land") {
-    tip("Not allowed when 'only land cells' filter is set", false, "error");
+    tip(t("Not allowed when 'only land cells' filter is set"), false, "error");
     return;
   }
   if (cellTypeFilter === "water") {
-    tip("Not allowed when 'only water cells' filter is set", false, "error");
+    tip(t("Not allowed when 'only water cells' filter is set"), false, "error");
     return;
   }
   const someHeights = grid.cells.h.some((h: number) => h);
   if (!someHeights) {
-    tip("Heightmap is already cleared, please do not click twice if not required", false, "error");
+    tip(t("Heightmap is already cleared, please do not click twice if not required"), false, "error");
     return;
   }
 
@@ -1488,7 +1494,7 @@ function openTemplateEditor(): void {
   renderTemplateEditor();
 
   $("#templateEditor").dialog({
-    title: "Template Editor",
+    title: t("Template Editor"),
     minHeight: "auto",
     width: "fit-content",
     resizable: false,
@@ -1530,32 +1536,45 @@ function addStep(type: string, count?: string, dist?: string, arg4?: string, arg
   }
 }
 
+const STEP_LABELS: Record<string, string> = {
+  Hill: t("Hill"),
+  Pit: t("Pit"),
+  Range: t("Range"),
+  Trough: t("Trough"),
+  Strait: t("Strait"),
+  Mask: t("Mask"),
+  Invert: t("Invert"),
+  Add: t("Add"),
+  Multiply: t("Multiply"),
+  Smooth: t("Smooth")
+};
+
 function getStepHTML(type: string, count?: string, arg3?: string, arg4?: string, arg5?: string): string {
-  const Trash = /* html */ `<i class="icon-trash-empty pointer" data-tip="Click to remove the step"></i>`;
-  const Hide = /* html */ `<div class="icon-check" data-tip="Click to skip the step"></div>`;
-  const Reorder = /* html */ `<i class="icon-resize-vertical" data-tip="Drag to reorder"></i>`;
-  const common = /* html */ `<div data-type="${type}">${Hide}<div style="width:4em">${type}</div>${Trash}${Reorder}`;
+  const Trash = /* html */ `<i class="icon-trash-empty pointer" data-tip="${t("Click to remove the step")}"></i>`;
+  const Hide = /* html */ `<div class="icon-check" data-tip="${t("Click to skip the step")}"></div>`;
+  const Reorder = /* html */ `<i class="icon-resize-vertical" data-tip="${t("Drag to reorder")}"></i>`;
+  const common = /* html */ `<div data-type="${type}">${Hide}<div style="width:4em">${STEP_LABELS[type] ?? type}</div>${Trash}${Reorder}`;
 
   const TempY = /* html */ `<span>y:
-      <input class="templateY" data-tip="Placement range percentage along Y axis (minY-maxY)" value=${
+      <input class="templateY" data-tip="${t("Placement range percentage along Y axis (minY-maxY)")}" value=${
         arg5 || "20-80"
       } />
     </span>`;
 
   const TempX = /* html */ `<span>x:
-      <input class="templateX" data-tip="Placement range percentage along X axis (minX-maxX)" value=${
+      <input class="templateX" data-tip="${t("Placement range percentage along X axis (minX-maxX)")}" value=${
         arg4 || "15-85"
       } />
     </span>`;
 
   const Height = /* html */ `<span>h:
-      <input class="templateHeight" data-tip="Blob maximum height, use hyphen to get a random number in range" value=${
+      <input class="templateHeight" data-tip="${t("Blob maximum height, use hyphen to get a random number in range")}" value=${
         arg3 || "40-50"
       } />
     </span>`;
 
   const Count = /* html */ `<span>n:
-      <input class="templateCount" data-tip="Blobs to add, use hyphen to get a random number in range" value=${
+      <input class="templateCount" data-tip="${t("Blobs to add, use hyphen to get a random number in range")}" value=${
         count || "1-2"
       } />
     </span>`;
@@ -1567,13 +1586,13 @@ function getStepHTML(type: string, count?: string, arg3?: string, arg4?: string,
   if (type === "Strait") {
     return /* html */ `${common}
       <span>d:
-        <select class="templateDist" data-tip="Strait direction">
-          <option value="vertical" selected>vertical</option>
-          <option value="horizontal">horizontal</option>
+        <select class="templateDist" data-tip="${t("Strait direction")}">
+          <option value="vertical" selected>${t("vertical")}</option>
+          <option value="horizontal">${t("horizontal")}</option>
         </select>
       </span>
       <span>w:
-        <input class="templateCount" data-tip="Strait width, use hyphen to get a random number in range" value=${
+        <input class="templateCount" data-tip="${t("Strait width, use hyphen to get a random number in range")}" value=${
           count || "2-7"
         } />
       </span>
@@ -1582,15 +1601,15 @@ function getStepHTML(type: string, count?: string, arg3?: string, arg4?: string,
 
   if (type === "Invert") {
     return /* html */ `${common}
-      <span>by:
-        <select class="templateDist" data-tip="Mirror heightmap along axis" style="width: 7.8em">
+      <span>${t("by")}:
+        <select class="templateDist" data-tip="${t("Mirror heightmap along axis")}" style="width: 7.8em">
           <option value="x" selected>x</option>
           <option value="y">y</option>
-          <option value="xy">both</option>
+          <option value="xy">${t("both")}</option>
         </select>
       </span>
       <span>n:
-        <input class="templateCount" data-tip="Probability of inversion, range 0-1" value=${count || "0.5"} />
+        <input class="templateCount" data-tip="${t("Probability of inversion, range 0-1")}" value=${count || "0.5"} />
       </span>
     </div>`;
   }
@@ -1599,7 +1618,7 @@ function getStepHTML(type: string, count?: string, arg3?: string, arg4?: string,
     return /* html */ `${common}
       <span>f:
         <input class="templateCount"
-          data-tip="Set masking fraction. 1 - full insulation (prevent land on map edges), 2 - half-insulation, etc. Negative number to inverse the effect"
+          data-tip="${t("Set masking fraction. 1 - full insulation (prevent land on map edges), 2 - half-insulation, etc. Negative number to inverse the effect")}"
           type="number" min=-10 max=10 value=${count || 1} />
       </span>
     </div>`;
@@ -1607,15 +1626,15 @@ function getStepHTML(type: string, count?: string, arg3?: string, arg4?: string,
 
   if (type === "Add") {
     return /* html */ `${common}
-      <span>to:
-        <select class="templateDist" data-tip="Change only land or all cells">
-          <option value="all" selected>all cells</option>
-          <option value="land">land only</option>
-          <option value="interval">interval</option>
+      <span>${t("to")}:
+        <select class="templateDist" data-tip="${t("Change only land or all cells")}">
+          <option value="all" selected>${t("all cells")}</option>
+          <option value="land">${t("land only")}</option>
+          <option value="interval">${t("Interval")}</option>
         </select>
       </span>
       <span>v:
-        <input class="templateCount" data-tip="Add value to height of all cells (negative values are allowed)"
+        <input class="templateCount" data-tip="${t("Add value to height of all cells (negative values are allowed)")}"
         type="number" value=${count || -10} min=-100 max=100 step=1 />
       </span>
     </div>`;
@@ -1623,15 +1642,15 @@ function getStepHTML(type: string, count?: string, arg3?: string, arg4?: string,
 
   if (type === "Multiply") {
     return /* html */ `${common}
-      <span>to:
-        <select class="templateDist" data-tip="Change only land or all cells">
-          <option value="all" selected>all cells</option>
-          <option value="land">land only</option>
-          <option value="interval">interval</option>
+      <span>${t("to")}:
+        <select class="templateDist" data-tip="${t("Change only land or all cells")}">
+          <option value="all" selected>${t("all cells")}</option>
+          <option value="land">${t("land only")}</option>
+          <option value="interval">${t("Interval")}</option>
         </select>
       </span>
       <span>v:
-        <input class="templateCount" data-tip="Multiply all cells Height by the value" type="number"
+        <input class="templateCount" data-tip="${t("Multiply all cells Height by the value")}" type="number"
           value=${count || 1.1} min=0 max=10 step=.1 />
       </span>
     </div>`;
@@ -1640,7 +1659,7 @@ function getStepHTML(type: string, count?: string, arg3?: string, arg4?: string,
   if (type === "Smooth") {
     return /* html */ `${common}
       <span>f:
-        <input class="templateCount" data-tip="Set smooth fraction. 1 - full smooth, 2 - half-smooth, etc."
+        <input class="templateCount" data-tip="${t("Set smooth fraction. 1 - full smooth, 2 - half-smooth, etc.")}"
           type="number" min=1 max=10 step=1 value=${count || 2} />
       </span>
     </div>`;
@@ -1654,7 +1673,7 @@ function setRange(event: Event): void {
   if (target.value !== "interval") return;
 
   prompt(
-    "Set a height interval. Avoid space, use hyphen as a separator",
+    t("Set a height interval. Avoid space, use hyphen as a separator"),
     {
       default: "17-20"
     },
@@ -1677,16 +1696,16 @@ function selectTemplate(e: Event): void {
     return;
   }
 
-  alertMessage.innerHTML = "Are you sure you want to select a different template? All changes will be lost.";
+  alertMessage.innerHTML = t("Are you sure you want to select a different template? All changes will be lost.");
   $("#alert").dialog({
     resizable: false,
-    title: "Change Template",
+    title: t("Change Template"),
     buttons: {
-      Change: function (this: HTMLElement) {
+      [t("Change")]: function (this: HTMLElement) {
         changeTemplate(template);
         $(this).dialog("close");
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
@@ -1703,7 +1722,7 @@ function changeTemplate(template: string): void {
 
   const steps = templateString.split("\n");
   if (!steps.length) {
-    tip(`Heightmap template: no steps defined`, false, "error");
+    tip(t("Heightmap template: no steps defined"), false, "error");
     return;
   }
 
@@ -1791,7 +1810,7 @@ function pickTemplateFile(): void {
 function uploadTemplate(dataLoaded: string): void {
   const steps = dataLoaded.split("\r\n");
   if (!steps.length) {
-    tip("Cannot parse the template, please check the file", false, "error");
+    tip(t("Cannot parse the template, please check the file"), false, "error");
     return;
   }
   ensureEl("templateBody").innerHTML = "";
@@ -1821,7 +1840,7 @@ function openImageConverter(): void {
   renderImageConverter();
 
   $("#imageConverter").dialog({
-    title: "Image Converter",
+    title: t("Image Converter"),
     maxHeight: viewport.height * 0.8,
     minHeight: "auto",
     width: "20em",
@@ -1838,7 +1857,7 @@ function openImageConverter(): void {
 
   setOverlayOpacity(0);
   clearMainTip();
-  tip("Image Converter is opened. Upload image and assign height value for each color", false, "warn"); // main tip
+  tip(t("Image Converter is opened. Upload image and assign height value for each color"), false, "warn"); // main tip
 
   // remove all heights
   grid.cells.h = new Uint8Array(grid.cells.i.length);
@@ -1991,7 +2010,7 @@ function autoAssing(type: string): void {
     heightsFromImage(+ensureEl<HTMLInputElement>("convertColors").value);
     unassigned = colorsUnassignedContainer.querySelectorAll<HTMLElement>("div");
     if (!unassigned.length) {
-      tip("No unassigned colors. Please load an image and click the button again", false, "error");
+      tip(t("No unassigned colors. Please load an image and click the button again"), false, "error");
       return;
     }
   }
@@ -2055,7 +2074,7 @@ function autoAssing(type: string): void {
 
 function setConvertColorsNumber(): void {
   prompt(
-    `Please set maximum number of colors. <br>An actual number is usually lower and depends on color scheme`,
+    `${t("Please set maximum number of colors.")}<br>${t("An actual number is usually lower and depends on color scheme")}`,
     {
       default: +ensureEl<HTMLInputElement>("convertColors").value,
       step: 1,
@@ -2077,7 +2096,7 @@ function setOverlayOpacity(v: number): void {
 
 function applyConversion(): void {
   if (ensureEl("colorsAssignedContainer").childElementCount < 3) {
-    tip("Please assign colors to heights first", false, "error");
+    tip(t("Please assign colors to heights first"), false, "error");
     return;
   }
 
@@ -2110,7 +2129,7 @@ function restoreImageConverterState(): void {
   ensureEl("colorsUnassigned").style.display = "none";
   ensureEl("colorsSelectValue").innerHTML = ensureEl("colorsSelectFriendly").innerHTML = "0";
   select<SVGElement, unknown>("#viewbox").style("cursor", "default").on(".drag", null);
-  tip('Heightmap edit mode is active. Click on "Exit Customization" to finalize the heightmap', true);
+  tip(t("Heightmap edit mode is active. Click on “Exit Customization” to finalize the heightmap"), true);
   $("#imageConverter").dialog("destroy");
   ensureEl("imageConverter").remove();
   openBrushesPanel();
@@ -2119,21 +2138,22 @@ function restoreImageConverterState(): void {
 function closeImageConverter(event: Event): void {
   event.preventDefault();
   event.stopPropagation();
-  alertMessage.innerHTML = /* html */ `Are you sure you want to close the Image Converter? Click "Cancel" to keep editing. Click "Complete" to apply
-  the conversion and close the tool. Click "Close" to discard the conversion and restore the previous heightmap.`;
+  alertMessage.innerHTML = t(
+    "Are you sure you want to close the Image Converter? Click “Cancel” to keep editing. Click “Complete” to apply the conversion and close the tool. Click “Close” to discard the conversion and restore the previous heightmap."
+  );
 
   $("#alert").dialog({
     resizable: false,
-    title: "Close Image Converter",
+    title: t("Close Image Converter"),
     buttons: {
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       },
-      Complete: function (this: HTMLElement) {
+      [t("Complete")]: function (this: HTMLElement) {
         $(this).dialog("close");
         applyConversion();
       },
-      Close: function (this: HTMLElement) {
+      [t("Close")]: function (this: HTMLElement) {
         $(this).dialog("close");
         restoreImageConverterState();
         select<SVGElement, unknown>("#viewbox").select("#heights").selectAll("polygon").remove();
@@ -2154,7 +2174,7 @@ function toggleHeightmapPreview(): void {
   preview.width = grid.cellsX;
   preview.height = grid.cellsY;
   document.body.insertBefore(preview, ensureEl("optionsContainer"));
-  preview.addEventListener("mouseover", () => tip("Heightmap preview. Click to download a screen-sized image"));
+  preview.addEventListener("mouseover", () => tip(t("Heightmap preview. Click to download a screen-sized image")));
   preview.addEventListener("click", downloadPreview);
   drawHeightmapPreview();
 }

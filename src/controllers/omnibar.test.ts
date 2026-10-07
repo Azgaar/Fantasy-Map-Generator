@@ -454,7 +454,7 @@ describe("Omnibar public behavior", () => {
     Omnibar.open();
     search("burg");
     expect(rows()).toHaveLength(50);
-    expect(document.getElementById("omnibar-status")?.textContent).toMatch(/^50 of \d+ results/);
+    expect(document.getElementById("omnibar-status")?.textContent).toMatch(/^Results: 50 of \d+ /);
   });
 
   it("keeps the browser's save dialog and help keys out while it is open", () => {

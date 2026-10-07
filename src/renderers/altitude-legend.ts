@@ -3,6 +3,7 @@
 import { extent } from "d3";
 import { tip } from "@/components/tooltips";
 import { getHeightUnitRatio, metersToHeight } from "@/utils";
+import { t } from "@/utils/i18n";
 import { hasHeightTints } from "./draw-heightmap";
 import { clearLegend, drawLegend, hasLegend } from "./draw-legend";
 import { HeightmapColorSchemes } from "./heightmap-color-schemes";
@@ -75,7 +76,7 @@ function drawAltitudeLegend(): void {
   const rows = getLegendRows();
   if (!rows.length) {
     clearLegend(LEGEND_NAME);
-    return void tip("The heightmap style has no elevation colors to show", false, "error");
+    return void tip(t("The heightmap style has no elevation colors to show"), false, "error");
   }
   drawLegend(
     LEGEND_NAME,

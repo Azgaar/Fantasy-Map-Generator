@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { Catalog, t } from "./i18n";
+import { Catalog, sentences, t } from "./i18n";
 
 const ENGLISH = {
   "{{count}} burgs_one": "{{count}} burg",
@@ -65,9 +65,25 @@ describe("t", () => {
     expect(t("{{layer}}: click to toggle")).toBe("{{layer}}: нажмите, чтобы переключить");
   });
 
+  it("inserts a {{- value}} as is, for markup or a text-only sink", () => {
+    expect(t("Open {{- link}} or {{name}}", { link: "<a>wiki</a>", name: "<b>" })).toBe(
+      "Open <a>wiki</a> or &lt;b&gt;"
+    );
+  });
+
   it("loads a shipped language from its locale file", async () => {
     await Catalog.load("ru");
     expect(Catalog.language).toBe("ru");
     expect(t("Rivers")).toBe("Реки");
+  });
+});
+
+describe("sentences", () => {
+  it("ends every sentence but the last with a period unless it has its own punctuation", () => {
+    expect(sentences("State name", "Click to change")).toBe("State name. Click to change");
+    expect(sentences("Remove the state?", "This action cannot be reverted")).toBe(
+      "Remove the state? This action cannot be reverted"
+    );
+    expect(sentences("Population: 5")).toBe("Population: 5");
   });
 });

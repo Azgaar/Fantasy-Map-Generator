@@ -1,4 +1,5 @@
 import { getHeight, rn } from "@/utils";
+import { t } from "@/utils/i18n";
 import { convertTemperature, ensureEl, list } from "../utils";
 
 type ParamType = "none" | "number" | "biomes" | "shore" | "featureType";
@@ -25,122 +26,122 @@ interface DistCondition {
 const FN_DEFS: FnDef[] = [
   {
     id: "biome",
-    label: "Biome",
+    label: t("Biome"),
     paramType: "biomes",
-    description: "Cells in specific biomes"
+    description: t("Cells in specific biomes")
   },
   {
     id: "minHeight",
-    label: "Min Height",
+    label: t("Min Height"),
     paramType: "number",
     paramLabel: "Height (0–100)",
     defaultVal: "40",
-    description: "Cells at or above a height",
-    note: "20: sea level, 50: highlands, 70: mountains."
+    description: t("Cells at or above a height"),
+    note: t("20: sea level, 50: highlands, 70: mountains.")
   },
   {
     id: "maxHeight",
-    label: "Max Height",
+    label: t("Max Height"),
     paramType: "number",
     paramLabel: "Height (0–100)",
     defaultVal: "40",
-    description: "Cells at or below a height",
-    note: "20: sea level, 50: highlands, 70: mountains."
+    description: t("Cells at or below a height"),
+    note: t("20: sea level, 50: highlands, 70: mountains.")
   },
   {
     id: "minTemp",
-    label: "Min Temperature",
+    label: t("Min Temperature"),
     paramType: "number",
     paramLabel: "Temp (°C)",
     defaultVal: "10",
-    description: "Cells with average temperature at or above a value",
-    note: "-18°C: polar, 18°C: tropical."
+    description: t("Cells with average temperature at or above a value"),
+    note: t("-18°C: polar, 18°C: tropical.")
   },
   {
     id: "maxTemp",
-    label: "Max Temperature",
+    label: t("Max Temperature"),
     paramType: "number",
     paramLabel: "Temp (°C)",
     defaultVal: "5",
-    description: "Cells with average temperature at or below a value",
-    note: "-18°C: polar, 18°C: tropical."
+    description: t("Cells with average temperature at or below a value"),
+    note: t("-18°C: polar, 18°C: tropical.")
   },
   {
     id: "shore",
-    label: "Shore Proximity",
+    label: t("Shore Proximity"),
     paramType: "shore",
-    description: "Cells by proximity to water",
-    note: "-1: shallow ocean, -2: deep ocean, 1: coastal land, 2: near coast land."
+    description: t("Cells by proximity to water"),
+    note: t("-1: shallow ocean, -2: deep ocean, 1: coastal land, 2: near coast land.")
   },
   {
     id: "type",
-    label: "Waterbody Type",
+    label: t("Waterbody Type"),
     paramType: "featureType",
-    description: "Cells by waterbody type"
+    description: t("Cells by waterbody type")
   },
   {
     id: "river",
-    label: "River",
+    label: t("River"),
     paramType: "none",
-    description: "Cells that have a river flowing"
+    description: t("Cells that have a river flowing")
   },
   {
     id: "minHabitability",
-    label: "Min Habitability",
+    label: t("Min Habitability"),
     paramType: "number",
     paramLabel: "Habitability (0–100)",
     defaultVal: "20",
-    description: "Cells where biome habitability is at or above a value"
+    description: t("Cells where biome habitability is at or above a value")
   },
   {
     id: "habitability",
-    label: "Habitability",
+    label: t("Habitability"),
     paramType: "none",
-    description: "Favors more habitable cells",
-    note: "Higher chance in habitable biomes."
+    description: t("Favors more habitable cells"),
+    note: t("Higher chance in habitable biomes.")
   },
   {
     id: "elevation",
-    label: "Elevation",
+    label: t("Elevation"),
     paramType: "none",
-    description: "Favors higher elevated cells",
-    note: "Higher chance at higher altitudes."
+    description: t("Favors higher elevated cells"),
+    note: t("Higher chance at higher altitudes.")
   },
   {
     id: "random",
-    label: "Random Chance",
+    label: t("Random Chance"),
     paramType: "number",
     paramLabel: "Chance (%)",
     defaultVal: "50",
-    description: "Probability to receive the good",
-    note: "random(50): 50% chance per cell."
+    description: t("Probability to receive the good"),
+    note: t("random(50): 50% chance per cell.")
   },
   {
     id: "nth",
-    label: "Every Nth Cell",
+    label: t("Every Nth Cell"),
     paramType: "number",
     paramLabel: "N",
     defaultVal: "5",
-    description: "Regular distribution pattern",
-    note: "nth(5): 1 in 5 eligible cells."
+    description: t("Regular distribution pattern"),
+    note: t("nth(5): 1 in 5 eligible cells.")
   }
 ];
 
 const SHORE_OPTIONS = [
-  { value: "-2", label: "Deep Ocean" },
-  { value: "-1", label: "Shallow Ocean (adjacent to land)" },
-  { value: "1", label: "Coastal Land (adjacent to water)" },
-  { value: "2", label: "Near Coast Land" }
+  { value: "-2", label: t("Deep Ocean") },
+  { value: "-1", label: t("Shallow Ocean (adjacent to land)") },
+  { value: "1", label: t("Coastal Land (adjacent to water)") },
+  { value: "2", label: t("Near Coast Land") }
 ];
 
 const FEATURE_TYPE_OPTIONS = [
-  { value: "ocean", label: "Ocean / Sea" },
-  { value: "freshwater", label: "Freshwater Lake" },
-  { value: "salt", label: "Salt Lake" },
-  { value: "dry", label: "Dry Lake" },
-  { value: "lava", label: "Lava Lake" },
-  { value: "frozen", label: "Frozen Lake" },
-  { value: "sinkhole", label: "Sinkhole" }
+  { value: "ocean", label: t("Ocean / Sea") },
+  { value: "freshwater", label: t("Freshwater lake") },
+  { value: "salt", label: t("Salt lake") },
+  { value: "dry", label: t("Dry lake") },
+  { value: "lava", label: t("Lava lake") },
+  { value: "frozen", label: t("Frozen lake") },
+  { value: "sinkhole", label: t("Sinkhole") }
 ];
 
 function createDefaultCondition(): DistCondition {
@@ -233,14 +234,14 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
     pickerEl.appendChild(grid);
 
     $(pickerEl).dialog({
-      title: "Select Biomes",
+      title: t("Select Biomes"),
       width: "34em",
       resizable: false,
       buttons: {
-        Cancel: function () {
+        [t("Cancel")]: function () {
           $(this).dialog("close");
         },
-        Apply: function () {
+        [t("Apply")]: function () {
           cond.biomeIds = entries.filter(e => e.cb.checked).map(e => e.id);
           onApplied();
           $(this).dialog("close");
@@ -276,14 +277,14 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
     pickerEl.appendChild(list);
 
     $(pickerEl).dialog({
-      title: "Select Feature Types",
+      title: t("Select Feature Types"),
       width: "18em",
       resizable: false,
       buttons: {
-        Cancel: function () {
+        [t("Cancel")]: function () {
           $(this).dialog("close");
         },
-        Apply: function () {
+        [t("Apply")]: function () {
           cond.typeValues = entries.filter(e => e.cb.checked).map(e => e.value);
           onApplied();
           $(this).dialog("close");
@@ -319,14 +320,14 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
     pickerEl.appendChild(list);
 
     $(pickerEl).dialog({
-      title: "Select Shore Proximity",
+      title: t("Select Shore Proximity"),
       width: "18em",
       resizable: false,
       buttons: {
-        Cancel: function () {
+        [t("Cancel")]: function () {
           $(this).dialog("close");
         },
-        Apply: function () {
+        [t("Apply")]: function () {
           cond.shoreValues = entries.filter(e => e.cb.checked).map(e => e.value);
           onApplied();
           $(this).dialog("close");
@@ -347,7 +348,7 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
     if (def.paramType === "none") {
       const span = document.createElement("span");
       span.className = "ded-no-params";
-      span.textContent = "no parameters";
+      span.textContent = t("no parameters");
       container.appendChild(span);
     } else if (def.paramType === "number") {
       const wrap = document.createElement("div");
@@ -378,7 +379,7 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
       refreshBiomeSummary();
       const editBtn = document.createElement("button");
       editBtn.className = "icon-pencil ded-row-edit-btn";
-      editBtn.title = "Select biomes";
+      editBtn.title = t("Select Biomes");
       editBtn.addEventListener("click", () =>
         openBiomePicker(cond, () => {
           refreshBiomeSummary();
@@ -395,13 +396,13 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
       summary.className = "ded-picker-summary";
       const refreshShoreSummary = () => {
         if (!cond.shoreValues.length) {
-          summary.textContent = "none";
+          summary.textContent = t("None");
         } else {
           const LABELS: Record<string, string> = {
-            "-2": "Deep Ocean",
-            "-1": "Shallow Ocean",
-            "1": "Coastal Land",
-            "2": "Near Coast"
+            "-2": t("Deep Ocean"),
+            "-1": t("Shallow Ocean"),
+            "1": t("Coastal Land"),
+            "2": t("Near Coast")
           };
           summary.textContent = cond.shoreValues.map(v => LABELS[v] ?? v).join(", ");
         }
@@ -409,7 +410,7 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
       refreshShoreSummary();
       const editBtn = document.createElement("button");
       editBtn.className = "icon-pencil ded-row-edit-btn";
-      editBtn.title = "Select shore proximity";
+      editBtn.title = t("Select Shore Proximity");
       editBtn.addEventListener("click", () =>
         openShorePicker(cond, () => {
           refreshShoreSummary();
@@ -430,7 +431,7 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
       refreshTypeSummary();
       const editBtn = document.createElement("button");
       editBtn.className = "icon-pencil ded-row-edit-btn";
-      editBtn.title = "Select feature types";
+      editBtn.title = t("Select Feature Types");
       editBtn.addEventListener("click", () =>
         openFeatureTypePicker(cond, () => {
           refreshTypeSummary();
@@ -457,7 +458,7 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
     notCb.type = "checkbox";
     notCb.className = "native";
     notCb.checked = cond.negate;
-    notCb.title = "Negate — match cells where this condition is FALSE";
+    notCb.title = t("Negate — match cells where this condition is FALSE");
     notCb.addEventListener("change", () => {
       cond.negate = notCb.checked;
       updateOutput();
@@ -495,7 +496,7 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
 
     const removeBtn = document.createElement("button");
     removeBtn.className = "icon-trash-empty ded-remove-btn";
-    removeBtn.title = "Remove this condition";
+    removeBtn.title = t("Remove this condition");
     removeBtn.addEventListener("click", () => {
       groups[groupIdx].splice(condIdx, 1);
       if (!groups[groupIdx].length) {
@@ -518,7 +519,7 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
       if (groupIdx > 0) {
         const orSep = document.createElement("div");
         orSep.className = "ded-or-sep";
-        orSep.textContent = "— OR —";
+        orSep.textContent = t("— OR —");
         groupList.appendChild(orSep);
       }
 
@@ -529,7 +530,7 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
         if (condIdx > 0) {
           const andLabel = document.createElement("div");
           andLabel.className = "ded-and-label";
-          andLabel.textContent = "AND";
+          andLabel.textContent = t("and").toUpperCase();
           groupBox.appendChild(andLabel);
         }
         groupBox.appendChild(buildConditionRow(cond, groupIdx, condIdx));
@@ -539,7 +540,7 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
       footer.className = "ded-group-footer";
 
       const addCondBtn = document.createElement("button");
-      addCondBtn.textContent = "+ Add condition";
+      addCondBtn.textContent = t("+ Add condition");
       addCondBtn.addEventListener("click", () => {
         group.push(createDefaultCondition());
         renderGroupList();
@@ -630,23 +631,23 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
 
     <div class="ded-wrap">
       <div class="ded-info">
-        Distribution controls where this raw good spawns. Leave empty for manufactured-only goods.
+        ${t("Distribution controls where this raw good spawns. Leave empty for manufactured-only goods.")}
       </div>
       <div class="ded-body">
         <div class="ded-builder">
           <div id="distGroupList" class="ded-group-list"></div>
-          <button id="distAddGroup" class="ded-add-or-btn">+ Add OR group</button>
+          <button id="distAddGroup" class="ded-add-or-btn">${t("+ Add OR group")}</button>
           <div class="ded-output">
-            <div class="ded-output-label">Distribution</div>
+            <div class="ded-output-label">${t("Distribution")}</div>
             <div class="ded-output-row">
               <input id="distExprOutput" class="ded-expr-input" readonly value="" />
-              <span id="distCellCount" class="ded-cell-count">0 cells (0%)</span>
+              <span id="distCellCount" class="ded-cell-count">${t("0 cells (0%)")}</span>
             </div>
           </div>
           <div id="distHumanPreview" class="ded-human-preview"></div>
         </div>
         <div class="ded-ref">
-          <div class="ded-ref-title">Function Reference</div>
+          <div class="ded-ref-title">${t("Function Reference")}</div>
           ${refHtml}
         </div>
       </div>
@@ -663,14 +664,14 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
   });
 
   $(popupEl).dialog({
-    title: "Distribution Editor",
+    title: t("Distribution Editor"),
     width: "60em",
     resizable: true,
     buttons: {
-      Cancel: function () {
+      [t("Cancel")]: function () {
         $(this).dialog("close");
       },
-      Apply: function () {
+      [t("Apply")]: function () {
         const expr = generateExpression();
         onApply(expr);
         $(this).dialog("close");

@@ -25,6 +25,7 @@ import {
   rn,
   unique
 } from "@/utils";
+import { t } from "@/utils/i18n";
 import {
   convertBlurFilters,
   getReferencedDefinitions,
@@ -74,7 +75,12 @@ async function exportToSvg(): Promise<void> {
     tip(message, true, "success", 5000);
   } catch (error) {
     ERROR && console.error(error);
-    tip(`SVG export failed: ${(error as Error)?.message || "Unknown error"}`, true, "error", 5000);
+    tip(
+      t("SVG export failed: {{error}}", { error: (error as Error)?.message || t("Unknown error") }),
+      true,
+      "error",
+      5000
+    );
   } finally {
     TIME && console.timeEnd("exportToSvg");
   }
@@ -112,11 +118,16 @@ async function exportToPng(): Promise<void> {
       window.URL.revokeObjectURL(link.href);
     }, 1000);
 
-    const message = `${savedMessage(link.download)}. You can set image scale in options`;
+    const message = `${savedMessage(link.download)}. ${t("You can set image scale in options")}`;
     tip(message, true, "success", 5000);
   } catch (error) {
     ERROR && console.error(error);
-    tip(`PNG export failed: ${(error as Error)?.message || "Unknown error"}`, true, "error", 5000);
+    tip(
+      t("PNG export failed: {{error}}", { error: (error as Error)?.message || t("Unknown error") }),
+      true,
+      "error",
+      5000
+    );
   } finally {
     TIME && console.timeEnd("exportToPng");
   }
@@ -184,7 +195,12 @@ async function exportToJpeg(): Promise<void> {
     window.setTimeout(() => window.URL.revokeObjectURL(link.href), 5000);
   } catch (error) {
     ERROR && console.error(error);
-    tip(`JPEG export failed: ${(error as Error)?.message || "Unknown error"}`, true, "error", 5000);
+    tip(
+      t("JPEG export failed: {{error}}", { error: (error as Error)?.message || t("Unknown error") }),
+      true,
+      "error",
+      5000
+    );
   } finally {
     TIME && console.timeEnd("exportToJpeg");
   }
@@ -192,7 +208,7 @@ async function exportToJpeg(): Promise<void> {
 
 async function exportToPngTiles(): Promise<void> {
   const status = ensureEl("tileStatus");
-  status.innerHTML = "Preparing files...";
+  status.innerHTML = t("Preparing files...");
 
   const urlSchema = await getMapURL("tiles", { debug: true, fullMap: true });
   await loadScript("libs/jszip.min.js");
@@ -207,7 +223,7 @@ async function exportToPngTiles(): Promise<void> {
   imgSchema.src = urlSchema;
   await loadImage(imgSchema);
 
-  status.innerHTML = "Rendering schema...";
+  status.innerHTML = t("Rendering schema...");
   ctx.drawImage(imgSchema, 0, 0, canvas.width, canvas.height);
   const blob = await canvasToBlob(canvas, "image/png");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -241,7 +257,11 @@ async function exportToPngTiles(): Promise<void> {
     const rowName = getRowLabel(row);
 
     for (let x = 0, cell = 1; x + tileW <= options.map.graph.width; x += tileW, cell++, id++) {
-      status.innerHTML = `Rendering tile ${rowName}${cell} (${id} of ${tolesTotal})...`;
+      status.innerHTML = t("Rendering tile {{tile}} ({{number}} of {{total}})...", {
+        tile: `${rowName}${cell}`,
+        number: id,
+        total: tolesTotal
+      });
       ctx.drawImage(img, x, y, tileW, tileH, 0, 0, width, height);
       const blob = await canvasToBlob(canvas, "image/png");
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -249,11 +269,11 @@ async function exportToPngTiles(): Promise<void> {
     }
   }
 
-  status.innerHTML = "Zipping files...";
+  status.innerHTML = t("Zipping files...");
   zip
     .generateAsync({ type: "blob" })
     .then((blob: Blob) => {
-      status.innerHTML = "Downloading the archive...";
+      status.innerHTML = t("Downloading the archive...");
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
       link.download = `${getFileName()}.zip`;
@@ -265,8 +285,13 @@ async function exportToPngTiles(): Promise<void> {
     })
     .catch((error: Error) => {
       ERROR && console.error(error);
-      status.innerHTML = "Tiles export failed";
-      tip(`PNG tiles export failed: ${error?.message || "Unknown error"}`, true, "error", 5000);
+      status.innerHTML = t("Tiles export failed");
+      tip(
+        t("PNG tiles export failed: {{error}}", { error: error?.message || t("Unknown error") }),
+        true,
+        "error",
+        5000
+      );
     });
 
   // promisified img.onload

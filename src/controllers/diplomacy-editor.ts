@@ -9,6 +9,7 @@ import { removeRelationsMark, showRelations } from "@/renderers/overlays/diploma
 import type { Point } from "@/types/global";
 import { ensureEl, findEl } from "@/utils";
 import { createBrushStroke } from "@/utils/brushUtils";
+import { t } from "@/utils/i18n";
 
 interface EditorOptions {
   /** another state was picked in the editor */
@@ -41,7 +42,7 @@ function open(state = 0, editorOptions?: EditorOptions): void {
 
   const states = pack.states.filter(s => s.i && !s.removed);
   if (states.length < 2) {
-    tip("There should be at least 2 states to edit the diplomacy", false, "error");
+    tip(t("There should be at least 2 states to edit the diplomacy"), false, "error");
     return;
   }
   if (editorOptions) options = editorOptions;
@@ -66,13 +67,13 @@ function open(state = 0, editorOptions?: EditorOptions): void {
     );
 
   $(`#${dialogId}`).dialog({
-    title: "Diplomacy Editor",
+    title: t("Diplomacy Editor"),
     resizable: false,
     width: "fit-content",
     position: { my: "right top-27", at: "left-10 top", of: "#diplomacyOverview", collision: "fit" },
     close: onDialogClose
   });
-  tip("Click or drag over states to set their relation. Shift + click to select another state", true);
+  tip(t("Click or drag over states to set their relation. Shift + click to select another state"), true);
 }
 
 function close(): void {
@@ -82,9 +83,9 @@ function close(): void {
 function renderDialog(states: typeof pack.states): void {
   const relations = Object.entries(RELATIONS)
     .map(
-      ([relation, { color, tip }]) => /* html */ `<label class="pointer" data-tip="${tip}">
+      ([relation, { color, tip, label }]) => /* html */ `<label class="pointer" data-tip="${tip}">
         <input type="radio" name="diplomacyRelation" value="${relation}" ${relation === chosenRelation ? "checked" : ""} />
-        <fill-box fill="${color}" size=".8em"></fill-box>${relation}
+        <fill-box fill="${color}" size=".8em"></fill-box>${label}
       </label>`
     )
     .join("");
@@ -96,15 +97,15 @@ function renderDialog(states: typeof pack.states): void {
   ensureEl("dialogs").insertAdjacentHTML(
     "beforeend",
     /* html */ `<div id="${dialogId}" class="dialog" style="display: flex; flex-direction: column; gap: 0.3em">
-      <label style="display: flex; align-items: center; gap: 0.3em" data-tip="States you click get the chosen relation to this state. Shift + click on the map to select another state">
-        Relations to
+      <label style="display: flex; align-items: center; gap: 0.3em" data-tip="${t("States you click get the chosen relation to this state. Shift + click on the map to select another state")}">
+        ${t("Relations to")}
         <select id="diplomacyEditorState" style="flex-grow: 1">${sources}</select>
       </label>
       <div style="display: grid; grid-template-rows: repeat(3, auto); grid-auto-flow: column; gap: .2em">${relations}</div>
       <div style="margin-top: .3em">
-        <button id="diplomacyEditorUndo" aria-label="Undo" data-tip="Undo last change" class="icon-ccw" disabled></button>
-        <button id="diplomacyEditorApply" aria-label="Apply" data-tip="Apply changes" class="icon-check"></button>
-        <button id="diplomacyEditorDiscard" aria-label="Discard" data-tip="Discard all changes since the last Apply" class="icon-cancel" disabled></button>
+        <button id="diplomacyEditorUndo" aria-label="${t("Undo")}" data-tip="${t("Undo last change")}" class="icon-ccw" disabled></button>
+        <button id="diplomacyEditorApply" aria-label="${t("Apply")}" data-tip="${t("Apply changes")}" class="icon-check"></button>
+        <button id="diplomacyEditorDiscard" aria-label="${t("Discard")}" data-tip="${t("Discard all changes since the last Apply")}" class="icon-cancel" disabled></button>
       </div>
     </div>`
   );

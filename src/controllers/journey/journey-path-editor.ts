@@ -6,7 +6,8 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import type { TransportDomain } from "@/generators/transports-generator";
 import type { Journey, JourneyPoint, JourneySegment } from "@/types/Journey";
-import { ensureEl, escapeHtml, findEl, getPointer, rn } from "@/utils";
+import { ensureEl, findEl, getPointer, rn } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { createEl } from "@/utils/nodeUtils";
 
 const OVERLAY_ID = "journeyOverlay";
@@ -15,9 +16,9 @@ const ERROR_TIP_TIME = 8000;
 const warn = (message: string) => tip(message, true, "error", ERROR_TIP_TIME);
 
 const HINTS = {
-  pick: "Click a cell on the map to set the endpoint. Esc to cancel.",
-  points: "Drag points to move, click the path to add, right-click a point to remove. Esc to finish.",
-  draw: "Click cells to add points. Enter to finish, right-click to undo, Esc to cancel."
+  pick: t("Click a cell on the map to set the endpoint. Esc to cancel."),
+  points: t("Drag points to move, click the path to add, right-click a point to remove. Esc to finish."),
+  draw: t("Click cells to add points. Enter to finish, right-click to undo, Esc to cancel.")
 };
 
 type Mode =
@@ -60,7 +61,7 @@ export class JourneyPathEditor {
     } else {
       const seg = this.host.getSegment(segmentId);
       if (!seg || seg.points.length < 2) {
-        warn("This segment has no path yet: set both endpoints first");
+        warn(t("This segment has no path yet: set both endpoints first"));
         return;
       }
       this.setMode({ kind: "points", segmentId });
@@ -196,7 +197,9 @@ export class JourneyPathEditor {
 
     const domain = Transports.getDomain(seg.transport);
     if (!Journeys.isValidEndpoint(cellId, domain)) {
-      warn(`Can't put an endpoint there — ${terrainRejection(cellId, domain, seg.transport)}`);
+      warn(
+        t("Can't put an endpoint there — {{- reason}}", { reason: terrainRejection(cellId, domain, seg.transport) })
+      );
       return;
     }
 
@@ -213,9 +216,13 @@ export class JourneyPathEditor {
     // recomputeSegment never overwrites a custom path, so a silent endpoint change would desync it
     if (seg.custom) {
       confirmationDialog({
-        title: "Overwrite custom path?",
-        message: `Segment "<b>${escapeHtml(seg.name)}</b>" has a custom-drawn path. Moving an endpoint replaces it with the pathfinder's route. Continue?`,
-        confirm: "Replace",
+        title: t("Overwrite custom path?"),
+        message: sentences(
+          t("Segment “<b>{{segment}}</b>” has a custom-drawn path", { segment: seg.name }),
+          t("Moving an endpoint replaces it with the pathfinder's route"),
+          t("Continue?")
+        ),
+        confirm: t("Replace"),
         onConfirm: () => {
           seg.custom = false;
           apply();
@@ -262,7 +269,7 @@ export class JourneyPathEditor {
         seg.from = originalFrom;
         seg.to = originalTo;
         syncGeometry(seg);
-        warn(`Point reverted — ${terrainRejection(droppedCell, domain, seg.transport)}`);
+        warn(t("Point reverted — {{- reason}}", { reason: terrainRejection(droppedCell, domain, seg.transport) }));
       }
       this.host.refresh();
     });
@@ -279,7 +286,7 @@ export class JourneyPathEditor {
 
     const domain = Transports.getDomain(seg.transport);
     if (!Journeys.isValidPathPoint(cellId, domain)) {
-      warn(`Can't add a point there — ${terrainRejection(cellId, domain, seg.transport)}`);
+      warn(t("Can't add a point there — {{- reason}}", { reason: terrainRejection(cellId, domain, seg.transport) }));
       return;
     }
 
@@ -294,7 +301,7 @@ export class JourneyPathEditor {
     if (!seg) return;
 
     if (seg.points.length <= 2) {
-      warn("A path needs at least two points.");
+      warn(t("A path needs at least two points."));
       return;
     }
 
@@ -315,13 +322,13 @@ export class JourneyPathEditor {
     // a mid-path point valid only as an endpoint (e.g. a port) can never be continued from
     const last = points.length > 1 ? points[points.length - 1] : undefined;
     if (last && !Journeys.isValidPathPoint(last[2], domain)) {
-      warn("The path reached a terminal point — finish the drawing there, or undo it with a right-click.");
+      warn(t("The path reached a terminal point — finish the drawing there, or undo it with a right-click."));
       return;
     }
 
     // any click may turn out to be the last one, so cells valid only as endpoints are accepted too
     if (!Journeys.isValidPathPoint(cellId, domain) && !Journeys.isValidEndpoint(cellId, domain)) {
-      warn(`Can't add a point there — ${terrainRejection(cellId, domain, seg.transport)}`);
+      warn(t("Can't add a point there — {{- reason}}", { reason: terrainRejection(cellId, domain, seg.transport) }));
       return;
     }
 
@@ -345,7 +352,7 @@ export class JourneyPathEditor {
 
     const points = this.mode.points;
     if (points.length < 2) {
-      warn("A custom path needs at least two points.");
+      warn(t("A custom path needs at least two points."));
       return;
     }
 
@@ -353,7 +360,11 @@ export class JourneyPathEditor {
     // mid-draw, so the finished path has to be re-checked as a whole
     const domain = Transports.getDomain(seg.transport);
     if (!Journeys.isValidPath(points, domain)) {
-      warn(`This path isn't valid for a ${domain} transport type — right-click to undo the bad points.`);
+      warn(
+        domain === "land"
+          ? t("This path isn't valid for a land transport type — right-click to undo the bad points.")
+          : t("This path isn't valid for a water transport type — right-click to undo the bad points.")
+      );
       return;
     }
 
@@ -382,8 +393,11 @@ export function recomputeSegment(seg: JourneySegment): void {
   const domain = Transports.getDomain(seg.transport);
   if (result.errorCode) {
     alertDialog({
-      title: `Can't use ${seg.transport} here`,
-      message: `Segment "<b>${escapeHtml(seg.name)}</b>": ${domainMismatchMessage(seg, domain) ?? result.warning}`
+      title: t("Can't use {{- transport}} here", { transport: seg.transport }),
+      message: t("Segment “<b>{{segment}}</b>”: {{- problem}}", {
+        segment: seg.name,
+        problem: domainMismatchMessage(seg, domain) ?? result.warning
+      })
     });
   } else tip(result.warning, true, "warn", 8000);
 }
@@ -394,24 +408,34 @@ export function domainMismatchMessage(seg: JourneySegment, domain: TransportDoma
   for (const endpoint of ["from", "to"] as const) {
     const cellId = seg[endpoint];
     if (cellId !== undefined && !Journeys.isValidEndpoint(cellId, domain)) {
-      bad.push(`<b>${endpoint}</b> is a ${Journeys.describeCell(cellId)}`);
+      const cell = Journeys.describeCell(cellId);
+      bad.push(endpoint === "from" ? t("<b>from</b> is a {{cell}}", { cell }) : t("<b>to</b> is a {{cell}}", { cell }));
     }
   }
   if (!bad.length) return null;
 
-  const need =
+  const rule =
     domain === "land"
-      ? "endpoints must be on land (coastal is fine)"
-      : "endpoints must be in water, on a coast touching water, or on a navigable river";
-  return `${bad.join(" and ")}.<br/><br/>This transport type is <b>${domain}</b> — ${need}.`;
+      ? t("This transport type is <b>land</b> — endpoints must be on land (coastal is fine).")
+      : t(
+          "This transport type is <b>water</b> — endpoints must be in water, on a coast touching water, or on a navigable river."
+        );
+  return `${bad.join(` ${t("and")} `)}.<br/><br/>${rule}`;
 }
 
 type DragStart = D3DragEvent<SVGCircleElement, unknown, unknown>;
 
 function terrainRejection(cellId: number, domain: TransportDomain, transport: string): string {
-  const rule =
-    domain === "land" ? "its path has to stay on land" : "its path has to stay on water or a navigable river";
-  return `${transport} is a ${domain} transport — ${rule}. That spot is a ${Journeys.describeCell(cellId)}.`;
+  const cell = Journeys.describeCell(cellId);
+  return domain === "land"
+    ? sentences(
+        t("{{transport}} is a land transport — its path has to stay on land", { transport }),
+        t("That spot is a {{cell}}", { cell })
+      )
+    : sentences(
+        t("{{transport}} is a water transport — its path has to stay on water or a navigable river", { transport }),
+        t("That spot is a {{cell}}", { cell })
+      );
 }
 
 /** Cell under the cursor, rounded to the map coordinates the path points store */

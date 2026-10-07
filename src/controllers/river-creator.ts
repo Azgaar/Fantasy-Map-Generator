@@ -4,6 +4,7 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { t } from "@/utils/i18n";
 import { errorText } from "@/utils/stringUtils";
 import { ensureEl, getPointer } from "../utils";
 
@@ -19,7 +20,7 @@ function open(): void {
   isCellsLayerForced = !Layers.isOn("cells");
   Layers.show("cells");
 
-  tip("Click to add river point, click again to remove", true);
+  tip(t("Click to add river point, click again to remove"), true);
   select("#debug").append("g").attr("id", "controlCells");
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", onCellClick);
 
@@ -27,7 +28,7 @@ function open(): void {
   renderDialog();
 
   $("#riverCreator").dialog({
-    title: "Create River",
+    title: t("Create River"),
     resizable: false,
     position: { my: "left top", at: "left+10 top+10", of: "#map" },
     close: closeRiverCreator
@@ -40,8 +41,8 @@ function renderDialog(): void {
   const html = /* html */ `<div id="riverCreator" class="dialog">
     <div id="riverCreatorBody" class="table"></div>
     <div id="riverCreatorBottom">
-      <button id="riverCreatorComplete" data-tip="Complete river creation" class="icon-check"></button>
-      <button id="riverCreatorCancel" data-tip="Cancel the creation" class="icon-cancel"></button>
+      <button id="riverCreatorComplete" data-tip="${t("Complete river creation")}" class="icon-check"></button>
+      <button id="riverCreatorCancel" data-tip="${t("Cancel the creation")}" class="icon-cancel"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -78,9 +79,9 @@ function addCell(cell: number): void {
   const flux = pack.cells.fl[cell];
   const line = `<div class="editorLine" data-cell="${cell}">
       <span>Cell ${cell}</span>
-      <span data-tip="Set flux affects river width" style="margin-left: 0.4em">Flux</span>
+      <span data-tip="${t("Set flux affects river width")}" style="margin-left: 0.4em">${t("Flux")}</span>
       <input type="number" min=0 value="${flux}" class="editFlux" style="width: 5em"/>
-      <span data-tip="Remove the cell" class="icon-trash-empty pointer"></span>
+      <span data-tip="${t("Remove the cell")}" class="icon-trash-empty pointer"></span>
     </div>`;
   ensureEl("riverCreatorBody").innerHTML += line;
 }
@@ -103,7 +104,7 @@ function drawCells(cells: number[]): void {
 
 function addRiver(): void {
   if (creatorCells.length < 2) {
-    tip("Add at least 2 cells", false, "error");
+    tip(t("Add at least 2 cells"), false, "error");
     return;
   }
   let riverId: number;

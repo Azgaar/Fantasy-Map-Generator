@@ -29,6 +29,7 @@ import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement, highlightOutline } from "@/renderers/overlays/highlight";
 import { applyOption, downloadFile, getArea, getAreaUnit, getFileName, groupByValue, speak } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { errorText } from "@/utils/stringUtils";
 import { ensureEl, getPointer, getRandomColor, isLand, rand, rn, si, unique } from "../utils";
 
@@ -46,7 +47,7 @@ const columns: EditorColumn<Province>[] = [
   { key: "color", width: "1.2em", permanent: true },
   {
     key: "name",
-    label: "Province",
+    label: t("Province"),
     width: "7em",
     permanent: true,
     sortBy: province => province.name || "",
@@ -55,7 +56,7 @@ const columns: EditorColumn<Province>[] = [
   { key: "emblem", width: "1.4em" },
   {
     key: "form",
-    label: "Form",
+    label: t("Form"),
     width: "7em",
     mobileHidden: true,
     sortBy: province => province.formName || "",
@@ -63,14 +64,14 @@ const columns: EditorColumn<Province>[] = [
   },
   {
     key: "capital",
-    label: "Capital",
+    label: t("Capital"),
     width: "7em",
     sortBy: province => (province.burg ? pack.burgs[province.burg]?.name || "" : ""),
     sortType: "alpha"
   },
   {
     key: "state",
-    label: "State",
+    label: t("State"),
     width: "7em",
     permanent: true,
     sortBy: province => pack.states[province.state]?.name || "",
@@ -78,20 +79,20 @@ const columns: EditorColumn<Province>[] = [
   },
   {
     key: "burgs",
-    label: "Burgs",
+    label: t("Burgs"),
     width: "5em",
     mobileHidden: true,
     sortBy: province => province.burgs?.length || 0
   },
   {
     key: "area",
-    label: "Area",
+    label: t("Area"),
     width: "7em",
     mobileHidden: true,
     defaultSort: "desc",
     sortBy: getProvinceArea
   },
-  { key: "population", label: "Population", width: "6em", sortBy: getProvincePopulation },
+  { key: "population", label: t("Population"), width: "6em", sortBy: getProvincePopulation },
   { key: "note", width: "1.1em" },
   { key: "independence", width: "1.1em" },
   { key: "locate", width: "1.1em" },
@@ -112,7 +113,7 @@ function open(): void {
   refreshProvincesEditor();
 
   $("#provincesEditor").dialog({
-    title: "Provinces Editor",
+    title: t("Provinces Editor"),
     resizable: false,
     width: "fit-content",
     close: closeProvincesEditor,
@@ -127,61 +128,61 @@ function renderDialog(): void {
         ${renderEditorHeader({ dialogId, columns })}
       </div>
       <div id="provincesFooter" class="totalLine">
-        <div data-tip="Provinces displayed" style="margin-left: 4px">
-          Provinces:&nbsp;<span id="provincesFooterNumber">0</span>
+        <div data-tip="${t("Provinces displayed")}" style="margin-left: 4px">
+          ${t("Provinces")}:&nbsp;<span id="provincesFooterNumber">0</span>
         </div>
-        <div data-tip="Total burgs number" style="margin-left: 12px" data-col="burgs">
-          Burgs:&nbsp;<span id="provincesFooterBurgs">0</span>
+        <div data-tip="${t("Number of burgs")}" style="margin-left: 12px" data-col="burgs">
+          ${t("Burgs")}:&nbsp;<span id="provincesFooterBurgs">0</span>
         </div>
-        <div data-tip="Average area" style="margin-left: 14px" data-col="area">
-          Mean area:&nbsp;<span id="provincesFooterArea">0</span>
+        <div data-tip="${t("Average area")}" style="margin-left: 14px" data-col="area">
+          ${t("Mean area")}:&nbsp;<span id="provincesFooterArea">0</span>
         </div>
-        <div data-tip="Average population" style="margin-left: 14px" data-col="population">
-          Mean population:&nbsp;<span id="provincesFooterPopulation">0</span>
+        <div data-tip="${t("Average population")}" style="margin-left: 14px" data-col="population">
+          ${t("Mean population")}:&nbsp;<span id="provincesFooterPopulation">0</span>
         </div>
       </div>
       <div id="provincesBottom" class="editorToolbar">
-        <button id="provincesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-        <button id="provincesEditStyle" data-tip="Edit provinces style in Style Editor" class="icon-adjust"></button>
+        <button id="provincesEditorRefresh" data-tip="${t("Refresh the Editor")}" class="icon-cw"></button>
+        <button id="provincesEditStyle" data-tip="${t("Edit style in Style Editor")}" class="icon-adjust"></button>
         <button
           id="provincesRecolor"
-          data-tip="Recolor listed provinces based on state color"
+          data-tip="${t("Recolor listed provinces based on state color")}"
           class="icon-paint-roller"
         ></button>
         <button
           id="provincesPercentage"
-          data-tip="Toggle percentage / absolute values views"
+          data-tip="${t("Toggle percentage / absolute values views")}"
           class="icon-percent"
         ></button>
-        <button id="provincesChart" data-tip="Show provinces chart" class="icon-chart-area"></button>
+        <button id="provincesChart" data-tip="${t("Show Provinces Chart")}" class="icon-chart-area"></button>
         <button
           id="provincesExport"
-          data-tip="Save provinces-related data as a text file (.csv)"
+          data-tip="${t("Save provinces-related data as a text file (.csv)")}"
           class="icon-download"
         ></button>
-        <button id="provincesManually" data-tip="Manually re-assign provinces" class="icon-brush"></button>
+        <button id="provincesManually" data-tip="${t("Manually re-assign provinces")}" class="icon-brush"></button>
         <button
           id="provincesRelease"
-          data-tip="Release all provinces. It will make all provinces with burgs independent"
+          data-tip="${t("Release all provinces. It will make all provinces with burgs independent")}"
           class="icon-flag"
         ></button>
         <button
           id="provincesAdd"
-          data-tip="Add a new province. Hold Shift to add multiple"
+          data-tip="${sentences(t("Add a new province"), t("Hold Shift to add multiple"))}"
           class="icon-plus"
         ></button>
-        <button id="provincesMerge" data-tip="Merge several provinces into one" class="icon-layer-group"></button>
+        <button id="provincesMerge" data-tip="${t("Merge several provinces into one")}" class="icon-layer-group"></button>
         <button
           id="provincesAnnex"
-          data-tip="Annex provinces: click the annexing province, then the provinces of the same state it absorbs. Hold Shift to keep annexing"
+          data-tip="${sentences(t("Annex provinces: click the annexing province, then the provinces of the same state it absorbs"), t("Hold Shift to keep annexing"))}"
           class="icon-crown"
         ></button>
         <button
           id="provincesRemoveAll"
-          data-tip="Remove all provinces. States will remain as they are"
+          data-tip="${sentences(t("Remove all provinces"), t("States will remain as they are"))}"
           class="icon-trash"
         ></button>
-        <span>State: </span>
+        <span>${t("State")}: </span>
         <select id="provincesFilterState"></select>
       </div>
     </div>`;
@@ -286,7 +287,7 @@ function updateFilter(): void {
     filterState.stateId = -1;
   }
   stateFilter.options.length = 0; // remove all options
-  stateFilter.options.add(new Option(`all`, "-1", false, filterState.stateId === -1));
+  stateFilter.options.add(new Option(t("All"), "-1", false, filterState.stateId === -1));
   const statesSorted = pack.states.filter(s => s.i && !s.removed).sort((a, b) => (a.name > b.name ? 1 : -1));
   statesSorted.forEach(s => {
     stateFilter.options.add(new Option(s.name, String(s.i), false, s.i === filterState.stateId));
@@ -319,39 +320,43 @@ function renderProvincesPage(view: TableView<Province>): void {
       const rural = p.rural! * options.map.units.population.scale;
       const urban = p.urban! * options.map.units.population.scale * options.map.units.population.urbanization.rate;
       const population = getProvincePopulation(p);
-      const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}`;
+      const populationTip = t("Total population: {{total}}; Rural population: {{rural}}; Urban population: {{urban}}", {
+        total: si(population),
+        rural: si(rural),
+        urban: si(urban)
+      });
       const stateName = pack.states[p.state].name;
       const separable = p.burg && p.burg !== pack.states[p.state].capital;
       const focused = select<SVGElement, unknown>("#deftemp").select(`#fog #focusProvince${p.i}`).size();
       EmblemRenderer.trigger(`provinceCOA${p.i}`, p.coa);
       return /* html */ `<div class="states" data-id=${p.i}>
       <fill-box data-col="color" fill="${p.color}"></fill-box>
-      <input data-col="name" data-tip="Province name. Click to change" class="name pointer" value="${p.name}" readonly />
-      <svg data-col="emblem" data-tip="Click to show and edit province emblem" class="coaIcon pointer" viewBox="0 0 200 200"><use href="#provinceCOA${p.i}"></use></svg>
-      <input data-col="form" data-tip="Province form name. Click to change" class="name pointer" value="${p.formName}" readonly />
+      <input data-col="name" data-tip="${sentences(t("Province name"), t("Click to change"))}" class="name pointer" value="${p.name}" readonly />
+      <svg data-col="emblem" data-tip="${t("Click to show and edit province emblem")}" class="coaIcon pointer" viewBox="0 0 200 200"><use href="#provinceCOA${p.i}"></use></svg>
+      <input data-col="form" data-tip="${sentences(t("Province form name"), t("Click to change"))}" class="name pointer" value="${p.formName}" readonly />
       <div data-col="capital">
-        <span data-tip="Province capital. Click to zoom into view" class="icon-star-empty pointer ${p.burg ? "" : "placeholder"}"></span>
-        <select data-tip="Province capital. Click to select from burgs within the state. No capital means the province is governed from the state capital" class="cultureBase ${p.burgs!.length ? "" : "placeholder"}">${p.burgs!.length ? getCapitalOptions(p.burgs!, p.burg) : ""}</select>
+        <span data-tip="${sentences(t("Province capital"), t("Click to zoom into view"))}" class="icon-star-empty pointer ${p.burg ? "" : "placeholder"}"></span>
+        <select data-tip="${sentences(t("Province capital"), t("Click to select from burgs within the state"), t("No capital means the province is governed from the state capital"))}" class="cultureBase ${p.burgs!.length ? "" : "placeholder"}">${p.burgs!.length ? getCapitalOptions(p.burgs!, p.burg) : ""}</select>
       </div>
-      <input data-col="state" data-tip="Province owner" class="provinceOwner" value="${stateName}" disabled>
+      <input data-col="state" data-tip="${t("Province owner")}" class="provinceOwner" value="${stateName}" disabled>
       <div data-col="burgs">
-        <span data-tip="Click to overview province burgs" class="icon-dot-circled pointer"></span>
-        <span data-tip="Burgs count" class="provinceBurgs">${percentage ? `${rn(totals.burgs ? (p.burgs!.length / totals.burgs) * 100 : 0)}%` : p.burgs!.length}</span>
+        <span data-tip="${t("Click to overview province burgs")}" class="icon-dot-circled pointer"></span>
+        <span data-tip="${t("Number of burgs")}" class="provinceBurgs">${percentage ? `${rn(totals.burgs ? (p.burgs!.length / totals.burgs) * 100 : 0)}%` : p.burgs!.length}</span>
       </div>
       <div data-col="area">
-        <span data-tip="Province area" class="icon-map-o" style="padding-right: 4px"></span>
-        <span data-tip="Province area" class="biomeArea">${percentage ? `${rn(totals.area ? (area / totals.area) * 100 : 0)}%` : si(area) + unit}</span>
+        <span data-tip="${t("Province area")}" class="icon-map-o" style="padding-right: 4px"></span>
+        <span data-tip="${t("Province area")}" class="biomeArea">${percentage ? `${rn(totals.area ? (area / totals.area) * 100 : 0)}%` : si(area) + unit}</span>
       </div>
       <div data-col="population">
         <span data-tip="${populationTip}" class="icon-male"></span>
         <span data-tip="${populationTip}" class="culturePopulation">${percentage ? `${rn(totals.population ? (population / totals.population) * 100 : 0)}%` : si(population)}</span>
       </div>
-      ${noteIcon("this province")}
-      <span data-col="independence" data-tip="Declare province independence (turn non-capital province with burgs into a new state)" class="icon-flag-empty ${separable ? "" : "placeholder"}"></span>
-      <span data-col="locate" data-tip="Locate the province" class="icon-target"></span>
-      <span data-col="focus" data-tip="Toggle province focus" class="icon-pin ${focused ? "" : " inactive"}"></span>
-      <span data-col="lock" data-tip="Lock the province" class="icon-lock${p.lock ? "" : "-open"}"></span>
-      <span data-col="remove" data-tip="Remove the province" class="icon-trash-empty"></span>
+      ${noteIcon(t("Edit free text notes (legend)"))}
+      <span data-col="independence" data-tip="${t("Declare province independence (turn non-capital province with burgs into a new state)")}" class="icon-flag-empty ${separable ? "" : "placeholder"}"></span>
+      <span data-col="locate" data-tip="${t("Locate the province")}" class="icon-target"></span>
+      <span data-col="focus" data-tip="${t("Toggle province focus")}" class="icon-pin ${focused ? "" : " inactive"}"></span>
+      <span data-col="lock" data-tip="${t("Lock the province")}" class="icon-lock${p.lock ? "" : "-open"}"></span>
+      <span data-col="remove" data-tip="${t("Remove province")}" class="icon-trash-empty"></span>
     </div>`;
     })
     .join("");
@@ -440,9 +445,9 @@ function capitalZoomIn(p: number): void {
 
 function triggerIndependencePromps(p: number): void {
   confirmationDialog({
-    title: "Declare independence",
-    message: "Are you sure you want to declare province independence? <br>It will turn province into a new state",
-    confirm: "Declare",
+    title: t("Declare independence"),
+    message: `${t("Are you sure you want to declare province independence?")}<br>${t("It will turn province into a new state")}`,
+    confirm: t("Declare"),
     onConfirm: () => {
       const result = declareProvinceIndependence(p);
       if (!result) return;
@@ -480,7 +485,7 @@ function changePopulation(province: number): void {
   const p = pack.provinces[province];
   const cells = pack.cells.i.filter(i => pack.cells.province[i] === province);
   if (!cells.length) {
-    tip("Province does not have any cells, cannot change population", false, "error");
+    tip(t("No cells, cannot change population"), false, "error");
     return;
   }
   const rural = rn(p.rural! * options.map.units.population.scale);
@@ -488,9 +493,9 @@ function changePopulation(province: number): void {
   const total = rural + urban;
   const l = (n: number): string => Number(n).toLocaleString();
 
-  alertMessage.innerHTML = /* html */ ` Rural: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" /> Urban:
+  alertMessage.innerHTML = /* html */ ` ${t("Rural")}: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" /> ${t("Urban")}:
     <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em" ${p.burgs!.length ? "" : "disabled"} />
-    <p>Total population: ${l(total)} ⇒ <span id="totalPop">${l(total)}</span> (<span id="totalPopPerc">100</span>%)</p>`;
+    <p>${t("Total population")}: ${l(total)} ⇒ <span id="totalPop">${l(total)}</span> (<span id="totalPopPerc">100</span>%)</p>`;
 
   const ruralPop = ensureEl<HTMLInputElement>("ruralPop");
   const urbanPop = ensureEl<HTMLInputElement>("urbanPop");
@@ -507,14 +512,14 @@ function changePopulation(province: number): void {
 
   $("#alert").dialog({
     resizable: false,
-    title: "Change province population",
+    title: t("Change province population"),
     width: "24em",
     buttons: {
-      Apply: function (this: HTMLElement) {
+      [t("Apply")]: function (this: HTMLElement) {
         applyPopulationChange();
         $(this).dialog("close");
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     },
@@ -542,12 +547,12 @@ function toggleFog(p: number, cl: DOMTokenList): void {
 }
 
 function removeProvince(p: number): void {
-  alertMessage.innerHTML = /* html */ `Are you sure you want to remove the province? <br />This action cannot be reverted`;
+  alertMessage.innerHTML = /* html */ `${t("Are you sure you want to remove the province?")}<br>${t("This action cannot be reverted")}`;
   $("#alert").dialog({
     resizable: false,
-    title: "Remove province",
+    title: t("Remove province"),
     buttons: {
-      Remove: function (this: HTMLElement) {
+      [t("Remove")]: function (this: HTMLElement) {
         Provinces.remove(p);
         unfog(`focusProvince${p}`);
         removeEmblem("province", p);
@@ -560,7 +565,7 @@ function removeProvince(p: number): void {
         refreshProvincesEditor();
         $(this).dialog("close");
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
@@ -580,13 +585,13 @@ function editProvinceName(province: number): void {
 
   $("#provinceNameEditor").dialog({
     resizable: false,
-    title: "Change province name",
+    title: t("Change province name"),
     buttons: {
-      Apply: function (this: HTMLElement) {
+      [t("Apply")]: function (this: HTMLElement) {
         applyNameChange(p);
         $(this).dialog("close");
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     },
@@ -599,97 +604,97 @@ function renderNameEditor(): void {
   destroyDialog("provinceNameEditor");
   const nameEditorHtml = /* html */ `<div id="provinceNameEditor" class="dialog" data-province="0">
       <div>
-        <div data-tip="Province short name" class="label">Short name:</div>
+        <div data-tip="${t("Province short name")}" class="label">${t("Short name")}:</div>
         <input
           id="provinceNameEditorShort"
-          data-tip="Type to change the short name"
+          data-tip="${t("Type to change the short name")}"
           autocorrect="off"
           spellcheck="false"
           style="width: 11em"
         />
-        <span id="provinceNameEditorShortSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <span id="provinceNameEditorShortSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
         <span
           id="provinceNameEditorShortCulture"
-          data-tip="Generate culture-specific name for the province"
+          data-tip="${t("Generate culture-specific name")}"
           class="icon-book pointer"
         ></span>
-        <span id="provinceNameEditorShortRandom" data-tip="Generate random name" class="icon-globe pointer"></span>
+        <span id="provinceNameEditorShortRandom" data-tip="${t("Generate random name")}" class="icon-globe pointer"></span>
       </div>
-      <div data-tip="Select form name">
-        <div data-tip="Province form name" class="label">Form name:</div>
+      <div data-tip="${t("Select form name")}">
+        <div data-tip="${t("Province form name")}" class="label">${t("Form name")}:</div>
         <select id="provinceNameEditorSelectForm" style="display: inline-block; width: 11em; height: 1.645em">
-          <option value="">blank</option>
-          <option value="Area">Area</option>
-          <option value="Autonomy">Autonomy</option>
-          <option value="Barony">Barony</option>
-          <option value="Canton">Canton</option>
-          <option value="Captaincy">Captaincy</option>
-          <option value="Chiefdom">Chiefdom</option>
-          <option value="Clan">Clan</option>
-          <option value="Colony">Colony</option>
-          <option value="Council">Council</option>
-          <option value="County">County</option>
-          <option value="Deanery">Deanery</option>
-          <option value="Department">Department</option>
-          <option value="Dependency">Dependency</option>
-          <option value="Diaconate">Diaconate</option>
-          <option value="District">District</option>
-          <option value="Earldom">Earldom</option>
-          <option value="Governorate">Governorate</option>
-          <option value="Island">Island</option>
-          <option value="Islands">Islands</option>
-          <option value="Land">Land</option>
-          <option value="Landgrave">Landgrave</option>
-          <option value="Mandate">Mandate</option>
-          <option value="Margrave">Margrave</option>
-          <option value="Municipality">Municipality</option>
-          <option value="Occupation zone">Occupation zone</option>
-          <option value="Parish">Parish</option>
-          <option value="Prefecture">Prefecture</option>
-          <option value="Province">Province</option>
-          <option value="Region">Region</option>
-          <option value="Republic">Republic</option>
-          <option value="Reservation">Reservation</option>
-          <option value="Seneschalty">Seneschalty</option>
-          <option value="Shire">Shire</option>
-          <option value="State">State</option>
-          <option value="Territory">Territory</option>
-          <option value="Tribe">Tribe</option>
+          <option value="">${t("blank")}</option>
+          <option value="Area">${t("Area")}</option>
+          <option value="Autonomy">${t("Autonomy")}</option>
+          <option value="Barony">${t("Barony")}</option>
+          <option value="Canton">${t("Canton")}</option>
+          <option value="Captaincy">${t("Captaincy")}</option>
+          <option value="Chiefdom">${t("Chiefdom")}</option>
+          <option value="Clan">${t("Clan")}</option>
+          <option value="Colony">${t("Colony")}</option>
+          <option value="Council">${t("Council")}</option>
+          <option value="County">${t("County")}</option>
+          <option value="Deanery">${t("Deanery")}</option>
+          <option value="Department">${t("Department")}</option>
+          <option value="Dependency">${t("Dependency")}</option>
+          <option value="Diaconate">${t("Diaconate")}</option>
+          <option value="District">${t("District")}</option>
+          <option value="Earldom">${t("Earldom")}</option>
+          <option value="Governorate">${t("Governorate")}</option>
+          <option value="Island">${t("Island")}</option>
+          <option value="Islands">${t("Islands")}</option>
+          <option value="Land">${t("Land")}</option>
+          <option value="Landgrave">${t("Landgrave")}</option>
+          <option value="Mandate">${t("Mandate")}</option>
+          <option value="Margrave">${t("Margrave")}</option>
+          <option value="Municipality">${t("Municipality")}</option>
+          <option value="Occupation zone">${t("Occupation zone")}</option>
+          <option value="Parish">${t("Parish")}</option>
+          <option value="Prefecture">${t("Prefecture")}</option>
+          <option value="Province">${t("Province")}</option>
+          <option value="Region">${t("Region")}</option>
+          <option value="Republic">${t("Republic")}</option>
+          <option value="Reservation">${t("Reservation")}</option>
+          <option value="Seneschalty">${t("Seneschalty")}</option>
+          <option value="Shire">${t("Shire")}</option>
+          <option value="State">${t("State")}</option>
+          <option value="Territory">${t("Territory")}</option>
+          <option value="Tribe">${t("Tribe")}</option>
         </select>
         <input
           id="provinceNameEditorCustomForm"
-          placeholder="type form name"
-          data-tip="Create custom province form name"
+          placeholder="${t("Enter custom form name")}"
+          data-tip="${t("Create custom province form name")}"
           style="display: none; width: 11em"
         />
         <span
           id="provinceNameEditorAddForm"
-          data-tip="Click to add custom province form name to the list"
+          data-tip="${t("Click to add custom province form name to the list")}"
           class="icon-plus pointer"
         ></span>
       </div>
       <div>
-        <div data-tip="Province full name" class="label">Full name:</div>
+        <div data-tip="${t("Province full name")}" class="label">${t("Full name")}:</div>
         <input
           id="provinceNameEditorFull"
-          data-tip="Type to change the full name"
+          data-tip="${t("Type to change the full name")}"
           autocorrect="off"
           spellcheck="false"
           style="width: 11em"
         />
-        <span id="provinceNameEditorFullSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <span id="provinceNameEditorFullSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
         <span
           id="provinceNameEditorFullRegenerate"
-          data-tip="Click to re-generate full name"
+          data-tip="${t("Click to re-generate full name")}"
           class="icon-arrows-cw pointer"
         ></span>
       </div>
       <div
         id="provinceCultureName"
-        data-tip="Dominant culture in the province. This defines culture-based naming. Can be changed via the Cultures Editor"
+        data-tip="${t("Dominant culture in the province. This defines culture-based naming. Can be changed via the Cultures Editor")}"
         style="margin-top: 0.2em"
       >
-        Dominant culture:&nbsp;<span id="provinceCultureDisplay"></span>
+        ${t("Dominant culture")}:&nbsp;<span id="provinceCultureDisplay"></span>
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", nameEditorHtml);
@@ -806,10 +811,10 @@ function showChart(): void {
 
   // prepare svg
   alertMessage.innerHTML = /* html */ `<select id="provincesTreeType" style="display:block; margin-left:13px; font-size:11px">
-    <option value="area" selected>Area</option>
-    <option value="population">Total population</option>
-    <option value="rural">Rural population</option>
-    <option value="urban">Urban population</option>
+    <option value="area" selected>${t("Area")}</option>
+    <option value="population">${t("Total population")}</option>
+    <option value="rural">${t("Rural population")}</option>
+    <option value="urban">${t("Urban population")}</option>
   </select>`;
   alertMessage.innerHTML += `<div id='provinceInfo' class='chartInfo'>&#8205;</div>`;
   const svg = select("#alertMessage")
@@ -848,12 +853,12 @@ function showChart(): void {
     const typeValue = ensureEl<HTMLSelectElement>("provincesTreeType").value;
     const value =
       typeValue === "area"
-        ? `Area: ${area}`
+        ? t("Area: {{area}}", { area })
         : typeValue === "rural"
-          ? `Rural population: ${si(rural)}`
+          ? t("Rural population: {{rural}}", { rural: si(rural) })
           : typeValue === "urban"
-            ? `Urban population: ${si(urban)}`
-            : `Population: ${si(rural + urban)}`;
+            ? t("Urban population: {{urban}}", { urban: si(urban) })
+            : t("Population: {{population}}", { population: si(rural + urban) });
 
     ensureEl("provinceInfo").innerHTML = /* html */ `${name}. ${state}. ${value}`;
     provinceHighlightOn(ev);
@@ -936,7 +941,7 @@ function showChart(): void {
   }
 
   $("#alert").dialog({
-    title: "Provinces chart",
+    title: t("Provinces chart"),
     width: "fit-content",
     position: { my: "left bottom", at: "left+10 bottom-10", of: "svg" },
     buttons: {},
@@ -950,11 +955,9 @@ function showChart(): void {
 
 function triggerProvincesRelease(): void {
   confirmationDialog({
-    title: "Release provinces",
-    message: `Are you sure you want to release all provinces?
-        </br>It will turn all separable provinces into independent states.
-        </br>Capital province and provinces without any burgs will state as they are`,
-    confirm: "Release",
+    title: t("Release provinces"),
+    message: `${t("Are you sure you want to release all provinces?")}<br>${t("It will turn all separable provinces into independent states.")}<br>${t("Capital province and provinces without any burgs will state as they are")}`,
+    confirm: t("Release"),
     onConfirm: () => {
       const oldStateIds: number[] = [];
       const newStateIds: number[] = [];
@@ -979,7 +982,7 @@ function openPaintEditor(): void {
   Layers.show("provinces", "borders");
 
   void Controllers.PaintEditor.open({
-    title: "Paint Provinces",
+    title: t("Paint Provinces"),
     parentDialogId: dialogId,
     onClose: open,
     items: getProvincesData().map(province => ({
@@ -992,7 +995,11 @@ function openPaintEditor(): void {
       if (!isLand(cell, pack) || !pack.cells.state[cell]) return false;
       if (pack.cells.state[cell] !== pack.provinces[nextProvince].state) return false;
       if (!currentProvince || cell !== pack.provinces[currentProvince].center) return true;
-      tip("Province center cannot be assigned to a different region. Please remove the province first", false, "error");
+      tip(
+        t("Province center cannot be assigned to a different region. Please remove the province first"),
+        false,
+        "error"
+      );
       return false;
     },
     dontOverrideControl: true,
@@ -1017,7 +1024,7 @@ function enterAddProvinceMode(this: HTMLElement): void {
 
   customization = 12;
   this.classList.add("pressed");
-  tip("Click on the map to place a new province center", true);
+  tip(t("Click on the map to place a new province center"), true);
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", addProvince);
   ensureEl("provincesBodySection")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")
@@ -1090,12 +1097,12 @@ function downloadProvincesData(): void {
 }
 
 function removeAllProvinces(): void {
-  alertMessage.innerHTML = /* html */ `Are you sure you want to remove all provinces? <br />This action cannot be reverted`;
+  alertMessage.innerHTML = /* html */ `${t("Are you sure you want to remove all provinces?")}<br>${t("This action cannot be reverted")}`;
   $("#alert").dialog({
     resizable: false,
-    title: "Remove all provinces",
+    title: t("Remove all provinces"),
     buttons: {
-      Remove: function (this: HTMLElement) {
+      [t("Remove")]: function (this: HTMLElement) {
         $(this).dialog("close");
 
         // remove emblems
@@ -1118,7 +1125,7 @@ function removeAllProvinces(): void {
 
         provincesTable.reset();
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
@@ -1139,11 +1146,11 @@ function closeProvincesEditor(): void {
 function openProvinceMergeDialog(): void {
   const selectedState = filterState.stateId;
   if (selectedState === -1) {
-    alertMessage.innerHTML = "Please select a specific state from the filter to merge provinces within that state.";
+    alertMessage.innerHTML = t("Please select a specific state from the filter to merge provinces within that state.");
     $("#alert").dialog({
-      title: "Merge Provinces",
+      title: t("Merge Provinces"),
       buttons: {
-        OK: function (this: HTMLElement) {
+        [t("OK")]: function (this: HTMLElement) {
           $(this).dialog("close");
         }
       }
@@ -1152,11 +1159,11 @@ function openProvinceMergeDialog(): void {
   }
   const provincesToMerge = pack.provinces.filter(p => p.i && !p.removed && p.state === selectedState);
   if (provincesToMerge.length < 2) {
-    alertMessage.innerHTML = "Not enough provinces in the selected state to merge.";
+    alertMessage.innerHTML = t("Not enough provinces in the selected state to merge.");
     $("#alert").dialog({
-      title: "Merge Provinces",
+      title: t("Merge Provinces"),
       buttons: {
-        OK: function (this: HTMLElement) {
+        [t("OK")]: function (this: HTMLElement) {
           $(this).dialog("close");
         }
       }
@@ -1179,9 +1186,7 @@ function openProvinceMergeDialog(): void {
   alertMessage.innerHTML = /* html */ `
     <form id='mergeProvincesForm' style="overflow: hidden; display: flex; flex-direction: column; gap: 1em;">
       <p style="margin:0">
-        Check the <b>checkbox</b> next to each province you want to merge.
-        Use the <b>radio button</b> to pick the <em>primary province</em> that will absorb all others.
-        Hover over a row to highlight the province on the map.
+        ${t("Check the <b>checkbox</b> next to each province you want to merge. Use the <b>radio button</b> to pick the <em>primary province</em> that will absorb all others. Hover over a row to highlight the province on the map.")}
       </p>
       <main style='display: grid; grid-template-columns: 1fr 1fr; gap: .3em;'>
         ${provincesSelector}
@@ -1198,14 +1203,14 @@ function openProvinceMergeDialog(): void {
 
   $("#alert").dialog({
     width: 600,
-    title: `Merge provinces`,
+    title: t("Merge Provinces"),
     close: provinceHighlightOff,
     buttons: {
-      Merge: function (this: HTMLElement) {
+      [t("Merge")]: function (this: HTMLElement) {
         const formData = new FormData(ensureEl<HTMLFormElement>("mergeProvincesForm"));
         const primaryProvinceId = Number(formData.get("rulingProvince"));
         if (!primaryProvinceId) {
-          tip("Please select a province to merge into", false, "error");
+          tip(t("Please select a province to merge into"), false, "error");
           return;
         }
 
@@ -1214,13 +1219,13 @@ function openProvinceMergeDialog(): void {
           .map(Number)
           .filter(provinceId => provinceId !== primaryProvinceId);
         if (!provincesToMergeIds.length) {
-          tip("Please select several provinces to merge", false, "error");
+          tip(t("Please select several provinces to merge"), false, "error");
           return;
         }
 
         confirmProvincesMerge(provincesToMergeIds, primaryProvinceId, () => $(this).dialog("close"));
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
@@ -1232,14 +1237,16 @@ const provinceEmblem = (i: number): string =>
 
 function confirmProvincesMerge(provincesToMerge: number[], primaryProvinceId: number, onConfirm?: () => void): void {
   confirmationDialog({
-    title: "Merge provinces",
+    title: t("Merge Provinces"),
     message: /* html */ `
-      <p>The following provinces will be <strong>removed</strong>: ${provincesToMerge
+      <p>${t("The following provinces will be <strong>removed</strong>")}: ${provincesToMerge
         .map(provinceId => `${provinceEmblem(provinceId)}${pack.provinces[provinceId].name}`)
         .join(", ")}.</p>
-      <p>Removed provinces data (burgs and cells) will be assigned to ${provinceEmblem(primaryProvinceId)}${pack.provinces[primaryProvinceId].name}.</p>
-      <p>Are you sure you want to merge provinces? This action cannot be reverted.</p>`,
-    confirm: "Merge",
+      <p>${t("Removed provinces data (burgs and cells) will be assigned to {{- province}}.", {
+        province: `${provinceEmblem(primaryProvinceId)}${pack.provinces[primaryProvinceId].name}`
+      })}</p>
+      <p>${sentences(t("Are you sure you want to merge provinces?"), t("This action cannot be reverted"))}</p>`,
+    confirm: t("Merge"),
     onConfirm: () => {
       mergeProvinces(provincesToMerge, primaryProvinceId);
       onConfirm?.();
@@ -1250,14 +1257,31 @@ function confirmProvincesMerge(provincesToMerge: number[], primaryProvinceId: nu
 const provincesAnnex = createAnnexMode({
   buttonId: "provincesAnnex",
   bodySectionId: "provincesBodySection",
-  noun: "province",
+  tips: {
+    start: sentences(
+      t("Click the province that annexes, then the provinces it absorbs"),
+      t("Hold Shift to keep annexing")
+    ),
+    pickLand: t("Click on a land cell to pick a province"),
+    nothingHere: t("There is no province here"),
+    annexing: name =>
+      sentences(
+        t("Annexing into {{province}}", { province: name }),
+        t("Click the provinces to annex"),
+        t("Hold Shift to keep annexing")
+      ),
+    isParent: name => t("{{province}} is the annexing province", { province: name })
+  },
   ownerOf: cellId => pack.cells.province[cellId],
   colorOf: provinceId => pack.provinces[provinceId].color,
   nameOf: provinceId => pack.provinces[provinceId].name,
   rejectReason: (primaryId, provinceId) =>
     pack.provinces[provinceId].state === pack.provinces[primaryId].state
       ? undefined
-      : `${pack.provinces[provinceId].name} belongs to another state. Merge states first, or pick a province of ${pack.states[pack.provinces[primaryId].state].name}`,
+      : t("{{province}} belongs to another state. Merge states first, or pick a province of {{state}}", {
+          province: pack.provinces[provinceId].name,
+          state: pack.states[pack.provinces[primaryId].state].name
+        }),
   commit: (primaryProvinceId, provincesToMerge) => confirmProvincesMerge(provincesToMerge, primaryProvinceId)
 });
 

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { lintCatalog } from "./lint-locales.mjs";
+import { lintCatalog, missingKeys } from "./lint-locales.mjs";
 
 const ENGLISH = {
   Rivers: "Rivers",
@@ -57,5 +57,18 @@ describe("lintCatalog", () => {
     assert.deepEqual(lintCatalog(quoted, quoted), [
       '"Say "hi"": a raw double quote outside a tag breaks attribute markup, use “ ”'
     ]);
+  });
+});
+
+describe("missingKeys", () => {
+  it("lists untranslated keys, with the plural forms the language has", () => {
+    const russian = { Rivers: "Реки", "{{count}} burgs_one": "{{count}} город" };
+    assert.deepEqual(missingKeys(russian, ENGLISH, "ru"), [
+      "{{layer}}: click",
+      "{{count}} burgs_few",
+      "{{count}} burgs_many",
+      "{{count}} burgs_other"
+    ]);
+    assert.deepEqual(missingKeys({}, ENGLISH, "zh"), ["Rivers", "{{layer}}: click", "{{count}} burgs_other"]);
   });
 });

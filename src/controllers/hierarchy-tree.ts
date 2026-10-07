@@ -2,8 +2,8 @@ import type { D3DragEvent, D3ZoomEvent } from "d3";
 import { drag, mean, select, stratify, tree, zoom } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
-import { capitalize } from "@/utils";
-import { ensureEl, minmax } from "../utils";
+import { sentences, t } from "@/utils/i18n";
+import { ensureEl, escapeHtml, minmax } from "../utils";
 
 type HierarchyElement = {
   i: number;
@@ -61,7 +61,13 @@ function open(props: OpenProps): void {
   model = props.type === "cultures" ? Cultures : Religions;
   validElements = cleanupOrigins(dataElements);
   if (validElements.length < 3) {
-    tip(`Not enough ${props.type} to show hierarchy`, false, "error");
+    tip(
+      props.type === "cultures"
+        ? t("Not enough cultures to show hierarchy")
+        : t("Not enough religions to show hierarchy"),
+      false,
+      "error"
+    );
     clearTreeState();
     return;
   }
@@ -94,7 +100,7 @@ function open(props: OpenProps): void {
   svg.attr("viewBox", `0, 0, ${width}, ${height}`);
 
   $("#hierarchyTree").dialog({
-    title: `${capitalize(props.type)} tree`,
+    title: props.type === "cultures" ? t("Cultures tree") : t("Religions tree"),
     position: { my: "left center", at: "left+10 center", of: "svg" },
     width,
     close: clearTreeState
@@ -216,8 +222,8 @@ function insertHtml(): void {
       <div id='hierarchyTree_infoLine' style="display: block">&#8205;</div>
       <div id='hierarchyTree_selected' style="display: none">
         <span><span id='hierarchyTree_selectedName'></span>. </span>
-        <span data-name="Type short name (abbreviation)">Abbreviation: <input id='hierarchyTree_selectedCode' type='text' maxlength='3' size='3' /></span>
-        <span>Origins: <span id='hierarchyTree_selectedOrigins'></span></span>
+        <span data-name="Type short name (abbreviation)">${t("Abbreviation")}: <input id='hierarchyTree_selectedCode' type='text' maxlength='3' size='3' /></span>
+        <span>${t("Origins")}: <span id='hierarchyTree_selectedOrigins'></span></span>
         <button data-tip='Edit this node's origins' class="hierarchyTree_selectedButton" id='hierarchyTree_selectedSelectButton'>Edit</button>
         <button data-tip='Unselect this node' class="hierarchyTree_selectedButton" id='hierarchyTree_selectedCloseButton'>Unselect</button>
       </div>
@@ -262,7 +268,7 @@ function getRoot(): any {
     oldRoot = root;
     return root;
   } catch (error) {
-    tip(`Hierarchy data issue. ${error}`, false, "error", 6000);
+    tip(sentences(t("Hierarchy data issue"), escapeHtml(String(error))), false, "error", 6000);
     return oldRoot;
   }
 }
@@ -440,8 +446,8 @@ function selectElement(d: any): void {
 
   ensureEl<HTMLInputElement>("hierarchyTree_selectedCode").onchange = function () {
     const input = this as HTMLInputElement;
-    if (input.value.length > 3) return tip("Abbreviation must be 3 characters or less", false, "error", 3000);
-    if (!input.value.length) return tip("Abbreviation cannot be empty", false, "error", 3000);
+    if (input.value.length > 3) return tip(t("Abbreviation must be 3 characters or less"), false, "error", 3000);
+    if (!input.value.length) return tip(t("Abbreviation cannot be empty"), false, "error", 3000);
 
     model.setCode(dataElement.i, input.value);
     node.select("text").text(dataElement.code || "");
@@ -452,8 +458,9 @@ function selectElement(d: any): void {
       .filter(origin => origin)
       .map((origin, index) => {
         const { name, code } = validElements.find(r => r.i === origin) || ({} as Partial<HierarchyElement>);
-        const type = index ? "Secondary" : "Primary";
-        const tipText = `${type} origin: ${name}. Click to remove link to that origin`;
+        const tipText = index
+          ? sentences(t("Secondary origin: {{name}}", { name }), t("Click to remove link to that origin"))
+          : sentences(t("Primary origin: {{name}}", { name }), t("Click to remove link to that origin"));
         return `<button data-id="${origin}" class="hierarchyTree_selectedButton hierarchyTree_selectedOrigin" data-tip="${tipText}">${code}</button>`;
       })
       .join("");
@@ -484,17 +491,17 @@ function selectElement(d: any): void {
       if (i === 0) {
         return /*html*/ `
         <div ${isChecked}>
-          <input data-tip="Set as primary origin" type="radio" name="primary" value="${i}" ${isPrimary} />
-          Top level
+          <input data-tip="${t("Set as primary origin")}" type="radio" name="primary" value="${i}" ${isPrimary} />
+          ${t("Top level")}
         </div>
       `;
       }
 
       return /*html*/ `
         <div ${isChecked}>
-          <input data-tip="Set as primary origin" type="radio" name="primary" value="${i}" ${isPrimary} />
+          <input data-tip="${t("Set as primary origin")}" type="radio" name="primary" value="${i}" ${isPrimary} />
           <input data-id="${i}" id="selectElementOrigin${i}" class="checkbox" type="checkbox" ${isChecked} />
-          <label data-tip="Check to set as a secondary origin" for="selectElementOrigin${i}" class="checkbox-label">
+          <label data-tip="${t("Check to set as a secondary origin")}" for="selectElementOrigin${i}" class="checkbox-label">
             <fill-box fill="${color}" size=".8em" disabled></fill-box>
             ${code}: ${name}
           </label>
@@ -509,10 +516,10 @@ function selectElement(d: any): void {
     `;
 
     $("#hierarchyTree_originSelector").dialog({
-      title: "Select origins",
+      title: t("Select origins"),
       position: { my: "center", at: "center", of: "svg" },
       buttons: {
-        Select: () => {
+        [t("Select")]: () => {
           $("#hierarchyTree_originSelector").dialog("close");
           const $selector = ensureEl("hierarchyTree_originSelector");
           const selectedRadio = $selector.querySelector<HTMLInputElement>("input[type='radio']:checked");
@@ -528,7 +535,7 @@ function selectElement(d: any): void {
           updateTree();
           createOriginButtons();
         },
-        Cancel: () => {
+        [t("Cancel")]: () => {
           $("#hierarchyTree_originSelector").dialog("close");
         }
       }
@@ -549,7 +556,7 @@ function handleNoteEnter(this: SVGGElement, _event: MouseEvent, d: any): void {
   onNodeEnter(d);
 
   ensureEl("hierarchyTree_infoLine").innerText = getDescription(d.data);
-  tip("Drag to other node to add parent, click to edit");
+  tip(t("Drag to other node to add parent, click to edit"));
 }
 
 function handleNodeExit(this: SVGGElement, _event: MouseEvent, d: any): void {

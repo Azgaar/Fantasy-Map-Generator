@@ -24,6 +24,7 @@ import { Names } from "@/generators/names-generator";
 import { Relief } from "@/generators/relief-generator";
 import { Transports } from "@/generators/transports-generator";
 import { safeParseJSON } from "@/utils";
+import { t } from "@/utils/i18n";
 import { rn } from "@/utils/numberUtils";
 import { deepMerge } from "@/utils/objectUtils";
 import { gauss, rand, rw } from "@/utils/probabilityUtils";
@@ -154,8 +155,9 @@ class OptionsModel {
       // a full storage keeps the last options; the map file still holds the map's own
       if (!(error instanceof DOMException && error.name === "QuotaExceededError")) throw error;
       console.error(error);
-      const message =
-        "Browser storage is full, so the latest settings are not kept in this browser. They are safe in the .map file: save the map to keep them";
+      const message = t(
+        "Browser storage is full, so the latest settings are not kept in this browser. They are safe in the .map file: save the map to keep them"
+      );
       tip(message, false, "error", 10000);
     }
   }

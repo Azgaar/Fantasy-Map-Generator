@@ -8,8 +8,8 @@ export interface TranslateOptions {
   context?: string;
   /** picks the plural form and fills `{{count}}` */
   count?: number;
-  /** values for the other `{{placeholders}}`, HTML-escaped */
-  [value: string]: string | number | undefined;
+  /** values for the other placeholders: `{{name}}` is HTML-escaped, `{{- name}}` inserted as is (markup, or a text-only sink) */
+  [value: string]: string | number | null | undefined;
 }
 
 const loaders = import.meta.glob<Strings>("../locales/*.json", { import: "default" });
@@ -56,9 +56,16 @@ function lookup(strings: Strings, base: string, count: number | undefined, rules
   return plural || strings[base] || undefined;
 }
 
-function interpolate(text: string, values: Record<string, string | number | undefined>): string {
-  return text.replace(/{{\s*(\w+)\s*}}/g, (placeholder, name: string) => {
+function interpolate(text: string, values: Record<string, string | number | null | undefined>): string {
+  return text.replace(/{{\s*(-)?\s*(\w+)\s*}}/g, (placeholder, raw: string | undefined, name: string) => {
     const value = values[name];
-    return value === undefined ? placeholder : escapeHtml(String(value));
+    if (value === undefined) return placeholder;
+    if (value === null) return "";
+    return raw ? String(value) : escapeHtml(String(value));
   });
+}
+
+/** Join translated sentences into one text, each sentence a catalog string of its own: `sentences(t("State name"), t("Click to change"))` */
+export function sentences(...parts: string[]): string {
+  return parts.map((part, i) => (i < parts.length - 1 && !/[.!?…:]$/.test(part) ? `${part}.` : part)).join(" ");
 }

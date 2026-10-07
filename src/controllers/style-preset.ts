@@ -9,7 +9,8 @@ import { applyVignetteOptions } from "@/renderers/draw-vignette";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { IconsArchive } from "@/services/io/icons-archive";
 import { CUSTOM_PREFIX, LEGACY_PREFIX, StylePresetsService } from "@/services/style-presets";
-import { downloadFile, ensureEl, isValidJSON, openURL, uploadFile } from "@/utils";
+import { downloadFile, ensureEl, escapeHtml, isValidJSON, openURL, uploadFile } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 
 let wired = false;
 
@@ -32,7 +33,7 @@ function syncLabel(): void {
 function applyPreset(presetJson: unknown): void {
   const parsed = StylePresetsService.parse(presetJson);
   if (!parsed) {
-    tip("The file is not a style preset - the current style is kept", false, "error", 5000);
+    tip(t("The file is not a style preset - the current style is kept"), false, "error", 5000);
     return;
   }
 
@@ -69,7 +70,7 @@ export function ensureGroupStyles(): void {
 // the preset by name; when it is gone or broken, the default with a tip saying so
 async function loadPreset(name: string): Promise<{ name: string; styles: unknown }> {
   const loaded = await StylePresetsService.load(name);
-  if (loaded.error) tip(`${loaded.error}. Applying default style`, false, "error", 8000);
+  if (loaded.error) tip(sentences(escapeHtml(loaded.error), t("Applying default style")), false, "error", 8000);
   return loaded;
 }
 
@@ -92,9 +93,9 @@ function requestChange(name: string): void {
   if (sessionStorage.getItem(CONFIRMED_KEY)) return void change(name);
 
   confirmationDialog({
-    title: "Change style preset",
-    message: "Are you sure you want to change the style preset? All unsaved style changes will be lost",
-    confirm: "Change",
+    title: t("Change style preset"),
+    message: t("Are you sure you want to change the style preset? All unsaved style changes will be lost"),
+    confirm: t("Change"),
     onConfirm: () => {
       sessionStorage.setItem(CONFIRMED_KEY, "true");
       void change(name);
@@ -125,19 +126,19 @@ function openSaver(): void {
   dialog.style.display = "none";
   dialog.innerHTML = /* html */ `
     <div style="padding: 2px 0">
-      <span>Preset name:</span>
-      <input id="styleSaverName" data-tip="Enter style preset name" placeholder="Preset name" style="width: 12em" required />
-      <span id="styleSaverTip" data-tip="Shows whether there is already a preset with this name" class="italic"></span>
+      <span>${t("Preset name")}:</span>
+      <input id="styleSaverName" data-tip="${t("Enter style preset name")}" placeholder="${t("Preset name")}" style="width: 12em" required />
+      <span id="styleSaverTip" data-tip="${t("Shows whether there is already a preset with this name")}" class="italic"></span>
     </div>
     <div style="padding: 2px 0; width: 100%">
-      <span>Style JSON:</span>
-      <textarea id="styleSaverJSON" rows="18" data-tip="Style JSON is getting formed based the current settings, but can be entered manually" placeholder="Paste any valid style data in JSON format" autocorrect="off" spellcheck="false"></textarea>
+      <span>${t("Style JSON")}:</span>
+      <textarea id="styleSaverJSON" rows="18" data-tip="${t("Style JSON is getting formed based the current settings, but can be entered manually")}" placeholder="${t("Paste any valid style data in JSON format")}" autocorrect="off" spellcheck="false"></textarea>
     </div>
     <div>
-      <button id="styleSaverSave" data-tip="Save current JSON as a new style preset" class="icon-check"></button>
-      <button id="styleSaverDownload" data-tip="Download the style as a .json file (can be opened in any text editor)" class="icon-download"></button>
-      <button id="styleSaverLoad" data-tip="Open previously downloaded style file" class="icon-upload"></button>
-      <button id="styleSaverCA" data-tip="Find or share custom style preset on Cartography Assets portal" class="icon-drafting-compass"></button>
+      <button id="styleSaverSave" data-tip="${t("Save current JSON as a new style preset")}" class="icon-check"></button>
+      <button id="styleSaverDownload" data-tip="${t("Download the style as a .json file (can be opened in any text editor)")}" class="icon-download"></button>
+      <button id="styleSaverLoad" data-tip="${t("Open previously downloaded style file")}" class="icon-upload"></button>
+      <button id="styleSaverCA" data-tip="${t("Find or share custom style preset on Cartography Assets portal")}" class="icon-drafting-compass"></button>
     </div>`;
   ensureEl("dialogs").append(dialog);
 
@@ -168,13 +169,13 @@ function openSaver(): void {
   const save = () => {
     const json = jsonInput.value;
     const desiredName = nameInput.value;
-    if (!json) return tip("Please provide a style JSON", false, "error");
-    if (!isValidJSON(json)) return tip("JSON string is not valid, please check the format", false, "error");
+    if (!json) return tip(t("Please provide a style JSON"), false, "error");
+    if (!isValidJSON(json)) return tip(t("JSON string is not valid, please check the format"), false, "error");
     if (!StylePresetsService.isPreset(JSON.parse(json)))
-      return tip("The JSON is not a style preset - nothing was saved", false, "error", 5000);
-    if (!desiredName) return tip("Please provide a preset name", false, "error");
+      return tip(t("The JSON is not a style preset - nothing was saved"), false, "error", 5000);
+    if (!desiredName) return tip(t("Please provide a preset name"), false, "error");
     if (nameStatus() === "default")
-      return tip("You cannot overwrite default preset, please change the name", false, "error");
+      return tip(t("You cannot overwrite default preset, please change the name"), false, "error");
 
     const name = CUSTOM_PREFIX + desiredName;
     options.map.style.preset = name;
@@ -182,16 +183,16 @@ function openSaver(): void {
     StylePresetsService.saveCustom(name, json);
     StylePresetsService.removeCustom(LEGACY_PREFIX + desiredName); // the saved preset replaces a legacy one
     applyWithUiRefresh(JSON.parse(json));
-    tip("Style preset is saved and applied", false, "success", 4000);
+    tip(t("Style preset is saved and applied"), false, "success", 4000);
     $(dialog).dialog("close");
   };
 
   const download = () => {
     const json = jsonInput.value;
     const name = nameInput.value;
-    if (!json) return tip("Please provide a style JSON", false, "error");
-    if (!isValidJSON(json)) return tip("JSON string is not valid, please check the format", false, "error");
-    if (!name) return tip("Please provide a preset name", false, "error");
+    if (!json) return tip(t("Please provide a style JSON"), false, "error");
+    if (!isValidJSON(json)) return tip(t("JSON string is not valid, please check the format"), false, "error");
+    if (!name) return tip(t("Please provide a preset name"), false, "error");
     downloadFile(json, `${name}.json`, "application/json");
     offerCustomIcons(json, name);
   };
@@ -199,12 +200,12 @@ function openSaver(): void {
   const upload = () => {
     const fileName = fileInput.files?.[0]?.name.replace(/\.[^.]*$/, "") ?? "";
     uploadFile(fileInput, data => {
-      if (!data) return tip("Cannot load the file. Please check the data format", false, "error");
-      if (!isValidJSON(data)) return tip("Loaded data is not a valid JSON, please check the format", false, "error");
+      if (!data) return tip(sentences(t("Cannot load the file"), t("Please check the data format")), false, "error");
+      if (!isValidJSON(data)) return tip(t("Loaded data is not a valid JSON, please check the format"), false, "error");
       jsonInput.value = JSON.stringify(JSON.parse(data), null, 2);
       nameInput.value = fileName;
       checkName();
-      tip("Style preset is uploaded", false, "success", 4000);
+      tip(t("Style preset is uploaded"), false, "success", 4000);
     });
   };
 
@@ -218,7 +219,7 @@ function openSaver(): void {
   fileInput.addEventListener("change", upload);
 
   $(dialog).dialog({
-    title: "Style Saver",
+    title: t("Style Saver"),
     width: "26em",
     position: { my: "center", at: "center", of: "svg" },
     close: () => destroyDialog("styleSaver")
@@ -231,17 +232,20 @@ function offerCustomIcons(json: string, name: string): void {
   if (!ids.size) return;
   const icons = CustomIcons.all.filter(icon => ids.has(icon.id));
 
-  const count = ids.size === 1 ? "1 custom icon" : `${ids.size} custom icons`;
   const missing = ids.size - icons.length;
-  const absent = missing ? ` ${missing} of them ${missing === 1 ? "is" : "are"} not on this map.` : "";
-  const message = `The style uses ${count}. Custom icons are stored in the map, not in the style, so they must be re-uploaded on the target map.${absent}`;
-  if (!icons.length) return void alertDialog({ title: "Custom icons", message });
+  const absent = missing ? `. ${t("Not on this map: {{missing}}", { missing })}` : "";
+  const message =
+    sentences(
+      t("Custom icons used by the style: {{icons}}", { icons: ids.size }),
+      t("Custom icons are stored in the map, not in the style, so they must be re-uploaded on the target map")
+    ) + absent;
+  if (!icons.length) return void alertDialog({ title: t("Custom icons"), message });
 
   confirmationDialog({
-    title: "Custom icons",
-    message: `${message}<br><br>Download the icons as a zip? Import it on the target map via the icon picker: <i>Custom → Import zip</i>`,
-    confirm: "Download icons",
-    cancel: "Skip",
+    title: t("Custom icons"),
+    message: `${message}<br><br>${t("Download the icons as a zip? Import it on the target map via the icon picker: <i>Custom → Import zip</i>")}`,
+    confirm: t("Download icons"),
+    cancel: t("Skip"),
     onConfirm: async () => {
       try {
         downloadFile(await IconsArchive.pack(icons), `${name} icons.zip`, "application/zip");
@@ -254,12 +258,14 @@ function offerCustomIcons(json: string, name: string): void {
 
 /** Remove a custom preset; when it is the current one, the map falls back to default */
 function remove(name: string): void {
-  if (StylePresetsService.isSystem(name)) return void tip("Cannot remove system preset", false, "error");
+  if (StylePresetsService.isSystem(name)) return void tip(t("Cannot remove system preset"), false, "error");
 
   confirmationDialog({
-    title: "Remove style preset",
-    message: `Are you sure you want to remove the "${StylePresetsService.displayName(name)}" preset? This action cannot be undone.`,
-    confirm: "Remove",
+    title: t("Remove style preset"),
+    message: t("Are you sure you want to remove the “{{preset}}” preset? This action cannot be undone.", {
+      preset: StylePresetsService.displayName(name)
+    }),
+    confirm: t("Remove"),
     onConfirm: () => {
       StylePresetsService.removeCustom(name);
       if (name === options.map.style.preset) void change("default");

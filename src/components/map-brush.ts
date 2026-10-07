@@ -5,6 +5,7 @@ import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import type { Point } from "@/types/global";
 import { ensureEl, minmax } from "@/utils";
 import { createBrushStroke } from "@/utils/brushUtils";
+import { sentences, t } from "@/utils/i18n";
 
 /** what one stroke does with the points it passes over; the tool keeps its per-stroke state in the closure */
 type Stamp = (point: Point) => void;
@@ -49,7 +50,7 @@ export class MapBrush {
     this.options = { ...options, id, min, max, spacing };
     this.currentRadius = minmax(options.radius ?? 12, min, max);
 
-    this.markup = /* html */ `<div data-tip="Change brush size. Shortcut: Shift + drag on the map, or + and −">
+    this.markup = /* html */ `<div data-tip="${sentences(t("Change brush size"), t("Shortcut: Shift + drag on the map, or + and −"))}">
       <slider-input id="${id}" min="${min}" max="${max}" step="1" value="${this.currentRadius}" data-key-step="${keyStep}" data-brush-size
         >${label}</slider-input>
     </div>`;

@@ -20,6 +20,7 @@ import {
 import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { downloadFile, getArea, getAreaUnit, getFileName, getHeight, getPrecipitation } from "@/utils";
+import { t } from "@/utils/i18n";
 import { capitalize, convertTemperature, ensureEl, formatPrice, isWater, rn, si } from "../utils";
 
 interface Dimension {
@@ -84,49 +85,49 @@ interface StackSeries {
 
 const entitiesMap: Record<string, Dimension> = {
   states: {
-    label: "State",
+    label: t("State"),
     getId: cellId => pack.cells.state[cellId],
     getName: nameGetter("states"),
     getColors: colorsGetter("states"),
     landOnly: true
   },
   cultures: {
-    label: "Culture",
+    label: t("Culture"),
     getId: cellId => pack.cells.culture[cellId],
     getName: nameGetter("cultures"),
     getColors: colorsGetter("cultures"),
     landOnly: true
   },
   religions: {
-    label: "Religion",
+    label: t("Religion"),
     getId: cellId => pack.cells.religion[cellId],
     getName: nameGetter("religions"),
     getColors: colorsGetter("religions"),
     landOnly: true
   },
   provinces: {
-    label: "Province",
+    label: t("Province"),
     getId: cellId => pack.cells.province[cellId],
     getName: nameGetter("provinces"),
     getColors: colorsGetter("provinces"),
     landOnly: true
   },
   biomes: {
-    label: "Biome",
+    label: t("Biome"),
     getId: cellId => pack.cells.biome[cellId],
     getName: biomeNameGetter,
     getColors: biomeColorsGetter,
     landOnly: false
   },
   markets: {
-    label: "Market",
+    label: t("Market"),
     getId: cellId => pack.cells.market[cellId],
     getName: marketNameGetter,
     getColors: marketColorsGetter,
     landOnly: false
   },
   goods: {
-    label: "Good",
+    label: t("Good"),
     requires: "good",
     getId: (_cellId, contribution) => contribution.good!,
     getName: goodNameGetter,
@@ -137,7 +138,7 @@ const entitiesMap: Record<string, Dimension> = {
 
 const quantizationMap: Record<string, Metric> = {
   total_population: {
-    label: "Total population",
+    label: t("Total population"),
     quantize: cellId => getUrbanPopulation(cellId) + getRuralPopulation(cellId),
     aggregate: values => rn(sum(values)),
     formatTicks: value => si(value),
@@ -146,7 +147,7 @@ const quantizationMap: Record<string, Metric> = {
     landOnly: true
   },
   urban_population: {
-    label: "Urban population",
+    label: t("Urban population"),
     quantize: getUrbanPopulation,
     aggregate: values => rn(sum(values)),
     formatTicks: value => si(value),
@@ -155,7 +156,7 @@ const quantizationMap: Record<string, Metric> = {
     landOnly: true
   },
   rural_population: {
-    label: "Rural population",
+    label: t("Rural population"),
     quantize: getRuralPopulation,
     aggregate: values => rn(sum(values)),
     formatTicks: value => si(value),
@@ -164,7 +165,7 @@ const quantizationMap: Record<string, Metric> = {
     landOnly: true
   },
   area: {
-    label: "Land area",
+    label: t("Land area"),
     quantize: cellId => getArea(pack.cells.area[cellId]),
     aggregate: values => rn(sum(values)),
     formatTicks: value => `${si(value)} ${getAreaUnit()}`,
@@ -173,8 +174,8 @@ const quantizationMap: Record<string, Metric> = {
     landOnly: true
   },
   cells: {
-    label: "Cells",
-    hint: "Number of land cells",
+    label: t("Cells"),
+    hint: t("Number of land cells"),
     quantize: () => 1,
     aggregate: values => sum(values),
     formatTicks: value => value,
@@ -183,8 +184,8 @@ const quantizationMap: Record<string, Metric> = {
     landOnly: true
   },
   burgs_number: {
-    label: "Burgs",
-    hint: "Number of burgs",
+    label: t("Burgs"),
+    hint: t("Number of burgs"),
     quantize: cellId => (pack.cells.burg[cellId] ? 1 : 0),
     aggregate: values => sum(values),
     formatTicks: value => value,
@@ -193,7 +194,7 @@ const quantizationMap: Record<string, Metric> = {
     landOnly: true
   },
   average_elevation: {
-    label: "Average elevation",
+    label: t("Average elevation"),
     quantize: cellId => pack.cells.h[cellId],
     aggregate: values => mean(values)!,
     formatTicks: value => getHeight(value),
@@ -202,7 +203,7 @@ const quantizationMap: Record<string, Metric> = {
     landOnly: false
   },
   max_elevation: {
-    label: "Maximum mean elevation",
+    label: t("Maximum mean elevation"),
     quantize: cellId => pack.cells.h[cellId],
     aggregate: values => max(values)!,
     formatTicks: value => getHeight(value),
@@ -211,7 +212,7 @@ const quantizationMap: Record<string, Metric> = {
     landOnly: false
   },
   min_elevation: {
-    label: "Minimum mean elevation",
+    label: t("Minimum mean elevation"),
     quantize: cellId => pack.cells.h[cellId],
     aggregate: values => min(values)!,
     formatTicks: value => getHeight(value),
@@ -220,7 +221,7 @@ const quantizationMap: Record<string, Metric> = {
     landOnly: false
   },
   average_temperature: {
-    label: "Annual mean temperature",
+    label: t("Annual mean temperature"),
     quantize: cellId => grid.cells.temp[pack.cells.g[cellId]],
     aggregate: values => mean(values)!,
     formatTicks: value => convertTemperature(value),
@@ -229,8 +230,8 @@ const quantizationMap: Record<string, Metric> = {
     landOnly: false
   },
   max_temperature: {
-    label: "Annual max temperature",
-    hint: "Highest mean temperature of the year",
+    label: t("Annual max temperature"),
+    hint: t("Highest mean temperature of the year"),
     quantize: cellId => grid.cells.temp[pack.cells.g[cellId]],
     aggregate: values => max(values)!,
     formatTicks: value => convertTemperature(value),
@@ -239,8 +240,8 @@ const quantizationMap: Record<string, Metric> = {
     landOnly: false
   },
   min_temperature: {
-    label: "Annual min temperature",
-    hint: "Lowest mean temperature of the year",
+    label: t("Annual min temperature"),
+    hint: t("Lowest mean temperature of the year"),
     quantize: cellId => grid.cells.temp[pack.cells.g[cellId]],
     aggregate: values => min(values)!,
     formatTicks: value => convertTemperature(value),
@@ -249,7 +250,7 @@ const quantizationMap: Record<string, Metric> = {
     landOnly: false
   },
   average_precipitation: {
-    label: "Annual mean precipitation",
+    label: t("Annual mean precipitation"),
     quantize: cellId => grid.cells.prec[pack.cells.g[cellId]],
     aggregate: values => rn(mean(values)!),
     formatTicks: value => getPrecipitation(rn(value)),
@@ -258,8 +259,8 @@ const quantizationMap: Record<string, Metric> = {
     landOnly: true
   },
   max_precipitation: {
-    label: "Annual max precipitation",
-    hint: "Highest mean precipitation of the year",
+    label: t("Annual max precipitation"),
+    hint: t("Highest mean precipitation of the year"),
     quantize: cellId => grid.cells.prec[pack.cells.g[cellId]],
     aggregate: values => rn(max(values)!),
     formatTicks: value => getPrecipitation(rn(value)),
@@ -268,8 +269,8 @@ const quantizationMap: Record<string, Metric> = {
     landOnly: true
   },
   min_precipitation: {
-    label: "Annual min precipitation",
-    hint: "Lowest mean precipitation of the year",
+    label: t("Annual min precipitation"),
+    hint: t("Lowest mean precipitation of the year"),
     quantize: cellId => grid.cells.prec[pack.cells.g[cellId]],
     aggregate: values => rn(min(values)!),
     formatTicks: value => getPrecipitation(rn(value)),
@@ -278,7 +279,7 @@ const quantizationMap: Record<string, Metric> = {
     landOnly: true
   },
   coastal_cells: {
-    label: "Number of coastal cells",
+    label: t("Number of coastal cells"),
     quantize: cellId => (pack.cells.t[cellId] === 1 ? 1 : 0),
     aggregate: values => sum(values),
     formatTicks: value => value,
@@ -287,7 +288,7 @@ const quantizationMap: Record<string, Metric> = {
     landOnly: true
   },
   river_cells: {
-    label: "Number of river cells",
+    label: t("Number of river cells"),
     quantize: cellId => (pack.cells.r[cellId] ? 1 : 0),
     aggregate: values => sum(values),
     formatTicks: value => value,
@@ -296,8 +297,8 @@ const quantizationMap: Record<string, Metric> = {
     landOnly: true
   },
   production_value: {
-    label: "Production value",
-    hint: "Worth of produced goods",
+    label: t("Production value"),
+    hint: t("Worth of produced goods"),
     provides: ["good"],
     prepare: () => ({ biomeProduction: Goods.getBiomesProduction() }),
     getContributions: (cellId, { biomeProduction }) => {
@@ -316,8 +317,8 @@ const quantizationMap: Record<string, Metric> = {
     landOnly: true
   },
   production_units: {
-    label: "Production volume",
-    hint: "Units of goods produced",
+    label: t("Production volume"),
+    hint: t("Units of goods produced"),
     provides: ["good"],
     prepare: () => ({ biomeProduction: Goods.getBiomesProduction() }),
     getContributions: (cellId, { biomeProduction }) => {
@@ -333,8 +334,8 @@ const quantizationMap: Record<string, Metric> = {
     landOnly: true
   },
   burgs_profit: {
-    label: "Burgs profit",
-    hint: "Burgs profit from trade and manufacturing",
+    label: t("Burgs profit"),
+    hint: t("Burgs profit from trade and manufacturing"),
     quantize: cellId => {
       const burgId = pack.cells.burg[cellId];
       return burgId ? pack.burgs[burgId].product || 0 : 0;
@@ -374,7 +375,7 @@ function open() {
   else for (const chart of charts) renderChart(chart);
 
   $("#chartsOverview").dialog({
-    title: "Data Charts",
+    title: t("Data Charts"),
     width: "60vw",
     height: "auto",
     position: { my: "center", at: "center", of: "svg" },
@@ -393,48 +394,48 @@ function renderDialog() {
   const html = /* html */ `<div id="chartsOverview" class="dialog stable">
     <form id="chartsOverview__form">
       <div>
-        <button data-tip="Add a chart" type="submit">Plot</button>
+        <button data-tip="${t("Add a chart")}" type="submit">${t("Plot")}</button>
 
-        <select data-tip="Select entity (y axis)" id="chartsOverview__entitiesSelect">
+        <select data-tip="${t("Select entity (y axis)")}" id="chartsOverview__entitiesSelect">
           ${createOptions(entities)}
         </select>
 
-        <label for="chartsOverview__plotBySelect" data-tip="Select metric to plot (x axis)">
-          <span>by</span>
+        <label for="chartsOverview__plotBySelect" data-tip="${t("Select metric to plot (x axis)")}">
+          <span>${t("by")}</span>
           <select id="chartsOverview__plotBySelect">
             ${createOptions(plotBy)}
           </select>
           <i id="chartsOverview__plotByInfo" class="icon-info-circled" style="display: none"></i>
         </label>
 
-        <label for="chartsOverview__groupBySelect" data-tip="Select entity to group by. If you don't need grouping, set it the same as the entity">
-          <span>grouped by</span>
+        <label for="chartsOverview__groupBySelect" data-tip="${t("Select entity to group by. If you don't need grouping, set it the same as the entity")}">
+          <span>${t("grouped by")}</span>
           <select id="chartsOverview__groupBySelect">
             ${createOptions(entities)}
           </select>
         </label>
 
-        <label data-tip="Sorting type" for="chartsOverview__sortingSelect">
-          <span>sorted</span>
+        <label data-tip="${t("Sorting type")}" for="chartsOverview__sortingSelect">
+          <span>${t("sorted")}</span>
           <select id="chartsOverview__sortingSelect">
-            <option value="value">by value</option>
-            <option value="name">by name</option>
-            <option value="natural">naturally</option>
+            <option value="value">${t("by value")}</option>
+            <option value="name">${t("by name")}</option>
+            <option value="natural">${t("naturally")}</option>
           </select>
         </label>
       </div>
 
       <div>
-        <label data-tip="Select chart type" for="chartsOverview__chartType">
-          <span>Type</span>
+        <label data-tip="${t("Select chart type")}" for="chartsOverview__chartType">
+          <span>${t("Type")}</span>
           <select id="chartsOverview__chartType">
-            <option value="stackedBar" selected>Stacked Bar</option>
-            <option value="normalizedStackedBar">Normalized Bar</option>
+            <option value="stackedBar" selected>${t("Stacked Bar")}</option>
+            <option value="normalizedStackedBar">${t("Normalized Bar")}</option>
           </select>
         </label>
 
-        <label data-tip="Show the charts in 1, 2, 3 or 4 columns" for="chartsOverview__viewColumns">
-          <span>Columns</span>
+        <label data-tip="${t("Show the charts in 1, 2, 3 or 4 columns")}" for="chartsOverview__viewColumns">
+          <span>${t("Columns")}</span>
           <select id="chartsOverview__viewColumns">
             <option value="1" selected>1</option>
             <option value="2">2</option>
@@ -443,9 +444,9 @@ function renderDialog() {
           </select>
         </label>
 
-        <label data-tip="Exclude zero element from the results (id 0, e.g. the neutral state)" for="chartsOverview__excludeNeutral">
+        <label data-tip="${t("Exclude zero element from the results (id 0, e.g. the neutral state)")}" for="chartsOverview__excludeNeutral">
           <input id="chartsOverview__excludeNeutral" type="checkbox" class="native" />
-          <span>Exclude neutral</span>
+          <span>${t("Exclude neutral")}</span>
         </label>
       </div>
     </form>
@@ -562,7 +563,10 @@ function addChart(event?: Event) {
   const incompatible = [entity, groupBy].find(lacksTag);
   if (incompatible) {
     tip(
-      `${plotByLabel} cannot be broken down by ${entitiesMap[incompatible].label.toLowerCase()}`,
+      t("{{plot}} cannot be broken down by {{group}}", {
+        plot: plotByLabel,
+        group: entitiesMap[incompatible].label.toLowerCase()
+      }),
       false,
       "error",
       4000
@@ -571,7 +575,7 @@ function addChart(event?: Event) {
   }
 
   if (!stackable && groupBy !== entity) {
-    tip(`Grouping is not supported for ${plotBy}`, false, "warn", 4000);
+    tip(t("Grouping is not supported for {{plot}}", { plot: plotBy }), false, "warn", 4000);
     groupBy = entity;
   }
 
@@ -823,13 +827,13 @@ function insertChart(id: number, sortedData: ChartDatum[], $chart: SVGSVGElement
   const figureNo = $chartContainer.childElementCount + 1;
   $caption.innerHTML = /* html */ `
     <div>
-      <strong>Figure ${figureNo}</strong>. ${title}
+      <strong>${t("Figure {{number}}", { number: figureNo })}</strong>. ${title}
     </div>
     <div>
-      <button data-tip="Download chart data as a text file (.csv)" class="icon-download"></button>
-      <button data-tip="Download the chart as a PNG image" class="icon-export"></button>
-      <button data-tip="Download the chart in SVG format (vector, opens in a browser or Inkscape)" class="icon-chart-bar"></button>
-      <button data-tip="Remove the chart" class="icon-trash"></button>
+      <button data-tip="${t("Download the chart data as a CSV file")}" class="icon-download"></button>
+      <button data-tip="${t("Download the chart as a PNG image")}" class="icon-export"></button>
+      <button data-tip="${t("Download the chart in SVG format (vector, opens in a browser or Inkscape)")}" class="icon-chart-bar"></button>
+      <button data-tip="${t("Remove the chart")}" class="icon-trash"></button>
     </div>
   `;
 
