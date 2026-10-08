@@ -9,8 +9,10 @@ export const LANGUAGES = {
   pl: "Polski",
   it: "Italiano",
   pt: "Português (Portugal)",
+  "pt-BR": "Português (Brasil)",
   nl: "Nederlands",
   ja: "日本語",
+  uk: "Українська",
   zh: "简体中文"
 } as const;
 

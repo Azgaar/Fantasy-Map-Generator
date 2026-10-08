@@ -59,7 +59,7 @@ const columns: EditorColumn<Journey>[] = [
   { key: "distance", label: t("Distance"), width: "7em", sortBy: j => Journeys.getTotals(j).totalDistance },
   {
     key: "speed",
-    label: t("Speed"),
+    label: t("Speed", { context: "column" }),
     width: "6em",
     mobileHidden: true,
     tip: t("Average speed"),

@@ -25,6 +25,14 @@ describe("resolveLanguage", () => {
     expect(resolveLanguage()).toBe("ru");
   });
 
+  it("keeps the Brazilian catalog for pt-BR and gives other Portuguese the Portugal one", () => {
+    browserLanguages(["pt-BR"]);
+    expect(resolveLanguage()).toBe("pt-BR");
+
+    browserLanguages(["pt-PT"]);
+    expect(resolveLanguage()).toBe("pt");
+  });
+
   it("falls back to English for an unshipped browser language or unreadable options", () => {
     browserLanguages(["ko-KR"]);
     localStorage.setItem(OPTIONS_STORAGE_KEY, "{not json");

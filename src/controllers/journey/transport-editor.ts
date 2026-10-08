@@ -19,7 +19,7 @@ const position = { my: "center", at: "center", of: "svg", collision: "fit" };
 
 const columns: EditorColumn<Transport>[] = [
   { key: "name", label: t("Name"), width: "14em", permanent: true },
-  { key: "speed", label: t("Speed"), width: "5em" },
+  { key: "speed", label: t("Speed", { context: "column" }), width: "5em" },
   { key: "hoursPerDay", label: t("h/day"), width: "4em", tip: t("Hours of travel a day sustains with this transport") },
   { key: "domain", label: t("Domain"), width: "5em" },
   { key: "remove", width: "1.4em", permanent: true }

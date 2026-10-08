@@ -1,5 +1,5 @@
 // The interface language at startup. Kept light: it runs before the app modules are loaded
-import { isLanguage, type Language } from "@/data/languages";
+import { isLanguage, LANGUAGE_CODES, type Language } from "@/data/languages";
 
 /** `Options`' storage key, read here before `Options` itself is loaded */
 export const OPTIONS_STORAGE_KEY = "fmg-options";
@@ -10,8 +10,14 @@ export function resolveLanguage(): Language {
   if (stored) return stored;
 
   const preferred = navigator.languages?.length ? navigator.languages : [navigator.language];
-  const code = preferred.map(tag => tag?.split("-")[0].toLowerCase()).find(isLanguage);
-  return code ?? "en";
+  return preferred.map(tag => matchLanguage(tag ?? "")).find(Boolean) ?? "en";
+}
+
+/** A shipped language for a browser tag: its exact tag (pt-BR), else its base language (pt-PT → pt) */
+function matchLanguage(tag: string): Language | undefined {
+  const lower = tag.toLowerCase();
+  const sameTag = LANGUAGE_CODES.find(code => code.toLowerCase() === lower);
+  return sameTag ?? LANGUAGE_CODES.find(code => code.toLowerCase() === lower.split("-")[0]);
 }
 
 function storedLanguage(): Language | undefined {

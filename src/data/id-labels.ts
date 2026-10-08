@@ -179,3 +179,23 @@ export const VIGNETTE_PRESET_LABELS: Record<string, string> = {
   granite: t("Granite"),
   spotlight: t("Spotlight")
 };
+
+/** Icon picker category names: the emoji themes and the built-in set groups, keyed by their English name */
+export const ICON_GROUP_LABELS: Record<string, string> = {
+  "War & power": t("War & power"),
+  "Magic & myth": t("Magic & myth"),
+  "Faith & signs": t("Faith & signs"),
+  "Shapes & colors": t("Shapes & colors"),
+  "Places & travel": t("Places & travel"),
+  "Crafts & tools": t("Crafts & tools"),
+  "Trade & treasure": t("Trade & treasure"),
+  "Arts & leisure": t("Arts & leisure"),
+  "Sky & weather": t("Sky & weather"),
+  "Reptiles & bugs": t("Reptiles & bugs"),
+  "Sea life": t("Sea life"),
+  "Food & drink": t("Food & drink"),
+  Settlements: t("Settlements"),
+  Relief: t("Relief"),
+  Goods: t("Goods"),
+  Heraldry: t("Heraldry")
+};

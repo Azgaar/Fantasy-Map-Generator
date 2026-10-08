@@ -57,7 +57,7 @@ const columns: EditorColumn<JourneySegment>[] = [
   { key: "to", label: t("To"), width: "11em", mobileHidden: true },
   { key: "transport", label: t("Transport"), width: "10em" },
   { key: "distance", label: t("Distance"), width: "5em" },
-  { key: "speed", label: t("Speed"), width: "5em", mobileHidden: true },
+  { key: "speed", label: t("Speed", { context: "column" }), width: "5em", mobileHidden: true },
   { key: "time", label: t("Time"), width: "5em" },
   { key: "roads", width: "1.4em", mobileHidden: true },
   { key: "visible", width: "1.4em", mobileHidden: true },

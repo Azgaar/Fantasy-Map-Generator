@@ -197,7 +197,7 @@ function walk(schema: z.ZodObject, meta: Meta): WalkedField[] {
 
 const STYLE = /* css */ `
   .schema-form .row { display: flex; align-items: center; gap: .3em; line-height: 1.5; }
-  .schema-form .row > label { flex: 0 0 8em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .schema-form .row > label { flex: 0 0 8em; overflow-wrap: anywhere; }
   .schema-form .row > .ctl { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: .3em; }
   .schema-form .ctl > select, .schema-form .ctl > input[type="text"], .schema-form .ctl > slider-input, .schema-form .ctl > .inline { flex: 1 1 0; min-width: 0; }
   .schema-form .inline { display: flex; align-items: center; gap: .3em; }

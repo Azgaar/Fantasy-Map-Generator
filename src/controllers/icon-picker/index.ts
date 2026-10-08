@@ -4,6 +4,7 @@ import { type IconSetId, IconSets } from "@/components/icon-sets";
 import { type CustomIcon, CustomIcons, type IconPicture, Icons } from "@/components/icons";
 import { tip } from "@/components/tooltips";
 import { ICON_GROUPS } from "@/data/icons-list";
+import { ICON_GROUP_LABELS } from "@/data/id-labels";
 import { IconsArchive } from "@/services/io/icons-archive";
 import type { IconSet } from "@/types/icons";
 import { capitalize, createFileInput, downloadFile, ensureEl, escapeHtml, getFileName } from "@/utils";
@@ -344,7 +345,7 @@ function catalog(): Entry[] {
   const emoji = Object.entries(ICON_GROUPS).map(([label, glyphs]) => ({
     key: `glyph/${label}`,
     group: t("Emoji"),
-    label,
+    label: ICON_GROUP_LABELS[label] ?? label,
     icons: Object.keys(glyphs).map(glyph => Icons.glyph(glyph))
   }));
   return [...emoji, ...IconSets.sets().flatMap(setEntries)];
@@ -385,8 +386,11 @@ function viewOf(current: string, entries: Entry[], preferCustom?: boolean): stri
 
 /** Relief · Simple, or Goods for a set that is its own group */
 function entryLabel(entry: Entry): string {
-  return entry.label === entry.group ? entry.group : `${entry.group} · ${entry.label}`;
+  return entry.label === entry.group ? groupName(entry.group) : `${groupName(entry.group)} · ${entry.label}`;
 }
+
+/** a set group's name in the interface; the group stays English in the data */
+const groupName = (group: string): string => ICON_GROUP_LABELS[group] ?? group;
 
 /** the selected icon, with its custom icon actions */
 function renderCurrent(current: string, replacing: string | null, entries: Entry[]): string {
@@ -420,8 +424,8 @@ function renderSources(entries: Entry[], active: string | null): string {
     `<button type="button" data-source="${escapeHtml(key)}" class="${type} ${key === active ? "active" : ""}">${label}${count ? ` <small>${count}</small>` : ""}</button>`;
   let group = "";
   const list = entries.map(entry => {
-    if (entry.label === entry.group) return item(entry.key, entry.label, entry.icons.length, "section");
-    const heading = entry.group === group ? "" : `<div class="section">${entry.group}</div>`;
+    if (entry.label === entry.group) return item(entry.key, groupName(entry.group), entry.icons.length, "section");
+    const heading = entry.group === group ? "" : `<div class="section">${groupName(entry.group)}</div>`;
     group = entry.group;
     return heading + item(entry.key, entry.label, entry.icons.length, "entry");
   });
