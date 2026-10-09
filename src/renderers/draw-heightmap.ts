@@ -62,6 +62,12 @@ function getContourSurface(smoothed: Float64Array): { points: [number, number][]
   return { points, elevations };
 }
 
+type HeightsOptions = typeof styles.heightmap.groups.landHeights.options;
+
+/** Whether the heights group is tinted by elevation, not drawn as contour or hachure lines alone */
+export const hasHeightTints = (heightOptions: HeightsOptions): boolean =>
+  heightOptions.contours.mode !== "only" && heightOptions.hachures.mode !== "only";
+
 export const drawHeightmap = (): void => {
   if (customization === 1)
     return void tip("The Layer control is not available in the heightmap edit mode", false, "error");
@@ -81,9 +87,8 @@ export const drawHeightmap = (): void => {
 
   const landOptions = styles.heightmap.groups.landHeights.options;
   const oceanOptions = styles.heightmap.groups.oceanHeights.options;
-  const linesOnly = (o: typeof landOptions) => o.contours.mode === "only" || o.hachures.mode === "only";
-  const landFillsVisible = !linesOnly(landOptions);
-  const oceanFillsVisible = !linesOnly(oceanOptions);
+  const landFillsVisible = hasHeightTints(landOptions);
+  const oceanFillsVisible = hasHeightTints(oceanOptions);
 
   // ocean cells
   const renderOceanCells = oceanOptions.render;
