@@ -5,7 +5,7 @@
  * See docs/prd/translation.md
  *
  * Usage:
- *   node scripts/lint-locales.mjs             # exit 1 on any problem (CI)
+ *   node scripts/lint-locales.mjs             # exit 1 on a broken string, warn about missing translations (CI)
  *   node scripts/lint-locales.mjs --missing   # list the English keys each language lacks, to translate
  */
 
@@ -26,9 +26,7 @@ const placeholders = text =>
 
 const LINE_BREAK = /[\n\r⏎]/;
 const OUTER_SPACE = /^\s|\s$/;
-
-/** The tags of a text with their spacing normalised: `</a >` and `</a>` are the same tag */
-const tagsOf = text => [...text.matchAll(/<\/?[a-zA-Z][^>]*>/g)].map(match => match[0].replace(/\s+(\/?>)$/, "$1"));
+const MARKUP = /<\/?[a-zA-Z][^>]*>/;
 
 /** What a locale's strings get wrong against the English catalog; lint English against itself */
 export function lintCatalog(strings, english) {
@@ -42,10 +40,9 @@ export function lintCatalog(strings, english) {
     else {
       if (OUTER_SPACE.test(value) || LINE_BREAK.test(value))
         problems.push(`"${key}": a value is one line with no outer spaces`);
-      if (value.replace(/<[^>]*>/g, "").includes('"'))
-        problems.push(`"${key}": a raw double quote outside a tag breaks attribute markup, use “ ”`);
+      if (MARKUP.test(value)) problems.push(`"${key}": markup belongs in code, pass it in a {{- placeholder}}`);
+      if (value.includes('"')) problems.push(`"${key}": a raw double quote breaks attribute markup, use “ ”`);
       if (placeholders(value) !== placeholders(source)) problems.push(`"${key}": placeholders differ from the English`);
-      if (tagsOf(value).join() !== tagsOf(source).join()) problems.push(`"${key}": markup differs from the English`);
       if (/[:：]\s*$/.test(value)) problems.push(`"${key}": ends with a colon, put it in code`);
     }
   }
@@ -72,6 +69,10 @@ function englishFor(key, english) {
   return english[key];
 }
 
+/** A GitHub Actions annotation in CI, a plain line elsewhere */
+const warn = (file, message) =>
+  process.env.GITHUB_ACTIONS ? console.log(`::warning file=${file}::${message}`) : console.warn(`${file}: ${message}`);
+
 function main() {
   const read = file => JSON.parse(fs.readFileSync(file, "utf8"));
   const english = read(ENGLISH);
@@ -95,6 +96,11 @@ function main() {
     if (!problems.length) continue;
     failed = true;
     console.error(`${file}:\n${problems.map(problem => `  ${problem}`).join("\n")}`);
+  }
+
+  for (const file of files.filter(file => file !== ENGLISH)) {
+    const missing = missingKeys(read(file), english, path.basename(file, ".json")).length;
+    if (missing) warn(file, `untranslated strings: ${missing}, shown in English; list them with --missing`);
   }
 
   if (failed) process.exit(1);

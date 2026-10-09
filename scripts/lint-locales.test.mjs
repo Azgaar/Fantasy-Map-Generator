@@ -31,7 +31,7 @@ describe("lintCatalog", () => {
     assert.deepEqual(lintCatalog(broken, ENGLISH), [
       '"Lakes": not in the English catalog',
       '"Rivers": empty, leave it out instead',
-      '"{{layer}}: click": a raw double quote outside a tag breaks attribute markup, use “ ”',
+      '"{{layer}}: click": a raw double quote breaks attribute markup, use “ ”',
       '"{{count}} burgs_few": placeholders differ from the English'
     ]);
   });
@@ -43,20 +43,23 @@ describe("lintCatalog", () => {
     assert.deepEqual(lintCatalog({ Rivers: "Реки：" }, ENGLISH), ['"Rivers": ends with a colon, put it in code']);
   });
 
-  it("allows quotes inside tags and requires the same raw placeholders", () => {
-    const english = { 'See <a href="x">{{- link}}</a>': 'See <a href="x">{{- link}}</a>' };
-    assert.deepEqual(lintCatalog({ 'See <a href="x">{{- link}}</a>': 'См. <a href="x">{{- link}}</a>' }, english), []);
-    assert.deepEqual(lintCatalog({ 'See <a href="x">{{- link}}</a>': 'См. <a href="x">{{link}}</a>' }, english), [
-      '"See <a href="x">{{- link}}</a>": placeholders differ from the English'
+  it("rejects markup and requires the same raw placeholders", () => {
+    const english = { "See {{- link}}": "See {{- link}}", "Click <b>here</b>": "Click <b>here</b>" };
+    assert.deepEqual(lintCatalog({ "See {{- link}}": "См. {{- link}}" }, english), []);
+    assert.deepEqual(lintCatalog({ "See {{- link}}": "См. {{link}}" }, english), [
+      '"See {{- link}}": placeholders differ from the English'
+    ]);
+    assert.deepEqual(lintCatalog({ "See {{- link}}": 'См. <a href="x">{{- link}}</a>' }, english), [
+      '"See {{- link}}": markup belongs in code, pass it in a {{- placeholder}}',
+      '"See {{- link}}": a raw double quote breaks attribute markup, use “ ”'
+    ]);
+    assert.deepEqual(lintCatalog(english, english), [
+      '"Click <b>here</b>": markup belongs in code, pass it in a {{- placeholder}}'
     ]);
   });
 
-  it("reports stray spacing, line breaks and changed markup", () => {
-    const english = { "Click <b>here</b>": "Click <b>here</b>", " Port": " Port", Ship: "Ship" };
-    assert.deepEqual(lintCatalog({ "Click <b>here</b>": "Нажмите <b >здесь</b>" }, english), []);
-    assert.deepEqual(lintCatalog({ "Click <b>here</b>": "Нажмите здесь" }, english), [
-      '"Click <b>here</b>": markup differs from the English'
-    ]);
+  it("reports stray spacing and line breaks", () => {
+    const english = { " Port": " Port", Ship: "Ship" };
     assert.deepEqual(lintCatalog({ Ship: " Корабль" }, english), ['"Ship": a value is one line with no outer spaces']);
     assert.deepEqual(lintCatalog({ Ship: "Корабль⏎ тут" }, english), ['"Ship": a value is one line with no outer spaces']);
     assert.deepEqual(lintCatalog({ Ship: "Корабль\n   тут" }, english), ['"Ship": a value is one line with no outer spaces']);
@@ -67,7 +70,7 @@ describe("lintCatalog", () => {
     assert.deepEqual(lintCatalog(ENGLISH, ENGLISH), []);
     const quoted = { ...ENGLISH, 'Say "hi"': 'Say "hi"' };
     assert.deepEqual(lintCatalog(quoted, quoted), [
-      '"Say "hi"": a raw double quote outside a tag breaks attribute markup, use “ ”'
+      '"Say "hi"": a raw double quote breaks attribute markup, use “ ”'
     ]);
   });
 });

@@ -4,8 +4,9 @@ import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Services } from "@/services";
+import { link } from "@/utils/commonUtils";
 import { createFileInput } from "@/utils/fileUtils";
-import { t } from "@/utils/i18n";
+import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 import { rn } from "@/utils/numberUtils";
 
@@ -33,16 +34,21 @@ const TEMPLATE = /* html */ `
     <p>${t("Generator uses pop-up window to download files. Please ensure your browser does not block popups.")}</p>
     <div style="margin: 1em 0 0.3em; font-weight: bold">${t("Export to GeoJSON")}</div>
     <div>
-      <button data-action="geojsonCells" data-tip="${t("Download cells data in GeoJSON format")}">${t("Cells")}</button>
-      <button data-action="geojsonRoutes" data-tip="${t("Download routes data in GeoJSON format")}">${t("Routes")}</button>
-      <button data-action="geojsonRivers" data-tip="${t("Download rivers data in GeoJSON format")}">${t("Rivers")}</button>
-      <button data-action="geojsonMarkers" data-tip="${t("Download markers data in GeoJSON format")}">${t("Markers")}</button>
-      <button data-action="geojsonZones" data-tip="${t("Download zones data in GeoJSON format")}">${t("Zones")}</button>
+      <button data-action="geojsonCells" data-tip="${t("Export to GeoJSON")}">${t("Cells")}</button>
+      <button data-action="geojsonRoutes" data-tip="${t("Export to GeoJSON")}">${t("Routes")}</button>
+      <button data-action="geojsonRivers" data-tip="${t("Export to GeoJSON")}">${t("Rivers")}</button>
+      <button data-action="geojsonMarkers" data-tip="${t("Export to GeoJSON")}">${t("Markers")}</button>
+      <button data-action="geojsonZones" data-tip="${t("Export to GeoJSON")}">${t("Zones")}</button>
     </div>
     <p>
-      ${t('GeoJSON format is used in GIS tools such as QGIS. Check out <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export" target="_blank">wiki-page</a> for guidance.')}
+      ${sentences(
+        t("GeoJSON format is used in GIS tools such as QGIS."),
+        t("Check out {{- wiki}} for guidance.", {
+          wiki: link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export", t("wiki"))
+        })
+      )}
     </p>
-    <div style="margin: 1em 0 0.3em; font-weight: bold">${t("Export To JSON")}</div>
+    <div style="margin: 1em 0 0.3em; font-weight: bold">${t("Export to JSON")}</div>
     <div>
       <button data-action="jsonFull" data-tip="${t("Download full data in JSON")}">${t("Full")}</button>
       <button data-action="jsonMinimal" data-tip="${t("Download minimal data in JSON")}">${t("Minimal")}</button>
@@ -72,7 +78,7 @@ const TEMPLATE = /* html */ `
       ${t("When supported by your browser, Save updates the chosen file. Shift-click machine or press Ctrl + Shift + S to save a separate copy.")}
     </p>
     <p>
-      ${t("Maps are saved in <i>.map</i> format, that can be loaded back via the <i>Load</i> in menu. There is no way to restore the progress if file is lost. Please keep old save files on your machine or cloud storage as backups.")}
+      ${t("Maps are saved in .map format, that can be loaded back via the Load in menu. There is no way to restore the progress if file is lost. Please keep old save files on your machine or cloud storage as backups.")}
     </p>
   </div>
 
@@ -85,7 +91,7 @@ const TEMPLATE = /* html */ `
       </button>
       <button data-action="loadFromStorage" data-tip="${t("Load map from browser storage (if saved before)")}">${t("storage")}</button>
     </div>
-    <p>${t("Click on <i>storage</i> to open the last saved map.")}</p>
+    <p>${t("Click on storage to open the last saved map.")}</p>
     <div id="loadFromDropbox">
       <p style="margin-bottom: 0.3em">
         ${t("Or load from your Dropbox account")}

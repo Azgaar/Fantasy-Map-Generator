@@ -455,6 +455,7 @@ button.options {
   background-color: var(--bg-main);
   font-weight: bold;
   border: none;
+  white-space: nowrap;
   transition: 0.2s;
 }
 
@@ -572,6 +573,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 #options output {
   text-align: right;
   font-size: smaller;
+  white-space: nowrap;
 }
 
 #options input[type="number"] {
@@ -659,6 +661,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 #loadGoogleTranslateButton {
   font-size: smaller;
   padding: 0.4em 0.5em;
+  white-space: normal;
 }
 
 #options input[type="color"] {
@@ -688,6 +691,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   background-color: transparent;
   font-weight: bold;
   border: 0;
+  padding: 1px 2px;
 }
 
 #sticked button:hover {

@@ -30,7 +30,7 @@ jobs:
       - name: Check the English catalog lists every translated interface string
         run: node scripts/extract-strings.mjs --check
 
-      - name: Check every locale catalog keeps the rules a translation must not break
+      - name: Check every locale catalog keeps the rules a translation must not break, warn about missing translations
         run: node scripts/lint-locales.mjs
 
       - name: Run Unit tests

@@ -146,9 +146,9 @@ function renderDialog(): void {
       <div data-tip="${t("Total area of the displayed features")}" style="margin-left: 12px" data-col="area">${t("Area")}:&nbsp;<span id="featuresFooterArea">0</span></div>
     </div>
     <div id="featuresBottom" class="editorToolbar">
-      <button id="featuresOverviewRefresh" data-tip="${t("Refresh the overview")}" class="icon-cw"></button>
+      <button id="featuresOverviewRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
       <button id="featuresHeightmapEditor" data-tip="${t("Features are added and removed in the Heightmap Editor")}" class="icon-brush"></button>
-      <button id="featuresExport" data-tip="${t("Save features-related data as a text file (.csv)")}" class="icon-download"></button>
+      <button id="featuresExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -222,7 +222,7 @@ function onFilterChange(): void {
 // islands are moved between groups by geography alone, oceans are not rendered at all
 function renderGroupCell(feature: Feature, lakeGroups: string[]): string {
   const brush = feature.group
-    ? `<span data-tip="${t("Edit group style in Style Editor")}" class="icon-brush pointer featureGroupStyle"></span>`
+    ? `<span data-tip="${t("Edit style in Style Editor")}" class="icon-brush pointer featureGroupStyle"></span>`
     : "";
   if (feature.type !== "lake")
     return `<div data-tip="${t("Rendering group")}" data-col="group">${brush}<span>${feature.group || ""}</span></div>`;
@@ -266,8 +266,8 @@ function renderFeaturesPage(view: TableView<Feature>): void {
 
   for (const feature of view.rows) {
     lines += /* html */ `<div class="states" data-id="${feature.i}">
-      <span data-tip="${t("Locate the feature")}" data-col="locate" class="icon-target"></span>
-      <input data-tip="${t("Feature name")}" class="featureName stateName" value="${escapeHtml(feature.name || "")}" placeholder="${UNNAMED}" data-col="name" />
+      <span data-tip="${t("Locate on map")}" data-col="locate" class="icon-target"></span>
+      <input data-tip="${t("Name")}" class="featureName stateName" value="${escapeHtml(feature.name || "")}" placeholder="${UNNAMED}" data-col="name" />
       ${renderTypeCell(feature)}
       ${renderGroupCell(feature, Object.keys(styles.lakes.groups))}
       ${renderAreaCell(feature, unit)}

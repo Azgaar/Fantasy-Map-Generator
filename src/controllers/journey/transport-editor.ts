@@ -61,8 +61,8 @@ function renderDialog(): void {
     </div>
 
     <div id="transportBottom" class="editorToolbar">
-      <button id="transportRefresh" data-tip="${t("Refresh the Editor")}" class="icon-cw"></button>
-      <button id="transportAdd" data-tip="${t("Add a new transport type")}" class="icon-plus"></button>
+      <button id="transportRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
+      <button id="transportAdd" data-tip="${t("Add")}" class="icon-plus"></button>
       <button id="transportRestore" data-tip="${t("Restore the default transport types, removing custom ones")}" class="icon-ccw"></button>
     </div>
   </div>`;
@@ -95,13 +95,13 @@ function renderTypesPage(view: TableView<Transport>): void {
     ).join("");
 
     lines += /* html */ `<div class="states" data-id="${type.i}">
-      <div data-col="name"><input class="ttName" value="${escapeHtml(type.name)}" data-tip="${t("Transport type name")}" /></div>
+      <div data-col="name"><input class="ttName" value="${escapeHtml(type.name)}" data-tip="${t("Name")}" /></div>
       <div data-col="speed"><input class="ttSpeed" type="number" min="0" step="0.5" value="${convertSpeed(type.speed)}" ${isStay ? "disabled" : ""}
         data-tip="${isStay ? t("Stay types have no speed") : t("Sustained travel speed in {{unit}}/h", { unit })}" /></div>
       <div data-col="hoursPerDay"><input class="ttHours" type="number" min="1" max="${MAX_HOURS_PER_DAY}" step="1" value="${Transports.resolveHoursPerDay(type)}"
         data-tip="${isStay ? t("Hours a day of waiting covers: 24 means a full day passes") : t("Hours of travel a day sustains: a caravan walks ~8 h/day, a ship sails 24")}" /></div>
       <div data-col="domain"><select class="ttDomain" data-tip="${DOMAIN_LABEL[type.domain]}">${options}</select></div>
-      <span data-col="remove" data-tip="${t("Remove transport type")}" class="ttDelete pointer icon-trash-empty"></span>
+      <span data-col="remove" data-tip="${t("Remove")}" class="ttDelete pointer icon-trash-empty"></span>
     </div>`;
   }
   body.insertAdjacentHTML("beforeend", lines);
@@ -208,8 +208,8 @@ function triggerTypeRemove(this: HTMLElement): void {
   }
 
   confirmationDialog({
-    title: t("Remove transport type"),
-    message: t("Remove transport type <b>{{transport}}</b>?", { transport: type.name }),
+    title: t("Remove"),
+    message: t("Remove transport type {{transport}}?", { transport: type.name }),
     confirm: t("Remove"),
     onConfirm: () => {
       Transports.set(Transports.all.filter(other => other.i !== type.i));

@@ -219,7 +219,7 @@ export class JourneyPathEditor {
       confirmationDialog({
         title: t("Overwrite custom path?"),
         message: sentences(
-          t("Segment “<b>{{segment}}</b>” has a custom-drawn path", { segment: seg.name }),
+          t("Segment “{{segment}}” has a custom-drawn path", { segment: seg.name }),
           t("Moving an endpoint replaces it with the pathfinder's route"),
           t("Continue?")
         ),
@@ -353,7 +353,7 @@ export class JourneyPathEditor {
 
     const points = this.mode.points;
     if (points.length < 2) {
-      warn(t("A custom path needs at least two points."));
+      warn(t("A path needs at least two points."));
       return;
     }
 
@@ -395,7 +395,7 @@ export function recomputeSegment(seg: JourneySegment): void {
   if (result.errorCode) {
     alertDialog({
       title: t("Can't use {{- transport}} here", { transport: seg.transport }),
-      message: t("Segment “<b>{{segment}}</b>”: {{- problem}}", {
+      message: t("Segment “{{segment}}”: {{- problem}}", {
         segment: seg.name,
         problem: domainMismatchMessage(seg, domain) ?? result.warning
       })
@@ -419,16 +419,16 @@ export function domainMismatchMessage(seg: JourneySegment, domain: TransportDoma
     const cellId = seg[endpoint];
     if (cellId !== undefined && !Journeys.isValidEndpoint(cellId, domain)) {
       const cell = describeCell(cellId);
-      bad.push(endpoint === "from" ? t("<b>from</b> is a {{cell}}", { cell }) : t("<b>to</b> is a {{cell}}", { cell }));
+      bad.push(endpoint === "from" ? t("from is a {{cell}}", { cell }) : t("to is a {{cell}}", { cell }));
     }
   }
   if (!bad.length) return null;
 
   const rule =
     domain === "land"
-      ? t("This transport type is <b>land</b> — endpoints must be on land (coastal is fine).")
+      ? t("This transport type is land — endpoints must be on land (coastal is fine).")
       : t(
-          "This transport type is <b>water</b> — endpoints must be in water, on a coast touching water, or on a navigable river."
+          "This transport type is water — endpoints must be in water, on a coast touching water, or on a navigable river."
         );
   return `${bad.join(` ${t("and")} `)}.<br/><br/>${rule}`;
 }

@@ -165,16 +165,16 @@ function renderDialog(): void {
     </div>
 
     <div id="religionsBottom" class="editorToolbar">
-      <button id="religionsEditorRefresh" data-tip="${t("Refresh the Editor")}" class="icon-cw"></button>
+      <button id="religionsEditorRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
       <button id="religionsEditStyle" data-tip="${t("Edit style in Style Editor")}" class="icon-adjust"></button>
       <button id="religionsLegend" data-tip="${t("Toggle Legend box")}" class="icon-list-bullet"></button>
-      <button id="religionsPercentage" data-tip="${t("Toggle percentage / absolute values display mode")}" class="icon-percent"></button>
-      <button id="religionsHeirarchy" data-tip="${t("Show Religions Hierarchy")}" class="icon-sitemap"></button>
+      <button id="religionsPercentage" data-tip="${t("Toggle percentage / absolute values views")}" class="icon-percent"></button>
+      <button id="religionsHeirarchy" data-tip="${t("Religions tree")}" class="icon-sitemap"></button>
       <button id="religionsExtinct" data-tip="${t("Show/hide extinct religions (religions without cells)")}" class="icon-eye-off"></button>
 
       <button id="religionsManually" data-tip="${t("Manually re-assign religions")}" class="icon-brush"></button>
-      <button id="religionsAdd" data-tip="${sentences(t("Add a new religion"), t("Hold Shift to add multiple"))}" class="icon-plus"></button>
-      <button id="religionsExport" data-tip="${t("Download religions-related data")}" class="icon-download"></button>
+      <button id="religionsAdd" data-tip="${sentences(t("Add"), t("Hold Shift to add multiple"))}" class="icon-plus"></button>
+      <button id="religionsExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
       <button id="religionsRecalculate" data-tip="${t("Recalculate religions based on current values of growth-related attributes")}" class="icon-retweet"></button>
       <span
         data-tip="${t("Allow religion center, extent, and expansionism changes to take an immediate effect")}"
@@ -276,7 +276,7 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
         data-expansionism=""
       >
         <svg width="9" height="9" class="placeholder" data-col="color"></svg>
-        <input data-tip="${sentences(t("Religion name"), t("Click and type to change"))}" class="religionName italic"
+        <input data-tip="${sentences(t("Name"), t("Click and type to change"))}" class="religionName italic"
           value="${r.name}" autocorrect="off" spellcheck="false" data-col="name" />
         <select data-tip="${t("Religion type")}" class="religionType placeholder" data-col="type">
           ${getTypeOptions(r.type)}
@@ -324,7 +324,7 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
       data-expansionism="${r.expansionism}"
     >
       <fill-box fill="${r.color}" data-col="color"></fill-box>
-      <input data-tip="${sentences(t("Religion name"), t("Click and type to change"))}" class="religionName"
+      <input data-tip="${sentences(t("Name"), t("Click and type to change"))}" class="religionName"
         value="${r.name}" autocorrect="off" spellcheck="false" data-col="name" />
       <select data-tip="${t("Religion type")}" class="religionType" data-col="type">
         ${getTypeOptions(r.type)}
@@ -346,9 +346,9 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
       </div>
       ${getExpansionColumns(r)}
       ${noteIcon(t("Edit free text notes (legend)"))}
-      <span data-col="locate" data-tip="${t("Locate the religion")}" class="icon-target"></span>
-      <span data-col="lock" data-tip="${t("Lock this religion")}" class="icon-lock${r.lock ? "" : "-open"}"></span>
-      <span data-col="remove" data-tip="${t("Remove religion")}" class="icon-trash-empty"></span>
+      <span data-col="locate" data-tip="${t("Locate on map")}" class="icon-target"></span>
+      <span data-col="lock" data-tip="${t("Lock")}" class="icon-lock${r.lock ? "" : "-open"}"></span>
+      <span data-col="remove" data-tip="${t("Remove")}" class="icon-trash-empty"></span>
     </div>`;
   }
   const body = ensureEl("religionsBody");
@@ -657,7 +657,7 @@ function religionRemovePrompt(this: HTMLElement): void {
 
   const religionId = +(this.closest(".states") as HTMLElement).dataset.id!;
   confirmationDialog({
-    title: t("Remove religion"),
+    title: t("Remove"),
     message: `${t("Are you sure you want to remove the religion?")}<br>${t("This action cannot be reverted")}`,
     confirm: t("Remove"),
     onConfirm: () => removeReligion(religionId)

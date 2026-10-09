@@ -96,12 +96,12 @@ function renderDialog(): void {
         <div data-tip="${t("Average market value per market")}" style="margin-left:12px">${t("Avg Value")}:&nbsp;<span id="marketsOverviewFooterValue">0</span></div>
       </div>
       <div id="marketsOverviewBottom">
-        <button id="marketsOverviewRefresh" data-tip="${t("Refresh the overview")}" class="icon-cw"></button>
+        <button id="marketsOverviewRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
         <button id="marketsOverviewPercentage" data-tip="${t("Toggle percentage / absolute values views")}" class="icon-percent"></button>
         <button id="marketsOverviewCompare" data-tip="${t("Compare good stock across markets")}" class="icon-chart-bar"></button>
-        <button id="marketsOverviewExport" data-tip="${t("Save markets data as a CSV file")}" class="icon-download"></button>
+        <button id="marketsOverviewExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
         <button id="marketsManually" data-tip="${t("Manually re-assign market territories")}" class="icon-brush"></button>
-        <button id="marketsAdd" data-tip="${sentences(t("Add a new market"), t("Click on a burg on the map"), t("Hold Shift to add multiple"))}" class="icon-plus"></button>
+        <button id="marketsAdd" data-tip="${sentences(t("Add"), t("Click on a burg on the map"), t("Hold Shift to add multiple"))}" class="icon-plus"></button>
         <button id="marketsRegenerate" data-tip="${t("Regenerate markets and their territories")}" class="icon-arrows-cw"></button>
         <button id="marketsRegenerateProduction" data-tip="${t("Regenerate production and trade deals")}" class="icon-retweet"></button>
       </div>
@@ -239,7 +239,7 @@ function renderMarketRow(
     <div data-col="buys" data-tip="${t("Total purchase spending")}" class="marketBuysCol">${format("buys", buys, true)}</div>
     <div data-col="value" data-tip="${t("Market value: net trading flow plus unsold inventory value minus tax")}" class="marketValue">${format("value", value, true)}</div>
     ${noteIcon(t("Edit free text notes (legend)"))}
-    <span data-col="remove" data-tip="${t("Remove market")}" class="icon-trash-empty hiddenIcon" style="visibility:hidden"></span>
+    <span data-col="remove" data-tip="${t("Remove")}" class="icon-trash-empty hiddenIcon" style="visibility:hidden"></span>
   </div>`;
 }
 
@@ -335,7 +335,7 @@ function confirmRemoveMarket(marketId: number): void {
   const name = Markets.getName(market);
 
   confirmationDialog({
-    title: t("Remove market"),
+    title: t("Remove"),
     message: `${t("Are you sure you want to remove the market “{{market}}”?", {
       market: name
     })}<br>${t("This action cannot be reverted")}`,
@@ -442,7 +442,7 @@ function regenerateMarkets() {
     message: /* html */ `${t("Are you sure you want to regenerate markets and their territories?")}
       <label style="display:flex; align-items:center; gap:.4em; margin-top:.6em;">
         <input id="marketsRegenerateProductionToggle" type="checkbox" class="native" checked />
-        ${t("Regenerate production and trade")}
+        ${t("Regenerate production and trade deals")}
       </label>`,
     confirm: t("Regenerate"),
     onConfirm: () => {

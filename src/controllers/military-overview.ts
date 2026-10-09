@@ -80,7 +80,7 @@ function renderDialog(): void {
         </div>
       </div>
       <div id="militaryBottom" class="editorToolbar">
-        <button id="militaryOverviewRefresh" data-tip="${t("Refresh the overview")}" class="icon-cw"></button>
+        <button id="militaryOverviewRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
         <button id="militaryOptionsButton" data-tip="${t("Edit Military Units")}" class="icon-cog"></button>
         <button id="militaryRegimentsList" data-tip="${t("Show regiments list")}" class="icon-list-bullet"></button>
         <button
@@ -95,7 +95,7 @@ function renderDialog(): void {
         ></button>
         <button
           id="militaryExport"
-          data-tip="${t("Save military-related data as a text file (.csv)")}"
+          data-tip="${t("Save data as a CSV file")}"
           class="icon-download"
         ></button>
         <button id="militaryWiki" data-tip="${t("Open Military Forces Tutorial")}" class="icon-info"></button>
@@ -147,7 +147,7 @@ function getMilitaryColumns(): EditorColumn<MilitaryRow>[] {
     label: capitalize(unit.name.replace(/_/g, " ")),
     width: "5em",
     mobileHidden: true,
-    tip: sentences(t("State {{unit}} units number", { unit: unit.name }), t("Click to sort")),
+    tip: sentences(t("{{unit}} units number", { unit: unit.name }), t("Click to sort")),
     sortBy: row => row.forces[unit.name] || 0
   }));
 
@@ -263,14 +263,14 @@ function renderMilitaryPage(view: TableView<MilitaryRow>): void {
       const unitCells = options.map.military.units
         .map(unit => {
           const value = row.forces[unit.name] || 0;
-          return `<div data-col="${`unit:${unit.name}`}" data-tip="${t("State {{unit}} units number", { unit: unit.name })}">${percentage ? percent(value, totals.units[unit.name] || 0) : value}</div>`;
+          return `<div data-col="${`unit:${unit.name}`}" data-tip="${t("{{unit}} units number", { unit: unit.name })}">${percentage ? percent(value, totals.units[unit.name] || 0) : value}</div>`;
         })
         .join("");
       return /* html */ `<div class="states" data-id="${row.state.i}">
         <fill-box data-col="color" data-tip="${row.state.fullName}" fill="${row.state.color}" disabled></fill-box>
         <input data-col="state" data-tip="${row.state.fullName}" value="${row.state.name}" readonly />
         ${unitCells}
-        <div data-col="total" data-tip="${t("Total state military personnel (considering crew)")}" style="font-weight:bold">${percentage ? percent(row.total, totals.total) : si(row.total)}</div>
+        <div data-col="total" data-tip="${t("Total military personnel (considering crew)")}" style="font-weight:bold">${percentage ? percent(row.total, totals.total) : si(row.total)}</div>
         <div data-col="population" data-tip="${t("State population")}">${percentage ? percent(row.population, totals.population) : si(row.population)}</div>
         <div data-col="rate" data-tip="${sentences(t("Military personnel rate (% of state population)"), t("Depends on war alert"))}">${rn(row.rate, 2)}%</div>
         <input data-col="alert" data-tip="${sentences(t("War Alert"), t("Modifier to military forces number, depends on political situation"))}" type="number" min="0" step=".01" value="${rn(row.alert, 2)}" />
@@ -399,7 +399,7 @@ function militaryCustomize(): void {
           `${t("Apply military units settings.")} <span style="color:#cb5858">${t("All forces will be recalculated!")}</span>`
         )
       );
-      buttons[1].addEventListener("mousemove", () => tip(t("Add new military unit to the table")));
+      buttons[1].addEventListener("mousemove", () => tip(t("Add")));
       buttons[2].addEventListener("mousemove", () => tip(t("Restore default military units and settings")));
       buttons[3].addEventListener("mousemove", () => tip(t("Close the window without saving the changes")));
     }
@@ -473,7 +473,7 @@ function militaryCustomize(): void {
     row.innerHTML = /* html */ `<td>
           <button data-type="icon" data-tip="${t("Click to select unit icon")}" translate="no"></button>
         </td>
-        <td><input data-tip="${sentences(t("Unit name"), t("If name is changed for existing unit, old unit will be replaced"))}" value="${name}" /></td>
+        <td><input data-tip="${sentences(t("Name"), t("If name is changed for existing unit, old unit will be replaced"))}" value="${name}" /></td>
         <td>${getLimitButton("biomes")}</td>
         <td>${getLimitButton("states")}</td>
         <td>${getLimitButton("cultures")}</td>
@@ -481,7 +481,7 @@ function militaryCustomize(): void {
         <td><input data-tip="${t("Conscription percentage for rural population")}" type="number" min="0" max="100" step=".01" value="${rural}" /></td>
         <td><input data-tip="${t("Conscription percentage for urban population")}" type="number" min="0" max="100" step=".01" value="${urban}" /></td>
         <td><input data-tip="${t("Average number of people in crew (used for total personnel calculation)")}" type="number" min="1" step="1" value="${crew}" /></td>
-        <td><input data-tip="${t("Enter military power (used for battle simulation)")}" type="number" min="0" step=".1" value="${power}" /></td>
+        <td><input data-tip="${t("Unit military power (used for battle simulation)")}" type="number" min="0" step=".1" value="${power}" /></td>
         <td>
           <select data-tip="${t("Unit type to apply special rules on forces recalculation")}">
             ${typeOptions}
@@ -491,8 +491,8 @@ function militaryCustomize(): void {
           <input id="${name}Separate" type="checkbox" class="checkbox" ${separate ? "checked" : ""} />
           <label for="${name}Separate" class="checkbox-label"></label>
         </td>
-        <td data-tip="${t("Remove the unit")}">
-          <span data-tip="${t("Remove unit type")}" class="icon-trash-empty pointer" onclick="this.parentElement.parentElement.remove();"></span>
+        <td data-tip="${t("Remove")}">
+          <span data-tip="${t("Remove")}" class="icon-trash-empty pointer" onclick="this.parentElement.parentElement.remove();"></span>
         </td>`;
     setIconButton(row.querySelector<HTMLButtonElement>("button[data-type='icon']")!, icon || "");
     tableBody.appendChild(row);
@@ -594,7 +594,7 @@ function renderOptions(): void {
           <thead>
             <tr>
               <th data-tip="${t("Unit icon")}">${t("Icon")}</th>
-              <th data-tip="${sentences(t("Unit name"), t("If name is changed for existing unit, old unit will be replaced"))}">${t("Unit name")}</th>
+              <th data-tip="${sentences(t("Name"), t("If name is changed for existing unit, old unit will be replaced"))}">${t("Name")}</th>
               <th style="width: 5em" data-tip="${t("Select allowed biomes")}">${t("Biomes")}</th>
               <th style="width: 5em" data-tip="${t("Select allowed states")}">${t("States")}</th>
               <th style="width: 5em" data-tip="${t("Select allowed cultures")}">${t("Cultures")}</th>

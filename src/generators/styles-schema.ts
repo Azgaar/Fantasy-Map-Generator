@@ -78,9 +78,9 @@ const strokeDasharray = meta(z.string().regex(FORMATS.strokeDasharray), {
   .nullable()
   .default(null);
 
-const strokeLinecap = choice(LINECAPS, { label: t("Linecap"), tip: t("Set stroke linecap") }).nullable();
+const strokeLinecap = choice(LINECAPS, { label: t("Linecap") }).nullable();
 
-const strokeLinejoin = choice(LINEJOINS, { label: t("Linejoin"), tip: t("Set stroke linejoin") }).nullable();
+const strokeLinejoin = choice(LINEJOINS, { label: t("Linejoin") }).nullable();
 
 const fontFamily = text({ control: "font", label: t("Family"), tip: t("Select font") });
 
@@ -322,7 +322,7 @@ const burgGroup = z.strictObject({
     filter
   }),
   options: z.strictObject({
-    size: number({ label: t("Icon size"), range: [0.01, 100], step: 0.01, tip: t("Set icon size") }),
+    size: number({ label: t("Icon size"), range: [0.01, 100], step: 0.01 }),
     icon: text({ control: "icon", tip: t("Select icon") })
   })
 });
@@ -434,7 +434,7 @@ export const stylesSchema = z.strictObject({
             step: 0.5,
             tip: t("Set good marker (icon and circle) size in pixels")
           }),
-          circle: flag({ label: t("Show circle"), tip: t("Show or hide circle around good icons") })
+          circle: flag({ label: t("Show circle") })
         })
       }),
       goodsBurgs: z.strictObject({
@@ -505,16 +505,14 @@ export const stylesSchema = z.strictObject({
           }),
           "font-style": choice(FONT_STYLES, {
             label: t("Style"),
-            group: "Font",
-            tip: t("Set font style")
+            group: "Font"
           })
             .nullable()
             .default(null),
           "font-weight": meta(z.literal(FONT_WEIGHTS), {
             control: "select",
             label: t("Weight", { context: "font" }),
-            group: "Font",
-            tip: t("Set font weight")
+            group: "Font"
           })
             .nullable()
             .default(null),
@@ -524,8 +522,7 @@ export const stylesSchema = z.strictObject({
             nullAs: 0,
             range: [-2, 10],
             step: 0.01,
-            effect: "draw",
-            tip: t("Set letter spacing")
+            effect: "draw"
           }).nullable(),
           style: meta(z.string().refine(isLabelStyle), {
             control: "labelStyle",
@@ -696,7 +693,7 @@ export const stylesSchema = z.strictObject({
     z.strictObject({
       attrs: z.strictObject({ opacity, fill, "font-size": fontSizePx }),
       options: z.strictObject({
-        barSize: number({ label: t("Bar size"), range: [0.5, 5], step: 0.1, tip: t("Set bar size") }),
+        barSize: number({ label: t("Bar size"), range: [0.5, 5], step: 0.1 }),
         label: text({ tip: t("Type scale bar label, leave blank to hide label") }),
         x: number({ group: "Position", range: [0, 100], step: 0.1, tip: t("Scale bar right edge, in percents") }),
         y: number({ group: "Position", range: [0, 100], step: 0.1, tip: t("Scale bar bottom edge, in percents") })
@@ -755,8 +752,8 @@ export const stylesSchema = z.strictObject({
         label: t("Image"),
         tip: t("Select texture image. Big textures can highly affect performance")
       }),
-      x: shift("x", 500, 1, t("Shift texture by x axis in pixels")),
-      y: shift("y", 500, 1, t("Shift texture by y axis in pixels"))
+      x: shift("x", 500, 1, t("Shift by x axis in pixels")),
+      y: shift("y", 500, 1, t("Shift by y axis in pixels"))
     })
   }),
   trade: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),

@@ -396,7 +396,7 @@ export async function addGoogleFont(family: string): Promise<string | undefined>
     return undefined;
   }
   fonts.push(...fontRanges);
-  tip(t("Google font {{family}} is added to the list", { family }), true, "success", 4000);
+  tip(t("Font {{family}} is added to the list", { family }), true, "success", 4000);
   return family;
 }
 
@@ -404,7 +404,7 @@ export async function addGoogleFont(family: string): Promise<string | undefined>
 export function addLocalFont(family: string): string {
   fonts.push({ family });
   document.fonts.add(new FontFace(family, `local(${family})`, { display: "block" }));
-  tip(t("Local font {{family}} is added to the fonts list", { family }), true, "success", 4000);
+  tip(t("Font {{family}} is added to the list", { family }), true, "success", 4000);
   return family;
 }
 

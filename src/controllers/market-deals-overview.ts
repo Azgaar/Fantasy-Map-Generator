@@ -105,8 +105,8 @@ function renderDialog(): void {
         </div>
 
         <div id="marketDealsBottom">
-          <button id="marketDealsRefresh" data-tip="${t("Refresh the Deals screen")}" class="icon-cw"></button>
-          <button id="marketDealsExport" data-tip="${t("Save market deals data as a text file (.csv)")}" class="icon-download"></button>
+          <button id="marketDealsRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
+          <button id="marketDealsExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
           <select id="marketDealsFilter" data-tip="${t("Filter deals by scope")}" style="margin-left: 8px">
             <option value="all">${t("All")}</option>
             <option value="local">${t("Local")}</option>
@@ -211,7 +211,7 @@ function renderDealLine(deal: Deal): string {
       <svg data-col="icon" data-tip="${t("Good icon")}" width="1.3em" height="1.3em" class="goodIcon">
         ${goodBadge(good)}
       </svg>
-      <div data-col="good" data-tip="${t("Good name")}" class="goodName">${good.name}</div>
+      <div data-col="good" data-tip="${t("Name")}" class="goodName">${good.name}</div>
       <div data-col="direction"><span class="marketBadge" style="background:${backColor}; color:${incomeColor}">${direction.toUpperCase()}</span></div>
       <div data-col="counterparty" class="marketDealParty pointer" data-tip="${t("Click to zoom")}">
         <div class="${counterparty.type === "burg" ? "icon-dot-circled" : "icon-store"}" style="display:inline-block; width: 0.8em; ${counterparty.type === "market" ? "font-size: 0.85em;" : ""}"></div>

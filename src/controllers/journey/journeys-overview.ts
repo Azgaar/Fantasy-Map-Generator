@@ -126,12 +126,12 @@ function renderDialog(): void {
     </div>
 
     <div id="journeysBottom" class="editorToolbar">
-      <button id="journeysOverviewRefresh" data-tip="${t("Refresh the Editor")}" class="icon-cw"></button>
+      <button id="journeysOverviewRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
       <button id="journeyCreateNew" data-tip="${t("Create a new journey")}" class="icon-plus"></button>
       <button id="journeyGenerateStory" data-tip="${t("Generate a random journey")}" class="icon-shuffle"></button>
       <button id="journeysEditStyle" data-tip="${t("Edit style in Style Editor")}" class="icon-adjust"></button>
       <button id="journeysEditTransport" data-tip="${t("Edit transport types (add custom modes like Magic Carpet)")}" class="icon-cog"></button>
-      <button id="journeysExport" data-tip="${t("Save journeys-related data as a text file (.csv)")}" class="icon-download"></button>
+      <button id="journeysExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
       <button id="journeysLockAll" data-tip="${t("Lock or unlock all journeys")}" class="icon-lock"></button>
       <button id="journeysRemoveAll" data-tip="${t("Remove all unlocked journeys")}" class="icon-trash"></button>
     </div>
@@ -183,7 +183,7 @@ function renderJourneysPage(view: TableView<Journey>): void {
     lines += /* html */ `<div class="states" data-id="${journey.i}">
       <div data-col="name" style="width: 93%; overflow: hidden">
         <fill-box class="journeyColor" fill="${journey.color}" size="0.8em" data-tip="${sentences(t("Journey color"), t("Click to change"))}"></fill-box>
-        <span data-tip="${t("Journey name: {{journey}}", { journey: journey.name })}">${escapeHtml(journey.name)}</span>
+        <span data-tip="${t("Name")}: ${escapeHtml(journey.name)}">${escapeHtml(journey.name)}</span>
       </div>
       <div data-tip="${t("Kind of travel this is")}" data-col="type">${escapeHtml(journey.type)}</div>
       ${renderEndpoint("from", getStart(journey))}
@@ -192,10 +192,10 @@ function renderJourneysPage(view: TableView<Journey>): void {
       <div data-tip="${t("Average speed, moving segments only")}" data-col="speed">${avgSpeed ? formatSpeed(avgSpeed) : "-"}</div>
       <div data-tip="${t("Total time: {{total}}. Travel time: {{travel}}", { total: Journeys.formatTravelTimeFull(elapsedHours), travel: Journeys.formatHours(totalHours) })}${hiddenNote}" data-col="time">${Journeys.formatTravelTime(elapsedHours)}</div>
       <div data-col="edit"><span class="journeyEdit pointer icon-pencil" data-tip="${t("Edit Journey")}"></span></div>
-      <div data-col="locate"><span class="journeyZoom pointer icon-target" data-tip="${t("Locate the journey")}"></span></div>
+      <div data-col="locate"><span class="journeyZoom pointer icon-target" data-tip="${t("Locate on map")}"></span></div>
       <div data-col="visible"><span class="journeyVisible pointer ${journey.visible === false ? "icon-eye-off" : "icon-eye"}" data-tip="${t("Toggle journey visibility on the map")}"></span></div>
       <div data-col="lock"><span class="locks pointer ${journey.lock ? "icon-lock" : "icon-lock-open inactive"}" onmouseover="showElementLockTip(event)"></span></div>
-      <div data-col="remove"><span class="journeyRemove pointer icon-trash-empty" data-tip="${t("Remove journey")}"></span></div>
+      <div data-col="remove"><span class="journeyRemove pointer icon-trash-empty" data-tip="${t("Remove")}"></span></div>
     </div>`;
   }
   body.insertAdjacentHTML("beforeend", lines);
@@ -346,7 +346,7 @@ function toggleLockAll(): void {
 function triggerJourneyRemove(this: HTMLElement): void {
   const journeyId = getRowId(this);
   confirmationDialog({
-    title: t("Remove journey"),
+    title: t("Remove"),
     message: `${t("Are you sure you want to remove the journey?")}<br>${t("This action cannot be reverted")}`,
     confirm: t("Remove"),
     onConfirm: () => {
@@ -367,7 +367,7 @@ function triggerAllJourneysRemove(): void {
   confirmationDialog({
     title: t("Remove all journeys"),
     message: sentences(
-      t("Remove all <b>unlocked</b> journeys ({{journeys}})?", { journeys: unlocked.length }),
+      t("Remove all unlocked journeys ({{journeys}})?", { journeys: unlocked.length }),
       t("Locked ones will be kept")
     ),
     confirm: t("Remove"),

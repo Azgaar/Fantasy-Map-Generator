@@ -166,7 +166,7 @@ function renderDialog(): void {
             </optgroup>
             <optgroup label="${t("Specific")}">
               <option value="targe">${t("Targe")}</option>
-              <option value="targe2">${t("Targe2")}</option>
+              <option value="targe2">${t("Targe")} 2</option>
               <option value="pavise">${t("Pavise")}</option>
               <option value="wedged">${t("Wedged")}</option>
               <option value="embowed">${t("Embowed")}</option>
@@ -189,11 +189,11 @@ function renderDialog(): void {
               <option value="hexagon">${t("Hexagon")}</option>
             </optgroup>
             <optgroup label="${t("Fantasy")}">
-              <option value="fantasy1">${t("Fantasy1")}</option>
-              <option value="fantasy2">${t("Fantasy2")}</option>
-              <option value="fantasy3">${t("Fantasy3")}</option>
-              <option value="fantasy4">${t("Fantasy4")}</option>
-              <option value="fantasy5">${t("Fantasy5")}</option>
+              <option value="fantasy1">${t("Fantasy")} 1</option>
+              <option value="fantasy2">${t("Fantasy")} 2</option>
+              <option value="fantasy3">${t("Fantasy")} 3</option>
+              <option value="fantasy4">${t("Fantasy")} 4</option>
+              <option value="fantasy5">${t("Fantasy")} 5</option>
             </optgroup>
             <optgroup label="${t("Middle Earth")}">
               <option value="noldor">${t("Noldor")}</option>
@@ -219,7 +219,7 @@ function renderDialog(): void {
             <input id="emblemChargeSizeNumber" type="number" min=".2" max="3" step=".05" />
           </div>
         </div>
-        <label for="emblemSizeNumber" data-tip="${SIZE_TIP}">${t("Map size")}</label>
+        <label for="emblemSizeNumber" data-tip="${SIZE_TIP}">${t("Map size", { context: "emblem" })}</label>
         <div class="size" data-tip="${SIZE_TIP}">
           <input id="emblemSizeSlider" type="range" min="0" max="5" step=".1" />
           <input id="emblemSizeNumber" type="number" min="0" max="5" step=".1" />

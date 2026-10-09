@@ -103,7 +103,7 @@ function renderDialog(states: typeof pack.states): void {
       </label>
       <div style="display: grid; grid-template-rows: repeat(3, auto); grid-auto-flow: column; gap: .2em">${relations}</div>
       <div style="margin-top: .3em">
-        <button id="diplomacyEditorUndo" aria-label="${t("Undo")}" data-tip="${t("Undo last change")}" class="icon-ccw" disabled></button>
+        <button id="diplomacyEditorUndo" aria-label="${t("Undo")}" data-tip="${t("Undo the latest action")}" class="icon-ccw" disabled></button>
         <button id="diplomacyEditorApply" aria-label="${t("Apply")}" data-tip="${t("Apply changes")}" class="icon-check"></button>
         <button id="diplomacyEditorDiscard" aria-label="${t("Discard")}" data-tip="${t("Discard all changes since the last Apply")}" class="icon-cancel" disabled></button>
       </div>

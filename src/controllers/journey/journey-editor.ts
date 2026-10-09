@@ -137,7 +137,7 @@ function renderDialog(journey: Journey): void {
 
     <div id="journeyControls" class="editorFilters" style="flex-direction: row; align-items: center">
       <fill-box id="journeyColor" size="1em" data-tip="${sentences(t("Journey color"), t("Click to change"))}" fill="${journey.color}"></fill-box>
-      <label for="journeyName" data-tip="${t("Journey name")}" style="flex: 1; grid-template-columns: 3.2em 1fr">${t("Name")}:
+      <label for="journeyName" data-tip="${t("Name")}" style="flex: 1; grid-template-columns: 3.2em 1fr">${t("Name")}:
         <input id="journeyName" type="text" value="${escapeHtml(journey.name)}" />
       </label>
       <label for="journeyType" data-tip="${t("Kind of travel this is: a quest, a caravan, a campaign")}"
@@ -148,18 +148,18 @@ function renderDialog(journey: Journey): void {
 
     <div id="journeyFooter" class="totalLine">
       <div data-tip="${t("Total distance")}" data-col="distance">${t("Distance")}:&nbsp;<span id="journeyTotalDistance">0</span></div>
-      <div data-tip="${t("Average speed, segments with non-zero speed only")}" style="margin-left: 12px" data-col="speed">${t("Avg speed")}:&nbsp;<span id="journeyAvgSpeed">0</span></div>
+      <div data-tip="${t("Average speed, moving segments only")}" style="margin-left: 12px" data-col="speed">${t("Avg speed")}:&nbsp;<span id="journeyAvgSpeed">0</span></div>
       <div data-tip="${t("Total time")}" style="margin-left: 12px" data-col="time">${t("Total time")}:&nbsp;<span id="journeyTotalTime">0</span></div>
       <div data-tip="${t("Travel time")}" style="margin-left: 12px" data-col="time">${t("Travel time")}:&nbsp;<span id="journeyTravelTime">0</span></div>
     </div>
 
     <div id="journeyBottom" class="editorToolbar">
-      <button id="journeyEditorRefresh" data-tip="${t("Refresh the Editor")}" class="icon-cw"></button>
+      <button id="journeyEditorRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
       <button id="journeyAddSegment" data-tip="${t("Add a segment to the journey")}" class="icon-plus"></button>
       <button id="journeyEditTransport" data-tip="${t("Edit transport types")}" class="icon-cog"></button>
       ${noteButton("journeyLegend", t("Edit free text notes (legend)"))}
-      <button id="journeyExport" data-tip="${t("Save journey segments as a text file (.csv)")}" class="icon-download"></button>
-      <button id="journeyRemove" data-tip="${t("Remove journey")}" class="icon-trash"></button>
+      <button id="journeyExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
+      <button id="journeyRemove" data-tip="${t("Remove")}" class="icon-trash"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -293,7 +293,7 @@ function renderSegmentLine(journey: Journey, segment: JourneySegment): string {
       <span class="segUp icon-up-open ${index ? "pointer" : "inactive"}" data-tip="${t("Move the segment up")}"></span>
     </div>
     <div data-col="delete">
-      <span class="segDelete pointer icon-trash-empty" data-tip="${t("Remove segment")}"></span>
+      <span class="segDelete pointer icon-trash-empty" data-tip="${t("Remove")}"></span>
     </div>
   </div>`;
 }
@@ -327,7 +327,7 @@ function cellEndpointTooltip(cellId: number | undefined, place: CellPlace): stri
   const what = !place
     ? t("Cell {{- cell}}", { cell: cellId })
     : place.nearby
-      ? t("Vicinity of {{- burg}}", { burg: place.burg.name })
+      ? t("{{- burg}} vicinity", { burg: place.burg.name })
       : place.burg.name;
   return t("{{- place}}, click to pick a different cell", { place: what });
 }
@@ -429,7 +429,7 @@ function onSegTransportChange(this: HTMLSelectElement): void {
     this.value = previousType;
     alertDialog({
       title: t("Can't switch to {{- transport}}", { transport: newType.name }),
-      message: `${message}<br/><br/>${t("Pick different endpoints first, then change the transport type or use an <b>air</b> transport type, which accepts any endpoints.")}`
+      message: `${message}<br/><br/>${t("Pick different endpoints first, then change the transport type or use an air transport type, which accepts any endpoints.")}`
     });
     return;
   }
@@ -448,7 +448,7 @@ function onSegTransportChange(this: HTMLSelectElement): void {
     confirmationDialog({
       title: t("Overwrite custom path?"),
       message: t(
-        "Segment “<b>{{segment}}</b>” has a custom-drawn path that {{transport}} can't follow. Replace it with the pathfinder's route?",
+        "Segment “{{segment}}” has a custom-drawn path that {{transport}} can't follow. Replace it with the pathfinder's route?",
         {
           segment: segment.name,
           transport: newType.name
@@ -563,7 +563,7 @@ function onSegReset(this: HTMLElement): void {
   confirmationDialog({
     title: t("Overwrite custom path?"),
     message: sentences(
-      t("Segment “<b>{{segment}}</b>” has a custom-drawn path", { segment: segment.name }),
+      t("Segment “{{segment}}” has a custom-drawn path", { segment: segment.name }),
       t("Resetting replaces it with the pathfinder's route"),
       t("Continue?")
     ),
@@ -588,8 +588,8 @@ function onSegDelete(this: HTMLElement): void {
   if (!journey || !segment) return;
 
   confirmationDialog({
-    title: t("Remove segment"),
-    message: `${t("Remove segment <b>{{segment}}</b>?", { segment: segment.name })}<br>${t("This action cannot be reverted")}`,
+    title: t("Remove"),
+    message: `${t("Remove segment {{segment}}?", { segment: segment.name })}<br>${t("This action cannot be reverted")}`,
     confirm: t("Remove"),
     onConfirm: () => {
       pathEditor.stopEditing(segment.i);
@@ -653,8 +653,8 @@ function triggerJourneyRemove(): void {
   if (!journey) return;
 
   confirmationDialog({
-    title: t("Remove journey"),
-    message: `${t("Remove journey <b>{{journey}}</b>?", { journey: journey.name })}<br>${t("This action cannot be reverted")}`,
+    title: t("Remove"),
+    message: `${t("Remove journey {{journey}}?", { journey: journey.name })}<br>${t("This action cannot be reverted")}`,
     confirm: t("Remove"),
     onConfirm: () => {
       Journeys.remove(journey.i);

@@ -62,7 +62,7 @@ function renderDialog(): void {
     <div id="routeBody" style="padding-bottom: 0.3em">
       <div>
         <div class="label">${t("Name")}:</div>
-        <input id="routeName" data-tip="${t("Type to rename the route")}" autocorrect="off" spellcheck="false" />
+        <input id="routeName" data-tip="${t("Type to rename")}" autocorrect="off" spellcheck="false" />
         <span id="routeNameSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
         <span id="routeGenerateName" data-tip="${t("Generate route name")}" class="icon-globe pointer"></span>
       </div>
@@ -70,7 +70,7 @@ function renderDialog(): void {
         <div class="label">${t("Group")}:</div>
         <select id="routeGroup"></select>
         <span id="routeGroupEdit" data-tip="${t("Edit route groups")}" class="icon-pencil pointer"></span>
-        <span id="routeEditStyle" data-tip="${t("Edit style for the route group")}" class="icon-brush pointer"></span>
+        <span id="routeEditStyle" data-tip="${t("Edit style")}" class="icon-brush pointer"></span>
       </div>
       <div data-tip="${t("Route length in selected units")}">
         <div class="label">${t("Length")}:</div>
@@ -81,10 +81,10 @@ function renderDialog(): void {
       <button id="routeCreateSelectingCells" data-tip="${t("Create a new route selecting route cells")}" class="icon-map-pin"></button>
       <button id="routeJoin" data-tip="${t("Click to join the route to another route that starts or ends at the same cell")}" class="icon-link"></button>
       <button id="routeSplit" data-tip="${t("Click on a control point to split the route there")}" class="icon-unlink"></button>
-      <button id="routeElevationProfile" data-tip="${t("Show the elevation profile for the route")}" class="icon-chart-area"></button>
+      <button id="routeElevationProfile" data-tip="${t("Elevation profile")}" class="icon-chart-area"></button>
       ${noteButton("routeLegend", t("Edit free text notes (legend)"))}
       <button id="routeLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
-      <button id="routeRemove" data-tip="${t("Remove route")}" data-shortcut="Delete" class="icon-trash fastDelete"></button>
+      <button id="routeRemove" data-tip="${t("Remove")}" data-shortcut="Delete" class="icon-trash fastDelete"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -414,7 +414,7 @@ function updateLockIcon(): void {
 
 function removeRoute(): void {
   confirmationDialog({
-    title: t("Remove route"),
+    title: t("Remove"),
     message: `${t("Are you sure you want to remove the route?")}<br>${t("This action cannot be reverted")}`,
     confirm: t("Remove"),
     onConfirm: () => {

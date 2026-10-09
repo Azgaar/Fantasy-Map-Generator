@@ -7,8 +7,8 @@ const TEMPLATE = /* html */ `
   <p>${t("Heightmap customization tools")}:</p>
   <div id="customizeTools">
     <button data-tip="${t("Display brushes panel")}" id="paintBrushes">${t("Paint Brushes")}</button>
-    <button data-tip="${t("Open Template Editor")}" id="applyTemplate" style="display: none">${t("Template Editor")}</button>
-    <button data-tip="${t("Open Image Converter")}" id="convertImage" style="display: none">${t("Image Converter")}</button>
+    <button data-tip="${t("Template Editor")}" id="applyTemplate" style="display: none">${t("Template Editor")}</button>
+    <button data-tip="${t("Image Converter")}" id="convertImage" style="display: none">${t("Image Converter")}</button>
     <button data-tip="${t("Render heightmap data as a small monochrome image")}" id="heightmapPreview">${t("Preview")}</button>
     <button data-tip="${t("Preview the heightmap in a 3D scene")}" id="heightmap3DView">${t("3D scene")}</button>
   </div>

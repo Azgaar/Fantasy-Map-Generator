@@ -65,7 +65,7 @@ function renderDialog(): void {
         <div class="label" style="width: 4.8em">${t("Name")}:</div>
         <span id="riverNameCulture" data-tip="${t("Generate culture-specific name")}" class="icon-book pointer"></span>
         <span id="riverNameRandom" data-tip="${t("Generate random name")}" class="icon-globe pointer"></span>
-        <input id="riverName" data-tip="${t("Type to rename the river")}" autocorrect="off" spellcheck="false" />
+        <input id="riverName" data-tip="${t("Type to rename")}" autocorrect="off" spellcheck="false" />
         <span id="riverNameSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
       </div>
       <div data-tip="${t("Type to change river type (e.g. fork, creek, river, brook, stream)")}">
@@ -103,10 +103,10 @@ function renderDialog(): void {
     </div>
     <div id="riverBottom">
       <button id="riverCreateSelectingCells" data-tip="${t("Create a new river selecting river cells")}" class="icon-map-pin"></button>
-      <button id="riverEditStyle" data-tip="${t("Edit style for all rivers in Style Editor")}" class="icon-brush"></button>
-      <button id="riverElevationProfile" data-tip="${t("Show the elevation profile for the river")}" class="icon-chart-area"></button>
+      <button id="riverEditStyle" data-tip="${t("Edit style in Style Editor")}" class="icon-brush"></button>
+      <button id="riverElevationProfile" data-tip="${t("Elevation profile")}" class="icon-chart-area"></button>
       ${noteButton("riverLegend", t("Edit free text notes (legend)"))}
-      <button id="riverRemove" data-tip="${t("Remove river")}" data-shortcut="Delete" class="icon-trash fastDelete"></button>
+      <button id="riverRemove" data-tip="${t("Remove")}" data-shortcut="Delete" class="icon-trash fastDelete"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -326,11 +326,11 @@ function editRiverLegend(): void {
 }
 
 function removeRiver(): void {
-  alertMessage.innerHTML = t("Are you sure you want to remove the river and all its tributaries");
+  alertMessage.innerHTML = t("Are you sure you want to remove the river? All tributaries will be auto-removed");
   $("#alert").dialog({
     resizable: false,
     width: "22em",
-    title: t("Remove river and tributaries"),
+    title: t("Remove"),
     buttons: {
       [t("Remove")]: function (this: any) {
         $(this).dialog("close");

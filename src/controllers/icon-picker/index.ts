@@ -224,7 +224,7 @@ function open({ current, onPick, live = false, preferCustom, profile = "icon" }:
         if (!isOpen()) return;
         refreshCustom();
         const counts = [
-          t("Added: {{added}}", { added }),
+          `${t("Added")}: ${added}`,
           unchanged && t("Already here: {{unchanged}}", { unchanged }),
           invalid && t("Invalid, skipped: {{invalid}}", { invalid })
         ];
@@ -258,7 +258,7 @@ function open({ current, onPick, live = false, preferCustom, profile = "icon" }:
     const uses = Icons.uses(id);
     const count = Object.values(uses).reduce((total, used) => total + used, 0);
     confirmationDialog({
-      title: t("Remove custom icon"),
+      title: t("Remove"),
       message: count
         ? `${t("The icon is used by {{uses}}. They will show no icon.", {
             uses: Icons.describeUses(uses)
@@ -410,7 +410,7 @@ function renderCurrent(current: string, replacing: string | null, entries: Entry
       ? /* html */ `<div class="currentActions">
           <button type="button" data-action="position" data-tip="${t("Zoom and pan the picture in its frame")}"><span class="icon-resize-full"></span> ${t("Position")}</button>
           <button type="button" data-action="replace" class="${replacing === current ? "pressed" : ""}" data-tip="${t("Give the icon a new picture: every use follows")}"><span class="icon-upload"></span> ${t("Replace")}</button>
-          <button type="button" data-action="remove" data-tip="${t("Remove the icon from the map")}"><span class="icon-trash-empty"></span></button>
+          <button type="button" data-action="remove" data-tip="${t("Remove")}"><span class="icon-trash-empty"></span></button>
         </div>`
       : "";
   return /* html */ `<span class="preview">${Icons.html(current)}</span>
@@ -476,7 +476,7 @@ function renderCustom(current: string, replacing: string | null, profile: Pictur
       <button type="button" data-action="upload" data-tip="${profile === "emblem" ? t("Upload an SVG file (up to 1 MB) or a PNG, JPEG or WebP image (up to 10 MB, shrunk to 1024 px)") : t("Upload an SVG file (up to 200 kB) or a PNG, JPEG or WebP image (up to 2 MB, shrunk to 256 px)")}">${t("Upload")}</button>
     </div>
     <div class="replacing" ${replacing ? "" : "hidden"}>${t("Link or upload the new picture of the selected icon.")} <a data-action="stopReplacing">${t("Cancel")}</a></div>
-    ${icons.length ? `<div class="choices">${icons.join("")}</div>` : t('<p class="empty">This map carries no custom icons yet.</p>')}
+    ${icons.length ? `<div class="choices">${icons.join("")}</div>` : `<p class="empty">${t("This map carries no custom icons yet.")}</p>`}
     <div class="customArchive">
       ${icons.length ? `<button type="button" data-action="exportAll" data-tip="${t("Download all custom icons as a zip archive, to import them into another map")}">${t("Download all")}</button>` : ""}
       <button type="button" data-action="importArchive" data-tip="${t("Import custom icons from a downloaded zip archive. An icon whose id the map uses for another picture is replaced only on confirmation")}">${t("Import zip")}</button>

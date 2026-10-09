@@ -98,13 +98,13 @@ function render(): void {
       .map(
         (rule, index) => /* html */ `<div class="states" data-index="${index}">
       <span data-col="reorder" data-tip="${t("Drag to check the rule earlier or later")}" class="icon-resize-vertical"></span>
-      <div data-col="name"><input data-field="name" value="${escapeHtml(rule.name)}" data-tip="${t("Rule name")}" /></div>
+      <div data-col="name"><input data-field="name" value="${escapeHtml(rule.name)}" data-tip="${t("Name")}" /></div>
       <div data-col="height" data-tip="${t("Height range: {{min}} to {{max}}", { min: getHeight(rule.height.min), max: getHeight(rule.height.max) })}">${range("height", rule.height, 'min="20" max="100" step="1"')}</div>
       <div data-col="temperature" data-tip="${sentences(t("Temperature range in °C"), t("An empty bound is open"))}">${range("temperature", rule.temperature, 'step="1" placeholder="any"')}</div>
-      <div data-col="biomes"><span class="ruleBiomes pointer" data-tip="${sentences(t("Biomes: {{biomes}}", { biomes: limitationTip(rule.biomes, pack.biomes) }), t("Click to change"))}">${biomesLabel(rule)}</span></div>
+      <div data-col="biomes"><span class="ruleBiomes pointer" data-tip="${sentences(`${t("Biomes")}: ${limitationTip(rule.biomes, pack.biomes)}`, t("Click to change"))}">${biomesLabel(rule)}</span></div>
       <div data-col="size" data-tip="${t("Icon size at the lowest height, growing with height up to the second value")}">${range("size", rule.size, 'min="0.1" step="0.1"')}</div>
       <div data-col="relief">${poolPreviewHtml(rule.icons, rule.density, "rulePool")}</div>
-      <span data-col="remove" data-tip="${t("Remove the rule")}" class="icon-trash-empty"></span>
+      <span data-col="remove" data-tip="${t("Remove")}" class="icon-trash-empty"></span>
     </div>`
       )
       .join("") || `<p class="empty">${t("No rules: all land takes its biome's relief pool")}</p>`;

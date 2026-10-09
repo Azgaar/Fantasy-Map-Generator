@@ -160,7 +160,7 @@ function renderTradeDetailsPage(view: TableView<TradeDetailRow>): void {
     <svg data-col="icon" data-tip="${t("Good icon")}" width="2em" height="2em" class="goodIcon">
       ${goodBadge(good)}
     </svg>
-    <div data-col="good" data-tip="${t("Good name")}" class="goodName">${good.name}</div>
+    <div data-col="good" data-tip="${t("Name")}" class="goodName">${good.name}</div>
     <div data-col="units" class="goodUnits">${rn(units, 2)}</div>
     <div data-col="price" class="goodPrice">${formatPrice(rn(price, 2))}</div>
     <div data-col="value" class="goodValue">${formatPrice(rn(value, 2))}</div>

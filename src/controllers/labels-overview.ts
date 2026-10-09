@@ -119,7 +119,7 @@ function renderDialog(): void {
       </div>
     </div>
     <div id="labelsBottom">
-      <button id="labelsOverviewRefresh" data-tip="${t("Refresh the overview")}" class="icon-cw"></button>
+      <button id="labelsOverviewRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
       <button
         id="labelsBulkToggle"
         data-tip="${t("Bulk assignment: select multiple labels and assign them all to one group")}"
@@ -258,9 +258,9 @@ function createLine(label: LabelData): string {
       <select data-col="group" class="labelsGroup" data-tip="${t("Select a group for this label")}">
         ${createGroupOptions(group)}
       </select>
-      <span data-col="visibility" data-tip="${hidden ? t("Show the label") : t("Hide the label")}" aria-label="${hidden ? t("Show the label") : t("Hide the label")}" class="icon-eye${hidden ? "-off" : ""} labelsVisibility"></span>
-      <span data-col="reset" data-tip="${t("Restore the default label")}" aria-label="${t("Restore the default label")}" class="icon-arrows-cw labelsReset ${hasOverride ? "" : " inactive"}"></span>
-      <span data-col="locate" data-tip="${t("Locate the label")}" aria-label="${t("Locate the label")}" class="icon-target"></span>
+      <span data-col="visibility" data-tip="${hidden ? t("Show") : t("Hide")}" aria-label="${hidden ? t("Show") : t("Hide")}" class="icon-eye${hidden ? "-off" : ""} labelsVisibility"></span>
+      <span data-col="reset" data-tip="${t("Reset to default")}" aria-label="${t("Reset to default")}" class="icon-arrows-cw labelsReset ${hasOverride ? "" : " inactive"}"></span>
+      <span data-col="locate" data-tip="${t("Locate on map")}" aria-label="${t("Locate on map")}" class="icon-target"></span>
     </div>`;
 }
 

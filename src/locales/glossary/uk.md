@@ -11,7 +11,8 @@ Terms every `uk.json` string uses the same way. Rules for all catalogs are in
 - Labels start with a capital letter only: “Редактор культур”, “Огляд річок”.
 - Dialog titles and editor names are noun phrases: “Редактор культур”, “Огляд міток”; inline actions use “Змінити”.
 - Keys keep their keyboard names: Ctrl, Shift, Alt, Enter, Esc, Space.
-- Brand and product names stay Latin: Fantasy Map Generator, Azgaar, Armoria, Dropbox, Discord, Google, FMG.
+- Brand and product names stay Latin: Azgaar, Armoria, Dropbox, Discord, Google, FMG.
+- The product names are translated: “Генератор фентезійних карт”, in full “Генератор фентезійних карт від Azgaar”; the assistant is “Асистент Azgaar”.
 - Keep labels short for narrow menu tabs; drop a word before dropping a meaning.
 
 ## Map
@@ -112,5 +113,5 @@ Terms every `uk.json` string uses the same way. Rules for all catalogs are in
 | scale bar / compass rose       | масштабна лінійка / компасна троянда |
 | preview                        | попередній перегляд                |
 | zoom / pan                     | масштаб / переміщення              |
-| Azgaar Assistant               | Azgaar Assistant                   |
+| Azgaar Assistant               | Асистент Azgaar                    |
 | chat / provider / API key      | чат / провайдер / ключ API         |

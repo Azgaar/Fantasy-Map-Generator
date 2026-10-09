@@ -67,7 +67,7 @@ function renderDialog(): void {
 
       <div id="markersRadiusBottom" style="margin-top:.4em">
         <button id="markersRadiusLocate" data-tip="${t("Zoom to the marker")}" class="icon-target"></button>
-        <button id="markersRadiusExport" data-tip="${t("Export the in-range markers as a text file (.csv)")}" class="icon-download"></button>
+        <button id="markersRadiusExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -112,8 +112,8 @@ function renderMarkersList(inRange: Marker[]): void {
           <span class="icon-pencil pointer" data-tip="${t("Edit Marker")}"></span>
           <span class="icon-target pointer" data-tip="${t("Locate on map")}"></span>
           <span class="icon-pin pointer ${pinned ? "" : "inactive"}" data-tip="${t("Pin marker")}"></span>
-          <span class="locks pointer ${lock ? "icon-lock" : "icon-lock-open inactive"}" data-tip="${t("Lock marker")}"></span>
-          <span class="icon-trash-empty pointer" data-tip="${t("Remove marker")}"></span>
+          <span class="locks pointer ${lock ? "icon-lock" : "icon-lock-open inactive"}" data-tip="${t("Lock")}"></span>
+          <span class="icon-trash-empty pointer" data-tip="${t("Remove")}"></span>
         </div>`;
     })
     .join("");
@@ -154,7 +154,7 @@ function toggleLock(marker: Marker, el: HTMLElement): void {
 
 function confirmRemove(marker: Marker): void {
   confirmationDialog({
-    title: t("Remove marker"),
+    title: t("Remove"),
     message: sentences(t("Are you sure you want to remove this marker?"), t("This action cannot be reverted")),
     confirm: t("Remove"),
     onConfirm: () => {

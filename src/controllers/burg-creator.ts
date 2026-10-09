@@ -17,7 +17,7 @@ function toggle(): void {
   toggleMapPlacement(
     "addBurgTool",
     addOnClick,
-    sentences(t("Click on the map to create a new burg"), t("Hold Shift to add multiple")),
+    sentences(t("Click on map to place a burg"), t("Hold Shift to add multiple")),
     "warn",
     unpressProxyButton
   );

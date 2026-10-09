@@ -54,9 +54,9 @@ function open(type: LabelType, id: number): void {
 function renderDialog(): void {
   destroyDialog("labelEditor");
   const editorHtml = /* html */ `<div id="labelEditor" class="dialog">
-      <button id="labelGroupShow" data-tip="${t("Show the group selection")}" class="icon-tags"></button>
+      <button id="labelGroupShow" data-tip="${t("Show")}" class="icon-tags"></button>
       <div id="labelGroupSection" style="display: none">
-        <button id="labelGroupHide" data-tip="${t("Hide the group selection")}" class="icon-tags"></button>
+        <button id="labelGroupHide" data-tip="${t("Hide")}" class="icon-tags"></button>
         <select id="labelGroupSelect" data-tip="${t("Select a group for this label")}" style="width: 10em"></select>
         <button
           id="labelGroupsConfigure"
@@ -64,9 +64,9 @@ function renderDialog(): void {
           class="icon-cog"
         ></button>
       </div>
-      <button id="labelTextShow" data-tip="${t("Show the edit label text section")}" class="icon-pencil"></button>
+      <button id="labelTextShow" data-tip="${t("Show")}" class="icon-pencil"></button>
       <div id="labelTextSection" style="display: none">
-        <button id="labelTextHide" data-tip="${t("Hide the edit label text section")}" class="icon-pencil"></button>
+        <button id="labelTextHide" data-tip="${t("Hide")}" class="icon-pencil"></button>
         <input
           id="labelText"
           data-tip="${t("Type to change the label. Enter “|” to move to a new line")}"
@@ -75,12 +75,12 @@ function renderDialog(): void {
         <span id="labelTextSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
         <span id="labelTextRandom" data-tip="${t("Generate random name")}" class="icon-shuffle pointer"></span>
       </div>
-      <button id="labelEditStyle" data-tip="${t("Edit label group style in Style Editor")}" class="icon-brush"></button>
+      <button id="labelEditStyle" data-tip="${t("Edit style in Style Editor")}" class="icon-brush"></button>
       <button id="labelPathToggle"></button>
-      <button id="labelSizeShow" data-tip="${t("Show the font size section")}" class="icon-text-height"></button>
+      <button id="labelSizeShow" data-tip="${t("Show")}" class="icon-text-height"></button>
       <div id="labelSizeSection" style="display: none">
-        <button id="labelSizeHide" data-tip="${t("Hide the font size section")}" class="icon-text-height"></button>
-        <span data-tip="${t("Set relative size for the particular label")}">${t("Size")}:</span>
+        <button id="labelSizeHide" data-tip="${t("Hide")}" class="icon-text-height"></button>
+        <span data-tip="${t("Set relative size for the particular label (% of group default)")}">${t("Size")}:</span>
         <input
           id="labelRelativeSize"
           data-tip="${t("Set relative size for the particular label (% of group default)")}"
@@ -91,10 +91,10 @@ function renderDialog(): void {
           style="width: 4.5em"
         />
       </div>
-      <button id="labelOffsetShow" data-tip="${t("Show the label offset section")}" class="icon-sliders"></button>
+      <button id="labelOffsetShow" data-tip="${t("Show")}" class="icon-sliders"></button>
       <div id="labelOffsetSection" style="display: none">
-        <button id="labelOffsetHide" data-tip="${t("Hide the label offset section")}" class="icon-sliders"></button>
-        <span data-tip="${t("Set starting offset for the particular label")}">${t("Offset")}:</span>
+        <button id="labelOffsetHide" data-tip="${t("Hide")}" class="icon-sliders"></button>
+        <span data-tip="${t("Set starting offset for the particular label (% along the path)")}">${t("Offset")}:</span>
         <input
           id="labelStartOffset"
           data-tip="${t("Set starting offset for the particular label (% along the path)")}"
@@ -113,11 +113,11 @@ function renderDialog(): void {
           data-tip="${t("Set starting offset numerically")}"
         />
       </div>
-      <button id="labelLetterSpacingShow" data-tip="${t("Show the letter spacing section")}" class="icon-text-width"></button>
+      <button id="labelLetterSpacingShow" data-tip="${t("Show")}" class="icon-text-width"></button>
       <div id="labelLetterSpacingSection" style="display: none">
         <button
           id="labelLetterSpacingHide"
-          data-tip="${t("Hide the letter spacing section")}"
+          data-tip="${t("Hide")}"
           class="icon-text-width"
         ></button>
         <slider-input
@@ -132,10 +132,10 @@ function renderDialog(): void {
       </div>
       <button id="labelVisibility"></button>
       ${noteButton("labelLegend", t("Edit free text notes (legend)"))}
-      <button id="labelReset" data-tip="${t("Restore the default label")}" class="icon-arrows-cw"></button>
+      <button id="labelReset" data-tip="${t("Reset to default")}" class="icon-arrows-cw"></button>
       <button
         id="labelRemoveSingle"
-        data-tip="${t("Remove label")}"
+        data-tip="${t("Remove")}"
         data-shortcut="Delete"
         class="icon-trash fastDelete"
       ></button>
@@ -203,8 +203,8 @@ function updateControls(): void {
   const visibility = ensureEl("labelVisibility");
   visibility.className = label.hidden ? "icon-eye-off" : "icon-eye";
   visibility.dataset.tip = label.hidden
-    ? t("Show the label")
-    : sentences(t("Hide the label"), t("You can toggle it on later in Labels Overview"));
+    ? t("Show")
+    : sentences(t("Hide"), t("You can toggle it on later in Labels Overview"));
 }
 
 function hasLabelPath(): boolean {
@@ -530,7 +530,7 @@ function removeSelectedLabel(): void {
   alertMessage.innerHTML = t("Are you sure you want to remove the label?");
   $("#alert").dialog({
     resizable: false,
-    title: t("Remove label"),
+    title: t("Remove"),
     buttons: {
       [t("Remove")]: function (this: HTMLElement) {
         $(this).dialog("close");

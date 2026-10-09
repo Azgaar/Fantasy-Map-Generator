@@ -96,7 +96,7 @@ function onClick(this: any, event: any): void {
       <span><b>${t("Cell")}</b>: ${cellId}</span>
       <span><b>X</b>: ${point[0]}</span>
       <span><b>Y</b>: ${point[1]}</span>
-      <span data-tip="${t("Remove the point")}" class="icon-trash-empty pointer"></span>
+      <span data-tip="${t("Remove")}" class="icon-trash-empty pointer"></span>
     </div>`;
 }
 

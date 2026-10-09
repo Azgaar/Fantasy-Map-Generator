@@ -182,7 +182,7 @@ function open(request: ReliefPoolEditorOptions): void {
               <input type="number" class="weight" min="1" step="1" value="${weight}" data-tip="${t("Weight: how often the entry is picked, relative to the others")}" />
               <input type="number" class="size" min="0.1" max="${MAX_SIZE}" step="0.1" value="${size}" data-tip="${t("Size: the entry's icons as a multiple of the pool's size")}" />
               <span class="share" data-tip="${t("Share of the pool's relief")}">${share(weight)}</span>
-              <button type="button" class="icon-trash-empty" data-tip="${t("Remove from the pool")}"></button>
+              <button type="button" class="icon-trash-empty" data-tip="${t("Remove")}"></button>
             </div>`
           )
           .join("")

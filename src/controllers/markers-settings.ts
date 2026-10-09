@@ -60,7 +60,7 @@ function applyChanges(): void {
 
 function drawConfigTable(): void {
   const headers = /* html */ `<thead style='font-weight:bold'><tr>
-    <td data-tip="${t("Marker type name")}">${t("Type")}</td>
+    <td data-tip="${t("Name")}">${t("Type")}</td>
     <td data-tip="${t("Marker icon")}">${t("Icon")}</td>
     <td data-tip="${t("Marker number multiplier")}">${t("Multiplier")}</td>
     <td data-tip="${t("Number of markers of that type on the current map")}">${t("Number")}</td>

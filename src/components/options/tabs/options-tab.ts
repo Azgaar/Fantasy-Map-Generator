@@ -201,7 +201,7 @@ const TEMPLATE = /* html */ `
       data-tip="${t("Coordinate extent the next map is generated on. It is fixed for the life of that map and cannot be changed later - the Viewport size below is what you see it through. For full-globe maps use aspect ratio 2:1")}"
     >
       <td>
-        <i data-tip="${t("Restore default map size: the window size")}" id="restoreDefaultMapSize" class="icon-ccw"></i>
+        <i data-tip="${t("Reset to default")}" id="restoreDefaultMapSize" class="icon-ccw"></i>
       </td>
       <td>${t("Map size")}</td>
       <td>
@@ -387,7 +387,7 @@ const TEMPLATE = /* html */ `
     </tr>
     <tr data-tip="${t("Set theme hue for dialogs and tool windows")}">
       <td>
-        <i data-tip="${t("Restore default theme color: pale magenta")}" id="themeColorRestore" class="icon-ccw"></i>
+        <i data-tip="${t("Reset to default")}" id="themeColorRestore" class="icon-ccw"></i>
       </td>
       <td>${t("Theme color")}</td>
       <td>
@@ -509,7 +509,7 @@ const TEMPLATE = /* html */ `
           </optgroup>
           <optgroup label="${t("Specific")}">
             <option value="targe">${t("Targe")}</option>
-            <option value="targe2">${t("Targe2")}</option>
+            <option value="targe2">${t("Targe")} 2</option>
             <option value="pavise">${t("Pavise")}</option>
             <option value="wedged">${t("Wedged")}</option>
             <option value="embowed">${t("Embowed")}</option>
@@ -532,11 +532,11 @@ const TEMPLATE = /* html */ `
             <option value="hexagon">${t("Hexagon")}</option>
           </optgroup>
           <optgroup label="${t("Fantasy")}">
-            <option value="fantasy1">${t("Fantasy1")}</option>
-            <option value="fantasy2">${t("Fantasy2")}</option>
-            <option value="fantasy3">${t("Fantasy3")}</option>
-            <option value="fantasy4">${t("Fantasy4")}</option>
-            <option value="fantasy5">${t("Fantasy5")}</option>
+            <option value="fantasy1">${t("Fantasy")} 1</option>
+            <option value="fantasy2">${t("Fantasy")} 2</option>
+            <option value="fantasy3">${t("Fantasy")} 3</option>
+            <option value="fantasy4">${t("Fantasy")} 4</option>
+            <option value="fantasy5">${t("Fantasy")} 5</option>
           </optgroup>
           <optgroup label="${t("Middle Earth")}">
             <option value="noldor">${t("Noldor")}</option>
@@ -570,7 +570,7 @@ const TEMPLATE = /* html */ `
     </tr>
     <tr data-tip="${t("Set minimum and maximum possible zoom level")}">
       <td>
-        <i data-tip="${t("Restore the default zoom extent")}" id="zoomExtentDefault" class="icon-ccw"></i>
+        <i data-tip="${t("Reset to default")}" id="zoomExtentDefault" class="icon-ccw"></i>
       </td>
       <td>${t("Zoom extent")}</td>
       <td>

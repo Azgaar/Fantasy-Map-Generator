@@ -107,9 +107,9 @@ function renderDialog(): void {
       <div data-tip="${t("Average length")}" style="margin-left: 12px" data-col="length">${t("Average length")}:&nbsp;<span id="routesFooterLength">0</span></div>
     </div>
     <div id="routesBottom" class="editorToolbar">
-      <button id="routesOverviewRefresh" data-tip="${t("Refresh the Editor")}" class="icon-cw"></button>
+      <button id="routesOverviewRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
       <button id="routesCreateNew" data-tip="${t("Create a new route selecting route cells")}" class="icon-map-pin"></button>
-      <button id="routesExport" data-tip="${t("Save routes-related data as a text file (.csv)")}" class="icon-download"></button>
+      <button id="routesExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
       <button id="routesLockAll" data-tip="${t("Lock or unlock all routes")}" class="icon-lock"></button>
       <button id="routesRemoveAll" data-tip="${t("Remove all unlocked routes (locked routes are kept)")}" class="icon-trash"></button>
     </div>
@@ -165,15 +165,15 @@ function renderRoutesPage(view: TableView<Route>): void {
         data-group="${route.group}"
         data-length="${route.length}"
       >
-        <span data-tip="${t("Locate the route")}" class="icon-target" data-col="locate"></span>
-        <div data-tip="${t("Route name")}" data-col="name">${route.name}</div>
+        <span data-tip="${t("Locate on map")}" class="icon-target" data-col="locate"></span>
+        <div data-tip="${t("Name")}" data-col="name">${route.name}</div>
         <div data-tip="${t("Route group")}" data-col="group">${route.group}</div>
         <div data-tip="${t("Route length")}" data-col="length">${length}</div>
         <span data-col="edit" data-tip="${t("Edit Route")}" class="icon-pencil"></span>
         <span data-col="lock" class="locks pointer ${
           route.lock ? "icon-lock" : "icon-lock-open inactive"
         }" onmouseover="showElementLockTip(event)"></span>
-        <span data-col="remove" data-tip="${t("Remove route")}" class="icon-trash-empty"></span>
+        <span data-col="remove" data-tip="${t("Remove")}" class="icon-trash-empty"></span>
       </div>`;
   }
   body.insertAdjacentHTML("beforeend", lines);
@@ -272,7 +272,7 @@ function toggleLockAll(): void {
 function triggerRouteRemove(this: HTMLElement): void {
   const routeId = +(this.closest(".states") as HTMLElement).dataset.id!;
   confirmationDialog({
-    title: t("Remove route"),
+    title: t("Remove"),
     message: `${t("Are you sure you want to remove the route?")}<br>${t("This action cannot be reverted")}`,
     confirm: t("Remove"),
     onConfirm: () => {
@@ -299,8 +299,8 @@ function triggerAllRoutesRemove(): void {
   alertMessage.innerHTML =
     lockedCount > 0
       ? sentences(
-          t("Remove all <b>unlocked</b> routes ({{routes}})?", { routes: toRemove.length }),
-          t("Locked routes to keep: <b>{{locked}}</b>", { locked: lockedCount }),
+          t("Remove all unlocked routes ({{routes}})?", { routes: toRemove.length }),
+          t("Locked routes to keep: {{locked}}", { locked: lockedCount }),
           t("This action cannot be reverted")
         )
       : sentences(t("Are you sure you want to remove all routes?"), t("This action cannot be reverted"));

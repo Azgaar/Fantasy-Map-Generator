@@ -115,18 +115,18 @@ function getElementTip({ group, target, event, path, cellId }: TipContext): stri
   if (burgElement) {
     const burgId = Number(burgElement.dataset.id);
     const burg = pack.burgs[burgId];
-    if (!burg) return t("Click to edit the Burg");
+    if (!burg) return t("Click to edit");
     const population = si(
       (burg.population || 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
     );
     const values = { burg: burg.name, group: burg.group, population };
     return burg.port
-      ? sentences(t("{{burg}} {{group}} port", values), t("Population: {{population}}", values), t("Click to edit"))
-      : sentences(t("{{burg}} {{group}}", values), t("Population: {{population}}", values), t("Click to edit"));
+      ? sentences(t("{{burg}} {{group}} port", values), `${t("Population")}: ${population}`, t("Click to edit"))
+      : sentences(t("{{burg}} {{group}}", values), `${t("Population")}: ${population}`, t("Click to edit"));
   }
 
   const labelElement = target.closest<SVGElement>("#labels [data-label-type]");
-  if (labelElement) return sentences(escapeHtml(getLabelText(labelElement)), t("Click to edit the label"));
+  if (labelElement) return sentences(escapeHtml(getLabelText(labelElement)), t("Click to edit"));
 
   if (group === "armies")
     return sentences(
@@ -145,17 +145,17 @@ function getElementTip({ group, target, event, path, cellId }: TipContext): stri
     const ref = MapEntities.resolveTarget(target);
     if (ref && MapEntities.get(ref)) {
       const name = MapEntities.getName(ref);
-      return name ? sentences(escapeHtml(name), t("Click to edit the Route")) : t("Click to edit the Route");
+      return name ? sentences(escapeHtml(name), t("Click to edit")) : t("Click to edit");
     }
     return undefined;
   }
 
-  if (group === "terrain") return t("Click to edit the Relief Icon");
+  if (group === "terrain") return t("Click to edit");
 
   if (group === "markers") return t("Click to edit the Marker. Hold Shift to not close the assosiated note");
 
   if (group === "ruler")
-    return findEl("measurersEditor") ? t("Drag the measurer or its points to edit") : t("Open Measurers Editor");
+    return findEl("measurersEditor") ? t("Drag the measurer or its points to edit") : t("Measurers Editor");
 
   // markets and goods swallow the tip even when there is nothing to say, layer values are not shown below them
   if (group === "markets") return getMarketTip(target) ?? "";
@@ -174,7 +174,7 @@ function getElementTip({ group, target, event, path, cellId }: TipContext): stri
     return zone?.name;
   }
 
-  if (group === "ice") return t("Click to edit the Ice");
+  if (group === "ice") return t("Click to edit");
 
   return undefined;
 }
@@ -282,19 +282,19 @@ function showLayerTip(point: Point, cellId: number, gridCellId: number, isLand: 
     return void tip(t("Annual Precipitation: {{value}}", { value: getFriendlyPrecipitation(cellId, pack, grid) }));
   if (Layers.isOn("population")) return void tip(getPopulationTip(cellId));
   if (Layers.isOn("temperature"))
-    return void tip(t("Temperature: {{value}}", { value: convertTemperature(grid.cells.temp[gridCellId]) }));
+    return void tip(`${t("Temperature")}: ${convertTemperature(grid.cells.temp[gridCellId])}`);
   if (Layers.isOn("biomes") && cells.biome[cellId]) {
     const biomeId = cells.biome[cellId];
-    return void tip(t("Biome: {{biome}}", { biome: pack.biomes[biomeId].name }));
+    return void tip(`${t("Biome")}: ${escapeHtml(pack.biomes[biomeId].name)}`);
   }
   if (Layers.isOn("religions") && cells.religion[cellId]) {
     const religionId = cells.religion[cellId];
     const religion = pack.religions[religionId];
     const name = religion.name;
-    if (religion.type === "Cult") return void tip(t("Cult: {{name}}", { name }));
-    if (religion.type === "Heresy") return void tip(t("Heresy: {{name}}", { name }));
-    if (religion.type === "Folk") return void tip(t("Folk religion: {{name}}", { name }));
-    return void tip(t("Organized religion: {{name}}", { name }));
+    if (religion.type === "Cult") return void tip(`${t("Cult")}: ${escapeHtml(name)}`);
+    if (religion.type === "Heresy") return void tip(`${t("Heresy")}: ${escapeHtml(name)}`);
+    if (religion.type === "Folk") return void tip(`${t("Folk religion")}: ${escapeHtml(name)}`);
+    return void tip(`${t("Organized religion")}: ${escapeHtml(name)}`);
   }
   if (cells.state[cellId] && (Layers.isOn("provinces") || Layers.isOn("states"))) {
     const stateId = cells.state[cellId];
@@ -304,8 +304,7 @@ function showLayerTip(point: Point, cellId: number, gridCellId: number, isLand: 
   }
   if (Layers.isOn("cultures") && cells.culture[cellId]) {
     const cultureId = cells.culture[cellId];
-    return void tip(t("Culture: {{culture}}", { culture: pack.cultures[cultureId].name }));
+    return void tip(`${t("Culture")}: ${escapeHtml(pack.cultures[cultureId].name)}`);
   }
-  if (Layers.isOn("heightmap"))
-    return void tip(t("Height: {{value}}", { value: getFriendlyHeight(point, pack, grid) }));
+  if (Layers.isOn("heightmap")) return void tip(`${t("Height")}: ${getFriendlyHeight(point, pack, grid)}`);
 }

@@ -32,7 +32,7 @@ function renderDialog(): void {
   const html = /* html */ `<div id="routeGroupsEditor" class="dialog">
     <div id="routeGroupsEditorBody" class="table" style="padding: 0.3em 0; width: 100%"></div>
     <div id="routeGroupsEditorBottom">
-      <button id="routeGroupsEditorAdd" data-tip="${t("Add route group")}" class="icon-plus"></button>
+      <button id="routeGroupsEditorAdd" data-tip="${t("Add")}" class="icon-plus"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -65,7 +65,7 @@ function addLines(): void {
           <span>${el.id} (${count})</span>
           <div style="width: auto; display: flex; gap: 0.4em;">
             <span data-tip="${t("Edit style")}" class="editStyle icon-brush pointer" style="font-size: smaller;"></span>
-            <span data-tip="${t("Remove group")}" class="removeGroup icon-trash pointer"></span>
+            <span data-tip="${t("Remove")}" class="removeGroup icon-trash pointer"></span>
           </div>
         </div>`;
     });
@@ -74,7 +74,7 @@ function addLines(): void {
 }
 
 function addGroup(): void {
-  prompt(t("Type group name"), { default: "route-group-new" }, v => {
+  prompt(t("Group name"), { default: "route-group-new" }, v => {
     let group = v
       .toLowerCase()
       .replace(/ /g, "_")
@@ -110,7 +110,7 @@ function addGroup(): void {
 
 function removeGroup(group: string): void {
   confirmationDialog({
-    title: t("Remove route group"),
+    title: t("Remove"),
     message: `${t("Are you sure you want to remove the entire route group? All routes in this group will be removed.")}<br>${t("This action cannot be reverted")}`,
     confirm: t("Remove"),
     onConfirm: () => {

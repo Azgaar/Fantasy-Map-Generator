@@ -16,7 +16,8 @@ Terms every `pl.json` string uses the same way. Rules for all catalogs are in
 - Link text inserted into a sentence takes the case the sentence needs (“serwera Discord”); prefer
   wording that keeps a brand link in the nominative (“w serwisie {{- patreon}}”).
 - Azgaar is declined: “Asystent Azgaara”, “Napisz do Azgaara”.
-- Brand and product names stay: Fantasy Map Generator, FMG, Armoria, Dropbox, Discord, Google.
+- Brand and product names stay: FMG, Armoria, Dropbox, Discord, Google.
+- The product names are translated: “Generator Map Fantasy”, in full “Generator Map Fantasy Azgaara”; the assistant is “Asystent Azgaara”.
 
 ## Map
 

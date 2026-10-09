@@ -90,7 +90,7 @@ async function open(type: string): Promise<void> {
 
   canvas.style.display = "block";
   canvas.onmouseenter = () => {
-    const help = t("Drag to pan • Scroll to zoom • Right-click drag to rotate • <b>O</b> to toggle options");
+    const help = t("Drag to pan • Scroll to zoom • Right-click drag to rotate • O to toggle options");
     +canvas.dataset.hovered! > 2 ? tip("") : tip(help);
     canvas.dataset.hovered = String((+canvas.dataset.hovered! | 0) + 1);
   };
@@ -239,7 +239,7 @@ function renderOptionsDialog(): void {
               <option value="256">256</option>
               <option value="512">512</option>
               <option value="1024" selected>1024</option>
-              <option value="2048">${t("2048 [slow]")}</option>
+              <option value="2048">2048 ${t("[slow]")}</option>
             </select>
           </div>
 

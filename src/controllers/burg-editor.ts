@@ -63,7 +63,7 @@ function renderDialog(): void {
               <div class="label">${t("Name")}:</div>
               <input
                 id="burgName"
-                data-tip="${t("Type to rename the burg")}"
+                data-tip="${t("Type to rename")}"
                 autocorrect="off"
                 spellcheck="false"
                 style="width: 9em"
@@ -124,7 +124,7 @@ function renderDialog(): void {
               <span id="burgElevation"></span> ${t("above sea level")}
             </div>
             <div>
-              <div class="label">${t("Features")}:</div>
+              <div class="label">${t("Features", { context: "burg" })}:</div>
               <span
                 id="burgCapital"
                 data-tip="${sentences(t("Shows whether the burg is a state capital"), t("Click to toggle"))}"
@@ -201,9 +201,9 @@ function renderDialog(): void {
         </div>
       </div>
       <div id="burgBottom">
-        <button id="burgStyleShow" data-tip="${t("Show style edit section")}" class="icon-brush"></button>
+        <button id="burgStyleShow" data-tip="${t("Show")}" class="icon-brush"></button>
         <div id="burgStyleSection" style="display: none">
-          <button id="burgStyleHide" data-tip="${t("Hide style edit section")}" class="icon-brush"></button>
+          <button id="burgStyleHide" data-tip="${t("Hide")}" class="icon-brush"></button>
           <button
             id="burgEditLabelStyle"
             data-tip="${t("Edit label style for burg group in Style Editor")}"
@@ -233,7 +233,7 @@ function renderDialog(): void {
         <button id="burgLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
         <button
           id="burgRemove"
-          data-tip="${t("Remove non-capital burg")}"
+          data-tip="${t("Remove")}"
           data-shortcut="Delete"
           class="icon-trash fastDelete"
         ></button>
@@ -420,7 +420,7 @@ function toggleFeature(this: HTMLElement): void {
 
 function confirmRemoveMarket(market: Market): void {
   confirmationDialog({
-    title: t("Remove market"),
+    title: t("Remove"),
     message: `${t("This burg is the center of the market “{{market}}”. Remove the market?", {
       market: Markets.getName(market)
     })}<br>${t("This action cannot be reverted")}`,
@@ -741,7 +741,7 @@ function removeSelectedBurg(): void {
     alertMessage.innerHTML = /* html */ `${sentences(t("You cannot remove the capital"), t("You must change the state capital first"))}`;
     $("#alert").dialog({
       resizable: false,
-      title: t("Remove burg"),
+      title: t("Remove"),
       buttons: {
         [t("OK")]: function (this: HTMLElement) {
           $(this).dialog("close");
@@ -752,7 +752,7 @@ function removeSelectedBurg(): void {
     alertMessage.innerHTML = /* html */ `${t("You cannot remove a market center burg. Please remove the market first")}`;
     $("#alert").dialog({
       resizable: false,
-      title: t("Remove burg"),
+      title: t("Remove"),
       buttons: {
         [t("OK")]: function (this: HTMLElement) {
           $(this).dialog("close");
@@ -761,7 +761,7 @@ function removeSelectedBurg(): void {
     });
   } else {
     confirmationDialog({
-      title: t("Remove burg"),
+      title: t("Remove"),
       message: `${t("Are you sure you want to remove the burg?")}<br>${t("This action cannot be reverted")}`,
       confirm: t("Remove"),
       onConfirm: () => {

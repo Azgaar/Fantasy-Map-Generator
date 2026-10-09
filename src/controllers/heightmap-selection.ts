@@ -219,8 +219,8 @@ function insertHtml(): void {
             </div>
           </div>
           <div>
-            <button data-tip="${t("Open Template Editor")}" data-tool="templateEditor" id="heightmapSelectionEditTemplates">${t("Edit Templates")}</button>
-            <button data-tip="${t("Open Image Converter")}" data-tool="imageConverter" id="heightmapSelectionImportHeightmap">${t("Import Heightmap")}</button>
+            <button data-tip="${t("Template Editor")}" data-tool="templateEditor" id="heightmapSelectionEditTemplates">${t("Edit Templates")}</button>
+            <button data-tip="${t("Image Converter")}" data-tool="imageConverter" id="heightmapSelectionImportHeightmap">${t("Import Heightmap")}</button>
           </div>
         </div>
       </section>

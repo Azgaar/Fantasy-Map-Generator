@@ -11,9 +11,18 @@ export const LANGUAGES = {
   pt: "Português (Portugal)",
   "pt-BR": "Português (Brasil)",
   nl: "Nederlands",
+  id: "Bahasa Indonesia",
   ja: "日本語",
   uk: "Українська",
-  zh: "简体中文"
+  zh: "简体中文",
+  tr: "Türkçe",
+  ko: "한국어",
+  cs: "Čeština",
+  hu: "Magyar",
+  sv: "Svenska",
+  da: "Dansk",
+  vi: "Tiếng Việt",
+  th: "ไทย"
 } as const;
 
 export type Language = keyof typeof LANGUAGES;

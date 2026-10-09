@@ -12,7 +12,7 @@ const TEMPLATE = /* html */ `
   </div>
   <div class="head">
     <p data-tip="${t("Select an element to edit its style")}">${t("Element")}:</p>
-    <select data-tip="${t("Select an element to edit its style (list is ordered alphabetically)")}" id="styleElementSelect"></select>
+    <select data-tip="${t("Select an element to edit its style")}" id="styleElementSelect"></select>
     <button id="styleElementTreeButton" data-tip="${t("Browse all elements and their groups")}" class="icon-sitemap sideButton"></button>
   </div>
   <div class="head group-row" style="display: none">

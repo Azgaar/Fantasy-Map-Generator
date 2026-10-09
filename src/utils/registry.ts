@@ -8,7 +8,7 @@ type DispatchFn = (...args: unknown[]) => unknown;
 let pendingLoads = 0;
 function trackLoad<T>(promise: Promise<T>): Promise<T> {
   pendingLoads++;
-  window.tip(t("Loading…"), false, "info");
+  window.tip(`${t("Loading")}…`, false, "info");
   return promise.finally(() => {
     if (--pendingLoads <= 0) {
       pendingLoads = 0;

@@ -122,7 +122,7 @@ function open(): void {
   void Icons.retry("goods");
   const goods = [...(pack.goods as Good[])];
   if (!goods.length) {
-    tip(t("No goods data available."), true, "warn");
+    tip(t("No goods available"), true, "warn");
     return;
   }
 

@@ -230,7 +230,7 @@ function showUploadMessage(type: string, mapData: string[] | null, mapVersion: s
 
   if (type === "invalid") {
     message = `${t("The file does not look like a valid save file.")}<br>${t("Please check the data format")}`;
-    title = t("Invalid file");
+    title = t("Invalid file format");
   } else if (type === "updated") {
     parseLoadedData(mapData!, mapVersion);
     return;
@@ -402,10 +402,10 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     Journeys.sync();
 
     select("#scaleBar")
-      .on("mousemove", () => tip(t("Open Units Editor")))
+      .on("mousemove", () => tip(t("Units Editor")))
       .on("click", () => window.Controllers.UnitsEditor.open());
     select("#legend")
-      .on("mousemove", () => tip(t("Drag to change the position. Click to hide the legend box")))
+      .on("mousemove", () => tip(sentences(t("Drag to change the position"), t("Click to hide the legend box"))))
       .on("click", onLegendClick);
 
     // add custom heightmap color scheme if any

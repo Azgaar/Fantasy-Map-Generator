@@ -136,7 +136,7 @@ function renderDialog(options: OpenPaintEditorOptions, items: readonly PaintEdit
     </div>
     <div id="paintEditorControls" style="display: flex; flex-direction: column; align-items: center; gap: 0.4em;">${dontOverrideControl}${landOnlyControl}</div>
     <div style="display: flex; gap: 0.4em;">
-      <button id="paintEditorUndo" aria-label="${t("Undo")}" data-tip="${t("Undo last brush stroke")}" class="icon-ccw" disabled></button>
+      <button id="paintEditorUndo" aria-label="${t("Undo")}" data-tip="${t("Undo the latest action")}" class="icon-ccw" disabled></button>
       <button id="paintEditorApply" aria-label="${t("Apply")}" data-tip="${t("Apply painted changes")}" class="icon-check"></button>
       <button id="paintEditorCancel" aria-label="${t("Cancel")}" data-tip="${t("Cancel painted changes")}" class="icon-cancel"></button>
     </div>

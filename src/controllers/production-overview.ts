@@ -86,7 +86,7 @@ function open(burgId: number): void {
     if (type === "SELL")
       return `<span style="${commonStyles};background:#dff0e2;color:#2f8a46" data-tip="${t("Sale to local market")}">${t("sell").toUpperCase()}</span>`;
     if (type === "LOCAL")
-      return `<span style="${commonStyles};background:#d9e7f5;color:#346" data-tip="${t("Local production")}">${t("LOCAL")}</span>`;
+      return `<span style="${commonStyles};background:#d9e7f5;color:#346" data-tip="${t("Local production")}">${t("Local").toUpperCase()}</span>`;
     return `<span style="${commonStyles};background:#f8e7bf;color:#b67a00" data-tip="${t("Manufacturing step")}">${t("MFG")}</span>`;
   };
   const modifierBadge = (modifier: number) =>

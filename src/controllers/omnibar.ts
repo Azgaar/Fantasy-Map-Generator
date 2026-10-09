@@ -99,7 +99,11 @@ class OmnibarController {
       id: command.id,
       name: command.name,
       context: "Command",
-      fields: { name: normalize(command.name), alias: normalize(command.aliases) },
+      fields: {
+        name: normalize(command.name),
+        // a dialog command is named by the dialog's title; “open burgs” still finds it
+        alias: normalize(command.link ? `open ${command.name} ${command.aliases}` : command.aliases)
+      },
       command
     }));
     if (typeof pack === "undefined" || !pack.cells?.i?.length) return commands;

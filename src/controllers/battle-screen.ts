@@ -368,17 +368,17 @@ function renderDialog(): void {
         </div>
         <button id="battleNameShow" data-tip="${t("Set battle name")}" class="icon-font"></button>
         <div id="battleNameSection" style="display: none">
-          <button id="battleNameHide" data-tip="${t("Hide the battle name section")}" class="icon-font"></button>
+          <button id="battleNameHide" data-tip="${t("Hide")}" class="icon-font"></button>
           <input id="battleNamePlace" data-tip="${t("Type place name")}" style="width: 30%" />
           <input id="battleNameFull" data-tip="${t("Type full battle name")}" style="width: 46%" />
           <button
             id="battleNameCulture"
-            data-tip="${t("Generate culture-specific name for place and battle")}"
+            data-tip="${t("Generate culture-specific name")}"
             class="icon-book"
           ></button>
           <button
             id="battleNameRandom"
-            data-tip="${t("Generate random name for place and battle")}"
+            data-tip="${t("Generate random name")}"
             class="icon-globe"
           ></button>
         </div>
@@ -400,15 +400,15 @@ function renderDialog(): void {
     </div>
     <div id="regimentSelectorScreen" class="dialog">
       <div id="regimentSelectorHeader" class="header" style="grid-template-columns: 9em 13em 4em 6em">
-        <div data-tip="${t("Click to sort by state name")}" class="sortable alphabetically" data-sortby="state">
+        <div data-tip="${t("Click to sort")}" class="sortable alphabetically" data-sortby="state">
           ${t("State")}&nbsp;
         </div>
-        <div data-tip="${t("Click to sort by regiment name")}" class="sortable alphabetically" data-sortby="regiment">
+        <div data-tip="${t("Click to sort")}" class="sortable alphabetically" data-sortby="regiment">
           ${t("Regiment")}&nbsp;
         </div>
-        <div data-tip="${t("Click to sort by total military forces")}" class="sortable" data-sortby="total">${t("Total")}&nbsp;</div>
+        <div data-tip="${t("Click to sort")}" class="sortable" data-sortby="total">${t("Total")}&nbsp;</div>
         <div
-          data-tip="${t("Click to sort by distance to the battlefield")}"
+          data-tip="${t("Click to sort")}"
           class="sortable icon-sort-number-up"
           data-sortby="distance"
         >
@@ -532,7 +532,7 @@ function addHeaders(): void {
     headers += `<th data-tip="${label}">${Icons.html(u.icon)}</th>`;
   }
 
-  headers += `<th data-tip="${t("Total military")}">${t("Total")}</th></tr></thead>`;
+  headers += `<th data-tip="${t("Total military forces")}">${t("Total")}</th></tr></thead>`;
   ensureEl("battleAttackers").innerHTML = headers;
   ensureEl("battleDefenders").innerHTML = headers;
 }

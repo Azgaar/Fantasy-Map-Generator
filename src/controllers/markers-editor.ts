@@ -102,7 +102,7 @@ function renderDialog(): void {
         <div class="label">${t("Icon colors")}:</div>
         <input id="markerIconFill" type="color" style="width: 5em; height: 1.6em" />
         <input id="markerIconStroke" type="color" style="width: 5em; height: 1.6em" />
-        <i id="markerIconPaintReset" data-tip="${t("Restore the icon's default colors")}" class="icon-ccw pointer"></i>
+        <i id="markerIconPaintReset" data-tip="${t("Reset to default")}" class="icon-ccw pointer"></i>
       </div>
     </div>
     <div id="markerBottom">
@@ -110,7 +110,7 @@ function renderDialog(): void {
       <button id="markerRadius" data-tip="${t("Show markers within a radius of this one")}" class="icon-dot-circled"></button>
       <button id="markerLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
       <button id="markerAdd" data-tip="${t("Add additional marker of that type")}" class="icon-plus"></button>
-      <button id="markerRemove" data-tip="${t("Remove marker")}" data-shortcut="Delete" class="icon-trash fastDelete"></button>
+      <button id="markerRemove" data-tip="${t("Remove")}" data-shortcut="Delete" class="icon-trash fastDelete"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -296,7 +296,7 @@ function toggleAddMarker(): void {
 
 function confirmMarkerDeletion(): void {
   confirmationDialog({
-    title: t("Remove marker"),
+    title: t("Remove"),
     message: sentences(t("Are you sure you want to remove this marker?"), t("This action cannot be reverted")),
     confirm: t("Remove"),
     onConfirm: deleteMarker

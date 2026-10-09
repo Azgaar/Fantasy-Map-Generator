@@ -7,35 +7,35 @@ import { sentences, t } from "@/utils/i18n";
 const TEMPLATE = /* html */ `
   <div class="separator">${t("Edit")}</div>
   <div class="grid">
-    <button id="editBiomesButton" data-tip="${t("Open Biomes Editor")}" data-shortcut="Shift + B">
+    <button id="editBiomesButton" data-tip="${t("Biomes Editor")}" data-shortcut="Shift + B">
       ${t("Biomes")}
     </button>
-    <button id="overviewBurgsButton" data-tip="${t("Open Burgs Overview")}" data-shortcut="Shift + T">
+    <button id="overviewBurgsButton" data-tip="${t("Burgs Overview")}" data-shortcut="Shift + T">
       ${t("Burgs")}
     </button>
     <button
       id="editCoastlineSettings"
-      data-tip="${t("Open Coastline Editor")}"
+      data-tip="${t("Coastline Settings")}"
     >
       ${t("Coastlines")}
     </button>
-    <button id="editCulturesButton" data-tip="${t("Open Cultures Editor")}" data-shortcut="Shift + C">
+    <button id="editCulturesButton" data-tip="${t("Cultures Editor")}" data-shortcut="Shift + C">
       ${t("Cultures")}
     </button>
     <button
       id="editDiplomacyButton"
-      data-tip="${t("Click to open Diplomatical relationships Editor")}"
+      data-tip="${t("Diplomacy Overview")}"
       data-shortcut="Shift + D"
     >
       ${t("Diplomacy")}
     </button>
-    <button id="editEmblemButton" data-tip="${t("Click to open Emblem Editor")}" data-shortcut="Shift + Y">
+    <button id="editEmblemButton" data-tip="${t("Edit Emblem")}" data-shortcut="Shift + Y">
       ${t("Emblems")}
     </button>
-    <button id="overviewFeaturesButton" data-tip="${t("Open Geographical Features Overview")}" data-shortcut="Shift + F">
+    <button id="overviewFeaturesButton" data-tip="${t("Geographical Features Overview")}" data-shortcut="Shift + F">
       ${t("Features")}
     </button>
-    <button id="editGoods" data-tip="${t("Open Goods Editor")}" data-shortcut="Shift + G">${t("Goods")}</button>
+    <button id="editGoods" data-tip="${t("Goods Editor")}" data-shortcut="Shift + G">${t("Goods")}</button>
     <button
       id="editHeightmapButton"
       data-tip="${t("Click to open Heightmap customization menu")}"
@@ -43,52 +43,52 @@ const TEMPLATE = /* html */ `
     >
       ${t("Heightmap")}
     </button>
-    <button id="overviewMarkersButton" data-tip="${t("Open Markers Overview")}" data-shortcut="Shift + K">
+    <button id="overviewMarkersButton" data-tip="${t("Markers Overview")}" data-shortcut="Shift + K">
       ${t("Markers")}
     </button>
-    <button id="overviewMarketsButton" data-tip="${t("Open Markets Overview")}">
+    <button id="overviewMarketsButton" data-tip="${t("Markets Overview")}">
       ${t("Markets")}
     </button>
-    <button id="editMeasurersButton" data-tip="${t("Open Measurers Editor")}" data-shortcut="Shift + =">
+    <button id="editMeasurersButton" data-tip="${t("Measurers Editor")}" data-shortcut="Shift + =">
       ${t("Measurers")}
     </button>
-    <button id="overviewLabelsButton" data-tip="${t("Open Labels Overview")}" data-shortcut="Shift + L">
+    <button id="overviewLabelsButton" data-tip="${t("Labels Overview")}" data-shortcut="Shift + L">
       ${t("Labels")}
     </button>
     <button
       id="overviewMilitaryButton"
-      data-tip="${t("Click to open Military Forces Overview")}"
+      data-tip="${t("Military Overview")}"
       data-shortcut="Shift + M"
     >
       ${t("Military")}
     </button>
-    <button id="editNamesBaseButton" data-tip="${t("Open Namesbase Editor")}" data-shortcut="Shift + N">
+    <button id="editNamesBaseButton" data-tip="${t("Namesbase Editor")}" data-shortcut="Shift + N">
       ${t("Namesbase")}
     </button>
-    <button id="editNotesButton" data-tip="${t("Open Notes Editor")}" data-shortcut="Shift + O">${t("Notes")}</button>
-    <button id="editProvincesButton" data-tip="${t("Open Provinces Editor")}" data-shortcut="Shift + P">
+    <button id="editNotesButton" data-tip="${t("Notes Editor")}" data-shortcut="Shift + O">${t("Notes")}</button>
+    <button id="editProvincesButton" data-tip="${t("Provinces Editor")}" data-shortcut="Shift + P">
       ${t("Provinces")}
     </button>
-    <button id="editReligions" data-tip="${t("Open Religions Editor")}" data-shortcut="Shift + R">
+    <button id="editReligions" data-tip="${t("Religions Editor")}" data-shortcut="Shift + R">
       ${t("Religions")}
     </button>
-    <button id="overviewRiversButton" data-tip="${t("Open Rivers Overview")}" data-shortcut="Shift + V">
+    <button id="overviewRiversButton" data-tip="${t("Rivers Overview")}" data-shortcut="Shift + V">
       ${t("Rivers")}
     </button>
-    <button id="overviewRoutesButton" data-tip="${t("Open Routes Overview")}" data-shortcut="Shift + U">
+    <button id="overviewRoutesButton" data-tip="${t("Routes Overview")}" data-shortcut="Shift + U">
       ${t("Routes")}
     </button>
-    <button id="overviewJourneysButton" data-tip="${t("Open Journeys Overview")}" data-shortcut="Shift + J">
+    <button id="overviewJourneysButton" data-tip="${t("Journeys Overview")}" data-shortcut="Shift + J">
       ${t("Journeys")}
     </button>
-    <button id="editStatesButton" data-tip="${t("Open States Editor")}" data-shortcut="Shift + S">
+    <button id="editStatesButton" data-tip="${t("States Editor")}" data-shortcut="Shift + S">
       ${t("States")}
     </button>
-    <button id="editTradeAnimationButton" data-tip="${t("Open Trade Animation Editor")}">
+    <button id="editTradeAnimationButton" data-tip="${t("Trade Animation Editor")}">
       ${t("Trade")}
     </button>
-    <button id="editUnitsButton" data-tip="${t("Open Units Editor")}" data-shortcut="Shift + Q">${t("Units")}</button>
-    <button id="editZonesButton" data-tip="${t("Open Zones Editor")}" data-shortcut="Shift + Z">${t("Zones")}</button>
+    <button id="editUnitsButton" data-tip="${t("Units Editor")}" data-shortcut="Shift + Q">${t("Units")}</button>
+    <button id="editZonesButton" data-tip="${t("Zones Editor")}" data-shortcut="Shift + Z">${t("Zones")}</button>
   </div>
   <div class="separator">${t("Regenerate")}</div>
   <div id="regenerateFeature" class="grid">
@@ -200,12 +200,12 @@ const TEMPLATE = /* html */ `
   </div>
   <div class="separator">${t("Show")}</div>
   <div class="grid">
-    <button id="overviewCellsButton" data-tip="${t("Click to open Cell details view")}" data-shortcut="Shift + E">
+    <button id="overviewCellsButton" data-tip="${t("Cell Details")}" data-shortcut="Shift + E">
       ${t("Cells")}
     </button>
     <button
       id="overviewChartsButton"
-      data-tip="${t("Click to open Charts to overview cells data")}"
+      data-tip="${t("Data Charts")}"
       data-shortcut="Shift + A"
     >
       ${t("Charts")}

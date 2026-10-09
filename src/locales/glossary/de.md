@@ -9,7 +9,8 @@ Terms every `de.json` string uses the same way. Rules for all catalogs are in
 - Buttons and menu items take the infinitive: “Karte speichern”, “Alle entfernen”.
 - Tooltips are a short imperative or a noun phrase; “Bitte” only where English insists on “please”.
 - Quotes are „…“. Keys are named as on German keyboards: Strg, Umschalt, Alt, Entf, Eingabe.
-- Brand and product names stay: Fantasy Map Generator, Azgaar, Armoria, Dropbox, Discord.
+- Brand and product names stay: Azgaar, Armoria, Dropbox, Discord.
+- The product names are translated: “Fantasy-Kartengenerator”, in full “Azgaars Fantasy-Kartengenerator”; the assistant is “Azgaar-Assistent”.
 
 ## Map
 

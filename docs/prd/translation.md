@@ -25,8 +25,11 @@ generated content stays English, and the `.map` format does not change.
   through `t()`. Text returned by `t()` is display-only and is never written into the Map, so a map
   made with a Russian interface is byte-identical to one made with an English interface.
 - Translations are written by AI alongside the code and corrected from user reports. A language is
-  added to the manifest only when its catalog is complete; CI keeps it complete afterwards.
-- Google Translate stays available for languages FMG doesn't ship.
+  added to the manifest only when its catalog is complete; afterwards CI warns about any string it
+  lacks, which shows in English until translated.
+- The Google Translate widget is retired once the shipped languages cover about 95% of non-English
+  users (see [Language coverage](#language-coverage)). Browsers' built-in page translation serves the
+  rest.
 
 Russian went first because it exercises the hard parts of interface text early: three plural forms,
 word order different from English, a different script and longer words. The language manifest is
@@ -53,8 +56,8 @@ the source of truth for the set of shipped languages.
    order, so that they are not English sentences with translated words.
 9. As a user, I want hotkey hints to remain visible in any language, so that I can still learn the
    shortcuts when the translated word doesn't contain the hotkey letter.
-10. As a user of a language FMG doesn't ship, I want the Google Translate option to remain, so that
-    I am not worse off than today.
+10. As a user of a language FMG doesn't ship, I want my browser's page translation to still work, so
+    that I am not worse off than with the Google Translate widget.
 11. As a desktop-app user, I want the same language choice and translations as on the web, so that
     both behave the same.
 12. As a user, I want the long help texts (About, font help) translated with their links intact, so
@@ -79,14 +82,14 @@ the source of truth for the set of shipped languages.
     that I translate the right meaning.
 19. As a maintainer, I want a list of each language's untranslated keys, so that AI can translate them
     in the pull request that adds them.
-20. As a maintainer, I want a changed English string to fail CI until its translations follow, so that
-    a copy edit never silently drops a language back to English.
+20. As a maintainer, I want CI to warn when an English string has no translation yet, so that a copy
+    edit never silently drops a language back to English, without blocking the pull request.
 21. As a developer, I want to write `t("Rivers Overview")` directly in a template, so that adding UI
     text costs nothing and the template stays readable.
 22. As a developer, I want an extraction command that collects every `t()` string into the English
     catalog, so that I never maintain it by hand.
 23. As a developer, I want CI to reject incomplete or broken locale files (empty values, malformed
-    placeholders or invalid rich text), so that a bad translation can't break the interface.
+    placeholders or markup), so that a bad translation can't break the interface.
 24. As a maintainer, I want the bundle to load only the active locale, so that adding languages
     doesn't slow everyone's startup.
 25. As a maintainer, I want no new production dependency, so that the bundle stays lightweight.
@@ -99,6 +102,28 @@ can select `pt`. Add a regional variant only when its wording materially differs
 
 Right-to-left languages remain out of scope until the layout supports them.
 
+### Language coverage
+
+GA4 active users by browser language, 11 Sep – 8 Oct 2026: 189,316 users, 70% English and 56,239
+non-English. The shipped catalogs cover 81.4% of non-English users (94.5% of all users).
+
+| Next language | Share of non-English | Cumulative coverage |
+| ------------- | -------------------: | ------------------: |
+| Turkish       |                 3.7% |               85.1% |
+| Indonesian    |                 1.8% |               87.0% |
+| Korean        |                 1.7% |               88.7% |
+| Czech         |                 1.4% |               90.1% |
+| Swedish       |                 1.4% |               91.4% |
+| Hungarian     |                 1.0% |               92.4% |
+| Thai          |                 0.9% |               93.3% |
+| Vietnamese    |                 0.8% |               94.1% |
+| Danish        |                 0.8% |               94.8% |
+
+Every language after these has under 0.7% of non-English users; the right-to-left ones (Arabic,
+Hebrew, Persian) add 1.2% together. These nine catalogs are therefore the bar for retiring the Google
+Translate widget. GA4 reports Chinese without the script; its region split decides whether
+Traditional Chinese is worth a regional variant.
+
 ## Implementation Decisions
 
 ### Modules
@@ -106,7 +131,7 @@ Right-to-left languages remain out of scope until the layout supports them.
 **1. Catalog** — a small, deep module that owns all UI text lookup.
 
 - Interface: load one locale before the app modules are evaluated, then synchronous
-  `t(key, { context?, count?, ...values })` and `tHtml(key, values)` lookups.
+  `t(key, { context?, count?, ...values })` lookups.
 - No library: a hand-written lookup of ~50 lines on top of `Intl.PluralRules`. The catalog files use
   the i18next v4 JSON shape (flat keys, `key_context`, `key_one`/`key_other`, `{{value}}`
   placeholders), so that standard translation tools read them.
@@ -114,21 +139,17 @@ Right-to-left languages remain out of scope until the layout supports them.
   `data/` may only import `utils/`. A `data/` module calling `t()` at import time is fine, because
   the catalog is loaded before any app module is evaluated.
 - Keys are the English text itself (`t("Rivers Overview")`). Lookup order: active locale → English
-  catalog → the key. Direct strings therefore need no English entry.
-- Exceptions to direct strings:
-  - **Ambiguous words** get a `context` ("Close" + `button` / `distance`).
-  - **Long prose** (multi-sentence help, paragraphs with links) uses explicit keys
-    (`about.intro`); its English lives in the English catalog.
-- Keys are string literals only, so extraction can find them. Never build sentences by
-  concatenation; use placeholders.
-- `t()` is plain text: interpolated values are HTML-escaped by default and its catalog entries may
-  not contain markup, so they remain safe in text and attribute sinks. `{{- value}}` is only for a
-  value bound to a sink that escapes on its own.
-- `tHtml()` is reserved for explicit prose keys that need rich text. Its locale value must have the
-  same parsed element tree and attributes as English; only text nodes and validated placeholders may
-  differ. Raw placeholders in `tHtml()` are code-owned markup, never translator-authored markup.
+  catalog → the key. Direct strings therefore need no English entry. **Ambiguous words** get a
+  `context` ("Close" + `button` / `distance`).
+- Keys are string literals only, so extraction can find them. Texts may be combined in code;
+  a value inside a sentence is a placeholder, so a translation can move it.
+- `t()` is plain text: interpolated values are HTML-escaped by default and catalog entries may not
+  contain markup, so they remain safe in text and attribute sinks. Markup is code-owned: a link or
+  `<code>` inside a sentence is built in code and passed as a raw `{{- value}}` placeholder, its label
+  translated as a string of its own. `{{- value}}` also serves a sink that escapes on its own. No
+  rich-text lookup (`tHtml()`) is needed.
 - Every locale, English included, is a separately loaded chunk; English loads alongside the
-  active one because plurals and explicit-key prose need it.
+  active one because plurals need it.
 
 **2. Language setting** — a browser preference, following the configuration rules.
 
@@ -139,7 +160,7 @@ Right-to-left languages remain out of scope until the layout supports them.
   user's stored map, so the user is told to save first. Controllers never re-render for a language
   change.
 - A language manifest (`src/data/languages.ts`) lists the shipped locales with their native names.
-  The Google Translate option remains for unlisted languages.
+  Unlisted languages rely on the browser's own page translation.
 
 **3. The map boundary** — what keeps the `.map` unchanged.
 
@@ -159,19 +180,19 @@ Right-to-left languages remain out of scope until the layout supports them.
   Controllers, so no attribute-based or DOM-walking translation mechanism is ever built.
 - Hotkey hints render from the existing shortcut metadata instead of `<u>` markup inside labels, so
   a translated label never has to contain the hotkey letter.
-- The lookup fallback to English is defensive only (for a failed locale resource or a developer
-  mistake); a shipped catalog may not rely on it for individual entries.
+- The lookup falls back to English for a failed locale resource and for a string a catalog has not
+  translated yet.
 
 **5. Tooling and workflow**
 
 - A small extraction script on the TypeScript compiler API (already a dev dependency) collects
-  `t()` and `tHtml()` literals into the English catalog, expanding contexts and plurals and keeping
+  `t()` literals into the English catalog, expanding contexts and plurals and keeping
   existing English values; `npm run extract-strings` writes it, and its `--check` mode fails CI when
   the catalog is stale. Chosen over `i18next-cli`, which would add a native-binary dependency tree
   for a job this narrow.
-- A locale lint script, run in CI over every shipped catalog, rejects empty or missing values,
-  placeholders missing from or added to the source, keys absent from the English catalog and invalid
-  rich text. Rich-text entries must preserve English's parsed tags, nesting and attributes exactly.
+- A locale lint script, run in CI over every shipped catalog, rejects empty values, placeholders
+  missing from or added to the source, keys absent from the English catalog, markup and raw double
+  quotes. Missing translations are a CI warning, not a failure.
 - Translations are written by AI in the pull request that changes the English, not through a
   translation platform: a machine translation reviewed against the code is as good as a volunteer's
   for most strings, and catalogs never lag behind the code. `lint-locales --missing` lists each
@@ -228,9 +249,10 @@ listed.
 
 ### M3 — Additional catalogs
 
-1. **Rich-text boundary.** Add `tHtml()` and migrate the existing markup-bearing entries to it.
-   `t()` accepts plain text only; extraction and locale lint identify rich-text entries and compare
-   their parsed structure with English.
+**Status: done.** Fourteen catalogs ship: af, de, es, fr, it, ja, nl, pl, pt, pt-BR, ru, tr, uk, zh.
+
+1. **No markup in catalogs.** The markup-bearing entries were split into plain sentences with link
+   placeholders and translated labels, and the lint rejects markup, so `tHtml()` was not built.
 2. Each catalog is translated in full from English, cross-checked against Russian for meaning, and
    added to the manifest only after CI reports no missing keys. The proof of concept's French and
    Chinese strings are terminology references, not a source.
@@ -245,19 +267,26 @@ listed.
 1. **Layout fit**: long labels wrap in the narrow menu tabs (Russian today; German is the worst
    case). Fix the layout (widths, wrapping, shorter wording where the meaning survives) rather than
    per-language CSS.
-2. **CJK text**: check the interface font's fallback renders Chinese and Japanese cleanly and that
-   nothing relies on spaces to wrap or truncate.
-3. **Icon-picker category names**: the last interface strings left in English.
-4. **Map invariance test**: one e2e test generates the same seed with the UI in English and in
+2. **CJK and Thai text**: check the interface font's fallback renders Chinese, Japanese and Thai
+   cleanly and that nothing relies on spaces to wrap or truncate.
+3. **Icon-picker category names**: done for the groups and emoji themes; the names of built-in set
+   subfolders (“Relief · Simple”) still come from folder names in English.
+4. **Map invariance test** (done): one e2e test generates the same seed with the UI in English and in
    Russian and asserts the saved `.map` files are identical. It turns the map boundary from a rule
    into a check.
 5. A browser pass in each language with every editor open, as done for Russian in M2.
 
-### M5 — Release
+### M5 — Coverage catalogs and widget retirement
 
-1. Glossary term: **UI language**.
+1. Catalogs for tr, id, ko, cs, sv, hu, th, vi and da, each with its glossary first, as in M3.
+2. Remove the Google Translate button, its script loader and its strings from the Options tab, and
+   its mentions from the wiki (User Interface, Knowledge Base, Q&A, Quick Start, Policy).
+
+### M6 — Release
+
+1. Glossary term: **UI language** (done).
 2. Wiki: the Q&A, Knowledge Base, User Interface, Quick Start, Policy and Reporting pages describe
-   the language picker, the shipped languages, Google Translate as the fallback and how to report a
+   the language picker, the shipped languages, the fallback for other languages and how to report a
    wrong translation. Written; published with the release.
 3. Close [Azgaar/Fantasy-Map-Generator#1354](https://github.com/Azgaar/Fantasy-Map-Generator/pull/1354)
    with thanks and a link here.
@@ -272,10 +301,9 @@ seed produces — never how lookup is implemented internally.
   interpolated values. The fallback test simulates an unavailable locale resource, not a partial
   shipped catalog. Prior art: the utils unit tests.
 - **Locale lint and extraction.** Both CI checks are tested against small fixture catalogs and
-  sources: the lint fails on an empty or missing value, a dropped or extra placeholder, an unknown
-  key, or changed rich-text structure, and passes a clean file.
-- **Catalog completeness.** Every shipped catalog parses, has every English key and only holds keys
-  the English catalog has.
+  sources: the lint fails on an empty value, a dropped or extra placeholder, an unknown key or
+  markup, lists missing keys with each language's plural forms, and passes a clean file.
+- **Catalog files.** A locale file exists for exactly the shipped languages.
 - **Labels for ids.** Tests keep `id-labels` and the Style field labels covering every id and schema
   key, so a new id cannot silently show raw.
 - **Map invariance** (M4). Same seed, English vs Russian UI, identical `.map`. A whole generation
@@ -316,7 +344,7 @@ It needs its own PRD. Lessons already learned, so they aren't rediscovered:
 ## Further Notes
 
 - English-as-key means a copy edit orphans that string's translations. That's intended — the
-  translation really is stale — and the lint fails on the orphaned key, so the same pull request
-  moves or redoes it.
+  translation really is stale. The lint fails on the orphaned key, so the pull request drops or moves
+  it; the new key shows in English, with a CI warning, until it is translated.
 - Russian interface with English map content is the expected result of this scope: a biome list
   reads "Grassland" under a Russian column header until the user renames it.

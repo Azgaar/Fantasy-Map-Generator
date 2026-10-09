@@ -1,7 +1,11 @@
 // About tab: credits, links and the supporters list
 import { alertDialog } from "@/components/dialog/dialog-helpers";
-import { t } from "@/utils/i18n";
+import { link } from "@/utils/commonUtils";
+import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/nodeUtils";
+
+const REPOSITORY = "https://github.com/Azgaar/Fantasy-Map-Generator";
+const WIKI = `${REPOSITORY}/wiki`;
 
 const TEMPLATE = /* html */ `
   <div class="aboutActions">
@@ -23,17 +27,42 @@ const TEMPLATE = /* html */ `
     </button>
   </div>
   <p>
-    ${t('<a href="https://github.com/Azgaar/Fantasy-Map-Generator" target="_blank">Fantasy Map Generator</a> is an <a href="https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE" target="_blank" >open source</a > tool by Azgaar and Team. You may use maps as they are, edit them or even create a new map from scratch. Check out the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial" target="_blank" >Quick start</a >, <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A" target="_blank">Q&A</a>,')}
-    <a href="https://youtube.com/playlist?list=PLtgiuDC8iVR2gIG8zMTRn7T_L0arl9h1C" target="_blank"
-      >${t("Video tutorial")}</a
-    >${t(", and")}
-    <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys" target="_blank">${t("hotkeys")}</a> ${t("for guidance.")}
+    ${sentences(
+      t("{{- generator}} is an {{- openSource}} tool by Azgaar and Team.", {
+        generator: link(REPOSITORY, t("Fantasy Map Generator")),
+        openSource: link(`${REPOSITORY}/blob/master/LICENSE`, t("open source"))
+      }),
+      t("You may use maps as they are, edit them or even create a new map from scratch."),
+      t("Check out the {{- quickStart}}, {{- qaa}}, {{- video}} and {{- hotkeys}} for guidance.", {
+        quickStart: link(`${WIKI}/Quick-Start-Tutorial`, t("Quick start tutorial")),
+        qaa: link(`${WIKI}/Q&A`, t("Q&A page")),
+        video: link("https://youtube.com/playlist?list=PLtgiuDC8iVR2gIG8zMTRn7T_L0arl9h1C", t("Video tutorial")),
+        hotkeys: link(`${WIKI}/Hotkeys`, t("hotkeys"))
+      })
+    )}
   </p>
   <p>
-    ${t('Join our <a href="https://discordapp.com/invite/X7E84HU" target="_blank">Discord server</a> and <a href="https://www.reddit.com/r/FantasyMapGenerator/" target="_blank">Reddit community</a> to ask questions, get help and share maps. The created maps can be used for free, even for commercial purposes.')}
+    ${sentences(
+      t("Join our {{- discord}} and {{- reddit}} to ask questions, get help and share maps.", {
+        discord: link("https://discordapp.com/invite/X7E84HU", t("Discord server")),
+        reddit: link("https://www.reddit.com/r/FantasyMapGenerator/", t("Reddit community"))
+      }),
+      t("The created maps can be used for free, even for commercial purposes.")
+    )}
   </p>
   <p>
-    ${t('The project is under active development. Creator and main maintainer: Azgaar. To track the development progress see the <a href="https://trello.com/b/7x832DG4/fantasy-map-generator" target="_blank">devboard</a>. For older versions see the <a href="https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog" target="_blank">changelog</a>. Please report bugs <a href="https://github.com/Azgaar/Fantasy-Map-Generator/issues" target="_blank">here</a>. You can also contact me directly via <a href="mailto:azgaar.fmg@yandex.by" target="_blank">email</a>.')}
+    ${sentences(
+      t("The project is under active development."),
+      t("Creator and main maintainer: Azgaar."),
+      t("To track the development progress see the {{- devboard}}.", {
+        devboard: link("https://trello.com/b/7x832DG4/fantasy-map-generator", t("devboard"))
+      }),
+      t("For older versions see the {{- changelog}}.", { changelog: link(`${WIKI}/Changelog`, t("changelog")) }),
+      t("Please report bugs {{- here}}.", { here: link(`${REPOSITORY}/issues`, t("here")) }),
+      t("You can also contact me directly via {{- email}}.", {
+        email: `<a href="mailto:azgaar.fmg@yandex.by" target="_blank">${t("email")}</a>`
+      })
+    )}
   </p>
   <div
     style="
@@ -61,8 +90,7 @@ const TEMPLATE = /* html */ `
     </a>
   </div>
   <p>
-    ${t("Special thanks to")}
-    <a data-tip="${t("Click to see list of supporters")}" onclick="showSupporters()">${t("all supporters")}</a> ${t("on Patreon!")}
+    ${t("Thanks for all supporters on {{- patreon}}!", { patreon: `<a data-tip="${t("Click to see list of supporters")}" onclick="showSupporters()">Patreon</a>` })}
   </p>
   <div style="display: flex; justify-content: center; padding: 0.4em; font-family: cursive">
     <a href="https://u24.gov.ua/" style="width: 80%" data-tip="${t("Support Ukraine")}" target="_blank">

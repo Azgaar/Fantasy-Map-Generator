@@ -51,7 +51,7 @@ function renderDialog(): void {
     <button id="iceRandomize" data-tip="${t("Randomize Iceberg shape")}" class="icon-shuffle"></button>
     <input id="iceSize" data-tip="${t("Change Iceberg size")}" type="range" min=".05" max="2" step=".01" />
     <button id="iceNew" data-tip="${t("Add an Iceberg (click on map)")}" class="icon-plus"></button>
-    <button id="iceRemove" data-tip="${t("Remove the element")}" data-shortcut="Delete" class="icon-trash fastDelete"></button>
+    <button id="iceRemove" data-tip="${t("Remove")}" data-shortcut="Delete" class="icon-trash fastDelete"></button>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
@@ -106,7 +106,7 @@ function removeIce(): void {
     : t("Are you sure you want to remove the iceberg?");
   $("#alert").dialog({
     resizable: false,
-    title: t("Remove {{- type}}", { type }),
+    title: t("Remove", { type }),
     buttons: {
       [t("Remove")]: function (this: HTMLElement) {
         $(this).dialog("close");

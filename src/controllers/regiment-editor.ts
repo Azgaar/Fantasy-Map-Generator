@@ -48,7 +48,7 @@ function renderDialog(): void {
         <button id="regimentType" data-tip="${sentences(t("Regiment type (land or naval)"), t("Click to change"))}"></button>
         <input
           id="regimentName"
-          data-tip="${t("Type to rename the regiment")}"
+          data-tip="${t("Type to rename")}"
           autocorrect="off"
           spellcheck="false"
           style="width: 13em"
@@ -59,7 +59,7 @@ function renderDialog(): void {
           class="speaker"
           >🔊</span
         >
-        <i id="regimentNameRestore" data-tip="${t("Click to restore regiment's default name")}" class="icon-ccw pointer"></i>
+        <i id="regimentNameRestore" data-tip="${t("Reset to default")}" class="icon-ccw pointer"></i>
       </div>
       <div data-tip="${t("Regiment icon")}" style="display: flex; align-items: center">
         <div class="label">${t("Icon")}:</div>
@@ -81,7 +81,7 @@ function renderDialog(): void {
       ${noteButton("regimentLegend", t("Edit free text notes (legend)"))}
       <button
         id="regimentRemove"
-        data-tip="${t("Remove regiment")}"
+        data-tip="${t("Remove")}"
         data-shortcut="Delete"
         class="icon-trash fastDelete"
       ></button>
@@ -438,7 +438,7 @@ function removeRegiment(): void {
   ensureEl("alertMessage").innerHTML = t("Are you sure you want to remove the regiment?");
   $("#alert").dialog({
     resizable: false,
-    title: t("Remove regiment"),
+    title: t("Remove"),
     buttons: {
       [t("Remove")]: function () {
         $(this).dialog("close");

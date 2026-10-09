@@ -59,11 +59,11 @@ function render(): void {
   ensureEl("dialogs").insertAdjacentHTML(
     "beforeend",
     /* html */ `<div id="wrapTool" class="dialog">
-    <div style="max-width: 22em">${t("Use for <strong>small shape adjustments only</strong>. Use the Heightmap Editor for significant changes.")}</div>
+    <div style="max-width: 22em">${t("Use for small shape adjustments only. Use the Heightmap Editor for significant changes.")}</div>
     <div style="margin-top: 0.5em">${brush?.markup ?? ""}</div>
     <div id="wrapBottom" style="margin-top: 0.4em">
-      <button id="wrapUndo" data-tip="${t("Undo the last stroke (Ctrl + Z)")}" class="icon-ccw" disabled></button>
-      <button id="wrapRedo" data-tip="${t("Redo the stroke (Ctrl + Y)")}" class="icon-cw" disabled></button>
+      <button id="wrapUndo" data-tip="${t("Undo the latest action (Ctrl + Z)")}" class="icon-ccw" disabled></button>
+      <button id="wrapRedo" data-tip="${t("Redo the action (Ctrl + Y)")}" class="icon-cw" disabled></button>
       <button id="wrapApply" data-tip="${t("Apply the changes and keep editing")}" class="icon-check" disabled></button>
       <button id="wrapReset" data-tip="${t("Drop the edits made in this session and its history")}" class="icon-eraser" disabled></button>
       <button id="wrapRevert" data-tip="${t("Revert all vertex edits ever made on this map")}" class="icon-trash-empty"></button>

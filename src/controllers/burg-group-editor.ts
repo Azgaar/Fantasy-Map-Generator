@@ -49,14 +49,14 @@ function renderDialog(): void {
         <thead>
           <tr>
             <th data-tip="${t("Rendering order: higher values are rendered on top")}">${t("Order")}</th>
-            <th data-tip="${t("Type group name")}">${t("Name")}</th>
+            <th data-tip="${t("Group name")}">${t("Name")}</th>
             <th data-tip="${t("Burg preview generator")}">${t("Preview generator")}</th>
             <th data-tip="${t("Set min and max population constraint in population points (see the multiplier in Units Editor)")}" colspan="3">${t("Population")}</th>
             <th data-tip="${t("Select allowed biomes")}">${t("Biomes")}</th>
             <th data-tip="${t("Select allowed states")}">${t("States")}</th>
             <th data-tip="${t("Select allowed cultures")}">${t("Cultures")}</th>
             <th data-tip="${t("Select allowed religions")}">${t("Religions")}</th>
-            <th data-tip="${t("Select allowed features")}">${t("Features")}</th>
+            <th data-tip="${t("Select allowed features")}">${t("Features", { context: "burg" })}</th>
             <th data-tip="${t("Number of burgs in group")}">${t("Count")}</th>
             <th data-tip="${t("Activate/deactivate group")}">${t("Active")}</th>
             <th data-tip="${t("Select group to be assigned if burg doesn't pass the criteria for other groups")}">
@@ -68,7 +68,7 @@ function renderDialog(): void {
       </table>
     </form>
     <div style="padding: 0.5em 0; font-style: italic;">
-      ${t('Burg population is calculated as <code style="font-size: smaller;">value * population_point * urbanization_rate</code>, see the')} <a style="text-decoration: underline;" id="burgGroupsUnitsEditorLink">${t("Units Editor")}</a>.
+      ${t("Burg population is calculated as value * population_point * urbanization_rate, see the")} <a style="text-decoration: underline;" id="burgGroupsUnitsEditorLink">${t("Units Editor")}</a>.
       <br>${t("Applying changes reclassifies Burgs, but label groups are not affected. Reconcile label groups in")} <a id="burgGroupsLabelGroupsLink" style="text-decoration: underline;">${t("Label Group Configurator")}</a>.
     </div>
   </div>`;
@@ -122,7 +122,7 @@ function createRow(group: BurgGroup): string {
   // prettier-ignore
   return /* html */ `<tr name="${group.name}">
       <td data-tip="${t("Rendering order: higher values are rendered on top")}"><input type="number" name="order" min="1" max="999" step="1" required value="${group.order || ""}" /></td>
-      <td data-tip="${sentences(t("Type group name"), t("Must start with a letter or underscore, followed by letters, digits, underscores, or dashes"), t("Spaces are not allowed"))}"><input type="text" name="name" value="${group.name}" required /></td>
+      <td data-tip="${sentences(t("Group name"), t("Must start with a letter or underscore, followed by letters, digits, underscores, or dashes"), t("Spaces are not allowed"))}"><input type="text" name="name" value="${group.name}" required /></td>
       <td data-tip="${t("Burg preview generator")}">
         <select name="preview">
           <option value="" ${!group.preview ? "selected" : ""}>${t("No")}</option>
@@ -131,8 +131,8 @@ function createRow(group: BurgGroup): string {
           <option value="watabou-dwelling" ${group.preview === "watabou-dwelling" ? "selected" : ""}>Watabou Dwelling</option>
         </select>
       </td>
-      <td data-tip="${t("Set min population constraint in population points (see the multiplier in Units Editor)")}"><input type="number" name="min" min="0" step="any" value="${group.min || ""}" /></td>
-      <td data-tip="${t("Set max population constraint in population points (see the multiplier in Units Editor)")}"><input type="number" name="max" min="0" step="any" value="${group.max || ""}" /></td>
+      <td data-tip="${t("Set min and max population constraint in population points (see the multiplier in Units Editor)")}"><input type="number" name="min" min="0" step="any" value="${group.min || ""}" /></td>
+      <td data-tip="${t("Set min and max population constraint in population points (see the multiplier in Units Editor)")}"><input type="number" name="max" min="0" step="any" value="${group.max || ""}" /></td>
       <td data-tip="${t("Set population percentile: 0-100, where 90 means the burg must have a population higher than 90% of all burgs")}"><input type="number" name="percentile" min="0" max="100" step="any" value="${group.percentile || ""}" /></td>
       <td data-tip="${t("Select allowed biomes")}">
         <input type="hidden" name="biomes" value="${group.biomes || ""}">
@@ -157,9 +157,9 @@ function createRow(group: BurgGroup): string {
       <td data-tip="${t("Number of burgs in group")}">${count}</td>
       <td data-tip="${t("Activate/deactivate group")}"><input type="checkbox" name="active" class="native" ${group.active && "checked"} /></td>
       <td data-tip="${t("Select group to be assigned if other groups are not passed")}"><input type="radio" name="isDefault" ${group.isDefault && "checked"}></td>
-      <td data-tip="${t("Assignment order: move group up")}"><button type="button" name="up" class="icon-up-big"></button></td>
-      <td data-tip="${t("Assignment order: move group down")}"><button type="button" name="down" class="icon-down-big"></button></td>
-      <td data-tip="${t("Remove group")}"><button type="button" name="remove" class="icon-trash"></button></td>
+      <td data-tip="${t("Assignment order: move group up or down")}"><button type="button" name="up" class="icon-up-big"></button></td>
+      <td data-tip="${t("Assignment order: move group up or down")}"><button type="button" name="down" class="icon-down-big"></button></td>
+      <td data-tip="${t("Remove")}"><button type="button" name="remove" class="icon-trash"></button></td>
     </tr>`;
 }
 
@@ -215,7 +215,7 @@ function selectFeaturesLimitation(el: HTMLElement): void {
       <form id="featuresLimitationForm">
         <table>
           <thead style="font-weight:bold">
-            <td style="width:6em">${t("Features")}</td>
+            <td style="width:6em">${t("Features", { context: "burg" })}</td>
             <td style="width:3em">${t("True")}</td>
             <td style="width:3em">${t("False")}</td>
             <td style="width:3em">${t("Any")}</td>
@@ -258,7 +258,7 @@ function removeRow(row: HTMLElement): void {
   }
 
   confirmationDialog({
-    title: t("Remove group"),
+    title: t("Remove"),
     message: `${t("Are you sure you want to remove the group?")}<br>${t("This WON'T change the burgs unless the changes are applied")}`,
     confirm: t("Remove"),
     onConfirm: () => {

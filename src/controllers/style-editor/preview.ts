@@ -71,7 +71,7 @@ export function cardPreview(values: PreviewValues, { sample, off, neutral = NEUT
   for (const chip of preview) {
     if (live) {
       (chip as HTMLElement).style.filter = live;
-      const name = t("Filter: {{- filter}}", { filter: filterName(live) });
+      const name = `${t("Filter")}: ${filterName(live)}`;
       chip.setAttribute(
         "data-tip",
         chip.getAttribute("data-tip") ? `${chip.getAttribute("data-tip")} · ${name}` : name
@@ -252,7 +252,7 @@ function ramp(scheme: string): HTMLElement {
   span.className = "ramp";
   const stops = [0, 0.25, 0.5, 0.75, 1].map(at => HeightmapColorSchemes.get(scheme)(at));
   span.style.background = `linear-gradient(to right, ${stops.join(",")})`;
-  span.dataset.tip = t("Color scheme: {{scheme}}", { scheme: scheme.startsWith("#") ? t("Custom") : scheme });
+  span.dataset.tip = `${t("Color scheme")}: ${scheme.startsWith("#") ? t("Custom") : scheme}`;
   return span;
 }
 

@@ -59,20 +59,20 @@ function renderDialog(): void {
       </div>
       <div id="regimentsFooter" class="totalLine"></div>
       <div id="regimentsBottom" class="editorToolbar">
-        <button id="regimentsOverviewRefresh" data-tip="${t("Refresh the overview")}" class="icon-cw"></button>
+        <button id="regimentsOverviewRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
         <button
           id="regimentsPercentage"
           data-tip="${t("Toggle percentage / absolute values views")}"
           class="icon-percent"
         ></button>
-        <button id="regimentsAddNew" data-tip="${t("Add new Regiment")}" class="icon-user-plus"></button>
+        <button id="regimentsAddNew" data-tip="${t("Add")}" class="icon-user-plus"></button>
         <div data-tip="${t("Select state")}" style="display: inline-block">
           <span>${t("State")}: </span
           ><select id="regimentsFilter"></select>
         </div>
         <button
           id="regimentsExport"
-          data-tip="${t("Save military-related data as a text file (.csv)")}"
+          data-tip="${t("Save data as a CSV file")}"
           class="icon-download"
         ></button>
       </div>
@@ -118,7 +118,7 @@ function getRegimentColumns(): EditorColumn<RegimentRow>[] {
     label: capitalize(unit.name.replace(/_/g, " ")),
     width: "5em",
     mobileHidden: true,
-    tip: sentences(t("Regiment {{unit}} units number", { unit: unit.name }), t("Click to sort")),
+    tip: sentences(t("{{unit}} units number", { unit: unit.name }), t("Click to sort")),
     sortBy: row => row.regiment.u[unit.name] || 0
   }));
 
@@ -192,7 +192,7 @@ function renderRegimentsPage(view: TableView<RegimentRow>): void {
         <fill-box data-col="color" data-tip="${state.fullName}" fill="${state.color}" disabled></fill-box>
         <input data-col="state" data-tip="${state.fullName}" value="${state.name}" readonly />
         ${emblem}
-        <input data-col="name" data-tip="${t("Regiment's name")}" value="${regiment.name}" readonly />
+        <input data-col="name" data-tip="${t("Name")}" value="${regiment.name}" readonly />
         ${unitCells}
         <div data-col="total" data-tip="${t("Total military personnel (not considering crew)")}" style="font-weight:bold">${percentage ? percent(regiment.a, total) : regiment.a}</div>
         <span data-col="edit" data-tip="${t("Edit Regiment")}" data-edit-regiment="regiment${state.i}-${regiment.i}" class="icon-pencil pointer"></span>

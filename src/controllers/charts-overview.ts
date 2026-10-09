@@ -394,7 +394,7 @@ function renderDialog() {
   const html = /* html */ `<div id="chartsOverview" class="dialog stable">
     <form id="chartsOverview__form">
       <div>
-        <button data-tip="${t("Add a chart")}" type="submit">${t("Plot")}</button>
+        <button data-tip="${t("Add")}" type="submit">${t("Plot")}</button>
 
         <select data-tip="${t("Select entity (y axis)")}" id="chartsOverview__entitiesSelect">
           ${createOptions(entities)}
@@ -839,7 +839,7 @@ function insertChart(id: number, sortedData: ChartDatum[], $chart: SVGSVGElement
       <button data-tip="${t("Download the chart data as a CSV file")}" class="icon-download"></button>
       <button data-tip="${t("Download the chart as a PNG image")}" class="icon-export"></button>
       <button data-tip="${t("Download the chart in SVG format (vector, opens in a browser or Inkscape)")}" class="icon-chart-bar"></button>
-      <button data-tip="${t("Remove the chart")}" class="icon-trash"></button>
+      <button data-tip="${t("Remove")}" class="icon-trash"></button>
     </div>
   `;
 

@@ -9,7 +9,8 @@ Terms every `it.json` string uses the same way. Rules for all catalogs are in
 - Buttons and menu items take the infinitive: “Salva mappa”, “Rimuovi tutto”.
 - Tooltips are a short imperative or a noun phrase: “Clicca per modificare il borgo”, “Trascina per spostare”.
 - Keys are named as on Italian keyboards: Ctrl, Maiusc, Alt, Canc, Invio, Esc.
-- Brand and product names stay: Fantasy Map Generator, Azgaar, Armoria, Dropbox, Discord.
+- Brand and product names stay: Azgaar, Armoria, Dropbox, Discord.
+- The product names are translated: “Generatore di mappe fantasy”, in full “Generatore di mappe fantasy di Azgaar”; the assistant is “Assistente di Azgaar”.
 
 ## Map
 

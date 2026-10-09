@@ -64,7 +64,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
   $(dialog!).dialog({
     width: "30em",
     resizable: false,
-    title: editedGood ? t("Edit good") : t("Add new good"),
+    title: editedGood ? t("Edit good") : t("Add"),
     open: function (this: HTMLElement) {
       if (!editedGood) return; // only edits can recompute the economy
       const pane = this.parentElement?.querySelector(".ui-dialog-buttonpane");
@@ -292,7 +292,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
       <div>
         <div class="ge-section-title">
           <span data-tip="${t("For manufactured goods: recipes define which other goods are required to produce this good")}">${t("Recipes")}</span>
-          <button id="newGoodAddRecipe" class="icon-plus" data-tip="${t("Add a recipe")}"></button>
+          <button id="newGoodAddRecipe" class="icon-plus" data-tip="${t("Add")}"></button>
         </div>
         <div id="newGoodRecipeList" class="ge-recipe-list"></div>
         <div id="newGoodRecipeNote" class="ge-note"></div>
@@ -349,8 +349,8 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             <div class="ge-recipe-head">
               <span>${t("Recipe {{number}}", { number: recipeIndex + 1 })}</span>
               <div class="ge-recipe-actions">
-                <span class="recipeAddIngredient icon-plus pointer" data-recipe-index="${recipeIndex}" data-tip="${t("Add ingredient")}"></span>
-                <span class="recipeRemoveOption icon-trash-empty pointer" data-recipe-index="${recipeIndex}" data-tip="${t("Remove recipe")}"></span>
+                <span class="recipeAddIngredient icon-plus pointer" data-recipe-index="${recipeIndex}" data-tip="${t("Add")}"></span>
+                <span class="recipeRemoveOption icon-trash-empty pointer" data-recipe-index="${recipeIndex}" data-tip="${t("Remove")}"></span>
               </div>
             </div>
             <div class="recipeIngredients ge-recipe-ings">
@@ -360,7 +360,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
                     <div class="ge-recipe-ing" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}">
                       <select class="recipeGoodSelect" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}">${sortedGoods.map(good => `<option value="${good.i}" ${good.i === Number(ingredientId) ? "selected" : ""}>${good.name}</option>`).join("")}</select>
                       <input class="recipeAmountInput" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}" type="number" min="1" step="1" value="${amount}" />
-                      <span class="recipeRemoveIngredient icon-trash-empty pointer" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}" data-tip="${t("Remove ingredient")}" />
+                      <span class="recipeRemoveIngredient icon-trash-empty pointer" data-recipe-index="${recipeIndex}" data-ingredient-index="${ingredientIndex}" data-tip="${t("Remove")}" />
                     </div>`
                 )
                 .join("")}

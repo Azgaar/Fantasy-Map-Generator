@@ -132,15 +132,15 @@ function renderDialog(): void {
         <div data-tip="${t("Total units in stock across all markets and burg inventories")}" style="margin-left: 12px">${t("Stock")}:&nbsp;<span id="goodsStock">0</span></div>
       </div>
       <div id="goodsBottom">
-        <button id="goodsEditorRefresh" data-tip="${t("Refresh the Editor")}" class="icon-cw"></button>
+        <button id="goodsEditorRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
         <button
           id="goodsPercentage"
-          data-tip="${t("Toggle percentage / absolute values display mode")}"
+          data-tip="${t("Toggle percentage / absolute values views")}"
           class="icon-percent"
         ></button>
         <button id="goodsTagsFilter" data-tip="${t("Filter goods by tags")}" class="icon-tags"></button>
         <button id="goodsAssign" data-tip="${t("Manually assign goods to cells")}" class="icon-brush"></button>
-        <button id="goodsAdd" data-tip="${t("Add new good")}" class="icon-plus hide"></button>
+        <button id="goodsAdd" data-tip="${t("Add")}" class="icon-plus hide"></button>
         <button id="goodsRegenerateGoods" data-tip="${t("Regenerate bonus goods placement")}" class="icon-arrows-cw hide"></button>
         <button id="goodsRegenerateProduction" data-tip="${t("Regenerate production and trade deals")}" class="icon-retweet hide"></button>
         <button id="goodsChains" data-tip="${t("Show production chains graph")}" class="icon-chart-line hide"></button>
@@ -149,7 +149,7 @@ function renderDialog(): void {
           data-tip="${t("Restore default list and regenerate goods")}"
           class="icon-history hide"
         ></button>
-        <button id="goodsExport" data-tip="${t("Download goods-related data")}" class="icon-download hide"></button>
+        <button id="goodsExport" data-tip="${t("Save data as a CSV file")}" class="icon-download hide"></button>
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
@@ -231,7 +231,7 @@ function renderGoodsPage(view: TableView<Good>) {
         <div data-col="display"><input type="checkbox" data-tip="${t("Toggle this good on the Goods map")}" class="native goodDisplayed" style="margin: 0; width: 1.2em;" ${good.visible ? "checked" : ""} /></div>
         <div data-col="name" style="display:flex; align-items:center"><svg data-tip="${t("Good icon")}" width="2em" height="2em" class="goodIcon">
           ${goodBadge(good)}
-        </svg><span data-tip="${t("Good name")}" class="goodName">${good.name}</span></div>
+        </svg><span data-tip="${t("Name")}" class="goodName">${good.name}</span></div>
         <div data-col="type" data-tip="${t("Good types")}" class="goodType">${types.map(renderTypeBadge).join(" ")}</div>
         <div data-col="unit" data-tip="${t("Unit of production")}" class="goodUnit">${good.unit ?? ""}</div>
         <div data-col="produced" data-tip="${sentences(producedTip, t("Click to see burgs producing this good"))}" class="goodProduced pointer" style="text-align: right">
@@ -245,7 +245,7 @@ function renderGoodsPage(view: TableView<Good>) {
         <div data-col="price" data-tip="${sentences(t("Base (initial) price"), t("Click to compare prices across markets"))}" class="goodBasePrice pointer">🟡 ${good.value}</div>
         ${noteIcon(t("Edit free text notes (legend)"))}
         <span data-col="edit" data-tip="${t("Edit good")}" class="icon-pencil goodEdit"></span>
-        <span data-col="remove" data-tip="${t("Remove good")}" class="icon-trash-empty goodRemove"></span>
+        <span data-col="remove" data-tip="${t("Remove")}" class="icon-trash-empty goodRemove"></span>
       </div>`;
     })
     .join("");
@@ -306,7 +306,7 @@ function openProducersDialog(goodId: number) {
     const rows = producers
       .map(
         ({ burg, units }) => /*html*/ `
-          <div data-tip="${t("Click to zoom to burg")}" class="states pointer" data-x="${burg.x} " data-y="${burg.y}" data-id="${burg.i}">
+          <div data-tip="${t("Click to zoom")}" class="states pointer" data-x="${burg.x} " data-y="${burg.y}" data-id="${burg.i}">
             <div class="icon-dot-circled" style="width:1em"></div>
             <div style="width:7em;">${burg.name}</div>
             <div style="width:4em;">${units}</div>
@@ -419,7 +419,7 @@ function openStockDialog(goodId: number) {
       .sort((a, b) => b.stock - a.stock)
       .map(
         source => /*html*/ `
-        <div data-tip="${t("Click to zoom to location")}" class="states pointer" data-x="${source.x}" data-y="${source.y}" data-id="${source.id}">
+        <div data-tip="${t("Click to zoom")}" class="states pointer" data-x="${source.x}" data-y="${source.y}" data-id="${source.id}">
           <div class="${source.type === "market" ? "icon-store" : "icon-dot-circled"}" style="width:1em"></div>
           <div style="width:7em;">${source.name}</div>
           <div style="width:4em;">${source.stock}</div>
@@ -671,7 +671,7 @@ function updateDisplayAllCheckbox() {
 
 function requestGoodsRegeneration() {
   confirmationDialog({
-    title: t("Regenerate bonus goods"),
+    title: t("Regenerate bonus goods placement"),
     message: t(
       "Are you sure you want to regenerate bonus goods placement? Generation will be based on the current Goods settings and won't affect production or trade"
     ),
@@ -714,7 +714,7 @@ function removeGood(good: Good) {
     goodsTable.refresh();
     Layers.draw("goods");
   };
-  confirmationDialog({ title: t("Remove resource"), message, confirm: t("Remove"), onConfirm });
+  confirmationDialog({ title: t("Remove"), message, confirm: t("Remove"), onConfirm });
 }
 
 function closeGoodsEditor() {

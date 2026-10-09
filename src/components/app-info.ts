@@ -23,16 +23,16 @@ const GUIDES = {
 };
 
 const LINKS = [
-  link("https://github.com/Azgaar/Fantasy-Map-Generator", "GitHub repository"),
-  link("https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE", "License"),
-  link(`${WIKI}/Changelog`, "Changelog"),
-  link(`${WIKI}/Hotkeys`, "Hotkeys"),
-  link("https://trello.com/b/7x832DG4/fantasy-map-generator", "Devboard"),
+  link("https://github.com/Azgaar/Fantasy-Map-Generator", t("GitHub repository")),
+  link("https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE", t("License")),
+  link(`${WIKI}/Changelog`, t("Changelog")),
+  link(`${WIKI}/Hotkeys`, t("Hotkeys")),
+  link("https://trello.com/b/7x832DG4/fantasy-map-generator", t("Devboard")),
   `<a href="mailto:azgaar.fmg@yandex.by" target="_blank">${t("Contact Azgaar")}</a>`
 ];
 
 function render(): string {
-  return /* html */ `${t("<b>Fantasy Map Generator</b> (FMG) is a free open-source application. It means that you own all created maps and can use them as you wish.")}
+  return /* html */ `${t("Fantasy Map Generator (FMG) is a free open-source application. It means that you own all created maps and can use them as you wish.")}
 
     <p>
       ${t("The development is community-backed, you can donate on {{- patreon}}. You can also help creating overviews, tutorials and spreding the word about the Generator.", { patreon: COMMUNITY.patreon })}

@@ -12,7 +12,8 @@ Terms every `fr.json` string uses the same way. Rules for all catalogs are in
 - Capitalize only the first word of a label: “Éditeur de cultures”, not “Éditeur de Cultures”.
 - **État** (the polity) is always capitalized, so it is never read as “state, condition”.
 - Keys are named as on French keyboards: Ctrl, Maj, Alt, Suppr, Entrée, Échap.
-- Brand and product names stay: Fantasy Map Generator, Azgaar, Armoria, Dropbox, Discord.
+- Brand and product names stay: Azgaar, Armoria, Dropbox, Discord.
+- The product names are translated: “Générateur de cartes fantastiques”, in full “Générateur de cartes fantastiques d’Azgaar”; the assistant is “Assistant Azgaar”.
 
 ## Map
 

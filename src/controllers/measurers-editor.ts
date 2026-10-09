@@ -48,7 +48,7 @@ function renderDialog(): void {
         <svg viewBox="0 0 512 512" width="0.88em" height="0.88em"><path d="M416 320h-96c-17.6 0-32-14.4-32-32s14.4-32 32-32h96s96-107 96-160-43-96-96-96-96 43-96 96c0 25.5 22.2 63.4 45.3 96H320c-52.9 0-96 43.1-96 96s43.1 96 96 96h96c17.6 0 32 14.4 32 32s-14.4 32-32 32H185.5c-16 24.8-33.8 47.7-47.3 64H416c52.9 0 96-43.1 96-96s-43.1-96-96-96zm0-256c17.7 0 32 14.3 32 32s-14.3 32-32 32-32-14.3-32-32 14.3-32 32-32zM96 256c-53 0-96 43-96 96s96 160 96 160 96-107 96-160-43-96-96-96zm0 128c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32z"/></svg>
       </button>
       <button id="addPlanimeter" data-tip="${t("Drag to measure a polygon area (planimeter)")}" class="icon-draw-polygon"></button>
-      <button id="removeMeasurers" data-tip="${t("Remove all measurers from the map")}" class="icon-trash"></button>
+      <button id="removeMeasurers" data-tip="${t("Remove all measurers")}" class="icon-trash"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -84,7 +84,7 @@ function redraw(): void {
       <div style="width: 9em">${measurer.type}</div>
       <div style="width: 6em">${value}</div>
       <span data-tip="${t("Zoom to the measurer")}" data-zoom class="icon-dot-circled pointer"></span>
-      <span data-tip="${t("Remove the measurer")}" data-remove class="icon-trash-empty pointer"></span>
+      <span data-tip="${t("Remove")}" data-remove class="icon-trash-empty pointer"></span>
     </div>`;
   });
   ensureEl("measurersBody").innerHTML = rows.join("");

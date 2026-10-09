@@ -112,7 +112,8 @@ const PRESET_LABELS: Record<string, string> = {
   Default: t("Default"),
   Smooth: t("Smooth", { context: "coastline" }),
   Rocky: t("Rocky"),
-  Fjords: t("Fjords")
+  Fjords: t("Fjords"),
+  Skerries: t("Skerries")
 };
 
 const COAST_PRESETS: Record<string, Omit<CoastlineSettings, "enabled" | "variant">> = {
@@ -159,6 +160,7 @@ const COAST_PRESETS: Record<string, Omit<CoastlineSettings, "enabled" | "variant
   }
 };
 
+const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let selectedFeature: Feature | null = null; // the feature the editor shapes, or the whole map
 
 function open(featureId?: number): void {
@@ -172,13 +174,14 @@ function open(featureId?: number): void {
   $("#coastlineSettingsDialog").dialog({
     title: t("Coastline Settings"),
     resizable: false,
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
+    position,
     close: () => {
       selectedFeature = null;
       destroyDialog("coastlineSettingsDialog");
     }
   });
   setFeature(featureId ? pack.features[featureId] : null); // once shown: the previews measure the canvas
+  $("#coastlineSettingsDialog").dialog("option", "position", position); // content is in: re-fit to its real size
 }
 
 /** the whole dialog follows the scope: the controls show its settings, the previews its shape */
@@ -292,9 +295,7 @@ function buildDialogHTML(): string {
     .join("");
 
   const presetButtons = Object.keys(COAST_PRESETS)
-    .map(
-      name => `<button id="coastPreset_${name}" style="padding:0.2em 0.8em">${labelOf(PRESET_LABELS, name)}</button>`
-    )
+    .map(name => `<button id="coastPreset_${name}" style="padding:0.2em 0.8em">${PRESET_LABELS[name]}</button>`)
     .join("");
 
   const rows = INPUTS_CONFIG.map(({ id, label, tip, min, max, step, key }) => {

@@ -106,7 +106,7 @@ function renderDialog(): void {
       </div>
       <div id="marketOverviewInfo" style="margin-bottom: 0.3em"></div>
       <div id="marketOverviewBottom">
-        <button id="marketOverviewRefresh" data-tip="${t("Refresh the overview")}" class="icon-cw"></button>
+        <button id="marketOverviewRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
         <button id="marketOverviewOpenDeals" data-tip="${t("View market deals")}" class="icon-list-bullet"></button>
         ${noteButton("marketOverviewLegend", t("Edit free text notes (legend)"))}
         <button
@@ -114,7 +114,7 @@ function renderDialog(): void {
           data-tip="${t("Relocate market. Click on a burg on the map to move the market center")}"
           class="icon-map-pin"
         ></button>
-        <button id="marketOverviewExport" data-tip="${t("Save market deals data as a text file (.csv)")}" class="icon-download"></button>
+        <button id="marketOverviewExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
       </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -196,7 +196,7 @@ function renderMarketOverviewPage(view: TableView<MarketGoodRow>): void {
       <svg data-col="icon" data-tip="${t("Good icon")}" width="2em" height="2em" class="goodIcon">
         ${goodBadge(good)}
       </svg>
-      <div data-col="good" data-tip="${t("Good name")}" class="goodName">${good.name}</div>
+      <div data-col="good" data-tip="${t("Name")}" class="goodName">${good.name}</div>
       <div data-col="stock" data-tip="${t("Good stock")}" class="marketGoodStock">${rn(row.stock, 2)}</div>
       <div data-col="price" data-tip="${t("Good price")}" class="marketGoodPrice">${formatPrice(row.price)}</div>
     </div>`;
@@ -250,7 +250,7 @@ function relocateMarketOnClick(this: SVGGElement, event: MouseEvent): void {
   }
 
   if (burgId === market.centerBurgId) {
-    tip(t("This burg is already the center of this market"), false, "error");
+    tip(t("This burg is already a market center"), false, "error");
     return;
   }
 

@@ -105,7 +105,7 @@ const columns: EditorColumn<Burg>[] = [
   },
   {
     key: "features",
-    label: t("Features"),
+    label: t("Features", { context: "burg" }),
     width: "6em",
     mobileHidden: true,
     sortType: "alpha",
@@ -162,7 +162,7 @@ function renderDialog(): void {
       </div>
       <div id="burgsFooter" class="totalLine">
         <div data-tip="${t("Burgs displayed")}" style="margin-left: 5px">
-          ${t("Burgs")}:&nbsp;<span id="burgsFooterBurgs">${t("0 of 0")}</span>
+          ${t("Burgs")}:&nbsp;<span id="burgsFooterBurgs">${t("{{shown}} of {{total}}", { shown: 0, total: 0 })}</span>
         </div>
         <div data-tip="${t("Average population")}" style="margin-left: 12px" data-col="population">
           ${t("Avg population")}:&nbsp;<span id="burgsFooterPopulation">0</span>
@@ -178,18 +178,18 @@ function renderDialog(): void {
         </div>
       </div>
       <div id="burgsBottom" class="editorToolbar">
-        <button id="burgsOverviewRefresh" data-tip="${t("Refresh the Editor")}" class="icon-cw"></button>
+        <button id="burgsOverviewRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
         <button id="burgsGroupsEditorButton" data-tip="${t("Edit burg groups")}" class="icon-cog"></button>
-        <button id="burgsChart" data-tip="${t("Show Burgs Chart")}" class="icon-chart-area"></button>
+        <button id="burgsChart" data-tip="${t("Burgs bubble chart")}" class="icon-chart-area"></button>
         <button
           id="regenerateBurgNames"
           data-tip="${t("Regenerate burg names based on assigned culture")}"
           class="icon-retweet"
         ></button>
-        <button id="addNewBurg" data-tip="${sentences(t("Add a new burg"), t("Hold Shift to add multiple"))}" class="icon-plus"></button>
+        <button id="addNewBurg" data-tip="${sentences(t("Add"), t("Hold Shift to add multiple"))}" class="icon-plus"></button>
         <button
           id="burgsExport"
-          data-tip="${t("Save burgs-related data as a text file (.csv)")}"
+          data-tip="${t("Save data as a CSV file")}"
           class="icon-download"
         ></button>
         <button id="burgNamesImport" data-tip="${t("Rename burgs in bulk")}" class="icon-upload"></button>
@@ -354,8 +354,8 @@ function renderBurgsPage(view: TableView<Burg>): void {
         data-treasury=${treasury}
         data-features="${features}"
       >
-        <span data-tip="${t("Click to zoom into view")}" class="icon-dot-circled pointer" data-col="locate"></span>
-        <input data-tip="${t("Burg name")}" class="burgName" value="${b.name}" data-col="name" disabled />
+        <span data-tip="${t("Click to zoom")}" class="icon-dot-circled pointer" data-col="locate"></span>
+        <input data-tip="${t("Name")}" class="burgName" value="${b.name}" data-col="name" disabled />
         <input data-tip="${t("Burg province")}" value="${province}" data-col="province" disabled />
         <input data-tip="${t("Burg state")}" value="${state}" data-col="state" disabled />
         <input data-tip="${t("Dominant culture")}" value="${culture}" data-col="culture" disabled />
@@ -387,7 +387,7 @@ function renderBurgsPage(view: TableView<Burg>): void {
         <span data-col="lock" class="locks pointer ${
           b.lock ? "icon-lock" : "icon-lock-open inactive"
         }" onmouseover="showElementLockTip(event)"></span>
-        <span data-col="remove" data-tip="${t("Remove burg")}" class="icon-trash-empty"></span>
+        <span data-col="remove" data-tip="${t("Remove")}" class="icon-trash-empty"></span>
       </div>`;
   }
   body.insertAdjacentHTML("beforeend", lines);
@@ -462,7 +462,7 @@ function triggerBurgRemove(this: HTMLElement): void {
   }
 
   confirmationDialog({
-    title: t("Remove burg"),
+    title: t("Remove"),
     message: `${t("Are you sure you want to remove the burg?")}<br>${t("This action cannot be reverted")}`,
     confirm: t("Remove"),
     onConfirm: () => {
@@ -574,10 +574,9 @@ function showBurgsChart(): void {
       d.value * options.map.units.population.scale * options.map.units.population.urbanization.rate
     );
 
-    ensureEl("burgsInfo").innerHTML =
-      /* html */ `${name}. ${parent}. ${t("Population: {{population}}", { population })}`;
+    ensureEl("burgsInfo").innerHTML = /* html */ `${name}. ${parent}. ${`${t("Population")}: ${population}`}`;
     burgHighlightOn(ev);
-    tip(t("Click to zoom into view"));
+    tip(t("Click to zoom"));
   }
 
   function hideInfo(ev: any): void {
@@ -797,7 +796,7 @@ function triggerAllBurgsRemove(): void {
     );
   confirmationDialog({
     title: t("Remove burgs ({{burgs}})", { burgs: removable().length }),
-    message: `${t("Are you sure you want to remove all <i>unlocked</i> burgs except for capitals and market centers?")}<br><i>${t("To remove a capital you have to remove its state first")}</i>`,
+    message: `${t("Are you sure you want to remove all unlocked burgs except for capitals and market centers?")}<br><i>${t("To remove a capital you have to remove its state first")}</i>`,
     confirm: t("Remove"),
     onConfirm: () => {
       for (const burg of removable()) {

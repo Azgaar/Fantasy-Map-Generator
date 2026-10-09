@@ -134,11 +134,11 @@ function renderDialog(): void {
       <div data-tip="${t("Average mouth width")}" style="margin-left: 12px" data-col="width">${t("Width")}:&nbsp;<span id="riversFooterWidth">0</span></div>
     </div>
     <div id="riversBottom" class="editorToolbar">
-      <button id="riversOverviewRefresh" data-tip="${t("Refresh the Editor")}" class="icon-cw"></button>
+      <button id="riversOverviewRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
       <button id="addNewRiver" data-tip="${sentences(t("Automatically add river starting from clicked cell"), t("Hold Shift to add multiple"))}" class="icon-plus"></button>
       <button id="riverCreateNew" data-tip="${t("Create a new river selecting river cells")}" class="icon-map-pin"></button>
       <button id="riversBasinHighlight" data-tip="${t("Toggle basin highlight mode")}" class="icon-sitemap"></button>
-      <button id="riversExport" data-tip="${t("Save rivers-related data as a text file (.csv)")}" class="icon-download"></button>
+      <button id="riversExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
       <button id="riversRemoveAll" data-tip="${t("Remove all rivers")}" class="icon-trash"></button>
     </div>
   </div>`;
@@ -206,15 +206,15 @@ function renderRiversPage(view: TableView<River>): void {
         data-width="${r.width}"
         data-basin="${basin}"
       >
-        <span data-tip="${t("Locate the river")}" class="icon-target" data-col="locate"></span>
-        <div data-tip="${t("River name")}" data-col="name">${r.name}</div>
+        <span data-tip="${t("Locate on map")}" class="icon-target" data-col="locate"></span>
+        <div data-tip="${t("Name")}" data-col="name">${r.name}</div>
         <div data-tip="${t("River type name")}" data-col="type">${r.type}</div>
         <div data-tip="${t("River discharge (flux power)")}" data-col="discharge">${discharge}</div>
         <div data-tip="${t("River length from source to mouth")}" data-col="length">${length}</div>
         <div data-tip="${t("River mouth width")}" data-col="width">${width}</div>
         <input data-tip="${t("River basin (name of the main stem)")}" class="stateName" value="${basin}" disabled data-col="basin" />
         <span data-col="edit" data-tip="${t("Edit River")}" class="icon-pencil"></span>
-        <span data-col="remove" data-tip="${t("Remove river")}" class="icon-trash-empty"></span>
+        <span data-col="remove" data-tip="${t("Remove")}" class="icon-trash-empty"></span>
       </div>`;
   }
   body.insertAdjacentHTML("beforeend", lines);
@@ -293,7 +293,7 @@ function triggerRiverRemove(this: HTMLElement): void {
   $("#alert").dialog({
     resizable: false,
     width: "22em",
-    title: t("Remove river"),
+    title: t("Remove"),
     buttons: {
       [t("Remove")]: function (this: any) {
         Rivers.remove(river);

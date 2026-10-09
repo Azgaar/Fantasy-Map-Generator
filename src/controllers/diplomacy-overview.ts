@@ -37,7 +37,7 @@ const columns: EditorColumn<State>[] = [
   {
     key: "relations",
     label: t("Relations"),
-    width: "7em",
+    width: "7.5em",
     permanent: true,
     sortBy: state => state.diplomacy?.[selectedDiplomacyId] ?? "",
     sortType: "alpha"
@@ -91,18 +91,18 @@ function renderDialog(): void {
       <div id="diplomacyBodySection" class="table"></div>
       <div id="diplomacyFooter" class="totalLine"><div>${t("States")}: <span id="diplomacyFooterStates">0</span></div></div>
       <div id="diplomacyBottom" class="editorToolbar">
-        <button id="diplomacyOverviewRefresh" data-tip="${t("Refresh the overview")}" class="icon-cw"></button>
+        <button id="diplomacyOverviewRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
         <button
           id="diplomacyEditRelations"
           data-tip="${t("Change relations: click or drag over states on the map")}"
           class="icon-brush"
         ></button>
         <button id="diplomacyRegenerate" data-tip="${t("Regenerate diplomatical relations")}" class="icon-retweet"></button>
-        <button id="diplomacyHistory" data-tip="${t("Show Relations History")}" class="icon-hourglass-1"></button>
+        <button id="diplomacyHistory" data-tip="${t("Relations history")}" class="icon-hourglass-1"></button>
         <button id="diplomacyShowMatrix" data-tip="${t("Show relations matrix")}" class="icon-list-bullet"></button>
         <button
           id="diplomacyExport"
-          data-tip="${t("Save state relations matrix as a text file (.csv)")}"
+          data-tip="${t("Save data as a CSV file")}"
           class="icon-download"
         ></button>
       </div>

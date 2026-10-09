@@ -135,7 +135,7 @@ function addListeners(container: SVGSVGElement, callback: (fill: string) => void
   const picker = getSvgElement<SVGGElement>("picker");
   const closePicker = () => container.remove();
   const tipClose = () => tip(t("Click to close the picker"));
-  const tipDrag = () => tip(t("Drag to change the picker position"));
+  const tipDrag = () => tip(t("Drag to change the position"));
 
   getSvgElement("pickerOverlay").addEventListener("mousemove", tipClose);
   getSvgElement("pickerOverlay").addEventListener("click", closePicker);

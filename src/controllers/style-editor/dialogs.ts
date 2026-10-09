@@ -10,7 +10,7 @@ import { addGoogleFont, addLocalFont, addWebFont } from "@/services/fonts";
 import { StylePresetsService, SYSTEM_PRESETS } from "@/services/style-presets";
 import { VERSION } from "@/services/versioning";
 import type { StyleElement, StyleSelection } from "@/types/styles";
-import { ensureEl, escapeHtml, findEl, htmlEl, toHEX } from "@/utils";
+import { ensureEl, escapeHtml, findEl, htmlEl, link, toHEX } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { groupEntriesFor, hasGroups, listElements } from "./elements";
 
@@ -282,7 +282,7 @@ export class PresetSelector {
       image.textContent = "custom";
       const remove = document.createElement("button");
       remove.className = "remove icon-trash-empty";
-      remove.dataset.tip = t("Remove this custom preset");
+      remove.dataset.tip = t("Remove");
       image.append(remove);
     }
 
@@ -385,6 +385,8 @@ export function openFontDialog({ selected, sample, onPick, onAdd }: FontDialogOp
   list.querySelector(".pressed")?.scrollIntoView({ block: "center" });
 }
 
+const GOOGLE_FONTS = "https://fonts.google.com/";
+
 export function openAddFontDialog(onAdded: (family: string) => void): void {
   destroyDialog("addFontDialog");
   trackControlDialog("addFontDialog");
@@ -392,13 +394,41 @@ export function openAddFontDialog(onAdded: (family: string) => void): void {
   dialog.innerHTML = /* html */ `
     <span>${t("There are 3 ways to add a custom font")}:</span>
     <p>
-      <strong>${t("Google font")}</strong>. ${t('Open <a href="https://fonts.google.com/" target="_blank">Google Fonts</a>, find a font you like and enter its name to the field below.')}
+      <strong>${t("Google font")}</strong>. ${t("Open {{- googleFonts}}, find a font you like and enter its name to the field below.", { googleFonts: link(GOOGLE_FONTS, "Google Fonts") })}
     </p>
     <p>
-      <strong>${t("Local font")}</strong>. ${t('If you have a font <a href="https://faqs.skillcrush.com/article/275-downloading-installing-a-font-on-your-computer" target="_blank">installed on your computer</a>, just provide the font name. Make sure the browser is reloaded after the installation. The font won\'t work on machines not having it installed. Good source of fonts are <a href="https://fontesk.com" target="_blank">Fontdesk</a> and <a href="https://www.dafont.com" target="_blank">DaFont</a>.')}
+      <strong>${t("Local font")}</strong>. ${sentences(
+        t("If you have a font {{- installed}}, just provide the font name.", {
+          installed: link(
+            "https://faqs.skillcrush.com/article/275-downloading-installing-a-font-on-your-computer",
+            t("installed on your computer")
+          )
+        }),
+        t("Make sure the browser is reloaded after the installation."),
+        t("The font won't work on machines not having it installed."),
+        t("Good source of fonts are {{- fontesk}} and {{- dafont}}.", {
+          fontesk: link("https://fontesk.com", "Fontdesk"),
+          dafont: link("https://www.dafont.com", "DaFont")
+        })
+      )}
     </p>
     <p>
-      <strong>${t("Font URL")}</strong>. ${t('Provide font name and link to the font file hosted online. The best free font hostings are <a href="https://fonts.google.com/" target="_blank">Google Fonts</a> and <a target="_blank" href="https://www.cdnfonts.com">CDN Fonts</a>. To get font file open the link to css provided by these services and manually copy the link to <code>woff2</code> of desired variant. To add another variant (e.g. Cyrillic), add the font one more time under the same name, but with another URL')}
+      <strong>${t("Font URL")}</strong>. ${sentences(
+        t("Provide font name and link to the font file hosted online."),
+        t("The best free font hostings are {{- googleFonts}} and {{- cdnFonts}}.", {
+          googleFonts: link(GOOGLE_FONTS, "Google Fonts"),
+          cdnFonts: link("https://www.cdnfonts.com", "CDN Fonts")
+        }),
+        t(
+          "To get font file open the link to css provided by these services and manually copy the link to {{- format}} of desired variant.",
+          {
+            format: "<code>woff2</code>"
+          }
+        ),
+        t(
+          "To add another variant (e.g. Cyrillic), add the font one more time under the same name, but with another URL"
+        )
+      )}
     </p>
     <div style="margin-top: 0.3em" data-tip="${t("Select font adding method")}">
       <select id="addFontMethod">
@@ -517,7 +547,7 @@ export function openSchemeBuilder(current: string, onCreate: (stops: string) => 
           textContent: "x",
           style: "margin-top: 0.3em; height: max-content"
         });
-        remove.dataset.tip = t("Remove color stop");
+        remove.dataset.tip = t("Remove");
         remove.addEventListener("click", () => {
           stops.splice(index, 1);
           renderAll();

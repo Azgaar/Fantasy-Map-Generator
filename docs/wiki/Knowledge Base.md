@@ -198,7 +198,7 @@ You can, but I doubt you will enjoy the experience. The Generator GUI is not sui
 
 ### What about non-English localization?
 
-The interface is available in English, Russian, German, French, Spanish, Portuguese, Italian, Polish, Chinese (Simplified), Japanese and Afrikaans. It starts in your browser's language when that is one of them; to change it, open Options, pick a language in the Language row and reload the page (save the map first). Only the interface is translated: generated names, legends and notes stay in English, and a map looks the same whatever interface language opens it. For other languages, the Other languages row loads Google Translate, which is machine translation and can break some page functions; use the reset icon or refresh the page to get back. Report a wrong translation in a GitHub issue or on Discord, quoting the text and the correction
+The interface is available in multiple languages. It starts in your browser's language when that is one of them; otherwise in English. To change it, see "How can I change the language on the Tool?". Only the interface is translated: generated names, legends and notes stay in English, and a map looks the same whatever interface language opens it. Because buttons, menus, tabs and dialogs carry translated names, the Assistant and the documentation, which use the English names, may not match what you see on screen; see "The Assistant names a button or menu I can't find. Is my interface in another language?". For other languages, the Other languages row loads Google Translate, which is machine translation and can break some page functions; use the reset icon or refresh the page to get back. Report a wrong translation in a GitHub issue or on Discord, quoting the text and the correction
 
 ### What does Azgaar mean?
 
@@ -678,7 +678,11 @@ Rivers, lakes, islands and oceans are named automatically, as well as states, pr
 
 ### How can I change the language on the Tool?
 
-In Options, pick a language in the Language row and reload the page. Supported languages: English, Russian, German, French, Spanish, Portuguese, Italian, Polish, Chinese (Simplified), Japanese and Afrikaans. Only the interface changes; map names stay as generated. For any other language, click "Load Google Translate" in the Other languages row: it is machine translation and can break some page functions
+Open the Options panel (the button in the top left corner, or press Tab), go to the Options tab and find the Language row at the end of Interface settings. Pick a language and press Reload in the confirmation; the new language applies only after the page reloads, so save the map first if it has unsaved changes. Press Not now to switch on the next reload instead. The choice is remembered in this browser. Only the interface changes; map names stay as generated, and keyboard shortcuts are the same in every language.
+
+### The Assistant names a button or menu I can't find. Is my interface in another language?
+
+Probably. Azgaar Assistant, this Knowledge Base and the wiki name controls by their English labels, for example Options -> Interface settings -> Language, Tools -> Edit -> States or Layers -> Rivers. When the interface is in another language, those labels are translated, so look for the control in the same place rather than by its exact English name: the order of panels, tabs, buttons and rows, the icons and the keyboard shortcuts do not change between languages. Hovering a control shows its tooltip in your language. You can ask the Assistant in your own language and tell it which language your interface is in; it still cannot see the translated labels, so it describes where a control is. If you still can't find it, switch the interface to English temporarily, find the control, and switch back. Map content such as state and burg names is never translated, so the Assistant names it exactly as on your map
 
 ### Is there a way I can use the map generator to generate galactic maps?
 

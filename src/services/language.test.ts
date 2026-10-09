@@ -20,7 +20,7 @@ describe("resolveLanguage", () => {
   });
 
   it("follows the browser's first shipped language when nothing valid is stored", () => {
-    browserLanguages(["ko-KR", "ru-RU", "en-US"]);
+    browserLanguages(["ar-SA", "ru-RU", "en-US"]);
     localStorage.setItem(OPTIONS_STORAGE_KEY, JSON.stringify({ app: { language: "" } }));
     expect(resolveLanguage()).toBe("ru");
   });
@@ -33,8 +33,19 @@ describe("resolveLanguage", () => {
     expect(resolveLanguage()).toBe("pt");
   });
 
+  it("reduces a regional variant to its base language only when the variant isn't shipped", () => {
+    browserLanguages(["pt-br"]);
+    expect(resolveLanguage()).toBe("pt-BR");
+
+    browserLanguages(["zh-TW"]);
+    expect(resolveLanguage()).toBe("zh");
+
+    browserLanguages(["de-AT", "ru"]);
+    expect(resolveLanguage()).toBe("de");
+  });
+
   it("falls back to English for an unshipped browser language or unreadable options", () => {
-    browserLanguages(["ko-KR"]);
+    browserLanguages(["ar-SA"]);
     localStorage.setItem(OPTIONS_STORAGE_KEY, "{not json");
     expect(resolveLanguage()).toBe("en");
   });

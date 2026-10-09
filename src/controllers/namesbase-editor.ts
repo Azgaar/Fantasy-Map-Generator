@@ -75,7 +75,7 @@ function renderDialog(): void {
           data-tip="${t("Re-generate examples based on provided data")}"
           class="icon-arrows-cw"
         ></button>
-        <button id="namesbaseAdd" data-tip="${t("Add new namesbase")}" class="icon-plus"></button>
+        <button id="namesbaseAdd" data-tip="${t("Add")}" class="icon-plus"></button>
         <button id="namesbaseDefault" data-tip="${t("Restore default namesbase")}" class="icon-cancel"></button>
         <button id="namesbaseDownload" data-tip="${t("Download namesbase to PC")}" class="icon-download"></button>
         <button
@@ -408,13 +408,13 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
             added: lines.length - errors.length,
             total: lines.length
           })}</strong>
-          ${t("Each namebase should be on its own line and follow the format: <code>name|min|max|duplication|m|names</code>. Parameters should be separated with the <code>|</code> character, and this character should not be used within the parameters. Another prohibited character is <code>/</code>. The most common issue is names and other parameters being on two separate lines.")}
+          ${t("Each namebase should be on its own line and follow the format: name|min|max|duplication|m|names. Parameters should be separated with the | character, and this character should not be used within the parameters. Another prohibited character is /. The most common issue is names and other parameters being on two separate lines.")}
           <ul style="margin:0.5em;">
             <li><code>name</code>: ${t("name of the base.")}</li>
             <li><code>min</code>: ${t("minimal recommended length of generated names. It should be a number.")}</li>
             <li><code>max</code>: ${t("maximal recommended length of generated names. It should be a number greater than minimal length.")}</li>
-            <li><code>duplication</code>: ${t("characters that can be duplicated in generated names. For example <code>lkd</code> means names like “Kalla”, “Mikkor”, “Dalddur” are possible. This parameter can be empty.")}</li>
-            <li><code>m</code>: ${t("unused parameter, populate with <code>0</code>.")}</li>
+            <li><code>duplication</code>: ${t("characters that can be duplicated in generated names. For example lkd means names like “Kalla”, “Mikkor”, “Dalddur” are possible. This parameter can be empty.")}</li>
+            <li><code>m</code>: ${t("unused parameter, populate with 0.")}</li>
             <li><code>names</code>: ${t("names data, separated with commas. It should contain at least 3 names to be valid.")}</li>
           </ul>
         </p>

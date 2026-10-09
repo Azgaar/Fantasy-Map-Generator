@@ -45,7 +45,7 @@ const TEMPLATE = /* html */ `
   ></button>
   <button
     id="removePresetButton"
-    data-tip="${t("Remove this custom preset")}"
+    data-tip="${t("Remove")}"
     class="icon-minus sideButton"
     style="display: none"
   ></button>

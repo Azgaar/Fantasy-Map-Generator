@@ -252,7 +252,7 @@ describe("Omnibar public behavior", () => {
     expect(JSON.parse(localStorage.getItem("fmg-omnibar-history")!)).toEqual(["regenerateRivers"]);
     Omnibar.open();
     expect(input().value).toBe("");
-    expect(rows()[0].textContent).toContain("Regenerate Rivers");
+    expect(rows()[0].textContent).toContain("Regenerate: Rivers");
   });
 
   it("runs creation commands without a corresponding button", async () => {

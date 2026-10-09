@@ -9,7 +9,8 @@ Terms every `nl.json` string uses the same way. Rules for all catalogs are in
 - Buttons and menu items take the infinitive: “Kaart opslaan”, “Alles verwijderen”.
 - Tooltips are a short imperative or a noun phrase; “Alstublieft” only where English insists on “please”.
 - Quotes are “ ”. Keys are named as on Dutch keyboards: Ctrl, Shift, Alt, Delete, Enter.
-- Brand and product names stay: Fantasy Map Generator, Azgaar, Armoria, Dropbox, Discord.
+- Brand and product names stay: Azgaar, Armoria, Dropbox, Discord.
+- The product names are translated: “Fantasykaartgenerator”, in full “Azgaars Fantasykaartgenerator”; the assistant is “Azgaar-assistent”.
 
 ## Map
 

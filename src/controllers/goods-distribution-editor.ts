@@ -496,7 +496,7 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
 
     const removeBtn = document.createElement("button");
     removeBtn.className = "icon-trash-empty ded-remove-btn";
-    removeBtn.title = t("Remove this condition");
+    removeBtn.title = t("Remove");
     removeBtn.addEventListener("click", () => {
       groups[groupIdx].splice(condIdx, 1);
       if (!groups[groupIdx].length) {
@@ -641,7 +641,7 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
             <div class="ded-output-label">${t("Distribution")}</div>
             <div class="ded-output-row">
               <input id="distExprOutput" class="ded-expr-input" readonly value="" />
-              <span id="distCellCount" class="ded-cell-count">${t("0 cells (0%)")}</span>
+              <span id="distCellCount" class="ded-cell-count"></span>
             </div>
           </div>
           <div id="distHumanPreview" class="ded-human-preview"></div>
@@ -826,7 +826,7 @@ function countMatchingCells(distribution: string): string {
     return "invalid";
   }
 
-  return `${cells.toLocaleString()} cells (${rn((cells / pack.cells.i.length) * 100, 1)}%)`;
+  return `${t("Cells")}: ${cells.toLocaleString()} (${rn((cells / pack.cells.i.length) * 100, 1)}%)`;
 }
 
 export const DistributionEditor = { open };

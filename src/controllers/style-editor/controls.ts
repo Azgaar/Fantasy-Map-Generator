@@ -124,8 +124,8 @@ const transform: ControlFactory = (spec, value, set) => {
   const y = sliderOf(spec, { min: 0, max: height, step: 1 }, match ? Number(match[2]) : 80, emit);
   const scale = sliderOf(spec, { min: 0.02, max: 1, step: 0.01 }, match ? Number(match[3]) : 0.25, emit);
   return rows(
-    withTip(row(t("Shift x"), x), t("Shift the rose along x, in pixels")),
-    withTip(row(t("Shift y"), y), t("Shift the rose along y, in pixels")),
+    withTip(row(t("Shift x"), x), t("Shift by x axis in pixels")),
+    withTip(row(t("Shift y"), y), t("Shift by y axis in pixels")),
     withTip(row(t("Size"), scale), t("Scale the rose"))
   );
 };
@@ -193,8 +193,8 @@ const labelStyle: ControlFactory = (spec, value, set) => {
   return rows(
     withTip(row(t("Shadow"), shadow), t("Set text shadow, e.g. white 0 0 4px")),
     withTip(row(t("Case"), transform), t("Change the letter case")),
-    withTip(row(t("Shift x"), dx), t("Shift the labels along x")),
-    withTip(row(t("Shift y"), dy), t("Shift the labels along y"))
+    withTip(row(t("Shift x"), dx), t("Shift by x axis in pixels")),
+    withTip(row(t("Shift y"), dy), t("Shift by y axis in pixels"))
   );
 };
 

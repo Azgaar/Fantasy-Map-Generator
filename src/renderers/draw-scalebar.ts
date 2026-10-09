@@ -7,9 +7,7 @@ import { ensureEl, rn } from "../utils";
 
 // TODO: a renderer should not own controls. Move this to a proper scale-bar component once one exists
 function addScaleBarControls(scaleBar: Selection<SVGGElement, unknown, null, undefined>): void {
-  scaleBar
-    .on("mousemove", () => tip(t("Click to open Units Editor")))
-    .on("click", () => Controllers.UnitsEditor.open());
+  scaleBar.on("mousemove", () => tip(t("Units Editor"))).on("click", () => Controllers.UnitsEditor.open());
 }
 
 export function drawScaleBar(

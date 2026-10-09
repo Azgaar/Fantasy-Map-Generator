@@ -112,8 +112,8 @@ const TEMPLATE = /* html */ `
       </div>
     </div>
     <div id="unitsBottom">
-      <button id="unitsAltitudeLegend" data-tip="${t("Toggle the Altitude legend box")}" class="icon-list-bullet"></button>
-      <button id="unitsRestore" data-tip="${t("Restore default units settings")}" class="icon-ccw"></button>
+      <button id="unitsAltitudeLegend" data-tip="${t("Toggle Legend box")}" class="icon-list-bullet"></button>
+      <button id="unitsRestore" data-tip="${t("Reset to default")}" class="icon-ccw"></button>
     </div>
 `;
 

@@ -14,7 +14,8 @@ Terms every `es.json` string uses the same way. Rules for all catalogs are in
 - Capitalize only the first word of a label: “Editor de culturas”, not “Editor de Culturas”.
 - **Estado** (the polity) is always capitalized, so it is never read as “state, condition”.
 - Keys are named as on Spanish keyboards: Ctrl, Mayús, Alt, Supr, Intro, Esc, Espacio.
-- Brand and product names stay: Fantasy Map Generator, Azgaar, Armoria, Dropbox, Discord.
+- Brand and product names stay: Azgaar, Armoria, Dropbox, Discord.
+- The product names are translated: “Generador de Mapas de Fantasía”, in full “Generador de Mapas de Fantasía de Azgaar”; the assistant is “Asistente de Azgaar”.
 
 ## Map
 
@@ -28,7 +29,7 @@ Terms every `es.json` string uses the same way. Rules for all catalogs are in
 | province                        | provincia                             |                                        |
 | culture                         | cultura                               |                                        |
 | religion                        | religión                              |                                        |
-| namesbase                       | base de nombres (pl. bases de nombres) |                                       |
+| namesbase                       | base de nombres (pl. bases de nombres) | the Tools button is “Nombres”         |
 | heightmap                       | mapa de alturas                       | the layer is “Alturas”                 |
 | template (heightmap)            | plantilla                             |                                        |
 | cell                            | celda                                 |                                        |

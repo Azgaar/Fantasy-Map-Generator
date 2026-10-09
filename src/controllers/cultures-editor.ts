@@ -154,15 +154,15 @@ function renderDialog(): void {
     </div>
 
     <div id="culturesBottom" class="editorToolbar">
-      <button id="culturesEditorRefresh" data-tip="${t("Refresh the Editor")}" class="icon-cw"></button>
+      <button id="culturesEditorRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
       <button id="culturesEditStyle" data-tip="${t("Edit style in Style Editor")}" class="icon-adjust"></button>
       <button id="culturesLegend" data-tip="${t("Toggle Legend box")}" class="icon-list-bullet"></button>
-      <button id="culturesPercentage" data-tip="${t("Toggle percentage / absolute values display mode")}" class="icon-percent"></button>
-      <button id="culturesHeirarchy" data-tip="${t("Show Cultures Hierarchy")}" class="icon-sitemap"></button>
+      <button id="culturesPercentage" data-tip="${t("Toggle percentage / absolute values views")}" class="icon-percent"></button>
+      <button id="culturesHeirarchy" data-tip="${t("Cultures tree")}" class="icon-sitemap"></button>
       <button id="culturesManually" data-tip="${t("Manually re-assign cultures")}" class="icon-brush"></button>
       <button id="culturesEditNamesBase" data-tip="${t("Edit a database used for names generation")}" class="icon-font"></button>
-      <button id="culturesAdd" data-tip="${sentences(t("Add a new culture"), t("Hold Shift to add multiple"))}" class="icon-plus"></button>
-      <button id="culturesExport" data-tip="${t("Download cultures-related data")}" class="icon-download"></button>
+      <button id="culturesAdd" data-tip="${sentences(t("Add"), t("Hold Shift to add multiple"))}" class="icon-plus"></button>
+      <button id="culturesExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
       <button id="culturesImport" data-tip="${t("Upload cultures-related data")}" class="icon-upload"></button>
       <button id="culturesRecalculate" data-tip="${t("Recalculate cultures based on current values of growth-related attributes")}" class="icon-retweet"></button>
       <span
@@ -242,9 +242,9 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
     const urban = (c.urban ?? 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     const population = rn(rural + urban);
     const populationTip = sentences(
-      t("Total population: {{total}}", { total: si(population) }),
-      t("Rural population: {{rural}}", { rural: si(rural) }),
-      t("Urban population: {{urban}}", { urban: si(urban) }),
+      `${t("Total population")}: ${si(population)}`,
+      `${t("Rural population")}: ${si(rural)}`,
+      `${t("Urban population")}: ${si(urban)}`,
       t("Click to edit")
     );
 
@@ -315,7 +315,7 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
       >
         <fill-box fill="${c.color}" data-col="color"></fill-box>
         <div data-col="name">
-          <input data-tip="${sentences(t("Culture name"), t("Click and type to change"))}" class="cultureName"
+          <input data-tip="${sentences(t("Name"), t("Click and type to change"))}" class="cultureName"
             value="${c.name}" autocorrect="off" spellcheck="false" />
           <span data-tip="${t("Regenerate culture name")}" class="icon-cw hiddenIcon" style="visibility: hidden"></span>
         </div>
@@ -352,9 +352,9 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
         </div>
         <div data-col="emblems">${getShapeOptions(Emblems.isDiversiform, c.shield)}</div>
         ${noteIcon(t("Edit free text notes (legend)"))}
-        <span data-col="locate" data-tip="${t("Locate the culture")}" class="icon-target"></span>
-        <span data-col="lock" data-tip="${t("Lock culture")}" class="icon-lock${c.lock ? "" : "-open"}"></span>
-        <span data-col="remove" data-tip="${t("Remove culture")}" class="icon-trash-empty"></span>
+        <span data-col="locate" data-tip="${t("Locate on map")}" class="icon-target"></span>
+        <span data-col="lock" data-tip="${t("Lock")}" class="icon-lock${c.lock ? "" : "-open"}"></span>
+        <span data-col="remove" data-tip="${t("Remove")}" class="icon-trash-empty"></span>
       </div>`;
   }
   const body = ensureEl("culturesBody");
@@ -673,7 +673,7 @@ function cultureRemovePrompt(this: HTMLElement): void {
 
   const cultureId = +(this.closest(".states") as HTMLElement).dataset.id!;
   confirmationDialog({
-    title: t("Remove culture"),
+    title: t("Remove"),
     message: `${t("Are you sure you want to remove the culture?")}<br>${t("This action cannot be reverted")}`,
     confirm: t("Remove"),
     onConfirm: () => removeCulture(cultureId)

@@ -465,7 +465,7 @@ function removeIcon(): void {
 
   $("#alert").dialog({
     resizable: false,
-    title: t("Remove relief icons"),
+    title: t("Remove"),
     buttons: {
       [t("Remove")]: function (this: HTMLElement) {
         pack.relief = pack.relief.filter(reliefIcon => !doomed.has(reliefIcon));

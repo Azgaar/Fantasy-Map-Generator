@@ -41,11 +41,11 @@ const SHELL_TEXT: [string, string | null, string | null][] = [
   ["#exportButton", t("Export"), t("Select format to download image or export map data")],
   ["#saveButton", t("Save"), t("Save fully-functional map file")],
   ["#loadButton", t("Load"), t("Load fully-functional map (.map or .gz formats)")],
-  ["#zoomReset", t("Zoom out"), t("Reset map zoom")],
+  ["#zoomReset", t("Zoom Out"), t("Reset map zoom")],
   ["#searchButton", t("Search"), t("Search map and commands")],
   ["#exitCustomization > div", null, t("Drag to move the pane")],
   ["#finalizeHeightmap", t("Exit Customization"), t("Finalize the heightmap and exit the edit mode")],
-  ["#assistantBubble", null, t("Open Azgaar Assistant")],
+  ["#assistantBubble", null, t("Azgaar Assistant")],
   ["#mapOverlay", t("Drop a map file to open"), null],
   ["#tourPromptButton", null, t("Take an interactive tour of the map generator")]
 ];
@@ -57,7 +57,7 @@ function translateShell(): void {
     if (text !== null) element.textContent = text;
     if (tip !== null) element.dataset.tip = tip;
   }
-  findEl("assistantBubble")?.setAttribute("aria-label", t("Open Azgaar Assistant"));
+  findEl("assistantBubble")?.setAttribute("aria-label", t("Azgaar Assistant"));
   document.querySelector("#tourPromptButton button")?.setAttribute("aria-label", t("Launch UI Tour"));
   const tooltip = findEl("tooltip");
   if (tooltip) tooltip.dataset.main = t("Click the arrow button for options. Zoom in to see the map in details");
@@ -148,7 +148,7 @@ function addDragToUpload(): void {
     if (!file.name.endsWith(".map") && !file.name.endsWith(".gz")) {
       return alertDialog({
         title: t("Invalid file format"),
-        message: t("Please upload a map file (<i>.map</i> or <i>.gz</i> formats) you have previously downloaded")
+        message: t("Please upload a map file (.map or .gz formats) you have previously downloaded")
       });
     }
 

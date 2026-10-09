@@ -12,7 +12,8 @@ Terms every `pt-BR.json` string uses the same way. Rules for all catalogs are in
 - Capitalize only the first word of a label: “Editor de culturas”, not “Editor de Culturas”.
 - **Estado** (the polity) is lowercase, as in “estado”; it is read from context like “Editor de estados”.
 - Keys keep their keyboard names: Ctrl, Shift, Alt, Enter, Esc, Espaço.
-- Brand and product names stay: Fantasy Map Generator, Azgaar, Armoria, Dropbox, Discord, Google, Patreon.
+- Brand and product names stay: Azgaar, Armoria, Dropbox, Discord, Google, Patreon.
+- The product names are translated: “Gerador de Mapas de Fantasia”, in full “Gerador de Mapas de Fantasia de Azgaar”; the assistant is “Assistente Azgaar”.
 - Months and days are lowercase: “janeiro”, “setembro”.
 - Quotes are “ ” and no straight double quotes appear in visible text.
 

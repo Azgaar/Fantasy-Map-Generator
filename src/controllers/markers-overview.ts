@@ -71,7 +71,7 @@ function renderDialog(): void {
         </div>
       </div>
       <div id="markersBottom">
-        <button id="markersOverviewRefresh" data-tip="${t("Refresh the overview")}" class="icon-cw"></button>
+        <button id="markersOverviewRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
         <button id="markersRegenerate" data-tip="${t("Regenerate unlocked markers")}" class="icon-shuffle"></button>
         <span id="markerTypeSelectorWrapper">
           <button id="markerTypeSelector" data-tip="${t("Select marker type for newly added markers.")}" style="font-size: 0.7em">❓</button>
@@ -79,12 +79,12 @@ function renderDialog(): void {
         </span>
         <button
           id="markersAddFromOverview"
-          data-tip="${sentences(t("Add a new marker"), t("Hold Shift to add multiple"))}"
+          data-tip="${sentences(t("Add"), t("Hold Shift to add multiple"))}"
           class="icon-plus"
         ></button>
         <button id="markersGenerationConfig" data-tip="${t("Config markers generation options")}" class="icon-cog"></button>
         <button id="markersRemoveAll" data-tip="${t("Remove all unlocked markers")}" class="icon-trash"></button>
-        <button id="markersExport" data-tip="${t("Save markers data as a text file (.csv)")}" class="icon-download"></button>
+        <button id="markersExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
       </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -277,8 +277,8 @@ function renderMarkersPage(view: TableView<Marker>): void {
             lock ? "icon-lock" : "icon-lock-open inactive"
           }" onmouseover="showElementLockTip(event)"></span>
           <span data-col="edit" data-tip="${t("Edit Marker")}" class="icon-pencil"></span>
-          <span data-col="locate" data-tip="${t("Locate the marker")}" class="icon-target"></span>
-          <span data-col="remove" data-tip="${t("Remove marker")}" class="icon-trash-empty"></span>
+          <span data-col="locate" data-tip="${t("Locate on map")}" class="icon-target"></span>
+          <span data-col="remove" data-tip="${t("Remove")}" class="icon-trash-empty"></span>
         </div>`;
     })
     .join("");
@@ -350,7 +350,7 @@ function toggleLockStatus(el: HTMLElement, i: number): void {
 
 function triggerRemove(i: number): void {
   confirmationDialog({
-    title: t("Remove marker"),
+    title: t("Remove"),
     message: sentences(t("Are you sure you want to remove this marker?"), t("This action cannot be reverted")),
     confirm: t("Remove"),
     onConfirm: () => removeMarker(i)

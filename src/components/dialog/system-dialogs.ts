@@ -5,7 +5,7 @@ import { ensureEl } from "@/utils/nodeUtils";
 
 const TEMPLATE = /* html */ `
   <div id="alert" style="display: none" class="dialog">
-    <p id="alertMessage">${t("Warning!")}</p>
+    <p id="alertMessage">${t("Warning")}</p>
   </div>
   <div id="prompt" style="display: none" class="dialog">
     <form id="promptForm">

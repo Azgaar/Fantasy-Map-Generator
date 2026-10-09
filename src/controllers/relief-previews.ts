@@ -29,9 +29,7 @@ export function poolPreviewHtml(pool: ReliefPool, density: number, className: st
     .map(([entry, { weight }]) => `${poolEntryName(entry)} ${rn((weight / total) * 100)}%`)
     .join(", ");
   const tipText =
-    total && density
-      ? sentences(t("Relief: {{shares}}", { shares }), t("Density: {{density}}", { density }))
-      : t("No relief");
+    total && density ? sentences(`${t("Relief")}: ${shares}`, `${t("Density")}: ${density}`) : t("No relief");
   const previews =
     total && density
       ? entries

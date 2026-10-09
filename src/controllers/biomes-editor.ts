@@ -122,7 +122,7 @@ function renderDialog(): void {
         </div>
       </div>
       <div id="biomesBottom">
-        <button id="biomesEditorRefresh" data-tip="${t("Refresh the Editor")}" class="icon-cw"></button>
+        <button id="biomesEditorRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
         <button id="biomesEditStyle" data-tip="${t("Edit style in Style Editor")}" class="icon-adjust"></button>
         <button id="biomesLegend" data-tip="${t("Toggle Legend box")}" class="icon-list-bullet"></button>
         <button
@@ -136,7 +136,7 @@ function renderDialog(): void {
           class="icon-brush"
         ></button>
         <button id="biomesReliefRules" data-tip="${t("Edit the relief rules: hills, mountains and other relief placed by elevation")}" class="icon-mountain"></button>
-        <button id="biomesAdd" data-tip="${t("Add a custom biome")}" class="icon-plus"></button>
+        <button id="biomesAdd" data-tip="${t("Add")}" class="icon-plus"></button>
         <button
           id="biomesRestore"
           data-tip="${t("Restore the defaults and re-define biomes based on current moisture and temperature")}"
@@ -144,7 +144,7 @@ function renderDialog(): void {
         ></button>
         <button
           id="biomesExport"
-          data-tip="${t("Save biomes-related data as a text file (.csv)")}"
+          data-tip="${t("Save data as a CSV file")}"
           class="icon-download"
         ></button>
       </div>
@@ -234,11 +234,11 @@ function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistic
     const rural = rawRural * options.map.units.population.scale;
     const urban = rawUrban * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     const population = rn(rural + urban);
-    const populationTip = t("Total population: {{total}}; Rural population: {{rural}}; Urban population: {{urban}}", {
-      total: si(population),
-      rural: si(rural),
-      urban: si(urban)
-    });
+    const populationTip = sentences(
+      `${t("Total population")}: ${si(population)}`,
+      `${t("Rural population")}: ${si(rural)}`,
+      `${t("Urban population")}: ${si(urban)}`
+    );
     lines += /* html */ `
       <div
         class="states biomes"
@@ -252,7 +252,7 @@ function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistic
       >
         <div data-col="name">
           <fill-box fill="${color}"></fill-box>
-          <input data-tip="${sentences(t("Biome name"), t("Click and type to change"))}" class="biomeName" value="${name}" autocorrect="off" spellcheck="false" />
+          <input data-tip="${sentences(t("Name"), t("Click and type to change"))}" class="biomeName" value="${name}" autocorrect="off" spellcheck="false" />
         </div>
         <div data-col="habitability" class="hide">
           <span data-tip="${t("Biome habitability percent")}">%</span>
@@ -264,9 +264,7 @@ function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistic
         <div data-col="population" class="hide"><span data-tip="${populationTip}" class="icon-male"></span><span data-tip="${populationTip}" class="biomePopulation">${si(population)}</span></div>
         ${noteIcon(t("Edit free text notes (legend)"))}
         <span data-col="wiki" data-tip="${t("Open Wikipedia article about the biome")}" class="icon-info-circled pointer"></span>
-        <span data-col="remove" ${
-          i > 12 && !cells ? `data-tip="${t("Remove the custom biome")}" class="icon-trash-empty"` : ""
-        }></span>
+        <span data-col="remove" ${i > 12 && !cells ? `data-tip="${t("Remove")}" class="icon-trash-empty"` : ""}></span>
       </div>
     `;
   }

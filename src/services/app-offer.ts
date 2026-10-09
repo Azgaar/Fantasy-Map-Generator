@@ -132,7 +132,7 @@ async function renderOffer(): Promise<string> {
   }
 
   return /* html */ `${INTRO}${downloads}
-    <p>${t("The app and this page keep their maps and settings apart, so what you have here does not appear there. To move a map over, save it as a <i>.map</i> file and load it in the app.")}</p>
+    <p>${t("The app and this page keep their maps and settings apart, so what you have here does not appear there. To move a map over, save it as a .map file and load it in the app.")}</p>
     <p>${t("Windows and macOS will warn about an unknown developer the first time, because the app is not signed yet: on Windows click “More info” and then “Run anyway”, on macOS right-click the app and choose “Open”.")}</p>`;
 }
 

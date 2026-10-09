@@ -120,7 +120,7 @@ function renderTemplateEditor(): void {
         <div data-type="Hill">
           <div class="icon-check" data-tip="${t("Click to skip the step")}"></div>
           <div style="width: 4em">${t("Hill")}</div>
-          <i class="icon-trash-empty pointer" data-tip="${t("Remove the step")}"></i>
+          <i class="icon-trash-empty pointer" data-tip="${t("Remove")}"></i>
           <i class="icon-resize-vertical" data-tip="${t("Drag to reorder")}"></i>
           <span
             >y:<input class="templateY" data-tip="${t("Y axis position in percentage (minY-maxY or Y)")}" value="47-53"
@@ -249,18 +249,18 @@ function renderImageConverter(): void {
         <input id="convertOverlay" type="range" min="0" max="1" step=".01" value="0" style="width: 12.6em" />
         <input id="convertOverlayNumber" type="number" min="0" max="1" step=".01" value="0" style="width: 4.2em" />
       </div>
-      <div data-tip="${t("Select a color below and assign a height value for it")}" id="colorsSelect" style="display: none">
+      <div data-tip="${t("Select a color to assign a height value")}" id="colorsSelect" style="display: none">
         <i>${t("Set height")}: </i>
         <span id="colorsSelectValue"></span>
         <span>(<span id="colorsSelectFriendly">0</span>)</span><br />
         <div id="imageConverterPalette"></div>
       </div>
       <div data-tip="${t("Select a color to re-assign the height value")}" id="colorsAssigned" style="display: none">
-        <i>${t("Assigned colors (")}<span id="colorsAssignedNumber"></span>):</i>
+        <i>${t("Assigned colors")} (<span id="colorsAssignedNumber"></span>):</i>
         <div id="colorsAssignedContainer" class="colorsContainer"></div>
       </div>
       <div data-tip="${t("Select a color to assign a height value")}" id="colorsUnassigned" style="display: none">
-        <i>${t("Unassigned colors (")}<span id="colorsUnassignedNumber"></span>):</i>
+        <i>${t("Unassigned colors")} (<span id="colorsUnassignedNumber"></span>):</i>
         <div id="colorsUnassignedContainer" class="colorsContainer"></div>
       </div>
       <button
@@ -333,15 +333,15 @@ function redrawDrainage(): void {
 }
 
 function showModeDialog(tool?: string): void {
-  alertMessage.innerHTML = /* html */ `${t("Heightmap is a core element on which all other data (rivers, burgs, states etc) is based. So the best edit approach is to <i>erase</i> the secondary data and let the system automatically regenerate it on edit completion.")}
-    <p>${t("<i>Erase</i> mode also allows you Convert an Image into a heightmap or use Template Editor.")}</p>
-    <p>${t("You can <i>keep</i> the data, but you won't be able to change the coastline.")}</p>
-    <p>${t("Try <i>risk</i> mode to change the coastline and keep the data. The data will be restored as much as possible, but it can cause unpredictable errors.")}</p>
+  alertMessage.innerHTML = /* html */ `${t("Heightmap is a core element on which all other data (rivers, burgs, states etc) is based. So the best edit approach is to erase the secondary data and let the system automatically regenerate it on edit completion.")}
+    <p>${t("Erase mode also allows you Convert an Image into a heightmap or use Template Editor.")}</p>
+    <p>${t("You can keep the data, but you won't be able to change the coastline.")}</p>
+    <p>${t("Try risk mode to change the coastline and keep the data. The data will be restored as much as possible, but it can cause unpredictable errors.")}</p>
     <p>${t("Please {{- save}} before editing the heightmap!", {
       save: `<span class="pseudoLink" onclick="window.Services.Save.toMachine()">${t("save the map")}</span>`
     })}</p>
     <p style="margin-bottom: 0">${t("Check out {{- wiki}} for guidance.", {
-      wiki: link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization", "wiki")
+      wiki: link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization", t("wiki"))
     })}</p>`;
 
   $("#alert").dialog({
@@ -1038,14 +1038,14 @@ function renderBrushesPanel(): void {
     <div id="modifyButtons">
       <button id="undo" data-tip="${t("Undo the latest action (Ctrl + Z)")}" class="icon-ccw" disabled></button>
       <button id="redo" data-tip="${t("Redo the action (Ctrl + Y)")}" class="icon-cw" disabled></button>
-      <button id="rescaleShow" data-tip="${t("Show rescaler slider")}" class="icon-exchange"></button>
+      <button id="rescaleShow" data-tip="${t("Show")}" class="icon-exchange"></button>
       <button id="rescaleCondShow" data-tip="${t("Rescaler: change height if condition is fulfilled")}" class="icon-if"></button>
       <button id="smoothHeights" data-tip="${t("Smooth all heights a bit")}" class="icon-smooth"></button>
       <button id="disruptHeights" data-tip="${t("Disrupt (randomize) heights a bit")}" class="icon-disrupt"></button>
       <button id="brushClear" data-tip="${t("Set height for all cells to 0 (erase the map)")}" class="icon-eraser"></button>
     </div>
     <div id="rescaleSection" style="display: none">
-      <button id="rescaleHide" data-tip="${t("Hide rescaler slider")}" class="icon-exchange"></button>
+      <button id="rescaleHide" data-tip="${t("Hide")}" class="icon-exchange"></button>
       <input id="rescaler" data-tip="${t("Change height for all cells")}" type="range" min="-10" max="10" step="1" value="0" />
     </div>
     <div
@@ -1053,7 +1053,7 @@ function renderBrushesPanel(): void {
       data-tip="${t("If height is greater or equal to X and less or equal to Y, then perform an operation Z with operand V")}"
       style="display: none"
     >
-      <button id="rescaleCondHide" data-tip="${t("Hide rescaler")}" class="icon-if"></button>
+      <button id="rescaleCondHide" data-tip="${t("Hide")}" class="icon-if"></button>
       <label>h ≥</label>
       <input id="rescaleLower" value="20" type="number" min="0" max="100" />
       <label>≤</label>
@@ -1550,7 +1550,7 @@ const STEP_LABELS: Record<string, string> = {
 };
 
 function getStepHTML(type: string, count?: string, arg3?: string, arg4?: string, arg5?: string): string {
-  const Trash = /* html */ `<i class="icon-trash-empty pointer" data-tip="${t("Click to remove the step")}"></i>`;
+  const Trash = /* html */ `<i class="icon-trash-empty pointer" data-tip="${t("Remove")}"></i>`;
   const Hide = /* html */ `<div class="icon-check" data-tip="${t("Click to skip the step")}"></div>`;
   const Reorder = /* html */ `<i class="icon-resize-vertical" data-tip="${t("Drag to reorder")}"></i>`;
   const common = /* html */ `<div data-type="${type}">${Hide}<div style="width:4em">${STEP_LABELS[type] ?? type}</div>${Trash}${Reorder}`;
@@ -2074,7 +2074,7 @@ function autoAssing(type: string): void {
 
 function setConvertColorsNumber(): void {
   prompt(
-    `${t("Please set maximum number of colors.")}<br>${t("An actual number is usually lower and depends on color scheme")}`,
+    `${t("Set maximum number of colors")}<br>${t("An actual number is usually lower and depends on color scheme")}`,
     {
       default: +ensureEl<HTMLInputElement>("convertColors").value,
       step: 1,

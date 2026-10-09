@@ -121,7 +121,7 @@ function showUpdateWindow(storedVersion: string | null): void {
   const patreon = "https://www.patreon.com/azgaar";
 
   alertMessage.innerHTML = /* html */ `${t(
-    "The Fantasy Map Generator is updated up to version <strong>{{version}}</strong>. This version is compatible with {{- previous}}, loaded save files will be auto-updated.",
+    "The Fantasy Map Generator is updated up to version {{version}}. This version is compatible with {{- previous}}, loaded save files will be auto-updated.",
     {
       version: VERSION,
       previous: `<a href="${changelog}" target="_blank" style="white-space: nowrap">${t("previous versions")}</a>`

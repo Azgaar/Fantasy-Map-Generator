@@ -81,11 +81,11 @@ function renderDialog(): void {
         </div>
       </div>
       <div id="zonesBottom">
-        <button id="zonesEditorRefresh" data-tip="${t("Refresh the Editor")}" class="icon-cw"></button>
+        <button id="zonesEditorRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
         <button id="zonesEditStyle" data-tip="${t("Edit style in Style Editor")}" class="icon-adjust"></button>
         <button
           id="zonesLegend"
-          data-tip="${t("Toggle Legend box (shows all non-hidden zones)")}"
+          data-tip="${t("Toggle Legend box")}"
           class="icon-list-bullet"
         ></button>
         <button
@@ -94,8 +94,8 @@ function renderDialog(): void {
           class="icon-percent"
         ></button>
         <button id="zonesManually" data-tip="${t("Re-assign zones")}" class="icon-brush"></button>
-        <button id="zonesAdd" data-tip="${t("Add new zone layer")}" class="icon-plus"></button>
-        <button id="zonesExport" data-tip="${t("Download zones-related data")}" class="icon-download"></button>
+        <button id="zonesAdd" data-tip="${t("Add")}" class="icon-plus"></button>
+        <button id="zonesExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
         <div id="zonesFilters" data-tip="${t("Show only zones of selected type")}" style="display: inline-block">
           ${t("Type")}:
           <select id="zonesFilterType"></select>
@@ -210,9 +210,9 @@ function renderZonesPage(view: TableView<ZoneRow>): void {
   const percentage = body.dataset.type === "percentage";
   const lines = view.rows.map(({ zone: { i, name, type, cells, color, hidden }, area, rural, urban, population }) => {
     const populationTip = sentences(
-      t("Total population: {{total}}", { total: si(population) }),
-      t("Rural population: {{rural}}", { rural: si(rural) }),
-      t("Urban population: {{urban}}", { urban: si(urban) }),
+      `${t("Total population")}: ${si(population)}`,
+      `${t("Rural population")}: ${si(rural)}`,
+      `${t("Urban population")}: ${si(urban)}`,
       t("Click to edit")
     );
     const focused = select<SVGElement, unknown>("#deftemp").select(`#fog #focusZone${i}`).size();
@@ -227,7 +227,7 @@ function renderZonesPage(view: TableView<ZoneRow>): void {
       <span data-col="reorder" data-tip="${t("Drag to raise or lower the zone")}" class="icon-resize-vertical"></span>
       <span data-col="focus" data-tip="${t("Toggle zone focus")}" class="zoneFog icon-pin ${focused ? "" : "inactive"} ${cells.length ? "" : "placeholder"}"></span>
       <span data-col="visibility" data-tip="${t("Toggle zone visibility")}" class="zoneHide icon-eye ${cells.length ? "" : " placeholder"}"></span>
-      <span data-col="remove" data-tip="${t("Remove zone")}" class="zoneRemove icon-trash-empty"></span>
+      <span data-col="remove" data-tip="${t("Remove")}" class="zoneRemove icon-trash-empty"></span>
     </div>`;
   });
 
@@ -482,7 +482,7 @@ function changePopulation(zone: Zone): void {
 
 function zoneRemove(zone: Zone): void {
   confirmationDialog({
-    title: t("Remove zone"),
+    title: t("Remove"),
     message: `${t("Are you sure you want to remove the zone?")}<br>${t("This action cannot be reverted")}`,
     confirm: t("Remove"),
     onConfirm: () => {

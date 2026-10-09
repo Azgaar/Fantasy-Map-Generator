@@ -81,7 +81,7 @@ function addCell(cell: number): void {
       <span>Cell ${cell}</span>
       <span data-tip="${t("Set flux affects river width")}" style="margin-left: 0.4em">${t("Flux")}</span>
       <input type="number" min=0 value="${flux}" class="editFlux" style="width: 5em"/>
-      <span data-tip="${t("Remove the cell")}" class="icon-trash-empty pointer"></span>
+      <span data-tip="${t("Remove")}" class="icon-trash-empty pointer"></span>
     </div>`;
   ensureEl("riverCreatorBody").innerHTML += line;
 }

@@ -61,7 +61,7 @@ The Generator targets modern browsers. Chromium browsers are the primary tested 
 You can, but I doubt you will enjoy the experience. The Generator GUI is not suitable for mobile devices and performance is subpar. In general, I would say mobile devices are not supported.
 
 ### What about non-English localization?
-The interface is available in English, Russian, German, French, Spanish, Portuguese, Italian, Polish, Chinese (Simplified), Japanese and Afrikaans. On first launch it follows your browser's language when it is one of these; to change it, pick a language in the _Language_ row of the Options tab and reload the page. Save your map first if it has unsaved changes.
+The interface is available in English, Russian, Ukrainian, German, Dutch, French, Spanish, Portuguese (Portugal and Brazil), Italian, Polish, Afrikaans, Chinese (Simplified) and Japanese. On first launch it follows your browser's language when it is one of these; to change it, pick a language in the _Language_ row of the Options tab and reload the page. Save your map first if it has unsaved changes.
 
 Only the interface is translated. Generated map content — names of states, provinces, burgs and religions, biome and goods names, legends and notes — stays in English, and a map looks the same whatever interface language it was made or opened in. Rename anything you want in your own language.
 

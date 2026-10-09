@@ -127,7 +127,7 @@ function openSaver(): void {
   dialog.innerHTML = /* html */ `
     <div style="padding: 2px 0">
       <span>${t("Preset name")}:</span>
-      <input id="styleSaverName" data-tip="${t("Enter style preset name")}" placeholder="${t("Preset name")}" style="width: 12em" required />
+      <input id="styleSaverName" data-tip="${t("Preset name")}" placeholder="${t("Preset name")}" style="width: 12em" required />
       <span id="styleSaverTip" data-tip="${t("Shows whether there is already a preset with this name")}" class="italic"></span>
     </div>
     <div style="padding: 2px 0; width: 100%">
@@ -243,7 +243,7 @@ function offerCustomIcons(json: string, name: string): void {
 
   confirmationDialog({
     title: t("Custom icons"),
-    message: `${message}<br><br>${t("Download the icons as a zip? Import it on the target map via the icon picker: <i>Custom → Import zip</i>")}`,
+    message: `${message}<br><br>${t("Download the icons as a zip? Import it on the target map via the icon picker: Custom → Import zip")}`,
     confirm: t("Download icons"),
     cancel: t("Skip"),
     onConfirm: async () => {
@@ -261,7 +261,7 @@ function remove(name: string): void {
   if (StylePresetsService.isSystem(name)) return void tip(t("Cannot remove system preset"), false, "error");
 
   confirmationDialog({
-    title: t("Remove style preset"),
+    title: t("Remove"),
     message: t("Are you sure you want to remove the “{{preset}}” preset? This action cannot be undone.", {
       preset: StylePresetsService.displayName(name)
     }),

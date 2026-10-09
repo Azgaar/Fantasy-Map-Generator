@@ -64,7 +64,7 @@ function renderDialog(): void {
           <tr>
             <th data-tip="${sentences(t("Activate/deactivate group"), t("Deactivated group labels are not visible"))}">${t("Active")}</th>
             <th data-tip="${sentences(t("Group name"), t("Must start with a letter or underscore, followed by letters, digits, underscores, or dashes"))}">${t("Group")}</th>
-            <th data-tip="${t("Label type, cannot be changed after creation")}">${t("Type")}</th>
+            <th data-tip="${t("Label type, fixed after creation")}">${t("Type")}</th>
             <th data-tip="${t("Name display mode. Only applicable to States and Provinces")}">${t("Mode")}</th>
             <th data-tip="${t("Minimum zoom level to show the group")}">${t("Zoom min")}</th>
             <th data-tip="${t("Maximum zoom level to show the group")}">${t("Zoom max")}</th>
@@ -165,7 +165,7 @@ function createRow(group: LabelGroup, isNew = false, labelCount = 0): string {
         <button type="button" name="list" class="icon-list-bullet" data-tip="${t("Show labels of this group in Labels Overview")}"></button>
       </td>
       <td data-tip="${t("Assignment order: move group up or down")}"><button type="button" name="up" class="icon-up-open" data-tip="${t("Move up")}"></button><button type="button" name="down" class="icon-down-open" data-tip="${t("Move down")}"></button></td>
-      <td><button type="button" name="style" class="icon-brush" data-tip="${t("Edit visual style")}"></button><span data-tip="${isDefault ? t("Default groups can't be removed") : t("Remove group")}"><button type="button" name="remove" class="icon-trash-empty" ${isDefault ? "disabled" : ""}></button></span></td>
+      <td><button type="button" name="style" class="icon-brush" data-tip="${t("Edit style")}"></button><span data-tip="${isDefault ? t("Default groups can't be removed") : t("Remove")}"><button type="button" name="remove" class="icon-trash-empty" ${isDefault ? "disabled" : ""}></button></span></td>
     </tr>`;
 }
 
@@ -224,7 +224,7 @@ function removeRow(row: HTMLTableRowElement): void {
   }
 
   confirmationDialog({
-    title: t("Remove Label Group"),
+    title: t("Remove"),
     message: t("Remove the group? This won't affect labels unless the changes are applied."),
     confirm: t("Remove"),
     onConfirm: () => {

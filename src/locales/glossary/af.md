@@ -14,7 +14,8 @@ Terms every `af.json` string uses the same way. Rules for all catalogs are in
   abbreviation, a number or a brand: “API-sleutel”, “3D-voorskou”, “Azgaar-assistent”.
 - Quotes are “…”; the apostrophe is ’ (“’n kaart”, “Azgaar’s”). Keys keep their English names:
   Ctrl, Shift, Alt, Enter, Esc, Space.
-- Brand and product names stay: Fantasy Map Generator, Azgaar, Armoria, Dropbox, Discord.
+- Brand and product names stay: Azgaar, Armoria, Dropbox, Discord.
+- The product names are translated: “Fantasiekaartgenerator”, in full “Azgaar se Fantasiekaartgenerator”; the assistant is “Azgaar-assistent”.
 
 ## Map
 
@@ -115,7 +116,7 @@ Terms every `af.json` string uses the same way. Rules for all catalogs are in
 | custom icon / icon library     | eie ikoon / ikoonbiblioteek       |
 | custom (font, name, scheme)    | eie                               |
 | glyph / brush                  | glief / kwas                      |
-| opacity / stroke / fill        | ondeursigtigheid / lyn / vulling  |
+| opacity / stroke / fill        | ondeursigtigheid (label: opasiteit) / lyn / vulling |
 | scale bar / compass rose       | skaalbalk / kompasroos            |
 | measurer, ruler                | meter, liniaal                    |
 | preview / zoom / pan           | voorskou / zoem / skuif           |
