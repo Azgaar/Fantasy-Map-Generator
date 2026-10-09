@@ -1,6 +1,7 @@
 import Alea from "alea";
 import { curveCatmullRom, line } from "d3";
 import Delaunator from "delaunator";
+import { replaceWholeWord } from "@/utils/languageUtils";
 import { requireName, requireOneOf } from "@/utils/validationUtils";
 import { distanceSquared, findPath, getAdjective, isLand, ra, rn, round, rw } from "../utils";
 import { meander } from "../utils/pathUtils";
@@ -206,7 +207,10 @@ class RoutesModule {
   rename(routeId: number, name: string): void {
     const route = pack.routes.find(({ i }) => i === routeId);
     if (!route) throw new Error(`Route ${routeId} does not exist`);
+    const old = route.name;
     route.name = requireName(name);
+    if (route.label?.text)
+      route.label.text = replaceWholeWord(route.label.text, old ?? "", route.name) ?? route.label.text;
   }
 
   regenerate(): void {

@@ -350,7 +350,18 @@ function addConnection(from: number, to: number, routeId: number): void {
 }
 
 function changeName(this: HTMLInputElement): void {
-  getRoute().name = this.value;
+  if (this.value.trim()) {
+    Routes.rename(getRoute().i, this.value);
+    Layers.draw("labels");
+  }
+}
+
+function generateName(): void {
+  const route = getRoute();
+  const name = Routes.generateName(route) || UNNAMED_ROUTE;
+  ensureEl<HTMLInputElement>("routeName").value = name;
+  Routes.rename(route.i, name);
+  Layers.draw("labels");
 }
 
 function changeGroup(this: HTMLInputElement): void {
@@ -358,11 +369,6 @@ function changeGroup(this: HTMLInputElement): void {
   Routes.setGroup(route.i, this.value);
   redrawRouteShape(route); // the path is re-created under the new group, so re-bind the editor to it
   selectedRoute = select<SVGElement, unknown>(`#route${route.i}`).on("click", addControlPoint);
-}
-
-function generateName(): void {
-  const route = getRoute();
-  route.name = ensureEl<HTMLInputElement>("routeName").value = Routes.generateName(route) || UNNAMED_ROUTE;
 }
 
 function showRouteElevationProfile(): void {
