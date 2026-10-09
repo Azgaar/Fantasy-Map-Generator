@@ -378,9 +378,9 @@ function renderBurgsPage(view: TableView<Burg>): void {
         </div>
         <div data-col="features">
           <span
-            data-tip="${b.capital ? t(" This burg is a state capital") : t("This burg is a NOT state capital")}"
+            data-tip="${b.capital ? t("This burg is a state capital") : t("This burg is NOT a state capital")}"
             class="icon-star-empty${b.capital ? "" : " inactive"}" style="padding: 0 1px;"></span>
-          <span data-tip="${b.port ? t(" This burg is a port") : t("This burg is NOT a port")}"
+          <span data-tip="${b.port ? t("This burg is a port") : t("This burg is NOT a port")}"
           class="icon-anchor${b.port ? "" : " inactive"}" style="font-size: .9em; padding: 0 1px;"></span>
         </div>
         <span data-col="edit" data-tip="${t("Edit Burg")}" class="icon-pencil"></span>

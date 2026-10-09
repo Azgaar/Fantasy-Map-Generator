@@ -1,6 +1,6 @@
 {
-  " This burg is a port": " この集落は港です",
-  " This burg is a state capital": " この集落は国家の首都です",
+  "This burg is a port": "この集落は港です",
+  "This burg is a state capital": "この集落は国家の首都です",
   "(prep for {{- good}})": "（{{- good}}の準備）",
   "({{size}} MB). The file goes to your Downloads folder, open it to install the app.": "（{{size}} MB）。ファイルは「ダウンロード」フォルダーに保存されます。開いてアプリをインストールしてください。",
   "+ Add OR group": "+ OR グループを追加",
@@ -117,7 +117,7 @@
   "All unassigned colors will be considered as ocean": "割り当てられていない色はすべて海とみなされます",
   "All units should have unique names": "すべての兵種には一意の名前が必要です",
   "All unsaved changes made to the current map will be lost": "現在の地図の未保存の変更はすべて失われます",
-  "All vertex edits made on this map, including the ones made in earlier sessions,\n      will be reverted. The action cannot be undone": "以前のセッションでの編集を含め、この地図上のすべての頂点編集が元に戻されます。この操作は取り消せません",
+  "All vertex edits made on this map, including the ones made in earlier sessions, will be reverted. The action cannot be undone": "以前のセッションでの編集を含め、この地図上のすべての頂点編集が元に戻されます。この操作は取り消せません",
   "All-world": "全世界",
   "Allies formed a defensive pact and protect each other in case of third party aggression": "同盟国は防衛協定を結び、第三者の侵略から互いを守ります",
   "Allow culture centers, expansion and type changes to take an immediate effect": "文化の中心地、拡張、種類の変更をすぐに反映させる",
@@ -3298,7 +3298,7 @@
   "This WON'T change the burgs unless the changes are applied": "変更を適用しない限り、集落は変わりません",
   "This action cannot be reverted": "この操作は元に戻せません",
   "This burg is NOT a port": "この集落は港ではありません",
-  "This burg is a NOT state capital": "この集落は国家の首都ではありません",
+  "This burg is NOT a state capital": "この集落は国家の首都ではありません",
   "This burg is already a center of another market": "この集落はすでに別の市場の中心です",
   "This burg is already a market center": "この集落はすでに市場の中心です",
   "This burg is already the center of this market": "この集落はすでにこの市場の中心です",
@@ -3803,5 +3803,10 @@
   "Сhase phase. Naval units pursue and rarely shell enemy fleet": "追撃の段階。海軍部隊は敵艦隊を追い、めったに砲撃しません",
   "— OR —": "— または —",
   "“{{transport}}” is used by existing segments. Reassign them first.": "「{{transport}}」は既存の区間で使用されています。先に割り当て直してください。",
-  "ⓘ Local models need no key. Point to the server and enter the model name. Set the server's context window to at least 8k tokens (Ollama's num_ctx).": "ⓘ ローカルモデルにはキーは不要です。サーバーを指定し、モデル名を入力してください。サーバーのコンテキストウィンドウは少なくとも 8k トークンに設定してください（Ollama の num_ctx）。"
+  "ⓘ Local models need no key. Point to the server and enter the model name. Set the server's context window to at least 8k tokens (Ollama's num_ctx).": "ⓘ ローカルモデルにはキーは不要です。サーバーを指定し、モデル名を入力してください。サーバーのコンテキストウィンドウは少なくとも 8k トークンに設定してください（Ollama の num_ctx）。",
+  "Deal": "取引",
+  "Map text": "マップテキスト",
+  "Measurer": "定規",
+  "Name base": "命名ベース",
+  "Relief icon": "地形アイコン"
 }

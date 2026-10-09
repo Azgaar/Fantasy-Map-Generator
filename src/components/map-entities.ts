@@ -1,5 +1,6 @@
 import type { LayerId } from "@/components/layers";
 import { Controllers } from "@/controllers";
+import { FEATURE_SUBTYPE_LABELS, labelOf } from "@/data/id-labels";
 import type { Point } from "@/types/global";
 import { t } from "@/utils/i18n";
 import { capitalize } from "@/utils/stringUtils";
@@ -108,7 +109,7 @@ class EntityLookup {
   private readonly types: Record<EntityType, EntityDefinition> = {
     state: {
       label: t("States"),
-      kind: "State",
+      kind: t("State"),
       icon: "icon-crown",
       scale: 2,
       layers: ["states"],
@@ -134,7 +135,7 @@ class EntityLookup {
     },
     province: {
       label: t("Provinces"),
-      kind: "Province",
+      kind: t("Province"),
       icon: "icon-flag",
       scale: 4,
       layers: ["provinces"],
@@ -152,7 +153,7 @@ class EntityLookup {
     },
     burg: {
       label: t("Burgs"),
-      kind: "Burg",
+      kind: t("Burg"),
       icon: "icon-home",
       scale: 8,
       layers: ["burgIcons", "labels"],
@@ -172,7 +173,7 @@ class EntityLookup {
     },
     marker: {
       label: t("Markers"),
-      kind: "Marker",
+      kind: t("Marker"),
       icon: "icon-map-pin",
       scale: 6,
       layers: ["markers"],
@@ -188,7 +189,7 @@ class EntityLookup {
     },
     river: {
       label: t("Rivers"),
-      kind: "River",
+      kind: t("River"),
       icon: "icon-bezier-curve",
       scale: 4,
       layers: ["rivers"],
@@ -209,7 +210,7 @@ class EntityLookup {
     },
     route: {
       label: t("Routes"),
-      kind: "Route",
+      kind: t("Route"),
       icon: "icon-map-signs",
       scale: 4,
       layers: ["routes"],
@@ -236,7 +237,10 @@ class EntityLookup {
     },
     feature: {
       label: t("Geographical features"),
-      kind: id => this.byId(pack.features, id)?.type || "Feature",
+      kind: id => {
+        const type = this.byId(pack.features, id)?.type;
+        return type ? labelOf(FEATURE_SUBTYPE_LABELS, type) : t("Feature");
+      },
       icon: "icon-globe",
       scale: 3,
       layers: id => [this.byId(pack.features, id)?.type === "lake" ? "lakes" : "coastline"],
@@ -254,7 +258,7 @@ class EntityLookup {
     },
     zone: {
       label: t("Zones"),
-      kind: "Zone",
+      kind: t("Zone"),
       icon: "icon-draw-polygon",
       scale: 3,
       layers: ["zones"],
@@ -268,7 +272,7 @@ class EntityLookup {
     },
     journey: {
       label: t("Journeys"),
-      kind: "Journey",
+      kind: t("Journey"),
       icon: "icon-compass",
       scale: 4,
       layers: ["journeys"],
@@ -290,7 +294,7 @@ class EntityLookup {
     },
     market: {
       label: t("Markets"),
-      kind: "Market",
+      kind: t("Market"),
       icon: "icon-store",
       scale: 6,
       layers: ["markets"],
@@ -312,7 +316,7 @@ class EntityLookup {
     },
     regiment: {
       label: t("Regiments"),
-      kind: "Regiment",
+      kind: t("Regiment"),
       icon: "icon-shield-alt",
       scale: 8,
       layers: ["military"],
@@ -333,7 +337,7 @@ class EntityLookup {
     },
     addedLabel: {
       label: t("Labels"),
-      kind: "Label",
+      kind: t("Label"),
       icon: "icon-font",
       scale: 8,
       layers: ["labels"],
@@ -345,11 +349,11 @@ class EntityLookup {
         const label = this.byId(pack.addedLabels, id);
         return label && [label.x, label.y];
       },
-      context: () => "Map text"
+      context: () => t("Map text")
     },
     culture: {
       label: t("Cultures"),
-      kind: "Culture",
+      kind: t("Culture"),
       icon: "icon-users",
       scale: 2,
       layers: ["cultures"],
@@ -362,7 +366,7 @@ class EntityLookup {
     },
     religion: {
       label: t("Religions"),
-      kind: "Religion",
+      kind: t("Religion"),
       icon: "icon-place-of-worship",
       scale: 2,
       layers: ["religions"],
@@ -383,7 +387,7 @@ class EntityLookup {
     },
     biome: {
       label: t("Biomes"),
-      kind: "Biome",
+      kind: t("Biome"),
       icon: "icon-leaf",
       scale: 2,
       layers: ["biomes"],
@@ -395,7 +399,7 @@ class EntityLookup {
     },
     good: {
       label: t("Goods"),
-      kind: "Good",
+      kind: t("Good"),
       icon: "icon-tags",
       scale: 6,
       layers: ["goods"],
@@ -412,7 +416,7 @@ class EntityLookup {
     },
     cell: {
       label: t("Cells"),
-      kind: "Cell",
+      kind: t("Cell"),
       icon: "icon-dot-circled",
       scale: 8,
       layers: [],
@@ -424,7 +428,7 @@ class EntityLookup {
     },
     ice: {
       label: t("Ice"),
-      kind: id => (this.byId(pack.ice, id)?.type === "glacier" ? "Glacier" : "Iceberg"),
+      kind: id => (this.byId(pack.ice, id)?.type === "glacier" ? t("Glacier") : t("Iceberg")),
       icon: "icon-temperature-low",
       scale: 4,
       layers: ["ice"],
@@ -443,14 +447,14 @@ class EntityLookup {
     },
     relief: {
       label: t("Relief icons"),
-      kind: "Relief icon",
+      kind: t("Relief icon"),
       icon: "icon-mountain",
       scale: 8,
       layers: ["relief"],
       entity: id => (pack.relief?.[id] ? { i: id } : undefined),
       name: id => {
         const icon = pack.relief?.[id];
-        return icon && "type" in icon ? capitalize(icon.type) : "Relief icon";
+        return icon && "type" in icon ? capitalize(icon.type) : t("Relief icon");
       },
       refs: () => (pack.relief ?? []).map((_, id) => ({ type: "relief" as const, id })),
       position: id => {
@@ -460,7 +464,7 @@ class EntityLookup {
     },
     measurer: {
       label: t("Measurers"),
-      kind: "Measurer",
+      kind: t("Measurer"),
       icon: "icon-ruler",
       scale: 4,
       layers: ["rulers"],
@@ -472,7 +476,7 @@ class EntityLookup {
     },
     deal: {
       label: t("Deals"),
-      kind: "Deal",
+      kind: t("Deal"),
       icon: "icon-exchange",
       scale: 6,
       layers: ["markets"],
@@ -500,7 +504,7 @@ class EntityLookup {
     },
     transport: {
       label: t("Transports"),
-      kind: "Transport",
+      kind: t("Transport"),
       icon: "icon-ship",
       scale: 1,
       layers: [],
@@ -512,7 +516,7 @@ class EntityLookup {
     },
     nameBase: {
       label: t("Name bases"),
-      kind: "Name base",
+      kind: t("Name base"),
       icon: "icon-book",
       scale: 1,
       layers: [],

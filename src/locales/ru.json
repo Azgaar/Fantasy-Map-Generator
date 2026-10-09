@@ -1,6 +1,6 @@
 {
-  " This burg is a port": " Это поселение — порт",
-  " This burg is a state capital": " Это поселение — столица страны",
+  "This burg is a port": "Это поселение — порт",
+  "This burg is a state capital": "Это поселение — столица страны",
   "(prep for {{- good}})": "(подготовка для {{- good}})",
   "({{size}} MB). The file goes to your Downloads folder, open it to install the app.": "({{size}} МБ). Файл попадёт в папку «Загрузки», откройте его, чтобы установить приложение.",
   "+ Add OR group": "+ Добавить группу ИЛИ",
@@ -117,7 +117,7 @@
   "All unassigned colors will be considered as ocean": "Все неназначенные цвета будут считаться океаном",
   "All units should have unique names": "У всех родов войск должны быть уникальные названия",
   "All unsaved changes made to the current map will be lost": "Все несохранённые изменения текущей карты будут потеряны",
-  "All vertex edits made on this map, including the ones made in earlier sessions,\n      will be reverted. The action cannot be undone": "Все правки вершин на этой карте, включая сделанные в прошлых сеансах, будут отменены. Действие нельзя отменить",
+  "All vertex edits made on this map, including the ones made in earlier sessions, will be reverted. The action cannot be undone": "Все правки вершин на этой карте, включая сделанные в прошлых сеансах, будут отменены. Действие нельзя отменить",
   "All-world": "Весь мир",
   "Allies formed a defensive pact and protect each other in case of third party aggression": "Союзники заключили оборонительный пакт и защищают друг друга от нападения третьей стороны",
   "Allow culture centers, expansion and type changes to take an immediate effect": "Применять изменения центров культур, экспансии и типов сразу",
@@ -3298,7 +3298,7 @@
   "This WON'T change the burgs unless the changes are applied": "Поселения НЕ изменятся, пока изменения не применены",
   "This action cannot be reverted": "Действие нельзя отменить",
   "This burg is NOT a port": "Это поселение НЕ порт",
-  "This burg is a NOT state capital": "Это поселение НЕ столица страны",
+  "This burg is NOT a state capital": "Это поселение НЕ столица страны",
   "This burg is already a center of another market": "Это поселение уже центр другого рынка",
   "This burg is already a market center": "Это поселение уже является центром рынка",
   "This burg is already the center of this market": "Это поселение уже центр этого рынка",
@@ -3803,5 +3803,10 @@
   "Сhase phase. Naval units pursue and rarely shell enemy fleet": "Этап погони. Флот преследует и изредка обстреливает вражеский флот",
   "— OR —": "— ИЛИ —",
   "“{{transport}}” is used by existing segments. Reassign them first.": "«{{transport}}» используется в отрезках. Сначала переназначьте их.",
-  "ⓘ Local models need no key. Point to the server and enter the model name. Set the server's context window to at least 8k tokens (Ollama's num_ctx).": "ⓘ Локальным моделям ключ не нужен. Укажите сервер и введите название модели. Установите окно контекста сервера не меньше 8k токенов (num_ctx в Ollama)."
+  "ⓘ Local models need no key. Point to the server and enter the model name. Set the server's context window to at least 8k tokens (Ollama's num_ctx).": "ⓘ Локальным моделям ключ не нужен. Укажите сервер и введите название модели. Установите окно контекста сервера не меньше 8k токенов (num_ctx в Ollama).",
+  "Deal": "Сделка",
+  "Map text": "Текст карты",
+  "Measurer": "Линейка",
+  "Name base": "База имён",
+  "Relief icon": "Иконка рельефа"
 }

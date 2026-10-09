@@ -86,4 +86,10 @@ describe("sentences", () => {
     );
     expect(sentences("Population: 5")).toBe("Population: 5");
   });
+
+  it("ends CJK sentences with 。 and joins them without a space", () => {
+    expect(sentences("州名を変更", "クリックして変更")).toBe("州名を変更。クリックして変更");
+    expect(sentences("これは港です。", "人口：100")).toBe("これは港です。人口：100");
+    expect(sentences("这是首都？", "点击编辑")).toBe("这是首都？点击编辑");
+  });
 });

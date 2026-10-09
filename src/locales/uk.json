@@ -1,6 +1,6 @@
 {
-  " This burg is a port": " Це поселення — порт",
-  " This burg is a state capital": " Це поселення — столиця держави",
+  "This burg is a port": "Це поселення — порт",
+  "This burg is a state capital": "Це поселення — столиця держави",
   "(prep for {{- good}})": "(підготовка для {{- good}})",
   "({{size}} MB). The file goes to your Downloads folder, open it to install the app.": "({{size}} МБ). Файл буде збережено в папку «Завантаження», відкрийте його, щоб встановити застосунок.",
   "+ Add OR group": "+ Додати групу АБО",
@@ -117,7 +117,7 @@
   "All unassigned colors will be considered as ocean": "Усі непризначені кольори вважатимуться океаном",
   "All units should have unique names": "Усі підрозділи мають мати унікальні назви",
   "All unsaved changes made to the current map will be lost": "Усі незбережені зміни поточної карти буде втрачено",
-  "All vertex edits made on this map, including the ones made in earlier sessions,\n      will be reverted. The action cannot be undone": "Усі редагування вершин на цій карті, зокрема зроблені в попередніх сесіях,\n      буде скасовано. Дію не можна відмінити",
+  "All vertex edits made on this map, including the ones made in earlier sessions, will be reverted. The action cannot be undone": "Усі редагування вершин на цій карті, зокрема зроблені в попередніх сесіях, буде скасовано. Дію не можна відмінити",
   "All-world": "Весь світ",
   "Allies formed a defensive pact and protect each other in case of third party aggression": "Союзники уклали оборонний пакт і захищають одне одного від агресії третьої сторони",
   "Allow culture centers, expansion and type changes to take an immediate effect": "Центри культур, розширення й зміни типу застосовуватимуться одразу",
@@ -3298,7 +3298,7 @@
   "This WON'T change the burgs unless the changes are applied": "Поселення НЕ зміняться, доки зміни не буде застосовано",
   "This action cannot be reverted": "Цю дію не можна відмінити",
   "This burg is NOT a port": "Це поселення НЕ є портом",
-  "This burg is a NOT state capital": "Це поселення НЕ є столицею держави",
+  "This burg is NOT a state capital": "Це поселення НЕ є столицею держави",
   "This burg is already a center of another market": "Це поселення вже є центром іншого ринку",
   "This burg is already a market center": "Це поселення вже є центром ринку",
   "This burg is already the center of this market": "Це поселення вже є центром цього ринку",
@@ -3803,5 +3803,10 @@
   "Сhase phase. Naval units pursue and rarely shell enemy fleet": "Фаза переслідування. Морські підрозділи переслідують флот противника і рідко його обстрілюють",
   "— OR —": "— АБО —",
   "“{{transport}}” is used by existing segments. Reassign them first.": "«{{transport}}» використовують наявні ділянки. Спершу перепризначте їх",
-  "ⓘ Local models need no key. Point to the server and enter the model name. Set the server's context window to at least 8k tokens (Ollama's num_ctx).": "ⓘ Локальним моделям ключ не потрібен. Вкажіть сервер і введіть назву моделі. Встановіть контекстне вікно сервера щонайменше 8k токенів (num_ctx в Ollama)."
+  "ⓘ Local models need no key. Point to the server and enter the model name. Set the server's context window to at least 8k tokens (Ollama's num_ctx).": "ⓘ Локальним моделям ключ не потрібен. Вкажіть сервер і введіть назву моделі. Встановіть контекстне вікно сервера щонайменше 8k токенів (num_ctx в Ollama).",
+  "Deal": "Угода",
+  "Map text": "Текст карти",
+  "Measurer": "Лінійка",
+  "Name base": "База імен",
+  "Relief icon": "Іконка рельєфу"
 }

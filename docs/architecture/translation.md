@@ -15,13 +15,13 @@ reasoning are in [the PRD](../prd/translation.md); this page is the contributor'
   option picks a plural form; use it only when no such wording works.
 - `t()` returns plain text. `{{name}}` is HTML-escaped; `{{- name}}` is only for a value going to a
   sink that escapes on its own (a jQuery UI dialog `title`, `textContent`).
-- Use `tHtml()` only for an explicit prose key that needs inline rich text. The English and every
-  locale value must have the same tags, nesting and attributes; translators change text nodes, not
-  markup. A raw placeholder in `tHtml()` is code-owned markup, never markup from a catalog.
+- A catalog value may keep inline markup (`<b>`, `<a>`) only if the English has the same tags in the
+  same order with the same attributes; translators change text, not markup. The lint checks it.
+  `tHtml()` for rich prose is planned, not built yet.
 - The same English with two meanings gets a context: `t("Close", { context: "button" })`.
 - Do not put markup in a `t()` key or catalog value. Markup around a translated string stays outside
-  it: `` `<p class="empty">${t("No rules")}</p>` ``. Use `tHtml()` only when word order requires
-  inline rich text.
+  it: `` `<p class="empty">${t("No rules")}</p>` ``. Keep inline markup in the value only when
+  word order requires it.
 - One string is one sentence or line. Join separate ones in code, so shared lines are translated once:
   `` `${t("Are you sure you want to remove the burg?")}<br>${t("This action cannot be reverted")}` ``.
   Sentences of one line join with `sentences()`: `sentences(t("State name"), t("Click to change"))`.
@@ -49,9 +49,10 @@ and shows a label from `src/data/id-labels.ts`.
   values. CI fails when it is stale.
 - `src/locales/<code>.json` holds a shipped language; `src/data/languages.ts` lists it.
   `npm run lint-locales` (a CI step) checks every catalog: exactly the English keys, no empty
-  values, no trailing colon, the same placeholders and valid `tHtml()` structure.
+  values, no trailing colon or outer spaces, one line, the same placeholders and the same markup.
 - Translations are written by AI in the pull request that adds or changes the English. A catalog is
   not added to the manifest until `npm run lint-locales -- --missing` reports zero missing keys; CI
   then rejects any missing translation. A copy edit renames the key, and the same pull request moves
   or redoes every translation.
+- Terms per language are in `src/locales/glossary/<code>.md`; a new term goes there before any catalog.
 - Users report a wrong translation in an issue; the fix is an edit to the catalog.

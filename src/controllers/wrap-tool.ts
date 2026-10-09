@@ -171,7 +171,7 @@ function revert(): void {
   confirmationDialog({
     title: t("Revert vertex edits"),
     message: t(
-      "All vertex edits made on this map, including the ones made in earlier sessions,\n      will be reverted. The action cannot be undone"
+      "All vertex edits made on this map, including the ones made in earlier sessions, will be reverted. The action cannot be undone"
     ),
     confirm: t("Revert"),
     onConfirm: () => {

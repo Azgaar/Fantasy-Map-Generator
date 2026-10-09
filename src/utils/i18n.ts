@@ -65,7 +65,14 @@ function interpolate(text: string, values: Record<string, string | number | null
   });
 }
 
+const CJK_END = /[\u3000-\u9fff\uff00-\uffef]$/; // CJK text ends a sentence with 。 and joins the next one without a space
+const TERMINATED = /[.!?…:。！？：]$/;
+
 /** Join translated sentences into one text, each sentence a catalog string of its own: `sentences(t("State name"), t("Click to change"))` */
 export function sentences(...parts: string[]): string {
-  return parts.map((part, i) => (i < parts.length - 1 && !/[.!?…:]$/.test(part) ? `${part}.` : part)).join(" ");
+  const ended = parts.map((part, i) => {
+    if (i === parts.length - 1 || TERMINATED.test(part)) return part;
+    return part + (CJK_END.test(part) ? "。" : ".");
+  });
+  return ended.reduce((text, part, i) => (i === 0 ? part : text + (CJK_END.test(ended[i - 1]) ? "" : " ") + part), "");
 }

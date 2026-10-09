@@ -51,6 +51,18 @@ describe("lintCatalog", () => {
     ]);
   });
 
+  it("reports stray spacing, line breaks and changed markup", () => {
+    const english = { "Click <b>here</b>": "Click <b>here</b>", " Port": " Port", Ship: "Ship" };
+    assert.deepEqual(lintCatalog({ "Click <b>here</b>": "Нажмите <b >здесь</b>" }, english), []);
+    assert.deepEqual(lintCatalog({ "Click <b>here</b>": "Нажмите здесь" }, english), [
+      '"Click <b>here</b>": markup differs from the English'
+    ]);
+    assert.deepEqual(lintCatalog({ Ship: " Корабль" }, english), ['"Ship": a value is one line with no outer spaces']);
+    assert.deepEqual(lintCatalog({ Ship: "Корабль⏎ тут" }, english), ['"Ship": a value is one line with no outer spaces']);
+    assert.deepEqual(lintCatalog({ Ship: "Корабль\n   тут" }, english), ['"Ship": a value is one line with no outer spaces']);
+    assert.deepEqual(lintCatalog({ " Port": "Порт" }, english), ['" Port": a key is one line with no outer spaces']);
+  });
+
   it("checks English against itself, letting its singular drop the count", () => {
     assert.deepEqual(lintCatalog(ENGLISH, ENGLISH), []);
     const quoted = { ...ENGLISH, 'Say "hi"': 'Say "hi"' };

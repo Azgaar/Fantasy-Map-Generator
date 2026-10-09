@@ -1,6 +1,6 @@
 {
-  " This burg is a port": " 该城镇是港口",
-  " This burg is a state capital": " 该城镇是国家首都",
+  "This burg is a port": "该城镇是港口",
+  "This burg is a state capital": "该城镇是国家首都",
   "(prep for {{- good}})": "（用于{{- good}}的预加工）",
   "({{size}} MB). The file goes to your Downloads folder, open it to install the app.": "（{{size}} MB）。文件会保存到“下载”文件夹，打开它即可安装应用。",
   "+ Add OR group": "+ 添加“或”组",
@@ -117,7 +117,7 @@
   "All unassigned colors will be considered as ocean": "所有未分配的颜色都将视为海洋",
   "All units should have unique names": "所有单位都应有唯一的名称",
   "All unsaved changes made to the current map will be lost": "当前地图所有未保存的更改都将丢失",
-  "All vertex edits made on this map, including the ones made in earlier sessions,\n      will be reverted. The action cannot be undone": "此地图上的所有顶点编辑（包括之前会话中的编辑）\n      都将被还原。此操作无法撤销",
+  "All vertex edits made on this map, including the ones made in earlier sessions, will be reverted. The action cannot be undone": "此地图上的所有顶点编辑（包括之前会话中的编辑） 都将被还原。此操作无法撤销",
   "All-world": "全球",
   "Allies formed a defensive pact and protect each other in case of third party aggression": "同盟结成防御协定，在遭遇第三方侵略时相互保护",
   "Allow culture centers, expansion and type changes to take an immediate effect": "允许文化中心、扩张和类型的更改立即生效",
@@ -3298,7 +3298,7 @@
   "This WON'T change the burgs unless the changes are applied": "除非应用更改，否则不会更改城镇",
   "This action cannot be reverted": "此操作无法撤销",
   "This burg is NOT a port": "该城镇不是港口",
-  "This burg is a NOT state capital": "该城镇不是国家首都",
+  "This burg is NOT a state capital": "该城镇不是国家首都",
   "This burg is already a center of another market": "该城镇已是另一个市场的中心",
   "This burg is already a market center": "该城镇已是市场中心",
   "This burg is already the center of this market": "该城镇已是此市场的中心",
@@ -3803,5 +3803,10 @@
   "Сhase phase. Naval units pursue and rarely shell enemy fleet": "追击阶段。海军单位追击，很少炮击敌方舰队",
   "— OR —": "— 或 —",
   "“{{transport}}” is used by existing segments. Reassign them first.": "“{{transport}}”正被现有路段使用。请先为它们重新分配运输类型。",
-  "ⓘ Local models need no key. Point to the server and enter the model name. Set the server's context window to at least 8k tokens (Ollama's num_ctx).": "ⓘ 本地模型无需密钥。指向服务器并输入模型名称。将服务器的上下文窗口设为至少 8k 个令牌（Ollama 的 num_ctx）。"
+  "ⓘ Local models need no key. Point to the server and enter the model name. Set the server's context window to at least 8k tokens (Ollama's num_ctx).": "ⓘ 本地模型无需密钥。指向服务器并输入模型名称。将服务器的上下文窗口设为至少 8k 个令牌（Ollama 的 num_ctx）。",
+  "Deal": "交易",
+  "Map text": "地图文本",
+  "Measurer": "标尺",
+  "Name base": "命名库",
+  "Relief icon": "地形图标"
 }

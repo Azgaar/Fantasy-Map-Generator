@@ -1,6 +1,6 @@
 {
-  " This burg is a port": " Questo borgo è un porto",
-  " This burg is a state capital": " Questo borgo è una capitale di stato",
+  "This burg is a port": "Questo borgo è un porto",
+  "This burg is a state capital": "Questo borgo è una capitale di stato",
   "(prep for {{- good}})": "(per {{- good}})",
   "({{size}} MB). The file goes to your Downloads folder, open it to install the app.": "({{size}} MB). Il file viene salvato nella cartella Download; aprilo per installare l’app.",
   "+ Add OR group": "+ Aggiungi gruppo OR",
@@ -117,7 +117,7 @@
   "All unassigned colors will be considered as ocean": "Tutti i colori non assegnati saranno considerati oceano",
   "All units should have unique names": "Tutte le unità devono avere nomi unici",
   "All unsaved changes made to the current map will be lost": "Tutte le modifiche non salvate alla mappa attuale andranno perse",
-  "All vertex edits made on this map, including the ones made in earlier sessions,\n      will be reverted. The action cannot be undone": "Tutte le modifiche ai vertici fatte su questa mappa, comprese quelle delle sessioni precedenti, saranno annullate. L’azione non può essere annullata",
+  "All vertex edits made on this map, including the ones made in earlier sessions, will be reverted. The action cannot be undone": "Tutte le modifiche ai vertici fatte su questa mappa, comprese quelle delle sessioni precedenti, saranno annullate. L’azione non può essere annullata",
   "All-world": "Mondo intero",
   "Allies formed a defensive pact and protect each other in case of third party aggression": "Gli alleati hanno formato un patto difensivo e si proteggono a vicenda in caso di aggressione di terzi",
   "Allow culture centers, expansion and type changes to take an immediate effect": "Consenti a centri culturali, espansione e cambi di tipo di avere effetto immediato",
@@ -3298,7 +3298,7 @@
   "This WON'T change the burgs unless the changes are applied": "Questo NON cambierà i borghi finché le modifiche non vengono applicate",
   "This action cannot be reverted": "Questa azione non può essere annullata",
   "This burg is NOT a port": "Questo borgo NON è un porto",
-  "This burg is a NOT state capital": "Questo borgo NON è una capitale di stato",
+  "This burg is NOT a state capital": "Questo borgo NON è una capitale di stato",
   "This burg is already a center of another market": "Questo borgo è già il centro di un altro mercato",
   "This burg is already a market center": "Questo borgo è già un centro di mercato",
   "This burg is already the center of this market": "Questo borgo è già il centro di questo mercato",
@@ -3803,5 +3803,10 @@
   "Сhase phase. Naval units pursue and rarely shell enemy fleet": "Fase d’inseguimento. Le unità navali inseguono e raramente bombardano la flotta nemica",
   "— OR —": "— OPPURE —",
   "“{{transport}}” is used by existing segments. Reassign them first.": "“{{transport}}” è usato dai segmenti esistenti. Riassegnali prima.",
-  "ⓘ Local models need no key. Point to the server and enter the model name. Set the server's context window to at least 8k tokens (Ollama's num_ctx).": "ⓘ I modelli locali non richiedono una chiave. Indica il server e inserisci il nome del modello. Imposta la finestra di contesto del server ad almeno 8k token (num_ctx di Ollama)."
+  "ⓘ Local models need no key. Point to the server and enter the model name. Set the server's context window to at least 8k tokens (Ollama's num_ctx).": "ⓘ I modelli locali non richiedono una chiave. Indica il server e inserisci il nome del modello. Imposta la finestra di contesto del server ad almeno 8k token (num_ctx di Ollama).",
+  "Deal": "Scambio",
+  "Map text": "Testo della mappa",
+  "Measurer": "Righello",
+  "Name base": "Base di nomi",
+  "Relief icon": "Icona di rilievo"
 }

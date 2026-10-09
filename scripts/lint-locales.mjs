@@ -24,18 +24,28 @@ const placeholders = text =>
     .sort()
     .join(", ");
 
+const LINE_BREAK = /[\n\r⏎]/;
+const OUTER_SPACE = /^\s|\s$/;
+
+/** The tags of a text with their spacing normalised: `</a >` and `</a>` are the same tag */
+const tagsOf = text => [...text.matchAll(/<\/?[a-zA-Z][^>]*>/g)].map(match => match[0].replace(/\s+(\/?>)$/, "$1"));
+
 /** What a locale's strings get wrong against the English catalog; lint English against itself */
 export function lintCatalog(strings, english) {
   const problems = [];
 
   for (const [key, value] of Object.entries(strings)) {
+    if (OUTER_SPACE.test(key) || LINE_BREAK.test(key)) problems.push(`"${key}": a key is one line with no outer spaces`);
     const source = strings === english ? value : englishFor(key, english); // English may say "a burg" for one
     if (source === undefined) problems.push(`"${key}": not in the English catalog`);
     else if (typeof value !== "string" || !value.trim()) problems.push(`"${key}": empty, leave it out instead`);
     else {
+      if (OUTER_SPACE.test(value) || LINE_BREAK.test(value))
+        problems.push(`"${key}": a value is one line with no outer spaces`);
       if (value.replace(/<[^>]*>/g, "").includes('"'))
         problems.push(`"${key}": a raw double quote outside a tag breaks attribute markup, use “ ”`);
       if (placeholders(value) !== placeholders(source)) problems.push(`"${key}": placeholders differ from the English`);
+      if (tagsOf(value).join() !== tagsOf(source).join()) problems.push(`"${key}": markup differs from the English`);
       if (/[:：]\s*$/.test(value)) problems.push(`"${key}": ends with a colon, put it in code`);
     }
   }

@@ -337,7 +337,9 @@ describe("Omnibar public behavior", () => {
 
     Omnibar.open();
     search("Silverwater");
-    expect(rows()[0].querySelector(".omnibar-detail")?.textContent).toBe(`${type} · Freshwater`);
+    expect(rows()[0].querySelector(".omnibar-detail")?.textContent).toBe(
+      `${type === "lake" ? "Lake" : "Island"} · Freshwater`
+    );
     key("Enter");
     expect(mocks.show).toHaveBeenCalledWith(type === "lake" ? "lakes" : "coastline");
     expect(mocks.zoom).toHaveBeenCalledWith(30, 40, 3, 1500);
