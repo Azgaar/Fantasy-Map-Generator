@@ -255,8 +255,10 @@ export class LayersRegistry<Id extends string = string> {
 
   /** default teardown: drop the content, keeping the declared skeleton */
   private eraseContent(layer: Layer<Id>): void {
+    const group = findEl<SVGGElement>(layer.elementId);
+    if (!group) return; // an incomplete SVG has no content to clear for this layer
     const declared = layer.children.map(child => child.id);
-    for (const child of Array.from(layer.getEl().children)) {
+    for (const child of Array.from(group.children)) {
       if (declared.includes(child.id)) child.replaceChildren();
       else child.remove();
     }
