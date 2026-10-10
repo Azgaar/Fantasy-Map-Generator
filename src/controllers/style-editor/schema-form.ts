@@ -3,7 +3,6 @@ import type { z } from "zod";
 import type { FieldMeta, StandardControl } from "@/types/styles";
 import { t } from "@/utils/i18n";
 import { getPath } from "@/utils/objectUtils";
-import { GROUP_LABELS, KEY_LABELS } from "./field-labels";
 
 export type FieldSpec = {
   path: string[]; // from the schema root passed in, e.g. ["attrs", "fill"]
@@ -92,15 +91,6 @@ function unwrap(
 const isObject = (schema: z.ZodType): schema is z.ZodObject => internals(schema).def?.type === "object";
 const isRecord = (schema: z.ZodType): boolean => internals(schema).def?.type === "record";
 
-/** Sentence case from a key: "stroke-width" → "Stroke width", "patternOpacity" → "Pattern opacity" */
-export function labelOf(key: string): string {
-  const words = key
-    .replace(/[-_]/g, " ")
-    .replace(/([a-z\d])([A-Z])/g, "$1 $2")
-    .toLowerCase();
-  return words.charAt(0).toUpperCase() + words.slice(1);
-}
-
 function fieldSpec(key: string, schema: z.ZodType, meta: Meta, path: string[] = [key]): FieldSpec {
   const { leaf, meta: fieldMeta, nullable, optional } = unwrap(schema, meta);
   const intern = internals(leaf);
@@ -128,7 +118,7 @@ function fieldSpec(key: string, schema: z.ZodType, meta: Meta, path: string[] = 
   return {
     path,
     kind: fieldMeta.control ?? derived,
-    label: fieldMeta.label ?? KEY_LABELS[key] ?? labelOf(key),
+    label: fieldMeta.label ?? key,
     tip: fieldMeta.tip,
     min,
     max,
@@ -341,7 +331,7 @@ function group(name: string): HTMLElement {
   block.dataset.group = name;
   const caption = document.createElement("div");
   caption.className = "caption";
-  caption.textContent = GROUP_LABELS[name] ?? name;
+  caption.textContent = name;
   block.append(caption);
   return block;
 }
@@ -354,7 +344,7 @@ function renderSection(
   ctx: Ctx,
   meta: FieldMeta<string>
 ): HTMLElement {
-  const details = section(meta.label ?? KEY_LABELS[key] ?? labelOf(key), path.join("."));
+  const details = section(meta.label ?? key, path.join("."));
   const summary = details.querySelector("summary")!;
   const preview = summary.querySelector(".preview")!;
   const body = details.querySelector<HTMLElement>(".body")!;

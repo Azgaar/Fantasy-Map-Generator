@@ -87,8 +87,7 @@ Interface settings:
 * _Viewport size_: the size of the map window on screen in pixels. The button on the left fits it back to the browser window.
 * _Zoom extent_: minimal and maximal zoom levels. Click on the button on the right to restore the default values.
 * _Performance_: a rendering preset trading visual quality for speed. Pick _Speed_ if the map feels slow. The cog button opens the detailed settings: shape rendering, state halos and redraw on zoom, each set on its own.
-* _Language_: the interface language (English, Russian, Ukrainian, German, Dutch, French, Spanish, Portuguese (Portugal and Brazil), Italian, Polish, Afrikaans, Chinese (Simplified) and Japanese). It applies after a page reload. Map names and notes are not translated.
-* _Other languages_: load Google Translate for a language not in the list. Automatic translation can break some functionality — use the reset icon or refresh the page if it does.
+* _Language_: the interface language (English, Russian, Ukrainian, German, French, Spanish, Portuguese (Portugal and Brazil), Italian, Dutch, Polish, Czech, Hungarian, Swedish, Danish, Afrikaans, Turkish, Indonesian, Vietnamese, Thai, Chinese (Simplified), Japanese and Korean). It applies after a page reload. Map names and notes are not translated.
 
 Below the tables there are three buttons. _Configure World_ opens the climate and globe position dialog (see the next section). _Set Lore_ opens the Lore Editor, where you name the map, set the current year and era (used to date state history and battle reports) and write a description of the world. _Reset Options_ cancels all user changes and refreshes the page.
 

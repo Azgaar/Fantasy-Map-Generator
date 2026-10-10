@@ -23,6 +23,17 @@ interface DistCondition {
   numberVal: string;
 }
 
+const legend = (...entries: [string, string][]) =>
+  `${entries.map(([value, label]) => `${value}: ${label}`).join(", ")}.`;
+const HEIGHT_LEGEND = legend(["20", t("sea level")], ["50", t("highlands")], ["70", t("mountains")]);
+const TEMPERATURE_LEGEND = legend(["-18°C", t("polar")], ["18°C", t("tropical")]);
+const SHORE_LEGEND = legend(
+  ["-1", t("Shallow Ocean")],
+  ["-2", t("Deep Ocean")],
+  ["1", t("Coastal Land")],
+  ["2", t("Near Coast Land")]
+);
+
 const FN_DEFS: FnDef[] = [
   {
     id: "biome",
@@ -37,7 +48,7 @@ const FN_DEFS: FnDef[] = [
     paramLabel: "Height (0–100)",
     defaultVal: "40",
     description: t("Cells at or above a height"),
-    note: t("20: sea level, 50: highlands, 70: mountains.")
+    note: HEIGHT_LEGEND
   },
   {
     id: "maxHeight",
@@ -46,7 +57,7 @@ const FN_DEFS: FnDef[] = [
     paramLabel: "Height (0–100)",
     defaultVal: "40",
     description: t("Cells at or below a height"),
-    note: t("20: sea level, 50: highlands, 70: mountains.")
+    note: HEIGHT_LEGEND
   },
   {
     id: "minTemp",
@@ -55,7 +66,7 @@ const FN_DEFS: FnDef[] = [
     paramLabel: "Temp (°C)",
     defaultVal: "10",
     description: t("Cells with average temperature at or above a value"),
-    note: t("-18°C: polar, 18°C: tropical.")
+    note: TEMPERATURE_LEGEND
   },
   {
     id: "maxTemp",
@@ -64,14 +75,14 @@ const FN_DEFS: FnDef[] = [
     paramLabel: "Temp (°C)",
     defaultVal: "5",
     description: t("Cells with average temperature at or below a value"),
-    note: t("-18°C: polar, 18°C: tropical.")
+    note: TEMPERATURE_LEGEND
   },
   {
     id: "shore",
     label: t("Shore Proximity"),
     paramType: "shore",
     description: t("Cells by proximity to water"),
-    note: t("-1: shallow ocean, -2: deep ocean, 1: coastal land, 2: near coast land.")
+    note: SHORE_LEGEND
   },
   {
     id: "type",
@@ -114,7 +125,7 @@ const FN_DEFS: FnDef[] = [
     paramLabel: "Chance (%)",
     defaultVal: "50",
     description: t("Probability to receive the good"),
-    note: t("random(50): 50% chance per cell.")
+    note: `random(50): ${t("{{chance}} chance per cell", { chance: "50%" })}.`
   },
   {
     id: "nth",
@@ -123,7 +134,7 @@ const FN_DEFS: FnDef[] = [
     paramLabel: "N",
     defaultVal: "5",
     description: t("Regular distribution pattern"),
-    note: t("nth(5): 1 in 5 eligible cells.")
+    note: `nth(5): ${t("one in {{n}} eligible cells", { n: 5 })}.`
   }
 ];
 
@@ -519,7 +530,7 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
       if (groupIdx > 0) {
         const orSep = document.createElement("div");
         orSep.className = "ded-or-sep";
-        orSep.textContent = t("— OR —");
+        orSep.textContent = `— ${t("OR")} —`;
         groupList.appendChild(orSep);
       }
 
@@ -540,7 +551,7 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
       footer.className = "ded-group-footer";
 
       const addCondBtn = document.createElement("button");
-      addCondBtn.textContent = t("+ Add condition");
+      addCondBtn.textContent = `+ ${t("Add condition")}`;
       addCondBtn.addEventListener("click", () => {
         group.push(createDefaultCondition());
         renderGroupList();
@@ -636,7 +647,7 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
       <div class="ded-body">
         <div class="ded-builder">
           <div id="distGroupList" class="ded-group-list"></div>
-          <button id="distAddGroup" class="ded-add-or-btn">${t("+ Add OR group")}</button>
+          <button id="distAddGroup" class="ded-add-or-btn">+ ${t("Add OR group")}</button>
           <div class="ded-output">
             <div class="ded-output-label">${t("Distribution")}</div>
             <div class="ded-output-row">

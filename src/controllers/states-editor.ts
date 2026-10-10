@@ -22,7 +22,7 @@ import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { CULTURE_TYPE_LABELS, labelOf } from "@/data/id-labels";
+import { CULTURE_TYPE_LABELS } from "@/data/id-labels";
 import { STATE_FORMS, type State } from "@/generators/states-generator";
 import { redrawEmblem, removeEmblem } from "@/renderers/draw-emblems";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
@@ -487,7 +487,7 @@ function getTypeOptions(type: string | number): string {
   let options = "";
   const types = ["Generic", "River", "Lake", "Naval", "Nomadic", "Hunting", "Highland"];
   types.forEach(t => {
-    options += `<option ${type === t ? "selected" : ""} value="${t}">${labelOf(CULTURE_TYPE_LABELS, t)}</option>`;
+    options += `<option ${type === t ? "selected" : ""} value="${t}">${CULTURE_TYPE_LABELS[t] ?? t}</option>`;
   });
   return options;
 }

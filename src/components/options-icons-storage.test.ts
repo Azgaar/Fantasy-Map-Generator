@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import "./options-model";
-import { ICONS_STORAGE_KEY, STORAGE_KEY } from "./options-model";
+import { ICONS_STORAGE_KEY } from "./options-model";
+import { OPTIONS_STORAGE_KEY as STORAGE_KEY } from "./options-storage";
 
 const icon = {
   id: "custom-1a2b3c4d",

@@ -108,7 +108,7 @@ function renderDownloads(release: Release, target: string | undefined): string {
   const main = primary
     ? /* html */ `<p>${t("Your system is {{system}}", { system: primaryLabel })}:
         <b><a href="${primary.browser_download_url}" target="_blank">${t("download version {{version}}", { version: release.version })}</a></b>
-        ${t("({{size}} MB). The file goes to your Downloads folder, open it to install the app.", { size: Math.round(primary.size / 1024 / 1024) })}</p>`
+        (${Math.round(primary.size / 1024 / 1024)} MB). ${t("The file goes to your Downloads folder, open it to install the app.")}</p>`
     : "";
 
   const rest = others ? `<p>${primary ? t("Other systems") : t("Downloads")}: ${others}.</p>` : "";

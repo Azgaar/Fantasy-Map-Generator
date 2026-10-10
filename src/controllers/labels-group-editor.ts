@@ -3,7 +3,7 @@ import { Layers } from "@/components/layers";
 import { LAYER_TOGGLES } from "@/components/options/tabs/layers-tab";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import { LABEL_MODE_LABELS, LABEL_TYPE_LABELS, labelOf } from "@/data/id-labels";
+import { LABEL_MODE_LABELS, LABEL_TYPE_LABELS } from "@/data/id-labels";
 import { layerLabel } from "@/data/layer-labels";
 import { LABEL_TYPES, type LabelGroup, type LabelNameMode, type LabelType } from "@/generators/labels-generator";
 import { getLabelsIndex } from "@/renderers/labels/label-data";
@@ -81,7 +81,7 @@ function renderDialog(): void {
       </div>
       <div style="display:flex; gap:1.2em; align-items:center; margin:.6em 0 0">
         <label data-tip="${t("Ignore zoom bounds and show all labels regardless of the current zoom level")}"><input id="labelsShowAll" class="checkbox" type="checkbox" ${options.app.labels.showAll ? "checked" : ""}><span class="checkbox-label">${t("Show all labels")} <small>[${t("slow")}]</small></span></label>
-        <div style="padding: 0.5em 0; font-style: italic;">${t("To change Burg Groups open")} <a id="labelGroupsBurgGroupsLink" style="text-decoration: underline;">${t("Burg Group Configurator")}</a>.</div>
+        <div style="padding: 0.5em 0; font-style: italic;">${t("To change Burg Groups open {{- configurator}}.", { configurator: `<a id="labelGroupsBurgGroupsLink" style="text-decoration: underline;">${t("Burg Group Configurator")}</a>` })}</div>
       </div>
     </form>
   </div>`;
@@ -149,10 +149,10 @@ function createRow(group: LabelGroup, isNew = false, labelCount = 0): string {
       <td data-tip="${t("Activate/deactivate group")}"><input type="checkbox" name="active" class="native" ${group.active !== false ? "checked" : ""}></td>
       <td data-tip="${nameTip}"><input type="text" name="name" value="${group.name}" ${isDefault ? "disabled" : "required"}></td>
       <td data-tip="${t("Label type, fixed after creation")}"><select name="type" ${isNew ? "" : "disabled"}>
-        ${LABEL_TYPES.map(type => `<option value="${type}" ${group.type === type ? "selected" : ""}>${labelOf(LABEL_TYPE_LABELS, type)}</option>`).join("")}
+        ${LABEL_TYPES.map(type => `<option value="${type}" ${group.type === type ? "selected" : ""}>${LABEL_TYPE_LABELS[type]}</option>`).join("")}
       </select></td>
       <td data-tip="${modeTip}"><select name="mode" ${modeApplicable ? "" : "disabled"}>
-        ${modes.map(mode => `<option value="${mode}" ${(group.mode || "auto") === mode ? "selected" : ""}>${labelOf(LABEL_MODE_LABELS, mode)}</option>`).join("")}
+        ${modes.map(mode => `<option value="${mode}" ${(group.mode || "auto") === mode ? "selected" : ""}>${LABEL_MODE_LABELS[mode] ?? mode}</option>`).join("")}
       </select></td>
       <td data-tip="${t("Minimum zoom to show the group, leave empty for no limit")}"><input type="number" name="zoom-min" min="0.01" max="200" step=".01" value="${group.zoom.min ?? ""}"></td>
       <td data-tip="${t("Maximum zoom to show the group, leave empty for no limit")}"><input type="number" name="zoom-max" min="0.01" max="200" step=".01" value="${group.zoom.max ?? ""}"></td>

@@ -12,6 +12,10 @@ reasoning are in [the PRD](../prd/translation.md); this page is the contributor'
   (`` `<p class="empty">${t("No rules")}</p>` ``) or into a raw placeholder; a link inside a sentence
   is a placeholder with its own translated label:
   `t("Check out {{- wiki}} for guidance.", { wiki: link(url, t("wiki")) })`. The lint rejects markup.
+- A string is language only. Symbols, values, notation and decoration stay in code: `` `+ ${t("Add condition")}` ``,
+  `` `/ (${t("slash sign")})` ``, `` `${t("Name")}*` ``, `` `0: ${t("transparent")}, 1: ${t("solid")}` ``. An example
+  or a formula inside a sentence is a placeholder: `t("Set text shadow, e.g. {{example}}", { example: "white 0 0 4px" })`.
+  The lint rejects a key that doesn't start and end with text, a value legend and a `•` list.
 - Texts combine in code. Separate sentences join with `sentences()`, which handles CJK punctuation:
   `sentences(t("State name"), t("Click to change"))`. A value inside a sentence is a placeholder, so a
   translation can move it: `t("Labels assigned to “{{group}}”: {{labels}}", { group, labels })`.

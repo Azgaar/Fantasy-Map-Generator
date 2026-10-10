@@ -90,7 +90,12 @@ async function open(type: string): Promise<void> {
 
   canvas.style.display = "block";
   canvas.onmouseenter = () => {
-    const help = t("Drag to pan • Scroll to zoom • Right-click drag to rotate • O to toggle options");
+    const help = [
+      t("Drag to pan"),
+      t("Scroll to zoom"),
+      t("Right-click drag to rotate"),
+      t("O to toggle options")
+    ].join(" • ");
     +canvas.dataset.hovered! > 2 ? tip("") : tip(help);
     canvas.dataset.hovered = String((+canvas.dataset.hovered! | 0) + 1);
   };
@@ -212,7 +217,7 @@ function renderOptionsDialog(): void {
         >
           <input id="options3dSubdivide" class="checkbox" type="checkbox" />
           <label for="options3dSubdivide" class="checkbox-label"
-            ><i>${t("Smooth geometry")} <small style="color: darkred">${t("[slow]")}</small></i></label
+            ><i>${t("Smooth geometry")} <small style="color: darkred">[${t("slow")}]</small></i></label
           >
         </div>
 
@@ -239,7 +244,7 @@ function renderOptionsDialog(): void {
               <option value="256">256</option>
               <option value="512">512</option>
               <option value="1024" selected>1024</option>
-              <option value="2048">2048 ${t("[slow]")}</option>
+              <option value="2048">2048 [${t("slow")}]</option>
             </select>
           </div>
 

@@ -22,7 +22,7 @@ import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { CULTURE_TYPE_LABELS, labelOf, SHIELD_LABELS } from "@/data/id-labels";
+import { CULTURE_TYPE_LABELS, SHIELD_LABELS } from "@/data/id-labels";
 import { CULTURE_TYPES, type Culture } from "@/generators/cultures-generator";
 import { Emblems } from "@/generators/emblems-generator";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
@@ -434,7 +434,7 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
 function getTypeOptions(type: string): string {
   let options = "";
   CULTURE_TYPES.forEach(t => {
-    options += `<option ${type === t ? "selected" : ""} value="${t}">${labelOf(CULTURE_TYPE_LABELS, t)}</option>`;
+    options += `<option ${type === t ? "selected" : ""} value="${t}">${CULTURE_TYPE_LABELS[t] ?? t}</option>`;
   });
   return options;
 }
@@ -454,7 +454,7 @@ function getShapeOptions(isDiversiform: boolean, selected: string): string {
   const shapes = Object.keys(Emblems.shields.types).flatMap(type => Object.keys(Emblems.shields[type]));
   const options = shapes.map(
     shape =>
-      `<option ${shape === selected ? "selected" : ""} value="${shape}">${labelOf(SHIELD_LABELS, shape)}</option>`
+      `<option ${shape === selected ? "selected" : ""} value="${shape}">${SHIELD_LABELS[shape] ?? shape}</option>`
   );
   return `<select data-tip="${sentences(t("Emblem shape associated with culture"), t("Click to change"))}" class="cultureEmblems">${options}</select>`;
 }
@@ -788,7 +788,7 @@ async function showHierarchy(): Promise<void> {
       urban * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     const populationText =
       population > 0 ? t("{{- population}} people", { population: si(rn(population)) }) : t("Extinct");
-    return sentences(t("{{- culture}} culture", { culture: name }), labelOf(CULTURE_TYPE_LABELS, type), populationText);
+    return sentences(t("{{- culture}} culture", { culture: name }), CULTURE_TYPE_LABELS[type] ?? type, populationText);
   };
 
   const getShape = ({ type }: any) => {

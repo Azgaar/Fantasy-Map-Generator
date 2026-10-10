@@ -68,8 +68,16 @@ function renderDialog(): void {
       </table>
     </form>
     <div style="padding: 0.5em 0; font-style: italic;">
-      ${t("Burg population is calculated as value * population_point * urbanization_rate, see the")} <a style="text-decoration: underline;" id="burgGroupsUnitsEditorLink">${t("Units Editor")}</a>.
-      <br>${t("Applying changes reclassifies Burgs, but label groups are not affected. Reconcile label groups in")} <a id="burgGroupsLabelGroupsLink" style="text-decoration: underline;">${t("Label Group Configurator")}</a>.
+      ${t("Burg population is calculated as {{formula}}, see the {{- editor}}.", {
+        formula: "value * population_point * urbanization_rate",
+        editor: `<a style="text-decoration: underline;" id="burgGroupsUnitsEditorLink">${t("Units Editor")}</a>`
+      })}
+      <br>${t(
+        "Applying changes reclassifies Burgs, but label groups are not affected. Reconcile label groups in {{- configurator}}.",
+        {
+          configurator: `<a id="burgGroupsLabelGroupsLink" style="text-decoration: underline;">${t("Label Group Configurator")}</a>`
+        }
+      )}
     </div>
   </div>`;
 

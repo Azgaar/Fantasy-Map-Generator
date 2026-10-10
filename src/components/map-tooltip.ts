@@ -1,7 +1,7 @@
 import { select } from "d3";
 import { Layers } from "@/components/layers";
 import { MapEntities } from "@/components/map-entities";
-import { FEATURE_SUBTYPE_LABELS, labelOf } from "@/data/id-labels";
+import { FEATURE_SUBTYPE_LABELS } from "@/data/id-labels";
 import { Notes } from "@/generators/notes";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
 import type { Point } from "@/types/global";
@@ -165,7 +165,8 @@ function getElementTip({ group, target, event, path, cellId }: TipContext): stri
   if (group === "lakes" && pack.cells.h[cellId] < 20) {
     const lake = pack.features[Number(target.dataset.f)];
     const name = lake?.name ? [escapeHtml(lake.name)] : [];
-    return sentences(...name, labelOf(FEATURE_SUBTYPE_LABELS, lake?.subtype || "lake"), t("Click to edit"));
+    const subtype = lake?.subtype || "lake";
+    return sentences(...name, FEATURE_SUBTYPE_LABELS[subtype] ?? subtype, t("Click to edit"));
   }
 
   if (group === "zones") {

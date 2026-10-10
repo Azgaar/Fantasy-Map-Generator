@@ -569,8 +569,7 @@ Below the map settings, the Options tab holds settings that apply immediately an
   - Shape rendering: a browser hint for drawing edges. The effect varies by browser; _Optimize speed_ does not guarantee faster rendering, and _Crisp edges_ can remove edge smoothing.
   - State halos: the blurred glow along state borders. It is an SVG blur filter, which is costly on big maps.
   - Redraw on zoom: when labels, icons and relief are redrawn during a zoom or pan. _After zoom_ redraws once per gesture: faster on big maps, but new content appears all at once.
-- Language: the interface language: English, Russian, Ukrainian, German, Dutch, French, Spanish, Portuguese (Portugal and Brazil), Italian, Polish, Afrikaans, Chinese (Simplified) and Japanese. It follows the browser's language until you pick one, and applies after a reload, so save unsaved changes first. Only the interface is translated; map content is not changed.
-- Other languages: the **Load Google Translate** button loads Google Translate for a language not in the list. It is a machine translation and can break some page functions; use the reset icon or refresh the page to undo it.
+- Language: the interface language: English, Russian, Ukrainian, German, French, Spanish, Portuguese (Portugal and Brazil), Italian, Dutch, Polish, Czech, Hungarian, Swedish, Danish, Afrikaans, Turkish, Indonesian, Vietnamese, Thai, Chinese (Simplified), Japanese and Korean. It follows the browser's language until you pick one, and applies after a reload, so save unsaved changes first. Only the interface is translated; map content is not changed.
 
 See [Performance settings](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Performance-settings) for the preset comparison and how to restore the default **Balance** settings.
 

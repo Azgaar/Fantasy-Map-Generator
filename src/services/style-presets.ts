@@ -39,8 +39,8 @@ function current(): string {
 }
 
 function displayName(name: string): string {
-  if (name.startsWith(CUSTOM_PREFIX)) return t("{{- name}} [custom]", { name: name.slice(CUSTOM_PREFIX.length) });
-  if (name.startsWith(LEGACY_PREFIX)) return t("{{- name}} [custom]", { name: name.slice(LEGACY_PREFIX.length) });
+  if (name.startsWith(CUSTOM_PREFIX)) return `${name.slice(CUSTOM_PREFIX.length)} [${t("custom")}]`;
+  if (name.startsWith(LEGACY_PREFIX)) return `${name.slice(LEGACY_PREFIX.length)} [${t("custom")}]`;
   return STYLE_PRESET_LABELS[name] ?? name;
 }
 

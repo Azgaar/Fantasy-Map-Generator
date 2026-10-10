@@ -27,6 +27,10 @@ const placeholders = text =>
 const LINE_BREAK = /[\n\r⏎]/;
 const OUTER_SPACE = /^\s|\s$/;
 const MARKUP = /<\/?[a-zA-Z][^>]*>/;
+const SUFFIXES = /_(zero|one|two|few|many|other)$|_[a-z]+$/g; // plural form, context
+const TEXT_START = /^(?:[\p{L}\p{N}“]|\{\{)/u;
+const TEXT_END = /(?:[\p{L}\p{N}.!?…)”%">]|\}\})$/u;
+const NOTATION = /(?:^|[,;] )-?\d[^\s:,]*: |\d = | • /u; // a value legend or a joined list
 
 /** What a locale's strings get wrong against the English catalog; lint English against itself */
 export function lintCatalog(strings, english) {
@@ -34,6 +38,9 @@ export function lintCatalog(strings, english) {
 
   for (const [key, value] of Object.entries(strings)) {
     if (OUTER_SPACE.test(key) || LINE_BREAK.test(key)) problems.push(`"${key}": a key is one line with no outer spaces`);
+    const text = key.replace(SUFFIXES, "");
+    if (strings === english && (!TEXT_START.test(text) || !TEXT_END.test(text) || NOTATION.test(text)))
+      problems.push(`"${key}": a key is language only, symbols and values around it belong in code`);
     const source = strings === english ? value : englishFor(key, english); // English may say "a burg" for one
     if (source === undefined) problems.push(`"${key}": not in the English catalog`);
     else if (typeof value !== "string" || !value.trim()) problems.push(`"${key}": empty, leave it out instead`);

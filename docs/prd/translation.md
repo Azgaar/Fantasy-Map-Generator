@@ -104,25 +104,65 @@ Right-to-left languages remain out of scope until the layout supports them.
 
 ### Language coverage
 
-GA4 active users by browser language, 11 Sep – 8 Oct 2026: 189,316 users, 70% English and 56,239
-non-English. The shipped catalogs cover 81.4% of non-English users (94.5% of all users).
+GA4 active users by browser language, 11 Sep – 8 Oct 2026: 189,316 users, of them 133,050 English
+(70.3%, 44% engaged). A user who switches browser language is counted once per language, so rows sum
+above the total; non-English shares use the sum of named non-English rows (56,241) and leave out
+GA4's 382 `(other)` users. The shipped catalogs cover 94.8% of non-English users and 98.5% of all
+users, which is the bar the Google Translate widget was retired against.
 
-| Next language | Share of non-English | Cumulative coverage |
-| ------------- | -------------------: | ------------------: |
-| Turkish       |                 3.7% |               85.1% |
-| Indonesian    |                 1.8% |               87.0% |
-| Korean        |                 1.7% |               88.7% |
-| Czech         |                 1.4% |               90.1% |
-| Swedish       |                 1.4% |               91.4% |
-| Hungarian     |                 1.0% |               92.4% |
-| Thai          |                 0.9% |               93.3% |
-| Vietnamese    |                 0.8% |               94.1% |
-| Danish        |                 0.8% |               94.8% |
+_Share_ is of all users, _Engaged_ is GA4's engagement rate, ✓ marks a shipped catalog. Languages
+under 25 users are left out.
 
-Every language after these has under 0.7% of non-English users; the right-to-left ones (Arabic,
-Hebrew, Persian) add 1.2% together. These nine catalogs are therefore the bar for retiring the Google
-Translate widget. GA4 reports Chinese without the script; its region split decides whether
-Traditional Chinese is worth a regional variant.
+| Language         | Users | Share | Non-English | Cumulative | Engaged | Covered         |
+| ---------------- | ----: | ----: | ----------: | ---------: | ------: | --------------- |
+| Russian          | 9,261 |  4.9% |       16.5% |      16.5% |     35% | ✓ `ru`          |
+| Spanish          | 7,243 |  3.8% |       12.9% |      29.3% |     42% | ✓ `es`          |
+| Portuguese       | 6,569 |  3.5% |       11.7% |      41.0% |     40% | ✓ `pt`, `pt-BR` |
+| French           | 5,460 |  2.9% |        9.7% |      50.7% |     39% | ✓ `fr`          |
+| German           | 4,778 |  2.5% |        8.5% |      59.2% |     40% | ✓ `de`          |
+| Chinese          | 3,561 |  1.9% |        6.3% |      65.6% |     43% | ✓ `zh`          |
+| Italian          | 3,279 |  1.7% |        5.8% |      71.4% |     41% | ✓ `it`          |
+| Polish           | 2,134 |  1.1% |        3.8% |      75.2% |     36% | ✓ `pl`          |
+| Turkish          | 2,091 |  1.1% |        3.7% |      78.9% |     45% | ✓ `tr`          |
+| Japanese         | 1,493 |  0.8% |        2.7% |      81.6% |     40% | ✓ `ja`          |
+| Dutch            | 1,211 |  0.6% |        2.2% |      83.7% |     40% | ✓ `nl`          |
+| Indonesian       | 1,022 |  0.5% |        1.8% |      85.5% |     48% | ✓ `id`          |
+| Korean           |   958 |  0.5% |        1.7% |      87.2% |     45% | ✓ `ko`          |
+| Ukrainian        |   798 |  0.4% |        1.4% |      88.7% |     33% | ✓ `uk`          |
+| Czech            |   792 |  0.4% |        1.4% |      90.1% |     44% | ✓ `cs`          |
+| Swedish          |   772 |  0.4% |        1.4% |      91.4% |     38% | ✓ `sv`          |
+| Hungarian        |   547 |  0.3% |        1.0% |      92.4% |     37% | ✓ `hu`          |
+| Thai             |   496 |  0.3% |        0.9% |      93.3% |     47% | ✓ `th`          |
+| Vietnamese       |   439 |  0.2% |        0.8% |      94.1% |     44% | ✓ `vi`          |
+| Danish           |   429 |  0.2% |        0.8% |      94.8% |     38% | ✓ `da`          |
+| Arabic           |   371 |  0.2% |        0.7% |      95.5% |     52% |                 |
+| Greek            |   317 |  0.2% |        0.6% |      96.1% |     48% |                 |
+| Finnish          |   292 |  0.2% |        0.5% |      96.6% |     42% |                 |
+| Norwegian Bokmål |   276 |  0.1% |        0.5% |      97.1% |     36% |                 |
+| Slovak           |   236 |  0.1% |        0.4% |      97.5% |     36% |                 |
+| Romanian         |   217 |  0.1% |        0.4% |      97.9% |     46% |                 |
+| Hebrew           |   192 |  0.1% |        0.3% |      98.2% |     47% |                 |
+| Catalan          |   152 |  0.1% |        0.3% |      98.5% |     41% |                 |
+| Croatian         |   149 |  0.1% |        0.3% |      98.7% |     43% |                 |
+| Serbian          |   124 |  0.1% |        0.2% |      99.0% |     44% |                 |
+| Persian          |   113 |  0.1% |        0.2% |      99.2% |     54% |                 |
+| Bulgarian        |    94 |  0.0% |        0.2% |      99.3% |     45% |                 |
+| Slovenian        |    41 |  0.0% |        0.1% |      99.4% |     37% |                 |
+| Lithuanian       |    39 |  0.0% |        0.1% |      99.5% |     50% |                 |
+| Estonian         |    37 |  0.0% |        0.1% |      99.5% |     30% |                 |
+| Malay            |    32 |  0.0% |        0.1% |      99.6% |     63% |                 |
+| Uzbek            |    30 |  0.0% |        0.1% |      99.7% |     34% |                 |
+| Azerbaijani      |    29 |  0.0% |        0.1% |      99.7% |     57% |                 |
+| Latvian          |    29 |  0.0% |        0.1% |      99.8% |     62% |                 |
+| Bosnian          |    27 |  0.0% |        0.0% |      99.8% |     53% |                 |
+
+The remaining 38 languages have 111 users together. Afrikaans (`af`) ships with 4 users.
+
+Next candidates by size are Arabic, Greek, Finnish, Norwegian Bokmål and Slovak; each is under 0.7%
+of non-English users. The right-to-left ones (Arabic, Hebrew, Persian) add 1.2% together and wait
+for right-to-left layout. Norwegian is reported as Bokmål (276), Nynorsk (5) and plain Norwegian (1),
+so `nb` alone would cover it. GA4 reports Chinese without the script; its region split decides
+whether Traditional Chinese is worth a regional variant.
 
 ## Implementation Decisions
 
@@ -211,8 +251,8 @@ changes along the way.
 
 1. **Golden English names.** Seeded unit tests pin what the naming code produces: adjectives and
    the number of random draws they take, state full names for every form, religion names for every
-   naming method. Written for a grammar refactor that is now out of scope; they stay as a guard that
-   interface work never touches generated names.
+   naming method. Written for a grammar refactor that is now out of scope, then removed: the map
+   invariance test (M4) guards generated content.
 2. **Hotkey hints from metadata.** The Layers tab renders its hotkey from the shortcut metadata
    instead of `<u>` inside the label, so labels are plain translatable text.
 3. **Static dialogs to their modules.** Export, save, load and PNG tiles moved into the module that
@@ -243,9 +283,8 @@ changes along the way.
 **Status: done.** All interface text was wrapped in one pass: 3,782 catalog entries, with a complete
 Russian catalog. A browser audit with every editor and Style element open found no untranslated
 interface text beyond map content (out of scope), brand names and icon-picker category names.
-Labels for ids the data stores in English live in `src/data/id-labels.ts`; Style tab labels derived
-from schema keys live in `controllers/style-editor/field-labels.ts`, with a test keeping every key
-listed.
+Labels for ids the data stores in English live in `src/data/id-labels.ts`; Style tab labels are the
+`label` meta on the styles schema itself, with a test requiring one on every field and section shown.
 
 ### M3 — Additional catalogs
 
@@ -278,6 +317,8 @@ listed.
 
 ### M5 — Coverage catalogs and widget retirement
 
+**Status: done.**
+
 1. Catalogs for tr, id, ko, cs, sv, hu, th, vi and da, each with its glossary first, as in M3.
 2. Remove the Google Translate button, its script loader and its strings from the Options tab, and
    its mentions from the wiki (User Interface, Knowledge Base, Q&A, Quick Start, Policy).
@@ -304,11 +345,10 @@ seed produces — never how lookup is implemented internally.
   sources: the lint fails on an empty value, a dropped or extra placeholder, an unknown key or
   markup, lists missing keys with each language's plural forms, and passes a clean file.
 - **Catalog files.** A locale file exists for exactly the shipped languages.
-- **Labels for ids.** Tests keep `id-labels` and the Style field labels covering every id and schema
-  key, so a new id cannot silently show raw.
+- **Labels for ids.** Tests keep `id-labels` covering every id, and the styles schema test requires a
+  label on every field and section the Style editor shows, so neither can silently show raw.
 - **Map invariance** (M4). Same seed, English vs Russian UI, identical `.map`. A whole generation
   needs the browser, so this is an e2e test. Prior art: the existing seeded e2e specs.
-- **Golden English names** (M0) stay green: interface work never changes generated names.
 - Existing DOM and e2e tests run with English and are unaffected.
 
 ## Out of Scope

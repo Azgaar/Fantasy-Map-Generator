@@ -70,9 +70,8 @@ const TERMINATED = /[.!?…:。！？：]$/;
 
 /** Join translated sentences into one text, each sentence a catalog string of its own: `sentences(t("Name"), t("Click to change"))` */
 export function sentences(...parts: string[]): string {
-  const ended = parts.map((part, i) => {
-    if (i === parts.length - 1 || TERMINATED.test(part)) return part;
-    return part + (CJK_END.test(part) ? "。" : ".");
+  return parts.reduce((text, part) => {
+    if (!TERMINATED.test(text)) text += CJK_END.test(text) ? "。" : ".";
+    return text + (CJK_END.test(text) ? "" : " ") + part;
   });
-  return ended.reduce((text, part, i) => (i === 0 ? part : text + (CJK_END.test(ended[i - 1]) ? "" : " ") + part), "");
 }

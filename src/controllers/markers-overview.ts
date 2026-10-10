@@ -67,7 +67,7 @@ function renderDialog(): void {
       </div>
       <div id="markersFooter" class="totalLine">
         <div data-tip="${t("Markers number")}">
-          ${t("Markers")}: <span id="markersFooterNumber">0</span> ${t("of")} <span id="markersFooterTotal">0</span>
+          ${t("Markers")}: ${t("{{- shown}} of {{- total}}", { shown: `<span id="markersFooterNumber">0</span>`, total: `<span id="markersFooterTotal">0</span>` })}
         </div>
       </div>
       <div id="markersBottom">

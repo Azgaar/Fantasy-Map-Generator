@@ -127,7 +127,7 @@ function renderDialog(): void {
       ${renderEditorHeader({ dialogId, columns })}
       <div id="goodsBody" class="table" style="max-height: 50vh;" data-type="absolute"></div>
       <div id="goodsFooter" class="totalLine hide">
-        <div data-tip="${t("Number of goods (displayed / total)")}" style="margin-left: 5px">${t("Goods")}:&nbsp;<span id="goodsDisplayed">0</span> ${t("of")} <span id="goodsNumber">0</span></div>
+        <div data-tip="${t("Number of goods (displayed / total)")}" style="margin-left: 5px">${t("Goods")}:&nbsp;${t("{{- shown}} of {{- total}}", { shown: `<span id="goodsDisplayed">0</span>`, total: `<span id="goodsNumber">0</span>` })}</div>
         <div data-tip="${t("Total units produced daily by all cells and burgs")}" style="margin-left: 12px">${t("Produced")}:&nbsp;<span id="goodsProduced">0</span></div>
         <div data-tip="${t("Total units in stock across all markets and burg inventories")}" style="margin-left: 12px">${t("Stock")}:&nbsp;<span id="goodsStock">0</span></div>
       </div>
@@ -219,10 +219,10 @@ function renderGoodsPage(view: TableView<Good>) {
       const types = [good.recipes && "MFG", good.distribution && "RAW"].filter(Boolean) as string[];
       const goodProduction = production[good.i] || { burg: 0, cell: 0 };
       const produced = rn(goodProduction.burg + goodProduction.cell);
-      const producedTip = t("Good daily production: {{total}}⚒. Cells: {{cells}}⚒. Burgs: {{burgs}}⚒", {
-        total: produced,
-        cells: rn(goodProduction.cell, 2),
-        burgs: rn(goodProduction.burg, 2)
+      const producedTip = t("Good daily production: {{total}}. Cells: {{cells}}. Burgs: {{burgs}}", {
+        total: `${produced}⚒`,
+        cells: `${rn(goodProduction.cell, 2)}⚒`,
+        burgs: `${rn(goodProduction.burg, 2)}⚒`
       });
       const stock = rn(stockData[good.i]?.total ?? 0);
       const stockTip = `${t("Total units in stock across all markets and burg inventories")}: ${stock}`;

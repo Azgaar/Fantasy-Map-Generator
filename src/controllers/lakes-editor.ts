@@ -3,7 +3,7 @@ import { closeDialogs, destroyDialog, noteButton } from "@/components/dialog/dia
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import { FEATURE_SUBTYPE_LABELS, labelOf } from "@/data/id-labels";
+import { FEATURE_SUBTYPE_LABELS } from "@/data/id-labels";
 import { type Feature, LAKE_SUBTYPES } from "@/generators/features-generator";
 import { Styles } from "@/generators/styles";
 import { drawLakeEmbellishments } from "@/renderers/draw-lakes";
@@ -48,7 +48,7 @@ function renderDialog(): void {
       <div data-tip="${t("Lake subtype. Generators read it: burgs cannot port on dry, frozen or lava lakes")}">
         <div class="label" style="width: 7em">${t("Subtype")}:</div>
         <select id="lakeSubtype" data-tip="${t("Select lake subtype")}">
-          ${LAKE_SUBTYPES.map(subtype => `<option value="${subtype}">${labelOf(FEATURE_SUBTYPE_LABELS, subtype)}</option>`).join("")}
+          ${LAKE_SUBTYPES.map(subtype => `<option value="${subtype}">${FEATURE_SUBTYPE_LABELS[subtype] ?? subtype}</option>`).join("")}
         </select>
       </div>
       <div data-tip="${sentences(t("Rendering group: the svg group the lake is drawn in"), t("Does not affect generation"))}">

@@ -3,7 +3,7 @@ import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
-import { CULTURE_TYPE_LABELS, DEMAND_CATEGORY_LABELS, labelOf } from "@/data/id-labels";
+import { CULTURE_TYPE_LABELS, DEMAND_CATEGORY_LABELS } from "@/data/id-labels";
 import { goodIconLines } from "@/renderers/draw-goods";
 import { capitalize, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
@@ -20,7 +20,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
     const entries = DEMAND_PRIORITY.map(cat => [cat, demandCoverageState[cat] ?? 0] as const).filter(([, v]) => v > 0);
     if (!entries.length) return t("None");
     return entries
-      .map(([cat, v]) => `${DEMAND_CATEGORY_ICONS[cat]} ${capitalize(labelOf(DEMAND_CATEGORY_LABELS, cat))}: ${v}`)
+      .map(([cat, v]) => `${DEMAND_CATEGORY_ICONS[cat]} ${capitalize(DEMAND_CATEGORY_LABELS[cat])}: ${v}`)
       .join(", ");
   };
 
@@ -47,7 +47,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
   };
 
   const renderMultiplierRow = (dim: MultiplierDimKey, label: string) => /*html*/ `
-      <label data-tip="${sentences(t("Production multiplier by {{dimension}}", { dimension: label.toLowerCase() }), t("1 = no effect, 0 = fully suppressed"))}">${label}</label>
+      <label data-tip="${sentences(t("Production multiplier by {{dimension}}", { dimension: label.toLowerCase() }), MULTIPLIER_LEGEND)}">${label}</label>
       <div class="ge-edit-row">
         <span id="mSummary_${dim}">${multiplierSummary(dim)}</span>
         <button class="mEdit icon-pencil ge-edit" data-dim="${dim}" data-tip="${t("Edit {{dimension}} multipliers", { dimension: label })}"></button>
@@ -236,13 +236,13 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
       <div>
         <div class="ge-section-title">${t("General")}</div>
         <div class="ge-grid">
-          <label for="newGoodName">${t("Name*")}</label>
+          <label for="newGoodName">${t("Name")}*</label>
           <input id="newGoodName" class="ge-field" value="${editedGood?.name || ""}" />
 
           <label for="newGoodTags">${t("Tags")}</label>
           <input id="newGoodTags" class="ge-field" value="${editedGood?.tags.join(", ") || ""}" placeholder="${t("comma separated")}" />
 
-          <label for="newGoodValue">${t("Base Price*")}</label>
+          <label for="newGoodValue">${t("Base Price")}*</label>
           <span class="ge-inline"><input id="newGoodValue" class="ge-num" type="number" min="0" step="1" value="${editedGood?.value ?? 1}" /> 🟡</span>
 
           <label for="newGoodChance">${t("Chance")}</label>
@@ -251,7 +251,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
           <label for="newGoodUnit">${t("Unit")}</label>
           <input id="newGoodUnit" class="ge-field" placeholder="${t("e.g. wagon, barrel")}" value="${editedGood?.unit || ""}" />
 
-          <label for="newGoodIcon">${t("Icon*")}</label>
+          <label for="newGoodIcon">${t("Icon")}*</label>
           <div class="ge-inline">
             <button id="newGoodIcon" type="button" class="ge-icon-select" data-tip="${t("Select the good's icon")}">
               <svg class="ge-icon-preview" width="2em" height="2em">
@@ -300,7 +300,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
 
       <div>
         <div class="ge-section-title">
-          <span data-tip="${sentences(t("Per-dimension production multipliers"), t("1 = no effect, 0 = fully suppressed"))}">${t("Multipliers")}</span>
+          <span data-tip="${sentences(t("Per-dimension production multipliers"), MULTIPLIER_LEGEND)}">${t("Multipliers")}</span>
         </div>
         <div class="ge-grid ge-grid--top">
           ${renderMultiplierRow("cultureType", MULTIPLIER_LABELS.cultureType)}
@@ -500,6 +500,8 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
 
 type MultiplierDimKey = "cultureType" | "culture" | "state" | "religion" | "biome" | "zone";
 
+const MULTIPLIER_LEGEND = `1 = ${t("no effect")}, 0 = ${t("fully suppressed")}`;
+
 const MULTIPLIER_LABELS: Record<MultiplierDimKey, string> = {
   cultureType: t("Culture type"),
   culture: t("Culture"),
@@ -510,7 +512,7 @@ const MULTIPLIER_LABELS: Record<MultiplierDimKey, string> = {
 };
 
 function getMultiplierEntityName(dim: MultiplierDimKey, id: string): string {
-  if (dim === "cultureType") return labelOf(CULTURE_TYPE_LABELS, id);
+  if (dim === "cultureType") return CULTURE_TYPE_LABELS[id] ?? id;
   if (dim === "culture") return pack.cultures[+id]?.name ?? `Culture ${id}`;
   if (dim === "state") return pack.states[+id]?.name ?? `State ${id}`;
   if (dim === "religion") return pack.religions[+id]?.name ?? `Religion ${id}`;
@@ -530,7 +532,7 @@ function openMultiplierPopup(
 
   switch (dim) {
     case "cultureType":
-      entities = CULTURE_TYPES.map(ct => ({ id: ct, name: labelOf(CULTURE_TYPE_LABELS, ct) }));
+      entities = CULTURE_TYPES.map(ct => ({ id: ct, name: CULTURE_TYPE_LABELS[ct] ?? ct }));
       label = MULTIPLIER_LABELS.cultureType;
       break;
     case "culture":
@@ -610,7 +612,7 @@ function openDemandCoveragePopup(
 ) {
   const rows = DEMAND_PRIORITY.map(cat => {
     const val = currentValues[cat] ?? 0;
-    return `<span>${DEMAND_CATEGORY_ICONS[cat]} ${capitalize(labelOf(DEMAND_CATEGORY_LABELS, cat))}</span><input type="number" class="dcPopupInput" data-cat="${cat}" min="0" step="0.05" style="width:5em;" value="${val}" />`;
+    return `<span>${DEMAND_CATEGORY_ICONS[cat]} ${capitalize(DEMAND_CATEGORY_LABELS[cat])}</span><input type="number" class="dcPopupInput" data-cat="${cat}" min="0" step="0.05" style="width:5em;" value="${val}" />`;
   }).join("");
 
   const popupEl = document.createElement("div");

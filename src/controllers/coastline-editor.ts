@@ -1,6 +1,6 @@
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Controllers } from "@/controllers";
-import { FEATURE_SUBTYPE_LABELS, labelOf } from "@/data/id-labels";
+import { FEATURE_SUBTYPE_LABELS } from "@/data/id-labels";
 import { Coastline, type CoastlineSettings, type FractalizedShape } from "@/generators/coastline-generator";
 import type { Feature } from "@/generators/features-generator";
 import { drawFeaturePath } from "@/renderers/draw-landmass";
@@ -278,7 +278,8 @@ function syncScope(): void {
 }
 
 const featureLabel = (feature: Feature) => {
-  const kind = labelOf(FEATURE_SUBTYPE_LABELS, feature.subtype || feature.type);
+  const subtype = feature.subtype || feature.type;
+  const kind = FEATURE_SUBTYPE_LABELS[subtype] ?? subtype;
   return `${feature.name ? `${feature.name} • ${kind}` : `${kind} #${feature.i}`}${feature.coastline ? " •" : ""}`;
 };
 

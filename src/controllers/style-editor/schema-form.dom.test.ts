@@ -68,7 +68,7 @@ describe("SchemaForm.render", () => {
     expect(field(form, "attrs.stroke-linecap").querySelector("select")).not.toBeNull();
     expect(field(form, "options.count").querySelector("input[type=number]")).not.toBeNull();
     expect(field(form, "options.circle").querySelector("input[type=checkbox]")).not.toBeNull();
-    expect(field(form, "options.circle").querySelector("label")?.textContent).toBe("Circle");
+    expect(field(form, "options.circle").querySelector("label")?.textContent).toBe("circle"); // no label: the key
     expect(form.querySelector('[data-field="groups"]')).toBeNull(); // records are never walked
   });
 
@@ -116,7 +116,7 @@ describe("SchemaForm.render", () => {
     expect(form.querySelector('[data-section="options"]')).toBeNull();
     const box = form.querySelector<HTMLDetailsElement>('[data-section="box"]')!;
     expect(box.tagName).toBe("DETAILS");
-    expect(box.querySelector("summary")?.textContent).toBe("Box");
+    expect(box.querySelector("summary")?.textContent).toBe("box");
     expect(box.querySelector("summary > .preview")).not.toBeNull(); // the slot the caller fills
     expect(box.querySelector('[data-field="box.attrs.fill"]')).not.toBeNull();
     expect(field(form, "attrs.fill").parentElement).toBe(form); // loose rows stay at the root
@@ -353,7 +353,7 @@ describe("SchemaForm.fieldSpec", () => {
       options: ["a", "b"],
       nullable: true
     });
-    expect(spec(z.string(), "stroke-width")).toMatchObject({ kind: "text", label: "Stroke width" });
+    expect(spec(z.string(), "stroke-width")).toMatchObject({ kind: "text", label: "stroke-width" });
     expect(spec(z.string().register(meta, { control: "font", label: "Font" }))).toMatchObject({
       kind: "font",
       label: "Font"

@@ -3,7 +3,7 @@
 
 import { Icons } from "@/components/icons";
 import { Controllers } from "@/controllers";
-import { FILTER_LABELS, HEIGHTMAP_SCHEME_LABELS, labelOf } from "@/data/id-labels";
+import { FILTER_LABELS, HEIGHTMAP_SCHEME_LABELS } from "@/data/id-labels";
 import { TEXTURES } from "@/data/textures";
 import { FORMATS, isLabelStyle } from "@/generators/styles-formats";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
@@ -191,7 +191,7 @@ const labelStyle: ControlFactory = (spec, value, set) => {
   shadow.addEventListener("input", emit);
   transform.addEventListener("change", emit);
   return rows(
-    withTip(row(t("Shadow"), shadow), t("Set text shadow, e.g. white 0 0 4px")),
+    withTip(row(t("Shadow"), shadow), t("Set text shadow, e.g. {{example}}", { example: "white 0 0 4px" })),
     withTip(row(t("Case"), transform), t("Change the letter case")),
     withTip(row(t("Shift x"), dx), t("Shift by x axis in pixels")),
     withTip(row(t("Shift y"), dy), t("Shift by y axis in pixels"))
@@ -205,7 +205,7 @@ const scheme: ControlFactory = (_spec, value, set) => {
   const select = selectOf(
     HeightmapColorSchemes.names().map(name => [
       name,
-      name.startsWith("#") ? `${t("Custom")} ${name.slice(0, 12)}…` : labelOf(HEIGHTMAP_SCHEME_LABELS, name)
+      name.startsWith("#") ? `${t("Custom")} ${name.slice(0, 12)}…` : (HEIGHTMAP_SCHEME_LABELS[name] ?? name)
     ]),
     current
   );

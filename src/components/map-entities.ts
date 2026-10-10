@@ -1,6 +1,6 @@
 import type { LayerId } from "@/components/layers";
 import { Controllers } from "@/controllers";
-import { FEATURE_SUBTYPE_LABELS, labelOf } from "@/data/id-labels";
+import { FEATURE_SUBTYPE_LABELS } from "@/data/id-labels";
 import type { Point } from "@/types/global";
 import { t } from "@/utils/i18n";
 import { capitalize } from "@/utils/stringUtils";
@@ -239,7 +239,7 @@ class EntityLookup {
       label: t("Geographical features"),
       kind: id => {
         const type = this.byId(pack.features, id)?.type;
-        return type ? labelOf(FEATURE_SUBTYPE_LABELS, type) : t("Feature");
+        return type ? (FEATURE_SUBTYPE_LABELS[type] ?? type) : t("Feature");
       },
       icon: "icon-globe",
       scale: 3,

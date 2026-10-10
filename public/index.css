@@ -4,17 +4,7 @@
   --sans-serif: Helvetica, Arial, sans-serif;
 }
 
-/* hide Google translate header */
-body > .skiptranslate {
-  display: none;
-}
-
-/* hide Google translate in-progress widget */
-body > .skiptranslate + div {
-  display: none;
-}
-
-/* make translated text wrapper non-blocking */
+/* make browser translation wrappers non-blocking */
 font {
   pointer-events: none;
 }

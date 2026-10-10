@@ -1,4 +1,7 @@
 // Interface names for ids the data stores in English: a select shows the label, keeps the id as its value
+import type { DemandCategory } from "@/generators/goods-generator";
+import type { LabelType } from "@/generators/labels-generator";
+import type { TransportDomain } from "@/generators/transports-generator";
 import { t } from "@/utils/i18n";
 
 export const FEATURE_SUBTYPE_LABELS: Record<string, string> = {
@@ -18,7 +21,7 @@ export const FEATURE_SUBTYPE_LABELS: Record<string, string> = {
   lake: t("Lake")
 };
 
-export const LABEL_TYPE_LABELS: Record<string, string> = {
+export const LABEL_TYPE_LABELS: Record<LabelType, string> = {
   state: t("State"),
   province: t("Province"),
   burg: t("Burg"),
@@ -52,15 +55,12 @@ export const CULTURE_TYPE_LABELS: Record<string, string> = {
   Nomadic: t("Nomadic")
 };
 
-export const TRANSPORT_DOMAIN_LABELS: Record<string, string> = {
+export const TRANSPORT_DOMAIN_LABELS: Record<TransportDomain, string> = {
   land: t("land"),
   water: t("water"),
   air: t("air"),
   stay: t("stay")
 };
-
-/** The label for an id, the id itself when it has none */
-export const labelOf = (labels: Record<string, string>, id: string): string => labels[id] ?? id;
 
 export const SHIELD_LABELS: Record<string, string> = {
   heater: t("Heater"),
@@ -138,7 +138,7 @@ export const STYLE_PRESET_LABELS: Record<string, string> = {
   monochrome: t("Monochrome")
 };
 
-export const DEMAND_CATEGORY_LABELS: Record<string, string> = {
+export const DEMAND_CATEGORY_LABELS: Record<DemandCategory, string> = {
   food: t("food"),
   utilities: t("utilities"),
   construction: t("construction"),

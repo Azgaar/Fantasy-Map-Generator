@@ -21,7 +21,7 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { labelOf, RELIGION_EXPANSION_LABELS, RELIGION_TYPE_LABELS } from "@/data/id-labels";
+import { RELIGION_EXPANSION_LABELS, RELIGION_TYPE_LABELS } from "@/data/id-labels";
 import type { Religion } from "@/generators/religions-generator";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -432,7 +432,7 @@ function getTypeOptions(type: string): string {
   let options = "";
   const types = ["Folk", "Organized", "Cult", "Heresy"];
   types.forEach(t => {
-    options += `<option ${type === t ? "selected" : ""} value="${t}">${labelOf(RELIGION_TYPE_LABELS, t)}</option>`;
+    options += `<option ${type === t ? "selected" : ""} value="${t}">${RELIGION_TYPE_LABELS[t] ?? t}</option>`;
   });
   return options;
 }
@@ -478,7 +478,7 @@ function getExtentOptions(type: string): string {
   let options = "";
   const types = ["global", "state", "culture"];
   types.forEach(t => {
-    options += `<option ${type === t ? "selected" : ""} value="${t}">${labelOf(RELIGION_EXPANSION_LABELS, t)}</option>`;
+    options += `<option ${type === t ? "selected" : ""} value="${t}">${RELIGION_EXPANSION_LABELS[t] ?? t}</option>`;
   });
   return options;
 }
@@ -778,7 +778,7 @@ async function showHierarchy(): Promise<void> {
       if (name.includes(type) || form.includes(type)) return "";
       if (type === "Folk") return t("Folk religion");
       if (type === "Organized") return t("Organized religion");
-      return labelOf(RELIGION_TYPE_LABELS, type);
+      return RELIGION_TYPE_LABELS[type] ?? type;
     };
 
     const population =

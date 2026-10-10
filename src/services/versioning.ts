@@ -25,6 +25,7 @@ export const VERSION = "1.155.0";
 
 // new changes on top
 const latestPublicChanges = [
+  "Translation: UI translated to 22 languages",
   "Population layer: colored cells style",
   // old ones
   "Azgaar Assistant can read map data and propose changes when your own AI key is provided",

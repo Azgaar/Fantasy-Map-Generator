@@ -9,7 +9,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { tip } from "@/components/tooltips";
-import { labelOf, TRANSPORT_DOMAIN_LABELS } from "@/data/id-labels";
+import { TRANSPORT_DOMAIN_LABELS } from "@/data/id-labels";
 import { MAX_HOURS_PER_DAY, type Transport, type TransportDomain } from "@/generators/transports-generator";
 import { convertSpeed, ensureEl, escapeHtml, getDistanceUnit, parseSpeed } from "@/utils";
 import { t } from "@/utils/i18n";
@@ -91,7 +91,7 @@ function renderTypesPage(view: TableView<Transport>): void {
     const isStay = type.domain === "stay";
     const options = DOMAINS.map(
       domain =>
-        `<option value="${domain}" ${domain === type.domain ? "selected" : ""}>${labelOf(TRANSPORT_DOMAIN_LABELS, domain)}</option>`
+        `<option value="${domain}" ${domain === type.domain ? "selected" : ""}>${TRANSPORT_DOMAIN_LABELS[domain]}</option>`
     ).join("");
 
     lines += /* html */ `<div class="states" data-id="${type.i}">

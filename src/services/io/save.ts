@@ -9,7 +9,7 @@ import { getUsedFonts } from "@/services/fonts";
 import { isElectron, savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
 import { ensureEl, getFileName, link, parseError, rn } from "@/utils";
-import { t } from "@/utils/i18n";
+import { sentences, t } from "@/utils/i18n";
 import { type SaveOutcome, saveToFileSystem } from "./save-to-file";
 
 type Writer = () => Promise<void>;
@@ -216,8 +216,9 @@ export function notifySaveOutcome(outcome: SaveOutcome): void {
     const noticeKey = "savePickerFallbackNoticeShown";
     try {
       if (!localStorage.getItem(noticeKey)) {
-        message += t(
-          ". A save-location picker is unavailable here; your browser's download settings control the location."
+        message = sentences(
+          message,
+          t("A save-location picker is unavailable here; your browser's download settings control the location.")
         );
         localStorage.setItem(noticeKey, "true");
       }

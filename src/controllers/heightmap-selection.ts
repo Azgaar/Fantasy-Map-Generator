@@ -3,7 +3,7 @@ import { syncOptionInputs } from "@/components/options/tabs/options-tab";
 import { Pins } from "@/components/pins";
 import { getPointsNumber } from "@/data/graph-density";
 import { heightmapTemplates } from "@/data/heightmap-templates";
-import { HEIGHTMAP_SCHEME_LABELS, labelOf } from "@/data/id-labels";
+import { HEIGHTMAP_SCHEME_LABELS } from "@/data/id-labels";
 import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
 import { drawHeights } from "@/renderers/draw-heightmap";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
@@ -188,7 +188,7 @@ function insertHtml(): void {
   if (!previewGraph || !previewConfig) return;
 
   const heightmapColorSchemeOptions = HeightmapColorSchemes.names()
-    .map(scheme => `<option value="${scheme}">${labelOf(HEIGHTMAP_SCHEME_LABELS, scheme)}</option>`)
+    .map(scheme => `<option value="${scheme}">${HEIGHTMAP_SCHEME_LABELS[scheme] ?? scheme}</option>`)
     .join("");
 
   const heightmapSelectionHtml = /* html */ `<div id="heightmapSelection" class="dialog stable">

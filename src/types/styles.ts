@@ -8,7 +8,7 @@ export type StandardControl = "checkbox" | "select" | "slider" | "number" | "tex
 /** How a schema field is edited, registered on the zod node */
 export type FieldMeta<Control extends string = StandardControl> = {
   control?: Control; // overrides the derived control
-  label?: string; // default: key → sentence case ("stroke-width" → "Stroke width")
+  label?: string; // default: the key; the styles schema labels every field it shows
   tip?: string; // the row's data-tip
   step?: number; // sliders; default 1 for int, 0.01 for a range ≤ 2, else 0.1
   range?: [number, number]; // slider bounds for a number the schema leaves unbounded; widened to hold the stored value

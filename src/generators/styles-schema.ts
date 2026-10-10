@@ -47,20 +47,24 @@ const choice = (choices: Record<string, string>, fieldMeta: StyleMeta = {}) =>
 const solidColor = (fieldMeta: StyleMeta = {}) => meta(hexColor.clone(), { control: "color", ...fieldMeta });
 
 // --- shared attrs -----------------------------------------------------------------------------------
-const opacity = range(0, 1, { nullAs: 1, tip: sentences(t("Set opacity"), t("0: transparent, 1: solid")) }).nullable();
+const opacity = range(0, 1, {
+  label: t("Opacity"),
+  nullAs: 1,
+  tip: sentences(t("Set opacity"), `0: ${t("transparent")}, 1: ${t("solid")}`)
+}).nullable();
 
 const color = solidColor().nullable();
 
 const fill = variant(color, { label: t("Color"), tip: t("Set fill color") });
 const fillOpacity = variant(opacity, {
   label: t("Opacity"),
-  tip: sentences(t("Set fill opacity"), t("0: transparent, 1: solid"))
+  tip: sentences(t("Set fill opacity"), `0: ${t("transparent")}, 1: ${t("solid")}`)
 });
 
 const stroke = variant(color, { label: t("Color"), tip: t("Set stroke color") });
 const strokeOpacity = variant(opacity, {
   label: t("Opacity"),
-  tip: sentences(t("Set stroke opacity"), t("0: transparent, 1: solid"))
+  tip: sentences(t("Set stroke opacity"), `0: ${t("transparent")}, 1: ${t("solid")}`)
 });
 
 const strokeWidth = meta(z.number().min(0), {
@@ -73,7 +77,7 @@ const strokeWidth = meta(z.number().min(0), {
 const strokeDasharray = meta(z.string().regex(FORMATS.strokeDasharray), {
   control: "dash",
   label: t("Dash array"),
-  tip: t("Set stroke dash array, e.g. 5 2")
+  tip: t("Set stroke dash array, e.g. {{example}}", { example: "5 2" })
 })
   .nullable()
   .default(null);
@@ -93,6 +97,7 @@ const fontSizePx = meta(z.string().regex(FORMATS.fontSizePx), {
 
 const filter = meta(z.string().regex(FORMATS.filter), {
   control: "filter",
+  label: t("Filter"),
   tip: t("Select filter for element. Filters may cause performance issues!")
 }).nullable();
 
@@ -117,21 +122,24 @@ const transform = hidden(z.string().nullable()); // a raw layer transform, not a
 const percentage = meta(z.string().regex(FORMATS.percentage), { control: "percent" });
 
 const dashGroup = {
-  "stroke-width": variant(strokeWidth, { group: "Stroke" }),
-  "stroke-dasharray": variant(strokeDasharray, { group: "Stroke" }),
-  "stroke-linecap": variant(strokeLinecap, { group: "Stroke" })
+  "stroke-width": variant(strokeWidth, { group: t("Stroke") }),
+  "stroke-dasharray": variant(strokeDasharray, { group: t("Stroke") }),
+  "stroke-linecap": variant(strokeLinecap, { group: t("Stroke") })
 };
 
 const strokeGroup = {
-  stroke: variant(stroke, { group: "Stroke" }),
-  "stroke-opacity": variant(strokeOpacity, { group: "Stroke" }),
-  "stroke-width": variant(strokeWidth, { group: "Stroke" }),
-  "stroke-dasharray": variant(strokeDasharray, { group: "Stroke" }),
-  "stroke-linecap": variant(strokeLinecap, { group: "Stroke" }),
-  "stroke-linejoin": variant(strokeLinejoin, { group: "Stroke" })
+  stroke: variant(stroke, { group: t("Stroke") }),
+  "stroke-opacity": variant(strokeOpacity, { group: t("Stroke") }),
+  "stroke-width": variant(strokeWidth, { group: t("Stroke") }),
+  "stroke-dasharray": variant(strokeDasharray, { group: t("Stroke") }),
+  "stroke-linecap": variant(strokeLinecap, { group: t("Stroke") }),
+  "stroke-linejoin": variant(strokeLinejoin, { group: t("Stroke") })
 };
 
-const fillGroup = { fill: variant(fill, { group: "Fill" }), "fill-opacity": variant(fillOpacity, { group: "Fill" }) };
+const fillGroup = {
+  fill: variant(fill, { group: t("Fill") }),
+  "fill-opacity": variant(fillOpacity, { group: t("Fill") })
+};
 
 // x/y shifts, in the unit of their element; a slider each: a dragged offset beats a typed one
 const shift = (axis: "x" | "y", reach: number, step: number, tip: string) =>
@@ -156,21 +164,26 @@ const lake = z.strictObject({
       embellishment: choice(LAKE_EMBELLISHMENTS, {
         tip: t("Fine ripples along the banks, fading into open water and scaled down for small lakes")
       }),
-      density: range(0.1, 4, { tip: t("How closely ripple rows are spaced") }),
-      length: range(0.2, 4, { tip: t("Ripple length, fitted to the available water width") }),
+      density: range(0.1, 4, { label: t("Density"), tip: t("How closely ripple rows are spaced") }),
+      length: range(0.2, 4, { label: t("Length"), tip: t("Ripple length, fitted to the available water width") }),
       halo: range(0, 2, {
         label: t("Shore gap"),
         step: 0.05,
         tip: t("Clear water along the shoreline, relative to lake ripple scale")
       }),
-      color: solidColor({ group: "Stroke", label: t("Color") }),
+      color: solidColor({ group: t("Stroke"), label: t("Color") }),
       width: range(0.05, 2, {
-        group: "Stroke",
+        group: t("Stroke"),
         label: t("Width"),
         step: 0.05,
         tip: t("Ripple stroke width in map pixels")
       }),
-      opacity: range(0, 1, { group: "Stroke", label: t("Opacity"), step: 0.05, tip: t("Opacity of the lake ripples") })
+      opacity: range(0, 1, {
+        group: t("Stroke"),
+        label: t("Opacity"),
+        step: 0.05,
+        tip: t("Opacity of the lake ripples")
+      })
     }),
     { gate: "embellishment", label: t("Embellishment") }
   ).default({ embellishment: "none", density: 1, length: 1, halo: 0.2, color: "#000000", width: 0.3, opacity: 0.6 })
@@ -185,11 +198,15 @@ const contours = meta(
       label: t("Spacing"),
       tip: t("Elevation spacing between contours. Lower values show more detail; every fifth contour is heavier")
     }),
-    color: solidColor({ tip: t("Color of the contour lines") }),
-    width: range(0.1, 2, { step: 0.05, tip: t("Width of minor contours. Every fifth contour is twice as wide") }),
-    opacity: range(0, 1, { step: 0.05, tip: t("Opacity of the contour lines") })
+    color: solidColor({ label: t("Color"), tip: t("Color of the contour lines") }),
+    width: range(0.1, 2, {
+      label: t("Width"),
+      step: 0.05,
+      tip: t("Width of minor contours. Every fifth contour is twice as wide")
+    }),
+    opacity: range(0, 1, { label: t("Opacity"), step: 0.05, tip: t("Opacity of the contour lines") })
   }),
-  { gate: "mode" }
+  { gate: "mode", label: t("Contours") }
 ).default({ mode: "off", interval: 5, color: "#5c513e", width: 0.35, opacity: 0.5 });
 
 // downhill pen strokes, denser and longer on steeper slopes
@@ -199,25 +216,27 @@ const hachures = meta(
       tip: t("Draw downhill pen strokes over the heightmap colors, or show only the strokes")
     }),
     density: range(0.1, 4, {
+      label: t("Density"),
       tip: t("How closely the strokes are packed, relative to the default. Steep ground packs them tighter")
     }),
     length: range(0.2, 4, {
+      label: t("Length"),
       tip: sentences(t("Stroke length, relative to the default"), t("Strokes stop early where the slope levels off"))
     }),
     width: range(0.2, 4, {
-      group: "Stroke",
+      group: t("Stroke"),
       label: t("Width"),
       tip: t("Stroke width at its root, relative to the default. Gentler ground draws lighter strokes")
     }),
-    color: solidColor({ group: "Stroke", label: t("Color"), tip: t("Color of the hachure strokes") }),
-    opacity: range(0, 1, { step: 0.05, tip: t("Opacity of the hachure strokes") })
+    color: solidColor({ group: t("Stroke"), label: t("Color"), tip: t("Color of the hachure strokes") }),
+    opacity: range(0, 1, { label: t("Opacity"), step: 0.05, tip: t("Opacity of the hachure strokes") })
   }),
-  { gate: "mode" }
+  { gate: "mode", label: t("Hachures") }
 ).default({ mode: "off", density: 1, length: 1, width: 1, color: "#5c513e", opacity: 0.65 });
 
 const heightOptions = z.strictObject({
   scheme: text({ control: "scheme", label: t("Color scheme"), tip: t("Select color scheme for the element") }),
-  terracing: range(0, 20, { step: 1, tip: t("Terracing power. Set to 0 to toggle off") }),
+  terracing: range(0, 20, { label: t("Terracing"), step: 1, tip: t("Terracing power. Set to 0 to toggle off") }),
   skip: range(0, 10, {
     label: t("Reduce layers"),
     step: 1,
@@ -232,7 +251,9 @@ const heightOptions = z.strictObject({
   contours,
   hachures
 });
-const landHeights = z.strictObject({ attrs: z.strictObject({ opacity, filter, mask }), options: heightOptions });
+const landHeights = meta(z.strictObject({ attrs: z.strictObject({ opacity, filter, mask }), options: heightOptions }), {
+  label: t("Land heights")
+});
 const oceanHeights = meta(
   z.strictObject({
     attrs: landHeights.shape.attrs,
@@ -240,28 +261,31 @@ const oceanHeights = meta(
       render: flag({ label: t("Render ocean heights"), tip: t("Draw heights of water cells") })
     })
   }),
-  { gate: "options.render" }
+  { gate: "options.render", label: t("Ocean heights") }
 );
 
 const coastlineBands = meta(
   z.strictObject({
     render: flag({ label: t("Coastline bands"), tip: t("Draw concentric bands that follow the coastline") }),
-    count: count(1, 8, { tip: t("Number of bands around the coast") }),
-    spacing: range(0.2, 5, { tip: t("Band spacing in map units; bands widen farther from shore") }),
+    count: count(1, 8, { label: t("Count"), tip: t("Number of bands around the coast") }),
+    spacing: range(0.2, 5, {
+      label: t("Spacing"),
+      tip: t("Band spacing in map units; bands widen farther from shore")
+    }),
     width: range(0.05, 1, {
-      group: "Outline",
+      group: t("Outline"),
       label: t("Width"),
       step: 0.05,
       tip: t("Width of the dark lines separating bands")
     }),
-    color: solidColor({ group: "Outline", label: t("Color") }),
+    color: solidColor({ group: t("Outline"), label: t("Color") }),
     shore: solidColor({ label: t("Shore tint"), tip: t("Tint over the existing ocean, strongest near the shore") }),
     shade: range(0, 1, {
       label: t("Shading"),
       step: 0.05,
       tip: t("Strength of the nearshore tint; zero leaves only outlines over the ocean texture")
     }).default(0.35),
-    opacity: range(0, 1, { step: 0.05 })
+    opacity: range(0, 1, { label: t("Opacity"), step: 0.05 })
   }),
   { gate: "render", label: t("Coastline bands") }
 ).default({
@@ -294,10 +318,16 @@ const oceanWaves = meta(
         label: t("Ocean embellishment"),
         tip: t("Decorate coastal and distant water around a clear offshore band")
       }),
-      type: choice(WAVE_TYPES, { tip: t("Choose the shape of the ocean embellishments") }).default("waves"),
-      density: range(0.1, 4, { tip: t("How closely embellishments are spaced, relative to the default") }),
-      length: range(0.2, 4, { tip: t("Stroke length, relative to the default") }),
+      type: choice(WAVE_TYPES, { label: t("Type"), tip: t("Choose the shape of the ocean embellishments") }).default(
+        "waves"
+      ),
+      density: range(0.1, 4, {
+        label: t("Density"),
+        tip: t("How closely embellishments are spaced, relative to the default")
+      }),
+      length: range(0.2, 4, { label: t("Length"), tip: t("Stroke length, relative to the default") }),
       reach: range(1, 12, {
+        label: t("Reach"),
         step: 0.5,
         tip: t("Distance into the sea over which embellishments fade, in cell spacings")
       }),
@@ -323,7 +353,7 @@ const burgGroup = z.strictObject({
   }),
   options: z.strictObject({
     size: number({ label: t("Icon size"), range: [0.01, 100], step: 0.01 }),
-    icon: text({ control: "icon", tip: t("Select icon") })
+    icon: text({ control: "icon", label: t("Icon"), tip: t("Select icon") })
   })
 });
 
@@ -352,17 +382,30 @@ const coastline = z.strictObject({
 });
 
 const emblemGroup = z.strictObject({
-  options: z.strictObject({ size: number({ range: [0, 5], step: 0.01, tip: t("Set emblems size multiplier") }) })
+  options: z.strictObject({
+    size: number({ label: t("Size"), range: [0, 5], step: 0.01, tip: t("Set emblems size multiplier") })
+  })
 });
 
 const padding = (side: string) =>
-  number({ group: "Padding", label: side, range: [0, 50], step: 0.5, tip: t("Background element padding in pixels") });
+  number({
+    group: t("Padding"),
+    label: side,
+    range: [0, 50],
+    step: 0.5,
+    tip: t("Background element padding in pixels")
+  });
 
 // --- the record -------------------------------------------------------------------------------------
 // on change run scripts/convert-style-presets.mjs to automatically update style presets
 export const stylesSchema = z.strictObject({
   biomes: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),
-  borders: z.strictObject({ groups: z.strictObject({ stateBorders: borders, provinceBorders: borders }) }),
+  borders: z.strictObject({
+    groups: z.strictObject({
+      stateBorders: variant(borders, { label: t("State borders") }),
+      provinceBorders: variant(borders, { label: t("Province borders") })
+    })
+  }),
   burgIcons: z.strictObject({
     groups: z
       .record(
@@ -377,19 +420,27 @@ export const stylesSchema = z.strictObject({
       .refine(groups => Object.keys(groups).length > 0)
   }),
   cells: z.strictObject({ attrs: z.strictObject({ ...strokeGroup, filter, mask: clip }) }),
-  coastline: z.strictObject({ groups: z.strictObject({ sea_island: coastline, lake_island: coastline }) }),
+  coastline: z.strictObject({
+    groups: z.strictObject({
+      sea_island: variant(coastline, { label: t("Sea island") }),
+      lake_island: variant(coastline, { label: t("Lake island") })
+    })
+  }),
   compass: z.strictObject({
     attrs: z.strictObject({ opacity, transform, filter, mask: clip }),
     groups: z.strictObject({
-      compassRose: z.strictObject({
-        attrs: z.strictObject({
-          transform: meta(z.string().regex(FORMATS.compassTransform), {
-            control: "transform",
-            label: t("Placement"),
-            tip: t("Set wind (compass) rose shift and size")
-          }).nullable()
-        })
-      })
+      compassRose: meta(
+        z.strictObject({
+          attrs: z.strictObject({
+            transform: meta(z.string().regex(FORMATS.compassTransform), {
+              control: "transform",
+              label: t("Placement"),
+              tip: t("Set wind (compass) rose shift and size")
+            }).nullable()
+          })
+        }),
+        { label: t("Compass rose") }
+      )
     })
   }),
   coordinates: z.strictObject({
@@ -408,51 +459,57 @@ export const stylesSchema = z.strictObject({
   emblems: z.strictObject({
     attrs: z.strictObject({ opacity, "stroke-width": variant(strokeWidth, { label: t("Stroke width") }), filter }),
     groups: z.strictObject({
-      stateEmblems: emblemGroup,
-      provinceEmblems: emblemGroup,
-      burgEmblems: emblemGroup
+      stateEmblems: variant(emblemGroup, { label: t("State emblems") }),
+      provinceEmblems: variant(emblemGroup, { label: t("Province emblems") }),
+      burgEmblems: variant(emblemGroup, { label: t("Burg emblems") })
     })
   }),
   fogging: z.strictObject({ attrs: z.strictObject({ opacity, fill, mask, filter }) }),
   goods: z.strictObject({
     groups: z.strictObject({
-      goodsCells: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),
-      goodsIcons: z.strictObject({
-        attrs: z.strictObject({
-          opacity,
-          stroke: variant(stroke, { label: t("Icon Lines"), tip: t("Color of the icon lines") }),
-          "stroke-width": variant(strokeWidth, {
-            label: t("Stroke width"),
-            tip: t("Width of the circle outline; the icon lines are drawn at 40% of it")
+      goodsCells: meta(z.strictObject({ attrs: z.strictObject({ opacity, filter }) }), { label: t("Goods cells") }),
+      goodsIcons: meta(
+        z.strictObject({
+          attrs: z.strictObject({
+            opacity,
+            stroke: variant(stroke, { label: t("Icon Lines"), tip: t("Color of the icon lines") }),
+            "stroke-width": variant(strokeWidth, {
+              label: t("Stroke width"),
+              tip: t("Width of the circle outline; the icon lines are drawn at 40% of it")
+            }),
+            filter
           }),
-          filter
-        }),
-        options: z.strictObject({
-          size: number({
-            label: t("Marker size"),
-            range: [1, 20],
-            step: 0.5,
-            tip: t("Set good marker (icon and circle) size in pixels")
-          }),
-          circle: flag({ label: t("Show circle") })
-        })
-      }),
-      goodsBurgs: z.strictObject({
-        attrs: z.strictObject({
-          opacity,
-          stroke: strokeGroup.stroke,
-          "stroke-width": strokeGroup["stroke-width"],
-          filter
-        }),
-        options: z.strictObject({
-          size: number({
-            label: t("Plate size"),
-            range: [1, 12],
-            step: 0.5,
-            tip: t("Set burg production plate icon size in pixels. Plate and font scale together with it")
+          options: z.strictObject({
+            size: number({
+              label: t("Marker size"),
+              range: [1, 20],
+              step: 0.5,
+              tip: t("Set good marker (icon and circle) size in pixels")
+            }),
+            circle: flag({ label: t("Show circle") })
           })
-        })
-      })
+        }),
+        { label: t("Goods icons") }
+      ),
+      goodsBurgs: meta(
+        z.strictObject({
+          attrs: z.strictObject({
+            opacity,
+            stroke: strokeGroup.stroke,
+            "stroke-width": strokeGroup["stroke-width"],
+            filter
+          }),
+          options: z.strictObject({
+            size: number({
+              label: t("Plate size"),
+              range: [1, 12],
+              step: 0.5,
+              tip: t("Set burg production plate icon size in pixels. Plate and font scale together with it")
+            })
+          })
+        }),
+        { label: t("Goods burgs") }
+      )
     })
   }),
   grid: z.strictObject({
@@ -470,8 +527,8 @@ export const stylesSchema = z.strictObject({
       { effect: "draw" }
     ),
     options: z.strictObject({
-      type: choice(GRID_TYPES, { tip: t("Select grid overlay type") }),
-      scale: number({ range: [0.1, 10], step: 0.01, tip: t("Set grid cells scale multiplier") }),
+      type: choice(GRID_TYPES, { label: t("Type"), tip: t("Select grid overlay type") }),
+      scale: number({ label: t("Scale"), range: [0.1, 10], step: 0.01, tip: t("Set grid cells scale multiplier") }),
       dx: shift("x", 100, 1, t("Shift by x axis in pixels")),
       dy: shift("y", 100, 1, t("Shift by y axis in pixels"))
     })
@@ -488,16 +545,16 @@ export const stylesSchema = z.strictObject({
           ...fillGroup,
           ...strokeGroup,
           "stroke-width": meta(z.number().min(0), {
-            group: "Stroke",
+            group: t("Stroke"),
             label: t("Width"),
             range: [0, 2],
             step: 0.01,
             tip: t("Set stroke width")
           }).default(0),
-          "font-family": variant(fontFamily, { group: "Font", effect: "draw" }),
+          "font-family": variant(fontFamily, { group: t("Font"), effect: "draw" }),
           "font-size": meta(z.string().regex(FORMATS.fontSizePercent), {
             control: "percent",
-            group: "Font",
+            group: t("Font"),
             label: t("Size"),
             range: [1, 40],
             effect: "draw",
@@ -505,20 +562,20 @@ export const stylesSchema = z.strictObject({
           }),
           "font-style": choice(FONT_STYLES, {
             label: t("Style"),
-            group: "Font"
+            group: t("Font")
           })
             .nullable()
             .default(null),
           "font-weight": meta(z.literal(FONT_WEIGHTS), {
             control: "select",
             label: t("Weight", { context: "font" }),
-            group: "Font"
+            group: t("Font")
           })
             .nullable()
             .default(null),
           "letter-spacing": number({
             label: t("Spacing"),
-            group: "Font",
+            group: t("Font"),
             nullAs: 0,
             range: [-2, 10],
             step: 0.01,
@@ -569,10 +626,10 @@ export const stylesSchema = z.strictObject({
   markets: z.strictObject({
     attrs: z.strictObject({
       "fill-opacity": fillGroup["fill-opacity"],
-      "stroke-opacity": variant(strokeOpacity, { group: "Stroke" }),
-      "stroke-width": variant(strokeWidth, { group: "Stroke" }),
-      "stroke-dasharray": variant(strokeDasharray, { group: "Stroke" }),
-      "stroke-linecap": variant(strokeLinecap, { group: "Stroke" }),
+      "stroke-opacity": variant(strokeOpacity, { group: t("Stroke") }),
+      "stroke-width": variant(strokeWidth, { group: t("Stroke") }),
+      "stroke-dasharray": variant(strokeDasharray, { group: t("Stroke") }),
+      "stroke-linecap": variant(strokeLinecap, { group: t("Stroke") }),
       filter
     }),
     options: z.strictObject({
@@ -595,6 +652,7 @@ export const stylesSchema = z.strictObject({
     attrs: z.strictObject({ opacity, "fill-opacity": fillGroup["fill-opacity"], ...strokeGroup, filter }),
     options: z.strictObject({
       boxSize: number({
+        label: t("Box size"),
         range: [0, 10],
         step: 0.1,
         tip: t("Set regiment box size. All regiments will be redrawn on change (position will defaulted)")
@@ -604,24 +662,33 @@ export const stylesSchema = z.strictObject({
   ocean: z.strictObject({
     options: z.strictObject({ bands: coastlineBands }),
     groups: z.strictObject({
-      base: z.strictObject({
-        attrs: z.strictObject({ fill })
-      }),
-      pattern: z.strictObject({
-        attrs: z.strictObject({
-          href: choice(OCEAN_PATTERNS, { label: t("Image"), tip: t("Select ocean pattern") }),
-          opacity
-        })
-      }),
-      oceanLayers: z.strictObject({
-        attrs: z.strictObject({ filter }),
-        options: z.strictObject({
-          outline: choice(OCEAN_OUTLINES, {
-            label: t("Ocean layers"),
-            tip: t("Define the coast outline contours scheme")
+      base: meta(
+        z.strictObject({
+          attrs: z.strictObject({ fill })
+        }),
+        { label: t("Base") }
+      ),
+      pattern: meta(
+        z.strictObject({
+          attrs: z.strictObject({
+            href: choice(OCEAN_PATTERNS, { label: t("Image"), tip: t("Select ocean pattern") }),
+            opacity
           })
-        })
-      }),
+        }),
+        { label: t("Pattern") }
+      ),
+      oceanLayers: meta(
+        z.strictObject({
+          attrs: z.strictObject({ filter }),
+          options: z.strictObject({
+            outline: choice(OCEAN_OUTLINES, {
+              label: t("Ocean layers"),
+              tip: t("Define the coast outline contours scheme")
+            })
+          })
+        }),
+        { label: t("Ocean layers") }
+      ),
       oceanWaves
     })
   }),
@@ -629,16 +696,25 @@ export const stylesSchema = z.strictObject({
     attrs: z.strictObject({ opacity, ...dashGroup, filter, mask: clip }),
     options: z
       .strictObject({
-        type: choice(POPULATION_TYPES, { tip: t("Draw population as bars or as cells shaded by density") })
+        type: choice(POPULATION_TYPES, {
+          label: t("Type"),
+          tip: t("Draw population as bars or as cells shaded by density")
+        })
       })
       .default({ type: "bars" }),
     groups: z.strictObject({
-      rural: z.strictObject({
-        attrs: z.strictObject({ stroke })
-      }),
-      urban: z.strictObject({
-        attrs: z.strictObject({ stroke })
-      })
+      rural: meta(
+        z.strictObject({
+          attrs: z.strictObject({ stroke })
+        }),
+        { label: t("Rural") }
+      ),
+      urban: meta(
+        z.strictObject({
+          attrs: z.strictObject({ stroke })
+        }),
+        { label: t("Urban") }
+      )
     })
   }),
   precipitation: z.strictObject({
@@ -660,12 +736,14 @@ export const stylesSchema = z.strictObject({
         tip: t("Select set of relief icons. Existing icons are restyled, not regenerated")
       }),
       size: number({
+        label: t("Size"),
         range: [0.2, 4],
         step: 0.01,
         effect: "draw",
         tip: t("Define the size of relief icons. A render multiplier: the map data is not changed")
       }),
       density: number({
+        label: t("Density"),
         range: [0.3, 0.8],
         step: 0.01,
         effect: "regenerateRelief",
@@ -685,7 +763,7 @@ export const stylesSchema = z.strictObject({
   }),
   rulers: z.strictObject({
     attrs: meta(
-      z.strictObject({ opacity, ...dashGroup, "font-size": variant(fontSizePx, { group: "Label" }), filter }),
+      z.strictObject({ opacity, ...dashGroup, "font-size": variant(fontSizePx, { group: t("Label") }), filter }),
       { effect: "draw" }
     )
   }),
@@ -694,9 +772,21 @@ export const stylesSchema = z.strictObject({
       attrs: z.strictObject({ opacity, fill, "font-size": fontSizePx }),
       options: z.strictObject({
         barSize: number({ label: t("Bar size"), range: [0.5, 5], step: 0.1 }),
-        label: text({ tip: t("Type scale bar label, leave blank to hide label") }),
-        x: number({ group: "Position", range: [0, 100], step: 0.1, tip: t("Scale bar right edge, in percents") }),
-        y: number({ group: "Position", range: [0, 100], step: 0.1, tip: t("Scale bar bottom edge, in percents") })
+        label: text({ label: t("Label"), tip: t("Type scale bar label, leave blank to hide label") }),
+        x: number({
+          group: t("Position"),
+          label: "X",
+          range: [0, 100],
+          step: 0.1,
+          tip: t("Scale bar right edge, in percents")
+        }),
+        y: number({
+          group: t("Position"),
+          label: "Y",
+          range: [0, 100],
+          step: 0.1,
+          tip: t("Scale bar bottom edge, in percents")
+        })
       }),
       groups: z.strictObject({
         back: meta(
@@ -723,22 +813,25 @@ export const stylesSchema = z.strictObject({
   ),
   states: z.strictObject({
     groups: z.strictObject({
-      statesBody: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),
+      statesBody: meta(z.strictObject({ attrs: z.strictObject({ opacity, filter }) }), { label: t("States body") }),
       // rendered only when performance is set to best quality; the zoom scales the width it writes
-      statesHalo: z.strictObject({
-        attrs: z.strictObject({
-          opacity,
-          "stroke-width": variant(strokeWidth, { range: [0, 30], step: 0.1, effect: "zoom" }),
-          filter: blurFilter
-        })
-      })
+      statesHalo: meta(
+        z.strictObject({
+          attrs: z.strictObject({
+            opacity,
+            "stroke-width": variant(strokeWidth, { range: [0, 30], step: 0.1, effect: "zoom" }),
+            filter: blurFilter
+          })
+        }),
+        { label: t("States halo") }
+      )
     })
   }),
   temperature: z.strictObject({
     attrs: z.strictObject({
-      fill: variant(fill, { group: "Label" }),
+      fill: variant(fill, { group: t("Label") }),
       "fill-opacity": fillGroup["fill-opacity"],
-      "font-size": variant(fontSizePx, { group: "Label" }),
+      "font-size": variant(fontSizePx, { group: t("Label") }),
       ...strokeGroup,
       filter,
       mask: clip
@@ -773,8 +866,18 @@ export const stylesSchema = z.strictObject({
           step: 0.1,
           tip: t("Vignette rectangle y, in percents")
         }),
-        width: variant(percentage, { range: [0, 100], step: 0.1, tip: t("Vignette rectangle width, in percents") }),
-        height: variant(percentage, { range: [0, 100], step: 0.1, tip: t("Vignette rectangle height, in percents") }),
+        width: variant(percentage, {
+          label: t("Width"),
+          range: [0, 100],
+          step: 0.1,
+          tip: t("Vignette rectangle width, in percents")
+        }),
+        height: variant(percentage, {
+          label: t("Height"),
+          range: [0, 100],
+          step: 0.1,
+          tip: t("Vignette rectangle height, in percents")
+        }),
         rx: variant(percentage, {
           label: t("Radius x"),
           range: [0, 50],

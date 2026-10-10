@@ -329,7 +329,7 @@ function renderDialog(): void {
         <input id="assistantLocalUrl" autocomplete="off" spellcheck="false" data-local />
       </div>
       <datalist id="assistantModels"></datalist>
-      <p id="assistantLocalHint" data-local>${t("ⓘ Local models need no key. Point to the server and enter the model name. Set the server's context window to at least 8k tokens (Ollama's num_ctx).")}</p>
+      <p id="assistantLocalHint" data-local>ⓘ ${t("Local models need no key. Point to the server and enter the model name. Set the server's context window to at least 8k tokens (Ollama's num_ctx).")}</p>
       <div id="assistantDiscoveryError" role="status"></div>
       <div class="assistantSheetActions">
         <button type="button" class="assistantButton" data-action="close-key">${t("Cancel")}</button>

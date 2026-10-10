@@ -13,7 +13,7 @@ import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { calculateLabelSpread, type LabelSpreadPatch } from "@/controllers/label-spread";
-import { LABEL_TYPE_LABELS, labelOf } from "@/data/id-labels";
+import { LABEL_TYPE_LABELS } from "@/data/id-labels";
 import { LABEL_TYPES, type Label, type LabelType } from "@/generators/labels-generator";
 import { getLabelsData, getLabelsIndex } from "@/renderers/labels/label-data";
 import type { LabelData } from "@/renderers/labels/labels";
@@ -115,7 +115,7 @@ function renderDialog(): void {
     </div>
     <div id="labelsFooter" class="totalLine">
       <div data-tip="${t("Number of listed labels")}" style="margin-left: 4px">
-        ${t("Labels")}:&nbsp;<span id="labelsFooterNumber">0</span>&nbsp;${t("of")}&nbsp;<span id="labelsFooterTotal">0</span>
+        ${t("Labels")}:&nbsp;${t("{{- shown}} of {{- total}}", { shown: `<span id="labelsFooterNumber">0</span>`, total: `<span id="labelsFooterTotal">0</span>` })}
       </div>
     </div>
     <div id="labelsBottom">
@@ -194,7 +194,7 @@ function populateTypeFilter(): void {
   const select = ensureEl<HTMLSelectElement>("labelsFilterType");
   select.options.length = 0;
   select.add(new Option(t("All"), ALL));
-  for (const type of LABEL_TYPES) select.add(new Option(labelOf(LABEL_TYPE_LABELS, type), type));
+  for (const type of LABEL_TYPES) select.add(new Option(LABEL_TYPE_LABELS[type], type));
   select.value = filterState.type;
 }
 
@@ -254,7 +254,7 @@ function createLine(label: LabelData): string {
   return /* html */ `<div class="states" data-id="${id}" data-text="${text}" data-type="${type}" data-group="${group}" style="${hidden ? "opacity: 0.5" : ""}">
       <div data-col="selection"><input class="labelsSelect native" type="checkbox" data-tip="${t("Select the label for bulk assignment")}" style="margin: 0; width: 1.2em; vertical-align: bottom; margin-bottom: 0.2em; ${isBulkMode ? "" : "display:none"}"></div>
       <div data-col="text" data-tip="${t("Label text")}">${text}</div>
-      <div data-col="type" data-tip="${t("Label type")}">${labelOf(LABEL_TYPE_LABELS, type)}</div>
+      <div data-col="type" data-tip="${t("Label type")}">${LABEL_TYPE_LABELS[type]}</div>
       <select data-col="group" class="labelsGroup" data-tip="${t("Select a group for this label")}">
         ${createGroupOptions(group)}
       </select>

@@ -1,6 +1,6 @@
 import { Icons } from "@/components/icons";
 import { tip } from "@/components/tooltips";
-import { DEMAND_CATEGORY_LABELS, labelOf } from "@/data/id-labels";
+import { DEMAND_CATEGORY_LABELS } from "@/data/id-labels";
 import { goodBadge } from "@/renderers/draw-goods";
 import { sentences, t } from "@/utils/i18n";
 import type { Burg } from "../generators/burgs-generator";
@@ -133,11 +133,11 @@ function open(burgId: number): void {
       ? DEMAND_PRIORITY.flatMap((category, index) => {
           const value = values[index] || 0;
           if (onlyPositive && value <= 0.001) return [];
-          return `<span data-tip="${labelOf(DEMAND_CATEGORY_LABELS, category)}">${DEMAND_CATEGORY_ICONS[category]} ${rn(value, 2)}</span>`;
+          return `<span data-tip="${DEMAND_CATEGORY_LABELS[category]}">${DEMAND_CATEGORY_ICONS[category]} ${rn(value, 2)}</span>`;
         })
       : (Object.entries(values) as [DemandCategory, number][]).flatMap(([category, value]) => {
           if (onlyPositive && value <= 0.001) return [];
-          return `<span data-tip="${labelOf(DEMAND_CATEGORY_LABELS, category)}">${DEMAND_CATEGORY_ICONS[category]} ${rn(value, 2)}</span>`;
+          return `<span data-tip="${DEMAND_CATEGORY_LABELS[category]}">${DEMAND_CATEGORY_ICONS[category]} ${rn(value, 2)}</span>`;
         });
 
     return entries.join(` <span style="${styles.divider}">•</span> `);
@@ -171,7 +171,7 @@ function open(burgId: number): void {
       .join(", ");
 
     const prep = candidate.isPreparation
-      ? ` ${t("(prep for {{- good}})", { good: goodDot(candidate.goalGoodId || -1) })}`
+      ? ` (${t("prep for {{- good}}", { good: goodDot(candidate.goalGoodId || -1) })})`
       : "";
     const demand =
       candidate.demandCategory && candidate.demandMultiplier !== 1

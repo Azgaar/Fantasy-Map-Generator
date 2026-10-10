@@ -14,7 +14,7 @@ import {
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
 import { Controllers } from "@/controllers";
-import { FEATURE_SUBTYPE_LABELS, labelOf } from "@/data/id-labels";
+import { FEATURE_SUBTYPE_LABELS } from "@/data/id-labels";
 import {
   type Feature,
   type FeatureType,
@@ -200,7 +200,7 @@ function updateSubtypeFilter(): void {
   filter.options.add(new Option(t("All"), "all", false, filterState.subtype === "all"));
   for (const subtype of subtypes) {
     filter.options.add(
-      new Option(labelOf(FEATURE_SUBTYPE_LABELS, subtype), subtype, false, subtype === filterState.subtype)
+      new Option(FEATURE_SUBTYPE_LABELS[subtype] ?? subtype, subtype, false, subtype === filterState.subtype)
     );
   }
   filter.disabled = subtypes.length === 0;
@@ -236,7 +236,8 @@ function renderGroupCell(feature: Feature, lakeGroups: string[]): string {
 
 // "Freshwater lake", "Isle", "Lake island", "Sea"
 function getTypeLabel(feature: Pick<Feature, "type" | "subtype">): string {
-  return labelOf(FEATURE_SUBTYPE_LABELS, feature.subtype || feature.type);
+  const subtype = feature.subtype || feature.type;
+  return FEATURE_SUBTYPE_LABELS[subtype] ?? subtype;
 }
 
 // the subtype set is fixed per type; lake_island is geographic, so it stays put

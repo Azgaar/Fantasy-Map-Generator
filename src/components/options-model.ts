@@ -23,12 +23,12 @@ import { Military } from "@/generators/military-generator";
 import { Names } from "@/generators/names-generator";
 import { Relief } from "@/generators/relief-generator";
 import { Transports } from "@/generators/transports-generator";
-import { safeParseJSON } from "@/utils";
 import { t } from "@/utils/i18n";
 import { rn } from "@/utils/numberUtils";
 import { deepMerge } from "@/utils/objectUtils";
 import { gauss, rand, rw } from "@/utils/probabilityUtils";
 import { parseSections } from "@/utils/schemaUtils";
+import { OPTIONS_STORAGE_KEY, readStoredOptions } from "./options-storage";
 
 declare global {
   var Options: OptionsModel;
@@ -36,7 +36,6 @@ declare global {
   var options: OptionsData;
 }
 
-export const STORAGE_KEY = "fmg-options";
 /** custom icons outgrow localStorage, so this browser keeps them in IndexedDB */
 export const ICONS_STORAGE_KEY = "fmg-custom-icons";
 const ICONS_READ_TIMEOUT = 3000; // the IndexedDB helper never answers when the database cannot open
@@ -150,7 +149,7 @@ class OptionsModel {
     const { customIcons, ...map } = options.map;
     this.persistIcons(customIcons);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...options, map }));
+      localStorage.setItem(OPTIONS_STORAGE_KEY, JSON.stringify({ ...options, map }));
     } catch (error) {
       // a full storage keeps the last options; the map file still holds the map's own
       if (!(error instanceof DOMException && error.name === "QuotaExceededError")) throw error;
@@ -195,9 +194,7 @@ class OptionsModel {
   /** Boot: adopt what this browser kept from the last session, validated and repaired */
   restore(): void {
     this.iconsRestored = false; // until `restoreIcons` reads them again
-    let stored: Record<string, unknown> = {};
-    const parsed = safeParseJSON(localStorage.getItem(STORAGE_KEY) ?? "");
-    if (typeof parsed === "object" && parsed !== null) stored = parsed;
+    const stored = readStoredOptions();
 
     const source = deepMerge(this.getDefaultOptions(), adoptLegacyOptions() ?? {});
     deepMerge(source, stored);

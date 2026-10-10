@@ -50,7 +50,7 @@ export class MapBrush {
     this.options = { ...options, id, min, max, spacing };
     this.currentRadius = minmax(options.radius ?? 12, min, max);
 
-    this.markup = /* html */ `<div data-tip="${sentences(t("Change brush size"), t("Shortcut: Shift + drag on the map, or + and −"))}">
+    this.markup = /* html */ `<div data-tip="${sentences(t("Change brush size"), t("Shortcut: Shift + drag on the map, or {{plus}} and {{minus}}", { plus: "+", minus: "−" }))}">
       <slider-input id="${id}" min="${min}" max="${max}" step="1" value="${this.currentRadius}" data-key-step="${keyStep}" data-brush-size
         >${label}</slider-input>
     </div>`;

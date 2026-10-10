@@ -16,7 +16,6 @@ Map generation and editing run entirely in the browser. A generated world is nev
 These are off by default. Using one means sending data to that third party under their own terms.
 
 * **Dropbox** — only if you sign in from _Save/Load → Cloud_, and only the map files you choose to store there.
-* **Google Translate** — only if you load it from _Options → Other languages_; the page text is then processed by Google. The built-in interface languages are part of the Generator and send nothing anywhere.
 * **AI text generation** (_Tools → AI generator_) — your prompt goes directly from your browser to the provider you pick (OpenAI, Anthropic, or a local Ollama instance). The API key you enter is kept in this browser's `localStorage` and is sent only to that provider. The project never sees the prompt or the key.
 
 ## Azgaar Assistant

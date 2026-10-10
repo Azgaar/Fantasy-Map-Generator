@@ -82,7 +82,7 @@ export function renderEditorPagination(
   nav.style.display = "inline-flex";
   nav.innerHTML = /* html */ `
     <button class="icon-left-open editorPagePrev" data-tip="${t("Previous page")}" style="padding: 0 4px;" ${view.page <= 1 ? "disabled" : ""}></button>
-    <span>${t("Page")}&nbsp;<input class="editorPageInput" type="number" min="1" max="${view.totalPages}" value="${view.page}" style="width: 3.5em" data-tip="${t("Jump to page")}" />&nbsp;${t("of")}&nbsp;${view.totalPages}</span>
+    <span>${t("Page {{- page}} of {{total}}", { page: `<input class="editorPageInput" type="number" min="1" max="${view.totalPages}" value="${view.page}" style="width: 3.5em" data-tip="${t("Jump to page")}" />`, total: view.totalPages })}</span>
     <button class="icon-right-open editorPageNext" data-tip="${t("Next page")}" style="padding: 0 4px;" ${view.page >= view.totalPages ? "disabled" : ""}></button>`;
   nav.querySelector<HTMLElement>(".editorPagePrev")?.addEventListener("click", () => onGoto(view.page - 1));
   nav.querySelector<HTMLElement>(".editorPageNext")?.addEventListener("click", () => onGoto(view.page + 1));
