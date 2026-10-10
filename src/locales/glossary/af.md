@@ -12,7 +12,7 @@ Terms every `af.json` string uses the same way. Rules for all catalogs are in
 - Capitalize only the first word of a label: “Kultuurredigeerder”, “Wys alle lae”.
 - Compounds are written as one word (“reliëfreël”, “hoogtekaart”); use a hyphen after an
   abbreviation, a number or a brand: “API-sleutel”, “3D-voorskou”, “Azgaar-assistent”.
-- Quotes are “…”; the apostrophe is ’ (“’n kaart”, “Azgaar’s”). Keys keep their English names:
+- Quotes are “…”; the apostrophe is ’ (“’n kaart”). Possessives use “se” (“Azgaar se kaart”). Keys keep their English names:
   Ctrl, Shift, Alt, Enter, Esc, Space.
 - Brand and product names stay: Azgaar, Armoria, Dropbox, Discord.
 - The product names are translated: “Fantasiekaartgenerator”, in full “Azgaar se Fantasiekaartgenerator”; the assistant is “Azgaar-assistent”.
@@ -57,7 +57,7 @@ Terms every `af.json` string uses the same way. Rules for all catalogs are in
 | zone                          | sone                               |                                       |
 | emblem / coat of arms         | wapen                              | “embleem” only for a picture emblem   |
 | charge / tincture / field     | wapenfiguur / tinktuur / veld      |                                       |
-| division / ordinary / shield  | verdeling / ereteken / skild       |                                       |
+| division / ordinary / shield  | verdeling / heroutstuk / skild       |                                       |
 | note / legend                 | nota / legende                     |                                       |
 | submap                        | subkaart                           |                                       |
 | expansionism                  | ekspansionisme                     |                                       |
