@@ -4,6 +4,7 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { redrawIceberg } from "@/renderers/draw-ice";
+import { sentences, t } from "@/utils/i18n";
 import { ensureEl, getPointer, parseTransform } from "../utils";
 
 let selectedIce: Selection<SVGElement, unknown, HTMLElement, unknown>;
@@ -19,7 +20,7 @@ function open(element: SVGElement): void {
   const id = +selectedIce.attr("data-id");
   const iceElement = pack.ice.find(el => el.i === id);
   const isGlacier = selectedIce.attr("type") === "glacier";
-  const type = isGlacier ? "Glacier" : "Iceberg";
+  const type = isGlacier ? t("Glacier") : t("Iceberg");
 
   renderDialog();
 
@@ -35,7 +36,7 @@ function open(element: SVGElement): void {
     .call(drag<SVGElement, unknown>().on("drag", dragElement));
 
   $("#iceEditor").dialog({
-    title: `Edit ${type}`,
+    title: t("Edit {{- type}}", { type }),
     resizable: false,
     position: { my: "center top+60", at: "top", of: "svg", collision: "fit" },
     close: closeEditor
@@ -46,11 +47,11 @@ function renderDialog(): void {
   destroyDialog("iceEditor");
 
   const html = /* html */ `<div id="iceEditor" class="dialog">
-    <button id="iceEditStyle" data-tip="Edit style in Style Editor" class="icon-brush"></button>
-    <button id="iceRandomize" data-tip="Randomize Iceberg shape" class="icon-shuffle"></button>
-    <input id="iceSize" data-tip="Change Iceberg size" type="range" min=".05" max="2" step=".01" />
-    <button id="iceNew" data-tip="Add an Iceberg (click on map)" class="icon-plus"></button>
-    <button id="iceRemove" data-tip="Remove the element" data-shortcut="Delete" class="icon-trash fastDelete"></button>
+    <button id="iceEditStyle" data-tip="${t("Edit style in Style Editor")}" class="icon-brush"></button>
+    <button id="iceRandomize" data-tip="${t("Randomize Iceberg shape")}" class="icon-shuffle"></button>
+    <input id="iceSize" data-tip="${t("Change Iceberg size")}" type="range" min=".05" max="2" step=".01" />
+    <button id="iceNew" data-tip="${t("Add an Iceberg (click on map)")}" class="icon-plus"></button>
+    <button id="iceRemove" data-tip="${t("Remove")}" data-shortcut="Delete" class="icon-trash fastDelete"></button>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
@@ -80,7 +81,7 @@ function toggleAdd(): void {
   iceNewBtn.classList.toggle("pressed");
   if (iceNewBtn.classList.contains("pressed")) {
     select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", addIcebergOnClick);
-    tip("Click on map to create an iceberg. Hold Shift to add multiple", true);
+    tip(sentences(t("Click on map to create an iceberg"), t("Hold Shift to add multiple")), true);
   } else {
     clearMainTip();
     applyDefaultViewboxEvents();
@@ -98,18 +99,21 @@ function addIcebergOnClick(event: PointerEvent): void {
 }
 
 function removeIce(): void {
-  const type = selectedIce.attr("type") === "glacier" ? "Glacier" : "Iceberg";
-  alertMessage.innerHTML = /* html */ `Are you sure you want to remove the ${type}?`;
+  const isGlacier = selectedIce.attr("type") === "glacier";
+  const type = isGlacier ? t("Glacier") : t("Iceberg");
+  alertMessage.innerHTML = isGlacier
+    ? t("Are you sure you want to remove the glacier?")
+    : t("Are you sure you want to remove the iceberg?");
   $("#alert").dialog({
     resizable: false,
-    title: `Remove ${type}`,
+    title: t("Remove", { type }),
     buttons: {
-      Remove: function (this: HTMLElement) {
+      [t("Remove")]: function (this: HTMLElement) {
         $(this).dialog("close");
         Ice.removeIce(+selectedIce.attr("data-id"));
         $("#iceEditor").dialog("close");
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }

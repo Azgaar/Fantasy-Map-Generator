@@ -6,6 +6,7 @@ import { type D3DragEvent, select } from "d3";
 import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
 import { minmax, parseTransform, rn } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { type LegendPosition, legendPositions } from "./legend-positions";
 
 // [id, color, label] as stored in the legend `data` attribute
@@ -33,7 +34,7 @@ export function drawLegend(name: string, data: LegendItem[]): void {
 
   // TODO: a renderer should not own controls. Move this to a proper legend component once one exists
   layer
-    .on("mousemove", () => tip("Drag to change the position. Click to hide the legend box"))
+    .on("mousemove", () => tip(sentences(t("Drag to change the position"), t("Click to hide the legend box"))))
     .on("click", event => onLegendClick(event));
 
   const node = getBox(name) ?? (layer.append("g").attr("data-legend", name).node() as SVGGElement);

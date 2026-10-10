@@ -27,6 +27,12 @@ jobs:
       - name: Check the public assets index.html serves are stamped with their current contents
         run: node scripts/stamp-assets.js --check
 
+      - name: Check the English catalog lists every translated interface string
+        run: node scripts/extract-strings.mjs --check
+
+      - name: Check every locale catalog keeps the rules a translation must not break, warn about missing translations
+        run: node scripts/lint-locales.mjs
+
       - name: Run Unit tests
         run: npm run test
 

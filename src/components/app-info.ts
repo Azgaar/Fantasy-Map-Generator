@@ -2,6 +2,7 @@
 // A component, not a controller — it is opened over the map but knows nothing about it
 
 import { ensureEl, link } from "@/utils";
+import { t } from "@/utils/i18n";
 
 const COMMUNITY = {
   discord: link("https://discordapp.com/invite/X7E84HU", "Discord"),
@@ -16,44 +17,39 @@ const PROJECTS = {
 
 const WIKI = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki";
 const GUIDES = {
-  quickStart: link(`${WIKI}/Quick-Start-Tutorial`, "Quick start tutorial"),
-  qaa: link(`${WIKI}/Q&A`, "Q&A page"),
-  video: link("https://youtube.com/playlist?list=PLtgiuDC8iVR2gIG8zMTRn7T_L0arl9h1C", "Video tutorial")
+  quickStart: link(`${WIKI}/Quick-Start-Tutorial`, t("Quick start tutorial")),
+  qaa: link(`${WIKI}/Q&A`, t("Q&A page")),
+  video: link("https://youtube.com/playlist?list=PLtgiuDC8iVR2gIG8zMTRn7T_L0arl9h1C", t("Video tutorial"))
 };
 
 const LINKS = [
-  link("https://github.com/Azgaar/Fantasy-Map-Generator", "GitHub repository"),
-  link("https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE", "License"),
-  link(`${WIKI}/Changelog`, "Changelog"),
-  link(`${WIKI}/Hotkeys`, "Hotkeys"),
-  link("https://trello.com/b/7x832DG4/fantasy-map-generator", "Devboard"),
-  `<a href="mailto:azgaar.fmg@yandex.by" target="_blank">Contact Azgaar</a>`
+  link("https://github.com/Azgaar/Fantasy-Map-Generator", t("GitHub repository")),
+  link("https://github.com/Azgaar/Fantasy-Map-Generator/blob/master/LICENSE", t("License")),
+  link(`${WIKI}/Changelog`, t("Changelog")),
+  link(`${WIKI}/Hotkeys`, t("Hotkeys")),
+  link("https://trello.com/b/7x832DG4/fantasy-map-generator", t("Devboard")),
+  `<a href="mailto:azgaar.fmg@yandex.by" target="_blank">${t("Contact Azgaar")}</a>`
 ];
 
 function render(): string {
-  return /* html */ `<b>Fantasy Map Generator</b> (FMG) is a free open-source application. It means that you own all created maps and can use them as
-    you wish.
+  return /* html */ `${t("Fantasy Map Generator (FMG) is a free open-source application. It means that you own all created maps and can use them as you wish.")}
 
     <p>
-      The development is community-backed, you can donate on ${COMMUNITY.patreon}. You can also help creating overviews, tutorials and spreding the word about the
-      Generator.
+      ${t("The development is community-backed, you can donate on {{- patreon}}. You can also help creating overviews, tutorials and spreding the word about the Generator.", { patreon: COMMUNITY.patreon })}
     </p>
 
     <p>
-      The best way to get help is to contact the community on ${COMMUNITY.discord} and ${COMMUNITY.reddit}. Before asking questions, please check out the
-      ${GUIDES.quickStart}, the ${GUIDES.qaa}, and ${GUIDES.video}.
+      ${t("The best way to get help is to contact the community on {{- discord}} and {{- reddit}}. Before asking questions, please check out the {{- quickStart}}, the {{- qaa}}, and {{- video}}.", { ...COMMUNITY, ...GUIDES })}
     </p>
 
     <ul style="columns:2">${LINKS.map(item => `<li>${item}</li>`).join("")}</ul>
 
-    <p>Check out our other projects:
+    <p>${t("Check out our other projects")}:
       <ul>
-        <li>${PROJECTS.armoria}: a tool for creating heraldic coats of arms</li>
-        <li>${PROJECTS.deorum}: a vast gallery of customizable fantasy characters</li>
+        <li>${t("{{- armoria}}: a tool for creating heraldic coats of arms", { armoria: PROJECTS.armoria })}</li>
+        <li>${t("{{- deorum}}: a vast gallery of customizable fantasy characters", { deorum: PROJECTS.deorum })}</li>
       </ul>
-    </p>
-
-    <p>Chinese localization: <a href="https://www.8desk.top" target="_blank">8desk.top</a></p>`;
+    </p>`;
 }
 
 /** Show info about the generator in a popup */
@@ -65,7 +61,7 @@ export function showInfo(): void {
     title: document.title,
     width: "28em",
     buttons: {
-      OK: function (this: HTMLElement) {
+      [t("OK")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     },

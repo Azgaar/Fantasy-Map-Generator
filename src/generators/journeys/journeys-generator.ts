@@ -24,6 +24,14 @@ export interface PathfindingResult {
   errorCode?: "no-water" | "no-land" | "no-water-path" | "no-land-path";
 }
 
+export type CellKind = "water" | "river" | "coast" | "inland";
+const CELL_KINDS: Record<CellKind, string> = {
+  water: "water",
+  river: "navigable river",
+  coast: "coastal land",
+  inland: "inland land"
+};
+
 export type SegmentFields = Partial<{
   name: string;
   color: string | null;
@@ -431,12 +439,16 @@ class JourneysModule {
     return true;
   }
 
+  /** The terrain an endpoint stands on, which decides the transports it accepts */
+  cellKind(cellId: number): CellKind {
+    if (!isLand(cellId, pack)) return "water";
+    if (Rivers.isNavigable(cellId)) return "river";
+    return this.isCoastalLand(cellId) ? "coast" : "inland";
+  }
+
   describeCell(cellId: number): string {
     if (cellId === undefined || cellId === null) return "no cell";
-    if (!isLand(cellId, pack)) return `water cell ${cellId}`;
-    if (Rivers.isNavigable(cellId)) return `navigable river cell ${cellId}`;
-    if (this.isCoastalLand(cellId)) return `coastal land cell ${cellId}`;
-    return `inland land cell ${cellId}`;
+    return `${CELL_KINDS[this.cellKind(cellId)]} cell ${cellId}`;
   }
 
   findPath(

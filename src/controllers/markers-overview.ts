@@ -18,6 +18,7 @@ import type { Marker } from "@/generators/markers-generator";
 import { setMarkersFilter } from "@/renderers/draw-markers";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName, getLatitude, getLongitude } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "../utils";
 
 const dialogId = "markersOverview" as const;
@@ -25,9 +26,9 @@ const position = { my: "right top", at: "right-10 top+10", of: "svg", collision:
 let filterState: { search: string; state: string; culture: string; type: string };
 
 const columns: EditorColumn<Marker>[] = [
-  { key: "type", label: "Type", width: "12em", permanent: true, sortBy: marker => marker.type, sortType: "alpha" },
-  { key: "pin", label: "Pin", width: "1.4em" },
-  { key: "lock", label: "Lock", width: "1.4em" },
+  { key: "type", label: t("Type"), width: "12em", permanent: true, sortBy: marker => marker.type, sortType: "alpha" },
+  { key: "pin", label: t("Pin"), width: "1.4em" },
+  { key: "lock", label: t("Lock"), width: "1.4em" },
   { key: "edit", width: "1.4em" },
   { key: "locate", width: "1.4em" },
   { key: "remove", width: "1.4em", permanent: true }
@@ -44,7 +45,7 @@ function open(): void {
   markersTable.reset();
 
   $(`#${dialogId}`).dialog({
-    title: "Markers Overview",
+    title: t("Markers Overview"),
     resizable: false,
     close: closeMarkersOverview,
     position
@@ -59,38 +60,38 @@ function renderDialog(): void {
       ${renderEditorHeader({ dialogId, columns })}
       <div id="markersBody" class="table"></div>
       <div id="markersFilters" style="width: 100%; display:flex; gap:.2em; padding:0.5em 0; flex-direction:column; font-size:smaller">
-        <select id="markersFilterState" data-tip="Show only markers located in the selected state"></select>
-        <select id="markersFilterCulture" data-tip="Show only markers located in the selected culture"></select>
-        <select id="markersFilterType" data-tip="Show only markers of the selected type"></select>
-        <label for="markersSearch" data-tip="Filter by type">Search: <input id="markersSearch" type="search" /></label>
+        <select id="markersFilterState" data-tip="${t("Show only markers located in the selected state")}"></select>
+        <select id="markersFilterCulture" data-tip="${t("Show only markers located in the selected culture")}"></select>
+        <select id="markersFilterType" data-tip="${t("Show only markers of the selected type")}"></select>
+        <label for="markersSearch" data-tip="${t("Filter by type")}">${t("Search")}: <input id="markersSearch" type="search" /></label>
       </div>
       <div id="markersFooter" class="totalLine">
-        <div data-tip="Markers number">
-          Markers: <span id="markersFooterNumber">0</span> of <span id="markersFooterTotal">0</span>
+        <div data-tip="${t("Markers number")}">
+          ${t("Markers")}: ${t("{{- shown}} of {{- total}}", { shown: `<span id="markersFooterNumber">0</span>`, total: `<span id="markersFooterTotal">0</span>` })}
         </div>
       </div>
       <div id="markersBottom">
-        <button id="markersOverviewRefresh" data-tip="Refresh the Overview screen" class="icon-cw"></button>
-        <button id="markersRegenerate" data-tip="Regenerate unlocked markers" class="icon-shuffle"></button>
+        <button id="markersOverviewRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
+        <button id="markersRegenerate" data-tip="${t("Regenerate unlocked markers")}" class="icon-shuffle"></button>
         <span id="markerTypeSelectorWrapper">
-          <button id="markerTypeSelector" data-tip="Select marker type for newly added markers." style="font-size: 0.7em">❓</button>
+          <button id="markerTypeSelector" data-tip="${t("Select marker type for newly added markers.")}" style="font-size: 0.7em">❓</button>
           <div id="markerTypeSelectMenu"></div>
         </span>
         <button
           id="markersAddFromOverview"
-          data-tip="Add a new marker. Hold Shift to add multiple"
+          data-tip="${sentences(t("Add"), t("Hold Shift to add multiple"))}"
           class="icon-plus"
         ></button>
-        <button id="markersGenerationConfig" data-tip="Config markers generation options" class="icon-cog"></button>
-        <button id="markersRemoveAll" data-tip="Remove all unlocked markers" class="icon-trash"></button>
-        <button id="markersExport" data-tip="Save markers data as a text file (.csv)" class="icon-download"></button>
+        <button id="markersGenerationConfig" data-tip="${t("Config markers generation options")}" class="icon-cog"></button>
+        <button id="markersRemoveAll" data-tip="${t("Remove all unlocked markers")}" class="icon-trash"></button>
+        <button id="markersExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
       </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
   ensureEl(`${dialogId}Header`).querySelector<HTMLElement>('[data-col="pin"]')!.innerHTML =
-    '<span id="markersInverPin" style="color:#6e5e66" data-tip="Click to invert pin state for all markers" class="icon-pin pointer"></span>';
+    `<span id="markersInverPin" style="color:#6e5e66" data-tip="${t("Click to invert pin state for all markers")}" class="icon-pin pointer"></span>`;
   ensureEl(`${dialogId}Header`).querySelector<HTMLElement>('[data-col="lock"]')!.innerHTML =
-    '<span id="markersInverLock" style="color:#6e5e66" data-tip="Click to invert lock state for all markers" class="icon-lock pointer"></span>';
+    `<span id="markersInverLock" style="color:#6e5e66" data-tip="${t("Click to invert lock state for all markers")}" class="icon-lock pointer"></span>`;
   bindColumnSorting(dialogId, markersTable.reset);
   initColumnVisibility({
     dialogId,
@@ -139,7 +140,7 @@ function populateFilters(): void {
     .map(state => ({ value: String(state.i), label: state.fullName || state.name }));
   filterState.state = fillSelect(
     ensureEl<HTMLSelectElement>("markersFilterState"),
-    "All states",
+    t("All states"),
     states,
     filterState.state
   );
@@ -149,7 +150,7 @@ function populateFilters(): void {
     .map(culture => ({ value: String(culture.i), label: culture.name }));
   filterState.culture = fillSelect(
     ensureEl<HTMLSelectElement>("markersFilterCulture"),
-    "All cultures",
+    t("All cultures"),
     cultures,
     filterState.culture
   );
@@ -157,7 +158,12 @@ function populateFilters(): void {
   const types = [...new Set(pack.markers.map(marker => marker.type))]
     .sort()
     .map(type => ({ value: type, label: type }));
-  filterState.type = fillSelect(ensureEl<HTMLSelectElement>("markersFilterType"), "All types", types, filterState.type);
+  filterState.type = fillSelect(
+    ensureEl<HTMLSelectElement>("markersFilterType"),
+    t("All types"),
+    types,
+    filterState.type
+  );
 
   ensureEl<HTMLInputElement>("markersSearch").value = filterState.search;
   dialogState.set(dialogId, "filters", filterState);
@@ -261,18 +267,18 @@ function renderMarkersPage(view: TableView<Marker>): void {
       return /* html */ `
         <div class="states" data-id=${i} data-type="${type}">
           <div data-col="type">
-            <span data-tip="Marker icon" style="display: inline-flex; width: 1.2em">${Icons.html(icon, { fill: iconFill, stroke: iconStroke })}</span>
-            <span data-tip="Marker type">${type}</span>
+            <span data-tip="${t("Marker icon")}" style="display: inline-flex; width: 1.2em">${Icons.html(icon, { fill: iconFill, stroke: iconStroke })}</span>
+            <span data-tip="${t("Marker type")}">${type}</span>
           </div>
-          <span data-col="pin" data-tip="Pin marker (display only pinned markers)" class="icon-pin ${
+          <span data-col="pin" data-tip="${t("Pin marker (display only pinned markers)")}" class="icon-pin ${
             pinned ? "" : "inactive"
           }" pointer"></span>
           <span data-col="lock" class="locks pointer ${
             lock ? "icon-lock" : "icon-lock-open inactive"
           }" onmouseover="showElementLockTip(event)"></span>
-          <span data-col="edit" data-tip="Edit marker" class="icon-pencil"></span>
-          <span data-col="locate" data-tip="Locate the marker" class="icon-target"></span>
-          <span data-col="remove" data-tip="Remove marker" class="icon-trash-empty"></span>
+          <span data-col="edit" data-tip="${t("Edit Marker")}" class="icon-pencil"></span>
+          <span data-col="locate" data-tip="${t("Locate on map")}" class="icon-target"></span>
+          <span data-col="remove" data-tip="${t("Remove")}" class="icon-trash-empty"></span>
         </div>`;
     })
     .join("");
@@ -344,9 +350,9 @@ function toggleLockStatus(el: HTMLElement, i: number): void {
 
 function triggerRemove(i: number): void {
   confirmationDialog({
-    title: "Remove marker",
-    message: "Are you sure you want to remove this marker? The action cannot be reverted",
-    confirm: "Remove",
+    title: t("Remove"),
+    message: sentences(t("Are you sure you want to remove this marker?"), t("This action cannot be reverted")),
+    confirm: t("Remove"),
     onConfirm: () => removeMarker(i)
   });
 }
@@ -371,9 +377,12 @@ function removeMarker(i: number): void {
 
 function triggerRemoveAll(): void {
   confirmationDialog({
-    title: "Remove all markers",
-    message: "Are you sure you want to remove all non-locked markers? The action cannot be reverted",
-    confirm: "Remove all",
+    title: t("Remove all markers"),
+    message: sentences(
+      t("Are you sure you want to remove all non-locked markers?"),
+      t("This action cannot be reverted")
+    ),
+    confirm: t("Remove all"),
     onConfirm: removeAllMarkers
   });
 }

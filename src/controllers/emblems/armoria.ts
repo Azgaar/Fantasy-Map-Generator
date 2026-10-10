@@ -1,10 +1,11 @@
 import { z } from "zod";
 import type { HeraldicEmblem } from "@/types/emblems";
+import { t } from "@/utils/i18n";
 
 export const ARMORIA_GUI = "https://azgaar.github.io/Armoria/";
 export const ARMORIA_API = "https://armoria.herokuapp.com/";
 
-const NOT_ARMORIA = "Paste an Armoria edit link, API link or COA string. Use the picture button for other images";
+const NOT_ARMORIA = t("Paste an Armoria edit link, API link or COA string. Use the picture button for other images");
 
 /** the COA of an Armoria edit link, API link or COA string; throws a message meant for the author */
 export function parseArmoria(input: string): HeraldicEmblem {

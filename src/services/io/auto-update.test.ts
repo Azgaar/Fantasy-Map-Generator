@@ -850,7 +850,7 @@ describe("v1.152.0 notes moved onto entities", () => {
     ]);
     expect(confirmationDialog).toHaveBeenCalledOnce();
     const [dialog] = vi.mocked(confirmationDialog).mock.calls[0];
-    expect(dialog.message).toContain("1 note(s)");
+    expect(dialog.message).toContain("cannot be kept: 1");
     dialog.onConfirm?.();
     expect(vi.mocked(downloadFile).mock.calls[0][0]).toBe('id,name,note\n"road0","Lost Road","Lost lore"');
   });
@@ -959,7 +959,7 @@ describe("v1.152.0 notes moved onto entities", () => {
     expect(confirmationDialog).toHaveBeenCalledOnce();
 
     const [dialog] = vi.mocked(confirmationDialog).mock.calls[0];
-    expect(dialog.message).toContain("2 note(s)");
+    expect(dialog.message).toContain("cannot be kept: 2");
 
     dialog.onConfirm?.();
     const [csv, fileName] = vi.mocked(downloadFile).mock.calls[0];

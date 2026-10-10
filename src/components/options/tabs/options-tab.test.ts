@@ -2,6 +2,7 @@
 import { readFileSync } from "node:fs";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { toggleAssistant } from "@/components/assistant-bubble";
+import { confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { Pins } from "@/components/pins";
 import { setMapZoom, setZoomExtent } from "@/components/zoom";
 import { Emblems } from "@/generators/emblems-generator";
@@ -26,6 +27,10 @@ vi.mock("@/components/options/io-panes", () => ({
 }));
 vi.mock("@/components/options/view-mode", () => ({ changeViewMode: vi.fn() }));
 vi.mock("@/services/url-params", () => ({ copyMapURL: vi.fn() }));
+vi.mock("@/components/dialog/dialog-helpers", async importOriginal => ({
+  ...(await importOriginal<typeof import("@/components/dialog/dialog-helpers")>()),
+  confirmationDialog: vi.fn()
+}));
 vi.mock("@/components/assistant-bubble", () => ({ toggleAssistant: vi.fn() }));
 
 let tab: typeof import("./options-tab");
@@ -179,7 +184,7 @@ describe("options tab bindings", () => {
     edit(control("manors"), "400");
     expect(output("manors").value).toBe("400");
     edit(control("manors"), "1000");
-    expect(output("manors").value).toBe("auto");
+    expect(output("manors").value).toBe("Auto");
     expect(Pins.valueOr("manors", 0)).toBe(1000);
   });
 
@@ -221,9 +226,11 @@ describe("options tab bindings", () => {
   });
 
   it("still pairs unbound legacy controls by ID", () => {
-    const input = document.getElementById("pngResolutionInput") as HTMLInputElement;
-    edit(input, "3");
-    expect((document.getElementById("pngResolutionOutput") as HTMLInputElement).value).toBe("3");
+    document
+      .getElementById("dialogs")!
+      .insertAdjacentHTML("beforeend", '<input id="legacyScaleInput" /><input id="legacyScaleOutput" />');
+    edit(document.getElementById("legacyScaleInput") as HTMLInputElement, "3");
+    expect((document.getElementById("legacyScaleOutput") as HTMLInputElement).value).toBe("3");
   });
 
   it("reads lock values from the binding config", () => {
@@ -231,5 +238,30 @@ describe("options tab bindings", () => {
     options.generation.states.limit = 42;
     document.getElementById("lock_statesNumber")!.click();
     expect(Pins.valueOr("statesNumber", 0)).toBe(42);
+  });
+});
+
+describe("interface language", () => {
+  const choose = (code: string) => {
+    const select = document.getElementById("interfaceLanguage") as HTMLSelectElement;
+    select.value = code;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    return select;
+  };
+  beforeEach(() => {
+    vi.mocked(confirmationDialog).mockClear();
+  });
+
+  it("stores the choice and offers the reload that applies it", () => {
+    const select = choose("ru");
+    expect(select.value).toBe("ru");
+    expect(JSON.parse(localStorage.getItem("fmg-options")!).app.language).toBe("ru");
+    expect(confirmationDialog).toHaveBeenCalledWith(expect.objectContaining({ confirm: "Reload", cancel: "Not now" }));
+  });
+
+  it("stores a switch back to the current language without asking to reload", () => {
+    choose("en");
+    expect(options.app.language).toBe("en");
+    expect(confirmationDialog).not.toHaveBeenCalled();
   });
 });

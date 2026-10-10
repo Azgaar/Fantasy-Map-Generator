@@ -1,4 +1,5 @@
 import "./options-model";
+import "./dialog/system-dialogs";
 import "./app-info";
 import "./tooltips";
 import "./map-tooltip";

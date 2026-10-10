@@ -1,7 +1,9 @@
 // A style card's header preview:
 
 import { Icons } from "@/components/icons";
+import { FILTER_LABELS } from "@/data/id-labels";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
+import { t } from "@/utils/i18n";
 
 export type PreviewValues = { attrs: Record<string, unknown>; options: Record<string, unknown> };
 
@@ -16,7 +18,7 @@ const CHIP_WIDTH = 48;
 const CHIP_HEIGHT = 26;
 const CHIP_TILE = 20; // the width a grid pattern tile is scaled to in a chip
 export const NEUTRAL = "#3b3b3b";
-const NEUTRAL_TIP = "Sample shape: this section sets no color of its own";
+const NEUTRAL_TIP = t("Sample shape: this section sets no color of its own");
 
 /** The tone a section with no colour is sampled in: the theme's darkest solid var */
 export const sampleColor = (): string =>
@@ -69,7 +71,7 @@ export function cardPreview(values: PreviewValues, { sample, off, neutral = NEUT
   for (const chip of preview) {
     if (live) {
       (chip as HTMLElement).style.filter = live;
-      const name = `Filter: ${filterName(live)}`;
+      const name = `${t("Filter")}: ${filterName(live)}`;
       chip.setAttribute(
         "data-tip",
         chip.getAttribute("data-tip") ? `${chip.getAttribute("data-tip")} · ${name}` : name
@@ -250,7 +252,7 @@ function ramp(scheme: string): HTMLElement {
   span.className = "ramp";
   const stops = [0, 0.25, 0.5, 0.75, 1].map(at => HeightmapColorSchemes.get(scheme)(at));
   span.style.background = `linear-gradient(to right, ${stops.join(",")})`;
-  span.dataset.tip = `Color scheme: ${scheme.startsWith("#") ? "custom" : scheme}`;
+  span.dataset.tip = `${t("Color scheme")}: ${scheme.startsWith("#") ? t("Custom") : scheme}`;
   return span;
 }
 
@@ -277,6 +279,6 @@ function iconChip(id: string, read: Read): HTMLElement {
 // url(#splotch) → the def's name; a CSS function list → its function names
 function filterName(filter: string): string {
   const id = filter.match(/^url\(#(.+)\)$/)?.[1];
-  if (id) return document.getElementById(id)?.getAttribute("name") ?? id;
+  if (id) return FILTER_LABELS[id] ?? document.getElementById(id)?.getAttribute("name") ?? id;
   return Array.from(filter.matchAll(/([a-z-]+)\(/g), match => match[1]).join(", ");
 }

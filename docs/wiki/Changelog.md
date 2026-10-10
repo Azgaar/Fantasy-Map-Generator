@@ -12,6 +12,15 @@ Check out [Dev board](https://github.com/users/Azgaar/projects/3/views/1?sumFiel
 
 Current version of the Fantasy Map Generator is the latest `master` branch. You can download it here: https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip. Also see [the wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#can-i-use-the-generator-offline).
 
+**[1.155.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.155.0) - 2026-10-24**:
+
+- Interface translations: 22 languages besides English.
+- The Google Translate widget removed
+- Population layer: shading land by population density by _[inviktos](https://github.com/inviktos)_
+- Altitude legend: heightmap colors by _[Avengium](https://github.com/Avengium)_
+
+# Releases
+
 **[1.154.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.154.0) - 2026-10-05**:
 
 - Azgaar Assistant can read map data and propose changes when your own AI key is provided
@@ -25,8 +34,6 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Saving: choose the map file destination by _[spencerpruitt](https://github.com/spencerpruitt)_
 - States Editor: merged states can be kept as provinces by _[barrulus](https://github.com/barrulus)_
 - Diplomacy Overview: set relations on map click by _[WebHead89](https://github.com/WebHead89)_
-
-# Releases
 
 **[1.153.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.153.0) - 2026-09-16**:
 

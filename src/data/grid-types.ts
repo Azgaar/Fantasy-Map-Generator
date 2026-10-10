@@ -1,12 +1,13 @@
+import { t } from "@/utils/i18n";
 export const GRID_TYPES = {
-  pointyHex: "Hex grid (pointy)",
-  flatHex: "Hex grid (flat)",
-  square: "Square grid",
-  square45deg: "Square 45 degrees grid",
-  squareTruncated: "Truncated square grid",
-  squareTetrakis: "Tetrakis square grid",
-  triangleHorizontal: "Triangle grid (horizontal)",
-  triangleVertical: "Triangle grid (vertical)",
-  trihexagonal: "Trihexagonal grid",
-  rhombille: "Rhombille grid"
+  pointyHex: t("Hex grid (pointy)"),
+  flatHex: t("Hex grid (flat)"),
+  square: t("Square grid"),
+  square45deg: t("Square 45 degrees grid"),
+  squareTruncated: t("Truncated square grid"),
+  squareTetrakis: t("Tetrakis square grid"),
+  triangleHorizontal: t("Triangle grid (horizontal)"),
+  triangleVertical: t("Triangle grid (vertical)"),
+  trihexagonal: t("Trihexagonal grid"),
+  rhombille: t("Rhombille grid")
 };

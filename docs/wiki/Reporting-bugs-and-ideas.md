@@ -51,6 +51,16 @@ Theme: Routes & Roads
 
 Votes help maintainers understand demand; they do not guarantee implementation or a release date. Maintainers decide which ideas become implementation issues. If an idea already links to an issue, follow that issue for development progress instead of submitting a duplicate.
 
+## Report a wrong translation
+
+Interface translations are written with AI help and corrected from user reports. If a label, tooltip or message reads wrong in your language, open a [GitHub issue](https://github.com/Azgaar/Fantasy-Map-Generator/issues/new?template=bug_report.yml) or post in `#fmg-bugs` on Discord. Include:
+
+- The language and where the text appears (the tab, editor or dialog).
+- The text as it is shown, and your correction.
+- The English text when you know it: switch the _Language_ in Options to English and reload to see it.
+
+Map content — generated names, legends and notes — is not translated, so English there is expected. Rename it in the editors.
+
 ## Reporting through Discord
 
 - Use `/bug` to open a bug-report form or `/idea` to open an idea form, **when those FMG Assistant commands are available**.

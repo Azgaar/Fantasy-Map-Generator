@@ -2,15 +2,16 @@
 
 import { dialogState } from "@/components/dialog/state";
 import { ensureEl, findEl, minmax } from "@/utils";
+import { t } from "@/utils/i18n";
 
-/** The note button every entity dialog puts in its toolbar. `subject` completes "notes (legend) for ..." */
-export function noteButton(id: string, subject: string): string {
-  return `<button id="${id}" data-tip="Edit free text notes (legend) for ${subject}" class="icon-book"></button>`;
+/** The note button every entity dialog puts in its toolbar, with its translated tooltip */
+export function noteButton(id: string, tip: string): string {
+  return `<button id="${id}" data-tip="${tip}" class="icon-book"></button>`;
 }
 
 /** The same button as a table row action, in the `note` column every editor table gives it */
-export function noteIcon(subject: string): string {
-  return `<span data-col="note" data-tip="Edit free text notes (legend) for ${subject}" class="icon-book pointer"></span>`;
+export function noteIcon(tip: string): string {
+  return `<span data-col="note" data-tip="${tip}" class="icon-book pointer"></span>`;
 }
 
 /** Close all open dialogs except the stated one */
@@ -38,10 +39,10 @@ interface ConfirmationOptions {
 /** Ask the user to confirm an action that cannot be reverted */
 export function confirmationDialog(options: ConfirmationOptions): void {
   const {
-    title = "Confirm action",
-    message = "Are you sure you want to continue? <br>The action cannot be reverted",
-    cancel = "Cancel",
-    confirm = "Continue",
+    title = t("Confirm action"),
+    message = `${t("Are you sure you want to continue?")}<br>${t("This action cannot be reverted")}`,
+    cancel = t("Cancel"),
+    confirm = t("Continue"),
     onCancel,
     onConfirm
   } = options;
@@ -71,7 +72,7 @@ interface AlertOptions {
 }
 
 /** Tell the user something they only need to acknowledge */
-export function alertDialog({ title = "Warning", message, width = "26em" }: AlertOptions): void {
+export function alertDialog({ title = t("Warning"), message, width = "26em" }: AlertOptions): void {
   ensureEl("alertMessage").innerHTML = message;
 
   $("#alert").dialog({
@@ -84,7 +85,7 @@ export function alertDialog({ title = "Warning", message, width = "26em" }: Aler
     close: () => {},
     position: { my: "center", at: "center", of: "svg" },
     buttons: {
-      OK: function (this: HTMLElement) {
+      [t("OK")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
@@ -174,8 +175,8 @@ function addResetButton(el: HTMLElement): void {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "ui-dialog-titlebar-reset icon-ccw";
-  button.dataset.tip = "Reset the dialog: restore its default position, columns and sorting";
-  button.setAttribute("aria-label", "Reset the dialog");
+  button.dataset.tip = t("Reset the dialog: restore its default position, columns and sorting");
+  button.setAttribute("aria-label", t("Reset the dialog"));
   button.addEventListener("click", () => dialogState.reset(el.id));
   titlebar.insertBefore(button, titlebar.querySelector(".ui-dialog-titlebar-collapse"));
 
@@ -191,8 +192,18 @@ function addResetButton(el: HTMLElement): void {
   });
 }
 
+// jQuery UI writes its titlebar buttons in English
+function translateTitlebar(event: { target: EventTarget | null }): void {
+  const titlebar = (event.target as HTMLElement).parentElement?.querySelector(".ui-dialog-titlebar");
+  titlebar?.querySelector(".ui-dialog-titlebar-collapse")?.setAttribute("data-tip", t("Minimize / maximize"));
+  const close = titlebar?.querySelector(".ui-dialog-titlebar-close");
+  close?.setAttribute("data-tip", t("Close"));
+  close?.setAttribute("title", t("Close"));
+}
+
 /** Restore each dialog to where the user last dragged it, and remember new drags. Called once by boot() */
 export function initDialogPositionPersistence(): void {
+  $(document).on("dialogcreate", translateTitlebar);
   $(document).on("dialogcreate", ".dialog", function (this: HTMLElement) {
     if (!POSITION_EXCLUDED_IDS.has(this.id)) addResetButton(this);
   });

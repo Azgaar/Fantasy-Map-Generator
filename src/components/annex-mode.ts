@@ -4,10 +4,18 @@ import { ensureEl, getPointer } from "@/utils";
 import { clearMainTip, tip } from "./tooltips";
 import { applyDefaultViewboxEvents } from "./viewbox-events";
 
+interface AnnexTips {
+  start: string;
+  pickLand: string;
+  nothingHere: string;
+  annexing: (name: string) => string;
+  isParent: (name: string) => string;
+}
+
 interface AnnexModeOptions {
   buttonId: string;
   bodySectionId: string;
-  noun: string;
+  tips: AnnexTips;
   ownerOf: (cellId: number) => number;
   colorOf: (id: number) => string;
   nameOf: (id: number) => string;
@@ -19,7 +27,7 @@ interface AnnexModeOptions {
 const ANNEX_MODE = 17;
 
 export function createAnnexMode(options: AnnexModeOptions) {
-  const { buttonId, bodySectionId, noun, ownerOf, colorOf, nameOf, rejectReason, commit } = options;
+  const { buttonId, bodySectionId, tips, ownerOf, colorOf, nameOf, rejectReason, commit } = options;
   let active = false;
   let parent = 0;
   const staged = new Set<number>();
@@ -36,7 +44,7 @@ export function createAnnexMode(options: AnnexModeOptions) {
     customization = ANNEX_MODE;
     ensureEl(buttonId).classList.add("pressed");
     select("#debug").append("g").attr("class", "annex-preview");
-    tip(`Click the ${noun} that annexes, then the ${noun}s it absorbs. Hold Shift to keep annexing`, true);
+    tip(tips.start, true);
     select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", onClick);
     setRowsInert(true);
   }
@@ -45,25 +53,25 @@ export function createAnnexMode(options: AnnexModeOptions) {
     const [x, y] = getPointer(event, this);
     const cell = Pack.findCell(x, y);
     if (cell === undefined || pack.cells.h[cell] < 20) {
-      tip(`Click on a land cell to pick a ${noun}`, false, "error");
+      tip(tips.pickLand, false, "error");
       return;
     }
 
     const id = ownerOf(cell);
     if (!id) {
-      tip(`There is no ${noun} here`, false, "error");
+      tip(tips.nothingHere, false, "error");
       return;
     }
 
     if (!parent) {
       parent = id;
       drawEntity(id, "annex-parent", 0.3);
-      tip(`Annexing into ${nameOf(id)}. Click the ${noun}s to annex. Hold Shift to keep annexing`, true);
+      tip(tips.annexing(nameOf(id)), true);
       return;
     }
 
     if (id === parent) {
-      tip(`${nameOf(id)} is the annexing ${noun}`, false, "error");
+      tip(tips.isParent(nameOf(id)), false, "error");
       return;
     }
 

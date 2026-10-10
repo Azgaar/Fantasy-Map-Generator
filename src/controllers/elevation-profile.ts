@@ -17,6 +17,7 @@ import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers"
 import { tip } from "@/components/tooltips";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { downloadFile, getFileName, getHeight, getLatitude, getLongitude } from "@/utils";
+import { t } from "@/utils/i18n";
 import type { Burg } from "../generators/burgs-generator";
 import type { Feature } from "../generators/features-generator";
 import type { Province } from "../generators/provinces-generator";
@@ -34,7 +35,7 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
   const firstCell = cells[0];
   const lastCell = cells.at(-1);
   if (firstCell === undefined || lastCell === undefined) {
-    tip("Elevation profile: no data", true, "error");
+    tip(t("Elevation profile: no data"), true, "error");
     return;
   }
 
@@ -133,7 +134,7 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
   draw();
 
   $("#elevationProfile").dialog({
-    title: "Elevation profile",
+    title: t("Elevation profile"),
     resizable: false,
     close: closeElevationProfile,
     position: {
@@ -571,24 +572,24 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
 function renderDialog(): void {
   destroyDialog("elevationProfile");
   const editorHtml = /* html */ `<div id="elevationProfile" class="dialog" width="100%">
-      <div id="elevationGraph" data-tip="Elevation profile"></div>
+      <div id="elevationGraph" data-tip="${t("Elevation profile")}"></div>
       <div style="text-align: center">
         <div id="epControls">
-          <span data-tip="Set curve profile"
-            >Curve:
+          <span data-tip="${t("Set curve profile")}"
+            >${t("Curve")}:
             <select id="epCurve">
-              <option>Linear</option>
-              <option>Bundle</option>
-              <option>Cubic Catmull-Rom</option>
-              <option selected>Monotone X</option>
-              <option>Natural</option>
+              <option>${t("Linear")}</option>
+              <option>${t("Bundle")}</option>
+              <option>${t("Cubic Catmull-Rom")}</option>
+              <option selected>${t("Monotone X")}</option>
+              <option>${t("Natural")}</option>
             </select>
           </span>
           <span
-            ><button id="epSave" data-tip="Download the chart data as a CSV file" class="icon-download"></button
+            ><button id="epSave" data-tip="${t("Download the chart data as a CSV file")}" class="icon-download"></button
           ></span>
-          <span><button id="epSaveSVG" data-tip="Download the chart as an SVG image">SVG</button></span>
-          <span><button id="epSavePNG" data-tip="Download the chart as a PNG image">PNG</button></span>
+          <span><button id="epSaveSVG" data-tip="${t("Download the chart as an SVG image")}">SVG</button></span>
+          <span><button id="epSavePNG" data-tip="${t("Download the chart as a PNG image")}">PNG</button></span>
           <span id="epstats" style="margin-left: 1em; color: #555; font-size: 0.85em"></span>
         </div>
       </div>

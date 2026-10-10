@@ -4,17 +4,7 @@
   --sans-serif: Helvetica, Arial, sans-serif;
 }
 
-/* hide Google translate header */
-body > .skiptranslate {
-  display: none;
-}
-
-/* hide Google translate in-progress widget */
-body > .skiptranslate + div {
-  display: none;
-}
-
-/* make translated text wrapper non-blocking */
+/* make browser translation wrappers non-blocking */
 font {
   pointer-events: none;
 }
@@ -228,6 +218,13 @@ t,
 #relig,
 #biomes,
 #cults {
+  mask: url(#land);
+}
+
+#populationCells {
+  stroke-dasharray: none;
+  stroke-linejoin: round;
+  fill-rule: evenodd;
   mask: url(#land);
 }
 
@@ -448,6 +445,7 @@ button.options {
   background-color: var(--bg-main);
   font-weight: bold;
   border: none;
+  white-space: nowrap;
   transition: 0.2s;
 }
 
@@ -565,6 +563,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 #options output {
   text-align: right;
   font-size: smaller;
+  white-space: nowrap;
 }
 
 #options input[type="number"] {
@@ -652,6 +651,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 #loadGoogleTranslateButton {
   font-size: smaller;
   padding: 0.4em 0.5em;
+  white-space: normal;
 }
 
 #options input[type="color"] {
@@ -672,6 +672,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 
 #sticked {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-evenly;
   width: 100%;
 }
@@ -680,6 +681,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   background-color: transparent;
   font-weight: bold;
   border: 0;
+  padding: 1px 2px;
 }
 
 #sticked button:hover {
@@ -760,6 +762,8 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 #toolsContent button {
   padding: 0.35em 0;
   margin: 0.16em 0.12em;
+  white-space: normal;
+  hyphens: auto;
 }
 
 #mapLayers {
@@ -767,6 +771,14 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   padding: 0;
   margin: 0;
   user-select: none; /* the items are re-rendered, so jQuery disableSelection cannot hold */
+}
+
+#mapLayers li {
+  text-transform: none; /* labels are cased by their language */
+  box-sizing: border-box;
+  width: calc(100% / 3 - 0.45em);
+  margin-inline: 0.2em;
+  padding-inline: 0.15em;
 }
 
 #viewMode > button {
@@ -1670,10 +1682,13 @@ div.states span.inactive:hover {
 #riverBody select,
 #routeBody div.label,
 #lakeBody div.label,
-#lakeBody input,
-#lakeBody select {
+#lakeBody input {
   display: inline-block;
   width: 7em;
+}
+
+#lakeBody select {
+  min-width: 7em;
 }
 
 #routeBody input,

@@ -6,6 +6,7 @@ import { reveal, revealEntity } from "@/components/reveal";
 import { tip } from "@/components/tooltips";
 import { getLabelsIndex, type LabelIndexEntry } from "@/renderers/labels/label-data";
 import { findEl } from "@/utils";
+import { t } from "@/utils/i18n";
 
 interface SearchFields {
   name: string;
@@ -98,7 +99,11 @@ class OmnibarController {
       id: command.id,
       name: command.name,
       context: "Command",
-      fields: { name: normalize(command.name), alias: normalize(command.aliases) },
+      fields: {
+        name: normalize(command.name),
+        // a dialog command is named by the dialog's title; “open burgs” still finds it
+        alias: normalize(command.link ? `open ${command.name} ${command.aliases}` : command.aliases)
+      },
       command
     }));
     if (typeof pack === "undefined" || !pack.cells?.i?.length) return commands;
@@ -173,7 +178,7 @@ class OmnibarController {
     const root = document.createElement("div");
     root.id = "omnibar";
     root.setAttribute("role", "dialog");
-    root.setAttribute("aria-label", "Search map and commands");
+    root.setAttribute("aria-label", t("Search map and commands"));
 
     root.innerHTML = /* html */ `
       <style>
@@ -321,18 +326,18 @@ class OmnibarController {
         <input
           id="omnibar-input"
           role="combobox"
-          aria-label="Search map and commands"
+          aria-label="${t("Search map and commands")}"
           aria-expanded="true"
           aria-controls="omnibar-list"
           aria-autocomplete="list"
           autocomplete="off"
           spellcheck="false"
-          placeholder="Search map and commands"
+          placeholder="${t("Search map and commands")}"
         >
         <span class="omnibar-escape" aria-hidden="true">esc</span>
       </div>
 
-      <div id="omnibar-list" role="listbox" aria-label="Search results"></div>
+      <div id="omnibar-list" role="listbox" aria-label="${t("Search results")}"></div>
       <div id="omnibar-status" role="status" aria-live="polite"></div>
     `;
 
@@ -420,7 +425,7 @@ class OmnibarController {
         if (!this.root) return;
         this.records = this.collect();
         this.search();
-        this.report("The map changed. Select a current result.");
+        this.report(t("The map changed. Select a current result."));
       },
       { signal: this.events.signal }
     );
@@ -493,7 +498,7 @@ class OmnibarController {
       detail.className = "omnibar-detail";
       const layer = result.kind === "command" ? result.command.layer : undefined;
       detail.textContent =
-        unavailable || `${result.context}${layer ? ` · ${Layers.isOn(layer) ? "Visible" : "Hidden"}` : ""}`;
+        unavailable || `${result.context}${layer ? ` · ${Layers.isOn(layer) ? t("Visible") : t("Hidden")}` : ""}`;
       row.append(prefix, title, detail);
 
       const note = result.kind === "entity" ? result.fields : undefined;
@@ -509,11 +514,13 @@ class OmnibarController {
     });
 
     const count =
-      this.matched > this.results.length ? `${this.results.length} of ${this.matched}` : this.results.length;
+      this.matched > this.results.length
+        ? t("{{shown}} of {{total}}", { shown: this.results.length, total: this.matched })
+        : this.results.length;
     this.status.textContent = this.results.length
-      ? `${count} results · ↑↓ navigate · ↵ select`
+      ? `${t("Results: {{results}}", { results: count })} · ↑↓ ${t("navigate")} · ↵ ${t("select")}`
       : query
-        ? "No matches"
+        ? t("No matches")
         : "";
     this.select(this.selected);
   }
@@ -561,7 +568,7 @@ class OmnibarController {
     if (result.kind !== "command" && !this.current(result)) {
       this.records = this.collect();
       this.search();
-      this.report("The map changed. Select a current result.");
+      this.report(t("The map changed. Select a current result."));
       return;
     }
 
@@ -580,7 +587,7 @@ class OmnibarController {
         else this.navigate(result.target); // the entity has no editor, so reveal it instead
       }
     } catch {
-      tip("Could not open the search result. Please try again.", false, "error");
+      tip(t("Could not open the search result. Please try again."), false, "error");
     } finally {
       this.busy = false;
     }
@@ -604,7 +611,7 @@ class OmnibarController {
         element: () => findEl(label.id)
       });
     } else shown = revealEntity(target.ref);
-    if (!shown) this.report("This element has no map location", "warn");
+    if (!shown) this.report(t("This element has no map location"), "warn");
   }
 
   private remember(id: string): void {
@@ -685,9 +692,9 @@ function match(text: string, query: string): number {
 }
 
 function getMapActionUnavailable(): string {
-  if (typeof pack === "undefined" || !pack.cells?.i?.length) return "Generate or load a map first";
-  if (typeof customization !== "undefined" && customization) return "Exit customization mode first";
-  if (document.getElementById("canvas3d")) return "Switch to the 2D map first";
+  if (typeof pack === "undefined" || !pack.cells?.i?.length) return t("Generate or load a map first");
+  if (typeof customization !== "undefined" && customization) return t("Exit customization mode first");
+  if (document.getElementById("canvas3d")) return t("Switch to the 2D map first");
   return "";
 }
 

@@ -4,6 +4,7 @@ import { Icons } from "@/components/icons";
 import type { ReliefRule } from "@/components/options-schema";
 import type { ReliefPool, ReliefSet } from "@/generators/relief-generator";
 import { capitalize, escapeHtml, rn } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 
 /** a relief set symbol in the relief style's stroke, as the map draws it, to be cropped by `fitReliefArt` */
 export function reliefArtHtml(id: string, attributes = ""): string {
@@ -27,7 +28,8 @@ export function poolPreviewHtml(pool: ReliefPool, density: number, className: st
   const shares = entries
     .map(([entry, { weight }]) => `${poolEntryName(entry)} ${rn((weight / total) * 100)}%`)
     .join(", ");
-  const tipText = total && density ? `Relief: ${shares}. Density ${density}` : "No relief";
+  const tipText =
+    total && density ? sentences(`${t("Relief")}: ${shares}`, `${t("Density")}: ${density}`) : t("No relief");
   const previews =
     total && density
       ? entries
@@ -35,7 +37,7 @@ export function poolPreviewHtml(pool: ReliefPool, density: number, className: st
           .map(([entry]) => poolEntryHtml(entry, styles.relief.options.set))
           .join("") + (entries.length > POOL_PREVIEW ? `<small>+${entries.length - POOL_PREVIEW}</small>` : "")
       : "–";
-  return `<span class="${className} pointer" data-tip="${escapeHtml(`${tipText}. Click to edit`)}">${previews}</span>`;
+  return `<span class="${className} pointer" data-tip="${sentences(tipText, t("Click to edit"))}">${previews}</span>`;
 }
 
 const PATCH_ASPECT = 4; // width to height

@@ -6,6 +6,7 @@ import {
   type PerformanceSettings as Settings,
   setPerformanceSetting
 } from "@/components/performance";
+import { t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/nodeUtils";
 
 const DIALOG_ID = "performanceSettings";
@@ -27,40 +28,44 @@ interface Setting {
 const SETTINGS: Setting[] = [
   {
     key: "shapeRendering",
-    label: "Shape rendering",
-    tip: "SVG shape-rendering hint for the map. Crisp edges drops anti-aliasing. Chromium-based browsers rasterize on the GPU and ignore the hint for speed purposes, so it makes no difference there",
+    label: t("Shape rendering"),
+    tip: t(
+      "SVG shape-rendering hint for the map. Crisp edges drops anti-aliasing. Chromium-based browsers rasterize on the GPU and ignore the hint for speed purposes, so it makes no difference there"
+    ),
     choices: [
-      { value: "geometricPrecision", label: "Geometric precision" },
-      { value: "auto", label: "Auto" },
-      { value: "optimizeSpeed", label: "Optimize speed" },
-      { value: "crispEdges", label: "Crisp edges" }
+      { value: "geometricPrecision", label: t("Geometric precision") },
+      { value: "auto", label: t("Auto") },
+      { value: "optimizeSpeed", label: t("Optimize speed") },
+      { value: "crispEdges", label: t("Crisp edges") }
     ]
   },
   {
     key: "stateHalos",
-    label: "State halos",
-    tip: "Blurred glow along state borders. It is an SVG blur filter, which is costly on big maps",
+    label: t("State halos"),
+    tip: t("Blurred glow along state borders. It is an SVG blur filter, which is costly on big maps"),
     choices: [
-      { value: "true", label: "Shown" },
-      { value: "false", label: "Hidden" }
+      { value: "true", label: t("Shown") },
+      { value: "false", label: t("Hidden") }
     ]
   },
   {
     key: "viewportRedraw",
-    label: "Redraw on zoom",
-    tip: "When labels, icons and relief are redrawn and text re-sized during a zoom or pan. 'After zoom' does it once per gesture: faster on big maps, but new content appears all at once",
+    label: t("Redraw on zoom"),
+    tip: t(
+      "When labels, icons and relief are redrawn and text re-sized during a zoom or pan. 'After zoom' does it once per gesture: faster on big maps, but new content appears all at once"
+    ),
     choices: [
-      { value: "continuous", label: "While zooming" },
-      { value: "settled", label: "After zoom" }
+      { value: "continuous", label: t("While zooming") },
+      { value: "settled", label: t("After zoom") }
     ]
   }
 ];
 
 const PRESET_LABELS: Record<string, string> = {
-  quality: "Quality",
-  balance: "Balance",
-  speed: "Speed",
-  custom: "Custom"
+  quality: t("Quality"),
+  balance: t("Balance"),
+  speed: t("Speed"),
+  custom: t("Custom")
 };
 
 function open(): void {
@@ -69,7 +74,7 @@ function open(): void {
   const unsubscribe = onPerformanceChange(sync); // a preset picked on the Options tab shows here too
 
   $(`#${DIALOG_ID}`).dialog({
-    title: "Performance Settings",
+    title: t("Performance Settings"),
     resizable: false,
     position: { my: "right top", at: "right-10 top+10", of: "svg" },
     close: () => {
@@ -119,7 +124,7 @@ function buildDialogHTML(): string {
         <td>${label}</td>
         <td><select id="${DIALOG_ID}_${key}" style="width: 100%">${optionsHtml}</select></td>
         <td>
-          <button id="${DIALOG_ID}_${key}Reset" data-tip="Reset to the Balance preset value"
+          <button id="${DIALOG_ID}_${key}Reset" data-tip="${t("Reset to the Balance preset value")}"
             style="font-size: .85em; padding: 1px 5px; margin-left: .3em">↺</button>
         </td>
       </tr>`;
@@ -127,8 +132,8 @@ function buildDialogHTML(): string {
 
   return /* html */ `
     <div id="${DIALOG_ID}" class="dialog" style="display: none">
-      <p data-tip="The preset on the Options tab these settings amount to" style="margin: 0 0 .5em">
-        Preset: <b id="${DIALOG_ID}Preset">${presetLabel()}</b>
+      <p data-tip="${t("The preset on the Options tab these settings amount to")}" style="margin: 0 0 .5em">
+        ${t("Preset")}: <b id="${DIALOG_ID}Preset">${presetLabel()}</b>
       </p>
       <table style="border-collapse: collapse; width: 100%">
         <tbody>${rows}</tbody>

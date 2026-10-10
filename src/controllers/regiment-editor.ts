@@ -7,6 +7,7 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { drawRegiment, moveRegiment, regimentIconBox, updateRegimentIcon } from "@/renderers/draw-military";
 import { speak } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import type { Regiment } from "../generators/military-generator";
 import { capitalize, ensureEl, getPointer, rn } from "../utils";
 
@@ -32,7 +33,7 @@ function editRegiment(selector: string): void {
   drawRotationControl();
 
   $("#regimentEditor").dialog({
-    title: "Edit Regiment",
+    title: t("Edit Regiment"),
     resizable: false,
     close: closeEditor,
     position: { my: "left top", at: "left+10 top+10", of: "#map" }
@@ -44,43 +45,43 @@ function renderDialog(): void {
   const editorHtml = /* html */ `<div id="regimentEditor" class="dialog">
     <div id="regimentBody" style="padding-bottom: 0.3em">
       <div style="padding-bottom: 0.2em">
-        <button id="regimentType" data-tip="Regiment type (land or naval). Click to change"></button>
+        <button id="regimentType" data-tip="${sentences(t("Regiment type (land or naval)"), t("Click to change"))}"></button>
         <input
           id="regimentName"
-          data-tip="Type to rename the regiment"
+          data-tip="${t("Type to rename")}"
           autocorrect="off"
           spellcheck="false"
           style="width: 13em"
         />
         <span
           id="regimentNameSpeak"
-          data-tip="Speak the name. You can change voice and language in options"
+          data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}"
           class="speaker"
           >🔊</span
         >
-        <i id="regimentNameRestore" data-tip="Click to restore regiment's default name" class="icon-ccw pointer"></i>
+        <i id="regimentNameRestore" data-tip="${t("Reset to default")}" class="icon-ccw pointer"></i>
       </div>
-      <div data-tip="Regiment icon" style="display: flex; align-items: center">
-        <div class="label">Icon:</div>
+      <div data-tip="${t("Regiment icon")}" style="display: flex; align-items: center">
+        <div class="label">${t("Icon")}:</div>
         <div id="regimentIcon" translate="no" style="font-size: 1.5em; width: 3.7em; display: flex"></div>
-        <button id="regimentIconChange" style="padding: 0; width: 4.5em">change</button>
+        <button id="regimentIconChange" style="padding: 0; width: 4.5em">${t("Change")}</button>
       </div>
       <div id="regimentComposition" class="table"></div>
     </div>
     <div id="regimentBottom">
-      <button id="regimentAttack" data-tip="Attack foreign regiment" class="icon-button-melee"></button>
-      <button id="regimentAdd" data-tip="Create a new regiment or fleet" class="icon-user-plus"></button>
-      <button id="regimentSplit" data-tip="Split regiment into 2 separate ones" class="icon-half"></button>
+      <button id="regimentAttack" data-tip="${t("Attack foreign regiment")}" class="icon-button-melee"></button>
+      <button id="regimentAdd" data-tip="${t("Create a new regiment or fleet")}" class="icon-user-plus"></button>
+      <button id="regimentSplit" data-tip="${t("Split regiment into 2 separate ones")}" class="icon-half"></button>
       <button
         id="regimentAttach"
-        data-tip="Attach regiment to another one (include this regiment to another one)"
+        data-tip="${t("Attach regiment to another one (include this regiment to another one)")}"
         class="icon-attach"
       ></button>
-      <button id="regimentRegenerateLegend" data-tip="Regenerate legend for this regiment" class="icon-retweet"></button>
-      ${noteButton("regimentLegend", "this regiment")}
+      <button id="regimentRegenerateLegend" data-tip="${t("Regenerate legend for this regiment")}" class="icon-retweet"></button>
+      ${noteButton("regimentLegend", t("Edit free text notes (legend)"))}
       <button
         id="regimentRemove"
-        data-tip="Remove regiment"
+        data-tip="${t("Remove")}"
         data-shortcut="Delete"
         class="icon-trash fastDelete"
       ></button>
@@ -118,7 +119,7 @@ function updateRegimentData(regiment: Regiment): void {
   const composition = ensureEl("regimentComposition");
   composition.innerHTML = options.map.military.units
     .map(u => {
-      return `<div data-tip="${capitalize(u.name)} number. Input to change">
+      return `<div data-tip="${t("{{unit}} number. Input to change", { unit: capitalize(u.name) })}">
         <div class="label">${capitalize(u.name)}:</div>
         <input data-u="${u.name}" type="number" min=0 step=1 value="${regiment.u[u.name] || 0}">
         <i>${u.type}</i></div>`;
@@ -140,7 +141,7 @@ function drawBase(): void {
     .attr("stroke-width", 0.3)
     .attr("stroke", "#000")
     .attr("cursor", "move")
-    .on("mouseenter", () => tip("Regiment base. Drag to re-base the regiment", true))
+    .on("mouseenter", () => tip(t("Regiment base. Drag to re-base the regiment"), true))
     .on("mouseleave", () => tip("", true));
 
   base
@@ -177,7 +178,7 @@ function drawRotationControl(): void {
     .attr("cursor", "alias")
     .attr("transform", `rotate(${reg.angle || 0})`)
     .attr("transform-origin", `${reg.x}px ${reg.y}px`)
-    .on("mouseenter", () => tip("Drag to rotate the regiment", true))
+    .on("mouseenter", () => tip(t("Drag to rotate the regiment"), true))
     .on("mouseleave", () => tip("", true))
     .call(drag<SVGCircleElement, unknown>().on("start", rotateRegiment));
 }
@@ -264,7 +265,7 @@ function splitRegiment(): void {
   try {
     newId = Military.split(state, reg.i);
   } catch {
-    tip("Not enough forces to split", false, "error");
+    tip(t("Not enough forces to split"), false, "error");
     return;
   }
 
@@ -284,7 +285,7 @@ function toggleAdd(): void {
   button.classList.toggle("pressed");
   if (button.classList.contains("pressed")) {
     select<SVGGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", addRegimentOnClick);
-    tip("Click on map to create new regiment or fleet", true);
+    tip(t("Click on map to create new regiment or fleet"), true);
   } else {
     clearMainTip();
     applyDefaultViewboxEvents();
@@ -308,7 +309,7 @@ function toggleAttack(): void {
   button.classList.toggle("pressed");
   if (button.classList.contains("pressed")) {
     select<SVGGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", attackRegimentOnClick);
-    tip("Click on another regiment to initiate battle", true);
+    tip(t("Click on another regiment to initiate battle"), true);
     select<SVGGElement, unknown>("#armies").selectAll(":scope > g").classed("draggable", false);
   } else {
     clearMainTip();
@@ -326,22 +327,22 @@ async function attackRegimentOnClick(this: SVGGElement, event: MouseEvent): Prom
   const newState = +regSelected.dataset.state!;
 
   if (army?.parentElement?.id !== "armies") {
-    tip("Please click on a regiment to attack", false, "error");
+    tip(t("Please click on a regiment to attack"), false, "error");
     return;
   }
   if ((regSelected as Node) === (selectedRegiment as Node)) {
-    tip("Regiment cannot attack itself", false, "error");
+    tip(t("Regiment cannot attack itself"), false, "error");
     return;
   }
   if (oldState === newState) {
-    tip("Cannot attack fraternal regiment", false, "error");
+    tip(t("Cannot attack fraternal regiment"), false, "error");
     return;
   }
 
   const attacker = getRegiment();
   const defender = pack.states[+regSelected.dataset.state!].military!.find(r => r.i === +regSelected.dataset.id!);
   if (!attacker || !defender || !attacker.a || !defender.a) {
-    tip("Regiment has no troops to battle", false, "error");
+    tip(t("Regiment has no troops to battle"), false, "error");
     return;
   }
 
@@ -381,7 +382,7 @@ function toggleAttach(): void {
   button.classList.toggle("pressed");
   if (button.classList.contains("pressed")) {
     select<SVGGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", attachRegimentOnClick);
-    tip("Click on another regiment to unite both regiments. The current regiment will be removed", true);
+    tip(t("Click on another regiment to unite both regiments. The current regiment will be removed"), true);
     select<SVGGElement, unknown>("#armies").selectAll(":scope > g").classed("draggable", false);
   } else {
     clearMainTip();
@@ -398,11 +399,11 @@ function attachRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
   const newState = +regSelected.dataset.state!;
 
   if (army?.parentElement?.id !== "armies") {
-    tip("Please click on a regiment", false, "error");
+    tip(t("Please click on a regiment"), false, "error");
     return;
   }
   if ((regSelected as Node) === (selectedRegiment as Node)) {
-    tip("Cannot attach regiment to itself. Please click on another regiment", false, "error");
+    tip(t("Cannot attach regiment to itself. Please click on another regiment"), false, "error");
     return;
   }
 
@@ -434,12 +435,12 @@ function editLegend(): void {
 }
 
 function removeRegiment(): void {
-  ensureEl("alertMessage").innerHTML = "Are you sure you want to remove the regiment?";
+  ensureEl("alertMessage").innerHTML = t("Are you sure you want to remove the regiment?");
   $("#alert").dialog({
     resizable: false,
-    title: "Remove regiment",
+    title: t("Remove"),
     buttons: {
-      Remove: function () {
+      [t("Remove")]: function () {
         $(this).dialog("close");
         if (!selectedRegiment) return;
         const reg = getRegiment();
@@ -450,7 +451,7 @@ function removeRegiment(): void {
         refreshEditors();
         $("#regimentEditor").dialog("close");
       },
-      Cancel: function () {
+      [t("Cancel")]: function () {
         $(this).dialog("close");
       }
     }

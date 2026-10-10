@@ -9,11 +9,12 @@ import { removeEmblem } from "@/renderers/draw-emblems";
 import { goodIconLines } from "@/renderers/draw-goods";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { getHeight, openURL, speak } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { MAX_ZOOM, PAN_ZOOM_IDENTITY, type PanZoom, panBy, zoomAt } from "@/utils/panZoomUtils";
 import { errorText } from "@/utils/stringUtils";
 import type { Burg } from "../generators/burgs-generator";
 import type { Market } from "../generators/markets-generator";
-import { convertTemperature, ensureEl, escapeHtml, getPointer, getTemperatureLikeness, rand, rn } from "../utils";
+import { convertTemperature, ensureEl, getPointer, getTemperatureLikeness, rand, rn } from "../utils";
 import type { PromptOptions } from "../utils/commonUtils";
 
 declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
@@ -41,7 +42,7 @@ function open(id: number | string): void {
   updateBurgValues();
 
   $("#burgEditor").dialog({
-    title: "Edit Burg",
+    title: t("Edit Burg"),
     resizable: false,
     close: closeBurgEditor,
     position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" }
@@ -53,144 +54,144 @@ function renderDialog(): void {
   const editorHtml = /* html */ `<div id="burgEditor" class="dialog" data-burg-id="${getSelectedId()}">
       <div id="burgBody" style="padding-bottom: 0.3em">
         <div style="display: flex; align-items: center">
-          <svg data-tip="Burg emblem. Click to edit" class="pointer" viewBox="0 0 200 200" width="13em" height="13em">
+          <svg data-tip="${sentences(t("Burg emblem"), t("Click to edit"))}" class="pointer" viewBox="0 0 200 200" width="13em" height="13em">
             <use id="burgEmblem"></use>
           </svg>
           <div style="display: grid; grid-auto-rows: minmax(1.6em, auto)">
             <div id="burgProvinceAndState" style="font-weight: bold; max-width: 16em"></div>
             <div>
-              <div class="label">Name:</div>
+              <div class="label">${t("Name")}:</div>
               <input
                 id="burgName"
-                data-tip="Type to rename the burg"
+                data-tip="${t("Type to rename")}"
                 autocorrect="off"
                 spellcheck="false"
                 style="width: 9em"
               />
-              <span id="burgNameSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+              <span id="burgNameSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
               <span
                 id="burgNameReRandom"
-                data-tip="Generate random name for the burg"
+                data-tip="${t("Generate random name")}"
                 class="icon-globe pointer"
               ></span>
             </div>
-            <div data-tip="Select burg group. Groups defines burg icon, label size and style">
-              <div class="label">Group:</div>
+            <div data-tip="${t("Select burg group. Groups defines burg icon, label size and style")}">
+              <div class="label">${t("Group")}:</div>
               <select id="burgGroup" style="width: 9em"></select>
-              <span id="burgGroupConfigure" data-tip="Configure burg groups" class="icon-cog pointer"></span>
+              <span id="burgGroupConfigure" data-tip="${t("Configure burg groups")}" class="icon-cog pointer"></span>
             </div>
-            <div data-tip="Select burg type. Type slightly affects emblem generation">
-              <div class="label">Type:</div>
+            <div data-tip="${t("Select burg type. Type slightly affects emblem generation")}">
+              <div class="label">${t("Type")}:</div>
               <select id="burgType" style="width: 9em">
-                <option value="Generic">Generic</option>
-                <option value="River">River</option>
-                <option value="Lake">Lake</option>
-                <option value="Naval">Naval</option>
-                <option value="Nomadic">Nomadic</option>
-                <option value="Hunting">Hunting</option>
-                <option value="Highland">Highland</option>
+                <option value="Generic">${t("Generic")}</option>
+                <option value="River">${t("River")}</option>
+                <option value="Lake">${t("Lake")}</option>
+                <option value="Naval">${t("Naval")}</option>
+                <option value="Nomadic">${t("Nomadic")}</option>
+                <option value="Hunting">${t("Hunting")}</option>
+                <option value="Highland">${t("Highland")}</option>
               </select>
             </div>
-            <div data-tip="Select dominant culture">
-              <div class="label">Culture:</div>
+            <div data-tip="${t("Select dominant culture")}">
+              <div class="label">${t("Culture")}:</div>
               <select id="burgCulture" style="width: 9em"></select>
               <span
                 id="burgNameReCulture"
-                data-tip="Generate culture-specific name for the burg"
+                data-tip="${t("Generate culture-specific name")}"
                 class="icon-book pointer"
               ></span>
             </div>
-            <div data-tip="Set burg population">
-              <div class="label">Population:</div>
+            <div data-tip="${t("Set burg population")}">
+              <div class="label">${t("Population")}:</div>
               <input id="burgPopulation" type="number" min="0" step="1" style="width: 9em" />
             </div>
-            <div data-tip="Burg average yearly temperature" style="display: flex; justify-content: space-between">
+            <div data-tip="${t("Burg average yearly temperature")}" style="display: flex; justify-content: space-between">
               <div>
-                <div class="label">Temperature:</div>
+                <div class="label">${t("Temperature")}:</div>
                 <span id="burgTemperature"></span>
               </div>
               <div style="display: flex; gap: 0.5em">
                 <i class="icon-info-circled" id="burgTemperatureLikeIn"></i>
                 <i
                   id="burgTemperatureGraph"
-                  data-tip="Show temperature graph for the burg"
+                  data-tip="${t("Show temperature graph for the burg")}"
                   class="icon-chart-area pointer"
                 ></i>
               </div>
             </div>
-            <div data-tip="Burg height above mean sea level">
-              <div class="label">Elevation:</div>
-              <span id="burgElevation"></span> above sea level
+            <div data-tip="${t("Burg height above mean sea level")}">
+              <div class="label">${t("Elevation")}:</div>
+              <span id="burgElevation"></span> ${t("above sea level")}
             </div>
             <div>
-              <div class="label">Features:</div>
+              <div class="label">${t("Features", { context: "burg" })}:</div>
               <span
                 id="burgCapital"
-                data-tip="Shows whether the burg is a state capital. Click to toggle"
+                data-tip="${sentences(t("Shows whether the burg is a state capital"), t("Click to toggle"))}"
                 data-feature="capital"
                 class="burgFeature icon-star"
               ></span>
               <span
                 id="burgPort"
-                data-tip="Shows whether the burg is a port. Click to toggle"
+                data-tip="${sentences(t("Shows whether the burg is a port"), t("Click to toggle"))}"
                 data-feature="port"
                 class="burgFeature icon-anchor"
               ></span>
               <span
                 id="burgCitadel"
-                data-tip="Shows whether the burg has a citadel (castle). Click to toggle"
+                data-tip="${sentences(t("Shows whether the burg has a citadel (castle)"), t("Click to toggle"))}"
                 data-feature="citadel"
                 class="burgFeature icon-chess-rook"
                 style="font-size: 1.1em"
               ></span>
               <span
                 id="burgWalls"
-                data-tip="Shows whether the burg is walled. Click to toggle"
+                data-tip="${sentences(t("Shows whether the burg is walled"), t("Click to toggle"))}"
                 data-feature="walls"
                 class="burgFeature icon-fort-awesome"
               ></span>
               <span
                 id="burgPlaza"
-                data-tip="Shows whether the burg is a trade center (market center). Click to toggle"
+                data-tip="${sentences(t("Shows whether the burg is a trade center (market center)"), t("Click to toggle"))}"
                 data-feature="plaza"
                 class="burgFeature icon-store"
                 style="font-size: 1em"
               ></span>
               <span
                 id="burgTemple"
-                data-tip="Shows whether the burg is a religious center. Click to toggle"
+                data-tip="${sentences(t("Shows whether the burg is a religious center"), t("Click to toggle"))}"
                 data-feature="temple"
                 class="burgFeature icon-chess-bishop"
                 style="font-size: 1.1em; margin-left: 3px"
               ></span>
               <span
                 id="burgShanty"
-                data-tip="Shows whether the burg has a shanty town. Click to toggle"
+                data-tip="${sentences(t("Shows whether the burg has a shanty town"), t("Click to toggle"))}"
                 data-feature="shanty"
                 class="burgFeature icon-campground"
                 style="font-size: 1em"
               ></span>
             </div>
-            <div data-tip="Burg average daily production">
-              <div class="label">Production:</div>
+            <div data-tip="${t("Burg average daily production")}">
+              <div class="label">${t("Production")}:</div>
               <span id="burgProduction" style="display: inline-flex; flex-wrap: wrap; column-gap: 0.3em; max-width: 110px;"></span>
             </div>
-            <div data-tip="Gross product per population point, daily average">
-              <div class="label">Wealth</div>
+            <div data-tip="${t("Gross product per population point, daily average")}">
+              <div class="label">${t("Wealth")}</div>
               <span id="burgWealth"></span>
             </div>
-            <div data-tip="Set treasury balance. Production won't be changed automatically">
-              <div class="label"><label for="burgTreasury">Treasury:</label></div>
+            <div data-tip="${t("Set treasury balance. Production won't be changed automatically")}">
+              <div class="label"><label for="burgTreasury">${t("Treasury")}:</label></div>
               <input id="burgTreasury" type="number" step="0.01" style="width: 9em" /> 🟡
             </div>
           </div>
         </div>
-        <div id="burgPreviewSection" data-tip="Burg map preview: scroll to zoom, drag to pan" style="display: flex; flex-direction: column">
+        <div id="burgPreviewSection" data-tip="${t("Burg map preview: scroll to zoom, drag to pan")}" style="display: flex; flex-direction: column">
           <div style="display: flex; justify-content: space-between">
-            <span>Burg preview:</span>
+            <span>${t("Burg preview")}:</span>
             <div style="display: flex; gap: 0.5em">
-              <i id="burgPreviewReset" data-tip="Reset preview zoom" class="icon-ccw pointer"></i>
-              <i id="burgLinkOpen" data-tip="Open burg map in a new tab" class="icon-link-ext pointer"></i>
+              <i id="burgPreviewReset" data-tip="${t("Reset preview zoom")}" class="icon-ccw pointer"></i>
+              <i id="burgLinkOpen" data-tip="${t("Open burg map in a new tab")}" class="icon-link-ext pointer"></i>
             </div>
           </div>
           <div
@@ -200,39 +201,39 @@ function renderDialog(): void {
         </div>
       </div>
       <div id="burgBottom">
-        <button id="burgStyleShow" data-tip="Show style edit section" class="icon-brush"></button>
+        <button id="burgStyleShow" data-tip="${t("Show")}" class="icon-brush"></button>
         <div id="burgStyleSection" style="display: none">
-          <button id="burgStyleHide" data-tip="Hide style edit section" class="icon-brush"></button>
+          <button id="burgStyleHide" data-tip="${t("Hide")}" class="icon-brush"></button>
           <button
             id="burgEditLabelStyle"
-            data-tip="Edit label style for burg group in Style Editor"
+            data-tip="${t("Edit label style for burg group in Style Editor")}"
             class="icon-font"
           ></button>
           <button
             id="burgEditGroupStyle"
-            data-tip="Edit icon and anchor style for the burg group in Style Editor"
+            data-tip="${t("Edit icon and anchor style for the burg group in Style Editor")}"
             class="icon-dot-circled"
           ></button>
         </div>
-        <button id="burgEditLabel" data-tip="Edit this burg label" class="icon-font"></button>
-        <button id="burgEditEmblem" data-tip="Edit emblem" class="icon-shield-alt"></button>
-        <button id="burgSetPreviewLink" data-tip="Set custom burg map URL" class="icon-map-o"></button>
-        <button id="burgLocate" data-tip="Zoom map and center view in the burg" class="icon-target"></button>
+        <button id="burgEditLabel" data-tip="${t("Edit this burg label")}" class="icon-font"></button>
+        <button id="burgEditEmblem" data-tip="${t("Edit Emblem")}" class="icon-shield-alt"></button>
+        <button id="burgSetPreviewLink" data-tip="${t("Set custom burg map URL")}" class="icon-map-o"></button>
+        <button id="burgLocate" data-tip="${t("Zoom map and center view in the burg")}" class="icon-target"></button>
         <button
           id="burgProductionOverview"
-          data-tip="Show production overview for this burg"
+          data-tip="${t("Show production overview for this burg")}"
           class="icon-chart-bar"
         ></button>
         <button
           id="burgRelocate"
-          data-tip="Relocate burg. Click on map to move the burg"
+          data-tip="${t("Relocate burg. Click on map to move the burg")}"
           class="icon-map-pin"
         ></button>
-        ${noteButton("burglLegend", "this burg")}
+        ${noteButton("burglLegend", t("Edit free text notes (legend)"))}
         <button id="burgLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
         <button
           id="burgRemove"
-          data-tip="Remove non-capital burg"
+          data-tip="${t("Remove")}"
           data-shortcut="Delete"
           class="icon-trash fastDelete"
         ></button>
@@ -314,8 +315,9 @@ function updateBurgValues(): void {
 
   const temperature = grid.cells.temp[pack.cells.g[b.cell]];
   ensureEl("burgTemperature").innerHTML = convertTemperature(temperature);
-  ensureEl("burgTemperatureLikeIn").dataset.tip =
-    `Average yearly temperature is like in ${getTemperatureLikeness(temperature)}`;
+  ensureEl("burgTemperatureLikeIn").dataset.tip = t("Average yearly temperature is like in {{place}}", {
+    place: getTemperatureLikeness(temperature)
+  });
   ensureEl("burgElevation").innerHTML = getHeight(pack.cells.h[b.cell]);
 
   ensureEl("burgCapital").classList.toggle("inactive", !b.capital);
@@ -387,7 +389,7 @@ function changeTreasury(this: HTMLInputElement): void {
   try {
     Burgs.setTreasury(burg.i, this.valueAsNumber);
   } catch {
-    tip("Enter a valid treasury amount", false, "error");
+    tip(t("Enter a valid treasury amount"), false, "error");
   }
   this.value = String(rn(burg.treasury || 0, 2));
 }
@@ -418,9 +420,11 @@ function toggleFeature(this: HTMLElement): void {
 
 function confirmRemoveMarket(market: Market): void {
   confirmationDialog({
-    title: "Remove market",
-    message: `This burg is the center of the market "${escapeHtml(Markets.getName(market))}". Remove the market?<br>This action cannot be reverted`,
-    confirm: "Remove",
+    title: t("Remove"),
+    message: `${t("This burg is the center of the market “{{market}}”. Remove the market?", {
+      market: Markets.getName(market)
+    })}<br>${t("This action cannot be reverted")}`,
+    confirm: t("Remove"),
     onConfirm: () => {
       Markets.removeMarket(market.i);
       Layers.draw("markets");
@@ -435,7 +439,7 @@ function togglePort(burgId: number): void {
 
 function toggleCapital(burgId: number): void {
   if (pack.burgs[burgId].capital) {
-    tip("To change capital please assign a capital status to another burg of this state", false, "error");
+    tip(t("To change capital please assign a capital status to another burg of this state"), false, "error");
     return;
   }
   if (tryEdit(() => Burgs.setCapital(burgId))) Layers.draw("burgIcons", "labels");
@@ -660,7 +664,9 @@ function setCustomPreview(): void {
   const burg = pack.burgs[id];
 
   prompt(
-    "Provide custom URL to the burg map. It can be a link to a generator or just an image. Leave empty to use the default map preview",
+    t(
+      "Provide custom URL to the burg map. It can be a link to a generator or just an image. Leave empty to use the default map preview"
+    ),
     { default: Burgs.getPreview(burg).link || "", required: false },
     link => {
       try {
@@ -691,7 +697,7 @@ function toggleRelocateBurg(): void {
   ensureEl("burgRelocate").classList.toggle("pressed");
   if (ensureEl("burgRelocate").classList.contains("pressed")) {
     select<SVGGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", relocateBurgOnClick);
-    tip("Click on map to relocate burg. Hold Shift for continuous move", true);
+    tip(t("Click on map to relocate burg. Hold Shift for continuous move"), true);
     if (!Layers.isOn("cells")) {
       Layers.show("cells");
       isCellsLayerForced = true;
@@ -732,32 +738,32 @@ function removeSelectedBurg(): void {
   const burg = pack.burgs[burgId];
 
   if (burg.capital) {
-    alertMessage.innerHTML = /* html */ `You cannot remove the capital. You must change the state capital first`;
+    alertMessage.innerHTML = /* html */ `${sentences(t("You cannot remove the capital"), t("You must change the state capital first"))}`;
     $("#alert").dialog({
       resizable: false,
-      title: "Remove burg",
+      title: t("Remove"),
       buttons: {
-        Ok: function (this: HTMLElement) {
+        [t("OK")]: function (this: HTMLElement) {
           $(this).dialog("close");
         }
       }
     });
   } else if (pack.markets?.some(m => m.centerBurgId === burgId)) {
-    alertMessage.innerHTML = /* html */ `You cannot remove a market center burg. Please remove the market first`;
+    alertMessage.innerHTML = /* html */ `${t("You cannot remove a market center burg. Please remove the market first")}`;
     $("#alert").dialog({
       resizable: false,
-      title: "Remove burg",
+      title: t("Remove"),
       buttons: {
-        Ok: function (this: HTMLElement) {
+        [t("OK")]: function (this: HTMLElement) {
           $(this).dialog("close");
         }
       }
     });
   } else {
     confirmationDialog({
-      title: "Remove burg",
-      message: "Are you sure you want to remove the burg? <br>This action cannot be reverted",
-      confirm: "Remove",
+      title: t("Remove"),
+      message: `${t("Are you sure you want to remove the burg?")}<br>${t("This action cannot be reverted")}`,
+      confirm: t("Remove"),
       onConfirm: () => {
         Burgs.remove(burgId);
         removeEmblem("burg", burgId);
@@ -789,7 +795,7 @@ function getProduction(pool: Record<number, number>): string {
     if (!resource) continue;
     const { name, unit, icon } = resource;
     const unitName = production === 1 ? unit : `${unit}s`;
-    html += `<span data-tip="${name}: ${production} ${unitName} per day">
+    html += `<span data-tip="${t("{{good}}: {{amount}} {{unit}} per day", { good: name, amount: production, unit: unitName })}">
       <svg class="resIcon" width="1em" height="1em"><use href="${Icons.href(icon)}"${goodIconLines()}></use></svg>
       <span style="margin: 0 0.2em 0 -0.2em">${production}</span>
     </span>`;

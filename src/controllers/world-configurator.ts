@@ -3,6 +3,7 @@ import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { Pins } from "@/components/pins";
 import { tip } from "@/components/tooltips";
+import { t } from "@/utils/i18n";
 import { convertTemperature, ensureEl, findEl, getKmInDistanceUnit, parseTransform, rn, round } from "../utils";
 
 const projection = geoOrthographic().translate([100, 100]).scale(100);
@@ -18,20 +19,20 @@ function open(): void {
   updateWindDirections();
 
   $("#worldConfigurator").dialog({
-    title: "Configure World",
+    title: t("Configure World"),
     resizable: false,
     width: "minmax(40em, 85vw)",
-    buttons: { "Update world": updateWorld },
+    buttons: { [t("Update world")]: updateWorld },
     open: function (this: HTMLElement) {
-      const checkbox = /* html */ `<div class="dontAsk" data-tip="Automatically update world on input changes and button clicks">
+      const checkbox = /* html */ `<div class="dontAsk" data-tip="${t("Automatically update world on input changes and button clicks")}">
         <input id="wcAutoChange" class="checkbox" type="checkbox" checked />
-        <label for="wcAutoChange" class="checkbox-label"><i>auto-apply changes</i></label>
+        <label for="wcAutoChange" class="checkbox-label"><i>${t("auto-apply changes")}</i></label>
       </div>`;
       const pane = this.parentElement?.querySelector(".ui-dialog-buttonpane");
       pane?.insertAdjacentHTML("afterbegin", checkbox);
 
       const button = this.parentElement?.querySelector(".ui-dialog-buttonset > button");
-      button?.addEventListener("mousemove", () => tip("Apply current settings to the map"));
+      button?.addEventListener("mousemove", () => tip(t("Apply current settings to the map")));
     },
     close: () => destroyDialog("worldConfigurator")
   });
@@ -57,21 +58,21 @@ function createDialogHtml(): string {
   return /* html */ `<div id="worldConfigurator" class="dialog stable">
     <div style="display: flex">
       <div id="worldControls">
-        ${temperatureControl("temperatureEquator", "Equator", "Set temperature at equator")}
-        ${temperatureControl("temperatureNorthPole", "North Pole", "Set the North Pole average yearly temperature")}
-        ${temperatureControl("temperatureSouthPole", "South Pole", "Set the South Pole average yearly temperature")}
+        ${temperatureControl("temperatureEquator", t("Equator"), t("Set temperature at equator"))}
+        ${temperatureControl("temperatureNorthPole", t("North Pole"), t("Set the North Pole average yearly temperature"))}
+        ${temperatureControl("temperatureSouthPole", t("South Pole"), t("Set the South Pole average yearly temperature"))}
         <div>
           <i data-locked="0" id="lock_mapSize" class="icon-lock-open"></i>
-          <label data-tip="Set map size relative to the world size">
-            <i>Map size:</i>
+          <label data-tip="${t("Set map size relative to the world size")}">
+            <i>${t("Map size")}:</i>
             <input id="mapSizeInput" type="number" min="1" max="100" step="0.1" />%
             <input id="mapSizeOutput" type="range" min="1" max="100" step="0.1" />
           </label>
         </div>
         <div>
           <i data-locked="0" id="lock_latitude" class="icon-lock-open"></i>
-          <label data-tip="Set a North-South map shift, set to 50 to make map center lie on Equator">
-            <i>Latitudes:</i>
+          <label data-tip="${t("Set a North-South map shift, set to 50 to make map center lie on Equator")}">
+            <i>${t("Latitudes")}:</i>
             <input id="latitudeInput" type="number" min="0" max="100" step="0.1" />
             <br /><i>N</i
             ><input
@@ -86,8 +87,8 @@ function createDialogHtml(): string {
         </div>
         <div>
           <i data-locked="0" id="lock_longitude" class="icon-lock-open"></i>
-          <label data-tip="Set a West-East map shift, set to 50 to make map center lie on Prime meridian">
-            <i>Longitudes:</i>
+          <label data-tip="${t("Set a West-East map shift, set to 50 to make map center lie on Prime meridian")}">
+            <i>${t("Longitudes")}:</i>
             <input id="longitudeInput" type="number" min="0" max="100" step="0.1" />
             <br /><i>W</i
             ><input
@@ -102,31 +103,31 @@ function createDialogHtml(): string {
         </div>
         <div>
           <label
-            data-tip="Set precipitation - water amount clouds can bring. Defines rivers and biomes generation. Keep around 100% for default generation"
+            data-tip="${t("Set precipitation - water amount clouds can bring. Defines rivers and biomes generation. Keep around 100% for default generation")}"
           >
             <i data-locked="0" id="lock_prec" class="icon-lock-open"></i>
-            <i>Precipitation:</i>
+            <i>${t("Precipitation")}:</i>
             <input id="precInput" type="number" />%
             <input id="precOutput" type="range" min="0" max="500" />
           </label>
         </div>
-        <div data-tip="The coordinate extent this map was generated on. The next map's is set in Options">
-          <i>Map size:</i><br />
+        <div data-tip="${t("The coordinate extent this map was generated on. The next map's is set in Options")}">
+          <i>${t("Map size")}:</i><br />
           <span id="mapSize"></span> px = <span id="mapSizeFriendly"></span>
         </div>
         <div>
-          <i data-tip="Length of Meridian. Almost half of the equator length">Meridian length:</i><br />
-          <span id="meridianLength" data-tip="Length of Meridian in pixels"></span> px =
+          <i data-tip="${t("Length of Meridian. Almost half of the equator length")}">${t("Meridian length")}:</i><br />
+          <span id="meridianLength" data-tip="${t("Length of Meridian in pixels")}"></span> px =
           <span
             id="meridianLengthFriendly"
-            data-tip="Length of Meridian is friendly units (depends on user configuration)"
+            data-tip="${t("Length of Meridian is friendly units (depends on user configuration)")}"
           ></span>
           <span
             id="meridianLengthEarth"
-            data-tip="Fantasy world Meridian length relative to real-world Earth (20k km)"
+            data-tip="${t("Fantasy world Meridian length relative to real-world Earth (20k km)")}"
           ></span>
         </div>
-        <div data-tip="Map coordinates on globe"><i>Coords:</i> <span id="mapCoordinates"></span></div>
+        <div data-tip="${t("Map coordinates on globe")}"><i>${t("Coords")}:</i> <span id="mapCoordinates"></span></div>
       </div>
       <div style="display: flex; flex-direction: column; align-items: flex-end">
         <svg id="globe" width="22em" viewBox="-20 -25 240 240">
@@ -150,7 +151,7 @@ function createDialogHtml(): string {
             <line x1="5" x2="220" y1="187" y2="187" />
             <line x1="5" x2="220" y1="200" y2="200" />
           </g>
-          <g id="globeWindArrows" data-tip="Click to change wind direction" stroke-linejoin="round">
+          <g id="globeWindArrows" data-tip="${t("Click to change wind direction")}" stroke-linejoin="round">
             <circle cx="210" cy="6" r="12" />
             <path data-tier="0" d="M210,11 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(225 210 6)" />
             <circle cx="210" cy="30" r="12" />
@@ -165,8 +166,8 @@ function createDialogHtml(): string {
             <path data-tier="5" d="M210,199 v-10 l-3,3 m6,0 l-3,-3" transform="rotate(315 210 194)" />
           </g>
           <g id="globaAxisLabels">
-            <text x="82%" y="-4%">wind</text>
-            <text x="-8%" y="-4%">latitude</text>
+            <text x="82%" y="-4%">${t("wind")}</text>
+            <text x="-8%" y="-4%">${t("Latitude")}</text>
           </g>
           <g id="globeLatLabels">
             <text x="-15" y="5">90°</text>
@@ -184,17 +185,17 @@ function createDialogHtml(): string {
           <path id="globeGraticule" />
           <path id="globeArea" />
         </svg>
-        <button id="restoreWinds" data-tip="Click to restore default (Earth-based) wind directions">
-          Restore winds
+        <button id="restoreWinds" data-tip="${t("Click to restore default (Earth-based) wind directions")}">
+          ${t("Restore winds")}
         </button>
       </div>
     </div>
     <div style="margin-top: 0.3em">
-      <i>Presets:</i>
-      <button id="wcWholeWorld" data-tip="Click to set map size to cover the whole world">Whole world</button>
-      <button id="wcNorthern" data-tip="Click to set map size to cover the Northern latitudes">Northern</button>
-      <button id="wcTropical" data-tip="Click to set map size to cover the Tropical latitudes">Tropical</button>
-      <button id="wcSouthern" data-tip="Click to set map size to cover the Southern latitudes">Southern</button>
+      <i>${t("Presets")}:</i>
+      <button id="wcWholeWorld" data-tip="${t("Click to set map size to cover the whole world")}">${t("Whole world")}</button>
+      <button id="wcNorthern" data-tip="${t("Click to set map size to cover the Northern latitudes")}">${t("Northern")}</button>
+      <button id="wcTropical" data-tip="${t("Click to set map size to cover the Tropical latitudes")}">${t("Tropical")}</button>
+      <button id="wcSouthern" data-tip="${t("Click to set map size to cover the Southern latitudes")}">${t("Southern")}</button>
     </div>
   </div>`;
 }

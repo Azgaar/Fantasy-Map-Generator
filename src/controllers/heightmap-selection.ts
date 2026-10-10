@@ -3,10 +3,12 @@ import { syncOptionInputs } from "@/components/options/tabs/options-tab";
 import { Pins } from "@/components/pins";
 import { getPointsNumber } from "@/data/graph-density";
 import { heightmapTemplates } from "@/data/heightmap-templates";
+import { HEIGHTMAP_SCHEME_LABELS } from "@/data/id-labels";
 import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
 import { drawHeights } from "@/renderers/draw-heightmap";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import type { GridGraph } from "@/types/GridGraph";
+import { sentences, t } from "@/utils/i18n";
 import { ensureEl, generateSeed } from "../utils";
 
 const initialSeed = generateSeed();
@@ -31,15 +33,15 @@ function open(): void {
   redrawAll();
 
   $("#heightmapSelection").dialog({
-    title: "Select Heightmap",
+    title: t("Select Heightmap"),
     resizable: false,
     position: { my: "center", at: "center", of: "svg" },
     close: onClose,
     buttons: {
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       },
-      Select: function (this: HTMLElement) {
+      [t("Select")]: function (this: HTMLElement) {
         const id = getSelected();
         if (!id) return;
         Options.set(o => (o.generation.template = id));
@@ -48,7 +50,7 @@ function open(): void {
 
         $(this).dialog("close");
       },
-      "New Map": function (this: HTMLElement) {
+      [t("New Map")]: function (this: HTMLElement) {
         const id = getSelected();
         if (!id) return;
         Options.set(o => (o.generation.template = id));
@@ -186,39 +188,39 @@ function insertHtml(): void {
   if (!previewGraph || !previewConfig) return;
 
   const heightmapColorSchemeOptions = HeightmapColorSchemes.names()
-    .map(scheme => `<option value="${scheme}">${scheme}</option>`)
+    .map(scheme => `<option value="${scheme}">${HEIGHTMAP_SCHEME_LABELS[scheme] ?? scheme}</option>`)
     .join("");
 
   const heightmapSelectionHtml = /* html */ `<div id="heightmapSelection" class="dialog stable">
     <div class="heightmap-selection">
-      <section data-tip="Select heightmap template – template provides unique, but similar-looking maps on generation">
-        <header><h1>Heightmap templates</h1></header>
+      <section data-tip="${t("Select heightmap template – template provides unique, but similar-looking maps on generation")}">
+        <header><h1>${t("Heightmap templates")}</h1></header>
         <div class="heightmap-selection_container"></div>
       </section>
-      <section data-tip="Select precreated heightmap – it will be the same for each map">
-        <header><h1>Precreated heightmaps</h1></header>
+      <section data-tip="${t("Select precreated heightmap – it will be the same for each map")}">
+        <header><h1>${t("Precreated heightmaps")}</h1></header>
         <div class="heightmap-selection_container"></div>
       </section>
       <section>
-        <header><h1>Options</h1></header>
+        <header><h1>${t("Options")}</h1></header>
         <div class="heightmap-selection_options">
           <div>
-            <label data-tip="Rerender all preview images" class="checkbox-label" id="heightmapSelectionRedrawPreview">
+            <label data-tip="${t("Rerender all preview images")}" class="checkbox-label" id="heightmapSelectionRedrawPreview">
               <i class="icon-cw"></i>
-              Redraw preview
+              ${t("Redraw preview")}
             </label>
             <div>
               <input id="heightmapSelectionRenderOcean" class="checkbox" type="checkbox" />
-              <label data-tip="Draw heights of water cells" for="heightmapSelectionRenderOcean" class="checkbox-label">Render ocean heights</label>
+              <label data-tip="${t("Draw heights of water cells")}" for="heightmapSelectionRenderOcean" class="checkbox-label">${t("Render ocean heights")}</label>
             </div>
-            <div data-tip="Color scheme used for heightmap preview">
-              Color scheme
+            <div data-tip="${t("Color scheme used for heightmap preview")}">
+              ${t("Color scheme")}
               <select id="heightmapSelectionColorScheme">${heightmapColorSchemeOptions}</select>
             </div>
           </div>
           <div>
-            <button data-tip="Open Template Editor" data-tool="templateEditor" id="heightmapSelectionEditTemplates">Edit Templates</button>
-            <button data-tip="Open Image Converter" data-tool="imageConverter" id="heightmapSelectionImportHeightmap">Import Heightmap</button>
+            <button data-tip="${t("Template Editor")}" data-tool="templateEditor" id="heightmapSelectionEditTemplates">${t("Edit Templates")}</button>
+            <button data-tip="${t("Image Converter")}" data-tool="imageConverter" id="heightmapSelectionImportHeightmap">${t("Import Heightmap")}</button>
           </div>
         </div>
       </section>
@@ -239,7 +241,7 @@ function insertHtml(): void {
         <img src="${getHeightmapPreview(heights)}" alt="${name}" />
         <div>
           ${name}
-          <span data-tip="Regenerate preview" class="icon-cw regeneratePreview"></span>
+          <span data-tip="${t("Regenerate preview")}" class="icon-cw regeneratePreview"></span>
         </div>
       </article>`;
     })
@@ -366,8 +368,8 @@ function confirmHeightmapEdit(el: HTMLElement): void {
 
   confirmationDialog({
     title: el.dataset.tip ?? "",
-    message: "Opening the tool will erase the current map. Are you sure you want to proceed?",
-    confirm: "Continue",
+    message: sentences(t("Opening the tool will erase the current map"), t("Are you sure you want to proceed?")),
+    confirm: t("Continue"),
     onConfirm: () => window.Controllers.HeightmapEditor.open({ mode: "erase", tool })
   });
 }

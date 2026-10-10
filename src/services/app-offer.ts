@@ -1,4 +1,6 @@
 // The Desktop App dialog: what the app is and which file this visitor needs
+
+import { t } from "@/utils/i18n";
 import { isMobile } from "./platform";
 
 const RELEASES_API = "https://api.github.com/repos/Azgaar/Fantasy-Map-Generator/releases/latest";
@@ -14,31 +16,29 @@ type Release = { version: string; assets: Asset[] };
  */
 const DOWNLOADS: { os: Os; label: string; suffix: string }[] = [
   { os: "windows", label: "Windows", suffix: "-win-x64.exe" },
-  { os: "windows", label: "Windows on ARM", suffix: "-win-arm64.exe" },
-  { os: "mac", label: "Mac with Apple silicon", suffix: "-mac-arm64.dmg" },
-  { os: "mac", label: "Mac with Intel", suffix: "-mac-x64.dmg" },
+  { os: "windows", label: t("Windows on ARM"), suffix: "-win-arm64.exe" },
+  { os: "mac", label: t("Mac with Apple silicon"), suffix: "-mac-arm64.dmg" },
+  { os: "mac", label: t("Mac with Intel"), suffix: "-mac-x64.dmg" },
   { os: "linux", label: "Linux", suffix: "-linux-x86_64.AppImage" },
-  { os: "linux", label: "Debian or Ubuntu", suffix: "-linux-amd64.deb" }
+  { os: "linux", label: t("Debian or Ubuntu"), suffix: "-linux-amd64.deb" }
 ];
 
-const INTRO = /* html */ `<p>The Desktop App is the Generator packaged as a program for your computer. It has the
-  same features as this page, but runs in its own window and works without an internet connection. It checks for new
-  versions on its own and installs them for you, except on macOS and Debian, where it points you at the download.</p>`;
+const INTRO = /* html */ `<p>${t("The Desktop App is the Generator packaged as a program for your computer. It has the same features as this page, but runs in its own window and works without an internet connection. It checks for new versions on its own and installs them for you, except on macOS and Debian, where it points you at the download.")}</p>`;
 
 async function open(): Promise<void> {
   $("#alert").dialog({
     resizable: false,
-    title: "Desktop App",
+    title: t("Desktop App"),
     width: "30em",
     position: { my: "center", at: "center", of: window },
     buttons: {
-      Close: function (this: HTMLElement) {
+      [t("Close")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
   });
 
-  alertMessage.innerHTML = "<p>Checking the latest version…</p>";
+  alertMessage.innerHTML = `<p>${t("Checking the latest version…")}</p>`;
   alertMessage.innerHTML = await renderOffer();
 }
 
@@ -106,33 +106,34 @@ function renderDownloads(release: Release, target: string | undefined): string {
   if (!primary && !others) return "";
 
   const main = primary
-    ? /* html */ `<p>Your system is ${primaryLabel}:
-        <b><a href="${primary.browser_download_url}" target="_blank">download version ${release.version}</a></b>
-        (${Math.round(primary.size / 1024 / 1024)} MB). The file goes to your Downloads folder, open it to install the app.</p>`
+    ? /* html */ `<p>${t("Your system is {{system}}", { system: primaryLabel })}:
+        <b><a href="${primary.browser_download_url}" target="_blank">${t("download version {{version}}", { version: release.version })}</a></b>
+        (${Math.round(primary.size / 1024 / 1024)} MB). ${t("The file goes to your Downloads folder, open it to install the app.")}</p>`
     : "";
 
-  const rest = others ? `<p>${primary ? "Other systems" : "Downloads"}: ${others}.</p>` : "";
+  const rest = others ? `<p>${primary ? t("Other systems") : t("Downloads")}: ${others}.</p>` : "";
   return `${main}${rest}`;
 }
 
 async function renderOffer(): Promise<string> {
-  if (isHandheld()) return "<p>The Desktop App is made for computers, there is no phone or tablet version.</p>";
+  if (isHandheld()) return `<p>${t("The Desktop App is made for computers, there is no phone or tablet version.")}</p>`;
 
   const [release, target] = await Promise.all([loadRelease(), detectTarget()]);
   const downloads = release ? renderDownloads(release, target) : "";
 
   if (!downloads) {
     const reason = release
-      ? "The Desktop App is not published yet."
-      : "The list of downloads could not be loaded right now.";
-    return `<span>${reason} Everything released so far is on the <a href="${RELEASES_PAGE}" target="_blank">releases page</a> on GitHub.</span>`;
+      ? t("The Desktop App is not published yet.")
+      : t("The list of downloads could not be loaded right now.");
+    return `<span>${t("{{- reason}} Everything released so far is on the {{- releases}} on GitHub.", {
+      reason,
+      releases: `<a href="${RELEASES_PAGE}" target="_blank">${t("releases page")}</a>`
+    })}</span>`;
   }
 
   return /* html */ `${INTRO}${downloads}
-    <p>The app and this page keep their maps and settings apart, so what you have here does not appear there.
-    To move a map over, save it as a <i>.map</i> file and load it in the app.</p>
-    <p>Windows and macOS will warn about an unknown developer the first time, because the app is not signed yet:
-    on Windows click "More info" and then "Run anyway", on macOS right-click the app and choose "Open".</p>`;
+    <p>${t("The app and this page keep their maps and settings apart, so what you have here does not appear there. To move a map over, save it as a .map file and load it in the app.")}</p>
+    <p>${t("Windows and macOS will warn about an unknown developer the first time, because the app is not signed yet: on Windows click “More info” and then “Run anyway”, on macOS right-click the app and choose “Open”.")}</p>`;
 }
 
 export const AppOffer = { open };

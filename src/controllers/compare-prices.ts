@@ -9,6 +9,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { downloadFile, getFileName } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import type { Market } from "../generators/markets-generator";
 import { ensureEl, formatPrice, rn } from "../utils";
 
@@ -18,27 +19,27 @@ const columns: EditorColumn<Market>[] = [
   { key: "color", width: "1.6em", permanent: true },
   {
     key: "market",
-    label: "Market",
+    label: t("Market"),
     width: "9em",
     permanent: true,
-    tip: "Market center burg name. Click to sort",
+    tip: sentences(t("Market center burg name"), t("Click to sort")),
     sortBy: market => Markets.getName(market),
     sortType: "alpha"
   },
   {
     key: "stock",
-    label: "Stock",
+    label: t("Stock"),
     width: "6em",
-    tip: "Good stock in this market. Click to sort",
+    tip: sentences(t("Good stock in this market"), t("Click to sort")),
     sortBy: market => market.goods[activeGoodId]?.stock ?? 0,
     defaultSort: "desc"
   },
   {
     key: "price",
-    label: "Price",
+    label: t("Price"),
     width: "6em",
     permanent: true,
-    tip: "Price for this good. Click to sort",
+    tip: sentences(t("Good price"), t("Click to sort")),
     sortBy: market => market.goods[activeGoodId]?.price ?? 0
   }
 ];
@@ -60,7 +61,7 @@ function open(goodId?: number, anchor = "#marketsOverview"): void {
   comparePricesTable.reset();
 
   $(`#${dialogId}`).dialog({
-    title: "Compare Prices",
+    title: t("Compare Prices"),
     position: { ...position, of: anchor },
     close: closeComparePrices
   });
@@ -70,19 +71,19 @@ function renderDialog(): void {
   destroyDialog(dialogId);
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog editorDialog">
       <div style="display:flex; align-items:center; gap:.5em; padding:.2em 0 .4em; font-size:.9em;">
-        <label for="marketsGoodCompareSelect" data-tip="Select good to compare stock across markets">Good:</label>
+        <label for="marketsGoodCompareSelect" data-tip="${t("Select good to compare stock across markets")}">${t("Good")}:</label>
         <select id="marketsGoodCompareSelect" style="flex:1; min-width:8em;"></select>
       </div>
       ${renderEditorHeader({ dialogId, columns })}
       <div id="marketsGoodCompareBody" class="table" data-type="absolute" style="max-height:40em;"></div>
       <div id="marketsGoodCompareFooter" class="totalLine">
-        <div data-col="stock" data-tip="Total stock of this good across all markets" style="margin-left:5px">Total Stock:&nbsp;<span id="marketsGoodCompareFooterStock">0</span></div>
-        <div data-col="price" data-tip="Average price of this good across markets" style="margin-left:12px">Avg Price:&nbsp;<span id="marketsGoodCompareFooterPrice">0</span></div>
+        <div data-col="stock" data-tip="${t("Total stock of this good across all markets")}" style="margin-left:5px">${t("Total Stock")}:&nbsp;<span id="marketsGoodCompareFooterStock">0</span></div>
+        <div data-col="price" data-tip="${t("Average price of this good across markets")}" style="margin-left:12px">${t("Avg Price")}:&nbsp;<span id="marketsGoodCompareFooterPrice">0</span></div>
       </div>
       <div id="marketsGoodCompareBottom">
-        <button id="marketsGoodCompareRefresh" data-tip="Refresh" class="icon-cw"></button>
-        <button id="marketsGoodComparePercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
-        <button id="marketsGoodCompareExport" data-tip="Save data as a CSV file" class="icon-download"></button>
+        <button id="marketsGoodCompareRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
+        <button id="marketsGoodComparePercentage" data-tip="${t("Toggle percentage / absolute values views")}" class="icon-percent"></button>
+        <button id="marketsGoodCompareExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
       </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
@@ -112,7 +113,7 @@ function renderComparePricesPage(view: TableView<Market>): void {
 
   const good = activeGoodId >= 0 ? Goods.get(activeGoodId) : undefined;
   if (!good) {
-    body.innerHTML = "Select a good";
+    body.innerHTML = t("Select a good");
     updateFooter(0, 0);
     renderEditorPagination(ensureEl("marketsGoodCompareFooter"), view, comparePricesTable.goto);
     return;

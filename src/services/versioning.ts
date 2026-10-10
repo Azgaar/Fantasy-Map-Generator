@@ -18,12 +18,16 @@
 import { dialogState } from "@/components/dialog/state";
 import { Pins } from "@/components/pins";
 import { tip } from "@/components/tooltips";
+import { t } from "@/utils/i18n";
 import { isElectron } from "./platform";
 
-export const VERSION = "1.154.0";
+export const VERSION = "1.155.0";
 
 // new changes on top
 const latestPublicChanges = [
+  "Translation: UI translated to 22 languages",
+  "Population layer: colored cells style",
+  // old ones
   "Azgaar Assistant can read map data and propose changes when your own AI key is provided",
   "Icons: unified icon picker and uploader for goods, markers, regiments, burgs and emblems",
   "Style: the Style tab is reworked",
@@ -117,27 +121,39 @@ function showUpdateWindow(storedVersion: string | null): void {
   const discord = "https://discordapp.com/invite/X7E84HU";
   const patreon = "https://www.patreon.com/azgaar";
 
-  alertMessage.innerHTML = /* html */ `The Fantasy Map Generator is updated up to version <strong>${VERSION}</strong>. This version is compatible with <a href="${changelog}" target="_blank">previous versions</a>, loaded save files will be auto-updated.
-    ${storedVersion ? "<span>In case of errors reload the page to update the code.</span>" : ""}
+  alertMessage.innerHTML = /* html */ `${t(
+    "The Fantasy Map Generator is updated up to version {{version}}. This version is compatible with {{- previous}}, loaded save files will be auto-updated.",
+    {
+      version: VERSION,
+      previous: `<a href="${changelog}" target="_blank" style="white-space: nowrap">${t("previous versions")}</a>`
+    }
+  )}
+    ${storedVersion ? `<span>${t("In case of errors reload the page to update the code.")}</span>` : ""}
 
     <ul>
-      <strong>Latest changes:</strong>
+      <strong>${t("Latest changes")}:</strong>
       ${latestPublicChanges.map(change => `<li>${change}</li>`).join("")}
     </ul>
 
-    ${isElectron() ? "" : `<p>The Generator is also available as a <a href="#" onclick="window.Services.AppOffer.open(); return false">desktop app</a> that works offline.</p>`}
+    ${isElectron() ? "" : `<p>${t("The Generator is also available as a {{- app}} that works offline.", { app: `<a href="#" onclick="window.Services.AppOffer.open(); return false">${t("desktop app")}</a>` })}</p>`}
 
-    <p>Join our <a href="${discord}" target="_blank">Discord server</a> and <a href="${reddit}" target="_blank">Reddit community</a> to ask questions, share maps, discuss the Generator and Worldbuilding, report bugs and propose new features.</p>
-    <span><i>Thanks for all supporters on <a href="${patreon}" target="_blank">Patreon</a>!</i></span>`;
+    <p>${t(
+      "Join our {{- discord}} and {{- reddit}} to ask questions, share maps, discuss the Generator and Worldbuilding, report bugs and propose new features.",
+      {
+        discord: `<a href="${discord}" target="_blank">${t("Discord server")}</a>`,
+        reddit: `<a href="${reddit}" target="_blank">${t("Reddit community")}</a>`
+      }
+    )}</p>
+    <span><i>${t("Thanks for all supporters on {{- patreon}}!", { patreon: `<a href="${patreon}" target="_blank">Patreon</a>` })}</i></span>`;
 
   $("#alert").dialog({
     resizable: false,
-    title: "Fantasy Map Generator update",
+    title: t("Fantasy Map Generator update"),
     width: "28em",
     position: { my: "center center-4em", at: "center", of: "svg" },
     buttons: {
-      "Clear cache": () => clearCache(),
-      "Don't show again": function (this: HTMLElement) {
+      [t("Clear cache")]: () => clearCache(),
+      [t("Don't show again")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
@@ -161,7 +177,7 @@ function announceVersion(): void {
     setTimeout(() => showUpdateWindow(storedVersion), 6000);
   } else if (compareVersions(storedVersion, VERSION).isOlder) {
     localStorage.setItem("version", VERSION);
-    tip(`Updated to v${VERSION}. Reload the page if you get errors`, true, "success", 6000);
+    tip(t("Updated to v{{version}}. Reload the page if you get errors", { version: VERSION }), true, "success", 6000);
   }
 }
 

@@ -4,6 +4,7 @@ import { limitationTip, pickLimitation } from "@/components/dialog/limitation-pi
 import { type EditorColumn, initColumnVisibility, renderEditorHeader } from "@/components/dialog/table";
 import type { ReliefRule } from "@/components/options-schema";
 import { ensureEl, escapeHtml, getHeight, minmax } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { confirmReplace, ReliefPoolEditor } from "./relief-pool-editor";
 import { fitReliefArt, poolPreviewHtml } from "./relief-previews";
 
@@ -12,17 +13,17 @@ const position = { my: "center", at: "center", of: "svg", collision: "fit" };
 
 const columns: EditorColumn[] = [
   { key: "reorder", width: "1.1em", permanent: true },
-  { key: "name", label: "Name", width: "10em", permanent: true },
-  { key: "height", label: "Height", width: "7em", tip: "Height range, 20 (sea level) to 100", permanent: true },
-  { key: "temperature", label: "Temperature", width: "7em", tip: "Temperature range in °C" },
-  { key: "biomes", label: "Biomes", width: "7em", tip: "Biomes the rule claims" },
+  { key: "name", label: t("Name"), width: "10em", permanent: true },
+  { key: "height", label: t("Height"), width: "7em", tip: t("Height range, 20 (sea level) to 100"), permanent: true },
+  { key: "temperature", label: t("Temperature"), width: "7em", tip: t("Temperature range in °C") },
+  { key: "biomes", label: t("Biomes"), width: "7em", tip: t("Biomes the rule claims") },
   {
     key: "size",
-    label: "Size",
+    label: t("Size"),
     width: "7em",
-    tip: "Icon size at the lowest height, growing with height. Each pool entry scales it"
+    tip: t("Icon size at the lowest height, growing with height. Each pool entry scales it")
   },
-  { key: "relief", label: "Relief", width: "8em", permanent: true },
+  { key: "relief", label: t("Relief"), width: "8em", permanent: true },
   { key: "remove", width: "1.2em", permanent: true }
 ];
 
@@ -46,12 +47,12 @@ function open(): void {
       ${renderEditorHeader({ dialogId, columns })}
       <div id="${dialogId}Body" class="table"></div>
       <div class="totalLine">
-        <div style="margin-left: 4px">First match wins. Land no rule claims takes its biome's relief pool</div>
+        <div style="margin-left: 4px">${t("First match wins. Land no rule claims takes its biome's relief pool")}</div>
       </div>
       <div class="editorToolbar">
-        <button id="${dialogId}Add" data-tip="Add a rule, checked last" class="icon-plus"></button>
-        <button id="${dialogId}Restore" data-tip="Restore the default hills and mountains" class="icon-ccw"></button>
-        <button id="${dialogId}Replace" data-tip="Re-place the relief the rules claim, to apply the edits" class="icon-arrows-cw"></button>
+        <button id="${dialogId}Add" data-tip="${t("Add a rule, checked last")}" class="icon-plus"></button>
+        <button id="${dialogId}Restore" data-tip="${t("Restore the default hills and mountains")}" class="icon-ccw"></button>
+        <button id="${dialogId}Replace" data-tip="${t("Re-place the relief the rules claim, to apply the edits")}" class="icon-arrows-cw"></button>
       </div>
     </div>`
   );
@@ -77,7 +78,7 @@ function open(): void {
   render();
 
   $(`#${dialogId}`).dialog({
-    title: "Relief Rules",
+    title: t("Relief Rules"),
     width: "fit-content",
     resizable: false,
     position,
@@ -96,17 +97,17 @@ function render(): void {
     options.map.relief.rules
       .map(
         (rule, index) => /* html */ `<div class="states" data-index="${index}">
-      <span data-col="reorder" data-tip="Drag to check the rule earlier or later" class="icon-resize-vertical"></span>
-      <div data-col="name"><input data-field="name" value="${escapeHtml(rule.name)}" data-tip="Rule name" /></div>
-      <div data-col="height" data-tip="Height range: ${getHeight(rule.height.min)} to ${getHeight(rule.height.max)}">${range("height", rule.height, 'min="20" max="100" step="1"')}</div>
-      <div data-col="temperature" data-tip="Temperature range in °C. An empty bound is open">${range("temperature", rule.temperature, 'step="1" placeholder="any"')}</div>
-      <div data-col="biomes"><span class="ruleBiomes pointer" data-tip="${escapeHtml(`Biomes: ${limitationTip(rule.biomes, pack.biomes)}. Click to change`)}">${biomesLabel(rule)}</span></div>
-      <div data-col="size" data-tip="Icon size at the lowest height, growing with height up to the second value">${range("size", rule.size, 'min="0.1" step="0.1"')}</div>
+      <span data-col="reorder" data-tip="${t("Drag to check the rule earlier or later")}" class="icon-resize-vertical"></span>
+      <div data-col="name"><input data-field="name" value="${escapeHtml(rule.name)}" data-tip="${t("Name")}" /></div>
+      <div data-col="height" data-tip="${t("Height range: {{min}} to {{max}}", { min: getHeight(rule.height.min), max: getHeight(rule.height.max) })}">${range("height", rule.height, 'min="20" max="100" step="1"')}</div>
+      <div data-col="temperature" data-tip="${sentences(t("Temperature range in °C"), t("An empty bound is open"))}">${range("temperature", rule.temperature, 'step="1" placeholder="any"')}</div>
+      <div data-col="biomes"><span class="ruleBiomes pointer" data-tip="${sentences(`${t("Biomes")}: ${limitationTip(rule.biomes, pack.biomes)}`, t("Click to change"))}">${biomesLabel(rule)}</span></div>
+      <div data-col="size" data-tip="${t("Icon size at the lowest height, growing with height up to the second value")}">${range("size", rule.size, 'min="0.1" step="0.1"')}</div>
       <div data-col="relief">${poolPreviewHtml(rule.icons, rule.density, "rulePool")}</div>
-      <span data-col="remove" data-tip="Remove the rule" class="icon-trash-empty"></span>
+      <span data-col="remove" data-tip="${t("Remove")}" class="icon-trash-empty"></span>
     </div>`
       )
-      .join("") || `<p class="empty">No rules: all land takes its biome's relief pool</p>`;
+      .join("") || `<p class="empty">${t("No rules: all land takes its biome's relief pool")}</p>`;
 
   void fitReliefArt(body, styles.relief.options.set);
 }
@@ -164,8 +165,8 @@ function onClick(target: Element): void {
 
 function pickBiomes(rule: ReliefRule): void {
   pickLimitation({
-    title: "Limit rule",
-    heading: `Biomes the ${rule.name} rule claims`,
+    title: t("Limit rule"),
+    heading: t("Biomes the {{rule}} rule claims", { rule: rule.name }),
     items: pack.biomes,
     allowed: rule.biomes,
     onApply: allowed => {
@@ -186,7 +187,7 @@ function reorder(): void {
 
 function addRule(): void {
   options.map.relief.rules.push({
-    name: "New rule",
+    name: t("New rule"),
     height: { min: 50, max: 100 },
     temperature: { min: null, max: null },
     icons: { hill: { weight: 1 } },
@@ -198,9 +199,9 @@ function addRule(): void {
 
 function restoreDefaults(): void {
   confirmationDialog({
-    title: "Restore relief rules",
-    message: "Replace the relief rules with the default hills and mountains?",
-    confirm: "Restore",
+    title: t("Restore relief rules"),
+    message: t("Replace the relief rules with the default hills and mountains?"),
+    confirm: t("Restore"),
     onConfirm: () => {
       options.map.relief.rules = Relief.getDefaultRules();
       commit();
@@ -209,7 +210,7 @@ function restoreDefaults(): void {
 }
 
 function replaceClaimed(): void {
-  confirmReplace("the cells the rules claim", cell => !!Relief.claim(cell));
+  confirmReplace(t("the cells the rules claim"), cell => !!Relief.claim(cell));
 }
 
 export const ReliefRulesEditor = { open };

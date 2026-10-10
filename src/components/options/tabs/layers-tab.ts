@@ -1,26 +1,27 @@
 // Layers tab: a projection of the Layers registry. Renders the layer buttons and wires them up.
 import type { LayerId } from "@/components/layers";
 import { Layers } from "@/components/layers";
-import { LAYER_TOGGLES } from "@/data/layer-labels";
+import { LAYER_TOGGLES, underlineHotkey } from "@/data/layer-labels";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { isCtrlClick } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 
 // built-in layer presets, in the order the select shows them; the layer sets live in layers-presets
 export const LAYER_PRESETS: Record<string, string> = {
-  political: "Political map",
-  cultural: "Cultural map",
-  religions: "Religions map",
-  provinces: "Provinces map",
-  biomes: "Biomes map",
-  heightmap: "Heightmap",
-  physical: "Physical map",
-  poi: "Places of interest",
-  goods: "Goods map",
-  trade: "Trade animation",
-  military: "Military map",
-  emblems: "Emblems",
-  landmass: "Pure landmass"
+  political: t("Political map"),
+  cultural: t("Cultural map"),
+  religions: t("Religions map"),
+  provinces: t("Provinces map"),
+  biomes: t("Biomes map"),
+  heightmap: t("Heightmap"),
+  physical: t("Physical map"),
+  poi: t("Places of interest"),
+  goods: t("Goods map"),
+  trade: t("Trade animation"),
+  military: t("Military map"),
+  emblems: t("Emblems"),
+  landmass: t("Pure landmass")
 };
 
 export { LAYER_TOGGLES } from "@/data/layer-labels";
@@ -29,45 +30,45 @@ export const getLayerByShortcut = (code: string): LayerId | undefined =>
   [...LAYER_TOGGLES].find(([, button]) => button.shortcut === code)?.[0];
 
 const TEMPLATE = /* html */ `
-  <p data-tip="Select a map layers preset" style="display: inline-block">Layers preset:</p>
-  <select data-tip="Select a map layers preset" id="layersPreset" style="width: 45%">
+  <p data-tip="${t("Select a map layers preset")}" style="display: inline-block">${t("Layers preset")}:</p>
+  <select data-tip="${t("Select a map layers preset")}" id="layersPreset" style="width: 45%">
     ${Object.entries(LAYER_PRESETS)
       .map(([id, label]) => `<option value="${id}">${label}</option>`)
       .join("")}
-    <option hidden value="custom">Custom (not saved)</option>
+    <option hidden value="custom">${t("Custom (not saved)")}</option>
   </select>
   <button
     id="savePresetButton"
-    data-tip="Click to save displayed layers as a new preset"
+    data-tip="${t("Click to save displayed layers as a new preset")}"
     class="icon-plus sideButton"
     style="display: none"
   ></button>
   <button
     id="removePresetButton"
-    data-tip="Click to remove current custom preset"
+    data-tip="${t("Remove")}"
     class="icon-minus sideButton"
     style="display: none"
   ></button>
-  <p>Displayed layers and layer order:</p>
+  <p>${t("Displayed layers and layer order")}:</p>
   <ul
-    data-tip="Click to toggle a layer, drag to raise or lower a layer. Ctrl + click to edit layer style"
+    data-tip="${sentences(t("Click to toggle, drag to raise or lower the layer"), t("Ctrl + click to edit layer style"))}"
     id="mapLayers"
   >
   </ul>
-  <div class="tip">Click to toggle, drag to raise or lower the layer</div>
-  <div class="tip">Ctrl + click to edit layer style</div>
-  <div id="viewMode" data-tip="Set view mode">
-    <p>View mode:</p>
-    <button data-tip="Standard view mode for editing the map" id="viewStandard" class="pressed">
-      Standard
+  <div class="tip">${t("Click to toggle, drag to raise or lower the layer")}</div>
+  <div class="tip">${t("Ctrl + click to edit layer style")}</div>
+  <div id="viewMode" data-tip="${t("Set view mode")}">
+    <p>${t("View mode")}:</p>
+    <button data-tip="${t("Standard view mode for editing the map")}" id="viewStandard" class="pressed">
+      ${t("Standard")}
     </button>
     <button
-      data-tip="Map presentation in 3D scene. Works best for heightmap. Cannot be used for editing"
+      data-tip="${sentences(t("Map presentation in 3D scene"), t("Works best for heightmap"), t("Cannot be used for editing"))}"
       id="viewMesh"
     >
-      3D scene
+      ${t("3D scene")}
     </button>
-    <button data-tip="Project map on globe. Cannot be used for editing" id="viewGlobe">Globe</button>
+    <button data-tip="${sentences(t("Project map on globe"), t("Cannot be used for editing"))}" id="viewGlobe">${t("Globe")}</button>
   </div>
 `;
 
@@ -81,9 +82,12 @@ function render(): void {
 
       const item = document.createElement("li");
       item.dataset.layer = layer.id;
-      item.dataset.tip = `${button.label.replace(/<\/?u>/g, "")}: click to toggle, drag to raise or lower the layer. Ctrl + click to edit layer style`;
+      item.dataset.tip = sentences(
+        t("{{layer}}: click to toggle, drag to raise or lower the layer", { layer: button.label }),
+        t("Ctrl + click to edit layer style")
+      );
       if (button.shortcut) item.dataset.shortcut = button.hint ?? button.shortcut.replace("Key", "");
-      item.innerHTML = button.label;
+      item.innerHTML = underlineHotkey(button);
       item.classList.toggle("buttonoff", !Layers.isOn(layer.id));
       item.classList.toggle("solid", layer.params.parent !== "viewbox"); // layers outside the viewbox cannot be reordered
       return [item];

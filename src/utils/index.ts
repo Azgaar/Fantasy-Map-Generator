@@ -65,10 +65,13 @@ import {
   getFriendlyHeight,
   getFriendlyPrecipitation,
   getHeight,
+  getHeightUnitRatio,
   getIntegerFromSI,
   getKmInDistanceUnit,
   getPrecipitation,
   getTemperatureLikeness,
+  heightToMeters,
+  metersToHeight,
   parseSpeed,
   si
 } from "./unitUtils";
@@ -123,13 +126,6 @@ window.openURL = openURL;
 window.wiki = wiki;
 window.link = link;
 window.isCtrlClick = isCtrlClick;
-
-// Initialize prompt when DOM is ready
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initializePrompt);
-} else {
-  initializePrompt();
-}
 
 // console debugging aids: no caller in the codebase by design, they are typed at the devtools prompt
 window.drawCellsValue = drawCellsValue;
@@ -188,6 +184,7 @@ export {
   getFriendlyHeight,
   getFriendlyPrecipitation,
   getHeight,
+  getHeightUnitRatio,
   getIntegerFromSI,
   getIsolines,
   getKmInDistanceUnit,
@@ -204,6 +201,7 @@ export {
   getTemperatureLikeness,
   getVertexPath,
   groupByValue,
+  heightToMeters,
   htmlEl,
   initializePrompt,
   isCtrlClick,
@@ -218,6 +216,7 @@ export {
   link,
   list,
   loadScript,
+  metersToHeight,
   minmax,
   normalize,
   nth,

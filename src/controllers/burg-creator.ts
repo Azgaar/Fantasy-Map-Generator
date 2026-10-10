@@ -4,6 +4,7 @@ import { Layers } from "@/components/layers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import { tip } from "@/components/tooltips";
 import { redrawEmblem } from "@/renderers/draw-emblems";
+import { sentences, t } from "@/utils/i18n";
 import { errorText } from "@/utils/stringUtils";
 
 function toggle(): void {
@@ -16,7 +17,7 @@ function toggle(): void {
   toggleMapPlacement(
     "addBurgTool",
     addOnClick,
-    "Click on the map to create a new burg. Hold Shift to add multiple",
+    sentences(t("Click on map to place a burg"), t("Hold Shift to add multiple")),
     "warn",
     unpressProxyButton
   );

@@ -1,3 +1,5 @@
+import { t } from "@/utils/i18n";
+
 // Heightmap generation templates: each is a script of steps for the heightmap
 // generator (tool count height rangeX rangeY per line); probability is the
 // relative weight used when picking a random template
@@ -156,20 +158,20 @@ export type HeightmapTemplate = {
 };
 
 export const heightmapTemplates: Record<string, HeightmapTemplate> = {
-  volcano: { id: 0, name: "Volcano", template: volcano, probability: 3 },
-  highIsland: { id: 1, name: "High Island", template: highIsland, probability: 19 },
-  lowIsland: { id: 2, name: "Low Island", template: lowIsland, probability: 9 },
-  continents: { id: 3, name: "Continents", template: continents, probability: 16 },
-  archipelago: { id: 4, name: "Archipelago", template: archipelago, probability: 18 },
-  atoll: { id: 5, name: "Atoll", template: atoll, probability: 1 },
-  mediterranean: { id: 6, name: "Mediterranean", template: mediterranean, probability: 5 },
-  peninsula: { id: 7, name: "Peninsula", template: peninsula, probability: 3 },
-  pangea: { id: 8, name: "Pangea", template: pangea, probability: 5 },
-  isthmus: { id: 9, name: "Isthmus", template: isthmus, probability: 2 },
-  shattered: { id: 10, name: "Shattered", template: shattered, probability: 7 },
-  taklamakan: { id: 11, name: "Taklamakan", template: taklamakan, probability: 1 },
-  oldWorld: { id: 12, name: "Old World", template: oldWorld, probability: 8 },
-  fractious: { id: 13, name: "Fractious", template: fractious, probability: 3 }
+  volcano: { id: 0, name: t("Volcano"), template: volcano, probability: 3 },
+  highIsland: { id: 1, name: t("High Island"), template: highIsland, probability: 19 },
+  lowIsland: { id: 2, name: t("Low Island"), template: lowIsland, probability: 9 },
+  continents: { id: 3, name: t("Continents"), template: continents, probability: 16 },
+  archipelago: { id: 4, name: t("Archipelago"), template: archipelago, probability: 18 },
+  atoll: { id: 5, name: t("Atoll"), template: atoll, probability: 1 },
+  mediterranean: { id: 6, name: t("Mediterranean"), template: mediterranean, probability: 5 },
+  peninsula: { id: 7, name: t("Peninsula"), template: peninsula, probability: 3 },
+  pangea: { id: 8, name: t("Pangea"), template: pangea, probability: 5 },
+  isthmus: { id: 9, name: t("Isthmus"), template: isthmus, probability: 2 },
+  shattered: { id: 10, name: t("Shattered"), template: shattered, probability: 7 },
+  taklamakan: { id: 11, name: t("Taklamakan"), template: taklamakan, probability: 1 },
+  oldWorld: { id: 12, name: t("Old World"), template: oldWorld, probability: 8 },
+  fractious: { id: 13, name: t("Fractious"), template: fractious, probability: 3 }
 };
 
 declare global {
