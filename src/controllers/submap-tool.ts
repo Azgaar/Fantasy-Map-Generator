@@ -79,8 +79,7 @@ function handlePointsInput(e: Event): void {
 function generateSubmap(): void {
   INFO && console.group("generateSubmap");
 
-  const { scale, x: viewX, y: viewY } = viewport;
-  const [x0, y0] = [Math.abs(viewX / scale), Math.abs(viewY / scale)]; // top-left corner
+  const { x0, y0, scale } = getSubmapRegion();
   recalculateMapSize(x0, y0, scale);
 
   const submapPointsValue = ensureEl<HTMLInputElement>("submapPointsInput").value;
@@ -103,6 +102,23 @@ function generateSubmap(): void {
   logStats();
 
   INFO && console.groupEnd();
+}
+
+/**
+ * The part of the map that becomes the submap: what is on screen, widened along one axis to the canvas
+ * proportions and kept inside the map. `scale` is the parent-to-submap factor, as the canvas is kept
+ */
+function getSubmapRegion(): { x0: number; y0: number; scale: number } {
+  const { width, height } = options.map.graph;
+  const visibleWidth = viewport.width / viewport.scale;
+  const visibleHeight = viewport.height / viewport.scale;
+  const scale = Math.min(width / visibleWidth, height / visibleHeight);
+
+  const regionWidth = width / scale;
+  const regionHeight = height / scale;
+  const x0 = minmax(-viewport.x / viewport.scale - (regionWidth - visibleWidth) / 2, 0, width - regionWidth);
+  const y0 = minmax(-viewport.y / viewport.scale - (regionHeight - visibleHeight) / 2, 0, height - regionHeight);
+  return { x0, y0, scale };
 }
 
 function recalculateMapSize(x0: number, y0: number, scale: number): void {
