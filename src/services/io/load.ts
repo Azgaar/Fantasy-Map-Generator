@@ -288,6 +288,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     undraw(); // every layer releases its scene and content before the loaded map takes over
     select("#map").remove();
     document.body.insertAdjacentHTML("afterbegin", data[5]);
+    ensureEl("map").dataset.layer = "map"; // pre-1.154 maps lack it, and styles address the root by it
     zonesFilter.type = "all"; // the dropped map's zone types say nothing about the loaded one
 
     // TODO: check if we need it or if LayersRegistry resolves it automatically?
