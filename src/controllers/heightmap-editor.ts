@@ -500,9 +500,9 @@ async function finalizeHeightmap(): Promise<void> {
   ensureEl<HTMLSelectElement>("layersPreset").disabled = false;
   ensureEl("exitCustomization").style.display = "none"; // hide finalize button
 
+  closeDialogs();
   applyDefaultViewboxEvents();
   clearMainTip();
-  closeDialogs();
   resetZoom();
 
   document.getElementById("preview")?.remove();
