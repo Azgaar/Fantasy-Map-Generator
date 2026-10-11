@@ -16,6 +16,7 @@ export type FieldSpec = {
   nullable: boolean;
   optional: boolean; // an unset optional is undefined, an unset nullable is null
   nullAs?: number | string;
+  unsetLabel?: string;
   schemaMin?: number; // the schema's own bound, which a control may not write past
   schemaMax?: number;
   valueType: "boolean" | "number" | "string" | "unknown"; // the leaf's own type, for controls that adapt (a checkbox over a 0/1 number)
@@ -136,6 +137,7 @@ function fieldSpec(key: string, schema: z.ZodType, meta: Meta, path: string[] = 
     nullable,
     optional,
     nullAs: fieldMeta.nullAs,
+    unsetLabel: fieldMeta.unsetLabel,
     schemaMin,
     schemaMax,
     valueType,
@@ -498,7 +500,7 @@ const select: ControlFactory = (spec, value, set) => {
   // "" is the unset sentinel only where the field has one: a real empty-string choice keeps its meaning
   const emptyChoice = spec.options?.some(option => String(option) === "") ?? false;
   const unsettable = (spec.nullable || spec.optional) && !emptyChoice;
-  if (unsettable) el.add(new Option("inherit", ""));
+  if (unsettable) el.add(new Option(spec.unsetLabel ?? "inherit", ""));
   for (const option of spec.options ?? []) {
     el.add(new Option(spec.choices?.[String(option)] ?? String(option), String(option)));
   }

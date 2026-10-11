@@ -14,6 +14,7 @@ export type FieldMeta<Control extends string = StandardControl> = {
   range?: [number, number]; // slider bounds for a number the schema leaves unbounded; widened to hold the stored value
   choices?: Record<string, string>; // labels for enum values, keyed by value
   nullAs?: number | string; // what an unset attr shows as (opacity null → 1, filter null → "")
+  unsetLabel?: string; // a select's unset option; default "inherit"
   hidden?: true; // stored, never edited
   gate?: string; // on a nested object: the key (or dotted path) that switches the rest of the section on
   group?: string; // a caption over the consecutive fields sharing it; their labels read under it ("Stroke" → "Width")
