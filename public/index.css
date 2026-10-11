@@ -231,6 +231,13 @@ t,
   mask: url(#land);
 }
 
+#populationCells {
+  stroke-dasharray: none;
+  stroke-linejoin: round;
+  fill-rule: evenodd;
+  mask: url(#land);
+}
+
 #borders {
   stroke-linejoin: round;
   fill: none;

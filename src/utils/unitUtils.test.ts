@@ -5,6 +5,9 @@ import {
   formatSpeed,
   getDistance,
   getDistanceUnitRatio,
+  getHeight,
+  heightToMeters,
+  metersToHeight,
   parseSpeed
 } from "./unitUtils";
 
@@ -73,5 +76,23 @@ describe("distance unit conversion", () => {
     options.map.units.distance.scale = 3;
     expect(getDistance(30.6)).toBe("92 mi");
     options.map.units.distance.scale = scale;
+  });
+});
+
+describe("height conversion", () => {
+  afterEach(() => {
+    options.map.units.height.unit = "ft";
+  });
+
+  it("formats a generator height in the user unit", () => {
+    options.map.units.height.unit = "m";
+    expect(getHeight(30)).toBe(`${Math.round(12 ** options.map.units.height.exponent)}m`);
+    expect(getHeight(10)).toBe("-50m");
+    expect(getHeight(10, true)).toBe("50m");
+    expect(getHeight(0)).toBe("-990m");
+  });
+
+  it("inverts meters back into generator heights, above and below sea level", () => {
+    for (const h of [20, 35.5, 100, 1, 10, 19]) expect(metersToHeight(heightToMeters(h))).toBeCloseTo(h, 9);
   });
 });

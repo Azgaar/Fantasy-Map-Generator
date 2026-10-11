@@ -1,4 +1,5 @@
 // Global layers registry: owns layers list, order, and svg skeleton
+import { AltitudeLegend } from "@/renderers/altitude-legend";
 import { drawBiomes } from "@/renderers/draw-biomes";
 import { drawBorders } from "@/renderers/draw-borders";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
@@ -288,7 +289,10 @@ const mapLayers = [
     element: "terrs",
     parent: "viewbox",
     children: ["oceanHeights", "landHeights"].map(id => ({ id, tag: "g" })),
-    draw: drawHeightmap
+    draw: () => {
+      drawHeightmap();
+      AltitudeLegend.refresh(); // the legend shows the heightmap colours
+    }
   }),
   new Layer({
     id: "lakes",
@@ -367,7 +371,7 @@ const mapLayers = [
   new Layer({
     id: "population",
     parent: "viewbox",
-    children: ["rural", "urban"].map(id => ({ id, tag: "g" })),
+    children: ["rural", "urban", "populationCells"].map(id => ({ id, tag: "g" })),
     draw: drawPopulation
   }),
   new Layer({

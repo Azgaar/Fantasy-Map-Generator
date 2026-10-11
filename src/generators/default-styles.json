@@ -1192,6 +1192,9 @@
       "filter": null,
       "mask": null
     },
+    "options": {
+      "type": "bars"
+    },
     "groups": {
       "rural": {
         "attrs": {

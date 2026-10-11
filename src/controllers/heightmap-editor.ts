@@ -28,7 +28,7 @@ import { removeEmblem } from "@/renderers/draw-emblems";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { drawDrainage, removeDrainage } from "@/renderers/overlays/drainage";
-import { downloadFile, getFileName, uploadFile } from "@/utils";
+import { downloadFile, getFileName, getHeightUnitRatio, heightToMeters, uploadFile } from "@/utils";
 import {
   createFileInput,
   ensureEl,
@@ -464,17 +464,7 @@ function moveCursor(this: SVGElement, event: any): void {
 
 // get user-friendly (real-world) height value from map data
 function getFriendlyHeight(h: number): string {
-  const unit = options.map.units.height.unit;
-  let unitRatio = 3.281; // default calculations are in feet
-  if (unit === "m") unitRatio = 1;
-  // if meter
-  else if (unit === "f") unitRatio = 0.5468; // if fathom
-
-  let height = -990;
-  if (h >= 20) height = (h - 18) ** options.map.units.height.exponent;
-  else if (h < 20 && h > 0) height = ((h - 20) / h) * 50;
-
-  return `${rn(height * unitRatio)} ${unit}`;
+  return `${rn(heightToMeters(h) * getHeightUnitRatio())} ${options.map.units.height.unit}`;
 }
 
 // Exit customization mode

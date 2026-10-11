@@ -10,6 +10,7 @@ export const HACHURE_MODES = { off: "Off", overlay: "Over colors", only: "Stroke
 
 export const LAKE_EMBELLISHMENTS = { none: "None", ripples: "Ripples", lines: "Straight strokes" };
 export const RELIEF_SETS = ["simple", "colored", "gray", "illustrated", "stickers"] as const;
+export const POPULATION_TYPES = { bars: "Bars", cells: "Cells" };
 export const WAVE_TYPES = { waves: "Waves", lines: "Straight strokes" };
 
 export const MAP_FILTERS = {
