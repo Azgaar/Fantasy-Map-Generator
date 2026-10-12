@@ -80,6 +80,7 @@ class BurgModule {
     const populatedCells = cells.i.filter(i => cells.s[i] > 0 && cells.culture[i]);
     if (!populatedCells.length) {
       ERROR && console.error("There is no populated cells with culture assigned. Cannot generate states");
+      pack.burgs = burgs;
       return burgs;
     }
 
@@ -617,10 +618,11 @@ class BurgModule {
       burgPopulation! * options.map.units.population.scale * options.map.units.population.urbanization.rate
     );
 
-    const river = cells.r[cell] ? 1 : 0;
-    const coast = Number((burg.port || 0) > 0);
+    const coast = Number(Boolean(burg.port && cells.haven[cell])); // a river port inland has no coast
+    // on the coast a river is drawn flowing into the sea, so only a river mouth counts
+    const river = Number(coast ? this.isEstuary(cell) : Boolean(cells.r[cell]));
     const sea = (() => {
-      if (!coast || !cells.haven[cell]) return null;
+      if (!coast) return null;
 
       // calculate see direction: 0 = east, 0.5 = north, 1 = west, 1.5 = south
       const [x1, y1] = cells.p[cell];
@@ -631,7 +633,7 @@ class BurgModule {
       return rn(2 - normalize(deg, 0, 180), 2);
     })();
 
-    const arableBiomes = river ? [1, 2, 3, 4, 5, 6, 7, 8] : [5, 6, 7, 8];
+    const arableBiomes = cells.r[cell] ? [1, 2, 3, 4, 5, 6, 7, 8] : [5, 6, 7, 8];
     const farms = +arableBiomes.includes(cells.biome[cell]);
 
     const citadel = Number(burg.citadel ?? 0);
@@ -670,6 +672,12 @@ class BurgModule {
     return { link, preview: `${link}&preview=1` };
   }
 
+  /** Whether a river meets the water at this coastal cell, not just passes it */
+  private isEstuary(cell: number): boolean {
+    const { r, haven } = pack.cells;
+    return Boolean(r[cell] && haven[cell] && pack.rivers.find(river => river.i === r[cell])?.mouth === cell);
+  }
+
   private createWatabouVillageLinks(burg: Burg) {
     const { cells, features } = pack;
     const { i, population, cell } = burg;
@@ -678,9 +686,9 @@ class BurgModule {
     const pop = rn(population! * options.map.units.population.scale * options.map.units.population.urbanization.rate);
     const tags = [];
 
-    if (cells.r[cell] && cells.haven[cell]) tags.push("estuary");
+    if (this.isEstuary(cell)) tags.push("estuary");
     else if (cells.haven[cell] && features[cells.f[cell]].cells === 1) tags.push("island,district");
-    else if (burg.port) tags.push("coast");
+    else if (burg.port && cells.haven[cell]) tags.push("coast");
     else if (cells.conf[cell]) tags.push("confluence");
     else if (cells.r[cell]) tags.push("river");
     else if (pop < 200 && each(4)(cell)) tags.push("pond");
@@ -813,7 +821,9 @@ class BurgModule {
 
   regenerate(): void {
     const { cells, burgs, states, provinces } = pack;
+    const { pop } = cells;
     Population.rankCells();
+    cells.pop = pop; // only burgs are regenerated, rural population stays
 
     const newBurgs: Burg[] = [0 as unknown as Burg];
     const burgsTree = quadtree<[number, number]>();
@@ -985,7 +995,7 @@ class BurgModule {
     const haven = cells.haven[cell];
     const feature = haven ? features[cells.f[haven]] : undefined;
     const water = !haven
-      ? Rivers.resolveDrainFeature(cell)
+      ? Rivers.isNavigable(cell) && Rivers.resolveDrainFeature(cell)
       : feature?.type === "lake" && feature.outlet
         ? (Rivers.resolveLakeDrainFeature(feature.i) ?? feature.i)
         : cells.f[haven];

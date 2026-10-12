@@ -20,7 +20,7 @@ import { Pins } from "@/components/pins";
 import { tip } from "@/components/tooltips";
 import { isElectron } from "./platform";
 
-export const VERSION = "1.154.0";
+export const VERSION = "1.154.1";
 
 // new changes on top
 const latestPublicChanges = [

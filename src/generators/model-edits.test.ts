@@ -86,6 +86,17 @@ describe("Burgs", () => {
     expect(pack.burgs[1].walls).toBe(0);
     expect(() => Burgs.setBuilding(1, "tavern", true)).toThrow("The building must be one of");
   });
+
+  it("setPort refuses a river too small to navigate", () => {
+    pack.burgs[1].cell = 1;
+    pack.cells = { haven: [0, 0], r: [0, 5], fl: [0, 20] } as unknown as typeof pack.cells;
+    const drain = vi.spyOn(Rivers, "resolveDrainFeature").mockReturnValue(3);
+    expect(() => Burgs.setPort(1, true)).toThrow("no navigable water");
+    pack.cells.fl[1] = 500;
+    Burgs.setPort(1, true);
+    expect(pack.burgs[1].port).toBe(3);
+    drain.mockRestore();
+  });
 });
 
 describe("full names", () => {

@@ -1162,3 +1162,24 @@ describe("v1.154 relief descriptors", () => {
     warn.mockRestore();
   });
 });
+
+describe("v1.154.1 relief pool density", () => {
+  const load = async (version: string) => {
+    globalThis.pack = {
+      cells: { i: [0, 1, 2, 3], h: [30, 30, 30, 10], area: [124, 124, 124, 124] },
+      biomes: [0, 3, 20, 120].map(iconsDensity => ({ iconsDensity }))
+    } as unknown as typeof globalThis.pack;
+    const data: string[] = [];
+    data[48] = JSON.stringify(Styles.defaults);
+    await resolveVersionConflicts(version, data);
+    return pack.biomes.map(biome => biome.iconsDensity);
+  };
+
+  it("raises sparse pools to place as many icons as their old per-cell placement did", async () => {
+    expect(await load("1.154.0")).toEqual([0, 27, 69, 120]);
+  });
+
+  it("leaves current maps alone", async () => {
+    expect(await load("1.154.1")).toEqual([0, 3, 20, 120]);
+  });
+});

@@ -195,7 +195,7 @@ test("a land cell takes the first rule it matches, with a null bound open", () =
 test("a rule places one entry per cell, sized by height; a cell no rule claims takes its biome's pool", () => {
   vi.stubGlobal("styles", { relief: { options: { size: 1, density: 1, set: "simple" } } });
   vi.stubGlobal("grid", { cells: { temp: [10, 10, 10] } });
-  vi.stubGlobal("Pack", { getPolygon: square });
+  vi.stubGlobal("Pack", { getPolygon: (i: number) => square().map(([x, y]) => [x + i * 20, y]) });
   vi.stubGlobal("options", {
     map: {
       relief: {
@@ -294,4 +294,42 @@ test("artwork directories fit a tight union of contiguous variant slots", () => 
   console.table(
     coverage.map(({ set, files, missing }) => ({ set, artwork: files.length, missing: missing.join(", ") }))
   );
+});
+
+test.each([
+  ["rule", false],
+  ["biome pool", true]
+])("a sparser %s places fewer icons, its spacing holding across cells", (_, pool) => {
+  vi.stubGlobal("styles", { relief: { options: { size: 1, density: 1, set: "simple" } } });
+  const side = 2;
+  const columns = 40;
+  const cells = Array.from({ length: columns * columns }, (_, i) => i);
+  vi.stubGlobal("grid", { cells: { temp: cells.map(() => 10) } });
+  vi.stubGlobal("Pack", {
+    getPolygon: (i: number) => {
+      const [x, y] = [(i % columns) * side, Math.floor(i / columns) * side];
+      return [
+        [x, y],
+        [x + side, y],
+        [x + side, y + side],
+        [x, y + side]
+      ];
+    }
+  });
+  const zeros = cells.map(() => 0);
+  vi.stubGlobal("pack", {
+    cells: { i: cells, h: cells.map(() => 60), r: zeros, g: zeros, biome: zeros },
+    biomes: [{}]
+  });
+
+  const count = (density: number) => {
+    const [, , hills] = Relief.getDefaultRules();
+    options.map.relief.rules = pool ? [] : [{ ...hills, density }];
+    Object.assign(pack.biomes[0], { iconsDensity: density, icons: { grass: { weight: 1 } } });
+    return Relief.generate().length;
+  };
+  const [dense, half, sparse] = [50, 25, 10].map(count);
+  expect(dense).toBeLessThan(cells.length); // a 4px spacing over 2px cells skips cells
+  expect(half).toBeLessThan(dense / 2);
+  expect(sparse).toBeLessThan(half / 2);
 });

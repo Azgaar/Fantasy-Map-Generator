@@ -49,7 +49,7 @@ function getDefaultBiomes(): Biome[] {
     "#0b9131"
   ];
   const habitability = [0, 4, 10, 22, 30, 50, 100, 80, 90, 12, 4, 0, 12];
-  const iconsDensity = [0, 3, 2, 120, 120, 120, 120, 150, 150, 100, 5, 0, 250];
+  const iconsDensity = [0, 27, 20, 120, 120, 120, 120, 150, 150, 100, 39, 0, 250];
   const weights: Record<string, number>[] = [
     {},
     { dune: 3, cactus: 6, deadTree: 1 },
