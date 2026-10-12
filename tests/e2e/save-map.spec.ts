@@ -39,32 +39,37 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("Ctrl+S reuses the chosen file and Ctrl+Shift+S switches to a separate copy", async ({ page }) => {
+  // the tip shows once the write is closed; reading the file mid-write can throw NotFoundError
+  const save = async (keys: string, filename: string) => {
+    await page.evaluate(() => {
+      document.getElementById("tooltip")!.textContent = "";
+    });
+    await page.keyboard.press(keys);
+    await expect(page.locator("#tooltip")).toContainText(`Map is saved to "${filename}"`);
+  };
+  const read = (index: number) =>
+    page.evaluate(async i => (await window.saveTest.handles[i].getFile()).text(), index);
+
   const initial = await page.evaluate(() => Services.Save.prepareMapData());
-  await page.keyboard.press("Control+s");
-  await expect(page.locator("#tooltip")).toContainText('Map is saved to "Chosen-1.map"');
-  expect(await page.evaluate(async () => (await window.saveTest.handles[0].getFile()).text())).toBe(initial);
+  await save("Control+s", "Chosen-1.map");
+  expect(await read(0)).toBe(initial);
 
   const edited = await page.evaluate(async () => {
     options.map.lore.name = "Edited after saving";
     return Services.Save.prepareMapData();
   });
-  await page.keyboard.press("Control+s");
-  await expect
-    .poll(() => page.evaluate(async () => (await window.saveTest.handles[0].getFile()).text()))
-    .toBe(edited);
+  await save("Control+s", "Chosen-1.map");
+  expect(await read(0)).toBe(edited);
   expect(await page.evaluate(() => window.saveTest.picks)).toBe(1);
 
-  await page.keyboard.press("Control+Shift+s");
-  await expect(page.locator("#tooltip")).toContainText('Map is saved to "Chosen-2.map"');
+  await save("Control+Shift+s", "Chosen-2.map");
   const copy = await page.evaluate(async () => {
     options.map.lore.name = "Edited copy";
     return Services.Save.prepareMapData();
   });
-  await page.keyboard.press("Control+s");
-  await expect
-    .poll(() => page.evaluate(async () => (await window.saveTest.handles[1].getFile()).text()))
-    .toBe(copy);
-  expect(await page.evaluate(async () => (await window.saveTest.handles[0].getFile()).text())).toBe(edited);
+  await save("Control+s", "Chosen-2.map");
+  expect(await read(1)).toBe(copy);
+  expect(await read(0)).toBe(edited);
   expect(await page.evaluate(() => window.saveTest.picks)).toBe(2);
   expect(await page.evaluate(() => window.saveTest.activations)).toEqual([true, true]);
 });
