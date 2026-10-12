@@ -2194,6 +2194,21 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       }
     }
   }
+
+  if (isOlderThan("1.154.1")) {
+    // a biome's relief spacing held within each cell only, so a sparse pool placed one icon per cell, or in
+    // density/10 of the cells below 10. Now it holds across cells: raise the density to place as many (fit on generated maps)
+    const biomes = (pack.biomes ?? []).filter(biome => biome.iconsDensity);
+    const { cells } = pack;
+    const land = biomes.length ? Array.from(cells.i).filter(i => cells.h[i] >= 20) : [];
+    const cellArea = land.reduce((sum, i) => sum + cells.area[i], 0) / land.length;
+    const styleDensity = Styles.parse(data[48] ? safeParseJSON(data[48]) : undefined).relief.options.density || 1;
+    for (const biome of land.length ? biomes : []) {
+      const density = biome.iconsDensity;
+      const perCell = 11.5 * Math.min(density, 10) ** 0.78 * (124 / cellArea) ** 0.55 * (0.4 / styleDensity);
+      biome.iconsDensity = Math.max(density, Math.min(Math.round(perCell), 250));
+    }
+  }
 }
 
 export function migrateLegacySettings(mapVersion: string, data: string[]): void {

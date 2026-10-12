@@ -1,4 +1,4 @@
-import { extent, polygonContains } from "d3";
+import { extent, polygonContains, type Quadtree, quadtree, shuffle } from "d3";
 import type { ReliefRule } from "@/components/options-schema";
 import { RELIEF_SETS } from "@/data/style-choices";
 import type { IconAlias, IconSet } from "@/types/icons";
@@ -47,6 +47,9 @@ export type ReliefPool = Record<string, ReliefPoolEntry>;
 
 const SIZE_GROWTH = 0.8; // what a rule's icon size gains per height unit above the rule's lowest height
 
+/** the icons each pool (a biome or a rule) placed so far in a pass, so its spacing holds across cells */
+type PoolPoints = Map<object, Quadtree<[number, number]>>;
+
 export class ReliefModel {
   readonly sets = RELIEF_SETS;
   readonly types = TYPES;
@@ -91,7 +94,8 @@ export class ReliefModel {
     TIME && console.time("generateRelief");
 
     const relief: ReliefIcon[] = [];
-    for (const i of pack.cells.i) this.placeCell(i, relief);
+    const placed: PoolPoints = new Map();
+    for (const i of shuffle(Array.from(pack.cells.i))) this.placeCell(i, relief, placed);
 
     // an icon whose box ends lower draws on top
     relief.sort(this.byBottom);
@@ -134,7 +138,8 @@ export class ReliefModel {
   regenerate(covers: (cell: number) => boolean): void {
     const replaced = new Set(this.iconsOn(covers));
     const placed: ReliefIcon[] = [];
-    for (const i of pack.cells.i) if (covers(i)) this.placeCell(i, placed);
+    const points: PoolPoints = new Map();
+    for (const i of shuffle(Array.from(pack.cells.i).filter(covers))) this.placeCell(i, placed, points);
     placed.sort(this.byBottom);
     // merged, not re-sorted: the kept icons may be in a hand-set order
     const merged: ReliefIcon[] = [];
@@ -182,13 +187,24 @@ export class ReliefModel {
     return TYPES.find(entry => entry.type === type)!.label;
   }
 
-  private placeCell(i: number, relief: ReliefIcon[]): void {
+  /** cells are placed in random order, as sparse relief would otherwise line up along the cell scan */
+  private placeCell(i: number, relief: ReliefIcon[], placed: PoolPoints): void {
     const cells = pack.cells;
     if (cells.h[i] < 20) return; // no icons on water
     if (cells.r[i]) return; // no icons on rivers
     const rule = this.claim(i);
-    if (rule) this.placeRule(i, rule, relief);
-    else this.placePool(i, relief);
+    if (rule) this.placeRule(i, rule, relief, placed);
+    else this.placePool(i, relief, placed);
+  }
+
+  /** a cell's points at the pool's spacing, which holds against what the pool placed in other cells too */
+  private spacedPoints(i: number, density: number, pool: object, placed: PoolPoints): [number, number][] {
+    const radius = this.spacing(density);
+    const tree = placed.get(pool) ?? quadtree<[number, number]>();
+    placed.set(pool, tree);
+    const points = [...this.samplePoints(i, radius)].filter(([x, y]) => tree.find(x, y, radius) === undefined);
+    tree.addAll(points);
+    return points;
   }
 
   /** an icon for a pool entry; an absent variant means 1, so it is only stored when it carries information */
@@ -197,14 +213,12 @@ export class ReliefModel {
     return this.ref(entry, 1 + Math.floor(Math.random() * this.variantsOf(entry)));
   }
 
-  private placePool(i: number, relief: ReliefIcon[]): void {
+  private placePool(i: number, relief: ReliefIcon[], placed: PoolPoints): void {
     const biome = pack.biomes[pack.cells.biome[i]];
     if (!biome.iconsDensity || !this.pickEntry(biome.icons, 0)) return; // no icons for this biome
 
-    if (Math.random() > (biome.iconsDensity / 100) * 10) return;
-
     const cold = grid.cells.temp[pack.cells.g[i]] < 0;
-    for (const [cx, cy] of this.samplePoints(i, this.spacing(biome.iconsDensity))) {
+    for (const [cx, cy] of this.spacedPoints(i, biome.iconsDensity, biome, placed)) {
       const base = this.poolSize(Math.random());
       const entry = this.pickEntry(biome.icons, Math.random())!;
       const s = base * (biome.icons[entry].size ?? 1);
@@ -214,15 +228,17 @@ export class ReliefModel {
   }
 
   /** one entry and variant per cell, so a cell's relief is uniform; no roll is spent where there is no choice */
-  private placeRule(i: number, rule: ReliefRule, relief: ReliefIcon[]): void {
+  private placeRule(i: number, rule: ReliefRule, relief: ReliefIcon[], placed: PoolPoints): void {
     const entries = Object.keys(rule.icons).filter(entry => rule.icons[entry].weight > 0);
     if (!rule.density || !entries.length) return;
-    if (rule.density < 10 && Math.random() > rule.density / 10) return;
+
+    const points = this.spacedPoints(i, rule.density, rule, placed);
+    if (!points.length) return;
 
     const entry = entries.length > 1 ? this.pickEntry(rule.icons, Math.random())! : entries[0];
     const icon = this.entryIcon(entry);
     const s = this.ruleSize(rule, pack.cells.h[i]) * (rule.icons[entry].size ?? 1);
-    for (const [cx, cy] of this.samplePoints(i, this.spacing(rule.density))) {
+    for (const [cx, cy] of points) {
       relief.push({ ...icon, x: rn(cx - s / 2, 2), y: rn(cy - s / 2, 2), s: rn(s, 2) });
     }
   }
