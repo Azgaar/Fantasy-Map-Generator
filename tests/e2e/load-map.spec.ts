@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import fs from "fs";
 import path from "path";
-import { waitForMap } from "./wait-for-map";
+import { countMaps, waitForMap, waitForNextMap } from "./wait-for-map";
 
 declare const style: { relief: { set: string; size: number; density: number } };
 
@@ -602,5 +602,36 @@ test.describe("Map loading", () => {
         !e.includes("Failed to load resource")
     );
     expect(criticalErrors).toEqual([]);
+  });
+
+  // a .map stores no names for a base equal to the default at its index, so a session's own bases must not fill them
+  test("loading a map should restore default namebases over the session's ones", async ({ page }) => {
+    await waitForMap(page);
+    await page.evaluate(() => {
+      const Names = (window as any).Names;
+      Names.nameBases = [{ name: "Custom", i: 0, min: 4, max: 8, d: "", m: 0, b: "Aaa,Bbb,Ccc" }];
+      Names.getBase(0); // caches the custom chain
+    });
+
+    const maps = await countMaps(page);
+    await page.locator("#mapToLoad").setInputFiles(path.join(__dirname, "../fixtures/1.154.0.map"));
+    await waitForNextMap(page, maps);
+
+    const result = await page.evaluate(() => {
+      const Names = (window as any).Names;
+      const defaults = Names.getNameBases();
+      return {
+        count: Names.nameBases.length,
+        matchDefaults: Names.nameBases.every((base: any, i: number) => base.b === defaults[i].b),
+        chainFromDefault:
+          !Names.chains[0] ||
+          JSON.stringify(Object.entries(Names.chains[0])) ===
+            JSON.stringify(Object.entries(Names.calculateChain(defaults[0].b)))
+      };
+    });
+
+    expect(result.count).toBe(43);
+    expect(result.matchDefaults).toBe(true);
+    expect(result.chainFromDefault).toBe(true);
   });
 });
