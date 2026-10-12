@@ -385,8 +385,8 @@ const mapLayers = [
     erase: removeLabels
   }),
   new Layer({ id: "military", element: "armies", parent: "viewbox", draw: drawMilitary }),
-  new Layer({ id: "markers", parent: "viewbox", draw: drawMarkers }),
   new Layer({ id: "fogging", parent: "viewbox", attrs: { mask: "url(#fog)" }, permanent: true, draw: drawFogging }),
+  new Layer({ id: "markers", parent: "viewbox", draw: drawMarkers }),
   new Layer({ id: "journeys", parent: "viewbox", draw: drawJourneys }),
   new Layer({ id: "rulers", element: "ruler", parent: "viewbox", draw: drawMeasurers }),
   new Layer({ id: "debug", parent: "viewbox", permanent: true, keepContent: true }),
