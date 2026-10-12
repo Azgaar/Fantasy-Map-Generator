@@ -558,6 +558,21 @@ class BurgModule {
         if (!isFit) continue;
       }
 
+      if (group.states) {
+        const isFit = group.states.includes(burg.state ?? 0);
+        if (!isFit) continue;
+      }
+
+      if (group.cultures) {
+        const isFit = group.cultures.includes(burg.culture ?? 0);
+        if (!isFit) continue;
+      }
+
+      if (group.religions) {
+        const isFit = group.religions.includes(pack.cells.religion[burg.cell]);
+        if (!isFit) continue;
+      }
+
       if (group.percentile) {
         const index = populations.indexOf(burg.population as number);
         const isFit = index >= Math.floor((populations.length * group.percentile) / 100);

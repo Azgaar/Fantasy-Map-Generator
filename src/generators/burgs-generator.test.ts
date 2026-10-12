@@ -477,6 +477,31 @@ describe("BurgsModule.parseStoredGroups", () => {
   });
 });
 
+describe("BurgsModule.defineGroup", () => {
+  it("assigns burgs only to groups whose state, culture and religion limits they meet", async () => {
+    await import("./burgs-generator");
+    const Burgs = (globalThis as any).Burgs;
+    globalThis.pack = { cells: { biome: [0, 0, 0], religion: [0, 1, 2] } } as any;
+    options.map.burgs.groups = [
+      { name: "elven", order: 4, active: true, cultures: [1] },
+      { name: "royal", order: 3, active: true, states: [2] },
+      { name: "pious", order: 2, active: true, religions: [2] },
+      { name: "town", order: 1, active: true, isDefault: true }
+    ];
+
+    const groupOf = (burg: object) => {
+      const target = { i: 1, population: 1, ...burg } as any;
+      Burgs.defineGroup(target, [1]);
+      return target.group;
+    };
+
+    expect(groupOf({ cell: 1, culture: 1, state: 2 })).toBe("elven");
+    expect(groupOf({ cell: 1, culture: 2, state: 2 })).toBe("royal");
+    expect(groupOf({ cell: 2, culture: 2, state: 1 })).toBe("pious");
+    expect(groupOf({ cell: 1, culture: 2, state: 1 })).toBe("town");
+  });
+});
+
 describe("BurgModule.rename", () => {
   it("renames a burg and its label, and rejects missing burgs and empty names", async () => {
     await import("./burgs-generator");
