@@ -63,8 +63,9 @@ const dropbox: DropboxProvider = {
       if (!this.api) await this.initialize();
       return await this.api[name](param);
     } catch (e) {
-      if ((e as Error).name !== "DropboxResponseError") throw e;
-      await this.auth(); // retry with auth
+      // only an expired or revoked token is fixed by signing in again
+      if ((e as { status?: number }).status !== 401) throw e;
+      await this.auth();
       return await this.api[name](param);
     }
   },
@@ -88,7 +89,7 @@ const dropbox: DropboxProvider = {
   },
 
   async save(fileName, contents) {
-    const resp = await this.call("filesUpload", { path: `/${fileName}`, contents });
+    const resp = await this.call("filesUpload", { path: `/${fileName}`, contents, mode: "overwrite" });
     DEBUG.cloud && console.info("Dropbox response:", resp);
     return true;
   },
@@ -101,14 +102,20 @@ const dropbox: DropboxProvider = {
   },
 
   async list() {
-    const resp = await this.call("filesListFolder", { path: "" });
-    const filesData: CloudFile[] = resp.result.entries.map(({ name, client_modified, size, path_lower }: any) => ({
+    let { result } = await this.call("filesListFolder", { path: "" });
+    const entries = [...result.entries];
+    while (result.has_more) {
+      ({ result } = await this.call("filesListFolderContinue", { cursor: result.cursor }));
+      entries.push(...result.entries);
+    }
+
+    const filesData: CloudFile[] = entries.map(({ name, client_modified, size, path_lower }: any) => ({
       name,
       updated: client_modified,
       size,
       path: path_lower
     }));
-    return filesData.filter(({ size }) => size).reverse();
+    return filesData.filter(({ size }) => size).sort((a, b) => b.updated.localeCompare(a.updated));
   },
 
   auth() {
