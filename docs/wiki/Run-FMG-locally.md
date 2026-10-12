@@ -20,4 +20,4 @@ Run `npm run build` to create a static build in `dist`. Use `npm run preview` to
 
 ## Desktop app
 
-`npm run electron` starts the desktop app against the Vite dev server, with hot reload. `npm run electron dist` packages installers for the current OS into `release/`. The published installers are built by the _Build desktop app_ GitHub workflow when a release is tagged; see [Install with Nix](Install-with-Nix) for the Nix build.
+`npm run electron` starts the desktop app against the Vite dev server, with hot reload. `npm run electron dist` packages installers for the current OS into `release/`. The published installers are built by the _Build desktop app_ GitHub workflow whenever a new version reaches `master`: patch versions are released automatically, minor versions wait as a draft release; see [Install with Nix](Install-with-Nix) for the Nix build.
