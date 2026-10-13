@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   ask: vi.fn(),
   connected: vi.fn(() => false),
-  highlight: vi.fn(),
   isOn: vi.fn((_layer: string) => true),
   openEditor: vi.fn((_element: Element) => true),
   reveal: vi.fn()
@@ -13,7 +12,6 @@ vi.mock("@/components/layers", () => ({ Layers: { isOn: mocks.isOn } }));
 vi.mock("@/components/reveal", () => ({ revealEntity: mocks.reveal }));
 vi.mock("@/components/viewbox-events", () => ({ openEditor: mocks.openEditor }));
 vi.mock("@/controllers", () => ({ Controllers: { Assistant: { ask: mocks.ask } } }));
-vi.mock("@/renderers/overlays/highlight", () => ({ highlightElement: mocks.highlight }));
 vi.mock("@/services/assistant/provider/connection", () => ({ isConnected: mocks.connected }));
 vi.mock("@/utils", async original => ({ ...(await original<object>()), getPointer: () => [30, 40] }));
 
@@ -89,10 +87,21 @@ describe("context menu", () => {
     expect(document.getElementById("contextMenu")).toBeNull();
   });
 
-  it("dims the rows whose layers are off", () => {
+  it("dims the rows whose layers are off, unless drawn under the cursor", () => {
     mocks.isOn.mockImplementation(layer => layer !== "biomes");
     rightClick("burgIcon");
     expect(rows().map(row => row.classList.contains("dim"))).toEqual([false, false, true]);
+
+    mocks.isOn.mockReturnValue(false);
+    rightClick("burgIcon"); // e.g. found through its emblem while the burg icons are off
+    expect(rows().map(row => row.classList.contains("dim"))).toEqual([false, true, true]);
+  });
+
+  it("titles an unnamed entity by its kind only", () => {
+    pack.burgs[1] = { i: 1, name: "" } as (typeof pack.burgs)[number];
+    rightClick("burgIcon");
+    expect(rows()[0].querySelector(".name")?.textContent).toBe("Burg");
+    expect(rows()[0].querySelector(".kind")).toBeNull();
   });
 
   it("asks the Assistant about the place for the Key tier only", () => {
@@ -120,5 +129,16 @@ describe("context menu", () => {
     rightClick("burgIcon");
     document.getElementById("map")!.dispatchEvent(new Event("pointerdown", { bubbles: true }));
     expect(document.getElementById("contextMenu")).toBeNull();
+  });
+
+  it("closes on any other key, leaving it to the hotkeys", () => {
+    const hotkey = vi.fn();
+    document.addEventListener("keyup", hotkey);
+    rightClick("burgIcon");
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "-", bubbles: true }));
+    document.dispatchEvent(new KeyboardEvent("keyup", { key: "-", bubbles: true }));
+    expect(document.getElementById("contextMenu")).toBeNull();
+    expect(hotkey).toHaveBeenCalledOnce();
+    document.removeEventListener("keyup", hotkey);
   });
 });

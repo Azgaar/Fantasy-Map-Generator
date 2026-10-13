@@ -70,12 +70,12 @@ class ContextMenuController {
     root.id = "contextMenu";
     root.setAttribute("role", "menu");
 
-    const rows = this.rows.map(({ ref }, index) => {
+    const rows = this.rows.map(({ ref, element }, index) => {
       const { kind, icon } = MapEntities.getDisplay(ref);
-      const hidden = this.hidden(ref);
-      const name = MapEntities.getName(ref) || kind;
+      const hidden = !element && this.hidden(ref); // drawn under the cursor is shown, whatever its own layers
+      const name = MapEntities.getName(ref); // an unnamed entity is titled by its kind only
       return /* html */ `<button type="button" role="menuitem" data-index="${index}" ${hidden ? `class="dim" data-tip="${t("The layer is hidden")}"` : ""}>
-        <span class="${icon}"></span><span class="name">${escapeHtml(name)}</span><span class="kind">${escapeHtml(kind)}</span>
+        <span class="${icon}"></span><span class="name">${escapeHtml(name || kind)}</span>${name ? `<span class="kind">${escapeHtml(kind)}</span>` : ""}
       </button>`;
     });
     if (Connection.isConnected())
@@ -168,12 +168,16 @@ class ContextMenuController {
     root.addEventListener("click", event => this.activate(event.target as Element), { signal });
     root.addEventListener("contextmenu", event => event.preventDefault(), { signal });
 
-    // the hotkeys act on keyup (Escape closes dialogs, arrows pan, Space opens search): the menu's keys stop there
+    // the hotkeys act on keyup (Escape closes dialogs, arrows pan, Space opens search): the menu's keys stop there;
+    // any other key closes the menu and does its usual job, as a zoom or a layer toggle would leave the menu stale
     const own = (event: KeyboardEvent) => MENU_KEYS.includes(event.key);
     window.addEventListener(
       "keydown",
       event => {
-        if (!own(event)) return;
+        if (!own(event)) {
+          this.close();
+          return;
+        }
         if (event.key === "ArrowDown" || event.key === "ArrowUp") this.move(event.key === "ArrowDown" ? 1 : -1);
         if (event.key !== "Enter" && event.key !== " ") event.preventDefault(); // a focused row clicks on them
         event.stopImmediatePropagation();
