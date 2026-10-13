@@ -66,7 +66,7 @@ You can add and remove relief icons on the map with the Relief Editor: turn the 
 
 ### How can I use rulers in a map?
 
-Rulers are managed by the Measurers Editor: Tools -> Measurers (Shift + =). There you can place a linear ruler, an opisometer (curve length), a route opisometer (a curve that sticks to routes) and a planimeter (polygon area). Remove a single measurer from the list in the editor or use the trash button to remove them all
+Rulers are managed by the Measurers Editor: Tools -> Measurers (Shift + =). There you can place a linear ruler, an opisometer (curve length), a route opisometer (a curve that sticks to routes) and a planimeter (polygon area). Remove a single measurer from the list in the editor or use the trash button to remove them all. Colors, width, dashes and label visibility are in Style -> Rulers
 
 ### Why do lakes appear after editing the heightmap? How do I see where water flows?
 

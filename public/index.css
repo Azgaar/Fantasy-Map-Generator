@@ -1915,15 +1915,19 @@ div.editorLine {
 }
 
 #ruler .white {
-  stroke: white;
+  stroke: currentColor;
 }
 
 #ruler .gray {
-  stroke: #3d3d3d;
   pointer-events: none;
 }
 
+#ruler[data-labels="false"] text {
+  display: none;
+}
+
 #ruler text {
+  stroke: none;
   font-family: var(--serif);
   fill: #3d3d3d;
   text-anchor: middle;
