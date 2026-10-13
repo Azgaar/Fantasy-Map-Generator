@@ -189,6 +189,12 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => Controllers.MilitaryOverview.open()
   },
   {
+    id: "openNationsButton",
+    name: "Open AI Nations",
+    aliases: "referee turns orders diplomacy game api",
+    run: () => import("@/controllers/nations").then(module => module.Nations.open())
+  },
+  {
     id: "regiments",
     name: "Open Regiments Overview",
     aliases: "military armies",

@@ -1,0 +1,110 @@
+# Keeps this fork current with Azgaar's generator. Each day it merges upstream's master, checks that the AI Nations
+# layer still builds on top of it, and publishes the result. When it cannot, it opens an issue instead of guessing.
+name: Sync with upstream
+
+on:
+  schedule:
+    - cron: "23 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  actions: write
+
+env:
+  ELECTRON_SKIP_BINARY_DOWNLOAD: 1
+  UPSTREAM: https://github.com/Azgaar/Fantasy-Map-Generator.git
+  GH_TOKEN: ${{ github.token }}
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository != 'Azgaar/Fantasy-Map-Generator'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Merge upstream
+        id: merge
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch "$UPSTREAM" master
+          if git merge-base --is-ancestor FETCH_HEAD HEAD; then
+            echo "state=current" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if git merge --no-edit FETCH_HEAD; then
+            echo "state=merged" >> "$GITHUB_OUTPUT"
+          else
+            {
+              echo "state=conflict"
+              echo "detail<<EOF"
+              echo "Files that conflict:"
+              git diff --name-only --diff-filter=U
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+            git merge --abort
+          fi
+
+      - uses: actions/setup-node@v6
+        if: steps.merge.outputs.state == 'merged'
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Check AI Nations still builds
+        id: check
+        if: steps.merge.outputs.state == 'merged'
+        run: |
+          npm ci
+          if npx tsc --noEmit > check.log 2>&1 && npx vitest run src/services/nations >> check.log 2>&1; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            tail -n 40 check.log
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish
+        id: publish
+        if: steps.check.outputs.ok == 'true'
+        run: |
+          # a push that changes workflow files is refused for this token: that case needs a manual merge
+          if git push origin HEAD:master; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+            gh workflow run deploy.yml --ref master || true
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Ask for a manual merge
+        if: >-
+          steps.merge.outputs.state == 'conflict' ||
+          (steps.merge.outputs.state == 'merged' && steps.publish.outputs.ok != 'true')
+        env:
+          STATE: ${{ steps.merge.outputs.state }}
+          DETAIL: ${{ steps.merge.outputs.detail }}
+          CHECK: ${{ steps.check.outputs.ok }}
+        run: |
+          title="Upstream sync needs a manual merge"
+          if [ "$STATE" = "conflict" ]; then reason="Upstream changed the same lines as this fork. $DETAIL"
+          elif [ "$CHECK" != "true" ]; then reason="Upstream merged cleanly, but AI Nations no longer builds or passes its tests on top of it."
+          else reason="Upstream merged cleanly, but the push was refused, most likely because upstream changed a workflow file."
+          fi
+          body="$reason
+
+          Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+
+          To fix it, merge https://github.com/Azgaar/Fantasy-Map-Generator master into this fork's master by hand (or ask Claude to), then close this issue."
+          # forks start with issues turned off: then the failed run itself is the notice
+          number=$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number' || true)
+          if [ -n "$number" ]; then gh issue comment "$number" --body "$body"; else gh issue create --title "$title" --body "$body"; fi || true
+          echo "::error::$reason"
+          exit 1

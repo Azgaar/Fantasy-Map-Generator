@@ -61,6 +61,9 @@ const TEMPLATE = /* html */ `
     >
       Military
     </button>
+    <button id="openNationsButton" data-tip="Click to open AI Nations: let AI models rule chosen states, turn by turn, with you as the referee">
+      AI Nations
+    </button>
     <button id="editNamesBaseButton" data-tip="Click to open Namesbase Editor" data-shortcut="Shift + N">
       Namesbase
     </button>
