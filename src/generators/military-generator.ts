@@ -704,13 +704,18 @@ class MilitaryModule {
     return i;
   }
 
-  /** Attach a regiment to another, of any state: its troops join the target and it is disbanded */
+  /** Attach a regiment to another, of any state: its troops and note join the target and it is disbanded */
   attach(stateId: number, regimentId: number, targetStateId: number, targetId: number): void {
     const regiment = this.living(stateId, regimentId);
     const target = this.living(targetStateId, targetId);
     if (regiment === target) throw new Error("A regiment cannot attach to itself");
     for (const [unit, count] of Object.entries(regiment.u)) if (count) target.u[unit] = (target.u[unit] || 0) + count;
     target.a = sum(Object.values(target.u));
+
+    const { year, eraShort } = options.map.lore.calendar;
+    const record = regiment.note ? ` Its record: ${regiment.note}` : "";
+    const merger = `${regiment.name} merged into the regiment (${year} ${eraShort}).${record}`;
+    target.note = target.note ? `${target.note}<br><br>${merger}` : merger;
     this.remove(stateId, regimentId);
   }
 
