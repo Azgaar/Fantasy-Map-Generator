@@ -572,12 +572,13 @@ class OmnibarController {
       return;
     }
 
+    const query = this.input?.value.trim().replace(/^>\s*/, "");
     this.busy = true;
     this.dismiss(false);
 
     try {
       if (result.kind === "command") {
-        await result.command.run();
+        await result.command.run(undefined, query);
         this.remember(result.id);
       } else if (result.kind === "label") {
         this.navigate(result.target, { label: result.label });

@@ -32,7 +32,7 @@ export interface MapCommand {
   id: string;
   name: string;
   aliases: string;
-  run: (event?: MouseEvent) => unknown;
+  run: (event?: MouseEvent, query?: string) => unknown; // query: what the omnibar holds when the command is picked
   layer?: LayerId;
   matches?: (query: string) => boolean; // queries the command answers beyond its name and aliases
   link?: true; // an Assistant answer may link it: it only opens a dialog, tab or chart
@@ -47,7 +47,8 @@ export const MAP_COMMANDS: MapCommand[] = [
     name: t("Azgaar Assistant"),
     aliases: "help chat question ask faq support how why what ?",
     matches: isQuestion,
-    run: () => Controllers.Assistant.open()
+    run: (_event, query) =>
+      query && isQuestion(query) ? Controllers.Assistant.ask(query) : Controllers.Assistant.open()
   },
   {
     id: "startTour",
