@@ -478,3 +478,20 @@ it("refreshes limits after an unauthorized rating", async () => {
   await vi.waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/v1/limits"))).toBe(true));
   expect(item.rating).toBeUndefined();
 });
+
+it("sends a question asked from elsewhere, keeping the draft, and holds the next one while answering", async () => {
+  Assistant.open();
+  const input = await vi.waitFor(() => document.getElementById("assistantQuestion") as HTMLTextAreaElement);
+  input.value = "my draft";
+  void Assistant.ask("What's there? cell:4");
+  await vi.waitFor(() => expect(state.send).toHaveBeenCalledTimes(1));
+  expect(state.send.mock.calls[0][1]).toBe("What's there? cell:4");
+  expect(input.value).toBe("my draft");
+
+  await Assistant.ask("What's there? cell:9");
+  expect(state.send).toHaveBeenCalledTimes(1);
+  expect(input.value).toBe("my draft");
+  input.value = "";
+  await Assistant.ask("What's there? cell:9");
+  expect(input.value).toBe("What's there? cell:9");
+});

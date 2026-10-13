@@ -18,8 +18,8 @@ const warn = (message: string) => tip(message, true, "error", ERROR_TIP_TIME);
 
 const HINTS = {
   pick: t("Click a cell on the map to set the endpoint. Esc to cancel."),
-  points: t("Drag points to move, click the path to add, right-click a point to remove. Esc to finish."),
-  draw: t("Click cells to add points. Enter to finish, right-click to undo, Esc to cancel.")
+  points: t("Drag points to move, click the path to add, double-click a point to remove. Esc to finish."),
+  draw: t("Click cells to add points. Enter to finish, Backspace to undo, Esc to cancel.")
 };
 
 type Mode =
@@ -132,7 +132,7 @@ export class JourneyPathEditor {
           .call(
             drag<SVGCircleElement, unknown>().on("start", (event: DragStart) => this.dragPoint(event, circle, index))
           )
-          .on("contextmenu", (event: MouseEvent) => this.removePoint(event, index));
+          .on("dblclick", (event: MouseEvent) => this.removePoint(event, index));
       });
 
     // listeners on the segment path go with it: refresh() redraws the layer from scratch
@@ -150,7 +150,6 @@ export class JourneyPathEditor {
     this.mode = next;
 
     const picksCells = next?.kind === "pick" || next?.kind === "draw";
-    const viewbox = ensureEl<SVGGElement>("viewbox");
 
     // Take the map click over the way every other cell-picking editor does, replacing the default
     // handler rather than stacking on top of it: a second listener would keep opening the editor
@@ -160,10 +159,7 @@ export class JourneyPathEditor {
     else if (wasPickingCells) applyDefaultViewboxEvents();
 
     document.removeEventListener("keydown", this.onKeyDown);
-    viewbox.removeEventListener("contextmenu", this.onDrawUndo);
     if (next) document.addEventListener("keydown", this.onKeyDown);
-    // scoped to the map: a draw in progress must not eat the context menu of the dialogs around it
-    if (next?.kind === "draw") viewbox.addEventListener("contextmenu", this.onDrawUndo);
 
     if (next) tip(HINTS[next.kind], true);
     else clearMainTip();
@@ -177,6 +173,11 @@ export class JourneyPathEditor {
       this.setMode(null);
       this.host.refresh();
     } else if (event.key === "Enter" && this.mode.kind === "draw") this.finishDrawing();
+    else if (
+      event.key === "Backspace" &&
+      !(event.target as Element).closest?.("input, textarea, select, [contenteditable]")
+    )
+      this.undoPoint();
   };
 
   /** Cell clicks belong to whichever mode is armed for them */
@@ -265,6 +266,7 @@ export class JourneyPathEditor {
     });
 
     event.on("end", () => {
+      if (seg.points[index] === original) return; // a click, not a drag: redrawing would swallow a double-click
       if (!isAllowed(droppedCell)) {
         seg.points[index] = original;
         seg.from = originalFrom;
@@ -297,7 +299,7 @@ export class JourneyPathEditor {
   }
 
   private removePoint(event: MouseEvent, index: number): void {
-    event.preventDefault();
+    event.stopPropagation(); // not a map zoom
     const seg = this.segment;
     if (!seg) return;
 
@@ -323,7 +325,7 @@ export class JourneyPathEditor {
     // a mid-path point valid only as an endpoint (e.g. a port) can never be continued from
     const last = points.length > 1 ? points[points.length - 1] : undefined;
     if (last && !Journeys.isValidPathPoint(last[2], domain)) {
-      warn(t("The path reached a terminal point — finish the drawing there, or undo it with a right-click."));
+      warn(t("The path reached a terminal point — finish the drawing there, or undo it with Backspace."));
       return;
     }
 
@@ -337,12 +339,11 @@ export class JourneyPathEditor {
     this.drawOverlays();
   }
 
-  private readonly onDrawUndo = (event: MouseEvent): void => {
+  private undoPoint(): void {
     if (this.mode?.kind !== "draw") return;
-    event.preventDefault();
     this.mode.points.pop();
     this.drawOverlays();
-  };
+  }
 
   private finishDrawing(): void {
     const seg = this.segment;
@@ -363,8 +364,8 @@ export class JourneyPathEditor {
     if (!Journeys.isValidPath(points, domain)) {
       warn(
         domain === "land"
-          ? t("This path isn't valid for a land transport type — right-click to undo the bad points.")
-          : t("This path isn't valid for a water transport type — right-click to undo the bad points.")
+          ? t("This path isn't valid for a land transport type — press Backspace to undo the bad points.")
+          : t("This path isn't valid for a water transport type — press Backspace to undo the bad points.")
       );
       return;
     }

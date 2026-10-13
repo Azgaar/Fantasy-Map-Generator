@@ -1,6 +1,8 @@
 import type { LayerId } from "@/components/layers";
 import { Controllers } from "@/controllers";
 import { FEATURE_SUBTYPE_LABELS } from "@/data/id-labels";
+import type { Burg } from "@/generators/burgs-generator";
+import type { Regiment } from "@/generators/military-generator";
 import type { Point } from "@/types/global";
 import { t } from "@/utils/i18n";
 import { capitalize } from "@/utils/stringUtils";
@@ -82,6 +84,7 @@ interface EntityDefinition {
   position?: (id: number, sub?: number) => Point | undefined;
   points?: (ref: EntityRef) => Point[];
   cells?: () => ArrayLike<number> | undefined; // per-cell assignment, the geometry of a territory
+  isAt?: (ref: EntityRef, cell: number) => boolean; // whether a cell holds the entity, for types not assigned through `cells`
   context?: (ref: EntityRef) => string;
   open?: (ref: EntityRef) => Promise<unknown>; // opens the entity's editor instead of zooming to it
 }
@@ -101,6 +104,17 @@ const ELEMENT_PATTERNS: [RegExp, EntityType][] = [
   [/^culture(\d+)$/, "culture"],
   [/^religion(\d+)$/, "religion"],
   [/^biome(\d+)$/, "biome"]
+];
+/** Layers whose elements carry their entity's id in a data attribute */
+const DATA_TARGETS: [layer: string, attribute: string, type: EntityType][] = [
+  ["#burgIcons, #goodsBurgs", "data-id", "burg"],
+  ["#burgEmblems", "data-i", "burg"],
+  ["#provinceEmblems", "data-i", "province"],
+  ["#stateEmblems", "data-i", "state"],
+  ["#goodsIcons", "data-i", "good"],
+  ["#ice", "data-id", "ice"],
+  ["#terrain", "data-id", "relief"],
+  ["#lakes, #coastline", "data-f", "feature"]
 ];
 const REGIMENT_PATTERN = /^regiment(\d+)-(\d+)$/;
 const SEGMENT_PATTERN = /^segment(\d+)_\d+$/; // a journey segment carries its journey's note
@@ -165,6 +179,7 @@ class EntityLookup {
       name: id => this.byId(pack.burgs, id)?.name || "",
       refs: () => this.refsOf("burg", pack.burgs, true),
       element: id => `burg${id}`,
+      isAt: (ref, cell) => pack.cells.burg[cell] === ref.id,
       position: id => {
         const burg = this.byId(pack.burgs, id);
         return burg && [burg.x, burg.y];
@@ -182,6 +197,7 @@ class EntityLookup {
       name: id => this.byId(pack.markers, id)?.name || "",
       refs: () => this.refsOf("marker", pack.markers),
       element: id => `marker${id}`,
+      isAt: (ref, cell) => this.byId(pack.markers, ref.id)?.cell === cell,
       position: id => {
         const marker = this.byId(pack.markers, id);
         return marker && [marker.x, marker.y];
@@ -200,6 +216,8 @@ class EntityLookup {
       },
       refs: () => this.refsOf("river", pack.rivers, true),
       element: id => `river${id}`,
+      isAt: (ref, cell) =>
+        pack.cells.r[cell] === ref.id || Boolean(this.byId(pack.rivers, ref.id)?.cells?.includes(cell)), // a confluence cell holds one river
       position: id => this.chainPoint(this.byId(pack.rivers, id)?.cells),
       points: ref => (this.byId(pack.rivers, ref.id)?.cells || []).map(i => pack.cells.p[i]),
       context: ref => {
@@ -218,6 +236,7 @@ class EntityLookup {
       name: id => this.byId(pack.routes, id)?.name || "",
       refs: () => this.refsOf("route", pack.routes),
       element: id => `route${id}`,
+      isAt: (ref, cell) => Object.values(pack.cells.routes?.[cell] || {}).includes(ref.id),
       position: id => {
         const points = this.byId(pack.routes, id)?.points;
         const point = points?.[Math.floor(points.length / 2)];
@@ -251,6 +270,7 @@ class EntityLookup {
       },
       refs: () => this.refsOf("feature", pack.features, true),
       element: id => `feature_${id}`,
+      isAt: (ref, cell) => pack.cells.f[cell] === ref.id,
       highlight: id => `#map use[data-f='${id}']`,
       position: id => this.cellPoint(this.byId(pack.features, id)?.firstCell),
       points: ref => (this.byId(pack.features, ref.id)?.vertices || []).map(i => pack.vertices.p[i]),
@@ -266,6 +286,7 @@ class EntityLookup {
       name: id => this.byId(pack.zones, id)?.name || "",
       refs: () => this.refsOf("zone", pack.zones),
       element: id => `zone${id}`,
+      isAt: (ref, cell) => Boolean(this.byId(pack.zones, ref.id)?.cells?.includes(cell)),
       position: id => this.chainPoint(this.byId(pack.zones, id)?.cells),
       points: ref => (this.byId(pack.zones, ref.id)?.cells || []).map(i => pack.cells.p[i]),
       context: ref => this.byId(pack.zones, ref.id)?.type || ""
@@ -280,6 +301,8 @@ class EntityLookup {
       name: id => this.byId(pack.journeys, id)?.name || "",
       refs: () => this.refsOf("journey", pack.journeys), // the first journey is 0
       element: id => `journey${id}`,
+      isAt: (ref, cell) =>
+        Boolean(this.byId(pack.journeys, ref.id)?.segments.some(segment => segment.points.some(p => p[2] === cell))),
       position: id => {
         const points = this.byId(pack.journeys, id)?.segments?.flatMap(segment => segment.points) || [];
         const point = points[Math.floor(points.length / 2)];
@@ -305,6 +328,7 @@ class EntityLookup {
         "",
       refs: () => this.refsOf("market", pack.markets, true),
       element: id => `market${id}`,
+      isAt: (ref, cell) => pack.cells.market?.[cell] === ref.id,
       position: id => {
         const center = this.byId(pack.burgs, this.byId(pack.markets, id)?.centerBurgId ?? -1);
         return center && [center.x, center.y];
@@ -320,8 +344,8 @@ class EntityLookup {
       icon: "icon-shield-alt",
       scale: 8,
       layers: ["military"],
-      entity: (id, sub) => this.byId(this.byId(pack.states, id)?.military, sub ?? -1),
-      name: (id, sub) => this.byId(this.byId(pack.states, id)?.military, sub ?? -1)?.name || "",
+      entity: (id, sub) => this.regiment(id, sub),
+      name: (id, sub) => this.regiment(id, sub)?.name || "",
       refs: () =>
         (pack.states || []).flatMap(state =>
           state?.i && !state.removed
@@ -329,8 +353,12 @@ class EntityLookup {
             : []
         ),
       element: (id, sub) => `regiment${id}-${sub}`,
+      isAt: (ref, cell) => {
+        const regiment = this.regiment(ref.id, ref.sub);
+        return regiment ? Pack.findCell(regiment.x, regiment.y) === cell : false; // `cell` stays put when it moves
+      },
       position: (id, sub) => {
-        const regiment = this.byId(this.byId(pack.states, id)?.military, sub ?? -1);
+        const regiment = this.regiment(id, sub);
         return regiment && [regiment.x, regiment.y];
       },
       context: ref => this.stateName(ref.id)
@@ -406,6 +434,8 @@ class EntityLookup {
       collection: { field: "goods", indexed: false },
       name: id => this.byId(pack.goods, id)?.name || "",
       refs: () => this.refsOf("good", pack.goods, true),
+      isAt: (ref, cell) =>
+        pack.cells.good?.[cell] === ref.id || this.produces(this.byId(pack.burgs, pack.cells.burg?.[cell]), ref.id),
       position: id => {
         const points = this.goodPoints(id);
         return points[Math.floor(points.length / 2)];
@@ -565,6 +595,15 @@ class EntityLookup {
     });
   }
 
+  /** Every live entity a cell holds or belongs to, in type order */
+  at(cell: number): EntityRef[] {
+    return Object.values(this.types).flatMap(({ cells, isAt, refs }) => {
+      const assigned = cells?.()?.[cell];
+      const holds = cells ? (ref: EntityRef) => ref.id === assigned : isAt;
+      return holds ? refs().filter(ref => holds(ref, cell)) : [];
+    });
+  }
+
   getName(ref: EntityRef): string {
     return this.types[ref.type].name(ref.id, ref.sub);
   }
@@ -643,15 +682,13 @@ class EntityLookup {
         const ref = this.parseKey(`${type}:${id}`);
         if (ref) return ref;
       }
-      if (id !== null && element.closest("#burgIcons")) {
-        const ref = this.parseKey(`burg:${id}`);
+      for (const [layer, attribute, type] of DATA_TARGETS) {
+        const value = element.getAttribute(attribute);
+        const ref = value !== null && element.closest(layer) ? this.parseKey(`${type}:${value}`) : undefined;
         if (ref) return ref;
       }
-      const feature = element.getAttribute("data-f");
-      if (feature !== null && element.closest("#lakes, #coastline")) {
-        const ref = this.parseKey(`feature:${feature}`);
-        if (ref) return ref;
-      }
+      const ruler = element.parentElement?.id === "ruler" ? element.parentElement : null; // measurers are drawn in order
+      if (ruler) return { type: "measurer", id: Array.from(ruler.children).indexOf(element) };
       const ref = this.resolveElement(element.id);
       if (ref) return ref;
     }
@@ -713,9 +750,15 @@ class EntityLookup {
   private goodPoints(id: number): Point[] {
     const cells = pack.cells.good ? this.cellPoints(pack.cells.good, id) : [];
     if (cells.length) return cells;
-    return (pack.burgs || [])
-      .filter(burg => burg?.i && !burg.removed && burg.production?.some(r => "goodId" in r && r.goodId === id))
-      .map(burg => [burg.x, burg.y]);
+    return (pack.burgs || []).filter(burg => this.produces(burg, id)).map(burg => [burg.x, burg.y]);
+  }
+
+  private produces(burg: Burg | undefined, goodId: number): boolean {
+    return Boolean(burg?.i && !burg.removed && burg.production?.some(r => "goodId" in r && r.goodId === goodId));
+  }
+
+  private regiment(stateId: number, regimentId?: number): Regiment | undefined {
+    return this.byId(this.byId(pack.states, stateId)?.military, regimentId ?? -1);
   }
 
   private cellPoints(assignments: ArrayLike<number>, id: number): Point[] {

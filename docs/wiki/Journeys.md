@@ -54,8 +54,8 @@ Press <kbd>Esc</kbd> at any point to cancel the cell picking.
 The automatically found route is a starting point. Each segment row has icons to change it:
 
 - **Endpoints** — click the _From_ or _To_ name, then click a different cell on the map. The route is recomputed. The target icon next to it zooms to that place instead
-- **Edit points** (pencil) — shows the path's control points. Drag a point to move it, click the path to insert a point, right-click a point to remove it. <kbd>Esc</kbd> finishes
-- **Draw** (brush) — draw the whole path yourself, cell by cell. Click cells to add points, right-click to undo the last one, <kbd>Enter</kbd> or the brush icon again to finish, <kbd>Esc</kbd> to discard
+- **Edit points** (pencil) — shows the path's control points. Drag a point to move it, click the path to insert a point, double-click a point to remove it. <kbd>Esc</kbd> finishes
+- **Draw** (brush) — draw the whole path yourself, cell by cell. Click cells to add points, <kbd>Backspace</kbd> to undo the last one, <kbd>Enter</kbd> or the brush icon again to finish, <kbd>Esc</kbd> to discard
 - **On-road / off-road** (land segments only) — the signpost icon means the route prefers roads and travels at full speed; the tree icon means it avoids them and travels at half speed
 - **Reset** — discards manual edits: recomputes the path from the endpoints and restores the default color, speed and time
 

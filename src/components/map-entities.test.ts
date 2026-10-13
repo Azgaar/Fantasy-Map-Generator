@@ -233,7 +233,14 @@ describe("map event targets", () => {
     ],
     ['<g id="coastline"><g><use id="target" data-f="1"/></g></g>', { type: "feature", id: 1 }],
     ['<g id="markers"><g id="marker0"><g><g><path id="target"/></g></g></g></g>', { type: "marker", id: 0 }],
-    ['<g id="journeys"><g id="journey2"><path id="segment2_5"/></g></g>', { type: "journey", id: 2 }]
+    ['<g id="journeys"><g id="journey2"><path id="segment2_5"/></g></g>', { type: "journey", id: 2 }],
+    ['<g id="ice"><polygon id="target" data-id="2"/></g>', { type: "ice", id: 2 }],
+    ['<g id="terrain"><use id="target" data-id="5"/></g>', { type: "relief", id: 5 }],
+    ['<g id="goodsIcons"><g data-i="3"><use id="target"/></g></g>', { type: "good", id: 3 }],
+    ['<g id="goodsBurgs"><g data-id="1"><use id="target"/></g></g>', { type: "burg", id: 1 }],
+    ['<g id="emblems"><g id="stateEmblems"><use id="target" data-i="1"/></g></g>', { type: "state", id: 1 }],
+    ['<g id="emblems"><g id="burgEmblems"><use id="target" data-i="4"/></g></g>', { type: "burg", id: 4 }],
+    ['<g id="ruler"><g></g><g><path id="target"/></g></g>', { type: "measurer", id: 1 }]
   ])("resolves nested SVG markup %s", (markup, expected) => {
     document.body.innerHTML = `<svg id="map"><g id="viewbox">${markup}</g></svg>`;
     const target = document.getElementById("target") || document.getElementById("segment2_5");
@@ -244,6 +251,103 @@ describe("map event targets", () => {
     document.body.innerHTML = '<svg id="map"><g id="viewbox"><g id="rivers"><path data-id="2"/></g></g></svg>';
     expect(MapEntities.resolveTarget(document.querySelector("path"))).toBeUndefined();
     expect(MapEntities.resolveTarget(null)).toBeUndefined();
+  });
+});
+
+describe("entities at a cell", () => {
+  beforeEach(() => {
+    globalThis.Pack = { findCell: (x: number) => x } as never;
+    Object.assign(globalThis.pack, {
+      cells: {
+        burg: [0, 1, 0],
+        market: [0, 2, 0],
+        good: [0, 3, 0],
+        r: [0, 1, 0],
+        f: [1, 1, 1],
+        routes: { 1: { 0: 7, 2: 7 } },
+        state: [0, 1, 1],
+        province: [0, 0, 0],
+        culture: [1, 0, 1],
+        religion: [0, 0, 0],
+        biome: [0, 0, 0]
+      },
+      markers: [
+        { i: 4, name: "Mount Doom", cell: 1 },
+        { i: 5, name: "Lost Tower", cell: 2 }
+      ],
+      routes: [{ i: 7, name: "King's Road" }],
+      zones: [0, { i: 1, name: "Plague", cells: [1, 2] }],
+      biomes: [{ i: 0, name: "Marine" }],
+      burgs: [0, { i: 1, name: "Vaeltown", production: [{ goodId: 5, units: 2, recipe: [] }, { dealId: 0 }] }],
+      states: [
+        { i: 0, name: "Neutrals" },
+        { i: 1, name: "Ardenia", military: [{ i: 0, name: "1st Cavalry", x: 1, y: 1 }] }
+      ],
+      journeys: [
+        {
+          i: 0,
+          name: "Quest",
+          segments: [
+            {
+              points: [
+                [0, 0, 0],
+                [1, 1, 1]
+              ]
+            }
+          ]
+        }
+      ],
+      markets: [{ i: 2, centerBurgId: 1 }],
+      goods: [
+        { i: 3, name: "Salt" },
+        { i: 5, name: "Wine" },
+        { i: 6, name: "Silk" }
+      ]
+    });
+  });
+
+  it("lists what the cell holds and the territories it belongs to, in type order", () => {
+    expect(MapEntities.at(1)).toEqual([
+      { type: "state", id: 1 },
+      { type: "burg", id: 1 },
+      { type: "marker", id: 4 },
+      { type: "river", id: 1 },
+      { type: "route", id: 7 },
+      { type: "feature", id: 1 },
+      { type: "zone", id: 1 },
+      { type: "journey", id: 0 },
+      { type: "market", id: 2 },
+      { type: "regiment", id: 1, sub: 0 },
+      { type: "biome", id: 0 },
+      { type: "good", id: 3 },
+      { type: "good", id: 5 }
+    ]);
+  });
+
+  it("skips the zero placeholders, but not a real zero biome", () => {
+    expect(MapEntities.at(0)).toEqual([
+      { type: "feature", id: 1 },
+      { type: "journey", id: 0 },
+      { type: "culture", id: 1 },
+      { type: "biome", id: 0 }
+    ]);
+  });
+
+  it("leaves out removed entities", () => {
+    globalThis.pack.burgs[1] = { i: 1, name: "Vaeltown", removed: true } as unknown as (typeof pack.burgs)[number];
+    expect(MapEntities.at(1)).not.toContainEqual({ type: "burg", id: 1 });
+  });
+
+  it("lists every river flowing through a confluence, not only the one the cell is assigned to", () => {
+    globalThis.pack.rivers = [
+      0,
+      { i: 1, name: "Ald", type: "Fork", cells: [0, 1] },
+      { i: 2, name: "Nelzug", type: "River", cells: [2, 1, 0] }
+    ] as unknown as typeof pack.rivers;
+    expect(MapEntities.at(1).filter(ref => ref.type === "river")).toEqual([
+      { type: "river", id: 1 },
+      { type: "river", id: 2 }
+    ]);
   });
 });
 

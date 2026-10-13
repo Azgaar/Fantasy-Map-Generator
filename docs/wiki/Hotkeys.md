@@ -121,6 +121,16 @@ Omnibar (while its search field is focused):
 
 Start a query with **>** to show commands only.
 
+Map context menu (right-click on the map):
+
+- <kbd>↑</kbd> / <kbd>↓</kbd> - select the previous / next row
+- <kbd>Enter</kbd> - open the selected row
+- <kbd>Escape</kbd> - close the menu
+
+Journey path drawing:
+
+- <kbd>Backspace</kbd> - undo the last point
+
 Wrap Tool:
 
 - <kbd>Shift</kbd> + drag - resize the brush

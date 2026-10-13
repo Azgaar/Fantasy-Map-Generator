@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   open: vi.fn(),
+  ask: vi.fn(),
   highlight: vi.fn(),
   highlightArea: vi.fn(),
   show: vi.fn(),
@@ -38,7 +39,10 @@ vi.mock("@/renderers/labels/label-data", () => ({ getLabelsIndex: mocks.labels }
 vi.mock("@/components/dialog/dialog-helpers", () => ({ refreshEditors: vi.fn() }));
 vi.mock("@/components/tooltips", () => ({ tip: mocks.tip }));
 vi.mock("@/controllers", () => ({
-  Controllers: new Proxy({}, { get: () => ({ open: mocks.open, toggle: mocks.open, openDefault: mocks.open }) })
+  Controllers: new Proxy(
+    {},
+    { get: () => ({ open: mocks.open, toggle: mocks.open, openDefault: mocks.open, ask: mocks.ask }) }
+  )
 }));
 
 import { MAP_COMMANDS } from "@/components/map-commands";
@@ -197,7 +201,15 @@ describe("Omnibar public behavior", () => {
     expect(rows()).toHaveLength(1);
     key("Enter");
     await vi.runAllTimersAsync();
+    expect(mocks.ask).toHaveBeenCalledExactlyOnceWith("How do I add a river?");
+    expect(mocks.open).not.toHaveBeenCalled();
+
+    Omnibar.open();
+    search("assistant");
+    key("Enter");
+    await vi.runAllTimersAsync();
     expect(mocks.open).toHaveBeenCalledOnce();
+    expect(mocks.ask).toHaveBeenCalledOnce();
   });
 
   it("shows the river basin name instead of an internal ID", () => {

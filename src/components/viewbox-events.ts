@@ -1,4 +1,4 @@
-// Default interaction on the map canvas: pan/zoom, click-to-edit and hover tooltips
+// Default interaction on the map canvas: pan/zoom, click-to-edit, the context menu and hover tooltips
 import { drag, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { LabelType } from "@/generators/labels-generator";
@@ -16,6 +16,7 @@ export function applyDefaultViewboxEvents(): void {
     .style("cursor", "default")
     .on(".drag", null)
     .on("click", onClick)
+    .on("contextmenu", onContextMenu)
     .on("touchmove mousemove", onMouseMove);
 
   select<SVGGElement, unknown>("#legend").call(drag<SVGGElement, unknown>().on("start", dragLegendBox));
@@ -52,14 +53,14 @@ const GREAT_EDITORS: Record<string, Opener> = {
   armies: (_target, parent) => Controllers.RegimentEditor.open(`#${parent.id}`)
 };
 
-/** Handle a click on the map: open the editor for the clicked element */
-function onClick(event: MouseEvent): void {
-  const target = event?.target as SVGElement | null;
-  const parent = target?.parentElement as SVGElement | null;
+/** Open the editor for a map element, as a click on it does; false when it has none */
+export function openEditor(element: Element): boolean {
+  const target = element as SVGElement;
+  const parent = target.parentElement as SVGElement | null;
   const grand = parent?.parentElement as SVGElement | null;
   const great = grand?.parentElement as SVGElement | null;
   const ancestor = great?.parentElement as SVGElement | null;
-  if (!target || !parent || !grand || !great || !ancestor) return;
+  if (!parent || !grand || !great || !ancestor) return false;
 
   const label = target.closest<SVGTextElement>("#labels text[data-label-type]");
   if (label) {
@@ -71,9 +72,21 @@ function onClick(event: MouseEvent): void {
       if (isBurgEditorOpen) Controllers.LabelsEditor.open(type, id);
       else Controllers.BurgEditor.open(id);
     } else Controllers.LabelsEditor.open(type, id);
-    return;
+    return true;
   }
 
   const open = PARENT_EDITORS[parent.id] || GRAND_EDITORS[grand.id] || GREAT_EDITORS[great.id];
   open?.(target, parent);
+  return Boolean(open);
+}
+
+function onClick(event: MouseEvent): void {
+  if (event?.target) openEditor(event.target as Element);
+}
+
+/** Right-click on the map belongs to the context menu; Shift+right-click keeps the browser's own */
+function onContextMenu(event: MouseEvent): void {
+  if (event.shiftKey || customization) return;
+  event.preventDefault();
+  Controllers.ContextMenu.open(event);
 }
