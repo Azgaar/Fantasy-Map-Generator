@@ -16,6 +16,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 
 - Population layer: Cells style, shading land by population density, darker for denser cells by _[inviktos](https://github.com/inviktos)_
 - Altitude legend: heightmap colors in round height and depth bands, toggled in the Units editor by _[Avengium](https://github.com/Avengium)_
+- Rulers style: line and dash colors and a toggle to hide the measured values by _[Avengium](https://github.com/Avengium)_
 
 # Releases
 

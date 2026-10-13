@@ -246,6 +246,7 @@
     "stroke-linecap": "round"
   },
   "#ruler": {
+    "stroke": "#3d3d3d",
     "stroke-width": "2",
     "stroke-dasharray": "10",
     "font-size": "20px",

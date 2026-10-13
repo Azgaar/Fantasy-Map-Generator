@@ -76,6 +76,8 @@ Measurers are placed and managed from the **Measurers Editor** (Menu â†’ Tools â
 
 Measurers are drawn on the _Rulers_ layer (<kbd>=</kbd> to toggle), so you can hide them without deleting them.
 
+The look of measurers is set in the Style tab under _Rulers_: line width, dash array, label size, the colors of the solid line and its dashes, and whether the measured values are shown.
+
 ### Linear rulers
 When you click the ruler icon a new linear ruler is created in the middle of the screen.
 

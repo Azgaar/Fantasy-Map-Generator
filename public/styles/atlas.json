@@ -1306,7 +1306,10 @@
       "stroke-width": 2,
       "stroke-dasharray": "10",
       "stroke-linecap": null,
+      "stroke": "#3d3d3d",
+      "color": "#ffffff",
       "font-size": "20px",
+      "data-labels": true,
       "filter": null
     }
   },
