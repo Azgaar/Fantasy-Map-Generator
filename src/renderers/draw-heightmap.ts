@@ -23,6 +23,7 @@ import {
   select
 } from "d3";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
+import { t } from "@/utils/i18n";
 import { tip } from "../components/tooltips";
 import { round } from "../utils";
 import { getHeightContours, smoothContourHeights } from "./heightmap-contours";
@@ -70,7 +71,7 @@ export const hasHeightTints = (heightOptions: HeightsOptions): boolean =>
 
 export const drawHeightmap = (): void => {
   if (customization === 1)
-    return void tip("The Layer control is not available in the heightmap edit mode", false, "error");
+    return void tip(t("The Layer control is not available in the heightmap edit mode"), false, "error");
 
   TIME && console.time("drawHeightmap");
 

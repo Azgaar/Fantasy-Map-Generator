@@ -1,6 +1,8 @@
 import type { LayerId } from "@/components/layers";
 import { Controllers } from "@/controllers";
+import { FEATURE_SUBTYPE_LABELS } from "@/data/id-labels";
 import type { Point } from "@/types/global";
+import { t } from "@/utils/i18n";
 import { capitalize } from "@/utils/stringUtils";
 
 export const ENTITY_TYPES = [
@@ -106,8 +108,8 @@ const SEGMENT_PATTERN = /^segment(\d+)_\d+$/; // a journey segment carries its j
 class EntityLookup {
   private readonly types: Record<EntityType, EntityDefinition> = {
     state: {
-      label: "States",
-      kind: "State",
+      label: t("States"),
+      kind: t("State"),
       icon: "icon-crown",
       scale: 2,
       layers: ["states"],
@@ -132,8 +134,8 @@ class EntityLookup {
       }
     },
     province: {
-      label: "Provinces",
-      kind: "Province",
+      label: t("Provinces"),
+      kind: t("Province"),
       icon: "icon-flag",
       scale: 4,
       layers: ["provinces"],
@@ -150,8 +152,8 @@ class EntityLookup {
       context: ref => this.stateName(this.byId(pack.provinces, ref.id)?.state)
     },
     burg: {
-      label: "Burgs",
-      kind: "Burg",
+      label: t("Burgs"),
+      kind: t("Burg"),
       icon: "icon-home",
       scale: 8,
       layers: ["burgIcons", "labels"],
@@ -170,8 +172,8 @@ class EntityLookup {
       context: ref => this.stateName(this.byId(pack.burgs, ref.id)?.state)
     },
     marker: {
-      label: "Markers",
-      kind: "Marker",
+      label: t("Markers"),
+      kind: t("Marker"),
       icon: "icon-map-pin",
       scale: 6,
       layers: ["markers"],
@@ -186,8 +188,8 @@ class EntityLookup {
       }
     },
     river: {
-      label: "Rivers",
-      kind: "River",
+      label: t("Rivers"),
+      kind: t("River"),
       icon: "icon-bezier-curve",
       scale: 4,
       layers: ["rivers"],
@@ -207,8 +209,8 @@ class EntityLookup {
       }
     },
     route: {
-      label: "Routes",
-      kind: "Route",
+      label: t("Routes"),
+      kind: t("Route"),
       icon: "icon-map-signs",
       scale: 4,
       layers: ["routes"],
@@ -234,8 +236,11 @@ class EntityLookup {
       }
     },
     feature: {
-      label: "Geographical features",
-      kind: id => this.byId(pack.features, id)?.type || "Feature",
+      label: t("Geographical features"),
+      kind: id => {
+        const type = this.byId(pack.features, id)?.type;
+        return type ? (FEATURE_SUBTYPE_LABELS[type] ?? type) : t("Feature");
+      },
       icon: "icon-globe",
       scale: 3,
       layers: id => [this.byId(pack.features, id)?.type === "lake" ? "lakes" : "coastline"],
@@ -252,8 +257,8 @@ class EntityLookup {
       context: ref => this.byId(pack.features, ref.id)?.subtype || ""
     },
     zone: {
-      label: "Zones",
-      kind: "Zone",
+      label: t("Zones"),
+      kind: t("Zone"),
       icon: "icon-draw-polygon",
       scale: 3,
       layers: ["zones"],
@@ -266,8 +271,8 @@ class EntityLookup {
       context: ref => this.byId(pack.zones, ref.id)?.type || ""
     },
     journey: {
-      label: "Journeys",
-      kind: "Journey",
+      label: t("Journeys"),
+      kind: t("Journey"),
       icon: "icon-compass",
       scale: 4,
       layers: ["journeys"],
@@ -288,8 +293,8 @@ class EntityLookup {
       }
     },
     market: {
-      label: "Markets",
-      kind: "Market",
+      label: t("Markets"),
+      kind: t("Market"),
       icon: "icon-store",
       scale: 6,
       layers: ["markets"],
@@ -310,8 +315,8 @@ class EntityLookup {
       }
     },
     regiment: {
-      label: "Regiments",
-      kind: "Regiment",
+      label: t("Regiments"),
+      kind: t("Regiment"),
       icon: "icon-shield-alt",
       scale: 8,
       layers: ["military"],
@@ -331,8 +336,8 @@ class EntityLookup {
       context: ref => this.stateName(ref.id)
     },
     addedLabel: {
-      label: "Labels",
-      kind: "Label",
+      label: t("Labels"),
+      kind: t("Label"),
       icon: "icon-font",
       scale: 8,
       layers: ["labels"],
@@ -344,11 +349,11 @@ class EntityLookup {
         const label = this.byId(pack.addedLabels, id);
         return label && [label.x, label.y];
       },
-      context: () => "Map text"
+      context: () => t("Map text")
     },
     culture: {
-      label: "Cultures",
-      kind: "Culture",
+      label: t("Cultures"),
+      kind: t("Culture"),
       icon: "icon-users",
       scale: 2,
       layers: ["cultures"],
@@ -360,8 +365,8 @@ class EntityLookup {
       context: ref => this.byId(pack.cultures, ref.id)?.type || ""
     },
     religion: {
-      label: "Religions",
-      kind: "Religion",
+      label: t("Religions"),
+      kind: t("Religion"),
       icon: "icon-place-of-worship",
       scale: 2,
       layers: ["religions"],
@@ -381,8 +386,8 @@ class EntityLookup {
       }
     },
     biome: {
-      label: "Biomes",
-      kind: "Biome",
+      label: t("Biomes"),
+      kind: t("Biome"),
       icon: "icon-leaf",
       scale: 2,
       layers: ["biomes"],
@@ -393,8 +398,8 @@ class EntityLookup {
       cells: () => pack.cells.biome
     },
     good: {
-      label: "Goods",
-      kind: "Good",
+      label: t("Goods"),
+      kind: t("Good"),
       icon: "icon-tags",
       scale: 6,
       layers: ["goods"],
@@ -410,8 +415,8 @@ class EntityLookup {
       open: ref => Controllers.GoodsEditor.open(ref.id)
     },
     cell: {
-      label: "Cells",
-      kind: "Cell",
+      label: t("Cells"),
+      kind: t("Cell"),
       icon: "icon-dot-circled",
       scale: 8,
       layers: [],
@@ -422,8 +427,8 @@ class EntityLookup {
       context: ref => this.byId(pack.biomes, pack.cells.biome?.[ref.id])?.name || ""
     },
     ice: {
-      label: "Ice",
-      kind: id => (this.byId(pack.ice, id)?.type === "glacier" ? "Glacier" : "Iceberg"),
+      label: t("Ice"),
+      kind: id => (this.byId(pack.ice, id)?.type === "glacier" ? t("Glacier") : t("Iceberg")),
       icon: "icon-temperature-low",
       scale: 4,
       layers: ["ice"],
@@ -441,15 +446,15 @@ class EntityLookup {
       }
     },
     relief: {
-      label: "Relief icons",
-      kind: "Relief icon",
+      label: t("Relief icons"),
+      kind: t("Relief icon"),
       icon: "icon-mountain",
       scale: 8,
       layers: ["relief"],
       entity: id => (pack.relief?.[id] ? { i: id } : undefined),
       name: id => {
         const icon = pack.relief?.[id];
-        return icon && "type" in icon ? capitalize(icon.type) : "Relief icon";
+        return icon && "type" in icon ? capitalize(icon.type) : t("Relief icon");
       },
       refs: () => (pack.relief ?? []).map((_, id) => ({ type: "relief" as const, id })),
       position: id => {
@@ -458,8 +463,8 @@ class EntityLookup {
       }
     },
     measurer: {
-      label: "Measurers",
-      kind: "Measurer",
+      label: t("Measurers"),
+      kind: t("Measurer"),
       icon: "icon-ruler",
       scale: 4,
       layers: ["rulers"],
@@ -470,8 +475,8 @@ class EntityLookup {
       open: () => Controllers.MeasurersEditor.open()
     },
     deal: {
-      label: "Deals",
-      kind: "Deal",
+      label: t("Deals"),
+      kind: t("Deal"),
       icon: "icon-exchange",
       scale: 6,
       layers: ["markets"],
@@ -498,8 +503,8 @@ class EntityLookup {
       }
     },
     transport: {
-      label: "Transports",
-      kind: "Transport",
+      label: t("Transports"),
+      kind: t("Transport"),
       icon: "icon-ship",
       scale: 1,
       layers: [],
@@ -510,8 +515,8 @@ class EntityLookup {
       open: () => Controllers.TransportEditor.open()
     },
     nameBase: {
-      label: "Name bases",
-      kind: "Name base",
+      label: t("Name bases"),
+      kind: t("Name base"),
       icon: "icon-book",
       scale: 1,
       layers: [],

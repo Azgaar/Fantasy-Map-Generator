@@ -47,6 +47,22 @@ function checkNode(schema: z.ZodType, path: string): void {
   }
 }
 
+/** The sections the editor titles under `path` that have no label: a fixed group entry, or an object
+ * inside attrs or options. A user group (a record entry) is titled by its own name */
+function unlabeledSections(schema: z.ZodType, path: string[], titled = false): string[] {
+  const { leaf, meta } = SchemaForm.unwrap(schema, styleMeta);
+  const def = (leaf as unknown as { def?: { type?: string; valueType?: z.ZodType } }).def;
+  if (def?.type === "record") return def.valueType ? unlabeledSections(def.valueType, [...path, "*"]) : [];
+  if (def?.type !== "object") return [];
+  const own = titled && !meta.label ? [path.join(".")] : [];
+  const children = Object.entries((leaf as z.ZodObject).shape as Record<string, z.ZodType>).flatMap(([key, child]) => {
+    const flattened = key === "groups" || (FLATTENED.has(key) && !SchemaForm.unwrap(child, styleMeta).meta.gate);
+    return unlabeledSections(child, [...path, key], !flattened);
+  });
+  return [...own, ...children];
+}
+const FLATTENED = new Set(["attrs", "options"]);
+
 describe("styles schema metadata", () => {
   test("the record is only ever attrs, options and groups, recursively", () => {
     for (const [element, schema] of Object.entries(stylesSchema.shape as Record<string, z.ZodType>)) {
@@ -110,7 +126,17 @@ describe("styles schema metadata", () => {
     expect(byPath["labels.groups.*.attrs.font-size"].hidden).toBe(false);
   });
 
-  test("labels come from the meta or the key, and read under their group or row", () => {
+  test("every field and section the editor shows has a label", () => {
+    const fieldsWithout = fields
+      .filter(({ spec, hidden, gate }) => !hidden && !gate && spec.label === spec.path.at(-1))
+      .map(({ spec }) => spec.path.join("."));
+    const sectionsWithout = Object.entries(stylesSchema.shape as Record<string, z.ZodType>).flatMap(
+      ([element, schema]) => unlabeledSections(schema, [element])
+    );
+    expect([...fieldsWithout, ...sectionsWithout]).toEqual([]);
+  });
+
+  test("labels read under their group or row", () => {
     expect(byPath["zones.attrs.stroke-width"].spec).toMatchObject({ group: "Stroke", label: "Width" });
     expect(byPath["temperature.attrs.stroke-opacity"].spec).toMatchObject({ group: "Stroke", label: "Opacity" });
     expect(byPath["burgIcons.groups.*.groups.anchors.options.dx"].spec).toMatchObject({

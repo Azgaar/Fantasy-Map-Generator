@@ -9,6 +9,7 @@ import { POINTS_BY_DENSITY } from "@/data/graph-density";
 import { Resample } from "@/generators/resample";
 import { logStats } from "@/services/logging";
 import { getLatitude, getLongitude } from "@/utils";
+import { t } from "@/utils/i18n";
 import { ensureEl, minmax, rn } from "../utils";
 
 function open(): void {
@@ -16,17 +17,17 @@ function open(): void {
   addListeners();
 
   $("#submapTool").dialog({
-    title: "Create a submap",
+    title: t("Create Submap"),
     resizable: false,
     width: "32em",
     position: { my: "center", at: "center", of: "svg" },
     close: cleanup,
     buttons: {
-      Submap: function (this: HTMLElement) {
+      [t("Submap")]: function (this: HTMLElement) {
         generateSubmap();
         $(this).dialog("close");
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
@@ -41,20 +42,19 @@ function renderDialog(): void {
 
   const html = /* html */ `<div id="submapTool" class="dialog">
     <p style="font-weight: bold">
-      This operation is destructive and irreversible. It will create a completely new map based on the current one.
-      Don't forget to save the .map file to your machine first!
+      ${t("This operation is destructive and irreversible. It will create a completely new map based on the current one. Don't forget to save the .map file to your machine first!")}
     </p>
     <div style="display: flex; flex-direction: column; gap: 0.5em">
-      <div data-tip="Set points (cells) number of the submap" style="display: flex; gap: 1em">
-        <div>Points number</div>
+      <div data-tip="${t("Set points (cells) number of the submap")}" style="display: flex; gap: 1em">
+        <div>${t("Points number")}</div>
         <div>
           <input id="submapPointsInput" type="range" min="1" max="13" value="${pointsValue}" />
           <output id="submapPointsFormatted" style="color: ${cellsDensityColor(cells)}">${cells / 1000}K</output>
         </div>
       </div>
-      <div data-tip="Check to fit burg styles (icon and label size) to the submap scale">
+      <div data-tip="${t("Check to fit burg styles (icon and label size) to the submap scale")}">
         <input type="checkbox" class="checkbox" id="submapRescaleBurgStyles" checked />
-        <label for="submapRescaleBurgStyles" class="checkbox-label">Rescale burg styles</label>
+        <label for="submapRescaleBurgStyles" class="checkbox-label">${t("Rescale burg styles")}</label>
       </div>
     </div>
   </div>`;

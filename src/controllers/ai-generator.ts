@@ -1,6 +1,7 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { openURL } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "../utils";
 
 type Provider = "openai" | "anthropic" | "ollama";
@@ -144,7 +145,10 @@ interface StreamChunk {
 
 async function handleStream(response: Response, getContent: (json: StreamChunk) => void): Promise<void> {
   if (!response.ok) {
-    let errorMessage = `Failed to generate (${response.status} ${response.statusText})`;
+    let errorMessage = t("Failed to generate ({{status}} {{statusText}})", {
+      status: response.status,
+      statusText: response.statusText
+    });
     try {
       const json = await response.json();
       errorMessage = json.error?.message || json.error || errorMessage;
@@ -188,21 +192,21 @@ function open(defaultPrompt: string, onApply: (result: string) => void): void {
   setInitialValues(defaultPrompt);
 
   $("#aiGenerator").dialog({
-    title: "AI Text Generator",
+    title: t("AI Text Generator"),
     position: { my: "center", at: "center", of: "svg" },
     resizable: false,
     close: () => destroyDialog("aiGenerator"),
     buttons: {
-      Generate: (e: Event) => {
+      [t("Generate")]: (e: Event) => {
         void generate(e.target as HTMLButtonElement);
       },
-      Apply: function (this: HTMLElement) {
+      [t("Apply")]: function (this: HTMLElement) {
         const result = ensureEl<HTMLTextAreaElement>("aiGeneratorResult").value;
-        if (!result) return tip("No result to apply", true, "error", 4000);
+        if (!result) return tip(t("No result to apply"), true, "error", 4000);
         onApply(result);
         $(this).dialog("close");
       },
-      Close: function (this: HTMLElement) {
+      [t("Close")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
@@ -214,32 +218,32 @@ function renderDialog(): void {
 
   const html = /* html */ `<div id="aiGenerator" class="dialog stable">
     <div style="display: flex; flex-direction: column; gap: 0.3em; width: 100%">
-      <textarea id="aiGeneratorResult" placeholder="Generated text will appear here" cols="30" rows="10"></textarea>
-      <textarea id="aiGeneratorPrompt" placeholder="Type a prompt here" cols="30" rows="5"></textarea>
+      <textarea id="aiGeneratorResult" placeholder="${t("Generated text will appear here")}" cols="30" rows="10"></textarea>
+      <textarea id="aiGeneratorPrompt" placeholder="${t("Type a prompt here")}" cols="30" rows="5"></textarea>
       <div style="display: flex; align-items: center; gap: 1em">
         <label for="aiGeneratorModel"
-          >Model:
+          >${t("Model")}:
           <select id="aiGeneratorModel"></select>
         </label>
         <label
           for="aiGeneratorTemperature"
-          data-tip="Temperature controls response randomness; higher values mean more creativity, lower values mean more predictability"
+          data-tip="${t("Temperature controls response randomness; higher values mean more creativity, lower values mean more predictability")}"
         >
-          Temperature:
+          ${t("Temperature")}:
           <input id="aiGeneratorTemperature" type="number" min="-1" max="2" step=".1" class="icon-key" />
         </label>
         <label for="aiGeneratorKey"
-          >Key:
+          >${t("Key")}:
           <input
             id="aiGeneratorKey"
-            placeholder="Enter API key"
+            placeholder="${t("Enter API key")}"
             class="icon-key"
-            data-tip="Enter API key. Note: the Generator doesn't store the key or any generated data"
+            data-tip="${sentences(t("Enter API key"), t("Note: the Generator doesn't store the key or any generated data"))}"
           />
           <button
             id="aiGeneratorKeyHelp"
             class="icon-help-circled"
-            data-tip="Click to see the usage instructions"
+            data-tip="${t("Click to see the usage instructions")}"
           ></button>
         </label>
       </div>
@@ -273,20 +277,20 @@ function setInitialValues(defaultPrompt: string): void {
 
 async function generate(button: HTMLButtonElement): Promise<void> {
   const key = ensureEl<HTMLInputElement>("aiGeneratorKey").value;
-  if (!key) return tip("Please enter an API key", true, "error", 4000);
+  if (!key) return tip(t("Enter API key"), true, "error", 4000);
 
   const model = ensureEl<HTMLSelectElement>("aiGeneratorModel").value;
-  if (!model) return tip("Please select a model", true, "error", 4000);
+  if (!model) return tip(t("Please select a model"), true, "error", 4000);
   localStorage.setItem("fmg-ai-model", model);
 
   const provider = MODELS[model];
   localStorage.setItem(`fmg-ai-kl-${provider}`, key);
 
   const prompt = ensureEl<HTMLTextAreaElement>("aiGeneratorPrompt").value;
-  if (!prompt) return tip("Please enter a prompt", true, "error", 4000);
+  if (!prompt) return tip(t("Please enter a prompt"), true, "error", 4000);
 
   const temperature = ensureEl<HTMLInputElement>("aiGeneratorTemperature").valueAsNumber;
-  if (Number.isNaN(temperature)) return tip("Temperature must be a number", true, "error", 4000);
+  if (Number.isNaN(temperature)) return tip(t("Temperature must be a number"), true, "error", 4000);
   localStorage.setItem("fmg-ai-temperature", String(temperature));
 
   try {
@@ -300,7 +304,7 @@ async function generate(button: HTMLButtonElement): Promise<void> {
 
     await PROVIDERS[provider].generate({ key, model, prompt, temperature, onContent });
   } catch (error) {
-    const message = (error instanceof Error && error.message) || String(error) || "Failed to generate text";
+    const message = (error instanceof Error && error.message) || String(error) || t("Failed to generate text");
     return tip(message, true, "error", 4000);
   } finally {
     button.disabled = false;

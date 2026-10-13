@@ -11,6 +11,7 @@ import { zoomTo } from "@/components/zoom";
 import type { Burg } from "@/generators/burgs-generator";
 import { Services } from "@/services";
 import { getRequestedMapSize } from "@/services/map-size";
+import { t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/nodeUtils";
 
 const MAP_LINK_PATTERN = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-/]))?/;
@@ -31,7 +32,7 @@ export async function checkLoadParameters(): Promise<void> {
       setTimeout(() => Services.Load.loadMapFromURL(maplink, true), 1000);
       return;
     }
-    Services.Load.showUploadErrorMessage("Map link is not a valid URL", maplink);
+    Services.Load.showUploadErrorMessage(t("Map link is not a valid URL"), maplink);
   }
 
   // a seed provided by the user or by MFCG: generate the map it describes
@@ -166,7 +167,7 @@ function findBurgForMFCG(params: URLSearchParams): void {
   }
 
   zoomTo(burg.x, burg.y, 8, 1600);
-  tip(`Here stands the glorious city of ${burg.name}`, true, "success", 15000);
+  tip(t("Here stands the glorious city of {{burg}}", { burg: burg.name }), true, "success", 15000);
 }
 
 /** Copy a link that reproduces the current map: the seed, the canvas size and whether options are pinned */
@@ -177,8 +178,8 @@ export function copyMapURL(): void {
 
   navigator.clipboard
     .writeText(location.host + location.pathname + search)
-    .then(() => tip("Map URL is copied to clipboard", false, "success", 3000))
-    .catch(error => tip(`Could not copy URL: ${error}`, false, "error", 5000));
+    .then(() => tip(t("Map URL is copied to clipboard"), false, "success", 3000))
+    .catch(error => tip(t("Could not copy URL: {{error}}", { error: String(error) }), false, "error", 5000));
 }
 
 // Legacy seam: the loader refocuses after a map is loaded, options.js wires the copy button

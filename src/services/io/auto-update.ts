@@ -47,6 +47,7 @@ import {
   scopeSvgIcon,
   unique
 } from "@/utils";
+import { t } from "@/utils/i18n";
 import { parsePathPoints } from "@/utils/pathUtils";
 
 type LegacyBurgGroup = Omit<MapData["burgs"]["groups"][number], "biomes" | "states" | "cultures" | "religions"> & {
@@ -1916,10 +1917,10 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       ].join("\n");
 
       confirmationDialog({
-        title: "Notes without an element",
-        message: `${unattachedNotes.length} note(s) in this map describe an element that no longer exists, so they cannot be kept.<br>Download them to keep the text outside the generator.`,
-        confirm: "Download",
-        cancel: "Discard",
+        title: t("Notes without an element"),
+        message: `${t("Notes describing an element that no longer exists cannot be kept: {{notes}}", { notes: unattachedNotes.length })}<br>${t("Download them to keep the text outside the generator.")}`,
+        confirm: t("Download"),
+        cancel: t("Discard"),
         onConfirm: () => downloadFile(csv, `${getFileName("Unattached notes")}.csv`)
       });
     }

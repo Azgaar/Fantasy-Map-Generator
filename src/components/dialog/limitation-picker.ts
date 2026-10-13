@@ -1,6 +1,7 @@
 // Pick which entities (biomes, states, cultures, religions) something is limited to; an empty list allows all
 import { tip } from "@/components/tooltips";
 import { ensureEl, escapeHtml } from "@/utils";
+import { t } from "@/utils/i18n";
 
 export interface LimitationItem {
   i: number;
@@ -51,16 +52,16 @@ export function pickLimitation({
     title,
     close: () => $("#alert").dialog("option", "buttons", {}), // release the closure over the live pack arrays
     buttons: {
-      Invert: () => {
+      [t("Invert")]: () => {
         for (const input of inputs()) input.checked = !input.checked;
       },
-      Apply: () => {
+      [t("Apply")]: () => {
         const checked = inputs().filter(input => input.checked);
-        if (!checked.length) return tip("Select at least one element", false, "error");
+        if (!checked.length) return tip(t("Select at least one element"), false, "error");
         onApply(checked.length === inputs().length ? [] : checked.map(input => Number(input.dataset.i)));
         $("#alert").dialog("close");
       },
-      Cancel: () => $("#alert").dialog("close")
+      [t("Cancel")]: () => $("#alert").dialog("close")
     }
   });
 }

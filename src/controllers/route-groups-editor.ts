@@ -3,6 +3,7 @@ import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-he
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import type { Route } from "@/generators/routes-generator";
+import { t } from "@/utils/i18n";
 import { ensureEl } from "../utils";
 
 // custom legacy 3-arg prompt from commonUtils.initializePrompt (collides with lib.dom's var prompt)
@@ -18,7 +19,7 @@ function open(): void {
   addLines();
 
   $("#routeGroupsEditor").dialog({
-    title: "Edit Route groups",
+    title: t("Edit route groups"),
     resizable: false,
     position: { my: "left top", at: "left+10 top+140", of: "#map" },
     close: closeRouteGroupsEditor
@@ -31,7 +32,7 @@ function renderDialog(): void {
   const html = /* html */ `<div id="routeGroupsEditor" class="dialog">
     <div id="routeGroupsEditorBody" class="table" style="padding: 0.3em 0; width: 100%"></div>
     <div id="routeGroupsEditorBottom">
-      <button id="routeGroupsEditorAdd" data-tip="Add route group" class="icon-plus"></button>
+      <button id="routeGroupsEditorAdd" data-tip="${t("Add")}" class="icon-plus"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -63,8 +64,8 @@ function addLines(): void {
       return /* html */ `<div data-id="${el.id}" class="states" style="display: flex; justify-content: space-between;">
           <span>${el.id} (${count})</span>
           <div style="width: auto; display: flex; gap: 0.4em;">
-            <span data-tip="Edit style" class="editStyle icon-brush pointer" style="font-size: smaller;"></span>
-            <span data-tip="Remove group" class="removeGroup icon-trash pointer"></span>
+            <span data-tip="${t("Edit style")}" class="editStyle icon-brush pointer" style="font-size: smaller;"></span>
+            <span data-tip="${t("Remove")}" class="removeGroup icon-trash pointer"></span>
           </div>
         </div>`;
     });
@@ -73,17 +74,17 @@ function addLines(): void {
 }
 
 function addGroup(): void {
-  prompt("Type group name", { default: "route-group-new" }, v => {
+  prompt(t("Group name"), { default: "route-group-new" }, v => {
     let group = v
       .toLowerCase()
       .replace(/ /g, "_")
       .replace(/[^\w\s]/gi, "");
 
-    if (!group) return tip("Invalid group name", false, "error");
+    if (!group) return tip(t("Invalid group name"), false, "error");
     if (!group.startsWith("route-")) group = `route-${group}`;
     if (document.getElementById(group))
-      return tip("Element with this name already exists. Provide a unique name", false, "error");
-    if (Number.isFinite(+group.charAt(0))) return tip("Group name should start with a letter", false, "error");
+      return tip(t("Element with this name already exists. Provide a unique name"), false, "error");
+    if (Number.isFinite(+group.charAt(0))) return tip(t("Group name should start with a letter"), false, "error");
 
     // the store is authoritative: seed an entry so style edits and presets can address the group
     const template = styles.routes.groups.roads || Object.values(styles.routes.groups)[0];
@@ -109,10 +110,9 @@ function addGroup(): void {
 
 function removeGroup(group: string): void {
   confirmationDialog({
-    title: "Remove route group",
-    message:
-      "Are you sure you want to remove the entire route group? All routes in this group will be removed.<br>This action can't be reverted",
-    confirm: "Remove",
+    title: t("Remove"),
+    message: `${t("Are you sure you want to remove the entire route group? All routes in this group will be removed.")}<br>${t("This action cannot be reverted")}`,
+    confirm: t("Remove"),
     onConfirm: () => {
       pack.routes
         .filter((r: Route) => r.group === group)

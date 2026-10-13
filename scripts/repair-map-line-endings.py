@@ -5,7 +5,9 @@ FMG .map files are sections joined by CRLF (\\r\\n), while the embedded SVG
 section contains bare LF (\\n) newlines inside it. Text editors and git
 (core.autocrlf, .gitattributes text rules, VSCode "files.eol") often strip or
 rewrite the CR bytes, after which the loader's split on \\r\\n yields a single
-giant section and the map fails to load as "invalid file".
+giant section and the map fails to load as "invalid file". The reverse also
+happens (LF converted to CRLF on Windows checkout), which splits the SVG into
+many sections.
 
 This script rebuilds the section structure. It works because every section
 except the SVG is a single line: the sections before the SVG map one-to-one
@@ -64,6 +66,12 @@ def parse_sections(text):
     return lines[:svg_start] + [svg_section] + lines[svg_end + 1 :]
 
 
+def is_intact(sections):
+    """True if the SVG section is a single CRLF-delimited section."""
+    svg = next((s for s in sections if s.lstrip().startswith("<svg")), None)
+    return svg is not None and svg.rstrip().endswith("</svg>")
+
+
 def validate(sections):
     first = sections[0].split("|")[0]
     if not first.replace(".", "").isdigit():
@@ -81,7 +89,7 @@ def validate(sections):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Repair an FMG .map file whose CRLF section delimiters were normalized to LF.",
+        description="Repair an FMG .map file whose line endings were normalized (CRLF to LF or LF to CRLF).",
         epilog='Prevent recurrence: add "*.map -text" to .gitattributes.'
     )
     parser.add_argument("input", type=Path, help="corrupted .map file")
@@ -98,8 +106,8 @@ def main():
         fail("file is not valid UTF-8 text — not a plain .map save (or binary-level damage)")
 
     crlf_sections = text.split("\r\n")
-    if len(crlf_sections) >= 30 and "|" in crlf_sections[0]:
-        print(f"{args.input}: already has {len(crlf_sections)} CRLF-delimited sections — no repair needed")
+    if is_intact(crlf_sections):
+        print(f"{args.input}: SVG section is intact ({len(crlf_sections)} sections) — no repair needed")
         return
 
     # normalize whatever mix of endings is present, then rebuild

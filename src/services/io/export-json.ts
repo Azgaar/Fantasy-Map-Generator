@@ -3,6 +3,7 @@ import { tip } from "@/components/tooltips";
 import { savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
 import { getFileName } from "@/utils";
+import { t } from "@/utils/i18n";
 
 type ExportJsonType = "Full" | "Minimal" | "PackCells" | "GridCells";
 
@@ -15,7 +16,7 @@ const typeMap = {
 
 function exportToJson(type: ExportJsonType): void {
   if (customization) {
-    tip("Data cannot be exported when edit mode is active, please exit the mode and retry", false, "error");
+    tip(t("Data cannot be exported when edit mode is active, please exit the mode and retry"), false, "error");
     return;
   }
   closeDialogs("#alert");

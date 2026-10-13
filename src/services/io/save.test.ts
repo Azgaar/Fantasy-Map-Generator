@@ -26,7 +26,7 @@ describe("save feedback", () => {
     const filename = "<img src=x onerror=alert(1)>&世界.map";
     notifySaveOutcome({ type: "saved", filename });
     const tooltip = document.getElementById("tooltip")!;
-    expect(tooltip.textContent).toBe(`Map is saved to "${filename}"`);
+    expect(tooltip.textContent).toBe(`Map is saved to “${filename}”`);
     expect(tooltip.querySelector("img")).toBeNull();
   });
 

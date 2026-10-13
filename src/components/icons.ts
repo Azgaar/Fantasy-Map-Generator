@@ -4,6 +4,7 @@ import { tip } from "@/components/tooltips";
 import { emojiName } from "@/data/icons-list";
 import type { IconPaint } from "@/types/icons";
 import { sanitizeSvgIcon } from "@/utils/fileUtils";
+import { t } from "@/utils/i18n";
 import { escapeHtml } from "@/utils/stringUtils";
 
 /** where a reference resolves: a built-in set, a glyph built from its text, or a picture the map carries */
@@ -11,23 +12,23 @@ export type IconKind = "set" | "glyph" | "custom";
 
 type IconOwner = { icon?: string };
 
-/** the slots that reference icons, as `Icons.uses` counts them: their singular and plural name and their owners */
+/** the slots that reference icons, as `Icons.uses` counts them: their name and their owners */
 const SLOTS = {
-  good: { names: ["good", "goods"], owners: () => pack.goods ?? [] },
-  marker: { names: ["marker", "markers"], owners: () => pack.markers ?? [] },
+  good: { label: t("goods"), owners: () => pack.goods ?? [] },
+  marker: { label: t("markers"), owners: () => pack.markers ?? [] },
   regiment: {
-    names: ["regiment", "regiments"],
+    label: t("regiments"),
     owners: () => (pack.states ?? []).flatMap(state => state?.military ?? [])
   },
-  unit: { names: ["unit type", "unit types"], owners: () => options.map.military.units },
+  unit: { label: t("unit types"), owners: () => options.map.military.units },
   burgGroup: {
-    names: ["burg group style", "burg group styles"],
+    label: t("burg group styles"),
     owners: () =>
       Object.values(styles.burgIcons.groups).flatMap(({ groups }) => [groups.icons.options, groups.anchors.options])
   },
-  market: { names: ["market marker style", "market marker styles"], owners: () => [styles.markets.options] },
+  market: { label: t("market marker styles"), owners: () => [styles.markets.options] },
   emblem: {
-    names: ["emblem", "emblems"],
+    label: t("emblems"),
     owners: () =>
       [...(pack.states ?? []), ...(pack.provinces ?? []), ...(pack.burgs ?? [])].flatMap(entity => {
         const coa = entity.i && !entity.removed ? entity.coa : undefined;
@@ -36,19 +37,19 @@ const SLOTS = {
       })
   },
   relief: {
-    names: ["relief icon", "relief icons"],
+    label: t("relief icons"),
     owners: () => (pack.relief ?? []).flatMap(icon => ("icon" in icon ? [icon] : []))
   },
   biome: {
-    names: ["biome relief pool", "biome relief pools"],
+    label: t("biome relief pools"),
     owners: () =>
       (pack.biomes ?? []).flatMap(biome => (biome.removed ? [] : Object.keys(biome.icons).map(icon => ({ icon }))))
   },
   reliefRule: {
-    names: ["relief rule", "relief rules"],
+    label: t("relief rules"),
     owners: () => options.map.relief.rules.flatMap(rule => Object.keys(rule.icons).map(icon => ({ icon })))
   }
-} satisfies Record<string, { names: readonly [string, string]; owners: () => readonly IconOwner[] }>;
+} satisfies Record<string, { label: string; owners: () => readonly IconOwner[] }>;
 export type IconUseKind = keyof typeof SLOTS;
 
 export interface CustomIcon {
@@ -249,10 +250,10 @@ class IconLibrary {
     return counts;
   }
 
-  /** "1 good, 12 markers" */
+  /** "goods (1), markers (12)" */
   describeUses(uses: Partial<Record<IconUseKind, number>>): string {
     return Object.entries(uses)
-      .map(([kind, count]) => `${count} ${SLOTS[kind as IconUseKind].names[count === 1 ? 0 : 1]}`)
+      .map(([kind, count]) => `${SLOTS[kind as IconUseKind].label} (${count})`)
       .join(", ");
   }
 
@@ -364,7 +365,7 @@ class IconLibrary {
       error => {
         this.settled.set(set, "failed");
         console.error(`Failed to load ${set} icons`, error);
-        tip(`Cannot load ${set} icons. Reload the page or retry the action.`, false, "error", 8000);
+        tip(t("Cannot load {{set}} icons. Reload the page or retry the action.", { set }), false, "error", 8000);
       }
     );
     this.loading.set(set, attempt);

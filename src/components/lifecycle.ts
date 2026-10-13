@@ -25,6 +25,7 @@ import { checkLoadParameters } from "@/services/url-params";
 import { cleanupData } from "@/services/versioning";
 import type { GridGraph } from "@/types/GridGraph";
 import { debounce, ensureEl, findEl, parseError } from "@/utils";
+import { t } from "@/utils/i18n";
 
 /** Bring the app up */
 export async function boot(): Promise<void> {
@@ -73,21 +74,21 @@ export async function generate(config?: GenerationConfig): Promise<void> {
     ERROR && console.error(error);
     clearMainTip();
 
-    ensureEl("alertMessage").innerHTML = /* html */ `An error has occurred on map generation. Please retry.
-      <br />If error is critical, clear the stored data and try again.
+    ensureEl("alertMessage").innerHTML =
+      /* html */ `${t("An error has occurred on map generation. Please retry.")}<br>${t("If error is critical, clear the stored data and try again.")}
       <p id="errorBox">${parseError(error as Error)}</p>`;
 
     $("#alert").dialog({
       resizable: false,
-      title: "Generation error",
+      title: t("Generation error"),
       width: "32em",
       buttons: {
-        "Cleanup data": () => cleanupData(),
-        Regenerate: function (this: HTMLElement) {
+        [t("Cleanup data")]: () => cleanupData(),
+        [t("Regenerate")]: function (this: HTMLElement) {
           regenerateMap("generation error");
           $(this).dialog("close");
         },
-        Ignore: function (this: HTMLElement) {
+        [t("Ignore")]: function (this: HTMLElement) {
           $(this).dialog("close");
         }
       },
@@ -124,7 +125,7 @@ export const regenerateMap = debounce(async (config?: GenerationConfig | string)
 /** Ask before throwing away a map the user has been working on for a while */
 export function regeneratePrompt(config?: GenerationConfig): void {
   if (customization) {
-    tip("New map cannot be generated when edit mode is active, please exit the mode and retry", false, "error");
+    tip(t("New map cannot be generated when edit mode is active, please exit the mode and retry"), false, "error");
     return;
   }
 
@@ -136,10 +137,9 @@ export function regeneratePrompt(config?: GenerationConfig): void {
   }
 
   confirmationDialog({
-    title: "Generate new map",
-    message:
-      "Are you sure you want to generate a new map?<br />All unsaved changes made to the current map will be lost",
-    confirm: "Generate",
+    title: t("Generate New Map"),
+    message: `${t("Are you sure you want to generate a new map?")}<br>${t("All unsaved changes made to the current map will be lost")}`,
+    confirm: t("Generate"),
     onConfirm: () => {
       closeDialogs();
       regenerateMap(config);

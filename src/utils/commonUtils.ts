@@ -1,6 +1,7 @@
 import { clipPolygon } from "lineclip";
 import { last } from "./arrayUtils";
 import { distanceSquared } from "./functionUtils";
+import { t } from "./i18n";
 import { rn } from "./numberUtils";
 import { rand } from "./probabilityUtils";
 
@@ -305,7 +306,7 @@ export const initializePrompt = (): void => {
   const form = prompt.querySelector<HTMLFormElement>("#promptForm");
   if (!form) return;
 
-  const defaultText = "Please provide an input";
+  const defaultText = t("Please provide an input");
   const defaultOptions: PromptOptions = {
     default: 1,
     step: 0.01,

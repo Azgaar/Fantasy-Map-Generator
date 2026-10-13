@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
   mapId: 1,
@@ -31,7 +31,11 @@ vi.mock("@/controllers", () => ({
 }));
 vi.mock("@/services/assistant/azgaar-server/answerer", () => ({ askServer: state.send }));
 
+import { Catalog } from "@/utils/i18n";
 import { Assistant } from "./index";
+
+// English plural forms live in the English catalog
+beforeAll(() => Catalog.load("en"));
 
 beforeEach(() => {
   state.mapId++;
@@ -309,10 +313,10 @@ it("renders every transcript item type and never renders user text as HTML", asy
   expect(proposed.querySelectorAll(".assistantChangeField")).toHaveLength(8);
   expect(proposed.querySelector(".assistantChangeName")?.innerHTML).toBe("Burg &lt;0&gt;");
   expect(proposed.querySelector(".assistantChangeField del")?.innerHTML).toBe("&lt;0&gt;");
-  expect(proposed.textContent).toContain("… 2 more changes");
-  expect(proposed.textContent).toContain("10 changes · 10 entities");
+  expect(proposed.textContent).toContain("… 2 more");
+  expect(proposed.textContent).toContain("Changes: 10 · Entities: 10");
   expect([...proposed.querySelectorAll("button")].map(button => button.textContent)).toEqual(["Discard", "Apply"]);
-  expect(applied.querySelector("summary")?.textContent).toBe("Show 1 change");
+  expect(applied.querySelector("summary")?.textContent).toBe("Show changes (1)");
   expect(applied.querySelector("button")?.textContent).toBe("Undo");
   expect(log.querySelector(".assistantDivider")).not.toBeNull();
   expect(log.querySelector(".assistantNoticeItem")?.textContent).toContain("Earlier notice");
@@ -347,7 +351,7 @@ it("shows an added or removed entity as one row and cell changes as a count", as
     "assistantChangeTag remove",
     "assistantChangeTag add"
   ]);
-  expect(card.textContent).toContain("3 changes · 3 entities");
+  expect(card.textContent).toContain("Changes: 3 · Entities: 3");
 });
 
 it("renders entity links in answers and an entities widget", async () => {

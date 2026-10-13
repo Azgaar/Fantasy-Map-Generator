@@ -12,6 +12,7 @@ import {
 } from "@/renderers/overlays/paint-overlay";
 import type { Point } from "@/types/global";
 import { ensureEl } from "@/utils";
+import { t } from "@/utils/i18n";
 
 export interface PaintEditorItem {
   id: number;
@@ -72,7 +73,7 @@ function open(options: OpenPaintEditorOptions): void {
 
   brush = new MapBrush({
     id: "paintEditorBrush",
-    label: "Brush size:",
+    label: `${t("Brush size")}:`,
     radius: defaultBrushRadius,
     onStart: startPainting,
     stampOnStart: false, // a plain click selects the painted item instead
@@ -104,7 +105,7 @@ function open(options: OpenPaintEditorOptions): void {
       close: cancel
     });
 
-    tip("Click to select, drag to paint. Shift + drag resizes the brush, Space + drag pans the map", true);
+    tip(t("Click to select, drag to paint. Shift + drag resizes the brush, Space + drag pans the map"), true);
   } catch (error) {
     close(options.onClose);
     throw error;
@@ -123,21 +124,21 @@ function renderDialog(options: OpenPaintEditorOptions, items: readonly PaintEdit
   const selectedColor = items[0]?.color ?? "#ffffff";
 
   const dontOverrideControl = options.dontOverrideControl
-    ? `<label data-tip="Only paint cells whose current value is 0 (neutral)" style="display: flex; align-items: center"><input id="paintEditorDontOverride" class="checkbox native" type="checkbox">Do not override existing</label>`
+    ? `<label data-tip="${t("Only paint cells whose current value is 0 (neutral)")}" style="display: flex; align-items: center"><input id="paintEditorDontOverride" class="checkbox native" type="checkbox">${t("Do not override existing")}</label>`
     : "";
   const landOnlyControl = options.landOnlyControl
-    ? `<label style="display: flex; align-items: center"><input id="paintEditorLandOnly" class="checkbox native" type="checkbox" checked> Change land only</label>`
+    ? `<label style="display: flex; align-items: center"><input id="paintEditorLandOnly" class="checkbox native" type="checkbox" checked> ${t("Change land only")}</label>`
     : "";
   const html = /* html */ `<div id="${dialogId}" class="dialog" style="display: flex; flex-direction: column; gap: 0.6em">
     <div style="display: grid; gap: 0.5em;">
-      <label style="display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.4em">Paint: <select id="paintEditorSelect"></select><fill-box id="paintEditorFill" fill="${selectedColor}" size="1.4em" data-tip="Selected paint color" disabled></fill-box></label>
+      <label style="display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.4em">${t("Paint")}: <select id="paintEditorSelect"></select><fill-box id="paintEditorFill" fill="${selectedColor}" size="1.4em" data-tip="${t("Selected paint color")}" disabled></fill-box></label>
       ${brush?.markup ?? ""}
     </div>
     <div id="paintEditorControls" style="display: flex; flex-direction: column; align-items: center; gap: 0.4em;">${dontOverrideControl}${landOnlyControl}</div>
     <div style="display: flex; gap: 0.4em;">
-      <button id="paintEditorUndo" aria-label="Undo" data-tip="Undo last brush stroke" class="icon-ccw" disabled></button>
-      <button id="paintEditorApply" aria-label="Apply" data-tip="Apply painted changes" class="icon-check"></button>
-      <button id="paintEditorCancel" aria-label="Cancel" data-tip="Cancel painted changes" class="icon-cancel"></button>
+      <button id="paintEditorUndo" aria-label="${t("Undo")}" data-tip="${t("Undo the latest action")}" class="icon-ccw" disabled></button>
+      <button id="paintEditorApply" aria-label="${t("Apply")}" data-tip="${t("Apply painted changes")}" class="icon-check"></button>
+      <button id="paintEditorCancel" aria-label="${t("Cancel")}" data-tip="${t("Cancel painted changes")}" class="icon-cancel"></button>
     </div>
   </div>`;
 
@@ -212,7 +213,7 @@ function showCellTip([x, y]: Point): void {
   const names = getCurrentValues(cell)
     .map(value => itemsById.get(value)?.name)
     .filter((name): name is string => Boolean(name));
-  tip(names.join(", ") || "No assignment");
+  tip(names.join(", ") || t("No assignment"));
 }
 
 function selectItem(id: number): boolean {

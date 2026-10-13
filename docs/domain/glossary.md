@@ -86,6 +86,7 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Overview Tool**: A summary UI for a particular system (e.g., production-overview, market-overview).
 - **Configurator**: A UI for setting up world generation parameters.
 - **Submap**: A tool to generate a new, more detailed map strictly from a selected area of the current map.
+- **UI language**: The language the interface is shown in (`options.app.language`, a browser preference applied after a reload). It never changes the Map: generated content stays English and the `.map` file is identical whatever it is. _Avoid_: locale, language (for the map's content)
 
 ## Azgaar Assistant
 

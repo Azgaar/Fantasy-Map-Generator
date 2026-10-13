@@ -3,6 +3,7 @@ import { Controllers } from "@/controllers";
 import { Services } from "@/services";
 import { toggleSaveReminder } from "@/services/autosave";
 import { findEl, minmax } from "@/utils";
+import { t } from "@/utils/i18n";
 import { showInfo } from "./app-info";
 import { closeDialogs } from "./dialog/dialog-helpers";
 import { getLayerByShortcut } from "./options/tabs/layers-tab";
@@ -167,7 +168,7 @@ function removeElementOnKey(): void {
 
   visibleDialogs.forEach(dialog => {
     dialog.querySelectorAll("button").forEach(button => {
-      if (button.textContent === "Remove") button.click();
+      if (button.textContent === t("Remove")) button.click();
     });
   });
 }

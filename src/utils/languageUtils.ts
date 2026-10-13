@@ -208,7 +208,8 @@ export const replaceWholeWord = (text: string | undefined, name: string, next: s
  */
 export const list = (array: string[]) => {
   if (!Intl.ListFormat) return array.join(", ");
-  const conjunction = new Intl.ListFormat(document.documentElement.lang || "en", {
+  // English whatever the interface language: the list is map text, which stays English
+  const conjunction = new Intl.ListFormat("en", {
     style: "long",
     type: "conjunction"
   });

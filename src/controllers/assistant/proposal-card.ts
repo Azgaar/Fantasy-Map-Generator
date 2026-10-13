@@ -2,6 +2,7 @@ import { Icons } from "@/components/icons";
 import { MapEntities } from "@/components/map-entities";
 import { layerLabel } from "@/data/layer-labels";
 import type { ChangeRow, Proposal } from "@/services/assistant/chats";
+import { t } from "@/utils/i18n";
 import { rn } from "@/utils/numberUtils";
 import { capitalize, escapeHtml } from "@/utils/stringUtils";
 import { formatPrice, getArea, getAreaUnit, getPeople, si } from "@/utils/unitUtils";
@@ -11,7 +12,14 @@ import { type Action, Proposals } from "./proposals";
 
 const PROPOSAL_ROWS = 8;
 const NEXT: Partial<Record<Proposal["state"], Action>> = { proposed: "apply", applied: "undo", undone: "redo" };
-const FIELD_LABELS: Record<string, string> = { fullName: "Full name", "label.text": "Label" };
+const FIELD_LABELS: Record<string, string> = { fullName: t("Full name"), "label.text": t("Label") };
+const ACTION_LABELS: Record<string, string> = { apply: t("Apply"), undo: t("Undo"), redo: t("Redo") };
+const STATE_LABELS: Record<string, string> = {
+  proposed: t("Proposed"),
+  applied: t("Applied"),
+  undone: t("Undone"),
+  discarded: t("Discarded")
+};
 const MONEY_FIELDS = new Set(["treasury", "pollTax"]);
 // bookkeeping that operations keep in sync, shown only when a change has nothing else
 const DERIVED_FIELDS = new Set(["pole", "center", "cells", "neighbors"]);
@@ -50,29 +58,31 @@ class ProposalCardView {
         </div>`
       )
       .join("");
-    const list = `${rows}${more > 0 ? `<div class="assistantChangeMore">… ${more} more change${more === 1 ? "" : "s"}</div>` : ""}`;
+    const list = `${rows}${more > 0 ? `<div class="assistantChangeMore">… ${t("{{more}} more", { more })}</div>` : ""}`;
     const entities = new Set(shown.map(row => row.key)).size;
-    const count = `${plural(shown.length, "change")}${entities > 1 ? ` · ${entities} entities` : ""}`;
+    const count = `${t("Changes: {{changes}}", { changes: shown.length })}${entities > 1 ? ` · ${t("Entities: {{entities}}", { entities })}` : ""}`;
 
     const button = (action: string, label: string, enabled: boolean, primary = false) =>
       `<button type="button" class="assistantButton${primary ? " assistantPrimary" : ""}" data-action="${action}" data-index="${index}" ${enabled ? "" : "disabled"}>${label}</button>`;
     const next = NEXT[state];
     const enabled = Boolean(next && Proposals.ready(next, proposal, mapId));
-    const main = next ? button(next, enabled ? capitalize(next) : "Changed since", enabled, state === "proposed") : "";
+    const main = next
+      ? button(next, enabled ? ACTION_LABELS[next] : t("Changed since"), enabled, state === "proposed")
+      : "";
     const proposed = state === "proposed";
 
     // a waiting proposal shows its changes with the actions below; a settled one folds them away
     return /* html */ `<div class="assistantItem assistantProposal ${state}">
       <div class="assistantProposalHeader">
-        <span class="assistantProposalState">${capitalize(state)}</span>
+        <span class="assistantProposalState">${STATE_LABELS[state] ?? capitalize(state)}</span>
         <span class="assistantProposalSummary">${escapeHtml(proposal.summary)}</span>
         ${proposed ? "" : main}
       </div>
       ${
         proposed
           ? `<div class="assistantProposalBody">${list}</div>
-        <div class="assistantProposalFooter"><span>${count}</span><span class="assistantProposalActions">${button("discard", "Discard", true)}${main}</span></div>`
-          : `<details class="assistantProposalBody"><summary>Show ${count}</summary>${list}</details>`
+        <div class="assistantProposalFooter"><span>${count}</span><span class="assistantProposalActions">${button("discard", t("Discard"), true)}${main}</span></div>`
+          : `<details class="assistantProposalBody"><summary>${t("Show changes ({{changes}})", { changes: shown.length })}</summary>${list}</details>`
       }
     </div>`;
   }
@@ -84,11 +94,11 @@ class ProposalCardView {
         return [`${row.entity}: added`, ...this.addedFields(row).map(([label, text]) => `${label}: ${text}`)].join(
           " · "
         );
-      if (!row.field) return `${row.entity}: removed`;
-      if (row.field === "coa") return `${row.entity} · Emblem: redrawn`;
+      if (!row.field) return `${row.entity}: ${t("removed")}`;
+      if (row.field === "coa") return `${row.entity} · ${t("Emblem: redrawn")}`;
       if (row.key === "cells")
         return `Cells · ${CELL_FIELDS[row.field]?.label ?? row.field}: ${plural(Object.keys(row.after as object).length, "cell")}`;
-      if (row.field === "note") return `${row.entity} · Note: rewritten`;
+      if (row.field === "note") return `${row.entity} · ${t("Note: rewritten")}`;
       if (row.append) return `${this.entityLabel(row)} · ${this.fieldLabel(row)}: + ${this.addedText(row)}`;
       const [before, after] = [this.valueText(row, row.before), this.valueText(row, row.after)];
       return `${this.entityLabel(row)} · ${this.fieldLabel(row)}: ${before ?? "none"} → ${after ?? "none"}`;
@@ -153,7 +163,7 @@ class ProposalCardView {
     }
     const value = (value: unknown) => {
       const text = this.valueText(row, value);
-      if (text === null) return `<em>none</em>`;
+      if (text === null) return `<em>${t("None")}</em>`;
       const swatch = COLOR.test(text) ? `<span class="assistantSwatch" style="background:${text}"></span>` : "";
       return swatch + escapeHtml(text);
     };

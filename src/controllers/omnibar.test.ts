@@ -15,7 +15,7 @@ vi.mock("@/components/layers", () => ({
   Layers: { draw: vi.fn(), show: mocks.show, toggle: mocks.toggle, has: () => true, isOn: () => false }
 }));
 vi.mock("@/components/options/tabs/layers-tab", () => ({
-  LAYER_TOGGLES: new Map([["rivers", { label: "Ri<u>v</u>ers" }]]),
+  LAYER_TOGGLES: new Map([["rivers", { label: "Rivers" }]]),
   LAYER_PRESETS: {}
 }));
 vi.mock("@/components/app-info", () => ({ showInfo: vi.fn() }));
@@ -252,7 +252,7 @@ describe("Omnibar public behavior", () => {
     expect(JSON.parse(localStorage.getItem("fmg-omnibar-history")!)).toEqual(["regenerateRivers"]);
     Omnibar.open();
     expect(input().value).toBe("");
-    expect(rows()[0].textContent).toContain("Regenerate Rivers");
+    expect(rows()[0].textContent).toContain("Regenerate: Rivers");
   });
 
   it("runs creation commands without a corresponding button", async () => {
@@ -337,7 +337,9 @@ describe("Omnibar public behavior", () => {
 
     Omnibar.open();
     search("Silverwater");
-    expect(rows()[0].querySelector(".omnibar-detail")?.textContent).toBe(`${type} · Freshwater`);
+    expect(rows()[0].querySelector(".omnibar-detail")?.textContent).toBe(
+      `${type === "lake" ? "Lake" : "Island"} · Freshwater`
+    );
     key("Enter");
     expect(mocks.show).toHaveBeenCalledWith(type === "lake" ? "lakes" : "coastline");
     expect(mocks.zoom).toHaveBeenCalledWith(30, 40, 3, 1500);
@@ -454,7 +456,7 @@ describe("Omnibar public behavior", () => {
     Omnibar.open();
     search("burg");
     expect(rows()).toHaveLength(50);
-    expect(document.getElementById("omnibar-status")?.textContent).toMatch(/^50 of \d+ results/);
+    expect(document.getElementById("omnibar-status")?.textContent).toMatch(/^Results: 50 of \d+ /);
   });
 
   it("keeps the browser's save dialog and help keys out while it is open", () => {

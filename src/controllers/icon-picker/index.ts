@@ -4,9 +4,11 @@ import { type IconSetId, IconSets } from "@/components/icon-sets";
 import { type CustomIcon, CustomIcons, type IconPicture, Icons } from "@/components/icons";
 import { tip } from "@/components/tooltips";
 import { ICON_GROUPS } from "@/data/icons-list";
+import { ICON_GROUP_LABELS } from "@/data/id-labels";
 import { IconsArchive } from "@/services/io/icons-archive";
 import type { IconSet } from "@/types/icons";
 import { capitalize, createFileInput, downloadFile, ensureEl, escapeHtml, getFileName } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { IconPictures, type PictureProfile } from "./pictures";
 import { closePositioner, openPositioner } from "./positioner";
 
@@ -101,7 +103,7 @@ function open({ current, onPick, live = false, preferCustom, profile = "icon" }:
       <style>${STYLE}</style>
       <div class="head">
         <div class="current"></div>
-        <input type="search" class="search" placeholder="Search built-in icons" data-tip="Find a built-in icon or emoji by name" />
+        <input type="search" class="search" placeholder="${t("Search built-in icons")}" data-tip="${t("Find a built-in icon or emoji by name")}" />
       </div>
       <div class="body">
         <nav></nav>
@@ -222,28 +224,31 @@ function open({ current, onPick, live = false, preferCustom, profile = "icon" }:
         if (!isOpen()) return;
         refreshCustom();
         const counts = [
-          `${added} added`,
-          unchanged && `${unchanged} already here`,
-          invalid && `${invalid} invalid skipped`
+          `${t("Added")}: ${added}`,
+          unchanged && t("Already here: {{unchanged}}", { unchanged }),
+          invalid && t("Invalid, skipped: {{invalid}}", { invalid })
         ];
-        tip(`Custom icons imported: ${counts.filter(Boolean).join(", ")}`, false, "success", 5000);
+        tip(sentences(t("Custom icons imported"), counts.filter(Boolean).join(", ")), false, "success", 5000);
         if (conflicts.length) askToReplace(conflicts);
       })
       .catch(error => isOpen() && tip((error as Error).message, false, "error", 6000))
       .finally(() => dialog.classList.remove("busy"));
   };
   const askToReplace = (conflicts: CustomIcon[]) => {
-    const count = conflicts.length === 1 ? "1 archived icon has" : `${conflicts.length} archived icons have`;
     confirmationDialog({
-      title: "Import custom icons",
-      message: `${count} the id of a different icon on this map. Replace the map's pictures with the archived ones? Everything using them will change`,
-      confirm: "Replace",
-      cancel: "Keep the map's",
+      title: t("Import custom icons"),
+      message: sentences(
+        t("Archived icons with the id of a different icon on this map: {{icons}}", { icons: conflicts.length }),
+        t("Replace the map's pictures with the archived ones?"),
+        t("Everything using them will change")
+      ),
+      confirm: t("Replace"),
+      cancel: t("Keep the map's"),
       onConfirm: () => {
         for (const { id } of conflicts) closePositioner(id);
         IconsArchive.replace(conflicts);
         if (isOpen()) refreshCustom();
-        tip(`${conflicts.length} custom icon(s) replaced`, false, "success", 4000);
+        tip(t("Custom icons replaced: {{icons}}", { icons: conflicts.length }), false, "success", 4000);
       }
     });
   };
@@ -253,11 +258,13 @@ function open({ current, onPick, live = false, preferCustom, profile = "icon" }:
     const uses = Icons.uses(id);
     const count = Object.values(uses).reduce((total, used) => total + used, 0);
     confirmationDialog({
-      title: "Remove custom icon",
+      title: t("Remove"),
       message: count
-        ? `The icon is used by ${Icons.describeUses(uses)}. ${count === 1 ? "It" : "They"} will show no icon.<br>Remove it anyway?`
-        : "The icon is not used on the map. Remove it?",
-      confirm: "Remove",
+        ? `${t("The icon is used by {{uses}}. They will show no icon.", {
+            uses: Icons.describeUses(uses)
+          })}<br>${t("Remove it anyway?")}`
+        : t("The icon is not used on the map. Remove it?"),
+      confirm: t("Remove"),
       onConfirm: () => {
         if (replacing === id) replacing = null;
         closePositioner(id);
@@ -312,7 +319,7 @@ function open({ current, onPick, live = false, preferCustom, profile = "icon" }:
   renderPanel();
 
   $(dialog).dialog({
-    title: "Select icon",
+    title: t("Select icon"),
     width: dialogWidth(),
     position: { my: "center", at: "center", of: "svg" },
     close: () => {
@@ -320,8 +327,8 @@ function open({ current, onPick, live = false, preferCustom, profile = "icon" }:
       destroyDialog(ICON_PICKER);
     },
     buttons: {
-      Apply: apply,
-      Cancel: () => $(dialog).dialog("close")
+      [t("Apply")]: apply,
+      [t("Cancel")]: () => $(dialog).dialog("close")
     }
   });
   reveal(); // the panel has its height only once the dialog is laid out
@@ -337,8 +344,8 @@ function dialogWidth(): number {
 function catalog(): Entry[] {
   const emoji = Object.entries(ICON_GROUPS).map(([label, glyphs]) => ({
     key: `glyph/${label}`,
-    group: "Emoji",
-    label,
+    group: t("Emoji"),
+    label: ICON_GROUP_LABELS[label] ?? label,
     icons: Object.keys(glyphs).map(glyph => Icons.glyph(glyph))
   }));
   return [...emoji, ...IconSets.sets().flatMap(setEntries)];
@@ -379,32 +386,35 @@ function viewOf(current: string, entries: Entry[], preferCustom?: boolean): stri
 
 /** Relief · Simple, or Goods for a set that is its own group */
 function entryLabel(entry: Entry): string {
-  return entry.label === entry.group ? entry.group : `${entry.group} · ${entry.label}`;
+  return entry.label === entry.group ? groupName(entry.group) : `${groupName(entry.group)} · ${entry.label}`;
 }
+
+/** a set group's name in the interface; the group stays English in the data */
+const groupName = (group: string): string => ICON_GROUP_LABELS[group] ?? group;
 
 /** the selected icon, with its custom icon actions */
 function renderCurrent(current: string, replacing: string | null, entries: Entry[]): string {
   const kind = Icons.kind(current);
   const located = kind === "set" ? locate(entries, current) : undefined;
   const from = !current
-    ? "No icon selected"
+    ? t("No icon selected")
     : kind === "glyph"
-      ? "Emoji"
+      ? t("Emoji")
       : kind === "custom"
-        ? "Carried by this map"
+        ? t("Carried by this map")
         : located
           ? entryLabel(located)
-          : "Built-in";
+          : t("Built-in");
   const actions =
     kind === "custom" && CustomIcons.get(current)
       ? /* html */ `<div class="currentActions">
-          <button type="button" data-action="position" data-tip="Zoom and pan the picture in its frame"><span class="icon-resize-full"></span> Position</button>
-          <button type="button" data-action="replace" class="${replacing === current ? "pressed" : ""}" data-tip="Give the icon a new picture: every use follows"><span class="icon-upload"></span> Replace</button>
-          <button type="button" data-action="remove" data-tip="Remove the icon from the map"><span class="icon-trash-empty"></span></button>
+          <button type="button" data-action="position" data-tip="${t("Zoom and pan the picture in its frame")}"><span class="icon-resize-full"></span> ${t("Position")}</button>
+          <button type="button" data-action="replace" class="${replacing === current ? "pressed" : ""}" data-tip="${t("Give the icon a new picture: every use follows")}"><span class="icon-upload"></span> ${t("Replace")}</button>
+          <button type="button" data-action="remove" data-tip="${t("Remove")}"><span class="icon-trash-empty"></span></button>
         </div>`
       : "";
   return /* html */ `<span class="preview">${Icons.html(current)}</span>
-    <div class="about"><span class="name">${escapeHtml(current ? capitalize(Icons.name(current)) : "None")}</span><span class="from">${from}</span></div>
+    <div class="about"><span class="name">${escapeHtml(current ? capitalize(Icons.name(current)) : t("None"))}</span><span class="from">${from}</span></div>
     ${actions}`;
 }
 
@@ -414,12 +424,12 @@ function renderSources(entries: Entry[], active: string | null): string {
     `<button type="button" data-source="${escapeHtml(key)}" class="${type} ${key === active ? "active" : ""}">${label}${count ? ` <small>${count}</small>` : ""}</button>`;
   let group = "";
   const list = entries.map(entry => {
-    if (entry.label === entry.group) return item(entry.key, entry.label, entry.icons.length, "section");
-    const heading = entry.group === group ? "" : `<div class="section">${entry.group}</div>`;
+    if (entry.label === entry.group) return item(entry.key, groupName(entry.group), entry.icons.length, "section");
+    const heading = entry.group === group ? "" : `<div class="section">${groupName(entry.group)}</div>`;
     group = entry.group;
     return heading + item(entry.key, entry.label, entry.icons.length, "entry");
   });
-  return item("custom", "Custom", CustomIcons.all.length) + list.join("");
+  return item("custom", t("Custom"), CustomIcons.all.length) + list.join("");
 }
 
 /** the entries' tiles, each under its label when asked */
@@ -449,11 +459,11 @@ function renderResults(entries: Entry[], query: string, current: string): string
   load(found);
   return found.length
     ? renderEntries(found, current, true)
-    : `<p class="empty">No built-in icon is called “${escapeHtml(query)}”.</p>`;
+    : `<p class="empty">${t("No built-in icon is called “{{query}}”.", { query })}</p>`;
 }
 
 function renderGlyphText(current: string): string {
-  return /* html */ `<label class="glyphText">Type any short text
+  return /* html */ `<label class="glyphText">${t("Type any short text")}
       <input value="${escapeHtml(Icons.glyphText(current) ?? "")}" placeholder="XIV" />
     </label>`;
 }
@@ -461,20 +471,17 @@ function renderGlyphText(current: string): string {
 function renderCustom(current: string, replacing: string | null, profile: PictureProfile): string {
   const icons = CustomIcons.all.map(({ id }) => tile(id, current));
   return /* html */ `<div class="customAdd">
-      <input type="url" placeholder="Paste a link to an image" data-tip="A linked image keeps the map small; it shows while its site serves it" />
-      <button type="button" data-action="link">Add link</button>
-      <button type="button" data-action="upload" data-tip="Upload an SVG file (up to ${profile === "emblem" ? "1 MB" : "200 kB"}) or a PNG, JPEG or WebP image (up to ${profile === "emblem" ? "10 MB, shrunk to 1024 px" : "2 MB, shrunk to 256 px"})">Upload</button>
+      <input type="url" placeholder="${t("Paste a link to an image")}" data-tip="${t("A linked image keeps the map small; it shows while its site serves it")}" />
+      <button type="button" data-action="link">${t("Add link")}</button>
+      <button type="button" data-action="upload" data-tip="${profile === "emblem" ? t("Upload an SVG file (up to 1 MB) or a PNG, JPEG or WebP image (up to 10 MB, shrunk to 1024 px)") : t("Upload an SVG file (up to 200 kB) or a PNG, JPEG or WebP image (up to 2 MB, shrunk to 256 px)")}">${t("Upload")}</button>
     </div>
-    <div class="replacing" ${replacing ? "" : "hidden"}>Link or upload the new picture of the selected icon. <a data-action="stopReplacing">Cancel</a></div>
-    ${icons.length ? `<div class="choices">${icons.join("")}</div>` : `<p class="empty">This map carries no custom icons yet.</p>`}
+    <div class="replacing" ${replacing ? "" : "hidden"}>${t("Link or upload the new picture of the selected icon.")} <a data-action="stopReplacing">${t("Cancel")}</a></div>
+    ${icons.length ? `<div class="choices">${icons.join("")}</div>` : `<p class="empty">${t("This map carries no custom icons yet.")}</p>`}
     <div class="customArchive">
-      ${icons.length ? `<button type="button" data-action="exportAll" data-tip="Download all custom icons as a zip archive, to import them into another map">Download all</button>` : ""}
-      <button type="button" data-action="importArchive" data-tip="Import custom icons from a downloaded zip archive. An icon whose id the map uses for another picture is replaced only on confirmation">Import zip</button>
+      ${icons.length ? `<button type="button" data-action="exportAll" data-tip="${t("Download all custom icons as a zip archive, to import them into another map")}">${t("Download all")}</button>` : ""}
+      <button type="button" data-action="importArchive" data-tip="${t("Import custom icons from a downloaded zip archive. An icon whose id the map uses for another picture is replaced only on confirmation")}">${t("Import zip")}</button>
     </div>
-    <p class="note">Free icons: <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>,
-      <a href="https://thenounproject.com" target="_blank" rel="noopener">The Noun Project</a>,
-      <a href="https://openmoji.org" target="_blank" rel="noopener">OpenMoji</a>,
-      <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a>.</p>`;
+    <p class="note">${t("Free icons")}: <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>, <a href="https://thenounproject.com" target="_blank" rel="noopener">The Noun Project</a>, <a href="https://openmoji.org" target="_blank" rel="noopener">OpenMoji</a>, <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a>.</p>`;
 }
 
 /** a glyph tile draws its text, sparing a symbol per glyph */

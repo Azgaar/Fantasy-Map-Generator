@@ -3,12 +3,14 @@
 
 import { Icons } from "@/components/icons";
 import { Controllers } from "@/controllers";
+import { FILTER_LABELS, HEIGHTMAP_SCHEME_LABELS } from "@/data/id-labels";
 import { TEXTURES } from "@/data/textures";
 import { FORMATS, isLabelStyle } from "@/generators/styles-formats";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { getLabelsIndex } from "@/renderers/labels/label-data";
 import type { StandardControl, StyleControl } from "@/types/styles";
 import { ensureEl, escapeHtml, findEl, htmlEl, rn } from "@/utils";
+import { t } from "@/utils/i18n";
 import {
   openAddFontDialog,
   openFontDialog,
@@ -32,9 +34,9 @@ const sideButton = (icon: string, tipText: string): HTMLButtonElement => {
 
 // url(#id) from the map's own filter defs, or none
 const filter: ControlFactory = (spec, value, set) => {
-  const entries: [string, string][] = [["", "None"]];
+  const entries: [string, string][] = [["", t("None")]];
   for (const def of ensureEl("filters").querySelectorAll("filter[id][name]")) {
-    entries.push([`url(#${def.id})`, def.getAttribute("name") ?? def.id]);
+    entries.push([`url(#${def.id})`, FILTER_LABELS[def.id] ?? def.getAttribute("name") ?? def.id]);
   }
   const current = typeof value === "string" && value !== "none" ? value : "";
   if (current && !entries.some(([v]) => v === current)) entries.push([current, current]); // a CSS filter list a preset carries
@@ -71,12 +73,12 @@ const font: ControlFactory = (_spec, value, set) => {
 // other elements get a stock sample
 export function fontSample(): string {
   const element = ensureEl<HTMLSelectElement>("styleElementSelect").value;
-  if (element !== "labels") return element === "legend" ? "Legend" : "Sample";
+  if (element !== "labels") return element === "legend" ? t("Legend") : t("Sample");
   const group = ensureEl<HTMLSelectElement>("styleGroupSelect").value;
   const texts = getLabelsIndex()
     .filter(label => label.group === group && label.text)
     .map(label => label.text);
-  return [...new Set(texts)].slice(0, 2).join(", ") || "Sample";
+  return [...new Set(texts)].slice(0, 2).join(", ") || t("Sample");
 }
 
 // blur(Npx), null at 0
@@ -122,9 +124,9 @@ const transform: ControlFactory = (spec, value, set) => {
   const y = sliderOf(spec, { min: 0, max: height, step: 1 }, match ? Number(match[2]) : 80, emit);
   const scale = sliderOf(spec, { min: 0.02, max: 1, step: 0.01 }, match ? Number(match[3]) : 0.25, emit);
   return rows(
-    withTip(row("Shift x", x), "Shift the rose along x, in pixels"),
-    withTip(row("Shift y", y), "Shift the rose along y, in pixels"),
-    withTip(row("Size", scale), "Scale the rose")
+    withTip(row(t("Shift x"), x), t("Shift by x axis in pixels")),
+    withTip(row(t("Shift y"), y), t("Shift by y axis in pixels")),
+    withTip(row(t("Size"), scale), t("Scale the rose"))
   );
 };
 
@@ -164,10 +166,10 @@ const labelStyle: ControlFactory = (spec, value, set) => {
   const shadow = htmlEl("input", { type: "text", value: parsed.shadow, placeholder: "none" });
   const transform = selectOf(
     [
-      ["", "As is"],
-      ["uppercase", "Uppercase"],
-      ["lowercase", "Lowercase"],
-      ["capitalize", "Capitalize"]
+      ["", t("As is")],
+      ["uppercase", t("Uppercase")],
+      ["lowercase", t("Lowercase")],
+      ["capitalize", t("Capitalize")]
     ],
     parsed.transform
   );
@@ -189,10 +191,10 @@ const labelStyle: ControlFactory = (spec, value, set) => {
   shadow.addEventListener("input", emit);
   transform.addEventListener("change", emit);
   return rows(
-    withTip(row("Shadow", shadow), "Set text shadow, e.g. white 0 0 4px"),
-    withTip(row("Case", transform), "Change the letter case"),
-    withTip(row("Shift x", dx), "Shift the labels along x"),
-    withTip(row("Shift y", dy), "Shift the labels along y")
+    withTip(row(t("Shadow"), shadow), t("Set text shadow, e.g. {{example}}", { example: "white 0 0 4px" })),
+    withTip(row(t("Case"), transform), t("Change the letter case")),
+    withTip(row(t("Shift x"), dx), t("Shift by x axis in pixels")),
+    withTip(row(t("Shift y"), dy), t("Shift by y axis in pixels"))
   );
 };
 
@@ -201,11 +203,14 @@ const scheme: ControlFactory = (_spec, value, set) => {
   const current = typeof value === "string" ? value : "bright";
   HeightmapColorSchemes.ensure(current);
   const select = selectOf(
-    HeightmapColorSchemes.names().map(name => [name, name.startsWith("#") ? `custom ${name.slice(0, 12)}…` : name]),
+    HeightmapColorSchemes.names().map(name => [
+      name,
+      name.startsWith("#") ? `${t("Custom")} ${name.slice(0, 12)}…` : (HEIGHTMAP_SCHEME_LABELS[name] ?? name)
+    ]),
     current
   );
   select.addEventListener("change", () => set(select.value));
-  const add = sideButton("icon-plus", "Click to add a custom heightmap color scheme");
+  const add = sideButton("icon-plus", t("Click to add a custom heightmap color scheme"));
   add.addEventListener("click", () =>
     openSchemeBuilder(select.value, stops => {
       select.add(new Option(`custom ${stops.slice(0, 12)}…`, stops));
@@ -223,7 +228,7 @@ const texture: ControlFactory = (_spec, value, set) => {
   if (current && !(current in TEXTURES)) entries.push([current, current.split("/").pop()!.slice(0, 20)]);
   const select = selectOf(entries, current);
   select.addEventListener("change", () => set(select.value));
-  const add = sideButton("icon-plus", "Click and provide a URL to image to be set as a texture");
+  const add = sideButton("icon-plus", t("Click and provide a URL to image to be set as a texture"));
   add.addEventListener("click", () =>
     openTextureUrlDialog(url => {
       select.add(new Option(url.split("/").pop()!.slice(0, 20), url));

@@ -13,6 +13,7 @@ import { Icons } from "@/components/icons";
 import { tip } from "@/components/tooltips";
 import { goodBadge } from "@/renderers/draw-goods";
 import { downloadFile, getFileName } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import type { Burg } from "../generators/burgs-generator";
 import type { Deal } from "../generators/markets-generator";
 import { ensureEl, formatPrice, rn } from "../utils";
@@ -27,7 +28,7 @@ const columns: EditorColumn<Deal>[] = [
   { key: "icon", width: "2em", permanent: true },
   {
     key: "good",
-    label: "Good",
+    label: t("Good"),
     width: "6.8em",
     permanent: true,
     sortBy: deal => Goods.get(deal.good)?.name ?? "",
@@ -35,27 +36,27 @@ const columns: EditorColumn<Deal>[] = [
   },
   {
     key: "direction",
-    label: "Type",
+    label: t("Type"),
     width: "5em",
     sortBy: deal => getDirection(deal, activeMarketId),
     sortType: "alpha"
   },
   {
     key: "counterparty",
-    label: "Counterparty",
+    label: t("Counterparty"),
     width: "8em",
     sortBy: deal => getParty(deal)?.name ?? "",
     sortType: "alpha"
   },
   {
     key: "units",
-    label: "Units",
+    label: t("Units"),
     width: "5em",
     sortBy: deal => deal.units
   },
   {
     key: "income",
-    label: "Income",
+    label: t("Income"),
     width: "5em",
     permanent: true,
     sortBy: deal => getDealNet(deal, activeMarketId)
@@ -71,7 +72,7 @@ function open(marketId: number): void {
   void Icons.retry("goods");
   const market = Markets.get(marketId);
   if (!market) {
-    tip("Invalid market. The selected market does not exist", true, "error", 5000);
+    tip(sentences(t("Invalid market"), t("The selected market does not exist")), true, "error", 5000);
     return;
   }
 
@@ -85,7 +86,7 @@ function open(marketId: number): void {
   marketDealsTable.reset();
 
   $(`#${dialogId}`).dialog({
-    title: `${Markets.getName(market)} Market Deals`,
+    title: t("{{- market}} Market Deals", { market: Markets.getName(market) }),
     position,
     close: closeMarketDeals
   });
@@ -99,17 +100,17 @@ function renderDialog(): void {
         <div id="marketDealsBody" class="table" style="max-height:30em"></div>
 
         <div id="marketDealsFooter" class="totalLine">
-          <div style="margin-left: 5px" data-tip="Deals count">Deals: <span id="marketDealsFooterDeals">0</span></div>
-          <div data-col="income" style="margin-left: 12px" data-tip="Net flow for this market">Net Flow: <span id="marketDealsFooterNet">🟡 0</span></div>
+          <div style="margin-left: 5px" data-tip="${t("Deals count")}">${t("Deals")}: <span id="marketDealsFooterDeals">0</span></div>
+          <div data-col="income" style="margin-left: 12px" data-tip="${t("Net flow for this market")}">${t("Net Flow")}: <span id="marketDealsFooterNet">🟡 0</span></div>
         </div>
 
         <div id="marketDealsBottom">
-          <button id="marketDealsRefresh" data-tip="Refresh the Deals screen" class="icon-cw"></button>
-          <button id="marketDealsExport" data-tip="Save market deals data as a text file (.csv)" class="icon-download"></button>
-          <select id="marketDealsFilter" data-tip="Filter deals by scope" style="margin-left: 8px">
-            <option value="all">All</option>
-            <option value="local">Local</option>
-            <option value="global">Global</option>
+          <button id="marketDealsRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
+          <button id="marketDealsExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
+          <select id="marketDealsFilter" data-tip="${t("Filter deals by scope")}" style="margin-left: 8px">
+            <option value="all">${t("All")}</option>
+            <option value="local">${t("Local")}</option>
+            <option value="global">${t("Global")}</option>
           </select>
         </div>
       </div>
@@ -148,7 +149,7 @@ function closeMarketDeals(): void {
 function getFilteredMarketDeals(): Deal[] {
   const market = Markets.get(activeMarketId);
   if (!market) {
-    tip("Invalid market. The selected market does not exist", true, "error", 5000);
+    tip(sentences(t("Invalid market"), t("The selected market does not exist")), true, "error", 5000);
     return [];
   }
 
@@ -166,7 +167,7 @@ function renderMarketDealsPage(view: TableView<Deal>): void {
   const lines = view.rows.map(renderDealLine).join("");
   const netFlow = view.all.reduce((total, deal) => total + getDealNet(deal, activeMarketId), 0);
 
-  ensureEl("marketDealsBody").innerHTML = lines || "No market deals recorded";
+  ensureEl("marketDealsBody").innerHTML = lines || t("No market deals recorded");
   ensureEl("marketDealsFooterDeals").innerHTML = String(view.all.length);
   ensureEl("marketDealsFooterNet").innerHTML = formatPrice(netFlow);
   renderEditorPagination(ensureEl("marketDealsFooter"), view, marketDealsTable.goto);
@@ -207,12 +208,12 @@ function renderDealLine(deal: Deal): string {
   const backColor = dealNet >= 0 ? "#dff0d8" : "#f2dede";
 
   return /* html */ `<div class="states marketDeal" data-id="${deal.i}" data-good="${good.name}" data-direction="${direction}" data-units="${rn(deal.units, 2)}" data-counterparty="${counterparty.type}_${party?.name}" data-income="${dealNet}">
-      <svg data-col="icon" data-tip="Good icon" width="1.3em" height="1.3em" class="goodIcon">
+      <svg data-col="icon" data-tip="${t("Good icon")}" width="1.3em" height="1.3em" class="goodIcon">
         ${goodBadge(good)}
       </svg>
-      <div data-col="good" data-tip="Good name" class="goodName">${good.name}</div>
+      <div data-col="good" data-tip="${t("Name")}" class="goodName">${good.name}</div>
       <div data-col="direction"><span class="marketBadge" style="background:${backColor}; color:${incomeColor}">${direction.toUpperCase()}</span></div>
-      <div data-col="counterparty" class="marketDealParty pointer" data-tip="Click to zoom">
+      <div data-col="counterparty" class="marketDealParty pointer" data-tip="${t("Click to zoom")}">
         <div class="${counterparty.type === "burg" ? "icon-dot-circled" : "icon-store"}" style="display:inline-block; width: 0.8em; ${counterparty.type === "market" ? "font-size: 0.85em;" : ""}"></div>
         <div style="display:inline-block; width: 6.8em;">${party?.name}</div>
       </div>

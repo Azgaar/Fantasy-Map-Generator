@@ -3,10 +3,13 @@ import { Layers } from "@/components/layers";
 import { LAYER_TOGGLES } from "@/components/options/tabs/layers-tab";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
+import { LABEL_MODE_LABELS, LABEL_TYPE_LABELS } from "@/data/id-labels";
+import { layerLabel } from "@/data/layer-labels";
 import { LABEL_TYPES, type LabelGroup, type LabelNameMode, type LabelType } from "@/generators/labels-generator";
 import { getLabelsIndex } from "@/renderers/labels/label-data";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { ensureEl } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 
 function open(): void {
   if (customization) return;
@@ -15,25 +18,25 @@ function open(): void {
   addRows();
 
   $("#labelGroupsConfigurator").dialog({
-    title: "Configure Label Groups",
+    title: t("Configure Label Groups"),
     resizable: false,
     maxHeight: Math.max(window.innerHeight - 40, 300),
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
     close,
     buttons: {
-      Apply: () => {
+      [t("Apply")]: () => {
         ensureEl<HTMLFormElement>("labelGroupsForm").requestSubmit();
       },
-      Add: () => {
+      [t("Add")]: () => {
         const group: LabelGroup = { name: "", type: "state", zoom: { min: null, max: null } };
         ensureEl("labelGroupsBody").insertAdjacentHTML("beforeend", createRow(group, true, 0));
       },
-      Restore: () => {
+      [t("Restore")]: () => {
         const defaults = Labels.getDefaultOptions();
         ensureEl<HTMLInputElement>("labelsShowAll").checked = defaults.showAll;
         addRows(defaults.groups);
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
@@ -59,26 +62,26 @@ function renderDialog(): void {
         </colgroup>
         <thead>
           <tr>
-            <th data-tip="Activate/deactivate group. Deactivated group labels are not visible">Active</th>
-            <th data-tip="Group name. Must start with a letter or underscore, followed by letters, digits, underscores, or dashes">Group</th>
-            <th data-tip="Label type, cannot be changed after creation">Type</th>
-            <th data-tip="Name display mode. Only applicable to States and Provinces">Mode</th>
-            <th data-tip="Minimum zoom level to show the group">Zoom min</th>
-            <th data-tip="Maximum zoom level to show the group">Zoom max</th>
-            <th data-tip="Layer that must be toggled on for this group to be shown">Layer dependency</th>
-            <th data-tip="Number of labels currently assigned to this group. Click the list icon to see them">Labels</th>
-            <th data-tip="Rendering order: lower groups are rendered on top">Order</th>
-            <th data-tip="Edit style or remove group">Actions</th>
+            <th data-tip="${sentences(t("Activate/deactivate group"), t("Deactivated group labels are not visible"))}">${t("Active")}</th>
+            <th data-tip="${sentences(t("Group name"), t("Must start with a letter or underscore, followed by letters, digits, underscores, or dashes"))}">${t("Group")}</th>
+            <th data-tip="${t("Label type, fixed after creation")}">${t("Type")}</th>
+            <th data-tip="${t("Name display mode. Only applicable to States and Provinces")}">${t("Mode")}</th>
+            <th data-tip="${t("Minimum zoom level to show the group")}">${t("Zoom min")}</th>
+            <th data-tip="${t("Maximum zoom level to show the group")}">${t("Zoom max")}</th>
+            <th data-tip="${t("Layer that must be toggled on for this group to be shown")}">${t("Layer dependency")}</th>
+            <th data-tip="${sentences(t("Number of labels currently assigned to this group"), t("Click the list icon to see them"))}">${t("Labels")}</th>
+            <th data-tip="${t("Rendering order: lower groups are rendered on top")}">${t("Order")}</th>
+            <th data-tip="${t("Edit style or remove group")}">${t("Actions")}</th>
           </tr>
         </thead>
         <tbody id="labelGroupsBody"></tbody>
       </table>
       <div id="labelGroupsMissingWrapper" style="display:none; gap:.4em; align-items:center; margin:.6em 0 0">
-        <label data-tip="Groups referenced by labels but not defined here. Such labels are not rendered until they are reassigned to an existing group"><strong>Missing groups:</strong> <span id="labelGroupsMissing"></span></label>
+        <label data-tip="${t("Groups referenced by labels but not defined here. Such labels are not rendered until they are reassigned to an existing group")}"><strong>${t("Missing groups")}:</strong> <span id="labelGroupsMissing"></span></label>
       </div>
       <div style="display:flex; gap:1.2em; align-items:center; margin:.6em 0 0">
-        <label data-tip="Ignore zoom bounds and show all labels regardless of the current zoom level"><input id="labelsShowAll" class="checkbox" type="checkbox" ${options.app.labels.showAll ? "checked" : ""}><span class="checkbox-label">Show all labels <small>[slow]</small></span></label>
-        <div style="padding: 0.5em 0; font-style: italic;">To change Burg Groups open <a id="labelGroupsBurgGroupsLink" style="text-decoration: underline;">Burg Group Configurator</a>.</div>
+        <label data-tip="${t("Ignore zoom bounds and show all labels regardless of the current zoom level")}"><input id="labelsShowAll" class="checkbox" type="checkbox" ${options.app.labels.showAll ? "checked" : ""}><span class="checkbox-label">${t("Show all labels")} <small>[${t("slow")}]</small></span></label>
+        <div style="padding: 0.5em 0; font-style: italic;">${t("To change Burg Groups open {{- configurator}}.", { configurator: `<a id="labelGroupsBurgGroupsLink" style="text-decoration: underline;">${t("Burg Group Configurator")}</a>` })}</div>
       </div>
     </form>
   </div>`;
@@ -111,7 +114,7 @@ function addMissingGroups(counts: Map<string, number>, groups: LabelGroup[]): vo
     .map(
       ([name, count]) => /* html */ `${name} (${count})
         <button type="button" name="missing" data-group="${name}" class="icon-list-bullet"
-          data-tip="Show labels of the ${name} group in Labels Overview to reassign them"></button>`
+          data-tip="${t("Show labels of the {{group}} group in Labels Overview to reassign them", { group: name })}"></button>`
     )
     .join(", ");
 }
@@ -130,36 +133,39 @@ function createRow(group: LabelGroup, isNew = false, labelCount = 0): string {
   const modes: LabelNameMode[] = ["auto", "short", "full"];
   const isDefault = Boolean(group.isDefault);
   const nameTip = isDefault
-    ? "Default group for this type, can't be renamed"
-    : "Group name. Must start with a letter or underscore, followed by letters, digits, underscores, or dashes";
+    ? t("Default group for this type, can't be renamed")
+    : sentences(
+        t("Group name"),
+        t("Must start with a letter or underscore, followed by letters, digits, underscores, or dashes")
+      );
   const modeApplicable = isModeApplicable(group.type);
   const modeTip = modeApplicable
-    ? "Name display mode: auto picks the best fit, short/full force a specific name form"
-    : "Name display mode is only applicable to States and Provinces";
+    ? t("Name display mode: auto picks the best fit, short/full force a specific name form")
+    : t("Name display mode. Only applicable to States and Provinces");
 
   const layers = [...LAYER_TOGGLES.keys()].sort();
 
   return /* html */ `<tr data-group="${isNew ? "" : group.name}" data-is-default="${isDefault ? "1" : ""}">
-      <td data-tip="Activate/deactivate group"><input type="checkbox" name="active" class="native" ${group.active !== false ? "checked" : ""}></td>
+      <td data-tip="${t("Activate/deactivate group")}"><input type="checkbox" name="active" class="native" ${group.active !== false ? "checked" : ""}></td>
       <td data-tip="${nameTip}"><input type="text" name="name" value="${group.name}" ${isDefault ? "disabled" : "required"}></td>
-      <td data-tip="Label type, fixed after creation"><select name="type" ${isNew ? "" : "disabled"}>
-        ${LABEL_TYPES.map(type => `<option value="${type}" ${group.type === type ? "selected" : ""}>${type}</option>`).join("")}
+      <td data-tip="${t("Label type, fixed after creation")}"><select name="type" ${isNew ? "" : "disabled"}>
+        ${LABEL_TYPES.map(type => `<option value="${type}" ${group.type === type ? "selected" : ""}>${LABEL_TYPE_LABELS[type]}</option>`).join("")}
       </select></td>
       <td data-tip="${modeTip}"><select name="mode" ${modeApplicable ? "" : "disabled"}>
-        ${modes.map(mode => `<option value="${mode}" ${(group.mode || "auto") === mode ? "selected" : ""}>${mode}</option>`).join("")}
+        ${modes.map(mode => `<option value="${mode}" ${(group.mode || "auto") === mode ? "selected" : ""}>${LABEL_MODE_LABELS[mode] ?? mode}</option>`).join("")}
       </select></td>
-      <td data-tip="Minimum zoom to show the group, leave empty for no limit"><input type="number" name="zoom-min" min="0.01" max="200" step=".01" value="${group.zoom.min ?? ""}"></td>
-      <td data-tip="Maximum zoom to show the group, leave empty for no limit"><input type="number" name="zoom-max" min="0.01" max="200" step=".01" value="${group.zoom.max ?? ""}"></td>
-      <td data-tip="Layer that must be toggled on for this group to be shown"><select name="dependency">
-        <option value="">none</option>
-        ${layers.map(id => `<option value="${id}" ${group.layerDependency === id ? "selected" : ""}>${id}</option>`).join("")}
+      <td data-tip="${t("Minimum zoom to show the group, leave empty for no limit")}"><input type="number" name="zoom-min" min="0.01" max="200" step=".01" value="${group.zoom.min ?? ""}"></td>
+      <td data-tip="${t("Maximum zoom to show the group, leave empty for no limit")}"><input type="number" name="zoom-max" min="0.01" max="200" step=".01" value="${group.zoom.max ?? ""}"></td>
+      <td data-tip="${t("Layer that must be toggled on for this group to be shown")}"><select name="dependency">
+        <option value="">${t("None")}</option>
+        ${layers.map(id => `<option value="${id}" ${group.layerDependency === id ? "selected" : ""}>${layerLabel(id)}</option>`).join("")}
       </select></td>
-      <td data-tip="Number of labels currently assigned to this group" style="text-align:center">
+      <td data-tip="${t("Number of labels currently assigned to this group")}" style="text-align:center">
         <div style="min-width:2em; display:inline-block">${labelCount}</div>
-        <button type="button" name="list" class="icon-list-bullet" data-tip="Show labels of this group in Labels Overview"></button>
+        <button type="button" name="list" class="icon-list-bullet" data-tip="${t("Show labels of this group in Labels Overview")}"></button>
       </td>
-      <td data-tip="Assignment order: move group up or down"><button type="button" name="up" class="icon-up-open" data-tip="Move up"></button><button type="button" name="down" class="icon-down-open" data-tip="Move down"></button></td>
-      <td><button type="button" name="style" class="icon-brush" data-tip="Edit visual style"></button><span data-tip="${isDefault ? "Default groups can't be removed" : "Remove group"}"><button type="button" name="remove" class="icon-trash-empty" ${isDefault ? "disabled" : ""}></button></span></td>
+      <td data-tip="${t("Assignment order: move group up or down")}"><button type="button" name="up" class="icon-up-open" data-tip="${t("Move up")}"></button><button type="button" name="down" class="icon-down-open" data-tip="${t("Move down")}"></button></td>
+      <td><button type="button" name="style" class="icon-brush" data-tip="${t("Edit style")}"></button><span data-tip="${isDefault ? t("Default groups can't be removed") : t("Remove")}"><button type="button" name="remove" class="icon-trash-empty" ${isDefault ? "disabled" : ""}></button></span></td>
     </tr>`;
 }
 
@@ -213,14 +219,14 @@ function onBodyClick(event: Event): void {
 function removeRow(row: HTMLTableRowElement): void {
   const rows = ensureEl("labelGroupsBody").children;
   if (rows.length < 2) {
-    tip("At least one group should be defined", false, "error");
+    tip(t("At least one group should be defined"), false, "error");
     return;
   }
 
   confirmationDialog({
-    title: "Remove Label Group",
-    message: "Remove the group? This won't affect labels unless the changes are applied.",
-    confirm: "Remove",
+    title: t("Remove"),
+    message: t("Remove the group? This won't affect labels unless the changes are applied."),
+    confirm: t("Remove"),
     onConfirm: () => {
       row.remove();
       validateForm();
@@ -246,8 +252,9 @@ function validateForm(): boolean {
     const GROUP_NAME_REGEXP = /^[\p{L}_][\p{L}\p{N}_-]*$/u;
     const isValidName = GROUP_NAME_REGEXP.test(value);
     const isUnique = names.filter(name => name === value).length === 1;
-    if (!isValidName) message = "Group name must start with a letter or underscore and not contain special characters";
-    if (!isUnique) message = "Group name should be unique";
+    if (!isValidName)
+      message = t("Group name must start with a letter or underscore and not contain special characters");
+    if (!isUnique) message = t("Group name should be unique");
     input.setCustomValidity(message);
   });
 
@@ -261,7 +268,7 @@ function submitForm(event: Event): void {
   if (!validateForm()) return;
 
   const rows = Array.from(ensureEl("labelGroupsBody").children) as HTMLTableRowElement[];
-  if (!rows.length) return void tip("At least one group should be defined", false, "error");
+  if (!rows.length) return void tip(t("At least one group should be defined"), false, "error");
 
   const newGroupNames = new Set<string>();
   rows.forEach(row => {

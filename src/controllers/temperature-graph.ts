@@ -1,20 +1,21 @@
 import { axisBottom, axisLeft, curveBasis, line, pointer, scaleLinear, scaleTime, select, timeFormat } from "d3";
 import { tip } from "@/components/tooltips";
+import { t } from "@/utils/i18n";
 import { convertTemperature, rn, round } from "../utils";
 
 const MONTHS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December"
+  t("January"),
+  t("February"),
+  t("March"),
+  t("April"),
+  t("May"),
+  t("June"),
+  t("July"),
+  t("August"),
+  t("September"),
+  t("October"),
+  t("November"),
+  t("December")
 ];
 
 function open(id: number): void {
@@ -150,7 +151,7 @@ function open(id: number): void {
   drawGraph();
 
   $("#alert").dialog({
-    title: `Average temperature in ${b.name}`,
+    title: t("Average temperature in {{- burg}}", { burg: b.name }),
     position: { my: "center", at: "center", of: "svg" }
   });
 
@@ -174,21 +175,21 @@ function open(id: number): void {
       .attr("x", legendTextX(1))
       .attr("y", legendY)
       .attr("alignment-baseline", "central")
-      .text("Day temperature");
+      .text(t("Day temperature"));
     legend.append("circle").attr("cx", legendX(2)).attr("cy", legendY).attr("r", 4).style("fill", "orange");
     legend
       .append("text")
       .attr("x", legendTextX(2))
       .attr("y", legendY)
       .attr("alignment-baseline", "central")
-      .text("Mean temperature");
+      .text(t("Mean temperature"));
     legend.append("circle").attr("cx", legendX(3)).attr("cy", legendY).attr("r", 4).style("fill", "blue");
     legend
       .append("text")
       .attr("x", legendTextX(3))
       .attr("y", legendY)
       .attr("alignment-baseline", "central")
-      .text("Night temperature");
+      .text(t("Night temperature"));
 
     const xGrid = axisBottom(xscale).tickSize(-chartHeight);
     const yGrid = axisLeft(yscale).ticks(5).tickSize(-chartWidth);
@@ -250,7 +251,10 @@ function open(id: number): void {
       const type = this.getAttribute("data-type");
       const temp = convertTemperature(yscale.invert(y - yOffset));
       const month = MONTHS[rn(((x - xOffset) / chartWidth) * 12)] || MONTHS[0];
-      tip(`Average ${type} temperature in ${month}: ${temp}`);
+      const values = { month, temp };
+      if (type === "day") tip(t("Average day temperature in {{month}}: {{temp}}", values));
+      else if (type === "night") tip(t("Average night temperature in {{month}}: {{temp}}", values));
+      else tip(t("Average mean temperature in {{month}}: {{temp}}", values));
     }
   }
 }

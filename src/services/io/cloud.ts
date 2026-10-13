@@ -10,6 +10,7 @@
 import { tip } from "@/components/tooltips";
 import { isElectron } from "@/services/platform";
 import { loadScript } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 
 export interface CloudFile {
   name: string;
@@ -114,7 +115,7 @@ const dropbox: DropboxProvider = {
   auth() {
     // Dropbox only redirects back to a registered https address, which the app:// origin can never be
     if (isElectron()) {
-      const message = "Dropbox is not available in the Desktop App, use the browser version to sync maps";
+      const message = t("Dropbox is not available in the Desktop App, use the browser version to sync maps");
       this.returnError(message);
       return Promise.reject(new Error(message));
     }
@@ -130,7 +131,7 @@ const dropbox: DropboxProvider = {
     );
 
     if (!this.authWindow) {
-      const message = "Dropbox sign-in window was blocked. Allow popups for this site and retry";
+      const message = sentences(t("Dropbox sign-in window was blocked"), t("Allow popups for this site and retry"));
       this.returnError(message);
       return Promise.reject(new Error(message));
     }

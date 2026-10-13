@@ -1,3 +1,4 @@
+import { t } from "@/utils/i18n";
 import { clearToken, getToken, signInAt } from "./auth";
 
 export const AZGAAR_SERVER_URL = "https://ask.azgaarsfmg.com";
@@ -80,7 +81,7 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
   }
 
   let code: AzgaarServerErrorCode = "provider_error";
-  let message = `The assistant returned an error (${response.status}).`;
+  let message = t("The assistant returned an error ({{status}}).", { status: response.status });
   let retryAfter: number | undefined;
   try {
     const body = await response.json();

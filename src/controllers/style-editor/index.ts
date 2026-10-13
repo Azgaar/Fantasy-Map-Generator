@@ -4,6 +4,7 @@ import type { z } from "zod";
 import { type LayerId, Layers } from "@/components/layers";
 import { openTab } from "@/components/options/options-panel";
 import { invokeActiveZooming } from "@/components/zoom";
+import { VIGNETTE_PRESET_LABELS } from "@/data/id-labels";
 import { layerLabel } from "@/data/layer-labels";
 import { VIGNETTE_PRESETS } from "@/data/vignette-presets";
 import { Styles } from "@/generators/styles";
@@ -12,6 +13,7 @@ import { applyVignetteOptions } from "@/renderers/draw-vignette";
 import { StylePresetsService } from "@/services/style-presets";
 import type { StyleElement, StyleSelection } from "@/types/styles";
 import { ensureEl, findEl } from "@/utils";
+import { t } from "@/utils/i18n";
 import { getPath } from "@/utils/objectUtils";
 import { Baseline } from "./baseline";
 import { CUSTOM_CONTROLS, fontSample, updateGridSizeReadout } from "./controls";
@@ -190,9 +192,9 @@ class StyleEditorController {
   private banner(layer: LayerId): HTMLElement {
     const banner = document.createElement("div");
     banner.className = "banner";
-    banner.append(`${layerLabel(layer)} layer is hidden. `);
+    banner.append(`${t("{{- layer}} layer is hidden.", { layer: layerLabel(layer) })} `);
     const link = document.createElement("a");
-    link.textContent = "Turn on";
+    link.textContent = t("Turn on");
     link.addEventListener("click", () => {
       Layers.show(layer);
       if (this.current) this.renderForm(this.current);
@@ -221,9 +223,8 @@ class StyleEditorController {
       const link = document.createElement("a");
       link.href = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Scale-and-distance#grids";
       link.target = "_blank";
-      link.innerHTML =
-        '<span data-tip="Open wiki article scale and distance to know about grid scale" class="icon-info-circled pointer"></span>';
-      const extra = this.extraRow("Cell size", "Distance between grid cell centers (in map scale)", output, link);
+      link.innerHTML = `<span data-tip="${t("Open wiki article scale and distance to know about grid scale")}" class="icon-info-circled pointer"></span>`;
+      const extra = this.extraRow(t("Cell size"), t("Distance between grid cell centers (in map scale)"), output, link);
       form.querySelector('[data-field="options.scale"]')?.after(extra);
       updateGridSizeReadout();
     }
@@ -231,7 +232,10 @@ class StyleEditorController {
     // not a field: assigns a ready-made look into the vignette and asks the editor to re-render
     if (sel.element === "vignette") {
       const select = document.createElement("select");
-      select.append(new Option("Select a preset…", ""), ...Object.keys(VIGNETTE_PRESETS).map(name => new Option(name)));
+      select.append(
+        new Option(t("Select a preset…"), ""),
+        ...Object.keys(VIGNETTE_PRESETS).map(name => new Option(VIGNETTE_PRESET_LABELS[name] ?? name, name))
+      );
       select.addEventListener("change", () => {
         const preset = VIGNETTE_PRESETS[select.value];
         if (!preset) return;
@@ -241,7 +245,7 @@ class StyleEditorController {
         applyVignetteOptions();
         this.renderForm(sel);
       });
-      const extra = this.extraRow("Preset", "Select a precreated vignette", select);
+      const extra = this.extraRow(t("Preset"), t("Select a precreated vignette"), select);
       extra.dataset.field = "preset";
       this.rootBody(form).prepend(extra);
     }
@@ -262,8 +266,8 @@ class StyleEditorController {
         invokeActiveZooming();
       });
       const extra = this.extraRow(
-        "Show all",
-        "Show emblem groups even if their size is too small or too big at the current scale",
+        t("Show all"),
+        t("Show emblem groups even if their size is too small or too big at the current scale"),
         checkbox
       );
       extra.dataset.field = "showAll";
@@ -396,7 +400,7 @@ class FormDecoration {
     if (!button || !diff) return;
     const value = diff.presetValue;
     const text = value == null ? "unset" : typeof value === "object" ? JSON.stringify(value) : String(value);
-    button.dataset.tip = `Reset to preset value: ${text}`;
+    button.dataset.tip = t("Reset to preset value: {{value}}", { value: text });
   }
 
   private updatePreviews(): void {

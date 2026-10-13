@@ -5,6 +5,7 @@ import { Layers } from "@/components/layers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import type { Marker } from "@/generators/markers-generator";
 import { ensureEl, findEl, rn } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 
 function toggle(baseMarker?: Marker): void {
   if (findEl("addMarker")?.classList.contains("pressed")) {
@@ -16,7 +17,7 @@ function toggle(baseMarker?: Marker): void {
   toggleMapPlacement(
     "addMarker",
     event => addOnClick(event, baseMarker),
-    "Click on map to add a marker. Hold Shift to add multiple",
+    sentences(t("Click on map to place a marker"), t("Hold Shift to add multiple")),
     undefined,
     unpressProxyButtons
   );

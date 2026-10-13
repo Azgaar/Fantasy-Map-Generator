@@ -3,6 +3,7 @@ import { z } from "zod";
 import { Icons } from "@/components/icons";
 import type { LayerId } from "@/components/layers";
 import { MAX_DENSITY, MIN_DENSITY } from "@/data/graph-density";
+import { LANGUAGE_CODES } from "@/data/languages";
 import { CULTURE_SETS } from "@/generators/cultures-generator";
 import { count, degrees, hexColor, ids, nonNegative, percent, positive, ratio } from "@/utils/schemaUtils";
 
@@ -215,6 +216,7 @@ export const optionsSchema = z.strictObject({
       viewportRedraw: z.enum(["continuous", "settled"])
     }),
     onLoad: z.enum(["random", "lastSaved"]), // what the app does with no map asked for
+    language: z.union([z.literal(""), z.enum(LANGUAGE_CODES)]), // the interface language, "" follows the browser
     zoomExtent: z.strictObject({ min: positive, max: positive }).refine(({ min, max }) => min <= max, {
       message: "zoomExtent.min must not exceed max"
     }),

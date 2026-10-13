@@ -19,6 +19,7 @@ import type { State } from "@/generators/states-generator";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { removeRelationsMark, showRelations } from "@/renderers/overlays/diplomacy";
 import { downloadFile, getFileName } from "@/utils";
+import { t } from "@/utils/i18n";
 import { ensureEl, findEl, getPointer } from "../utils";
 
 const dialogId = "diplomacyOverview" as const;
@@ -27,7 +28,7 @@ const position = { my: "right top", at: "right-10 top+10", of: "svg", collision:
 const columns: EditorColumn<State>[] = [
   {
     key: "name",
-    label: "State",
+    label: t("State"),
     width: "15em",
     permanent: true,
     sortBy: state => state.fullName || state.name,
@@ -35,8 +36,8 @@ const columns: EditorColumn<State>[] = [
   },
   {
     key: "relations",
-    label: "Relations",
-    width: "7em",
+    label: t("Relations"),
+    width: "7.5em",
     permanent: true,
     sortBy: state => state.diplomacy?.[selectedDiplomacyId] ?? "",
     sortType: "alpha"
@@ -59,7 +60,7 @@ const isEditing = (): boolean => Boolean(findEl("diplomacyEditor"));
 function open(): void {
   if (customization) return;
   if (pack.states.filter(s => s.i && !s.removed).length < 2) {
-    tip("There should be at least 2 states to edit the diplomacy", false, "error");
+    tip(t("There should be at least 2 states to edit the diplomacy"), false, "error");
     return;
   }
   if (!selectedDiplomacyId || !pack.states[selectedDiplomacyId] || pack.states[selectedDiplomacyId].removed) {
@@ -75,7 +76,7 @@ function open(): void {
   attachMapSelection();
 
   $(`#${dialogId}`).dialog({
-    title: "Diplomacy Overview",
+    title: t("Diplomacy Overview"),
     resizable: false,
     width: "fit-content",
     close: closeDiplomacyOverview,
@@ -88,20 +89,20 @@ function renderDialog(): void {
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
       ${renderEditorHeader({ dialogId, columns })}
       <div id="diplomacyBodySection" class="table"></div>
-      <div id="diplomacyFooter" class="totalLine"><div>States: <span id="diplomacyFooterStates">0</span></div></div>
+      <div id="diplomacyFooter" class="totalLine"><div>${t("States")}: <span id="diplomacyFooterStates">0</span></div></div>
       <div id="diplomacyBottom" class="editorToolbar">
-        <button id="diplomacyOverviewRefresh" data-tip="Refresh the Overview" class="icon-cw"></button>
+        <button id="diplomacyOverviewRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
         <button
           id="diplomacyEditRelations"
-          data-tip="Change relations: click or drag over states on the map"
+          data-tip="${t("Change relations: click or drag over states on the map")}"
           class="icon-brush"
         ></button>
-        <button id="diplomacyRegenerate" data-tip="Regenerate diplomatical relations" class="icon-retweet"></button>
-        <button id="diplomacyHistory" data-tip="Show relations history" class="icon-hourglass-1"></button>
-        <button id="diplomacyShowMatrix" data-tip="Show relations matrix" class="icon-list-bullet"></button>
+        <button id="diplomacyRegenerate" data-tip="${t("Regenerate diplomatical relations")}" class="icon-retweet"></button>
+        <button id="diplomacyHistory" data-tip="${t("Relations history")}" class="icon-hourglass-1"></button>
+        <button id="diplomacyShowMatrix" data-tip="${t("Show relations matrix")}" class="icon-list-bullet"></button>
         <button
           id="diplomacyExport"
-          data-tip="Save state relations matrix as a text file (.csv)"
+          data-tip="${t("Save data as a CSV file")}"
           class="icon-download"
         ></button>
       </div>
@@ -159,7 +160,7 @@ function renderDiplomacyPage(view: TableView<State>): void {
   const selectedName = states[selectedId].name;
 
   EmblemRenderer.trigger(`stateCOA${selectedId}`, states[selectedId].coa);
-  let lines = /* html */ `<div class="states Self" data-id=${selectedId} data-tip="List below shows relations to ${selectedName}">
+  let lines = /* html */ `<div class="states Self" data-id=${selectedId} data-tip="${t("List below shows relations to {{state}}", { state: selectedName })}">
     <div data-col="name"><svg class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${selectedId}"></use></svg><span>${states[selectedId].fullName}</span></div>
     <div data-col="relations"></div>
   </div>`;
@@ -167,10 +168,16 @@ function renderDiplomacyPage(view: TableView<State>): void {
   for (const state of view.rows) {
     const storedRelation = state.diplomacy?.[selectedId] ?? "x";
     const relation = isRelation(storedRelation) ? storedRelation : "Invalid";
-    const { color, inText } = RELATIONS[relation] ?? { color: "#a9a9a9", inText: "has an invalid relation to" };
-
-    const tipText = `${state.name} ${inText} ${selectedName}`;
-    const tipSelect = `${tipText}. Click to see relations to ${state.name}`;
+    const known = RELATIONS[relation];
+    const color = known?.color ?? "#a9a9a9";
+    const label = known?.label ?? t("Invalid");
+    const tipText = known
+      ? known.describe(state.name, selectedName)
+      : t("{{subject}} has an invalid relation to {{object}}", { subject: state.name, object: selectedName });
+    const tipSelect = t("{{- relation}}. Click to see relations to {{state}}", {
+      relation: tipText,
+      state: state.name
+    });
 
     const name = state.fullName!.length < 23 ? state.fullName : state.name;
     EmblemRenderer.trigger(`stateCOA${state.i}`, state.coa);
@@ -179,7 +186,7 @@ function renderDiplomacyPage(view: TableView<State>): void {
       <div data-col="name" data-tip="${tipSelect}"><svg class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${state.i}"></use></svg><span>${name}</span></div>
       <div data-col="relations" data-tip="${tipText}">
         <fill-box fill="${color}" size=".9em"></fill-box>
-        ${relation}
+        ${label}
       </div>
     </div>`;
   }
@@ -247,9 +254,9 @@ function selectState(stateId: number): void {
 
 function regenerateRelations(): void {
   confirmationDialog({
-    title: "Regenerate relations",
-    message: "Are you sure you want to regenerate relations of all states? <br>This action cannot be reverted",
-    confirm: "Regenerate",
+    title: t("Regenerate relations"),
+    message: `${t("Are you sure you want to regenerate relations of all states?")}<br>${t("This action cannot be reverted")}`,
+    confirm: t("Regenerate"),
     onConfirm: async () => {
       if (isEditing()) await Controllers.DiplomacyEditor.close();
       States.generateDiplomacy();
@@ -273,28 +280,28 @@ function showHistory(): void {
 
   if (!chronicle.length) {
     pack.states[0].diplomacy = [[]] as unknown as string[];
-    message += /* html */ `<div><div contenteditable="true" data-id="0-0">No historical records</div>&#8205;</div>`;
+    message += /* html */ `<div><div contenteditable="true" data-id="0-0">${t("No historical records")}</div>&#8205;</div>`;
   }
 
-  alertMessage.innerHTML = `${message}</div><div class="info-line">Type to edit. Press Enter to add a new line, empty the element to remove it</div>`;
+  alertMessage.innerHTML = `${message}</div><div class="info-line">${t("Type to edit. Press Enter to add a new line, empty the element to remove it")}</div>`;
   alertMessage.querySelectorAll("div[contenteditable='true']").forEach(el => {
     el.addEventListener("input", changeReliationsHistory);
   });
 
   $("#alert").dialog({
-    title: "Relations history",
+    title: t("Relations history"),
     position: { my: "center", at: "center", of: "svg" },
     buttons: {
-      Save: function (this: HTMLElement) {
+      [t("Save")]: function (this: HTMLElement) {
         const data = this.querySelector("div")!.innerText.split("\n").join("\r\n");
         const name = `${getFileName("Relations history")}.txt`;
         downloadFile(data, name);
       },
-      Clear: function (this: HTMLElement) {
+      [t("Clear")]: function (this: HTMLElement) {
         pack.states[0].diplomacy = [] as unknown as string[];
         $(this).dialog("close");
       },
-      Close: function (this: HTMLElement) {
+      [t("Close")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
@@ -316,19 +323,19 @@ function showMatrix(): void {
   const diplomacyMatrixBody = ensureEl("diplomacyMatrixBody");
 
   let table = `<table><thead><tr><th data-tip='&#8205;'></th>`;
-  table += `${states.map(state => `<th data-tip='Relations to ${state.fullName}'>${state.name}</th>`).join("")}</tr>`;
+  table += `${states.map(state => `<th data-tip="${t("Relations to {{state}}", { state: state.fullName })}">${state.name}</th>`).join("")}</tr>`;
   table += `<tbody>`;
 
   states.forEach(state => {
-    table += `<tr data-id=${state.i}><th data-tip='Relations of ${state.fullName}'>${state.name}</th>${states
+    table += `<tr data-id=${state.i}><th data-tip="${t("Relations of {{state}}", { state: state.fullName })}">${state.name}</th>${states
       .map(objectState => {
         if (state.i === objectState.i) return `<td class="x">x</td>`;
         const relation = state.diplomacy?.[objectState.i] ?? "x";
         if (!isRelation(relation)) {
-          return `<td data-tip="Invalid relation" class="Unknown">Invalid</td>`;
+          return `<td data-tip="${t("Invalid relation")}" class="Unknown">${t("Invalid")}</td>`;
         }
-        const t = `${state.fullName} ${RELATIONS[relation].inText} ${objectState.fullName}`;
-        return `<td data-tip='${t}' class='${relation}'>${relation}</td>`;
+        const { describe, label } = RELATIONS[relation];
+        return `<td data-tip="${describe(state.fullName!, objectState.fullName!)}" class="${relation}">${label}</td>`;
       })
       .join("")}</tr>`;
   });
@@ -337,7 +344,7 @@ function showMatrix(): void {
   diplomacyMatrixBody.innerHTML = table;
 
   $("#diplomacyMatrix").dialog({
-    title: "Relations matrix",
+    title: t("Relations matrix"),
     position: { my: "center", at: "center", of: "svg" },
     close: closeDiplomacyMatrix,
     buttons: {}

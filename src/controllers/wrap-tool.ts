@@ -6,6 +6,7 @@ import { GraphOverride } from "@/generators/graph-override";
 import { drawMesh, removeMesh } from "@/renderers/overlays/vertex-mesh";
 import type { Point } from "@/types/global";
 import { ensureEl } from "@/utils";
+import { t } from "@/utils/i18n";
 import { findVertices, VertexBrush } from "./vertex-brush";
 
 type Edit = { before: Map<number, Point>; after: Map<number, Point> };
@@ -27,7 +28,7 @@ function open(): void {
   customization = 18;
   brush = new MapBrush({
     id: "wrapRadius",
-    label: "Radius:",
+    label: `${t("Radius")}:`,
     radius,
     min: 1,
     max: 100,
@@ -50,7 +51,7 @@ function open(): void {
   render();
   addListeners();
   brush.attach();
-  tip("Wrap tool: drag to reshape cells, Shift + drag to resize the brush, Space + drag to pan the map", true);
+  tip(t("Wrap tool: drag to reshape cells, Shift + drag to resize the brush, Space + drag to pan the map"), true);
   updateControls();
 }
 
@@ -58,20 +59,20 @@ function render(): void {
   ensureEl("dialogs").insertAdjacentHTML(
     "beforeend",
     /* html */ `<div id="wrapTool" class="dialog">
-    <div style="max-width: 22em">Use for <strong>small shape adjustments only</strong>. Use the Heightmap Editor for significant changes.</div>
+    <div style="max-width: 22em">${t("Use for small shape adjustments only. Use the Heightmap Editor for significant changes.")}</div>
     <div style="margin-top: 0.5em">${brush?.markup ?? ""}</div>
     <div id="wrapBottom" style="margin-top: 0.4em">
-      <button id="wrapUndo" data-tip="Undo the last stroke (Ctrl + Z)" class="icon-ccw" disabled></button>
-      <button id="wrapRedo" data-tip="Redo the stroke (Ctrl + Y)" class="icon-cw" disabled></button>
-      <button id="wrapApply" data-tip="Apply the changes and keep editing" class="icon-check" disabled></button>
-      <button id="wrapReset" data-tip="Drop the edits made in this session and its history" class="icon-eraser" disabled></button>
-      <button id="wrapRevert" data-tip="Revert all vertex edits ever made on this map" class="icon-trash-empty"></button>
+      <button id="wrapUndo" data-tip="${t("Undo the latest action (Ctrl + Z)")}" class="icon-ccw" disabled></button>
+      <button id="wrapRedo" data-tip="${t("Redo the action (Ctrl + Y)")}" class="icon-cw" disabled></button>
+      <button id="wrapApply" data-tip="${t("Apply the changes and keep editing")}" class="icon-check" disabled></button>
+      <button id="wrapReset" data-tip="${t("Drop the edits made in this session and its history")}" class="icon-eraser" disabled></button>
+      <button id="wrapRevert" data-tip="${t("Revert all vertex edits ever made on this map")}" class="icon-trash-empty"></button>
     </div>
   </div>`
   );
 
   $("#wrapTool").dialog({
-    title: "Wrap Tool",
+    title: t("Wrap Tool"),
     resizable: false,
     width: "auto",
     closeOnEscape: false,
@@ -168,10 +169,11 @@ function applyEdits(): void {
 function revert(): void {
   abortStroke();
   confirmationDialog({
-    title: "Revert vertex edits",
-    message: `All vertex edits made on this map, including the ones made in earlier sessions,
-      will be reverted. The action cannot be undone`,
-    confirm: "Revert",
+    title: t("Revert vertex edits"),
+    message: t(
+      "All vertex edits made on this map, including the ones made in earlier sessions, will be reverted. The action cannot be undone"
+    ),
+    confirm: t("Revert"),
     onConfirm: () => {
       if (source !== pack.vertices) return;
       GraphOverride.revert();
@@ -245,9 +247,9 @@ function confirmClose(): boolean {
   abortStroke();
   if (closeConfirmed || source !== pack.vertices || !restorable().size) return true;
   confirmationDialog({
-    title: "Discard edits",
-    message: "The edits not applied yet will be discarded. Apply them first to keep them",
-    confirm: "Discard",
+    title: t("Discard edits"),
+    message: t("The edits not applied yet will be discarded. Apply them first to keep them"),
+    confirm: t("Discard"),
     onConfirm: () => {
       closeConfirmed = true;
       close();

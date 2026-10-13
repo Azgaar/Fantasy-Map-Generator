@@ -92,7 +92,7 @@ describe("custom presets", () => {
     expect(StylePresetsService.listCustom().sort()).toEqual([name, "fmgStyle_old"]);
     expect(StylePresetsService.displayName(name)).toBe("mine [custom]");
     expect(StylePresetsService.displayName("fmgStyle_old")).toBe("old [custom]");
-    expect(StylePresetsService.displayName("ink")).toBe("ink");
+    expect(StylePresetsService.displayName("ink")).toBe("Ink");
     StylePresetsService.removeCustom(name);
     expect(StylePresetsService.listCustom()).toEqual(["fmgStyle_old"]);
   });
