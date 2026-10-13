@@ -14,10 +14,11 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 
 **[1.155.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.155.0) - 2026-10-24**:
 
-- Interface translations: 22 languages besides English.
+- Interface translations: 29 languages besides English.
 - The Google Translate widget removed
-- Population layer: shading land by population density by _[inviktos](https://github.com/inviktos)_
-- Altitude legend: heightmap colors by _[Avengium](https://github.com/Avengium)_
+- Population layer: Cells style, shading land by population density, darker for denser cells by _[inviktos](https://github.com/inviktos)_
+- Altitude legend: heightmap colors in round height and depth bands, toggled in the Units editor by _[Avengium](https://github.com/Avengium)_
+- Rulers style: line and dash colors and a toggle to hide the measured values by _[Avengium](https://github.com/Avengium)_
 
 # Releases
 

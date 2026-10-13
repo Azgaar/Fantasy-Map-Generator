@@ -763,7 +763,31 @@ export const stylesSchema = z.strictObject({
   }),
   rulers: z.strictObject({
     attrs: meta(
-      z.strictObject({ opacity, ...dashGroup, "font-size": variant(fontSizePx, { group: t("Label") }), filter }),
+      z.strictObject({
+        opacity,
+        ...dashGroup,
+        // inherited by the measurer lines: the dashes take the stroke, the solid line under them the color
+        stroke: solidColor({
+          group: t("Stroke"),
+          label: t("Dash color"),
+          tip: t("Set the dash color"),
+          effect: "write"
+        }),
+        color: solidColor({
+          group: t("Stroke"),
+          label: t("Line color"),
+          tip: t("Set the color of the solid line under the dashes"),
+          effect: "write"
+        }),
+        "data-labels": flag({
+          group: t("Label"),
+          label: t("Show"),
+          tip: t("Show the measured values"),
+          effect: "write"
+        }),
+        "font-size": variant(fontSizePx, { group: t("Label") }),
+        filter
+      }),
       { effect: "draw" }
     )
   }),

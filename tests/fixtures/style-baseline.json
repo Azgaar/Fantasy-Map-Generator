@@ -249,6 +249,7 @@
     "stroke-linecap": "round"
   },
   "#ruler": {
+    "stroke": "#3d3d3d",
     "font-size": "20px",
     "style": "display: none;"
   },
