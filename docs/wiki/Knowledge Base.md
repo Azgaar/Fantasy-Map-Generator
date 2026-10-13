@@ -828,6 +828,10 @@ Use the Layers preset select at the top of the Layers tab: Political, Cultural, 
 
 Yes, press Space (or click Search at the bottom of the menu) to open the Omnibar. Search names and notes for states, provinces, burgs, cultures, religions, biomes, goods, rivers, routes, markers, features, zones, journeys, markets, regiments and labels. Select a result to open its editor; labels and entities without an editor are located and highlighted on the map. Start a query with > to show commands only. Arrow keys select, Enter runs the result, and Escape closes the search. The last ten commands are remembered between sessions. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Omnibar
 
+### What does right-click on the map do? How do I reach something hidden under another element?
+
+Right-click a spot to open the map context menu. It lists everything at that spot across all layers: what is drawn there first (the element a click would open on top, including emblems, relief icons, ice, goods and measurers), then the burg, river, routes, markers, zones, journeys and regiments of the cell, its resource and the goods its burg produces, and the feature, market, province, state, culture, religion and biome it belongs to. Click a row to open its editor, as a click on the map would; entities without an editor are shown on the map instead. Rows on hidden layers are dimmed: clicking one turns its layer on and shows the entity on the map. With your own AI key or a local model connected, What's there? asks the Assistant about the place. Shift + right-click opens the browser's own menu. The menu doesn't open while a customization mode such as heightmap editing or annexing is active. In the Journey path editor, undo a drawn point with Backspace and remove a control point by double-clicking it
+
 ### Is there a minimap?
 
 Yes, Tools -> Show -> Minimap. It displays the whole map with the current viewport marked, click anywhere on the minimap to center the view there

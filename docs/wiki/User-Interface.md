@@ -91,6 +91,8 @@ In general, whoever wants to generate a map with fixed characteristics, he shoul
 
 The map, that can be presented in several view mode.
 
+Click an element on the map to open its editor. Right-click a spot to open the context menu: it lists everything at that spot across all layers — what is drawn there first (emblems, relief icons, ice, goods and measurers included), then what the cell holds (burg, river, routes, markers, zones, journeys, regiments, its resource and the goods its burg produces) and the areas it belongs to (feature, market, province, state, culture, religion, biome). Click a row to open its editor or, for an entity without one, to show it on the map. Rows on hidden layers are dimmed; clicking one turns its layer on and shows the entity. With your own AI key or a local model connected, **What's there?** asks the [Assistant](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Assistant) about the place. Shift + right-click opens the browser's own menu. The menu doesn't open in customization modes such as heightmap editing or annexing.
+
 ### Bottom label tooltip
 
 When moving over a certain element (on the map or in the windows), a description of it will appear below.

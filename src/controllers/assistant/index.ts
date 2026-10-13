@@ -58,6 +58,7 @@ let abort: AbortController | null = null;
 let limits: Limits | null = null;
 let notice: Notice | null = null;
 let initialized = false;
+let ready: Promise<void> | undefined; // the first initialize(), which a question asked from outside waits for
 let openMap = 0; // the map id last seen: reloading the same map keeps the selected chat
 let observedTier: Tier | null = null; // null when no answerer is available
 let noteLabel: string | null = null;
@@ -118,7 +119,7 @@ function build(): void {
     close: closeAssistant
   });
   addChatsButton();
-  void initialize();
+  ready = initialize();
 }
 
 function closeAssistant(): void {
@@ -884,6 +885,26 @@ async function send(): Promise<void> {
   }
 }
 
+/** Ask a question from elsewhere in the app, keeping the user's draft; while answering it waits in an empty input */
+async function ask(question: string): Promise<void> {
+  open();
+  await ready;
+  if (!writable(chat)) startChat();
+  else if (view !== "chat") showView("chat");
+  const input = el<HTMLTextAreaElement>("assistantQuestion");
+  const draft = input.value;
+  if (busy) {
+    if (!draft.trim()) input.value = question;
+    fitInput(input);
+  } else {
+    input.value = question;
+    const sending = send(); // takes the question from the input at once
+    input.value = draft;
+    fitInput(input);
+    await sending;
+  }
+}
+
 /** Ask the failed question again; a failure before any step leaves nothing of it behind */
 function resend(owner: Chat, question: string, images: string[], from: number): void {
   if (busy || chat !== owner) return;
@@ -967,4 +988,4 @@ function normalizeQuestion(raw: string): string | null {
   return question && question.length <= MAX_QUESTION_LENGTH ? question : null;
 }
 
-export const Assistant = { open, toggle };
+export const Assistant = { open, toggle, ask };
