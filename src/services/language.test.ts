@@ -26,11 +26,14 @@ describe("resolveLanguage", () => {
     expect(resolveLanguage(undefined)).toBe("pt");
   });
 
-  it("reduces a regional variant to its base language only when the variant isn't shipped", () => {
+  it("keeps the Traditional Chinese catalog for zh-TW and reduces other regional variants to their base language", () => {
     browserLanguages(["pt-br"]);
     expect(resolveLanguage(undefined)).toBe("pt-BR");
 
     browserLanguages(["zh-TW"]);
+    expect(resolveLanguage(undefined)).toBe("zh-TW");
+
+    browserLanguages(["zh-HK"]);
     expect(resolveLanguage(undefined)).toBe("zh");
 
     browserLanguages(["de-AT", "ru"]);

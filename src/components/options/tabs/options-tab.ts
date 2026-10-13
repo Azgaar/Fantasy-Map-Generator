@@ -192,6 +192,12 @@ function option<T extends string | number>(definition: OptionDefinition<T>): Opt
   };
 }
 
+const collator = new Intl.Collator();
+/** English first, then the rest by their own name */
+const LANGUAGE_OPTIONS = Object.entries(LANGUAGES).sort(([a, x], [b, y]) =>
+  a === "en" ? -1 : b === "en" ? 1 : collator.compare(x, y)
+);
+
 const TEMPLATE = /* html */ `
   <p data-tip="${t("Settings for the next map. Generate a new map to apply them")}">
     ${t("Map settings (apply to new maps)")}:
@@ -369,6 +375,18 @@ const TEMPLATE = /* html */ `
     ${t("Interface settings")}:
   </p>
   <table>
+    <tr data-tip="${t("Select the interface language. It applies after a reload")}">
+      <td></td>
+      <td>${t("Language")}</td>
+      <td>
+        <select id="interfaceLanguage">
+          ${LANGUAGE_OPTIONS.map(
+            ([code, name]) => `<option value="${code}" ${code === Catalog.language ? "selected" : ""}>${name}</option>`
+          ).join("")}
+        </select>
+      </td>
+      <td></td>
+    </tr>
     <tr
       data-tip="${t("Set user interface size. Please note browser zoom also affects interface size (Ctrl + or Ctrl - to change)")}"
     >
@@ -604,21 +622,6 @@ const TEMPLATE = /* html */ `
           class="icon-hand-paper-o"
         ></i>
       </td>
-    </tr>
-    <tr data-tip="${t("Select the interface language. It applies after a reload")}">
-      <td></td>
-      <td>${t("Language")}</td>
-      <td>
-        <select id="interfaceLanguage">
-          ${Object.entries(LANGUAGES)
-            .map(
-              ([code, name]) =>
-                `<option value="${code}" ${code === Catalog.language ? "selected" : ""}>${name}</option>`
-            )
-            .join("")}
-        </select>
-      </td>
-      <td></td>
     </tr>
   </table>
   <div>

@@ -107,7 +107,7 @@ Right-to-left languages remain out of scope until the layout supports them.
 GA4 active users by browser language, 11 Sep – 8 Oct 2026: 189,316 users, of them 133,050 English
 (70.3%, 44% engaged). A user who switches browser language is counted once per language, so rows sum
 above the total; non-English shares use the sum of named non-English rows (56,241) and leave out
-GA4's 382 `(other)` users. The shipped catalogs cover 94.8% of non-English users and 98.5% of all
+GA4's 382 `(other)` users. The shipped catalogs cover 95.9% of non-English users and 98.8% of all
 users, which is the bar the Google Translate widget was retired against.
 
 _Share_ is of all users, _Engaged_ is GA4's engagement rate, ✓ marks a shipped catalog. Languages
@@ -120,7 +120,7 @@ under 25 users are left out.
 | Portuguese       | 6,569 |  3.5% |       11.7% |      41.0% |     40% | ✓ `pt`, `pt-BR` |
 | French           | 5,460 |  2.9% |        9.7% |      50.7% |     39% | ✓ `fr`          |
 | German           | 4,778 |  2.5% |        8.5% |      59.2% |     40% | ✓ `de`          |
-| Chinese          | 3,561 |  1.9% |        6.3% |      65.6% |     43% | ✓ `zh`          |
+| Chinese          | 3,561 |  1.9% |        6.3% |      65.6% |     43% | ✓ `zh`, `zh-TW` |
 | Italian          | 3,279 |  1.7% |        5.8% |      71.4% |     41% | ✓ `it`          |
 | Polish           | 2,134 |  1.1% |        3.8% |      75.2% |     36% | ✓ `pl`          |
 | Turkish          | 2,091 |  1.1% |        3.7% |      78.9% |     45% | ✓ `tr`          |
@@ -136,17 +136,17 @@ under 25 users are left out.
 | Vietnamese       |   439 |  0.2% |        0.8% |      94.1% |     44% | ✓ `vi`          |
 | Danish           |   429 |  0.2% |        0.8% |      94.8% |     38% | ✓ `da`          |
 | Arabic           |   371 |  0.2% |        0.7% |      95.5% |     52% |                 |
-| Greek            |   317 |  0.2% |        0.6% |      96.1% |     48% |                 |
+| Greek            |   317 |  0.2% |        0.6% |      96.1% |     48% | ✓ `el`          |
 | Finnish          |   292 |  0.2% |        0.5% |      96.6% |     42% |                 |
 | Norwegian Bokmål |   276 |  0.1% |        0.5% |      97.1% |     36% |                 |
 | Slovak           |   236 |  0.1% |        0.4% |      97.5% |     36% |                 |
-| Romanian         |   217 |  0.1% |        0.4% |      97.9% |     46% |                 |
+| Romanian         |   217 |  0.1% |        0.4% |      97.9% |     46% | ✓ `ro`          |
 | Hebrew           |   192 |  0.1% |        0.3% |      98.2% |     47% |                 |
 | Catalan          |   152 |  0.1% |        0.3% |      98.5% |     41% |                 |
 | Croatian         |   149 |  0.1% |        0.3% |      98.7% |     43% |                 |
 | Serbian          |   124 |  0.1% |        0.2% |      99.0% |     44% |                 |
 | Persian          |   113 |  0.1% |        0.2% |      99.2% |     54% |                 |
-| Bulgarian        |    94 |  0.0% |        0.2% |      99.3% |     45% |                 |
+| Bulgarian        |    94 |  0.0% |        0.2% |      99.3% |     45% | ✓ `bg`          |
 | Slovenian        |    41 |  0.0% |        0.1% |      99.4% |     37% |                 |
 | Lithuanian       |    39 |  0.0% |        0.1% |      99.5% |     50% |                 |
 | Estonian         |    37 |  0.0% |        0.1% |      99.5% |     30% |                 |
@@ -158,10 +158,10 @@ under 25 users are left out.
 
 The remaining 38 languages have 111 users together. Afrikaans (`af`) ships with 4 users.
 
-Next candidates by size are Arabic, Greek, Finnish, Norwegian Bokmål and Slovak; each is under 0.7%
-of non-English users. The right-to-left ones (Arabic, Hebrew, Persian) add 1.2% together and wait
-for right-to-left layout. Norwegian is reported as Bokmål (276), Nynorsk (5) and plain Norwegian (1),
-so `nb` alone would cover it. GA4 reports Chinese without the script; its region split decides
+Next candidates by size are Arabic, Finnish, Norwegian Bokmål and Slovak; each is under 0.7%
+of non-English users. Belarusian, Bengali and Hindi also ship; they fall below the table's cut-off.
+The right-to-left ones (Arabic, Hebrew, Persian) add 1.2% together and wait for right-to-left layout. Norwegian is reported as Bokmål (276), Nynorsk (5) and plain Norwegian
+(1), so `nb` alone would cover it. GA4 reports Chinese without the script; its region split decides
 whether Traditional Chinese is worth a regional variant.
 
 ## Implementation Decisions

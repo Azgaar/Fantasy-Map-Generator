@@ -15,14 +15,21 @@ export const LANGUAGES = {
   ja: "日本語",
   uk: "Українська",
   zh: "简体中文",
+  "zh-TW": "繁體中文",
   tr: "Türkçe",
   ko: "한국어",
   cs: "Čeština",
   hu: "Magyar",
   sv: "Svenska",
   da: "Dansk",
+  ro: "Română",
   vi: "Tiếng Việt",
-  th: "ไทย"
+  th: "ไทย",
+  el: "Ελληνικά",
+  bg: "Български",
+  hi: "हिन्दी",
+  bn: "বাংলা",
+  be: "Беларуская"
 } as const;
 
 export type Language = keyof typeof LANGUAGES;
