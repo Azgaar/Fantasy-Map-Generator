@@ -924,7 +924,11 @@ describe("Military", () => {
       cells: { p: [[5, 6]], h: [30] }
     });
     vi.stubGlobal("options", {
-      map: { military: { units: [{ name: "infantry" }, { name: "archers" }] }, graph: { width: 100, height: 100 } }
+      map: {
+        military: { units: [{ name: "infantry" }, { name: "archers" }] },
+        graph: { width: 100, height: 100 },
+        lore: { calendar: { year: 1200, eraShort: "AE" } }
+      }
     });
     vi.stubGlobal("styles", { military: { options: { boxSize: 3 } } });
     vi.spyOn(Military, "getName").mockReturnValue("New");
@@ -963,6 +967,16 @@ describe("Military", () => {
     expect(pack.states[2].military![0]).toMatchObject({ u: { infantry: 4, archers: 2 }, a: 6 });
     expect(pack.states[1].military!.some(({ i }) => i === 0)).toBe(false);
     expect(() => Military.rotate(1, id, 270)).toThrow("from -180 to 180");
+  });
+
+  it("keeps the attached regiment's note in the target's", () => {
+    pack.states[1].military![0].name = "First";
+    pack.states[1].military![0].note = "Formed in 1100 AE.";
+    pack.states[2].military![0].note = "Formed in 1150 AE.";
+    Military.attach(1, 0, 2, 0);
+    expect(pack.states[2].military![0].note).toBe(
+      "Formed in 1150 AE.<br><br>First merged into the regiment (1200 AE). Its record: Formed in 1100 AE."
+    );
   });
 });
 
