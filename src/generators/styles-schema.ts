@@ -677,8 +677,8 @@ export const stylesSchema = z.strictObject({
           tip: "Set the color of the solid line under the dashes",
           effect: "write"
         }),
+        "data-labels": flag({ group: "Label", label: "Show", tip: "Show the measured values", effect: "write" }),
         "font-size": variant(fontSizePx, { group: "Label" }),
-        "data-labels": flag({ group: "Label", label: "Show labels", tip: "Show the measured values", effect: "write" }),
         filter
       }),
       { effect: "draw" }
