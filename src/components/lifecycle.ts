@@ -50,17 +50,29 @@ export async function boot(): Promise<void> {
   initiateAutosave();
 }
 
-export type GenerationConfig = { seed?: string; graph?: GridGraph; width?: number; height?: number; points?: number };
+export type GenerationConfig = {
+  seed?: string;
+  graph?: GridGraph;
+  width?: number;
+  height?: number;
+  points?: number;
+  jitter?: number;
+};
 
 /** Generate a whole new world */
 export async function generate(config?: GenerationConfig): Promise<void> {
   try {
-    const { seed: precreatedSeed, graph: precreatedGraph, width, height, points } = config || {};
+    const { seed: precreatedSeed, graph: precreatedGraph, width, height, points, jitter } = config || {};
     Options.setGraphSize(width, height);
     setSeed(precreatedSeed);
     Options.randomize();
     Icons.syncCustom(); // the carried-over custom icons, and the stored ones at startup
-    if (precreatedGraph && points !== undefined) options.map.graph.points = points;
+    if (precreatedGraph) {
+      // the map is built on the given graph, whatever the settings ask for meanwhile
+      if (points !== undefined) options.map.graph.points = points;
+      if (jitter !== undefined) options.map.graph.jitter = jitter;
+      options.map.graph.sampling = precreatedGraph.sampling;
+    }
     applyGraphSize(); // TODO: DOM change, not part of generation
 
     await GenerationPipeline.run({ graph: precreatedGraph });

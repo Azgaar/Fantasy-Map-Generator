@@ -2207,12 +2207,21 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
       data[1] = JSON.stringify(settings);
     }
   }
+  if (compareVersions(mapVersion, "1.155.0").isOlder && data[1]?.trimStart().startsWith("{")) {
+    const settings = safeParseJSON(data[1]);
+    if (settings?.graph) {
+      // v1.155.0 added grid samplings, older maps sit on the jittered square lattice
+      settings.graph.sampling ??= "square";
+      settings.graph.jitter ??= 0.9;
+      data[1] = JSON.stringify(settings);
+    }
+  }
   if (!compareVersions(mapVersion, "1.152.0").isOlder || data[1]?.trimStart().startsWith("{")) return;
 
   // v1.152.0 replaced the legacy pipe-delimited settings string with the map's settings object
   const migrated = {
     seed: "",
-    graph: { width: 1280, height: 800, points: 10000 },
+    graph: { width: 1280, height: 800, points: 10000, sampling: "square", jitter: 0.9 },
     geography: {
       mapSize: 100,
       latitude: 50,

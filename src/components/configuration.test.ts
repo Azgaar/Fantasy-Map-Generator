@@ -75,7 +75,7 @@ describe("a file describes its map", () => {
   it("round-trips: load, save, load again is a fixed point", () => {
     const file = savedFile(map => {
       map.seed = "12345";
-      map.graph = { width: 1600, height: 900, points: 20000 };
+      map.graph = { width: 1600, height: 900, points: 20000, sampling: "square", jitter: 0.9 };
       map.lore.name = "Narnia";
       map.military.units = [UNIT];
       map.units.distance = { unit: "leagues", scale: 5 };
@@ -137,7 +137,7 @@ describe("a load establishes a map, and leaves the rest of this browser alone", 
   });
 
   it("carries the extent over, since the next map should continue the one just opened", () => {
-    load(savedFile(map => (map.graph = { width: 1600, height: 900, points: 20000 })));
+    load(savedFile(map => (map.graph = { width: 1600, height: 900, points: 20000, sampling: "square", jitter: 0.9 })));
 
     expect(options.generation.graph.width).toBe(1600);
     expect(options.generation.graph.height).toBe(900);
@@ -459,11 +459,11 @@ describe("a request and what it produced are not the same field", () => {
   it("asks for the graph in one place and records it in another", () => {
     // the request holds a density step; the cell count it stands for is derived, never stored
     const asked = Options.getDefaultOptions().generation.graph;
-    expect(asked).toEqual({ width: 1280, height: 800, density: 4 });
+    expect(asked).toEqual({ width: 1280, height: 800, density: 4, sampling: "square", jitter: 0.9 });
     expect(getPointsNumber(asked.density)).toBe(10000);
 
     // the record has no density: a step is how the request was phrased, not what was built
-    expect(defaults().graph).toEqual({ width: 1280, height: 800, points: 10000 });
+    expect(defaults().graph).toEqual({ width: 1280, height: 800, points: 10000, sampling: "square", jitter: 0.9 });
   });
 });
 

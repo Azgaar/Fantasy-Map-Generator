@@ -502,8 +502,7 @@ export function openSchemeBuilder(current: string, onCreate: (stops: string) => 
   const renderPreview = () => {
     ensureEl<HTMLImageElement>("heightmapSchemePreview").src = drawHeights({
       heights: grid.cells.h,
-      width: grid.cellsX,
-      height: grid.cellsY,
+      raster: Grid.getRaster(),
       scheme: scaleSequential(interpolateRgbBasis(stops)),
       renderOcean: styles.heightmap.groups.oceanHeights.options.render
     });

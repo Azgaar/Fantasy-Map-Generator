@@ -51,12 +51,13 @@ export function makeKey(params: BakeParams): string {
     }
   };
 
+  const raster = Grid.getRaster();
   const paramString = [
     options.map.seed,
     options.map.graph.width,
     options.map.graph.height,
-    grid.cellsX,
-    grid.cellsY,
+    raster.width,
+    raster.height,
     params.strength,
     params.riverDepth,
     params.octaves,
@@ -81,7 +82,6 @@ function getBakeSize(bakeResolution: number): [number, number] {
 // R: height 0-100: bilinear filtering approximates the heightfield.
 // G: delta 0-255: the max height delta to a LAND neighbor cell, scaled x10.
 function buildHeightTexture() {
-  const { cellsX, cellsY } = grid;
   const n = grid.cells.h.length;
   const data = new Uint8Array(n * 4);
 
@@ -112,7 +112,14 @@ function buildHeightTexture() {
     data[i * 4 + 3] = 255;
   }
 
-  const texture = new THREE.DataTexture(data, cellsX, cellsY, THREE.RGBAFormat, THREE.UnsignedByteType);
+  return buildGridTexture(data);
+}
+
+/** linear-filtered RGBA texture over the grid raster from 4 bytes per grid cell */
+export function buildGridTexture(cellData: Uint8Array): THREEType.DataTexture {
+  const raster = Grid.getRaster();
+  const pixels = Grid.rasterize(cellData, raster, 4);
+  const texture = new THREE.DataTexture(pixels, raster.width, raster.height, THREE.RGBAFormat, THREE.UnsignedByteType);
   texture.minFilter = texture.magFilter = THREE.LinearFilter;
   texture.needsUpdate = true;
   return texture;
@@ -449,7 +456,7 @@ const fragmentShader = /* glsl */ `
     uniform sampler2D uCoast;  // R: blurred land mask (0.5 = true coastline),
                                // G: water surface byte 0-100 -- bake resolution, sampled directly
     uniform sampler2D uRivers; // R: valley intensity
-    uniform vec2 uGridSize;    // (cellsX, cellsY)
+    uniform vec2 uGridSize;    // grid raster size in pixels
     uniform vec2 uResolution;  // bake size in px
     uniform float uAspect;     // map height / map width
     uniform float uSeed;
@@ -736,7 +743,7 @@ function runErosionPass(
       uHeight: { value: textures.height },
       uCoast: { value: textures.coast },
       uRivers: { value: textures.rivers },
-      uGridSize: { value: new THREE.Vector2(grid.cellsX, grid.cellsY) },
+      uGridSize: { value: new THREE.Vector2(textures.height.image.width, textures.height.image.height) },
       uResolution: { value: new THREE.Vector2(bakeW, bakeH) },
       uAspect: { value: options.map.graph.height / options.map.graph.width },
       uSeed: { value: (Number.parseInt(options.map.seed, 10) % 1e5 || 1) / 1e5 + 1 },

@@ -1,6 +1,7 @@
 // Interface names for ids the data stores in English: a select shows the label, keeps the id as its value
 import type { DemandCategory } from "@/generators/goods-generator";
 import type { LabelType } from "@/generators/labels-generator";
+import type { Sampling } from "@/generators/lattice";
 import type { TransportDomain } from "@/generators/transports-generator";
 import { t } from "@/utils/i18n";
 
@@ -198,4 +199,12 @@ export const ICON_GROUP_LABELS: Record<string, string> = {
   Relief: t("Relief"),
   Goods: t("Goods"),
   Heraldry: t("Heraldry")
+};
+
+export const SAMPLING_LABELS: Record<Sampling, string> = {
+  square: t("Square grid"),
+  hexPointy: t("Hex grid (pointy)"),
+  hexFlat: t("Hex grid (flat)"),
+  diamond: t("Square 45 degrees grid"),
+  triangle: t("Triangle grid (horizontal)")
 };

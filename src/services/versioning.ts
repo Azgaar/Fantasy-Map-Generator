@@ -15,10 +15,11 @@
  * For the changes that may be interesting for end users, update the `latestPublicChanges` below.
  */
 
+import { confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { dialogState } from "@/components/dialog/state";
 import { Pins } from "@/components/pins";
 import { tip } from "@/components/tooltips";
-import { t } from "@/utils/i18n";
+import { sentences, t } from "@/utils/i18n";
 import { isElectron } from "./platform";
 
 export const VERSION = "1.155.0";
@@ -98,6 +99,19 @@ export async function clearCache(): Promise<void> {
   }
 
   location.reload();
+}
+
+/** cleanupData once the user agrees: it wipes every option and reloads the page */
+export function confirmCleanupData(): void {
+  confirmationDialog({
+    title: t("Reset Options"),
+    message: sentences(
+      t("All options return to their defaults and the page reloads"),
+      t("If you have unsaved changes, save the map first")
+    ),
+    confirm: t("Reset"),
+    onConfirm: () => cleanupData()
+  });
 }
 
 export const ARROW_TIP_KEY = "fmg-disable-click-arrow-tooltip";

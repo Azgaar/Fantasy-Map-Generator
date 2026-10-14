@@ -46,7 +46,7 @@ This its because the border of states or provinces follow the border of the cell
 
 ### Why is there no autosave?
 
-There is an autosave. Go to Options -> Interface settings -> Autosave interval and set the interval in minutes (0 disables it). The map is saved to the browser storage, and browser storage can be cleared accidentally, so also save .map file backups to your machine from time to time
+There is an autosave. Go to Options -> Configure -> Advanced -> Autosave interval and set the interval in minutes (0 disables it). The map is saved to the browser storage, and browser storage can be cleared accidentally, so also save .map file backups to your machine from time to time
 
 ### Why is there no undo button?
 
@@ -55,6 +55,14 @@ There is no global undo for the whole map, but undo and redo (Ctrl + Z / Ctrl + 
 ### Can I increase the number of cells?
 
 Not on an already generated map directly, but you can rebuild the map with a different points number using the Transform tool: Tools -> Create -> Transform. It recreates the map based on the existing one and tries to keep the details. The Submap tool does the same for a part of the map. Alternatively export the image, set a higher points number and import the image back as a heightmap
+
+### What do the buttons at the bottom of the Options tab do?
+
+They form the Configure row. Climate opens the World Configurator: the map position on the globe, temperatures and precipitation. Lore opens the Lore Editor: the map name, calendar and world description. Advanced opens Advanced Options: map size, the cell grid, provinces ratio, size variety, growth rate, autosave interval, on load behavior, speaker voice and emblem shape; hover a setting to see what it does. Reset restores every option to its default and reloads the page; it asks for confirmation first, so save the map before confirming
+
+### Can I make a map with hexagonal or square cells?
+
+Yes. In the Options tab click Advanced in the Configure row at the bottom. Pick a Lattice preset such as Hex board (pointy), Hex board (flat), Square board or Isometric board, then generate a new map. A preset sets Sampling and Jitter together; you can also set them yourself, Jitter 0 gives perfectly regular cells. The settings apply to the next map only, and a saved map keeps the grid it was made with. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Advanced-options
 
 ### Can I export map data as a text file?
 
@@ -94,7 +102,7 @@ You may have pushed cell shapes too far with the Wrap Tool, in which case use it
 
 ### Does time exists?
 
-There is no a thing as time at the moment on the generator. The era and year thing in Options -> Set Lore is just to define time messages on legends of military regiments, battles and similar things with a date on the notes
+There is no a thing as time at the moment on the generator. The era and year thing in Options -> Configure -> Lore is just to define time messages on legends of military regiments, battles and similar things with a date on the notes
 
 ### I have made the menu too big. How to put it normal again?
 
@@ -114,7 +122,7 @@ You need to know the dungeon seed. Create a new marker, and edit the notes. Then
 
 ### How can I cover both ends of my map with ice? Top and bottom
 
-Options -> Configure world -> Change the temperature of the poles. After that, Tools -> regenerate ice
+Options -> Configure -> Climate -> Change the temperature of the poles. After that, Tools -> regenerate ice
 
 ### How can I make mountains taller?
 
@@ -386,7 +394,7 @@ No, fog edges cannot be made blurry
 
 ### Is there a way to change the dimensions of the map?
 
-Go to Tools -> Units and change the '1 map pixel' distance scale. To change how much of the world the map covers, use Map size in Options -> Configure World
+Go to Tools -> Units and change the '1 map pixel' distance scale. To change how much of the world the map covers, use Map size in Options -> Configure -> Climate
 
 ### How to merge provinces?
 
@@ -450,7 +458,7 @@ You can set States number to 0 in Options and regenerate. Cultures number cannot
 
 ### How to make map to open in specific zoom and focus on specific area on load?
 
-Follow the steps. 1. Save the map to storage. 2. Go to Options -> Interface settings and set 'On load' to 'Open last saved map'. 3. Add URL parameters to make it look like this: https://azgaar.github.io/Fantasy-Map-Generator/?scale=4&x=800&y=200. 4. Change scale, x and y values as you need and use the link
+Follow the steps. 1. Save the map to storage. 2. Go to Options -> Configure -> Advanced and set 'On load' to 'Open last saved map'. 3. Add URL parameters to make it look like this: https://azgaar.github.io/Fantasy-Map-Generator/?scale=4&x=800&y=200. 4. Change scale, x and y values as you need and use the link
 
 ### How the map is rendered? Is it on GPU or CPU?
 
@@ -466,7 +474,7 @@ The map is static. Over-time simulation is planned, but not yet implemented
 
 ### When creating a new world, in which order do you add elements
 
-Follow the order the generator itself uses. Heightmap and Configure World in Options first, let that determine the biomes, then Units (height scale), goods, cultures, states, Units again (population and distance scale), burgs and routes, religions, provinces, then the economy (markets, production and taxes), ice, military, and optionally zones and markers
+Follow the order the generator itself uses. Heightmap and Climate (Options -> Configure) first, let that determine the biomes, then Units (height scale), goods, cultures, states, Units again (population and distance scale), burgs and routes, religions, provinces, then the economy (markets, production and taxes), ice, military, and optionally zones and markers
 
 ### Is there a means to get the width of a river at a particular point along its length?
 
@@ -510,7 +518,7 @@ These are SVG standard Dash endcaps. Round: The ends of lines taper smoothly int
 
 ### How can I place states without filling whole map?
 
-There's a Growth rate slider in Options that you can set to a smaller value, it defines how far states expand into neutral lands. The States Editor regeneration menu (cog button) has the same growth rate control plus 'Recalculate states', so you can tune it without regenerating the whole map. You can also lower individual expansion values and/or remove some states
+There's a Growth rate slider in Options -> Configure -> Advanced that you can set to a smaller value, it defines how far states expand into neutral lands. The States Editor regeneration menu (cog button) has the same growth rate control plus 'Recalculate states', so you can tune it without regenerating the whole map. You can also lower individual expansion values and/or remove some states
 
 ### How can i create lakes?
 
@@ -546,7 +554,7 @@ We recommend to set Precipitation to 100 for a Earth-like world. Obviously, the 
 
 ### How can I make my map more desert-like?
 
-To make your map more desert-like, adjust the precipitation level in the Options -> Configure World. Setting it to zero will create an unlivable desert across most of the map
+To make your map more desert-like, adjust the precipitation level in Options -> Configure -> Climate. Setting it to zero will create an unlivable desert across most of the map
 
 ### How to make wind direction similar to earth?
 
@@ -690,7 +698,7 @@ The generator is supposed to work with Earth-like maps, but with some creativily
 
 ### Can i build a world instead of generating one?
 
-To start with a Blank Map go to Tools -> Heightmap and select an Erase mode to clear the existing land. Use the brushes available in the Heightmap editor to manually build your landmasses. This will be the foundation of your map. Then you can set the climate basics in the Configure World menu in options. Once your heightmap and climate are set, you can edit rivers and other features. Go to Tools -> Biomes to adjust the biomes associated with your landmasses. Use the States and Cultures editors under the tools to define the political entities and cultures on your map. Customize labels, roads, and other details using different tools available under the Tools tab. Remember to save your map frequently, save .map file to your machine
+To start with a Blank Map go to Tools -> Heightmap and select an Erase mode to clear the existing land. Use the brushes available in the Heightmap editor to manually build your landmasses. This will be the foundation of your map. Then you can set the climate basics with Options -> Configure -> Climate. Once your heightmap and climate are set, you can edit rivers and other features. Go to Tools -> Biomes to adjust the biomes associated with your landmasses. Use the States and Cultures editors under the tools to define the political entities and cultures on your map. Customize labels, roads, and other details using different tools available under the Tools tab. Remember to save your map frequently, save .map file to your machine
 
 ### Is there a way to have a province inside a province?
 
@@ -710,11 +718,11 @@ The see the latest changes, please check out the Changelog: https://github.com/A
 
 ### What does “growth rate” setting do?
 
-The "growth rate" setting defines how far states and cultures will expand into neutral lands during generation. A lower value will result in more lands remaining politically neutral
+The "growth rate" setting defines how far states and cultures will expand into neutral lands during generation. A lower value will result in more lands remaining politically neutral. It is in Options -> Configure -> Advanced
 
 ### What does size variety setting do?
 
-The "size variety" setting determines how much the areas of states should differ from each other. A lower value results in more uniform state areas
+The "size variety" setting determines how much the areas of states should differ from each other. A lower value results in more uniform state areas. It is in Options -> Configure -> Advanced
 
 ### Does is use cookies or cache?
 
@@ -746,7 +754,7 @@ You can select one of the available heightmap color schemes or create a custom o
 
 ### How do I control meridian length?
 
-The meridian length and world size can be adjusted in the Configure World section, specifically using the Map Size parameter. After that, you can further refine settings in the Units Editor
+The meridian length and world size can be adjusted in the World Configurator (Options -> Configure -> Climate), specifically using the Map Size parameter. After that, you can further refine settings in the Units Editor
 
 ### Can i change the size of each region?
 

@@ -90,7 +90,7 @@ describe("generateStoryJourney", () => {
     };
 
     options.map.transports = Transports.getDefaults();
-    options.map.graph = { width: GRID * STEP, height: GRID * STEP, points: 10000 };
+    options.map.graph = { width: GRID * STEP, height: GRID * STEP, points: 10000, sampling: "square", jitter: 0.9 };
   });
 
   it("returns null when the map has fewer than two burgs", () => {
@@ -206,7 +206,7 @@ const MODERN_TYPES = [
 describe("archetype transport preferences", () => {
   beforeEach(() => {
     options.map.transports = Transports.getDefaults();
-    options.map.graph = { width: GRID * STEP, height: GRID * STEP, points: 10000 };
+    options.map.graph = { width: GRID * STEP, height: GRID * STEP, points: 10000, sampling: "square", jitter: 0.9 };
   });
 
   // A preference is matched by name against the configured types, so a renamed default

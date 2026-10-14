@@ -2,6 +2,7 @@
 import Alea from "alea";
 import { mean, range } from "d3";
 import { minmax, rand, SEA_LEVEL } from "@/utils";
+import { getSteps } from "./lattice";
 
 declare global {
   var Precipitation: PrecipitationModule;
@@ -32,20 +33,28 @@ class PrecipitationModule {
   /** precipitation of every grid cell for the given heights and temperatures, the grid itself stays untouched */
   compute(h: ArrayLike<number>, temp: ArrayLike<number>): Uint8Array {
     Math.random = Alea(options.map.seed); // the same winds for the same map, whoever rolled before
-    const { cells, cellsX, cellsY } = grid;
+    const { cells, cellsX, cellsY, sampling, spacing } = grid;
     const prec = new Uint8Array(cells.i.length);
+    const { dx, dy } = getSteps(sampling, spacing);
 
     const cellsNumberModifier = (Grid.getCellsDesired() / 10000) ** 0.25;
     const modifier = cellsNumberModifier * (options.map.climate.precipitation / 100);
 
-    const getPrecipitation = (humidity: number, i: number, n: number) => {
-      const normalLoss = Math.max(humidity / (10 * modifier), 1); // precipitation in normal conditions
+    // `stepLength` is the distance to the next cell in spacings: humidity changes with the distance covered
+    const getPrecipitation = (humidity: number, i: number, n: number, stepLength: number) => {
+      const normalLoss = Math.max(humidity / (10 * modifier), 1) * stepLength; // precipitation in normal conditions
       const diff = Math.max(h[i + n] - h[i], 0); // difference in height
       const mod = (h[i + n] / 70) ** 2; // 50 stands for hills, 70 for mountains
-      return minmax(normalLoss + diff * mod, 1, humidity);
+      return minmax(normalLoss + diff * mod, stepLength, humidity);
     };
 
-    const passWind = (sources: (number | WindBand)[], initialMaxPrec: number, next: number, steps: number) => {
+    const passWind = (
+      sources: (number | WindBand)[],
+      initialMaxPrec: number,
+      next: number,
+      steps: number,
+      stepLength: number
+    ) => {
       let maxPrec = initialMaxPrec;
 
       for (const source of sources) {
@@ -66,7 +75,7 @@ class PrecipitationModule {
             if (h[current + next] >= SEA_LEVEL) {
               prec[current + next] += Math.max(humidity / rand(10, 20), 1); // coastal precipitation
             } else {
-              humidity = Math.min(humidity + 5 * modifier, maxPrec); // wind gets more humidity passing water cell
+              humidity = Math.min(humidity + 5 * modifier * stepLength, maxPrec); // wind gets more humidity passing water cell
               prec[current] += 5 * modifier; // water cells precipitation (need to correctly pour water through lakes)
             }
             continue;
@@ -74,9 +83,9 @@ class PrecipitationModule {
 
           // land cell
           const isPassable = h[current + next] <= MAX_PASSABLE_ELEVATION;
-          const precipitation = isPassable ? getPrecipitation(humidity, current, next) : humidity;
+          const precipitation = isPassable ? getPrecipitation(humidity, current, next, stepLength) : humidity;
           prec[current] += precipitation;
-          const evaporation = precipitation > 1.5 ? 1 : 0; // some humidity evaporates back to the atmosphere
+          const evaporation = precipitation > 1.5 * stepLength ? stepLength : 0; // some humidity evaporates back to the atmosphere
           humidity = isPassable ? minmax(humidity - precipitation + evaporation, 0, maxPrec) : 0;
         }
       }
@@ -84,8 +93,8 @@ class PrecipitationModule {
 
     const { westerly, easterly, northerly, southerly } = this.getWinds();
 
-    if (westerly.length) passWind(westerly, 120 * modifier, 1, cellsX);
-    if (easterly.length) passWind(easterly, 120 * modifier, -1, cellsX);
+    if (westerly.length) passWind(westerly, 120 * modifier, 1, cellsX, dx / spacing);
+    if (easterly.length) passWind(easterly, 120 * modifier, -1, cellsX, dx / spacing);
 
     const vertT = southerly + northerly;
     if (northerly) {
@@ -93,7 +102,7 @@ class PrecipitationModule {
       const latModN =
         options.map.geography.coordinates.latT > 60 ? (mean(LATITUDE_MODIFIER) as number) : LATITUDE_MODIFIER[bandN];
       const maxPrecN = (northerly / vertT) * 60 * modifier * latModN;
-      passWind(range(0, cellsX, 1), maxPrecN, cellsX, cellsY);
+      passWind(range(0, cellsX, 1), maxPrecN, cellsX, cellsY, dy / spacing);
     }
 
     if (southerly) {
@@ -101,7 +110,7 @@ class PrecipitationModule {
       const latModS =
         options.map.geography.coordinates.latT > 60 ? (mean(LATITUDE_MODIFIER) as number) : LATITUDE_MODIFIER[bandS];
       const maxPrecS = (southerly / vertT) * 60 * modifier * latModS;
-      passWind(range(cells.i.length - cellsX, cells.i.length, 1), maxPrecS, -cellsX, cellsY);
+      passWind(range(cells.i.length - cellsX, cells.i.length, 1), maxPrecS, -cellsX, cellsY, dy / spacing);
     }
 
     return prec;

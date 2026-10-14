@@ -107,7 +107,7 @@ const redraw = () => {
   scene.remove(mesh);
   Renderer.setSize(Renderer.domElement.width, Renderer.domElement.height);
   if (isGlobeView()) updateGlobeTexure(true);
-  else createMesh(options.map.graph.width, options.map.graph.height, grid.cellsX, grid.cellsY);
+  else createMesh(options.map.graph.width, options.map.graph.height);
   render();
 };
 
@@ -366,7 +366,7 @@ async function newMesh(canvas: HTMLCanvasElement) {
   Options.set(o => (o.app.threeD.resolutionScale = clampToRendererLimit(o.app.threeD.resolutionScale)));
 
   if (options.app.threeD.extendedWater) extendWater(options.map.graph.width, options.map.graph.height);
-  createMesh(options.map.graph.width, options.map.graph.height, grid.cellsX, grid.cellsY);
+  createMesh(options.map.graph.width, options.map.graph.height);
 
   camera = new Three.PerspectiveCamera(70, canvas.width / canvas.height, 0.1, 2000);
   camera.position.set(0, 400, 500); // Set initial camera position for isometric view
@@ -666,7 +666,7 @@ async function loadMapTexture() {
 }
 
 // create a mesh from pixel data
-async function createMesh(width: number, height: number, segmentsX: number, segmentsY: number) {
+async function createMesh(width: number, height: number) {
   if (!scene || !Renderer) return;
   stopWaterAnimation(); // restarted below if the satellite texture applies
 
@@ -749,11 +749,12 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
     geometry.computeVertexNormals();
     mesh = new Three.Mesh(geometry, material); // geometry is dense already, subdivision is ignored
   } else {
-    geometry = new Three.PlaneGeometry(width, height, segmentsX - 1, segmentsY - 1);
+    const raster = Grid.getRaster(); // a vertex per raster pixel: square spacing on every sampling
+    geometry = new Three.PlaneGeometry(width, height, raster.width - 1, raster.height - 1);
 
     const vertices = geometry.getAttribute("position");
     for (let i = 0; i < vertices.count; i++) {
-      vertices.setZ(i, getMeshHeight(i));
+      vertices.setZ(i, getMeshHeight(raster.cells[i]));
     }
 
     geometry.setAttribute("position", vertices);

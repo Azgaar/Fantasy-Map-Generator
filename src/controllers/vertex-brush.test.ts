@@ -37,7 +37,7 @@ const polygon = (cell: number) => pack.cells.v[cell].map(id => pack.vertices.p[i
 beforeEach(() => {
   globalThis.pack = createGraph() as unknown as typeof globalThis.pack;
   globalThis.grid = { spacing: 5 } as unknown as typeof globalThis.grid;
-  options.map.graph = { width: 100, height: 100, points: 100 };
+  options.map.graph = { width: 100, height: 100, points: 100, sampling: "square", jitter: 0.9 };
   GraphOverride.revert();
 });
 

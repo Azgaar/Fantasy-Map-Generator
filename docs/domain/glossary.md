@@ -7,6 +7,10 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Map**: The generated world, including all terrain, features, and data layers.
 - **Cell**: The smallest unit of the map grid, representing a piece of land or water. Voronoi cell.
 - **Grid**: The underlying voronoi structure of cells that make up the map.
+- **Sampling**: The lattice the Grid points sit on: `square`, `hexPointy`, `hexFlat`, `diamond` or `triangle`. Every sampling stores its points in rows of `cellsX`, so code reading the Grid by rows and columns works on all of them. _Avoid_: grid type, layout
+- **Jitter**: How far a Grid point may move off its lattice position, from 0 (regular cells) to 0.9. The classic natural look is `square` sampling at 0.9.
+- **Lattice preset**: A named Sampling and Jitter pair in Advanced options (Default, Organic hexes, Hex board, Square board, Isometric board). Derived from the two values, never stored. _Avoid_: cell type
+- **Lattice slot**: The rectangle of the lattice a Grid point was placed in. On a jittered or offset lattice a position's slot can differ from the Cell it falls in.
 - **Pack**: The main data object containing all world data (cells, burgs, states, cultures, etc.), created after 'repacking' the grid to discard most of ocean cells and add more cells along the coasts.
 - **Layer**: A visual or logical overlay on the map (e.g., rivers, biomes, elevation).
 - **SVG Layer**: A named group of SVG elements for a specific map feature.

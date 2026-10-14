@@ -23,11 +23,20 @@ import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
 import { isAutoBurgLimit } from "@/generators/burgs-generator";
 import { CULTURE_SETS, Cultures } from "@/generators/cultures-generator";
 import { Emblems } from "@/generators/emblems-generator";
+import type { Sampling } from "@/generators/lattice";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { copyMapURL } from "@/services/url-params";
+import { confirmCleanupData } from "@/services/versioning";
 import { Catalog, sentences, t } from "@/utils/i18n";
 import { applyOption, ensureEl } from "@/utils/nodeUtils";
 import { minmax, rn } from "@/utils/numberUtils";
+import {
+  ADVANCED_OPTIONS_ID,
+  AdvancedOptions,
+  GRAPH_PRESETS,
+  getAdvancedOptionsHTML,
+  getGraphPreset
+} from "../advanced-options";
 import { PerformanceSettings } from "../performance-settings";
 
 interface OptionBinding {
@@ -49,6 +58,19 @@ const OPTION_BINDINGS: Record<string, OptionBinding> = {
   mapWidth: { read: o => o.generation.graph.width, update: onMapSizeChange, pin: "mapWidth", event: "change" },
   mapHeight: { read: o => o.generation.graph.height, update: onMapSizeChange, pin: "mapHeight", event: "change" },
   seed: { read: o => o.map.seed, update: generateMapWithSeed, event: "change" },
+  graphPreset: { read: o => getGraphPreset(o.generation.graph), update: applyGraphPreset },
+  sampling: option({
+    read: o => o.generation.graph.sampling,
+    write: (o, value) => (o.generation.graph.sampling = value),
+    parse: value => value as Sampling,
+    effect: () => syncOption("graphPreset")
+  }),
+  jitter: option({
+    read: o => o.generation.graph.jitter,
+    write: (o, value) => (o.generation.graph.jitter = value),
+    parse: Number,
+    effect: () => syncOption("graphPreset")
+  }),
   points: option({
     read: o => o.generation.graph.density,
     write: (o, value) => (o.generation.graph.density = value),
@@ -204,21 +226,6 @@ const TEMPLATE = /* html */ `
   </p>
   <table>
     <tr
-      data-tip="${t("Coordinate extent the next map is generated on. It is fixed for the life of that map and cannot be changed later - the Viewport size below is what you see it through. For full-globe maps use aspect ratio 2:1")}"
-    >
-      <td>
-        <i data-tip="${t("Reset to default")}" id="restoreDefaultMapSize" class="icon-ccw"></i>
-      </td>
-      <td>${t("Map size")}</td>
-      <td>
-        <input id="mapWidthInput" data-option="mapWidth" class="paired" type="number" min="240" value="960" />
-        <span>x</span>
-        <input id="mapHeightInput" data-option="mapHeight" class="paired" type="number" min="135" value="540" />
-        <span>px</span>
-      </td>
-      <td></td>
-    </tr>
-    <tr
       data-tip="${t("Map seed number. Press 'Enter' to apply. A seed reproduces the same map only if the map size and the settings are the same")}"
     >
       <td>
@@ -312,35 +319,6 @@ const TEMPLATE = /* html */ `
         <slider-input id="statesNumber" data-option="statesNumber" min="0" max="100"></slider-input>
       </td>
     </tr>
-    <tr
-      data-tip="${t("Set what share of eligible burgs in each state will become province centers. Higher values create more provinces")}"
-    >
-      <td>
-        <i data-locked="0" id="lock_provincesRatio" class="icon-lock-open"></i>
-      </td>
-      <td>${t("Provinces ratio")}</td>
-      <td colspan="2">
-        <slider-input id="provincesRatio" data-option="provincesRatio" min="0" max="100"></slider-input>
-      </td>
-    </tr>
-    <tr data-tip="${t("Define how much states and cultures can vary in size. Defines expansionism value")}">
-      <td>
-        <i data-locked="0" id="lock_sizeVariety" class="icon-lock-open"></i>
-      </td>
-      <td>${t("Size variety")}</td>
-      <td colspan="2">
-        <slider-input id="sizeVariety" data-option="sizeVariety" min="0" max="10" step=".1"></slider-input>
-      </td>
-    </tr>
-    <tr data-tip="${t("Set the growth rate of states and cultures. Determines how much land stays neutral")}">
-      <td>
-        <i data-locked="0" id="lock_growthRate" class="icon-lock-open"></i>
-      </td>
-      <td>${t("Growth rate")}</td>
-      <td colspan="2">
-        <slider-input id="growthRate" data-option="growthRate" min=".1" max="2" step=".1"></slider-input>
-      </td>
-    </tr>
     <tr data-tip="${t("Define a number of non-capital settlements to be placed (if enough suitable land exists)")}">
       <td>
         <i data-locked="0" id="lock_manors" class="icon-lock-open"></i>
@@ -422,43 +400,6 @@ const TEMPLATE = /* html */ `
         <slider-input id="transparencyInput" data-option="transparency" min="0" max="100"></slider-input>
       </td>
     </tr>
-    <tr data-tip="${t("Set autosave interval in minutes. Set 0 to disable autosave. Map is saved to browser memory")}">
-      <td></td>
-      <td>${t("Autosave interval")}</td>
-      <td>
-        <input
-          id="autosaveIntervalInput"
-          data-option="autosaveInterval"
-          type="range"
-          min="0"
-          max="60"
-          step="1"
-          value="15"
-        />
-      </td>
-      <td>
-        <input
-          id="autosaveIntervalOutput"
-          data-option="autosaveInterval"
-          type="number"
-          min="0"
-          max="60"
-          step="1"
-          value="15"
-        />
-      </td>
-    </tr>
-    <tr data-tip="${t("Set what Generator should do on load")}">
-      <td></td>
-      <td>${t("On load")}</td>
-      <td>
-        <select id="onloadBehavior" data-option="onloadBehavior">
-          <option value="random" selected>${t("Generate random map")}</option>
-          <option value="lastSaved">${t("Open last saved map")}</option>
-        </select>
-      </td>
-      <td></td>
-    </tr>
     <tr data-tip="${t("Rendering preset: visual quality traded for speed. Pick 'Speed' if the map feels slow")}">
       <td></td>
       <td>${t("Performance")}</td>
@@ -482,93 +423,6 @@ const TEMPLATE = /* html */ `
           <option value="show" selected>${t("Show")}</option>
           <option value="hide">${t("Hide")}</option>
         </select>
-      </td>
-    </tr>
-    <tr data-tip="${t("Select speech synthesis voice to pronounce generated names")}">
-      <td></td>
-      <td>${t("Speaker voice")}</td>
-      <td>
-        <select id="speakerVoice" data-option="speakerVoice"></select>
-      </td>
-      <td>
-        <span id="speakerTest" data-tip="${t("Click to test the voice")}" style="cursor: pointer">🔊</span>
-      </td>
-    </tr>
-    <tr data-tip="${t("Select emblem shape. Can be changed individually in the Emblem Editor")}">
-      <td></td>
-      <!-- no lock: the shape is an interface preference, kept by this browser whatever map is on screen -->
-      <td>${t("Emblem shape")}</td>
-      <td>
-        <select id="emblemShape" data-option="emblemShape">
-          <optgroup label="${t("Diversiform")}">
-            <option value="culture" selected>${t("Culture-specific")}</option>
-            <option value="random">${t("Culture-random")}</option>
-            <option value="state">${t("State-specific")}</option>
-          </optgroup>
-          <optgroup label="${t("Basic")}">
-            <option value="heater">${t("Heater")}</option>
-            <option value="spanish">${t("Spanish")}</option>
-            <option value="french">${t("French")}</option>
-          </optgroup>
-          <optgroup label="${t("Regional")}">
-            <option value="horsehead">${t("Horsehead")}</option>
-            <option value="horsehead2">${t("Horsehead Edgy")}</option>
-            <option value="polish">${t("Polish")}</option>
-            <option value="hessen">${t("Hessen")}</option>
-            <option value="swiss">${t("Swiss")}</option>
-          </optgroup>
-          <optgroup label="${t("Historical")}">
-            <option value="boeotian">${t("Boeotian")}</option>
-            <option value="roman">${t("Roman")}</option>
-            <option value="kite">${t("Kite")}</option>
-            <option value="oldFrench">${t("Old French")}</option>
-            <option value="renaissance">${t("Renaissance")}</option>
-            <option value="baroque">${t("Baroque")}</option>
-          </optgroup>
-          <optgroup label="${t("Specific")}">
-            <option value="targe">${t("Targe")}</option>
-            <option value="targe2">${t("Targe")} 2</option>
-            <option value="pavise">${t("Pavise")}</option>
-            <option value="wedged">${t("Wedged")}</option>
-            <option value="embowed">${t("Embowed")}</option>
-          </optgroup>
-          <optgroup label="${t("Banner")}">
-            <option value="flag">${t("Flag")}</option>
-            <option value="pennon">${t("Pennon")}</option>
-            <option value="guidon">${t("Guidon")}</option>
-            <option value="banner">${t("Banner")}</option>
-            <option value="dovetail">${t("Dovetail")}</option>
-            <option value="gonfalon">${t("Gonfalon")}</option>
-            <option value="pennant">${t("Pennant")}</option>
-          </optgroup>
-          <optgroup label="${t("Simple")}">
-            <option value="round">${t("Round")}</option>
-            <option value="oval">${t("Oval")}</option>
-            <option value="vesicaPiscis">${t("Vesica Piscis")}</option>
-            <option value="square">${t("Square")}</option>
-            <option value="diamond">${t("Diamond")}</option>
-            <option value="hexagon">${t("Hexagon")}</option>
-          </optgroup>
-          <optgroup label="${t("Fantasy")}">
-            <option value="fantasy1">${t("Fantasy")} 1</option>
-            <option value="fantasy2">${t("Fantasy")} 2</option>
-            <option value="fantasy3">${t("Fantasy")} 3</option>
-            <option value="fantasy4">${t("Fantasy")} 4</option>
-            <option value="fantasy5">${t("Fantasy")} 5</option>
-          </optgroup>
-          <optgroup label="${t("Middle Earth")}">
-            <option value="noldor">${t("Noldor")}</option>
-            <option value="gondor">${t("Gondor")}</option>
-            <option value="easterling">${t("Easterling")}</option>
-            <option value="erebor">${t("Erebor")}</option>
-            <option value="ironHills">${t("Iron Hills")}</option>
-            <option value="urukHai">${t("UrukHai")}</option>
-            <option value="moriaOrc">${t("Moria Orc")}</option>
-          </optgroup>
-        </select>
-      </td>
-      <td>
-        <svg class="emblemShapePreview" viewBox="0 0 200 210"><path id="emblemShapeImage" /></svg>
       </td>
     </tr>
     <tr
@@ -624,27 +478,37 @@ const TEMPLATE = /* html */ `
       </td>
     </tr>
   </table>
-  <div>
+  <p data-tip="${t("Open the map configurators or reset all options")}">${t("Configure")}:</p>
+  <div style="display: flex; flex-wrap: wrap; gap: 0.3em; margin: 0.3em 0.3em 0">
     <button
       id="configureWorld"
+      style="flex: 1; min-width: max-content"
       data-tip="${t("Open the World Configurator to set the map position on the globe and the world climate")}"
       onclick="window.Controllers.WorldConfigurator.open()"
     >
-      ${t("Configure World")}
+      ${t("Climate")}
     </button>
     <button
       id="setupLore"
+      style="flex: 1; min-width: max-content"
       data-tip="${t("Click to name the map, date its calendar and describe the world")}"
       onclick="window.Controllers.LoreEditor.open()"
     >
-      ${t("Set Lore")}
+      ${t("Lore")}
+    </button>
+    <button
+      id="openAdvancedOptions"
+      style="flex: 1; min-width: max-content"
+      data-tip="${t("Open advanced options: settings for experienced users")}"
+    >
+      ${t("Advanced")}
     </button>
     <button
       id="optionsReset"
+      style="flex: 1; min-width: max-content"
       data-tip="${t("Click to restore default options and reload the page")}"
-      onclick="cleanupData()"
     >
-      ${t("Reset Options")}
+      ${t("Reset")}
     </button>
   </div>
 `;
@@ -652,19 +516,19 @@ const TEMPLATE = /* html */ `
 const pendingInputs = new WeakMap<HTMLElement, string>();
 
 ensureEl("optionsContent").innerHTML = TEMPLATE;
+ensureEl("dialogs").insertAdjacentHTML("beforeend", getAdvancedOptionsHTML());
 addListeners();
 loadVoices();
 onPerformanceChange(() => syncOption("performancePreset")); // the preset follows the fields, wherever they change
 
 function addListeners(): void {
-  const content = ensureEl("optionsContent");
-
-  const root = ensureEl("options");
-  root.addEventListener("input", onOptionInput);
-  root.addEventListener("change", onOptionInput);
+  for (const root of [ensureEl("options"), ensureEl(ADVANCED_OPTIONS_ID)]) {
+    root.addEventListener("input", onOptionInput);
+    root.addEventListener("change", onOptionInput);
+  }
   ensureEl("interfaceLanguage").addEventListener("change", event => changeLanguage(event.target as HTMLSelectElement));
 
-  content.addEventListener("click", event => {
+  const onClick = (event: Event) => {
     const target = event.target as HTMLElement;
     if (target.id === "restoreDefaultMapSize") restoreDefaultMapSize();
     else if (target.id === "optionsMapHistory") showSeedHistoryDialog();
@@ -676,11 +540,15 @@ function addListeners(): void {
     else if (target.id === "openPerformanceSettings") PerformanceSettings.open();
     else if (target.id === "speakerTest") testSpeaker();
     else if (target.id === "themeColorRestore") restoreDefaultThemeColor();
-  });
+    else if (target.id === "openAdvancedOptions") AdvancedOptions.open();
+    else if (target.id === "optionsReset") confirmCleanupData();
+  };
+  ensureEl("optionsContent").addEventListener("click", onClick);
+  ensureEl(ADVANCED_OPTIONS_ID).addEventListener("click", onClick);
 }
 
 function optionInputs<T extends HTMLElement = HTMLInputElement>(key: string): NodeListOf<T> {
-  return ensureEl("options").querySelectorAll<T>(`[data-option="${key}"]`);
+  return document.querySelectorAll<T>(`:is(#options, #${ADVANCED_OPTIONS_ID}) [data-option="${key}"]`);
 }
 
 function optionInput<T extends HTMLElement = HTMLInputElement>(key: string): T {
@@ -809,6 +677,15 @@ function restoreDefaultMapSize(): void {
   Pins.clear("mapWidth");
   Pins.clear("mapHeight");
   syncOptionInputs();
+}
+
+/** A preset is only a sampling and jitter pair: it writes both, the preset select follows them */
+function applyGraphPreset(id: string): void {
+  const preset = GRAPH_PRESETS[id];
+  if (!preset) return;
+  Options.set(o => Object.assign(o.generation.graph, { sampling: preset.sampling, jitter: preset.jitter }));
+  syncOption("sampling");
+  syncOption("jitter");
 }
 
 /** The Points slider picks a density step; the readout shows the cell count it resolves to */
@@ -1045,6 +922,7 @@ export function restoreUi(): void {
   }
 
   Pins.bindIcons(ensureEl("options"), currentValue);
+  Pins.bindIcons(ensureEl(ADVANCED_OPTIONS_ID), currentValue);
 
   // `syncInputs` has already put every preference in its control; these are the ones that also do
   // something the moment they are read back. See docs/architecture/configuration.md

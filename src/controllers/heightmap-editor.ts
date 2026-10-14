@@ -2171,8 +2171,9 @@ function toggleHeightmapPreview(): void {
   }
   const preview = document.createElement("canvas");
   preview.id = "preview";
-  preview.width = grid.cellsX;
-  preview.height = grid.cellsY;
+  const raster = Grid.getRaster();
+  preview.width = raster.width;
+  preview.height = raster.height;
   document.body.insertBefore(preview, ensureEl("optionsContainer"));
   preview.addEventListener("mouseover", () => tip(t("Heightmap preview. Click to download a screen-sized image")));
   preview.addEventListener("click", downloadPreview);
@@ -2181,9 +2182,10 @@ function toggleHeightmapPreview(): void {
 
 function drawHeightmapPreview(): void {
   const ctx = (document.getElementById("preview") as HTMLCanvasElement).getContext("2d")!;
-  const imageData = ctx.createImageData(grid.cellsX, grid.cellsY);
+  const raster = Grid.getRaster();
+  const imageData = ctx.createImageData(raster.width, raster.height);
 
-  grid.cells.h.forEach((height: number, i: number) => {
+  Grid.rasterize(grid.cells.h, raster).forEach((height: number, i: number) => {
     const h = height < 20 ? Math.max(height / 1.5, 0) : height;
     const v = (h / 100) * 255;
 
