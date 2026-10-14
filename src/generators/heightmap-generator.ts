@@ -4,7 +4,7 @@ import type { MapData } from "@/components/options-schema";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import type { GridGraph } from "@/types/GridGraph";
 import { getNumberInRange, lim, minmax, P, rand } from "../utils";
-import { findSlot } from "./lattice";
+import { Lattice } from "./lattice";
 
 declare global {
   var HeightmapGenerator: HeightmapModule;
@@ -98,7 +98,7 @@ class HeightmapModule {
         const x = this.getPointInRange(rangeX, this.width);
         const y = this.getPointInRange(rangeY, this.height);
         if (x === undefined || y === undefined) return;
-        start = findSlot(x, y, this.grid);
+        start = Lattice.findSlot(x, y, this.grid);
         limit++;
       } while (this.heights[start] + h > 90 && limit < 50);
       change[start] = h;
@@ -134,7 +134,7 @@ class HeightmapModule {
         const x = this.getPointInRange(rangeX, this.width);
         const y = this.getPointInRange(rangeY, this.height);
         if (x === undefined || y === undefined) return;
-        start = findSlot(x, y, this.grid);
+        start = Lattice.findSlot(x, y, this.grid);
         limit++;
       } while (this.heights[start] < 20 && limit < 50);
 
@@ -219,8 +219,8 @@ class HeightmapModule {
           limit++;
         } while ((dist < this.width / 8 || dist > this.width / 3) && limit < 50);
 
-        startCellId = findSlot(startX, startY, this.grid);
-        endCellId = findSlot(endX, endY, this.grid);
+        startCellId = Lattice.findSlot(startX, startY, this.grid);
+        endCellId = Lattice.findSlot(endX, endY, this.grid);
       }
 
       const range = getRange(startCellId as number, endCellId as number);
@@ -322,7 +322,7 @@ class HeightmapModule {
         do {
           startX = this.getPointInRange(rangeX, this.width) as number;
           startY = this.getPointInRange(rangeY, this.height) as number;
-          startCellId = findSlot(startX, startY, this.grid);
+          startCellId = Lattice.findSlot(startX, startY, this.grid);
           limit++;
         } while (this.heights[startCellId] < 20 && limit < 50);
 
@@ -334,7 +334,7 @@ class HeightmapModule {
           limit++;
         } while ((dist < this.width / 8 || dist > this.width / 2) && limit < 50);
 
-        endCellId = findSlot(endX, endY, this.grid);
+        endCellId = Lattice.findSlot(endX, endY, this.grid);
       }
 
       const range = getRange(startCellId as number, endCellId as number);
@@ -399,8 +399,8 @@ class HeightmapModule {
       ? this.height - 5
       : Math.floor(this.height - startY - this.height * 0.1 + Math.random() * this.height * 0.2);
 
-    const start = findSlot(startX, startY, this.grid);
-    const end = findSlot(endX, endY, this.grid);
+    const start = Lattice.findSlot(startX, startY, this.grid);
+    const end = Lattice.findSlot(endX, endY, this.grid);
 
     const getRange = (cur: number, end: number) => {
       const range = [];

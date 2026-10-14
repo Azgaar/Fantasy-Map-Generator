@@ -2,7 +2,7 @@
 import Alea from "alea";
 import { mean, range } from "d3";
 import { minmax, rand, SEA_LEVEL } from "@/utils";
-import { getSteps } from "./lattice";
+import { Lattice } from "./lattice";
 
 declare global {
   var Precipitation: PrecipitationModule;
@@ -35,7 +35,7 @@ class PrecipitationModule {
     Math.random = Alea(options.map.seed); // the same winds for the same map, whoever rolled before
     const { cells, cellsX, cellsY, sampling, spacing } = grid;
     const prec = new Uint8Array(cells.i.length);
-    const { dx, dy } = getSteps(sampling, spacing);
+    const { dx, dy } = Lattice.getSteps(sampling, spacing);
 
     const cellsNumberModifier = (Grid.getCellsDesired() / 10000) ** 0.25;
     const modifier = cellsNumberModifier * (options.map.climate.precipitation / 100);

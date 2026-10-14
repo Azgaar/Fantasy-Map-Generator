@@ -2,14 +2,14 @@ import Alea from "alea";
 import { describe, expect, it } from "vitest";
 import type { Point } from "@/types/global";
 import { rn } from "@/utils";
-import { findSlot, getSteps, MAX_JITTER, placePoints, SAMPLINGS, type Sampling } from "./lattice";
+import { Lattice, MAX_JITTER, SAMPLINGS, type Sampling } from "./lattice";
 import { calculateVoronoi } from "./voronoi";
 
 const WIDTH = 1280;
 const HEIGHT = 800;
 const getSpacing = (points: number, width = WIDTH, height = HEIGHT) => rn(Math.sqrt((width * height) / points), 2);
 const place = (sampling: Sampling, jitter: number, points = 10000, width = WIDTH, height = HEIGHT) =>
-  placePoints({ sampling, width, height, spacing: getSpacing(points, width, height), jitter }, Alea("lattice"));
+  Lattice.placePoints({ sampling, width, height, spacing: getSpacing(points, width, height), jitter }, Alea("lattice"));
 
 // the grid generator before samplings, kept verbatim: the default lattice must reproduce it
 function placeLegacy(width: number, height: number, spacing: number, random: () => number) {
@@ -44,7 +44,7 @@ function placeLegacy(width: number, height: number, spacing: number, random: () 
   return { cellsX: count(width), cellsY: count(height), points, boundary };
 }
 
-describe("placePoints", () => {
+describe("Lattice.placePoints", () => {
   it("reproduces the legacy jittered square grid", () => {
     for (const [width, height, cells] of [
       [1280, 800, 10000],
@@ -55,7 +55,10 @@ describe("placePoints", () => {
     ]) {
       const spacing = getSpacing(cells, width, height);
       const legacy = placeLegacy(width, height, spacing, Alea(`seed-${cells}`));
-      const lattice = placePoints({ sampling: "square", width, height, spacing, jitter: 0.9 }, Alea(`seed-${cells}`));
+      const lattice = Lattice.placePoints(
+        { sampling: "square", width, height, spacing, jitter: 0.9 },
+        Alea(`seed-${cells}`)
+      );
       expect(lattice).toEqual(legacy);
     }
   });
@@ -122,7 +125,7 @@ describe("placePoints", () => {
   it.each(SAMPLINGS)("%s keeps neighbours apart at the highest jitter", sampling => {
     const { points, boundary } = place(sampling, MAX_JITTER, 30000);
     const { cells } = calculateVoronoi(points, boundary);
-    const { neighborDistance } = getSteps(sampling, getSpacing(30000));
+    const { neighborDistance } = Lattice.getSteps(sampling, getSpacing(30000));
     let closest = Infinity;
     for (const cellId of cells.i) {
       for (const neighborId of cells.c[cellId]) {
@@ -139,7 +142,7 @@ describe("placePoints", () => {
       const calls = [0, 0.3, 0.9].map(jitter => {
         let count = 0;
         const random = Alea("count");
-        placePoints({ sampling, width: WIDTH, height: HEIGHT, spacing: getSpacing(10000), jitter }, () => {
+        Lattice.placePoints({ sampling, width: WIDTH, height: HEIGHT, spacing: getSpacing(10000), jitter }, () => {
           count++;
           return random();
         });
@@ -150,7 +153,7 @@ describe("placePoints", () => {
   });
 });
 
-describe("findSlot", () => {
+describe("Lattice.findSlot", () => {
   it("matches the legacy square cell formula", () => {
     const spacing = getSpacing(10000);
     const { cellsX, cellsY } = place("square", 0.9);
@@ -161,7 +164,7 @@ describe("findSlot", () => {
       const y = random() * HEIGHT;
       const legacy =
         Math.floor(Math.min(y / spacing, cellsY - 1)) * cellsX + Math.floor(Math.min(x / spacing, cellsX - 1));
-      expect(findSlot(x, y, graph)).toBe(legacy);
+      expect(Lattice.findSlot(x, y, graph)).toBe(legacy);
     }
   });
 
@@ -174,7 +177,7 @@ describe("findSlot", () => {
       [WIDTH / 2, -10],
       [-10, HEIGHT / 2]
     ]) {
-      const slot = findSlot(x, y, graph);
+      const slot = Lattice.findSlot(x, y, graph);
       expect(slot).toBeGreaterThanOrEqual(0);
       expect(slot).toBeLessThan(cellsX * cellsY);
     }
@@ -183,6 +186,6 @@ describe("findSlot", () => {
   it.each(SAMPLINGS)("%s slot holds the point placed in it at zero jitter", sampling => {
     const { points, cellsX, cellsY } = place(sampling, 0);
     const graph = { sampling, spacing: getSpacing(10000), cellsX, cellsY };
-    expect(points.map(([x, y]) => findSlot(x, y, graph))).toEqual(points.map((_, cellId) => cellId));
+    expect(points.map(([x, y]) => Lattice.findSlot(x, y, graph))).toEqual(points.map((_, cellId) => cellId));
   });
 });

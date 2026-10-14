@@ -3,7 +3,7 @@ import { polygonArea, type Quadtree, quadtree } from "d3";
 import type { Point } from "@/types/global";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { findAllInQuadtree, rn, SEA_LEVEL, TYPED_ARRAY_MAX } from "@/utils";
-import { DEFAULT_JITTER, getSteps } from "./lattice";
+import { DEFAULT_JITTER, Lattice } from "./lattice";
 import { calculateVoronoi } from "./voronoi";
 
 declare global {
@@ -19,7 +19,7 @@ class PackModule {
     const newCells: { p: Point[]; g: number[]; h: number[] } = { p: [], g: [], h: [] };
     // coastal pairs further apart get a point between; the more regular the lattice, the fewer pairs qualify
     const splitDistance =
-      getSteps(sampling, spacing).neighborDistance * (1 + (DEFAULT_JITTER - options.map.graph.jitter));
+      Lattice.getSteps(sampling, spacing).neighborDistance * (1 + (DEFAULT_JITTER - options.map.graph.jitter));
     const splitDistance2 = splitDistance ** 2;
 
     const addNewPoint = (gridCellId: number, x: number, y: number, height: number) => {

@@ -5,7 +5,7 @@ import type { MapData } from "@/components/options-schema";
 import type { GridCells, GridGraph } from "@/types/GridGraph";
 import type { Point } from "@/types/global";
 import { rn, SEA_LEVEL } from "@/utils";
-import { findSlot, getSteps, placePoints } from "./lattice";
+import { Lattice } from "./lattice";
 import { calculateVoronoi } from "./voronoi";
 
 declare global {
@@ -35,7 +35,10 @@ class GridModule {
     const { width, height, points: cellsDesired, sampling, jitter } = settings;
     const spacing = this.getSpacing(cellsDesired, width, height);
     TIME && console.time("placePoints");
-    const { cellsX, cellsY, points, boundary } = placePoints({ sampling, width, height, spacing, jitter }, Math.random);
+    const { cellsX, cellsY, points, boundary } = Lattice.placePoints(
+      { sampling, width, height, spacing, jitter },
+      Math.random
+    );
     TIME && console.timeEnd("placePoints");
 
     const { cells, vertices } = calculateVoronoi(points, boundary);
@@ -70,7 +73,7 @@ class GridModule {
   /** cell at the given coordinates: the lattice slot, then the closest neighbour until none is closer */
   findCell(x: number, y: number, graph: GridGraph = grid): number {
     const { points, cells } = graph;
-    let cellId = findSlot(x, y, graph);
+    let cellId = Lattice.findSlot(x, y, graph);
     let distance = (points[cellId][0] - x) ** 2 + (points[cellId][1] - y) ** 2;
 
     for (let checked = -1; checked !== cellId; ) {
@@ -91,7 +94,7 @@ class GridModule {
   /** cell indexes within the radius from the given coordinates */
   findAll(x: number, y: number, radius: number, graph: GridGraph = grid): number[] {
     const cellId = this.findCell(x, y, graph);
-    const rings = Math.floor(radius / getSteps(graph.sampling, graph.spacing).neighborDistance);
+    const rings = Math.floor(radius / Lattice.getSteps(graph.sampling, graph.spacing).neighborDistance);
     if (!rings || radius === 1) return [cellId];
     return this.getRings(cellId, rings, graph.cells.c);
   }
