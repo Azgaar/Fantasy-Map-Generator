@@ -39,10 +39,11 @@ The headline is the verdict: **✅ No slowdowns** or **🔴 Slower:** and what. 
 says _no change_, _N% faster_ or _N% slower_. **Details** lists the generation steps and layers that changed.
 
 A total changes when the median of its per-round after/before ratios moves over 15% **and** every round
-agrees; a part needs 25%. Between identical builds the totals stay within about 10% (zoom painting at 20× is the
-noisiest) and the parts within about 15%, so the thresholds sit clear of the noise. Only a slower total
-fails the check. The parts point at where to look. A failed check is a signal to look, not a merge
-block.
+agrees; a part needs 25% and at least 10 ms. Between identical builds the totals stay within about 10% (zoom
+painting at 20× is the noisiest) and the parts within about 15%, so the thresholds sit clear of the noise.
+
+The benchmark is a monitor, not a gate: a slower number turns the report red and never fails the check. The
+check fails only when the benchmark itself cannot run, such as a build that breaks.
 
 ## When it runs
 
