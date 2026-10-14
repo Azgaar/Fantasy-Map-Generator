@@ -166,19 +166,24 @@ export class LayersRegistry<Id extends string = string> {
   /** draw the listed layers that are ON, always in layer order */
   draw(...ids: Id[]): void {
     for (const layer of this.layers) {
-      if (ids.includes(layer.id) && this.active.has(layer.id)) layer.params.draw?.(layer);
+      if (!layer.params.draw || !ids.includes(layer.id) || !this.active.has(layer.id)) continue;
+      const start = performance.now();
+      layer.params.draw(layer);
+      performance.measure(layer.id, { start, detail: "Layers" });
     }
   }
 
   drawAll(): void {
     INFO && console.group("Layers Rendering");
     TIME && console.time("Layers Rendering");
+    const start = performance.now();
 
     try {
       this.draw(...this.layers.map(layer => layer.id));
     } finally {
       // a throwing renderer must not leave the group open: every later render would nest inside it
       TIME && console.timeEnd("Layers Rendering");
+      performance.measure("Layers Rendering", { start });
       INFO && console.groupEnd();
     }
   }
