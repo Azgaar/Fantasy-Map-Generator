@@ -94,7 +94,8 @@ describe("Pipeline", () => {
 
     await pipeline.run(undefined);
 
-    const measures = performance.getEntriesByType("measure").map(({ name, detail }) => [name, detail]);
+    const entries = performance.getEntriesByType("measure") as PerformanceMeasure[];
+    const measures = entries.map(({ name, detail }) => [name, detail]);
     expect(measures).toEqual([
       ["measured", null],
       ["a", "measured"],
