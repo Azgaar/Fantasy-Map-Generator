@@ -23,6 +23,8 @@ const EDGE_RINGS = 3;
 
 class GridModule {
   private readonly rasters = new WeakMap<GridGraph, GridRaster>();
+  private visited = new Uint32Array(0); // getRings stamps per cell
+  private visit = 0;
 
   prepare(graph?: GridGraph): void {
     if (graph) this.resetHeights(graph);
@@ -80,7 +82,8 @@ class GridModule {
       checked = cellId;
       // the boundary pseudo-points cut the walk along the map edge, there it looks a few rings around
       const candidates = cells.b[checked] ? this.getRings(checked, EDGE_RINGS, cells.c) : cells.c[checked];
-      for (const candidate of candidates) {
+      for (let i = 0; i < candidates.length; i++) {
+        const candidate = candidates[i];
         const candidateDistance = (points[candidate][0] - x) ** 2 + (points[candidate][1] - y) ** 2;
         if (candidateDistance >= distance) continue;
         cellId = candidate;
@@ -101,18 +104,28 @@ class GridModule {
 
   /** the cell and every cell up to the given number of neighbour steps away */
   private getRings(cellId: number, rings: number, neighbors: number[][]): number[] {
+    // a visit stamps the cells it reaches, so no visited list is searched or allocated
+    if (this.visited.length < neighbors.length || this.visit === 0xffffffff) {
+      this.visited = new Uint32Array(neighbors.length);
+      this.visit = 0;
+    }
+    const visit = ++this.visit;
+    const { visited } = this;
+
     const found = [cellId];
-    let frontier = [cellId];
-    for (let ring = 0; ring < rings; ring++) {
-      const next: number[] = [];
-      for (const id of frontier) {
-        for (const neighborId of neighbors[id]) {
-          if (found.includes(neighborId)) continue;
+    visited[cellId] = visit;
+    for (let ring = 0, start = 0; ring < rings; ring++) {
+      const end = found.length; // the previous ring is found[start..end)
+      for (let i = start; i < end; i++) {
+        const cellNeighbors = neighbors[found[i]];
+        for (let j = 0; j < cellNeighbors.length; j++) {
+          const neighborId = cellNeighbors[j];
+          if (visited[neighborId] === visit) continue;
+          visited[neighborId] = visit;
           found.push(neighborId);
-          next.push(neighborId);
         }
       }
-      frontier = next;
+      start = end;
     }
     return found;
   }

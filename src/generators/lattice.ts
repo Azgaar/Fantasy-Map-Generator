@@ -42,7 +42,17 @@ const SQRT3 = Math.sqrt(3);
 const HEX_SIDE = Math.sqrt(2 / SQRT3); // hexagon across-flats width with an area of 1
 
 class LatticeModule {
+  // the last steps asked for: cell lookups ask for the same ones on every call
+  private cached: { sampling: Sampling; spacing: number; steps: LatticeSteps } | null = null;
+
   getSteps(sampling: Sampling, spacing: number): LatticeSteps {
+    if (this.cached?.sampling === sampling && this.cached.spacing === spacing) return this.cached.steps;
+    const steps = this.computeSteps(sampling, spacing);
+    this.cached = { sampling, spacing, steps };
+    return steps;
+  }
+
+  private computeSteps(sampling: Sampling, spacing: number): LatticeSteps {
     if (sampling === "hexPointy") {
       const dx = spacing * HEX_SIDE;
       return { dx, dy: (dx * SQRT3) / 2, rowOffset: dx / 2, triangleShift: 0, neighborDistance: dx };
