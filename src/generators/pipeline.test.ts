@@ -84,4 +84,21 @@ describe("Pipeline", () => {
 
     await expect(pipeline.run(undefined)).rejects.toThrow('test failed at step "a": boom');
   });
+
+  test("records each step and the whole run as a performance measure", async () => {
+    performance.clearMeasures();
+    const pipeline = new Pipeline("measured", [
+      { id: "a", run: () => {} },
+      { id: "b", run: () => {} }
+    ]);
+
+    await pipeline.run(undefined);
+
+    const measures = performance.getEntriesByType("measure").map(({ name, detail }) => [name, detail]);
+    expect(measures).toEqual([
+      ["measured", null],
+      ["a", "measured"],
+      ["b", "measured"]
+    ]);
+  });
 });

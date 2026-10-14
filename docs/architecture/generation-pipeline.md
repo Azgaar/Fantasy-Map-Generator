@@ -36,7 +36,8 @@ new Pipeline<Id, TContext>(name, steps).run(context): Promise<void>;
   and `EraseContext`. A step that behaves differently between paths reads a flag off the context
   instead of being conditionally omitted from the list.
 - **Logging and timing belong to the runner.** Each run is an `INFO`-gated `console.group(name)` with a
-  `TIME`-gated timer per step id. Generators no longer time themselves at the top level; the timers
+  `TIME`-gated timer per step id, and every step is recorded as a `performance.measure` (the DevTools
+  Performance panel shows them). Generators no longer time themselves at the top level; the timers
   that remain inside them (`expandStates`, `generateTrails`, `calculateVoronoi`, …) are sub-phase
   detail nested under their step.
 - **Failures name the phase.** A throwing step is rethrown as
