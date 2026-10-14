@@ -1,5 +1,5 @@
 // Translates the Assistant's Anthropic-shaped chat into the OpenAI chat/completions format
-// spoken by OpenAI, Mistral, Qwen (DashScope compatible mode) and DeepSeek, and back.
+// spoken by OpenAI, Gemini, Mistral, Qwen (DashScope compatible mode) and DeepSeek, and back.
 
 import { errorText } from "@/utils/stringUtils";
 import type { SystemBlock } from "./context";
@@ -19,7 +19,7 @@ import {
 
 type ChatMessage = Record<string, unknown>;
 
-export function toChatMessages(system: SystemBlock[], messages: Message[]): ChatMessage[] {
+export function toChatMessages(system: SystemBlock[], messages: Message[], gemini = false): ChatMessage[] {
   const chat: ChatMessage[] = [{ role: "system", content: system.map(block => block.text).join("\n\n") }];
 
   for (const message of messages) {
@@ -33,7 +33,10 @@ export function toChatMessages(system: SystemBlock[], messages: Message[]): Chat
         .map(block => ({
           id: block.id,
           type: "function",
-          function: { name: block.name, arguments: JSON.stringify(block.input) }
+          function: { name: block.name, arguments: JSON.stringify(block.input) },
+          ...(gemini && block.thoughtSignature
+            ? { extra_content: { google: { thought_signature: block.thoughtSignature } } }
+            : {})
         }));
 
       if (!text && !toolCalls.length) continue; // an empty turn is invalid: content may be null only beside tool calls
@@ -77,7 +80,14 @@ export function toChatTools(tools: ToolDefinition[]): ChatMessage[] {
 
 export function fromChatResponse(json: {
   choices?: {
-    message?: { content?: string | null; tool_calls?: { id: string; function: { name: string; arguments: string } }[] };
+    message?: {
+      content?: string | null;
+      tool_calls?: {
+        id: string;
+        function: { name: string; arguments: string };
+        extra_content?: { google?: { thought_signature?: string } };
+      }[];
+    };
     finish_reason?: string | null;
   }[];
   usage?: {
@@ -96,7 +106,10 @@ export function fromChatResponse(json: {
       type: "tool_use",
       id: call.id,
       name: call.function.name,
-      input: parseArguments(call.function.arguments)
+      input: parseArguments(call.function.arguments),
+      ...(call.extra_content?.google?.thought_signature
+        ? { thoughtSignature: call.extra_content.google.thought_signature }
+        : {})
     });
   }
 
@@ -122,12 +135,13 @@ function parseArguments(raw: string): ToolInput {
   }
 }
 
-// DeepSeek counts its reasoning against the limit, so a large batch would be cut off at 4096
-const outputLimit = (baseUrl: string) => (baseUrl.includes("deepseek.com") ? 8192 : 4096);
+// Reasoning counts against the limit, leaving less room for tool calls
+const outputLimit = (baseUrl: string) =>
+  /deepseek\.com|generativelanguage\.googleapis\.com/.test(baseUrl) ? 8192 : 4096;
 
 export async function completeOpenAI(
   baseUrl: string,
-  { key, model, system, messages, tools, signal }: CompletionRequest
+  { provider, key, model, system, messages, tools, signal }: CompletionRequest
 ): Promise<Completion> {
   const openAI = baseUrl === "https://api.openai.com/v1";
   const response = await fetch(`${baseUrl}/chat/completions`, {
@@ -136,7 +150,7 @@ export async function completeOpenAI(
     headers: { "Content-Type": "application/json", ...bearerHeaders(key) },
     body: JSON.stringify({
       model,
-      messages: toChatMessages(system, messages),
+      messages: toChatMessages(system, messages, provider === "gemini"),
       tools: toChatTools(tools),
       ...(openAI ? { max_completion_tokens: 4096 } : { max_tokens: outputLimit(baseUrl) }),
       ...(openAI && /^gpt-6-(sol|luna)$/.test(model) ? { reasoning_effort: "none" } : {})

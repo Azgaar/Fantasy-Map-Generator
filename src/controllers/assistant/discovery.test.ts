@@ -52,6 +52,32 @@ function enterKey(value: string): void {
   key.dispatchEvent(new Event("input"));
 }
 
+it("offers Gemini, discovers models and saves its own key and model", async () => {
+  discovery.list.mockResolvedValue(["gemini-flash-latest"]);
+  await openSheet();
+  const provider = document.getElementById("assistantProvider") as HTMLSelectElement;
+  expect(provider.querySelector('option[value="gemini"]')?.textContent).toBe("Gemini");
+  provider.value = "gemini";
+  provider.dispatchEvent(new Event("change"));
+  expect((document.getElementById("assistantKeyLink") as HTMLAnchorElement).href).toBe(
+    "https://aistudio.google.com/apikey"
+  );
+  expect((document.getElementById("assistantModel") as HTMLInputElement).value).toBe("gemini-flash-latest");
+  enterKey("gemini-key");
+  await vi.waitFor(() =>
+    expect(discovery.list).toHaveBeenCalledWith(
+      "gemini",
+      "gemini-key",
+      "http://localhost:11434/v1",
+      expect.any(AbortSignal)
+    )
+  );
+  click("Connect");
+  expect(localStorage.getItem("fmg-ai-chat-provider")).toBe("gemini");
+  expect(localStorage.getItem("fmg-ai-kl-gemini")).toBe("gemini-key");
+  expect(localStorage.getItem("fmg-ai-model-gemini")).toBe("gemini-flash-latest");
+});
+
 it("does not save a draft local address when the key sheet is cancelled", async () => {
   localStorage.setItem("fmg-ai-local-url", "http://localhost:8080/v1");
   await openSheet();
