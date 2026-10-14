@@ -7,7 +7,7 @@ export type Sampling = (typeof SAMPLINGS)[number];
 export const MAX_JITTER = 0.9; // at 1 neighbouring points can coincide and the Voronoi step drops one of them
 export const DEFAULT_JITTER = 0.9; // the classic grid
 
-export interface LatticeSettings {
+interface LatticeSettings {
   sampling: Sampling;
   width: number;
   height: number;
@@ -15,14 +15,14 @@ export interface LatticeSettings {
   jitter: number;
 }
 
-export interface LatticePoints {
+interface LatticePoints {
   cellsX: number;
   cellsY: number;
   points: Point[];
   boundary: Point[]; // pseudo-points outside the map, they clip the edge cells but get no cells of their own
 }
 
-export interface LatticeGraph {
+interface LatticeGraph {
   sampling: Sampling;
   spacing: number;
   cellsX: number;
@@ -30,7 +30,7 @@ export interface LatticeGraph {
 }
 
 /** slot size and lattice offsets; every slot covers spacing² */
-export interface LatticeSteps {
+interface LatticeSteps {
   dx: number;
   dy: number;
   rowOffset: number; // odd rows sit this far right of even rows
