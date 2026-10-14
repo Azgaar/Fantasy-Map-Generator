@@ -27,10 +27,11 @@ const TOTALS = {
   "pan paint": "Pan: painting"
 };
 const PARTS = { generation: "Generation", rendering: "Drawing" };
-const THRESHOLD = 0.15; // a total changes when its median moves this much and every round agrees, clear of the ~10% noise
+const PHASES = { moving: "while moving", after: "after it stops" };
+const THRESHOLD = 0.1; // a total changes when its median moves this much and every round agrees: twice the 5% noise
 const PART_THRESHOLD = 0.25; // parts are noisier, so they need a bigger move to be listed
 const MIN_MS = 10; // a part must also move this much to be listed: smaller swings are noise
-const TRACE_CATEGORIES = ["devtools.timeline", "disabled-by-default-devtools.timeline", "toplevel"];
+const TRACE_CATEGORIES = ["devtools.timeline", "disabled-by-default-devtools.timeline", "toplevel", "blink.user_timing"];
 
 const { values: args } = parseArgs({
   options: { base: { type: "string", default: "origin/master" }, rounds: { type: "string", default: "3" } }
@@ -77,54 +78,105 @@ const settle = async page => {
   await frame(page);
 };
 
-/** CPU time the browser spends on a gesture: main-thread tasks, and raster, which no in-page timer sees */
-async function traced(browser, page, gesture) {
+/** Runs in the page before the app: nothing covers the map, and every frame a gesture draws is counted */
+function prepare() {
+  localStorage.setItem("version", "999.0.0"); // newer than any build, so no "what's new" dialog opens mid-gesture
+  globalThis.benchmarkFrames = 0;
+  addEventListener("DOMContentLoaded", () => {
+    const count = records => (globalThis.benchmarkFrames += records.length);
+    new MutationObserver(count).observe(document.getElementById("viewbox"), { attributeFilter: ["transform"] });
+  });
+}
+
+/** CPU time of one gesture from a Chrome trace: main-thread tasks and raster, while moving and after it stops */
+async function traced(browser, page, gesture, inputs) {
+  await page.evaluate(() => (globalThis.benchmarkFrames = 0));
   await browser.startTracing(page, { categories: TRACE_CATEGORIES });
-  await gesture();
+  const release = await gesture();
+  const frames = await page.evaluate(() => {
+    performance.mark("benchmark:stop");
+    return globalThis.benchmarkFrames;
+  });
+  await release?.();
   await settle(page);
   const { traceEvents } = JSON.parse(await browser.stopTracing());
+  if (frames !== inputs) throw new Error(`${inputs} inputs drew ${frames} frames: the gesture missed the map`);
 
+  const stop = traceEvents.find(event => event.name === "benchmark:stop").ts;
   const mainThreads = new Set(
     traceEvents
       .filter(event => event.name === "thread_name" && event.args.name === "CrRendererMain")
       .map(event => `${event.pid}:${event.tid}`)
   );
-  const work = { page: 0, paint: 0 };
-  for (const { name, dur, pid, tid } of traceEvents) {
+  const work = {};
+  for (const { name, ts, dur, pid, tid } of traceEvents) {
     if (!dur) continue;
-    if (name === "RasterTask") work.paint += dur / 1000;
-    else if (name === "ThreadControllerImpl::RunTask" && mainThreads.has(`${pid}:${tid}`)) {
-      work.page += dur / 1000;
-    }
+    const main = name === "ThreadControllerImpl::RunTask" && mainThreads.has(`${pid}:${tid}`);
+    const kind = name === "RasterTask" ? "paint" : main ? "page" : null;
+    if (!kind) continue;
+    const key = `${kind} › ${ts < stop ? "moving" : "after"}`;
+    work[key] = (work[key] ?? 0) + dur / 1000;
   }
   return work;
 }
 
-async function zoom(page, ticks, deltaY) {
-  await page.mouse.move(VIEWPORT.width / 2, VIEWPORT.height / 2);
-  for (let i = 0; i < ticks; i++) {
+const TICKS = 22; // d3 scales 2^0.2 per tick: 22 ticks go from 1x to the 20x maximum, and back
+const PAN = [
+  [400, 0],
+  [0, 300],
+  [-400, 0],
+  [0, -300]
+];
+const PAN_STEPS = 25; // per side of the loop
+
+async function zoom(page, [x, y], deltaY) {
+  await page.mouse.move(x, y);
+  for (let i = 0; i < TICKS; i++) {
     await page.mouse.wheel(0, deltaY);
     await frame(page);
   }
 }
 
-async function drag(page, dx, steps) {
-  const y = VIEWPORT.height / 2;
-  const x = VIEWPORT.width / 2 - dx / 2;
+/** One drag around a square: the release, and with it the settle redraw, is left to the caller */
+async function pan(page, [x, y]) {
   await page.mouse.move(x, y);
   await page.mouse.down();
-  for (let i = 1; i <= steps; i++) {
-    await page.mouse.move(x + (dx * i) / steps, y);
-    await frame(page);
+  for (const [dx, dy] of PAN) {
+    for (let i = 0; i < PAN_STEPS; i++) {
+      x += dx / PAN_STEPS;
+      y += dy / PAN_STEPS;
+      await page.mouse.move(x, y);
+      await frame(page);
+    }
   }
-  await page.mouse.up();
+  return () => page.mouse.up();
 }
 
-/** Load the map in a fresh profile, then zoom in, pan and zoom out with real input, one event per frame */
+/** The biggest city, the biggest port and the deepest sea in the middle of the screen, clear of the panels */
+function findSpots({ width, height }) {
+  const { a: k, e, f } = document.getElementById("viewbox").getScreenCTM();
+  const toScreen = ([x, y]) => [e + x * k, f + y * k];
+  const inside = ([x, y]) => x > width * 0.2 && x < width * 0.8 && y > height * 0.2 && y < height * 0.8;
+
+  const burgs = pack.burgs
+    .filter(burg => burg.i && !burg.removed)
+    .map(burg => ({ ...burg, at: toScreen([burg.x, burg.y]) }))
+    .filter(burg => inside(burg.at))
+    .sort((a, b) => b.population - a.population);
+  let sea;
+  for (let i = 0; i < grid.points.length; i++) {
+    const at = toScreen(grid.points[i]);
+    if (inside(at) && (!sea || grid.cells.h[i] < sea.h)) sea = { h: grid.cells.h[i], at };
+  }
+  return [burgs[0]?.at, burgs.find(burg => burg.port)?.at, sea?.at];
+}
+
+/** Load the map in a fresh profile, then zoom at three spots and pan a loop at 20x, with real input, one event per frame */
 async function sample(browser, side) {
   const context = await browser.newContext({ viewport: VIEWPORT, serviceWorkers: "block" });
   const origin = new URL(side.url).origin;
   await context.route(url => url.origin !== origin, route => route.abort()); // offline: no fonts, no analytics
+  await context.addInitScript(prepare);
 
   const page = await context.newPage();
   await page.goto(`${side.url}?seed=${SEED}`);
@@ -152,14 +204,24 @@ async function sample(browser, side) {
   }
 
   await settle(page);
-  const gestures = [
-    ["zoom", () => zoom(page, 22, -100)], // d3 scales 2^0.2 per tick: 22 ticks reach the 20x maximum
-    ["pan", () => drag(page, 600, 30).then(() => drag(page, -600, 30))],
-    ["zoom", () => zoom(page, 22, 100)]
-  ];
-  for (const [gesture, run] of gestures) {
-    for (const [part, ms] of Object.entries(await traced(browser, page, run))) add(`${gesture} ${part}`, ms);
+  const spots = await page.evaluate(findSpots, VIEWPORT);
+  if (!spots.every(Boolean)) throw new Error(`seed ${SEED} has no city, port or sea in the middle of the screen`);
+  const record = (gesture, work) => {
+    for (const [part, ms] of Object.entries(work)) {
+      add(`${gesture} ${part.split(" ")[0]}`, ms);
+      add(`${gesture} ${part}`, ms);
+    }
+  };
+
+  for (const spot of spots) {
+    record("zoom", await traced(browser, page, () => zoom(page, spot, -100), TICKS));
+    record("zoom", await traced(browser, page, () => zoom(page, spot, 100), TICKS));
   }
+
+  await zoom(page, spots[0], -100);
+  await settle(page);
+  const corner = [VIEWPORT.width / 2 - 200, VIEWPORT.height / 2 - 150];
+  record("pan", await traced(browser, page, () => pan(page, corner), PAN.length * PAN_STEPS));
 
   await context.close();
   return metrics;
@@ -208,7 +270,7 @@ function report(rows, baseLabel) {
     .sort((a, b) => Math.abs(b.after - (b.before ?? 0)) - Math.abs(a.after - (a.before ?? 0)));
   const partLabel = key => {
     const [total, part] = key.split(" › ");
-    return `${PARTS[total]}: ${part}`;
+    return total in TOTALS ? `${TOTALS[total]} ${PHASES[part]}` : `${PARTS[total]}: ${part}`;
   };
 
   const markdown = [
@@ -224,8 +286,10 @@ function report(rows, baseLabel) {
     "",
     "<details><summary>Details</summary>",
     "",
-    `Seed \`${SEED}\`, 10k cells, 1280×720. Zooming is 22 wheel ticks to 20× and back; panning is two 600 px ` +
-      "drags at 20×. Page work is the main thread: script, style, layout and paint recording; painting is raster. " +
+    `Seed \`${SEED}\`, 10k cells, 1280×720. Zooming is 22 wheel ticks to 20× and back at the biggest city, ` +
+      "the biggest port and the deepest sea; panning is one 100-step drag around a square at 20×. " +
+      "Every input draws one frame. Page work is the main thread: script, style, layout and paint recording; " +
+      "painting is raster. " +
       `A total changes when it moves over ${share(THRESHOLD)} (a part over ${share(PART_THRESHOLD)}) and every run agrees.`,
     "",
     changed.length ? "| What changed | Before | After | |\n|---|--:|--:|---|" : "No part changed.",

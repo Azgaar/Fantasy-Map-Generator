@@ -16,31 +16,52 @@ same machine.
 
 One map: seed `benchmark`, 10k cells, a 1280×720 viewport, the default style and layers.
 
-| Total            | What it is                                                                   |
-| ---------------- | ---------------------------------------------------------------------------- |
-| Generate the map | the Generation Pipeline, start to end                                        |
-| Draw the map     | every layer draw during load, summed                                         |
-| Zoom: page work  | main-thread time of 22 wheel ticks in to the 20× maximum and 22 back out     |
-| Zoom: painting   | raster time of the same zoom                                                 |
-| Pan: page work   | main-thread time of a 600 px drag right and back at 20×, 30 steps each way   |
-| Pan: painting    | raster time of the same pan                                                  |
+| Total            | What it is                                                                        |
+| ---------------- | --------------------------------------------------------------------------------- |
+| Generate the map | the Generation Pipeline, start to end                                             |
+| Draw the map     | every layer draw during load, summed                                              |
+| Zoom: page work  | main-thread time of zooming in to the 20× maximum and back out, at three spots    |
+| Zoom: painting   | raster time of the same zooms                                                     |
+| Pan: page work   | main-thread time of one 100-step drag around a 400×300 px square at 20×           |
+| Pan: painting    | raster time of the same pan                                                       |
 
 Generation and drawing come from the app's own `performance.measure` entries: `Pipeline.run` records each
-step and `Layers.draw` each renderer. Zoom and pan are real mouse input, one event per frame, each followed
-by the settle redraw d3 fires when the gesture ends, and their time comes from a Chrome trace.
+step and `Layers.draw` each renderer.
+
+Zoom and pan are real mouse input, one event per frame, and their time comes from a Chrome trace. Each zoom
+is 22 wheel ticks in and 22 out at the biggest city, the biggest port and the deepest sea in the middle of
+the screen, so dense labels, coast and open water are all covered. Every input must draw exactly one frame
+(counted as writes to `#viewbox`'s transform); a gesture that misses the map stops the run rather than
+report numbers for less work. The profile is told it already saw this version, because the "what's new"
+dialog opens six seconds in and would cover the map mid-gesture.
 
 Page work (script, style, layout, paint recording) and painting (raster) are separate totals because they
 fail differently: a slow zoom handler is page work, a costly SVG change is painting. Raster is most of a
-gesture's time, more so on slower machines, so a sum would let page work double before it showed.
+gesture's time, more so on slower machines, so a sum would let page work double before it showed. Details
+splits each into _while moving_ (the per-frame handler) and _after it stops_ (the settle redraw d3 fires
+when the gesture ends), so a regression points at the code that runs it.
 
 ## Reading the report
 
 The headline is the verdict: **✅ No slowdowns** or **🔴 Slower:** and what. Below it, one row per total
-says _no change_, _N% faster_ or _N% slower_. **Details** lists the generation steps and layers that changed.
+says _no change_, _N% faster_ or _N% slower_. **Details** lists the generation steps, layers and gesture phases that changed.
 
-A total changes when the median of its per-round after/before ratios moves over 15% **and** every round
-agrees; a part needs 25% and at least 10 ms. Between identical builds the totals stay within about 10% (zoom
-painting at 20× is the noisiest) and the parts within about 15%, so the thresholds sit clear of the noise.
+A total changes when the median of its per-round after/before ratios moves over 10% **and** every round
+agrees; a part needs 25% and at least 10 ms, because the _after it stops_ phases swing by up to ±30% in a
+single round. Over five runs with no app change, no total's median moved more than 5%.
+
+How much it catches, measured locally with 3 rounds:
+
+| Change                                   | Zoom: page work | Pan: page work | Pan: painting |
+| ---------------------------------------- | --------------- | -------------- | ------------- |
+| none (5 runs, worst median)              | +3%             | +2%            | +2%           |
+| 5 ms of script per zoom frame            | +7%             | **+18%**       | 0%            |
+| 10 ms of script per zoom frame           | **+22%**        | **+20%**       | −1%           |
+| 30 ms of script per zoom frame           | **+62%**        | **+88%**       | +1%           |
+| `drop-shadow` filter on the coastline    | +4%             | +9%            | **+12%**      |
+
+So script cost from about 5 ms a frame, and a filter on one detailed layer, turn the report red; painting
+cost shows most on pan, which keeps redrawing new tiles at 20×.
 
 The benchmark is a monitor, not a gate: a slower number turns the report red and never fails the check. The
 check fails only when the benchmark itself cannot run, such as a build that breaks.
