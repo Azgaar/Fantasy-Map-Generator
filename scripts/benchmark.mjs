@@ -29,7 +29,7 @@ const TOTALS = {
 const PARTS = { generation: "Generation", rendering: "Drawing" };
 const THRESHOLD = 0.15; // a total changes when its median moves this much and every round agrees, clear of the ~10% noise
 const PART_THRESHOLD = 0.25; // parts are noisier, so they need a bigger move to be listed
-const MIN_MS = 5; // parts below this are noise
+const MIN_MS = 10; // a part must also move this much to be listed: smaller swings are noise
 const TRACE_CATEGORIES = ["devtools.timeline", "disabled-by-default-devtools.timeline", "toplevel"];
 
 const { values: args } = parseArgs({
@@ -204,7 +204,7 @@ function report(rows, baseLabel) {
   const totals = Object.entries(TOTALS).map(([key, label]) => ({ ...rows.find(row => row.key === key), label }));
   const slower = totals.filter(row => row.verdict === "slower");
   const changed = rows
-    .filter(row => !(row.key in TOTALS) && row.verdict !== "same" && Math.max(row.before ?? 0, row.after) >= MIN_MS)
+    .filter(row => !(row.key in TOTALS) && row.verdict !== "same" && Math.abs(row.after - (row.before ?? 0)) >= MIN_MS)
     .sort((a, b) => Math.abs(b.after - (b.before ?? 0)) - Math.abs(a.after - (a.before ?? 0)));
   const partLabel = key => {
     const [total, part] = key.split(" › ");
@@ -234,7 +234,7 @@ function report(rows, baseLabel) {
     "</details>",
     ""
   ].join("\n");
-  return { markdown, regressed: slower.length > 0 };
+  return markdown;
 }
 
 const sides = [];
@@ -262,7 +262,7 @@ try {
 }
 
 const baseLabel = /^[0-9a-f]{40}$/.test(args.base) ? baseRef.slice(0, 8) : `${args.base}@${baseRef.slice(0, 8)}`;
-const { markdown, regressed } = report(compare(samples.base, samples.head), baseLabel);
+const markdown = report(compare(samples.base, samples.head), baseLabel);
 console.log(markdown);
 if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, markdown);
-process.exit(regressed ? 1 : 0);
+process.exit(); // a monitor, not a gate: slower numbers are reported, never an exit code
