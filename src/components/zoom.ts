@@ -39,6 +39,9 @@ function onZoom(event: D3ZoomEvent<SVGSVGElement, unknown>): void {
 
 /** Per-frame view tracking. Keep this cheap */
 function handleZoomPerFrame(): void {
+  // TEST ONLY: 30 ms of busy work per zoom frame, to see the benchmark flag it
+  const start = performance.now();
+  while (performance.now() - start < 30) {}
   const didScaleChange = pendingScaleChange;
   const didPositionChange = pendingPositionChange;
   pendingScaleChange = false;
