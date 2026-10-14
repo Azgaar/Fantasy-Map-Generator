@@ -16,33 +16,38 @@ same machine.
 
 One map: seed `benchmark`, 10k cells, a 1280×720 viewport, the default style and layers.
 
-| Total            | What it is                                                                       |
-| ---------------- | -------------------------------------------------------------------------------- |
-| Generate the map | the Generation Pipeline, start to end                                            |
-| Draw the map     | every layer draw during load, summed                                             |
-| Zoom in and out  | 22 wheel ticks in to the 20× maximum and 22 back out, at the map centre          |
-| Pan around       | a 600 px drag right and back at 20×, in 30 steps each way                        |
+| Total            | What it is                                                                   |
+| ---------------- | ---------------------------------------------------------------------------- |
+| Generate the map | the Generation Pipeline, start to end                                        |
+| Draw the map     | every layer draw during load, summed                                         |
+| Zoom: page work  | main-thread time of 22 wheel ticks in to the 20× maximum and 22 back out     |
+| Zoom: painting   | raster time of the same zoom                                                 |
+| Pan: page work   | main-thread time of a 600 px drag right and back at 20×, 30 steps each way   |
+| Pan: painting    | raster time of the same pan                                                  |
 
 Generation and drawing come from the app's own `performance.measure` entries: `Pipeline.run` records each
 step and `Layers.draw` each renderer. Zoom and pan are real mouse input, one event per frame, each followed
-by the settle redraw d3 fires when the gesture ends. Their time comes from a Chrome trace, as main-thread
-tasks plus raster tasks. Raster is where SVG cost shows up when the view changes, and no timer inside the
-page can see it.
+by the settle redraw d3 fires when the gesture ends, and their time comes from a Chrome trace.
+
+Page work (script, style, layout, paint recording) and painting (raster) are separate totals because they
+fail differently: a slow zoom handler is page work, a costly SVG change is painting. Raster is most of a
+gesture's time, more so on slower machines, so a sum would let page work double before it showed.
 
 ## Reading the report
 
 The headline is the verdict: **✅ No slowdowns** or **🔴 Slower:** and what. Below it, one row per total
-says _no change_, _N% faster_ or _N% slower_. **Details** lists the steps, layers and threads that changed.
+says _no change_, _N% faster_ or _N% slower_. **Details** lists the generation steps and layers that changed.
 
 A total changes when the median of its per-round after/before ratios moves over 15% **and** every round
-agrees; a part needs 25%. Between identical builds the totals stay within about 10% (zoom at 20× is the
+agrees; a part needs 25%. Between identical builds the totals stay within about 10% (zoom painting at 20× is the
 noisiest) and the parts within about 15%, so the thresholds sit clear of the noise. Only a slower total
 fails the check. The parts point at where to look. A failed check is a signal to look, not a merge
 block.
 
 ## When it runs
 
-- **On a pull request to `master`** that changes `src`. The report is the job summary of the Benchmark check.
+- **On a pull request to `master`** that changes `src`. The report is a PR comment, updated on every push; a
+  fork's token cannot comment, so there it is the job summary of the Benchmark check.
 - **By hand**, from the Actions tab or locally.
 
 Each round runs before and after, alternating which goes first so machine drift hits both sides equally:
@@ -60,5 +65,5 @@ The base is checked out into a temporary worktree that shares this checkout's `n
 
 ## Changing what is tracked
 
-Keep it to one map and four totals. New work is covered by making it a pipeline step or a layer. Add a
-gesture to `sample` in `scripts/benchmark.mjs` only when a real regression slipped past the four totals.
+Keep it to one map and six totals. New work is covered by making it a pipeline step or a layer. Add a
+gesture to `sample` in `scripts/benchmark.mjs` only when a real regression slipped past the six totals.

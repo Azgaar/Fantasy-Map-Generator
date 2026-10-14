@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write # the report comment
 
 concurrency:
   group: benchmark-${{ github.ref }}
@@ -45,4 +46,22 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
       - name: Compare against the commit the change branched from
-        run: npm run benchmark -- --base origin/${{ github.base_ref || 'master' }}
+        id: benchmark
+        continue-on-error: true # comment first, fail after
+        shell: bash # with pipefail, so tee keeps the script's exit code
+        run: node scripts/benchmark.mjs --base origin/${{ github.base_ref || 'master' }} | tee benchmark.md
+      - name: Comment the report on the pull request
+        # a fork's token is read-only, so its report stays in the job summary
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMENTS: repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments
+        run: |
+          [ -s benchmark.md ] || exit 0
+          body=$(printf '<!-- benchmark -->\n%s' "$(cat benchmark.md)")
+          id=$(gh api "$COMMENTS" --paginate --jq '.[] | select(.body | startswith("<!-- benchmark -->")) | .id' | tail -n 1)
+          if [ -n "$id" ]; then gh api -X PATCH "repos/${{ github.repository }}/issues/comments/$id" -f body="$body" > /dev/null
+          else gh api "$COMMENTS" -f body="$body" > /dev/null; fi
+      - name: Fail on a slowdown
+        if: steps.benchmark.outcome == 'failure'
+        run: exit 1

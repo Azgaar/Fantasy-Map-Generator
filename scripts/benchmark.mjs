@@ -17,8 +17,16 @@ import { chromium } from "playwright";
 
 const SEED = "benchmark";
 const VIEWPORT = { width: 1280, height: 720 };
-const TOTALS = { generation: "Generate the map", rendering: "Draw the map", zoom: "Zoom in and out", pan: "Pan around" };
-const PARTS = { generation: "Generation", rendering: "Drawing", zoom: "Zoom", pan: "Pan" };
+// page work (script, style, layout on the main thread) and painting (raster) gate apart: neither hides behind the other
+const TOTALS = {
+  generation: "Generate the map",
+  rendering: "Draw the map",
+  "zoom page": "Zoom: page work",
+  "zoom paint": "Zoom: painting",
+  "pan page": "Pan: page work",
+  "pan paint": "Pan: painting"
+};
+const PARTS = { generation: "Generation", rendering: "Drawing" };
 const THRESHOLD = 0.15; // a total changes when its median moves this much and every round agrees, clear of the ~10% noise
 const PART_THRESHOLD = 0.25; // parts are noisier, so they need a bigger move to be listed
 const MIN_MS = 5; // parts below this are noise
@@ -69,7 +77,7 @@ const settle = async page => {
   await frame(page);
 };
 
-/** CPU time the browser spends on a gesture: main-thread tasks plus raster, which no in-page timer sees */
+/** CPU time the browser spends on a gesture: main-thread tasks, and raster, which no in-page timer sees */
 async function traced(browser, page, gesture) {
   await browser.startTracing(page, { categories: TRACE_CATEGORIES });
   await gesture();
@@ -81,12 +89,12 @@ async function traced(browser, page, gesture) {
       .filter(event => event.name === "thread_name" && event.args.name === "CrRendererMain")
       .map(event => `${event.pid}:${event.tid}`)
   );
-  const work = { "main thread": 0, raster: 0 };
+  const work = { page: 0, paint: 0 };
   for (const { name, dur, pid, tid } of traceEvents) {
     if (!dur) continue;
-    if (name === "RasterTask") work.raster += dur / 1000;
+    if (name === "RasterTask") work.paint += dur / 1000;
     else if (name === "ThreadControllerImpl::RunTask" && mainThreads.has(`${pid}:${tid}`)) {
-      work["main thread"] += dur / 1000;
+      work.page += dur / 1000;
     }
   }
   return work;
@@ -150,10 +158,7 @@ async function sample(browser, side) {
     ["zoom", () => zoom(page, 22, 100)]
   ];
   for (const [gesture, run] of gestures) {
-    for (const [part, ms] of Object.entries(await traced(browser, page, run))) {
-      add(gesture, ms);
-      add(`${gesture} › ${part}`, ms);
-    }
+    for (const [part, ms] of Object.entries(await traced(browser, page, run))) add(`${gesture} ${part}`, ms);
   }
 
   await context.close();
@@ -220,7 +225,7 @@ function report(rows, baseLabel) {
     "<details><summary>Details</summary>",
     "",
     `Seed \`${SEED}\`, 10k cells, 1280×720. Zooming is 22 wheel ticks to 20× and back; panning is two 600 px ` +
-      "drags at 20×. Both count the browser's work: script, layout and paint on the main thread plus raster. " +
+      "drags at 20×. Page work is the main thread: script, style, layout and paint recording; painting is raster. " +
       `A total changes when it moves over ${share(THRESHOLD)} (a part over ${share(PART_THRESHOLD)}) and every run agrees.`,
     "",
     changed.length ? "| What changed | Before | After | |\n|---|--:|--:|---|" : "No part changed.",
