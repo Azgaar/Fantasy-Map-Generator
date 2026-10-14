@@ -64,37 +64,36 @@ All Grid lookups by coordinates go through two functions on the Grid module: one
 7. As a map maker, I want to raise the jitter on a hex sampling, so that I get an organic Map whose Cells are more even than the classic look.
 8. As an existing user, I want the default Map to look exactly as it does today, so that nothing changes unless I choose to.
 9. As a user with a favourite seed, I want the same seed with default settings to produce the same Map as before, so that my shared seeds still work.
-10. As a user experimenting with jitter, I want the same seed on the same sampling to keep the same world at any jitter, so that I can compare looks without losing the land layout.
-11. As a map maker, I want about the same number of Cells on every sampling, so that the Points setting means the same thing everywhere.
-12. As a map maker, I want my chosen sampling and jitter kept for every new Map until I change them, so that I don't set them again each time.
-13. As a map maker, I want the sampling and jitter saved in the `.map` file, so that the Map reopens as it was made.
-14. As a user loading a map made before this feature, I want it to open exactly as before, so that old files keep working.
-15. As a user, I want sampling and jitter outside the main Options panel, so that the panel stays simple.
-16. As an experienced user, I want an Advanced options dialog, so that I know where settings for experienced users are.
-17. As a user, I want to see that these settings apply to the next Map, so that I don't expect the current Map to change.
-18. As a user, I want a way back to the default sampling and jitter, so that I can get back to the classic look.
-19. As a user, I want a short tooltip on each Advanced option, so that I understand it before generating.
-36. As a user picking hexes, I want presets that set sampling and jitter together, so that I don't have to know a board needs jitter 0.
-37. As a user, I want settings I tend to misread (map size, provinces ratio, size variety, growth rate) and rarely changed preferences (autosave interval, on load, speaker voice, emblem shape) moved out of the main panel, so that it shows what I change often.
-38. As a user, I want to generate a new Map from the Advanced options dialog, so that I don't have to find the button elsewhere.
-39. As a user, I want the dialog buttons at the bottom of the Options panel in one tidy row with short names, so that I can tell them apart at a glance.
-40. As a user, I want Reset to ask before wiping my options and reloading the page, so that I don't lose work by a misclick.
-20. As a user of a non-English interface, I want the Advanced options translated, so that I can use them in my language.
-21. As a map maker on a regular grid, I want land Cells along the coast to keep their lattice shape, so that the coastline follows the grid.
-22. As a map maker on a regular grid, I want Cells at the map edge to keep their lattice shape, so that the border looks clean.
-23. As a map maker, I want the tooltip, cell info and heightmap brushes to find the Cell under the cursor exactly on every sampling, so that I edit the Cell I point at.
-24. As a classic-map user, I want the cursor lookup to be exact on the jittered Grid too, so that brushes no longer sometimes hit the neighbouring Cell.
-25. As a map maker, I want contours, hachures and coastal waves to line up with the Cells on every sampling, so that the heightmap styles look right.
-26. As a map maker, I want wind, precipitation and temperature to work on every sampling, so that climate and biomes are as believable as today.
-27. As a map maker, I want heightmap templates to raise land on every sampling, so that template choice works the same way.
-28. As a map maker, I want to import a heightmap image on any sampling, so that I can keep using my own heightmaps.
-29. As a map maker, I want to export the heightmap image on any sampling, so that I can use it in other tools.
-30. As a map maker, I want the heightmap selection previews to use my sampling, so that the preview matches the result.
-31. As a map maker, I want the 3D view and its erosion and satellite looks to work on every sampling, so that I can still view the Map in 3D.
-32. As a map maker, I want resampling (changing map size or cropping) to keep my sampling and jitter, so that the Map keeps its look.
-33. As a map maker, I want rivers, lakes, states and routes generated on every sampling, so that the Map is a complete world.
-34. As a user, I want the Assistant to know a Map's sampling, so that it can explain why Cells look the way they do.
-35. As a user reading the wiki, I want a page explaining the Advanced options and each sampling, so that I can choose one.
+10. As a map maker, I want about the same number of Cells on every sampling, so that the Points setting means the same thing everywhere.
+11. As a map maker, I want my chosen sampling and jitter kept for every new Map until I change them, so that I don't set them again each time.
+12. As a map maker, I want the sampling and jitter saved in the `.map` file, so that the Map reopens as it was made.
+13. As a user loading a map made before this feature, I want it to open exactly as before, so that old files keep working.
+14. As a user, I want sampling and jitter outside the main Options panel, so that the panel stays simple.
+15. As an experienced user, I want an Advanced options dialog, so that I know where settings for experienced users are.
+16. As a user, I want to see that these settings apply to the next Map, so that I don't expect the current Map to change.
+17. As a user, I want a way back to the default sampling and jitter, so that I can get back to the classic look.
+18. As a user, I want a short tooltip on each Advanced option, so that I understand it before generating.
+35. As a user picking hexes, I want presets that set sampling and jitter together, so that I don't have to know a board needs jitter 0.
+36. As a user, I want settings I tend to misread (map size, provinces ratio, size variety, growth rate) and rarely changed preferences (autosave interval, on load, speaker voice, emblem shape) moved out of the main panel, so that it shows what I change often.
+37. As a user, I want to generate a new Map from the Advanced options dialog, so that I don't have to find the button elsewhere.
+38. As a user, I want the dialog buttons at the bottom of the Options panel in one tidy row with short names, so that I can tell them apart at a glance.
+39. As a user, I want Reset to ask before wiping my options and reloading the page, so that I don't lose work by a misclick.
+19. As a user of a non-English interface, I want the Advanced options translated, so that I can use them in my language.
+20. As a map maker on a regular grid, I want land Cells along the coast to keep their lattice shape, so that the coastline follows the grid.
+21. As a map maker on a regular grid, I want Cells at the map edge to keep their lattice shape, so that the border looks clean.
+22. As a map maker, I want the tooltip, cell info and heightmap brushes to find the Cell under the cursor exactly on every sampling, so that I edit the Cell I point at.
+23. As a classic-map user, I want the cursor lookup to be exact on the jittered Grid too, so that brushes no longer sometimes hit the neighbouring Cell.
+24. As a map maker, I want contours, hachures and coastal waves to line up with the Cells on every sampling, so that the heightmap styles look right.
+25. As a map maker, I want wind, precipitation and temperature to work on every sampling, so that climate and biomes are as believable as today.
+26. As a map maker, I want heightmap templates to raise land on every sampling, so that template choice works the same way.
+27. As a map maker, I want to import a heightmap image on any sampling, so that I can keep using my own heightmaps.
+28. As a map maker, I want to export the heightmap image on any sampling, so that I can use it in other tools.
+29. As a map maker, I want the heightmap selection previews to use my sampling, so that the preview matches the result.
+30. As a map maker, I want the 3D view and its erosion and satellite looks to work on every sampling, so that I can still view the Map in 3D.
+31. As a map maker, I want resampling (changing map size or cropping) to keep my sampling and jitter, so that the Map keeps its look.
+32. As a map maker, I want rivers, lakes, states and routes generated on every sampling, so that the Map is a complete world.
+33. As a user, I want the Assistant to know a Map's sampling, so that it can explain why Cells look the way they do.
+34. As a user reading the wiki, I want a page explaining the Advanced options and each sampling, so that I can choose one.
 
 ## Implementation Decisions
 

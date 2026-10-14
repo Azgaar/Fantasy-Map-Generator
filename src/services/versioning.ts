@@ -26,6 +26,7 @@ export const VERSION = "1.155.0";
 
 // new changes on top
 const latestPublicChanges = [
+  "Advanced options: hex, square, diamond and triangle cells with adjustable jitter",
   "Translation: UI translated to 22 languages",
   "Population layer: colored cells style",
   // old ones

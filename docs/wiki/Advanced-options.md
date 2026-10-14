@@ -39,7 +39,7 @@ It reads **Custom** when Sampling and Jitter match none of them. Pick **Default*
 | Square 45 degrees grid | squares turned 45° (diamonds) | isometric game styles |
 | Triangle grid (horizontal) | triangles, alternating up and down | experiments |
 
-**Jitter** is how far each point may move off its lattice position, from 0 (perfectly regular cells) to 0.9 (the default). Lower values give a calmer look; a jittered hex grid gives an organic map with more even cells than the classic one. The same seed on the same sampling keeps the same land layout at any jitter, so you can compare looks.
+**Jitter** is how far each point may move off its lattice position, from 0 (perfectly regular cells) to 0.9 (the default). Lower values give a calmer look; a jittered hex grid gives an organic map with more even cells than the classic one.
 
 Every sampling gives about as many cells as the Points setting asks for. Cells along the map edge keep the lattice shape where the edge lines up with it and are slightly wider where it doesn't.
 
