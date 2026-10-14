@@ -3,6 +3,7 @@ import { anthropicHeaders, bearerHeaders, endpoint, type ProviderSpec, readError
 
 const FILTERS: Partial<Record<ProviderSpec["id"], { include?: RegExp; exclude?: RegExp }>> = {
   anthropic: { include: /^claude/ },
+  gemini: { include: /^gemini-/, exclude: /embed|image|audio|tts|live|robotics|computer-use/ },
   openai: {
     include: /^(gpt|o\d)/,
     exclude: /audio|realtime|image|tts|embed|whisper|moderation|transcribe|dall|gpt-6-astra/

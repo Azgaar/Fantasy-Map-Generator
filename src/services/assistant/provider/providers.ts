@@ -19,6 +19,7 @@ export interface ToolUseBlock {
   id: string;
   name: string;
   input: ToolInput;
+  thoughtSignature?: string; // Gemini requires this on subsequent tool turns
 }
 
 export interface ImageBlock {
@@ -73,7 +74,7 @@ export interface Completion {
 }
 
 export interface ProviderSpec {
-  id: "anthropic" | "openai" | "mistral" | "qwen" | "deepseek" | "local";
+  id: "anthropic" | "openai" | "gemini" | "mistral" | "qwen" | "deepseek" | "local";
   label: string;
   fallbackModel: string;
   keyLink: string;
@@ -93,6 +94,13 @@ export const PROVIDERS: ProviderSpec[] = [
     fallbackModel: "gpt-6-luna",
     keyLink: "https://platform.openai.com/account/api-keys",
     baseUrl: "https://api.openai.com/v1"
+  },
+  {
+    id: "gemini",
+    label: "Gemini",
+    fallbackModel: "gemini-flash-latest",
+    keyLink: "https://aistudio.google.com/apikey",
+    baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai"
   },
   {
     id: "deepseek",
@@ -173,6 +181,14 @@ async function completeAnthropic({
   tools,
   signal
 }: CompletionRequest): Promise<Completion> {
+  messages = messages.map(message => ({
+    ...message,
+    content: message.content.map(block => {
+      if (block.type !== "tool_use") return block;
+      const { thoughtSignature, ...call } = block;
+      return call;
+    })
+  }));
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     signal,
