@@ -15,7 +15,7 @@ const STEP_TITLES = [
   "Individual Style Settings",         // 9
   "Options Tab",                       // 10
   "Generation Options",                // 11
-  "Configure World",                   // 12
+  "Climate",                           // 12
   "World Configurator",                // 13
   "Tools Tab",                         // 14
   "Edit Heightmap",                    // 15
@@ -264,7 +264,7 @@ test.describe("UI Tour", () => {
     await page.evaluate(() => (window as any).Services.UiTour.start());
     await page.waitForSelector(".driver-popover", { state: "visible" });
 
-    // Advance to "Configure World" button step (index 12 → 12 clicks).
+    // Advance to the Climate button step (index 12 → 12 clicks).
     await advanceSteps(page, 12);
     expect(await popoverTitle(page)).toBe(STEP_TITLES[12]);
 

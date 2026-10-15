@@ -34,7 +34,8 @@ To report a problem or propose a feature, see [Reporting bugs and suggesting ide
 [River Editor](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/River-Editor) ·
 [Coastline Editor](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Coastline-Editor) ·
 [Geographical Features overview](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Geographical-Features-Overview) ·
-[Wrap Tool](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Wrap-Tool)
+[Wrap Tool](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Wrap-Tool) ·
+[Advanced options: hex and other cell grids](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Advanced-options)
 
 **Appearance and performance**
 [Map embellishments](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Map-embellishments) ·

@@ -4,9 +4,9 @@ import { Resample as Resampler } from "./resample";
 
 it("resamples at the requested density and records it in the map", () => {
   options = Options.getDefaultOptions();
-  options.map.graph = { width: 800, height: 600, points: 1000 };
+  options.map.graph = { width: 800, height: 600, points: 1000, sampling: "square", jitter: 0.9 };
   options.generation.graph.density = 2;
-  vi.stubGlobal("grid", Grid.generate("old", 800, 600));
+  vi.stubGlobal("grid", Grid.generate("old"));
   vi.stubGlobal("pack", { cells: { p: [], g: [] }, rivers: [] });
   vi.stubGlobal("Features", {
     markupGrid: () => {
@@ -34,7 +34,7 @@ describe("restoreJourneys", () => {
   beforeEach(async () => {
     globalThis.window = globalThis.window || ({} as any);
     (globalThis as any).WARN = false;
-    options.map.graph = { width: 100, height: 100, points: 100 };
+    options.map.graph = { width: 100, height: 100, points: 100, sampling: "square", jitter: 0.9 };
     (globalThis as any).Pack = { findCell: (x: number, _y: number) => Math.round(x) };
     (globalThis as any).pack = {};
 

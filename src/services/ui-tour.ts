@@ -223,7 +223,7 @@ function start() {
           ensureEl("optionsTab")?.click();
         },
         popover: {
-          title: t("Configure World"),
+          title: t("Climate"),
           description: t(
             "This button opens the World Configurator where you can set the map's position on the globe, adjust equatorial and polar temperatures, and configure precipitation to shape the world's climate."
           ),

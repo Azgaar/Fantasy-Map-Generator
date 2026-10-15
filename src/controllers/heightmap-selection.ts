@@ -298,15 +298,16 @@ function getSeed(): string | undefined {
 }
 
 function getGraphConfig() {
-  const { width, height, density } = options.generation.graph;
-  return { width, height, points: getPointsNumber(density) };
+  const { width, height, density, sampling, jitter } = options.generation.graph;
+  return { width, height, points: getPointsNumber(density), sampling, jitter };
 }
 
 function getGraph(): GridGraph {
-  const { width, height, points } = graphConfig ?? getGraphConfig();
+  const config = graphConfig ?? getGraphConfig();
   const current = options.map.graph;
-  if (current.width !== width || current.height !== height || current.points !== points) {
-    return Grid.generate(initialSeed, width, height, points);
+  const keys = ["width", "height", "points", "sampling", "jitter"] as const;
+  if (keys.some(key => current[key] !== config[key])) {
+    return Grid.generate(initialSeed, config);
   }
   const preview = structuredClone(grid);
   Grid.resetHeights(preview);
@@ -375,14 +376,13 @@ function confirmHeightmapEdit(el: HTMLElement): void {
 }
 
 function getHeightmapPreview(heights: Uint8Array | null): string {
-  if (!graph || !heights?.length) return "";
+  if (!graph || !graphConfig || !heights?.length) return "";
 
   const scheme = HeightmapColorSchemes.get(ensureEl<HTMLSelectElement>("heightmapSelectionColorScheme").value);
   const renderOcean = ensureEl<HTMLInputElement>("heightmapSelectionRenderOcean").checked;
   const dataUrl = drawHeights({
     heights,
-    width: graph.cellsX,
-    height: graph.cellsY,
+    raster: Grid.getRaster(graph, graphConfig.width, graphConfig.height),
     scheme,
     renderOcean
   });

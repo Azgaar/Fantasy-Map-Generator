@@ -29,7 +29,7 @@ You are not, of course, limited to only QGIS. Data exported can also be used in 
 # Loading into QGIS
 Fantasy Map Generator allows you to export some data in a GIS-compatible format. Open the _Export_ dialog from the _Tools_ tab; its _Export to GeoJSON_ section has buttons for **cells**, **routes**, **rivers**, **markers** and **zones**. The separate _Export to JSON_ section (full, minimal, pack cells, grid cells) is plain JSON, not GeoJSON, and is not meant for GIS tools.
 
-Coordinates in the GeoJSON files are geographic (longitude / latitude) and follow the map coordinates set in _Options → Configure world_.
+Coordinates in the GeoJSON files are geographic (longitude / latitude) and follow the map coordinates set in _Options → Configure → Climate_.
 
 ## Cell Data
 The cells file is a polygon layer with one feature per cell. Each feature carries these properties: `id`, `height`, `biome`, `type` (feature type, e.g. island or lake), `population`, `state`, `province`, `culture`, `religion` and `neighbors`. Import it into QGIS by choosing _Layer_ -> _Add Layer..._ -> _Add Vector Layer..._.

@@ -229,6 +229,7 @@ function getGridCellsData() {
       v: grid.vertices.v[vertexId],
       c: grid.vertices.c[vertexId]
     })),
+    sampling: grid.sampling,
     spacing: grid.spacing,
     cellsY: grid.cellsY,
     cellsX: grid.cellsX,

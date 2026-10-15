@@ -98,16 +98,16 @@ describe("options tab bindings", () => {
   });
 
   it("pairs controls by binding without overwriting an unrelated draft", () => {
-    const inputs = document.querySelectorAll<HTMLInputElement>('[data-option="autosaveInterval"]');
+    const inputs = document.querySelectorAll<HTMLInputElement>('[data-option="cultures"]');
     control("mapWidth").value = "777";
-    edit(inputs[1], "23");
+    edit(inputs[1], "5");
 
-    expect(options.app.autosave.interval).toBe(23);
-    expect(inputs[0].value).toBe("23");
+    expect(options.generation.cultures.limit).toBe(5);
+    expect(inputs[0].value).toBe("5");
     expect(control("mapWidth").value).toBe("777");
-    expect(Pins.all()).toEqual({});
+    expect(Pins.all()).toEqual({ cultures: 5 });
     inputs[1].dispatchEvent(new Event("change", { bubbles: true }));
-    expect(JSON.parse(localStorage.getItem("fmg-options")!).app.autosave.interval).toBe(23);
+    expect(JSON.parse(localStorage.getItem("fmg-options")!).generation.cultures.limit).toBe(5);
   });
 
   it("writes and pins the heightmap controls outside the tab", () => {

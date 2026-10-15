@@ -19,6 +19,7 @@ import { Coastline } from "@/generators/coastline-generator";
 import { Coordinates } from "@/generators/coordinates";
 import { CULTURE_SETS } from "@/generators/cultures-generator";
 import { Labels } from "@/generators/labels-generator";
+import { DEFAULT_JITTER } from "@/generators/lattice";
 import { Military } from "@/generators/military-generator";
 import { Names } from "@/generators/names-generator";
 import { Relief } from "@/generators/relief-generator";
@@ -56,7 +57,7 @@ class OptionsModel {
     return {
       map: {
         seed: "",
-        graph: { width: 1280, height: 800, points: 10000 },
+        graph: { width: 1280, height: 800, points: 10000, sampling: "square", jitter: DEFAULT_JITTER },
         geography: {
           mapSize: 100,
           latitude: 50,
@@ -87,7 +88,7 @@ class OptionsModel {
         relief: { rules: Relief.getDefaultRules() }
       },
       generation: {
-        graph: { width: 1280, height: 800, density: DEFAULT_DENSITY },
+        graph: { width: 1280, height: 800, density: DEFAULT_DENSITY, sampling: "square", jitter: DEFAULT_JITTER },
         geography: { mapSize: null, latitude: null, longitude: null },
         template: "",
         resolveDepressionsSteps: 250,
@@ -268,7 +269,8 @@ class OptionsModel {
     map.relief = previous.relief;
 
     // and the requests it consumes
-    map.graph = { width: graph.width, height: graph.height, points: getPointsNumber(graph.density) };
+    const { width, height, density, sampling, jitter } = graph;
+    map.graph = { width, height, points: getPointsNumber(density), sampling, jitter };
     map.cultures.set = cultures.set;
     options.map = map;
     this.repairSets();

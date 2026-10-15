@@ -1,7 +1,7 @@
 # Generation Pipeline
 
 Building a world is one long, strictly ordered sequence of generator calls. The generators talk to
-each other almost entirely through the two shared globals — `grid` (the raw jittered-square graph,
+each other almost entirely through the two shared globals — `grid` (the raw graph on a sampling lattice,
 typed as [`GridGraph`](../../src/types/GridGraph.ts)) and `pack` (the repacked graph everything
 downstream is indexed against) — so **the execution order _is_ the dependency graph**: a step depends
 on every earlier step that last wrote a global it reads.
@@ -232,11 +232,11 @@ global the same way `Features`, `Rivers` and the other generators are:
 | Method                                                       | Role                                                                 |
 | ------------------------------------------------------------ | -------------------------------------------------------------------- |
 | `prepare(graph?)`                                            | set the generation grid, creating a fresh graph or clearing a supplied preview's heights |
-| `generate(seed, width, height)`                              | jittered points, boundary and Voronoi diagram for a fresh graph      |
+| `generate(seed, settings?)`                                  | lattice points, boundary and Voronoi diagram for a fresh graph; settings default to `options.map.graph` |
 | `rebuildGraph(graph)`                                        | restore cells and vertices of a saved graph from its points          |
 | `resetHeights(graph)`                                        | blank the heightmap, keeping the graph                               |
 | `getCellsDesired()`                                          | the cell count requested in the options                              |
-| `findCell(x, y)` / `findAll(x, y, radius)` / `getPolygon(id)` | lookups on the regular square grid; all take an optional graph       |
+| `findCell(x, y)` / `findAll(x, y, radius)` / `getPolygon(id)` | exact Voronoi lookups, starting from the lattice slot; all take an optional graph |
 | `addDeepDepressionLakes()` / `openNearSeaLakes()`            | lake topology over `grid.cells.h/t/f` and `grid.features`            |
 
 ### `Temperature` — [`temperature-generator.ts`](../../src/generators/temperature-generator.ts)

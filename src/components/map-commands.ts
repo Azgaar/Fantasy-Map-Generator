@@ -24,7 +24,7 @@ import { unfog } from "@/renderers/overlays/fogging";
 import { Services } from "@/services";
 import { toggleSaveReminder } from "@/services/autosave";
 import { copyMapURL } from "@/services/url-params";
-import { cleanupData } from "@/services/versioning";
+import { confirmCleanupData } from "@/services/versioning";
 import { ensureEl, gauss, isCtrlClick } from "@/utils";
 import { t } from "@/utils/i18n";
 
@@ -759,7 +759,7 @@ export const MAP_COMMANDS: MapCommand[] = [
     id: "optionsReset",
     name: t("Reset Options"),
     aliases: "restore defaults clear cache reload",
-    run: () => cleanupData()
+    run: () => confirmCleanupData()
   },
   { id: "savePresetButton", name: t("Save Layers Preset"), aliases: "displayed layers", run: () => savePreset() },
   ...Object.entries(LAYER_PRESETS).map(([id, label]) => ({

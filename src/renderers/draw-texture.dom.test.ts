@@ -7,7 +7,7 @@ import { drawTexture } from "./draw-texture";
 
 beforeEach(() => {
   document.body.innerHTML = `<svg id="map"><g id="texture"></g></svg>`;
-  options.map.graph = { width: 800, height: 600, points: 10000 };
+  options.map.graph = { width: 800, height: 600, points: 10000, sampling: "square", jitter: 0.9 };
 });
 
 const layer = { getEl: () => document.getElementById("texture") } as never;
