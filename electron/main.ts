@@ -86,8 +86,8 @@ protocol.registerSchemesAsPrivileged([
 /**
  * A .map file is shared like a document, and the app builds markup out of what is inside it, so the one
  * directive that matters is `script-src`: no external origin may supply code. The rest stays permissive,
- * because maps embed data/blob images and fonts and the AI providers are fetched over https. `unsafe-eval`
- * is required by the goods distribution formulas, which compile to `new Function`
+ * because maps embed data/blob images and fonts and AI providers use https or local http (localhost or LAN).
+ * `unsafe-eval` is required by the goods distribution formulas, which compile to `new Function`
  */
 const CSP = [
   "default-src 'self' data: blob:",
@@ -96,7 +96,7 @@ const CSP = [
   "font-src 'self' data: https:",
   "img-src 'self' data: blob: https:",
   "media-src 'self' data: blob:",
-  "connect-src 'self' data: blob: https: wss:",
+  "connect-src 'self' data: blob: http: https: wss:",
   "frame-src 'self' https:"
 ].join("; ");
 
