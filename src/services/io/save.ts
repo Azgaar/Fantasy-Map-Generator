@@ -4,6 +4,7 @@ import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { GraphOverride } from "@/generators/graph-override";
 import { Notes } from "@/generators/notes";
+import { restoreOceanVectors } from "@/renderers/ocean-cache";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
 import { isElectron, savedMessage } from "@/services/platform";
@@ -77,6 +78,8 @@ function prepareMapData(): string {
 
   // save svg
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
+
+  restoreOceanVectors(cloneEl);
 
   // reset transform values to default
   cloneEl.setAttribute("width", String(options.map.graph.width));

@@ -81,7 +81,7 @@ describe("coastal band rendering", () => {
     expect(widths.every((width, i) => !i || width < widths[i - 1])).toBe(true);
     expect(document.querySelectorAll("#coastal-bands-mask use")).toHaveLength(3);
     expect(document.querySelector('#coastal-bands-mask use[href="#feature_2"]')).toBeNull();
-    expect(document.querySelector("#oceanBands")?.getAttribute("mask")).toBe("url(#coastal-bands-mask)");
+    expect(document.querySelector("#oceanBands-source")?.getAttribute("mask")).toBe("url(#coastal-bands-mask)");
   });
 
   test("redraws deterministically and removes bands and their mask when disabled", () => {
