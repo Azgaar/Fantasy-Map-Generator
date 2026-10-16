@@ -4,6 +4,7 @@ import { rn, round } from "@/utils";
 import { ensureEl } from "@/utils/nodeUtils";
 import { getCoastalDistances, getCoastalWaves } from "./coastal-waves";
 import { drawCoastalBands, getCoastalBandReach, removeCoastalBands } from "./draw-coastal-bands";
+import { cacheOceanLayer, clearOceanCache } from "./ocean-cache";
 
 /**
  * The two full-graph rects the rings are drawn over: the textured pattern fill and the flat base
@@ -94,6 +95,7 @@ export function removeOcean(): void {
 }
 
 function removeCoastalWaves(): void {
+  clearOceanCache("oceanWaves");
   ensureEl("oceanWaves").replaceChildren();
   document.getElementById("waves-mask")?.remove();
 }
@@ -147,5 +149,6 @@ function drawCoastalWaves(): void {
         attrs["stroke-dasharray"] ? ` stroke-dasharray="${attrs["stroke-dasharray"]}"` : ""
       } opacity="${attrs.opacity ?? 1}" stroke-linecap="round" mask="url(#waves-mask)"></path>`
     : "";
+  cacheOceanLayer(group, ["waves-mask"]);
   TIME && console.timeEnd("drawCoastalWaves");
 }
