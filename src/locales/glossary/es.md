@@ -47,6 +47,7 @@ Terms every `es.json` string uses the same way. Rules for all catalogs are in
 | temperature                     | temperatura                           |                                        |
 | population / rural / urban      | población / rural / urbana            |                                        |
 | relief                          | relieve                               |                                        |
+| hachures                        | líneas de achurado                    |                                        |
 | relief pool / relief rule       | conjunto de relieves / regla de relieve |                                      |
 | marker                          | marcador                              |                                        |
 | label / added label             | etiqueta / etiqueta añadida           |                                        |
