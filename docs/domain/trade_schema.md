@@ -82,22 +82,27 @@ After global trade, each burg fills personal demand via `Markets.buy(...)` with 
 
 ## Global redistribution
 
-`Markets.runGlobalTrade()` runs after every burg has produced and sold. For each good:
+`Markets.runGlobalTrade()` runs after every burg has produced and sold. Tariff and embargo policies are compiled once into an $O(1)$ pre-indexed lookup prior to iterating goods. For each good:
 
 1. Computes a per-market safety reserve = `population × (consumerDemand + industrialDemand) × (1 + TRADE_RESERVE_FACTOR)`.
 2. Splits markets into **exporters** (stock above reserve) and **importers** (stock below reserve). Skips the good entirely if either side is empty.
-3. For each (exporter, importer) pair, builds an opportunity with:
+3. For each (exporter, importer) pair, checks tariffs and embargoes:
+   - Domestic inter-market trade (`exporterStateId === importerStateId`): 0 tariff, never embargoed.
+   - Cross-state trade: evaluates bidirected embargo (`resolve(importerState, exporterState, good)` and `resolve(exporterState, importerState, good)`). If either side is `"embargo"`, the opportunity is skipped.
+   - Otherwise resolves `tariffRate` from the importer state's most specific rule (0 fallback).
    - `transportCost = (octileDistance / mapDiagonal) × DISTANCE_COST_FACTOR × good.value` (a precomputed Chebyshev-octile straight-line cost between market center burgs).
    - `exporterTaxPerUnit = exporterState.salesTax × exporterPrice` (0 for neutral exporters).
-   - `unitProfit = importerPrice − (exporterPrice + transportCost + exporterTaxPerUnit)`
-   - `units = min(exporterAvailable, importerNeeded)`
-   - Skips if `unitProfit × units < MIN_PROFIT` or `units < MIN_UNIT`. High-tax exporters drop out of opportunities they would otherwise win.
+   - `tariffPerUnit = tariffRate × exporterPrice`.
+   - `landedCost = exporterPrice + transportCost + exporterTaxPerUnit + tariffPerUnit`.
+   - `unitProfit = importerPrice − landedCost`.
+   - `units = min(exporterAvailable, importerNeeded)`.
+   - Skips if `unitProfit × units < MIN_PROFIT` or `units < MIN_UNIT`. High tariffs or taxes drop opportunities that become unprofitable.
 4. Sorts opportunities by total profit descending and executes them greedily, recomputing available / needed at execution time.
-5. Each executed transfer records a market-to-market deal at `price = exporterPrice + transportCost + exporterTaxPerUnit` (the importer's landed cost) with `tax = exporterTaxPerUnit × units`, moves stock, and applies market pressure:
+5. Each executed transfer records a market-to-market deal at `price = landedCost` with `tax = exporterTaxPerUnit × units` and `tariff = tariffPerUnit × units` (omitted if 0), moves stock, and applies market pressure:
    - **Exporter price rises** (lost stock → applyMarketPressure with positive `units`).
    - **Importer price falls** (gained stock → applyMarketPressure with negative `units`).
 
-The recorded `deal.tax` flows to the exporter state's treasury via `States.collectTaxes()`. Markets have no treasury, so the deal price (gross of exporter tax) is what the importer effectively paid.
+The recorded `deal.tax` flows to the exporter state's treasury, and `deal.tariff` flows to the importer market's state treasury via `States.collectTaxes()`. Markets have no treasury, so the deal price (gross of exporter tax and import tariff) is what the importer effectively paid.
 
 ## Demand model
 

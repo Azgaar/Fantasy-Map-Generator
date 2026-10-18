@@ -16,12 +16,12 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 
 - Interface translations: 29 languages besides English.
 - The Google Translate widget removed
-- Population layer: Cells style, shading land by population density, darker for denser cells by _[inviktos](https://github.com/inviktos)_
-- Altitude legend: heightmap colors in round height and depth bands, toggled in the Units editor by _[Avengium](https://github.com/Avengium)_
+- Advanced options: configurable map lattice
+- Trade tariffs and embargoes
+- Options: Advanced Options dialog
+- Population layer: Shading land by population density by _[inviktos](https://github.com/inviktos)_
+- Altitude legend: heightmap colors by _[Avengium](https://github.com/Avengium)_
 - Rulers style: line and dash colors and a toggle to hide the measured values by _[Avengium](https://github.com/Avengium)_
-- Hexagonal, square, diamond and triangle cell grids, with Lattice presets such as Hex board and a jitter setting for calmer or perfectly regular cells
-- Options: Advanced Options dialog for map size, the cell grid, provinces ratio, size variety, growth rate and rarely changed interface settings
-- Options: Climate, Lore, Advanced and Reset buttons in one Configure row; Reset now asks before reloading the page
 
 # Releases
 

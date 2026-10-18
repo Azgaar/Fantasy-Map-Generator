@@ -711,6 +711,7 @@ function removeGood(good: Good) {
 
     pack.goods = pack.goods.filter(g => g.i !== good.i);
     Goods.sync();
+    States.pruneTariffs({ goods: [good.i] });
     goodsTable.refresh();
     Layers.draw("goods");
   };

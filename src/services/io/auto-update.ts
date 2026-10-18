@@ -2195,6 +2195,20 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       }
     }
   }
+
+  if (isOlderThan("1.155.0")) {
+    // v1.155.0 added state.tariffs
+    for (const state of pack.states ?? []) {
+      if (!state) continue;
+      if (!Array.isArray(state.tariffs)) {
+        if (!state.i || state.removed) {
+          state.tariffs = [];
+        } else {
+          state.tariffs = States.defineTariffs(state);
+        }
+      }
+    }
+  }
 }
 
 export function migrateLegacySettings(mapVersion: string, data: string[]): void {
@@ -2207,6 +2221,7 @@ export function migrateLegacySettings(mapVersion: string, data: string[]): void 
       data[1] = JSON.stringify(settings);
     }
   }
+
   if (compareVersions(mapVersion, "1.155.0").isOlder && data[1]?.trimStart().startsWith("{")) {
     const settings = safeParseJSON(data[1]);
     if (settings?.graph) {

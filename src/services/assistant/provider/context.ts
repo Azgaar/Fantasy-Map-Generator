@@ -22,9 +22,8 @@ how-to questions; \`read_map\` runs scripts for facts about the open map (never 
 reference docs; \`propose_change\` edits the map; \`show_*\` place widgets; \`view_emblem\` and \`view_map\` show you
 an emblem or the map.
 
-Scope: the generator, the open map, cartography and world-building. Real-world knowledge is fine when it serves 
-the user's world. For anything else reply in one sentence that it is out of your scope.
-Do not answer out of scope questions, don't be polite.`;
+Scope: the generator, the open map, cartography and world-building. Real-world knowledge is fine when it serves
+the user's world. Reply in one sentence that other requests are out of scope. Never be polite.`;
 
 const SCRIPTS = `# Scripts (read_map)
 
