@@ -302,7 +302,9 @@ class StatesModule {
   }
 
   private createStates() {
-    const states: State[] = [{ i: 0, name: "Neutrals", salesTax: 0, pollTax: 0, treasury: 0, tariffs: [] } as State];
+    const states: State[] = [
+      { i: 0, name: "Neutrals", salesTax: 0, pollTax: 0, treasury: 0, tariffs: [] } as unknown as State
+    ];
     const each5th = each(5);
     const sizeVariety = options.generation.states.sizeVariety;
 

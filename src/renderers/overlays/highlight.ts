@@ -5,7 +5,7 @@ import { minmax, parseTransform } from "@/utils";
 const debugLayer = () => select<SVGGElement, unknown>("#debug");
 
 function getBBox(element: Element): DOMRect {
-  const attr = (name: string) => Number(element.getAttribute(name));
+  const attr = (name: string) => Number.parseFloat(element.getAttribute(name) || "0") || 0;
   return new DOMRect(attr("x"), attr("y"), attr("width"), attr("height"));
 }
 
@@ -29,7 +29,7 @@ export function highlightElement(target: Element | null, zoom?: number): void {
   highlightArea(box, undefined, `matrix(${a} ${b} ${c} ${d} ${e} ${f})`);
   if (!zoom) return;
   const center = new DOMPoint(box.x + box.width / 2, box.y + box.height / 2).matrixTransform(matrix);
-  zoomTo(center.x, center.y, viewport.scale > 2 ? viewport.scale : zoom, 1600);
+  zoomTo(center.x, center.y, viewport.scale > zoom ? viewport.scale : zoom, 1600);
 }
 
 type Box = Pick<DOMRect, "x" | "y" | "width" | "height">;

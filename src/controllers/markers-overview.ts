@@ -16,8 +16,8 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
 import { setMarkersFilter } from "@/renderers/draw-markers";
-import { highlightElement } from "@/renderers/overlays/highlight";
-import { downloadFile, getFileName, getLatitude, getLongitude } from "@/utils";
+import { highlightArea, highlightElement } from "@/renderers/overlays/highlight";
+import { downloadFile, escapeHtml, getFileName, getLatitude, getLongitude } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "../utils";
 
@@ -26,7 +26,15 @@ const position = { my: "right top", at: "right-10 top+10", of: "svg", collision:
 let filterState: { search: string; state: string; culture: string; type: string };
 
 const columns: EditorColumn<Marker>[] = [
-  { key: "type", label: t("Type"), width: "12em", permanent: true, sortBy: marker => marker.type, sortType: "alpha" },
+  {
+    key: "name",
+    label: t("Marker"),
+    width: "18em",
+    permanent: true,
+    sortBy: marker => marker.name || "",
+    sortType: "alpha"
+  },
+  { key: "type", label: t("Type"), width: "10em", sortBy: marker => marker.type || "", sortType: "alpha" },
   { key: "pin", label: t("Pin"), width: "1.4em" },
   { key: "lock", label: t("Lock"), width: "1.4em" },
   { key: "edit", width: "1.4em" },
@@ -63,7 +71,7 @@ function renderDialog(): void {
         <select id="markersFilterState" data-tip="${t("Show only markers located in the selected state")}"></select>
         <select id="markersFilterCulture" data-tip="${t("Show only markers located in the selected culture")}"></select>
         <select id="markersFilterType" data-tip="${t("Show only markers of the selected type")}"></select>
-        <label for="markersSearch" data-tip="${t("Filter by type")}">${t("Search")}: <input id="markersSearch" type="search" /></label>
+        <label for="markersSearch" data-tip="${t("Filter by name or type")}">${t("Search")}: <input id="markersSearch" type="search" /></label>
       </div>
       <div id="markersFooter" class="totalLine">
         <div data-tip="${t("Markers number")}">
@@ -226,8 +234,9 @@ function getFilteredMarkers(): Marker[] {
   const searchText = filterState.search.toLowerCase().trim();
   if (searchText) {
     markers = markers.filter(marker => {
+      const name = (marker.name || "").toLowerCase();
       const type = (marker.type || "").toLowerCase();
-      return type.includes(searchText);
+      return name.includes(searchText) || type.includes(searchText);
     });
   }
 
@@ -263,16 +272,17 @@ function onFilterChange(): void {
 
 function renderMarkersPage(view: TableView<Marker>): void {
   const lines = view.rows
-    .map(({ i, type, icon, iconFill, iconStroke, pinned, lock }) => {
+    .map(({ i, type, icon, iconFill, iconStroke, name, pinned, lock }) => {
       return /* html */ `
-        <div class="states" data-id=${i} data-type="${type}">
+        <div class="states" data-id=${i} data-name="${escapeHtml(name || "")}" data-type="${type}">
+          <div data-col="name" data-tip="${t("Marker name")}">${escapeHtml(name || "")}</div>
           <div data-col="type">
             <span data-tip="${t("Marker icon")}" style="display: inline-flex; width: 1.2em">${Icons.html(icon, { fill: iconFill, stroke: iconStroke })}</span>
             <span data-tip="${t("Marker type")}">${type}</span>
           </div>
           <span data-col="pin" data-tip="${t("Pin marker (display only pinned markers)")}" class="icon-pin ${
             pinned ? "" : "inactive"
-          }" pointer"></span>
+          } pointer"></span>
           <span data-col="lock" class="locks pointer ${
             lock ? "icon-lock" : "icon-lock-open inactive"
           }" onmouseover="showElementLockTip(event)"></span>
@@ -326,9 +336,14 @@ function openEditor(i: number): void {
 }
 
 function highlightMarker(i: number): void {
-  const marker = document.getElementById(`marker${i}`);
+  const marker = pack.markers.find(marker => marker.i === i);
   if (!marker) return;
-  highlightElement(marker, 2);
+
+  const { x, y } = marker;
+  zoomTo(x, y, 8, 2000);
+  const el = document.getElementById(`marker${i}`);
+  if (el) highlightElement(el);
+  else highlightArea({ x: x - 15, y: y - 15, width: 30, height: 30 });
 }
 
 function pinMarker(el: HTMLElement, i: number): void {
