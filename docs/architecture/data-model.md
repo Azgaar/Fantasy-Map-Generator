@@ -205,7 +205,8 @@ States (countries) data is stored as an array of objects with strict element ord
 - `coa`: `object` - heraldic emblem in [Armoria's COA format](https://github.com/Azgaar/armoria-api#readme), or picture emblem `{ icon: string, shield?: string }` referring to an icon in the library. Both forms may have optional `size`, `x` and `y` fields for map placement. A picture emblem can be clipped to a shield, but cannot be edited as heraldry in Armoria
 - `salesTax`: `number` - sales tax rate `0..1` charged on deals where this state is the seller. Generated from `form` (Monarchy 0.15, Theocracy 0.25, Union 0.07, Republic 0.05, Anarchy 0), jittered per state. Always `0` for neutrals
 - `pollTax`: `number` - flat poll tax per population point (rural + urban), credited to the treasury once per cycle. Generated from `form` (Monarchy 0.20, Theocracy 0.10, Union 0.13, Republic 0.15, Anarchy 0), jittered per state. Always `0` for neutrals
-- `treasury`: `number` - accumulated state currency balance. Reset and refilled by `States.collectTaxes()` from `deal.tax` (sales tax) plus `pollTax × (rural + urban)`. Always `0` for neutrals
+- `treasury`: `number` - accumulated state currency balance. Reset and refilled by `States.collectTaxes()` from `deal.tax` (sales tax) plus `deal.tariff` (import tariffs) plus `pollTax × (rural + urban)`. Always `0` for neutrals
+- `tariffs`: `TariffRule[]` - list of import tariff and embargo rules `{ states: number[] | "all", goods: number[] | "all", rate: number | "embargo" }`. Procedurally seeded from diplomacy relations with a `0` baseline for all foreign states and goods. Empty array `[]` for neutrals
 - `lock`: `boolean` - `true` if state is locked (not affected by regeneration)
 - `removed`: `boolean` - `true` if state is removed
 - `note`: `string` - optional. The user's note (legend) about the state, as html. Removed with it
@@ -511,8 +512,9 @@ Trade transaction log stored in `pack.deals: Deal[]`. Append-only within a produ
 - `buyerType`: `"burg" | "market"` - what `buyer` refers to
 - `good`: `number` - good id
 - `units`: `number` - traded amount, rounded to 2 decimals
-- `price`: `number` - per-unit price at the time of the deal, rounded to 2 decimals. For inter-market trades this is the importer's landed cost (exporter price + transport + exporter sales tax)
+- `price`: `number` - per-unit price at the time of the deal, rounded to 2 decimals. For inter-market trades this is the importer's landed cost (exporter price + transport + exporter sales tax + import tariff)
 - `tax`: `number` - optional. Absolute sales-tax amount in currency units, set on burg sells and inter-market trades when the seller's state has a non-zero `salesTax`. `States.collectTaxes()` sums it into the seller state's treasury
+- `tariff`: `number` - optional. Absolute import tariff amount in currency units, set on inter-market trades when the buyer's state charges a tariff on foreign imports. `States.collectTaxes()` sums it into the buyer market's state treasury
 
 ## Journeys
 

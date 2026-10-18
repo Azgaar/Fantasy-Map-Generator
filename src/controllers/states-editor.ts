@@ -23,8 +23,9 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { CULTURE_TYPE_LABELS } from "@/data/id-labels";
-import { STATE_FORMS, type State } from "@/generators/states-generator";
+import { STATE_FORMS, type State, type TariffRule } from "@/generators/states-generator";
 import { redrawEmblem, removeEmblem } from "@/renderers/draw-emblems";
+import { goodBadge } from "@/renderers/draw-goods";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { fog, unfog } from "@/renderers/overlays/fogging";
@@ -770,33 +771,172 @@ function openTreasuryDialog(stateId: number): void {
   const state = pack.states[stateId];
   if (!stateId || !state || state.removed) return;
 
-  const pollTaxRevenue = rn(state.pollTax * ((state.rural || 0) + (state.urban || 0)), 2);
-  const salesTaxRevenue = pack.deals.reduce((sum, deal) => {
-    if (!deal.tax) return sum;
-    let sellerStateId = 0;
-    if (deal.sellerType === "burg") {
-      sellerStateId = pack.burgs[deal.seller]?.state || 0;
-    } else if (deal.sellerType === "market") {
-      const market = Markets.get(deal.seller);
-      const centerBurgId = market?.centerBurgId;
-      sellerStateId = centerBurgId ? pack.burgs[centerBurgId]?.state || 0 : 0;
+  const pollTaxRevenue = rn((state.pollTax || 0) * ((state.rural || 0) + (state.urban || 0)), 2);
+  let salesTaxRevenue = 0;
+  let tariffRevenue = 0;
+  for (const deal of pack.deals ?? []) {
+    if (deal.tax) {
+      let sellerStateId = 0;
+      if (deal.sellerType === "burg") {
+        sellerStateId = pack.burgs[deal.seller]?.state || 0;
+      } else if (deal.sellerType === "market") {
+        const market = Markets.get(deal.seller);
+        const centerBurgId = market?.centerBurgId;
+        sellerStateId = centerBurgId ? pack.burgs[centerBurgId]?.state || 0 : 0;
+      }
+      if (sellerStateId === stateId) salesTaxRevenue += deal.tax;
     }
-    return sellerStateId === stateId ? sum + deal.tax : sum;
-  }, 0);
+    if (deal.tariff && deal.buyerType === "market") {
+      const market = Markets.get(deal.buyer);
+      const centerBurgId = market?.centerBurgId;
+      const buyerStateId = centerBurgId ? pack.burgs[centerBurgId]?.state || 0 : 0;
+      if (buyerStateId === stateId) tariffRevenue += deal.tariff;
+    }
+  }
 
-  alertMessage.innerHTML = /* html */ `<div data-tip="${t("Sales tax is applied to deals with a seller from the state. Poll tax is applied to all population of the state. Tax changes take effect on Production regeneration")}" style="margin: 0.6em 0; display: grid; grid-template-columns: 7em auto auto; row-gap: 0.4em; align-items: center">
+  let draftRules: TariffRule[] = (state.tariffs ?? []).map(rule => ({
+    states: Array.isArray(rule.states) ? [...rule.states] : "all",
+    goods: Array.isArray(rule.goods) ? [...rule.goods] : "all",
+    rate: rule.rate
+  }));
+
+  const formatStatesLabel = (states: number[] | "all"): { label: string; tip: string } => {
+    if (!Array.isArray(states))
+      return { label: t("All states"), tip: sentences(t("All foreign states"), t("Click to select")) };
+    const names = states.map(id => pack.states[id]?.name || String(id));
+    const label = names.length <= 2 ? names.join(", ") : `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
+    return { label: label || t("None"), tip: sentences(names.join(", ") || t("None"), t("Click to select")) };
+  };
+
+  const formatGoodsLabel = (goods: number[] | "all"): { label: string; tip: string } => {
+    if (!Array.isArray(goods)) return { label: t("All goods"), tip: sentences(t("All goods"), t("Click to select")) };
+    const names = goods.map(id => Goods.get(id)?.name || String(id));
+    const label = names.length <= 2 ? names.join(", ") : `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
+    return { label: label || t("None"), tip: sentences(names.join(", ") || t("None"), t("Click to select")) };
+  };
+
+  alertMessage.innerHTML = /* html */ `<div data-tip="${t("Sales tax is applied to deals with a seller from the state. Poll tax is applied to all population of the state. Tariffs are applied to foreign goods imported into the state's markets. Tax changes take effect on Production regeneration")}" style="margin: 0.6em 0; display: grid; grid-template-columns: 7em auto auto; row-gap: 0.4em; align-items: center">
       <label for="stateSalesTaxInput">${t("Sales Tax")}:</label>
       <input id="stateSalesTaxInput" type="number" min="0" max="1" step="0.01" value="${state.salesTax}" style="width: 6em"/> = ${formatPrice(salesTaxRevenue)}
       <label for="statePollTaxInput">${t("Poll Tax")}:</label>
       <input id="statePollTaxInput" type="number" min="0" max="10" step="0.01" value="${state.pollTax}" style="width: 6em"/> = ${formatPrice(pollTaxRevenue)}
+      <label>${t("Tariffs")}:</label>
+      <span></span> = ${formatPrice(tariffRevenue)}
       <label for="stateTreasuryInput">${t("Treasury")}:</label>
       <input id="stateTreasuryInput" type="number" step="1" value="${state.treasury}" style="width: 6em" />
-    </div>`;
+    </div>
+    <hr />
+    <div style="display: flex; justify-content: space-between; align-items: center; margin: 0.4em 0;">
+      <b data-tip="${t("More specific rules override general rules. Embargoes block trade in both directions")}">${t("Tariffs and Embargoes")}</b>
+      <div style="display: flex; gap: 0.3em;">
+        <button id="stateTariffReset" type="button" class="icon-arrows-cw" data-tip="${t("Reset tariffs based on current diplomatic relations")}"> ${t("Reset")}</button>
+        <button id="stateTariffAdd" type="button" class="icon-plus" data-tip="${t("Add tariff or embargo rule")}"> ${t("Add")}</button>
+      </div>
+    </div>
+    <div id="stateTariffsList" style="max-height: 15em; overflow-y: auto; display: flex; flex-direction: column; row-gap: 0.25em;"></div>`;
+
+  const listEl = ensureEl("stateTariffsList");
+
+  const renderRules = (): void => {
+    if (!draftRules.length) {
+      listEl.innerHTML = `<div style="color: #666; font-style: italic; padding: 0.3em 0;">${t("No tariff or embargo rules")}</div>`;
+      return;
+    }
+    listEl.innerHTML = draftRules
+      .map((rule, index) => {
+        const statesInfo = formatStatesLabel(rule.states);
+        const goodsInfo = formatGoodsLabel(rule.goods);
+        const isEmbargo = rule.rate === "embargo";
+        const rateValue = isEmbargo ? 0.1 : rule.rate;
+        return /* html */ `<div class="tariffRuleRow" data-index="${index}" style="display: grid; grid-template-columns: 1fr 1fr 5.8em 4.5em 1.2em; column-gap: 0.3em; align-items: center;">
+          <button type="button" class="tariffStatesBtn" data-tip="${statesInfo.tip}" style="text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${statesInfo.label}</button>
+          <button type="button" class="tariffGoodsBtn" data-tip="${goodsInfo.tip}" style="text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${goodsInfo.label}</button>
+          <select class="tariffTypeSelect" data-tip="${t("Rule policy: tariff rate or complete trade embargo")}">
+            <option value="tariff" ${!isEmbargo ? "selected" : ""}>${t("Tariff")}</option>
+            <option value="embargo" ${isEmbargo ? "selected" : ""}>${t("Embargo")}</option>
+          </select>
+          <input class="tariffRateInput" type="number" min="0" max="10" step="0.01" value="${rateValue}" data-tip="${t("Import tariff rate")}" style="width: 4.2em; ${isEmbargo ? "visibility: hidden;" : ""}" />
+          <span class="icon-trash-empty pointer tariffRemoveBtn" data-tip="${t("Remove rule")}"></span>
+        </div>`;
+      })
+      .join("");
+  };
+
+  renderRules();
+
+  ensureEl("stateTariffReset").addEventListener("click", () => {
+    draftRules = States.defineTariffs(state).map(rule => ({
+      states: Array.isArray(rule.states) ? [...rule.states] : "all",
+      goods: Array.isArray(rule.goods) ? [...rule.goods] : "all",
+      rate: rule.rate
+    }));
+    renderRules();
+  });
+
+  ensureEl("stateTariffAdd").addEventListener("click", () => {
+    draftRules.push({ states: "all", goods: "all", rate: 0.1 });
+    renderRules();
+  });
+
+  listEl.addEventListener("click", event => {
+    const target = event.target as HTMLElement;
+    const row = target.closest<HTMLElement>(".tariffRuleRow");
+    if (!row) return;
+    const index = +row.dataset.index!;
+    const rule = draftRules[index];
+    if (!rule) return;
+
+    if (target.classList.contains("tariffRemoveBtn")) {
+      draftRules.splice(index, 1);
+      renderRules();
+    } else if (target.classList.contains("tariffStatesBtn")) {
+      openTariffStatesSelector(stateId, rule, renderRules);
+    } else if (target.classList.contains("tariffGoodsBtn")) {
+      openTariffGoodsSelector(rule, renderRules);
+    }
+  });
+
+  listEl.addEventListener("change", event => {
+    const target = event.target as HTMLInputElement | HTMLSelectElement;
+    const row = target.closest<HTMLElement>(".tariffRuleRow");
+    if (!row) return;
+    const index = +row.dataset.index!;
+    const rule = draftRules[index];
+    if (!rule) return;
+
+    if (target.classList.contains("tariffTypeSelect")) {
+      const rateInput = row.querySelector<HTMLInputElement>(".tariffRateInput");
+      if (target.value === "embargo") {
+        rule.rate = "embargo";
+        if (rateInput) rateInput.style.visibility = "hidden";
+      } else {
+        const val = rateInput ? Math.max(0, Math.min(10, +rateInput.value)) : 0.1;
+        rule.rate = Number.isFinite(val) ? rn(val, 4) : 0.1;
+        if (rateInput) rateInput.style.visibility = "";
+      }
+    } else if (target.classList.contains("tariffRateInput")) {
+      const val = Math.max(0, Math.min(10, +target.value));
+      if (rule.rate !== "embargo") rule.rate = Number.isFinite(val) ? rn(val, 4) : 0;
+    }
+  });
+
+  listEl.addEventListener("input", event => {
+    const target = event.target as HTMLInputElement;
+    if (!target.classList.contains("tariffRateInput")) return;
+    const row = target.closest<HTMLElement>(".tariffRuleRow");
+    if (!row) return;
+    const index = +row.dataset.index!;
+    const rule = draftRules[index];
+    if (!rule || rule.rate === "embargo") return;
+    const val = Math.max(0, Math.min(10, +target.value));
+    rule.rate = Number.isFinite(val) ? rn(val, 4) : 0;
+  });
 
   $("#alert").dialog({
     resizable: false,
     title: t("Taxes and Treasury: {{- state}}", { state: state.name }),
-    width: "26em",
+    width: "32em",
+    close: () => destroyDialog("tariffSelectorDialog"),
     buttons: {
       [t("Apply")]: function (this: HTMLElement) {
         const salesInput = ensureEl<HTMLInputElement>("stateSalesTaxInput");
@@ -810,6 +950,7 @@ function openTreasuryDialog(stateId: number): void {
           Number.isFinite(newSales) ? newSales : state.salesTax,
           Number.isFinite(newPoll) ? newPoll : state.pollTax
         );
+        States.setTariffs(stateId, draftRules);
         if (Number.isFinite(newTreasury)) States.setTreasury(stateId, newTreasury);
         refreshStatesEditor();
         $(this).dialog("close");
@@ -819,6 +960,134 @@ function openTreasuryDialog(stateId: number): void {
       }
     },
     position: { my: "center", at: "center", of: "svg" }
+  });
+}
+
+function openTariffStatesSelector(stateId: number, rule: TariffRule, onApply: () => void): void {
+  const foreignStates = pack.states.filter(s => s.i && !s.removed && s.i !== stateId);
+  const isAll = rule.states === "all";
+  const selected = new Set(Array.isArray(rule.states) ? rule.states : foreignStates.map(s => s.i));
+
+  openTariffChecklistDialog({
+    title: t("Select States"),
+    allLabel: t("All states"),
+    isAll,
+    items: foreignStates.map(s => ({
+      id: s.i,
+      name: s.name,
+      badgeHtml: `<fill-box fill="${s.color || "#ccc"}" size=".8em" disabled></fill-box>`,
+      checked: isAll || selected.has(s.i)
+    })),
+    emptyWarning: t("Select at least one state"),
+    onSave: result => {
+      rule.states = result;
+      onApply();
+    }
+  });
+}
+
+function openTariffGoodsSelector(rule: TariffRule, onApply: () => void): void {
+  const goods = pack.goods ?? [];
+  const isAll = rule.goods === "all";
+  const selected = new Set(Array.isArray(rule.goods) ? rule.goods : goods.map(g => g.i));
+
+  openTariffChecklistDialog({
+    title: t("Select Goods"),
+    allLabel: t("All goods"),
+    isAll,
+    items: goods.map(g => ({
+      id: g.i,
+      name: g.name,
+      badgeHtml: g.icon
+        ? `<svg width="1.2em" height="1.2em" class="goodIcon" style="min-width: 1.2em; min-height: 1.2em; flex-shrink: 0;">${goodBadge(g)}</svg>`
+        : `<fill-box fill="${g.color || "#ccc"}" size=".8em" disabled></fill-box>`,
+      checked: isAll || selected.has(g.i)
+    })),
+    emptyWarning: t("Select at least one good"),
+    onSave: result => {
+      rule.goods = result;
+      onApply();
+    }
+  });
+}
+
+function openTariffChecklistDialog({
+  title,
+  allLabel,
+  isAll,
+  items,
+  emptyWarning,
+  onSave
+}: {
+  title: string;
+  allLabel: string;
+  isAll: boolean;
+  items: { id: number; name: string; badgeHtml?: string; checked: boolean }[];
+  emptyWarning: string;
+  onSave: (value: number[] | "all") => void;
+}): void {
+  destroyDialog("tariffSelectorDialog");
+  const dialogEl = document.createElement("div");
+  dialogEl.id = "tariffSelectorDialog";
+  dialogEl.className = "dialog";
+  document.body.appendChild(dialogEl);
+
+  const itemsHtml = items
+    .map(
+      item =>
+        `<label style="display: flex; align-items: center; column-gap: 0.35em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><input type="checkbox" class="native tariffItemCheck" value="${item.id}" ${item.checked ? "checked" : ""} />${item.badgeHtml ?? ""}<span>${item.name}</span></label>`
+    )
+    .join("");
+
+  dialogEl.innerHTML = /* html */ `
+    <div style="margin-bottom: 0.4em; padding-bottom: 0.3em; border-bottom: 1px solid #ccc;">
+      <label style="display: flex; align-items: center; column-gap: 0.3em;">
+        <input id="tariffAllCheck" type="checkbox" class="native" ${isAll ? "checked" : ""} />
+        <b>${allLabel}</b>
+      </label>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.25em 0.5em; max-height: 16em; overflow-y: auto;">
+      ${itemsHtml}
+    </div>
+  `;
+
+  const allCheck = ensureEl<HTMLInputElement>("tariffAllCheck");
+  const itemChecks = Array.from(dialogEl.querySelectorAll<HTMLInputElement>(".tariffItemCheck"));
+
+  allCheck.addEventListener("change", () => {
+    for (const check of itemChecks) check.checked = allCheck.checked;
+  });
+
+  dialogEl.addEventListener("change", event => {
+    const target = event.target as HTMLInputElement;
+    if (!target.classList.contains("tariffItemCheck")) return;
+    allCheck.checked = itemChecks.length > 0 && itemChecks.every(c => c.checked);
+  });
+
+  $(dialogEl).dialog({
+    resizable: false,
+    title,
+    width: "24em",
+    close: () => destroyDialog("tariffSelectorDialog"),
+    buttons: {
+      [t("Apply")]: function () {
+        if (allCheck.checked) {
+          onSave("all");
+          $(this).dialog("close");
+          return;
+        }
+        const checkedIds = itemChecks.filter(c => c.checked).map(c => +c.value);
+        if (!checkedIds.length) {
+          tip(emptyWarning, false, "error");
+          return;
+        }
+        onSave(checkedIds.length === itemChecks.length ? "all" : checkedIds);
+        $(this).dialog("close");
+      },
+      [t("Cancel")]: function () {
+        $(this).dialog("close");
+      }
+    }
   });
 }
 

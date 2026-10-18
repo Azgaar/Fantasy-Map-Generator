@@ -33,6 +33,15 @@ export type Deal = {
   units: number;
   price: number;
   tax: number;
+  tariff?: number;
+};
+
+type TariffRate = number | "embargo";
+type CompiledStateTariffs = {
+  byStateAndGood: Map<number, Map<number, TariffRate>>;
+  byStateAllGoods: Map<number, TariffRate>;
+  allStatesByGood: Map<number, TariffRate>;
+  allStatesAllGoods: TariffRate | undefined;
 };
 
 export class MarketsModule {
@@ -423,10 +432,67 @@ export class MarketsModule {
     return deal;
   }
 
+  private compileTariffs(): (ownerStateId: number, otherStateId: number, goodId: number) => TariffRate {
+    const compiled: Record<number, CompiledStateTariffs> = {};
+    const pickRate = (prev: TariffRate | undefined, next: TariffRate): TariffRate =>
+      prev === "embargo" ? "embargo" : next;
+
+    for (const state of pack.states ?? []) {
+      if (!state?.i || state.removed || !Array.isArray(state.tariffs) || !state.tariffs.length) continue;
+      const entry: CompiledStateTariffs = {
+        byStateAndGood: new Map(),
+        byStateAllGoods: new Map(),
+        allStatesByGood: new Map(),
+        allStatesAllGoods: undefined
+      };
+      for (const rule of state.tariffs) {
+        if (!rule) continue;
+        if (rule.states === "all" && rule.goods === "all") {
+          entry.allStatesAllGoods = pickRate(entry.allStatesAllGoods, rule.rate);
+        } else if (rule.states === "all" && Array.isArray(rule.goods)) {
+          for (const g of rule.goods) {
+            entry.allStatesByGood.set(g, pickRate(entry.allStatesByGood.get(g), rule.rate));
+          }
+        } else if (Array.isArray(rule.states) && rule.goods === "all") {
+          for (const s of rule.states) {
+            entry.byStateAllGoods.set(s, pickRate(entry.byStateAllGoods.get(s), rule.rate));
+          }
+        } else if (Array.isArray(rule.states) && Array.isArray(rule.goods)) {
+          for (const s of rule.states) {
+            let goodMap = entry.byStateAndGood.get(s);
+            if (!goodMap) {
+              goodMap = new Map();
+              entry.byStateAndGood.set(s, goodMap);
+            }
+            for (const g of rule.goods) {
+              goodMap.set(g, pickRate(goodMap.get(g), rule.rate));
+            }
+          }
+        }
+      }
+      compiled[state.i] = entry;
+    }
+
+    return (ownerStateId: number, otherStateId: number, goodId: number): TariffRate => {
+      if (!ownerStateId || ownerStateId === otherStateId) return 0;
+      const entry = compiled[ownerStateId];
+      if (!entry) return 0;
+      const tier1 = entry.byStateAndGood.get(otherStateId)?.get(goodId);
+      if (tier1 !== undefined) return tier1;
+      const tier2 = entry.byStateAllGoods.get(otherStateId);
+      if (tier2 !== undefined) return tier2;
+      const tier3 = entry.allStatesByGood.get(goodId);
+      if (tier3 !== undefined) return tier3;
+      if (entry.allStatesAllGoods !== undefined) return entry.allStatesAllGoods;
+      return 0;
+    };
+  }
+
   runGlobalTrade(): void {
     const consumerDemandFactors = this.collectConsumerDemand(pack.goods);
     const industrialDemandFactors = this.collectIndustrialDemand(pack.goods, consumerDemandFactors);
     const populationByMarket = this.calculatePopulationByMarket();
+    const resolveTariff = this.compileTariffs();
 
     const mapDiagonal = Math.hypot(options.map.graph.width, options.map.graph.height) || 1;
     const TRADE_RESERVE_FACTOR = 0.2;
@@ -481,6 +547,7 @@ export class MarketsModule {
         reserveImporter: number;
         transportCost: number;
         exporterTaxPerUnit: number;
+        tariffPerUnit: number;
         units: number;
         unitProfit: number;
         totalProfit: number;
@@ -495,16 +562,30 @@ export class MarketsModule {
         if (available < MIN_UNIT) continue;
 
         const exporterCenter = pack.burgs[exporter.market.centerBurgId];
+        const exporterStateId = exporterCenter?.state || 0;
         const exporterTaxPerUnit = States.getSalesTax(exporterCenter) * exporterGood.price;
 
         for (const importer of importers) {
+          const importerCenter = pack.burgs[importer.market.centerBurgId];
+          const importerStateId = importerCenter?.state || 0;
+
+          let tariffRate = 0;
+          if (exporterStateId !== importerStateId) {
+            const importerPolicy = resolveTariff(importerStateId, exporterStateId, good.i);
+            const exporterPolicy = resolveTariff(exporterStateId, importerStateId, good.i);
+            if (importerPolicy === "embargo" || exporterPolicy === "embargo") continue;
+            tariffRate = importerPolicy;
+          }
+          const tariffPerUnit = tariffRate * exporterGood.price;
+
           const importerGood = this.getMarketGood(importer.market, good);
           const needed = Math.max(0, importer.reserve - importerGood.stock);
           const units = Math.min(available, needed);
           if (units < MIN_UNIT) continue;
 
           const transportCost = distances[importer.market.i] * good.value;
-          const unitProfit = importerGood.price - (exporterGood.price + transportCost + exporterTaxPerUnit);
+          const unitProfit =
+            importerGood.price - (exporterGood.price + transportCost + exporterTaxPerUnit + tariffPerUnit);
           const totalProfit = unitProfit * units;
           if (totalProfit < MIN_PROFIT) continue;
 
@@ -515,6 +596,7 @@ export class MarketsModule {
             reserveImporter: importer.reserve,
             transportCost,
             exporterTaxPerUnit,
+            tariffPerUnit,
             units,
             unitProfit,
             totalProfit
@@ -532,10 +614,12 @@ export class MarketsModule {
         const units = Math.min(available, needed);
         if (units < MIN_UNIT) continue;
 
-        const landedCost = exporterGood.price + opportunity.transportCost + opportunity.exporterTaxPerUnit;
+        const landedCost =
+          exporterGood.price + opportunity.transportCost + opportunity.exporterTaxPerUnit + opportunity.tariffPerUnit;
         const totalProfit = (importerGood.price - landedCost) * units;
         if (totalProfit < MIN_PROFIT) continue;
 
+        const tariff = rn(opportunity.tariffPerUnit * units, 2);
         const deal: Deal = {
           i: pack.deals.length,
           seller: opportunity.exporter.i,
@@ -543,9 +627,10 @@ export class MarketsModule {
           buyer: opportunity.importer.i,
           buyerType: "market",
           good: good.i,
-          units,
-          price: landedCost,
-          tax: opportunity.exporterTaxPerUnit * units
+          units: rn(units, 2),
+          price: rn(landedCost, 2),
+          tax: rn(opportunity.exporterTaxPerUnit * units, 2),
+          ...(tariff ? { tariff } : {})
         };
         pack.deals.push(deal);
 
