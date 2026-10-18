@@ -1114,6 +1114,7 @@
       "stroke-dasharray": "0 4 10 4",
       "stroke-linecap": "round",
       "stroke-linejoin": null,
+      "fill": "#000000",
       "font-family": "Almendra SC",
       "font-size": "13px"
     },
@@ -1158,13 +1159,13 @@
   "military": {
     "attrs": {
       "opacity": null,
+      "fill-opacity": 1,
       "stroke": "#000",
       "stroke-opacity": null,
       "stroke-width": 0.2,
       "stroke-dasharray": null,
       "stroke-linecap": null,
       "stroke-linejoin": null,
-      "fill-opacity": 1,
       "filter": null
     },
     "options": {
@@ -1232,6 +1233,9 @@
       "filter": null,
       "mask": null
     },
+    "options": {
+      "type": "bars"
+    },
     "groups": {
       "rural": {
         "attrs": {
@@ -1268,9 +1272,9 @@
   "relief": {
     "attrs": {
       "opacity": 1,
+      "stroke": "#999999",
       "filter": null,
-      "mask": null,
-      "stroke": "#999999"
+      "mask": null
     },
     "options": {
       "set": "gray",
@@ -1348,8 +1352,8 @@
       "stroke-linecap": null,
       "stroke": "#3d3d3d",
       "color": "#ffffff",
-      "font-size": "20px",
       "data-labels": true,
+      "font-size": "20px",
       "filter": null
     }
   },

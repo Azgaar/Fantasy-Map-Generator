@@ -31,9 +31,9 @@ export function drawLegend(name: string, data: LegendItem[]): void {
   const backColor = styles.legend.groups.box.attrs.fill;
   const opacity = Number(styles.legend.groups.box.attrs["fill-opacity"]);
   const fontSize = Number.parseFloat(styles.legend.attrs["font-size"]); // the texts size by inheritance
-
   // TODO: a renderer should not own controls. Move this to a proper legend component once one exists
   layer
+    .attr("fill", styles.legend.attrs.fill || "#000000")
     .on("mousemove", () => tip(sentences(t("Drag to change the position"), t("Click to hide the legend box"))))
     .on("click", event => onLegendClick(event));
 
@@ -48,7 +48,7 @@ export function drawLegend(name: string, data: LegendItem[]): void {
   const vOffset = fontSize / 2;
 
   const boxes = box.append("g").attr("stroke-width", 0.5).attr("stroke", "#111111").attr("stroke-dasharray", "none");
-  const labels = box.append("g").attr("fill", "#000000").attr("stroke", "none");
+  const labels = box.append("g").attr("stroke", "none");
 
   const columns = Math.ceil(data.length / itemsInCol);
   const linesInColumn = Math.ceil(data.length / columns);

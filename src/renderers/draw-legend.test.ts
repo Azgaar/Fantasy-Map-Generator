@@ -46,13 +46,18 @@ describe("drawLegend", () => {
   it("takes the styling from the store when the legend is drawn anew", () => {
     styles.legend.options.columns = 4;
     styles.legend.groups.box.attrs.fill = "#123456";
+    styles.legend.attrs.fill = "#feeedd";
     drawLegend("States", items);
 
     const box = boxOf("States")!.querySelector(".legendBox")!;
     expect(box.getAttribute("data-columns")).toBe("4");
     expect(box.getAttribute("fill")).toBe("#123456");
+    expect(document.querySelector("#legend")?.getAttribute("fill")).toBe("#feeedd");
+    const labels = boxOf("States")!.querySelector("g[stroke='none']")!;
+    expect(labels.getAttribute("fill")).toBeNull();
     styles.legend.options.columns = 8;
     styles.legend.groups.box.attrs.fill = "#ffffff";
+    styles.legend.attrs.fill = "#000000";
   });
 
   it("redraws the box from the store, not from the attrs the drawn box carried", () => {
@@ -62,6 +67,7 @@ describe("drawLegend", () => {
     box.setAttribute("fill", "#f0e0c0"); // a stale DOM value the store never learned about
     styles.legend.groups.box.attrs.fill = "#abcdef";
     styles.legend.groups.box.attrs["fill-opacity"] = 0.6;
+    styles.legend.attrs.fill = "#334455";
     styles.legend.options.columns = 1;
 
     redrawLegend();
@@ -70,10 +76,14 @@ describe("drawLegend", () => {
     expect(redrawn.getAttribute("data-columns")).toBe("1");
     expect(redrawn.getAttribute("fill")).toBe("#abcdef");
     expect(redrawn.getAttribute("fill-opacity")).toBe("0.6");
+    expect(document.querySelector("#legend")?.getAttribute("fill")).toBe("#334455");
+    const labels = boxOf("States")!.querySelector("g[stroke='none']")!;
+    expect(labels.getAttribute("fill")).toBeNull();
     expect(boxOf("States")!.querySelector(".legendLabel")?.textContent).toBe("States");
     expect(document.querySelectorAll("#legend text")).toHaveLength(3); // 2 items + the label
     styles.legend.options.columns = 8;
     styles.legend.groups.box.attrs.fill = "#ffffff";
+    styles.legend.attrs.fill = "#000000";
   });
 
   it("fitLegendBox positions from the remembered spot, ignoring the retired data attrs", () => {

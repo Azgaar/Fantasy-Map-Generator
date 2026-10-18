@@ -105,6 +105,7 @@ describe("styles schema metadata", () => {
     expect(byPath["markets.options.icon"].spec.kind).toBe("icon");
     expect(byPath["map.attrs.filter"].spec).toMatchObject({ kind: "select", nullable: true, label: "Filter" });
     expect(byPath["ocean.groups.pattern.attrs.href"].spec).toMatchObject({ kind: "select", label: "Image" });
+    expect(byPath["legend.attrs.fill"].spec).toMatchObject({ kind: "color", group: undefined, label: "Color" });
     expect(byPath["legend.attrs.font-size"].spec).toMatchObject({ kind: "px", group: undefined, label: "Size" });
     expect(byPath["states.groups.statesHalo.attrs.stroke-width"].spec).toMatchObject({
       kind: "slider",

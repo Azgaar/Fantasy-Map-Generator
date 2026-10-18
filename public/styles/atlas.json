@@ -1074,6 +1074,7 @@
       "stroke-dasharray": "0",
       "stroke-linecap": "butt",
       "stroke-linejoin": null,
+      "fill": "#000000",
       "font-family": "Georgia",
       "font-size": "13px"
     },
@@ -1192,6 +1193,9 @@
       "filter": null,
       "mask": null
     },
+    "options": {
+      "type": "bars"
+    },
     "groups": {
       "rural": {
         "attrs": {
@@ -1228,9 +1232,9 @@
   "relief": {
     "attrs": {
       "opacity": null,
+      "stroke": "#5c5c70",
       "filter": null,
-      "mask": null,
-      "stroke": "#5c5c70"
+      "mask": null
     },
     "options": {
       "set": "simple",
@@ -1308,8 +1312,8 @@
       "stroke-linecap": null,
       "stroke": "#3d3d3d",
       "color": "#ffffff",
-      "font-size": "20px",
       "data-labels": true,
+      "font-size": "20px",
       "filter": null
     }
   },

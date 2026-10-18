@@ -596,6 +596,7 @@ export const stylesSchema = z.strictObject({
   legend: z.strictObject({
     attrs: z.strictObject({
       ...strokeGroup,
+      fill,
       "font-family": variant(fontFamily, { effect: "draw" }),
       "font-size": variant(fontSizePx, { effect: "draw" })
     }),
