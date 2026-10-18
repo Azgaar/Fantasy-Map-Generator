@@ -792,50 +792,47 @@ export const stylesSchema = z.strictObject({
       { effect: "draw" }
     )
   }),
-  scaleBar: meta(
-    z.strictObject({
-      attrs: z.strictObject({ opacity, fill, "font-size": fontSizePx }),
-      options: z.strictObject({
-        barSize: number({ label: t("Bar size"), range: [0.5, 5], step: 0.1 }),
-        label: text({ label: t("Label"), tip: t("Type scale bar label, leave blank to hide label") }),
-        x: number({
-          group: t("Position"),
-          label: "X",
-          range: [0, 100],
-          step: 0.1,
-          tip: t("Scale bar right edge, in percents")
-        }),
-        y: number({
-          group: t("Position"),
-          label: "Y",
-          range: [0, 100],
-          step: 0.1,
-          tip: t("Scale bar bottom edge, in percents")
-        })
+  scaleBar: z.strictObject({
+    attrs: z.strictObject({ opacity, fill, "font-size": variant(fontSizePx, { effect: "draw" }) }),
+    options: z.strictObject({
+      barSize: number({ label: t("Bar size"), range: [0.5, 5], step: 0.1 }),
+      label: text({ label: t("Label"), tip: t("Type scale bar label, leave blank to hide label") }),
+      x: number({
+        group: t("Position"),
+        label: "X",
+        range: [0, 100],
+        step: 0.1,
+        tip: t("Scale bar right edge, in percents")
       }),
-      groups: z.strictObject({
-        back: meta(
-          z.strictObject({
-            attrs: z.strictObject({
-              opacity,
-              ...fillGroup,
-              stroke: strokeGroup.stroke,
-              "stroke-width": strokeGroup["stroke-width"],
-              filter
-            }),
-            options: z.strictObject({
-              top: padding(t("Top")),
-              right: padding(t("Right")),
-              bottom: padding(t("Bottom")),
-              left: padding(t("Left"))
-            })
-          }),
-          { label: t("Background") }
-        )
+      y: number({
+        group: t("Position"),
+        label: "Y",
+        range: [0, 100],
+        step: 0.1,
+        tip: t("Scale bar bottom edge, in percents")
       })
     }),
-    { effect: "draw" }
-  ),
+    groups: z.strictObject({
+      back: meta(
+        z.strictObject({
+          attrs: z.strictObject({
+            opacity,
+            ...fillGroup,
+            stroke: strokeGroup.stroke,
+            "stroke-width": strokeGroup["stroke-width"],
+            filter
+          }),
+          options: z.strictObject({
+            top: padding(t("Top")),
+            right: padding(t("Right")),
+            bottom: padding(t("Bottom")),
+            left: padding(t("Left"))
+          })
+        }),
+        { label: t("Background") }
+      )
+    })
+  }),
   states: z.strictObject({
     groups: z.strictObject({
       statesBody: meta(z.strictObject({ attrs: z.strictObject({ opacity, filter }) }), { label: t("States body") }),
