@@ -24,6 +24,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Province } from "@/generators/provinces-generator";
+import { Tags } from "@/generators/tags";
 import { redrawEmblem, redrawEmblems, removeEmblem } from "@/renderers/draw-emblems";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { fog, unfog } from "@/renderers/overlays/fogging";
@@ -35,7 +36,7 @@ import { ensureEl, getPointer, getRandomColor, isLand, rand, rn, si, unique } fr
 
 const dialogId = "provincesEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
-let filterState: { stateId: number };
+let filterState: { stateId: number; search?: string };
 
 const getProvinceArea = (province: Province) => getArea(province.area!);
 const getProvincePopulation = (province: Province) =>
@@ -93,6 +94,14 @@ const columns: EditorColumn<Province>[] = [
     sortBy: getProvinceArea
   },
   { key: "population", label: t("Population"), width: "6em", sortBy: getProvincePopulation },
+  {
+    key: "tags",
+    label: t("Tags"),
+    width: "10em",
+    hidden: true,
+    sortBy: province => Tags.format(province.tags),
+    sortType: "alpha"
+  },
   { key: "note", width: "1.1em" },
   { key: "independence", width: "1.1em" },
   { key: "locate", width: "1.1em" },
@@ -104,7 +113,7 @@ const provincesTable = initEditorTable<Province>({ getData: getProvincesData, on
 
 function open(): void {
   if (customization) return;
-  filterState = dialogState.get(dialogId, "filters", () => ({ stateId: 1 }));
+  filterState = dialogState.get(dialogId, "filters", () => ({ stateId: 1, search: "" }));
   closeDialogs("#provincesEditor, .stable");
   Layers.show("provinces", "borders");
   Layers.hide("states", "cultures");
@@ -121,11 +130,22 @@ function open(): void {
   });
 }
 
+function onSearchInput(): void {
+  filterState.search = ensureEl<HTMLInputElement>("provincesSearch").value;
+  dialogState.set(dialogId, "filters", filterState);
+  provincesTable.reset();
+}
+
 function renderDialog(): void {
   destroyDialog("provincesEditor");
   const editorHtml = /* html */ `<div id="provincesEditor" class="dialog stable editorDialog">
       <div id="provincesBodySection" class="table" data-type="absolute">
         ${renderEditorHeader({ dialogId, columns })}
+      </div>
+      <div id="provincesFilters" data-tip="${t("Apply a filter")}" class="editorFilters">
+        <label for="provincesSearch" data-tip="${t("Filter by name, form, capital, state, or tag")}">
+          ${t("Search")}: <input id="provincesSearch" type="search" />
+        </label>
       </div>
       <div id="provincesFooter" class="totalLine">
         <div data-tip="${t("Provinces displayed")}" style="margin-left: 4px">
@@ -187,6 +207,9 @@ function renderDialog(): void {
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  const searchInput = ensureEl<HTMLInputElement>("provincesSearch");
+  searchInput.value = filterState.search ?? "";
+  searchInput.addEventListener("input", onSearchInput);
   bindColumnSorting(dialogId, provincesTable.reset);
   initColumnVisibility({
     dialogId,
@@ -297,8 +320,16 @@ function updateFilter(): void {
 
 function getProvincesData(): Province[] {
   const provinces = pack.provinces.filter(province => province.i && !province.removed);
-  const filtered =
+  let filtered =
     filterState.stateId === -1 ? provinces : provinces.filter(province => province.state === filterState.stateId);
+  const searchText = filterState?.search?.toLowerCase().trim();
+  if (searchText) {
+    filtered = filtered.filter(p => {
+      const capital = p.burg ? pack.burgs[p.burg]?.name : "";
+      const state = pack.states[p.state]?.name;
+      return Tags.matches(searchText, p.name, p.tags, [p.formName, capital, state]);
+    });
+  }
   return sortDataByColumns(dialogId, filtered, columns);
 }
 
@@ -351,6 +382,16 @@ function renderProvincesPage(view: TableView<Province>): void {
         <span data-tip="${populationTip}" class="icon-male"></span>
         <span data-tip="${populationTip}" class="culturePopulation">${percentage ? `${rn(totals.population ? (population / totals.population) * 100 : 0)}%` : si(population)}</span>
       </div>
+      <div data-col="tags">
+        <input
+          data-tip="${t("Tags (comma-separated)")}"
+          class="provinceTags"
+          value="${Tags.format(p.tags)}"
+          placeholder="${t("Tags")}"
+          autocorrect="off"
+          spellcheck="false"
+        />
+      </div>
       ${noteIcon(t("Edit free text notes (legend)"))}
       <span data-col="independence" data-tip="${t("Declare province independence (turn non-capital province with burgs into a new state)")}" class="icon-flag-empty ${separable ? "" : "placeholder"}"></span>
       <span data-col="locate" data-tip="${t("Locate on map")}" class="icon-target"></span>
@@ -377,8 +418,22 @@ function renderProvincesPage(view: TableView<Province>): void {
     el.addEventListener("mouseenter", provinceHighlightOn);
     el.addEventListener("mouseleave", provinceHighlightOff);
   });
+  body.querySelectorAll("input.provinceTags").forEach(el => {
+    el.addEventListener("change", provinceChangeTags);
+  });
 
   updateDialog(dialogId, { width: "fit-content", position });
+}
+
+function provinceChangeTags(this: HTMLInputElement): void {
+  const line = this.closest(".states") as HTMLElement;
+  const provinceId = Number(line.dataset.id);
+  const province = pack.provinces[provinceId];
+  if (!province) return;
+
+  Tags.set(province, this.value);
+  this.value = Tags.format(province.tags);
+  if (filterState.search) provincesTable.refresh();
 }
 
 function getCapitalOptions(burgs: number[], capital: number): string {
@@ -1085,11 +1140,11 @@ function recolorProvinces(): void {
 function downloadProvincesData(): void {
   const unit =
     options.map.units.area.unit === "square" ? `${options.map.units.distance.unit}2` : options.map.units.area.unit;
-  let data = `Id,Province,Full Name,Form,State,Color,Capital,Area ${unit},Total Population,Rural Population,Urban Population,Burgs\n`; // headers
+  let data = `Id,Province,Full Name,Form,State,Color,Capital,Area ${unit},Total Population,Rural Population,Urban Population,Burgs,Tags\n`; // headers
 
   for (const province of getProvincesData()) {
     const capital = province.burg ? pack.burgs[province.burg].name : "";
-    data += `${province.i},${province.name},${province.fullName},${province.formName},${pack.states[province.state].name},${province.color},${capital},${getProvinceArea(province)},${getProvincePopulation(province)},${Math.round(province.rural! * options.map.units.population.scale)},${Math.round(province.urban! * options.map.units.population.scale * options.map.units.population.urbanization.rate)},${province.burgs!.length}\n`;
+    data += `${province.i},${province.name},${province.fullName},${province.formName},${pack.states[province.state].name},${province.color},${capital},${getProvinceArea(province)},${getProvincePopulation(province)},${Math.round(province.rural! * options.map.units.population.scale)},${Math.round(province.urban! * options.map.units.population.scale * options.map.units.population.urbanization.rate)},${province.burgs!.length},"${Tags.format(province.tags)}"\n`;
   }
 
   const name = `${getFileName("Provinces")}.csv`;

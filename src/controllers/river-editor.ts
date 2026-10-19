@@ -4,6 +4,7 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
+import { Tags } from "@/generators/tags";
 import type { Point } from "@/generators/voronoi";
 import { redrawRiver as redrawRiverShape, setEditedRiver } from "@/renderers/draw-rivers";
 import { speak } from "@/utils";
@@ -72,6 +73,15 @@ function renderDialog(): void {
         <div class="label">${t("Type")}:</div>
         <input id="riverType" autocorrect="off" spellcheck="false" />
       </div>
+      <div data-tip="${t("River tags (comma-separated)")}">
+        <div class="label">${t("Tags")}:</div>
+        <input
+          id="riverTags"
+          placeholder="${t("Tags")}"
+          autocorrect="off"
+          spellcheck="false"
+        />
+      </div>
       <div data-tip="${t("Select parent river")}">
         <div class="label">${t("Mainstem")}:</div>
         <select id="riverMainstem"></select>
@@ -120,6 +130,7 @@ function renderDialog(): void {
   ensureEl("riverName").addEventListener("input", changeName);
   ensureEl("riverNameSpeak").addEventListener("click", () => speak(ensureEl<HTMLInputElement>("riverName").value));
   ensureEl("riverType").addEventListener("input", changeType);
+  ensureEl("riverTags").addEventListener("change", changeTags);
   ensureEl("riverNameCulture").addEventListener("click", generateNameCulture);
   ensureEl("riverNameRandom").addEventListener("click", generateNameRandom);
   ensureEl("riverMainstem").addEventListener("change", changeParent);
@@ -145,6 +156,7 @@ function updateRiverData(): void {
 
   ensureEl<HTMLInputElement>("riverName").value = r.name;
   ensureEl<HTMLInputElement>("riverType").value = r.type;
+  ensureEl<HTMLInputElement>("riverTags").value = Tags.format(r.tags);
 
   const parentSelect = ensureEl<HTMLSelectElement>("riverMainstem");
   parentSelect.options.length = 0;
@@ -271,6 +283,13 @@ function changeName(this: HTMLInputElement): void {
 
 function changeType(this: HTMLInputElement): void {
   if (this.value.trim()) Rivers.setType(getRiver().i, this.value);
+}
+
+function changeTags(this: HTMLInputElement): void {
+  const river = getRiver();
+  if (!river) return;
+  Tags.set(river, this.value);
+  this.value = Tags.format(river.tags);
 }
 
 function generateNameCulture(): void {

@@ -6,6 +6,7 @@ import { Controllers } from "@/controllers";
 import { FEATURE_SUBTYPE_LABELS } from "@/data/id-labels";
 import { type Feature, LAKE_SUBTYPES } from "@/generators/features-generator";
 import { Styles } from "@/generators/styles";
+import { Tags } from "@/generators/tags";
 import { drawLakeEmbellishments } from "@/renderers/draw-lakes";
 import { getArea, getAreaUnit, speak } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
@@ -58,6 +59,15 @@ function renderDialog(): void {
         <select id="lakeGroup" data-tip="${t("Select lake rendering group")}"></select>
         <input id="lakeGroupName" placeholder="${t("Group name")}" data-tip="${t("Provide a name for the new group")}" style="display: none" />
         <span id="lakeEditStyle" data-tip="${t("Edit style in Style Editor")}" class="icon-brush pointer"></span>
+      </div>
+      <div data-tip="${t("Lake tags (comma-separated)")}">
+        <div class="label" style="width: 4.8em">${t("Tags")}:</div>
+        <input
+          id="lakeTags"
+          placeholder="${t("Tags")}"
+          autocorrect="off"
+          spellcheck="false"
+        />
       </div>
       <div data-tip="${t("Lake area in selected units")}">
         <div class="label">${t("Area")}:</div>
@@ -113,6 +123,7 @@ function renderDialog(): void {
   ensureEl("lakeGroupName").addEventListener("change", createNewGroup);
   ensureEl("lakeGroupRemove").addEventListener("click", removeLakeGroup);
   ensureEl("lakeEditStyle").addEventListener("click", editGroupStyle);
+  ensureEl("lakeTags").addEventListener("change", changeLakeTags);
   ensureEl("lakeLegend").addEventListener("click", editLakeLegend);
 }
 
@@ -127,6 +138,7 @@ function updateLakeValues(): void {
   const l = getLake();
   ensureEl<HTMLInputElement>("lakeName").value = l.name;
   ensureEl<HTMLSelectElement>("lakeSubtype").value = l.subtype || "freshwater";
+  ensureEl<HTMLInputElement>("lakeTags").value = Tags.format(l.tags);
   ensureEl<HTMLInputElement>("lakeArea").value = `${si(getArea(l.area))} ${getAreaUnit()}`;
 
   const length = polygonLength(l.vertices.map(v => vertices.p[v] as [number, number]));
@@ -305,6 +317,13 @@ function removeLakeGroup(): void {
 function editGroupStyle(): void {
   const g = (selectedLake.node()!.parentNode as SVGGElement).id;
   void Controllers.StyleEditor.open("lakes", g);
+}
+
+function changeLakeTags(this: HTMLInputElement): void {
+  const lake = getLake();
+  if (!lake) return;
+  Tags.set(lake, this.value);
+  this.value = Tags.format(lake.tags);
 }
 
 function editLakeLegend(): void {

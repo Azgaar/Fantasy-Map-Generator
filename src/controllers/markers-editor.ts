@@ -11,6 +11,7 @@ import { stopMapPlacement } from "@/components/map-placement";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Marker, MarkerAppearance } from "@/generators/markers-generator";
+import { Tags } from "@/generators/tags";
 import { drawMarkers, setEditedMarker } from "@/renderers/draw-markers";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl, minmax, rn } from "../utils";
@@ -59,6 +60,16 @@ function renderDialog(): void {
       <div data-tip="${sentences(t("Marker type"), t("Style changes will apply to all markers of the same type"), t("Leave blank if the marker is unique"))}">
         <div class="label">${t("Type")}:</div>
         <input id="markerType" style="width: 10.3em" />
+      </div>
+      <div data-tip="${t("Marker tags (comma-separated)")}">
+        <div class="label">${t("Tags")}:</div>
+        <input
+          id="markerTags"
+          placeholder="${t("Tags")}"
+          autocorrect="off"
+          spellcheck="false"
+          style="width: 10.3em"
+        />
       </div>
       <div data-tip="${t("Marker icon")}" style="display: flex; align-items: center">
         <div class="label">${t("Icon")}:</div>
@@ -118,6 +129,7 @@ function renderDialog(): void {
   // add listeners — dropped together with the dialog HTML on close
   ensureEl("markerName").addEventListener("change", changeMarkerName);
   ensureEl("markerType").addEventListener("change", changeMarkerType);
+  ensureEl("markerTags").addEventListener("change", changeMarkerTags);
   ensureEl("markerIconSelect").addEventListener("click", changeMarkerIcon);
   ensureEl("markerIconSize").addEventListener("input", changeIconSize);
   ensureEl("markerIconShiftX").addEventListener("input", changeIconShiftX);
@@ -179,6 +191,7 @@ function updateInputs(): void {
 
   ensureEl<HTMLInputElement>("markerName").value = marker.name || "";
   ensureEl<HTMLInputElement>("markerType").value = marker.type || "";
+  ensureEl<HTMLInputElement>("markerTags").value = Tags.format(marker.tags);
   ensureEl<HTMLInputElement>("markerIconSize").value = String(marker.px || 12);
   ensureEl<HTMLInputElement>("markerIconShiftX").value = String(marker.dx || 50);
   ensureEl<HTMLInputElement>("markerIconShiftY").value = String(marker.dy || 50);
@@ -208,6 +221,11 @@ function changeMarkerName(this: HTMLInputElement): void {
 
 function changeMarkerType(this: HTMLInputElement): void {
   if (this.value.trim()) Markers.setType(selectedMarker.i, this.value);
+}
+
+function changeMarkerTags(this: HTMLInputElement): void {
+  Tags.set(selectedMarker, this.value);
+  this.value = Tags.format(selectedMarker.tags);
 }
 
 function changeMarkerIcon(): void {

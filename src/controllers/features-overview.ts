@@ -22,6 +22,7 @@ import {
   LAKE_SUBTYPES,
   OCEAN_SUBTYPES
 } from "@/generators/features-generator";
+import { Tags } from "@/generators/tags";
 import { highlightArea, highlightOutline } from "@/renderers/overlays/highlight";
 import {
   downloadFile,
@@ -54,6 +55,14 @@ const columns: EditorColumn<Feature>[] = [
     sortType: "alpha"
   },
   { key: "area", label: t("Area"), width: "6em", sortBy: getCalculatedArea, defaultSort: "desc" },
+  {
+    key: "tags",
+    label: t("Tags"),
+    width: "10em",
+    hidden: true,
+    sortBy: feature => Tags.format(feature.tags),
+    sortType: "alpha"
+  },
   { key: "edit", width: "1.4em" },
   { key: "coastline", width: "1.4em" },
   { key: "note", width: "1.4em", permanent: true }
@@ -98,7 +107,7 @@ function getFilteredFeatures(): Feature[] {
     if (filterState.type !== "all" && feature.type !== filterState.type) return false;
     if (filterState.subtype !== "all" && feature.subtype !== filterState.subtype) return false;
     if (!search) return true;
-    return [getName(feature), feature.type, feature.subtype].some(value => value?.toLowerCase().includes(search));
+    return Tags.matches(search, getName(feature), feature.tags, [feature.type, feature.subtype, feature.group]);
   });
 }
 
@@ -132,7 +141,7 @@ function renderDialog(): void {
   const html = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
     <div id="featuresBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
     <div id="featuresFilters" class="editorFilters">
-      <label for="featuresSearch" data-tip="${t("Filter by name, type or subtype")}">${t("Search")}: <input id="featuresSearch" type="search" /></label>
+      <label for="featuresSearch" data-tip="${t("Filter by name, type, subtype, or tag")}">${t("Search")}: <input id="featuresSearch" type="search" /></label>
       <label for="featuresFilterType">${t("Type")}:
         <select id="featuresFilterType">
           <option value="all">${t("All")}</option>
@@ -272,6 +281,16 @@ function renderFeaturesPage(view: TableView<Feature>): void {
       ${renderTypeCell(feature)}
       ${renderGroupCell(feature, Object.keys(styles.lakes.groups))}
       ${renderAreaCell(feature, unit)}
+      <div data-col="tags">
+        <input
+          data-tip="${t("Feature tags (comma-separated)")}"
+          class="featureTags"
+          value="${Tags.format(feature.tags)}"
+          placeholder="${t("Tags")}"
+          autocorrect="off"
+          spellcheck="false"
+        />
+      </div>
       ${feature.type === "lake" ? `<span data-tip="${t("Edit Lake")}" data-col="edit" class="icon-pencil"></span>` : `<span data-col="edit" class="placeholder"></span>`}
       ${
         feature.type === "ocean"
@@ -303,7 +322,11 @@ const rowActions: Record<string, Record<string, (element: HTMLElement) => void>>
     "span.featureCoastline": openCoastlineEditor
   },
   input: { "input.featureName": changeName },
-  change: { "select.featureSubtype": changeSubtype, "select.featureGroup": changeGroup }
+  change: {
+    "input.featureTags": changeTags,
+    "select.featureSubtype": changeSubtype,
+    "select.featureGroup": changeGroup
+  }
 };
 
 function bindRowActions(body: HTMLElement): void {
@@ -379,6 +402,15 @@ function changeName(input: HTMLElement): void {
   else feature.name = "";
 }
 
+function changeTags(input: HTMLElement): void {
+  const feature = getFeature(input);
+  if (!feature) return;
+  const target = input as HTMLInputElement;
+  Tags.set(feature, target.value);
+  target.value = Tags.format(feature.tags);
+  if (filterState.search) featuresTable.refresh();
+}
+
 function changeSubtype(select: HTMLElement): void {
   Features.setSubtype(getFeature(select).i, (select as HTMLSelectElement).value); // no cascade: generators pick it up on the next run
 }
@@ -409,7 +441,7 @@ function openCoastlineEditor(element: HTMLElement): void {
 
 function downloadFeaturesData(): void {
   const unit = getAreaUnit();
-  let data = `Id,Name,Type,Subtype,Group,Area (${unit}),Map area (${unit}),Cut by border\n`;
+  let data = `Id,Name,Type,Subtype,Group,Tags,Area (${unit}),Map area (${unit}),Cut by border\n`;
 
   for (const feature of featuresTable.view().all) {
     const cells = [
@@ -418,6 +450,7 @@ function downloadFeaturesData(): void {
       feature.type,
       feature.subtype,
       feature.group,
+      `"${Tags.format(feature.tags)}"`,
       getArea(getCalculatedArea(feature)),
       getArea(feature.area),
       feature.border

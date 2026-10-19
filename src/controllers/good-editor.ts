@@ -10,7 +10,8 @@ import { sentences, t } from "@/utils/i18n";
 import { CULTURE_TYPES } from "../generators/cultures-generator";
 import type { DemandCategory, Good } from "../generators/goods-generator";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "../generators/goods-generator";
-import { ensureEl, escapeHtml, getRandomColor, unique } from "../utils";
+import { Tags } from "../generators/tags";
+import { ensureEl, escapeHtml, getRandomColor } from "../utils";
 
 function open(editedGood?: Good, onUpdate?: () => void): void {
   const demandCoverageState: Partial<Record<DemandCategory, number>> = { ...(editedGood?.demandCoverage || {}) };
@@ -88,7 +89,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
 
         const name = ensureEl<HTMLInputElement>("newGoodName").value.trim();
         const tagsInput = ensureEl<HTMLInputElement>("newGoodTags").value.trim();
-        const tags = unique(tagsInput.split(",").map(tag => tag.trim().toLocaleLowerCase()));
+        const tags = Tags.parse(tagsInput);
         const value = +ensureEl<HTMLInputElement>("newGoodValue").value;
         const chance = +ensureEl<HTMLInputElement>("newGoodChance").value;
         const unit = ensureEl<HTMLInputElement>("newGoodUnit").value.trim();
@@ -240,7 +241,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
           <input id="newGoodName" class="ge-field" value="${editedGood?.name || ""}" />
 
           <label for="newGoodTags">${t("Tags")}</label>
-          <input id="newGoodTags" class="ge-field" value="${editedGood?.tags.join(", ") || ""}" placeholder="${t("comma separated")}" />
+          <input id="newGoodTags" class="ge-field" value="${Tags.format(editedGood?.tags)}" placeholder="${t("comma separated")}" />
 
           <label for="newGoodValue">${t("Base Price")}*</label>
           <span class="ge-inline"><input id="newGoodValue" class="ge-num" type="number" min="0" step="1" value="${editedGood?.value ?? 1}" /> 🟡</span>

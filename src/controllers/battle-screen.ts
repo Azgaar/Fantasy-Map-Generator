@@ -1311,7 +1311,8 @@ function applyResults(): void {
     icon: Icons.glyph("⚔️"),
     type: "battlefields",
     dy: 52,
-    name: b.name
+    name: b.name,
+    tags: []
   };
   pack.markers.push(marker);
   Layers.draw("markers");

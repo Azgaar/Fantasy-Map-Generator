@@ -15,6 +15,7 @@ import { clearMainTip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { Marker } from "@/generators/markers-generator";
+import { Tags } from "@/generators/tags";
 import { setMarkersFilter } from "@/renderers/draw-markers";
 import { highlightArea, highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, escapeHtml, getFileName, getLatitude, getLongitude } from "@/utils";
@@ -35,6 +36,14 @@ const columns: EditorColumn<Marker>[] = [
     sortType: "alpha"
   },
   { key: "type", label: t("Type"), width: "10em", sortBy: marker => marker.type || "", sortType: "alpha" },
+  {
+    key: "tags",
+    label: t("Tags"),
+    width: "10em",
+    hidden: true,
+    sortBy: marker => Tags.format(marker.tags),
+    sortType: "alpha"
+  },
   { key: "pin", label: t("Pin"), width: "1.4em" },
   { key: "lock", label: t("Lock"), width: "1.4em" },
   { key: "edit", width: "1.4em" },
@@ -71,7 +80,7 @@ function renderDialog(): void {
         <select id="markersFilterState" data-tip="${t("Show only markers located in the selected state")}"></select>
         <select id="markersFilterCulture" data-tip="${t("Show only markers located in the selected culture")}"></select>
         <select id="markersFilterType" data-tip="${t("Show only markers of the selected type")}"></select>
-        <label for="markersSearch" data-tip="${t("Filter by name or type")}">${t("Search")}: <input id="markersSearch" type="search" /></label>
+        <label for="markersSearch" data-tip="${t("Filter by name, type, or tag")}">${t("Search")}: <input id="markersSearch" type="search" /></label>
       </div>
       <div id="markersFooter" class="totalLine">
         <div data-tip="${t("Markers number")}">
@@ -233,11 +242,7 @@ function getFilteredMarkers(): Marker[] {
 
   const searchText = filterState.search.toLowerCase().trim();
   if (searchText) {
-    markers = markers.filter(marker => {
-      const name = (marker.name || "").toLowerCase();
-      const type = (marker.type || "").toLowerCase();
-      return name.includes(searchText) || type.includes(searchText);
-    });
+    markers = markers.filter(marker => Tags.matches(searchText, marker.name, marker.tags, [marker.type]));
   }
 
   if (filterState.state !== "") {
@@ -272,13 +277,23 @@ function onFilterChange(): void {
 
 function renderMarkersPage(view: TableView<Marker>): void {
   const lines = view.rows
-    .map(({ i, type, icon, iconFill, iconStroke, name, pinned, lock }) => {
+    .map(({ i, type, icon, iconFill, iconStroke, name, pinned, lock, tags }) => {
       return /* html */ `
         <div class="states" data-id=${i} data-name="${escapeHtml(name || "")}" data-type="${type}">
           <div data-col="name" data-tip="${t("Marker name")}">${escapeHtml(name || "")}</div>
           <div data-col="type">
             <span data-tip="${t("Marker icon")}" style="display: inline-flex; width: 1.2em">${Icons.html(icon, { fill: iconFill, stroke: iconStroke })}</span>
             <span data-tip="${t("Marker type")}">${type}</span>
+          </div>
+          <div data-col="tags">
+            <input
+              data-tip="${t("Tags (comma-separated)")}"
+              class="markerTags"
+              value="${Tags.format(tags)}"
+              placeholder="${t("Tags")}"
+              autocorrect="off"
+              spellcheck="false"
+            />
           </div>
           <span data-col="pin" data-tip="${t("Pin marker (display only pinned markers)")}" class="icon-pin ${
             pinned ? "" : "inactive"
@@ -295,10 +310,22 @@ function renderMarkersPage(view: TableView<Marker>): void {
 
   const body = ensureEl("markersBody");
   body.innerHTML = lines;
+  body.querySelectorAll("input.markerTags").forEach(el => void el.addEventListener("change", markerChangeTags));
   ensureEl("markersFooterNumber").innerText = String(view.all.length);
   ensureEl("markersFooterTotal").innerText = String(pack.markers.length);
   renderEditorPagination(ensureEl("markersFooter"), view, markersTable.goto);
   updateDialog(dialogId, { position });
+}
+
+function markerChangeTags(this: HTMLInputElement): void {
+  const line = this.closest(".states") as HTMLElement;
+  const markerId = Number(line.dataset.id);
+  const marker = pack.markers.find(m => m.i === markerId);
+  if (!marker) return;
+
+  Tags.set(marker, this.value);
+  this.value = Tags.format(marker.tags);
+  if (filterState.search) markersTable.refresh();
 }
 
 // last filter set pushed to the renderer, so we only redraw the map when the visible set actually changes
@@ -414,7 +441,7 @@ function removeAllMarkers(): void {
 }
 
 function exportMarkers(): void {
-  const headers = "Id,Type,Icon,Name,Note,State,Culture,X,Y,Latitude,Longitude\n";
+  const headers = "Id,Type,Icon,Name,Note,State,Culture,X,Y,Latitude,Longitude,Tags\n";
   const quote = (s: string) => `"${s.replaceAll('"', '""')}"`;
 
   const body = pack.markers.map(marker => {
@@ -431,9 +458,20 @@ function exportMarkers(): void {
     const lat = getLatitude(y, options.map.geography.coordinates, options.map.graph.height, 2);
     const lon = getLongitude(x, options.map.geography.coordinates, options.map.graph.width, 2);
 
-    return [i, type, quote(Icons.glyphText(icon) ?? icon), name, legend, stateName, cultureName, x, y, lat, lon].join(
-      ","
-    );
+    return [
+      i,
+      type,
+      quote(Icons.glyphText(icon) ?? icon),
+      name,
+      legend,
+      stateName,
+      cultureName,
+      x,
+      y,
+      lat,
+      lon,
+      quote(Tags.format(marker.tags))
+    ].join(",");
   });
 
   const data = headers + body.join("\n");

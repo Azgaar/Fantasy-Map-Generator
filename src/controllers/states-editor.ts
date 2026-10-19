@@ -9,6 +9,7 @@ import {
 } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import { dialogState } from "@/components/dialog/state";
 import {
   type EditorColumn,
   initColumnVisibility,
@@ -24,6 +25,7 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { CULTURE_TYPE_LABELS } from "@/data/id-labels";
 import { STATE_FORMS, type State, type TariffRule } from "@/generators/states-generator";
+import { Tags } from "@/generators/tags";
 import { redrawEmblem, removeEmblem } from "@/renderers/draw-emblems";
 import { goodBadge } from "@/renderers/draw-goods";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
@@ -38,6 +40,7 @@ import { ensureEl, formatPrice, getAdjective, getPointer, isLand, rand, rn, si }
 const dialogId = "statesEditor" as const;
 const LEGEND_NAME = "States"; // the legend box this editor toggles
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+let filterState: { search: string };
 const columns: EditorColumn<State>[] = [
   { key: "color", width: "1.2em", permanent: true },
   {
@@ -128,6 +131,14 @@ const columns: EditorColumn<State>[] = [
     hidden: true,
     sortBy: s => (s.i ? s.expansionism || 0 : 0)
   },
+  {
+    key: "tags",
+    label: t("Tags"),
+    width: "10em",
+    hidden: true,
+    sortBy: s => Tags.format(s.tags),
+    sortType: "alpha"
+  },
   { key: "note", width: "1.1em" },
   { key: "locate", width: "1.1em" },
   { key: "focus", width: "1.1em" },
@@ -135,18 +146,24 @@ const columns: EditorColumn<State>[] = [
   { key: "remove", width: "1.4em", permanent: true }
 ];
 
+function getFilteredStates(): State[] {
+  const query = filterState?.search;
+  const states = pack.states.filter(s => !s.removed);
+  if (!query) return states;
+  return states.filter(s => {
+    if (!s.i) return Tags.matches(query, s.name);
+    return Tags.matches(query, s.name, s.tags, [s.fullName]);
+  });
+}
+
 const statesTable = initEditorTable<State>({
-  getData: () =>
-    sortDataByColumns(
-      dialogId,
-      pack.states.filter(s => !s.removed),
-      columns
-    ),
+  getData: () => sortDataByColumns(dialogId, getFilteredStates(), columns),
   onUpdate: renderStatesPage
 });
 
 function open(): void {
   if (customization) return;
+  filterState = dialogState.get(dialogId, "filters", () => ({ search: "" }));
 
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("states", "borders");
@@ -169,6 +186,10 @@ function renderDialog(): void {
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
     <div id="statesBodySection" class="table" data-type="absolute">
       ${renderEditorHeader({ dialogId, columns })}
+    </div>
+
+    <div id="statesFilters" class="editorFilters">
+      <label for="statesSearch" data-tip="${t("Filter by name or tag")}">${t("Search")}: <input id="statesSearch" type="search" autocomplete="off" /></label>
     </div>
 
     <div id="statesFooter" class="totalLine">
@@ -209,6 +230,7 @@ function renderDialog(): void {
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  ensureEl<HTMLInputElement>("statesSearch").value = filterState.search;
 
   bindColumnSorting(dialogId, statesTable.reset);
   applyLineHighlighting(dialogId, ({ cellId }) => (pack.cells.h[cellId] < 20 ? undefined : pack.cells.state[cellId]));
@@ -217,6 +239,8 @@ function renderDialog(): void {
     columns,
     onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
   });
+
+  ensureEl("statesSearch").addEventListener("input", onSearchInput);
 
   ensureEl("statesEditorRefresh").addEventListener("click", refreshStatesEditor);
   ensureEl("statesEditStyle").addEventListener("click", () => void Controllers.StyleEditor.open("states"));
@@ -265,7 +289,23 @@ function renderDialog(): void {
     if (classList.contains("stateCulture")) stateChangeCulture(state, line, $element.value);
     else if (classList.contains("cultureType")) stateChangeType(state, line, $element.value);
     else if (classList.contains("statePower")) stateChangeExpansionism(state, line, $element.value);
+    else if (classList.contains("stateTags")) stateChangeTags(state, line, $element);
   });
+}
+
+function onSearchInput(event: Event): void {
+  filterState.search = (event.target as HTMLInputElement).value;
+  dialogState.set(dialogId, "filters", filterState);
+  statesTable.reset();
+}
+
+function stateChangeTags(stateId: number, line: HTMLElement, input: HTMLInputElement): void {
+  const state = pack.states[stateId];
+  if (!state) return;
+  Tags.set(state, input.value);
+  input.value = Tags.format(state.tags);
+  line.dataset.tags = Tags.format(state.tags);
+  if (filterState.search) statesTable.refresh();
 }
 
 function closeStatesEditor(): void {
@@ -337,6 +377,7 @@ function renderStatesPage(view: TableView<State>): void {
         data-culture=""
         data-type=""
         data-expansionism=""
+        data-tags=""
       >
         <svg width="1em" height="1em" class="placeholder" data-col="color"></svg>
         <input data-tip="${sentences(t("Neutral lands name"), t("Click to change"))}" class="stateName name pointer italic" value="${
@@ -371,6 +412,7 @@ function renderStatesPage(view: TableView<State>): void {
           <span class="icon-resize-full placeholder"></span>
           <input class="statePower placeholder" type="number" value="0" />
         </div>
+        <div data-col="tags" class="placeholder"></div>
         <div data-col="note"></div>
         <div data-col="locate"></div>
         <div data-col="focus"></div>
@@ -397,6 +439,7 @@ function renderStatesPage(view: TableView<State>): void {
       data-culture=${pack.cultures[s.culture].name}
       data-type=${s.type}
       data-expansionism=${s.expansionism}
+      data-tags="${Tags.format(s.tags)}"
     >
       <fill-box fill="${s.color}" data-col="color"></fill-box>
       <input data-tip="${sentences(t("Name"), t("Click to change"))}" class="stateName name pointer" value="${s.name}" readonly data-col="name" />
@@ -436,6 +479,9 @@ function renderStatesPage(view: TableView<State>): void {
         <input data-tip="${t("Expansionism (defines competitive size). Change to re-calculate states based on new value")}"
           class="statePower" type="number" min="0" max="99" step=".1" value=${s.expansionism} />
       </div>
+      <div data-col="tags">
+        <input data-tip="${sentences(t("State tags"), t("Comma-separated list of tags"))}" class="stateTags" placeholder="${t("none")}" value="${Tags.format(s.tags)}" />
+      </div>
       ${noteIcon(t("Edit free text notes (legend)"))}
       <span data-col="locate" data-tip="${t("Locate on map")}" class="icon-target"></span>
       <span data-col="focus" data-tip="${t("Toggle state focus")}" class="icon-pin ${focused ? "" : " inactive"}"></span>
@@ -450,7 +496,12 @@ function renderStatesPage(view: TableView<State>): void {
   body.insertAdjacentHTML("beforeend", lines);
 
   // update footer
-  ensureEl("statesFooterStates").innerHTML = String(pack.states.filter(s => s.i && !s.removed).length);
+  const totalStates = pack.states.filter(s => s.i && !s.removed).length;
+  const shownStates = view.all.filter(s => s.i && !s.removed).length;
+  ensureEl("statesFooterStates").innerHTML =
+    shownStates === totalStates
+      ? String(totalStates)
+      : t("{{shown}} of {{total}}", { shown: shownStates, total: totalStates });
   ensureEl("statesFooterBurgs").innerHTML = String(totalBurgs);
   ensureEl("statesFooterArea").innerHTML = si(totalArea) + unit;
   ensureEl("statesFooterArea").dataset.area = String(totalArea);
@@ -1592,7 +1643,7 @@ function mergeStates(statesToMerge: number[], rulingStateId: number, asProvinces
 
 function downloadStatesCsv(): void {
   const unit = getAreaUnit("2");
-  const headers = `Id,State,Full Name,Form,Color,Capital,Culture,Type,Expansionism,Cells,Burgs,Area ${unit},Total Population,Rural Population,Urban Population`;
+  const headers = `Id,State,Full Name,Form,Color,Capital,Culture,Type,Expansionism,Cells,Burgs,Area ${unit},Total Population,Rural Population,Urban Population,Tags`;
   const data = statesTable.view().all.map(s => {
     const rural = s.rural || 0;
     const urban = s.urban || 0;
@@ -1615,7 +1666,8 @@ function downloadStatesCsv(): void {
       getArea(s.area || 0),
       population,
       Math.round(rural * options.map.units.population.scale),
-      Math.round(urban * options.map.units.population.scale * options.map.units.population.urbanization.rate)
+      Math.round(urban * options.map.units.population.scale * options.map.units.population.urbanization.rate),
+      s.i ? (s.tags || []).join(";") : ""
     ].join(",");
   });
   const csvData = [headers].concat(data).join("\n");

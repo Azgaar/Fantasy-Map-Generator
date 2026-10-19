@@ -14,6 +14,7 @@ import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
+import { Tags } from "@/generators/tags";
 import { getRouteBox } from "@/renderers/draw-routes";
 import { highlightArea } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName } from "@/utils";
@@ -48,6 +49,14 @@ const columns: EditorColumn<Route>[] = [
     sortBy: route => route.length || 0,
     defaultSort: "desc"
   },
+  {
+    key: "tags",
+    label: t("Tags"),
+    width: "10em",
+    hidden: true,
+    sortBy: route => Tags.format(route.tags),
+    sortType: "alpha"
+  },
   { key: "edit", width: "1.1em" },
   { key: "lock", width: "1.1em" },
   { key: "remove", width: "1.4em", permanent: true }
@@ -64,11 +73,7 @@ function getFilteredRoutes(): Route[] {
 
   if (!searchText) return routes;
 
-  return routes.filter((route: Route) => {
-    const name = (route.name || "").toLowerCase();
-    const group = (route.group || "").toLowerCase();
-    return name.includes(searchText) || group.includes(searchText);
-  });
+  return routes.filter((route: Route) => Tags.matches(searchText, route.name, route.tags, [route.group]));
 }
 
 const routesTable = initEditorTable<Route>({
@@ -100,7 +105,7 @@ function renderDialog(): void {
   const html = /* html */ `<div id="routesOverview" class="dialog stable editorDialog">
     <div id="routesBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
     <div id="routesFilters" class="editorFilters">
-      <label for="routesSearch" data-tip="${t("Filter by name or group")}">${t("Search")}: <input id="routesSearch" type="search" /></label>
+      <label for="routesSearch" data-tip="${t("Filter by name, group, or tag")}">${t("Search")}: <input id="routesSearch" type="search" /></label>
     </div>
     <div id="routesFooter" class="totalLine">
       <div data-tip="${t("Routes number")}" style="margin-left: 4px">${t("Routes")}:&nbsp;<span id="routesFooterNumber">0</span></div>
@@ -169,6 +174,16 @@ function renderRoutesPage(view: TableView<Route>): void {
         <div data-tip="${t("Name")}" data-col="name">${route.name}</div>
         <div data-tip="${t("Route group")}" data-col="group">${route.group}</div>
         <div data-tip="${t("Route length")}" data-col="length">${length}</div>
+        <div data-col="tags">
+          <input
+            data-tip="${t("Tags (comma-separated)")}"
+            class="routeTags"
+            value="${Tags.format(route.tags)}"
+            placeholder="${t("Tags")}"
+            autocorrect="off"
+            spellcheck="false"
+          />
+        </div>
         <span data-col="edit" data-tip="${t("Edit Route")}" class="icon-pencil"></span>
         <span data-col="lock" class="locks pointer ${
           route.lock ? "icon-lock" : "icon-lock-open inactive"
@@ -192,11 +207,23 @@ function renderRoutesPage(view: TableView<Route>): void {
   body.querySelectorAll("div > span.icon-target").forEach(el => void el.addEventListener("click", zoomToRoute));
   body.querySelectorAll("div > span.icon-pencil").forEach(el => void el.addEventListener("click", openRouteEditor));
   body.querySelectorAll("div > span.locks").forEach(el => void el.addEventListener("click", toggleLockStatus));
+  body.querySelectorAll("input.routeTags").forEach(el => void el.addEventListener("change", routeChangeTags));
   body
     .querySelectorAll("div > span.icon-trash-empty")
     .forEach(el => void el.addEventListener("click", triggerRouteRemove));
 
   renderEditorPagination(ensureEl("routesFooter"), view, routesTable.goto);
+}
+
+function routeChangeTags(this: HTMLInputElement): void {
+  const line = this.closest(".states") as HTMLElement;
+  const routeId = Number(line.dataset.id);
+  const route = pack.routes.find(r => r.i === routeId);
+  if (!route) return;
+
+  Tags.set(route, this.value);
+  this.value = Tags.format(route.tags);
+  if (filterState.search) routesTable.refresh();
 }
 
 function routeHighlightOn(event: Event): void {
@@ -225,13 +252,13 @@ function zoomToRoute(this: HTMLElement): void {
 }
 
 function downloadRoutesData(): void {
-  let data = "Id,Route,Group,Length\n"; // headers
+  let data = "Id,Route,Group,Length,Tags\n"; // headers
 
   // export the full sorted+filtered set (all pages), not the DOM (which only holds the current page)
   const exported = routesTable.view().all;
   exported.forEach((route: Route) => {
     const length = `${rn((route.length || 0) * options.map.units.distance.scale)} ${options.map.units.distance.unit}`;
-    data += `${[route.i, route.name, route.group, length].join(",")}\n`;
+    data += `${[route.i, route.name, route.group, length, `"${Tags.format(route.tags)}"`].join(",")}\n`;
   });
 
   const name = `${getFileName("Routes")}.csv`;

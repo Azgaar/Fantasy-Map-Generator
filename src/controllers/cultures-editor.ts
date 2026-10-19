@@ -8,6 +8,7 @@ import {
 } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import { dialogState } from "@/components/dialog/state";
 import {
   type EditorColumn,
   initColumnVisibility,
@@ -25,6 +26,7 @@ import { Controllers } from "@/controllers";
 import { CULTURE_TYPE_LABELS, SHIELD_LABELS } from "@/data/id-labels";
 import { CULTURE_TYPES, type Culture } from "@/generators/cultures-generator";
 import { Emblems } from "@/generators/emblems-generator";
+import { Tags } from "@/generators/tags";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -37,6 +39,7 @@ import { createFileInput, debounce, ensureEl, getPointer, isLand, parseTransform
 const dialogId = "culturesEditor" as const;
 const LEGEND_NAME = "Cultures"; // the legend box this editor toggles
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+let filterState: { search: string };
 let culturesInput: HTMLInputElement | null = null;
 
 const columns: EditorColumn<Culture>[] = [
@@ -112,24 +115,35 @@ const columns: EditorColumn<Culture>[] = [
     sortBy: culture => culture.shield || "",
     sortType: "alpha"
   },
+  {
+    key: "tags",
+    label: t("Tags"),
+    width: "9em",
+    hidden: true,
+    sortBy: culture => Tags.format(culture.tags),
+    sortType: "alpha"
+  },
   { key: "note", width: "1.1em" },
   { key: "locate", width: "1.1em" },
   { key: "lock", width: "1.1em" },
   { key: "remove", width: "1.4em", permanent: true }
 ];
 
+function getFilteredCultures(): Culture[] {
+  const searchText = filterState?.search?.toLowerCase().trim();
+  const cultures = pack.cultures.filter(c => !c.removed);
+  if (!searchText) return cultures;
+  return cultures.filter(c => Tags.matches(searchText, c.name, c.tags, [c.ancestry, c.type]));
+}
+
 const culturesTable = initEditorTable<Culture>({
-  getData: () =>
-    sortDataByColumns(
-      dialogId,
-      pack.cultures.filter(c => !c.removed),
-      columns
-    ),
+  getData: () => sortDataByColumns(dialogId, getFilteredCultures(), columns),
   onUpdate: culturesEditorAddLines
 });
 
 function open(): void {
   if (customization) return;
+  filterState = dialogState.get(dialogId, "filters", () => ({ search: "" }));
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("cultures");
   Layers.hide("states", "biomes");
@@ -149,6 +163,12 @@ function open(): void {
   });
 }
 
+function onSearchInput(): void {
+  filterState.search = ensureEl<HTMLInputElement>("culturesSearch").value;
+  dialogState.set(dialogId, "filters", filterState);
+  culturesTable.reset();
+}
+
 function renderDialog(): void {
   const hasAncestry = pack.cultures.some(c => c.i && !c.removed && Boolean(c.ancestry?.trim()));
   const ancestryCol = columns.find(c => c.key === "ancestry");
@@ -157,6 +177,11 @@ function renderDialog(): void {
   destroyDialog("culturesEditor");
   const editorHtml = /* html */ `<div id="culturesEditor" class="dialog stable editorDialog">
     <div id="culturesBody" class="table" data-type="absolute">${renderEditorHeader({ dialogId, columns })}</div>
+    <div id="culturesFilters" data-tip="${t("Apply a filter")}" class="editorFilters">
+      <label for="culturesSearch" data-tip="${t("Filter by name, ancestry, type, or tag")}">
+        ${t("Search")}: <input id="culturesSearch" type="search" />
+      </label>
+    </div>
 
     <div id="culturesFooter" class="totalLine">
       <div data-tip="${t("Cultures number")}" style="margin-left: 12px">${t("Cultures")}:&nbsp;<span id="culturesFooterCultures">0</span></div>
@@ -189,6 +214,8 @@ function renderDialog(): void {
   </div>`;
 
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  ensureEl<HTMLInputElement>("culturesSearch").value = filterState.search;
+  ensureEl("culturesSearch").addEventListener("input", onSearchInput);
   bindColumnSorting(dialogId, culturesTable.reset);
   applyLineHighlighting(dialogId, ({ cellId }) => pack.cells.culture[cellId]);
 
@@ -305,6 +332,7 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
             <div data-tip="${populationTip}" class="culturePopulation pointer">${si(population)}</div>
           </div>
           <div data-col="emblems">${getShapeOptions(Emblems.isDiversiform, c.shield)}</div>
+          <div data-col="tags"></div>
           <div data-col="note"></div>
           <div data-col="locate"></div>
           <div data-col="lock"></div>
@@ -369,6 +397,10 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
           <div data-tip="${populationTip}" class="culturePopulation pointer">${si(population)}</div>
         </div>
         <div data-col="emblems">${getShapeOptions(Emblems.isDiversiform, c.shield)}</div>
+        <div data-col="tags">
+          <input data-tip="${sentences(t("Culture tags"), t("Click and type to change"))}" class="cultureTags"
+            value="${Tags.format(c.tags)}" autocorrect="off" spellcheck="false" />
+        </div>
         ${noteIcon(t("Edit free text notes (legend)"))}
         <span data-col="locate" data-tip="${t("Locate on map")}" class="icon-target"></span>
         <span data-col="lock" data-tip="${t("Lock")}" class="icon-lock${c.lock ? "" : "-open"}"></span>
@@ -406,6 +438,9 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
   ensureEl("culturesBody")
     .querySelectorAll("div > input.cultureAncestry")
     .forEach($el => void $el.addEventListener("input", cultureChangeAncestry));
+  ensureEl("culturesBody")
+    .querySelectorAll("div > input.cultureTags")
+    .forEach($el => void $el.addEventListener("change", cultureChangeTags));
   ensureEl("culturesBody")
     .querySelectorAll("div > span.icon-cw")
     .forEach($el => void $el.addEventListener("click", cultureRegenerateName));
@@ -565,6 +600,14 @@ function cultureChangeAncestry(this: HTMLInputElement): void {
   const culture = +row.dataset.id!;
   row.dataset.ancestry = this.value.trim();
   Cultures.setAncestry(culture, this.value);
+}
+
+function cultureChangeTags(this: HTMLInputElement): void {
+  const row = this.closest(".states") as HTMLElement;
+  const culture = +row.dataset.id!;
+  Tags.set(pack.cultures[culture], this.value);
+  this.value = Tags.format(pack.cultures[culture].tags);
+  if (filterState.search) culturesTable.refresh();
 }
 
 function cultureRegenerateName(this: HTMLElement): void {
@@ -955,7 +998,7 @@ function addCulture(this: SVGElement, event: MouseEvent): void {
 
 function downloadCulturesCsv(): void {
   const unit = getAreaUnit("2");
-  const headers = `Id,Name,Ancestry,Color,Cells,Expansionism,Type,Area ${unit},Population,Namesbase,Emblems Shape,Origins`;
+  const headers = `Id,Name,Ancestry,Color,Cells,Expansionism,Type,Area ${unit},Population,Namesbase,Emblems Shape,Origins,Tags`;
   // export the full filtered set (all pages), not just the visible page
   const data = culturesTable.view().all.map(c => {
     const area = getArea(c.area ?? 0);
@@ -980,7 +1023,8 @@ function downloadCulturesCsv(): void {
       population,
       namesbase,
       c.shield,
-      originText
+      originText,
+      `"${Tags.format(c.tags)}"`
     ].join(",");
   });
   const csvData = [headers].concat(data).join("\n");

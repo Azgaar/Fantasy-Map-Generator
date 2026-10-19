@@ -29,6 +29,7 @@ const latestPublicChanges = [
   "Translation: UI translated to 22 languages",
   "Advanced options: configurable map lattice",
   "Trade tariffs and embargoes",
+  "Free-text tags for states and other entities (hidden by default)",
   "Population layer: colored cells style",
   // old ones
   "Azgaar Assistant can read map data and propose changes when your own AI key is provided",

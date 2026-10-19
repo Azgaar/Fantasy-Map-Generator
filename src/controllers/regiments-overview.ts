@@ -16,6 +16,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import type { State } from "@/generators/states-generator";
+import { Tags } from "@/generators/tags";
 import { drawRegiment } from "@/renderers/draw-military";
 import { downloadFile, getFileName, getLatitude, getLongitude } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
@@ -24,7 +25,7 @@ import { capitalize, ensureEl, findEl, getPointer, last, si } from "../utils";
 
 const dialogId = "regimentsOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
-let filterState: { stateId: number };
+let filterState: { stateId: number; search: string };
 
 type RegimentRow = { state: State; regiment: Regiment };
 let columns: EditorColumn<RegimentRow>[] = [];
@@ -32,7 +33,9 @@ const regimentsTable = initEditorTable<RegimentRow>({ getData: getRegimentsData,
 
 function open(state?: number): void {
   if (customization) return;
-  filterState = dialogState.get(dialogId, "filters", () => ({ stateId: -1 }));
+  filterState = dialogState.get(dialogId, "filters", () => ({ stateId: -1, search: "" }));
+  filterState.search ??= "";
+  filterState.stateId ??= -1;
   closeDialogs(".stable");
   Layers.show("military");
 
@@ -57,6 +60,14 @@ function renderDialog(): void {
       <div id="regimentsBody" class="table" data-type="absolute">
         ${renderEditorHeader({ dialogId, columns })}
       </div>
+      <div id="regimentsFilters" class="editorFilters">
+        <label for="regimentsSearch" data-tip="${t("Filter by name, state, or tag")}">
+          ${t("Search")}: <input id="regimentsSearch" type="search" />
+        </label>
+        <label for="regimentsFilter" data-tip="${t("Select state")}">
+          ${t("State")}: <select id="regimentsFilter"></select>
+        </label>
+      </div>
       <div id="regimentsFooter" class="totalLine"></div>
       <div id="regimentsBottom" class="editorToolbar">
         <button id="regimentsOverviewRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
@@ -66,10 +77,6 @@ function renderDialog(): void {
           class="icon-percent"
         ></button>
         <button id="regimentsAddNew" data-tip="${t("Add")}" class="icon-user-plus"></button>
-        <div data-tip="${t("Select state")}" style="display: inline-block">
-          <span>${t("State")}: </span
-          ><select id="regimentsFilter"></select>
-        </div>
         <button
           id="regimentsExport"
           data-tip="${t("Save data as a CSV file")}"
@@ -78,6 +85,7 @@ function renderDialog(): void {
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  ensureEl<HTMLInputElement>("regimentsSearch").value = filterState.search;
   bindColumnSorting(dialogId, regimentsTable.reset);
   initColumnVisibility({
     dialogId,
@@ -91,6 +99,11 @@ function renderDialog(): void {
   ensureEl("regimentsPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("regimentsAddNew").addEventListener("click", toggleAdd);
   ensureEl("regimentsExport").addEventListener("click", downloadRegimentsData);
+  ensureEl("regimentsSearch").addEventListener("input", event => {
+    filterState.search = (event.target as HTMLInputElement).value;
+    dialogState.set(dialogId, "filters", filterState);
+    regimentsTable.reset();
+  });
   ensureEl("regimentsFilter").addEventListener("change", event => {
     filterState.stateId = +(event.target as HTMLSelectElement).value;
     dialogState.set(dialogId, "filters", filterState);
@@ -165,6 +178,14 @@ function getRegimentColumns(): EditorColumn<RegimentRow>[] {
       tip: sentences(t("Total military personnel (not considering crew)"), t("Click to sort"))
     },
     {
+      key: "tags",
+      label: t("Tags"),
+      width: "10em",
+      hidden: true,
+      sortBy: row => Tags.format(row.regiment.tags),
+      sortType: "alpha"
+    },
+    {
       key: "visibility",
       width: "1.4em",
       sortBy: row => (row.regiment.hidden ? 1 : 0),
@@ -176,10 +197,14 @@ function getRegimentColumns(): EditorColumn<RegimentRow>[] {
 
 function getRegimentsData(): RegimentRow[] {
   const rows: RegimentRow[] = [];
+  const search = filterState.search.toLowerCase().trim();
   for (const state of pack.states) {
     if (!state.i || state.removed || !state.military?.length) continue;
     if (filterState.stateId !== -1 && state.i !== filterState.stateId) continue;
-    for (const regiment of state.military) rows.push({ state, regiment });
+    for (const regiment of state.military) {
+      if (search && !Tags.matches(search, regiment.name, regiment.tags, [state.name || ""])) continue;
+      rows.push({ state, regiment });
+    }
   }
   return sortDataByColumns(dialogId, rows, columns);
 }
@@ -215,6 +240,16 @@ function renderRegimentsPage(view: TableView<RegimentRow>): void {
         <input data-col="name" data-tip="${t("Name")}" value="${regiment.name}" readonly />
         ${unitCells}
         <div data-col="total" data-tip="${t("Total military personnel (not considering crew)")}" style="font-weight:bold">${percentage ? percent(regiment.a, total) : regiment.a}</div>
+        <div data-col="tags">
+          <input
+            data-tip="${t("Regiment tags (comma-separated)")}"
+            class="regimentTags"
+            value="${Tags.format(regiment.tags)}"
+            placeholder="${t("Tags")}"
+            autocorrect="off"
+            spellcheck="false"
+          />
+        </div>
         <span data-col="visibility" data-tip="${t("Toggle visibility")}" class="regimentVisibility pointer ${regiment.hidden ? "icon-eye-off" : "icon-eye"}"></span>
         <span data-col="edit" data-tip="${t("Edit Regiment")}" data-edit-regiment="regiment${state.i}-${regiment.i}" class="icon-pencil pointer"></span>
       </div>`;
@@ -236,7 +271,21 @@ function renderRegimentsPage(view: TableView<RegimentRow>): void {
     line.addEventListener("mouseenter", regimentHighlightOn);
     line.addEventListener("mouseleave", regimentHighlightOff);
   });
+  body.querySelectorAll<HTMLInputElement>(".regimentTags").forEach(el => {
+    void el.addEventListener("change", regimentChangeTags);
+  });
   updateDialog(dialogId, { width: "fit-content", position });
+}
+
+function regimentChangeTags(this: HTMLInputElement): void {
+  const line = this.closest(".states") as HTMLElement;
+  const stateId = Number(line.dataset.s);
+  const regId = Number(line.dataset.id);
+  const regiment = pack.states[stateId]?.military?.find(r => r.i === regId);
+  if (!regiment) return;
+  Tags.set(regiment, this.value);
+  this.value = Tags.format(regiment.tags);
+  if (filterState.search) regimentsTable.refresh();
 }
 
 function updateFilter(): void {
@@ -323,6 +372,7 @@ function addRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
     state,
     icon: Icons.glyph("🛡️"),
     name: "",
+    tags: [],
     t: 0,
     s: 0,
     type: ""
@@ -336,7 +386,7 @@ function addRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
 
 function downloadRegimentsData(): void {
   const units = options.map.military.units.map(u => u.name);
-  let data = `State,Id,Icon,Name,${units.map(u => capitalize(u)).join(",")},X,Y,Latitude,Longitude,Base X,Base Y,Base Latitude,Base Longitude\n`; // headers
+  let data = `State,Id,Icon,Name,${units.map(u => capitalize(u)).join(",")},Tags,X,Y,Latitude,Longitude,Base X,Base Y,Base Latitude,Base Longitude\n`; // headers
 
   for (const s of pack.states) {
     if (!s.i || s.removed || !s.military?.length) continue;
@@ -347,6 +397,7 @@ function downloadRegimentsData(): void {
       data += `${Icons.glyphText(r.icon ?? "") ?? r.icon},`;
       data += `${r.name},`;
       data += `${units.map(unit => r.u[unit]).join(",")},`;
+      data += `"${Tags.format(r.tags)}",`;
 
       data += `${r.x},`;
       data += `${r.y},`;

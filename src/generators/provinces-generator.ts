@@ -33,6 +33,7 @@ export interface Province {
   urban?: number;
   burgs?: number[];
   note?: string;
+  tags?: string[];
 }
 
 class ProvinceModule {
@@ -103,6 +104,7 @@ class ProvinceModule {
         }
 
         province.i = newId;
+        province.tags ??= [];
         provinces.push(province);
       });
     }
@@ -153,7 +155,8 @@ class ProvinceModule {
           formName,
           fullName,
           color,
-          coa
+          coa,
+          tags: []
         });
       }
     });
@@ -301,7 +304,8 @@ class ProvinceModule {
           formName,
           fullName,
           color,
-          coa
+          coa,
+          tags: []
         });
         s.provinces.push(provinceId);
 
@@ -421,7 +425,7 @@ class ProvinceModule {
     );
     coa.shield = Emblems.getShield(culture, state);
     const color = getMixedColor(states[state].color!, 0.2, 0);
-    provinces.push({ i, state, center, burg, name, formName, fullName: `${name} ${formName}`, color, coa });
+    provinces.push({ i, state, center, burg, name, formName, fullName: `${name} ${formName}`, color, coa, tags: [] });
     states[state].provinces = [...(states[state].provinces ?? []), i];
 
     cells.province[center] = i;

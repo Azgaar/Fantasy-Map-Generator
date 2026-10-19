@@ -1,6 +1,7 @@
 import { mean, median, quadtree, sum } from "d3";
 import { getInverseRelation, RELATIONS } from "@/data/diplomacy";
 import { Emblems } from "@/generators/emblems-generator";
+import { Tags } from "@/generators/tags";
 import type { Emblem } from "@/types/emblems";
 import { requireColor } from "@/utils/colorUtils";
 import { replaceWholeWord } from "@/utils/languageUtils";
@@ -47,6 +48,7 @@ export interface State {
   center: number;
   culture: number;
   coa: Emblem;
+  tags?: string[];
   lock?: boolean;
   removed?: boolean;
   pole?: [number, number];
@@ -237,7 +239,9 @@ class StatesModule {
     const count = Math.min(statesCount, validBurgs.length) + 1;
     let spacing = (options.map.graph.width + options.map.graph.height) / 2 / count;
     const capitalsTree = quadtree<[number, number]>();
-    const newStates: State[] = [{ ...pack.states[0], i: 0, name: pack.states[0].name, tariffs: [] }];
+    const newStates: State[] = [
+      { ...pack.states[0], i: 0, name: pack.states[0].name, tariffs: [], tags: pack.states[0]?.tags || [] }
+    ];
 
     for (const state of lockedStates) {
       const newId = newStates.length;
@@ -294,7 +298,8 @@ class StatesModule {
         salesTax: 0,
         pollTax: 0,
         treasury: 0,
-        tariffs: []
+        tariffs: [],
+        tags: []
       });
     }
 
@@ -303,7 +308,7 @@ class StatesModule {
 
   private createStates() {
     const states: State[] = [
-      { i: 0, name: "Neutrals", salesTax: 0, pollTax: 0, treasury: 0, tariffs: [] } as unknown as State
+      { i: 0, name: "Neutrals", salesTax: 0, pollTax: 0, treasury: 0, tariffs: [], tags: [] } as unknown as State
     ];
     const each5th = each(5);
     const sizeVariety = options.generation.states.sizeVariety;
@@ -329,7 +334,8 @@ class StatesModule {
         salesTax: 0,
         pollTax: 0,
         treasury: 0,
-        tariffs: []
+        tariffs: [],
+        tags: []
       });
     });
 
@@ -1156,7 +1162,8 @@ class StatesModule {
       salesTax: 0,
       pollTax: 0,
       treasury: 0,
-      tariffs: []
+      tariffs: [],
+      tags: []
     });
     states[i].tariffs = this.defineTariffs(states[i]);
     this.getPoles();
@@ -1208,11 +1215,15 @@ class StatesModule {
     for (const state of merged) {
       state.removed = true;
       delete state.label;
+      if (state.tags?.length) {
+        Tags.add(ruling, state.tags);
+      }
       for (const regiment of state.military ?? [])
         ruling.military.push({
           ...regiment,
           i: Math.max(-1, ...ruling.military.map(({ i }) => i)) + 1,
-          state: rulingStateId
+          state: rulingStateId,
+          tags: [...(regiment.tags ?? [])]
         });
       ruling.provinces.push(...(state.provinces ?? []).filter(province => !pack.provinces[province]?.removed));
       state.military = [];
@@ -1259,7 +1270,8 @@ class StatesModule {
       formName,
       fullName: `${state.name} ${formName}`,
       color: getMixedColor(state.color!),
-      coa: state.coa
+      coa: state.coa,
+      tags: []
     } as Province);
     ruling.provinces ??= [];
     ruling.provinces.push(provinceId);
@@ -1377,6 +1389,12 @@ class StatesModule {
     else delete state.lock;
   }
 
+  /** Set a state's tags */
+  setTags(stateId: number, tags: string[] | string): void {
+    const state = this.ruled(stateId);
+    state.tags = Tags.set(state, tags);
+  }
+
   /** Replace a chronicle entry with text lines, the first being its title. Index -1 adds an entry after any the batch records before it (setRelation does); no lines removes it */
   setChronicleEntry(index: number, lines: string[]): void {
     pack.states[0].diplomacy ??= [];
@@ -1471,7 +1489,8 @@ class StatesModule {
         formName,
         fullName: `${name} ${formName}`,
         color: getMixedColor(states[stateId].color!),
-        coa
+        coa,
+        tags: []
       } as Province);
       for (const cell of provinceCells) cells.province[cell] = id;
       states[stateId].provinces = [...(states[stateId].provinces ?? []), id];
