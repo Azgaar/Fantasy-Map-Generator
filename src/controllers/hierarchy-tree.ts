@@ -3,7 +3,7 @@ import { drag, mean, select, stratify, tree, zoom } from "d3";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, escapeHtml, minmax } from "../utils";
+import { abbreviate, ensureEl, escapeHtml, minmax } from "../utils";
 
 type HierarchyElement = {
   i: number;
@@ -13,6 +13,8 @@ type HierarchyElement = {
   cells?: number;
   removed?: boolean;
   origins: (number | null)[];
+  ancestry?: string;
+  shadow?: boolean;
   [key: string]: unknown;
 };
 
@@ -60,7 +62,7 @@ function open(props: OpenProps): void {
   dataElements = props.data;
   model = props.type === "cultures" ? Cultures : Religions;
   validElements = cleanupOrigins(dataElements);
-  if (validElements.length < 3) {
+  if (validElements.filter(d => !d.shadow).length < 3) {
     tip(
       props.type === "cultures"
         ? t("Not enough cultures to show hierarchy")
@@ -234,24 +236,72 @@ function insertHtml(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 }
 
-function cleanupOrigins(elements: HierarchyElement[]): HierarchyElement[] {
-  const existingElements = elements.filter(d => !d.removed);
+export function cleanupOrigins(elements: HierarchyElement[]): HierarchyElement[] {
+  const existingElements = elements.filter(d => !d.removed).map(d => ({ ...d, origins: [...(d.origins || [])] }));
 
-  return existingElements.map(d => {
+  for (const d of existingElements) {
     if (d.i === 0)
       d.origins = [null]; // root element
     else if (!d.origins.length) d.origins = [0];
     else if (!existingElements.find(el => d.origins[0] === el.i)) d.origins = [0];
     // secondary origins may point at removed elements in older maps
     d.origins = d.origins.filter((origin, index) => !index || existingElements.some(el => el.i && el.i === origin));
-    return d;
-  });
+  }
+
+  // Inject ancestry shadow nodes for cultures
+  const ancestryMap = new Map<string, HierarchyElement[]>();
+  for (const el of existingElements) {
+    if (!el.i) continue;
+    const ancestry = typeof el.ancestry === "string" ? el.ancestry.trim() : "";
+    if (!ancestry) continue;
+    if (!ancestryMap.has(ancestry)) ancestryMap.set(ancestry, []);
+    ancestryMap.get(ancestry)!.push(el);
+  }
+
+  if (ancestryMap.size > 0) {
+    let nextShadowId = -1;
+    const shadowNodes: HierarchyElement[] = [];
+
+    for (const [ancestry, cultures] of ancestryMap.entries()) {
+      const rootCultures = cultures.filter(c => c.origins[0] === 0);
+      if (!rootCultures.length) continue;
+
+      const shadowId = nextShadowId--;
+      const usedCodes = [
+        ...existingElements.map(e => e.code).filter(Boolean),
+        ...shadowNodes.map(s => s.code).filter(Boolean)
+      ] as string[];
+
+      const shadowNode: HierarchyElement = {
+        i: shadowId,
+        name: ancestry,
+        code: abbreviate(ancestry, usedCodes),
+        color: "#ffffff",
+        type: "Generic",
+        origins: [0],
+        shadow: true,
+        ancestry
+      };
+      shadowNodes.push(shadowNode);
+
+      for (const culture of rootCultures) {
+        culture.origins[0] = shadowId;
+      }
+    }
+
+    existingElements.push(...shadowNodes);
+  }
+
+  return existingElements;
 }
 
 /** Set origins, showing why they are refused, such as a loop through a secondary origin */
 function setOrigins(id: number, origins: number[]): boolean {
   try {
-    model.setOrigins(id, origins);
+    const realOrigins = origins.map(o => (o < 0 ? 0 : o));
+    const unique = [...new Set(realOrigins)];
+    const sanitized = unique.length > 1 ? unique.filter(Boolean) : unique;
+    model.setOrigins(id, sanitized.length ? sanitized : [0]);
     return true;
   } catch (error) {
     tip(error instanceof Error ? error.message : String(error), false, "error", 4000);
@@ -320,8 +370,12 @@ const getSortIndex = (node: any): number => {
   const descendants = node.descendants();
   const secondaryOrigins = descendants.flatMap(({ data }: any) => data.origins.slice(1));
 
-  if (secondaryOrigins.length === 0) return node.data.i;
-  return mean(secondaryOrigins) ?? 0;
+  if (secondaryOrigins.length > 0) return mean(secondaryOrigins) ?? 0;
+  if (node.data.shadow) {
+    const realDescendants = descendants.filter((n: any) => !n.data.shadow && n.data.i > 0);
+    if (realDescendants.length) return Math.min(...realDescendants.map((n: any) => n.data.i));
+  }
+  return node.data.i;
 };
 
 function renderTree(root: any, treeLayout: any): void {
@@ -372,6 +426,7 @@ function mapCoords(newRoot: any, prevRoot: any): void {
 
 function updateTree(): void {
   const prevRoot = oldRoot;
+  validElements = cleanupOrigins(dataElements);
   const root = getRoot();
   mapCoords(root, prevRoot);
 
@@ -432,7 +487,12 @@ function updateTree(): void {
 
 function selectElement(d: any): void {
   const dataElement: HierarchyElement = d.data;
-  if (d.id === 0) return;
+  if (!dataElement.i || dataElement.shadow) {
+    nodes.selectAll("g").style("outline", "none");
+    ensureEl("hierarchyTree_selected").style.display = "none";
+    ensureEl("hierarchyTree_infoLine").style.display = "block";
+    return;
+  }
 
   const node = nodes.select(`g[data-id="${d.id}"]`);
   nodes.selectAll("g").style("outline", "none");
@@ -455,13 +515,13 @@ function selectElement(d: any): void {
 
   const createOriginButtons = () => {
     ensureEl("hierarchyTree_selectedOrigins").innerHTML = dataElement.origins
-      .filter(origin => origin)
+      .filter(origin => origin && origin > 0)
       .map((origin, index) => {
         const { name, code } = validElements.find(r => r.i === origin) || ({} as Partial<HierarchyElement>);
         const tipText = index
           ? sentences(t("Secondary origin: {{name}}", { name }), t("Click to remove link to that origin"))
           : sentences(t("Primary origin: {{name}}", { name }), t("Click to remove link to that origin"));
-        return `<button data-id="${origin}" class="hierarchyTree_selectedButton hierarchyTree_selectedOrigin" data-tip="${tipText}">${code}</button>`;
+        return `<button data-id="${origin}" class="hierarchyTree_selectedButton hierarchyTree_selectedOrigin" data-tip="${tipText}">${code ?? name ?? origin}</button>`;
       })
       .join("");
 
@@ -482,10 +542,10 @@ function selectElement(d: any): void {
     const origins = dataElement.origins;
 
     const descendants = d.descendants().map((d: any) => d.data.i);
-    const selectableElements = validElements.filter(({ i }) => !descendants.includes(i));
+    const selectableElements = validElements.filter(({ i, shadow }) => !descendants.includes(i) && !shadow);
 
     const selectableElementsHtml = selectableElements.map(({ i, name, code, color }) => {
-      const isPrimary = origins[0] === i ? "checked" : "";
+      const isPrimary = origins[0] === i || (i === 0 && (origins[0] == null || origins[0] <= 0)) ? "checked" : "";
       const isChecked = origins.includes(i) ? "checked" : "";
 
       if (i === 0) {
@@ -556,7 +616,11 @@ function handleNoteEnter(this: SVGGElement, _event: MouseEvent, d: any): void {
   onNodeEnter(d);
 
   ensureEl("hierarchyTree_infoLine").innerText = getDescription(d.data);
-  tip(t("Drag to other node to add parent, click to edit"));
+  if (d.data.shadow) {
+    tip(t("Ancestry"));
+  } else {
+    tip(t("Drag to other node to add parent, click to edit"));
+  }
 }
 
 function handleNodeExit(this: SVGGElement, _event: MouseEvent, d: any): void {
@@ -568,7 +632,7 @@ function handleNodeExit(this: SVGGElement, _event: MouseEvent, d: any): void {
 }
 
 function dragToReorigin(event: D3DragEvent<SVGGElement, unknown, unknown>, from: any): void {
-  if (from.id === 0) return;
+  if (!from.data.i || from.data.shadow) return;
 
   dragLine.attr("d", `M${from.x},${from.y}L${from.x},${from.y}`);
 
@@ -582,16 +646,24 @@ function dragToReorigin(event: D3DragEvent<SVGGElement, unknown, unknown>, from:
     if (!selected.size()) return;
 
     const elementId = from.data.i;
-    const newOrigin = (selected.datum() as any).data.i;
+    const selectedData = (selected.datum() as any)?.data;
+    if (!selectedData) return;
+
+    const isShadowTarget = Boolean(selectedData.shadow);
+    const newOrigin = isShadowTarget ? 0 : selectedData.i;
     if (elementId === newOrigin) return; // dragged to itself
-    if (from.data.origins.includes(newOrigin)) return; // already a child of the selected node
-    if (from.descendants().some((node: any) => node.data.i === newOrigin)) return; // cannot be a child of its own child
+    if (from.data.origins.includes(selectedData.i)) return; // already a child of the selected node
+    if (from.descendants().some((node: any) => node.data.i === selectedData.i)) return; // cannot be a child of its own child
 
     const element = dataElements.find(({ i }) => i === elementId);
     if (!element) return;
 
-    const origins = (element.origins[0] === 0 ? [] : element.origins) as number[];
-    if (!setOrigins(elementId, [...origins, newOrigin])) return;
+    if (isShadowTarget || newOrigin === 0) {
+      if (!setOrigins(elementId, [0])) return;
+    } else {
+      const origins = (element.origins[0] === 0 ? [] : element.origins) as number[];
+      if (!setOrigins(elementId, [...origins, newOrigin])) return;
+    }
 
     selectElement(from);
     updateTree();

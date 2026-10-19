@@ -322,7 +322,10 @@ function showLayerTip(point: Point, cellId: number, gridCellId: number, isLand: 
   }
   if (Layers.isOn("cultures") && cells.culture[cellId]) {
     const cultureId = cells.culture[cellId];
-    return void tip(`${t("Culture")}: ${escapeHtml(pack.cultures[cultureId].name)}`);
+    const culture = pack.cultures[cultureId];
+    const ancestry = culture?.ancestry?.trim();
+    const name = ancestry ? `${culture.name} (${ancestry})` : culture?.name || "";
+    return void tip(`${t("Culture")}: ${escapeHtml(name)}`);
   }
   if (Layers.isOn("cells")) return void tip(`${t("Cell")}: ${cellId} (${t("Grid")}: ${gridCellId})`);
   if (Layers.isOn("heightmap")) return void tip(`${t("Height")}: ${getFriendlyHeight(point, pack, grid)}`);

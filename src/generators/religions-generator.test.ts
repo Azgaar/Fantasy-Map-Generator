@@ -396,3 +396,60 @@ describe("ReligionsModule.rename", () => {
     expect(() => globalThis.Religions.rename(2, "X")).toThrow("Religion 2 does not exist");
   });
 });
+
+describe("ReligionsModule ancestral folk religions", () => {
+  let Religions: any;
+
+  beforeAll(async () => {
+    await import("./religions-generator");
+    Religions = globalThis.Religions;
+  });
+
+  it("assigns the same folk ancestral religion to cultures with the same non-blank ancestry", () => {
+    globalThis.options = {
+      generation: { religions: { limit: 0 }, cultures: { growthRate: 1 } },
+      map: { graph: { width: 1000, height: 1000 } }
+    } as any;
+    globalThis.pack = {
+      cells: {
+        i: [0, 1, 2, 3],
+        c: [[1], [0, 2], [1, 3], [2]],
+        p: [
+          [0, 0],
+          [1, 0],
+          [2, 0],
+          [3, 0]
+        ],
+        culture: Uint16Array.from([1, 1, 2, 3]),
+        state: Uint16Array.from([0, 0, 0, 0]),
+        burg: Uint16Array.from([0, 0, 0, 0]),
+        religion: new Uint16Array(4)
+      },
+      cultures: [
+        { i: 0, name: "Wildlands" },
+        { i: 1, name: "Quenian", ancestry: "Elfish", center: 0, color: "#112233" },
+        { i: 2, name: "Eldar", ancestry: "Elfish", center: 2, color: "#445566" },
+        { i: 3, name: "Dunirr", ancestry: "Dwarven", center: 3, color: "#778899" }
+      ],
+      religions: [],
+      states: [],
+      burgs: [],
+      biomes: []
+    } as any;
+
+    const folkReligions = Religions.generateFolkReligions();
+    expect(folkReligions.length).toBe(2);
+
+    const named = Religions.specifyReligions(folkReligions);
+    expect(named.some((r: any) => r.name.includes("Elfish"))).toBe(true);
+    expect(named.some((r: any) => r.name.includes("Dwarven"))).toBe(true);
+
+    const indexed = Religions.combineReligions(named, []);
+    const religionIds = Religions.spreadFolkReligions(indexed);
+
+    expect(religionIds[0]).toBe(religionIds[2]);
+    expect(religionIds[0]).not.toBe(0);
+    expect(religionIds[3]).not.toBe(religionIds[0]);
+    expect(religionIds[3]).not.toBe(0);
+  });
+});

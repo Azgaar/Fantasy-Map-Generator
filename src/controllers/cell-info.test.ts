@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { getGeozone, toDMS } from "./cell-info";
+import { getCultureInfo, getGeozone, toDMS } from "./cell-info";
 
 describe("cell info geographic formatting", () => {
   test.each([
@@ -25,5 +25,20 @@ describe("cell info geographic formatting", () => {
     [0, "lon", "0°0′0″E"]
   ] as const)("formats %s %s as degrees, minutes, seconds and a cardinal", (coordinate, type, expected) => {
     expect(toDMS(coordinate, type)).toBe(expected);
+  });
+
+  test("formats culture with and without ancestry", () => {
+    globalThis.pack = {
+      cultures: [
+        { i: 0, name: "Wildlands" },
+        { i: 1, name: "Quenian", ancestry: "Elfish" },
+        { i: 2, name: "Angshire" }
+      ]
+    } as any;
+
+    expect(getCultureInfo(0)).toBe("no");
+    expect(getCultureInfo(1)).toBe("Quenian (Elfish) (1)");
+    expect(getCultureInfo(2)).toBe("Angshire (2)");
+    expect(getCultureInfo(99)).toBe("no");
   });
 });

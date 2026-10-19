@@ -327,6 +327,10 @@ There's no 'View Only' mode, but you can share your .map file with them and they
 ### What are the culture types?
 
 Each culture gets a type assigned on generation. The type defines how the culture will grow and what territories it will get, but also serves world-building needs. Nomadic cultures are generated in hot desert, cold desert or grassland cells with height less than 70 points. Highland cultures are generated in cells where height is over 50 points. Lake cultures are generated in cells around lakes that are over 5 cells in size. Naval cultures have a chance of being generated in coastal cells; the chance is slightly higher if the cell is next to an ocean (as opposed to a lake), and significantly higher if the cell is on an island. River cultures are generated in cells with a river of over 100 flux points. Hunting cultures are generated in cells that are more than two cells away from a coast where the biome is Savanna, Tropical rainforest, Temperate rainforest, Taiga, Tundra or Wetland. A culture is set to be generic when its spawn location is ineligible for any other culture type, or, in the case of the Naval type, failed a random probability check. Culture spread is a competitive system, where each culture tries to get more cells considering the cost of it. Culture type is crucial in defining cell 'cost' and the way the culture will spread
+ 
+### What is culture ancestry and how does it work?
+
+Ancestry is an optional culture attribute (such as "Elfish", "Dwarven", or "Human") used in fantasy culture sets or edited in Tools -> Cultures. When set, ancestry is shown alongside the culture name in the map tooltip and Cell Details dialog. Cultures sharing the same ancestry also share an ancestral Folk religion when religions are generated. If all cultures have an empty ancestry, the Ancestry column in the Cultures Editor is hidden by default.
 
 ### Is there a way to generate a map from an image? How can I convert image into a map?
 
@@ -858,7 +862,7 @@ Ctrl + click on a layer button in the Layers tab opens the Style tab with that e
 
 ### How do religions work?
 
-Religions are generated on top of cultures. A Folk religion belongs to a single culture and spreads with it, an Organized religion spreads across cultures and states, a Cult is small and local, and a Heresy splits off from an existing organized religion. Open Tools -> Religions to rename and recolor them, change type and expansion, repaint the borders with the brush, add or remove religions, see the hierarchy tree and toggle extinct ones
+Religions are generated on top of cultures. A Folk religion belongs to a single culture (or is shared across cultures with the same ancestry) and spreads with them, an Organized religion spreads across cultures and states, a Cult is small and local, and a Heresy splits off from an existing organized religion. Open Tools -> Religions to rename and recolor them, change type and expansion, repaint the borders with the brush, add or remove religions, see the hierarchy tree and toggle extinct ones
 
 ### What are zones?
 
