@@ -646,14 +646,37 @@ class ReligionsModule {
   }
 
   private generateFolkReligions(): ReligionBase[] {
-    return pack.cultures
-      .filter(c => c.i && !c.removed)
-      .map(culture => ({
+    const activeCultures = pack.cultures.filter(c => c.i && !c.removed);
+    const folkReligions: ReligionBase[] = [];
+    const ancestryGroups = new Map<string, typeof activeCultures>();
+
+    for (const culture of activeCultures) {
+      const ancestry = culture.ancestry?.trim();
+      if (ancestry) {
+        const group = ancestryGroups.get(ancestry);
+        if (group) group.push(culture);
+        else ancestryGroups.set(ancestry, [culture]);
+      } else {
+        folkReligions.push({
+          type: "Folk" as const,
+          form: rw(forms.Folk),
+          culture: culture.i,
+          center: culture.center!
+        });
+      }
+    }
+
+    for (const group of ancestryGroups.values()) {
+      const primary = group[0];
+      folkReligions.push({
         type: "Folk" as const,
         form: rw(forms.Folk),
-        culture: culture.i,
-        center: culture.center!
-      }));
+        culture: primary.i,
+        center: primary.center!
+      });
+    }
+
+    return folkReligions;
   }
 
   private generateOrganizedReligions(desiredReligionNumber: number, lockedReligions: Religion[]): ReligionBase[] {
@@ -795,7 +818,13 @@ class ReligionsModule {
 
         if (
           nextReligion.type === "Folk" &&
-          lockedReligions.some(({ type, culture }) => type === "Folk" && culture === nextReligion.culture)
+          lockedReligions.some(({ type, culture }) => {
+            if (type !== "Folk") return false;
+            if (culture === nextReligion.culture) return true;
+            const nextAncestry = pack.cultures[nextReligion.culture]?.ancestry?.trim();
+            const lockedAncestry = pack.cultures[culture]?.ancestry?.trim();
+            return Boolean(nextAncestry && lockedAncestry && nextAncestry === lockedAncestry);
+          })
         )
           continue; // when there is a locked Folk religion for this culture discard duplicate
 
@@ -848,12 +877,19 @@ class ReligionsModule {
     function renameOld({ name, type, culture: cultureId }: NamedReligion): string {
       if (type !== "Folk") return name;
 
+      const ancestry = pack.cultures[cultureId]?.ancestry?.trim();
+      const matchingCultures = ancestry
+        ? new Set(pack.cultures.filter(c => c.i && !c.removed && c.ancestry?.trim() === ancestry).map(c => c.i))
+        : new Set([cultureId]);
+
       const haveOrganized =
         namedReligions.some(
-          ({ type, culture, expansion }) => culture === cultureId && type === "Organized" && expansion === "culture"
+          ({ type, culture, expansion }) =>
+            matchingCultures.has(culture) && type === "Organized" && expansion === "culture"
         ) ||
         lockedReligions.some(
-          ({ type, culture, expansion }) => culture === cultureId && type === "Organized" && expansion === "culture"
+          ({ type, culture, expansion }) =>
+            matchingCultures.has(culture) && type === "Organized" && expansion === "culture"
         );
       if (haveOrganized && name.slice(0, 3) !== "Old") return `Old ${name}`;
       return name;
@@ -1178,7 +1214,22 @@ class ReligionsModule {
     const religionIds = new Uint16Array(cells.i.length);
 
     const folkReligions = religions.filter(religion => religion.type === "Folk" && !religion.removed);
-    const cultureToReligionMap = new Map(folkReligions.map(({ i, culture }) => [culture, i]));
+    const cultureToReligionMap = new Map<number, number>();
+
+    for (const religion of folkReligions) {
+      cultureToReligionMap.set(religion.culture, religion.i);
+    }
+    for (const religion of folkReligions) {
+      const ancestry = pack.cultures[religion.culture]?.ancestry?.trim();
+      if (!ancestry) continue;
+      for (const culture of pack.cultures) {
+        if (culture.i && !culture.removed && culture.ancestry?.trim() === ancestry) {
+          if (!cultureToReligionMap.has(culture.i)) {
+            cultureToReligionMap.set(culture.i, religion.i);
+          }
+        }
+      }
+    }
 
     for (const cellId of cells.i) {
       const oldId = (hasPrior && cells.religion[cellId]) || 0;
@@ -1423,7 +1474,9 @@ class ReligionsModule {
     const random = () => Names.getCulture(cells.culture[center]);
     const type = rw(types[form]);
     const supreme = deity.split(/[ ,]+/)[0];
-    const culture = cultures[cells.culture[center]].name;
+    const cultureObj = cultures[cells.culture[center]];
+    const ancestry = cultureObj?.ancestry?.trim();
+    const culture = (variety === "Folk" && ancestry) || cultureObj?.name;
 
     const place = (adj?: boolean): string => {
       const burgId = cells.burg[center];
@@ -1435,6 +1488,10 @@ class ReligionsModule {
     };
 
     const m = rw(namingMethods[form] || namingMethods[variety]);
+    if (variety === "Folk" && ancestry) {
+      if (m === "Culture + ism") return [`${trimVowels(ancestry)}ism`, "culture"];
+      return [`${ancestry} ${type}`, "culture"];
+    }
     if (m === "Random + type") return [`${random()} ${type}`, "global"];
     if (m === "Random + ism") return [`${trimVowels(random())}ism`, "global"];
     if (m === "Supreme + ism" && deity) return [`${trimVowels(supreme)}ism`, "global"];

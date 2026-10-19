@@ -126,6 +126,7 @@ Cultures (races, language zones) data is stored as an array of objects with stri
 - `i`: `number` - culture id, always equal to the array index
 - `base`: `number` - _nameBase_ id, name base is used for names generation
 - `name`: `string` - culture name
+- `ancestry`: `string` - optional. Culture ancestry (race), e.g. "Elfish", "Dwarven", "Human"
 - `origins`: `number[]` - ids of origin cultures. Used to render cultures tree to show cultures evolution. The first array member is main link, other - supporting out-of-tree links
 - `shield`: `string` - shield type. Used for emblems rendering
 - `center`: `number` - cell id of culture center (initial cell)

@@ -104,7 +104,7 @@ function updateFields(point: Point, cellId: number, gridCellId: number): void {
   set("infoRiver", cells.h[cellId] >= 20 && cells.r[cellId] ? getRiverInfo(cells.r[cellId]) : "no");
   set("infoState", getStateInfo(cellId));
   set("infoProvince", getNamedInfo(pack.provinces, cells.province[cellId], "fullName"));
-  set("infoCulture", getNamedInfo(pack.cultures, cells.culture[cellId], "name"));
+  set("infoCulture", getCultureInfo(cells.culture[cellId]));
   set("infoReligion", getNamedInfo(pack.religions, cells.religion[cellId], "name"));
   set("infoPopulation", getFriendlyPopulation(cellId));
   set("infoBurg", getNamedInfo(pack.burgs, cells.burg[cellId], "name"));
@@ -121,6 +121,14 @@ function updateFields(point: Point, cellId: number, gridCellId: number): void {
 
 function set(id: string, value: string | number) {
   ensureEl(id).innerHTML = String(value);
+}
+
+export function getCultureInfo(cultureId: number): string {
+  if (!cultureId) return "no";
+  const culture = pack.cultures[cultureId];
+  if (!culture) return "no";
+  const ancestry = culture.ancestry?.trim();
+  return ancestry ? `${culture.name} (${ancestry}) (${cultureId})` : `${culture.name} (${cultureId})`;
 }
 
 function getNamedInfo<T, K extends keyof T>(elements: T[], id: number, key: K): string {

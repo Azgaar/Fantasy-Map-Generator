@@ -50,6 +50,14 @@ const columns: EditorColumn<Culture>[] = [
     sortType: "alpha"
   },
   {
+    key: "ancestry",
+    label: t("Ancestry"),
+    width: "7.5em",
+    mobileHidden: true,
+    sortBy: culture => culture.ancestry || "",
+    sortType: "alpha"
+  },
+  {
     key: "type",
     label: t("Type"),
     width: "7.5em",
@@ -142,6 +150,10 @@ function open(): void {
 }
 
 function renderDialog(): void {
+  const hasAncestry = pack.cultures.some(c => c.i && !c.removed && Boolean(c.ancestry?.trim()));
+  const ancestryCol = columns.find(c => c.key === "ancestry");
+  if (ancestryCol) ancestryCol.hidden = !hasAncestry;
+
   destroyDialog("culturesEditor");
   const editorHtml = /* html */ `<div id="culturesEditor" class="dialog stable editorDialog">
     <div id="culturesBody" class="table" data-type="absolute">${renderEditorHeader({ dialogId, columns })}</div>
@@ -269,6 +281,7 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
               value="${c.name}" autocorrect="off" spellcheck="false" />
             <span class="icon-cw placeholder"></span>
           </div>
+          <div data-col="ancestry"></div>
           <select class="cultureType placeholder" data-col="type">${getTypeOptions(c.type)}</select>
           <div data-col="base">
             <span data-tip="${t("Click to re-generate names for burgs with this culture assigned")}" class="icon-arrows-cw"></span>
@@ -304,6 +317,7 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
         class="states"
         data-id="${c.i}"
         data-name="${c.name}"
+        data-ancestry="${c.ancestry || ""}"
         data-color="${c.color}"
         data-cells="${c.cells}"
         data-area="${area}"
@@ -318,6 +332,10 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
           <input data-tip="${sentences(t("Name"), t("Click and type to change"))}" class="cultureName"
             value="${c.name}" autocorrect="off" spellcheck="false" />
           <span data-tip="${t("Regenerate culture name")}" class="icon-cw hiddenIcon" style="visibility: hidden"></span>
+        </div>
+        <div data-col="ancestry">
+          <input data-tip="${sentences(t("Ancestry"), t("Culture ancestry or race"), t("Click and type to change"))}" class="cultureAncestry"
+            value="${c.ancestry || ""}" autocorrect="off" spellcheck="false" />
         </div>
         <select data-tip="${sentences(t("Culture type"), t("Defines growth model"), t("Click to change"))}"
           class="cultureType" data-col="type">${getTypeOptions(c.type)}</select>
@@ -385,6 +403,9 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
   ensureEl("culturesBody")
     .querySelectorAll("div > input.cultureName")
     .forEach($el => void $el.addEventListener("input", cultureChangeName));
+  ensureEl("culturesBody")
+    .querySelectorAll("div > input.cultureAncestry")
+    .forEach($el => void $el.addEventListener("input", cultureChangeAncestry));
   ensureEl("culturesBody")
     .querySelectorAll("div > span.icon-cw")
     .forEach($el => void $el.addEventListener("click", cultureRegenerateName));
@@ -460,12 +481,32 @@ function getShapeOptions(isDiversiform: boolean, selected: string): string {
 }
 
 const cultureHighlightOn = debounce((event: any) => {
-  const cultureId = Number(event.id || event.target.dataset.id);
-
   if (!Layers.isOn("cultures")) return;
   if (customization) return;
 
   const animate = transition().duration(2000).ease(easeSinIn);
+
+  if (event.data?.shadow) {
+    const ancestry = event.data.name;
+    const matching = pack.cultures.filter(c => c.i && !c.removed && c.ancestry?.trim() === ancestry);
+    for (const c of matching) {
+      select("#cults")
+        .select(`#culture${c.i}`)
+        .raise()
+        .transition(animate)
+        .attr("stroke-width", 2.5)
+        .attr("stroke", "#d0240f");
+      select("#debug")
+        .select(`#cultureCenter${c.i}`)
+        .raise()
+        .transition(animate)
+        .attr("r", 3)
+        .attr("stroke", "#d0240f");
+    }
+    return;
+  }
+
+  const cultureId = Number(event.id || event.target?.dataset?.id);
   select("#cults")
     .select(`#culture${cultureId}`)
     .raise()
@@ -481,9 +522,19 @@ const cultureHighlightOn = debounce((event: any) => {
 }, 200);
 
 function cultureHighlightOff(event: any): void {
-  const cultureId = Number(event.id || event.target.dataset.id);
-
   if (!Layers.isOn("cultures")) return;
+
+  if (event.data?.shadow) {
+    const ancestry = event.data.name;
+    const matching = pack.cultures.filter(c => c.i && !c.removed && c.ancestry?.trim() === ancestry);
+    for (const c of matching) {
+      select("#cults").select(`#culture${c.i}`).transition().attr("stroke-width", null).attr("stroke", null);
+      select("#debug").select(`#cultureCenter${c.i}`).transition().attr("r", 2).attr("stroke", null);
+    }
+    return;
+  }
+
+  const cultureId = Number(event.id || event.target?.dataset?.id);
   select("#cults").select(`#culture${cultureId}`).transition().attr("stroke-width", null).attr("stroke", null);
   select("#debug").select(`#cultureCenter${cultureId}`).transition().attr("r", 2).attr("stroke", null);
 }
@@ -507,6 +558,13 @@ function cultureChangeName(this: HTMLInputElement): void {
   const culture = +row.dataset.id!;
   row.dataset.name = this.value;
   if (this.value.trim()) Cultures.rename(culture, this.value);
+}
+
+function cultureChangeAncestry(this: HTMLInputElement): void {
+  const row = this.closest(".states") as HTMLElement;
+  const culture = +row.dataset.id!;
+  row.dataset.ancestry = this.value.trim();
+  Cultures.setAncestry(culture, this.value);
 }
 
 function cultureRegenerateName(this: HTMLElement): void {
@@ -781,6 +839,7 @@ async function showHierarchy(): Promise<void> {
   if (customization) return;
 
   const getDescription = (culture: any) => {
+    if (culture.shadow) return t("{{- ancestry}} ancestry", { ancestry: culture.name });
     const { name, type, rural, urban } = culture;
 
     const population =
@@ -791,7 +850,8 @@ async function showHierarchy(): Promise<void> {
     return sentences(t("{{- culture}} culture", { culture: name }), CULTURE_TYPE_LABELS[type] ?? type, populationText);
   };
 
-  const getShape = ({ type }: any) => {
+  const getShape = ({ type, shadow }: any) => {
+    if (shadow) return "circle";
     if (type === "Generic") return "circle";
     if (type === "River") return "diamond";
     if (type === "Lake") return "hexagon";
@@ -895,7 +955,7 @@ function addCulture(this: SVGElement, event: MouseEvent): void {
 
 function downloadCulturesCsv(): void {
   const unit = getAreaUnit("2");
-  const headers = `Id,Name,Color,Cells,Expansionism,Type,Area ${unit},Population,Namesbase,Emblems Shape,Origins`;
+  const headers = `Id,Name,Ancestry,Color,Cells,Expansionism,Type,Area ${unit},Population,Namesbase,Emblems Shape,Origins`;
   // export the full filtered set (all pages), not just the visible page
   const data = culturesTable.view().all.map(c => {
     const area = getArea(c.area ?? 0);
@@ -911,6 +971,7 @@ function downloadCulturesCsv(): void {
     return [
       c.i,
       c.name,
+      c.i ? c.ancestry || "" : "",
       c.i ? c.color || "" : "",
       c.cells || 0,
       c.i ? c.expansionism || 0 : "",
@@ -948,6 +1009,7 @@ async function uploadCulturesData(this: HTMLInputElement): Promise<void> {
   const csv = await file.text();
   const data: any[] = csvParse(csv, d => ({
     name: d.Name,
+    ancestry: d.Ancestry,
     i: +d.Id!,
     color: d.Color,
     expansionism: +d.Expansionism!,
@@ -991,6 +1053,10 @@ async function uploadCulturesData(this: HTMLInputElement): Promise<void> {
     else current.name = culture.name;
 
     if (current.i) {
+      if (culture.ancestry !== undefined) {
+        if (culture.ancestry.trim()) current.ancestry = culture.ancestry.trim();
+        else delete current.ancestry;
+      }
       current.color = culture.color;
       current.expansionism = +culture.expansionism;
 
