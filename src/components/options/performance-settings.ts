@@ -53,6 +53,15 @@ const SETTINGS: Setting[] = [
       { value: "continuous", label: "While zooming" },
       { value: "settled", label: "After zoom" }
     ]
+  },
+  {
+    key: "rendering",
+    label: "Map rendering",
+    tip: "Raster shows the map as one picture while you pan and zoom: much faster with heavy styles, blurred until a zoom settles, and redrawn with a short pause after each zoom or edit. Editors show the vector map",
+    choices: [
+      { value: "vector", label: "Vector" },
+      { value: "raster", label: "Raster" }
+    ]
   }
 ];
 

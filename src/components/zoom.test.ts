@@ -2,11 +2,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/components/layers", () => ({ Layers: { draw: vi.fn() } }));
+vi.mock("@/components/raster-view", () => ({ RasterView: { follow: vi.fn(() => false), settle: vi.fn() } }));
 vi.mock("@/renderers/viewport/viewport-renderer", () => ({
   ViewportLayers: { schedule: vi.fn(), renderNow: vi.fn() }
 }));
 
 import "@/generators/styles";
+import { Layers } from "@/components/layers";
+import { RasterView } from "@/components/raster-view";
 import { setViewportSize, setViewportTransform, viewport } from "@/components/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { rn } from "@/utils/numberUtils";
@@ -123,6 +126,20 @@ describe("viewport redraw during zoom", () => {
 
     expect(ViewportLayers.schedule).not.toHaveBeenCalled();
     expect(ViewportLayers.renderNow).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("zoom with the raster view", () => {
+  it("leaves the SVG to the raster while it carries the frames, then brings it up to date once", () => {
+    vi.mocked(RasterView.follow).mockReturnValue(true);
+    vi.mocked(Layers.draw).mockClear();
+    setMapZoom(4);
+
+    expect(document.getElementById("viewbox")!.getAttribute("transform")).toBe("translate(-1500 -900) scale(4)");
+    expect(vi.mocked(Layers.draw).mock.calls).toEqual([["scaleBar"], ["coordinates"]]);
+    expect(ViewportLayers.schedule).toHaveBeenCalledTimes(1);
+    expect(RasterView.settle).toHaveBeenCalled();
+    vi.mocked(RasterView.follow).mockReturnValue(false);
   });
 });
 

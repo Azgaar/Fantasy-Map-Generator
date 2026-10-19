@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { cacheOceanLayer, clearOceanCache, getRasterRegion, restoreOceanVectors } from "./ocean-cache";
+import {
+  cacheOceanLayer,
+  clearOceanCache,
+  getRasterRegion,
+  restoreOceanVectors,
+  suspendOceanCache
+} from "./ocean-cache";
 import type { ViewportRenderContext } from "./viewport/viewport-renderer";
 
 const view = vi.hoisted(() => ({
@@ -94,6 +100,20 @@ test("reuses the bitmap during nearby pans and refreshes at a new zoom resolutio
   render();
   await vi.waitFor(() => expect(bitmap()!.getAttribute("href")).not.toBe(first));
   expect(revoke).toHaveBeenCalledWith(first);
+});
+
+test("keeps vectors and rasterizes nothing while suspended, then resumes", async () => {
+  cacheOceanLayer(group(), ["bands-mask"]);
+  await vi.waitFor(() => expect(bitmap()).not.toBeNull());
+
+  suspendOceanCache(true);
+  expect(bitmap()).toBeNull();
+  view.bounds = { ...view.bounds, scale: 4 };
+  render();
+  expect(decode).toHaveBeenCalledTimes(2); // the first bitmap's two decodes, nothing new
+
+  suspendOceanCache(false);
+  await vi.waitFor(() => expect(bitmap()).not.toBeNull());
 });
 
 test("falls back to vectors when panning outside the cached area", async () => {

@@ -1,5 +1,9 @@
 # PRD — Raster Rendering
 
+> **Status: concluded proof of concept, not to be merged.** Raster mode works, but on heavy maps it is still
+> slow to fill in and feels worse than Vector. See [Conclusion](#conclusion). The way forward is GPU rendering
+> of the heavy layers from map data, layer by layer, without rasterizing SVG.
+
 ## Problem Statement
 
 Zooming and panning a detailed map is slow, and painting is most of that cost. The camera is a `transform`
@@ -118,44 +122,84 @@ Not measured (stopped: headed multi-browser runs overload the machine):
 
 Run these one browser and one preset at a time.
 
+### Implementation check (GPU)
+
+One headed run on the implementation, Frostbite at 2×, Apple M1 Pro at DPR 2, mean frame interval over a
+100-step pan:
+
+| Build                                           | Vector  | Raster  |
+| ----------------------------------------------- | ------: | ------: |
+| Hidden SVG kept in step with the camera         | 40.8 ms | 12.9 ms |
+| SVG left behind during the gesture (as built)   | 33.8 ms |  8.8 ms |
+
+8.8 ms is the 120 Hz display rate. The first bitmap was ready 1.4–1.5 s after Raster was turned on.
+
+### Rasterizing off the main thread (pane check)
+
+A browser renders SVG only on the main thread, so every rebuild blocked navigation. Measured on a 10k-cell
+map, Cinderwood, Apple M1 Pro:
+
+| Step                                                         | Main thread | Total   |
+| ------------------------------------------------------------ | ----------: | ------: |
+| Export the full-map snapshot (`getMapURL`)                   | 219 ms      | 219 ms  |
+| Decode it (1.9 MB SVG)                                       | 48 ms       | 48 ms   |
+| `drawImage` of the whole map at 3840×2160                    | 516 ms      | 516 ms  |
+| `drawImage` of one 512 px tile at 10× from the same image    | ~190 ms     | ~190 ms |
+| `createImageBitmap` of the same tile (crop + resize)         | ~20 ms      | 224 ms  |
+
+`createImageBitmap` rasterizes the SVG image off the main thread (a 4 ms timer kept ticking through it) and
+stays vector-crisp at the requested size (edge sharpness 8.16 against 8.23 for `drawImage`, 1.61 for an
+upscaled bitmap). On the default style a tile costs about 14 ms of main thread.
+
 ## Solution
 
-Raster tiles behind one Performance setting. The spike shows the display side pays off for heavy presets; the
-tiling and snapshot questions above decide whether it can be built cheaply enough.
+One Performance setting, **Map rendering: Vector / Raster**. In Raster mode the map on screen is drawn from
+bitmaps on a canvas under the SVG, the way a web map shows tiles: a coarse picture at once, sharp tiles
+filling in around the centre, nothing ever blocking a gesture. The SVG stays in the DOM, invisible, as the
+model and the hit-test surface.
 
-### Raster tiles (Performance setting)
+### Behaviour
 
-One select in Performance settings, **Map rendering: Vector / Raster**, stored as
-`app.performance.rendering`. Quality preset: Vector; Balance and Speed: Raster.
+- **Snapshot per zoom level.** The map is exported once per zoom level (powers of 2, labels sized for that
+  level) and decoded. It is the only step that blocks the main thread, it never runs during a gesture, and it
+  is redone only after an edit.
+- **Overview.** The whole map, cut from the level-1 snapshot as densely as 16 MP allows. It covers any view at
+  once, so pans and zooms never leave raster.
+- **Tiles.** Once the zoom outgrows the overview's density, the view is filled with 512 px tiles cut from its
+  level's snapshot by `createImageBitmap`: two at a time, nearest the centre first, each drawn as it lands.
+  A one-tile margin is prepared around the view. Tiles stay cached (at most 160, about 160 MB, least recently
+  drawn evicted), so returning to an area or a zoom costs nothing.
+- **Always raster.** From the first overview on, the screen is the canvas. Missing tiles show the overview or
+  another level's tiles; after an edit the old bitmaps stay until new ones replace them.
+- **Gestures.** Every camera frame redraws the bitmaps under the camera. No new work starts during a gesture,
+  and the SVG is left behind: `#viewbox` is not displayed and the zoom skips its per-frame SVG work. It
+  catches up once at the end, invisibly, for hit testing.
+- **Editing.** Dialogs change nothing about what is shown. Editor feedback drawn into `#debug` is live and
+  shows over the canvas; any other change inside `#viewbox` is an edit and shows once its tiles are redone.
+- **Live layers.** Coordinates, trade animation, journeys, rulers and `#debug` are left out of the bitmaps and
+  stay visible in the SVG, above the canvas, except during a gesture. Layers outside `#viewbox` (scale bar,
+  legend, vignette) are untouched and left out too.
+- **Ocean cache.** Suspended in Raster mode: the bitmaps do its job, and its asynchronous image swaps would
+  read as edits. It keeps working in Vector mode.
+- **Off-screen export.** The export mounts its working clone in an off-screen host, so a snapshot being built
+  never flashes on screen.
 
-In Raster mode the map on screen is a viewport-sized `<canvas>` filled from tiles:
+### Setting
 
-- **Source.** The SVG stays the model. One self-contained snapshot per invalidation is built by the export
-  pipeline, with `ViewportLayers.renderTo()` drawing the culled layers for the region being tiled.
-- **Tiles.** 512 px tiles at device pixel ratio, at zoom levels a power of 2 apart, prerendered for the
-  viewport plus a margin. A missing tile is drawn from the coarser level, scaled, until its own is ready.
-- **Memory.** An LRU tile pool with a byte budget, about 80 MB on desktop (the current level for a
-  1920×1080 viewport at DPR 2 with a one-tile margin, plus a coarser level) and less on iOS. No single
-  canvas exceeds 16 MP.
-- **Interaction.** The SVG stays in the DOM with `visibility: hidden` and `pointer-events: painted`,
-  following the camera, so the existing click, drag and tooltip handlers keep working through native hit
-  testing. Not `opacity: 0`: Chromium still paints it.
-- **Editing.** While an editor is open or a drag is active the map shows the SVG (Vector), since hover
-  highlights, drag previews and selection outlines must be visible as they change.
-- **Animation.** Animated layers (trade animation, journeys, measurers) stay live SVG above the canvas.
-- **Invalidation.** A layer draw (`Layers.draw`) marks the snapshot stale. A new snapshot is built once the
-  map settles, never during a gesture (it takes 0.5–2 s); until it is ready the stale tiles stay on screen.
-
-The ocean cache is retired once the tiles cover it.
+`app.performance.rendering: "vector" | "raster"`. Quality and Balance: Vector; Speed: Raster.
 
 ### Costs accepted
 
-| Cost        | Bound                                                                          |
-| ----------- | ------------------------------------------------------------------------------ |
-| Clicks      | Native hit testing on the hidden SVG; vectors shown while editing             |
-| Memory      | Fixed tile budget, about 80 MB desktop                                        |
-| Zoom blur   | At most 2× upscaling, for as long as the next level takes to render          |
-| Edits       | Each change pays one snapshot (0.5–2 s, off the gesture); editors show vectors |
+| Cost              | Bound                                                                                |
+| ----------------- | ------------------------------------------------------------------------------------ |
+| Snapshot pause    | One export per zoom level per edit (219 ms at 10k cells on Cinderwood), never mid-gesture |
+| Tile hand-off     | 14–20 ms of main thread per tile, two in flight                                      |
+| Zoom blur         | Until the tiles of the new level land                                                |
+| Label sizes       | Between levels, labels scale with the bitmap; the overview's are sized for scale 1  |
+| Memory            | Overview ≤ 16 MP, 160 tiles of 1 MB, up to 3 decoded snapshots                      |
+| Editing           | An edit shows after its tiles are redone; only `#debug` feedback is live            |
+| Live layers       | Not shown while a gesture is carried by the bitmaps                                 |
+| Other browsers    | Where `createImageBitmap` cannot take an SVG image, tiles are drawn on the main thread |
 
 ## User Stories
 
@@ -171,20 +215,94 @@ The ocean cache is retired once the tiles cover it.
 
 ## Implementation Decisions
 
-- The setting is a field of `app.performance` with a default, so a stored performance block without it
-  still loads.
-- A `Rasterizer` module owns snapshots, the tile pool and the display canvas. `applyPerformanceSettings()`
-  switches it on or off. It does not know layer names: it reads layers through `Layers` and
-  `ViewportLayers`.
-- Defs a snapshot needs are found from its references (`url(#…)`, `href="#…"`), not listed per layer.
+One new closed singleton owns everything raster. Each existing module gains at most one generic hook and
+never learns that rasterization exists.
+
+### Changes
+
+| Module                                      | Change                                                                       |
+| ------------------------------------------- | ---------------------------------------------------------------------------- |
+| `src/components/raster-view.ts` (new)       | The `RasterView` singleton, with its own style element                       |
+| `src/components/zoom.ts`                    | Skips the SVG frame when `RasterView.follow()` carries it; `settle()` at end |
+| `src/renderers/ocean-cache.ts`              | `suspendOceanCache(on)`: vectors only, nothing rasterized                    |
+| `src/components/performance.ts`             | The `rendering` value in each preset; apply calls `RasterView.setEnabled()`  |
+| `src/components/options-schema.ts`          | `rendering: z.enum(["vector", "raster"])` with a `"vector"` default          |
+| `src/components/options/performance-settings.ts` | One `SETTINGS` row                                                      |
+| `src/services/io/export.ts`                 | `GetMapURLOptions.exclude`; the clone is mounted in an off-screen host       |
+
+Save and load, the layers registry, the viewport renderer, the ocean cache and every renderer stay as they
+are.
+
+### `RasterView`
+
+```ts
+class RasterViewModule {
+  setEnabled(on: boolean): void; // the Performance setting
+  follow(): boolean; // every camera frame: redraw the bitmaps under the camera; false before the first one
+  settle(): void; // gesture end: fill the view with tiles for its zoom
+}
+
+export const RasterView = new RasterViewModule();
+```
+
+Three methods, nothing else exported. `follow()` and `settle()` return at once when Raster is off. It lives
+in `components/`: it reads `Layers` and the export service, which a renderer may not import.
+
+Invalidation is internal: one `MutationObserver` on `#viewbox`, from `setEnabled(true)` to
+`setEnabled(false)`. A record inside a live layer, or an attribute of `#viewbox` itself (the camera), is
+ignored; a child added to or removed from `#viewbox` (a layer moved) counts. `settle()` drops the records of
+the SVG catching up with the camera, which run in the same task before it. An edit bumps a version; no other
+module calls an `invalidate()`, and `Layers` needs no hook.
+
+Private state: the canvas, the overview, the tile cache keyed by level, pixel ratio, column and row, the
+decoded snapshots, the jobs in flight, the version and a session that turning off bumps, so late results are
+dropped. A pump starts jobs after a 150 ms idle delay: the overview first, then the view's missing tiles; a
+job needing a snapshot that is not there yet starts its export and waits for the next pump. One export runs
+at a time; one that fails is not retried until the next edit.
+
+A snapshot is `ExportMap.getMapURL("png", { region: whole map at width × level, exclude })` and an `Image`
+decode. A tile is `createImageBitmap(image, crop, { resizeWidth: 512, resizeHeight: 512 })`, with a
+`drawImage` fallback for browsers that cannot bitmap an SVG image.
+
+The excluded ids come from `Layers`: the elements of layers whose parent is `map`, and of the live layers,
+a constant list of layer ids (`coordinates`, `trade`, `journeys`, `rulers`, `debug`) inside the module.
+
+### Visibility
+
+The canvas is a sibling inserted right before `#map`, sized to it, behind it (`z-index: -1`) and with
+`pointer-events: none`. Its `hidden` attribute is the single switch for both sides. The module injects the
+rules on first enable, so no stylesheet changes:
+
+```css
+#rasterView:not([hidden]) + #map { background-color: transparent; }
+#rasterView:not([hidden]) + #map #viewbox { visibility: hidden; pointer-events: painted; }
+#rasterView:not([hidden]) + #map :is(#coordinates, #tradeAnimation, #journeys, #ruler, #debug) { visibility: visible; }
+#rasterView[data-moving]:not([hidden]) + #map #viewbox { display: none; }
+```
+
+- One state drives both, so the canvas and the SVG cannot disagree.
+- `pointer-events: painted` hits what a visible map would hit, ignoring `visibility`. An element that sets a
+  `visible*` value of its own must switch to the plain value (`stroke`, `fill`, `painted`).
+- The export and save clones are not next to the canvas, so neither rule reaches them: files never change.
+- `#map`'s black background goes transparent while the canvas shows; the canvas copies it.
+- The minimap draws `#viewbox` through a `<use>`; the rules do not match inside its copy, so it stays drawn.
+
+### Not done, on purpose
+
+- No worker renderer: the snapshot export stays on the main thread, once per zoom level per edit.
+- The ocean cache stays for Vector, suspended in Raster.
 
 ## Testing Decisions
 
-- Frame intervals in a GPU-rastered browser decide the feature: pans at 2×, 6× and 20× on the default,
-  Atlas, Cinderwood and Frostbite presets at DPR 2, Vector against Raster. `npm run benchmark` only guards
-  page work, since it rasters on the CPU.
-- Unit tests for tile cover, LRU eviction and stale-snapshot discards; a pixel comparison of
-  Vector and Raster at settled views.
+- Unit tests drive `RasterView` through its three methods with stubbed `getMapURL` and `createImageBitmap`:
+  the canvas and the ocean-cache suspension come and go with `setEnabled`; one export makes the overview; a
+  zoom past it exports its level once and cuts the view's tiles nearest the centre first; a gesture starts
+  no work until it settles; an edit keeps the old bitmaps until new ones; live layers and the camera are not
+  edits; work that finishes after Raster is off is dropped.
+- An export and a save with Raster on match the same with Vector, byte for byte.
+- Frame intervals decide the defaults: a headed, GPU-rastered browser at DPR 2, one preset and one browser
+  per run (Frostbite and Default at 2×), Vector against Raster, plus the rebuild pause. `npm run benchmark`
+  only guards page work, since it rasters on the CPU.
 
 ## Out of Scope
 
@@ -192,7 +310,43 @@ The ocean cache is retired once the tiles cover it.
 - Drawing layers to canvas natively (`Path2D`): it needs masks, filters, patterns and text reimplemented.
 - Rasterizing saved maps or exports.
 
+## Conclusion
+
+The POC is on branch `raster-view` as a record. What it showed:
+
+- **Showing pixels is solved; making them is not.** Once bitmaps exist, pans and zooms run at the display's
+  refresh rate (8.8 ms a frame on Frostbite against 33.8 ms in Vector). Every bitmap, though, has to come from
+  the SVG, and that is where the time goes:
+  - the snapshot export blocks the main thread once per zoom level per edit (219 ms at 10k cells on
+    Cinderwood, seconds at 100k);
+  - each tile costs about 200 ms on heavy styles even off the main thread, because the browser re-renders
+    full-map masks and filters for every crop.
+- **The real experience is worse.** On a 100k-cell map with relief and Cinderwood, fast navigation shows
+  blurry overview pixels for long stretches while tiles trickle in, and edits show late. Vector is slower per
+  frame but always current and sharp.
+- **Textures do not change it.** Putting the same bitmaps into WebGL or three.js textures would display them no
+  faster than the canvas does now; they would still come from the same SVG pipeline.
+- **Done the hard way, still useful:** `createImageBitmap` rasterizes an SVG image off the main thread and stays
+  vector-sharp; the export now mounts its clone off-screen; the ocean cache can be suspended.
+
+### Next: GPU rendering per layer
+
+Render the heaviest layers natively on the GPU from map data, the way
+[#1352](https://github.com/Azgaar/Fantasy-Map-Generator/pull/1352) started with relief, keeping SVG for the
+rest and for export and editing:
+
+1. Measure draw cost per layer on a 100k-cell map with heavy presets, by toggling layers, and pick the two or
+   three that dominate. Expected: relief icons, ocean bands and waves, textured and filtered fills.
+2. Give each a WebGL2 renderer: relief as instanced sprites from an icon atlas, ocean bands and waves as a
+   shader over a distance-to-coast texture instead of SVG masks, fills as triangulated polygons, labels as
+   signed-distance-field text.
+3. Composite them with the SVG layers in z-order, for example the two-root split (SVG root, canvas, second SVG
+   root) from barrulus's fork, and judge each layer frame for frame against SVG on a GPU at DPR 2.
+
 ## Further Notes
 
-The two-root compositor in barrulus's fork (an SVG root, a canvas, a second SVG root above it) is the
-fallback if the tiles should go to a canvas below the SVG for the bottom layers only (ocean, bands, waves).
+- **If the raster path is revisited**, the snapshot export is the last blocking step: it clones the map,
+  inlines computed styles and serializes it. Splitting it into chunks that yield between them would remove
+  the pause, but not the tile cost of heavy styles.
+- The two-root compositor in barrulus's fork (an SVG root, a canvas, a second SVG root above it) is the
+  fallback if only the bottom layers (ocean, bands, waves) should be rasterized.
