@@ -44,6 +44,7 @@ export interface MapEntity {
   name?: string;
   removed?: boolean;
   note?: string;
+  tags?: string[];
 }
 
 export interface EntityTarget {

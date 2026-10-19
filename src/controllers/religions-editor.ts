@@ -23,6 +23,7 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { RELIGION_EXPANSION_LABELS, RELIGION_TYPE_LABELS } from "@/data/id-labels";
 import type { Religion } from "@/generators/religions-generator";
+import { Tags } from "@/generators/tags";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { downloadFile, getArea, getAreaUnit, getFileName, groupByValue } from "@/utils";
@@ -33,7 +34,7 @@ import { debounce, ensureEl, getPointer, isLand, parseTransform, rn, si } from "
 const dialogId = "religionsEditor" as const;
 const LEGEND_NAME = "Religions"; // the legend box this editor toggles
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
-let filterState: { showExtinct: boolean };
+let filterState: { showExtinct: boolean; search?: string };
 
 const columns: EditorColumn<Religion>[] = [
   { key: "color", width: "1.2em", permanent: true },
@@ -101,6 +102,14 @@ const columns: EditorColumn<Religion>[] = [
     mobileHidden: true,
     sortBy: religion => religion.expansionism || 0
   },
+  {
+    key: "tags",
+    label: t("Tags"),
+    width: "10em",
+    hidden: true,
+    sortBy: religion => Tags.format(religion.tags),
+    sortType: "alpha"
+  },
   { key: "note", width: "1.1em" },
   { key: "locate", width: "1.1em" },
   { key: "lock", width: "1.1em" },
@@ -108,7 +117,10 @@ const columns: EditorColumn<Religion>[] = [
 ];
 
 function getFilteredReligions(): Religion[] {
-  return pack.religions.filter(r => !r.removed && !(r.i && !r.cells && !filterState.showExtinct));
+  const searchText = filterState?.search?.toLowerCase().trim();
+  const religions = pack.religions.filter(r => !r.removed && !(r.i && !r.cells && !filterState.showExtinct));
+  if (!searchText) return religions;
+  return religions.filter(r => Tags.matches(searchText, r.name, r.tags, [r.deity, r.form, r.type]));
 }
 
 const religionsTable = initEditorTable<Religion>({
@@ -118,7 +130,7 @@ const religionsTable = initEditorTable<Religion>({
 
 function open(): void {
   if (customization) return;
-  filterState = dialogState.get(dialogId, "filters", () => ({ showExtinct: false }));
+  filterState = dialogState.get(dialogId, "filters", () => ({ showExtinct: false, search: "" }));
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("religions");
   Layers.hide("states", "biomes");
@@ -138,10 +150,21 @@ function open(): void {
   });
 }
 
+function onSearchInput(): void {
+  filterState.search = ensureEl<HTMLInputElement>("religionsSearch").value;
+  dialogState.set(dialogId, "filters", filterState);
+  religionsTable.reset();
+}
+
 function renderDialog(): void {
   destroyDialog("religionsEditor");
   const editorHtml = /* html */ `<div id="religionsEditor" class="dialog stable editorDialog">
     <div id="religionsBody" class="table" data-type="absolute">${renderEditorHeader({ dialogId, columns })}</div>
+    <div id="religionsFilters" data-tip="${t("Apply a filter")}" class="editorFilters">
+      <label for="religionsSearch" data-tip="${t("Filter by name, deity, form, type, or tag")}">
+        ${t("Search")}: <input id="religionsSearch" type="search" />
+      </label>
+    </div>
 
     <div id="religionsFooter" class="totalLine">
       <div data-tip="${t("Total number of organized religions")}" style="margin-left: 12px">
@@ -188,6 +211,9 @@ function renderDialog(): void {
 
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
   syncFilterControls();
+  const searchInput = ensureEl<HTMLInputElement>("religionsSearch");
+  searchInput.value = filterState.search ?? "";
+  searchInput.addEventListener("input", onSearchInput);
   bindColumnSorting(dialogId, religionsTable.reset);
   applyLineHighlighting(dialogId, ({ cellId }) => pack.cells.religion[cellId]);
 
@@ -302,6 +328,7 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
           <span class="icon-resize-full placeholder"></span>
           <input class="religionExpantion placeholder" disabled type="number" value="0" />
         </div>
+        <div data-col="tags"></div>
         <div data-col="note"></div>
         <div data-col="locate"></div>
         <div data-col="lock"></div>
@@ -345,6 +372,16 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
         <div data-tip="${populationTip}" class="religionPopulation pointer">${si(population)}</div>
       </div>
       ${getExpansionColumns(r)}
+      <div data-col="tags">
+        <input
+          data-tip="${t("Tags (comma-separated)")}"
+          class="religionTags"
+          value="${Tags.format(r.tags)}"
+          placeholder="${t("Tags")}"
+          autocorrect="off"
+          spellcheck="false"
+        />
+      </div>
       ${noteIcon(t("Edit free text notes (legend)"))}
       <span data-col="locate" data-tip="${t("Locate on map")}" class="icon-target"></span>
       <span data-col="lock" data-tip="${t("Lock")}" class="icon-lock${r.lock ? "" : "-open"}"></span>
@@ -404,6 +441,9 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
   ensureEl("religionsBody")
     .querySelectorAll("div > input.religionExpantion")
     .forEach(el => void el.addEventListener("change", religionChangeExpansionism));
+  ensureEl("religionsBody")
+    .querySelectorAll("div > input.religionTags")
+    .forEach(el => void el.addEventListener("change", religionChangeTags));
   ensureEl("religionsBody")
     .querySelectorAll("div > span.icon-trash-empty")
     .forEach(el => void el.addEventListener("click", religionRemovePrompt));
@@ -552,6 +592,17 @@ function religionChangeDeity(this: HTMLInputElement): void {
   const religionId = +row.dataset.id!;
   row.dataset.deity = this.value;
   Religions.setDeity(religionId, this.value);
+}
+
+function religionChangeTags(this: HTMLInputElement): void {
+  const line = this.closest(".states") as HTMLElement;
+  const religionId = Number(line.dataset.id);
+  const religion = pack.religions[religionId];
+  if (!religion) return;
+
+  Tags.set(religion, this.value);
+  this.value = Tags.format(religion.tags);
+  if (filterState.search) religionsTable.refresh();
 }
 
 function regenerateDeity(this: HTMLElement): void {
@@ -893,7 +944,7 @@ function addReligion(this: SVGElement, event: MouseEvent): void {
 
 function downloadReligionsCsv(): void {
   const unit = getAreaUnit("2");
-  const headers = `Id,Name,Color,Type,Form,Supreme Deity,Area ${unit},Believers,Origins,Potential,Expansionism`;
+  const headers = `Id,Name,Color,Type,Form,Supreme Deity,Area ${unit},Believers,Origins,Potential,Expansionism,Tags`;
   // export the full filtered set (all pages), not just the visible page
   const data = religionsTable.view().all.map(r => {
     const area = getArea(r.area ?? 0);
@@ -917,7 +968,8 @@ function downloadReligionsCsv(): void {
       population,
       originText,
       r.expansion ?? "",
-      r.i ? (r.expansionism ?? "") : ""
+      r.i ? (r.expansionism ?? "") : "",
+      `"${Tags.format(r.tags)}"`
     ].join(",");
   });
   const csvData = [headers].concat(data).join("\n");

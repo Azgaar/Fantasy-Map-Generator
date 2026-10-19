@@ -47,6 +47,7 @@ export interface Culture {
   rural?: number;
   urban?: number;
   note?: string;
+  tags?: string[];
 }
 
 export const CULTURE_TYPES = ["Generic", "Hunting", "Highland", "River", "Lake", "Naval", "Nomadic"] as const;
@@ -1080,7 +1081,8 @@ class CulturesGenerator {
             i: 0,
             base: 1,
             shield: "round",
-            type: DEFAULT_CULTURE_TYPE
+            type: DEFAULT_CULTURE_TYPE,
+            tags: []
           }
         ];
         this.cells.culture = cultureIds;
@@ -1230,6 +1232,7 @@ class CulturesGenerator {
       codes.push(c.code);
       cultureIds[center] = newId;
       if (emblemShape === "random") c.shield = this.getRandomShield();
+      c.tags = c.tags ?? [];
     });
 
     this.cells.culture = cultureIds;
@@ -1241,7 +1244,8 @@ class CulturesGenerator {
       base: 1,
       origins: [null],
       shield: "round",
-      type: DEFAULT_CULTURE_TYPE
+      type: DEFAULT_CULTURE_TYPE,
+      tags: []
     });
 
     // make sure all bases exist in Names.nameBases
@@ -1296,7 +1300,8 @@ class CulturesGenerator {
       urban: 0,
       origins: [pack.cells.culture[center]],
       code,
-      shield: Emblems.shape === "random" ? this.getRandomShield() : ""
+      shield: Emblems.shape === "random" ? this.getRandomShield() : "",
+      tags: []
     };
     if (ancestry) newCulture.ancestry = ancestry;
     pack.cultures.push(newCulture);

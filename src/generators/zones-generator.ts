@@ -16,6 +16,7 @@ export interface Zone {
   color: string;
   hidden?: boolean;
   note?: string;
+  tags?: string[];
 }
 
 type ZoneGenerator = (usedCells: Uint8Array) => void;
@@ -69,7 +70,14 @@ class ZonesModule {
   /** Add a zone over a list of cell ids; returns its id */
   add(name: string, type: string, cells: number[]): number {
     const i = pack.zones.length ? Math.max(...pack.zones.map(zone => zone.i)) + 1 : 0;
-    const zone = { i, name: requireName(name), type: requireName(type), color: `url(#hatch${i % 42})`, cells: [] };
+    const zone = {
+      i,
+      name: requireName(name),
+      type: requireName(type),
+      color: `url(#hatch${i % 42})`,
+      cells: [],
+      tags: []
+    };
     pack.zones.push(zone);
     this.setCells(i, cells);
     return i;
@@ -123,6 +131,10 @@ class ZonesModule {
       let number = gauss(expectedNumber, expectedNumber / 2, 0, 100);
       while (number--) type.generate(usedCells);
     });
+
+    for (const zone of pack.zones) {
+      if (zone && !zone.tags) zone.tags = [];
+    }
   }
 
   private addInvasion(usedCells: Uint8Array) {

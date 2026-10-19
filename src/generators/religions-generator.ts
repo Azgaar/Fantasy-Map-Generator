@@ -31,6 +31,7 @@ export interface Religion extends NamedReligion {
   rural?: number;
   urban?: number;
   note?: string;
+  tags?: string[];
 }
 
 const RELIGION_TYPES = ["Folk", "Organized", "Cult", "Heresy"] as const;
@@ -637,6 +638,9 @@ class ReligionsModule {
     const baseReligions = this.defineOrigins(religionIds, indexedReligions);
     const heresies = this.generateHeresies(baseReligions, religionIds);
     const religions = [...baseReligions, ...heresies];
+    for (const r of religions) {
+      if (r) r.tags = r.tags ?? [];
+    }
     this.expandHeresies(religions, religionIds, heresies);
 
     pack.religions = religions;
@@ -1001,7 +1005,8 @@ class ReligionsModule {
       rural: 0,
       urban: 0,
       origins: [parent.i],
-      code: abbreviate(name, codes)
+      code: abbreviate(name, codes),
+      tags: []
     };
   }
 
@@ -1451,7 +1456,8 @@ class ReligionsModule {
       rural: 0,
       urban: 0,
       origins,
-      code
+      code,
+      tags: []
     });
     cells.religion[center] = i;
     return i;

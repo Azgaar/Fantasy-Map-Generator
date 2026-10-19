@@ -14,6 +14,7 @@ import {
 import { Layers } from "@/components/layers";
 import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
+import { Tags } from "@/generators/tags";
 import { getRiverBox, toggleBasinHighlight } from "@/renderers/draw-rivers";
 import { highlightArea } from "@/renderers/overlays/highlight";
 import { downloadFile, getFileName } from "@/utils";
@@ -71,6 +72,14 @@ const columns: EditorColumn<River>[] = [
     sortBy: river => pack.rivers.find(({ i }) => i === river.basin)?.name || "",
     sortType: "alpha"
   },
+  {
+    key: "tags",
+    label: t("Tags"),
+    width: "10em",
+    hidden: true,
+    sortBy: river => Tags.format(river.tags),
+    sortType: "alpha"
+  },
   { key: "edit", width: "1.1em" },
   { key: "remove", width: "1.4em", permanent: true }
 ];
@@ -84,11 +93,9 @@ function getFilteredRivers(riversById: Map<number, River>): River[] {
   if (!searchText) return pack.rivers.slice();
 
   return pack.rivers.filter((r: River) => {
-    const name = (r.name || "").toLowerCase();
-    const type = (r.type || "").toLowerCase();
     const basin = riversById.get(r.basin);
-    const basinName = basin ? (basin.name || "").toLowerCase() : "";
-    return name.includes(searchText) || type.includes(searchText) || basinName.includes(searchText);
+    const basinName = basin ? basin.name || "" : "";
+    return Tags.matches(searchText, r.name, r.tags, [r.type, basinName]);
   });
 }
 
@@ -125,7 +132,7 @@ function renderDialog(): void {
   const html = /* html */ `<div id="riversOverview" class="dialog stable editorDialog">
     <div id="riversBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
     <div id="riversFilters" class="editorFilters">
-      <label for="riversSearch" data-tip="${t("Filter by name, type or basin")}">${t("Search")}: <input id="riversSearch" type="search" /></label>
+      <label for="riversSearch" data-tip="${t("Filter by name, type, basin, or tag")}">${t("Search")}: <input id="riversSearch" type="search" /></label>
     </div>
     <div id="riversFooter" class="totalLine">
       <div data-tip="${t("Rivers number")}" style="margin-left: 4px">${t("Rivers")}:&nbsp;<span id="riversFooterNumber">0</span></div>
@@ -213,6 +220,16 @@ function renderRiversPage(view: TableView<River>): void {
         <div data-tip="${t("River length from source to mouth")}" data-col="length">${length}</div>
         <div data-tip="${t("River mouth width")}" data-col="width">${width}</div>
         <input data-tip="${t("River basin (name of the main stem)")}" class="stateName" value="${basin}" disabled data-col="basin" />
+        <div data-col="tags">
+          <input
+            data-tip="${t("Tags (comma-separated)")}"
+            class="riverTags"
+            value="${Tags.format(r.tags)}"
+            placeholder="${t("Tags")}"
+            autocorrect="off"
+            spellcheck="false"
+          />
+        </div>
         <span data-col="edit" data-tip="${t("Edit River")}" class="icon-pencil"></span>
         <span data-col="remove" data-tip="${t("Remove")}" class="icon-trash-empty"></span>
       </div>`;
@@ -239,11 +256,23 @@ function renderRiversPage(view: TableView<River>): void {
     .forEach(el => void el.addEventListener("mouseleave", (ev: Event) => riverHighlightOff(ev)));
   body.querySelectorAll("div > span.icon-target").forEach(el => void el.addEventListener("click", zoomToRiver));
   body.querySelectorAll("div > span.icon-pencil").forEach(el => void el.addEventListener("click", openRiverEditor));
+  body.querySelectorAll("input.riverTags").forEach(el => void el.addEventListener("change", riverChangeTags));
   body
     .querySelectorAll("div > span.icon-trash-empty")
     .forEach(el => void el.addEventListener("click", triggerRiverRemove));
 
   renderEditorPagination(ensureEl("riversFooter"), view, riversTable.goto);
+}
+
+function riverChangeTags(this: HTMLInputElement): void {
+  const line = this.closest(".states") as HTMLElement;
+  const riverId = Number(line.dataset.id);
+  const river = pack.rivers.find(r => r.i === riverId);
+  if (!river) return;
+
+  Tags.set(river, this.value);
+  this.value = Tags.format(river.tags);
+  if (filterState.search) riversTable.refresh();
 }
 
 function riverHighlightOn(event: Event): void {
@@ -264,7 +293,7 @@ function zoomToRiver(this: HTMLElement): void {
 }
 
 function downloadRiversData(): void {
-  let data = "Id,River,Type,Discharge,Length,Width,Basin\n"; // headers
+  let data = "Id,River,Type,Discharge,Length,Width,Basin,Tags\n"; // headers
 
   const riversById = getRiversById();
   const exported = riversTable.view().all;
@@ -274,7 +303,7 @@ function downloadRiversData(): void {
     const length = `${rn(r.length * options.map.units.distance.scale)} ${options.map.units.distance.unit}`;
     const width = `${rn(r.width * options.map.units.distance.scale, 3)} ${options.map.units.distance.unit}`;
     const basin = riversById.get(r.basin)?.name || "";
-    data += `${[r.i, r.name, r.type, discharge, length, width, basin].join(",")}\n`;
+    data += `${[r.i, r.name, r.type, discharge, length, width, basin, `"${Tags.format(r.tags)}"`].join(",")}\n`;
   });
 
   const name = `${getFileName("Rivers")}.csv`;

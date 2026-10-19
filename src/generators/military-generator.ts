@@ -32,6 +32,7 @@ export interface Regiment {
   py?: number;
   note?: string;
   hidden?: boolean;
+  tags?: string[];
 }
 
 interface Platoon {
@@ -436,7 +437,8 @@ class MilitaryModule {
             n: r.n,
             name: "",
             icon: "",
-            state: s.i
+            state: s.i,
+            tags: []
           };
         });
 
@@ -595,7 +597,8 @@ class MilitaryModule {
       name: "",
       t: 0,
       s: 0,
-      type: ""
+      type: "",
+      tags: []
     };
     regiment.name = this.getName(regiment, military);
     military.push(regiment);
@@ -697,7 +700,8 @@ class MilitaryModule {
       name: "",
       t: 0,
       s: 0,
-      type: regiment.type
+      type: regiment.type,
+      tags: [...(regiment.tags ?? [])]
     };
     added.name = this.getName(added, military);
     military.push(added);

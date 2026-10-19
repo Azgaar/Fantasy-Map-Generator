@@ -23,12 +23,13 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { Tags } from "@/generators/tags";
 import { goodBadge } from "@/renderers/draw-goods";
 import { downloadFile, getFileName, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import type { Good } from "../generators/goods-generator";
 import { isDealRecord, isMfgRecord } from "../generators/production-generator";
-import { ensureEl, getPointer, unique } from "../utils";
+import { ensureEl, getPointer } from "../utils";
 
 let production: ReturnType<typeof getProduction> = {};
 let stockData: ReturnType<typeof getAllStockData> = {};
@@ -474,7 +475,7 @@ function getProduction() {
 }
 
 function openTagsVisibilityDialog() {
-  const tags = unique(pack.goods.flatMap(good => good.tags));
+  const tags = Tags.all(pack.goods);
   const renderTag = (tag: string) =>
     `<label style="display: flex; align-items: center;"><input type="checkbox" class="native" value="${tag}" ${filterState.visibleTags.includes(tag) ? "checked" : ""} /> ${tag}</label>`;
   const tagsMarkup = tags.length

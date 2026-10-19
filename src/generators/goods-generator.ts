@@ -1,6 +1,7 @@
 import Alea from "alea";
 import { color, shuffler } from "d3";
 import { Icons } from "@/components/icons";
+import { Tags } from "@/generators/tags";
 import { requireColor } from "@/utils/colorUtils";
 import { requireName } from "@/utils/validationUtils";
 import type { IconSet } from "../types/icons";
@@ -1149,7 +1150,7 @@ export class GoodsModule {
   /** Set a good's tags, such as "food, luxury" */
   setTags(goodId: number, tags: string[]): void {
     if (!Array.isArray(tags) || tags.some(tag => typeof tag !== "string")) throw new Error("Tags are a list of words");
-    this.living(goodId).tags = [...new Set(tags.map(tag => tag.trim().toLocaleLowerCase()).filter(Boolean))];
+    Tags.set(this.living(goodId), tags);
   }
 
   /** Set how a good is produced: chance (0–100), recipes ([{ goodId: amount }]), biomeOutput ({ biomeId: amount }), multipliers ({ cultureType | culture | state | religion | biome | zone: { key: factor } }), demandCoverage ({ category: share }). A key set to null clears it. Takes effect on the next economy run */

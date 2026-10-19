@@ -5,6 +5,7 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { Tags } from "@/generators/tags";
 import {
   drawRegiment,
   getRegimentWidth,
@@ -71,6 +72,16 @@ function renderDialog(): void {
         <div id="regimentIcon" translate="no" style="font-size: 1.5em; width: 3.7em; display: flex"></div>
         <button id="regimentIconChange" style="padding: 0; width: 4.5em">${t("Change")}</button>
       </div>
+      <div data-tip="${t("Regiment tags (comma-separated)")}">
+        <div class="label">${t("Tags")}:</div>
+        <input
+          id="regimentTags"
+          placeholder="${t("Tags")}"
+          autocorrect="off"
+          spellcheck="false"
+          style="width: 13em"
+        />
+      </div>
       <div id="regimentComposition" class="table"></div>
     </div>
     <div id="regimentBottom">
@@ -103,6 +114,7 @@ function renderDialog(): void {
   ensureEl("regimentType").addEventListener("click", changeType);
   ensureEl("regimentName").addEventListener("change", changeName);
   ensureEl("regimentIconChange").addEventListener("click", changeIcon);
+  ensureEl("regimentTags").addEventListener("change", changeTags);
   ensureEl("regimentAttack").addEventListener("click", toggleAttack);
   ensureEl("regimentToggleVisibility").addEventListener("click", toggleVisibility);
   ensureEl("regimentRegenerateLegend").addEventListener("click", regenerateLegend);
@@ -122,6 +134,7 @@ function updateRegimentData(regiment: Regiment): void {
   ensureEl("regimentType").className = regiment.n ? "icon-anchor" : "icon-users";
   ensureEl<HTMLInputElement>("regimentName").value = regiment.name;
   ensureEl("regimentIcon").innerHTML = Icons.html(regiment.icon ?? "");
+  ensureEl<HTMLInputElement>("regimentTags").value = Tags.format(regiment.tags);
   ensureEl("regimentToggleVisibility").className = regiment.hidden ? "icon-eye-off" : "icon-eye";
 
   const composition = ensureEl("regimentComposition");
@@ -282,6 +295,13 @@ function changeName(this: HTMLInputElement): void {
   Military.rename(reg.state, reg.i, this.value);
   selectedRegiment.dataset.name = reg.name;
   updateRegimentElement(reg, selectedRegiment);
+}
+
+function changeTags(this: HTMLInputElement): void {
+  const reg = getRegiment();
+  if (!reg) return;
+  Tags.set(reg, this.value);
+  this.value = Tags.format(reg.tags);
 }
 
 function restoreName(): void {

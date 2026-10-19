@@ -27,6 +27,7 @@ export interface River {
   points?: Point[]; // river points (for meandering)
   label?: Label;
   note?: string;
+  tags?: string[];
 }
 
 class RiverModule {
@@ -179,7 +180,8 @@ class RiverModule {
         cells: riverCells,
         basin,
         name,
-        type
+        type,
+        tags: []
       });
     }
 
@@ -375,7 +377,8 @@ class RiverModule {
           widthFactor,
           sourceWidth,
           parent,
-          cells: riverCells
+          cells: riverCells,
+          tags: []
         } as River);
       }
     };
@@ -700,7 +703,8 @@ class RiverModule {
       cells: cellIds,
       basin: this.getBasin(parent),
       name: this.getName(mouth),
-      type: "River"
+      type: "River",
+      tags: []
     } as River;
     this.updateWidth(river);
     rivers.push(river);

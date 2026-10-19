@@ -4,6 +4,7 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
+import { Tags } from "@/generators/tags";
 import { redrawRoute as redrawRouteShape, setEditedRoute } from "@/renderers/draw-routes";
 import { speak } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
@@ -72,6 +73,15 @@ function renderDialog(): void {
         <span id="routeGroupEdit" data-tip="${t("Edit route groups")}" class="icon-pencil pointer"></span>
         <span id="routeEditStyle" data-tip="${t("Edit style")}" class="icon-brush pointer"></span>
       </div>
+      <div data-tip="${t("Route tags (comma-separated)")}">
+        <div class="label">${t("Tags")}:</div>
+        <input
+          id="routeTags"
+          placeholder="${t("Tags")}"
+          autocorrect="off"
+          spellcheck="false"
+        />
+      </div>
       <div data-tip="${t("Route length in selected units")}">
         <div class="label">${t("Length")}:</div>
         <input id="routeLength" disabled />
@@ -100,6 +110,7 @@ function renderDialog(): void {
   ensureEl("routeName").addEventListener("input", changeName);
   ensureEl("routeNameSpeak").addEventListener("click", () => speak(ensureEl<HTMLInputElement>("routeName").value));
   ensureEl("routeGroup").addEventListener("input", changeGroup);
+  ensureEl("routeTags").addEventListener("change", changeTags);
   ensureEl("routeGroupEdit").addEventListener("click", openRouteGroupsEditor);
   ensureEl("routeEditStyle").addEventListener("click", editRouteGroupStyle);
   ensureEl("routeGenerateName").addEventListener("click", generateName);
@@ -117,6 +128,7 @@ function getRoute(): Route {
 function updateRouteData(route: Route): void {
   route.name = route.name || Routes.generateName(route) || UNNAMED_ROUTE;
   ensureEl<HTMLInputElement>("routeName").value = route.name;
+  ensureEl<HTMLInputElement>("routeTags").value = Tags.format(route.tags);
 
   const routeGroup = ensureEl<HTMLSelectElement>("routeGroup");
   routeGroup.options.length = 0;
@@ -369,6 +381,13 @@ function changeGroup(this: HTMLInputElement): void {
   Routes.setGroup(route.i, this.value);
   redrawRouteShape(route); // the path is re-created under the new group, so re-bind the editor to it
   selectedRoute = select<SVGElement, unknown>(`#route${route.i}`).on("click", addControlPoint);
+}
+
+function changeTags(this: HTMLInputElement): void {
+  const route = getRoute();
+  if (!route) return;
+  Tags.set(route, this.value);
+  this.value = Tags.format(route.tags);
 }
 
 function generateName(): void {

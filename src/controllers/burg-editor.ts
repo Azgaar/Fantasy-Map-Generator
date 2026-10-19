@@ -5,6 +5,7 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { Tags } from "@/generators/tags";
 import { removeEmblem } from "@/renderers/draw-emblems";
 import { goodIconLines } from "@/renderers/draw-goods";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
@@ -184,6 +185,16 @@ function renderDialog(): void {
               <div class="label"><label for="burgTreasury">${t("Treasury")}:</label></div>
               <input id="burgTreasury" type="number" step="0.01" style="width: 9em" /> 🟡
             </div>
+            <div data-tip="${t("Burg tags (comma-separated)")}">
+              <div class="label"><label for="burgTags">${t("Tags")}:</label></div>
+              <input
+                id="burgTags"
+                placeholder="${t("Tags")}"
+                autocorrect="off"
+                spellcheck="false"
+                style="width: 9em"
+              />
+            </div>
           </div>
         </div>
         <div id="burgPreviewSection" data-tip="${t("Burg map preview: scroll to zoom, drag to pan")}" style="display: flex; flex-direction: column">
@@ -251,6 +262,7 @@ function renderDialog(): void {
   ensureEl("burgNameReCulture").addEventListener("click", generateNameCulture);
   ensureEl("burgPopulation").addEventListener("change", changePopulation);
   ensureEl("burgTreasury").addEventListener("change", changeTreasury);
+  ensureEl("burgTags").addEventListener("change", changeTags);
   ensureEl("burgBody")
     .querySelectorAll<HTMLElement>(".burgFeature")
     .forEach(el => void el.addEventListener("click", toggleFeature));
@@ -306,6 +318,7 @@ function updateBurgValues(): void {
   );
   ensureEl("burgWealth").innerHTML = `🟡 ${rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2)}`;
   ensureEl<HTMLInputElement>("burgTreasury").value = String(rn(b.treasury || 0, 2));
+  ensureEl<HTMLInputElement>("burgTags").value = Tags.format(b.tags);
 
   // update list and select culture
   const cultureSelect = ensureEl<HTMLSelectElement>("burgCulture");
@@ -392,6 +405,14 @@ function changeTreasury(this: HTMLInputElement): void {
     tip(t("Enter a valid treasury amount"), false, "error");
   }
   this.value = String(rn(burg.treasury || 0, 2));
+}
+
+function changeTags(): void {
+  const burg = pack.burgs[getSelectedId()];
+  if (!burg) return;
+  const input = ensureEl<HTMLInputElement>("burgTags");
+  Tags.set(burg, input.value);
+  input.value = Tags.format(burg.tags);
 }
 
 function toggleFeature(this: HTMLElement): void {

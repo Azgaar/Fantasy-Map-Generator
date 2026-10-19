@@ -489,4 +489,40 @@ describe("StatesModule.tariffs", () => {
 
     expect(pack.states[1].tariffs).toEqual([{ states: "all", goods: "all", rate: 0.1 }]);
   });
+
+  it("setTags() sets normalized tags on a state", () => {
+    globalThis.pack = {
+      states: [
+        { i: 0, name: "Neutrals" },
+        { i: 1, name: "A", tags: [] }
+      ]
+    } as any;
+
+    States.setTags(1, "Coastal, TRADE, coastal, naval");
+    expect(pack.states[1].tags).toEqual(["coastal", "trade", "naval"]);
+
+    States.setTags(1, ["EMPIRE", "trade"]);
+    expect(pack.states[1].tags).toEqual(["empire", "trade"]);
+  });
+
+  it("merge() merges tags of merged states into ruling state", () => {
+    globalThis.pack = {
+      cells: { state: new Uint16Array(10), province: new Uint16Array(10) },
+      burgs: [],
+      provinces: [],
+      states: [
+        { i: 0, name: "Neutrals" },
+        { i: 1, name: "A", tags: ["coastal"] },
+        { i: 2, name: "B", tags: ["trade", "coastal"] },
+        { i: 3, name: "C", tags: ["empire"] }
+      ]
+    } as any;
+    vi.spyOn(States, "collectStatistics").mockImplementation(() => {});
+    vi.spyOn(States, "findNeighbors").mockImplementation(() => {});
+    vi.spyOn(States, "getPoles").mockImplementation(() => {});
+
+    States.merge(1, [2, 3]);
+
+    expect(pack.states[1].tags).toEqual(["coastal", "trade", "empire"]);
+  });
 });

@@ -377,7 +377,17 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         const mouth = Pack.findCell(e.x, e.y)!;
         const name = Rivers.getName(mouth);
         const type = length < 25 ? rw({ Creek: 9, River: 3, Brook: 3, Stream: 1 }) : "River";
-        pack.rivers.push({ i, parent: 0, length, source, mouth, basin: i, name, type } as (typeof pack.rivers)[number]);
+        pack.rivers.push({
+          i,
+          parent: 0,
+          length,
+          source,
+          mouth,
+          basin: i,
+          name,
+          type,
+          tags: []
+        } as (typeof pack.rivers)[number]);
       });
   }
 
@@ -981,7 +991,13 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         const feature = secondCellId === undefined ? undefined : pack.cells.f[secondCellId];
 
         if (node.id) noteRenames.set(node.id, `route${pack.routes.length}`);
-        pack.routes.push({ i: pack.routes.length, group, feature, points } as unknown as (typeof pack.routes)[number]);
+        pack.routes.push({
+          i: pack.routes.length,
+          group,
+          feature,
+          points,
+          tags: []
+        } as unknown as (typeof pack.routes)[number]);
       }
     }
     select("#routes").selectAll("path").remove();
@@ -1015,7 +1031,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         const type = this.dataset.type;
         const color = this.getAttribute("fill");
         const cells = this.dataset.cells!.split(",").map(Number);
-        pack.zones.push({ i, name, type, cells, color } as unknown as (typeof pack.zones)[number]);
+        pack.zones.push({ i, name, type, cells, color, tags: [] } as unknown as (typeof pack.zones)[number]);
       });
     select("#zones").style("display", null).selectAll("*").remove();
   }

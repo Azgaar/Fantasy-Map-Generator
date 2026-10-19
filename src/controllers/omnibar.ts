@@ -4,6 +4,7 @@ import { MAP_COMMANDS, type MapCommand } from "@/components/map-commands";
 import { ENTITY_TYPES, type EntityDisplay, type EntityTarget, MapEntities } from "@/components/map-entities";
 import { reveal, revealEntity } from "@/components/reveal";
 import { tip } from "@/components/tooltips";
+import { Tags } from "@/generators/tags";
 import { getLabelsIndex, type LabelIndexEntry } from "@/renderers/labels/label-data";
 import { findEl } from "@/utils";
 import { t } from "@/utils/i18n";
@@ -115,8 +116,10 @@ class OmnibarController {
         const key = MapEntities.key(ref);
         const display = MapEntities.getDisplay(ref);
         const name = MapEntities.getName(ref) || entity.name || "";
+        const tags = Tags.format(entity.tags);
+        const hashTags = (entity.tags || []).map(t => `#${t}`).join(" ");
         const context = [display.kind, MapEntities.getContext(ref)].filter(Boolean).join(" · ");
-        const alias = name ? `${entity.name || name} ${context}` : context;
+        const alias = [entity.name || name, context, tags, hashTags].filter(Boolean).join(" ");
         entities.set(key, {
           kind: "entity",
           id: `entity:${key}`,

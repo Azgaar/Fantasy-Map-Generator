@@ -15,6 +15,7 @@ import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Burg } from "@/generators/burgs-generator";
+import { Tags } from "@/generators/tags";
 import { removeEmblem } from "@/renderers/draw-emblems";
 import { downloadFile, getFileName, getHeight, getLatitude, getLongitude, uploadFile } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
@@ -111,6 +112,14 @@ const columns: EditorColumn<Burg>[] = [
     sortType: "alpha",
     sortBy: b => (b.capital && b.port ? "a-capital-port" : b.capital ? "c-capital" : b.port ? "p-port" : "z-burg")
   },
+  {
+    key: "tags",
+    label: t("Tags"),
+    width: "10em",
+    hidden: true,
+    sortBy: b => Tags.format(b.tags),
+    sortType: "alpha"
+  },
   { key: "edit", width: "1.1em" },
   { key: "lock", width: "1.1em" },
   { key: "remove", width: "1.4em", permanent: true }
@@ -148,7 +157,7 @@ function renderDialog(): void {
   const HTML = /* html */ `<div id="burgsOverview" class="dialog stable editorDialog">
       <div id="burgsBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
       <div id="burgsFilters" data-tip="${t("Apply a filter")}" class="editorFilters">
-        <label for="burgsSearch" data-tip="${t("Filter by name, province, state, culture, or group")}"
+        <label for="burgsSearch" data-tip="${t("Filter by name, province, state, culture, group, or tag")}"
           >${t("Search")}: <input id="burgsSearch" type="search"
         /></label>
         <label for="burgsFilterState"
@@ -283,18 +292,11 @@ function getFilteredBurgs(): Burg[] {
   if (searchText) {
     // filter by search text
     filtered = filtered.filter(b => {
-      const name = b.name!.toLowerCase();
-      const state = (pack.states[b.state!]?.name || "").toLowerCase();
+      const state = pack.states[b.state!]?.name || "";
       const prov = pack.cells.province[b.cell];
-      const province = prov ? pack.provinces[prov]?.name.toLowerCase() : "";
-      const culture = (pack.cultures[b.culture!]?.name || "").toLowerCase();
-      return (
-        name.includes(searchText) ||
-        state.includes(searchText) ||
-        province.includes(searchText) ||
-        culture.includes(searchText) ||
-        b.group!.toLowerCase().includes(searchText)
-      );
+      const province = prov ? pack.provinces[prov]?.name || "" : "";
+      const culture = pack.cultures[b.culture!]?.name || "";
+      return Tags.matches(searchText, b.name, b.tags, [state, province, culture, b.group]);
     });
   }
   if (filterState.stateId !== -1) filtered = filtered.filter(b => b.state === filterState.stateId); // filtered by state
@@ -383,6 +385,16 @@ function renderBurgsPage(view: TableView<Burg>): void {
           <span data-tip="${b.port ? t("This burg is a port") : t("This burg is NOT a port")}"
           class="icon-anchor${b.port ? "" : " inactive"}" style="font-size: .9em; padding: 0 1px;"></span>
         </div>
+        <div data-col="tags">
+          <input
+            data-tip="${t("Tags (comma-separated)")}"
+            class="burgTags"
+            value="${Tags.format(b.tags)}"
+            placeholder="${t("Tags")}"
+            autocorrect="off"
+            spellcheck="false"
+          />
+        </div>
         <span data-col="edit" data-tip="${t("Edit Burg")}" class="icon-pencil"></span>
         <span data-col="lock" class="locks pointer ${
           b.lock ? "icon-lock" : "icon-lock-open inactive"
@@ -408,9 +420,21 @@ function renderBurgsPage(view: TableView<Burg>): void {
   body.querySelectorAll("div > span.icon-dot-circled").forEach(el => void el.addEventListener("click", zoomIntoBurg));
   body.querySelectorAll("div > span.locks").forEach(el => void el.addEventListener("click", toggleBurgLockStatus));
   body.querySelectorAll("div > span.icon-pencil").forEach(el => void el.addEventListener("click", openBurgEditor));
+  body.querySelectorAll("div > input.burgTags").forEach(el => void el.addEventListener("change", burgChangeTags));
   body
     .querySelectorAll("div > span.icon-trash-empty")
     .forEach(el => void el.addEventListener("click", triggerBurgRemove));
+}
+
+function burgChangeTags(this: HTMLInputElement): void {
+  const line = this.closest(".states") as HTMLElement;
+  const burgId = Number(line.dataset.id);
+  const burg = pack.burgs[burgId];
+  if (!burg) return;
+
+  Tags.set(burg, this.value);
+  this.value = Tags.format(burg.tags);
+  if (filterState.search) burgsTable.refresh();
 }
 
 function burgHighlightOn(event: Event): void {
@@ -669,7 +693,7 @@ function showBurgsChart(): void {
 }
 
 function downloadBurgsData(): void {
-  let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Group,Population,X,Y,Latitude,Longitude,Elevation (${options.map.units.height.unit}),Temperature,Temperature likeness,Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town,Emblem,Preview link\n`; // headers
+  let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Group,Population,X,Y,Latitude,Longitude,Elevation (${options.map.units.height.unit}),Temperature,Temperature likeness,Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town,Emblem,Preview link,Tags\n`; // headers
   const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
 
   valid.forEach(b => {
@@ -704,9 +728,8 @@ function downloadBurgsData(): void {
     data += b.temple ? "temple," : ",";
     data += b.shanty ? "shanty town," : ",";
     data += b.coa ? `${JSON.stringify(b.coa).replace(/"/g, "").replace(/,/g, ";")},` : ",";
-    data += Burgs.getPreview(b).link;
-
-    data += "\n";
+    data += `${Burgs.getPreview(b).link},`;
+    data += `"${Tags.format(b.tags)}"\n`;
   });
 
   const name = `${getFileName("Burgs")}.csv`;

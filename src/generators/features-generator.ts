@@ -14,6 +14,7 @@ export type FeatureType = "ocean" | "lake" | "island";
 export interface CapturedFeature {
   name: string;
   note?: string;
+  tags?: string[];
   type: FeatureType;
   gridCells: Set<number>;
   coastline?: CoastlineSettings;
@@ -47,6 +48,7 @@ export interface Feature {
   outCell?: number;
 
   note?: string;
+  tags?: string[];
 }
 
 export interface GridFeature {
@@ -252,7 +254,8 @@ class FeatureModule {
       }
 
       return {
-        ...feature
+        ...feature,
+        tags: []
       } as Feature;
     };
 
@@ -336,11 +339,11 @@ class FeatureModule {
 
     const captured: CapturedFeature[] = [];
     for (const feature of pack.features) {
-      if (!feature?.i || (!feature.name && !feature.note && !feature.coastline)) continue;
+      if (!feature?.i || (!feature.name && !feature.note && !feature.coastline && !feature.tags?.length)) continue;
       const gridCells = gridCellsByFeature.get(feature.i);
       if (!gridCells?.size) continue;
-      const { name, note, type, coastline } = feature;
-      captured.push({ name, note, type, gridCells, coastline });
+      const { name, note, type, coastline, tags } = feature;
+      captured.push({ name, note, type, gridCells, coastline, tags });
     }
 
     return captured;
@@ -384,10 +387,11 @@ class FeatureModule {
 
       takenFeatures.add(featureId);
       takenCaptures.add(index);
-      const { name, note, coastline } = captured[index];
+      const { name, note, coastline, tags } = captured[index];
       if (name) feature.name = name;
       if (note) feature.note = note;
       if (coastline) feature.coastline = coastline;
+      if (tags) feature.tags = [...tags];
     }
   }
 
