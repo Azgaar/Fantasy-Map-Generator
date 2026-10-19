@@ -3471,5 +3471,22 @@
   "Select at least one state": "少なくとも1つの国家を選択してください",
   "Tariff": "関税",
   "Tariffs": "関税",
-  "Tariffs and Embargoes": "関税と禁輸"
+  "Tariffs and Embargoes": "関税と禁輸",
+  "Adjust height multiplier for population bars": "人口バーの高さ倍率を調整",
+  "Bar height": "バーの高さ",
+  "Decoration": "装飾",
+  "Display regiment names below units": "部隊の下に連隊名を表示",
+  "Draw directional arrow markers on journey paths": "旅の経路に方向を示す矢印を描画",
+  "Edit segment note": "区間のメモを編集",
+  "Filter by name or type": "名前または種類で絞り込み",
+  "Marker name": "マーカー名",
+  "Render cell ID numbers at cell centers": "セルの中心にセルID番号を描画",
+  "Segment": "区間",
+  "Shift+Click to remove without confirmation": "Shift + クリックで確認なしに削除",
+  "Show arrows": "矢印を表示",
+  "Show indexes": "インデックスを表示",
+  "Show names": "名前を表示",
+  "Toggle regiment visibility on the map": "地図上の連隊の表示を切り替え",
+  "Toggle visibility": "表示を切り替え",
+  "locked": "ロック中"
 }

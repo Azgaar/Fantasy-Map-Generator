@@ -3471,5 +3471,22 @@
   "Select at least one state": "เลือกรัฐอย่างน้อยหนึ่งรัฐ",
   "Tariff": "ภาษีศุลกากร",
   "Tariffs": "ภาษีศุลกากร",
-  "Tariffs and Embargoes": "ภาษีศุลกากรและการคว่ำบาตร"
+  "Tariffs and Embargoes": "ภาษีศุลกากรและการคว่ำบาตร",
+  "Adjust height multiplier for population bars": "ปรับตัวคูณความสูงสำหรับแท่งประชากร",
+  "Bar height": "ความสูงแท่ง",
+  "Decoration": "การตกแต่ง",
+  "Display regiment names below units": "แสดงชื่อกรมใต้หน่วย",
+  "Draw directional arrow markers on journey paths": "วาดลูกศรบอกทิศทางบนเส้นทางการเดินทาง",
+  "Edit segment note": "แก้ไขบันทึกช่วง",
+  "Filter by name or type": "กรองตามชื่อหรือประเภท",
+  "Marker name": "ชื่อเครื่องหมาย",
+  "Render cell ID numbers at cell centers": "เรนเดอร์หมายเลข ID เซลล์ที่กึ่งกลางเซลล์",
+  "Segment": "ช่วง",
+  "Shift+Click to remove without confirmation": "คลิกพร้อมกด Shift เพื่อลบโดยไม่ต้องยืนยัน",
+  "Show arrows": "แสดงลูกศร",
+  "Show indexes": "แสดงดัชนี",
+  "Show names": "แสดงชื่อ",
+  "Toggle regiment visibility on the map": "สลับการแสดงกรมบนแผนที่",
+  "Toggle visibility": "สลับการแสดง",
+  "locked": "ล็อกอยู่"
 }

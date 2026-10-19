@@ -3471,5 +3471,22 @@
   "Select at least one state": "Chọn ít nhất một bang",
   "Tariff": "Thuế quan",
   "Tariffs": "Thuế quan",
-  "Tariffs and Embargoes": "Thuế quan và cấm vận"
+  "Tariffs and Embargoes": "Thuế quan và cấm vận",
+  "Adjust height multiplier for population bars": "Điều chỉnh hệ số chiều cao cho các thanh dân số",
+  "Bar height": "Chiều cao thanh",
+  "Decoration": "Trang trí",
+  "Display regiment names below units": "Hiển thị tên trung đoàn bên dưới các đơn vị",
+  "Draw directional arrow markers on journey paths": "Vẽ mũi tên chỉ hướng trên đường hành trình",
+  "Edit segment note": "Sửa ghi chú chặng",
+  "Filter by name or type": "Lọc theo tên hoặc loại",
+  "Marker name": "Tên điểm đánh dấu",
+  "Render cell ID numbers at cell centers": "Kết xuất số ID ô tại tâm ô",
+  "Segment": "Chặng",
+  "Shift+Click to remove without confirmation": "Shift + nhấp để xóa không cần xác nhận",
+  "Show arrows": "Hiện mũi tên",
+  "Show indexes": "Hiện chỉ số",
+  "Show names": "Hiện tên",
+  "Toggle regiment visibility on the map": "Bật/tắt hiển thị trung đoàn trên bản đồ",
+  "Toggle visibility": "Bật/tắt hiển thị",
+  "locked": "đã khóa"
 }

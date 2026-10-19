@@ -3471,5 +3471,22 @@
   "Select at least one state": "至少选择一个国家",
   "Tariff": "关税",
   "Tariffs": "关税",
-  "Tariffs and Embargoes": "关税与禁运"
+  "Tariffs and Embargoes": "关税与禁运",
+  "Adjust height multiplier for population bars": "调整人口柱的高度倍数",
+  "Bar height": "柱高",
+  "Decoration": "装饰",
+  "Display regiment names below units": "在单位下方显示团名称",
+  "Draw directional arrow markers on journey paths": "在旅程路径上绘制方向箭头标记",
+  "Edit segment note": "编辑路段注释",
+  "Filter by name or type": "按名称或类型筛选",
+  "Marker name": "标记名称",
+  "Render cell ID numbers at cell centers": "在单元格中心渲染单元格ID编号",
+  "Segment": "路段",
+  "Shift+Click to remove without confirmation": "按住 Shift 点击无需确认即可删除",
+  "Show arrows": "显示箭头",
+  "Show indexes": "显示索引",
+  "Show names": "显示名称",
+  "Toggle regiment visibility on the map": "切换地图上团的可见性",
+  "Toggle visibility": "切换可见性",
+  "locked": "已锁定"
 }

@@ -3471,5 +3471,22 @@
   "Select at least one state": "Selecciona al menos un estado",
   "Tariff": "Arancel",
   "Tariffs": "Aranceles",
-  "Tariffs and Embargoes": "Aranceles y embargos"
+  "Tariffs and Embargoes": "Aranceles y embargos",
+  "Adjust height multiplier for population bars": "Ajustar el multiplicador de altura de las barras de población",
+  "Bar height": "Altura de la barra",
+  "Decoration": "Decoración",
+  "Display regiment names below units": "Mostrar los nombres de los regimientos debajo de las unidades",
+  "Draw directional arrow markers on journey paths": "Dibujar flechas de dirección en los caminos del viaje",
+  "Edit segment note": "Editar la nota del tramo",
+  "Filter by name or type": "Filtrar por nombre o tipo",
+  "Marker name": "Nombre del marcador",
+  "Render cell ID numbers at cell centers": "Renderizar los números de ID de celda en sus centros",
+  "Segment": "Tramo",
+  "Shift+Click to remove without confirmation": "Mayús + clic para eliminar sin confirmación",
+  "Show arrows": "Mostrar flechas",
+  "Show indexes": "Mostrar índices",
+  "Show names": "Mostrar nombres",
+  "Toggle regiment visibility on the map": "Mostrar u ocultar el regimiento en el mapa",
+  "Toggle visibility": "Mostrar u ocultar",
+  "locked": "bloqueado"
 }

@@ -3471,5 +3471,22 @@
   "Select at least one state": "Seleziona almeno uno stato",
   "Tariff": "Dazio",
   "Tariffs": "Dazi",
-  "Tariffs and Embargoes": "Dazi ed embarghi"
+  "Tariffs and Embargoes": "Dazi ed embarghi",
+  "Adjust height multiplier for population bars": "Regola il moltiplicatore di altezza per le barre della popolazione",
+  "Bar height": "Altezza della barra",
+  "Decoration": "Decorazione",
+  "Display regiment names below units": "Mostra i nomi dei reggimenti sotto le unità",
+  "Draw directional arrow markers on journey paths": "Disegna frecce direzionali sui percorsi del viaggio",
+  "Edit segment note": "Modifica la nota del segmento",
+  "Filter by name or type": "Filtra per nome o tipo",
+  "Marker name": "Nome del segnaposto",
+  "Render cell ID numbers at cell centers": "Mostra i numeri ID delle celle al loro centro",
+  "Segment": "Segmento",
+  "Shift+Click to remove without confirmation": "Maiusc + clic per rimuovere senza conferma",
+  "Show arrows": "Mostra frecce",
+  "Show indexes": "Mostra indici",
+  "Show names": "Mostra nomi",
+  "Toggle regiment visibility on the map": "Attiva/disattiva la visibilità del reggimento sulla mappa",
+  "Toggle visibility": "Attiva/disattiva la visibilità",
+  "locked": "bloccato"
 }

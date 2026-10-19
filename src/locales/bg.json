@@ -3471,5 +3471,22 @@
   "Select at least one state": "Изберете поне една държава",
   "Tariff": "Мито",
   "Tariffs": "Мита",
-  "Tariffs and Embargoes": "Мита и ембарго"
+  "Tariffs and Embargoes": "Мита и ембарго",
+  "Adjust height multiplier for population bars": "Регулиране на множителя за височина на лентите на населението",
+  "Bar height": "Височина на лентата",
+  "Decoration": "Декорация",
+  "Display regiment names below units": "Показване на имената на полковете под единиците",
+  "Draw directional arrow markers on journey paths": "Рисуване на стрелки за посока по пътищата на пътуването",
+  "Edit segment note": "Редактиране на бележката за отсечката",
+  "Filter by name or type": "Филтриране по име или вид",
+  "Marker name": "Име на маркера",
+  "Render cell ID numbers at cell centers": "Изобразяване на номерата на клетките в техните центрове",
+  "Segment": "Отсечка",
+  "Shift+Click to remove without confirmation": "Shift + щракване за премахване без потвърждение",
+  "Show arrows": "Показване на стрелки",
+  "Show indexes": "Показване на индекси",
+  "Show names": "Показване на имена",
+  "Toggle regiment visibility on the map": "Превключване на видимостта на полка на картата",
+  "Toggle visibility": "Превключване на видимостта",
+  "locked": "заключено"
 }

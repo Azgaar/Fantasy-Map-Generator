@@ -3471,5 +3471,22 @@
   "Select at least one state": "Válasszon ki legalább egy államot",
   "Tariff": "Vám",
   "Tariffs": "Vámok",
-  "Tariffs and Embargoes": "Vámok és embargók"
+  "Tariffs and Embargoes": "Vámok és embargók",
+  "Adjust height multiplier for population bars": "A népességoszlopok magassági szorzójának beállítása",
+  "Bar height": "Oszlopmagasság",
+  "Decoration": "Díszítés",
+  "Display regiment names below units": "Ezrednevek megjelenítése az egységek alatt",
+  "Draw directional arrow markers on journey paths": "Irányjelző nyilak rajzolása az utazási útvonalakon",
+  "Edit segment note": "Szakasz jegyzetének szerkesztése",
+  "Filter by name or type": "Szűrés név vagy típus szerint",
+  "Marker name": "Jelölő neve",
+  "Render cell ID numbers at cell centers": "A cellaazonosítók megjelenítése a cellaközéppontokban",
+  "Segment": "Szakasz",
+  "Shift+Click to remove without confirmation": "Shift + kattintás az eltávolításhoz megerősítés nélkül",
+  "Show arrows": "Nyilak megjelenítése",
+  "Show indexes": "Indexek megjelenítése",
+  "Show names": "Nevek megjelenítése",
+  "Toggle regiment visibility on the map": "Ezred láthatóságának váltása a térképen",
+  "Toggle visibility": "Láthatóság váltása",
+  "locked": "zárolva"
 }

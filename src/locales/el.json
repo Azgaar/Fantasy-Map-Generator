@@ -3471,5 +3471,22 @@
   "Select at least one state": "Επιλέξτε τουλάχιστον ένα κράτος",
   "Tariff": "Δασμός",
   "Tariffs": "Δασμοί",
-  "Tariffs and Embargoes": "Δασμοί και εμπάργκο"
+  "Tariffs and Embargoes": "Δασμοί και εμπάργκο",
+  "Adjust height multiplier for population bars": "Προσαρμογή πολλαπλασιαστή ύψους για τις ράβδους πληθυσμού",
+  "Bar height": "Ύψος ράβδου",
+  "Decoration": "Διακόσμηση",
+  "Display regiment names below units": "Εμφάνιση ονομάτων συνταγμάτων κάτω από τις μονάδες",
+  "Draw directional arrow markers on journey paths": "Σχεδίαση βελών κατεύθυνσης στις διαδρομές ταξιδιού",
+  "Edit segment note": "Επεξεργασία σημείωσης τμήματος",
+  "Filter by name or type": "Φιλτράρισμα κατά όνομα ή τύπο",
+  "Marker name": "Όνομα σημείου",
+  "Render cell ID numbers at cell centers": "Σχεδίαση αριθμών ID κελιών στα κέντρα των κελιών",
+  "Segment": "Τμήμα",
+  "Shift+Click to remove without confirmation": "Shift-κλικ για αφαίρεση χωρίς επιβεβαίωση",
+  "Show arrows": "Εμφάνιση βελών",
+  "Show indexes": "Εμφάνιση δεικτών",
+  "Show names": "Εμφάνιση ονομάτων",
+  "Toggle regiment visibility on the map": "Εναλλαγή ορατότητας συντάγματος στον χάρτη",
+  "Toggle visibility": "Εναλλαγή ορατότητας",
+  "locked": "κλειδωμένο"
 }

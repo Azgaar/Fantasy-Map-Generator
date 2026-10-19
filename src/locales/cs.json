@@ -3471,5 +3471,22 @@
   "Select at least one state": "Vyberte alespoň jeden stát",
   "Tariff": "Clo",
   "Tariffs": "Cla",
-  "Tariffs and Embargoes": "Cla a embarga"
+  "Tariffs and Embargoes": "Cla a embarga",
+  "Adjust height multiplier for population bars": "Upravit násobitel výšky pruhů populace",
+  "Bar height": "Výška pruhu",
+  "Decoration": "Dekorace",
+  "Display regiment names below units": "Zobrazit názvy pluků pod jednotkami",
+  "Draw directional arrow markers on journey paths": "Kreslit směrové šipky na trasách cesty",
+  "Edit segment note": "Upravit poznámku úseku",
+  "Filter by name or type": "Filtrovat podle názvu nebo typu",
+  "Marker name": "Název značky",
+  "Render cell ID numbers at cell centers": "Vykreslit ID čísla buněk v jejich středech",
+  "Segment": "Úsek",
+  "Shift+Click to remove without confirmation": "Shift + klik — odebrat bez potvrzení",
+  "Show arrows": "Zobrazit šipky",
+  "Show indexes": "Zobrazit indexy",
+  "Show names": "Zobrazit názvy",
+  "Toggle regiment visibility on the map": "Přepnout viditelnost pluku na mapě",
+  "Toggle visibility": "Přepnout viditelnost",
+  "locked": "zamčeno"
 }

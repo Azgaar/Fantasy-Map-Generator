@@ -3471,5 +3471,22 @@
   "Select at least one state": "Välj minst en stat",
   "Tariff": "Tull",
   "Tariffs": "Tullar",
-  "Tariffs and Embargoes": "Tullar och embargon"
+  "Tariffs and Embargoes": "Tullar och embargon",
+  "Adjust height multiplier for population bars": "Justera höjdmulltiplikator för befolkningsstaplar",
+  "Bar height": "Stapelhöjd",
+  "Decoration": "Dekoration",
+  "Display regiment names below units": "Visa regementsnamn under enheter",
+  "Draw directional arrow markers on journey paths": "Rita riktningspilar på resvägar",
+  "Edit segment note": "Redigera etappanteckning",
+  "Filter by name or type": "Filtrera efter namn eller typ",
+  "Marker name": "Markörens namn",
+  "Render cell ID numbers at cell centers": "Rendera cellernas id-nummer i mitten av cellerna",
+  "Segment": "Etapp",
+  "Shift+Click to remove without confirmation": "Shift-klick för att ta bort utan bekräftelse",
+  "Show arrows": "Visa pilar",
+  "Show indexes": "Visa index",
+  "Show names": "Visa namn",
+  "Toggle regiment visibility on the map": "Visa/dölj regemente på kartan",
+  "Toggle visibility": "Visa/dölj",
+  "locked": "låst"
 }

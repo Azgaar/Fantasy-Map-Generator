@@ -3471,5 +3471,22 @@
   "Select at least one state": "Виберіть хоча б одну державу",
   "Tariff": "Тариф",
   "Tariffs": "Тарифи",
-  "Tariffs and Embargoes": "Тарифи та ембарго"
+  "Tariffs and Embargoes": "Тарифи та ембарго",
+  "Adjust height multiplier for population bars": "Налаштувати множник висоти стовпців населення",
+  "Bar height": "Висота стовпця",
+  "Decoration": "Оформлення",
+  "Display regiment names below units": "Показувати назви полків під підрозділами",
+  "Draw directional arrow markers on journey paths": "Малювати стрілки напрямку на шляхах подорожі",
+  "Edit segment note": "Редагувати нотатку ділянки",
+  "Filter by name or type": "Фільтр за назвою або типом",
+  "Marker name": "Назва маркера",
+  "Render cell ID numbers at cell centers": "Відображати номери клітинок у їхніх центрах",
+  "Segment": "Ділянка",
+  "Shift+Click to remove without confirmation": "Shift + клік — видалити без підтвердження",
+  "Show arrows": "Показувати стрілки",
+  "Show indexes": "Показувати індекси",
+  "Show names": "Показувати назви",
+  "Toggle regiment visibility on the map": "Перемкнути видимість полку на карті",
+  "Toggle visibility": "Перемкнути видимість",
+  "locked": "заблоковано"
 }

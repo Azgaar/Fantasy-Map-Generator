@@ -3471,5 +3471,22 @@
   "Select at least one state": "कम से कम एक राज्य चुनें",
   "Tariff": "शुल्क",
   "Tariffs": "शुल्क",
-  "Tariffs and Embargoes": "शुल्क और प्रतिबंध"
+  "Tariffs and Embargoes": "शुल्क और प्रतिबंध",
+  "Adjust height multiplier for population bars": "जनसंख्या बार के लिए ऊँचाई गुणक समायोजित करें",
+  "Bar height": "बार की ऊँचाई",
+  "Decoration": "सजावट",
+  "Display regiment names below units": "इकाइयों के नीचे रेजिमेंट के नाम दिखाएँ",
+  "Draw directional arrow markers on journey paths": "यात्रा पथों पर दिशात्मक तीर मार्कर बनाएँ",
+  "Edit segment note": "खंड नोट संपादित करें",
+  "Filter by name or type": "नाम या प्रकार से फ़िल्टर करें",
+  "Marker name": "मार्कर का नाम",
+  "Render cell ID numbers at cell centers": "कोशिका केंद्रों पर कोशिका ID संख्याएँ रेंडर करें",
+  "Segment": "खंड",
+  "Shift+Click to remove without confirmation": "बिना पुष्टि के हटाने के लिए Shift-क्लिक करें",
+  "Show arrows": "तीर दिखाएँ",
+  "Show indexes": "सूचकांक दिखाएँ",
+  "Show names": "नाम दिखाएँ",
+  "Toggle regiment visibility on the map": "मानचित्र पर रेजिमेंट की दृश्यता टॉगल करें",
+  "Toggle visibility": "दृश्यता टॉगल करें",
+  "locked": "लॉक किया गया"
 }

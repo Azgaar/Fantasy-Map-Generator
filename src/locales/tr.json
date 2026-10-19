@@ -3471,5 +3471,22 @@
   "Select at least one state": "En az bir devlet seçin",
   "Tariff": "Tarife",
   "Tariffs": "Tarifeler",
-  "Tariffs and Embargoes": "Tarifeler ve Ambargolar"
+  "Tariffs and Embargoes": "Tarifeler ve Ambargolar",
+  "Adjust height multiplier for population bars": "Nüfus çubukları için yükseklik çarpanını ayarla",
+  "Bar height": "Çubuk yüksekliği",
+  "Decoration": "Süsleme",
+  "Display regiment names below units": "Birliklerin altında alay adlarını göster",
+  "Draw directional arrow markers on journey paths": "Yolculuk rotalarında yön oku işaretçileri çiz",
+  "Edit segment note": "Etap notunu düzenle",
+  "Filter by name or type": "Ada veya türe göre filtrele",
+  "Marker name": "İşaretçi adı",
+  "Render cell ID numbers at cell centers": "Hücre merkezlerinde hücre kimlik numaralarını göster",
+  "Segment": "Etap",
+  "Shift+Click to remove without confirmation": "Onay olmadan kaldırmak için Shift + tıkla",
+  "Show arrows": "Okları göster",
+  "Show indexes": "Dizinleri göster",
+  "Show names": "Adları göster",
+  "Toggle regiment visibility on the map": "Alayın haritada görünürlüğünü aç/kapat",
+  "Toggle visibility": "Görünürlüğü aç/kapat",
+  "locked": "kilitli"
 }

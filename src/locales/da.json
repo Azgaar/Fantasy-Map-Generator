@@ -3471,5 +3471,22 @@
   "Select at least one state": "Vælg mindst én stat",
   "Tariff": "Told",
   "Tariffs": "Toldsatser",
-  "Tariffs and Embargoes": "Told og embargoer"
+  "Tariffs and Embargoes": "Told og embargoer",
+  "Adjust height multiplier for population bars": "Juster højdemultiplikator for befolkningssøjler",
+  "Bar height": "Søjlehøjde",
+  "Decoration": "Dekoration",
+  "Display regiment names below units": "Vis regimentsnavne under enheder",
+  "Draw directional arrow markers on journey paths": "Tegn retningspile på rejsestier",
+  "Edit segment note": "Rediger etapenote",
+  "Filter by name or type": "Filtrér efter navn eller type",
+  "Marker name": "Markørens navn",
+  "Render cell ID numbers at cell centers": "Tegn celle-id-numre i cellernes midte",
+  "Segment": "Etape",
+  "Shift+Click to remove without confirmation": "Shift-klik for at fjerne uden bekræftelse",
+  "Show arrows": "Vis pile",
+  "Show indexes": "Vis indekser",
+  "Show names": "Vis navne",
+  "Toggle regiment visibility on the map": "Skift regimentets synlighed på kortet",
+  "Toggle visibility": "Skift synlighed",
+  "locked": "låst"
 }

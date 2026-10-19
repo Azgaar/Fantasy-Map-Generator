@@ -3471,5 +3471,22 @@
   "Select at least one state": "Selectați cel puțin un stat",
   "Tariff": "Tarif",
   "Tariffs": "Tarife",
-  "Tariffs and Embargoes": "Tarife și embargouri"
+  "Tariffs and Embargoes": "Tarife și embargouri",
+  "Adjust height multiplier for population bars": "Ajustează multiplicatorul de înălțime pentru barele de populație",
+  "Bar height": "Înălțimea barei",
+  "Decoration": "Decorație",
+  "Display regiment names below units": "Afișează numele regimentelor sub unități",
+  "Draw directional arrow markers on journey paths": "Desenează săgeți de direcție pe traseele călătoriei",
+  "Edit segment note": "Editează nota segmentului",
+  "Filter by name or type": "Filtrează după nume sau tip",
+  "Marker name": "Numele marcatorului",
+  "Render cell ID numbers at cell centers": "Desenează numerele de ID ale celulelor în centrul acestora",
+  "Segment": "Segment",
+  "Shift+Click to remove without confirmation": "Shift + clic pentru a elimina fără confirmare",
+  "Show arrows": "Arată săgețile",
+  "Show indexes": "Arată indicii",
+  "Show names": "Arată numele",
+  "Toggle regiment visibility on the map": "Comută vizibilitatea regimentului pe hartă",
+  "Toggle visibility": "Comută vizibilitatea",
+  "locked": "blocat"
 }

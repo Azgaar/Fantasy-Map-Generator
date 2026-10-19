@@ -3471,5 +3471,22 @@
   "Select at least one state": "至少選擇一個國家",
   "Tariff": "關稅",
   "Tariffs": "關稅",
-  "Tariffs and Embargoes": "關稅與禁運"
+  "Tariffs and Embargoes": "關稅與禁運",
+  "Adjust height multiplier for population bars": "調整人口柱的高度倍數",
+  "Bar height": "柱高",
+  "Decoration": "裝飾",
+  "Display regiment names below units": "在單位下方顯示團名稱",
+  "Draw directional arrow markers on journey paths": "在旅程路徑上繪製方向箭頭標記",
+  "Edit segment note": "編輯路段註釋",
+  "Filter by name or type": "按名稱或類型篩選",
+  "Marker name": "標記名稱",
+  "Render cell ID numbers at cell centers": "在單元格中心算繪單元格ID編號",
+  "Segment": "路段",
+  "Shift+Click to remove without confirmation": "按住 Shift 點選無需確認即可刪除",
+  "Show arrows": "顯示箭頭",
+  "Show indexes": "顯示索引",
+  "Show names": "顯示名稱",
+  "Toggle regiment visibility on the map": "切換地圖上團的可見性",
+  "Toggle visibility": "切換可見性",
+  "locked": "已鎖定"
 }

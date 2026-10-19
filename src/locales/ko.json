@@ -3471,5 +3471,22 @@
   "Select at least one state": "최소 하나의 국가를 선택하세요",
   "Tariff": "관세",
   "Tariffs": "관세",
-  "Tariffs and Embargoes": "관세 및 금수"
+  "Tariffs and Embargoes": "관세 및 금수",
+  "Adjust height multiplier for population bars": "인구 막대의 높이 배율 조정",
+  "Bar height": "막대 높이",
+  "Decoration": "장식",
+  "Display regiment names below units": "유닛 아래에 연대 이름 표시",
+  "Draw directional arrow markers on journey paths": "여정 경로에 방향 화살표 표시 그리기",
+  "Edit segment note": "구간 메모 편집",
+  "Filter by name or type": "이름 또는 유형으로 필터링",
+  "Marker name": "마커 이름",
+  "Render cell ID numbers at cell centers": "셀 중심에 셀 ID 번호 렌더링",
+  "Segment": "구간",
+  "Shift+Click to remove without confirmation": "Shift + 클릭 — 확인 없이 삭제",
+  "Show arrows": "화살표 표시",
+  "Show indexes": "인덱스 표시",
+  "Show names": "이름 표시",
+  "Toggle regiment visibility on the map": "지도에서 연대 표시 전환",
+  "Toggle visibility": "표시 전환",
+  "locked": "잠김"
 }

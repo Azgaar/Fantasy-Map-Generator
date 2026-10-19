@@ -3471,5 +3471,22 @@
   "Select at least one state": "Sélectionnez au moins un État",
   "Tariff": "Tarif douanier",
   "Tariffs": "Tarifs douaniers",
-  "Tariffs and Embargoes": "Tarifs et embargos"
+  "Tariffs and Embargoes": "Tarifs et embargos",
+  "Adjust height multiplier for population bars": "Ajuster le multiplicateur de hauteur des barres de population",
+  "Bar height": "Hauteur des barres",
+  "Decoration": "Décoration",
+  "Display regiment names below units": "Afficher les noms des régiments sous les unités",
+  "Draw directional arrow markers on journey paths": "Dessiner des flèches directionnelles sur les trajets de voyage",
+  "Edit segment note": "Modifier la note de l’étape",
+  "Filter by name or type": "Filtrer par nom ou type",
+  "Marker name": "Nom du marqueur",
+  "Render cell ID numbers at cell centers": "Afficher les numéros d’identifiant des cellules en leur centre",
+  "Segment": "Étape",
+  "Shift+Click to remove without confirmation": "Maj + clic pour supprimer sans confirmation",
+  "Show arrows": "Afficher les flèches",
+  "Show indexes": "Afficher les index",
+  "Show names": "Afficher les noms",
+  "Toggle regiment visibility on the map": "Afficher/masquer le régiment sur la carte",
+  "Toggle visibility": "Afficher/masquer",
+  "locked": "verrouillé"
 }

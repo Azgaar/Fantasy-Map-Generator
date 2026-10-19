@@ -3471,5 +3471,22 @@
   "Select at least one state": "Выберите хотя бы одно государство",
   "Tariff": "Тариф",
   "Tariffs": "Тарифы",
-  "Tariffs and Embargoes": "Тарифы и эмбарго"
+  "Tariffs and Embargoes": "Тарифы и эмбарго",
+  "Adjust height multiplier for population bars": "Настроить множитель высоты столбцов населения",
+  "Bar height": "Высота столбца",
+  "Decoration": "Оформление",
+  "Display regiment names below units": "Показывать названия полков под отрядами",
+  "Draw directional arrow markers on journey paths": "Рисовать стрелки направления на путях путешествий",
+  "Edit segment note": "Редактировать заметку об отрезке",
+  "Filter by name or type": "Фильтр по названию или типу",
+  "Marker name": "Название маркера",
+  "Render cell ID numbers at cell centers": "Показывать номера ячеек в их центрах",
+  "Segment": "Отрезок",
+  "Shift+Click to remove without confirmation": "Shift + клик — удалить без подтверждения",
+  "Show arrows": "Показывать стрелки",
+  "Show indexes": "Показывать индексы",
+  "Show names": "Показывать названия",
+  "Toggle regiment visibility on the map": "Показать/скрыть полк на карте",
+  "Toggle visibility": "Показать/скрыть",
+  "locked": "закреплено"
 }

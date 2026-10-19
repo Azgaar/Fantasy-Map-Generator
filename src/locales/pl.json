@@ -3471,5 +3471,22 @@
   "Select at least one state": "Wybierz co najmniej jedno państwo",
   "Tariff": "Cło",
   "Tariffs": "Cła",
-  "Tariffs and Embargoes": "Cła i embarga"
+  "Tariffs and Embargoes": "Cła i embarga",
+  "Adjust height multiplier for population bars": "Dostosuj mnożnik wysokości dla słupków populacji",
+  "Bar height": "Wysokość słupka",
+  "Decoration": "Dekoracja",
+  "Display regiment names below units": "Wyświetlaj nazwy pułków pod jednostkami",
+  "Draw directional arrow markers on journey paths": "Rysuj strzałki kierunkowe na trasach podróży",
+  "Edit segment note": "Edytuj notatkę o odcinku",
+  "Filter by name or type": "Filtruj według nazwy lub typu",
+  "Marker name": "Nazwa znacznika",
+  "Render cell ID numbers at cell centers": "Renderuj numery ID komórek w ich środkach",
+  "Segment": "Odcinek",
+  "Shift+Click to remove without confirmation": "Shift + klik — usuń bez potwierdzenia",
+  "Show arrows": "Pokaż strzałki",
+  "Show indexes": "Pokaż indeksy",
+  "Show names": "Pokaż nazwy",
+  "Toggle regiment visibility on the map": "Pokaż/ukryj pułk na mapie",
+  "Toggle visibility": "Pokaż/ukryj",
+  "locked": "zablokowane"
 }

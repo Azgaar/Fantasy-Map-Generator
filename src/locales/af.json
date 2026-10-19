@@ -3471,5 +3471,22 @@
   "Select at least one state": "Kies ten minste een staat",
   "Tariff": "Tarief",
   "Tariffs": "Tariewe",
-  "Tariffs and Embargoes": "Tariewe en embargo's"
+  "Tariffs and Embargoes": "Tariewe en embargo's",
+  "Adjust height multiplier for population bars": "Pas hoogtemenigvuldiger vir bevolkingstawe aan",
+  "Bar height": "Staafhoogte",
+  "Decoration": "Versiering",
+  "Display regiment names below units": "Wys regimentsname onder eenhede",
+  "Draw directional arrow markers on journey paths": "Teken rigtingpylmerkers op reispaaie",
+  "Edit segment note": "Wysig segmentnota",
+  "Filter by name or type": "Filter volgens naam of tipe",
+  "Marker name": "Merkernaam",
+  "Render cell ID numbers at cell centers": "Wys sel-ID-nommers by selsentrums",
+  "Segment": "Segment",
+  "Shift+Click to remove without confirmation": "Shift-klik om sonder bevestiging te verwyder",
+  "Show arrows": "Wys pyle",
+  "Show indexes": "Wys indekse",
+  "Show names": "Wys name",
+  "Toggle regiment visibility on the map": "Wissel regiment se sigbaarheid op die kaart",
+  "Toggle visibility": "Wissel sigbaarheid",
+  "locked": "gesluit"
 }
