@@ -82,11 +82,6 @@ iframe {
   cursor: pointer;
 }
 
-#pickerContainer {
-  position: absolute;
-  z-index: 100;
-}
-
 input,
 button,
 select,
@@ -1778,80 +1773,6 @@ div.editorLine {
   margin: 0.2em 0;
   padding: 0 0.2em;
   font-size: 0.9em;
-}
-
-#picker text {
-  cursor: default;
-}
-
-#pickerHeader {
-  fill: var(--header);
-  stroke: var(--dark-solid);
-  cursor: move;
-}
-
-#pickerLabel {
-  fill: #f8ffff;
-  font-size: 12px;
-  font-weight: bold;
-  font-family: var(--sans-serif);
-  cursor: move !important;
-}
-
-#pickerCloseRect {
-  cursor: pointer;
-  fill: var(--header);
-  stroke: #f8ffff;
-}
-
-#pickerCloseText {
-  fill: #f8ffff;
-  font-size: 10px;
-  font-family: var(--sans-serif);
-  pointer-events: none;
-}
-
-#pickerControls line {
-  stroke: #999999;
-  stroke-width: 2;
-}
-
-#pickerControls circle {
-  fill: #ffeb3b;
-  stroke: #666666;
-  cursor: ew-resize;
-}
-
-#pickerControls circle:hover {
-  fill: #eca116;
-  stroke: #000000;
-}
-
-#pickerControls,
-#pickerSpaces {
-  font-size: 11px;
-}
-
-#pickerSpaces input {
-  width: 22px;
-  font-size: 9px;
-  -moz-appearance: textfield;
-}
-
-#pickerSpaces input::-webkit-inner-spin-button,
-#pickerSpaces input::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-#pickerColors rect,
-#pickerHatches rect {
-  cursor: pointer;
-}
-
-#picker rect.selected {
-  outline: 2px dashed #b90c0c;
-  stroke-width: 0;
 }
 
 .hoverButton {

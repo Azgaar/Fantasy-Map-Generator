@@ -17,6 +17,7 @@ import { Styles } from "@/generators/styles";
 import { onLegendClick } from "@/renderers/draw-legend";
 import { applyVignetteOptions } from "@/renderers/draw-vignette";
 import { zonesFilter } from "@/renderers/draw-zones";
+import { Hatches } from "@/renderers/hatches";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
@@ -295,6 +296,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     undraw(); // every layer releases its scene and content before the loaded map takes over
     select("#map").remove();
     document.body.insertAdjacentHTML("afterbegin", data[5]);
+    Hatches.ensureUsed(ensureEl("map"));
     zonesFilter.type = "all"; // the dropped map's zone types say nothing about the loaded one
 
     // TODO: check if we need it or if LayersRegistry resolves it automatically?

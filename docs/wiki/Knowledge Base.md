@@ -546,7 +546,11 @@ To start a battle ensure the Military layer is on. Then click on any Regiment an
 
 ### How do I color multiple nations?
 
-To change the fill color of a State, open Tools -> edit State. Then locate the State you want and click on a box with its current color. Select the color you want. Then do the same for all other States
+To change the fill color of a State, open Tools -> edit State. Then locate the State you want and click on a box with its current color to open the Color Picker. Drag in the square to set saturation and brightness and use the slider to set the hue, type a HEX, RGB or HSL value (the arrows button switches the format), take a color from the screen with the eyedropper (Chrome and Edge), or click one of the preset colors or the random color button. The map updates as you pick. Then do the same for all other States. The same picker opens from the color boxes of provinces, cultures, religions, biomes, zones, markets and journeys
+
+### Can I fill a state or zone with hatching? Can hatching be colored?
+
+Yes. In the Color Picker, the row below the preset colors holds hatching patterns: lines, grids, dots and dashes. Click a pattern to fill with it, and click the selected pattern again to return to a solid color. The hatching is drawn in the color selected above, so pick a pattern and then change the color to get colored hatching; black gives the classic black hatching. The arrow button at the end of the row shows all patterns, including older ones and waves, zigzag, crosses, bricks and stipple
 
 ### How to change all emblems in a state?
 

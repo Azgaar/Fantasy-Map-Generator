@@ -34,7 +34,7 @@ export const requireColor = (value: unknown): string => {
 
 /** A HEX color or a hatching pattern reference, as the fill picker gives them */
 export const requireFill = (value: unknown): string =>
-  typeof value === "string" && /^url\(#hatch\d+\)$/.test(value) ? value : requireColor(value);
+  typeof value === "string" && /^url\(#hatch\d+(?:-[\da-f]{6})?\)$/.test(value) ? value : requireColor(value);
 
 /** Predefined set of 12 distinct pastel colors */
 export const C_12 = [
