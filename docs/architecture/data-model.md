@@ -131,7 +131,7 @@ Cultures (races, language zones) data is stored as an array of objects with stri
 - `shield`: `string` - shield type. Used for emblems rendering
 - `center`: `number` - cell id of culture center (initial cell)
 - `code`: `string` - culture name abbreviation. Used to render cultures tree
-- `color`: `string` - culture color in hex (e.g. `#45ff12`) or link to hatching pattern (e.g. `url(#hatch7)`)
+- `color`: `string` - culture color in hex (e.g. `#45ff12`) or link to hatching pattern (e.g. `url(#hatch7)`, or `url(#hatch7-c0392b)` for one drawn in a color)
 - `expansionism`: `number` - culture growth multiplier. Used mainly during cultures generation to spread cultures not uniformly
 - `type`: `string` - culture type, see [culture types](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-types)
 - `area`: `number` - culture area in pixels
@@ -185,7 +185,7 @@ States (countries) data is stored as an array of objects with strict element ord
 - `form`: `string` - state form type. Available types are `Monarchy`, `Republic`, `Theocracy`, `Union`, and `Anarchy`
 - `formName`: `string` - string form name, used to get state `fullName`
 - `fullName`: `string` - full state name. Combination of the proper name and state `formName`
-- `color`: `string` - state color in hex (e.g. `#45ff12`) or link to hatching pattern (e.g. `url(#hatch7)`)
+- `color`: `string` - state color in hex (e.g. `#45ff12`) or link to hatching pattern (e.g. `url(#hatch7)`, or `url(#hatch7-c0392b)` for one drawn in a color)
 - `center`: `number` - cell id of state center (initial cell)
 - `pole`: `number[]` - state pole of inaccessibility (visual center) coordinates, see [the concept description](https://blog.mapbox.com/a-new-algorithm-for-finding-a-visual-center-of-a-polygon-7c77e6492fbc?gi=6bd4fcb9ecc1)
 - `culture`: `number` - state culture id (equals to initial cell culture)
@@ -236,7 +236,7 @@ Provinces data is stored as an array of objects with strict element order. Eleme
 - `name`: `string` - short (proper) form of the province name
 - `formName`: `string` - string form name, used to get province `fullName`
 - `fullName`: `string` - full state name. Combination of the proper name and province `formName`
-- `color`: `string` - province color in hex (e.g. `#45ff12`) or link to hatching pattern (e.g. `url(#hatch7)`)
+- `color`: `string` - province color in hex (e.g. `#45ff12`) or link to hatching pattern (e.g. `url(#hatch7)`, or `url(#hatch7-c0392b)` for one drawn in a color)
 - `center`: `number` - cell id of province center (initial cell)
 - `pole`: `number[]` - province pole of inaccessibility (visual center) coordinates, see [the concept description](https://blog.mapbox.com/a-new-algorithm-for-finding-a-visual-center-of-a-polygon-7c77e6492fbc?gi=6bd4fcb9ecc1)
 - `area`: `number` - province area in pixels
@@ -260,7 +260,7 @@ Religions data is stored as an array of objects with strict element order. Eleme
 - `type`: `string` - religion type. Available types are `Folk`, `Organized`, `Heresy` and `Cult`
 - `form`: `string` - religion form
 - `deity`: `string` - religion supreme deity if any
-- `color`: `string` - religion color in hex (e.g. `#45ff12`) or link to hatching pattern (e.g. `url(#hatch7)`)
+- `color`: `string` - religion color in hex (e.g. `#45ff12`) or link to hatching pattern (e.g. `url(#hatch7)`, or `url(#hatch7-c0392b)` for one drawn in a color)
 - `code`: `string` - religion name abbreviation. Used to render religions tree
 - `origins`: `number[]` - ids of ancestor religions. `[0]` if religion doesn't have an ancestor. Used to render religions tree. The first array member is main link, other - supporting out-of-tree links
 - `center`: `number` - cell id of religion center (initial cell)
@@ -409,7 +409,7 @@ Zones data is stored as an array of objects with `i` not necessary equal to the 
 - `i`: `number` - zone id. Please note the element with id `0` is a fully valid zone, not a placeholder
 - `name`: `string` - zone description
 - `type`: `string` - zone type
-- `color`: `string` - link to hatching pattern (e.g. `url(#hatch7)`) or color in hex (e.g. `#45ff12`)
+- `color`: `string` - link to hatching pattern (e.g. `url(#hatch7)`, or `url(#hatch7-c0392b)` for one drawn in a color) or color in hex (e.g. `#45ff12`)
 - `cells`: `number[]` - array of zone cells
 - `lock`: `boolean` - `true` if zone is locked (not affected by regeneration). Optional
 - `hidden`: `boolean` - `true` if zone is hidden (not displayed). Optional
@@ -492,7 +492,7 @@ Biome definitions are stored in `pack.biomes: Biome[]`, where `i` equals the arr
 
 - `i`: `number` - biome id, always equal to the array index
 - `name`: `string` - biome name
-- `color`: `string` - biome color in hex (e.g. `#45ff12`) or link to a hatching pattern
+- `color`: `string` - biome color in hex (e.g. `#45ff12`) or link to a hatching pattern (e.g. `url(#hatch7)`, or `url(#hatch7-c0392b)` for one drawn in a color)
 - `cost`: `number` - non-negative movement cost used during culture, state and religion growth
 - `habitability`: `number` - non-negative suitability value; `0` means uninhabitable
 - `icons`: `Record<string, { weight: number; size?: number }>` - the relief pool: lowland relief entries in insertion order, each with a positive weight and an optional positive `size`, a multiplier of the pool's icon size (absent is 1). A key is a relief type (`dune`) or an icon reference (`custom-1a2b3c4d`). Before v1.154.0 a list of repeated entries

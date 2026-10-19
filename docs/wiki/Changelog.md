@@ -14,8 +14,9 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 
 **[1.155.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.155.0) - 2026-10-24**:
 
-- Free-text tags for states and other entities.
-- Interface translations: 29 languages besides English.
+- Free-text tags for states and other entities
+- Color picker rework
+- Interface translations: 29 languages besides English
 - The Google Translate widget removed
 - Advanced options: configurable map lattice
 - Trade tariffs and embargoes

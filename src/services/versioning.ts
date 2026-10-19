@@ -30,6 +30,7 @@ const latestPublicChanges = [
   "Advanced options: configurable map lattice",
   "Trade tariffs and embargoes",
   "Free-text tags for states and other entities (hidden by default)",
+  "Color picker rework",
   "Population layer: colored cells style",
   // old ones
   "Azgaar Assistant can read map data and propose changes when your own AI key is provided",
