@@ -212,8 +212,7 @@ export const optionsSchema = z.strictObject({
     performance: z.strictObject({
       shapeRendering: z.enum(["geometricPrecision", "auto", "optimizeSpeed", "crispEdges"]),
       stateHalos: z.boolean(),
-      viewportRedraw: z.enum(["continuous", "settled"]),
-      rendering: z.enum(["vector", "raster"])
+      viewportRedraw: z.enum(["continuous", "settled"])
     }),
     onLoad: z.enum(["random", "lastSaved"]), // what the app does with no map asked for
     zoomExtent: z.strictObject({ min: positive, max: positive }).refine(({ min, max }) => min <= max, {

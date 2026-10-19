@@ -22,7 +22,6 @@ const PADDING = 512;
 const MAX_PIXELS = 16_000_000;
 let observer: MutationObserver | undefined;
 let registered = false;
-let suspended = false;
 
 /** Keep the editable vectors in defs; only the on-screen projection is rasterized. */
 export function cacheOceanLayer(group: SVGGElement, definitions: string[]): void {
@@ -73,21 +72,6 @@ export function restoreOceanVectors(root: ParentNode): void {
   }
 }
 
-/** While the raster view draws the map, the layers stay vectors and nothing is rasterized */
-export function suspendOceanCache(isSuspended: boolean): void {
-  if (suspended === isSuspended) return;
-  suspended = isSuspended;
-  if (!isSuspended) {
-    render(ViewportLayers.getContext());
-    return;
-  }
-  for (const cache of caches.values()) {
-    cache.revision++; // an image in flight is dropped
-    cache.region = undefined;
-    showVectors(cache);
-  }
-}
-
 function invalidate(): void {
   for (const cache of caches.values()) {
     cache.revision++;
@@ -111,7 +95,6 @@ function render({ root, bounds }: ViewportRenderContext): void {
     restoreOceanVectors(root);
     return;
   }
-  if (suspended) return;
   for (const cache of caches.values()) {
     if (!cache.group.isConnected || cache.source.parentNode?.parentNode !== cache.group) {
       clearOceanCache(cache.group.id);

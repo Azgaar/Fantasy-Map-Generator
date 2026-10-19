@@ -103,12 +103,7 @@ class OptionsModel {
         emblems: { showAll: false, shape: "culture" },
         labels: { showAll: false },
         heightmapEditor: { renderOcean: false, showDrainage: false, allowErosion: true },
-        performance: {
-          shapeRendering: "optimizeSpeed",
-          stateHalos: false,
-          viewportRedraw: "continuous",
-          rendering: "vector"
-        }, // "balance"
+        performance: { shapeRendering: "optimizeSpeed", stateHalos: false, viewportRedraw: "continuous" }, // "balance"
         onLoad: "random",
         zoomExtent: { min: 1, max: 20 },
         viewport: null,

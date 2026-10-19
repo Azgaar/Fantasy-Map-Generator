@@ -49,7 +49,6 @@ export interface GetMapURLOptions {
   noVignette?: boolean;
   fullMap?: boolean;
   region?: Region;
-  exclude?: string[]; // ids of elements to leave out
   noViewbox?: boolean; // accepted by some callers (view-3d); currently unused here
 }
 
@@ -366,17 +365,12 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
     noIce = false,
     noVignette = false,
     fullMap = false,
-    region,
-    exclude = []
+    region
   } = config;
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
   restoreOceanVectors(cloneEl);
   cloneEl.id = "fantasyMap";
-  // attached for computed styles and measurements, but never on screen while the export awaits
-  const host = document.createElement("div");
-  host.style.cssText = "position: fixed; left: -100000px; top: 0; width: 100vw; height: 100vh";
-  host.append(cloneEl);
-  document.body.append(host);
+  document.body.appendChild(cloneEl);
   const clone: MapSelection = select(cloneEl);
   try {
     if (!debug) clone.select("#debug").remove();
@@ -411,7 +405,6 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
     }
 
     ViewportLayers.renderTo(cloneEl, bounds);
-    for (const id of exclude) cloneEl.querySelector(`#${id}`)?.remove();
 
     const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
     if (isFirefox && type === "mesh") clone.select("#oceanPattern").remove();
@@ -581,7 +574,7 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
     window.setTimeout(() => window.URL.revokeObjectURL(url), 5000);
     return url;
   } finally {
-    host.remove();
+    cloneEl.remove();
   }
 }
 

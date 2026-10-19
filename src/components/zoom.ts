@@ -1,6 +1,5 @@
 import { type D3ZoomEvent, interpolateZoom, select, type ZoomView, zoom, zoomIdentity, zoomTransform } from "d3";
 import { Layers } from "@/components/layers";
-import { RasterView } from "@/components/raster-view";
 import { setViewportTransform, viewport, ZOOM_CURVES, type ZoomedLayer, zoomFontSize } from "@/components/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
@@ -17,7 +16,6 @@ let frameId: number | null = null;
 let pendingScaleChange = false;
 let pendingPositionChange = false;
 let isViewChanged = false;
-let isSvgBehind = false;
 
 function onZoom(event: D3ZoomEvent<SVGSVGElement, unknown>): void {
   const { k, x, y } = event.transform;
@@ -47,22 +45,17 @@ function handleZoomPerFrame(): void {
   pendingPositionChange = false;
   if (!didScaleChange && !didPositionChange) return;
 
-  if (didScaleChange) Layers.draw("scaleBar");
-  if (RasterView.follow()) {
-    isSvgBehind = true; // the raster carries the gesture: the SVG catches up once it ends
-    return;
-  }
-  followInSvg(didScaleChange || isSvgBehind, didPositionChange || isSvgBehind);
-  isSvgBehind = false;
-}
-
-function followInSvg(isScaled: boolean, isMoved: boolean): void {
   ensureEl<SVGGElement>("viewbox").setAttribute(
     "transform",
     `translate(${viewport.x} ${viewport.y}) scale(${viewport.scale})`
   );
-  if (isScaled && options.app.performance.viewportRedraw === "continuous") applyZoomFontSize();
-  if (isMoved) Layers.draw("coordinates");
+
+  if (didScaleChange) {
+    Layers.draw("scaleBar");
+    if (options.app.performance.viewportRedraw === "continuous") applyZoomFontSize();
+  }
+
+  if (didPositionChange) Layers.draw("coordinates");
 
   window.updateMinimap?.();
   redrawTracedImage();
@@ -79,13 +72,8 @@ function handleZoomEnd(): void {
     frameId = null;
     handleZoomPerFrame();
   }
-  if (isSvgBehind) {
-    isSvgBehind = false;
-    followInSvg(true, true);
-  }
 
   invokeActiveZooming();
-  RasterView.settle();
 }
 
 /** Mirror the map transform onto the heightmap tracing canvas */
