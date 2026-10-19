@@ -298,19 +298,41 @@ class EntityLookup {
       scale: 4,
       layers: ["journeys"],
       collection: { field: "journeys", indexed: false },
-      name: id => this.byId(pack.journeys, id)?.name || "",
+      entity: (id, sub) => this.journey(id, sub),
+      name: (id, sub) => {
+        const journey = this.byId(pack.journeys, id);
+        if (sub === undefined) return journey?.name || "";
+        const segment = journey?.segments?.find(s => s.i === sub);
+        if (!segment) return journey?.name || "";
+        return journey?.name ? `${journey.name} — ${segment.name || `${t("Segment")} ${sub + 1}`}` : segment.name || "";
+      },
       refs: () => this.refsOf("journey", pack.journeys), // the first journey is 0
-      element: id => `journey${id}`,
-      isAt: (ref, cell) =>
-        Boolean(this.byId(pack.journeys, ref.id)?.segments.some(segment => segment.points.some(p => p[2] === cell))),
-      position: id => {
-        const points = this.byId(pack.journeys, id)?.segments?.flatMap(segment => segment.points) || [];
+      element: (id, sub) => (sub !== undefined ? `segment${id}_${sub}` : `journey${id}`),
+      isAt: (ref, cell) => {
+        const journey = this.byId(pack.journeys, ref.id);
+        if (!journey) return false;
+        const segments = ref.sub !== undefined ? journey.segments.filter(s => s.i === ref.sub) : journey.segments || [];
+        return segments.some(segment => segment.points.some(p => p[2] === cell));
+      },
+      position: (id, sub) => {
+        const journey = this.byId(pack.journeys, id);
+        const segments = sub !== undefined ? journey?.segments?.filter(s => s.i === sub) : journey?.segments || [];
+        const points = segments?.flatMap(segment => segment.points) || [];
         const point = points[Math.floor(points.length / 2)];
         return point && [point[0], point[1]];
       },
-      points: ref =>
-        (this.byId(pack.journeys, ref.id)?.segments || []).flatMap(s => s.points.map(p => [p[0], p[1]] as Point)),
+      points: ref => {
+        const journey = this.byId(pack.journeys, ref.id);
+        if (!journey) return [];
+        const segments = ref.sub !== undefined ? journey.segments.filter(s => s.i === ref.sub) : journey.segments || [];
+        return segments.flatMap(s => s.points.map(p => [p[0], p[1]] as Point));
+      },
       context: ref => {
+        if (ref.sub !== undefined) {
+          const journey = this.byId(pack.journeys, ref.id);
+          const segment = journey?.segments?.find(s => s.i === ref.sub);
+          return segment?.name || "";
+        }
         const count = this.byId(pack.journeys, ref.id)?.segments.length;
         return count ? `${count} ${count === 1 ? "segment" : "segments"}` : "";
       }
@@ -559,7 +581,12 @@ class EntityLookup {
 
   get(ref: EntityRef): MapEntity | undefined {
     const { collection, entity: find } = this.types[ref.type];
-    const entity = collection ? this.byId(this.list(collection.field), ref.id) : find?.(ref.id, ref.sub);
+    const entity =
+      ref.sub !== undefined && find
+        ? find(ref.id, ref.sub)
+        : collection
+          ? this.byId(this.list(collection.field), ref.id)
+          : find?.(ref.id, ref.sub);
     return entity && !entity.removed ? entity : undefined;
   }
 
@@ -696,14 +723,16 @@ class EntityLookup {
   }
 
   key(ref: EntityRef): string {
-    return ref.type === "regiment" ? `regiment:${ref.id}-${ref.sub}` : `${ref.type}:${ref.id}`;
+    return ref.sub !== undefined ? `${ref.type}:${ref.id}-${ref.sub}` : `${ref.type}:${ref.id}`;
   }
 
   parseKey(key: string): EntityRef | undefined {
     const match = /^(\w+):(\d+)(?:-(\d+))?$/.exec(key);
     if (!match || !isEntityType(match[1])) return undefined;
     const type: EntityType = match[1];
-    if ((type === "regiment") !== (match[3] !== undefined)) return undefined;
+    const hasSub = match[3] !== undefined;
+    if (type === "regiment" && !hasSub) return undefined;
+    if (type !== "regiment" && type !== "journey" && hasSub) return undefined;
     const id = Number(match[2]);
     const sub = match[3] === undefined ? undefined : Number(match[3]);
     if (!Number.isSafeInteger(id) || (sub !== undefined && !Number.isSafeInteger(sub))) return undefined;
@@ -759,6 +788,13 @@ class EntityLookup {
 
   private regiment(stateId: number, regimentId?: number): Regiment | undefined {
     return this.byId(this.byId(pack.states, stateId)?.military, regimentId ?? -1);
+  }
+
+  private journey(journeyId: number, segmentId?: number): MapEntity | undefined {
+    const journey = this.byId(pack.journeys, journeyId);
+    if (!journey) return undefined;
+    if (segmentId === undefined) return journey;
+    return journey.segments?.find(s => s.i === segmentId);
   }
 
   private cellPoints(assignments: ArrayLike<number>, id: number): Point[] {

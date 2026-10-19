@@ -1,6 +1,6 @@
 _The current stable version is available [here](https://azgaar.github.io/Fantasy-Map-Generator)._
 
-Notable user-facing changes to the project should be documented in this file. The purpose of a changelog entry is to document only the noteworthy difference and communicate it clearly to end users. Keep the updates short and simple.
+Notable user-facing changes to the project should be documented in this file. The purpose of a changelog entry is to document only the noteworthy difference and communicate it clearly to end users. Keep the updates very short (oneliners) and simple.
 
 Compatible `.gz` and `.map` files from `v0.70.0` onward are checked and auto-updated when loaded. Maps older than `v0.70.0` are considered ancient and require the matching old Generator version. To use an old version click on a link to download an archive. Unzip all files and [run the Tool locally](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally).
 
@@ -22,6 +22,13 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Population layer: Shading land by population density by _[inviktos](https://github.com/inviktos)_
 - Altitude legend: heightmap colors by _[Avengium](https://github.com/Avengium)_
 - Rulers style: line and dash colors and a toggle to hide the measured values by _[Avengium](https://github.com/Avengium)_
+- Remove confirmation: Enter to confirm; Shift+Click on delete button to remove immediately without confirmation dialog
+- Labels style: underlined parameter in label style editor
+- Cells layer: optionally render cell indexes at cell centers and show cell/grid IDs in map tooltip
+- Travel Builder: directional arrow markers on journey paths and per-segment notes editable in Notes Editor
+- Paint editor: lock elements from being painted over
+- Military forces: hide/show individual regiments on the map and toggle to show regiment names below units
+- Population layer: adjustable 3D bar height multiplier
 
 # Releases
 

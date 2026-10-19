@@ -4,7 +4,7 @@ import { IconSets } from "@/components/icon-sets";
 import { CustomIcons, Icons, IMAGE_FRAME } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { OCEAN_PATTERNS } from "@/data/ocean-patterns";
-import { FONT_STYLES, FONT_WEIGHTS, LINECAPS, LINEJOINS, MAP_FILTERS } from "@/data/style-choices";
+import { FONT_STYLES, FONT_WEIGHTS, LINECAPS, LINEJOINS, MAP_FILTERS, TEXT_DECORATIONS } from "@/data/style-choices";
 import type { StylesData } from "@/types/styles";
 import { safeParseJSON } from "@/utils";
 import { toColorHex } from "@/utils/colorUtils";
@@ -857,6 +857,7 @@ export function labelGroupFromLegacy(legacy: unknown): StylesData["labels"]["gro
       "font-family": strOr(bag["font-family"], "Almendra SC") ?? "Almendra SC",
       "font-style": oneOf(bag["font-style"], FONT_STYLE_VALUES),
       "font-weight": oneOf(numOr(bag["font-weight"], null), FONT_WEIGHTS),
+      "text-decoration": oneOf(bag["text-decoration"], TEXT_DECORATION_VALUES),
       style: labelStyleFromLegacy(bag),
       filter: strOr(bag.filter, null)
     }
@@ -1019,10 +1020,12 @@ function strOr(value: unknown, fallback: string | null): string | null {
 type Linecap = keyof typeof LINECAPS;
 type Linejoin = keyof typeof LINEJOINS;
 type FontStyle = keyof typeof FONT_STYLES;
+type TextDecoration = keyof typeof TEXT_DECORATIONS;
 
 const LINECAP_VALUES = Object.keys(LINECAPS) as Linecap[];
 const LINEJOIN_VALUES = Object.keys(LINEJOINS) as Linejoin[];
 const FONT_STYLE_VALUES = Object.keys(FONT_STYLES) as FontStyle[];
+const TEXT_DECORATION_VALUES = Object.keys(TEXT_DECORATIONS) as TextDecoration[];
 
 // a legacy value outside the fixed list ("inherit", a stray weight) means "not set"
 function oneOf<T extends string | number>(value: unknown, allowed: readonly T[]): T | null {

@@ -93,7 +93,8 @@ describe("entity on the map", () => {
 describe("keys", () => {
   it.each([
     [{ type: "burg", id: 1 } as const, "burg:1"],
-    [{ type: "regiment", id: 3, sub: 2 } as const, "regiment:3-2"]
+    [{ type: "regiment", id: 3, sub: 2 } as const, "regiment:3-2"],
+    [{ type: "journey", id: 2, sub: 1 } as const, "journey:2-1"]
   ])("round-trips %o", (ref, key) => {
     expect(MapEntities.key(ref)).toBe(key);
     expect(MapEntities.parseKey(key)).toEqual(ref);

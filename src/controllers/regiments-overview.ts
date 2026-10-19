@@ -98,6 +98,20 @@ function renderDialog(): void {
   });
 
   body.addEventListener("click", async event => {
+    const vis = (event.target as HTMLElement).closest<HTMLElement>(".regimentVisibility");
+    if (vis) {
+      const rowEl = vis.closest<HTMLElement>(".states")!;
+      const stateId = +rowEl.dataset.s!;
+      const regId = +rowEl.dataset.id!;
+      const reg = pack.states[stateId]?.military?.find(r => r.i === regId);
+      if (reg) {
+        reg.hidden = !reg.hidden;
+        vis.className = `regimentVisibility pointer ${reg.hidden ? "icon-eye-off" : "icon-eye"}`;
+        Layers.draw("military");
+      }
+      return;
+    }
+
     const target = (event.target as HTMLElement).closest<HTMLElement>("[data-edit-regiment]");
     if (!target) return;
     Controllers.RegimentEditor.open(`#${target.dataset.editRegiment}`);
@@ -150,6 +164,12 @@ function getRegimentColumns(): EditorColumn<RegimentRow>[] {
       sortBy: row => row.regiment.a,
       tip: sentences(t("Total military personnel (not considering crew)"), t("Click to sort"))
     },
+    {
+      key: "visibility",
+      width: "1.4em",
+      sortBy: row => (row.regiment.hidden ? 1 : 0),
+      tip: t("Toggle visibility")
+    },
     { key: "edit", width: "1.4em", permanent: true }
   ];
 }
@@ -195,6 +215,7 @@ function renderRegimentsPage(view: TableView<RegimentRow>): void {
         <input data-col="name" data-tip="${t("Name")}" value="${regiment.name}" readonly />
         ${unitCells}
         <div data-col="total" data-tip="${t("Total military personnel (not considering crew)")}" style="font-weight:bold">${percentage ? percent(regiment.a, total) : regiment.a}</div>
+        <span data-col="visibility" data-tip="${t("Toggle visibility")}" class="regimentVisibility pointer ${regiment.hidden ? "icon-eye-off" : "icon-eye"}"></span>
         <span data-col="edit" data-tip="${t("Edit Regiment")}" data-edit-regiment="regiment${state.i}-${regiment.i}" class="icon-pencil pointer"></span>
       </div>`;
     })

@@ -828,7 +828,12 @@ function openPaintEditor(): void {
     onClose: open,
     items: pack.cultures
       .filter(culture => !culture.removed)
-      .map(culture => ({ id: culture.i, name: culture.name, color: culture.color || "#ffffff" })),
+      .map(culture => ({
+        id: culture.i,
+        name: culture.name,
+        color: culture.color || "#ffffff",
+        lock: Boolean(culture.lock)
+      })),
     dontOverrideControl: true,
     getValue: cell => pack.cells.culture[cell],
     filterCell: cell => isLand(cell, pack),

@@ -34,6 +34,31 @@ interface ConfirmationOptions {
   confirm?: string;
   onCancel?: () => void;
   onConfirm?: () => void;
+  event?: MouseEvent | Event;
+}
+
+let isShiftPressed = false;
+let lastClickEvent: MouseEvent | null = null;
+let lastClickTime = 0;
+
+if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+  window.addEventListener("keydown", (e: KeyboardEvent) => {
+    if (e.key === "Shift") isShiftPressed = true;
+  });
+  window.addEventListener("keyup", (e: KeyboardEvent) => {
+    if (e.key === "Shift") isShiftPressed = false;
+  });
+  window.addEventListener("blur", () => {
+    isShiftPressed = false;
+  });
+  window.addEventListener(
+    "click",
+    (e: MouseEvent) => {
+      lastClickEvent = e;
+      lastClickTime = Date.now();
+    },
+    true
+  );
 }
 
 /** Ask the user to confirm an action that cannot be reverted */
@@ -44,8 +69,20 @@ export function confirmationDialog(options: ConfirmationOptions): void {
     cancel = t("Cancel"),
     confirm = t("Continue"),
     onCancel,
-    onConfirm
+    onConfirm,
+    event
   } = options;
+
+  const isShift =
+    Boolean((event as MouseEvent)?.shiftKey) ||
+    isShiftPressed ||
+    (typeof window !== "undefined" && window.event instanceof MouseEvent && window.event.shiftKey) ||
+    Boolean(lastClickEvent?.shiftKey && Date.now() - lastClickTime < 300);
+
+  if (isShift) {
+    onConfirm?.();
+    return;
+  }
 
   ensureEl("alertMessage").innerHTML = message;
 
@@ -61,6 +98,27 @@ export function confirmationDialog(options: ConfirmationOptions): void {
         onCancel?.();
         $(this).dialog("close");
       }
+    },
+    open: function (this: HTMLElement) {
+      const widget = $(this).dialog?.("widget");
+      const buttons = widget?.find?.(".ui-dialog-buttonpane button");
+      buttons?.first?.()?.focus?.();
+
+      widget?.off?.("keydown.confirm")?.on?.("keydown.confirm", (e: any) => {
+        if (e.key === "Enter") {
+          const active = document.activeElement;
+          const cancelBtn = buttons?.last?.()?.[0];
+          if (active === cancelBtn) return;
+
+          e.preventDefault();
+          e.stopPropagation();
+          onConfirm?.();
+          $(this).dialog("close");
+        }
+      });
+    },
+    close: function (this: HTMLElement) {
+      $(this).dialog?.("widget")?.off?.("keydown.confirm");
     }
   });
 }

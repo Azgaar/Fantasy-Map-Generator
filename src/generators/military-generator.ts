@@ -31,6 +31,7 @@ export interface Regiment {
   px?: number; // battle-screen: position before being moved into a battle, restored afterward
   py?: number;
   note?: string;
+  hidden?: boolean;
 }
 
 interface Platoon {

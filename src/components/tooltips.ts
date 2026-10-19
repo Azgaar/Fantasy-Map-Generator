@@ -69,6 +69,15 @@ export function showDataTip(event: Event): void {
   const shortcut = target.dataset.shortcut;
   if (shortcut && !isMobile()) dataTip = sentences(dataTip, `${t("Shortcut")}: ${shortcut}`);
 
+  const isRemove =
+    target.dataset.col === "remove" ||
+    parent?.dataset?.col === "remove" ||
+    target.classList.contains("icon-trash-empty") ||
+    target.classList.contains("fastDelete");
+  if (isRemove && !isMobile() && !dataTip.includes("Shift+Click")) {
+    dataTip = sentences(dataTip, t("Shift+Click to remove without confirmation"));
+  }
+
   tip(dataTip);
 }
 

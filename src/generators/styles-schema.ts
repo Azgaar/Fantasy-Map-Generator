@@ -19,6 +19,7 @@ import {
   POPULATION_TYPES,
   RELIEF_SET_LABELS,
   RELIEF_SETS,
+  TEXT_DECORATIONS,
   WAVE_TYPES
 } from "@/data/style-choices";
 import type { StyleMeta } from "@/types/styles";
@@ -419,7 +420,17 @@ export const stylesSchema = z.strictObject({
       )
       .refine(groups => Object.keys(groups).length > 0)
   }),
-  cells: z.strictObject({ attrs: z.strictObject({ ...strokeGroup, filter, mask: clip }) }),
+  cells: z.strictObject({
+    attrs: z.strictObject({ ...strokeGroup, filter, mask: clip }),
+    options: z
+      .strictObject({
+        showIndexes: flag({
+          label: t("Show indexes"),
+          tip: t("Render cell ID numbers at cell centers")
+        }).default(false)
+      })
+      .default({ showIndexes: false })
+  }),
   coastline: z.strictObject({
     groups: z.strictObject({
       sea_island: variant(coastline, { label: t("Sea island") }),
@@ -535,7 +546,17 @@ export const stylesSchema = z.strictObject({
   }),
   heightmap: z.strictObject({ groups: z.strictObject({ landHeights, oceanHeights }) }),
   ice: z.strictObject({ attrs: z.strictObject({ opacity, fill, ...strokeGroup, filter }) }),
-  journeys: z.strictObject({ attrs: z.strictObject({ opacity, ...dashGroup, filter, mask: clip }) }),
+  journeys: z.strictObject({
+    attrs: z.strictObject({ opacity, ...dashGroup, filter, mask: clip }),
+    options: z
+      .strictObject({
+        arrows: flag({
+          label: t("Show arrows"),
+          tip: t("Draw directional arrow markers on journey paths")
+        }).default(false)
+      })
+      .default({ arrows: false })
+  }),
   labels: z.strictObject({
     groups: z.record(
       z.string(),
@@ -569,6 +590,12 @@ export const stylesSchema = z.strictObject({
           "font-weight": meta(z.literal(FONT_WEIGHTS), {
             control: "select",
             label: t("Weight", { context: "font" }),
+            group: t("Font")
+          })
+            .nullable()
+            .default(null),
+          "text-decoration": choice(TEXT_DECORATIONS, {
+            label: t("Decoration"),
             group: t("Font")
           })
             .nullable()
@@ -657,7 +684,11 @@ export const stylesSchema = z.strictObject({
         range: [0, 10],
         step: 0.1,
         tip: t("Set regiment box size. All regiments will be redrawn on change (position will defaulted)")
-      })
+      }),
+      showNames: flag({
+        label: t("Show names"),
+        tip: t("Display regiment names below units")
+      }).default(false)
     })
   }),
   ocean: z.strictObject({
@@ -700,9 +731,15 @@ export const stylesSchema = z.strictObject({
         type: choice(POPULATION_TYPES, {
           label: t("Type"),
           tip: t("Draw population as bars or as cells shaded by density")
-        })
+        }),
+        barHeight: number({
+          label: t("Bar height"),
+          range: [0.1, 5],
+          step: 0.1,
+          tip: t("Adjust height multiplier for population bars")
+        }).default(1)
       })
-      .default({ type: "bars" }),
+      .default({ type: "bars", barHeight: 1 }),
     groups: z.strictObject({
       rural: meta(
         z.strictObject({

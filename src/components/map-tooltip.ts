@@ -177,6 +177,23 @@ function getElementTip({ group, target, event, path, cellId }: TipContext): stri
 
   if (group === "ice") return t("Click to edit");
 
+  if (group === "journeys") {
+    const match = target.id?.match(/^segment(\d+)_(\d+)$/);
+    if (match) {
+      const journey = pack.journeys?.find(j => j.i === +match[1]);
+      const segment = journey?.segments?.find(s => s.i === +match[2]);
+      if (journey && segment) {
+        const parts = [
+          `${journey.name}: ${segment.name}`,
+          segment.note ? `“${escapeHtml(segment.note)}”` : null,
+          t("Click to edit")
+        ].filter(Boolean) as string[];
+        return sentences(...parts);
+      }
+    }
+    return t("Click to edit");
+  }
+
   return undefined;
 }
 
@@ -307,5 +324,6 @@ function showLayerTip(point: Point, cellId: number, gridCellId: number, isLand: 
     const cultureId = cells.culture[cellId];
     return void tip(`${t("Culture")}: ${escapeHtml(pack.cultures[cultureId].name)}`);
   }
+  if (Layers.isOn("cells")) return void tip(`${t("Cell")}: ${cellId} (${t("Grid")}: ${gridCellId})`);
   if (Layers.isOn("heightmap")) return void tip(`${t("Height")}: ${getFriendlyHeight(point, pack, grid)}`);
 }

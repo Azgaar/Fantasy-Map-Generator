@@ -16,15 +16,20 @@ function drawBars(): void {
   const { cells, burgs } = pack;
   const population = select(ensureEl<SVGGElement>("population"));
   const show = transition().duration(2000).ease(easeSinIn);
+  const modifier = styles.population.options.barHeight ?? 1;
 
   const rural: Bar[] = Array.from(cells.i as ArrayLike<number>)
     .filter(i => cells.pop[i] > 0)
-    .map(i => [cells.p[i][0], cells.p[i][1], cells.p[i][1] - cells.pop[i] / 5]);
+    .map(i => [cells.p[i][0], cells.p[i][1], cells.p[i][1] - (cells.pop[i] / 5) * modifier]);
   appendBars(population.select("#rural"), rural, show, 0);
 
   const urban: Bar[] = burgs
     .filter(burg => burg.i && !burg.removed)
-    .map(burg => [burg.x!, burg.y!, burg.y! - (burg.population! / 5) * options.map.units.population.urbanization.rate]);
+    .map(burg => [
+      burg.x!,
+      burg.y!,
+      burg.y! - (burg.population! / 5) * options.map.units.population.urbanization.rate * modifier
+    ]);
   appendBars(population.select("#urban"), urban, show, 500);
 }
 

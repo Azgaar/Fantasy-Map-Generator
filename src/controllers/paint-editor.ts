@@ -18,6 +18,7 @@ export interface PaintEditorItem {
   id: number;
   name: string;
   color: string;
+  lock?: boolean;
 }
 
 interface CommonPaintEditorOptions {
@@ -211,7 +212,11 @@ function showCellTip([x, y]: Point): void {
 
   const { itemsById } = getState();
   const names = getCurrentValues(cell)
-    .map(value => itemsById.get(value)?.name)
+    .map(value => {
+      const item = itemsById.get(value);
+      if (!item) return undefined;
+      return item.lock ? `${item.name} (${t("locked")})` : item.name;
+    })
     .filter((name): name is string => Boolean(name));
   tip(names.join(", ") || t("No assignment"));
 }
@@ -237,7 +242,7 @@ function getCurrentValues(cell: number): readonly number[] {
 }
 
 function paintCells(cells: readonly number[], nextValue: number, historyEntry: PaintHistoryEntry): boolean {
-  const { options, changes } = getState();
+  const { options, changes, itemsById } = getState();
   const isErase = options.mode === "multiple" && nextValue === eraseAllValue;
   const landOnly = options.landOnlyControl && ensureEl<HTMLInputElement>("paintEditorLandOnly").checked;
   const dontOverride =
@@ -249,6 +254,7 @@ function paintCells(cells: readonly number[], nextValue: number, historyEntry: P
     const currentValues = getCurrentValues(cell);
     if (landOnly && pack.cells.h[cell] < 20) continue;
     if (dontOverride && currentValues.some(value => value !== 0)) continue;
+    if (currentValues.some(value => value !== nextValue && itemsById.get(value)?.lock)) continue;
 
     const nextValues = getNextValues(options, cell, currentValues, nextValue);
     if (!nextValues || arraysEqual(nextValues, currentValues)) continue;

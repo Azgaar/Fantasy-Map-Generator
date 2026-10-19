@@ -16,6 +16,7 @@ import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { State } from "@/generators/states-generator";
+import { drawRegiment } from "@/renderers/draw-military";
 import type { MilitaryUnit } from "@/types/Military";
 import { downloadFile, getFileName } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
@@ -296,8 +297,7 @@ function renderMilitaryPage(view: TableView<MilitaryRow>): void {
 function changeAlert(state: number, alert: number): void {
   if (alert >= 0) Military.setAlert(state, alert);
   for (const regiment of pack.states[state].military ?? []) {
-    const text = document.querySelector(`#armies #regiment${state}-${regiment.i} > text`);
-    if (text) text.textContent = String(Military.getTotal(regiment));
+    drawRegiment(regiment, state);
   }
   militaryTable.refresh();
 }

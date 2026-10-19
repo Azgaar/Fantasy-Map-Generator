@@ -2,6 +2,7 @@ import { t } from "@/utils/i18n";
 export const LINECAPS = { butt: t("Butt"), round: t("Round"), square: t("Square") };
 export const LINEJOINS = { miter: t("Miter"), round: t("Round"), bevel: t("Bevel") };
 export const FONT_STYLES = { italic: t("Italic") };
+export const TEXT_DECORATIONS = { underline: t("Underline") };
 export const FONT_WEIGHTS = [100, 200, 300, 400, 500, 600, 700, 800, 900, 950] as const;
 export const CLIPS = { "url(#land)": t("water"), "url(#water)": t("land") };
 

@@ -14,6 +14,7 @@ export interface JourneySegment {
   duration?: number; // hours; overrides the distance/speed calculation when set
   custom?: boolean; // path drawn by the user cell-by-cell
   visible?: boolean;
+  note?: string;
 }
 
 export interface Journey {

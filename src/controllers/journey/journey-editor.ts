@@ -61,6 +61,7 @@ const columns: EditorColumn<JourneySegment>[] = [
   { key: "time", label: t("Time"), width: "5em" },
   { key: "roads", width: "1.4em", mobileHidden: true },
   { key: "visible", width: "1.4em", mobileHidden: true },
+  { key: "note", width: "1.4em", mobileHidden: true },
   { key: "points", width: "1.4em", mobileHidden: true },
   { key: "draw", width: "1.4em", mobileHidden: true },
   { key: "reset", width: "1.4em" },
@@ -222,6 +223,7 @@ function renderSegmentsPage(view: TableView<JourneySegment>): void {
   on(".segRoads.pointer", "click", onToggleAvoidRoads);
   on(".segColor", "click", onSegColorPick);
   on(".segVisible", "click", onToggleSegVisible);
+  on(".segNote", "click", onEditSegNote);
   on(".segPoints.pointer", "click", onToggleEditPoints);
   on(".segDraw.pointer", "click", onToggleDrawPath);
   on(".segReset", "click", onSegReset);
@@ -277,6 +279,9 @@ function renderSegmentLine(journey: Journey, segment: JourneySegment): string {
     </div>
     <div data-col="visible">
       <span class="segVisible pointer ${segment.visible === false ? "icon-eye-off" : "icon-eye"}" data-tip="${t("Toggle segment visibility")}"></span>
+    </div>
+    <div data-col="note">
+      <span class="segNote pointer icon-book ${segment.note ? "" : "inactive"}" data-tip="${segment.note ? escapeHtml(segment.note) : t("Edit segment note")}"></span>
     </div>
     <div data-col="points">
       <span class="segPoints icon-pencil ${canEditPoints ? "pointer" : "inactive"}" ${isEditingPoints ? ` style="color: #2a6e2a"` : ""}
@@ -599,6 +604,14 @@ function onSegDelete(this: HTMLElement): void {
   });
 }
 
+function onEditSegNote(this: HTMLElement): void {
+  const segment = getLineSegment(this);
+  const journey = getJourney();
+  if (!segment || !journey) return;
+
+  void Controllers.NotesEditor.open({ type: "journey", id: journey.i, sub: segment.i });
+}
+
 function segmentHighlightOn(this: HTMLElement): void {
   Layers.show("journeys");
   if (editingJourneyId !== null) startJourneyTravel(editingJourneyId, getRowId(this));
@@ -625,7 +638,7 @@ function downloadSegmentsData(): void {
   if (!journey) return;
 
   const unit = getDistanceUnit();
-  const headers = `Idx,Name,Transport,Speed(${unit}/h),EffectiveSpeed(${unit}/h),DistancePx,Distance(${unit}),TimeHours,From,To,AvoidRoads,Custom,Visible,Color`;
+  const headers = `Idx,Name,Transport,Speed(${unit}/h),EffectiveSpeed(${unit}/h),DistancePx,Distance(${unit}),TimeHours,From,To,AvoidRoads,Custom,Visible,Color,Note`;
   const lines = journey.segments.map((segment, index) =>
     [
       index + 1,
@@ -641,7 +654,8 @@ function downloadSegmentsData(): void {
       segment.avoidRoads ? "yes" : "no",
       segment.custom ? "yes" : "no",
       segment.visible === false ? "no" : "yes",
-      segment.color ?? ""
+      segment.color ?? "",
+      toCsvField(segment.note ?? "")
     ].join(",")
   );
 
@@ -671,3 +685,9 @@ function onClose(): void {
 }
 
 export const JourneyEditor = { open };
+
+if (typeof window !== "undefined") {
+  window.addEventListener("notes:context-changed", () => {
+    if (findEl(dialogId)) segmentsTable.refresh();
+  });
+}
