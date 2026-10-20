@@ -272,12 +272,23 @@ Update `docs/domain/glossary.md` (it is a living document) with: **History** (th
 
 ## Build Order
 
+Slice notes:
+
+- Slice 2 chronicle migration — the chronicle *content* flows into events at generation: ongoing-war
+  records written by `generateDiplomacy` become the war events' text (matched by campaign name). The
+  chronicle itself stays on `states[0].diplomacy`: the diplomacy overview uses it as a live,
+  user-editable "Relations history" dialog, so relocating it is a UI/IO refactor deferred beyond
+  slice 5. `States.getChronicle()` is now defensive about its absence.
+- Slice 2 dating — founding age biases with `sqrt(area / largest)` and a uniform jitter; a gaussian
+  was avoided because d3's `randomNormal` loops forever when the test suite pins `Math.random`
+  constant.
+
 Each slice is shippable; nothing user-visible breaks if work stops between slices.
 
 | Slice | Contents | Acceptance |
 |---|---|---|
 | 1 ✅ | `src/types/history.ts`; `Chronicle` model skeleton (`generate()` produces empty history); pipeline step; save/load record 53; options schema + defaults | New map and old map both save/load identically to before; `pack.history` present in saves |
-| 2 | Pass 1 (scaffold) + pass 3 (emission); migrate `states[0].diplomacy` chronicle into events, closing the states-generator TODO; culture/religion divergence events | Every state has a founding; every war (past and ongoing) is an event; invariants above pass |
+| 2 ✅ | Pass 1 (scaffold) + pass 3 (emission); migrate `states[0].diplomacy` chronicle into events; culture/religion divergence events | Every state has a founding; every war (past and ongoing) is an event; invariants above pass |
 | 3 | Pass 2 (ghost realms) + pass 4 (echoes: markers, notes, optional renames) | Realms with valid dates; ruin/battleplace markers from events; successor notes visible in the notes box |
 | 4 | Legends browser (timeline + realms tabs, filters, zoom links); Tools tab entry; Lore Editor history section | Browsable, filterable, clickable chronicle |
 | 5 | Figures: dynasties (2–5 rulers per major state spanning founding→now), coronations, successions, a general per major war — lazily generated, only where events need them | Entity pages list figures; events reference them |

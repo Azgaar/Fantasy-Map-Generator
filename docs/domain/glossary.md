@@ -43,6 +43,10 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Marker**: A specific point of interest placed on the map (e.g., volcano, battlefield, ruin).
 - **Journey**: A route travelled by a party — a quest, a caravan run, a raid — made of ordered Segments. Distinct from a [[Route]], which is a road on the ground that a Journey may follow. Stored in `pack.journeys`.
 - **Zone**: An arbitrary highlighted area of the map defined for custom purposes (e.g., danger zone, magic zone).
+- **History**: The map's chronicle in `pack.history`: dated events, fallen realms and eras. Generated retroactively from the finished world by the Chronicle model, not simulated; older saves carry an empty one. See docs/plans/history-generation.md.
+- **History Event**: A dated entry in `pack.history.events` referencing map entities by `HistRef` (`state`, `realm`, `burg`, `culture`, `religion`). A `lock`ed event survives regeneration.
+- **Chronicle**: The generator model owning `pack.history` (global `Chronicle`; the DOM owns the name `History`). Distinct from the relations chronicle: the user-editable war and relation log the diplomacy overview keeps on `states[0].diplomacy`.
+- **Realm**: A fallen state in `pack.history.realms`, never added to `pack.states`, so politics, statistics and editors never see it.
 - **Diplomacy**: The system of political relationships (allies, enemies, neutral, vassals) between different States.
 - **Regiment / Military**: The armed forces belonging to States or Burgs, represented by units.
 - **Good**: A resource or product (e.g., wood, iron, grain) with properties like value, demand, and recipes. Raw goods have a `distribution`; manufactured goods have `recipes`.

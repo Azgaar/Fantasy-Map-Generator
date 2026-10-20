@@ -761,7 +761,7 @@ class StatesModule {
   // state 0 stores the diplomacy chronicle (array of [title, ...messages])
   // TODO: move to a better place
   getChronicle(): string[][] {
-    return pack.states[0].diplomacy as unknown as string[][];
+    return (pack.states[0]?.diplomacy as unknown as string[][]) ?? [];
   }
 
   // select a forms for listed or all valid states
