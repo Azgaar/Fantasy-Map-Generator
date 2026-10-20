@@ -30,7 +30,7 @@ export class TagsModule {
   }
 
   /** Check if an entity matches a search query by name, alias, or tag */
-  matches(query: string, name?: string, tags?: string[], aliases: (string | undefined)[] = []): boolean {
+  matches(query: string, name?: string, tags?: string[], aliases: (string | null | undefined)[] = []): boolean {
     const q = query.trim().toLocaleLowerCase();
     if (!q) return true;
 

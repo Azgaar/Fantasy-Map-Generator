@@ -879,7 +879,7 @@ function openPaintEditor(): void {
     parentDialogId: dialogId,
     onClose: open,
     items: pack.religions
-      .filter(religion => !religion.removed && (!religion.i || religion.cells))
+      .filter(religion => !religion.removed)
       .map(religion => ({ id: religion.i, name: religion.name, color: religion.color || "#ffffff" })),
     dontOverrideControl: true,
     getValue: cell => pack.cells.religion[cell],

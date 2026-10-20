@@ -373,7 +373,18 @@ function addConnection(from: number, to: number, routeId: number): void {
 }
 
 function changeName(this: HTMLInputElement): void {
-  getRoute().name = this.value;
+  if (this.value.trim()) {
+    Routes.rename(getRoute().i, this.value);
+    Layers.draw("labels");
+  }
+}
+
+function generateName(): void {
+  const route = getRoute();
+  const name = Routes.generateName(route) || UNNAMED_ROUTE;
+  ensureEl<HTMLInputElement>("routeName").value = name;
+  Routes.rename(route.i, name);
+  Layers.draw("labels");
 }
 
 function changeGroup(this: HTMLInputElement): void {
@@ -388,11 +399,6 @@ function changeTags(this: HTMLInputElement): void {
   if (!route) return;
   Tags.set(route, this.value);
   this.value = Tags.format(route.tags);
-}
-
-function generateName(): void {
-  const route = getRoute();
-  route.name = ensureEl<HTMLInputElement>("routeName").value = Routes.generateName(route) || UNNAMED_ROUTE;
 }
 
 function showRouteElevationProfile(): void {

@@ -1,8 +1,12 @@
 name: Build desktop app
 
 on:
-  # Tagging a release (v1.150) builds installers and attaches them to its GitHub release
+  # A new VERSION on master is tagged and released: a patch (1.154.2) is published right away,
+  # a minor (1.155.0) is left as a draft to write the notes for and publish by hand.
+  # Pushing a tag by hand (v1.150) builds it and attaches the installers to its release
   push:
+    branches: [master]
+    paths: ["src/services/versioning.ts"] # not evaluated for tag pushes
     tags: ["v[0-9]*"]
 
   # Cheap guard: make sure the desktop app still compiles when its own files change
@@ -24,8 +28,57 @@ on:
 permissions:
   contents: write
 
+# Two version bumps in a row must not both find their tag missing and release twice
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ steps.target.outputs.ref }}
+      tag: ${{ steps.target.outputs.tag }}
+      new: ${{ steps.target.outputs.new }}
+      publish: ${{ steps.target.outputs.publish }}
+      skip: ${{ steps.target.outputs.skip }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          sparse-checkout: src/services/versioning.ts
+          sparse-checkout-cone-mode: false
+
+      - name: Decide what to build and release
+        id: target
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" != push ] || [ "$GITHUB_REF_TYPE" != branch ]; then
+            TAG="$INPUT_TAG"
+            if [ "$GITHUB_REF_TYPE" = tag ]; then TAG="$GITHUB_REF_NAME"; fi
+            echo "ref=${TAG:-$GITHUB_REF}" >> "$GITHUB_OUTPUT"
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          VERSION=$(grep -oP 'const VERSION = "\K[\d.]+' src/services/versioning.ts)
+          TAG="v$VERSION"
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+            echo "$TAG is already tagged, nothing to release"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "ref=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "new=true" >> "$GITHUB_OUTPUT"
+          if [[ "$VERSION" != *.0 ]]; then echo "publish=true" >> "$GITHUB_OUTPUT"; fi
+          echo "Releasing $TAG"
+
   compile:
+    needs: prepare
+    if: needs.prepare.outputs.skip != 'true'
     runs-on: ubuntu-latest
     env:
       # Compiling needs no Electron binary, only its type definitions
@@ -34,7 +87,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          ref: ${{ inputs.tag || github.ref }}
+          ref: ${{ needs.prepare.outputs.ref }}
 
       - name: Set up Node
         uses: actions/setup-node@v6
@@ -54,7 +107,7 @@ jobs:
         run: npm run electron build
 
   build:
-    needs: compile
+    needs: [prepare, compile]
     if: github.event_name != 'pull_request'
     strategy:
       fail-fast: false
@@ -73,7 +126,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          ref: ${{ inputs.tag || github.ref }}
+          ref: ${{ needs.prepare.outputs.ref }}
 
       - name: Set up Node
         uses: actions/setup-node@v6
@@ -105,17 +158,17 @@ jobs:
             release/latest*.yml
 
   release:
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/') || inputs.tag != ''
+    needs: [prepare, build]
+    if: needs.prepare.outputs.tag != ''
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      TAG: ${{ inputs.tag || github.ref_name }}
+      TAG: ${{ needs.prepare.outputs.tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          ref: ${{ env.TAG }}
+          ref: ${{ needs.prepare.outputs.ref }}
 
       - name: Collect the installers
         uses: actions/download-artifact@v8
@@ -124,7 +177,13 @@ jobs:
           merge-multiple: true
           path: release
 
-      # A tag push has no release yet: start a draft one to fill in and publish by hand
+      # Tagged only once the installers are built, so a failed build is retried by the next push.
+      # GITHUB_TOKEN pushes trigger no workflows, so this does not start a second tag build
+      - name: Tag the version
+        if: needs.prepare.outputs.new == 'true'
+        run: gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$TAG" -f sha="$GITHUB_SHA" --silent
+
+      # Starts as a draft, so the updater never sees a release without its latest*.yml
       - name: Make sure the release exists
         run: gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --draft --title "$TAG" --generate-notes
 
@@ -146,3 +205,18 @@ jobs:
             gh release edit "$TAG" --notes-file notes.md
             echo "Put the download instructions on top of the $TAG notes"
           fi
+
+      - name: Publish the patch release
+        if: needs.prepare.outputs.publish == 'true'
+        run: gh release edit "$TAG" --draft=false --latest
+
+      # Automatic releases keep the tag as their title; renaming one (v1.152.1 [Options]) keeps it
+      - name: Remove the older automatic releases
+        if: needs.prepare.outputs.publish == 'true'
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" -q '.[] | select(.draft | not) | select(.name == .tag_name) | .tag_name' |
+            grep -E '^v[0-9]+\.[0-9]+\.[1-9][0-9]*$' | grep -vxF "$TAG" |
+            while read -r OLD; do
+              gh release delete "$OLD" --yes
+              echo "Removed the $OLD release, its tag stays"
+            done

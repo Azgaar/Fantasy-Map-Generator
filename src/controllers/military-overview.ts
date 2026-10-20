@@ -444,8 +444,9 @@ function militaryCustomize(): void {
     return attr?.length ? "some" : "all";
   }
 
-  const getLimitTip = (attr: number[] | undefined, items: readonly LimitationItem[]): string =>
-    attr?.length ? limitationTip(attr, items) : "";
+  function getLimitTip(attr: number[] | undefined, items: readonly LimitationItem[]): string {
+    return attr?.length ? limitationTip(attr, items) : "";
+  }
 
   const LIMIT_TIPS = {
     biomes: t("Select allowed biomes"),
@@ -580,9 +581,25 @@ function militaryCustomize(): void {
     });
     options.map.military.units = units;
     Options.save(); // the roster is this map's, and what the next map starts from
-    Military.generate();
-    Layers.draw("military");
     rebuildMilitaryColumns();
+
+    ensureEl("alertMessage").innerHTML =
+      "Units are saved. Recalculate military forces for all states?<br>Regiments for all states will be regenerated, so manual changes to them will be lost";
+    $("#alert").dialog({
+      resizable: false,
+      title: "Recalculate military",
+      buttons: {
+        Recalculate: function () {
+          $(this).dialog("close");
+          Military.generate();
+          Layers.draw("military");
+          refreshMilitaryOverview();
+        },
+        "Keep regiments": function () {
+          $(this).dialog("close");
+        }
+      }
+    });
   }
 }
 

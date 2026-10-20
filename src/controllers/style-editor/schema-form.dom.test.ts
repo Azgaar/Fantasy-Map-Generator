@@ -177,6 +177,16 @@ describe("SchemaForm.render", () => {
     expect(onChange).toHaveBeenLastCalledWith(["attrs", "stroke-dasharray"], "5 2");
   });
 
+  test("a select's unset option reads inherit unless the field names it", () => {
+    const named = z.strictObject({
+      plain: z.enum(["a"]).nullable(),
+      named: z.enum(["a"]).register(meta, { unsetLabel: "None" }).nullable()
+    });
+    const form = SchemaForm.render(named, { plain: null, named: null }, { meta, onChange: vi.fn() });
+    expect(field(form, "plain").querySelector("select")?.options[0].text).toBe("inherit");
+    expect(field(form, "named").querySelector("select")?.options[0].text).toBe("None");
+  });
+
   test("clearing a nullable field writes null, an optional one undefined, a required number nothing", () => {
     const { form, onChange } = mount();
 

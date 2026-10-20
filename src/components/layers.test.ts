@@ -250,6 +250,26 @@ describe("erase", () => {
     expect([Layers.isOn("a"), Layers.isOn("b")]).toEqual([true, false]); // state is untouched
   });
 
+  it("eraseAll tolerates missing groups and still releases custom renderer state", () => {
+    const erase = vi.fn();
+    registry(
+      new Layer({ id: "missing", parent: "viewbox" }),
+      new Layer({ id: "scene", parent: "viewbox", erase }),
+      new Layer({ id: "present", parent: "viewbox", children: [{ id: "kept", tag: "g" }] })
+    );
+    document.getElementById("missing")!.remove();
+    document.getElementById("scene")!.remove();
+    document.getElementById("kept")!.innerHTML = /* html */ `<circle />`;
+    const state = Layers.state;
+
+    Layers.eraseAll();
+
+    expect(document.getElementById("missing")).toBeNull();
+    expect(document.getElementById("kept")!.children.length).toBe(0);
+    expect(erase).toHaveBeenCalledTimes(1);
+    expect(Layers.state).toEqual(state);
+  });
+
   it("keeps the content when keepContent is set", () => {
     registry(new Layer({ id: "a", element: "a-el", parent: "viewbox", keepContent: true }));
     Layers.show("a");

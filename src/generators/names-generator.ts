@@ -11,6 +11,8 @@ declare global {
 // Note: Uses array with string keys (sparse array) to match original JS behavior
 type MarkovChain = string[][] & Record<string, string[]>;
 
+const SYLLABIC = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
+
 class NamesGenerator {
   nameBases: NameBase[] = this.getNameBases();
   chains: (MarkovChain | null)[] = []; // Markov chains for namebases
@@ -34,6 +36,7 @@ class NamesGenerator {
           syllable += that;
           if (syllable === " " || syllable === "-") break; // syllable starts with space or hyphen
           if (!next || next === " " || next === "-") break; // no need to check
+          if (SYLLABIC.test(that) || SYLLABIC.test(next)) break; // CJK character is a syllable on its own
 
           if (isVowel(that)) v = 1; // check if letter is vowel
 

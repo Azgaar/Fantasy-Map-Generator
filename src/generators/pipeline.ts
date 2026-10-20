@@ -18,10 +18,12 @@ export class Pipeline<Id extends string = string, TContext = void> {
   async run(context: TContext): Promise<void> {
     INFO && console.group(this.name);
     TIME && console.time(this.name);
+    const start = performance.now();
 
     try {
       for (const step of this.steps) {
         TIME && console.time(step.id);
+        const stepStart = performance.now();
         try {
           await step.run(context);
         } catch (error) {
@@ -29,10 +31,12 @@ export class Pipeline<Id extends string = string, TContext = void> {
           throw new Error(`${this.name} failed at step "${step.id}": ${reason}`, { cause: error });
         } finally {
           TIME && console.timeEnd(step.id);
+          performance.measure(step.id, { start: stepStart, detail: this.name });
         }
       }
     } finally {
       TIME && console.timeEnd(this.name);
+      performance.measure(this.name, { start });
       INFO && console.groupEnd();
     }
   }

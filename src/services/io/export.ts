@@ -8,6 +8,7 @@ import { viewport, ZOOM_CURVES, type ZoomedLayer, zoomFontSize } from "@/compone
 import { renderEmblemDefinitions } from "@/renderers/draw-emblems";
 import { drawScaleBar } from "@/renderers/draw-scalebar";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
+import { restoreOceanVectors } from "@/renderers/ocean-cache";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
 import { savedMessage } from "@/services/platform";
@@ -392,6 +393,7 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
     region
   } = config;
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
+  restoreOceanVectors(cloneEl);
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
   const clone: MapSelection = select(cloneEl);

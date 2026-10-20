@@ -646,7 +646,8 @@ export const stylesSchema = z.strictObject({
     attrs: z.strictObject({
       filter: choice(MAP_FILTERS, {
         label: t("Filter"),
-        tip: t("Set a filter to be applied to the map in general")
+        tip: t("Set a filter to be applied to the map in general"),
+        unsetLabel: t("None")
       }).nullable()
     })
   }),

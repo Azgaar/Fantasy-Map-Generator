@@ -167,19 +167,24 @@ export class LayersRegistry<Id extends string = string> {
   /** draw the listed layers that are ON, always in layer order */
   draw(...ids: Id[]): void {
     for (const layer of this.layers) {
-      if (ids.includes(layer.id) && this.active.has(layer.id)) layer.params.draw?.(layer);
+      if (!layer.params.draw || !ids.includes(layer.id) || !this.active.has(layer.id)) continue;
+      const start = performance.now();
+      layer.params.draw(layer);
+      performance.measure(layer.id, { start, detail: "Layers" });
     }
   }
 
   drawAll(): void {
     INFO && console.group("Layers Rendering");
     TIME && console.time("Layers Rendering");
+    const start = performance.now();
 
     try {
       this.draw(...this.layers.map(layer => layer.id));
     } finally {
       // a throwing renderer must not leave the group open: every later render would nest inside it
       TIME && console.timeEnd("Layers Rendering");
+      performance.measure("Layers Rendering", { start });
       INFO && console.groupEnd();
     }
   }
@@ -256,8 +261,10 @@ export class LayersRegistry<Id extends string = string> {
 
   /** default teardown: drop the content, keeping the declared skeleton */
   private eraseContent(layer: Layer<Id>): void {
+    const group = findEl<SVGGElement>(layer.elementId);
+    if (!group) return; // an incomplete SVG has no content to clear for this layer
     const declared = layer.children.map(child => child.id);
-    for (const child of Array.from(layer.getEl().children)) {
+    for (const child of Array.from(group.children)) {
       if (declared.includes(child.id)) child.replaceChildren();
       else child.remove();
     }
@@ -387,8 +394,8 @@ const mapLayers = [
     erase: removeLabels
   }),
   new Layer({ id: "military", element: "armies", parent: "viewbox", draw: drawMilitary }),
-  new Layer({ id: "markers", parent: "viewbox", draw: drawMarkers }),
   new Layer({ id: "fogging", parent: "viewbox", attrs: { mask: "url(#fog)" }, permanent: true, draw: drawFogging }),
+  new Layer({ id: "markers", parent: "viewbox", draw: drawMarkers }),
   new Layer({ id: "journeys", parent: "viewbox", draw: drawJourneys }),
   new Layer({ id: "rulers", element: "ruler", parent: "viewbox", draw: drawMeasurers }),
   new Layer({ id: "debug", parent: "viewbox", permanent: true, keepContent: true }),

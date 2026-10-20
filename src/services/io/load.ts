@@ -297,6 +297,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     undraw(); // every layer releases its scene and content before the loaded map takes over
     select("#map").remove();
     document.body.insertAdjacentHTML("afterbegin", data[5]);
+    ensureEl("map").dataset.layer = "map"; // pre-1.154 maps lack it, and styles address the root by it
     Hatches.ensureUsed(ensureEl("map"));
     zonesFilter.type = "all"; // the dropped map's zone types say nothing about the loaded one
 
@@ -404,15 +405,16 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       if (state?.military) ensureTags(state.military);
     }
 
-    if (data[31]) {
-      const namesDL = data[31].split("/");
-      namesDL.forEach((d, i) => {
-        const e = d.split("|");
-        if (!e.length) return;
-        const b = e[5].split(",").length > 2 || !Names.nameBases[i] ? e[5] : Names.nameBases[i].b;
-        Names.nameBases[i] = { name: e[0], i, min: +e[1], max: +e[2], d: e[3], m: +e[4], b };
-      });
-    }
+    // save omits names that equal the default base at the same index
+    const defaultNameBases = Names.getNameBases();
+    Names.nameBases = data[31]
+      ? data[31].split("/").map((d, i) => {
+          const e = d.split("|");
+          const b = e[5].split(",").length > 2 || !defaultNameBases[i] ? e[5] : defaultNameBases[i].b;
+          return { name: e[0], i, min: +e[1], max: +e[2], d: e[3], m: +e[4], b };
+        })
+      : defaultNameBases;
+    Names.clearChains();
 
     await resolveVersionConflicts(mapVersion!, data);
 

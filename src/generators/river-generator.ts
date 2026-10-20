@@ -378,7 +378,7 @@ class RiverModule {
           sourceWidth,
           parent,
           cells: riverCells,
-          tags: []
+          tags: [] as string[]
         } as River);
       }
     };

@@ -86,6 +86,17 @@ describe("Burgs", () => {
     expect(pack.burgs[1].walls).toBe(0);
     expect(() => Burgs.setBuilding(1, "tavern", true)).toThrow("The building must be one of");
   });
+
+  it("setPort refuses a river too small to navigate", () => {
+    pack.burgs[1].cell = 1;
+    pack.cells = { haven: [0, 0], r: [0, 5], fl: [0, 20] } as unknown as typeof pack.cells;
+    const drain = vi.spyOn(Rivers, "resolveDrainFeature").mockReturnValue(3);
+    expect(() => Burgs.setPort(1, true)).toThrow("no navigable water");
+    pack.cells.fl[1] = 500;
+    Burgs.setPort(1, true);
+    expect(pack.burgs[1].port).toBe(3);
+    drain.mockRestore();
+  });
 });
 
 describe("full names", () => {
@@ -913,7 +924,11 @@ describe("Military", () => {
       cells: { p: [[5, 6]], h: [30] }
     });
     vi.stubGlobal("options", {
-      map: { military: { units: [{ name: "infantry" }, { name: "archers" }] }, graph: { width: 100, height: 100 } }
+      map: {
+        military: { units: [{ name: "infantry" }, { name: "archers" }] },
+        graph: { width: 100, height: 100 },
+        lore: { calendar: { year: 1200, eraShort: "AE" } }
+      }
     });
     vi.stubGlobal("styles", { military: { options: { boxSize: 3 } } });
     vi.spyOn(Military, "getName").mockReturnValue("New");
@@ -952,6 +967,16 @@ describe("Military", () => {
     expect(pack.states[2].military![0]).toMatchObject({ u: { infantry: 4, archers: 2 }, a: 6 });
     expect(pack.states[1].military!.some(({ i }) => i === 0)).toBe(false);
     expect(() => Military.rotate(1, id, 270)).toThrow("from -180 to 180");
+  });
+
+  it("keeps the attached regiment's note in the target's", () => {
+    pack.states[1].military![0].name = "First";
+    pack.states[1].military![0].note = "Formed in 1100 AE.";
+    pack.states[2].military![0].note = "Formed in 1150 AE.";
+    Military.attach(1, 0, 2, 0);
+    expect(pack.states[2].military![0].note).toBe(
+      "Formed in 1150 AE.<br><br>First merged into the regiment (1200 AE). Its record: Formed in 1100 AE."
+    );
   });
 });
 

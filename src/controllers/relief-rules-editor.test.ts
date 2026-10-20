@@ -118,11 +118,11 @@ describe("ReliefRulesEditor", () => {
   });
 
   it("re-places the relief of every cell a rule claims", () => {
-    const square = () => [
-      [0, 0],
-      [20, 0],
-      [20, 20],
-      [0, 20]
+    const square = (i: number) => [
+      [i * 20, 0],
+      [i * 20 + 20, 0],
+      [i * 20 + 20, 20],
+      [i * 20, 20]
     ];
     globalThis.grid = { cells: { temp: [10, 10, 10] } } as unknown as typeof grid;
     globalThis.Pack = { findCell: () => 0, getPolygon: square } as unknown as typeof Pack;

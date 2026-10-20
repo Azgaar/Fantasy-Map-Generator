@@ -230,7 +230,7 @@ async function showLoadPane(): Promise<void> {
   fileSelect.innerHTML = /* html */ `<option value="" disabled selected>${t("Loading")}…</option>`;
 
   const files = await Services.Cloud.list();
-  if (!files) {
+  if (!files.length) {
     buttons.style.display = "none";
     fileSelect.innerHTML = /* html */ `<option value="" disabled selected>${t("Save files to Dropbox first")}</option>`;
     return;

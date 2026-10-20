@@ -477,6 +477,31 @@ describe("BurgsModule.parseStoredGroups", () => {
   });
 });
 
+describe("BurgsModule.defineGroup", () => {
+  it("assigns burgs only to groups whose state, culture and religion limits they meet", async () => {
+    await import("./burgs-generator");
+    const Burgs = (globalThis as any).Burgs;
+    globalThis.pack = { cells: { biome: [0, 0, 0], religion: [0, 1, 2] } } as any;
+    options.map.burgs.groups = [
+      { name: "elven", order: 4, active: true, cultures: [1] },
+      { name: "royal", order: 3, active: true, states: [2] },
+      { name: "pious", order: 2, active: true, religions: [2] },
+      { name: "town", order: 1, active: true, isDefault: true }
+    ];
+
+    const groupOf = (burg: object) => {
+      const target = { i: 1, population: 1, ...burg } as any;
+      Burgs.defineGroup(target, [1]);
+      return target.group;
+    };
+
+    expect(groupOf({ cell: 1, culture: 1, state: 2 })).toBe("elven");
+    expect(groupOf({ cell: 1, culture: 2, state: 2 })).toBe("royal");
+    expect(groupOf({ cell: 2, culture: 2, state: 1 })).toBe("pious");
+    expect(groupOf({ cell: 1, culture: 2, state: 1 })).toBe("town");
+  });
+});
+
 describe("BurgModule.rename", () => {
   it("renames a burg and its label, and rejects missing burgs and empty names", async () => {
     await import("./burgs-generator");
@@ -496,5 +521,70 @@ describe("BurgModule.rename", () => {
     expect(() => burgs.rename(2, "X")).toThrow("Burg 2 does not exist");
     expect(() => burgs.rename(0, "X")).toThrow("does not exist");
     expect(() => burgs.rename(1, "  ")).toThrow("must not be empty");
+  });
+});
+
+describe("BurgsModule.generate", () => {
+  it("leaves an empty burg list when no cell is habitable", async () => {
+    globalThis.ERROR = false;
+    globalThis.pack = { burgs: undefined, cells: { i: [0, 1, 2], s: [0, 0, 0], culture: [0, 0, 0] } } as any;
+    await import("./burgs-generator");
+
+    (globalThis as any).Burgs.generate();
+
+    expect(globalThis.pack.burgs).toEqual([0]);
+  });
+});
+
+describe("BurgsModule.getPreview — Watabou city river and coast", () => {
+  const params = (burg: object) => {
+    const { link } = (globalThis as any).Burgs.getPreview({
+      i: 1,
+      name: "Vel",
+      population: 10,
+      group: "city",
+      ...burg
+    });
+    const { searchParams } = new URL(link);
+    return { river: searchParams.get("river"), coast: searchParams.get("coast") };
+  };
+
+  beforeEach(async () => {
+    globalThis.options = {
+      map: {
+        seed: "1",
+        units: { population: { scale: 1000, urbanization: { rate: 1, density: 10 } } },
+        burgs: { groups: [{ name: "city", preview: "watabou-city" }] }
+      }
+    } as any;
+    globalThis.Routes = { isCrossroad: () => false } as any;
+    // cells 1 and 2 are on the coast facing water cell 3; river 5 passes cell 1 and meets the sea at cell 2
+    globalThis.pack = {
+      cells: {
+        r: [5, 5, 5, 0],
+        haven: [0, 3, 3, 0],
+        biome: [6, 6, 6, 0],
+        p: [
+          [0, 0],
+          [0, 0],
+          [1, 0],
+          [1, 1]
+        ]
+      },
+      rivers: [{ i: 5, mouth: 2 }]
+    } as any;
+    await import("./burgs-generator");
+  });
+
+  it("drops the river of a coastal port the river only passes", () => {
+    expect(params({ cell: 1, port: 3 })).toEqual({ river: "0", coast: "1" });
+  });
+
+  it("keeps the river of a coastal port at the river mouth", () => {
+    expect(params({ cell: 2, port: 3 })).toEqual({ river: "1", coast: "1" });
+  });
+
+  it("gives an inland river port no coast", () => {
+    expect(params({ cell: 0, port: 3 })).toEqual({ river: "1", coast: "0" });
   });
 });

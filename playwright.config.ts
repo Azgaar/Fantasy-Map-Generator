@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test'
 
 const isCI = !!process.env.CI
 const skipBuild = !!process.env.SKIP_BUILD
+const baseURL = isCI ? 'http://localhost:4173' : 'http://localhost:5173'
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -13,7 +14,9 @@ export default defineConfig({
   // Use OS-independent snapshot names (HTML content is the same across platforms)
   snapshotPathTemplate: '{testDir}/{testFileDir}/{testFileName}-snapshots/{arg}{ext}',
   use: {
-    baseURL: isCI ? 'http://localhost:4173' : 'http://localhost:5173',
+    baseURL,
+    // a first visit opens the update notice in #alert 6s after load, over whatever dialog a test is using
+    storageState: { cookies: [], origins: [{ origin: baseURL, localStorage: [{ name: 'version', value: '99.0.0' }] }] },
     trace: 'on-first-retry',
     // Fixed viewport to ensure consistent map rendering
     viewport: { width: 1280, height: 720 },
@@ -34,7 +37,7 @@ export default defineConfig({
     // In CI: build (done as a separate cached step) and preview for production-like testing
     // In dev: use vite dev server (faster, no rebuild needed)
     command: isCI ? (skipBuild ? 'npm run preview' : 'npm run build && npm run preview') : 'npm run dev',
-    url: isCI ? 'http://localhost:4173' : 'http://localhost:5173',
+    url: baseURL,
     reuseExistingServer: !isCI,
     timeout: 120000,
   },

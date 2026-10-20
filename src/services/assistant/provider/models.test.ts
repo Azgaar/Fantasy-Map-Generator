@@ -37,6 +37,34 @@ describe("filterChatModels", () => {
 });
 
 describe("listModels", () => {
+  it("discovers Gemini chat models with the user's key and excludes specialized models", async () => {
+    const fetchStub = stubFetch([
+      "gemini-flash-latest",
+      "gemini-3.8-flash",
+      "gemini-3.1-pro-preview",
+      "gemini-embedding-001",
+      "gemini-2.5-flash-image",
+      "gemini-2.5-flash-native-audio-latest",
+      "gemini-2.5-flash-preview-tts",
+      "gemini-live-2.5-flash-preview",
+      "gemini-robotics-er-1.5-preview",
+      "gemini-2.5-computer-use-preview-10-2025",
+      "imagen-4.0-generate-001",
+      "veo-3.0-generate-001",
+      "gemma-3-27b-it"
+    ]);
+    const signal = new AbortController().signal;
+    expect(await listModels("gemini", "gemini-key", "", signal)).toEqual([
+      "gemini-flash-latest",
+      "gemini-3.8-flash",
+      "gemini-3.1-pro-preview"
+    ]);
+    expect(fetchStub.mock.calls[0]).toEqual([
+      "https://generativelanguage.googleapis.com/v1beta/openai/models",
+      { headers: { Authorization: "Bearer gemini-key" }, signal }
+    ]);
+  });
+
   it("shows the provider's discovery error", async () => {
     globals.fetch = vi.fn(
       async () => new Response(JSON.stringify({ error: { message: "Invalid API key" } }), { status: 401 })

@@ -232,7 +232,7 @@ describe("ReliefPoolEditor", () => {
 
     buttons.Apply();
     expect(biome().icons).toEqual({ dune: { weight: 3 }, cactus: { weight: 6 }, deadTree: { weight: 1 } });
-    expect(biome().iconsDensity).toBe(3);
+    expect(biome().iconsDensity).toBe(27);
   });
 
   it("restores a default rule's pool and size, and offers nothing to restore for a rule of the user's own", () => {

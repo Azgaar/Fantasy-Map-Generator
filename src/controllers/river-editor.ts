@@ -278,11 +278,16 @@ function removeControlPoint(this: any): void {
 }
 
 function changeName(this: HTMLInputElement): void {
-  if (this.value.trim()) Rivers.rename(getRiver().i, this.value);
+  if (this.value.trim()) {
+    Rivers.rename(getRiver().i, this.value);
+    Layers.draw("labels");
+  }
 }
 
 function changeType(this: HTMLInputElement): void {
-  if (this.value.trim()) Rivers.setType(getRiver().i, this.value);
+  if (!this.value.trim()) return;
+  Rivers.setType(getRiver().i, this.value);
+  Layers.draw("labels");
 }
 
 function changeTags(this: HTMLInputElement): void {
@@ -293,18 +298,18 @@ function changeTags(this: HTMLInputElement): void {
 }
 
 function generateNameCulture(): void {
-  const r = getRiver();
-  const name = Rivers.getName(r.mouth);
+  const river = getRiver();
+  const name = Rivers.getName(river.mouth);
   ensureEl<HTMLInputElement>("riverName").value = name;
-  Rivers.rename(r.i, name);
+  Rivers.rename(river.i, name);
+  Layers.draw("labels");
 }
 
 function generateNameRandom(): void {
-  const r = getRiver();
-  if (!r) return;
   const name = Names.getBase(rand(Names.nameBases.length - 1));
   ensureEl<HTMLInputElement>("riverName").value = name;
-  Rivers.rename(r.i, name);
+  Rivers.rename(getRiver().i, name);
+  Layers.draw("labels");
 }
 
 function changeParent(this: HTMLInputElement): void {
