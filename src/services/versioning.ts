@@ -110,6 +110,7 @@ export async function cleanupData(): Promise<void> {
 }
 
 function showUpdateWindow(storedVersion: string | null): void {
+  if (typeof alertMessage === "undefined") return; // no app shell, e.g. the module was imported by a unit test
   localStorage.setItem("version", VERSION);
 
   const changelog = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog";

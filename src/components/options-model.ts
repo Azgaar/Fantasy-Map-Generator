@@ -69,7 +69,12 @@ class OptionsModel {
           winds: [225, 45, 225, 315, 135, 315]
         },
         cultures: { set: "world" },
-        lore: { name: "", description: "", calendar: { year: 1000, era: "Era", eraShort: "E" } },
+        lore: {
+          name: "",
+          description: "",
+          calendar: { year: 1000, era: "Era", eraShort: "E" },
+          history: { span: 1000, realms: 2, density: 1, echoes: true, renames: false }
+        },
         units: {
           distance: { unit: isImperial() ? "mi" : "km", scale: 3 },
           area: { unit: "square" },

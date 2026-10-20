@@ -134,7 +134,15 @@ const climate = z.strictObject({
 const lore = z.strictObject({
   name: z.string(),
   description: z.string(),
-  calendar: z.strictObject({ year: z.number().int(), era: z.string(), eraShort: z.string() })
+  calendar: z.strictObject({ year: z.number().int(), era: z.string(), eraShort: z.string() }),
+  /** how deep a past the chronicle generates; see docs/plans/history-generation.md */
+  history: z.strictObject({
+    span: positive, // years before the current year the chronicle reaches back to
+    realms: count, // fallen empires to weave into the map
+    density: nonNegative, // event density multiplier
+    echoes: z.boolean(), // place ruins and battlefield markers from events
+    renames: z.boolean() // let a successor state inherit the fallen realm's name
+  })
 });
 
 /** the map's scale, and the author's presentation of it. Units may be named by the user */

@@ -489,7 +489,7 @@ describe("the map carries its own lore", () => {
     delete (older.lore as Partial<MapData["lore"]>).description;
 
     load(JSON.stringify(older));
-    expect(options.map.lore).toEqual({ name: "old", description: "", calendar: defaults().lore.calendar });
+    expect(options.map.lore).toEqual({ ...defaults().lore, name: "old", description: "" });
   });
 });
 

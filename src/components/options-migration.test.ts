@@ -93,7 +93,8 @@ it("migrates definition sets before validating them", () => {
 it("preserves legacy burg groups with comma-separated biome filters through a reload", () => {
   const data = readFileSync("tests/fixtures/1.139.4.map", "utf8").split("\r\n");
   migrateLegacySettings("1.139.4", data);
-  Options.applyLoaded(JSON.parse(data[1]));
+  Options.applyLoaded(JSON.parse(data[1])); // pre-lore.history settings repair with a warning on this first load
+  vi.mocked(console.warn).mockClear();
   const groups = structuredClone(options.map.burgs.groups);
 
   expect(groups).toHaveLength(9);

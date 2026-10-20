@@ -45,7 +45,8 @@ const generationPipelineSteps = [
   { id: "markers", run: () => Markers.generate() },
   { id: "zones", run: () => Zones.generate() },
   { id: "addedLabels", run: () => AddedLabels.initiate() },
-  { id: "journeys", run: () => Journeys.generate() }
+  { id: "journeys", run: () => Journeys.generate() },
+  { id: "history", run: () => Chronicle.generate() }
 ] as const satisfies PipelineStep<string, GenerationContext>[];
 
 type GenerationPipelineStepId = (typeof generationPipelineSteps)[number]["id"];
@@ -90,7 +91,8 @@ const erasePipelineSteps = [
   { id: "taxes", run: () => States.collectTaxes() },
   { id: "military", run: () => Military.generate() },
   { id: "markers", run: () => Markers.generate() },
-  { id: "zones", run: () => Zones.generate() }
+  { id: "zones", run: () => Zones.generate() },
+  { id: "history", run: () => Chronicle.generate() }
 ] as const satisfies PipelineStep<GenerationPipelineStepId, EraseContext>[];
 
 type EraseContext = { erosion: boolean };

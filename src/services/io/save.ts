@@ -9,6 +9,7 @@ import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
 import { isElectron, savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
+import { emptyHistory } from "@/types/history";
 import { ensureEl, escapeHtml, getFileName, link, parseError, rn } from "@/utils";
 import { type SaveOutcome, saveToFileSystem } from "./save-to-file";
 
@@ -67,6 +68,7 @@ function prepareMapData(): string {
   const settings = JSON.stringify(options.map); // what the map is; the requests and preferences stay out
   const measurers = JSON.stringify(pack.measurers ?? []);
   const journeys = JSON.stringify(pack.journeys ?? []);
+  const history = JSON.stringify(pack.history ?? emptyHistory());
   const fonts = JSON.stringify(
     getUsedFonts(
       ensureEl("map") as Element as SVGSVGElement,
@@ -189,7 +191,8 @@ function prepareMapData(): string {
     relief,
     layers,
     graphOverride,
-    journeys
+    journeys,
+    history
   ].join("\r\n");
   return mapData;
 }
