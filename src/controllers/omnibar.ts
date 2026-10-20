@@ -95,7 +95,7 @@ class OmnibarController {
   }
 
   private collect(): Result[] {
-    const commands: CommandResult[] = MAP_COMMANDS.map(command => ({
+    const commands: CommandResult[] = (options.map.viewOnly ? [] : MAP_COMMANDS).map(command => ({
       kind: "command",
       id: command.id,
       name: command.name,
@@ -586,7 +586,7 @@ class OmnibarController {
       } else if (result.kind === "label") {
         this.navigate(result.target, { label: result.label });
       } else {
-        const opened = MapEntities.open(result.target.ref);
+        const opened = !options.map.viewOnly && MapEntities.open(result.target.ref);
         if (opened) await opened;
         else this.navigate(result.target); // the entity has no editor, so reveal it instead
       }

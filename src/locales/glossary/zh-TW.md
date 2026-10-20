@@ -34,6 +34,7 @@ catalog's terms are in [zh.md](zh.md); this file lists where Taiwan usage differ
 | software                     | 软件            | 軟體                         |
 | procedure / engagement       | 程序            | 交戰進程 (procedure: 程序)   |
 | map                          | 地图            | 地圖                         |
+| view-only                    | 仅查看          | 僅供檢視                     |
 
 Terms that match Simplified in Taiwan too (生成, 更改, 配置, 文件 for documentation, 單元格 for cell)
 are kept as in `zh.md`.

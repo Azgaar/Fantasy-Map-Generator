@@ -3029,3 +3029,21 @@ body.tour-free-roam * {
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* a map with options.map.viewOnly: browsing only */
+body.view-only :is(#styleTab, #optionsTab, #toolsTab, #assistantBubble) {
+  display: none !important;
+}
+
+body.view-only #viewbox * {
+  cursor: inherit;
+}
+
+body.view-only #scaleBar {
+  pointer-events: none;
+}
+
+#saveButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

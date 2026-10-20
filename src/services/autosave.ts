@@ -12,7 +12,7 @@ export function initiateAutosave(): void {
 
   async function autosave() {
     const timeoutMinutes = options.app.autosave.interval;
-    if (!timeoutMinutes) return;
+    if (!timeoutMinutes || options.map.viewOnly) return;
 
     const diffInMinutes = (Date.now() - lastSavedAt) / MINUTE;
     if (diffInMinutes < timeoutMinutes) return;

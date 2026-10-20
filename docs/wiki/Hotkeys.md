@@ -24,6 +24,8 @@ General:
 
 <kbd>Cmd</kbd> works instead of <kbd>Ctrl</kbd> on macOS.
 
+On a view-only map only the browsing keys work: <kbd>Space</kbd>, <kbd>F1</kbd>, <kbd>F2</kbd>, <kbd>F9</kbd>, <kbd>Tab</kbd>, <kbd>Escape</kbd>, <kbd>O</kbd>, the arrows, zoom and layer keys.
+
 Map scrolling and zooming:
 
 - <kbd>↑</kbd> - scroll up

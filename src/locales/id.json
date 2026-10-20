@@ -408,7 +408,8 @@
   "Cell Production": "Produksi Sel",
   "Cell info": "Info sel",
   "Cell population: {{total}}; Rural: {{rural}}; Urban: {{urban}}": "Populasi sel: {{total}}; Perdesaan: {{rural}}; Perkotaan: {{urban}}",
-  "Cell rural production: {{production}}. Click to select displayed goods in Goods Editor": "Produksi perdesaan sel: {{production}}. Klik untuk memilih barang yang ditampilkan di Editor Barang",
+  "Cell rural production: {{production}}": "Produksi perdesaan sel: {{production}}",
+  "Click to select displayed goods in Goods Editor": "Klik untuk memilih barang yang ditampilkan di Editor Barang",
   "Cell size": "Ukuran sel",
   "Cell {{- cell}}": "Sel {{- cell}}",
   "Cells": "Sel",
@@ -3447,7 +3448,8 @@
   "{{chance}} chance per cell": "peluang {{chance}} per sel",
   "{{crossTyped}} of {{total}} selected labels are not of the {{targetType}} type": "{{crossTyped}} dari {{total}} label terpilih bukan berjenis {{targetType}}",
   "{{file}} is saved": "{{file}} disimpan",
-  "{{good}} bonus resource. Click to open Goods Editor and select displayed goods": "Sumber daya bonus {{good}}. Klik untuk membuka Editor Barang dan memilih barang yang ditampilkan",
+  "{{good}} bonus resource": "Sumber daya bonus {{good}}",
+  "Click to open Goods Editor and select displayed goods": "Klik untuk membuka Editor Barang dan memilih barang yang ditampilkan",
   "{{good}}: {{amount}} {{unit}} per day": "{{good}}: {{amount}} {{unit}} per hari",
   "{{layer}}: click to toggle, drag to raise or lower the layer": "{{layer}}: klik untuk mengalihkan, seret untuk menaikkan atau menurunkan lapisan",
   "{{map}} Emblems Gallery": "Galeri Lambang {{map}}",
@@ -3513,5 +3515,9 @@
   "Show names": "Tampilkan nama",
   "Toggle regiment visibility on the map": "Alihkan visibilitas resimen pada peta",
   "Toggle visibility": "Alihkan visibilitas",
-  "locked": "terkunci"
+  "locked": "terkunci",
+  "View-only": "Hanya lihat",
+  "It is view-only: editing is disabled": "Hanya lihat: penyuntingan dinonaktifkan",
+  "The map is in view-only mode and cannot be saved": "Peta dalam mode hanya lihat dan tidak dapat disimpan",
+  "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "Peta yang disimpan hanya dibuka untuk dilihat, tanpa penyuntingan. Ini bukan perlindungan: berkasnya sendiri masih dapat diubah"
 }

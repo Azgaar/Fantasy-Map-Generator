@@ -110,3 +110,4 @@ Terms every `ko.json` string uses the same way. Rules for all catalogs are in
 | ruler                          | 자                              |
 | preview / zoom / pan           | 미리보기 / 확대·축소 / 이동     |
 | chat / provider / API key      | 채팅 / 제공자 / API 키          |
+| view-only                      | 보기 전용                       |

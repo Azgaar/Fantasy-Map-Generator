@@ -115,3 +115,4 @@ Terms every `uk.json` string uses the same way. Rules for all catalogs are in
 | zoom / pan                     | масштаб / переміщення              |
 | Azgaar Assistant               | Асистент Azgaar                    |
 | chat / provider / API key      | чат / провайдер / ключ API         |
+| view-only                      | лише перегляд                      |

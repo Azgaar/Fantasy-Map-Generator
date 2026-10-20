@@ -1,4 +1,4 @@
-import { driver } from "driver.js";
+import { type DriveStep, driver } from "driver.js";
 import { closeDialogs } from "@/components/dialog/dialog-helpers";
 import { ensureEl } from "@/utils/nodeUtils";
 import "driver.js/dist/driver.css";
@@ -52,7 +52,7 @@ function start() {
       closeDialogs();
       closeOptionsPanel();
     },
-    steps: [
+    steps: browsingSteps([
       {
         element: "#map",
         popover: {
@@ -381,7 +381,7 @@ function start() {
           }
         }
       }
-    ]
+    ])
   });
 
   function isEditableTarget(target: EventTarget | null): boolean {
@@ -410,6 +410,26 @@ function start() {
   activeTour = tour;
   document.addEventListener("keydown", handleKeydown);
   tour.drive();
+}
+
+// the tabs a view-only map hides and the Save it disables
+const EDITING_STEPS = [
+  "#styleTab",
+  "#stylePreset",
+  "#styleElementSelect",
+  "#optionsTab",
+  "#optionsContent",
+  "#configureWorld",
+  "#worldConfigurator",
+  "#toolsTab",
+  "#editHeightmapButton",
+  "#customizationMenu",
+  "#saveButton"
+];
+
+function browsingSteps(steps: DriveStep[]): DriveStep[] {
+  if (!options.map.viewOnly) return steps;
+  return steps.filter(step => typeof step.element !== "string" || !EDITING_STEPS.includes(step.element));
 }
 
 function hideHeightmapCustomizationPanel() {

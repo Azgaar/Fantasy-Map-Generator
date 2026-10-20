@@ -408,7 +408,8 @@
   "Cell Production": "การผลิตของเซลล์",
   "Cell info": "ข้อมูลเซลล์",
   "Cell population: {{total}}; Rural: {{rural}}; Urban: {{urban}}": "ประชากรของเซลล์: {{total}}; ชนบท: {{rural}}; เมือง: {{urban}}",
-  "Cell rural production: {{production}}. Click to select displayed goods in Goods Editor": "การผลิตในชนบทของเซลล์: {{production}} คลิกเพื่อเลือกสินค้าที่แสดงในตัวแก้ไขสินค้า",
+  "Cell rural production: {{production}}": "การผลิตในชนบทของเซลล์: {{production}}",
+  "Click to select displayed goods in Goods Editor": "คลิกเพื่อเลือกสินค้าที่แสดงในตัวแก้ไขสินค้า",
   "Cell size": "ขนาดเซลล์",
   "Cell {{- cell}}": "เซลล์ {{- cell}}",
   "Cells": "เซลล์",
@@ -3447,7 +3448,8 @@
   "{{chance}} chance per cell": "โอกาส {{chance}} ต่อเซลล์",
   "{{crossTyped}} of {{total}} selected labels are not of the {{targetType}} type": "{{crossTyped}} จาก {{total}} ป้ายชื่อที่เลือกไม่ใช่ประเภท {{targetType}}",
   "{{file}} is saved": "บันทึก {{file}} แล้ว",
-  "{{good}} bonus resource. Click to open Goods Editor and select displayed goods": "ทรัพยากรโบนัส {{good}} คลิกเพื่อเปิดตัวแก้ไขสินค้าและเลือกสินค้าที่แสดง",
+  "{{good}} bonus resource": "ทรัพยากรโบนัส {{good}}",
+  "Click to open Goods Editor and select displayed goods": "คลิกเพื่อเปิดตัวแก้ไขสินค้าและเลือกสินค้าที่แสดง",
   "{{good}}: {{amount}} {{unit}} per day": "{{good}}: {{amount}} {{unit}} ต่อวัน",
   "{{layer}}: click to toggle, drag to raise or lower the layer": "{{layer}}: คลิกเพื่อสลับ ลากเพื่อยกขึ้นหรือลดลงของเลเยอร์",
   "{{map}} Emblems Gallery": "แกลเลอรีตราสัญลักษณ์ {{map}}",
@@ -3513,5 +3515,9 @@
   "Show names": "แสดงชื่อ",
   "Toggle regiment visibility on the map": "สลับการแสดงกรมบนแผนที่",
   "Toggle visibility": "สลับการแสดง",
-  "locked": "ล็อกอยู่"
+  "locked": "ล็อกอยู่",
+  "View-only": "ดูอย่างเดียว",
+  "It is view-only: editing is disabled": "ดูได้อย่างเดียว ปิดการแก้ไขไว้",
+  "The map is in view-only mode and cannot be saved": "แผนที่อยู่ในโหมดดูอย่างเดียวและบันทึกไม่ได้",
+  "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "แผนที่ที่บันทึกจะเปิดให้ดูได้อย่างเดียวและแก้ไขไม่ได้ นี่ไม่ใช่การป้องกัน ตัวไฟล์ยังแก้ไขได้"
 }

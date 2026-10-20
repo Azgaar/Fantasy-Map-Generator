@@ -408,7 +408,8 @@
   "Cell Production": "Celproductie",
   "Cell info": "Celinformatie",
   "Cell population: {{total}}; Rural: {{rural}}; Urban: {{urban}}": "Bevolking van de cel: {{total}}; Landelijk: {{rural}}; Stedelijk: {{urban}}",
-  "Cell rural production: {{production}}. Click to select displayed goods in Goods Editor": "Landelijke productie van de cel: {{production}}. Klik om getoonde goederen in de goederenbewerker te selecteren",
+  "Cell rural production: {{production}}": "Landelijke productie van de cel: {{production}}",
+  "Click to select displayed goods in Goods Editor": "Klik om getoonde goederen in de goederenbewerker te selecteren",
   "Cell size": "Celgrootte",
   "Cell {{- cell}}": "Cel {{- cell}}",
   "Cells": "Cellen",
@@ -3447,7 +3448,8 @@
   "{{chance}} chance per cell": "{{chance}} kans per cel",
   "{{crossTyped}} of {{total}} selected labels are not of the {{targetType}} type": "{{crossTyped}} van de {{total}} geselecteerde labels zijn niet van het type {{targetType}}",
   "{{file}} is saved": "{{file}} is opgeslagen",
-  "{{good}} bonus resource. Click to open Goods Editor and select displayed goods": "Bonusgrondstof {{good}}. Klik om de goederenbewerker te openen en de getoonde goederen te kiezen",
+  "{{good}} bonus resource": "Bonusgrondstof {{good}}",
+  "Click to open Goods Editor and select displayed goods": "Klik om de goederenbewerker te openen en de getoonde goederen te kiezen",
   "{{good}}: {{amount}} {{unit}} per day": "{{good}}: {{amount}} {{unit}} per dag",
   "{{layer}}: click to toggle, drag to raise or lower the layer": "{{layer}}: klik om te wisselen, sleep om de laag omhoog of omlaag te verplaatsen",
   "{{map}} Emblems Gallery": "Galerij met wapens van {{map}}",
@@ -3513,5 +3515,9 @@
   "Show names": "Namen tonen",
   "Toggle regiment visibility on the map": "Zichtbaarheid van het regiment op de kaart wisselen",
   "Toggle visibility": "Zichtbaarheid wisselen",
-  "locked": "vergrendeld"
+  "locked": "vergrendeld",
+  "View-only": "Alleen bekijken",
+  "It is view-only: editing is disabled": "Alleen bekijken: bewerken is uitgeschakeld",
+  "The map is in view-only mode and cannot be saved": "De kaart is alleen te bekijken en kan niet worden opgeslagen",
+  "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "De opgeslagen kaart opent alleen om te bekijken, bewerken is uitgeschakeld. Geen beveiliging: het bestand zelf kan nog steeds worden gewijzigd"
 }

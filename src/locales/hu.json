@@ -408,7 +408,8 @@
   "Cell Production": "Cella termelése",
   "Cell info": "Cellainformáció",
   "Cell population: {{total}}; Rural: {{rural}}; Urban: {{urban}}": "Cella népessége: {{total}}; vidéki: {{rural}}; városi: {{urban}}",
-  "Cell rural production: {{production}}. Click to select displayed goods in Goods Editor": "A cella vidéki termelése: {{production}}. Kattintson a megjelenített áruk kijelöléséhez az Áruszerkesztőben",
+  "Cell rural production: {{production}}": "A cella vidéki termelése: {{production}}",
+  "Click to select displayed goods in Goods Editor": "Kattintson a megjelenített áruk kijelöléséhez az Áruszerkesztőben",
   "Cell size": "Cellaméret",
   "Cell {{- cell}}": "Cella {{- cell}}",
   "Cells": "Cellák",
@@ -3447,7 +3448,8 @@
   "{{chance}} chance per cell": "{{chance}} esély cellánként",
   "{{crossTyped}} of {{total}} selected labels are not of the {{targetType}} type": "A kijelölt {{total}} feliratból {{crossTyped}} nem {{targetType}} típusú",
   "{{file}} is saved": "{{file}} elmentve",
-  "{{good}} bonus resource. Click to open Goods Editor and select displayed goods": "{{good}} bónusz erőforrás. Kattintson az Áruszerkesztő megnyitásához és a megjelenített áruk kiválasztásához",
+  "{{good}} bonus resource": "{{good}} bónusz erőforrás",
+  "Click to open Goods Editor and select displayed goods": "Kattintson az Áruszerkesztő megnyitásához és a megjelenített áruk kiválasztásához",
   "{{good}}: {{amount}} {{unit}} per day": "{{good}}: {{amount}} {{unit}} naponta",
   "{{layer}}: click to toggle, drag to raise or lower the layer": "{{layer}}: kattintás a váltáshoz, húzás a réteg feljebb vagy lejjebb helyezéséhez",
   "{{map}} Emblems Gallery": "Címergaléria: {{map}}",
@@ -3513,5 +3515,9 @@
   "Show names": "Nevek megjelenítése",
   "Toggle regiment visibility on the map": "Ezred láthatóságának váltása a térképen",
   "Toggle visibility": "Láthatóság váltása",
-  "locked": "zárolva"
+  "locked": "zárolva",
+  "View-only": "Csak megtekintés",
+  "It is view-only: editing is disabled": "Csak megtekinthető: a szerkesztés ki van kapcsolva",
+  "The map is in view-only mode and cannot be saved": "A térkép csak megtekinthető, nem menthető",
+  "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "A mentett térkép csak megtekintésre nyílik meg, szerkesztés nélkül. Ez nem védelem: maga a fájl továbbra is módosítható"
 }

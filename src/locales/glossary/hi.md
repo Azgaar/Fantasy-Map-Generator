@@ -94,3 +94,4 @@ Terms every `hi.json` string uses the same way. Rules for all catalogs are in
 | Battle                 | युद्ध                  |                                         |
 | Temperature (weather)  | तापमान                 |                                         |
 | Autosave               | स्वतः सहेजना           |                                         |
+| view-only              | केवल देखने के लिए          |                                         |

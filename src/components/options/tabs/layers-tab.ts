@@ -99,7 +99,7 @@ ensureEl("mapLayers").addEventListener("click", event => {
   const id = (event.target as HTMLElement).closest("li")?.dataset.layer;
   if (!id || !Layers.has(id)) return;
 
-  if (isCtrlClick(event)) return void Controllers.StyleEditor.open(id);
+  if (isCtrlClick(event) && !options.map.viewOnly) return void Controllers.StyleEditor.open(id);
   Layers.toggle(id);
 });
 

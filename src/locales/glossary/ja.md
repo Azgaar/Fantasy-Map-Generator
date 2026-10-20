@@ -131,3 +131,4 @@ Terms every `ja.json` string uses the same way. Rules for all catalogs are in
 | zoom / pan                     | ズーム / パン                          |
 | Azgaar Assistant               | アズガル・アシスタント                  |
 | chat / provider / API key      | チャット / プロバイダー / APIキー       |
+| view-only                      | 閲覧専用                               |

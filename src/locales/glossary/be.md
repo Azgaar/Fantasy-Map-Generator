@@ -134,6 +134,7 @@ Terms every `be.json` string uses the same way. Rules for all catalogs are in
 | zoom / pan                     | маштаб, наблізіць / рухаць         |
 | Azgaar Assistant               | Памочнік Азгаара                        |
 | chat / provider / API key      | чат / правайдэр / ключ API              |
+| view-only                      | толькі прагляд                          |
 
 ## Narrow labels
 

@@ -81,8 +81,9 @@ template raised the terrain and is never consulted again.
 
 **`options.map`** is cell-independent map data: the seed, the graph extent, where the map sits on
 the globe and the climate that produced its per-cell values, the culture set, lore, units, the
-style preset, the definition sets, the coastline settings the renderer reads, and the relief rules. Everything keyed
-by cell lives in `data` instead.
+style preset, the definition sets, the coastline settings the renderer reads, the relief rules, and `viewOnly`
+when the file opens for browsing only (written only by a view-only save). Everything keyed by cell lives in `data`
+instead.
 
 Some of it is **derived** — `geography.coordinates` is computed from `mapSize`, `latitude`,
 `longitude` and the aspect ratio. A derived value is re-derived **the moment any of its inputs

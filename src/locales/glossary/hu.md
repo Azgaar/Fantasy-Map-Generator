@@ -143,3 +143,4 @@ Terms every `hu.json` string uses the same way. Rules for all catalogs are in
 | chat / proposal / tier           | csevegés / javaslat / szint              |
 | guest / member / key             | vendég / tag / kulcs                     |
 | provider / API key               | szolgáltató / API-kulcs                  |
+| view-only                        | csak megtekintés                         |

@@ -131,3 +131,4 @@ Terms every `zh.json` string uses the same way. Rules for all catalogs are in
 | zoom / pan                     | 缩放 / 平移                      |
 | Azgaar Assistant               | Azgaar 助手                      |
 | chat / provider / API key      | 聊天 / 服务商 / API 密钥         |
+| view-only                      | 仅查看                           |

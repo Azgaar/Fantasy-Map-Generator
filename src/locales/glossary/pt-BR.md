@@ -70,3 +70,4 @@ Terms every `pt-BR.json` string uses the same way. Rules for all catalogs are in
 | Preset                        | predefinição               |                                                     |
 | Download                      | Baixar                     |                                                     |
 | Upload                        | Enviar                     |                                                     |
+| view-only                     | somente visualização       |                                                     |

@@ -105,3 +105,4 @@ Terms every `sv.json` string uses the same way. Rules for all catalogs are in
 | chat / proposal / tier          | chatt / förslag / nivå           |
 | guest / member / key            | gäst / medlem / nyckel           |
 | provider                        | leverantör                       |
+| view-only                       | endast visning                   |

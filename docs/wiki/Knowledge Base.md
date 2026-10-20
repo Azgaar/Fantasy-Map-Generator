@@ -180,6 +180,10 @@ There is no transparent background option: the PNG and JPEG exports always inclu
 
 Yes, in browsers that support it, such as Chrome and Edge. The first Save to machine asks for a file name and location; after that Save and Ctrl + S write straight to the same file, until you generate or load another map. Shift-click the Save to machine button, press Ctrl + Shift + S or use the "Save Map As…" command in the Omnibar to save a copy under another name or location. Firefox and Safari have no such picker, so the map is downloaded to the folder set in the browser's download settings
 
+### Can I share a map that others can view but not edit?
+
+Yes. Tick View-only at the bottom of the Save dialog, then save to machine, Dropbox or browser storage. The saved map opens for browsing only: the Style, Options and Tools tabs and the Assistant are hidden, Save is disabled, clicks on the map, editor hotkeys and Omnibar commands open nothing, and tooltips no longer say "Click to edit". Layers, pan and zoom, the Omnibar search, notes on hover, the 3D view and Export still work. The checkbox is unticked whenever the dialog opens, and a view-only save to machine always asks for a new file, so it never replaces your editable map. Adding `view=1` to the URL opens every map loaded in that tab view-only, e.g. `?maplink=<file URL>&view=1`. It is not a protection: the file is plain text and can be changed, and New Map or loading another file leaves view-only mode
+
 ### How can I open a saved .gz or .map file?
 
 Open the generator, click on Load and select the file. Or just drag and drop the file onto the Generator window

@@ -408,7 +408,8 @@
   "Cell Production": "Производство на клетката",
   "Cell info": "Информация за клетката",
   "Cell population: {{total}}; Rural: {{rural}}; Urban: {{urban}}": "Население на клетката: {{total}}; Селско: {{rural}}; Градско: {{urban}}",
-  "Cell rural production: {{production}}. Click to select displayed goods in Goods Editor": "Селско производство на клетката: {{production}}. Щракнете, за да изберете показаните стоки в редактора на стоки",
+  "Cell rural production: {{production}}": "Селско производство на клетката: {{production}}",
+  "Click to select displayed goods in Goods Editor": "Щракнете, за да изберете показаните стоки в редактора на стоки",
   "Cell size": "Размер на клетката",
   "Cell {{- cell}}": "Клетка {{- cell}}",
   "Cells": "Клетки",
@@ -3447,7 +3448,8 @@
   "{{chance}} chance per cell": "{{chance}} шанс на клетка",
   "{{crossTyped}} of {{total}} selected labels are not of the {{targetType}} type": "{{crossTyped}} от {{total}} избрани етикета не са от вид {{targetType}}",
   "{{file}} is saved": "{{file}} е запазен",
-  "{{good}} bonus resource. Click to open Goods Editor and select displayed goods": "Бонус ресурс {{good}}. Щракнете, за да отворите редактора на стоки и да изберете показваните стоки",
+  "{{good}} bonus resource": "Бонус ресурс {{good}}",
+  "Click to open Goods Editor and select displayed goods": "Щракнете, за да отворите редактора на стоки и да изберете показваните стоки",
   "{{good}}: {{amount}} {{unit}} per day": "{{good}}: {{amount}} {{unit}} на ден",
   "{{layer}}: click to toggle, drag to raise or lower the layer": "{{layer}}: щракнете, за да превключите, влачете, за да повишите или понижите слоя",
   "{{map}} Emblems Gallery": "Галерия с гербове на {{map}}",
@@ -3513,5 +3515,9 @@
   "Show names": "Показване на имена",
   "Toggle regiment visibility on the map": "Превключване на видимостта на полка на картата",
   "Toggle visibility": "Превключване на видимостта",
-  "locked": "заключено"
+  "locked": "заключено",
+  "View-only": "Само за преглед",
+  "It is view-only: editing is disabled": "Само за преглед: редакцията е изключена",
+  "The map is in view-only mode and cannot be saved": "Картата е в режим само за преглед и не може да се запази",
+  "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "Запазената карта се отваря само за преглед, без възможност за редакция. Това не е защита: самият файл все още може да се промени"
 }

@@ -172,7 +172,8 @@ export const mapSchema = z.strictObject({
   transports: z.array(transport),
   customIcons,
   coastline: coastlineSettings,
-  relief: z.strictObject({ rules: z.array(reliefRule) })
+  relief: z.strictObject({ rules: z.array(reliefRule) }),
+  viewOnly: z.boolean().optional()
 });
 
 export const optionsSchema = z.strictObject({

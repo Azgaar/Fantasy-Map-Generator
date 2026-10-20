@@ -408,7 +408,8 @@
   "Cell Production": "Производство ячейки",
   "Cell info": "Сведения о ячейке",
   "Cell population: {{total}}; Rural: {{rural}}; Urban: {{urban}}": "Население ячейки: {{total}}; сельское: {{rural}}; городское: {{urban}}",
-  "Cell rural production: {{production}}. Click to select displayed goods in Goods Editor": "Сельское производство ячейки: {{production}}. Нажмите, чтобы выбрать показываемые товары в редакторе товаров",
+  "Cell rural production: {{production}}": "Сельское производство ячейки: {{production}}",
+  "Click to select displayed goods in Goods Editor": "Нажмите, чтобы выбрать показываемые товары в редакторе товаров",
   "Cell size": "Размер ячейки",
   "Cell {{- cell}}": "Ячейка {{- cell}}",
   "Cells": "Ячейки",
@@ -3447,7 +3448,8 @@
   "{{chance}} chance per cell": "шанс {{chance}} на ячейку",
   "{{crossTyped}} of {{total}} selected labels are not of the {{targetType}} type": "{{crossTyped}} из {{total}} выбранных надписей не относятся к типу «{{targetType}}»",
   "{{file}} is saved": "Сохранено: {{file}}",
-  "{{good}} bonus resource. Click to open Goods Editor and select displayed goods": "Бонусный ресурс: {{good}}. Нажмите, чтобы открыть редактор товаров и выбрать показываемые товары",
+  "{{good}} bonus resource": "Бонусный ресурс: {{good}}",
+  "Click to open Goods Editor and select displayed goods": "Нажмите, чтобы открыть редактор товаров и выбрать показываемые товары",
   "{{good}}: {{amount}} {{unit}} per day": "{{good}}: {{amount}} {{unit}} в день",
   "{{layer}}: click to toggle, drag to raise or lower the layer": "{{layer}}: нажмите, чтобы включить или выключить слой, перетащите, чтобы поднять или опустить его",
   "{{map}} Emblems Gallery": "Галерея эмблем: {{map}}",
@@ -3513,5 +3515,9 @@
   "Show names": "Показывать названия",
   "Toggle regiment visibility on the map": "Показать/скрыть полк на карте",
   "Toggle visibility": "Показать/скрыть",
-  "locked": "закреплено"
+  "locked": "закреплено",
+  "View-only": "Только просмотр",
+  "It is view-only: editing is disabled": "Только просмотр: правка отключена",
+  "The map is in view-only mode and cannot be saved": "Карта открыта только для просмотра и не может быть сохранена",
+  "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "Сохранённая карта откроется только для просмотра, правка будет отключена. Это не защита: сам файл всё равно можно изменить"
 }

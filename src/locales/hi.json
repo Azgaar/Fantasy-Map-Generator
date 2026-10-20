@@ -408,7 +408,8 @@
   "Cell Production": "कोशिका उत्पादन",
   "Cell info": "कोशिका जानकारी",
   "Cell population: {{total}}; Rural: {{rural}}; Urban: {{urban}}": "कोशिका जनसंख्या: {{total}}; ग्रामीण: {{rural}}; शहरी: {{urban}}",
-  "Cell rural production: {{production}}. Click to select displayed goods in Goods Editor": "कोशिका का ग्रामीण उत्पादन: {{production}}. वस्तु संपादक में प्रदर्शित वस्तुएँ चुनने के लिए क्लिक करें",
+  "Cell rural production: {{production}}": "कोशिका का ग्रामीण उत्पादन: {{production}}",
+  "Click to select displayed goods in Goods Editor": "वस्तु संपादक में प्रदर्शित वस्तुएँ चुनने के लिए क्लिक करें",
   "Cell size": "कोशिका का आकार",
   "Cell {{- cell}}": "कोशिका {{- cell}}",
   "Cells": "कोशिकाएँ",
@@ -3447,7 +3448,8 @@
   "{{chance}} chance per cell": "प्रति कोशिका {{chance}} संभावना",
   "{{crossTyped}} of {{total}} selected labels are not of the {{targetType}} type": "चुने गए {{total}} लेबलों में से {{crossTyped}} {{targetType}} प्रकार के नहीं हैं",
   "{{file}} is saved": "{{file}} सहेजी गई",
-  "{{good}} bonus resource. Click to open Goods Editor and select displayed goods": "{{good}} बोनस संसाधन। वस्तु संपादक खोलने और प्रदर्शित वस्तुएँ चुनने के लिए क्लिक करें",
+  "{{good}} bonus resource": "{{good}} बोनस संसाधन",
+  "Click to open Goods Editor and select displayed goods": "वस्तु संपादक खोलने और प्रदर्शित वस्तुएँ चुनने के लिए क्लिक करें",
   "{{good}}: {{amount}} {{unit}} per day": "{{good}}: प्रतिदिन {{amount}} {{unit}}",
   "{{layer}}: click to toggle, drag to raise or lower the layer": "{{layer}}: टॉगल करने के लिए क्लिक करें, परत ऊपर या नीचे करने के लिए खींचें",
   "{{map}} Emblems Gallery": "{{map}} एम्बलम गैलरी",
@@ -3513,5 +3515,9 @@
   "Show names": "नाम दिखाएँ",
   "Toggle regiment visibility on the map": "मानचित्र पर रेजिमेंट की दृश्यता टॉगल करें",
   "Toggle visibility": "दृश्यता टॉगल करें",
-  "locked": "लॉक किया गया"
+  "locked": "लॉक किया गया",
+  "View-only": "केवल देखने के लिए",
+  "It is view-only: editing is disabled": "यह केवल देखने के लिए है: संपादन बंद है",
+  "The map is in view-only mode and cannot be saved": "मानचित्र केवल देखने के मोड में है और सहेजा नहीं जा सकता",
+  "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "सहेजा गया मानचित्र केवल देखने के लिए खुलेगा, संपादन बंद रहेगा। यह कोई सुरक्षा नहीं है: फ़ाइल को अब भी बदला जा सकता है"
 }

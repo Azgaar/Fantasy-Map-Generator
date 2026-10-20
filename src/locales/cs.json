@@ -408,7 +408,8 @@
   "Cell Production": "Produkce buňky",
   "Cell info": "Informace o buňce",
   "Cell population: {{total}}; Rural: {{rural}}; Urban: {{urban}}": "Populace buňky: {{total}}; venkov: {{rural}}; města: {{urban}}",
-  "Cell rural production: {{production}}. Click to select displayed goods in Goods Editor": "Venkovská produkce buňky: {{production}}. Kliknutím vyberete zobrazené zboží v Editoru zboží",
+  "Cell rural production: {{production}}": "Venkovská produkce buňky: {{production}}",
+  "Click to select displayed goods in Goods Editor": "Kliknutím vyberete zobrazené zboží v Editoru zboží",
   "Cell size": "Velikost buňky",
   "Cell {{- cell}}": "Buňka {{- cell}}",
   "Cells": "Buňky",
@@ -3447,7 +3448,8 @@
   "{{chance}} chance per cell": "{{chance}} šance na buňku",
   "{{crossTyped}} of {{total}} selected labels are not of the {{targetType}} type": "{{crossTyped}} z {{total}} vybraných popisků není typu {{targetType}}",
   "{{file}} is saved": "Soubor {{file}} je uložen",
-  "{{good}} bonus resource. Click to open Goods Editor and select displayed goods": "Bonusová surovina {{good}}. Kliknutím otevřete Editor zboží a vyberete zobrazené zboží",
+  "{{good}} bonus resource": "Bonusová surovina {{good}}",
+  "Click to open Goods Editor and select displayed goods": "Kliknutím otevřete Editor zboží a vyberete zobrazené zboží",
   "{{good}}: {{amount}} {{unit}} per day": "{{good}}: {{amount}} {{unit}} denně",
   "{{layer}}: click to toggle, drag to raise or lower the layer": "{{layer}}: kliknutím přepnete, tažením vrstvu posunete výš nebo níž",
   "{{map}} Emblems Gallery": "Galerie znaků mapy {{map}}",
@@ -3513,5 +3515,9 @@
   "Show names": "Zobrazit názvy",
   "Toggle regiment visibility on the map": "Přepnout viditelnost pluku na mapě",
   "Toggle visibility": "Přepnout viditelnost",
-  "locked": "zamčeno"
+  "locked": "zamčeno",
+  "View-only": "Jen k prohlížení",
+  "It is view-only: editing is disabled": "Mapa je jen k prohlížení: úpravy jsou vypnuté",
+  "The map is in view-only mode and cannot be saved": "Mapa je v režimu jen k prohlížení a nelze ji uložit",
+  "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "Uložená mapa se otevře jen k prohlížení, s vypnutými úpravami. Nejde o ochranu: samotný soubor lze stále změnit"
 }

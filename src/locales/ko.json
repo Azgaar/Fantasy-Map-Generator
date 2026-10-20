@@ -408,7 +408,8 @@
   "Cell Production": "셀 생산",
   "Cell info": "셀 정보",
   "Cell population: {{total}}; Rural: {{rural}}; Urban: {{urban}}": "셀 인구: {{total}}, 농촌: {{rural}}, 도시: {{urban}}",
-  "Cell rural production: {{production}}. Click to select displayed goods in Goods Editor": "셀 농촌 생산: {{production}}. 클릭하여 상품 편집기에서 표시할 상품 선택",
+  "Cell rural production: {{production}}": "셀 농촌 생산: {{production}}",
+  "Click to select displayed goods in Goods Editor": "클릭하여 상품 편집기에서 표시할 상품 선택",
   "Cell size": "셀 크기",
   "Cell {{- cell}}": "셀 {{- cell}}",
   "Cells": "셀",
@@ -3447,7 +3448,8 @@
   "{{chance}} chance per cell": "셀당 {{chance}} 확률",
   "{{crossTyped}} of {{total}} selected labels are not of the {{targetType}} type": "선택한 라벨 {{total}}개 중 {{crossTyped}}개가 {{targetType}} 유형이 아닙니다",
   "{{file}} is saved": "{{file}}이(가) 저장되었습니다",
-  "{{good}} bonus resource. Click to open Goods Editor and select displayed goods": "{{good}} 보너스 자원. 클릭하여 상품 편집기를 열고 표시할 상품을 선택하세요",
+  "{{good}} bonus resource": "{{good}} 보너스 자원",
+  "Click to open Goods Editor and select displayed goods": "클릭하여 상품 편집기를 열고 표시할 상품을 선택하세요",
   "{{good}}: {{amount}} {{unit}} per day": "{{good}}: 하루 {{amount}} {{unit}}",
   "{{layer}}: click to toggle, drag to raise or lower the layer": "{{layer}}: 클릭하여 전환, 드래그하여 레이어 순서 변경",
   "{{map}} Emblems Gallery": "{{map}} 문장 갤러리",
@@ -3513,5 +3515,9 @@
   "Show names": "이름 표시",
   "Toggle regiment visibility on the map": "지도에서 연대 표시 전환",
   "Toggle visibility": "표시 전환",
-  "locked": "잠김"
+  "locked": "잠김",
+  "View-only": "보기 전용",
+  "It is view-only: editing is disabled": "보기 전용이므로 편집할 수 없습니다",
+  "The map is in view-only mode and cannot be saved": "보기 전용 모드의 지도는 저장할 수 없습니다",
+  "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "저장한 지도는 보기 전용으로 열리며 편집할 수 없습니다. 보호 기능은 아니며, 파일 자체는 여전히 변경할 수 있습니다"
 }

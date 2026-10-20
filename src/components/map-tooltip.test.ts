@@ -12,7 +12,7 @@ import { showMapTooltip, showNotes } from "./map-tooltip";
 
 beforeEach(() => {
   document.body.innerHTML = `
-    <svg id="map"><g id="viewbox"><g id="markers"><g id="marker0"><g><g><path/></g></g></g></g><g id="cultures"><polygon id="cell1"/></g></g></svg>
+    <svg id="map"><g id="viewbox"><g id="markers"><g id="marker0"><g><g><path/></g></g></g></g><g id="cultures"><polygon id="cell1"/></g><g id="labels"><g><g><text id="label1" data-label-type="state" data-id="1">Ovis</text></g></g></g></g></svg>
     <div id="notes"><div id="notesHeader"></div><div id="notesBody"></div></div>
   `;
   globalThis.pack = {
@@ -27,7 +27,7 @@ beforeEach(() => {
       { i: 1, name: "Quenian", ancestry: "Elfish" }
     ]
   } as typeof pack;
-  globalThis.options = { app: { notesPinned: false } } as typeof options;
+  globalThis.options = { app: { notesPinned: false }, map: {} } as typeof options;
   document.getElementById("map")!.addEventListener("mousemove", showNotes);
 });
 
@@ -64,4 +64,17 @@ it("shows culture tooltip without ancestry when empty", () => {
 
   showMapTooltip([0, 0], { ...event, target: cell }, 1, 1);
   expect(tip).toHaveBeenCalledWith("Culture: Quenian");
+});
+
+it.each([
+  [false, "Ovis. Click to edit"],
+  [true, "Ovis"]
+])("hints a click on an editable element unless the map is view-only (%s)", (viewOnly, expected) => {
+  options.map.viewOnly = viewOnly;
+  const label = document.getElementById("label1")!;
+  const event = new MouseEvent("mousemove", { bubbles: true });
+  label.dispatchEvent(event);
+
+  showMapTooltip([0, 0], { ...event, target: label }, 1, 1);
+  expect(tip).toHaveBeenCalledWith(expected);
 });

@@ -80,6 +80,10 @@ const TEMPLATE = /* html */ `
     <p>
       ${t("Maps are saved in .map format, that can be loaded back via the Load in menu. There is no way to restore the progress if file is lost. Please keep old save files on your machine or cloud storage as backups.")}
     </p>
+    <div data-tip="${t("Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed")}">
+      <input id="saveViewOnly" class="checkbox" type="checkbox" />
+      <label for="saveViewOnly" class="checkbox-label">${t("View-only mode")}</label>
+    </div>
   </div>
 
   <div id="loadMapData" style="display: none" class="dialog">
@@ -152,9 +156,9 @@ const ACTIONS: Record<string, (event: MouseEvent) => void> = {
   jsonMinimal: () => Services.ExportJson.exportToJson("Minimal"),
   jsonPackCells: () => Services.ExportJson.exportToJson("PackCells"),
   jsonGridCells: () => Services.ExportJson.exportToJson("GridCells"),
-  saveToMachine: event => Services.Save.toMachine(event.shiftKey),
-  saveToDropbox: () => Services.Save.toDropbox(),
-  saveToStorage: () => Services.Save.toStorage(),
+  saveToMachine: event => Services.Save.toMachine(event.shiftKey, isViewOnlyCopy()),
+  saveToDropbox: () => Services.Save.toDropbox(isViewOnlyCopy()),
+  saveToStorage: () => Services.Save.toStorage(isViewOnlyCopy()),
   loadFromURL: () => loadURL(),
   loadFromStorage: () => Services.Load.quickLoad(),
   connectDropbox: () => connectToDropbox(),
@@ -163,6 +167,8 @@ const ACTIONS: Record<string, (event: MouseEvent) => void> = {
   copyLink: () => copyLinkToClipboard()
 };
 
+const isViewOnlyCopy = (): boolean => ensureEl<HTMLInputElement>("saveViewOnly").checked;
+
 const closeButton = {
   [t("Close")]: function (this: HTMLElement) {
     $(this).dialog("close");
@@ -170,6 +176,8 @@ const closeButton = {
 };
 
 function showSavePane(): void {
+  ensureEl<HTMLInputElement>("saveViewOnly").checked = false; // a view-only save is chosen each time
+
   $("#saveMapData").dialog({
     title: t("Save map"),
     resizable: false,

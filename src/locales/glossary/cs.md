@@ -107,3 +107,4 @@ Terms every `cs.json` string uses the same way. Rules for all catalogs are in
 | preview                          | náhled                                   |
 | Azgaar Assistant                 | Azgaarův asistent                        |
 | provider / API key               | poskytovatel / klíč API                  |
+| view-only                        | jen k prohlížení                         |

@@ -274,6 +274,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     const settings = data[1] ? safeParseJSON(data[1]) : null;
     if (!settings) throw new Error("Map settings are missing or malformed");
     Options.applyLoaded(settings);
+    if (new URL(window.location.href).searchParams.get("view") === "1") options.map.viewOnly = true;
     syncOptionInputs();
     await Controllers.StylePresetsEditor.init(); // the preset row follows the loaded map
 
@@ -717,7 +718,13 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     const mapCreatedAt = +data[0].split("|")[6] || Date.now();
     registerMap(mapCreatedAt);
     logStats();
-    tip(t("Map is successfully loaded"), true, "success", 7000);
+    const loaded = t("Map is successfully loaded");
+    tip(
+      options.map.viewOnly ? sentences(loaded, t("It is view-only: editing is disabled")) : loaded,
+      true,
+      "success",
+      7000
+    );
   } catch (error) {
     ERROR && console.error(error);
     clearMainTip();

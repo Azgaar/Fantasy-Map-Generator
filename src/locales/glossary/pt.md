@@ -109,3 +109,4 @@ Terms every `pt.json` string uses the same way. Rules for all catalogs are in
 | chat / proposal / tier           | conversa / proposta / nível         |
 | guest / member / key             | convidado / membro / chave          |
 | provider                         | fornecedor                          |
+| view-only                        | apenas visualização                 |

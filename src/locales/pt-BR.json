@@ -408,7 +408,8 @@
   "Cell Production": "Produção da célula",
   "Cell info": "Informações da célula",
   "Cell population: {{total}}; Rural: {{rural}}; Urban: {{urban}}": "População da célula: {{total}}; rural: {{rural}}; urbana: {{urban}}",
-  "Cell rural production: {{production}}. Click to select displayed goods in Goods Editor": "Produção rural da célula: {{production}}. Clique para selecionar as mercadorias exibidas no Editor de mercadorias",
+  "Cell rural production: {{production}}": "Produção rural da célula: {{production}}",
+  "Click to select displayed goods in Goods Editor": "Clique para selecionar as mercadorias exibidas no Editor de mercadorias",
   "Cell size": "Tamanho da célula",
   "Cell {{- cell}}": "Célula {{- cell}}",
   "Cells": "Células",
@@ -3447,7 +3448,8 @@
   "{{chance}} chance per cell": "{{chance}} de chance por célula",
   "{{crossTyped}} of {{total}} selected labels are not of the {{targetType}} type": "{{crossTyped}} de {{total}} rótulos selecionados não são do tipo {{targetType}}",
   "{{file}} is saved": "{{file}} foi salvo",
-  "{{good}} bonus resource. Click to open Goods Editor and select displayed goods": "Recurso bônus de {{good}}. Clique para abrir o Editor de mercadorias e selecionar as mercadorias exibidas",
+  "{{good}} bonus resource": "Recurso bônus de {{good}}",
+  "Click to open Goods Editor and select displayed goods": "Clique para abrir o Editor de mercadorias e selecionar as mercadorias exibidas",
   "{{good}}: {{amount}} {{unit}} per day": "{{good}}: {{amount}} {{unit}} por dia",
   "{{layer}}: click to toggle, drag to raise or lower the layer": "{{layer}}: clique para alternar; arraste para subir ou descer a camada",
   "{{map}} Emblems Gallery": "Galeria de emblemas de {{map}}",
@@ -3513,5 +3515,9 @@
   "Show names": "Mostrar nomes",
   "Toggle regiment visibility on the map": "Alternar a visibilidade do regimento no mapa",
   "Toggle visibility": "Alternar visibilidade",
-  "locked": "bloqueado"
+  "locked": "bloqueado",
+  "View-only": "Somente visualização",
+  "It is view-only: editing is disabled": "Somente visualização: a edição está desativada",
+  "The map is in view-only mode and cannot be saved": "O mapa está no modo somente visualização e não pode ser salvo",
+  "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "O mapa salvo abre somente para visualização, com a edição desativada. Não é uma proteção: o próprio arquivo ainda pode ser alterado"
 }

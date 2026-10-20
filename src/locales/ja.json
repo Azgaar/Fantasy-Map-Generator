@@ -408,7 +408,8 @@
   "Cell Production": "セルの生産",
   "Cell info": "セル情報",
   "Cell population: {{total}}; Rural: {{rural}}; Urban: {{urban}}": "セルの人口：{{total}}；農村：{{rural}}；都市：{{urban}}",
-  "Cell rural production: {{production}}. Click to select displayed goods in Goods Editor": "セルの農村生産：{{production}}。クリックすると商品エディターで表示する商品を選択できます",
+  "Cell rural production: {{production}}": "セルの農村生産：{{production}}",
+  "Click to select displayed goods in Goods Editor": "クリックすると商品エディターで表示する商品を選択できます",
   "Cell size": "セルのサイズ",
   "Cell {{- cell}}": "セル {{- cell}}",
   "Cells": "セル",
@@ -3447,7 +3448,8 @@
   "{{chance}} chance per cell": "セルごとに{{chance}}の確率",
   "{{crossTyped}} of {{total}} selected labels are not of the {{targetType}} type": "選択したラベル {{total}} 件のうち {{crossTyped}} 件は {{targetType}} の種類ではありません",
   "{{file}} is saved": "{{file}} を保存しました",
-  "{{good}} bonus resource. Click to open Goods Editor and select displayed goods": "{{good}} のボーナス資源。クリックすると商品エディターを開き、表示する商品を選択できます",
+  "{{good}} bonus resource": "{{good}} のボーナス資源",
+  "Click to open Goods Editor and select displayed goods": "クリックすると商品エディターを開き、表示する商品を選択できます",
   "{{good}}: {{amount}} {{unit}} per day": "{{good}}：1日あたり {{amount}} {{unit}}",
   "{{layer}}: click to toggle, drag to raise or lower the layer": "{{layer}}：クリックで切り替え、ドラッグでレイヤーを上げ下げ",
   "{{map}} Emblems Gallery": "{{map}} の紋章ギャラリー",
@@ -3513,5 +3515,9 @@
   "Show names": "名前を表示",
   "Toggle regiment visibility on the map": "地図上の連隊の表示を切り替え",
   "Toggle visibility": "表示を切り替え",
-  "locked": "ロック中"
+  "locked": "ロック中",
+  "View-only": "閲覧専用",
+  "It is view-only: editing is disabled": "閲覧専用のため、編集はできません",
+  "The map is in view-only mode and cannot be saved": "閲覧専用モードの地図は保存できません",
+  "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "保存した地図は閲覧専用で開き、編集はできません。これは保護ではなく、ファイル自体は引き続き変更できます"
 }

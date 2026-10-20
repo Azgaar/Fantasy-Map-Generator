@@ -81,12 +81,12 @@ export function openEditor(element: Element): boolean {
 }
 
 function onClick(event: MouseEvent): void {
-  if (event?.target) openEditor(event.target as Element);
+  if (event?.target && !options.map.viewOnly) openEditor(event.target as Element);
 }
 
 /** Right-click on the map belongs to the context menu; Shift+right-click keeps the browser's own */
 function onContextMenu(event: MouseEvent): void {
-  if (event.shiftKey || customization) return;
+  if (event.shiftKey || customization || options.map.viewOnly) return;
   event.preventDefault();
   Controllers.ContextMenu.open(event);
 }

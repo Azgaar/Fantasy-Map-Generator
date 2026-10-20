@@ -105,3 +105,4 @@ Terms every `vi.json` string uses the same way. Rules for all catalogs are in
 | chat / proposal / tier          | trò chuyện / đề xuất / cấp       |
 | guest / member / key            | khách / thành viên / khóa        |
 | provider                        | nhà cung cấp                     |
+| view-only                       | chỉ xem                          |

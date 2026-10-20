@@ -408,7 +408,8 @@
   "Cell Production": "Selproduksie",
   "Cell info": "Selinligting",
   "Cell population: {{total}}; Rural: {{rural}}; Urban: {{urban}}": "Selbevolking: {{total}}; landelik: {{rural}}; stedelik: {{urban}}",
-  "Cell rural production: {{production}}. Click to select displayed goods in Goods Editor": "Landelike produksie van die sel: {{production}}. Klik om die gewysde produkte in die produkredigeerder te kies",
+  "Cell rural production: {{production}}": "Landelike produksie van die sel: {{production}}",
+  "Click to select displayed goods in Goods Editor": "Klik om die gewysde produkte in die produkredigeerder te kies",
   "Cell size": "Selgrootte",
   "Cell {{- cell}}": "Sel {{- cell}}",
   "Cells": "Selle",
@@ -3447,7 +3448,8 @@
   "{{chance}} chance per cell": "{{chance}} kans per sel",
   "{{crossTyped}} of {{total}} selected labels are not of the {{targetType}} type": "{{crossTyped}} van {{total}} gekose etikette is nie van die tipe {{targetType}} nie",
   "{{file}} is saved": "{{file}} is gestoor",
-  "{{good}} bonus resource. Click to open Goods Editor and select displayed goods": "Bonushulpbron {{good}}. Klik om die produkredigeerder oop te maak en die gewysde produkte te kies",
+  "{{good}} bonus resource": "Bonushulpbron {{good}}",
+  "Click to open Goods Editor and select displayed goods": "Klik om die produkredigeerder oop te maak en die gewysde produkte te kies",
   "{{good}}: {{amount}} {{unit}} per day": "{{good}}: {{amount}} {{unit}} per dag",
   "{{layer}}: click to toggle, drag to raise or lower the layer": "{{layer}}: klik om aan of af te skakel; sleep om die laag hoër of laer te skuif",
   "{{map}} Emblems Gallery": "Wapengalery: {{map}}",
@@ -3513,5 +3515,9 @@
   "Show names": "Wys name",
   "Toggle regiment visibility on the map": "Wissel regiment se sigbaarheid op die kaart",
   "Toggle visibility": "Wissel sigbaarheid",
-  "locked": "gesluit"
+  "locked": "gesluit",
+  "View-only": "Slegs-kyk",
+  "It is view-only: editing is disabled": "Dit is slegs-kyk: wysiging is gedeaktiveer",
+  "The map is in view-only mode and cannot be saved": "Die kaart is in slegs-kyk-modus en kan nie gestoor word nie",
+  "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "Die gestoorde kaart maak slegs oop om te bekyk, met wysiging gedeaktiveer. Nie 'n beskerming nie: die lêer self kan steeds verander word"
 }

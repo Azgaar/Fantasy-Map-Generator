@@ -76,6 +76,19 @@ describe("saveToFileSystem", () => {
     expect(second.stream.write.mock.calls).toEqual([["three"], ["four"]]);
   });
 
+  it("always picks a file for a copy and never makes it the destination", async () => {
+    const main = makeHandle("Main.map");
+    const copy = makeHandle("Copy.map");
+    const picker = vi.fn().mockResolvedValueOnce(main.handle).mockResolvedValueOnce(copy.handle);
+    vi.stubGlobal("showSaveFilePicker", picker);
+    await saveToFileSystem(() => "one", "Map.map");
+    await saveToFileSystem(() => "copy", "Map.map", false, true);
+    await saveToFileSystem(() => "two", "Map.map");
+    expect(picker).toHaveBeenCalledTimes(2);
+    expect(main.stream.write.mock.calls).toEqual([["one"], ["two"]]);
+    expect(copy.stream.write.mock.calls).toEqual([["copy"]]);
+  });
+
   it("retains the previous destination when Save As is cancelled", async () => {
     const { handle, stream } = makeHandle();
     const picker = vi

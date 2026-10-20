@@ -28,7 +28,7 @@ import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { copyMapURL } from "@/services/url-params";
 import { confirmCleanupData } from "@/services/versioning";
 import { Catalog, sentences, t } from "@/utils/i18n";
-import { applyOption, ensureEl } from "@/utils/nodeUtils";
+import { applyOption, ensureEl, findEl } from "@/utils/nodeUtils";
 import { minmax, rn } from "@/utils/numberUtils";
 import {
   ADVANCED_OPTIONS_ID,
@@ -577,6 +577,20 @@ export function syncOptionInputs(): void {
   syncCellsDensity();
   syncCultures();
   syncPngResolution();
+  syncViewOnly();
+}
+
+function syncViewOnly(): void {
+  const viewOnly = !!options.map.viewOnly;
+  document.body.classList.toggle("view-only", viewOnly);
+  if (viewOnly) findEl("layersTab")?.click();
+
+  const saveButton = findEl<HTMLButtonElement>("saveButton");
+  if (!saveButton) return;
+  saveButton.disabled = viewOnly;
+  saveButton.dataset.tip = viewOnly
+    ? t("The map is in view-only mode and cannot be saved")
+    : t("Save fully-functional map file");
 }
 
 function syncManors(): void {

@@ -408,7 +408,8 @@
   "Cell Production": "Cellproduktion",
   "Cell info": "Cellinformation",
   "Cell population: {{total}}; Rural: {{rural}}; Urban: {{urban}}": "Cellens befolkning: {{total}}; Landsbygd: {{rural}}; Städer: {{urban}}",
-  "Cell rural production: {{production}}. Click to select displayed goods in Goods Editor": "Cellens landsbygdsproduktion: {{production}}. Klicka för att välja visade varor i varuredigeraren",
+  "Cell rural production: {{production}}": "Cellens landsbygdsproduktion: {{production}}",
+  "Click to select displayed goods in Goods Editor": "Klicka för att välja visade varor i varuredigeraren",
   "Cell size": "Cellstorlek",
   "Cell {{- cell}}": "Cell {{- cell}}",
   "Cells": "Celler",
@@ -3447,7 +3448,8 @@
   "{{chance}} chance per cell": "{{chance}} chans per cell",
   "{{crossTyped}} of {{total}} selected labels are not of the {{targetType}} type": "{{crossTyped}} av {{total}} markerade etiketter är inte av typen {{targetType}}",
   "{{file}} is saved": "{{file}} är sparad",
-  "{{good}} bonus resource. Click to open Goods Editor and select displayed goods": "Bonusresurs {{good}}. Klicka för att öppna varuredigeraren och välja visade varor",
+  "{{good}} bonus resource": "Bonusresurs {{good}}",
+  "Click to open Goods Editor and select displayed goods": "Klicka för att öppna varuredigeraren och välja visade varor",
   "{{good}}: {{amount}} {{unit}} per day": "{{good}}: {{amount}} {{unit}} per dag",
   "{{layer}}: click to toggle, drag to raise or lower the layer": "{{layer}}: klicka för att växla, dra för att höja eller sänka lagret",
   "{{map}} Emblems Gallery": "Vapengalleri för {{map}}",
@@ -3513,5 +3515,9 @@
   "Show names": "Visa namn",
   "Toggle regiment visibility on the map": "Visa/dölj regemente på kartan",
   "Toggle visibility": "Visa/dölj",
-  "locked": "låst"
+  "locked": "låst",
+  "View-only": "Endast visning",
+  "It is view-only: editing is disabled": "Endast visning: redigering är avstängd",
+  "The map is in view-only mode and cannot be saved": "Kartan är endast för visning och kan inte sparas",
+  "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "Den sparade kartan öppnas endast för visning, utan redigering. Inget skydd: själva filen kan fortfarande ändras"
 }

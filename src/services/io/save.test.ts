@@ -60,6 +60,15 @@ describe("save feedback", () => {
 });
 
 describe("Save.toMachine", () => {
+  it("refuses a view-only map before opening the picker", async () => {
+    vi.stubGlobal("options", { map: { viewOnly: true } });
+    const picker = vi.fn();
+    vi.stubGlobal("showSaveFilePicker", picker);
+    await Save.toMachine();
+    expect(picker).not.toHaveBeenCalled();
+    expect(document.getElementById("tooltip")!.textContent).toContain("view-only");
+  });
+
   it("rejects saving in edit mode before opening the picker", async () => {
     vi.stubGlobal("customization", 1);
     const picker = vi.fn();

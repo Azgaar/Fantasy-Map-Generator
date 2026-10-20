@@ -105,3 +105,4 @@ Terms every `da.json` string uses the same way. Rules for all catalogs are in
 | chat / proposal / tier          | chat / forslag / niveau          |
 | guest / member / key            | gæst / medlem / nøgle            |
 | provider                        | udbyder                          |
+| view-only                       | kun til visning                  |

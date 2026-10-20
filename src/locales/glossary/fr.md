@@ -108,3 +108,4 @@ Terms every `fr.json` string uses the same way. Rules for all catalogs are in
 | chat / proposal / tier           | discussion / proposition / niveau       |
 | guest / member / key             | invité / membre / clé                   |
 | provider                         | fournisseur                             |
+| view-only                        | lecture seule                           |

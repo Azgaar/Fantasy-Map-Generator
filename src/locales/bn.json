@@ -408,7 +408,8 @@
   "Cell Production": "কোষের উৎপাদন",
   "Cell info": "কোষের তথ্য",
   "Cell population: {{total}}; Rural: {{rural}}; Urban: {{urban}}": "কোষের জনসংখ্যা: {{total}}; গ্রামীণ: {{rural}}; শহুরে: {{urban}}",
-  "Cell rural production: {{production}}. Click to select displayed goods in Goods Editor": "কোষের গ্রামীণ উৎপাদন: {{production}}। পণ্য সম্পাদকে প্রদর্শিত পণ্য বাছাই করতে ক্লিক করুন",
+  "Cell rural production: {{production}}": "কোষের গ্রামীণ উৎপাদন: {{production}}",
+  "Click to select displayed goods in Goods Editor": "পণ্য সম্পাদকে প্রদর্শিত পণ্য বাছাই করতে ক্লিক করুন",
   "Cell size": "কোষের আকার",
   "Cell {{- cell}}": "কোষ {{- cell}}",
   "Cells": "কোষ",
@@ -3447,7 +3448,8 @@
   "{{chance}} chance per cell": "প্রতি কোষে {{chance}} সম্ভাবনা",
   "{{crossTyped}} of {{total}} selected labels are not of the {{targetType}} type": "নির্বাচিত {{total}}টি লেবেলের মধ্যে {{crossTyped}}টি {{targetType}} ধরনের নয়",
   "{{file}} is saved": "{{file}} সংরক্ষিত হয়েছে",
-  "{{good}} bonus resource. Click to open Goods Editor and select displayed goods": "{{good}} বোনাস সম্পদ। প্রদর্শিত পণ্য বাছাই করতে পণ্য সম্পাদক খুলতে ক্লিক করুন",
+  "{{good}} bonus resource": "{{good}} বোনাস সম্পদ",
+  "Click to open Goods Editor and select displayed goods": "প্রদর্শিত পণ্য বাছাই করতে পণ্য সম্পাদক খুলতে ক্লিক করুন",
   "{{good}}: {{amount}} {{unit}} per day": "{{good}}: প্রতিদিন {{amount}} {{unit}}",
   "{{layer}}: click to toggle, drag to raise or lower the layer": "{{layer}}: টগল করতে ক্লিক করুন, স্তর উঁচু বা নিচু করতে টানুন",
   "{{map}} Emblems Gallery": "{{map}} প্রতীক গ্যালারি",
@@ -3513,5 +3515,9 @@
   "Show names": "নাম দেখান",
   "Toggle regiment visibility on the map": "মানচিত্রে রেজিমেন্টের দৃশ্যমানতা বদলান",
   "Toggle visibility": "দৃশ্যমানতা বদলান",
-  "locked": "লক করা"
+  "locked": "লক করা",
+  "View-only": "শুধু দেখার জন্য",
+  "It is view-only: editing is disabled": "এটি শুধু দেখার জন্য: সম্পাদনা বন্ধ",
+  "The map is in view-only mode and cannot be saved": "মানচিত্রটি শুধু দেখার মোডে আছে, তাই সংরক্ষণ করা যাবে না",
+  "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "সংরক্ষিত মানচিত্র শুধু দেখার জন্য খুলবে, সম্পাদনা বন্ধ থাকবে। এটি কোনো সুরক্ষা নয়: ফাইলটি এখনও বদলানো যায়"
 }

@@ -116,3 +116,4 @@ Terms every `tr.json` string uses the same way. Rules for all catalogs are in
 | zoom / pan                   | yakınlaştırma / kaydırma |
 | Azgaar Assistant             | Azgaar Asistanı          |
 | chat / provider / API key    | sohbet / sağlayıcı / API anahtarı |
+| view-only                    | salt görüntüleme         |

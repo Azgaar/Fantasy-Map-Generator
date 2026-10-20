@@ -249,6 +249,11 @@ describe("validation repairs rather than rejects", () => {
     expect(map.climate).not.toHaveProperty("humidity");
   });
 
+  it("keeps the view-only flag of a file, and a file without it opens editable", () => {
+    expect(adopt(file => (file.viewOnly = true)).viewOnly).toBe(true);
+    expect(adopt(() => {}).viewOnly).toBeUndefined();
+  });
+
   it("strips an unknown key nested inside a section", () => {
     const map = adopt(file => {
       file.climate.temperature.equator = 33;

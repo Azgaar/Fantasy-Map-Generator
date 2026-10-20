@@ -105,3 +105,4 @@ Terms every `de.json` string uses the same way. Rules for all catalogs are in
 | chat / proposal / tier       | Chat / Vorschlag / Stufe        |
 | guest / member / key         | Gast / Mitglied / Schlüssel     |
 | provider                     | Anbieter                        |
+| view-only                    | nur zur Ansicht                 |

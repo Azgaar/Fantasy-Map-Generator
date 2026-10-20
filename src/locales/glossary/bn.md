@@ -91,3 +91,4 @@ Terms every `bn.json` string uses the same way. Rules for all catalogs are in
 | search                         | অনুসন্ধান                            |
 | Azgaar Assistant               | আজগার সহকারী                         |
 | chat / provider / API key      | চ্যাট / প্রদানকারী / API কী          |
+| view-only                      | শুধু দেখার জন্য                         |

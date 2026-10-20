@@ -408,7 +408,8 @@
   "Cell Production": "Sản xuất của ô",
   "Cell info": "Thông tin ô",
   "Cell population: {{total}}; Rural: {{rural}}; Urban: {{urban}}": "Dân số ô: {{total}}; Nông thôn: {{rural}}; Đô thị: {{urban}}",
-  "Cell rural production: {{production}}. Click to select displayed goods in Goods Editor": "Sản xuất nông thôn của ô: {{production}}. Nhấp để chọn hàng hóa hiển thị trong Trình chỉnh sửa hàng hóa",
+  "Cell rural production: {{production}}": "Sản xuất nông thôn của ô: {{production}}",
+  "Click to select displayed goods in Goods Editor": "Nhấp để chọn hàng hóa hiển thị trong Trình chỉnh sửa hàng hóa",
   "Cell size": "Kích thước ô",
   "Cell {{- cell}}": "Ô {{- cell}}",
   "Cells": "Các ô",
@@ -3447,7 +3448,8 @@
   "{{chance}} chance per cell": "xác suất {{chance}} mỗi ô",
   "{{crossTyped}} of {{total}} selected labels are not of the {{targetType}} type": "{{crossTyped}} trên {{total}} nhãn đã chọn không thuộc loại {{targetType}}",
   "{{file}} is saved": "Đã lưu {{file}}",
-  "{{good}} bonus resource. Click to open Goods Editor and select displayed goods": "Tài nguyên thưởng {{good}}. Nhấp để mở Trình chỉnh sửa hàng hóa và chọn hàng hóa hiển thị",
+  "{{good}} bonus resource": "Tài nguyên thưởng {{good}}",
+  "Click to open Goods Editor and select displayed goods": "Nhấp để mở Trình chỉnh sửa hàng hóa và chọn hàng hóa hiển thị",
   "{{good}}: {{amount}} {{unit}} per day": "{{good}}: {{amount}} {{unit}} mỗi ngày",
   "{{layer}}: click to toggle, drag to raise or lower the layer": "{{layer}}: nhấp để bật/tắt, kéo để nâng hoặc hạ lớp",
   "{{map}} Emblems Gallery": "Thư viện huy hiệu {{map}}",
@@ -3513,5 +3515,9 @@
   "Show names": "Hiện tên",
   "Toggle regiment visibility on the map": "Bật/tắt hiển thị trung đoàn trên bản đồ",
   "Toggle visibility": "Bật/tắt hiển thị",
-  "locked": "đã khóa"
+  "locked": "đã khóa",
+  "View-only": "Chỉ xem",
+  "It is view-only: editing is disabled": "Chỉ xem: đã tắt chỉnh sửa",
+  "The map is in view-only mode and cannot be saved": "Bản đồ đang ở chế độ chỉ xem và không thể lưu",
+  "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "Bản đồ đã lưu sẽ mở ở chế độ chỉ xem, không thể chỉnh sửa. Đây không phải là bảo vệ: bản thân tệp vẫn có thể bị thay đổi"
 }

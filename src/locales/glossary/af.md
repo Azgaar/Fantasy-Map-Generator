@@ -124,3 +124,4 @@ Terms every `af.json` string uses the same way. Rules for all catalogs are in
 | chat / proposal / tier         | klets / voorstel / vlak           |
 | guest / member / API key       | gas / lid / API-sleutel           |
 | provider                       | verskaffer                        |
+| view-only                      | slegs-kyk                         |

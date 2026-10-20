@@ -408,7 +408,8 @@
   "Cell Production": "Producția celulei",
   "Cell info": "Informații despre celulă",
   "Cell population: {{total}}; Rural: {{rural}}; Urban: {{urban}}": "Populația celulei: {{total}}; rurală: {{rural}}; urbană: {{urban}}",
-  "Cell rural production: {{production}}. Click to select displayed goods in Goods Editor": "Producția rurală a celulei: {{production}}. Apasă ca să selectezi bunurile afișate în Editorul de bunuri",
+  "Cell rural production: {{production}}": "Producția rurală a celulei: {{production}}",
+  "Click to select displayed goods in Goods Editor": "Apasă ca să selectezi bunurile afișate în Editorul de bunuri",
   "Cell size": "Dimensiunea celulei",
   "Cell {{- cell}}": "Celula {{- cell}}",
   "Cells": "Celule",
@@ -3447,7 +3448,8 @@
   "{{chance}} chance per cell": "{{chance}} șansă pe celulă",
   "{{crossTyped}} of {{total}} selected labels are not of the {{targetType}} type": "{{crossTyped}} din {{total}} etichete selectate nu sunt de tipul {{targetType}}",
   "{{file}} is saved": "{{file}} este salvat",
-  "{{good}} bonus resource. Click to open Goods Editor and select displayed goods": "Resursă de bonus: {{good}}. Apasă ca să deschizi Editorul de bunuri și să selectezi bunurile afișate",
+  "{{good}} bonus resource": "Resursă de bonus: {{good}}",
+  "Click to open Goods Editor and select displayed goods": "Apasă ca să deschizi Editorul de bunuri și să selectezi bunurile afișate",
   "{{good}}: {{amount}} {{unit}} per day": "{{good}}: {{amount}} {{unit}} pe zi",
   "{{layer}}: click to toggle, drag to raise or lower the layer": "{{layer}}: apasă ca să comuți, trage ca să ridici sau să cobori stratul",
   "{{map}} Emblems Gallery": "Galeria de steme a {{map}}",
@@ -3513,5 +3515,9 @@
   "Show names": "Arată numele",
   "Toggle regiment visibility on the map": "Comută vizibilitatea regimentului pe hartă",
   "Toggle visibility": "Comută vizibilitatea",
-  "locked": "blocat"
+  "locked": "blocat",
+  "View-only": "Doar vizualizare",
+  "It is view-only: editing is disabled": "Doar vizualizare: editarea este dezactivată",
+  "The map is in view-only mode and cannot be saved": "Harta este în modul doar vizualizare și nu poate fi salvată",
+  "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "Harta salvată se deschide doar pentru vizualizare, cu editarea dezactivată. Nu este o protecție: fișierul în sine poate fi modificat în continuare"
 }

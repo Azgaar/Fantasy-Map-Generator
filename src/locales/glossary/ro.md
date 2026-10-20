@@ -97,6 +97,7 @@ Terms every `ro.json` string uses the same way. Rules for all catalogs are in
 | Azgaar Assistant                | Asistentul Azgaar                |
 | chat / proposal / tier          | conversație / propunere / nivel  |
 | provider                        | furnizor                         |
+| view-only                       | doar vizualizare                 |
 
 ## Tight labels
 

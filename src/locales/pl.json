@@ -408,7 +408,8 @@
   "Cell Production": "Produkcja komórki",
   "Cell info": "Informacje o komórce",
   "Cell population: {{total}}; Rural: {{rural}}; Urban: {{urban}}": "Ludność komórki: {{total}}; wiejska: {{rural}}; miejska: {{urban}}",
-  "Cell rural production: {{production}}. Click to select displayed goods in Goods Editor": "Produkcja wiejska komórki: {{production}}. Kliknij, aby wybrać wyświetlane towary w edytorze towarów",
+  "Cell rural production: {{production}}": "Produkcja wiejska komórki: {{production}}",
+  "Click to select displayed goods in Goods Editor": "Kliknij, aby wybrać wyświetlane towary w edytorze towarów",
   "Cell size": "Rozmiar komórki",
   "Cell {{- cell}}": "Komórka {{- cell}}",
   "Cells": "Komórki",
@@ -3447,7 +3448,8 @@
   "{{chance}} chance per cell": "{{chance}} szansy na komórkę",
   "{{crossTyped}} of {{total}} selected labels are not of the {{targetType}} type": "Zaznaczone etykiety spoza typu {{targetType}}: {{crossTyped}} z {{total}}",
   "{{file}} is saved": "Zapisano {{file}}",
-  "{{good}} bonus resource. Click to open Goods Editor and select displayed goods": "Zasób premiowy: {{good}}. Kliknij, aby otworzyć edytor towarów i wybrać wyświetlane towary",
+  "{{good}} bonus resource": "Zasób premiowy: {{good}}",
+  "Click to open Goods Editor and select displayed goods": "Kliknij, aby otworzyć edytor towarów i wybrać wyświetlane towary",
   "{{good}}: {{amount}} {{unit}} per day": "{{good}}: {{amount}} {{unit}} dziennie",
   "{{layer}}: click to toggle, drag to raise or lower the layer": "{{layer}}: kliknij, aby przełączyć; przeciągnij, aby podnieść lub obniżyć warstwę",
   "{{map}} Emblems Gallery": "Galeria herbów: {{map}}",
@@ -3513,5 +3515,9 @@
   "Show names": "Pokaż nazwy",
   "Toggle regiment visibility on the map": "Pokaż/ukryj pułk na mapie",
   "Toggle visibility": "Pokaż/ukryj",
-  "locked": "zablokowane"
+  "locked": "zablokowane",
+  "View-only": "Tylko do podglądu",
+  "It is view-only: editing is disabled": "Tylko do podglądu: edycja jest wyłączona",
+  "The map is in view-only mode and cannot be saved": "Mapa jest w trybie tylko do podglądu i nie można jej zapisać",
+  "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "Zapisana mapa otwiera się tylko do podglądu, z wyłączoną edycją. To nie jest zabezpieczenie: sam plik nadal można zmienić"
 }

@@ -408,7 +408,8 @@
   "Cell Production": "单元格生产",
   "Cell info": "单元格信息",
   "Cell population: {{total}}; Rural: {{rural}}; Urban: {{urban}}": "单元格人口：{{total}}；乡村：{{rural}}；城市：{{urban}}",
-  "Cell rural production: {{production}}. Click to select displayed goods in Goods Editor": "单元格乡村产量：{{production}}。点击可在商品编辑器中选择要显示的商品",
+  "Cell rural production: {{production}}": "单元格乡村产量：{{production}}",
+  "Click to select displayed goods in Goods Editor": "点击可在商品编辑器中选择要显示的商品",
   "Cell size": "单元格大小",
   "Cell {{- cell}}": "单元格 {{- cell}}",
   "Cells": "单元格",
@@ -3447,7 +3448,8 @@
   "{{chance}} chance per cell": "每个单元格有 {{chance}} 的概率",
   "{{crossTyped}} of {{total}} selected labels are not of the {{targetType}} type": "所选的{{total}}个标签中有{{crossTyped}}个不属于{{targetType}}类型",
   "{{file}} is saved": "{{file}}已保存",
-  "{{good}} bonus resource. Click to open Goods Editor and select displayed goods": "{{good}}奖励资源。点击打开商品编辑器并选择显示的商品",
+  "{{good}} bonus resource": "{{good}}奖励资源",
+  "Click to open Goods Editor and select displayed goods": "点击打开商品编辑器并选择显示的商品",
   "{{good}}: {{amount}} {{unit}} per day": "{{good}}：每天{{amount}}{{unit}}",
   "{{layer}}: click to toggle, drag to raise or lower the layer": "{{layer}}：点击切换，拖动以升高或降低图层",
   "{{map}} Emblems Gallery": "{{map}}纹章图库",
@@ -3513,5 +3515,9 @@
   "Show names": "显示名称",
   "Toggle regiment visibility on the map": "切换地图上团的可见性",
   "Toggle visibility": "切换可见性",
-  "locked": "已锁定"
+  "locked": "已锁定",
+  "View-only": "仅查看",
+  "It is view-only: editing is disabled": "仅供查看：编辑已禁用",
+  "The map is in view-only mode and cannot be saved": "地图处于仅查看模式，无法保存",
+  "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "保存的地图将以仅查看方式打开，无法编辑。这不是保护措施：文件本身仍可被修改"
 }

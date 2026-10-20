@@ -408,7 +408,8 @@
   "Cell Production": "Production de la cellule",
   "Cell info": "Infos de la cellule",
   "Cell population: {{total}}; Rural: {{rural}}; Urban: {{urban}}": "Population de la cellule : {{total}} ; rurale : {{rural}} ; urbaine : {{urban}}",
-  "Cell rural production: {{production}}. Click to select displayed goods in Goods Editor": "Production rurale de la cellule : {{production}}. Cliquer pour choisir les marchandises affichées dans l’éditeur de marchandises",
+  "Cell rural production: {{production}}": "Production rurale de la cellule : {{production}}",
+  "Click to select displayed goods in Goods Editor": "Cliquer pour choisir les marchandises affichées dans l’éditeur de marchandises",
   "Cell size": "Taille des cellules",
   "Cell {{- cell}}": "Cellule {{- cell}}",
   "Cells": "Cellules",
@@ -3447,7 +3448,8 @@
   "{{chance}} chance per cell": "{{chance}} de chances par cellule",
   "{{crossTyped}} of {{total}} selected labels are not of the {{targetType}} type": "{{crossTyped}} des {{total}} étiquettes sélectionnées ne sont pas du type {{targetType}}",
   "{{file}} is saved": "{{file}} est enregistré",
-  "{{good}} bonus resource. Click to open Goods Editor and select displayed goods": "Ressource bonus {{good}}. Cliquer pour ouvrir l’éditeur de marchandises et choisir les marchandises affichées",
+  "{{good}} bonus resource": "Ressource bonus {{good}}",
+  "Click to open Goods Editor and select displayed goods": "Cliquer pour ouvrir l’éditeur de marchandises et choisir les marchandises affichées",
   "{{good}}: {{amount}} {{unit}} per day": "{{good}} : {{amount}} {{unit}} par jour",
   "{{layer}}: click to toggle, drag to raise or lower the layer": "{{layer}} : cliquer pour afficher/masquer, faire glisser pour monter ou descendre le calque",
   "{{map}} Emblems Gallery": "Galerie des emblèmes de {{map}}",
@@ -3513,5 +3515,9 @@
   "Show names": "Afficher les noms",
   "Toggle regiment visibility on the map": "Afficher/masquer le régiment sur la carte",
   "Toggle visibility": "Afficher/masquer",
-  "locked": "verrouillé"
+  "locked": "verrouillé",
+  "View-only": "Lecture seule",
+  "It is view-only: editing is disabled": "Lecture seule : la modification est désactivée",
+  "The map is in view-only mode and cannot be saved": "La carte est en lecture seule et ne peut pas être enregistrée",
+  "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "La carte enregistrée s’ouvre en lecture seule, sans modification possible. Ce n’est pas une protection : le fichier lui-même peut toujours être modifié"
 }

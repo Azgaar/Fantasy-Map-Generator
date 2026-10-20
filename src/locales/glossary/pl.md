@@ -143,3 +143,4 @@ Terms every `pl.json` string uses the same way. Rules for all catalogs are in
 | chat / proposal / tier           | czat / propozycja / poziom               |
 | guest / member / key             | gość / członek / klucz                   |
 | provider / API key               | dostawca / klucz API                     |
+| view-only                        | tylko do podglądu                        |

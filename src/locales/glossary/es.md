@@ -111,3 +111,4 @@ Terms every `es.json` string uses the same way. Rules for all catalogs are in
 | chat / proposal / tier           | chat / propuesta / nivel                |
 | guest / member / key             | invitado / miembro / clave              |
 | provider                         | proveedor                               |
+| view-only                        | solo lectura                            |

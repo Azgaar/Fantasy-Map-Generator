@@ -408,7 +408,8 @@
   "Cell Production": "Hücre üretimi",
   "Cell info": "Hücre bilgisi",
   "Cell population: {{total}}; Rural: {{rural}}; Urban: {{urban}}": "Hücre nüfusu: {{total}}; Kırsal: {{rural}}; Kentsel: {{urban}}",
-  "Cell rural production: {{production}}. Click to select displayed goods in Goods Editor": "Hücrenin kırsal üretimi: {{production}}. Mal düzenleyicide gösterilen malları seçmek için tıkla",
+  "Cell rural production: {{production}}": "Hücrenin kırsal üretimi: {{production}}",
+  "Click to select displayed goods in Goods Editor": "Mal düzenleyicide gösterilen malları seçmek için tıkla",
   "Cell size": "Hücre boyutu",
   "Cell {{- cell}}": "Hücre {{- cell}}",
   "Cells": "Hücreler",
@@ -3447,7 +3448,8 @@
   "{{chance}} chance per cell": "hücre başına {{chance}} şans",
   "{{crossTyped}} of {{total}} selected labels are not of the {{targetType}} type": "Seçili {{total}} etiketten {{crossTyped}} tanesi {{targetType}} türünde değil",
   "{{file}} is saved": "{{file}} kaydedildi",
-  "{{good}} bonus resource. Click to open Goods Editor and select displayed goods": "{{good}} bonus kaynağı. Mal düzenleyiciyi açıp gösterilen malları seçmek için tıkla",
+  "{{good}} bonus resource": "{{good}} bonus kaynağı",
+  "Click to open Goods Editor and select displayed goods": "Mal düzenleyiciyi açıp gösterilen malları seçmek için tıkla",
   "{{good}}: {{amount}} {{unit}} per day": "{{good}}: günde {{amount}} {{unit}}",
   "{{layer}}: click to toggle, drag to raise or lower the layer": "{{layer}}: açıp kapatmak için tıkla, katmanı yükseltmek veya alçaltmak için sürükle",
   "{{map}} Emblems Gallery": "{{map}} arma galerisi",
@@ -3513,5 +3515,9 @@
   "Show names": "Adları göster",
   "Toggle regiment visibility on the map": "Alayın haritada görünürlüğünü aç/kapat",
   "Toggle visibility": "Görünürlüğü aç/kapat",
-  "locked": "kilitli"
+  "locked": "kilitli",
+  "View-only": "Salt görüntüleme",
+  "It is view-only: editing is disabled": "Salt görüntüleme: düzenleme kapalı",
+  "The map is in view-only mode and cannot be saved": "Harita salt görüntüleme modunda ve kaydedilemez",
+  "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "Kaydedilen harita yalnızca görüntülemek için açılır, düzenleme kapalıdır. Bu bir koruma değil: dosyanın kendisi yine de değiştirilebilir"
 }

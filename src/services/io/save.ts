@@ -14,13 +14,15 @@ import { type SaveOutcome, saveToFileSystem } from "./save-to-file";
 
 type Writer = () => Promise<void>;
 
-const toStorage = (): Promise<void> => save(() => writeToStorage(prepareMapData(), true));
-const toMachine = (saveAs = false): Promise<void> => save(() => writeToMachine(saveAs));
-const toDropbox = (): Promise<void> => save(() => writeToDropbox(prepareMapData(), `${getFileName()}.map`));
+const toStorage = (viewOnly = false): Promise<void> => save(() => writeToStorage(prepareMapData(viewOnly), true));
+const toMachine = (saveAs = false, viewOnly = false): Promise<void> => save(() => writeToMachine(saveAs, viewOnly));
+const toDropbox = (viewOnly = false): Promise<void> =>
+  save(() => writeToDropbox(prepareMapData(viewOnly), `${getFileName()}.map`));
 
 async function save(write: Writer): Promise<void> {
   if (customization)
     return tip(t("Map cannot be saved in EDIT mode, please complete the edit and retry"), false, "error");
+  if (options.map.viewOnly) return tip(t("The map is in view-only mode and cannot be saved"), false, "warn");
   closeDialogs("#alert");
 
   try {
@@ -51,7 +53,8 @@ async function save(write: Writer): Promise<void> {
   }
 }
 
-function prepareMapData(): string {
+/** `viewOnly` saves a copy that opens for browsing only */
+function prepareMapData(viewOnly = false): string {
   const date = new Date();
   const dateString = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
   const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator"; // file format text: never translated
@@ -65,7 +68,7 @@ function prepareMapData(): string {
     mapHistory.at(-1)?.created ?? Date.now() // the map id: when the map on screen was created
   ].join("|");
 
-  const settings = JSON.stringify(options.map); // what the map is; the requests and preferences stay out
+  const settings = JSON.stringify(viewOnly ? { ...options.map, viewOnly } : options.map); // the requests and preferences stay out
   const measurers = JSON.stringify(pack.measurers ?? []);
   const journeys = JSON.stringify(pack.journeys ?? []);
   const fonts = JSON.stringify(
@@ -200,8 +203,9 @@ async function writeToStorage(mapData: string, showTip = false): Promise<void> {
   showTip && tip(t("Map is saved to the browser storage"), false, "success");
 }
 
-async function writeToMachine(saveAs: boolean): Promise<void> {
-  notifySaveOutcome(await saveToFileSystem(prepareMapData, `${getFileName()}.map`, saveAs));
+// a view-only copy never becomes the file Save updates: that is the author's editable map
+async function writeToMachine(saveAs: boolean, viewOnly: boolean): Promise<void> {
+  notifySaveOutcome(await saveToFileSystem(() => prepareMapData(viewOnly), `${getFileName()}.map`, saveAs, viewOnly));
 }
 
 export function notifySaveOutcome(outcome: SaveOutcome): void {

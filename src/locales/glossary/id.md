@@ -114,3 +114,4 @@ Terms every `id.json` string uses the same way. Rules for all catalogs are in
 | preview                    | pratinjau                     |
 | zoom / pan                 | zum / geser                   |
 | chat / provider / API key  | obrolan / penyedia / kunci API |
+| view-only                  | hanya lihat                   |

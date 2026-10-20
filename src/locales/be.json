@@ -408,7 +408,8 @@
   "Cell Production": "Вытворчасць клеткі",
   "Cell info": "Інфармацыя пра клетку",
   "Cell population: {{total}}; Rural: {{rural}}; Urban: {{urban}}": "Насельніцтва клеткі: {{total}}; сельскае: {{rural}}; гарадское: {{urban}}",
-  "Cell rural production: {{production}}. Click to select displayed goods in Goods Editor": "Сельская вытворчасць клеткі: {{production}}. Націсніце, каб абраць паказаныя тавары ў рэдактары тавараў",
+  "Cell rural production: {{production}}": "Сельская вытворчасць клеткі: {{production}}",
+  "Click to select displayed goods in Goods Editor": "Націсніце, каб абраць паказаныя тавары ў рэдактары тавараў",
   "Cell size": "Памер клеткі",
   "Cell {{- cell}}": "Клетка {{- cell}}",
   "Cells": "Клеткі",
@@ -3447,7 +3448,8 @@
   "{{chance}} chance per cell": "шанец {{chance}} на клетку",
   "{{crossTyped}} of {{total}} selected labels are not of the {{targetType}} type": "{{crossTyped}} з {{total}} выбраных надпісаў не тыпу {{targetType}}",
   "{{file}} is saved": "{{file}} захаваны",
-  "{{good}} bonus resource. Click to open Goods Editor and select displayed goods": "Бонусны рэсурс: {{good}}. Націсніце, каб адкрыць рэдактар тавараў і выбраць паказаныя тавары",
+  "{{good}} bonus resource": "Бонусны рэсурс: {{good}}",
+  "Click to open Goods Editor and select displayed goods": "Націсніце, каб адкрыць рэдактар тавараў і выбраць паказаныя тавары",
   "{{good}}: {{amount}} {{unit}} per day": "{{good}}: {{amount}} {{unit}} у дзень",
   "{{layer}}: click to toggle, drag to raise or lower the layer": "{{layer}}: націсніце, каб пераключыць, цягніце, каб перанесці слой",
   "{{map}} Emblems Gallery": "Галерэя гербоў: {{map}}",
@@ -3513,5 +3515,9 @@
   "Show names": "Паказаць назвы",
   "Toggle regiment visibility on the map": "Пераключыць бачнасць палка на мапе",
   "Toggle visibility": "Пераключыць бачнасць",
-  "locked": "зафіксавана"
+  "locked": "зафіксавана",
+  "View-only": "Толькі прагляд",
+  "It is view-only: editing is disabled": "Толькі прагляд: рэдагаванне адключана",
+  "The map is in view-only mode and cannot be saved": "Мапа ў рэжыме толькі прагляду, яе нельга захаваць",
+  "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "Захаваная мапа адкрываецца толькі для прагляду, рэдагаванне адключана. Гэта не абарона: сам файл усё яшчэ можна змяніць"
 }

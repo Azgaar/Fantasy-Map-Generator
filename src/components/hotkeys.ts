@@ -31,6 +31,7 @@ function handleKeyup(event: KeyboardEvent): void {
   if (!allowHotkeys()) return; // in some cases (e.g. in a textarea) hotkeys are not allowed
 
   event.stopPropagation();
+  if (options.map.viewOnly && !isBrowsingKey(event)) return;
 
   const { code, key, ctrlKey, metaKey, shiftKey, altKey } = event;
   const ctrl = ctrlKey || metaKey || key === "Control";
@@ -103,6 +104,28 @@ function handleKeyup(event: KeyboardEvent): void {
   else if (key === "7") setMapZoom(7);
   else if (key === "8") setMapZoom(8);
   else if (key === "9") setMapZoom(9);
+}
+
+const BROWSING_CODES = [
+  "Space",
+  "F1",
+  "F2",
+  "F9",
+  "Tab",
+  "Escape",
+  "KeyO",
+  "ArrowLeft",
+  "ArrowRight",
+  "ArrowUp",
+  "ArrowDown"
+];
+
+/** The keys a view-only map answers: menu, search, info, new map, load, 3D options, pan, zoom and layers */
+function isBrowsingKey({ code, key, ctrlKey, metaKey, altKey, shiftKey }: KeyboardEvent): boolean {
+  if (ctrlKey || metaKey || altKey) return false;
+  if (BROWSING_CODES.includes(code)) return true;
+  if (/^[\d=+-]$/.test(key)) return !(shiftKey && code === "Equal"); // Shift + Equal opens the Measurers Editor
+  return !shiftKey && !!getLayerByShortcut(code);
 }
 
 // only a plain Space with nothing focused: a focused control keeps its own Space, a modified Space is not ours,

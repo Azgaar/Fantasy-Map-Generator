@@ -106,3 +106,4 @@ Terms every `th.json` string uses the same way. Rules for all catalogs are in
 | chat / proposal / tier          | แชต / ข้อเสนอ / ระดับ            |
 | guest / member / key            | ผู้เยี่ยมชม / สมาชิก / คีย์      |
 | provider                        | ผู้ให้บริการ                     |
+| view-only                       | ดูอย่างเดียว                     |

@@ -97,6 +97,12 @@ export function showMapTooltip(point: Point, event: Event, cellId: number, gridC
   showLayerTip(point, cellId, gridCellId, isLand);
 }
 
+/** Add what a click on the element does; on a view-only map clicks open nothing, and an empty tip shows the layer's */
+function withHint(text?: string, hint = t("Click to edit")): string | undefined {
+  if (options.map.viewOnly) return text || undefined;
+  return text ? sentences(text, hint) : hint;
+}
+
 interface TipContext {
   group: string;
   target: SVGElement;
@@ -115,44 +121,41 @@ function getElementTip({ group, target, event, path, cellId }: TipContext): stri
   if (burgElement) {
     const burgId = Number(burgElement.dataset.id);
     const burg = pack.burgs[burgId];
-    if (!burg) return t("Click to edit");
+    if (!burg) return withHint();
     const population = si(
       (burg.population || 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
     );
     const values = { burg: burg.name, group: burg.group, population };
-    return burg.port
-      ? sentences(t("{{burg}} {{group}} port", values), `${t("Population")}: ${population}`, t("Click to edit"))
-      : sentences(t("{{burg}} {{group}}", values), `${t("Population")}: ${population}`, t("Click to edit"));
+    const name = burg.port ? t("{{burg}} {{group}} port", values) : t("{{burg}} {{group}}", values);
+    return withHint(sentences(name, `${t("Population")}: ${population}`));
   }
 
   const labelElement = target.closest<SVGElement>("#labels [data-label-type]");
-  if (labelElement) return sentences(escapeHtml(getLabelText(labelElement)), t("Click to edit"));
+  if (labelElement) return withHint(escapeHtml(getLabelText(labelElement)));
 
   if (group === "armies")
-    return sentences(
-      escapeHtml((parent as SVGElement & { dataset: DOMStringMap }).dataset.name ?? ""),
-      t("Click to edit")
-    );
+    return withHint(escapeHtml((parent as SVGElement & { dataset: DOMStringMap }).dataset.name ?? ""));
 
   if (group === "emblems" && target.tagName === "use") return getEmblemTip(target, parent, event);
 
   if (group === "rivers") {
     const ref = MapEntities.resolveTarget(target);
-    return sentences(escapeHtml(ref ? MapEntities.getName(ref) : ""), t("Click to edit"));
+    return withHint(escapeHtml(ref ? MapEntities.getName(ref) : ""));
   }
 
   if (group === "routes") {
     const ref = MapEntities.resolveTarget(target);
     if (ref && MapEntities.get(ref)) {
       const name = MapEntities.getName(ref);
-      return name ? sentences(escapeHtml(name), t("Click to edit")) : t("Click to edit");
+      return withHint(name ? escapeHtml(name) : undefined);
     }
     return undefined;
   }
 
-  if (group === "terrain") return t("Click to edit");
+  if (group === "terrain" || group === "ice") return withHint();
 
-  if (group === "markers") return t("Click to edit the Marker. Hold Shift to not close the assosiated note");
+  if (group === "markers")
+    return withHint(undefined, t("Click to edit the Marker. Hold Shift to not close the assosiated note"));
 
   if (group === "ruler")
     return findEl("measurersEditor") ? t("Drag the measurer or its points to edit") : t("Measurers Editor");
@@ -166,7 +169,7 @@ function getElementTip({ group, target, event, path, cellId }: TipContext): stri
     const lake = pack.features[Number(target.dataset.f)];
     const name = lake?.name ? [escapeHtml(lake.name)] : [];
     const subtype = lake?.subtype || "lake";
-    return sentences(...name, FEATURE_SUBTYPE_LABELS[subtype] ?? subtype, t("Click to edit"));
+    return withHint(sentences(...name, FEATURE_SUBTYPE_LABELS[subtype] ?? subtype));
   }
 
   if (group === "zones") {
@@ -175,23 +178,17 @@ function getElementTip({ group, target, event, path, cellId }: TipContext): stri
     return zone?.name;
   }
 
-  if (group === "ice") return t("Click to edit");
-
   if (group === "journeys") {
     const match = target.id?.match(/^segment(\d+)_(\d+)$/);
     if (match) {
       const journey = pack.journeys?.find(j => j.i === +match[1]);
       const segment = journey?.segments?.find(s => s.i === +match[2]);
       if (journey && segment) {
-        const parts = [
-          `${journey.name}: ${segment.name}`,
-          segment.note ? `“${escapeHtml(segment.note)}”` : null,
-          t("Click to edit")
-        ].filter(Boolean) as string[];
-        return sentences(...parts);
+        const name = `${journey.name}: ${segment.name}`;
+        return withHint(segment.note ? sentences(name, `“${escapeHtml(segment.note)}”`) : name);
       }
     }
-    return t("Click to edit");
+    return withHint();
   }
 
   return undefined;
@@ -206,7 +203,7 @@ function getLabelText(labelElement: SVGElement): string {
   return text.replaceAll("|", " ").trim();
 }
 
-function getEmblemTip(target: SVGElement, parent: SVGElement, event: Event): string {
+function getEmblemTip(target: SVGElement, parent: SVGElement, event: Event): string | undefined {
   const [elements, type] =
     parent.id === "burgEmblems"
       ? ([pack.burgs, "burg"] as const)
@@ -221,23 +218,13 @@ function getEmblemTip(target: SVGElement, parent: SVGElement, event: Event): str
   select(parent).raise();
 
   const name = "fullName" in element ? element.fullName || element.name : element.name;
-  if (type === "burg")
-    return sentences(
-      t("{{name}} burg emblem", { name }),
-      t("Click to edit"),
-      t("Hold Shift to show associated area or place")
-    );
-  if (type === "province")
-    return sentences(
-      t("{{name}} province emblem", { name }),
-      t("Click to edit"),
-      t("Hold Shift to show associated area or place")
-    );
-  return sentences(
-    t("{{name}} state emblem", { name }),
-    t("Click to edit"),
-    t("Hold Shift to show associated area or place")
-  );
+  const emblem =
+    type === "burg"
+      ? t("{{name}} burg emblem", { name })
+      : type === "province"
+        ? t("{{name}} province emblem", { name })
+        : t("{{name}} state emblem", { name });
+  return withHint(sentences(emblem, t("Hold Shift to show associated area or place")));
 }
 
 function getMarketTip(target: SVGElement): string | undefined {
@@ -248,7 +235,7 @@ function getMarketTip(target: SVGElement): string | undefined {
   const centerBurg = market && pack.burgs[market.centerBurgId];
   if (!centerBurg) return undefined;
 
-  return sentences(t("{{burg}} market", { burg: centerBurg.name }), t("Click to view"));
+  return withHint(t("{{burg}} market", { burg: centerBurg.name }), t("Click to view"));
 }
 
 function getGoodsTip(target: SVGElement, cellId: number): string | undefined {
@@ -265,14 +252,18 @@ function getGoodsTip(target: SVGElement, cellId: number): string | undefined {
 
   if (target.closest("#goodsIcons")) {
     const good = Goods.get(Number(target.closest<SVGElement>("[data-i]")?.dataset.i));
-    return t("{{good}} bonus resource. Click to open Goods Editor and select displayed goods", { good: good?.name });
+    return withHint(
+      t("{{good}} bonus resource", { good: good?.name }),
+      t("Click to open Goods Editor and select displayed goods")
+    );
   }
 
   if (target.closest("#goodsCells")) {
     const produced = Production.getCellProduction(cellId, Goods.getBiomesProduction());
-    return t("Cell rural production: {{production}}. Click to select displayed goods in Goods Editor", {
-      production: formatProduction(produced)
-    });
+    return withHint(
+      t("Cell rural production: {{production}}", { production: formatProduction(produced) }),
+      t("Click to select displayed goods in Goods Editor")
+    );
   }
 
   if (target.closest("#goodsBurgs")) {
@@ -281,7 +272,7 @@ function getGoodsTip(target: SVGElement, cellId: number): string | undefined {
     if (!burg || burg.removed) return undefined;
 
     select(burgEl).raise();
-    return sentences(
+    return withHint(
       t("{{burg}} urban production: {{production}}", {
         burg: burg.name,
         production: formatProduction(Production.getBurgProduction(burg))

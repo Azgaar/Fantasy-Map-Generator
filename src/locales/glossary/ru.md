@@ -133,3 +133,4 @@ Terms every `ru.json` string uses the same way. Rules for all catalogs are in
 | zoom / pan                     | масштаб, приблизить / сдвиг                |
 | Azgaar Assistant               | Ассистент Азгаара                          |
 | chat / provider / API key      | чат / провайдер / API-ключ                 |
+| view-only                      | только просмотр                            |

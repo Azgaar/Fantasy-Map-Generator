@@ -105,3 +105,4 @@ Terms every `nl.json` string uses the same way. Rules for all catalogs are in
 | chat / proposal / tier          | chat / voorstel / niveau         |
 | guest / member / key            | gast / lid / sleutel             |
 | provider                        | aanbieder                        |
+| view-only                       | alleen bekijken                  |

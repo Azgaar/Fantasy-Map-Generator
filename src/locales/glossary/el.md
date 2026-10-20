@@ -59,3 +59,4 @@ Terms every `el.json` string uses the same way. Rules for all catalogs are in
 | market                          | αγορά                         |                                        |
 | good (trade)                    | αγαθό                         |                                        |
 | treasury / taxes                | θησαυροφυλάκιο / φόροι        |                                        |
+| view-only                       | μόνο για προβολή              |                                        |

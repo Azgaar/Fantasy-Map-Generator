@@ -91,3 +91,4 @@ Terms every `it.json` string uses the same way. Rules for all catalogs are in
 | apply            | applica              |                                                   |
 | cancel           | annulla              | the action; “Chiudi” for closing a window         |
 | close            | chiudi               | “Chiudi” for a window or dialog; context `distance` for the measure “vicino” |
+| view-only        | sola lettura         |                                                   |

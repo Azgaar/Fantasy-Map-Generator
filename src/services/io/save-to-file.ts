@@ -12,21 +12,28 @@ window.addEventListener("map:generated", () => {
   mapRevision++;
 });
 
+/** `copy` is a one-off file: always picked, never the file a later Save updates */
 export async function saveToFileSystem(
   prepareData: () => string,
   suggestedName: string,
-  saveAs = false
+  saveAs = false,
+  copy = false
 ): Promise<SaveOutcome> {
   if (saving) return { type: "cancelled" };
   saving = true;
   try {
-    return await writeMapFile(prepareData, suggestedName, saveAs);
+    return await writeMapFile(prepareData, suggestedName, saveAs || copy, copy);
   } finally {
     saving = false;
   }
 }
 
-async function writeMapFile(prepareData: () => string, suggestedName: string, saveAs: boolean): Promise<SaveOutcome> {
+async function writeMapFile(
+  prepareData: () => string,
+  suggestedName: string,
+  saveAs: boolean,
+  copy: boolean
+): Promise<SaveOutcome> {
   if (typeof window.showSaveFilePicker !== "function") {
     downloadFile(prepareData(), suggestedName);
     return { type: "downloaded-fallback" };
@@ -63,7 +70,7 @@ async function writeMapFile(prepareData: () => string, suggestedName: string, sa
     await writable?.abort().catch(() => {});
     throw error;
   }
-  if (revision === mapRevision) destination = handle;
+  if (revision === mapRevision && !copy) destination = handle;
   return { type: "saved", filename: handle.name };
 }
 

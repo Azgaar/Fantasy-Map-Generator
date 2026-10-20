@@ -408,7 +408,8 @@
   "Cell Production": "Виробництво клітинки",
   "Cell info": "Дані клітинки",
   "Cell population: {{total}}; Rural: {{rural}}; Urban: {{urban}}": "Населення клітинки: {{total}}; сільське: {{rural}}; міське: {{urban}}",
-  "Cell rural production: {{production}}. Click to select displayed goods in Goods Editor": "Сільськогосподарське виробництво клітинки: {{production}}. Клацніть, щоб вибрати товари для показу в редакторі товарів",
+  "Cell rural production: {{production}}": "Сільськогосподарське виробництво клітинки: {{production}}",
+  "Click to select displayed goods in Goods Editor": "Клацніть, щоб вибрати товари для показу в редакторі товарів",
   "Cell size": "Розмір клітинки",
   "Cell {{- cell}}": "Клітинка {{- cell}}",
   "Cells": "Клітинки",
@@ -3447,7 +3448,8 @@
   "{{chance}} chance per cell": "{{chance}} імовірність для кожної клітинки",
   "{{crossTyped}} of {{total}} selected labels are not of the {{targetType}} type": "{{crossTyped}} з {{total}} вибраних міток не належать до типу {{targetType}}",
   "{{file}} is saved": "{{file}} збережено",
-  "{{good}} bonus resource. Click to open Goods Editor and select displayed goods": "Бонусний ресурс: {{good}}. Клацніть, щоб відкрити редактор товарів і вибрати відображувані товари",
+  "{{good}} bonus resource": "Бонусний ресурс: {{good}}",
+  "Click to open Goods Editor and select displayed goods": "Клацніть, щоб відкрити редактор товарів і вибрати відображувані товари",
   "{{good}}: {{amount}} {{unit}} per day": "{{good}}: {{amount}} {{unit}} на добу",
   "{{layer}}: click to toggle, drag to raise or lower the layer": "{{layer}}: клацніть, щоб перемкнути, перетягніть, щоб підняти або опустити шар",
   "{{map}} Emblems Gallery": "Галерея гербів: {{map}}",
@@ -3513,5 +3515,9 @@
   "Show names": "Показувати назви",
   "Toggle regiment visibility on the map": "Перемкнути видимість полку на карті",
   "Toggle visibility": "Перемкнути видимість",
-  "locked": "заблоковано"
+  "locked": "заблоковано",
+  "View-only": "Лише перегляд",
+  "It is view-only: editing is disabled": "Лише перегляд: редагування вимкнено",
+  "The map is in view-only mode and cannot be saved": "Карта в режимі лише перегляду, її не можна зберегти",
+  "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "Збережена карта відкриватиметься лише для перегляду, редагування буде вимкнено. Це не захист: сам файл усе ще можна змінити"
 }
