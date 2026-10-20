@@ -31,6 +31,7 @@ const latestPublicChanges = [
   "Trade tariffs and embargoes",
   "Free-text tags for states and other entities (hidden by default)",
   "Color picker rework",
+  "View-only mode for saved maps",
   "Population layer: colored cells style",
   // old ones
   "Azgaar Assistant can read map data and propose changes when your own AI key is provided",

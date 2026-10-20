@@ -16,6 +16,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 
 - Free-text tags for states and other entities
 - Color picker rework
+- View-only mode for saved maps
 - Interface translations: 29 languages besides English
 - The Google Translate widget removed
 - Advanced options: configurable map lattice
