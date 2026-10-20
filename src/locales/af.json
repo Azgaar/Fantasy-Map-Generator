@@ -3516,7 +3516,7 @@
   "Toggle regiment visibility on the map": "Wissel regiment se sigbaarheid op die kaart",
   "Toggle visibility": "Wissel sigbaarheid",
   "locked": "gesluit",
-  "View-only": "Slegs-kyk",
+  "View-only mode": "Slegs-kyk",
   "It is view-only: editing is disabled": "Dit is slegs-kyk: wysiging is gedeaktiveer",
   "The map is in view-only mode and cannot be saved": "Die kaart is in slegs-kyk-modus en kan nie gestoor word nie",
   "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "Die gestoorde kaart maak slegs oop om te bekyk, met wysiging gedeaktiveer. Nie 'n beskerming nie: die lêer self kan steeds verander word"

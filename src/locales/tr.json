@@ -3516,7 +3516,7 @@
   "Toggle regiment visibility on the map": "Alayın haritada görünürlüğünü aç/kapat",
   "Toggle visibility": "Görünürlüğü aç/kapat",
   "locked": "kilitli",
-  "View-only": "Salt görüntüleme",
+  "View-only mode": "Salt görüntüleme",
   "It is view-only: editing is disabled": "Salt görüntüleme: düzenleme kapalı",
   "The map is in view-only mode and cannot be saved": "Harita salt görüntüleme modunda ve kaydedilemez",
   "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "Kaydedilen harita yalnızca görüntülemek için açılır, düzenleme kapalıdır. Bu bir koruma değil: dosyanın kendisi yine de değiştirilebilir"

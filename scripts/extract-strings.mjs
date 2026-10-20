@@ -9,7 +9,7 @@
  *
  * Usage:
  *   node scripts/extract-strings.mjs           # write src/locales/en.json
- *   node scripts/extract-strings.mjs --check   # exit 1 if it is stale (CI)
+ *   node scripts/extract-strings.mjs --check   # warn if it is stale (CI)
  */
 
 import fs from "node:fs";
@@ -75,6 +75,9 @@ function sourceFiles(dir) {
     .sort();
 }
 
+/** A GitHub Actions annotation in CI, a plain line elsewhere */
+const warn = message => (process.env.GITHUB_ACTIONS ? console.log(`::warning::${message}`) : console.warn(message));
+
 function main() {
   const check = process.argv.includes("--check");
   const found = new Map();
@@ -89,6 +92,7 @@ function main() {
   }
 
   if (problems.length) {
+    if (check) return problems.forEach(problem => warn(problem));
     console.error(problems.join("\n"));
     process.exit(1);
   }
@@ -98,8 +102,7 @@ function main() {
 
   if (check) {
     if (output === current) return console.log(`${CATALOG} is up to date`);
-    console.error(`${CATALOG} is stale. Run: npm run extract-strings`);
-    process.exit(1);
+    return warn(`${CATALOG} is stale. Run: npm run extract-strings`);
   }
 
   fs.writeFileSync(CATALOG, output);

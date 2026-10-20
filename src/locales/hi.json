@@ -3516,7 +3516,7 @@
   "Toggle regiment visibility on the map": "मानचित्र पर रेजिमेंट की दृश्यता टॉगल करें",
   "Toggle visibility": "दृश्यता टॉगल करें",
   "locked": "लॉक किया गया",
-  "View-only": "केवल देखने के लिए",
+  "View-only mode": "केवल देखने के लिए",
   "It is view-only: editing is disabled": "यह केवल देखने के लिए है: संपादन बंद है",
   "The map is in view-only mode and cannot be saved": "मानचित्र केवल देखने के मोड में है और सहेजा नहीं जा सकता",
   "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "सहेजा गया मानचित्र केवल देखने के लिए खुलेगा, संपादन बंद रहेगा। यह कोई सुरक्षा नहीं है: फ़ाइल को अब भी बदला जा सकता है"

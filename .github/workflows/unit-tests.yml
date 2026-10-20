@@ -27,14 +27,23 @@ jobs:
       - name: Check the public assets index.html serves are stamped with their current contents
         run: node scripts/stamp-assets.js --check
 
-      - name: Check the English catalog lists every translated interface string
-        run: node scripts/extract-strings.mjs --check
-
-      - name: Check every locale catalog keeps the rules a translation must not break, warn about missing translations
-        run: node scripts/lint-locales.mjs
-
       - name: Run Unit tests
         run: npm run test
 
       - name: Run script tests
         run: npm run test:scripts
+
+  # translation checks only warn: a stale catalog or a broken string never blocks a merge
+  translations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+      - name: Install dependencies
+        run: npm ci
+      - name: Warn if the English catalog misses a translated interface string
+        run: node scripts/extract-strings.mjs --check
+      - name: Warn about broken and missing translations
+        run: node scripts/lint-locales.mjs

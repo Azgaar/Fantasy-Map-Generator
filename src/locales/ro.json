@@ -3516,7 +3516,7 @@
   "Toggle regiment visibility on the map": "Comută vizibilitatea regimentului pe hartă",
   "Toggle visibility": "Comută vizibilitatea",
   "locked": "blocat",
-  "View-only": "Doar vizualizare",
+  "View-only mode": "Doar vizualizare",
   "It is view-only: editing is disabled": "Doar vizualizare: editarea este dezactivată",
   "The map is in view-only mode and cannot be saved": "Harta este în modul doar vizualizare și nu poate fi salvată",
   "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "Harta salvată se deschide doar pentru vizualizare, cu editarea dezactivată. Nu este o protecție: fișierul în sine poate fi modificat în continuare"

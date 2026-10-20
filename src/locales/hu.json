@@ -3516,7 +3516,7 @@
   "Toggle regiment visibility on the map": "Ezred láthatóságának váltása a térképen",
   "Toggle visibility": "Láthatóság váltása",
   "locked": "zárolva",
-  "View-only": "Csak megtekintés",
+  "View-only mode": "Csak megtekintés",
   "It is view-only: editing is disabled": "Csak megtekinthető: a szerkesztés ki van kapcsolva",
   "The map is in view-only mode and cannot be saved": "A térkép csak megtekinthető, nem menthető",
   "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "A mentett térkép csak megtekintésre nyílik meg, szerkesztés nélkül. Ez nem védelem: maga a fájl továbbra is módosítható"

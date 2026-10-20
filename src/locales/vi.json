@@ -3516,7 +3516,7 @@
   "Toggle regiment visibility on the map": "Bật/tắt hiển thị trung đoàn trên bản đồ",
   "Toggle visibility": "Bật/tắt hiển thị",
   "locked": "đã khóa",
-  "View-only": "Chỉ xem",
+  "View-only mode": "Chỉ xem",
   "It is view-only: editing is disabled": "Chỉ xem: đã tắt chỉnh sửa",
   "The map is in view-only mode and cannot be saved": "Bản đồ đang ở chế độ chỉ xem và không thể lưu",
   "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "Bản đồ đã lưu sẽ mở ở chế độ chỉ xem, không thể chỉnh sửa. Đây không phải là bảo vệ: bản thân tệp vẫn có thể bị thay đổi"

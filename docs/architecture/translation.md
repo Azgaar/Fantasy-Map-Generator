@@ -51,9 +51,9 @@ and shows a label from `src/data/id-labels.ts`.
 ## Catalogs
 
 - `npm run extract-strings` rewrites `src/locales/en.json` from the sources, keeping existing English
-  values. CI fails when it is stale.
+  values. CI warns when it is stale.
 - `src/locales/<code>.json` holds a shipped language; `src/data/languages.ts` lists it.
-  `npm run lint-locales` (a CI step) fails a catalog with a key English lacks, an empty value, a
+  `npm run lint-locales` (a CI step) warns about a catalog with a key English lacks, an empty value, a
   trailing colon or outer spaces, a line break, markup, a raw `"` or different placeholders.
 - A missing translation shows the English and only warns in CI; `npm run lint-locales -- --missing`
   lists them. Translations are written by AI in the pull request that adds or changes the English, or

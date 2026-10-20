@@ -3516,7 +3516,7 @@
   "Toggle regiment visibility on the map": "Přepnout viditelnost pluku na mapě",
   "Toggle visibility": "Přepnout viditelnost",
   "locked": "zamčeno",
-  "View-only": "Jen k prohlížení",
+  "View-only mode": "Jen k prohlížení",
   "It is view-only: editing is disabled": "Mapa je jen k prohlížení: úpravy jsou vypnuté",
   "The map is in view-only mode and cannot be saved": "Mapa je v režimu jen k prohlížení a nelze ji uložit",
   "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "Uložená mapa se otevře jen k prohlížení, s vypnutými úpravami. Nejde o ochranu: samotný soubor lze stále změnit"

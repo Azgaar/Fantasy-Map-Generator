@@ -3516,7 +3516,7 @@
   "Toggle regiment visibility on the map": "Visa/dölj regemente på kartan",
   "Toggle visibility": "Visa/dölj",
   "locked": "låst",
-  "View-only": "Endast visning",
+  "View-only mode": "Endast visning",
   "It is view-only: editing is disabled": "Endast visning: redigering är avstängd",
   "The map is in view-only mode and cannot be saved": "Kartan är endast för visning och kan inte sparas",
   "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "Den sparade kartan öppnas endast för visning, utan redigering. Inget skydd: själva filen kan fortfarande ändras"

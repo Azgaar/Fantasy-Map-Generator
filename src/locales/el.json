@@ -3516,7 +3516,7 @@
   "Toggle regiment visibility on the map": "Εναλλαγή ορατότητας συντάγματος στον χάρτη",
   "Toggle visibility": "Εναλλαγή ορατότητας",
   "locked": "κλειδωμένο",
-  "View-only": "Μόνο για προβολή",
+  "View-only mode": "Μόνο για προβολή",
   "It is view-only: editing is disabled": "Μόνο για προβολή: η επεξεργασία είναι απενεργοποιημένη",
   "The map is in view-only mode and cannot be saved": "Ο χάρτης είναι σε λειτουργία μόνο για προβολή και δεν μπορεί να αποθηκευτεί",
   "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "Ο αποθηκευμένος χάρτης ανοίγει μόνο για προβολή, με απενεργοποιημένη την επεξεργασία. Δεν αποτελεί προστασία: το ίδιο το αρχείο μπορεί ακόμη να αλλάξει"

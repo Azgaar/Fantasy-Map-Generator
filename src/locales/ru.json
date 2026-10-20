@@ -3516,7 +3516,7 @@
   "Toggle regiment visibility on the map": "Показать/скрыть полк на карте",
   "Toggle visibility": "Показать/скрыть",
   "locked": "закреплено",
-  "View-only": "Только просмотр",
+  "View-only mode": "Только просмотр",
   "It is view-only: editing is disabled": "Только просмотр: правка отключена",
   "The map is in view-only mode and cannot be saved": "Карта открыта только для просмотра и не может быть сохранена",
   "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "Сохранённая карта откроется только для просмотра, правка будет отключена. Это не защита: сам файл всё равно можно изменить"

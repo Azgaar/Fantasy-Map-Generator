@@ -3516,7 +3516,7 @@
   "Toggle regiment visibility on the map": "地図上の連隊の表示を切り替え",
   "Toggle visibility": "表示を切り替え",
   "locked": "ロック中",
-  "View-only": "閲覧専用",
+  "View-only mode": "閲覧専用",
   "It is view-only: editing is disabled": "閲覧専用のため、編集はできません",
   "The map is in view-only mode and cannot be saved": "閲覧専用モードの地図は保存できません",
   "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "保存した地図は閲覧専用で開き、編集はできません。これは保護ではなく、ファイル自体は引き続き変更できます"

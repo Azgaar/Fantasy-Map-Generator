@@ -3516,7 +3516,7 @@
   "Toggle regiment visibility on the map": "切換地圖上團的可見性",
   "Toggle visibility": "切換可見性",
   "locked": "已鎖定",
-  "View-only": "僅供檢視",
+  "View-only mode": "僅供檢視",
   "It is view-only: editing is disabled": "僅供檢視：已停用編輯",
   "The map is in view-only mode and cannot be saved": "地圖處於僅供檢視模式，無法儲存",
   "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "儲存的地圖將以僅供檢視方式開啟，無法編輯。這不是保護措施：檔案本身仍可被修改"

@@ -268,7 +268,7 @@ test.describe("style editor events drive the store", () => {
 
     await page.locator(`${f("options.boxSize")} input[type=number]`).fill("4");
 
-    expect(await page.evaluate(() => (window as any).styles.military.options)).toEqual({ boxSize: 4 });
+    expect(await page.evaluate(() => (window as any).styles.military.options)).toEqual({ boxSize: 4, showNames: false });
 
     // renderer derives from the store: a regiment box is 2x boxSize tall
     const boxHeight = await page.locator("#armies > g > g rect").first().getAttribute("height");

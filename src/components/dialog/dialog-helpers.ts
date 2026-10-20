@@ -42,12 +42,21 @@ let lastClickEvent: MouseEvent | null = null;
 let lastClickTime = 0;
 
 if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
-  window.addEventListener("keydown", (e: KeyboardEvent) => {
-    if (e.key === "Shift") isShiftPressed = true;
-  });
-  window.addEventListener("keyup", (e: KeyboardEvent) => {
-    if (e.key === "Shift") isShiftPressed = false;
-  });
+  // capture: the hotkeys stop keyup propagation on document, a missed release would skip every confirmation
+  window.addEventListener(
+    "keydown",
+    (e: KeyboardEvent) => {
+      if (e.key === "Shift") isShiftPressed = true;
+    },
+    true
+  );
+  window.addEventListener(
+    "keyup",
+    (e: KeyboardEvent) => {
+      if (e.key === "Shift") isShiftPressed = false;
+    },
+    true
+  );
   window.addEventListener("blur", () => {
     isShiftPressed = false;
   });

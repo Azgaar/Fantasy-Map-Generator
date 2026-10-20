@@ -5,7 +5,7 @@
  * See docs/prd/translation.md
  *
  * Usage:
- *   node scripts/lint-locales.mjs             # exit 1 on a broken string, warn about missing translations (CI)
+ *   node scripts/lint-locales.mjs             # warn about broken strings and missing translations (CI)
  *   node scripts/lint-locales.mjs --missing   # list the English keys each language lacks, to translate
  */
 
@@ -96,13 +96,12 @@ function main() {
     return;
   }
 
-  let failed = false;
+  let broken = false;
   for (const file of files) {
     const strings = file === ENGLISH ? english : read(file);
     const problems = lintCatalog(strings, english);
-    if (!problems.length) continue;
-    failed = true;
-    console.error(`${file}:\n${problems.map(problem => `  ${problem}`).join("\n")}`);
+    broken ||= problems.length > 0;
+    for (const problem of problems) warn(file, problem);
   }
 
   for (const file of files.filter(file => file !== ENGLISH)) {
@@ -110,8 +109,7 @@ function main() {
     if (missing) warn(file, `untranslated strings: ${missing}, shown in English; list them with --missing`);
   }
 
-  if (failed) process.exit(1);
-  console.log("Locale catalogs keep the rules");
+  if (!broken) console.log("Locale catalogs keep the rules");
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) main();

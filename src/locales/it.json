@@ -3516,7 +3516,7 @@
   "Toggle regiment visibility on the map": "Attiva/disattiva la visibilità del reggimento sulla mappa",
   "Toggle visibility": "Attiva/disattiva la visibilità",
   "locked": "bloccato",
-  "View-only": "Sola lettura",
+  "View-only mode": "Sola lettura",
   "It is view-only: editing is disabled": "È in sola lettura: la modifica è disattivata",
   "The map is in view-only mode and cannot be saved": "La mappa è in modalità sola lettura e non può essere salvata",
   "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "La mappa salvata si apre in sola lettura, con la modifica disattivata. Non è una protezione: il file stesso può ancora essere modificato"

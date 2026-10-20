@@ -151,6 +151,7 @@
     "fill": "#eef6fb"
   },
   "#legend": {
+    "fill": "#000000",
     "stroke": "#812929",
     "stroke-width": "2.5",
     "stroke-dasharray": "0 4 10 4",

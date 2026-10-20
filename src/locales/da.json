@@ -3516,7 +3516,7 @@
   "Toggle regiment visibility on the map": "Skift regimentets synlighed på kortet",
   "Toggle visibility": "Skift synlighed",
   "locked": "låst",
-  "View-only": "Kun til visning",
+  "View-only mode": "Kun til visning",
   "It is view-only: editing is disabled": "Kun til visning: redigering er slået fra",
   "The map is in view-only mode and cannot be saved": "Kortet er kun til visning og kan ikke gemmes",
   "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "Det gemte kort åbnes kun til visning, uden redigering. Ikke en beskyttelse: selve filen kan stadig ændres"

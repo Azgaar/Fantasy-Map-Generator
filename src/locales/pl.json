@@ -3516,7 +3516,7 @@
   "Toggle regiment visibility on the map": "Pokaż/ukryj pułk na mapie",
   "Toggle visibility": "Pokaż/ukryj",
   "locked": "zablokowane",
-  "View-only": "Tylko do podglądu",
+  "View-only mode": "Tylko do podglądu",
   "It is view-only: editing is disabled": "Tylko do podglądu: edycja jest wyłączona",
   "The map is in view-only mode and cannot be saved": "Mapa jest w trybie tylko do podglądu i nie można jej zapisać",
   "Saved map opens for browsing only, with editing disabled. Not a protection: the file itself can still be changed": "Zapisana mapa otwiera się tylko do podglądu, z wyłączoną edycją. To nie jest zabezpieczenie: sam plik nadal można zmienić"
