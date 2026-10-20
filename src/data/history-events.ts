@@ -59,3 +59,58 @@ export const SCHISM_TEMPLATES: Record<string, SchismTemplate[]> = {
     (child, parent) => `Secret rites of ${parent} grew into the ${child} cult`
   ]
 };
+
+export type RealmForm = "Empire" | "Dominion" | "Imperium" | "Hegemony"; // single words: the proper name is the rest
+export const REALM_FORMS: Record<RealmForm, number> = { Empire: 6, Dominion: 2, Imperium: 2, Hegemony: 1 };
+
+export type RealmFoundingTemplate = (name: string, culture: string) => string;
+export const REALM_FOUNDING_TEMPLATES: RealmFoundingTemplate[] = [
+  (name, culture) => `${culture} kings proclaimed the ${name}, which came to rule the known world`,
+  (name, culture) => `The ${name} rose from the ${culture} heartland, and its word became law`,
+  (name, culture) => `${culture} warlords forged the ${name} out of a hundred squabbling realms`
+];
+
+export type GoldenAgeTemplate = (name: string) => string;
+export const GOLDEN_AGE_TEMPLATES: GoldenAgeTemplate[] = [
+  name => `The ${name} reached the height of its power and learning`,
+  name => `Under the ${name}, roads were laid, cities swelled and the arts flourished`,
+  name => `The ${name} knew peace and plenty; chroniclers call it a golden age`
+];
+
+export type FallBattleTemplate = (name: string) => string;
+export const FALL_BATTLE_TEMPLATES: FallBattleTemplate[] = [
+  name => `The host of the ${name} was shattered in a last great battle on the frontier`,
+  name => `The armies of the ${name} met their enemies in the field one final time, and broke`,
+  name => `Rebellion and invasion met the ${name} in open battle, and its luck ran out`
+];
+
+export type CollapseTemplate = (name: string, year: number, successors: string) => string;
+export const COLLAPSE_TEMPLATES: Record<string, CollapseTemplate[]> = {
+  collapse: [
+    (name, year, successors) => `The ${name} collapsed in ${year}, and its lands were divided among ${successors}`,
+    (name, year, successors) => `In ${year} the ${name} fell to ruin; ${successors} rose from its remains`
+  ],
+  conquest: [
+    (name, year, successors) =>
+      `The ${name} was broken by invading armies in ${year}; ${successors} inherited what remained`,
+    (name, year, successors) => `Invaders sacked the ${name} in ${year}, and ${successors} quarrelled over the spoils`
+  ],
+  partition: [
+    (name, year, successors) => `The ${name} was partitioned in ${year} among ${successors}`,
+    (name, year, successors) =>
+      `In ${year} the generals of the ${name} divided the realm, and ${successors} each took a piece`
+  ]
+};
+
+export type IndependenceTemplate = (vassal: string, realm: string) => string;
+export const INDEPENDENCE_TEMPLATES: IndependenceTemplate[] = [
+  (vassal, realm) => `${vassal} first rose in revolt against the ${realm}, and won its freedom`,
+  (vassal, realm) => `${vassal} won its freedom from the ${realm} by the sword`
+];
+
+export type RemnantTemplate = (culture: string, realm: string) => string;
+export const REMNANT_TEMPLATES: RemnantTemplate[] = [
+  (culture, realm) =>
+    `Pockets of ${culture} speakers endure in the old ${realm} heartland, relics of imperial resettlement`,
+  (culture, realm) => `The ${realm} settled loyal ${culture} families along its roads; their descendants remain`
+];

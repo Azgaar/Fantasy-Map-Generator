@@ -282,6 +282,13 @@ Slice notes:
 - Slice 2 dating — founding age biases with `sqrt(area / largest)` and a uniform jitter; a gaussian
   was avoided because d3's `randomNormal` loops forever when the test suite pins `Math.random`
   constant.
+- Slice 3 independence — a realm falls *before* its youngest successor is founded, so no successor
+  state ever lived under it. The footprint-vassal event is therefore the *people's* revolt: "D first
+  rose in revolt against the Empire", dated inside the realm's span, with the current vassalage left
+  to the slice-2 subjugation event to explain.
+- Slice 3 suppression — `Markers.generate` skips its random `ruins`/`battlefields` rolls when
+  `lore.history.echoes` is on and realms are configured; the chronicle places them where history
+  says they happened. Sea battle events keep their `loc` but place no marker.
 
 Each slice is shippable; nothing user-visible breaks if work stops between slices.
 
@@ -289,7 +296,7 @@ Each slice is shippable; nothing user-visible breaks if work stops between slice
 |---|---|---|
 | 1 ✅ | `src/types/history.ts`; `Chronicle` model skeleton (`generate()` produces empty history); pipeline step; save/load record 53; options schema + defaults | New map and old map both save/load identically to before; `pack.history` present in saves |
 | 2 ✅ | Pass 1 (scaffold) + pass 3 (emission); migrate `states[0].diplomacy` chronicle into events; culture/religion divergence events | Every state has a founding; every war (past and ongoing) is an event; invariants above pass |
-| 3 | Pass 2 (ghost realms) + pass 4 (echoes: markers, notes, optional renames) | Realms with valid dates; ruin/battleplace markers from events; successor notes visible in the notes box |
+| 3 ✅ | Pass 2 (ghost realms) + pass 4 (echoes: markers, notes, optional renames) | Realms with valid dates; ruin/battlefield markers from events; successor notes visible in the notes box |
 | 4 | Legends browser (timeline + realms tabs, filters, zoom links); Tools tab entry; Lore Editor history section | Browsable, filterable, clickable chronicle |
 | 5 | Figures: dynasties (2–5 rulers per major state spanning founding→now), coronations, successions, a general per major war — lazily generated, only where events need them | Entity pages list figures; events reference them |
 

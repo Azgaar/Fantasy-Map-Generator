@@ -1,6 +1,8 @@
+// @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { HistRefKind } from "@/types/history";
 import { emptyHistory } from "@/types/history";
+import "./pack-generator"; // Markers.place resolves cells through the global Pack
 import { Chronicle } from "./history-generator";
 
 beforeEach(() => {
@@ -8,6 +10,8 @@ beforeEach(() => {
   vi.spyOn(Math, "random").mockReturnValue(0.5);
   globalThis.options = {
     map: {
+      graph: { width: 1280, height: 800 },
+      cultures: { set: "world" },
       lore: {
         name: "",
         description: "",
@@ -90,7 +94,9 @@ describe("Chronicle", () => {
   it("generates an empty chronicle for a world with nothing to date", () => {
     emptyWorld();
     Chronicle.generate();
-    expect(pack.history).toEqual({ events: [], realms: [], eras: [] });
+    expect(pack.history.events).toEqual([]);
+    expect(pack.history.realms).toEqual([]);
+    expect(pack.history.eras).toEqual([{ name: "Era", from: 0, to: 1000 }]); // the configured era alone
   });
 
   it("replaces a stale chronicle on regeneration", () => {
@@ -236,5 +242,183 @@ describe("Chronicle.generate", () => {
     pack.states.push({ i: 4, name: "D", area: 10, campaigns: undefined, diplomacy: undefined } as never);
     pack.states[0].diplomacy = [] as unknown as string[];
     expect(() => Chronicle.generate()).not.toThrow();
+  });
+});
+
+describe("Chronicle.generate fallen realms", () => {
+  /** a compact world: state 1 cores a 4-state footprint; cells on a 6x3 grid; culture 2 pockets in the old heartland */
+  beforeEach(() => {
+    const cellState = [1, 1, 1, 1, 2, 2, 1, 1, 1, 3, 3, 3, 1, 1, 4, 4, 4, 4];
+    const cellCulture = [1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2];
+    const cellColumn = (cellId: number) => cellId % 6;
+    const cellRow = (cellId: number) => Math.floor(cellId / 6);
+    const at = (cellId: number) => [cellColumn(cellId) * 100 + 50, cellRow(cellId) * 100 + 50];
+    globalThis.pack = {
+      cells: {
+        i: cellState.map((_, cellId) => cellId),
+        state: cellState,
+        culture: cellCulture,
+        burg: cellState.map((_, cellId) => (cellId === 2 ? 1 : cellId === 10 ? 2 : 0)),
+        c: cellState.map((_, cellId) => {
+          const [x, y] = [cellColumn(cellId), cellRow(cellId)];
+          return cellState
+            .map((_, other) => [other, other % 6, Math.floor(other / 6)] as const)
+            .filter(([, ox, oy]) => Math.abs(ox - x) + Math.abs(oy - y) === 1)
+            .map(([other]) => other);
+        }),
+        p: cellState.map((_, cellId) => at(cellId))
+      },
+      burgs: [
+        0,
+        { i: 1, cell: 2, x: at(2)[0], y: at(2)[1], population: 10, capital: 1 },
+        { i: 2, cell: 10, x: at(10)[0], y: at(10)[1], population: 8 }
+      ],
+      markers: [],
+      states: [
+        { i: 0, name: "Neutrals" },
+        {
+          i: 1,
+          name: "A",
+          area: 900,
+          culture: 1,
+          neighbors: [2, 3, 4],
+          campaigns: [{ name: "The Succession War", start: 900, end: 904, attacker: 1, defender: 2 }],
+          diplomacy: ["x", "x", "x", "x"]
+        },
+        { i: 2, name: "B", area: 400, culture: 2, neighbors: [1], campaigns: [], diplomacy: ["x", "x", "x", "x"] },
+        {
+          i: 3,
+          name: "C",
+          area: 400,
+          culture: 1,
+          neighbors: [1, 4],
+          campaigns: [{ name: "The Border War", start: 900, end: 905, attacker: 3, defender: 1 }],
+          diplomacy: ["x", "x", "x", "x"]
+        },
+        {
+          i: 4,
+          name: "D",
+          area: 980,
+          culture: 2,
+          neighbors: [1, 3],
+          campaigns: [],
+          diplomacy: ["x", "Vassal", "x", "x"]
+        }
+      ],
+      cultures: [
+        { i: 0, name: "Wildlings", base: 1 },
+        { i: 1, name: "Aeloran", base: 1, origins: [0] },
+        { i: 2, name: "Velic", base: 1, origins: [1] }
+      ],
+      religions: [{ i: 0, name: "No religion", origins: null }]
+    } as unknown as typeof pack;
+  });
+
+  it("weaves a fallen realm over the largest state and its neighbors", () => {
+    Chronicle.generate();
+    expect(pack.history.realms).toHaveLength(1);
+    const [realm] = pack.history.realms;
+    expect(realm.successors).toEqual([1, 2, 3, 4]);
+    expect(realm.name.split(" ")).toHaveLength(2); // a proper name and a form word
+    expect(realm.coa).toBeTruthy();
+    expect(realm.capital).toBe(2); // the grandest burg that is not a capital
+    expect(realm.center).toBe(pack.burgs[2].cell);
+  });
+
+  it("dates the realm after its founding and before every successor", () => {
+    Chronicle.generate();
+    const [realm] = pack.history.realms;
+    expect(realm.founded).toBeLessThan(realm.fallen);
+    for (const successorId of realm.successors) {
+      expect(realm.fallen).toBeLessThan(foundingYear(successorId)!);
+    }
+    expect(realm.fallen).toBeLessThan(1000);
+  });
+
+  it("records the rise, golden ages, last battle and the fall of the realm", () => {
+    Chronicle.generate();
+    const byType = (type: string) => pack.history.events.filter(event => event.type === type);
+    const realmRef = { kind: "realm", id: 0 };
+    const founding = byType("founding").find(event => event.actors.some(actor => actor.kind === "realm"));
+    expect(founding!.loc).toBe(10);
+    expect(byType("goldenAge").length).toBeGreaterThanOrEqual(1);
+    const battle = byType("battle")[0]!;
+    expect(battle.loc).toBeDefined();
+    expect(battle.actors).toContainEqual(realmRef);
+    const collapse = byType("collapse")[0]!;
+    expect(collapse.actors[0]).toEqual(realmRef);
+    expect(collapse.actors).toHaveLength(5); // the realm and its four successors
+    expect(collapse.text).toContain("A, B, C and D");
+    expect(battle.year).toBe(collapse.year);
+  });
+
+  it("names the successors in the partition text", () => {
+    Chronicle.generate();
+    const collapse = pack.history.events.find(event => event.type === "collapse")!;
+    expect(collapse.text).toMatch(/A, B, C and D/);
+  });
+
+  it("places ruins and battlefield markers where history says they happened", () => {
+    Chronicle.generate();
+    const ruins = pack.markers.filter(marker => marker.type === "ruins");
+    const battlefields = pack.markers.filter(marker => marker.type === "battlefields");
+    expect(ruins).toHaveLength(1);
+    expect(ruins[0].name).toContain("Ruins of");
+    expect(ruins[0].cell).toBe(10);
+    expect(battlefields).toHaveLength(1);
+    expect(battlefields[0].cell).toBe(pack.history.events.find(event => event.type === "battle")!.loc);
+  });
+
+  it("notes the successors and the fallen capital", () => {
+    Chronicle.generate();
+    for (const successorId of [1, 2, 3, 4]) {
+      expect(pack.states[successorId].note).toContain("was carved from the");
+    }
+    expect(pack.burgs[2].note).toContain("fell with the empire");
+  });
+
+  it("renames a successor when renames are on", () => {
+    options.map.lore.history.renames = true;
+    Chronicle.generate();
+    expect(pack.states[1].name).toMatch(/^New /);
+  });
+
+  it("records the independence of a footprint vassal from the realm", () => {
+    Chronicle.generate();
+    const independence = pack.history.events.find(event => event.type === "independence");
+    expect(independence!.actors).toContainEqual({ kind: "state", id: 4 });
+    expect(independence!.actors).toContainEqual({ kind: "realm", id: 0 });
+    expect(independence!.year).toBeLessThan(pack.history.realms[0].fallen);
+  });
+
+  it("marks a remnant culture in the old heartland", () => {
+    Chronicle.generate();
+    expect(pack.history.realms[0].remnantCulture).toBe(2);
+    const migration = pack.history.events.find(
+      event => event.type === "migration" && event.actors.some(actor => actor.kind === "realm")
+    );
+    expect(migration!.actors).toContainEqual({ kind: "culture", id: 2 });
+  });
+
+  it("retells border wars as attempts to reforge the old borders", () => {
+    Chronicle.generate();
+    const borderWar = pack.history.events.find(event => event.text.includes("The Border War"));
+    expect(borderWar!.text).toContain("reforge the old");
+  });
+
+  it("derives eras from the realm spans and the configured era", () => {
+    Chronicle.generate();
+    const [realm] = pack.history.realms;
+    expect(pack.history.eras).toEqual([
+      { name: `The ${realm.name.split(" ")[0]} Era`, from: realm.founded, to: realm.fallen },
+      { name: "Era", from: realm.fallen, to: 1000 }
+    ]);
+  });
+
+  it("places no markers when echoes are off", () => {
+    options.map.lore.history.echoes = false;
+    Chronicle.generate();
+    expect(pack.markers).toHaveLength(0);
+    expect(pack.states[1].note).toBeUndefined();
   });
 });

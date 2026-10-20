@@ -672,8 +672,11 @@ class MarkersModule {
   }
 
   private generateTypes() {
+    // when the chronicle echoes history onto the map, it places the ruins and battlefields itself
+    const echoes = options.map.lore.history.echoes && options.map.lore.history.realms > 0;
     this.config.forEach(({ type, icon, dx, dy, px, size, pin, fill, stroke, min, each, multiplier, list, add }) => {
       if (multiplier === 0) return;
+      if (echoes && (type === "ruins" || type === "battlefields")) return;
 
       const candidates = Array.from(list(pack));
       let quantity = this.getQuantity(candidates, min, each, multiplier);
