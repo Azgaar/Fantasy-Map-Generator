@@ -231,7 +231,7 @@ class MilitaryModule {
           stateModifier[unit.type as keyof typeof stateModifier][
             s.type as keyof (typeof stateModifier)[keyof typeof stateModifier]
           ] || 1;
-        if (unit.type === "mounted" && s.formName!.includes("Horde")) modifier *= 2;
+        if (unit.type === "mounted" && s.formName?.includes("Horde")) modifier *= 2;
         else if (unit.type === "naval" && s.form === "Republic") modifier *= 1.2;
         s.temp[unit.name] = modifier * s.alert;
       }

@@ -373,7 +373,7 @@ function renderStatesPage(view: TableView<State>): void {
       class="states"
       data-id=${s.i}
       data-name="${s.name}"
-      data-form="${s.formName}"
+      data-form="${s.formName || ""}"
       data-capital="${capital}"
       data-color="${s.color}"
       data-cells=${s.cells}
@@ -388,9 +388,7 @@ function renderStatesPage(view: TableView<State>): void {
       <fill-box fill="${s.color}" data-col="color"></fill-box>
       <input data-tip="State name. Click to change" class="stateName name pointer" value="${s.name}" readonly data-col="name" />
       <svg data-tip="Click to show and edit state emblem" class="coaIcon pointer" viewBox="0 0 200 200" data-col="emblem"><use href="#stateCOA${s.i}"></use></svg>
-      <input data-tip="State form name. Click to change" class="stateForm name pointer" value="${
-        s.formName
-      }" readonly data-col="form" />
+      <input data-tip="State form name. Click to change" class="stateForm name pointer" value="${s.formName || ""}" readonly data-col="form" />
       <div data-col="capital">
         <span data-tip="State capital. Click to zoom into view" class="icon-star-empty pointer"></span>
         <div data-tip="Capital name" class="stateCapital">${capital}</div>
@@ -1316,7 +1314,7 @@ function downloadStatesCsv(): void {
       s.i,
       s.name,
       s.fullName || "",
-      s.i ? s.formName : "",
+      s.i ? s.formName || "" : "",
       s.i ? s.color : "",
       s.i ? pack.burgs[s.capital].name : "",
       s.i ? pack.cultures[s.culture].name : "",
