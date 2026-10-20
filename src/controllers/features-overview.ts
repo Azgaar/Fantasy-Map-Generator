@@ -24,20 +24,12 @@ import {
 } from "@/generators/features-generator";
 import { Tags } from "@/generators/tags";
 import { highlightArea, highlightOutline } from "@/renderers/overlays/highlight";
-import {
-  downloadFile,
-  ensureEl,
-  escapeHtml,
-  findEl,
-  getArea,
-  getAreaUnit,
-  getFileName,
-  getVertexPath,
-  si
-} from "@/utils";
+import { Csv } from "@/services/io/csv";
+import { ensureEl, escapeHtml, findEl, getArea, getAreaUnit, getVertexPath, si } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 
 const dialogId = "featuresOverview" as const;
+const CSV_COLUMNS = ["Id", "Name", "Type", "Subtype", "Group", "Tags", "Area", "Map area", "Cut by border"];
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let filterState: { search: string; type: string; subtype: string };
 
@@ -158,6 +150,7 @@ function renderDialog(): void {
       <button id="featuresOverviewRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
       <button id="featuresHeightmapEditor" data-tip="${t("Features are added and removed in the Heightmap Editor")}" class="icon-brush"></button>
       <button id="featuresExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
+      <button id="featuresImport" data-tip="${t("Upload data from a CSV file")}" class="icon-upload"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -176,6 +169,7 @@ function renderDialog(): void {
   ensureEl("featuresOverviewRefresh").addEventListener("click", refreshOverview);
   ensureEl("featuresHeightmapEditor").addEventListener("click", () => void Controllers.HeightmapEditor.open());
   ensureEl("featuresExport").addEventListener("click", downloadFeaturesData);
+  ensureEl("featuresImport").addEventListener("click", () => Csv.pick(uploadFeaturesCsv));
   ensureEl("featuresSearch").addEventListener("input", onFilterChange);
   ensureEl("featuresFilterType").addEventListener("change", onTypeFilterChange);
   ensureEl("featuresFilterSubtype").addEventListener("change", onFilterChange);
@@ -441,24 +435,43 @@ function openCoastlineEditor(element: HTMLElement): void {
 
 function downloadFeaturesData(): void {
   const unit = getAreaUnit();
-  let data = `Id,Name,Type,Subtype,Group,Tags,Area (${unit}),Map area (${unit}),Cut by border\n`;
-
-  for (const feature of featuresTable.view().all) {
-    const cells = [
+  const headers = CSV_COLUMNS.map(column => (["Area", "Map area"].includes(column) ? `${column} (${unit})` : column));
+  const rows = featuresTable
+    .view()
+    .all.map(feature => [
       feature.i,
       getName(feature),
       feature.type,
       feature.subtype,
       feature.group,
-      `"${Tags.format(feature.tags)}"`,
+      Tags.format(feature.tags),
       getArea(getCalculatedArea(feature)),
       getArea(feature.area),
       feature.border
-    ];
-    data += `${cells.join(",")}\n`;
-  }
+    ]);
+  Csv.download("Features", headers, rows);
+}
 
-  downloadFile(data, `${getFileName("Features")}.csv`);
+/** Update existing features from a CSV in the export format */
+async function uploadFeaturesCsv(text: string): Promise<void> {
+  const find = (id: number) => (id && pack.features[id] ? pack.features[id] : undefined);
+  const units = ["Area", "Map area"];
+  const updated = await Controllers.CsvUpload.update(
+    text,
+    CSV_COLUMNS,
+    { find, units, text: ["Name", "Tags"] },
+    (id, row) => {
+      const feature = find(id)!;
+      row.apply("Name", name => Features.rename(feature.i, name), getName(feature));
+      row.apply("Subtype", subtype => Features.setSubtype(feature.i, subtype), feature.subtype);
+      row.apply("Group", group => Features.setGroup(feature.i, group), feature.group);
+      row.assign("Tags", tags => Tags.set(feature, tags), Tags.format(feature.tags));
+    }
+  );
+  if (!updated) return;
+
+  Layers.draw("lakes", "coastline", "labels");
+  refreshOverview();
 }
 
 export const FeaturesOverview = { open, refresh: () => findEl(dialogId) && featuresTable.refresh() };

@@ -17,11 +17,12 @@ import type { River } from "@/generators/river-generator";
 import { Tags } from "@/generators/tags";
 import { getRiverBox, toggleBasinHighlight } from "@/renderers/draw-rivers";
 import { highlightArea } from "@/renderers/overlays/highlight";
-import { downloadFile, getFileName } from "@/utils";
+import { Csv } from "@/services/io/csv";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, rn } from "../utils";
 
 const dialogId = "riversOverview" as const;
+const CSV_COLUMNS = ["Id", "River", "Type", "Discharge", "Length", "Width", "Basin", "Tags"];
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let filterState: { search: string };
 
@@ -146,6 +147,7 @@ function renderDialog(): void {
       <button id="riverCreateNew" data-tip="${t("Create a new river selecting river cells")}" class="icon-map-pin"></button>
       <button id="riversBasinHighlight" data-tip="${t("Toggle basin highlight mode")}" class="icon-sitemap"></button>
       <button id="riversExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
+      <button id="riversImport" data-tip="${t("Upload data from a CSV file")}" class="icon-upload"></button>
       <button id="riversRemoveAll" data-tip="${t("Remove all rivers")}" class="icon-trash"></button>
     </div>
   </div>`;
@@ -169,6 +171,7 @@ function renderDialog(): void {
   ensureEl("riverCreateNew").addEventListener("click", createNewRiver);
   ensureEl("riversBasinHighlight").addEventListener("click", () => void toggleBasinHighlight());
   ensureEl("riversExport").addEventListener("click", downloadRiversData);
+  ensureEl("riversImport").addEventListener("click", () => Csv.pick(uploadRiversCsv));
   ensureEl("riversRemoveAll").addEventListener("click", triggerAllRiversRemove);
   ensureEl("riversSearch").addEventListener("input", event => {
     filterState.search = (event.target as HTMLInputElement).value;
@@ -293,21 +296,21 @@ function zoomToRiver(this: HTMLElement): void {
 }
 
 function downloadRiversData(): void {
-  let data = "Id,River,Type,Discharge,Length,Width,Basin,Tags\n"; // headers
-
   const riversById = getRiversById();
-  const exported = riversTable.view().all;
-
-  exported.forEach((r: River) => {
-    const discharge = `${r.discharge} m³/s`;
-    const length = `${rn(r.length * options.map.units.distance.scale)} ${options.map.units.distance.unit}`;
-    const width = `${rn(r.width * options.map.units.distance.scale, 3)} ${options.map.units.distance.unit}`;
-    const basin = riversById.get(r.basin)?.name || "";
-    data += `${[r.i, r.name, r.type, discharge, length, width, basin, `"${Tags.format(r.tags)}"`].join(",")}\n`;
-  });
-
-  const name = `${getFileName("Rivers")}.csv`;
-  downloadFile(data, name);
+  const { scale, unit } = options.map.units.distance;
+  const rows = riversTable
+    .view()
+    .all.map((r: River) => [
+      r.i,
+      r.name,
+      r.type,
+      `${r.discharge} m³/s`,
+      `${rn(r.length * scale)} ${unit}`,
+      `${rn(r.width * scale, 3)} ${unit}`,
+      riversById.get(r.basin)?.name || "",
+      Tags.format(r.tags)
+    ]);
+  Csv.download("Rivers", CSV_COLUMNS, rows);
 }
 
 function openRiverEditor(this: HTMLElement): void {
@@ -357,6 +360,26 @@ function triggerAllRiversRemove(): void {
 function removeAllRivers(): void {
   pack.rivers = [];
   pack.cells.r = new Uint16Array(pack.cells.i.length);
+  Layers.draw("rivers", "labels");
+  riversTable.refresh();
+}
+
+/** Update existing rivers from a CSV in the export format */
+async function uploadRiversCsv(text: string): Promise<void> {
+  const find = (id: number) => pack.rivers.find(river => river.i === id);
+  const updated = await Controllers.CsvUpload.update(
+    text,
+    CSV_COLUMNS,
+    { find, text: ["River", "Type", "Tags"] },
+    (id, row) => {
+      const river = find(id)!;
+      row.apply("River", name => Rivers.rename(river.i, name), river.name);
+      row.apply("Type", type => Rivers.setType(river.i, type), river.type);
+      row.assign("Tags", tags => Tags.set(river, tags), Tags.format(river.tags));
+    }
+  );
+  if (!updated) return;
+
   Layers.draw("rivers", "labels");
   riversTable.refresh();
 }

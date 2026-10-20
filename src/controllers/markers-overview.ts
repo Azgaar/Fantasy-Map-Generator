@@ -18,11 +18,26 @@ import type { Marker } from "@/generators/markers-generator";
 import { Tags } from "@/generators/tags";
 import { setMarkersFilter } from "@/renderers/draw-markers";
 import { highlightArea, highlightElement } from "@/renderers/overlays/highlight";
-import { downloadFile, escapeHtml, getFileName, getLatitude, getLongitude } from "@/utils";
+import { Csv } from "@/services/io/csv";
+import { escapeHtml, getLatitude, getLongitude } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "../utils";
 
 const dialogId = "markersOverview" as const;
+const CSV_COLUMNS = [
+  "Id",
+  "Type",
+  "Icon",
+  "Name",
+  "Note",
+  "State",
+  "Culture",
+  "X",
+  "Y",
+  "Latitude",
+  "Longitude",
+  "Tags"
+];
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let filterState: { search: string; state: string; culture: string; type: string };
 
@@ -102,6 +117,7 @@ function renderDialog(): void {
         <button id="markersGenerationConfig" data-tip="${t("Config markers generation options")}" class="icon-cog"></button>
         <button id="markersRemoveAll" data-tip="${t("Remove all unlocked markers")}" class="icon-trash"></button>
         <button id="markersExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
+        <button id="markersImport" data-tip="${t("Upload data from a CSV file")}" class="icon-upload"></button>
       </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -126,6 +142,7 @@ function renderDialog(): void {
   ensureEl("markersGenerationConfig").addEventListener("click", () => void Controllers.MarkersSettings.open());
   ensureEl("markersRemoveAll").addEventListener("click", triggerRemoveAll);
   ensureEl("markersExport").addEventListener("click", exportMarkers);
+  ensureEl("markersImport").addEventListener("click", () => Csv.pick(uploadMarkersCsv));
   ensureEl("markersSearch").addEventListener("input", onFilterChange);
   ensureEl("markersFilterState").addEventListener("change", onFilterChange);
   ensureEl("markersFilterCulture").addEventListener("change", onFilterChange);
@@ -441,42 +458,47 @@ function removeAllMarkers(): void {
 }
 
 function exportMarkers(): void {
-  const headers = "Id,Type,Icon,Name,Note,State,Culture,X,Y,Latitude,Longitude,Tags\n";
-  const quote = (s: string) => `"${s.replaceAll('"', '""')}"`;
-
-  const body = pack.markers.map(marker => {
+  const { coordinates } = options.map.geography;
+  const rows = pack.markers.map(marker => {
     const { i, type, icon, x, y, cell } = marker;
-
-    const name = quote(marker.name);
-    const legend = quote(marker.note || "");
-
     const state = pack.states[pack.cells.state[cell]];
     const culture = pack.cultures[pack.cells.culture[cell]];
-    const stateName = state ? quote(state.fullName || state.name) : "";
-    const cultureName = culture ? quote(culture.name) : "";
-
-    const lat = getLatitude(y, options.map.geography.coordinates, options.map.graph.height, 2);
-    const lon = getLongitude(x, options.map.geography.coordinates, options.map.graph.width, 2);
-
     return [
       i,
       type,
-      quote(Icons.glyphText(icon) ?? icon),
-      name,
-      legend,
-      stateName,
-      cultureName,
+      Icons.glyphText(icon) ?? icon,
+      marker.name,
+      marker.note,
+      state ? state.fullName || state.name : "",
+      culture?.name,
       x,
       y,
-      lat,
-      lon,
-      quote(Tags.format(marker.tags))
-    ].join(",");
+      getLatitude(y, coordinates, options.map.graph.height, 2),
+      getLongitude(x, coordinates, options.map.graph.width, 2),
+      Tags.format(marker.tags)
+    ];
   });
+  Csv.download("Markers", CSV_COLUMNS, rows);
+}
 
-  const data = headers + body.join("\n");
-  const fileName = `${getFileName("Markers")}.csv`;
-  downloadFile(data, fileName);
+/** Update existing markers from a CSV in the export format; notes are uploaded in the Notes editor */
+async function uploadMarkersCsv(text: string): Promise<void> {
+  const find = (id: number) => pack.markers.find(marker => marker.i === id);
+  const updated = await Controllers.CsvUpload.update(
+    text,
+    CSV_COLUMNS,
+    { find, text: ["Type", "Name", "Tags"] },
+    (id, row) => {
+      const marker = find(id)!;
+      row.apply("Name", name => Markers.rename(marker.i, name), marker.name);
+      row.apply("Type", type => Markers.setType(marker.i, type), marker.type);
+      row.assign("Tags", tags => Tags.set(marker, tags), Tags.format(marker.tags));
+    }
+  );
+  if (!updated) return;
+
+  Layers.draw("markers");
+  markersTable.refresh();
 }
 
 export const MarkersOverview = { open, exportCsv: exportMarkers };

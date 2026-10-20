@@ -12,7 +12,7 @@ import {
 import { Icons } from "@/components/icons";
 import { tip } from "@/components/tooltips";
 import { goodBadge } from "@/renderers/draw-goods";
-import { downloadFile, getFileName } from "@/utils";
+import { Csv } from "@/services/io/csv";
 import { sentences, t } from "@/utils/i18n";
 import type { Burg } from "../generators/burgs-generator";
 import type { Deal } from "../generators/markets-generator";
@@ -238,25 +238,22 @@ function downloadDealsCsv(): void {
   const market = Markets.get(activeMarketId);
   if (!market) return;
 
-  const lines = getMarketDeals(pack.deals, activeMarketId);
-  let csv = "Id,Good,Type,Client,Units,Price,Net\n";
-  for (const deal of lines) {
+  const rows = getMarketDeals(pack.deals, activeMarketId).flatMap(deal => {
     const good = Goods.get(deal.good);
-    if (!good) continue;
-
-    csv += [
-      deal.i,
-      good.name,
-      getDirection(deal, activeMarketId),
-      getParty(deal)?.name ?? "",
-      rn(deal.units, 2),
-      rn(deal.price, 2),
-      rn(getDealNet(deal, activeMarketId), 2)
-    ].join(",");
-    csv += "\n";
-  }
-
-  downloadFile(csv, `${getFileName(`Market_${activeMarketId}_Deals`)}.csv`);
+    if (!good) return [];
+    return [
+      [
+        deal.i,
+        good.name,
+        getDirection(deal, activeMarketId),
+        getParty(deal)?.name ?? "",
+        rn(deal.units, 2),
+        rn(deal.price, 2),
+        rn(getDealNet(deal, activeMarketId), 2)
+      ]
+    ];
+  });
+  Csv.download(`Market_${activeMarketId}_Deals`, ["Id", "Good", "Type", "Client", "Units", "Price", "Net"], rows);
 }
 
 export const MarketDealsOverview = { open };

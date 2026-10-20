@@ -16,7 +16,7 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { goodBadge } from "@/renderers/draw-goods";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
-import { downloadFile, getFileName } from "@/utils";
+import { Csv } from "@/services/io/csv";
 import { sentences, t } from "@/utils/i18n";
 import type { Burg } from "../generators/burgs-generator";
 import type { Market } from "../generators/markets-generator";
@@ -273,15 +273,14 @@ function downloadStockCsv() {
   const market = Markets.get(activeMarketId);
   if (!market) return;
 
-  let csv = "Good,Stock,Buy Price,Sell Price\n";
-  for (const [goodId, marketGood] of Object.entries(market.goods)) {
+  const rows = Object.entries(market.goods).flatMap(([goodId, marketGood]) => {
     const good = Goods.get(Number(goodId));
-    if (!good) continue;
+    if (!good) return [];
     const buyPrice = rn(Markets.customerBuyPrice(marketGood.price), 2);
     const sellPrice = rn(Markets.customerSellPrice(marketGood.price), 2);
-    csv += `${[good.name, rn(marketGood.stock, 2), buyPrice, sellPrice].join(",")}\n`;
-  }
-  downloadFile(csv, `${getFileName("Market")}.csv`);
+    return [[good.name, rn(marketGood.stock, 2), buyPrice, sellPrice]];
+  });
+  Csv.download("Market", ["Good", "Stock", "Buy Price", "Sell Price"], rows);
 }
 
 function closeMarketOverview() {

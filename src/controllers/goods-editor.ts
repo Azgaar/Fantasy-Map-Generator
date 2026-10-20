@@ -25,7 +25,8 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { Tags } from "@/generators/tags";
 import { goodBadge } from "@/renderers/draw-goods";
-import { downloadFile, getFileName, rn } from "@/utils";
+import { Csv } from "@/services/io/csv";
+import { rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import type { Good } from "../generators/goods-generator";
 import { isDealRecord, isMfgRecord } from "../generators/production-generator";
@@ -618,24 +619,44 @@ function downloadGoodsData() {
   const production = getProduction();
   const stockData = getAllStockData();
 
-  let data = "Id,Good,Color,Type,Tags,Value,Unit,Demand Coverage,Chance,Model,Cells,Produced,Stock\n";
-
-  for (const good of pack.goods) {
+  const rows = pack.goods.map(good => {
     const types = [good.recipes && "MFG", good.distribution && "RAW"].filter(Boolean).join(";");
-    const tags = good.tags.join(";");
     const demandCoverage = Object.entries(good.demandCoverage || {})
       .map(([k, v]) => `${k}:${v}`)
       .join(";");
-    const cells = cellsByGood[good.i] || 0;
     const goodProduction = production[good.i] || { burg: 0, cell: 0 };
-    const produced = rn(goodProduction.burg + goodProduction.cell);
-    const stock = stockData[good.i]?.total ?? 0;
-
-    data += `${good.i},${good.name},${good.color},${types},${tags},${good.value},${good.unit ?? ""},${demandCoverage},${good.chance ?? ""},${good.distribution ?? ""},${cells},${produced},${stock}\n`;
-  }
-
-  const name = `${getFileName("Goods")}.csv`;
-  downloadFile(data, name);
+    return [
+      good.i,
+      good.name,
+      good.color,
+      types,
+      good.tags.join(";"),
+      good.value,
+      good.unit,
+      demandCoverage,
+      good.chance,
+      good.distribution,
+      cellsByGood[good.i] || 0,
+      rn(goodProduction.burg + goodProduction.cell),
+      stockData[good.i]?.total ?? 0
+    ];
+  });
+  const headers = [
+    "Id",
+    "Good",
+    "Color",
+    "Type",
+    "Tags",
+    "Value",
+    "Unit",
+    "Demand Coverage",
+    "Chance",
+    "Model",
+    "Cells",
+    "Produced",
+    "Stock"
+  ];
+  Csv.download("Goods", headers, rows);
 }
 
 function toggleDisplayedGood(good: Good, el: HTMLInputElement) {

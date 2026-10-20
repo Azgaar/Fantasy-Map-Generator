@@ -46,7 +46,7 @@ Unfortunately, there are sometimes gaps or overlaps in the cell export data. You
 
 
 ## Burg Data
-Burg data can be downloaded as a _.csv_ file from the _Burgs Overview_. The downloaded file contains the burg id, name, province, state, culture, religion, group, population, map coordinates, latitude, longitude, elevation, temperature, the capital / port / citadel / walls / plaza / temple / shanty town flags, the emblem and a preview link. These can be imported into QGIS by choosing _Layer_ -> _Add Layer..._ -> _Add Delimited Text Layer..._
+Burg data can be downloaded as a _.csv_ file from the _Burgs Overview_. The downloaded file contains the burg id, name, province, state, culture, religion, group, type, population, market, product, wealth, treasury, map coordinates, latitude, longitude, elevation, temperature, the capital / port / citadel / walls / plaza / temple / shanty town flags, the emblem, a preview link and tags. These can be imported into QGIS by choosing _Layer_ -> _Add Layer..._ -> _Add Delimited Text Layer..._
 
 ![Steps](https://azgaar.files.wordpress.com/2019/09/add_csv.png)
 

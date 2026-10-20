@@ -17,17 +17,51 @@ import { Controllers } from "@/controllers";
 import type { Burg } from "@/generators/burgs-generator";
 import { Tags } from "@/generators/tags";
 import { removeEmblem } from "@/renderers/draw-emblems";
-import { downloadFile, getFileName, getHeight, getLatitude, getLongitude, uploadFile } from "@/utils";
+import { Csv } from "@/services/io/csv";
+import { getHeight, getLatitude, getLongitude } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
-import { convertTemperature, createFileInput, ensureEl, getTemperatureLikeness, rn, si } from "../utils";
+import { convertTemperature, ensureEl, getTemperatureLikeness, rn, si } from "../utils";
 
 type Filters = { stateId?: number | null; cultureId?: number | null };
 type FilterState = { search: string; stateId: number; cultureId: number };
 
 const dialogId = "burgsOverview" as const;
+const CSV_COLUMNS = [
+  "Id",
+  "Burg",
+  "Province",
+  "Province Full Name",
+  "State",
+  "State Full Name",
+  "Culture",
+  "Religion",
+  "Group",
+  "Type",
+  "Population",
+  "Market",
+  "Product",
+  "Wealth",
+  "Treasury",
+  "X",
+  "Y",
+  "Latitude",
+  "Longitude",
+  "Elevation",
+  "Temperature",
+  "Temperature likeness",
+  "Capital",
+  "Port",
+  "Citadel",
+  "Walls",
+  "Plaza",
+  "Temple",
+  "Shanty Town",
+  "Emblem",
+  "Preview link",
+  "Tags"
+];
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let filterState: FilterState;
-let burgNamesInput: HTMLInputElement | null = null;
 
 const columns: EditorColumn<Burg>[] = [
   { key: "locate", width: "0.8em", permanent: true },
@@ -201,7 +235,7 @@ function renderDialog(): void {
           data-tip="${t("Save data as a CSV file")}"
           class="icon-download"
         ></button>
-        <button id="burgNamesImport" data-tip="${t("Rename burgs in bulk")}" class="icon-upload"></button>
+        <button id="burgsImport" data-tip="${t("Upload data from a CSV file")}" class="icon-upload"></button>
         <button id="burgsLockAll" data-tip="${t("Lock or unlock all burgs")}" class="icon-lock"></button>
         <button
           id="burgsRemoveAll"
@@ -235,7 +269,7 @@ function renderDialog(): void {
   ensureEl("regenerateBurgNames").addEventListener("click", regenerateNames);
   ensureEl("addNewBurg").addEventListener("click", () => void Controllers.BurgCreator.toggle());
   ensureEl("burgsExport").addEventListener("click", downloadBurgsData);
-  ensureEl("burgNamesImport").addEventListener("click", renameBurgsInBulk);
+  ensureEl("burgsImport").addEventListener("click", () => Csv.pick(uploadBurgsCsv));
   ensureEl("burgsLockAll").addEventListener("click", toggleLockAll);
   ensureEl("burgsRemoveAll").addEventListener("click", triggerAllBurgsRemove);
 }
@@ -693,123 +727,53 @@ function showBurgsChart(): void {
 }
 
 function downloadBurgsData(): void {
-  let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Group,Population,X,Y,Latitude,Longitude,Elevation (${options.map.units.height.unit}),Temperature,Temperature likeness,Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town,Emblem,Preview link,Tags\n`; // headers
-  const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
-
-  valid.forEach(b => {
-    data += `${b.i},`;
-    data += `${b.name},`;
-    const province = pack.cells.province[b.cell];
-    data += province ? `${pack.provinces[province].name},` : ",";
-    data += province ? `${pack.provinces[province].fullName},` : ",";
-    data += `${pack.states[b.state!].name},`;
-    data += `${pack.states[b.state!].fullName},`;
-    data += `${pack.cultures[b.culture!].name},`;
-    data += `${pack.religions[pack.cells.religion[b.cell]].name},`;
-    data += `${b.group},`;
-    data += `${rn(b.population! * options.map.units.population.scale * options.map.units.population.urbanization.rate)},`;
-
-    // add geography data
-    data += `${b.x},`;
-    data += `${b.y},`;
-    data += `${getLatitude(b.y, options.map.geography.coordinates, options.map.graph.height, 2)},`;
-    data += `${getLongitude(b.x, options.map.geography.coordinates, options.map.graph.width, 2)},`;
-    data += `${parseInt(getHeight(pack.cells.h[b.cell]), 10)},`;
-    const temperature = grid.cells.temp[pack.cells.g[b.cell]];
-    data += `${convertTemperature(temperature)},`;
-    data += `${getTemperatureLikeness(temperature)},`;
-
-    // add status data
-    data += b.capital ? "capital," : ",";
-    data += b.port ? "port," : ",";
-    data += b.citadel ? "citadel," : ",";
-    data += b.walls ? "walls," : ",";
-    data += b.plaza ? "plaza," : ",";
-    data += b.temple ? "temple," : ",";
-    data += b.shanty ? "shanty town," : ",";
-    data += b.coa ? `${JSON.stringify(b.coa).replace(/"/g, "").replace(/,/g, ";")},` : ",";
-    data += `${Burgs.getPreview(b).link},`;
-    data += `"${Tags.format(b.tags)}"\n`;
-  });
-
-  const name = `${getFileName("Burgs")}.csv`;
-  downloadFile(data, name);
-}
-
-function renameBurgsInBulk(): void {
-  alertMessage.innerHTML = /* html */ `${t("Download burgs list as a text file, make changes and re-upload the file. Make sure the file is a plain text document with each name on its own line (the dilimiter is CRLF). If you do not want to change the name, just leave it as is")}`;
-
-  $("#alert").dialog({
-    title: t("Burgs bulk renaming"),
-    width: "22em",
-    position: { my: "center", at: "center", of: "svg" },
-    buttons: {
-      [t("Download")]: () => {
-        const data = pack.burgs
-          .filter(b => b.i && !b.removed)
-          .map(b => b.name)
-          .join("\r\n");
-        const name = `${getFileName("Burg names")}.txt`;
-        downloadFile(data, name);
-      },
-      [t("Upload")]: pickBurgNamesFile,
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
-  });
-}
-
-/** Own the burg-names file input here so repeat opens cannot stack listeners on a shared element */
-function pickBurgNamesFile(): void {
-  burgNamesInput ??= createFileInput(".txt,.csv");
-  burgNamesInput.onchange = () => uploadFile(burgNamesInput!, importBurgNames);
-  burgNamesInput.click();
-}
-
-function importBurgNames(dataLoaded: string): void {
-  if (!dataLoaded) {
-    tip(t("Cannot load the file, please check the format"), false, "error");
-    return;
-  }
-  const data = dataLoaded
-    .replace(/\r\n|\r/g, "\n")
-    .split("\n")
-    .map(line => line.trim())
-    .filter(Boolean);
-  if (!data.length) {
-    tip(t("Cannot parse the list, please check the file format"), false, "error");
-    return;
-  }
-
-  const change: { id: number; name: string }[] = [];
-  let message = `${t("Burgs to be renamed as below")}:`;
-  message += `<table class="overflow-table"><tr><th>Id</th><th>${t("Current name")}</th><th>${t("New Name")}</th></tr>`;
-
-  const burgs = pack.burgs.filter(b => b.i && !b.removed);
-  for (let i = 0; i < data.length && i <= burgs.length; i++) {
-    const v = data[i];
-    if (!v || !burgs[i] || v === burgs[i].name) continue;
-    change.push({ id: burgs[i].i, name: v });
-    message += `<tr><td style="width:20%">${burgs[i].i}</td><td style="width:40%">${burgs[i].name}</td><td style="width:40%">${v}</td></tr>`;
-  }
-  message += `</tr></table>`;
-
-  if (!change.length) message = t("No changes found in the file. Please change some names to get a result");
-  alertMessage.innerHTML = message;
-
-  const onConfirm = () => {
-    for (const { id, name } of change) Burgs.rename(id, name);
-    burgsTable.refresh();
-    Layers.draw("labels");
-  };
-
-  confirmationDialog({
-    title: t("Burgs bulk renaming"),
-    message,
-    confirm: t("Rename"),
-    onConfirm
-  });
+  const { coordinates } = options.map.geography;
+  const { scale, urbanization } = options.map.units.population;
+  const headers = CSV_COLUMNS.map(column =>
+    column === "Elevation" ? `Elevation (${options.map.units.height.unit})` : column
+  );
+  const rows = pack.burgs
+    .filter(b => b.i && !b.removed)
+    .map(b => {
+      const province = pack.provinces[pack.cells.province[b.cell]];
+      const temperature = grid.cells.temp[pack.cells.g[b.cell]];
+      const market = Markets.get(b.market);
+      return [
+        b.i,
+        b.name,
+        province?.i ? province.name : "",
+        province?.i ? province.fullName : "",
+        pack.states[b.state!].name,
+        pack.states[b.state!].fullName,
+        pack.cultures[b.culture!].name,
+        pack.religions[pack.cells.religion[b.cell]].name,
+        b.group,
+        b.type,
+        rn(b.population! * scale * urbanization.rate),
+        market ? Markets.getName(market) : "",
+        rn(b.product || 0, 2),
+        rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2),
+        rn(b.treasury || 0, 2),
+        b.x,
+        b.y,
+        getLatitude(b.y, coordinates, options.map.graph.height, 2),
+        getLongitude(b.x, coordinates, options.map.graph.width, 2),
+        parseInt(getHeight(pack.cells.h[b.cell]), 10),
+        convertTemperature(temperature),
+        getTemperatureLikeness(temperature),
+        b.capital ? "capital" : "",
+        b.port ? "port" : "",
+        b.citadel ? "citadel" : "",
+        b.walls ? "walls" : "",
+        b.plaza ? "plaza" : "",
+        b.temple ? "temple" : "",
+        b.shanty ? "shanty town" : "",
+        b.coa ? JSON.stringify(b.coa).replace(/"/g, "").replace(/,/g, ";") : "",
+        Burgs.getPreview(b).link,
+        Tags.format(b.tags)
+      ];
+    });
+  Csv.download("Burgs", headers, rows);
 }
 
 function triggerAllBurgsRemove(): void {
@@ -845,6 +809,60 @@ function toggleLockAll(): void {
 function updateLockAllIcon(): void {
   const allLocked = pack.burgs.every(({ lock, i, removed }) => lock || !i || removed);
   ensureEl("burgsLockAll").className = allLocked ? "icon-lock-open" : "icon-lock";
+}
+
+const BUILDING_COLUMNS = [
+  ["Citadel", "citadel"],
+  ["Walls", "walls"],
+  ["Plaza", "plaza"],
+  ["Temple", "temple"],
+  ["Shanty Town", "shanty"]
+] as const;
+
+/** Update existing burgs from a CSV in the export format; a blank building or port cell removes it */
+async function uploadBurgsCsv(text: string): Promise<void> {
+  const { scale, urbanization } = options.map.units.population;
+  const find = (id: number) => (id && pack.burgs[id] && !pack.burgs[id].removed ? pack.burgs[id] : undefined);
+  // other rows and this row's own edits change these, so compare with the values as downloaded
+  const burgs = pack.burgs.filter(burg => burg?.i && !burg.removed);
+  const capitals = new Set(burgs.filter(burg => burg.capital).map(burg => burg.i));
+  const links = new Map(burgs.map(burg => [burg.i, Burgs.getPreview(burg).link]));
+  const updated = await Controllers.CsvUpload.update(
+    text,
+    CSV_COLUMNS,
+    { find, units: ["Elevation"], text: ["Burg", "Tags"] },
+    (id, row) => {
+      const burg = find(id)!;
+      row.apply("Burg", name => Burgs.rename(id, name), burg.name);
+      row.apply(
+        "Culture",
+        name => Burgs.setCulture(id, Csv.byName(pack.cultures, name).i),
+        pack.cultures[burg.culture!]?.name
+      );
+      row.apply("Group", group => Burgs.setGroup(id, group), burg.group);
+      row.apply("Type", type => Burgs.setType(id, type), burg.type);
+      row.apply(
+        "Population",
+        people => Burgs.setPopulation(id, +people),
+        rn(burg.population! * scale * urbanization.rate)
+      );
+      row.apply("Treasury", amount => Burgs.setTreasury(id, +amount), rn(burg.treasury || 0, 2));
+      row.apply("Capital", () => Burgs.setCapital(id), capitals.has(id) ? "capital" : "");
+      row.assign("Port", port => Burgs.setPort(id, Boolean(port)), burg.port ? "port" : "");
+      for (const [column, building] of BUILDING_COLUMNS)
+        row.assign(
+          column,
+          present => Burgs.setBuilding(id, building, Boolean(present)),
+          burg[building] ? column.toLowerCase() : ""
+        );
+      row.apply("Preview link", url => Burgs.setLink(id, url), links.get(id));
+      row.assign("Tags", tags => Tags.set(burg, tags), Tags.format(burg.tags));
+    }
+  );
+  if (!updated) return;
+
+  Layers.draw("burgIcons", "labels", "emblems", "population");
+  refreshBurgsEditor();
 }
 
 export const BurgsOverview = { open, showChart: showBurgsChart, exportCsv: downloadBurgsData };

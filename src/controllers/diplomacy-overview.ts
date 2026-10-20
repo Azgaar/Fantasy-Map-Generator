@@ -18,6 +18,7 @@ import { isRelation, RELATIONS } from "@/data/diplomacy";
 import type { State } from "@/generators/states-generator";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { removeRelationsMark, showRelations } from "@/renderers/overlays/diplomacy";
+import { Csv } from "@/services/io/csv";
 import { downloadFile, getFileName } from "@/utils";
 import { t } from "@/utils/i18n";
 import { ensureEl, findEl, getPointer } from "../utils";
@@ -368,14 +369,8 @@ function exportCsv(): void {
   const states = pack.states.filter(s => s.i && !s.removed);
   const valid = states.map(s => s.i);
 
-  let data = `,${states.map(s => s.name).join(",")}\n`; // headers
-  states.forEach(s => {
-    const rels = s.diplomacy!.filter((_v, i) => valid.includes(i));
-    data += `${s.name},${rels.join(",")}\n`;
-  });
-
-  const name = `${getFileName("Relations")}.csv`;
-  downloadFile(data, name);
+  const rows = states.map(s => [s.name, ...s.diplomacy!.filter((_v, i) => valid.includes(i))]);
+  Csv.download("Relations", ["", ...states.map(s => s.name)], rows);
 }
 
 function closeDiplomacyOverview(): void {

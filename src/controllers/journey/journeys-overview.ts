@@ -18,19 +18,9 @@ import { Controllers } from "@/controllers";
 import { cellEndpointLabel, getCellPoint } from "@/generators/journeys/journey-places";
 import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
 import { highlightElement } from "@/renderers/overlays/highlight";
+import { Csv } from "@/services/io/csv";
 import type { Journey } from "@/types/Journey";
-import {
-  convertSpeed,
-  downloadFile,
-  ensureEl,
-  escapeHtml,
-  findEl,
-  formatSpeed,
-  getDistanceUnit,
-  getFileName,
-  rn,
-  toCsvField
-} from "@/utils";
+import { convertSpeed, ensureEl, escapeHtml, findEl, formatSpeed, getDistanceUnit, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 
 const dialogId = "journeysOverview" as const;
@@ -381,27 +371,34 @@ function triggerAllJourneysRemove(): void {
 
 function downloadJourneysData(): void {
   const unit = getDistanceUnit();
-  let data = `Id,Journey,Type,From,To,Segments,Distance(${unit}),AvgSpeed(${unit}/h),TravelHours,TotalDays\n`; // headers
-
-  for (const journey of journeysTable.view().all) {
+  const headers = [
+    "Id",
+    "Journey",
+    "Type",
+    "From",
+    "To",
+    "Segments",
+    `Distance(${unit})`,
+    `AvgSpeed(${unit}/h)`,
+    "TravelHours",
+    "TotalDays"
+  ];
+  const rows = journeysTable.view().all.map(journey => {
     const { totalDistance, totalHours, avgSpeed, totalDays } = Journeys.getTotals(journey);
-    const places = [cellEndpointLabel(getStart(journey)), cellEndpointLabel(getEnd(journey))];
-    const values = [
+    return [
       journey.i,
-      toCsvField(journey.name),
-      toCsvField(journey.type),
-      toCsvField(places[0]),
-      toCsvField(places[1]),
+      journey.name,
+      journey.type,
+      cellEndpointLabel(getStart(journey)),
+      cellEndpointLabel(getEnd(journey)),
       journey.segments.length,
       rn(totalDistance, 2),
       convertSpeed(avgSpeed),
       rn(totalHours, 2),
       rn(totalDays, 2) // calendar days from start to finish, a full travel day counting as a whole day
     ];
-    data += `${values.join(",")}\n`;
-  }
-
-  downloadFile(data, `${getFileName("Journeys")}.csv`);
+  });
+  Csv.download("Journeys", headers, rows);
 }
 
 function onClose(): void {

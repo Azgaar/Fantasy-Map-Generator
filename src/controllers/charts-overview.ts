@@ -19,6 +19,7 @@ import {
 } from "d3";
 import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { Csv } from "@/services/io/csv";
 import { downloadFile, getArea, getAreaUnit, getFileName, getHeight, getPrecipitation } from "@/utils";
 import { t } from "@/utils/i18n";
 import { convertTemperature, ensureEl, formatPrice, isWater, rn, si } from "../utils";
@@ -849,10 +850,8 @@ function insertChart(id: number, sortedData: ChartDatum[], $chart: SVGSVGElement
   $chartContainer.appendChild($figure);
 
   const downloadChartData = () => {
-    const name = `${getFileName(title)}.csv`;
-    const headers = "Name,Group,Value\n";
-    const values = sortedData.map(({ name, group, value }) => `${name},${group},${value}`).join("\n");
-    downloadFile(headers + values, name);
+    const rows = sortedData.map(({ name, group, value }) => [name, group, value]);
+    Csv.download(title, ["Name", "Group", "Value"], rows);
   };
 
   const downloadChartSvg = () => {

@@ -23,18 +23,35 @@ import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import type { Burg } from "@/generators/burgs-generator";
 import type { Province } from "@/generators/provinces-generator";
 import { Tags } from "@/generators/tags";
 import { redrawEmblem, redrawEmblems, removeEmblem } from "@/renderers/draw-emblems";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement, highlightOutline } from "@/renderers/overlays/highlight";
-import { applyOption, downloadFile, getArea, getAreaUnit, getFileName, groupByValue, speak } from "@/utils";
+import { Csv } from "@/services/io/csv";
+import { applyOption, getArea, getAreaUnit, groupByValue, speak } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { errorText } from "@/utils/stringUtils";
 import { ensureEl, getPointer, getRandomColor, isLand, rand, rn, si, unique } from "../utils";
 
 const dialogId = "provincesEditor" as const;
+const CSV_COLUMNS = [
+  "Id",
+  "Province",
+  "Full Name",
+  "Form",
+  "State",
+  "Color",
+  "Capital",
+  "Area",
+  "Total Population",
+  "Rural Population",
+  "Urban Population",
+  "Burgs",
+  "Tags"
+];
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let filterState: { stateId: number; search?: string };
 
@@ -180,6 +197,7 @@ function renderDialog(): void {
           data-tip="${t("Save data as a CSV file")}"
           class="icon-download"
         ></button>
+        <button id="provincesImport" data-tip="${t("Upload data from a CSV file")}" class="icon-upload"></button>
         <button id="provincesManually" data-tip="${t("Manually re-assign provinces")}" class="icon-brush"></button>
         <button
           id="provincesRelease"
@@ -228,6 +246,7 @@ function renderDialog(): void {
   ensureEl("provincesPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("provincesChart").addEventListener("click", showChart);
   ensureEl("provincesExport").addEventListener("click", downloadProvincesData);
+  ensureEl("provincesImport").addEventListener("click", () => Csv.pick(uploadProvincesCsv));
   ensureEl("provincesRemoveAll").addEventListener("click", removeAllProvinces);
   ensureEl("provincesManually").addEventListener("click", openPaintEditor);
   ensureEl("provincesRelease").addEventListener("click", triggerProvincesRelease);
@@ -1140,15 +1159,24 @@ function recolorProvinces(): void {
 function downloadProvincesData(): void {
   const unit =
     options.map.units.area.unit === "square" ? `${options.map.units.distance.unit}2` : options.map.units.area.unit;
-  let data = `Id,Province,Full Name,Form,State,Color,Capital,Area ${unit},Total Population,Rural Population,Urban Population,Burgs,Tags\n`; // headers
-
-  for (const province of getProvincesData()) {
-    const capital = province.burg ? pack.burgs[province.burg].name : "";
-    data += `${province.i},${province.name},${province.fullName},${province.formName},${pack.states[province.state].name},${province.color},${capital},${getProvinceArea(province)},${getProvincePopulation(province)},${Math.round(province.rural! * options.map.units.population.scale)},${Math.round(province.urban! * options.map.units.population.scale * options.map.units.population.urbanization.rate)},${province.burgs!.length},"${Tags.format(province.tags)}"\n`;
-  }
-
-  const name = `${getFileName("Provinces")}.csv`;
-  downloadFile(data, name);
+  const { scale, urbanization } = options.map.units.population;
+  const headers = CSV_COLUMNS.map(column => (column === "Area" ? `Area ${unit}` : column));
+  const rows = getProvincesData().map(province => [
+    province.i,
+    province.name,
+    province.fullName,
+    province.formName,
+    pack.states[province.state].name,
+    province.color,
+    province.burg ? pack.burgs[province.burg].name : "",
+    getProvinceArea(province),
+    getProvincePopulation(province),
+    Math.round(province.rural! * scale),
+    Math.round(province.urban! * scale * urbanization.rate),
+    province.burgs!.length,
+    Tags.format(province.tags)
+  ]);
+  Csv.download("Provinces", headers, rows);
 }
 
 function removeAllProvinces(): void {
@@ -1374,6 +1402,49 @@ function updateLockStatus(provinceId: number, classList: DOMTokenList): void {
 
   classList.toggle("icon-lock-open");
   classList.toggle("icon-lock");
+}
+
+/** Update existing provinces from a CSV in the export format */
+async function uploadProvincesCsv(text: string): Promise<void> {
+  const { scale, urbanization } = options.map.units.population;
+  const find = (id: number) => {
+    const province = pack.provinces[id];
+    return id && province && !province.removed ? province : undefined;
+  };
+  const textColumns = ["Province", "Full Name", "Form", "Tags"];
+  const updated = await Controllers.CsvUpload.update(
+    text,
+    CSV_COLUMNS,
+    { find, units: ["Area"], text: textColumns },
+    (id, row) => {
+      const province = find(id)!;
+      const fullName = province.fullName; // a new name or form rebuilds it, so an unchanged cell must not restore the old one
+      row.apply("Province", name => Provinces.rename(id, name), province.name);
+      row.apply("Form", form => Provinces.setForm(id, form), province.formName);
+      row.apply("Full Name", name => Provinces.setFullName(id, name), fullName);
+      row.apply("Color", color => Provinces.recolor(id, color), province.color);
+      row.apply(
+        "State",
+        name => Provinces.setState(id, Csv.byName(pack.states, name).i),
+        pack.states[province.state].name
+      );
+      const inProvince = (burg: Burg) => pack.cells.province[burg.cell] === id;
+      row.apply(
+        "Capital",
+        name => Provinces.setCapital(id, Csv.byName(pack.burgs, name, inProvince).i),
+        pack.burgs[province.burg]?.name
+      );
+      row.assign("Tags", tags => Tags.set(province, tags), Tags.format(province.tags));
+      row.population(
+        [(province.rural ?? 0) * scale, (province.urban ?? 0) * scale * urbanization.rate],
+        (rural, urban) => Provinces.setPopulation(id, rural, urban)
+      );
+    }
+  );
+  if (!updated) return;
+
+  Layers.draw("states", "provinces", "borders", "burgIcons", "labels", "emblems", "population");
+  refreshProvincesEditor();
 }
 
 export const ProvincesEditor = { open, showChart };

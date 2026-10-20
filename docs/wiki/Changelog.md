@@ -15,6 +15,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 **[1.155.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.155.0) - 2026-10-24**:
 
 - Free-text tags for states and other entities
+- CSV upload for states, religions, provinces, burgs, rivers, routes, markers, zones, biomes and features
 - Color picker rework
 - View-only mode for saved maps
 - Interface translations: 29 languages besides English

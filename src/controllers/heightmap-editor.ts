@@ -1808,7 +1808,7 @@ function pickTemplateFile(): void {
 }
 
 function uploadTemplate(dataLoaded: string): void {
-  const steps = dataLoaded.split("\r\n");
+  const steps = dataLoaded.split(/\r?\n/).filter(Boolean);
   if (!steps.length) {
     tip(t("Cannot parse the template, please check the file"), false, "error");
     return;

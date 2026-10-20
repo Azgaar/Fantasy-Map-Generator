@@ -34,10 +34,8 @@ import { StylePresetsService } from "@/services/style-presets";
 import { compareVersions } from "@/services/versioning";
 import type { StylesData } from "@/types/styles";
 import {
-  downloadFile,
   ensureEl,
   findEl,
-  getFileName,
   minmax,
   parseTransform,
   rn,
@@ -49,6 +47,7 @@ import {
 } from "@/utils";
 import { t } from "@/utils/i18n";
 import { parsePathPoints } from "@/utils/pathUtils";
+import { Csv } from "./csv";
 
 type LegacyBurgGroup = Omit<MapData["burgs"]["groups"][number], "biomes" | "states" | "cultures" | "religions"> & {
   biomes?: number[] | string;
@@ -1926,18 +1925,14 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     if (unattachedNotes.length) {
       WARN && console.warn(`[Auto-update] ${unattachedNotes.length} note(s) belong to no map element`);
 
-      const quote = (value: string) => `"${(value || "").replaceAll('"', '""')}"`;
-      const csv = [
-        "id,name,note",
-        ...unattachedNotes.map(note => [quote(note.id), quote(note.name), quote(note.legend)].join(","))
-      ].join("\n");
+      const rows = unattachedNotes.map(note => [note.id, note.name, note.legend]);
 
       confirmationDialog({
         title: t("Notes without an element"),
         message: `${t("Notes describing an element that no longer exists cannot be kept: {{notes}}", { notes: unattachedNotes.length })}<br>${t("Download them to keep the text outside the generator.")}`,
         confirm: t("Download"),
         cancel: t("Discard"),
-        onConfirm: () => downloadFile(csv, `${getFileName("Unattached notes")}.csv`)
+        onConfirm: () => Csv.download("Unattached notes", ["id", "name", "note"], rows)
       });
     }
   }

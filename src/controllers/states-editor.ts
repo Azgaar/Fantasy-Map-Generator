@@ -32,7 +32,8 @@ import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement, highlightOutline } from "@/renderers/overlays/highlight";
-import { applyOption, downloadFile, getArea, getAreaUnit, getFileName, groupByValue, speak } from "@/utils";
+import { Csv } from "@/services/io/csv";
+import { applyOption, getArea, getAreaUnit, groupByValue, speak } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { errorText } from "@/utils/stringUtils";
 import { ensureEl, formatPrice, getAdjective, getPointer, isLand, rand, rn, si } from "../utils";
@@ -41,6 +42,43 @@ const dialogId = "statesEditor" as const;
 const LEGEND_NAME = "States"; // the legend box this editor toggles
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let filterState: { search: string };
+// the states CSV columns; "Area" is written with its unit
+const CSV_COLUMNS = [
+  "Id",
+  "State",
+  "Full Name",
+  "Form",
+  "Color",
+  "Capital",
+  "Culture",
+  "Type",
+  "Expansionism",
+  "Cells",
+  "Burgs",
+  "Area",
+  "Total Population",
+  "Rural Population",
+  "Urban Population",
+  "Provinces",
+  "Neighbors",
+  "Sales Tax",
+  "Poll Tax",
+  "Treasury",
+  "Tags"
+];
+const RULED_COLUMNS = [
+  "Full Name",
+  "Form",
+  "Color",
+  "Capital",
+  "Culture",
+  "Type",
+  "Expansionism",
+  "Sales Tax",
+  "Poll Tax",
+  "Treasury",
+  "Tags"
+];
 const columns: EditorColumn<State>[] = [
   { key: "color", width: "1.2em", permanent: true },
   {
@@ -227,6 +265,7 @@ function renderDialog(): void {
       <button id="statesMerge" data-tip="${t("Merge several states into one")}" class="icon-layer-group"></button>
       <button id="statesAnnex" data-tip="${sentences(t("Annex states: click the annexing state, then the states it absorbs"), t("Hold Shift to keep annexing"))}" class="icon-crown"></button>
       <button id="statesExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
+      <button id="statesImport" data-tip="${t("Upload data from a CSV file")}" class="icon-upload"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
@@ -256,6 +295,7 @@ function renderDialog(): void {
   ensureEl("statesMerge").addEventListener("click", openStateMergeDialog);
   ensureEl("statesAnnex").addEventListener("click", statesAnnex.toggle);
   ensureEl("statesExport").addEventListener("click", downloadStatesCsv);
+  ensureEl("statesImport").addEventListener("click", () => Csv.pick(uploadStatesCsv));
 
   ensureEl("statesBodySection").addEventListener("click", event => {
     const $element = (event as MouseEvent).target as HTMLElement;
@@ -1642,38 +1682,88 @@ function mergeStates(statesToMerge: number[], rulingStateId: number, asProvinces
 }
 
 function downloadStatesCsv(): void {
-  const unit = getAreaUnit("2");
-  const headers = `Id,State,Full Name,Form,Color,Capital,Culture,Type,Expansionism,Cells,Burgs,Area ${unit},Total Population,Rural Population,Urban Population,Tags`;
-  const data = statesTable.view().all.map(s => {
-    const rural = s.rural || 0;
-    const urban = s.urban || 0;
-    const population = rn(
-      rural * options.map.units.population.scale +
-        urban * options.map.units.population.scale * options.map.units.population.urbanization.rate
-    );
+  const { scale, urbanization } = options.map.units.population;
+  const headers = CSV_COLUMNS.map(column => (column === "Area" ? `Area ${getAreaUnit("2")}` : column));
+  const rows = statesTable.view().all.map(s => {
+    const rural = Math.round((s.rural || 0) * scale);
+    const urban = Math.round((s.urban || 0) * scale * urbanization.rate);
+    const neighbors = (s.neighbors || []).filter(n => n && !pack.states[n]?.removed);
     return [
       s.i,
       s.name,
-      s.fullName || "",
-      s.i ? s.formName : "",
-      s.i ? s.color : "",
-      s.i ? pack.burgs[s.capital].name : "",
+      s.i ? s.fullName || "" : "",
+      s.i ? s.formName || "" : "",
+      s.i ? s.color || "" : "",
+      s.i ? pack.burgs[s.capital].name || "" : "",
       s.i ? pack.cultures[s.culture].name : "",
       s.i ? s.type : "",
       s.i ? s.expansionism : "",
-      s.cells,
-      s.burgs,
+      s.cells || 0,
+      s.burgs || 0,
       getArea(s.area || 0),
-      population,
-      Math.round(rural * options.map.units.population.scale),
-      Math.round(urban * options.map.units.population.scale * options.map.units.population.urbanization.rate),
+      rural + urban,
+      rural,
+      urban,
+      s.i ? (s.provinces || []).filter(p => !pack.provinces[p]?.removed).length : "",
+      s.i ? neighbors.map(n => pack.states[n].name).join(";") : "",
+      s.i ? s.salesTax || 0 : "",
+      s.i ? s.pollTax || 0 : "",
+      s.i ? s.treasury || 0 : "",
       s.i ? (s.tags || []).join(";") : ""
-    ].join(",");
+    ];
   });
-  const csvData = [headers].concat(data).join("\n");
 
-  const name = `${getFileName("States")}.csv`;
-  downloadFile(csvData, name);
+  Csv.download("States", headers, rows);
+}
+
+/** Update existing states from a CSV in the export format; blank cells and derived columns are skipped */
+async function uploadStatesCsv(text: string): Promise<void> {
+  const { scale, urbanization } = options.map.units.population;
+  const find = (id: number) => (pack.states[id]?.removed ? undefined : pack.states[id]);
+  const updated = await Controllers.CsvUpload.update(
+    text,
+    CSV_COLUMNS,
+    { find, units: ["Area"], text: ["State", "Full Name", "Form", "Tags"] },
+    (id, row) => {
+      const state = find(id)!;
+      const fullName = state.fullName; // a new name or form rebuilds it, so an unchanged cell must not restore the old one
+      row.apply("State", name => States.rename(id, name), state.name);
+      if (id) {
+        row.apply("Form", form => States.setForm(id, form), state.formName);
+        row.apply("Full Name", name => States.setFullName(id, name), fullName);
+        row.apply("Color", color => States.recolor(id, color), state.color); // recolor rejects hatched fills, so keep them when unchanged
+        row.apply(
+          "Capital",
+          name => Burgs.setCapital(Csv.byName(pack.burgs, name, burg => burg.state === id).i),
+          pack.burgs[state.capital]?.name
+        );
+        row.apply(
+          "Culture",
+          name => States.setCulture(id, Csv.byName(pack.cultures, name).i),
+          pack.cultures[state.culture]?.name
+        );
+        row.apply("Type", type => States.setType(id, type), state.type);
+        row.apply("Expansionism", value => States.setExpansionism(id, +value), state.expansionism);
+        row.apply("Sales Tax", value => States.setTaxes(id, +value, state.pollTax), state.salesTax || 0);
+        row.apply("Poll Tax", value => States.setTaxes(id, state.salesTax, +value), state.pollTax || 0);
+        row.apply("Treasury", value => States.setTreasury(id, +value), state.treasury || 0);
+        row.assign("Tags", tags => States.setTags(id, tags), (state.tags ?? []).join(";"));
+      } else {
+        for (const column of RULED_COLUMNS)
+          row.apply(column, () => {
+            throw new Error("Neutral lands have no government");
+          });
+      }
+      row.population(
+        [Math.round((state.rural || 0) * scale), Math.round((state.urban || 0) * scale * urbanization.rate)],
+        (rural, urban) => States.setPopulation(id, rural, urban)
+      );
+    }
+  );
+  if (!updated) return;
+
+  Layers.draw("states", "borders", "burgIcons", "labels", "provinces", "military", "emblems", "population");
+  refreshStatesEditor();
 }
 
 function updateLockStatus(stateId: number, classList: DOMTokenList): void {

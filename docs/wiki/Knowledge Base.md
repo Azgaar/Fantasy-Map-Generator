@@ -66,7 +66,15 @@ Yes. In the Options tab click Advanced in the Configure row at the bottom. Pick 
 
 ### Can I export map data as a text file?
 
-Map data can be exported, but only a little of it can be imported back. Overview editors (Burgs, Rivers, Routes, Markers, States, Military and others) have a download button that saves their table as a .csv file, and the Export menu offers GeoJSON (cells, routes, rivers, markers, zones) and JSON (full, minimal, pack cells, grid cells). The text data you can upload back is burg names (.txt or .csv), namesbases, notes (legends, as a .csv of `type,id,note` rows addressing map objects that exist) and heightmap templates
+Map data can be exported, but only some of it can be uploaded back. Overview editors (Burgs, Rivers, Routes, Markers, States, Military and others) have a download button that saves their table as a .csv file, and the Export menu offers GeoJSON (cells, routes, rivers, markers, zones) and JSON (full, minimal, pack cells, grid cells); GeoJSON and JSON cannot be loaded back. You can upload: the tables of the States, Religions, Provinces, Burgs, Rivers, Routes, Markers, Zones, Biomes and Features editors (.csv, updates existing entries), the Cultures table (.csv, replaces the culture list), notes (legends, as a .csv of `type,id,note` rows addressing map objects that exist), namesbases (.txt), heightmap templates (.txt) and style presets (.json). Download the file from the same place first, edit it and upload it back. Formats are on the Data import wiki page: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Data-import
+
+### Can I upload states, religions, burgs or other data from a CSV file?
+
+Yes, to update entries that already exist. The States, Religions, Provinces, Burgs, Rivers, Routes, Markers, Zones, Biomes and Features editors in Tools have an upload button next to the download button. Download the table as .csv, edit it in a spreadsheet and upload it back. Before anything changes, an Upload preview lists every value to update (current and new) and every value that will not be applied with the reason; Apply makes the changes, Cancel keeps the map. Save from Excel as CSV UTF-8 so names with accents survive. Rows are matched by Id; an empty cell or an unchanged value keeps the current one, and entries left out of the file are not changed. In Tags and the burg building and Port columns an empty cell clears the value. Names that point at other entries (a capital, culture, state or origin religion) must match exactly. Columns calculated from the map (cells, area, length) are ignored, and territory is not in the file. If an Id is not on the map, nothing is changed and the missing ids are listed: create the entries in the editor first, download the CSV again to see their ids and fill them in. Values that cannot be applied, such as an unknown culture, are skipped and listed. Only comma-separated files are accepted (a spreadsheet in a language with decimal commas may save with semicolons, choose the comma when saving), and a changed name cannot contain " < or >: such a value is skipped and listed. Neutral lands (state Id 0) take only a name and population. The columns each editor reads are on https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Data-import
+
+### Can I upload cultures data from a CSV file?
+
+Yes. Open Tools -> Cultures, download the table as .csv, edit it and upload it with the upload button next to it. Unlike the other uploads it replaces the list, and its preview shows the cultures to add and remove before you apply: cultures missing from the file are removed, and a row with a new Id adds a culture on a random populated cell without land until cultures are expanded again. It reads the name, ancestry, color, expansionism, type, population, namesbase (by name), emblems shape and origins (culture names separated by commas); cells, area and tags are ignored. Save the map first, as the upload cannot be undone. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Data-import
 
 ### Can I add new relief icons?
 
@@ -310,7 +318,7 @@ You could represent an invasion or conquest manually by following these steps: G
 
 ### I would like to use my own list of names for States, Provinces, and Burgs. How can I do it?
 
-You can create your own namebases in the corresponding tool, and select them when you place custom cultures and states
+You can create your own namebases in the corresponding tool (Tools -> Namesbase, which also uploads a .txt namesbase), and select them when you place custom cultures and states. To rename existing ones in bulk, download the table of the Burgs, States, Provinces or another editor as .csv, change the names and upload it back. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Data-import
 
 ### Is it possible to use the map generator to create a fantasy map based on an actual city map?
 

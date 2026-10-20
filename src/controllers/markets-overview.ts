@@ -22,7 +22,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { ColorPicker } from "@/controllers/color-picker";
-import { downloadFile, getFileName } from "@/utils";
+import { Csv } from "@/services/io/csv";
 import { sentences, t } from "@/utils/i18n";
 import type { Burg } from "../generators/burgs-generator";
 import type { Deal, Market } from "../generators/markets-generator";
@@ -475,15 +475,22 @@ function regenerateProduction() {
 }
 
 function downloadMarketsCsv(): void {
-  let csv = "Market,Owner,Cells,Burgs,Total Stock,Sales,Buys,Value\n";
-  for (const market of pack.markets) {
+  const rows = pack.markets.map(market => {
     const { sales, buys, value } = getMarketFinancials(market);
-    const cells = getMarketCells(market.i);
-    const burgs = getMarketBurgs(market.i);
     const stock = rn(getMarketTotalStock(market), 2);
-    csv += `${[Markets.getName(market), getOwnerStateName(market), cells, burgs, stock, sales, buys, value].join(",")}\n`;
-  }
-  downloadFile(csv, `${getFileName("Markets_Overview")}.csv`);
+    return [
+      Markets.getName(market),
+      getOwnerStateName(market),
+      getMarketCells(market.i),
+      getMarketBurgs(market.i),
+      stock,
+      sales,
+      buys,
+      value
+    ];
+  });
+  const headers = ["Market", "Owner", "Cells", "Burgs", "Total Stock", "Sales", "Buys", "Value"];
+  Csv.download("Markets_Overview", headers, rows);
 }
 
 function closeMarketsOverview(): void {

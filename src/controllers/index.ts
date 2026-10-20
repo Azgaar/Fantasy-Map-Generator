@@ -14,6 +14,7 @@ export const Controllers = createRegistry({
   ColorPicker: () => import("@/controllers/color-picker").then(m => m.ColorPicker),
   ComparePrices: () => import("@/controllers/compare-prices").then(m => m.ComparePrices),
   ContextMenu: () => import("@/controllers/context-menu").then(m => m.ContextMenu),
+  CsvUpload: () => import("@/controllers/csv-upload").then(m => m.CsvUpload),
   CulturesEditor: () => import("@/controllers/cultures-editor").then(m => m.CulturesEditor),
   DiplomacyEditor: () => import("@/controllers/diplomacy-editor").then(m => m.DiplomacyEditor),
   DiplomacyOverview: () => import("@/controllers/diplomacy-overview").then(m => m.DiplomacyOverview),

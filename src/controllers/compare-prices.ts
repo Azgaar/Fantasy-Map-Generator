@@ -8,7 +8,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/components/dialog/table";
-import { downloadFile, getFileName } from "@/utils";
+import { Csv } from "@/services/io/csv";
 import { sentences, t } from "@/utils/i18n";
 import type { Market } from "../generators/markets-generator";
 import { ensureEl, formatPrice, rn } from "../utils";
@@ -157,15 +157,11 @@ function togglePercentageMode(): void {
 function downloadCsv(): void {
   const good = activeGoodId >= 0 ? Goods.get(activeGoodId) : undefined;
   const goodName = good?.name ?? "Unknown";
-  let csv = `Market,Stock (${goodName}),Price (${goodName})\n`;
-  for (const market of pack.markets) {
-    const centerName = Markets.getName(market);
+  const rows = pack.markets.map(market => {
     const goodData = good ? market.goods[good.i] : undefined;
-    const stock = rn(goodData?.stock ?? 0, 2);
-    const price = rn(goodData?.price ?? 0, 2);
-    csv += `${centerName},${stock},${price}\n`;
-  }
-  downloadFile(csv, `${getFileName(`Compare_Prices_${goodName}`)}.csv`);
+    return [Markets.getName(market), rn(goodData?.stock ?? 0, 2), rn(goodData?.price ?? 0, 2)];
+  });
+  Csv.download(`Compare_Prices_${goodName}`, ["Market", `Stock (${goodName})`, `Price (${goodName})`], rows);
 }
 
 function rebuildGoodSelect(): void {

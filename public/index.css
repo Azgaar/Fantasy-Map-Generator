@@ -2128,6 +2128,7 @@ svg.button {
 }
 
 #alertMessage {
+  margin: 0;
   user-select: text;
   max-height: 70vh;
   max-width: 75vw;

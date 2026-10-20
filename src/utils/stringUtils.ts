@@ -54,13 +54,6 @@ export const setInlineStyleProperty = (style: string | null, property: string, v
 };
 
 /**
- * Quote a value for one CSV field, doubling any embedded quotes per RFC 4180
- * @param {string|number} value - The value to quote
- * @returns {string} - The quoted field
- */
-export const toCsvField = (value: string | number): string => `"${String(value ?? "").replace(/"/g, '""')}"`;
-
-/**
  * Split a string into two parts, trying to balance their lengths
  * @param {string} inputString - The input string
  * @returns {[string, string]} - An array with two parts of the string

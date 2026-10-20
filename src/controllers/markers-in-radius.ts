@@ -8,7 +8,8 @@ import type { Marker } from "@/generators/markers-generator";
 import { clearMarkerRadius, drawMarkerRadius } from "@/renderers/draw-marker-radius";
 import { setMarkersFilter } from "@/renderers/draw-markers";
 import { highlightElement } from "@/renderers/overlays/highlight";
-import { downloadFile, ensureEl, getFileName, getLatitude, getLongitude } from "@/utils";
+import { Csv } from "@/services/io/csv";
+import { ensureEl, getLatitude, getLongitude } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 
 let center: Marker | null = null;
@@ -169,24 +170,26 @@ function confirmRemove(marker: Marker): void {
 function exportInRange(): void {
   if (!inRangeMarkers.length) return void tip(t("No markers in range to export"), false, "error");
 
-  const headers = "Id,Type,Icon,Name,Note,State,Culture,X,Y,Latitude,Longitude\n";
-  const quote = (s: string) => `"${s.replaceAll('"', '""')}"`;
-
-  const body = inRangeMarkers.map(({ i, type, icon, x, y, cell, name: markerName, note }) => {
-    const name = quote(markerName);
-    const legend = quote(note || "");
+  const { coordinates } = options.map.geography;
+  const rows = inRangeMarkers.map(({ i, type, icon, x, y, cell, name, note }) => {
     const state = pack.states[pack.cells.state[cell]];
     const culture = pack.cultures[pack.cells.culture[cell]];
-    const stateName = state ? quote(state.fullName || state.name) : "";
-    const cultureName = culture ? quote(culture.name) : "";
-    const lat = getLatitude(y, options.map.geography.coordinates, options.map.graph.height, 2);
-    const lon = getLongitude(x, options.map.geography.coordinates, options.map.graph.width, 2);
-    return [i, type, quote(Icons.glyphText(icon) ?? icon), name, legend, stateName, cultureName, x, y, lat, lon].join(
-      ","
-    );
+    return [
+      i,
+      type,
+      Icons.glyphText(icon) ?? icon,
+      name,
+      note,
+      state ? state.fullName || state.name : "",
+      culture?.name,
+      x,
+      y,
+      getLatitude(y, coordinates, options.map.graph.height, 2),
+      getLongitude(x, coordinates, options.map.graph.width, 2)
+    ];
   });
-
-  downloadFile(headers + body.join("\n"), `${getFileName(t("Markers in Radius"))}.csv`);
+  const headers = ["Id", "Type", "Icon", "Name", "Note", "State", "Culture", "X", "Y", "Latitude", "Longitude"];
+  Csv.download(t("Markers in Radius"), headers, rows);
 }
 
 function locateCenter(): void {

@@ -32,6 +32,7 @@ const latestPublicChanges = [
   "Free-text tags for states and other entities (hidden by default)",
   "Color picker rework",
   "View-only mode for saved maps",
+  "CSV upload for states, religions, provinces, burgs, rivers, routes, markers, zones, biomes and features",
   "Population layer: colored cells style",
   // old ones
   "Azgaar Assistant can read map data and propose changes when your own AI key is provided",

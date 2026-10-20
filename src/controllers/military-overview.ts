@@ -17,8 +17,8 @@ import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { State } from "@/generators/states-generator";
 import { drawRegiment } from "@/renderers/draw-military";
+import { Csv } from "@/services/io/csv";
 import type { MilitaryUnit } from "@/types/Military";
-import { downloadFile, getFileName } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { capitalize, ensureEl, escapeHtml, rn, sanitizeId, si, wiki } from "../utils";
 
@@ -660,14 +660,17 @@ function militaryRecalculate(): void {
 
 function downloadMilitaryData(): void {
   const units = options.map.military.units.map(u => u.name);
-  let data = `Id,State,${units.map(u => capitalize(u)).join(",")},Total,Population,Rate,War Alert\n`; // headers
-
-  for (const row of getMilitaryData()) {
-    data += `${row.state.i},${row.state.name},${units.map(unit => row.forces[unit] || 0).join(",")},${row.total},${row.population},${rn(row.rate, 2)}%,${row.alert}\n`;
-  }
-
-  const name = `${getFileName("Military")}.csv`;
-  downloadFile(data, name);
+  const headers = ["Id", "State", ...units.map(u => capitalize(u)), "Total", "Population", "Rate", "War Alert"];
+  const rows = getMilitaryData().map(row => [
+    row.state.i,
+    row.state.name,
+    ...units.map(unit => row.forces[unit] || 0),
+    row.total,
+    row.population,
+    `${rn(row.rate, 2)}%`,
+    row.alert
+  ]);
+  Csv.download("Military", headers, rows);
 }
 
 export const MilitaryOverview = { open, exportCsv: downloadMilitaryData };

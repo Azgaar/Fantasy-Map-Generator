@@ -25,12 +25,14 @@ import type { Zone } from "@/generators/zones-generator";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { zonesFilter } from "@/renderers/draw-zones";
 import { fog, unfog } from "@/renderers/overlays/fogging";
-import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
+import { Csv } from "@/services/io/csv";
+import { getArea, getAreaUnit } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { errorText } from "@/utils/stringUtils";
 import { ensureEl, rn, si, unique } from "../utils";
 
 const dialogId = "zonesEditor" as const;
+const CSV_COLUMNS = ["Id", "Color", "Description", "Type", "Tags", "Cells", "Area", "Population"];
 const LEGEND_NAME = "Zones"; // the legend box this editor toggles
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let filterState: { search: string };
@@ -116,6 +118,7 @@ function renderDialog(): void {
         <button id="zonesManually" data-tip="${t("Re-assign zones")}" class="icon-brush"></button>
         <button id="zonesAdd" data-tip="${t("Add")}" class="icon-plus"></button>
         <button id="zonesExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
+        <button id="zonesImport" data-tip="${t("Upload data from a CSV file")}" class="icon-upload"></button>
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
@@ -145,6 +148,7 @@ function renderDialog(): void {
   ensureEl("zonesManually").addEventListener("click", openPaintEditor);
   ensureEl("zonesAdd").addEventListener("click", addZonesLayer);
   ensureEl("zonesExport").addEventListener("click", downloadZonesData);
+  ensureEl("zonesImport").addEventListener("click", () => Csv.pick(uploadZonesCsv));
 
   body.addEventListener("click", (ev: Event) => {
     const line = (ev.target as HTMLElement).closest<HTMLElement>("div.states");
@@ -230,13 +234,18 @@ function getZonesData(): ZoneRow[] {
   }
   return zones.map(zone => {
     const area = getArea(sum(zone.cells.map(cell => pack.cells.area[cell])));
-    const rural = sum(zone.cells.map(cell => pack.cells.pop[cell])) * options.map.units.population.scale;
-    const urban =
-      sum(zone.cells.map(cell => pack.cells.burg[cell]).map(burg => pack.burgs[burg]?.population ?? 0)) *
-      options.map.units.population.scale *
-      options.map.units.population.urbanization.rate;
+    const [rural, urban] = getZonePopulation(zone);
     return { zone, area, rural, urban, population: rn(rural + urban) };
   });
+}
+
+/** Rural and urban people of a zone */
+function getZonePopulation(zone: Zone): [number, number] {
+  const { scale, urbanization } = options.map.units.population;
+  const rural = sum(zone.cells.map(cell => pack.cells.pop[cell])) * scale;
+  const urban =
+    sum(zone.cells.map(cell => pack.burgs[pack.cells.burg[cell]]?.population ?? 0)) * scale * urbanization.rate;
+  return [rural, urban];
 }
 
 function renderZonesPage(view: TableView<ZoneRow>): void {
@@ -448,14 +457,21 @@ function addZonesLayer(): void {
 function downloadZonesData(): void {
   const unit =
     options.map.units.area.unit === "square" ? `${options.map.units.distance.unit}2` : options.map.units.area.unit;
-  let data = `Id,Color,Description,Type,Tags,Cells,Area ${unit},Population\n`; // headers
-
-  for (const { zone, area, population } of getZonesData()) {
-    data += `${zone.i},${zone.color},${zone.name},${zone.type},"${Tags.format(zone.tags)}",${zone.cells.length},${area},${population}\n`;
-  }
-
-  const name = `${getFileName("Zones")}.csv`;
-  downloadFile(data, name);
+  const rows = getZonesData().map(({ zone, area, population }) => [
+    zone.i,
+    zone.color,
+    zone.name,
+    zone.type,
+    Tags.format(zone.tags),
+    zone.cells.length,
+    area,
+    population
+  ]);
+  Csv.download(
+    "Zones",
+    CSV_COLUMNS.map(column => (column === "Area" ? `Area ${unit}` : column)),
+    rows
+  );
 }
 
 function changeDescription(zone: Zone, value: string): void {
@@ -544,6 +560,31 @@ function zoneRemove(zone: Zone): void {
       zonesTable.refresh();
     }
   });
+}
+
+/** Update existing zones from a CSV in the export format */
+async function uploadZonesCsv(text: string): Promise<void> {
+  const find = (id: number) => pack.zones.find(zone => zone.i === id);
+  const textColumns = ["Description", "Type", "Tags"];
+  const updated = await Controllers.CsvUpload.update(
+    text,
+    CSV_COLUMNS,
+    { find, units: ["Area"], text: textColumns },
+    (id, row) => {
+      const zone = find(id)!;
+      row.apply("Description", name => Zones.rename(zone.i, name), zone.name);
+      row.apply("Color", color => Zones.recolor(zone.i, color), zone.color); // recolor rejects hatched fills, so keep them when unchanged
+      row.apply("Type", type => Zones.setType(zone.i, type), zone.type);
+      row.assign("Tags", tags => Tags.set(zone, tags), Tags.format(zone.tags));
+      row.population(getZonePopulation(zone), (rural, urban) => Zones.setPopulation(zone.i, rural, urban), [
+        "Population"
+      ]);
+    }
+  );
+  if (!updated) return;
+
+  Layers.draw("zones");
+  zonesTable.refresh();
 }
 
 export const ZonesEditor = { open, exportCsv: downloadZonesData };

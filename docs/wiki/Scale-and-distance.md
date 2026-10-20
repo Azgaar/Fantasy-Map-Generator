@@ -131,6 +131,7 @@ At the botton there is:
 * Refresh the editor.
 * Pin. Create a new route selecting route cells.
 * Save routes-related data as a text file (.csv).
+* Upload an edited .csv to rename routes and change their groups and tags, see [Data import](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Data-import).
 * Lock or unlock all routes.
 * Remove all routes.
 

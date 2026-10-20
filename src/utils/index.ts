@@ -48,8 +48,7 @@ import {
   safeParseJSON,
   sanitizeId,
   setInlineStyleProperty,
-  splitInTwo,
-  toCsvField
+  splitInTwo
 } from "./stringUtils";
 import {
   convertSpeed,
@@ -244,7 +243,6 @@ export {
   svgToDataUri,
   TYPED_ARRAY_MAX,
   throttle,
-  toCsvField,
   toHEX,
   trimVowels,
   unique,

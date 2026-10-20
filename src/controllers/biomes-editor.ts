@@ -19,12 +19,14 @@ import { fitReliefArt, poolPreviewHtml } from "@/controllers/relief-previews";
 import type { Biome } from "@/generators/biomes-generator";
 import { Population } from "@/generators/population-generator";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
+import { Csv } from "@/services/io/csv";
 import type { PackedGraph } from "@/types/PackedGraph";
-import { downloadFile, getArea, getAreaUnit, getFileName, groupByValue, openURL } from "@/utils";
+import { getArea, getAreaUnit, groupByValue, openURL } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, getRandomColor, isLand, rn, si } from "../utils";
 
 const dialogId = "biomesEditor" as const;
+const CSV_COLUMNS = ["Id", "Biome", "Color", "Habitability", "Cells", "Area", "Population"];
 const LEGEND_NAME = "Biomes"; // the legend box this editor toggles
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let currentBiomeStatistics: BiomeStatistics[] = [];
@@ -147,6 +149,7 @@ function renderDialog(): void {
           data-tip="${t("Save data as a CSV file")}"
           class="icon-download"
         ></button>
+        <button id="biomesImport" data-tip="${t("Upload data from a CSV file")}" class="icon-upload"></button>
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -165,6 +168,7 @@ function renderDialog(): void {
   ensureEl("biomesReliefRules").addEventListener("click", () => void Controllers.ReliefRulesEditor.open());
   ensureEl("biomesAdd").addEventListener("click", addCustomBiome);
   ensureEl("biomesExport").addEventListener("click", downloadBiomesData);
+  ensureEl("biomesImport").addEventListener("click", () => Csv.pick(uploadBiomesCsv));
 
   bindColumnSorting(dialogId, biomesTable.reset);
   applyLineHighlighting(dialogId, ({ cellId }) => cellId && pack.cells.biome[cellId]);
@@ -466,20 +470,20 @@ function removeCustomBiomeLine(el: HTMLElement): void {
 function downloadBiomesData(): void {
   const unit =
     options.map.units.area.unit === "square" ? `${options.map.units.distance.unit}2` : options.map.units.area.unit;
-  let data = `Id,Biome,Color,Habitability,Cells,Area ${unit},Population\n`; // headers
+  const { scale, urbanization } = options.map.units.population;
   const statistics = biomesCollectStatistics();
-  for (const biome of pack.biomes) {
-    if (!biome.i || biome.removed) continue;
-    const { cells, area, rural, urban } = statistics[biome.i];
-    const population = rn(
-      rural * options.map.units.population.scale +
-        urban * options.map.units.population.scale * options.map.units.population.urbanization.rate
-    );
-    data += `${biome.i},${biome.name},${biome.color},${biome.habitability}%,${cells},${getArea(area)},${population}\n`;
-  }
-
-  const name = `${getFileName("Biomes")}.csv`;
-  downloadFile(data, name);
+  const rows = pack.biomes
+    .filter(biome => biome.i && !biome.removed)
+    .map(biome => {
+      const { cells, area, rural, urban } = statistics[biome.i];
+      const population = rn(rural * scale + urban * scale * urbanization.rate);
+      return [biome.i, biome.name, biome.color, `${biome.habitability}%`, cells, getArea(area), population];
+    });
+  Csv.download(
+    "Biomes",
+    CSV_COLUMNS.map(column => (column === "Area" ? `Area ${unit}` : column)),
+    rows
+  );
 }
 
 function openPaintEditor(): void {
@@ -520,6 +524,30 @@ function closeBiomesEditor(): void {
 function regeneratePopulation(): void {
   Population.regenerate();
   Layers.draw("population", "goods");
+}
+
+/** Update existing biomes from a CSV in the export format */
+async function uploadBiomesCsv(text: string): Promise<void> {
+  const find = (id: number) => (id && pack.biomes[id] && !pack.biomes[id].removed ? pack.biomes[id] : undefined);
+  const updated = await Controllers.CsvUpload.update(
+    text,
+    CSV_COLUMNS,
+    { find, units: ["Area"], text: ["Biome"] },
+    (id, row) => {
+      const biome = find(id)!;
+      row.apply("Biome", name => Biomes.rename(biome.i, name), biome.name);
+      row.apply("Color", color => Biomes.recolor(biome.i, color), biome.color);
+      row.apply(
+        "Habitability",
+        value => Biomes.setHabitability(biome.i, Number.parseFloat(value)),
+        `${biome.habitability}%`
+      );
+    }
+  );
+  if (!updated) return;
+
+  Layers.draw("biomes");
+  refreshBiomesEditor();
 }
 
 export const BiomesEditor = { open, exportCsv: downloadBiomesData };

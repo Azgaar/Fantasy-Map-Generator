@@ -26,12 +26,29 @@ import type { Religion } from "@/generators/religions-generator";
 import { Tags } from "@/generators/tags";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { highlightElement } from "@/renderers/overlays/highlight";
-import { downloadFile, getArea, getAreaUnit, getFileName, groupByValue } from "@/utils";
+import { Csv } from "@/services/io/csv";
+import { getArea, getAreaUnit, groupByValue } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { errorText } from "@/utils/stringUtils";
 import { debounce, ensureEl, getPointer, isLand, parseTransform, rn, si } from "../utils";
 
 const dialogId = "religionsEditor" as const;
+const CSV_COLUMNS = [
+  "Id",
+  "Name",
+  "Color",
+  "Type",
+  "Form",
+  "Supreme Deity",
+  "Culture",
+  "Area",
+  "Cells",
+  "Believers",
+  "Origins",
+  "Potential",
+  "Expansionism",
+  "Tags"
+];
 const LEGEND_NAME = "Religions"; // the legend box this editor toggles
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let filterState: { showExtinct: boolean; search?: string };
@@ -198,6 +215,7 @@ function renderDialog(): void {
       <button id="religionsManually" data-tip="${t("Manually re-assign religions")}" class="icon-brush"></button>
       <button id="religionsAdd" data-tip="${sentences(t("Add"), t("Hold Shift to add multiple"))}" class="icon-plus"></button>
       <button id="religionsExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
+      <button id="religionsImport" data-tip="${t("Upload data from a CSV file")}" class="icon-upload"></button>
       <button id="religionsRecalculate" data-tip="${t("Recalculate religions based on current values of growth-related attributes")}" class="icon-retweet"></button>
       <span
         data-tip="${t("Allow religion center, extent, and expansionism changes to take an immediate effect")}"
@@ -231,6 +249,7 @@ function renderDialog(): void {
   ensureEl("religionsManually").addEventListener("click", openPaintEditor);
   ensureEl("religionsAdd").addEventListener("click", enterAddReligionMode);
   ensureEl("religionsExport").addEventListener("click", downloadReligionsCsv);
+  ensureEl("religionsImport").addEventListener("click", () => Csv.pick(uploadReligionsCsv));
   ensureEl("religionsRecalculate").addEventListener("click", () => recalculateReligions(true));
 }
 
@@ -943,39 +962,28 @@ function addReligion(this: SVGElement, event: MouseEvent): void {
 }
 
 function downloadReligionsCsv(): void {
-  const unit = getAreaUnit("2");
-  const headers = `Id,Name,Color,Type,Form,Supreme Deity,Area ${unit},Believers,Origins,Potential,Expansionism,Tags`;
+  const { scale, urbanization } = options.map.units.population;
+  const headers = CSV_COLUMNS.map(column => (column === "Area" ? `Area ${getAreaUnit("2")}` : column));
   // export the full filtered set (all pages), not just the visible page
-  const data = religionsTable.view().all.map(r => {
-    const area = getArea(r.area ?? 0);
-    const population = rn(
-      (r.rural ?? 0) * options.map.units.population.scale +
-        (r.urban ?? 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate
-    );
-    const deityText = `"${r.deity || ""}"`;
-    const originList = (r.origins ?? [])
-      .filter((origin): origin is number => Boolean(origin))
-      .map(origin => pack.religions[origin].name);
-    const originText = `"${originList.join(", ")}"`;
+  const rows = religionsTable.view().all.map(r => {
     return [
       r.i,
       r.name,
-      r.color ?? "",
-      r.type ?? "",
-      r.form ?? "",
-      deityText,
-      area,
-      population,
-      originText,
-      r.expansion ?? "",
-      r.i ? (r.expansionism ?? "") : "",
-      `"${Tags.format(r.tags)}"`
-    ].join(",");
+      r.color,
+      r.type,
+      r.form,
+      r.deity,
+      r.i ? pack.cultures[r.culture]?.name : "",
+      getArea(r.area ?? 0),
+      r.cells,
+      rn((r.rural ?? 0) * scale + (r.urban ?? 0) * scale * urbanization.rate),
+      originNames(r),
+      r.expansion,
+      r.i ? r.expansionism : "",
+      Tags.format(r.tags)
+    ];
   });
-  const csvData = [headers].concat(data).join("\n");
-
-  const name = `${getFileName("Religions")}.csv`;
-  downloadFile(csvData, name);
+  Csv.download("Religions", headers, rows);
 }
 
 function editReligionNote(this: HTMLElement): void {
@@ -1019,6 +1027,59 @@ function closeReligionsEditor(): void {
   view.all = [];
   $("#religionsEditor").dialog("destroy");
   ensureEl("religionsEditor").remove();
+}
+
+const originNames = (religion: Religion) =>
+  (religion.origins ?? [])
+    .filter((origin): origin is number => Boolean(origin))
+    .map(origin => pack.religions[origin].name)
+    .join(", ");
+const splitNames = (names: string) =>
+  names
+    .split(",")
+    .map(name => name.trim())
+    .filter(Boolean);
+
+/** Update existing religions from a CSV in the export format */
+async function uploadReligionsCsv(text: string): Promise<void> {
+  const { scale, urbanization } = options.map.units.population;
+  const find = (id: number) => (pack.religions[id]?.removed ? undefined : pack.religions[id]);
+  const textColumns = ["Name", "Type", "Form", "Supreme Deity", "Potential", "Tags"];
+  // a renamed religion keeps its old name in other rows' origins, so they are read by the names as downloaded
+  const living = pack.religions.filter(religion => !religion.removed);
+  const origins = new Map(living.map(religion => [religion.i, originNames(religion)]));
+  const ids = new Map(living.map(religion => [religion.name, religion.i]));
+  const originId = (name: string) => ids.get(name) ?? Csv.byName(pack.religions, name).i;
+  const updated = await Controllers.CsvUpload.update(
+    text,
+    CSV_COLUMNS,
+    { find, units: ["Area"], text: textColumns },
+    (id, row) => {
+      const religion = find(id)!;
+      row.apply("Name", name => Religions.rename(id, name), religion.name);
+      row.apply("Color", color => Religions.recolor(id, color), religion.color);
+      row.apply("Type", type => Religions.setType(id, type), religion.type);
+      row.apply("Form", form => Religions.setForm(id, form), religion.form);
+      row.apply("Supreme Deity", deity => Religions.setDeity(id, deity), religion.deity);
+      row.apply("Potential", expansion => Religions.setExpansion(id, expansion), religion.expansion);
+      row.apply("Expansionism", value => Religions.setExpansionism(id, +value), religion.expansionism);
+      row.assign(
+        "Origins",
+        names => Religions.setOrigins(id, names ? splitNames(names).map(originId) : [0]), // empty is the top level
+        origins.get(id)
+      );
+      row.assign("Tags", tags => Tags.set(religion, tags), Tags.format(religion.tags));
+      row.population(
+        [(religion.rural ?? 0) * scale, (religion.urban ?? 0) * scale * urbanization.rate],
+        (rural, urban) => Religions.setPopulation(id, rural, urban),
+        ["Believers"]
+      );
+    }
+  );
+  if (!updated) return;
+
+  Layers.draw("religions");
+  refreshReligionsEditor();
 }
 
 export const ReligionsEditor = { open, showHierarchy };

@@ -17,11 +17,12 @@ import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
 import { Tags } from "@/generators/tags";
 import { getRouteBox } from "@/renderers/draw-routes";
 import { highlightArea } from "@/renderers/overlays/highlight";
-import { downloadFile, getFileName } from "@/utils";
+import { Csv } from "@/services/io/csv";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, rn } from "../utils";
 
 const dialogId = "routesOverview" as const;
+const CSV_COLUMNS = ["Id", "Route", "Group", "Length", "Tags"];
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let filterState: { search: string };
 
@@ -115,6 +116,7 @@ function renderDialog(): void {
       <button id="routesOverviewRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
       <button id="routesCreateNew" data-tip="${t("Create a new route selecting route cells")}" class="icon-map-pin"></button>
       <button id="routesExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
+      <button id="routesImport" data-tip="${t("Upload data from a CSV file")}" class="icon-upload"></button>
       <button id="routesLockAll" data-tip="${t("Lock or unlock all routes")}" class="icon-lock"></button>
       <button id="routesRemoveAll" data-tip="${t("Remove all unlocked routes (locked routes are kept)")}" class="icon-trash"></button>
     </div>
@@ -132,6 +134,7 @@ function renderDialog(): void {
   });
   ensureEl("routesCreateNew").addEventListener("click", createNewRoute);
   ensureEl("routesExport").addEventListener("click", downloadRoutesData);
+  ensureEl("routesImport").addEventListener("click", () => Csv.pick(uploadRoutesCsv));
   ensureEl("routesLockAll").addEventListener("click", toggleLockAll);
   ensureEl("routesRemoveAll").addEventListener("click", triggerAllRoutesRemove);
   ensureEl("routesSearch").addEventListener("input", event => {
@@ -252,17 +255,18 @@ function zoomToRoute(this: HTMLElement): void {
 }
 
 function downloadRoutesData(): void {
-  let data = "Id,Route,Group,Length,Tags\n"; // headers
-
+  const { scale, unit } = options.map.units.distance;
   // export the full sorted+filtered set (all pages), not the DOM (which only holds the current page)
-  const exported = routesTable.view().all;
-  exported.forEach((route: Route) => {
-    const length = `${rn((route.length || 0) * options.map.units.distance.scale)} ${options.map.units.distance.unit}`;
-    data += `${[route.i, route.name, route.group, length, `"${Tags.format(route.tags)}"`].join(",")}\n`;
-  });
-
-  const name = `${getFileName("Routes")}.csv`;
-  downloadFile(data, name);
+  const rows = routesTable
+    .view()
+    .all.map((route: Route) => [
+      route.i,
+      route.name,
+      route.group,
+      `${rn((route.length || 0) * scale)} ${unit}`,
+      Tags.format(route.tags)
+    ]);
+  Csv.download("Routes", CSV_COLUMNS, rows);
 }
 
 function openRouteEditor(this: HTMLElement): void {
@@ -360,6 +364,26 @@ function triggerAllRoutesRemove(): void {
       }
     }
   });
+}
+
+/** Update existing routes from a CSV in the export format */
+async function uploadRoutesCsv(text: string): Promise<void> {
+  const find = (id: number) => pack.routes.find(route => route.i === id);
+  const updated = await Controllers.CsvUpload.update(
+    text,
+    CSV_COLUMNS,
+    { find, text: ["Route", "Tags"] },
+    (id, row) => {
+      const route = find(id)!;
+      row.apply("Route", name => Routes.rename(route.i, name), route.name);
+      row.apply("Group", group => Routes.setGroup(route.i, group), route.group);
+      row.assign("Tags", tags => Tags.set(route, tags), Tags.format(route.tags));
+    }
+  );
+  if (!updated) return;
+
+  Layers.draw("routes", "labels");
+  routesTable.refresh();
 }
 
 export const RoutesOverview = { open };

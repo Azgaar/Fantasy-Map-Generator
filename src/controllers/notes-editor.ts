@@ -1,14 +1,16 @@
 import type Quill from "quill";
-import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { alertDialog, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { ENTITY_TYPES, type EntityRef, MapEntities } from "@/components/map-entities";
 import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
 import { Controllers } from "@/controllers";
 import { type NoteEntry, Notes } from "@/generators/notes";
 import { highlightElement } from "@/renderers/overlays/highlight";
-import { downloadFile, getFileName, speak, uploadFile } from "@/utils";
+import { Csv } from "@/services/io/csv";
+import { speak } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
-import { createFileInput, ensureEl, findEl } from "../utils";
+import { errorText } from "@/utils/stringUtils";
+import { ensureEl, findEl } from "../utils";
 import {
   canEditAsRichText,
   createRichTextEditor,
@@ -21,7 +23,6 @@ import {
 let quill: Quill | null = null;
 let lastSelection: { index: number; length: number } | null = null;
 let windowed: { width: number; height: number; top: string; left: string } | null = null;
-let legendsInput: HTMLInputElement | null = null;
 
 /** Open the editor on the given entity, or on the first note when called with no reference */
 function open(ref?: EntityRef): void {
@@ -197,7 +198,7 @@ function renderDialog(): void {
   ensureEl("notesFocus").addEventListener("click", validateHighlightElement);
   ensureEl("notesGenerateWithAi").addEventListener("click", openAiGenerator);
   ensureEl("notesDownload").addEventListener("click", downloadLegends);
-  ensureEl("notesUpload").addEventListener("click", pickLegendsFile);
+  ensureEl("notesUpload").addEventListener("click", () => Csv.pick(uploadLegends, ".csv,.txt"));
   ensureEl("notesRemove").addEventListener("click", triggerNotesRemove);
 }
 
@@ -353,46 +354,38 @@ function openAiGenerator(): void {
   Controllers.Assistant.open();
 }
 
-const CSV_HEADER = "type,id,note";
-
-function csvCell(value: string): string {
-  return `"${value.replaceAll('"', '""')}"`;
-}
-
 /** Notes are exchanged as csv addressed by entity, so an uploaded note always has an owner */
 function downloadLegends(): void {
   const rows = Notes.list().map(entry => {
     const id = entry.ref.sub === undefined ? String(entry.ref.id) : `${entry.ref.id}-${entry.ref.sub}`;
-    return [entry.ref.type, id, csvCell(entry.note)].join(",");
+    return [entry.ref.type, id, entry.note];
   });
-
-  downloadFile([CSV_HEADER, ...rows].join("\n"), `${getFileName("Notes")}.csv`);
+  Csv.download("Notes", ["type", "id", "note"], rows);
 }
 
-/** Own the legends file input here so repeat opens cannot stack listeners on a shared element */
-function pickLegendsFile(): void {
-  legendsInput ??= createFileInput(".txt");
-  legendsInput.onchange = () => uploadFile(legendsInput!, uploadLegends);
-  legendsInput.click();
-}
-
-function uploadLegends(dataLoaded: string): void {
-  const rows = parseCsv(dataLoaded);
-  if (!rows) {
-    tip(sentences(t("Cannot load the file"), t("Please check the data format")), false, "error");
+function uploadLegends(text: string): void {
+  let rows: string[][];
+  try {
+    rows = Csv.parse(text).filter(row => row.length >= 3 && row[0].trim() !== "type");
+  } catch (error) {
+    alertDialog({ message: errorText(error) });
+    return;
+  }
+  if (!rows.length) {
+    alertDialog({ message: sentences(t("Cannot load the file"), t("Please check the data format")) });
     return;
   }
 
   let applied = 0;
   let rejected = 0;
-  for (const [type, id, note] of rows) {
-    const ref = MapEntities.parseKey(`${type}:${id}`);
-    if (ref && Notes.set(ref, note)) applied++;
+  for (const [type, id, ...note] of rows) {
+    const ref = MapEntities.parseKey(`${type.trim()}:${id.trim()}`);
+    if (ref && Notes.set(ref, note.join(","))) applied++;
     else rejected++;
   }
 
   if (!applied) {
-    tip(t("No note matched an element on this map. Nothing was loaded"), false, "error", 6000);
+    alertDialog({ message: t("No note matched an element on this map. Nothing was loaded") });
     return;
   }
 
@@ -403,49 +396,6 @@ function uploadLegends(dataLoaded: string): void {
 
   const [first] = Notes.list();
   if (first) open(first.ref);
-}
-
-/** Minimal csv reader: three columns, the last one quoted and free to contain commas and newlines */
-function parseCsv(data: string): [string, string, string][] | null {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let cell = "";
-  let quoted = false;
-
-  for (let i = 0; i < data.length; i++) {
-    const char = data[i];
-
-    if (quoted) {
-      if (char !== '"') cell += char;
-      else if (data[i + 1] === '"') {
-        cell += '"';
-        i++;
-      } else quoted = false;
-      continue;
-    }
-
-    if (char === '"') quoted = true;
-    else if (char === ",") {
-      row.push(cell);
-      cell = "";
-    } else if (char === "\n" || char === "\r") {
-      if (char === "\r" && data[i + 1] === "\n") i++;
-      row.push(cell);
-      rows.push(row);
-      row = [];
-      cell = "";
-    } else cell += char;
-  }
-  row.push(cell);
-  if (row.length > 1 || row[0]) rows.push(row);
-
-  const parsed = rows
-    .filter(parsedRow => parsedRow.length >= 3 && parsedRow[0] !== "type")
-    .map(
-      parsedRow => [parsedRow[0].trim(), parsedRow[1].trim(), parsedRow.slice(2).join(",")] as [string, string, string]
-    );
-
-  return parsed.length ? parsed : null;
 }
 
 function triggerNotesRemove(): void {

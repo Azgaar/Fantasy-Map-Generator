@@ -18,7 +18,8 @@ import { Controllers } from "@/controllers";
 import type { State } from "@/generators/states-generator";
 import { Tags } from "@/generators/tags";
 import { drawRegiment } from "@/renderers/draw-military";
-import { downloadFile, getFileName, getLatitude, getLongitude } from "@/utils";
+import { Csv } from "@/services/io/csv";
+import { getLatitude, getLongitude } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import type { Regiment } from "../generators/military-generator";
 import { capitalize, ensureEl, findEl, getPointer, last, si } from "../utils";
@@ -386,33 +387,47 @@ function addRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
 
 function downloadRegimentsData(): void {
   const units = options.map.military.units.map(u => u.name);
-  let data = `State,Id,Icon,Name,${units.map(u => capitalize(u)).join(",")},Tags,X,Y,Latitude,Longitude,Base X,Base Y,Base Latitude,Base Longitude\n`; // headers
-
-  for (const s of pack.states) {
-    if (!s.i || s.removed || !s.military?.length) continue;
-
-    for (const r of s.military) {
-      data += `${s.name},`;
-      data += `${r.i},`;
-      data += `${Icons.glyphText(r.icon ?? "") ?? r.icon},`;
-      data += `${r.name},`;
-      data += `${units.map(unit => r.u[unit]).join(",")},`;
-      data += `"${Tags.format(r.tags)}",`;
-
-      data += `${r.x},`;
-      data += `${r.y},`;
-      data += `${getLatitude(r.y, options.map.geography.coordinates, options.map.graph.height, 2)},`;
-      data += `${getLongitude(r.x, options.map.geography.coordinates, options.map.graph.width, 2)},`;
-
-      data += `${r.bx},`;
-      data += `${r.by},`;
-      data += `${getLatitude(r.by, options.map.geography.coordinates, options.map.graph.height, 2)},`;
-      data += `${getLongitude(r.bx, options.map.geography.coordinates, options.map.graph.width, 2)}\n`;
-    }
-  }
-
-  const name = `${getFileName("Regiments")}.csv`;
-  downloadFile(data, name);
+  const { coordinates } = options.map.geography;
+  const { width, height } = options.map.graph;
+  const headers = [
+    "State",
+    "Id",
+    "Icon",
+    "Name",
+    ...units.map(u => capitalize(u)),
+    "Total",
+    "Tags",
+    "X",
+    "Y",
+    "Latitude",
+    "Longitude",
+    "Base X",
+    "Base Y",
+    "Base Latitude",
+    "Base Longitude"
+  ];
+  const rows = pack.states
+    .filter(s => s.i && !s.removed)
+    .flatMap(s =>
+      (s.military ?? []).map(r => [
+        s.name,
+        r.i,
+        Icons.glyphText(r.icon ?? "") ?? r.icon,
+        r.name,
+        ...units.map(unit => r.u[unit]),
+        r.t,
+        Tags.format(r.tags),
+        r.x,
+        r.y,
+        getLatitude(r.y, coordinates, height, 2),
+        getLongitude(r.x, coordinates, width, 2),
+        r.bx,
+        r.by,
+        getLatitude(r.by, coordinates, height, 2),
+        getLongitude(r.bx, coordinates, width, 2)
+      ])
+    );
+  Csv.download("Regiments", headers, rows);
 }
 
 export const RegimentsOverview = { open, exportCsv: downloadRegimentsData };

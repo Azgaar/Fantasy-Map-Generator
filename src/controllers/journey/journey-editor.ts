@@ -27,20 +27,9 @@ import {
   resolveCellPlace
 } from "@/generators/journeys/journey-places";
 import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
+import { Csv } from "@/services/io/csv";
 import type { Journey, JourneySegment } from "@/types/Journey";
-import {
-  convertSpeed,
-  downloadFile,
-  ensureEl,
-  escapeHtml,
-  findEl,
-  formatSpeed,
-  getDistanceUnit,
-  getFileName,
-  parseSpeed,
-  rn,
-  toCsvField
-} from "@/utils";
+import { convertSpeed, ensureEl, escapeHtml, findEl, formatSpeed, getDistanceUnit, parseSpeed, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { domainMismatchMessage, JourneyPathEditor, recomputeSegment } from "./journey-path-editor";
 
@@ -638,28 +627,41 @@ function downloadSegmentsData(): void {
   if (!journey) return;
 
   const unit = getDistanceUnit();
-  const headers = `Idx,Name,Transport,Speed(${unit}/h),EffectiveSpeed(${unit}/h),DistancePx,Distance(${unit}),TimeHours,From,To,AvoidRoads,Custom,Visible,Color,Note`;
-  const lines = journey.segments.map((segment, index) =>
-    [
-      index + 1,
-      toCsvField(segment.name),
-      toCsvField(segment.transport),
-      convertSpeed(segment.speed),
-      convertSpeed(Journeys.getEffectiveSpeed(segment)),
-      rn(segment.distance, 2),
-      rn(Journeys.getSegmentDistance(segment), 2),
-      rn(Journeys.getSegmentTime(segment), 2),
-      segment.from ?? "",
-      segment.to ?? "",
-      segment.avoidRoads ? "yes" : "no",
-      segment.custom ? "yes" : "no",
-      segment.visible === false ? "no" : "yes",
-      segment.color ?? "",
-      toCsvField(segment.note ?? "")
-    ].join(",")
-  );
-
-  downloadFile([headers, ...lines].join("\n"), `${getFileName(journey.name || "Journey")}.csv`);
+  const headers = [
+    "Idx",
+    "Name",
+    "Transport",
+    `Speed(${unit}/h)`,
+    `EffectiveSpeed(${unit}/h)`,
+    "DistancePx",
+    `Distance(${unit})`,
+    "TimeHours",
+    "From",
+    "To",
+    "AvoidRoads",
+    "Custom",
+    "Visible",
+    "Color",
+    "Note"
+  ];
+  const rows = journey.segments.map((segment, index) => [
+    index + 1,
+    segment.name,
+    segment.transport,
+    convertSpeed(segment.speed),
+    convertSpeed(Journeys.getEffectiveSpeed(segment)),
+    rn(segment.distance, 2),
+    rn(Journeys.getSegmentDistance(segment), 2),
+    rn(Journeys.getSegmentTime(segment), 2),
+    segment.from,
+    segment.to,
+    segment.avoidRoads ? "yes" : "no",
+    segment.custom ? "yes" : "no",
+    segment.visible === false ? "no" : "yes",
+    segment.color,
+    segment.note
+  ]);
+  Csv.download(journey.name || "Journey", headers, rows);
 }
 
 function triggerJourneyRemove(): void {

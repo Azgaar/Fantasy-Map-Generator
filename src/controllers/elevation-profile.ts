@@ -16,6 +16,7 @@ import {
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
+import { Csv } from "@/services/io/csv";
 import { downloadFile, getFileName, getHeight, getLatitude, getLongitude } from "@/utils";
 import { t } from "@/utils/i18n";
 import type { Burg } from "../generators/burgs-generator";
@@ -476,8 +477,29 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
   }
 
   function downloadCSV(): void {
-    const headers =
-      "Id,x,y,lat,lon,Cell,Height,Height value,Population,Burg,Burg population,Biome,Biome color,Culture,Culture color,Religion,Religion color,Province,Province color,State,State color\n";
+    const headers = [
+      "Id",
+      "x",
+      "y",
+      "lat",
+      "lon",
+      "Cell",
+      "Height",
+      "Height value",
+      "Population",
+      "Burg",
+      "Burg population",
+      "Biome",
+      "Biome color",
+      "Culture",
+      "Culture color",
+      "Religion",
+      "Religion color",
+      "Province",
+      "Province color",
+      "State",
+      "State color"
+    ];
     const rows = chartData.points.map((_, k) => {
       const cell = chartData.cell[k];
       const [x, y] = pack.cells.p[cells[k]];
@@ -520,9 +542,9 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
         province ? province.color : "",
         state.name,
         (state as State & { color: string }).color
-      ].join(",");
+      ];
     });
-    downloadFile(`${headers}${rows.join("\n")}`, `${getFileName("elevation profile")}.csv`);
+    Csv.download("elevation profile", headers, rows);
   }
 
   function downloadSVG(): void {

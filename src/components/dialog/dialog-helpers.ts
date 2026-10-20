@@ -35,6 +35,8 @@ interface ConfirmationOptions {
   onCancel?: () => void;
   onConfirm?: () => void;
   event?: MouseEvent | Event;
+  width?: string;
+  modal?: boolean;
 }
 
 let isShiftPressed = false;
@@ -79,7 +81,9 @@ export function confirmationDialog(options: ConfirmationOptions): void {
     confirm = t("Continue"),
     onCancel,
     onConfirm,
-    event
+    event,
+    width = "26em",
+    modal = false
   } = options;
 
   const isShift =
@@ -98,6 +102,8 @@ export function confirmationDialog(options: ConfirmationOptions): void {
   $("#alert").dialog({
     resizable: false,
     title,
+    width, // the #alert dialog is shared: set its size and modality each time
+    modal,
     buttons: {
       [confirm]: function (this: HTMLElement) {
         onConfirm?.();
