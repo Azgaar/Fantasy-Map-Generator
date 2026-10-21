@@ -5,7 +5,7 @@ import type { Transport } from "@/generators/transports-generator";
 import type { BurgGroup } from "@/types/burg-groups";
 import type { MilitaryUnit } from "@/types/Military";
 import { parseSections } from "@/utils/schemaUtils";
-import { type MapData, mapSchema, type OptionsData, optionsSchema } from "./options-schema";
+import { type MapData, mapSchema, type OptionsData, optionsSchema, pinSchemas } from "./options-schema";
 
 // The schema is the shape; the default factory is the values. These keep the two in step,
 // and keep both in step with the domain types the rest of the app is written against.
@@ -99,6 +99,21 @@ describe("the schema describes the value, not merely its type", () => {
 
     expect(repair("generation", generation).generation.cultures.set).toBe(defaults.generation.cultures.set);
     expect(repair("map", map).map.cultures.set).toBe(defaults.map.cultures.set);
+  });
+
+  it("validates astral culture-set ids and accepts them in schema and pins", () => {
+    const defaults = Options.getDefaultOptions();
+    for (const setId of ["astralTrek", "astralJammer", "grimdark"]) {
+      const generation = {
+        ...defaults.generation,
+        cultures: { ...defaults.generation.cultures, set: setId }
+      };
+      const map = { ...defaults.map, cultures: { set: setId } };
+
+      expect(repair("generation", generation).generation.cultures.set).toBe(setId);
+      expect(repair("map", map).map.cultures.set).toBe(setId);
+      expect(pinSchemas.culturesSet.safeParse(setId).success).toBe(true);
+    }
   });
 
   it("repairs a zoom extent whose ends are the wrong way round", () => {

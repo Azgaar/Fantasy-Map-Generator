@@ -1,4 +1,5 @@
 import { max, quadtree, range } from "d3";
+import { getDefaultNameBases } from "@/data/name-bases";
 import { Emblems } from "@/generators/emblems-generator";
 import type { Emblem } from "@/types/emblems";
 import { requireColor } from "@/utils/colorUtils";
@@ -15,7 +16,10 @@ export const CULTURE_SETS: Record<string, { name: string; max: number; probabili
   antique: { name: "Antique", max: 10, probability: 3 },
   highFantasy: { name: "High Fantasy", max: 17, probability: 11 },
   darkFantasy: { name: "Dark Fantasy", max: 18, probability: 3 },
-  random: { name: "Random", max: 100, probability: 1 }
+  random: { name: "Random", max: 100, probability: 1 },
+  astralTrek: { name: "AstralTrek", max: 8, probability: 5 },
+  astralJammer: { name: "AstralJammer", max: 8, probability: 4 },
+  grimdark: { name: "Grimdark", max: 8, probability: 3 }
 };
 
 declare global {
@@ -785,6 +789,188 @@ class CulturesGenerator {
           sort: (i: number) => n(i) / bd(i, [12], 10),
           shield: "fantasy1"
         } // Serpents
+      ];
+    }
+
+    const getBase = (baseName: string) => {
+      const list = typeof Names !== "undefined" && Names.nameBases?.length ? Names.nameBases : getDefaultNameBases();
+      return list.findIndex(b => b.name === baseName);
+    };
+
+    if (options.map.cultures.set === "astralTrek") {
+      return [
+        {
+          name: "Terran (Human)",
+          base: getBase("Trek Terran"),
+          odd: 1,
+          sort: (i: number) => n(i) / td(i, 12),
+          shield: "heater"
+        },
+        { name: "Colonial (Human)", base: getBase("Trek Terran"), odd: 0.8, sort: (i: number) => n(i), shield: "kite" },
+        {
+          name: "Continental (Human)",
+          base: getBase("Trek Continental"),
+          odd: 0.9,
+          sort: (i: number) => n(i) / td(i, 12),
+          shield: "french"
+        },
+        {
+          name: "Highlander (Human)",
+          base: getBase("Trek Continental"),
+          odd: 0.6,
+          sort: (i: number) => (n(i) / td(i, 0)) * (h[i] || 1),
+          shield: "hessen"
+        },
+        {
+          name: "Synthetic (Machine)",
+          base: getBase("Trek Synthetic"),
+          odd: 0.7,
+          sort: (i: number) => n(i),
+          shield: "hexagon"
+        },
+        {
+          name: "Posthuman (Machine)",
+          base: getBase("Trek Synthetic"),
+          odd: 0.5,
+          sort: (i: number) => 1 / (n(i) + 1),
+          shield: "diamond"
+        },
+        {
+          name: "Core Worlds (Mixed)",
+          base: getBase("Trek Core"),
+          odd: 0.8,
+          sort: (i: number) => n(i),
+          shield: "gonfalon"
+        },
+        {
+          name: "Inner Reach (Mixed)",
+          base: getBase("Trek Core"),
+          odd: 0.6,
+          sort: (i: number) => 1 / (n(i) + 1),
+          shield: "banner"
+        }
+      ];
+    }
+
+    if (options.map.cultures.set === "astralJammer") {
+      return [
+        {
+          name: "Ethereal (Kindred)",
+          base: getBase("Jammer Ethereal"),
+          odd: 1,
+          sort: (i: number) => 1 / (n(i) + 1),
+          shield: "vesicaPiscis"
+        },
+        {
+          name: "Silver Kin (Kindred)",
+          base: getBase("Jammer Ethereal"),
+          odd: 0.8,
+          sort: (i: number) => n(i),
+          shield: "fantasy1"
+        },
+        {
+          name: "Stoneborn (Deep)",
+          base: getBase("Jammer Stoneborn"),
+          odd: 0.9,
+          sort: (i: number) => (n(i) / td(i, 0)) * (h[i] || 1),
+          shield: "wedged"
+        },
+        {
+          name: "Deepkin (Deep)",
+          base: getBase("Jammer Stoneborn"),
+          odd: 0.7,
+          sort: (i: number) => (n(i) / td(i, 0)) * (h[i] || 1),
+          shield: "fantasy2"
+        },
+        {
+          name: "Wild (Ferals)",
+          base: getBase("Jammer Wild"),
+          odd: 0.8,
+          sort: (i: number) => (n(i) / td(i, 0)) * (h[i] || 1),
+          shield: "moriaOrc"
+        },
+        {
+          name: "Scavengers (Ferals)",
+          base: getBase("Jammer Wild"),
+          odd: 0.6,
+          sort: (i: number) => n(i),
+          shield: "fantasy4"
+        },
+        {
+          name: "Deep Choir (Collective)",
+          base: getBase("Jammer Deep"),
+          odd: 0.7,
+          sort: (i: number) => n(i),
+          shield: "pavise"
+        },
+        {
+          name: "Far Chorus (Collective)",
+          base: getBase("Jammer Deep"),
+          odd: 0.5,
+          sort: (i: number) => 1 / (n(i) + 1),
+          shield: "fantasy5"
+        }
+      ];
+    }
+
+    if (options.map.cultures.set === "grimdark") {
+      return [
+        {
+          name: "Gothic (Darkling)",
+          base: getBase("Grimdark Gothic"),
+          odd: 1,
+          sort: (i: number) => (n(i) / td(i, 0)) * (h[i] || 1),
+          shield: "oldFrench"
+        },
+        {
+          name: "Northerners (Darkling)",
+          base: getBase("Grimdark Gothic"),
+          odd: 0.8,
+          sort: (i: number) => (n(i) / td(i, 0)) * (h[i] || 1),
+          shield: "horsehead"
+        },
+        {
+          name: "Iron (Foundrymen)",
+          base: getBase("Grimdark Iron"),
+          odd: 0.9,
+          sort: (i: number) => n(i),
+          shield: "square"
+        },
+        {
+          name: "Yard Companies (Foundrymen)",
+          base: getBase("Grimdark Iron"),
+          odd: 0.7,
+          sort: (i: number) => n(i),
+          shield: "targe"
+        },
+        {
+          name: "Machine (Cold)",
+          base: getBase("Grimdark Machine"),
+          odd: 0.7,
+          sort: (i: number) => 1 / (n(i) + 1),
+          shield: "embowed"
+        },
+        {
+          name: "Calculators (Cold)",
+          base: getBase("Grimdark Machine"),
+          odd: 0.5,
+          sort: (i: number) => n(i),
+          shield: "diamond"
+        },
+        {
+          name: "Core Holds (Mixed)",
+          base: getBase("Grimdark Core"),
+          odd: 0.8,
+          sort: (i: number) => n(i),
+          shield: "gonfalon"
+        },
+        {
+          name: "Rust Kingdoms (Mixed)",
+          base: getBase("Grimdark Core"),
+          odd: 0.6,
+          sort: (i: number) => 1 / (n(i) + 1),
+          shield: "pavise"
+        }
       ];
     }
 

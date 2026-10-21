@@ -1,3 +1,6 @@
+// Stub import.meta.glob for test runners outside Vite
+(import.meta as any).glob ??= () => ({});
+
 // Make window === globalThis so module side-effects (window.rn = ...) work in Node
 if (typeof window === "undefined") {
   (globalThis as Record<string, unknown>).window = globalThis;
@@ -70,6 +73,23 @@ for (const flag of ["INFO", "TIME", "ERROR", "WARN", "DEBUG"]) {
 const { Options } = await import("@/components/options-model");
 
 (globalThis as Record<string, unknown>).options ??= Options.getDefaultOptions();
+
+// Bun test compatibility for vi.stubGlobal and vi.unstubAllGlobals
+const { vi } = await import("vitest");
+if (typeof vi !== "undefined" && !(vi as any).stubGlobal) {
+  const stubs = new Map<string, unknown>();
+  (vi as any).stubGlobal = (name: string, value: unknown) => {
+    if (!stubs.has(name)) stubs.set(name, (globalThis as any)[name]);
+    (globalThis as any)[name] = value;
+  };
+  (vi as any).unstubAllGlobals = () => {
+    for (const [name, val] of stubs.entries()) {
+      if (val === undefined) delete (globalThis as any)[name];
+      else (globalThis as any)[name] = val;
+    }
+    stubs.clear();
+  };
+}
 
 // Those imports pull in the real tooltip module, which needs a DOM node no unit test renders.
 // A test that wants the real one imports it itself, and that assignment lands after this
