@@ -15,7 +15,7 @@
   "author": "Azgaar",
   "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "vite",
+    "dev": "bun node_modules/vite/bin/vite.js",
     "build": "tsc && vite build && node scripts/pwa-precache.mjs",
     "preview": "vite preview",
     "electron": "node scripts/electron.mjs",
@@ -27,7 +27,11 @@
     "sync-version": "node scripts/sync-version.js",
     "stamp-assets": "node scripts/stamp-assets.js",
     "generate:assistant-context": "node scripts/generate-assistant-context.mjs",
-    "prepare": "simple-git-hooks"
+    "postinstall": "node scripts/patch-esbuild.mjs"
+  },
+  "overrides": {
+    "rollup": "npm:@rollup/wasm-node@^4.64.12",
+    "esbuild": "npm:esbuild-wasm@^0.25.0"
   },
   "simple-git-hooks": {
     "pre-commit": "npm run lint && node scripts/sync-version.js --stage && node scripts/stamp-assets.js --stage"
@@ -52,14 +56,16 @@
     "playwright": "^1.57.0",
     "simple-git-hooks": "^2.13.1",
     "typescript": "^5.9.3",
-    "vite": "^8.0.16",
+    "vite": "^6.0.0",
     "vitest": "^4.1.11"
   },
   "dependencies": {
+    "@rollup/wasm-node": "^4.64.12",
     "alea": "^1.0.1",
     "d3": "^7.9.0",
     "delaunator": "^5.0.1",
     "driver.js": "^1.4.0",
+    "esbuild-wasm": "^0.28.2",
     "lineclip": "^2.0.0",
     "polylabel": "^2.0.1",
     "quill": "^2.0.3",

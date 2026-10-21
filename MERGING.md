@@ -28,3 +28,11 @@ When rebasing or merging `upstream/master`, consult this checklist to ensure for
 
 - **`src/data/name-bases.test.ts`**
   - Dedicated test suite for content rules, culture set generation, placement scoring, and Phase A acceptance.
+
+### Toolchain & Windows Environment Compatibility
+
+- **`package.json`**:
+  - Replaced upstream `vite: ^8.0.16` (which requires native Rolldown `.node` bindings blocked by Windows security policies in user directories) with `vite: ^6.0.0`.
+  - Added package overrides mapping `rollup` to `@rollup/wasm-node` and `esbuild` to `esbuild-wasm` (pure WebAssembly, zero native C++ DLL bindings).
+  - Added `scripts/patch-esbuild.mjs` running on `postinstall` to adapt Go WASM runtime process spawning for Windows `cmd.exe`.
+  - Provided `dev.cmd` and `dev.ps1` dev server launchers.
