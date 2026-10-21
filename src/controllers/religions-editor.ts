@@ -828,8 +828,8 @@ function togglePercentageMode(): void {
       .querySelectorAll<HTMLElement>(":scope > .states")
       .forEach($el => {
         const { area, population } = $el.dataset;
-        $el.querySelector<HTMLElement>(".religionArea")!.innerText = `${rn((+area! / totalArea) * 100)}%`;
-        $el.querySelector<HTMLElement>(".religionPopulation")!.innerText =
+        $el.querySelector<HTMLElement>(".religionArea")!.textContent = `${rn((+area! / totalArea) * 100)}%`;
+        $el.querySelector<HTMLElement>(".religionPopulation")!.textContent =
           `${rn((+population! / totalPopulation) * 100)}%`;
       });
   } else {

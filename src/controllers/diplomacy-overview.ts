@@ -294,6 +294,7 @@ function showHistory(): void {
     position: { my: "center", at: "center", of: "svg" },
     buttons: {
       [t("Save")]: function (this: HTMLElement) {
+        // biome-ignore lint/performance/useDomNodeTextContent: innerText yields a line per nested div
         const data = this.querySelector("div")!.innerText.split("\n").join("\r\n");
         const name = `${getFileName("Relations history")}.txt`;
         downloadFile(data, name);

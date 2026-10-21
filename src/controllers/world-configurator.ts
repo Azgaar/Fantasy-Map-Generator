@@ -273,9 +273,9 @@ function convertedTemperature(temperatureCelsius: number): string {
 
 function updateConvertedTemperatures(): void {
   const { equator, northPole, southPole } = options.map.climate.temperature;
-  ensureEl("temperatureEquatorConverted").innerText = convertedTemperature(equator);
-  ensureEl("temperatureNorthPoleConverted").innerText = convertedTemperature(northPole);
-  ensureEl("temperatureSouthPoleConverted").innerText = convertedTemperature(southPole);
+  ensureEl("temperatureEquatorConverted").textContent = convertedTemperature(equator);
+  ensureEl("temperatureNorthPoleConverted").textContent = convertedTemperature(northPole);
+  ensureEl("temperatureSouthPoleConverted").textContent = convertedTemperature(southPole);
 }
 
 /** The object is the source: push what it holds into both halves of every control that shows it */

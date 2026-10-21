@@ -167,7 +167,7 @@ function addDragToUpload(): void {
  * again once the user has taken it. The tour itself stays lazy: it is a chunk of its own
  */
 function initTourPromptButton(): void {
-  const MAX_SHOWS = 3;
+  const MAX_SHOWS = 2;
   const STORAGE_KEY = "fmg-tour-prompt-count";
 
   const count = Number.parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);

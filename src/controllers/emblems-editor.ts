@@ -357,7 +357,7 @@ function updateEmblemData(): void {
   ensureEl("emblemImage").setAttribute("href", `#${currentId}`);
   let name = el.fullName || el.name;
   if (currentType === "burg") name = t("Burg of {{- burg}}", { burg: name });
-  ensureEl("emblemArmiger").innerText = name ?? "";
+  ensureEl("emblemArmiger").textContent = name ?? "";
 
   const emblemShapeSelector = ensureEl<HTMLSelectElement>("emblemShapeSelector");
   emblemShapeSelector.value = el.coa.shield ?? ("icon" in el.coa ? "" : "heater");

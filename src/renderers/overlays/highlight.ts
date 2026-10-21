@@ -29,7 +29,7 @@ export function highlightElement(target: Element | null, zoom?: number): void {
   highlightArea(box, undefined, `matrix(${a} ${b} ${c} ${d} ${e} ${f})`);
   if (!zoom) return;
   const center = new DOMPoint(box.x + box.width / 2, box.y + box.height / 2).matrixTransform(matrix);
-  zoomTo(center.x, center.y, viewport.scale > zoom ? viewport.scale : zoom, 1600);
+  zoomTo(center.x, center.y, Math.max(viewport.scale, zoom), 1600);
 }
 
 type Box = Pick<DOMRect, "x" | "y" | "width" | "height">;

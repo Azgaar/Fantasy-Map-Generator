@@ -655,7 +655,7 @@ function editProvinceName(province: number): void {
   ensureEl<HTMLInputElement>("provinceNameEditorFull").value = p.fullName;
 
   const cultureId = pack.cells.culture[p.center];
-  ensureEl("provinceCultureDisplay").innerText = pack.cultures[cultureId].name;
+  ensureEl("provinceCultureDisplay").textContent = pack.cultures[cultureId].name;
 
   $("#provinceNameEditor").dialog({
     resizable: false,

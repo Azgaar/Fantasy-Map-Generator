@@ -53,7 +53,7 @@ async function createSharableDropboxLink(): Promise<void> {
     const directLink = previewLink.replace("www.dropbox.com", "dl.dropboxusercontent.com"); // DL allows CORS
     const finalLink = `${location.origin}${location.pathname}?maplink=${directLink}`;
 
-    sharableLink.innerText = `${finalLink.slice(0, 45)}...`;
+    sharableLink.textContent = `${finalLink.slice(0, 45)}...`;
     sharableLink.setAttribute("href", finalLink);
     sharableLinkContainer.style.display = "block";
   } catch (error) {

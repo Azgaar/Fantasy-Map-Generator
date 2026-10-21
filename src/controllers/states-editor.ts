@@ -1253,7 +1253,7 @@ function toggleLegend(): void {
 function togglePercentageMode(): void {
   if (ensureEl("statesBodySection").dataset.type === "absolute") {
     ensureEl("statesBodySection").dataset.type = "percentage";
-    const totalBurgs = +ensureEl("statesFooterBurgs").innerText;
+    const totalBurgs = +ensureEl("statesFooterBurgs").textContent;
     const totalArea = +ensureEl("statesFooterArea").dataset.area!;
     const totalPopulation = +ensureEl("statesFooterPopulation").dataset.population!;
     const totalTreasury = pack.states.reduce((sum, s) => sum + (s.treasury || 0), 0);
@@ -1263,11 +1263,12 @@ function togglePercentageMode(): void {
       .querySelectorAll<HTMLElement>(":scope > .states")
       .forEach(el => {
         const { burgs, area, population, treasury, cells } = el.dataset;
-        el.querySelector<HTMLElement>(".stateBurgs")!.innerText = `${rn((+burgs! / totalBurgs) * 100)}%`;
-        el.querySelector<HTMLElement>(".stateCells")!.innerText = `${rn((+cells! / totalCells) * 100)}%`;
-        el.querySelector<HTMLElement>(".stateArea")!.innerText = `${rn((+area! / totalArea) * 100)}%`;
-        el.querySelector<HTMLElement>(".statePopulation")!.innerText = `${rn((+population! / totalPopulation) * 100)}%`;
-        el.querySelector<HTMLElement>(".stateTreasury")!.innerText = `${rn((+treasury! / totalTreasury) * 100, 2)}%`;
+        el.querySelector<HTMLElement>(".stateBurgs")!.textContent = `${rn((+burgs! / totalBurgs) * 100)}%`;
+        el.querySelector<HTMLElement>(".stateCells")!.textContent = `${rn((+cells! / totalCells) * 100)}%`;
+        el.querySelector<HTMLElement>(".stateArea")!.textContent = `${rn((+area! / totalArea) * 100)}%`;
+        el.querySelector<HTMLElement>(".statePopulation")!.textContent =
+          `${rn((+population! / totalPopulation) * 100)}%`;
+        el.querySelector<HTMLElement>(".stateTreasury")!.textContent = `${rn((+treasury! / totalTreasury) * 100, 2)}%`;
       });
   } else {
     ensureEl("statesBodySection").dataset.type = "absolute";

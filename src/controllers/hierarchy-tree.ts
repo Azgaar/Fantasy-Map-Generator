@@ -298,7 +298,7 @@ export function cleanupOrigins(elements: HierarchyElement[]): HierarchyElement[]
 /** Set origins, showing why they are refused, such as a loop through a secondary origin */
 function setOrigins(id: number, origins: number[]): boolean {
   try {
-    const realOrigins = origins.map(o => (o < 0 ? 0 : o));
+    const realOrigins = origins.map(o => Math.max(o, 0));
     const unique = [...new Set(realOrigins)];
     const sanitized = unique.length > 1 ? unique.filter(Boolean) : unique;
     model.setOrigins(id, sanitized.length ? sanitized : [0]);
@@ -501,7 +501,7 @@ function selectElement(d: any): void {
   ensureEl("hierarchyTree_selected").style.display = "block";
   ensureEl("hierarchyTree_infoLine").style.display = "none";
 
-  ensureEl("hierarchyTree_selectedName").innerText = dataElement.name;
+  ensureEl("hierarchyTree_selectedName").textContent = dataElement.name;
   ensureEl<HTMLInputElement>("hierarchyTree_selectedCode").value = dataElement.code || "";
 
   ensureEl<HTMLInputElement>("hierarchyTree_selectedCode").onchange = function () {
@@ -615,7 +615,7 @@ function handleNoteEnter(this: SVGGElement, _event: MouseEvent, d: any): void {
   this.classList.add("selected");
   onNodeEnter(d);
 
-  ensureEl("hierarchyTree_infoLine").innerText = getDescription(d.data);
+  ensureEl("hierarchyTree_infoLine").textContent = getDescription(d.data);
   if (d.data.shadow) {
     tip(t("Ancestry"));
   } else {

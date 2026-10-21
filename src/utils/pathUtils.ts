@@ -530,7 +530,7 @@ function relaxAcuteAngles(points: Point[], anchorIndices: number[]): void {
   const acuteCost = (pos: (k: number) => Point, i: number): number => {
     if (i <= 0 || i >= n - 1) return 0; // endpoints have no corner
     const cos = cornerCos(pos(i - 1), pos(i), pos(i + 1));
-    return cos > 0 ? cos : 0;
+    return Math.max(cos, 0);
   };
 
   for (let iter = 0; iter < RELAX_ITERATIONS; iter++) {

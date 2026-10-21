@@ -328,8 +328,8 @@ function renderMarkersPage(view: TableView<Marker>): void {
   const body = ensureEl("markersBody");
   body.innerHTML = lines;
   body.querySelectorAll("input.markerTags").forEach(el => void el.addEventListener("change", markerChangeTags));
-  ensureEl("markersFooterNumber").innerText = String(view.all.length);
-  ensureEl("markersFooterTotal").innerText = String(pack.markers.length);
+  ensureEl("markersFooterNumber").textContent = String(view.all.length);
+  ensureEl("markersFooterTotal").textContent = String(pack.markers.length);
   renderEditorPagination(ensureEl("markersFooter"), view, markersTable.goto);
   updateDialog(dialogId, { position });
 }

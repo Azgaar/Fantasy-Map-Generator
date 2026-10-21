@@ -876,7 +876,7 @@ function toggleLegend(): void {
 function togglePercentageMode(): void {
   if (ensureEl("culturesBody").dataset.type === "absolute") {
     ensureEl("culturesBody").dataset.type = "percentage";
-    const totalCells = +ensureEl("culturesFooterCells").innerText;
+    const totalCells = +ensureEl("culturesFooterCells").textContent;
     const totalArea = +ensureEl("culturesFooterArea").dataset.area!;
     const totalPopulation = +ensureEl("culturesFooterPopulation").dataset.population!;
 
@@ -884,9 +884,9 @@ function togglePercentageMode(): void {
       .querySelectorAll<HTMLElement>(":scope > div.states")
       .forEach(el => {
         const { cells, area, population } = el.dataset;
-        el.querySelector<HTMLElement>(".cultureCells")!.innerText = `${rn((+cells! / totalCells) * 100)}%`;
-        el.querySelector<HTMLElement>(".cultureArea")!.innerText = `${rn((+area! / totalArea) * 100)}%`;
-        el.querySelector<HTMLElement>(".culturePopulation")!.innerText =
+        el.querySelector<HTMLElement>(".cultureCells")!.textContent = `${rn((+cells! / totalCells) * 100)}%`;
+        el.querySelector<HTMLElement>(".cultureArea")!.textContent = `${rn((+area! / totalArea) * 100)}%`;
+        el.querySelector<HTMLElement>(".culturePopulation")!.textContent =
           `${rn((+population! / totalPopulation) * 100)}%`;
       });
   } else {

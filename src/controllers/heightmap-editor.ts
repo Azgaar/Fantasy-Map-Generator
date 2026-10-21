@@ -878,8 +878,8 @@ function mockHeightmapSelection(selection: number[]): void {
 
 function updateStatistics(): void {
   const landCells = grid.cells.h.reduce((s: number, h: number) => (h >= 20 ? s + 1 : s), 0);
-  ensureEl("landmassCounter").innerText = `${landCells} (${rn((landCells / grid.cells.i.length) * 100)}%)`;
-  ensureEl("landmassAverage").innerText = String(rn(mean(grid.cells.h) ?? 0));
+  ensureEl("landmassCounter").textContent = `${landCells} (${rn((landCells / grid.cells.i.length) * 100)}%)`;
+  ensureEl("landmassAverage").textContent = String(rn(mean(grid.cells.h) ?? 0));
 }
 
 // the brushes panel's and template editor's undo/redo buttons only exist once rendered,

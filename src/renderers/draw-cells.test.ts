@@ -34,7 +34,7 @@ test("draws nothing until indexes are shown, then the cells in view, centered", 
   styles.cells.groups.cellIndexes.options.show = true;
   render();
   expect(Array.from(indexes().children, text => text.textContent)).toEqual(["0"]);
-  expect(indexes().getAttribute("font-size")).toBe("3"); // spacing 10 * size 0.3
+  expect(indexes().getAttribute("font-size")).toBe("1.5"); // spacing 10 * size 0.15
   expect(indexes().getAttribute("text-anchor")).toBe("middle");
   expect(indexes().hasAttribute("transform")).toBe(false);
 });
@@ -42,5 +42,5 @@ test("draws nothing until indexes are shown, then the cells in view, centered", 
 test("shifts the numbers by the style dx/dy in font-size units", () => {
   Object.assign(styles.cells.groups.cellIndexes.options, { show: true, dx: 1, dy: -0.5 });
   render();
-  expect(indexes().getAttribute("transform")).toBe("translate(3 -1.5)");
+  expect(indexes().getAttribute("transform")).toBe("translate(1.5 -0.75)");
 });

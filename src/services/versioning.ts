@@ -176,7 +176,7 @@ function announceVersion(): void {
 
   document.title += ` v${VERSION}`;
   const loadingScreenVersion = findEl("versionText");
-  if (loadingScreenVersion) loadingScreenVersion.innerText = `v${VERSION}`;
+  if (loadingScreenVersion) loadingScreenVersion.textContent = `v${VERSION}`;
 
   const storedVersion = localStorage.getItem("version");
   if (!storedVersion) {
