@@ -1,5 +1,5 @@
 import { interpolateString, select, sum } from "d3";
-import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { type LimitationItem, limitationTip, pickLimitation } from "@/components/dialog/limitation-picker";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
@@ -583,21 +583,15 @@ function militaryCustomize(): void {
     Options.save(); // the roster is this map's, and what the next map starts from
     rebuildMilitaryColumns();
 
-    ensureEl("alertMessage").innerHTML =
-      "Units are saved. Recalculate military forces for all states?<br>Regiments for all states will be regenerated, so manual changes to them will be lost";
-    $("#alert").dialog({
-      resizable: false,
-      title: "Recalculate military",
-      buttons: {
-        Recalculate: function () {
-          $(this).dialog("close");
-          Military.generate();
-          Layers.draw("military");
-          refreshMilitaryOverview();
-        },
-        "Keep regiments": function () {
-          $(this).dialog("close");
-        }
+    confirmationDialog({
+      title: t("Recalculate military"),
+      message: `${t("Units are saved. Recalculate military forces for all states?")}<br>${t("Regiments for all states will be regenerated, so manual changes to them will be lost")}`,
+      confirm: t("Recalculate"),
+      cancel: t("Keep regiments"),
+      onConfirm: () => {
+        Military.generate();
+        Layers.draw("military");
+        refreshMilitaryOverview();
       }
     });
   }
@@ -639,21 +633,14 @@ function closeMilitaryOptions(): void {
 }
 
 function militaryRecalculate(): void {
-  ensureEl("alertMessage").innerHTML =
-    `${t("Are you sure you want to recalculate military forces for all states?")}<br>${t("Regiments for all states will be regenerated")}`;
-  $("#alert").dialog({
-    resizable: false,
+  confirmationDialog({
     title: t("Recalculate military"),
-    buttons: {
-      [t("Recalculate")]: function () {
-        $(this).dialog("close");
-        Military.generate();
-        Layers.draw("military");
-        refreshMilitaryOverview();
-      },
-      [t("Cancel")]: function () {
-        $(this).dialog("close");
-      }
+    message: `${t("Are you sure you want to recalculate military forces for all states?")}<br>${t("Regiments for all states will be regenerated")}`,
+    confirm: t("Recalculate"),
+    onConfirm: () => {
+      Military.generate();
+      Layers.draw("military");
+      refreshMilitaryOverview();
     }
   });
 }

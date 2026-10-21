@@ -15,18 +15,22 @@ export class TagsModule {
     const raw = Array.isArray(input)
       ? input.flatMap(i => (typeof i === "string" ? i.split(/[,;]/) : []))
       : input.split(/[,;]/);
-    return [
-      ...new Set(
-        raw
-          .map(tag => (typeof tag === "string" ? tag.trim().replace(/^#+/, "").trim().toLocaleLowerCase() : ""))
-          .filter(Boolean)
-      )
-    ];
+    return [...new Set(raw.map(tag => this.normalize(tag)).filter(Boolean))];
   }
 
-  /** Format an array of tags as a comma-separated display string */
+  /** Lowercase letters, numbers, spaces and `_-'.` only: tags go into markup and attributes unescaped */
+  private normalize(tag: unknown): string {
+    if (typeof tag !== "string") return "";
+    return tag
+      .replace(/[^\p{L}\p{M}\p{N}\s_'.-]/gu, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLocaleLowerCase();
+  }
+
+  /** Format an array of tags as a comma-separated display string; tags from a loaded file are normalized too */
   format(tags?: string[] | null): string {
-    return tags && Array.isArray(tags) ? tags.join(", ") : "";
+    return Array.isArray(tags) ? this.parse(tags).join(", ") : "";
   }
 
   /** Check if an entity matches a search query by name, alias, or tag */
@@ -92,14 +96,14 @@ export class TagsModule {
   /** Check if an entity or EntityRef has a specific tag */
   has(target?: Taggable | EntityRef | null, tag?: string | null): boolean {
     if (!tag) return false;
-    const targetTag = tag.trim().replace(/^#+/, "").trim().toLocaleLowerCase();
+    const targetTag = this.normalize(tag);
     if (!targetTag) return false;
     return this.get(target).some(t => t.toLocaleLowerCase() === targetTag);
   }
 
   /** Get all unique tags across a collection of items */
   all(items: (Taggable | null | undefined)[]): string[] {
-    return [...new Set(items.flatMap(item => (item && typeof item === "object" ? (item.tags ?? []) : [])))].sort();
+    return this.parse(items.flatMap(item => (item && typeof item === "object" ? (item.tags ?? []) : []))).sort();
   }
 }
 

@@ -2,12 +2,20 @@ import { findEl } from "@/utils";
 
 // Colored hatchings: a base pattern from #defs-hatching recolored on demand, "url(#hatch3-c0392b)"
 const HATCH_FILL = /^url\(#(hatch\d+)(?:-([\da-f]{6}))?\)$/;
+const BASE_ID = /^hatch\d+$/;
 const BLACK = "#000000";
 
 class HatchPatterns {
   /** The fill for a hatching in a HEX color; black is the base pattern itself */
   fill(hatch: string, color: string): string {
     return color === BLACK ? `url(#${hatch})` : `url(#${hatch}-${color.slice(1)})`;
+  }
+
+  /** The base patterns, without the recolored copies appended next to them */
+  bases(): SVGPatternElement[] {
+    return Array.from(document.querySelectorAll<SVGPatternElement>("#defs-hatching > pattern")).filter(({ id }) =>
+      BASE_ID.test(id)
+    );
   }
 
   /** Split a hatching fill into its base pattern id and HEX color; null for any other fill */
@@ -37,14 +45,9 @@ class HatchPatterns {
     base.parentElement!.append(this.recolor(base, id, parsed.color));
   }
 
-  /** Create the patterns of every colored hatching used within the element */
-  ensureUsed(root: Element): void {
-    for (const fill of new Set(this.urlFills(root))) this.ensure(fill);
-  }
-
-  // matched by prefix: some selector engines (jsdom) cannot match "(#" inside an attribute value
-  private urlFills(root: ParentNode): string[] {
-    return Array.from(root.querySelectorAll('[fill^="url"]'), el => el.getAttribute("fill")!);
+  /** Create the patterns of every colored hatching among the fills */
+  ensureAll(fills: Iterable<unknown>): void {
+    for (const fill of new Set(fills)) if (typeof fill === "string") this.ensure(fill);
   }
 }
 

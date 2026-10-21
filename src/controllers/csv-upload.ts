@@ -118,9 +118,9 @@ async function update(
           const [before, after] = [Math.round(rural + urban), Math.round(next[0] + next[1])];
           try {
             setter(...next);
-            record("Population", before, after);
+            record(t("Population"), before, after);
           } catch (error) {
-            record("Population", before, after, escapeHtml(errorText(error)));
+            record(t("Population"), before, after, escapeHtml(errorText(error)));
           }
         }
       });
@@ -129,11 +129,7 @@ async function update(
   };
 
   const preview = World.live().draft().asLive(run);
-  if (!preview.length && !table.unknown.length) {
-    alertDialog({ message: t("No changes found in the file") });
-    return false;
-  }
-  if (!(await confirm(preview, table.unknown))) return false;
+  if (!(await review(preview, table.unknown))) return false;
 
   // the preview listed what cannot be applied; report only what fails on the map unexpectedly
   const key = ({ id, column }: CsvOutcome) => `${id} ${column}`;
@@ -146,24 +142,19 @@ async function update(
   return true;
 }
 
-/** Try a model-only change on a draft of the map and preview what `compare` finds it changes. Resolves to whether
- * the user applies it; the caller then runs it on the map */
-async function preview(
-  apply: () => void,
-  compare: (live: typeof pack, draft: typeof pack) => CsvOutcome[]
-): Promise<boolean> {
-  const draft = World.live().draft();
-  draft.asLive(apply);
-  const outcomes = compare(pack, draft.pack);
-  if (!outcomes.length) {
+/** Show what an upload changes and what it cannot; resolves to whether the user applies it. With nothing to
+ * apply there is no Apply: the preview only tells why */
+function review(outcomes: CsvOutcome[], unknown: string[]): Promise<boolean> {
+  if (!outcomes.length && !unknown.length) {
     alertDialog({ message: t("No changes found in the file") });
-    return false;
+    return Promise.resolve(false);
   }
-  return confirm(outcomes, []);
-}
+  if (outcomes.every(outcome => outcome.reason)) {
+    const message = `<p>${t("Nothing in the file can be applied")}</p>${previewMessage(outcomes, unknown)}`;
+    alertDialog({ title: t("Upload preview"), message, width: "auto" });
+    return Promise.resolve(false);
+  }
 
-/** Show what an upload changes and what it cannot; resolves to whether the user applies it */
-function confirm(outcomes: CsvOutcome[], unknown: string[]): Promise<boolean> {
   return new Promise(resolve =>
     confirmationDialog({
       title: t("Upload preview"),
@@ -197,7 +188,7 @@ function previewMessage(outcomes: CsvOutcome[], unknown: string[]): string {
 
   const updates = outcomes.filter(outcome => !outcome.reason);
   const failures = outcomes.filter(outcome => outcome.reason);
-  const body = [heading(`${t("Values to update")}: ${updates.length}`), ...rows(updates)];
+  const body = updates.length ? [heading(`${t("Values to update")}: ${updates.length}`), ...rows(updates)] : [];
   if (failures.length)
     body.push(heading(`${t("Values that will not be applied")}: ${failures.length}`, true), ...rows(failures));
   if (unknown.length) body.push(heading(`${t("Unknown column")}: ${unknown.map(escapeHtml).join(", ")}`, true));
@@ -205,4 +196,4 @@ function previewMessage(outcomes: CsvOutcome[], unknown: string[]): string {
   return `<style>${STYLE}</style><table class="csv-preview">${header}${body.join("")}</table>`;
 }
 
-export const CsvUpload = { update, preview };
+export const CsvUpload = { update };

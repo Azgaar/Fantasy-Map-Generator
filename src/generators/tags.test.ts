@@ -26,6 +26,18 @@ describe("Tags", () => {
       ]);
     });
 
+    it("keeps only letters, numbers, spaces and _-'. so tags never break the markup", () => {
+      expect(Tags.parse(`a"b, <i>x</i>, & co, it's, sub-type_1.2, Königreich  alt, ""`)).toEqual([
+        "ab",
+        "ixi",
+        "co",
+        "it's",
+        "sub-type_1.2",
+        "königreich alt"
+      ]);
+      expect(Tags.format(['a"b', "<script>"])).toBe("ab, script");
+    });
+
     it("deduplicates tags and discards empty values", () => {
       expect(Tags.parse("trade, Trade, #TRADE, other")).toEqual(["trade", "other"]);
       expect(Tags.parse("one,,two,  ,three; ;four")).toEqual(["one", "two", "three", "four"]);

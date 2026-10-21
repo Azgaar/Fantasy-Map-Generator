@@ -9,13 +9,8 @@ async function waitForMapLoad(page: Page) {
 }
 
 test.describe("Tour Prompt Button", () => {
-  test.beforeEach(async ({ context, page }) => {
-    await context.clearCookies();
-    await page.goto("/");
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
+  // each test gets a fresh browser context, so storage starts empty: no warm-up visit, which would count as a load
+  test.beforeEach(async ({ page }) => {
     await page.goto("/?seed=test-tour-prompt&width=1280&height=720");
     await waitForMapLoad(page);
   });

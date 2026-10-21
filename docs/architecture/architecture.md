@@ -498,7 +498,7 @@ Static content: lookup tables, templates, tuning constants, reference lists.
   runs the setters on a `World` draft for a modal preview the user confirms, then runs them on the
   map; setters must therefore only change data, and the row callback reads its entity by id so it
   gets the draft one. Values another row may change are compared with the map as it was before the
-  upload. `CsvUpload.preview` does the same for an upload that replaces a list (Cultures).
+  upload.
   Downloads carry a UTF-8 BOM so spreadsheets keep accented and non-Latin names.
 - **Azgaar Assistant** lives in `src/controllers/assistant/`. `index.ts` is its one controller, for the panel, chat list, key sheet and transcript.
   `map.ts` is the open map as the Assistant sees it — one `AssistantMap` object with its id,

@@ -12,7 +12,6 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
-import type { FillBoxElement } from "@/components/shared/fill-box";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { cellEndpointLabel, getCellPoint } from "@/generators/journeys/journey-places";
@@ -172,7 +171,7 @@ function renderJourneysPage(view: TableView<Journey>): void {
       : "";
     lines += /* html */ `<div class="states" data-id="${journey.i}">
       <div data-col="name" style="width: 93%; overflow: hidden">
-        <fill-box class="journeyColor" fill="${journey.color}" size="0.8em" data-tip="${sentences(t("Journey color"), t("Click to change"))}"></fill-box>
+        <input class="journeyColor" type="color" value="${journey.color}" style="flex: none; width: 1em; height: 1em; padding: 0" data-tip="${sentences(t("Journey color"), t("Click to change"))}" />
         <span data-tip="${t("Name")}: ${escapeHtml(journey.name)}">${escapeHtml(journey.name)}</span>
       </div>
       <div data-tip="${t("Kind of travel this is")}" data-col="type">${escapeHtml(journey.type)}</div>
@@ -227,7 +226,7 @@ function renderJourneysPage(view: TableView<Journey>): void {
 
   body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseenter", journeyHighlightOn));
   body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseleave", stopJourneyTravel));
-  body.querySelectorAll("fill-box.journeyColor").forEach(el => void el.addEventListener("click", changeJourneyColor));
+  body.querySelectorAll("input.journeyColor").forEach(el => void el.addEventListener("change", changeJourneyColor));
   body.querySelectorAll("span.journeyZoom").forEach(el => void el.addEventListener("click", zoomToJourney));
   body.querySelectorAll("span.journeyLocate.pointer").forEach(el => void el.addEventListener("click", zoomToEndpoint));
   body.querySelectorAll("span.journeyEdit").forEach(el => void el.addEventListener("click", openJourneyEditor));
@@ -272,15 +271,11 @@ function zoomToEndpoint(this: HTMLElement): void {
   if (point) zoomTo(point[0], point[1], 8, 2000);
 }
 
-function changeJourneyColor(this: FillBoxElement): void {
+function changeJourneyColor(this: HTMLInputElement): void {
   const journey = getLineJourney(this);
   if (!journey) return;
-
-  void Controllers.ColorPicker.open(this.fill, (fill: string) => {
-    journey.color = fill;
-    this.fill = fill;
-    Layers.draw("journeys");
-  });
+  Journeys.recolor(journey.i, this.value);
+  Layers.draw("journeys");
 }
 
 function openJourneyEditor(this: HTMLElement): void {

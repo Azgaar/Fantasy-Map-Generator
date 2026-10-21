@@ -92,7 +92,7 @@ class CsvService {
     const entity = list.find(
       item => item && typeof item === "object" && !item.removed && item.name === name && test(item)
     );
-    if (!entity) throw new Error(`Name not found: ${name}`);
+    if (!entity) throw new Error(t("Name not found: {{- name}}", { name })); // the preview escapes the reason
     return entity;
   }
 }

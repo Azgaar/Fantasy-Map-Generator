@@ -1751,7 +1751,7 @@ async function uploadStatesCsv(text: string): Promise<void> {
       } else {
         for (const column of RULED_COLUMNS)
           row.apply(column, () => {
-            throw new Error("Neutral lands have no government");
+            throw new Error(t("Neutral lands have no government"));
           });
       }
       row.population(

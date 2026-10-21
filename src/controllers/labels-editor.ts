@@ -527,21 +527,15 @@ function editLabelLegend(): void {
 }
 
 function removeSelectedLabel(): void {
-  alertMessage.innerHTML = t("Are you sure you want to remove the label?");
-  $("#alert").dialog({
-    resizable: false,
+  confirmationDialog({
     title: t("Remove"),
-    buttons: {
-      [t("Remove")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-        if (label.type !== "added") return;
-        AddedLabels.remove(label.entityId);
-        Layers.draw("labels");
-        $("#labelEditor").dialog("close");
-      },
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
+    message: t("Are you sure you want to remove the label?"),
+    confirm: t("Remove"),
+    onConfirm: () => {
+      if (label.type !== "added") return;
+      AddedLabels.remove(label.entityId);
+      Layers.draw("labels");
+      $("#labelEditor").dialog("close");
     }
   });
 }

@@ -21,6 +21,10 @@ These elements appear in many places in the UI, for example in the various windo
 
 Editors and overviews open in dialogs. Their positions and sizes are remembered in the browser. When a dialog has a saved position, column layout or sort, a circular-arrow **Reset** button appears in its title bar beside minimize and close. It restores the default position, columns and sorting. It leaves table filters and map data in place.
 
+### Confirmations
+
+Actions that cannot be reverted, such as removing an element, restoring default data or recalculating regiments, ask for confirmation first. <kbd>Enter</kbd> confirms and <kbd>Escape</kbd> cancels. Hold <kbd>Shift</kbd> while clicking the button to skip the confirmation and act immediately, handy for fast edits.
+
 ### Legends
 
 A panel that displays a description of a certain element.
@@ -201,6 +205,10 @@ Saving to the dropbox account, if connected.
 #### Browser
 
 Saving to the browser's memory.
+
+#### View-only mode
+
+Tick **View-only mode** to save a copy that opens for browsing only. It works for machine and Dropbox saves: a machine copy always asks for a new file, and a Dropbox copy gets "view" at the end of its name, so neither replaces your editable map. Browser storage holds the map that autosave and quick load use, so it is off while the box is ticked.
 
 ## Load
 

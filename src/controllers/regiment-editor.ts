@@ -1,5 +1,11 @@
 import { type D3DragEvent, drag, easeSinInOut, select, transition } from "d3";
-import { closeDialogs, destroyDialog, noteButton, refreshEditors } from "@/components/dialog/dialog-helpers";
+import {
+  closeDialogs,
+  confirmationDialog,
+  destroyDialog,
+  noteButton,
+  refreshEditors
+} from "@/components/dialog/dialog-helpers";
 import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
@@ -15,7 +21,7 @@ import {
 } from "@/renderers/draw-military";
 import { sentences, t } from "@/utils/i18n";
 import type { Regiment } from "../generators/military-generator";
-import { capitalize, ensureEl, getPointer, rn, speak } from "../utils";
+import { capitalize, ensureEl, findEl, getPointer, rn, speak } from "../utils";
 
 let selectedRegiment: SVGGElement | null = null;
 
@@ -24,9 +30,7 @@ function editRegiment(selector: string): void {
   closeDialogs(".stable");
   Layers.show("military");
 
-  const armies = select<SVGGElement, unknown>("#armies");
-  armies.selectAll(":scope > g").classed("draggable", true);
-  armies.selectAll<SVGGElement, unknown>(":scope > g > g").call(drag<SVGGElement, unknown>().on("drag", dragRegiment));
+  bindRegiments();
   selectedRegiment = document.querySelector<SVGGElement>(selector);
   if (!selectedRegiment) return;
   if (!pack.states[+selectedRegiment.dataset.state!]) return;
@@ -44,6 +48,12 @@ function editRegiment(selector: string): void {
     close: closeEditor,
     position: { my: "left top", at: "left+10 top+10", of: "#map" }
   });
+}
+
+function bindRegiments(): void {
+  const armies = select<SVGGElement, unknown>("#armies");
+  armies.selectAll(":scope > g").classed("draggable", true);
+  armies.selectAll<SVGGElement, unknown>(":scope > g > g").call(drag<SVGGElement, unknown>().on("drag", dragRegiment));
 }
 
 function renderDialog(): void {
@@ -158,6 +168,8 @@ function toggleVisibility(): void {
   reg.hidden = !reg.hidden;
   ensureEl("regimentToggleVisibility").className = reg.hidden ? "icon-eye-off" : "icon-eye";
   Layers.draw("military");
+  bindRegiments(); // the redraw replaced the regiment nodes
+  selectedRegiment = findEl<SVGGElement>(selectedRegiment!.id) ?? selectedRegiment; // a hidden one is not drawn
   refreshEditors();
 }
 
@@ -519,25 +531,19 @@ function editLegend(): void {
 }
 
 function removeRegiment(): void {
-  ensureEl("alertMessage").innerHTML = t("Are you sure you want to remove the regiment?");
-  $("#alert").dialog({
-    resizable: false,
+  confirmationDialog({
     title: t("Remove"),
-    buttons: {
-      [t("Remove")]: function () {
-        $(this).dialog("close");
-        if (!selectedRegiment) return;
-        const reg = getRegiment();
-        if (!reg) return;
-        Military.remove(+selectedRegiment.dataset.state!, reg.i);
-        selectedRegiment.remove();
+    message: t("Are you sure you want to remove the regiment?"),
+    confirm: t("Remove"),
+    onConfirm: () => {
+      if (!selectedRegiment) return;
+      const reg = getRegiment();
+      if (!reg) return;
+      Military.remove(+selectedRegiment.dataset.state!, reg.i);
+      selectedRegiment.remove();
 
-        refreshEditors();
-        $("#regimentEditor").dialog("close");
-      },
-      [t("Cancel")]: function () {
-        $(this).dialog("close");
-      }
+      refreshEditors();
+      $("#regimentEditor").dialog("close");
     }
   });
 }

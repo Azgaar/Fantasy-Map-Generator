@@ -28,6 +28,7 @@ import {
   stylesFromMap
 } from "@/generators/styles-legacy";
 import type { Point } from "@/generators/voronoi";
+import { Hatches } from "@/renderers/hatches";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { unfog } from "@/renderers/overlays/fogging";
 import { StylePresetsService } from "@/services/style-presets";
@@ -2245,6 +2246,14 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
     // a single-box legend dragged then hidden left its offset on the layer, pushing new boxes off the canvas
     findEl("legend")?.removeAttribute("transform");
+
+    // journeys take plain colors only since v1.155.0: a hatching keeps its color
+    for (const journey of pack.journeys ?? []) {
+      for (const item of [journey, ...(journey.segments ?? [])]) {
+        const hatched = item.color && Hatches.parse(item.color);
+        if (hatched) item.color = hatched.color;
+      }
+    }
   }
 }
 

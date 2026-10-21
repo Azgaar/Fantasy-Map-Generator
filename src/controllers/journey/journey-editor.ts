@@ -17,7 +17,6 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
-import type { FillBoxElement } from "@/components/shared/fill-box";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import {
@@ -126,7 +125,7 @@ function renderDialog(journey: Journey): void {
     <div id="segmentsBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
 
     <div id="journeyControls" class="editorFilters" style="flex-direction: row; align-items: center">
-      <fill-box id="journeyColor" size="1em" data-tip="${sentences(t("Journey color"), t("Click to change"))}" fill="${journey.color}"></fill-box>
+      <input id="journeyColor" type="color" value="${journey.color}" style="flex: none; width: 1.2em; height: 1.2em; padding: 0" data-tip="${sentences(t("Journey color"), t("Click to change"))}" />
       <label for="journeyName" data-tip="${t("Name")}" style="flex: 1; grid-template-columns: 3.2em 1fr">${t("Name")}:
         <input id="journeyName" type="text" value="${escapeHtml(journey.name)}" />
       </label>
@@ -173,7 +172,7 @@ function renderDialog(journey: Journey): void {
   });
   ensureEl("journeyName").addEventListener("input", onNameInput);
   ensureEl("journeyType").addEventListener("input", onTypeInput);
-  ensureEl("journeyColor").addEventListener("click", onColorPick);
+  ensureEl("journeyColor").addEventListener("change", onColorChange);
   ensureEl("journeyAddSegment").addEventListener("click", addSegment);
   ensureEl("journeyEditTransport").addEventListener("click", () => void Controllers.TransportEditor.open());
   ensureEl("journeyLegend").addEventListener("click", editJourneyNote);
@@ -210,7 +209,7 @@ function renderSegmentsPage(view: TableView<JourneySegment>): void {
   on(".segFrom", "click", onPickFrom);
   on(".segTo", "click", onPickTo);
   on(".segRoads.pointer", "click", onToggleAvoidRoads);
-  on(".segColor", "click", onSegColorPick);
+  on(".segColor", "change", onSegColorChange);
   on(".segVisible", "click", onToggleSegVisible);
   on(".segNote", "click", onEditSegNote);
   on(".segPoints.pointer", "click", onToggleEditPoints);
@@ -242,7 +241,7 @@ function renderSegmentLine(journey: Journey, segment: JourneySegment): string {
 
   return /* html */ `<div class="states" data-id="${segment.i}">
     <div data-col="color">
-      <fill-box class="segColor" fill="${segment.color || journey.color}" data-tip="${sentences(t("Segment color"), t("Click to change"))}"></fill-box>
+      <input class="segColor" type="color" value="${segment.color || journey.color}" style="flex: none; width: 1em; height: 1em; padding: 0" data-tip="${sentences(t("Segment color"), t("Click to change"))}" />
     </div>
     <div data-col="name" style="width: 95%; overflow: hidden">
       <input class="segName" value="${escapeHtml(segment.name)}" data-tip="${t("Segment name: {{segment}}", { segment: segment.name })}" />
@@ -383,15 +382,11 @@ function onTypeInput(this: HTMLInputElement): void {
   if (journey && this.value.trim()) Journeys.setType(journey.i, this.value);
 }
 
-function onColorPick(): void {
+function onColorChange(this: HTMLInputElement): void {
   const journey = getJourney();
   if (!journey) return;
-
-  void Controllers.ColorPicker.open(journey.color, (fill: string) => {
-    Journeys.recolor(journey.i, fill);
-    ensureEl<FillBoxElement>("journeyColor").fill = fill;
-    segmentsTable.refresh();
-  });
+  Journeys.recolor(journey.i, this.value);
+  segmentsTable.refresh();
 }
 
 function onSegNameInput(this: HTMLInputElement): void {
@@ -484,14 +479,11 @@ function onSegDurationInput(this: HTMLInputElement): void {
   updateTotals(journey);
 }
 
-function onSegColorPick(this: FillBoxElement): void {
+function onSegColorChange(this: HTMLInputElement): void {
   const segment = getLineSegment(this);
   if (!segment) return;
-
-  void Controllers.ColorPicker.open(this.fill, (fill: string) => {
-    Journeys.setSegment(getJourney()!.i, segment.i, { color: fill });
-    segmentsTable.refresh();
-  });
+  Journeys.setSegment(getJourney()!.i, segment.i, { color: this.value });
+  segmentsTable.refresh();
 }
 
 function onToggleSegVisible(this: HTMLElement): void {

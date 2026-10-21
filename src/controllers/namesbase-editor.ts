@@ -1,5 +1,5 @@
 import { max as d3max, min as d3min, mean, median } from "d3";
-import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { downloadFile, escapeHtml, getFileName, speak, uploadFile } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
@@ -318,21 +318,15 @@ function namesbaseAdd(): void {
 }
 
 function namesbaseRestoreDefault(): void {
-  alertMessage.innerHTML = /* html */ `${t("Are you sure you want to restore default namesbase?")}`;
-  $("#alert").dialog({
-    resizable: false,
+  confirmationDialog({
     title: t("Restore default data"),
-    buttons: {
-      [t("Restore")]: function () {
-        $(this).dialog("close");
-        Names.clearChains();
-        Names.nameBases = Names.getNameBases();
-        createBasesList();
-        updateInputs();
-      },
-      [t("Cancel")]: function () {
-        $(this).dialog("close");
-      }
+    message: t("Are you sure you want to restore default namesbase?"),
+    confirm: t("Restore"),
+    onConfirm: () => {
+      Names.clearChains();
+      Names.nameBases = Names.getNameBases();
+      createBasesList();
+      updateInputs();
     }
   });
 }
@@ -368,9 +362,9 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
     try {
       const [rawName, min, max, d, m, rawNames] = line.split("|");
       const name = rawName?.replace(unsafe, "");
-      if (!name) throw new Error("Name is missing");
+      if (!name) throw new Error(t("Name is missing"));
       const names = rawNames?.replace(unsafe, "");
-      if (!names) throw new Error("Names are missing");
+      if (!names) throw new Error(t("Names are missing"));
       Names.nameBases.push({
         name,
         i: Names.nameBases.length,
@@ -396,7 +390,7 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
               <span style="color:#8b0000">${escapeHtml(error)}.</span> ${t("Data")}:
             </div>
             <div style="margin-top:0.35em;font-family:var(--font-monospace,monospace);line-height:1.4;word-break:break-word;color:#333;">
-              ${escapeHtml(line) || "<empty line>"}
+              ${escapeHtml(line) || `<i>${t("empty line")}</i>`}
             </div>
           </li>`
       )

@@ -3044,7 +3044,8 @@ body.view-only #scaleBar {
   pointer-events: none;
 }
 
-#saveButton:disabled {
+#saveButton:disabled,
+#saveToStorageButton:disabled {
   opacity: 0.5;
   cursor: default;
 }

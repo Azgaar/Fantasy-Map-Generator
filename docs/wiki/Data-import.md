@@ -26,7 +26,7 @@ Names and other shown text cannot contain `"`, `<` or `>`. A changed value with 
 
 Nothing changes until you confirm. The upload first works out what the file would do and shows an _Upload preview_: each value to update with its current and new value, and each value that will not be applied with the reason (a wrong color, an unknown culture, a name with `"`, `<` or `>`, and so on). The map cannot be edited while the preview is open. _Apply_ makes the changes, _Cancel_ leaves the map as it is. A file that changes nothing says so instead, and an upload that cannot start (see above) explains why in a message.
 
-All uploads except Cultures **update existing entries only**. Every row is matched by `Id`, and entries left out of the file are kept unchanged.
+All uploads **update existing entries only**. Every row is matched by `Id`, and entries left out of the file are kept unchanged.
 
 - An empty cell keeps the current value, and a value equal to the current one is not touched (a number the spreadsheet reformatted, such as `2.50` for `2.5`, counts as equal). The exception is a column of flags or tags (`Tags`, and the building and `Port` columns of burgs): there an empty cell clears the value, so remove the column to keep them.
 - Columns are matched ignoring letter case and spaces around them; a column the upload does not know (a typo, for example) is listed in the message.
@@ -42,6 +42,7 @@ Tags are separated by `;`. Colors are HEX like `#a1b2c3`; a hatched fill is kept
 | Editor | Columns |
 | --- | --- |
 | States | `State`, `Full Name` (rebuilt from a new name or form unless changed too), `Form`, `Color`, `Capital` (a burg of the state), `Culture`, `Type`, `Expansionism` (0 to 99, takes effect on _Recalculate_), population, `Sales Tax` (0 to 1), `Poll Tax`, `Treasury`, `Tags`. `Id` 0 is the neutral lands, which take only a name and population |
+| Cultures | `Name`, `Ancestry`, `Color`, `Expansionism` (0 to 99, takes effect on _Recalculate_), `Type`, `Population`, `Namesbase` (a namesbase name), `Emblems Shape`, `Origins` (culture names separated by commas, empty for none), `Tags` |
 | Religions | `Name`, `Color`, `Type`, `Form`, `Supreme Deity`, `Potential`, `Expansionism`, `Believers` (population), `Origins` (religion names separated by commas, empty for none), `Tags` |
 | Provinces | `Province`, `Full Name`, `Form`, `Color`, `State` (moves the province), `Capital` (a burg of the province), population, `Tags` |
 | Burgs | `Burg`, `Culture`, `Group`, `Type`, `Population`, `Treasury`, `Capital` (makes it the state capital), `Port`, `Citadel`, `Walls`, `Plaza`, `Temple`, `Shanty Town` (any text adds it, empty removes it), `Preview link`, `Tags` |
@@ -51,10 +52,6 @@ Tags are separated by `;`. Colors are HEX like `#a1b2c3`; a hatched fill is kept
 | Zones | `Description`, `Color`, `Type`, `Population`, `Tags` |
 | Biomes | `Biome`, `Color`, `Habitability` (percent) |
 | Features | `Name`, `Subtype`, `Group` (lakes only), `Tags` |
-
-## Cultures
-
-The cultures upload **replaces the culture list**: cultures missing from the file are removed, and a row with a new or empty `Id` adds a culture centered on a random populated cell (it has no land until cultures are expanded again). It reads `Id`, `Name`, `Ancestry`, `Color`, `Expansionism`, `Type`, `Population`, `Namesbase` (a namesbase name), `Emblems Shape` and `Origins` (culture names separated by commas). `Cells`, `Area` and `Tags` are ignored. An empty `Name` keeps the culture's name. As it replaces the list, a changed or new name or ancestry with `"`, `<` or `>` stops the upload before any change. Its preview lists the cultures to add and remove, and the values to change.
 
 # Text data
 

@@ -1,5 +1,5 @@
 import { drag, quadtree, range, select } from "d3";
-import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { clearMainTip, showMainTip, tip } from "@/components/tooltips";
@@ -457,26 +457,21 @@ function removeIcon(): void {
     ? new Set(selectedIcon ? [selectedIcon] : [])
     : new Set(pack.relief.filter(reliefIcon => matchesTypeTile(reliefIcon, icon)));
 
-  if (isIndividual) alertMessage.innerHTML = t("Are you sure you want to remove the icon?");
-  else
-    alertMessage.innerHTML = icon
+  const message = isIndividual
+    ? t("Are you sure you want to remove the icon?")
+    : icon
       ? t("Are you sure you want to remove all {{icon}} icons ({{icons}})?", { icon, icons: doomed.size })
       : t("Are you sure you want to remove all icons ({{icons}})?", { icons: doomed.size });
 
-  $("#alert").dialog({
-    resizable: false,
+  confirmationDialog({
     title: t("Remove"),
-    buttons: {
-      [t("Remove")]: function (this: HTMLElement) {
-        pack.relief = pack.relief.filter(reliefIcon => !doomed.has(reliefIcon));
-        selectedIcon = null;
-        redrawRelief();
-        $(this).dialog("close");
-        $("#reliefEditor").dialog("close");
-      },
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
+    message,
+    confirm: t("Remove"),
+    onConfirm: () => {
+      pack.relief = pack.relief.filter(reliefIcon => !doomed.has(reliefIcon));
+      selectedIcon = null;
+      redrawRelief();
+      $("#reliefEditor").dialog("close");
     }
   });
 }

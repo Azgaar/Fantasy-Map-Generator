@@ -1,6 +1,5 @@
 import { drag, easeSinIn, select, transition } from "d3";
 import {
-  alertDialog,
   closeDialogs,
   confirmationDialog,
   destroyDialog,
@@ -24,7 +23,6 @@ import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import type { CsvOutcome } from "@/controllers/csv-upload";
 import { CULTURE_TYPE_LABELS, SHIELD_LABELS } from "@/data/id-labels";
 import { CULTURE_TYPES, type Culture } from "@/generators/cultures-generator";
 import { Emblems } from "@/generators/emblems-generator";
@@ -36,8 +34,8 @@ import { Csv } from "@/services/io/csv";
 import type { Emblem } from "@/types/emblems";
 import { findEl, getArea, getAreaUnit, groupByValue } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
-import { errorText, escapeHtml } from "@/utils/stringUtils";
-import { debounce, ensureEl, getPointer, isLand, parseTransform, ra, rn, si } from "../utils";
+import { errorText } from "@/utils/stringUtils";
+import { debounce, ensureEl, getPointer, isLand, parseTransform, rn, si } from "../utils";
 
 const dialogId = "culturesEditor" as const;
 const LEGEND_NAME = "Cultures"; // the legend box this editor toggles
@@ -251,7 +249,7 @@ function renderDialog(): void {
   ensureEl("culturesEditNamesBase").addEventListener("click", () => Controllers.NamesbaseEditor.open());
   ensureEl("culturesAdd").addEventListener("click", enterAddCulturesMode);
   ensureEl("culturesExport").addEventListener("click", downloadCulturesCsv);
-  ensureEl("culturesImport").addEventListener("click", () => Csv.pick(uploadCulturesData));
+  ensureEl("culturesImport").addEventListener("click", () => Csv.pick(uploadCulturesCsv));
 }
 
 function refreshCulturesEditor(): void {
@@ -1054,187 +1052,55 @@ function closeCulturesEditor(): void {
   ensureEl("culturesEditor").remove();
 }
 
-/** A culture as an uploaded row describes it */
-interface CultureRow {
-  i: number;
-  name: string;
-  ancestry?: string;
-  color: string;
-  expansionism: number;
-  type: string;
-  population: number;
-  shield: string;
-  origins: string;
-  namesbase: string;
-}
+const originNames = (culture: Culture) =>
+  (culture.origins ?? [])
+    .filter((origin): origin is number => Boolean(origin))
+    .map(origin => pack.cultures[origin].name)
+    .join(", ");
 
-const CULTURE_FIELDS: [string, (culture: Culture, map: typeof pack) => unknown][] = [
-  ["Name", culture => culture.name],
-  ["Ancestry", culture => culture.ancestry ?? ""],
-  ["Color", culture => culture.color],
-  ["Expansionism", culture => culture.expansionism],
-  ["Type", culture => culture.type],
-  ["Namesbase", culture => Names.nameBases[culture.base]?.name ?? ""],
-  ["Emblems Shape", culture => culture.shield],
-  [
-    "Origins",
-    (culture, map) =>
-      (culture.origins ?? [])
-        .filter(origin => origin)
-        .map(origin => map.cultures[origin!]?.name)
-        .join(", ")
-  ]
-];
-
-/** People of each culture, counted from cells and burgs, as the upload changes those */
-function culturePeople(map: typeof pack): number[] {
+/** Update existing cultures from a CSV in the export format */
+async function uploadCulturesCsv(text: string): Promise<void> {
   const { scale, urbanization } = options.map.units.population;
-  const people = map.cultures.map(() => 0);
-  map.cells.pop.forEach((pop, cell) => {
-    if (map.cells.h[cell] >= 20) people[map.cells.culture[cell]] += pop * scale;
-  });
-  for (const burg of map.burgs)
-    if (burg?.i && !burg.removed) people[burg.culture ?? 0] += (burg.population ?? 0) * scale * urbanization.rate;
-  return people.map(Math.round);
-}
-
-/** What the upload changes: cultures it adds or removes, and the values it sets */
-function compareCultures(live: typeof pack, draft: typeof pack): CsvOutcome[] {
-  const [peopleBefore, peopleAfter] = [culturePeople(live), culturePeople(draft)];
-  return draft.cultures.flatMap((after, i) => {
-    const before = live.cultures[i];
-    const id = String(i);
-    if (!i) return [];
-    if (!before || (before.removed && !after.removed))
-      return [{ id, name: after.name, column: t("Added"), before: "", after: after.name }];
-    if (before.removed) return [];
-    if (after.removed) return [{ id, name: before.name, column: t("Removed"), before: before.name, after: "" }];
-    const fields = CULTURE_FIELDS.flatMap(([column, read]) => {
-      const [was, now] = [String(read(before, live) ?? ""), String(read(after, draft) ?? "")];
-      return was === now ? [] : [{ id, name: before.name, column, before: was, after: now }];
-    });
-    if (Math.abs(peopleBefore[i] - peopleAfter[i]) >= 1)
-      fields.push({
-        id,
-        name: before.name,
-        column: "Population",
-        before: String(peopleBefore[i]),
-        after: String(peopleAfter[i])
-      });
-    return fields;
-  });
-}
-
-async function uploadCulturesData(text: string): Promise<void> {
-  let rows: Record<string, string>[];
-  try {
-    ({ rows } = Csv.read(text, CSV_COLUMNS, { required: ["Id", "Name", "Color", "Expansionism"], units: ["Area"] }));
-  } catch (error) {
-    alertDialog({ message: errorText(error) });
-    return;
-  }
-
-  // the upload replaces the list, so a changed or new text with markup characters stops it before any change
-  const unsafe = rows.flatMap(row =>
-    (["Name", "Ancestry"] as const).flatMap(column => {
-      const culture = pack.cultures[+row.Id];
-      const current =
-        culture && !culture.removed ? (culture[column === "Name" ? "name" : "ancestry"] ?? "") : undefined;
-      const message = row[column]?.trim() !== current && Csv.unsafeText(row[column] ?? "");
-      return message ? [`${escapeHtml(row.Id.trim() || "?")} ${column}: ${message}`] : [];
-    })
-  );
-  if (unsafe.length) {
-    alertDialog({ message: unsafe.join("<br>") });
-    return;
-  }
-  const data: CultureRow[] = rows.map(row => ({
-    i: /^\d+$/.test(row.Id.trim()) ? +row.Id : Number.NaN, // a row without a valid id adds a culture
-    name: row.Name.trim(),
-    ancestry: row.Ancestry?.trim(),
-    color: row.Color.trim(),
-    expansionism: +row.Expansionism,
-    type: row.Type?.trim() ?? "",
-    population: row.Population?.trim() ? +row.Population : Number.NaN, // a blank cell keeps the population
-    shield: row["Emblems Shape"]?.trim() ?? "",
-    origins: row.Origins ?? "",
-    namesbase: row.Namesbase?.trim() ?? ""
-  }));
-
-  // model changes only, so the same run makes the preview on a draft and then the change
-  const apply = (): number[] => {
-    const { cultures, cells } = pack;
-    const { scale, urbanization } = options.map.units.population;
-    const idsByName = new Map(cultures.map(culture => [culture.name, culture.i])); // a renamed origin keeps its old name in other rows
-    const shapes = Object.keys(Emblems.shields.types).flatMap(type => Object.keys(Emblems.shields[type]));
-    const populated = Array.from(cells.pop, (pop, cell) => (pop ? cell : 0)).filter(Boolean);
-    const living = cultures.filter(culture => culture.i && !culture.removed).map(culture => culture.i);
-    const kept = new Set<number>();
-
-    for (const row of data) {
-      let culture = row.i < cultures.length ? cultures[row.i] : undefined;
-      if (culture) {
-        culture.removed = false;
-        const [rural, urban] = [culture.rural ?? 0, (culture.urban ?? 0) * urbanization.rate]; // urban in rural terms
-        const ratio = rural + urban ? urban / (rural + urban) : 0;
-        if (row.population >= 0 && Math.abs(row.population - (rural + urban) * scale) >= 1) {
-          try {
-            Cultures.setPopulation(row.i, row.population * (1 - ratio), row.population * ratio);
-          } catch {
-            // a culture without land or burgs cannot hold the population
-          }
-        }
-        if (culture.i && row.name) Cultures.rename(culture.i, row.name);
-        else if (row.name) culture.name = row.name; // the wildlands have no model rename
-      } else {
-        culture = {
-          i: cultures.length,
-          name: row.name,
-          base: 0,
-          shield: "heater",
-          type: "Generic",
-          center: ra(populated),
-          area: 0,
-          cells: 0,
-          rural: 0,
-          urban: 0
-        };
-        cultures.push(culture);
-      }
-      kept.add(culture.i);
-
-      if (culture.i) {
-        if (row.ancestry !== undefined) {
-          if (row.ancestry) culture.ancestry = row.ancestry;
-          else delete culture.ancestry;
-        }
-        culture.color = row.color;
-        culture.expansionism = row.expansionism;
-        culture.type = CULTURE_TYPES.find(type => type === row.type) ?? "Generic";
-        const originIds = row.origins
-          .replaceAll('"', "")
-          .split(",")
-          .map(name => name.trim())
-          .filter(Boolean)
-          .map(name => idsByName.get(name) ?? cultures.findIndex(other => other.name === name))
-          .filter(id => id !== -1);
-        culture.origins = originIds.length ? originIds : [0];
-      } else culture.origins = [null];
-      culture.shield = shapes.includes(row.shield) ? row.shield : "heater";
-      culture.base = Names.nameBases.findIndex(base => base.name === row.namesbase); // -1 if the namesbase is not found
+  const find = (id: number) => (pack.cultures[id]?.removed ? undefined : pack.cultures[id]);
+  // a renamed culture keeps its old name in other rows' origins, so they are read by the names as downloaded
+  const living = pack.cultures.filter(culture => !culture.removed);
+  const origins = new Map(living.map(culture => [culture.i, originNames(culture)]));
+  const ids = new Map(living.map(culture => [culture.name, culture.i]));
+  const originId = (name: string) => ids.get(name) ?? Csv.byName(pack.cultures, name).i;
+  const updated = await Controllers.CsvUpload.update(
+    text,
+    CSV_COLUMNS,
+    { find, units: ["Area"], text: ["Name", "Ancestry", "Tags"] },
+    (id, row) => {
+      const culture = find(id)!;
+      row.apply("Name", name => Cultures.rename(id, name), culture.name);
+      row.apply("Ancestry", ancestry => Cultures.setAncestry(id, ancestry), culture.ancestry);
+      row.apply("Color", color => Cultures.recolor(id, color), culture.color);
+      row.apply("Expansionism", value => Cultures.setExpansionism(id, +value), culture.expansionism);
+      row.apply("Type", type => Cultures.setType(id, type), culture.type);
+      row.apply(
+        "Namesbase",
+        name => Cultures.setBase(id, Names.nameBases.indexOf(Csv.byName(Names.nameBases, name))),
+        Names.nameBases[culture.base]?.name
+      );
+      row.apply("Emblems Shape", shape => Cultures.setEmblemShape(id, shape), culture.shield);
+      row.assign(
+        "Origins",
+        names => Cultures.setOrigins(id, names ? names.split(",").map(name => originId(name.trim())) : [0]), // empty is the top level
+        origins.get(id)
+      );
+      row.assign("Tags", tags => Tags.set(culture, tags), Tags.format(culture.tags));
+      row.population(
+        [(culture.rural ?? 0) * scale, (culture.urban ?? 0) * scale * urbanization.rate],
+        (rural, urban) => Cultures.setPopulation(id, rural, urban),
+        ["Population"]
+      );
     }
+  );
+  if (!updated) return;
 
-    const removed = living.filter(id => !kept.has(id)); // cultures missing from the file
-    for (const id of removed) Cultures.remove(id);
-    return removed;
-  };
-
-  if (!(await Controllers.CsvUpload.preview(apply, compareCultures))) return;
-
-  for (const id of apply()) select("#debug").select(`#cultureCenter${id}`).remove();
-  Layers.draw("cultures");
+  Layers.draw("cultures", "emblems");
   refreshCulturesEditor();
-  tip(t("Data is updated"), false, "success", 4000);
 }
 
 function updateLockStatus(this: HTMLElement): void {

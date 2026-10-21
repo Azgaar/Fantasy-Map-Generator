@@ -198,7 +198,7 @@ function open(fill: string, callback: (fill: string) => void): void {
 }
 
 function renderDialog(): string {
-  const bases = Array.from(document.querySelectorAll<SVGPatternElement>("#defs-hatching > pattern"));
+  const bases = Hatches.bases();
   const previews = bases.map(base => Hatches.recolor(base, `picker-${base.id}`, "currentColor").outerHTML).join("");
   const swatch = (data: string, fill: string, hint: string, extra = false) =>
     /* html */ `<button class="swatch${extra ? " extra" : ""}" ${data} data-tip="${hint}"><svg><rect width="100%" height="100%" fill="${fill}" /></svg></button>`;

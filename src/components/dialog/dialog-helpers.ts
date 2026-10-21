@@ -72,7 +72,7 @@ if (typeof window !== "undefined" && typeof window.addEventListener === "functio
   );
 }
 
-/** Ask the user to confirm an action that cannot be reverted */
+/** Ask the user to confirm an action that cannot be reverted. Every confirmation in the app goes through it: a Shift-click skips it */
 export function confirmationDialog(options: ConfirmationOptions): void {
   const {
     title = t("Confirm action"),
@@ -117,6 +117,7 @@ export function confirmationDialog(options: ConfirmationOptions): void {
     open: function (this: HTMLElement) {
       const widget = $(this).dialog?.("widget");
       const buttons = widget?.find?.(".ui-dialog-buttonpane button");
+      buttons?.first?.()?.attr?.("data-tip", t("Hold Shift when clicking the button to skip the confirmation"));
       buttons?.first?.()?.focus?.();
 
       widget?.off?.("keydown.confirm")?.on?.("keydown.confirm", (e: any) => {

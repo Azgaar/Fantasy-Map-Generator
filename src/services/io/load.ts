@@ -1,6 +1,6 @@
 import { select } from "d3";
 import { fitMapToScreen } from "@/components/canvas";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { registerMap } from "@/components/lifecycle";
@@ -70,19 +70,11 @@ function loadMapPrompt(blob: Blob): void {
     return;
   }
 
-  alertMessage.innerHTML = /* html */ `${t("Are you sure you want to load saved map?")}<br>${t("All unsaved changes made to the current map will be lost")}`;
-  $("#alert").dialog({
-    resizable: false,
+  confirmationDialog({
     title: t("Load saved map"),
-    buttons: {
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-      },
-      [t("Load")]: function (this: HTMLElement) {
-        loadLastSavedMap();
-        $(this).dialog("close");
-      }
-    }
+    message: `${t("Are you sure you want to load saved map?")}<br>${t("All unsaved changes made to the current map will be lost")}`,
+    confirm: t("Load"),
+    onConfirm: loadLastSavedMap
   });
 
   function loadLastSavedMap() {
@@ -298,7 +290,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     select("#map").remove();
     document.body.insertAdjacentHTML("afterbegin", data[5]);
     ensureEl("map").dataset.layer = "map"; // pre-1.154 maps lack it, and styles address the root by it
-    Hatches.ensureUsed(ensureEl("map"));
     zonesFilter.type = "all"; // the dropped map's zone types say nothing about the loaded one
 
     // TODO: check if we need it or if LayersRegistry resolves it automatically?
@@ -390,6 +381,11 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     Names.clearChains();
 
     await resolveVersionConflicts(mapVersion!, data);
+
+    // hidden layers save no paths, so colored hatchings are restored from data
+    const { biomes, cultures, states, religions, provinces, zones, markets } = pack;
+    const entities = [biomes, cultures, states, religions, provinces, zones, markets].flat();
+    Hatches.ensureAll(entities.map(entity => entity?.color));
 
     const styleRecord = data[48] ? safeParseJSON(data[48]) : undefined; // data[48] should be already migrated by auto-update
     Styles.set(Styles.parse(styleRecord));

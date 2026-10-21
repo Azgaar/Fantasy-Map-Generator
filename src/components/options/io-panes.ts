@@ -72,7 +72,7 @@ const TEMPLATE = /* html */ `
       <button id="saveToDropboxButton" data-action="saveToDropbox" data-tip="${t("Save Map to Dropbox")}" data-shortcut="Ctrl + C">
         dropbox
       </button>
-      <button data-action="saveToStorage" data-tip="${t("Save the project to browser storage only")}" data-shortcut="F6">${t("browser")}</button>
+      <button id="saveToStorageButton" data-action="saveToStorage" data-tip="${t("Save the project to browser storage only")}" data-shortcut="F6">${t("browser")}</button>
     </div>
     <p>
       ${t("When supported by your browser, Save updates the chosen file. Shift-click machine or press Ctrl + Shift + S to save a separate copy.")}
@@ -158,7 +158,7 @@ const ACTIONS: Record<string, (event: MouseEvent) => void> = {
   jsonGridCells: () => Services.ExportJson.exportToJson("GridCells"),
   saveToMachine: event => Services.Save.toMachine(event.shiftKey, isViewOnlyCopy()),
   saveToDropbox: () => Services.Save.toDropbox(isViewOnlyCopy()),
-  saveToStorage: () => Services.Save.toStorage(isViewOnlyCopy()),
+  saveToStorage: () => Services.Save.toStorage(),
   loadFromURL: () => loadURL(),
   loadFromStorage: () => Services.Load.quickLoad(),
   connectDropbox: () => connectToDropbox(),
@@ -169,6 +169,11 @@ const ACTIONS: Record<string, (event: MouseEvent) => void> = {
 
 const isViewOnlyCopy = (): boolean => ensureEl<HTMLInputElement>("saveViewOnly").checked;
 
+// browser storage holds the author's own map that autosave and quick load use, never a view-only copy
+function syncViewOnlyCopy(): void {
+  ensureEl<HTMLButtonElement>("saveToStorageButton").disabled = isViewOnlyCopy();
+}
+
 const closeButton = {
   [t("Close")]: function (this: HTMLElement) {
     $(this).dialog("close");
@@ -177,6 +182,7 @@ const closeButton = {
 
 function showSavePane(): void {
   ensureEl<HTMLInputElement>("saveViewOnly").checked = false; // a view-only save is chosen each time
+  syncViewOnlyCopy();
 
   $("#saveMapData").dialog({
     title: t("Save map"),
@@ -403,6 +409,7 @@ function initialize(): void {
     Layers.draw("labels");
   });
 
+  ensureEl("saveViewOnly").addEventListener("change", syncViewOnlyCopy);
   ensureEl("loadMapFromMachine").addEventListener("click", pickMapFile);
 }
 

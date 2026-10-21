@@ -13,7 +13,7 @@ General:
 - <kbd>Escape</kbd> - close dialogs and hide the options pane; decline confirmation dialogs
 - <kbd>Enter</kbd> - confirm in confirmation dialogs
 - <kbd>Delete</kbd> - remove selected element
-- <kbd>Shift</kbd> + click on delete/remove button - remove element immediately without confirmation dialog
+- <kbd>Shift</kbd> + click on a button that asks for confirmation (remove, restore, recalculate, load and so on) - do it immediately, skipping the confirmation dialog
 - <kbd>+</kbd>, <kbd>=</kbd>, or <kbd>-</kbd> - change the active brush size (heightmap, paint or Wrap); otherwise zoom the map
 - <kbd>[</kbd> or <kbd>]</kbd> - change the active brush size. With no active brush, <kbd>[</kbd> toggles the Vignette layer
 - <kbd>Ctrl</kbd> + <kbd>S</kbd> - save .map file to machine; after the first save it updates the chosen file

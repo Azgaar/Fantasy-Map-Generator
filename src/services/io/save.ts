@@ -15,10 +15,10 @@ import { type SaveOutcome, saveToFileSystem } from "./save-to-file";
 
 type Writer = () => Promise<void>;
 
-const toStorage = (viewOnly = false): Promise<void> => save(() => writeToStorage(prepareMapData(viewOnly), true));
+const toStorage = (): Promise<void> => save(() => writeToStorage(prepareMapData(), true));
 const toMachine = (saveAs = false, viewOnly = false): Promise<void> => save(() => writeToMachine(saveAs, viewOnly));
 const toDropbox = (viewOnly = false): Promise<void> =>
-  save(() => writeToDropbox(prepareMapData(viewOnly), `${getFileName()}.map`));
+  save(() => writeToDropbox(prepareMapData(viewOnly), `${getFileName()}${viewOnly ? " view" : ""}.map`)); // a copy never replaces the editable file
 
 async function save(write: Writer): Promise<void> {
   if (customization)

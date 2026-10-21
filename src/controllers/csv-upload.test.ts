@@ -63,9 +63,18 @@ describe("CsvUpload.update", () => {
   });
 
   it("lists a changed text with markup characters as not applied", async () => {
-    void rename("Id,Name\n1,<b>Z</b>", { text: ["Name"] });
+    void rename("Id,Name\n1,<b>Z</b>\n2,Y", { text: ["Name"] });
     expect(dialog().message).toContain("Values that will not be applied: 1");
     expect(dialog().message).toContain("Text cannot contain &quot; &lt; &gt;");
+  });
+
+  it("offers no Apply when nothing in the file can be applied", async () => {
+    expect(await rename("Id,Name\n1,<b>Z</b>", { text: ["Name"] })).toBe(false);
+    expect(await rename("Id,Name,Colour\n1,A,red")).toBe(false);
+    expect(confirmationDialog).not.toHaveBeenCalled();
+    expect(lastAlert()).toContain("Nothing in the file can be applied");
+    expect(lastAlert()).toContain("Unknown column: Colour");
+    expect(lastAlert()).not.toContain("Values to update");
   });
 
   it("reports after Apply only the failures the preview did not list", async () => {

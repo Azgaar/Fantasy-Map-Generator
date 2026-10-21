@@ -1,5 +1,5 @@
 import { mean, min, polygonLength, type Selection, select } from "d3";
-import { closeDialogs, destroyDialog, noteButton } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog, noteButton } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
@@ -284,32 +284,25 @@ function removeLakeGroup(): void {
   }
 
   const count = (selectedLake.node()!.parentNode as SVGGElement).querySelectorAll("use[data-f]").length;
-  alertMessage.innerHTML = sentences(
-    t("Are you sure you want to remove the group?"),
-    t("All lakes of the group ({{lakes}}) will be turned into Freshwater", { lakes: count })
-  );
-  $("#alert").dialog({
-    resizable: false,
+  confirmationDialog({
     title: t("Remove"),
-    width: "26em",
-    buttons: {
-      [t("Remove")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-        const freshwater = ensureEl("freshwater");
-        const groupEl = ensureEl(group);
-        assignGroup(Array.from(groupEl.children), "freshwater");
-        while (groupEl.childNodes.length) {
-          freshwater.appendChild(groupEl.childNodes[0]);
-        }
-        groupEl.remove();
-        drawLakeEmbellishments(Layers.get("lakes"));
-        delete styles.lakes.groups[group];
-        ensureEl<HTMLSelectElement>("lakeGroup").selectedOptions[0].remove();
-        ensureEl<HTMLSelectElement>("lakeGroup").value = "freshwater";
-      },
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
+    message: sentences(
+      t("Are you sure you want to remove the group?"),
+      t("All lakes of the group ({{lakes}}) will be turned into Freshwater", { lakes: count })
+    ),
+    confirm: t("Remove"),
+    onConfirm: () => {
+      const freshwater = ensureEl("freshwater");
+      const groupEl = ensureEl(group);
+      assignGroup(Array.from(groupEl.children), "freshwater");
+      while (groupEl.childNodes.length) {
+        freshwater.appendChild(groupEl.childNodes[0]);
       }
+      groupEl.remove();
+      drawLakeEmbellishments(Layers.get("lakes"));
+      delete styles.lakes.groups[group];
+      ensureEl<HTMLSelectElement>("lakeGroup").selectedOptions[0].remove();
+      ensureEl<HTMLSelectElement>("lakeGroup").value = "freshwater";
     }
   });
 }

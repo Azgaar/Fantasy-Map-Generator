@@ -1,5 +1,5 @@
 import { drag, type Selection, select } from "d3";
-import { closeDialogs, destroyDialog, noteButton } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog, noteButton } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
@@ -350,22 +350,16 @@ function editRiverLegend(): void {
 }
 
 function removeRiver(): void {
-  alertMessage.innerHTML = t("Are you sure you want to remove the river? All tributaries will be auto-removed");
-  $("#alert").dialog({
-    resizable: false,
-    width: "22em",
+  confirmationDialog({
     title: t("Remove"),
-    buttons: {
-      [t("Remove")]: function (this: any) {
-        $(this).dialog("close");
-        const river = +selectedRiver.attr("id").slice(5);
-        Rivers.remove(river);
-        $("#riverEditor").dialog("close");
-        Layers.draw("rivers", "labels");
-      },
-      [t("Cancel")]: function (this: any) {
-        $(this).dialog("close");
-      }
+    message: t("Are you sure you want to remove the river? All tributaries will be auto-removed"),
+    confirm: t("Remove"),
+    width: "22em",
+    onConfirm: () => {
+      const river = +selectedRiver.attr("id").slice(5);
+      Rivers.remove(river);
+      $("#riverEditor").dialog("close");
+      Layers.draw("rivers", "labels");
     }
   });
 }

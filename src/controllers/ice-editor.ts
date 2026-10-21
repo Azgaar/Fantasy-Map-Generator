@@ -1,5 +1,5 @@
 import { drag, type Selection, select } from "d3";
-import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -100,22 +100,15 @@ function addIcebergOnClick(event: PointerEvent): void {
 
 function removeIce(): void {
   const isGlacier = selectedIce.attr("type") === "glacier";
-  const type = isGlacier ? t("Glacier") : t("Iceberg");
-  alertMessage.innerHTML = isGlacier
-    ? t("Are you sure you want to remove the glacier?")
-    : t("Are you sure you want to remove the iceberg?");
-  $("#alert").dialog({
-    resizable: false,
-    title: t("Remove", { type }),
-    buttons: {
-      [t("Remove")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-        Ice.removeIce(+selectedIce.attr("data-id"));
-        $("#iceEditor").dialog("close");
-      },
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
+  confirmationDialog({
+    title: t("Remove"),
+    message: isGlacier
+      ? t("Are you sure you want to remove the glacier?")
+      : t("Are you sure you want to remove the iceberg?"),
+    confirm: t("Remove"),
+    onConfirm: () => {
+      Ice.removeIce(+selectedIce.attr("data-id"));
+      $("#iceEditor").dialog("close");
     }
   });
 }

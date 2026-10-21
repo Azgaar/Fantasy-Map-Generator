@@ -327,41 +327,33 @@ function triggerAllRoutesRemove(): void {
   }
 
   const lockedCount = pack.routes.length - toRemove.length;
-  alertMessage.innerHTML =
-    lockedCount > 0
-      ? sentences(
-          t("Remove all unlocked routes ({{routes}})?", { routes: toRemove.length }),
-          t("Locked routes to keep: {{locked}}", { locked: lockedCount }),
-          t("This action cannot be reverted")
-        )
-      : sentences(t("Are you sure you want to remove all routes?"), t("This action cannot be reverted"));
-
-  $("#alert").dialog({
-    resizable: false,
+  confirmationDialog({
     title: lockedCount > 0 ? t("Remove unlocked routes") : t("Remove all routes"),
-    buttons: {
-      [t("Remove")]: function (this: any) {
-        const routesToRemove = pack.routes.filter((route: Route) => !route.lock);
-        if (!routesToRemove.length) {
-          if (!pack.routes.length) {
-            tip(t("There are no routes to remove"), false, "error");
-          } else {
-            tip(t("All routes are now locked; nothing was removed."), false, "error");
-          }
-          $(this).dialog("close");
-          return;
+    message:
+      lockedCount > 0
+        ? sentences(
+            t("Remove all unlocked routes ({{routes}})?", { routes: toRemove.length }),
+            t("Locked routes to keep: {{locked}}", { locked: lockedCount }),
+            t("This action cannot be reverted")
+          )
+        : sentences(t("Are you sure you want to remove all routes?"), t("This action cannot be reverted")),
+    confirm: t("Remove"),
+    onConfirm: () => {
+      const routesToRemove = pack.routes.filter((route: Route) => !route.lock);
+      if (!routesToRemove.length) {
+        if (!pack.routes.length) {
+          tip(t("There are no routes to remove"), false, "error");
+        } else {
+          tip(t("All routes are now locked; nothing was removed."), false, "error");
         }
-        for (const route of routesToRemove) {
-          Routes.remove(route.i);
-        }
-        pack.cells.routes = Routes.buildLinks(pack.routes);
-        Layers.draw("routes", "labels");
-        routesTable.refresh();
-        $(this).dialog("close");
-      },
-      [t("Cancel")]: function (this: any) {
-        $(this).dialog("close");
+        return;
       }
+      for (const route of routesToRemove) {
+        Routes.remove(route.i);
+      }
+      pack.cells.routes = Routes.buildLinks(pack.routes);
+      Layers.draw("routes", "labels");
+      routesTable.refresh();
     }
   });
 }

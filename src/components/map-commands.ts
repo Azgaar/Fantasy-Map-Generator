@@ -1,5 +1,5 @@
 import { showInfo } from "@/components/app-info";
-import { refreshEditors } from "@/components/dialog/dialog-helpers";
+import { confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
 import type { LayerId } from "@/components/layers";
 import { Layers } from "@/components/layers";
 import { applyPreset, savePreset } from "@/components/layers-presets";
@@ -25,7 +25,7 @@ import { Services } from "@/services";
 import { toggleSaveReminder } from "@/services/autosave";
 import { copyMapURL } from "@/services/url-params";
 import { confirmCleanupData } from "@/services/versioning";
-import { ensureEl, gauss, isCtrlClick } from "@/utils";
+import { findEl, gauss, isCtrlClick } from "@/utils";
 import { t } from "@/utils/i18n";
 
 export interface MapCommand {
@@ -794,30 +794,23 @@ function confirmRegeneration(action: () => void): void {
     return;
   }
 
-  const message = ensureEl("alertMessage");
-  message.innerHTML = `${t("Regeneration will remove all the custom changes for the element.")}<br><br>${t("Are you sure you want to proceed?")}`;
-  $("#alert").dialog({
-    resizable: false,
+  const remember = () => {
+    if (findEl<HTMLInputElement>("regenerateDontAsk")?.checked)
+      sessionStorage.setItem("regenerateFeatureDontAsk", "true");
+  };
+  confirmationDialog({
     title: t("Regenerate element"),
-    buttons: {
-      [t("Proceed")]: function () {
-        apply();
-        $(this).dialog("close");
-      },
-      [t("Cancel")]: function () {
-        $(this).dialog("close");
-      }
+    message: /* html */ `${t("Regeneration will remove all the custom changes for the element.")}<br><br>${t("Are you sure you want to proceed?")}
+      <div style="margin-top: 0.6em">
+        <input id="regenerateDontAsk" class="checkbox" type="checkbox" />
+        <label for="regenerateDontAsk" class="checkbox-label"><i>${t("Do not ask again")}</i></label>
+      </div>`,
+    confirm: t("Proceed"),
+    onConfirm: () => {
+      remember();
+      apply();
     },
-    open: function () {
-      const checkbox =
-        '<span><input id="dontAsk" class="checkbox" type="checkbox"><label for="dontAsk" class="checkbox-label dontAsk"><i>do not ask again</i></label><span>';
-      this.parentElement.querySelector(".ui-dialog-buttonpane")?.insertAdjacentHTML("afterbegin", checkbox);
-    },
-    close: function () {
-      const checkbox = this.parentElement.querySelector(".checkbox") as HTMLInputElement | null;
-      if (checkbox?.checked) sessionStorage.setItem("regenerateFeatureDontAsk", "true");
-      $(this).dialog("destroy");
-    }
+    onCancel: remember
   });
 }
 

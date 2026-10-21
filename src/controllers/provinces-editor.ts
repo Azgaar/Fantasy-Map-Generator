@@ -621,27 +621,21 @@ function toggleFog(p: number, cl: DOMTokenList): void {
 }
 
 function removeProvince(p: number): void {
-  alertMessage.innerHTML = /* html */ `${t("Are you sure you want to remove the province?")}<br>${t("This action cannot be reverted")}`;
-  $("#alert").dialog({
-    resizable: false,
+  confirmationDialog({
     title: t("Remove"),
-    buttons: {
-      [t("Remove")]: function (this: HTMLElement) {
-        Provinces.remove(p);
-        unfog(`focusProvince${p}`);
-        removeEmblem("province", p);
+    message: `${t("Are you sure you want to remove the province?")}<br>${t("This action cannot be reverted")}`,
+    confirm: t("Remove"),
+    onConfirm: () => {
+      Provinces.remove(p);
+      unfog(`focusProvince${p}`);
+      removeEmblem("province", p);
 
-        const g = select<SVGGElement, unknown>("#provs").select("#provincesBody");
-        g.select(`#province${p}`).remove();
-        g.select(`#province-gap${p}`).remove();
-        Layers.draw("borders");
-        Layers.draw("labels");
-        refreshProvincesEditor();
-        $(this).dialog("close");
-      },
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
+      const g = select<SVGGElement, unknown>("#provs").select("#provincesBody");
+      g.select(`#province${p}`).remove();
+      g.select(`#province-gap${p}`).remove();
+      Layers.draw("borders");
+      Layers.draw("labels");
+      refreshProvincesEditor();
     }
   });
 }
@@ -1180,37 +1174,30 @@ function downloadProvincesData(): void {
 }
 
 function removeAllProvinces(): void {
-  alertMessage.innerHTML = /* html */ `${t("Are you sure you want to remove all provinces?")}<br>${t("This action cannot be reverted")}`;
-  $("#alert").dialog({
-    resizable: false,
+  confirmationDialog({
     title: t("Remove all provinces"),
-    buttons: {
-      [t("Remove")]: function (this: HTMLElement) {
-        $(this).dialog("close");
+    message: `${t("Are you sure you want to remove all provinces?")}<br>${t("This action cannot be reverted")}`,
+    confirm: t("Remove"),
+    onConfirm: () => {
+      // remove emblems
+      pack.provinces.forEach(province => {
+        if (province.i) removeEmblem("province", province.i);
+      });
 
-        // remove emblems
-        pack.provinces.forEach(province => {
-          if (province.i) removeEmblem("province", province.i);
-        });
+      // remove data
+      pack.provinces = [0] as unknown as Province[];
+      pack.cells.province = new Uint16Array(pack.cells.i.length);
+      pack.states.forEach(s => {
+        s.provinces = [];
+      });
 
-        // remove data
-        pack.provinces = [0] as unknown as Province[];
-        pack.cells.province = new Uint16Array(pack.cells.i.length);
-        pack.states.forEach(s => {
-          s.provinces = [];
-        });
+      unfog();
+      Layers.draw("borders");
+      select<SVGGElement, unknown>("#provs").select("#provincesBody").remove();
+      Layers.hide("provinces");
+      Layers.draw("labels");
 
-        unfog();
-        Layers.draw("borders");
-        select<SVGGElement, unknown>("#provs").select("#provincesBody").remove();
-        Layers.hide("provinces");
-        Layers.draw("labels");
-
-        provincesTable.reset();
-      },
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
+      provincesTable.reset();
     }
   });
 }

@@ -1,5 +1,5 @@
 import { type D3DragEvent, drag, type Selection, select } from "d3";
-import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -110,19 +110,13 @@ function onListClick(event: Event): void {
 
 function removeAllMeasurers(): void {
   if (!pack.measurers.length) return;
-  alertMessage.innerHTML = /* html */ `${t("Are you sure you want to remove all placed measurers?")}<br>${t("If you just want to hide them, toggle the Rulers layer off in Menu")}`;
-  $("#alert").dialog({
-    resizable: false,
+  confirmationDialog({
     title: t("Remove all measurers"),
-    buttons: {
-      [t("Remove")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-        pack.measurers = [];
-        redraw();
-      },
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
+    message: `${t("Are you sure you want to remove all placed measurers?")}<br>${t("If you just want to hide them, toggle the Rulers layer off in Menu")}`,
+    confirm: t("Remove"),
+    onConfirm: () => {
+      pack.measurers = [];
+      redraw();
     }
   });
 }

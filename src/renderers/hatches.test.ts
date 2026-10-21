@@ -32,9 +32,13 @@ test("ensure recolors a copy of the base pattern once", () => {
   expect(document.querySelector<SVGElement>("#hatch6 line")!.style.stroke).toBe("black");
 });
 
-test("ensureUsed covers the colored fills used within the element", () => {
-  document.getElementById("map")!.innerHTML = `<path fill="url(#hatch6-00ff00)" /><path fill="url(#hatch6)" />`;
-  Hatches.ensureUsed(document.getElementById("map")!);
+test("ensureAll covers the colored fills among the given ones", () => {
+  Hatches.ensureAll(["url(#hatch6-00ff00)", "url(#hatch6)", "#00ff00", undefined, "url(#hatch6-00ff00)"]);
   expect(document.getElementById("hatch6-00ff00")).not.toBeNull();
   expect(document.querySelectorAll("pattern")).toHaveLength(2);
+});
+
+test("bases skip the recolored copies", () => {
+  Hatches.ensure("url(#hatch6-c0392b)");
+  expect(Hatches.bases().map(({ id }) => id)).toEqual(["hatch6"]);
 });

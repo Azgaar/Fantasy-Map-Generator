@@ -1,7 +1,7 @@
 import { DEFAULT_JOURNEY_TYPE } from "@/data/journey-lore";
 import type { Journey, JourneyPoint, JourneySegment } from "@/types/Journey";
 import { getDistanceUnitRatio, isLand } from "@/utils";
-import { getCardinalColor, requireFill } from "@/utils/colorUtils";
+import { getCardinalColor, requireColor } from "@/utils/colorUtils";
 import { requireName } from "@/utils/validationUtils";
 import type { Burg } from "../burgs-generator";
 import type { Route } from "../routes-generator";
@@ -118,7 +118,7 @@ class JourneysModule {
 
   /** Set a journey's color; segments without their own color take it */
   recolor(journeyId: number, color: string): void {
-    this.living(journeyId).color = requireFill(color);
+    this.living(journeyId).color = requireColor(color);
   }
 
   /** Hide or show a journey on the map */
@@ -162,7 +162,7 @@ class JourneysModule {
 
     if (name !== undefined) segment.name = requireName(name);
     if (color === null) delete segment.color;
-    else if (color !== undefined) segment.color = requireFill(color);
+    else if (color !== undefined) segment.color = requireColor(color);
     if (hidden !== undefined) {
       if (hidden) segment.visible = false;
       else delete segment.visible;

@@ -12,7 +12,7 @@ Check out [Dev board](https://github.com/users/Azgaar/projects/3/views/1?sumFiel
 
 Current version of the Fantasy Map Generator is the latest `master` branch. You can download it here: https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip. Also see [the wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#can-i-use-the-generator-offline).
 
-**[1.155.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.155.0) - 2026-10-21**:
+**[1.155.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.155.0) - 2026-10-22**:
 
 - Interface translation: 29 languages besides English
 - The Google Translate widget removed
@@ -27,7 +27,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Population layer: Shading land by population density by _[inviktos](https://github.com/inviktos)_
 - Altitude legend: heightmap colors by _[Avengium](https://github.com/Avengium)_
 - Rulers style: line and dash colors and a toggle to hide the measured values by _[Avengium](https://github.com/Avengium)_
-- Remove confirmation: Enter to confirm; Shift+Click on delete button to remove immediately without confirmation dialog
+- Confirmations: Enter to confirm; Shift+Click on the button to act immediately without the confirmation dialog
 - Labels style: underlined parameter in label style editor
 - Cells layer: optionally render cell indexes with their own style (color, halo, font, size, shift, clip), and show cell/grid IDs in map tooltip
 - Travel Builder: directional arrow markers on journey paths and per-segment notes editable in Notes Editor
