@@ -768,6 +768,26 @@ describe("Lore", () => {
     expect(() => Lore.rename(" ")).toThrow("must not be empty");
     expect(() => Lore.setYear(Number.NaN)).toThrow("The year must be a number");
   });
+
+  it("configures the chronicle and rejects nonsense", () => {
+    const lore = {
+      name: "",
+      description: "",
+      calendar: { year: 1000, era: "Era", eraShort: "E" },
+      history: { span: 1000, realms: 2, density: 1, echoes: true, renames: false }
+    };
+    vi.stubGlobal("options", { map: { lore } });
+    Lore.setHistory({ span: 1500.7, realms: 3 });
+    expect(lore.history.span).toBe(1501); // rounded to whole years
+    expect(lore.history.realms).toBe(3);
+    Lore.setHistory({ echoes: false, renames: true });
+    expect(lore.history.echoes).toBe(false);
+    expect(lore.history.renames).toBe(true);
+    expect(() => Lore.setHistory({ span: 50 })).toThrow("at least 100 years");
+    expect(() => Lore.setHistory({ realms: 11 })).toThrow("from 0 to 10");
+    expect(() => Lore.setHistory({ realms: -1 })).toThrow("from 0 to 10");
+    expect(() => Lore.setHistory({ density: 99 })).toThrow("from 0 to 10");
+  });
 });
 
 describe("Biomes and Features", () => {

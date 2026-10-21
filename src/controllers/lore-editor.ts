@@ -61,6 +61,55 @@ const TEMPLATE = /* html */ `
       placeholder="Describe the map, its age, its peoples – whatever the map should carry with it."
     ></textarea>
     <span></span>
+
+    <span></span>
+    <label for="loreHistorySpan">History span:</label>
+    <input
+      id="loreHistorySpan"
+      data-tip="How many years before the current year the chronicle reaches back. Regenerate history to apply"
+      type="number"
+      step="100"
+      min="100"
+    />
+    <span></span>
+
+    <span></span>
+    <label for="loreHistoryRealms">Fallen realms:</label>
+    <input
+      id="loreHistoryRealms"
+      data-tip="How many fallen empires the chronicle weaves into the map. 0 turns them off. Regenerate history to apply"
+      type="number"
+      step="1"
+      min="0"
+      max="10"
+    />
+    <span></span>
+
+    <span></span>
+    <label for="loreHistoryDensity">Event density:</label>
+    <input
+      id="loreHistoryDensity"
+      data-tip="Multiplier on how many events the chronicle records. Regenerate history to apply"
+      type="number"
+      step="0.5"
+      min="0"
+      max="10"
+    />
+    <span></span>
+
+    <span></span>
+    <label for="loreHistoryEchoes">Echoes:</label>
+    <span data-tip="Let fallen realms leave ruins, battlefields and notes on the map">
+      <input id="loreHistoryEchoes" type="checkbox" />
+    </span>
+    <span></span>
+
+    <span></span>
+    <label for="loreHistoryRenames">Renames:</label>
+    <span data-tip="Let a successor state inherit the fallen realm's name (New X)">
+      <input id="loreHistoryRenames" type="checkbox" />
+    </span>
+    <span></span>
   </div>
 `;
 
@@ -101,12 +150,17 @@ function loreValue(key: string): string | number | undefined {
 
 /** The object is the source: push what it holds into the control that shows it */
 function fillInputs(): void {
-  const { name, description, calendar } = options.map.lore;
+  const { name, description, calendar, history } = options.map.lore;
   ensureEl<HTMLInputElement>("loreMapName").value = name;
   ensureEl<HTMLInputElement>("loreYear").value = String(calendar.year);
   ensureEl<HTMLInputElement>("loreEra").value = calendar.era;
   ensureEl<HTMLInputElement>("loreEraShort").value = calendar.eraShort;
   ensureEl<HTMLTextAreaElement>("loreDescription").value = description;
+  ensureEl<HTMLInputElement>("loreHistorySpan").value = String(history.span);
+  ensureEl<HTMLInputElement>("loreHistoryRealms").value = String(history.realms);
+  ensureEl<HTMLInputElement>("loreHistoryDensity").value = String(history.density);
+  ensureEl<HTMLInputElement>("loreHistoryEchoes").checked = history.echoes;
+  ensureEl<HTMLInputElement>("loreHistoryRenames").checked = history.renames;
 }
 
 function addListeners(): void {
@@ -152,6 +206,29 @@ function onLoreChange(event: Event): void {
     // the description is the one lore value with no pin: nothing ever re-rolls an author's note
     case "loreDescription":
       Lore.setDescription(value);
+      break;
+
+    case "loreHistorySpan":
+      if (value === "") return;
+      Lore.setHistory({ span: +value });
+      break;
+
+    case "loreHistoryRealms":
+      if (value === "") return;
+      Lore.setHistory({ realms: +value });
+      break;
+
+    case "loreHistoryDensity":
+      if (value === "") return;
+      Lore.setHistory({ density: +value });
+      break;
+
+    case "loreHistoryEchoes":
+      Lore.setHistory({ echoes: (input as HTMLInputElement).checked });
+      break;
+
+    case "loreHistoryRenames":
+      Lore.setHistory({ renames: (input as HTMLInputElement).checked });
       break;
 
     default:

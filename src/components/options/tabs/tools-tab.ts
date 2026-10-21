@@ -80,6 +80,9 @@ const TEMPLATE = /* html */ `
     <button id="overviewJourneysButton" data-tip="Click to open Journeys Overview" data-shortcut="Shift + J">
       Journeys
     </button>
+    <button id="openLegendsBrowser" data-tip="Click to open the Legends browser: the map's chronicle">
+      Legends
+    </button>
     <button id="editStatesButton" data-tip="Click to open States Editor" data-shortcut="Shift + S">
       States
     </button>

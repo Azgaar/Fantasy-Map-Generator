@@ -26,6 +26,38 @@ class LoreModel {
     if (typeof text !== "string") throw new Error("The description must be text");
     options.map.lore.description = text;
   }
+
+  /** Configure the chronicle generator: how deep a past it reaches, how many fallen realms it weaves, and whether they leave echoes on the map */
+  setHistory(config: { span?: number; realms?: number; density?: number; echoes?: boolean; renames?: boolean }): void {
+    const history = options.map.lore.history;
+    if (config.span !== undefined) {
+      if (typeof config.span !== "number" || !Number.isFinite(config.span) || config.span < 100)
+        throw new Error("The span must be a number of at least 100 years");
+      history.span = Math.round(config.span);
+    }
+    if (config.realms !== undefined) {
+      if (
+        typeof config.realms !== "number" ||
+        !Number.isInteger(config.realms) ||
+        config.realms < 0 ||
+        config.realms > 10
+      )
+        throw new Error("The realms count must be a whole number from 0 to 10");
+      history.realms = config.realms;
+    }
+    if (config.density !== undefined) {
+      if (
+        typeof config.density !== "number" ||
+        !Number.isFinite(config.density) ||
+        config.density < 0 ||
+        config.density > 10
+      )
+        throw new Error("The density must be a number from 0 to 10");
+      history.density = config.density;
+    }
+    if (config.echoes !== undefined) history.echoes = Boolean(config.echoes);
+    if (config.renames !== undefined) history.renames = Boolean(config.renames);
+  }
 }
 
 export const Lore = new LoreModel();

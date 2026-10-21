@@ -262,6 +262,12 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => Controllers.JourneysOverview.open()
   },
   {
+    id: "openLegendsBrowser",
+    name: "Open Legends Browser",
+    aliases: "history chronicle timeline fallen realms",
+    run: () => Controllers.LegendsOverview.open()
+  },
+  {
     id: "transports",
     name: "Open Transports Editor",
     aliases: "journeys travel speed",

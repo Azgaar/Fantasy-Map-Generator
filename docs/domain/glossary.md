@@ -47,6 +47,7 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **History Event**: A dated entry in `pack.history.events` referencing map entities by `HistRef` (`state`, `realm`, `burg`, `culture`, `religion`). A `lock`ed event survives regeneration.
 - **Chronicle**: The generator model owning `pack.history` (global `Chronicle`; the DOM owns the name `History`). Distinct from the relations chronicle: the user-editable war and relation log the diplomacy overview keeps on `states[0].diplomacy`.
 - **Realm**: A fallen state in `pack.history.realms`, never added to `pack.states`, so politics, statistics and editors never see it.
+- **Legends Browser**: The read-only overview of the map's chronicle (`Controllers.LegendsOverview`, Tools → Legends): a Timeline tab of events grouped by era with filters and zoom links, and a Realms tab with the fallen realms' stories. Also reachable through the "Open Legends Browser" command.
 - **Diplomacy**: The system of political relationships (allies, enemies, neutral, vassals) between different States.
 - **Regiment / Military**: The armed forces belonging to States or Burgs, represented by units.
 - **Good**: A resource or product (e.g., wood, iron, grain) with properties like value, demand, and recipes. Raw goods have a `distribution`; manufactured goods have `recipes`.
