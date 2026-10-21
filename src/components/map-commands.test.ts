@@ -42,10 +42,10 @@ function confirmation() {
   return mocks.dialog.mock.calls[0][0] as { buttons: { Proceed: () => void; Cancel: () => void } };
 }
 
-it("offers Save As in command search without another save button", () => {
+it("offers overwriting the saved file in command search without another save button", () => {
   MAP_COMMANDS.find(command => command.id === "saveToMachine")!.run();
   expect(mocks.save).toHaveBeenLastCalledWith();
-  MAP_COMMANDS.find(command => command.id === "saveMapAs")!.run();
+  MAP_COMMANDS.find(command => command.id === "overwriteMapFile")!.run();
   expect(mocks.save).toHaveBeenLastCalledWith(true);
 });
 

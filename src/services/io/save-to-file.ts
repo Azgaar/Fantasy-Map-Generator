@@ -12,17 +12,18 @@ window.addEventListener("map:generated", () => {
   mapRevision++;
 });
 
-/** `copy` is a one-off file: always picked, never the file a later Save updates */
+/** A save picks a new file, keeping the earlier ones as backups; `overwrite` rewrites the last picked file instead.
+ * `copy` is a one-off file: always picked, never the file a later overwrite updates */
 export async function saveToFileSystem(
   prepareData: () => string,
   suggestedName: string,
-  saveAs = false,
+  overwrite = false,
   copy = false
 ): Promise<SaveOutcome> {
   if (saving) return { type: "cancelled" };
   saving = true;
   try {
-    return await writeMapFile(prepareData, suggestedName, saveAs || copy, copy);
+    return await writeMapFile(prepareData, suggestedName, overwrite && !copy, copy);
   } finally {
     saving = false;
   }
@@ -31,7 +32,7 @@ export async function saveToFileSystem(
 async function writeMapFile(
   prepareData: () => string,
   suggestedName: string,
-  saveAs: boolean,
+  overwrite: boolean,
   copy: boolean
 ): Promise<SaveOutcome> {
   if (typeof window.showSaveFilePicker !== "function") {
@@ -40,7 +41,7 @@ async function writeMapFile(
   }
 
   const revision = mapRevision;
-  let handle = saveAs ? undefined : destination;
+  let handle = overwrite ? destination : undefined;
   if (!handle) {
     // Pick before serializing: a large map can outlive the browser's user activation.
     try {

@@ -63,7 +63,7 @@ const TEMPLATE = /* html */ `
       <strong>${t("Save map to")}</strong>
       <button
         data-action="saveToMachine"
-        data-tip="${t("Save to the chosen file; Shift-click to choose another filename or location")}"
+        data-tip="${t("Save to a new file; Shift-click to overwrite the last saved file")}"
         data-shortcut="Ctrl + S"
         style="font-weight: 600"
       >
@@ -75,7 +75,7 @@ const TEMPLATE = /* html */ `
       <button id="saveToStorageButton" data-action="saveToStorage" data-tip="${t("Save the project to browser storage only")}" data-shortcut="F6">${t("browser")}</button>
     </div>
     <p>
-      ${t("When supported by your browser, Save updates the chosen file. Shift-click machine or press Ctrl + Shift + S to save a separate copy.")}
+      ${t("Each save creates a new file, so earlier saves stay as backups. Where your browser supports it, Shift-click machine or press Ctrl + Shift + S to overwrite the last saved file.")}
     </p>
     <p>
       ${t("Maps are saved in .map format, that can be loaded back via the Load in menu. There is no way to restore the progress if file is lost. Please keep old save files on your machine or cloud storage as backups.")}

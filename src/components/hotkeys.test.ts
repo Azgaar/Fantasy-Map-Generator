@@ -57,7 +57,7 @@ describe("save shortcut", () => {
     expect(mocks.getLayer).not.toHaveBeenCalled();
   });
 
-  it.each(["ctrlKey", "metaKey"])("uses Save As for %s + Shift + S", modifier => {
+  it.each(["ctrlKey", "metaKey"])("overwrites the saved file for %s + Shift + S", modifier => {
     press(document.body, "KeyS", "S", { [modifier]: true, shiftKey: true });
     expect(mocks.save).toHaveBeenCalledExactlyOnceWith(true);
     expect(mocks.getLayer).not.toHaveBeenCalled();

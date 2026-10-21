@@ -172,7 +172,7 @@ function renderDialog(journey: Journey): void {
   });
   ensureEl("journeyName").addEventListener("input", onNameInput);
   ensureEl("journeyType").addEventListener("input", onTypeInput);
-  ensureEl("journeyColor").addEventListener("change", onColorChange);
+  ensureEl("journeyColor").addEventListener("input", onColorInput);
   ensureEl("journeyAddSegment").addEventListener("click", addSegment);
   ensureEl("journeyEditTransport").addEventListener("click", () => void Controllers.TransportEditor.open());
   ensureEl("journeyLegend").addEventListener("click", editJourneyNote);
@@ -209,7 +209,7 @@ function renderSegmentsPage(view: TableView<JourneySegment>): void {
   on(".segFrom", "click", onPickFrom);
   on(".segTo", "click", onPickTo);
   on(".segRoads.pointer", "click", onToggleAvoidRoads);
-  on(".segColor", "change", onSegColorChange);
+  on(".segColor", "input", onSegColorInput);
   on(".segVisible", "click", onToggleSegVisible);
   on(".segNote", "click", onEditSegNote);
   on(".segPoints.pointer", "click", onToggleEditPoints);
@@ -382,7 +382,7 @@ function onTypeInput(this: HTMLInputElement): void {
   if (journey && this.value.trim()) Journeys.setType(journey.i, this.value);
 }
 
-function onColorChange(this: HTMLInputElement): void {
+function onColorInput(this: HTMLInputElement): void {
   const journey = getJourney();
   if (!journey) return;
   Journeys.recolor(journey.i, this.value);
@@ -479,11 +479,11 @@ function onSegDurationInput(this: HTMLInputElement): void {
   updateTotals(journey);
 }
 
-function onSegColorChange(this: HTMLInputElement): void {
+function onSegColorInput(this: HTMLInputElement): void {
   const segment = getLineSegment(this);
   if (!segment) return;
   Journeys.setSegment(getJourney()!.i, segment.i, { color: this.value });
-  segmentsTable.refresh();
+  Layers.draw("journeys"); // a table refresh would tear out the input while its picker is open
 }
 
 function onToggleSegVisible(this: HTMLElement): void {

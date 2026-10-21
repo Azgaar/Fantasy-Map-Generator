@@ -226,7 +226,7 @@ function renderJourneysPage(view: TableView<Journey>): void {
 
   body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseenter", journeyHighlightOn));
   body.querySelectorAll("div.states").forEach(el => void el.addEventListener("mouseleave", stopJourneyTravel));
-  body.querySelectorAll("input.journeyColor").forEach(el => void el.addEventListener("change", changeJourneyColor));
+  body.querySelectorAll("input.journeyColor").forEach(el => void el.addEventListener("input", changeJourneyColor));
   body.querySelectorAll("span.journeyZoom").forEach(el => void el.addEventListener("click", zoomToJourney));
   body.querySelectorAll("span.journeyLocate.pointer").forEach(el => void el.addEventListener("click", zoomToEndpoint));
   body.querySelectorAll("span.journeyEdit").forEach(el => void el.addEventListener("click", openJourneyEditor));

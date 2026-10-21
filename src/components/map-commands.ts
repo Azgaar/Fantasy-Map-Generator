@@ -64,9 +64,9 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => Services.Save.toMachine()
   },
   {
-    id: "saveMapAs",
-    name: t("Save Map As…"),
-    aliases: "save as copy .map filename folder location backup",
+    id: "overwriteMapFile",
+    name: t("Overwrite Saved Map File"),
+    aliases: "save same file update replace .map",
     run: () => Services.Save.toMachine(true)
   },
   {

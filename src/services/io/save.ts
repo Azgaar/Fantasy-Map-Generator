@@ -16,7 +16,8 @@ import { type SaveOutcome, saveToFileSystem } from "./save-to-file";
 type Writer = () => Promise<void>;
 
 const toStorage = (): Promise<void> => save(() => writeToStorage(prepareMapData(), true));
-const toMachine = (saveAs = false, viewOnly = false): Promise<void> => save(() => writeToMachine(saveAs, viewOnly));
+const toMachine = (overwrite = false, viewOnly = false): Promise<void> =>
+  save(() => writeToMachine(overwrite, viewOnly));
 const toDropbox = (viewOnly = false): Promise<void> =>
   save(() => writeToDropbox(prepareMapData(viewOnly), `${getFileName()}${viewOnly ? " view" : ""}.map`)); // a copy never replaces the editable file
 
@@ -206,9 +207,11 @@ async function writeToStorage(mapData: string, showTip = false): Promise<void> {
   showTip && tip(t("Map is saved to the browser storage"), false, "success");
 }
 
-// a view-only copy never becomes the file Save updates: that is the author's editable map
-async function writeToMachine(saveAs: boolean, viewOnly: boolean): Promise<void> {
-  notifySaveOutcome(await saveToFileSystem(() => prepareMapData(viewOnly), `${getFileName()}.map`, saveAs, viewOnly));
+// a view-only copy never becomes the file an overwrite updates: that is the author's editable map
+async function writeToMachine(overwrite: boolean, viewOnly: boolean): Promise<void> {
+  notifySaveOutcome(
+    await saveToFileSystem(() => prepareMapData(viewOnly), `${getFileName()}.map`, overwrite, viewOnly)
+  );
 }
 
 export function notifySaveOutcome(outcome: SaveOutcome): void {

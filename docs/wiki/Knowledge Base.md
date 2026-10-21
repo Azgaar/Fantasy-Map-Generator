@@ -182,7 +182,7 @@ There is no transparent background option: the PNG and JPEG exports always inclu
 
 ### Can I choose where the map file is saved?
 
-Yes, in browsers that support it, such as Chrome and Edge. The first Save to machine asks for a file name and location; after that Save and Ctrl + S write straight to the same file, until you generate or load another map. Shift-click the Save to machine button, press Ctrl + Shift + S or use the "Save Map As…" command in the Omnibar to save a copy under another name or location. Firefox and Safari have no such picker, so the map is downloaded to the folder set in the browser's download settings
+Yes, in browsers that support it, such as Chrome and Edge. Every Save to machine (Ctrl + S) asks for a file name and location and creates a new file, so earlier saves stay as backups. To write over the last saved file instead, Shift-click the Save to machine button, press Ctrl + Shift + S or use the "Overwrite Saved Map File" command in the Omnibar; that works until you generate or load another map. Firefox and Safari have no such picker, so the map is downloaded to the folder set in the browser's download settings
 
 ### Can I share a map that others can view but not edit?
 
@@ -938,7 +938,7 @@ Yes, use the focus (pin) icon. Open Tools -> States (or Provinces) and click on 
 
 ### Are there any keyboard shortcuts?
 
-Yes, plenty. The full list is on the Hotkeys wiki page: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys (F1 in the app opens the info dialog that links to it). The most used ones are Tab (toggle the menu), F2 (new map), Ctrl + S (save to machine), Ctrl + Shift + S (save a copy), F6 and F9 (quick save to browser storage and quick load), single letters to toggle layers, and Shift + letter to open editors. Hold Shift while clicking a button that asks for confirmation (remove, restore, recalculate, load) to act immediately without the dialog; Enter confirms and Escape cancels an open confirmation
+Yes, plenty. The full list is on the Hotkeys wiki page: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys (F1 in the app opens the info dialog that links to it). The most used ones are Tab (toggle the menu), F2 (new map), Ctrl + S (save to machine as a new file), Ctrl + Shift + S (overwrite the last saved file), F6 and F9 (quick save to browser storage and quick load), single letters to toggle layers, and Shift + letter to open editors. Hold Shift while clicking a button that asks for confirmation (remove, restore, recalculate, load) to act immediately without the dialog; Enter confirms and Escape cancels an open confirmation
 
 ### Where can I find the documentation?
 

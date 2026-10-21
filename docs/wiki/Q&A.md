@@ -26,7 +26,7 @@ If there is no version conflict, please [report the problem](https://github.com/
 Open the menu with the upper-left triangle or press Tab. Click **Export** in the menu's bottom row to open the Export dialog. For SVG, click **.svg** in the **Download image** row. The separate **Save** dialog saves editable `.map` files; it does not contain image exports.
 
 The **Save** dialog offers:
-* Save to machine: save file can be directly loaded to the Generator. Where the browser supports it, you pick the file once and later saves update it; Shift-click saves a copy elsewhere.
+* Save to machine: save file can be directly loaded to the Generator. Each save creates a new file, so earlier saves stay as backups; where the browser supports it, Shift-click overwrites the last saved file instead.
 * Save to Dropbox: save file can be directly loaded to the Generator.
 * Save to storage: save map data to the browser's internal database. File will be loaded automatically on page refresh. Bear in mind that saving to desktop is safer since browser storage can be accidentally cleared
 
