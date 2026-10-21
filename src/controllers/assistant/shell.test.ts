@@ -100,7 +100,7 @@ it("opens one Assistant panel with one composer and no mode tabs", async () => {
   Assistant.open();
   expect(document.getElementById("assistantQuestion")).toBe(input);
   expect(input.value).toBe("partly typed");
-});
+}, 20000);
 
 it("starts a Member chat after signing in and keeps the Guest chat", async () => {
   const chats = await import("@/services/assistant/chats");

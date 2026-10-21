@@ -1,5 +1,17 @@
 # Proposal — Three Mod Seams for Stock FMG
 
+> **Status: superseded for our own use, still valid as an upstream proposal.** The upstream lead's
+> guidance is that mods maintain the fork format — a full fork gives a mod full developmental
+> control, and merging upstream is not an obstacle. Our own mods therefore live in this fork
+> (Astral Cartographer's content in core, OpenConquest under `src/conquest/`), and the three seams
+> below are implemented in-tree: `LayersRegistry.register(...)`, `window.LAYER_TOGGLES` and
+> `window.MAP_COMMANDS`. See [mod-merge-plan.md](mod-merge-plan.md) for the decision record.
+>
+> The proposal stays here because the seams remain a legitimate contribution to upstream: with them
+> in stock FMG, a mod could run on a true stock build — even from a userscript — instead of a
+> vendored fork. The three-patch series this proposal was written against lives in the OpenConquest
+> repository and is still the smallest possible diff.
+
 A pitch prepared for the upstream FMG GitHub Discussions board. The working patches live in
 OpenConquest (`openconquest/build/patches/`) and ship in the vendored client of Astral Cartographer
 (`clients/fmg/dist`), both against FMG 1.154.x.

@@ -42,7 +42,12 @@ stays mechanical:
 Keep a `MERGING.md` at root listing exactly these touch points, so an assisted upstream merge has
 a checklist.
 
-## Phase A — Astral content in core (bases + sets)
+## Phase A — Astral content in core (bases + sets) ✅
+
+Delivered in `240ba81e`: 12 Astral name bases appended to `getDefaultNameBases()` (with the
+`groups` extension carrying the `polities` pools), the three sets added to `CULTURE_SETS` and
+`CulturesGenerator.getDefault()`, the placement hints translated into the stock homeland scoring
+callbacks, and the content-rules test suite (`src/data/name-bases.test.ts`).
 
 The user-visible outcome: the Cultures set dropdown offers **AstralTrek, AstralJammer, Grimdark**,
 and generating with one produces the star-map peoples out of the box — no panel, no payload push,
@@ -101,15 +106,22 @@ Acceptance: generate a world, open Conquest from Tools, start a campaign from th
 fight a turn, save the campaign, reload the browser, resume it. A stock map untouched by
 Conquest behaves exactly as FMG.
 
-## Phase C — Cleanup and strategy artifacts
+## Phase C — Cleanup and strategy artifacts ✅
 
-1. Archive `AFMGTW` and `Astral-Cartographer` (READMEs point here; repos read-only).
-2. Retire per-mod harnesses: dev servers, bundle/inject pipelines, patch series, vendored
-   `clients/fmg/dist` (~23 MB × 2 out of the working set). One workflow: `npm run dev`.
-3. Mark [mod-seams-proposal.md](mod-seams-proposal.md) superseded-by-decision (keep it: the
-   patches remain a legitimate upstream contribution if the ecosystem question reopens).
-4. `MERGING.md` with the upstream touch-point checklist.
-5. Content docs: the Astral sets and the Conquest game get wiki pages when they land.
+Delivered together with this commit:
+
+1. **Archived** `AFMGTW` and `Astral-Cartographer`: both READMEs carry a banner pointing at this
+   fork, both repositories are read-only from here on, and their vendored FMG clients and dev
+   harnesses are retired (~47 MB out of the working set; the files remain in their git history).
+2. **Retired** the per-mod harnesses: one workflow remains — `npm run dev` (or `bun dev`).
+3. **Marked** [mod-seams-proposal.md](mod-seams-proposal.md) superseded-by-decision. The file is
+   kept: the seams remain a legitimate upstream contribution if the ecosystem question reopens.
+4. **`MERGING.md`** carries the upstream touch-point checklist — now covering all three features
+   (history, conquest, Astral), not only Phase A.
+5. **Content docs**: wiki pages for the [Legends browser](../wiki/Legends.md) and
+   [OpenConquest](../wiki/OpenConquest.md); the three Astral sets are documented in
+   [Culture sets](../wiki/Culture-sets.md) and linked from the wiki's home page. The module
+   READMEs under `docs/` were corrected where they described the pre-merge integration.
 
 ## Phase D — Astral naming in generation (the mapping)
 
@@ -158,16 +170,30 @@ classes; a European-set world is byte-for-byte unaffected.
 
 ## Build order
 
-| # | Slice | Size | Acceptance |
-|---|---|---|---|
-| A | Astral content in core (bases, sets, schema, naming tests) | small | Trek generation works; set survives save/load + pinning |
-| B ✅ | Conquest transplant (engine/host/store → `src/conquest/`, native layers/commands, worker) | large | Campaign compiles from a finished world; a turn can be fought |
-| C ✅ | Conquest UI (controller, rail, Tools entry, campaign storage) | medium | Save/resume campaign across reloads |
-| D | Cleanup (archive repos, retire harnesses, MERGING.md, docs) | small | One repo, one dev command |
-| E | Astral naming (polities, sectors, star classes) | small–medium | Astral-set worlds read as star maps; stock worlds untouched |
+The table's rows are the work items; the sections above are the phases they belong to. Phase A and
+B are done, C (cleanup) with them; only the naming step is left.
 
-Phase D before E on purpose: the naming step is optional polish, while the cleanup makes the repo
-the single home for everything the remaining work builds on.
+| # | Slice | Phase | Size | Acceptance |
+|---|---|---|---|---|
+| A ✅ | Astral content in core (bases, sets, schema, naming tests) | A | small | Trek generation works; set survives save/load + pinning |
+| B ✅ | Conquest transplant (engine/host/store → `src/conquest/`, native layers/commands, worker) | B | large | Campaign compiles from a finished world; a turn can be fought |
+| C ✅ | Conquest UI (top-bar button, rail, layers, campaign storage) | B | medium | Save/resume campaign across reloads |
+| D ✅ | Cleanup (archive repos, retire harnesses, MERGING.md, wiki pages) | C | small | One repo, one dev command |
+| E | Astral naming (polities, sectors, star classes) | D | small–medium | Astral-set worlds read as star maps; stock worlds untouched |
+
+Phase D (cleanup) before E on purpose: the naming step is optional polish, while the cleanup makes
+the repo the single home for everything the remaining work builds on.
+
+### Phase C notes
+
+- The Conquest UI needed no controller registration: the ⚔ button installs itself in the top bar
+  (`#sticked`) and the campaign actions register themselves in `MAP_COMMANDS`, so the omnibar and
+  the hotkey system find them without any wiring. The plan's "Tools tab entry" line item is
+  superseded by the top-bar button, which is the mod's own design and needs no duplicate.
+- The module READMEs under `docs/` were written before the merge and described the pre-merge
+  integration in two places (a Vite-native module worker, and a `Controllers.Conquest` registry
+  entry). Both were corrected: the worker is a Blob importing the engine's own module URL, and the
+  feature is reached through the self-installing button.
 
 ### Phase B notes
 

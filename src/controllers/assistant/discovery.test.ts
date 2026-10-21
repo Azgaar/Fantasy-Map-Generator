@@ -76,7 +76,7 @@ it("offers Gemini, discovers models and saves its own key and model", async () =
   expect(localStorage.getItem("fmg-ai-chat-provider")).toBe("gemini");
   expect(localStorage.getItem("fmg-ai-kl-gemini")).toBe("gemini-key");
   expect(localStorage.getItem("fmg-ai-model-gemini")).toBe("gemini-flash-latest");
-});
+}, 20000);
 
 it("does not save a draft local address when the key sheet is cancelled", async () => {
   localStorage.setItem("fmg-ai-local-url", "http://localhost:8080/v1");

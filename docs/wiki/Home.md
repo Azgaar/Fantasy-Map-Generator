@@ -52,6 +52,10 @@ To report a problem or propose a feature, see [Reporting bugs and suggesting ide
 [Battle Simulator](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Battle-Simulator) ·
 [Scale and distance](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Scale-and-distance)
 
+**Fork features**
+[Legends browser](https://github.com/0xPaladin/Fantasy-Map-Generator/wiki/Legends) ·
+[OpenConquest: Atlas Invictus](https://github.com/0xPaladin/Fantasy-Map-Generator/wiki/OpenConquest)
+
 **Running and integrating**
 [Run FMG locally](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally) ·
 [Install with Nix](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Install-with-Nix) ·

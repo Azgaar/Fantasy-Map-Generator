@@ -19,10 +19,10 @@ OpenConquest is designed as a clean, self-contained vertical in the FMG ecosyste
 
 - **Deterministic Rules Engine**:
   - Pure, deterministic simulation compiling a map pack and ruleset into an actionable game state.
-  - Runs in a background **Web Worker** using Vite's native module worker integration (`new Worker(new URL(...), { type: "module" })`), guaranteeing responsive UI performance during AI turn processing.
+  - Runs in a background **Web Worker**, so a large world never freezes the map. The worker is a Blob that imports the engine's own module URL, which keeps the engine out of the main bundle; if the browser refuses the worker (a strict CSP, for instance) the compile falls back to the main thread rather than failing.
 - **Native UI & Layer Integration**:
-  - Integrated into FMG's native Layers registry (`armies`, `regions`, `settlements`, `move-paths`, `selection`).
-  - Native controller registration under `Controllers.Conquest` with quick-access Tools menu actions.
+  - Integrated into FMG's native Layers registry (`armies`, `regions`, `settlements`, `move-paths`, `selection`), so every layer appears in the _Layers_ tab with its own toggle and hotkey.
+  - The **⚔ OpenConquest** button installs itself in the generator's top bar, and the campaign actions register themselves in the omnibar's command list — no separate panel to keep in sync.
 - **Persistence**:
   - Campaigns persist locally in IndexedDB keyed by map ID.
   - Campaign archives can be exported and imported as JSON sessions without mutating the base `.map` file.

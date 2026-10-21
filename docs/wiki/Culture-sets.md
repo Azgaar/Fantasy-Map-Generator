@@ -11,6 +11,9 @@ A culture set is the pool of cultures a map can draw from. It is picked in the _
 | Antique      | 16                   | 10           |
 | High Fantasy | 17                   | 17           |
 | Dark Fantasy | 34                   | 18           |
+| AstralTrek   | 8                    | 8            |
+| AstralJammer | 8                    | 8            |
+| Grimdark     | 8                    | 8            |
 | Random       | generated on the fly | 100          |
 
 Every culture in a set has an _odd_ — a chance to be included at all — and a _sort_ function that scores cells to pick the culture center. That is why two maps with the same set rarely get the same cultures, and why e.g. Inuk tends to appear in cold regions and Maui on tropical islands.
@@ -186,3 +189,42 @@ Thirty-four cultures are defined, but at most 18 are placed on a map. Real-world
 ### Random
 
 This set does not use a predefined list. For each culture it picks a random namesbase and generates the culture name from it, so the result is different every time. Up to 100 cultures can be requested.
+
+### AstralTrek
+
+The clean, optimistic register of classic science fiction: people who still live on a world and name its places the way their grandparents named villages, and the invented peoples that do not.
+
+- Terran (Human): the people of the old worlds. Namesbase: Trek Terran.
+- Colonial (Human): the settlers of the far colonies. Namesbase: Trek Terran.
+- Continental (Human): another kind of old world, with its own register. Namesbase: Trek Continental.
+- Highlander (Human): the mountain peoples. Namesbase: Trek Continental.
+- Synthetic (Machine): the machine intelligences. Namesbase: Trek Synthetic.
+- Posthuman (Machine): what is left of people after long travel. Namesbase: Trek Synthetic.
+- Core Worlds (Mixed): the rich inner systems. Namesbase: Trek Core.
+- Inner Reach (Mixed): the frontier beyond them. Namesbase: Trek Core.
+
+### AstralJammer
+
+The high-fantasy register, told in the vocabulary of the deep places: the kindred, the deep folk, the ferals and the choruses.
+
+- Ethereal (Kindred): the bright spirits of the upper places. Namesbase: Jammer Ethereal.
+- Silver Kin (Kindred): their kin, of the old blood. Namesbase: Jammer Ethereal.
+- Stoneborn (Deep): the people of the deep stone. Namesbase: Jammer Stoneborn.
+- Deepkin (Deep): their children. Namesbase: Jammer Stoneborn.
+- Wild (Ferals): the unclaimed wilds. Namesbase: Jammer Wild.
+- Scavengers (Ferals): those who take from the wilds. Namesbase: Jammer Wild.
+- Deep Choir (Collective): the choirs of the deep. Namesbase: Jammer Deep.
+- Far Chorus (Collective): the choirs that answer from afar. Namesbase: Jammer Deep.
+
+### Grimdark
+
+The dark-fantasy register, industrial and cold: darklings, foundrymen, and the machine calculators that took the world apart.
+
+- Gothic (Darkling): the old dark blood. Namesbase: Grimdark Gothic.
+- Northerners (Darkling): the dark folk of the north. Namesbase: Grimdark Gothic.
+- Iron (Foundrymen): the workers of the foundries. Namesbase: Grimdark Iron.
+- Yard Companies (Foundrymen): the companies that hold the yards. Namesbase: Grimdark Iron.
+- Machine (Cold): the cold logic of the machines. Namesbase: Grimdark Machine.
+- Calculators (Cold): those who calculate for them. Namesbase: Grimdark Machine.
+- Core Holds (Mixed): the fortified holds of the new order. Namesbase: Grimdark Core.
+- Rust Kingdoms (Mixed): the kingdoms that did not hold. Namesbase: Grimdark Core.

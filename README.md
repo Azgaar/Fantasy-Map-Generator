@@ -11,11 +11,11 @@ Azgaar's *Fantasy Map Generator* is the premier open-source tool for procedural 
 1. **[History Generator & Legends Browser](docs/history/README.md)** *(Shipped)*  
    Retroactively reconstructs the chronological history of generated worlds. Dates state foundings, wars, migrations, and schisms, seeds the ruins and battlefields of fallen empires, and provides an interactive in-app chronicle browser.
 
-2. **[Astral Cartographer](docs/astral/README.md)** *(Phase A Integrated)*  
+2. **[Astral Cartographer](docs/astral/README.md)** *(Content Integrated)*  
    Reimagines the procedural engine for science-fiction star sector cartography. Ships 12 sci-fi name bases and 3 culture sets (AstralTrek, AstralJammer, Grimdark) in core data, with upcoming stellar traits, celestial classifications, and space-map rendering.
 
-3. **[OpenConquest: Atlas Invictus](docs/openconquest/README.md)** *(Integration In Progress)*  
-   Turns any generated map into an interactive, turn-based grand strategy campaign. Features strategic regions, settlement infrastructure, army recruitment, and deterministic battle mechanics running in a background Web Worker.
+3. **[OpenConquest: Atlas Invictus](docs/openconquest/README.md)** *(Integrated)*  
+   Turns any generated map into an interactive, turn-based grand strategy campaign. Features strategic regions, settlement infrastructure, army recruitment, and deterministic battle mechanics running in a background Web Worker. Campaigns persist in the browser, keyed to the map.
 
 ---
 

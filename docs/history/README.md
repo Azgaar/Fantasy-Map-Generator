@@ -23,7 +23,7 @@ The **History Generator** brings retroactive chronological depth to the map usin
   - Grounds world landmarks in history: ruins and battlefield markers are placed from actual historical conflicts rather than scattered at random.
   - Sacked burgs and successor states gain contextual lore notes.
 - **The Legends Browser**:
-  - An interactive in-app chronicle UI (accessible via **Tools > Overviews > Legends**).
+  - An interactive in-app chronicle UI (accessible via _Options_ → _Tools_ → _Legends_, or the "Open Legends Browser" command in the omnibar).
   - Chronological timeline grouped by eras with rich filtering (by entity, event type, or keyword).
   - Dedicated entity pages displaying an entity's complete historical narrative and relationships.
   - Click-to-zoom map integration.
