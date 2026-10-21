@@ -23,6 +23,9 @@ When rebasing or merging `upstream/master`, consult this checklist to ensure for
 - **`src/components/options-schema.ts`**
   - Uses dynamic enumeration from `Object.keys(CULTURE_SETS)`. No direct stock modifications needed; automatically validates and pins the Astral sets.
 
+- **`src/components/options/tabs/options-tab.ts`**
+  - `<select id="culturesSet">` renders options dynamically from `CULTURE_SETS` so all core and mod culture sets appear in the Options tab dropdown automatically.
+
 - **`src/components/configuration-schema.test.ts`**
   - Added unit test: validates astral culture-set ids and accepts them in schema and pins.
 

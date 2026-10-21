@@ -282,14 +282,12 @@ const TEMPLATE = /* html */ `
       <td>Cultures set</td>
       <td>
         <select id="culturesSet" data-option="culturesSet">
-          <option value="world" data-max="32" selected>All-world</option>
-          <option value="european" data-max="15">European</option>
-          <option value="oriental" data-max="13">Oriental</option>
-          <option value="english" data-max="10">English</option>
-          <option value="antique" data-max="10">Antique</option>
-          <option value="highFantasy" data-max="17">High Fantasy</option>
-          <option value="darkFantasy" data-max="18">Dark Fantasy</option>
-          <option value="random" data-max="100">Random</option>
+          ${Object.entries(CULTURE_SETS)
+            .map(
+              ([key, set]) =>
+                `<option value="${key}" data-max="${set.max}"${key === "world" ? " selected" : ""}>${set.name}</option>`
+            )
+            .join("\n          ")}
         </select>
       </td>
       <td></td>

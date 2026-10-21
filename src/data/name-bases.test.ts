@@ -264,4 +264,14 @@ describe("Phase A acceptance", () => {
       (globalThis as any).grid = origGrid;
     }
   });
+
+  it("options tab culturesSet select renders all CULTURE_SETS including Astral sets", async () => {
+    const { readFileSync } = await import("node:fs");
+    const source = readFileSync("src/components/options/tabs/options-tab.ts", "utf8");
+    expect(source).toContain("CULTURE_SETS");
+    expect(source).toContain('data-option="culturesSet"');
+    for (const key of ["astralTrek", "astralJammer", "grimdark"]) {
+      expect(CULTURE_SETS[key]).toBeDefined();
+    }
+  });
 });
