@@ -621,6 +621,13 @@ const expansionismMap: Record<string, () => number> = {
   Heresy: () => gauss(1, 0.5, 0, 5, 1)
 };
 
+/** The culture and the living cultures of its ancestry: they share one folk religion */
+function getKinCultures(cultureId: number): Set<number> {
+  const ancestry = pack.cultures[cultureId]?.ancestry?.trim();
+  if (!ancestry) return new Set([cultureId]);
+  return new Set(pack.cultures.filter(c => c.i && !c.removed && c.ancestry?.trim() === ancestry).map(c => c.i));
+}
+
 class ReligionsModule {
   regenerate(): void {
     this.generate();
@@ -881,10 +888,7 @@ class ReligionsModule {
     function renameOld({ name, type, culture: cultureId }: NamedReligion): string {
       if (type !== "Folk") return name;
 
-      const ancestry = pack.cultures[cultureId]?.ancestry?.trim();
-      const matchingCultures = ancestry
-        ? new Set(pack.cultures.filter(c => c.i && !c.removed && c.ancestry?.trim() === ancestry).map(c => c.i))
-        : new Set([cultureId]);
+      const matchingCultures = getKinCultures(cultureId);
 
       const haveOrganized =
         namedReligions.some(
@@ -1402,9 +1406,10 @@ class ReligionsModule {
     const i = religions.length;
 
     const cultureId = cells.culture[center];
+    const kin = getKinCultures(cultureId);
     const missingFolk =
       cultureId !== 0 &&
-      !religions.some(({ type, culture, removed }) => type === "Folk" && culture === cultureId && !removed);
+      !religions.some(({ type, culture, removed }) => type === "Folk" && kin.has(culture) && !removed);
     const parentReligion = religions[religionId];
 
     const type: "Folk" | "Organized" | "Cult" | "Heresy" = missingFolk

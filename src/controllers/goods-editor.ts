@@ -523,7 +523,9 @@ function goodsRestoreDefaults() {
     message: `${t("Are you sure you want to restore default goods?")}<br>${t("This action cannot be reverted")}`,
     confirm: t("Restore"),
     onConfirm: () => {
+      const previousIds = pack.goods.map(good => good.i);
       Goods.restoreDefaults();
+      States.pruneTariffs({ goods: previousIds.filter(id => !Goods.get(id)) }); // a later good could reuse the id
       Goods.generate();
       Production.regenerateEconomy();
       Layers.draw("markets", "goods");

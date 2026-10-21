@@ -382,6 +382,41 @@ describe("ReligionsModule origins", () => {
   });
 });
 
+describe("ReligionsModule.add", () => {
+  it("does not add a folk religion to a culture whose ancestry already has one", async () => {
+    await import("./religions-generator");
+    let randomIndex = 0;
+    vi.spyOn(Math, "random").mockImplementation(() => (randomIndex++ % 2 ? 0.25 : 0.75));
+    globalThis.Names = { getCulture: () => "Test" } as any;
+    vi.stubGlobal("Pack", { requireCell: () => 0 });
+    globalThis.pack = {
+      cells: {
+        c: [[]],
+        h: [30],
+        culture: Uint16Array.from([2]),
+        religion: Uint16Array.from([1]),
+        burg: Uint16Array.from([0]),
+        state: Uint16Array.from([0])
+      },
+      states: [{ i: 0, name: "Neutrals" }],
+      burgs: [],
+      cultures: [
+        { i: 0 },
+        { i: 1, name: "Quenian", ancestry: "Elfish", color: "#aaaaaa" },
+        { i: 2, name: "Eldar", ancestry: "Elfish", color: "#bbbbbb" }
+      ],
+      religions: [
+        { i: 0, name: "No religion" },
+        { i: 1, name: "Elfish Faith", type: "Folk", culture: 1, color: "#aaaaaa", code: "EF" }
+      ]
+    } as any;
+
+    globalThis.Religions.add(5, 5);
+
+    expect(globalThis.pack.religions[2].type).not.toBe("Folk");
+  });
+});
+
 describe("ReligionsModule.rename", () => {
   it("recomputes a renamed religion's code", async () => {
     await import("./religions-generator");

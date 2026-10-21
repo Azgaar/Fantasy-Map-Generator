@@ -184,7 +184,7 @@ function getElementTip({ group, target, event, path, cellId }: TipContext): stri
       const journey = pack.journeys?.find(j => j.i === +match[1]);
       const segment = journey?.segments?.find(s => s.i === +match[2]);
       if (journey && segment) {
-        const name = `${journey.name}: ${segment.name}`;
+        const name = escapeHtml(`${journey.name}: ${segment.name}`);
         return withHint(segment.note ? sentences(name, `“${escapeHtml(segment.note)}”`) : name);
       }
     }

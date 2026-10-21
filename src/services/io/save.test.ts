@@ -69,6 +69,15 @@ describe("Save.toMachine", () => {
     expect(document.getElementById("tooltip")!.textContent).toContain("view-only");
   });
 
+  it("suggests a view-only copy its own filename", async () => {
+    vi.stubGlobal("options", { map: { lore: { name: "Ovis" } } });
+    vi.stubGlobal("$", () => ({ not: () => ({ each: vi.fn() }) }));
+    const picker = vi.fn().mockRejectedValue(Object.assign(new Error("cancelled"), { name: "AbortError" }));
+    vi.stubGlobal("showSaveFilePicker", picker);
+    await Save.toMachine(false, true);
+    expect(picker.mock.calls[0][0].suggestedName).toMatch(/ view\.map$/);
+  });
+
   it("rejects saving in edit mode before opening the picker", async () => {
     vi.stubGlobal("customization", 1);
     const picker = vi.fn();

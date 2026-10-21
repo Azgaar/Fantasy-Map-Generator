@@ -147,7 +147,7 @@ class OptionsModel {
   persist(): void {
     clearTimeout(this.saveTimer);
     this.saveTimer = 0;
-    const { customIcons, ...map } = options.map;
+    const { customIcons, viewOnly, ...map } = options.map; // view-only belongs to the loaded file, not this browser
     this.persistIcons(customIcons);
     try {
       localStorage.setItem(OPTIONS_STORAGE_KEY, JSON.stringify({ ...options, map }));
@@ -201,6 +201,7 @@ class OptionsModel {
     deepMerge(source, stored);
 
     options = parseSections<OptionsData>(optionsSchema, this.getDefaultOptions(), source, "Options.restore");
+    delete options.map.viewOnly; // kept by earlier versions
     this.repairSets();
     this.setGraphSize(Pins.valueOr("mapWidth", window.innerWidth), Pins.valueOr("mapHeight", window.innerHeight));
     this.persist();

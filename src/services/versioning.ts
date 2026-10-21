@@ -19,24 +19,25 @@ import { confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { dialogState } from "@/components/dialog/state";
 import { Pins } from "@/components/pins";
 import { tip } from "@/components/tooltips";
+import { LANGUAGE_CODES } from "@/data/languages";
 import { findEl } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { isElectron } from "./platform";
 
 export const VERSION = "1.155.0";
 
-// new changes on top
-const latestPublicChanges = [
-  "Translation: UI translated to 29 languages",
-  "Map context menu",
-  "Advanced options: configurable map lattice",
-  "Trade tariffs and embargoes",
-  "View-only mode for saved maps",
-  "Free-text tags for states and other entities (hidden by default)",
-  "Color picker rework",
-  "CSV upload for states, religions, provinces, burgs, rivers, routes, markers, zones, biomes and features",
-  "Population layer: colored cells style",
-  "Altitude legend: heightmap colors"
+// new changes on top, translated: a function as the catalog is read when the window opens
+const latestPublicChanges = (): string[] => [
+  t("Interface translated into {{languages}} languages", { languages: LANGUAGE_CODES.length - 1 }),
+  t("Map context menu"),
+  t("Advanced Options: configurable map lattice"),
+  t("Trade tariffs and embargoes"),
+  t("View-only mode for saved maps"),
+  t("Free-text tags for states and other entities (hidden by default)"),
+  t("Color picker rework"),
+  t("CSV upload for states, religions, provinces, burgs, rivers, routes, markers, zones, biomes and features"),
+  t("Population layer: colored cells style"),
+  t("Altitude legend: heightmap colors")
 ];
 
 export function parseMapVersion(version: string): string {
@@ -143,7 +144,9 @@ function showUpdateWindow(storedVersion: string | null): void {
 
     <ul>
       <strong>${t("Latest changes")}:</strong>
-      ${latestPublicChanges.map(change => `<li>${change}</li>`).join("")}
+      ${latestPublicChanges()
+        .map(change => `<li>${change}</li>`)
+        .join("")}
     </ul>
 
     ${isElectron() ? "" : `<p>${t("The Generator is also available as a {{- app}} that works offline.", { app: `<a href="#" onclick="window.Services.AppOffer.open(); return false">${t("desktop app")}</a>` })}</p>`}

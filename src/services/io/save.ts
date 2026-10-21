@@ -19,7 +19,10 @@ const toStorage = (): Promise<void> => save(() => writeToStorage(prepareMapData(
 const toMachine = (overwrite = false, viewOnly = false): Promise<void> =>
   save(() => writeToMachine(overwrite, viewOnly));
 const toDropbox = (viewOnly = false): Promise<void> =>
-  save(() => writeToDropbox(prepareMapData(viewOnly), `${getFileName()}${viewOnly ? " view" : ""}.map`)); // a copy never replaces the editable file
+  save(() => writeToDropbox(prepareMapData(viewOnly), mapFileName(viewOnly)));
+
+// a view-only copy never takes the editable file's name
+const mapFileName = (viewOnly: boolean): string => `${getFileName()}${viewOnly ? " view" : ""}.map`;
 
 async function save(write: Writer): Promise<void> {
   if (customization)
@@ -209,9 +212,7 @@ async function writeToStorage(mapData: string, showTip = false): Promise<void> {
 
 // a view-only copy never becomes the file an overwrite updates: that is the author's editable map
 async function writeToMachine(overwrite: boolean, viewOnly: boolean): Promise<void> {
-  notifySaveOutcome(
-    await saveToFileSystem(() => prepareMapData(viewOnly), `${getFileName()}.map`, overwrite, viewOnly)
-  );
+  notifySaveOutcome(await saveToFileSystem(() => prepareMapData(viewOnly), mapFileName(viewOnly), overwrite, viewOnly));
 }
 
 export function notifySaveOutcome(outcome: SaveOutcome): void {

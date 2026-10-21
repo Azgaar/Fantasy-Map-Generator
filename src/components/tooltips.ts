@@ -74,9 +74,8 @@ export function showDataTip(event: Event): void {
     parent?.dataset?.col === "remove" ||
     target.classList.contains("icon-trash-empty") ||
     target.classList.contains("fastDelete");
-  if (isRemove && !isMobile() && !dataTip.includes("Shift+Click")) {
-    dataTip = sentences(dataTip, t("Shift+Click to remove without confirmation"));
-  }
+  const removeHint = t("Shift+Click to remove without confirmation");
+  if (isRemove && !isMobile() && !dataTip.includes(removeHint)) dataTip = sentences(dataTip, removeHint);
 
   tip(dataTip);
 }

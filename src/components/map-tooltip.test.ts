@@ -12,7 +12,7 @@ import { showMapTooltip, showNotes } from "./map-tooltip";
 
 beforeEach(() => {
   document.body.innerHTML = `
-    <svg id="map"><g id="viewbox"><g id="markers"><g id="marker0"><g><g><path/></g></g></g></g><g id="cultures"><polygon id="cell1"/></g><g id="labels"><g><g><text id="label1" data-label-type="state" data-id="1">Ovis</text></g></g></g></g></svg>
+    <svg id="map"><g id="viewbox"><g id="markers"><g id="marker0"><g><g><path/></g></g></g></g><g id="cultures"><polygon id="cell1"/></g><g id="journeys"><g><g><path id="segment0_1"/></g></g></g><g id="labels"><g><g><text id="label1" data-label-type="state" data-id="1">Ovis</text></g></g></g></g></svg>
     <div id="notes"><div id="notesHeader"></div><div id="notesBody"></div></div>
   `;
   globalThis.pack = {
@@ -64,6 +64,18 @@ it("shows culture tooltip without ancestry when empty", () => {
 
   showMapTooltip([0, 0], { ...event, target: cell }, 1, 1);
   expect(tip).toHaveBeenCalledWith("Culture: Quenian");
+});
+
+it("escapes journey and segment names", () => {
+  pack.journeys = [
+    { i: 0, name: "<b>Quest</b>", segments: [{ i: 1, name: "<img src=x>", note: "" }] }
+  ] as unknown as typeof pack.journeys;
+  const segment = document.getElementById("segment0_1")!;
+  const event = new MouseEvent("mousemove", { bubbles: true });
+  segment.dispatchEvent(event);
+
+  showMapTooltip([0, 0], { ...event, target: segment }, 1, 1);
+  expect(tip).toHaveBeenCalledWith("&lt;b&gt;Quest&lt;/b&gt;: &lt;img src=x&gt;. Click to edit");
 });
 
 it.each([

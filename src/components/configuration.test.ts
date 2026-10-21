@@ -41,6 +41,19 @@ it.each(["ancient", "fmgStyle_custom"])("keeps the %s style preset across genera
   }
 });
 
+it("never carries a loaded file's view-only flag into the next session", () => {
+  load(savedFile(file => (file.viewOnly = true)));
+  Options.persist();
+  expect(JSON.parse(localStorage.getItem("fmg-options")!).map).not.toHaveProperty("viewOnly");
+  expect(options.map.viewOnly).toBe(true); // the open map stays view-only
+
+  const stored = Options.getDefaultOptions();
+  stored.map.viewOnly = true; // as an earlier version kept it
+  localStorage.setItem("fmg-options", JSON.stringify(stored));
+  Options.restore();
+  expect(options.map.viewOnly).toBeUndefined();
+});
+
 it.each(["load", "restore"])("repairs one wind without losing other settings during %s", boundary => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
   const stored = Options.getDefaultOptions();

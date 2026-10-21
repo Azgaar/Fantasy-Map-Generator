@@ -15,6 +15,10 @@ async function generateIn(browser: Browser, language: string): Promise<{ map: st
   const page = await context.newPage();
   await page.goto(url);
   await waitForMap(page);
+  // burg icon sets load after the map is announced, and the icons redraw to their frames once they do
+  await page.waitForFunction(() =>
+    Array.from(document.querySelectorAll("#burgIcons use")).every(use => document.querySelector(use.getAttribute("href")!))
+  );
   // the header's last field is the map's creation time, so it differs between any two runs
   const map = (await page.evaluate(() => Services.Save.prepareMapData())).replace(/\|\d+(\r?\n)/, "$1");
   const cyrillic = /[А-Яа-яЁё]/.test(await page.locator("body").innerText());
