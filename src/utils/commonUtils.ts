@@ -2,6 +2,7 @@ import { clipPolygon } from "lineclip";
 import { last } from "./arrayUtils";
 import { distanceSquared } from "./functionUtils";
 import { t } from "./i18n";
+import { findEl } from "./nodeUtils";
 import { rn } from "./numberUtils";
 import { rand } from "./probabilityUtils";
 
@@ -300,7 +301,7 @@ export interface PromptOptions {
  * This should be called once when the DOM is ready
  */
 export const initializePrompt = (): void => {
-  const prompt = document.getElementById("prompt");
+  const prompt = findEl("prompt");
   if (!prompt) return;
 
   const form = prompt.querySelector<HTMLFormElement>("#promptForm");

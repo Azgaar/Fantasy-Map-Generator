@@ -34,7 +34,7 @@ import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { Csv } from "@/services/io/csv";
 import type { Emblem } from "@/types/emblems";
-import { getArea, getAreaUnit, groupByValue } from "@/utils";
+import { findEl, getArea, getAreaUnit, groupByValue } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { errorText, escapeHtml } from "@/utils/stringUtils";
 import { debounce, ensureEl, getPointer, isLand, parseTransform, ra, rn, si } from "../utils";
@@ -672,7 +672,7 @@ function cultureChangeEmblemsShape(this: HTMLSelectElement): void {
   row.dataset.emblems = pack.cultures[culture].shield;
 
   const rerenderCOA = (id: string, coa: Emblem | undefined) => {
-    const $coa = document.getElementById(id);
+    const $coa = findEl(id);
     if (!$coa || !coa) return; // not rendered
     $coa.remove();
     EmblemRenderer.trigger(id, coa);
@@ -965,7 +965,7 @@ function applyCulturePaint(changes: ReadonlyMap<number, number>): void {
   for (const [culture, cells] of groupByValue(changes)) Cultures.setCells(culture, cells);
   if (changes.size) {
     Layers.draw("cultures");
-    if (document.getElementById(dialogId)) refreshCulturesEditor();
+    if (findEl(dialogId)) refreshCulturesEditor();
   }
 }
 

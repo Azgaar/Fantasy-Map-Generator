@@ -31,7 +31,7 @@ import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement, highlightOutline } from "@/renderers/overlays/highlight";
 import { Csv } from "@/services/io/csv";
-import { applyOption, getArea, getAreaUnit, groupByValue, speak } from "@/utils";
+import { applyOption, findEl, getArea, getAreaUnit, groupByValue, speak } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { errorText } from "@/utils/stringUtils";
 import { ensureEl, getPointer, getRandomColor, isLand, rand, rn, si, unique } from "../utils";
@@ -940,7 +940,7 @@ function showChart(): void {
 
   function hideInfo(ev: any): void {
     provinceHighlightOff(ev);
-    if (!document.getElementById("provinceInfo")) return;
+    if (!findEl("provinceInfo")) return;
     ensureEl("provinceInfo").innerHTML = "&#8205;";
     select(ev.currentTarget as SVGGElement)
       .select("rect")
@@ -1087,7 +1087,7 @@ function applyProvincePaint(changes: ReadonlyMap<number, number>): void {
   Layers.draw("borders", "provinces");
   Layers.draw("labels");
 
-  if (document.getElementById(dialogId)) refreshProvincesEditor();
+  if (findEl(dialogId)) refreshProvincesEditor();
 }
 
 function enterAddProvinceMode(this: HTMLElement): void {

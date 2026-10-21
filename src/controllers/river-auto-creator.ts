@@ -3,11 +3,12 @@ import { closeDialogs, refreshEditors } from "@/components/dialog/dialog-helpers
 import { Layers } from "@/components/layers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import { tip } from "@/components/tooltips";
+import { findEl } from "@/utils";
 import { t } from "@/utils/i18n";
 import { errorText } from "@/utils/stringUtils";
 
 function toggle(): void {
-  if (document.getElementById("addRiver")?.classList.contains("pressed")) {
+  if (findEl("addRiver")?.classList.contains("pressed")) {
     stopMapPlacement();
     return;
   }

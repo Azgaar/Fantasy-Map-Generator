@@ -3,6 +3,7 @@
 import { Icons } from "@/components/icons";
 import { FILTER_LABELS } from "@/data/id-labels";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
+import { findEl } from "@/utils";
 import { t } from "@/utils/i18n";
 
 export type PreviewValues = { attrs: Record<string, unknown>; options: Record<string, unknown> };
@@ -279,6 +280,6 @@ function iconChip(id: string, read: Read): HTMLElement {
 // url(#splotch) → the def's name; a CSS function list → its function names
 function filterName(filter: string): string {
   const id = filter.match(/^url\(#(.+)\)$/)?.[1];
-  if (id) return FILTER_LABELS[id] ?? document.getElementById(id)?.getAttribute("name") ?? id;
+  if (id) return FILTER_LABELS[id] ?? findEl(id)?.getAttribute("name") ?? id;
   return Array.from(filter.matchAll(/([a-z-]+)\(/g), match => match[1]).join(", ");
 }

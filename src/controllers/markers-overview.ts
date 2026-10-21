@@ -19,7 +19,7 @@ import { Tags } from "@/generators/tags";
 import { setMarkersFilter } from "@/renderers/draw-markers";
 import { highlightArea, highlightElement } from "@/renderers/overlays/highlight";
 import { Csv } from "@/services/io/csv";
-import { escapeHtml, getLatitude, getLongitude } from "@/utils";
+import { escapeHtml, findEl, getLatitude, getLongitude } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "../utils";
 
@@ -204,8 +204,8 @@ function populateFilters(): void {
 }
 
 function closeMarkersOverview(): void {
-  document.getElementById("addMarker")?.classList.remove("pressed");
-  document.getElementById("markerAdd")?.classList.remove("pressed");
+  findEl("addMarker")?.classList.remove("pressed");
+  findEl("markerAdd")?.classList.remove("pressed");
   applyDefaultViewboxEvents();
   clearMainTip();
 
@@ -385,7 +385,7 @@ function highlightMarker(i: number): void {
 
   const { x, y } = marker;
   zoomTo(x, y, 8, 2000);
-  const el = document.getElementById(`marker${i}`);
+  const el = findEl(`marker${i}`);
   if (el) highlightElement(el);
   else highlightArea({ x: x - 15, y: y - 15, width: 30, height: 30 });
 }
@@ -430,7 +430,7 @@ function changeMarkerType(): void {
 
 function removeMarker(i: number): void {
   pack.markers = pack.markers.filter(marker => marker.i !== i);
-  document.getElementById(`marker${i}`)?.remove();
+  findEl(`marker${i}`)?.remove();
   markersTable.refresh();
 }
 
@@ -450,7 +450,7 @@ function removeAllMarkers(): void {
   pack.markers = pack.markers.filter(({ i, lock }) => {
     if (lock) return true;
 
-    document.getElementById(`marker${i}`)?.remove();
+    findEl(`marker${i}`)?.remove();
     return false;
   });
 

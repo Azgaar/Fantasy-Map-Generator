@@ -366,14 +366,14 @@ const anchorGroup = burgGroup.extend({
       range: [-5, 5],
       step: 0.05,
       nullAs: 0,
-      tip: t("Horizontal shift in icon-size units (positive moves right)")
+      tip: t("Horizontal shift (positive moves right)")
     }),
     dy: meta(z.number().optional(), {
       label: t("Shift y"),
       range: [-5, 5],
       step: 0.05,
       nullAs: 0,
-      tip: t("Vertical shift in icon-size units (positive moves down)")
+      tip: t("Vertical shift (positive moves down)")
     })
   })
 });
@@ -422,14 +422,65 @@ export const stylesSchema = z.strictObject({
   }),
   cells: z.strictObject({
     attrs: z.strictObject({ ...strokeGroup, filter, mask: clip }),
-    options: z
+    groups: z
       .strictObject({
-        showIndexes: flag({
-          label: t("Show indexes"),
-          tip: t("Render cell ID numbers at cell centers")
-        }).default(false)
+        cellIndexes: meta(
+          z.strictObject({
+            attrs: z.strictObject({
+              opacity,
+              fill: solidColor({ label: t("Color"), tip: t("Set fill color") }),
+              "font-family": fontFamily,
+              stroke: strokeGroup.stroke,
+              "stroke-opacity": strokeGroup["stroke-opacity"],
+              "stroke-width": meta(z.number().min(0), {
+                group: t("Stroke"),
+                label: t("Width"),
+                range: [0, 2],
+                step: 0.01,
+                tip: t("Set stroke width")
+              }).default(0),
+              filter,
+              mask: clip
+            }),
+            options: z.strictObject({
+              show: flag({ label: t("Indexes"), tip: t("Render cell ID numbers") }),
+              size: number({
+                label: t("Size"),
+                range: [0.05, 1],
+                step: 0.01
+              }),
+              dx: number({
+                label: t("Shift x"),
+                range: [-5, 5],
+                step: 0.05,
+                tip: t("Horizontal shift (positive moves right)")
+              }),
+              dy: number({
+                label: t("Shift y"),
+                range: [-5, 5],
+                step: 0.05,
+                tip: t("Vertical shift (positive moves down)")
+              })
+            })
+          }),
+          { gate: "options.show", label: t("Indexes") }
+        )
       })
-      .default({ showIndexes: false })
+      .default({
+        cellIndexes: {
+          attrs: {
+            opacity: null,
+            fill: "#808080",
+            "font-family": "Arial",
+            stroke: "#ffffff",
+            "stroke-opacity": null,
+            "stroke-width": 0,
+            filter: null,
+            mask: null
+          },
+          options: { show: false, size: 0.15, dx: 0, dy: 0 }
+        }
+      })
   }),
   coastline: z.strictObject({
     groups: z.strictObject({

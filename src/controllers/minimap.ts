@@ -1,7 +1,7 @@
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { viewport } from "@/components/viewport";
 import { t } from "@/utils/i18n";
-import { ensureEl, minmax, rn } from "../utils";
+import { ensureEl, findEl, minmax, rn } from "../utils";
 
 function open(): void {
   closeDialogs("#minimap, .stable");
@@ -33,7 +33,7 @@ function renderDialog(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
   ensureEl("minimapSurface").addEventListener("click", minimapClickToPan);
 
-  document.getElementById("minimapStyles")?.remove();
+  findEl("minimapStyles")?.remove();
   const style = document.createElement("style");
   style.id = "minimapStyles";
   style.textContent = /* css */ `
@@ -79,11 +79,11 @@ function renderDialog(): void {
 function closeMinimap(): void {
   $("#minimap").dialog("destroy");
   ensureEl("minimap").remove();
-  document.getElementById("minimapStyles")?.remove();
+  findEl("minimapStyles")?.remove();
 }
 
 function minimapClickToPan(event: MouseEvent): void {
-  const minimap = document.getElementById("minimapSurface") as SVGSVGElement | null;
+  const minimap = findEl<SVGSVGElement>("minimapSurface");
   if (!minimap) return;
 
   const point = minimap.createSVGPoint();
@@ -100,9 +100,9 @@ function minimapClickToPan(event: MouseEvent): void {
 }
 
 function updateMinimap(): void {
-  const minimap = document.getElementById("minimapSurface") as SVGSVGElement | null;
-  const viewportRect = document.getElementById("minimapViewport") as SVGRectElement | null;
-  const mapUse = document.getElementById("minimapMapUse") as SVGUseElement | null;
+  const minimap = findEl<SVGSVGElement>("minimapSurface");
+  const viewportRect = findEl<SVGRectElement>("minimapViewport");
+  const mapUse = findEl<SVGUseElement>("minimapMapUse");
   if (!minimap || !viewportRect || !mapUse) return;
 
   minimap.setAttribute("viewBox", `0 0 ${options.map.graph.width} ${options.map.graph.height}`);

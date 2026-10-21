@@ -27,7 +27,7 @@ import { Tags } from "@/generators/tags";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { Csv } from "@/services/io/csv";
-import { getArea, getAreaUnit, groupByValue } from "@/utils";
+import { findEl, getArea, getAreaUnit, groupByValue } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { errorText } from "@/utils/stringUtils";
 import { debounce, ensureEl, getPointer, isLand, parseTransform, rn, si } from "../utils";
@@ -911,7 +911,7 @@ function applyReligionPaint(changes: ReadonlyMap<number, number>): void {
   for (const [religion, cells] of groupByValue(changes)) Religions.setCells(religion, cells);
   if (changes.size) {
     Layers.draw("religions");
-    if (document.getElementById(dialogId)) refreshReligionsEditor();
+    if (findEl(dialogId)) refreshReligionsEditor();
     drawReligionCenters();
   }
 }

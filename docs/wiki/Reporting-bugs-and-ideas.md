@@ -53,11 +53,11 @@ Votes help maintainers understand demand; they do not guarantee implementation o
 
 ## Report a wrong translation
 
-Interface translations are written with AI help and corrected from user reports. If a label, tooltip or message reads wrong in your language, open a [GitHub issue](https://github.com/Azgaar/Fantasy-Map-Generator/issues/new?template=bug_report.yml) or post in `#fmg-bugs` on Discord. Include:
+Interface translations are written with AI and corrected from user reports. If a label, tooltip or message reads wrong in your language, open a [GitHub issue](https://github.com/Azgaar/Fantasy-Map-Generator/issues/new?template=bug_report.yml) or post in `#fmg-bugs` on Discord. Include:
 
 - The language and where the text appears (the tab, editor or dialog).
 - The text as it is shown, and your correction.
-- The English text when you know it: switch the _Language_ in Options to English and reload to see it.
+- The English text: switch the _Language_ in Options to English and reload to see it (required!).
 
 Map content — generated names, legends and notes — is not translated, so English there is expected. Rename it in the editors.
 

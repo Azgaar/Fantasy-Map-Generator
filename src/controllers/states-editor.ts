@@ -33,7 +33,7 @@ import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement, highlightOutline } from "@/renderers/overlays/highlight";
 import { Csv } from "@/services/io/csv";
-import { applyOption, getArea, getAreaUnit, groupByValue, speak } from "@/utils";
+import { applyOption, findEl, getArea, getAreaUnit, groupByValue, speak } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { errorText } from "@/utils/stringUtils";
 import { ensureEl, formatPrice, getAdjective, getPointer, isLand, rand, rn, si } from "../utils";
@@ -42,43 +42,7 @@ const dialogId = "statesEditor" as const;
 const LEGEND_NAME = "States"; // the legend box this editor toggles
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let filterState: { search: string };
-// the states CSV columns; "Area" is written with its unit
-const CSV_COLUMNS = [
-  "Id",
-  "State",
-  "Full Name",
-  "Form",
-  "Color",
-  "Capital",
-  "Culture",
-  "Type",
-  "Expansionism",
-  "Cells",
-  "Burgs",
-  "Area",
-  "Total Population",
-  "Rural Population",
-  "Urban Population",
-  "Provinces",
-  "Neighbors",
-  "Sales Tax",
-  "Poll Tax",
-  "Treasury",
-  "Tags"
-];
-const RULED_COLUMNS = [
-  "Full Name",
-  "Form",
-  "Color",
-  "Capital",
-  "Culture",
-  "Type",
-  "Expansionism",
-  "Sales Tax",
-  "Poll Tax",
-  "Treasury",
-  "Tags"
-];
+
 const columns: EditorColumn<State>[] = [
   { key: "color", width: "1.2em", permanent: true },
   {
@@ -108,7 +72,7 @@ const columns: EditorColumn<State>[] = [
   {
     key: "culture",
     label: t("Culture"),
-    width: "10em",
+    width: "6em",
     mobileHidden: true,
     sortBy: s => (s.i ? pack.cultures[s.culture]?.name || "" : ""),
     sortType: "alpha"
@@ -182,6 +146,43 @@ const columns: EditorColumn<State>[] = [
   { key: "focus", width: "1.1em" },
   { key: "lock", width: "1.1em" },
   { key: "remove", width: "1.4em", permanent: true }
+];
+
+const CSV_COLUMNS = [
+  "Id",
+  "State",
+  "Full Name",
+  "Form",
+  "Color",
+  "Capital",
+  "Culture",
+  "Type",
+  "Expansionism",
+  "Cells",
+  "Burgs",
+  "Area",
+  "Total Population",
+  "Rural Population",
+  "Urban Population",
+  "Provinces",
+  "Neighbors",
+  "Sales Tax",
+  "Poll Tax",
+  "Treasury",
+  "Tags"
+];
+const RULED_COLUMNS = [
+  "Full Name",
+  "Form",
+  "Color",
+  "Capital",
+  "Culture",
+  "Type",
+  "Expansionism",
+  "Sales Tax",
+  "Poll Tax",
+  "Treasury",
+  "Tags"
 ];
 
 function getFilteredStates(): State[] {
@@ -1373,7 +1374,7 @@ function showStatesChart(): void {
 
   function hideInfo(ev: any) {
     stateHighlightOff();
-    if (!document.getElementById("statesInfo")) return;
+    if (!findEl("statesInfo")) return;
     ensureEl("statesInfo").innerHTML = "&#8205;";
     select(ev.target).select("circle").classed("selected", false);
   }
@@ -1497,7 +1498,7 @@ function applyStatesPaint(changes: ReadonlyMap<number, number>, adjustLabels: bo
     for (const stateId of affectedStates) delete pack.states[stateId].label;
     Layers.draw("labels");
   }
-  if (document.getElementById(dialogId)) refreshStatesEditor();
+  if (findEl(dialogId)) refreshStatesEditor();
 }
 
 function enterAddStateMode(this: HTMLElement): void {

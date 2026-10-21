@@ -5,7 +5,7 @@ import type { Burg } from "@/generators/burgs-generator";
 import type { State } from "@/generators/states-generator";
 import { Services } from "@/services";
 import { savedMessage } from "@/services/platform";
-import { downloadFile, getFileName } from "@/utils";
+import { downloadFile, findEl, getFileName } from "@/utils";
 import { t } from "@/utils/i18n";
 import { clampTextureResolution, timeOfDayPresets } from "../data/view-3d-options";
 import { rn, throttle } from "../utils";
@@ -248,13 +248,13 @@ const toggle3dSubdivision = () => {
 };
 
 function syncErosionUI() {
-  const checkbox = document.getElementById("options3dErosion") as HTMLInputElement | null;
+  const checkbox = findEl<HTMLInputElement>("options3dErosion");
   if (checkbox) checkbox.checked = options.app.threeD.erosion;
 
-  const section = document.getElementById("options3dErosionSection") as HTMLElement | null;
+  const section = findEl("options3dErosionSection");
   if (section) section.style.display = options.app.threeD.erosion ? "block" : "none";
 
-  const subdivide = document.getElementById("options3dSubdivide") as HTMLInputElement | null;
+  const subdivide = findEl<HTMLInputElement>("options3dSubdivide");
   if (subdivide) subdivide.disabled = options.app.threeD.erosion;
 }
 

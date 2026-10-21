@@ -4,6 +4,7 @@ import { Layers } from "@/components/layers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import { tip } from "@/components/tooltips";
 import { redrawEmblem } from "@/renderers/draw-emblems";
+import { findEl } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { errorText } from "@/utils/stringUtils";
 
@@ -21,7 +22,7 @@ function toggle(): void {
     "warn",
     unpressProxyButton
   );
-  document.getElementById("addNewBurg")?.classList.add("pressed");
+  findEl("addNewBurg")?.classList.add("pressed");
 
   Layers.show("burgIcons", "labels");
 }
@@ -48,11 +49,11 @@ function stop(): void {
 }
 
 function isActive(): boolean {
-  return document.getElementById("addBurgTool")?.classList.contains("pressed") ?? false;
+  return findEl("addBurgTool")?.classList.contains("pressed") ?? false;
 }
 
 function unpressProxyButton(): void {
-  document.getElementById("addNewBurg")?.classList.remove("pressed");
+  findEl("addNewBurg")?.classList.remove("pressed");
 }
 
 export const BurgCreator = { toggle, stop };

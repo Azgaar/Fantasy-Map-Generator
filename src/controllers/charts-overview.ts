@@ -20,7 +20,7 @@ import {
 import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
 import { Csv } from "@/services/io/csv";
-import { downloadFile, getArea, getAreaUnit, getFileName, getHeight, getPrecipitation } from "@/utils";
+import { downloadFile, findEl, getArea, getAreaUnit, getFileName, getHeight, getPrecipitation } from "@/utils";
 import { t } from "@/utils/i18n";
 import { convertTemperature, ensureEl, formatPrice, isWater, rn, si } from "../utils";
 
@@ -466,7 +466,7 @@ function renderDialog() {
   ensureEl("chartsOverview__viewColumns").addEventListener("change", changeViewColumns);
   ensureEl("chartsOverview__plotBySelect").addEventListener("change", updateMetricInfo);
 
-  document.getElementById("chartsOverviewStyle")?.remove();
+  findEl("chartsOverviewStyle")?.remove();
   const style = document.createElement("style");
   style.id = "chartsOverviewStyle";
   style.textContent = /* css */ `
@@ -912,7 +912,7 @@ function updateDialogPosition() {
 function handleClose() {
   $("#chartsOverview").dialog("destroy");
   ensureEl("chartsOverview").remove();
-  document.getElementById("chartsOverviewStyle")?.remove();
+  findEl("chartsOverviewStyle")?.remove();
 }
 
 // config

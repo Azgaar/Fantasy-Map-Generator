@@ -13,7 +13,7 @@ import { ensureEl, getSegmentId, last, rn } from "../utils";
 type MeasurerEl = Selection<SVGGElement, unknown, null, undefined>;
 type MeasurerDragEvent<E extends Element = SVGGElement> = D3DragEvent<E, unknown, unknown>;
 
-const rulerLayer = () => document.getElementById("ruler") as unknown as SVGGElement;
+const rulerLayer = () => ensureEl<SVGGElement>("ruler");
 function measurerDrag<E extends Element>() {
   return drag<E, unknown>().container(rulerLayer);
 }

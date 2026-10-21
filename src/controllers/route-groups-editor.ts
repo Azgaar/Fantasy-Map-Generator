@@ -4,7 +4,7 @@ import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import type { Route } from "@/generators/routes-generator";
 import { t } from "@/utils/i18n";
-import { ensureEl } from "../utils";
+import { ensureEl, findEl } from "../utils";
 
 // custom legacy 3-arg prompt from commonUtils.initializePrompt (collides with lib.dom's var prompt)
 declare const prompt: (text: string, options: { default: string }, callback: (value: string) => void) => void;
@@ -82,8 +82,7 @@ function addGroup(): void {
 
     if (!group) return tip(t("Invalid group name"), false, "error");
     if (!group.startsWith("route-")) group = `route-${group}`;
-    if (document.getElementById(group))
-      return tip(t("Element with this name already exists. Provide a unique name"), false, "error");
+    if (findEl(group)) return tip(t("Element with this name already exists. Provide a unique name"), false, "error");
     if (Number.isFinite(+group.charAt(0))) return tip(t("Group name should start with a letter"), false, "error");
 
     // the store is authoritative: seed an entry so style edits and presets can address the group

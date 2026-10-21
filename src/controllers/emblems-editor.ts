@@ -13,7 +13,7 @@ import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
 import { cloneEmblem, emblemURL, loadEmblemIcons } from "@/services/io/emblem-image";
 import type { Emblem, EmblemCharge, HeraldicEmblem } from "@/types/emblems";
-import { capitalize, downloadFile, escapeHtml, getFileName, openURL } from "@/utils";
+import { capitalize, downloadFile, escapeHtml, findEl, getFileName, openURL } from "@/utils";
 import { t } from "@/utils/i18n";
 import { ensureEl, minmax, rn } from "../utils";
 import { ARMORIA_API, ARMORIA_GUI, armoriaRenderUrl, parseArmoria } from "./emblems/armoria";
@@ -438,7 +438,7 @@ function changeShape(): void {
     }
     currentEl.coa = { icon, size: coa.size, x: coa.x, y: coa.y };
   }
-  document.getElementById(currentId)?.remove();
+  findEl(currentId)?.remove();
   void EmblemRenderer.trigger(currentId, currentEl.coa);
   redrawEmblem(currentType, currentEl.i);
   updateEmblemData();
@@ -691,7 +691,7 @@ function toggleControl(id: "emblemPasteControl" | "emblemDownloadControl"): void
 
 async function download(format: string): Promise<void> {
   await EmblemRenderer.trigger(currentId, currentEl.coa);
-  const coa = document.getElementById(currentId)!;
+  const coa = ensureEl(currentId);
   await loadEmblemIcons([coa]);
   const size = +ensureEl<HTMLInputElement>("emblemsDownloadSize").value;
   const url = await emblemURL(coa, size, format !== "svg");
@@ -745,7 +745,7 @@ async function downloadGallery(): Promise<void> {
 
   const stateSection = `<div><h2>${t("States")}</h2>${validStates
     .map(state => {
-      const el = document.getElementById(`stateCOA${state.i}`)!;
+      const el = ensureEl(`stateCOA${state.i}`);
       return `<figure id="state_${state.i}"><a href="#provinces_${state.i}"><figcaption>${state.fullName}</figcaption>${getSVG(el, 200)}</a></figure>`;
     })
     .join("")}</div>`;
@@ -755,7 +755,7 @@ async function downloadGallery(): Promise<void> {
       const stateProvinces = validProvinces.filter(p => p.state === state.i);
       const figures = stateProvinces
         .map(province => {
-          const el = document.getElementById(`provinceCOA${province.i}`)!;
+          const el = ensureEl(`provinceCOA${province.i}`);
           return `<figure id="province_${province.i}"><a href="#burgs_${province.i}"><figcaption>${province.fullName}</figcaption>${getSVG(el, 200)}</a></figure>`;
         })
         .join("");
@@ -774,7 +774,7 @@ async function downloadGallery(): Promise<void> {
           const provinceBurgs = stateBurgs.filter(b => pack.cells.province[b.cell] === province.i);
           const provinceBurgFigures = provinceBurgs
             .map(burg => {
-              const el = document.getElementById(`burgCOA${burg.i}`);
+              const el = findEl(`burgCOA${burg.i}`);
               if (!el) return "";
               return `<figure id="burg_${burg.i}"><figcaption>${burg.name}</figcaption>${getSVG(el, 200)}</figure>`;
             })
@@ -788,7 +788,7 @@ async function downloadGallery(): Promise<void> {
       const stateBurgOutOfProvinces = stateBurgs.filter(b => !pack.cells.province[b.cell]);
       const stateBurgOutOfProvincesFigures = stateBurgOutOfProvinces
         .map(burg => {
-          const el = document.getElementById(`burgCOA${burg.i}`);
+          const el = findEl(`burgCOA${burg.i}`);
           if (!el) return "";
           return `<figure id="burg_${burg.i}"><figcaption>${burg.name}</figcaption>${getSVG(el, 200)}</figure>`;
         })
@@ -803,7 +803,7 @@ async function downloadGallery(): Promise<void> {
   const neutralsSection = neutralBurgs.length
     ? `<div><h2>${t("Independent burgs")}</h2>${neutralBurgs
         .map(burg => {
-          const el = document.getElementById(`burgCOA${burg.i}`);
+          const el = findEl(`burgCOA${burg.i}`);
           if (!el) return "";
           return `<figure id="burg_${burg.i}"><figcaption>${burg.name}</figcaption>${getSVG(el, 200)}</figure>`;
         })

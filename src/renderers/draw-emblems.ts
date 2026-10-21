@@ -185,7 +185,7 @@ export function invalidateEmblems(): void {
 /** Layer teardown: drop the scenes so the next draw rebuilds them from the current data. */
 export function removeEmblems(): void {
   invalidateEmblems();
-  for (const type of TYPES) document.getElementById(GROUPS[type])?.replaceChildren();
+  for (const type of TYPES) findEl(GROUPS[type])?.replaceChildren();
   evictUnreferencedDefinitions(); // the layer holds nothing now, so only open dialogs keep a shield alive
 }
 

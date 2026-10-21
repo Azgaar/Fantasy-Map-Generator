@@ -21,7 +21,7 @@ import { Population } from "@/generators/population-generator";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { Csv } from "@/services/io/csv";
 import type { PackedGraph } from "@/types/PackedGraph";
-import { getArea, getAreaUnit, groupByValue, openURL } from "@/utils";
+import { findEl, getArea, getAreaUnit, groupByValue, openURL } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, getRandomColor, isLand, rn, si } from "../utils";
 
@@ -505,7 +505,7 @@ function applyBiomesChange(changes: ReadonlyMap<number, number>): void {
   for (const [biome, cells] of groupByValue(changes)) Biomes.setCells(biome, cells);
   if (changes.size) {
     Layers.draw("biomes");
-    if (document.getElementById(dialogId)) refreshBiomesEditor();
+    if (findEl(dialogId)) refreshBiomesEditor();
   }
 }
 

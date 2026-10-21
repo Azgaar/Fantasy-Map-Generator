@@ -3,6 +3,7 @@ import { type IconSetId, IconSets } from "@/components/icon-sets";
 import { tip } from "@/components/tooltips";
 import { emojiName } from "@/data/icons-list";
 import type { IconPaint } from "@/types/icons";
+import { findEl } from "@/utils";
 import { sanitizeSvgIcon } from "@/utils/fileUtils";
 import { t } from "@/utils/i18n";
 import { escapeHtml } from "@/utils/stringUtils";
@@ -215,7 +216,7 @@ class IconLibrary {
 
   /** the symbol's frame in the page, `[x, y, width, height]` */
   private frame(id: string): number[] | null {
-    return this.parseFrame(document.getElementById(id)?.getAttribute("viewBox") ?? "");
+    return this.parseFrame(findEl(id)?.getAttribute("viewBox") ?? "");
   }
 
   /** where anchored art (its set declares `em`) sits around its point, in em; null for boxed icons */
@@ -308,7 +309,7 @@ class IconLibrary {
   /** Glyphs inherit fill, font and shadow from where they are drawn; a stroke would outline emoji */
   private ensureGlyph(id: string): void {
     const text = this.glyphText(id);
-    if (text === null || document.getElementById(id)) return;
+    if (text === null || findEl(id)) return;
     const symbol = /* html */ `<symbol id="${id}" viewBox="0 0 100 100" overflow="visible">
       <text x="50" y="50" font-size="100" text-anchor="middle" dominant-baseline="central" stroke="none">${escapeHtml(text)}</text></symbol>`;
     this.ensureGroup("glyph")?.insertAdjacentHTML("beforeend", symbol);

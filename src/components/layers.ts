@@ -307,7 +307,24 @@ const mapLayers = [
     draw: drawLakes
   }),
   new Layer({ id: "biomes", parent: "viewbox", draw: drawBiomes }),
-  new Layer({ id: "cells", parent: "viewbox", draw: drawCells }),
+  new Layer({
+    id: "cells",
+    parent: "viewbox",
+    children: [
+      {
+        id: "cellIndexes",
+        tag: "g",
+        // the stroke is a halo under the digits; the cells' own dashes don't apply to it
+        attrs: {
+          "paint-order": "stroke",
+          "stroke-linejoin": "round",
+          "stroke-dasharray": "none",
+          "pointer-events": "none"
+        }
+      }
+    ],
+    draw: drawCells
+  }),
   new Layer({ id: "grid", element: "gridOverlay", parent: "viewbox", draw: drawGrid }),
   new Layer({ id: "coordinates", parent: "viewbox", draw: drawCoordinates }),
   new Layer({

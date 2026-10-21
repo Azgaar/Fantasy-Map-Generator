@@ -471,6 +471,12 @@ Static content: lookup tables, templates, tuning constants, reference lists.
   silently dropped field corrupts saves.
 - **Pure functions.** Serialization reads state and returns bytes; it owns no state of its
   own.
+- **Migrations are isolated and one-time.** Upgrading an older `.map` belongs only in
+  `src/services/io/auto-update.ts`, in the `isOlderThan("<version>")` block of the version that
+  changed the format. It runs once, on load of an older file; saving writes the current shape, so
+  the next load skips it. Code outside `auto-update` (the loader, generators, renderers, editors)
+  assumes the current shape: it never back-fills fields older maps lack, nor carries fallbacks for
+  them. When a format changes, add the migration block, not a guard in the code that reads the field.
 
 ## Services
 

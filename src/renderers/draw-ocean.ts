@@ -1,6 +1,6 @@
 import { curveBasisClosed, line } from "d3";
 import { Ocean } from "@/generators/ocean-generator";
-import { rn, round } from "@/utils";
+import { findEl, rn, round } from "@/utils";
 import { ensureEl } from "@/utils/nodeUtils";
 import { getCoastalDistances, getCoastalWaves } from "./coastal-waves";
 import { drawCoastalBands, getCoastalBandReach, removeCoastalBands } from "./draw-coastal-bands";
@@ -97,7 +97,7 @@ export function removeOcean(): void {
 function removeCoastalWaves(): void {
   clearOceanCache("oceanWaves");
   ensureEl("oceanWaves").replaceChildren();
-  document.getElementById("waves-mask")?.remove();
+  findEl("waves-mask")?.remove();
 }
 
 /** sparse wave dashes clipped to the sea, with a clear gap along the coast */

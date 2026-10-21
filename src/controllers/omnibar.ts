@@ -698,7 +698,7 @@ function match(text: string, query: string): number {
 function getMapActionUnavailable(): string {
   if (typeof pack === "undefined" || !pack.cells?.i?.length) return t("Generate or load a map first");
   if (typeof customization !== "undefined" && customization) return t("Exit customization mode first");
-  if (document.getElementById("canvas3d")) return t("Switch to the 2D map first");
+  if (findEl("canvas3d")) return t("Switch to the 2D map first");
   return "";
 }
 

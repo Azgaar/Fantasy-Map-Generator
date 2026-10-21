@@ -249,7 +249,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         });
     }
 
-    if (!document.getElementById("freshwater")) {
+    if (!findEl("freshwater")) {
       select("#lakes").append("g").attr("id", "freshwater");
       select("#lakes")
         .select("#freshwater")
@@ -260,7 +260,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         .attr("filter", null);
     }
 
-    if (!document.getElementById("salt")) {
+    if (!findEl("salt")) {
       select("#lakes").append("g").attr("id", "salt");
       select("#lakes")
         .select("#salt")
@@ -272,7 +272,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     }
 
     // v1.1 added new lake and coast groups
-    if (!document.getElementById("sinkhole")) {
+    if (!findEl("sinkhole")) {
       select("#lakes").append("g").attr("id", "sinkhole");
       select("#lakes").append("g").attr("id", "frozen");
       select("#lakes").append("g").attr("id", "lava");
@@ -487,7 +487,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   if (isOlderThan("1.6.0")) {
     // v1.6 changed rivers data
     for (const river of pack.rivers) {
-      const el = document.getElementById(`river${river.i}`);
+      const el = findEl(`river${river.i}`);
       if (el) {
         river.widthFactor = +el.getAttribute("data-width")!;
         el.removeAttribute("data-width");
@@ -570,7 +570,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     if (ruler) ruler.style.display = pack.measurers.length ? "" : "none";
 
     // 1.61 changed oceanicPattern from rect to image
-    const pattern = document.getElementById("oceanic")!;
+    const pattern = ensureEl("oceanic");
     const filter = pattern.firstElementChild!.getAttribute("filter");
     const href = filter ? `./images/${filter.replace("url(#", "").replace(")", "")}.png` : "";
     pattern.innerHTML = /* html */ `<image id="oceanicPattern" href="${href}" width="100" height="100" opacity="0.2"></image>`;
@@ -583,9 +583,9 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.63.0")) {
     // v1.63 changed ocean pattern opacity element
-    const oceanPattern = document.getElementById("oceanPattern");
+    const oceanPattern = findEl("oceanPattern");
     if (oceanPattern) oceanPattern.removeAttribute("opacity");
-    const oceanicPattern = document.getElementById("oceanicPattern");
+    const oceanicPattern = findEl("oceanicPattern");
     if (oceanicPattern && !oceanicPattern.getAttribute("opacity")) oceanicPattern.setAttribute("opacity", "0.2");
   }
 
@@ -605,7 +605,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     const defaultWidthFactor = rn(1 / (options.map.graph.points / 10000) ** 0.25, 2);
 
     for (const river of rivers) {
-      const node = document.getElementById(`river${river.i}`) as unknown as SVGPathElement | null;
+      const node = findEl<SVGPathElement>(`river${river.i}`);
       if (node && !river.cells) {
         const riverCells = [];
         const riverPoints: [number, number][] = [];
@@ -648,8 +648,8 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.7.0")) {
     // v1.7 changed markers data
-    const defs = document.getElementById("defs-markers");
-    const markersGroup = document.getElementById("markers");
+    const defs = findEl("defs-markers");
+    const markersGroup = findEl("markers");
 
     if (defs && markersGroup) {
       const markerElements = markersGroup.querySelectorAll<SVGUseElement>("use");
@@ -706,7 +706,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.73.0")) {
     // v1.73 moved the hatching patterns out of the user's SVG
-    document.getElementById("hatching")?.remove();
+    findEl("hatching")?.remove();
 
     // v1.73 added zone type to UI, ensure type is populated
     const zones = Array.from(document.querySelectorAll<SVGGElement>("#zones > g"));
@@ -1152,7 +1152,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       pack.ice = [];
       let iceId = 0;
 
-      const iceGroup = document.getElementById("ice");
+      const iceGroup = findEl("ice");
       if (iceGroup) {
         // Migrate glaciers (type="iceShield")
         iceGroup.querySelectorAll<SVGPolygonElement>("polygon[type='iceShield']").forEach(polygon => {
@@ -1423,7 +1423,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       styles.labels.groups[name] = labelGroupFromLegacy(oldStyle);
 
       for (const textEl of addedGroup.querySelectorAll<SVGTextElement>(":scope > text")) {
-        const pathEl = document.getElementById(`textPath_${textEl.id}`) as SVGPathElement | null;
+        const pathEl = findEl<SVGPathElement>(`textPath_${textEl.id}`);
         if (!pathEl) continue;
 
         const label = getPathLabel({ textEl, pathEl });
@@ -1458,7 +1458,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       const state = pack.states[stateId];
       if (!state) continue;
 
-      const pathEl = document.getElementById(`textPath_${textEl.id}`) as SVGPathElement | null;
+      const pathEl = findEl<SVGPathElement>(`textPath_${textEl.id}`);
       // the renderer reproduces only one of the two names; a label showing the other must be pinned
       const renderedName = stateMode === "short" ? state.name : state.fullName || state.name;
       if (pathEl) state.label = getPathLabel({ textEl, pathEl, names: [renderedName] });
@@ -1531,7 +1531,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     }
 
     provinceGroup?.remove();
-    document.getElementById("textPaths")?.replaceChildren();
+    findEl("textPaths")?.replaceChildren();
     labels.replaceChildren();
     // record the state for the 1.144 migration to read: the content this wiped is redrawn by the load routine,
     // so an empty group must not be mistaken for a layer that was off
@@ -1543,7 +1543,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.142.0")) {
     // v1.142.0 moved relief icons from the svg to pack.relief, rendered within the viewport only
-    const terrainEl = document.getElementById("terrain");
+    const terrainEl = findEl("terrain");
     if (terrainEl) {
       // v1.142.0 moved the relief style from the #terrain attributes to the style store
       const set = terrainEl.getAttribute("set");
@@ -1997,7 +1997,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   if (isOlderThan("1.153.2")) {
     // the 1.61 step wrote the "no pattern" href unquoted, leaving the text width="100" as the pattern
     const isBroken = (href: unknown) => typeof href === "string" && href !== "" && !/^(\.\/images\/|data:)/.test(href);
-    const image = document.getElementById("oceanicPattern");
+    const image = findEl("oceanicPattern");
     if (image && isBroken(image.getAttribute("href"))) image.setAttribute("href", "");
     const record = data[48] ? safeParseJSON(data[48]) : undefined;
     if (isBroken(record?.ocean?.options?.pattern)) {
@@ -2036,10 +2036,10 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     // the ocean pattern tile lives in its layer now, and an id clash would shadow it
     for (const tile of document.querySelectorAll("pattern#oceanic")) if (!tile.closest("#oceanPattern")) tile.remove();
     // a burg group element hangs directly off the layer now, with its anchor part inside it
-    document.getElementById("anchors")?.remove();
-    document.getElementById("burgIcons")?.remove();
-    document.getElementById("icons")?.remove(); // the layer group itself: it is #burgIcons now
-    document.getElementById("labels")?.removeAttribute("font-size"); // the zoom sets the layer font the groups size from
+    findEl("anchors")?.remove();
+    findEl("burgIcons")?.remove();
+    findEl("icons")?.remove(); // the layer group itself: it is #burgIcons now
+    findEl("labels")?.removeAttribute("font-size"); // the zoom sets the layer font the groups size from
 
     // v1.154.0 changed the relief icons data format
     const { set: incomingSet, size: incomingSize } = Styles.parse(data[48] ? safeParseJSON(data[48]) : undefined).relief
@@ -2144,7 +2144,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         for (const entity of entities) {
           const coa = entity.coa as typeof entity.coa & { custom?: boolean };
           if (!coa?.custom) continue;
-          const definition = document.getElementById(`${type}COA${entity.i}`);
+          const definition = findEl(`${type}COA${entity.i}`);
           // a removed entity is never drawn again, so its picture would only clutter the Custom icons
           const icon = entity.removed ? "" : legacyEmblemIcon(definition, pictures);
           entity.coa = { icon, size: coa.size, x: coa.x, y: coa.y };
@@ -2223,6 +2223,14 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   }
 
   if (isOlderThan("1.155.0")) {
+    // v1.155.0 added tags to every taggable entity
+    const { states, provinces, cultures, religions, burgs, markers, rivers, routes, zones, features, goods } = pack;
+    const regiments = (states ?? []).flatMap(state => state?.military ?? []);
+    const tagged = [states, provinces, cultures, religions, burgs, markers, rivers, routes, zones, features, goods];
+    for (const entity of [...tagged, regiments].flat() as { tags?: unknown }[]) {
+      if (entity && typeof entity === "object" && !Array.isArray(entity.tags)) entity.tags = [];
+    }
+
     // v1.155.0 added state.tariffs
     for (const state of pack.states ?? []) {
       if (!state) continue;
@@ -2234,6 +2242,9 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         }
       }
     }
+
+    // a single-box legend dragged then hidden left its offset on the layer, pushing new boxes off the canvas
+    findEl("legend")?.removeAttribute("transform");
   }
 }
 

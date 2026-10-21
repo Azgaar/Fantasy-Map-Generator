@@ -6,7 +6,7 @@ import { Pins } from "@/components/pins";
 import { Lore } from "@/generators/lore";
 import { Names } from "@/generators/names-generator";
 import { t } from "@/utils/i18n";
-import { ensureEl } from "../utils";
+import { ensureEl, findEl } from "../utils";
 
 const DIALOG_ID = "loreEditor";
 
@@ -179,7 +179,7 @@ function regenerateEra(): void {
 
 /** Show the lore again after something else changed it */
 function refresh(): void {
-  if (document.getElementById(DIALOG_ID)) fillInputs();
+  if (findEl(DIALOG_ID)) fillInputs();
 }
 
 export const LoreEditor = { open, refresh };

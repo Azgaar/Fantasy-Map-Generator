@@ -18,7 +18,7 @@ import type { Burg } from "@/generators/burgs-generator";
 import { Tags } from "@/generators/tags";
 import { removeEmblem } from "@/renderers/draw-emblems";
 import { Csv } from "@/services/io/csv";
-import { getHeight, getLatitude, getLongitude } from "@/utils";
+import { findEl, getHeight, getLatitude, getLongitude } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { convertTemperature, ensureEl, getTemperatureLikeness, rn, si } from "../utils";
 
@@ -275,7 +275,7 @@ function renderDialog(): void {
 }
 
 function closeBurgsOverview(): void {
-  if (document.getElementById("addBurgTool")?.classList.contains("pressed")) void Controllers.BurgCreator.stop();
+  if (findEl("addBurgTool")?.classList.contains("pressed")) void Controllers.BurgCreator.stop();
   $("#burgsOverview").dialog("destroy");
   ensureEl("burgsOverview").remove();
 }

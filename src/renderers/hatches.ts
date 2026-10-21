@@ -1,3 +1,5 @@
+import { findEl } from "@/utils";
+
 // Colored hatchings: a base pattern from #defs-hatching recolored on demand, "url(#hatch3-c0392b)"
 const HATCH_FILL = /^url\(#(hatch\d+)(?:-([\da-f]{6}))?\)$/;
 const BLACK = "#000000";
@@ -30,8 +32,8 @@ class HatchPatterns {
     const parsed = this.parse(fill);
     if (!parsed || parsed.color === BLACK) return;
     const id = fill.slice(5, -1);
-    const base = document.getElementById(parsed.hatch) as SVGPatternElement | null;
-    if (!base || document.getElementById(id)) return;
+    const base = findEl<SVGPatternElement>(parsed.hatch);
+    if (!base || findEl(id)) return;
     base.parentElement!.append(this.recolor(base, id, parsed.color));
   }
 

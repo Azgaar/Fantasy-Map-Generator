@@ -19,6 +19,7 @@ import { confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { dialogState } from "@/components/dialog/state";
 import { Pins } from "@/components/pins";
 import { tip } from "@/components/tooltips";
+import { findEl } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { isElectron } from "./platform";
 
@@ -26,26 +27,16 @@ export const VERSION = "1.155.0";
 
 // new changes on top
 const latestPublicChanges = [
-  "Translation: UI translated to 22 languages",
+  "Translation: UI translated to 29 languages",
+  "Map context menu",
   "Advanced options: configurable map lattice",
   "Trade tariffs and embargoes",
+  "View-only mode for saved maps",
   "Free-text tags for states and other entities (hidden by default)",
   "Color picker rework",
-  "View-only mode for saved maps",
   "CSV upload for states, religions, provinces, burgs, rivers, routes, markers, zones, biomes and features",
   "Population layer: colored cells style",
-  // old ones
-  "Azgaar Assistant can read map data and propose changes when your own AI key is provided",
-  "Icons: unified icon picker and uploader for goods, markers, regiments, burgs and emblems",
-  "Style: the Style tab is reworked",
-  "Atlas preset reworked",
-  "Relief: any icon can be a relief icon",
-  "Relief: new relief icons pack",
-  "Biome editor: editable relief icon pools",
-  "Emblems: live updates on edit in Armoria",
-  "Saving: choose the map file destination",
-  "States Editor: keep merged states as provinces",
-  "Diplomacy Overview: set relations on map click"
+  "Altitude legend: heightmap colors"
 ];
 
 export function parseMapVersion(version: string): string {
@@ -184,7 +175,7 @@ function announceVersion(): void {
   if (parseMapVersion(VERSION) !== VERSION) alert("versioning: Invalid format or parsing function");
 
   document.title += ` v${VERSION}`;
-  const loadingScreenVersion = document.getElementById("versionText");
+  const loadingScreenVersion = findEl("versionText");
   if (loadingScreenVersion) loadingScreenVersion.innerText = `v${VERSION}`;
 
   const storedVersion = localStorage.getItem("version");

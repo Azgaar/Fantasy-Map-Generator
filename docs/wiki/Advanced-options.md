@@ -52,6 +52,8 @@ On square, 45° and triangle grids at jitter 0, cells touching only at a corner 
 - The Transform and Submap tools keep the map's own sampling and jitter.
 - The heightmap selection previews use the requested sampling.
 
+To number the cells of a board, turn on the Cells layer and check **Indexes** in its style. Numbers are centered in the cells; the style sets their color, font, size and a halo stroke for contrast, and Shift x / Shift y move them, in font-size units, e.g. to the top of each hex.
+
 To get a heightmap image that fits a square tile grid one cell per tile, generate with the Square board preset and export the heightmap image.
 
 ## Interface settings

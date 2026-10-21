@@ -9,6 +9,7 @@ import type { ChartRow, Widget } from "@/services/assistant/chats";
 import type { Region } from "@/services/io/export";
 import type { Emblem } from "@/types/emblems";
 import type { Point } from "@/types/global";
+import { findEl } from "@/utils";
 import { t } from "@/utils/i18n";
 import { type LinkResolver, renderMarkdown } from "@/utils/markdown";
 import { rn } from "@/utils/numberUtils";
@@ -44,7 +45,7 @@ let insetCount = 0;
 let marked: Of<"entities"> | null = null;
 
 /** The Assistant panel over the map: what it reveals is centred beside it */
-const panel = () => document.getElementById("assistant")?.closest(".ui-dialog")?.getBoundingClientRect();
+const panel = () => findEl("assistant")?.closest(".ui-dialog")?.getBoundingClientRect();
 
 function linkableCommand(id: string) {
   const command = MAP_COMMANDS.find(command => command.id === id);
@@ -332,7 +333,7 @@ async function drawInset(widget: Of<"inset">, inset: Inset): Promise<void> {
   } catch {
     inset.failed = true;
   }
-  const button = document.getElementById(inset.id);
+  const button = findEl(inset.id);
   if (button) button.innerHTML = insetBody(widget, inset);
 }
 

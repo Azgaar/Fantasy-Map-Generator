@@ -9,7 +9,7 @@ import { clearMarkerRadius, drawMarkerRadius } from "@/renderers/draw-marker-rad
 import { setMarkersFilter } from "@/renderers/draw-markers";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { Csv } from "@/services/io/csv";
-import { ensureEl, getLatitude, getLongitude } from "@/utils";
+import { ensureEl, findEl, getLatitude, getLongitude } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 
 let center: Marker | null = null;
@@ -50,7 +50,7 @@ function open(marker: Marker): void {
 }
 
 function renderDialog(): void {
-  document.getElementById("markersInRadius")?.remove();
+  findEl("markersInRadius")?.remove();
 
   const centerName = center ? markerName(center) : "";
   const html = /* html */ `
@@ -138,7 +138,7 @@ function onMarkerListClick(event: MouseEvent): void {
   if (target.classList.contains("icon-trash-empty")) return void confirmRemove(marker);
 
   zoomTo(marker.x, marker.y, 8, 1600);
-  const el = document.getElementById(`marker${i}`);
+  const el = findEl(`marker${i}`);
   if (el) highlightElement(el, 2);
 }
 
@@ -160,7 +160,7 @@ function confirmRemove(marker: Marker): void {
     confirm: t("Remove"),
     onConfirm: () => {
       Markers.remove(marker.i);
-      document.getElementById(`marker${marker.i}`)?.remove();
+      findEl(`marker${marker.i}`)?.remove();
       refreshEditors();
       applyRadius(getRadius());
     }
@@ -204,7 +204,7 @@ function closeMarkersInRadius(): void {
   center = null;
   clearMainTip();
   $("#markersInRadius").dialog("destroy");
-  document.getElementById("markersInRadius")?.remove();
+  findEl("markersInRadius")?.remove();
 }
 
 export const MarkersInRadius = { open };

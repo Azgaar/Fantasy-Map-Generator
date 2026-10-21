@@ -20,6 +20,7 @@ beforeEach(() => {
     width: 60,
     height: 40
   });
+  (SVGElement.prototype as unknown as { getComputedTextLength: () => number }).getComputedTextLength = () => 30;
   setViewportSize(800, 600);
   legendPositions.clear();
 });
@@ -84,6 +85,17 @@ describe("drawLegend", () => {
     styles.legend.options.columns = 8;
     styles.legend.groups.box.attrs.fill = "#ffffff";
     styles.legend.attrs.fill = "#000000";
+  });
+
+  it("centres the title over the wider of the items and itself", () => {
+    const textLength = SVGElement.prototype as unknown as { getComputedTextLength: () => number };
+    drawLegend("States", items);
+    // padding 13 + items width 60 / 2
+    expect(boxOf("States")!.querySelector(".legendLabel")?.getAttribute("x")).toBe("43");
+
+    textLength.getComputedTextLength = () => 100;
+    drawLegend("States", items);
+    expect(boxOf("States")!.querySelector(".legendLabel")?.getAttribute("x")).toBe("63");
   });
 
   it("fitLegendBox positions from the remembered spot, ignoring the retired data attrs", () => {

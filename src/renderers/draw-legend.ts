@@ -5,7 +5,7 @@
 import { type D3DragEvent, select } from "d3";
 import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
-import { minmax, parseTransform, rn } from "@/utils";
+import { findEl, minmax, parseTransform, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { type LegendPosition, legendPositions } from "./legend-positions";
 
@@ -74,16 +74,18 @@ export function drawLegend(name: string, data: LegendItem[]): void {
     }
   }
 
-  labels
+  // measured before the title is in, so it centres over the wider of itself and the items
+  const itemsWidth = data.length ? getBBox(node).width : 0;
+  const title = labels
     .append("text")
     .attr("text-rendering", "optimizeSpeed")
     .attr("text-anchor", "middle")
     .attr("font-weight", "bold")
     .attr("font-size", "1.2em")
     .attr("class", "legendLabel")
-    .text(name)
-    .attr("x", colOffset + getBBox(node).width / 2)
-    .attr("y", fontSize * 1.1 + vOffset / 2);
+    .text(name);
+  const titleWidth = (title.node() as SVGTextElement).getComputedTextLength();
+  title.attr("x", colOffset + Math.max(itemsWidth, titleWidth) / 2).attr("y", fontSize * 1.1 + vOffset / 2);
 
   const bbox = getBBox(node);
   box
@@ -226,7 +228,7 @@ function placeNewBox(node: SVGGElement): LegendPosition {
 
 // maps saved before the legend could hold several boxes keep their single box in the layer group itself
 function adoptLegacyLegend(): void {
-  const layer = document.getElementById("legend");
+  const layer = findEl("legend");
   if (!layer?.hasAttribute("data")) return;
 
   const name = layer.querySelector("#legendLabel")?.textContent || "Legend";

@@ -12,27 +12,32 @@ Check out [Dev board](https://github.com/users/Azgaar/projects/3/views/1?sumFiel
 
 Current version of the Fantasy Map Generator is the latest `master` branch. You can download it here: https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip. Also see [the wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#can-i-use-the-generator-offline).
 
-**[1.155.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.155.0) - 2026-10-24**:
+**[1.155.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.155.0) - 2026-10-21**:
 
+- Interface translation: 29 languages besides English
+- The Google Translate widget removed
+- Map context menu
+- Advanced options: configurable map lattice
+- Options: Advanced Options dialog
+- Trade tariffs and embargoes
 - Free-text tags for states and other entities
+- View-only mode for saved maps
 - CSV upload for states, religions, provinces, burgs, rivers, routes, markers, zones, biomes and features
 - Color picker rework
-- View-only mode for saved maps
-- Interface translations: 29 languages besides English
-- The Google Translate widget removed
-- Advanced options: configurable map lattice
-- Trade tariffs and embargoes
-- Options: Advanced Options dialog
 - Population layer: Shading land by population density by _[inviktos](https://github.com/inviktos)_
 - Altitude legend: heightmap colors by _[Avengium](https://github.com/Avengium)_
 - Rulers style: line and dash colors and a toggle to hide the measured values by _[Avengium](https://github.com/Avengium)_
 - Remove confirmation: Enter to confirm; Shift+Click on delete button to remove immediately without confirmation dialog
 - Labels style: underlined parameter in label style editor
-- Cells layer: optionally render cell indexes at cell centers and show cell/grid IDs in map tooltip
+- Cells layer: optionally render cell indexes with their own style (color, halo, font, size, shift, clip), and show cell/grid IDs in map tooltip
 - Travel Builder: directional arrow markers on journey paths and per-segment notes editable in Notes Editor
 - Paint editor: lock elements from being painted over
-- Military forces: hide/show individual regiments on the map and toggle to show regiment names below units
+- Military forces: hide/show individual regiments and toggle to show regiment names below units
 - Population layer: adjustable 3D bar height multiplier
+- Journey arrows and per-segment notes
+- Enter or Shift+Click to delete
+- Underlined labels
+- Cell id display
 
 # Releases
 

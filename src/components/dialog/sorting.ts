@@ -1,4 +1,4 @@
-import { ensureEl } from "@/utils";
+import { ensureEl, findEl } from "@/utils";
 import { type DialogSort, dialogState } from "./state";
 import type { EditorColumn } from "./table";
 
@@ -7,7 +7,7 @@ const columnSorts = new WeakMap<HTMLElement, DialogSort[]>();
 
 /** Make every .sortable header in the container sort the lines below it */
 export function applySortingByHeader(dialogId: string, headerContainerId = `${dialogId}Header`): void {
-  const container = document.getElementById(headerContainerId);
+  const container = findEl(headerContainerId);
   if (!container) return;
 
   const defaultSort = getActiveSort(container);

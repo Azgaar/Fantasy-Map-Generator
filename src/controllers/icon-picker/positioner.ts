@@ -3,7 +3,7 @@
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { CustomIcons, Icons } from "@/components/icons";
 import { tip } from "@/components/tooltips";
-import { ensureEl, escapeHtml } from "@/utils";
+import { ensureEl, escapeHtml, findEl } from "@/utils";
 import { t } from "@/utils/i18n";
 import { IconPictures } from "./pictures";
 
@@ -30,15 +30,15 @@ type Frame = { x: number; y: number; side: number };
 
 /** Cancel the positioner, or only the one positioning icon `id`: its frame is stale once the picture changes */
 export function closePositioner(id?: string): void {
-  const dialog = document.getElementById(DIALOG);
+  const dialog = findEl(DIALOG);
   if (dialog && (!id || dialog.dataset.icon === id)) $(dialog).dialog("close");
 }
 
 export function openPositioner(id: string): void {
   const icon = CustomIcons.get(id);
-  if (!icon || !document.getElementById(id)) return;
+  if (!icon || !findEl(id)) return;
   // looked up on every change: a sync of the custom icons replaces the symbol
-  const setSymbolFrame = (viewBox: string) => document.getElementById(id)?.setAttribute("viewBox", viewBox);
+  const setSymbolFrame = (viewBox: string) => findEl(id)?.setAttribute("viewBox", viewBox);
 
   const original = icon.viewBox;
   const reference = toFrame(original);
@@ -50,7 +50,7 @@ export function openPositioner(id: string): void {
     /* html */ `<div id="${DIALOG}" class="dialog" data-icon="${escapeHtml(id)}">
       <style>${STYLE}</style>
       <div class="stage" data-tip="${t("Drag to pan, scroll to zoom")}">
-        <svg><g class="art"${Icons.paintAttributes(id)}>${document.getElementById(id)!.innerHTML}</g><path class="shade" fill="#000" fill-opacity=".45" fill-rule="evenodd"/><rect class="edge" fill="none" stroke="#d0240f" vector-effect="non-scaling-stroke" stroke-dasharray="4 3"/></svg>
+        <svg><g class="art"${Icons.paintAttributes(id)}>${ensureEl(id).innerHTML}</g><path class="shade" fill="#000" fill-opacity=".45" fill-rule="evenodd"/><rect class="edge" fill="none" stroke="#d0240f" vector-effect="non-scaling-stroke" stroke-dasharray="4 3"/></svg>
       </div>
       <div class="controls">
         <span>${t("Zoom")}</span>

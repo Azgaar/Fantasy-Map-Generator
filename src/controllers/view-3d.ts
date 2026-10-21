@@ -2,7 +2,7 @@ import { is3dView } from "@/components/options/view-mode";
 import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
 import { globeResolutionFor, timeOfDayPresets } from "@/data/view-3d-options";
-import { ensureEl } from "@/utils";
+import { ensureEl, findEl } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 
 // View3d controller: enters/exits the 3D view and owns the 3D settings dialog.
@@ -46,11 +46,11 @@ const isCached = (key?: string) => loadRenderer().then(m => m.isCached(key));
 const heightAt = (x: number, y: number, scale: number) => loadRenderer().then(m => m.heightAt(x, y, scale));
 
 function teardown(): void {
-  if (!document.getElementById("canvas3d")) return;
+  if (!findEl("canvas3d")) return;
   void stop();
-  document.getElementById("canvas3d")?.remove();
-  if (document.getElementById("options3d")) $("#options3d").dialog("close");
-  if (document.getElementById("preview3d")) $("#preview3d").dialog("close");
+  findEl("canvas3d")?.remove();
+  if (findEl("options3d")) $("#options3d").dialog("close");
+  if (findEl("preview3d")) $("#preview3d").dialog("close");
 }
 
 function enterStandard(): void {
@@ -116,7 +116,7 @@ async function open(type: string): Promise<void> {
 }
 
 function renderPreviewDialog(): void {
-  document.getElementById("preview3d")?.remove();
+  findEl("preview3d")?.remove();
   const editorHtml = /* html */ `<div id="preview3d" class="dialog stable" style="padding: 0px"></div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 }
@@ -128,7 +128,7 @@ function closePreview3d(): void {
 }
 
 function resize3d(): void {
-  const canvas = document.getElementById("canvas3d") as HTMLCanvasElement | null;
+  const canvas = findEl<HTMLCanvasElement>("canvas3d");
   if (!canvas) return;
   const preview3d = ensureEl("preview3d");
   canvas.width = parseFloat(preview3d.style.width);
@@ -138,7 +138,7 @@ function resize3d(): void {
 
 // --- settings dialog ---------------------------------------------------------
 function toggleOptions(): void {
-  if (document.getElementById("options3d")) {
+  if (findEl("options3d")) {
     $("#options3d").dialog("close");
     return;
   }
@@ -157,7 +157,7 @@ function toggleOptions(): void {
 }
 
 function renderOptionsDialog(): void {
-  document.getElementById("options3d")?.remove();
+  findEl("options3d")?.remove();
   const editorHtml = /* html */ `<div id="options3d" class="dialog stable">
       <div id="options3dMesh" style="display: none">
         <div data-tip="${sentences(t("Set map rotation speed"), t("Set to 0 is you want to toggle off the rotation"))}">
@@ -371,7 +371,7 @@ function setInput(id: string, value: string | number): void {
 
 function updateValues(): void {
   const o = options.app.threeD;
-  const globe = (document.getElementById("canvas3d") as HTMLElement | null)?.dataset.type === "viewGlobe";
+  const globe = findEl("canvas3d")?.dataset.type === "viewGlobe";
   ensureEl("options3dMesh").style.display = globe ? "none" : "block";
   ensureEl("options3dGlobe").style.display = globe ? "block" : "none";
   ensureEl("options3dOBJSave").style.display = globe ? "none" : "inline-block";

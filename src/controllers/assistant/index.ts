@@ -29,7 +29,7 @@ import {
 import { askProvider } from "@/services/assistant/provider/answerer";
 import * as Connection from "@/services/assistant/provider/connection";
 import { PROVIDERS } from "@/services/assistant/provider/providers";
-import { ensureEl } from "@/utils";
+import { ensureEl, findEl } from "@/utils";
 import { t } from "@/utils/i18n";
 import { renderMarkdown } from "@/utils/markdown";
 import { errorText, escapeHtml } from "@/utils/stringUtils";
@@ -79,7 +79,7 @@ const writable = (entry: Chat | undefined): entry is Chat =>
 
 // Built once and hidden on close, unlike other dialogs: an answer in flight, the draft and the scroll survive,
 // so only open() and events that can fire before it check that the dialog exists
-const isBuilt = () => document.getElementById(dialogId) !== null;
+const isBuilt = () => findEl(dialogId) !== null;
 let showing = false;
 let unseen = false; // the transcript changed while hidden, so reopen at its end
 const el = <T extends HTMLElement = HTMLElement>(id: string): T => ensureEl<T>(id);
@@ -510,7 +510,7 @@ function render(keepScroll = false): void {
   el("assistantKey").hidden = view !== "key";
   el("assistantComposer").hidden = view !== "chat" || readOnly;
   renderContextChip();
-  const openChats = document.getElementById("assistantOpenChats") as HTMLButtonElement | null;
+  const openChats = findEl<HTMLButtonElement>("assistantOpenChats");
   if (openChats) openChats.disabled = busy || !initialized;
   const ask = el<HTMLButtonElement>("assistantAsk");
   ask.className = busy ? "busy icon-cancel" : "icon-right-big";

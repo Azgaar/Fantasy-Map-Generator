@@ -3,6 +3,7 @@ import { drag, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { LabelType } from "@/generators/labels-generator";
 import { dragLegendBox } from "@/renderers/draw-legend";
+import { findEl } from "@/utils";
 import { debounce } from "@/utils/commonUtils";
 import { handleMouseMove } from "./map-tooltip";
 import { applyZoomBehavior } from "./zoom";
@@ -67,7 +68,7 @@ export function openEditor(element: Element): boolean {
     const id = Number(label.dataset.id);
     const type = label.dataset.labelType as LabelType;
     if (type === "burg") {
-      const burgEditor = document.getElementById("burgEditor");
+      const burgEditor = findEl("burgEditor");
       const isBurgEditorOpen = burgEditor?.dataset.burgId === String(id);
       if (isBurgEditorOpen) Controllers.LabelsEditor.open(type, id);
       else Controllers.BurgEditor.open(id);

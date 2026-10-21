@@ -404,8 +404,25 @@
       "filter": null,
       "mask": null
     },
-    "options": {
-      "showIndexes": false
+    "groups": {
+      "cellIndexes": {
+        "attrs": {
+          "opacity": null,
+          "fill": "#808080",
+          "font-family": "Arial",
+          "stroke": "#ffffff",
+          "stroke-opacity": null,
+          "stroke-width": 0,
+          "filter": null,
+          "mask": null
+        },
+        "options": {
+          "show": false,
+          "size": 0.15,
+          "dx": 0,
+          "dy": 0
+        }
+      }
     }
   },
   "coastline": {

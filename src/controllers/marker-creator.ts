@@ -21,8 +21,8 @@ function toggle(baseMarker?: Marker): void {
     undefined,
     unpressProxyButtons
   );
-  document.getElementById("markersAddFromOverview")?.classList.add("pressed");
-  document.getElementById("markerAdd")?.classList.add("pressed");
+  findEl("markersAddFromOverview")?.classList.add("pressed");
+  findEl("markerAdd")?.classList.add("pressed");
   Layers.show("markers");
 }
 
@@ -47,8 +47,8 @@ function addOnClick(event: MouseEvent, baseMarker?: Marker): void {
 }
 
 function unpressProxyButtons(): void {
-  document.getElementById("markerAdd")?.classList.remove("pressed");
-  document.getElementById("markersAddFromOverview")?.classList.remove("pressed");
+  findEl("markerAdd")?.classList.remove("pressed");
+  findEl("markersAddFromOverview")?.classList.remove("pressed");
 }
 
 export const MarkerCreator = { toggle };

@@ -2,6 +2,7 @@ import { Layers } from "@/components/layers";
 import type { LabelGroup, LabelType } from "@/generators/labels-generator";
 import type { LabelData } from "@/renderers/labels/labels";
 import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
+import { findEl } from "@/utils";
 import { getLabelsData } from "./label-data";
 import { renderLabelGroups } from "./label-groups";
 import { createLabelElements } from "./label-markup";
@@ -15,7 +16,7 @@ export function drawLabels(): void {
 
   TIME && console.time("drawLabels");
   renderLabelGroups();
-  document.getElementById("textPaths")?.replaceChildren();
+  findEl("textPaths")?.replaceChildren();
   scene.replace(getLabelsData());
   indexLabelsByGroup();
   layer.render();

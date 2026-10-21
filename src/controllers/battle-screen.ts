@@ -8,7 +8,21 @@ import { moveRegiment } from "@/renderers/draw-military";
 import { sentences, t } from "@/utils/i18n";
 import type { Marker } from "../generators/markers-generator";
 import type { Regiment } from "../generators/military-generator";
-import { capitalize, ensureEl, escapeHtml, getAdjective, last, list, minmax, P, Pint, rand, rn, wiki } from "../utils";
+import {
+  capitalize,
+  ensureEl,
+  escapeHtml,
+  findEl,
+  getAdjective,
+  last,
+  list,
+  minmax,
+  P,
+  Pint,
+  rand,
+  rn,
+  wiki
+} from "../utils";
 
 type Side = "attackers" | "defenders";
 
@@ -82,8 +96,8 @@ function open(attacker: Regiment, defender: Regiment): void {
 }
 
 function renderDialog(): void {
-  document.getElementById("battleScreen")?.remove();
-  document.getElementById("regimentSelectorScreen")?.remove();
+  findEl("battleScreen")?.remove();
+  findEl("regimentSelectorScreen")?.remove();
   const editorHtml = /* html */ `<div id="battleScreen" class="dialog stable">
       <div id="battleBody">
         <template id="battlePhases_field">
@@ -475,7 +489,7 @@ function setType(): void {
   const b = battle!;
   ensureEl("battleType").className = `icon-button-${b.type}`;
 
-  const sideSpecific = document.getElementById(`battlePhases_${b.type}_attackers`) as HTMLTemplateElement | null;
+  const sideSpecific = findEl<HTMLTemplateElement>(`battlePhases_${b.type}_attackers`);
   const attackersContent = sideSpecific
     ? sideSpecific.content
     : ensureEl<HTMLTemplateElement>(`battlePhases_${b.type}`).content;
@@ -1388,7 +1402,7 @@ function closeBattleScreen(): void {
   $("#battleScreen").dialog("destroy");
   ensureEl("battleScreen").remove();
 
-  const regimentSelector = document.getElementById("regimentSelectorScreen");
+  const regimentSelector = findEl("regimentSelectorScreen");
   if (regimentSelector?.classList.contains("ui-dialog-content")) $("#regimentSelectorScreen").dialog("destroy");
   regimentSelector?.remove();
 }

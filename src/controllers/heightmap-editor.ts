@@ -496,8 +496,8 @@ async function finalizeHeightmap(): Promise<void> {
   clearMainTip();
   resetZoom();
 
-  document.getElementById("preview")?.remove();
-  if (document.getElementById("canvas3d")) {
+  findEl("preview")?.remove();
+  if (findEl("canvas3d")) {
     void Controllers.View3d.enterStandard();
   }
 
@@ -916,8 +916,8 @@ function updateHistory(noStat?: string): void {
 
 // the views derived from the heightmap: the preview, the 3D scene and the drainage overlay
 function redrawDerivedViews(): void {
-  if (document.getElementById("preview")) drawHeightmapPreview();
-  if (document.getElementById("canvas3d")) Controllers.View3d.redraw();
+  if (findEl("preview")) drawHeightmapPreview();
+  if (findEl("canvas3d")) Controllers.View3d.redraw();
   redrawDrainage();
 }
 
@@ -940,7 +940,7 @@ function restartHistory(): void {
 }
 
 function openBrushesPanel(): void {
-  if (document.getElementById("brushesPanel")) return;
+  if (findEl("brushesPanel")) return;
   renderBrushesPanel();
 
   $("#brushesPanel").dialog({
@@ -1490,7 +1490,7 @@ function startFromScratch(): void {
 }
 
 function openTemplateEditor(): void {
-  if (document.getElementById("templateEditor")) return;
+  if (findEl("templateEditor")) return;
   renderTemplateEditor();
 
   $("#templateEditor").dialog({
@@ -1833,7 +1833,7 @@ function pickConverterImage(): void {
 }
 
 function openImageConverter(): void {
-  if (document.getElementById("imageConverter")) return;
+  if (findEl("imageConverter")) return;
   pickConverterImage();
   closeDialogs("#imageConverter");
 
@@ -2121,8 +2121,8 @@ function cancelConversion(): void {
 }
 
 function restoreImageConverterState(): void {
-  document.getElementById("canvas")?.remove();
-  document.getElementById("imageToConvert")?.remove();
+  findEl("canvas")?.remove();
+  findEl("imageToConvert")?.remove();
 
   select("#imageConverter").selectAll("div.color-div").remove();
   ensureEl("colorsAssigned").style.display = "none";
@@ -2164,7 +2164,7 @@ function closeImageConverter(event: Event): void {
 }
 
 function toggleHeightmapPreview(): void {
-  const existing = document.getElementById("preview");
+  const existing = findEl("preview");
   if (existing) {
     existing.remove();
     return;
@@ -2181,7 +2181,7 @@ function toggleHeightmapPreview(): void {
 }
 
 function drawHeightmapPreview(): void {
-  const ctx = (document.getElementById("preview") as HTMLCanvasElement).getContext("2d")!;
+  const ctx = ensureEl<HTMLCanvasElement>("preview").getContext("2d")!;
   const raster = Grid.getRaster();
   const imageData = ctx.createImageData(raster.width, raster.height);
 
@@ -2200,7 +2200,7 @@ function drawHeightmapPreview(): void {
 }
 
 function downloadPreview(): void {
-  const preview = document.getElementById("preview") as HTMLCanvasElement;
+  const preview = ensureEl<HTMLCanvasElement>("preview");
   const dataURL = preview.toDataURL("image/png");
 
   const img = new Image();

@@ -26,7 +26,7 @@ import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { zonesFilter } from "@/renderers/draw-zones";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { Csv } from "@/services/io/csv";
-import { getArea, getAreaUnit } from "@/utils";
+import { findEl, getArea, getAreaUnit } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { errorText } from "@/utils/stringUtils";
 import { ensureEl, rn, si, unique } from "../utils";
@@ -388,7 +388,7 @@ function applyZonePaint(zones: readonly Zone[], changes: ReadonlyMap<number, rea
   for (const zone of zones) zone.cells = [...cellsByZone.get(zone.i)!];
 
   Layers.draw("zones");
-  if (document.getElementById(dialogId)) zonesTable.refresh();
+  if (findEl(dialogId)) zonesTable.refresh();
 }
 
 function changeFill(fillBox: FillBoxElement, zone: Zone): void {

@@ -420,7 +420,7 @@ export interface Note {
 }
 
 function current(): Note | null {
-  if (!document.getElementById("notesEditor")) return null;
+  if (!findEl("notesEditor")) return null;
   const ref = selectedRef();
   if (!ref || !MapEntities.get(ref)) return null;
   return { id: MapEntities.key(ref), name: MapEntities.getName(ref), legend: Notes.get(ref) || "" };
@@ -428,7 +428,7 @@ function current(): Note | null {
 
 /** Show notes and names changed outside the editor, keeping the selected entity */
 function refresh(): void {
-  if (!document.getElementById("notesEditor")) return;
+  if (!findEl("notesEditor")) return;
   const select = ensureEl<HTMLSelectElement>("notesSelect");
   const selected = MapEntities.parseKey(select.value);
   fillSelect(select, Notes.list(), selected);
@@ -438,7 +438,7 @@ function refresh(): void {
 }
 
 function getSelectionHtml(): string | null {
-  if (!document.getElementById("notesEditor") || !quill) return null;
+  if (!findEl("notesEditor") || !quill) return null;
   const source = ensureEl<HTMLTextAreaElement>("notesSource");
   if (!source.hidden) return source.value.slice(source.selectionStart, source.selectionEnd) || null;
   const range = quill.getSelection() ?? lastSelection;

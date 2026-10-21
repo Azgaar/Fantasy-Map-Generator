@@ -208,9 +208,9 @@ function effectiveHidden(dialogId: string): Set<string> {
 }
 
 function applyColumnVisibility(dialogId: string, hidden: Set<string>): void {
-  const dialog = document.getElementById(dialogId);
+  const dialog = findEl(dialogId);
   const styleId = `${dialogId}ColumnsStyle`;
-  let style = document.getElementById(styleId) as HTMLStyleElement | null;
+  let style = findEl<HTMLStyleElement>(styleId);
   if (!style) {
     style = document.createElement("style");
     style.id = styleId;
@@ -227,13 +227,13 @@ function applyColumnVisibility(dialogId: string, hidden: Set<string>): void {
   dialog.style.setProperty("--table-columns", buildTracks(entry.columns, hidden));
 
   const lastVisibleIndex = getLastVisibleIndex(entry.columns, hidden);
-  const header = document.getElementById(`${dialogId}Header`);
+  const header = findEl(`${dialogId}Header`);
   const lastVisibleCell = header?.querySelectorAll<HTMLElement>(":scope > [data-col]")[lastVisibleIndex];
-  const button = document.getElementById(`${dialogId}ColumnsButton`);
+  const button = findEl(`${dialogId}ColumnsButton`);
   if (!lastVisibleCell || !button) return;
 
   lastVisibleCell.appendChild(button);
-  const popup = document.getElementById(`${dialogId}ColumnsPicker`);
+  const popup = findEl(`${dialogId}ColumnsPicker`);
   if (popup) button.insertAdjacentElement("afterend", popup);
 }
 
@@ -254,7 +254,7 @@ function bindColumnsPicker({
   onChange: (hidden: Set<string>) => void;
 }): void {
   const popupId = `${dialogId}ColumnsPicker`;
-  const dialog = document.getElementById(dialogId);
+  const dialog = findEl(dialogId);
   let detachPopup: (() => void) | null = null;
 
   const cleanup = () => {
@@ -267,7 +267,7 @@ function bindColumnsPicker({
   // a destroyDialog() close does not fire dialogclose, so the mousedown handler below also cleans up
   if (dialog) $(dialog).one("dialogclose", cleanup);
   button.addEventListener("click", () => {
-    const existing = document.getElementById(popupId);
+    const existing = findEl(popupId);
     if (existing) {
       cleanup();
       return;

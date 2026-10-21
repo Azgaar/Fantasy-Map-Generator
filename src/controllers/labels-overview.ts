@@ -475,7 +475,7 @@ function cancelSpread(): void {
   restoreLabelSnapshot();
   finishSpreadPreview();
   Layers.draw("labels");
-  if (document.getElementById("labelsOverview")) {
+  if (findEl("labelsOverview")) {
     labelsTable.refresh();
     syncSpreadControls();
   }
@@ -515,7 +515,7 @@ function finishSpreadPreview(): void {
 }
 
 function syncSpreadControls(): void {
-  const dialog = document.getElementById("labelsOverview");
+  const dialog = findEl("labelsOverview");
   if (!dialog) return;
   const isRunning = spreadPreview.phase === "running";
   const isReview = spreadPreview.phase === "review";

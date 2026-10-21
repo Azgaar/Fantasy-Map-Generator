@@ -378,33 +378,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.relief = data[49] ? JSON.parse(data[49]) : [];
     pack.journeys = data[52] ? JSON.parse(data[52]) : [];
 
-    const ensureTags = (entities?: unknown[]) => {
-      if (!entities) return;
-      for (const entity of entities) {
-        if (
-          entity &&
-          typeof entity === "object" &&
-          (!("tags" in entity) || !Array.isArray((entity as { tags?: unknown }).tags))
-        ) {
-          (entity as { tags: string[] }).tags = [];
-        }
-      }
-    };
-    ensureTags(pack.states);
-    ensureTags(pack.provinces);
-    ensureTags(pack.cultures);
-    ensureTags(pack.religions);
-    ensureTags(pack.burgs);
-    ensureTags(pack.markers);
-    ensureTags(pack.rivers);
-    ensureTags(pack.routes);
-    ensureTags(pack.zones);
-    ensureTags(pack.features);
-    ensureTags(pack.goods);
-    for (const state of pack.states) {
-      if (state?.military) ensureTags(state.military);
-    }
-
     // save omits names that equal the default base at the same index
     const defaultNameBases = Names.getNameBases();
     Names.nameBases = data[31]

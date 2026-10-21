@@ -2,7 +2,7 @@
 import { color, hsl, rgb } from "d3";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Hatches } from "@/renderers/hatches";
-import { ensureEl, minmax } from "@/utils";
+import { ensureEl, findEl, minmax } from "@/utils";
 import { getRandomColor } from "@/utils/colorUtils";
 import { sentences, t } from "@/utils/i18n";
 
@@ -49,7 +49,7 @@ const EYEDROPPER_ICON = /* html */ `<svg viewBox="0 0 16 16"><path d="M13.4 2.6a
 
 /** Close the picker if it is open, releasing the caller callback */
 function close(): void {
-  const dialog = document.getElementById(DIALOG);
+  const dialog = findEl(DIALOG);
   if (dialog) $(dialog).dialog("close");
 }
 

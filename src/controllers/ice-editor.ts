@@ -5,13 +5,13 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { redrawIceberg } from "@/renderers/draw-ice";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, getPointer, parseTransform } from "../utils";
+import { ensureEl, findEl, getPointer, parseTransform } from "../utils";
 
 let selectedIce: Selection<SVGElement, unknown, HTMLElement, unknown>;
 
 function open(element: SVGElement): void {
   if (customization) return;
-  if (document.getElementById("iceEditor") && element === selectedIce.node()) return;
+  if (findEl("iceEditor") && element === selectedIce.node()) return;
 
   closeDialogs(".stable");
   Layers.show("ice");

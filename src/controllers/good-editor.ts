@@ -5,7 +5,7 @@ import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { CULTURE_TYPE_LABELS, DEMAND_CATEGORY_LABELS } from "@/data/id-labels";
 import { goodIconLines } from "@/renderers/draw-goods";
-import { capitalize, rn } from "@/utils";
+import { capitalize, findEl, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { CULTURE_TYPES } from "../generators/cultures-generator";
 import type { DemandCategory, Good } from "../generators/goods-generator";
@@ -325,8 +325,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
     const sortedGoods = [...pack.goods].sort((a, b) => a.name.localeCompare(b.name));
 
     const isRawProductionEmpty = () =>
-      !Object.values(biomeOutputState).some(v => (v ?? 0) > 0) &&
-      !document.getElementById("newGoodDistribution")?.textContent?.trim();
+      !Object.values(biomeOutputState).some(v => (v ?? 0) > 0) && !findEl("newGoodDistribution")?.textContent?.trim();
 
     // a good is either gathered (raw) or made from recipes (manufactured)
     const updateTypeNotes = () => {
@@ -440,7 +439,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
         const dim = btn.dataset.dim as MultiplierDimKey;
         openMultiplierPopup(dim, multipliers[dim] ?? {}, values => {
           multipliers[dim] = values;
-          const summaryEl = document.getElementById(`mSummary_${dim}`);
+          const summaryEl = findEl(`mSummary_${dim}`);
           if (summaryEl) summaryEl.textContent = multiplierSummary(dim);
         });
       });
@@ -450,7 +449,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
       openDemandCoveragePopup({ ...demandCoverageState }, values => {
         (Object.keys(demandCoverageState) as DemandCategory[]).forEach(k => void delete demandCoverageState[k]);
         Object.assign(demandCoverageState, values);
-        const summaryEl = document.getElementById("demandCoverageSummary");
+        const summaryEl = findEl("demandCoverageSummary");
         if (summaryEl) summaryEl.textContent = demandCoverageSummary();
       });
     });
@@ -459,7 +458,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
       openBiomeProductionPopup({ ...biomeOutputState }, values => {
         Object.keys(biomeOutputState).forEach(k => void delete biomeOutputState[+k]);
         Object.assign(biomeOutputState, values);
-        const summaryEl = document.getElementById("biomeProductionSummary");
+        const summaryEl = findEl("biomeProductionSummary");
         if (summaryEl) summaryEl.textContent = biomeOutputSummary();
         updateTypeNotes();
       });

@@ -73,7 +73,9 @@ const font: ControlFactory = (_spec, value, set) => {
 // other elements get a stock sample
 export function fontSample(): string {
   const element = ensureEl<HTMLSelectElement>("styleElementSelect").value;
-  if (element !== "labels") return element === "legend" ? t("Legend") : t("Sample");
+  if (element === "legend") return t("Legend");
+  if (element === "cells") return "123"; // the cell indexes are its only text
+  if (element !== "labels") return t("Sample");
   const group = ensureEl<HTMLSelectElement>("styleGroupSelect").value;
   const texts = getLabelsIndex()
     .filter(label => label.group === group && label.text)
