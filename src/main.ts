@@ -15,6 +15,7 @@ import "@/components";
 import "@/controllers";
 import "@/services";
 import "@/generators/styles-legacy";
+import "@/conquest/entry"; // registers the conquest layers before a map can load
 
 import { boot } from "@/components/lifecycle";
 

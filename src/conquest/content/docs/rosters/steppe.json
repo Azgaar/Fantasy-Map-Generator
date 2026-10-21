@@ -1,0 +1,41 @@
+{
+  "id": "steppeBase",
+  "name": "Steppe",
+  "roster": {
+    "id": "steppeBase",
+    "extends": "commonBase",
+    "units": {
+      "cavalry": {
+        "name": "Steppe Horse Archers",
+        "category": "cavalry",
+        "blocks": 0.08,
+        "requiresGood": 18,
+        "attack": 9,
+        "defense": 8,
+        "charge": 8,
+        "missile": 4,
+        "cost": 450,
+        "upkeep": 55,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 0,
+          "c": 0
+        }
+      }
+    },
+    "recruitable": [
+      "sword",
+      "spear",
+      "archers",
+      "cavalry",
+      "artillery"
+    ],
+    "caps": {
+      "cavalry": 10,
+      "artillery": 2
+    }
+  },
+  "tech": [],
+  "buildings": []
+}

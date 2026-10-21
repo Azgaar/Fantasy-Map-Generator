@@ -1,0 +1,174 @@
+{
+  "id": "orcBase",
+  "name": "Orc",
+  "roster": {
+    "id": "orcBase",
+    "units": {
+      "orc_boyz": {
+        "name": "Orc Boyz",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 8,
+        "defense": 8,
+        "charge": 4,
+        "missile": 0,
+        "cost": 200,
+        "upkeep": 30,
+        "capacityCost": {
+          "m": 1,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "orc_archers": {
+        "name": "Orc Archers",
+        "category": "ranged",
+        "blocks": 0.12,
+        "attack": 3,
+        "defense": 4,
+        "charge": 1,
+        "missile": 9,
+        "cost": 250,
+        "upkeep": 35,
+        "capacityCost": {
+          "m": 1,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "warg_riders": {
+        "name": "Warg Riders",
+        "category": "cavalry",
+        "blocks": 0.08,
+        "requiresGood": 18,
+        "attack": 10,
+        "defense": 7,
+        "charge": 10,
+        "missile": 0,
+        "cost": 450,
+        "upkeep": 55,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "troll": {
+        "name": "River Trolls",
+        "category": "melee",
+        "blocks": 0.2,
+        "requiresGood": 4,
+        "attack": 11,
+        "defense": 8,
+        "charge": 6,
+        "missile": 0,
+        "cost": 700,
+        "upkeep": 60,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "siege_bow": {
+        "name": "Siege Bows",
+        "category": "artillery",
+        "blocks": 0.04,
+        "requiresGood": 4,
+        "attack": 2,
+        "defense": 3,
+        "charge": 0,
+        "missile": 12,
+        "cost": 700,
+        "upkeep": 70,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "orc_banner": {
+        "name": "Great Orc Banner",
+        "category": "melee",
+        "blocks": 0.1,
+        "requiresGood": 4,
+        "attack": 9,
+        "defense": 10,
+        "charge": 5,
+        "missile": 0,
+        "cost": 500,
+        "upkeep": 55,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 1,
+          "c": 0
+        }
+      },
+      "levy_orcs": {
+        "name": "Levy Orcs",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 3,
+        "defense": 8,
+        "charge": 2,
+        "missile": 0,
+        "cost": 80,
+        "upkeep": 12,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "levy_runts": {
+        "name": "Goblin Runts",
+        "category": "ranged",
+        "blocks": 0.12,
+        "attack": 2,
+        "defense": 3,
+        "charge": 1,
+        "missile": 6,
+        "cost": 100,
+        "upkeep": 15,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      }
+    },
+    "recruitable": [
+      "orc_boyz",
+      "orc_archers",
+      "warg_riders",
+      "troll",
+      "siege_bow"
+    ],
+    "garrison": {
+      "melee": "levy_orcs",
+      "ranged": "levy_runts"
+    },
+    "regimentMap": {
+      "infantry": "orc_boyz",
+      "archers": "orc_archers",
+      "cavalry": "warg_riders",
+      "artillery": "siege_bow"
+    },
+    "caps": {
+      "orc_boyz": 10,
+      "warg_riders": 8,
+      "troll": 2,
+      "siege_bow": 4
+    }
+  },
+  "tech": [],
+  "buildings": []
+}

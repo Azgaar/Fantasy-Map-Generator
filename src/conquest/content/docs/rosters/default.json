@@ -1,0 +1,537 @@
+{
+  "id": "commonBase",
+  "name": "Default",
+  "roster": {
+    "id": "commonBase",
+    "units": {
+      "sword": {
+        "name": "Swordsmen",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 8,
+        "defense": 11,
+        "charge": 4,
+        "missile": 0,
+        "cost": 300,
+        "upkeep": 40,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "spear": {
+        "name": "Spearmen",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 5,
+        "defense": 13,
+        "charge": 3,
+        "missile": 0,
+        "cost": 250,
+        "upkeep": 35,
+        "capacityCost": {
+          "m": 2,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "archers": {
+        "name": "Archers",
+        "category": "ranged",
+        "blocks": 0.12,
+        "attack": 3,
+        "defense": 5,
+        "charge": 1,
+        "missile": 11,
+        "cost": 350,
+        "upkeep": 45,
+        "capacityCost": {
+          "m": 1,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "cavalry": {
+        "name": "Cavalry",
+        "category": "cavalry",
+        "blocks": 0.08,
+        "requiresGood": 18,
+        "attack": 9,
+        "defense": 9,
+        "charge": 9,
+        "missile": 0,
+        "cost": 500,
+        "upkeep": 60,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "artillery": {
+        "name": "Ballistae",
+        "category": "artillery",
+        "blocks": 0.04,
+        "requiresGood": 4,
+        "attack": 2,
+        "defense": 3,
+        "charge": 0,
+        "missile": 14,
+        "cost": 800,
+        "upkeep": 80,
+        "capacityCost": {
+          "m": 2,
+          "w": 4,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "levy_spear": {
+        "name": "Levy Spearmen",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 3,
+        "defense": 9,
+        "charge": 2,
+        "missile": 0,
+        "cost": 100,
+        "upkeep": 15,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "levy_archers": {
+        "name": "Levy Archers",
+        "category": "ranged",
+        "blocks": 0.12,
+        "attack": 2,
+        "defense": 4,
+        "charge": 1,
+        "missile": 8,
+        "cost": 120,
+        "upkeep": 18,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "balbenGuard": {
+        "name": "Balben Guard",
+        "category": "melee",
+        "blocks": 0.1,
+        "requiresGood": 4,
+        "attack": 10,
+        "defense": 13,
+        "charge": 5,
+        "missile": 0,
+        "cost": 600,
+        "upkeep": 70,
+        "capacityCost": {
+          "m": 3,
+          "w": 3,
+          "s": 1,
+          "c": 0
+        }
+      }
+    },
+    "recruitable": [
+      "sword",
+      "spear",
+      "archers",
+      "cavalry",
+      "artillery"
+    ],
+    "garrison": {
+      "melee": "levy_spear",
+      "ranged": "levy_archers"
+    },
+    "regimentMap": {
+      "infantry": "spear",
+      "archers": "archers",
+      "cavalry": "cavalry",
+      "artillery": "artillery"
+    },
+    "caps": {
+      "sword": 8,
+      "spear": 8,
+      "archers": 6,
+      "cavalry": 6,
+      "artillery": 4,
+      "balbenGuard": 2
+    }
+  },
+  "tech": [
+    {
+      "id": "census",
+      "name": "Great Census",
+      "era": 1,
+      "cost": 1200,
+      "effects": {
+        "incomePct": 0.05
+      }
+    },
+    {
+      "id": "roads",
+      "name": "Royal Roads",
+      "era": 1,
+      "cost": 1800,
+      "requires": [
+        "census"
+      ],
+      "effects": {
+        "incomePct": 0.08
+      }
+    },
+    {
+      "id": "legionDrill",
+      "name": "Legion Drill",
+      "era": 1,
+      "cost": 1500,
+      "requires": [
+        "census"
+      ],
+      "effects": {
+        "upkeepReduction": 0.1
+      }
+    },
+    {
+      "id": "engineering",
+      "name": "Field Engineering",
+      "era": 2,
+      "cost": 2500,
+      "requires": [
+        "legionDrill"
+      ],
+      "effects": {
+        "incomePct": 0.05
+      }
+    }
+  ],
+  "buildings": [
+    {
+      "id": "walls1",
+      "name": "Palisade",
+      "chain": "defense",
+      "tier": 1,
+      "settlementKinds": [
+        "major",
+        "minor"
+      ],
+      "cost": 600,
+      "turns": 1,
+      "effects": {
+        "walls": 1,
+        "capacity": {
+          "m": 2
+        }
+      }
+    },
+    {
+      "id": "walls2",
+      "name": "Stone Walls",
+      "chain": "defense",
+      "tier": 2,
+      "settlementKinds": [
+        "major"
+      ],
+      "cost": 1500,
+      "turns": 2,
+      "requires": "walls1",
+      "effects": {
+        "walls": 1,
+        "capacity": {
+          "m": 4
+        },
+        "upkeep": {
+          "w": 1
+        }
+      }
+    },
+    {
+      "id": "walls3",
+      "name": "Layered Walls",
+      "chain": "defense",
+      "tier": 3,
+      "settlementKinds": [
+        "major"
+      ],
+      "cost": 3000,
+      "turns": 3,
+      "requires": "walls2",
+      "effects": {
+        "walls": 1,
+        "orderPerTurn": 1,
+        "capacity": {
+          "m": 8
+        },
+        "upkeep": {
+          "w": 2
+        }
+      }
+    },
+    {
+      "id": "market1",
+      "name": "Market",
+      "chain": "economy",
+      "tier": 1,
+      "settlementKinds": [
+        "major"
+      ],
+      "cost": 700,
+      "turns": 1,
+      "effects": {
+        "incomePct": 0.05,
+        "capacity": {
+          "w": 2
+        }
+      }
+    },
+    {
+      "id": "market2",
+      "name": "Trade Center",
+      "chain": "economy",
+      "tier": 2,
+      "settlementKinds": [
+        "major"
+      ],
+      "cost": 1800,
+      "turns": 2,
+      "requires": "market1",
+      "effects": {
+        "incomePct": 0.08,
+        "capacity": {
+          "w": 4
+        },
+        "upkeep": {
+          "m": 1
+        }
+      }
+    },
+    {
+      "id": "market3",
+      "name": "Mercantile Guilds",
+      "chain": "economy",
+      "tier": 3,
+      "settlementKinds": [
+        "major"
+      ],
+      "cost": 3000,
+      "turns": 3,
+      "requires": "market2",
+      "effects": {
+        "incomePct": 0.12,
+        "capacity": {
+          "w": 8
+        },
+        "upkeep": {
+          "m": 1,
+          "s": 1
+        }
+      }
+    },
+    {
+      "id": "temple1",
+      "name": "Shrine",
+      "chain": "order",
+      "tier": 1,
+      "settlementKinds": [
+        "major",
+        "minor"
+      ],
+      "cost": 400,
+      "turns": 1,
+      "effects": {
+        "orderPerTurn": 2,
+        "capacity": {
+          "s": 2
+        }
+      }
+    },
+    {
+      "id": "temple2",
+      "name": "Temple",
+      "chain": "order",
+      "tier": 2,
+      "settlementKinds": [
+        "major"
+      ],
+      "cost": 2000,
+      "turns": 2,
+      "requires": "temple1",
+      "effects": {
+        "orderPerTurn": 3,
+        "capacity": {
+          "s": 4
+        },
+        "upkeep": {
+          "w": 1
+        }
+      }
+    },
+    {
+      "id": "temple3",
+      "name": "Great Temple",
+      "chain": "order",
+      "tier": 3,
+      "settlementKinds": [
+        "major"
+      ],
+      "cost": 3000,
+      "turns": 3,
+      "requires": "temple2",
+      "effects": {
+        "orderPerTurn": 4,
+        "capacity": {
+          "s": 8
+        },
+        "upkeep": {
+          "w": 2
+        }
+      }
+    },
+    {
+      "id": "barracks1",
+      "name": "Barracks",
+      "chain": "military",
+      "tier": 1,
+      "settlementKinds": [
+        "major"
+      ],
+      "cost": 900,
+      "turns": 2,
+      "effects": {
+        "capacity": {
+          "m": 2
+        }
+      }
+    },
+    {
+      "id": "barracks2",
+      "name": "Training Grounds",
+      "chain": "military",
+      "tier": 2,
+      "settlementKinds": [
+        "major"
+      ],
+      "cost": 1200,
+      "turns": 2,
+      "requires": "barracks1",
+      "effects": {
+        "capacity": {
+          "m": 4
+        },
+        "upkeep": {
+          "w": 1
+        }
+      }
+    },
+    {
+      "id": "barracks3",
+      "name": "War Academy",
+      "chain": "military",
+      "tier": 3,
+      "settlementKinds": [
+        "major"
+      ],
+      "cost": 1200,
+      "turns": 2,
+      "requires": "barracks2",
+      "effects": {
+        "capacity": {
+          "m": 8
+        },
+        "upkeep": {
+          "w": 1,
+          "s": 1
+        }
+      }
+    },
+    {
+      "id": "port1",
+      "name": "Harbor Works",
+      "chain": "maritime",
+      "tier": 1,
+      "settlementKinds": [
+        "major"
+      ],
+      "cost": 900,
+      "turns": 2,
+      "effects": {
+        "incomePct": 0.06,
+        "capacity": {
+          "w": 1
+        }
+      }
+    },
+    {
+      "id": "informants1",
+      "name": "Informants",
+      "chain": "shadows",
+      "tier": 1,
+      "settlementKinds": [
+        "major",
+        "minor"
+      ],
+      "cost": 500,
+      "turns": 1,
+      "effects": {
+        "capacity": {
+          "c": 1
+        },
+        "upkeep": {
+          "w": 1
+        }
+      }
+    },
+    {
+      "id": "informants2",
+      "name": "Spy Network",
+      "chain": "shadows",
+      "tier": 2,
+      "settlementKinds": [
+        "major"
+      ],
+      "cost": 1400,
+      "turns": 2,
+      "requires": "informants1",
+      "effects": {
+        "capacity": {
+          "c": 2
+        },
+        "upkeep": {
+          "w": 2
+        }
+      }
+    },
+    {
+      "id": "informants3",
+      "name": "Hidden Court",
+      "chain": "shadows",
+      "tier": 3,
+      "settlementKinds": [
+        "major"
+      ],
+      "cost": 3000,
+      "turns": 3,
+      "requires": "informants2",
+      "effects": {
+        "capacity": {
+          "c": 3
+        },
+        "upkeep": {
+          "w": 3
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,135 @@
+{
+  "id": "dwarfBase",
+  "name": "Dwarf",
+  "roster": {
+    "id": "dwarfBase",
+    "units": {
+      "dwarf_axe": {
+        "name": "Dwarf Axemen",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 7,
+        "defense": 13,
+        "charge": 3,
+        "missile": 0,
+        "cost": 320,
+        "upkeep": 45,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "dwarf_crossbow": {
+        "name": "Dwarf Crossbows",
+        "category": "ranged",
+        "blocks": 0.12,
+        "attack": 3,
+        "defense": 6,
+        "charge": 1,
+        "missile": 12,
+        "cost": 400,
+        "upkeep": 50,
+        "capacityCost": {
+          "m": 1,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "dwarf_slayer": {
+        "name": "Slayers",
+        "category": "melee",
+        "blocks": 0.1,
+        "requiresGood": 4,
+        "attack": 11,
+        "defense": 9,
+        "charge": 6,
+        "missile": 0,
+        "cost": 650,
+        "upkeep": 75,
+        "capacityCost": {
+          "m": 3,
+          "w": 3,
+          "s": 1,
+          "c": 0
+        }
+      },
+      "gyro_bombard": {
+        "name": "Gyro Bombards",
+        "category": "artillery",
+        "blocks": 0.04,
+        "requiresGood": 4,
+        "attack": 3,
+        "defense": 3,
+        "charge": 0,
+        "missile": 16,
+        "cost": 900,
+        "upkeep": 90,
+        "capacityCost": {
+          "m": 2,
+          "w": 4,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "levy_defenders": {
+        "name": "Levy Defenders",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 4,
+        "defense": 11,
+        "charge": 2,
+        "missile": 0,
+        "cost": 120,
+        "upkeep": 18,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "levy_throng": {
+        "name": "Levy Throng",
+        "category": "ranged",
+        "blocks": 0.12,
+        "attack": 2,
+        "defense": 5,
+        "charge": 1,
+        "missile": 7,
+        "cost": 140,
+        "upkeep": 20,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      }
+    },
+    "recruitable": [
+      "dwarf_axe",
+      "dwarf_crossbow",
+      "dwarf_slayer",
+      "gyro_bombard"
+    ],
+    "garrison": {
+      "melee": "levy_defenders",
+      "ranged": "levy_throng"
+    },
+    "regimentMap": {
+      "infantry": "dwarf_axe",
+      "archers": "dwarf_crossbow",
+      "cavalry": "dwarf_axe",
+      "artillery": "gyro_bombard"
+    },
+    "caps": {
+      "dwarf_slayer": 3,
+      "gyro_bombard": 4
+    }
+  },
+  "tech": [],
+  "buildings": []
+}

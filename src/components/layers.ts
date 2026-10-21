@@ -50,6 +50,8 @@ interface LayerParams<Id extends string = string> {
   erase?: (layer: Layer) => void; // custom teardown, defaults to erasing the content down to the declared children
 }
 
+export type { LayerParams };
+
 type ChildParams = { id: string; tag: string; attrs?: Record<string, string> };
 
 export interface LayersState {
@@ -110,6 +112,17 @@ export class LayersRegistry<Id extends string = string> {
 
   get all(): readonly Layer<Id>[] {
     return this.layers;
+  }
+
+  /** Register layers after construction — the conquest campaign adds its own.
+   *  Accepts bare `LayerParams` so a self-contained feature module can register
+   *  without importing this module's Layer class. Appended in registration order
+   *  and initialized immediately, so registered layers join the same ordering,
+   *  visibility and save/restore flow as the native ones. */
+  register(...layers: (Layer<Id> | LayerParams<Id>)[]): void {
+    this.layers.push(...layers.map(layer => (layer instanceof Layer ? layer : new Layer(layer))));
+    this.init();
+    this.emit();
   }
 
   has(id: string): id is Id {
@@ -406,13 +419,14 @@ const mapLayers = [
   new Layer({ id: "legend", parent: "map", permanent: true, keepContent: true, draw: redrawLegend })
 ];
 
-export type LayerId = (typeof mapLayers)[number]["id"];
+/** Native layer ids, plus any string a registered feature layer brings. */
+export type LayerId = (typeof mapLayers)[number]["id"] | (string & {});
 
 declare global {
   var Layers: LayersRegistry<LayerId>;
 }
 
 // biome-ignore lint/suspicious/noRedeclare: legacy seam, exposed on window
-export const Layers = new LayersRegistry(mapLayers);
+export const Layers = new LayersRegistry<LayerId>(mapLayers);
 
 window.Layers = Layers;

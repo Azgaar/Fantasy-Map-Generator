@@ -161,13 +161,30 @@ classes; a European-set world is byte-for-byte unaffected.
 | # | Slice | Size | Acceptance |
 |---|---|---|---|
 | A | Astral content in core (bases, sets, schema, naming tests) | small | Trek generation works; set survives save/load + pinning |
-| B | Conquest transplant (engine/host/store → `src/conquest/`, native layers/commands, worker) | large | Campaign compiles from a finished world; a turn can be fought |
-| C | Conquest UI (controller, rail, Tools entry, campaign storage) | medium | Save/resume campaign across reloads |
+| B ✅ | Conquest transplant (engine/host/store → `src/conquest/`, native layers/commands, worker) | large | Campaign compiles from a finished world; a turn can be fought |
+| C ✅ | Conquest UI (controller, rail, Tools entry, campaign storage) | medium | Save/resume campaign across reloads |
 | D | Cleanup (archive repos, retire harnesses, MERGING.md, docs) | small | One repo, one dev command |
 | E | Astral naming (polities, sectors, star classes) | small–medium | Astral-set worlds read as star maps; stock worlds untouched |
 
 Phase D before E on purpose: the naming step is optional polish, while the cleanup makes the repo
 the single home for everything the remaining work builds on.
+
+### Phase B notes
+
+- The transplant kept the mod's host-seam module (`ui/fmg.ts`) intact, so its files ported 1:1;
+  the three patch seams became three small in-tree changes (`LayersRegistry.register` with
+  `LayerId` widened, `window.LAYER_TOGGLES`, `window.MAP_COMMANDS`).
+- Campaign persistence is **IndexedDB keyed by map id** (`conquest-<id>` via the app's `ldb`),
+  loaded on `map:generated` and awaited by the compile flow before the session adopts anything;
+  the pack-keyed mirror (store/mirror.ts) stays as crash insurance. The `.map` slot design is gone.
+- The compile Worker (a Blob importing its own module URL) needed no changes under Vite.
+- The ⚔ button self-installs into FMG's top bar (`#sticked`) and the palette commands
+  self-register into `MAP_COMMANDS` — no Tools-tab or registry wiring required.
+- Tests: 9 of 16 suites ported (204 tests, green under vitest). Skipped: `server-boot`/`tw-layers`
+  (build-harness-coupled), `phase-b` bundle assertions (same), `phase-c` (superseded — it tested
+  the removed ModSlot seam). The golden-world fixture (8 MB) is committed at
+  `src/conquest/test-data/`. Remaining port candidates: `phase-b/d/e` integration suites, rebased
+  onto the new persistence.
 
 ## Out of scope (for now)
 

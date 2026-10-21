@@ -1,0 +1,134 @@
+{
+  "id": "elfBase",
+  "name": "Elf",
+  "roster": {
+    "id": "elfBase",
+    "units": {
+      "elf_spears": {
+        "name": "Elven Spearmen",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 6,
+        "defense": 14,
+        "charge": 3,
+        "missile": 0,
+        "cost": 350,
+        "upkeep": 50,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 1,
+          "c": 0
+        }
+      },
+      "elf_archers": {
+        "name": "Elven Archers",
+        "category": "ranged",
+        "blocks": 0.12,
+        "attack": 4,
+        "defense": 6,
+        "charge": 1,
+        "missile": 13,
+        "cost": 500,
+        "upkeep": 60,
+        "capacityCost": {
+          "m": 1,
+          "w": 2,
+          "s": 2,
+          "c": 0
+        }
+      },
+      "elf_riders": {
+        "name": "Elven Riders",
+        "category": "cavalry",
+        "blocks": 0.08,
+        "requiresGood": 18,
+        "attack": 9,
+        "defense": 9,
+        "charge": 10,
+        "missile": 0,
+        "cost": 600,
+        "upkeep": 70,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 1,
+          "c": 0
+        }
+      },
+      "elf_bolt": {
+        "name": "Elven Bolt Throwers",
+        "category": "artillery",
+        "blocks": 0.04,
+        "requiresGood": 4,
+        "attack": 2,
+        "defense": 3,
+        "charge": 0,
+        "missile": 13,
+        "cost": 750,
+        "upkeep": 75,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 2,
+          "c": 0
+        }
+      },
+      "levy_wardens": {
+        "name": "Warden Levy",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 3,
+        "defense": 10,
+        "charge": 2,
+        "missile": 0,
+        "cost": 130,
+        "upkeep": 20,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "levy_glades": {
+        "name": "Glade Levy",
+        "category": "ranged",
+        "blocks": 0.12,
+        "attack": 2,
+        "defense": 5,
+        "charge": 1,
+        "missile": 9,
+        "cost": 150,
+        "upkeep": 22,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      }
+    },
+    "recruitable": [
+      "elf_spears",
+      "elf_archers",
+      "elf_riders",
+      "elf_bolt"
+    ],
+    "garrison": {
+      "melee": "levy_wardens",
+      "ranged": "levy_glades"
+    },
+    "regimentMap": {
+      "infantry": "elf_spears",
+      "archers": "elf_archers",
+      "cavalry": "elf_riders",
+      "artillery": "elf_bolt"
+    },
+    "caps": {
+      "elf_riders": 8
+    }
+  },
+  "tech": [],
+  "buildings": []
+}

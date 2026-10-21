@@ -1,0 +1,116 @@
+{
+  "turn": {
+    "startYear": 1332,
+    "seasonsPerYear": 4
+  },
+  "movement": {
+    "costDivisor": 10,
+    "basePoints": 60,
+    "roadMultiplier": 0.5,
+    "trailMultiplier": 0.8,
+    "stanceMultipliers": {
+      "normal": 1,
+      "march": 1.5,
+      "encamp": 0.7,
+      "ambush": 0.7,
+      "raid": 1
+    }
+  },
+  "battle": {
+    "maxRounds": 6,
+    "routThreshold": 0.25,
+    "attritionScale": 0.35,
+    "wallBonusPerTier": 0.1,
+    "encampBonus": 0.1,
+    "ambushBonus": 0.3,
+    "riverDefenderBonus": 0.15,
+    "marchAttackPenalty": 0
+  },
+  "economy": {
+    "taxPer1000Pop": 2.5,
+    "taxFromMap": false,
+    "pollTaxOrderDrag": 20,
+    "specialtiesFromMap": false,
+    "specialtyIncomePerGood": 0.02,
+    "specialtyCap": 0.35,
+    "garrisonUpkeepPerRegion": 0,
+    "capacityMode": false,
+    "corruptionPerStep": 0.02,
+    "corruptionCap": 0.4,
+    "startOrder": 75,
+    "occupiedOrder": 25
+  },
+  "military": {
+    "maxUnitsPerArmy": 20,
+    "replenishFraction": 0.25,
+    "encampReplenishBonus": 2
+  },
+  "saves": {
+    "enabled": false,
+    "defaultDc": 12,
+    "bands": [6, 11, 16, 21],
+    "bandStep": 5
+  },
+  "capacity": {
+    "attritionPerTurn": 0.1,
+    "overCapacityOrderCost": 3,
+    "developTurns": 4,
+    "developWPerTurn": 2,
+    "growthTurns": 6,
+    "growthOrderThreshold": 60,
+    "growthPerHabitability": 20,
+    "constructionWPerTurn": 1,
+    "stabilityPerGarrison": 1,
+    "stabilityPerGrowth": 3,
+    "developStabilityCost": 4,
+    "purseGoldPerW": 100
+  },
+  "victory": {
+    "regionFraction": 0.35
+  },
+  "diplomacy": {
+    "giftRelationPer100": 2,
+    "breakReliabilityPenalty": 15,
+    "breakRelationsPenalty": 30,
+    "truceTurns": 5,
+    "confederationMaxRegions": 4,
+    "confederationRelationThreshold": 60
+  },
+  "sieges": {
+    "garrisonWeakenPerTick": 0.15,
+    "garrisonWeakenFloor": 0.4,
+    "orderDamagePerTick": 3
+  },
+  "rebellion": {
+    "orderThreshold": 25,
+    "requiredTurns": 2,
+    "brigandUnits": 4
+  },
+  "seasons": {
+    "winterMovementMult": 0.8,
+    "autumnIncomeBonus": 0.15
+  },
+  "characters": {
+    "lordCost": 500,
+    "agentCost": 800,
+    "movementPoints": 90,
+    "xpPerBattleWin": 40,
+    "xpPerBattleLoss": 15,
+    "xpPerLevel": 100,
+    "skillPowerPerLevel": 0.05,
+    "campaignMpPerLevel": 0.1,
+    "economyIncomePerLevel": 0.05
+  },
+  "pois": {
+    "discoveryGold": 200
+  },
+  "ai": {
+    "incomeBudgetShare": 0.85,
+    "warExhaustionTurns": 20,
+    "defenseRadius": 2
+  },
+  "content": {
+    "defaultRoster": "commonBase",
+    "defaultVictory": "standardShort"
+  }
+}

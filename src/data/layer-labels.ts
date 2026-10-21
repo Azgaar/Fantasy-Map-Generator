@@ -44,6 +44,13 @@ export const LAYER_TOGGLES = new Map<LayerId, LayerButton>([
   ["vignette", { label: "Vignette", shortcut: "BracketLeft", hint: "[ (left square bracket)" }]
 ]);
 
+declare global {
+  // biome-ignore lint/suspicious/noRedeclare: exposed on window for the conquest feature seam
+  var LAYER_TOGGLES: Map<LayerId, LayerButton>;
+}
+
+window.LAYER_TOGGLES = LAYER_TOGGLES;
+
 /** The plain label of a layer, the hotkey markup stripped; `map` is the whole-map style element */
 export function layerLabel(id: string): string {
   if (id === "map") return "Map";

@@ -665,6 +665,13 @@ export const MAP_COMMANDS: MapCommand[] = [
   }))
 ];
 
+declare global {
+  // biome-ignore lint/suspicious/noRedeclare: exposed on window for the conquest feature seam
+  var MAP_COMMANDS: MapCommand[];
+}
+
+window.MAP_COMMANDS = MAP_COMMANDS;
+
 /** A typed question: ends with a question mark or opens with a question word */
 function isQuestion(text: string): boolean {
   const query = text.trim();

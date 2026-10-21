@@ -1,0 +1,113 @@
+{
+  "events": [
+    {
+      "id": "harvestFestival",
+      "title": "Harvest Festival",
+      "text": "The granaries overflow and the people look to their lords. A feast would bind them closer — or you could tax the merriment.",
+      "trigger": {
+        "type": "season",
+        "season": "Autumn"
+      },
+      "scope": "all",
+      "once": false,
+      "choices": [
+        {
+          "text": "Hold a great feast.",
+          "effects": {
+            "treasury": -200,
+            "order": 5
+          }
+        },
+        {
+          "text": "Tax the harvest hard.",
+          "effects": {
+            "treasury": 300,
+            "order": -5
+          }
+        }
+      ]
+    },
+    {
+      "id": "borderBrigands",
+      "title": "Brigands on the Roads",
+      "text": "Displaced soldiers prey on travellers near the border. Hire them, hang them, or look away.",
+      "trigger": {
+        "type": "turn",
+        "every": 12
+      },
+      "scope": "player",
+      "choices": [
+        {
+          "text": "Hire them as road wardens.",
+          "effects": {
+            "treasury": -300,
+            "order": 3
+          }
+        },
+        {
+          "text": "Hang the ringleaders.",
+          "effects": {
+            "order": 1
+          }
+        },
+        {
+          "text": "Let the roads fend for themselves.",
+          "effects": {
+            "treasury": 100,
+            "order": -3
+          }
+        }
+      ]
+    },
+    {
+      "id": "ruinedFortLoot",
+      "title": "The Ruined Fort",
+      "text": "Your soldiers uncovered an old garrison vault beneath the ruins. Its dead owners have no use for gold.",
+      "trigger": {
+        "type": "poiDiscovered",
+        "poiType": "ruins"
+      },
+      "scope": "player",
+      "choices": [
+        {
+          "text": "Distribute it among the troops.",
+          "effects": {
+            "treasury": 150,
+            "order": 3
+          }
+        },
+        {
+          "text": "Send it to the treasury.",
+          "effects": {
+            "treasury": 400
+          }
+        }
+      ]
+    },
+    {
+      "id": "warWeary",
+      "title": "War-Weary Notables",
+      "text": "Merchants and landowners petition for an end to the fighting. Their coin could buy peace — or their resentment will buy trouble.",
+      "trigger": {
+        "type": "warDeclared"
+      },
+      "scope": "player",
+      "once": true,
+      "choices": [
+        {
+          "text": "Take their donation and promise nothing.",
+          "effects": {
+            "treasury": 500,
+            "order": -2
+          }
+        },
+        {
+          "text": "Refuse — the war will be won first.",
+          "effects": {
+            "order": 2
+          }
+        }
+      ]
+    }
+  ]
+}

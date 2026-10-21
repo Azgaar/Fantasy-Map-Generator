@@ -1,0 +1,45 @@
+{
+  "victory": [
+    {
+      "id": "standardShort",
+      "name": "Short Campaign",
+      "objectives": [
+        {
+          "type": "controlRegions",
+          "fraction": 0.35
+        }
+      ]
+    },
+    {
+      "id": "standardLong",
+      "name": "Long Campaign",
+      "objectives": [
+        {
+          "type": "controlRegions",
+          "fraction": 0.5
+        },
+        {
+          "type": "holdCapitals",
+          "count": 3
+        }
+      ]
+    },
+    {
+      "id": "warlordLong",
+      "name": "Great Despoiling",
+      "objectives": [
+        {
+          "type": "eliminateFactions",
+          "factions": [
+            7,
+            14
+          ]
+        },
+        {
+          "type": "controlRegions",
+          "count": 30
+        }
+      ]
+    }
+  ]
+}
