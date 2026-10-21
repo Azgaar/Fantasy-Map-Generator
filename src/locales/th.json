@@ -2671,7 +2671,7 @@
   "Shortcut: + to increase; – to decrease": "ปุ่มลัด: + เพื่อเพิ่ม; – เพื่อลด",
   "Shortcut: Shift + drag on the map, or {{plus}} and {{minus}}": "ปุ่มลัด: Shift + ลากบนแผนที่ หรือ {{plus}} และ {{minus}}",
   "Show": "แสดง",
-  "Show 3D labels": "แสดงป้ายชื่อ 3D",
+  "Show labels as sprites": "แสดงป้ายชื่อเป็นสไปรต์",
   "Show App Info": "แสดงข้อมูลแอป",
   "Show Export Panel": "แสดงแผงส่งออก",
   "Show Save Panel": "แสดงแผงบันทึก",

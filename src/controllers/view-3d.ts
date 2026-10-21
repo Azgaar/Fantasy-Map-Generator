@@ -205,7 +205,7 @@ function renderOptionsDialog(): void {
         </div>
         <div data-tip="${t("Toggle 3d labels")}" style="margin: 0.6em 0 0.3em -0.2em">
           <input id="options3dMeshLabels3d" class="checkbox" type="checkbox" />
-          <label for="options3dMeshLabels3d" class="checkbox-label"><i>${t("Show 3D labels")}</i></label>
+          <label for="options3dMeshLabels3d" class="checkbox-label"><i>${t("Show labels as sprites")}</i></label>
         </div>
         <div data-tip="${t("Toggle sky mode")}" style="margin: 0.6em 0 0.3em -0.2em">
           <input id="options3dMeshSkyMode" class="checkbox" type="checkbox" />

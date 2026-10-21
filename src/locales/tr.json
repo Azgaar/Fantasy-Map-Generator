@@ -2671,7 +2671,7 @@
   "Shortcut: + to increase; – to decrease": "Kısayol: artırmak için +; azaltmak için –",
   "Shortcut: Shift + drag on the map, or {{plus}} and {{minus}}": "Kısayol: haritada Shift + sürükle ya da {{plus}} ve {{minus}}",
   "Show": "Göster",
-  "Show 3D labels": "3B etiketleri göster",
+  "Show labels as sprites": "Etiketleri sprite olarak göster",
   "Show App Info": "Uygulama bilgisini göster",
   "Show Export Panel": "Dışa aktarma panelini göster",
   "Show Save Panel": "Kaydetme panelini göster",

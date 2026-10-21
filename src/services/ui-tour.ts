@@ -54,14 +54,11 @@ function start() {
     },
     steps: browsingSteps([
       {
-        element: "#map",
         popover: {
           title: t("Welcome to Fantasy Map Generator"),
           description: t(
             "This quick tour covers the essential controls. Use Next/Previous to navigate, or press Esc to exit at any time."
-          ),
-          side: "over",
-          align: "center"
+          )
         }
       },
       {

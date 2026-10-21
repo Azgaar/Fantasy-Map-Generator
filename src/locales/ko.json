@@ -2671,7 +2671,7 @@
   "Shortcut: + to increase; – to decrease": "단축키: + 키우기, – 줄이기",
   "Shortcut: Shift + drag on the map, or {{plus}} and {{minus}}": "단축키: 지도에서 Shift + 드래그, 또는 {{plus}} 와 {{minus}}",
   "Show": "표시",
-  "Show 3D labels": "3D 라벨 표시",
+  "Show labels as sprites": "라벨을 스프라이트로 표시",
   "Show App Info": "앱 정보 표시",
   "Show Export Panel": "내보내기 패널 표시",
   "Show Save Panel": "저장 패널 표시",

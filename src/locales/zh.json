@@ -2671,7 +2671,7 @@
   "Shortcut: + to increase; – to decrease": "快捷键：+ 增加；– 减少",
   "Shortcut: Shift + drag on the map, or {{plus}} and {{minus}}": "快捷键：在地图上按住 Shift 拖动，或使用 {{plus}} 和 {{minus}}",
   "Show": "显示",
-  "Show 3D labels": "显示 3D 标签",
+  "Show labels as sprites": "将标签显示为精灵",
   "Show App Info": "显示应用信息",
   "Show Export Panel": "显示导出面板",
   "Show Save Panel": "显示保存面板",

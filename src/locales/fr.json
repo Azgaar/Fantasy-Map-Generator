@@ -2671,7 +2671,7 @@
   "Shortcut: + to increase; – to decrease": "Raccourci : + pour augmenter, – pour diminuer",
   "Shortcut: Shift + drag on the map, or {{plus}} and {{minus}}": "Raccourci : Maj + glisser sur la carte, ou {{plus}} et {{minus}}",
   "Show": "Afficher",
-  "Show 3D labels": "Afficher les étiquettes 3D",
+  "Show labels as sprites": "Afficher les étiquettes en sprites",
   "Show App Info": "Afficher les informations sur l’application",
   "Show Export Panel": "Afficher le panneau d’export",
   "Show Save Panel": "Afficher le panneau d’enregistrement",

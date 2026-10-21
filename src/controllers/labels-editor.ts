@@ -235,7 +235,7 @@ function showTopButtons(): void {
   updateControls();
 }
 
-function showEditorTips(event: MouseEvent): void {
+function showEditorTips(event: MouseEvent | TouchEvent): void {
   showMainTip();
   const target = event.target as SVGElement;
   const parent = target.parentNode as Element | null;

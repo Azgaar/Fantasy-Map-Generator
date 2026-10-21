@@ -2671,7 +2671,7 @@
   "Shortcut: + to increase; – to decrease": "Tastenkürzel: + zum Erhöhen; – zum Verringern",
   "Shortcut: Shift + drag on the map, or {{plus}} and {{minus}}": "Tastenkürzel: Umschalt + Ziehen auf der Karte oder {{plus}} und {{minus}}",
   "Show": "Anzeigen",
-  "Show 3D labels": "3D-Beschriftungen anzeigen",
+  "Show labels as sprites": "Beschriftungen als Sprites anzeigen",
   "Show App Info": "App-Informationen anzeigen",
   "Show Export Panel": "Exportbereich anzeigen",
   "Show Save Panel": "Speicherbereich anzeigen",

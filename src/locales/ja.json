@@ -2671,7 +2671,7 @@
   "Shortcut: + to increase; – to decrease": "ショートカット：+ で増加、– で減少",
   "Shortcut: Shift + drag on the map, or {{plus}} and {{minus}}": "ショートカット：地図上で Shift + ドラッグ、または {{plus}} と {{minus}}",
   "Show": "表示",
-  "Show 3D labels": "3D ラベルを表示",
+  "Show labels as sprites": "ラベルをスプライトとして表示",
   "Show App Info": "アプリの情報を表示",
   "Show Export Panel": "書き出しパネルを表示",
   "Show Save Panel": "保存パネルを表示",

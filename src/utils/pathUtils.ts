@@ -255,7 +255,7 @@ export const getPolesOfInaccessibility = (
   const isolines = getIsolines(graph, getType, { polygons: true });
 
   const poles = Object.entries(isolines).map(([id, isoline]) => {
-    const multiPolygon = (isoline.polygons as unknown as number[][][]).sort((a, b) => b.length - a.length);
+    const multiPolygon = isoline.polygons?.sort((a, b) => b.length - a.length) || [];
     const [x, y] = polylabel(multiPolygon, 20);
     return [id, [rn(x), rn(y)]];
   });

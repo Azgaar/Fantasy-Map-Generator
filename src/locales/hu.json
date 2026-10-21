@@ -2671,7 +2671,7 @@
   "Shortcut: + to increase; – to decrease": "Gyorsgomb: + a növeléshez; – a csökkentéshez",
   "Shortcut: Shift + drag on the map, or {{plus}} and {{minus}}": "Gyorsgomb: Shift + húzás a térképen, vagy {{plus}} és {{minus}}",
   "Show": "Megjelenítés",
-  "Show 3D labels": "3D feliratok megjelenítése",
+  "Show labels as sprites": "Feliratok megjelenítése spriteként",
   "Show App Info": "Alkalmazásinfó megjelenítése",
   "Show Export Panel": "Exportpanel megjelenítése",
   "Show Save Panel": "Mentéspanel megjelenítése",
