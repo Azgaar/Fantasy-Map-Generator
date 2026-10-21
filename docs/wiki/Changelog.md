@@ -22,8 +22,8 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Trade tariffs and embargoes
 - Free-text tags for states and other entities
 - View-only mode for saved maps
-- Save to machine creates a new file each time; Shift+Click overwrites the last saved file
-- CSV upload for states, religions, provinces, burgs, rivers, routes, markers, zones, biomes and features
+- Save to machine creates a new file each time
+- CSV upload for most entities
 - Color picker rework
 - Population layer: Shading land by population density by _[inviktos](https://github.com/inviktos)_
 - Altitude legend: heightmap colors by _[Avengium](https://github.com/Avengium)_

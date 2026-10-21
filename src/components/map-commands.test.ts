@@ -10,7 +10,10 @@ const mocks = vi.hoisted(() => ({
   save: vi.fn()
 }));
 vi.mock("@/components/layers", () => ({ Layers: { draw: mocks.draw, toggle: vi.fn() } }));
-vi.mock("@/components/dialog/dialog-helpers", () => ({ refreshEditors: mocks.refresh }));
+vi.mock("@/components/dialog/dialog-helpers", async importOriginal => ({
+  ...(await importOriginal<typeof import("@/components/dialog/dialog-helpers")>()),
+  refreshEditors: mocks.refresh
+}));
 vi.mock("@/components/options/tabs/layers-tab", () => ({
   LAYER_TOGGLES: new Map(),
   LAYER_PRESETS: { political: "Political map" }

@@ -1744,8 +1744,8 @@ async function uploadStatesCsv(text: string): Promise<void> {
         );
         row.apply("Type", type => States.setType(id, type), state.type);
         row.apply("Expansionism", value => States.setExpansionism(id, +value), state.expansionism);
-        row.apply("Sales Tax", value => States.setTaxes(id, +value, state.pollTax), state.salesTax || 0);
-        row.apply("Poll Tax", value => States.setTaxes(id, state.salesTax, +value), state.pollTax || 0);
+        row.apply("Sales Tax", value => States.setTaxes(id, +value, state.pollTax || 0), state.salesTax || 0);
+        row.apply("Poll Tax", value => States.setTaxes(id, state.salesTax || 0, +value), state.pollTax || 0);
         row.apply("Treasury", value => States.setTreasury(id, +value), state.treasury || 0);
         row.assign("Tags", tags => States.setTags(id, tags), (state.tags ?? []).join(";"));
       } else {
