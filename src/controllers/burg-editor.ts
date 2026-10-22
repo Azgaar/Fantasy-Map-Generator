@@ -38,14 +38,17 @@ function open(id: number | string): void {
   renderDialog();
   ensureEl("burgEditor").dataset.entity = `burg:${selectedId}`;
   updateGroupsList();
-  updateBurgValues();
 
   $("#burgEditor").dialog({
+    autoOpen: false,
     title: "Edit Burg",
     resizable: false,
     close: closeBurgEditor,
     position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" }
   });
+  // Loading the iframe before dialog creation would restart its navigation when reparented.
+  updateBurgValues();
+  $("#burgEditor").dialog("open");
 }
 
 function renderDialog(): void {
@@ -776,6 +779,7 @@ function closeBurgEditor(): void {
   clearTimeout(previewSettleTimer);
   if (ensureEl("burgRelocate").classList.contains("pressed")) toggleRelocateBurg();
   selected = null;
+  ensureEl("burgPreviewObject").replaceChildren();
   $("#burgEditor").dialog("destroy");
   ensureEl("burgEditor").remove();
 }
