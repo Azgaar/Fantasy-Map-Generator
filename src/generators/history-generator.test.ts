@@ -57,10 +57,10 @@ beforeEach(() => {
       }
     ],
     cultures: [
-      { i: 0, name: "Wildlings" },
-      { i: 1, name: "Aeloran", origins: [0] },
-      { i: 2, name: "Velic", origins: [1] },
-      { i: 3, name: "Thornic", origins: [2] }
+      { i: 0, name: "Wildlings", base: 1 },
+      { i: 1, name: "Aeloran", base: 1, origins: [0] },
+      { i: 2, name: "Velic", base: 1, origins: [1] },
+      { i: 3, name: "Thornic", base: 1, origins: [2] }
     ],
     religions: [
       { i: 0, name: "No religion", origins: null },
@@ -151,19 +151,20 @@ describe("Chronicle.generate", () => {
 
   it("resolves every actor reference to a living entity", () => {
     Chronicle.generate();
-    const tables: Record<HistRefKind, { removed?: boolean }[]> = {
+    const tables: Record<HistRefKind, unknown[]> = {
       state: pack.states,
       culture: pack.cultures,
       religion: pack.religions,
       realm: [],
-      burg: []
+      burg: [],
+      figure: pack.history.figures ?? []
     };
     for (const event of pack.history.events) {
       expect(event.actors.length).toBeGreaterThan(0);
       for (const ref of event.actors) {
-        const entity = tables[ref.kind][ref.id];
+        const entity = tables[ref.kind][ref.id] as { removed?: boolean } | undefined;
         expect(entity).toBeTruthy();
-        expect(entity.removed).toBeFalsy();
+        expect(entity!.removed).toBeFalsy();
       }
     }
   });
@@ -181,7 +182,7 @@ describe("Chronicle.generate", () => {
     for (const event of pack.history.events) {
       if (event.type !== "war") continue;
       for (const ref of event.actors) {
-        const founded = foundingYear(ref.id);
+        const founded = ref.kind === "state" ? foundingYear(ref.id) : undefined;
         if (founded !== undefined) expect(event.year).toBeGreaterThanOrEqual(founded);
       }
     }
@@ -242,6 +243,75 @@ describe("Chronicle.generate", () => {
     pack.states.push({ i: 4, name: "D", area: 10, campaigns: undefined, diplomacy: undefined } as never);
     pack.states[0].diplomacy = [] as unknown as string[];
     expect(() => Chronicle.generate()).not.toThrow();
+  });
+});
+
+describe("Chronicle.generate figures", () => {
+  const figures = () => pack.history.figures ?? [];
+  const rulers = () => figures().filter(figure => figure.roles[0]?.type === "ruler");
+  const roleOf = (figureId: number) => figures()[figureId].roles[0]!;
+
+  it("remembers dynasties for the major states only", () => {
+    Chronicle.generate();
+    const served = new Set(rulers().map(figure => figure.roles[0]!.target.id));
+    expect(served).toEqual(new Set([1, 3])); // B is too small to be remembered
+    for (const figure of rulers()) expect(figure.culture).toBe(pack.states[figure.roles[0]!.target.id].culture);
+  });
+
+  it("spans each dynasty from the state's founding to now under 2–5 rulers", () => {
+    Chronicle.generate();
+    for (const stateId of [1, 3]) {
+      const dynasty = rulers().filter(figure => figure.roles[0]!.target.id === stateId);
+      expect(dynasty.length).toBeGreaterThanOrEqual(2);
+      expect(dynasty.length).toBeLessThanOrEqual(5);
+      let previousEnd: number | undefined;
+      for (const figure of dynasty) {
+        const role = figure.roles[0]!;
+        expect(role.from).toBe(previousEnd ?? foundingYear(stateId)); // reigns are contiguous from the founding
+        expect(figure.birth).toBeLessThan(role.from);
+        if (role.to !== undefined) expect(figure.death).toBeGreaterThanOrEqual(role.to);
+        previousEnd = role.to;
+      }
+      expect(previousEnd).toBeUndefined(); // the last ruler still reigns
+    }
+  });
+
+  it("crowns the founder and records each later accession", () => {
+    Chronicle.generate();
+    const coronations = pack.history.events.filter(event => event.type === "coronation");
+    const successions = pack.history.events.filter(event => event.type === "succession");
+    expect(coronations.length + successions.length).toBe(rulers().length);
+    expect(coronations.map(event => event.actors[1]!.id).sort()).toEqual([1, 3]);
+    for (const event of coronations) expect(event.year).toBe(foundingYear(event.actors[1]!.id));
+    for (const event of successions) {
+      const [heir, dead] = event.actors;
+      expect(heir.kind).toBe("figure");
+      expect(dead.kind).toBe("figure");
+      expect(roleOf(heir.id).from).toBe(event.year); // the heir's reign began
+      expect(roleOf(dead.id).to).toBe(event.year); // the dead ruler's reign ended
+    }
+  });
+
+  it("indexes figures densely by id", () => {
+    Chronicle.generate();
+    expect(figures().map(figure => figure.i)).toEqual(figures().map((_, index) => index));
+  });
+
+  it("gives every interstate war a general", () => {
+    Chronicle.generate();
+    const wars = pack.history.events.filter(
+      event => event.type === "war" && event.actors.some(ref => ref.kind === "state" && ref.id)
+    );
+    const generals = figures().filter(figure => figure.roles[0]?.type === "general");
+    expect(generals.length).toBe(wars.length);
+    for (const event of wars) {
+      const servant = event.actors.find(ref => ref.kind === "state" && ref.id)!;
+      const ref = event.actors.find(ref => ref.kind === "figure")!;
+      expect(roleOf(ref.id).type).toBe("general");
+      expect(roleOf(ref.id).target).toEqual(servant);
+      expect(roleOf(ref.id).from).toBe(event.year);
+      expect(figures()[ref.id].birth).toBeLessThan(event.year);
+    }
   });
 });
 

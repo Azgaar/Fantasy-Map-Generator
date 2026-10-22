@@ -1,7 +1,7 @@
 // The map's chronicle: dated events, fallen realms and eras. See docs/plans/history-generation.md
 import type { Emblem } from "@/types/emblems";
 
-export type HistRefKind = "state" | "realm" | "burg" | "culture" | "religion";
+export type HistRefKind = "state" | "realm" | "burg" | "culture" | "religion" | "figure";
 
 export interface HistRef {
   kind: HistRefKind;
@@ -18,7 +18,9 @@ export type HistoryEventType =
   | "independence"
   | "goldenAge"
   | "sack"
-  | "plague";
+  | "plague"
+  | "coronation"
+  | "succession";
 
 export interface HistoryEvent {
   i: number;

@@ -1,6 +1,6 @@
 # Plan — History Generation (the Archaeologist)
 
-Updated: 2026-10-20. Decisions taken in brainstorming: **Archaeologist** approach (retroactive
+Updated: 2026-10-22. Decisions taken in brainstorming: **Archaeologist** approach (retroactive
 event log + ghost fallen realms), figures deferred to a later phase, primary consumption is an
 **in-app Legends browser**. This document is the implementation contract; slices in
 [Build Order](#build-order) are each shippable on their own.
@@ -293,6 +293,11 @@ Slice notes:
   chips zoom to where the actor lives (a state's pole, a culture or religion's center cell); a burg
   chip opens its editor; a realm chip switches to the Realms tab. Realm COAs are carried in the
   realm record but not yet drawn in the browser — inline heraldry is future polish.
+- Slice 5 figures — `HistRef` gains a `figure` kind and the log two event types (`coronation` for a
+  founder, `succession` for each heir). A dynasty of 2–5 rulers per major state (area ≥ ⅓ of the
+  largest) partitions founding→now; the last ruler still reigns. Every interstate war event gains
+  one general on the leading state's side (wars against the wilds get none), named from the state's
+  culture namebase; the browser lists figures grouped by whom they served on a Figures tab.
 
 Each slice is shippable; nothing user-visible breaks if work stops between slices.
 
@@ -302,7 +307,7 @@ Each slice is shippable; nothing user-visible breaks if work stops between slice
 | 2 ✅ | Pass 1 (scaffold) + pass 3 (emission); migrate `states[0].diplomacy` chronicle into events; culture/religion divergence events | Every state has a founding; every war (past and ongoing) is an event; invariants above pass |
 | 3 ✅ | Pass 2 (ghost realms) + pass 4 (echoes: markers, notes, optional renames) | Realms with valid dates; ruin/battlefield markers from events; successor notes visible in the notes box |
 | 4 ✅ | Legends browser (timeline + realms tabs, filters, zoom links); Tools tab entry; Lore Editor history section | Browsable, filterable, clickable chronicle |
-| 5 | Figures: dynasties (2–5 rulers per major state spanning founding→now), coronations, successions, a general per major war — lazily generated, only where events need them | Entity pages list figures; events reference them |
+| 5 ✅ | Figures: dynasties (2–5 rulers per major state spanning founding→now), coronations, successions, a general per major war — lazily generated, only where events need them | Entity pages list figures; events reference them |
 
 ## Future Phases (out of scope for now)
 
