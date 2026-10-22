@@ -268,6 +268,18 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => Controllers.LegendsOverview.open()
   },
   {
+    id: "applyAstralNaming",
+    name: "Apply Astral Naming",
+    aliases: "astral polities sectors star systems names sci-fi",
+    run: () => Controllers.AstralNames.apply()
+  },
+  {
+    id: "openStarSystems",
+    name: "Open Star Systems Overview",
+    aliases: "astral systems stars classes populations sci-fi",
+    run: () => Controllers.AstralSystems.open()
+  },
+  {
     id: "transports",
     name: "Open Transports Editor",
     aliases: "journeys travel speed",

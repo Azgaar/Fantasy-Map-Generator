@@ -83,6 +83,12 @@ const TEMPLATE = /* html */ `
     <button id="openLegendsBrowser" data-tip="Click to open the Legends browser: the map's chronicle">
       Legends
     </button>
+    <button id="applyAstralNaming" data-tip="Click to give the polities their own words and the provinces their sectors">
+      Astral Names
+    </button>
+    <button id="openStarSystems" data-tip="Click to open the Star Systems overview">
+      Star Systems
+    </button>
     <button id="editStatesButton" data-tip="Click to open States Editor" data-shortcut="Shift + S">
       States
     </button>

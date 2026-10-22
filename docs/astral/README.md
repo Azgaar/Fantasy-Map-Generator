@@ -37,14 +37,49 @@ Three dedicated culture sets available directly from the Cultures generator drop
 
 Each set generates 8 distinct cultures with habitat scoring callbacks mapped to star-map preferences (`temperate`, `harsh`, `remote`, `any`). All three sets are fully supported by options schema validation and persistent option pinning.
 
+## The mapping — polities, sectors and star systems
+
+The content is only half the mapping. The other half is what FMG's own words become on a star map, and it is applied **on demand**, not during generation: a world stays a fantasy world until the author asks for it.
+
+### Applying the naming
+
+_Options_ → _Tools_ → **Astral Names** (or the "Apply Astral Naming" command in the omnibar) does three things:
+
+- **the polities get their words** — a state's word comes from the `polities` group of its own culture's base, so a Trek state becomes a "United Federation" and a Grimdark one a "Compact". A state whose culture names from a stock base keeps FMG's own word, so a mixed map keeps each people's register.
+- **the polities are named by the system that holds them** — a state takes the name of its capital, with no fantasy suffix. "Gant", not "Gantia".
+- **the provinces become sectors** — "Gant Sector", "Yaxford Reach", "Aulacurus Belt".
+
+The words are picked by a hash of the name, so a polity keeps its word between regenerations, and applying the naming twice changes nothing the second time.
+
+### The star classes
+
+A burg is a star system: a star with a class, a population, and the installations that make it what it is. The class follows the population, and the ladder runs from the comfortable to the exotic as the population falls:
+
+| People | Class | Star |
+|---|---|---|
+| over 1 000 000 | G | yellow dwarf — the Sun-like homeworld, the most habitable there is |
+| under 1 000 000 | F | white-yellow star — bright and comfortable |
+| under 250 000 | K | orange dwarf — hardy, long-lived |
+| under 50 000 | A | white star — hot and brilliant |
+| under 10 000 | B | blue giant — spectacular, and short-lived |
+| under 2 000 | M | red dwarf — flare-lit, tidal-locked, nobody's idea of a home |
+
+The big worlds sit on the comfortable stars; the small ones on the exotic, harsh fringe. The rare, spectacular types belong to the smaller worlds, because they are spectacular, not comfortable.
+
+The installations become the system's own: a port is a **shipyard**, a citadel a **bastion**, a plaza a **civic core**, a shanty a **drift**, a temple a **shrine**, walls are **shielding**.
+
+### The Star Systems overview
+
+_Options_ → _Tools_ → **Star Systems** lists every system on the map with its class, its people and its traits; clicking a row zooms to it. In the browser console, `Astral.systems()` returns the same list as data.
+
 ## In-Tree Roadmap
 
 As detailed in [`docs/plans/mod-merge-plan.md`](../plans/mod-merge-plan.md):
 - **Phase A (Shipped)**: Core name bases, culture sets, and schema validation.
-- **Phase D (Upcoming)**:
-  - Custom star system, sector, and polity naming generators (`src/generators/astral-naming.ts`).
-  - Stellar classification (spectral types, stellar remnants) and celestial traits derived from world data.
+- **Phase D (Shipped)**: The mapping — polity and sector naming, the star classes and traits, and the Star Systems overview.
+- **Upcoming**:
   - Nebula rendering, stellar density heatmaps, and sci-fi cartographic visual styles.
+  - The visual reskin: the galactic plane, the void between systems, the system markers.
 
 ---
 *For upstream merge tracking, see [MERGING.md](../../MERGING.md).*

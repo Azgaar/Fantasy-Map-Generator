@@ -9,6 +9,17 @@ export interface NameBase {
   groups?: Record<string, string[]>;
 }
 
+/**
+ * Is this base one of the Astral ones?
+ *
+ * The Astral bases carry name groups — the polities they can name — and those
+ * groups are what makes them ours. A stock base has none, so a stock culture
+ * keeps FMG's own words everywhere.
+ */
+export function isAstralBase(base: NameBase | undefined): boolean {
+  return !!base?.groups?.polities?.length;
+}
+
 export function getDefaultNameBases(): NameBase[] {
   // name, min length, max length, letters to allow duplication, multi-word name rate [deprecated]
   // prettier-ignore

@@ -179,10 +179,26 @@ B are done, C (cleanup) with them; only the naming step is left.
 | B ✅ | Conquest transplant (engine/host/store → `src/conquest/`, native layers/commands, worker) | B | large | Campaign compiles from a finished world; a turn can be fought |
 | C ✅ | Conquest UI (top-bar button, rail, layers, campaign storage) | B | medium | Save/resume campaign across reloads |
 | D ✅ | Cleanup (archive repos, retire harnesses, MERGING.md, wiki pages) | C | small | One repo, one dev command |
-| E | Astral naming (polities, sectors, star classes) | D | small–medium | Astral-set worlds read as star maps; stock worlds untouched |
+| E ✅ | Astral naming (polities, sectors, star classes) | D | small–medium | Astral-set worlds read as star maps; stock worlds untouched |
 
 Phase D (cleanup) before E on purpose: the naming step is optional polish, while the cleanup makes
 the repo the single home for everything the remaining work builds on.
+
+### Phase D notes
+
+- The mapping is an **action, not a generation step**: a world stays a fantasy world until the
+  author applies the naming (_Options_ → _Tools_ → _Astral Names_). The pipeline is untouched by it,
+  so no stock file gains a generation step.
+- A polity is named by the system that holds it — a state takes its capital's name, with no
+  fantasy suffix — and its word comes from the `polities` group of its own culture's base, so a
+  mixed map keeps each people's register. The words are hashed from the name, so applying twice
+  changes nothing.
+- **The star class ladder was corrected during the work**: the biggest settlements sit on the most
+  habitable stars (a Sun-like yellow dwarf), and the small ones on the exotic, harsh fringe (blue
+  giants, white stars, red dwarfs). The original mod's mapping ran the other way — a capital on a
+  blue giant, a hamlet on a red dwarf.
+- The Star Systems overview is a read-only controller (`Controllers.AstralSystems`); the console
+  helper `Astral.systems()` returns the same data.
 
 ### Phase C notes
 

@@ -54,7 +54,8 @@ To report a problem or propose a feature, see [Reporting bugs and suggesting ide
 
 **Fork features**
 [Legends browser](https://github.com/0xPaladin/Fantasy-Map-Generator/wiki/Legends) ·
-[OpenConquest: Atlas Invictus](https://github.com/0xPaladin/Fantasy-Map-Generator/wiki/OpenConquest)
+[OpenConquest: Atlas Invictus](https://github.com/0xPaladin/Fantasy-Map-Generator/wiki/OpenConquest) ·
+[Astral Cartographer](https://github.com/0xPaladin/Fantasy-Map-Generator/wiki/Astral-Cartographer)
 
 **Running and integrating**
 [Run FMG locally](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally) ·

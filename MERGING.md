@@ -68,6 +68,27 @@ git fetch upstream && git merge upstream/master
 - **`src/data/name-bases.test.ts`**
   - Dedicated test suite for content rules, culture set generation, placement scoring, and Phase A acceptance.
 
+### Phase D: Astral mapping (polities, sectors, star systems)
+
+- **`src/data/name-bases.ts`**
+  - **Interface extension**: `NameBase` includes optional `groups?: Record<string, string[]>`.
+  - **New helper**: `isAstralBase(base)` — the bases that carry name groups, and so are ours.
+  - *Conflict resolution strategy*: the Astral bases stay appended after upstream bases; the helper
+    reads the live array, so a user-edited base without groups is treated as a stock one.
+
+- **`src/generators/astral-naming.ts`** (new)
+  - The mapping: the polity words, the sector words, the star classes, the traits, and
+    `applyNaming()` — the action the tool button runs.
+
+- **`src/controllers/astral-names.ts`** (new) — the action: a confirmation, the apply, and a tip.
+- **`src/controllers/astral-systems.ts`** (new) — the read-only Star Systems overview.
+- **`src/controllers/index.ts`**: two registry entries (`AstralNames`, `AstralSystems`).
+- **`src/components/map-commands.ts`**: two commands appended (`applyAstralNaming`, `openStarSystems`).
+- **`src/components/options/tabs/tools-tab.ts`**: two buttons appended.
+- **`src/generators/index.ts`**: one import appended (`./astral-naming`).
+- *Note*: the mapping is **not** a generation step. A world stays a fantasy world until the author
+  applies the naming, so the pipeline is untouched by it.
+
 ### Toolchain & Windows Environment Compatibility
 
 - **`package.json`**:
