@@ -53,6 +53,16 @@ bun test --preload ./src/test-setup.ts
 bun run build
 ```
 
+### What's next
+The plans for the work that is not here yet live in [`docs/plans`](docs/plans):
+
+| Plan | What it covers |
+|---|---|
+| [`history-generation.md`](docs/plans/history-generation.md) | the shipped chronicle: events, fallen realms, the Legends browser |
+| [`history-epochs.md`](docs/plans/history-epochs.md) | **epochs** — the political layer regenerated K times, so the past is causal and the borders can be scrubbed through time |
+| [`mod-merge-plan.md`](docs/plans/mod-merge-plan.md) | bringing the Astral Cartographer and OpenConquest mods in-tree (done) |
+| [`mod-seams-proposal.md`](docs/plans/mod-seams-proposal.md) | the three upstream seams a mod needs to run on stock FMG (proposed upstream) |
+
 ---
 
 ## Credits & Upstream

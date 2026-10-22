@@ -309,7 +309,8 @@ Each slice is shippable; nothing user-visible breaks if work stops between slice
 - **Epochs**: run the political layer K times with collapses between; per-epoch
   `cellsState: Uint16Array` snapshots (~20 × 10k cells) enable a border time slider. The event
   schema above is already what epochs would emit causally; `History.generate` would consume
-  epoch logs instead of writing retroactive ones.
+  epoch logs instead of writing retroactive ones. **Planned in detail in
+  [history-epochs.md](history-epochs.md).**
 - **Chronicle export**: markdown timeline export for worldbuilding outside the tool — falls out
   of the event log.
 - **Assistant operations**: register `History.regenerate()`, `History.lockEvent(id)` as
