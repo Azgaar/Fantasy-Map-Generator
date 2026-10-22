@@ -44,10 +44,11 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Journey**: A route travelled by a party — a quest, a caravan run, a raid — made of ordered Segments. Distinct from a [[Route]], which is a road on the ground that a Journey may follow. Stored in `pack.journeys`.
 - **Zone**: An arbitrary highlighted area of the map defined for custom purposes (e.g., danger zone, magic zone).
 - **History**: The map's chronicle in `pack.history`: dated events, fallen realms and eras. Generated retroactively from the finished world by the Chronicle model, not simulated; older saves carry an empty one. See docs/plans/history-generation.md.
-- **History Event**: A dated entry in `pack.history.events` referencing map entities by `HistRef` (`state`, `realm`, `burg`, `culture`, `religion`). A `lock`ed event survives regeneration.
+- **History Event**: A dated entry in `pack.history.events` referencing map entities by `HistRef` (`state`, `realm`, `burg`, `culture`, `religion`, `figure`). A `lock`ed event survives regeneration.
 - **Chronicle**: The generator model owning `pack.history` (global `Chronicle`; the DOM owns the name `History`). Distinct from the relations chronicle: the user-editable war and relation log the diplomacy overview keeps on `states[0].diplomacy`.
+- **Historical Figure**: A ruler or general in `pack.history.figures`, generated lazily as events need them: a dynasty of 2–5 rulers per major state and a general per interstate war. Referenced from events by `{kind: "figure", id}`.
 - **Realm**: A fallen state in `pack.history.realms`, never added to `pack.states`, so politics, statistics and editors never see it.
-- **Legends Browser**: The read-only overview of the map's chronicle (`Controllers.LegendsOverview`, Tools → Legends): a Timeline tab of events grouped by era with filters and zoom links, and a Realms tab with the fallen realms' stories. Also reachable through the "Open Legends Browser" command.
+- **Legends Browser**: The read-only overview of the map's chronicle (`Controllers.LegendsOverview`, Tools → Legends): a Timeline tab of events grouped by era with filters and zoom links, a Realms tab with the fallen realms' stories, and a Figures tab with the rulers and generals. Also reachable through the "Open Legends Browser" command.
 - **Diplomacy**: The system of political relationships (allies, enemies, neutral, vassals) between different States.
 - **Regiment / Military**: The armed forces belonging to States or Burgs, represented by units.
 - **Good**: A resource or product (e.g., wood, iron, grain) with properties like value, demand, and recipes. Raw goods have a `distribution`; manufactured goods have `recipes`.

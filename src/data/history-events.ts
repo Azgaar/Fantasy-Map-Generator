@@ -114,3 +114,48 @@ export const REMNANT_TEMPLATES: RemnantTemplate[] = [
     `Pockets of ${culture} speakers endure in the old ${realm} heartland, relics of imperial resettlement`,
   (culture, realm) => `The ${realm} settled loyal ${culture} families along its roads; their descendants remain`
 ];
+
+/** how a state's ruler is titled, by its form name; unmapped forms rule as lord or lady */
+export const RULER_TITLES: Record<string, [string, string]> = {
+  Beylik: ["Bey", "Bey"],
+  Bishopric: ["Bishop", "Bishop"],
+  Caliphate: ["Caliph", "Calipha"],
+  Despotate: ["Despot", "Despoina"],
+  "Divine Empire": ["God-Emperor", "God-Empress"],
+  Duchy: ["Duke", "Duchess"],
+  Emirate: ["Emir", "Emira"],
+  Empire: ["Emperor", "Empress"],
+  Horde: ["Great Khan", "Khatun"],
+  Imamat: ["Imam", "Imam"],
+  Khaganate: ["Khagan", "Khatun"],
+  Khanate: ["Khan", "Khatun"],
+  Kingdom: ["King", "Queen"],
+  Patriarchate: ["Patriarch", "Matriarch"],
+  Principality: ["Prince", "Princess"],
+  Satrapy: ["Satrap", "Satrap"],
+  Shogunate: ["Shogun", "Shogun"],
+  Sultanate: ["Sultan", "Sultana"],
+  Tsardom: ["Tsar", "Tsarina"],
+  Viceroyalty: ["Viceroy", "Vicereine"]
+};
+
+export type CoronationTemplate = (ruler: string, title: string, state: string) => string;
+export const CORONATION_TEMPLATES: CoronationTemplate[] = [
+  (ruler, title, state) => `${ruler} was crowned ${title} of ${state}`,
+  (ruler, title, state) => `The lords of ${state} hailed ${ruler} as their ${title}`,
+  (ruler, title, state) => `${ruler} took the throne of ${state} as ${title}`
+];
+
+export type SuccessionTemplate = (heir: string, dead: string, state: string) => string;
+export const SUCCESSION_TEMPLATES: SuccessionTemplate[] = [
+  (heir, dead, state) => `${heir} succeeded ${dead} to the throne of ${state}`,
+  (heir, dead, state) => `On ${dead}'s death the crown of ${state} passed to ${heir}`,
+  (heir, dead, state) => `${dead} was laid to rest, and ${heir} inherited the throne of ${state}`
+];
+
+export type GeneralTemplate = (general: string, state: string) => string;
+export const WAR_GENERAL_TEMPLATES: GeneralTemplate[] = [
+  (general, state) => `The armies of ${state} were led by ${general}`,
+  (general, state) => `${general} commanded the hosts of ${state}`,
+  (general, state) => `${state} trusted its fortunes in the war to ${general}`
+];

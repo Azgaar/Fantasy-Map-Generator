@@ -6,8 +6,8 @@ import { dialogState } from "@/components/dialog/state";
 import { Controllers } from "@/controllers";
 import { Chronicle } from "@/generators/history-generator";
 import { getCellPoint } from "@/generators/journeys/journey-places";
-import type { Era, HistoryEvent, HistoryEventType, HistRef } from "@/types/history";
-import { downloadFile, ensureEl, escapeHtml, getFileName } from "@/utils";
+import type { Era, HistoricalFigure, HistoryEvent, HistoryEventType, HistRef } from "@/types/history";
+import { capitalize, downloadFile, ensureEl, escapeHtml, getFileName } from "@/utils";
 
 const dialogId = "legendsBrowser" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -43,10 +43,12 @@ const EVENT_ICONS: Record<HistoryEventType, string> = {
   independence: "🏴",
   goldenAge: "🌟",
   sack: "🔥",
-  plague: "☠️"
+  plague: "☠️",
+  coronation: "👑",
+  succession: "🤝"
 };
 
-let tab: "timeline" | "realms" = "timeline";
+let tab: "timeline" | "realms" | "figures" = "timeline";
 let filters: { type: string; actor: string; search: string };
 
 function open(): void {
@@ -70,6 +72,7 @@ function renderDialog(): void {
     <div id="legendsTabs">
       <button id="legendsTabTimeline" class="active" data-tip="Every recorded event, grouped by era">Timeline</button>
       <button id="legendsTabRealms" data-tip="The fallen realms and their stories">Realms</button>
+      <button id="legendsTabFigures" data-tip="The rulers and generals of the chronicle">Figures</button>
     </div>
 
     <div id="legendsFilters" class="editorFilters">
@@ -79,7 +82,7 @@ function renderDialog(): void {
       <label for="legendsActor" data-tip="Show only events involving this kind of entity" style="grid-template-columns: 3.4em 7em">Actors:
         <select id="legendsActor">
           <option value="">All</option>
-          ${["state", "realm", "culture", "religion", "burg"].map(kind => `<option>${kind}</option>`).join("")}
+          ${["state", "realm", "culture", "religion", "burg", "figure"].map(kind => `<option>${kind}</option>`).join("")}
         </select>
       </label>
       <label for="legendsSearch" data-tip="Filter by the event text" style="grid-template-columns: 4em 10em">Search:
@@ -106,6 +109,7 @@ function renderDialog(): void {
 
   ensureEl("legendsTabTimeline").addEventListener("click", () => switchTab("timeline"));
   ensureEl("legendsTabRealms").addEventListener("click", () => switchTab("realms"));
+  ensureEl("legendsTabFigures").addEventListener("click", () => switchTab("figures"));
   ensureEl("legendsType").addEventListener("change", onFilterChange);
   ensureEl("legendsActor").addEventListener("change", onFilterChange);
   ensureEl("legendsSearch").addEventListener("input", onFilterChange);
@@ -113,10 +117,11 @@ function renderDialog(): void {
   ensureEl("legendsExport").addEventListener("click", exportChronicle);
 }
 
-function switchTab(next: "timeline" | "realms"): void {
+function switchTab(next: "timeline" | "realms" | "figures"): void {
   tab = next;
   ensureEl("legendsTabTimeline").classList.toggle("active", tab === "timeline");
   ensureEl("legendsTabRealms").classList.toggle("active", tab === "realms");
+  ensureEl("legendsTabFigures").classList.toggle("active", tab === "figures");
   renderBody();
 }
 
@@ -148,6 +153,10 @@ function renderBody(): void {
 
   if (tab === "realms") {
     renderRealms(body);
+    return;
+  }
+  if (tab === "figures") {
+    renderFigures(body);
     return;
   }
 
@@ -198,8 +207,10 @@ function renderEvent(event: HistoryEvent): string {
 
 function renderActor(ref: HistRef): string {
   const label = actorLabel(ref);
+  const tip =
+    ref.kind === "burg" ? "its editor" : ref.kind === "figure" || ref.kind === "realm" ? "its page" : "it on the map";
   return /* html */ `<span class="legendActor pointer" data-kind="${ref.kind}" data-id="${ref.id}"
-    data-tip="Find ${ref.kind === "burg" ? "its editor" : "it on the map"}">${escapeHtml(label)}</span>`;
+    data-tip="Open ${tip}">${escapeHtml(label)}</span>`;
 }
 
 function renderLocate(cell: number): string {
@@ -212,6 +223,7 @@ function actorLabel(ref: HistRef): string {
   if (ref.kind === "burg") return pack.burgs[ref.id]?.name ?? "a lost town";
   if (ref.kind === "culture") return pack.cultures[ref.id]?.name ?? "an ancient people";
   if (ref.kind === "religion") return pack.religions[ref.id]?.name ?? "an old faith";
+  if (ref.kind === "figure") return pack.history.figures?.[ref.id]?.name ?? "a nameless name";
   return "unknown";
 }
 
@@ -237,6 +249,56 @@ function renderRealms(body: HTMLElement): void {
   body.innerHTML = lines || `<div class="legendsEmpty">No fallen realms haunt this map.</div>`;
   wireRows(body);
   ensureEl("legendsCount").textContent = String(pack.history.realms.length);
+}
+
+/** the people of the chronicle, grouped under the entity they served */
+function renderFigures(body: HTMLElement): void {
+  const figures = (pack.history.figures ?? []).filter(figureMatches);
+  const grouped = new Map<string, { target: HistRef; figures: HistoricalFigure[] }>();
+  for (const figure of figures) {
+    const target = figure.roles[0]?.target;
+    if (!target) continue;
+    const key = `${target.kind}:${target.id}`;
+    const group = grouped.get(key) ?? { target, figures: [] };
+    group.figures.push(figure);
+    grouped.set(key, group);
+  }
+  const lines = [...grouped.values()]
+    .map(
+      ({ target, figures: group }) => /* html */ `<div class="legendsRealm">
+      <div class="legendsRealmHead"><b>${escapeHtml(actorLabel(target))}</b></div>
+      ${group.map(renderFigure).join("")}
+    </div>`
+    )
+    .join("");
+  body.innerHTML = lines || `<div class="legendsEmpty">No figures grace this chronicle.</div>`;
+  wireRows(body);
+  ensureEl("legendsCount").textContent = String(figures.length);
+}
+
+function figureMatches(figure: HistoricalFigure): boolean {
+  if (filters.actor && filters.actor !== "figure" && !figure.roles.some(role => role.target.kind === filters.actor))
+    return false;
+  const search = filters.search.toLowerCase().trim();
+  if (search && !figure.name.toLowerCase().includes(search)) return false;
+  return true;
+}
+
+function renderFigure(figure: HistoricalFigure): string {
+  const life = figure.death === undefined ? `${figure.birth}–` : formatSpan(figure.birth, figure.death);
+  const roles = figure.roles
+    .map(role => {
+      const served =
+        role.to === undefined && role.type === "ruler"
+          ? `since ${role.from}`
+          : formatSpan(role.from, role.to ?? role.from);
+      return `${capitalize(role.type)} ${renderActor(role.target)}, ${served}`;
+    })
+    .join("; ");
+  return /* html */ `<div class="legendsEvent">
+    <span class="legendsYear">${life}</span>
+    <span class="legendsText"><b>${escapeHtml(figure.name)}</b> — ${roles}</span>
+  </div>`;
 }
 
 function wireRows(body: HTMLElement): void {
@@ -271,7 +333,8 @@ function openActor(this: HTMLElement): void {
       break;
     }
     case "realm":
-      switchTab("realms");
+    case "figure":
+      switchTab(this.dataset.kind === "realm" ? "realms" : "figures");
       break;
   }
 }

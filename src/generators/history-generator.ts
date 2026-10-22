@@ -2,6 +2,7 @@
 // The model is `Chronicle`, not `History`: the DOM owns that global name
 import {
   COLLAPSE_TEMPLATES,
+  CORONATION_TEMPLATES,
   FALL_BATTLE_TEMPLATES,
   FOUNDING_TEMPLATES,
   GOLDEN_AGE_TEMPLATES,
@@ -12,19 +13,23 @@ import {
   REALM_FORMS,
   REALM_FOUNDING_TEMPLATES,
   REMNANT_TEMPLATES,
+  RULER_TITLES,
   SCHISM_TEMPLATES,
-  SUBJUGATION_TEMPLATES
+  SUBJUGATION_TEMPLATES,
+  SUCCESSION_TEMPLATES,
+  WAR_GENERAL_TEMPLATES
 } from "@/data/history-events";
 import {
   type Era,
   emptyHistory,
+  type HistoricalFigure,
   type History,
   type HistoryEvent,
   type HistRef,
   type Realm,
   type RealmCause
 } from "@/types/history";
-import { last, minmax, ra, rand, rw } from "@/utils";
+import { last, minmax, P, ra, rand, rw } from "@/utils";
 import { Emblems } from "./emblems-generator";
 import { Markers } from "./markers-generator";
 import { Names } from "./names-generator";
@@ -49,13 +54,14 @@ class ChronicleModel {
     this.emitReligionSchisms(events);
     const eras: Era[] = [];
     const realms = this.emitRealms(events, founded, eras);
+    const figures = this.emitFigures(events, founded);
     eras.sort((a, b) => a.from - b.from);
     eras.push({ name: options.map.lore.calendar.era, from: last(eras)?.to ?? this.year - this.span, to: this.year });
     events.sort((a, b) => a.year - b.year);
     events.forEach((event, i) => {
       event.i = i;
     });
-    pack.history = { events, realms, eras };
+    pack.history = { events, realms, eras, figures };
     this.echoes(realms, events);
   }
 
@@ -215,6 +221,86 @@ class ChronicleModel {
         )
       });
     }
+  }
+
+  /** dynasties for the major states and a general for every interstate war, each figure made only as an event needs it */
+  private emitFigures(events: HistoryEvent[], founded: number[]): HistoricalFigure[] {
+    const figures: HistoricalFigure[] = [];
+    for (const stateId of this.majorStates()) this.emitDynasty(stateId, founded[stateId], figures, events);
+    for (const event of events) {
+      if (event.type !== "war") continue;
+      const servant = event.actors.find(ref => ref.kind === "state" && ref.id); // a state, not the wilds
+      if (servant) this.attachGeneral(event, servant.id, figures);
+    }
+    return figures;
+  }
+
+  /** the states grand enough to be remembered through their dynasties */
+  private majorStates(): number[] {
+    const valid = pack.states.filter(s => s.i && !s.removed);
+    const largest = Math.max(...valid.map(s => s.area || 1), 1);
+    return valid.filter(s => (s.area || 0) >= largest / 3).map(s => s.i);
+  }
+
+  /** 2–5 rulers whose reigns span the state's founding to the present; each accession is an event */
+  private emitDynasty(stateId: number, start: number, figures: HistoricalFigure[], events: HistoryEvent[]): void {
+    const state = pack.states[stateId];
+    const stateRef: HistRef = { kind: "state", id: stateId };
+    const reigns = rand(2, 5);
+    const length = (this.year - start) / reigns;
+    let predecessor: HistoricalFigure | undefined;
+    for (let r = 0, from = start; r < reigns; r++, from += length) {
+      const accession = Math.round(from);
+      const end = r === reigns - 1 ? undefined : Math.max(accession + 1, Math.round(from + length));
+      const figure: HistoricalFigure = {
+        i: figures.length,
+        name: Names.getCulture(state.culture),
+        culture: state.culture,
+        birth: accession - rand(18, 40),
+        death: end, // reigns end with the ruler; the last figure has neither
+        roles: [{ type: "ruler", target: stateRef, from: accession, to: end }]
+      };
+      const figureRef: HistRef = { kind: "figure", id: figure.i };
+      events.push(
+        predecessor
+          ? {
+              i: 0,
+              year: accession,
+              type: "succession",
+              actors: [figureRef, { kind: "figure", id: predecessor.i }, stateRef],
+              text: ra(SUCCESSION_TEMPLATES)(figure.name, predecessor.name, state.name)
+            }
+          : {
+              i: 0,
+              year: accession,
+              type: "coronation",
+              actors: [figureRef, stateRef],
+              text: ra(CORONATION_TEMPLATES)(figure.name, this.rulerTitle(state), state.name)
+            }
+      );
+      figures.push(figure);
+      predecessor = figure;
+    }
+  }
+
+  private rulerTitle(state: { formName?: string }): string {
+    const [masculine, feminine] = RULER_TITLES[state.formName ?? ""] ?? ["Lord", "Lady"];
+    return P(0.7) ? masculine : feminine;
+  }
+
+  /** the war is remembered through the commander its leading state trusted it to */
+  private attachGeneral(event: HistoryEvent, stateId: number, figures: HistoricalFigure[]): void {
+    const culture = pack.states[stateId]?.culture ?? 0;
+    const figure: HistoricalFigure = {
+      i: figures.length,
+      name: Names.getCulture(culture),
+      culture,
+      birth: event.year - rand(20, 45),
+      roles: [{ type: "general", target: { kind: "state", id: stateId }, from: event.year }]
+    };
+    event.actors.push({ kind: "figure", id: figure.i });
+    if (P(0.5)) event.text += ` ${ra(WAR_GENERAL_TEMPLATES)(figure.name, this.displayName(stateId))}`;
+    figures.push(figure);
   }
 
   /** weave in fallen empires: the largest state and its neighbors, once one and about to be again */
