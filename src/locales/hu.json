@@ -580,7 +580,6 @@
   "Click to regenerate all unlocked routes": "Kattintson az összes feloldott útvonal újragenerálásához",
   "Click to regenerate icebergs and glaciers": "Kattintson a jéghegyek és gleccserek újragenerálásához",
   "Click to regenerate non-locked cultures": "Kattintson a nem zárolt kultúrák újragenerálásához",
-  "Click to regenerate non-locked provinces": "Kattintson a nem zárolt tartományok újragenerálásához",
   "Click to regenerate non-locked religions": "Kattintson a nem zárolt vallások újragenerálásához",
   "Click to regenerate non-locked states. Emblems and military forces will be regenerated as well, burgs will remain as they are, but capitals will be different": "Kattintson a nem zárolt államok újragenerálásához. A címerek és haderők szintén újragenerálódnak, a települések megmaradnak, de a fővárosok mások lesznek",
   "Click to regenerate zones. Hold Ctrl and click to set zones number multiplier": "Kattintson a zónák újragenerálásához. Ctrl lenyomva tartásával kattintva megadható a zónák számának szorzója",
@@ -603,7 +602,6 @@
   "Click to set map size to cover the Southern latitudes": "Kattintson a térképméret déli szélességekre állításához",
   "Click to set map size to cover the Tropical latitudes": "Kattintson a térképméret trópusi szélességekre állításához",
   "Click to set map size to cover the whole world": "Kattintson a térképméret az egész világra állításához",
-  "Click to set number multiplier": "Kattintson a számszorzó megadásához",
   "Click to set the color": "Kattintson a szín megadásához",
   "Click to show the Menu": "Kattintson a menü megjelenítéséhez",
   "Click to skip the step": "Kattintson a lépés kihagyásához",
@@ -662,7 +660,6 @@
   "Config markers generation options": "Jelölőgenerálás beállításainak konfigurálása",
   "Configure": "Beállítás",
   "Configure Label Groups": "Feliratcsoportok beállítása",
-  "Configure Marker Generation": "Jelölőgenerálás beállítása",
   "Configure World": "Világ beállítása",
   "Configure burg groups": "Településcsoportok beállítása",
   "Configure world and map size and climate settings": "A világ, a térképméret és az éghajlat beállítása",
@@ -3556,5 +3553,11 @@
   "No changes found in the file": "Nem találhatók változások a fájlban",
   "Upload preview": "Feltöltés előnézete",
   "Values that will not be applied": "Nem alkalmazott értékek",
-  "Values to update": "Frissítendő értékek"
+  "Values to update": "Frissítendő értékek",
+  "Click to configure markers generation and regenerate unlocked markers": "Kattintson a jelölőgenerálás beállításához és a nem zárolt jelölők újragenerálásához",
+  "Click to select states and regenerate their non-locked provinces": "Kattintson az államok kiválasztásához és nem zárolt tartományaik újragenerálásához",
+  "No states to regenerate provinces for": "Nincs állam, amelynek tartományai újragenerálhatók",
+  "Please select at least one state": "Válasszon ki legalább egy államot",
+  "Regenerate Provinces": "Tartományok újragenerálása",
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Válassza ki az államokat, amelyek tartományait újragenerálja. A zárolt tartományok változatlanok maradnak"
 }

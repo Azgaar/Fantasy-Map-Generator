@@ -580,7 +580,6 @@
   "Click to regenerate all unlocked routes": "Κάντε κλικ για νέα δημιουργία όλων των μη κλειδωμένων διαδρομών",
   "Click to regenerate icebergs and glaciers": "Κάντε κλικ για νέα δημιουργία παγόβουνων και παγετώνων",
   "Click to regenerate non-locked cultures": "Κάντε κλικ για νέα δημιουργία των μη κλειδωμένων πολιτισμών",
-  "Click to regenerate non-locked provinces": "Κάντε κλικ για νέα δημιουργία των μη κλειδωμένων επαρχιών",
   "Click to regenerate non-locked religions": "Κάντε κλικ για νέα δημιουργία των μη κλειδωμένων θρησκειών",
   "Click to regenerate non-locked states. Emblems and military forces will be regenerated as well, burgs will remain as they are, but capitals will be different": "Κάντε κλικ για νέα δημιουργία των μη κλειδωμένων κρατών. Θα δημιουργηθούν ξανά και τα οικόσημα και οι στρατιωτικές δυνάμεις, οι οικισμοί θα μείνουν ως έχουν, αλλά οι πρωτεύουσες θα είναι διαφορετικές",
   "Click to regenerate zones. Hold Ctrl and click to set zones number multiplier": "Κάντε κλικ για νέα δημιουργία ζωνών. Κρατήστε πατημένο το Ctrl και κάντε κλικ για να ορίσετε πολλαπλασιαστή αριθμού ζωνών",
@@ -603,7 +602,6 @@
   "Click to set map size to cover the Southern latitudes": "Κάντε κλικ για ορισμό μεγέθους χάρτη που καλύπτει τα νότια γεωγραφικά πλάτη",
   "Click to set map size to cover the Tropical latitudes": "Κάντε κλικ για ορισμό μεγέθους χάρτη που καλύπτει τα τροπικά γεωγραφικά πλάτη",
   "Click to set map size to cover the whole world": "Κάντε κλικ για ορισμό μεγέθους χάρτη που καλύπτει ολόκληρο τον κόσμο",
-  "Click to set number multiplier": "Κάντε κλικ για ορισμό πολλαπλασιαστή αριθμού",
   "Click to set the color": "Κάντε κλικ για ορισμό του χρώματος",
   "Click to show the Menu": "Κάντε κλικ για εμφάνιση του μενού",
   "Click to skip the step": "Κάντε κλικ για παράλειψη του βήματος",
@@ -662,7 +660,6 @@
   "Config markers generation options": "Επιλογές δημιουργίας σημείων ρύθμισης",
   "Configure": "Ρύθμιση",
   "Configure Label Groups": "Ρύθμιση ομάδων ετικετών",
-  "Configure Marker Generation": "Ρύθμιση δημιουργίας σημείων",
   "Configure World": "Ρύθμιση κόσμου",
   "Configure burg groups": "Ρύθμιση ομάδων οικισμών",
   "Configure world and map size and climate settings": "Ρύθμιση κόσμου, μεγέθους χάρτη και κλιματικών ρυθμίσεων",
@@ -3556,5 +3553,11 @@
   "No changes found in the file": "Δεν βρέθηκαν αλλαγές στο αρχείο",
   "Upload preview": "Προεπισκόπηση μεταφόρτωσης",
   "Values that will not be applied": "Τιμές που δεν θα εφαρμοστούν",
-  "Values to update": "Τιμές προς ενημέρωση"
+  "Values to update": "Τιμές προς ενημέρωση",
+  "Click to configure markers generation and regenerate unlocked markers": "Κάντε κλικ για ρύθμιση της δημιουργίας σημείων και νέα δημιουργία των μη κλειδωμένων σημείων",
+  "Click to select states and regenerate their non-locked provinces": "Κάντε κλικ για επιλογή κρατών και νέα δημιουργία των μη κλειδωμένων επαρχιών τους",
+  "No states to regenerate provinces for": "Δεν υπάρχουν κράτη για επαναδημιουργία επαρχιών",
+  "Please select at least one state": "Επιλέξτε τουλάχιστον ένα κράτος",
+  "Regenerate Provinces": "Επαναδημιουργία επαρχιών",
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Επιλέξτε τα κράτη για επαναδημιουργία επαρχιών. Οι κλειδωμένες επαρχίες θα μείνουν ως έχουν"
 }

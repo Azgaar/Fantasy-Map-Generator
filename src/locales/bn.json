@@ -580,7 +580,6 @@
   "Click to regenerate all unlocked routes": "লক-বিহীন সব রুট পুনরায় তৈরি করতে ক্লিক করুন",
   "Click to regenerate icebergs and glaciers": "হিমশৈল ও হিমবাহ পুনরায় তৈরি করতে ক্লিক করুন",
   "Click to regenerate non-locked cultures": "লক-বিহীন সংস্কৃতি পুনরায় তৈরি করতে ক্লিক করুন",
-  "Click to regenerate non-locked provinces": "লক-বিহীন প্রদেশ পুনরায় তৈরি করতে ক্লিক করুন",
   "Click to regenerate non-locked religions": "লক-বিহীন ধর্ম পুনরায় তৈরি করতে ক্লিক করুন",
   "Click to regenerate non-locked states. Emblems and military forces will be regenerated as well, burgs will remain as they are, but capitals will be different": "লক-বিহীন রাষ্ট্র পুনরায় তৈরি করতে ক্লিক করুন। প্রতীক ও সামরিক বাহিনীও পুনরায় তৈরি হবে, জনপদ যেমন আছে তেমনই থাকবে, তবে রাজধানী বদলে যাবে",
   "Click to regenerate zones. Hold Ctrl and click to set zones number multiplier": "অঞ্চল পুনরায় তৈরি করতে ক্লিক করুন। অঞ্চলের সংখ্যার গুণক ঠিক করতে Ctrl ধরে ক্লিক করুন",
@@ -603,7 +602,6 @@
   "Click to set map size to cover the Southern latitudes": "দক্ষিণ অক্ষাংশ ঢাকতে মানচিত্রের আকার ঠিক করতে ক্লিক করুন",
   "Click to set map size to cover the Tropical latitudes": "ক্রান্তীয় অক্ষাংশ ঢাকতে মানচিত্রের আকার ঠিক করতে ক্লিক করুন",
   "Click to set map size to cover the whole world": "পুরো বিশ্ব ঢাকতে মানচিত্রের আকার ঠিক করতে ক্লিক করুন",
-  "Click to set number multiplier": "সংখ্যার গুণক ঠিক করতে ক্লিক করুন",
   "Click to set the color": "রং সেট করতে ক্লিক করুন",
   "Click to show the Menu": "মেনু দেখাতে ক্লিক করুন",
   "Click to skip the step": "ধাপ এড়িয়ে যেতে ক্লিক করুন",
@@ -662,7 +660,6 @@
   "Config markers generation options": "মার্কার তৈরির বিকল্পগুলো কনফিগার করুন",
   "Configure": "কনফিগার",
   "Configure Label Groups": "লেবেল গোষ্ঠী কনফিগার করুন",
-  "Configure Marker Generation": "মার্কার তৈরি কনফিগার করুন",
   "Configure World": "বিশ্ব কনফিগার করুন",
   "Configure burg groups": "জনপদ গোষ্ঠী কনফিগার করুন",
   "Configure world and map size and climate settings": "বিশ্ব, মানচিত্রের আকার ও জলবায়ু সেটিংস কনফিগার করুন",
@@ -3556,5 +3553,11 @@
   "No changes found in the file": "ফাইলে কোনো পরিবর্তন পাওয়া যায়নি",
   "Upload preview": "আপলোডের পূর্বরূপ",
   "Values that will not be applied": "যে মানগুলো প্রয়োগ হবে না",
-  "Values to update": "হালনাগাদ করার মান"
+  "Values to update": "হালনাগাদ করার মান",
+  "Click to configure markers generation and regenerate unlocked markers": "মার্কার তৈরি কনফিগার করতে ও লক-বিহীন মার্কার পুনরায় তৈরি করতে ক্লিক করুন",
+  "Click to select states and regenerate their non-locked provinces": "রাষ্ট্র বাছাই করে তাদের লক-বিহীন প্রদেশ পুনরায় তৈরি করতে ক্লিক করুন",
+  "No states to regenerate provinces for": "প্রদেশ পুনরায় তৈরি করার মতো কোনো রাষ্ট্র নেই",
+  "Please select at least one state": "অন্তত একটি রাষ্ট্র বাছাই করুন",
+  "Regenerate Provinces": "প্রদেশ পুনরায় তৈরি করুন",
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "যেসব রাষ্ট্রের প্রদেশ পুনরায় তৈরি হবে সেগুলো বাছাই করুন। লক করা প্রদেশ যেমন আছে তেমনই থাকবে"
 }

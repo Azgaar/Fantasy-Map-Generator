@@ -580,7 +580,6 @@
   "Click to regenerate all unlocked routes": "クリックして、ロックされていないすべての経路を再生成",
   "Click to regenerate icebergs and glaciers": "クリックして氷山と氷河を再生成",
   "Click to regenerate non-locked cultures": "クリックして、ロックされていない文化を再生成",
-  "Click to regenerate non-locked provinces": "クリックして、ロックされていない州を再生成",
   "Click to regenerate non-locked religions": "クリックして、ロックされていない宗教を再生成",
   "Click to regenerate non-locked states. Emblems and military forces will be regenerated as well, burgs will remain as they are, but capitals will be different": "クリックして、ロックされていない国家を再生成します。紋章と兵力も再生成され、集落はそのまま残りますが、首都は変わります",
   "Click to regenerate zones. Hold Ctrl and click to set zones number multiplier": "クリックしてゾーンを再生成。Ctrl を押しながらクリックするとゾーン数の倍率を設定",
@@ -603,7 +602,6 @@
   "Click to set map size to cover the Southern latitudes": "クリックして、南緯の地域を覆う地図のサイズに設定",
   "Click to set map size to cover the Tropical latitudes": "クリックして、熱帯の緯度を覆う地図のサイズに設定",
   "Click to set map size to cover the whole world": "クリックして、世界全体を覆う地図のサイズに設定",
-  "Click to set number multiplier": "クリックして数の倍率を設定",
   "Click to set the color": "クリックして色を設定",
   "Click to show the Menu": "クリックしてメニューを表示",
   "Click to skip the step": "クリックして手順をスキップ",
@@ -662,7 +660,6 @@
   "Config markers generation options": "マーカー生成のオプションを設定",
   "Configure": "設定",
   "Configure Label Groups": "ラベルグループを設定",
-  "Configure Marker Generation": "マーカー生成を設定",
   "Configure World": "世界を設定",
   "Configure burg groups": "集落グループを設定",
   "Configure world and map size and climate settings": "世界、地図のサイズ、気候の設定",
@@ -3556,5 +3553,11 @@
   "No changes found in the file": "ファイルに変更が見つかりませんでした",
   "Upload preview": "アップロードのプレビュー",
   "Values that will not be applied": "適用されない値",
-  "Values to update": "更新する値"
+  "Values to update": "更新する値",
+  "Click to configure markers generation and regenerate unlocked markers": "クリックしてマーカー生成を設定し、ロックされていないマーカーを再生成",
+  "Click to select states and regenerate their non-locked provinces": "クリックして国家を選択し、ロックされていない州を再生成",
+  "No states to regenerate provinces for": "州を再生成できる国家がありません",
+  "Please select at least one state": "少なくとも1つの国家を選択してください",
+  "Regenerate Provinces": "州を再生成",
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "州を再生成する国家を選択します。ロックされた州はそのまま残ります"
 }

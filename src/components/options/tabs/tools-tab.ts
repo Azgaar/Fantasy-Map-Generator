@@ -114,8 +114,8 @@ const TEMPLATE = /* html */ `
     >
       ${t("State Labels")}
     </button>
-    <button id="regenerateMarkers" data-tip="${t("Regenerate unlocked markers")}">
-      ${t("Markers")} <i id="configRegenerateMarkers" class="icon-cog" data-tip="${t("Click to set number multiplier")}"></i>
+    <button id="regenerateMarkers" data-tip="${t("Click to configure markers generation and regenerate unlocked markers")}">
+      ${t("Markers")}
     </button>
     <button id="regenerateMarkets" data-tip="${t("Regenerate markets and their territories")}">
       ${t("Markets")}
@@ -137,7 +137,7 @@ const TEMPLATE = /* html */ `
     </button>
     <button
       id="regenerateProvinces"
-      data-tip="${sentences(t("Click to regenerate non-locked provinces"), t("States will remain as they are"))}"
+      data-tip="${sentences(t("Click to select states and regenerate their non-locked provinces"), t("States will remain as they are"))}"
     >
       ${t("Provinces")}
     </button>
@@ -227,7 +227,7 @@ ensureEl("toolsContent").innerHTML = TEMPLATE;
 ensureEl("toolsContent").addEventListener("click", event => {
   if (customization) return tip(t("Exit customization mode first"), false, "error");
   if (!(event instanceof MouseEvent) || !(event.target instanceof HTMLElement)) return;
-  if (!["BUTTON", "I"].includes(event.target.tagName)) return;
+  if (event.target.tagName !== "BUTTON") return;
   const command = MAP_COMMANDS.find(command => command.id === (event.target as HTMLElement).id);
   if (command) void command.run(event);
 });

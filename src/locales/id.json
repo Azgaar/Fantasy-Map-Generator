@@ -580,7 +580,6 @@
   "Click to regenerate all unlocked routes": "Klik untuk membuat ulang semua rute yang tidak terkunci",
   "Click to regenerate icebergs and glaciers": "Klik untuk membuat ulang gunung es dan gletser",
   "Click to regenerate non-locked cultures": "Klik untuk membuat ulang budaya yang tidak terkunci",
-  "Click to regenerate non-locked provinces": "Klik untuk membuat ulang provinsi yang tidak terkunci",
   "Click to regenerate non-locked religions": "Klik untuk membuat ulang agama yang tidak terkunci",
   "Click to regenerate non-locked states. Emblems and military forces will be regenerated as well, burgs will remain as they are, but capitals will be different": "Klik untuk membuat ulang negara yang tidak terkunci. Lambang dan pasukan militer ikut dibuat ulang, permukiman tetap seperti adanya, tetapi ibu kota akan berbeda",
   "Click to regenerate zones. Hold Ctrl and click to set zones number multiplier": "Klik untuk membuat ulang zona. Tahan Ctrl dan klik untuk menetapkan pengali jumlah zona",
@@ -603,7 +602,6 @@
   "Click to set map size to cover the Southern latitudes": "Klik untuk mengatur ukuran peta mencakup lintang Selatan",
   "Click to set map size to cover the Tropical latitudes": "Klik untuk mengatur ukuran peta mencakup lintang Tropis",
   "Click to set map size to cover the whole world": "Klik untuk mengatur ukuran peta mencakup seluruh dunia",
-  "Click to set number multiplier": "Klik untuk mengatur pengali jumlah",
   "Click to set the color": "Klik untuk mengatur warna",
   "Click to show the Menu": "Klik untuk menampilkan Menu",
   "Click to skip the step": "Klik untuk melewati langkah",
@@ -662,7 +660,6 @@
   "Config markers generation options": "Atur opsi pembuatan penanda",
   "Configure": "Konfigurasi",
   "Configure Label Groups": "Konfigurasi Grup Label",
-  "Configure Marker Generation": "Konfigurasi Pembuatan Penanda",
   "Configure World": "Konfigurasi Dunia",
   "Configure burg groups": "Konfigurasi grup permukiman",
   "Configure world and map size and climate settings": "Atur dunia, ukuran peta, dan pengaturan iklim",
@@ -3556,5 +3553,11 @@
   "No changes found in the file": "Tidak ada perubahan di berkas",
   "Upload preview": "Pratinjau unggahan",
   "Values that will not be applied": "Nilai yang tidak akan diterapkan",
-  "Values to update": "Nilai yang akan diperbarui"
+  "Values to update": "Nilai yang akan diperbarui",
+  "Click to configure markers generation and regenerate unlocked markers": "Klik untuk mengonfigurasi pembuatan penanda dan membuat ulang penanda yang tidak terkunci",
+  "Click to select states and regenerate their non-locked provinces": "Klik untuk memilih negara dan membuat ulang provinsinya yang tidak terkunci",
+  "No states to regenerate provinces for": "Tidak ada negara untuk dibuat ulang provinsinya",
+  "Please select at least one state": "Pilih setidaknya satu negara",
+  "Regenerate Provinces": "Buat Ulang Provinsi",
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Pilih negara yang provinsinya akan dibuat ulang. Provinsi yang terkunci akan tetap seperti adanya"
 }

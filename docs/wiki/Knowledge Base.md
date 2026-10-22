@@ -902,11 +902,15 @@ Emblems are generated for states, provinces and burgs and drawn in the Emblems l
 
 ### How do markers work? Can I add my own marker types?
 
-Markers are icons for points of interest. Generated markers follow placement rules (a bridge needs a river and so on) and get a note attached. Add your own with Tools -> Add -> Marker (Shift + 3) and click on the map, then click the marker to change its type, icon (a bundled icon, any emoji or short text, or your own linked or uploaded image, chosen in the icon picker), size, pin shape, pin colors and icon colors - style changes apply to all markers of the same type. Tools -> Markers lists all markers, filters them by state, culture and type and exports them as .csv, and the generation settings dialog sets the number multiplier per type
+Markers are icons for points of interest. Generated markers follow placement rules (a bridge needs a river and so on) and get a note attached. Add your own with Tools -> Add -> Marker (Shift + 3) and click on the map, then click the marker to change its type, icon (a bundled icon, any emoji or short text, or your own linked or uploaded image, chosen in the icon picker), size, pin shape, pin colors and icon colors - style changes apply to all markers of the same type. Tools -> Markers lists all markers, filters them by state, culture and type and exports them as .csv, and the generation settings dialog (also opened by Tools -> Regenerate -> Markers) sets the number multiplier per type
 
 ### How do I protect my manual changes from being overwritten by regeneration?
 
 Use locks. States, provinces, cultures, religions, burgs, routes and markers have a lock icon, and locked elements are skipped by the corresponding Regenerate command. Options rows have lock icons too - a locked option keeps its value when you generate a new map
+
+### Can I regenerate provinces of just one state?
+
+Yes. Tools -> Regenerate -> Provinces opens a dialog listing all states with their province counts. Check one or several states (or All states) and click Regenerate: only the selected states get new provinces, others keep theirs, and locked provinces stay as they are
 
 ### What are burg groups?
 

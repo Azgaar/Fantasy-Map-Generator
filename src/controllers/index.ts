@@ -56,6 +56,7 @@ export const Controllers = createRegistry({
   ProductionChains: () => import("@/controllers/production-chains").then(m => m.ProductionChains),
   ProductionOverview: () => import("@/controllers/production-overview").then(m => m.ProductionOverview),
   ProvincesEditor: () => import("@/controllers/provinces-editor").then(m => m.ProvincesEditor),
+  ProvincesRegeneration: () => import("@/controllers/provinces-regeneration").then(m => m.ProvincesRegeneration),
   RegimentEditor: () => import("@/controllers/regiment-editor").then(m => m.RegimentEditor),
   RegimentsOverview: () => import("@/controllers/regiments-overview").then(m => m.RegimentsOverview),
   ReliefEditor: () => import("@/controllers/relief-editor").then(m => m.ReliefEditor),

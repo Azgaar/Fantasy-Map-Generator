@@ -476,8 +476,9 @@ export const MAP_COMMANDS: MapCommand[] = [
   {
     id: "regenerateProvinces",
     name: `${t("Regenerate")}: ${t("Provinces")}`,
+    link: true,
     aliases: "generate counties",
-    run: () => confirmRegeneration(regenerateProvinces)
+    run: () => Controllers.ProvincesRegeneration.open()
   },
   {
     id: "regenerateBurgs",
@@ -530,8 +531,9 @@ export const MAP_COMMANDS: MapCommand[] = [
   {
     id: "regenerateMarkers",
     name: `${t("Regenerate")}: ${t("Markers")}`,
-    aliases: "generate points of interest",
-    run: () => confirmRegeneration(regenerateMarkers)
+    link: true,
+    aliases: "generate points of interest settings configure multiplier",
+    run: () => Controllers.MarkersSettings.open()
   },
   {
     id: "regenerateZones",
@@ -580,12 +582,6 @@ export const MAP_COMMANDS: MapCommand[] = [
     name: `${t("Regenerate")}: ${t("Ice")}`,
     aliases: "generate glaciers icebergs",
     run: () => confirmRegeneration(regenerateIce)
-  },
-  {
-    id: "configRegenerateMarkers",
-    name: t("Configure Marker Generation"),
-    aliases: "markers settings",
-    run: () => Controllers.MarkersSettings.open()
   },
   { id: "zoomReset", name: t("Reset Zoom"), aliases: "fit view whole map", run: () => resetZoom(1000) },
   { id: "zoomIn", name: t("Zoom In"), aliases: "view closer", run: () => changeMapZoom(1.2) },
@@ -851,12 +847,6 @@ function regenerateStates(): void {
   Layers.draw("states", "borders", "provinces", "labels", "burgIcons", "military", "goods", "emblems");
 }
 
-function regenerateProvinces(): void {
-  Provinces.regenerate();
-  unfog();
-  Layers.draw("borders", "provinces", "labels", "emblems");
-}
-
 function regenerateBurgs(): void {
   Burgs.regenerate();
   Layers.draw("burgIcons", "labels", "routes", "population", "goods", "emblems");
@@ -905,11 +895,6 @@ function regenerateMilitary(): void {
 function regenerateIce(): void {
   Ice.regenerate();
   Layers.draw("ice");
-}
-
-function regenerateMarkers(): void {
-  Markers.regenerate();
-  Layers.draw("markers");
 }
 
 function regenerateZones(event?: MouseEvent): void {

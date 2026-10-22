@@ -580,7 +580,6 @@
   "Click to regenerate all unlocked routes": "Щракнете, за да генерирате отново всички незаключени маршрути",
   "Click to regenerate icebergs and glaciers": "Щракнете, за да генерирате отново айсбергите и ледниците",
   "Click to regenerate non-locked cultures": "Щракнете, за да генерирате отново незаключените култури",
-  "Click to regenerate non-locked provinces": "Щракнете, за да генерирате отново незаключените провинции",
   "Click to regenerate non-locked religions": "Щракнете, за да генерирате отново незаключените религии",
   "Click to regenerate non-locked states. Emblems and military forces will be regenerated as well, burgs will remain as they are, but capitals will be different": "Щракнете, за да генерирате отново незаключените държави. Гербовете и военните сили също ще се генерират отново; селищата ще останат същите, но столиците ще са различни",
   "Click to regenerate zones. Hold Ctrl and click to set zones number multiplier": "Щракнете, за да генерирате отново зоните. Задръжте Ctrl и щракнете, за да зададете множител на броя зони",
@@ -603,7 +602,6 @@
   "Click to set map size to cover the Southern latitudes": "Щракнете, за да зададете размер на картата, който покрива южните ширини",
   "Click to set map size to cover the Tropical latitudes": "Щракнете, за да зададете размер на картата, който покрива тропическите ширини",
   "Click to set map size to cover the whole world": "Щракнете, за да зададете размер на картата, който покрива целия свят",
-  "Click to set number multiplier": "Щракнете, за да зададете множител на броя",
   "Click to set the color": "Щракнете, за да зададете цвят",
   "Click to show the Menu": "Щракнете, за да покажете менюто",
   "Click to skip the step": "Щракнете, за да пропуснете стъпката",
@@ -662,7 +660,6 @@
   "Config markers generation options": "Опции за генериране на маркери",
   "Configure": "Настройка",
   "Configure Label Groups": "Настройка на групите етикети",
-  "Configure Marker Generation": "Настройка на генерирането на маркери",
   "Configure World": "Настройка на света",
   "Configure burg groups": "Настройка на групите селища",
   "Configure world and map size and climate settings": "Настройка на света, размера на картата и климата",
@@ -3556,5 +3553,11 @@
   "No changes found in the file": "Във файла няма промени",
   "Upload preview": "Преглед на качването",
   "Values that will not be applied": "Стойности, които няма да бъдат приложени",
-  "Values to update": "Стойности за обновяване"
+  "Values to update": "Стойности за обновяване",
+  "Click to configure markers generation and regenerate unlocked markers": "Щракнете, за да настроите генерирането на маркери и да генерирате отново незаключените маркери",
+  "Click to select states and regenerate their non-locked provinces": "Щракнете, за да изберете държави и да генерирате отново незаключените им провинции",
+  "No states to regenerate provinces for": "Няма държави, за които да се генерират отново провинции",
+  "Please select at least one state": "Изберете поне една държава",
+  "Regenerate Provinces": "Регенериране на провинциите",
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Изберете държави, за които да се генерират отново провинциите. Заключените провинции ще останат такива, каквито са"
 }

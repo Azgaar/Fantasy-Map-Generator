@@ -580,7 +580,6 @@
   "Click to regenerate all unlocked routes": "Klicka för att generera om alla olåsta rutter",
   "Click to regenerate icebergs and glaciers": "Klicka för att generera om isberg och glaciärer",
   "Click to regenerate non-locked cultures": "Klicka för att generera om olåsta kulturer",
-  "Click to regenerate non-locked provinces": "Klicka för att generera om olåsta provinser",
   "Click to regenerate non-locked religions": "Klicka för att generera om olåsta religioner",
   "Click to regenerate non-locked states. Emblems and military forces will be regenerated as well, burgs will remain as they are, but capitals will be different": "Klicka för att generera om olåsta stater. Vapen och militära styrkor genereras också om, bosättningar förblir som de är, men huvudstäderna blir andra",
   "Click to regenerate zones. Hold Ctrl and click to set zones number multiplier": "Klicka för att generera om zoner. Håll Ctrl och klicka för att ange multiplikator för antal zoner",
@@ -603,7 +602,6 @@
   "Click to set map size to cover the Southern latitudes": "Klicka för att låta kartstorleken täcka de södra breddgraderna",
   "Click to set map size to cover the Tropical latitudes": "Klicka för att låta kartstorleken täcka de tropiska breddgraderna",
   "Click to set map size to cover the whole world": "Klicka för att låta kartstorleken täcka hela världen",
-  "Click to set number multiplier": "Klicka för att ange multiplikator",
   "Click to set the color": "Klicka för att ange färgen",
   "Click to show the Menu": "Klicka för att visa menyn",
   "Click to skip the step": "Klicka för att hoppa över steget",
@@ -662,7 +660,6 @@
   "Config markers generation options": "Konfigurera alternativ för markörgenerering",
   "Configure": "Konfigurera",
   "Configure Label Groups": "Konfigurera etikettgrupper",
-  "Configure Marker Generation": "Konfigurera markörgenerering",
   "Configure World": "Konfigurera världen",
   "Configure burg groups": "Konfigurera bosättningsgrupper",
   "Configure world and map size and climate settings": "Konfigurera värld, kartstorlek och klimatinställningar",
@@ -3556,5 +3553,11 @@
   "No changes found in the file": "Inga ändringar hittades i filen",
   "Upload preview": "Förhandsgranskning av uppladdning",
   "Values that will not be applied": "Värden som inte tillämpas",
-  "Values to update": "Värden att uppdatera"
+  "Values to update": "Värden att uppdatera",
+  "Click to configure markers generation and regenerate unlocked markers": "Klicka för att konfigurera markörgenerering och generera om olåsta markörer",
+  "Click to select states and regenerate their non-locked provinces": "Klicka för att välja stater och generera om deras olåsta provinser",
+  "No states to regenerate provinces for": "Inga stater att generera om provinser för",
+  "Please select at least one state": "Välj minst en stat",
+  "Regenerate Provinces": "Generera om provinser",
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Välj stater vars provinser ska genereras om. Låsta provinser förblir som de är"
 }

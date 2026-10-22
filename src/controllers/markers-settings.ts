@@ -20,12 +20,12 @@ function open(): void {
     maxHeight: 600,
     position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" },
     buttons: {
-      [t("Regenerate")]: () => {
+      [t("Regenerate")]: function () {
         applyChanges();
         Markers.regenerate();
         Layers.draw("markers");
         refreshEditors();
-        drawConfigTable();
+        $(this).dialog("close");
       },
       [t("Close")]: function () {
         $(this).dialog("close");

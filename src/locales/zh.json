@@ -580,7 +580,6 @@
   "Click to regenerate all unlocked routes": "点击以重新生成所有未锁定的路线",
   "Click to regenerate icebergs and glaciers": "点击以重新生成冰山和冰川",
   "Click to regenerate non-locked cultures": "点击以重新生成未锁定的文化",
-  "Click to regenerate non-locked provinces": "点击以重新生成未锁定的省份",
   "Click to regenerate non-locked religions": "点击以重新生成未锁定的宗教",
   "Click to regenerate non-locked states. Emblems and military forces will be regenerated as well, burgs will remain as they are, but capitals will be different": "点击以重新生成未锁定的国家。纹章和军队也会一并重新生成，城镇保持不变，但首都会有所不同",
   "Click to regenerate zones. Hold Ctrl and click to set zones number multiplier": "点击以重新生成区域。按住 Ctrl 并点击可设置区域数量倍数",
@@ -603,7 +602,6 @@
   "Click to set map size to cover the Southern latitudes": "点击以将地图尺寸设为覆盖南方纬度",
   "Click to set map size to cover the Tropical latitudes": "点击以将地图尺寸设为覆盖热带纬度",
   "Click to set map size to cover the whole world": "点击以将地图尺寸设为覆盖整个世界",
-  "Click to set number multiplier": "点击以设置数量倍数",
   "Click to set the color": "点击以设置颜色",
   "Click to show the Menu": "点击以显示菜单",
   "Click to skip the step": "点击以跳过此步骤",
@@ -662,7 +660,6 @@
   "Config markers generation options": "标记生成选项",
   "Configure": "配置",
   "Configure Label Groups": "配置标签组",
-  "Configure Marker Generation": "配置标记生成",
   "Configure World": "配置世界",
   "Configure burg groups": "配置城镇组",
   "Configure world and map size and climate settings": "配置世界、地图尺寸和气候设置",
@@ -3556,5 +3553,11 @@
   "No changes found in the file": "文件中未发现更改",
   "Upload preview": "上传预览",
   "Values that will not be applied": "不会应用的值",
-  "Values to update": "要更新的值"
+  "Values to update": "要更新的值",
+  "Click to configure markers generation and regenerate unlocked markers": "点击以配置标记生成并重新生成未锁定的标记",
+  "Click to select states and regenerate their non-locked provinces": "点击以选择国家并重新生成其未锁定的省份",
+  "No states to regenerate provinces for": "没有可重新生成省份的国家",
+  "Please select at least one state": "请至少选择一个国家",
+  "Regenerate Provinces": "重新生成省份",
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "选择要重新生成省份的国家。已锁定的省份将保持原样"
 }

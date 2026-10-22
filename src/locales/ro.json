@@ -580,7 +580,6 @@
   "Click to regenerate all unlocked routes": "Apasă ca să regenerezi toate rutele neblocate",
   "Click to regenerate icebergs and glaciers": "Apasă ca să regenerezi aisbergurile și ghețarii",
   "Click to regenerate non-locked cultures": "Apasă ca să regenerezi culturile neblocate",
-  "Click to regenerate non-locked provinces": "Apasă ca să regenerezi provinciile neblocate",
   "Click to regenerate non-locked religions": "Apasă ca să regenerezi religiile neblocate",
   "Click to regenerate non-locked states. Emblems and military forces will be regenerated as well, burgs will remain as they are, but capitals will be different": "Apasă ca să regenerezi statele neblocate. Stemele și forțele militare vor fi regenerate și ele, așezările vor rămâne cum sunt, dar capitalele vor fi altele",
   "Click to regenerate zones. Hold Ctrl and click to set zones number multiplier": "Apasă ca să regenerezi zonele. Ține Ctrl și apasă ca să setezi multiplicatorul numărului de zone",
@@ -603,7 +602,6 @@
   "Click to set map size to cover the Southern latitudes": "Apasă ca să setezi dimensiunea hărții să acopere latitudinile sudice",
   "Click to set map size to cover the Tropical latitudes": "Apasă ca să setezi dimensiunea hărții să acopere latitudinile tropicale",
   "Click to set map size to cover the whole world": "Apasă ca să setezi dimensiunea hărții să acopere întreaga lume",
-  "Click to set number multiplier": "Apasă ca să setezi multiplicatorul numărului",
   "Click to set the color": "Apasă ca să setezi culoarea",
   "Click to show the Menu": "Apasă ca să afișezi meniul",
   "Click to skip the step": "Apasă ca să sari peste pas",
@@ -662,7 +660,6 @@
   "Config markers generation options": "Configurează opțiunile de generare a marcatorilor",
   "Configure": "Configurare",
   "Configure Label Groups": "Configurează grupurile de etichete",
-  "Configure Marker Generation": "Configurează generarea marcatorilor",
   "Configure World": "Configurează lumea",
   "Configure burg groups": "Configurează grupurile de așezări",
   "Configure world and map size and climate settings": "Configurează lumea, dimensiunea hărții și setările climei",
@@ -3556,5 +3553,11 @@
   "No changes found in the file": "Nu s-au găsit modificări în fișier",
   "Upload preview": "Previzualizarea încărcării",
   "Values that will not be applied": "Valori care nu vor fi aplicate",
-  "Values to update": "Valori de actualizat"
+  "Values to update": "Valori de actualizat",
+  "Click to configure markers generation and regenerate unlocked markers": "Apasă ca să configurezi generarea marcatorilor și să regenerezi marcatorii neblocați",
+  "Click to select states and regenerate their non-locked provinces": "Apasă ca să alegi state și să le regenerezi provinciile neblocate",
+  "No states to regenerate provinces for": "Nu există state pentru care să regenerezi provinciile",
+  "Please select at least one state": "Selectează cel puțin un stat",
+  "Regenerate Provinces": "Regenerează provinciile",
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Selectează statele ale căror provincii se regenerează. Provinciile blocate vor rămâne așa cum sunt"
 }

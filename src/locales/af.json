@@ -580,7 +580,6 @@
   "Click to regenerate all unlocked routes": "Klik om alle ongeslote roetes te hergenereer",
   "Click to regenerate icebergs and glaciers": "Klik om ysberge en gletsers te hergenereer",
   "Click to regenerate non-locked cultures": "Klik om ongeslote kulture te hergenereer",
-  "Click to regenerate non-locked provinces": "Klik om ongeslote provinsies te hergenereer",
   "Click to regenerate non-locked religions": "Klik om ongeslote godsdienste te hergenereer",
   "Click to regenerate non-locked states. Emblems and military forces will be regenerated as well, burgs will remain as they are, but capitals will be different": "Klik om ongeslote state te hergenereer. Wapens en militêre magte sal ook hergenereer word; nedersettings sal bly soos hulle is, maar hoofstede sal anders wees",
   "Click to regenerate zones. Hold Ctrl and click to set zones number multiplier": "Klik om sones te hergenereer. Hou Ctrl in en klik om die vermenigvuldiger vir die aantal sones te stel",
@@ -603,7 +602,6 @@
   "Click to set map size to cover the Southern latitudes": "Klik om die kaartgrootte op die suidelike breedtegrade te stel",
   "Click to set map size to cover the Tropical latitudes": "Klik om die kaartgrootte op die tropiese breedtegrade te stel",
   "Click to set map size to cover the whole world": "Klik om die kaartgrootte op die hele wêreld te stel",
-  "Click to set number multiplier": "Klik om die getalvermenigvuldiger te stel",
   "Click to set the color": "Klik om die kleur te stel",
   "Click to show the Menu": "Klik om die kieslys te wys",
   "Click to skip the step": "Klik om die stap oor te slaan",
@@ -662,7 +660,6 @@
   "Config markers generation options": "Stel opsies vir merkergenerering",
   "Configure": "Konfigureer",
   "Configure Label Groups": "Konfigureer etiketgroepe",
-  "Configure Marker Generation": "Konfigureer merkergenerering",
   "Configure World": "Konfigureer wêreld",
   "Configure burg groups": "Konfigureer nedersettingsgroepe",
   "Configure world and map size and climate settings": "Stel wêreld- en kaartgrootte en klimaat in",
@@ -3556,5 +3553,11 @@
   "No changes found in the file": "Geen veranderinge in die lêer gevind nie",
   "Upload preview": "Oplaai-voorskou",
   "Values that will not be applied": "Waardes wat nie toegepas sal word nie",
-  "Values to update": "Waardes om by te werk"
+  "Values to update": "Waardes om by te werk",
+  "Click to configure markers generation and regenerate unlocked markers": "Klik om merkergenerering te konfigureer en ongeslote merkers te hergenereer",
+  "Click to select states and regenerate their non-locked provinces": "Klik om state te kies en hul ongeslote provinsies te hergenereer",
+  "No states to regenerate provinces for": "Geen state om provinsies voor te hergenereer nie",
+  "Please select at least one state": "Kies asseblief ten minste een staat",
+  "Regenerate Provinces": "Hergenereer provinsies",
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Kies state om provinsies voor te hergenereer. Geslote provinsies sal bly soos hulle is"
 }

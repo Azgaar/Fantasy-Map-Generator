@@ -580,7 +580,6 @@
   "Click to regenerate all unlocked routes": "Clique para regenerar todas as rotas desbloqueadas",
   "Click to regenerate icebergs and glaciers": "Clique para regenerar icebergs e glaciares",
   "Click to regenerate non-locked cultures": "Clique para regenerar as culturas não bloqueadas",
-  "Click to regenerate non-locked provinces": "Clique para regenerar as províncias não bloqueadas",
   "Click to regenerate non-locked religions": "Clique para regenerar as religiões não bloqueadas",
   "Click to regenerate non-locked states. Emblems and military forces will be regenerated as well, burgs will remain as they are, but capitals will be different": "Clique para regenerar os Estados não bloqueados. Os emblemas e as forças militares também serão regenerados; as povoações manter-se-ão, mas as capitais serão diferentes",
   "Click to regenerate zones. Hold Ctrl and click to set zones number multiplier": "Clique para regenerar as zonas. Mantenha Ctrl e clique para definir o multiplicador do número de zonas",
@@ -603,7 +602,6 @@
   "Click to set map size to cover the Southern latitudes": "Clique para definir o tamanho do mapa de forma a cobrir as latitudes sul",
   "Click to set map size to cover the Tropical latitudes": "Clique para definir o tamanho do mapa de forma a cobrir as latitudes tropicais",
   "Click to set map size to cover the whole world": "Clique para definir o tamanho do mapa de forma a cobrir o mundo inteiro",
-  "Click to set number multiplier": "Clique para definir o multiplicador do número",
   "Click to set the color": "Clique para definir a cor",
   "Click to show the Menu": "Clique para mostrar o menu",
   "Click to skip the step": "Clique para saltar o passo",
@@ -662,7 +660,6 @@
   "Config markers generation options": "Configurar opções de geração de marcadores",
   "Configure": "Configurar",
   "Configure Label Groups": "Configurar grupos de etiquetas",
-  "Configure Marker Generation": "Configurar a geração de marcadores",
   "Configure World": "Configurar o mundo",
   "Configure burg groups": "Configurar grupos de povoações",
   "Configure world and map size and climate settings": "Configurar o mundo, o tamanho do mapa e as definições climáticas",
@@ -3556,5 +3553,11 @@
   "No changes found in the file": "Não foram encontradas alterações no ficheiro",
   "Upload preview": "Pré-visualização do carregamento",
   "Values that will not be applied": "Valores que não serão aplicados",
-  "Values to update": "Valores a atualizar"
+  "Values to update": "Valores a atualizar",
+  "Click to configure markers generation and regenerate unlocked markers": "Clique para configurar a geração de marcadores e regenerar os marcadores não bloqueados",
+  "Click to select states and regenerate their non-locked provinces": "Clique para escolher Estados e regenerar as suas províncias não bloqueadas",
+  "No states to regenerate provinces for": "Não há Estados cujas províncias possam ser regeneradas",
+  "Please select at least one state": "Selecione pelo menos um Estado",
+  "Regenerate Provinces": "Regenerar províncias",
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Selecione os Estados cujas províncias serão regeneradas. As províncias bloqueadas manter-se-ão como estão"
 }

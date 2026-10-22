@@ -580,7 +580,6 @@
   "Click to regenerate all unlocked routes": "सभी अनलॉक मार्ग फिर से बनाने के लिए क्लिक करें",
   "Click to regenerate icebergs and glaciers": "हिमखंड और हिमनद फिर से बनाने के लिए क्लिक करें",
   "Click to regenerate non-locked cultures": "सभी गैर-लॉक संस्कृतियाँ फिर से बनाने के लिए क्लिक करें",
-  "Click to regenerate non-locked provinces": "सभी गैर-लॉक प्रांत फिर से बनाने के लिए क्लिक करें",
   "Click to regenerate non-locked religions": "सभी गैर-लॉक धर्म फिर से बनाने के लिए क्लिक करें",
   "Click to regenerate non-locked states. Emblems and military forces will be regenerated as well, burgs will remain as they are, but capitals will be different": "सभी गैर-लॉक राज्य फिर से बनाने के लिए क्लिक करें। प्रतीक-चिह्न और सैन्य बल भी फिर से बनेंगे, बस्तियाँ जैसी हैं वैसी रहेंगी, पर राजधानियाँ बदल जाएँगी",
   "Click to regenerate zones. Hold Ctrl and click to set zones number multiplier": "क्षेत्र फिर से बनाने के लिए क्लिक करें। संख्या गुणक सेट करने के लिए Ctrl दबाकर क्लिक करें",
@@ -603,7 +602,6 @@
   "Click to set map size to cover the Southern latitudes": "दक्षिणी अक्षांशों को कवर करने वाला मानचित्र आकार सेट करने के लिए क्लिक करें",
   "Click to set map size to cover the Tropical latitudes": "उष्णकटिबंधीय अक्षांशों को कवर करने वाला मानचित्र आकार सेट करने के लिए क्लिक करें",
   "Click to set map size to cover the whole world": "पूरी दुनिया को कवर करने वाला मानचित्र आकार सेट करने के लिए क्लिक करें",
-  "Click to set number multiplier": "संख्या गुणक सेट करने के लिए क्लिक करें",
   "Click to set the color": "रंग सेट करने के लिए क्लिक करें",
   "Click to show the Menu": "मेनू दिखाने के लिए क्लिक करें",
   "Click to skip the step": "चरण छोड़ने के लिए क्लिक करें",
@@ -662,7 +660,6 @@
   "Config markers generation options": "मार्कर जनरेशन विकल्प कॉन्फ़िगर करें",
   "Configure": "कॉन्फ़िगर",
   "Configure Label Groups": "लेबल समूह कॉन्फ़िगर करें",
-  "Configure Marker Generation": "मार्कर जनरेशन कॉन्फ़िगर करें",
   "Configure World": "दुनिया कॉन्फ़िगर करें",
   "Configure burg groups": "बस्ती समूह कॉन्फ़िगर करें",
   "Configure world and map size and climate settings": "दुनिया, मानचित्र का आकार और जलवायु सेटिंग्स कॉन्फ़िगर करें",
@@ -3556,5 +3553,11 @@
   "No changes found in the file": "फ़ाइल में कोई बदलाव नहीं मिला",
   "Upload preview": "अपलोड पूर्वावलोकन",
   "Values that will not be applied": "मान जो लागू नहीं होंगे",
-  "Values to update": "अपडेट होने वाले मान"
+  "Values to update": "अपडेट होने वाले मान",
+  "Click to configure markers generation and regenerate unlocked markers": "मार्कर जनरेशन कॉन्फ़िगर करने और गैर-लॉक मार्कर फिर से बनाने के लिए क्लिक करें",
+  "Click to select states and regenerate their non-locked provinces": "राज्य चुनने और उनके गैर-लॉक प्रांत फिर से बनाने के लिए क्लिक करें",
+  "No states to regenerate provinces for": "प्रांत फिर से बनाने के लिए कोई राज्य नहीं",
+  "Please select at least one state": "कृपया कम से कम एक राज्य चुनें",
+  "Regenerate Provinces": "प्रांत फिर से बनाएँ",
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "वे राज्य चुनें जिनके प्रांत फिर से बनाने हैं। लॉक किए गए प्रांत जैसे हैं वैसे रहेंगे"
 }

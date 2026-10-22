@@ -25,6 +25,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Save to machine creates a new file each time
 - CSV upload for most entities
 - Color picker rework
+- Regenerate provinces for selected states
 - Population layer: Shading land by population density by _[inviktos](https://github.com/inviktos)_
 - Altitude legend: heightmap colors by _[Avengium](https://github.com/Avengium)_
 - Rulers style: line and dash colors and a toggle to hide the measured values by _[Avengium](https://github.com/Avengium)_
