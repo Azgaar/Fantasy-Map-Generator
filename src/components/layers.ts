@@ -1,4 +1,6 @@
 // Global layers registry: owns layers list, order, and svg skeleton
+import { drawNebulae } from "@/renderers/astral/draw-nebulae";
+import { drawStarDensity } from "@/renderers/astral/draw-star-density";
 import { drawBiomes } from "@/renderers/draw-biomes";
 import { drawBorders } from "@/renderers/draw-borders";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
@@ -304,12 +306,15 @@ const mapLayers = [
   new Layer({
     id: "nebulae",
     parent: "viewbox",
-    children: ["ion", "dust", "neutral"].map(id => ({ id, tag: "g" }))
+    attrs: { "pointer-events": "none" }, // decorative
+    children: ["ion", "dust", "neutral"].map(id => ({ id, tag: "g" })),
+    draw: drawNebulae
   }),
   new Layer({
     id: "starDensity",
     parent: "viewbox",
-    children: ["band1", "band2", "band3", "band4", "band5", "band6"].map(id => ({ id, tag: "g" }))
+    children: ["band1", "band2", "band3", "band4", "band5", "band6"].map(id => ({ id, tag: "g" })),
+    draw: drawStarDensity
   }),
   new Layer({
     id: "heightmap",

@@ -389,11 +389,15 @@ Shipped: the `nebulae`, `starDensity` and `systems` style sections, the starfiel
 the void has its own starfield; there is no core or spiral arm; the style editor exposes the new
 elements.
 
-### Phase 3 — Nebulae and density
+### Phase 3 — Nebulae and density ✅
 
 - seeded nebula shapes and defs;
 - density field and banded heatmap;
 - performance-mode fallback.
+
+Shipped: `draw-nebulae` (seeded ellipse clusters, one turbulence filter per cluster, fade gradients
+in the `speed` preset), `draw-star-density` (population-weighted sparse kernel, banded through
+`getIsolines`), and the layer wiring in the registry.
 
 **Acceptance:** the same seed yields the same sky; nebulae and density toggle cleanly; a 100k-cell
 map draws both without blocking the UI for an unreasonable time.

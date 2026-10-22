@@ -92,8 +92,10 @@ As detailed in [`docs/plans/mod-merge-plan.md`](../plans/mod-merge-plan.md):
   `options.map.astral` mode flag, and the three Astral layer slots.
 - **Shipped (Phase 2)**: The `astral` style preset, the sector-dust and void starfields, and the
   nebula/density/system style sections.
-- **Planned**: The visual phases — nebula rendering, stellar density heatmaps, and the system
-  markers. Planned in [`docs/plans/astral-ui-overhaul.md`](../plans/astral-ui-overhaul.md).
+- **Shipped (Phase 3)**: The nebula renderer (seeded cloud clusters) and the stellar-density
+  heatmap (a population-weighted kernel over the burgs, banded on the cell graph).
+- **Planned**: The system markers with their tooltip and editor seams.
+  Planned in [`docs/plans/astral-ui-overhaul.md`](../plans/astral-ui-overhaul.md).
 
 ---
 *For upstream merge tracking, see [MERGING.md](../../MERGING.md).*
