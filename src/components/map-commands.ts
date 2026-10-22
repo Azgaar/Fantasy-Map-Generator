@@ -352,12 +352,29 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => Controllers.WrapTool.open()
   },
   { id: "openMinimapButton", name: "Open Minimap", aliases: "navigation", run: () => Controllers.Minimap.open() },
-  { id: "viewMesh", name: "Open 3D Scene", aliases: "view mode mesh", run: () => Controllers.View3d.open("viewMesh") },
+  {
+    id: "viewMesh",
+    name: "Open 3D Scene",
+    aliases: "view mode mesh",
+    run: async () => {
+      await Controllers.AstralMode.exit();
+      return Controllers.View3d.open("viewMesh");
+    }
+  },
   {
     id: "viewGlobe",
     name: "Open Globe View",
     aliases: "view mode planet",
-    run: () => Controllers.View3d.open("viewGlobe")
+    run: async () => {
+      await Controllers.AstralMode.exit();
+      return Controllers.View3d.open("viewGlobe");
+    }
+  },
+  {
+    id: "viewAstral",
+    name: "Toggle Astral View",
+    aliases: "view mode astral star chart sci-fi nebula",
+    run: () => Controllers.AstralMode.toggle()
   },
   {
     id: "showStatesChart",

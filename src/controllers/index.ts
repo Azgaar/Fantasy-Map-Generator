@@ -2,6 +2,7 @@ import { createRegistry } from "@/utils/registry";
 
 export const Controllers = createRegistry({
   AiGenerator: () => import("@/controllers/ai-generator").then(m => m.AiGenerator),
+  AstralMode: () => import("@/controllers/astral-mode").then(m => m.AstralMode),
   AstralNames: () => import("@/controllers/astral-names").then(m => m.AstralNames),
   AstralSystems: () => import("@/controllers/astral-systems").then(m => m.AstralSystems),
   BattleScreen: () => import("@/controllers/battle-screen").then(m => m.BattleScreen),

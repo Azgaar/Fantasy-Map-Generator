@@ -1,5 +1,6 @@
 // The layers the Layers tab lists, with their button labels and hotkeys; the style editor names elements by these
 import type { LayerId } from "@/components/layers";
+import { ASTRAL_LAYER_TOGGLES } from "./astral-layer-labels";
 
 export interface LayerButton {
   label: string; // button text, may contain markup marking the shortcut letter
@@ -54,6 +55,8 @@ window.LAYER_TOGGLES = LAYER_TOGGLES;
 /** The plain label of a layer, the hotkey markup stripped; `map` is the whole-map style element */
 export function layerLabel(id: string): string {
   if (id === "map") return "Map";
-  const label = LAYER_TOGGLES.get(id as LayerId)?.label.replace(/<\/?u>/g, "");
+  const label =
+    LAYER_TOGGLES.get(id as LayerId)?.label.replace(/<\/?u>/g, "") ??
+    ASTRAL_LAYER_TOGGLES.get(id as LayerId)?.label.replace(/<\/?u>/g, "");
   return label ?? id.charAt(0).toUpperCase() + id.slice(1); // the permanent layers have no button
 }

@@ -362,11 +362,14 @@ MERGING.md                                new touch points
 
 ## Phases
 
-### Phase 1 — Mode and button swap
+### Phase 1 — Mode and button swap ✅
 
 - mode flag, button, controller skeleton, mode-aware layer tab and presets;
 - Astral layer ids registered with placeholder renderers;
 - persistence through `options.map.astral` and hydration on boot/load.
+
+Shipped: `AstralMode`, the `Astral` button, the mode-aware layer/preset list, the three layer ids,
+`options.map.astral`, and the boot/load hydration.
 
 **Acceptance:** clicking Astral hides the standard layer buttons and shows the Astral list; leaving
 restores the previous list, style and layers; a reload of a saved Astral map shows the Astral list;

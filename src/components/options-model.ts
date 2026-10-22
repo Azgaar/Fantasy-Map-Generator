@@ -83,6 +83,7 @@ class OptionsModel {
           population: { scale: 1000, urbanization: { rate: 1, density: 10 } }
         },
         style: { preset: "default" },
+        astral: false,
         burgs: { groups: Burgs.getDefaultGroups() },
         labels: { groups: Labels.getDefaultGroups() },
         military: { units: Military.getDefaultOptions() },
@@ -264,6 +265,7 @@ class OptionsModel {
     const map = this.getDefaultOptions().map;
     map.seed = previous.seed;
     map.style = previous.style;
+    map.astral = previous.astral;
     map.burgs.groups = previous.burgs.groups;
     map.labels.groups = previous.labels.groups;
     map.military.units = previous.military.units;

@@ -302,6 +302,16 @@ const mapLayers = [
   new Layer({ id: "landmass", parent: "viewbox", permanent: true, keepContent: true, draw: drawLandmass }),
   new Layer({ id: "texture", element: "texture", parent: "viewbox", draw: drawTexture }),
   new Layer({
+    id: "nebulae",
+    parent: "viewbox",
+    children: ["ion", "dust", "neutral"].map(id => ({ id, tag: "g" }))
+  }),
+  new Layer({
+    id: "starDensity",
+    parent: "viewbox",
+    children: ["band1", "band2", "band3", "band4", "band5", "band6"].map(id => ({ id, tag: "g" }))
+  }),
+  new Layer({
     id: "heightmap",
     element: "terrs",
     parent: "viewbox",
@@ -396,6 +406,7 @@ const mapLayers = [
     erase: removeEmblems
   }),
   new Layer({ id: "burgIcons", parent: "viewbox", draw: drawBurgIcons }),
+  new Layer({ id: "systems", parent: "viewbox" }),
   new Layer({
     id: "labels",
     parent: "viewbox",
