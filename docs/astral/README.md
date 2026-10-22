@@ -10,7 +10,7 @@
 
 | Fantasy Map Generator | Astral Cartographer |
 |---|---|
-| Landmass & coastlines | Galactic plane, core, and void rifts |
+| Landmass & coastlines | Sector dust, starfields, and void rifts |
 | Elevation & mountains | Star density, nebulae, and stellar hazards |
 | Rivers & routes | Hyperspace lanes, trade corridors, and warp gates |
 | Burgs | **Star systems** |
@@ -72,14 +72,25 @@ The installations become the system's own: a port is a **shipyard**, a citadel a
 
 _Options_ → _Tools_ → **Star Systems** lists every system on the map with its class, its people and its traits; clicking a row zooms to it. In the browser console, `Astral.systems()` returns the same list as data.
 
+## The Astral view
+
+_Options_ → _Layers_ → **View mode** → **Astral** turns the map into a star chart of one chosen
+sector. The fantasy layer buttons are replaced by the Astral list — Sector Dust, Nebulae, Star
+Density, Systems, Empires, Sectors, Borders, Hyperlanes, Anomalies and Labels — and the map takes the
+Astral style: the void becomes deep space, the land becomes a starry dust sheet, nebulae and a
+stellar-density heatmap appear, and every burg is drawn as a class-coloured star. There is no
+galactic core or spiral arm. Leaving the mode restores the previous layers and style.
+
+The full design is in [`docs/plans/astral-ui-overhaul.md`](../plans/astral-ui-overhaul.md).
+
 ## In-Tree Roadmap
 
 As detailed in [`docs/plans/mod-merge-plan.md`](../plans/mod-merge-plan.md):
 - **Phase A (Shipped)**: Core name bases, culture sets, and schema validation.
 - **Phase D (Shipped)**: The mapping — polity and sector naming, the star classes and traits, and the Star Systems overview.
-- **Upcoming**:
-  - Nebula rendering, stellar density heatmaps, and sci-fi cartographic visual styles.
-  - The visual reskin: the galactic plane, the void between systems, the system markers.
+- **Planned**: The visual overhaul — the Astral view button, nebula rendering, stellar density
+  heatmaps, sci-fi cartographic styles, sector dust, the void between systems, and the system
+  markers. Planned in [`docs/plans/astral-ui-overhaul.md`](../plans/astral-ui-overhaul.md).
 
 ---
 *For upstream merge tracking, see [MERGING.md](../../MERGING.md).*
