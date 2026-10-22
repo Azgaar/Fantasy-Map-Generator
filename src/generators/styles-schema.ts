@@ -338,6 +338,22 @@ const emblemGroup = z.strictObject({
   options: z.strictObject({ size: number({ range: [0, 5], step: 0.01, tip: "Set emblems size multiplier" }) })
 });
 
+const nebulaGroup = z.strictObject({
+  attrs: z.strictObject({ opacity, ...fillGroup, filter })
+});
+
+const densityBand = z.strictObject({
+  attrs: z.strictObject({ opacity, ...fillGroup, filter })
+});
+
+const starGroup = z.strictObject({
+  attrs: z.strictObject({ opacity, ...fillGroup, ...strokeGroup, filter }),
+  options: z.strictObject({
+    size: number({ label: "Size", range: [0.05, 10], step: 0.05, tip: "Set star marker size" }),
+    glow: flag({ label: "Glow", tip: "Draw a soft halo around the star" })
+  })
+});
+
 const padding = (side: string) =>
   number({ group: "Padding", label: side, range: [0, 50], step: 0.5, tip: "Background element padding in pixels" });
 
@@ -588,6 +604,19 @@ export const stylesSchema = z.strictObject({
       })
     })
   }),
+  nebulae: z.strictObject({
+    attrs: z.strictObject({ opacity, filter, mask: clip }),
+    options: z.strictObject({
+      count: count(1, 12, { label: "Clouds", tip: "Number of nebula clusters" }),
+      size: number({ label: "Size", range: [1, 60], step: 1, tip: "Cluster size in percent of the map" }),
+      softness: number({ label: "Softness", range: [0, 10], step: 0.1, tip: "Edge softness of the clouds" })
+    }),
+    groups: z.strictObject({
+      ion: variant(nebulaGroup, { label: "Ionised gas" }),
+      dust: variant(nebulaGroup, { label: "Dust" }),
+      neutral: variant(nebulaGroup, { label: "Neutral gas" })
+    })
+  }),
   ocean: z.strictObject({
     options: z.strictObject({ bands: coastlineBands }),
     groups: z.strictObject({
@@ -697,6 +726,32 @@ export const stylesSchema = z.strictObject({
     }),
     { effect: "draw" }
   ),
+  starDensity: z.strictObject({
+    attrs: z.strictObject({ opacity, filter, mask: clip }),
+    options: z.strictObject({
+      levels: count(1, 6, { label: "Bands", tip: "Number of density bands" }),
+      reach: number({
+        label: "Reach",
+        range: [1, 30],
+        step: 1,
+        tip: "Kernel reach in percent of the map's smaller side"
+      }),
+      populationWeight: number({
+        label: "Pop. weight",
+        range: [0, 1],
+        step: 0.05,
+        tip: "How much population, rather than system count, drives the density"
+      })
+    }),
+    groups: z.strictObject({
+      band1: variant(densityBand, { label: "Band 1" }),
+      band2: variant(densityBand, { label: "Band 2" }),
+      band3: variant(densityBand, { label: "Band 3" }),
+      band4: variant(densityBand, { label: "Band 4" }),
+      band5: variant(densityBand, { label: "Band 5" }),
+      band6: variant(densityBand, { label: "Band 6" })
+    })
+  }),
   states: z.strictObject({
     groups: z.strictObject({
       statesBody: z.strictObject({ attrs: z.strictObject({ opacity, filter }) }),
@@ -708,6 +763,20 @@ export const stylesSchema = z.strictObject({
           filter: blurFilter
         })
       })
+    })
+  }),
+  systems: z.strictObject({
+    attrs: z.strictObject({ opacity, filter }),
+    options: z.strictObject({
+      glow: flag({ label: "Glow", tip: "Draw a soft halo around the star markers" })
+    }),
+    groups: z.strictObject({
+      G: variant(starGroup, { label: "G — yellow dwarf" }),
+      F: variant(starGroup, { label: "F — white-yellow star" }),
+      K: variant(starGroup, { label: "K — orange dwarf" }),
+      A: variant(starGroup, { label: "A — white star" }),
+      B: variant(starGroup, { label: "B — blue giant" }),
+      M: variant(starGroup, { label: "M — red dwarf" })
     })
   }),
   temperature: z.strictObject({

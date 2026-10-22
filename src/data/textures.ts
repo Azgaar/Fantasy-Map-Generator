@@ -23,5 +23,6 @@ export const TEXTURES: Record<string, string> = {
   "./images/textures/mercury-big.jpg": "Mercury big",
   "./images/textures/mauritania-small.jpg": "Mauritania small",
   "./images/textures/iran-small.jpg": "Iran small",
-  "./images/textures/spain-small.jpg": "Spain small"
+  "./images/textures/spain-small.jpg": "Spain small",
+  "./images/textures/starfield.png": "Starfield"
 };

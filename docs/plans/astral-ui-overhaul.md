@@ -375,12 +375,16 @@ Shipped: `AstralMode`, the `Astral` button, the mode-aware layer/preset list, th
 restores the previous list, style and layers; a reload of a saved Astral map shows the Astral list;
 standard maps are untouched.
 
-### Phase 2 — Plane, void and style
+### Phase 2 — Sector dust, void and style ✅
 
 - three style elements and defaults;
 - `astral.json` preset and thumbnail;
 - sector dust and void starfields, and the coast palette;
 - states, borders, routes and labels reskinned by the preset.
+
+Shipped: the `nebulae`, `starDensity` and `systems` style sections, the starfield asset and the
+`astral` preset. The thumbnail is listed in the renderer script; regenerate it where Playwright and
+ffmpeg are available.
 
 **Acceptance:** the map reads as a sector chart, not a parchment map; the land uses the starfield PNG;
 the void has its own starfield; there is no core or spiral arm; the style editor exposes the new

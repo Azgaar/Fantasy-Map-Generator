@@ -90,9 +90,10 @@ As detailed in [`docs/plans/mod-merge-plan.md`](../plans/mod-merge-plan.md):
 - **Phase D (Shipped)**: The mapping — polity and sector naming, the star classes and traits, and the Star Systems overview.
 - **Shipped (Phase 1)**: The Astral view button, the mode-aware layer list and presets, the
   `options.map.astral` mode flag, and the three Astral layer slots.
-- **Planned**: The visual phases — nebula rendering, stellar density heatmaps, sci-fi cartographic
-  styles, sector dust, the void between systems, and the system markers. Planned in
-  [`docs/plans/astral-ui-overhaul.md`](../plans/astral-ui-overhaul.md).
+- **Shipped (Phase 2)**: The `astral` style preset, the sector-dust and void starfields, and the
+  nebula/density/system style sections.
+- **Planned**: The visual phases — nebula rendering, stellar density heatmaps, and the system
+  markers. Planned in [`docs/plans/astral-ui-overhaul.md`](../plans/astral-ui-overhaul.md).
 
 ---
 *For upstream merge tracking, see [MERGING.md](../../MERGING.md).*

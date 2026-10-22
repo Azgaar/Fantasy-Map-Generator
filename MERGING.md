@@ -110,6 +110,22 @@ git fetch upstream && git merge upstream/master
 - *Conflict resolution strategy*: the three layer entries are append-only at fixed z-positions; the
   new option has a schema default, so older maps load as Standard.
 
+### Astral visual overhaul — Phase 2 (style)
+
+- **`src/generators/styles-schema.ts`**: `nebulae`, `starDensity` and `systems` elements, with their
+  grouped children and field meta.
+- **`src/generators/default-styles.json`**: the same three sections' defaults.
+- **`public/styles/astral.json`** (new): the complete sector-chart preset. The other shipped presets
+  gain the three new sections through the converter.
+- **`src/data/textures.ts`** / **`src/data/ocean-patterns.ts`**: the starfield image in the texture
+  and ocean-pattern choices.
+- **`public/images/textures/starfield.png`** (new): the tiled starfield used by sector dust and the
+  void.
+- **`src/services/style-presets.ts`** / **`scripts/render-style-thumbnails.mjs`**: `astral` in the
+  system preset list.
+- *Conflict resolution strategy*: the schema additions are one contiguous block; old maps and
+  presets repair the missing sections from defaults.
+
 ### Toolchain & Windows Environment Compatibility
 
 - **`package.json`**:

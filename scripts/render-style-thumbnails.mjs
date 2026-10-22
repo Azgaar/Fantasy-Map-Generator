@@ -35,6 +35,7 @@ const SYSTEM_PRESETS = [
   "atlas",
   "darkSeas",
   "cyberpunk",
+  "astral",
   "night",
   "monochrome",
   "ink",

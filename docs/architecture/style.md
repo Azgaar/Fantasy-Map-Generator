@@ -189,7 +189,7 @@ and the style saved in a `.map` all use the schema; there is no second format.
   see [configuration.md](./configuration.md)); the record is map state. Load runs the auto-update
   migrations over `data[48]`, `Styles.parse`s and `set`s it, draws the layers, `Styles.write`s every
   element and runs the defs appliers.
-- **System presets** are the fifteen names in `SYSTEM_PRESETS`: `default` ships in the bundle, the
+- **System presets** are the sixteen names in `SYSTEM_PRESETS`: `default` ships in the bundle, the
   rest are fetched from `public/styles/<name>.json`. `public/images/style-presets/<name>.avif` is each
   one's thumbnail for the gallery, rendered by `scripts/render-style-thumbnails.mjs`.
 - **Custom presets** live in `localStorage` under `fmg-style-<name>` (older ones under
@@ -366,7 +366,7 @@ there.
 - **Every leaf has a control or is `hidden`** — `styles-schema.test.ts` walks the real schema with
   `styleMeta` and fails on a field with no known control kind, so a field cannot be added without UI.
 - **No label longer than 13 characters** — the column shows it on one line.
-- **Every preset parses** — the fifteen JSONs and the fixtures are validated in `styles.test.ts`.
+- **Every preset parses** — the sixteen JSONs and the fixtures are validated in `styles.test.ts`.
 - **Build on open, destroy on close.** `open` renders into `#styleForm`; `close` (leaving the tab)
   empties it and destroys the controls' dialogs, the elements dialog and the gallery.
 - **The attribute snapshot stays identical.** The `style-parity` e2e baselines pin what a preset

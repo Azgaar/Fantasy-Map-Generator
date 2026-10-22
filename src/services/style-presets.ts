@@ -18,6 +18,7 @@ export const SYSTEM_PRESETS = [
   "gloom",
   "darkSeas",
   "cyberpunk",
+  "astral",
   "night",
   "monochrome"
 ] as readonly string[];
