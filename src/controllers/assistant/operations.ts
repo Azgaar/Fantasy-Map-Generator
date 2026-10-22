@@ -137,7 +137,7 @@ export const METHODS = {
     "setPopulation"
   ],
   Biomes: ["rename", "recolor", "setHabitability", "add", "remove", "setCells", "restore"],
-  Rivers: ["rename", "setType", "add", "remove", "setParent", "setWidth", "create"],
+  Rivers: ["rename", "setType", "add", "remove", "setParent", "setWidth", "setLocked", "create"],
   Routes: ["rename", "setGroup", "add", "remove", "setLocked", "create", "split", "join"],
   Features: ["rename", "setSubtype", "setGroup", "setCoastline"],
   Zones: ["rename", "recolor", "setType", "setHidden", "setCells", "add", "remove", "setPopulation"],

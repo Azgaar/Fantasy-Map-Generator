@@ -138,7 +138,7 @@ Hover it over, you will see some tips at the bottom on the page
 
 ### How can I remove part of my map to expand my ocean?
 
-Open Tools -> Heightmap. When you click on it, a popup asks whether to use Keep, Risk or Erase mode. Select Risk if you want to keep the other layers (states, burgs, etc.), Keep mode won't let you change the coastline at all. Sink the land with the brushes and finalize the edit. Burgs that end up on water are moved to the closest available land cell and ordinary burgs with no land nearby are removed, but capitals are always preserved, so deal with them (reassign the capital status or remove the state) before sinking their land
+Open Tools -> Heightmap. When you click on it, a popup asks whether to use Keep, Risk or Erase mode. Select Risk if you want to keep the other layers (states, burgs, etc.), Keep mode won't let you change the coastline at all. Sink the land with the brushes and finalize the edit. Risk mode never sinks the land under a burg: each burg keeps its cell as a small island, so remove or move the burgs there first (a capital needs its capital status given to another burg, or its state removed)
 
 ### What is burg? What is berg?
 
@@ -358,7 +358,7 @@ Population depends mainly on by area / biome, but there are other factors as wel
 
 ### Is there a way that I can add a lake to a landmass without resetting all the rivers and stuff?
 
-Not really. Lakes are derived from the heightmap, so a new lake requires a heightmap edit: Tools -> Heightmap -> Risk mode keeps most of the data, but rivers and lakes are recalculated on edit completion, so manual river edits will be lost
+Not really. Lakes are derived from the heightmap, so a new lake requires a heightmap edit: Tools -> Heightmap -> Risk mode keeps most of the data. With 'Allow water erosion' checked, rivers are generated again on edit completion: a river or lake that keeps its place keeps its name, and a locked river keeps its course, so lock the rivers you edited by hand first (the lock button in the River Editor or Tools -> Rivers)
 
 ### I have issues with download. The button disappeared after I clicked it. Even though I didnt download the app
 
@@ -606,7 +606,7 @@ No, this feature is not supported. You can only adjust borders manually using th
 
 ### Is it possible to change the Heightmap in risk mode without regenerating the rivers?
 
-No. Risk mode tries to keep the data, but rivers, lakes and biomes directly depend on the heightmap and are regenerated on edit completion. Unchecking 'Allow water erosion' in the heightmap customization menu keeps the heights as you drew them, but rivers are still recalculated
+Yes. Uncheck 'Allow water erosion' in the heightmap customization menu: Risk mode then keeps the rivers, ending them at the new coast where their land went under the sea, and the heights: as you drew them where you edited, as they were everywhere else. With erosion allowed, rivers are generated again on edit completion, but a locked river keeps its course and data and the new rivers flow around it; lock a river with the lock button in the River Editor or in Tools -> Rivers. Other rivers keep their names where they follow their old course
 
 ### Is there any way to make the .map file size a little smaller?
 

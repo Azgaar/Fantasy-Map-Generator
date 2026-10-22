@@ -293,6 +293,8 @@ Rivers data is stored as an unordered array of objects (so element id is _not_ t
 - `width`: `number` - river mouth width in km
 - `sourceWidth`: `number` - additional width added to river source on rendering. Used to make lake outlets start with some width depending on flux. Can be also used to manually create channels
 - `note`: `string` - optional. The user's note (legend) about the river, as html. Removed with it
+- `lock`: `boolean` - `true` if river is locked: regeneration (Regenerate rivers, a World Configurator change, a
+  Risk heightmap edit with erosion) keeps its course and data and generates the other rivers around it. Optional
 
 ## Markers
 

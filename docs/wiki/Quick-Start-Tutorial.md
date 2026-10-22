@@ -113,7 +113,7 @@ If you don’t like the heightmap generated automatically, you may edit it or ev
 
 If you want to perform just a minor change, select the _Keep_ mode. You won’t be able to change the coastline, but all the data, including manually placed relief icons and rivers, will be kept as it is. So it’s more like a visual change without changing the underlying data.
 
-If you have done some changes and still need to amend the coastline, you may use the _Risk_ mode. As the title says, it’s not safe and can cause some issues. So please use this mode only if you really need to.
+If you have done some changes and still need to amend the coastline, use the _Risk_ mode. It carries burgs, states, routes, markers and the rest of the data over to the new coastline, but what was on land you sink is lost, and rivers are generated again unless you uncheck _Allow water erosion_ or lock them first. Save the map before editing, as with any big change.
 
 Heightmap editing process has multiple build-in tools. These tools won’t be covered in this tutorial, just note that they allow you to use brushes to "paint" the map, to edit and apply heightmap template and to convert any image into a heightmap.
 

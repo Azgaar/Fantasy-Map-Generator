@@ -26,6 +26,12 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - CSV upload for most entities
 - Color picker rework
 - Regenerate provinces for selected states
+- Heightmap Risk mode: map data is carried over to the new coastline reliably
+- Heightmap Risk mode: names of rivers, lakes and islands are kept
+- Heightmap Risk mode: relief icons follow the new coastline
+- Rivers: lock a river to keep it through regeneration
+- Submap and Transform: custom label paths follow the map
+- Submap and Transform: a state or province whose capital is left out gets a new capital
 - Population layer: Shading land by population density by _[inviktos](https://github.com/inviktos)_
 - Altitude legend: heightmap colors by _[Avengium](https://github.com/Avengium)_
 - Rulers style: line and dash colors and a toggle to hide the measured values by _[Avengium](https://github.com/Avengium)_

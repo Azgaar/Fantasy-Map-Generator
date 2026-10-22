@@ -11,15 +11,6 @@ declare global {
 export type FeatureType = "ocean" | "lake" | "island";
 
 /* Pack features interface */
-export interface CapturedFeature {
-  name: string;
-  note?: string;
-  tags?: string[];
-  type: FeatureType;
-  gridCells: Set<number>;
-  coastline?: CoastlineSettings;
-}
-
 export interface Feature {
   i: number;
   type: FeatureType;
@@ -330,86 +321,6 @@ class FeatureModule {
     pack.cells.haven = haven;
     pack.cells.harbor = harbor;
     pack.features = [0 as unknown as Feature, ...features];
-  }
-
-  /** Grid cells a feature covered, plus the data the user owns, so a re-markup can hand it back */
-  captureUserData(): CapturedFeature[] {
-    const gridCellsByFeature = this.mapGridCellsByFeature();
-    if (!gridCellsByFeature) return [];
-
-    const captured: CapturedFeature[] = [];
-    for (const feature of pack.features) {
-      if (!feature?.i || (!feature.name && !feature.note && !feature.coastline && !feature.tags?.length)) continue;
-      const gridCells = gridCellsByFeature.get(feature.i);
-      if (!gridCells?.size) continue;
-      const { name, note, type, coastline, tags } = feature;
-      captured.push({ name, note, type, gridCells, coastline, tags });
-    }
-
-    return captured;
-  }
-
-  /** Hand the captured data to whichever new feature covers most of the old one, dropping the rest */
-  restoreUserData(captured: CapturedFeature[]): void {
-    const { cells, features } = pack;
-    if (!captured.length || !cells?.f) return;
-
-    const capturedByGridCell = new Map<number, number>();
-    captured.forEach((item, index) => {
-      for (const gridCell of item.gridCells) capturedByGridCell.set(gridCell, index);
-    });
-
-    const overlaps = new Map<string, number>(); // `${featureId}:${capturedIndex}` -> shared grid cells
-    for (let i = 0; i < cells.f.length; i++) {
-      const featureId = cells.f[i];
-      if (!featureId) continue;
-      const index = capturedByGridCell.get(cells.g[i]);
-      if (index === undefined) continue;
-      const key = `${featureId}:${index}`;
-      overlaps.set(key, (overlaps.get(key) || 0) + 1);
-    }
-
-    const matches = Array.from(overlaps, ([key, overlap]) => {
-      const [featureId, index] = key.split(":").map(Number);
-      return { featureId, index, overlap };
-    }).sort((a, b) => b.overlap - a.overlap);
-
-    const takenFeatures = new Set<number>();
-    const takenCaptures = new Set<number>();
-
-    for (const { featureId, index, overlap } of matches) {
-      if (takenFeatures.has(featureId) || takenCaptures.has(index)) continue;
-      if (overlap * 2 < captured[index].gridCells.size) continue; // the old feature is mostly gone
-
-      const feature = features[featureId];
-      if (!feature) continue;
-      if (feature.type !== captured[index].type) continue; // a lake raised to land is not the island covering it
-
-      takenFeatures.add(featureId);
-      takenCaptures.add(index);
-      const { name, note, coastline, tags } = captured[index];
-      if (name) feature.name = name;
-      if (note) feature.note = note;
-      if (coastline) feature.coastline = coastline;
-      if (tags) feature.tags = [...tags];
-    }
-  }
-
-  private mapGridCellsByFeature(): Map<number, Set<number>> | undefined {
-    const { cells } = pack;
-    if (!cells?.f || !cells.g || !pack.features) return undefined;
-
-    const gridCellsByFeature = new Map<number, Set<number>>();
-    for (let i = 0; i < cells.f.length; i++) {
-      const featureId = cells.f[i];
-      if (!featureId) continue;
-
-      const gridCells = gridCellsByFeature.get(featureId) ?? new Set<number>();
-      gridCells.add(cells.g[i]);
-      gridCellsByFeature.set(featureId, gridCells);
-    }
-
-    return gridCellsByFeature;
   }
 
   /** Rename a geographical feature: an island, lake or ocean */

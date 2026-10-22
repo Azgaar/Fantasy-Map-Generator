@@ -830,6 +830,7 @@ function regenerateRoutes(): void {
 
 function regenerateRivers(): void {
   Rivers.regenerate();
+  Routes.sync(); // its river edges follow the rivers
   Layers.draw("rivers");
 }
 

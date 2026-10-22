@@ -12,6 +12,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
+import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
 import { Tags } from "@/generators/tags";
@@ -82,6 +83,7 @@ const columns: EditorColumn<River>[] = [
     sortType: "alpha"
   },
   { key: "edit", width: "1.1em" },
+  { key: "lock", width: "1.1em" },
   { key: "remove", width: "1.4em", permanent: true }
 ];
 
@@ -148,7 +150,8 @@ function renderDialog(): void {
       <button id="riversBasinHighlight" data-tip="${t("Toggle basin highlight mode")}" class="icon-sitemap"></button>
       <button id="riversExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
       <button id="riversImport" data-tip="${t("Upload data from a CSV file")}" class="icon-upload"></button>
-      <button id="riversRemoveAll" data-tip="${t("Remove all rivers")}" class="icon-trash"></button>
+      <button id="riversLockAll" data-tip="${t("Lock or unlock all rivers")}" class="icon-lock"></button>
+      <button id="riversRemoveAll" data-tip="${t("Remove all unlocked rivers (locked rivers are kept)")}" class="icon-trash"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -172,6 +175,7 @@ function renderDialog(): void {
   ensureEl("riversBasinHighlight").addEventListener("click", () => void toggleBasinHighlight());
   ensureEl("riversExport").addEventListener("click", downloadRiversData);
   ensureEl("riversImport").addEventListener("click", () => Csv.pick(uploadRiversCsv));
+  ensureEl("riversLockAll").addEventListener("click", toggleLockAll);
   ensureEl("riversRemoveAll").addEventListener("click", triggerAllRiversRemove);
   ensureEl("riversSearch").addEventListener("input", event => {
     filterState.search = (event.target as HTMLInputElement).value;
@@ -234,6 +238,9 @@ function renderRiversPage(view: TableView<River>): void {
           />
         </div>
         <span data-col="edit" data-tip="${t("Edit River")}" class="icon-pencil"></span>
+        <span data-col="lock" class="locks pointer ${
+          r.lock ? "icon-lock" : "icon-lock-open inactive"
+        }" onmouseover="showElementLockTip(event)"></span>
         <span data-col="remove" data-tip="${t("Remove")}" class="icon-trash-empty"></span>
       </div>`;
   }
@@ -260,6 +267,7 @@ function renderRiversPage(view: TableView<River>): void {
   body.querySelectorAll("div > span.icon-target").forEach(el => void el.addEventListener("click", zoomToRiver));
   body.querySelectorAll("div > span.icon-pencil").forEach(el => void el.addEventListener("click", openRiverEditor));
   body.querySelectorAll("input.riverTags").forEach(el => void el.addEventListener("change", riverChangeTags));
+  body.querySelectorAll("div > span.locks").forEach(el => void el.addEventListener("click", toggleLockStatus));
   body
     .querySelectorAll("div > span.icon-trash-empty")
     .forEach(el => void el.addEventListener("click", triggerRiverRemove));
@@ -333,18 +341,48 @@ function triggerRiverRemove(this: HTMLElement): void {
   });
 }
 
+function toggleLockStatus(this: HTMLElement): void {
+  const river = pack.rivers.find(r => r.i === +(this.closest(".states") as HTMLElement).dataset.id!);
+  if (!river) return;
+  Rivers.setLocked(river.i, !river.lock);
+  this.className = `locks pointer ${river.lock ? "icon-lock" : "icon-lock-open inactive"}`;
+}
+
+function toggleLockAll(): void {
+  const allLocked = pack.rivers.every(river => river.lock);
+  for (const river of pack.rivers) Rivers.setLocked(river.i, !allLocked);
+  riversTable.refresh();
+  ensureEl("riversLockAll").className = allLocked ? "icon-lock" : "icon-lock-open";
+}
+
 function triggerAllRiversRemove(): void {
+  const toRemove = pack.rivers.filter(river => !river.lock).length;
+  if (!toRemove) {
+    if (!pack.rivers.length) tip(t("There are no rivers to remove"), false, "error");
+    else
+      tip(t("All rivers are locked. Unlock rivers to remove them, or use Lock all to unlock first."), false, "error");
+    return;
+  }
+
+  const locked = pack.rivers.length - toRemove;
   confirmationDialog({
-    title: t("Remove all rivers"),
-    message: t("Are you sure you want to remove all rivers?"),
+    title: locked ? t("Remove unlocked rivers") : t("Remove all rivers"),
+    message: locked
+      ? sentences(
+          t("Remove all unlocked rivers ({{rivers}})?", { rivers: toRemove }),
+          t("Locked rivers to keep: {{locked}}", { locked })
+        )
+      : t("Are you sure you want to remove all rivers?"),
     confirm: t("Remove"),
     onConfirm: removeAllRivers
   });
 }
 
 function removeAllRivers(): void {
-  pack.rivers = [];
-  pack.cells.r = new Uint16Array(pack.cells.i.length);
+  const kept = new Set(pack.rivers.filter(river => river.lock).map(river => river.i));
+  pack.rivers = pack.rivers.filter(river => kept.has(river.i));
+  pack.cells.r = pack.cells.r.map(r => (kept.has(r) ? r : 0));
+  Lakes.cleanupLakeData(); // lakes drop the removed rivers from their inlets and outlet
   Layers.draw("rivers", "labels");
   riversTable.refresh();
 }

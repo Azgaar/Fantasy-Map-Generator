@@ -32,5 +32,6 @@ import "./markets-generator";
 import "./transports-generator";
 import "./journeys/journeys-generator";
 import "./resample";
+import "./map-integrity";
 import "./generation-pipeline";
 import "./tags";

@@ -1,13 +1,15 @@
-import { applyGraphSize, fitMapToScreen } from "@/components/canvas";
+import { applyGraphSize, fitMapToScreen, redrawMap } from "@/components/canvas";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { registerMap } from "@/components/lifecycle";
 import { cellsDensityColor, changeCellsDensity } from "@/components/options/tabs/options-tab";
+import { tip } from "@/components/tooltips";
 import { undraw } from "@/components/undraw";
 import { POINTS_BY_DENSITY } from "@/data/graph-density";
+import { MapRestoration } from "@/generators/map-restoration";
 import { Resample } from "@/generators/resample";
 import { logStats } from "@/services/logging";
-import { t } from "@/utils/i18n";
+import { sentences, t } from "@/utils/i18n";
 import { ensureEl, rn } from "../utils";
 
 let mouseIsDown = false;
@@ -198,17 +200,28 @@ function handleWheel(e: WheelEvent): void {
 function transformMap(): void {
   INFO && console.group("transformMap");
 
-  const transformPointsValue = ensureEl<HTMLInputElement>("transformPointsInput").value;
-  const globalPointsValue = String(options.generation.graph.density);
-  if (transformPointsValue !== globalPointsValue) changeCellsDensity(+transformPointsValue);
+  try {
+    MapRestoration.transaction(() => {
+      const transformPointsValue = ensureEl<HTMLInputElement>("transformPointsInput").value;
+      const globalPointsValue = String(options.generation.graph.density);
+      if (transformPointsValue !== globalPointsValue) changeCellsDensity(+transformPointsValue);
 
-  const [projection, inverse] = getProjection();
+      const [projection, inverse] = getProjection();
 
-  applyGraphSize();
-  fitMapToScreen();
-  resetZoom(0);
-  undraw();
-  Resample.process({ projection, inverse, scale: 1 });
+      applyGraphSize();
+      fitMapToScreen();
+      resetZoom(0);
+      undraw();
+      Resample.process({ projection, inverse, scale: 1 });
+    });
+  } catch (error) {
+    ERROR && console.error(error);
+    redrawMap();
+    const failed = t("Failed to transform the map: {{error}}", { error: (error as Error).message });
+    tip(sentences(failed, t("The map is unchanged")), false, "error", 6000);
+    INFO && console.groupEnd();
+    return;
+  }
 
   Layers.drawAll();
 

@@ -988,13 +988,13 @@ class BurgModule {
       burg.port = 0;
       return;
     }
-    const water = this.portWater(burg.cell);
+    const water = this.getPortWater(burg.cell);
     if (!water) throw new Error(`Burg ${burgId} has no navigable water to be a port on`);
     burg.port = water;
   }
 
   /** The water body a burg at a cell trades by: the one it faces or drains to, or 0 */
-  private portWater(cell: number): number {
+  getPortWater(cell: number): number {
     const { cells, features } = pack;
     const haven = cells.haven[cell];
     const feature = haven ? features[cells.f[haven]] : undefined;
@@ -1043,7 +1043,7 @@ class BurgModule {
     Object.assign(burg, { cell, state, x: rn(x, 2), y: rn(y, 2), feature: cells.f[cell] });
     if (burg.capital) pack.states[state].center = cell;
     if (province) province.center = cell;
-    if (burg.port) burg.port = this.portWater(cell); // a port moved inland stops being one
+    if (burg.port) burg.port = this.getPortWater(cell); // a port moved inland stops being one
     if (burg.label) Object.assign(burg.label, { dx: 0, dy: 0, pathPoints: undefined }); // a custom path no longer fits
   }
 

@@ -1,15 +1,17 @@
-import { applyGraphSize, fitMapToScreen } from "@/components/canvas";
+import { applyGraphSize, fitMapToScreen, redrawMap } from "@/components/canvas";
 import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { registerMap } from "@/components/lifecycle";
 import { cellsDensityColor, changeCellsDensity } from "@/components/options/tabs/options-tab";
+import { tip } from "@/components/tooltips";
 import { undraw } from "@/components/undraw";
 import { viewport } from "@/components/viewport";
 import { POINTS_BY_DENSITY } from "@/data/graph-density";
+import { MapRestoration } from "@/generators/map-restoration";
 import { Resample } from "@/generators/resample";
 import { logStats } from "@/services/logging";
 import { getLatitude, getLongitude } from "@/utils";
-import { t } from "@/utils/i18n";
+import { sentences, t } from "@/utils/i18n";
 import { ensureEl, minmax, rn } from "../utils";
 
 function open(): void {
@@ -80,20 +82,31 @@ function generateSubmap(): void {
   INFO && console.group("generateSubmap");
 
   const { x0, y0, scale } = getSubmapRegion();
-  recalculateMapSize(x0, y0, scale);
+  try {
+    MapRestoration.transaction(() => {
+      recalculateMapSize(x0, y0, scale);
 
-  const submapPointsValue = ensureEl<HTMLInputElement>("submapPointsInput").value;
-  const globalPointsValue = String(options.generation.graph.density);
-  if (submapPointsValue !== globalPointsValue) changeCellsDensity(+submapPointsValue);
+      const submapPointsValue = ensureEl<HTMLInputElement>("submapPointsInput").value;
+      const globalPointsValue = String(options.generation.graph.density);
+      if (submapPointsValue !== globalPointsValue) changeCellsDensity(+submapPointsValue);
 
-  const projection = (x: number, y: number): [number, number] => [(x - x0) * scale, (y - y0) * scale];
-  const inverse = (x: number, y: number): [number, number] => [x / scale + x0, y / scale + y0];
+      const projection = (x: number, y: number): [number, number] => [(x - x0) * scale, (y - y0) * scale];
+      const inverse = (x: number, y: number): [number, number] => [x / scale + x0, y / scale + y0];
 
-  applyGraphSize();
-  fitMapToScreen();
-  resetZoom(0);
-  undraw();
-  Resample.process({ projection, inverse, scale });
+      applyGraphSize();
+      fitMapToScreen();
+      resetZoom(0);
+      undraw();
+      Resample.process({ projection, inverse, scale });
+    });
+  } catch (error) {
+    ERROR && console.error(error);
+    redrawMap();
+    const failed = t("Failed to create the submap: {{error}}", { error: (error as Error).message });
+    tip(sentences(failed, t("The map is unchanged")), false, "error", 6000);
+    INFO && console.groupEnd();
+    return;
+  }
 
   if (ensureEl<HTMLInputElement>("submapRescaleBurgStyles").checked) rescaleBurgStyles(scale);
   Layers.drawAll();

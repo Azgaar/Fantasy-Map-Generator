@@ -28,6 +28,13 @@ export interface River {
   label?: Label;
   note?: string;
   tags?: string[];
+  lock?: boolean; // its course and data survive regeneration
+}
+
+/** a locked river to keep through a regeneration, with the flux along its cells before it */
+export interface LockedRiver {
+  river: River;
+  flux: number[];
 }
 
 class RiverModule {
@@ -52,7 +59,7 @@ class RiverModule {
   smallLength: number | null = null;
 
   regenerate(): void {
-    this.generate();
+    this.generate(true, this.getLocked());
     this.specify();
     Features.defineGroups();
     Features.defineNames();
@@ -188,7 +195,16 @@ class RiverModule {
     return {};
   }
 
-  generate(allowErosion = true) {
+  /** the locked rivers of the current graph, to pass to a regeneration of it */
+  getLocked(): LockedRiver[] {
+    const { fl } = pack.cells;
+    return pack.rivers
+      .filter(river => river.lock)
+      .map(river => ({ river, flux: river.cells.map(cell => fl[cell] ?? 0) }));
+  }
+
+  /** Generate rivers from the heightmap; locked rivers keep their course, the generated ones flow around them */
+  generate(allowErosion = true, locked: LockedRiver[] = []) {
     Math.random = Alea(options.map.seed);
     const { cells, features } = pack;
 
@@ -417,20 +433,87 @@ class RiverModule {
     cells.fl = new Uint16Array(cells.i.length); // water flux array
     cells.r = new Uint16Array(cells.i.length); // rivers array
     cells.conf = new Uint8Array(cells.i.length); // confluences array
-    let riverNext = 1; // first river id is 1
+    let riverNext = Math.max(0, ...locked.map(({ river }) => river.i)) + 1; // generated ids follow the locked ones
 
     const h = this.alterHeights();
     Lakes.detectCloseLakes(h);
     this.resolveDepressions(h);
     drainWater();
     defineRivers();
+    if (locked.length) this.mergeLocked(locked);
 
     calculateConfluenceFlux();
     Lakes.cleanupLakeData();
+    if (locked.length) this.linkLockedLakes(locked);
 
     if (allowErosion) {
       cells.h = Uint8Array.from(h); // apply gradient
       downcutRivers(); // downcut river beds
+    }
+  }
+
+  /** a generated river mostly along a locked course is dropped, one reaching it ends there as its tributary */
+  private mergeLocked(locked: LockedRiver[]) {
+    const { cells } = pack;
+    const isLand = (cell: number) => cell >= 0 && cells.h[cell] >= 20;
+    // a river's last cell is where it flows into another, not its own course
+    const lockedAt = new Map<number, number>(); // land cell -> locked river
+    for (const { river } of locked) {
+      for (const cell of river.cells.slice(0, -1)) if (isLand(cell) && !lockedAt.has(cell)) lockedAt.set(cell, river.i);
+    }
+
+    const generated = pack.rivers.flatMap(river => {
+      const land = river.cells.filter(isLand);
+      if (land.filter(cell => lockedAt.has(cell)).length * 2 >= land.length) return [];
+      const junction = river.cells.findIndex(cell => lockedAt.has(cell));
+      if (junction === -1) return [river];
+      if (junction < 2) return []; // too short, as generation drops tiny rivers
+
+      const riverCells = river.cells.slice(0, junction + 1);
+      const mouth = riverCells.at(-2)!;
+      const length = this.getApproximateLength(this.addMeandering(riverCells) as unknown as Point[]);
+      const cut = { ...river, cells: riverCells, mouth, discharge: cells.fl[mouth], length };
+      return [{ ...cut, parent: lockedAt.get(riverCells.at(-1)!)! }];
+    });
+    pack.rivers = [...locked.map(({ river }) => river), ...generated];
+
+    // a cell belongs to the river flowing through it, locked first; where one ends on another is a confluence
+    cells.r.fill(0);
+    cells.conf.fill(0);
+    const claim = (cell: number, riverId: number) => {
+      if (!isLand(cell)) return;
+      if (cells.r[cell] && cells.r[cell] !== riverId) cells.conf[cell] = 1;
+      else cells.r[cell] = riverId;
+    };
+    for (const river of pack.rivers) for (const cell of river.cells.slice(0, -1)) claim(cell, river.i);
+    for (const river of pack.rivers) claim(river.cells.at(-1)!, river.i);
+
+    const lockedIds = new Set(locked.map(({ river }) => river.i));
+    for (const { river, flux } of locked) {
+      // a locked river carries no less than before, and never less downstream than upstream
+      let upstream = 0;
+      river.cells.forEach((cell, index) => {
+        if (!isLand(cell)) return;
+        upstream = cells.fl[cell] = Math.max(cells.fl[cell], flux[index] ?? 0, upstream);
+      });
+
+      const end = river.cells.at(-1)!;
+      const receiver = isLand(end) && cells.r[end] !== river.i ? cells.r[end] : 0;
+      if (!lockedIds.has(river.parent)) river.parent = receiver || river.i;
+    }
+    for (const river of generated) this.updateWidth(river);
+  }
+
+  /** a lake a locked river flows out of or into lists it, generated rivers being gone from it */
+  private linkLockedLakes(locked: LockedRiver[]) {
+    const { cells, features } = pack;
+    const lakeAt = (cell: number | undefined) =>
+      cell !== undefined && cell >= 0 && features[cells.f[cell]]?.type === "lake" ? features[cells.f[cell]] : undefined;
+    for (const { river } of locked) {
+      const source = lakeAt(river.cells[0]);
+      if (source && !source.outlet) source.outlet = river.i;
+      const sink = lakeAt(river.cells.at(-1));
+      if (sink && !sink.inlets?.includes(river.i)) sink.inlets = [...(sink.inlets ?? []), river.i];
     }
   }
 
@@ -604,6 +687,7 @@ class RiverModule {
     for (const river of rivers) {
       river.parent = this.getParent(river.i);
       river.basin = this.getBasin(river.i);
+      if (river.lock) continue; // a locked river keeps its name and type
       river.name = this.getName(river.mouth);
       river.type = this.getType(river);
     }
@@ -642,6 +726,13 @@ class RiverModule {
     const old = river.name;
     river.name = requireName(name);
     if (river.label?.text) river.label.text = replaceWholeWord(river.label.text, old, river.name) ?? river.label.text;
+  }
+
+  /** Lock a river so regeneration keeps its course and data, or unlock it */
+  setLocked(riverId: number, locked: boolean): void {
+    const river = this.living(riverId);
+    if (locked) river.lock = true;
+    else delete river.lock;
   }
 
   /** Set a river's type, a free label such as River, Creek or Fork */

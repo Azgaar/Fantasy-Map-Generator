@@ -255,6 +255,7 @@ describe("Omnibar public behavior", () => {
   it("calls generation directly and remembers only command IDs", async () => {
     const action = vi.fn();
     vi.stubGlobal("Rivers", { regenerate: action });
+    vi.stubGlobal("Routes", { sync: () => {} });
     sessionStorage.setItem("regenerateFeatureDontAsk", "true");
     document.getElementById("regenerateRivers")!.remove();
     Omnibar.open();

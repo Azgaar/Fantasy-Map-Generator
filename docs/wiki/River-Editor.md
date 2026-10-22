@@ -22,6 +22,7 @@ Control points are shown as circles along the river. Drag a point to move the ri
 * **Edit style** — open the Style Editor for the whole _Rivers_ layer
 * **Elevation profile** — show the river elevation profile
 * **Legend** — edit free text notes (legend) for the river
+* **Lock** — keep the river as it is when rivers are generated again: by _Regenerate rivers_, a change in the World Configurator or a heightmap edit in Risk mode with water erosion. Its course, name and other data stay, and the new rivers flow around it, ending where they reach it. Rivers can also be locked in the _Rivers Overview_
 * **Remove** — delete the river (also bound to <kbd>Delete</kbd>)
 
 Close the Editor when customization is done.

@@ -307,8 +307,9 @@ function updateWorld(): void {
   Temperature.generate();
   Precipitation.generate();
   const heights = new Uint8Array(pack.cells.h);
-  Rivers.generate();
+  Rivers.generate(true, Rivers.getLocked());
   Rivers.specify();
+  Routes.sync(); // its river edges follow the rivers
   pack.cells.h = new Float32Array(heights);
   Biomes.define();
   Features.defineGroups();

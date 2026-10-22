@@ -177,29 +177,64 @@ sync by hand. Differences, all deliberate:
 Three other places rebuild a large slice of a map by hand. They are not (yet) expressed as pipelines,
 and each one is a site that can silently fall behind when a generation step is added.
 
-| Concern                       | Full generate              | Erase                      | [Keep](../../src/controllers/heightmap-editor.ts) | [Risk](../../src/controllers/heightmap-editor.ts) | [Resample](../../src/generators/resample.ts)      |
-| ----------------------------- | -------------------------- | -------------------------- | ------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------- |
-| Driver                        | `GenerationPipeline`       | `ErasePipeline`            | `restoreKeptData()`                               | `restoreRiskedData()`                             | `Resampler.process()`                             |
-| Grid rebuilt                  | ✅                         | ❌                         | ❌                                                | ❌                                                | ✅ (new dimensions)                               |
-| `markupGrid`                  | ✅                         | ✅                         | ❌                                                | ✅                                                | ✅                                                |
-| `regraph` (pack rebuilt)      | ✅                         | ✅                         | ❌                                                | ✅                                                | ✅                                                |
-| Rivers                        | generate                   | generate (parameterized)   | keep                                              | generate _or_ restore                             | restored from parent meanders                     |
-| Biomes                        | `generate` (new catalogue) | `define` (reuse catalogue) | keep                                              | recompute where missing                           | restored per cell                                 |
-| Cultures / burgs / states / … | generate                   | generate                   | keep                                              | **remap onto the new pack**                       | restored from parent                              |
-| Economy                       | generate                   | generate                   | keep                                              | rebuild (cell ids changed)                        | rebuild (`restoreEconomy` + `Production.produce`) |
-| Coastline can change          | ✅                         | ✅                         | ❌                                                | ✅                                                | ✅                                                |
+| Concern                       | Full generate              | Erase                      | [Keep](../../src/controllers/heightmap-editor.ts) | [Risk](../../src/controllers/heightmap-editor.ts) | [Resample](../../src/generators/resample.ts) |
+| ----------------------------- | -------------------------- | -------------------------- | ------------------------------------------------- | ------------------------------------------------- | -------------------------------------------- |
+| Driver                        | `GenerationPipeline`       | `ErasePipeline`            | `restoreKeptData()`                               | `MapRestoration.applyHeights()`                   | `Resampler.process()`                        |
+| Grid rebuilt                  | ✅                         | ❌                         | ❌                                                | ❌                                                | ✅ (new dimensions)                          |
+| `markupGrid`                  | ✅                         | ✅                         | ❌                                                | ✅                                                | ✅                                           |
+| `regraph` (pack rebuilt)      | ✅                         | ✅                         | ❌                                                | ✅                                                | ✅                                           |
+| Rivers                        | generate                   | generate (parameterized)   | keep                                              | generate _or_ restore                             | restore                                      |
+| Biomes                        | `generate` (new catalogue) | `define` (reuse catalogue) | keep                                              | restore, compute where new                        | restore, compute where new                   |
+| Cultures / burgs / states / … | generate                   | generate                   | keep                                              | restore                                           | restore                                      |
+| Economy                       | generate                   | generate                   | keep                                              | rebuild                                           | rebuild                                      |
+| Coastline can change          | ✅                         | ✅                         | ❌                                                | ✅                                                | ✅                                           |
 
 - **Keep** is the minimal path: it copies edited grid heights into the existing pack cells via
   `pack.cells.g` and touches nothing else, which is why the coastline cannot change.
-- **Risk** rebuilds the graph but _preserves entities_: it snapshots every per-cell array against grid
-  indices, re-runs hydrology/climate/repack, calls `GraphOverride.restore()`, then re-attaches the
-  snapshot and re-locates each burg, culture and province centre in the new pack. The economy is
-  rebuilt because cell ids no longer match.
-- **Resample** (transform and submap tools) generates a fresh grid for the target size, resamples
-  height/temp/prec from the parent by inverse projection, re-runs `markupGrid` → `markupPack` → `ice`
-  → `defaultRuler`, then restores cells, entities and notes from the parent. Only the map-independent
-  parts of the economy survive: the goods catalogue and market anchors are carried over, territories
-  are re-flooded via `Markets.expandTerritories`, and `Production.produce()` is re-run.
+- **Risk** and **Resample** rebuild the graph, so every stored pack cell id becomes meaningless. Both
+  take a `MapRestoration.snapshot()` before the rebuild and hand it to `MapRestoration.restore()`
+  after it ([`map-restoration.ts`](../../src/generators/map-restoration.ts)). Both run inside
+  `MapRestoration.transaction()`: if anything throws, `grid`, `pack`, `options.map` and the graph
+  overrides are put back as they were, and the caller tells the user the map is unchanged. A rebuild
+  must therefore build a new `pack` object, never change the old one. Risk restores with the
+  identity projection on the same grid; Resample generates a fresh grid for the target size,
+  resamples height/temp/prec from the parent by inverse projection and restores through the
+  transform or submap projection.
+
+### Map restoration
+
+`restore` finds every cell id again by position, never by index:
+
+- **Heights**: in Risk mode without water erosion, a cell whose grid height the edit did not change
+  keeps the snapshot's eroded height at its place; edited cells take the heights as drawn.
+- **Cells**: a cell takes its data from the nearest snapshot cell of the same land/water type within
+  two cell spacings. New land too far from old land is left unclaimed and gets a computed biome.
+- **Matching**: features and regenerated rivers are matched to old ones by shared cells, one to one and
+  best overlap first. A pair matches when the overlap is most of the old one as it lies now or most of
+  the new one, so an entity that shrank or grew is found again, and of a split one the biggest part.
+- **Features**: a new feature takes the user data (name, note, coastline, tags, chosen subtype and
+  group) of the matched old feature of its type. The matches map old feature ids to new ones for the
+  entities that refer to a feature.
+- **Burgs** keep their place or move to the nearest free land cell, capitals first; a burg is removed
+  only when no land is left for it. Feature and port water are found again.
+- **Centers**: states and provinces center on their capital. One whose capital left the map takes its
+  most populous burg as the new capital; one with no burg left keeps its center while it is its own,
+  else moves to its pole. Cultures and religions
+  keep their origin while it is land on the map. An entity left without cells is removed.
+- **Paths**: route and journey points keep the cell they were routed through while it is under or next
+  to the point, else they take the cell under it. Where two consecutive cells are no longer neighbors,
+  the cells between are filled in, on the line the path is drawn along. Rivers keep their anchors, and
+  start and end where their course leaves and reaches the sea, so a river whose land sank ends at the new
+  coast; one with no land left is dropped. With `rivers: "generate"`
+  they are generated for the new graph around the locked ones, which keep their course up to where it
+  now runs into the sea; each generated river takes the name, type, note, tags and label of the matched
+  old river.
+- **Labels**: a custom label path and offset follow the projection; a default label stays default.
+- **Relief**: icons stay, except where land went under the sea, unless the icon is in the marine biome's
+  pool; land raised from the sea gets relief placed. Resample places all relief anew for its scale.
+- **Zones** take every cell whose snapshot cell was in the zone, markers the cell under them and regiments
+  the cell under their old one.
+- **Economy**: goods and markets with a living center burg are kept, everything cell-bound is rebuilt.
 
 Partial regenerations triggered from the UI (`regenerate` methods on the generator modules,
 [`auto-update.ts`](../../src/services/io/auto-update.ts) migrations,
@@ -213,12 +248,14 @@ reaches a phase you change.
    boundary. `generate()` in `components/lifecycle.ts` does not sequence generator calls any more.
 2. If the step runs **after `regraph`**, add it to `erasePipelineSteps` at the matching boundary —
    otherwise the feature is missing from every map that went through the heightmap editor.
-3. If the step's output is cell-indexed or belongs to an entity the risk path re-maps, handle it in
-   `restoreRiskedData()`.
-4. For `resample.ts`: per-cell arrays go into `restoreCellData` (parent-quadtree mapping);
-   entity-keyed lists go into `restoreEconomy` (or a sibling) with a validity filter for removed
-   entities. Call the generator directly only when the output cannot be recovered from the parent —
-   and prefer a partial method (cf. `Markets.expandTerritories`) over a full regeneration.
+3. If the step's output is cell-indexed or stores a cell id, restore it in `MapRestoration.restore()`:
+   per-cell arrays in `restoreCells`, entities in their own step, each id found again by position.
+   Call the generator directly only when the output cannot be recovered from the snapshot, and prefer
+   a partial method (cf. `Markets.expandTerritories`) over a full regeneration.
+4. Teach [`MapIntegrity`](../../src/generators/map-integrity.ts) the step's ids and run
+   `map-restoration.scenarios.test.ts`, which restores real maps and fails on any id the restore breaks: a
+   missed id does not throw, it silently points at an unrelated cell. See
+   [the test plan](../prd/map-restoration-tests.md).
 5. Add a version-bump migration in [`auto-update.ts`](../../src/services/io/auto-update.ts) so older
    saves gain the new fields on load.
 6. Update the phase table above.

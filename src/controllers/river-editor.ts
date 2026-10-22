@@ -116,6 +116,7 @@ function renderDialog(): void {
       <button id="riverEditStyle" data-tip="${t("Edit style in Style Editor")}" class="icon-brush"></button>
       <button id="riverElevationProfile" data-tip="${t("Elevation profile")}" class="icon-chart-area"></button>
       ${noteButton("riverLegend", t("Edit free text notes (legend)"))}
+      <button id="riverLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
       <button id="riverRemove" data-tip="${t("Remove")}" data-shortcut="Delete" class="icon-trash fastDelete"></button>
     </div>
   </div>`;
@@ -126,6 +127,7 @@ function renderDialog(): void {
   ensureEl("riverEditStyle").addEventListener("click", openRiverStyle);
   ensureEl("riverElevationProfile").addEventListener("click", showRiverElevationProfile);
   ensureEl("riverLegend").addEventListener("click", editRiverLegend);
+  ensureEl("riverLock").addEventListener("click", toggleLock);
   ensureEl("riverRemove").addEventListener("click", removeRiver);
   ensureEl("riverName").addEventListener("input", changeName);
   ensureEl("riverNameSpeak").addEventListener("click", () => speak(ensureEl<HTMLInputElement>("riverName").value));
@@ -157,6 +159,7 @@ function updateRiverData(): void {
   ensureEl<HTMLInputElement>("riverName").value = r.name;
   ensureEl<HTMLInputElement>("riverType").value = r.type;
   ensureEl<HTMLInputElement>("riverTags").value = Tags.format(r.tags);
+  updateLockIcon(r);
 
   const parentSelect = ensureEl<HTMLSelectElement>("riverMainstem");
   parentSelect.options.length = 0;
@@ -175,6 +178,16 @@ function updateRiverData(): void {
   updateRiverLength(r);
   Rivers.updateWidth(r);
   showRiverWidth(r);
+}
+
+function toggleLock(): void {
+  const river = getRiver();
+  Rivers.setLocked(river.i, !river.lock);
+  updateLockIcon(river);
+}
+
+function updateLockIcon(river: River): void {
+  ensureEl("riverLock").className = river.lock ? "icon-lock" : "icon-lock-open";
 }
 
 function updateRiverLength(river: River): void {

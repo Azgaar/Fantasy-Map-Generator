@@ -1,7 +1,7 @@
 import { select } from "d3";
 import { Layers } from "@/components/layers";
 import { setViewportSize, viewport } from "@/components/viewport";
-import { constrainZoom, setTranslateExtent, setZoomExtent } from "@/components/zoom";
+import { constrainZoom, resetZoom, setTranslateExtent, setZoomExtent } from "@/components/zoom";
 import { fitLegendBox } from "@/renderers/draw-legend";
 import { findEl } from "@/utils/nodeUtils";
 
@@ -70,4 +70,13 @@ export function fitMapToScreen(): void {
   const width = wanted.width > 0 ? wanted.width : options.map.graph.width;
   const height = wanted.height > 0 ? wanted.height : options.map.graph.height;
   setViewport(width, height);
+}
+
+/** Show the map as its data is, after an operation that resized or undrew it failed and was rolled back */
+export function redrawMap(): void {
+  Options.save(); // the rolled-back options replace the ones the operation stored
+  applyGraphSize();
+  fitMapToScreen();
+  resetZoom(0);
+  Layers.drawAll();
 }

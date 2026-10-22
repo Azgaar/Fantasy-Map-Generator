@@ -38,6 +38,7 @@ beforeEach(() => {
   sessionStorage.clear();
   vi.clearAllMocks();
   vi.stubGlobal("Rivers", { regenerate: mocks.regenerate });
+  vi.stubGlobal("Routes", { sync: () => {} });
   vi.stubGlobal("$", () => ({ dialog: mocks.dialog }));
 });
 

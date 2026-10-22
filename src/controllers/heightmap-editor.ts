@@ -7,7 +7,6 @@ import {
   lab,
   max,
   mean,
-  quadtree,
   range,
   scaleSequential,
   select
@@ -23,26 +22,13 @@ import { viewport } from "@/components/viewport";
 import { Controllers } from "@/controllers";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { ErasePipeline } from "@/generators/generation-pipeline";
-import { GraphOverride } from "@/generators/graph-override";
-import { removeEmblem } from "@/renderers/draw-emblems";
+import { MapRestoration } from "@/generators/map-restoration";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { drawDrainage, removeDrainage } from "@/renderers/overlays/drainage";
 import { downloadFile, getFileName, getHeightUnitRatio, heightToMeters, uploadFile } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
-import {
-  createFileInput,
-  ensureEl,
-  findEl,
-  generateSeed,
-  getPointer,
-  last,
-  lim,
-  link,
-  minmax,
-  rn,
-  unique
-} from "../utils";
+import { createFileInput, ensureEl, findEl, generateSeed, getPointer, last, lim, link, minmax, rn } from "../utils";
 import { createBrushStroke } from "../utils/brushUtils";
 import type { PromptOptions } from "../utils/commonUtils";
 
@@ -58,6 +44,7 @@ const EDITOR_OPTIONS = ["renderOcean", "showDrainage", "allowErosion"] as const;
 const historyLimit = 100;
 let filterState: FilterState;
 let templateInput: HTMLInputElement | null = null;
+let riskBaseHeights: Uint8Array | null = null; // the heights of the map when Risk editing began
 let converterInput: HTMLInputElement | null = null;
 
 function open(options?: { mode?: string; tool?: string }): void {
@@ -385,6 +372,7 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
     Layers.get("landmass").getEl().replaceChildren();
     filterState.cellType = "land";
   } else if (mode === "risk") {
+    riskBaseHeights = grid.cells.h.slice();
     select<SVGElement, unknown>("#deftemp").selectAll("#land, #water").selectAll("path").remove();
     select<SVGElement, unknown>("#deftemp").select("#featurePaths").selectAll("path").remove();
     select<SVGElement, unknown>("#viewbox").selectAll("#coastline use, #lakes path, #oceanLayers path").remove();
@@ -508,14 +496,10 @@ async function finalizeHeightmap(): Promise<void> {
     else if (mode === "keep") restoreKeptData();
     else if (mode === "risk") restoreRiskedData();
   } catch (error) {
-    // the map is left partially rebuilt, but the editor must still be exited, so the user isn't stuck in it
+    // the editor is exited anyway, so the user isn't stuck in it; a Risk edit leaves the map as it was
     ERROR && console.error(error);
-    tip(
-      t("Failed to apply the edited heightmap: {{error}}", { error: (error as Error).message }),
-      false,
-      "error",
-      6000
-    );
+    const failed = t("Failed to apply the edited heightmap: {{error}}", { error: (error as Error).message });
+    tip(mode === "risk" ? sentences(failed, t("The map is unchanged")) : failed, false, "error", 6000);
   }
 
   select<SVGElement, unknown>("#viewbox").selectAll("#heights").remove();
@@ -542,273 +526,12 @@ function restoreKeptData(): void {
   }
 }
 
-/**
- * Creates a finder that assigns each request the nearest currently available land cell.
- * Assigned cells are removed from the spatial index, so a later request cannot overwrite
- * the reverse burg reference of an earlier request.
- */
-export const createAvailableLandCellFinder = (cells: {
-  h: ArrayLike<number>;
-  p: readonly (readonly [number, number])[];
-}) => {
-  const landPoints: [number, number, number][] = [];
-  for (let i = 0; i < cells.p.length; i++) {
-    if (cells.h[i] >= 20) landPoints.push([cells.p[i][0], cells.p[i][1], i]);
-  }
-
-  const availableLand = quadtree<[number, number, number]>(landPoints);
-  return (x: number, y: number): number | undefined => {
-    const point = availableLand.find(x, y);
-    if (!point) return;
-
-    availableLand.remove(point);
-    return point[2];
-  };
-};
-
-// capitals and market centers stay: removing them would break their state or market
-function removeBurg(burg: (typeof pack.burgs)[number]): void {
-  if (burg.capital || pack.markets?.some(market => market.centerBurgId === burg.i)) return;
-  Burgs.remove(burg.i);
-  removeEmblem("burg", burg.i);
-}
-
 function restoreRiskedData(): void {
-  INFO && console.group("Edit Heightmap");
-  TIME && console.time("restoreRiskedData");
-  const erosionAllowed = options.app.heightmapEditor.allowErosion;
-
-  // assign pack data to grid cells
-  const l = grid.cells.i.length;
-  const biome = new Uint8Array(l);
-  const pop = new Uint16Array(l);
-  const routes: Record<number, any> = {};
-  const s = new Uint16Array(l);
-  const burg = new Uint16Array(l);
-  const state = new Uint16Array(l);
-  const province = new Uint16Array(l);
-  const culture = new Uint16Array(l);
-  const religion = new Uint16Array(l);
-  const good = new Uint16Array(l);
-
-  // rivers data, stored only if allowErosion is unchecked
-  const fl = new Uint16Array(l);
-  const r = new Uint16Array(l);
-  const conf = new Uint8Array(l);
-
-  for (const i of pack.cells.i) {
-    const g = pack.cells.g[i];
-    biome[g] = pack.cells.biome[i];
-    culture[g] = pack.cells.culture[i];
-    pop[g] = pack.cells.pop[i];
-    routes[g] = pack.cells.routes[i];
-    s[g] = pack.cells.s[i];
-    state[g] = pack.cells.state[i];
-    province[g] = pack.cells.province[i];
-    burg[g] = pack.cells.burg[i];
-    religion[g] = pack.cells.religion[i];
-    good[g] = pack.cells.good?.[i] || 0;
-
-    if (!erosionAllowed) {
-      fl[g] = pack.cells.fl[i];
-      r[g] = pack.cells.r[i];
-      conf[g] = pack.cells.conf[i];
-    }
-  }
-
-  // do not allow to remove land with burgs
-  for (const i of grid.cells.i) {
-    if (!burg[i]) continue;
-    if (grid.cells.h[i] < 20) grid.cells.h[i] = 20;
-  }
-
-  // save culture centers x and y to restore center cell id after re-graph
-  for (const c of pack.cultures) {
-    if (!c.i || c.removed) continue;
-    const p = pack.cells.p[c.center!];
-    c.x = p[0];
-    c.y = p[1];
-  }
-
-  // the graph is rebuilt below, so what the user owns on a feature is matched back by grid cells
-  const capturedFeatures = Features.captureUserData();
-
-  // save zone grid cells to restore them later
-  const zoneGridCellsMap = new Map<number, number[]>();
-  for (const zone of pack.zones) {
-    if (!zone.cells?.length) continue;
-    const zoneGridCells = zone.cells.map(i => pack.cells.g[i]);
-    zoneGridCellsMap.set(zone.i, unique(zoneGridCells));
-  }
-
-  Features.markupGrid();
-  if (erosionAllowed) Grid.addDeepDepressionLakes();
-  Temperature.generate();
-  Precipitation.generate();
-  Pack.generate();
-  Features.markupPack();
-  GraphOverride.restore(); // the graph is rebuilt, re-apply user edits that still fit it
-
-  if (erosionAllowed) {
-    Rivers.generate(true);
-    Features.defineGroups();
-  }
-
-  Features.restoreUserData(capturedFeatures); // after the lakes are renamed, so the kept names win
-
-  // assign saved pack data from grid back to pack
-  const n = pack.cells.i.length;
-  pack.cells.pop = new Float32Array(n);
-  pack.cells.routes = {};
-  pack.cells.s = new Uint16Array(n);
-  pack.cells.burg = new Uint16Array(n);
-  pack.cells.state = new Uint16Array(n);
-  pack.cells.province = new Uint16Array(n);
-  pack.cells.culture = new Uint16Array(n);
-  pack.cells.religion = new Uint16Array(n);
-  pack.cells.biome = new Uint8Array(n);
-  pack.cells.good = new Uint16Array(n);
-
-  if (!erosionAllowed) {
-    pack.cells.r = new Uint16Array(n);
-    pack.cells.conf = new Uint8Array(n);
-    pack.cells.fl = new Uint16Array(n);
-  }
-
-  for (const i of pack.cells.i) {
-    const g = pack.cells.g[i];
-    const isLandCell = pack.cells.h[i] >= 20;
-
-    // rivers data
-    if (!erosionAllowed) {
-      pack.cells.r[i] = r[g];
-      pack.cells.conf[i] = conf[g];
-      pack.cells.fl[i] = fl[g];
-    }
-
-    // check biome
-    pack.cells.biome[i] =
-      isLandCell && biome[g]
-        ? biome[g]
-        : Biomes.getId(grid.cells.prec[g], grid.cells.temp[g], pack.cells.h[i], Boolean(pack.cells.r[i]));
-
-    pack.cells.good[i] = good[g]; // goods can sit on water cells (e.g. fish), so restore before the land check
-
-    if (!isLandCell) continue;
-    pack.cells.culture[i] = culture[g];
-    pack.cells.pop[i] = pop[g];
-    pack.cells.routes[i] = routes[g];
-    pack.cells.s[i] = s[g];
-    pack.cells.state[i] = state[g];
-    pack.cells.province[i] = province[g];
-    pack.cells.religion[i] = religion[g];
-  }
-
-  // find closest available land cell to burg
-  const findBurgCell = createAvailableLandCellFinder(pack.cells);
-
-  // find best cell for burgs
-  for (const b of pack.burgs) {
-    if (!b.i || b.removed) continue;
-    const cell = findBurgCell(b.x, b.y);
-    if (cell === undefined) {
-      ERROR &&
-        console.error(
-          `[Data integrity] Burg ${b.i} has no available land cell after Risk restoration. Removing the burg`
-        );
-      // no land left for it: release its capital and market so it can go
-      if (b.capital) pack.states[b.state!].capital = b.capital = 0;
-      const market = pack.markets?.find(market => market.centerBurgId === b.i);
-      if (market) Markets.removeMarket(market.i);
-      removeBurg(b);
-      continue;
-    }
-
-    b.cell = cell;
-    b.feature = pack.cells.f[b.cell];
-
-    pack.cells.burg[b.cell] = b.i;
-    if (pack.cells.h[b.cell] < 20) removeBurg(b);
-    if (b.capital) pack.states[b.state!].center = b.cell;
-  }
-
-  for (const p of pack.provinces) {
-    if (!p.i || p.removed) continue;
-    const provCells = pack.cells.i.filter(i => pack.cells.province[i] === p.i);
-    if (!provCells.length) {
-      const state = p.state;
-      const stateProvs = pack.states[state].provinces!;
-      if (stateProvs.includes(p.i)) {
-        pack.states[state].provinces!.splice(stateProvs.indexOf(p.i), 1);
-      }
-
-      p.removed = true;
-      continue;
-    }
-
-    if (p.burg && !pack.burgs[p.burg].removed) {
-      p.center = pack.burgs[p.burg].cell;
-    } else {
-      p.center = provCells[0];
-      p.burg = pack.cells.burg[p.center];
-    }
-  }
-
-  for (const c of pack.cultures) {
-    if (!c.i || c.removed) continue;
-    c.center = Pack.findCell(c.x!, c.y!)!;
-  }
-
-  States.getPoles();
-  States.findNeighbors();
-  States.collectStatistics();
-
-  if (erosionAllowed) {
-    Rivers.specify();
-    Features.defineNames();
-  }
-
-  const gridToPackMap = new Map<number, number[]>();
-  for (const i of pack.cells.i) {
-    const g = pack.cells.g[i];
-    if (!gridToPackMap.has(g)) gridToPackMap.set(g, []);
-    gridToPackMap.get(g)!.push(i);
-  }
-
-  // restore zone cells
-  for (const zone of pack.zones) {
-    const gridCells = zoneGridCellsMap.get(zone.i);
-    if (gridCells?.length) {
-      const packCells = gridCells.flatMap(g => gridToPackMap.get(g) || []);
-      zone.cells = unique(packCells);
-    } else {
-      zone.cells = [];
-    }
-  }
-
-  // restore economy: keep the existing goods and markets, then recompute
-  if (pack.goods?.length) {
-    pack.markets = (pack.markets || []).filter(market => {
-      const centerBurg = pack.burgs[market.centerBurgId];
-      return Boolean(centerBurg && !centerBurg.removed);
-    });
-    Production.regenerateEconomy();
-    Layers.draw("markets", "goods");
-    Layers.draw("trade");
-    refreshEditors();
-  } else {
-    Goods.generate();
-    Markets.generate();
-    Production.produce();
-    States.collectTaxes();
-  }
-
-  // recalculate ice
-  Ice.generate();
+  const edited = grid.cells.h;
+  grid.cells.h = riskBaseHeights!; // the map is consistent again, so a failed edit can roll back to it
+  MapRestoration.applyHeights(edited, { erosion: options.app.heightmapEditor.allowErosion });
+  refreshEditors();
   select("#ice").selectAll("*").remove();
-
-  TIME && console.timeEnd("restoreRiskedData");
-  INFO && console.groupEnd();
 }
 
 // trigger heightmap redraw and history update if at least 1 cell is changed
