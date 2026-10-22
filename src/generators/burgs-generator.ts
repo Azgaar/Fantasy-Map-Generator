@@ -622,8 +622,7 @@ class BurgModule {
     );
 
     const coast = Number(Boolean(burg.port && cells.haven[cell])); // a river port inland has no coast
-    // on the coast a river is drawn flowing into the sea, so only a river mouth counts
-    const river = Number(coast ? this.isEstuary(cell) : Boolean(cells.r[cell]));
+    const river = Number(Boolean(cells.r[cell]));
     const sea = (() => {
       if (!coast) return null;
 
@@ -675,12 +674,6 @@ class BurgModule {
     return { link, preview: `${link}&preview=1` };
   }
 
-  /** Whether a river meets the water at this coastal cell, not just passes it */
-  private isEstuary(cell: number): boolean {
-    const { r, haven } = pack.cells;
-    return Boolean(r[cell] && haven[cell] && pack.rivers.find(river => river.i === r[cell])?.mouth === cell);
-  }
-
   private createWatabouVillageLinks(burg: Burg) {
     const { cells, features } = pack;
     const { i, population, cell } = burg;
@@ -689,7 +682,7 @@ class BurgModule {
     const pop = rn(population! * options.map.units.population.scale * options.map.units.population.urbanization.rate);
     const tags = [];
 
-    if (this.isEstuary(cell)) tags.push("estuary");
+    if (cells.r[cell] && cells.haven[cell]) tags.push("estuary");
     else if (cells.haven[cell] && features[cells.f[cell]].cells === 1) tags.push("island,district");
     else if (burg.port && cells.haven[cell]) tags.push("coast");
     else if (cells.conf[cell]) tags.push("confluence");
