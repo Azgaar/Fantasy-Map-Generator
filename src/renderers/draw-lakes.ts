@@ -1,4 +1,5 @@
 import type { Layer } from "@/components/layers";
+import { findEl } from "@/utils";
 import { getLakeRipples } from "./lake-ripples";
 
 export function drawLakes(layer: Layer): void {
@@ -31,7 +32,7 @@ export function removeLakeEmbellishments(): void {
 
 export function drawLakeEmbellishments(layer: Layer): void {
   removeLakeEmbellishments();
-  const defs = document.getElementById("deftemp");
+  const defs = findEl("deftemp");
   if (!defs) return;
   const islands = pack.features
     .filter(feature => feature?.land && feature.subtype === "lake_island")

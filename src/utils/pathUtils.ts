@@ -255,7 +255,7 @@ export const getPolesOfInaccessibility = (
   const isolines = getIsolines(graph, getType, { polygons: true });
 
   const poles = Object.entries(isolines).map(([id, isoline]) => {
-    const multiPolygon = (isoline.polygons as unknown as number[][][]).sort((a, b) => b.length - a.length);
+    const multiPolygon = isoline.polygons?.sort((a, b) => b.length - a.length) || [];
     const [x, y] = polylabel(multiPolygon, 20);
     return [id, [rn(x), rn(y)]];
   });
@@ -530,7 +530,7 @@ function relaxAcuteAngles(points: Point[], anchorIndices: number[]): void {
   const acuteCost = (pos: (k: number) => Point, i: number): number => {
     if (i <= 0 || i >= n - 1) return 0; // endpoints have no corner
     const cos = cornerCos(pos(i - 1), pos(i), pos(i + 1));
-    return cos > 0 ? cos : 0;
+    return Math.max(cos, 0);
   };
 
   for (let iter = 0; iter < RELAX_ITERATIONS; iter++) {

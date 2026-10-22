@@ -46,7 +46,7 @@ This its because the border of states or provinces follow the border of the cell
 
 ### Why is there no autosave?
 
-There is an autosave. Go to Options -> Interface settings -> Autosave interval and set the interval in minutes (0 disables it). The map is saved to the browser storage, and browser storage can be cleared accidentally, so also save .map file backups to your machine from time to time
+There is an autosave. Go to Options -> Configure -> Advanced -> Autosave interval and set the interval in minutes (0 disables it). The map is saved to the browser storage, and browser storage can be cleared accidentally, so also save .map file backups to your machine from time to time
 
 ### Why is there no undo button?
 
@@ -56,9 +56,21 @@ There is no global undo for the whole map, but undo and redo (Ctrl + Z / Ctrl + 
 
 Not on an already generated map directly, but you can rebuild the map with a different points number using the Transform tool: Tools -> Create -> Transform. It recreates the map based on the existing one and tries to keep the details. The Submap tool does the same for a part of the map. Alternatively export the image, set a higher points number and import the image back as a heightmap
 
+### What do the buttons at the bottom of the Options tab do?
+
+They form the Configure row. Climate opens the World Configurator: the map position on the globe, temperatures and precipitation. Lore opens the Lore Editor: the map name, calendar and world description. Advanced opens Advanced Options: map size, the cell grid, provinces ratio, size variety, growth rate, autosave interval, on load behavior, speaker voice and emblem shape; hover a setting to see what it does. Reset restores every option to its default and reloads the page; it asks for confirmation first, so save the map before confirming
+
+### Can I make a map with hexagonal or square cells?
+
+Yes. In the Options tab click Advanced in the Configure row at the bottom. Pick a Lattice preset such as Hex board (pointy), Hex board (flat), Square board or Isometric board, then generate a new map. A preset sets Sampling and Jitter together; you can also set them yourself, Jitter 0 gives perfectly regular cells. The settings apply to the next map only, and a saved map keeps the grid it was made with. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Advanced-options
+
 ### Can I export map data as a text file?
 
-Map data can be exported, but only a little of it can be imported back. Overview editors (Burgs, Rivers, Routes, Markers, States, Military and others) have a download button that saves their table as a .csv file, and the Export menu offers GeoJSON (cells, routes, rivers, markers, zones) and JSON (full, minimal, pack cells, grid cells). The text data you can upload back is burg names (.txt or .csv), namesbases, notes (legends, as a .csv of `type,id,note` rows addressing map objects that exist) and heightmap templates
+Map data can be exported, but only some of it can be uploaded back. Overview editors (Burgs, Rivers, Routes, Markers, States, Military and others) have a download button that saves their table as a .csv file, and the Export menu offers GeoJSON (cells, routes, rivers, markers, zones) and JSON (full, minimal, pack cells, grid cells); GeoJSON and JSON cannot be loaded back. You can upload: the tables of the States, Cultures, Religions, Provinces, Burgs, Rivers, Routes, Markers, Zones, Biomes and Features editors (.csv, updates existing entries), notes (legends, as a .csv of `type,id,note` rows addressing map objects that exist), namesbases (.txt), heightmap templates (.txt) and style presets (.json). Download the file from the same place first, edit it and upload it back. Formats are on the Data import wiki page: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Data-import
+
+### Can I upload states, religions, burgs or other data from a CSV file?
+
+Yes, to update entries that already exist. The States, Cultures, Religions, Provinces, Burgs, Rivers, Routes, Markers, Zones, Biomes and Features editors in Tools have an upload button next to the download button. Download the table as .csv, edit it in a spreadsheet and upload it back. Before anything changes, an Upload preview lists every value to update (current and new) and every value that will not be applied with the reason; Apply makes the changes, Cancel keeps the map. Save from Excel as CSV UTF-8 so names with accents survive. Rows are matched by Id; an empty cell or an unchanged value keeps the current one, and entries left out of the file are not changed. In Tags and the burg building and Port columns an empty cell clears the value. Names that point at other entries (a capital, culture, state, namesbase or origin) must match exactly. Columns calculated from the map (cells, area, length) are ignored, and territory is not in the file. If an Id is not on the map, nothing is changed and the missing ids are listed: create the entries in the editor first, download the CSV again to see their ids and fill them in. Values that cannot be applied, such as an unknown culture, are skipped and listed. Only comma-separated files are accepted (a spreadsheet in a language with decimal commas may save with semicolons, choose the comma when saving), and a changed name cannot contain " < or >: such a value is skipped and listed. Neutral lands (state Id 0) take only a name and population. The columns each editor reads are on https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Data-import
 
 ### Can I add new relief icons?
 
@@ -66,7 +78,7 @@ You can add and remove relief icons on the map with the Relief Editor: turn the 
 
 ### How can I use rulers in a map?
 
-Rulers are managed by the Measurers Editor: Tools -> Measurers (Shift + =). There you can place a linear ruler, an opisometer (curve length), a route opisometer (a curve that sticks to routes) and a planimeter (polygon area). Remove a single measurer from the list in the editor or use the trash button to remove them all
+Rulers are managed by the Measurers Editor: Tools -> Measurers (Shift + =). There you can place a linear ruler, an opisometer (curve length), a route opisometer (a curve that sticks to routes) and a planimeter (polygon area). Remove a single measurer from the list in the editor or use the trash button to remove them all. Colors, width, dashes and label visibility are in Style -> Rulers
 
 ### Why do lakes appear after editing the heightmap? How do I see where water flows?
 
@@ -94,7 +106,7 @@ You may have pushed cell shapes too far with the Wrap Tool, in which case use it
 
 ### Does time exists?
 
-There is no a thing as time at the moment on the generator. The era and year thing in Options -> Set Lore is just to define time messages on legends of military regiments, battles and similar things with a date on the notes
+There is no a thing as time at the moment on the generator. The era and year thing in Options -> Configure -> Lore is just to define time messages on legends of military regiments, battles and similar things with a date on the notes
 
 ### I have made the menu too big. How to put it normal again?
 
@@ -114,7 +126,7 @@ You need to know the dungeon seed. Create a new marker, and edit the notes. Then
 
 ### How can I cover both ends of my map with ice? Top and bottom
 
-Options -> Configure world -> Change the temperature of the poles. After that, Tools -> regenerate ice
+Options -> Configure -> Climate -> Change the temperature of the poles. After that, Tools -> regenerate ice
 
 ### How can I make mountains taller?
 
@@ -170,7 +182,11 @@ There is no transparent background option: the PNG and JPEG exports always inclu
 
 ### Can I choose where the map file is saved?
 
-Yes, in browsers that support it, such as Chrome and Edge. The first Save to machine asks for a file name and location; after that Save and Ctrl + S write straight to the same file, until you generate or load another map. Shift-click the Save to machine button, press Ctrl + Shift + S or use the "Save Map As…" command in the Omnibar to save a copy under another name or location. Firefox and Safari have no such picker, so the map is downloaded to the folder set in the browser's download settings
+Yes, in browsers that support it, such as Chrome and Edge. Every Save to machine (Ctrl + S) asks for a file name and location and creates a new file, so earlier saves stay as backups. To write over the last saved file instead, Shift-click the Save to machine button, press Ctrl + Shift + S or use the "Overwrite Saved Map File" command in the Omnibar; that works until you generate or load another map. Firefox and Safari have no such picker, so the map is downloaded to the folder set in the browser's download settings
+
+### Can I share a map that others can view but not edit?
+
+Yes. Tick View-only at the bottom of the Save dialog, then save to machine or Dropbox; browser storage is unavailable for it, as it holds the map autosave and quick load use. The saved map opens for browsing only: the Style, Options and Tools tabs and the Assistant are hidden, Save is disabled, clicks on the map, editor hotkeys and Omnibar commands open nothing, and tooltips no longer say "Click to edit". Layers, pan and zoom, the Omnibar search, notes on hover, the 3D view and Export still work. The checkbox is unticked whenever the dialog opens, a view-only save to machine always asks for a new file, and a Dropbox copy gets "view" at the end of its name, so neither replaces your editable map. Adding `view=1` to the URL opens every map loaded in that tab view-only, e.g. `?maplink=<file URL>&view=1`. It is not a protection: the file is plain text and can be changed, and New Map or loading another file leaves view-only mode
 
 ### How can I open a saved .gz or .map file?
 
@@ -198,7 +214,7 @@ You can, but I doubt you will enjoy the experience. The Generator GUI is not sui
 
 ### What about non-English localization?
 
-Localization is planned, but not ready from the coding side. Preparation can take a lot of time as it's not a current priority. As for now, open Options and click on the 'Init Google Translate' button in the Language row, then select a language. It's machine translation and it can break some of the page functionality; use the reset icon or refresh the page to get back to English. There is also a community-made Chinese localization at https://www.8desk.top
+The interface is available in multiple languages. It starts in your browser's language when that is one of them; otherwise in English. To change it, see "How can I change the language on the Tool?". Only the interface is translated: generated names, legends and notes stay in English, and a map looks the same whatever interface language opens it. Because buttons, menus, tabs and dialogs carry translated names, the Assistant and the documentation, which use the English names, may not match what you see on screen; see "The Assistant names a button or menu I can't find. Is my interface in another language?". For other languages, the browser's built-in page translation may work, but it is machine translation and can break some page functions; refresh the page to get back. Report a wrong translation in a GitHub issue or on Discord, quoting the text and the correction
 
 ### What does Azgaar mean?
 
@@ -298,7 +314,7 @@ You could represent an invasion or conquest manually by following these steps: G
 
 ### I would like to use my own list of names for States, Provinces, and Burgs. How can I do it?
 
-You can create your own namebases in the corresponding tool, and select them when you place custom cultures and states
+You can create your own namebases in the corresponding tool (Tools -> Namesbase, which also uploads a .txt namesbase), and select them when you place custom cultures and states. To rename existing ones in bulk, download the table of the Burgs, States, Provinces or another editor as .csv, change the names and upload it back. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Data-import
 
 ### Is it possible to use the map generator to create a fantasy map based on an actual city map?
 
@@ -319,6 +335,10 @@ There's no 'View Only' mode, but you can share your .map file with them and they
 ### What are the culture types?
 
 Each culture gets a type assigned on generation. The type defines how the culture will grow and what territories it will get, but also serves world-building needs. Nomadic cultures are generated in hot desert, cold desert or grassland cells with height less than 70 points. Highland cultures are generated in cells where height is over 50 points. Lake cultures are generated in cells around lakes that are over 5 cells in size. Naval cultures have a chance of being generated in coastal cells; the chance is slightly higher if the cell is next to an ocean (as opposed to a lake), and significantly higher if the cell is on an island. River cultures are generated in cells with a river of over 100 flux points. Hunting cultures are generated in cells that are more than two cells away from a coast where the biome is Savanna, Tropical rainforest, Temperate rainforest, Taiga, Tundra or Wetland. A culture is set to be generic when its spawn location is ineligible for any other culture type, or, in the case of the Naval type, failed a random probability check. Culture spread is a competitive system, where each culture tries to get more cells considering the cost of it. Culture type is crucial in defining cell 'cost' and the way the culture will spread
+ 
+### What is culture ancestry and how does it work?
+
+Ancestry is an optional culture attribute (such as "Elfish", "Dwarven", or "Human") used in fantasy culture sets or edited in Tools -> Cultures. When set, ancestry is shown alongside the culture name in the map tooltip and Cell Details dialog. Cultures sharing the same ancestry also share an ancestral Folk religion when religions are generated. If all cultures have an empty ancestry, the Ancestry column in the Cultures Editor is hidden by default.
 
 ### Is there a way to generate a map from an image? How can I convert image into a map?
 
@@ -386,7 +406,7 @@ No, fog edges cannot be made blurry
 
 ### Is there a way to change the dimensions of the map?
 
-Go to Tools -> Units and change the '1 map pixel' distance scale. To change how much of the world the map covers, use Map size in Options -> Configure World
+Go to Tools -> Units and change the '1 map pixel' distance scale. To change how much of the world the map covers, use Map size in Options -> Configure -> Climate
 
 ### How to merge provinces?
 
@@ -450,7 +470,7 @@ You can set States number to 0 in Options and regenerate. Cultures number cannot
 
 ### How to make map to open in specific zoom and focus on specific area on load?
 
-Follow the steps. 1. Save the map to storage. 2. Go to Options -> Interface settings and set 'On load' to 'Open last saved map'. 3. Add URL parameters to make it look like this: https://azgaar.github.io/Fantasy-Map-Generator/?scale=4&x=800&y=200. 4. Change scale, x and y values as you need and use the link
+Follow the steps. 1. Save the map to storage. 2. Go to Options -> Configure -> Advanced and set 'On load' to 'Open last saved map'. 3. Add URL parameters to make it look like this: https://azgaar.github.io/Fantasy-Map-Generator/?scale=4&x=800&y=200. 4. Change scale, x and y values as you need and use the link
 
 ### How the map is rendered? Is it on GPU or CPU?
 
@@ -466,7 +486,7 @@ The map is static. Over-time simulation is planned, but not yet implemented
 
 ### When creating a new world, in which order do you add elements
 
-Follow the order the generator itself uses. Heightmap and Configure World in Options first, let that determine the biomes, then Units (height scale), goods, cultures, states, Units again (population and distance scale), burgs and routes, religions, provinces, then the economy (markets, production and taxes), ice, military, and optionally zones and markers
+Follow the order the generator itself uses. Heightmap and Climate (Options -> Configure) first, let that determine the biomes, then Units (height scale), goods, cultures, states, Units again (population and distance scale), burgs and routes, religions, provinces, then the economy (markets, production and taxes), ice, military, and optionally zones and markers
 
 ### Is there a means to get the width of a river at a particular point along its length?
 
@@ -510,7 +530,7 @@ These are SVG standard Dash endcaps. Round: The ends of lines taper smoothly int
 
 ### How can I place states without filling whole map?
 
-There's a Growth rate slider in Options that you can set to a smaller value, it defines how far states expand into neutral lands. The States Editor regeneration menu (cog button) has the same growth rate control plus 'Recalculate states', so you can tune it without regenerating the whole map. You can also lower individual expansion values and/or remove some states
+There's a Growth rate slider in Options -> Configure -> Advanced that you can set to a smaller value, it defines how far states expand into neutral lands. The States Editor regeneration menu (cog button) has the same growth rate control plus 'Recalculate states', so you can tune it without regenerating the whole map. You can also lower individual expansion values and/or remove some states
 
 ### How can i create lakes?
 
@@ -534,7 +554,11 @@ To start a battle ensure the Military layer is on. Then click on any Regiment an
 
 ### How do I color multiple nations?
 
-To change the fill color of a State, open Tools -> edit State. Then locate the State you want and click on a box with its current color. Select the color you want. Then do the same for all other States
+To change the fill color of a State, open Tools -> edit State. Then locate the State you want and click on a box with its current color to open the Color Picker. Drag in the square to set saturation and brightness and use the slider to set the hue, type a HEX, RGB or HSL value (the arrows button switches the format), take a color from the screen with the eyedropper (Chrome and Edge), or click one of the preset colors or the random color button. The map updates as you pick. Then do the same for all other States. The same picker opens from the color boxes of provinces, cultures, religions, biomes, zones, markets and journeys
+
+### Can I fill a state or zone with hatching? Can hatching be colored?
+
+Yes. In the Color Picker, the row below the preset colors holds hatching patterns: lines, grids, dots and dashes. Click a pattern to fill with it, and click the selected pattern again to return to a solid color. The hatching is drawn in the color selected above, so pick a pattern and then change the color to get colored hatching; black gives the classic black hatching. The arrow button at the end of the row shows all patterns, including older ones and waves, zigzag, crosses, bricks and stipple
 
 ### How to change all emblems in a state?
 
@@ -546,7 +570,7 @@ We recommend to set Precipitation to 100 for a Earth-like world. Obviously, the 
 
 ### How can I make my map more desert-like?
 
-To make your map more desert-like, adjust the precipitation level in the Options -> Configure World. Setting it to zero will create an unlivable desert across most of the map
+To make your map more desert-like, adjust the precipitation level in Options -> Configure -> Climate. Setting it to zero will create an unlivable desert across most of the map
 
 ### How to make wind direction similar to earth?
 
@@ -678,7 +702,11 @@ Rivers, lakes, islands and oceans are named automatically, as well as states, pr
 
 ### How can I change the language on the Tool?
 
-In Options click on the "Init Google Translate" button. Then select a language of your choise. Please note that it's only a machine translation, it's not that good in terms of quality. You can ask here if you need a better translation
+Open the Options panel (the button in the top left corner, or press Tab), go to the Options tab and find the Language row at the end of Interface settings. Pick a language and press Reload in the confirmation; the new language applies only after the page reloads, so save the map first if it has unsaved changes. Press Not now to switch on the next reload instead. The choice is remembered in this browser. Only the interface changes; map names stay as generated, and keyboard shortcuts are the same in every language.
+
+### The Assistant names a button or menu I can't find. Is my interface in another language?
+
+Probably. Azgaar Assistant, this Knowledge Base and the wiki name controls by their English labels, for example Options -> Interface settings -> Language, Tools -> Edit -> States or Layers -> Rivers. When the interface is in another language, those labels are translated, so look for the control in the same place rather than by its exact English name: the order of panels, tabs, buttons and rows, the icons and the keyboard shortcuts do not change between languages. Hovering a control shows its tooltip in your language. You can ask the Assistant in your own language and tell it which language your interface is in; it still cannot see the translated labels, so it describes where a control is. If you still can't find it, switch the interface to English temporarily, find the control, and switch back. Map content such as state and burg names is never translated, so the Assistant names it exactly as on your map
 
 ### Is there a way I can use the map generator to generate galactic maps?
 
@@ -686,7 +714,7 @@ The generator is supposed to work with Earth-like maps, but with some creativily
 
 ### Can i build a world instead of generating one?
 
-To start with a Blank Map go to Tools -> Heightmap and select an Erase mode to clear the existing land. Use the brushes available in the Heightmap editor to manually build your landmasses. This will be the foundation of your map. Then you can set the climate basics in the Configure World menu in options. Once your heightmap and climate are set, you can edit rivers and other features. Go to Tools -> Biomes to adjust the biomes associated with your landmasses. Use the States and Cultures editors under the tools to define the political entities and cultures on your map. Customize labels, roads, and other details using different tools available under the Tools tab. Remember to save your map frequently, save .map file to your machine
+To start with a Blank Map go to Tools -> Heightmap and select an Erase mode to clear the existing land. Use the brushes available in the Heightmap editor to manually build your landmasses. This will be the foundation of your map. Then you can set the climate basics with Options -> Configure -> Climate. Once your heightmap and climate are set, you can edit rivers and other features. Go to Tools -> Biomes to adjust the biomes associated with your landmasses. Use the States and Cultures editors under the tools to define the political entities and cultures on your map. Customize labels, roads, and other details using different tools available under the Tools tab. Remember to save your map frequently, save .map file to your machine
 
 ### Is there a way to have a province inside a province?
 
@@ -706,11 +734,11 @@ The see the latest changes, please check out the Changelog: https://github.com/A
 
 ### What does “growth rate” setting do?
 
-The "growth rate" setting defines how far states and cultures will expand into neutral lands during generation. A lower value will result in more lands remaining politically neutral
+The "growth rate" setting defines how far states and cultures will expand into neutral lands during generation. A lower value will result in more lands remaining politically neutral. It is in Options -> Configure -> Advanced
 
 ### What does size variety setting do?
 
-The "size variety" setting determines how much the areas of states should differ from each other. A lower value results in more uniform state areas
+The "size variety" setting determines how much the areas of states should differ from each other. A lower value results in more uniform state areas. It is in Options -> Configure -> Advanced
 
 ### Does is use cookies or cache?
 
@@ -742,7 +770,7 @@ You can select one of the available heightmap color schemes or create a custom o
 
 ### How do I control meridian length?
 
-The meridian length and world size can be adjusted in the Configure World section, specifically using the Map Size parameter. After that, you can further refine settings in the Units Editor
+The meridian length and world size can be adjusted in the World Configurator (Options -> Configure -> Climate), specifically using the Map Size parameter. After that, you can further refine settings in the Units Editor
 
 ### Can i change the size of each region?
 
@@ -822,7 +850,11 @@ Use the Layers preset select at the top of the Layers tab: Political, Cultural, 
 
 ### Is there a search? How do I find a burg, state or river by name?
 
-Yes, press Space (or click Search at the bottom of the menu) to open the Omnibar. Search names and notes for states, provinces, burgs, cultures, religions, biomes, goods, rivers, routes, markers, features, zones, journeys, markets, regiments and labels. Select a result to open its editor; labels and entities without an editor are located and highlighted on the map. Start a query with > to show commands only. Arrow keys select, Enter runs the result, and Escape closes the search. The last ten commands are remembered between sessions. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Omnibar
+Yes, press Space (or click Search at the bottom of the menu) to open the Omnibar. Search names and notes for states, provinces, burgs, cultures, religions, biomes, goods, rivers, routes, markers, features, zones, journeys, markets, regiments and labels. Select a result to open its editor; labels and entities without an editor are located and highlighted on the map. Start a query with > to show commands only. Type a question and select Azgaar Assistant to send it to the Assistant. Arrow keys select, Enter runs the result, and Escape closes the search. The last ten commands are remembered between sessions. See https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Omnibar
+
+### What does right-click on the map do? How do I reach something hidden under another element?
+
+Right-click a spot to open the map context menu. It lists everything at that spot across all layers: what is drawn there first (the element a click would open on top, including emblems, relief icons, ice, goods and measurers), then the burg, river, routes, markers, zones, journeys and regiments of the cell, its resource and the goods its burg produces, and the feature, market, province, state, culture, religion and biome it belongs to. Click a row to open its editor, as a click on the map would; entities without an editor are shown on the map instead. Rows on hidden layers are dimmed: clicking one turns its layer on and shows the entity on the map. With your own AI key or a local model connected, What's there? asks the Assistant about the place. Shift + right-click opens the browser's own menu. The menu doesn't open while a customization mode such as heightmap editing or annexing is active. In the Journey path editor, undo a drawn point with Backspace and remove a control point by double-clicking it
 
 ### Is there a minimap?
 
@@ -842,7 +874,7 @@ Ctrl + click on a layer button in the Layers tab opens the Style tab with that e
 
 ### How do religions work?
 
-Religions are generated on top of cultures. A Folk religion belongs to a single culture and spreads with it, an Organized religion spreads across cultures and states, a Cult is small and local, and a Heresy splits off from an existing organized religion. Open Tools -> Religions to rename and recolor them, change type and expansion, repaint the borders with the brush, add or remove religions, see the hierarchy tree and toggle extinct ones
+Religions are generated on top of cultures. A Folk religion belongs to a single culture (or is shared across cultures with the same ancestry) and spreads with them, an Organized religion spreads across cultures and states, a Cult is small and local, and a Heresy splits off from an existing organized religion. Open Tools -> Religions to rename and recolor them, change type and expansion, repaint the borders with the brush, add or remove religions, see the hierarchy tree and toggle extinct ones
 
 ### What are zones?
 
@@ -870,11 +902,15 @@ Emblems are generated for states, provinces and burgs and drawn in the Emblems l
 
 ### How do markers work? Can I add my own marker types?
 
-Markers are icons for points of interest. Generated markers follow placement rules (a bridge needs a river and so on) and get a note attached. Add your own with Tools -> Add -> Marker (Shift + 3) and click on the map, then click the marker to change its type, icon (a bundled icon, any emoji or short text, or your own linked or uploaded image, chosen in the icon picker), size, pin shape, pin colors and icon colors - style changes apply to all markers of the same type. Tools -> Markers lists all markers, filters them by state, culture and type and exports them as .csv, and the generation settings dialog sets the number multiplier per type
+Markers are icons for points of interest. Generated markers follow placement rules (a bridge needs a river and so on) and get a note attached. Add your own with Tools -> Add -> Marker (Shift + 3) and click on the map, then click the marker to change its type, icon (a bundled icon, any emoji or short text, or your own linked or uploaded image, chosen in the icon picker), size, pin shape, pin colors and icon colors - style changes apply to all markers of the same type. Tools -> Markers lists all markers, filters them by state, culture and type and exports them as .csv, and the generation settings dialog (also opened by Tools -> Regenerate -> Markers) sets the number multiplier per type
 
 ### How do I protect my manual changes from being overwritten by regeneration?
 
 Use locks. States, provinces, cultures, religions, burgs, routes and markers have a lock icon, and locked elements are skipped by the corresponding Regenerate command. Options rows have lock icons too - a locked option keeps its value when you generate a new map
+
+### Can I regenerate provinces of just one state?
+
+Yes. Tools -> Regenerate -> Provinces opens a dialog listing all states with their province counts. Check one or several states (or All states) and click Regenerate: only the selected states get new provinces, others keep theirs, and locked provinces stay as they are
 
 ### What are burg groups?
 
@@ -894,7 +930,7 @@ Yes. In the Style editor, next to a font select there is a plus button that open
 
 ### What is the Legend box and how do I use it?
 
-A Legend box is a titled list of colored elements drawn on the map. The States, Cultures, Religions, Biomes and Zones editors have a 'Toggle Legend box' button that shows or hides the box for that editor. The boxes are independent: you can have as many of them on the map at once as you like, which is handy when exporting the map as an image. A new box is placed next to the ones already shown, on whichever side has room. Each box can be dragged around the map on its own, is hidden by clicking it, and they all share the styling in Style -> Legend. Where you drag a box is remembered by your browser rather than saved into the map, the same way editor dialog positions are
+A Legend box is a titled list of colored elements drawn on the map. The States, Cultures, Religions, Biomes and Zones editors have a 'Toggle Legend box' button that shows or hides the box for that editor. The Units editor has one for the Altitude legend: the heightmap colors split into bands at round heights and depths (0–100m, 100–200m, 200–500m and so on) in the current height unit. It lists only the heights the map actually has, follows height unit, exponent and color scheme changes, and needs the heightmap style to draw colors rather than contour or hachure lines alone. The boxes are independent: you can have as many of them on the map at once as you like, which is handy when exporting the map as an image. A new box is placed next to the ones already shown, on whichever side has room. Each box can be dragged around the map on its own, is hidden by clicking it, and they all share the styling in Style -> Legend. Where you drag a box is remembered by your browser rather than saved into the map, the same way editor dialog positions are
 
 ### A dialog opened off-screen or with a weird size. How do I reset it?
 
@@ -906,7 +942,7 @@ Yes, use the focus (pin) icon. Open Tools -> States (or Provinces) and click on 
 
 ### Are there any keyboard shortcuts?
 
-Yes, plenty. The full list is on the Hotkeys wiki page: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys (F1 in the app opens the info dialog that links to it). The most used ones are Tab (toggle the menu), F2 (new map), Ctrl + S (save to machine), Ctrl + Shift + S (save a copy), F6 and F9 (quick save to browser storage and quick load), single letters to toggle layers, and Shift + letter to open editors
+Yes, plenty. The full list is on the Hotkeys wiki page: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys (F1 in the app opens the info dialog that links to it). The most used ones are Tab (toggle the menu), F2 (new map), Ctrl + S (save to machine as a new file), Ctrl + Shift + S (overwrite the last saved file), F6 and F9 (quick save to browser storage and quick load), single letters to toggle layers, and Shift + letter to open editors. Hold Shift while clicking a button that asks for confirmation (remove, restore, recalculate, load) to act immediately without the dialog; Enter confirms and Escape cancels an open confirmation
 
 ### Where can I find the documentation?
 

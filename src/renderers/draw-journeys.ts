@@ -22,11 +22,12 @@ export function getSegmentPathData(segment: JourneySegment): string {
 }
 
 function getJourneyPaths(journey: Journey): string {
+  const arrowAttr = styles.journeys.options?.arrows ? ' marker-end="url(#journey-arrow)"' : "";
   const paths = journey.segments
     .filter(segment => segment.visible !== false && segment.points.length > 1)
     .map(segment => {
       const d = getSegmentPathData(segment);
-      return /* html */ `<path id="segment${journey.i}_${segment.i}" d="${d}" stroke="${segment.color || journey.color}"/>`;
+      return /* html */ `<path id="segment${journey.i}_${segment.i}" d="${d}" stroke="${segment.color || journey.color}"${arrowAttr}/>`;
     })
     .join("");
 

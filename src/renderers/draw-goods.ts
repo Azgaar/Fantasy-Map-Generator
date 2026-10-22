@@ -7,7 +7,7 @@ import {
   type ViewportRenderContext
 } from "@/renderers/viewport/viewport-renderer";
 import type { PackedGraph } from "@/types/PackedGraph";
-import { normalize, rn } from "../utils";
+import { findEl, normalize, rn } from "../utils";
 
 const layer = ViewportLayers.register({ id: "goods", render: reconcileGoods });
 let cellProduction: CellProduction[] = [];
@@ -94,7 +94,7 @@ export function removeGoods(): void {
   resourceIcons = [];
   burgPlates = [];
 
-  const root = document.getElementById("goods");
+  const root = findEl("goods");
   if (root) for (const child of Array.from(root.children)) child.replaceChildren();
 }
 

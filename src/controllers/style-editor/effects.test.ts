@@ -52,11 +52,13 @@ describe("effectAt", () => {
     expect(at("ocean.groups.pattern.attrs.href")).toBe("write");
     expect(at("coordinates.attrs.font-size")).toBe("draw");
     expect(at("burgIcons.groups.town.groups.anchors.attrs.fill")).toBe("write");
-    expect(at("burgIcons.groups.town.groups.anchors.options.icon")).toBe("draw");
-    expect(at("scaleBar.groups.back.attrs.fill")).toBe("draw");
+    expect(at("scaleBar.attrs.font-size")).toBe("draw");
+    expect(at("scaleBar.attrs.fill")).toBe("write");
+    expect(at("scaleBar.groups.back.attrs.fill")).toBe("write");
     expect(at("labels.groups.state.attrs.font-family")).toBe("draw");
     expect(at("labels.groups.state.attrs.fill")).toBe("write");
     expect(at("legend.attrs.font-family")).toBe("draw");
+    expect(at("legend.attrs.fill")).toBe("write");
     expect(at("legend.attrs.stroke")).toBe("write");
     expect(at("legend.groups.box.attrs.fill")).toBe("draw"); // every shown box is redrawn from the store
     expect(at("vignette.options.rx")).toBe("draw");
@@ -118,12 +120,15 @@ describe("runEffect", () => {
     expect(Layers.draw).not.toHaveBeenCalled();
   });
 
-  test("scale bar and legend font redraw; a burg icon attr goes onto its group", () => {
-    run("scaleBar.groups.back.attrs.fill");
-    expect(Styles.writeAttr).toHaveBeenCalledWith(["scaleBar", "groups", "back", "attrs", "fill"]);
+  test("scale bar font and legend font redraw; a burg icon attr goes onto its group", () => {
+    run("scaleBar.attrs.font-size");
     expect(Layers.draw).toHaveBeenCalledWith("scaleBar");
     run("legend.attrs.font-family");
     expect(Layers.draw).toHaveBeenCalledWith("legend");
+    vi.clearAllMocks();
+    run("scaleBar.groups.back.attrs.fill");
+    expect(Styles.writeAttr).toHaveBeenCalledWith(["scaleBar", "groups", "back", "attrs", "fill"]);
+    expect(Layers.draw).not.toHaveBeenCalled();
     vi.clearAllMocks();
     run("burgIcons.groups.town.groups.icons.attrs.fill");
     expect(Styles.writeAttr).toHaveBeenCalledWith(["burgIcons", "groups", "town", "groups", "icons", "attrs", "fill"]);

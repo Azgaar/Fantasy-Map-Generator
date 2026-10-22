@@ -74,7 +74,7 @@ const createGraphWithOcean = () => ({
 
 beforeEach(() => {
   globalThis.pack = createGraph() as unknown as typeof globalThis.pack;
-  options.map.graph = { width: 100, height: 100, points: 100 };
+  options.map.graph = { width: 100, height: 100, points: 100, sampling: "square", jitter: 0.9 };
   GraphOverride.revert();
 });
 

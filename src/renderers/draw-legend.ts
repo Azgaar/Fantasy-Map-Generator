@@ -5,7 +5,8 @@
 import { type D3DragEvent, select } from "d3";
 import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
-import { minmax, parseTransform, rn } from "@/utils";
+import { findEl, minmax, parseTransform, rn } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { type LegendPosition, legendPositions } from "./legend-positions";
 
 // [id, color, label] as stored in the legend `data` attribute
@@ -30,10 +31,10 @@ export function drawLegend(name: string, data: LegendItem[]): void {
   const backColor = styles.legend.groups.box.attrs.fill;
   const opacity = Number(styles.legend.groups.box.attrs["fill-opacity"]);
   const fontSize = Number.parseFloat(styles.legend.attrs["font-size"]); // the texts size by inheritance
-
   // TODO: a renderer should not own controls. Move this to a proper legend component once one exists
   layer
-    .on("mousemove", () => tip("Drag to change the position. Click to hide the legend box"))
+    .attr("fill", styles.legend.attrs.fill || "#000000")
+    .on("mousemove", () => tip(sentences(t("Drag to change the position"), t("Click to hide the legend box"))))
     .on("click", event => onLegendClick(event));
 
   const node = getBox(name) ?? (layer.append("g").attr("data-legend", name).node() as SVGGElement);
@@ -47,7 +48,7 @@ export function drawLegend(name: string, data: LegendItem[]): void {
   const vOffset = fontSize / 2;
 
   const boxes = box.append("g").attr("stroke-width", 0.5).attr("stroke", "#111111").attr("stroke-dasharray", "none");
-  const labels = box.append("g").attr("fill", "#000000").attr("stroke", "none");
+  const labels = box.append("g").attr("stroke", "none");
 
   const columns = Math.ceil(data.length / itemsInCol);
   const linesInColumn = Math.ceil(data.length / columns);
@@ -73,16 +74,18 @@ export function drawLegend(name: string, data: LegendItem[]): void {
     }
   }
 
-  labels
+  // measured before the title is in, so it centres over the wider of itself and the items
+  const itemsWidth = data.length ? getBBox(node).width : 0;
+  const title = labels
     .append("text")
     .attr("text-rendering", "optimizeSpeed")
     .attr("text-anchor", "middle")
     .attr("font-weight", "bold")
     .attr("font-size", "1.2em")
     .attr("class", "legendLabel")
-    .text(name)
-    .attr("x", colOffset + getBBox(node).width / 2)
-    .attr("y", fontSize * 1.1 + vOffset / 2);
+    .text(name);
+  const titleWidth = (title.node() as SVGTextElement).getComputedTextLength();
+  title.attr("x", colOffset + Math.max(itemsWidth, titleWidth) / 2).attr("y", fontSize * 1.1 + vOffset / 2);
 
   const bbox = getBBox(node);
   box
@@ -225,7 +228,7 @@ function placeNewBox(node: SVGGElement): LegendPosition {
 
 // maps saved before the legend could hold several boxes keep their single box in the layer group itself
 function adoptLegacyLegend(): void {
-  const layer = document.getElementById("legend");
+  const layer = findEl("legend");
   if (!layer?.hasAttribute("data")) return;
 
   const name = layer.querySelector("#legendLabel")?.textContent || "Legend";

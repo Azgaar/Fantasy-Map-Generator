@@ -2,6 +2,7 @@
 // Stateless; every thrown message is meant for the author
 import { type IconPicture, Icons, IMAGE_FRAME } from "@/components/icons";
 import { sanitizeSvgIcon, scopeSvgIcon } from "@/utils/fileUtils";
+import { t } from "@/utils/i18n";
 import { rn } from "@/utils/numberUtils";
 import { escapeHtml } from "@/utils/stringUtils";
 
@@ -35,26 +36,32 @@ async function fromFile(file: File, id: string, profile: PictureProfile = "icon"
   if (isSvg) {
     if (file.size > limits.svg)
       throw new Error(
-        `The SVG file is ${kilobytes(file.size)}, the limit is ${kilobytes(limits.svg)}. Simplify it or link to it instead`
+        t("The SVG file is {{size}}, the limit is {{limit}}. Simplify it or link to it instead", {
+          size: kilobytes(file.size),
+          limit: kilobytes(limits.svg)
+        })
       );
     const svg = sanitizeSvgIcon(await file.text());
-    if (!svg) throw new Error("The file is not a valid SVG image");
+    if (!svg) throw new Error(t("The file is not a valid SVG image"));
     scopeSvgIcon(svg, id);
     const picture = fromSvg(svg);
     return { ...picture, viewBox: svgFrame(picture.content, picture.viewBox) };
   }
 
   if (!file.type.startsWith("image/"))
-    throw new Error("The file is not an image: upload an SVG, PNG, JPEG or WebP file");
+    throw new Error(t("The file is not an image: upload an SVG, PNG, JPEG or WebP file"));
   if (file.size > limits.raster)
     throw new Error(
-      `The image is ${kilobytes(file.size)}, the limit is ${kilobytes(limits.raster)}. Make it smaller or link to it instead`
+      t("The image is {{size}}, the limit is {{limit}}. Make it smaller or link to it instead", {
+        size: kilobytes(file.size),
+        limit: kilobytes(limits.raster)
+      })
     );
   const url = URL.createObjectURL(file);
   try {
     const canvas = rasterize(
       await loadImage(url, false).catch(() => {
-        throw new Error("The file cannot be read as an image");
+        throw new Error(t("The file cannot be read as an image"));
       }),
       limits.side
     );
@@ -68,10 +75,11 @@ async function fromFile(file: File, id: string, profile: PictureProfile = "icon"
 /** A link to an image hosted elsewhere, confirmed to load */
 async function fromLink(link: string): Promise<IconPicture> {
   const url = link.trim();
-  if (!/^https?:\/\/\S+$/i.test(url)) throw new Error("Paste a link that starts with http:// or https://");
+  if (!/^https?:\/\/\S+$/i.test(url))
+    throw new Error(t("Paste a link that starts with {{http}} or {{https}}", { http: "http://", https: "https://" }));
   const viewBox = await imageFrame(url).catch(async () => {
     await loadImage(url, false).catch(() => {
-      throw new Error("The link does not open an image, or its site does not allow it");
+      throw new Error(t("The link does not open an image, or its site does not allow it"));
     });
     return IMAGE_FRAME; // shown, but its pixels cannot be read
   });

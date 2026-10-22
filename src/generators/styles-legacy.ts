@@ -4,9 +4,9 @@ import { IconSets } from "@/components/icon-sets";
 import { CustomIcons, Icons, IMAGE_FRAME } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { OCEAN_PATTERNS } from "@/data/ocean-patterns";
-import { FONT_STYLES, FONT_WEIGHTS, LINECAPS, LINEJOINS, MAP_FILTERS } from "@/data/style-choices";
+import { FONT_STYLES, FONT_WEIGHTS, LINECAPS, LINEJOINS, MAP_FILTERS, TEXT_DECORATIONS } from "@/data/style-choices";
 import type { StylesData } from "@/types/styles";
-import { safeParseJSON } from "@/utils";
+import { findEl, safeParseJSON } from "@/utils";
 import { toColorHex } from "@/utils/colorUtils";
 import { isImageIcon } from "@/utils/fileUtils";
 import { getPath } from "@/utils/objectUtils";
@@ -307,45 +307,41 @@ export function harvestStylesFromSvg({ hasStyleRecord = false } = {}): void {
     anchors: Object.values(harvested.burgIcons.groups).map(entry => entry.groups.anchors)
   };
   for (const [layer, groups] of Object.entries(strandedOpacity)) {
-    const opacity = document.getElementById(layer)?.getAttribute("opacity");
+    const opacity = findEl(layer)?.getAttribute("opacity");
     if (opacity === null || opacity === undefined) continue;
     for (const group of groups) group.attrs.opacity = Number(opacity) || null;
   }
 
-  if (!document.getElementById("legend")?.hasAttribute("data-columns"))
-    harvested.legend.options.columns = styles.legend.options.columns;
+  if (!findEl("legend")?.hasAttribute("data-columns")) harvested.legend.options.columns = styles.legend.options.columns;
   for (const key of ["stateEmblems", "provinceEmblems", "burgEmblems"] as const) {
-    if (!document.getElementById(key)?.hasAttribute("data-size"))
+    if (!findEl(key)?.hasAttribute("data-size"))
       harvested.emblems.groups[key].options = structuredClone(styles.emblems.groups[key].options);
   }
   // per-key: goodsIcons' circle and markets' fontSize/icon are still attr-authoritative
-  if (!document.getElementById("goodsIcons")?.hasAttribute("data-size"))
+  if (!findEl("goodsIcons")?.hasAttribute("data-size"))
     harvested.goods.groups.goodsIcons.options.size = styles.goods.groups.goodsIcons.options.size;
-  if (!document.getElementById("goodsBurgs")?.hasAttribute("data-size"))
+  if (!findEl("goodsBurgs")?.hasAttribute("data-size"))
     harvested.goods.groups.goodsBurgs.options = structuredClone(styles.goods.groups.goodsBurgs.options);
-  if (!document.getElementById("markets")?.hasAttribute("data-size"))
-    harvested.markets.options.size = styles.markets.options.size;
+  if (!findEl("markets")?.hasAttribute("data-size")) harvested.markets.options.size = styles.markets.options.size;
   for (const key of ["landHeights", "oceanHeights"] as const) {
-    if (!document.getElementById(key)?.hasAttribute("scheme"))
+    if (!findEl(key)?.hasAttribute("scheme"))
       harvested.heightmap.groups[key].options = structuredClone(styles.heightmap.groups[key].options);
   }
-  if (!document.getElementById("armies")?.hasAttribute("box-size"))
+  if (!findEl("armies")?.hasAttribute("box-size"))
     harvested.military.options = structuredClone(styles.military.options);
-  if (!document.getElementById("gridOverlay")?.hasAttribute("type"))
-    harvested.grid.options = structuredClone(styles.grid.options);
-  if (!document.getElementById("markets")?.hasAttribute("font-size"))
+  if (!findEl("gridOverlay")?.hasAttribute("type")) harvested.grid.options = structuredClone(styles.grid.options);
+  if (!findEl("markets")?.hasAttribute("font-size"))
     harvested.markets.options.iconSize = styles.markets.options.iconSize;
-  if (!document.getElementById("markets")?.hasAttribute("data-icon"))
-    harvested.markets.options.icon = styles.markets.options.icon;
-  if (!document.getElementById("goodsIcons")?.hasAttribute("data-circle"))
+  if (!findEl("markets")?.hasAttribute("data-icon")) harvested.markets.options.icon = styles.markets.options.icon;
+  if (!findEl("goodsIcons")?.hasAttribute("data-circle"))
     harvested.goods.groups.goodsIcons.options.circle = styles.goods.groups.goodsIcons.options.circle;
-  if (!document.getElementById("texture")?.hasAttribute("data-href"))
+  if (!findEl("texture")?.hasAttribute("data-href"))
     harvested.texture.options = structuredClone(styles.texture.options);
-  if (!document.getElementById("oceanLayers")?.hasAttribute("layers"))
+  if (!findEl("oceanLayers")?.hasAttribute("layers"))
     harvested.ocean.groups.oceanLayers.options.outline = styles.ocean.groups.oceanLayers.options.outline;
-  if (!document.getElementById("scaleBar")?.hasAttribute("data-bar-size"))
+  if (!findEl("scaleBar")?.hasAttribute("data-bar-size"))
     harvested.scaleBar.options = structuredClone(styles.scaleBar.options);
-  if (!document.getElementById("scaleBarBack")?.hasAttribute("data-top"))
+  if (!findEl("scaleBarBack")?.hasAttribute("data-top"))
     harvested.scaleBar.groups.back.options = structuredClone(styles.scaleBar.groups.back.options);
   // the layer registry stamps its declared attrs after this runs, so a map predating one
   // harvests it as null; the store keeps the attr until the element itself carries it
@@ -353,7 +349,7 @@ export function harvestStylesFromSvg({ hasStyleRecord = false } = {}): void {
     const node = (harvested as unknown as Record<string, { attrs?: Record<string, unknown> }>)[layer.id]?.attrs;
     const stored = (styles as unknown as Record<string, { attrs?: Record<string, unknown> }>)[layer.id]?.attrs;
     if (!node || !stored) continue;
-    const el = document.getElementById(layer.elementId);
+    const el = findEl(layer.elementId);
     for (const attr of Object.keys(layer.params.attrs ?? {})) {
       if (attr in node && !el?.hasAttribute(attr)) node[attr] = stored[attr];
     }
@@ -524,7 +520,7 @@ export function restoreStrippedLayerStyles(preset: Record<string, unknown>): voi
     style: Record<string, string | number | null> | undefined,
     declared?: Record<string, string>
   ): void => {
-    const group = document.getElementById(id);
+    const group = findEl(id);
     if (!style || group?.tagName !== "g" || !isBareGroup(group, declared)) return;
 
     for (const [name, value] of Object.entries(style)) {
@@ -546,7 +542,7 @@ export function restoreStrippedLayerStyles(preset: Record<string, unknown>): voi
 // harvest above reads them: a stale one beside a store record would outrank it forever
 export function stripMigratedAttributes(): void {
   const strip = (id: string, ...attrs: string[]) => {
-    const el = document.getElementById(id);
+    const el = findEl(id);
     for (const attr of attrs) el?.removeAttribute(attr);
   };
 
@@ -857,6 +853,7 @@ export function labelGroupFromLegacy(legacy: unknown): StylesData["labels"]["gro
       "font-family": strOr(bag["font-family"], "Almendra SC") ?? "Almendra SC",
       "font-style": oneOf(bag["font-style"], FONT_STYLE_VALUES),
       "font-weight": oneOf(numOr(bag["font-weight"], null), FONT_WEIGHTS),
+      "text-decoration": oneOf(bag["text-decoration"], TEXT_DECORATION_VALUES),
       style: labelStyleFromLegacy(bag),
       filter: strOr(bag.filter, null)
     }
@@ -1019,10 +1016,12 @@ function strOr(value: unknown, fallback: string | null): string | null {
 type Linecap = keyof typeof LINECAPS;
 type Linejoin = keyof typeof LINEJOINS;
 type FontStyle = keyof typeof FONT_STYLES;
+type TextDecoration = keyof typeof TEXT_DECORATIONS;
 
 const LINECAP_VALUES = Object.keys(LINECAPS) as Linecap[];
 const LINEJOIN_VALUES = Object.keys(LINEJOINS) as Linejoin[];
 const FONT_STYLE_VALUES = Object.keys(FONT_STYLES) as FontStyle[];
+const TEXT_DECORATION_VALUES = Object.keys(TEXT_DECORATIONS) as TextDecoration[];
 
 // a legacy value outside the fixed list ("inherit", a stray weight) means "not set"
 function oneOf<T extends string | number>(value: unknown, allowed: readonly T[]): T | null {

@@ -1,3 +1,5 @@
+import { t } from "@/utils/i18n";
+
 const NEARBY_BURG_MAX_CELLS = 3;
 type NamedBurg = { name: string; x: number; y: number };
 
@@ -48,10 +50,10 @@ export function resolveCellPlace(cellId: number): CellPlace {
 
 /** A short display label for an endpoint cell */
 export function cellEndpointLabel(cellId: number | undefined, place?: CellPlace): string {
-  if (cellId === undefined) return "unset";
+  if (cellId === undefined) return t("unset");
   const resolved = place === undefined ? resolveCellPlace(cellId) : place;
-  if (!resolved) return `cell ${cellId}`;
-  return resolved.nearby ? `${resolved.burg.name} vicinity` : resolved.burg.name;
+  if (!resolved) return t("cell {{- cell}}", { cell: cellId });
+  return resolved.nearby ? t("{{- burg}} vicinity", { burg: resolved.burg.name }) : resolved.burg.name;
 }
 
 /**

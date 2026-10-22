@@ -19,15 +19,17 @@ import { Coastline } from "@/generators/coastline-generator";
 import { Coordinates } from "@/generators/coordinates";
 import { CULTURE_SETS } from "@/generators/cultures-generator";
 import { Labels } from "@/generators/labels-generator";
+import { DEFAULT_JITTER } from "@/generators/lattice";
 import { Military } from "@/generators/military-generator";
 import { Names } from "@/generators/names-generator";
 import { Relief } from "@/generators/relief-generator";
 import { Transports } from "@/generators/transports-generator";
-import { safeParseJSON } from "@/utils";
+import { t } from "@/utils/i18n";
 import { rn } from "@/utils/numberUtils";
 import { deepMerge } from "@/utils/objectUtils";
 import { gauss, rand, rw } from "@/utils/probabilityUtils";
 import { parseSections } from "@/utils/schemaUtils";
+import { OPTIONS_STORAGE_KEY, readStoredOptions } from "./options-storage";
 
 declare global {
   var Options: OptionsModel;
@@ -35,7 +37,6 @@ declare global {
   var options: OptionsData;
 }
 
-export const STORAGE_KEY = "fmg-options";
 /** custom icons outgrow localStorage, so this browser keeps them in IndexedDB */
 export const ICONS_STORAGE_KEY = "fmg-custom-icons";
 const ICONS_READ_TIMEOUT = 3000; // the IndexedDB helper never answers when the database cannot open
@@ -56,7 +57,7 @@ class OptionsModel {
     return {
       map: {
         seed: "",
-        graph: { width: 1280, height: 800, points: 10000 },
+        graph: { width: 1280, height: 800, points: 10000, sampling: "square", jitter: DEFAULT_JITTER },
         geography: {
           mapSize: 100,
           latitude: 50,
@@ -87,7 +88,7 @@ class OptionsModel {
         relief: { rules: Relief.getDefaultRules() }
       },
       generation: {
-        graph: { width: 1280, height: 800, density: DEFAULT_DENSITY },
+        graph: { width: 1280, height: 800, density: DEFAULT_DENSITY, sampling: "square", jitter: DEFAULT_JITTER },
         geography: { mapSize: null, latitude: null, longitude: null },
         template: "",
         resolveDepressionsSteps: 250,
@@ -105,6 +106,7 @@ class OptionsModel {
         heightmapEditor: { renderOcean: false, showDrainage: false, allowErosion: true },
         performance: { shapeRendering: "optimizeSpeed", stateHalos: false, viewportRedraw: "continuous" }, // "balance"
         onLoad: "random",
+        language: "",
         zoomExtent: { min: 1, max: 20 },
         viewport: null,
         autosave: { interval: 15, remind: true },
@@ -145,16 +147,17 @@ class OptionsModel {
   persist(): void {
     clearTimeout(this.saveTimer);
     this.saveTimer = 0;
-    const { customIcons, ...map } = options.map;
+    const { customIcons, viewOnly, ...map } = options.map; // view-only belongs to the loaded file, not this browser
     this.persistIcons(customIcons);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...options, map }));
+      localStorage.setItem(OPTIONS_STORAGE_KEY, JSON.stringify({ ...options, map }));
     } catch (error) {
       // a full storage keeps the last options; the map file still holds the map's own
       if (!(error instanceof DOMException && error.name === "QuotaExceededError")) throw error;
       console.error(error);
-      const message =
-        "Browser storage is full, so the latest settings are not kept in this browser. They are safe in the .map file: save the map to keep them";
+      const message = t(
+        "Browser storage is full, so the latest settings are not kept in this browser. They are safe in the .map file: save the map to keep them"
+      );
       tip(message, false, "error", 10000);
     }
   }
@@ -192,14 +195,13 @@ class OptionsModel {
   /** Boot: adopt what this browser kept from the last session, validated and repaired */
   restore(): void {
     this.iconsRestored = false; // until `restoreIcons` reads them again
-    let stored: Record<string, unknown> = {};
-    const parsed = safeParseJSON(localStorage.getItem(STORAGE_KEY) ?? "");
-    if (typeof parsed === "object" && parsed !== null) stored = parsed;
+    const stored = readStoredOptions();
 
     const source = deepMerge(this.getDefaultOptions(), adoptLegacyOptions() ?? {});
     deepMerge(source, stored);
 
     options = parseSections<OptionsData>(optionsSchema, this.getDefaultOptions(), source, "Options.restore");
+    delete options.map.viewOnly; // kept by earlier versions
     this.repairSets();
     this.setGraphSize(Pins.valueOr("mapWidth", window.innerWidth), Pins.valueOr("mapHeight", window.innerHeight));
     this.persist();
@@ -268,7 +270,8 @@ class OptionsModel {
     map.relief = previous.relief;
 
     // and the requests it consumes
-    map.graph = { width: graph.width, height: graph.height, points: getPointsNumber(graph.density) };
+    const { width, height, density, sampling, jitter } = graph;
+    map.graph = { width, height, points: getPointsNumber(density), sampling, jitter };
     map.cultures.set = cultures.set;
     options.map = map;
     this.repairSets();

@@ -3,13 +3,12 @@ import type { Point } from "@/types/global";
 import { getHeightContourChains } from "./heightmap-contours";
 
 export interface HachureParams {
-  points: Point[]; // cell centers of the jittered square grid, then the boundary pseudo-points
+  points: Point[]; // cell centers, then the boundary pseudo-points
   heights: ArrayLike<number>; // one per point
   neighbors: number[][]; // one per cell: the boundary points have none
   triangles: number[][];
   spacing: number;
-  cellsX: number;
-  cellsY: number;
+  findCell: (x: number, y: number) => number; // -1 off the map
   inBand: (height: number) => boolean; // land or ocean cells
   thresholds: number[]; // the levels strokes are seeded along
   density: number; // strokes along a level, relative to the default
@@ -64,7 +63,7 @@ export function getSlopeGradients(points: Point[], heights: ArrayLike<number>, n
 
 /** Engraved hachures: tapered strokes down the fall line, seeded along the levels, denser where steep. One filled path */
 export function getHachures(params: HachureParams): string {
-  const { points, heights, neighbors, triangles, spacing, cellsX, cellsY, inBand } = params;
+  const { points, heights, neighbors, triangles, spacing, findCell, inBand } = params;
   const { thresholds, density, length, width, seed } = params;
   const random = Alea(seed);
   const gradients = getSlopeGradients(points, heights, neighbors);
@@ -79,14 +78,6 @@ export function getHachures(params: HachureParams): string {
   if (!Number.isFinite(lowestLevel)) return "";
   const levelOf = (height: number) =>
     highestLevel === lowestLevel ? 1 : (height - lowestLevel) / (highestLevel - lowestLevel);
-
-  const cellAt = (x: number, y: number): number => {
-    if (x < 0 || y < 0) return -1;
-    const column = Math.floor(x / spacing);
-    const row = Math.floor(y / spacing);
-    if (column >= cellsX || row >= cellsY) return -1;
-    return row * cellsX + column;
-  };
 
   // inverse-distance blend of the cell gradients around a point: the fall line without cell-edge kinks.
   // Called per stroke step, so it writes to `gx`/`gy` instead of allocating a tuple
@@ -112,7 +103,7 @@ export function getHachures(params: HachureParams): string {
 
   const trace = (x: number, y: number): { path: string | null; weight: number } => {
     const none = { path: null, weight: 0 };
-    const cell = cellAt(x, y);
+    const cell = findCell(x, y);
     if (cell < 0 || !inBand(heights[cell])) return none;
     blendGradient(x, y, cell);
     const weight = weightOf(Math.hypot(gx, gy) * spacing);
@@ -134,7 +125,7 @@ export function getHachures(params: HachureParams): string {
     while (run < wanted) {
       const px = x + dx * (run + step);
       const py = y + dy * (run + step);
-      const here = cellAt(px, py);
+      const here = findCell(px, py);
       if (here < 0 || !inBand(heights[here])) break;
       blendGradient(px, py, here);
       if (Math.hypot(gx, gy) * spacing < MIN_SLOPE && ++fading > FADE_STEPS) break;

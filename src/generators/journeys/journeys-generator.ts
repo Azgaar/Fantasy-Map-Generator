@@ -1,7 +1,7 @@
 import { DEFAULT_JOURNEY_TYPE } from "@/data/journey-lore";
 import type { Journey, JourneyPoint, JourneySegment } from "@/types/Journey";
 import { getDistanceUnitRatio, isLand } from "@/utils";
-import { getCardinalColor, requireFill } from "@/utils/colorUtils";
+import { getCardinalColor, requireColor } from "@/utils/colorUtils";
 import { requireName } from "@/utils/validationUtils";
 import type { Burg } from "../burgs-generator";
 import type { Route } from "../routes-generator";
@@ -23,6 +23,14 @@ export interface PathfindingResult {
   warning?: string;
   errorCode?: "no-water" | "no-land" | "no-water-path" | "no-land-path";
 }
+
+export type CellKind = "water" | "river" | "coast" | "inland";
+const CELL_KINDS: Record<CellKind, string> = {
+  water: "water",
+  river: "navigable river",
+  coast: "coastal land",
+  inland: "inland land"
+};
 
 export type SegmentFields = Partial<{
   name: string;
@@ -110,7 +118,7 @@ class JourneysModule {
 
   /** Set a journey's color; segments without their own color take it */
   recolor(journeyId: number, color: string): void {
-    this.living(journeyId).color = requireFill(color);
+    this.living(journeyId).color = requireColor(color);
   }
 
   /** Hide or show a journey on the map */
@@ -154,7 +162,7 @@ class JourneysModule {
 
     if (name !== undefined) segment.name = requireName(name);
     if (color === null) delete segment.color;
-    else if (color !== undefined) segment.color = requireFill(color);
+    else if (color !== undefined) segment.color = requireColor(color);
     if (hidden !== undefined) {
       if (hidden) segment.visible = false;
       else delete segment.visible;
@@ -431,12 +439,16 @@ class JourneysModule {
     return true;
   }
 
+  /** The terrain an endpoint stands on, which decides the transports it accepts */
+  cellKind(cellId: number): CellKind {
+    if (!isLand(cellId, pack)) return "water";
+    if (Rivers.isNavigable(cellId)) return "river";
+    return this.isCoastalLand(cellId) ? "coast" : "inland";
+  }
+
   describeCell(cellId: number): string {
     if (cellId === undefined || cellId === null) return "no cell";
-    if (!isLand(cellId, pack)) return `water cell ${cellId}`;
-    if (Rivers.isNavigable(cellId)) return `navigable river cell ${cellId}`;
-    if (this.isCoastalLand(cellId)) return `coastal land cell ${cellId}`;
-    return `inland land cell ${cellId}`;
+    return `${CELL_KINDS[this.cellKind(cellId)]} cell ${cellId}`;
   }
 
   findPath(

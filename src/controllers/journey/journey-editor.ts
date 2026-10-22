@@ -17,7 +17,6 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
-import type { FillBoxElement } from "@/components/shared/fill-box";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import {
@@ -27,20 +26,10 @@ import {
   resolveCellPlace
 } from "@/generators/journeys/journey-places";
 import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
+import { Csv } from "@/services/io/csv";
 import type { Journey, JourneySegment } from "@/types/Journey";
-import {
-  convertSpeed,
-  downloadFile,
-  ensureEl,
-  escapeHtml,
-  findEl,
-  formatSpeed,
-  getDistanceUnit,
-  getFileName,
-  parseSpeed,
-  rn,
-  toCsvField
-} from "@/utils";
+import { convertSpeed, ensureEl, escapeHtml, findEl, formatSpeed, getDistanceUnit, parseSpeed, rn } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { domainMismatchMessage, JourneyPathEditor, recomputeSegment } from "./journey-path-editor";
 
 const dialogId = "journeyEditor" as const;
@@ -51,15 +40,16 @@ let editingJourneyId: number | null = null;
 
 const columns: EditorColumn<JourneySegment>[] = [
   { key: "color", width: "1.2em" },
-  { key: "name", label: "Name", width: "14em", permanent: true },
-  { key: "from", label: "From", width: "11em", mobileHidden: true },
-  { key: "to", label: "To", width: "11em", mobileHidden: true },
-  { key: "transport", label: "Transport", width: "10em" },
-  { key: "distance", label: "Distance", width: "5em" },
-  { key: "speed", label: "Speed", width: "5em", mobileHidden: true },
-  { key: "time", label: "Time", width: "5em" },
+  { key: "name", label: t("Name"), width: "14em", permanent: true },
+  { key: "from", label: t("From"), width: "11em", mobileHidden: true },
+  { key: "to", label: t("To"), width: "11em", mobileHidden: true },
+  { key: "transport", label: t("Transport"), width: "10em" },
+  { key: "distance", label: t("Distance"), width: "5em" },
+  { key: "speed", label: t("Speed", { context: "column" }), width: "5em", mobileHidden: true },
+  { key: "time", label: t("Time"), width: "5em" },
   { key: "roads", width: "1.4em", mobileHidden: true },
   { key: "visible", width: "1.4em", mobileHidden: true },
+  { key: "note", width: "1.4em", mobileHidden: true },
   { key: "points", width: "1.4em", mobileHidden: true },
   { key: "draw", width: "1.4em", mobileHidden: true },
   { key: "reset", width: "1.4em" },
@@ -96,7 +86,7 @@ function open(journeyId: number): void {
 
   const journey = getJourney();
   if (!journey) {
-    tip("Journey not found", true, "error", 6000);
+    tip(t("Journey not found"), true, "error", 6000);
     return;
   }
 
@@ -104,7 +94,7 @@ function open(journeyId: number): void {
   segmentsTable.reset();
 
   $(`#${dialogId}`).dialog({
-    title: "Edit Journey",
+    title: t("Edit Journey"),
     resizable: false,
     width: "fit-content",
     position: findEl("journeysOverview") ? OVERVIEW_POSITION : MAP_POSITION,
@@ -135,30 +125,30 @@ function renderDialog(journey: Journey): void {
     <div id="segmentsBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
 
     <div id="journeyControls" class="editorFilters" style="flex-direction: row; align-items: center">
-      <fill-box id="journeyColor" size="1em" data-tip="Journey color. Click to change" fill="${journey.color}"></fill-box>
-      <label for="journeyName" data-tip="Journey name" style="flex: 1; grid-template-columns: 3.2em 1fr">Name:
+      <input id="journeyColor" type="color" value="${journey.color}" style="flex: none; width: 1.2em; height: 1.2em; padding: 0" data-tip="${sentences(t("Journey color"), t("Click to change"))}" />
+      <label for="journeyName" data-tip="${t("Name")}" style="flex: 1; grid-template-columns: 3.2em 1fr">${t("Name")}:
         <input id="journeyName" type="text" value="${escapeHtml(journey.name)}" />
       </label>
-      <label for="journeyType" data-tip="Kind of travel this is: a quest, a caravan, a campaign"
-        style="flex: 0 1 14em; grid-template-columns: 3.2em 1fr">Type:
+      <label for="journeyType" data-tip="${t("Kind of travel this is: a quest, a caravan, a campaign")}"
+        style="flex: 0 1 14em; grid-template-columns: 3.2em 1fr">${t("Type")}:
         <input id="journeyType" type="text" value="${escapeHtml(journey.type)}" />
       </label>
     </div>
 
     <div id="journeyFooter" class="totalLine">
-      <div data-tip="Total distance" data-col="distance">Distance:&nbsp;<span id="journeyTotalDistance">0</span></div>
-      <div data-tip="Average speed, segments with non-zero speed only" style="margin-left: 12px" data-col="speed">Avg speed:&nbsp;<span id="journeyAvgSpeed">0</span></div>
-      <div data-tip="Total time" style="margin-left: 12px" data-col="time">Total time:&nbsp;<span id="journeyTotalTime">0</span></div>
-      <div data-tip="Travel time" style="margin-left: 12px" data-col="time">Travel time:&nbsp;<span id="journeyTravelTime">0</span></div>
+      <div data-tip="${t("Total distance")}" data-col="distance">${t("Distance")}:&nbsp;<span id="journeyTotalDistance">0</span></div>
+      <div data-tip="${t("Average speed, moving segments only")}" style="margin-left: 12px" data-col="speed">${t("Avg speed")}:&nbsp;<span id="journeyAvgSpeed">0</span></div>
+      <div data-tip="${t("Total time")}" style="margin-left: 12px" data-col="time">${t("Total time")}:&nbsp;<span id="journeyTotalTime">0</span></div>
+      <div data-tip="${t("Travel time")}" style="margin-left: 12px" data-col="time">${t("Travel time")}:&nbsp;<span id="journeyTravelTime">0</span></div>
     </div>
 
     <div id="journeyBottom" class="editorToolbar">
-      <button id="journeyEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-      <button id="journeyAddSegment" data-tip="Add a segment to the journey" class="icon-plus"></button>
-      <button id="journeyEditTransport" data-tip="Edit transport types" class="icon-cog"></button>
-      ${noteButton("journeyLegend", "this journey")}
-      <button id="journeyExport" data-tip="Save journey segments as a text file (.csv)" class="icon-download"></button>
-      <button id="journeyRemove" data-tip="Remove the journey" class="icon-trash"></button>
+      <button id="journeyEditorRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
+      <button id="journeyAddSegment" data-tip="${t("Add a segment to the journey")}" class="icon-plus"></button>
+      <button id="journeyEditTransport" data-tip="${t("Edit transport types")}" class="icon-cog"></button>
+      ${noteButton("journeyLegend", t("Edit free text notes (legend)"))}
+      <button id="journeyExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
+      <button id="journeyRemove" data-tip="${t("Remove")}" class="icon-trash"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -182,7 +172,7 @@ function renderDialog(journey: Journey): void {
   });
   ensureEl("journeyName").addEventListener("input", onNameInput);
   ensureEl("journeyType").addEventListener("input", onTypeInput);
-  ensureEl("journeyColor").addEventListener("click", onColorPick);
+  ensureEl("journeyColor").addEventListener("input", onColorInput);
   ensureEl("journeyAddSegment").addEventListener("click", addSegment);
   ensureEl("journeyEditTransport").addEventListener("click", () => void Controllers.TransportEditor.open());
   ensureEl("journeyLegend").addEventListener("click", editJourneyNote);
@@ -219,8 +209,9 @@ function renderSegmentsPage(view: TableView<JourneySegment>): void {
   on(".segFrom", "click", onPickFrom);
   on(".segTo", "click", onPickTo);
   on(".segRoads.pointer", "click", onToggleAvoidRoads);
-  on(".segColor", "click", onSegColorPick);
+  on(".segColor", "input", onSegColorInput);
   on(".segVisible", "click", onToggleSegVisible);
+  on(".segNote", "click", onEditSegNote);
   on(".segPoints.pointer", "click", onToggleEditPoints);
   on(".segDraw.pointer", "click", onToggleDrawPath);
   on(".segReset", "click", onSegReset);
@@ -250,49 +241,52 @@ function renderSegmentLine(journey: Journey, segment: JourneySegment): string {
 
   return /* html */ `<div class="states" data-id="${segment.i}">
     <div data-col="color">
-      <fill-box class="segColor" fill="${segment.color || journey.color}" data-tip="Segment color. Click to change"></fill-box>
+      <input class="segColor" type="color" value="${segment.color || journey.color}" style="flex: none; width: 1em; height: 1em; padding: 0" data-tip="${sentences(t("Segment color"), t("Click to change"))}" />
     </div>
     <div data-col="name" style="width: 95%; overflow: hidden">
-      <input class="segName" value="${escapeHtml(segment.name)}" data-tip="Segment name: ${escapeHtml(segment.name)}" />
+      <input class="segName" value="${escapeHtml(segment.name)}" data-tip="${t("Segment name: {{segment}}", { segment: segment.name })}" />
     </div>
     ${renderEndpointCell("from", segment)}
     ${renderEndpointCell("to", segment)}
-    <div data-col="transport"><select class="segTransport" data-tip="Transport type, sets the default speed and where the segment may go">${Transports.all
+    <div data-col="transport"><select class="segTransport" data-tip="${t("Transport type, sets the default speed and where the segment may go")}">${Transports.all
       .map(
         type =>
           `<option value="${escapeHtml(type.name)}" ${type.name === segment.transport ? "selected" : ""}>${escapeHtml(type.name)}</option>`
       )
       .join("")}</select></div>
-    <div data-tip="Segment distance" data-col="distance">${rn(Journeys.getSegmentDistance(segment))} ${unit}</div>
+    <div data-tip="${t("Segment distance")}" data-col="distance">${rn(Journeys.getSegmentDistance(segment))} ${unit}</div>
     <div data-col="speed">
       <input class="segSpeed" type="number" step="0.1" min="0" value="${convertSpeed(segment.speed)}" ${isStay ? "disabled" : ""}
-        data-tip="${isStay ? "A stay covers no ground, so it has no speed" : `Average travel speed in ${unit}/h, type to override. ${segment.avoidRoads ? `Off-road speed: ${convertSpeed(Journeys.getEffectiveSpeed(segment))}` : ""}`}" />
+        data-tip="${isStay ? t("A stay covers no ground, so it has no speed") : sentences(t("Average travel speed in {{unit}}/h, type to override", { unit }), ...(segment.avoidRoads ? [t("Off-road speed: {{speed}}", { speed: convertSpeed(Journeys.getEffectiveSpeed(segment)) })] : []))}" />
     </div>
     <div data-col="time" data-tip="${timeCellTip(segment)}">
       <input class="segDuration" type="number" min="0" step="0.1" value="${rn(hours, 1)}"/>
     </div>
     <div data-col="roads">
-      <span class="segRoads pointer ${segment.avoidRoads ? "icon-tree" : "icon-map-signs"} ${domain === "land" ? "" : "hidden"}" data-tip="${segment.avoidRoads ? `Off-road: avoids the road network. Click to follow roads.` : `On-road: follows the road network at full speed. Click to go off-road.`}"></span>
+      <span class="segRoads pointer ${segment.avoidRoads ? "icon-tree" : "icon-map-signs"} ${domain === "land" ? "" : "hidden"}" data-tip="${segment.avoidRoads ? t("Off-road: avoids the road network. Click to follow roads.") : t("On-road: follows the road network at full speed. Click to go off-road.")}"></span>
     </div>
     <div data-col="visible">
-      <span class="segVisible pointer ${segment.visible === false ? "icon-eye-off" : "icon-eye"}" data-tip="Toggle segment visibility"></span>
+      <span class="segVisible pointer ${segment.visible === false ? "icon-eye-off" : "icon-eye"}" data-tip="${t("Toggle segment visibility")}"></span>
+    </div>
+    <div data-col="note">
+      <span class="segNote pointer icon-book ${segment.note ? "" : "inactive"}" data-tip="${segment.note ? escapeHtml(segment.note) : t("Edit segment note")}"></span>
     </div>
     <div data-col="points">
       <span class="segPoints icon-pencil ${canEditPoints ? "pointer" : "inactive"}" ${isEditingPoints ? ` style="color: #2a6e2a"` : ""}
-        data-tip="${!canEditPoints ? "Set both endpoints first" : isEditingPoints ? "Finish editing path points" : "Edit path points"}"></span>
+        data-tip="${!canEditPoints ? t("Set both endpoints first") : isEditingPoints ? t("Finish editing path points") : t("Edit path points")}"></span>
     </div>
     <div data-col="draw">
       <span class="segDraw icon-brush ${isStay ? "inactive" : "pointer"}" ${isDrawing ? ` style="color: #2a6e2a"` : ""}
-        data-tip="${isDrawing ? "Click to finish drawing (Esc to cancel)" : "Draw a custom path cell by cell"}"></span>
+        data-tip="${isDrawing ? t("Click to finish drawing (Esc to cancel)") : t("Draw a custom path cell by cell")}"></span>
     </div>
     <div data-col="reset">
-      <span class="segReset pointer icon-cw" data-tip="Reset the segment: recompute the path and restore the default color, speed and time"></span>
+      <span class="segReset pointer icon-cw" data-tip="${t("Reset the segment: recompute the path and restore the default color, speed and time")}"></span>
     </div>
     <div data-col="move">
-      <span class="segUp icon-up-open ${index ? "pointer" : "inactive"}" data-tip="Move the segment up"></span>
+      <span class="segUp icon-up-open ${index ? "pointer" : "inactive"}" data-tip="${t("Move the segment up")}"></span>
     </div>
     <div data-col="delete">
-      <span class="segDelete pointer icon-trash-empty" data-tip="Remove the segment"></span>
+      <span class="segDelete pointer icon-trash-empty" data-tip="${t("Remove")}"></span>
     </div>
   </div>`;
 }
@@ -301,7 +295,10 @@ function renderSegmentLine(journey: Journey, segment: JourneySegment): string {
 function timeCellTip(segment: JourneySegment): string {
   const hoursPerDay = Journeys.getSegmentHoursPerDay(segment); // each transport sustains its own travel day
   const full = Journeys.formatTravelTimeFull(Journeys.getSegmentElapsedHours(segment));
-  return `Travel time in hours, type to override. Takes ${full} at ${hoursPerDay}h of travel per day`;
+  return t("Travel time in hours, type to override. Takes {{time}} at {{hours}}h of travel per day", {
+    time: full,
+    hours: hoursPerDay
+  });
 }
 
 /**
@@ -319,9 +316,13 @@ function syncTimeCell(el: HTMLElement, segment: JourneySegment): void {
 
 /** Longer endpoint tooltip; distinguishes the three cases explicitly */
 function cellEndpointTooltip(cellId: number | undefined, place: CellPlace): string {
-  if (cellId === undefined) return "Not set: click, then click a cell on the map to set this endpoint";
-  const what = !place ? `Cell ${cellId}` : place.nearby ? `Vicinity of ${place.burg.name}` : place.burg.name;
-  return `${what}, click to pick a different cell`;
+  if (cellId === undefined) return t("Not set: click, then click a cell on the map to set this endpoint");
+  const what = !place
+    ? t("Cell {{- cell}}", { cell: cellId })
+    : place.nearby
+      ? t("{{- burg}} vicinity", { burg: place.burg.name })
+      : place.burg.name;
+  return t("{{- place}}, click to pick a different cell", { place: what });
 }
 
 /** Locate icon to zoom to the place, then the place name itself to re-pick the cell */
@@ -333,7 +334,7 @@ function renderEndpointCell(endpoint: "from" | "to", segment: JourneySegment): s
 
   return /* html */ `<div data-col="${endpoint}">
     <span class="segLocate icon-target ${isSet ? "pointer" : "inactive"}" data-endpoint="${endpoint}"
-      data-tip="${isSet ? `Zoom to ${label}` : "Set the endpoint first"}"></span>
+      data-tip="${isSet ? t("Zoom to {{place}}", { place: label }) : t("Set the endpoint first")}"></span>
     <span class="seg${endpoint === "from" ? "From" : "To"} pointer" data-tip="${escapeHtml(cellEndpointTooltip(cellId, place))}"
       ${isSet ? "" : 'style="opacity: 0.55; font-style: italic"'}>${label}</span>
   </div>`;
@@ -343,7 +344,7 @@ function updateTotals(journey: Journey): void {
   const unit = getDistanceUnit();
   const { totalDistance, totalHours, avgSpeed, elapsedHours, hiddenSegments } = Journeys.getTotals(journey);
   const hiddenNote = hiddenSegments
-    ? ` ${hiddenSegments} hidden segment${hiddenSegments > 1 ? "s" : ""} left out.`
+    ? ` ${t("Hidden segments left out: {{segments}}", { segments: hiddenSegments })}.`
     : "";
 
   ensureEl("journeyTotalDistance").innerHTML = `${rn(totalDistance)} ${unit}`;
@@ -352,11 +353,23 @@ function updateTotals(journey: Journey): void {
   // the two clocks the journey runs on: days on the calendar, hours actually spent on the road
   const totalTime = ensureEl("journeyTotalTime");
   totalTime.innerHTML = Journeys.formatTravelTime(elapsedHours);
-  totalTime.parentElement!.dataset.tip = `Time from start to finish: ${Journeys.formatTravelTimeFull(elapsedHours)}. A day of travel fills a whole day, however many hours the transport sustains.${hiddenNote}`;
+  totalTime.parentElement!.dataset.tip =
+    t(
+      "Time from start to finish: {{time}}. A day of travel fills a whole day, however many hours the transport sustains.",
+      {
+        time: Journeys.formatTravelTimeFull(elapsedHours)
+      }
+    ) + hiddenNote;
 
   const travelTime = ensureEl("journeyTravelTime");
   travelTime.innerHTML = Journeys.formatHours(totalHours);
-  travelTime.parentElement!.dataset.tip = `Hours spent moving or waiting: ${rn(totalHours, 1)}h, the sum of the segment times. Rest between travel days is not counted.${hiddenNote}`;
+  travelTime.parentElement!.dataset.tip =
+    t(
+      "Hours spent moving or waiting: {{hours}}h, the sum of the segment times. Rest between travel days is not counted.",
+      {
+        hours: rn(totalHours, 1)
+      }
+    ) + hiddenNote;
 }
 
 function onNameInput(this: HTMLInputElement): void {
@@ -369,15 +382,11 @@ function onTypeInput(this: HTMLInputElement): void {
   if (journey && this.value.trim()) Journeys.setType(journey.i, this.value);
 }
 
-function onColorPick(): void {
+function onColorInput(this: HTMLInputElement): void {
   const journey = getJourney();
   if (!journey) return;
-
-  void Controllers.ColorPicker.open(journey.color, (fill: string) => {
-    Journeys.recolor(journey.i, fill);
-    ensureEl<FillBoxElement>("journeyColor").fill = fill;
-    segmentsTable.refresh();
-  });
+  Journeys.recolor(journey.i, this.value);
+  segmentsTable.refresh();
 }
 
 function onSegNameInput(this: HTMLInputElement): void {
@@ -408,8 +417,8 @@ function onSegTransportChange(this: HTMLSelectElement): void {
   if (message) {
     this.value = previousType;
     alertDialog({
-      title: `Can't switch to ${newType.name}`,
-      message: `${message}<br/><br/>Pick different endpoints first, then change the transport type or use an <b>air</b> transport type, which accepts any endpoints.`
+      title: t("Can't switch to {{- transport}}", { transport: newType.name }),
+      message: `${message}<br/><br/>${t("Pick different endpoints first, then change the transport type or use an air transport type, which accepts any endpoints.")}`
     });
     return;
   }
@@ -426,11 +435,15 @@ function onSegTransportChange(this: HTMLSelectElement): void {
   if (segment.custom && !Journeys.isValidPath(segment.points, newType.domain)) {
     this.value = previousType;
     confirmationDialog({
-      title: "Overwrite custom path?",
-      message: `Segment "<b>${escapeHtml(segment.name)}</b>" has a custom-drawn path that ${escapeHtml(
-        newType.name
-      )} can't follow. Replace it with the pathfinder's route?`,
-      confirm: "Replace",
+      title: t("Overwrite custom path?"),
+      message: t(
+        "Segment “{{segment}}” has a custom-drawn path that {{transport}} can't follow. Replace it with the pathfinder's route?",
+        {
+          segment: segment.name,
+          transport: newType.name
+        }
+      ),
+      confirm: t("Replace"),
       onConfirm: () => {
         this.value = newType.name;
         segment.custom = false;
@@ -466,14 +479,11 @@ function onSegDurationInput(this: HTMLInputElement): void {
   updateTotals(journey);
 }
 
-function onSegColorPick(this: FillBoxElement): void {
+function onSegColorInput(this: HTMLInputElement): void {
   const segment = getLineSegment(this);
   if (!segment) return;
-
-  void Controllers.ColorPicker.open(this.fill, (fill: string) => {
-    Journeys.setSegment(getJourney()!.i, segment.i, { color: fill });
-    segmentsTable.refresh();
-  });
+  Journeys.setSegment(getJourney()!.i, segment.i, { color: this.value });
+  Layers.draw("journeys"); // a table refresh would tear out the input while its picker is open
 }
 
 function onToggleSegVisible(this: HTMLElement): void {
@@ -537,9 +547,13 @@ function onSegReset(this: HTMLElement): void {
   }
 
   confirmationDialog({
-    title: "Overwrite custom path?",
-    message: `Segment "<b>${escapeHtml(segment.name)}</b>" has a custom-drawn path. Resetting replaces it with the pathfinder's route. Continue?`,
-    confirm: "Reset",
+    title: t("Overwrite custom path?"),
+    message: sentences(
+      t("Segment “{{segment}}” has a custom-drawn path", { segment: segment.name }),
+      t("Resetting replaces it with the pathfinder's route"),
+      t("Continue?")
+    ),
+    confirm: t("Reset"),
     onConfirm: reset
   });
 }
@@ -560,15 +574,23 @@ function onSegDelete(this: HTMLElement): void {
   if (!journey || !segment) return;
 
   confirmationDialog({
-    title: "Remove segment",
-    message: `Remove segment <b>${escapeHtml(segment.name)}</b>? This action cannot be reverted.`,
-    confirm: "Remove",
+    title: t("Remove"),
+    message: `${t("Remove segment {{segment}}?", { segment: segment.name })}<br>${t("This action cannot be reverted")}`,
+    confirm: t("Remove"),
     onConfirm: () => {
       pathEditor.stopEditing(segment.i);
       Journeys.removeSegment(journey.i, segment.i);
       segmentsTable.refresh();
     }
   });
+}
+
+function onEditSegNote(this: HTMLElement): void {
+  const segment = getLineSegment(this);
+  const journey = getJourney();
+  if (!segment || !journey) return;
+
+  void Controllers.NotesEditor.open({ type: "journey", id: journey.i, sub: segment.i });
 }
 
 function segmentHighlightOn(this: HTMLElement): void {
@@ -597,27 +619,41 @@ function downloadSegmentsData(): void {
   if (!journey) return;
 
   const unit = getDistanceUnit();
-  const headers = `Idx,Name,Transport,Speed(${unit}/h),EffectiveSpeed(${unit}/h),DistancePx,Distance(${unit}),TimeHours,From,To,AvoidRoads,Custom,Visible,Color`;
-  const lines = journey.segments.map((segment, index) =>
-    [
-      index + 1,
-      toCsvField(segment.name),
-      toCsvField(segment.transport),
-      convertSpeed(segment.speed),
-      convertSpeed(Journeys.getEffectiveSpeed(segment)),
-      rn(segment.distance, 2),
-      rn(Journeys.getSegmentDistance(segment), 2),
-      rn(Journeys.getSegmentTime(segment), 2),
-      segment.from ?? "",
-      segment.to ?? "",
-      segment.avoidRoads ? "yes" : "no",
-      segment.custom ? "yes" : "no",
-      segment.visible === false ? "no" : "yes",
-      segment.color ?? ""
-    ].join(",")
-  );
-
-  downloadFile([headers, ...lines].join("\n"), `${getFileName(journey.name || "Journey")}.csv`);
+  const headers = [
+    "Idx",
+    "Name",
+    "Transport",
+    `Speed(${unit}/h)`,
+    `EffectiveSpeed(${unit}/h)`,
+    "DistancePx",
+    `Distance(${unit})`,
+    "TimeHours",
+    "From",
+    "To",
+    "AvoidRoads",
+    "Custom",
+    "Visible",
+    "Color",
+    "Note"
+  ];
+  const rows = journey.segments.map((segment, index) => [
+    index + 1,
+    segment.name,
+    segment.transport,
+    convertSpeed(segment.speed),
+    convertSpeed(Journeys.getEffectiveSpeed(segment)),
+    rn(segment.distance, 2),
+    rn(Journeys.getSegmentDistance(segment), 2),
+    rn(Journeys.getSegmentTime(segment), 2),
+    segment.from,
+    segment.to,
+    segment.avoidRoads ? "yes" : "no",
+    segment.custom ? "yes" : "no",
+    segment.visible === false ? "no" : "yes",
+    segment.color,
+    segment.note
+  ]);
+  Csv.download(journey.name || "Journey", headers, rows);
 }
 
 function triggerJourneyRemove(): void {
@@ -625,9 +661,9 @@ function triggerJourneyRemove(): void {
   if (!journey) return;
 
   confirmationDialog({
-    title: "Remove journey",
-    message: `Remove journey <b>${escapeHtml(journey.name)}</b>? This action cannot be reverted.`,
-    confirm: "Remove",
+    title: t("Remove"),
+    message: `${t("Remove journey {{journey}}?", { journey: journey.name })}<br>${t("This action cannot be reverted")}`,
+    confirm: t("Remove"),
     onConfirm: () => {
       Journeys.remove(journey.i);
       Layers.draw("journeys");
@@ -643,3 +679,9 @@ function onClose(): void {
 }
 
 export const JourneyEditor = { open };
+
+if (typeof window !== "undefined") {
+  window.addEventListener("notes:context-changed", () => {
+    if (findEl(dialogId)) segmentsTable.refresh();
+  });
+}

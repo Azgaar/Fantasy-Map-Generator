@@ -15,10 +15,10 @@ const STEP_TITLES = [
   "Individual Style Settings",         // 9
   "Options Tab",                       // 10
   "Generation Options",                // 11
-  "Configure World",                   // 12
+  "Climate",                           // 12
   "World Configurator",                // 13
   "Tools Tab",                         // 14
-  "Edit the Heightmap",                // 15
+  "Edit Heightmap",                    // 15
   "Heightmap Editor",                  // 16
   "About Tab",                         // 17
   "About & Resources",                 // 18
@@ -231,7 +231,7 @@ test.describe("UI Tour", () => {
     await expect(page.locator("#optionsContent")).toBeVisible();
   });
 
-  test("tools tab content is visible on Tools Tab and Edit the Heightmap steps", async ({ page }) => {
+  test("tools tab content is visible on Tools Tab and Edit Heightmap steps", async ({ page }) => {
     await page.evaluate(() => (window as any).Services.UiTour.start());
     await page.waitForSelector(".driver-popover", { state: "visible" });
 
@@ -264,7 +264,7 @@ test.describe("UI Tour", () => {
     await page.evaluate(() => (window as any).Services.UiTour.start());
     await page.waitForSelector(".driver-popover", { state: "visible" });
 
-    // Advance to "Configure World" button step (index 12 → 12 clicks).
+    // Advance to the Climate button step (index 12 → 12 clicks).
     await advanceSteps(page, 12);
     expect(await popoverTitle(page)).toBe(STEP_TITLES[12]);
 
@@ -304,7 +304,7 @@ test.describe("UI Tour", () => {
     await page.evaluate(() => (window as any).Services.UiTour.start());
     await page.waitForSelector(".driver-popover", { state: "visible" });
 
-    // Advance to "Edit the Heightmap" button step (index 15 → 15 clicks).
+    // Advance to "Edit Heightmap" button step (index 15 → 15 clicks).
     await advanceSteps(page, 15);
     expect(await popoverTitle(page)).toBe(STEP_TITLES[15]);
 
@@ -449,7 +449,7 @@ test.describe("UI Tour", () => {
     await expect(page.locator("#toolsContent")).toBeHidden();
   });
 
-  test("back from Heightmap Editor to Edit the Heightmap hides the customization panel", async ({ page }) => {
+  test("back from Heightmap Editor to Edit Heightmap hides the customization panel", async ({ page }) => {
     await page.evaluate(() => (window as any).Services.UiTour.start());
     await page.waitForSelector(".driver-popover", { state: "visible" });
 

@@ -9,13 +9,8 @@ async function waitForMapLoad(page: Page) {
 }
 
 test.describe("Tour Prompt Button", () => {
-  test.beforeEach(async ({ context, page }) => {
-    await context.clearCookies();
-    await page.goto("/");
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
+  // each test gets a fresh browser context, so storage starts empty: no warm-up visit, which would count as a load
+  test.beforeEach(async ({ page }) => {
     await page.goto("/?seed=test-tour-prompt&width=1280&height=720");
     await waitForMapLoad(page);
   });
@@ -33,7 +28,7 @@ test.describe("Tour Prompt Button", () => {
     expect(count).toBe("1");
   });
 
-  test("button is visible on second and third load", async ({ page }) => {
+  test("button is visible on second load", async ({ page }) => {
     // Simulate second load by setting count to 1 then reloading.
     await page.evaluate(
       (key: string) => localStorage.setItem(key, "1"),
@@ -42,20 +37,11 @@ test.describe("Tour Prompt Button", () => {
     await page.reload();
     await waitForMapLoad(page);
     await expect(page.locator("#tourPromptButton")).toBeVisible();
-
-    // Simulate third load.
-    await page.evaluate(
-      (key: string) => localStorage.setItem(key, "2"),
-      STORAGE_KEY,
-    );
-    await page.reload();
-    await waitForMapLoad(page);
-    await expect(page.locator("#tourPromptButton")).toBeVisible();
   });
 
-  test("button is hidden when counter is already at 3 or more", async ({ page }) => {
+  test("button is hidden when counter is already at 2 or more", async ({ page }) => {
     await page.evaluate(
-      (key: string) => localStorage.setItem(key, "3"),
+      (key: string) => localStorage.setItem(key, "2"),
       STORAGE_KEY,
     );
     await page.reload();

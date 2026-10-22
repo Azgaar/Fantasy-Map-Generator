@@ -109,7 +109,7 @@ river drops).
 
 ### Labels
 
-- **"Show 3D labels"**: renders state and burg name labels as billboard sprites floating above
+- **"Show labels as sprites"**: renders state and burg name labels as billboard sprites floating above
   the terrain (using the same fonts/sizes/colors as the 2D label styling), plus small burg
   icon markers with connector lines down to the terrain surface.
 

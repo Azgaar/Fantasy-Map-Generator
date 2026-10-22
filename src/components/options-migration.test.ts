@@ -123,7 +123,7 @@ it.each(["biomes", "states", "cultures", "religions"] as const)("normalizes lega
 
 it("keeps the loaded extent through preparation for the next map", () => {
   const map = Options.getDefaultOptions().map;
-  map.graph = { width: 1600, height: 900, points: 20000 };
+  map.graph = { width: 1600, height: 900, points: 20000, sampling: "square", jitter: 0.9 };
   Options.applyLoaded(map);
   Options.setGraphSize();
   Options.randomize();
@@ -173,7 +173,7 @@ it.each([
 });
 
 it("resolves pins into requests before the geography generator runs", () => {
-  globalThis.grid = { ...Grid.generate("geography", 1280, 800), features: [] };
+  globalThis.grid = { ...Grid.generate("geography"), features: [] };
   Pins.set("template", "britain");
   Pins.set("mapSize", 20);
   Pins.set("latitude", 0);
@@ -213,8 +213,7 @@ it("adopts the user's legacy transport library", () => {
 });
 
 it("replaces the previous grid when generation asks for a different seed", async () => {
-  const { width, height } = options.map.graph;
-  const previous = Grid.generate("old-seed", width, height);
+  const previous = Grid.generate("old-seed");
   globalThis.grid = previous;
   options.map.seed = "new-seed";
   vi.stubGlobal("HeightmapGenerator", {
@@ -225,14 +224,14 @@ it("replaces the previous grid when generation asks for a different seed", async
   try {
     await expect(GenerationPipeline.run({})).rejects.toThrow("stop after grid");
     expect(grid).not.toBe(previous);
-    expect(grid.points).toEqual(Grid.generate("new-seed", width, height).points);
+    expect(grid.points).toEqual(Grid.generate("new-seed").points);
   } finally {
     vi.unstubAllGlobals();
   }
 });
 
 it("uses an explicitly selected preview grid and clears its old heights", async () => {
-  const preview = Grid.generate("preview", 1280, 800);
+  const preview = Grid.generate("preview");
   preview.cells.h.fill(70);
   const createGrid = vi.spyOn(Grid, "generate");
   vi.stubGlobal("HeightmapGenerator", {

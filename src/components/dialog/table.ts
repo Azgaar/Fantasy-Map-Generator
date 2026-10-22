@@ -1,5 +1,6 @@
 import { isMobile } from "@/services/platform";
 import { capitalize, findEl } from "@/utils";
+import { t } from "@/utils/i18n";
 import { dialogState } from "./state";
 
 const EDITOR_PAGE_SIZE = 100;
@@ -80,9 +81,9 @@ export function renderEditorPagination(
   }
   nav.style.display = "inline-flex";
   nav.innerHTML = /* html */ `
-    <button class="icon-left-open editorPagePrev" data-tip="Previous page" style="padding: 0 4px;" ${view.page <= 1 ? "disabled" : ""}></button>
-    <span>Page&nbsp;<input class="editorPageInput" type="number" min="1" max="${view.totalPages}" value="${view.page}" style="width: 3.5em" data-tip="Jump to page" />&nbsp;of&nbsp;${view.totalPages}</span>
-    <button class="icon-right-open editorPageNext" data-tip="Next page" style="padding: 0 4px;" ${view.page >= view.totalPages ? "disabled" : ""}></button>`;
+    <button class="icon-left-open editorPagePrev" data-tip="${t("Previous page")}" style="padding: 0 4px;" ${view.page <= 1 ? "disabled" : ""}></button>
+    <span>${t("Page {{- page}} of {{total}}", { page: `<input class="editorPageInput" type="number" min="1" max="${view.totalPages}" value="${view.page}" style="width: 3.5em" data-tip="${t("Jump to page")}" />`, total: view.totalPages })}</span>
+    <button class="icon-right-open editorPageNext" data-tip="${t("Next page")}" style="padding: 0 4px;" ${view.page >= view.totalPages ? "disabled" : ""}></button>`;
   nav.querySelector<HTMLElement>(".editorPagePrev")?.addEventListener("click", () => onGoto(view.page - 1));
   nav.querySelector<HTMLElement>(".editorPageNext")?.addEventListener("click", () => onGoto(view.page + 1));
   nav.querySelector<HTMLInputElement>(".editorPageInput")?.addEventListener("change", event => {
@@ -129,7 +130,8 @@ export function renderEditorHeader({ dialogId, columns }: { dialogId: string; co
         classes.push(`icon-sort-${type}-${column.defaultSort === "desc" ? "down" : "up"}`);
       }
     }
-    const tip = column.tip ?? (column.sortBy && column.label ? `Click to sort by ${column.label}` : "");
+    const tip =
+      column.tip ?? (column.sortBy && column.label ? t("Click to sort by {{column}}", { column: column.label }) : "");
     const attributes = [
       `data-col="${column.key}"`,
       classes.length ? `class="${classes.join(" ")}"` : "",
@@ -149,7 +151,7 @@ export function renderEditorHeader({ dialogId, columns }: { dialogId: string; co
 
     const button =
       index === lastVisibleIndex
-        ? `<button id="${dialogId}ColumnsButton" data-tip="Show or hide columns" class="icon-sliders" style="line-height: 0;padding: 0 .2em;"></button>`
+        ? `<button id="${dialogId}ColumnsButton" data-tip="${t("Show or hide columns")}" class="icon-sliders" style="line-height: 0;padding: 0 .2em;"></button>`
         : "";
     return `<div ${attributes} style="${style}">${column.label ?? ""}${button}</div>`;
   });
@@ -206,9 +208,9 @@ function effectiveHidden(dialogId: string): Set<string> {
 }
 
 function applyColumnVisibility(dialogId: string, hidden: Set<string>): void {
-  const dialog = document.getElementById(dialogId);
+  const dialog = findEl(dialogId);
   const styleId = `${dialogId}ColumnsStyle`;
-  let style = document.getElementById(styleId) as HTMLStyleElement | null;
+  let style = findEl<HTMLStyleElement>(styleId);
   if (!style) {
     style = document.createElement("style");
     style.id = styleId;
@@ -225,13 +227,13 @@ function applyColumnVisibility(dialogId: string, hidden: Set<string>): void {
   dialog.style.setProperty("--table-columns", buildTracks(entry.columns, hidden));
 
   const lastVisibleIndex = getLastVisibleIndex(entry.columns, hidden);
-  const header = document.getElementById(`${dialogId}Header`);
+  const header = findEl(`${dialogId}Header`);
   const lastVisibleCell = header?.querySelectorAll<HTMLElement>(":scope > [data-col]")[lastVisibleIndex];
-  const button = document.getElementById(`${dialogId}ColumnsButton`);
+  const button = findEl(`${dialogId}ColumnsButton`);
   if (!lastVisibleCell || !button) return;
 
   lastVisibleCell.appendChild(button);
-  const popup = document.getElementById(`${dialogId}ColumnsPicker`);
+  const popup = findEl(`${dialogId}ColumnsPicker`);
   if (popup) button.insertAdjacentElement("afterend", popup);
 }
 
@@ -252,7 +254,7 @@ function bindColumnsPicker({
   onChange: (hidden: Set<string>) => void;
 }): void {
   const popupId = `${dialogId}ColumnsPicker`;
-  const dialog = document.getElementById(dialogId);
+  const dialog = findEl(dialogId);
   let detachPopup: (() => void) | null = null;
 
   const cleanup = () => {
@@ -265,7 +267,7 @@ function bindColumnsPicker({
   // a destroyDialog() close does not fire dialogclose, so the mousedown handler below also cleans up
   if (dialog) $(dialog).one("dialogclose", cleanup);
   button.addEventListener("click", () => {
-    const existing = document.getElementById(popupId);
+    const existing = findEl(popupId);
     if (existing) {
       cleanup();
       return;
@@ -299,8 +301,8 @@ function bindColumnsPicker({
       .join("");
     popup.innerHTML = `${options}
       <div style="display: flex; justify-content: flex-end; gap: 0.2em; margin-top: 0.5em;">
-        <button id="${popupId}Invert" type="button" class="icon-exchange" data-tip="Invert columns visibility" aria-label="Invert columns visibility"></button>
-        <button id="${popupId}RestoreDefaults" type="button" class="icon-ccw" data-tip="Restore default columns visibility" aria-label="Restore default columns visibility"></button>
+        <button id="${popupId}Invert" type="button" class="icon-exchange" data-tip="${t("Invert columns visibility")}" aria-label="${t("Invert columns visibility")}"></button>
+        <button id="${popupId}RestoreDefaults" type="button" class="icon-ccw" data-tip="${t("Restore default columns visibility")}" aria-label="${t("Restore default columns visibility")}"></button>
       </div>`;
 
     const updateCheckboxes = (updated: Set<string>) => {

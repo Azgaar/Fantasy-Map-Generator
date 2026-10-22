@@ -1,3 +1,4 @@
+import { t } from "@/utils/i18n";
 import type { Message, Usage } from "./provider/providers";
 import type { RunResult } from "./provider/runtime";
 
@@ -116,7 +117,7 @@ export function select(id: string): Chat | undefined {
 export function create(tier: Tier, mapId: number, mapName: string): Chat {
   const chat: Chat = {
     id: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    title: "New chat",
+    title: t("New chat"),
     updated: Date.now(),
     tier,
     mapId,

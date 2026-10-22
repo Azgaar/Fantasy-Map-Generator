@@ -2,6 +2,7 @@ import * as Connection from "@/services/assistant/provider/connection";
 import { listModels } from "@/services/assistant/provider/models";
 import { DEFAULT_PROVIDER, type ProviderSpec, providerById } from "@/services/assistant/provider/providers";
 import { ensureEl as el } from "@/utils";
+import { t } from "@/utils/i18n";
 import { errorText } from "@/utils/stringUtils";
 
 /** The "Connect your AI key" sheet: provider fields, model discovery and saving the connection.
@@ -40,7 +41,7 @@ class KeySheetForm {
     const model = this.input("assistantModel").value.trim();
     const key = this.input("assistantApiKey").value.trim();
     if (!model || (!local && !key)) {
-      el("assistantDiscoveryError").textContent = local ? "Enter a model name." : "Enter a model and API key.";
+      el("assistantDiscoveryError").textContent = local ? t("Enter a model name.") : t("Enter a model and API key.");
       return false;
     }
     Connection.save({

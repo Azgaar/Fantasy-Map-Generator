@@ -98,5 +98,5 @@ export function markEntities(refs: EntityRef[], cover?: DOMRect): boolean {
 }
 
 export function clearEntityMarks(): void {
-  document.getElementById(MARKS)?.remove();
+  findEl(MARKS)?.remove();
 }

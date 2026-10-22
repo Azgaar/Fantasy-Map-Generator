@@ -1,10 +1,11 @@
 import { z } from "zod";
 import type { HeraldicEmblem } from "@/types/emblems";
+import { t } from "@/utils/i18n";
 
 export const ARMORIA_GUI = "https://azgaar.github.io/Armoria/";
 export const ARMORIA_API = "https://armoria.herokuapp.com/";
 
-const NOT_ARMORIA = "Paste an Armoria edit link, API link or COA string. Use the picture button for other images";
+const NOT_ARMORIA = t("Paste an Armoria edit link, API link or COA string. Use the picture button for other images");
 
 /** the COA of an Armoria edit link, API link or COA string; throws a message meant for the author */
 export function parseArmoria(input: string): HeraldicEmblem {
@@ -14,7 +15,7 @@ export function parseArmoria(input: string): HeraldicEmblem {
   try {
     url = new URL(text);
   } catch {
-    throw new Error("The link is not a valid URL");
+    throw new Error(t("The link is not a valid URL"));
   }
   const isArmoria =
     (url.origin === new URL(ARMORIA_GUI).origin && url.pathname.startsWith("/Armoria")) ||
@@ -32,7 +33,7 @@ function parseCoa(text: string): HeraldicEmblem {
   } catch {
     // not JSON: reported as an invalid COA
   }
-  throw new Error("The Armoria COA is not valid JSON with a field tincture");
+  throw new Error(t("The Armoria COA is not valid JSON with a field {{field}}", { field: "tincture" }));
 }
 
 /** The fields FMG reads from an Armoria COA; anything else it carries is kept as it is */

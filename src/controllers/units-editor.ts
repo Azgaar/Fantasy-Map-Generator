@@ -3,6 +3,8 @@ import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers"
 import { Layers } from "@/components/layers";
 import { Pins } from "@/components/pins";
 import { updateGridSizeReadout } from "@/controllers/style-editor/controls";
+import { AltitudeLegend } from "@/renderers/altitude-legend";
+import { t } from "@/utils/i18n";
 import { applyOption, ensureEl } from "../utils";
 import type { PromptOptions } from "../utils/commonUtils";
 
@@ -14,45 +16,45 @@ const TEMPLATE = /* html */ `
     <div id="unitsBody" style="margin-left: 1.1em">
       <div class="unitsHeader" style="margin-top: 0.4em">
         <span class="icon-map-signs"></span>
-        <label>Distance:</label>
+        <label>${t("Distance")}:</label>
       </div>
-      <div data-tip="Select a distance unit or provide a custom name">
-        <label>Distance unit:</label>
+      <div data-tip="${t("Select a distance unit or provide a custom name")}">
+        <label>${t("Distance unit")}:</label>
         <select id="distanceUnitInput">
-          <option value="mi" selected>Mile (mi)</option>
-          <option value="km">Kilometer (km)</option>
-          <option value="lg">League (lg)</option>
-          <option value="vr">Versta (vr)</option>
-          <option value="nmi">Nautical mile (nmi)</option>
-          <option value="nlg">Nautical league (nlg)</option>
-          <option value="custom_name">Custom name</option>
+          <option value="mi" selected>${t("Mile (mi)")}</option>
+          <option value="km">${t("Kilometer (km)")}</option>
+          <option value="lg">${t("League (lg)")}</option>
+          <option value="vr">${t("Versta (vr)")}</option>
+          <option value="nmi">${t("Nautical mile (nmi)")}</option>
+          <option value="nlg">${t("Nautical league (nlg)")}</option>
+          <option value="custom_name">${t("Custom name")}</option>
         </select>
       </div>
-      <div data-tip="Select how many distance units are in one pixel">
+      <div data-tip="${t("Select how many distance units are in one pixel")}">
         <i data-locked="0" id="lock_distanceScale" class="icon-lock-open"></i>
         <slider-input id="distanceScaleInput" min=".01" max="20" step=".1" value="3">
-          <label>1 map pixel:</label>
+          <label>${t("1 map pixel")}:</label>
         </slider-input>
       </div>
-      <div data-tip='Area unit name, type "square" to add ² to the distance unit'>
-        <label>Area unit:</label>
+      <div data-tip="${t("Area unit name, type “square” to add ² to the distance unit")}">
+        <label>${t("Area unit")}:</label>
         <input id="areaUnit" type="text" value="square" />
       </div>
       <div class="unitsHeader">
         <span class="icon-signal"></span>
-        <label>Altitude:</label>
+        <label>${t("Altitude")}:</label>
       </div>
-      <div data-tip="Select an altitude unit or provide a custom name">
-        <label>Height unit:</label>
+      <div data-tip="${t("Select an altitude unit or provide a custom name")}">
+        <label>${t("Height unit")}:</label>
         <select id="heightUnit">
-          <option value="ft" selected>Feet (ft)</option>
-          <option value="m">Meters (m)</option>
-          <option value="f">Fathoms (f)</option>
-          <option value="custom_name">Custom name</option>
+          <option value="ft" selected>${t("Feet (ft)")}</option>
+          <option value="m">${t("Meters (m)")}</option>
+          <option value="f">${t("Fathoms (f)")}</option>
+          <option value="custom_name">${t("Custom name")}</option>
         </select>
       </div>
       <div
-        data-tip="Set height exponent, i.e. a value for altitude change sharpness. Altitude affects temperature and hence biomes"
+        data-tip="${t("Set height exponent, i.e. a value for altitude change sharpness. Altitude affects temperature and hence biomes")}"
       >
         <slider-input
           id="heightExponentInput"
@@ -62,31 +64,31 @@ const TEMPLATE = /* html */ `
           step=".01"
           value="2"
         >
-          <label>Exponent:</label>
+          <label>${t("Exponent")}:</label>
         </slider-input>
       </div>
-      <div class="unitsHeader" data-tip="Select Temperature scale">
+      <div class="unitsHeader" data-tip="${t("Select Temperature scale")}">
         <span class="icon-temperature-high"></span>
-        <label>Temperature:</label>
+        <label>${t("Temperature")}:</label>
       </div>
       <div>
-        <label>Temperature scale:</label>
+        <label>${t("Temperature scale")}:</label>
         <select id="temperatureScale">
-          <option value="°C" selected>degree Celsius (°C)</option>
-          <option value="°F">degree Fahrenheit (°F)</option>
-          <option value="K">Kelvin (K)</option>
-          <option value="°R">degree Rankine (°R)</option>
-          <option value="°De">degree Delisle (°De)</option>
-          <option value="°N">degree Newton (°N)</option>
-          <option value="°Ré">degree Réaumur (°Ré)</option>
-          <option value="°Rø">degree Rømer (°Rø)</option>
+          <option value="°C" selected>${t("degree Celsius (°C)")}</option>
+          <option value="°F">${t("degree Fahrenheit (°F)")}</option>
+          <option value="K">${t("Kelvin (K)")}</option>
+          <option value="°R">${t("degree Rankine (°R)")}</option>
+          <option value="°De">${t("degree Delisle (°De)")}</option>
+          <option value="°N">${t("degree Newton (°N)")}</option>
+          <option value="°Ré">${t("degree Réaumur (°Ré)")}</option>
+          <option value="°Rø">${t("degree Rømer (°Rø)")}</option>
         </select>
       </div>
       <div class="unitsHeader">
         <span class="icon-male"></span>
-        <label>Population:</label>
+        <label>${t("Population")}:</label>
       </div>
-      <div data-tip="Set how many people are in one population point">
+      <div data-tip="${t("Set how many people are in one population point")}">
         <slider-input
           id="populationRateInput"
          
@@ -95,22 +97,23 @@ const TEMPLATE = /* html */ `
           step="10"
           value="1000"
         >
-          <label>1 population point:</label>
+          <label>${t("1 population point")}:</label>
         </slider-input>
       </div>
-      <div data-tip="Set urban population modifier. Change to increase or decrease burgs population">
+      <div data-tip="${t("Set urban population modifier. Change to increase or decrease burgs population")}">
         <slider-input id="urbanizationInput" min=".01" max="5" step=".01" value="1">
-          <label>Urbanization rate:</label>
+          <label>${t("Urbanization rate")}:</label>
         </slider-input>
       </div>
-      <div data-tip="Set urban density: average population per building in Medieval Fantasy City Generator">
+      <div data-tip="${t("Set urban density: average population per building in Medieval Fantasy City Generator")}">
         <slider-input id="urbanDensityInput" min="1" max="200" step="1" value="10">
-          <label>Urban density:</label>
+          <label>${t("Urban density")}:</label>
         </slider-input>
       </div>
     </div>
     <div id="unitsBottom">
-      <button id="unitsRestore" data-tip="Restore default units settings" class="icon-ccw"></button>
+      <button id="unitsAltitudeLegend" data-tip="${t("Toggle Legend box")}" class="icon-list-bullet"></button>
+      <button id="unitsRestore" data-tip="${t("Reset to default")}" class="icon-ccw"></button>
     </div>
 `;
 
@@ -119,7 +122,7 @@ function open(): void {
   renderDialog();
 
   $("#unitsEditor").dialog({
-    title: "Units Editor",
+    title: t("Units Editor"),
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
     close: () => destroyDialog(DIALOG_ID)
   });
@@ -185,6 +188,7 @@ function fillInputs(): void {
  */
 function addListeners(): void {
   ensureEl(DIALOG_ID).addEventListener("change", onUnitChange);
+  ensureEl("unitsAltitudeLegend").addEventListener("click", AltitudeLegend.toggle);
   ensureEl("unitsRestore").addEventListener("click", restoreDefaultUnits);
 }
 
@@ -257,27 +261,33 @@ function onUnitChange(event: Event): void {
       return;
   }
 
+  AltitudeLegend.refresh(); // reads the height unit and exponent
   Options.save();
 }
 
 /** "custom_name" is not a unit: it asks for one, and puts the answer where the value belongs */
 function askForCustomUnit(select: HTMLInputElement, kind: "distance" | "height"): void {
   fillInputs(); // the sentinel is not a unit, so the select goes back to the one in use right away
-  prompt(`Provide a custom name for a ${kind} unit`, { default: "" }, custom => {
-    const name = String(custom);
-    if (!name) return;
+  prompt(
+    kind === "distance" ? t("Provide a custom name for a distance unit") : t("Provide a custom name for a height unit"),
+    { default: "" },
+    custom => {
+      const name = String(custom);
+      if (!name) return;
 
-    (select as unknown as HTMLSelectElement).options.add(new Option(name, name, false, true));
-    if (kind === "distance") {
-      options.map.units.distance.unit = name;
-      Pins.set("distanceUnit", name);
-      redrawDistances();
-    } else {
-      options.map.units.height.unit = name;
-      Pins.set("heightUnit", name);
+      (select as unknown as HTMLSelectElement).options.add(new Option(name, name, false, true));
+      if (kind === "distance") {
+        options.map.units.distance.unit = name;
+        Pins.set("distanceUnit", name);
+        redrawDistances();
+      } else {
+        options.map.units.height.unit = name;
+        Pins.set("heightUnit", name);
+        AltitudeLegend.refresh();
+      }
+      Options.save();
     }
-    Options.save();
-  });
+  );
 }
 
 /** Everything measured in distance units: the scale bar and the grid size the Style tab reports */
@@ -294,6 +304,7 @@ function restoreDefaultUnits(): void {
   fillInputs();
   Temperature.generate();
   redrawDistances();
+  AltitudeLegend.refresh();
 }
 
 export const UnitsEditor = { open };

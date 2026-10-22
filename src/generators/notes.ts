@@ -47,11 +47,22 @@ class NotesStore {
 
   /** Every note on the map, grouped by entity type in ENTITY_TYPES order */
   list(): NoteEntry[] {
-    return ENTITY_TYPES.flatMap(type =>
-      MapEntities.collect(type).flatMap(({ ref, entity: { note } }) =>
+    return ENTITY_TYPES.flatMap(type => {
+      const entries = MapEntities.collect(type).flatMap(({ ref, entity: { note } }) =>
         note ? [{ ref, key: MapEntities.key(ref), note }] : []
-      )
-    );
+      );
+      if (type === "journey" && typeof pack !== "undefined") {
+        for (const journey of pack.journeys || []) {
+          for (const segment of journey.segments || []) {
+            if (segment.note) {
+              const ref: EntityRef = { type: "journey", id: journey.i, sub: segment.i };
+              entries.push({ ref, key: MapEntities.key(ref), note: segment.note });
+            }
+          }
+        }
+      }
+      return entries;
+    });
   }
 }
 

@@ -10,17 +10,21 @@ General:
 - <kbd>F6</kbd> - quick save
 - <kbd>F9</kbd> - quick load
 - <kbd>Tab</kbd> - toggle options pane
-- <kbd>Escape</kbd> - close dialogs and hide the options pane
+- <kbd>Escape</kbd> - close dialogs and hide the options pane; decline confirmation dialogs
+- <kbd>Enter</kbd> - confirm in confirmation dialogs
 - <kbd>Delete</kbd> - remove selected element
+- <kbd>Shift</kbd> + click on a button that asks for confirmation (remove, restore, recalculate, load and so on) - do it immediately, skipping the confirmation dialog
 - <kbd>+</kbd>, <kbd>=</kbd>, or <kbd>-</kbd> - change the active brush size (heightmap, paint or Wrap); otherwise zoom the map
 - <kbd>[</kbd> or <kbd>]</kbd> - change the active brush size. With no active brush, <kbd>[</kbd> toggles the Vignette layer
-- <kbd>Ctrl</kbd> + <kbd>S</kbd> - save .map file to machine; after the first save it updates the chosen file
-- <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> - save a copy of the .map file under another name or location
+- <kbd>Ctrl</kbd> + <kbd>S</kbd> - save .map file to machine as a new file
+- <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> - overwrite the last saved .map file
 - <kbd>Ctrl</kbd> + <kbd>C</kbd> - save .map file to Dropbox
 - <kbd>Ctrl</kbd> + <kbd>Q</kbd> - toggle the save reminder
 - <kbd>Ctrl</kbd> + <kbd>Z</kbd> / <kbd>Ctrl</kbd> + <kbd>Y</kbd> - undo / redo in supported editors
 
 <kbd>Cmd</kbd> works instead of <kbd>Ctrl</kbd> on macOS.
+
+On a view-only map only the browsing keys work: <kbd>Space</kbd>, <kbd>F1</kbd>, <kbd>F2</kbd>, <kbd>F9</kbd>, <kbd>Tab</kbd>, <kbd>Escape</kbd>, <kbd>O</kbd>, the arrows, zoom and layer keys.
 
 Map scrolling and zooming:
 
@@ -120,6 +124,16 @@ Omnibar (while its search field is focused):
 - <kbd>Escape</kbd> - close the Omnibar
 
 Start a query with **>** to show commands only.
+
+Map context menu (right-click on the map):
+
+- <kbd>↑</kbd> / <kbd>↓</kbd> - select the previous / next row
+- <kbd>Enter</kbd> - open the selected row
+- <kbd>Escape</kbd> - close the menu
+
+Journey path drawing:
+
+- <kbd>Backspace</kbd> - undo the last point
 
 Wrap Tool:
 

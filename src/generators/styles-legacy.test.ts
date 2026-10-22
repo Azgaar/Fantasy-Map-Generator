@@ -38,7 +38,7 @@ test("converts the frozen default preset without warnings", () => {
   expect(styles.relief.options).toEqual({ set: "simple", size: 1, density: 0.4 });
   expect(styles.ocean.groups.oceanLayers.options.outline).toBe("-6,-3,-1");
   expect(styles.ocean.groups.pattern.attrs).toEqual({ href: "./images/pattern1.png", opacity: 0.2 });
-  expect(styles.military.options).toEqual({ boxSize: 3 });
+  expect(styles.military.options).toEqual({ boxSize: 3, showNames: false });
   expect(styles.coordinates.attrs["font-size"]).toBe("12px");
   expect(styles.states.groups.statesHalo.attrs["stroke-width"]).toBe(10);
   expect(styles.legend.options).toEqual({ columns: 8 });

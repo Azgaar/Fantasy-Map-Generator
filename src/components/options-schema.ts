@@ -3,7 +3,9 @@ import { z } from "zod";
 import { Icons } from "@/components/icons";
 import type { LayerId } from "@/components/layers";
 import { MAX_DENSITY, MIN_DENSITY } from "@/data/graph-density";
+import { LANGUAGE_CODES } from "@/data/languages";
 import { CULTURE_SETS } from "@/generators/cultures-generator";
+import { MAX_JITTER, SAMPLINGS } from "@/generators/lattice";
 import { count, degrees, hexColor, ids, nonNegative, percent, positive, ratio } from "@/utils/schemaUtils";
 
 /** the burg request at its maximum stands for "as many burgs as the land supports" */
@@ -13,6 +15,8 @@ const LABEL_TYPES = ["state", "province", "burg", "river", "route", "added"] as 
 const LABEL_MODES = ["auto", "short", "full"] as const;
 const TRANSPORT_DOMAINS = ["land", "water", "air", "stay"] as const;
 const cultureSetId = z.enum(Object.keys(CULTURE_SETS) as [string, ...string[]]);
+const sampling = z.enum(SAMPLINGS); // the lattice the grid points sit on
+const jitter = ratio.max(MAX_JITTER); // how far a grid point may move off its lattice slot
 
 export const labelGroup = z.strictObject({
   name: z.string(),
@@ -155,7 +159,7 @@ const units = z.strictObject({
  */
 export const mapSchema = z.strictObject({
   seed: z.string(),
-  graph: z.strictObject({ width: positive, height: positive, points: positive }),
+  graph: z.strictObject({ width: positive, height: positive, points: positive, sampling, jitter }),
   geography,
   climate,
   cultures: z.strictObject({ set: cultureSetId }),
@@ -168,7 +172,8 @@ export const mapSchema = z.strictObject({
   transports: z.array(transport),
   customIcons,
   coastline: coastlineSettings,
-  relief: z.strictObject({ rules: z.array(reliefRule) })
+  relief: z.strictObject({ rules: z.array(reliefRule) }),
+  viewOnly: z.boolean().optional()
 });
 
 export const optionsSchema = z.strictObject({
@@ -181,7 +186,9 @@ export const optionsSchema = z.strictObject({
     graph: z.strictObject({
       width: positive,
       height: positive,
-      density: count.min(MIN_DENSITY).max(MAX_DENSITY) // the Points slider step
+      density: count.min(MIN_DENSITY).max(MAX_DENSITY), // the Points slider step
+      sampling,
+      jitter
     }),
     geography: z.strictObject({
       mapSize: geography.shape.mapSize.nullable(),
@@ -215,6 +222,7 @@ export const optionsSchema = z.strictObject({
       viewportRedraw: z.enum(["continuous", "settled"])
     }),
     onLoad: z.enum(["random", "lastSaved"]), // what the app does with no map asked for
+    language: z.union([z.literal(""), z.enum(LANGUAGE_CODES)]), // the interface language, "" follows the browser
     zoomExtent: z.strictObject({ min: positive, max: positive }).refine(({ min, max }) => min <= max, {
       message: "zoomExtent.min must not exceed max"
     }),

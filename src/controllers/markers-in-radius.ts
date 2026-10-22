@@ -8,7 +8,9 @@ import type { Marker } from "@/generators/markers-generator";
 import { clearMarkerRadius, drawMarkerRadius } from "@/renderers/draw-marker-radius";
 import { setMarkersFilter } from "@/renderers/draw-markers";
 import { highlightElement } from "@/renderers/overlays/highlight";
-import { downloadFile, ensureEl, getFileName, getLatitude, getLongitude } from "@/utils";
+import { Csv } from "@/services/io/csv";
+import { ensureEl, findEl, getLatitude, getLongitude } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 
 let center: Marker | null = null;
 let lastRadius = 0;
@@ -39,7 +41,7 @@ function open(marker: Marker): void {
   applyRadius(getRadius());
 
   $("#markersInRadius").dialog({
-    title: "Markers in Radius",
+    title: t("Markers in Radius"),
     resizable: false,
     width: "fit-content",
     close: closeMarkersInRadius,
@@ -48,25 +50,25 @@ function open(marker: Marker): void {
 }
 
 function renderDialog(): void {
-  document.getElementById("markersInRadius")?.remove();
+  findEl("markersInRadius")?.remove();
 
   const centerName = center ? markerName(center) : "";
   const html = /* html */ `
     <div id="markersInRadius" class="dialog">
-      <div style="padding:.2em 0 .4em; line-height:1.5">Around: <b>${centerName}</b></div>
+      <div style="padding:.2em 0 .4em; line-height:1.5">${t("Around")}: <b>${centerName}</b></div>
 
-      <div data-tip="Radius around the marker, in the map's distance unit — markers inside it are listed and shown on the map">
-        <span class="label" style="display:inline">Radius:</span>
+      <div data-tip="${t("Radius around the marker, in the map's distance unit — markers inside it are listed and shown on the map")}">
+        <span class="label" style="display:inline">${t("Radius")}:</span>
         <input id="markersRadiusValue" type="number" min="1" step="1" value="${getRadius()}" style="width:6em" />
         <span>${options.map.units.distance.unit}</span>
       </div>
 
-      <div class="label" style="margin-top:.4em">In range: <span id="markersRadiusCount">0</span></div>
+      <div class="label" style="margin-top:.4em">${t("In range")}: <span id="markersRadiusCount">0</span></div>
       <div id="markersRadiusList" class="table" style="max-height:15em; overflow-y:auto"></div>
 
       <div id="markersRadiusBottom" style="margin-top:.4em">
-        <button id="markersRadiusLocate" data-tip="Zoom to the marker" class="icon-target"></button>
-        <button id="markersRadiusExport" data-tip="Export the in-range markers as a text file (.csv)" class="icon-download"></button>
+        <button id="markersRadiusLocate" data-tip="${t("Zoom to the marker")}" class="icon-target"></button>
+        <button id="markersRadiusExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -108,11 +110,11 @@ function renderMarkersList(inRange: Marker[]): void {
         <div class="states" data-id="${i}" style="display:flex; align-items:center; gap:.15em">
           ${iconHtml}
           <div data-tip="${type}" style="flex:1; min-width:10em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">${name}</div>
-          <span class="icon-pencil pointer" data-tip="Edit marker"></span>
-          <span class="icon-target pointer" data-tip="Locate on map"></span>
-          <span class="icon-pin pointer ${pinned ? "" : "inactive"}" data-tip="Pin marker"></span>
-          <span class="locks pointer ${lock ? "icon-lock" : "icon-lock-open inactive"}" data-tip="Lock marker"></span>
-          <span class="icon-trash-empty pointer" data-tip="Remove marker"></span>
+          <span class="icon-pencil pointer" data-tip="${t("Edit Marker")}"></span>
+          <span class="icon-target pointer" data-tip="${t("Locate on map")}"></span>
+          <span class="icon-pin pointer ${pinned ? "" : "inactive"}" data-tip="${t("Pin marker")}"></span>
+          <span class="locks pointer ${lock ? "icon-lock" : "icon-lock-open inactive"}" data-tip="${t("Lock")}"></span>
+          <span class="icon-trash-empty pointer" data-tip="${t("Remove")}"></span>
         </div>`;
     })
     .join("");
@@ -136,7 +138,7 @@ function onMarkerListClick(event: MouseEvent): void {
   if (target.classList.contains("icon-trash-empty")) return void confirmRemove(marker);
 
   zoomTo(marker.x, marker.y, 8, 1600);
-  const el = document.getElementById(`marker${i}`);
+  const el = findEl(`marker${i}`);
   if (el) highlightElement(el, 2);
 }
 
@@ -153,12 +155,12 @@ function toggleLock(marker: Marker, el: HTMLElement): void {
 
 function confirmRemove(marker: Marker): void {
   confirmationDialog({
-    title: "Remove marker",
-    message: "Are you sure you want to remove this marker? The action cannot be reverted",
-    confirm: "Remove",
+    title: t("Remove"),
+    message: sentences(t("Are you sure you want to remove this marker?"), t("This action cannot be reverted")),
+    confirm: t("Remove"),
     onConfirm: () => {
       Markers.remove(marker.i);
-      document.getElementById(`marker${marker.i}`)?.remove();
+      findEl(`marker${marker.i}`)?.remove();
       refreshEditors();
       applyRadius(getRadius());
     }
@@ -166,26 +168,28 @@ function confirmRemove(marker: Marker): void {
 }
 
 function exportInRange(): void {
-  if (!inRangeMarkers.length) return void tip("No markers in range to export", false, "error");
+  if (!inRangeMarkers.length) return void tip(t("No markers in range to export"), false, "error");
 
-  const headers = "Id,Type,Icon,Name,Note,State,Culture,X,Y,Latitude,Longitude\n";
-  const quote = (s: string) => `"${s.replaceAll('"', '""')}"`;
-
-  const body = inRangeMarkers.map(({ i, type, icon, x, y, cell, name: markerName, note }) => {
-    const name = quote(markerName);
-    const legend = quote(note || "");
+  const { coordinates } = options.map.geography;
+  const rows = inRangeMarkers.map(({ i, type, icon, x, y, cell, name, note }) => {
     const state = pack.states[pack.cells.state[cell]];
     const culture = pack.cultures[pack.cells.culture[cell]];
-    const stateName = state ? quote(state.fullName || state.name) : "";
-    const cultureName = culture ? quote(culture.name) : "";
-    const lat = getLatitude(y, options.map.geography.coordinates, options.map.graph.height, 2);
-    const lon = getLongitude(x, options.map.geography.coordinates, options.map.graph.width, 2);
-    return [i, type, quote(Icons.glyphText(icon) ?? icon), name, legend, stateName, cultureName, x, y, lat, lon].join(
-      ","
-    );
+    return [
+      i,
+      type,
+      Icons.glyphText(icon) ?? icon,
+      name,
+      note,
+      state ? state.fullName || state.name : "",
+      culture?.name,
+      x,
+      y,
+      getLatitude(y, coordinates, options.map.graph.height, 2),
+      getLongitude(x, coordinates, options.map.graph.width, 2)
+    ];
   });
-
-  downloadFile(headers + body.join("\n"), `${getFileName("Markers in radius")}.csv`);
+  const headers = ["Id", "Type", "Icon", "Name", "Note", "State", "Culture", "X", "Y", "Latitude", "Longitude"];
+  Csv.download(t("Markers in Radius"), headers, rows);
 }
 
 function locateCenter(): void {
@@ -200,7 +204,7 @@ function closeMarkersInRadius(): void {
   center = null;
   clearMainTip();
   $("#markersInRadius").dialog("destroy");
-  document.getElementById("markersInRadius")?.remove();
+  findEl("markersInRadius")?.remove();
 }
 
 export const MarkersInRadius = { open };

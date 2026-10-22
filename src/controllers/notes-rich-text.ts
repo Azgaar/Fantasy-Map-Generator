@@ -5,6 +5,7 @@ import type Table from "quill/modules/table";
 import { tip } from "@/components/tooltips";
 import { ICONS } from "@/data/icons-list";
 import "quill/dist/quill.snow.css";
+import { t } from "@/utils/i18n";
 
 // Quill's own align, size and font formats are ql-* classes that only render inside the editor. Inline
 // styles render wherever a note is shown, and no whitelist keeps the sizes and fonts TinyMCE wrote
@@ -43,53 +44,53 @@ const TABLE_ACTIONS: Record<string, (table: Table) => void> = {
   "delete-table": table => table.deleteTable()
 };
 
-export const TOOLBAR_HTML = /* html */ `<div id="notesToolbar" role="toolbar" aria-label="Note formatting">
-    <span class="ql-formats" role="group" aria-label="History">
-      <button class="ql-undo icon-ccw" data-tip="Undo"></button>
-      <button class="ql-redo icon-cw" data-tip="Redo"></button>
+export const TOOLBAR_HTML = /* html */ `<div id="notesToolbar" role="toolbar" aria-label="${t("Note formatting")}">
+    <span class="ql-formats" role="group" aria-label="${t("History")}">
+      <button class="ql-undo icon-ccw" data-tip="${t("Undo")}"></button>
+      <button class="ql-redo icon-cw" data-tip="${t("Redo")}"></button>
     </span>
-    <span class="ql-formats" role="group" aria-label="Font and size">
-      <select class="ql-font" data-tip="Font"><option selected>Font</option></select>
-      <select class="ql-size" data-tip="Text size">
-        <option value="10px">Small</option>
-        <option selected>Normal</option>
-        <option value="18px">Large</option>
-        <option value="32px">Huge</option>
+    <span class="ql-formats" role="group" aria-label="${t("Font and size")}">
+      <select class="ql-font" data-tip="${t("Font")}"><option selected>${t("Font")}</option></select>
+      <select class="ql-size" data-tip="${t("Text size")}">
+        <option value="10px">${t("Small")}</option>
+        <option selected>${t("Normal")}</option>
+        <option value="18px">${t("Large")}</option>
+        <option value="32px">${t("Huge")}</option>
       </select>
     </span>
-    <span class="ql-formats" role="group" aria-label="Text formatting">
-      <button class="ql-bold" data-tip="Bold"></button>
-      <button class="ql-italic" data-tip="Italic"></button>
-      <button class="ql-underline" data-tip="Underline"></button>
-      <button class="ql-strike" data-tip="Strikethrough"></button>
-      <select class="ql-color" data-tip="Text color"></select>
-      <select class="ql-background" data-tip="Highlight color"></select>
-      <button class="ql-clean" data-tip="Clear formatting"></button>
+    <span class="ql-formats" role="group" aria-label="${t("Text formatting")}">
+      <button class="ql-bold" data-tip="${t("Bold")}"></button>
+      <button class="ql-italic" data-tip="${t("Italic")}"></button>
+      <button class="ql-underline" data-tip="${t("Underline")}"></button>
+      <button class="ql-strike" data-tip="${t("Strikethrough")}"></button>
+      <select class="ql-color" data-tip="${t("Text color")}"></select>
+      <select class="ql-background" data-tip="${t("Highlight color")}"></select>
+      <button class="ql-clean" data-tip="${t("Clear formatting")}"></button>
     </span>
-    <span class="ql-formats" role="group" aria-label="Paragraph formatting">
-      <select class="ql-align" data-tip="Alignment"></select>
-      <button class="ql-list" value="bullet" data-tip="Bulleted list"></button>
-      <button class="ql-list" value="ordered" data-tip="Numbered list"></button>
-      <button class="ql-indent" value="-1" data-tip="Decrease indent"></button>
-      <button class="ql-indent" value="+1" data-tip="Increase indent"></button>
-      <button class="ql-blockquote" data-tip="Quote"></button>
+    <span class="ql-formats" role="group" aria-label="${t("Paragraph formatting")}">
+      <select class="ql-align" data-tip="${t("Alignment")}"></select>
+      <button class="ql-list" value="bullet" data-tip="${t("Bulleted list")}"></button>
+      <button class="ql-list" value="ordered" data-tip="${t("Numbered list")}"></button>
+      <button class="ql-indent" value="-1" data-tip="${t("Decrease indent")}"></button>
+      <button class="ql-indent" value="+1" data-tip="${t("Increase indent")}"></button>
+      <button class="ql-blockquote" data-tip="${t("Quote")}"></button>
     </span>
-    <span class="ql-formats" role="group" aria-label="Insert">
-      <button class="ql-link" data-tip="Insert or edit a link (Ctrl+K)"></button>
-      <button class="ql-image" data-tip="Insert an image from a file"></button>
-      <select id="notesTable" class="notes-table" data-tip="Insert a table or edit the one under the cursor">
-        <option value="" selected>Table</option>
-        <option value="insert">Insert table</option>
-        <option value="row-above">Add row above</option>
-        <option value="row-below">Add row below</option>
-        <option value="column-left">Add column left</option>
-        <option value="column-right">Add column right</option>
-        <option value="delete-row">Delete row</option>
-        <option value="delete-column">Delete column</option>
-        <option value="delete-table">Delete table</option>
+    <span class="ql-formats" role="group" aria-label="${t("Insert")}">
+      <button class="ql-link" data-tip="${t("Insert or edit a link (Ctrl+K)")}"></button>
+      <button class="ql-image" data-tip="${t("Insert an image from a file")}"></button>
+      <select id="notesTable" class="notes-table" data-tip="${t("Insert a table or edit the one under the cursor")}">
+        <option value="" selected>${t("Table")}</option>
+        <option value="insert">${t("Insert table")}</option>
+        <option value="row-above">${t("Add row above")}</option>
+        <option value="row-below">${t("Add row below")}</option>
+        <option value="column-left">${t("Add column left")}</option>
+        <option value="column-right">${t("Add column right")}</option>
+        <option value="delete-row">${t("Delete row")}</option>
+        <option value="delete-column">${t("Delete column")}</option>
+        <option value="delete-table">${t("Delete table")}</option>
       </select>
-      <button class="ql-symbol" data-tip="Insert a symbol">Ω</button>
-      <button class="ql-divider" data-tip="Horizontal rule">―</button>
+      <button class="ql-symbol" data-tip="${t("Insert a symbol")}">Ω</button>
+      <button class="ql-divider" data-tip="${t("Horizontal rule")}">―</button>
     </span>
   </div>`;
 
@@ -168,7 +169,7 @@ export function createRichTextEditor(
       "table",
       "divider"
     ],
-    placeholder: "Write the note here. It shows up in the notes box when the element is hovered or clicked",
+    placeholder: t("Write the note here. It shows up in the notes box when the element is hovered or clicked"),
     bounds: host, // otherwise the link tooltip is kept inside the body and drifts over the toolbar
     modules: {
       table: true,
@@ -302,7 +303,7 @@ function insertImage(quill: Quill): void {
     if (file.size > MAX_IMAGE_SIZE) {
       const size = (file.size / 1024 / 1024).toFixed(1);
       return tip(
-        `The image is ${size} MB. Images are stored inside the map file, the limit is 2 MB`,
+        t("The image is {{size}} MB. Images are stored inside the map file, the limit is 2 MB", { size }),
         false,
         "error",
         5000
@@ -326,7 +327,7 @@ function openSymbolPicker(quill: Quill, toolbar: HTMLElement): void {
   const picker = document.createElement("div");
   picker.className = "notes-symbols";
   picker.popover = "auto";
-  picker.setAttribute("aria-label", "Insert a symbol");
+  picker.setAttribute("aria-label", t("Insert a symbol"));
   const symbols = [...new Set([..."©®™°±×÷−≠≈≤≥∞√∑πΩµ•†‡§¶…–—«»‘’“”←↑→↓↔★☆✓✗", ...ICONS])];
   for (const symbol of symbols) {
     const button = document.createElement("button");

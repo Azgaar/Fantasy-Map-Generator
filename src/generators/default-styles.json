@@ -403,6 +403,26 @@
       "stroke-linejoin": null,
       "filter": null,
       "mask": null
+    },
+    "groups": {
+      "cellIndexes": {
+        "attrs": {
+          "opacity": null,
+          "fill": "#808080",
+          "font-family": "Arial",
+          "stroke": "#ffffff",
+          "stroke-opacity": null,
+          "stroke-width": 0,
+          "filter": null,
+          "mask": null
+        },
+        "options": {
+          "show": false,
+          "size": 0.15,
+          "dx": 0,
+          "dy": 0
+        }
+      }
     }
   },
   "coastline": {
@@ -631,6 +651,9 @@
       "stroke-linecap": "round",
       "filter": null,
       "mask": null
+    },
+    "options": {
+      "arrows": false
     }
   },
   "labels": {
@@ -650,6 +673,7 @@
           "font-size": "6%",
           "font-style": null,
           "font-weight": null,
+          "text-decoration": null,
           "letter-spacing": 0,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em)",
           "filter": null
@@ -670,6 +694,7 @@
           "font-size": "5%",
           "font-style": null,
           "font-weight": null,
+          "text-decoration": null,
           "letter-spacing": 0,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
           "filter": null
@@ -690,6 +715,7 @@
           "font-size": "2%",
           "font-style": null,
           "font-weight": null,
+          "text-decoration": null,
           "letter-spacing": 0,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em)",
           "filter": null
@@ -710,6 +736,7 @@
           "font-size": "2%",
           "font-style": null,
           "font-weight": null,
+          "text-decoration": null,
           "letter-spacing": 0,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em)",
           "filter": null
@@ -730,6 +757,7 @@
           "font-size": "2%",
           "font-style": null,
           "font-weight": null,
+          "text-decoration": null,
           "letter-spacing": 0,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em)",
           "filter": null
@@ -750,6 +778,7 @@
           "font-size": "2%",
           "font-style": null,
           "font-weight": null,
+          "text-decoration": null,
           "letter-spacing": 0,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.5em)",
           "filter": null
@@ -770,6 +799,7 @@
           "font-size": "3%",
           "font-style": null,
           "font-weight": null,
+          "text-decoration": null,
           "letter-spacing": 0,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
           "filter": null
@@ -790,6 +820,7 @@
           "font-size": "2%",
           "font-style": null,
           "font-weight": null,
+          "text-decoration": null,
           "letter-spacing": 0,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
           "filter": null
@@ -810,6 +841,7 @@
           "font-size": "4%",
           "font-style": null,
           "font-weight": null,
+          "text-decoration": null,
           "letter-spacing": 0,
           "style": "text-shadow: white 0px 0px 4px; transform: translate(0em, -0.4em)",
           "filter": null
@@ -830,6 +862,7 @@
           "font-size": "22%",
           "font-style": null,
           "font-weight": null,
+          "text-decoration": null,
           "letter-spacing": 0,
           "style": "text-shadow: white 0px 0px 4px",
           "filter": null
@@ -850,6 +883,7 @@
           "font-size": "6%",
           "font-style": null,
           "font-weight": null,
+          "text-decoration": null,
           "letter-spacing": 0,
           "style": "text-shadow: white 0px 0px 4px",
           "filter": null
@@ -870,6 +904,7 @@
           "font-size": "1.5%",
           "font-style": null,
           "font-weight": null,
+          "text-decoration": null,
           "letter-spacing": 0,
           "style": "text-shadow: white 0px 1px 6px",
           "filter": null
@@ -890,6 +925,7 @@
           "font-size": "1.5%",
           "font-style": null,
           "font-weight": null,
+          "text-decoration": null,
           "letter-spacing": 0,
           "style": "text-shadow: white 0px 1px 6px",
           "filter": null
@@ -910,6 +946,7 @@
           "font-size": "18%",
           "font-style": null,
           "font-weight": null,
+          "text-decoration": null,
           "letter-spacing": 0,
           "style": "text-shadow: white 0px 0px 4px",
           "filter": null
@@ -1074,6 +1111,7 @@
       "stroke-dasharray": "0 4 10 4",
       "stroke-linecap": "round",
       "stroke-linejoin": null,
+      "fill": "#000000",
       "font-family": "Almendra SC",
       "font-size": "13px"
     },
@@ -1118,17 +1156,18 @@
   "military": {
     "attrs": {
       "opacity": null,
+      "fill-opacity": 1,
       "stroke": "#000",
       "stroke-opacity": null,
       "stroke-width": 0.3,
       "stroke-dasharray": null,
       "stroke-linecap": null,
       "stroke-linejoin": null,
-      "fill-opacity": 1,
       "filter": null
     },
     "options": {
-      "boxSize": 3
+      "boxSize": 3,
+      "showNames": false
     }
   },
   "ocean": {
@@ -1192,6 +1231,10 @@
       "filter": null,
       "mask": null
     },
+    "options": {
+      "type": "bars",
+      "barHeight": 1
+    },
     "groups": {
       "rural": {
         "attrs": {
@@ -1228,9 +1271,9 @@
   "relief": {
     "attrs": {
       "opacity": null,
+      "stroke": "#5c5c70",
       "filter": null,
-      "mask": null,
-      "stroke": "#5c5c70"
+      "mask": null
     },
     "options": {
       "set": "simple",
@@ -1306,6 +1349,9 @@
       "stroke-width": 2,
       "stroke-dasharray": "10",
       "stroke-linecap": null,
+      "stroke": "#3d3d3d",
+      "color": "#ffffff",
+      "data-labels": true,
       "font-size": "20px",
       "filter": null
     }

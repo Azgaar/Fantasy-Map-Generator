@@ -1,6 +1,6 @@
 import { curveBasisClosed, line } from "d3";
 import { Ocean } from "@/generators/ocean-generator";
-import { rn, round } from "@/utils";
+import { findEl, rn, round } from "@/utils";
 import { ensureEl } from "@/utils/nodeUtils";
 import { getCoastalDistances, getCoastalWaves } from "./coastal-waves";
 import { drawCoastalBands, getCoastalBandReach, removeCoastalBands } from "./draw-coastal-bands";
@@ -97,7 +97,7 @@ export function removeOcean(): void {
 function removeCoastalWaves(): void {
   clearOceanCache("oceanWaves");
   ensureEl("oceanWaves").replaceChildren();
-  document.getElementById("waves-mask")?.remove();
+  findEl("waves-mask")?.remove();
 }
 
 /** sparse wave dashes clipped to the sea, with a clear gap along the coast */
@@ -109,14 +109,12 @@ function drawCoastalWaves(): void {
 
   TIME && console.time("drawCoastalWaves");
   const { width, height } = options.map.graph;
-  const { spacing, cellsX, cellsY, cells, features } = grid;
+  const { spacing, cells, features } = grid;
   const bandReach = getCoastalBandReach(styles.ocean.options.bands);
   const bandCells = bandReach / spacing;
   const distances = getCoastalDistances(cells.h, cells.c, waveOptions.reach * 2 + bandCells);
   const distanceAt = (x: number, y: number): number => {
-    const column = Math.max(0, Math.min(cellsX - 1, Math.floor(x / spacing)));
-    const row = Math.max(0, Math.min(cellsY - 1, Math.floor(y / spacing)));
-    const cell = row * cellsX + column;
+    const cell = Grid.findCell(x, y);
     if (cells.h[cell] >= 20 || features[cells.f[cell]]?.type === "lake") return 0;
     return distances[cell] ? Math.max(1, distances[cell] - bandCells) : Infinity;
   };

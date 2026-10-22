@@ -54,6 +54,21 @@ describe("note access", () => {
     expect(MapEntities.getName(ref)).toBe("1st Cavalry");
   });
 
+  it("addresses a journey segment through its journey", () => {
+    (pack.journeys as any) = [
+      {
+        i: 0,
+        name: "Grand Tour",
+        segments: [{ i: 0, name: "Departure", note: "Started at dawn" }]
+      }
+    ];
+    const ref = { type: "journey", id: 0, sub: 0 } as const;
+    expect(Notes.get(ref)).toBe("Started at dawn");
+    expect(MapEntities.getName(ref)).toBe("Grand Tour — Departure");
+    Notes.set(ref, "Started at dusk");
+    expect(pack.journeys[0].segments[0].note).toBe("Started at dusk");
+  });
+
   it("names a state by its full name and a river by name and type", () => {
     expect(MapEntities.getName({ type: "state", id: 1 })).toBe("Duchy of Ardenia");
     expect(MapEntities.getName({ type: "river", id: 1 })).toBe("Ald River");

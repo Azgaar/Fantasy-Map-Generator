@@ -15,23 +15,59 @@ import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { Burg } from "@/generators/burgs-generator";
+import { Tags } from "@/generators/tags";
 import { removeEmblem } from "@/renderers/draw-emblems";
-import { downloadFile, getFileName, getHeight, getLatitude, getLongitude, uploadFile } from "@/utils";
-import { convertTemperature, createFileInput, ensureEl, getTemperatureLikeness, rn, si } from "../utils";
+import { Csv } from "@/services/io/csv";
+import { findEl, getHeight, getLatitude, getLongitude } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
+import { convertTemperature, ensureEl, getTemperatureLikeness, rn, si } from "../utils";
 
 type Filters = { stateId?: number | null; cultureId?: number | null };
 type FilterState = { search: string; stateId: number; cultureId: number };
 
 const dialogId = "burgsOverview" as const;
+const CSV_COLUMNS = [
+  "Id",
+  "Burg",
+  "Province",
+  "Province Full Name",
+  "State",
+  "State Full Name",
+  "Culture",
+  "Religion",
+  "Group",
+  "Type",
+  "Population",
+  "Market",
+  "Product",
+  "Wealth",
+  "Treasury",
+  "X",
+  "Y",
+  "Latitude",
+  "Longitude",
+  "Elevation",
+  "Temperature",
+  "Temperature likeness",
+  "Capital",
+  "Port",
+  "Citadel",
+  "Walls",
+  "Plaza",
+  "Temple",
+  "Shanty Town",
+  "Emblem",
+  "Preview link",
+  "Tags"
+];
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let filterState: FilterState;
-let burgNamesInput: HTMLInputElement | null = null;
 
 const columns: EditorColumn<Burg>[] = [
   { key: "locate", width: "0.8em", permanent: true },
   {
     key: "name",
-    label: "Burg",
+    label: t("Burg"),
     width: "8em",
     permanent: true,
     sortBy: b => b.name || "",
@@ -39,7 +75,7 @@ const columns: EditorColumn<Burg>[] = [
   },
   {
     key: "province",
-    label: "Province",
+    label: t("Province"),
     width: "8em",
     hidden: true,
     mobileHidden: true,
@@ -51,14 +87,14 @@ const columns: EditorColumn<Burg>[] = [
   },
   {
     key: "state",
-    label: "State",
+    label: t("State"),
     width: "8em",
     sortBy: b => pack.states[b.state!]?.name || "",
     sortType: "alpha"
   },
   {
     key: "culture",
-    label: "Culture",
+    label: t("Culture"),
     width: "10em",
     mobileHidden: true,
     sortBy: b => pack.cultures[b.culture!]?.name || "",
@@ -66,7 +102,7 @@ const columns: EditorColumn<Burg>[] = [
   },
   {
     key: "group",
-    label: "Group",
+    label: t("Group"),
     width: "6em",
     mobileHidden: true,
     sortBy: b => b.group || "",
@@ -74,14 +110,14 @@ const columns: EditorColumn<Burg>[] = [
   },
   {
     key: "population",
-    label: "Population",
+    label: t("Population"),
     width: "7em",
     defaultSort: "desc",
     sortBy: b => b.population! * options.map.units.population.scale * options.map.units.population.urbanization.rate
   },
   {
     key: "grossproduct",
-    label: "Product",
+    label: t("Product"),
     width: "6.5em",
     hidden: true,
     mobileHidden: true,
@@ -89,26 +125,34 @@ const columns: EditorColumn<Burg>[] = [
   },
   {
     key: "productpercapita",
-    label: "Wealth",
+    label: t("Wealth"),
     width: "6.5em",
     mobileHidden: true,
-    tip: "Click to sort by burg wealth (gross product per capita)",
+    tip: t("Click to sort by burg wealth (gross product per capita)"),
     sortBy: b => rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2)
   },
   {
     key: "treasury",
-    label: "Treasury",
+    label: t("Treasury"),
     width: "6.5em",
     mobileHidden: true,
     sortBy: b => rn(b.treasury || 0, 2)
   },
   {
     key: "features",
-    label: "Features",
+    label: t("Features", { context: "burg" }),
     width: "6em",
     mobileHidden: true,
     sortType: "alpha",
     sortBy: b => (b.capital && b.port ? "a-capital-port" : b.capital ? "c-capital" : b.port ? "p-port" : "z-burg")
+  },
+  {
+    key: "tags",
+    label: t("Tags"),
+    width: "10em",
+    hidden: true,
+    sortBy: b => Tags.format(b.tags),
+    sortType: "alpha"
   },
   { key: "edit", width: "1.1em" },
   { key: "lock", width: "1.1em" },
@@ -134,7 +178,7 @@ function open(filters: Filters = {}): void {
   burgsTable.reset();
 
   $(`#${dialogId}`).dialog({
-    title: "Burgs Overview",
+    title: t("Burgs Overview"),
     resizable: false,
     close: closeBurgsOverview,
     width: "fit-content",
@@ -146,56 +190,56 @@ function renderDialog(): void {
   destroyDialog("burgsOverview");
   const HTML = /* html */ `<div id="burgsOverview" class="dialog stable editorDialog">
       <div id="burgsBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
-      <div id="burgsFilters" data-tip="Apply a filter" class="editorFilters">
-        <label for="burgsSearch" data-tip="Filter by name, province, state, culture, or group"
-          >Search: <input id="burgsSearch" type="search"
+      <div id="burgsFilters" data-tip="${t("Apply a filter")}" class="editorFilters">
+        <label for="burgsSearch" data-tip="${t("Filter by name, province, state, culture, group, or tag")}"
+          >${t("Search")}: <input id="burgsSearch" type="search"
         /></label>
         <label for="burgsFilterState"
-          >State:
+          >${t("State")}:
           <select id="burgsFilterState"></select
         ></label>
         <label for="burgsFilterCulture"
-          >Culture:
+          >${t("Culture")}:
           <select id="burgsFilterCulture"></select
         ></label>
       </div>
       <div id="burgsFooter" class="totalLine">
-        <div data-tip="Burgs displayed" style="margin-left: 5px">
-          Burgs:&nbsp;<span id="burgsFooterBurgs">0 of 0</span>
+        <div data-tip="${t("Burgs displayed")}" style="margin-left: 5px">
+          ${t("Burgs")}:&nbsp;<span id="burgsFooterBurgs">${t("{{shown}} of {{total}}", { shown: 0, total: 0 })}</span>
         </div>
-        <div data-tip="Average population" style="margin-left: 12px" data-col="population">
-          Avg population:&nbsp;<span id="burgsFooterPopulation">0</span>
+        <div data-tip="${t("Average population")}" style="margin-left: 12px" data-col="population">
+          ${t("Avg population")}:&nbsp;<span id="burgsFooterPopulation">0</span>
         </div>
-        <div data-tip="Average gross product" style="margin-left: 12px" data-col="grossproduct">
-          Avg product:&nbsp;<span id="burgsFooterGrossProduct">0</span> 🟡
+        <div data-tip="${t("Average gross product")}" style="margin-left: 12px" data-col="grossproduct">
+          ${t("Avg product")}:&nbsp;<span id="burgsFooterGrossProduct">0</span> 🟡
         </div>
-        <div data-tip="Average wealth (product per capita)" style="margin-left: 12px" data-col="productpercapita">
-          Avg wealth:&nbsp;<span id="burgsFooterProductPerCapita">0</span> 🟡
+        <div data-tip="${t("Average wealth (product per capita)")}" style="margin-left: 12px" data-col="productpercapita">
+          ${t("Avg wealth")}:&nbsp;<span id="burgsFooterProductPerCapita">0</span> 🟡
         </div>
-        <div data-tip="Average treasury" style="margin-left: 12px" data-col="treasury">
-          Avg treasury:&nbsp;<span id="burgsFooterTreasury">0</span> 🟡
+        <div data-tip="${t("Average treasury")}" style="margin-left: 12px" data-col="treasury">
+          ${t("Avg treasury")}:&nbsp;<span id="burgsFooterTreasury">0</span> 🟡
         </div>
       </div>
       <div id="burgsBottom" class="editorToolbar">
-        <button id="burgsOverviewRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-        <button id="burgsGroupsEditorButton" data-tip="Edit burg groups" class="icon-cog"></button>
-        <button id="burgsChart" data-tip="Show burgs bubble chart" class="icon-chart-area"></button>
+        <button id="burgsOverviewRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
+        <button id="burgsGroupsEditorButton" data-tip="${t("Edit burg groups")}" class="icon-cog"></button>
+        <button id="burgsChart" data-tip="${t("Burgs bubble chart")}" class="icon-chart-area"></button>
         <button
           id="regenerateBurgNames"
-          data-tip="Regenerate burg names based on assigned culture"
+          data-tip="${t("Regenerate burg names based on assigned culture")}"
           class="icon-retweet"
         ></button>
-        <button id="addNewBurg" data-tip="Add a new burg. Hold Shift to add multiple" class="icon-plus"></button>
+        <button id="addNewBurg" data-tip="${sentences(t("Add"), t("Hold Shift to add multiple"))}" class="icon-plus"></button>
         <button
           id="burgsExport"
-          data-tip="Save burgs-related data as a text file (.csv)"
+          data-tip="${t("Save data as a CSV file")}"
           class="icon-download"
         ></button>
-        <button id="burgNamesImport" data-tip="Rename burgs in bulk" class="icon-upload"></button>
-        <button id="burgsLockAll" data-tip="Lock or unlock all burgs" class="icon-lock"></button>
+        <button id="burgsImport" data-tip="${t("Upload data from a CSV file")}" class="icon-upload"></button>
+        <button id="burgsLockAll" data-tip="${t("Lock or unlock all burgs")}" class="icon-lock"></button>
         <button
           id="burgsRemoveAll"
-          data-tip="Remove all unlocked burgs except for capitals. To remove a capital remove its state first"
+          data-tip="${t("Remove all unlocked burgs except for capitals. To remove a capital remove its state first")}"
           class="icon-trash"
         ></button>
       </div>
@@ -225,13 +269,13 @@ function renderDialog(): void {
   ensureEl("regenerateBurgNames").addEventListener("click", regenerateNames);
   ensureEl("addNewBurg").addEventListener("click", () => void Controllers.BurgCreator.toggle());
   ensureEl("burgsExport").addEventListener("click", downloadBurgsData);
-  ensureEl("burgNamesImport").addEventListener("click", renameBurgsInBulk);
+  ensureEl("burgsImport").addEventListener("click", () => Csv.pick(uploadBurgsCsv));
   ensureEl("burgsLockAll").addEventListener("click", toggleLockAll);
   ensureEl("burgsRemoveAll").addEventListener("click", triggerAllBurgsRemove);
 }
 
 function closeBurgsOverview(): void {
-  if (document.getElementById("addBurgTool")?.classList.contains("pressed")) void Controllers.BurgCreator.stop();
+  if (findEl("addBurgTool")?.classList.contains("pressed")) void Controllers.BurgCreator.stop();
   $("#burgsOverview").dialog("destroy");
   ensureEl("burgsOverview").remove();
 }
@@ -246,7 +290,7 @@ function updateFilter(): void {
   const validStateIds = new Set(pack.states.filter(state => !state.removed).map(state => state.i));
   if (!validStateIds.has(filterState.stateId)) filterState.stateId = -1;
   stateFilter.options.length = 0; // remove all options
-  stateFilter.options.add(new Option("all", "-1", false, filterState.stateId === -1));
+  stateFilter.options.add(new Option(t("All"), "-1", false, filterState.stateId === -1));
   stateFilter.options.add(new Option(pack.states[0].name, "0", false, filterState.stateId === 0));
   const statesSorted = pack.states.filter(s => s.i && !s.removed).sort((a, b) => (a.name > b.name ? 1 : -1));
   statesSorted.forEach(
@@ -257,7 +301,7 @@ function updateFilter(): void {
   const validCultureIds = new Set(pack.cultures.filter(culture => !culture.removed).map(culture => culture.i));
   if (!validCultureIds.has(filterState.cultureId)) filterState.cultureId = -1;
   cultureFilter.options.length = 0; // remove all options
-  cultureFilter.options.add(new Option(`all`, "-1", false, filterState.cultureId === -1));
+  cultureFilter.options.add(new Option(t("All"), "-1", false, filterState.cultureId === -1));
   cultureFilter.options.add(new Option(pack.cultures[0].name, "0", false, filterState.cultureId === 0));
   const culturesSorted = pack.cultures.filter(c => c.i && !c.removed).sort((a, b) => (a.name > b.name ? 1 : -1));
   culturesSorted.forEach(
@@ -282,18 +326,11 @@ function getFilteredBurgs(): Burg[] {
   if (searchText) {
     // filter by search text
     filtered = filtered.filter(b => {
-      const name = b.name!.toLowerCase();
-      const state = (pack.states[b.state!]?.name || "").toLowerCase();
+      const state = pack.states[b.state!]?.name || "";
       const prov = pack.cells.province[b.cell];
-      const province = prov ? pack.provinces[prov]?.name.toLowerCase() : "";
-      const culture = (pack.cultures[b.culture!]?.name || "").toLowerCase();
-      return (
-        name.includes(searchText) ||
-        state.includes(searchText) ||
-        province.includes(searchText) ||
-        culture.includes(searchText) ||
-        b.group!.toLowerCase().includes(searchText)
-      );
+      const province = prov ? pack.provinces[prov]?.name || "" : "";
+      const culture = pack.cultures[b.culture!]?.name || "";
+      return Tags.matches(searchText, b.name, b.tags, [state, province, culture, b.group]);
     });
   }
   if (filterState.stateId !== -1) filtered = filtered.filter(b => b.state === filterState.stateId); // filtered by state
@@ -353,45 +390,55 @@ function renderBurgsPage(view: TableView<Burg>): void {
         data-treasury=${treasury}
         data-features="${features}"
       >
-        <span data-tip="Click to zoom into view" class="icon-dot-circled pointer" data-col="locate"></span>
-        <input data-tip="Burg name" class="burgName" value="${b.name}" data-col="name" disabled />
-        <input data-tip="Burg province" value="${province}" data-col="province" disabled />
-        <input data-tip="Burg state" value="${state}" data-col="state" disabled />
-        <input data-tip="Dominant culture" value="${culture}" data-col="culture" disabled />
-        <input data-tip="Burg group" value="${b.group}" data-col="group" disabled />
+        <span data-tip="${t("Click to zoom")}" class="icon-dot-circled pointer" data-col="locate"></span>
+        <input data-tip="${t("Name")}" class="burgName" value="${b.name}" data-col="name" disabled />
+        <input data-tip="${t("Burg province")}" value="${province}" data-col="province" disabled />
+        <input data-tip="${t("Burg state")}" value="${state}" data-col="state" disabled />
+        <input data-tip="${t("Dominant culture")}" value="${culture}" data-col="culture" disabled />
+        <input data-tip="${t("Burg group")}" value="${b.group}" data-col="group" disabled />
         <div data-col="population">
-          <span data-tip="Burg population" class="icon-male"></span>
-          <input data-tip="Burg population" value=${si(population)} disabled />
+          <span data-tip="${t("Burg population")}" class="icon-male"></span>
+          <input data-tip="${t("Burg population")}" value=${si(population)} disabled />
         </div>
         <div data-col="grossproduct">
-          <span data-tip="Gross Product: local sale revenue minus purchased ingredient costs during the production.">🟡</span>
-          <input data-tip="Gross Product: local sale revenue minus purchased ingredient costs during the production." value=${grossProduct} disabled />
+          <span data-tip="${t("Gross Product: local sale revenue minus purchased ingredient costs during the production.")}">🟡</span>
+          <input data-tip="${t("Gross Product: local sale revenue minus purchased ingredient costs during the production.")}" value=${grossProduct} disabled />
         </div>
         <div data-col="productpercapita">
-          <span data-tip="Wealth: gross product divided by population">🟡</span>
-          <input data-tip="Wealth: gross product divided by population" value=${productPerCapita} disabled />
+          <span data-tip="${t("Wealth: gross product divided by population")}">🟡</span>
+          <input data-tip="${t("Wealth: gross product divided by population")}" value=${productPerCapita} disabled />
         </div>
         <div data-col="treasury">
-          <span data-tip="Treasury: accumulated cash balance">🟡</span>
-          <input data-tip="Treasury: accumulated cash balance" value=${treasury} disabled />
+          <span data-tip="${t("Treasury: accumulated cash balance")}">🟡</span>
+          <input data-tip="${t("Treasury: accumulated cash balance")}" value=${treasury} disabled />
         </div>
         <div data-col="features">
           <span
-            data-tip="${b.capital ? " This burg is a state capital" : "This burg is a NOT state capital"}"
+            data-tip="${b.capital ? t("This burg is a state capital") : t("This burg is NOT a state capital")}"
             class="icon-star-empty${b.capital ? "" : " inactive"}" style="padding: 0 1px;"></span>
-          <span data-tip="${b.port ? " This burg is a port" : "This burg is NOT a port"}"
+          <span data-tip="${b.port ? t("This burg is a port") : t("This burg is NOT a port")}"
           class="icon-anchor${b.port ? "" : " inactive"}" style="font-size: .9em; padding: 0 1px;"></span>
         </div>
-        <span data-col="edit" data-tip="Edit burg" class="icon-pencil"></span>
+        <div data-col="tags">
+          <input
+            data-tip="${t("Tags (comma-separated)")}"
+            class="burgTags"
+            value="${Tags.format(b.tags)}"
+            placeholder="${t("Tags")}"
+            autocorrect="off"
+            spellcheck="false"
+          />
+        </div>
+        <span data-col="edit" data-tip="${t("Edit Burg")}" class="icon-pencil"></span>
         <span data-col="lock" class="locks pointer ${
           b.lock ? "icon-lock" : "icon-lock-open inactive"
         }" onmouseover="showElementLockTip(event)"></span>
-        <span data-col="remove" data-tip="Remove burg" class="icon-trash-empty"></span>
+        <span data-col="remove" data-tip="${t("Remove")}" class="icon-trash-empty"></span>
       </div>`;
   }
   body.insertAdjacentHTML("beforeend", lines);
 
-  ensureEl("burgsFooterBurgs").innerHTML = `${view.all.length} of ${validCount}`;
+  ensureEl("burgsFooterBurgs").innerHTML = t("{{shown}} of {{total}}", { shown: view.all.length, total: validCount });
   ensureEl("burgsFooterPopulation").innerHTML = view.all.length ? si(totalPopulation / view.all.length) : "0";
   ensureEl("burgsFooterGrossProduct").innerHTML = view.all.length ? String(rn(totalProduct / view.all.length, 2)) : "0";
   ensureEl("burgsFooterProductPerCapita").innerHTML = view.all.length
@@ -407,9 +454,21 @@ function renderBurgsPage(view: TableView<Burg>): void {
   body.querySelectorAll("div > span.icon-dot-circled").forEach(el => void el.addEventListener("click", zoomIntoBurg));
   body.querySelectorAll("div > span.locks").forEach(el => void el.addEventListener("click", toggleBurgLockStatus));
   body.querySelectorAll("div > span.icon-pencil").forEach(el => void el.addEventListener("click", openBurgEditor));
+  body.querySelectorAll("div > input.burgTags").forEach(el => void el.addEventListener("change", burgChangeTags));
   body
     .querySelectorAll("div > span.icon-trash-empty")
     .forEach(el => void el.addEventListener("click", triggerBurgRemove));
+}
+
+function burgChangeTags(this: HTMLInputElement): void {
+  const line = this.closest(".states") as HTMLElement;
+  const burgId = Number(line.dataset.id);
+  const burg = pack.burgs[burgId];
+  if (!burg) return;
+
+  Tags.set(burg, this.value);
+  this.value = Tags.format(burg.tags);
+  if (filterState.search) burgsTable.refresh();
 }
 
 function burgHighlightOn(event: Event): void {
@@ -452,18 +511,18 @@ function openBurgEditor(this: HTMLElement): void {
 function triggerBurgRemove(this: HTMLElement): void {
   const burgId = +(this.closest(".states") as HTMLElement).dataset.id!;
   if (pack.burgs[burgId].capital) {
-    tip("You cannot remove the capital. Please change the state capital first", false, "error");
+    tip(sentences(t("You cannot remove the capital"), t("You must change the state capital first")), false, "error");
     return;
   }
   if (pack.markets?.some(m => m.centerBurgId === burgId)) {
-    tip("You cannot remove a market center burg. Please remove the market first", false, "error");
+    tip(t("You cannot remove a market center burg. Please remove the market first"), false, "error");
     return;
   }
 
   confirmationDialog({
-    title: "Remove burg",
-    message: "Are you sure you want to remove the burg? <br>This action cannot be reverted",
-    confirm: "Remove",
+    title: t("Remove"),
+    message: `${t("Are you sure you want to remove the burg?")}<br>${t("This action cannot be reverted")}`,
+    confirm: t("Remove"),
     onConfirm: () => {
       Burgs.remove(burgId);
       removeEmblem("burg", burgId);
@@ -516,7 +575,7 @@ function showBurgsChart(): void {
     });
   const data: any[] = (states as any[]).concat(burgs);
   if (data.length < 2) {
-    tip("No burgs to show", false, "error");
+    tip(t("No burgs to show"), false, "error");
     return;
   }
 
@@ -535,10 +594,10 @@ function showBurgsChart(): void {
 
   // prepare svg
   alertMessage.innerHTML = /* html */ `<select id="burgsTreeType" style="display:block; margin-left:13px; font-size:11px">
-      <option value="states" selected>Group by state</option>
-      <option value="cultures">Group by culture</option>
-      <option value="parent">Group by province and state</option>
-      <option value="provinces">Group by province</option>
+      <option value="states" selected>${t("Group by state")}</option>
+      <option value="cultures">${t("Group by culture")}</option>
+      <option value="parent">${t("Group by province and state")}</option>
+      <option value="provinces">${t("Group by province")}</option>
     </select>`;
   alertMessage.innerHTML += `<div id='burgsInfo' class='chartInfo'>&#8205;</div>`;
   const svg = select("#alertMessage")
@@ -573,9 +632,9 @@ function showBurgsChart(): void {
       d.value * options.map.units.population.scale * options.map.units.population.urbanization.rate
     );
 
-    ensureEl("burgsInfo").innerHTML = /* html */ `${name}. ${parent}. Population: ${population}`;
+    ensureEl("burgsInfo").innerHTML = /* html */ `${name}. ${parent}. ${`${t("Population")}: ${population}`}`;
     burgHighlightOn(ev);
-    tip("Click to zoom into view");
+    tip(t("Click to zoom"));
   }
 
   function hideInfo(ev: any): void {
@@ -659,7 +718,7 @@ function showBurgsChart(): void {
   }
 
   $("#alert").dialog({
-    title: "Burgs bubble chart",
+    title: t("Burgs bubble chart"),
     width: "fit-content",
     position: { my: "left bottom", at: "left+10 bottom-10", of: "svg" },
     buttons: {},
@@ -668,125 +727,53 @@ function showBurgsChart(): void {
 }
 
 function downloadBurgsData(): void {
-  let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Group,Population,X,Y,Latitude,Longitude,Elevation (${options.map.units.height.unit}),Temperature,Temperature likeness,Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town,Emblem,Preview link\n`; // headers
-  const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
-
-  valid.forEach(b => {
-    data += `${b.i},`;
-    data += `${b.name},`;
-    const province = pack.cells.province[b.cell];
-    data += province ? `${pack.provinces[province].name},` : ",";
-    data += province ? `${pack.provinces[province].fullName},` : ",";
-    data += `${pack.states[b.state!].name},`;
-    data += `${pack.states[b.state!].fullName},`;
-    data += `${pack.cultures[b.culture!].name},`;
-    data += `${pack.religions[pack.cells.religion[b.cell]].name},`;
-    data += `${b.group},`;
-    data += `${rn(b.population! * options.map.units.population.scale * options.map.units.population.urbanization.rate)},`;
-
-    // add geography data
-    data += `${b.x},`;
-    data += `${b.y},`;
-    data += `${getLatitude(b.y, options.map.geography.coordinates, options.map.graph.height, 2)},`;
-    data += `${getLongitude(b.x, options.map.geography.coordinates, options.map.graph.width, 2)},`;
-    data += `${parseInt(getHeight(pack.cells.h[b.cell]), 10)},`;
-    const temperature = grid.cells.temp[pack.cells.g[b.cell]];
-    data += `${convertTemperature(temperature)},`;
-    data += `${getTemperatureLikeness(temperature)},`;
-
-    // add status data
-    data += b.capital ? "capital," : ",";
-    data += b.port ? "port," : ",";
-    data += b.citadel ? "citadel," : ",";
-    data += b.walls ? "walls," : ",";
-    data += b.plaza ? "plaza," : ",";
-    data += b.temple ? "temple," : ",";
-    data += b.shanty ? "shanty town," : ",";
-    data += b.coa ? `${JSON.stringify(b.coa).replace(/"/g, "").replace(/,/g, ";")},` : ",";
-    data += Burgs.getPreview(b).link;
-
-    data += "\n";
-  });
-
-  const name = `${getFileName("Burgs")}.csv`;
-  downloadFile(data, name);
-}
-
-function renameBurgsInBulk(): void {
-  alertMessage.innerHTML = /* html */ `Download burgs list as a text file, make changes and re-upload the file. Make sure the file is a plain text document with each
-    name on its own line (the dilimiter is CRLF). If you do not want to change the name, just leave it as is`;
-
-  $("#alert").dialog({
-    title: "Burgs bulk renaming",
-    width: "22em",
-    position: { my: "center", at: "center", of: "svg" },
-    buttons: {
-      Download: () => {
-        const data = pack.burgs
-          .filter(b => b.i && !b.removed)
-          .map(b => b.name)
-          .join("\r\n");
-        const name = `${getFileName("Burg names")}.txt`;
-        downloadFile(data, name);
-      },
-      Upload: pickBurgNamesFile,
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
-  });
-}
-
-/** Own the burg-names file input here so repeat opens cannot stack listeners on a shared element */
-function pickBurgNamesFile(): void {
-  burgNamesInput ??= createFileInput(".txt,.csv");
-  burgNamesInput.onchange = () => uploadFile(burgNamesInput!, importBurgNames);
-  burgNamesInput.click();
-}
-
-function importBurgNames(dataLoaded: string): void {
-  if (!dataLoaded) {
-    tip("Cannot load the file, please check the format", false, "error");
-    return;
-  }
-  const data = dataLoaded
-    .replace(/\r\n|\r/g, "\n")
-    .split("\n")
-    .map(line => line.trim())
-    .filter(Boolean);
-  if (!data.length) {
-    tip("Cannot parse the list, please check the file format", false, "error");
-    return;
-  }
-
-  const change: { id: number; name: string }[] = [];
-  let message = `Burgs to be renamed as below:`;
-  message += `<table class="overflow-table"><tr><th>Id</th><th>Current name</th><th>New Name</th></tr>`;
-
-  const burgs = pack.burgs.filter(b => b.i && !b.removed);
-  for (let i = 0; i < data.length && i <= burgs.length; i++) {
-    const v = data[i];
-    if (!v || !burgs[i] || v === burgs[i].name) continue;
-    change.push({ id: burgs[i].i, name: v });
-    message += `<tr><td style="width:20%">${burgs[i].i}</td><td style="width:40%">${burgs[i].name}</td><td style="width:40%">${v}</td></tr>`;
-  }
-  message += `</tr></table>`;
-
-  if (!change.length) message = "No changes found in the file. Please change some names to get a result";
-  alertMessage.innerHTML = message;
-
-  const onConfirm = () => {
-    for (const { id, name } of change) Burgs.rename(id, name);
-    burgsTable.refresh();
-    Layers.draw("labels");
-  };
-
-  confirmationDialog({
-    title: "Burgs bulk renaming",
-    message,
-    confirm: "Rename",
-    onConfirm
-  });
+  const { coordinates } = options.map.geography;
+  const { scale, urbanization } = options.map.units.population;
+  const headers = CSV_COLUMNS.map(column =>
+    column === "Elevation" ? `Elevation (${options.map.units.height.unit})` : column
+  );
+  const rows = pack.burgs
+    .filter(b => b.i && !b.removed)
+    .map(b => {
+      const province = pack.provinces[pack.cells.province[b.cell]];
+      const temperature = grid.cells.temp[pack.cells.g[b.cell]];
+      const market = Markets.get(b.market);
+      return [
+        b.i,
+        b.name,
+        province?.i ? province.name : "",
+        province?.i ? province.fullName : "",
+        pack.states[b.state!].name,
+        pack.states[b.state!].fullName,
+        pack.cultures[b.culture!].name,
+        pack.religions[pack.cells.religion[b.cell]].name,
+        b.group,
+        b.type,
+        rn(b.population! * scale * urbanization.rate),
+        market ? Markets.getName(market) : "",
+        rn(b.product || 0, 2),
+        rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2),
+        rn(b.treasury || 0, 2),
+        b.x,
+        b.y,
+        getLatitude(b.y, coordinates, options.map.graph.height, 2),
+        getLongitude(b.x, coordinates, options.map.graph.width, 2),
+        parseInt(getHeight(pack.cells.h[b.cell]), 10),
+        convertTemperature(temperature),
+        getTemperatureLikeness(temperature),
+        b.capital ? "capital" : "",
+        b.port ? "port" : "",
+        b.citadel ? "citadel" : "",
+        b.walls ? "walls" : "",
+        b.plaza ? "plaza" : "",
+        b.temple ? "temple" : "",
+        b.shanty ? "shanty town" : "",
+        b.coa ? JSON.stringify(b.coa).replace(/"/g, "").replace(/,/g, ";") : "",
+        Burgs.getPreview(b).link,
+        Tags.format(b.tags)
+      ];
+    });
+  Csv.download("Burgs", headers, rows);
 }
 
 function triggerAllBurgsRemove(): void {
@@ -795,11 +782,9 @@ function triggerAllBurgsRemove(): void {
       b => b.i && !b.removed && !(b.capital || b.lock) && !pack.markets?.some(m => m.centerBurgId === b.i)
     );
   confirmationDialog({
-    title: `Remove ${removable().length} burgs`,
-    message: `
-        Are you sure you want to remove all <i>unlocked</i> burgs except for capitals and market centers?
-        <br><i>To remove a capital you have to remove its state first</i>`,
-    confirm: "Remove",
+    title: t("Remove burgs ({{burgs}})", { burgs: removable().length }),
+    message: `${t("Are you sure you want to remove all unlocked burgs except for capitals and market centers?")}<br><i>${t("To remove a capital you have to remove its state first")}</i>`,
+    confirm: t("Remove"),
     onConfirm: () => {
       for (const burg of removable()) {
         Burgs.remove(burg.i);
@@ -824,6 +809,60 @@ function toggleLockAll(): void {
 function updateLockAllIcon(): void {
   const allLocked = pack.burgs.every(({ lock, i, removed }) => lock || !i || removed);
   ensureEl("burgsLockAll").className = allLocked ? "icon-lock-open" : "icon-lock";
+}
+
+const BUILDING_COLUMNS = [
+  ["Citadel", "citadel"],
+  ["Walls", "walls"],
+  ["Plaza", "plaza"],
+  ["Temple", "temple"],
+  ["Shanty Town", "shanty"]
+] as const;
+
+/** Update existing burgs from a CSV in the export format; a blank building or port cell removes it */
+async function uploadBurgsCsv(text: string): Promise<void> {
+  const { scale, urbanization } = options.map.units.population;
+  const find = (id: number) => (id && pack.burgs[id] && !pack.burgs[id].removed ? pack.burgs[id] : undefined);
+  // other rows and this row's own edits change these, so compare with the values as downloaded
+  const burgs = pack.burgs.filter(burg => burg?.i && !burg.removed);
+  const capitals = new Set(burgs.filter(burg => burg.capital).map(burg => burg.i));
+  const links = new Map(burgs.map(burg => [burg.i, Burgs.getPreview(burg).link]));
+  const updated = await Controllers.CsvUpload.update(
+    text,
+    CSV_COLUMNS,
+    { find, units: ["Elevation"], text: ["Burg", "Tags"] },
+    (id, row) => {
+      const burg = find(id)!;
+      row.apply("Burg", name => Burgs.rename(id, name), burg.name);
+      row.apply(
+        "Culture",
+        name => Burgs.setCulture(id, Csv.byName(pack.cultures, name).i),
+        pack.cultures[burg.culture!]?.name
+      );
+      row.apply("Group", group => Burgs.setGroup(id, group), burg.group);
+      row.apply("Type", type => Burgs.setType(id, type), burg.type);
+      row.apply(
+        "Population",
+        people => Burgs.setPopulation(id, +people),
+        rn(burg.population! * scale * urbanization.rate)
+      );
+      row.apply("Treasury", amount => Burgs.setTreasury(id, +amount), rn(burg.treasury || 0, 2));
+      row.apply("Capital", () => Burgs.setCapital(id), capitals.has(id) ? "capital" : "");
+      row.assign("Port", port => Burgs.setPort(id, Boolean(port)), burg.port ? "port" : "");
+      for (const [column, building] of BUILDING_COLUMNS)
+        row.assign(
+          column,
+          present => Burgs.setBuilding(id, building, Boolean(present)),
+          burg[building] ? column.toLowerCase() : ""
+        );
+      row.apply("Preview link", url => Burgs.setLink(id, url), links.get(id));
+      row.assign("Tags", tags => Tags.set(burg, tags), Tags.format(burg.tags));
+    }
+  );
+  if (!updated) return;
+
+  Layers.draw("burgIcons", "labels", "emblems", "population");
+  refreshBurgsEditor();
 }
 
 export const BurgsOverview = { open, showChart: showBurgsChart, exportCsv: downloadBurgsData };

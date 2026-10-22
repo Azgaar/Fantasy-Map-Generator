@@ -1,15 +1,21 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ open: vi.fn(), save: vi.fn(), getLayer: vi.fn() }));
+const mocks = vi.hoisted(() => ({ open: vi.fn(), save: vi.fn(), getLayer: vi.fn(), edit: vi.fn(), zoom: vi.fn() }));
 vi.mock("@/components/options/options-panel", () => ({ hideOptions: vi.fn() }));
-vi.mock("@/controllers", () => ({ Controllers: { Omnibar: { open: mocks.open } } }));
+vi.mock("@/controllers", () => ({
+  Controllers: {
+    Omnibar: { open: mocks.open },
+    StatesEditor: { open: mocks.edit },
+    MarkerCreator: { toggle: mocks.edit }
+  }
+}));
 vi.mock("@/services", () => ({ Services: { Save: { toMachine: mocks.save } } }));
 vi.mock("@/services/autosave", () => ({ toggleSaveReminder: vi.fn() }));
 vi.mock("./app-info", () => ({ showInfo: vi.fn() }));
 vi.mock("./dialog/dialog-helpers", () => ({ closeDialogs: vi.fn() }));
 vi.mock("./options/tabs/layers-tab", () => ({ getLayerByShortcut: mocks.getLayer }));
-vi.mock("./zoom", () => ({ changeMapZoom: vi.fn(), panMap: vi.fn(), setMapZoom: vi.fn() }));
+vi.mock("./zoom", () => ({ changeMapZoom: vi.fn(), panMap: vi.fn(), setMapZoom: mocks.zoom }));
 
 import "./hotkeys";
 
@@ -32,6 +38,9 @@ beforeEach(() => {
   mocks.open.mockClear();
   mocks.save.mockClear();
   mocks.getLayer.mockClear();
+  mocks.edit.mockClear();
+  mocks.zoom.mockClear();
+  globalThis.options = { map: {} } as typeof options;
 });
 
 describe("save shortcut", () => {
@@ -48,7 +57,7 @@ describe("save shortcut", () => {
     expect(mocks.getLayer).not.toHaveBeenCalled();
   });
 
-  it.each(["ctrlKey", "metaKey"])("uses Save As for %s + Shift + S", modifier => {
+  it.each(["ctrlKey", "metaKey"])("overwrites the saved file for %s + Shift + S", modifier => {
     press(document.body, "KeyS", "S", { [modifier]: true, shiftKey: true });
     expect(mocks.save).toHaveBeenCalledExactlyOnceWith(true);
     expect(mocks.getLayer).not.toHaveBeenCalled();
@@ -89,5 +98,26 @@ describe("Space opens the search", () => {
     const { keydown } = press(field, "Space", " ");
     expect(keydown.defaultPrevented).toBe(false);
     expect(mocks.open).not.toHaveBeenCalled();
+  });
+});
+
+describe("a view-only map", () => {
+  beforeEach(() => (options.map.viewOnly = true));
+
+  it("ignores editor hotkeys", () => {
+    press(document.body, "KeyS", "S", { shiftKey: true });
+    expect(mocks.edit).not.toHaveBeenCalled();
+  });
+
+  it("ignores creator hotkeys on layouts where they need no Shift", () => {
+    press(document.body, "Backslash", "#"); // German QWERTZ
+    expect(mocks.edit).not.toHaveBeenCalled();
+  });
+
+  it("keeps the browsing keys", () => {
+    press(document.body, "Space", " ");
+    press(document.body, "Digit3", "3");
+    expect(mocks.open).toHaveBeenCalledOnce();
+    expect(mocks.zoom).toHaveBeenCalledExactlyOnceWith(3);
   });
 });

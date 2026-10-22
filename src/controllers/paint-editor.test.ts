@@ -360,4 +360,26 @@ describe("PaintEditor", () => {
     PaintEditor.open(getOptions());
     expect((document.getElementById("paintEditorBrush") as HTMLInputElement).getAttribute("value")).toBe("12");
   });
+
+  it("protects locked elements from being overwritten", async () => {
+    const onApply = vi.fn();
+    PaintEditor.open(
+      getOptions({
+        items: [
+          { id: 1, name: "State 1", color: "#111111", lock: true },
+          { id: 2, name: "State 2", color: "#222222" }
+        ],
+        getValue: () => 1,
+        onApply
+      })
+    );
+    const itemSelect = document.getElementById("paintEditorSelect") as HTMLSelectElement;
+    itemSelect.value = "2";
+    itemSelect.dispatchEvent(new Event("change"));
+
+    await dragBrush();
+    document.getElementById("paintEditorApply")?.click();
+    const changes = onApply.mock.calls[0][0] as ReadonlyMap<number, number>;
+    expect(changes.size).toBe(0);
+  });
 });

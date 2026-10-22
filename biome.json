@@ -45,6 +45,12 @@
       }
     }
   },
+  "overrides": [
+    {
+      "includes": ["**", "!src/e2e/**"],
+      "linter": { "rules": { "correctness": { "usePlaywrightValidDescribeCallback": "off" } } }
+    }
+  ],
   "javascript": {
     "formatter": {
       "quoteStyle": "double",

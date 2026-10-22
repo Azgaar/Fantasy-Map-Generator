@@ -52,6 +52,7 @@ export interface Burg {
   market?: number;
   label?: Label;
   note?: string;
+  tags?: string[];
 }
 
 // A burg that could become a port on a given water body.
@@ -121,6 +122,7 @@ class BurgModule {
         burg.name = Names.getCultureShort(burg.culture);
         burg.feature = cells.f[burg.cell];
         burg.capital = 1;
+        burg.tags = [];
         cells.burg[burg.cell] = burgId;
       });
     };
@@ -155,7 +157,8 @@ class BurgModule {
             culture,
             name,
             feature,
-            capital: 0
+            capital: 0,
+            tags: []
           });
           added++;
           cells.burg[cell] = burgId;
@@ -793,7 +796,8 @@ class BurgModule {
       name: Names.getCulture(culture),
       feature: cells.f[cellId],
       capital: 0,
-      port: 0
+      port: 0,
+      tags: []
     };
     this.definePopulation(burg);
     this.defineEmblem(burg);

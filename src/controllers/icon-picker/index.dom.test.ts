@@ -189,7 +189,7 @@ test("removing tells how many slots use the icon, and removes it once confirmed"
   vi.spyOn(Icons, "uses").mockReturnValue({ marker: 12, good: 1 });
   const { dialog } = open("custom-1a2b3c4d");
   dialog.querySelector<HTMLElement>('.currentActions [data-action="remove"]')!.click();
-  expect(document.getElementById("alertMessage")!.textContent).toContain("12 markers, 1 good");
+  expect(document.getElementById("alertMessage")!.textContent).toContain("markers (12), goods (1)");
   confirm.onConfirm?.();
   expect(CustomIcons.all).toEqual([]);
   expect(dialog.querySelector(".panel [data-icon]")).toBeNull();

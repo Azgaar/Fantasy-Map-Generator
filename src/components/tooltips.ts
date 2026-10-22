@@ -1,5 +1,6 @@
 import { isMobile } from "@/services/platform";
 import { debounce, ensureEl, findEl } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 
 type TipType = "info" | "success" | "warn" | "error";
 
@@ -66,7 +67,15 @@ export function showDataTip(event: Event): void {
   if (!dataTip) return;
 
   const shortcut = target.dataset.shortcut;
-  if (shortcut && !isMobile()) dataTip += `. Shortcut: ${shortcut}`;
+  if (shortcut && !isMobile()) dataTip = sentences(dataTip, `${t("Shortcut")}: ${shortcut}`);
+
+  const isRemove =
+    target.dataset.col === "remove" ||
+    parent?.dataset?.col === "remove" ||
+    target.classList.contains("icon-trash-empty") ||
+    target.classList.contains("fastDelete");
+  const removeHint = t("Shift+Click to remove without confirmation");
+  if (isRemove && !isMobile() && !dataTip.includes(removeHint)) dataTip = sentences(dataTip, removeHint);
 
   tip(dataTip);
 }
@@ -75,8 +84,8 @@ export function showElementLockTip(event: Event): void {
   const locked = (event.target as HTMLElement | null)?.classList?.contains("icon-lock");
   tip(
     locked
-      ? "Locked. Click to unlock the element and allow it to be changed by regeneration tools"
-      : "Unlocked. Click to lock the element and prevent changes to it by regeneration tools"
+      ? t("Locked. Click to unlock the element and allow it to be changed by regeneration tools")
+      : t("Unlocked. Click to lock the element and prevent changes to it by regeneration tools")
   );
 }
 

@@ -1,5 +1,6 @@
 // Layer presets: named sets of layers the user can switch between, stored in localStorage
 import { ensureEl } from "@/utils";
+import { t } from "@/utils/i18n";
 import { confirmationDialog } from "./dialog/dialog-helpers";
 import { type LayerId, Layers } from "./layers";
 import { LAYER_TOGGLES } from "./options/tabs/layers-tab";
@@ -120,9 +121,9 @@ export function applyPreset(name: string): void {
 
 export function savePreset(): void {
   confirmationDialog({
-    title: "Save layer preset",
-    message: /*html*/ `<label>Preset name: <input id="layersPresetName" type="text" autocomplete="off" /></label>`,
-    confirm: "Save",
+    title: t("Save Layers Preset"),
+    message: /*html*/ `<label>${t("Preset name")}: <input id="layersPresetName" type="text" autocomplete="off" /></label>`,
+    confirm: t("Save"),
     onConfirm: () => {
       const name = ensureEl<HTMLInputElement>("layersPresetName").value.trim();
       if (!name) return;

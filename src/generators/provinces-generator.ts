@@ -33,6 +33,7 @@ export interface Province {
   urban?: number;
   burgs?: number[];
   note?: string;
+  tags?: string[];
 }
 
 class ProvinceModule {
@@ -76,12 +77,12 @@ class ProvinceModule {
     }
   };
 
-  regenerate(regenerateNames = true): void {
-    this.generate(true, regenerateNames);
+  regenerate(regenerateLockedStates = true, stateIds?: number[]): void {
+    this.generate(true, regenerateLockedStates, stateIds);
     this.getPoles();
   }
 
-  generate(regenerate = false, regenerateLockedStates = false) {
+  generate(regenerate = false, regenerateLockedStates = false, stateIds?: number[]) {
     const localSeed = regenerate ? generateSeed() : options.map.seed;
     Math.random = Alea(localSeed);
 
@@ -89,8 +90,9 @@ class ProvinceModule {
     const provinces: Province[] = [0 as unknown as Province]; // 0 index is reserved for "no province"
     const provinceIds = new Uint16Array(cells.i.length);
 
-    const isProvinceLocked = (province: Province) =>
-      province.lock || (!regenerateLockedStates && states[province.state]?.lock);
+    const isStateKept = (stateId: number) =>
+      (stateIds && !stateIds.includes(stateId)) || (!regenerateLockedStates && states[stateId]?.lock);
+    const isProvinceLocked = (province: Province) => province.lock || isStateKept(province.state);
     const isProvinceCellLocked = (cell: number) => provinceIds[cell] && isProvinceLocked(provinces[provinceIds[cell]]);
 
     if (regenerate) {
@@ -103,6 +105,7 @@ class ProvinceModule {
         }
 
         province.i = newId;
+        province.tags ??= [];
         provinces.push(province);
       });
     }
@@ -115,7 +118,7 @@ class ProvinceModule {
       s.provinces = [];
       if (!s.i || s.removed) return;
       if (provinces.length) s.provinces = provinces.filter(p => p.state === s.i).map(p => p.i); // locked provinces ids
-      if (s.lock && !regenerateLockedStates) return; // don't regenerate provinces of a locked state
+      if (isStateKept(s.i)) return;
 
       const stateBurgs = burgs
         .filter(b => b.state === s.i && !b.removed && !provinceIds[b.cell]) // burgs in this state without province assigned
@@ -153,7 +156,8 @@ class ProvinceModule {
           formName,
           fullName,
           color,
-          coa
+          coa,
+          tags: []
         });
       }
     });
@@ -214,8 +218,7 @@ class ProvinceModule {
     // add "wild" provinces if some cells don't have a province assigned
     const noProvince = Array.from(cells.i).filter(i => cells.state[i] && !provinceIds[i]); // cells without province assigned
     states.forEach(s => {
-      if (!s.i || s.removed) return;
-      if (s.lock && !regenerateLockedStates) return;
+      if (!s.i || s.removed || isStateKept(s.i)) return;
       if (!s.provinces?.length) return;
 
       const coreProvinceNames = s.provinces.map(p => provinces[p]?.name);
@@ -301,7 +304,8 @@ class ProvinceModule {
           formName,
           fullName,
           color,
-          coa
+          coa,
+          tags: []
         });
         s.provinces.push(provinceId);
 
@@ -421,7 +425,7 @@ class ProvinceModule {
     );
     coa.shield = Emblems.getShield(culture, state);
     const color = getMixedColor(states[state].color!, 0.2, 0);
-    provinces.push({ i, state, center, burg, name, formName, fullName: `${name} ${formName}`, color, coa });
+    provinces.push({ i, state, center, burg, name, formName, fullName: `${name} ${formName}`, color, coa, tags: [] });
     states[state].provinces = [...(states[state].provinces ?? []), i];
 
     cells.province[center] = i;

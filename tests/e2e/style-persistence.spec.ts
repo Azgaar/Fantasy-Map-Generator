@@ -76,7 +76,7 @@ test.describe("style persistence round trips", () => {
       option: options.map.style.preset,
       label: document.getElementById("stylePreset")!.textContent
     }));
-    expect(preset).toEqual({ option: "ancient", label: "ancient" });
+    expect(preset).toEqual({ option: "ancient", label: "Ancient" });
   });
 
   test("a legacy map's preset name is migrated out of the pipe string and into the options", async ({
@@ -101,7 +101,7 @@ test.describe("style persistence round trips", () => {
       option: options.map.style.preset,
       label: document.getElementById("stylePreset")!.textContent
     }));
-    expect(preset).toEqual({ option: "cyberpunk", label: "cyberpunk" });
+    expect(preset).toEqual({ option: "cyberpunk", label: "Cyberpunk" });
   });
 
   test("an unavailable custom preset name survives a load", async ({ page, context }) => {
@@ -119,7 +119,7 @@ test.describe("style persistence round trips", () => {
       option: options.map.style.preset,
       label: document.getElementById("stylePreset")!.textContent
     }));
-    expect(preset).toEqual({ option: "custom-from-another-browser", label: "default" });
+    expect(preset).toEqual({ option: "custom-from-another-browser", label: "Default" });
   });
 
   test("a DOM-only style write does not survive a save and load: the store is the authority", async ({

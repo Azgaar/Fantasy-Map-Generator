@@ -1,12 +1,14 @@
 import { drag, type Selection, select } from "d3";
-import { closeDialogs, destroyDialog, noteButton } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, confirmationDialog, destroyDialog, noteButton } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
+import { Tags } from "@/generators/tags";
 import type { Point } from "@/generators/voronoi";
 import { redrawRiver as redrawRiverShape, setEditedRiver } from "@/renderers/draw-rivers";
 import { speak } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl, getPointer, getSegmentId, rand, rn } from "../utils";
 
 let selectedRiver: Selection<SVGElement, unknown, HTMLElement, unknown>;
@@ -26,7 +28,12 @@ function open(id: string): void {
   selectedRiver = select<SVGElement, unknown>(`#${id}`).on("click", addControlPoint);
 
   tip(
-    "Drag control points to change the river course. Click on point to remove it. Click on river to add additional control point. For major changes please create a new river instead",
+    sentences(
+      t("Drag control points to change the river course"),
+      t("Click on point to remove it"),
+      t("Click on river to add additional control point"),
+      t("For major changes please create a new river instead")
+    ),
     true
   );
   select("#debug").append("g").attr("id", "controlCells");
@@ -43,7 +50,7 @@ function open(id: string): void {
   drawCells(cells);
 
   $("#riverEditor").dialog({
-    title: "Edit River",
+    title: t("Edit River"),
     resizable: false,
     position: { my: "left top", at: "left+10 top+10", of: "#map" },
     close: closeRiverEditor
@@ -56,51 +63,60 @@ function renderDialog(): void {
   const html = /* html */ `<div id="riverEditor" class="dialog">
     <div id="riverBody" style="padding-bottom: 0.3em">
       <div>
-        <div class="label" style="width: 4.8em">Name:</div>
-        <span id="riverNameCulture" data-tip="Generate culture-specific name for the river" class="icon-book pointer"></span>
-        <span id="riverNameRandom" data-tip="Generate random name for the river" class="icon-globe pointer"></span>
-        <input id="riverName" data-tip="Type to rename the river" autocorrect="off" spellcheck="false" />
-        <span id="riverNameSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <div class="label" style="width: 4.8em">${t("Name")}:</div>
+        <span id="riverNameCulture" data-tip="${t("Generate culture-specific name")}" class="icon-book pointer"></span>
+        <span id="riverNameRandom" data-tip="${t("Generate random name")}" class="icon-globe pointer"></span>
+        <input id="riverName" data-tip="${t("Type to rename")}" autocorrect="off" spellcheck="false" />
+        <span id="riverNameSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
       </div>
-      <div data-tip="Type to change river type (e.g. fork, creek, river, brook, stream)">
-        <div class="label">Type:</div>
+      <div data-tip="${t("Type to change river type (e.g. fork, creek, river, brook, stream)")}">
+        <div class="label">${t("Type")}:</div>
         <input id="riverType" autocorrect="off" spellcheck="false" />
       </div>
-      <div data-tip="Select parent river">
-        <div class="label">Mainstem:</div>
+      <div data-tip="${t("River tags (comma-separated)")}">
+        <div class="label">${t("Tags")}:</div>
+        <input
+          id="riverTags"
+          placeholder="${t("Tags")}"
+          autocorrect="off"
+          spellcheck="false"
+        />
+      </div>
+      <div data-tip="${t("Select parent river")}">
+        <div class="label">${t("Mainstem")}:</div>
         <select id="riverMainstem"></select>
       </div>
-      <div data-tip="River drainage basin (watershed)">
-        <div class="label">Basin:</div>
+      <div data-tip="${t("River drainage basin (watershed)")}">
+        <div class="label">${t("Basin")}:</div>
         <input id="riverBasin" disabled />
       </div>
-      <div data-tip="River discharge (flux power)">
-        <div class="label">Discharge:</div>
+      <div data-tip="${t("River discharge (flux power)")}">
+        <div class="label">${t("Discharge")}:</div>
         <input id="riverDischarge" disabled />
       </div>
-      <div data-tip="River length in selected units">
-        <div class="label">Length:</div>
+      <div data-tip="${t("River length in selected units")}">
+        <div class="label">${t("Length")}:</div>
         <input id="riverLength" disabled />
       </div>
-      <div data-tip="River mouth width in selected units">
-        <div class="label">Mouth width:</div>
+      <div data-tip="${t("River mouth width in selected units")}">
+        <div class="label">${t("Mouth width")}:</div>
         <input id="riverWidth" disabled />
       </div>
-      <div data-tip="River source additional width. Default value is 0">
-        <div class="label">Source width:</div>
+      <div data-tip="${t("River source additional width. Default value is 0")}">
+        <div class="label">${t("Source width")}:</div>
         <input id="riverSourceWidth" type="number" min="0" max="3" step=".01" />
       </div>
-      <div data-tip="River width multiplier. Default value is 1">
-        <div class="label">Width modifier:</div>
+      <div data-tip="${t("River width multiplier. Default value is 1")}">
+        <div class="label">${t("Width modifier")}:</div>
         <input id="riverWidthFactor" type="number" min=".1" max="4" step=".1" />
       </div>
     </div>
     <div id="riverBottom">
-      <button id="riverCreateSelectingCells" data-tip="Create a new river selecting river cells" class="icon-map-pin"></button>
-      <button id="riverEditStyle" data-tip="Edit style for all rivers in Style Editor" class="icon-brush"></button>
-      <button id="riverElevationProfile" data-tip="Show the elevation profile for the river" class="icon-chart-area"></button>
-      ${noteButton("riverLegend", "this river")}
-      <button id="riverRemove" data-tip="Remove river" data-shortcut="Delete" class="icon-trash fastDelete"></button>
+      <button id="riverCreateSelectingCells" data-tip="${t("Create a new river selecting river cells")}" class="icon-map-pin"></button>
+      <button id="riverEditStyle" data-tip="${t("Edit style in Style Editor")}" class="icon-brush"></button>
+      <button id="riverElevationProfile" data-tip="${t("Elevation profile")}" class="icon-chart-area"></button>
+      ${noteButton("riverLegend", t("Edit free text notes (legend)"))}
+      <button id="riverRemove" data-tip="${t("Remove")}" data-shortcut="Delete" class="icon-trash fastDelete"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -114,6 +130,7 @@ function renderDialog(): void {
   ensureEl("riverName").addEventListener("input", changeName);
   ensureEl("riverNameSpeak").addEventListener("click", () => speak(ensureEl<HTMLInputElement>("riverName").value));
   ensureEl("riverType").addEventListener("input", changeType);
+  ensureEl("riverTags").addEventListener("change", changeTags);
   ensureEl("riverNameCulture").addEventListener("click", generateNameCulture);
   ensureEl("riverNameRandom").addEventListener("click", generateNameRandom);
   ensureEl("riverMainstem").addEventListener("change", changeParent);
@@ -139,6 +156,7 @@ function updateRiverData(): void {
 
   ensureEl<HTMLInputElement>("riverName").value = r.name;
   ensureEl<HTMLInputElement>("riverType").value = r.type;
+  ensureEl<HTMLInputElement>("riverTags").value = Tags.format(r.tags);
 
   const parentSelect = ensureEl<HTMLSelectElement>("riverMainstem");
   parentSelect.options.length = 0;
@@ -272,6 +290,13 @@ function changeType(this: HTMLInputElement): void {
   Layers.draw("labels");
 }
 
+function changeTags(this: HTMLInputElement): void {
+  const river = getRiver();
+  if (!river) return;
+  Tags.set(river, this.value);
+  this.value = Tags.format(river.tags);
+}
+
 function generateNameCulture(): void {
   const river = getRiver();
   const name = Rivers.getName(river.mouth);
@@ -325,22 +350,16 @@ function editRiverLegend(): void {
 }
 
 function removeRiver(): void {
-  alertMessage.innerHTML = "Are you sure you want to remove the river and all its tributaries";
-  $("#alert").dialog({
-    resizable: false,
+  confirmationDialog({
+    title: t("Remove"),
+    message: t("Are you sure you want to remove the river? All tributaries will be auto-removed"),
+    confirm: t("Remove"),
     width: "22em",
-    title: "Remove river and tributaries",
-    buttons: {
-      Remove: function (this: any) {
-        $(this).dialog("close");
-        const river = +selectedRiver.attr("id").slice(5);
-        Rivers.remove(river);
-        $("#riverEditor").dialog("close");
-        Layers.draw("rivers", "labels");
-      },
-      Cancel: function (this: any) {
-        $(this).dialog("close");
-      }
+    onConfirm: () => {
+      const river = +selectedRiver.attr("id").slice(5);
+      Rivers.remove(river);
+      $("#riverEditor").dialog("close");
+      Layers.draw("rivers", "labels");
     }
   });
 }

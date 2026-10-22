@@ -12,9 +12,9 @@ import { Layers } from "@/components/layers";
 import { Styles } from "@/generators/styles";
 import * as versioning from "@/services/versioning";
 import { VERSION } from "@/services/versioning";
-import { downloadFile } from "@/utils";
 import { safeParseJSON } from "@/utils/stringUtils";
 import { migrateLegacySettings, resolveVersionConflicts } from "./auto-update";
+import { Csv } from "./csv";
 
 beforeEach(() => {
   document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox"></g></svg>`;
@@ -738,10 +738,7 @@ describe("missing svg defs", () => {
 });
 
 vi.mock("@/components/dialog/dialog-helpers", () => ({ confirmationDialog: vi.fn(), destroyDialog: vi.fn() }));
-vi.mock("@/utils", async importOriginal => ({
-  ...(await importOriginal<typeof import("@/utils")>()),
-  downloadFile: vi.fn()
-}));
+vi.mock("./csv", () => ({ Csv: { download: vi.fn() } }));
 
 describe("v1.152.0 notes moved onto entities", () => {
   async function migrate(notes: object[], versions = ["1.152.0"]) {
@@ -760,7 +757,7 @@ describe("v1.152.0 notes moved onto entities", () => {
 
   beforeEach(() => {
     vi.mocked(confirmationDialog).mockClear();
-    vi.mocked(downloadFile).mockClear();
+    vi.mocked(Csv.download).mockClear();
     globalThis.pack = {
       burgs: [0, { i: 1, name: "Vaeltown" }],
       states: [
@@ -850,9 +847,13 @@ describe("v1.152.0 notes moved onto entities", () => {
     ]);
     expect(confirmationDialog).toHaveBeenCalledOnce();
     const [dialog] = vi.mocked(confirmationDialog).mock.calls[0];
-    expect(dialog.message).toContain("1 note(s)");
+    expect(dialog.message).toContain("cannot be kept: 1");
     dialog.onConfirm?.();
-    expect(vi.mocked(downloadFile).mock.calls[0][0]).toBe('id,name,note\n"road0","Lost Road","Lost lore"');
+    expect(Csv.download).toHaveBeenCalledWith(
+      "Unattached notes",
+      ["id", "name", "note"],
+      [["road0", "Lost Road", "Lost lore"]]
+    );
   });
 
   it("keeps a note title that differs from the entity name as a heading", async () => {
@@ -940,7 +941,7 @@ describe("v1.152.0 notes moved onto entities", () => {
 
       expect(data[4]).toBe("");
       expect(confirmationDialog).not.toHaveBeenCalled();
-      expect(downloadFile).not.toHaveBeenCalled();
+      expect(Csv.download).not.toHaveBeenCalled();
       expect(pack.states[1].military![0].note).toBeUndefined();
     }
   );
@@ -959,15 +960,12 @@ describe("v1.152.0 notes moved onto entities", () => {
     expect(confirmationDialog).toHaveBeenCalledOnce();
 
     const [dialog] = vi.mocked(confirmationDialog).mock.calls[0];
-    expect(dialog.message).toContain("2 note(s)");
+    expect(dialog.message).toContain("cannot be kept: 2");
 
     dialog.onConfirm?.();
-    const [csv, fileName] = vi.mocked(downloadFile).mock.calls[0];
-    expect(fileName).toContain(".csv");
-    expect(String(csv).split("\n")).toEqual([
-      "id,name,note",
-      '"burg99","Lost Town","dropped, with a ""quote"""',
-      '"someLegacyThing","Older still","dropped too"'
+    expect(vi.mocked(Csv.download).mock.calls[0][2]).toEqual([
+      ["burg99", "Lost Town", 'dropped, with a "quote"'],
+      ["someLegacyThing", "Older still", "dropped too"]
     ]);
   });
 });

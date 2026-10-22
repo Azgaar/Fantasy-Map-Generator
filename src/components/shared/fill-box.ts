@@ -1,5 +1,7 @@
 // <fill-box> — a small clickable swatch previewing a fill style (color or hatch)
+
 import { tip } from "@/components/tooltips";
+import { sentences, t } from "@/utils/i18n";
 
 const style = /* css */ `
   fill-box:not([disabled]) {
@@ -65,7 +67,7 @@ class FillBox extends HTMLElement {
   }
 
   get tip(): string {
-    return this.dataset.tip || "Fill style. Click to change";
+    return this.dataset.tip || sentences(t("Fill style"), t("Click to change"));
   }
 }
 

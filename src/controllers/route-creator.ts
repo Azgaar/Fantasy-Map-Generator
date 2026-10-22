@@ -6,6 +6,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { setTempRoute } from "@/renderers/draw-routes";
+import { t } from "@/utils/i18n";
 import { ensureEl, getPointer, minmax, rn } from "../utils";
 
 let creatorPoints: number[][] = [];
@@ -21,7 +22,7 @@ function open(defaultGroup?: string): void {
   isCellsLayerForced = !Layers.isOn("cells");
   Layers.show("cells");
 
-  tip("Click to add route point", true);
+  tip(t("Click to add route point"), true);
   select("#debug").append("g").attr("id", "controlCells");
   select("#debug").append("g").attr("id", "controlPoints");
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", onClick);
@@ -40,7 +41,7 @@ function open(defaultGroup?: string): void {
     .join("");
 
   $("#routeCreator").dialog({
-    title: "Create Route",
+    title: t("Create Route"),
     resizable: false,
     position: { my: "left top", at: "left+10 top+10", of: "#map" },
     close: closeRouteCreator
@@ -51,15 +52,15 @@ function renderDialog(): void {
   destroyDialog("routeCreator");
 
   const html = /* html */ `<div id="routeCreator" class="dialog">
-    <div>Click on map to add/remove route points</div>
+    <div>${t("Click on map to add/remove route points")}</div>
     <div id="routeCreatorBody" class="table" style="margin: 0.3em 0"></div>
     <div id="routeCreatorBottom">
-      <button id="routeCreatorComplete" data-tip="Complete route creation" class="icon-check"></button>
-      <button id="routeCreatorCancel" data-tip="Cancel the creation" class="icon-cancel"></button>
+      <button id="routeCreatorComplete" data-tip="${t("Complete route creation")}" class="icon-check"></button>
+      <button id="routeCreatorCancel" data-tip="${t("Cancel the creation")}" class="icon-cancel"></button>
       <div style="display: inline-block">
-        Group:
+        ${t("Group")}:
         <select id="routeCreatorGroupSelect"></select>
-        <span id="routeCreatorGroupEdit" data-tip="Edit route groups" class="icon-pencil pointer"></span>
+        <span id="routeCreatorGroupEdit" data-tip="${t("Edit route groups")}" class="icon-pencil pointer"></span>
       </div>
     </div>
   </div>`;
@@ -92,10 +93,10 @@ function onClick(this: any, event: any): void {
     `<div class="editorLine" style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 1em;" data-point="${point.join(
       "-"
     )}">
-      <span><b>Cell</b>: ${cellId}</span>
+      <span><b>${t("Cell")}</b>: ${cellId}</span>
       <span><b>X</b>: ${point[0]}</span>
       <span><b>Y</b>: ${point[1]}</span>
-      <span data-tip="Remove the point" class="icon-trash-empty pointer"></span>
+      <span data-tip="${t("Remove")}" class="icon-trash-empty pointer"></span>
     </div>`;
 }
 
@@ -130,7 +131,7 @@ function drawRoute(points: number[][]): void {
 function completeCreation(): void {
   const points = creatorPoints;
   if (points.length < 2) {
-    tip("Add at least 2 points", false, "error");
+    tip(t("Add at least 2 points"), false, "error");
     return;
   }
 

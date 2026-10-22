@@ -16,7 +16,7 @@ To edit a marker, click its icon. A small window with the marker properties appe
 The buttons at the bottom let you edit the legend, show all markers within a radius of this one, lock the marker so regeneration does not touch it, add another marker of the same type and remove the marker.
 
 ### Generation settings
-The _Markers Overview_ has a settings dialog listing every marker type with its icon, a **multiplier** and the current count on the map. Set a multiplier to 0 to stop a type from being generated, or raise it to get more of them. Some types (disturbed burials, rifts, portals) are only generated when a fantasy culture set is used, i.e. their default multiplier is 0 otherwise.
+The _Markers Overview_ and Tools -> Regenerate -> Markers open a settings dialog listing every marker type with its icon, a **multiplier** and the current count on the map. Set a multiplier to 0 to stop a type from being generated, or raise it to get more of them. Some types (disturbed burials, rifts, portals) are only generated when a fantasy culture set is used, i.e. their default multiplier is 0 otherwise.
 
 ## Special markers
 There are special markers for dungeons, which link to Watabou's one-page dungeon generator (https://watabou.itch.io/one-page-dungeon).  These special markers show a preview in the notes.  In the notes editor, click on the <> button to show the HTML code used for the preview.  You can use the same text to generate your own previews to dungeons.  The text is below:

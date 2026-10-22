@@ -26,6 +26,9 @@ const { stylesSchema } = await import("../src/generators/styles-schema.ts");
 rewrite(DEFAULTS, json => byElement(repairDefaults(json)));
 
 // importing the store module parses the defaults, so it loads only once they are repaired
+await import("../src/generators/relief-generator.ts");
+await import("../src/generators/burgs-generator.ts");
+await import("../src/generators/goods-generator.ts");
 const { Styles } = await import("../src/generators/styles.ts");
 const { normalizeStyles } = await import("../src/generators/styles-legacy.ts");
 for (const file of presets) rewrite(file, json => byElement(Styles.parse(normalizeStyles(json))));

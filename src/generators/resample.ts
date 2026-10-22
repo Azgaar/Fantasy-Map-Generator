@@ -453,8 +453,7 @@ class Resampler {
     const riversData = this.saveRiversData(pack.rivers);
 
     options.map.graph.points = getPointsNumber(options.generation.graph.density);
-    const { width, height } = options.map.graph;
-    grid = Grid.generate(options.map.seed, width, height);
+    grid = Grid.generate(options.map.seed);
     pack = {} as PackedGraph;
 
     this.resamplePrimaryGridData(parentMap, inverse, scale);

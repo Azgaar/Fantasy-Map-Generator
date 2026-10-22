@@ -1,13 +1,16 @@
 import type Quill from "quill";
-import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
+import { alertDialog, confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { ENTITY_TYPES, type EntityRef, MapEntities } from "@/components/map-entities";
 import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
 import { Controllers } from "@/controllers";
 import { type NoteEntry, Notes } from "@/generators/notes";
 import { highlightElement } from "@/renderers/overlays/highlight";
-import { downloadFile, getFileName, speak, uploadFile } from "@/utils";
-import { createFileInput, ensureEl, findEl } from "../utils";
+import { Csv } from "@/services/io/csv";
+import { speak } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
+import { errorText } from "@/utils/stringUtils";
+import { ensureEl, findEl } from "../utils";
 import {
   canEditAsRichText,
   createRichTextEditor,
@@ -20,7 +23,6 @@ import {
 let quill: Quill | null = null;
 let lastSelection: { index: number; length: number } | null = null;
 let windowed: { width: number; height: number; top: string; left: string } | null = null;
-let legendsInput: HTMLInputElement | null = null;
 
 /** Open the editor on the given entity, or on the first note when called with no reference */
 function open(ref?: EntityRef): void {
@@ -52,15 +54,16 @@ function open(ref?: EntityRef): void {
     showNote(selected);
   } else {
     ensureEl("notesName").textContent = "";
-    quill.root.dataset.placeholder =
-      "No notes yet. Click a burg, marker, state or other element on the map and add a note from its editor";
+    quill.root.dataset.placeholder = t(
+      "No notes yet. Click a burg, marker, state or other element on the map and add a note from its editor"
+    );
     quill.disable();
     lastSelection = null;
     window.dispatchEvent(new Event("notes:context-changed"));
   }
 
   $("#notesEditor").dialog({
-    title: "Notes Editor",
+    title: t("Notes Editor"),
     width: viewport.width * 0.8,
     height: viewport.height * 0.75,
     position: { my: "center", at: "center", of: "svg" },
@@ -162,23 +165,23 @@ function renderDialog(): void {
     ${STYLES}
     <div id="notesLayout">
       <div id="notesHead">
-        <strong>Element:</strong>
-        <select id="notesSelect" data-tip="Select the element the note belongs to"></select>
-        <strong id="notesName" data-tip="The element name, edited in the element's own editor"></strong>
-        <span id="notesNameSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <strong>${t("Element")}:</strong>
+        <select id="notesSelect" data-tip="${t("Select the element the note belongs to")}"></select>
+        <strong id="notesName" data-tip="${t("The element name, edited in the element's own editor")}"></strong>
+        <span id="notesNameSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
       </div>
       ${TOOLBAR_HTML}
       <div id="notesLegend"></div>
       <textarea id="notesSource" hidden spellcheck="false"></textarea>
       <div id="notesFooter">
-        <button id="notesFocus" data-tip="Focus on selected object" class="icon-target"></button>
-        <button id="notesGenerateWithAi" data-tip="Open Azgaar Assistant" class="icon-robot"></button>
-        <button id="notesPin" data-tip="Toggle notes box display: hide or do not hide the box on mouse move" class="icon-pin"></button>
-        <button id="notesSourceToggle" data-tip="Edit the note as HTML" class="icon-edit"></button>
-        <button id="notesFullscreen" data-tip="Toggle fullscreen" class="icon-resize-full"></button>
-        <button id="notesDownload" data-tip="Download notes to PC" class="icon-download"></button>
-        <button id="notesUpload" data-tip="Upload notes from PC" class="icon-upload"></button>
-        <button id="notesRemove" data-tip="Remove this note" class="icon-trash fastDelete"></button>
+        <button id="notesFocus" data-tip="${t("Focus on selected object")}" class="icon-target"></button>
+        <button id="notesGenerateWithAi" data-tip="${t("Azgaar Assistant")}" class="icon-robot"></button>
+        <button id="notesPin" data-tip="${t("Toggle notes box display: hide or do not hide the box on mouse move")}" class="icon-pin"></button>
+        <button id="notesSourceToggle" data-tip="${t("Edit the note as HTML")}" class="icon-edit"></button>
+        <button id="notesFullscreen" data-tip="${t("Toggle fullscreen")}" class="icon-resize-full"></button>
+        <button id="notesDownload" data-tip="${t("Download notes to PC")}" class="icon-download"></button>
+        <button id="notesUpload" data-tip="${t("Upload notes from PC")}" class="icon-upload"></button>
+        <button id="notesRemove" data-tip="${t("Remove")}" class="icon-trash fastDelete"></button>
       </div>
     </div>
   </div>`;
@@ -195,7 +198,7 @@ function renderDialog(): void {
   ensureEl("notesFocus").addEventListener("click", validateHighlightElement);
   ensureEl("notesGenerateWithAi").addEventListener("click", openAiGenerator);
   ensureEl("notesDownload").addEventListener("click", downloadLegends);
-  ensureEl("notesUpload").addEventListener("click", pickLegendsFile);
+  ensureEl("notesUpload").addEventListener("click", () => Csv.pick(uploadLegends, ".csv,.txt"));
   ensureEl("notesRemove").addEventListener("click", triggerNotesRemove);
 }
 
@@ -209,7 +212,7 @@ function closeNotesEditor(): void {
 
 function selectedRef(): EntityRef | undefined {
   const ref = MapEntities.parseKey(ensureEl<HTMLSelectElement>("notesSelect").value);
-  if (!ref) tip("Note element is not found", true, "error", 4000);
+  if (!ref) tip(t("Note element is not found"), true, "error", 4000);
   return ref;
 }
 
@@ -250,7 +253,7 @@ function toggleSourceMode(): void {
     setEditorHtml(quill, source.value);
     setSourceMode(false);
   } else {
-    tip("The note has markup the rich text editor cannot keep, so it stays in HTML mode", false, "error", 4000);
+    tip(t("The note has markup the rich text editor cannot keep, so it stays in HTML mode"), false, "error", 4000);
   }
 }
 
@@ -313,9 +316,9 @@ function validateHighlightElement(): void {
 
   if (!MapEntities.get(ref)) {
     confirmationDialog({
-      title: "Element not found",
-      message: "Note element is not found. Would you like to remove the note?",
-      confirm: "Remove",
+      title: t("Element not found"),
+      message: sentences(t("Note element is not found"), t("Would you like to remove the note?")),
+      confirm: t("Remove"),
       onConfirm: removeSelectedNote
     });
     return;
@@ -329,7 +332,7 @@ function validateHighlightElement(): void {
   const position = MapEntities.getPosition(ref);
   if (position) return void zoomTo(position[0], position[1], 8, 1600);
 
-  tip("This element is not drawn on the map on its own", false, "warn", 4000);
+  tip(t("This element is not drawn on the map on its own"), false, "warn", 4000);
 }
 
 function removeSelectedNote(): void {
@@ -351,104 +354,55 @@ function openAiGenerator(): void {
   Controllers.Assistant.open();
 }
 
-const CSV_HEADER = "type,id,note";
-
-function csvCell(value: string): string {
-  return `"${value.replaceAll('"', '""')}"`;
-}
-
 /** Notes are exchanged as csv addressed by entity, so an uploaded note always has an owner */
 function downloadLegends(): void {
   const rows = Notes.list().map(entry => {
     const id = entry.ref.sub === undefined ? String(entry.ref.id) : `${entry.ref.id}-${entry.ref.sub}`;
-    return [entry.ref.type, id, csvCell(entry.note)].join(",");
+    return [entry.ref.type, id, entry.note];
   });
-
-  downloadFile([CSV_HEADER, ...rows].join("\n"), `${getFileName("Notes")}.csv`);
+  Csv.download("Notes", ["type", "id", "note"], rows);
 }
 
-/** Own the legends file input here so repeat opens cannot stack listeners on a shared element */
-function pickLegendsFile(): void {
-  legendsInput ??= createFileInput(".txt");
-  legendsInput.onchange = () => uploadFile(legendsInput!, uploadLegends);
-  legendsInput.click();
-}
-
-function uploadLegends(dataLoaded: string): void {
-  const rows = parseCsv(dataLoaded);
-  if (!rows) {
-    tip("Cannot load the file. Please check the data format", false, "error");
+function uploadLegends(text: string): void {
+  let rows: string[][];
+  try {
+    rows = Csv.parse(text).filter(row => row.length >= 3 && row[0].trim() !== "type");
+  } catch (error) {
+    alertDialog({ message: errorText(error) });
+    return;
+  }
+  if (!rows.length) {
+    alertDialog({ message: sentences(t("Cannot load the file"), t("Please check the data format")) });
     return;
   }
 
   let applied = 0;
   let rejected = 0;
-  for (const [type, id, note] of rows) {
-    const ref = MapEntities.parseKey(`${type}:${id}`);
-    if (ref && Notes.set(ref, note)) applied++;
+  for (const [type, id, ...note] of rows) {
+    const ref = MapEntities.parseKey(`${type.trim()}:${id.trim()}`);
+    if (ref && Notes.set(ref, note.join(","))) applied++;
     else rejected++;
   }
 
   if (!applied) {
-    tip("No note matched an element on this map. Nothing was loaded", false, "error", 6000);
+    alertDialog({ message: t("No note matched an element on this map. Nothing was loaded") });
     return;
   }
 
-  const rejectedText = rejected ? `, ${rejected} skipped as their element is not on the map` : "";
-  tip(`Loaded ${applied} note(s)${rejectedText}`, true, "success", 6000);
+  const message = rejected
+    ? t("Loaded {{applied}} note(s), {{rejected}} skipped as their element is not on the map", { applied, rejected })
+    : t("Loaded {{applied}} note(s)", { applied });
+  tip(message, true, "success", 6000);
 
   const [first] = Notes.list();
   if (first) open(first.ref);
 }
 
-/** Minimal csv reader: three columns, the last one quoted and free to contain commas and newlines */
-function parseCsv(data: string): [string, string, string][] | null {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let cell = "";
-  let quoted = false;
-
-  for (let i = 0; i < data.length; i++) {
-    const char = data[i];
-
-    if (quoted) {
-      if (char !== '"') cell += char;
-      else if (data[i + 1] === '"') {
-        cell += '"';
-        i++;
-      } else quoted = false;
-      continue;
-    }
-
-    if (char === '"') quoted = true;
-    else if (char === ",") {
-      row.push(cell);
-      cell = "";
-    } else if (char === "\n" || char === "\r") {
-      if (char === "\r" && data[i + 1] === "\n") i++;
-      row.push(cell);
-      rows.push(row);
-      row = [];
-      cell = "";
-    } else cell += char;
-  }
-  row.push(cell);
-  if (row.length > 1 || row[0]) rows.push(row);
-
-  const parsed = rows
-    .filter(parsedRow => parsedRow.length >= 3 && parsedRow[0] !== "type")
-    .map(
-      parsedRow => [parsedRow[0].trim(), parsedRow[1].trim(), parsedRow.slice(2).join(",")] as [string, string, string]
-    );
-
-  return parsed.length ? parsed : null;
-}
-
 function triggerNotesRemove(): void {
   confirmationDialog({
-    title: "Remove note",
-    message: "Are you sure you want to remove the selected note? There is no way to undo this action",
-    confirm: "Remove",
+    title: t("Remove"),
+    message: t("Are you sure you want to remove the selected note? There is no way to undo this action"),
+    confirm: t("Remove"),
     onConfirm: removeSelectedNote
   });
 }
@@ -466,7 +420,7 @@ export interface Note {
 }
 
 function current(): Note | null {
-  if (!document.getElementById("notesEditor")) return null;
+  if (!findEl("notesEditor")) return null;
   const ref = selectedRef();
   if (!ref || !MapEntities.get(ref)) return null;
   return { id: MapEntities.key(ref), name: MapEntities.getName(ref), legend: Notes.get(ref) || "" };
@@ -474,7 +428,7 @@ function current(): Note | null {
 
 /** Show notes and names changed outside the editor, keeping the selected entity */
 function refresh(): void {
-  if (!document.getElementById("notesEditor")) return;
+  if (!findEl("notesEditor")) return;
   const select = ensureEl<HTMLSelectElement>("notesSelect");
   const selected = MapEntities.parseKey(select.value);
   fillSelect(select, Notes.list(), selected);
@@ -484,7 +438,7 @@ function refresh(): void {
 }
 
 function getSelectionHtml(): string | null {
-  if (!document.getElementById("notesEditor") || !quill) return null;
+  if (!findEl("notesEditor") || !quill) return null;
   const source = ensureEl<HTMLTextAreaElement>("notesSource");
   if (!source.hidden) return source.value.slice(source.selectionStart, source.selectionEnd) || null;
   const range = quill.getSelection() ?? lastSelection;

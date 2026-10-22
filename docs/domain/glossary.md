@@ -7,6 +7,10 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Map**: The generated world, including all terrain, features, and data layers.
 - **Cell**: The smallest unit of the map grid, representing a piece of land or water. Voronoi cell.
 - **Grid**: The underlying voronoi structure of cells that make up the map.
+- **Sampling**: The lattice the Grid points sit on: `square`, `hexPointy`, `hexFlat`, `diamond` or `triangle`. Every sampling stores its points in rows of `cellsX`, so code reading the Grid by rows and columns works on all of them. _Avoid_: grid type, layout
+- **Jitter**: How far a Grid point may move off its lattice position, from 0 (regular cells) to 0.9. The classic natural look is `square` sampling at 0.9.
+- **Lattice preset**: A named Sampling and Jitter pair in Advanced options (Default, Organic hexes, Hex board, Square board, Isometric board). Derived from the two values, never stored. _Avoid_: cell type
+- **Lattice slot**: The rectangle of the lattice a Grid point was placed in. On a jittered or offset lattice a position's slot can differ from the Cell it falls in.
 - **Pack**: The main data object containing all world data (cells, burgs, states, cultures, etc.), created after 'repacking' the grid to discard most of ocean cells and add more cells along the coasts.
 - **Layer**: A visual or logical overlay on the map (e.g., rivers, biomes, elevation).
 - **SVG Layer**: A named group of SVG elements for a specific map feature.
@@ -47,10 +51,12 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Regiment / Military**: The armed forces belonging to States or Burgs, represented by units.
 - **Good**: A resource or product (e.g., wood, iron, grain) with properties like value, demand, and recipes. Raw goods have a `distribution`; manufactured goods have `recipes`.
 - **Market**: A regional economic hub anchored at a burg. Owns per-good stock and price, mediates all flows between rural cells, burgs, and other markets.
-- **Deal**: A record of a single transaction in the trade/markets system (`{seller, sellerType, buyer, buyerType, good, units, price, tax?}`). Stored in `pack.deals` and consumed by the trade animation and trade details UI. The optional `tax` field carries the sales-tax amount in currency units credited to the seller's state treasury.
-- **Treasury**: Per-state accumulated balance in currency units. Fed each cycle by [[Sales Tax]] on deals where the seller belongs to the state and by [[Poll Tax]] on the state's population. Stored as `state.treasury`. Neutrals (state 0) keep treasury at 0.
+- **Deal**: A record of a single transaction in the trade/markets system (`{seller, sellerType, buyer, buyerType, good, units, price, tax?, tariff?}`). Stored in `pack.deals` and consumed by the trade animation and trade details UI. The optional `tax` field carries the sales-tax amount credited to the seller's state treasury. The optional `tariff` field carries the import-tariff amount credited to the buyer market's state treasury.
+- **Treasury**: Per-state accumulated balance in currency units. Fed each cycle by [[Sales Tax]] on deals where the seller belongs to the state, [[Tariff]] on foreign deals imported into the state's markets, and by [[Poll Tax]] on the state's population. Stored as `state.treasury`. Neutrals (state 0) keep treasury at 0.
 - **Sales Tax**: Per-state rate (`state.salesTax`, `0–1`) applied to deals where the state is the seller. For local sales (burg → market) it is deducted from burg revenue. For global trade (market → market) it is added to the importer's landed cost, so high-tax exporters become less competitive. Base rate per [[State Form]]: Monarchy 0.15, Theocracy 0.25, Union 0.07, Republic 0.05, Anarchy 0.
 - **Poll Tax**: Per-state flat fee (`state.pollTax`) levied per population point (rural + urban) once per cycle. Not deducted from any burg — it simply credits the state treasury, matching the frozen-cycle economy. Base rate per [[State Form]]: Monarchy 0.20, Theocracy 0.10, Union 0.13, Republic 0.15, Anarchy 0.
+- **Tariff**: Per-state policy (`state.tariffs: TariffRule[]`) applied to foreign goods imported into the state's markets in `Markets.runGlobalTrade()`. Increases landed cost and adds `deal.tariff = units × tariffPerUnit` to the buyer state's treasury. Seeded procedurally with a `0%` baseline for all states/goods, `0%` for allies, `20%` for suspicion, and `30%` for rivals.
+- **Embargo**: A trade sanction rule (`rate: "embargo"`) eliminating trade between two states for specific or all goods. Bidirected: if either state sets an embargo towards the other on a good, trade of that good between their markets is blocked in both directions. Seeded automatically between warring nations (`Enemy`).
 - **Trade Batch**: All deals sharing the same ordered `(seller burg, buyer burg)` endpoints, animated as one flow on the map.
 - **Demand Category**: One of `food | utilities | construction | military | luxury`, evaluated in `DEMAND_PRIORITY` order during production and demand fill.
 - **Namesbase**: A collection of linguistic rules, prefixes, and suffixes used to procedurally generate names for map entities.
@@ -85,7 +91,9 @@ This glossary covers core terminology, data structures, and concepts used throug
 - **Editor Tool**: Any interactive UI for editing map features (e.g., rivers-editor, provinces-editor).
 - **Overview Tool**: A summary UI for a particular system (e.g., production-overview, market-overview).
 - **Configurator**: A UI for setting up world generation parameters.
+- **Map context menu**: The right-click list of everything at a spot on the Map, across all Layers: what is drawn there, what its Cell holds and the territories it belongs to. Right-click on the map belongs to it alone. _Avoid_: popup, right-click menu
 - **Submap**: A tool to generate a new, more detailed map strictly from a selected area of the current map.
+- **UI language**: The language the interface is shown in (`options.app.language`, a browser preference applied after a reload). It never changes the Map: generated content stays English and the `.map` file is identical whatever it is. _Avoid_: locale, language (for the map's content)
 
 ## Azgaar Assistant
 

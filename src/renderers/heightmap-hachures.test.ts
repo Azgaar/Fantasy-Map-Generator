@@ -31,8 +31,11 @@ const params = (heights: number[], seed = "seed") => ({
   neighbors,
   triangles,
   spacing: SPACING,
-  cellsX: SIZE,
-  cellsY: SIZE,
+  findCell: (x: number, y: number) => {
+    const column = Math.floor(x / SPACING);
+    const row = Math.floor(y / SPACING);
+    return x < 0 || y < 0 || column >= SIZE || row >= SIZE ? -1 : row * SIZE + column;
+  },
   inBand: (h: number) => h >= 20,
   thresholds: [23, 26, 29, 32, 35, 38, 41, 44, 47, 50, 53, 56, 59, 62, 65, 68, 71, 74, 77, 80],
   density: 1,

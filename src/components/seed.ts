@@ -2,6 +2,7 @@
 import { alertDialog } from "@/components/dialog/dialog-helpers";
 import { Pins } from "@/components/pins";
 import { tip } from "@/components/tooltips";
+import { t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/nodeUtils";
 import { generateSeed } from "@/utils/probabilityUtils";
 
@@ -24,7 +25,7 @@ export function setSeed(precreatedSeed?: string): void {
 export function generateMapWithSeed(): void {
   const requested = ensureEl<HTMLInputElement>("seedInput").value;
   if (requested === options.map.seed) {
-    tip("The current map already has this seed", false, "error");
+    tip(t("The current map already has this seed"), false, "error");
     return;
   }
   regeneratePrompt({ seed: requested });
@@ -33,12 +34,22 @@ export function generateMapWithSeed(): void {
 export function showSeedHistoryDialog(): void {
   const lines = mapHistory.map((entry, index) => {
     const created = new Date(entry.created).toLocaleTimeString();
-    const button = /* html */ `<i data-tip="Click to generate a map with this seed" onclick="restoreSeed(${index})" class="icon-history optionsSeedRestore"></i>`;
-    return /* html */ `<li>Seed: ${entry.seed} ${button}. Size: ${entry.width}x${entry.height}. Template: ${entry.template}. Created: ${created}</li>`;
+    const button = /* html */ `<i data-tip="${t("Click to generate a map with this seed")}" onclick="restoreSeed(${index})" class="icon-history optionsSeedRestore"></i>`;
+    return /* html */ `<li>${t(
+      "Seed: {{seed}} {{- restore}}. Size: {{width}}x{{height}}. Template: {{template}}. Created: {{created}}",
+      {
+        seed: entry.seed,
+        restore: button,
+        width: entry.width,
+        height: entry.height,
+        template: entry.template,
+        created
+      }
+    )}</li>`;
   });
 
   alertDialog({
-    title: "Seed history",
+    title: t("Seed history"),
     message: /* html */ `<ol style="margin: 0; padding-left: 1.5em">${lines.join("")}</ol>`
   });
 }

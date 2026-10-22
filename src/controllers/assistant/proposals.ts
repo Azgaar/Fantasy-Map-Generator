@@ -8,6 +8,7 @@ import { effectAt } from "@/controllers/style-editor/effects";
 import { Styles } from "@/generators/styles";
 import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
 import type { ChangeRow, Proposal } from "@/services/assistant/chats";
+import { findEl } from "@/utils";
 import { getPath } from "@/utils/objectUtils";
 import { errorText } from "@/utils/stringUtils";
 import { Change, type Side } from "./change";
@@ -138,10 +139,10 @@ class ProposalLifecycle {
     this.refreshStyle(change.stylePaths);
     refreshEditors();
     for (const key of change.keys) this.refreshNameInputs(key);
-    if (document.getElementById("notesEditor")) void Controllers.NotesEditor.refresh();
+    if (findEl("notesEditor")) void Controllers.NotesEditor.refresh();
     if (change.keys.has(Change.LORE)) {
       Options.save();
-      if (document.getElementById("loreEditor")) void Controllers.LoreEditor.refresh();
+      if (findEl("loreEditor")) void Controllers.LoreEditor.refresh();
     }
   }
 
@@ -159,7 +160,7 @@ class ProposalLifecycle {
     }
     Layers.draw(...layers);
     if (zoom) invokeActiveZooming();
-    if (document.getElementById("styleForm")?.childElementCount) void Controllers.StyleEditor.refresh();
+    if (findEl("styleForm")?.childElementCount) void Controllers.StyleEditor.refresh();
   }
 
   /** Entity editors show the name in an input; update it only when that editor shows this entity */
@@ -169,15 +170,15 @@ class ProposalLifecycle {
     if (!ref || !entity) return;
     const value = entity.name ?? "";
     if (ref.type === "state" || ref.type === "province") {
-      const dialog = document.getElementById(`${ref.type}NameEditor`);
+      const dialog = findEl(`${ref.type}NameEditor`);
       if (dialog?.dataset[ref.type] !== String(ref.id)) return;
-      const short = document.getElementById(`${ref.type}NameEditorShort`) as HTMLInputElement | null;
-      const full = document.getElementById(`${ref.type}NameEditorFull`) as HTMLInputElement | null;
+      const short = findEl<HTMLInputElement>(`${ref.type}NameEditorShort`);
+      const full = findEl<HTMLInputElement>(`${ref.type}NameEditorFull`);
       if (short) short.value = value;
       if (full) full.value = entity.fullName ?? value;
     } else {
-      const dialog = document.getElementById(`${ref.type}Editor`);
-      const input = document.getElementById(`${ref.type}Name`) as HTMLInputElement | null;
+      const dialog = findEl(`${ref.type}Editor`);
+      const input = findEl<HTMLInputElement>(`${ref.type}Name`);
       if (dialog?.dataset.entity === key && input) input.value = value;
     }
   }

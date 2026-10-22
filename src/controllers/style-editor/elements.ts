@@ -4,6 +4,7 @@ import { layerLabel } from "@/data/layer-labels";
 import { stylesSchema } from "@/generators/styles-schema";
 import { getLabelsData } from "@/renderers/labels/label-data";
 import type { StyleElement } from "@/types/styles";
+import { t } from "@/utils/i18n";
 
 export function listElements(): { id: StyleElement; label: string }[] {
   return (Object.keys(stylesSchema.shape) as StyleElement[])
@@ -59,7 +60,7 @@ const GROUP_SOURCES: Partial<Record<StyleElement, () => GroupEntry[]>> = {
       .map(({ name }) => ({
         id: name,
         label: name,
-        count: `${all.get(name) ?? 0} burgs, ${ports.get(name) ?? 0} ports`
+        count: `${t("Burgs")}: ${all.get(name) ?? 0}, ${t("Ports")}: ${ports.get(name) ?? 0}`
       }));
   },
   routes: () => {

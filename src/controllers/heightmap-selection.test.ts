@@ -32,9 +32,9 @@ beforeAll(async () => {
   document.body.innerHTML = '<div id="dialogs"></div>';
   localStorage.clear();
   options = Options.getDefaultOptions();
-  options.map.graph = { width: 800, height: 600, points: 1000 };
-  options.generation.graph = { width: 800, height: 600, density: 1 };
-  globalThis.grid = Grid.generate("old", 800, 600);
+  options.map.graph = { width: 800, height: 600, points: 1000, sampling: "square", jitter: 0.9 };
+  options.generation.graph = { width: 800, height: 600, density: 1, sampling: "square", jitter: 0.9 };
+  globalThis.grid = Grid.generate("old");
   vi.stubGlobal("aleaPRNG", Alea);
   vi.stubGlobal("$", () => ({ dialog }));
   vi.stubGlobal("regeneratePrompt", regenerate);
@@ -52,13 +52,15 @@ afterAll(() => {
 });
 
 it.each([
-  { width: 1600, height: 900, density: 1, points: 1000 },
-  { width: 800, height: 600, density: 2, points: 2000 }
-])("builds the selected preview for $width × $height and $points points", async requested => {
-  options.map.graph = { width: 800, height: 600, points: 1000 };
-  globalThis.grid = Grid.generate("old", 800, 600);
+  { width: 1600, height: 900, density: 1, points: 1000, sampling: "square", jitter: 0.9 },
+  { width: 800, height: 600, density: 2, points: 2000, sampling: "square", jitter: 0.9 },
+  { width: 800, height: 600, density: 1, points: 1000, sampling: "hexPointy", jitter: 0 }
+] as const)("builds the selected preview for $width × $height, $points points on $sampling", async requested => {
+  const { width, height, density, points, sampling, jitter } = requested;
+  options.map.graph = { width: 800, height: 600, points: 1000, sampling: "square", jitter: 0.9 };
+  globalThis.grid = Grid.generate("old");
   const original = structuredClone(options.map);
-  options.generation.graph = requested;
+  options.generation.graph = { width, height, density, sampling, jitter };
   options.generation.template = "test";
   Pins.clear("points");
   selection.HeightmapSelection.open();
@@ -71,7 +73,8 @@ it.each([
   expect(config).toMatchObject({ width: requested.width, height: requested.height, points: requested.points });
 
   await generate(config);
-  expect(options.map.graph).toEqual({ width: requested.width, height: requested.height, points: requested.points });
+  expect(options.map.graph).toEqual({ width, height, points, sampling, jitter });
+  expect(grid.sampling).toBe(sampling);
   expect(grid.spacing).toBe(Math.round(Math.sqrt((requested.width * requested.height) / requested.points) * 100) / 100);
   expect(grid.points.some(([x]) => x > requested.width * 0.9)).toBe(true);
   const generated = grid.cells.h;

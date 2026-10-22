@@ -471,6 +471,12 @@ Static content: lookup tables, templates, tuning constants, reference lists.
   silently dropped field corrupts saves.
 - **Pure functions.** Serialization reads state and returns bytes; it owns no state of its
   own.
+- **Migrations are isolated and one-time.** Upgrading an older `.map` belongs only in
+  `src/services/io/auto-update.ts`, in the `isOlderThan("<version>")` block of the version that
+  changed the format. It runs once, on load of an older file; saving writes the current shape, so
+  the next load skips it. Code outside `auto-update` (the loader, generators, renderers, editors)
+  assumes the current shape: it never back-fills fields older maps lack, nor carries fallbacks for
+  them. When a format changes, add the migration block, not a guard in the code that reads the field.
 
 ## Services
 
@@ -485,6 +491,15 @@ Static content: lookup tables, templates, tuning constants, reference lists.
 - **IO is a service.** Save/load/export live in `src/services/io/`. Like controllers, each
   service/io module exports a single named object (`Save`, `Load`, `ExportMap`, …) reached
   through the `Services` registry (`Services.Save.toMachine()`).
+  CSV tables go through `Csv` (`services/io/csv.ts`): downloads quote every value that needs it,
+  uploads are parsed and checked there. An editor's upload is `Controllers.CsvUpload.update`
+  (`controllers/csv-upload.ts`, lazy like other dialogs) with the editor's column list (shared
+  with its download) and one model setter per column. It owns id checks, blank and unchanged cells and population splits,
+  runs the setters on a `World` draft for a modal preview the user confirms, then runs them on the
+  map; setters must therefore only change data, and the row callback reads its entity by id so it
+  gets the draft one. Values another row may change are compared with the map as it was before the
+  upload.
+  Downloads carry a UTF-8 BOM so spreadsheets keep accented and non-Latin names.
 - **Azgaar Assistant** lives in `src/controllers/assistant/`. `index.ts` is its one controller, for the panel, chat list, key sheet and transcript.
   `map.ts` is the open map as the Assistant sees it — one `AssistantMap` object with its id,
   per-question context and its map tools: `read_map`, `propose_change`, `view_emblem`, `view_map` and one `show_*` tool per

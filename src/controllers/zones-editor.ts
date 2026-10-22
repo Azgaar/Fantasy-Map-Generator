@@ -7,6 +7,7 @@ import {
   updateDialog
 } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
+import { dialogState } from "@/components/dialog/state";
 import {
   type EditorColumn,
   initColumnVisibility,
@@ -19,25 +20,36 @@ import { Layers } from "@/components/layers";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
+import { Tags } from "@/generators/tags";
 import type { Zone } from "@/generators/zones-generator";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { zonesFilter } from "@/renderers/draw-zones";
 import { fog, unfog } from "@/renderers/overlays/fogging";
-import { downloadFile, getArea, getAreaUnit, getFileName } from "@/utils";
+import { Csv } from "@/services/io/csv";
+import { findEl, getArea, getAreaUnit } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { errorText } from "@/utils/stringUtils";
 import { ensureEl, rn, si, unique } from "../utils";
 
 const dialogId = "zonesEditor" as const;
+const CSV_COLUMNS = ["Id", "Color", "Description", "Type", "Tags", "Cells", "Area", "Population"];
 const LEGEND_NAME = "Zones"; // the legend box this editor toggles
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+let filterState: { search: string };
 
 type ZoneRow = { zone: Zone; area: number; rural: number; urban: number; population: number };
 const columns: EditorColumn<ZoneRow>[] = [
-  { key: "description", label: "Description", width: "13em", permanent: true },
-  { key: "type", label: "Type", width: "7em" },
-  { key: "cells", label: "Cells", width: "5em" },
-  { key: "area", label: "Area", width: "7em" },
-  { key: "population", label: "Population", width: "6em" },
+  { key: "description", label: t("Description"), width: "13em", permanent: true },
+  { key: "type", label: t("Type"), width: "7em" },
+  { key: "cells", label: t("Cells"), width: "5em" },
+  { key: "area", label: t("Area"), width: "7em" },
+  { key: "population", label: t("Population"), width: "6em" },
+  {
+    key: "tags",
+    label: t("Tags"),
+    width: "10em",
+    hidden: true
+  },
   { key: "note", width: "1.1em" },
   { key: "reorder", width: "1.1em" },
   { key: "focus", width: "1.1em" },
@@ -50,12 +62,15 @@ function open(): void {
   closeDialogs("#zonesEditor, .stable");
   Layers.show("zones");
 
+  filterState = dialogState.get(dialogId, "filters", () => ({ search: "" }));
+  filterState.search ??= "";
+
   renderDialog();
   updateFilters();
   zonesTable.reset();
 
   $("#zonesEditor").dialog({
-    title: "Zones Editor",
+    title: t("Zones Editor"),
     resizable: false,
     close: closeZonesEditor,
     position
@@ -67,41 +82,47 @@ function renderDialog(): void {
   const editorHtml = /* html */ `<div id="zonesEditor" class="dialog stable editorDialog">
       ${renderEditorHeader({ dialogId, columns })}
       <div id="zonesBodySection" class="table" data-type="absolute"></div>
+      <div id="zonesFilters" class="editorFilters">
+        <label for="zonesSearch" data-tip="${t("Filter by description, type, or tag")}">
+          ${t("Search")}: <input id="zonesSearch" type="search" />
+        </label>
+        <label for="zonesFilterType" data-tip="${t("Show only zones of selected type")}">
+          ${t("Type")}: <select id="zonesFilterType"></select>
+        </label>
+      </div>
       <div id="zonesFooter" class="totalLine">
-        <div data-tip="Number of zones" style="margin-left: 5px">
-          Zones:&nbsp;<span id="zonesFooterNumber">0</span>
+        <div data-tip="${t("Number of zones")}" style="margin-left: 5px">
+          ${t("Zones")}:&nbsp;<span id="zonesFooterNumber">0</span>
         </div>
-        <div data-tip="Total cells number" style="margin-left: 12px">
-          Cells:&nbsp;<span id="zonesFooterCells">0</span>
+        <div data-tip="${t("Number of cells")}" style="margin-left: 12px">
+          ${t("Cells")}:&nbsp;<span id="zonesFooterCells">0</span>
         </div>
-        <div data-tip="Total map area" style="margin-left: 12px">Area:&nbsp;<span id="zonesFooterArea">0</span></div>
-        <div data-tip="Total map population" style="margin-left: 12px">
-          Population:&nbsp;<span id="zonesFooterPopulation">0</span>
+        <div data-tip="${t("Total map area")}" style="margin-left: 12px">${t("Area")}:&nbsp;<span id="zonesFooterArea">0</span></div>
+        <div data-tip="${t("Total map population")}" style="margin-left: 12px">
+          ${t("Population")}:&nbsp;<span id="zonesFooterPopulation">0</span>
         </div>
       </div>
       <div id="zonesBottom">
-        <button id="zonesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-        <button id="zonesEditStyle" data-tip="Edit zones style in Style Editor" class="icon-adjust"></button>
+        <button id="zonesEditorRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
+        <button id="zonesEditStyle" data-tip="${t("Edit style in Style Editor")}" class="icon-adjust"></button>
         <button
           id="zonesLegend"
-          data-tip="Toggle Legend box (shows all non-hidden zones)"
+          data-tip="${t("Toggle Legend box")}"
           class="icon-list-bullet"
         ></button>
         <button
           id="zonesPercentage"
-          data-tip="Toggle percentage / absolute values views"
+          data-tip="${t("Toggle percentage / absolute values views")}"
           class="icon-percent"
         ></button>
-        <button id="zonesManually" data-tip="Re-assign zones" class="icon-brush"></button>
-        <button id="zonesAdd" data-tip="Add new zone layer" class="icon-plus"></button>
-        <button id="zonesExport" data-tip="Download zones-related data" class="icon-download"></button>
-        <div id="zonesFilters" data-tip="Show only zones of selected type" style="display: inline-block">
-          Type:
-          <select id="zonesFilterType"></select>
-        </div>
+        <button id="zonesManually" data-tip="${t("Re-assign zones")}" class="icon-brush"></button>
+        <button id="zonesAdd" data-tip="${t("Add")}" class="icon-plus"></button>
+        <button id="zonesExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
+        <button id="zonesImport" data-tip="${t("Upload data from a CSV file")}" class="icon-upload"></button>
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  ensureEl<HTMLInputElement>("zonesSearch").value = filterState.search;
   initColumnVisibility({
     dialogId,
     columns,
@@ -115,6 +136,11 @@ function renderDialog(): void {
   const body = ensureEl("zonesBodySection");
   ensureEl("zonesFilterType").addEventListener("click", updateFilters);
   ensureEl("zonesFilterType").addEventListener("change", filterZonesByType);
+  ensureEl("zonesSearch").addEventListener("input", event => {
+    filterState.search = (event.target as HTMLInputElement).value;
+    dialogState.set(dialogId, "filters", filterState);
+    zonesTable.reset();
+  });
   ensureEl("zonesEditorRefresh").addEventListener("click", zonesTable.refresh);
   ensureEl("zonesEditStyle").addEventListener("click", () => void Controllers.StyleEditor.open("zones"));
   ensureEl("zonesLegend").addEventListener("click", toggleLegend);
@@ -122,6 +148,7 @@ function renderDialog(): void {
   ensureEl("zonesManually").addEventListener("click", openPaintEditor);
   ensureEl("zonesAdd").addEventListener("click", addZonesLayer);
   ensureEl("zonesExport").addEventListener("click", downloadZonesData);
+  ensureEl("zonesImport").addEventListener("click", () => Csv.pick(uploadZonesCsv));
 
   body.addEventListener("click", (ev: Event) => {
     const line = (ev.target as HTMLElement).closest<HTMLElement>("div.states");
@@ -148,6 +175,20 @@ function renderDialog(): void {
 
     if (target.classList.contains("zoneName")) changeDescription(zone, target.value);
     else if (target.classList.contains("zoneType")) changeType(zone, target.value);
+  });
+
+  body.addEventListener("change", (ev: Event) => {
+    const target = ev.target as HTMLInputElement;
+    const line = target.closest<HTMLElement>("div.states");
+    if (!line) return;
+    const zone = pack.zones.find(z => z.i === +line.dataset.id!);
+    if (!zone) return;
+
+    if (target.classList.contains("zoneTags")) {
+      Tags.set(zone, target.value);
+      target.value = Tags.format(zone.tags);
+      if (filterState.search) zonesTable.refresh();
+    }
   });
 
   $(body).sortable({
@@ -177,7 +218,7 @@ function updateFilters(): void {
     Layers.draw("zones"); // the filtered-out type is gone, the map must stop hiding zones
   }
 
-  filterSelect.innerHTML = `<option value='all'>all</option>${types
+  filterSelect.innerHTML = `<option value='all'>${t("All")}</option>${types
     .map(type => `<option value="${type}">${type}</option>`)
     .join("")}`;
   filterSelect.value = zonesFilter.type;
@@ -186,16 +227,25 @@ function updateFilters(): void {
 // add line for each zone
 function getZonesData(): ZoneRow[] {
   const filterBy = zonesFilter.type;
-  const zones = filterBy === "all" ? pack.zones : pack.zones.filter(zone => zone.type === filterBy);
+  const search = filterState.search.toLowerCase().trim();
+  let zones = filterBy === "all" ? pack.zones : pack.zones.filter(zone => zone.type === filterBy);
+  if (search) {
+    zones = zones.filter(zone => Tags.matches(search, zone.name, zone.tags, [zone.type]));
+  }
   return zones.map(zone => {
     const area = getArea(sum(zone.cells.map(cell => pack.cells.area[cell])));
-    const rural = sum(zone.cells.map(cell => pack.cells.pop[cell])) * options.map.units.population.scale;
-    const urban =
-      sum(zone.cells.map(cell => pack.cells.burg[cell]).map(burg => pack.burgs[burg]?.population ?? 0)) *
-      options.map.units.population.scale *
-      options.map.units.population.urbanization.rate;
+    const [rural, urban] = getZonePopulation(zone);
     return { zone, area, rural, urban, population: rn(rural + urban) };
   });
+}
+
+/** Rural and urban people of a zone */
+function getZonePopulation(zone: Zone): [number, number] {
+  const { scale, urbanization } = options.map.units.population;
+  const rural = sum(zone.cells.map(cell => pack.cells.pop[cell])) * scale;
+  const urban =
+    sum(zone.cells.map(cell => pack.burgs[pack.cells.burg[cell]]?.population ?? 0)) * scale * urbanization.rate;
+  return [rural, urban];
 }
 
 function renderZonesPage(view: TableView<ZoneRow>): void {
@@ -207,23 +257,40 @@ function renderZonesPage(view: TableView<ZoneRow>): void {
         options.map.units.population.urbanization.rate) *
     options.map.units.population.scale;
   const percentage = body.dataset.type === "percentage";
-  const lines = view.rows.map(({ zone: { i, name, type, cells, color, hidden }, area, rural, urban, population }) => {
-    const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(urban)}. Click to change`;
-    const focused = select<SVGElement, unknown>("#deftemp").select(`#fog #focusZone${i}`).size();
+  const lines = view.rows.map(
+    ({ zone: { i, name, type, cells, color, hidden, tags }, area, rural, urban, population }) => {
+      const populationTip = sentences(
+        `${t("Total population")}: ${si(population)}`,
+        `${t("Rural population")}: ${si(rural)}`,
+        `${t("Urban population")}: ${si(urban)}`,
+        t("Click to edit")
+      );
+      const focused = select<SVGElement, unknown>("#deftemp").select(`#fog #focusZone${i}`).size();
 
-    return /* html */ `<div class="states" data-id="${i}" style="${hidden ? "opacity: 0.5" : ""}">
-      <div data-col="description" style="display:flex; align-items:center"><fill-box fill="${color}"></fill-box><input data-tip="Zone description. Click and type to change" style="width: 11em" class="zoneName" value="${name}" autocorrect="off" spellcheck="false"></div>
-      <div data-col="type"><input data-tip="Zone type. Click and type to change" class="zoneType" value="${type}"></div>
-      <div data-col="cells"><span data-tip="Cells count" class="icon-check-empty"></span><span data-tip="Cells count" class="stateCells">${percentage ? `${rn((cells.length / pack.cells.i.length) * 100, 2)}%` : cells.length}</span></div>
-      <div data-col="area"><span data-tip="Zone area" class="icon-map-o" style="padding-right: 2px"></span><span data-tip="Zone area" class="biomeArea">${percentage ? `${rn((area / totalArea) * 100, 2)}%` : `${si(area)} ${getAreaUnit()}`}</span></div>
+      return /* html */ `<div class="states" data-id="${i}" style="${hidden ? "opacity: 0.5" : ""}">
+      <div data-col="description" style="display:flex; align-items:center"><fill-box fill="${color}"></fill-box><input data-tip="${sentences(t("Zone description"), t("Click and type to change"))}" style="width: 11em" class="zoneName" value="${name}" autocorrect="off" spellcheck="false"></div>
+      <div data-col="type"><input data-tip="${sentences(t("Zone type"), t("Click and type to change"))}" class="zoneType" value="${type}"></div>
+      <div data-col="cells"><span data-tip="${t("Number of cells")}" class="icon-check-empty"></span><span data-tip="${t("Number of cells")}" class="stateCells">${percentage ? `${rn((cells.length / pack.cells.i.length) * 100, 2)}%` : cells.length}</span></div>
+      <div data-col="area"><span data-tip="${t("Zone area")}" class="icon-map-o" style="padding-right: 2px"></span><span data-tip="${t("Zone area")}" class="biomeArea">${percentage ? `${rn((area / totalArea) * 100, 2)}%` : `${si(area)} ${getAreaUnit()}`}</span></div>
       <div data-col="population"><span data-tip="${populationTip}" class="icon-male"></span><span data-tip="${populationTip}" class="zonePopulation pointer">${percentage ? `${rn((population / totalPopulation) * 100, 2)}%` : si(population)}</span></div>
-      ${noteIcon("this zone")}
-      <span data-col="reorder" data-tip="Drag to raise or lower the zone" class="icon-resize-vertical"></span>
-      <span data-col="focus" data-tip="Toggle zone focus" class="zoneFog icon-pin ${focused ? "" : "inactive"} ${cells.length ? "" : "placeholder"}"></span>
-      <span data-col="visibility" data-tip="Toggle zone visibility" class="zoneHide icon-eye ${cells.length ? "" : " placeholder"}"></span>
-      <span data-col="remove" data-tip="Remove zone" class="zoneRemove icon-trash-empty"></span>
+      <div data-col="tags">
+        <input
+          data-tip="${t("Zone tags (comma-separated)")}"
+          class="zoneTags"
+          value="${Tags.format(tags)}"
+          placeholder="${t("Tags")}"
+          autocorrect="off"
+          spellcheck="false"
+        />
+      </div>
+      ${noteIcon(t("Edit free text notes (legend)"))}
+      <span data-col="reorder" data-tip="${t("Drag to raise or lower the zone")}" class="icon-resize-vertical"></span>
+      <span data-col="focus" data-tip="${t("Toggle zone focus")}" class="zoneFog icon-pin ${focused ? "" : "inactive"} ${cells.length ? "" : "placeholder"}"></span>
+      <span data-col="visibility" data-tip="${t("Toggle zone visibility")}" class="zoneHide icon-eye ${cells.length ? "" : " placeholder"}"></span>
+      <span data-col="remove" data-tip="${t("Remove")}" class="zoneRemove icon-trash-empty"></span>
     </div>`;
-  });
+    }
+  );
 
   body.innerHTML = lines.join("");
 
@@ -231,7 +298,10 @@ function renderZonesPage(view: TableView<ZoneRow>): void {
   const footerArea = ensureEl("zonesFooterArea");
   footerArea.dataset.area = String(totalArea);
   ensureEl("zonesFooterPopulation").dataset.population = String(totalPopulation);
-  ensureEl("zonesFooterNumber").innerHTML = `${view.all.length} of ${pack.zones.length}`;
+  ensureEl("zonesFooterNumber").innerHTML = t("{{shown}} of {{total}}", {
+    shown: view.all.length,
+    total: pack.zones.length
+  });
   ensureEl("zonesFooterCells").innerHTML = String(pack.cells.i.length);
   footerArea.innerHTML = `${si(totalArea)} ${getAreaUnit()}`;
   ensureEl("zonesFooterPopulation").innerHTML = si(totalPopulation);
@@ -295,12 +365,12 @@ function openPaintEditor(): void {
   }
 
   void Controllers.PaintEditor.open({
-    title: "Paint Zones",
+    title: t("Paint Zones"),
     parentDialogId: dialogId,
     onClose: open,
     mode: "multiple",
     items: [
-      { id: -1, name: "No zone", color: "#ffffff" },
+      { id: -1, name: t("No zone"), color: "#ffffff" },
       ...visibleZones.map(zone => ({ id: zone.i, name: zone.name, color: zone.color }))
     ],
     landOnlyControl: true,
@@ -318,7 +388,7 @@ function applyZonePaint(zones: readonly Zone[], changes: ReadonlyMap<number, rea
   for (const zone of zones) zone.cells = [...cellsByZone.get(zone.i)!];
 
   Layers.draw("zones");
-  if (document.getElementById(dialogId)) zonesTable.refresh();
+  if (findEl(dialogId)) zonesTable.refresh();
 }
 
 function changeFill(fillBox: FillBoxElement, zone: Zone): void {
@@ -363,7 +433,7 @@ function toggleLegend(): void {
   const isFiltered = filterBy !== "all";
   const visibleZones = pack.zones.filter(zone => !zone.hidden && (!isFiltered || zone.type === filterBy));
   const data = visibleZones.map(({ i, name, color }) => [`zone${i}`, color, name]);
-  if (!data.length) return void tip("No zones to show", false, "error");
+  if (!data.length) return void tip(t("No zones to show"), false, "error");
   drawLegend(LEGEND_NAME, data);
 }
 
@@ -378,7 +448,7 @@ function addZonesLayer(): void {
   const name = "Unknown zone";
   const type = "Unknown";
   const color = `url(#hatch${zoneId % 42})`;
-  pack.zones.push({ i: zoneId, name, type, color, cells: [] });
+  pack.zones.push({ i: zoneId, name, type, color, cells: [], tags: [] });
 
   zonesTable.refresh();
   Layers.draw("zones");
@@ -387,14 +457,21 @@ function addZonesLayer(): void {
 function downloadZonesData(): void {
   const unit =
     options.map.units.area.unit === "square" ? `${options.map.units.distance.unit}2` : options.map.units.area.unit;
-  let data = `Id,Color,Description,Type,Cells,Area ${unit},Population\n`; // headers
-
-  for (const { zone, area, population } of getZonesData()) {
-    data += `${zone.i},${zone.color},${zone.name},${zone.type},${zone.cells.length},${area},${population}\n`;
-  }
-
-  const name = `${getFileName("Zones")}.csv`;
-  downloadFile(data, name);
+  const rows = getZonesData().map(({ zone, area, population }) => [
+    zone.i,
+    zone.color,
+    zone.name,
+    zone.type,
+    Tags.format(zone.tags),
+    zone.cells.length,
+    area,
+    population
+  ]);
+  Csv.download(
+    "Zones",
+    CSV_COLUMNS.map(column => (column === "Area" ? `Area ${unit}` : column)),
+    rows
+  );
 }
 
 function changeDescription(zone: Zone, value: string): void {
@@ -412,7 +489,7 @@ function changeType(zone: Zone, value: string): void {
 function changePopulation(zone: Zone): void {
   const landCells = zone.cells.filter(i => pack.cells.h[i] >= 20);
   if (!landCells.length) {
-    tip("Zone does not have any land cells, cannot change population", false, "error");
+    tip(t("Zone does not have any land cells, cannot change population"), false, "error");
     return;
   }
 
@@ -426,9 +503,9 @@ function changePopulation(zone: Zone): void {
   const total = rural + urban;
   const l = (n: number): string => Number(n).toLocaleString();
 
-  alertMessage.innerHTML = /* html */ `Rural: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" /> Urban:
+  alertMessage.innerHTML = /* html */ `${t("Rural")}: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" /> ${t("Urban")}:
     <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em" ${burgs.length ? "" : "disabled"} />
-    <p>Total population: ${l(total)} ⇒ <span id="totalPop">${l(total)}</span> (<span id="totalPopPerc">100</span>%)</p>`;
+    <p>${t("Total population")}: ${l(total)} ⇒ <span id="totalPop">${l(total)}</span> (<span id="totalPopPerc">100</span>%)</p>`;
 
   const ruralPop = ensureEl<HTMLInputElement>("ruralPop");
   const urbanPop = ensureEl<HTMLInputElement>("urbanPop");
@@ -445,14 +522,14 @@ function changePopulation(zone: Zone): void {
 
   $("#alert").dialog({
     resizable: false,
-    title: "Change zone population",
+    title: t("Change zone population"),
     width: "24em",
     buttons: {
-      Apply: function (this: HTMLElement) {
+      [t("Apply")]: function (this: HTMLElement) {
         applyPopulationChange();
         $(this).dialog("close");
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     },
@@ -473,9 +550,9 @@ function changePopulation(zone: Zone): void {
 
 function zoneRemove(zone: Zone): void {
   confirmationDialog({
-    title: "Remove zone",
-    message: "Are you sure you want to remove the zone? <br>This action cannot be reverted",
-    confirm: "Remove",
+    title: t("Remove"),
+    message: `${t("Are you sure you want to remove the zone?")}<br>${t("This action cannot be reverted")}`,
+    confirm: t("Remove"),
     onConfirm: () => {
       Zones.remove(zone.i);
       select<SVGGElement, unknown>("#zones").select(`#zone${zone.i}`).remove();
@@ -483,6 +560,31 @@ function zoneRemove(zone: Zone): void {
       zonesTable.refresh();
     }
   });
+}
+
+/** Update existing zones from a CSV in the export format */
+async function uploadZonesCsv(text: string): Promise<void> {
+  const find = (id: number) => pack.zones.find(zone => zone.i === id);
+  const textColumns = ["Description", "Type", "Tags"];
+  const updated = await Controllers.CsvUpload.update(
+    text,
+    CSV_COLUMNS,
+    { find, units: ["Area"], text: textColumns },
+    (id, row) => {
+      const zone = find(id)!;
+      row.apply("Description", name => Zones.rename(zone.i, name), zone.name);
+      row.apply("Color", color => Zones.recolor(zone.i, color), zone.color); // recolor rejects hatched fills, so keep them when unchanged
+      row.apply("Type", type => Zones.setType(zone.i, type), zone.type);
+      row.assign("Tags", tags => Tags.set(zone, tags), Tags.format(zone.tags));
+      row.population(getZonePopulation(zone), (rural, urban) => Zones.setPopulation(zone.i, rural, urban), [
+        "Population"
+      ]);
+    }
+  );
+  if (!updated) return;
+
+  Layers.draw("zones");
+  zonesTable.refresh();
 }
 
 export const ZonesEditor = { open, exportCsv: downloadZonesData };

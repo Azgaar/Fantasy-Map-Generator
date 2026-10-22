@@ -61,10 +61,11 @@ and **never** use module-local `declare const` or `as any` to paper over one.
    module) already types.
 
 3. **It's a DOM element** (an `id`'d node the browser exposes as a global) →
-   **don't declare it at all.** Use `ensureEl<HTMLInputElement>("brushSize")` (or
-   `document.getElementById`). For an element used several times in a function —
-   especially one built from a just-assigned `innerHTML` — grab it once into a
-   local `const el = ensureEl(...)`.
+   **don't declare it at all.** Use `ensureEl<HTMLInputElement>("brushSize")` when
+   it must exist, `findEl` when it may be missing (`findEl("preview")?.remove()`).
+   Never raw `document.getElementById` outside tests. For an element used several
+   times in a function — especially one built from a just-assigned `innerHTML` —
+   grab it once into a local `const el = ensureEl(...)`.
 
 ## D3: v7 named imports only
 
@@ -176,7 +177,7 @@ No logic here — the data says _what_, the generator decides _how_.
 // src/renderers/module-renderer.ts
 // Clean core: a pure projection of state → markup. Same state ⇒ same output; reads only.
 function draw(): string {
-  return (document.getElementById("moduleLayer").innerHTML = buildModule(pack));
+  return (ensureEl("moduleLayer").innerHTML = buildModule(pack));
 }
 export const ModuleRenderer = { draw };
 

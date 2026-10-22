@@ -10,7 +10,10 @@ const mocks = vi.hoisted(() => ({
   save: vi.fn()
 }));
 vi.mock("@/components/layers", () => ({ Layers: { draw: mocks.draw, toggle: vi.fn() } }));
-vi.mock("@/components/dialog/dialog-helpers", () => ({ refreshEditors: mocks.refresh }));
+vi.mock("@/components/dialog/dialog-helpers", async importOriginal => ({
+  ...(await importOriginal<typeof import("@/components/dialog/dialog-helpers")>()),
+  refreshEditors: mocks.refresh
+}));
 vi.mock("@/components/options/tabs/layers-tab", () => ({
   LAYER_TOGGLES: new Map(),
   LAYER_PRESETS: { political: "Political map" }
@@ -42,10 +45,10 @@ function confirmation() {
   return mocks.dialog.mock.calls[0][0] as { buttons: { Proceed: () => void; Cancel: () => void } };
 }
 
-it("offers Save As in command search without another save button", () => {
+it("offers overwriting the saved file in command search without another save button", () => {
   MAP_COMMANDS.find(command => command.id === "saveToMachine")!.run();
   expect(mocks.save).toHaveBeenLastCalledWith();
-  MAP_COMMANDS.find(command => command.id === "saveMapAs")!.run();
+  MAP_COMMANDS.find(command => command.id === "overwriteMapFile")!.run();
   expect(mocks.save).toHaveBeenLastCalledWith(true);
 });
 

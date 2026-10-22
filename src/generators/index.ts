@@ -33,3 +33,4 @@ import "./transports-generator";
 import "./journeys/journeys-generator";
 import "./resample";
 import "./generation-pipeline";
+import "./tags";

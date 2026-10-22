@@ -1,10 +1,12 @@
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Controllers } from "@/controllers";
+import { FEATURE_SUBTYPE_LABELS } from "@/data/id-labels";
 import { Coastline, type CoastlineSettings, type FractalizedShape } from "@/generators/coastline-generator";
 import type { Feature } from "@/generators/features-generator";
 import { drawFeaturePath } from "@/renderers/draw-landmass";
 import type { Point } from "@/types/global";
 import { ensureEl, escapeHtml, findEl } from "@/utils";
+import { t } from "@/utils/i18n";
 
 interface InputParams {
   id: string;
@@ -19,8 +21,8 @@ interface InputParams {
 const INPUTS_CONFIG: InputParams[] = [
   {
     id: "coastMaxDepth",
-    label: "Detail",
-    tip: "How fine the shore detail is. Higher adds ever smaller bays and points but makes the map slower to draw",
+    label: t("Detail"),
+    tip: t("How fine the shore detail is. Higher adds ever smaller bays and points but makes the map slower to draw"),
     min: 1,
     max: 5,
     step: 1,
@@ -28,8 +30,8 @@ const INPUTS_CONFIG: InputParams[] = [
   },
   {
     id: "coastBaseAmplitude",
-    label: "Ruggedness",
-    tip: "How far the coast bends in and out. 0 keeps the smooth arcs, high values carve deep bays and headlands",
+    label: t("Ruggedness"),
+    tip: t("How far the coast bends in and out. 0 keeps the smooth arcs, high values carve deep bays and headlands"),
     min: 0,
     max: 8,
     step: 0.1,
@@ -37,8 +39,8 @@ const INPUTS_CONFIG: InputParams[] = [
   },
   {
     id: "coastAmplitudeDecay",
-    label: "Fine detail",
-    tip: "How much the small details stand out. Low gives soft, rounded shores; high gives jagged, crumbly ones",
+    label: t("Fine detail"),
+    tip: t("How much the small details stand out. Low gives soft, rounded shores; high gives jagged, crumbly ones"),
     min: 0.1,
     max: 1.3,
     step: 0.01,
@@ -46,8 +48,10 @@ const INPUTS_CONFIG: InputParams[] = [
   },
   {
     id: "coastMinEdge",
-    label: "Smallest edge",
-    tip: "Coast segments shorter than this stay as they are. Raise it to keep tiny isles simple and the map faster to draw",
+    label: t("Smallest edge"),
+    tip: t(
+      "Coast segments shorter than this stay as they are. Raise it to keep tiny isles simple and the map faster to draw"
+    ),
     min: 0,
     max: 20,
     step: 0.1,
@@ -55,8 +59,8 @@ const INPUTS_CONFIG: InputParams[] = [
   },
   {
     id: "coastSmoothThreshold",
-    label: "Calm shores",
-    tip: "How much of the coast stays calm. 0 makes every shore rough, high values leave only a few rough stretches",
+    label: t("Calm shores"),
+    tip: t("How much of the coast stays calm. 0 makes every shore rough, high values leave only a few rough stretches"),
     min: 0,
     max: 0.9,
     step: 0.01,
@@ -64,8 +68,8 @@ const INPUTS_CONFIG: InputParams[] = [
   },
   {
     id: "coastRoughnessContrast",
-    label: "Contrast",
-    tip: "How sharply calm shores turn into rough ones. Low blends them, high gives clear-cut calm and rough coasts",
+    label: t("Contrast"),
+    tip: t("How sharply calm shores turn into rough ones. Low blends them, high gives clear-cut calm and rough coasts"),
     min: 0.1,
     max: 10,
     step: 0.1,
@@ -73,8 +77,10 @@ const INPUTS_CONFIG: InputParams[] = [
   },
   {
     id: "coastRoughnessScale",
-    label: "Stretch length",
-    tip: "How long a calm or rough stretch of coast is. Small mixes them along a single isle, large gives a continent a few long coasts of each kind",
+    label: t("Stretch length"),
+    tip: t(
+      "How long a calm or rough stretch of coast is. Small mixes them along a single isle, large gives a continent a few long coasts of each kind"
+    ),
     min: 2,
     max: 600,
     step: 1,
@@ -82,8 +88,8 @@ const INPUTS_CONFIG: InputParams[] = [
   },
   {
     id: "coastVariant",
-    label: "Variant",
-    tip: "Reshuffles where the calm and rough stretches fall",
+    label: t("Variant"),
+    tip: t("Reshuffles where the calm and rough stretches fall"),
     min: 0,
     max: 99,
     step: 1,
@@ -91,14 +97,24 @@ const INPUTS_CONFIG: InputParams[] = [
   },
   {
     id: "coastLakeSmoothThreshMult",
-    label: "Calmer lakes",
-    tip: "How much calmer lake shores are than the sea. 1 is the same, higher gives glassy lakes, 0 makes every lake shore rough",
+    label: t("Calmer lakes"),
+    tip: t(
+      "How much calmer lake shores are than the sea. 1 is the same, higher gives glassy lakes, 0 makes every lake shore rough"
+    ),
     min: 0,
     max: 5,
     step: 0.1,
     key: "lakeSmoothThreshMult"
   }
 ];
+
+const PRESET_LABELS: Record<string, string> = {
+  Default: t("Default"),
+  Smooth: t("Smooth", { context: "coastline" }),
+  Rocky: t("Rocky"),
+  Fjords: t("Fjords"),
+  Skerries: t("Skerries")
+};
 
 const COAST_PRESETS: Record<string, Omit<CoastlineSettings, "enabled" | "variant">> = {
   Default: Coastline.getDefaultSettings(),
@@ -144,6 +160,7 @@ const COAST_PRESETS: Record<string, Omit<CoastlineSettings, "enabled" | "variant
   }
 };
 
+const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let selectedFeature: Feature | null = null; // the feature the editor shapes, or the whole map
 
 function open(featureId?: number): void {
@@ -155,15 +172,16 @@ function open(featureId?: number): void {
     `<div id="coastlineSettingsDialog" style="display:none" class="dialog"></div>`
   );
   $("#coastlineSettingsDialog").dialog({
-    title: "Coastline Settings",
+    title: t("Coastline Settings"),
     resizable: false,
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
+    position,
     close: () => {
       selectedFeature = null;
       destroyDialog("coastlineSettingsDialog");
     }
   });
   setFeature(featureId ? pack.features[featureId] : null); // once shown: the previews measure the canvas
+  $("#coastlineSettingsDialog").dialog("option", "position", position); // content is in: re-fit to its real size
 }
 
 /** the whole dialog follows the scope: the controls show its settings, the previews its shape */
@@ -259,8 +277,11 @@ function syncScope(): void {
   if (findEl("featuresOverview")) void Controllers.FeaturesOverview.refresh(); // only when open: skip loading the chunk
 }
 
-const featureLabel = (feature: Feature) =>
-  `${feature.name ? `${feature.name} • ${feature.subtype} ${feature.type}` : `Unnamed ${feature.subtype || feature.type} #${feature.i}`}${feature.coastline ? " •" : ""}`;
+const featureLabel = (feature: Feature) => {
+  const subtype = feature.subtype || feature.type;
+  const kind = FEATURE_SUBTYPE_LABELS[subtype] ?? subtype;
+  return `${feature.name ? `${feature.name} • ${kind}` : `${kind} #${feature.i}`}${feature.coastline ? " •" : ""}`;
+};
 
 function buildDialogHTML(): string {
   const settings = selectedFeature?.coastline || Coastline.settings;
@@ -275,7 +296,7 @@ function buildDialogHTML(): string {
     .join("");
 
   const presetButtons = Object.keys(COAST_PRESETS)
-    .map(name => `<button id="coastPreset_${name}" style="padding:0.2em 0.8em">${name}</button>`)
+    .map(name => `<button id="coastPreset_${name}" style="padding:0.2em 0.8em">${PRESET_LABELS[name]}</button>`)
     .join("");
 
   const rows = INPUTS_CONFIG.map(({ id, label, tip, min, max, step, key }) => {
@@ -287,7 +308,7 @@ function buildDialogHTML(): string {
           <slider-input id="${id}" min="${min}" max="${max}" step="${step}" value="${settings[key]}"></slider-input>
         </td>
         <td style="padding:0.2em">
-          <button id="${id}Reset" title="${selectedFeature ? "Reset to the map globals" : "Reset to default"}" style="font-size:.8em; padding:1px 5px; cursor:pointer">↺</button>
+          <button id="${id}Reset" title="${selectedFeature ? t("Reset to the map globals") : t("Reset to default")}" style="font-size:.8em; padding:1px 5px; cursor:pointer">↺</button>
         </td>
       </tr>`;
   }).join("");
@@ -297,24 +318,24 @@ function buildDialogHTML(): string {
         #coastlineSettingsDialog slider-input input[type=range] { width:100%; }
       </style>
       <div style="display:flex; align-items:center; gap:0.5em; margin-bottom:0.5em">
-        <select id="coastScopeSelect" style="flex:1; min-width:0; height: 18px" data-tip="Select feature. Features with custom settings are bullet-marked">
-          <option value="0" ${selectedFeature ? "" : "selected"}>Whole map</option>
+        <select id="coastScopeSelect" style="flex:1; min-width:0; height: 18px" data-tip="${t("Select feature. Features with custom settings are bullet-marked")}">
+          <option value="0" ${selectedFeature ? "" : "selected"}>${t("Whole map")}</option>
           ${scopeOptions}
         </select>
-        <button id="coastScopeReset" style="display:${selectedFeature?.coastline ? "" : "none"}" data-tip="Reset custom override and follow the global map settings">Reset to map settings</button>
-        <span id="coastScopeFollows" style="display:${selectedFeature && !selectedFeature.coastline ? "" : "none"}; color:#999">follows the map settings</span>
-        <span id="coastScopeMap" style="display:${selectedFeature ? "none" : ""}; color:#999">apply to all non-overwritten features</span>
+        <button id="coastScopeReset" style="display:${selectedFeature?.coastline ? "" : "none"}" data-tip="${t("Reset custom override and follow the global map settings")}">${t("Reset to map settings")}</button>
+        <span id="coastScopeFollows" style="display:${selectedFeature && !selectedFeature.coastline ? "" : "none"}; color:#999">${t("follows the map settings")}</span>
+        <span id="coastScopeMap" style="display:${selectedFeature ? "none" : ""}; color:#999">${t("apply to all non-overwritten features")}</span>
       </div>
       <div style="display:flex; justify-content:space-between; gap:0.5em; margin-bottom:0.5em; padding-bottom:0.5em; border-bottom:1px solid #ddd">
-        <label style="display:flex; align-items:center; gap:0.5em; cursor:pointer; user-select:none" data-tip="Enable or disable coastline fractalization. When disabled, coastlines are simple arcs between feature vertices. Enabling adds naturalistic roughness but can increase rendering time">
+        <label style="display:flex; align-items:center; gap:0.5em; cursor:pointer; user-select:none" data-tip="${t("Enable or disable coastline fractalization. When disabled, coastlines are simple arcs between feature vertices. Enabling adds naturalistic roughness but can increase rendering time")}">
           <input id="coastEnabled" type="checkbox" ${settings.enabled ? "checked" : ""}
             style="position:absolute; opacity:0; pointer-events:none; width:0; height:0"/>
           <span id="coastEnabledTrack" style="position:relative; display:inline-block; width:36px; height:20px; border-radius:10px; background:${settings.enabled ? "#33bb88" : "#bbb"}; cursor:pointer; flex-shrink:0">
             <span id="coastEnabledThumb" style="position:absolute; top:2px; left:${settings.enabled ? "18px" : "2px"};width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)"></span>
           </span>
         </label>
-        <div style="display:flex; align-items:center; gap:0.4em" data-tip="A ready-made look. Sets every slider, tune from there">
-          <span style="color:#999">Preset</span>
+        <div style="display:flex; align-items:center; gap:0.4em" data-tip="${t("A ready-made look. Sets every slider, tune from there")}">
+          <span style="color:#999">${t("Preset")}</span>
           ${presetButtons}
         </div>
       </div>
@@ -330,8 +351,8 @@ function buildDialogHTML(): string {
       </div>
       <div style="margin-top:0.5em">
         <div style="display:flex; justify-content:space-between; color:#999; font-size:.85em; margin-bottom:0.2em">
-          <span>Shape preview</span>
-          <span id="coastPreviewStats" data-tip="Coastline rendering cost"></span>
+          <span>${t("Shape preview")}</span>
+          <span id="coastPreviewStats" data-tip="${t("Coastline rendering cost")}"></span>
         </div>
         <canvas id="coastShapePreview" style="display:block; height:170px"></canvas>
         <canvas id="coastRoughnessGraph" style="display:block; height:56px"></canvas>
