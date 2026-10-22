@@ -382,9 +382,8 @@ standard maps are untouched.
 - sector dust and void starfields, and the coast palette;
 - states, borders, routes and labels reskinned by the preset.
 
-Shipped: the `nebulae`, `starDensity` and `systems` style sections, the starfield asset and the
-`astral` preset. The thumbnail is listed in the renderer script; regenerate it where Playwright and
-ffmpeg are available.
+Shipped: the `nebulae`, `starDensity` and `systems` style sections, the starfield asset, the
+`astral` preset and its thumbnail. Re-run the thumbnail script when the preset changes.
 
 **Acceptance:** the map reads as a sector chart, not a parchment map; the land uses the starfield PNG;
 the void has its own starfield; there is no core or spiral arm; the style editor exposes the new

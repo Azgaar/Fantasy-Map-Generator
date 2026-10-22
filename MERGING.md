@@ -123,6 +123,7 @@ git fetch upstream && git merge upstream/master
   void.
 - **`src/services/style-presets.ts`** / **`scripts/render-style-thumbnails.mjs`**: `astral` in the
   system preset list.
+- **`public/images/style-presets/astral.avif`** (new): the preset card thumbnail.
 - *Conflict resolution strategy*: the schema additions are one contiguous block; old maps and
   presets repair the missing sections from defaults.
 
