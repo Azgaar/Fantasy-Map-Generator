@@ -33,7 +33,7 @@ const ACTION_COLUMNS: Record<string, string[]> = {
   militaryOverview: ["regiments"],
   provincesEditor: ["note", "independence", "locate", "focus", "lock", "remove"],
   religionsEditor: ["note", "locate", "lock", "remove"],
-  riversOverview: ["edit", "remove"],
+  riversOverview: ["edit", "lock", "remove"],
   routesOverview: ["edit", "lock", "remove"],
   statesEditor: ["note", "locate", "focus", "lock", "remove"],
   zonesEditor: ["note", "reorder", "focus", "visibility", "remove"]

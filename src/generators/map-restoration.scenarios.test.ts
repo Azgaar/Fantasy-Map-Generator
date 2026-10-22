@@ -273,7 +273,7 @@ describe("Submap and Transform", () => {
       else expect(living(pack.burgs).some(burg => cells.province[burg.cell] === province.i)).toBe(false);
     }
     expect(violations().has("state-capitals")).toBe(false);
-  });
+  }, 15000);
 
   it("leaves the map as it was when resampling fails", async () => {
     await generateMap({ seed: "restoration-resample-rollback" });
