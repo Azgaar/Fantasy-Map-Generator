@@ -1,5 +1,5 @@
 import { isMobile } from "@/services/platform";
-import { debounce, ensureEl, findEl } from "@/utils";
+import { debounce, findEl } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 
 type TipType = "info" | "success" | "warn" | "error";
@@ -11,7 +11,7 @@ const TIP_BACKGROUND: Record<TipType, string> = {
   error: "linear-gradient(0.1turn, #ffffff00, #e11d1dcc, #ffffff00)"
 };
 
-const getTooltip = () => ensureEl("tooltip");
+const getTooltip = () => findEl("tooltip"); // absent before the shell renders and in unit tests
 
 let autoClearTimeout: number | undefined;
 
@@ -24,6 +24,7 @@ let autoClearTimeout: number | undefined;
  */
 export function tip(message: string, main = false, type: TipType = "info", time = 0): void {
   const tooltip = getTooltip();
+  if (!tooltip) return;
   tooltip.innerHTML = message;
   tooltip.style.background = TIP_BACKGROUND[type];
 
@@ -40,8 +41,24 @@ export function tip(message: string, main = false, type: TipType = "info", time 
   }
 }
 
+let pendingLoads = 0;
+
+/** The registries' feedback while a lazy module downloads */
+export const loadingTip = {
+  start(): void {
+    pendingLoads++;
+    tip(`${t("Loading")}…`, false, "info");
+  },
+  end(): void {
+    if (--pendingLoads > 0) return;
+    pendingLoads = 0;
+    clearMainTip();
+  }
+};
+
 export function showMainTip(): void {
   const tooltip = getTooltip();
+  if (!tooltip) return;
   tooltip.style.background = tooltip.dataset.color || "";
   tooltip.innerHTML = tooltip.dataset.main || "";
 }
@@ -52,6 +69,7 @@ export function clearMainTip(): void {
     autoClearTimeout = undefined;
   }
   const tooltip = getTooltip();
+  if (!tooltip) return;
   tooltip.dataset.color = "";
   tooltip.dataset.main = "";
   tooltip.innerHTML = "";
@@ -61,6 +79,10 @@ export function clearMainTip(): void {
 export function showDataTip(event: Event): void {
   const target = event.target as HTMLElement | null;
   if (!target) return;
+  if (target.dataset?.lockTip !== undefined) {
+    showLockTip(target);
+    return;
+  }
 
   const parent = target.parentNode as HTMLElement | null;
   let dataTip = target.dataset?.tip || parent?.dataset?.tip;
@@ -80,8 +102,8 @@ export function showDataTip(event: Event): void {
   tip(dataTip);
 }
 
-export function showElementLockTip(event: Event): void {
-  const locked = (event.target as HTMLElement | null)?.classList?.contains("icon-lock");
+function showLockTip(target: HTMLElement): void {
+  const locked = target.classList.contains("icon-lock");
   tip(
     locked
       ? t("Locked. Click to unlock the element and allow it to be changed by regeneration tools")
@@ -98,9 +120,3 @@ function initialize(): void {
 }
 
 initialize();
-
-export const Tooltips = { tip, showMainTip, clearMainTip, showDataTip, showElementLockTip };
-
-window.tip = tip;
-window.clearMainTip = clearMainTip;
-window.showElementLockTip = showElementLockTip;

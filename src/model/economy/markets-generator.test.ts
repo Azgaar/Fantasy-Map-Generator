@@ -1,22 +1,25 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Burg } from "@/model/political/burgs-generator";
-import { type Market, MarketsModule } from "./markets-generator";
+import { States } from "@/model/political/states-generator";
+import { Goods } from "./goods-generator";
+import { type Market, Markets, MarketsModule } from "./markets-generator";
+import { Production } from "./production-generator";
 
 describe("MarketsModule", () => {
   describe("buy logic and budget constraints", () => {
     let marketsModule: MarketsModule;
     beforeEach(() => {
       marketsModule = new MarketsModule();
-      globalThis.Markets = marketsModule;
+      Object.assign(Markets, marketsModule);
       options.map.graph = { width: 1000, height: 800, points: 10000, sampling: "square", jitter: 0.9 };
       globalThis.TIME = false;
-      globalThis.States = {
+      Object.assign(States, {
         getSalesTax: (burg: { state?: number }) => {
           const stateId = burg?.state || 0;
           if (!stateId) return 0;
           return globalThis.pack.states?.[stateId]?.salesTax ?? 0;
         }
-      } as any;
+      });
       // Minimal valid Good
       globalThis.pack = {
         goods: [
@@ -169,7 +172,6 @@ describe("MarketsModule", () => {
       marketsModule["marketById"] = [market1];
       globalThis.pack.burgs = [{ i: 0 } as any, { i: 1, cell: 0 } as any];
       globalThis.pack.cells = { i: [0], market: Uint16Array.from([1]) } as any;
-      window.tip = () => {};
 
       expect(marketsModule.addMarket(1)).toBeNull();
       expect(globalThis.pack.markets).toHaveLength(1);
@@ -217,12 +219,12 @@ describe("MarketsModule", () => {
       globalThis.pack.cells = { i: [0, 1, 2], market: Uint16Array.from([1, 0, 1]) } as any;
 
       const good = globalThis.pack.goods[0];
-      globalThis.Goods = {
+      Object.assign(Goods, {
         getBiomesProduction: () => ({}),
         get: (id: number) => (id === good.i ? good : undefined)
-      } as any;
+      });
       // Each cell would yield 5 units if collected.
-      globalThis.Production = { getCellProduction: () => ({ [good.i]: 5 }) } as any;
+      Object.assign(Production, { getCellProduction: () => ({ [good.i]: 5 }) });
 
       marketsModule.collectRuralProduction();
 
@@ -259,7 +261,7 @@ describe("MarketsModule", () => {
       const burg: Burg = { i: 1, market: 1, state: 1 } as any;
       globalThis.pack.burgs = [{ i: 0 } as any, burg];
       globalThis.pack.states = [{ i: 0, salesTax: 0 } as any, { i: 1, salesTax: 0.2 } as any];
-      const taxRate = globalThis.States.getSalesTax(burg);
+      const taxRate = States.getSalesTax(burg);
       const deal = marketsModule.sell({ burg, good: globalThis.pack.goods[0], units: 5, taxRate });
       expect(deal).not.toBeNull();
       expect(deal!.tax).toBeGreaterThan(0);

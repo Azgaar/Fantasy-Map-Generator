@@ -1,9 +1,5 @@
 import { minmax, rn, SEA_LEVEL } from "@/utils";
 
-declare global {
-  var Temperature: TemperatureModule;
-}
-
 class TemperatureModule {
   /** calculate the temperature of every grid cell from its latitude and altitude */
   generate(): void {
@@ -63,4 +59,4 @@ class TemperatureModule {
   }
 }
 
-window.Temperature = new TemperatureModule();
+export const Temperature = new TemperatureModule();

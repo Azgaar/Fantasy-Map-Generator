@@ -1,4 +1,5 @@
 import { pointer } from "d3";
+import { Rivers } from "@/model/physical/river-generator";
 import { Layers } from "@/renderers/layers";
 import { closeDialogs, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/ui/map/map-placement";

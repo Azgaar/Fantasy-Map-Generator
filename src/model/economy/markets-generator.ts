@@ -1,11 +1,15 @@
 import Alea from "alea";
 import { quadtree } from "d3-quadtree";
 import type { Burg } from "@/model/political/burgs-generator";
+import { States } from "@/model/political/states-generator";
+import { tip } from "@/ui/tooltips";
 import { minmax, rn } from "@/utils";
 import { getColors, getRandomColor, requireFill } from "@/utils/colorUtils";
+import { FlatQueue } from "@/utils/flatQueue";
 import { t } from "@/utils/i18n";
 import type { DemandCategory, Good } from "./goods-generator";
-import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "./goods-generator";
+import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS, Goods } from "./goods-generator";
+import { Production } from "./production-generator";
 
 const PRICE_FLOOR_FACTOR = 0.1;
 const PRICE_CEILING_FACTOR = 5.0;
@@ -124,7 +128,7 @@ export class MarketsModule {
     const cells = pack.cells;
     const cellMarket = new Uint16Array(cells.i.length);
     const costs: number[] = [];
-    const queue = new FlatQueue();
+    const queue = new FlatQueue<{ cellId: number; marketId: number; burg: Burg; priority: number }>();
 
     const MIN_COST = 1;
     const BASE_COST = 10;
@@ -288,7 +292,7 @@ export class MarketsModule {
     if (!burg || burg.removed) return null;
 
     if (pack.markets.some(m => m.centerBurgId === burgId)) {
-      window.tip(t("This burg is already a market center"), false, "error");
+      tip(t("This burg is already a market center"), false, "error");
       return null;
     }
 
@@ -717,10 +721,4 @@ export class MarketsModule {
   }
 }
 
-declare global {
-  var Markets: MarketsModule;
-}
-
-// biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const Markets = new MarketsModule();
-window.Markets = Markets;

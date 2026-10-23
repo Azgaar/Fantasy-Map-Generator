@@ -1,5 +1,10 @@
 // The Cell Info panel: everything known about the cell under the cursor
 import { select } from "d3";
+import { Goods } from "@/model/economy/goods-generator";
+import { Markets } from "@/model/economy/markets-generator";
+import { Production } from "@/model/economy/production-generator";
+import { Grid } from "@/model/graph/grid-generator";
+import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
 import type { Feature } from "@/model/physical/features-generator";
 import { destroyDialog } from "@/ui/dialog/dialog-helpers";

@@ -34,6 +34,10 @@ vi.mock("@/services/assistant/azgaar-server/answerer", () => ({ askServer: state
 import { Catalog } from "@/utils/i18n";
 import { Assistant } from "./index";
 
+vi.mock("@/utils/localDB", () => ({
+  LocalDB: { isSupported: () => true, get: vi.fn(async () => []), set: vi.fn(async () => {}) }
+}));
+
 // English plural forms live in the English catalog
 beforeAll(() => Catalog.load("en"));
 
@@ -58,7 +62,6 @@ beforeEach(() => {
   );
   document.body.innerHTML = '<div id="dialogs"></div>';
   localStorage.setItem("fmg-help-gateway", "http://localhost:9876");
-  vi.stubGlobal("ldb", { get: vi.fn(async () => []), set: vi.fn(async () => {}) });
   window.$ = vi.fn(() => ({
     dialog: (options: string | { close?: () => void }) => {
       if (typeof options === "string") return;

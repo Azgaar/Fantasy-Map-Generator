@@ -1,6 +1,6 @@
 import { mean, select } from "d3";
 import { Controllers } from "@/controllers";
-import { type Route, UNNAMED_ROUTE } from "@/model/economy/routes-generator";
+import { type Route, Routes, UNNAMED_ROUTE } from "@/model/economy/routes-generator";
 import { Tags } from "@/model/tags";
 import { getRouteBox } from "@/renderers/draw-routes";
 import { Layers } from "@/renderers/layers";
@@ -190,7 +190,7 @@ function renderRoutesPage(view: TableView<Route>): void {
         <span data-col="edit" data-tip="${t("Edit Route")}" class="icon-pencil"></span>
         <span data-col="lock" class="locks pointer ${
           route.lock ? "icon-lock" : "icon-lock-open inactive"
-        }" onmouseover="showElementLockTip(event)"></span>
+        }" data-lock-tip></span>
         <span data-col="remove" data-tip="${t("Remove")}" class="icon-trash-empty"></span>
       </div>`;
   }

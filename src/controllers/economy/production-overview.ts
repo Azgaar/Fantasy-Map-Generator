@@ -1,14 +1,16 @@
 import { DEMAND_CATEGORY_LABELS } from "@/data/id-labels";
 import type { DemandCategory } from "@/model/economy/goods-generator";
-import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS } from "@/model/economy/goods-generator";
+import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS, Goods } from "@/model/economy/goods-generator";
 import type { Deal } from "@/model/economy/markets-generator";
+import { Markets } from "@/model/economy/markets-generator";
 import type { ProductionCandidate } from "@/model/economy/production-generator";
 import { isDealRecord, isMfgRecord } from "@/model/economy/production-generator";
 import { Icons } from "@/model/icons";
 import type { Burg } from "@/model/political/burgs-generator";
+import { States } from "@/model/political/states-generator";
 import { goodBadge } from "@/renderers/draw-goods";
 import { tip } from "@/ui/tooltips";
-import { formatPrice, rn } from "@/utils";
+import { ensureEl, formatPrice, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 
 type Type = "MFG" | "BUY" | "SELL" | "LOCAL";
@@ -380,7 +382,7 @@ function open(burgId: number): void {
     empty: t("No goods manufactured")
   });
 
-  alertMessage.innerHTML = /*html*/ `
+  ensureEl("alertMessage").innerHTML = /*html*/ `
     <div id="productionOverviewContent">
       ${statsHtml}
       ${renderSection(t("Manufactured Goods"), producedTable, t("Goods manufactured by this burg in this production cycle."))}
@@ -392,7 +394,7 @@ function open(burgId: number): void {
     </div>
   `;
 
-  const overviewContent = alertMessage.querySelector<HTMLElement>("#productionOverviewContent");
+  const overviewContent = ensureEl("alertMessage").querySelector<HTMLElement>("#productionOverviewContent");
   if (overviewContent) {
     overviewContent.onclick = event => {
       const target = event.target as HTMLElement;

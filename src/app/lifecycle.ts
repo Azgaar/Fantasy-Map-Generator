@@ -8,6 +8,8 @@ import { Controllers } from "@/controllers";
 import { getPointsNumber } from "@/data/graph-density";
 import { GenerationPipeline } from "@/model/generation-pipeline";
 import { Icons } from "@/model/icons";
+import { mapHistory } from "@/model/map-history";
+import { Options } from "@/model/options/options-model";
 import { adoptLegacyIconSlots } from "@/model/styles/styles-legacy";
 import { Layers } from "@/renderers/layers";
 import { undraw } from "@/renderers/undraw";
@@ -15,6 +17,7 @@ import { is3dView } from "@/renderers/view-mode";
 import { setViewportSize } from "@/renderers/viewport/viewport";
 import { stashCallbackToken } from "@/services/assistant/azgaar-server/auth";
 import { initiateAutosave } from "@/services/autosave";
+import { declareDefaultFonts } from "@/services/fonts";
 import { logStats } from "@/services/logging";
 import { registerServiceWorker } from "@/services/platform";
 import { checkLoadParameters } from "@/services/url-params";
@@ -33,6 +36,7 @@ export async function boot(): Promise<void> {
   registerServiceWorker();
   initShell();
   initDialogPositionPersistence();
+  declareDefaultFonts();
 
   Options.restore();
   await Options.restoreIcons(); // kept in IndexedDB, and needed before the first map draws
@@ -159,18 +163,6 @@ export function regeneratePrompt(config?: GenerationConfig): void {
   });
 }
 
-interface MapHistoryEntry {
-  seed: string;
-  width: number;
-  height: number;
-  template: string;
-  created: number;
-  /** when this entry was put on screen in this session, unlike `created` never backdated to a loaded file's own timestamp */
-  registeredAt: number;
-}
-
-// every map this session put on screen, oldest first; the last one is what is on screen now
-globalThis.mapHistory = [];
 const MAP_HISTORY_LIMIT = 100;
 
 /** Take note of a map that is now on screen, and announce it */
@@ -188,13 +180,3 @@ export function registerMap(created: number = Date.now()): void {
   // the public seam test automation and external integrations wait on; the id is the creation date
   window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed: options.map.seed, mapId: created } }));
 }
-
-declare global {
-  var mapHistory: MapHistoryEntry[];
-  // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
-  var regeneratePrompt: (config?: GenerationConfig) => void;
-  // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
-  var regenerateMap: (config?: GenerationConfig | string) => void;
-}
-window.regeneratePrompt = regeneratePrompt;
-window.regenerateMap = regenerateMap;

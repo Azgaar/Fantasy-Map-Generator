@@ -1,9 +1,11 @@
 // A relief pool: the relief types and icons a biome's lowland or a relief rule places, with their weights and sizes
 
 import { Controllers } from "@/controllers";
+import { Options } from "@/model/options/options-model";
 import type { ReliefRule } from "@/model/options/options-schema";
 import { Biomes } from "@/model/physical/biomes-generator";
 import type { ReliefPool } from "@/model/physical/relief-generator";
+import { Relief } from "@/model/physical/relief-generator";
 import { redrawRelief } from "@/renderers/draw-relief-icons";
 import { Layers } from "@/renderers/layers";
 import { confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";

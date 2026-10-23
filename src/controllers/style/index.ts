@@ -5,6 +5,7 @@ import { openTab } from "@/app/chrome/options-panel";
 import { VIGNETTE_PRESET_LABELS } from "@/data/id-labels";
 import { layerLabel } from "@/data/layer-labels";
 import { VIGNETTE_PRESETS } from "@/data/vignette-presets";
+import { Options } from "@/model/options/options-model";
 import { Styles } from "@/model/styles/styles";
 import { styleMeta, stylesSchema } from "@/model/styles/styles-schema";
 import { applyVignetteOptions } from "@/renderers/draw-vignette";

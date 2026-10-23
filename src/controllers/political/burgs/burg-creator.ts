@@ -1,4 +1,5 @@
 import { pointer } from "d3";
+import { Burgs } from "@/model/political/burgs-generator";
 import { redrawEmblem } from "@/renderers/draw-emblems";
 import { Layers } from "@/renderers/layers";
 import { closeDialogs, refreshEditors } from "@/ui/dialog/dialog-helpers";

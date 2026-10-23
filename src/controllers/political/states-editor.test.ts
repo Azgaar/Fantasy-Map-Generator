@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/renderers/layers", () => ({ Layers: { show: vi.fn(), hide: vi.fn(), isOn: () => false } }));
-vi.mock("@/ui/tooltips", () => ({ tip: vi.fn(), clearMainTip: vi.fn() }));
+vi.mock("@/ui/tooltips", () => ({ tip: vi.fn(), clearMainTip: vi.fn(), loadingTip: { start: vi.fn(), end: vi.fn() } }));
 vi.mock("@/ui/map/viewbox-events", () => ({ applyDefaultViewboxEvents: vi.fn() }));
 vi.mock("@/ui/dialog/highlighting", () => ({ applyLineHighlighting: vi.fn() }));
 vi.mock("@/ui/map/annex-mode", () => ({
@@ -22,6 +22,7 @@ vi.mock("@/renderers/emblems/renderer", () => ({ EmblemRenderer: { trigger: vi.f
 vi.mock("@/renderers/overlays/fogging", () => ({ fog: vi.fn(), unfog: vi.fn() }));
 vi.mock("@/renderers/overlays/highlight", () => ({ highlightElement: vi.fn(), highlightOutline: vi.fn() }));
 
+import { States } from "@/model/political/states-generator";
 import { dialogState } from "@/ui/dialog/state";
 import { StatesEditor } from "./states-editor";
 
@@ -39,7 +40,7 @@ describe("StatesEditor", () => {
       not: vi.fn().mockReturnThis(),
       each: vi.fn()
     }));
-    vi.stubGlobal("States", {
+    Object.assign(States, {
       collectStatistics: vi.fn(),
       setLocked: vi.fn()
     });

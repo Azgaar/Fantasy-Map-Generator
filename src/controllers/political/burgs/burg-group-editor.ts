@@ -1,10 +1,13 @@
 import { Controllers } from "@/controllers";
+import { Labels } from "@/model/annotations/labels-generator";
+import { Options } from "@/model/options/options-model";
+import { Burgs } from "@/model/political/burgs-generator";
 import { Layers } from "@/renderers/layers";
 import type { BurgGroup } from "@/types/burg-groups";
 import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { type LimitationItem, pickLimitation } from "@/ui/dialog/limitation-picker";
 import { tip } from "@/ui/tooltips";
-import { ensureEl } from "@/utils";
+import { ensureEl, isValidJSON } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 
 const GROUP_NAME_REGEXP = /^[\p{L}_][\p{L}\p{N}_-]*$/u;
@@ -219,7 +222,7 @@ function selectFeaturesLimitation(el: HTMLElement): void {
         </tr>`
   );
 
-  alertMessage.innerHTML = /* html */ `
+  ensureEl("alertMessage").innerHTML = /* html */ `
       <form id="featuresLimitationForm">
         <table>
           <thead style="font-weight:bold">
@@ -364,7 +367,7 @@ function rowToGroup(row: Element): BurgGroup {
 }
 
 function getFeatures(value: string): Record<string, boolean> | undefined {
-  if (!JSON.isValid(value)) return undefined;
+  if (!isValidJSON(value)) return undefined;
   const features: Record<string, boolean> = JSON.parse(value);
   return Object.keys(features).length ? features : undefined;
 }
@@ -386,8 +389,8 @@ function submitForm(event: Event): void {
   const validBurgs = pack.burgs.filter(b => b.i && !b.removed);
   const populations = validBurgs.map(b => b.population!).sort((a, b) => a - b);
   validBurgs.forEach(burg => void Burgs.defineGroup(burg, populations));
-  window.Labels.ensureBurgLabelGroups();
-  window.Burgs.ensureBurgGroupStyles();
+  Labels.ensureBurgLabelGroups();
+  Burgs.ensureBurgGroupStyles();
 
   Layers.draw("burgIcons");
   Layers.draw("labels");

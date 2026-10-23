@@ -1,6 +1,6 @@
 import { axisBottom, axisLeft, curveBasis, line, pointer, scaleLinear, scaleTime, select, timeFormat } from "d3";
 import { tip } from "@/ui/tooltips";
-import { convertTemperature, rn, round } from "@/utils";
+import { convertTemperature, ensureEl, rn, round } from "@/utils";
 import { t } from "@/utils/i18n";
 
 const MONTHS = [
@@ -153,7 +153,7 @@ function open(id: number): void {
   });
 
   function drawGraph(): void {
-    alertMessage.innerHTML = "";
+    ensureEl("alertMessage").innerHTML = "";
     const getCurve = (data: [number, number][]): string => round(line().curve(curveBasis)(data) ?? "", 2);
 
     const legendSize = 60;

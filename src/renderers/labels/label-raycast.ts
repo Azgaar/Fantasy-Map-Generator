@@ -1,3 +1,4 @@
+import { Pack } from "@/model/graph/pack-generator";
 import type { TypedArray } from "@/types/PackedGraph";
 
 export interface Ray {

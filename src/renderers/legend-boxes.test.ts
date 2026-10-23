@@ -5,7 +5,7 @@ import { Layers } from "./layers";
 import { getAltitudeBands, LegendBoxes } from "./legend-boxes";
 
 vi.mock("./layers", () => ({ Layers: { draw: vi.fn() } }));
-vi.mock("@/ui/tooltips", () => ({ tip: vi.fn() }));
+vi.mock("@/ui/tooltips", () => ({ tip: vi.fn(), loadingTip: { start: vi.fn(), end: vi.fn() } }));
 vi.mock("@/renderers/legend-positions", () => ({ legendPositions: { release: vi.fn() } }));
 
 describe("LegendBoxes", () => {

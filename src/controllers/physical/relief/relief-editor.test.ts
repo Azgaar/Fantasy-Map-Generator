@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Pack } from "@/model/graph/pack-generator";
 import type { ReliefIcon, ReliefIconType } from "@/model/physical/relief-generator";
+import { Relief } from "@/model/physical/relief-generator";
 import { Styles } from "@/model/styles/styles";
 import { getReliefIcon } from "@/renderers/draw-relief-icons";
 import { ReliefEditor } from "./relief-editor";
-import "@/model/graph/pack-generator"; // registers the Pack global the editor finds cells with
-import "@/model/physical/relief-generator"; // installs the Relief global
 
 vi.mock("@/model/icons", () => ({
   Icons: {
@@ -18,6 +18,10 @@ vi.mock("@/model/icons", () => ({
 
 // jsdom lays nothing out: the previews keep their frames
 Object.assign(SVGElement.prototype, { getBBox: () => ({ x: 0, y: 0, width: 0, height: 0 }) });
+const { Controllers } = vi.hoisted(() => ({
+  Controllers: { IconPicker: { open: vi.fn() } } as Record<string, Record<string, unknown>>
+}));
+vi.mock("@/controllers", () => ({ Controllers }));
 vi.mock("@/ui/map/viewbox-events", () => ({ applyDefaultViewboxEvents: vi.fn() }));
 vi.mock("@/renderers/layers", () => ({ Layers: { show: vi.fn(), draw: vi.fn() } }));
 vi.mock("@/renderers/draw-relief-icons", () => ({ redrawRelief: vi.fn(), getReliefIcon: vi.fn() }));
@@ -151,13 +155,13 @@ describe("ReliefEditor any icon", () => {
     pack.relief = [original];
     vi.mocked(getReliefIcon).mockReturnValue(original);
     let pick: (id: string) => void = () => {};
-    globalThis.Controllers = {
+    Object.assign(Controllers, {
       IconPicker: {
         open: vi.fn(({ onPick }) => {
           pick = onPick;
         })
       }
-    } as unknown as typeof Controllers;
+    });
     const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
     use.dataset.id = "0";
     ReliefEditor.open(use);
@@ -174,9 +178,9 @@ describe("ReliefEditor any icon", () => {
     const icon: ReliefIcon = { type: "mount", x: 1, y: 2, s: 3 };
     pack.relief = [icon];
     vi.mocked(getReliefIcon).mockReturnValue(icon);
-    globalThis.Controllers = {
+    Object.assign(Controllers, {
       IconPicker: { open: vi.fn(({ onPick }) => onPick("custom-a")) }
-    } as unknown as typeof Controllers;
+    });
     const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
     use.dataset.id = "0";
     ReliefEditor.open(use);

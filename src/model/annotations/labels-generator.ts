@@ -58,10 +58,6 @@ const LAYOUT: Record<keyof LabelLayout, (value: unknown) => unknown> = {
   }
 };
 
-declare global {
-  var Labels: LabelsModule;
-}
-
 export class LabelsModule {
   getDefaultGroups(): LabelGroup[] {
     // order matters for z-indexing
@@ -287,7 +283,4 @@ export class LabelsModule {
   }
 }
 
-// biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const Labels = new LabelsModule();
-
-window.Labels = Labels;

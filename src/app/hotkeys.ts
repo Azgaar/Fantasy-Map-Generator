@@ -1,13 +1,15 @@
-import { hideOptions } from "@/app/chrome/options-panel";
+import { hideOptions, toggleOptions } from "@/app/chrome/options-panel";
 import { Controllers } from "@/controllers";
+import { Layers } from "@/renderers/layers";
 import { Services } from "@/services";
 import { toggleSaveReminder } from "@/services/autosave";
 import { closeDialogs } from "@/ui/dialog/dialog-helpers";
-import { changeMapZoom, panMap, setMapZoom } from "@/ui/map/zoom";
+import { changeMapZoom, panMap, resetZoom, setMapZoom } from "@/ui/map/zoom";
 import { findEl, minmax } from "@/utils";
 import { t } from "@/utils/i18n";
 import { showInfo } from "./chrome/app-info";
 import { getLayerByShortcut } from "./chrome/tabs/layers-tab";
+import { regeneratePrompt } from "./lifecycle";
 
 // Hotkeys, see github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys
 document.addEventListener("keydown", handleKeydown);

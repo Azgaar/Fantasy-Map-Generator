@@ -12,9 +12,7 @@ the owning module (its own chunk, evaluated at most once), then dispatches the c
 returning a Promise**. Callers never write `import()` or `.then(m => …)`. An `eager(value)` helper
 registers an already-imported value so lazy vs eager is invisible to callers.
 
-Two buckets are built from the factory, each in its own layer's eager entry, and exposed on `window`
-(so inline `onclick` handlers and the `window`-bridge code can reach them, mirroring the old
-`window.lazy`):
+Two buckets are built from the factory, each in its own layer's eager entry:
 
 Both buckets use the **same contract**: every registered module exports a single named object whose
 properties are its public methods.
@@ -27,11 +25,13 @@ properties are its public methods.
 
 The mechanism is **dispatch-only**: callers invoke methods, they don't read properties off the
 resolved object. A module that exposes data or a nested object must wrap it in a method facade (e.g.
-`CloudStorage` flattens `Cloud.providers.dropbox`), OR be loaded eagerly instead (e.g. the small
-credits string is exposed as `window.supporters` via `src/data/index.ts`).
+`CloudStorage` flattens `Cloud.providers.dropbox`), OR be imported eagerly instead (e.g. the small
+credits string, `supporters` in `src/data/supporters.ts`).
 
-Both `index.ts` files are eager `<script type="module">` entries in `index.html`, so the registries
+Both `index.ts` files are imported eagerly by the composition root, `app/index.ts`, so the registries
 exist at startup. They hold only loader thunks, so the eager cost is a few bytes, not module bodies.
+The caller passes the loading feedback: both registries show `loadingTip` from `ui/tooltips` while a
+chunk downloads.
 
 ## Adding a lazy module
 
@@ -56,15 +56,11 @@ exist at startup. They hold only loader thunks, so the eager cost is a few bytes
    Rollup sees the string literal inside `import()` and emits an independent chunk. Each entry keeps
    its exact resolved type, so call sites are fully typed and autocompleted.
 
-4. **Call it uniformly.** Migrated TS imports the bucket; other scripts reach the same bucket through
-   the `window` global:
+4. **Call it uniformly.** Every caller imports the bucket:
 
    ```ts
    import { Controllers } from "@/controllers";
    Controllers.MarketOverview.open(id); // returns Promise<void>
-   ```
-   ```js
-   window.Controllers.MarketOverview.open(id);
    ```
 
 ## Lazy vs eager is invisible to callers
@@ -77,17 +73,16 @@ click's user activation, which a module download would outlive.
 
 ## Rules
 
-- Named exports only — no module-level `window.X = new Thing()` self-registration for lazy modules
-  (that pattern is for eagerly-loaded generators like `markets-generator.ts`).
+- Named exports only, and nothing registered on `window`: the console reaches modules through
+  `window.FMG` ([architecture.md](./architecture.md#scripting-surface)).
 - The registry buckets in `index.ts` contain only `() => import(...)` thunks and `eager(...)` wrappers — no logic. The moment
   a controller is imported statically there, it stops being lazy.
 - An entry must never be made thenable: the factory's per-entry proxy returns `undefined` for `then`
   and for symbol keys, so `await Registry.Name` is a no-op rather than a phantom method call. Keep
   that guard if you touch `registry.ts`.
-- If a lazy module needs another not-yet-declared global, add it to `src/types/global.ts` under the
-  existing ambient-global convention (see `src/model/globals.ts`) — don't `as any` around it.
-- Use **d3 v7 via named imports** (`import { select } from "d3"`), not the `window.d3` global. See
-  [migration-guide.md](./migration-guide.md#d3-v7-named-imports-only).
+- A lazy module imports what it calls, like any other: see the [module guide](./module-guide.md#imports-not-globals).
+- Use **d3 v7 via named imports** (`import { select } from "d3"`). See
+  [module-guide.md](./module-guide.md#d3-v7-named-imports-only).
 
 ## Verifying a module is actually lazy
 

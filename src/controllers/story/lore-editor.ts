@@ -2,6 +2,7 @@
 // it. Every control edits `options.map.lore` through the Lore model - the dialog is built and filled from
 // the object on open, and nothing outside reads its inputs. See docs/architecture/configuration.md
 
+import { Options } from "@/model/options/options-model";
 import { Pins } from "@/model/options/pins";
 import { Names } from "@/model/society/names-generator";
 import { Lore } from "@/model/story/lore";

@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 import { select } from "d3";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { Pack } from "@/model/graph/pack-generator";
 import type { State } from "@/model/political/states-generator";
 import { Layers } from "@/renderers/layers";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { tip } from "@/ui/tooltips";
-import "@/model/political/states-generator"; // registers the States global the diplomacy chronicle is read through
 import { DiplomacyEditor } from "./diplomacy-editor";
 
 vi.mock("@/renderers/layers", () => ({ Layers: { show: vi.fn(), hide: vi.fn(), draw: vi.fn() } }));
@@ -13,7 +13,7 @@ vi.mock("@/utils", async importOriginal => ({
   ...(await importOriginal<typeof import("@/utils")>()),
   getVertexPath: (cells: number[]) => `M${cells.join()}`
 }));
-vi.mock("@/ui/tooltips", () => ({ tip: vi.fn(), clearMainTip: vi.fn() }));
+vi.mock("@/ui/tooltips", () => ({ tip: vi.fn(), clearMainTip: vi.fn(), loadingTip: { start: vi.fn(), end: vi.fn() } }));
 vi.mock("@/ui/map/viewbox-events", () => ({
   applyDefaultViewboxEvents: vi.fn(() => select("#viewbox").on("click", null).on(".drag", null))
 }));
@@ -83,7 +83,7 @@ beforeEach(() => {
     { i: 4, name: "Removed", removed: true, diplomacy: ["x", "x", "x", "x", "x"] }
   ] as State[];
   vi.stubGlobal("pack", { states, cells: { i: [0, 1, 2, 3, 4, 5], state: Uint16Array.from([0, 1, 2, 3, 4, 99]) } });
-  vi.stubGlobal("Pack", { findCell: (x: number) => (x < 6 ? x : undefined) });
+  Object.assign(Pack, { findCell: (x: number) => (x < 6 ? x : undefined) });
   vi.stubGlobal("customization", 0);
 });
 
@@ -147,6 +147,9 @@ describe("painting relations", () => {
   test("starts with the first relation and remembers the last chosen one", async () => {
     vi.resetModules();
     const { DiplomacyEditor: fresh } = await import("./diplomacy-editor");
+    Object.assign((await import("@/model/graph/pack-generator")).Pack, {
+      findCell: (x: number) => (x < 6 ? x : undefined)
+    });
     fresh.open(1);
     expect(checkedRelation()).toBe("Ally");
     choose("Rival");

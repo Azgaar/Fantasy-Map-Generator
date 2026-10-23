@@ -15,11 +15,13 @@
  * For the changes that may be interesting for end users, update the `latestPublicChanges` below.
  */
 
+import { Options } from "@/model/options/options-model";
 import { Pins } from "@/model/options/pins";
+import { Services } from "@/services";
 import { confirmationDialog } from "@/ui/dialog/dialog-helpers";
 import { dialogState } from "@/ui/dialog/state";
 import { tip } from "@/ui/tooltips";
-import { findEl } from "@/utils";
+import { ensureEl, findEl } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { isElectron } from "./platform";
 
@@ -139,7 +141,7 @@ function showUpdateWindow(storedVersion: string | null): void {
   const discord = "https://discordapp.com/invite/X7E84HU";
   const patreon = "https://www.patreon.com/azgaar";
 
-  alertMessage.innerHTML = /* html */ `${t(
+  ensureEl("alertMessage").innerHTML = /* html */ `${t(
     "The Fantasy Map Generator is updated up to version {{version}}. This version is compatible with {{- previous}}, loaded save files will be auto-updated.",
     {
       version: VERSION,
@@ -155,7 +157,7 @@ function showUpdateWindow(storedVersion: string | null): void {
         .join("")}
     </ul>
 
-    ${isElectron() ? "" : `<p>${t("The Generator is also available as a {{- app}} that works offline.", { app: `<a href="#" onclick="window.Services.AppOffer.open(); return false">${t("desktop app")}</a>` })}</p>`}
+    ${isElectron() ? "" : `<p>${t("The Generator is also available as a {{- app}} that works offline.", { app: `<a id="updateAppOffer" href="#">${t("desktop app")}</a>` })}</p>`}
 
     <p>${t(
       "Join our {{- discord}} and {{- reddit}} to ask questions, share maps, discuss the Generator and Worldbuilding, report bugs and propose new features.",
@@ -165,6 +167,10 @@ function showUpdateWindow(storedVersion: string | null): void {
       }
     )}</p>
     <span><i>${t("Thanks for all supporters on {{- patreon}}!", { patreon: `<a href="${patreon}" target="_blank">Patreon</a>` })}</i></span>`;
+  findEl("updateAppOffer")?.addEventListener("click", event => {
+    event.preventDefault();
+    Services.AppOffer.open();
+  });
 
   $("#alert").dialog({
     resizable: false,
@@ -203,13 +209,4 @@ function announceVersion(): void {
 
 announceVersion();
 
-declare global {
-  // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
-  var VERSION: string;
-  // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
-  var cleanupData: () => Promise<void>;
-}
-
 // temp legacy compatibility
-window.VERSION = VERSION;
-window.cleanupData = cleanupData;

@@ -1,4 +1,8 @@
 // Checks that every stored cell id and every link between entities still holds. A broken id never throws
+
+import { Routes } from "@/model/economy/routes-generator";
+import { Transports } from "@/model/economy/transports-generator";
+import { Pack } from "@/model/graph/pack-generator";
 import { isWater } from "@/utils";
 
 export type IntegrityRule = (typeof RULES)[number];
@@ -228,4 +232,3 @@ class MapIntegrityModule {
 }
 
 export const MapIntegrity = new MapIntegrityModule();
-Object.assign(window, { MapIntegrity }); // to run from the console on a map that behaves oddly

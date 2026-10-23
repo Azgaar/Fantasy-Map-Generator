@@ -3,6 +3,7 @@
 // See docs/architecture/configuration.md#invariants
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getPointsNumber, POINTS_BY_DENSITY } from "@/data/graph-density";
+import { Options } from "./options-model";
 import type { MapData } from "./options-schema";
 import { Pins } from "./pins";
 

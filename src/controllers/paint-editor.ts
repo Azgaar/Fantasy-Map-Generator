@@ -1,4 +1,5 @@
 import "@/ui/elements/fill-box";
+import { Pack } from "@/model/graph/pack-generator";
 import {
   openPaintOverlay,
   type PaintOverlayCell,

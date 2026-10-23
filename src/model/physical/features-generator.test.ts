@@ -1,5 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { Names } from "@/model/society/names-generator";
 import type { Feature } from "./features-generator";
+import { Features } from "./features-generator";
 
 describe("feature naming", () => {
   beforeAll(async () => {
@@ -30,7 +32,7 @@ describe("feature naming", () => {
     } as unknown as typeof pack;
     globalThis.grid = { cells: { i: new Array(1000) } } as unknown as typeof grid;
     globalThis.options = { map: { seed: "1", graph: { width: 100, height: 100 } } } as unknown as typeof options;
-    globalThis.Names = { getCulture: (culture: number) => `name-of-${culture}` } as unknown as typeof Names;
+    Object.assign(Names, { getCulture: (culture: number) => `name-of-${culture}` });
   });
 
   it("takes the culture of the first cell for islands and of a shore cell for lakes", () => {

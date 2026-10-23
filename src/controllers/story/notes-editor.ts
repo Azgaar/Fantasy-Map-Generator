@@ -1,11 +1,14 @@
 import type Quill from "quill";
 import { Controllers } from "@/controllers";
 import { ENTITY_TYPES, type EntityRef, MapEntities } from "@/model/map-entities";
+import { Options } from "@/model/options/options-model";
 import { type NoteEntry, Notes } from "@/model/story/notes";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { viewport } from "@/renderers/viewport/viewport";
+import { fonts } from "@/services/fonts";
 import { Csv } from "@/services/io/csv";
 import { alertDialog, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { ensureEl, findEl, speak } from "@/utils";
 import { sentences, t } from "@/utils/i18n";

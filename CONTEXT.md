@@ -75,6 +75,7 @@
 
 # Sharp Edges
 
-- **Legacy Globals**: The codebase heavily relies on implicit global state (`pack` and `grid` on the `window`). Be extremely cautious when refactoring these to explicit parameters.
+- **Ambient state**: `pack`, `grid`, `options`, `styles` and `customization` are still globals, read bare across the app; everything else is imported. Be cautious when turning them into explicit parameters.
+- **`window.FMG`**: the browser console and the Assistant's `read_map` scripts reach the app through `window.FMG` ([src/app/fmg.ts](src/app/fmg.ts)). App code never reads it.
 - **`index.html`**: The shared app-shell and map SVG template. It can easily break if structural tags are accidentally nested incorrectly.
 - **Playwright**: Never automatically run Playwright tests when developing, they are too slow and cause PC freezes.

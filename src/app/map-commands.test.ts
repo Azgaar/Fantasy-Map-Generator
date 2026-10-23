@@ -31,14 +31,16 @@ vi.mock("@/services/autosave", () => ({ toggleSaveReminder: vi.fn() }));
 vi.mock("@/services/url-params", () => ({ copyMapURL: vi.fn() }));
 vi.mock("@/services/versioning", () => ({ cleanupData: vi.fn() }));
 
+import { Routes } from "@/model/economy/routes-generator";
+import { Rivers } from "@/model/physical/river-generator";
 import { isLinkable, MAP_COMMANDS } from "./map-commands";
 
 beforeEach(() => {
   document.body.innerHTML = '<div id="alert"><div id="alertMessage"></div></div>';
   sessionStorage.clear();
   vi.clearAllMocks();
-  vi.stubGlobal("Rivers", { regenerate: mocks.regenerate });
-  vi.stubGlobal("Routes", { sync: () => {} });
+  Object.assign(Rivers, { regenerate: mocks.regenerate });
+  Object.assign(Routes, { sync: () => {} });
   vi.stubGlobal("$", () => ({ dialog: mocks.dialog }));
 });
 

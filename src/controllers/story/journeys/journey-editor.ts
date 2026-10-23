@@ -1,10 +1,12 @@
 import { Controllers } from "@/controllers";
+import { Transports } from "@/model/economy/transports-generator";
 import {
   type CellPlace,
   cellEndpointLabel,
   getCellPoint,
   resolveCellPlace
 } from "@/model/story/journeys/journey-places";
+import { Journeys } from "@/model/story/journeys/journeys-generator";
 import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
@@ -27,6 +29,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
+import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { convertSpeed, ensureEl, escapeHtml, findEl, formatSpeed, getDistanceUnit, parseSpeed, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";

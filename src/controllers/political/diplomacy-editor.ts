@@ -1,6 +1,8 @@
 // Set relations to a state by clicking or dragging over other states on the map
 import { type D3DragEvent, drag, pointer, select } from "d3";
 import { getInverseRelation, RELATIONS } from "@/data/diplomacy";
+import { Pack } from "@/model/graph/pack-generator";
+import { States } from "@/model/political/states-generator";
 import { Layers } from "@/renderers/layers";
 import { removeRelationsMark, showRelations } from "@/renderers/overlays/diplomacy";
 import type { Point } from "@/types/global";

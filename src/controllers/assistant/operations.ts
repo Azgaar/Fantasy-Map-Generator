@@ -21,7 +21,7 @@ import { Notes } from "@/model/story/notes";
 import { Styles } from "@/model/styles/styles";
 import { StylePresets } from "./style-presets";
 
-const MODELS = {
+export const MODELS = {
   AddedLabels,
   Biomes,
   Burgs,

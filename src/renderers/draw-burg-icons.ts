@@ -1,6 +1,7 @@
 import { IconSets } from "@/model/icon-sets";
 import { Icons } from "@/model/icons";
 import type { Burg } from "@/model/political/burgs-generator";
+import { Burgs } from "@/model/political/burgs-generator";
 import { Layers } from "@/renderers/layers";
 import { zoomFontSize } from "@/renderers/viewport/viewport";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";

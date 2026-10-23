@@ -5,7 +5,7 @@ import "@/model/physical/relief-generator"; // the models own the set definition
 import "@/model/political/burgs-generator";
 import "@/model/economy/goods-generator";
 
-vi.mock("@/ui/tooltips", () => ({ tip: vi.fn() }));
+vi.mock("@/ui/tooltips", () => ({ tip: vi.fn(), loadingTip: { start: vi.fn(), end: vi.fn() } }));
 
 beforeEach(() => {
   vi.resetModules();
@@ -72,8 +72,9 @@ test("custom icons are rebuilt from the map's list, beside the loaded sets and n
 
 test("a change to one custom icon rebuilds only its symbol", async () => {
   const { CustomIcons } = await import("./icons");
+  const { Options } = await import("@/model/options/options-model");
   globalThis.options = { map: { customIcons: [] } } as unknown as typeof options;
-  globalThis.Options = { iconsChanged: vi.fn() } as unknown as typeof Options;
+  Object.assign(Options, { iconsChanged: vi.fn() });
   const svg = CustomIcons.add({ kind: "svg", content: '<path d="M0 0"/>', viewBox: "0 0 10 10" });
   const image = CustomIcons.add({ kind: "image", content: "https://a.b/c.png", viewBox: "0 0 100 100" });
   expect(document.querySelectorAll("#icons-library > [data-set=custom] > symbol")).toHaveLength(2);

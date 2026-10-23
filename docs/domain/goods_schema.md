@@ -109,7 +109,7 @@ Coverage is used during the burg worker loop to calculate demand effects (boosti
 
 ## The `GoodsModule` Class
 
-`window.Goods` (singleton) provides:
+`Goods` (the singleton in `src/model/economy/goods-generator.ts`) provides:
 
 | Method / property       | Purpose                                                                                                     |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------- |

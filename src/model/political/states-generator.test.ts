@@ -1,4 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Markets } from "@/model/economy/markets-generator";
+import { Routes } from "@/model/economy/routes-generator";
+import { Names } from "@/model/society/names-generator";
+import { States } from "./states-generator";
 
 describe("StatesModule.collectTaxes", () => {
   let StatesModule: any;
@@ -14,26 +18,17 @@ describe("StatesModule.collectTaxes", () => {
       biomes: []
     } as any;
     // Stub Names/COA data not needed for this test
-    globalThis.Names = { getCultureShort: () => "X", getState: () => "X" } as any;
-    globalThis.FlatQueue = class {
-      length = 0;
-      pop() {
-        return undefined as any;
-      }
-      push() {
-        /* noop */
-      }
-    } as any;
-    globalThis.Routes = { areConnected: () => false } as any;
-    globalThis.Markets = {
+    Object.assign(Names, { getCultureShort: () => "X", getState: () => "X" });
+    Object.assign(Routes, { areConnected: () => false });
+    Object.assign(Markets, {
       get: (marketId: number | undefined) =>
         marketId ? globalThis.pack.markets?.find((m: any) => m?.i === marketId) : undefined
-    } as any;
+    });
     globalThis.options = {} as any;
 
     // Reload module fresh
     await import("./states-generator");
-    StatesModule = (globalThis as any).States;
+    StatesModule = States;
   });
 
   it("credits sales-tax deal.tax to the seller's state and adds poll tax", () => {
@@ -201,7 +196,7 @@ describe("StatesModule.generateDiplomacy", () => {
     // 0.5 makes P(0.8) true and rw() pick no Rival, so the vassal branch runs and no war is declared
     vi.spyOn(Math, "random").mockReturnValue(0.5);
     await import("./states-generator");
-    StatesModule = (globalThis as any).States;
+    StatesModule = States;
   });
 
   afterEach(() => {

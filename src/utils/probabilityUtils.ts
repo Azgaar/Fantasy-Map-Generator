@@ -132,14 +132,3 @@ export const getNumberInRange = (r: string): number => {
 export const generateSeed = (): string => {
   return String(Math.floor(Math.random() * 1e9));
 };
-
-declare global {
-  interface Window {
-    rand: typeof rand;
-    P: typeof P;
-    each: typeof each;
-    gauss: typeof gauss;
-    rw: typeof rw;
-    generateSeed: typeof generateSeed;
-  }
-}

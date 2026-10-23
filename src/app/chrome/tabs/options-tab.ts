@@ -17,17 +17,18 @@ import {
 } from "@/app/performance";
 import { generateMapWithSeed, showSeedHistoryDialog } from "@/app/seed";
 import { Controllers } from "@/controllers";
+import { CULTURE_SETS } from "@/data/culture-sets";
 import { getPointsNumber } from "@/data/graph-density";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { isLanguage, LANGUAGES } from "@/data/languages";
 import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
 import type { Sampling } from "@/model/graph/lattice";
-import { DEFAULT_THEME_COLOR } from "@/model/options/options-model";
+import { DEFAULT_THEME_COLOR, Options } from "@/model/options/options-model";
 import type { OptionsData } from "@/model/options/options-schema";
 import { Pins } from "@/model/options/pins";
 import { isAutoBurgLimit } from "@/model/political/burgs-generator";
 import { Emblems } from "@/model/political/emblems-generator";
-import { CULTURE_SETS, Cultures } from "@/model/society/cultures-generator";
+import { Cultures } from "@/model/society/cultures-generator";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { viewport } from "@/renderers/viewport/viewport";
 import { copyMapURL } from "@/services/url-params";
@@ -484,7 +485,6 @@ const TEMPLATE = /* html */ `
       id="configureWorld"
       style="flex: 1; min-width: max-content"
       data-tip="${t("Open the World Configurator to set the map position on the globe and the world climate")}"
-      onclick="window.Controllers.WorldConfigurator.open()"
     >
       ${t("Climate")}
     </button>
@@ -492,7 +492,6 @@ const TEMPLATE = /* html */ `
       id="setupLore"
       style="flex: 1; min-width: max-content"
       data-tip="${t("Click to name the map, date its calendar and describe the world")}"
-      onclick="window.Controllers.LoreEditor.open()"
     >
       ${t("Lore")}
     </button>
@@ -531,6 +530,8 @@ function addListeners(): void {
   const onClick = (event: Event) => {
     const target = event.target as HTMLElement;
     if (target.id === "restoreDefaultMapSize") restoreDefaultMapSize();
+    else if (target.id === "configureWorld") Controllers.WorldConfigurator.open();
+    else if (target.id === "setupLore") Controllers.LoreEditor.open();
     else if (target.id === "optionsMapHistory") showSeedHistoryDialog();
     else if (target.id === "optionsCopySeed") copyMapURL();
     else if (target.id === "templateInputContainer") Controllers.HeightmapSelection.open();
@@ -952,11 +953,3 @@ export function restoreUi(): void {
   applyPerformanceSettings();
   applyZoomExtent();
 }
-
-// Legacy seam: the submap and transform tools set the cell density
-declare global {
-  // biome-ignore lint/suspicious/noRedeclare: legacy seam
-  var changeCellsDensity: (density: number) => void;
-}
-
-window.changeCellsDensity = changeCellsDensity;

@@ -1,9 +1,33 @@
 // Canonical generation sequence, as a declared pipeline instead of a hand-written call list. See docs/architecture/generation-pipeline.md.
 
+import { AddedLabels } from "@/model/annotations/added-labels";
 import { Legends } from "@/model/annotations/legends";
+import { Measurers } from "@/model/annotations/measurers-generator";
+import { Goods } from "@/model/economy/goods-generator";
+import { Markets } from "@/model/economy/markets-generator";
+import { Production } from "@/model/economy/production-generator";
+import { Routes } from "@/model/economy/routes-generator";
 import { GraphOverride } from "@/model/graph/graph-override";
+import { Grid } from "@/model/graph/grid-generator";
+import { Pack } from "@/model/graph/pack-generator";
+import { Biomes } from "@/model/physical/biomes-generator";
+import { Features } from "@/model/physical/features-generator";
+import { HeightmapGenerator } from "@/model/physical/heightmap-generator";
+import { Ice } from "@/model/physical/ice-generator";
+import { Precipitation } from "@/model/physical/precipitation-generator";
+import { Rivers } from "@/model/physical/river-generator";
+import { Temperature } from "@/model/physical/temperature-generator";
 import { Pipeline, type PipelineStep } from "@/model/pipeline";
+import { Burgs } from "@/model/political/burgs-generator";
+import { Military } from "@/model/political/military-generator";
+import { Provinces } from "@/model/political/provinces-generator";
+import { States } from "@/model/political/states-generator";
+import { Zones } from "@/model/political/zones-generator";
+import { Cultures } from "@/model/society/cultures-generator";
 import { Population } from "@/model/society/population-generator";
+import { Religions } from "@/model/society/religions-generator";
+import { Journeys } from "@/model/story/journeys/journeys-generator";
+import { Markers } from "@/model/story/markers-generator";
 import type { GridGraph } from "@/types/GridGraph";
 import { Coordinates } from "./physical/coordinates";
 
@@ -101,9 +125,3 @@ export const ErasePipeline = new Pipeline<GenerationPipelineStepId, EraseContext
   "Erase Heightmap",
   erasePipelineSteps
 );
-
-declare global {
-  // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
-  var GenerationPipeline: import("@/model/pipeline").Pipeline<GenerationPipelineStepId, GenerationContext>;
-}
-window.GenerationPipeline = GenerationPipeline;

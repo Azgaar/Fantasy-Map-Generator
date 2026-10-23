@@ -1,6 +1,7 @@
 import { select, sum } from "d3";
 import { Controllers } from "@/controllers";
 import type { Zone } from "@/model/political/zones-generator";
+import { Zones } from "@/model/political/zones-generator";
 import { Tags } from "@/model/tags";
 import { zonesFilter } from "@/renderers/draw-zones";
 import { Layers } from "@/renderers/layers";
@@ -493,7 +494,8 @@ function changePopulation(zone: Zone): void {
   const total = rural + urban;
   const l = (n: number): string => Number(n).toLocaleString();
 
-  alertMessage.innerHTML = /* html */ `${t("Rural")}: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" /> ${t("Urban")}:
+  ensureEl("alertMessage").innerHTML =
+    /* html */ `${t("Rural")}: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" /> ${t("Urban")}:
     <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em" ${burgs.length ? "" : "disabled"} />
     <p>${t("Total population")}: ${l(total)} ⇒ <span id="totalPop">${l(total)}</span> (<span id="totalPopPerc">100</span>%)</p>`;
 

@@ -1,7 +1,7 @@
 // Browser-mode test (vitest.browser.config.ts): drawTexture derives the image from the store
 // and clamps out-of-range shifts instead of emitting invalid negative sizes.
 import { beforeEach, expect, test } from "vitest";
-import "@/model/options/options-model"; // installs the options global
+import "@/model/options/options-defaults"; // sets the default options
 import "@/model/styles/styles";
 import { drawTexture } from "./draw-texture";
 

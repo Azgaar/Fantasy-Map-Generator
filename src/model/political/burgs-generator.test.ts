@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Routes } from "@/model/economy/routes-generator";
 import type { Burg } from "./burgs-generator";
+import { Burgs } from "./burgs-generator";
 
 // ---------------------------------------------------------------------------
 // Minimal pack geometry used across all scenarios
@@ -66,8 +68,6 @@ function makeBurgs() {
 // ---------------------------------------------------------------------------
 
 describe("BurgsModule.assignPorts — open-lake port promotion", () => {
-  let Burgs: any;
-
   beforeEach(async () => {
     globalThis.TIME = false;
     globalThis.window = globalThis.window || ({} as any);
@@ -78,7 +78,6 @@ describe("BurgsModule.assignPorts — open-lake port promotion", () => {
     await import("@/model/graph/pack-generator"); // the river-bank shift is checked against the cell under it
     await import("@/model/physical/river-generator");
     await import("./burgs-generator");
-    Burgs = (globalThis as any).Burgs;
   });
 
   // -------------------------------------------------------------------------
@@ -340,8 +339,6 @@ describe("BurgsModule.assignPorts — open-lake port promotion", () => {
 });
 
 describe("BurgsModule.assignPorts — river-bank shift", () => {
-  let Burgs: any;
-
   beforeEach(async () => {
     globalThis.TIME = false;
     globalThis.window = globalThis.window || ({} as any);
@@ -350,7 +347,6 @@ describe("BurgsModule.assignPorts — river-bank shift", () => {
     await import("@/model/graph/pack-generator"); // the river-bank shift is checked against the cell under it
     await import("@/model/physical/river-generator");
     await import("./burgs-generator");
-    Burgs = (globalThis as any).Burgs;
   });
 
   it("shifts a non-port river burg perpendicular to the local river course", () => {
@@ -459,7 +455,6 @@ describe("ensureBurgGroupStyles", () => {
   it("seeds icon and anchor styles for custom groups from the fallback group, keeping existing entries", async () => {
     globalThis.window = globalThis.window || ({} as any);
     await import("./burgs-generator");
-    const Burgs = (globalThis as any).Burgs;
 
     options.map.burgs.groups = [{ name: "town" }, { name: "fortresses" }] as never;
     const town = { attrs: { fill: "#aaa" }, options: { size: 1, icon: "#burgs-burg" } };
@@ -481,13 +476,10 @@ describe("ensureBurgGroupStyles", () => {
 });
 
 describe("BurgsModule.parseStoredGroups", () => {
-  let Burgs: any;
-
   beforeEach(async () => {
     globalThis.TIME = false;
     globalThis.window = globalThis.window || ({} as any);
     await import("./burgs-generator");
-    Burgs = (globalThis as any).Burgs;
   });
 
   it("falls back to the defaults when the stored value holds no usable group", () => {
@@ -514,7 +506,6 @@ describe("BurgsModule.parseStoredGroups", () => {
 describe("BurgsModule.defineGroup", () => {
   it("assigns burgs only to groups whose state, culture and religion limits they meet", async () => {
     await import("./burgs-generator");
-    const Burgs = (globalThis as any).Burgs;
     globalThis.pack = { cells: { biome: [0, 0, 0], religion: [0, 1, 2] } } as any;
     options.map.burgs.groups = [
       { name: "elven", order: 4, active: true, cultures: [1] },
@@ -539,7 +530,7 @@ describe("BurgsModule.defineGroup", () => {
 describe("BurgModule.rename", () => {
   it("renames a burg and its label, and rejects missing burgs and empty names", async () => {
     await import("./burgs-generator");
-    const burgs = (globalThis as any).Burgs;
+    const burgs = Burgs;
     globalThis.pack = {
       burgs: [
         0,
@@ -564,7 +555,7 @@ describe("BurgsModule.generate", () => {
     globalThis.pack = { burgs: undefined, cells: { i: [0, 1, 2], s: [0, 0, 0], culture: [0, 0, 0] } } as any;
     await import("./burgs-generator");
 
-    (globalThis as any).Burgs.generate();
+    Burgs.generate();
 
     expect(globalThis.pack.burgs).toEqual([0]);
   });
@@ -572,7 +563,7 @@ describe("BurgsModule.generate", () => {
 
 describe("BurgsModule.getPreview — Watabou river and coast", () => {
   const params = (burg: Pick<Burg, "cell"> & Partial<Burg>) => {
-    const { link, preview } = globalThis.Burgs.getPreview({
+    const { link, preview } = Burgs.getPreview({
       i: 1,
       x: 0,
       y: 0,
@@ -598,7 +589,7 @@ describe("BurgsModule.getPreview — Watabou river and coast", () => {
         }
       }
     });
-    vi.stubGlobal("Routes", { isCrossroad: () => false, getConnectivityRate: () => 0 });
+    Object.assign(Routes, { isCrossroad: () => false, getConnectivityRate: () => 0 });
     vi.stubGlobal("grid", { cells: { temp: [20] } });
     // River 5 passes coastal cell 1 and meets the sea at cell 2; cell 4 is a riverless coast.
     vi.stubGlobal("pack", {

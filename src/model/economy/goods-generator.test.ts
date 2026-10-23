@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { Goods } from "./goods-generator";
 
 describe("GoodsModule", () => {
   let goodsModule: any;
@@ -49,7 +50,7 @@ describe("GoodsModule", () => {
 
     const { GoodsModule } = await import("./goods-generator");
     goodsModule = new GoodsModule();
-    globalThis.Goods = goodsModule as any;
+    Object.assign(Goods, goodsModule);
   });
 
   it("keeps the current catalogue when rerolling placement", () => {

@@ -1,9 +1,10 @@
 import { curveBundle, line, max, min, select } from "d3";
+import { Grid } from "@/model/graph/grid-generator";
 import type { Point } from "@/model/graph/voronoi";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
-import { C_12 } from "./colorUtils";
-import { normalize } from "./numberUtils";
-import { round } from "./stringUtils";
+import { C_12 } from "@/utils/colorUtils";
+import { normalize } from "@/utils/numberUtils";
+import { round } from "@/utils/stringUtils";
 
 /**
  * Drawing cell values and polygons for debugging purposes
@@ -100,13 +101,3 @@ export const drawPath = (points: [number, number][], { color = "red", width = 0.
     .attr("stroke-width", width)
     .attr("fill", "none");
 };
-
-declare global {
-  interface Window {
-    drawCellsValue: typeof drawCellsValue;
-    drawPolygons: typeof drawPolygons;
-    drawRouteConnections: typeof drawRouteConnections;
-    drawPoint: typeof drawPoint;
-    drawPath: typeof drawPath;
-  }
-}

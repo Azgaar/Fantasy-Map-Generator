@@ -1,27 +1,15 @@
 import { max, quadtree, range } from "d3";
+import { CULTURE_SETS } from "@/data/culture-sets";
+import { Pack } from "@/model/graph/pack-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import type { Emblem } from "@/types/emblems";
-import { abbreviate, biased, getColors, getRandomColor, minmax, P, rand, rn, rw } from "@/utils";
+import { abbreviate, biased, ensureEl, getColors, getRandomColor, minmax, P, rand, rn, rw } from "@/utils";
 import { requireColor } from "@/utils/colorUtils";
+import { FlatQueue } from "@/utils/flatQueue";
 import { t } from "@/utils/i18n";
 import { requireCode, requireName, requireOneOf, requireOrigins } from "@/utils/validationUtils";
+import { Names } from "./names-generator";
 import { Population } from "./population-generator";
-
-/** The named culture sets the user picks from: how many cultures each holds and how often it is rolled */
-export const CULTURE_SETS: Record<string, { name: string; max: number; probability: number }> = {
-  world: { name: "All-world", max: 32, probability: 10 },
-  european: { name: "European", max: 15, probability: 10 },
-  oriental: { name: "Oriental", max: 13, probability: 2 },
-  english: { name: "English", max: 10, probability: 5 },
-  antique: { name: "Antique", max: 10, probability: 3 },
-  highFantasy: { name: "High Fantasy", max: 17, probability: 11 },
-  darkFantasy: { name: "Dark Fantasy", max: 18, probability: 3 },
-  random: { name: "Random", max: 100, probability: 1 }
-};
-
-declare global {
-  var Cultures: CulturesGenerator;
-}
 
 export interface Culture {
   name: string;
@@ -1087,7 +1075,8 @@ class CulturesGenerator {
         ];
         this.cells.culture = cultureIds;
 
-        alertMessage.innerHTML = `${t("The climate is harsh and people cannot live in this world.")}<br>${t("No cultures, states and burgs will be created.")}<br>${t("Please consider changing climate settings in the World Configurator")}`;
+        ensureEl("alertMessage").innerHTML =
+          `${t("The climate is harsh and people cannot live in this world.")}<br>${t("No cultures, states and burgs will be created.")}<br>${t("Please consider changing climate settings in the World Configurator")}`;
 
         $("#alert").dialog({
           resizable: false,
@@ -1101,7 +1090,7 @@ class CulturesGenerator {
         return;
       } else {
         WARN && console.warn(`Not enough populated cells (${populated.length}). Will generate only ${count} cultures`);
-        alertMessage.innerHTML = [
+        ensureEl("alertMessage").innerHTML = [
           t("There are only {{populated}} populated cells and it's insufficient livable area.", {
             populated: populated.length
           }),
@@ -1311,7 +1300,7 @@ class CulturesGenerator {
   expand() {
     const { cells, cultures } = pack;
 
-    const queue = new FlatQueue();
+    const queue = new FlatQueue<{ cellId: number; cultureId: number; priority: number }>();
     const cost: number[] = [];
 
     const growthRate = options.generation.cultures.growthRate;
@@ -1331,7 +1320,7 @@ class CulturesGenerator {
 
     for (const culture of cultures) {
       if (!culture.i || culture.removed || culture.lock) continue;
-      queue.push({ cellId: culture.center, cultureId: culture.i, priority: 0 }, 0);
+      queue.push({ cellId: culture.center as number, cultureId: culture.i, priority: 0 }, 0);
     }
 
     const getBiomeCost = (c: number, biome: number, type: string) => {
@@ -1558,6 +1547,4 @@ class CulturesGenerator {
   }
 }
 
-// biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const Cultures = new CulturesGenerator();
-window.Cultures = Cultures;

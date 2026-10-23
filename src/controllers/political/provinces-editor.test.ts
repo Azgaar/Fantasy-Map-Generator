@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/renderers/layers", () => ({ Layers: { show: vi.fn(), hide: vi.fn(), isOn: () => false } }));
-vi.mock("@/ui/tooltips", () => ({ tip: vi.fn(), clearMainTip: vi.fn() }));
+vi.mock("@/ui/tooltips", () => ({ tip: vi.fn(), clearMainTip: vi.fn(), loadingTip: { start: vi.fn(), end: vi.fn() } }));
 vi.mock("@/ui/map/viewbox-events", () => ({ applyDefaultViewboxEvents: vi.fn() }));
 vi.mock("@/ui/dialog/highlighting", () => ({ applyLineHighlighting: vi.fn() }));
 vi.mock("@/ui/dialog/sorting", () => ({ bindColumnSorting: vi.fn(), sortDataByColumns: vi.fn() }));

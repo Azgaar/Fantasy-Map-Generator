@@ -21,13 +21,11 @@ import {
   throttle,
   wiki
 } from "./commonUtils";
-import { drawCellsValue, drawPath, drawPoint, drawPolygons, drawRouteConnections } from "./debugUtils";
 import {
   createFileInput,
   downloadFile,
   getFileName,
   isImageIcon,
-  loadScript,
   sanitizeSvgIcon,
   scopeSvgIcon,
   svgToDataUri,
@@ -75,68 +73,6 @@ import {
   si
 } from "./unitUtils";
 
-window.rn = rn;
-window.minmax = minmax;
-window.normalize = normalize;
-
-window.nth = nth;
-window.list = list;
-
-window.last = last;
-window.unique = unique;
-
-window.rand = rand;
-window.P = P;
-window.each = each;
-window.gauss = gauss;
-window.rw = rw;
-window.generateSeed = generateSeed;
-
-window.toHEX = toHEX;
-
-window.ensureEl = ensureEl;
-window.findEl = findEl;
-window.applyOption = applyOption;
-window.getNextId = getNextId;
-
-window.dist2 = distanceSquared;
-
-window.getIsolines = getIsolines;
-window.getVertexPath = cellsArray => getVertexPath(cellsArray, (window as any).pack);
-
-window.round = round;
-window.capitalize = capitalize;
-window.parseTransform = parseTransform;
-window.setInlineStyleProperty = setInlineStyleProperty;
-
-JSON.isValid = isValidJSON;
-JSON.safeParse = safeParseJSON;
-
-declare global {
-  interface JSON {
-    isValid: (str: string) => boolean;
-    safeParse: (str: string) => any;
-  }
-}
-
-window.debounce = debounce;
-window.parseError = parseError;
-window.openURL = openURL;
-window.wiki = wiki;
-window.link = link;
-window.isCtrlClick = isCtrlClick;
-
-// console debugging aids: no caller in the codebase by design, they are typed at the devtools prompt
-window.drawCellsValue = drawCellsValue;
-window.drawPolygons = (data: any[]) => drawPolygons(data, (window as any).terrs, (window as any).grid);
-window.drawRouteConnections = () => drawRouteConnections((window as any).packedGraph);
-window.drawPoint = drawPoint;
-window.drawPath = drawPath;
-window.downloadFile = downloadFile;
-window.uploadFile = uploadFile;
-
-window.TYPED_ARRAY_MAX = TYPED_ARRAY_MAX;
-
 export {
   abbreviate,
   applyOption,
@@ -151,11 +87,6 @@ export {
   debounce,
   distanceSquared,
   downloadFile,
-  drawCellsValue,
-  drawPath,
-  drawPoint,
-  drawPolygons,
-  drawRouteConnections,
   each,
   ensureEl,
   escapeHtml,
@@ -214,7 +145,6 @@ export {
   lim,
   link,
   list,
-  loadScript,
   metersToHeight,
   minmax,
   normalize,

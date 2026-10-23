@@ -90,10 +90,6 @@ const biomesMatrix = [
   new Uint8Array([7, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 10, 10])
 ];
 
-declare global {
-  var Biomes: BiomesGenerator;
-}
-
 class BiomesGenerator {
   private MIN_LAND_HEIGHT = 20;
 
@@ -219,6 +215,4 @@ class BiomesGenerator {
   }
 }
 
-// biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const Biomes = new BiomesGenerator();
-window.Biomes = Biomes;

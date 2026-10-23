@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { limitationTip, pickLimitation } from "./limitation-picker";
 
-vi.mock("@/ui/tooltips", () => ({ tip: vi.fn() }));
+vi.mock("@/ui/tooltips", () => ({ tip: vi.fn(), loadingTip: { start: vi.fn(), end: vi.fn() } }));
 
 type Buttons = Record<string, () => void>;
 let buttons: Buttons = {};

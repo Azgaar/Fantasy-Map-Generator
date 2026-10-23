@@ -1,4 +1,5 @@
 import { Controllers } from "@/controllers";
+import { Pack } from "@/model/graph/pack-generator";
 import { type EntityRef, MapEntities } from "@/model/map-entities";
 import { Layers } from "@/renderers/layers";
 import * as Connection from "@/services/assistant/provider/connection";

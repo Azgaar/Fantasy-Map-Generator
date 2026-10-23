@@ -1,5 +1,6 @@
 import { type Selection, select, zoom, zoomIdentity } from "d3";
 import type { Good } from "@/model/economy/goods-generator";
+import { Goods } from "@/model/economy/goods-generator";
 import { Icons } from "@/model/icons";
 import { goodIconLines } from "@/renderers/draw-goods";
 import { destroyDialog } from "@/ui/dialog/dialog-helpers";

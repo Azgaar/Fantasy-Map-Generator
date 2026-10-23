@@ -9,7 +9,6 @@ import "@/model/physical/relief-generator";
 import "@/model/political/burgs-generator";
 import "@/model/economy/goods-generator";
 import "@/ui/elements/slider-input";
-import Alea from "alea";
 
 const pictures = vi.hoisted(() => ({ fromLink: vi.fn(), fromFile: vi.fn(), fit: vi.fn() }));
 vi.mock("./pictures", () => ({ IconPictures: pictures }));
@@ -21,7 +20,6 @@ const dialogs = new Map<HTMLElement, DialogSettings>();
 const PICTURE: IconPicture = { kind: "image", content: "https://example.com/icon.png", viewBox: "0 0 100 100" };
 
 beforeEach(() => {
-  vi.stubGlobal("aleaPRNG", Alea);
   dialogs.clear();
   vi.clearAllMocks();
   vi.spyOn(Icons, "syncCustom").mockImplementation(() => {}); // the fixture's symbols stand for the synced ones

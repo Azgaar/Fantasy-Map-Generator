@@ -2,6 +2,7 @@ import type { AddedLabel } from "@/model/annotations/added-labels";
 import type { Label, LabelType } from "@/model/annotations/labels-generator";
 import type { Route } from "@/model/economy/routes-generator";
 import type { River } from "@/model/physical/river-generator";
+import { Rivers } from "@/model/physical/river-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import type { Province } from "@/model/political/provinces-generator";
 import type { State } from "@/model/political/states-generator";
@@ -195,4 +196,3 @@ function getMiddleCellPoint(cells: number[]): Point | undefined {
   const point = pack.cells.p[onMap[Math.floor(onMap.length / 2)]];
   return point && [point[0], point[1]];
 }
-window.getLabelsData = getLabelsData;

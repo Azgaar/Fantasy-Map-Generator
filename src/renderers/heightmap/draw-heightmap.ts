@@ -23,6 +23,7 @@ import {
   select
 } from "d3";
 import type { GridRaster } from "@/model/graph/grid-generator";
+import { Grid } from "@/model/graph/grid-generator";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
 import { tip } from "@/ui/tooltips";
 import { round } from "@/utils";

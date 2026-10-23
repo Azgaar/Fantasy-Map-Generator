@@ -2,8 +2,10 @@ import Alea from "alea";
 import { curveCatmullRom, line } from "d3";
 import Delaunator from "delaunator";
 import type { Label } from "@/model/annotations/labels-generator";
+import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
 import type { River } from "@/model/physical/river-generator";
+import { Rivers } from "@/model/physical/river-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Tags } from "@/model/tags";
 import { distanceSquared, findPath, getAdjective, isLand, ra, rn, round, rw } from "@/utils";
@@ -1075,10 +1077,6 @@ class RoutesModule {
   }
 }
 
-declare global {
-  var Routes: RoutesModule;
-}
-
 /** The points of two routes that share an endpoint, as one route; null when they share none */
 export function mergeRoutePoints(routePoints: number[][], joinedPoints: number[][]): number[][] | null {
   if (!routePoints.length || !joinedPoints.length) return null;
@@ -1095,6 +1093,4 @@ export function mergeRoutePoints(routePoints: number[][], joinedPoints: number[]
   return null;
 }
 
-// biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const Routes = new RoutesModule();
-window.Routes = Routes;

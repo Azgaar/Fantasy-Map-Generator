@@ -6,10 +6,6 @@ import { findAllInQuadtree, rn, SEA_LEVEL, TYPED_ARRAY_MAX } from "@/utils";
 import { DEFAULT_JITTER, Lattice } from "./lattice";
 import { calculateVoronoi } from "./voronoi";
 
-declare global {
-  var Pack: PackModule;
-}
-
 class PackModule {
   private readonly quadtreeCache = new WeakMap<object, Quadtree<[number, number, number]>>();
 
@@ -108,4 +104,4 @@ class PackModule {
   }
 }
 
-window.Pack = new PackModule();
+export const Pack = new PackModule();

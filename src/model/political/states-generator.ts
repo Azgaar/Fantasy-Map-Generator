@@ -1,8 +1,12 @@
+import Alea from "alea";
 import { mean, median, quadtree, sum } from "d3";
 import { getInverseRelation, RELATIONS } from "@/data/diplomacy";
 import type { Label } from "@/model/annotations/labels-generator";
+import { Markets } from "@/model/economy/markets-generator";
+import { Pack } from "@/model/graph/pack-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import { CULTURE_TYPES } from "@/model/society/cultures-generator";
+import { Names } from "@/model/society/names-generator";
 import { Population } from "@/model/society/population-generator";
 import { Tags } from "@/model/tags";
 import type { Emblem } from "@/types/emblems";
@@ -24,14 +28,14 @@ import {
   trimVowels
 } from "@/utils";
 import { requireColor } from "@/utils/colorUtils";
+import { FlatQueue } from "@/utils/flatQueue";
 import { replaceWholeWord } from "@/utils/languageUtils";
 import { requireName, requireOneOf } from "@/utils/validationUtils";
+import { Burgs } from "./burgs-generator";
 import type { Regiment } from "./military-generator";
+import { Military } from "./military-generator";
 import type { Province } from "./provinces-generator";
-
-declare global {
-  var States: StatesModule;
-}
+import { Provinces } from "./provinces-generator";
 
 export type TariffRule = {
   states: number[] | "all";
@@ -198,7 +202,7 @@ class StatesModule {
   }
 
   private recreate(): { warning?: string; error?: string; states?: State[] } {
-    Math.random = aleaPRNG(generateSeed());
+    Math.random = Alea(generateSeed());
     const statesCount = options.generation.states.limit;
     if (!statesCount) return { error: "<i>States Number</i> option value is zero. No counties are generated" };
 
@@ -391,7 +395,7 @@ class StatesModule {
 
     cells.state = cells.state || new Uint16Array(cells.i.length);
 
-    const queue = new FlatQueue();
+    const queue = new FlatQueue<{ e: number; p: number; s: number; b: number }>();
     const cost: number[] = [];
 
     const growthRate = (cells.i.length / 2) * options.generation.states.growthRate; // limit cost for state growth
@@ -1592,6 +1596,4 @@ class StatesModule {
   }
 }
 
-// biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const States = new StatesModule();
-window.States = States;

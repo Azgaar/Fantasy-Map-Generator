@@ -178,13 +178,3 @@ ensureEl("savePresetButton").addEventListener("click", savePreset);
 ensureEl("removePresetButton").addEventListener("click", removePreset);
 
 Layers.subscribe(highlightCurrentPreset);
-
-declare global {
-  interface Window {
-    applyLayersPreset: typeof applyLayersPreset;
-    applyURLLayers: typeof applyURLLayers;
-  }
-}
-
-window.applyLayersPreset = applyLayersPreset;
-window.applyURLLayers = applyURLLayers;

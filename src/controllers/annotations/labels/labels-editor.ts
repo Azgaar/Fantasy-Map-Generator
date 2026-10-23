@@ -1,9 +1,14 @@
 import { curveNatural, type D3DragEvent, drag, line, select } from "d3";
 import { Controllers } from "@/controllers";
+import { AddedLabels } from "@/model/annotations/added-labels";
 import type { Label, LabelType } from "@/model/annotations/labels-generator";
-import { UNNAMED_ROUTE } from "@/model/economy/routes-generator";
+import { Labels } from "@/model/annotations/labels-generator";
+import { Routes, UNNAMED_ROUTE } from "@/model/economy/routes-generator";
+import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
 import { MapEntities } from "@/model/map-entities";
+import { Rivers } from "@/model/physical/river-generator";
+import { Names } from "@/model/society/names-generator";
 import { createLabelArc } from "@/renderers/labels/label-arc";
 import { getLabelPath } from "@/renderers/labels/label-markup";
 import type { LabelData } from "@/renderers/labels/labels";

@@ -1,8 +1,8 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
-import "@/model/physical/relief-generator"; // installs the Relief global
-import "@/model/political/burgs-generator"; // installs the Burgs global
-import "@/model/economy/goods-generator"; // installs the Goods global
+import { Goods } from "@/model/economy/goods-generator";
+import { Relief } from "@/model/physical/relief-generator";
+import { Burgs } from "@/model/political/burgs-generator";
 import { IconSets } from "./icon-sets";
 
 const svg =

@@ -4,6 +4,7 @@ vi.mock("@/model/styles/styles", () => ({ Styles: { writeAttr: vi.fn(), write: v
 vi.mock("@/renderers/layers", () => ({ Layers: { draw: vi.fn() } }));
 vi.mock("@/ui/map/zoom", () => ({ invokeActiveZooming: vi.fn() }));
 
+import { Relief } from "@/model/physical/relief-generator";
 import { Styles } from "@/model/styles/styles";
 import { Layers } from "@/renderers/layers";
 import type { StyleSelection } from "@/types/styles";
@@ -11,7 +12,7 @@ import { invokeActiveZooming } from "@/ui/map/zoom";
 import { effectAt, runEffect } from "./effects";
 
 const relief = { generate: vi.fn() };
-vi.stubGlobal("Relief", relief);
+Object.assign(Relief, relief);
 
 const store = () => ({
   labels: { groups: { state: { attrs: { "stroke-width": 0, "letter-spacing": 0 } } } }

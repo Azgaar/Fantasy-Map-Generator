@@ -1,12 +1,16 @@
 import { viewport } from "@/renderers/viewport/viewport";
 import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { onViewportChange, zoomTo } from "@/ui/map/zoom";
 import { t } from "@/utils/i18n";
 import { ensureEl, findEl, minmax, rn } from "../utils";
+
+let stopFollowing: (() => void) | undefined;
 
 function open(): void {
   closeDialogs("#minimap, .stable");
   renderDialog();
   updateMinimap();
+  stopFollowing ??= onViewportChange(updateMinimap);
 
   $("#minimap").dialog({
     title: t("Minimap"),
@@ -77,6 +81,8 @@ function renderDialog(): void {
 }
 
 function closeMinimap(): void {
+  stopFollowing?.();
+  stopFollowing = undefined;
   $("#minimap").dialog("destroy");
   ensureEl("minimap").remove();
   findEl("minimapStyles")?.remove();
@@ -124,12 +130,5 @@ function updateMinimap(): void {
   viewportRect.setAttribute("width", String(rn(Math.max(0, right - left), 3)));
   viewportRect.setAttribute("height", String(rn(Math.max(0, bottom - top), 3)));
 }
-
-declare global {
-  interface Window {
-    updateMinimap: () => void;
-  }
-}
-window.updateMinimap = updateMinimap;
 
 export const Minimap = { open };

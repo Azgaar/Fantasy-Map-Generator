@@ -1,6 +1,8 @@
 // Save the whole .map project to storage, machine or cloud
 
 import { GraphOverride } from "@/model/graph/graph-override";
+import { mapHistory } from "@/model/map-history";
+import { Names } from "@/model/society/names-generator";
 import { Notes } from "@/model/story/notes";
 import { Layers } from "@/renderers/layers";
 import { restoreOceanVectors } from "@/renderers/ocean-cache";
@@ -12,6 +14,7 @@ import { closeDialogs } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
 import { ensureEl, getFileName, link, parseError, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { LocalDB } from "@/utils/localDB";
 import { type SaveOutcome, saveToFileSystem } from "./save-to-file";
 
 type Writer = () => Promise<void>;
@@ -36,7 +39,7 @@ async function save(write: Writer): Promise<void> {
   } catch (error) {
     ERROR && console.error(error);
     const saveError = error instanceof Error ? error : new Error(String(error));
-    alertMessage.innerHTML = /* html */ `${t(
+    ensureEl("alertMessage").innerHTML = /* html */ `${t(
       "An error occurred while saving the map. If the issue persists, please copy the message below and report it on {{- github}}.",
       { github: link("https://github.com/Azgaar/Fantasy-Map-Generator/issues", "GitHub") }
     )} <p id="errorBox">${parseError(saveError)}</p>`;
@@ -209,7 +212,7 @@ function prepareMapData(viewOnly = false): string {
 // save map file to indexedDB
 async function writeToStorage(mapData: string, showTip = false): Promise<void> {
   const blob = new Blob([mapData], { type: "text/plain" });
-  await ldb.set("lastMap", blob);
+  await LocalDB.set("lastMap", blob);
   showTip && tip(t("Map is saved to the browser storage"), false, "success");
 }
 

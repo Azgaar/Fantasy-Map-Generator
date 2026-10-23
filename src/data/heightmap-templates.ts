@@ -174,10 +174,4 @@ export const heightmapTemplates: Record<string, HeightmapTemplate> = {
   fractious: { id: 13, name: t("Fractious"), template: fractious, probability: 3 }
 };
 
-declare global {
-  // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
-  var heightmapTemplates: Record<string, HeightmapTemplate>;
-}
-
 // temp legacy compatibility
-window.heightmapTemplates = heightmapTemplates;

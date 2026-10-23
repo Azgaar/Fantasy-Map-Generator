@@ -1,4 +1,6 @@
+import { Goods } from "@/model/economy/goods-generator";
 import type { Market } from "@/model/economy/markets-generator";
+import { Markets } from "@/model/economy/markets-generator";
 import { Csv } from "@/services/io/csv";
 import { destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";

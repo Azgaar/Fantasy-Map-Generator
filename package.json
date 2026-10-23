@@ -63,9 +63,12 @@
     "d3": "^7.9.0",
     "delaunator": "^5.1.0",
     "driver.js": "^1.10.2",
+    "dropbox": "^10.47.0",
+    "jszip": "^3.10.2",
     "lineclip": "^2.0.0",
     "polylabel": "^2.1.0",
     "quill": "^2.0.3",
+    "rgbquant": "^1.1.2",
     "three": "^0.186.1",
     "zod": "^4.6.7"
   },

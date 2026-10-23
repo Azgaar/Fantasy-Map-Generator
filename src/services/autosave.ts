@@ -1,5 +1,6 @@
 // Background save lifecycle: the autosave timer and the periodic "remember to save" reminder
 
+import { Options } from "@/model/options/options-model";
 import { Services } from "@/services";
 import { tip } from "@/ui/tooltips";
 import { ra } from "@/utils";
@@ -75,13 +76,3 @@ export function toggleSaveReminder(): void {
     startSaveReminder();
   }
 }
-
-declare global {
-  interface Window {
-    initiateAutosave: typeof initiateAutosave;
-    toggleSaveReminder: typeof toggleSaveReminder;
-  }
-}
-
-window.initiateAutosave = initiateAutosave;
-window.toggleSaveReminder = toggleSaveReminder;

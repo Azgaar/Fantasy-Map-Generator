@@ -10,7 +10,7 @@ import "@/model/styles/styles";
 import { setViewportSize, setViewportTransform, viewport } from "@/renderers/viewport/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { rn } from "@/utils/numberUtils";
-import { applyZoomBehavior, setMapZoom, setTranslateExtent, setZoomExtent, zoomTo } from "./zoom";
+import { applyZoomBehavior, invokeActiveZooming, setMapZoom, setTranslateExtent, setZoomExtent, zoomTo } from "./zoom";
 
 beforeEach(() => {
   document.body.innerHTML = /* html */ `

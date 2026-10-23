@@ -1,12 +1,11 @@
 import { max, mean } from "d3";
+import { Routes } from "@/model/economy/routes-generator";
+import { Names } from "@/model/society/names-generator";
 import { Population } from "@/model/society/population-generator";
 import { gauss, getAdjective, P, ra, rand, rw } from "@/utils";
 import { requireColor } from "@/utils/colorUtils";
+import { FlatQueue } from "@/utils/flatQueue";
 import { requireName } from "@/utils/validationUtils";
-
-declare global {
-  var Zones: ZonesModule;
-}
 
 export interface Zone {
   i: number;
@@ -335,7 +334,7 @@ class ZonesModule {
     const cost: number[] = [];
     const maxCells = rand(20, 40);
 
-    const queue = new FlatQueue();
+    const queue = new FlatQueue<{ e: number; p: number }>();
     queue.push({ e: burg.cell, p: 0 }, 0);
 
     while (queue.length) {
@@ -472,7 +471,7 @@ class ZonesModule {
     const cost: number[] = [];
     const maxCells = rand(5, 25);
 
-    const queue = new FlatQueue();
+    const queue = new FlatQueue<{ e: number; p: number }>();
     queue.push({ e: burg.cell, p: 0 }, 0);
 
     while (queue.length) {
@@ -707,6 +706,4 @@ class ZonesModule {
   }
 }
 
-// biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const Zones = new ZonesModule();
-window.Zones = Zones;

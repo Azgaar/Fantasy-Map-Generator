@@ -5,8 +5,7 @@ import type { Biome } from "@/model/physical/biomes-generator";
 import { Styles } from "@/model/styles/styles";
 import { ReliefPoolEditor } from "./relief-pool-editor";
 import "@/ui/elements/slider-input";
-import Alea from "alea";
-import "@/model/physical/relief-generator"; // installs the Relief global
+import { Relief } from "@/model/physical/relief-generator";
 
 const picked = vi.hoisted(() => ({ id: "" }));
 vi.mock("@/model/icons", () => ({
@@ -22,7 +21,7 @@ vi.mock("@/model/icons", () => ({
 vi.mock("@/controllers", () => ({
   Controllers: { IconPicker: { open: ({ onPick }: { onPick: (id: string) => void }) => onPick(picked.id) } }
 }));
-vi.mock("@/ui/tooltips", () => ({ tip: vi.fn() }));
+vi.mock("@/ui/tooltips", () => ({ tip: vi.fn(), loadingTip: { start: vi.fn(), end: vi.fn() } }));
 vi.mock("@/renderers/layers", () => ({ Layers: { isOn: () => true, show: vi.fn() } }));
 vi.mock("@/renderers/draw-relief-icons", () => ({ redrawRelief: vi.fn() }));
 vi.mock("@/ui/dialog/dialog-helpers", async importOriginal => ({
@@ -46,7 +45,6 @@ const click = (selector: string) =>
 Object.assign(SVGElement.prototype, { getBBox: () => ({ x: 0, y: 0, width: 0, height: 0 }) });
 
 beforeEach(() => {
-  vi.stubGlobal("aleaPRNG", Alea);
   document.body.innerHTML = '<div id="dialogs"></div>';
   globalThis.styles = Styles.parse(undefined);
   globalThis.options = Options.getDefaultOptions();

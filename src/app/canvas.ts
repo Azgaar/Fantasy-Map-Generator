@@ -1,4 +1,5 @@
 import { select } from "d3";
+import { Options } from "@/model/options/options-model";
 import { fitLegendBox } from "@/renderers/draw-legend";
 import { Layers } from "@/renderers/layers";
 import { setViewportSize, viewport } from "@/renderers/viewport/viewport";

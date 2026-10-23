@@ -1,10 +1,16 @@
 // Style presets: the preset row on the Style tab, applying a preset to the map, the Style Saver dialog
 
 import { Controllers } from "@/controllers";
+import { Labels } from "@/model/annotations/labels-generator";
+import { Routes } from "@/model/economy/routes-generator";
 import { CustomIcons } from "@/model/icons";
+import { Options } from "@/model/options/options-model";
+import { Lakes } from "@/model/physical/lakes";
+import { Burgs } from "@/model/political/burgs-generator";
 import { Styles } from "@/model/styles/styles";
 import { applyVignetteOptions } from "@/renderers/draw-vignette";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
+import { Layers } from "@/renderers/layers";
 import { IconsArchive } from "@/services/io/icons-archive";
 import { CUSTOM_PREFIX, LEGACY_PREFIX, StylePresetsService } from "@/services/style-presets";
 import { alertDialog, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";

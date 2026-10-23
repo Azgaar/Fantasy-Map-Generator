@@ -1,12 +1,9 @@
 import { quadtree, sum } from "d3";
+import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
 import { findAllInQuadtree, gauss, minmax, nth, ra, rand, rn, si } from "@/utils";
 import { requireName, requireOneOf } from "@/utils/validationUtils";
 import type { State } from "./states-generator";
-
-declare global {
-  var Military: MilitaryModule;
-}
 
 export interface Regiment {
   i: number;
@@ -747,6 +744,4 @@ class MilitaryModule {
   }
 }
 
-// biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const Military = new MilitaryModule();
-window.Military = Military;

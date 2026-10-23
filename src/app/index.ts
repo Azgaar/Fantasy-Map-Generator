@@ -1,6 +1,7 @@
 // The app's modules, loaded once the interface language's strings are: their markup is translated as they load
 import "@/services/logging";
 import "@/model/globals";
+import "@/model/options/options-defaults";
 import "./chrome/tabs";
 
 import "@/utils";
@@ -31,6 +32,11 @@ import "@/ui/elements/fill-box";
 import "@/ui/elements/slider-input";
 import "@/controllers";
 import "@/services";
+import "@/services/platform";
+import "@/services/autosave";
+import "@/services/url-params";
+import "@/services/versioning";
 import "@/model/styles/styles-legacy";
+import "./fmg";
 
 export { boot } from "./lifecycle";

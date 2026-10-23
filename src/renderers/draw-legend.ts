@@ -197,5 +197,3 @@ export function legendBoxFromEvent(event: Event | undefined): SVGGElement | null
   if (!(target instanceof Element)) return null;
   return target.closest<SVGGElement>("#legend > g[data-legend]");
 }
-
-window.fitLegendBox = fitLegendBox;

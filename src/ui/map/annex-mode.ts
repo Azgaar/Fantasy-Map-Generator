@@ -1,5 +1,6 @@
 // Map mode shared by the states and provinces editors: click the annexing entity, then the ones it absorbs
 import { select } from "d3";
+import { Pack } from "@/model/graph/pack-generator";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { ensureEl, getPointer } from "@/utils";
 import { applyDefaultViewboxEvents } from "./viewbox-events";

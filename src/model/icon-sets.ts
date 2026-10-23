@@ -1,6 +1,10 @@
+import { Goods } from "@/model/economy/goods-generator";
 import type { ReliefIconSetId } from "@/model/physical/relief-generator";
+import { Relief } from "@/model/physical/relief-generator";
 import type { BurgIconSetId } from "@/model/political/burgs-generator";
+import { Burgs } from "@/model/political/burgs-generator";
 import type { ChargeIconSetId } from "@/model/political/emblems-generator";
+import { Emblems } from "@/model/political/emblems-generator";
 import type { IconSet } from "@/types/icons";
 
 export type IconSetId = ReliefIconSetId | BurgIconSetId | typeof Goods.iconSet.id | ChargeIconSetId;
@@ -14,7 +18,7 @@ export class IconSetRegistry {
 
   /** the models that own icon sets, in picker order; a new family adds its model here, a new relief set is a directory plus its name in `Relief.sets` */
   sets(): readonly IconSet[] {
-    this.catalog ??= [...Burgs.iconSets, Goods.iconSet, ...Relief.iconSets, ...window.Emblems.iconSets];
+    this.catalog ??= [...Burgs.iconSets, Goods.iconSet, ...Relief.iconSets, ...Emblems.iconSets];
     return this.catalog;
   }
 

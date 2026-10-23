@@ -1,4 +1,6 @@
+import { Controllers } from "@/controllers";
 import type { Route } from "@/model/economy/routes-generator";
+import { Routes } from "@/model/economy/routes-generator";
 import { Layers } from "@/renderers/layers";
 import { isGroupNameFree } from "@/renderers/style-groups";
 import { confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";

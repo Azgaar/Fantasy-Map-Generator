@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-import Alea from "alea";
 import { afterAll, beforeAll, expect, it, vi } from "vitest";
 import { generate } from "@/app/lifecycle";
 import { GenerationPipeline } from "@/model/generation-pipeline";
@@ -7,7 +6,12 @@ import { Pins } from "@/model/options/pins";
 import { drawHeights } from "@/renderers/heightmap/draw-heightmap";
 import "@/model/graph/grid-generator";
 import "@/model/physical/heightmap-generator";
+import { Grid } from "@/model/graph/grid-generator";
+import { Options } from "@/model/options/options-model";
+import { HeightmapGenerator } from "@/model/physical/heightmap-generator";
 
+const { regenerate } = vi.hoisted(() => ({ regenerate: vi.fn() }));
+vi.mock("@/app/lifecycle", async original => ({ ...(await original<object>()), regeneratePrompt: regenerate }));
 vi.mock("@/ui/dialog/dialog-helpers", () => ({ closeDialogs: vi.fn(), confirmationDialog: vi.fn() }));
 vi.mock("@/app/chrome/tabs/options-tab", () => ({ syncOptionInputs: vi.fn() }));
 vi.mock("@/app/shell", () => ({ initShell: vi.fn(), warnIfServerless: vi.fn() }));
@@ -25,7 +29,6 @@ vi.mock("@/renderers/heightmap/draw-heightmap", () => ({
 }));
 
 const dialog = vi.fn();
-const regenerate = vi.fn();
 let selection: typeof import("./heightmap-selection");
 
 beforeAll(async () => {
@@ -35,9 +38,7 @@ beforeAll(async () => {
   options.map.graph = { width: 800, height: 600, points: 1000, sampling: "square", jitter: 0.9 };
   options.generation.graph = { width: 800, height: 600, density: 1, sampling: "square", jitter: 0.9 };
   globalThis.grid = Grid.generate("old");
-  vi.stubGlobal("aleaPRNG", Alea);
   vi.stubGlobal("$", () => ({ dialog }));
-  vi.stubGlobal("regeneratePrompt", regenerate);
   vi.spyOn(GenerationPipeline, "run").mockImplementation(async ({ graph }) => {
     Grid.prepare(graph);
     await HeightmapGenerator.generate();

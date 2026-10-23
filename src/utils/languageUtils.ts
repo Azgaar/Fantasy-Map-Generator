@@ -215,10 +215,3 @@ export const list = (array: string[]) => {
   });
   return conjunction.format(array);
 };
-
-declare global {
-  interface Window {
-    nth: typeof nth;
-    list: typeof list;
-  }
-}

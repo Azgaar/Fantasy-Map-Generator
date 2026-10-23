@@ -1,6 +1,9 @@
 import { mean, select, sum } from "d3";
+import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
 import type { Regiment } from "@/model/political/military-generator";
+import { Military } from "@/model/political/military-generator";
+import { Names } from "@/model/society/names-generator";
 import type { Marker } from "@/model/story/markers-generator";
 import { moveRegiment } from "@/renderers/draw-military";
 import { Layers } from "@/renderers/layers";

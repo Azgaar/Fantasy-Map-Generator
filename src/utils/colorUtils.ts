@@ -91,9 +91,3 @@ export const getMixedColor = (colorToMix: string, mix = 0.2, bright = 0.3): stri
   const mixedColor: RGBColor = color(interpolate(c, getRandomColor())(mix)) as RGBColor;
   return mixedColor.brighter(bright).formatHex();
 };
-
-declare global {
-  interface Window {
-    toHEX: typeof toHEX;
-  }
-}

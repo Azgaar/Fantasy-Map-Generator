@@ -1,4 +1,5 @@
 import { max as d3max, min as d3min, mean, median } from "d3";
+import { Names } from "@/model/society/names-generator";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
 import {
@@ -276,7 +277,7 @@ function analyzeNamesbase(): void {
     return `<span data-tip="${t("Namesbase variety is good")}" style="color:green">[${t("good")}]</span>`;
   };
 
-  alertMessage.innerHTML = /* html */ `<div style="line-height: 1.6em; max-width: 20em">
+  ensureEl("alertMessage").innerHTML = /* html */ `<div style="line-height: 1.6em; max-width: 20em">
       <div data-tip="${t("Number of names provided")}">${t("Namesbase length")}: ${length} ${getLengthQuality()}</div>
       <div data-tip="${t("Average number of generation variants for each key in the chain")}">${t("Namesbase variety")}: ${variety} ${getVarietyLevel()}</div>
       <hr />
@@ -406,7 +407,7 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
       )
       .join("");
 
-    alertMessage.innerHTML = /* html */ `<div>
+    ensureEl("alertMessage").innerHTML = /* html */ `<div>
         <p style="margin:0.75em;">
           <strong>${t("File parsing error. Only {{added}} out of {{total}} namebases added.", {
             added: lines.length - errors.length,

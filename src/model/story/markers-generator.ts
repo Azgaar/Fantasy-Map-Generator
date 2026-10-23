@@ -41,8 +41,14 @@ import {
   WATERFALL_DESCRIPTIONS
 } from "@/data/markers";
 import type { Good } from "@/model/economy/goods-generator";
+import { Goods } from "@/model/economy/goods-generator";
+import { Markets } from "@/model/economy/markets-generator";
 import { isDealRecord, isMfgRecord } from "@/model/economy/production-generator";
+import { Routes } from "@/model/economy/routes-generator";
+import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
+import { States } from "@/model/political/states-generator";
+import { Names } from "@/model/society/names-generator";
 import { Notes } from "@/model/story/notes";
 import type { PackedGraph } from "@/types/PackedGraph";
 import {
@@ -62,10 +68,6 @@ import {
 } from "@/utils";
 import { requireColor } from "@/utils/colorUtils";
 import { requireName, requireOneOf } from "@/utils/validationUtils";
-
-declare global {
-  var Markers: MarkersModule;
-}
 
 /** Fallback for a marker with no generated name: "hot-springs" -> "Hot springs" */
 export function getDefaultMarkerName(type: string | undefined): string {
@@ -1390,6 +1392,4 @@ class MarkersModule {
   }
 }
 
-// biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const Markers = new MarkersModule();
-window.Markers = Markers;

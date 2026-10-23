@@ -1,6 +1,8 @@
 import { mean, select } from "d3";
 import { Controllers } from "@/controllers";
+import { Lakes } from "@/model/physical/lakes";
 import type { River } from "@/model/physical/river-generator";
+import { Rivers } from "@/model/physical/river-generator";
 import { Tags } from "@/model/tags";
 import { getRiverBox, toggleBasinHighlight } from "@/renderers/draw-rivers";
 import { Layers } from "@/renderers/layers";
@@ -240,7 +242,7 @@ function renderRiversPage(view: TableView<River>): void {
         <span data-col="edit" data-tip="${t("Edit River")}" class="icon-pencil"></span>
         <span data-col="lock" class="locks pointer ${
           r.lock ? "icon-lock" : "icon-lock-open inactive"
-        }" onmouseover="showElementLockTip(event)"></span>
+        }" data-lock-tip></span>
         <span data-col="remove" data-tip="${t("Remove")}" class="icon-trash-empty"></span>
       </div>`;
   }

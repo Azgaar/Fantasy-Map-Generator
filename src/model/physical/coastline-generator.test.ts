@@ -16,7 +16,7 @@ beforeEach(() => {
   globalThis.options.map.seed = "1";
   globalThis.options.map.graph = { width: 100, height: 100, points: 100, sampling: "square", jitter: 0.9 };
   globalThis.options.map.coastline = Coastline.getDefaultSettings();
-  globalThis.Options = Options;
+  Object.assign(Options, Options);
   globalThis.pack = {
     vertices: {
       p: [
@@ -27,7 +27,6 @@ beforeEach(() => {
       ]
     }
   } as unknown as typeof globalThis.pack;
-  globalThis.simplify = points => points;
 });
 
 describe("settings", () => {

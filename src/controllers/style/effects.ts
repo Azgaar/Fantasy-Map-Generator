@@ -1,5 +1,6 @@
 // What happens after a style value changes: the schema names the effect, this runs it
 
+import { Relief } from "@/model/physical/relief-generator";
 import { Styles } from "@/model/styles/styles";
 import { styleMeta, stylesSchema } from "@/model/styles/styles-schema";
 import { Layers } from "@/renderers/layers";

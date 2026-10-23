@@ -2,6 +2,7 @@ import polylabel from "polylabel";
 import type { Vertices } from "@/model/graph/voronoi";
 import type { Point } from "@/types/global";
 import type { PackedGraph } from "../types/PackedGraph";
+import { FlatQueue } from "./flatQueue";
 import { rn } from "./numberUtils";
 
 /**
@@ -307,17 +308,17 @@ export const connectVertices = ({
 
     // a hull half-edge has no opposite triangle, so `vertices.v` holds -1 for it
     if (next < 0 || next >= vertices.c.length) {
-      window.ERROR && console.error("ConnectVertices: next vertex is out of bounds");
+      ERROR && console.error("ConnectVertices: next vertex is out of bounds");
       break;
     }
 
     if (next === current) {
-      window.ERROR && console.error("ConnectVertices: next vertex is not found", { startingVertex, current });
+      ERROR && console.error("ConnectVertices: next vertex is not found", { startingVertex, current });
       break;
     }
 
     if (i === MAX_ITERATIONS) {
-      window.ERROR && console.error("ConnectVertices: max iterations reached", MAX_ITERATIONS);
+      ERROR && console.error("ConnectVertices: max iterations reached", MAX_ITERATIONS);
       break;
     }
   }
@@ -344,7 +345,7 @@ export const findPath = (
 
   const from: number[] = [];
   const cost: number[] = [];
-  const queue = new window.FlatQueue();
+  const queue = new FlatQueue();
   queue.push(start, 0);
 
   while (queue.length) {
@@ -579,13 +580,6 @@ export function projectToNearestEdge(point: Point, width: number, height: number
   if (minDist === height - y) return [x, height];
   if (minDist === x) return [0, y];
   return [width, y];
-}
-
-declare global {
-  interface Window {
-    getIsolines: typeof getIsolines;
-    getVertexPath: typeof getVertexPath;
-  }
 }
 
 /** An open wave dash: `halves` half-periods spanning `length` from (x, y), the first bump bending by `amplitude` */

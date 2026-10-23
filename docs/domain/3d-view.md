@@ -9,7 +9,7 @@ It is a **presentation-only** feature: nothing it does ever mutates map data. It
 - **Globe** — the map projected onto a sphere with an equirectangular projection.
 
 Implementation lives in [src/controllers/view-3d.ts](../../src/controllers/view-3d.ts),
-exposed globally as `window.ThreeD`. The erosion bake and satellite texture pipelines are
+reached through `Controllers.View3d`. The erosion bake and satellite texture pipelines are
 separate modules: [src/renderers/erosion-bake.ts](../../src/renderers/erosion-bake.ts) and
 [src/renderers/draw-satellite-texture.ts](../../src/renderers/draw-satellite-texture.ts).
 

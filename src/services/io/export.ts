@@ -1,7 +1,9 @@
 import type { Selection } from "d3";
 import { select } from "d3";
+import { Grid } from "@/model/graph/grid-generator";
 import { type IconSetId, IconSets } from "@/model/icon-sets";
 import { Icons } from "@/model/icons";
+import { Rivers } from "@/model/physical/river-generator";
 import { renderEmblemDefinitions } from "@/renderers/draw-emblems";
 import { drawScaleBar } from "@/renderers/draw-scalebar";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
@@ -22,7 +24,6 @@ import {
   getCoordinates,
   getFileName,
   getFriendlyHeight,
-  loadScript,
   rn,
   unique
 } from "@/utils";
@@ -212,8 +213,8 @@ async function exportToPngTiles(): Promise<void> {
   status.innerHTML = t("Preparing files...");
 
   const urlSchema = await getMapURL("tiles", { debug: true, fullMap: true });
-  await loadScript("libs/jszip.min.js");
-  const zip = new window.JSZip();
+  const { default: JSZip } = await import("jszip");
+  const zip = new JSZip();
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d")!;
@@ -1000,13 +1001,6 @@ function saveGeoJsonZones(): void {
 
   const fileName = `${getFileName("Zones")}.geojson`;
   downloadFile(JSON.stringify(json), fileName, "application/json");
-}
-
-// reached lazily via Services.ExportMap
-declare global {
-  interface Window {
-    JSZip: any; // registered on demand by libs/jszip.min.js (see exportToPngTiles)
-  }
 }
 
 export const ExportMap = {

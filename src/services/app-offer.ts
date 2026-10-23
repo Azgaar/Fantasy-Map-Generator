@@ -1,5 +1,6 @@
 // The Desktop App dialog: what the app is and which file this visitor needs
 
+import { ensureEl } from "@/utils";
 import { t } from "@/utils/i18n";
 import { isMobile } from "./platform";
 
@@ -38,8 +39,8 @@ async function open(): Promise<void> {
     }
   });
 
-  alertMessage.innerHTML = `<p>${t("Checking the latest version…")}</p>`;
-  alertMessage.innerHTML = await renderOffer();
+  ensureEl("alertMessage").innerHTML = `<p>${t("Checking the latest version…")}</p>`;
+  ensureEl("alertMessage").innerHTML = await renderOffer();
 }
 
 /** A narrow desktop window is not a phone: ask the device before trusting the viewport width */

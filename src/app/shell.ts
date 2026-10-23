@@ -1,6 +1,7 @@
 // The app window itself: the SVG layer scaffold, browser-level behaviours
 
 import { Controllers } from "@/controllers";
+import { Options } from "@/model/options/options-model";
 import { Pins } from "@/model/options/pins";
 import { Layers } from "@/renderers/layers";
 import { Services } from "@/services";

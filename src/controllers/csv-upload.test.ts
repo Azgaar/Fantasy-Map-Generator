@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { alertDialog, confirmationDialog } from "@/ui/dialog/dialog-helpers";
 import { CsvUpload } from "./csv-upload";
 
-vi.mock("@/ui/tooltips", () => ({ tip: vi.fn() }));
+vi.mock("@/ui/tooltips", () => ({ tip: vi.fn(), loadingTip: { start: vi.fn(), end: vi.fn() } }));
 vi.mock("@/ui/dialog/dialog-helpers", () => ({ alertDialog: vi.fn(), confirmationDialog: vi.fn() }));
 
 type Entity = { i: number; name: string; tags: string; people: [number, number] };

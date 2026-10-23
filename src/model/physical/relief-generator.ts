@@ -1,5 +1,6 @@
 import { extent, polygonContains, type Quadtree, quadtree, shuffle } from "d3";
 import { RELIEF_SETS } from "@/data/style-choices";
+import { Pack } from "@/model/graph/pack-generator";
 import type { ReliefRule } from "@/model/options/options-schema";
 import type { IconAlias, IconSet } from "@/types/icons";
 import { minmax, rn } from "@/utils";
@@ -351,13 +352,7 @@ export class ReliefModel {
   readonly byBottom = (a: ReliefIcon, b: ReliefIcon): number => this.bottomY(a) - this.bottomY(b);
 }
 
-declare global {
-  var Relief: ReliefModel;
-}
-
-// biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const Relief = new ReliefModel();
-window.Relief = Relief;
 
 /**
  * mbostock's poissonDiscSampler implementation

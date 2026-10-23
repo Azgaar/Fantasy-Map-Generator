@@ -1,12 +1,9 @@
 import Alea from "alea";
+import { Options } from "@/model/options/options-model";
 import type { Point } from "@/types/global";
 import { clipPoly, minmax, round } from "@/utils";
+import { simplify } from "@/utils/simplify";
 import type { Feature } from "./features-generator";
-
-declare global {
-  // vendored lib, loaded as a classic script from public/libs/simplify.js
-  var simplify: (points: Point[], tolerance: number, highestQuality?: boolean) => Point[];
-}
 
 export interface CoastlineSettings {
   enabled: boolean; // master toggle — false bypasses all fractalization

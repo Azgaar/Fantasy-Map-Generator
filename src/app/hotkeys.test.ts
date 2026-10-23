@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ open: vi.fn(), save: vi.fn(), getLayer: vi.fn(), edit: vi.fn(), zoom: vi.fn() }));
-vi.mock("@/app/chrome/options-panel", () => ({ hideOptions: vi.fn() }));
+vi.mock("@/app/chrome/options-panel", () => ({ hideOptions: vi.fn(), toggleOptions: vi.fn() }));
 vi.mock("@/controllers", () => ({
   Controllers: {
     Omnibar: { open: mocks.open },
@@ -15,7 +15,13 @@ vi.mock("@/services/autosave", () => ({ toggleSaveReminder: vi.fn() }));
 vi.mock("./chrome/app-info", () => ({ showInfo: vi.fn() }));
 vi.mock("@/ui/dialog/dialog-helpers", () => ({ closeDialogs: vi.fn() }));
 vi.mock("./chrome/tabs/layers-tab", () => ({ getLayerByShortcut: mocks.getLayer }));
-vi.mock("@/ui/map/zoom", () => ({ changeMapZoom: vi.fn(), panMap: vi.fn(), setMapZoom: mocks.zoom }));
+vi.mock("@/ui/map/zoom", () => ({
+  changeMapZoom: vi.fn(),
+  panMap: vi.fn(),
+  resetZoom: vi.fn(),
+  setMapZoom: mocks.zoom
+}));
+vi.mock("./lifecycle", () => ({ regeneratePrompt: vi.fn() }));
 
 import "./hotkeys";
 

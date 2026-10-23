@@ -1,12 +1,9 @@
 // The simplest precipitation model: winds enter the map from each side and drop humidity as they pass the cells
 import Alea from "alea";
 import { mean, range } from "d3";
+import { Grid } from "@/model/graph/grid-generator";
 import { Lattice } from "@/model/graph/lattice";
 import { minmax, rand, SEA_LEVEL } from "@/utils";
-
-declare global {
-  var Precipitation: PrecipitationModule;
-}
 
 type WindBand = [number, number, number]; // [firstCellId, latitudeModifier, windTier]
 type Winds = { westerly: WindBand[]; easterly: WindBand[]; northerly: number; southerly: number };
@@ -143,4 +140,4 @@ class PrecipitationModule {
   }
 }
 
-window.Precipitation = new PrecipitationModule();
+export const Precipitation = new PrecipitationModule();

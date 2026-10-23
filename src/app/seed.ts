@@ -1,11 +1,15 @@
 // The map seed: where it comes from, and the UI to revisit or share it
 
+import Alea from "alea";
+import { mapHistory } from "@/model/map-history";
+import { Options } from "@/model/options/options-model";
 import { Pins } from "@/model/options/pins";
 import { alertDialog } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/nodeUtils";
 import { generateSeed } from "@/utils/probabilityUtils";
+import { regeneratePrompt } from "./lifecycle";
 
 export function setSeed(precreatedSeed?: string): void {
   if (precreatedSeed) options.map.seed = precreatedSeed;
@@ -19,7 +23,7 @@ export function setSeed(precreatedSeed?: string): void {
     } else options.map.seed = generateSeed();
   }
 
-  Math.random = aleaPRNG(options.map.seed);
+  Math.random = Alea(options.map.seed);
 }
 
 /** Regenerate with the seed the user typed into the options panel */
@@ -35,7 +39,7 @@ export function generateMapWithSeed(): void {
 export function showSeedHistoryDialog(): void {
   const lines = mapHistory.map((entry, index) => {
     const created = new Date(entry.created).toLocaleTimeString();
-    const button = /* html */ `<i data-tip="${t("Click to generate a map with this seed")}" onclick="restoreSeed(${index})" class="icon-history optionsSeedRestore"></i>`;
+    const button = /* html */ `<i data-tip="${t("Click to generate a map with this seed")}" data-index="${index}" class="icon-history optionsSeedRestore"></i>`;
     return /* html */ `<li>${t(
       "Seed: {{seed}} {{- restore}}. Size: {{width}}x{{height}}. Template: {{template}}. Created: {{created}}",
       {
@@ -53,6 +57,9 @@ export function showSeedHistoryDialog(): void {
     title: t("Seed history"),
     message: /* html */ `<ol style="margin: 0; padding-left: 1.5em">${lines.join("")}</ol>`
   });
+  for (const button of document.querySelectorAll<HTMLElement>("#alertMessage .optionsSeedRestore")) {
+    button.addEventListener("click", () => restoreSeed(Number(button.dataset.index)));
+  }
 }
 
 /** Generate a map with a seed from this session's history, restoring the size and template it used */
@@ -63,15 +70,3 @@ export function restoreSeed(index: number): void {
   if (Pins.has("template")) Pins.clear("template");
   regeneratePrompt({ seed, width, height });
 }
-
-// Legacy seam: the seed history list wires its buttons with an inline onclick
-declare global {
-  interface Window {
-    restoreSeed: typeof restoreSeed;
-    generateMapWithSeed: typeof generateMapWithSeed;
-    showSeedHistoryDialog: typeof showSeedHistoryDialog;
-  }
-}
-window.restoreSeed = restoreSeed;
-window.generateMapWithSeed = generateMapWithSeed;
-window.showSeedHistoryDialog = showSeedHistoryDialog;

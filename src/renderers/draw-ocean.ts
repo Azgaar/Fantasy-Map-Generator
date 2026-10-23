@@ -1,4 +1,5 @@
 import { curveBasisClosed, line } from "d3";
+import { Grid } from "@/model/graph/grid-generator";
 import { Ocean } from "@/model/physical/ocean-generator";
 import { findEl, rn, round } from "@/utils";
 import { ensureEl } from "@/utils/nodeUtils";

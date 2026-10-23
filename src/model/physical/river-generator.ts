@@ -1,11 +1,15 @@
 import Alea from "alea";
 import { curveBasis, curveCatmullRom, line, mean, min, sum } from "d3";
 import type { Label } from "@/model/annotations/labels-generator";
+import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
+import { Names } from "@/model/society/names-generator";
 import { each, rn, round, rw } from "@/utils";
 import { replaceWholeWord } from "@/utils/languageUtils";
 import { meander, projectToNearestEdge } from "@/utils/pathUtils";
 import { requireName } from "@/utils/validationUtils";
+import { Features } from "./features-generator";
+import { Lakes } from "./lakes";
 
 export const MIN_FLUX_TO_FORM_RIVER = 30;
 export const MIN_NAVIGABLE_FLUX = 100;
@@ -922,10 +926,4 @@ class RiverModule {
   }
 }
 
-declare global {
-  var Rivers: RiverModule;
-}
-
-// biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const Rivers = new RiverModule();
-window.Rivers = Rivers;

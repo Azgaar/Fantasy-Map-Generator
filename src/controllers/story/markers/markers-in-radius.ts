@@ -1,6 +1,7 @@
 import { Controllers } from "@/controllers";
 import { Icons } from "@/model/icons";
 import type { Marker } from "@/model/story/markers-generator";
+import { Markers } from "@/model/story/markers-generator";
 import { clearMarkerRadius, drawMarkerRadius } from "@/renderers/draw-marker-radius";
 import { setMarkersFilter } from "@/renderers/draw-markers";
 import { Layers } from "@/renderers/layers";
@@ -8,6 +9,7 @@ import { highlightElement } from "@/renderers/overlays/highlight";
 import { viewport } from "@/renderers/viewport/viewport";
 import { Csv } from "@/services/io/csv";
 import { closeDialogs, confirmationDialog, refreshEditors } from "@/ui/dialog/dialog-helpers";
+import { zoomTo } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { ensureEl, findEl, getLatitude, getLongitude } from "@/utils";
 import { sentences, t } from "@/utils/i18n";

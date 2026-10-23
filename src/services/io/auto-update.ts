@@ -2,18 +2,39 @@
 
 import { min, select } from "d3";
 import { IconPictures } from "@/controllers/icon-picker/pictures";
-import { type Label, type LabelNameMode, Labels as LabelsGenerator } from "@/model/annotations/labels-generator";
+import { AddedLabels } from "@/model/annotations/added-labels";
+import {
+  type Label,
+  type LabelNameMode,
+  Labels,
+  Labels as LabelsGenerator
+} from "@/model/annotations/labels-generator";
 import type { Measurer, MeasurerType } from "@/model/annotations/measurers-generator";
+import { Measurers } from "@/model/annotations/measurers-generator";
+import { Goods } from "@/model/economy/goods-generator";
+import { Markets } from "@/model/economy/markets-generator";
+import { Production } from "@/model/economy/production-generator";
 import type { GraphOverrides } from "@/model/graph/graph-override";
+import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
 import { CustomIcons, IMAGE_FRAME } from "@/model/icons";
 import { type EntityRef, MapEntities } from "@/model/map-entities";
 import { normalizeLegacyBurgGroupFilters } from "@/model/options/options-legacy";
 import type { MapData } from "@/model/options/options-schema";
-import { type Feature, LAKE_SUBTYPES, OCEAN_SUBTYPES } from "@/model/physical/features-generator";
+import { Biomes } from "@/model/physical/biomes-generator";
+import { type Feature, Features, LAKE_SUBTYPES, OCEAN_SUBTYPES } from "@/model/physical/features-generator";
+import { Lakes } from "@/model/physical/lakes";
 import { Relief, type ReliefIcon, type ReliefIconType, type ReliefSet } from "@/model/physical/relief-generator";
+import { Rivers } from "@/model/physical/river-generator";
+import { Burgs } from "@/model/political/burgs-generator";
 import { Emblems } from "@/model/political/emblems-generator";
-import { getDefaultMarkerName, type Marker } from "@/model/story/markers-generator";
+import { Military } from "@/model/political/military-generator";
+import { Provinces } from "@/model/political/provinces-generator";
+import { States } from "@/model/political/states-generator";
+import { Zones } from "@/model/political/zones-generator";
+import { Cultures } from "@/model/society/cultures-generator";
+import { Religions } from "@/model/society/religions-generator";
+import { getDefaultMarkerName, type Marker, Markers } from "@/model/story/markers-generator";
 import { Notes } from "@/model/story/notes";
 import { Styles } from "@/model/styles/styles";
 import {

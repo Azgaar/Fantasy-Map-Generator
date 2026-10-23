@@ -25,10 +25,11 @@ vi.mock("@/ui/map/reveal", () => ({
   markEntities: mocks.mark,
   clearEntityMarks: mocks.clear
 }));
-vi.mock("@/ui/tooltips", () => ({ tip: vi.fn() }));
+vi.mock("@/ui/tooltips", () => ({ tip: vi.fn(), loadingTip: { start: vi.fn(), end: vi.fn() } }));
 vi.mock("@/renderers/draw-goods", () => ({ goodBadge: ({ icon }: { icon: string }) => `<use href="#${icon}"/>` }));
 vi.mock("@/services/io/export", () => ({ ExportMap: { getRegionImage: mocks.image } }));
 
+import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import type { Widget } from "@/services/assistant/chats";
 import { AssistantWidgets } from "./widgets";
 
@@ -91,7 +92,7 @@ beforeEach(() => {
       }
     }
   } as unknown as typeof options;
-  window.EmblemRenderer = { trigger: mocks.emblem } as unknown as typeof window.EmblemRenderer;
+  Object.assign(EmblemRenderer, { trigger: mocks.emblem });
 });
 
 it("links a live entity and keeps just the label otherwise", () => {

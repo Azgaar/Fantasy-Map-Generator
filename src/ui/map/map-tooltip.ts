@@ -1,5 +1,10 @@
 import { select } from "d3";
 import { FEATURE_SUBTYPE_LABELS } from "@/data/id-labels";
+import { Goods } from "@/model/economy/goods-generator";
+import { Markets } from "@/model/economy/markets-generator";
+import { Production } from "@/model/economy/production-generator";
+import { Grid } from "@/model/graph/grid-generator";
+import { Pack } from "@/model/graph/pack-generator";
 import { MapEntities } from "@/model/map-entities";
 import { Notes } from "@/model/story/notes";
 import { Layers } from "@/renderers/layers";

@@ -1,9 +1,5 @@
 import { type EntityRef, MapEntities } from "@/model/map-entities";
 
-declare global {
-  var Tags: TagsModule;
-}
-
 export interface Taggable {
   tags?: string[];
 }
@@ -107,6 +103,4 @@ export class TagsModule {
   }
 }
 
-// biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const Tags = new TagsModule();
-window.Tags = Tags;

@@ -1,3 +1,5 @@
+import { Grid } from "@/model/graph/grid-generator";
+import { Pack } from "@/model/graph/pack-generator";
 import type { PackedGraph } from "../types/PackedGraph";
 import { rn } from "./numberUtils";
 

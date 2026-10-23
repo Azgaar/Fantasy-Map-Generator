@@ -1,9 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { MIN_NAVIGABLE_FLUX } from "@/model/physical/river-generator";
+import { MIN_NAVIGABLE_FLUX, Rivers } from "@/model/physical/river-generator";
+import { Routes } from "./routes-generator";
 
 describe("RoutesModule river-aware water cost", () => {
-  let Routes: any;
-
   beforeEach(async () => {
     globalThis.TIME = false;
     globalThis.window = globalThis.window || ({} as any);
@@ -23,7 +22,6 @@ describe("RoutesModule river-aware water cost", () => {
     globalThis.grid = { cells: { temp: [20, 20, 20, 20, 20, 20, 20, 20] } } as any;
 
     await import("./routes-generator");
-    Routes = (globalThis as any).Routes;
   });
 
   function setupTwoRiverPack() {
@@ -181,8 +179,6 @@ describe("RoutesModule river-aware water cost", () => {
 });
 
 describe("RoutesModule.findWaterPath", () => {
-  let Routes: any;
-
   // Two coastal ports (land cells 0 and 4) with three sea cells between them.
   // Cell 0's haven is cell 1; cell 4's haven is set per test.
   function setupTwoPortsPack(destinationHaven: number) {
@@ -239,7 +235,6 @@ describe("RoutesModule.findWaterPath", () => {
   beforeEach(async () => {
     setupTwoPortsPack(3);
     await import("./routes-generator");
-    Routes = (globalThis as any).Routes;
     Routes.sync();
   });
 
@@ -267,9 +262,6 @@ describe("RoutesModule.findWaterPath", () => {
 });
 
 describe("RoutesModule.addMeandering", () => {
-  let Routes: any;
-  let Rivers: any;
-
   beforeEach(async () => {
     globalThis.TIME = false;
     globalThis.window = globalThis.window || ({} as any);
@@ -292,8 +284,6 @@ describe("RoutesModule.addMeandering", () => {
 
     await import("./routes-generator");
     await import("@/model/physical/river-generator");
-    Routes = (globalThis as any).Routes;
-    Rivers = (globalThis as any).Rivers;
   });
 
   function setupRiverPack() {
@@ -459,7 +449,7 @@ describe("RoutesModule.addMeandering", () => {
     const cell3Anchor = result.find(
       (p: number[], idx: number, arr: number[][]) => p[2] === 3 && (idx === 0 || arr[idx - 1][2] !== 3)
     );
-    expect([cell3Anchor[0], cell3Anchor[1]]).toEqual([40, 0]);
+    expect([cell3Anchor?.[0], cell3Anchor?.[1]]).toEqual([40, 0]);
 
     // Terminal port (cell 4) also stays at its river cell center [55, 0], not the marker [55, 8].
     const last = result[result.length - 1];
@@ -557,8 +547,6 @@ describe("RoutesModule.addMeandering", () => {
 });
 
 describe("RoutesModule.remove", () => {
-  let Routes: any;
-
   beforeEach(async () => {
     globalThis.TIME = false;
     globalThis.window = globalThis.window || ({} as any);
@@ -566,7 +554,6 @@ describe("RoutesModule.remove", () => {
     globalThis.document = { querySelector: () => null, documentElement: {} } as any;
     globalThis.pack = { cells: {}, routes: [] } as any;
     await import("./routes-generator");
-    Routes = (globalThis as any).Routes;
   });
 
   it("removes a route when the link index is asymmetric (reverse cell absent)", () => {
@@ -603,7 +590,6 @@ describe("ensureRouteGroupStyles", () => {
       ]
     } as any;
     await import("./routes-generator");
-    const Routes = (globalThis as any).Routes;
 
     const roads = { attrs: { opacity: 0.9, stroke: "#d06324", "stroke-width": 0.7 } };
     (globalThis as any).styles = { routes: { groups: { roads: structuredClone(roads) } } };
@@ -624,7 +610,6 @@ describe("ensureRouteGroupStyles before a map exists", () => {
     globalThis.grid = { cells: { temp: [20] } } as any;
     globalThis.pack = {} as any;
     await import("./routes-generator");
-    const Routes = (globalThis as any).Routes;
 
     (globalThis as any).styles = { routes: { groups: { roads: { attrs: { opacity: 0.9 } } } } };
 

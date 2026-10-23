@@ -5,6 +5,7 @@ import "@/model/physical/relief-generator"; // the models own the icon sets that
 import "@/model/political/burgs-generator";
 import "@/model/economy/goods-generator";
 import { Icons } from "@/model/icons";
+import { Options } from "@/model/options/options-model";
 import { Styles } from "./styles";
 import {
   adoptLegacyIconSlots,
@@ -298,7 +299,7 @@ test("older icon slot values become references: `#id` loses its `#`, any other t
 
 test("older icon slots become references, one custom icon per distinct image", () => {
   vi.stubGlobal("options", { map: { customIcons: [] } });
-  vi.stubGlobal("Options", { save: vi.fn(), iconsChanged: vi.fn() });
+  Object.assign(Options, { save: vi.fn(), iconsChanged: vi.fn() });
   const slots = [{ icon: "https://a.b/c.png" }, { icon: "⚔️" }, { icon: "https://a.b/c.png" }, {}];
   adoptLegacyIconSlots(slots);
   expect(options.map.customIcons).toHaveLength(1);

@@ -1,8 +1,13 @@
 import { type Selection, select } from "d3";
 import { Controllers } from "@/controllers";
+import { Goods } from "@/model/economy/goods-generator";
 import type { Market } from "@/model/economy/markets-generator";
+import { Markets } from "@/model/economy/markets-generator";
+import { Production } from "@/model/economy/production-generator";
 import { Icons } from "@/model/icons";
 import type { Burg } from "@/model/political/burgs-generator";
+import { Burgs } from "@/model/political/burgs-generator";
+import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
 import { removeEmblem } from "@/renderers/draw-emblems";
 import { goodIconLines } from "@/renderers/draw-goods";
@@ -10,6 +15,7 @@ import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
 import { closeDialogs, confirmationDialog, destroyDialog, noteButton } from "@/ui/dialog/dialog-helpers";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
+import { zoomTo } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import {
   convertTemperature,
@@ -253,7 +259,7 @@ function renderDialog(): void {
           class="icon-map-pin"
         ></button>
         ${noteButton("burglLegend", t("Edit free text notes (legend)"))}
-        <button id="burgLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
+        <button id="burgLock" class="icon-lock-open" data-lock-tip></button>
         <button
           id="burgRemove"
           data-tip="${t("Remove")}"
@@ -771,7 +777,8 @@ function removeSelectedBurg(): void {
   const burg = pack.burgs[burgId];
 
   if (burg.capital) {
-    alertMessage.innerHTML = /* html */ `${sentences(t("You cannot remove the capital"), t("You must change the state capital first"))}`;
+    ensureEl("alertMessage").innerHTML =
+      /* html */ `${sentences(t("You cannot remove the capital"), t("You must change the state capital first"))}`;
     $("#alert").dialog({
       resizable: false,
       title: t("Remove"),
@@ -782,7 +789,8 @@ function removeSelectedBurg(): void {
       }
     });
   } else if (pack.markets?.some(m => m.centerBurgId === burgId)) {
-    alertMessage.innerHTML = /* html */ `${t("You cannot remove a market center burg. Please remove the market first")}`;
+    ensureEl("alertMessage").innerHTML =
+      /* html */ `${t("You cannot remove a market center burg. Please remove the market first")}`;
     $("#alert").dialog({
       resizable: false,
       title: t("Remove"),

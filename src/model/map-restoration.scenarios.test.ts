@@ -1,5 +1,8 @@
 // Map restoration on real generated maps: Risk heightmap edits, Submap and Transform. See docs/prd/map-restoration-tests.md
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { Production } from "@/model/economy/production-generator";
+import { Features } from "@/model/physical/features-generator";
+import { Rivers } from "@/model/physical/river-generator";
 import type { IntegrityRule } from "./map-integrity";
 import { circle, generateMap, living, newViolations, riskEdit, violations } from "./real-map.testing";
 

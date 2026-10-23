@@ -3,6 +3,7 @@ import { Controllers } from "@/controllers";
 import { ReliefPoolEditor } from "@/controllers/physical/relief/relief-pool-editor";
 import { fitReliefArt, poolPreviewHtml } from "@/controllers/physical/relief/relief-previews";
 import type { Biome } from "@/model/physical/biomes-generator";
+import { Biomes } from "@/model/physical/biomes-generator";
 import { Population } from "@/model/society/population-generator";
 import { Layers } from "@/renderers/layers";
 import { LegendBoxes } from "@/renderers/legend-boxes";

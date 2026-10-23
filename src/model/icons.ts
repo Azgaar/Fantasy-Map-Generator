@@ -2,6 +2,7 @@
 
 import { emojiName } from "@/data/icons-list";
 import { type IconSetId, IconSets } from "@/model/icon-sets";
+import { Options } from "@/model/options/options-model";
 import type { IconPaint } from "@/types/icons";
 import { tip } from "@/ui/tooltips";
 import { findEl } from "@/utils";

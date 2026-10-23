@@ -4,6 +4,7 @@ import type { TransportDomain } from "@/model/economy/transports-generator";
 import type { JourneyPoint, JourneySegment } from "@/types/Journey";
 import { generateStoryJourney, type JourneyPathfinder } from "./journey-story";
 import "@/model/economy/transports-generator";
+import { Transports } from "@/model/economy/transports-generator";
 
 /**
  * A 10×10 land grid, 100px apart, with eight burgs scattered over two states.

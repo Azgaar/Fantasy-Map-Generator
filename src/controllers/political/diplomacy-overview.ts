@@ -1,7 +1,9 @@
 import { interpolateString, select } from "d3";
 import { Controllers } from "@/controllers";
 import { isRelation, RELATIONS } from "@/data/diplomacy";
+import { Pack } from "@/model/graph/pack-generator";
 import type { State } from "@/model/political/states-generator";
+import { States } from "@/model/political/states-generator";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
 import { removeRelationsMark, showRelations } from "@/renderers/overlays/diplomacy";
@@ -283,10 +285,13 @@ function showHistory(): void {
     message += /* html */ `<div><div contenteditable="true" data-id="0-0">${t("No historical records")}</div>&#8205;</div>`;
   }
 
-  alertMessage.innerHTML = `${message}</div><div class="info-line">${t("Type to edit. Press Enter to add a new line, empty the element to remove it")}</div>`;
-  alertMessage.querySelectorAll("div[contenteditable='true']").forEach(el => {
-    el.addEventListener("input", changeReliationsHistory);
-  });
+  ensureEl("alertMessage").innerHTML =
+    `${message}</div><div class="info-line">${t("Type to edit. Press Enter to add a new line, empty the element to remove it")}</div>`;
+  ensureEl("alertMessage")
+    .querySelectorAll("div[contenteditable='true']")
+    .forEach(el => {
+      el.addEventListener("input", changeReliationsHistory);
+    });
 
   $("#alert").dialog({
     title: t("Relations history"),

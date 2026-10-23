@@ -15,6 +15,7 @@ vi.mock("@/controllers", () => ({ Controllers: { Assistant: { ask: mocks.ask } }
 vi.mock("@/services/assistant/provider/connection", () => ({ isConnected: mocks.connected }));
 vi.mock("@/utils", async original => ({ ...(await original<object>()), getPointer: () => [30, 40] }));
 
+import { Pack } from "@/model/graph/pack-generator";
 import { ContextMenu } from "./context-menu";
 
 const rows = () => Array.from(document.querySelectorAll<HTMLButtonElement>("#contextMenu button"));
@@ -32,7 +33,7 @@ beforeEach(() => {
     <g id="labels"><text id="stateLabel1"></text></g>
     <g id="burgIcons"><g data-id="1"><use id="burgIcon"></use></g><use id="burg1"></use></g>
   </g></svg>`;
-  globalThis.Pack = { findCell: () => 1 } as unknown as typeof Pack;
+  Object.assign(Pack, { findCell: () => 1 });
   globalThis.pack = {
     cells: {
       p: [

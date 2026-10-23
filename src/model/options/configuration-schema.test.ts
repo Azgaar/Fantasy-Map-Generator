@@ -5,6 +5,7 @@ import type { CoastlineSettings } from "@/model/physical/coastline-generator";
 import type { BurgGroup } from "@/types/burg-groups";
 import type { MilitaryUnit } from "@/types/Military";
 import { parseSections } from "@/utils/schemaUtils";
+import { Options } from "./options-model";
 import { type MapData, mapSchema, type OptionsData, optionsSchema } from "./options-schema";
 
 // The schema is the shape; the default factory is the values. These keep the two in step,

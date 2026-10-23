@@ -1,7 +1,8 @@
 import { Controllers } from "@/controllers";
 import { CULTURE_TYPE_LABELS, DEMAND_CATEGORY_LABELS } from "@/data/id-labels";
 import type { DemandCategory, Good } from "@/model/economy/goods-generator";
-import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "@/model/economy/goods-generator";
+import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, Goods } from "@/model/economy/goods-generator";
+import { Production } from "@/model/economy/production-generator";
 import { Icons } from "@/model/icons";
 import { CULTURE_TYPES } from "@/model/society/cultures-generator";
 import { Tags } from "@/model/tags";

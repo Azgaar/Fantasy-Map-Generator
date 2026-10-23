@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/types/global";
 import type { PaintEditorOptions } from "./paint-editor";
 import { PaintEditor } from "./paint-editor";
-import "@/model/graph/pack-generator"; // registers the Pack global the editor finds cells with
 
 vi.mock("@/ui/map/viewbox-events", () => ({ applyDefaultViewboxEvents: vi.fn() }));
 vi.mock("@/ui/dialog/dialog-helpers", async importOriginal => ({

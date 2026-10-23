@@ -238,7 +238,7 @@ Yes, we have a dedicated Discord server and Reddit community. Both have a very a
 
 ### Can I underline at the name of the capitals?
 
-You cannot using the UI, but if you are comfortable with dev tools, you can amend the svg part directly. Open the console (F12) and run: `d3.select('#labels-capital').style('text-decoration', 'underline')`. Use another burg group name instead of `capital` if needed. The change may be lost when labels are re-rendered
+You cannot using the UI, but if you are comfortable with dev tools, you can amend the svg part directly. Open the console (F12) and run: `document.querySelector('#labels-capital').style.textDecoration = 'underline'`. Use another burg group name instead of `capital` if needed. The change may be lost when labels are re-rendered
 
 ### I have a height map but it doesn’t work in Roblox Studio. How do I get the map on Roblox?
 

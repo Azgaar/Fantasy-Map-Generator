@@ -1,7 +1,6 @@
 import { polygonArea } from "d3";
 import { beforeEach, describe, expect, it } from "vitest";
 import { GraphOverride } from "@/model/graph/graph-override";
-import "@/model/graph/pack-generator"; // registers the Pack global the brush looks cells up with
 import type { Point } from "@/types/global";
 import { isSimple, VertexBrush } from "./vertex-brush";
 

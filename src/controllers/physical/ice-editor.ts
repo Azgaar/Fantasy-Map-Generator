@@ -1,4 +1,7 @@
 import { drag, type Selection, select } from "d3";
+import { Controllers } from "@/controllers";
+import { Grid } from "@/model/graph/grid-generator";
+import { Ice } from "@/model/physical/ice-generator";
 import { redrawIceberg } from "@/renderers/draw-ice";
 import { Layers } from "@/renderers/layers";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";

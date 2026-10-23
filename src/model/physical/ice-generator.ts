@@ -1,12 +1,9 @@
 import Alea from "alea";
 import { min } from "d3";
+import { Grid } from "@/model/graph/grid-generator";
 import type { Point } from "@/model/graph/voronoi";
 import { redrawGlacier, redrawIceberg } from "@/renderers/draw-ice";
 import { clipPoly, getIsolines, lerp, minmax, normalize, P, ra, rand, rn } from "@/utils";
-
-declare global {
-  var Ice: IceModule;
-}
 
 export type Ice = Glacier | Iceberg;
 
@@ -151,4 +148,4 @@ class IceModule {
   }
 }
 
-window.Ice = new IceModule();
+export const Ice = new IceModule();

@@ -1,5 +1,6 @@
 // Settings for experienced users: the Options tab binds these controls like its own, this dialog only shows them
 
+import { regeneratePrompt } from "@/app/lifecycle";
 import { SAMPLING_LABELS } from "@/data/id-labels";
 import { DEFAULT_JITTER, MAX_JITTER, SAMPLINGS, type Sampling } from "@/model/graph/lattice";
 import { closeDialogs } from "@/ui/dialog/dialog-helpers";

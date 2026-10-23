@@ -2,7 +2,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 
 vi.mock("@/renderers/layers", () => ({ Layers: { show: vi.fn() } }));
-vi.mock("@/ui/tooltips", () => ({ tip: vi.fn(), clearMainTip: vi.fn() }));
+vi.mock("@/ui/tooltips", () => ({ tip: vi.fn(), clearMainTip: vi.fn(), loadingTip: { start: vi.fn(), end: vi.fn() } }));
 vi.mock("@/ui/map/viewbox-events", () => ({ applyDefaultViewboxEvents: vi.fn() }));
 vi.mock("@/controllers", () => ({ Controllers: {} }));
 vi.mock("@/renderers/draw-emblems", () => ({ removeEmblem: vi.fn() }));
@@ -14,6 +14,8 @@ vi.mock("@/ui/dialog/dialog-helpers", async importActual => ({
   destroyDialog: vi.fn()
 }));
 
+import { Production } from "@/model/economy/production-generator";
+import { Burgs } from "@/model/political/burgs-generator";
 import { BurgEditor } from "./burg-editor";
 
 const preview = "https://watabou.github.io/city-generator/?seed=1&size=55&preview=1";
@@ -34,8 +36,8 @@ it("does not reparent a loaded preview when opening or closing the dialog", () =
     states: [{ name: "Neutrals" }],
     cultures: []
   });
-  vi.stubGlobal("Burgs", { getPreview: () => ({ link: preview, preview }) });
-  vi.stubGlobal("Production", { getBurgProduction: () => ({}) });
+  Object.assign(Burgs, { getPreview: () => ({ link: preview, preview }) });
+  Object.assign(Production, { getBurgProduction: () => ({}) });
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
 
   const reparentedPreviews: string[] = [];

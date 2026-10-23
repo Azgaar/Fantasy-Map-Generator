@@ -1,8 +1,12 @@
 import { select } from "d3";
 import { Controllers } from "@/controllers";
 import type { Good } from "@/model/economy/goods-generator";
-import { isDealRecord, isMfgRecord } from "@/model/economy/production-generator";
+import { Goods } from "@/model/economy/goods-generator";
+import { Markets } from "@/model/economy/markets-generator";
+import { isDealRecord, isMfgRecord, Production } from "@/model/economy/production-generator";
+import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
+import { States } from "@/model/political/states-generator";
 import { Tags } from "@/model/tags";
 import { goodBadge } from "@/renderers/draw-goods";
 import { Layers } from "@/renderers/layers";
@@ -27,6 +31,7 @@ import {
   type TableView
 } from "@/ui/dialog/table";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
+import { zoomTo } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { ensureEl, getPointer, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
@@ -296,7 +301,8 @@ function openProducersDialog(goodId: number) {
     .sort((a, b) => b.units - a.units);
 
   if (!producers.length) {
-    alertMessage.innerHTML = `<i style="color:#888">${t("No burgs produced {{good}}.", { good: good.name })}</i>`;
+    ensureEl("alertMessage").innerHTML =
+      `<i style="color:#888">${t("No burgs produced {{good}}.", { good: good.name })}</i>`;
   } else {
     const header = /*html*/ `
           <div class="header" style="grid-template-columns: 1.6em 7em 4em;">
@@ -314,12 +320,14 @@ function openProducersDialog(goodId: number) {
           </div>`
       )
       .join("");
-    alertMessage.innerHTML = header + rows;
-    alertMessage.querySelectorAll<HTMLElement>(".states").forEach(row => {
-      row.addEventListener("click", () => {
-        zoomTo(Number(row.dataset.x), Number(row.dataset.y), 8, 2000);
+    ensureEl("alertMessage").innerHTML = header + rows;
+    ensureEl("alertMessage")
+      .querySelectorAll<HTMLElement>(".states")
+      .forEach(row => {
+        row.addEventListener("click", () => {
+          zoomTo(Number(row.dataset.x), Number(row.dataset.y), 8, 2000);
+        });
       });
-    });
   }
 
   $("#alert").dialog({
@@ -408,7 +416,8 @@ function openStockDialog(goodId: number) {
   const sources = data?.sources ?? [];
 
   if (!sources.length) {
-    alertMessage.innerHTML = `<i style="color:#888">${t("No stock of {{good}} found in any market or burg inventory.", { good: good.name })}</i>`;
+    ensureEl("alertMessage").innerHTML =
+      `<i style="color:#888">${t("No stock of {{good}} found in any market or burg inventory.", { good: good.name })}</i>`;
   } else {
     const header = /*html*/ `
       <div class="header" style="grid-template-columns: 1.6em 7em 4em;">
@@ -427,12 +436,14 @@ function openStockDialog(goodId: number) {
         </div>`
       )
       .join("");
-    alertMessage.innerHTML = header + rows;
-    alertMessage.querySelectorAll<HTMLElement>(".states").forEach(row => {
-      row.addEventListener("click", () => {
-        zoomTo(Number(row.dataset.x), Number(row.dataset.y), 8, 2000);
+    ensureEl("alertMessage").innerHTML = header + rows;
+    ensureEl("alertMessage")
+      .querySelectorAll<HTMLElement>(".states")
+      .forEach(row => {
+        row.addEventListener("click", () => {
+          zoomTo(Number(row.dataset.x), Number(row.dataset.y), 8, 2000);
+        });
       });
-    });
   }
 
   $("#alert").dialog({
@@ -482,7 +493,7 @@ function openTagsVisibilityDialog() {
     ? tags.map(renderTag).join("")
     : `<div style="color:#666">${t("No tags available")}</div>`;
 
-  alertMessage.innerHTML = `
+  ensureEl("alertMessage").innerHTML = `
     <div data-tip="${t("Only goods with at least one selected tag remain visible in the editor list")}" style="display: grid; grid-template-columns: 1fr 1fr 1fr; column-gap: 0.3em;">${tagsMarkup}</div>
   `;
 
@@ -500,7 +511,9 @@ function openTagsVisibilityDialog() {
         $(this).dialog("close");
       },
       [t("Apply")]: function () {
-        const checks = Array.from(alertMessage.querySelectorAll<HTMLInputElement>("input[type=checkbox]:checked"));
+        const checks = Array.from(
+          ensureEl("alertMessage").querySelectorAll<HTMLInputElement>("input[type=checkbox]:checked")
+        );
         filterState.visibleTags = checks.map(check => check.value);
         dialogState.set(dialogId, "filters", filterState);
         applyTagVisibilityFilter();

@@ -1,7 +1,10 @@
 import { drag, type Selection, select } from "d3";
 import { Controllers } from "@/controllers";
+import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
 import type { River } from "@/model/physical/river-generator";
+import { Rivers } from "@/model/physical/river-generator";
+import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
 import { redrawRiver as redrawRiverShape, setEditedRiver } from "@/renderers/draw-rivers";
 import { Layers } from "@/renderers/layers";
@@ -115,7 +118,7 @@ function renderDialog(): void {
       <button id="riverEditStyle" data-tip="${t("Edit style in Style Editor")}" class="icon-brush"></button>
       <button id="riverElevationProfile" data-tip="${t("Elevation profile")}" class="icon-chart-area"></button>
       ${noteButton("riverLegend", t("Edit free text notes (legend)"))}
-      <button id="riverLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
+      <button id="riverLock" class="icon-lock-open" data-lock-tip></button>
       <button id="riverRemove" data-tip="${t("Remove")}" data-shortcut="Delete" class="icon-trash fastDelete"></button>
     </div>
   </div>`;

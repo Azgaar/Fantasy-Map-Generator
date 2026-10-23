@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import "./options-model";
-import { ICONS_STORAGE_KEY } from "./options-model";
+import { LocalDB } from "@/utils/localDB";
+import { ICONS_STORAGE_KEY, Options } from "./options-model";
 import { OPTIONS_STORAGE_KEY as STORAGE_KEY } from "./options-storage";
 
 const icon = {
@@ -15,13 +16,15 @@ let stored: Map<string, unknown>;
 beforeEach(() => {
   localStorage.clear();
   stored = new Map();
-  vi.stubGlobal("ldb", {
-    get: vi.fn(async (key: string) => stored.get(key) ?? null),
-    set: vi.fn(async (key: string, value: unknown) => void stored.set(key, structuredClone(value)))
+  vi.spyOn(LocalDB, "isSupported").mockReturnValue(true);
+  vi.spyOn(LocalDB, "get").mockImplementation(async <T>(key: string) => (stored.get(key) ?? null) as T);
+  vi.spyOn(LocalDB, "set").mockImplementation(async (key: string, value: unknown) => {
+    stored.set(key, structuredClone(value));
   });
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
   vi.useRealTimers();
 });
@@ -55,7 +58,7 @@ it("moves icons an earlier version kept in localStorage to IndexedDB", async () 
 
 it("writes no icons in a session whose IndexedDB never answers, so none there are lost", async () => {
   vi.useFakeTimers();
-  vi.stubGlobal("ldb", { get: vi.fn(() => new Promise(() => {})), set: vi.fn() });
+  vi.spyOn(LocalDB, "get").mockImplementation(() => new Promise(() => {}));
   Options.restore();
   const restoring = Options.restoreIcons();
   await vi.advanceTimersByTimeAsync(5000);
@@ -63,5 +66,5 @@ it("writes no icons in a session whose IndexedDB never answers, so none there ar
 
   Options.iconsChanged();
   Options.persist();
-  expect(ldb.set).not.toHaveBeenCalled();
+  expect(LocalDB.set).not.toHaveBeenCalled();
 });

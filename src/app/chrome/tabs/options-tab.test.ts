@@ -2,6 +2,7 @@
 import { readFileSync } from "node:fs";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { toggleAssistant } from "@/app/chrome/assistant-bubble";
+import { Options } from "@/model/options/options-model";
 import { Pins } from "@/model/options/pins";
 import { Emblems } from "@/model/political/emblems-generator";
 import { confirmationDialog } from "@/ui/dialog/dialog-helpers";

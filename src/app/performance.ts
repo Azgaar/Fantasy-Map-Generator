@@ -1,5 +1,6 @@
 // Quality traded for speed: three independent settings, and the presets that name common combinations
 
+import { Options } from "@/model/options/options-model";
 import type { OptionsData } from "@/model/options/options-schema";
 import { Layers } from "@/renderers/layers";
 import { findEl } from "@/utils/nodeUtils";

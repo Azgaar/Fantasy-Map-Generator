@@ -1,8 +1,17 @@
+// @vitest-environment jsdom
 import { describe, expect, test } from "vitest";
-import { showElementLockTip } from "./tooltips";
 
-describe("tooltip compatibility bridge", () => {
-  test("exposes the lock tooltip handler used by inline UI markup", () => {
-    expect((window as unknown as Record<string, unknown>).showElementLockTip).toBe(showElementLockTip);
+describe("data tips", () => {
+  test("a lock icon tells whether it is locked", async () => {
+    document.body.innerHTML = '<div id="tooltip"></div><span class="icon-lock" data-lock-tip></span>';
+    const { showDataTip } = await import("./tooltips");
+    const lock = document.querySelector<HTMLElement>("[data-lock-tip]")!;
+
+    showDataTip({ target: lock } as unknown as Event);
+    expect(document.getElementById("tooltip")!.textContent).toMatch(/^Locked/);
+
+    lock.className = "icon-lock-open";
+    showDataTip({ target: lock } as unknown as Event);
+    expect(document.getElementById("tooltip")!.textContent).toMatch(/^Unlocked/);
   });
 });

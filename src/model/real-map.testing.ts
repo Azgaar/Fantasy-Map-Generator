@@ -1,12 +1,6 @@
 // Generates real maps in the Node test environment, with the generators the app runs
-import { readFileSync } from "node:fs";
 import type { IntegrityRule, IntegrityViolation } from "./map-integrity";
 
-// the legacy libraries index.html loads as globals
-for (const lib of ["flatqueue.js", "alea.min.js", "polylabel.min.js", "simplify.js"]) {
-  const code = readFileSync(new URL(`../../public/libs/${lib}`, import.meta.url), "utf8");
-  new Function("module", "exports", "define", code).call(globalThis, undefined, undefined, undefined);
-}
 Object.assign(globalThis, { grid: undefined, pack: {} });
 
 const { GenerationPipeline } = await import("./generation-pipeline");

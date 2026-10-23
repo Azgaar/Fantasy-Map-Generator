@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { Transports } from "@/model/economy/transports-generator";
+import { Rivers } from "@/model/physical/river-generator";
 import type { Journey, JourneySegment } from "@/types/Journey";
+import { Journeys } from "./journeys-generator";
 
 const makeSeg = (
   distance: number,
@@ -20,14 +23,11 @@ const makeSeg = (
 });
 
 describe("journey metrics", () => {
-  let Journeys: any;
-
   beforeEach(async () => {
     await import("@/model/economy/transports-generator");
     options.map.units.distance = { unit: "km", scale: 1 };
     options.map.transports = Transports.getDefaults();
     await import("./journeys-generator");
-    Journeys = (globalThis as any).Journeys;
   });
 
   it("getSegmentDistance multiplies by options.map.units.distance.scale", () => {
@@ -212,8 +212,6 @@ describe("journey metrics", () => {
 });
 
 describe("land pathfinding stays on land", () => {
-  let Journeys: any;
-
   /**
    * Cells 0-1-2-3 in a row. Cell 2 is open water, and pack.cells.routes links
    * 1-2-3 as a "sea route". pack.cells.routes merges every route group into one
@@ -261,7 +259,6 @@ describe("land pathfinding stays on land", () => {
     (globalThis as any).grid = { cells: { temp: [20, 20, 20, 20] } };
 
     await import("./journeys-generator");
-    Journeys = (globalThis as any).Journeys;
   });
 
   it("does not follow a sea route across water", () => {
@@ -283,7 +280,6 @@ describe("land pathfinding stays on land", () => {
 });
 
 describe("Journeys.isValidPath", () => {
-  let Journeys: any;
   const at = (cellId: number): [number, number, number] => [cellId * 10, 0, cellId];
 
   const navigable = new Set<number>();
@@ -291,9 +287,8 @@ describe("Journeys.isValidPath", () => {
   beforeEach(async () => {
     (globalThis as any).pack = { cells: { h: [30, 30, 5, 30] } }; // cell 2 is water
     navigable.clear();
-    (globalThis as any).Rivers = { isNavigable: (cellId: number) => navigable.has(cellId) };
+    Object.assign(Rivers, { isNavigable: (cellId: number) => navigable.has(cellId) });
     await import("./journeys-generator");
-    Journeys = (globalThis as any).Journeys;
   });
 
   it("rejects a land path whose middle crosses water", () => {
@@ -387,8 +382,6 @@ function makeTerrainPack() {
 }
 
 describe("land pathfinding respects terrain", () => {
-  let Journeys: any;
-
   /** Straight west→east crossing of the middle row, with room to detour north or south */
   const [START, END] = [cellAt(4, 0), cellAt(4, 8)];
   const rowsOf = (points: any[]) => points.map(([, , cellId]) => Math.floor(cellId / TERRAIN_GRID));
@@ -401,7 +394,6 @@ describe("land pathfinding respects terrain", () => {
     options.map.units.distance = { unit: "km", scale: 1 };
     options.map.transports = Transports.getDefaults();
     await import("./journeys-generator");
-    Journeys = (globalThis as any).Journeys;
   });
 
   it("goes straight across uniform lowland", () => {

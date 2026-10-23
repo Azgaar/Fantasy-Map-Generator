@@ -1,7 +1,41 @@
 // @vitest-environment jsdom
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { AddedLabels } from "@/model/annotations/added-labels";
+import { Labels } from "@/model/annotations/labels-generator";
+import { Goods } from "@/model/economy/goods-generator";
+import { Markets } from "@/model/economy/markets-generator";
+import { Routes } from "@/model/economy/routes-generator";
+import { Transports } from "@/model/economy/transports-generator";
+import { Pack } from "@/model/graph/pack-generator";
+import { Biomes } from "@/model/physical/biomes-generator";
+import { Features } from "@/model/physical/features-generator";
+import { Rivers } from "@/model/physical/river-generator";
+import { Burgs } from "@/model/political/burgs-generator";
+import { Military } from "@/model/political/military-generator";
+import { Provinces } from "@/model/political/provinces-generator";
+import { States } from "@/model/political/states-generator";
+import { Zones } from "@/model/political/zones-generator";
+import { Cultures } from "@/model/society/cultures-generator";
+import { Names } from "@/model/society/names-generator";
+import { Religions } from "@/model/society/religions-generator";
+import { Journeys } from "@/model/story/journeys/journeys-generator";
+import { Markers } from "@/model/story/markers-generator";
 import { Emblems } from "./political/emblems-generator";
 import { Lore } from "./story/lore";
+
+// each test calls the model method its row names
+const MODELS: Record<string, any> = {
+  Biomes,
+  Burgs,
+  Cultures,
+  Journeys,
+  Markers,
+  Provinces,
+  Religions,
+  Routes,
+  States,
+  Zones
+};
 
 beforeAll(async () => {
   await Promise.all([
@@ -46,7 +80,7 @@ describe("recolor", () => {
     ["Zones", "zones"]
   ])("%s.recolor sets a HEX color and rejects anything else", (model, key) => {
     vi.stubGlobal("pack", { [key]: [{ i: 0 }, { i: 1, color: "#000000" }, { i: 2, removed: true }] });
-    const owner = (globalThis as Record<string, any>)[model];
+    const owner = MODELS[model];
     owner.recolor(1, "#A1B2C3");
     expect(pack[key as "states"][1].color).toBe("#A1B2C3");
     owner.recolor(1, "red");
@@ -584,7 +618,7 @@ describe("locks, treasuries and links", () => {
     ["Markers", 0, "markers"],
     ["Journeys", 2, "journeys"]
   ])("%s.setLocked stores only a lock", (model, id, key) => {
-    const owner = (globalThis as Record<string, any>)[model];
+    const owner = MODELS[model];
     const entity = () => (pack as any)[key].find((item: { i: number }) => item?.i === id);
     owner.setLocked(id, true);
     expect(entity().lock).toBe(true);
@@ -649,7 +683,7 @@ describe("States: chronicle, painting and merging as provinces", () => {
     vi.spyOn(Burgs, "getType").mockReturnValue("Generic");
     vi.spyOn(Emblems, "generate").mockReturnValue({ t1: "or" });
     vi.spyOn(Emblems, "getShield").mockReturnValue("heater");
-    vi.stubGlobal("Names", { getState: () => "Marca", getCultureShort: () => "M" });
+    Object.assign(Names, { getState: () => "Marca", getCultureShort: () => "M" });
     States.setCells(2, [2]);
     expect([...pack.cells.state]).toEqual([0, 1, 2, 2, 2]);
     expect(pack.provinces[2]).toMatchObject({ i: 2, state: 2, center: 2, name: "Vel" }); // the split-off part of Vel

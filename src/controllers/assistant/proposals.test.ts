@@ -23,6 +23,7 @@ vi.mock("@/controllers", () => ({ Controllers: { NotesEditor: { refresh: vi.fn()
 vi.mock("@/model/options/options-model", () => ({ Options: { save: vi.fn() } }));
 
 import { Options } from "@/model/options/options-model";
+import { Zones } from "@/model/political/zones-generator";
 import { Layers } from "@/renderers/layers";
 import type { Proposal } from "@/services/assistant/chats";
 import { Proposals } from "./proposals";

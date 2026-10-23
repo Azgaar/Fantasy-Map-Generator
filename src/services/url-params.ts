@@ -5,6 +5,7 @@ import { fitMapToScreen } from "@/app/canvas";
 import { toggleAssistant } from "@/app/chrome/assistant-bubble";
 import { applyLayersPreset, applyURLLayers } from "@/app/layers-presets";
 import { type GenerationConfig, generate } from "@/app/lifecycle";
+import { Controllers } from "@/controllers";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Layers } from "@/renderers/layers";
 import { Services } from "@/services";
@@ -12,6 +13,7 @@ import { getRequestedMapSize } from "@/services/map-size";
 import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
+import { LocalDB } from "@/utils/localDB";
 import { ensureEl } from "@/utils/nodeUtils";
 
 const MAP_LINK_PATTERN = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-/]))?/;
@@ -44,7 +46,7 @@ export async function checkLoadParameters(): Promise<void> {
 
   if (options.app.onLoad === "lastSaved") {
     try {
-      const blob = await ldb.get("lastMap");
+      const blob = await LocalDB.get("lastMap");
       if (blob) {
         WARN && console.warn("Loading last stored map");
         Services.Load.uploadMap(blob);
@@ -181,17 +183,3 @@ export function copyMapURL(): void {
     .then(() => tip(t("Map URL is copied to clipboard"), false, "success", 3000))
     .catch(error => tip(t("Could not copy URL: {{error}}", { error: String(error) }), false, "error", 5000));
 }
-
-// Legacy seam: the loader refocuses after a map is loaded, options.js wires the copy button
-declare global {
-  // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
-  var focusOn: () => void;
-  // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
-  var generateMapOnLoad: () => void;
-  interface Window {
-    copyMapURL: typeof copyMapURL;
-  }
-}
-window.focusOn = focusOn;
-window.generateMapOnLoad = generateMapOnLoad;
-window.copyMapURL = copyMapURL;

@@ -1,4 +1,5 @@
 import { beforeEach, expect, it } from "vitest";
+import { Provinces } from "./provinces-generator";
 
 beforeEach(async () => {
   await import("./provinces-generator");

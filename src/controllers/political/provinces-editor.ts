@@ -2,6 +2,8 @@ import { color as d3Color, easeSinIn, interpolate, select, stratify, transition,
 import { Controllers } from "@/controllers";
 import type { Burg } from "@/model/political/burgs-generator";
 import type { Province } from "@/model/political/provinces-generator";
+import { Provinces } from "@/model/political/provinces-generator";
+import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
 import { redrawEmblem, redrawEmblems, removeEmblem } from "@/renderers/draw-emblems";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
@@ -24,6 +26,7 @@ import {
 import type { FillBoxElement } from "@/ui/elements/fill-box";
 import { createAnnexMode } from "@/ui/map/annex-mode";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
+import { zoomTo } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import {
   applyOption,
@@ -575,7 +578,8 @@ function changePopulation(province: number): void {
   const total = rural + urban;
   const l = (n: number): string => Number(n).toLocaleString();
 
-  alertMessage.innerHTML = /* html */ ` ${t("Rural")}: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" /> ${t("Urban")}:
+  ensureEl("alertMessage").innerHTML =
+    /* html */ ` ${t("Rural")}: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" /> ${t("Urban")}:
     <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em" ${p.burgs!.length ? "" : "disabled"} />
     <p>${t("Total population")}: ${l(total)} ⇒ <span id="totalPop">${l(total)}</span> (<span id="totalPopPerc">100</span>%)</p>`;
 
@@ -886,13 +890,14 @@ function showChart(): void {
   const treeLayout = treemap<TreeNode>().size([w, h]).padding(2);
 
   // prepare svg
-  alertMessage.innerHTML = /* html */ `<select id="provincesTreeType" style="display:block; margin-left:13px; font-size:11px">
+  ensureEl("alertMessage").innerHTML =
+    /* html */ `<select id="provincesTreeType" style="display:block; margin-left:13px; font-size:11px">
     <option value="area" selected>${t("Area")}</option>
     <option value="population">${t("Total population")}</option>
     <option value="rural">${t("Rural population")}</option>
     <option value="urban">${t("Urban population")}</option>
   </select>`;
-  alertMessage.innerHTML += `<div id='provinceInfo' class='chartInfo'>&#8205;</div>`;
+  ensureEl("alertMessage").innerHTML += `<div id='provinceInfo' class='chartInfo'>&#8205;</div>`;
   const svg = select("#alertMessage")
     .insert("svg", "#provinceInfo")
     .attr("id", "provincesTree")
@@ -1022,7 +1027,7 @@ function showChart(): void {
     position: { my: "left bottom", at: "left+10 bottom-10", of: "svg" },
     buttons: {},
     close: () => {
-      alertMessage.innerHTML = "";
+      ensureEl("alertMessage").innerHTML = "";
     }
   });
 
@@ -1224,7 +1229,9 @@ function closeProvincesEditor(): void {
 function openProvinceMergeDialog(): void {
   const selectedState = filterState.stateId;
   if (selectedState === -1) {
-    alertMessage.innerHTML = t("Please select a specific state from the filter to merge provinces within that state.");
+    ensureEl("alertMessage").innerHTML = t(
+      "Please select a specific state from the filter to merge provinces within that state."
+    );
     $("#alert").dialog({
       title: t("Merge Provinces"),
       buttons: {
@@ -1237,7 +1244,7 @@ function openProvinceMergeDialog(): void {
   }
   const provincesToMerge = pack.provinces.filter(p => p.i && !p.removed && p.state === selectedState);
   if (provincesToMerge.length < 2) {
-    alertMessage.innerHTML = t("Not enough provinces in the selected state to merge.");
+    ensureEl("alertMessage").innerHTML = t("Not enough provinces in the selected state to merge.");
     $("#alert").dialog({
       title: t("Merge Provinces"),
       buttons: {
@@ -1261,7 +1268,7 @@ function openProvinceMergeDialog(): void {
     )
     .join("");
 
-  alertMessage.innerHTML = /* html */ `
+  ensureEl("alertMessage").innerHTML = /* html */ `
     <form id='mergeProvincesForm' style="overflow: hidden; display: flex; flex-direction: column; gap: 1em;">
       <p style="margin:0">
         ${t("Check the checkbox next to each province you want to merge. Use the radio button to pick the primary province that will absorb all others. Hover over a row to highlight the province on the map.")}

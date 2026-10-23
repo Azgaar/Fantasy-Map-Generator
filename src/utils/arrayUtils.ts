@@ -33,11 +33,3 @@ export const TYPED_ARRAY_MAX = {
   UINT16: 65535,
   UINT32: 4294967295
 };
-
-declare global {
-  interface Window {
-    last: typeof last;
-    unique: typeof unique;
-    TYPED_ARRAY_MAX: typeof TYPED_ARRAY_MAX;
-  }
-}

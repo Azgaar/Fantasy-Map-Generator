@@ -1,8 +1,11 @@
 import { drag, easeSinIn, select, transition } from "d3";
 import { Controllers } from "@/controllers";
 import { CULTURE_TYPE_LABELS, SHIELD_LABELS } from "@/data/id-labels";
+import { Pack } from "@/model/graph/pack-generator";
+import { Burgs } from "@/model/political/burgs-generator";
 import { Emblems } from "@/model/political/emblems-generator";
-import { CULTURE_TYPES, type Culture } from "@/model/society/cultures-generator";
+import { CULTURE_TYPES, type Culture, Cultures } from "@/model/society/cultures-generator";
+import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
@@ -705,7 +708,7 @@ function changePopulation(this: HTMLElement): void {
   const format = (n: number) => Number(n).toLocaleString();
   const burgs = pack.burgs.filter(b => !b.removed && b.culture === cultureId);
 
-  alertMessage.innerHTML = /* html */ `<div>
+  ensureEl("alertMessage").innerHTML = /* html */ `<div>
     <i>${t("Change population of all cells assigned to the culture")}</i>
     <div style="margin: 0.5em 0">
       ${t("Rural")}: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" />

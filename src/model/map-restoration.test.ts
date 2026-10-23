@@ -1,4 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Routes } from "@/model/economy/routes-generator";
+import { Pack } from "@/model/graph/pack-generator";
+import { Features } from "@/model/physical/features-generator";
+import { Relief } from "@/model/physical/relief-generator";
+import { Rivers } from "@/model/physical/river-generator";
+import { Burgs } from "@/model/political/burgs-generator";
+import { Provinces } from "@/model/political/provinces-generator";
+import { Journeys } from "@/model/story/journeys/journeys-generator";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { createAvailableLandCellFinder, MapRestoration } from "./map-restoration";
 import type { LockedRiver } from "./physical/river-generator";
@@ -75,8 +83,8 @@ describe("createAvailableLandCellFinder", () => {
 
 describe("restoreRivers", () => {
   beforeEach(() => {
-    vi.stubGlobal("Pack", { findCell: findOnLine });
-    vi.stubGlobal("Rivers", {
+    Object.assign(Pack, { findCell: findOnLine });
+    Object.assign(Rivers, {
       getParent: (i: number) => pack.rivers.find(river => river.i === i)?.parent || i,
       getBasin: (i: number) => i,
       getApproximateLength: () => 1,
@@ -96,7 +104,7 @@ describe("restoreRivers", () => {
           Math.hypot(px - x, py - y) < Math.hypot(p[best][0] - x, p[best][1] - y) ? cell : best,
         0
       );
-    vi.stubGlobal("Pack", { findCell: nearest });
+    Object.assign(Pack, { findCell: nearest });
     const cells = {
       i: [0, 1, 2, 3, 4],
       p,
@@ -245,7 +253,7 @@ describe("restoreFeatures", () => {
   type FeatureData = Record<string, unknown> | undefined;
 
   beforeEach(() => {
-    vi.stubGlobal("Features", { defineGroups: () => {} });
+    Object.assign(Features, { defineGroups: () => {} });
   });
 
   const parent = (features: FeatureData[], featureIds = [1, 1, 1, 2, 2, 2]) =>
@@ -330,8 +338,8 @@ describe("restoreFeatures", () => {
 describe("restoreBurgs", () => {
   beforeEach(() => {
     vi.stubGlobal("WARN", false);
-    vi.stubGlobal("Pack", { findCell: findOnLine });
-    vi.stubGlobal("Burgs", { getPortWater: () => 7 });
+    Object.assign(Pack, { findCell: findOnLine });
+    Object.assign(Burgs, { getPortWater: () => 7 });
   });
 
   const setPack = (heights: number[]) =>
@@ -394,7 +402,7 @@ describe("restoreBurgs", () => {
 
 describe("restoreProvinces", () => {
   it("drops a province without cells, and gives one whose capital left its most populous burg", () => {
-    vi.stubGlobal("Provinces", {
+    Object.assign(Provinces, {
       getPoles: () => {
         pack.provinces[1].pole = [20, 0];
         pack.provinces[3].pole = [30, 0];
@@ -402,7 +410,7 @@ describe("restoreProvinces", () => {
       setCapital: (provinceId: number, burgId: number) =>
         Object.assign(pack.provinces[provinceId], { burg: burgId, center: pack.burgs[burgId].cell })
     });
-    vi.stubGlobal("Pack", { findCell: findOnLine });
+    Object.assign(Pack, { findCell: findOnLine });
     vi.stubGlobal(
       "pack",
       graph({
@@ -440,8 +448,8 @@ describe("restoreProvinces", () => {
 describe("restoreRoutes", () => {
   beforeEach(() => {
     vi.stubGlobal("grid", { spacing: 10 });
-    vi.stubGlobal("Pack", { findCell: findOnLine });
-    vi.stubGlobal("Routes", { buildLinks: () => ({ built: true }), sync: () => {} });
+    Object.assign(Pack, { findCell: findOnLine });
+    Object.assign(Routes, { buildLinks: () => ({ built: true }), sync: () => {} });
     vi.stubGlobal(
       "pack",
       graph({ cells: { ...lineCells([25, 10, 10, 25, 25]), f: Uint16Array.from([1, 2, 2, 3, 3]) } })
@@ -504,7 +512,7 @@ describe("restoreRoutes", () => {
 
 describe("fillPathGaps", () => {
   beforeEach(() => {
-    vi.stubGlobal("Pack", { findCell: findOnLine });
+    Object.assign(Pack, { findCell: findOnLine });
     vi.stubGlobal("pack", graph({ cells: lineCells([25, 25, 25, 25, 25, 25]) }));
   });
 
@@ -538,7 +546,7 @@ describe("fillPathGaps", () => {
           Math.hypot(px - x, py - y) < Math.hypot(p[best][0] - x, p[best][1] - y) ? cell : best,
         0
       );
-    vi.stubGlobal("Pack", { findCell: nearest });
+    Object.assign(Pack, { findCell: nearest });
     vi.stubGlobal("pack", graph({ cells: { p, c: [[1], [0, 2], [1, 3], [2]] } }));
 
     const filled = internals.fillPathGaps([
@@ -586,8 +594,8 @@ describe("restoreZones", () => {
 describe("restoreJourneys", () => {
   beforeEach(() => {
     vi.stubGlobal("WARN", false);
-    vi.stubGlobal("Pack", { findCell: (x: number) => Math.round(x) });
-    vi.stubGlobal("Journeys", { getPathLength: (points: unknown[]) => points.length });
+    Object.assign(Pack, { findCell: (x: number) => Math.round(x) });
+    Object.assign(Journeys, { getPathLength: (points: unknown[]) => points.length });
     // cells 20 apart are neighbors too, so the points below need no filling
     const c = Array.from({ length: 101 }, (_, i) => [i - 1, i + 1, i - 20, i + 20]);
     vi.stubGlobal("pack", graph({ cells: { c } }));
@@ -715,8 +723,8 @@ describe("restoreRelief", () => {
 
   beforeEach(() => {
     covered = [];
-    vi.stubGlobal("Pack", { findCell: findOnLine });
-    vi.stubGlobal("Relief", {
+    Object.assign(Pack, { findCell: findOnLine });
+    Object.assign(Relief, {
       regenerate: (covers: (cell: number) => boolean) => {
         covered = [0, 1, 2].filter(covers);
       }
@@ -827,7 +835,7 @@ describe("restoreLockedRivers", () => {
 
   beforeEach(() => {
     vi.stubGlobal("WARN", false);
-    vi.stubGlobal("Pack", { findCell: findOnLine });
+    Object.assign(Pack, { findCell: findOnLine });
     // cell 3 went under the sea
     const cells = { ...lineCells([25, 25, 25, 10, 25, 25]), f: Uint16Array.from([1, 1, 1, 2, 1, 1]) };
     vi.stubGlobal("pack", graph({ cells, features: [0, { type: "island" }, { type: "ocean" }] }));

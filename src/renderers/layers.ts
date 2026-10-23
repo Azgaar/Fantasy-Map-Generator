@@ -429,11 +429,4 @@ const mapLayers = [
 
 export type LayerId = (typeof mapLayers)[number]["id"];
 
-declare global {
-  var Layers: LayersRegistry<LayerId>;
-}
-
-// biome-ignore lint/suspicious/noRedeclare: legacy seam, exposed on window
 export const Layers = new LayersRegistry(mapLayers);
-
-window.Layers = Layers;

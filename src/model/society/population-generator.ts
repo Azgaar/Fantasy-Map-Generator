@@ -1,4 +1,5 @@
 import { max, mean, median, sum } from "d3";
+import { Goods } from "@/model/economy/goods-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import { gauss, isWater, normalize, rn } from "@/utils";
 

@@ -1,3 +1,4 @@
+import { Goods } from "@/model/economy/goods-generator";
 import { convertTemperature, ensureEl, getHeight, list, rn } from "@/utils";
 import { t } from "@/utils/i18n";
 

@@ -1,6 +1,8 @@
 import { pointer } from "d3";
+import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
 import type { Marker } from "@/model/story/markers-generator";
+import { Markers } from "@/model/story/markers-generator";
 import { Layers } from "@/renderers/layers";
 import { refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/ui/map/map-placement";

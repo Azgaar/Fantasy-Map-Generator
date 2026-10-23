@@ -7,6 +7,7 @@ import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 const mocks = vi.hoisted(() => ({ layerOn: true }));
 vi.mock("@/renderers/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
 
+import { Rivers } from "@/model/physical/river-generator";
 import {
   drawRivers,
   getRiverBox,
@@ -41,7 +42,7 @@ beforeEach(() => {
   mocks.layerOn = true;
   document.body.innerHTML = '<svg id="map"><g id="rivers"></g></svg>';
   globalThis.pack = { rivers: [river(1, 0), river(2, 500)] } as never;
-  globalThis.Rivers = { addMeandering, getRiverPath, getOffset: () => 1 } as never;
+  Object.assign(Rivers, { addMeandering, getRiverPath, getOffset: () => 1 });
   addMeandering.mockClear();
   setViewportSize(100, 100);
   setViewportTransform(1, 0, 0);

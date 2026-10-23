@@ -19,8 +19,12 @@ vi.mock("@/controllers", () => ({
   }
 }));
 
+import { Markers } from "@/model/story/markers-generator";
 import { dialogState } from "@/ui/dialog/state";
 import { MarkersOverview } from "./markers-overview";
+
+const zoom = vi.hoisted(() => ({ zoomTo: vi.fn() }));
+vi.mock("@/ui/map/zoom", async original => ({ ...(await original<object>()), zoomTo: zoom.zoomTo }));
 
 describe("MarkersOverview", () => {
   beforeEach(() => {
@@ -34,7 +38,7 @@ describe("MarkersOverview", () => {
       not: vi.fn().mockReturnThis(),
       each: vi.fn()
     }));
-    vi.stubGlobal("Markers", {
+    Object.assign(Markers, {
       getConfig: () => [{ type: "volcano", icon: "🌋" }],
       setPinned: vi.fn(),
       setLocked: vi.fn()
@@ -105,13 +109,11 @@ describe("MarkersOverview", () => {
   });
 
   it("zooms to and locates the marker when target button is clicked", () => {
-    const zoomTo = vi.fn();
-    vi.stubGlobal("zoomTo", zoomTo);
     MarkersOverview.open();
 
     const targetButton = document.querySelector('#markersBody .states[data-id="1"] .icon-target') as HTMLElement;
     targetButton.click();
 
-    expect(zoomTo).toHaveBeenCalledWith(100, 200, 8, 2000);
+    expect(zoom.zoomTo).toHaveBeenCalledWith(100, 200, 8, 2000);
   });
 });

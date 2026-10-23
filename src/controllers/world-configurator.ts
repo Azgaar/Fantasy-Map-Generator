@@ -1,5 +1,14 @@
 import { geoGraticule, geoOrthographic, geoPath, interpolateSpectral, range, scaleSequential, select } from "d3";
+import { Controllers } from "@/controllers";
+import { Routes } from "@/model/economy/routes-generator";
+import { Options } from "@/model/options/options-model";
 import { Pins } from "@/model/options/pins";
+import { Biomes } from "@/model/physical/biomes-generator";
+import { Coordinates } from "@/model/physical/coordinates";
+import { Features } from "@/model/physical/features-generator";
+import { Precipitation } from "@/model/physical/precipitation-generator";
+import { Rivers } from "@/model/physical/river-generator";
+import { Temperature } from "@/model/physical/temperature-generator";
 import { Layers } from "@/renderers/layers";
 import { destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
@@ -317,7 +326,7 @@ function updateWorld(): void {
 
   Layers.draw("temperature", "precipitation");
   Layers.draw("biomes", "coordinates", "rivers");
-  if (findEl("canvas3d")) setTimeout(() => window.Controllers.View3d.update(), 500);
+  if (findEl("canvas3d")) setTimeout(() => Controllers.View3d.update(), 500);
 }
 
 function updateGlobePosition(): void {

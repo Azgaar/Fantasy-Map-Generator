@@ -20,7 +20,7 @@ it("returns data-model sections and extra topics, ignoring case and field-index 
   const result = await readDocs(["burgs", "States (regiment)", "Globals"]);
   expect(result).toContain("## Burgs");
   expect(result).toContain("## States");
-  expect(result).toContain("var pack: PackedGraph;");
+  expect(result).toContain("pack: PackedGraph;");
 });
 
 it("serves the style overview, or the fields of the elements named", async () => {

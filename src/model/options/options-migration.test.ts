@@ -5,8 +5,11 @@ import { GenerationPipeline } from "@/model/generation-pipeline";
 import { Coordinates } from "@/model/physical/coordinates";
 import { Layers } from "@/renderers/layers";
 import "@/model/graph/grid-generator";
+import { Grid } from "@/model/graph/grid-generator";
+import { HeightmapGenerator } from "@/model/physical/heightmap-generator";
 import { migrateLegacySettings } from "@/services/io/auto-update";
 import { safeParseJSON } from "@/utils/stringUtils";
+import { Options } from "./options-model";
 import { Pins } from "./pins";
 
 beforeEach(() => {
@@ -216,7 +219,7 @@ it("replaces the previous grid when generation asks for a different seed", async
   const previous = Grid.generate("old-seed");
   globalThis.grid = previous;
   options.map.seed = "new-seed";
-  vi.stubGlobal("HeightmapGenerator", {
+  Object.assign(HeightmapGenerator, {
     generate: () => {
       throw new Error("stop after grid");
     }
@@ -234,7 +237,7 @@ it("uses an explicitly selected preview grid and clears its old heights", async 
   const preview = Grid.generate("preview");
   preview.cells.h.fill(70);
   const createGrid = vi.spyOn(Grid, "generate");
-  vi.stubGlobal("HeightmapGenerator", {
+  Object.assign(HeightmapGenerator, {
     generate: () => {
       throw new Error("stop after grid");
     }

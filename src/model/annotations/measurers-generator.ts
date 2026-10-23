@@ -46,10 +46,3 @@ function createDefaultRuler(): void {
 }
 
 export const Measurers = { create, remove, createDefaultRuler };
-
-type MeasurersModule = typeof Measurers;
-declare global {
-  // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
-  var Measurers: MeasurersModule;
-}
-window.Measurers = Measurers;

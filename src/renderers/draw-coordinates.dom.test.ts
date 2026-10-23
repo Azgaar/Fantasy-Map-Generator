@@ -1,7 +1,7 @@
 // Browser-mode test (vitest.browser.config.ts): the coordinates renderer takes its base label
 // size from the store, not the retired data-size attribute.
 import { beforeEach, expect, test } from "vitest";
-import "@/model/options/options-model"; // installs the options global
+import "@/model/options/options-defaults"; // sets the default options
 import "@/model/styles/styles";
 import { setViewportTransform } from "@/renderers/viewport/viewport";
 import { drawCoordinates } from "./draw-coordinates";

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PackedGraph } from "@/types/PackedGraph";
 import "./pack-generator";
+import { Pack } from "./pack-generator";
 
 describe("packed-cell spatial queries", () => {
   it("reuses one quadtree for repeated queries against the same map", () => {

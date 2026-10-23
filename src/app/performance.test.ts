@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { Options } from "@/model/options/options-model";
 import { Layers } from "@/renderers/layers";
 import {
   applyPerformancePreset,

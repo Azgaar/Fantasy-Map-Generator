@@ -22,6 +22,13 @@ let frameId: number | null = null;
 let pendingScaleChange = false;
 let pendingPositionChange = false;
 let isViewChanged = false;
+const viewportListeners = new Set<() => void>();
+
+/** Call `listener` after each camera frame until the returned function is called */
+export function onViewportChange(listener: () => void): () => void {
+  viewportListeners.add(listener);
+  return () => viewportListeners.delete(listener);
+}
 
 function onZoom(event: D3ZoomEvent<SVGSVGElement, unknown>): void {
   const { k, x, y } = event.transform;
@@ -63,7 +70,7 @@ function handleZoomPerFrame(): void {
 
   if (didPositionChange) Layers.draw("coordinates");
 
-  window.updateMinimap?.();
+  for (const listener of viewportListeners) listener();
   redrawTracedImage();
   if (options.app.performance.viewportRedraw === "continuous") ViewportLayers.schedule();
 }
@@ -200,25 +207,3 @@ export function setTranslateExtent(x0: number, y0: number, x1: number, y1: numbe
     [x1, y1]
   ]);
 }
-
-type ZoomTo = typeof zoomTo;
-type ResetZoom = typeof resetZoom;
-type InvokeActiveZooming = typeof invokeActiveZooming;
-
-declare global {
-  // biome-ignore lint/suspicious/noRedeclare: the bridges registered just below
-  var zoomTo: ZoomTo;
-  // biome-ignore lint/suspicious/noRedeclare: the bridges registered just below
-  var resetZoom: ResetZoom;
-  // biome-ignore lint/suspicious/noRedeclare: the bridges registered just below
-  var invokeActiveZooming: InvokeActiveZooming;
-}
-
-// Bridges for classic public/ code. These take numbers only, never a selection: the behavior is
-// d3 v7 while `public/` still speaks the global d3 v5, and the two must not meet.
-window.zoomTo = zoomTo;
-window.setZoomExtent = setZoomExtent;
-window.setTranslateExtent = setTranslateExtent;
-window.resetZoom = resetZoom;
-window.invokeActiveZooming = invokeActiveZooming;
-window.setMapZoom = setMapZoom;

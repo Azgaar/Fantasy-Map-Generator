@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { Goods } from "@/model/economy/goods-generator";
+import { Names } from "@/model/society/names-generator";
 import type { Marker } from "./markers-generator";
+import { Markers } from "./markers-generator";
 
 const NAV_KEY = "navigator";
 
@@ -31,12 +34,12 @@ describe("MarkersModule.addEncounter", () => {
       biomes: [{ name: "" }, { name: "" }, { name: "" }, { name: "Forest" }]
     } as any;
 
-    globalThis.Names = {
+    Object.assign(Names, {
       getCulture: () => "Aeloran"
-    } as any;
+    });
 
     await import("./markers-generator");
-    markers = globalThis.Markers;
+    markers = Markers;
   });
 
   afterEach(() => {
@@ -84,9 +87,9 @@ describe("MarkersModule.rename", () => {
   it("renames a marker by id", async () => {
     await import("./markers-generator");
     globalThis.pack = { markers: [{ i: 4, name: "Old Well" }] } as any;
-    globalThis.Markers.rename(4, "Wishing Well");
+    Markers.rename(4, "Wishing Well");
     expect(pack.markers[0].name).toBe("Wishing Well");
-    expect(() => globalThis.Markers.rename(0, "X")).toThrow("Marker 0 does not exist");
+    expect(() => Markers.rename(0, "X")).toThrow("Marker 0 does not exist");
   });
 });
 
@@ -97,7 +100,7 @@ describe("MarkersModule mines", () => {
       { i: 1, name: "Iron", tags: ["ore"] },
       { i: 2, name: "Grain", tags: ["food"] }
     ];
-    globalThis.Goods = { get: (id: number) => goods.find(good => good.i === id) } as any;
+    Object.assign(Goods, { get: (id: number) => goods.find(good => good.i === id) });
     globalThis.pack = {
       cells: {
         i: [0, 1, 2, 3],
@@ -111,7 +114,7 @@ describe("MarkersModule mines", () => {
         { name: "Smithton", population: 1, production: [{ goodId: 1, units: 2, recipe: [] }] }
       ]
     } as any;
-    const markers = globalThis.Markers as any;
+    const markers = Markers as any;
 
     expect(markers.listMines(pack)).toEqual([1]);
     const marker = { i: 0, cell: 1 } as Marker;
@@ -126,7 +129,7 @@ describe("MarkersModule migrations", () => {
     globalThis.pack = {
       cells: { i: [0, 1, 2], h: [30, 30, 30], pop: [0, 0, 0], biome: [10, 11, 1] }
     } as any;
-    const markers = globalThis.Markers as any;
+    const markers = Markers as any;
 
     expect(markers.listMigrations(pack)).toEqual([0, 2]);
     const marker = { i: 0, cell: 0 } as Marker;

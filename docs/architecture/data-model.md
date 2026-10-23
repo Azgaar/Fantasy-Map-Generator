@@ -1,6 +1,6 @@
 **FMG data model** is poorly defined, inconsistent and not well-documented. This page is an attempt to document it. Once everything is documented, it can be used for building a new consistent model. Please note the current document reflect the object model **as is**, so with all its quirks. The model we want to get is covered in the [future-data-model.md](future-data-model.md) page.
 
-FMG exposes most of its data into the global namespace.
+The map data lives in the ambient `pack` and `grid` objects; the browser console reaches them as `FMG.pack` and `FMG.grid`.
 
 # Basic objects
 

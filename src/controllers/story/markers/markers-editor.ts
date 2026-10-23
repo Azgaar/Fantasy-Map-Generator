@@ -2,6 +2,7 @@ import { type D3DragEvent, drag, select } from "d3";
 import { Controllers } from "@/controllers";
 import { Icons } from "@/model/icons";
 import type { Marker, MarkerAppearance } from "@/model/story/markers-generator";
+import { Markers } from "@/model/story/markers-generator";
 import { Tags } from "@/model/tags";
 import { drawMarkers, setEditedMarker } from "@/renderers/draw-markers";
 import {
@@ -119,7 +120,7 @@ function renderDialog(): void {
     <div id="markerBottom">
       ${noteButton("markerNotes", t("Edit free text notes (legend)"))}
       <button id="markerRadius" data-tip="${t("Show markers within a radius of this one")}" class="icon-dot-circled"></button>
-      <button id="markerLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
+      <button id="markerLock" class="icon-lock-open" data-lock-tip></button>
       <button id="markerAdd" data-tip="${t("Add additional marker of that type")}" class="icon-plus"></button>
       <button id="markerRemove" data-tip="${t("Remove")}" data-shortcut="Delete" class="icon-trash fastDelete"></button>
     </div>

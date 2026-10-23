@@ -13,12 +13,7 @@ import { Icons } from "@/model/icons";
 import type { Emblem, EmblemCharge, EmblemOrdinary, HeraldicEmblem } from "@/types/emblems";
 import type { IconSet } from "@/types/icons";
 import { P, rw } from "@/utils";
-
-declare global {
-  interface Window {
-    Emblems: EmblemsGenerator;
-  }
-}
+import { Burgs } from "./burgs-generator";
 
 // shapes that resolve per entity rather than fixing one shield for the whole map (the "Diversiform" option group)
 const DIVERSIFORM_SHAPES = ["culture", "random", "state"];
@@ -638,4 +633,3 @@ export class EmblemsGenerator {
 }
 
 export const Emblems = new EmblemsGenerator();
-window.Emblems = Emblems;

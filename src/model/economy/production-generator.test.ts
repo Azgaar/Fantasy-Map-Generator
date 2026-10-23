@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Burg } from "@/model/political/burgs-generator";
 import type { Good } from "./goods-generator";
-import { type Market, MarketsModule } from "./markets-generator";
+import { Goods } from "./goods-generator";
+import { type Market, Markets } from "./markets-generator";
 import { isMfgRecord, ProductionModule } from "./production-generator";
 
 const good = (i: number, name: string, value: number, recipes?: Good["recipes"]): Good => ({
@@ -38,7 +39,7 @@ beforeEach(() => {
   burg = { i: 1, cell: 0, population: 100, market: 1 } as Burg;
   globalThis.pack = { goods: catalogue, cells: { good: [0] }, markets: [market], deals: [] } as unknown as typeof pack;
   Goods.sync();
-  globalThis.Markets = new MarketsModule();
+
   Markets.sync();
 });
 

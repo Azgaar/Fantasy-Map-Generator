@@ -1,6 +1,8 @@
 import { FEATURE_SUBTYPE_LABELS } from "@/data/id-labels";
+import { Pack } from "@/model/graph/pack-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import type { Regiment } from "@/model/political/military-generator";
+import { Names } from "@/model/society/names-generator";
 import type { LayerId } from "@/renderers/layers";
 import type { Point } from "@/types/global";
 import { t } from "@/utils/i18n";

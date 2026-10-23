@@ -20,6 +20,7 @@ import type { State } from "@/model/political/states-generator";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
 import { Csv } from "@/services/io/csv";
 import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { downloadFile, ensureEl, getFileName, getHeight, getLatitude, getLongitude, getPointer, rn } from "@/utils";
 import { t } from "@/utils/i18n";

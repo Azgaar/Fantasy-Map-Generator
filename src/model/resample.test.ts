@@ -1,5 +1,8 @@
 import { expect, it, vi } from "vitest";
 import "./graph/grid-generator";
+import { Grid } from "@/model/graph/grid-generator";
+import { Options } from "@/model/options/options-model";
+import { Features } from "@/model/physical/features-generator";
 import { Resample as Resampler } from "./resample";
 
 it("resamples at the requested density and records it in the map", () => {
@@ -8,7 +11,7 @@ it("resamples at the requested density and records it in the map", () => {
   options.generation.graph.density = 2;
   vi.stubGlobal("grid", Grid.generate("old"));
   vi.stubGlobal("pack", { cells: { p: [], g: [] }, rivers: [] });
-  vi.stubGlobal("Features", {
+  Object.assign(Features, {
     markupGrid: () => {
       throw new Error("stop after resampling");
     }

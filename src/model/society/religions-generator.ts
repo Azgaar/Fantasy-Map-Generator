@@ -1,4 +1,6 @@
 import { quadtree } from "d3";
+import { Routes } from "@/model/economy/routes-generator";
+import { Pack } from "@/model/graph/pack-generator";
 import {
   abbreviate,
   each,
@@ -13,12 +15,10 @@ import {
   trimVowels
 } from "@/utils";
 import { requireColor } from "@/utils/colorUtils";
+import { FlatQueue } from "@/utils/flatQueue";
 import { requireCode, requireName, requireOneOf, requireOrigins } from "@/utils/validationUtils";
+import { Names } from "./names-generator";
 import { Population } from "./population-generator";
-
-declare global {
-  var Religions: ReligionsModule;
-}
 
 export interface Religion extends NamedReligion {
   i: number;
@@ -1073,7 +1073,7 @@ class ReligionsModule {
     const { cells } = pack;
     const religionIds = this.spreadFolkReligions(religions);
 
-    const queue = new FlatQueue();
+    const queue = new FlatQueue<{ e: number; p: number; r: number; s: number }>();
     const cost: number[] = [];
 
     // limit cost for organized religions growth
@@ -1123,7 +1123,7 @@ class ReligionsModule {
     if (!heresies.length) return;
 
     const { cells } = pack;
-    const queue = new FlatQueue();
+    const queue = new FlatQueue<{ e: number; p: number; r: number; b: number }>();
     const cost: number[] = [];
     const maxExpansionCost = (cells.i.length / 20) * options.generation.cultures.growthRate;
     const religionsMap = new Map(religions.map(religion => [religion.i, religion]));
@@ -1542,6 +1542,4 @@ class ReligionsModule {
   }
 }
 
-// biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const Religions = new ReligionsModule();
-window.Religions = Religions;

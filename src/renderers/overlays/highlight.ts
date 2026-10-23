@@ -1,5 +1,6 @@
 import { easeBounceOut, easeLinear, easeSinIn, interpolateString, select, transition } from "d3";
 import { viewport } from "@/renderers/viewport/viewport";
+import { zoomTo } from "@/ui/map/zoom";
 import { minmax, parseTransform } from "@/utils";
 
 const debugLayer = () => select<SVGGElement, unknown>("#debug");

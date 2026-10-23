@@ -1,6 +1,8 @@
 import { interpolateString, select, sum } from "d3";
 import { Controllers } from "@/controllers";
 import { Icons } from "@/model/icons";
+import { Options } from "@/model/options/options-model";
+import { Military } from "@/model/political/military-generator";
 import type { State } from "@/model/political/states-generator";
 import { drawRegiment } from "@/renderers/draw-military";
 import { Layers } from "@/renderers/layers";
@@ -365,6 +367,12 @@ function militaryCustomize(): void {
   renderOptions();
   const types = ["melee", "ranged", "mounted", "machinery", "naval", "armored", "aviation", "magical"];
   const tableBody = ensureEl("militaryOptions").querySelector("tbody")!;
+  const LIMIT_TIPS = {
+    biomes: t("Select allowed biomes"),
+    states: t("Select allowed states"),
+    cultures: t("Select allowed cultures"),
+    religions: t("Select allowed religions")
+  };
   removeUnitLines();
   options.map.military.units.map(unit => addUnitLine(unit));
 
@@ -448,13 +456,6 @@ function militaryCustomize(): void {
     return attr?.length ? limitationTip(attr, items) : "";
   }
 
-  const LIMIT_TIPS = {
-    biomes: t("Select allowed biomes"),
-    states: t("Select allowed states"),
-    cultures: t("Select allowed cultures"),
-    religions: t("Select allowed religions")
-  };
-
   function addUnitLine(unit: MilitaryUnit): void {
     const { type, icon, name, rural, urban, power, crew, separate } = unit;
     const row = document.createElement("tr");
@@ -493,8 +494,9 @@ function militaryCustomize(): void {
           <label for="${name}Separate" class="checkbox-label"></label>
         </td>
         <td data-tip="${t("Remove")}">
-          <span data-tip="${t("Remove")}" class="icon-trash-empty pointer" onclick="this.parentElement.parentElement.remove();"></span>
+          <span data-tip="${t("Remove")}" class="icon-trash-empty pointer"></span>
         </td>`;
+    row.querySelector(".icon-trash-empty")!.addEventListener("click", () => row.remove());
     setIconButton(row.querySelector<HTMLButtonElement>("button[data-type='icon']")!, icon || "");
     tableBody.appendChild(row);
   }

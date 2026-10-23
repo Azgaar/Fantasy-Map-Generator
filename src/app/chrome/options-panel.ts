@@ -1,5 +1,6 @@
 // The collapsible panel on the right and the sticked menu below it
 import { showExportPane, showLoadPane, showSavePane } from "@/app/chrome/io-panes";
+import { regeneratePrompt } from "@/app/lifecycle";
 import { Controllers } from "@/controllers";
 import { changeViewMode } from "@/renderers/view-mode";
 import { ARROW_TIP_KEY } from "@/services/versioning";
@@ -15,7 +16,7 @@ const TAB_CONTENT: Record<string, string> = {
   aboutTab: "aboutContent"
 };
 
-export function showOptions(event?: Event): void {
+function showOptions(event?: Event): void {
   if (!localStorage.getItem(ARROW_TIP_KEY)) {
     clearMainTip();
     localStorage.setItem(ARROW_TIP_KEY, "true");
@@ -118,19 +119,9 @@ function initialize(): void {
   });
 
   ensureEl("viewMode").addEventListener("click", changeViewMode);
+  ensureEl("optionsTrigger").addEventListener("click", showOptions);
+  ensureEl("regenerate").addEventListener("click", () => regeneratePrompt());
+  ensureEl("optionsHide").addEventListener("click", hideOptions);
 }
 
 initialize();
-
-// Legacy seam: the hotkeys and the About tab reach these by name from inline markup
-declare global {
-  // biome-ignore lint/suspicious/noRedeclare: legacy seam
-  var toggleOptions: (event?: Event) => void;
-  interface Window {
-    showOptions: typeof showOptions;
-    hideOptions: typeof hideOptions;
-  }
-}
-window.toggleOptions = toggleOptions;
-window.showOptions = showOptions;
-window.hideOptions = hideOptions;

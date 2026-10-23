@@ -1,8 +1,11 @@
 // Relief art in the interface: painted in the relief style and cropped to what it draws, since relief art
 // sits small in its frame (vegetation fills a tenth to a third of it)
+
+import Alea from "alea";
 import { Icons } from "@/model/icons";
 import type { ReliefRule } from "@/model/options/options-schema";
 import type { ReliefPool, ReliefSet } from "@/model/physical/relief-generator";
+import { Relief } from "@/model/physical/relief-generator";
 import { capitalize, escapeHtml, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 
@@ -57,7 +60,7 @@ export function reliefPatchHtml(pool: ReliefPool, density: number, rule: ReliefR
   const base = rule ? rule.size.max : Relief.poolSize(1);
   const height = (base * styleSize) / PATCH_FILL[rule ? "rule" : "pool"];
   const width = height * PATCH_ASPECT;
-  const random = aleaPRNG(seed);
+  const random = Alea(seed);
   const radius = Relief.spacing(density);
 
   const points: [number, number][] = [];

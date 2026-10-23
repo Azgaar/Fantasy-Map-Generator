@@ -3,6 +3,7 @@ import { polygonArea } from "d3";
 import type { Point } from "@/types/global";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { clipPoly, rn, TYPED_ARRAY_MAX, unique } from "@/utils";
+import { Pack } from "./pack-generator";
 
 type OverrideValue = number | number[];
 /** property name → element id → [original value, custom value] */

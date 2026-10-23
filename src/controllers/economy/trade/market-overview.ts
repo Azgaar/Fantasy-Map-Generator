@@ -1,6 +1,9 @@
 import { select } from "d3";
 import { Controllers } from "@/controllers";
+import { Goods } from "@/model/economy/goods-generator";
 import type { Market } from "@/model/economy/markets-generator";
+import { Markets } from "@/model/economy/markets-generator";
+import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
 import type { Burg } from "@/model/political/burgs-generator";
 import { goodBadge } from "@/renderers/draw-goods";

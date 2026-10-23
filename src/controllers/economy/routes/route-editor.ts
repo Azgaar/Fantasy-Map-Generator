@@ -1,6 +1,7 @@
 import { drag, type Selection, select } from "d3";
 import { Controllers } from "@/controllers";
-import { type Route, UNNAMED_ROUTE } from "@/model/economy/routes-generator";
+import { type Route, Routes, UNNAMED_ROUTE } from "@/model/economy/routes-generator";
+import { Pack } from "@/model/graph/pack-generator";
 import { Tags } from "@/model/tags";
 import { redrawRoute as redrawRouteShape, setEditedRoute } from "@/renderers/draw-routes";
 import { Layers } from "@/renderers/layers";
@@ -92,7 +93,7 @@ function renderDialog(): void {
       <button id="routeSplit" data-tip="${t("Click on a control point to split the route there")}" class="icon-unlink"></button>
       <button id="routeElevationProfile" data-tip="${t("Elevation profile")}" class="icon-chart-area"></button>
       ${noteButton("routeLegend", t("Edit free text notes (legend)"))}
-      <button id="routeLock" class="icon-lock-open" onmouseover="showElementLockTip(event)"></button>
+      <button id="routeLock" class="icon-lock-open" data-lock-tip></button>
       <button id="routeRemove" data-tip="${t("Remove")}" data-shortcut="Delete" class="icon-trash fastDelete"></button>
     </div>
   </div>`;
@@ -305,7 +306,7 @@ function openJoinRoutesDialog(): void {
       const length = `${rn(r.length * options.map.units.distance.scale)} ${options.map.units.distance.unit}`;
       return `<option value="${r.i}">${r.name} (${length})</option>`;
     });
-    alertMessage.innerHTML = /* html */ `<div>${t("Route to join with")}:
+    ensureEl("alertMessage").innerHTML = /* html */ `<div>${t("Route to join with")}:
         <select>${routeOptions.join("")}</select>
       </div>`;
 
@@ -318,7 +319,7 @@ function openJoinRoutesDialog(): void {
           $("#alert").dialog("close");
         },
         [t("Join")]: () => {
-          const selectedRouteId = +alertMessage.querySelector("select")!.value;
+          const selectedRouteId = +ensureEl("alertMessage").querySelector("select")!.value;
           const selectedRoute = pack.routes.find((r: Route) => r.i === selectedRouteId) as Route;
           joinRoutes(route, selectedRoute);
           tip(t("Routes joined"), false, "success", 5000);

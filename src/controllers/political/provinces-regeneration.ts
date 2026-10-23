@@ -1,3 +1,4 @@
+import { Provinces } from "@/model/political/provinces-generator";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
 import { unfog } from "@/renderers/overlays/fogging";

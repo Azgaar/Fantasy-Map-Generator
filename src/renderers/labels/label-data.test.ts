@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { Rivers } from "@/model/physical/river-generator";
 import { getLabelsData, getLabelsIndex } from "./label-data";
 
 const fitStateLabel = vi.hoisted(() => vi.fn(() => ({ pathPoints: [[1, 1]], text: "West", fontSize: 100 })));
@@ -25,7 +26,7 @@ function stubPack(rivers: unknown[]): void {
   } as any;
   options.map.labels.groups = [];
   // the label path is not under test here; only the anchor is
-  globalThis.Rivers = { addMeandering: () => [] } as any;
+  Object.assign(Rivers, { addMeandering: () => [] });
 }
 
 describe("river labels with off-map cells", () => {
@@ -90,7 +91,7 @@ describe("labels index", () => {
       { i: 0 },
       { i: 1, name: "West", fullName: "Kingdom of West", cells: 5, center: 1 }
     ] as typeof pack.states;
-    globalThis.Rivers = { addMeandering: vi.fn(() => []) } as any;
+    Object.assign(Rivers, { addMeandering: vi.fn(() => []) });
     fitStateLabel.mockClear();
   });
 

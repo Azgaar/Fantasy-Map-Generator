@@ -1,3 +1,4 @@
+import Alea from "alea";
 import {
   drag,
   easeSinInOut,
@@ -11,10 +12,14 @@ import {
   scaleSequential,
   select
 } from "d3";
+import RgbQuant from "rgbquant";
 import { Controllers } from "@/controllers";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { ErasePipeline } from "@/model/generation-pipeline";
+import { Grid } from "@/model/graph/grid-generator";
 import { MapRestoration } from "@/model/map-restoration";
+import { Options } from "@/model/options/options-model";
+import { HeightmapGenerator } from "@/model/physical/heightmap-generator";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
 import { Layers } from "@/renderers/layers";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
@@ -22,9 +27,11 @@ import { drawDrainage, removeDrainage } from "@/renderers/overlays/drainage";
 import { undraw } from "@/renderers/undraw";
 import { changeViewMode } from "@/renderers/view-mode";
 import { viewport } from "@/renderers/viewport/viewport";
+import { Services } from "@/services";
 import { closeDialogs, destroyDialog, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { dialogState } from "@/ui/dialog/state";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
+import { resetZoom } from "@/ui/map/zoom";
 import { clearMainTip, showMainTip, tip } from "@/ui/tooltips";
 import {
   createFileInput,
@@ -40,8 +47,10 @@ import {
   lim,
   link,
   minmax,
+  openURL,
   rn,
-  uploadFile
+  uploadFile,
+  wiki
 } from "@/utils";
 import { createBrushStroke } from "@/utils/brushUtils";
 import type { PromptOptions } from "@/utils/commonUtils";
@@ -58,6 +67,7 @@ const dialogId = "heightmapEditor";
 const EDITOR_OPTIONS = ["renderOcean", "showDrainage", "allowErosion"] as const; // the customization menu checkboxes
 const historyLimit = 100;
 let filterState: FilterState;
+let edits: Uint8Array[] & { n: number } = Object.assign([], { n: 0 });
 let templateInput: HTMLInputElement | null = null;
 let riskBaseHeights: Uint8Array | null = null; // the heights of the map when Risk editing began
 let converterInput: HTMLInputElement | null = null;
@@ -154,15 +164,11 @@ function renderTemplateEditor(): void {
           id="templateCA"
           data-tip="${t("Find or share custom template on Cartography Assets portal")}"
           class="icon-drafting-compass"
-          onclick="
-            openURL('https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/templates')
-          "
         ></button>
         <button
           id="templateTutorial"
           data-tip="${t("Open Template Editor Tutorial")}"
           class="icon-info"
-          onclick="wiki('Heightmap-template-editor')"
         ></button>
         <label
           data-tip="${t("Enter seed for template to generate the same heightmap each time")}"
@@ -212,6 +218,10 @@ function renderTemplateEditor(): void {
   ensureEl("templateTools").addEventListener("click", addStepOnClick);
   ensureEl("templateSelect").addEventListener("change", selectTemplate);
   ensureEl("templateRun").addEventListener("click", executeTemplate);
+  ensureEl("templateCA").addEventListener("click", () =>
+    openURL("https://cartographyassets.com/asset-category/specific-assets/azgaars-generator/templates")
+  );
+  ensureEl("templateTutorial").addEventListener("click", () => wiki("Heightmap-template-editor"));
   ensureEl("templateUndo").addEventListener("click", () => restoreHistory(edits.n - 1));
   ensureEl("templateRedo").addEventListener("click", () => restoreHistory(edits.n + 1));
   ensureEl("templateSave").addEventListener("click", downloadTemplate);
@@ -335,16 +345,18 @@ function redrawDrainage(): void {
 }
 
 function showModeDialog(tool?: string): void {
-  alertMessage.innerHTML = /* html */ `${t("Heightmap is a core element on which all other data (rivers, burgs, states etc) is based. So the best edit approach is to erase the secondary data and let the system automatically regenerate it on edit completion.")}
+  ensureEl("alertMessage").innerHTML =
+    /* html */ `${t("Heightmap is a core element on which all other data (rivers, burgs, states etc) is based. So the best edit approach is to erase the secondary data and let the system automatically regenerate it on edit completion.")}
     <p>${t("Erase mode also allows you Convert an Image into a heightmap or use Template Editor.")}</p>
     <p>${t("You can keep the data, but you won't be able to change the coastline.")}</p>
     <p>${t("Try risk mode to change the coastline and keep the data. The data will be restored as much as possible, but it can cause unpredictable errors.")}</p>
     <p>${t("Please {{- save}} before editing the heightmap!", {
-      save: `<span class="pseudoLink" onclick="window.Services.Save.toMachine()">${t("save the map")}</span>`
+      save: `<span id="modeDialogSave" class="pseudoLink">${t("save the map")}</span>`
     })}</p>
     <p style="margin-bottom: 0">${t("Check out {{- wiki}} for guidance.", {
       wiki: link("https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Heightmap-customization", t("wiki"))
     })}</p>`;
+  ensureEl("modeDialogSave").addEventListener("click", () => Services.Save.toMachine());
 
   $("#alert").dialog({
     resizable: false,
@@ -482,7 +494,7 @@ async function finalizeHeightmap(): Promise<void> {
     return;
   }
 
-  Reflect.deleteProperty(window, "edits");
+  edits = Object.assign([], { n: 0 });
   setHistoryButtonsDisabled(true, true);
   HeightmapGenerator.clearData(); // the edited grid is no longer needed once the editor is left
 
@@ -672,7 +684,7 @@ function restoreHistory(step: number): void {
 
 // restart edits from 1st step
 function restartHistory(): void {
-  window.edits = Object.assign([], { n: 0 });
+  edits = Object.assign([], { n: 0 });
   setHistoryButtonsDisabled(true, true);
   updateHistory();
 }
@@ -1434,7 +1446,9 @@ function selectTemplate(e: Event): void {
     return;
   }
 
-  alertMessage.innerHTML = t("Are you sure you want to select a different template? All changes will be lost.");
+  ensureEl("alertMessage").innerHTML = t(
+    "Are you sure you want to select a different template? All changes will be lost."
+  );
   $("#alert").dialog({
     resizable: false,
     title: t("Change Template"),
@@ -1475,7 +1489,7 @@ function executeTemplate(): void {
   if (!steps.length) return;
 
   const currentSeed = ensureEl<HTMLInputElement>("templateSeed").value;
-  Math.random = aleaPRNG(currentSeed || generateSeed());
+  Math.random = Alea(currentSeed || generateSeed());
 
   grid.cells.h = new Uint8Array(grid.points.length);
   HeightmapGenerator.setGraph(grid);
@@ -1876,7 +1890,7 @@ function restoreImageConverterState(): void {
 function closeImageConverter(event: Event): void {
   event.preventDefault();
   event.stopPropagation();
-  alertMessage.innerHTML = t(
+  ensureEl("alertMessage").innerHTML = t(
     "Are you sure you want to close the Image Converter? Click “Cancel” to keep editing. Click “Complete” to apply the conversion and close the tool. Click “Close” to discard the conversion and restore the previous heightmap."
   );
 
@@ -1961,7 +1975,3 @@ function downloadPreview(): void {
 }
 
 export const HeightmapEditor = { open, redrawDrainage };
-
-declare global {
-  var edits: Uint8Array[] & { n: number };
-}

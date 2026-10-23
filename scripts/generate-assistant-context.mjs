@@ -18,21 +18,73 @@ const paths = readdirSync(join(root, "src"), { recursive: true })
   .sort();
 const sources = paths.map(path => read(`src/${path}`));
 
-// `declare global` bodies are already valid TS declarations, so they go to the model verbatim
-function extractGlobalBlocks(source) {
-  return [...source.matchAll(/declare global \{\n([\s\S]*?)\n\}/g)].map(([, body]) => body);
+// The scripting surface is `window.FMG` (src/app/fmg.ts); read_map scripts see each member by name
+const FMG = "src/app/fmg.ts";
+const fmgSource = read(FMG);
+
+const modulePath = spec => {
+  const base = `src/${spec.slice(2)}`;
+  return paths.includes(`${spec.slice(2)}.ts`) ? `${base}.ts` : `${base}/index.ts`;
+};
+
+// imported name → the source file that exports it
+const fmgImports = new Map(
+  [...fmgSource.matchAll(/import \{([^}]+)\} from "(@\/[^"]+)";/g)].flatMap(([, names, spec]) =>
+    names.split(",").map(name => [name.trim(), modulePath(spec)])
+  )
+);
+
+const fmgBody = fmgSource.match(/const FMG = \{\n([\s\S]*?)\n\};/)?.[1] ?? "";
+if (!fmgBody) throw new Error(`${FMG} has no FMG object`);
+
+// the declared type of a `var` global: the map state a getter reads
+const globalType = name =>
+  sources.map(source => source.match(new RegExp(`^\\s*var ${name}: ([^;]+);`, "m"))?.[1]).find(Boolean);
+
+// a one-line declaration of an exported member, read from the module that owns it
+function memberDeclaration(name) {
+  const path = fmgImports.get(name);
+  const source = path ? read(path) : "";
+  const instance = source.match(new RegExp(`export const ${name} = new (\\w+)`))?.[1];
+  if (instance) return `${name}: ${instance};`;
+  if (new RegExp(`export const ${name} = "`).test(source)) return `${name}: string;`;
+  const typed = source.match(new RegExp(`export const ${name}: ([^=]+?) =`))?.[1];
+  if (typed) return `${name}: ${typed};`;
+  const fn = source.match(new RegExp(`export (?:async )?function ${name}(\\([^)]*\\)(?:: [^{]+?)?) \\{`))?.[1];
+  if (fn) return `${name}${fn};`;
+  const arrow = source.match(new RegExp(`export const ${name} = (?:async )?(\\([^)]*\\))(?:: ([^=]+?))? =>`));
+  if (arrow) return `${name}${arrow[1]}${arrow[2] ? `: ${arrow[2]}` : ""};`;
+  return `${name}: typeof ${name};`;
 }
 
-// Global declarations live beside the modules that own them
+function utilsNames() {
+  const list = read("src/utils/index.ts").match(/export \{\n([\s\S]*?)\n\};/)?.[1] ?? "";
+  return list.split(",").map(name => name.trim()).filter(Boolean);
+}
+
+function fmgMembers() {
+  return fmgBody.split("\n").flatMap(line => {
+    const getter = line.match(/^ {2}get (\w+)\(\)/)?.[1];
+    if (getter) return [`${getter}: ${globalType(getter) ?? "unknown"};`];
+    if (/^ {2}\.\.\.utils,/.test(line)) return [`// helpers from src/utils: ${utilsNames().join(", ")}`];
+    const wrapper = line.match(/^ {2}(\w+): (\([^)]*\)) =>/);
+    if (wrapper) return [`${wrapper[1]}${wrapper[2]};`];
+    const member = line.match(/^ {2}(\w+),?$/)?.[1];
+    if (member) return [memberDeclaration(member)];
+    const comment = line.match(/^ {2}(\/\/.*)$/)?.[1];
+    return comment ? [comment] : [];
+  });
+}
+
 function globalDeclarations() {
-  return sources.flatMap(extractGlobalBlocks).join("\n").trim();
+  return ["declare const FMG: {", ...fmgMembers().map(line => `  ${line}`), "};"].join("\n");
 }
 
+// the generator singletons; the Globals doc lists the rest
 function generatorNames() {
-  const names = sources
-    .filter((_, index) => /^model(\/(?!options$)[\w-]+)?$/.test(dirname(paths[index]))) // model modules, not options
-    .flatMap(extractGlobalBlocks)
-    .flatMap(body => [...body.matchAll(/^\s*var ([A-Z]\w*):/gm)].map(([, name]) => name));
+  const names = [...fmgImports]
+    .filter(([name, path]) => /^[A-Z]/.test(name) && path.startsWith("src/model/") && path.endsWith("-generator.ts"))
+    .map(([name]) => name);
   return [...new Set(names)].sort().join(", ");
 }
 

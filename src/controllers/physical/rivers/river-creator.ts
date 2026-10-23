@@ -1,5 +1,7 @@
 import { select } from "d3";
 import { Controllers } from "@/controllers";
+import { Pack } from "@/model/graph/pack-generator";
+import { Rivers } from "@/model/physical/river-generator";
 import { Layers } from "@/renderers/layers";
 import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";

@@ -1,6 +1,7 @@
 import { Controllers } from "@/controllers";
 import { Icons } from "@/model/icons";
 import type { Marker } from "@/model/story/markers-generator";
+import { Markers } from "@/model/story/markers-generator";
 import { Tags } from "@/model/tags";
 import { setMarkersFilter } from "@/renderers/draw-markers";
 import { Layers } from "@/renderers/layers";
@@ -18,6 +19,7 @@ import {
   type TableView
 } from "@/ui/dialog/table";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
+import { zoomTo } from "@/ui/map/zoom";
 import { clearMainTip } from "@/ui/tooltips";
 import { ensureEl, escapeHtml, findEl, getLatitude, getLongitude } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
@@ -316,7 +318,7 @@ function renderMarkersPage(view: TableView<Marker>): void {
           } pointer"></span>
           <span data-col="lock" class="locks pointer ${
             lock ? "icon-lock" : "icon-lock-open inactive"
-          }" onmouseover="showElementLockTip(event)"></span>
+          }" data-lock-tip></span>
           <span data-col="edit" data-tip="${t("Edit Marker")}" class="icon-pencil"></span>
           <span data-col="locate" data-tip="${t("Locate on map")}" class="icon-target"></span>
           <span data-col="remove" data-tip="${t("Remove")}" class="icon-trash-empty"></span>

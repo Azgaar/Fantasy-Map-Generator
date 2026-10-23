@@ -2,7 +2,14 @@ import { LAYER_TOGGLES } from "@/app/chrome/tabs/layers-tab";
 import { Controllers } from "@/controllers";
 import { LABEL_MODE_LABELS, LABEL_TYPE_LABELS } from "@/data/id-labels";
 import { layerLabel } from "@/data/layer-labels";
-import { LABEL_TYPES, type LabelGroup, type LabelNameMode, type LabelType } from "@/model/annotations/labels-generator";
+import {
+  LABEL_TYPES,
+  type LabelGroup,
+  type LabelNameMode,
+  Labels,
+  type LabelType
+} from "@/model/annotations/labels-generator";
+import { Options } from "@/model/options/options-model";
 import { getLabelsIndex } from "@/renderers/labels/label-data";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { Layers } from "@/renderers/layers";

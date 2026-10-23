@@ -1,5 +1,7 @@
 import type { D3DragEvent, D3ZoomEvent } from "d3";
 import { drag, mean, select, stratify, tree, zoom } from "d3";
+import { Cultures } from "@/model/society/cultures-generator";
+import { Religions } from "@/model/society/religions-generator";
 import { closeDialogs } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";

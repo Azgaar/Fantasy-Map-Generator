@@ -1,6 +1,9 @@
 import { pack as packLayout, select, stratify } from "d3";
 import { Controllers } from "@/controllers";
+import { Markets } from "@/model/economy/markets-generator";
 import type { Burg } from "@/model/political/burgs-generator";
+import { Burgs } from "@/model/political/burgs-generator";
+import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
 import { removeEmblem } from "@/renderers/draw-emblems";
 import { Layers } from "@/renderers/layers";
@@ -17,6 +20,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
+import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import {
   convertTemperature,
@@ -441,7 +445,7 @@ function renderBurgsPage(view: TableView<Burg>): void {
         <span data-col="edit" data-tip="${t("Edit Burg")}" class="icon-pencil"></span>
         <span data-col="lock" class="locks pointer ${
           b.lock ? "icon-lock" : "icon-lock-open inactive"
-        }" onmouseover="showElementLockTip(event)"></span>
+        }" data-lock-tip></span>
         <span data-col="remove" data-tip="${t("Remove")}" class="icon-trash-empty"></span>
       </div>`;
   }
@@ -602,13 +606,14 @@ function showBurgsChart(): void {
   const treeLayout = packLayout().size([w, h]).padding(3);
 
   // prepare svg
-  alertMessage.innerHTML = /* html */ `<select id="burgsTreeType" style="display:block; margin-left:13px; font-size:11px">
+  ensureEl("alertMessage").innerHTML =
+    /* html */ `<select id="burgsTreeType" style="display:block; margin-left:13px; font-size:11px">
       <option value="states" selected>${t("Group by state")}</option>
       <option value="cultures">${t("Group by culture")}</option>
       <option value="parent">${t("Group by province and state")}</option>
       <option value="provinces">${t("Group by province")}</option>
     </select>`;
-  alertMessage.innerHTML += `<div id='burgsInfo' class='chartInfo'>&#8205;</div>`;
+  ensureEl("alertMessage").innerHTML += `<div id='burgsInfo' class='chartInfo'>&#8205;</div>`;
   const svg = select("#alertMessage")
     .insert("svg", "#burgsInfo")
     .attr("id", "burgsTree")
@@ -731,7 +736,7 @@ function showBurgsChart(): void {
     width: "fit-content",
     position: { my: "left bottom", at: "left+10 bottom-10", of: "svg" },
     buttons: {},
-    close: () => (alertMessage.innerHTML = "")
+    close: () => (ensureEl("alertMessage").innerHTML = "")
   });
 }
 

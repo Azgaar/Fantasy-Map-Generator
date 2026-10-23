@@ -1,5 +1,6 @@
 import { Controllers } from "@/controllers";
 import { cellEndpointLabel, getCellPoint } from "@/model/story/journeys/journey-places";
+import { Journeys } from "@/model/story/journeys/journeys-generator";
 import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
 import { Layers } from "@/renderers/layers";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -18,6 +19,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
+import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { convertSpeed, ensureEl, escapeHtml, findEl, formatSpeed, getDistanceUnit, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
@@ -183,7 +185,7 @@ function renderJourneysPage(view: TableView<Journey>): void {
       <div data-col="edit"><span class="journeyEdit pointer icon-pencil" data-tip="${t("Edit Journey")}"></span></div>
       <div data-col="locate"><span class="journeyZoom pointer icon-target" data-tip="${t("Locate on map")}"></span></div>
       <div data-col="visible"><span class="journeyVisible pointer ${journey.visible === false ? "icon-eye-off" : "icon-eye"}" data-tip="${t("Toggle journey visibility on the map")}"></span></div>
-      <div data-col="lock"><span class="locks pointer ${journey.lock ? "icon-lock" : "icon-lock-open inactive"}" onmouseover="showElementLockTip(event)"></span></div>
+      <div data-col="lock"><span class="locks pointer ${journey.lock ? "icon-lock" : "icon-lock-open inactive"}" data-lock-tip></span></div>
       <div data-col="remove"><span class="journeyRemove pointer icon-trash-empty" data-tip="${t("Remove")}"></span></div>
     </div>`;
   }

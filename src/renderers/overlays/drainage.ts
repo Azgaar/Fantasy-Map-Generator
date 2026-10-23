@@ -1,6 +1,11 @@
 // Water drainage over a raw heightmap: flow arrows, the depressions that get filled and the lakes to be
+
+import { Grid } from "@/model/graph/grid-generator";
+import { Precipitation } from "@/model/physical/precipitation-generator";
 import { MIN_FLUX_TO_FORM_RIVER } from "@/model/physical/river-generator";
+import { Temperature } from "@/model/physical/temperature-generator";
 import { minmax, rn } from "@/utils";
+import { FlatQueue } from "@/utils/flatQueue";
 import { SEA_LEVEL } from "@/utils/heightUtils";
 import { createEl, ensureEl, findEl } from "@/utils/nodeUtils";
 

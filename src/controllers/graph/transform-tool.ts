@@ -6,8 +6,10 @@ import { MapRestoration } from "@/model/map-restoration";
 import { Resample } from "@/model/resample";
 import { Layers } from "@/renderers/layers";
 import { undraw } from "@/renderers/undraw";
+import { Services } from "@/services";
 import { logStats } from "@/services/logging";
 import { destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { resetZoom } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { ensureEl, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
@@ -119,7 +121,7 @@ async function loadPreview(): Promise<void> {
   ensureEl("transformPreview").style.height = `${height}px`;
 
   const urlOptions = { noWater: true, fullMap: true, noLabels: true, noScaleBar: true, noVignette: true, noIce: true };
-  const url = await window.Services.ExportMap.getMapURL("png", urlOptions);
+  const url = await Services.ExportMap.getMapURL("png", urlOptions);
   const SCALE = 4;
 
   const img = new Image();

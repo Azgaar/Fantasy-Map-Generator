@@ -1,9 +1,15 @@
+import Alea from "alea";
 import { syncOptionInputs } from "@/app/chrome/tabs/options-tab";
+import { regeneratePrompt } from "@/app/lifecycle";
+import { Controllers } from "@/controllers";
 import { getPointsNumber } from "@/data/graph-density";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { HEIGHTMAP_SCHEME_LABELS } from "@/data/id-labels";
 import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
+import { Grid } from "@/model/graph/grid-generator";
+import { Options } from "@/model/options/options-model";
 import { Pins } from "@/model/options/pins";
+import { HeightmapGenerator } from "@/model/physical/heightmap-generator";
 import { drawHeights } from "@/renderers/heightmap/draw-heightmap";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
 import type { GridGraph } from "@/types/GridGraph";
@@ -234,7 +240,7 @@ function insertHtml(): void {
   sections[0].innerHTML = Object.keys(heightmapTemplates)
     .map(key => {
       const name = heightmapTemplates[key].name;
-      Math.random = aleaPRNG(initialSeed);
+      Math.random = Alea(initialSeed);
       const heights = HeightmapGenerator.fromTemplate(previewGraph, key, previewConfig);
 
       return /* html */ `<article data-id="${key}" data-seed="${initialSeed}">
@@ -343,7 +349,7 @@ function regeneratePreview(article: HTMLElement, id: string): void {
   Grid.resetHeights(graph);
   const seed = generateSeed();
   article.dataset.seed = seed;
-  Math.random = aleaPRNG(seed);
+  Math.random = Alea(seed);
   drawTemplatePreview(id);
 }
 
@@ -355,7 +361,7 @@ function redrawAll(): void {
   for (const article of articles) {
     const { id, seed } = article.dataset;
     if (!id || !seed) continue;
-    Math.random = aleaPRNG(seed);
+    Math.random = Alea(seed);
 
     const isTemplate = id in heightmapTemplates;
     if (isTemplate) drawTemplatePreview(id);
@@ -371,7 +377,7 @@ function confirmHeightmapEdit(el: HTMLElement): void {
     title: el.dataset.tip ?? "",
     message: sentences(t("Opening the tool will erase the current map"), t("Are you sure you want to proceed?")),
     confirm: t("Continue"),
-    onConfirm: () => window.Controllers.HeightmapEditor.open({ mode: "erase", tool })
+    onConfirm: () => Controllers.HeightmapEditor.open({ mode: "erase", tool })
   });
 }
 

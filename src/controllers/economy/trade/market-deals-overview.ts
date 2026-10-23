@@ -1,4 +1,6 @@
+import { Goods } from "@/model/economy/goods-generator";
 import type { Deal } from "@/model/economy/markets-generator";
+import { Markets } from "@/model/economy/markets-generator";
 import { Icons } from "@/model/icons";
 import type { Burg } from "@/model/political/burgs-generator";
 import { goodBadge } from "@/renderers/draw-goods";
@@ -14,6 +16,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
+import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { ensureEl, formatPrice, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";

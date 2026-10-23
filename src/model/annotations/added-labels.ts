@@ -1,9 +1,7 @@
+import { Pack } from "@/model/graph/pack-generator";
 import { requireName, requireOneOf } from "@/utils/validationUtils";
 import type { Label } from "./labels-generator";
-
-declare global {
-  var AddedLabels: AddedLabelsModule;
-}
+import { Labels } from "./labels-generator";
 
 // A free-standing map object that exists only to carry a label
 export interface AddedLabel {
@@ -56,6 +54,4 @@ export class AddedLabelsModule {
   }
 }
 
-// biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const AddedLabels = new AddedLabelsModule();
-window.AddedLabels = AddedLabels;

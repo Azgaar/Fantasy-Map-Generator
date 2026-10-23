@@ -1,10 +1,11 @@
 // Every dialog the Style tab opens
 import { interpolateRgb, interpolateRgbBasis, scaleSequential } from "d3";
 import { Controllers } from "@/controllers";
+import { Grid } from "@/model/graph/grid-generator";
 import { drawHeights } from "@/renderers/heightmap/draw-heightmap";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
 import { Layers } from "@/renderers/layers";
-import { addGoogleFont, addLocalFont, addWebFont } from "@/services/fonts";
+import { addGoogleFont, addLocalFont, addWebFont, fonts } from "@/services/fonts";
 import { StylePresetsService, SYSTEM_PRESETS } from "@/services/style-presets";
 import { VERSION } from "@/services/versioning";
 import type { StyleElement, StyleSelection } from "@/types/styles";

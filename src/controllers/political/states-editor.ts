@@ -1,7 +1,12 @@
 import { max, pack as packLayout, select, stratify } from "d3";
 import { Controllers } from "@/controllers";
 import { CULTURE_TYPE_LABELS } from "@/data/id-labels";
-import { STATE_FORMS, type State, type TariffRule } from "@/model/political/states-generator";
+import { Goods } from "@/model/economy/goods-generator";
+import { Markets } from "@/model/economy/markets-generator";
+import { Pack } from "@/model/graph/pack-generator";
+import { Burgs } from "@/model/political/burgs-generator";
+import { STATE_FORMS, type State, States, type TariffRule } from "@/model/political/states-generator";
+import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
 import { redrawEmblem, removeEmblem } from "@/renderers/draw-emblems";
 import { goodBadge } from "@/renderers/draw-goods";
@@ -27,6 +32,7 @@ import {
 import type { FillBoxElement } from "@/ui/elements/fill-box";
 import { createAnnexMode } from "@/ui/map/annex-mode";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
+import { zoomTo } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import {
   applyOption,
@@ -812,7 +818,7 @@ function changePopulation(stateId: number): void {
   const total = rural + urban;
   const format = (n: number) => Number(n).toLocaleString();
 
-  alertMessage.innerHTML = /* html */ `<div>
+  ensureEl("alertMessage").innerHTML = /* html */ `<div>
     <i>${t("Change population of all cells assigned to the state")}</i>
     <div style="margin: 0.5em 0">
       ${t("Rural")}: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" />
@@ -914,7 +920,8 @@ function openTreasuryDialog(stateId: number): void {
     return { label: label || t("None"), tip: sentences(names.join(", ") || t("None"), t("Click to select")) };
   };
 
-  alertMessage.innerHTML = /* html */ `<div data-tip="${t("Sales tax is applied to deals with a seller from the state. Poll tax is applied to all population of the state. Tariffs are applied to foreign goods imported into the state's markets. Tax changes take effect on Production regeneration")}" style="margin: 0.6em 0; display: grid; grid-template-columns: 7em auto auto; row-gap: 0.4em; align-items: center">
+  ensureEl("alertMessage").innerHTML =
+    /* html */ `<div data-tip="${t("Sales tax is applied to deals with a seller from the state. Poll tax is applied to all population of the state. Tariffs are applied to foreign goods imported into the state's markets. Tax changes take effect on Production regeneration")}" style="margin: 0.6em 0; display: grid; grid-template-columns: 7em auto auto; row-gap: 0.4em; align-items: center">
       <label for="stateSalesTaxInput">${t("Sales Tax")}:</label>
       <input id="stateSalesTaxInput" type="number" min="0" max="1" step="0.01" value="${state.salesTax}" style="width: 6em"/> = ${formatPrice(salesTaxRevenue)}
       <label for="statePollTaxInput">${t("Poll Tax")}:</label>
@@ -1300,14 +1307,15 @@ function showStatesChart(): void {
   const treeLayout = packLayout<any>().size([w, h]).padding(3);
 
   // prepare svg
-  alertMessage.innerHTML = /* html */ `<select id="statesTreeType" style="display:block; margin-left:13px; font-size:11px">
+  ensureEl("alertMessage").innerHTML =
+    /* html */ `<select id="statesTreeType" style="display:block; margin-left:13px; font-size:11px">
     <option value="area" selected>${t("Area")}</option>
     <option value="population">${t("Total population")}</option>
     <option value="rural">${t("Rural population")}</option>
     <option value="urban">${t("Urban population")}</option>
     <option value="burgs">${t("Number of burgs")}</option>
   </select>`;
-  alertMessage.innerHTML += `<div id='statesInfo' class='chartInfo'>&#8205;</div>`;
+  ensureEl("alertMessage").innerHTML += `<div id='statesInfo' class='chartInfo'>&#8205;</div>`;
 
   const svg = select("#alertMessage")
     .insert("svg", "#statesInfo")
@@ -1421,7 +1429,7 @@ function showStatesChart(): void {
     position: { my: "left bottom", at: "left+10 bottom-10", of: "svg" },
     buttons: {},
     close: () => {
-      alertMessage.innerHTML = "";
+      ensureEl("alertMessage").innerHTML = "";
     }
   });
 }
@@ -1572,7 +1580,7 @@ function openStateMergeDialog(): void {
     )
     .join("");
 
-  alertMessage.innerHTML = /* html */ `
+  ensureEl("alertMessage").innerHTML = /* html */ `
     <form id='mergeStatesForm' style="overflow: hidden; display: flex; flex-direction: column; gap: 1em;">
       <p style="margin:0">
         ${t("Check the checkbox next to each state you want to merge. Use the radio button to pick the ruling state that will absorb all others (its name, color, and capital will be kept). Hover over a row to highlight the state on the map.")}

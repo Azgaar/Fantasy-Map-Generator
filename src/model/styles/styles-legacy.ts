@@ -4,6 +4,7 @@ import { OCEAN_PATTERNS } from "@/data/ocean-patterns";
 import { FONT_STYLES, FONT_WEIGHTS, LINECAPS, LINEJOINS, MAP_FILTERS, TEXT_DECORATIONS } from "@/data/style-choices";
 import { IconSets } from "@/model/icon-sets";
 import { CustomIcons, Icons, IMAGE_FRAME } from "@/model/icons";
+import { Relief } from "@/model/physical/relief-generator";
 import { Layers } from "@/renderers/layers";
 import type { StylesData } from "@/types/styles";
 import { safeParseJSON } from "@/utils";

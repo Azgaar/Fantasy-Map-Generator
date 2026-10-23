@@ -1,4 +1,4 @@
-// Make window === globalThis so module side-effects (window.rn = ...) work in Node
+// Make window === globalThis, as in the browser, for modules that touch window in Node
 if (typeof window === "undefined") {
   (globalThis as Record<string, unknown>).window = globalThis;
 }
@@ -22,15 +22,6 @@ if (typeof document === "undefined") {
     getElementById: () => null,
     querySelector: () => null
   };
-}
-
-// Stub the tooltip globals (registered by services/tooltips) so the registry's
-// lazy-load loading tip doesn't throw outside the browser
-if (typeof window.tip === "undefined") {
-  window.tip = () => {};
-}
-if (typeof window.clearMainTip === "undefined") {
-  window.clearMainTip = () => {};
 }
 
 // jsdom implements no layout, so Range never got getBoundingClientRect/getClientRects; Quill's
@@ -70,8 +61,3 @@ for (const flag of ["INFO", "TIME", "ERROR", "WARN", "DEBUG"]) {
 const { Options } = await import("@/model/options/options-model");
 
 (globalThis as Record<string, unknown>).options ??= Options.getDefaultOptions();
-
-// Those imports pull in the real tooltip module, which needs a DOM node no unit test renders.
-// A test that wants the real one imports it itself, and that assignment lands after this
-window.tip = () => {};
-window.clearMainTip = () => {};

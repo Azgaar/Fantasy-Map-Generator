@@ -3,6 +3,7 @@ import { closeDialogs } from "@/ui/dialog/dialog-helpers";
 import { ensureEl } from "@/utils/nodeUtils";
 import "driver.js/dist/driver.css";
 import { showExportPane } from "@/app/chrome/io-panes";
+import { Controllers } from "@/controllers";
 import { t } from "@/utils/i18n";
 
 function closeOptionsPanel() {

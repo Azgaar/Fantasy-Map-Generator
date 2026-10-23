@@ -1,4 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
+import { Options } from "@/model/options/options-model";
 import { Cultures } from "./cultures-generator";
 
 afterEach(() => {

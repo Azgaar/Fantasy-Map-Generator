@@ -1,7 +1,9 @@
 import { select, sum } from "d3";
 import { Controllers } from "@/controllers";
+import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
 import type { Regiment } from "@/model/political/military-generator";
+import { Military } from "@/model/political/military-generator";
 import type { State } from "@/model/political/states-generator";
 import { Tags } from "@/model/tags";
 import { drawRegiment } from "@/renderers/draw-military";

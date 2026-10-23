@@ -17,12 +17,6 @@ import { patterns } from "./patterns";
 import { DEFAULT_SHIELD_BOX, INESCUTCHEON, inescutcheonShape, shieldShapes } from "./shields";
 import { divisionTemplates, ordinaryTemplates, type Template } from "./templates";
 
-declare global {
-  interface Window {
-    EmblemRenderer: EmblemRendererModule;
-  }
-}
-
 const SIZE_MODIFIERS: Record<string, number> = { small: 0.8, smaller: 0.5, smallest: 0.25, big: 1.6, bigger: 2 };
 
 // document-wide and matched in <use> copies, so it names SVG-only elements rather than scoping by emblem id
@@ -379,4 +373,3 @@ class EmblemRendererModule {
 }
 
 export const EmblemRenderer = new EmblemRendererModule();
-window.EmblemRenderer = EmblemRenderer;

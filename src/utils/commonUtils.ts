@@ -18,7 +18,7 @@ import { rand } from "./probabilityUtils";
 export const clipPoly = (points: [number, number][], graphWidth: number, graphHeight: number, secure?: number) => {
   if (points.length < 2) return points;
   if (points.some(point => point === undefined)) {
-    window.ERROR && console.error("Undefined point in clipPoly", points);
+    ERROR && console.error("Undefined point in clipPoly", points);
     return points;
   }
 
@@ -322,7 +322,7 @@ export const initializePrompt = (): void => {
     callback?: (value: number | string) => void
   ) => {
     if (options.default === undefined)
-      return window.ERROR && console.error("Prompt: options object does not have default value defined");
+      return ERROR && console.error("Prompt: options object does not have default value defined");
 
     const input = prompt.querySelector("#promptInput") as HTMLInputElement;
     const promptTextElement = prompt.querySelector("#promptText") as HTMLElement;
@@ -376,16 +376,3 @@ export const speak = (text: string): void => {
 
   speechSynthesis.speak(speaker);
 };
-
-declare global {
-  interface Window {
-    ERROR: boolean;
-
-    debounce: typeof debounce;
-    parseError: typeof parseError;
-    openURL: typeof openURL;
-    wiki: typeof wiki;
-    link: typeof link;
-    isCtrlClick: typeof isCtrlClick;
-  }
-}

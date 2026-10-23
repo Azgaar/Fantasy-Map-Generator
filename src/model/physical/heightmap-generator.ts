@@ -6,10 +6,6 @@ import type { MapData } from "@/model/options/options-schema";
 import type { GridGraph } from "@/types/GridGraph";
 import { getNumberInRange, lim, minmax, P, rand } from "@/utils";
 
-declare global {
-  var HeightmapGenerator: HeightmapModule;
-}
-
 type Tool = "Hill" | "Pit" | "Range" | "Trough" | "Strait" | "Mask" | "Invert" | "Add" | "Multiply" | "Smooth";
 
 class HeightmapModule {
@@ -67,7 +63,7 @@ class HeightmapModule {
 
   private getPointInRange(range: string, length: number): number | undefined {
     if (typeof range !== "string") {
-      window.ERROR && console.error("Range should be a string");
+      ERROR && console.error("Range should be a string");
       return;
     }
 
@@ -628,4 +624,4 @@ class HeightmapModule {
   }
 }
 
-window.HeightmapGenerator = new HeightmapModule();
+export const HeightmapGenerator = new HeightmapModule();

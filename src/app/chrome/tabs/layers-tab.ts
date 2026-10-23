@@ -1,5 +1,6 @@
 // Layers tab: a projection of the Layers registry. Renders the layer buttons and wires them up.
 
+import { Controllers } from "@/controllers";
 import { LAYER_TOGGLES, underlineHotkey } from "@/data/layer-labels";
 import type { LayerId } from "@/renderers/layers";
 import { Layers } from "@/renderers/layers";

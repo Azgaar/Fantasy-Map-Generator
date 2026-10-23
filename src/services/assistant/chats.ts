@@ -1,4 +1,5 @@
 import { t } from "@/utils/i18n";
+import { LocalDB } from "@/utils/localDB";
 import type { Message, Usage } from "./provider/providers";
 import type { RunResult } from "./provider/runtime";
 
@@ -88,7 +89,7 @@ let dirty = false;
 
 /** Loads once; a failed load is retried on the next call */
 export function load(): Promise<void> {
-  loading ??= ldb.get<Chat[]>(STORAGE_KEY).then(
+  loading ??= LocalDB.get<Chat[]>(STORAGE_KEY).then(
     value => {
       chats = Array.isArray(value) ? value.filter(item => item?.id && Array.isArray(item.items)) : [];
       currentId = localStorage.getItem(CURRENT_KEY) || chats[0]?.id || "";
@@ -166,7 +167,7 @@ export const isLong = (chat: Chat): boolean =>
     100_000;
 
 function persist(): void {
-  if (!loaded || typeof ldb === "undefined") return;
+  if (!loaded || !LocalDB.isSupported()) return;
   dirty = true;
   if (saving) return;
   saving = true;
@@ -175,7 +176,7 @@ function persist(): void {
     try {
       while (dirty) {
         dirty = false;
-        await ldb.set(STORAGE_KEY, chats);
+        await LocalDB.set(STORAGE_KEY, chats);
       }
     } catch (error) {
       ERROR && console.error("Assistant chats could not be saved", error); // the next change tries again

@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({ layerOn: true }));
 vi.mock("@/renderers/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
 
 import "@/model/styles/styles";
+import { Routes } from "@/model/economy/routes-generator";
 import { drawRoutes, getRouteBox, redrawRoute, removeRoutes, setEditedRoute, setTempRoute } from "./draw-routes";
 
 const routesLayer = { getEl: () => document.getElementById("routes") } as unknown as Layer;
@@ -33,7 +34,7 @@ beforeEach(() => {
       <g id="routes"><g id="roads"></g><g id="trails"></g><g id="searoutes"></g></g>
     </svg>`;
   globalThis.pack = { routes: [route(1, 0), route(2, 500), route(3, 0, "trails")] } as never;
-  globalThis.Routes = { getPath } as never;
+  Object.assign(Routes, { getPath });
   getPath.mockClear();
   setViewportSize(100, 100);
   setViewportTransform(1, 0, 0);

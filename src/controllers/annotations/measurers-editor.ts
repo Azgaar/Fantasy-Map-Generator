@@ -1,11 +1,14 @@
 import { type D3DragEvent, drag, type Selection, select } from "d3";
 import { type Measurer, Measurers, type MeasurerType } from "@/model/annotations/measurers-generator";
+import { Routes } from "@/model/economy/routes-generator";
+import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
 import { Layers } from "@/renderers/layers";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { viewport } from "@/renderers/viewport/viewport";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
+import { zoomTo } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { ensureEl, getSegmentId, last, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";

@@ -81,7 +81,7 @@ Four files carry the feature: `src/controllers/graph/wrap-tool.ts` (dialog, life
 `src/ui/map/map-brush.ts`, the brush instrument shared with the paint editor (see below). Two
 shared modules gain an entry: the Tools tab button and the `Shift + W` hotkey. No new dependency.
 
-The controller follows [migration-guide.md](../architecture/migration-guide.md): a named export over
+The controller follows [module-guide.md](../architecture/module-guide.md): a named export over
 module-scoped `let` state, `open()` → `render()` → `addListeners()`, and a `cleanup()` wired through
 the dialog's `close` so every node, listener and overlay it introduced is removed again. It owns its
 markup — nothing for it exists in `index.html` — and is lazy-loaded through the Controllers registry.
@@ -401,5 +401,5 @@ each pointing at the right tool for the scale of the change.
 - `BUDGET` (3 average original edges), `AREA_MARGIN` (25% of the stroke-start cell area), `FRAME`, the
   1/1024 backoff floor, and the 1000-entry history cap are tuning constants in `vertex-brush.ts` and
   `wrap-tool.ts`; they can be adjusted against representative maps without changing the design.
-- The structure overlay reuses the `#vertices` group and its `public/index.css` rules, which the removed
+- The structure overlay reuses the `#vertices` group and its `src/index.css` rules, which the removed
   coastline vertex editor left behind — no new CSS, so no cache-busting bump.

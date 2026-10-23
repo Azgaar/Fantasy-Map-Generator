@@ -37,7 +37,7 @@ the way they do, not a copy of what they contain.
    one value, and never two forms of one — a density step and the cell count it stands for are the
    same request said twice, so only the step is stored.
 4. **A value belongs in `map` if and only if the map cannot be operated correctly without it.**
-5. **The model is the store.** `options` is a global the model declares and initializes, written
+5. **The model is the store.** `options` is the ambient object the model declares, written
    plainly — `options.map.units.area.unit = …` — because a value takes effect where it is written.
    What remembers it is `Options.save()` (debounced) or `Options.persist()` for the few places that
    must not wait: boot, reset, and the end of a generation or a load.

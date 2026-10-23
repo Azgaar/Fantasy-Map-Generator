@@ -1,16 +1,17 @@
 // @vitest-environment jsdom
 import { beforeEach, expect, it, vi } from "vitest";
 
+const localDB = vi.hoisted(() => ({ isSupported: () => true, get: vi.fn(), set: vi.fn() }));
+vi.mock("@/utils/localDB", () => ({ LocalDB: localDB }));
+
 const storage = new Map<string, unknown>();
 beforeEach(() => {
   vi.resetModules();
   storage.clear();
   localStorage.clear();
-  vi.stubGlobal("ldb", {
-    get: vi.fn(async (key: string) => storage.get(key) ?? null),
-    set: vi.fn(async (key: string, value: unknown) => {
-      storage.set(key, value);
-    })
+  localDB.get.mockReset().mockImplementation(async (key: string) => storage.get(key) ?? null);
+  localDB.set.mockReset().mockImplementation(async (key: string, value: unknown) => {
+    storage.set(key, value);
   });
 });
 
@@ -44,9 +45,9 @@ it("recognizes provider history beyond the long-chat threshold", async () => {
 
 it("retries a failed load without overwriting the saved chats", async () => {
   const chats = await import("./chats");
-  vi.mocked(ldb.get).mockRejectedValueOnce(new Error("Temporarily unavailable"));
+  localDB.get.mockRejectedValueOnce(new Error("Temporarily unavailable"));
   await expect(chats.load()).rejects.toThrow("Temporarily unavailable");
-  expect(ldb.set).not.toHaveBeenCalled();
+  expect(localDB.set).not.toHaveBeenCalled();
   await chats.load();
   const chat = chats.create("guest", 9, "Recovered");
   await vi.waitFor(() => expect(storage.get("fmg-assistant-chats")).toEqual([chat]));
@@ -56,7 +57,7 @@ it("coalesces pending saves and persists the latest history", async () => {
   const chats = await import("./chats");
   await chats.load();
   let release: (() => void) | undefined;
-  vi.mocked(ldb.set).mockImplementationOnce(
+  localDB.set.mockImplementationOnce(
     () =>
       new Promise<void>(resolve => {
         release = resolve;
@@ -64,8 +65,8 @@ it("coalesces pending saves and persists the latest history", async () => {
   );
   const chat = chats.create("guest", 1, "Map");
   for (let index = 0; index < 20; index++) chats.append(chat, { kind: "question", text: `Question ${index}` });
-  expect(ldb.set).toHaveBeenCalledTimes(1);
+  expect(localDB.set).toHaveBeenCalledTimes(1);
   release!();
-  await vi.waitFor(() => expect(ldb.set).toHaveBeenCalledTimes(2));
+  await vi.waitFor(() => expect(localDB.set).toHaveBeenCalledTimes(2));
   expect((storage.get("fmg-assistant-chats") as { items: unknown[] }[])[0].items).toHaveLength(20);
 });

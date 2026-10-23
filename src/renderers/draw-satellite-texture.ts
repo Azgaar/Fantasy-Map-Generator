@@ -1,5 +1,7 @@
 import { color as parseColor } from "d3";
 import type * as THREEType from "three";
+import { Biomes } from "@/model/physical/biomes-generator";
+import { Rivers } from "@/model/physical/river-generator";
 import { buildGridTexture, type ErosionBakeResult, heightAt } from "./erosion-bake";
 
 let renderTarget: THREEType.WebGLRenderTarget | null = null;

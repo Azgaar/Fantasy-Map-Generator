@@ -1,3 +1,5 @@
+import { Options } from "@/model/options/options-model";
+
 /**
  * The travel domain of a transport type: determines both pathfinding strategy and endpoint validation.
  *   land: walks, wheels, hooves: land-only (endpoints must be on land or coastal). Uses road network if possible.
@@ -101,10 +103,4 @@ class TransportsModule {
   }
 }
 
-declare global {
-  var Transports: TransportsModule;
-}
-
-// biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const Transports = new TransportsModule();
-window.Transports = Transports;

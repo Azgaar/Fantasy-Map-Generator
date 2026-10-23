@@ -1,4 +1,5 @@
 import { easeSinIn, select, transition } from "d3";
+import { Precipitation } from "@/model/physical/precipitation-generator";
 import { ensureEl, rn } from "@/utils";
 
 export function drawPrecipitation(): void {

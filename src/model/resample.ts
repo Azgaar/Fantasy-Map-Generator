@@ -1,7 +1,13 @@
 import { mean, quadtree } from "d3";
 import { getPointsNumber } from "@/data/graph-density";
 import { Measurers } from "@/model/annotations/measurers-generator";
+import { Grid } from "@/model/graph/grid-generator";
+import { Pack } from "@/model/graph/pack-generator";
 import { MapRestoration } from "@/model/map-restoration";
+import { Coordinates } from "@/model/physical/coordinates";
+import { Features } from "@/model/physical/features-generator";
+import { Ice } from "@/model/physical/ice-generator";
+import { Temperature } from "@/model/physical/temperature-generator";
 import type { GridGraph } from "@/types/GridGraph";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { isWater } from "@/utils";

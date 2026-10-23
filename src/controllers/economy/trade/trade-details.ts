@@ -1,3 +1,4 @@
+import { Goods } from "@/model/economy/goods-generator";
 import type { Deal } from "@/model/economy/markets-generator";
 import type { Point } from "@/model/graph/voronoi";
 import { Icons } from "@/model/icons";
@@ -5,6 +6,7 @@ import type { Burg } from "@/model/political/burgs-generator";
 import { goodBadge } from "@/renderers/draw-goods";
 import { clearHighlight, highlight } from "@/renderers/draw-trade-animation";
 import type { TradeBatch } from "@/renderers/trade-animation";
+import { TradeAnimation } from "@/renderers/trade-animation";
 import { destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import {
@@ -15,6 +17,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
+import { zoomTo } from "@/ui/map/zoom";
 import { ensureEl, formatPrice, rn } from "@/utils";
 import { t } from "@/utils/i18n";
 

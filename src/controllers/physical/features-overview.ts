@@ -3,6 +3,7 @@ import { Controllers } from "@/controllers";
 import { FEATURE_SUBTYPE_LABELS } from "@/data/id-labels";
 import {
   type Feature,
+  Features,
   type FeatureType,
   ISLAND_SUBTYPES,
   LAKE_SUBTYPES,

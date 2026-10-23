@@ -295,6 +295,3 @@ export function initDialogPositionPersistence(): void {
     }
   );
 }
-
-window.closeDialogs = closeDialogs;
-window.confirmationDialog = confirmationDialog;

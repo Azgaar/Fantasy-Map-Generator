@@ -1,5 +1,7 @@
 import { select } from "d3";
 import { Controllers } from "@/controllers";
+import { Routes } from "@/model/economy/routes-generator";
+import { Pack } from "@/model/graph/pack-generator";
 import { setTempRoute } from "@/renderers/draw-routes";
 import { Layers } from "@/renderers/layers";
 import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";

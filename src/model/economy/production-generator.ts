@@ -1,11 +1,13 @@
 import { sum } from "d3";
 import type { Burg } from "@/model/political/burgs-generator";
+import { States } from "@/model/political/states-generator";
 import type { Zone } from "@/model/political/zones-generator";
 import { DEFAULT_CULTURE_TYPE } from "@/model/society/cultures-generator";
 import { minmax, rn } from "@/utils";
 import type { DemandCategory, Good } from "./goods-generator";
-import { DEMAND_PRIORITY, getDemandTargets } from "./goods-generator";
+import { DEMAND_PRIORITY, Goods, getDemandTargets } from "./goods-generator";
 import type { Deal, Market } from "./markets-generator";
+import { Markets } from "./markets-generator";
 
 const BONUS_RURAL_PRODUCTION = 0.25;
 const BONUS_URBAN_PRODUCTION = 1;
@@ -888,8 +890,4 @@ export type LocalRecord = { goodId: number; units: number };
 
 export type ProductionRecord = DealRecord | MfgRecord | LocalRecord;
 
-declare global {
-  var Production: ProductionModule;
-}
-
-window.Production = new ProductionModule();
+export const Production = new ProductionModule();

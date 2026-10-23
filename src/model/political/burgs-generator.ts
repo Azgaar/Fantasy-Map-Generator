@@ -1,12 +1,16 @@
 import { quadtree } from "d3-quadtree";
 import type { Label } from "@/model/annotations/labels-generator";
 import type { ProductionRecord } from "@/model/economy/production-generator";
+import { Routes } from "@/model/economy/routes-generator";
+import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
 import { AUTO_BURG_LIMIT } from "@/model/options/options-schema";
 import { NON_NAVIGABLE_LAKE_SUBTYPES } from "@/model/physical/features-generator";
 import type { River } from "@/model/physical/river-generator";
+import { Rivers } from "@/model/physical/river-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import { CULTURE_TYPES, type CultureType, DEFAULT_CULTURE_TYPE } from "@/model/society/cultures-generator";
+import { Names } from "@/model/society/names-generator";
 import { Population } from "@/model/society/population-generator";
 import type { BurgGroup } from "@/types/burg-groups";
 import type { Emblem } from "@/types/emblems";
@@ -1092,13 +1096,6 @@ class BurgModule {
   }
 }
 
-declare global {
-  var Burgs: BurgModule;
-}
-
-// biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const Burgs = new BurgModule();
 
 export type BurgIconSetId = (typeof Burgs.iconSets)[number]["id"];
-
-window.Burgs = Burgs;

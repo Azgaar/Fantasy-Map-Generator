@@ -1,6 +1,10 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
+vi.mock("@/utils/localDB", () => ({
+  LocalDB: { isSupported: () => true, get: vi.fn(async () => []), set: vi.fn(async () => {}) }
+}));
+
 const discovery = vi.hoisted(() => ({ list: vi.fn() }));
 vi.mock("@/app/map-commands", () => ({ MAP_COMMANDS: [], isLinkable: () => false })); // its import touches the DOM
 vi.mock("./map", () => ({
@@ -24,7 +28,6 @@ beforeEach(() => {
   localStorage.clear();
   discovery.list.mockReset().mockResolvedValue([]);
   document.body.innerHTML = '<div id="dialogs"></div>';
-  vi.stubGlobal("ldb", { get: vi.fn(async () => []), set: vi.fn(async () => {}) });
   window.$ = vi.fn(() => ({ dialog: vi.fn() })) as unknown as typeof window.$;
 });
 

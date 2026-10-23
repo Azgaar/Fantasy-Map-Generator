@@ -37,7 +37,7 @@ vi.mock("@/ui/map/zoom", () => ({ zoomTo: mocks.zoom }));
 vi.mock("@/renderers/viewport/viewport", () => ({ viewport: { width: 1000, height: 800, scale: 1 } }));
 vi.mock("@/renderers/labels/label-data", () => ({ getLabelsIndex: mocks.labels }));
 vi.mock("@/ui/dialog/dialog-helpers", () => ({ refreshEditors: vi.fn() }));
-vi.mock("@/ui/tooltips", () => ({ tip: mocks.tip }));
+vi.mock("@/ui/tooltips", () => ({ tip: mocks.tip, loadingTip: { start: vi.fn(), end: vi.fn() } }));
 vi.mock("@/controllers", () => ({
   Controllers: new Proxy(
     {},
@@ -46,6 +46,8 @@ vi.mock("@/controllers", () => ({
 }));
 
 import { MAP_COMMANDS } from "@/app/map-commands";
+import { Routes } from "@/model/economy/routes-generator";
+import { Rivers } from "@/model/physical/river-generator";
 import { Omnibar } from "./omnibar";
 
 function input(): HTMLInputElement {
@@ -254,8 +256,8 @@ describe("Omnibar public behavior", () => {
 
   it("calls generation directly and remembers only command IDs", async () => {
     const action = vi.fn();
-    vi.stubGlobal("Rivers", { regenerate: action });
-    vi.stubGlobal("Routes", { sync: () => {} });
+    Object.assign(Rivers, { regenerate: action });
+    Object.assign(Routes, { sync: () => {} });
     sessionStorage.setItem("regenerateFeatureDontAsk", "true");
     document.getElementById("regenerateRivers")!.remove();
     Omnibar.open();

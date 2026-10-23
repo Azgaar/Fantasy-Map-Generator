@@ -1,6 +1,7 @@
 import { readdirSync } from "node:fs";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import "./relief-generator"; // installs the Relief global
+import { Pack } from "@/model/graph/pack-generator";
+import { Relief } from "./relief-generator";
 
 type ReliefIcon = Parameters<typeof Relief.bottomY>[0];
 type ReliefSet = (typeof Relief.sets)[number];
@@ -26,7 +27,7 @@ test("generates logical union variants with no set pin", () => {
   vi.stubGlobal("styles", { relief: { options: { size: 1, density: 1, set: "simple" } } });
   vi.stubGlobal("grid", { cells: { temp: [10] } });
   vi.stubGlobal("pack", { cells: { i: [0], h: [80], r: [0], g: [0], biome: [0] }, biomes: [{ iconsDensity: 100 }] });
-  vi.stubGlobal("Pack", {
+  Object.assign(Pack, {
     getPolygon: () => [
       [0, 0],
       [20, 0],
@@ -50,7 +51,7 @@ test("the style size is not baked into generated icons", () => {
   vi.stubGlobal("styles", { relief: { options: { size: 4, density: 1, set: "simple" } } });
   vi.stubGlobal("grid", { cells: { temp: [10] } });
   vi.stubGlobal("pack", { cells: { i: [0], h: [80], r: [0], g: [0], biome: [0] }, biomes: [{ iconsDensity: 100 }] });
-  vi.stubGlobal("Pack", {
+  Object.assign(Pack, {
     getPolygon: () => [
       [0, 0],
       [20, 0],
@@ -118,7 +119,7 @@ const square = () => [
 test("a pool places its types and its icon references; an empty pool places nothing", () => {
   vi.stubGlobal("styles", { relief: { options: { size: 1, density: 1, set: "simple" } } });
   vi.stubGlobal("grid", { cells: { temp: [10, 10] } });
-  vi.stubGlobal("Pack", { getPolygon: square });
+  Object.assign(Pack, { getPolygon: square });
   vi.stubGlobal("pack", {
     cells: { i: [0, 1], h: [30, 30], r: [0, 0], g: [0, 1], biome: [1, 2] },
     biomes: [
@@ -149,7 +150,7 @@ test.each([false, true])("re-placing preserves unaffected icons, including manua
   ] as ReliefIcon[];
   if (manualOrder) kept.reverse();
   const replaced = { type: "grass", x: 5, y: 5, s: 4 } as ReliefIcon; // in cell 0
-  vi.stubGlobal("Pack", { getPolygon: square, findCell: (x: number) => (x < 20 ? 0 : 1) });
+  Object.assign(Pack, { getPolygon: square, findCell: (x: number) => (x < 20 ? 0 : 1) });
   vi.stubGlobal("pack", {
     cells: { i: [0, 1], h: [30, 30], r: [0, 0], g: [0, 1], biome: [1, 2] },
     biomes: [
@@ -195,7 +196,7 @@ test("a land cell takes the first rule it matches, with a null bound open", () =
 test("a rule places one entry per cell, sized by height; a cell no rule claims takes its biome's pool", () => {
   vi.stubGlobal("styles", { relief: { options: { size: 1, density: 1, set: "simple" } } });
   vi.stubGlobal("grid", { cells: { temp: [10, 10, 10] } });
-  vi.stubGlobal("Pack", { getPolygon: (i: number) => square().map(([x, y]) => [x + i * 20, y]) });
+  Object.assign(Pack, { getPolygon: (i: number) => square().map(([x, y]) => [x + i * 20, y]) });
   vi.stubGlobal("options", {
     map: {
       relief: {
@@ -229,7 +230,7 @@ test("a rule places one entry per cell, sized by height; a cell no rule claims t
 test("an entry's size scales the icons of a biome's pool and of a rule", () => {
   vi.stubGlobal("styles", { relief: { options: { size: 1, density: 1, set: "simple" } } });
   vi.stubGlobal("grid", { cells: { temp: [10, 10] } });
-  vi.stubGlobal("Pack", { getPolygon: square });
+  Object.assign(Pack, { getPolygon: square });
   const [, , hills] = Relief.getDefaultRules();
   vi.stubGlobal("options", {
     map: { relief: { rules: [{ ...hills, icons: { hill: { weight: 1, size: 0.5 } } }] } }
@@ -252,7 +253,7 @@ test("an entry's size scales the icons of a biome's pool and of a rule", () => {
 test("a rule with an empty pool claims its cells and places nothing there", () => {
   vi.stubGlobal("styles", { relief: { options: { size: 1, density: 1, set: "simple" } } });
   vi.stubGlobal("grid", { cells: { temp: [10] } });
-  vi.stubGlobal("Pack", { getPolygon: square });
+  Object.assign(Pack, { getPolygon: square });
   const [, , hills] = Relief.getDefaultRules();
   vi.stubGlobal("options", { map: { relief: { rules: [{ ...hills, icons: {} }] } } });
   vi.stubGlobal("pack", {
@@ -305,7 +306,7 @@ test.each([
   const columns = 40;
   const cells = Array.from({ length: columns * columns }, (_, i) => i);
   vi.stubGlobal("grid", { cells: { temp: cells.map(() => 10) } });
-  vi.stubGlobal("Pack", {
+  Object.assign(Pack, {
     getPolygon: (i: number) => {
       const [x, y] = [(i % columns) * side, Math.floor(i / columns) * side];
       return [

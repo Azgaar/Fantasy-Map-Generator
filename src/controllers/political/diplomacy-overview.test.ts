@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import { select } from "d3";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { Pack } from "@/model/graph/pack-generator";
 import type { State } from "@/model/political/states-generator";
-import "@/model/political/states-generator"; // registers the States global the diplomacy chronicle is read through
+import { States } from "@/model/political/states-generator";
 import { DiplomacyOverview } from "./diplomacy-overview";
 
 vi.mock("@/renderers/layers", () => ({ Layers: { show: vi.fn(), hide: vi.fn(), draw: vi.fn(), isOn: () => false } }));
@@ -11,7 +12,7 @@ vi.mock("@/utils", async importOriginal => ({
   ...(await importOriginal<typeof import("@/utils")>()),
   getVertexPath: (cells: number[]) => `M${cells.join()}`
 }));
-vi.mock("@/ui/tooltips", () => ({ tip: vi.fn(), clearMainTip: vi.fn() }));
+vi.mock("@/ui/tooltips", () => ({ tip: vi.fn(), clearMainTip: vi.fn(), loadingTip: { start: vi.fn(), end: vi.fn() } }));
 vi.mock("@/ui/map/viewbox-events", () => ({
   applyDefaultViewboxEvents: vi.fn(() => select("#viewbox").on("click", null).on(".drag", null))
 }));
@@ -126,10 +127,8 @@ beforeEach(() => {
     { i: 4, name: "Removed", removed: true, diplomacy: ["x", "x", "x", "x", "x"] }
   ] as State[];
   vi.stubGlobal("pack", { states, cells: { i: [0, 1, 2, 3, 4, 5], state: Uint16Array.from([0, 1, 2, 3, 4, 99]) } });
-  vi.stubGlobal("Pack", { findCell: (x: number) => (x < 6 ? x : undefined) });
+  Object.assign(Pack, { findCell: (x: number) => (x < 6 ? x : undefined) });
   vi.stubGlobal("customization", 0);
-  vi.stubGlobal("tip", vi.fn()); // the registry shows a loading tip through window
-  vi.stubGlobal("clearMainTip", vi.fn());
   DiplomacyOverview.open();
   mapClick(1);
 });

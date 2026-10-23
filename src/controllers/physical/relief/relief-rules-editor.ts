@@ -1,6 +1,8 @@
 // Relief rules: which land cells take relief by elevation and temperature instead of their biome's pool
 
+import { Options } from "@/model/options/options-model";
 import type { ReliefRule } from "@/model/options/options-schema";
+import { Relief } from "@/model/physical/relief-generator";
 import { confirmationDialog, destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
 import { limitationTip, pickLimitation } from "@/ui/dialog/limitation-picker";
 import { type EditorColumn, initColumnVisibility, renderEditorHeader } from "@/ui/dialog/table";

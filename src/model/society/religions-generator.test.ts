@@ -1,5 +1,8 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { Pack } from "@/model/graph/pack-generator";
+import { Names } from "./names-generator";
 import type { Religion } from "./religions-generator";
+import { Religions as ReligionsModule } from "./religions-generator";
 
 interface TestableReligionsModule {
   add(x: number, y: number): number;
@@ -10,14 +13,17 @@ interface TestableReligionsModule {
   generateReligionName(variety: string, form: string, deity: string, center: number): [string, string];
   normalizeHeresiesForExpansion(religions: Religion[], religionIds: Uint16Array): Religion[];
   recalculate(): void;
+  rename(id: number, name: string): void;
+  generateFolkReligions(): Religion[];
+  specifyReligions(religions: Religion[]): Religion[];
+  spreadFolkReligions(religions: Religion[]): Uint16Array;
 }
 
-describe("ReligionsModule origins", () => {
-  let Religions: TestableReligionsModule;
+const Religions = ReligionsModule as unknown as TestableReligionsModule;
 
+describe("ReligionsModule origins", () => {
   beforeAll(async () => {
     await import("./religions-generator");
-    Religions = globalThis.Religions as unknown as TestableReligionsModule;
   });
 
   beforeEach(() => {
@@ -345,8 +351,8 @@ describe("ReligionsModule origins", () => {
       if (randomIndex < randomValues.length) return randomValues[randomIndex++];
       return randomIndex++ % 2 ? 0.25 : 0.75;
     });
-    globalThis.Names = { getCulture: () => "Test" } as any;
-    vi.stubGlobal("Pack", { requireCell: () => 0 });
+    Object.assign(Names, { getCulture: () => "Test" });
+    Object.assign(Pack, { requireCell: () => 0 });
     globalThis.pack = {
       cells: {
         c: [[]],
@@ -387,8 +393,8 @@ describe("ReligionsModule.add", () => {
     await import("./religions-generator");
     let randomIndex = 0;
     vi.spyOn(Math, "random").mockImplementation(() => (randomIndex++ % 2 ? 0.25 : 0.75));
-    globalThis.Names = { getCulture: () => "Test" } as any;
-    vi.stubGlobal("Pack", { requireCell: () => 0 });
+    Object.assign(Names, { getCulture: () => "Test" });
+    Object.assign(Pack, { requireCell: () => 0 });
     globalThis.pack = {
       cells: {
         c: [[]],
@@ -411,7 +417,7 @@ describe("ReligionsModule.add", () => {
       ]
     } as any;
 
-    globalThis.Religions.add(5, 5);
+    Religions.add(5, 5);
 
     expect(globalThis.pack.religions[2].type).not.toBe("Folk");
   });
@@ -426,18 +432,15 @@ describe("ReligionsModule.rename", () => {
         { i: 1, name: "Old Faith", code: "OF" }
       ]
     } as any;
-    globalThis.Religions.rename(1, "Sun Cult");
+    Religions.rename(1, "Sun Cult");
     expect(pack.religions[1]).toMatchObject({ name: "Sun Cult", code: "SC" });
-    expect(() => globalThis.Religions.rename(2, "X")).toThrow("Religion 2 does not exist");
+    expect(() => Religions.rename(2, "X")).toThrow("Religion 2 does not exist");
   });
 });
 
 describe("ReligionsModule ancestral folk religions", () => {
-  let Religions: any;
-
   beforeAll(async () => {
     await import("./religions-generator");
-    Religions = globalThis.Religions;
   });
 
   it("assigns the same folk ancestral religion to cultures with the same non-blank ancestry", () => {

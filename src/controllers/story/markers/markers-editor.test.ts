@@ -14,6 +14,7 @@ vi.mock("@/ui/dialog/dialog-helpers", async importActual => ({
   refreshEditors: vi.fn()
 }));
 
+import { Markers } from "@/model/story/markers-generator";
 import { MarkersEditor } from "./markers-editor";
 
 it("renames through Markers.rename, the same method the Assistant proposes", () => {
@@ -22,7 +23,7 @@ it("renames through Markers.rename, the same method the Assistant proposes", () 
   vi.stubGlobal("pack", { markers: [{ i: 4, name: "Old Well" }] });
   vi.stubGlobal("$", () => ({ dialog: vi.fn() }));
   const rename = vi.fn();
-  vi.stubGlobal("Markers", { rename });
+  Object.assign(Markers, { rename });
   MarkersEditor.open(4);
   const input = document.getElementById("markerName") as HTMLInputElement;
   input.value = "Wishing Well";

@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { Pack } from "@/model/graph/pack-generator";
 import { Options } from "@/model/options/options-model";
+import { Relief } from "@/model/physical/relief-generator";
 import { Styles } from "@/model/styles/styles";
 import { ReliefRulesEditor } from "./relief-rules-editor";
-import "@/model/physical/relief-generator"; // installs the Relief global
 
 vi.mock("@/model/icons", () => ({
   Icons: {
@@ -23,7 +24,7 @@ vi.mock("@/ui/dialog/limitation-picker", () => ({
   limitationTip: () => "",
   pickLimitation: ({ onApply }: { onApply: (allowed: number[]) => void }) => onApply(limitation.allowed)
 }));
-vi.mock("@/ui/tooltips", () => ({ tip: vi.fn() }));
+vi.mock("@/ui/tooltips", () => ({ tip: vi.fn(), loadingTip: { start: vi.fn(), end: vi.fn() } }));
 vi.mock("@/renderers/layers", () => ({ Layers: { isOn: () => true, show: vi.fn() } }));
 vi.mock("@/renderers/draw-relief-icons", () => ({ redrawRelief: vi.fn() }));
 vi.mock("@/ui/dialog/dialog-helpers", async importOriginal => ({
@@ -125,7 +126,7 @@ describe("ReliefRulesEditor", () => {
       [i * 20, 20]
     ];
     globalThis.grid = { cells: { temp: [10, 10, 10] } } as unknown as typeof grid;
-    globalThis.Pack = { findCell: () => 0, getPolygon: square } as unknown as typeof Pack;
+    Object.assign(Pack, { findCell: () => 0, getPolygon: square });
     globalThis.pack = {
       cells: { i: [0, 1, 2], h: [80, 60, 30], g: [0, 1, 2], r: [0, 0, 0], biome: [9, 4, 4] },
       biomes: [],

@@ -1,3 +1,4 @@
+import { Pack } from "@/model/graph/pack-generator";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { findEl } from "@/utils";
 

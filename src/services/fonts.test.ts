@@ -2,6 +2,7 @@
 
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { StylesData } from "@/types/styles";
+import { fonts } from "./fonts";
 
 let getUsedFonts: typeof import("./fonts").getUsedFonts;
 

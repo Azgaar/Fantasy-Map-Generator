@@ -109,11 +109,3 @@ export const applyOption = (element: HTMLElement, value: string, name = value): 
   if (!isExisting) select.options.add(new Option(name, value));
   select.value = value;
 };
-
-declare global {
-  interface Window {
-    getNextId: typeof getNextId;
-    ensureEl: typeof ensureEl;
-    findEl: typeof findEl;
-  }
-}

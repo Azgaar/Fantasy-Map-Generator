@@ -9,7 +9,6 @@
 
 import { isElectron } from "@/services/platform";
 import { tip } from "@/ui/tooltips";
-import { loadScript } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 
 export interface CloudFile {
@@ -80,13 +79,13 @@ const dropbox: DropboxProvider = {
   },
 
   async connect({ token, refreshToken, expiresAt }) {
-    await loadScript("libs/dropbox-sdk.min.js");
-    const auth = new Dropbox.DropboxAuth({ clientId: this.clientId });
+    const { Dropbox, DropboxAuth } = await import("dropbox");
+    const auth = new DropboxAuth({ clientId: this.clientId });
     auth.setAccessToken(token);
     // with a refresh token set, the SDK refreshes the short-lived access token before each request
     if (refreshToken) auth.setRefreshToken(refreshToken);
     if (expiresAt) auth.setAccessTokenExpiresAt(new Date(expiresAt));
-    this.api = new Dropbox.Dropbox({ auth });
+    this.api = new Dropbox({ auth });
   },
 
   async save(fileName, contents) {

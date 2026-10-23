@@ -2,7 +2,7 @@ This document outlines the future architecture of the Fantasy Map Generator. It 
 
 ## Goals
 
-The proposed FMG 2.0 architecture aims to gradually transform the project from a large, tightly-coupled vanilla JavaScript application into a modular, maintainable, and testable system.
+The FMG 2.0 architecture gradually transforms the project from a large, tightly-coupled application into a modular, maintainable, and testable system.
 
 Main goals:
 
@@ -12,7 +12,7 @@ Main goals:
 - Make world data independent from SVG / DOM manipulation
 - Reduce hidden global state and implicit side effects
 - Enable easier contribution and onboarding
-- Support gradual migration from JavaScript to TypeScript
+- Keep every module typed, imported and explicit: no ambient state beyond the world data
 - Improve long-term maintainability without breaking existing `.map` files
 - Allow alternative renderers in the future (e.g. WebGL)
 
@@ -331,9 +331,9 @@ When a feature spans layers, each part stays under the folder for its role, in t
 Heraldry is the current example:
 
 - `src/data/emblems/` — static heraldry catalogs
-- `src/model/political/emblems-generator.ts` — emblem generation (registers `window.Emblems`)
+- `src/model/political/emblems-generator.ts` — emblem generation
 - `src/controllers/political/emblems/` — the Emblems editor and the Armoria bridge
-- `src/renderers/emblems/` — SVG drawing of emblems (registers `window.EmblemRenderer`). Its shields, lines,
+- `src/renderers/emblems/` — SVG drawing of emblems. Its shields, lines,
   patterns, templates and diapers are ported from [Armoria](https://github.com/Azgaar/Armoria), and `public/charges/`
   is a verbatim copy of Armoria's charges: sync both from Armoria rather than editing them here
 
@@ -349,11 +349,12 @@ New bundled code imports third-party dependencies from **npm**; Vite tree-shakes
 into the graph (e.g. d3 v7 via `import { select } from "d3"`). There is **no vendored
 `libs/` under `src/`**.
 
-`public/libs/*.min.js` (d3 v5, jQuery, three, …) is loaded via `<script>` tags **only**
-for classic `public/**/*.js` that still depend on runtime globals. It is legacy-only and
-shrinks as modules migrate: when a feature ports to `src/`, its dependency flips from a
-vendored global script to an npm import, and the vendored script is dropped once nothing
-classic needs it.
+A library loaded by a `<script>` tag as a runtime global is the exception that is being removed.
+`public/libs/` holds only two: jQuery with jQuery UI and Touch Punch, which run the dialogs, and
+three.js r140 with its add-ons for the 3D view. The dialogs move to a native primitive in
+`ui/dialog/`, the 3D view to the npm `three`; neither is extended in the meantime. A library of a
+few dozen lines is kept in `utils/` as typed source (`flatQueue.ts`, `simplify.ts`) rather than added
+as a dependency.
 
 ## Where does my file go?
 
@@ -380,8 +381,8 @@ classic needs it.
 
 ## Imports point down, never up
 
-Bundled code **imports what it calls** — a migrated module must not reach a migrated function
-through its `window.*` global. The globals exist for classic `public/**/*.js`, not for `src/`.
+Code **imports what it calls** and never reads a module through `window`. The one object the app
+puts on `window` is the [scripting surface](#scripting-surface), and the app itself never reads it.
 
 But an import is also a dependency, and dependencies only run **downhill**:
 
@@ -404,10 +405,10 @@ dispatch through them (`viewbox-events` opens an editor on click), the model and
 Type-only imports (`import type { LayerId }`) carry no runtime dependency and may cross.
 
 So `states-editor` imports `tip` from `ui/tooltips`, but a **model or a renderer module that wants
-to show a tooltip may not** — that import would point up the stack. Those few call sites keep the
-`window` bridge with a comment saying why; the real fix is to move the message to the controller
-that owns the interaction, not to import across the layer boundary. `utils/registry.ts` is the
-standing example: it shows a loading tip through `window.tip` because utils must never depend on the UI.
+to show a tooltip may not** — that import would point up the stack. Move the message to the
+controller that owns the interaction, or let the caller pass the behavior down: `createRegistry` in
+`utils/registry.ts` takes its loading feedback from the registry that builds it, and the minimap
+follows the camera through `onViewportChange` in `ui/map/zoom.ts` rather than being called by it.
 
 ---
 
@@ -495,7 +496,7 @@ A controller is the thin seam between a user action and the state.
   (`Controllers.StatesEditor.open()`), never imported eagerly. See [Lazy module registry](#lazy-module-registry).
 - **Transient overlays own their styles.** A palette, popover, or bubble that lives only while
   it is open may render its own `<style>` block next to its markup, scoped under its own id, so
-  the rules are created and removed with the element. Keep `public/index.css` for the shell and
+  the rules are created and removed with the element. Keep `src/index.css` for the shell and
   for widgets whose markup is static in `src/index.html`. The omnibar is the reference case: its
   stylesheet is one block in `omnibar.ts`, scoped under `#omnibar`.
 
@@ -578,13 +579,25 @@ two typed registries — `Controllers` (built in `src/controllers/index.ts`) and
   the module on first use (its own code-split chunk, evaluated once) and then dispatches — so
   every call returns a Promise. The factory infers each module's real signatures, so callers
   get precise, type-checked contracts rather than `any`.
-- **Same handle everywhere.** Migrated TS imports `{ Controllers }` / `{ Services }`; legacy
-  `public/**/*.js` and inline handlers use the `window.Controllers` / `window.Services` globals.
+- **Same handle everywhere.** Every caller imports `{ Controllers }` / `{ Services }`. Markup never
+  calls code: a template carries ids or `data-` attributes and its module wires the listeners.
 
-Model, renderers, `ui/` and `app/` modules are different: they are **eager** and self-register their
-own globals (`window.Markets`, `window.drawRoutes`, `window.tip`) because classic code calls them
-directly and, in chrome's case, because there is no moment at which they would be "opened". See
+Model, renderers, `ui/` and `app/` modules are different: they are **eager**, imported directly by
+their callers, and chrome has no moment at which it would be "opened". See
 [lazy-loading.md](./lazy-loading.md) for the full pattern and how to add a module.
+
+## Scripting surface
+
+`window.FMG`, built in `src/app/fmg.ts`, is how a person at the browser console and the Assistant's
+`read_map` scripts reach the app: the map state (`pack`, `grid`, `options`, `styles` through getters,
+since a regeneration or a load replaces them), the helpers in `utils/`, every model singleton, the
+layers registry, `Controllers`, `Services` and a few app commands. `read_map` scripts see each member
+by name, so `pack.burgs` works there as `FMG.pack.burgs` does in the console.
+
+- **One-way.** The app never reads `window.FMG`, and TypeScript does not declare it: a module imports
+  what it calls.
+- **Add, don't bridge.** A new public singleton or command is one line in `fmg.ts`. The Assistant's
+  Globals doc is generated from that file (`npm run generate:assistant-context`), so it stays in step.
 
 ---
 
@@ -833,32 +846,18 @@ what the user is looking at now — not everything they have opened this session
 
 ---
 
-# Migration Strategy
+# Evolution
 
-The refactor is explicitly incremental and is already in progress. The project is too large for a full rewrite, so the architecture aims for:
+The project is too large for a rewrite, so it changes one module at a time, and every step leaves a
+working app. The code is TypeScript throughout and imports what it calls. What remains between it and
+the target model above:
 
-- Progressive extraction
-- Compatibility bridges
-- Mixed JS/TS operation
-- Gradual module isolation
-- Step-by-step modernization
+- **One world object.** `pack`, `grid`, `options`, `styles` and `customization` are still ambient
+  globals; they become the single `map` object of [future-data-model.md](./future-data-model.md), with
+  the `.map` file as its JSON.
+- **Native dialogs.** The jQuery UI dialogs give way to a small dialog primitive in `ui/dialog/`, which
+  retires the last vendored scripts but three.js.
+- **Strict typing.** `any` goes, module by module, as each one is touched.
 
-Key strategy: old code continues working, while new subsystems adopt cleaner architecture.
-
----
-
-# TypeScript Adoption
-
-A major direction of the modernization is gradual TypeScript migration.
-
-Goals:
-
-- Strong typing
-- Better editor tooling
-- Safer refactors
-- Explicit contracts between systems
-- Better discoverability for contributors
-
-For the concrete `src/` layout the code actually uses — and a guide to where each new
-file belongs — see [Project Structure](#project-structure) below. The transition is
-designed to coexist with legacy JavaScript.
+For the `src/` layout and where each new file belongs, see [Project Structure](#project-structure)
+and the [module guide](./module-guide.md).

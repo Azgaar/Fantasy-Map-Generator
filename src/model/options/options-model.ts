@@ -1,5 +1,6 @@
 // All app configuration options, options.map saved to `.map` file as settings; docs/architecture/configuration.md
 
+import { CULTURE_SETS } from "@/data/culture-sets";
 import { DEFAULT_DENSITY, getPointsNumber } from "@/data/graph-density";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { DEFAULT_TRADE_ANIMATION } from "@/data/trade-animation-options";
@@ -22,10 +23,10 @@ import { Coordinates } from "@/model/physical/coordinates";
 import { Relief } from "@/model/physical/relief-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Military } from "@/model/political/military-generator";
-import { CULTURE_SETS } from "@/model/society/cultures-generator";
 import { Names } from "@/model/society/names-generator";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
+import { LocalDB } from "@/utils/localDB";
 import { rn } from "@/utils/numberUtils";
 import { deepMerge } from "@/utils/objectUtils";
 import { gauss, rand, rw } from "@/utils/probabilityUtils";
@@ -33,7 +34,6 @@ import { parseSections } from "@/utils/schemaUtils";
 import { OPTIONS_STORAGE_KEY, readStoredOptions } from "./options-storage";
 
 declare global {
-  var Options: OptionsModel;
   /** what this browser wants, read bare across the app and replaced wholesale on restore */
   var options: OptionsData;
 }
@@ -165,17 +165,17 @@ class OptionsModel {
 
   private persistIcons(icons: OptionsData["map"]["customIcons"]): void {
     const unchanged = icons === this.savedIcons.icons && this.iconsRevision === this.savedIcons.revision;
-    if (!this.iconsRestored || unchanged || typeof ldb === "undefined") return;
+    if (!this.iconsRestored || unchanged || !LocalDB.isSupported()) return;
     this.savedIcons = { icons, revision: this.iconsRevision };
-    void ldb.set(ICONS_STORAGE_KEY, icons);
+    void LocalDB.set(ICONS_STORAGE_KEY, icons);
   }
 
   /** Boot, after `restore`: adopt the custom icons this browser kept, each checked on its own */
   async restoreIcons(): Promise<void> {
-    if (typeof ldb === "undefined") return;
+    if (!LocalDB.isSupported()) return;
     const unreadable = Symbol("unreadable");
     const timeout = new Promise<symbol>(resolve => setTimeout(() => resolve(unreadable), ICONS_READ_TIMEOUT));
-    const stored = await Promise.race([ldb.get<unknown>(ICONS_STORAGE_KEY).catch(() => unreadable), timeout]);
+    const stored = await Promise.race([LocalDB.get<unknown>(ICONS_STORAGE_KEY).catch(() => unreadable), timeout]);
     if (stored === unreadable) return; // icons are then not written this session, so none that may be there are lost
 
     this.iconsRestored = true;
@@ -357,7 +357,4 @@ class OptionsModel {
   }
 }
 
-// biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const Options = new OptionsModel();
-globalThis.Options = Options;
-globalThis.options = Options.getDefaultOptions();

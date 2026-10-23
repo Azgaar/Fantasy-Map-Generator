@@ -8,10 +8,6 @@ import { rn, SEA_LEVEL } from "@/utils";
 import { Lattice } from "./lattice";
 import { calculateVoronoi } from "./voronoi";
 
-declare global {
-  var Grid: GridModule;
-}
-
 /** square pixels over the map, row by row, each holding the cell under its centre */
 export interface GridRaster {
   width: number;
@@ -280,4 +276,4 @@ class GridModule {
   }
 }
 
-window.Grid = new GridModule();
+export const Grid = new GridModule();

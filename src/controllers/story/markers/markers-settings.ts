@@ -1,5 +1,6 @@
 import { Controllers } from "@/controllers";
 import { Icons } from "@/model/icons";
+import { Markers } from "@/model/story/markers-generator";
 import { Layers } from "@/renderers/layers";
 import { destroyDialog, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";

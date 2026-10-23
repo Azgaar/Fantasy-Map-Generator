@@ -57,8 +57,7 @@ heights cleared before terrain generation. Map naming belongs to `Options.random
 the pipeline, since it depends only on name bases and the seeded random source.
 
 `generate(config)` in `app/lifecycle.ts` resolves what the pipeline doesn't own (`setSeed`, `Options.randomize`, `applyGraphSize`), calls `await GenerationPipeline.run({graph})`, then reports (`logStats`,
-`TOTAL` timing) or shows the generation error dialog. The pipeline is exposed as
-`window.GenerationPipeline` because `main.js` is a classic script.
+`TOTAL` timing) or shows the generation error dialog.
 
 | Phase                    | Step ids                                        | Writes (selection)                                                              |
 | ------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -263,8 +262,8 @@ reaches a phase you change.
 
 ## The grid modules
 
-Everything that builds or reads the raw graph lives in five sibling modules, each reachable as a
-global the same way `Features`, `Rivers` and the other generators are:
+Everything that builds or reads the raw graph lives in five sibling modules, each an exported
+singleton like `Features`, `Rivers` and the other generators:
 
 ### `Grid` — [`grid-generator.ts`](../../src/model/graph/grid-generator.ts)
 
@@ -314,5 +313,5 @@ elevation, what it is coastal to and the goods around it — into `cells.s`, the
 rural population in `cells.pop`. Everything placed by population (cultures, burgs, states) reads it,
 so it has to run after `biomes` and `goods` and before `cultures`.
 
-Unlike the grid modules it is imported rather than global, and it runs outside the pipeline too:
+It runs outside the pipeline too:
 `Burgs.regenerate()` and `Population.regenerate()` re-rank the cells before replacing burgs.

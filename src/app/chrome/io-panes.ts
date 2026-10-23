@@ -1,5 +1,6 @@
 // The Save, Export and Load dialogs behind the sticked menu, plus the tile-export screen; this module owns their markup
 import { select } from "d3";
+import { Options } from "@/model/options/options-model";
 import { Layers } from "@/renderers/layers";
 import { Services } from "@/services";
 import { closeDialogs } from "@/ui/dialog/dialog-helpers";

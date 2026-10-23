@@ -1,5 +1,7 @@
 import { drag, quadtree, range, select } from "d3";
+import { Controllers } from "@/controllers";
 import { RELIEF_SET_LABELS } from "@/data/style-choices";
+import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
 import type {
   ReliefIcon,
@@ -8,6 +10,7 @@ import type {
   ReliefSet,
   ReliefType
 } from "@/model/physical/relief-generator";
+import { Relief } from "@/model/physical/relief-generator";
 import { getReliefIcon, redrawRelief } from "@/renderers/draw-relief-icons";
 import { Layers } from "@/renderers/layers";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
@@ -97,8 +100,8 @@ function renderDialog(): void {
   ) => /* html */ `
     <div id="relief${name}Div" class="reliefRow" data-tip="${tipText}"${hidden ? " hidden" : ""}>
       <div class="reliefEditorLabel">${SLIDER_LABELS[name]}</div>
-      <input id="relief${name}" oninput="relief${name}Number.value = this.value" type="range" min="${min}" max="${max}" value="${value}" />
-      <input id="relief${name}Number" oninput="relief${name}.value = this.value" type="number" min="${min}" value="${value}" />
+      <input id="relief${name}" type="range" min="${min}" max="${max}" value="${value}" />
+      <input id="relief${name}Number" type="number" min="${min}" value="${value}" />
     </div>`;
   const html = /* html */ `<div id="reliefEditor" class="dialog">
     <div id="reliefTools" class="reliefRow">
@@ -135,6 +138,11 @@ function renderDialog(): void {
   </div>`;
 
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+  for (const range of document.querySelectorAll<HTMLInputElement>("#reliefEditor .reliefRow input[type=range]")) {
+    const number = ensureEl<HTMLInputElement>(`${range.id}Number`);
+    range.addEventListener("input", () => (number.value = range.value));
+    number.addEventListener("input", () => (range.value = number.value));
+  }
 
   ensureEl("reliefIndividual").addEventListener("click", enterIndividualMode);
   ensureEl("reliefBulkAdd").addEventListener("click", enterBulkAddMode);

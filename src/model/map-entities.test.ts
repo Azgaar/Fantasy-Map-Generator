@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
+import { Pack } from "@/model/graph/pack-generator";
+import { Names } from "@/model/society/names-generator";
 import { MapEntities } from "./map-entities";
 
 beforeEach(() => {
@@ -257,7 +259,7 @@ describe("map event targets", () => {
 
 describe("entities at a cell", () => {
   beforeEach(() => {
-    globalThis.Pack = { findCell: (x: number) => x } as never;
+    Object.assign(Pack, { findCell: (x: number) => x });
     Object.assign(globalThis.pack, {
       cells: {
         burg: [0, 1, 0],
@@ -395,7 +397,7 @@ describe("records", () => {
     globalThis.options = {
       map: { transports: [{ i: 2, name: "Galley", speed: 8, domain: "water" }] }
     } as typeof options;
-    globalThis.Names = { nameBases: [{ i: 0, name: "German" }] } as unknown as typeof Names;
+    Object.assign(Names, { nameBases: [{ i: 0, name: "German" }] });
   });
 
   it("resolves every record type by key", () => {

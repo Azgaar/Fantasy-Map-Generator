@@ -1,4 +1,7 @@
 // About tab: credits, links and the supporters list
+
+import { supporters } from "@/data/supporters";
+import { Services } from "@/services";
 import { alertDialog } from "@/ui/dialog/dialog-helpers";
 import { link } from "@/utils/commonUtils";
 import { sentences, t } from "@/utils/i18n";
@@ -11,7 +14,6 @@ const TEMPLATE = /* html */ `
   <div class="aboutActions">
     <button
       id="startTourButton"
-      onclick="window.Services.UiTour.start()"
       data-tip="${t("Take an interactive tour of the map generator")}"
       style="flex: 1; border: 1px solid var(--header);"
     >
@@ -19,7 +21,6 @@ const TEMPLATE = /* html */ `
     </button>
     <button
       id="getAppButton"
-      onclick="window.Services.AppOffer.open()"
       data-tip="${t("Install the Generator on your computer")}"
       style="flex: 1; border: 1px solid var(--header);"
     >
@@ -90,7 +91,7 @@ const TEMPLATE = /* html */ `
     </a>
   </div>
   <p>
-    ${t("Thanks for all supporters on {{- patreon}}!", { patreon: `<a data-tip="${t("Click to see list of supporters")}" onclick="showSupporters()">Patreon</a>` })}
+    ${t("Thanks for all supporters on {{- patreon}}!", { patreon: `<a id="supportersLink" data-tip="${t("Click to see list of supporters")}">Patreon</a>` })}
   </p>
   <div style="display: flex; justify-content: center; padding: 0.4em; font-family: cursive">
     <a href="https://u24.gov.ua/" style="width: 80%" data-tip="${t("Support Ukraine")}" target="_blank">
@@ -153,9 +154,9 @@ ensureEl("aboutContent").innerHTML = TEMPLATE;
 /** The list of Patreon supporters, updated by hand with each release */
 function showSupporters(): void {
   const columns = window.innerWidth < 800 ? 2 : 5;
-  const names = window.Supporters.split("\n").sort();
+  const names = supporters.split("\n").sort();
   alertDialog({
-    title: t("Patreon Supporters"),
+    title: t("Patreon supporters"),
     width: "min-width",
     message: /* html */ `<ul style="column-count: ${columns}; column-gap: 2em">${names
       .map(name => `<li>${name}</li>`)
@@ -163,10 +164,6 @@ function showSupporters(): void {
   });
 }
 
-// Legacy seam: the credits block wires the dialog with an inline onclick
-declare global {
-  interface Window {
-    showSupporters: typeof showSupporters;
-  }
-}
-window.showSupporters = showSupporters;
+ensureEl("startTourButton").addEventListener("click", () => Services.UiTour.start());
+ensureEl("getAppButton").addEventListener("click", () => Services.AppOffer.open());
+ensureEl("supportersLink").addEventListener("click", showSupporters);

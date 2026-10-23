@@ -152,12 +152,3 @@ export const sanitizeId = (inputString: string) => {
 
   return sanitized;
 };
-
-declare global {
-  interface Window {
-    round: typeof round;
-    capitalize: typeof capitalize;
-    parseTransform: typeof parseTransform;
-    setInlineStyleProperty: typeof setInlineStyleProperty;
-  }
-}

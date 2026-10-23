@@ -1,7 +1,9 @@
 import { drag, easeSinIn, select, transition } from "d3";
 import { Controllers } from "@/controllers";
 import { RELIGION_EXPANSION_LABELS, RELIGION_TYPE_LABELS } from "@/data/id-labels";
+import { Pack } from "@/model/graph/pack-generator";
 import type { Religion } from "@/model/society/religions-generator";
+import { Religions } from "@/model/society/religions-generator";
 import { Tags } from "@/model/tags";
 import { Layers } from "@/renderers/layers";
 import { LegendBoxes } from "@/renderers/legend-boxes";
@@ -656,7 +658,7 @@ function changePopulation(this: HTMLElement): void {
   const format = (n: number) => Number(n).toLocaleString();
   const burgs = pack.burgs.filter(b => !b.removed && pack.cells.religion[b.cell] === religionId);
 
-  alertMessage.innerHTML = /* html */ `<div>
+  ensureEl("alertMessage").innerHTML = /* html */ `<div>
     <i>${t("All population of religion territory is considered believers of this religion. It means believers number change will directly affect population")}</i>
     <div style="margin: 0.5em 0">
       ${t("Rural")}: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" />

@@ -1,7 +1,7 @@
 import { Controllers } from "@/controllers";
 import { calculateLabelSpread, type LabelSpreadPatch } from "@/controllers/annotations/labels/label-spread";
 import { LABEL_TYPE_LABELS } from "@/data/id-labels";
-import { LABEL_TYPES, type Label, type LabelType } from "@/model/annotations/labels-generator";
+import { LABEL_TYPES, type Label, Labels, type LabelType } from "@/model/annotations/labels-generator";
 import { getLabelsData, getLabelsIndex } from "@/renderers/labels/label-data";
 import type { LabelData } from "@/renderers/labels/labels";
 import { Layers } from "@/renderers/layers";
@@ -17,6 +17,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
+import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { ensureEl, findEl } from "@/utils";
 import { sentences, t } from "@/utils/i18n";

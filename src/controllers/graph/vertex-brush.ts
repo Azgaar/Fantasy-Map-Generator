@@ -1,5 +1,6 @@
 import { polygonArea } from "d3";
 import { GraphOverride } from "@/model/graph/graph-override";
+import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/types/global";
 import { minmax } from "@/utils";
 

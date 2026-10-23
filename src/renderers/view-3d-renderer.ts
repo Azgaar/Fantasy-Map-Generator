@@ -1,10 +1,13 @@
 import type * as THREE from "three";
+import { Grid } from "@/model/graph/grid-generator";
+import { Options } from "@/model/options/options-model";
 import type { Burg } from "@/model/political/burgs-generator";
 import type { State } from "@/model/political/states-generator";
 import { Layers } from "@/renderers/layers";
 import { isGlobeView, setViewMode } from "@/renderers/view-mode";
 import { Services } from "@/services";
 import { savedMessage } from "@/services/platform";
+import { tip } from "@/ui/tooltips";
 import { downloadFile, findEl, getFileName } from "@/utils";
 import { t } from "@/utils/i18n";
 import { clampTextureResolution, timeOfDayPresets } from "../data/view-3d-options";
@@ -329,7 +332,7 @@ const saveScreenshot = async () => {
   link.download = `${getFileName()}.jpeg`;
   link.href = URL;
   link.click();
-  window.tip(savedMessage(t("Screenshot")), true, "success", 7000);
+  tip(savedMessage(t("Screenshot")), true, "success", 7000);
   window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
 };
 
@@ -343,7 +346,7 @@ const saveOBJ = async () => {
 // start 3d view and heightmap edit preview
 async function newMesh(canvas: HTMLCanvasElement) {
   const loaded = await loadTHREE();
-  if (!loaded) return window.tip(t("Cannot load 3d library"), false, "error", 4000);
+  if (!loaded) return tip(t("Cannot load 3d library"), false, "error", 4000);
   scene = new Three.Scene();
 
   // light
@@ -718,7 +721,7 @@ async function createMesh(width: number, height: number) {
     });
     if (!bakeResult && options.app.threeD.erosion) {
       console.warn("3D erosion bake failed, falling back to standard mesh");
-      window.tip(t("Eroded terrain is not supported on this device"), false, "warn", 4000);
+      tip(t("Eroded terrain is not supported on this device"), false, "warn", 4000);
       Options.set(o => (o.app.threeD.erosion = false));
       syncErosionUI();
     }
@@ -874,7 +877,7 @@ async function update3dTexture() {
 async function newGlobe(canvas: HTMLCanvasElement) {
   const loaded = await loadTHREE();
   if (!loaded) {
-    window.tip(t("Cannot load 3d library"), false, "error", 4000);
+    tip(t("Cannot load 3d library"), false, "error", 4000);
     return false;
   }
 

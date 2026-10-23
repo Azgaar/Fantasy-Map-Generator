@@ -1,10 +1,7 @@
 import { getDefaultNameBases, type NameBase } from "@/data/name-bases";
+import { tip } from "@/ui/tooltips";
 import { capitalize, isVowel, last, P, ra, rand } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
-
-declare global {
-  var Names: NamesGenerator;
-}
 
 // Markov chain lookup table: key is a letter (or empty string for word start), value is array of possible next syllables
 // Note: Uses array with string keys (sparse array) to match original JS behavior
@@ -90,8 +87,7 @@ class NamesGenerator {
 
     const data = this.chains[base];
     if (!data || data[""] === undefined) {
-      // the window bridge: a model module does not import UI
-      window.tip(
+      tip(
         sentences(t("Namesbase {{base}} is incorrect", { base }), t("Please check in namesbase editor")),
         false,
         "error"
@@ -282,7 +278,7 @@ class NamesGenerator {
   getMapName(): string {
     const base = P(0.7) ? 2 : P(0.5) ? rand(0, 6) : rand(0, 31);
     if (!this.nameBases[base]) {
-      window.tip(t("Namebase is not found"), false, "error");
+      tip(t("Namebase is not found"), false, "error");
       return "";
     }
     const min = this.nameBases[base].min - 1;
@@ -311,7 +307,4 @@ class NamesGenerator {
   }
 }
 
-// biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const Names = new NamesGenerator();
-
-window.Names = Names;

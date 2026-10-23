@@ -1,9 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { MIN_NAVIGABLE_FLUX } from "./river-generator";
+import { MIN_NAVIGABLE_FLUX, Rivers } from "./river-generator";
 
 describe("RiverModule helpers", () => {
-  let Rivers: any;
-
   beforeEach(async () => {
     globalThis.TIME = false;
     globalThis.window = globalThis.window || ({} as any);
@@ -14,7 +12,6 @@ describe("RiverModule helpers", () => {
     } as any;
 
     await import("./river-generator");
-    Rivers = (globalThis as any).Rivers;
   });
 
   function setCells(cells: { r?: number[]; fl?: number[]; f?: number[] }) {
@@ -165,9 +162,9 @@ describe("RiverModule.rename", () => {
   it("renames a river by id and keeps its custom label pattern", async () => {
     await import("./river-generator");
     globalThis.pack = { rivers: [{ i: 7, name: "Ald", type: "River", label: { text: "Ald Falls" } }] } as any;
-    (globalThis as any).Rivers.rename(7, "Brae");
+    Rivers.rename(7, "Brae");
     expect(pack.rivers[0]).toMatchObject({ name: "Brae", label: { text: "Brae Falls" } });
-    expect(() => (globalThis as any).Rivers.rename(1, "X")).toThrow("River 1 does not exist");
+    expect(() => Rivers.rename(1, "X")).toThrow("River 1 does not exist");
   });
 });
 
@@ -175,7 +172,6 @@ describe("locked rivers", () => {
   type LockedRiver = import("./river-generator").LockedRiver;
   type River = import("./river-generator").River;
   type Internals = { mergeLocked(locked: LockedRiver[]): void; linkLockedLakes(locked: LockedRiver[]): void };
-  let Rivers: typeof import("./river-generator").Rivers;
   let internals: Internals;
 
   // cells 0-10 are land on a line, cell 11 is the sea
@@ -200,7 +196,6 @@ describe("locked rivers", () => {
       rivers: []
     } as unknown as typeof pack;
     await import("./river-generator");
-    Rivers = (globalThis as unknown as { Rivers: typeof Rivers }).Rivers;
     internals = Rivers as unknown as Internals;
   });
 

@@ -1,5 +1,12 @@
 import { TRANSPORT_DOMAIN_LABELS } from "@/data/id-labels";
-import { MAX_HOURS_PER_DAY, type Transport, type TransportDomain } from "@/model/economy/transports-generator";
+import {
+  MAX_HOURS_PER_DAY,
+  type Transport,
+  type TransportDomain,
+  Transports
+} from "@/model/economy/transports-generator";
+import { Options } from "@/model/options/options-model";
+import { Journeys } from "@/model/story/journeys/journeys-generator";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
 import {
   type EditorColumn,

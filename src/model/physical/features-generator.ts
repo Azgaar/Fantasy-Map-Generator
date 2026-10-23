@@ -1,12 +1,10 @@
 import Alea from "alea";
 import { polygonArea } from "d3";
+import { Names } from "@/model/society/names-generator";
 import { clipPoly, connectVertices, distanceSquared, isLand, isWater, P, ra, rn, TYPED_ARRAY_MAX } from "@/utils";
 import { requireName, requireOneOf } from "@/utils/validationUtils";
 import { Coastline, type CoastlineSettings } from "./coastline-generator";
-
-declare global {
-  var Features: FeatureModule;
-}
+import { Lakes } from "./lakes";
 
 export type FeatureType = "ocean" | "lake" | "island";
 
@@ -526,6 +524,4 @@ const ADJECTIVES = [
   "World"
 ];
 
-// biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const Features = new FeatureModule();
-window.Features = Features;

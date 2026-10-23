@@ -32,10 +32,4 @@ export const precreatedHeightmaps: Record<string, PrecreatedHeightmap> = {
   "world-from-pacific": { id: 22, name: t("World from Pacific") }
 };
 
-declare global {
-  // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
-  var precreatedHeightmaps: Record<string, PrecreatedHeightmap>;
-}
-
 // temp legacy compatibility
-window.precreatedHeightmaps = precreatedHeightmaps;

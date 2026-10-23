@@ -1,7 +1,8 @@
 import { mean, min, polygonLength, type Selection, select } from "d3";
 import { Controllers } from "@/controllers";
 import { FEATURE_SUBTYPE_LABELS } from "@/data/id-labels";
-import { type Feature, LAKE_SUBTYPES } from "@/model/physical/features-generator";
+import { type Feature, Features, LAKE_SUBTYPES } from "@/model/physical/features-generator";
+import { Names } from "@/model/society/names-generator";
 import { Styles } from "@/model/styles/styles";
 import { Tags } from "@/model/tags";
 import { Layers } from "@/renderers/layers";

@@ -1,8 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, expect, test, vi } from "vitest";
-import { setViewportSize } from "@/renderers/viewport/viewport";
-import "@/model/physical/relief-generator"; // installs the Relief global
 import { Styles } from "@/model/styles/styles";
+import { setViewportSize } from "@/renderers/viewport/viewport";
 import { drawRelief } from "./draw-relief-icons";
 
 vi.mock("@/renderers/layers", () => ({ Layers: { isOn: () => true, draw: vi.fn() } }));

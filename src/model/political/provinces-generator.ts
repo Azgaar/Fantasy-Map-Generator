@@ -1,17 +1,18 @@
 import Alea from "alea";
 import { max } from "d3";
 import type { Label } from "@/model/annotations/labels-generator";
+import { Pack } from "@/model/graph/pack-generator";
 import { Emblems } from "@/model/political/emblems-generator";
+import { Names } from "@/model/society/names-generator";
 import { Population } from "@/model/society/population-generator";
 import type { Emblem } from "@/types/emblems";
 import { gauss, generateSeed, getMixedColor, getPolesOfInaccessibility, P, rand, rw } from "@/utils";
 import { requireColor } from "@/utils/colorUtils";
+import { FlatQueue } from "@/utils/flatQueue";
 import { replaceWholeWord } from "@/utils/languageUtils";
 import { requireName } from "@/utils/validationUtils";
-
-declare global {
-  var Provinces: ProvinceModule;
-}
+import { Burgs } from "./burgs-generator";
+import { States } from "./states-generator";
 
 export interface Province {
   i: number;
@@ -163,7 +164,7 @@ class ProvinceModule {
     });
 
     // expand generated provinces
-    const queue = new FlatQueue();
+    const queue = new FlatQueue<{ e: number; province: number; state: number; p: number }>();
     const cost: number[] = [];
 
     provinces.forEach(p => {
@@ -243,6 +244,7 @@ class ProvinceModule {
         // expand province
         const cost: number[] = [];
         cost[center] = 1;
+        const queue = new FlatQueue<{ e: number; p: number }>();
         queue.push({ e: center, p: 0 }, 0);
         while (queue.length) {
           const { e, p } = queue.pop();
@@ -540,6 +542,4 @@ class ProvinceModule {
   }
 }
 
-// biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const Provinces = new ProvinceModule();
-window.Provinces = Provinces;

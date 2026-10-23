@@ -1248,10 +1248,4 @@ export class GoodsModule {
   });
 }
 
-declare global {
-  var Goods: GoodsModule;
-}
-
-// biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const Goods = new GoodsModule();
-window.Goods = Goods;

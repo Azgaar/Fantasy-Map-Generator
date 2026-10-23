@@ -1,10 +1,6 @@
 // Where the map sits on the globe: its share of the world and the resulting lat/lon box
 import { gauss, P, rn } from "@/utils";
 
-declare global {
-  var Coordinates: CoordinatesModule;
-}
-
 type SizeAndPosition = [size: number, latitude: number, longitude: number];
 
 // [size in % of the world, North-South shift in %, West-East shift in %] per real-world template
@@ -100,6 +96,4 @@ class CoordinatesModule {
   }
 }
 
-// biome-ignore lint/suspicious/noRedeclare: legacy global and module export
 export const Coordinates = new CoordinatesModule();
-window.Coordinates = Coordinates;

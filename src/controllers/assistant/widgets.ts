@@ -3,6 +3,7 @@ import { isLinkable, MAP_COMMANDS } from "@/app/map-commands";
 import { ENTITY_TYPES, type EntityRef, isEntityType, MapEntities, RECORD_TYPES } from "@/model/map-entities";
 import type { State } from "@/model/political/states-generator";
 import { goodBadge } from "@/renderers/draw-goods";
+import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import type { ChartRow, Widget } from "@/services/assistant/chats";
 import type { Region } from "@/services/io/export";
 import type { Emblem } from "@/types/emblems";
@@ -211,7 +212,7 @@ function cardHtml(widget: Of<"card">, live: boolean): string {
 
 /** An emblem shown by reference, rendered on first use */
 function emblemSvg(id: string, coa: Emblem | undefined, className = ""): string {
-  if (coa) void window.EmblemRenderer?.trigger(id, coa);
+  if (coa) void EmblemRenderer?.trigger(id, coa);
   return `<svg${className && ` class="${className}"`} viewBox="0 0 200 200" aria-hidden="true"><use href="#${id}"></use></svg>`;
 }
 

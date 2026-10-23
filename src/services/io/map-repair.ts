@@ -1,7 +1,10 @@
 // Fixes the broken links a loaded map can carry, then logs what was fixed and what is still broken
 
+import { Transports } from "@/model/economy/transports-generator";
+import { Pack } from "@/model/graph/pack-generator";
 import { type IntegrityViolation, MapIntegrity } from "@/model/map-integrity";
 import type { Burg } from "@/model/political/burgs-generator";
+import { Burgs } from "@/model/political/burgs-generator";
 import { last } from "@/utils";
 
 class MapRepairService {

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { Grid } from "@/model/graph/grid-generator";
 import defaults from "@/model/styles/default-styles.json";
 import { drawOcean } from "./draw-ocean";
 
@@ -33,7 +34,7 @@ beforeEach(() => {
     features: [{ type: "ocean" }]
   });
   const clamp = (value: number, size: number) => Math.max(0, Math.min(size - 1, Math.floor(value / 8)));
-  vi.stubGlobal("Grid", { findCell: (x: number, y: number) => clamp(y, cellsY) * cellsX + clamp(x, cellsX) });
+  Object.assign(Grid, { findCell: (x: number, y: number) => clamp(y, cellsY) * cellsX + clamp(x, cellsX) });
   vi.stubGlobal("pack", {
     features: [
       { i: 0, type: "ocean", land: false },

@@ -7,6 +7,9 @@ import "@/model/physical/features-generator"; // migrations call the Features mo
 import "@/model/political/burgs-generator"; // the burg sets that tell style icon references from text
 import "@/model/economy/goods-generator"; // the goods icon namespace the 1.154 step migrates into
 import "@/model/physical/relief-generator"; // the relief set namespace the 1.154 step migrates into
+import { Pack } from "@/model/graph/pack-generator";
+import { Options } from "@/model/options/options-model";
+import { Names } from "@/model/society/names-generator";
 import { Styles } from "@/model/styles/styles";
 import * as versioning from "@/services/versioning";
 import { VERSION } from "@/services/versioning";
@@ -265,7 +268,7 @@ describe("v1.146 rendering groups", () => {
         { i: 4, type: "lake", group: "freshwater", firstCell: 0 } // the old group is the classification
       ]
     } as unknown as typeof globalThis.pack;
-    globalThis.Names = { getCulture: () => "Named" } as unknown as typeof Names;
+    Object.assign(Names, { getCulture: () => "Named" });
 
     placement = /* html */ `<svg id="map"><g id="viewbox">
       <g id="coastline">
@@ -478,7 +481,7 @@ describe("v1.153.0 feature subtype and lake group styles", () => {
       ]
     } as unknown as typeof globalThis.pack;
     globalThis.grid = { cells: { i: new Array(1000) } } as unknown as typeof grid;
-    globalThis.Names = { getCulture: () => "Named" } as unknown as typeof Names;
+    Object.assign(Names, { getCulture: () => "Named" });
 
     lakesSvg = /* html */ `<svg id="map"><g id="viewbox">
       <g id="lakes">
@@ -686,7 +689,7 @@ describe("v1.152.0 notes moved onto entities", () => {
     element.getPointAtLength = (length: number) => ({ x: length, y: 0 });
     pack.cells = { f: new Uint16Array([1, 1]) } as typeof pack.cells;
     vi.stubGlobal("grid", { spacing: 10 });
-    vi.stubGlobal("Pack", { findCell: (x: number) => (x < 5 ? 0 : 1) });
+    Object.assign(Pack, { findCell: (x: number) => (x < 5 ? 0 : 1) });
     try {
       await migrate(
         [

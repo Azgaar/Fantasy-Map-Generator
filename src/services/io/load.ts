@@ -1,32 +1,46 @@
 import { fitMapToScreen } from "@/app/canvas";
 import { pickMapFile } from "@/app/chrome/io-panes";
 import { syncOptionInputs } from "@/app/chrome/tabs/options-tab";
-import { registerMap } from "@/app/lifecycle";
+import { regenerateMap, registerMap } from "@/app/lifecycle";
 import { applyPerformanceSettings } from "@/app/performance";
 import { Controllers } from "@/controllers";
+import { Goods } from "@/model/economy/goods-generator";
+import { Markets } from "@/model/economy/markets-generator";
+import { Routes } from "@/model/economy/routes-generator";
 import { GraphOverride } from "@/model/graph/graph-override";
+import { Grid } from "@/model/graph/grid-generator";
+import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
+import { mapHistory } from "@/model/map-history";
+import { Options } from "@/model/options/options-model";
+import { Features } from "@/model/physical/features-generator";
+import { HeightmapGenerator } from "@/model/physical/heightmap-generator";
+import { Names } from "@/model/society/names-generator";
+import { Journeys } from "@/model/story/journeys/journeys-generator";
 import { Styles } from "@/model/styles/styles";
 import { applyVignetteOptions } from "@/renderers/draw-vignette";
 import { zonesFilter } from "@/renderers/draw-zones";
 import { Hatches } from "@/renderers/hatches";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
 import { Layers } from "@/renderers/layers";
+import { TradeAnimation } from "@/renderers/trade-animation";
 import { undraw } from "@/renderers/undraw";
 import { Services } from "@/services";
-import { declareFont } from "@/services/fonts";
+import { declareFont, fonts } from "@/services/fonts";
 import { MapRepair } from "@/services/io/map-repair";
 import { logStats } from "@/services/logging";
+import { focusOn, generateMapOnLoad } from "@/services/url-params";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
 import { closeDialogs, confirmationDialog } from "@/ui/dialog/dialog-helpers";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
-import { resetZoom } from "@/ui/map/zoom";
+import { invokeActiveZooming, resetZoom } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { ensureEl, link, parseError, rn, safeParseJSON } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { LocalDB } from "@/utils/localDB";
 
 async function quickLoad(): Promise<void> {
-  const blob = await ldb.get("lastMap");
+  const blob = await LocalDB.get("lastMap");
   if (blob) loadMapPrompt(blob);
   else {
     tip(t("No map stored. Save map to browser storage first"), true, "error", 2000);
@@ -114,7 +128,7 @@ async function loadMapFromURL(maplink: string, random?: boolean): Promise<void> 
 function showUploadErrorMessage(error: string, maplink: string, random?: boolean): void {
   ERROR && console.error(error);
   const source = link(maplink, t("link provided"));
-  alertMessage.innerHTML = random
+  ensureEl("alertMessage").innerHTML = random
     ? sentences(
         t("Cannot load map from the {{- source}}", { source }),
         t("A new random map is generated"),
@@ -234,7 +248,7 @@ function showUploadMessage(type: string, mapData: string[] | null, mapVersion: s
     return;
   }
 
-  alertMessage.innerHTML = message;
+  ensureEl("alertMessage").innerHTML = message;
   $("#alert").dialog({
     title,
     buttons: {
@@ -425,7 +439,8 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     ERROR && console.error(error);
     clearMainTip();
 
-    alertMessage.innerHTML = /* html */ `${t("An error occurred while loading the map. Select a different file to load, generate a new random map or cancel the loading.")}<br>${t("Map version: {{map}}. Generator version: {{generator}}.", { map: mapVersion, generator: VERSION })}
+    ensureEl("alertMessage").innerHTML =
+      /* html */ `${t("An error occurred while loading the map. Select a different file to load, generate a new random map or cancel the loading.")}<br>${t("Map version: {{map}}. Generator version: {{generator}}.", { map: mapVersion, generator: VERSION })}
       <p id="errorBox">${parseError(error as Error)}</p>`;
 
     $("#alert").dialog({

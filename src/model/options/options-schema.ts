@@ -1,10 +1,10 @@
 // All app configuration options, options.map saved to `.map` file as settings; docs/architecture/configuration.md
 import { z } from "zod";
+import { CULTURE_SETS } from "@/data/culture-sets";
 import { MAX_DENSITY, MIN_DENSITY } from "@/data/graph-density";
 import { LANGUAGE_CODES } from "@/data/languages";
 import { MAX_JITTER, SAMPLINGS } from "@/model/graph/lattice";
 import { Icons } from "@/model/icons";
-import { CULTURE_SETS } from "@/model/society/cultures-generator";
 import type { LayerId } from "@/renderers/layers";
 import { count, degrees, hexColor, ids, nonNegative, percent, positive, ratio } from "@/utils/schemaUtils";
 
@@ -23,7 +23,7 @@ export const labelGroup = z.strictObject({
   type: z.enum(LABEL_TYPES),
   active: z.boolean().optional(),
   layerDependency: z
-    .custom<LayerId>(value => typeof value === "string" && (globalThis.Layers?.has(value) ?? true))
+    .custom<LayerId>(value => typeof value === "string") // an id no layer has is no dependency
     .nullable()
     .optional(),
   zoom: z.strictObject({ min: nonNegative.nullable(), max: nonNegative.nullable() }),

@@ -2,18 +2,14 @@ import type { StylesData } from "@/types/styles";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
 
-declare global {
-  var fonts: FontDefinition[];
-}
-
-type FontDefinition = {
+export type FontDefinition = {
   family: string;
   src?: string;
   unicodeRange?: string;
   variant?: string;
 };
 
-window.fonts = [
+export const fonts: FontDefinition[] = [
   { family: "Arial" },
   { family: "Brush Script MT" },
   { family: "Century Gothic" },
@@ -290,12 +286,8 @@ export function declareFont(font: FontDefinition): void {
   document.fonts.add(fontFace);
 }
 
-declareDefaultFonts(); // execute once on load
-
-function declareDefaultFonts() {
-  fonts.forEach(font => {
-    declareFont(font);
-  });
+export function declareDefaultFonts(): void {
+  for (const font of fonts) declareFont(font);
 }
 
 async function fetchGoogleFont(family: string) {

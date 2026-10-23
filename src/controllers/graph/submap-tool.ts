@@ -3,12 +3,15 @@ import { cellsDensityColor, changeCellsDensity } from "@/app/chrome/tabs/options
 import { registerMap } from "@/app/lifecycle";
 import { POINTS_BY_DENSITY } from "@/data/graph-density";
 import { MapRestoration } from "@/model/map-restoration";
+import { Options } from "@/model/options/options-model";
+import { Burgs } from "@/model/political/burgs-generator";
 import { Resample } from "@/model/resample";
 import { Layers } from "@/renderers/layers";
 import { undraw } from "@/renderers/undraw";
 import { viewport } from "@/renderers/viewport/viewport";
 import { logStats } from "@/services/logging";
 import { destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { resetZoom } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { ensureEl, getLatitude, getLongitude, minmax, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
@@ -152,7 +155,7 @@ function recalculateMapSize(x0: number, y0: number, scale: number): void {
 }
 
 function rescaleBurgStyles(scale: number): void {
-  window.Burgs.ensureBurgGroupStyles(); // a group without a store entry would silently skip the rescale
+  Burgs.ensureBurgGroupStyles(); // a group without a store entry would silently skip the rescale
   for (const group of ensureEl("burgIcons").querySelectorAll<SVGGElement>(":scope > g")) {
     const iconStyle = styles.burgIcons.groups[group.id]?.groups.icons;
     if (iconStyle) iconStyle.options.size = rn(minmax(iconStyle.options.size * scale, 0.2, 10), 2);

@@ -1,3 +1,6 @@
+import { Goods } from "@/model/economy/goods-generator";
+import { Production } from "@/model/economy/production-generator";
+import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
 import { Layers } from "@/renderers/layers";
 import {
