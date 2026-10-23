@@ -1,4 +1,5 @@
 import type { PackedGraph } from "@/types/PackedGraph";
+import { findEl } from "@/utils";
 
 export interface PaintOverlayValue {
   id: number;
@@ -22,7 +23,7 @@ let overlay: SVGGElement | null = null;
 export function openPaintOverlay(): void {
   removePaintOverlay();
 
-  const debug = document.getElementById("debug");
+  const debug = findEl("debug");
   if (!debug) return;
 
   overlay = document.createElementNS("http://www.w3.org/2000/svg", "g");

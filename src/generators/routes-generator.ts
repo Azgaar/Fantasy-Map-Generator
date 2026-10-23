@@ -8,6 +8,7 @@ import { meander } from "../utils/pathUtils";
 import type { Burg } from "./burgs-generator";
 import type { Label } from "./labels-generator";
 import type { River } from "./river-generator";
+import { Tags } from "./tags";
 import type { Point } from "./voronoi";
 
 const ROUTES_SHARP_ANGLE = 135;
@@ -185,6 +186,7 @@ export interface Route {
   lock?: boolean;
   label?: Label;
   note?: string;
+  tags?: string[];
 }
 
 type RiverEdge = { riverId: number; fromIndex: number };
@@ -703,21 +705,21 @@ class RoutesModule {
       if (merged) continue;
       const points = this.getPoints("roads", cells!, pointsArray);
       const name = this.generateName({ group: "roads", points });
-      routes.push({ i: routes.length, group: "roads", name, feature, points });
+      routes.push({ i: routes.length, group: "roads", name, feature, points, tags: [] });
     }
 
     for (const { feature, cells, merged } of this.mergeRoutes(trails)) {
       if (merged) continue;
       const points = this.getPoints("trails", cells!, pointsArray);
       const name = this.generateName({ group: "trails", points });
-      routes.push({ i: routes.length, group: "trails", name, feature, points });
+      routes.push({ i: routes.length, group: "trails", name, feature, points, tags: [] });
     }
 
     for (const { feature, cells, merged } of this.mergeRoutes(seaRoutes)) {
       if (merged) continue;
       const points = this.getPoints("searoutes", cells!, pointsArray);
       const name = this.generateName({ group: "searoutes", points });
-      routes.push({ i: routes.length, group: "searoutes", name, feature, points });
+      routes.push({ i: routes.length, group: "searoutes", name, feature, points, tags: [] });
     }
 
     return routes;
@@ -799,7 +801,7 @@ class RoutesModule {
     const points = this.getPoints("trails", pathCells, pointsArray);
     const feature = pack.cells.f[cellId];
     const routeId = this.getNextId();
-    const newRoute = { i: routeId, group: "trails", feature, points };
+    const newRoute = { i: routeId, group: "trails", feature, points, tags: [] };
     pack.routes.push(newRoute as Route);
 
     const addConnection = (from: number, to: number, routeId: number) => {
@@ -877,7 +879,7 @@ class RoutesModule {
 
     const points = isWater ? this.getWaterPoints(cells) : this.getPoints(group, cells, this.preparePointsArray());
     const i = this.getNextId();
-    const route: Route = { i, group, feature: pack.cells.f[from.cell], points };
+    const route: Route = { i, group, feature: pack.cells.f[from.cell], points, tags: [] };
     route.name = this.generateName(route);
     pack.routes.push(route);
     const links = pack.cells.routes;
@@ -911,7 +913,7 @@ class RoutesModule {
       return [rn(x, 2), rn(y, 2), Pack.requireCell(x, y)];
     });
     const i = this.getNextId();
-    pack.routes.push({ i, group, feature: pack.cells.f[routePoints[0][2]], points: routePoints } as Route);
+    pack.routes.push({ i, group, feature: pack.cells.f[routePoints[0][2]], points: routePoints, tags: [] } as Route);
     this.link(routePoints, i);
     return i;
   }
@@ -924,7 +926,14 @@ class RoutesModule {
     const tail = route.points.slice(pointIndex);
     route.points = route.points.slice(0, pointIndex + 1);
     const i = this.getNextId();
-    pack.routes.push({ i, group: route.group, feature: route.feature, name: route.name, points: tail } as Route);
+    pack.routes.push({
+      i,
+      group: route.group,
+      feature: route.feature,
+      name: route.name,
+      points: tail,
+      tags: [...(route.tags ?? [])]
+    } as Route);
     this.link(tail, i);
     return i;
   }
@@ -938,6 +947,7 @@ class RoutesModule {
     const points = mergeRoutePoints(route.points, other.points);
     if (!points) throw new Error(`Routes ${routeId} and ${otherId} share no endpoint`);
     route.points = points;
+    Tags.add(route, other.tags ?? []);
     this.link(points, route.i);
     this.remove(otherId);
   }

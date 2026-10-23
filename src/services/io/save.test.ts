@@ -26,7 +26,7 @@ describe("save feedback", () => {
     const filename = "<img src=x onerror=alert(1)>&世界.map";
     notifySaveOutcome({ type: "saved", filename });
     const tooltip = document.getElementById("tooltip")!;
-    expect(tooltip.textContent).toBe(`Map is saved to "${filename}"`);
+    expect(tooltip.textContent).toBe(`Map is saved to “${filename}”`);
     expect(tooltip.querySelector("img")).toBeNull();
   });
 
@@ -60,6 +60,24 @@ describe("save feedback", () => {
 });
 
 describe("Save.toMachine", () => {
+  it("refuses a view-only map before opening the picker", async () => {
+    vi.stubGlobal("options", { map: { viewOnly: true } });
+    const picker = vi.fn();
+    vi.stubGlobal("showSaveFilePicker", picker);
+    await Save.toMachine();
+    expect(picker).not.toHaveBeenCalled();
+    expect(document.getElementById("tooltip")!.textContent).toContain("view-only");
+  });
+
+  it("suggests a view-only copy its own filename", async () => {
+    vi.stubGlobal("options", { map: { lore: { name: "Ovis" } } });
+    vi.stubGlobal("$", () => ({ not: () => ({ each: vi.fn() }) }));
+    const picker = vi.fn().mockRejectedValue(Object.assign(new Error("cancelled"), { name: "AbortError" }));
+    vi.stubGlobal("showSaveFilePicker", picker);
+    await Save.toMachine(false, true);
+    expect(picker.mock.calls[0][0].suggestedName).toMatch(/ view\.map$/);
+  });
+
   it("rejects saving in edit mode before opening the picker", async () => {
     vi.stubGlobal("customization", 1);
     const picker = vi.fn();

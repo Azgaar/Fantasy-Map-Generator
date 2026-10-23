@@ -4,15 +4,7 @@ import { waitForMap } from "./wait-for-map";
 // The legend can hold one box per source at a time: turning on a second box must not drop the first,
 // and each box is toggled, positioned and hidden on its own.
 test.describe("legend boxes", () => {
-  test.beforeEach(async ({ context, page }) => {
-    await context.clearCookies();
-
-    await page.goto("/");
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-
+  test.beforeEach(async ({ page }) => {
     await page.goto("/?seed=test-seed&width=1280&height=720");
     await waitForMap(page);
     await page.waitForTimeout(500);

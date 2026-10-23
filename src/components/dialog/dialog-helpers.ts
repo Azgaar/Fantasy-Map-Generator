@@ -2,15 +2,16 @@
 
 import { dialogState } from "@/components/dialog/state";
 import { ensureEl, findEl, minmax } from "@/utils";
+import { t } from "@/utils/i18n";
 
-/** The note button every entity dialog puts in its toolbar. `subject` completes "notes (legend) for ..." */
-export function noteButton(id: string, subject: string): string {
-  return `<button id="${id}" data-tip="Edit free text notes (legend) for ${subject}" class="icon-book"></button>`;
+/** The note button every entity dialog puts in its toolbar, with its translated tooltip */
+export function noteButton(id: string, tip: string): string {
+  return `<button id="${id}" data-tip="${tip}" class="icon-book"></button>`;
 }
 
 /** The same button as a table row action, in the `note` column every editor table gives it */
-export function noteIcon(subject: string): string {
-  return `<span data-col="note" data-tip="Edit free text notes (legend) for ${subject}" class="icon-book pointer"></span>`;
+export function noteIcon(tip: string): string {
+  return `<span data-col="note" data-tip="${tip}" class="icon-book pointer"></span>`;
 }
 
 /** Close all open dialogs except the stated one */
@@ -33,24 +34,76 @@ interface ConfirmationOptions {
   confirm?: string;
   onCancel?: () => void;
   onConfirm?: () => void;
+  event?: MouseEvent | Event;
+  width?: string;
+  modal?: boolean;
 }
 
-/** Ask the user to confirm an action that cannot be reverted */
+let isShiftPressed = false;
+let lastClickEvent: MouseEvent | null = null;
+let lastClickTime = 0;
+
+if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+  // capture: the hotkeys stop keyup propagation on document, a missed release would skip every confirmation
+  window.addEventListener(
+    "keydown",
+    (e: KeyboardEvent) => {
+      if (e.key === "Shift") isShiftPressed = true;
+    },
+    true
+  );
+  window.addEventListener(
+    "keyup",
+    (e: KeyboardEvent) => {
+      if (e.key === "Shift") isShiftPressed = false;
+    },
+    true
+  );
+  window.addEventListener("blur", () => {
+    isShiftPressed = false;
+  });
+  window.addEventListener(
+    "click",
+    (e: MouseEvent) => {
+      lastClickEvent = e;
+      lastClickTime = Date.now();
+    },
+    true
+  );
+}
+
+/** Ask the user to confirm an action that cannot be reverted. Every confirmation in the app goes through it: a Shift-click skips it */
 export function confirmationDialog(options: ConfirmationOptions): void {
   const {
-    title = "Confirm action",
-    message = "Are you sure you want to continue? <br>The action cannot be reverted",
-    cancel = "Cancel",
-    confirm = "Continue",
+    title = t("Confirm action"),
+    message = `${t("Are you sure you want to continue?")}<br>${t("This action cannot be reverted")}`,
+    cancel = t("Cancel"),
+    confirm = t("Continue"),
     onCancel,
-    onConfirm
+    onConfirm,
+    event,
+    width = "26em",
+    modal = false
   } = options;
+
+  const isShift =
+    Boolean((event as MouseEvent)?.shiftKey) ||
+    isShiftPressed ||
+    (typeof window !== "undefined" && window.event instanceof MouseEvent && window.event.shiftKey) ||
+    Boolean(lastClickEvent?.shiftKey && Date.now() - lastClickTime < 300);
+
+  if (isShift) {
+    onConfirm?.();
+    return;
+  }
 
   ensureEl("alertMessage").innerHTML = message;
 
   $("#alert").dialog({
     resizable: false,
     title,
+    width, // the #alert dialog is shared: set its size and modality each time
+    modal,
     buttons: {
       [confirm]: function (this: HTMLElement) {
         onConfirm?.();
@@ -60,6 +113,28 @@ export function confirmationDialog(options: ConfirmationOptions): void {
         onCancel?.();
         $(this).dialog("close");
       }
+    },
+    open: function (this: HTMLElement) {
+      const widget = $(this).dialog?.("widget");
+      const buttons = widget?.find?.(".ui-dialog-buttonpane button");
+      buttons?.first?.()?.attr?.("data-tip", t("Hold Shift when clicking the button to skip the confirmation"));
+      buttons?.first?.()?.focus?.();
+
+      widget?.off?.("keydown.confirm")?.on?.("keydown.confirm", (e: any) => {
+        if (e.key === "Enter") {
+          const active = document.activeElement;
+          const cancelBtn = buttons?.last?.()?.[0];
+          if (active === cancelBtn) return;
+
+          e.preventDefault();
+          e.stopPropagation();
+          onConfirm?.();
+          $(this).dialog("close");
+        }
+      });
+    },
+    close: function (this: HTMLElement) {
+      $(this).dialog?.("widget")?.off?.("keydown.confirm");
     }
   });
 }
@@ -71,7 +146,7 @@ interface AlertOptions {
 }
 
 /** Tell the user something they only need to acknowledge */
-export function alertDialog({ title = "Warning", message, width = "26em" }: AlertOptions): void {
+export function alertDialog({ title = t("Warning"), message, width = "26em" }: AlertOptions): void {
   ensureEl("alertMessage").innerHTML = message;
 
   $("#alert").dialog({
@@ -84,7 +159,7 @@ export function alertDialog({ title = "Warning", message, width = "26em" }: Aler
     close: () => {},
     position: { my: "center", at: "center", of: "svg" },
     buttons: {
-      OK: function (this: HTMLElement) {
+      [t("OK")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
@@ -174,8 +249,8 @@ function addResetButton(el: HTMLElement): void {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "ui-dialog-titlebar-reset icon-ccw";
-  button.dataset.tip = "Reset the dialog: restore its default position, columns and sorting";
-  button.setAttribute("aria-label", "Reset the dialog");
+  button.dataset.tip = t("Reset the dialog: restore its default position, columns and sorting");
+  button.setAttribute("aria-label", t("Reset the dialog"));
   button.addEventListener("click", () => dialogState.reset(el.id));
   titlebar.insertBefore(button, titlebar.querySelector(".ui-dialog-titlebar-collapse"));
 
@@ -191,8 +266,18 @@ function addResetButton(el: HTMLElement): void {
   });
 }
 
+// jQuery UI writes its titlebar buttons in English
+function translateTitlebar(event: { target: EventTarget | null }): void {
+  const titlebar = (event.target as HTMLElement).parentElement?.querySelector(".ui-dialog-titlebar");
+  titlebar?.querySelector(".ui-dialog-titlebar-collapse")?.setAttribute("data-tip", t("Minimize / maximize"));
+  const close = titlebar?.querySelector(".ui-dialog-titlebar-close");
+  close?.setAttribute("data-tip", t("Close"));
+  close?.setAttribute("title", t("Close"));
+}
+
 /** Restore each dialog to where the user last dragged it, and remember new drags. Called once by boot() */
 export function initDialogPositionPersistence(): void {
+  $(document).on("dialogcreate", translateTitlebar);
   $(document).on("dialogcreate", ".dialog", function (this: HTMLElement) {
     if (!POSITION_EXCLUDED_IDS.has(this.id)) addResetButton(this);
   });

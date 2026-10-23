@@ -94,6 +94,7 @@ export interface Marker {
   pinned?: boolean;
   name: string;
   note?: string;
+  tags?: string[];
 }
 
 type MarkerConfig = {
@@ -187,7 +188,7 @@ class MarkersModule {
     }
 
     const i = last(pack.markers)?.i + 1 || 0;
-    const added = { ...marker, i, name: marker.name || getDefaultMarkerName(marker.type) };
+    const added = { ...marker, i, name: marker.name || getDefaultMarkerName(marker.type), tags: marker.tags ?? [] };
     pack.markers.push(added);
     this.occupied[marker.cell] = true;
     return added;
@@ -695,7 +696,7 @@ class MarkersModule {
   private getQuantity(array: any[], min: number, each: number, multiplier: number) {
     if (!array.length || array.length < min / multiplier) return 0;
     const requestQty = Math.ceil((array.length / each) * multiplier);
-    return array.length < requestQty ? array.length : requestQty;
+    return Math.min(array.length, requestQty);
   }
 
   private extractAnyElement(array: any[]) {
@@ -707,7 +708,7 @@ class MarkersModule {
     if (marker.cell === undefined) return;
     const i = last(pack.markers)?.i + 1 || 0;
     const [x, y] = this.getMarkerCoordinates(marker.cell);
-    marker = { ...base, x, y, ...marker, i };
+    marker = { ...base, x, y, ...marker, i, tags: marker.tags ?? [] };
     marker.name ||= getDefaultMarkerName(marker.type);
     pack.markers.push(marker);
     this.occupied[marker.cell] = true;

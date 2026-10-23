@@ -94,8 +94,8 @@ test.describe("Map loading", () => {
       sessionStorage.clear();
     });
 
-    // Wait for the hidden file input to be available
-    await page.waitForSelector("#mapToLoad", { state: "attached" });
+    // the boot map must finish first: its generation logs into the error checks of a test that uploads over it
+    await waitForMap(page);
   });
 
   test("should load a saved map file", async ({ page }) => {
@@ -114,10 +114,11 @@ test.describe("Map loading", () => {
     // Get the file input element and upload the map file
     const fileInput = page.locator("#mapToLoad");
     const mapFilePath = path.join(__dirname, "../fixtures/1.112.1.map");
+    const maps = await countMaps(page);
     await fileInput.setInputFiles(mapFilePath);
 
     // Wait for map to be fully loaded
-    await waitForMap(page);
+    await waitForNextMap(page, maps);
 
     // Additional wait for rendering to settle
     await page.waitForTimeout(500);
@@ -166,9 +167,10 @@ test.describe("Map loading", () => {
 
     const fileInput = page.locator("#mapToLoad");
     const mapFilePath = path.join(__dirname, "../fixtures/1.112.1.map");
+    const maps = await countMaps(page);
     await fileInput.setInputFiles(mapFilePath);
 
-    await waitForMap(page);
+    await waitForNextMap(page, maps);
     await page.waitForTimeout(500);
 
     // Check essential SVG layers exist
@@ -216,9 +218,10 @@ test.describe("Map loading", () => {
 
     const fileInput = page.locator("#mapToLoad");
     const mapFilePath = path.join(__dirname, "../fixtures/1.112.1.map");
+    const maps = await countMaps(page);
     await fileInput.setInputFiles(mapFilePath);
 
-    await waitForMap(page);
+    await waitForNextMap(page, maps);
     await page.waitForTimeout(500);
 
     // Verify states have proper structure
@@ -570,9 +573,10 @@ test.describe("Map loading", () => {
 
     const fileInput = page.locator("#mapToLoad");
     const mapFilePath = path.join(__dirname, "../fixtures/1.112.1.map");
+    const maps = await countMaps(page);
     await fileInput.setInputFiles(mapFilePath);
 
-    await waitForMap(page);
+    await waitForNextMap(page, maps);
     await page.waitForTimeout(500);
 
     // Verify burgs have proper structure

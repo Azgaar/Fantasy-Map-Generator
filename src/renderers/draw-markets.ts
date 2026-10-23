@@ -3,6 +3,7 @@ import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { boundsIntersect, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import type { PackedGraph } from "@/types/PackedGraph";
+import { findEl } from "@/utils";
 import { rn } from "@/utils/numberUtils";
 import { getIsolines } from "@/utils/pathUtils";
 import { escapeHtml } from "@/utils/stringUtils";
@@ -50,7 +51,7 @@ export function removeMarkets(): void {
   sourcePack = null;
   sourceMarkets = null;
   territories.clear();
-  document.getElementById("markets")?.replaceChildren();
+  findEl("markets")?.replaceChildren();
 }
 
 function reconcileMarkets({ root, bounds }: ViewportRenderContext): void {

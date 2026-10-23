@@ -4,15 +4,7 @@ import { waitForMap } from "./wait-for-map";
 // Emblems and ice both clear their rendered content when hidden and rebuild it from world state when shown.
 // Emblems retain their declared category groups, but the viewport-rendered <use> elements are rematerialized.
 test.describe("layer content on hide and show", () => {
-  test.beforeEach(async ({ context, page }) => {
-    await context.clearCookies();
-
-    await page.goto("/");
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-
+  test.beforeEach(async ({ page }) => {
     await page.goto("/?seed=test-seed&width=1280&height=720");
     await waitForMap(page);
     await page.waitForTimeout(500);

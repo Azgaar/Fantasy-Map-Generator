@@ -23,7 +23,36 @@ it("uses the requested culture set when regenerating an existing map", () => {
   expect(() => Cultures.regenerate()).toThrow("stop before placement");
   expect(options.map.cultures.set).toBe("highFantasy");
   expect(Cultures.getDefault).toHaveBeenCalledWith(16);
-  expect(names.includes("Quenian (Elfish)")).toBe(true);
+  expect(names.includes("Quenian")).toBe(true);
+});
+
+it("sets ancestry on highFantasy and darkFantasy cultures and allows setting ancestry", () => {
+  options = Options.getDefaultOptions();
+  const cells = { i: Array.from({ length: 500 }, (_, i) => i), s: Array(500).fill(1), h: [], t: [] };
+  vi.stubGlobal("pack", {
+    cells,
+    cultures: [
+      { i: 0, name: "Wildlands", code: "Wi" },
+      { i: 1, name: "Quenian", ancestry: "Elfish", code: "Qu" }
+    ]
+  });
+  vi.stubGlobal("grid", { cells: { temp: [] } });
+
+  options.map.cultures.set = "highFantasy";
+  const highFantasy = Cultures.getDefault();
+  const quenian = highFantasy.find(c => c.name === "Quenian");
+  expect(quenian?.ancestry).toBe("Elfish");
+
+  options.map.cultures.set = "darkFantasy";
+  const darkFantasy = Cultures.getDefault();
+  const eldar = darkFantasy.find(c => c.name === "Eldar");
+  expect(eldar?.ancestry).toBe("Elfish");
+
+  Cultures.setAncestry(1, "High Elf");
+  expect(pack.cultures[1].ancestry).toBe("High Elf");
+
+  Cultures.setAncestry(1, "   ");
+  expect(pack.cultures[1].ancestry).toBeUndefined();
 });
 
 it("recomputes a renamed culture's code without clashing with other cultures", () => {

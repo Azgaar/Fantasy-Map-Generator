@@ -15,14 +15,7 @@ declare const Layers: {
 declare const Services: { Save: { toMachine: () => Promise<void> } };
 
 test.describe("layers round-trip", () => {
-  test("saved layer state and custom order survive a save and load", async ({ page, context }) => {
-    await context.clearCookies();
-    await page.goto("/");
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-
+  test("saved layer state and custom order survive a save and load", async ({ page }) => {
     await page.goto("/?seed=layers-round-trip&width=1280&height=720");
     await waitForMap(page);
 

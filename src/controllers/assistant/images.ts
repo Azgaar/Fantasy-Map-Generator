@@ -1,13 +1,15 @@
 // A picture the user attaches to a question, as the Assistant sends it: a JPEG no larger than vision models read
 // at full detail
 
+import { t } from "@/utils/i18n";
+
 const MAX_SIDE = 1568;
 const MAX_BYTES = 20_000_000;
 
 async function read(file: Blob): Promise<string> {
-  if (file.size > MAX_BYTES) throw new Error("The image is over 20 MB");
+  if (file.size > MAX_BYTES) throw new Error(t("The image is over {{size}}", { size: "20 MB" }));
   const bitmap = await createImageBitmap(file).catch(() => {
-    throw new Error("The pasted file cannot be read as an image");
+    throw new Error(t("The pasted file cannot be read as an image"));
   });
   const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");

@@ -4,15 +4,21 @@ import { Layers } from "@/components/layers";
 import { stopMapPlacement, toggleMapPlacement } from "@/components/map-placement";
 import { Controllers } from "@/controllers";
 import { createLabelArc } from "@/renderers/labels/label-arc";
+import { findEl } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 
 function toggle(): void {
-  if (document.getElementById("addLabel")?.classList.contains("pressed")) {
+  if (findEl("addLabel")?.classList.contains("pressed")) {
     stopMapPlacement();
     return;
   }
 
   closeDialogs(".stable");
-  toggleMapPlacement("addLabel", addOnClick, "Click on map to place label. Hold Shift to add multiple");
+  toggleMapPlacement(
+    "addLabel",
+    addOnClick,
+    sentences(t("Click on map to place label"), t("Hold Shift to add multiple"))
+  );
   Layers.show("labels");
 }
 

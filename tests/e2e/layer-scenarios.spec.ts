@@ -97,15 +97,6 @@ async function regenerate(page: Page, seed?: string): Promise<void> {
 }
 
 test.describe("layer scenarios", () => {
-  test.beforeEach(async ({ page, context }) => {
-    await context.clearCookies();
-    await page.goto("/");
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-  });
-
   for (const preset of PRESETS) {
     test(`the ${preset} preset applies without errors and matches the dom`, async ({ page }) => {
       const errors = watchErrors(page);

@@ -14,7 +14,7 @@ beforeEach(() => {
   localStorage.clear();
   globalThis.options = Options.getDefaultOptions();
   globalThis.options.map.seed = "1";
-  globalThis.options.map.graph = { width: 100, height: 100, points: 100 };
+  globalThis.options.map.graph = { width: 100, height: 100, points: 100, sampling: "square", jitter: 0.9 };
   globalThis.options.map.coastline = Coastline.getDefaultSettings();
   globalThis.Options = Options;
   globalThis.pack = {

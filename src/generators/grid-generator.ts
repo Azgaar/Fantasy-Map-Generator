@@ -1,42 +1,50 @@
-// The initial graph: a jittered square grid of points
+// The initial graph: points on a sampling lattice and their Voronoi diagram
 import Alea from "alea";
 import { min } from "d3";
+import type { MapData } from "@/components/options-schema";
 import type { GridCells, GridGraph } from "@/types/GridGraph";
 import type { Point } from "@/types/global";
 import { rn, SEA_LEVEL } from "@/utils";
+import { Lattice } from "./lattice";
 import { calculateVoronoi } from "./voronoi";
 
 declare global {
   var Grid: GridModule;
 }
 
+/** square pixels over the map, row by row, each holding the cell under its centre */
+export interface GridRaster {
+  width: number;
+  height: number;
+  cells: Uint32Array;
+}
+
+const EDGE_RINGS = 3;
+
 class GridModule {
+  private readonly rasters = new WeakMap<GridGraph, GridRaster>();
+  private visited = new Uint32Array(0); // getRings stamps per cell
+  private visit = 0;
+
   prepare(graph?: GridGraph): void {
     if (graph) this.resetHeights(graph);
-    grid = graph ?? this.generate(options.map.seed, options.map.graph.width, options.map.graph.height);
+    grid = graph ?? this.generate(options.map.seed);
   }
 
-  generate(seed: string, width: number, height: number, cellsDesired = this.getCellsDesired()): GridGraph {
+  generate(seed: string, settings: MapData["graph"] = options.map.graph): GridGraph {
     Math.random = Alea(seed); // reset PRNG
 
+    const { width, height, points: cellsDesired, sampling, jitter } = settings;
     const spacing = this.getSpacing(cellsDesired, width, height);
-    const boundary = this.getBoundaryPoints(width, height, spacing);
-
     TIME && console.time("placePoints");
-    const points = this.getJitteredPoints(width, height, spacing);
+    const { cellsX, cellsY, points, boundary } = Lattice.placePoints(
+      { sampling, width, height, spacing, jitter },
+      Math.random
+    );
     TIME && console.timeEnd("placePoints");
 
     const { cells, vertices } = calculateVoronoi(points, boundary);
-
-    const graph = {
-      spacing,
-      cellsX: this.getCellsCount(spacing, width),
-      cellsY: this.getCellsCount(spacing, height),
-      boundary,
-      points,
-      cells,
-      vertices
-    } as GridGraph;
+    const graph = { sampling, spacing, cellsX, cellsY, boundary, points, cells, vertices } as GridGraph;
     this.resetHeights(graph);
 
     return graph;
@@ -44,10 +52,11 @@ class GridModule {
 
   /**
    * rebuild the Voronoi diagram of a stored graph: saves keep only the points and the boundary,
-   * cells and vertices are derived from them on load
+   * cells and vertices are derived from them on load, the sampling comes from the loaded map settings
    */
   rebuildGraph(graph: GridGraph): void {
     const { cells, vertices } = calculateVoronoi(graph.points, graph.boundary);
+    graph.sampling = options.map.graph.sampling;
     graph.cells = cells as GridCells;
     graph.vertices = vertices;
     this.resetHeights(graph);
@@ -63,35 +72,97 @@ class GridModule {
     return options.map.graph.points;
   }
 
-  /** cell index at the given coordinates, resolved by the regular square grid the points sit on */
+  /** cell at the given coordinates: the lattice slot, then the closest neighbour until none is closer */
   findCell(x: number, y: number, graph: GridGraph = grid): number {
-    const { spacing, cellsX, cellsY } = graph;
-    return Math.floor(Math.min(y / spacing, cellsY - 1)) * cellsX + Math.floor(Math.min(x / spacing, cellsX - 1));
+    const { points, cells } = graph;
+    let cellId = Lattice.findSlot(x, y, graph);
+    let distance = (points[cellId][0] - x) ** 2 + (points[cellId][1] - y) ** 2;
+
+    for (let checked = -1; checked !== cellId; ) {
+      checked = cellId;
+      // the boundary pseudo-points cut the walk along the map edge, there it looks a few rings around
+      const candidates = cells.b[checked] ? this.getRings(checked, EDGE_RINGS, cells.c) : cells.c[checked];
+      for (let i = 0; i < candidates.length; i++) {
+        const candidate = candidates[i];
+        const candidateDistance = (points[candidate][0] - x) ** 2 + (points[candidate][1] - y) ** 2;
+        if (candidateDistance >= distance) continue;
+        cellId = candidate;
+        distance = candidateDistance;
+      }
+    }
+
+    return cellId;
   }
 
   /** cell indexes within the radius from the given coordinates */
   findAll(x: number, y: number, radius: number, graph: GridGraph = grid): number[] {
-    const neighbors = graph.cells.c;
-    const found = [this.findCell(x, y, graph)];
-    let rings = Math.floor(radius / graph.spacing);
-    if (!rings || radius === 1) return found;
+    const cellId = this.findCell(x, y, graph);
+    const rings = Math.floor(radius / Lattice.getSteps(graph.sampling, graph.spacing).neighborDistance);
+    if (!rings || radius === 1) return [cellId];
+    return this.getRings(cellId, rings, graph.cells.c);
+  }
 
-    found.push(...neighbors[found[0]]);
-    let frontier = neighbors[found[0]];
-    while (rings > 1) {
-      const next: number[] = [];
-      for (const cellId of frontier) {
-        for (const neighborId of neighbors[cellId]) {
-          if (found.includes(neighborId)) continue;
+  /** the cell and every cell up to the given number of neighbour steps away */
+  private getRings(cellId: number, rings: number, neighbors: number[][]): number[] {
+    // a visit stamps the cells it reaches, so no visited list is searched or allocated
+    if (this.visited.length < neighbors.length || this.visit === 0xffffffff) {
+      this.visited = new Uint32Array(neighbors.length);
+      this.visit = 0;
+    }
+    const visit = ++this.visit;
+    const { visited } = this;
+
+    const found = [cellId];
+    visited[cellId] = visit;
+    for (let ring = 0, start = 0; ring < rings; ring++) {
+      const end = found.length; // the previous ring is found[start..end)
+      for (let i = start; i < end; i++) {
+        const cellNeighbors = neighbors[found[i]];
+        for (let j = 0; j < cellNeighbors.length; j++) {
+          const neighborId = cellNeighbors[j];
+          if (visited[neighborId] === visit) continue;
+          visited[neighborId] = visit;
           found.push(neighborId);
-          next.push(neighborId);
         }
       }
-      frontier = next;
-      rings--;
+      start = end;
+    }
+    return found;
+  }
+
+  /** the grid as square pixels for images and textures: the lattice slots themselves on the square lattice */
+  getRaster(graph: GridGraph = grid, width = options.map.graph.width, height = options.map.graph.height): GridRaster {
+    const { sampling, spacing, cellsX, cellsY, cells } = graph;
+    if (sampling === "square") return { width: cellsX, height: cellsY, cells: cells.i as Uint32Array };
+
+    const rasterWidth = Math.round(width / spacing);
+    const rasterHeight = Math.round(height / spacing);
+    const cached = this.rasters.get(graph);
+    if (cached?.width === rasterWidth && cached.height === rasterHeight) return cached;
+
+    const pixels = new Uint32Array(rasterWidth * rasterHeight);
+    for (let row = 0, pixel = 0; row < rasterHeight; row++) {
+      const y = ((row + 0.5) * height) / rasterHeight;
+      for (let col = 0; col < rasterWidth; col++, pixel++) {
+        pixels[pixel] = this.findCell(((col + 0.5) * width) / rasterWidth, y, graph);
+      }
     }
 
-    return found;
+    const raster = { width: rasterWidth, height: rasterHeight, cells: pixels };
+    this.rasters.set(graph, raster);
+    return raster;
+  }
+
+  /** per-cell values as raster pixels, `channels` values per cell and per pixel */
+  rasterize(values: ArrayLike<number>, raster: GridRaster, channels = 1): Uint8Array {
+    const pixels = new Uint8Array(raster.cells.length * channels);
+    for (let pixel = 0; pixel < raster.cells.length; pixel++) {
+      const cellId = raster.cells[pixel];
+      for (let channel = 0; channel < channels; channel++) {
+        pixels[pixel * channels + channel] = values[cellId * channels + channel];
+      }
+    }
+    return pixels;
   }
 
   /** cell polygon points */
@@ -99,53 +170,9 @@ class GridModule {
     return graph.cells.v[cellId].map(vertexId => graph.vertices.p[vertexId]);
   }
 
-  /** distance between points before jittering */
+  /** the lattice step that makes each cell cover the same area */
   private getSpacing(cellsDesired: number, width: number, height: number): number {
     return rn(Math.sqrt((width * height) / cellsDesired), 2);
-  }
-
-  /** number of cells fitting the given map dimension */
-  private getCellsCount(spacing: number, size: number): number {
-    return Math.floor((size + 0.5 * spacing - 1e-10) / spacing);
-  }
-
-  /** pseudo-points along the map edge, they clip the outer Voronoi cells but get no cells of their own */
-  private getBoundaryPoints(width: number, height: number, spacing: number): Point[] {
-    const offset = rn(-1 * spacing);
-    const bSpacing = spacing * 2;
-    const w = width - offset * 2;
-    const h = height - offset * 2;
-    const numberX = Math.ceil(w / bSpacing) - 1;
-    const numberY = Math.ceil(h / bSpacing) - 1;
-    const points: Point[] = [];
-
-    for (let i = 0.5; i < numberX; i++) {
-      const x = Math.ceil((w * i) / numberX + offset);
-      points.push([x, offset], [x, h + offset]);
-    }
-
-    for (let i = 0.5; i < numberY; i++) {
-      const y = Math.ceil((h * i) / numberY + offset);
-      points.push([offset, y], [w + offset, y]);
-    }
-
-    return points;
-  }
-
-  /** points of a square grid, each one randomly shifted within its square */
-  private getJitteredPoints(width: number, height: number, spacing: number): Point[] {
-    const radius = spacing / 2;
-    const jittering = radius * 0.9;
-    const doubleJittering = jittering * 2;
-    const jitter = () => Math.random() * doubleJittering - jittering;
-
-    const points: Point[] = [];
-    for (let y = radius; y < height; y += spacing) {
-      for (let x = radius; x < width; x += spacing) {
-        points.push([Math.min(rn(x + jitter(), 2), width), Math.min(rn(y + jitter(), 2), height)]);
-      }
-    }
-    return points;
   }
 
   /** turn depressions that cannot pour to water into lakes */

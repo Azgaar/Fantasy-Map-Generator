@@ -1074,6 +1074,7 @@
       "stroke-dasharray": "0",
       "stroke-linecap": "round",
       "stroke-linejoin": null,
+      "fill": "#000000",
       "font-family": "Arial",
       "font-size": "12px"
     },
@@ -1192,6 +1193,9 @@
       "filter": "url(#blur3)",
       "mask": null
     },
+    "options": {
+      "type": "bars"
+    },
     "groups": {
       "rural": {
         "attrs": {
@@ -1306,6 +1310,9 @@
       "stroke-width": 2,
       "stroke-dasharray": "10",
       "stroke-linecap": null,
+      "stroke": "#3d3d3d",
+      "color": "#ffffff",
+      "data-labels": true,
       "font-size": "20px",
       "filter": null
     }

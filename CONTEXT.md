@@ -1,7 +1,8 @@
 # Project Overview
 
 - **Purpose**: Procedural generation, editing, and visualization of fantasy maps for writers, game masters, and cartographers.
-- **Main Technologies**: Vanilla JS/TS, SVG for rendering, Vite for bundling, Biome for linting/formatting.
+- **Entry Points**: Start by inspecting `docs/architecture.md` to align with the domain model.
+- **Main Technologies**: Typescript, SVG/WebGL for rendering, Vite for bundling, Biome for linting/formatting.
 - **Architecture**: Moving toward FMG 2.0. The system is divided into four major layers:
   1. **State**: The world data (`grid` and `pack` objects).
   2. **Generators**: Procedural simulation logic (Model).
@@ -10,19 +11,20 @@
 
 # Repository Structure
 
-- `src/generators/`: Generators containing simulation logic (e.g., `heightmap-generator.ts`, `cultures-generator.ts`).
-- `src/controllers/`: The UI layer — editors and tools that mutate state, plus read-only overviews/dialogs that present it.
-- `src/renderers/`: Code responsible for transforming world data into SVG overlays.
-- `src/services/io/`: Serialization and persistence — save, load, export.
-- `src/services/`: App-shell & platform lifecycle, unrelated to map state (e.g., PWA installation, auto-update).
-- `src/data/`: Static content / reference data (e.g., supporters list, heightmap templates).
+- `src/generators/`: Generators containing simulation logic.
+- `src/controllers/`: The UI layer — editors, overviews and tools that present and mutate state.
+- `src/renderers/`: Code responsible for transforming world data into SVG layers.
+- `src/services/io/`: Serialization and persistence — save, load, export, and `auto-update.ts`.
+- `src/services/`: App-shell & platform lifecycle, unrelated to map state.
+- `src/data/`: Static content / reference data.
+- `src/locales/`: Interface strings per language.
 - `src/types/`: Shared TypeScript interfaces and domain models.
 - `src/utils/`: Generic helper functions.
-- `public/`: Static assets. `public/libs/` holds vendored third-party scripts loaded by `index.html` — new `src/` code imports deps from npm (no `src/libs/`). The last classic `public/modules` script was retired with the schema-driven style editor.
-- `electron/`: Main process, preload script and self-update of the desktop app; the renderer is the same `src/` build, served from the `app://` scheme.
+- `public/`: Static assets.
+- `electron/`: Main process, preload script and self-update of the desktop app.
 - `docs/`: Domain, architectural documentation and user-facing wiki.
-- `src/index.html`: **CAUTION**: The shared page template contains the map structure and app shell (~44KB).
-- `tests/e2e/`: Playwright end-to-end tests. Never automatically run Playwright tests when developing, they are too slow.
+- `src/index.html`: The shared page template contains the map structure and app shell.
+- `tests/e2e/`: Playwright end-to-end tests.
 
 # FMG 2.0 Architecture Rules
 
@@ -31,32 +33,33 @@
 - **Idempotency**: Renderers SHOULD be stateless and idempotent.
 - **Separation of Concerns**: UI logic and simulation logic MUST remain separate.
 - **Serialization**: The entire world state must remain serializable into a single JSON object for `.map` saving and loading.
+- **Map Migrations**: Upgrading older `.map` files lives only in `src/services/io/auto-update.ts`, run once on load. Never back-fill or guard for old data in `load.ts`, generators, renderers or editors: they assume the current shape.
 
 # Coding Conventions
 
-- **Language**: TypeScript is mandatory for all new files.
+- **Language**: TypeScript is mandatory for all code files.
+- **Typing**: Explicit TypeScript interfaces for all shared domain objects, `any` is prohibited.
 - **Linting and formatting**: Enforced via Biome (`biome.json`).
 - **Style**: Double quotes, no trailing commas, 120 line width, semicolons required.
-- **Typing**: Use explicit TypeScript interfaces for all shared domain objects, `any` is prohibited.
-- **Comments**: Reduced. Don't repeat information that is in docs. Prefer one-liners or no comments.
+- **Comments**: Don't repeat information that is in docs. Prefer one-liners or no comments.
 - **Imports**: Mandatory `@/*` aliases `src/*` over deep `../../` relative paths; keep sibling imports relative.
+- **DOM lookups**: No `getElementById`, utils `ensureEl` when the element must exist, `findEl` when it may be missing.
+- **Order**: Files MUST be readable from top to bottom.
+- **Variables**: Concise and descriptive variable names, don't use unusual abbreviations.
+- **Save space**: Prefer laconic but clear code. Save space, I like my code to be compact.
+- **Keep it simple**: Avoid over-engineering.
+- **Dependencies**: Don't introduce new production dependencies without explicit permission. Keep the bundle lightweight.
+- **Export**: Export only what another module imports. Types, helpers and constants used within one module stay unexported.
 
 # Workflow Rules
 
 - **Run Locally**: `npm run dev`
 - **Build**: `npm run build`
 - **Lint**: `npm run lint`
-- **Unit Tests**: `npm run test` (Vitest)
-- **E2E Tests**: `npm run test:e2e` (Playwright)
-- **Desktop App**: `npm run electron` (run in Electron with hot reload), `npm run electron dist` (installers into `release/`)
+- **Unit Tests**: `npm run test` (Vitest); `npm run test:scenarios` runs the slow real-map `*.scenarios.test.ts` suites
+- **E2E Tests**: `npm run test:e2e` (Playwright; never run without asking)
+- **Desktop App**: `npm run electron`, `npm run electron dist`
 - **CI/CD**: GitHub Actions enforce linting, building, and playwright tests on PRs.
-
-# AI Agent Instructions
-
-- **Entry Points**: Start by inspecting `docs/architecture.md` and `docs/glossary.md` to align with the domain model.
-- **Refactoring Constraints**: The project is in a gradual JS -> TS migration. Focus on incremental type safety and extracting logic.
-- **File Limits**: `src/index.html` is excessively large. DO NOT try to perform large structural changes to it in a single pass.
-- **Dependencies**: DO NOT introduce new production dependencies without explicit permission. Keep the bundle lightweight.
 
 # Domain Knowledge
 
@@ -64,24 +67,12 @@
 - **Pack**: The aggregate world state (contains `burgs`, `states`, `cultures`, etc.).
 - **Cell**: The smallest indivisible unit of the map.
 - **Burg**: A settlement. Grouped into `States`.
-- **Feature**: An island, lake or ocean. Its `subtype` is domain classification (generators read it); its `group` is only the SVG group it is drawn in.
-- **Label**: Text attached to a State, Burg, or user-defined path. Labels select typography from a shared Label Group.
+- **Feature**: An island, lake or ocean.
+- **Label**: Text attached to a State, Burg, or user-defined path.
 - **Invariants**: Saving a `.map` file MUST preserve the exact world state so it can be reloaded identically.
 
-# Known Sharp Edges
+# Sharp Edges
 
 - **Legacy Globals**: The codebase heavily relies on implicit global state (`pack` and `grid` on the `window`). Be extremely cautious when refactoring these to explicit parameters.
 - **`index.html`**: The shared app-shell and map SVG template. It can easily break if structural tags are accidentally nested incorrectly.
-
-# Important Files
-
-- `docs/glossary.md`: Domain vocabulary definitions.
-- `docs/architecture.md`: The guiding blueprint for FMG 2.0.
-
-# Code Style Rules
-
-- Files MUST be readable from top to bottom.
-- Use concise and descriptive variable names, don't use unusual abbreviations.
-- Prefer laconic but clear code.
-- Save space, I like my code to be compact.
-- Avoid over-engineering, keep it simple and vertically readable.
+- **Playwright**: Never automatically run Playwright tests when developing, they are too slow and cause PC freezes.

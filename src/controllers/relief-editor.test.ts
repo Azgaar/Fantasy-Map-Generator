@@ -85,7 +85,7 @@ describe("ReliefEditor bulk brushes", () => {
     const type = await openBulkMode("reliefBulkRemove");
     const reference = { icon: Relief.symbolId({ type }, styles.relief.options.set), x: 8, y: 48, s: 4 };
     pack.relief = [{ type, x: 8, y: 48, s: 4 }, reference];
-    globalThis.alertMessage = document.createElement("div");
+    document.body.insertAdjacentHTML("beforeend", '<div id="alertMessage"></div>');
     let remove: () => void = () => {};
     window.$ = vi.fn(() => ({
       dialog: (settings: { buttons?: { Remove?: () => void } }) => {

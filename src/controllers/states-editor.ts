@@ -9,6 +9,7 @@ import {
 } from "@/components/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/components/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/components/dialog/sorting";
+import { dialogState } from "@/components/dialog/state";
 import {
   type EditorColumn,
   initColumnVisibility,
@@ -22,24 +23,31 @@ import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { STATE_FORMS, type State } from "@/generators/states-generator";
+import { CULTURE_TYPE_LABELS } from "@/data/id-labels";
+import { STATE_FORMS, type State, type TariffRule } from "@/generators/states-generator";
+import { Tags } from "@/generators/tags";
 import { redrawEmblem, removeEmblem } from "@/renderers/draw-emblems";
+import { goodBadge } from "@/renderers/draw-goods";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement, highlightOutline } from "@/renderers/overlays/highlight";
-import { applyOption, downloadFile, getArea, getAreaUnit, getFileName, groupByValue, speak } from "@/utils";
+import { Csv } from "@/services/io/csv";
+import { applyOption, findEl, getArea, getAreaUnit, groupByValue, speak } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import { errorText } from "@/utils/stringUtils";
 import { ensureEl, formatPrice, getAdjective, getPointer, isLand, rand, rn, si } from "../utils";
 
 const dialogId = "statesEditor" as const;
 const LEGEND_NAME = "States"; // the legend box this editor toggles
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+let filterState: { search: string };
+
 const columns: EditorColumn<State>[] = [
   { key: "color", width: "1.2em", permanent: true },
   {
     key: "name",
-    label: "State",
+    label: t("State"),
     width: "7em",
     permanent: true,
     sortBy: s => s.name || "",
@@ -48,7 +56,7 @@ const columns: EditorColumn<State>[] = [
   { key: "emblem", width: "1.4em" },
   {
     key: "form",
-    label: "Form",
+    label: t("Form"),
     width: "8em",
     mobileHidden: true,
     sortBy: s => (s.i ? s.formName || "" : ""),
@@ -56,29 +64,29 @@ const columns: EditorColumn<State>[] = [
   },
   {
     key: "capital",
-    label: "Capital",
+    label: t("Capital"),
     width: "7em",
     sortBy: s => (s.i ? pack.burgs[s.capital]?.name || "" : ""),
     sortType: "alpha"
   },
   {
     key: "culture",
-    label: "Culture",
-    width: "10em",
+    label: t("Culture"),
+    width: "6em",
     mobileHidden: true,
     sortBy: s => (s.i ? pack.cultures[s.culture]?.name || "" : ""),
     sortType: "alpha"
   },
   {
     key: "burgs",
-    label: "Burgs",
+    label: t("Burgs"),
     width: "5em",
     mobileHidden: true,
     sortBy: s => s.burgs || 0
   },
   {
     key: "cells",
-    label: "Cells",
+    label: t("Cells"),
     width: "5em",
     hidden: true,
     mobileHidden: true,
@@ -86,7 +94,7 @@ const columns: EditorColumn<State>[] = [
   },
   {
     key: "area",
-    label: "Area",
+    label: t("Area"),
     width: "7em",
     mobileHidden: true,
     defaultSort: "desc",
@@ -94,7 +102,7 @@ const columns: EditorColumn<State>[] = [
   },
   {
     key: "population",
-    label: "Population",
+    label: t("Population"),
     width: "6em",
     sortBy: s =>
       rn(
@@ -104,15 +112,15 @@ const columns: EditorColumn<State>[] = [
   },
   {
     key: "treasury",
-    label: "Treasury",
+    label: t("Treasury"),
     width: "6em",
     mobileHidden: true,
-    tip: "Click to sort by state treasury. Click on a value to view and edit taxes",
+    tip: t("Click to sort by state treasury. Click on a value to view and edit taxes"),
     sortBy: s => s.treasury || 0
   },
   {
     key: "type",
-    label: "Type",
+    label: t("Type"),
     width: "5em",
     hidden: true,
     sortBy: s => (s.i ? s.type || "" : ""),
@@ -120,10 +128,18 @@ const columns: EditorColumn<State>[] = [
   },
   {
     key: "expansionism",
-    label: "Expansion",
+    label: t("Expansion"),
     width: "5em",
     hidden: true,
     sortBy: s => (s.i ? s.expansionism || 0 : 0)
+  },
+  {
+    key: "tags",
+    label: t("Tags"),
+    width: "10em",
+    hidden: true,
+    sortBy: s => Tags.format(s.tags),
+    sortType: "alpha"
   },
   { key: "note", width: "1.1em" },
   { key: "locate", width: "1.1em" },
@@ -132,18 +148,61 @@ const columns: EditorColumn<State>[] = [
   { key: "remove", width: "1.4em", permanent: true }
 ];
 
+const CSV_COLUMNS = [
+  "Id",
+  "State",
+  "Full Name",
+  "Form",
+  "Color",
+  "Capital",
+  "Culture",
+  "Type",
+  "Expansionism",
+  "Cells",
+  "Burgs",
+  "Area",
+  "Total Population",
+  "Rural Population",
+  "Urban Population",
+  "Provinces",
+  "Neighbors",
+  "Sales Tax",
+  "Poll Tax",
+  "Treasury",
+  "Tags"
+];
+const RULED_COLUMNS = [
+  "Full Name",
+  "Form",
+  "Color",
+  "Capital",
+  "Culture",
+  "Type",
+  "Expansionism",
+  "Sales Tax",
+  "Poll Tax",
+  "Treasury",
+  "Tags"
+];
+
+function getFilteredStates(): State[] {
+  const query = filterState?.search;
+  const states = pack.states.filter(s => !s.removed);
+  if (!query) return states;
+  return states.filter(s => {
+    if (!s.i) return Tags.matches(query, s.name);
+    return Tags.matches(query, s.name, s.tags, [s.fullName]);
+  });
+}
+
 const statesTable = initEditorTable<State>({
-  getData: () =>
-    sortDataByColumns(
-      dialogId,
-      pack.states.filter(s => !s.removed),
-      columns
-    ),
+  getData: () => sortDataByColumns(dialogId, getFilteredStates(), columns),
   onUpdate: renderStatesPage
 });
 
 function open(): void {
   if (customization) return;
+  filterState = dialogState.get(dialogId, "filters", () => ({ search: "" }));
 
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("states", "borders");
@@ -154,7 +213,7 @@ function open(): void {
   statesTable.reset();
 
   $(`#${dialogId}`).dialog({
-    title: "States Editor",
+    title: t("States Editor"),
     resizable: false,
     position,
     close: closeStatesEditor
@@ -168,44 +227,50 @@ function renderDialog(): void {
       ${renderEditorHeader({ dialogId, columns })}
     </div>
 
+    <div id="statesFilters" class="editorFilters">
+      <label for="statesSearch" data-tip="${t("Filter by name or tag")}">${t("Search")}: <input id="statesSearch" type="search" autocomplete="off" /></label>
+    </div>
+
     <div id="statesFooter" class="totalLine">
-      <div data-tip="States number" style="margin-left: 5px">States:&nbsp;<span id="statesFooterStates">0</span></div>
-      <div data-tip="Total burgs number" style="margin-left: 12px" data-col="burgs">Burgs:&nbsp;<span id="statesFooterBurgs">0</span></div>
-      <div data-tip="Total land area" style="margin-left: 12px" data-col="area">Land Area:&nbsp;<span id="statesFooterArea">0</span></div>
-      <div data-tip="Total population" style="margin-left: 12px" data-col="population">Population:&nbsp;<span id="statesFooterPopulation">0</span></div>
+      <div data-tip="${t("States number")}" style="margin-left: 5px">${t("States")}:&nbsp;<span id="statesFooterStates">0</span></div>
+      <div data-tip="${t("Number of burgs")}" style="margin-left: 12px" data-col="burgs">${t("Burgs")}:&nbsp;<span id="statesFooterBurgs">0</span></div>
+      <div data-tip="${t("Total land area")}" style="margin-left: 12px" data-col="area">${t("Land area")}:&nbsp;<span id="statesFooterArea">0</span></div>
+      <div data-tip="${t("Total population")}" style="margin-left: 12px" data-col="population">${t("Population")}:&nbsp;<span id="statesFooterPopulation">0</span></div>
     </div>
 
     <div id="statesBottom" class="editorToolbar">
-      <button id="statesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-      <button id="statesEditStyle" data-tip="Edit states style in Style Editor" class="icon-adjust"></button>
-      <button id="statesLegend" data-tip="Toggle Legend box" class="icon-list-bullet"></button>
-      <button id="statesPercentage" data-tip="Toggle percentage / absolute values views" class="icon-percent"></button>
-      <button id="statesChart" data-tip="Show states bubble chart" class="icon-chart-area"></button>
+      <button id="statesEditorRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
+      <button id="statesEditStyle" data-tip="${t("Edit style in Style Editor")}" class="icon-adjust"></button>
+      <button id="statesLegend" data-tip="${t("Toggle Legend box")}" class="icon-list-bullet"></button>
+      <button id="statesPercentage" data-tip="${t("Toggle percentage / absolute values views")}" class="icon-percent"></button>
+      <button id="statesChart" data-tip="${t("States bubble chart")}" class="icon-chart-area"></button>
 
-      <button id="statesRegenerate" data-tip="Show the regeneration menu and more data" class="icon-cog-alt"></button>
+      <button id="statesRegenerate" data-tip="${t("Show")}" class="icon-cog-alt"></button>
       <div id="statesRegenerateButtons" style="display: none">
-        <button id="statesRegenerateBack" data-tip="Hide the regeneration menu" class="icon-cog-alt"></button>
-        <button id="statesRandomize" data-tip="Randomize states Expansion value and re-calculate states and provinces" class="icon-shuffle"></button>
-        <button id="statesRecalculate" data-tip="Recalculate states based on current values of growth-related attributes" class="icon-retweet"></button>
-        <div data-tip="Allow states neutral distance, expansion and type changes to take an immediate effect" style="display: inline-block">
+        <button id="statesRegenerateBack" data-tip="${t("Hide")}" class="icon-cog-alt"></button>
+        <button id="statesRandomize" data-tip="${t("Randomize states Expansion value and re-calculate states and provinces")}" class="icon-shuffle"></button>
+        <button id="statesRecalculate" data-tip="${t("Recalculate states based on current values of growth-related attributes")}" class="icon-retweet"></button>
+        <div data-tip="${t("Allow states neutral distance, expansion and type changes to take an immediate effect")}" style="display: inline-block">
           <input id="statesAutoChange" class="checkbox" type="checkbox" />
-          <label for="statesAutoChange" class="checkbox-label"><i>auto-apply changes</i></label>
+          <label for="statesAutoChange" class="checkbox-label"><i>${t("auto-apply changes")}</i></label>
         </div>
-        <div data-tip="Allow system to change state labels when states data is change" style="display: inline-block">
+        <div data-tip="${t("Allow system to change state labels when states data is change")}" style="display: inline-block">
           <input id="adjustLabels" class="checkbox" type="checkbox" />
-          <label for="adjustLabels" class="checkbox-label"><i>auto-change labels</i></label>
+          <label for="adjustLabels" class="checkbox-label"><i>${t("auto-change labels")}</i></label>
         </div>
       </div>
 
-      <button id="statesManually" data-tip="Manually re-assign states" class="icon-brush"></button>
+      <button id="statesManually" data-tip="${t("Manually re-assign states")}" class="icon-brush"></button>
 
-      <button id="statesAdd" data-tip="Add a new state. Hold Shift to add multiple" class="icon-plus"></button>
-      <button id="statesMerge" data-tip="Merge several states into one" class="icon-layer-group"></button>
-      <button id="statesAnnex" data-tip="Annex states: click the annexing state, then the states it absorbs. Hold Shift to keep annexing" class="icon-crown"></button>
-      <button id="statesExport" data-tip="Save state-related data as a text file (.csv)" class="icon-download"></button>
+      <button id="statesAdd" data-tip="${sentences(t("Add"), t("Hold Shift to add multiple"))}" class="icon-plus"></button>
+      <button id="statesMerge" data-tip="${t("Merge several states into one")}" class="icon-layer-group"></button>
+      <button id="statesAnnex" data-tip="${sentences(t("Annex states: click the annexing state, then the states it absorbs"), t("Hold Shift to keep annexing"))}" class="icon-crown"></button>
+      <button id="statesExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
+      <button id="statesImport" data-tip="${t("Upload data from a CSV file")}" class="icon-upload"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  ensureEl<HTMLInputElement>("statesSearch").value = filterState.search;
 
   bindColumnSorting(dialogId, statesTable.reset);
   applyLineHighlighting(dialogId, ({ cellId }) => (pack.cells.h[cellId] < 20 ? undefined : pack.cells.state[cellId]));
@@ -214,6 +279,8 @@ function renderDialog(): void {
     columns,
     onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
   });
+
+  ensureEl("statesSearch").addEventListener("input", onSearchInput);
 
   ensureEl("statesEditorRefresh").addEventListener("click", refreshStatesEditor);
   ensureEl("statesEditStyle").addEventListener("click", () => void Controllers.StyleEditor.open("states"));
@@ -229,6 +296,7 @@ function renderDialog(): void {
   ensureEl("statesMerge").addEventListener("click", openStateMergeDialog);
   ensureEl("statesAnnex").addEventListener("click", statesAnnex.toggle);
   ensureEl("statesExport").addEventListener("click", downloadStatesCsv);
+  ensureEl("statesImport").addEventListener("click", () => Csv.pick(uploadStatesCsv));
 
   ensureEl("statesBodySection").addEventListener("click", event => {
     const $element = (event as MouseEvent).target as HTMLElement;
@@ -262,7 +330,23 @@ function renderDialog(): void {
     if (classList.contains("stateCulture")) stateChangeCulture(state, line, $element.value);
     else if (classList.contains("cultureType")) stateChangeType(state, line, $element.value);
     else if (classList.contains("statePower")) stateChangeExpansionism(state, line, $element.value);
+    else if (classList.contains("stateTags")) stateChangeTags(state, line, $element);
   });
+}
+
+function onSearchInput(event: Event): void {
+  filterState.search = (event.target as HTMLInputElement).value;
+  dialogState.set(dialogId, "filters", filterState);
+  statesTable.reset();
+}
+
+function stateChangeTags(stateId: number, line: HTMLElement, input: HTMLInputElement): void {
+  const state = pack.states[stateId];
+  if (!state) return;
+  Tags.set(state, input.value);
+  input.value = Tags.format(state.tags);
+  line.dataset.tags = Tags.format(state.tags);
+  if (filterState.search) statesTable.refresh();
 }
 
 function closeStatesEditor(): void {
@@ -301,11 +385,21 @@ function renderStatesPage(view: TableView<State>): void {
     const rural = (s.rural || 0) * options.map.units.population.scale;
     const urban = (s.urban || 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     const population = rn(rural + urban);
-    const populationTip = `Total population: ${si(population)}; Rural population: ${si(rural)}; Urban population: ${si(
-      urban
-    )}. Click to change`;
+    const populationTip = sentences(
+      `${t("Total population")}: ${si(population)}`,
+      `${t("Rural population")}: ${si(rural)}`,
+      `${t("Urban population")}: ${si(urban)}`,
+      t("Click to edit")
+    );
     const focused = select("#deftemp").select(`#fog #focusState${s.i}`).size();
-    const treasuryTip = `Current treasury: 🟡 ${si(s.treasury)}. Sales Tax: ${rn((s.salesTax || 0) * 100, 1)}%. Poll Tax: ${rn((s.pollTax || 0) * 100, 1)}%. Click to view and edit taxes`;
+    const treasuryTip = t(
+      "Current treasury: 🟡 {{treasury}}. Sales Tax: {{salesTax}}%. Poll Tax: {{pollTax}}%. Click to view and edit taxes",
+      {
+        treasury: si(s.treasury),
+        salesTax: rn((s.salesTax || 0) * 100, 1),
+        pollTax: rn((s.pollTax || 0) * 100, 1)
+      }
+    );
 
     if (!s.i) {
       // Neutral line
@@ -324,9 +418,10 @@ function renderStatesPage(view: TableView<State>): void {
         data-culture=""
         data-type=""
         data-expansionism=""
+        data-tags=""
       >
         <svg width="1em" height="1em" class="placeholder" data-col="color"></svg>
-        <input data-tip="Neutral lands name. Click to change" class="stateName name pointer italic" value="${
+        <input data-tip="${sentences(t("Neutral lands name"), t("Click to change"))}" class="stateName name pointer italic" value="${
           s.name
         }" readonly data-col="name" />
         <svg class="coaIcon placeholder" viewBox="0 0 200 200" data-col="emblem"></svg>
@@ -337,27 +432,28 @@ function renderStatesPage(view: TableView<State>): void {
         </div>
         <select class="stateCulture placeholder" data-col="culture">${getCultureOptions(0)}</select>
         <div data-col="burgs">
-          <span data-tip="Click to overview neutral burgs" class="icon-dot-circled pointer" style="padding-right: 1px"></span>
-          <div data-tip="Burgs count" class="stateBurgs">${s.burgs}</div>
+          <span data-tip="${t("Click to overview neutral burgs")}" class="icon-dot-circled pointer" style="padding-right: 1px"></span>
+          <div data-tip="${t("Number of burgs")}" class="stateBurgs">${s.burgs}</div>
         </div>
         <div data-col="cells">
-          <span data-tip="Cells count" class="icon-check-empty"></span>
-          <div data-tip="Cells count" class="stateCells">${s.cells}</div>
+          <span data-tip="${t("Number of cells")}" class="icon-check-empty"></span>
+          <div data-tip="${t("Number of cells")}" class="stateCells">${s.cells}</div>
         </div>
         <div data-col="area">
-          <span data-tip="Neutral lands area" style="padding-right: 4px" class="icon-map-o"></span>
-          <div data-tip="Neutral lands area" class="stateArea">${si(area)} ${unit}</div>
+          <span data-tip="${t("Neutral lands area")}" style="padding-right: 4px" class="icon-map-o"></span>
+          <div data-tip="${t("Neutral lands area")}" class="stateArea">${si(area)} ${unit}</div>
         </div>
         <div data-col="population">
           <span data-tip="${populationTip}" class="icon-male"></span>
           <div data-tip="${populationTip}" class="statePopulation pointer">${si(population)}</div>
         </div>
-        <div data-tip="Neutrals collect no taxes" class="stateTreasury placeholder" data-col="treasury"></div>
+        <div data-tip="${t("Neutrals collect no taxes")}" class="stateTreasury placeholder" data-col="treasury"></div>
         <select class="cultureType placeholder" data-col="type">${getTypeOptions(0)}</select>
         <div data-col="expansionism">
           <span class="icon-resize-full placeholder"></span>
           <input class="statePower placeholder" type="number" value="0" />
         </div>
+        <div data-col="tags" class="placeholder"></div>
         <div data-col="note"></div>
         <div data-col="locate"></div>
         <div data-col="focus"></div>
@@ -384,50 +480,52 @@ function renderStatesPage(view: TableView<State>): void {
       data-culture=${pack.cultures[s.culture].name}
       data-type=${s.type}
       data-expansionism=${s.expansionism}
+      data-tags="${Tags.format(s.tags)}"
     >
       <fill-box fill="${s.color}" data-col="color"></fill-box>
-      <input data-tip="State name. Click to change" class="stateName name pointer" value="${s.name}" readonly data-col="name" />
-      <svg data-tip="Click to show and edit state emblem" class="coaIcon pointer" viewBox="0 0 200 200" data-col="emblem"><use href="#stateCOA${s.i}"></use></svg>
-      <input data-tip="State form name. Click to change" class="stateForm name pointer" value="${s.formName || ""}" readonly data-col="form" />
+      <input data-tip="${sentences(t("Name"), t("Click to change"))}" class="stateName name pointer" value="${s.name}" readonly data-col="name" />
+      <svg data-tip="${t("Edit Emblem")}" class="coaIcon pointer" viewBox="0 0 200 200" data-col="emblem"><use href="#stateCOA${s.i}"></use></svg>
+      <input data-tip="${sentences(t("Form name"), t("Click to change"))}" class="stateForm name pointer" value="${s.formName || ""}" readonly data-col="form" />
       <div data-col="capital">
-        <span data-tip="State capital. Click to zoom into view" class="icon-star-empty pointer"></span>
-        <div data-tip="Capital name" class="stateCapital">${capital}</div>
+        <span data-tip="${sentences(t("State capital"), t("Click to zoom"))}" class="icon-star-empty pointer"></span>
+        <div data-tip="${t("Capital name")}" class="stateCapital">${capital}</div>
       </div>
-      <select data-tip="Dominant culture. Click to change" class="stateCulture" data-col="culture">${getCultureOptions(
+      <select data-tip="${sentences(t("Dominant culture"), t("Click to change"))}" class="stateCulture" data-col="culture">${getCultureOptions(
         s.culture
       )}</select>
       <div data-col="burgs">
-        <span data-tip="Click to overview state burgs" style="padding-right: 1px" class="icon-dot-circled pointer"></span>
-        <div data-tip="Burgs count" class="stateBurgs">${s.burgs}</div>
+        <span data-tip="${t("Click to overview state burgs")}" style="padding-right: 1px" class="icon-dot-circled pointer"></span>
+        <div data-tip="${t("Number of burgs")}" class="stateBurgs">${s.burgs}</div>
       </div>
       <div data-col="cells">
-        <span data-tip="Cells count" class="icon-check-empty"></span>
-        <div data-tip="Cells count" class="stateCells">${s.cells}</div>
+        <span data-tip="${t("Number of cells")}" class="icon-check-empty"></span>
+        <div data-tip="${t("Number of cells")}" class="stateCells">${s.cells}</div>
       </div>
       <div data-col="area">
-        <span data-tip="State area" style="padding-right: 4px" class="icon-map-o"></span>
-        <div data-tip="State area" class="stateArea">${si(area)} ${unit}</div>
+        <span data-tip="${t("State area")}" style="padding-right: 4px" class="icon-map-o"></span>
+        <div data-tip="${t("State area")}" class="stateArea">${si(area)} ${unit}</div>
       </div>
       <div data-col="population">
         <span data-tip="${populationTip}" class="icon-male"></span>
         <div data-tip="${populationTip}" class="statePopulation pointer">${si(population)}</div>
       </div>
       <div data-tip="${treasuryTip}" class="stateTreasury pointer" data-col="treasury">🟡 ${si(s.treasury)}</div>
-      <select data-tip="State type. Defines growth model. Click to change" class="cultureType" data-col="type">${getTypeOptions(
+      <select data-tip="${sentences(t("State type"), t("Defines growth model"), t("Click to change"))}" class="cultureType" data-col="type">${getTypeOptions(
         s.type
       )}</select>
       <div data-col="expansionism">
-        <span data-tip="State expansionism" class="icon-resize-full"></span>
-        <input data-tip="Expansionism (defines competitive size). Change to re-calculate states based on new value"
+        <span data-tip="${t("State expansionism")}" class="icon-resize-full"></span>
+        <input data-tip="${t("Expansionism (defines competitive size). Change to re-calculate states based on new value")}"
           class="statePower" type="number" min="0" max="99" step=".1" value=${s.expansionism} />
       </div>
-      ${noteIcon("this state")}
-      <span data-col="locate" data-tip="Locate the state" class="icon-target"></span>
-      <span data-col="focus" data-tip="Toggle state focus" class="icon-pin ${focused ? "" : " inactive"}"></span>
-      <span data-col="lock" data-tip="Lock the state to protect it from re-generation" class="icon-lock${
-        s.lock ? "" : "-open"
-      }"></span>
-      <span data-col="remove" data-tip="Remove the state" class="icon-trash-empty"></span>
+      <div data-col="tags">
+        <input data-tip="${sentences(t("State tags"), t("Comma-separated list of tags"))}" class="stateTags" placeholder="${t("none")}" value="${Tags.format(s.tags)}" />
+      </div>
+      ${noteIcon(t("Edit free text notes (legend)"))}
+      <span data-col="locate" data-tip="${t("Locate on map")}" class="icon-target"></span>
+      <span data-col="focus" data-tip="${t("Toggle state focus")}" class="icon-pin ${focused ? "" : " inactive"}"></span>
+      <span data-col="lock" data-tip="${t("Lock")}" class="icon-lock${s.lock ? "" : "-open"}"></span>
+      <span data-col="remove" data-tip="${t("Remove")}" class="icon-trash-empty"></span>
     </div>`;
   }
   const body = ensureEl("statesBodySection");
@@ -437,7 +535,12 @@ function renderStatesPage(view: TableView<State>): void {
   body.insertAdjacentHTML("beforeend", lines);
 
   // update footer
-  ensureEl("statesFooterStates").innerHTML = String(pack.states.filter(s => s.i && !s.removed).length);
+  const totalStates = pack.states.filter(s => s.i && !s.removed).length;
+  const shownStates = view.all.filter(s => s.i && !s.removed).length;
+  ensureEl("statesFooterStates").innerHTML =
+    shownStates === totalStates
+      ? String(totalStates)
+      : t("{{shown}} of {{total}}", { shown: shownStates, total: totalStates });
   ensureEl("statesFooterBurgs").innerHTML = String(totalBurgs);
   ensureEl("statesFooterArea").innerHTML = si(totalArea) + unit;
   ensureEl("statesFooterArea").dataset.area = String(totalArea);
@@ -475,7 +578,7 @@ function getTypeOptions(type: string | number): string {
   let options = "";
   const types = ["Generic", "River", "Lake", "Naval", "Nomadic", "Hunting", "Highland"];
   types.forEach(t => {
-    options += `<option ${type === t ? "selected" : ""} value="${t}">${t}</option>`;
+    options += `<option ${type === t ? "selected" : ""} value="${t}">${CULTURE_TYPE_LABELS[t] ?? t}</option>`;
   });
   return options;
 }
@@ -532,13 +635,13 @@ function editStateName(state: number): void {
 
   $("#stateNameEditor").dialog({
     resizable: false,
-    title: "Change state name",
+    title: t("Change state name"),
     buttons: {
-      Apply: function (this: HTMLElement) {
+      [t("Apply")]: function (this: HTMLElement) {
         applyNameChange(s);
         $(this).dialog("close");
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     },
@@ -617,26 +720,26 @@ function renderNameEditor(): void {
   destroyDialog("stateNameEditor");
   const nameEditorHtml = /* html */ `<div id="stateNameEditor" class="dialog" data-state="0">
       <div>
-        <div data-tip="State short name" class="label">Short name:</div>
+        <div data-tip="${t("Short name")}" class="label">${t("Short name")}:</div>
         <input
           id="stateNameEditorShort"
-          data-tip="Type to change the short name"
+          data-tip="${t("Type to change the short name")}"
           autocorrect="off"
           spellcheck="false"
           style="width: 11em"
         />
-        <span id="stateNameEditorShortSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <span id="stateNameEditorShortSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
         <span
           id="stateNameEditorShortCulture"
-          data-tip="Generate culture-specific name"
+          data-tip="${t("Generate culture-specific name")}"
           class="icon-book pointer"
         ></span>
-        <span id="stateNameEditorShortRandom" data-tip="Generate random name" class="icon-globe pointer"></span>
+        <span id="stateNameEditorShortRandom" data-tip="${t("Generate random name")}" class="icon-globe pointer"></span>
       </div>
-      <div data-tip="Select form name">
-        <div data-tip="State form name" class="label">Form name:</div>
+      <div data-tip="${t("Select form name")}">
+        <div data-tip="${t("Form name")}" class="label">${t("Form name")}:</div>
         <select id="stateNameEditorSelectForm" style="width: 11em">
-          <option value="">blank</option>
+          <option value="">${t("blank")}</option>
           ${Object.entries(STATE_FORMS)
             .map(
               ([form, names]) =>
@@ -646,36 +749,36 @@ function renderNameEditor(): void {
         </select>
         <input
           id="stateNameEditorCustomForm"
-          placeholder="type form name"
-          data-tip="Enter custom form name"
+          placeholder="${t("Enter custom form name")}"
+          data-tip="${t("Enter custom form name")}"
           style="display: none; width: 11em"
         />
         <span
           id="stateNameEditorAddForm"
-          data-tip="Click to add custom state form name to the list"
+          data-tip="${t("Click to add custom state form name to the list")}"
           class="icon-plus pointer"
         ></span>
       </div>
       <div>
-        <div data-tip="State full name" class="label">Full name:</div>
+        <div data-tip="${t("Full name")}" class="label">${t("Full name")}:</div>
         <input
           id="stateNameEditorFull"
-          data-tip="Type to change the full name"
+          data-tip="${t("Type to change the full name")}"
           autocorrect="off"
           spellcheck="false"
           style="width: 11em"
         />
-        <span id="stateNameEditorFullSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+        <span id="stateNameEditorFullSpeak" data-tip="${sentences(t("Speak the name"), t("You can change voice and language in options"))}" class="speaker">🔊</span>
         <span
           id="stateNameEditorFullRegenerate"
-          data-tip="Click to re-generate full name"
+          data-tip="${t("Click to re-generate full name")}"
           data-tick="0"
           class="icon-arrows-cw pointer"
         ></span>
       </div>
-      <div data-tip="Uncheck to not update state label on name change" style="padding-block: 0.2em">
+      <div data-tip="${t("Uncheck to not update state label on name change")}" style="padding-block: 0.2em">
         <input id="stateNameEditorUpdateLabel" class="checkbox" type="checkbox" checked />
-        <label for="stateNameEditorUpdateLabel" class="checkbox-label"><i>Update label on Apply</i></label>
+        <label for="stateNameEditorUpdateLabel" class="checkbox-label"><i>${t("Update label on Apply")}</i></label>
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", nameEditorHtml);
@@ -689,7 +792,7 @@ function closeStateNameEditor(): void {
 function changePopulation(stateId: number): void {
   const state = pack.states[stateId];
   if (!state.cells) {
-    tip("State does not have any cells, cannot change population", false, "error");
+    tip(t("No cells, cannot change population"), false, "error");
     return;
   }
 
@@ -701,12 +804,12 @@ function changePopulation(stateId: number): void {
   const format = (n: number) => Number(n).toLocaleString();
 
   alertMessage.innerHTML = /* html */ `<div>
-    <i>Change population of all cells assigned to the state</i>
+    <i>${t("Change population of all cells assigned to the state")}</i>
     <div style="margin: 0.5em 0">
-      Rural: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" />
-      Urban: <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em" />
+      ${t("Rural")}: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" />
+      ${t("Urban")}: <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em" />
     </div>
-    <div>Total population: ${format(total)} ⇒ <span id="totalPop">${format(total)}</span>
+    <div>${t("Total population")}: ${format(total)} ⇒ <span id="totalPop">${format(total)}</span>
       (<span id="totalPopPerc">100</span>%)
     </div>
   </div>`;
@@ -728,14 +831,14 @@ function changePopulation(stateId: number): void {
 
   $("#alert").dialog({
     resizable: false,
-    title: "Change state population",
+    title: t("Change state population"),
     width: "24em",
     buttons: {
-      Apply: function (this: HTMLElement) {
+      [t("Apply")]: function (this: HTMLElement) {
         applyPopulationChange();
         $(this).dialog("close");
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     },
@@ -758,35 +861,174 @@ function openTreasuryDialog(stateId: number): void {
   const state = pack.states[stateId];
   if (!stateId || !state || state.removed) return;
 
-  const pollTaxRevenue = rn(state.pollTax * ((state.rural || 0) + (state.urban || 0)), 2);
-  const salesTaxRevenue = pack.deals.reduce((sum, deal) => {
-    if (!deal.tax) return sum;
-    let sellerStateId = 0;
-    if (deal.sellerType === "burg") {
-      sellerStateId = pack.burgs[deal.seller]?.state || 0;
-    } else if (deal.sellerType === "market") {
-      const market = Markets.get(deal.seller);
-      const centerBurgId = market?.centerBurgId;
-      sellerStateId = centerBurgId ? pack.burgs[centerBurgId]?.state || 0 : 0;
+  const pollTaxRevenue = rn((state.pollTax || 0) * ((state.rural || 0) + (state.urban || 0)), 2);
+  let salesTaxRevenue = 0;
+  let tariffRevenue = 0;
+  for (const deal of pack.deals ?? []) {
+    if (deal.tax) {
+      let sellerStateId = 0;
+      if (deal.sellerType === "burg") {
+        sellerStateId = pack.burgs[deal.seller]?.state || 0;
+      } else if (deal.sellerType === "market") {
+        const market = Markets.get(deal.seller);
+        const centerBurgId = market?.centerBurgId;
+        sellerStateId = centerBurgId ? pack.burgs[centerBurgId]?.state || 0 : 0;
+      }
+      if (sellerStateId === stateId) salesTaxRevenue += deal.tax;
     }
-    return sellerStateId === stateId ? sum + deal.tax : sum;
-  }, 0);
+    if (deal.tariff && deal.buyerType === "market") {
+      const market = Markets.get(deal.buyer);
+      const centerBurgId = market?.centerBurgId;
+      const buyerStateId = centerBurgId ? pack.burgs[centerBurgId]?.state || 0 : 0;
+      if (buyerStateId === stateId) tariffRevenue += deal.tariff;
+    }
+  }
 
-  alertMessage.innerHTML = /* html */ `<div data-tip="Sales tax is applied to deals with a seller from the state. Poll tax is applied to all population of the state. Tax changes take effect on Production regeneration" style="margin: 0.6em 0; display: grid; grid-template-columns: 7em auto auto; row-gap: 0.4em; align-items: center">
-      <label for="stateSalesTaxInput">Sales Tax:</label>
+  let draftRules: TariffRule[] = (state.tariffs ?? []).map(rule => ({
+    states: Array.isArray(rule.states) ? [...rule.states] : "all",
+    goods: Array.isArray(rule.goods) ? [...rule.goods] : "all",
+    rate: rule.rate
+  }));
+
+  const formatStatesLabel = (states: number[] | "all"): { label: string; tip: string } => {
+    if (!Array.isArray(states))
+      return { label: t("All states"), tip: sentences(t("All foreign states"), t("Click to select")) };
+    const names = states.map(id => pack.states[id]?.name || String(id));
+    const label = names.length <= 2 ? names.join(", ") : `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
+    return { label: label || t("None"), tip: sentences(names.join(", ") || t("None"), t("Click to select")) };
+  };
+
+  const formatGoodsLabel = (goods: number[] | "all"): { label: string; tip: string } => {
+    if (!Array.isArray(goods)) return { label: t("All goods"), tip: sentences(t("All goods"), t("Click to select")) };
+    const names = goods.map(id => Goods.get(id)?.name || String(id));
+    const label = names.length <= 2 ? names.join(", ") : `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
+    return { label: label || t("None"), tip: sentences(names.join(", ") || t("None"), t("Click to select")) };
+  };
+
+  alertMessage.innerHTML = /* html */ `<div data-tip="${t("Sales tax is applied to deals with a seller from the state. Poll tax is applied to all population of the state. Tariffs are applied to foreign goods imported into the state's markets. Tax changes take effect on Production regeneration")}" style="margin: 0.6em 0; display: grid; grid-template-columns: 7em auto auto; row-gap: 0.4em; align-items: center">
+      <label for="stateSalesTaxInput">${t("Sales Tax")}:</label>
       <input id="stateSalesTaxInput" type="number" min="0" max="1" step="0.01" value="${state.salesTax}" style="width: 6em"/> = ${formatPrice(salesTaxRevenue)}
-      <label for="statePollTaxInput">Poll Tax:</label>
+      <label for="statePollTaxInput">${t("Poll Tax")}:</label>
       <input id="statePollTaxInput" type="number" min="0" max="10" step="0.01" value="${state.pollTax}" style="width: 6em"/> = ${formatPrice(pollTaxRevenue)}
-      <label for="stateTreasuryInput">Treasury:</label>
+      <label>${t("Tariffs")}:</label>
+      <span></span> = ${formatPrice(tariffRevenue)}
+      <label for="stateTreasuryInput">${t("Treasury")}:</label>
       <input id="stateTreasuryInput" type="number" step="1" value="${state.treasury}" style="width: 6em" />
-    </div>`;
+    </div>
+    <hr />
+    <div style="display: flex; justify-content: space-between; align-items: center; margin: 0.4em 0;">
+      <b data-tip="${t("More specific rules override general rules. Embargoes block trade in both directions")}">${t("Tariffs and Embargoes")}</b>
+      <div style="display: flex; gap: 0.3em;">
+        <button id="stateTariffReset" type="button" class="icon-arrows-cw" data-tip="${t("Reset tariffs based on current diplomatic relations")}"> ${t("Reset")}</button>
+        <button id="stateTariffAdd" type="button" class="icon-plus" data-tip="${t("Add tariff or embargo rule")}"> ${t("Add")}</button>
+      </div>
+    </div>
+    <div id="stateTariffsList" style="max-height: 15em; overflow-y: auto; display: flex; flex-direction: column; row-gap: 0.25em;"></div>`;
+
+  const listEl = ensureEl("stateTariffsList");
+
+  const renderRules = (): void => {
+    if (!draftRules.length) {
+      listEl.innerHTML = `<div style="color: #666; font-style: italic; padding: 0.3em 0;">${t("No tariff or embargo rules")}</div>`;
+      return;
+    }
+    listEl.innerHTML = draftRules
+      .map((rule, index) => {
+        const statesInfo = formatStatesLabel(rule.states);
+        const goodsInfo = formatGoodsLabel(rule.goods);
+        const isEmbargo = rule.rate === "embargo";
+        const rateValue = isEmbargo ? 0.1 : rule.rate;
+        return /* html */ `<div class="tariffRuleRow" data-index="${index}" style="display: grid; grid-template-columns: 1fr 1fr 5.8em 4.5em 1.2em; column-gap: 0.3em; align-items: center;">
+          <button type="button" class="tariffStatesBtn" data-tip="${statesInfo.tip}" style="text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${statesInfo.label}</button>
+          <button type="button" class="tariffGoodsBtn" data-tip="${goodsInfo.tip}" style="text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${goodsInfo.label}</button>
+          <select class="tariffTypeSelect" data-tip="${t("Rule policy: tariff rate or complete trade embargo")}">
+            <option value="tariff" ${!isEmbargo ? "selected" : ""}>${t("Tariff")}</option>
+            <option value="embargo" ${isEmbargo ? "selected" : ""}>${t("Embargo")}</option>
+          </select>
+          <input class="tariffRateInput" type="number" min="0" max="10" step="0.01" value="${rateValue}" data-tip="${t("Import tariff rate")}" style="width: 4.2em; ${isEmbargo ? "visibility: hidden;" : ""}" />
+          <span class="icon-trash-empty pointer tariffRemoveBtn" data-tip="${t("Remove rule")}"></span>
+        </div>`;
+      })
+      .join("");
+  };
+
+  renderRules();
+
+  ensureEl("stateTariffReset").addEventListener("click", () => {
+    draftRules = States.defineTariffs(state).map(rule => ({
+      states: Array.isArray(rule.states) ? [...rule.states] : "all",
+      goods: Array.isArray(rule.goods) ? [...rule.goods] : "all",
+      rate: rule.rate
+    }));
+    renderRules();
+  });
+
+  ensureEl("stateTariffAdd").addEventListener("click", () => {
+    draftRules.push({ states: "all", goods: "all", rate: 0.1 });
+    renderRules();
+  });
+
+  listEl.addEventListener("click", event => {
+    const target = event.target as HTMLElement;
+    const row = target.closest<HTMLElement>(".tariffRuleRow");
+    if (!row) return;
+    const index = +row.dataset.index!;
+    const rule = draftRules[index];
+    if (!rule) return;
+
+    if (target.classList.contains("tariffRemoveBtn")) {
+      draftRules.splice(index, 1);
+      renderRules();
+    } else if (target.classList.contains("tariffStatesBtn")) {
+      openTariffStatesSelector(stateId, rule, renderRules);
+    } else if (target.classList.contains("tariffGoodsBtn")) {
+      openTariffGoodsSelector(rule, renderRules);
+    }
+  });
+
+  listEl.addEventListener("change", event => {
+    const target = event.target as HTMLInputElement | HTMLSelectElement;
+    const row = target.closest<HTMLElement>(".tariffRuleRow");
+    if (!row) return;
+    const index = +row.dataset.index!;
+    const rule = draftRules[index];
+    if (!rule) return;
+
+    if (target.classList.contains("tariffTypeSelect")) {
+      const rateInput = row.querySelector<HTMLInputElement>(".tariffRateInput");
+      if (target.value === "embargo") {
+        rule.rate = "embargo";
+        if (rateInput) rateInput.style.visibility = "hidden";
+      } else {
+        const val = rateInput ? Math.max(0, Math.min(10, +rateInput.value)) : 0.1;
+        rule.rate = Number.isFinite(val) ? rn(val, 4) : 0.1;
+        if (rateInput) rateInput.style.visibility = "";
+      }
+    } else if (target.classList.contains("tariffRateInput")) {
+      const val = Math.max(0, Math.min(10, +target.value));
+      if (rule.rate !== "embargo") rule.rate = Number.isFinite(val) ? rn(val, 4) : 0;
+    }
+  });
+
+  listEl.addEventListener("input", event => {
+    const target = event.target as HTMLInputElement;
+    if (!target.classList.contains("tariffRateInput")) return;
+    const row = target.closest<HTMLElement>(".tariffRuleRow");
+    if (!row) return;
+    const index = +row.dataset.index!;
+    const rule = draftRules[index];
+    if (!rule || rule.rate === "embargo") return;
+    const val = Math.max(0, Math.min(10, +target.value));
+    rule.rate = Number.isFinite(val) ? rn(val, 4) : 0;
+  });
 
   $("#alert").dialog({
     resizable: false,
-    title: `Taxes and Treasury: ${state.name}`,
-    width: "26em",
+    title: t("Taxes and Treasury: {{- state}}", { state: state.name }),
+    width: "32em",
+    close: () => destroyDialog("tariffSelectorDialog"),
     buttons: {
-      Apply: function (this: HTMLElement) {
+      [t("Apply")]: function (this: HTMLElement) {
         const salesInput = ensureEl<HTMLInputElement>("stateSalesTaxInput");
         const pollInput = ensureEl<HTMLInputElement>("statePollTaxInput");
         const treasuryInput = ensureEl<HTMLInputElement>("stateTreasuryInput");
@@ -798,15 +1040,144 @@ function openTreasuryDialog(stateId: number): void {
           Number.isFinite(newSales) ? newSales : state.salesTax,
           Number.isFinite(newPoll) ? newPoll : state.pollTax
         );
+        States.setTariffs(stateId, draftRules);
         if (Number.isFinite(newTreasury)) States.setTreasury(stateId, newTreasury);
         refreshStatesEditor();
         $(this).dialog("close");
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     },
     position: { my: "center", at: "center", of: "svg" }
+  });
+}
+
+function openTariffStatesSelector(stateId: number, rule: TariffRule, onApply: () => void): void {
+  const foreignStates = pack.states.filter(s => s.i && !s.removed && s.i !== stateId);
+  const isAll = rule.states === "all";
+  const selected = new Set(Array.isArray(rule.states) ? rule.states : foreignStates.map(s => s.i));
+
+  openTariffChecklistDialog({
+    title: t("Select States"),
+    allLabel: t("All states"),
+    isAll,
+    items: foreignStates.map(s => ({
+      id: s.i,
+      name: s.name,
+      badgeHtml: `<fill-box fill="${s.color || "#ccc"}" size=".8em" disabled></fill-box>`,
+      checked: isAll || selected.has(s.i)
+    })),
+    emptyWarning: t("Select at least one state"),
+    onSave: result => {
+      rule.states = result;
+      onApply();
+    }
+  });
+}
+
+function openTariffGoodsSelector(rule: TariffRule, onApply: () => void): void {
+  const goods = pack.goods ?? [];
+  const isAll = rule.goods === "all";
+  const selected = new Set(Array.isArray(rule.goods) ? rule.goods : goods.map(g => g.i));
+
+  openTariffChecklistDialog({
+    title: t("Select Goods"),
+    allLabel: t("All goods"),
+    isAll,
+    items: goods.map(g => ({
+      id: g.i,
+      name: g.name,
+      badgeHtml: g.icon
+        ? `<svg width="1.2em" height="1.2em" class="goodIcon" style="min-width: 1.2em; min-height: 1.2em; flex-shrink: 0;">${goodBadge(g)}</svg>`
+        : `<fill-box fill="${g.color || "#ccc"}" size=".8em" disabled></fill-box>`,
+      checked: isAll || selected.has(g.i)
+    })),
+    emptyWarning: t("Select at least one good"),
+    onSave: result => {
+      rule.goods = result;
+      onApply();
+    }
+  });
+}
+
+function openTariffChecklistDialog({
+  title,
+  allLabel,
+  isAll,
+  items,
+  emptyWarning,
+  onSave
+}: {
+  title: string;
+  allLabel: string;
+  isAll: boolean;
+  items: { id: number; name: string; badgeHtml?: string; checked: boolean }[];
+  emptyWarning: string;
+  onSave: (value: number[] | "all") => void;
+}): void {
+  destroyDialog("tariffSelectorDialog");
+  const dialogEl = document.createElement("div");
+  dialogEl.id = "tariffSelectorDialog";
+  dialogEl.className = "dialog";
+  document.body.appendChild(dialogEl);
+
+  const itemsHtml = items
+    .map(
+      item =>
+        `<label style="display: flex; align-items: center; column-gap: 0.35em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><input type="checkbox" class="native tariffItemCheck" value="${item.id}" ${item.checked ? "checked" : ""} />${item.badgeHtml ?? ""}<span>${item.name}</span></label>`
+    )
+    .join("");
+
+  dialogEl.innerHTML = /* html */ `
+    <div style="margin-bottom: 0.4em; padding-bottom: 0.3em; border-bottom: 1px solid #ccc;">
+      <label style="display: flex; align-items: center; column-gap: 0.3em;">
+        <input id="tariffAllCheck" type="checkbox" class="native" ${isAll ? "checked" : ""} />
+        <b>${allLabel}</b>
+      </label>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.25em 0.5em; max-height: 16em; overflow-y: auto;">
+      ${itemsHtml}
+    </div>
+  `;
+
+  const allCheck = ensureEl<HTMLInputElement>("tariffAllCheck");
+  const itemChecks = Array.from(dialogEl.querySelectorAll<HTMLInputElement>(".tariffItemCheck"));
+
+  allCheck.addEventListener("change", () => {
+    for (const check of itemChecks) check.checked = allCheck.checked;
+  });
+
+  dialogEl.addEventListener("change", event => {
+    const target = event.target as HTMLInputElement;
+    if (!target.classList.contains("tariffItemCheck")) return;
+    allCheck.checked = itemChecks.length > 0 && itemChecks.every(c => c.checked);
+  });
+
+  $(dialogEl).dialog({
+    resizable: false,
+    title,
+    width: "24em",
+    close: () => destroyDialog("tariffSelectorDialog"),
+    buttons: {
+      [t("Apply")]: function () {
+        if (allCheck.checked) {
+          onSave("all");
+          $(this).dialog("close");
+          return;
+        }
+        const checkedIds = itemChecks.filter(c => c.checked).map(c => +c.value);
+        if (!checkedIds.length) {
+          tip(emptyWarning, false, "error");
+          return;
+        }
+        onSave(checkedIds.length === itemChecks.length ? "all" : checkedIds);
+        $(this).dialog("close");
+      },
+      [t("Cancel")]: function () {
+        $(this).dialog("close");
+      }
+    }
   });
 }
 
@@ -847,9 +1218,9 @@ function stateRemovePrompt(state: number): void {
   if (customization) return;
 
   confirmationDialog({
-    title: "Remove state",
-    message: "Are you sure you want to remove the state? <br>This action cannot be reverted",
-    confirm: "Remove",
+    title: t("Remove"),
+    message: `${t("Are you sure you want to remove the state?")}<br>${t("This action cannot be reverted")}`,
+    confirm: t("Remove"),
     onConfirm: () => stateRemove(state)
   });
 }
@@ -875,14 +1246,14 @@ function toggleLegend(): void {
     .filter(s => s.i && !s.removed && s.cells)
     .sort((a, b) => (b.area ?? 0) - (a.area ?? 0))
     .map(s => [s.i, s.color, s.name]);
-  if (!data.length) return void tip("No states to show", false, "error");
+  if (!data.length) return void tip(t("No states to show"), false, "error");
   drawLegend(LEGEND_NAME, data);
 }
 
 function togglePercentageMode(): void {
   if (ensureEl("statesBodySection").dataset.type === "absolute") {
     ensureEl("statesBodySection").dataset.type = "percentage";
-    const totalBurgs = +ensureEl("statesFooterBurgs").innerText;
+    const totalBurgs = +ensureEl("statesFooterBurgs").textContent;
     const totalArea = +ensureEl("statesFooterArea").dataset.area!;
     const totalPopulation = +ensureEl("statesFooterPopulation").dataset.population!;
     const totalTreasury = pack.states.reduce((sum, s) => sum + (s.treasury || 0), 0);
@@ -892,11 +1263,12 @@ function togglePercentageMode(): void {
       .querySelectorAll<HTMLElement>(":scope > .states")
       .forEach(el => {
         const { burgs, area, population, treasury, cells } = el.dataset;
-        el.querySelector<HTMLElement>(".stateBurgs")!.innerText = `${rn((+burgs! / totalBurgs) * 100)}%`;
-        el.querySelector<HTMLElement>(".stateCells")!.innerText = `${rn((+cells! / totalCells) * 100)}%`;
-        el.querySelector<HTMLElement>(".stateArea")!.innerText = `${rn((+area! / totalArea) * 100)}%`;
-        el.querySelector<HTMLElement>(".statePopulation")!.innerText = `${rn((+population! / totalPopulation) * 100)}%`;
-        el.querySelector<HTMLElement>(".stateTreasury")!.innerText = `${rn((+treasury! / totalTreasury) * 100, 2)}%`;
+        el.querySelector<HTMLElement>(".stateBurgs")!.textContent = `${rn((+burgs! / totalBurgs) * 100)}%`;
+        el.querySelector<HTMLElement>(".stateCells")!.textContent = `${rn((+cells! / totalCells) * 100)}%`;
+        el.querySelector<HTMLElement>(".stateArea")!.textContent = `${rn((+area! / totalArea) * 100)}%`;
+        el.querySelector<HTMLElement>(".statePopulation")!.textContent =
+          `${rn((+population! / totalPopulation) * 100)}%`;
+        el.querySelector<HTMLElement>(".stateTreasury")!.textContent = `${rn((+treasury! / totalTreasury) * 100, 2)}%`;
       });
   } else {
     ensureEl("statesBodySection").dataset.type = "absolute";
@@ -907,7 +1279,7 @@ function togglePercentageMode(): void {
 function showStatesChart(): void {
   const statesData = pack.states.filter(s => !s.removed);
   if (statesData.length < 2) {
-    tip("There are no states to show", false, "error");
+    tip(t("No states to show"), false, "error");
     return;
   }
 
@@ -925,11 +1297,11 @@ function showStatesChart(): void {
 
   // prepare svg
   alertMessage.innerHTML = /* html */ `<select id="statesTreeType" style="display:block; margin-left:13px; font-size:11px">
-    <option value="area" selected>Area</option>
-    <option value="population">Total population</option>
-    <option value="rural">Rural population</option>
-    <option value="urban">Urban population</option>
-    <option value="burgs">Burgs number</option>
+    <option value="area" selected>${t("Area")}</option>
+    <option value="population">${t("Total population")}</option>
+    <option value="rural">${t("Rural population")}</option>
+    <option value="urban">${t("Urban population")}</option>
+    <option value="burgs">${t("Number of burgs")}</option>
   </select>`;
   alertMessage.innerHTML += `<div id='statesInfo' class='chartInfo'>&#8205;</div>`;
 
@@ -988,14 +1360,14 @@ function showStatesChart(): void {
     const option = ensureEl<HTMLSelectElement>("statesTreeType").value;
     const value =
       option === "area"
-        ? `Area: ${area}`
+        ? `${t("Area")}: ${area}`
         : option === "rural"
-          ? `Rural population: ${si(rural)}`
+          ? `${t("Rural population")}: ${si(rural)}`
           : option === "urban"
-            ? `Urban population: ${si(urban)}`
+            ? `${t("Urban population")}: ${si(urban)}`
             : option === "burgs"
-              ? `Burgs number: ${d.data.burgs}`
-              : `Population: ${si(rural + urban)}`;
+              ? t("Burgs number: {{burgs}}", { burgs: d.data.burgs })
+              : `${t("Population")}: ${si(rural + urban)}`;
 
     ensureEl("statesInfo").innerHTML = /* html */ `${state}. ${value}`;
     stateHighlightOn(ev);
@@ -1003,7 +1375,7 @@ function showStatesChart(): void {
 
   function hideInfo(ev: any) {
     stateHighlightOff();
-    if (!document.getElementById("statesInfo")) return;
+    if (!findEl("statesInfo")) return;
     ensureEl("statesInfo").innerHTML = "&#8205;";
     select(ev.target).select("circle").classed("selected", false);
   }
@@ -1040,7 +1412,7 @@ function showStatesChart(): void {
   }
 
   $("#alert").dialog({
-    title: "States bubble chart",
+    title: t("States bubble chart"),
     width: "fit-content",
     position: { my: "left bottom", at: "left+10 bottom-10", of: "svg" },
     buttons: {},
@@ -1101,12 +1473,12 @@ function openPaintEditor(): void {
   const adjustLabels = ensureEl<HTMLInputElement>("adjustLabels").checked;
 
   void Controllers.PaintEditor.open({
-    title: "Paint States",
+    title: t("Paint States"),
     parentDialogId: dialogId,
     onClose: open,
     items: pack.states
       .filter(state => !state.removed)
-      .map(state => ({ id: state.i, name: state.name, color: state.color || "#ffffff" })),
+      .map(state => ({ id: state.i, name: state.name, color: state.color || "#ffffff", lock: Boolean(state.lock) })),
     dontOverrideControl: true,
     getValue: cell => pack.cells.state[cell],
     filterCell: (cell, currentState) => isLand(cell, pack) && cell !== pack.states[currentState].center,
@@ -1127,7 +1499,7 @@ function applyStatesPaint(changes: ReadonlyMap<number, number>, adjustLabels: bo
     for (const stateId of affectedStates) delete pack.states[stateId].label;
     Layers.draw("labels");
   }
-  if (document.getElementById(dialogId)) refreshStatesEditor();
+  if (findEl(dialogId)) refreshStatesEditor();
 }
 
 function enterAddStateMode(this: HTMLElement): void {
@@ -1137,7 +1509,7 @@ function enterAddStateMode(this: HTMLElement): void {
   }
   customization = 3;
   this.classList.add("pressed");
-  tip("Click on the map to create a new capital or promote an existing burg", true);
+  tip(t("Click on the map to create a new capital or promote an existing burg"), true);
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", addState);
   ensureEl("statesBodySection")
     .querySelectorAll<HTMLElement>("div > input, select, span, svg")
@@ -1199,9 +1571,7 @@ function openStateMergeDialog(): void {
   alertMessage.innerHTML = /* html */ `
     <form id='mergeStatesForm' style="overflow: hidden; display: flex; flex-direction: column; gap: 1em;">
       <p style="margin:0">
-        Check the <b>checkbox</b> next to each state you want to merge.
-        Use the <b>radio button</b> to pick the <em>ruling state</em> that will absorb all others (its name, color, and capital will be kept).
-        Hover over a row to highlight the state on the map.
+        ${t("Check the checkbox next to each state you want to merge. Use the radio button to pick the ruling state that will absorb all others (its name, color, and capital will be kept). Hover over a row to highlight the state on the map.")}
       </p>
       <main style='display: grid; grid-template-columns: 1fr 1fr; gap: .3em;'>
         ${statesSelector}
@@ -1230,15 +1600,15 @@ function openStateMergeDialog(): void {
 
   $("#alert").dialog({
     width: 600,
-    title: `Merge states`,
+    title: t("Merge states"),
     close: stateHighlightOff,
     buttons: {
-      Merge: function (this: HTMLElement) {
+      [t("Merge")]: function (this: HTMLElement) {
         const formData = new FormData(ensureEl<HTMLFormElement>("mergeStatesForm"));
 
         const rulingStateId = Number(formData.get("rulingState"));
         if (!rulingStateId) {
-          tip("Please select a state to merge into", false, "error");
+          tip(t("Please select a state to merge into"), false, "error");
           return;
         }
 
@@ -1247,13 +1617,13 @@ function openStateMergeDialog(): void {
           .map(Number)
           .filter(stateId => stateId !== rulingStateId);
         if (!statesToMerge.length) {
-          tip("Please select several states to merge", false, "error");
+          tip(t("Please select several states to merge"), false, "error");
           return;
         }
 
         confirmStatesMerge(statesToMerge, rulingStateId, () => $(this).dialog("close"));
       },
-      Cancel: function (this: HTMLElement) {
+      [t("Cancel")]: function (this: HTMLElement) {
         $(this).dialog("close");
       }
     }
@@ -1264,14 +1634,14 @@ function confirmStatesMerge(statesToMerge: number[], rulingStateId: number, onCo
   const rulingState = pack.states[rulingStateId];
   const ruler = `${stateEmblem(rulingState.i)}${rulingState.name}`;
   confirmationDialog({
-    title: "Merge states",
+    title: t("Merge states"),
     // prettier-ignore
     message: /* html */ `
-      <p>The following states will be <strong>removed</strong>: ${statesToMerge.map(stateId => `${stateEmblem(stateId)}${(pack.states)[stateId].name}`).join(", ")}.</p>
-      <p>Removed states data (burgs, provinces, regiments) will be assigned to ${ruler}.</p>
-      <label style="display: flex; align-items: center"><input id="mergeStatesAsProvinces" class="checkbox native" type="checkbox"> Keep each removed state as a province of ${ruler}, replacing its own provinces</label>
-      <p>Are you sure you want to merge states? This action cannot be reverted.</p>`,
-    confirm: "Merge",
+      <p>${t("The following states will be removed")}: ${statesToMerge.map(stateId => `${stateEmblem(stateId)}${(pack.states)[stateId].name}`).join(", ")}.</p>
+      <p>${t("Removed states data (burgs, provinces, regiments) will be assigned to {{- ruler}}.", { ruler })}</p>
+      <label style="display: flex; align-items: center"><input id="mergeStatesAsProvinces" class="checkbox native" type="checkbox"> ${t("Keep each removed state as a province of {{- ruler}}, replacing its own provinces", { ruler })}</label>
+      <p>${sentences(t("Are you sure you want to merge states?"), t("This action cannot be reverted"))}</p>`,
+    confirm: t("Merge"),
     onConfirm: () => {
       mergeStates(statesToMerge, rulingStateId, ensureEl<HTMLInputElement>("mergeStatesAsProvinces").checked);
       onConfirm?.();
@@ -1282,7 +1652,18 @@ function confirmStatesMerge(statesToMerge: number[], rulingStateId: number, onCo
 const statesAnnex = createAnnexMode({
   buttonId: "statesAnnex",
   bodySectionId: "statesBodySection",
-  noun: "state",
+  tips: {
+    start: sentences(t("Click the state that annexes, then the states it absorbs"), t("Hold Shift to keep annexing")),
+    pickLand: t("Click on a land cell to pick a state"),
+    nothingHere: t("There is no state here"),
+    annexing: name =>
+      sentences(
+        t("Annexing into {{state}}", { state: name }),
+        t("Click the states to annex"),
+        t("Hold Shift to keep annexing")
+      ),
+    isParent: name => t("{{state}} is the annexing state", { state: name })
+  },
   ownerOf: cellId => pack.cells.state[cellId],
   colorOf: stateId => pack.states[stateId].color ?? "#999999",
   nameOf: stateId => pack.states[stateId].name,
@@ -1301,37 +1682,88 @@ function mergeStates(statesToMerge: number[], rulingStateId: number, asProvinces
 }
 
 function downloadStatesCsv(): void {
-  const unit = getAreaUnit("2");
-  const headers = `Id,State,Full Name,Form,Color,Capital,Culture,Type,Expansionism,Cells,Burgs,Area ${unit},Total Population,Rural Population,Urban Population`;
-  const data = statesTable.view().all.map(s => {
-    const rural = s.rural || 0;
-    const urban = s.urban || 0;
-    const population = rn(
-      rural * options.map.units.population.scale +
-        urban * options.map.units.population.scale * options.map.units.population.urbanization.rate
-    );
+  const { scale, urbanization } = options.map.units.population;
+  const headers = CSV_COLUMNS.map(column => (column === "Area" ? `Area ${getAreaUnit("2")}` : column));
+  const rows = statesTable.view().all.map(s => {
+    const rural = Math.round((s.rural || 0) * scale);
+    const urban = Math.round((s.urban || 0) * scale * urbanization.rate);
+    const neighbors = (s.neighbors || []).filter(n => n && !pack.states[n]?.removed);
     return [
       s.i,
       s.name,
-      s.fullName || "",
+      s.i ? s.fullName || "" : "",
       s.i ? s.formName || "" : "",
-      s.i ? s.color : "",
-      s.i ? pack.burgs[s.capital].name : "",
+      s.i ? s.color || "" : "",
+      s.i ? pack.burgs[s.capital].name || "" : "",
       s.i ? pack.cultures[s.culture].name : "",
       s.i ? s.type : "",
       s.i ? s.expansionism : "",
-      s.cells,
-      s.burgs,
+      s.cells || 0,
+      s.burgs || 0,
       getArea(s.area || 0),
-      population,
-      Math.round(rural * options.map.units.population.scale),
-      Math.round(urban * options.map.units.population.scale * options.map.units.population.urbanization.rate)
-    ].join(",");
+      rural + urban,
+      rural,
+      urban,
+      s.i ? (s.provinces || []).filter(p => !pack.provinces[p]?.removed).length : "",
+      s.i ? neighbors.map(n => pack.states[n].name).join(";") : "",
+      s.i ? s.salesTax || 0 : "",
+      s.i ? s.pollTax || 0 : "",
+      s.i ? s.treasury || 0 : "",
+      s.i ? (s.tags || []).join(";") : ""
+    ];
   });
-  const csvData = [headers].concat(data).join("\n");
 
-  const name = `${getFileName("States")}.csv`;
-  downloadFile(csvData, name);
+  Csv.download("States", headers, rows);
+}
+
+/** Update existing states from a CSV in the export format; blank cells and derived columns are skipped */
+async function uploadStatesCsv(text: string): Promise<void> {
+  const { scale, urbanization } = options.map.units.population;
+  const find = (id: number) => (pack.states[id]?.removed ? undefined : pack.states[id]);
+  const updated = await Controllers.CsvUpload.update(
+    text,
+    CSV_COLUMNS,
+    { find, units: ["Area"], text: ["State", "Full Name", "Form", "Tags"] },
+    (id, row) => {
+      const state = find(id)!;
+      const fullName = state.fullName; // a new name or form rebuilds it, so an unchanged cell must not restore the old one
+      row.apply("State", name => States.rename(id, name), state.name);
+      if (id) {
+        row.apply("Form", form => States.setForm(id, form), state.formName);
+        row.apply("Full Name", name => States.setFullName(id, name), fullName);
+        row.apply("Color", color => States.recolor(id, color), state.color); // recolor rejects hatched fills, so keep them when unchanged
+        row.apply(
+          "Capital",
+          name => Burgs.setCapital(Csv.byName(pack.burgs, name, burg => burg.state === id).i),
+          pack.burgs[state.capital]?.name
+        );
+        row.apply(
+          "Culture",
+          name => States.setCulture(id, Csv.byName(pack.cultures, name).i),
+          pack.cultures[state.culture]?.name
+        );
+        row.apply("Type", type => States.setType(id, type), state.type);
+        row.apply("Expansionism", value => States.setExpansionism(id, +value), state.expansionism);
+        row.apply("Sales Tax", value => States.setTaxes(id, +value, state.pollTax || 0), state.salesTax || 0);
+        row.apply("Poll Tax", value => States.setTaxes(id, state.salesTax || 0, +value), state.pollTax || 0);
+        row.apply("Treasury", value => States.setTreasury(id, +value), state.treasury || 0);
+        row.assign("Tags", tags => States.setTags(id, tags), (state.tags ?? []).join(";"));
+      } else {
+        for (const column of RULED_COLUMNS)
+          row.apply(column, () => {
+            throw new Error(t("Neutral lands have no government"));
+          });
+      }
+      row.population(
+        [Math.round((state.rural || 0) * scale), Math.round((state.urban || 0) * scale * urbanization.rate)],
+        (rural, urban) => States.setPopulation(id, rural, urban)
+      );
+    }
+  );
+  if (!updated) return;
+
+  Layers.draw("states", "borders", "burgIcons", "labels", "provinces", "military", "emblems", "population");
+  refreshStatesEditor();
 }
 
 function updateLockStatus(stateId: number, classList: DOMTokenList): void {

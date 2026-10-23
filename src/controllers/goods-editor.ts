@@ -23,11 +23,14 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { Tags } from "@/generators/tags";
 import { goodBadge } from "@/renderers/draw-goods";
-import { downloadFile, getFileName, rn } from "@/utils";
+import { Csv } from "@/services/io/csv";
+import { rn } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
 import type { Good } from "../generators/goods-generator";
 import { isDealRecord, isMfgRecord } from "../generators/production-generator";
-import { ensureEl, getPointer, unique } from "../utils";
+import { ensureEl, getPointer } from "../utils";
 
 let production: ReturnType<typeof getProduction> = {};
 let stockData: ReturnType<typeof getAllStockData> = {};
@@ -38,10 +41,10 @@ let filterState: { visibleTags: string[] };
 
 const columns: EditorColumn<Good>[] = [
   { key: "display", width: "1.6em" },
-  { key: "name", label: "Name", width: "10em", permanent: true, sortBy: good => good.name, sortType: "alpha" },
+  { key: "name", label: t("Name"), width: "10em", permanent: true, sortBy: good => good.name, sortType: "alpha" },
   {
     key: "type",
-    label: "Type",
+    label: t("Type"),
     width: "6em",
     permanent: true,
     sortBy: good => [good.recipes && "MFG", good.distribution && "RAW"].filter(Boolean).join(","),
@@ -49,34 +52,34 @@ const columns: EditorColumn<Good>[] = [
   },
   {
     key: "unit",
-    label: "Unit",
+    label: t("Unit"),
     width: "4em",
     sortBy: good => good.unit ?? "",
     sortType: "alpha",
-    tip: "Unit of production. Click to sort"
+    tip: sentences(t("Unit of production"), t("Click to sort"))
   },
   {
     key: "produced",
-    label: "Produced",
+    label: t("Produced"),
     width: "6em",
     sortBy: good => rn((production[good.i]?.burg ?? 0) + (production[good.i]?.cell ?? 0)),
     defaultSort: "desc",
-    tip: "Total units produced daily in cells (raw) and burgs (manufactured). Click to sort"
+    tip: sentences(t("Total units produced daily in cells (raw) and burgs (manufactured)"), t("Click to sort"))
   },
   {
     key: "stock",
-    label: "Stock",
+    label: t("Stock"),
     width: "6em",
     sortBy: good => stockData[good.i]?.total ?? 0,
     marginLeft: ".7em",
-    tip: "Total units in stock across all markets and burg inventories. Click to sort"
+    tip: sentences(t("Total units in stock across all markets and burg inventories"), t("Click to sort"))
   },
   {
     key: "price",
-    label: "Price",
+    label: t("Price"),
     width: "4.6em",
     sortBy: good => good.value,
-    tip: "Base (initial) price. Click to sort"
+    tip: sentences(t("Base (initial) price"), t("Click to sort"))
   },
   { key: "note", width: "1.1em" },
   { key: "edit", width: "1.1em" },
@@ -105,7 +108,7 @@ function open(goodId?: number): void {
   goodsTable.reset();
 
   $("#goodsEditor").dialog({
-    title: "Goods Editor",
+    title: t("Goods Editor"),
     close: closeGoodsEditor,
     position
   });
@@ -126,35 +129,35 @@ function renderDialog(): void {
       ${renderEditorHeader({ dialogId, columns })}
       <div id="goodsBody" class="table" style="max-height: 50vh;" data-type="absolute"></div>
       <div id="goodsFooter" class="totalLine hide">
-        <div data-tip="Number of goods (displayed / total)" style="margin-left: 5px">Goods:&nbsp;<span id="goodsDisplayed">0</span> of <span id="goodsNumber">0</span></div>
-        <div data-tip="Total units produced daily by all cells and burgs" style="margin-left: 12px">Produced:&nbsp;<span id="goodsProduced">0</span></div>
-        <div data-tip="Total units in stock across all markets and burg inventories" style="margin-left: 12px">Stock:&nbsp;<span id="goodsStock">0</span></div>
+        <div data-tip="${t("Number of goods (displayed / total)")}" style="margin-left: 5px">${t("Goods")}:&nbsp;${t("{{- shown}} of {{- total}}", { shown: `<span id="goodsDisplayed">0</span>`, total: `<span id="goodsNumber">0</span>` })}</div>
+        <div data-tip="${t("Total units produced daily by all cells and burgs")}" style="margin-left: 12px">${t("Produced")}:&nbsp;<span id="goodsProduced">0</span></div>
+        <div data-tip="${t("Total units in stock across all markets and burg inventories")}" style="margin-left: 12px">${t("Stock")}:&nbsp;<span id="goodsStock">0</span></div>
       </div>
       <div id="goodsBottom">
-        <button id="goodsEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+        <button id="goodsEditorRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
         <button
           id="goodsPercentage"
-          data-tip="Toggle percentage / absolute values display mode"
+          data-tip="${t("Toggle percentage / absolute values views")}"
           class="icon-percent"
         ></button>
-        <button id="goodsTagsFilter" data-tip="Filter visible goods by tags" class="icon-tags"></button>
-        <button id="goodsAssign" data-tip="Manually assign goods to cells" class="icon-brush"></button>
-        <button id="goodsAdd" data-tip="Add a new good" class="icon-plus hide"></button>
-        <button id="goodsRegenerateGoods" data-tip="Regenerate bonus goods placement" class="icon-arrows-cw hide"></button>
-        <button id="goodsRegenerateProduction" data-tip="Regenerate production and trade deals" class="icon-retweet hide"></button>
-        <button id="goodsChains" data-tip="Show production chains graph" class="icon-chart-line hide"></button>
+        <button id="goodsTagsFilter" data-tip="${t("Filter goods by tags")}" class="icon-tags"></button>
+        <button id="goodsAssign" data-tip="${t("Manually assign goods to cells")}" class="icon-brush"></button>
+        <button id="goodsAdd" data-tip="${t("Add")}" class="icon-plus hide"></button>
+        <button id="goodsRegenerateGoods" data-tip="${t("Regenerate bonus goods placement")}" class="icon-arrows-cw hide"></button>
+        <button id="goodsRegenerateProduction" data-tip="${t("Regenerate production and trade deals")}" class="icon-retweet hide"></button>
+        <button id="goodsChains" data-tip="${t("Show production chains graph")}" class="icon-chart-line hide"></button>
         <button
           id="goodsRestore"
-          data-tip="Restore default list and regenerate goods"
+          data-tip="${t("Restore default list and regenerate goods")}"
           class="icon-history hide"
         ></button>
-        <button id="goodsExport" data-tip="Download goods-related data" class="icon-download hide"></button>
+        <button id="goodsExport" data-tip="${t("Save data as a CSV file")}" class="icon-download hide"></button>
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
   ensureEl("goodsTagsFilter").classList.toggle("active", filterState.visibleTags.length > 0);
   ensureEl(`${dialogId}Header`).querySelector<HTMLElement>('[data-col="display"]')!.innerHTML = /* html */ `<input
-    type="checkbox" data-tip="Show or hide all goods matching the current filter" class="native" id="goodsDisplayAll"
+    type="checkbox" data-tip="${t("Show or hide all goods matching the current filter")}" class="native" id="goodsDisplayAll"
     style="margin: 0; width: 1.2em;" />`;
   bindColumnSorting(dialogId, goodsTable.reset);
   initColumnVisibility({
@@ -209,8 +212,8 @@ function renderGoodsPage(view: TableView<Good>) {
     const commonStyles =
       "display:inline-block;border-radius:3px;padding:0 .4em;font-size:0.8em;font-weight:bold;line-height:1.35";
     if (type === "RAW")
-      return `<span style="${commonStyles};background:#d0e7f5;color:#036" data-tip="Raw goods are produced by rural population in cells based on biome availability and in cells and burgs when bonus resource is assigned to cells">RAW</span>`;
-    return `<span style="${commonStyles};background:#f8e7bf;color:#b67a00" data-tip="Manufactured goods are produced in burgs">MFG</span>`;
+      return `<span style="${commonStyles};background:#d0e7f5;color:#036" data-tip="${t("Raw goods are produced by rural population in cells based on biome availability and in cells and burgs when bonus resource is assigned to cells")}">${t("RAW")}</span>`;
+    return `<span style="${commonStyles};background:#f8e7bf;color:#b67a00" data-tip="${t("Manufactured goods are produced in burgs")}">${t("MFG")}</span>`;
   };
 
   const lines = view.rows
@@ -218,33 +221,37 @@ function renderGoodsPage(view: TableView<Good>) {
       const types = [good.recipes && "MFG", good.distribution && "RAW"].filter(Boolean) as string[];
       const goodProduction = production[good.i] || { burg: 0, cell: 0 };
       const produced = rn(goodProduction.burg + goodProduction.cell);
-      const producedTip = `Good daily production: ${produced}⚒. Cells: ${rn(goodProduction.cell, 2)}⚒. Burgs: ${rn(goodProduction.burg, 2)}⚒`;
+      const producedTip = t("Good daily production: {{total}}. Cells: {{cells}}. Burgs: {{burgs}}", {
+        total: `${produced}⚒`,
+        cells: `${rn(goodProduction.cell, 2)}⚒`,
+        burgs: `${rn(goodProduction.burg, 2)}⚒`
+      });
       const stock = rn(stockData[good.i]?.total ?? 0);
-      const stockTip = `Total stock in all markets and burg inventories: ${stock} units`;
+      const stockTip = `${t("Total units in stock across all markets and burg inventories")}: ${stock}`;
 
       return /*html*/ `<div class="states goods" data-id=${good.i} data-produced="${produced}" data-stock="${stock}">
-        <div data-col="display"><input type="checkbox" data-tip="Toggle this good on the Goods map" class="native goodDisplayed" style="margin: 0; width: 1.2em;" ${good.visible ? "checked" : ""} /></div>
-        <div data-col="name" style="display:flex; align-items:center"><svg data-tip="Good icon" width="2em" height="2em" class="goodIcon">
+        <div data-col="display"><input type="checkbox" data-tip="${t("Toggle this good on the Goods map")}" class="native goodDisplayed" style="margin: 0; width: 1.2em;" ${good.visible ? "checked" : ""} /></div>
+        <div data-col="name" style="display:flex; align-items:center"><svg data-tip="${t("Good icon")}" width="2em" height="2em" class="goodIcon">
           ${goodBadge(good)}
-        </svg><span data-tip="Good name" class="goodName">${good.name}</span></div>
-        <div data-col="type" data-tip="Good types" class="goodType">${types.map(renderTypeBadge).join(" ")}</div>
-        <div data-col="unit" data-tip="Unit of production" class="goodUnit">${good.unit ?? ""}</div>
-        <div data-col="produced" data-tip="${producedTip}. Click to see burgs producing this good" class="goodProduced pointer" style="text-align: right">
+        </svg><span data-tip="${t("Name")}" class="goodName">${good.name}</span></div>
+        <div data-col="type" data-tip="${t("Good types")}" class="goodType">${types.map(renderTypeBadge).join(" ")}</div>
+        <div data-col="unit" data-tip="${t("Unit of production")}" class="goodUnit">${good.unit ?? ""}</div>
+        <div data-col="produced" data-tip="${sentences(producedTip, t("Click to see burgs producing this good"))}" class="goodProduced pointer" style="text-align: right">
           <div style="display: inline-block; width: 3em">${percentage ? `${rn(totalProduced ? (produced / totalProduced) * 100 : 0, 2)}%` : produced}</div>
           <div style="display: inline-block; width: 0.4em; font-size: 1.5em;">⚒</div>
         </div>
-        <div data-col="stock" data-tip="${stockTip}. Click to see breakdown by location" class="goodStock pointer" style="text-align: right">
+        <div data-col="stock" data-tip="${sentences(stockTip, t("Click to see breakdown by location"))}" class="goodStock pointer" style="text-align: right">
           <div style="display: inline-block; width: 3em">${percentage ? `${rn(totalStock ? (stock / totalStock) * 100 : 0, 2)}%` : stock}</div>
           <div style="display: inline-block; width: 0.4em; font-size: 1.2em;">⛁</div>
         </div>
-        <div data-col="price" data-tip="Base (initial) price. Click to compare prices across markets" class="goodBasePrice pointer">🟡 ${good.value}</div>
-        ${noteIcon("this good")}
-        <span data-col="edit" data-tip="Edit good" class="icon-pencil goodEdit"></span>
-        <span data-col="remove" data-tip="Remove good" class="icon-trash-empty goodRemove"></span>
+        <div data-col="price" data-tip="${sentences(t("Base (initial) price"), t("Click to compare prices across markets"))}" class="goodBasePrice pointer">🟡 ${good.value}</div>
+        ${noteIcon(t("Edit free text notes (legend)"))}
+        <span data-col="edit" data-tip="${t("Edit good")}" class="icon-pencil goodEdit"></span>
+        <span data-col="remove" data-tip="${t("Remove")}" class="icon-trash-empty goodRemove"></span>
       </div>`;
     })
     .join("");
-  body.innerHTML = lines || "No goods available";
+  body.innerHTML = lines || t("No goods available");
 
   ensureEl("goodsNumber").innerHTML = String(pack.goods.length);
   ensureEl("goodsProduced").innerHTML = String(rn(totalProduced));
@@ -290,18 +297,18 @@ function openProducersDialog(goodId: number) {
     .sort((a, b) => b.units - a.units);
 
   if (!producers.length) {
-    alertMessage.innerHTML = `<i style="color:#888">No burgs produced ${good.name}.</i>`;
+    alertMessage.innerHTML = `<i style="color:#888">${t("No burgs produced {{good}}.", { good: good.name })}</i>`;
   } else {
     const header = /*html*/ `
           <div class="header" style="grid-template-columns: 1.6em 7em 4em;">
             <div></div>
-            <div>Burg</div>
-            <div>Units</div>
+            <div>${t("Burg")}</div>
+            <div>${t("Units")}</div>
          </div>`;
     const rows = producers
       .map(
         ({ burg, units }) => /*html*/ `
-          <div data-tip="Click to zoom to burg" class="states pointer" data-x="${burg.x} " data-y="${burg.y}" data-id="${burg.i}">
+          <div data-tip="${t("Click to zoom")}" class="states pointer" data-x="${burg.x} " data-y="${burg.y}" data-id="${burg.i}">
             <div class="icon-dot-circled" style="width:1em"></div>
             <div style="width:7em;">${burg.name}</div>
             <div style="width:4em;">${units}</div>
@@ -318,9 +325,9 @@ function openProducersDialog(goodId: number) {
 
   $("#alert").dialog({
     resizable: false,
-    title: `${good.name} producers`,
+    title: t("{{- good}} producers", { good: good.name }),
     buttons: {
-      Close: function () {
+      [t("Close")]: function () {
         $(this).dialog("close");
       }
     }
@@ -402,19 +409,19 @@ function openStockDialog(goodId: number) {
   const sources = data?.sources ?? [];
 
   if (!sources.length) {
-    alertMessage.innerHTML = `<i style="color:#888">No stock of ${good.name} found in any market or burg inventory.</i>`;
+    alertMessage.innerHTML = `<i style="color:#888">${t("No stock of {{good}} found in any market or burg inventory.", { good: good.name })}</i>`;
   } else {
     const header = /*html*/ `
       <div class="header" style="grid-template-columns: 1.6em 7em 4em;">
         <div></div>
-        <div>Location</div>
-        <div>Units</div>
+        <div>${t("Location")}</div>
+        <div>${t("Units")}</div>
       </div>`;
     const rows = [...sources]
       .sort((a, b) => b.stock - a.stock)
       .map(
         source => /*html*/ `
-        <div data-tip="Click to zoom to location" class="states pointer" data-x="${source.x}" data-y="${source.y}" data-id="${source.id}">
+        <div data-tip="${t("Click to zoom")}" class="states pointer" data-x="${source.x}" data-y="${source.y}" data-id="${source.id}">
           <div class="${source.type === "market" ? "icon-store" : "icon-dot-circled"}" style="width:1em"></div>
           <div style="width:7em;">${source.name}</div>
           <div style="width:4em;">${source.stock}</div>
@@ -431,9 +438,9 @@ function openStockDialog(goodId: number) {
 
   $("#alert").dialog({
     resizable: false,
-    title: `${good.name} stock`,
+    title: t("{{- good}} stock", { good: good.name }),
     buttons: {
-      Close: function () {
+      [t("Close")]: function () {
         $(this).dialog("close");
       }
     }
@@ -469,29 +476,31 @@ function getProduction() {
 }
 
 function openTagsVisibilityDialog() {
-  const tags = unique(pack.goods.flatMap(good => good.tags));
+  const tags = Tags.all(pack.goods);
   const renderTag = (tag: string) =>
     `<label style="display: flex; align-items: center;"><input type="checkbox" class="native" value="${tag}" ${filterState.visibleTags.includes(tag) ? "checked" : ""} /> ${tag}</label>`;
-  const tagsMarkup = tags.length ? tags.map(renderTag).join("") : '<div style="color:#666">No tags available</div>';
+  const tagsMarkup = tags.length
+    ? tags.map(renderTag).join("")
+    : `<div style="color:#666">${t("No tags available")}</div>`;
 
   alertMessage.innerHTML = `
-    <div data-tip="Only goods with at least one selected tag remain visible in the editor list" style="display: grid; grid-template-columns: 1fr 1fr 1fr; column-gap: 0.3em;">${tagsMarkup}</div>
+    <div data-tip="${t("Only goods with at least one selected tag remain visible in the editor list")}" style="display: grid; grid-template-columns: 1fr 1fr 1fr; column-gap: 0.3em;">${tagsMarkup}</div>
   `;
 
   $("#alert").dialog({
     resizable: false,
-    title: "Filter goods by tags",
+    title: t("Filter goods by tags"),
     buttons: {
-      Cancel: function () {
+      [t("Cancel")]: function () {
         $(this).dialog("close");
       },
-      "Clear filter": function () {
+      [t("Clear filter")]: function () {
         filterState.visibleTags = [];
         dialogState.set(dialogId, "filters", filterState);
         applyTagVisibilityFilter();
         $(this).dialog("close");
       },
-      Apply: function () {
+      [t("Apply")]: function () {
         const checks = Array.from(alertMessage.querySelectorAll<HTMLInputElement>("input[type=checkbox]:checked"));
         filterState.visibleTags = checks.map(check => check.value);
         dialogState.set(dialogId, "filters", filterState);
@@ -510,11 +519,13 @@ function applyTagVisibilityFilter() {
 
 function goodsRestoreDefaults() {
   confirmationDialog({
-    title: "Restore default goods",
-    message: "Are you sure you want to restore default goods? <br>This action cannot be reverted",
-    confirm: "Restore",
+    title: t("Restore default goods"),
+    message: `${t("Are you sure you want to restore default goods?")}<br>${t("This action cannot be reverted")}`,
+    confirm: t("Restore"),
     onConfirm: () => {
+      const previousIds = pack.goods.map(good => good.i);
       Goods.restoreDefaults();
+      States.pruneTariffs({ goods: previousIds.filter(id => !Goods.get(id)) }); // a later good could reuse the id
       Goods.generate();
       Production.regenerateEconomy();
       Layers.draw("markets", "goods");
@@ -545,7 +556,7 @@ function enterResourceAssignMode(this: HTMLElement) {
 
   updateDialog(dialogId, { position });
 
-  tip("Select good line in editor, click on cells to remove or add a bonus resource", true);
+  tip(t("Select good line in editor, click on cells to remove or add a bonus resource"), true);
   select<SVGElement, unknown>("#viewbox").on("click", changeResourceOnCellClick);
 }
 
@@ -610,24 +621,44 @@ function downloadGoodsData() {
   const production = getProduction();
   const stockData = getAllStockData();
 
-  let data = "Id,Good,Color,Type,Tags,Value,Unit,Demand Coverage,Chance,Model,Cells,Produced,Stock\n";
-
-  for (const good of pack.goods) {
+  const rows = pack.goods.map(good => {
     const types = [good.recipes && "MFG", good.distribution && "RAW"].filter(Boolean).join(";");
-    const tags = good.tags.join(";");
     const demandCoverage = Object.entries(good.demandCoverage || {})
       .map(([k, v]) => `${k}:${v}`)
       .join(";");
-    const cells = cellsByGood[good.i] || 0;
     const goodProduction = production[good.i] || { burg: 0, cell: 0 };
-    const produced = rn(goodProduction.burg + goodProduction.cell);
-    const stock = stockData[good.i]?.total ?? 0;
-
-    data += `${good.i},${good.name},${good.color},${types},${tags},${good.value},${good.unit ?? ""},${demandCoverage},${good.chance ?? ""},${good.distribution ?? ""},${cells},${produced},${stock}\n`;
-  }
-
-  const name = `${getFileName("Goods")}.csv`;
-  downloadFile(data, name);
+    return [
+      good.i,
+      good.name,
+      good.color,
+      types,
+      good.tags.join(";"),
+      good.value,
+      good.unit,
+      demandCoverage,
+      good.chance,
+      good.distribution,
+      cellsByGood[good.i] || 0,
+      rn(goodProduction.burg + goodProduction.cell),
+      stockData[good.i]?.total ?? 0
+    ];
+  });
+  const headers = [
+    "Id",
+    "Good",
+    "Color",
+    "Type",
+    "Tags",
+    "Value",
+    "Unit",
+    "Demand Coverage",
+    "Chance",
+    "Model",
+    "Cells",
+    "Produced",
+    "Stock"
+  ];
+  Csv.download("Goods", headers, rows);
 }
 
 function toggleDisplayedGood(good: Good, el: HTMLInputElement) {
@@ -664,10 +695,11 @@ function updateDisplayAllCheckbox() {
 
 function requestGoodsRegeneration() {
   confirmationDialog({
-    title: "Regenerate bonus goods",
-    message:
-      "Are you sure you want to regenerate bonus goods placement? Generation will be based on the current Goods settings and won't affect production or trade",
-    confirm: "Regenerate",
+    title: t("Regenerate bonus goods placement"),
+    message: t(
+      "Are you sure you want to regenerate bonus goods placement? Generation will be based on the current Goods settings and won't affect production or trade"
+    ),
+    confirm: t("Regenerate"),
     onConfirm: () => {
       Goods.regenerate();
       Layers.draw("goods");
@@ -678,10 +710,11 @@ function requestGoodsRegeneration() {
 
 function requestProductionRegeneration() {
   confirmationDialog({
-    title: "Regenerate production",
-    message:
-      "Are you sure you want to regenerate production and trade for all goods? Generation will be based on the current Goods settings and bonus goods placement",
-    confirm: "Regenerate",
+    title: t("Regenerate Production"),
+    message: t(
+      "Are you sure you want to regenerate production and trade for all goods? Generation will be based on the current Goods settings and bonus goods placement"
+    ),
+    confirm: t("Regenerate"),
     onConfirm: () => {
       Production.regenerate();
       Layers.draw("goods");
@@ -692,7 +725,7 @@ function requestProductionRegeneration() {
 }
 
 function removeGood(good: Good) {
-  const message = "Are you sure you want to remove the resource? <br>This action cannot be reverted";
+  const message = `${t("Are you sure you want to remove the resource?")}<br>${t("This action cannot be reverted")}`;
   const onConfirm = () => {
     for (const i of pack.cells.i) {
       if (pack.cells.good[i] === good.i) {
@@ -702,10 +735,11 @@ function removeGood(good: Good) {
 
     pack.goods = pack.goods.filter(g => g.i !== good.i);
     Goods.sync();
+    States.pruneTariffs({ goods: [good.i] });
     goodsTable.refresh();
     Layers.draw("goods");
   };
-  confirmationDialog({ title: "Remove resource", message, confirm: "Remove", onConfirm });
+  confirmationDialog({ title: t("Remove"), message, confirm: t("Remove"), onConfirm });
 }
 
 function closeGoodsEditor() {

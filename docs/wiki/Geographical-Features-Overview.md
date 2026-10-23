@@ -67,6 +67,7 @@ The filters are remembered while the map is open, and the footer shows how many 
 * **Refresh** — rebuild the table, for instance after editing the heightmap
 * **Heightmap** — open the _Heightmap Editor_, where features are actually added and removed
 * **Export** — save the listed features as a `.csv` file
+* **Upload** — update names, subtypes, lake groups and tags from an edited export, see [Data import](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Data-import)
 
 ## Oceans
 

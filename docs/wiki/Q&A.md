@@ -26,7 +26,7 @@ If there is no version conflict, please [report the problem](https://github.com/
 Open the menu with the upper-left triangle or press Tab. Click **Export** in the menu's bottom row to open the Export dialog. For SVG, click **.svg** in the **Download image** row. The separate **Save** dialog saves editable `.map` files; it does not contain image exports.
 
 The **Save** dialog offers:
-* Save to machine: save file can be directly loaded to the Generator. Where the browser supports it, you pick the file once and later saves update it; Shift-click saves a copy elsewhere.
+* Save to machine: save file can be directly loaded to the Generator. Each save creates a new file, so earlier saves stay as backups; where the browser supports it, Shift-click overwrites the last saved file instead.
 * Save to Dropbox: save file can be directly loaded to the Generator.
 * Save to storage: save map data to the browser's internal database. File will be loaded automatically on page refresh. Bear in mind that saving to desktop is safer since browser storage can be accidentally cleared
 
@@ -61,7 +61,11 @@ The Generator targets modern browsers. Chromium browsers are the primary tested 
 You can, but I doubt you will enjoy the experience. The Generator GUI is not suitable for mobile devices and performance is subpar. In general, I would say mobile devices are not supported.
 
 ### What about non-English localization?
-There is no hand-written localization yet. As a workaround, the Options tab has a _Language_ row with an **Init Google Translate** button that loads Google Translate and lets you pick a language. Automatic translation can break some of the page functionality — if that happens, use the reset icon to go back to English or refresh the page.
+The interface is available in English, Russian, Ukrainian, German, French, Spanish, Portuguese (Portugal and Brazil), Italian, Dutch, Polish, Czech, Hungarian, Swedish, Danish, Afrikaans, Turkish, Indonesian, Vietnamese, Thai, Chinese (Simplified), Japanese and Korean. On first launch it follows your browser's language when it is one of these; to change it, pick a language in the _Language_ row of the Options tab and reload the page. Save your map first if it has unsaved changes.
+
+Only the interface is translated. Generated map content — names of states, provinces, burgs and religions, biome and goods names, legends and notes — stays in English, and a map looks the same whatever interface language it was made or opened in. Rename anything you want in your own language.
+
+For other languages, your browser's built-in page translation may work, but it is machine translation and can break some page functions; refresh the page to go back. To report a wrong translation, see [Reporting bugs and suggesting ideas](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Reporting-bugs-and-ideas#report-a-wrong-translation).
 
 ### Can I embed the map to my website?
 Yes, you can and it's easy to do. Please follow the guide [here](https://sites.google.com/view/fantasy-map-generator-embedded/home).

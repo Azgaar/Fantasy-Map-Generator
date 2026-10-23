@@ -4,17 +4,7 @@
   --sans-serif: Helvetica, Arial, sans-serif;
 }
 
-/* hide Google translate header */
-body > .skiptranslate {
-  display: none;
-}
-
-/* hide Google translate in-progress widget */
-body > .skiptranslate + div {
-  display: none;
-}
-
-/* make translated text wrapper non-blocking */
+/* make browser translation wrappers non-blocking */
 font {
   pointer-events: none;
 }
@@ -90,11 +80,6 @@ iframe {
   bottom: 1em;
   left: 1em;
   cursor: pointer;
-}
-
-#pickerContainer {
-  position: absolute;
-  z-index: 100;
 }
 
 input,
@@ -228,6 +213,13 @@ t,
 #relig,
 #biomes,
 #cults {
+  mask: url(#land);
+}
+
+#populationCells {
+  stroke-dasharray: none;
+  stroke-linejoin: round;
+  fill-rule: evenodd;
   mask: url(#land);
 }
 
@@ -448,6 +440,7 @@ button.options {
   background-color: var(--bg-main);
   font-weight: bold;
   border: none;
+  white-space: nowrap;
   transition: 0.2s;
 }
 
@@ -565,6 +558,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 #options output {
   text-align: right;
   font-size: smaller;
+  white-space: nowrap;
 }
 
 #options input[type="number"] {
@@ -652,6 +646,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 #loadGoogleTranslateButton {
   font-size: smaller;
   padding: 0.4em 0.5em;
+  white-space: normal;
 }
 
 #options input[type="color"] {
@@ -672,6 +667,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 
 #sticked {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-evenly;
   width: 100%;
 }
@@ -680,6 +676,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   background-color: transparent;
   font-weight: bold;
   border: 0;
+  padding: 1px 2px;
 }
 
 #sticked button:hover {
@@ -760,6 +757,8 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 #toolsContent button {
   padding: 0.35em 0;
   margin: 0.16em 0.12em;
+  white-space: normal;
+  hyphens: auto;
 }
 
 #mapLayers {
@@ -767,6 +766,14 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   padding: 0;
   margin: 0;
   user-select: none; /* the items are re-rendered, so jQuery disableSelection cannot hold */
+}
+
+#mapLayers li {
+  text-transform: none; /* labels are cased by their language */
+  box-sizing: border-box;
+  width: calc(100% / 3 - 0.45em);
+  margin-inline: 0.2em;
+  padding-inline: 0.15em;
 }
 
 #viewMode > button {
@@ -1670,10 +1677,13 @@ div.states span.inactive:hover {
 #riverBody select,
 #routeBody div.label,
 #lakeBody div.label,
-#lakeBody input,
-#lakeBody select {
+#lakeBody input {
   display: inline-block;
   width: 7em;
+}
+
+#lakeBody select {
+  min-width: 7em;
 }
 
 #routeBody input,
@@ -1765,80 +1775,6 @@ div.editorLine {
   font-size: 0.9em;
 }
 
-#picker text {
-  cursor: default;
-}
-
-#pickerHeader {
-  fill: var(--header);
-  stroke: var(--dark-solid);
-  cursor: move;
-}
-
-#pickerLabel {
-  fill: #f8ffff;
-  font-size: 12px;
-  font-weight: bold;
-  font-family: var(--sans-serif);
-  cursor: move !important;
-}
-
-#pickerCloseRect {
-  cursor: pointer;
-  fill: var(--header);
-  stroke: #f8ffff;
-}
-
-#pickerCloseText {
-  fill: #f8ffff;
-  font-size: 10px;
-  font-family: var(--sans-serif);
-  pointer-events: none;
-}
-
-#pickerControls line {
-  stroke: #999999;
-  stroke-width: 2;
-}
-
-#pickerControls circle {
-  fill: #ffeb3b;
-  stroke: #666666;
-  cursor: ew-resize;
-}
-
-#pickerControls circle:hover {
-  fill: #eca116;
-  stroke: #000000;
-}
-
-#pickerControls,
-#pickerSpaces {
-  font-size: 11px;
-}
-
-#pickerSpaces input {
-  width: 22px;
-  font-size: 9px;
-  -moz-appearance: textfield;
-}
-
-#pickerSpaces input::-webkit-inner-spin-button,
-#pickerSpaces input::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-#pickerColors rect,
-#pickerHatches rect {
-  cursor: pointer;
-}
-
-#picker rect.selected {
-  outline: 2px dashed #b90c0c;
-  stroke-width: 0;
-}
-
 .hoverButton {
   position: sticky;
   margin-left: -1.8em;
@@ -1908,15 +1844,19 @@ div.editorLine {
 }
 
 #ruler .white {
-  stroke: white;
+  stroke: currentColor;
 }
 
 #ruler .gray {
-  stroke: #3d3d3d;
   pointer-events: none;
 }
 
+#ruler[data-labels="false"] text {
+  display: none;
+}
+
 #ruler text {
+  stroke: none;
   font-family: var(--serif);
   fill: #3d3d3d;
   text-anchor: middle;
@@ -2188,6 +2128,7 @@ svg.button {
 }
 
 #alertMessage {
+  margin: 0;
   user-select: text;
   max-height: 70vh;
   max-width: 75vw;
@@ -3088,4 +3029,23 @@ body.tour-free-roam * {
 #assistantMap .assistantMapAssistant a {
   text-decoration: underline;
   cursor: pointer;
+}
+
+/* a map with options.map.viewOnly: browsing only */
+body.view-only :is(#styleTab, #optionsTab, #toolsTab, #assistantBubble) {
+  display: none !important;
+}
+
+body.view-only #viewbox * {
+  cursor: inherit;
+}
+
+body.view-only #scaleBar {
+  pointer-events: none;
+}
+
+#saveButton:disabled,
+#saveToStorageButton:disabled {
+  opacity: 0.5;
+  cursor: default;
 }

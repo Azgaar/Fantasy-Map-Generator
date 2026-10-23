@@ -49,6 +49,7 @@ const BASE_ATTRS: LabelGroupStyle["attrs"] = {
   "font-family": "Almendra SC",
   "font-style": null,
   "font-weight": null,
+  "text-decoration": null,
   style: null,
   filter: null
 };

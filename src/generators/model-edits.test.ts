@@ -274,7 +274,7 @@ describe("Burgs: capital, move, remove", () => {
 
   it("move takes a free land cell and keeps a capital in its state and province", () => {
     vi.spyOn(Pack, "requireCell").mockImplementation((x: unknown) => x as number);
-    const portWater = vi.spyOn(Burgs as unknown as { portWater: () => number }, "portWater").mockReturnValue(0);
+    const portWater = vi.spyOn(Burgs, "getPortWater").mockReturnValue(0);
     pack.burgs[2].port = 7;
     Burgs.move(2, 3, 5);
     expect(pack.burgs[2]).toMatchObject({ cell: 3, state: 0, x: 3, y: 5, port: 0 });

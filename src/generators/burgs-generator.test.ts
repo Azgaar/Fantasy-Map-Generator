@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { Burg } from "./burgs-generator";
 
 // ---------------------------------------------------------------------------
 // Minimal pack geometry used across all scenarios
@@ -74,6 +75,7 @@ describe("BurgsModule.assignPorts — open-lake port promotion", () => {
 
     // Modules are cached by Vitest; re-import is a no-op after the first run,
     // so we re-wire the globals each time instead.
+    await import("./pack-generator"); // the river-bank shift is checked against the cell under it
     await import("./river-generator");
     await import("./burgs-generator");
     Burgs = (globalThis as any).Burgs;
@@ -345,6 +347,7 @@ describe("BurgsModule.assignPorts — river-bank shift", () => {
     globalThis.window = globalThis.window || ({} as any);
     globalThis.grid = { cells: { temp: new Array(10).fill(20) } } as any;
 
+    await import("./pack-generator"); // the river-bank shift is checked against the cell under it
     await import("./river-generator");
     await import("./burgs-generator");
     Burgs = (globalThis as any).Burgs;
@@ -418,6 +421,37 @@ describe("BurgsModule.assignPorts — river-bank shift", () => {
     const burg = globalThis.pack.burgs[1];
     // Still shifted (axis-aligned fallback), just not crashing on the missing course.
     expect(burg.x === 5 && burg.y === 5).toBe(false);
+  });
+
+  it("keeps the burg on its cell centre when the shift would cross into a neighbor", () => {
+    // cell 3 is 0.4 away from cell 2, closer than the 0.6 shift: the shifted burg would lie in cell 3
+    globalThis.pack = {
+      burgs: [0 as any, { i: 1, cell: 2, x: 10, y: 10, capital: 0 }],
+      cells: {
+        h: [20, 25, 25, 25],
+        r: [0, 10, 10, 0],
+        fl: [0, 300, 300, 0],
+        f: [0, 0, 0, 0],
+        g: [0, 0, 0, 0],
+        haven: [0, 0, 0, 0],
+        harbor: [0, 0, 0, 0],
+        v: [[], [], [], []],
+        p: [
+          [0, 0],
+          [10, 0],
+          [10, 10],
+          [10.4, 10]
+        ] as [number, number][]
+      },
+      features: [null],
+      vertices: { c: [], p: [] },
+      rivers: [{ i: 10, cells: [1, 2] }]
+    } as any;
+
+    Burgs.assignPorts();
+
+    const burg = globalThis.pack.burgs[1];
+    expect([burg.x, burg.y]).toEqual([10, 10]);
   });
 });
 
@@ -536,55 +570,83 @@ describe("BurgsModule.generate", () => {
   });
 });
 
-describe("BurgsModule.getPreview — Watabou city river and coast", () => {
-  const params = (burg: object) => {
-    const { link } = (globalThis as any).Burgs.getPreview({
+describe("BurgsModule.getPreview — Watabou river and coast", () => {
+  const params = (burg: Pick<Burg, "cell"> & Partial<Burg>) => {
+    const { link, preview } = globalThis.Burgs.getPreview({
       i: 1,
+      x: 0,
+      y: 0,
       name: "Vel",
       population: 10,
       group: "city",
       ...burg
     });
-    const { searchParams } = new URL(link);
-    return { river: searchParams.get("river"), coast: searchParams.get("coast") };
+    expect(preview).toBe(`${link}&preview=1`);
+    return new URL(link!).searchParams;
   };
 
   beforeEach(async () => {
-    globalThis.options = {
+    vi.stubGlobal("options", {
       map: {
         seed: "1",
         units: { population: { scale: 1000, urbanization: { rate: 1, density: 10 } } },
-        burgs: { groups: [{ name: "city", preview: "watabou-city" }] }
+        burgs: {
+          groups: [
+            { name: "city", preview: "watabou-city" },
+            { name: "village", preview: "watabou-village" }
+          ]
+        }
       }
-    } as any;
-    globalThis.Routes = { isCrossroad: () => false } as any;
-    // cells 1 and 2 are on the coast facing water cell 3; river 5 passes cell 1 and meets the sea at cell 2
-    globalThis.pack = {
+    });
+    vi.stubGlobal("Routes", { isCrossroad: () => false, getConnectivityRate: () => 0 });
+    vi.stubGlobal("grid", { cells: { temp: [20] } });
+    // River 5 passes coastal cell 1 and meets the sea at cell 2; cell 4 is a riverless coast.
+    vi.stubGlobal("pack", {
       cells: {
-        r: [5, 5, 5, 0],
-        haven: [0, 3, 3, 0],
-        biome: [6, 6, 6, 0],
+        r: [5, 5, 5, 0, 0],
+        haven: [0, 3, 3, 0, 3],
+        biome: [6, 6, 6, 0, 6],
+        f: [0, 0, 0, 1, 0],
+        g: [0, 0, 0, 0, 0],
+        conf: [0, 0, 0, 0, 0],
         p: [
           [0, 0],
           [0, 0],
           [1, 0],
-          [1, 1]
+          [1, 1],
+          [2, 0]
         ]
       },
+      features: [{ cells: 4 }],
       rivers: [{ i: 5, mouth: 2 }]
-    } as any;
+    });
     await import("./burgs-generator");
   });
 
-  it("drops the river of a coastal port the river only passes", () => {
-    expect(params({ cell: 1, port: 3 })).toEqual({ river: "0", coast: "1" });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it.each([
+    { name: "coastal port before the river mouth", cell: 1, port: 3, river: "1", coast: "1" },
+    { name: "coastal port at the river mouth", cell: 2, port: 3, river: "1", coast: "1" },
+    { name: "inland river port", cell: 0, port: 3, river: "1", coast: "0" },
+    { name: "coastal river burg with its harbor disabled", cell: 1, port: 0, river: "1", coast: "0" },
+    { name: "coastal port without a river", cell: 4, port: 3, river: "0", coast: "1" },
+    { name: "riverless burg with its harbor disabled", cell: 4, port: 0, river: "0", coast: "0" }
+  ])("keeps city water features for a $name", ({ cell, port, river, coast }) => {
+    const query = params({ cell, port });
+    expect(query.get("river")).toBe(river);
+    expect(query.get("coast")).toBe(coast);
+    expect(query.has("sea")).toBe(coast === "1");
   });
 
-  it("keeps the river of a coastal port at the river mouth", () => {
-    expect(params({ cell: 2, port: 3 })).toEqual({ river: "1", coast: "1" });
-  });
-
-  it("gives an inland river port no coast", () => {
-    expect(params({ cell: 0, port: 3 })).toEqual({ river: "1", coast: "0" });
+  it.each([
+    { name: "coastal port before the river mouth", cell: 1, port: 3, water: "estuary" },
+    { name: "coastal port at the river mouth", cell: 2, port: 3, water: "estuary" },
+    { name: "coastal river burg with its harbor disabled", cell: 1, port: 0, water: "estuary" },
+    { name: "inland river port", cell: 0, port: 3, water: "river" },
+    { name: "coastal port without a river", cell: 4, port: 3, water: "coast" }
+  ])("keeps village water features for a $name", ({ cell, port, water }) => {
+    const tags = params({ cell, port, group: "village" }).get("tags")!.split(",");
+    expect(tags.filter(tag => ["estuary", "river", "coast"].includes(tag))).toEqual([water]);
   });
 });

@@ -8,7 +8,7 @@ describe("MarketsModule", () => {
     beforeEach(() => {
       marketsModule = new MarketsModule();
       globalThis.Markets = marketsModule;
-      options.map.graph = { width: 1000, height: 800, points: 10000 };
+      options.map.graph = { width: 1000, height: 800, points: 10000, sampling: "square", jitter: 0.9 };
       globalThis.TIME = false;
       globalThis.States = {
         getSalesTax: (burg: { state?: number }) => {
@@ -285,6 +285,148 @@ describe("MarketsModule", () => {
       globalThis.pack.markets = [null as any, market2];
       expect(() => marketsModule.sync()).not.toThrow();
       expect(marketsModule.get(2)).toBe(market2);
+    });
+
+    it("runGlobalTrade() should apply importer tariff to landed cost and record deal.tariff", () => {
+      const market1: Market = {
+        i: 1,
+        centerBurgId: 1,
+        color: "#ff0000",
+        goods: { 0: { stock: 100, price: 5 } }
+      };
+      const market2: Market = {
+        i: 2,
+        centerBurgId: 2,
+        color: "#00ff00",
+        goods: { 0: { stock: 0, price: 20 } }
+      };
+      const burg1: Burg = { i: 1, x: 100, y: 100, population: 100, market: 1, state: 1 } as any;
+      const burg2: Burg = { i: 2, x: 200, y: 100, population: 100, market: 2, state: 2 } as any;
+      globalThis.pack.markets = [market1, market2];
+      globalThis.pack.burgs = [{ i: 0 } as any, burg1, burg2];
+      globalThis.pack.states = [
+        { i: 0, salesTax: 0, tariffs: [] } as any,
+        { i: 1, salesTax: 0, tariffs: [{ states: "all", goods: "all", rate: 0.1 }] } as any,
+        { i: 2, salesTax: 0, tariffs: [{ states: "all", goods: "all", rate: 0.2 }] } as any
+      ];
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      marketsModule["marketById"] = [market1, market2];
+      marketsModule.runGlobalTrade();
+
+      const deal = globalThis.pack.deals.find(
+        (d: any) => d.sellerType === "market" && d.seller === 1 && d.buyerType === "market" && d.buyer === 2
+      );
+      expect(deal).toBeDefined();
+      expect(deal!.tariff).toBeGreaterThan(0);
+      // Importer state 2 rate is 0.2 -> tariff = 0.2 * 5 * units
+      expect(deal!.tariff).toBeCloseTo(0.2 * 5 * deal!.units, 2);
+    });
+
+    it("runGlobalTrade() applies zero tariff and no embargo on domestic inter-market trade", () => {
+      const market1: Market = {
+        i: 1,
+        centerBurgId: 1,
+        color: "#ff0000",
+        goods: { 0: { stock: 100, price: 5 } }
+      };
+      const market2: Market = {
+        i: 2,
+        centerBurgId: 2,
+        color: "#00ff00",
+        goods: { 0: { stock: 0, price: 20 } }
+      };
+      // Both markets belong to state 1
+      const burg1: Burg = { i: 1, x: 100, y: 100, population: 100, market: 1, state: 1 } as any;
+      const burg2: Burg = { i: 2, x: 200, y: 100, population: 100, market: 2, state: 1 } as any;
+      globalThis.pack.markets = [market1, market2];
+      globalThis.pack.burgs = [{ i: 0 } as any, burg1, burg2];
+      globalThis.pack.states = [
+        { i: 0, salesTax: 0, tariffs: [] } as any,
+        { i: 1, salesTax: 0, tariffs: [{ states: "all", goods: "all", rate: "embargo" }] } as any
+      ];
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      marketsModule["marketById"] = [market1, market2];
+      marketsModule.runGlobalTrade();
+
+      const deal = globalThis.pack.deals.find(
+        (d: any) => d.sellerType === "market" && d.seller === 1 && d.buyerType === "market" && d.buyer === 2
+      );
+      expect(deal).toBeDefined();
+      expect(deal!.tariff).toBeUndefined();
+    });
+
+    it("runGlobalTrade() eliminates trade when an embargo is set by either importer or exporter", () => {
+      const market1: Market = {
+        i: 1,
+        centerBurgId: 1,
+        color: "#ff0000",
+        goods: { 0: { stock: 100, price: 5 } }
+      };
+      const market2: Market = {
+        i: 2,
+        centerBurgId: 2,
+        color: "#00ff00",
+        goods: { 0: { stock: 0, price: 20 } }
+      };
+      const burg1: Burg = { i: 1, x: 100, y: 100, population: 100, market: 1, state: 1 } as any;
+      const burg2: Burg = { i: 2, x: 200, y: 100, population: 100, market: 2, state: 2 } as any;
+      globalThis.pack.markets = [market1, market2];
+      globalThis.pack.burgs = [{ i: 0 } as any, burg1, burg2];
+
+      // Exporter state 1 has embargo on state 2
+      globalThis.pack.states = [
+        { i: 0, salesTax: 0, tariffs: [] } as any,
+        { i: 1, salesTax: 0, tariffs: [{ states: [2], goods: "all", rate: "embargo" }] } as any,
+        { i: 2, salesTax: 0, tariffs: [{ states: "all", goods: "all", rate: 0.1 }] } as any
+      ];
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      marketsModule["marketById"] = [market1, market2];
+      marketsModule.runGlobalTrade();
+
+      expect(globalThis.pack.deals).toHaveLength(0);
+    });
+
+    it("runGlobalTrade() respects override precedence for specific state and good", () => {
+      const market1: Market = {
+        i: 1,
+        centerBurgId: 1,
+        color: "#ff0000",
+        goods: { 0: { stock: 100, price: 5 } }
+      };
+      const market2: Market = {
+        i: 2,
+        centerBurgId: 2,
+        color: "#00ff00",
+        goods: { 0: { stock: 0, price: 20 } }
+      };
+      const burg1: Burg = { i: 1, x: 100, y: 100, population: 100, market: 1, state: 1 } as any;
+      const burg2: Burg = { i: 2, x: 200, y: 100, population: 100, market: 2, state: 2 } as any;
+      globalThis.pack.markets = [market1, market2];
+      globalThis.pack.burgs = [{ i: 0 } as any, burg1, burg2];
+
+      // State 2 has base 0.5, but specific rule for state 1 + good 0 is 0.05
+      globalThis.pack.states = [
+        { i: 0, salesTax: 0, tariffs: [] } as any,
+        { i: 1, salesTax: 0, tariffs: [] } as any,
+        {
+          i: 2,
+          salesTax: 0,
+          tariffs: [
+            { states: "all", goods: "all", rate: 0.5 },
+            { states: [1], goods: "all", rate: 0.3 },
+            { states: [1], goods: [0], rate: 0.05 }
+          ]
+        } as any
+      ];
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      marketsModule["marketById"] = [market1, market2];
+      marketsModule.runGlobalTrade();
+
+      const deal = globalThis.pack.deals.find(
+        (d: any) => d.sellerType === "market" && d.seller === 1 && d.buyerType === "market" && d.buyer === 2
+      );
+      expect(deal).toBeDefined();
+      expect(deal!.tariff).toBeCloseTo(0.05 * 5 * deal!.units, 2);
     });
   });
 });

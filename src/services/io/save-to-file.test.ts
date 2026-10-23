@@ -62,21 +62,34 @@ describe("saveToFileSystem", () => {
     await expect(result).resolves.toEqual({ type: "saved", filename: "Chosen.map" });
   });
 
-  it("reuses the chosen file until Save As selects a new destination", async () => {
+  it("picks a new file on every save, and overwrite rewrites the last picked one", async () => {
     const first = makeHandle("First.map");
     const second = makeHandle("Second.map");
     const picker = vi.fn().mockResolvedValueOnce(first.handle).mockResolvedValueOnce(second.handle);
     vi.stubGlobal("showSaveFilePicker", picker);
     await saveToFileSystem(() => "one", "Suggested.map");
-    await saveToFileSystem(() => "two", "Suggested.map");
-    await saveToFileSystem(() => "three", "Suggested.map", true);
-    await saveToFileSystem(() => "four", "Suggested.map");
+    await saveToFileSystem(() => "two", "Suggested.map", true);
+    await saveToFileSystem(() => "three", "Suggested.map");
+    await saveToFileSystem(() => "four", "Suggested.map", true);
     expect(picker).toHaveBeenCalledTimes(2);
     expect(first.stream.write.mock.calls).toEqual([["one"], ["two"]]);
     expect(second.stream.write.mock.calls).toEqual([["three"], ["four"]]);
   });
 
-  it("retains the previous destination when Save As is cancelled", async () => {
+  it("always picks a file for a copy and never makes it the destination", async () => {
+    const main = makeHandle("Main.map");
+    const copy = makeHandle("Copy.map");
+    const picker = vi.fn().mockResolvedValueOnce(main.handle).mockResolvedValueOnce(copy.handle);
+    vi.stubGlobal("showSaveFilePicker", picker);
+    await saveToFileSystem(() => "one", "Map.map");
+    await saveToFileSystem(() => "copy", "Map.map", true, true);
+    await saveToFileSystem(() => "two", "Map.map", true);
+    expect(picker).toHaveBeenCalledTimes(2);
+    expect(main.stream.write.mock.calls).toEqual([["one"], ["two"]]);
+    expect(copy.stream.write.mock.calls).toEqual([["copy"]]);
+  });
+
+  it("retains the previous destination when a new file is cancelled", async () => {
     const { handle, stream } = makeHandle();
     const picker = vi
       .fn()
@@ -85,8 +98,8 @@ describe("saveToFileSystem", () => {
     vi.stubGlobal("showSaveFilePicker", picker);
     await saveToFileSystem(() => "one", "Map.map");
     const prepare = vi.fn(() => "cancelled");
-    await expect(saveToFileSystem(prepare, "Copy.map", true)).resolves.toEqual({ type: "cancelled" });
-    await saveToFileSystem(() => "two", "Map.map");
+    await expect(saveToFileSystem(prepare, "Copy.map")).resolves.toEqual({ type: "cancelled" });
+    await saveToFileSystem(() => "two", "Map.map", true);
     expect(picker).toHaveBeenCalledTimes(2);
     expect(prepare).not.toHaveBeenCalled();
     expect(stream.write.mock.calls).toEqual([["one"], ["two"]]);
@@ -99,7 +112,7 @@ describe("saveToFileSystem", () => {
     vi.stubGlobal("showSaveFilePicker", picker);
     await saveToFileSystem(() => "first map", "Map.map");
     window.dispatchEvent(new Event("map:generated"));
-    await saveToFileSystem(() => "second map", "Map.map");
+    await saveToFileSystem(() => "second map", "Map.map", true);
     expect(picker).toHaveBeenCalledTimes(2);
     expect(first.stream.write).toHaveBeenCalledExactlyOnceWith("first map");
     expect(second.stream.write).toHaveBeenCalledExactlyOnceWith("second map");
@@ -155,7 +168,7 @@ describe("saveToFileSystem", () => {
     const picker = vi.fn().mockResolvedValueOnce(first.handle).mockResolvedValueOnce(second.handle);
     vi.stubGlobal("showSaveFilePicker", picker);
     await saveToFileSystem(() => "first", "Map.map");
-    await saveToFileSystem(() => "second", "Map.map");
+    await saveToFileSystem(() => "second", "Map.map", true);
     expect(picker).toHaveBeenCalledTimes(2);
     expect(second.stream.write).toHaveBeenCalledWith("second");
   });
@@ -169,22 +182,22 @@ describe("saveToFileSystem", () => {
     const error = new DOMException("File missing", "NotFoundError");
     first.handle.createWritable.mockRejectedValueOnce(error);
     const prepare = vi.fn(() => "two");
-    await expect(saveToFileSystem(prepare, "Map.map")).rejects.toBe(error);
+    await expect(saveToFileSystem(prepare, "Map.map", true)).rejects.toBe(error);
     expect(prepare).not.toHaveBeenCalled();
-    await saveToFileSystem(prepare, "Map.map");
+    await saveToFileSystem(prepare, "Map.map", true);
     expect(picker).toHaveBeenCalledTimes(2);
     expect(second.stream.write).toHaveBeenCalledWith("two");
   });
 
-  it("retains the old destination if writing a Save As copy fails", async () => {
+  it("retains the old destination if writing a new file fails", async () => {
     const first = makeHandle("First.map");
     const second = makeHandle("Copy.map");
     const picker = vi.fn().mockResolvedValueOnce(first.handle).mockResolvedValueOnce(second.handle);
     vi.stubGlobal("showSaveFilePicker", picker);
     await saveToFileSystem(() => "one", "Map.map");
     second.stream.write.mockRejectedValueOnce(new Error("Disk full"));
-    await expect(saveToFileSystem(() => "two", "Copy.map", true)).rejects.toThrow("Disk full");
-    await saveToFileSystem(() => "three", "Map.map");
+    await expect(saveToFileSystem(() => "two", "Copy.map")).rejects.toThrow("Disk full");
+    await saveToFileSystem(() => "three", "Map.map", true);
     expect(picker).toHaveBeenCalledTimes(2);
     expect(first.stream.write.mock.calls).toEqual([["one"], ["three"]]);
   });

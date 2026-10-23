@@ -14,12 +14,15 @@ import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { type Route, UNNAMED_ROUTE } from "@/generators/routes-generator";
+import { Tags } from "@/generators/tags";
 import { getRouteBox } from "@/renderers/draw-routes";
 import { highlightArea } from "@/renderers/overlays/highlight";
-import { downloadFile, getFileName } from "@/utils";
+import { Csv } from "@/services/io/csv";
+import { sentences, t } from "@/utils/i18n";
 import { ensureEl, rn } from "../utils";
 
 const dialogId = "routesOverview" as const;
+const CSV_COLUMNS = ["Id", "Route", "Group", "Length", "Tags"];
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
 let filterState: { search: string };
 
@@ -27,7 +30,7 @@ const columns: EditorColumn<Route>[] = [
   { key: "locate", width: "1.4em", permanent: true },
   {
     key: "name",
-    label: "Route",
+    label: t("Route"),
     width: "15em",
     permanent: true,
     sortBy: route => route.name || "",
@@ -35,17 +38,25 @@ const columns: EditorColumn<Route>[] = [
   },
   {
     key: "group",
-    label: "Group",
+    label: t("Group"),
     width: "7em",
     sortBy: route => route.group || "",
     sortType: "alpha"
   },
   {
     key: "length",
-    label: "Length",
+    label: t("Length"),
     width: "6em",
     sortBy: route => route.length || 0,
     defaultSort: "desc"
+  },
+  {
+    key: "tags",
+    label: t("Tags"),
+    width: "10em",
+    hidden: true,
+    sortBy: route => Tags.format(route.tags),
+    sortType: "alpha"
   },
   { key: "edit", width: "1.1em" },
   { key: "lock", width: "1.1em" },
@@ -63,11 +74,7 @@ function getFilteredRoutes(): Route[] {
 
   if (!searchText) return routes;
 
-  return routes.filter((route: Route) => {
-    const name = (route.name || "").toLowerCase();
-    const group = (route.group || "").toLowerCase();
-    return name.includes(searchText) || group.includes(searchText);
-  });
+  return routes.filter((route: Route) => Tags.matches(searchText, route.name, route.tags, [route.group]));
 }
 
 const routesTable = initEditorTable<Route>({
@@ -85,7 +92,7 @@ function open(): void {
   routesTable.reset();
 
   $(`#${dialogId}`).dialog({
-    title: "Routes Overview",
+    title: t("Routes Overview"),
     resizable: false,
     width: "fit-content",
     position,
@@ -99,18 +106,19 @@ function renderDialog(): void {
   const html = /* html */ `<div id="routesOverview" class="dialog stable editorDialog">
     <div id="routesBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
     <div id="routesFilters" class="editorFilters">
-      <label for="routesSearch" data-tip="Filter by name or group">Search: <input id="routesSearch" type="search" /></label>
+      <label for="routesSearch" data-tip="${t("Filter by name, group, or tag")}">${t("Search")}: <input id="routesSearch" type="search" /></label>
     </div>
     <div id="routesFooter" class="totalLine">
-      <div data-tip="Routes number" style="margin-left: 4px">Routes:&nbsp;<span id="routesFooterNumber">0</span></div>
-      <div data-tip="Average length" style="margin-left: 12px" data-col="length">Average length:&nbsp;<span id="routesFooterLength">0</span></div>
+      <div data-tip="${t("Routes number")}" style="margin-left: 4px">${t("Routes")}:&nbsp;<span id="routesFooterNumber">0</span></div>
+      <div data-tip="${t("Average length")}" style="margin-left: 12px" data-col="length">${t("Average length")}:&nbsp;<span id="routesFooterLength">0</span></div>
     </div>
     <div id="routesBottom" class="editorToolbar">
-      <button id="routesOverviewRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
-      <button id="routesCreateNew" data-tip="Create a new route selecting route cells" class="icon-map-pin"></button>
-      <button id="routesExport" data-tip="Save routes-related data as a text file (.csv)" class="icon-download"></button>
-      <button id="routesLockAll" data-tip="Lock or unlock all routes" class="icon-lock"></button>
-      <button id="routesRemoveAll" data-tip="Remove all unlocked routes (locked routes are kept)" class="icon-trash"></button>
+      <button id="routesOverviewRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
+      <button id="routesCreateNew" data-tip="${t("Create a new route selecting route cells")}" class="icon-map-pin"></button>
+      <button id="routesExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
+      <button id="routesImport" data-tip="${t("Upload data from a CSV file")}" class="icon-upload"></button>
+      <button id="routesLockAll" data-tip="${t("Lock or unlock all routes")}" class="icon-lock"></button>
+      <button id="routesRemoveAll" data-tip="${t("Remove all unlocked routes (locked routes are kept)")}" class="icon-trash"></button>
     </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -126,6 +134,7 @@ function renderDialog(): void {
   });
   ensureEl("routesCreateNew").addEventListener("click", createNewRoute);
   ensureEl("routesExport").addEventListener("click", downloadRoutesData);
+  ensureEl("routesImport").addEventListener("click", () => Csv.pick(uploadRoutesCsv));
   ensureEl("routesLockAll").addEventListener("click", toggleLockAll);
   ensureEl("routesRemoveAll").addEventListener("click", triggerAllRoutesRemove);
   ensureEl("routesSearch").addEventListener("input", event => {
@@ -164,20 +173,33 @@ function renderRoutesPage(view: TableView<Route>): void {
         data-group="${route.group}"
         data-length="${route.length}"
       >
-        <span data-tip="Locate the route" class="icon-target" data-col="locate"></span>
-        <div data-tip="Route name" data-col="name">${route.name}</div>
-        <div data-tip="Route group" data-col="group">${route.group}</div>
-        <div data-tip="Route length" data-col="length">${length}</div>
-        <span data-col="edit" data-tip="Edit route" class="icon-pencil"></span>
+        <span data-tip="${t("Locate on map")}" class="icon-target" data-col="locate"></span>
+        <div data-tip="${t("Name")}" data-col="name">${route.name}</div>
+        <div data-tip="${t("Route group")}" data-col="group">${route.group}</div>
+        <div data-tip="${t("Route length")}" data-col="length">${length}</div>
+        <div data-col="tags">
+          <input
+            data-tip="${t("Tags (comma-separated)")}"
+            class="routeTags"
+            value="${Tags.format(route.tags)}"
+            placeholder="${t("Tags")}"
+            autocorrect="off"
+            spellcheck="false"
+          />
+        </div>
+        <span data-col="edit" data-tip="${t("Edit Route")}" class="icon-pencil"></span>
         <span data-col="lock" class="locks pointer ${
           route.lock ? "icon-lock" : "icon-lock-open inactive"
         }" onmouseover="showElementLockTip(event)"></span>
-        <span data-col="remove" data-tip="Remove route" class="icon-trash-empty"></span>
+        <span data-col="remove" data-tip="${t("Remove")}" class="icon-trash-empty"></span>
       </div>`;
   }
   body.insertAdjacentHTML("beforeend", lines);
 
-  ensureEl("routesFooterNumber").innerHTML = `${view.all.length} of ${pack.routes.length}`;
+  ensureEl("routesFooterNumber").innerHTML = t("{{shown}} of {{total}}", {
+    shown: view.all.length,
+    total: pack.routes.length
+  });
   const averageLength = rn(mean(view.all.map(r => r.length)) || 0) || 0;
   ensureEl("routesFooterLength").innerHTML =
     `${averageLength * options.map.units.distance.scale} ${options.map.units.distance.unit}`;
@@ -188,11 +210,23 @@ function renderRoutesPage(view: TableView<Route>): void {
   body.querySelectorAll("div > span.icon-target").forEach(el => void el.addEventListener("click", zoomToRoute));
   body.querySelectorAll("div > span.icon-pencil").forEach(el => void el.addEventListener("click", openRouteEditor));
   body.querySelectorAll("div > span.locks").forEach(el => void el.addEventListener("click", toggleLockStatus));
+  body.querySelectorAll("input.routeTags").forEach(el => void el.addEventListener("change", routeChangeTags));
   body
     .querySelectorAll("div > span.icon-trash-empty")
     .forEach(el => void el.addEventListener("click", triggerRouteRemove));
 
   renderEditorPagination(ensureEl("routesFooter"), view, routesTable.goto);
+}
+
+function routeChangeTags(this: HTMLInputElement): void {
+  const line = this.closest(".states") as HTMLElement;
+  const routeId = Number(line.dataset.id);
+  const route = pack.routes.find(r => r.i === routeId);
+  if (!route) return;
+
+  Tags.set(route, this.value);
+  this.value = Tags.format(route.tags);
+  if (filterState.search) routesTable.refresh();
 }
 
 function routeHighlightOn(event: Event): void {
@@ -221,17 +255,18 @@ function zoomToRoute(this: HTMLElement): void {
 }
 
 function downloadRoutesData(): void {
-  let data = "Id,Route,Group,Length\n"; // headers
-
+  const { scale, unit } = options.map.units.distance;
   // export the full sorted+filtered set (all pages), not the DOM (which only holds the current page)
-  const exported = routesTable.view().all;
-  exported.forEach((route: Route) => {
-    const length = `${rn((route.length || 0) * options.map.units.distance.scale)} ${options.map.units.distance.unit}`;
-    data += `${[route.i, route.name, route.group, length].join(",")}\n`;
-  });
-
-  const name = `${getFileName("Routes")}.csv`;
-  downloadFile(data, name);
+  const rows = routesTable
+    .view()
+    .all.map((route: Route) => [
+      route.i,
+      route.name,
+      route.group,
+      `${rn((route.length || 0) * scale)} ${unit}`,
+      Tags.format(route.tags)
+    ]);
+  Csv.download("Routes", CSV_COLUMNS, rows);
 }
 
 function openRouteEditor(this: HTMLElement): void {
@@ -268,9 +303,9 @@ function toggleLockAll(): void {
 function triggerRouteRemove(this: HTMLElement): void {
   const routeId = +(this.closest(".states") as HTMLElement).dataset.id!;
   confirmationDialog({
-    title: "Remove route",
-    message: "Are you sure you want to remove the route? <br>This action cannot be reverted",
-    confirm: "Remove",
+    title: t("Remove"),
+    message: `${t("Are you sure you want to remove the route?")}<br>${t("This action cannot be reverted")}`,
+    confirm: t("Remove"),
     onConfirm: () => {
       const route = pack.routes.find((r: Route) => r.i === routeId) as Route;
       Routes.remove(route.i);
@@ -284,47 +319,63 @@ function triggerAllRoutesRemove(): void {
   const toRemove = pack.routes.filter((route: Route) => !route.lock);
   if (!toRemove.length) {
     if (!pack.routes.length) {
-      tip("There are no routes to remove", false, "error");
+      tip(t("There are no routes to remove"), false, "error");
     } else {
-      tip("All routes are locked. Unlock routes to remove them, or use Lock all to unlock first.", false, "error");
+      tip(t("All routes are locked. Unlock routes to remove them, or use Lock all to unlock first."), false, "error");
     }
     return;
   }
 
   const lockedCount = pack.routes.length - toRemove.length;
-  alertMessage.innerHTML =
-    lockedCount > 0
-      ? /* html */ `Remove all <b>unlocked</b> routes (${toRemove.length})? <b>${lockedCount}</b> locked route(s) will be kept. This cannot be undone.`
-      : /* html */ `Are you sure you want to remove all routes? This action can't be undone`;
-
-  $("#alert").dialog({
-    resizable: false,
-    title: lockedCount > 0 ? "Remove unlocked routes" : "Remove all routes",
-    buttons: {
-      Remove: function (this: any) {
-        const routesToRemove = pack.routes.filter((route: Route) => !route.lock);
-        if (!routesToRemove.length) {
-          if (!pack.routes.length) {
-            tip("There are no routes to remove", false, "error");
-          } else {
-            tip("All routes are now locked; nothing was removed.", false, "error");
-          }
-          $(this).dialog("close");
-          return;
+  confirmationDialog({
+    title: lockedCount > 0 ? t("Remove unlocked routes") : t("Remove all routes"),
+    message:
+      lockedCount > 0
+        ? sentences(
+            t("Remove all unlocked routes ({{routes}})?", { routes: toRemove.length }),
+            t("Locked routes to keep: {{locked}}", { locked: lockedCount }),
+            t("This action cannot be reverted")
+          )
+        : sentences(t("Are you sure you want to remove all routes?"), t("This action cannot be reverted")),
+    confirm: t("Remove"),
+    onConfirm: () => {
+      const routesToRemove = pack.routes.filter((route: Route) => !route.lock);
+      if (!routesToRemove.length) {
+        if (!pack.routes.length) {
+          tip(t("There are no routes to remove"), false, "error");
+        } else {
+          tip(t("All routes are now locked; nothing was removed."), false, "error");
         }
-        for (const route of routesToRemove) {
-          Routes.remove(route.i);
-        }
-        pack.cells.routes = Routes.buildLinks(pack.routes);
-        Layers.draw("routes", "labels");
-        routesTable.refresh();
-        $(this).dialog("close");
-      },
-      Cancel: function (this: any) {
-        $(this).dialog("close");
+        return;
       }
+      for (const route of routesToRemove) {
+        Routes.remove(route.i);
+      }
+      pack.cells.routes = Routes.buildLinks(pack.routes);
+      Layers.draw("routes", "labels");
+      routesTable.refresh();
     }
   });
+}
+
+/** Update existing routes from a CSV in the export format */
+async function uploadRoutesCsv(text: string): Promise<void> {
+  const find = (id: number) => pack.routes.find(route => route.i === id);
+  const updated = await Controllers.CsvUpload.update(
+    text,
+    CSV_COLUMNS,
+    { find, text: ["Route", "Tags"] },
+    (id, row) => {
+      const route = find(id)!;
+      row.apply("Route", name => Routes.rename(route.i, name), route.name);
+      row.apply("Group", group => Routes.setGroup(route.i, group), route.group);
+      row.assign("Tags", tags => Tags.set(route, tags), Tags.format(route.tags));
+    }
+  );
+  if (!updated) return;
+
+  Layers.draw("routes", "labels");
+  routesTable.refresh();
 }
 
 export const RoutesOverview = { open };

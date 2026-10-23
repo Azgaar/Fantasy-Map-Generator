@@ -8,6 +8,7 @@ import type {
   HeraldicEmblem,
   PictureEmblem
 } from "@/types/emblems";
+import { ensureEl, findEl } from "@/utils";
 import { colors } from "./colors";
 import { componyDashes } from "./compony";
 import { diapers } from "./diapers";
@@ -125,8 +126,8 @@ class EmblemRendererModule {
     const content = shape ? `<g clip-path="url(#shield_${id})">${picture}</g>` : picture;
     const overlay = shape ? `<path d="${shape.path}" fill="url(#backlight_${id})" stroke="#333"/>` : "";
     const svg = `<svg id="${id}" width="200" height="200" viewBox="${shape?.box ?? DEFAULT_SHIELD_BOX}"><defs>${clip}${backlight}</defs>${content}${overlay}</svg>`;
-    const coas = document.getElementById("coas")!;
-    document.getElementById(id)?.remove();
+    const coas = ensureEl("coas");
+    findEl(id)?.remove();
     coas.insertAdjacentHTML("beforeend", svg);
     (coas.lastElementChild as SVGElement).dataset.coa = JSON.stringify(coa);
   }
@@ -332,8 +333,8 @@ class EmblemRendererModule {
     if (this.versions.get(id) !== version) return false;
 
     // insert coa svg to defs
-    const coas = document.getElementById("coas")!;
-    document.getElementById(id)?.remove();
+    const coas = ensureEl("coas");
+    findEl(id)?.remove();
     coas.insertAdjacentHTML("beforeend", svg);
     // the cache key travels with the rendered shield, so clearing #coas clears the cache with it
     (coas.lastElementChild as SVGElement).dataset.coa = JSON.stringify(coa);
@@ -345,7 +346,7 @@ class EmblemRendererModule {
     if (!coa) return console.warn(`Emblem ${id} is undefined`);
 
     const serialized = JSON.stringify(coa);
-    const rendered = document.getElementById(id);
+    const rendered = findEl(id);
     const pending = this.pending.get(id);
     if (rendered?.dataset.coa === serialized) {
       if (pending) this.invalidate(id);
@@ -367,7 +368,7 @@ class EmblemRendererModule {
 
   remove(id: string): void {
     this.invalidate(id);
-    document.getElementById(id)?.remove();
+    findEl(id)?.remove();
   }
 
   /** the version only ever grows: a render still in flight can never match a later one for the same id */

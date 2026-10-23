@@ -29,7 +29,7 @@ You are not, of course, limited to only QGIS. Data exported can also be used in 
 # Loading into QGIS
 Fantasy Map Generator allows you to export some data in a GIS-compatible format. Open the _Export_ dialog from the _Tools_ tab; its _Export to GeoJSON_ section has buttons for **cells**, **routes**, **rivers**, **markers** and **zones**. The separate _Export to JSON_ section (full, minimal, pack cells, grid cells) is plain JSON, not GeoJSON, and is not meant for GIS tools.
 
-Coordinates in the GeoJSON files are geographic (longitude / latitude) and follow the map coordinates set in _Options → Configure world_.
+Coordinates in the GeoJSON files are geographic (longitude / latitude) and follow the map coordinates set in _Options → Configure → Climate_.
 
 ## Cell Data
 The cells file is a polygon layer with one feature per cell. Each feature carries these properties: `id`, `height`, `biome`, `type` (feature type, e.g. island or lake), `population`, `state`, `province`, `culture`, `religion` and `neighbors`. Import it into QGIS by choosing _Layer_ -> _Add Layer..._ -> _Add Vector Layer..._.
@@ -46,7 +46,7 @@ Unfortunately, there are sometimes gaps or overlaps in the cell export data. You
 
 
 ## Burg Data
-Burg data can be downloaded as a _.csv_ file from the _Burgs Overview_. The downloaded file contains the burg id, name, province, state, culture, religion, group, population, map coordinates, latitude, longitude, elevation, temperature, the capital / port / citadel / walls / plaza / temple / shanty town flags, the emblem and a preview link. These can be imported into QGIS by choosing _Layer_ -> _Add Layer..._ -> _Add Delimited Text Layer..._
+Burg data can be downloaded as a _.csv_ file from the _Burgs Overview_. The downloaded file contains the burg id, name, province, state, culture, religion, group, type, population, market, product, wealth, treasury, map coordinates, latitude, longitude, elevation, temperature, the capital / port / citadel / walls / plaza / temple / shanty town flags, the emblem, a preview link and tags. These can be imported into QGIS by choosing _Layer_ -> _Add Layer..._ -> _Add Delimited Text Layer..._
 
 ![Steps](https://azgaar.files.wordpress.com/2019/09/add_csv.png)
 

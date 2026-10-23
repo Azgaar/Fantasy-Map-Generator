@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   open: vi.fn(),
+  ask: vi.fn(),
   highlight: vi.fn(),
   highlightArea: vi.fn(),
   show: vi.fn(),
@@ -15,7 +16,7 @@ vi.mock("@/components/layers", () => ({
   Layers: { draw: vi.fn(), show: mocks.show, toggle: mocks.toggle, has: () => true, isOn: () => false }
 }));
 vi.mock("@/components/options/tabs/layers-tab", () => ({
-  LAYER_TOGGLES: new Map([["rivers", { label: "Ri<u>v</u>ers" }]]),
+  LAYER_TOGGLES: new Map([["rivers", { label: "Rivers" }]]),
   LAYER_PRESETS: {}
 }));
 vi.mock("@/components/app-info", () => ({ showInfo: vi.fn() }));
@@ -38,7 +39,10 @@ vi.mock("@/renderers/labels/label-data", () => ({ getLabelsIndex: mocks.labels }
 vi.mock("@/components/dialog/dialog-helpers", () => ({ refreshEditors: vi.fn() }));
 vi.mock("@/components/tooltips", () => ({ tip: mocks.tip }));
 vi.mock("@/controllers", () => ({
-  Controllers: new Proxy({}, { get: () => ({ open: mocks.open, toggle: mocks.open, openDefault: mocks.open }) })
+  Controllers: new Proxy(
+    {},
+    { get: () => ({ open: mocks.open, toggle: mocks.open, openDefault: mocks.open, ask: mocks.ask }) }
+  )
 }));
 
 import { MAP_COMMANDS } from "@/components/map-commands";
@@ -197,7 +201,15 @@ describe("Omnibar public behavior", () => {
     expect(rows()).toHaveLength(1);
     key("Enter");
     await vi.runAllTimersAsync();
+    expect(mocks.ask).toHaveBeenCalledExactlyOnceWith("How do I add a river?");
+    expect(mocks.open).not.toHaveBeenCalled();
+
+    Omnibar.open();
+    search("assistant");
+    key("Enter");
+    await vi.runAllTimersAsync();
     expect(mocks.open).toHaveBeenCalledOnce();
+    expect(mocks.ask).toHaveBeenCalledOnce();
   });
 
   it("shows the river basin name instead of an internal ID", () => {
@@ -243,6 +255,7 @@ describe("Omnibar public behavior", () => {
   it("calls generation directly and remembers only command IDs", async () => {
     const action = vi.fn();
     vi.stubGlobal("Rivers", { regenerate: action });
+    vi.stubGlobal("Routes", { sync: () => {} });
     sessionStorage.setItem("regenerateFeatureDontAsk", "true");
     document.getElementById("regenerateRivers")!.remove();
     Omnibar.open();
@@ -252,7 +265,7 @@ describe("Omnibar public behavior", () => {
     expect(JSON.parse(localStorage.getItem("fmg-omnibar-history")!)).toEqual(["regenerateRivers"]);
     Omnibar.open();
     expect(input().value).toBe("");
-    expect(rows()[0].textContent).toContain("Regenerate Rivers");
+    expect(rows()[0].textContent).toContain("Regenerate: Rivers");
   });
 
   it("runs creation commands without a corresponding button", async () => {
@@ -337,7 +350,9 @@ describe("Omnibar public behavior", () => {
 
     Omnibar.open();
     search("Silverwater");
-    expect(rows()[0].querySelector(".omnibar-detail")?.textContent).toBe(`${type} · Freshwater`);
+    expect(rows()[0].querySelector(".omnibar-detail")?.textContent).toBe(
+      `${type === "lake" ? "Lake" : "Island"} · Freshwater`
+    );
     key("Enter");
     expect(mocks.show).toHaveBeenCalledWith(type === "lake" ? "lakes" : "coastline");
     expect(mocks.zoom).toHaveBeenCalledWith(30, 40, 3, 1500);
@@ -454,7 +469,7 @@ describe("Omnibar public behavior", () => {
     Omnibar.open();
     search("burg");
     expect(rows()).toHaveLength(50);
-    expect(document.getElementById("omnibar-status")?.textContent).toMatch(/^50 of \d+ results/);
+    expect(document.getElementById("omnibar-status")?.textContent).toMatch(/^Results: 50 of \d+ /);
   });
 
   it("keeps the browser's save dialog and help keys out while it is open", () => {

@@ -2,6 +2,7 @@ import { max, quadtree, range } from "d3";
 import { Emblems } from "@/generators/emblems-generator";
 import type { Emblem } from "@/types/emblems";
 import { requireColor } from "@/utils/colorUtils";
+import { t } from "@/utils/i18n";
 import { requireCode, requireName, requireOneOf, requireOrigins } from "@/utils/validationUtils";
 import { abbreviate, biased, getColors, getRandomColor, minmax, P, rand, rn, rw } from "../utils";
 import { Population } from "./population-generator";
@@ -27,6 +28,7 @@ export interface Culture {
   i: number;
   base: number;
   shield: string;
+  ancestry?: string;
   lock?: boolean;
   code?: string;
   center?: number;
@@ -45,6 +47,7 @@ export interface Culture {
   rural?: number;
   urban?: number;
   note?: string;
+  tags?: string[];
 }
 
 export const CULTURE_TYPES = ["Generic", "Hunting", "Highland", "River", "Lake", "Naval", "Nomadic"] as const;
@@ -419,91 +422,104 @@ class CulturesGenerator {
       return [
         // fantasy races
         {
-          name: "Quenian (Elfish)",
+          name: "Quenian",
+          ancestry: "Elfish",
           base: 33,
           odd: 1,
           sort: (i: number) => (n(i) / bd(i, [6, 7, 8, 9], 10)) * t[i],
           shield: "gondor"
         }, // Elves
         {
-          name: "Eldar (Elfish)",
+          name: "Eldar",
+          ancestry: "Elfish",
           base: 33,
           odd: 1,
           sort: (i: number) => (n(i) / bd(i, [6, 7, 8, 9], 10)) * t[i],
           shield: "noldor"
         }, // Elves
         {
-          name: "Trow (Dark Elfish)",
+          name: "Trow",
+          ancestry: "Dark Elfish",
           base: 34,
           odd: 0.9,
           sort: (i: number) => (n(i) / bd(i, [7, 8, 9, 12], 10)) * t[i],
           shield: "hessen"
         }, // Dark Elves
         {
-          name: "Lothian (Dark Elfish)",
+          name: "Lothian",
+          ancestry: "Dark Elfish",
           base: 34,
           odd: 0.3,
           sort: (i: number) => (n(i) / bd(i, [7, 8, 9, 12], 10)) * t[i],
           shield: "wedged"
         }, // Dark Elves
         {
-          name: "Dunirr (Dwarven)",
+          name: "Dunirr",
+          ancestry: "Dwarven",
           base: 35,
           odd: 1,
           sort: (i: number) => n(i) + h[i],
           shield: "ironHills"
         }, // Dwarfs
         {
-          name: "Khazadur (Dwarven)",
+          name: "Khazadur",
+          ancestry: "Dwarven",
           base: 35,
           odd: 1,
           sort: (i: number) => n(i) + h[i],
           shield: "erebor"
         }, // Dwarfs
         {
-          name: "Kobold (Goblin)",
+          name: "Kobold",
+          ancestry: "Goblin",
           base: 36,
           odd: 1,
           sort: (i: number) => t[i] - s[i],
           shield: "moriaOrc"
         }, // Goblin
         {
-          name: "Uruk (Orkish)",
+          name: "Uruk",
+          ancestry: "Orkish",
           base: 37,
           odd: 1,
           sort: (i: number) => h[i] * t[i],
           shield: "urukHai"
         }, // Orc
         {
-          name: "Ugluk (Orkish)",
+          name: "Ugluk",
+          ancestry: "Orkish",
           base: 37,
           odd: 0.5,
           sort: (i: number) => (h[i] * t[i]) / bd(i, [1, 2, 10, 11]),
           shield: "moriaOrc"
         }, // Orc
         {
-          name: "Yotunn (Giants)",
+          name: "Yotunn",
+          ancestry: "Giants",
           base: 38,
           odd: 0.7,
           sort: (i: number) => td(i, -10),
           shield: "pavise"
         }, // Giant
         {
-          name: "Rake (Drakonic)",
+          name: "Rake",
+          ancestry: "Drakonic",
           base: 39,
           odd: 0.7,
           sort: (i: number) => -s[i],
           shield: "fantasy2"
         }, // Draconic
         {
-          name: "Arago (Arachnid)",
+          name: "Arago",
+          ancestry: "Arachnid",
           base: 40,
           odd: 0.7,
           sort: (i: number) => t[i] - s[i],
           shield: "horsehead2"
         }, // Arachnid
         {
-          name: "Aj'Snaga (Serpents)",
+          name: "Aj'Snaga",
+          ancestry: "Serpents",
           base: 41,
           odd: 0.7,
           sort: (i: number) => n(i) / bd(i, [12], 10),
@@ -511,28 +527,32 @@ class CulturesGenerator {
         }, // Serpents
         // fantasy human
         {
-          name: "Anor (Human)",
+          name: "Anor",
+          ancestry: "Human",
           base: 32,
           odd: 1,
           sort: (i: number) => n(i) / td(i, 10),
           shield: "fantasy5"
         },
         {
-          name: "Dail (Human)",
+          name: "Dail",
+          ancestry: "Human",
           base: 32,
           odd: 1,
           sort: (i: number) => n(i) / td(i, 13),
           shield: "roman"
         },
         {
-          name: "Rohand (Human)",
+          name: "Rohand",
+          ancestry: "Human",
           base: 16,
           odd: 1,
           sort: (i: number) => n(i) / td(i, 16),
           shield: "round"
         },
         {
-          name: "Dulandir (Human)",
+          name: "Dulandir",
+          ancestry: "Human",
           base: 31,
           odd: 1,
           sort: (i: number) => (n(i) / td(i, 5) / bd(i, [2, 4, 10], 7)) * t[i],
@@ -724,6 +744,7 @@ class CulturesGenerator {
         // fantasy races
         {
           name: "Eldar",
+          ancestry: "Elfish",
           base: 33,
           odd: 0.5,
           sort: (i: number) => (n(i) / bd(i, [6, 7, 8, 9], 10)) * t[i],
@@ -731,6 +752,7 @@ class CulturesGenerator {
         }, // Elves
         {
           name: "Trow",
+          ancestry: "Dark Elfish",
           base: 34,
           odd: 0.8,
           sort: (i: number) => (n(i) / bd(i, [7, 8, 9, 12], 10)) * t[i],
@@ -738,6 +760,7 @@ class CulturesGenerator {
         }, // Dark Elves
         {
           name: "Durinn",
+          ancestry: "Dwarven",
           base: 35,
           odd: 0.8,
           sort: (i: number) => n(i) + h[i],
@@ -745,6 +768,7 @@ class CulturesGenerator {
         }, // Dwarven
         {
           name: "Kobblin",
+          ancestry: "Goblin",
           base: 36,
           odd: 0.8,
           sort: (i: number) => t[i] - s[i],
@@ -752,6 +776,7 @@ class CulturesGenerator {
         }, // Goblin
         {
           name: "Uruk",
+          ancestry: "Orkish",
           base: 37,
           odd: 0.8,
           sort: (i: number) => (h[i] * t[i]) / bd(i, [1, 2, 10, 11]),
@@ -759,6 +784,7 @@ class CulturesGenerator {
         }, // Orc
         {
           name: "Yotunn",
+          ancestry: "Giants",
           base: 38,
           odd: 0.8,
           sort: (i: number) => td(i, -10),
@@ -766,6 +792,7 @@ class CulturesGenerator {
         }, // Giant
         {
           name: "Drake",
+          ancestry: "Drakonic",
           base: 39,
           odd: 0.9,
           sort: (i: number) => -s[i],
@@ -773,6 +800,7 @@ class CulturesGenerator {
         }, // Draconic
         {
           name: "Rakhnid",
+          ancestry: "Arachnid",
           base: 40,
           odd: 0.9,
           sort: (i: number) => t[i] - s[i],
@@ -780,6 +808,7 @@ class CulturesGenerator {
         }, // Arachnid
         {
           name: "Aj'Snaga",
+          ancestry: "Serpents",
           base: 41,
           odd: 0.9,
           sort: (i: number) => n(i) / bd(i, [12], 10),
@@ -1052,20 +1081,19 @@ class CulturesGenerator {
             i: 0,
             base: 1,
             shield: "round",
-            type: DEFAULT_CULTURE_TYPE
+            type: DEFAULT_CULTURE_TYPE,
+            tags: []
           }
         ];
         this.cells.culture = cultureIds;
 
-        alertMessage.innerHTML = /* html */ `The climate is harsh and people cannot live in this world.<br />
-          No cultures, states and burgs will be created.<br />
-          Please consider changing climate settings in the World Configurator`;
+        alertMessage.innerHTML = `${t("The climate is harsh and people cannot live in this world.")}<br>${t("No cultures, states and burgs will be created.")}<br>${t("Please consider changing climate settings in the World Configurator")}`;
 
         $("#alert").dialog({
           resizable: false,
-          title: "Extreme climate warning",
+          title: t("Extreme climate warning"),
           buttons: {
-            Ok: function () {
+            [t("OK")]: function () {
               $(this).dialog("close");
             }
           }
@@ -1073,14 +1101,21 @@ class CulturesGenerator {
         return;
       } else {
         WARN && console.warn(`Not enough populated cells (${populated.length}). Will generate only ${count} cultures`);
-        alertMessage.innerHTML = /* html */ ` There are only ${populated.length} populated cells and it's insufficient livable area.<br />
-          Only ${count} out of ${options.generation.cultures.limit} requested cultures will be generated.<br />
-          Please consider changing climate settings in the World Configurator`;
+        alertMessage.innerHTML = [
+          t("There are only {{populated}} populated cells and it's insufficient livable area.", {
+            populated: populated.length
+          }),
+          t("Cultures to generate: {{cultures}}, requested: {{limit}}", {
+            cultures: count,
+            limit: options.generation.cultures.limit
+          }),
+          t("Please consider changing climate settings in the World Configurator")
+        ].join("<br>");
         $("#alert").dialog({
           resizable: false,
-          title: "Extreme climate warning",
+          title: t("Extreme climate warning"),
           buttons: {
-            Ok: function () {
+            [t("OK")]: function () {
               $(this).dialog("close");
             }
           }
@@ -1197,6 +1232,7 @@ class CulturesGenerator {
       codes.push(c.code);
       cultureIds[center] = newId;
       if (emblemShape === "random") c.shield = this.getRandomShield();
+      c.tags = c.tags ?? [];
     });
 
     this.cells.culture = cultureIds;
@@ -1208,7 +1244,8 @@ class CulturesGenerator {
       base: 1,
       origins: [null],
       shield: "round",
-      type: DEFAULT_CULTURE_TYPE
+      type: DEFAULT_CULTURE_TYPE,
+      tags: []
     });
 
     // make sure all bases exist in Names.nameBases
@@ -1229,25 +1266,27 @@ class CulturesGenerator {
     if (pack.cultures.some(c => c.i && !c.removed && c.center === center))
       throw new Error(`Cell ${center} is already a culture center`);
     const defaultCultures = this.getDefault();
-    let culture: number, base: number, name: string;
+    let culture: number, base: number, name: string, ancestry: string | undefined;
 
     if (pack.cultures.length < defaultCultures.length) {
       // add one of the default cultures
       culture = pack.cultures.length;
       base = defaultCultures[culture].base;
       name = defaultCultures[culture].name;
+      ancestry = defaultCultures[culture].ancestry;
     } else {
       // add random culture based on one of the current ones
       culture = rand(pack.cultures.length - 1);
       name = Names.getCulture(culture, 5, 8, "");
       base = pack.cultures[culture].base;
+      ancestry = pack.cultures[culture].ancestry;
     }
 
     const code = abbreviate(name, pack.cultures.map(c => c.code) as string[]);
     const i = pack.cultures.length;
     const color = getRandomColor();
 
-    pack.cultures.push({
+    const newCulture: Culture = {
       name,
       color,
       base,
@@ -1261,8 +1300,11 @@ class CulturesGenerator {
       urban: 0,
       origins: [pack.cells.culture[center]],
       code,
-      shield: Emblems.shape === "random" ? this.getRandomShield() : ""
-    });
+      shield: Emblems.shape === "random" ? this.getRandomShield() : "",
+      tags: []
+    };
+    if (ancestry) newCulture.ancestry = ancestry;
+    pack.cultures.push(newCulture);
     return i;
   }
 
@@ -1367,6 +1409,14 @@ class CulturesGenerator {
       culture.name,
       pack.cultures.flatMap(other => (other !== culture && other.code ? [other.code] : []))
     );
+  }
+
+  /** Set a culture's ancestry, or delete if empty */
+  setAncestry(cultureId: number, ancestry: string): void {
+    const culture = this.living(cultureId);
+    const trimmed = ancestry.trim();
+    if (trimmed) culture.ancestry = trimmed;
+    else delete culture.ancestry;
   }
 
   /** Set a culture's color */

@@ -1,342 +1,303 @@
-// The fill picker: an SVG overlay to pick a color or a hatching pattern.
-import { type D3DragEvent, drag, hsl, rgb, select } from "d3";
-import { tip } from "@/components/tooltips";
-import { viewport } from "@/components/viewport";
-import { parseTransform, rn } from "@/utils";
+// The fill picker: a Chrome-like color dialog; a fill is a color, optionally drawn as a hatching pattern
+import { color, hsl, rgb } from "d3";
+import { destroyDialog } from "@/components/dialog/dialog-helpers";
+import { Hatches } from "@/renderers/hatches";
+import { ensureEl, findEl, minmax } from "@/utils";
+import { getRandomColor } from "@/utils/colorUtils";
+import { sentences, t } from "@/utils/i18n";
 
-type ColorSpace = "hsl" | "rgb" | "hex";
+const DIALOG = "colorPicker";
+const PRESETS = Array.from({ length: 12 }, (_, i) => hsl(i * 30, 0.7, 0.7).formatHex());
+// clean, tileable hatchings shown by default; the rest stay for maps that already use them
+const BASIC_HATCHES = [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11].map(i => `hatch${i}`);
+const FORMATS = ["hex", "rgb", "hsl"] as const;
+let format: (typeof FORMATS)[number] = "hex";
 
-const CONTROLS = ["pickerH", "pickerS", "pickerL"] as const;
-const CONTROL_MAX = { pickerH: 360, pickerS: 1, pickerL: 1 } as const;
-const COLUMNS = 14;
-const SWATCH_STEP_X = 22;
-const SWATCH_STEP_Y = 20;
-const SWATCH_X = 4;
-const SWATCH_SIZE = 16;
-const PICKER_WIDTH = 315;
+type EyeDropperApi = new () => { open: () => Promise<{ sRGBHex: string }> };
+const EyeDropper = (window as unknown as { EyeDropper?: EyeDropperApi }).EyeDropper;
+
+const STYLE = /* css */ `
+  #${DIALOG} { padding: .6em; }
+  #${DIALOG} > div { width: auto; }
+  #${DIALOG} button { margin: 0; }
+  #${DIALOG} svg { pointer-events: none; }
+  #${DIALOG} .area { position: relative; height: 12em; border: 1px solid #9b9b9b; cursor: crosshair; touch-action: none;
+    background: linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, var(--hue)); }
+  #${DIALOG} .handle { position: absolute; width: .7em; height: .7em; margin: -.45em; border: 1px solid #fff; outline: 1px solid #000; pointer-events: none; }
+  #${DIALOG} .controls, #${DIALOG} .fields { display: flex; align-items: center; gap: .4em; margin-top: .6em; }
+  #${DIALOG} .controls button svg { display: block; width: 1em; height: 1em; fill: currentColor; }
+  #${DIALOG} .preview { flex: none; width: 1.75em; height: 1.75em; box-sizing: border-box; border: 1px solid #9b9b9b; }
+  #${DIALOG} .hue { flex: 1; min-width: 0; height: .8em; border: 1px solid #9b9b9b;
+    background: linear-gradient(to right, #f00, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00); }
+  #${DIALOG} .inputs { display: flex; flex: 1; gap: .4em; }
+  #${DIALOG} .inputs label { display: grid; flex: 1; min-width: 0; }
+  #${DIALOG} .inputs label > * { grid-area: 1 / 1; }
+  #${DIALOG} .inputs input { width: 100%; padding: .2em 2.2em .2em .4em; -moz-appearance: textfield; }
+  #${DIALOG} .inputs input::-webkit-inner-spin-button, #${DIALOG} .inputs input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  #${DIALOG} .inputs span { align-self: center; justify-self: end; padding-right: .5em; font-size: .9em; opacity: .6; pointer-events: none; }
+  #${DIALOG} .swatches { display: grid; grid-template-columns: repeat(12, 1fr); gap: .3em; margin-top: .6em; padding-top: .6em; border-top: 1px solid #0000001a; }
+  #${DIALOG} .swatch { aspect-ratio: 1; padding: 0; border: 1px solid #9b9b9b; background: none; }
+  #${DIALOG} .swatch:hover { border-color: #000; }
+  #${DIALOG} .swatch.selected { outline: 2px solid var(--dark-solid); outline-offset: 1px; }
+  #${DIALOG} .swatches:not(.expanded) .extra { display: none; }
+  #${DIALOG} .expand { padding: 0; }
+  #${DIALOG} .swatches svg, #${DIALOG} .preview svg { display: block; width: 100%; height: 100%; }
+  #${DIALOG} .patterns { position: absolute; }
+`;
+
+const EYEDROPPER_ICON = /* html */ `<svg viewBox="0 0 16 16"><path d="M13.4 2.6a2 2 0 0 0-2.8 0L8.9 4.3 8.2 3.6 7.1 4.7l.7.7L2.5 10.7V13.5h2.8l5.3-5.3.7.7 1.1-1.1-.7-.7 1.7-1.7a2 2 0 0 0 0-2.8ZM4.7 12H4v-.7l5-5 .7.7Z"/></svg>`;
 
 /** Close the picker if it is open, releasing the caller callback */
 function close(): void {
-  document.getElementById("pickerContainer")?.remove();
+  const dialog = findEl(DIALOG);
+  if (dialog) $(dialog).dialog("close");
 }
 
 /** Open the picker for the current fill, calling back on every pick */
 function open(fill: string, callback: (fill: string) => void): void {
   close();
-  const container = renderPicker();
-  addListeners(container, callback);
+  const hatched = Hatches.parse(fill);
+  let pattern = hatched?.hatch ?? ""; // "" for a solid color
+  let { h: hue, s: saturation, v: value } = toHsv(hatched?.color || normalize(fill) || PRESETS[0]);
+  if (Number.isNaN(hue)) hue = 0;
 
-  if (fill[0] === "#") {
-    setControlsFromColor(fill);
-    updateSpaces();
-    updatePickerColors();
-  }
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", renderDialog());
+  const dialog = ensureEl(DIALOG);
+  const find = <T extends Element = HTMLElement>(selector: string) => dialog.querySelector<T>(selector)!;
+  const [area, handle, hueSlider, preview, inputs, patterns] = [
+    find(".area"),
+    find(".handle"),
+    find<HTMLInputElement>(".hue"),
+    find<SVGRectElement>(".preview rect"),
+    find(".inputs"),
+    find<SVGSVGElement>(".patterns")
+  ];
 
-  updateSelectedRect(fill);
-}
-
-function renderPicker(): SVGSVGElement {
-  const hatches = Array.from(document.querySelectorAll<SVGPatternElement>("g#defs-hatching > pattern"));
-  const number = hatches.length;
-  const colors = Array.from({ length: number }, (_, i) => hsl((i / number) * 360, 0.7, 0.7).formatHex());
-  const rows = Math.ceil(number / COLUMNS);
-  const colorsBottom = 36 + rows * SWATCH_STEP_Y;
-  const hatchesBottom = 16 + number * 2 + rows * SWATCH_STEP_Y;
-  const height = Math.max(40, colorsBottom, hatchesBottom) + 9;
-  const x = (viewport.width - PICKER_WIDTH) / 2;
-  const y = (viewport.height - height) / 2;
-  const zIndex =
-    Array.from(document.querySelectorAll<HTMLElement>(".ui-front")).reduce(
-      (max, element) => Math.max(max, Number(getComputedStyle(element).zIndex) || 0),
-      100
-    ) + 1;
-
-  const controls = [
-    { id: "pickerH", label: "H:", x: 4, x1: 18, x2: 107, cx: 75, tip: "Set palette hue" },
-    { id: "pickerS", label: "S:", x: 113, x1: 124, x2: 206, cx: 181.4, tip: "Set palette saturation" },
-    { id: "pickerL", label: "L:", x: 213, x1: 226, x2: 306, cx: 282, tip: "Set palette lightness" }
-  ]
-    .map(
-      control => /* html */ `<g data-tip="${control.tip}">
-        <text x="${control.x}" y="14">${control.label}</text>
-        <line x1="${control.x1}" y1="10" x2="${control.x2}" y2="10"></line>
-        <circle cx="${control.cx}" cy="10" r="5" id="${control.id}"></circle>
-      </g>`
-    )
-    .join("");
-
-  const colorRects = colors
-    .map(
-      (color, i) => /* html */ `<rect
-        id="picker_${color}"
-        fill="${color}"
-        class="${i ? "" : "selected"}"
-        x="${(i % COLUMNS) * SWATCH_STEP_X + SWATCH_X}"
-        y="${40 + Math.floor(i / COLUMNS) * SWATCH_STEP_Y}"
-        width="${SWATCH_SIZE}"
-        height="${SWATCH_SIZE}"
-      ></rect>`
-    )
-    .join("");
-
-  const hatchRects = hatches
-    .map(
-      (hatch, i) => /* html */ `<rect
-        id="picker_${hatch.id}"
-        fill="url(#${hatch.id})"
-        x="${(i % COLUMNS) * SWATCH_STEP_X + SWATCH_X}"
-        y="${Math.floor(i / COLUMNS) * SWATCH_STEP_Y + 20 + number * 2}"
-        width="${SWATCH_SIZE}"
-        height="${SWATCH_SIZE}"
-      ></rect>`
-    )
-    .join("");
-
-  const SPACES_HTML = /* html */ `<label style="margin-right: 6px"
-    >HSL: <input type="number" id="pickerHSL_H" data-space="hsl" min="0" max="360" value="231" />,
-    <input type="number" id="pickerHSL_S" data-space="hsl" min="0" max="100" value="70" />,
-    <input type="number" id="pickerHSL_L" data-space="hsl" min="0" max="100" value="70" />
-  </label>
-  <label style="margin-right: 6px"
-    >RGB: <input type="number" id="pickerRGB_R" data-space="rgb" min="0" max="255" value="125" />,
-    <input type="number" id="pickerRGB_G" data-space="rgb" min="0" max="255" value="142" />,
-    <input type="number" id="pickerRGB_B" data-space="rgb" min="0" max="255" value="232" />
-  </label>
-  <label>HEX: <input type="text" id="pickerHEX" data-space="hex" style="width:42px" autocorrect="off" spellcheck="false" value="#7d8ee8" /></label>`;
-
-  document.body.insertAdjacentHTML(
-    "beforeend",
-    /* html */ `<svg
-      id="pickerContainer"
-      width="100%"
-      height="100%"
-      style="z-index: ${zIndex}"
-    >
-      <rect id="pickerOverlay" x="0" y="0" width="100%" height="100%" opacity="0.2"></rect>
-      <g id="picker" transform="translate(${x},${y})">
-        <rect id="pickerBackground" x="0" y="0" width="${PICKER_WIDTH}" height="${height}" fill="#ffffff" stroke="#5d4651"></rect>
-        <g id="pickerControls">${controls}</g>
-        <foreignObject id="pickerSpaces" x="4" y="20" width="303" height="20">${SPACES_HTML}</foreignObject>
-        <g id="pickerColors" stroke="#333333">${colorRects}</g>
-        <g id="pickerHatches" stroke="#333333">${hatchRects}</g>
-        <rect id="pickerHeader" x="0" y="-30" width="${PICKER_WIDTH}" height="30"></rect>
-        <text id="pickerLabel" x="12" y="-10">Color Picker</text>
-        <rect id="pickerCloseRect" x="${PICKER_WIDTH - 23}" y="-21" width="14" height="14"></rect>
-        <text id="pickerCloseText" x="${PICKER_WIDTH - 20}" y="-10">✕</text>
-      </g>
-    </svg>`
-  );
-
-  return document.getElementById("pickerContainer") as unknown as SVGSVGElement;
-}
-
-function addListeners(container: SVGSVGElement, callback: (fill: string) => void): void {
-  const picker = getSvgElement<SVGGElement>("picker");
-  const closePicker = () => container.remove();
-  const tipClose = () => tip("Click to close the picker");
-  const tipDrag = () => tip("Drag to change the picker position");
-
-  getSvgElement("pickerOverlay").addEventListener("mousemove", tipClose);
-  getSvgElement("pickerOverlay").addEventListener("click", closePicker);
-  getSvgElement("pickerCloseRect").addEventListener("mousemove", tipClose);
-  getSvgElement("pickerCloseRect").addEventListener("click", closePicker);
-  getSvgElement("pickerBackground").addEventListener("mousemove", tipDrag);
-  getSvgElement("pickerHeader").addEventListener("mousemove", tipDrag);
-  getSvgElement("pickerLabel").addEventListener("mousemove", tipDrag);
-
-  getSvgElement("pickerControls").addEventListener("mousemove", event => {
-    const control = (event.target as Element).closest<SVGGElement>("g[data-tip]");
-    if (control) tip(control.dataset.tip || "");
-  });
-
-  container.querySelectorAll<SVGLineElement>("#pickerControls line").forEach(line => {
-    line.addEventListener("click", event => onControlClicked(event, callback));
-  });
-
-  container.querySelectorAll<HTMLInputElement>("#pickerSpaces input").forEach(input => {
-    input.addEventListener("change", event => onSpaceChanged(event, callback));
-  });
-  getSvgElement("pickerSpaces").addEventListener("mousemove", () =>
-    tip("Color value in different color spaces. Edit to change")
-  );
-
-  addFillListeners(getSvgElement("pickerColors"), callback, "Click to fill with the color");
-  addFillListeners(getSvgElement("pickerHatches"), callback);
-
-  select(picker).call(
-    drag<SVGGElement, unknown>()
-      .filter(event => (event.target as HTMLElement).tagName !== "INPUT")
-      .on("start", function (event) {
-        onPickerDrag.call(this, event);
-      })
-  );
-
-  select(picker)
-    .selectAll<SVGCircleElement, unknown>("#pickerControls circle")
-    .call(
-      drag<SVGCircleElement, unknown>().on("start", function (event) {
-        onControlDrag.call(this, event, callback);
-      })
-    );
-}
-
-function addFillListeners(group: SVGGElement, callback: (fill: string) => void, hint?: string): void {
-  group.addEventListener("click", event => {
-    const rect = (event.target as Element).closest<SVGRectElement>("rect");
-    if (rect) onFillClicked(rect, callback);
-  });
-  group.addEventListener("mouseover", event => {
-    const rect = (event.target as Element).closest<SVGRectElement>("rect");
-    if (rect) tip(hint || `Click to fill with the hatching ${rect.id}`);
-  });
-}
-
-function getSvgElement<T extends SVGElement = SVGElement>(id: string): T {
-  return document.getElementById(id) as unknown as T;
-}
-
-function setControlsFromColor(fill: string): void {
-  const { h, s, l } = hsl(fill);
-  if (!Number.isNaN(h)) setPickerControl("pickerH", h, 360);
-  if (!Number.isNaN(s)) setPickerControl("pickerS", s, 1);
-  if (!Number.isNaN(l)) setPickerControl("pickerL", l, 1);
-}
-
-function pickFill(callback: (fill: string) => void): void {
-  const selected = getSvgElement("picker").querySelector("rect.selected");
-  if (selected) callback(selected.getAttribute("fill") as string);
-}
-
-function updateSelectedRect(fill: string): void {
-  const picker = getSvgElement("picker");
-  picker.querySelector("rect.selected")?.classList.remove("selected");
-  picker.querySelector(`rect[fill='${fill.toLowerCase()}']`)?.classList.add("selected");
-}
-
-const getControl = (id: (typeof CONTROLS)[number]) => getSvgElement<SVGCircleElement>(id);
-
-function setPickerControl(id: (typeof CONTROLS)[number], value: number, max: number): void {
-  const control = getControl(id);
-  const line = control.previousElementSibling as SVGLineElement;
-  const min = Number(line.getAttribute("x1"));
-  const delta = Number(line.getAttribute("x2")) - min;
-  control.setAttribute("cx", String(min + delta * (value / max)));
-}
-
-function getPickerControl(id: (typeof CONTROLS)[number]): number {
-  const control = getControl(id);
-  const line = control.previousElementSibling as SVGLineElement;
-  const min = Number(line.getAttribute("x1"));
-  const delta = Number(line.getAttribute("x2")) - min;
-  return ((Number(control.getAttribute("cx")) - min) / delta) * CONTROL_MAX[id];
-}
-
-const getHSL = () => hsl(getPickerControl("pickerH"), getPickerControl("pickerS"), getPickerControl("pickerL"));
-
-/** Sync the numeric HSL/RGB/HEX inputs with the control positions */
-function updateSpaces(): void {
-  const { h, s, l } = getHSL();
-  const setValue = (id: string, value: string | number) => {
-    (document.getElementById(id) as HTMLInputElement).value = String(value);
+  const render = (fields = true) => {
+    const hex = toHex(hue, saturation, value);
+    area.style.setProperty("--hue", toHex(hue, 1, 1));
+    Object.assign(handle.style, { left: `${saturation * 100}%`, top: `${(1 - value) * 100}%`, background: hex });
+    hueSlider.value = String(Math.round(hue));
+    patterns.style.color = hex; // the hatching swatches draw in the current color
+    preview.setAttribute("fill", pattern ? `url(#picker-${pattern})` : hex);
+    if (fields) {
+      const elements = inputs.querySelectorAll("input");
+      getFields(hex, hue).forEach((field, i) => {
+        elements[i].value = String(field.value);
+      });
+    }
+    for (const swatch of dialog.querySelectorAll<HTMLElement>("[data-color]")) {
+      swatch.classList.toggle("selected", swatch.dataset.color === hex);
+    }
+    for (const swatch of dialog.querySelectorAll<HTMLElement>("[data-hatch]")) {
+      swatch.classList.toggle("selected", swatch.dataset.hatch === pattern);
+    }
   };
 
-  setValue("pickerHSL_H", rn(h));
-  setValue("pickerHSL_S", rn(s * 100));
-  setValue("pickerHSL_L", rn(l * 100));
+  const pick = (fields = true) => {
+    const hex = toHex(hue, saturation, value);
+    const picked = pattern ? Hatches.fill(pattern, hex) : hex;
+    render(fields);
+    Hatches.ensure(picked);
+    callback(picked);
+  };
 
-  const color = rgb(getHSL());
-  setValue("pickerRGB_R", color.r);
-  setValue("pickerRGB_G", color.g);
-  setValue("pickerRGB_B", color.b);
-  setValue("pickerHEX", color.formatHex());
-}
+  const pickColor = (hex: string, fields = true) => {
+    const hsv = toHsv(hex);
+    if (!Number.isNaN(hsv.h)) hue = hsv.h;
+    [saturation, value] = [hsv.s, hsv.v];
+    pick(fields);
+  };
 
-/** Re-tint the color swatches around the current hue, saturation and lightness */
-function updatePickerColors(): void {
-  const colors = Array.from(getSvgElement("pickerColors").querySelectorAll<SVGRectElement>("rect"));
-  const number = colors.length;
-  const { h, s, l } = getHSL();
+  const pickFromArea = (event: PointerEvent) => {
+    const { left, top, width, height } = area.getBoundingClientRect();
+    saturation = minmax((event.clientX - left) / width, 0, 1);
+    value = 1 - minmax((event.clientY - top) / height, 0, 1);
+    pick();
+  };
 
-  colors.forEach((rect, i) => {
-    const color = hsl((i / number) * 180 + h, s, l).formatHex();
-    rect.id = `picker_${color}`;
-    rect.setAttribute("fill", color);
+  area.addEventListener("pointerdown", event => {
+    area.setPointerCapture(event.pointerId);
+    pickFromArea(event);
+  });
+  area.addEventListener("pointermove", event => {
+    if (area.hasPointerCapture(event.pointerId)) pickFromArea(event);
+  });
+
+  hueSlider.addEventListener("input", () => {
+    hue = hueSlider.valueAsNumber;
+    pick();
+  });
+
+  // typing updates the map live but leaves the fields alone; committing a field normalizes them in place
+  inputs.addEventListener("input", () => {
+    const values = Array.from(inputs.querySelectorAll("input"), input => input.value.trim());
+    const hex = parseFields(values);
+    if (!hex) return;
+    pickColor(hex, false);
+    if (format === "hsl") {
+      hue = Number(values[0]) % 360;
+      render(false);
+    }
+  });
+  inputs.addEventListener("change", () => render());
+
+  const buildFields = () => {
+    inputs.innerHTML = getFields(toHex(hue, saturation, value), hue)
+      .map(renderField)
+      .join("");
+  };
+
+  find(".format").addEventListener("click", () => {
+    format = FORMATS[(FORMATS.indexOf(format) + 1) % FORMATS.length];
+    buildFields();
+  });
+
+  find(".random").addEventListener("click", () => pickColor(getRandomColor()));
+
+  const eyedropper = find(".eyedropper");
+  if (EyeDropper) {
+    eyedropper.addEventListener("click", async () => {
+      const picked = await new EyeDropper()
+        .open()
+        .then(result => normalize(result.sRGBHex))
+        .catch(() => ""); // cancelled with Esc
+      if (picked && dialog.isConnected) pickColor(picked);
+    });
+  } else eyedropper.remove();
+
+  dialog.addEventListener("click", event => {
+    const swatch = (event.target as Element).closest<HTMLElement>(".swatch");
+    if (swatch?.dataset.color) pickColor(swatch.dataset.color);
+    else if (swatch?.dataset.hatch) {
+      pattern = pattern === swatch.dataset.hatch ? "" : swatch.dataset.hatch; // clicking the selected one goes solid
+      pick();
+    }
+  });
+
+  const hatchGrid = find(".hatches");
+  const expandButton = find(".expand");
+  const expand = (expanded: boolean) => {
+    hatchGrid.classList.toggle("expanded", expanded);
+    expandButton.className = `expand ${expanded ? "icon-up-open" : "icon-down-open"}`;
+    expandButton.dataset.tip = expanded ? t("Show only the basic hatchings") : t("Show all hatchings");
+  };
+  expandButton.addEventListener("click", () => expand(!hatchGrid.classList.contains("expanded")));
+  expand(Boolean(pattern) && !BASIC_HATCHES.includes(pattern));
+
+  buildFields();
+  render();
+
+  $(dialog).dialog({
+    title: t("Color Picker"),
+    resizable: false,
+    width: "26em",
+    position: { my: "center", at: "center", of: "svg" },
+    close: () => destroyDialog(DIALOG)
   });
 }
 
-function onFillClicked(rect: SVGRectElement, callback: (fill: string) => void): void {
-  const fill = rect.getAttribute("fill") as string;
-  updateSelectedRect(fill);
-  pickFill(callback);
+function renderDialog(): string {
+  const bases = Hatches.bases();
+  const previews = bases.map(base => Hatches.recolor(base, `picker-${base.id}`, "currentColor").outerHTML).join("");
+  const swatch = (data: string, fill: string, hint: string, extra = false) =>
+    /* html */ `<button class="swatch${extra ? " extra" : ""}" ${data} data-tip="${hint}"><svg><rect width="100%" height="100%" fill="${fill}" /></svg></button>`;
+  const colors = PRESETS.map(color => swatch(`data-color="${color}"`, color, t("Click to fill with the color")));
+  const hatch = (id: string) =>
+    swatch(
+      `data-hatch="${id}"`,
+      `url(#picker-${id})`,
+      sentences(t("Click to fill with the hatching {{hatching}}", { hatching: id }), t("Click again to remove it")),
+      !BASIC_HATCHES.includes(id)
+    );
+  const extras = bases.map(({ id }) => id).filter(id => !BASIC_HATCHES.includes(id));
 
-  const { h } = hsl(fill);
-  if (Number.isNaN(h)) return; // hatching, not a color
-  setPickerControl("pickerH", h, 360);
-  updateSpaces();
+  return /* html */ `<div id="${DIALOG}" class="dialog">
+    <style>${STYLE}</style>
+    <svg class="patterns" width="0" height="0"><defs>${previews}</defs></svg>
+    <div class="area" data-tip="${t("Drag to set saturation and brightness")}"><div class="handle"></div></div>
+    <div class="controls">
+      <button class="eyedropper" data-tip="${t("Pick a color from the screen")}">${EYEDROPPER_ICON}</button>
+      <span class="preview" data-tip="${t("Current fill")}"><svg><rect width="100%" height="100%" /></svg></span>
+      <input class="hue" type="range" min="0" max="360" step="1" data-tip="${t("Set hue")}" />
+      <button class="random icon-shuffle" data-tip="${t("Pick a random color")}"></button>
+    </div>
+    <div class="fields">
+      <div class="inputs"></div>
+      <button class="format icon-resize-vertical" data-tip="${t("Switch color format")}"></button>
+    </div>
+    <div class="swatches">${colors.join("")}</div>
+    <div class="swatches hatches">
+      ${BASIC_HATCHES.map(hatch).join("")}
+      <button class="expand"></button>${extras.map(hatch).join("")}
+    </div>
+  </div>`;
 }
 
-function onControlClicked(event: MouseEvent, callback: (fill: string) => void): void {
-  const line = event.currentTarget as SVGLineElement;
-  const min = line.getScreenCTM()?.e || 0;
-  (line.nextElementSibling as SVGCircleElement).setAttribute("cx", String(event.x - min));
-  updateSpaces();
-  updatePickerColors();
-  pickFill(callback);
+type Field = { label: string; value: string | number; max?: number };
+
+function getFields(hex: string, hue: number): Field[] {
+  if (format === "hex") return [{ label: "HEX", value: hex }];
+  if (format === "rgb") {
+    const { r, g, b } = rgb(hex);
+    return [
+      { label: "R", value: r, max: 255 },
+      { label: "G", value: g, max: 255 },
+      { label: "B", value: b, max: 255 }
+    ];
+  }
+  const { s, l } = hsl(hex);
+  return [
+    { label: "H", value: Math.round(hue), max: 360 },
+    { label: "S", value: Math.round((s || 0) * 100), max: 100 },
+    { label: "L", value: Math.round(l * 100), max: 100 }
+  ];
 }
 
-function onControlDrag(
-  this: SVGCircleElement,
-  event: D3DragEvent<SVGCircleElement, unknown, unknown>,
-  callback: (fill: string) => void
-): void {
-  const line = this.previousElementSibling as SVGLineElement;
-  const min = Number(line.getAttribute("x1"));
-  const max = Number(line.getAttribute("x2"));
-
-  event.on("drag", dragEvent => {
-    this.setAttribute("cx", String(Math.max(Math.min(dragEvent.x, max), min)));
-    updateSpaces();
-    updatePickerColors();
-    pickFill(callback);
-  });
+function renderField({ label, value, max }: Field): string {
+  const type = max ? `type="number" min="0" max="${max}"` : `type="text" maxlength="7"`;
+  return /* html */ `<label><input ${type} value="${value}" spellcheck="false" autocomplete="off" /><span>${label}</span></label>`;
 }
 
-function onSpaceChanged(event: Event, callback: (fill: string) => void): void {
-  const input = event.currentTarget as HTMLInputElement;
-  const invalid = () => tip("You must provide a correct value", false, "error");
-  if (!input.checkValidity()) return void invalid();
+/** The fields' color as HEX, or "" while they hold an incomplete or invalid value */
+function parseFields(values: string[]): string {
+  if (format === "hex")
+    return /^#?([\da-f]{3}|[\da-f]{6})$/i.test(values[0]) ? normalize(`#${values[0].replace("#", "")}`) : "";
 
-  const space = input.dataset.space as ColorSpace;
-  const values = Array.from(input.parentNode?.querySelectorAll("input") || []).map(input => input.value);
-  const fill =
-    space === "hex"
-      ? rgb(input.value)
-      : space === "rgb"
-        ? rgb(Number(values[0]), Number(values[1]), Number(values[2]))
-        : hsl(Number(values[0]), Number(values[1]) / 100, Number(values[2]) / 100);
-
-  const { l } = hsl(fill);
-  if (Number.isNaN(l)) return void invalid();
-
-  setControlsFromColor(fill.formatHex());
-  updateSpaces();
-  updatePickerColors();
-  pickFill(callback);
+  const numbers = values.map(Number);
+  const limits = format === "rgb" ? [255, 255, 255] : [360, 100, 100];
+  if (values.some(value => value === "") || numbers.some((n, i) => !(n >= 0 && n <= limits[i]))) return "";
+  const [a, b, c] = numbers;
+  return format === "rgb" ? rgb(a, b, c).formatHex() : hsl(a, b / 100, c / 100).formatHex();
 }
 
-function onPickerDrag(this: SVGGElement, event: D3DragEvent<SVGGElement, unknown, unknown>): void {
-  const transform = parseTransform(this.getAttribute("transform")!);
-  const x = Number(transform[0]) - event.x;
-  const y = Number(transform[1]) - event.y;
-  const bbox = this.getBBox();
+/** A CSS color as lowercase 6-digit HEX; "" for a hatching or another non-color fill */
+function normalize(fill: string): string {
+  return color(fill)?.formatHex() || "";
+}
 
-  event.on("drag", dragEvent => {
-    const px = rn(((x + dragEvent.x + bbox.width) / viewport.width) * 100, 2);
-    const py = rn(((y + dragEvent.y + bbox.height) / viewport.height) * 100, 2);
-    this.setAttribute("transform", `translate(${x + dragEvent.x},${y + dragEvent.y})`);
-    this.dataset.x = String(px);
-    this.dataset.y = String(py);
-  });
+function toHex(hue: number, saturation: number, value: number): string {
+  const channel = (n: number) => {
+    const k = (n + hue / 60) % 6;
+    return (value - value * saturation * Math.max(0, Math.min(k, 4 - k, 1))) * 255;
+  };
+  return rgb(channel(5), channel(3), channel(1)).formatHex();
+}
+
+/** HSV with hue in degrees, NaN for greys */
+function toHsv(hex: string): { h: number; s: number; v: number } {
+  const { r, g, b } = rgb(hex);
+  const [red, green, blue] = [r / 255, g / 255, b / 255];
+  const max = Math.max(red, green, blue);
+  const delta = max - Math.min(red, green, blue);
+  const sector = !delta
+    ? NaN
+    : max === red
+      ? ((green - blue) / delta + 6) % 6
+      : max === green
+        ? (blue - red) / delta + 2
+        : (red - green) / delta + 4;
+  return { h: sector * 60, s: max ? delta / max : 0, v: max };
 }
 
 export const ColorPicker = { open, close };

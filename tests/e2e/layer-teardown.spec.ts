@@ -9,15 +9,7 @@ declare const styles: any;
 // custom route groups, burg icon groups — and must survive the erasure. The wind arrows are the
 // counter-example: they are render output and must be rebuilt identically when the layer comes back.
 test.describe("layer teardown keeps user data", () => {
-  test.beforeEach(async ({ context, page }) => {
-    await context.clearCookies();
-
-    await page.goto("/");
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-
+  test.beforeEach(async ({ page }) => {
     await page.goto("/?seed=test-seed&width=1280&height=720");
     await waitForMap(page);
     await page.waitForTimeout(500);

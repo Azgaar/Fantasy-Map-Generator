@@ -1,6 +1,7 @@
 import { mean, median, quadtree, sum } from "d3";
 import { getInverseRelation, RELATIONS } from "@/data/diplomacy";
 import { Emblems } from "@/generators/emblems-generator";
+import { Tags } from "@/generators/tags";
 import type { Emblem } from "@/types/emblems";
 import { requireColor } from "@/utils/colorUtils";
 import { replaceWholeWord } from "@/utils/languageUtils";
@@ -32,6 +33,12 @@ declare global {
   var States: StatesModule;
 }
 
+export type TariffRule = {
+  states: number[] | "all";
+  goods: number[] | "all";
+  rate: number | "embargo";
+};
+
 export interface State {
   i: number;
   name: string;
@@ -41,6 +48,7 @@ export interface State {
   center: number;
   culture: number;
   coa: Emblem;
+  tags?: string[];
   lock?: boolean;
   removed?: boolean;
   pole?: [number, number];
@@ -63,6 +71,7 @@ export interface State {
   salesTax: number;
   pollTax: number;
   treasury: number;
+  tariffs?: TariffRule[];
   label?: Label;
   note?: string;
 }
@@ -230,7 +239,9 @@ class StatesModule {
     const count = Math.min(statesCount, validBurgs.length) + 1;
     let spacing = (options.map.graph.width + options.map.graph.height) / 2 / count;
     const capitalsTree = quadtree<[number, number]>();
-    const newStates: State[] = [{ ...pack.states[0], i: 0, name: pack.states[0].name }];
+    const newStates: State[] = [
+      { ...pack.states[0], i: 0, name: pack.states[0].name, tariffs: [], tags: pack.states[0]?.tags || [] }
+    ];
 
     for (const state of lockedStates) {
       const newId = newStates.length;
@@ -286,7 +297,9 @@ class StatesModule {
         coa,
         salesTax: 0,
         pollTax: 0,
-        treasury: 0
+        treasury: 0,
+        tariffs: [],
+        tags: []
       });
     }
 
@@ -294,7 +307,9 @@ class StatesModule {
   }
 
   private createStates() {
-    const states: State[] = [{ i: 0, name: "Neutrals", salesTax: 0, pollTax: 0, treasury: 0 } as State];
+    const states: State[] = [
+      { i: 0, name: "Neutrals", salesTax: 0, pollTax: 0, treasury: 0, tariffs: [], tags: [] } as unknown as State
+    ];
     const each5th = each(5);
     const sizeVariety = options.generation.states.sizeVariety;
 
@@ -318,7 +333,9 @@ class StatesModule {
         coa,
         salesTax: 0,
         pollTax: 0,
-        treasury: 0
+        treasury: 0,
+        tariffs: [],
+        tags: []
       });
     });
 
@@ -592,10 +609,16 @@ class StatesModule {
     const far = { Friendly: 1, Neutral: 12, Suspicion: 2, Unknown: 6 }; // relations to other
     const navals = { Neutral: 1, Suspicion: 2, Rival: 1, Unknown: 1 }; // relations of naval powers
 
+    states[0].tariffs = [];
     valid.forEach(s => {
       s.diplomacy = new Array(states.length).fill("x"); // clear all relationships
     });
-    if (valid.length < 2) return; // no states to generate relations with
+    if (valid.length < 2) {
+      valid.forEach(s => {
+        s.tariffs = this.defineTariffs(s);
+      });
+      return; // no states to generate relations with
+    }
     const areaMean: number = mean(valid.map(s => stateAreas[s.i])) as number; // average state area
 
     // generic relations
@@ -755,7 +778,42 @@ class StatesModule {
       // TODO: record war in chronicle to keep state interface clean
       chronicle.push(war as any); // add a record to diplomatical history
     }
+    valid.forEach(s => {
+      s.tariffs = this.defineTariffs(s);
+    });
     TIME && console.timeEnd("generateDiplomacy");
+  }
+
+  defineTariffs(state: State): TariffRule[] {
+    if (!state.i || state.removed) return [];
+    const rules: TariffRule[] = [{ states: "all", goods: "all", rate: 0 }];
+    const diplomacy = state.diplomacy;
+    if (!Array.isArray(diplomacy)) return rules;
+
+    const freeTrade: number[] = [];
+    const suspicion: number[] = [];
+    const rival: number[] = [];
+    const enemy: number[] = [];
+
+    for (let otherId = 1; otherId < diplomacy.length; otherId++) {
+      if (otherId === state.i || !pack.states?.[otherId] || pack.states[otherId].removed) continue;
+      const relation = diplomacy[otherId];
+      if (relation === "Ally" || relation === "Friendly" || relation === "Vassal" || relation === "Suzerain") {
+        freeTrade.push(otherId);
+      } else if (relation === "Suspicion") {
+        suspicion.push(otherId);
+      } else if (relation === "Rival") {
+        rival.push(otherId);
+      } else if (relation === "Enemy") {
+        enemy.push(otherId);
+      }
+    }
+
+    if (freeTrade.length) rules.push({ states: freeTrade, goods: "all", rate: 0 });
+    if (suspicion.length) rules.push({ states: suspicion, goods: "all", rate: 0.2 });
+    if (rival.length) rules.push({ states: rival, goods: "all", rate: 0.3 });
+    if (enemy.length) rules.push({ states: enemy, goods: "all", rate: "embargo" });
+    return rules;
   }
 
   // state 0 stores the diplomacy chronicle (array of [title, ...messages])
@@ -1103,8 +1161,11 @@ class StatesModule {
       coa,
       salesTax: 0,
       pollTax: 0,
-      treasury: 0
+      treasury: 0,
+      tariffs: [],
+      tags: []
     });
+    states[i].tariffs = this.defineTariffs(states[i]);
     this.getPoles();
     this.findNeighbors();
     this.collectStatistics();
@@ -1135,6 +1196,7 @@ class StatesModule {
     for (const other of pack.states)
       if (other.i && !other.removed && other.neighbors) other.neighbors = other.neighbors.filter(n => n !== stateId);
     pack.states[stateId] = { i: stateId, removed: true } as State;
+    this.pruneTariffs({ states: [stateId] });
     this.collectStatistics();
   }
 
@@ -1153,11 +1215,15 @@ class StatesModule {
     for (const state of merged) {
       state.removed = true;
       delete state.label;
+      if (state.tags?.length) {
+        Tags.add(ruling, state.tags);
+      }
       for (const regiment of state.military ?? [])
         ruling.military.push({
           ...regiment,
           i: Math.max(-1, ...ruling.military.map(({ i }) => i)) + 1,
-          state: rulingStateId
+          state: rulingStateId,
+          tags: [...(regiment.tags ?? [])]
         });
       ruling.provinces.push(...(state.provinces ?? []).filter(province => !pack.provinces[province]?.removed));
       state.military = [];
@@ -1175,6 +1241,7 @@ class StatesModule {
     pack.cells.state.forEach((owner, cell) => {
       if (ids.has(owner)) pack.cells.state[cell] = rulingStateId;
     });
+    this.pruneTariffs({ states: ids });
     this.findNeighbors();
     this.collectStatistics();
     this.getPoles();
@@ -1203,7 +1270,8 @@ class StatesModule {
       formName,
       fullName: `${state.name} ${formName}`,
       color: getMixedColor(state.color!),
-      coa: state.coa
+      coa: state.coa,
+      tags: []
     } as Province);
     ruling.provinces ??= [];
     ruling.provinces.push(provinceId);
@@ -1233,6 +1301,81 @@ class StatesModule {
     state.pollTax = rn(pollTax, 4);
   }
 
+  /** Set a state's import tariff and embargo rules; they take effect when trade is regenerated */
+  setTariffs(stateId: number, tariffs: TariffRule[]): void {
+    const state = this.ruled(stateId);
+    if (!Array.isArray(tariffs)) throw new Error("Tariffs must be a list of rules");
+    const validStates = new Set((pack.states ?? []).filter(s => s?.i && !s.removed && s.i !== stateId).map(s => s.i));
+    const hasGoods = Array.isArray(pack.goods) && pack.goods.length > 0;
+    const validGoods = new Set((pack.goods ?? []).filter(g => g && g.i !== undefined).map(g => g.i));
+
+    const normalized: TariffRule[] = [];
+    for (const rule of tariffs) {
+      if (!rule || typeof rule !== "object") throw new Error("Each tariff rule must be an object");
+      let ruleStates: number[] | "all";
+      if (rule.states === "all") {
+        ruleStates = "all";
+      } else if (Array.isArray(rule.states)) {
+        ruleStates = [...new Set(rule.states.filter(id => Number.isInteger(id) && validStates.has(id)))];
+        if (!ruleStates.length) continue;
+      } else {
+        throw new Error('Rule states must be "all" or a list of state ids');
+      }
+
+      let ruleGoods: number[] | "all";
+      if (rule.goods === "all") {
+        ruleGoods = "all";
+      } else if (Array.isArray(rule.goods)) {
+        ruleGoods = [
+          ...new Set(rule.goods.filter(id => Number.isInteger(id) && id >= 0 && (!hasGoods || validGoods.has(id))))
+        ];
+        if (!ruleGoods.length) continue;
+      } else {
+        throw new Error('Rule goods must be "all" or a list of good ids');
+      }
+
+      let rate: number | "embargo";
+      if (rule.rate === "embargo") {
+        rate = "embargo";
+      } else if (typeof rule.rate === "number" && Number.isFinite(rule.rate) && rule.rate >= 0 && rule.rate <= 10) {
+        rate = rn(rule.rate, 4);
+      } else {
+        throw new Error('Rule rate must be "embargo" or a number from 0 to 10');
+      }
+
+      normalized.push({ states: ruleStates, goods: ruleGoods, rate });
+    }
+    state.tariffs = normalized;
+  }
+
+  /** Remove deleted or merged states and deleted goods from all state tariff rules */
+  pruneTariffs({
+    states: removedStates,
+    goods: removedGoods
+  }: {
+    states?: Iterable<number>;
+    goods?: Iterable<number>;
+  }): void {
+    const stateSet = removedStates ? new Set(removedStates) : null;
+    const goodSet = removedGoods ? new Set(removedGoods) : null;
+    if (!stateSet?.size && !goodSet?.size) return;
+
+    for (const state of pack.states ?? []) {
+      if (!state?.i || state.removed || !Array.isArray(state.tariffs)) continue;
+      state.tariffs = state.tariffs.filter(rule => {
+        if (Array.isArray(rule.states)) {
+          rule.states = rule.states.filter(id => id !== state.i && !stateSet?.has(id));
+          if (!rule.states.length) return false;
+        }
+        if (Array.isArray(rule.goods) && goodSet?.size) {
+          rule.goods = rule.goods.filter(id => !goodSet.has(id));
+          if (!rule.goods.length) return false;
+        }
+        return true;
+      });
+    }
+  }
+
   /** Set a state's treasury, in the map's currency */
   setTreasury(stateId: number, amount: number): void {
     if (typeof amount !== "number" || !Number.isFinite(amount)) throw new Error("The treasury must be a number");
@@ -1244,6 +1387,12 @@ class StatesModule {
     const state = this.ruled(stateId);
     if (locked) state.lock = true;
     else delete state.lock;
+  }
+
+  /** Set a state's tags */
+  setTags(stateId: number, tags: string[] | string): void {
+    const state = this.ruled(stateId);
+    state.tags = Tags.set(state, tags);
   }
 
   /** Replace a chronicle entry with text lines, the first being its title. Index -1 adds an entry after any the batch records before it (setRelation does); no lines removes it */
@@ -1340,7 +1489,8 @@ class StatesModule {
         formName,
         fullName: `${name} ${formName}`,
         color: getMixedColor(states[stateId].color!),
-        coa
+        coa,
+        tags: []
       } as Province);
       for (const cell of provinceCells) cells.province[cell] = id;
       states[stateId].provinces = [...(states[stateId].provinces ?? []), id];
@@ -1399,38 +1549,44 @@ class StatesModule {
 
   collectTaxes() {
     const { states, burgs, deals } = pack;
-    if (!states.length) return;
+    if (!states?.length) return;
     for (const state of states) {
       if (!state.i || state.removed) continue;
       state.treasury = 0;
     }
 
-    for (const deal of deals) {
-      if (!deal.tax) continue;
-
-      let sellerStateId = 0;
-      if (deal.sellerType === "burg") {
-        sellerStateId = burgs?.[deal.seller]?.state || 0;
-      } else if (deal.sellerType === "market") {
-        const market = Markets.get(deal.seller);
-        const centerBurgId = market?.centerBurgId;
-        sellerStateId = centerBurgId ? burgs?.[centerBurgId]?.state || 0 : 0;
+    for (const deal of deals ?? []) {
+      if (deal.tax) {
+        let sellerStateId = 0;
+        if (deal.sellerType === "burg") {
+          sellerStateId = burgs?.[deal.seller]?.state || 0;
+        } else if (deal.sellerType === "market") {
+          const market = Markets.get(deal.seller);
+          const centerBurgId = market?.centerBurgId;
+          sellerStateId = centerBurgId ? burgs?.[centerBurgId]?.state || 0 : 0;
+        }
+        const sellerState = sellerStateId ? states[sellerStateId] : undefined;
+        if (sellerState && !sellerState.removed) sellerState.treasury += deal.tax;
       }
-      if (!sellerStateId) continue;
-      const state = states[sellerStateId];
-      if (!state || state.removed) continue;
-      state.treasury += deal.tax;
+
+      if (deal.tariff && deal.buyerType === "market") {
+        const market = Markets.get(deal.buyer);
+        const centerBurgId = market?.centerBurgId;
+        const buyerStateId = centerBurgId ? burgs?.[centerBurgId]?.state || 0 : 0;
+        const buyerState = buyerStateId ? states[buyerStateId] : undefined;
+        if (buyerState && !buyerState.removed) buyerState.treasury += deal.tariff;
+      }
     }
 
     for (const state of states) {
       if (!state.i || state.removed) continue;
       const population = (state.rural || 0) + (state.urban || 0);
-      state.treasury = rn(state.treasury + state.pollTax * population, 2);
+      state.treasury = rn(state.treasury + (state.pollTax || 0) * population, 2);
     }
   }
 
-  getSalesTax(burg: { state?: number }): number {
-    const stateId = burg.state || 0;
+  getSalesTax(burg?: { state?: number }): number {
+    const stateId = burg?.state || 0;
     if (!stateId) return 0;
     return pack.states?.[stateId]?.salesTax ?? 0;
   }

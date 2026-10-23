@@ -29,9 +29,10 @@ import {
 import { askProvider } from "@/services/assistant/provider/answerer";
 import * as Connection from "@/services/assistant/provider/connection";
 import { PROVIDERS } from "@/services/assistant/provider/providers";
-import { ensureEl } from "@/utils";
+import { ensureEl, findEl } from "@/utils";
+import { t } from "@/utils/i18n";
 import { renderMarkdown } from "@/utils/markdown";
-import { capitalize, errorText, escapeHtml } from "@/utils/stringUtils";
+import { errorText, escapeHtml } from "@/utils/stringUtils";
 import { si } from "@/utils/unitUtils";
 import { AssistantImages } from "./images";
 import { KeySheet } from "./key-sheet";
@@ -57,6 +58,7 @@ let abort: AbortController | null = null;
 let limits: Limits | null = null;
 let notice: Notice | null = null;
 let initialized = false;
+let ready: Promise<void> | undefined; // the first initialize(), which a question asked from outside waits for
 let openMap = 0; // the map id last seen: reloading the same map keeps the selected chat
 let observedTier: Tier | null = null; // null when no answerer is available
 let noteLabel: string | null = null;
@@ -77,7 +79,7 @@ const writable = (entry: Chat | undefined): entry is Chat =>
 
 // Built once and hidden on close, unlike other dialogs: an answer in flight, the draft and the scroll survive,
 // so only open() and events that can fire before it check that the dialog exists
-const isBuilt = () => document.getElementById(dialogId) !== null;
+const isBuilt = () => findEl(dialogId) !== null;
 let showing = false;
 let unseen = false; // the transcript changed while hidden, so reopen at its end
 const el = <T extends HTMLElement = HTMLElement>(id: string): T => ensureEl<T>(id);
@@ -107,7 +109,7 @@ function build(): void {
   view = "chat";
   renderDialog();
   $(`#${dialogId}`).dialog({
-    title: "Azgaar Assistant",
+    title: t("Azgaar Assistant"),
     position: { my: "right bottom", at: "right-16 bottom-44", of: window },
     width: Math.min(340, window.innerWidth - 24),
     height: Math.min(580, window.innerHeight - 140),
@@ -117,7 +119,7 @@ function build(): void {
     close: closeAssistant
   });
   addChatsButton();
-  void initialize();
+  ready = initialize();
 }
 
 function closeAssistant(): void {
@@ -303,37 +305,37 @@ function renderDialog(): void {
 
   const html = /* html */ `<div id="${dialogId}" class="dialog stable">
     ${STYLES}
-    <div id="assistantTranscript" role="log" aria-live="polite" aria-label="Assistant chat"></div>
+    <div id="assistantTranscript" role="log" aria-live="polite" aria-label="${t("Assistant chat")}"></div>
 
     <div id="assistantChats" hidden>
       <div class="assistantViewHeader">
-        <strong>Chats</strong>
-        <button type="button" class="assistantLink" data-action="new-chat">+ New chat</button>
+        <strong>${t("Chats")}</strong>
+        <button type="button" class="assistantLink" data-action="new-chat">+ ${t("New chat")}</button>
       </div>
       <div id="assistantChatList"></div>
     </div>
 
     <form id="assistantKey" hidden>
-      <h3>Connect your AI key</h3>
-      <p>Unlimited questions, and I can read and edit this map. Your key stays in this browser and goes only to the provider. I run scripts in this page to read your map. Only use me on maps from sources you trust.</p>
+      <h3>${t("Connect your AI key")}</h3>
+      <p>${t("Unlimited questions, and I can read and edit this map. Your key stays in this browser and goes only to the provider. I run scripts in this page to read your map. Only use me on maps from sources you trust.")}</p>
       <div class="assistantFields">
-        <label for="assistantProvider">Provider</label>
+        <label for="assistantProvider">${t("Provider")}</label>
         <select id="assistantProvider">${providers}</select>
-        <label id="assistantModelLabel" for="assistantModel">Model</label>
+        <label id="assistantModelLabel" for="assistantModel">${t("Model")}</label>
         <input id="assistantModel" list="assistantModels" autocomplete="off" spellcheck="false" />
-        <label for="assistantApiKey" data-remote>API key</label>
+        <label for="assistantApiKey" data-remote>${t("API key")}</label>
         <input id="assistantApiKey" type="password" autocomplete="off" data-remote />
-        <a id="assistantKeyLink" target="_blank" rel="noopener noreferrer" data-remote>Where to get one</a>
-        <label for="assistantLocalUrl" data-local>Server</label>
+        <a id="assistantKeyLink" target="_blank" rel="noopener noreferrer" data-remote>${t("Where to get one")}</a>
+        <label for="assistantLocalUrl" data-local>${t("Server")}</label>
         <input id="assistantLocalUrl" autocomplete="off" spellcheck="false" data-local />
       </div>
       <datalist id="assistantModels"></datalist>
-      <p id="assistantLocalHint" data-local>ⓘ Local models need no key. Point to the server and enter the model name. Set the server's context window to at least 8k tokens (Ollama's num_ctx).</p>
+      <p id="assistantLocalHint" data-local>ⓘ ${t("Local models need no key. Point to the server and enter the model name. Set the server's context window to at least 8k tokens (Ollama's num_ctx).")}</p>
       <div id="assistantDiscoveryError" role="status"></div>
       <div class="assistantSheetActions">
-        <button type="button" class="assistantButton" data-action="close-key">Cancel</button>
-        <button type="button" id="assistantDisconnect" class="assistantButton" data-action="disconnect">Disconnect</button>
-        <button type="submit" class="assistantButton assistantPrimary">Connect</button>
+        <button type="button" class="assistantButton" data-action="close-key">${t("Cancel")}</button>
+        <button type="button" id="assistantDisconnect" class="assistantButton" data-action="disconnect">${t("Disconnect")}</button>
+        <button type="submit" class="assistantButton assistantPrimary">${t("Connect")}</button>
       </div>
     </form>
 
@@ -342,19 +344,19 @@ function renderDialog(): void {
     <div id="assistantNotice" role="status" hidden>
       <div id="assistantNoticeText"></div>
       <div id="assistantNoticeActions" class="assistantActions">
-        <button type="button" id="assistantRetry" class="assistantButton" data-action="retry">Retry</button>
-        <button type="button" id="assistantNoticeSignIn" class="assistantButton" data-action="sign-in">Sign in</button>
+        <button type="button" id="assistantRetry" class="assistantButton" data-action="retry">${t("Retry")}</button>
+        <button type="button" id="assistantNoticeSignIn" class="assistantButton" data-action="sign-in">${t("Sign in")}</button>
         <button type="button" id="assistantNoticeKey" class="assistantButton assistantPrimary" data-action="key"></button>
       </div>
       <div id="assistantLong">
-        <p>This chat is getting long — each question re-sends all of it.</p>
-        <button type="button" class="assistantButton" data-action="new-chat">Start a new chat</button>
+        <p>${t("This chat is getting long — each question re-sends all of it.")}</p>
+        <button type="button" class="assistantButton" data-action="new-chat">${t("Start a new chat")}</button>
       </div>
     </div>
 
     <div id="assistantComposer">
       <div id="assistantAttachments" hidden></div>
-      <textarea id="assistantQuestion" rows="1" maxlength="${MAX_QUESTION_LENGTH}" aria-label="Your question" placeholder="Ask a question…"></textarea>
+      <textarea id="assistantQuestion" rows="1" maxlength="${MAX_QUESTION_LENGTH}" aria-label="${t("Your question")}" placeholder="${t("Ask a question…")}"></textarea>
       <button id="assistantAsk" type="button"></button>
     </div>
 
@@ -362,13 +364,13 @@ function renderDialog(): void {
       <span>
         <a href="${DISCORD}" target="_blank" rel="noopener noreferrer">Discord</a>
         <a href="${PATREON}" target="_blank" rel="noopener noreferrer">Patreon</a>
-        <a href="${POLICY}" target="_blank" rel="noopener noreferrer">Policy</a>
+        <a href="${POLICY}" target="_blank" rel="noopener noreferrer">${t("Policy")}</a>
       </span>
       <span id="assistantAccount">
         <span id="assistantTier"></span>
         <span id="assistantStatus"></span>
-        <button type="button" id="assistantSignIn" class="assistantLink" data-action="sign-in">Sign in</button>
-        <button type="button" id="assistantSignOut" class="assistantLink" data-action="sign-out">Sign out</button>
+        <button type="button" id="assistantSignIn" class="assistantLink" data-action="sign-in">${t("Sign in")}</button>
+        <button type="button" id="assistantSignOut" class="assistantLink" data-action="sign-out">${t("Sign out")}</button>
         <button type="button" id="assistantUseKey" class="assistantLink" data-action="key"></button>
       </span>
     </div>
@@ -405,13 +407,15 @@ function addChatsButton(): void {
   button.id = "assistantOpenChats";
   button.type = "button";
   button.className = "icon-list-bullet";
-  button.dataset.tip = "Chats";
+  button.dataset.tip = t("Chats");
   button.setAttribute("aria-label", "Chats");
   button.addEventListener("click", () => {
     if (!busy && initialized) showView(view === "chats" ? "chat" : "chats");
   });
   titlebar.insertBefore(button, titlebar.querySelector(".ui-dialog-titlebar-reset, .ui-dialog-titlebar-collapse"));
-  titlebar.querySelector(".ui-dialog-titlebar-collapse")?.setAttribute("aria-label", "Minimize or restore Assistant");
+  titlebar
+    .querySelector(".ui-dialog-titlebar-collapse")
+    ?.setAttribute("aria-label", t("Minimize or restore Assistant"));
   titlebar.querySelector(".ui-dialog-titlebar-close")?.setAttribute("aria-label", "Close Assistant");
 }
 
@@ -443,7 +447,7 @@ async function initialize(): Promise<void> {
   try {
     await load();
   } catch {
-    notice = { text: "Chats could not be loaded.", retry: () => void initialize() };
+    notice = { text: t("Chats could not be loaded."), retry: () => void initialize() };
     render();
     return;
   }
@@ -506,7 +510,7 @@ function render(keepScroll = false): void {
   el("assistantKey").hidden = view !== "key";
   el("assistantComposer").hidden = view !== "chat" || readOnly;
   renderContextChip();
-  const openChats = document.getElementById("assistantOpenChats") as HTMLButtonElement | null;
+  const openChats = findEl<HTMLButtonElement>("assistantOpenChats");
   if (openChats) openChats.disabled = busy || !initialized;
   const ask = el<HTMLButtonElement>("assistantAsk");
   ask.className = busy ? "busy icon-cancel" : "icon-right-big";
@@ -536,8 +540,8 @@ function renderTranscript(keepScroll = false): void {
     if (item !== notice?.item) html += itemHtml(item, { index, live, canAsk });
   });
   if (initialized && !continues && (chat || now)) {
-    html += /* html */ `<div class="assistantItem assistantNoticeItem">Start a new chat to continue
-      <div class="assistantActions"><button type="button" class="assistantButton" data-action="new-chat">New chat</button></div>
+    html += /* html */ `<div class="assistantItem assistantNoticeItem">${t("Start a new chat to continue")}
+      <div class="assistantActions"><button type="button" class="assistantButton" data-action="new-chat">${t("New chat")}</button></div>
     </div>`;
   }
   if (busy) html += `<div class="assistantTyping"><i></i><i></i><i></i>${escapeHtml(answerStatus)}…</div>`;
@@ -549,23 +553,30 @@ function welcomeHtml(now: Tier | null): string {
   const note = noteLabel ? escapeHtml(noteLabel) : "";
   const paragraphs = !now
     ? [
-        "The free Assistant runs only on the official site. Connect your own AI key or a local model to ask questions here."
+        t(
+          "The free Assistant runs only on the official site. Connect your own AI key or a local model to ask questions here."
+        )
       ]
     : now === "key"
       ? [
-          "Hi! Ask about the Fantasy Map Generator or this map. I can read and propose changes to your map.",
-          note ? `I can work on the note “${note}”.` : ""
+          t("Hi! Ask about the Fantasy Map Generator or this map. I can read and propose changes to your map."),
+          note ? t("I can work on the note “{{note}}”.", { note }) : ""
         ]
       : [
-          "Hi! Ask anything about the Fantasy Map Generator.",
+          t("Hi! Ask anything about the Fantasy Map Generator."),
           note
-            ? `Connect your own AI key and I can write the note “${note}”, and read, answer questions about and edit this map, with no daily limit.`
-            : "Connect your own AI key and I can read this map, answer questions about it and edit it, with no daily limit."
+            ? t(
+                "Connect your own AI key and I can write the note “{{note}}”, and read, answer questions about and edit this map, with no daily limit.",
+                { note }
+              )
+            : t(
+                "Connect your own AI key and I can read this map, answer questions about it and edit it, with no daily limit."
+              )
         ];
   const connect =
     now === "key"
       ? ""
-      : `<div class="assistantActions"><button type="button" class="assistantButton assistantPrimary" data-action="key">🔑 Connect your AI key</button></div>`;
+      : `<div class="assistantActions"><button type="button" class="assistantButton assistantPrimary" data-action="key">🔑 ${t("Connect your AI key")}</button></div>`;
   const text = paragraphs
     .filter(Boolean)
     .map(paragraph => `<p>${paragraph}</p>`)
@@ -577,7 +588,7 @@ function itemHtml(item: TranscriptItem, context: WidgetContext): string {
   const { index, live } = context;
   if (item.kind === "question") {
     const images = item.images?.length
-      ? `<div class="assistantQuestionImages">${item.images.map(src => `<img src="${escapeHtml(src)}" alt="Attached image" />`).join("")}</div>`
+      ? `<div class="assistantQuestionImages">${item.images.map(src => `<img src="${escapeHtml(src)}" alt="${t("Attached image")}" />`).join("")}</div>`
       : "";
     return `<div class="assistantItem assistantQuestion">${images}${escapeHtml(item.text)}</div>`;
   }
@@ -595,7 +606,7 @@ function itemHtml(item: TranscriptItem, context: WidgetContext): string {
   }
   if (item.kind === "step") {
     const { result } = item;
-    const summary = !result ? "Reading the map" : result.ok ? "Read the map" : "Map read failed";
+    const summary = !result ? t("Reading the map") : result.ok ? t("Read the map") : t("Map read failed");
     const output = result ? (result.ok ? [result.value, ...result.logs].join("\n") : result.error?.message) : "";
     return /* html */ `<details class="assistantItem assistantStep${result && !result.ok ? " failed" : ""}">
       <summary>${summary}${result ? ` · ${result.ms} ms` : ""}</summary>
@@ -603,7 +614,7 @@ function itemHtml(item: TranscriptItem, context: WidgetContext): string {
     </details>`;
   }
   if (item.kind === "proposal") return ProposalCard.html(item.proposal, index, AssistantMap.id());
-  if (item.kind === "divider") return `<div class="assistantDivider">New memory</div>`;
+  if (item.kind === "divider") return `<div class="assistantDivider">${t("New memory")}</div>`;
   if (item.kind === "widget") return AssistantWidgets.html(item.widget, context);
   return `<div class="assistantItem assistantNoticeItem">${renderMarkdown(item.text)}</div>`;
 }
@@ -612,7 +623,7 @@ function renderChats(): void {
   const entries = list();
   el("assistantChatList").innerHTML = entries.length
     ? entries.map(chatRowHtml).join("")
-    : `<div class="assistantEmpty">No chats yet.</div>`;
+    : `<div class="assistantEmpty">${t("No chats yet.")}</div>`;
 }
 
 function chatRowHtml(entry: Chat): string {
@@ -629,7 +640,7 @@ function chatRowHtml(entry: Chat): string {
   return /* html */ `<div class="assistantChatRow${entry === chat ? " current" : ""}">
     <button type="button" class="assistantChatTitle" data-action="open-chat" data-id="${entry.id}" title="${title}">${title}</button>
     <time datetime="${updated.toISOString()}" title="${updated.toLocaleString()}">${timeAgo(entry.updated)}</time>
-    <button type="button" class="assistantDelete icon-trash" data-action="delete-chat" data-id="${entry.id}" aria-label="Delete chat ${title}"></button>
+    <button type="button" class="assistantDelete icon-trash" data-action="delete-chat" data-id="${entry.id}" aria-label="${t("Delete chat {{- title}}", { title })}"></button>
     <small>${meta}</small>
   </div>`;
 }
@@ -661,7 +672,7 @@ function renderNotice(): void {
   el("assistantRetry").hidden = !notice?.retry;
   el("assistantNoticeSignIn").hidden = !live || now !== "guest";
   el("assistantNoticeKey").hidden = !live;
-  el("assistantNoticeKey").textContent = now === "key" ? "Key" : "🔑 Connect your AI key";
+  el("assistantNoticeKey").textContent = now === "key" ? "Key" : `🔑 ${t("Connect your AI key")}`;
   el("assistantNoticeActions").hidden = !notice?.retry && !live;
   el("assistantLong").hidden = !long;
   for (const button of el("assistantNotice").querySelectorAll("button")) button.disabled = busy;
@@ -720,7 +731,12 @@ function decide(action: "apply" | "undo" | "redo" | "discard", index: number): v
   try {
     if (action === "discard") Proposals.discard(item.proposal);
     else if (!Proposals.run(action, item.proposal, AssistantMap.id()))
-      showNotice({ text: `The map changed since; ${capitalize(action)} is unavailable.` });
+      showNotice({
+        text:
+          action === "undo"
+            ? t("The map changed since; Undo is unavailable.")
+            : t("The map changed since; Apply is unavailable.")
+      });
     touch(owner);
   } catch (error) {
     showNotice({ text: errorText(error) });
@@ -869,6 +885,26 @@ async function send(): Promise<void> {
   }
 }
 
+/** Ask a question from elsewhere in the app, keeping the user's draft; while answering it waits in an empty input */
+async function ask(question: string): Promise<void> {
+  open();
+  await ready;
+  if (!writable(chat)) startChat();
+  else if (view !== "chat") showView("chat");
+  const input = el<HTMLTextAreaElement>("assistantQuestion");
+  const draft = input.value;
+  if (busy) {
+    if (!draft.trim()) input.value = question;
+    fitInput(input);
+  } else {
+    input.value = question;
+    const sending = send(); // takes the question from the input at once
+    input.value = draft;
+    fitInput(input);
+    await sending;
+  }
+}
+
 /** Ask the failed question again; a failure before any step leaves nothing of it behind */
 function resend(owner: Chat, question: string, images: string[], from: number): void {
   if (busy || chat !== owner) return;
@@ -880,11 +916,11 @@ function resend(owner: Chat, question: string, images: string[], from: number): 
   void send();
 }
 
-const IMAGES_NEED_KEY = "Images need your own AI key with a vision model: the free Assistant reads text only.";
+const IMAGES_NEED_KEY = t("Images need your own AI key with a vision model: the free Assistant reads text only.");
 
 async function attach(files: File[]): Promise<void> {
   if (tier() !== "key") return showNotice({ text: IMAGES_NEED_KEY });
-  const full = () => showNotice({ text: `Up to ${MAX_IMAGES} images per question.` });
+  const full = () => showNotice({ text: t("Image limit per question: {{max}}", { max: MAX_IMAGES }) });
   if (files.length > MAX_IMAGES - attached.length) full();
   for (const file of files.slice(0, Math.max(MAX_IMAGES - attached.length, 0))) {
     try {
@@ -911,7 +947,7 @@ function renderAttachments(): void {
   list.innerHTML = attached
     .map(
       (src, index) =>
-        `<span class="assistantAttachment"><img src="${escapeHtml(src)}" alt="Attached image ${index + 1}" /><button type="button" data-action="detach" data-index="${index}" aria-label="Remove image ${index + 1}">✕</button></span>`
+        `<span class="assistantAttachment"><img src="${escapeHtml(src)}" alt="${t("Attached image {{number}}", { number: index + 1 })}" /><button type="button" data-action="detach" data-index="${index}" aria-label="${t("Remove image {{number}}", { number: index + 1 })}">✕</button></span>`
     )
     .join("");
 }
@@ -945,11 +981,11 @@ window.addEventListener("notes:context-changed", () => {
 const limitsLabel = (value: Limits): string =>
   value.remaining
     ? `${value.remaining} question${value.remaining === 1 ? "" : "s"} left today`
-    : "No questions left today";
+    : t("No questions left today");
 
 function normalizeQuestion(raw: string): string | null {
   const question = raw.trim();
   return question && question.length <= MAX_QUESTION_LENGTH ? question : null;
 }
 
-export const Assistant = { open, toggle };
+export const Assistant = { open, toggle, ask };

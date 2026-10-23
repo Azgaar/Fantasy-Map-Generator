@@ -7,6 +7,7 @@ import {
   type ViewportRenderContext
 } from "@/renderers/viewport/viewport-renderer";
 import type { Point } from "@/types/global";
+import { findEl } from "@/utils";
 
 interface RiverShape {
   id: string;
@@ -40,7 +41,7 @@ export function drawRivers(): void {
 /** Drop the paths and the scene behind them: a hidden layer must not keep a map's worth of geometry */
 export function removeRivers(): void {
   scene.invalidate();
-  document.getElementById("rivers")?.replaceChildren();
+  findEl("rivers")?.replaceChildren();
 }
 
 /** Re-render a single edited river, keeping its element (and its editor handlers) in place */

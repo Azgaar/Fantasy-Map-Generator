@@ -52,6 +52,7 @@ export interface Burg {
   market?: number;
   label?: Label;
   note?: string;
+  tags?: string[];
 }
 
 // A burg that could become a port on a given water body.
@@ -121,6 +122,7 @@ class BurgModule {
         burg.name = Names.getCultureShort(burg.culture);
         burg.feature = cells.f[burg.cell];
         burg.capital = 1;
+        burg.tags = [];
         cells.burg[burg.cell] = burgId;
       });
     };
@@ -155,7 +157,8 @@ class BurgModule {
             culture,
             name,
             feature,
-            capital: 0
+            capital: 0,
+            tags: []
           });
           added++;
           cells.burg[cell] = burgId;
@@ -343,7 +346,7 @@ class BurgModule {
       // No usable course (single-cell river, or cell missing from river path): nudge on axes
       const xShifted = cellId % 2 ? x + shift : x - shift;
       const yShifted = cells.r[cellId] % 2 ? y + shift : y - shift;
-      return [rn(xShifted, 2), rn(yShifted, 2)];
+      return this.withinCell(cellId, [rn(xShifted, 2), rn(yShifted, 2)]);
     }
 
     // Perpendicular to the course
@@ -352,7 +355,13 @@ class BurgModule {
     const side = cellId % 2 ? 1 : -1;
     const xShifted = x + (-ty / length) * shift * side;
     const yShifted = y + (tx / length) * shift * side;
-    return [rn(xShifted, 2), rn(yShifted, 2)];
+    return this.withinCell(cellId, [rn(xShifted, 2), rn(yShifted, 2)]);
+  }
+
+  // a shift past the edge of a tiny cell would put the burg in its neighbor: it stays at the centre then
+  private withinCell(cellId: number, point: Point): Point {
+    const [x, y] = pack.cells.p[cellId];
+    return Pack.findCell(...point) === cellId ? point : [x, y];
   }
 
   // Local river course direction at a cell
@@ -619,8 +628,7 @@ class BurgModule {
     );
 
     const coast = Number(Boolean(burg.port && cells.haven[cell])); // a river port inland has no coast
-    // on the coast a river is drawn flowing into the sea, so only a river mouth counts
-    const river = Number(coast ? this.isEstuary(cell) : Boolean(cells.r[cell]));
+    const river = Number(Boolean(cells.r[cell]));
     const sea = (() => {
       if (!coast) return null;
 
@@ -672,12 +680,6 @@ class BurgModule {
     return { link, preview: `${link}&preview=1` };
   }
 
-  /** Whether a river meets the water at this coastal cell, not just passes it */
-  private isEstuary(cell: number): boolean {
-    const { r, haven } = pack.cells;
-    return Boolean(r[cell] && haven[cell] && pack.rivers.find(river => river.i === r[cell])?.mouth === cell);
-  }
-
   private createWatabouVillageLinks(burg: Burg) {
     const { cells, features } = pack;
     const { i, population, cell } = burg;
@@ -686,7 +688,7 @@ class BurgModule {
     const pop = rn(population! * options.map.units.population.scale * options.map.units.population.urbanization.rate);
     const tags = [];
 
-    if (this.isEstuary(cell)) tags.push("estuary");
+    if (cells.r[cell] && cells.haven[cell]) tags.push("estuary");
     else if (cells.haven[cell] && features[cells.f[cell]].cells === 1) tags.push("island,district");
     else if (burg.port && cells.haven[cell]) tags.push("coast");
     else if (cells.conf[cell]) tags.push("confluence");
@@ -800,7 +802,8 @@ class BurgModule {
       name: Names.getCulture(culture),
       feature: cells.f[cellId],
       capital: 0,
-      port: 0
+      port: 0,
+      tags: []
     };
     this.definePopulation(burg);
     this.defineEmblem(burg);
@@ -984,13 +987,13 @@ class BurgModule {
       burg.port = 0;
       return;
     }
-    const water = this.portWater(burg.cell);
+    const water = this.getPortWater(burg.cell);
     if (!water) throw new Error(`Burg ${burgId} has no navigable water to be a port on`);
     burg.port = water;
   }
 
   /** The water body a burg at a cell trades by: the one it faces or drains to, or 0 */
-  private portWater(cell: number): number {
+  getPortWater(cell: number): number {
     const { cells, features } = pack;
     const haven = cells.haven[cell];
     const feature = haven ? features[cells.f[haven]] : undefined;
@@ -1039,7 +1042,7 @@ class BurgModule {
     Object.assign(burg, { cell, state, x: rn(x, 2), y: rn(y, 2), feature: cells.f[cell] });
     if (burg.capital) pack.states[state].center = cell;
     if (province) province.center = cell;
-    if (burg.port) burg.port = this.portWater(cell); // a port moved inland stops being one
+    if (burg.port) burg.port = this.getPortWater(cell); // a port moved inland stops being one
     if (burg.label) Object.assign(burg.label, { dx: 0, dy: 0, pathPoints: undefined }); // a custom path no longer fits
   }
 

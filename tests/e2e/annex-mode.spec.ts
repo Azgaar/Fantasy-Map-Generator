@@ -31,13 +31,7 @@ const confirmButton = ".ui-dialog:has(#alert) .ui-dialog-buttonpane button:first
 const cancelButton = ".ui-dialog:has(#alert) .ui-dialog-buttonpane button:last-child";
 
 test.describe("Annex by clicking on the map", () => {
-  test.beforeEach(async ({context, page}) => {
-    await context.clearCookies();
-    await page.goto("/");
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
+  test.beforeEach(async ({ page }) => {
     await page.goto("/?seed=test-annex&width=1280&height=720");
     await waitForMap(page);
     await page.waitForTimeout(500);

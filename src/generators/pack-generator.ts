@@ -3,6 +3,7 @@ import { polygonArea, type Quadtree, quadtree } from "d3";
 import type { Point } from "@/types/global";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { findAllInQuadtree, rn, SEA_LEVEL, TYPED_ARRAY_MAX } from "@/utils";
+import { DEFAULT_JITTER, Lattice } from "./lattice";
 import { calculateVoronoi } from "./voronoi";
 
 declare global {
@@ -14,9 +15,12 @@ class PackModule {
 
   /** deep ocean points dropped and coastal cells split so packed graph has a higher resolution where needed */
   generate(): void {
-    const { cells: gridCells, points, features, spacing, boundary } = grid;
+    const { cells: gridCells, points, features, spacing, sampling, boundary } = grid;
     const newCells: { p: Point[]; g: number[]; h: number[] } = { p: [], g: [], h: [] };
-    const spacing2 = spacing ** 2;
+    // coastal pairs further apart get a point between; the more regular the lattice, the fewer pairs qualify
+    const splitDistance =
+      Lattice.getSteps(sampling, spacing).neighborDistance * (1 + (DEFAULT_JITTER - options.map.graph.jitter));
+    const splitDistance2 = splitDistance ** 2;
 
     const addNewPoint = (gridCellId: number, x: number, y: number, height: number) => {
       newCells.p.push([x, y]);
@@ -43,7 +47,7 @@ class PackModule {
           if (gridCells.t[e] !== type) continue;
 
           const dist2 = (y - points[e][1]) ** 2 + (x - points[e][0]) ** 2;
-          if (dist2 < spacing2) continue; // too close to each other
+          if (dist2 < splitDistance2) continue; // too close to each other
           addNewPoint(i, rn((x + points[e][0]) / 2, 1), rn((y + points[e][1]) / 2, 1), height);
         }
       }

@@ -1,4 +1,4 @@
-import { createEl } from "@/utils/nodeUtils";
+import { createEl, findEl } from "@/utils/nodeUtils";
 import { type Box, ViewportLayers, type ViewportRenderContext } from "./viewport/viewport-renderer";
 
 interface RasterRegion extends Box {
@@ -47,9 +47,9 @@ export function cacheOceanLayer(group: SVGGElement, definitions: string[]): void
   }
   observer ??= new MutationObserver(invalidate);
   observer.disconnect();
-  const features = document.getElementById("featurePaths");
+  const features = findEl("featurePaths");
   if (features) observer.observe(features, { subtree: true, childList: true, attributes: true });
-  const viewbox = document.getElementById("viewbox");
+  const viewbox = findEl("viewbox");
   if (viewbox) observer.observe(viewbox, { attributes: true, attributeFilter: ["shape-rendering"] });
   render(ViewportLayers.getContext());
 }
@@ -156,10 +156,10 @@ function snapshot(cache: OceanCache, region: RasterRegion): string {
   });
   const defs = createEl("defs", "");
   for (const id of cache.definitions) {
-    const definition = document.getElementById(id);
+    const definition = findEl(id);
     if (definition) defs.append(definition.cloneNode(true));
   }
-  const features = document.getElementById("featurePaths");
+  const features = findEl("featurePaths");
   if (features) defs.append(features.cloneNode(true));
   svg.append(defs, cache.source.cloneNode(true));
   return new XMLSerializer().serializeToString(svg);
