@@ -47,8 +47,8 @@
               "filter": null
             },
             "options": {
-              "size": 2,
-              "icon": "burgs-atlas-square"
+              "size": 2.2,
+              "icon": "burgs-atlas-star-circled"
             }
           },
           "anchors": {

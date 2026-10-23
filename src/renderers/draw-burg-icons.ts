@@ -1,4 +1,4 @@
-import { IconSets } from "@/components/icon-sets";
+import { type IconSetId, IconSets } from "@/components/icon-sets";
 import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { zoomFontSize } from "@/components/viewport";
@@ -16,8 +16,13 @@ export async function drawBurgIcons(): Promise<void> {
     groups.icons.options.icon,
     groups.anchors.options.icon
   ]);
-  const referenced = icons.map(icon => icon && IconSets.setForId(icon)).filter(set => !!set);
-  await Icons.loadAll([...new Set([...Burgs.iconSets.map(set => set.id), ...referenced])]);
+  const referenced = icons
+    .map(icon => icon && IconSets.setForId(icon))
+    .filter((set): set is IconSetId => Boolean(set));
+  const setIds: readonly IconSetId[] = [
+    ...new Set([...Burgs.iconSets.map(set => set.id), ...referenced, "burgs" as const])
+  ];
+  await Icons.loadAll(setIds);
   layer.render();
   TIME && console.timeEnd("drawBurgIcons");
 }
@@ -27,6 +32,17 @@ type BurgPart =
   | StylesData["burgIcons"]["groups"][string]["groups"]["anchors"];
 
 type Bounds = ViewportRenderContext["bounds"];
+
+export function isStateCapital(burg: Burg): boolean {
+  if (typeof pack === "undefined" || !pack) return Boolean(burg.capital);
+  return Boolean(burg.capital || (burg.state && pack.states?.[burg.state]?.capital === burg.i));
+}
+
+export function isProvinceCapital(burg: Burg): boolean {
+  if (typeof pack === "undefined" || !pack?.provinces) return false;
+  if (isStateCapital(burg)) return false;
+  return Boolean(pack.provinces.some(p => p && p.burg === burg.i && p.i > 0));
+}
 
 function reconcileBurgIcons({ root, bounds }: ViewportRenderContext): void {
   if (!Layers.isOn("burgIcons")) return;
@@ -83,16 +99,40 @@ function part(name: "icons" | "anchors", style: BurgPart, burgs: Burg[], bounds:
   const markup = [`<g data-group="${name}" data-icon="${escapeHtml(id)}"${attrs.join("")} font-size="${size}%">`];
   const em = (size * zoomFontSize("burgIcons", bounds.scale)) / 100; // the icon em in map units at this zoom
   // Symbols overflow their viewBox; the tallest burg artwork reaches two em above its anchor.
-  const padding = 2 * (Math.abs(em) + (style.attrs["stroke-width"] ?? 0));
+  const padding = 2 * (Math.abs(em) * 2.5 + (style.attrs["stroke-width"] ?? 0));
 
-  for (const { i, x, y, port } of burgs) {
+  for (const burg of burgs) {
+    const { i, x, y, port } = burg;
     if (!id || (anchors && !port)) continue;
     const cx = x + shiftX * em;
     const cy = y + shiftY * em;
     if (cx + padding < bounds.x0 || cx - padding > bounds.x1 || cy + padding < bounds.y0 || cy - padding > bounds.y1)
       continue;
+
+    if (anchors) {
+      markup.push(
+        `<use id="anchor${i}" data-id="${i}" href="${icon}" x="${x}" y="${y}" width="${rn(boxWidth, 4)}em" height="${rn(boxHeight, 4)}em"/>`
+      );
+      continue;
+    }
+
+    let burgIcon = icon;
+    let scale = 1;
+    if (isStateCapital(burg)) {
+      burgIcon = escapeHtml(Icons.href("burgs-atlas-star-circled"));
+      scale = 2.2 / size;
+    } else if (isProvinceCapital(burg)) {
+      burgIcon = escapeHtml(Icons.href("burgs-atlas-star"));
+      scale = 1.4 / size;
+    }
+
+    const extraShift = scale !== 1 ? rn(-0.5 * (scale - 1), 4) : 0;
+    const transformAttr = extraShift ? ` transform="translate(${extraShift}em, ${extraShift}em)"` : "";
+    const w = rn(boxWidth * scale, 4);
+    const h = rn(boxHeight * scale, 4);
+
     markup.push(
-      `<use id="${anchors ? "anchor" : "burg"}${i}" data-id="${i}" href="${icon}" x="${x}" y="${y}" width="${rn(boxWidth, 4)}em" height="${rn(boxHeight, 4)}em"/>`
+      `<use id="burg${i}" data-id="${i}" href="${burgIcon}" x="${x}" y="${y}" width="${w}em" height="${h}em"${transformAttr}/>`
     );
   }
 

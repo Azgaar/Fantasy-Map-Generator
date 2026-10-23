@@ -7,7 +7,7 @@ const mockLayersState = {
 
 const mockLayers = {
   state: mockLayersState,
-  all: [{ id: "states" }, { id: "twSettlements" }],
+  all: [{ id: "states" }],
   isOn: vi.fn((id: string) => mockLayersState.active.includes(id)),
   show: vi.fn((id: string) => {
     if (!mockLayersState.active.includes(id)) mockLayersState.active.push(id);
@@ -34,7 +34,7 @@ vi.mock("@/components/options/view-mode", () => ({
 vi.mock("@/conquest/ui/presets", () => ({
   applyPreset: vi.fn((presetId: string) => {
     if (presetId === "campaign") {
-      mockLayersState.active = ["states", "borders", "military", "twSettlements", "labels", "scaleBar", "vignette"];
+      mockLayersState.active = ["states", "borders", "military", "burgIcons", "labels", "scaleBar", "vignette"];
     }
     return true;
   })
