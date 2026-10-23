@@ -75,6 +75,7 @@ describe("BurgsModule.assignPorts — open-lake port promotion", () => {
 
     // Modules are cached by Vitest; re-import is a no-op after the first run,
     // so we re-wire the globals each time instead.
+    await import("./pack-generator"); // the river-bank shift is checked against the cell under it
     await import("./river-generator");
     await import("./burgs-generator");
     Burgs = (globalThis as any).Burgs;
@@ -346,6 +347,7 @@ describe("BurgsModule.assignPorts — river-bank shift", () => {
     globalThis.window = globalThis.window || ({} as any);
     globalThis.grid = { cells: { temp: new Array(10).fill(20) } } as any;
 
+    await import("./pack-generator"); // the river-bank shift is checked against the cell under it
     await import("./river-generator");
     await import("./burgs-generator");
     Burgs = (globalThis as any).Burgs;
@@ -419,6 +421,37 @@ describe("BurgsModule.assignPorts — river-bank shift", () => {
     const burg = globalThis.pack.burgs[1];
     // Still shifted (axis-aligned fallback), just not crashing on the missing course.
     expect(burg.x === 5 && burg.y === 5).toBe(false);
+  });
+
+  it("keeps the burg on its cell centre when the shift would cross into a neighbor", () => {
+    // cell 3 is 0.4 away from cell 2, closer than the 0.6 shift: the shifted burg would lie in cell 3
+    globalThis.pack = {
+      burgs: [0 as any, { i: 1, cell: 2, x: 10, y: 10, capital: 0 }],
+      cells: {
+        h: [20, 25, 25, 25],
+        r: [0, 10, 10, 0],
+        fl: [0, 300, 300, 0],
+        f: [0, 0, 0, 0],
+        g: [0, 0, 0, 0],
+        haven: [0, 0, 0, 0],
+        harbor: [0, 0, 0, 0],
+        v: [[], [], [], []],
+        p: [
+          [0, 0],
+          [10, 0],
+          [10, 10],
+          [10.4, 10]
+        ] as [number, number][]
+      },
+      features: [null],
+      vertices: { c: [], p: [] },
+      rivers: [{ i: 10, cells: [1, 2] }]
+    } as any;
+
+    Burgs.assignPorts();
+
+    const burg = globalThis.pack.burgs[1];
+    expect([burg.x, burg.y]).toEqual([10, 10]);
   });
 });
 

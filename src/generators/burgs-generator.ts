@@ -346,7 +346,7 @@ class BurgModule {
       // No usable course (single-cell river, or cell missing from river path): nudge on axes
       const xShifted = cellId % 2 ? x + shift : x - shift;
       const yShifted = cells.r[cellId] % 2 ? y + shift : y - shift;
-      return [rn(xShifted, 2), rn(yShifted, 2)];
+      return this.withinCell(cellId, [rn(xShifted, 2), rn(yShifted, 2)]);
     }
 
     // Perpendicular to the course
@@ -355,7 +355,13 @@ class BurgModule {
     const side = cellId % 2 ? 1 : -1;
     const xShifted = x + (-ty / length) * shift * side;
     const yShifted = y + (tx / length) * shift * side;
-    return [rn(xShifted, 2), rn(yShifted, 2)];
+    return this.withinCell(cellId, [rn(xShifted, 2), rn(yShifted, 2)]);
+  }
+
+  // a shift past the edge of a tiny cell would put the burg in its neighbor: it stays at the centre then
+  private withinCell(cellId: number, point: Point): Point {
+    const [x, y] = pack.cells.p[cellId];
+    return Pack.findCell(...point) === cellId ? point : [x, y];
   }
 
   // Local river course direction at a cell

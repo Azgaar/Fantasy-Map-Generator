@@ -1,5 +1,4 @@
-// Checks that every stored cell id and every link between entities still holds. A broken id never throws, so it is
-// looked for: after a rebuild of the graph, in tests, or from the console on a map that behaves oddly
+// Checks that every stored cell id and every link between entities still holds. A broken id never throws
 import { isWater } from "@/utils";
 
 export type IntegrityRule = (typeof RULES)[number];
@@ -20,12 +19,12 @@ const RULES = [
   "river-sea", // the course does not cross the sea before its end
   "river-unique", // the course does not come back to a cell it left
   "river-outlet", // -1 only ends a course, at a point on the map edge or off it
-  "route-points", // a point's cell is under it or next to it
+  "route-points", // a point's cell, or on a meander the next cell of the path, is under it or next to it
   "route-steps", // consecutive cells are neighbors
   "route-links", // cells.routes links cells along existing routes
   "route-cache", // the Routes path cache matches the routes
   "journey-points",
-  "journey-steps",
+  "journey-steps", // by land or water, consecutive cells are neighbors
   "marker-cells", // a marker's cell is the cell under it
   "burg-cells", // a burg owns a land cell no other burg has
   "burg-positions", // a burg lies in its cell
@@ -87,7 +86,18 @@ class MapIntegrityModule {
       Number.isInteger(cell) && (cell as number) >= 0 && (cell as number) < n;
     const land = (cell: number) => valid(cell) && !isWater(cell, pack);
     const neighbors = (a: number, b: number) => a === b || cells.c[a]?.includes(b);
-    const nearPoint = (cell: number, x: number, y: number) => neighbors(cell, Pack.findCell(x, y)!);
+    // a meandered point carries the cell of the anchor before it, but bends toward the next cell of the path
+    const offPath = (points: number[][]) => {
+      let ahead = -1;
+      for (let k = points.length - 1; k >= 0; k--) {
+        const [x, y, cell] = points[k];
+        if (!valid(cell)) return true;
+        const under = Pack.findCell(x, y)!;
+        if (!neighbors(cell, under) && !(valid(ahead) && neighbors(ahead, under))) return true;
+        if (points[k - 1]?.[2] !== cell) ahead = cell;
+      }
+      return false;
+    };
     const living = <T extends { i: number; removed?: boolean }>(list: T[] = []) => list.filter(e => e.i && !e.removed);
     const alive = (list: { i: number; removed?: boolean }[], id: number) => Boolean(list[id]?.i && !list[id].removed);
     const isOcean = (cell: number) => valid(cell) && features[cells.f[cell]]?.type === "ocean";
@@ -96,6 +106,10 @@ class MapIntegrityModule {
 
     const riverIds = new Set(pack.rivers.map(river => river.i));
     for (const river of pack.rivers) {
+      if (!Array.isArray(river.cells)) {
+        fail("river-cells", river.i);
+        continue;
+      }
       if (river.cells.some(cell => cell !== -1 && !valid(cell))) fail("river-cells", river.i);
       else if (river.points && river.points.length !== river.cells.length) fail("river-cells", river.i);
       if (river.points?.some((point, k) => valid(river.cells[k]) && Pack.findCell(...point) !== river.cells[k]))
@@ -115,7 +129,7 @@ class MapIntegrityModule {
     const routeIds = new Set(pack.routes.map(route => route.i));
     const routePairs = new Set<string>();
     for (const route of pack.routes) {
-      if (route.points.some(([x, y, cell]) => !valid(cell) || !nearPoint(cell, x, y))) fail("route-points", route.i);
+      if (offPath(route.points)) fail("route-points", route.i);
       for (let k = 1; k < route.points.length; k++) {
         const [a, b] = [route.points[k - 1][2], route.points[k][2]];
         routePairs.add(`${a}-${b}`).add(`${b}-${a}`);
@@ -135,8 +149,9 @@ class MapIntegrityModule {
     for (const journey of pack.journeys ?? []) {
       for (const segment of journey.segments) {
         const { points } = segment;
-        if (points.some(([x, y, cell]) => !valid(cell) || !nearPoint(cell, x, y))) fail("journey-points", journey.i);
-        if (points.some(([, , cell], k) => k && valid(cell) && !neighbors(points[k - 1][2], cell)))
+        if (offPath(points)) fail("journey-points", journey.i);
+        const flies = Transports.getDomain(segment.transport) === "air"; // a flight goes straight, over any cells
+        if (!flies && points.some(([, , cell], k) => k && valid(cell) && !neighbors(points[k - 1][2], cell)))
           fail("journey-steps", journey.i);
       }
     }
