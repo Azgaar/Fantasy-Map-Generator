@@ -7,10 +7,15 @@ export type IconSetId = ReliefIconSetId | BurgIconSetId | typeof Goods.iconSet.i
 
 /** The catalog of the built-in sets: their files and the symbols they make; `Icons` puts them in the page */
 export class IconSetRegistry {
-  private readonly sources =
-    "glob" in import.meta
-      ? import.meta.glob("@/assets/icons/**/*.svg", { query: "?raw", import: "default" })
-      : ({} as Record<string, () => Promise<string>>);
+  // Vite rewrites the glob call at build time, so a runtime `import.meta` test always misses it:
+  // only a runner that never transforms the call (bun test) reaches the fallback
+  private readonly sources = (() => {
+    try {
+      return import.meta.glob("@/assets/icons/**/*.svg", { query: "?raw", import: "default" });
+    } catch {
+      return {} as Record<string, () => Promise<string>>;
+    }
+  })();
   private readonly folders = new Map<string, Map<string, () => Promise<unknown>>>(); // the glob never changes
   private catalog: readonly IconSet[] | null = null; // the models' sets never change either
   private index: Map<string, { set: IconSetId; file: string }> | null = null;
