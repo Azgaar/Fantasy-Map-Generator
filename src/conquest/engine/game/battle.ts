@@ -15,7 +15,7 @@ import { MATCHUP } from "../common/content";
 import type { BattleSideReport, BattleSummary } from "./events";
 import type { Campaign } from "./state";
 import { rng } from "./state";
-import type { ArmyUnit } from "./units";
+import type { ArmyUnit } from "../common/types";
 
 export interface BattleSide {
   factionId: number;

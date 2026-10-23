@@ -2,6 +2,7 @@
  * Raw Azgaar FMG v1.154 export shapes — only the fields the compiler reads.
  * Everything is defensive: layers may be missing between generator versions.
  */
+import type { ArmyUnit } from "../common/types";
 
 interface AzgaarInfo {
   version: string;
@@ -115,11 +116,13 @@ interface AzgaarRegiment {
   cell: number;
   x: number;
   y: number;
-  u: { infantry?: number; archers?: number; cavalry?: number; artillery?: number; fleet?: number };
+  u: Record<string, number>;
+  units?: ArmyUnit[];
   /** 0 = land regiment, 1 = fleet. */
   n: 0 | 1;
   name: string;
   state: number;
+  rosterId?: string;
 }
 
 export interface AzgaarCulture {

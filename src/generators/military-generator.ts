@@ -1,8 +1,11 @@
 import { quadtree, sum } from "d3";
 import { Icons } from "@/components/icons";
-import { requireName, requireOneOf } from "@/utils/validationUtils";
+import { requireName } from "@/utils/validationUtils";
 import { findAllInQuadtree, gauss, minmax, nth, ra, rand, rn, si } from "../utils";
 import type { State } from "./states-generator";
+import type { ArmyUnit } from "@/conquest/engine/common/types";
+import type { ResolvedRoster, UnitType } from "@/conquest/engine/common/content";
+import { currentContent } from "@/conquest/content/store";
 
 declare global {
   var Military: MilitaryModule;
@@ -10,18 +13,20 @@ declare global {
 
 export interface Regiment {
   i: number;
-  t: number; // total troops
+  t?: number; // legacy total troops
   name: string;
-  a: number; // regiment army
-  s: number; // separate flag (for fleets)
+  a: number; // total troops
+  s?: number; // separate flag (for fleets)
   cell: number;
   x: number;
   y: number;
   bx: number; // base x (for movement)
   by: number; // base y (for movement)
-  u: Record<string, number>; // units composition
-  n: number; // naval unit flag
-  type: string; // unit type
+  u: Record<string, number>; // units composition (unitId -> count)
+  units?: ArmyUnit[]; // concrete roster unit blocks
+  rosterId?: string; // state's assigned roster identifier
+  n: number; // 0 = land regiment, 1 = naval fleet
+  type?: string; // unit type
   icon: string;
   children?: Regiment[]; // merged regiments
   state: number;
@@ -31,6 +36,128 @@ export interface Regiment {
   px?: number; // battle-screen: position before being moved into a battle, restored afterward
   py?: number;
   note?: string;
+}
+
+export function getCategoryForUnit(
+  unitId: string,
+  unitTypes?: Record<string, UnitType>
+): "melee" | "ranged" | "cavalry" | "artillery" | "naval" {
+  if (unitId === "fleet" || unitId === "naval") return "naval";
+  if (unitTypes && unitTypes[unitId]) {
+    const cat = unitTypes[unitId].category;
+    if (cat === "cavalry") return "cavalry";
+    if (cat === "artillery") return "artillery";
+    if (cat === "ranged") return "ranged";
+    return "melee";
+  }
+  if (/(horse|cavalry|rider|warg)/i.test(unitId)) return "cavalry";
+  if (/(bow|archer|crossbow|missile|sling|dart)/i.test(unitId)) return "ranged";
+  if (/(bombard|artillery|siege|catapult|trebuchet|ballista|bolt)/i.test(unitId)) return "artillery";
+  if (/(ship|fleet|boat|vessel|galley|navy)/i.test(unitId)) return "naval";
+  return "melee";
+}
+
+export function syncRegimentTotals(regiment: Regiment, _unitTypes?: Record<string, UnitType>): void {
+  if (regiment.units && regiment.units.length > 0) {
+    const u: Record<string, number> = {};
+    let total = 0;
+    for (const slot of regiment.units) {
+      if (slot.count > 0) {
+        u[slot.type] = (u[slot.type] || 0) + slot.count;
+        total += slot.count;
+      }
+    }
+    if (regiment.n && regiment.u.fleet && !u.fleet) {
+      u.fleet = regiment.u.fleet;
+      total += u.fleet;
+    }
+    regiment.u = u;
+    regiment.a = total;
+  } else if (regiment.u) {
+    regiment.a = sum(Object.values(regiment.u));
+  }
+}
+
+export function reconcileRegimentBlocks(
+  regiment: Regiment,
+  unitTypes: Record<string, UnitType>,
+  maxUnits = 20
+): void {
+  const existingSlots = regiment.units ?? [];
+  const expByType = new Map<string, number[]>();
+  for (const s of existingSlots) {
+    const list = expByType.get(s.type) ?? [];
+    list.push(s.exp ?? 0);
+    expByType.set(s.type, list);
+  }
+
+  const slots: ArmyUnit[] = [];
+  for (const [typeId, totalMen] of Object.entries(regiment.u)) {
+    if (typeId === "fleet" || totalMen <= 0) continue;
+    const ut = unitTypes[typeId];
+    const blockSize = ut && ut.men > 0 ? ut.men : 100;
+    let remaining = totalMen;
+    const expList = expByType.get(typeId) ?? [];
+    let expIdx = 0;
+    while (remaining > 0 && slots.length < maxUnits) {
+      const count = Math.min(blockSize, remaining);
+      const exp = expList[expIdx++] ?? 0;
+      slots.push({ type: typeId, count, exp });
+      remaining -= count;
+    }
+  }
+
+  if (regiment.n && regiment.u.fleet) {
+    slots.push({ type: "fleet", count: regiment.u.fleet, exp: 0 });
+  }
+
+  regiment.units = slots;
+  syncRegimentTotals(regiment, unitTypes);
+}
+
+function selectRosterUnitForCategory(
+  category: "melee" | "ranged" | "mounted" | "machinery" | "naval",
+  roster: ResolvedRoster | undefined,
+  isUrban: boolean,
+  isCapital: boolean,
+  walls = 0
+): string {
+  if (category === "naval") return "fleet";
+  if (!roster) {
+    if (category === "melee") return "infantry";
+    if (category === "ranged") return "archers";
+    if (category === "mounted") return "cavalry";
+    if (category === "machinery") return "artillery";
+    return "infantry";
+  }
+
+  const map = roster.regimentMap;
+  const coreMelee = map?.infantry ?? roster.garrison?.melee ?? "infantry";
+  const coreRanged = map?.archers ?? roster.garrison?.ranged ?? "archers";
+  const coreCavalry = map?.cavalry ?? "cavalry";
+  const coreArtillery = map?.artillery ?? "artillery";
+
+  if (!isUrban) {
+    if (category === "melee") return coreMelee;
+    if (category === "ranged") return coreRanged;
+    if (category === "mounted") return coreCavalry;
+    if (category === "machinery") return coreArtillery;
+  }
+
+  // In burgs: allow elite / secondary units
+  if (category === "melee") {
+    if (roster.id === "commonBase" && isCapital && walls >= 2 && roster.units.balbenGuard) return "balbenGuard";
+    if (roster.id === "dwarfBase" && walls >= 2 && roster.units.dwarf_slayer && Math.random() < 0.4) return "dwarf_slayer";
+    if (roster.id === "orcBase" && (isCapital || walls >= 2) && roster.units.troll && Math.random() < 0.35) return "troll";
+    if (roster.id === "commonBase" && roster.units.sword && Math.random() < 0.5) return "sword";
+    return coreMelee;
+  }
+
+  if (category === "ranged") return coreRanged;
+  if (category === "mounted") return coreCavalry;
+  if (category === "machinery") return coreArtillery;
+
+  return coreMelee;
 }
 
 interface Platoon {
@@ -206,6 +333,7 @@ class MilitaryModule {
 
     valid.forEach(s => {
       s.temp = {};
+      s.temp.roster = this.getRoster(s);
       const d = s.diplomacy!;
 
       const expansionRate = minmax(s.expansionism / expn / (s.area! / area), 0.25, 4); // how much state expansionism is realized
@@ -298,13 +426,21 @@ class MilitaryModule {
           n = 1;
         }
 
+        const rosterUnitName = selectRosterUnitForCategory(
+          unit.type as any,
+          stateObj.temp.roster,
+          false,
+          false,
+          0
+        );
+
         stateObj.temp.platoons.push({
           cell: i,
           a: total,
           t: total,
           x,
           y,
-          u: unit.name,
+          u: rosterUnitName,
           n,
           s: unit.separate,
           type: unit.type
@@ -355,13 +491,21 @@ class MilitaryModule {
           n = 1;
         }
 
+        const rosterUnitName = selectRosterUnitForCategory(
+          unit.type as any,
+          stateObj.temp.roster,
+          true,
+          Boolean(b.capital),
+          b.walls || 0
+        );
+
         stateObj.temp.platoons.push({
           cell: b.cell,
           a: total,
           t: total,
           x,
           y,
-          u: unit.name,
+          u: rosterUnitName,
           n,
           s: unit.separate,
           type: unit.type
@@ -414,7 +558,8 @@ class MilitaryModule {
       });
 
       // parse regiments data
-      const regiments: Omit<Regiment, "s" | "t" | "type">[] = nodes
+      const unitTypes = this.getUnitTypes();
+      const regiments: Regiment[] = nodes
         .filter(n => n.t)
         .sort((a, b) => b.t - a.t)
         .map((r, i) => {
@@ -423,7 +568,7 @@ class MilitaryModule {
           (r.children ?? []).forEach(n => {
             u[n.u] = (u[n.u] ?? 0) + n.a;
           });
-          return {
+          const reg: Regiment = {
             i,
             a: r.t,
             cell: r.cell,
@@ -432,21 +577,24 @@ class MilitaryModule {
             bx: r.x,
             by: r.y,
             u,
+            rosterId: s.rosterId,
             n: r.n,
             name: "",
             icon: "",
             state: s.i
           };
+          reconcileRegimentBlocks(reg, unitTypes);
+          return reg;
         });
 
       // generate name for regiments
-      regiments.forEach((r: Omit<Regiment, "s" | "t" | "type">) => {
-        r.name = this.getName(r as Regiment, regiments as Regiment[]);
-        r.icon = this.getEmblem(r as Regiment);
-        this.generateNote(r as Regiment, s);
+      regiments.forEach(r => {
+        r.name = this.getName(r, regiments);
+        r.icon = this.getEmblem(r);
+        this.generateNote(r, s);
       });
 
-      return regiments as Regiment[];
+      return regiments;
     };
 
     // get regiments for each state
@@ -510,6 +658,41 @@ class MilitaryModule {
       }
     ];
     return units.map(unit => ({ ...unit, icon: Icons.glyph(unit.icon) }));
+  }
+
+  getRoster(state: State): ResolvedRoster | undefined {
+    try {
+      const content = currentContent()?.content;
+      if (!content) return undefined;
+      const rosterId = state.rosterId || content.defaultRoster || "commonBase";
+      return content.rosters[rosterId] || content.rosters[content.defaultRoster] || Object.values(content.rosters)[0];
+    } catch {
+      return undefined;
+    }
+  }
+
+  getUnitTypes(): Record<string, UnitType> {
+    try {
+      const content = currentContent()?.content;
+      return content?.unitTypes ?? {};
+    } catch {
+      return {};
+    }
+  }
+
+  getCategory(unitId: string): "melee" | "ranged" | "cavalry" | "artillery" | "naval" {
+    return getCategoryForUnit(unitId, this.getUnitTypes());
+  }
+
+  getCategoryCount(reg: Regiment, cat: "melee" | "ranged" | "cavalry" | "artillery" | "naval"): number {
+    let count = 0;
+    const unitTypes = this.getUnitTypes();
+    for (const [unitId, men] of Object.entries(reg.u ?? {})) {
+      if (getCategoryForUnit(unitId, unitTypes) === cat) {
+        count += men;
+      }
+    }
+    return count;
   }
 
   getName(r: Regiment, regiments: Regiment[]) {
@@ -602,19 +785,24 @@ class MilitaryModule {
     return i;
   }
 
-  /** Set a regiment's troops by unit name, such as { infantry: 800, archers: 200 }; the total follows */
+  /** Set a regiment's troops by unit name, such as { spear: 800, archers: 200 }; the total and blocks follow */
   setUnits(stateId: number, regimentId: number, units: Record<string, number>): void {
     const regiment = this.living(stateId, regimentId);
     if (typeof units !== "object" || units === null || Array.isArray(units))
       throw new Error("Units are an object of unit names and troop numbers");
-    const names = options.map.military.units.map(({ name }) => name);
     for (const [name, count] of Object.entries(units)) {
-      if (!(name in regiment.u)) requireOneOf(name, names, "The unit"); // troops of a unit type since removed stay
       if (!Number.isInteger(count) || count < 0)
         throw new Error(`The number of ${name} must be a non-negative integer`);
     }
     regiment.u = { ...units };
-    regiment.a = sum(Object.values(regiment.u));
+    reconcileRegimentBlocks(regiment, this.getUnitTypes());
+  }
+
+  /** Set a regiment's explicit unit slots directly */
+  setUnitSlots(stateId: number, regimentId: number, slots: ArmyUnit[]): void {
+    const regiment = this.living(stateId, regimentId);
+    regiment.units = slots.map(s => ({ ...s }));
+    syncRegimentTotals(regiment, this.getUnitTypes());
   }
 
   /** Set a state's war alert, the modifier of its forces (generated from 0.1 to 5): every regiment's troops scale with it */
@@ -628,7 +816,7 @@ class MilitaryModule {
     const change = previous ? state.alert / previous : 0; // the stored value, so the next change divides by it
     for (const regiment of state.military ?? []) {
       for (const unit of Object.keys(regiment.u)) regiment.u[unit] = rn(regiment.u[unit] * change);
-      regiment.a = sum(Object.values(regiment.u));
+      reconcileRegimentBlocks(regiment, this.getUnitTypes());
     }
   }
 
@@ -675,7 +863,7 @@ class MilitaryModule {
     const a = sum(Object.values(half));
     if (!a) throw new Error(`Regiment ${stateId}-${regimentId} has too few troops to split`);
     regiment.u = Object.fromEntries(Object.entries(regiment.u).map(([unit, count]) => [unit, Math.ceil(count / 2)]));
-    regiment.a = sum(Object.values(regiment.u));
+    reconcileRegimentBlocks(regiment, this.getUnitTypes());
 
     const shift = styles.military.options.boxSize * 2;
     let y = regiment.y + shift;
@@ -687,6 +875,7 @@ class MilitaryModule {
       i,
       n: regiment.n,
       u: half,
+      rosterId: regiment.rosterId,
       x: regiment.x,
       y,
       bx: regiment.bx,
@@ -698,6 +887,7 @@ class MilitaryModule {
       s: 0,
       type: regiment.type
     };
+    reconcileRegimentBlocks(added, this.getUnitTypes());
     added.name = this.getName(added, military);
     military.push(added);
     this.generateNote(added, state);
@@ -710,7 +900,7 @@ class MilitaryModule {
     const target = this.living(targetStateId, targetId);
     if (regiment === target) throw new Error("A regiment cannot attach to itself");
     for (const [unit, count] of Object.entries(regiment.u)) if (count) target.u[unit] = (target.u[unit] || 0) + count;
-    target.a = sum(Object.values(target.u));
+    reconcileRegimentBlocks(target, this.getUnitTypes());
 
     const { year, eraShort } = options.map.lore.calendar;
     const record = regiment.note ? ` Its record: ${regiment.note}` : "";
@@ -731,14 +921,22 @@ class MilitaryModule {
     if (!r.n && !Object.values(r.u).length) return Icons.glyph("🔰"); // "Newbie" regiment without troops
     if (
       !r.n &&
-      pack.states[r.state].form === "Monarchy" &&
+      pack.states[r.state]?.form === "Monarchy" &&
       pack.cells.burg[r.cell] &&
-      pack.burgs[pack.cells.burg[r.cell]].capital
+      pack.burgs[pack.cells.burg[r.cell]]?.capital
     )
       return Icons.glyph("👑"); // "Royal" regiment based in capital
-    const mainUnit = Object.entries(r.u).sort((a, b) => b[1] - a[1])[0][0]; // unit with more troops in regiment
+    const sorted = Object.entries(r.u).sort((a, b) => b[1] - a[1]);
+    const mainUnit = sorted.length > 0 ? sorted[0][0] : undefined;
+    if (!mainUnit) return Icons.glyph(r.n ? "🌊" : "⚔️");
     const unit = options.map.military.units.find((u: { name: string; icon: string }) => u.name === mainUnit);
-    return unit ? unit.icon : Icons.glyph("⚔️");
+    if (unit) return unit.icon;
+    const cat = this.getCategory(mainUnit);
+    if (cat === "cavalry") return Icons.glyph("🐴");
+    if (cat === "ranged") return Icons.glyph("🏹");
+    if (cat === "artillery") return Icons.glyph("💣");
+    if (cat === "naval") return Icons.glyph("🌊");
+    return Icons.glyph("⚔️");
   }
 }
 

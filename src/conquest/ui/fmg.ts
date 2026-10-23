@@ -9,6 +9,8 @@
  * FMG type knowledge at all.
  */
 
+import type { ArmyUnit } from "../engine/common/types";
+
 /** The subset of FMG's `Layer` we use. `getEl()` is the SVG group we render into. */
 export interface FmgLayer {
   id: string;
@@ -106,16 +108,19 @@ export interface FmgBurg {
   citadel?: number;
 }
 
-interface FmgRegiment {
+export interface FmgRegiment {
   i: number;
-  a: number; // army id
-  t: number; // troops
+  a: number; // total troops
+  t?: number; // legacy troops
   cell: number;
   x: number;
   y: number;
   n?: number; // naval
   name?: string;
   state?: number;
+  u?: Record<string, number>;
+  units?: ArmyUnit[];
+  rosterId?: string;
 }
 
 export interface FmgState {

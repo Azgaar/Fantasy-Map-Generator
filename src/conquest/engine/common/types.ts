@@ -278,6 +278,14 @@ export interface Faction {
 
 // -- Military, POIs, flavor ---------------------------------------------------
 
+export interface ArmyUnit {
+  type: string;
+  /** Current men (0..UnitType.men). */
+  count: number;
+  /** Experience 0..9. */
+  exp: number;
+}
+
 export interface StartingArmy {
   id: string;
   factionId: number;
@@ -285,12 +293,8 @@ export interface StartingArmy {
   cell: number;
   /** n === 1 in Azgaar (fleet regiment). */
   fleet: boolean;
-  units: {
-    infantry: number;
-    archers: number;
-    cavalry: number;
-    artillery: number;
-  };
+  units: Record<string, number>;
+  slots?: ArmyUnit[];
   /** Total regiment strength (Azgaar `a`). */
   strength: number;
 }

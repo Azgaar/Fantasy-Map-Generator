@@ -915,12 +915,8 @@ function buildPack(raw: AzgaarMap): MapPack {
         name: reg.name,
         cell: reg.cell,
         fleet: reg.n === 1,
-        units: {
-          infantry: reg.u.infantry ?? 0,
-          archers: reg.u.archers ?? 0,
-          cavalry: reg.u.cavalry ?? 0,
-          artillery: reg.u.artillery ?? 0
-        },
+        units: { ...reg.u },
+        slots: reg.units ? reg.units.map(u => ({ ...u })) : undefined,
         strength: reg.a
       });
     }

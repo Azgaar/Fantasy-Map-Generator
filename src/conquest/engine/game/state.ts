@@ -5,10 +5,10 @@
 
 import type { ContentPack, ResolvedContent } from "../common/content";
 import { canonicalHash } from "../common/prng";
-import type { FactionCapacity, MapPack } from "../common/types";
+import type { ArmyUnit, FactionCapacity, MapPack } from "../common/types";
 import type { CampaignConfig } from "./config";
 import type { GameEvent, TreatyType } from "./events";
-import { type ArmyUnit, regimentToUnits } from "./units";
+import { regimentToUnits } from "./units";
 
 export type Stance = "normal" | "march" | "encamp" | "ambush" | "raid";
 
@@ -437,14 +437,17 @@ export function createCampaign(opts: CreateOptions): Campaign {
   let nextArmyId = 1;
   for (const reg of pack.armies) {
     const rf = resolved.factions[String(reg.factionId)]!;
-    const { units } = regimentToUnits(
-      rf.roster,
-      resolved.pack.unitTypes,
-      reg.units,
-      reg.strength,
-      reg.fleet,
-      config.military.maxUnitsPerArmy
-    );
+    const units =
+      reg.slots && reg.slots.length > 0
+        ? reg.slots.map(u => ({ ...u }))
+        : regimentToUnits(
+            rf.roster,
+            resolved.pack.unitTypes,
+            reg.units,
+            reg.strength,
+            reg.fleet,
+            config.military.maxUnitsPerArmy
+          ).units;
     if (units.length === 0) continue;
     const id = `a${nextArmyId++}`;
     armies[id] = {
