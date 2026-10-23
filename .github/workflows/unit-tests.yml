@@ -33,6 +33,20 @@ jobs:
       - name: Run script tests
         run: npm run test:scripts
 
+  # real-map restoration scenarios, kept out of the main run so it stays fast
+  scenarios:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+      - name: Install dependencies
+        run: npm ci
+      - name: Run scenario tests
+        run: npm run test:scenarios
+
   # translation checks only warn: a stale catalog or a broken string never blocks a merge
   translations:
     runs-on: ubuntu-latest

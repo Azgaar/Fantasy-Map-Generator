@@ -4,11 +4,6 @@ import { waitForMap } from "./wait-for-map";
 const MAP_URL = "/?seed=test-seed&width=1280&height=720";
 
 async function loadMap(page: Page): Promise<void> {
-  await page.goto("/");
-  await page.evaluate(() => {
-    localStorage.clear();
-    sessionStorage.clear();
-  });
   await page.goto(MAP_URL);
   await waitForMap(page);
   await page.waitForTimeout(500);
@@ -30,8 +25,7 @@ async function closeIconPicker(page: Page): Promise<void> {
 }
 
 test.describe("Icon picker lifecycle", () => {
-  test.beforeEach(async ({ context, page }) => {
-    await context.clearCookies();
+  test.beforeEach(async ({ page }) => {
     await loadMap(page);
   });
 

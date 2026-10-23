@@ -11,14 +11,7 @@ const countUses = () => document.querySelectorAll("#emblems use[data-i]").length
 const countStateUses = () => document.querySelectorAll("#stateEmblems > use").length;
 
 test.describe("emblems viewport rendering", () => {
-  test.beforeEach(async ({ context, page }) => {
-    await context.clearCookies();
-    await page.goto("/");
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-
+  test.beforeEach(async ({ page }) => {
     await page.goto("/?seed=emblems-viewport&width=1280&height=720");
     await waitForMap(page);
     await page.evaluate(() => (window as Win).Layers.show("emblems"));

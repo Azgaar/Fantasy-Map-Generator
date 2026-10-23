@@ -5,15 +5,7 @@ import { waitForMap } from "./wait-for-map";
 // (https://github.com/Azgaar/Fantasy-Map-Generator/issues — burg CSV export and burg
 // editor showed Celsius even when another scale was selected)
 test.describe("Temperature units", () => {
-  test.beforeEach(async ({ context, page }) => {
-    await context.clearCookies();
-
-    await page.goto("/");
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-
+  test.beforeEach(async ({ page }) => {
     // Navigate with seed parameter and wait for full load
     await page.goto("/?seed=test-temperature&width=1280&height=720");
 

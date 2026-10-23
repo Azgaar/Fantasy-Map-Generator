@@ -2,15 +2,7 @@ import {test, expect, type Page} from "@playwright/test";
 import { countMaps, waitForMap, waitForNextMap } from "./wait-for-map";
 
 test.describe("States", () => {
-  test.beforeEach(async ({context, page}) => {
-    await context.clearCookies();
-
-    await page.goto("/");
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-
+  test.beforeEach(async ({ page }) => {
     // Navigate with seed parameter and wait for full load
     await page.goto("/?seed=test-states&width=1280&height=720");
 

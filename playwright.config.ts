@@ -10,7 +10,8 @@ export default defineConfig({
   forbidOnly: isCI,
   retries: 0,
   workers: isCI ? 2 : undefined,
-  reporter: 'html',
+  // CI shards write blob reports, merged into one HTML report by the workflow
+  reporter: process.env.GITHUB_ACTIONS ? [['blob'], ['dot']] : 'html',
   // Use OS-independent snapshot names (HTML content is the same across platforms)
   snapshotPathTemplate: '{testDir}/{testFileDir}/{testFileName}-snapshots/{arg}{ext}',
   use: {

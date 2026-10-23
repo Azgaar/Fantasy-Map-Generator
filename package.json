@@ -20,6 +20,7 @@
     "preview": "vite preview",
     "electron": "node scripts/electron.mjs",
     "test": "vitest",
+    "test:scenarios": "vitest run --config vitest.scenarios.config.ts",
     "test:e2e": "playwright test",
     "test:scripts": "node --test scripts/*.test.mjs",
     "benchmark": "node scripts/benchmark.mjs",

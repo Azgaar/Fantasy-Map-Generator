@@ -15,6 +15,7 @@ export default defineConfig({
     // *.dom.test.ts needs a real DOM (querySelector, createElementNS, ...) that the node
     // environment's minimal document/Element stubs (test-setup.ts) don't provide - those run
     // only under vitest.browser.config.ts.
-    exclude: [...configDefaults.exclude, "**/*.dom.test.ts"]
+    // *.scenarios.test.ts generate real maps and take most of the run - vitest.scenarios.config.ts runs them
+    exclude: [...configDefaults.exclude, "**/*.dom.test.ts", "**/*.scenarios.test.ts"]
   }
 });

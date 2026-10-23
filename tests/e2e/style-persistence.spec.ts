@@ -42,14 +42,7 @@ async function reload(page: Page, buffer: Buffer, seed: string): Promise<void> {
 }
 
 test.describe("style persistence round trips", () => {
-  test("new-map record: a preset switch survives a save and load", async ({ page, context }) => {
-    await context.clearCookies();
-    await page.goto("/");
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-
+  test("new-map record: a preset switch survives a save and load", async ({ page }) => {
     await page.goto("/?seed=style-persistence-preset&width=1280&height=720");
     await waitForMap(page);
 
@@ -79,11 +72,7 @@ test.describe("style persistence round trips", () => {
     expect(preset).toEqual({ option: "ancient", label: "Ancient" });
   });
 
-  test("a legacy map's preset name is migrated out of the pipe string and into the options", async ({
-    page,
-    context
-  }) => {
-    await context.clearCookies();
+  test("a legacy map's preset name is migrated out of the pipe string and into the options", async ({ page }) => {
     await page.goto("/");
     await page.evaluate(() => {
       localStorage.clear();
@@ -104,8 +93,7 @@ test.describe("style persistence round trips", () => {
     expect(preset).toEqual({ option: "cyberpunk", label: "Cyberpunk" });
   });
 
-  test("an unavailable custom preset name survives a load", async ({ page, context }) => {
-    await context.clearCookies();
+  test("an unavailable custom preset name survives a load", async ({ page }) => {
     await page.goto("/?seed=missing-style-preset&width=1280&height=720");
     await waitForMap(page);
 
@@ -122,17 +110,7 @@ test.describe("style persistence round trips", () => {
     expect(preset).toEqual({ option: "custom-from-another-browser", label: "Default" });
   });
 
-  test("a DOM-only style write does not survive a save and load: the store is the authority", async ({
-    page,
-    context
-  }) => {
-    await context.clearCookies();
-    await page.goto("/");
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-
+  test("a DOM-only style write does not survive a save and load: the store is the authority", async ({ page }) => {
     await page.goto("/?seed=style-persistence-editor&width=1280&height=720");
     await waitForMap(page);
 
@@ -156,11 +134,7 @@ test.describe("style persistence round trips", () => {
     expect(after.dom).toBe(storeFill);
   });
 
-  test("old-map harvest: a record-less map is harvested into the store and re-saves as store-format", async ({
-    page,
-    context
-  }) => {
-    await context.clearCookies();
+  test("old-map harvest: a record-less map is harvested into the store and re-saves as store-format", async ({ page }) => {
     await page.goto("/");
     await page.evaluate(() => {
       localStorage.clear();
@@ -203,11 +177,7 @@ test.describe("style persistence round trips", () => {
     expect(parsed).toHaveProperty("map");
   });
 
-  test("record-less burg and anchor groups: the map's own styling reaches the store and the record", async ({
-    page,
-    context
-  }) => {
-    await context.clearCookies();
+  test("record-less burg and anchor groups: the map's own styling reaches the store and the record", async ({ page }) => {
     await page.goto("/");
     await page.evaluate(() => {
       localStorage.clear();
@@ -248,17 +218,7 @@ test.describe("style persistence round trips", () => {
     expect(record.burgIcons.groups.cities.groups.anchors.options.size).toBe(2.2);
   });
 
-  test("preset-nulled attr stays absent: a preset switch survives a save and load with no backfill", async ({
-    page,
-    context
-  }) => {
-    await context.clearCookies();
-    await page.goto("/");
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-
+  test("preset-nulled attr stays absent: a preset switch survives a save and load with no backfill", async ({ page }) => {
     await page.goto("/?seed=style-persistence-null-preset&width=1280&height=720");
     await waitForMap(page);
 
@@ -279,17 +239,7 @@ test.describe("style persistence round trips", () => {
     expect(after.dom).toBeNull();
   });
 
-  test("step-4-era map: a store record beside the retired attrs strips them on load and every save after", async ({
-    page,
-    context
-  }) => {
-    await context.clearCookies();
-    await page.goto("/");
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-
+  test("step-4-era map: a store record beside the retired attrs strips them on load and every save after", async ({ page }) => {
     await page.goto("/?seed=style-persistence-step4-era&width=1280&height=720");
     await waitForMap(page);
 
@@ -416,13 +366,7 @@ test.describe("style persistence round trips", () => {
     expect(record.coordinates.attrs["font-size"]).toBe("21px");
   });
 
-  test("save serializes the store: a rogue DOM-only attr does not leak into the record", async ({ page, context }) => {
-    await context.clearCookies();
-    await page.goto("/");
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
+  test("save serializes the store: a rogue DOM-only attr does not leak into the record", async ({ page }) => {
     await page.goto("/?seed=store-authoritative-save&width=1280&height=720");
     await waitForMap(page);
 
@@ -438,14 +382,7 @@ test.describe("style persistence round trips", () => {
     expect(record.rivers.attrs.fill).toBe("#0000aa");
   });
 
-  test("relief attrs persistence: a store write survives a save and load", async ({ page, context }) => {
-    await context.clearCookies();
-    await page.goto("/");
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-
+  test("relief attrs persistence: a store write survives a save and load", async ({ page }) => {
     await page.goto("/?seed=style-persistence-relief&width=1280&height=720");
     await waitForMap(page);
 

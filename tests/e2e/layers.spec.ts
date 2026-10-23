@@ -14,13 +14,6 @@ test.describe("map layers", () => {
     sharedContext = await browser.newContext();
     sharedPage = await sharedContext.newPage();
 
-    await sharedContext.clearCookies();
-    await sharedPage.goto("/");
-    await sharedPage.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-
     // Navigate with seed parameter and wait for full load
     // NOTE:
     // - We use a fixed seed ("test-seed") to make map generation deterministic for snapshot tests.

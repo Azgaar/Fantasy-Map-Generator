@@ -56,7 +56,7 @@
 - **Run Locally**: `npm run dev`
 - **Build**: `npm run build`
 - **Lint**: `npm run lint`
-- **Unit Tests**: `npm run test` (Vitest)
+- **Unit Tests**: `npm run test` (Vitest); `npm run test:scenarios` runs the slow real-map `*.scenarios.test.ts` suites
 - **E2E Tests**: `npm run test:e2e` (Playwright; never run without asking)
 - **Desktop App**: `npm run electron`, `npm run electron dist`
 - **CI/CD**: GitHub Actions enforce linting, building, and playwright tests on PRs.

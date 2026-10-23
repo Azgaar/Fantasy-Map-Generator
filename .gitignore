@@ -6,6 +6,7 @@
 /dist
 /coverage
 /playwright-report
+/blob-report
 /test-results
 /_bmad
 /_bmad-output

@@ -128,7 +128,7 @@ Where a test is about behavior, replace the hand-made `Rivers`, `Burgs` and `pac
 
 ### Exit
 
-- `npx vitest run` is green.
+- `npx vitest run` and `npm run test:scenarios` are green.
 - `SWEEP=1 npx vitest run map-restoration.sweep` adds no violation, and every fixed-point check is exact.
 - `CI=1 npx playwright test map-restoration` is green.
 
