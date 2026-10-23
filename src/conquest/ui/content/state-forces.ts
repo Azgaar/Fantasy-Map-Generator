@@ -130,7 +130,7 @@ function upsertStateDef(docs: RawContentDocs, stateId: number, patch: Partial<St
   (file.doc as Record<string, unknown>).factions = list;
 }
 
-function getBoundRoster(state: { id: number; cultureName: string }, docs: RawContentDocs): BoundRoster {
+function getBoundRoster(state: { id: number; cultureName: string; rosterId?: string }, docs: RawContentDocs): BoundRoster {
   const content = currentContent().content;
   const existingDefs = stateDefsOf(docs);
   const def = existingDefs.get(state.id);
@@ -148,7 +148,10 @@ function getBoundRoster(state: { id: number; cultureName: string }, docs: RawCon
     rostersMap,
     docs.meta.defaultRoster || Object.keys(content.rosters)[0] || "default"
   );
-  const rosterId = def?.rosterId && rostersMap[def.rosterId] ? def.rosterId : inferredId;
+  const rosterId =
+    (def?.rosterId && rostersMap[def.rosterId] ? def.rosterId : undefined) ??
+    (state.rosterId && rostersMap[state.rosterId] ? state.rosterId : undefined) ??
+    inferredId;
 
   const rosterObj =
     content.rosters[rosterId] ?? content.rosters[docs.meta.defaultRoster] ?? Object.values(content.rosters)[0]!;
@@ -245,27 +248,24 @@ export function openStateForcesDialog(): void {
       if (!stateObj) continue;
       const bound = getBoundRoster(stateObj, docs);
       const unitTypes = currentContent().content.unitTypes;
-      const grouped = new Map<number, { cell: number; strength: number; fleet: boolean; units: any }>();
       for (const reg of s.military ?? []) {
-        const existing = grouped.get(reg.a);
-        if (existing) {
-          existing.strength += reg.t || 0;
-          existing.fleet = existing.fleet || !!reg.n;
+        const armyId = `fm-${s.i}-${reg.i}`;
+        const strength = reg.a || reg.t || 0;
+        let units: WorkingUnit[];
+        if (reg.units && reg.units.length > 0) {
+          units = reg.units.map(u => ({ type: u.type, count: u.count, exp: u.exp ?? 0 }));
         } else {
-          grouped.set(reg.a, { cell: reg.cell, strength: reg.t || 0, fleet: !!reg.n, units: (reg as any).u ?? {} });
+          const converted = regimentToUnits(bound.rosterDraft, unitTypes, reg.u ?? {}, strength, !!reg.n, 20);
+          units = converted.units.map(u => ({ type: u.type, count: u.count, exp: u.exp ?? 0 }));
         }
-      }
-      for (const [aId, g] of grouped) {
-        const armyId = `fm-${s.i}-${aId}`;
-        const converted = regimentToUnits(bound.rosterDraft, unitTypes, g.units, g.strength, g.fleet, 20);
         workingArmies.set(armyId, {
           id: armyId,
           stateId: s.i,
-          name: `${s.name || "State"} army ${aId}`,
-          cell: g.cell,
-          fleet: g.fleet,
+          name: reg.name || `${s.name || "State"} regiment ${reg.i}`,
+          cell: reg.cell,
+          fleet: !!reg.n,
           stance: "normal",
-          units: converted.units.map(u => ({ type: u.type, count: u.count, exp: u.exp ?? 0 }))
+          units
         });
       }
     }
@@ -472,6 +472,9 @@ export function openStateForcesDialog(): void {
           buildings: undefined,
           tech: undefined
         });
+        if (fmg()?.pack?.states?.[s.id]) {
+          fmg()!.pack!.states![s.id]!.rosterId = bound.id;
+        }
       }
 
       clearErrors(document.body);

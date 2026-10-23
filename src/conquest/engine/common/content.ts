@@ -1392,21 +1392,32 @@ function raceOf(cultureName: string | undefined): string {
   return m ? m[1]!.trim().toLowerCase() : "";
 }
 
+export const DEFAULT_ROSTER_MAP: Record<string, boolean> = {
+  commonBase: true,
+  dwarfBase: true,
+  elfBase: true,
+  orcBase: true,
+  steppeBase: true
+};
+
 /**
  * Infer the roster for an active map culture based on its name or race tag
- * (e.g. Azgaar's "Name (Race)" convention or custom culture names like "Wood Elves").
+ * (e.g. Azgaar's "Name (Race)" convention or custom culture names like "Wood Elves"),
+ * optionally taking culture/state type into account.
  */
 export function inferRosterForCulture(
   cultureName: string | undefined,
   rosters: Record<string, unknown>,
-  defaultRoster: string
+  defaultRoster: string,
+  cultureType?: string,
+  stateType?: string
 ): string {
-  if (!cultureName) return defaultRoster;
-  const race = raceOf(cultureName) || cultureName.toLowerCase();
-  const name = cultureName.toLowerCase();
+  if (!cultureName && !cultureType && !stateType) return defaultRoster;
+  const race = raceOf(cultureName) || (cultureName ? cultureName.toLowerCase() : "");
+  const name = cultureName ? cultureName.toLowerCase() : "";
 
   for (const id of Object.keys(rosters)) {
-    if (name.includes(id.toLowerCase())) return id;
+    if (name && name.includes(id.toLowerCase())) return id;
   }
 
   if (/(dwarf|dwarv)/i.test(race) || /(dwarf|dwarv)/i.test(name)) {
@@ -1418,15 +1429,46 @@ export function inferRosterForCulture(
   if (/(orc|ork|goblin|uruk|ugluk|arachnid)/i.test(race) || /(orc|ork|goblin|uruk|ugluk|arachnid)/i.test(name)) {
     if (rosters.orcBase) return "orcBase";
   }
-  if (/(steppe|nomad)/i.test(race) || /(steppe|nomad)/i.test(name)) {
+  if (
+    /(steppe|nomad)/i.test(race) ||
+    /(steppe|nomad)/i.test(name) ||
+    cultureType === "Nomadic" ||
+    stateType === "Nomadic"
+  ) {
     if (rosters.steppeBase) return "steppeBase";
+  }
+  if (
+    (cultureType === "Highland" || stateType === "Highland") &&
+    (/(mountain|hill|stone|rock)/i.test(name) || /(mountain|hill|stone|rock)/i.test(race))
+  ) {
+    if (rosters.dwarfBase) return "dwarfBase";
   }
 
   return defaultRoster;
 }
 
+/**
+ * Determine a state's unit roster, preserving an existing rosterId or inferring
+ * from its culture name, race tag, culture type, or state type.
+ */
+export function assignStateRoster(
+  state: { rosterId?: string; culture?: number; type?: string },
+  cultures?: Array<{ i?: number; name?: string; type?: string } | undefined>,
+  rosters: Record<string, unknown> = DEFAULT_ROSTER_MAP,
+  defaultRoster = "commonBase"
+): string {
+  if (state.rosterId && rosters[state.rosterId]) return state.rosterId;
+  const culture = state.culture && cultures ? cultures[state.culture] : undefined;
+  const cultureName = culture?.name;
+  const cultureType = culture?.type;
+  return inferRosterForCulture(cultureName, rosters, defaultRoster, cultureType, state.type);
+}
+
 export function resolveForPack(
-  pack: { cultures: { i: number; name: string }[]; factions: { id: number; name: string; culture: number }[] },
+  pack: {
+    cultures: { i: number; name: string }[];
+    factions: { id: number; name: string; culture: number; rosterId?: string }[];
+  },
   content: ContentPack
 ): ResolvedContent {
   const bindingWarnings: string[] = [];
@@ -1551,9 +1593,10 @@ export function resolveForPack(
         content.cultures.find(c => c.cultureName === culture.name) ??
         content.cultures.find(c => c.cultureRace !== undefined && c.cultureRace.toLowerCase() === raceOf(culture.name)))
       : undefined;
-    // Most specific roster decision wins: an explicit per-state assignment,
+    // Most specific roster decision wins: an explicit per-state assignment on state or def,
     // then the culture-group binding, then race inference, then the default.
     const baseRosterId =
+      (state.rosterId && content.rosters[state.rosterId] ? state.rosterId : undefined) ??
       (def?.rosterId && content.rosters[def.rosterId] ? def.rosterId : undefined) ??
       (explicitBinding && content.rosters[explicitBinding.roster] ? explicitBinding.roster : undefined) ??
       fromCulture.rosterId;

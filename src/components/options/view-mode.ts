@@ -1,5 +1,8 @@
 // The 2d / 3d / globe switch under the options panel, and the Astral 2d view
 import { Controllers } from "@/controllers";
+import { isConquestEnabled, subscribeConquestView } from "@/controllers/conquest-mode";
+
+export { isConquestEnabled, subscribeConquestView };
 
 type ViewMode = "standard" | "mesh" | "globe";
 type Cartography = "standard" | "astral";
@@ -32,6 +35,13 @@ export function subscribeAstralView(listener: () => void): () => void {
 export async function changeViewMode(event: Event): Promise<void> {
   const button = event.target as HTMLElement;
   if (button.tagName !== "BUTTON") return;
+
+  if (button.id === "viewConquest") {
+    await Controllers.ConquestMode.toggle();
+    return;
+  }
+
+  if (isConquestEnabled()) await Controllers.ConquestMode.exit();
 
   if (button.id === "viewAstral") {
     await Controllers.AstralMode.toggle();

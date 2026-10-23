@@ -140,6 +140,33 @@ export function currentContent(): ContentState {
   return state;
 }
 
+/** Available rosters for UI dropdowns */
+export function getAvailableRosters(): { id: string; name: string }[] {
+  try {
+    const rosters = currentContent()?.content?.rosters;
+    if (rosters && Object.keys(rosters).length > 0) {
+      return Object.values(rosters).map(r => ({ id: r.id, name: r.name || r.id }));
+    }
+  } catch {
+    // fallback
+  }
+  return [
+    { id: "commonBase", name: "Common" },
+    { id: "dwarfBase", name: "Dwarf" },
+    { id: "elfBase", name: "Elf" },
+    { id: "orcBase", name: "Orc" },
+    { id: "steppeBase", name: "Steppe" }
+  ];
+}
+
+/** Render HTML <option> tags for roster selects */
+export function getRosterOptions(selectedId?: string): string {
+  const rosters = getAvailableRosters();
+  return rosters
+    .map(r => `<option value="${r.id}" ${r.id === selectedId ? "selected" : ""}>${r.name}</option>`)
+    .join("");
+}
+
 /** Subscribe to rule changes: the editors, the rail and the session all redraw. */
 export function onContentChange(listener: (state: ContentState) => void): () => void {
   listeners.add(listener);

@@ -1,7 +1,7 @@
 // Layers tab: a projection of the Layers registry. Renders the layer buttons and wires them up.
 import type { LayerId } from "@/components/layers";
 import { Layers } from "@/components/layers";
-import { isAstralView, subscribeAstralView } from "@/components/options/view-mode";
+import { isAstralView, isConquestEnabled, subscribeAstralView, subscribeConquestView } from "@/components/options/view-mode";
 import { ASTRAL_LAYER_TOGGLES } from "@/data/astral-layer-labels";
 import { ASTRAL_DEFAULT_PRESET, ASTRAL_PRESETS } from "@/data/astral-layers";
 import { LAYER_TOGGLES, type LayerButton } from "@/data/layer-labels";
@@ -32,7 +32,13 @@ export { LAYER_TOGGLES } from "@/data/layer-labels";
 const toggles = (): Map<LayerId, LayerButton> => (isAstralView() ? ASTRAL_LAYER_TOGGLES : LAYER_TOGGLES);
 
 export const getLayerByShortcut = (code: string): LayerId | undefined =>
-  [...toggles()].find(([, button]) => button.shortcut === code)?.[0];
+  {
+    const conquestActive = isConquestEnabled();
+    return [...toggles()].find(([id, button]) => {
+      if (!conquestActive && id.startsWith("tw")) return false;
+      return button.shortcut === code;
+    })?.[0];
+  };
 
 const ASTRAL_PRESET_IDS = new Set(Object.keys(ASTRAL_PRESETS));
 
@@ -72,6 +78,7 @@ const TEMPLATE = /* html */ `
     </button>
     <button data-tip="Project map on globe. Cannot be used for editing" id="viewGlobe">Globe</button>
     <button data-tip="Astral view: star chart layers, nebulae and systems" id="viewAstral">Astral</button>
+    <button data-tip="OpenConquest campaign simulation" id="viewConquest">⚔️ Conquest</button>
   </div>
 `;
 
@@ -104,8 +111,10 @@ function renderPresetOptions(): void {
 function render(): void {
   renderPresetOptions();
   const activeToggles = toggles();
+  const conquestActive = isConquestEnabled();
   ensureEl("mapLayers").replaceChildren(
     ...Layers.all.flatMap(layer => {
+      if (!conquestActive && layer.id.startsWith("tw")) return [];
       const button = activeToggles.get(layer.id);
       if (!button) return [];
 
@@ -145,6 +154,7 @@ $("#mapLayers").sortable({
 
 Layers.subscribe(render);
 subscribeAstralView(render);
+subscribeConquestView(render);
 Layers.subscribe(() => ViewportLayers.renderNow());
 
 // the 3d view renders the map as a texture: refresh it on any layer change, once the batch has settled

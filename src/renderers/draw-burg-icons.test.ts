@@ -259,3 +259,31 @@ test("clearing burg and port icons keeps them absent through redraw and export",
   ViewportLayers.renderTo(clone);
   expect(clone.querySelectorAll("#burgIcons use")).toHaveLength(0);
 });
+
+test("state capitals render with a larger circled star icon and province capitals with a smaller star icon", async () => {
+  (globalThis as any).pack = {
+    burgs: [
+      {},
+      { i: 1, group: "town", x: 10, y: 10, capital: 1 },
+      { i: 2, group: "town", x: 20, y: 20, capital: 0 },
+      { i: 3, group: "town", x: 30, y: 30, capital: 0 }
+    ],
+    provinces: [null, { i: 1, burg: 2, state: 1 }]
+  };
+  styles.burgIcons.groups.town.groups.icons.options.size = 1;
+  styles.burgIcons.groups.town.groups.icons.options.icon = "burgs-atlas-circle";
+
+  await drawBurgIcons();
+
+  const stateCap = document.getElementById("burg1")!;
+  expect(stateCap.getAttribute("href")).toBe("#burgs-atlas-star-circled");
+  expect(stateCap.getAttribute("width")).toBe("2.2em");
+
+  const provCap = document.getElementById("burg2")!;
+  expect(provCap.getAttribute("href")).toBe("#burgs-atlas-star");
+  expect(provCap.getAttribute("width")).toBe("1.4em");
+
+  const regular = document.getElementById("burg3")!;
+  expect(regular.getAttribute("href")).toBe("#burgs-atlas-circle");
+  expect(regular.getAttribute("width")).toBe("1em");
+});

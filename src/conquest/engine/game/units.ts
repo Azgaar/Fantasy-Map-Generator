@@ -4,16 +4,9 @@
  * unit types / roster explicitly so the engine has no hardcoded pool.
  */
 import type { ResolvedRoster, UnitType } from "../common/content";
+import type { ArmyUnit } from "../common/types";
 
 export type { UnitCategory, UnitType } from "../common/content";
-
-export interface ArmyUnit {
-  type: string;
-  /** Current men (0..UnitType.men). */
-  count: number;
-  /** Experience 0..9 (chevrons). */
-  exp: number;
-}
 
 interface RegimentConversion {
   units: ArmyUnit[];

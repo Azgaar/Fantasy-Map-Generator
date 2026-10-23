@@ -247,7 +247,6 @@ const CSS = /* css */ `
 
 /* -- our layers ------------------------------------------------------------ */
 [data-layer^="tw"] { pointer-events: none; }
-[data-layer="twArmies"] { pointer-events: auto; }
 .tw-army, .tw-settlement { cursor: pointer; }
 .tw-army text, .tw-settlement text { user-select: none; pointer-events: none; }
 .tw-army-count {

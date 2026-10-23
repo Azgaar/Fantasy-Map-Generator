@@ -111,6 +111,34 @@ function closeRegimentsOverview(): void {
 
 const unitColumnKey = (name: string) => `unit:${name}`;
 
+function getRegimentUnitCount(
+  regiment: Regiment,
+  unitName: string
+): { count: number; breakdown: Record<string, number> } {
+  const breakdown: Record<string, number> = {};
+  let total = 0;
+  for (const [uId, count] of Object.entries(regiment.u ?? {})) {
+    if (count <= 0) continue;
+    let matches = uId === unitName;
+    if (!matches) {
+      const cat = Military.getCategory(uId);
+      const opt = options.map.military.units.find(u => u.name === unitName);
+      if (opt) {
+        if (cat === "melee" && (opt.type === "melee" || opt.name === "infantry")) matches = true;
+        else if (cat === "ranged" && (opt.type === "ranged" || opt.name === "archers")) matches = true;
+        else if (cat === "cavalry" && (opt.type === "mounted" || opt.name === "cavalry")) matches = true;
+        else if (cat === "artillery" && (opt.type === "machinery" || opt.name === "artillery")) matches = true;
+        else if (cat === "naval" && (opt.type === "naval" || opt.name === "fleet")) matches = true;
+      }
+    }
+    if (matches) {
+      total += count;
+      breakdown[uId] = (breakdown[uId] || 0) + count;
+    }
+  }
+  return { count: total, breakdown };
+}
+
 function getRegimentColumns(): EditorColumn<RegimentRow>[] {
   const unitColumns: EditorColumn<RegimentRow>[] = options.map.military.units.map(unit => ({
     key: unitColumnKey(unit.name),
@@ -118,7 +146,7 @@ function getRegimentColumns(): EditorColumn<RegimentRow>[] {
     width: "5em",
     mobileHidden: true,
     tip: `Regiment ${unit.name} units number. Click to sort`,
-    sortBy: row => row.regiment.u[unit.name] || 0
+    sortBy: row => getRegimentUnitCount(row.regiment, unit.name).count
   }));
 
   return [
@@ -141,6 +169,13 @@ function getRegimentColumns(): EditorColumn<RegimentRow>[] {
       sortType: "alpha"
     },
     ...unitColumns,
+    {
+      key: "slots",
+      label: "Slots",
+      width: "4.5em",
+      sortBy: row => row.regiment.units?.length ?? 0,
+      tip: "Regiment unit slots / blocks (max 20). Click to sort"
+    },
     {
       key: "total",
       label: "Total",
@@ -172,7 +207,10 @@ function renderRegimentsPage(view: TableView<RegimentRow>): void {
   const body = ensureEl("regimentsBody");
   const percentage = body.dataset.type === "percentage";
   const unitTotals = Object.fromEntries(
-    options.map.military.units.map(unit => [unit.name, sum(view.all.map(row => row.regiment.u[unit.name] || 0))])
+    options.map.military.units.map(unit => [
+      unit.name,
+      sum(view.all.map(row => getRegimentUnitCount(row.regiment, unit.name).count))
+    ])
   );
   const total = sum(view.all.map(row => row.regiment.a));
   const percent = (value: number, all: number) => `${Math.round(all ? (value / all) * 100 : 0)}%`;
@@ -181,10 +219,18 @@ function renderRegimentsPage(view: TableView<RegimentRow>): void {
     .map(({ state, regiment }) => {
       const unitCells = options.map.military.units
         .map(unit => {
-          const value = regiment.u[unit.name] || 0;
-          return `<div data-col="${unitColumnKey(unit.name)}" data-tip="${capitalize(unit.name)} units number">${percentage ? percent(value, unitTotals[unit.name]) : value}</div>`;
+          const { count: value, breakdown } = getRegimentUnitCount(regiment, unit.name);
+          const bdEntries = Object.entries(breakdown);
+          const bdTip =
+            bdEntries.length > 1 || (bdEntries.length === 1 && bdEntries[0][0] !== unit.name)
+              ? `${capitalize(unit.name)} (${capitalize(unit.type)}):&#10;` +
+                bdEntries.map(([k, v]) => `• ${capitalize(k)}: ${v}`).join("&#10;")
+              : `${capitalize(unit.name)} units number: ${value}`;
+          return `<div data-col="${unitColumnKey(unit.name)}" data-tip="${bdTip}">${percentage ? percent(value, unitTotals[unit.name]) : value}</div>`;
         })
         .join("");
+      const slotsCount = regiment.units?.length ?? 0;
+      const slotsCell = `<div data-col="slots" data-tip="Unit blocks (${slotsCount}/20 slots)">${slotsCount}/20</div>`;
       const emblem = `<span data-col="emblem" data-tip="Regiment's emblem">${Icons.html(regiment.icon ?? "")}</span>`;
 
       return /* html */ `<div class="states" data-id="${regiment.i}" data-s="${state.i}">
@@ -193,6 +239,7 @@ function renderRegimentsPage(view: TableView<RegimentRow>): void {
         ${emblem}
         <input data-col="name" data-tip="Regiment's name" value="${regiment.name}" readonly />
         ${unitCells}
+        ${slotsCell}
         <div data-col="total" data-tip="Total military personnel (not considering crew)" style="font-weight:bold">${percentage ? percent(regiment.a, total) : regiment.a}</div>
         <span data-col="edit" data-tip="Edit regiment" data-edit-regiment="regiment${state.i}-${regiment.i}" class="icon-pencil pointer"></span>
       </div>`;

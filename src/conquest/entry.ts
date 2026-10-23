@@ -487,7 +487,7 @@ function bootUnsafe(): void {
   // behind (layers registered, click handler missing) is exactly what `booted`
   // now guards against.
   const zoom = installZoomRedraw();
-  const unsubscribeSelection = onSelection(() => redrawLayers(["twSelection"]));
+  const unsubscribeSelection = onSelection(() => {});
   const uninstallSelection = installSelection({
     regionAt: cellId => getSource().regionOf(cellId)?.id ?? null,
     armyAt: cellId =>

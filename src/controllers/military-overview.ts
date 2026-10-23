@@ -18,6 +18,7 @@ import { Controllers } from "@/controllers";
 import type { State } from "@/generators/states-generator";
 import type { MilitaryUnit } from "@/types/Military";
 import { downloadFile, getFileName } from "@/utils";
+import { getRosterOptions } from "@/conquest/content/store";
 import { capitalize, ensureEl, escapeHtml, rn, sanitizeId, si, wiki } from "../utils";
 
 const dialogId = "militaryOverview" as const;
@@ -25,6 +26,7 @@ const position = { my: "right top", at: "right-10 top+10", of: "svg", collision:
 type MilitaryRow = {
   state: State;
   forces: Record<string, number>;
+  breakdowns?: Record<string, Record<string, number>>;
   total: number;
   population: number;
   rate: number;
@@ -115,10 +117,14 @@ function renderDialog(): void {
   ensureEl("militaryWiki").addEventListener("click", () => wiki("Military-Forces"));
 
   body.addEventListener("change", event => {
-    const el = event.target as HTMLInputElement;
+    const el = event.target as HTMLInputElement | HTMLSelectElement;
     const line = el.closest<HTMLElement>(".states");
     if (!line) return;
     const state = +line.dataset.id!;
+    if (el.classList.contains("stateRoster")) {
+      pack.states[state].rosterId = el.value;
+      return;
+    }
     changeAlert(state, +el.value);
   });
 
@@ -184,6 +190,14 @@ function getMilitaryColumns(): EditorColumn<MilitaryRow>[] {
       sortBy: row => row.alert,
       tip: "War Alert. Modifier to military forces number, depends on political situation. Click to sort"
     },
+    {
+      key: "roster",
+      label: "Roster",
+      width: "6.5em",
+      mobileHidden: true,
+      tip: "Assigned military unit roster. Click to change",
+      sortBy: row => row.state.rosterId || ""
+    },
     { key: "regiments", width: "1.4em", permanent: true }
   ];
 }
@@ -208,20 +222,43 @@ function getMilitaryData(): MilitaryRow[] {
   const rows = pack.states
     .filter(state => state.i && !state.removed)
     .map(state => {
-      const forces = Object.fromEntries(
-        options.map.military.units.map(unit => [
-          unit.name,
-          (state.military || []).reduce((total, regiment) => total + (regiment.u[unit.name] || 0), 0)
-        ])
-      );
+      const forces: Record<string, number> = {};
+      const breakdowns: Record<string, Record<string, number>> = {};
+      for (const unit of options.map.military.units) {
+        forces[unit.name] = 0;
+        breakdowns[unit.name] = {};
+      }
+
+      for (const reg of state.military ?? []) {
+        for (const [uId, count] of Object.entries(reg.u ?? {})) {
+          if (count <= 0) continue;
+          let matchedUnit = options.map.military.units.find(u => u.name === uId);
+          if (!matchedUnit) {
+            const cat = Military.getCategory(uId);
+            matchedUnit = options.map.military.units.find(u => {
+              if (cat === "melee") return u.type === "melee" || u.name === "infantry";
+              if (cat === "ranged") return u.type === "ranged" || u.name === "archers";
+              if (cat === "cavalry") return u.type === "mounted" || u.name === "cavalry";
+              if (cat === "artillery") return u.type === "machinery" || u.name === "artillery";
+              if (cat === "naval") return u.type === "naval" || u.name === "fleet";
+              return false;
+            });
+          }
+          const colName = matchedUnit ? matchedUnit.name : "infantry";
+          forces[colName] = (forces[colName] || 0) + count;
+          breakdowns[colName][uId] = (breakdowns[colName][uId] || 0) + count;
+        }
+      }
+
       const population = rn(
         ((state.rural || 0) + (state.urban || 0) * options.map.units.population.urbanization.rate) *
           options.map.units.population.scale
       );
-      const total = options.map.military.units.reduce((sum, unit) => sum + (forces[unit.name] || 0) * unit.crew, 0);
+      const total = (state.military || []).reduce((sum, r) => sum + (r.a || 0), 0);
       return {
         state,
         forces,
+        breakdowns,
         total,
         population,
         rate: population ? (total / population) * 100 : 0,
@@ -243,7 +280,7 @@ function renderMilitaryPage(view: TableView<MilitaryRow>): void {
       result.total += row.total;
       result.population += row.population;
       for (const unit of options.map.military.units)
-        result.units[unit.name] = (result.units[unit.name] || 0) + row.forces[unit.name];
+        result.units[unit.name] = (result.units[unit.name] || 0) + (row.forces[unit.name] || 0);
       return result;
     },
     { total: 0, population: 0, units: {} as Record<string, number> }
@@ -254,7 +291,14 @@ function renderMilitaryPage(view: TableView<MilitaryRow>): void {
       const unitCells = options.map.military.units
         .map(unit => {
           const value = row.forces[unit.name] || 0;
-          return `<div data-col="${`unit:${unit.name}`}" data-tip="State ${unit.name} units number">${percentage ? percent(value, totals.units[unit.name] || 0) : value}</div>`;
+          const bd = row.breakdowns?.[unit.name] ?? {};
+          const bdEntries = Object.entries(bd);
+          const bdTip =
+            bdEntries.length > 1 || (bdEntries.length === 1 && bdEntries[0][0] !== unit.name)
+              ? `State ${unit.name} (${capitalize(unit.type)}):&#10;` +
+                bdEntries.map(([k, v]) => `• ${capitalize(k)}: ${v}`).join("&#10;")
+              : `State ${unit.name} units number: ${value}`;
+          return `<div data-col="${`unit:${unit.name}`}" data-tip="${bdTip}">${percentage ? percent(value, totals.units[unit.name] || 0) : value}</div>`;
         })
         .join("");
       return /* html */ `<div class="states" data-id="${row.state.i}">
@@ -265,6 +309,7 @@ function renderMilitaryPage(view: TableView<MilitaryRow>): void {
         <div data-col="population" data-tip="State population">${percentage ? percent(row.population, totals.population) : si(row.population)}</div>
         <div data-col="rate" data-tip="Military personnel rate (% of state population). Depends on war alert">${rn(row.rate, 2)}%</div>
         <input data-col="alert" data-tip="War Alert. Editable modifier to military forces number, depends on political situation" type="number" min="0" step=".01" value="${rn(row.alert, 2)}" />
+        <select data-col="roster" data-tip="Assigned military unit roster. Click to change" class="stateRoster">${getRosterOptions(row.state.rosterId)}</select>
         <span data-col="regiments" data-tip="Show regiments list" class="icon-list-bullet pointer"></span>
       </div>`;
     })

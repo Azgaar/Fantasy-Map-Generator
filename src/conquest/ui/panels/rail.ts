@@ -318,6 +318,8 @@ export function installRail(): void {
     `<div class="tw-panel-head"><span>Inspect</span>` +
     `<button class="tw-rail-toggle" title="Collapse the rail">›</button></div>` +
     `<div class="tw-rail-body tw-rail-body--inspect">${renderInspection()}</div></div>`;
+  rail.style.display = "none";
+  rail.hidden = true;
   document.body.append(rail);
 
   const toggle = rail.querySelector<HTMLButtonElement>(".tw-rail-toggle");

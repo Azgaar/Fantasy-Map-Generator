@@ -24,7 +24,7 @@ beforeEach(() => {
       store.set(key, value);
     })
   });
-  vi.stubGlobal("Layers", { state: { active: ["states", "twArmies", "twRegions"] } });
+  vi.stubGlobal("Layers", { state: { active: ["states", "military"] } });
   vi.stubGlobal("mapHistory", [{ created: MAP_ID }]);
   vi.useFakeTimers();
 });
@@ -52,7 +52,7 @@ describe("the campaign store", () => {
     await vi.advanceTimersByTimeAsync(500);
 
     const stored = JSON.parse(store.get(KEY)!);
-    expect(stored.ui.layers).toEqual(["twArmies", "twRegions"]); // the stock layers are not ours
+    expect(stored.ui.layers).toEqual([]); // the stock layers are not ours
   });
 
   it("reads a stored campaign back after a restart", async () => {

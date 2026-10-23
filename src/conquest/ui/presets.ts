@@ -30,7 +30,7 @@ export const PRESETS: TwPreset[] = [
     id: "campaign",
     label: "Campaign map",
     hint: "OpenConquest's political projection: territories, settlements, armies — no route clutter",
-    layers: ["twRegions", "twSettlements", "twArmies", "twMovePaths", "twSelection", "labels", "scaleBar", "vignette"]
+    layers: ["states", "borders", "military", "burgIcons", "labels", "scaleBar", "vignette"]
   },
   {
     id: "cartographer",

@@ -115,18 +115,73 @@ function updateRegimentData(regiment: Regiment): void {
   ensureEl<HTMLInputElement>("regimentName").value = regiment.name;
   ensureEl("regimentIcon").innerHTML = Icons.html(regiment.icon ?? "");
 
+  const state = pack.states[regiment.state];
+  const roster = state ? Military.getRoster(state) : undefined;
+  const allUnitTypes = Military.getUnitTypes();
+
+  // Collect candidate unit ids: recruitable units + units currently in regiment
+  const unitIds = new Set<string>();
+  if (regiment.n) {
+    unitIds.add("fleet");
+  } else {
+    if (roster?.recruitable) {
+      for (const uid of roster.recruitable) unitIds.add(uid);
+    }
+  }
+  for (const uid of Object.keys(regiment.u ?? {})) {
+    if ((regiment.u[uid] ?? 0) > 0) unitIds.add(uid);
+  }
+  for (const slot of regiment.units ?? []) {
+    unitIds.add(slot.type);
+  }
+  if (unitIds.size === 0) {
+    for (const u of options.map.military.units) unitIds.add(u.name);
+  }
+
+  const totalSlots = regiment.units?.length ?? 0;
   const composition = ensureEl("regimentComposition");
-  composition.innerHTML = options.map.military.units
-    .map(u => {
-      return `<div data-tip="${capitalize(u.name)} number. Input to change">
-        <div class="label">${capitalize(u.name)}:</div>
-        <input data-u="${u.name}" type="number" min=0 step=1 value="${regiment.u[u.name] || 0}">
-        <i>${u.type}</i></div>`;
-    })
-    .join("");
+
+  let html = `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-size:0.9em; opacity:0.85">
+    <span>Army Units</span>
+    <span>Slots: <b>${totalSlots} / 20</b></span>
+  </div>`;
+
+  for (const uid of unitIds) {
+    const ut = roster?.units?.[uid] ?? allUnitTypes[uid];
+    const legacy = options.map.military.units.find(u => u.name === uid);
+    const name = ut?.name ?? capitalize(uid);
+    const cat = ut?.category ?? Military.getCategory(uid);
+    const menPerBlock = ut?.men ?? (legacy?.crew ? legacy.crew * 100 : 100);
+    const count = regiment.u?.[uid] || 0;
+    const blocks = regiment.units
+      ? regiment.units.filter(s => s.type === uid).length
+      : Math.ceil(count / (menPerBlock || 100));
+
+    const statTip = ut
+      ? `${ut.name} [${cat}]&#10;Men/Block: ${ut.men}&#10;Attack: ${ut.attack} | Defense: ${ut.defense}&#10;Charge: ${ut.charge} | Missile: ${ut.missile}`
+      : `${name} [${cat}]&#10;Men: ${count}`;
+
+    html += `<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;" data-tip="${statTip}">
+      <div style="flex:1; display:flex; align-items:center; gap:5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+        <span style="font-size:0.75em; padding:1px 5px; border-radius:3px; background:#444; color:#eee;">${cat}</span>
+        <span style="font-weight:500;">${name}</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:3px;">
+        <button class="stepBlockBtn" data-u="${uid}" data-dir="-1" title="Remove 1 block" style="padding:0 5px; line-height:1.2;">-</button>
+        <span style="min-width:1.8em; text-align:center; font-size:0.85em;">${blocks}b</span>
+        <button class="stepBlockBtn" data-u="${uid}" data-dir="1" title="Add 1 block" style="padding:0 5px; line-height:1.2;">+</button>
+        <input data-u="${uid}" type="number" min="0" step="1" value="${count}" style="width:4.2em; text-align:right;" />
+      </div>
+    </div>`;
+  }
+
+  composition.innerHTML = html;
 
   composition.querySelectorAll("input").forEach(el => {
     el.addEventListener("change", changeUnit);
+  });
+  composition.querySelectorAll(".stepBlockBtn").forEach(btn => {
+    btn.addEventListener("click", stepBlock);
   });
 }
 
@@ -209,6 +264,7 @@ function changeType(): void {
   baseRect.setAttribute("width", String(reg.n ? size * 4 : size * 6));
   iconRect.setAttribute("x", String(x - size * 2));
   updateRegimentIcon(selectedRegiment.querySelector<SVGUseElement>(".regimentIcon")!, reg);
+  updateRegimentData(reg);
   selectedRegiment.querySelector("text")!.innerHTML = String(Military.getTotal(reg));
 }
 
@@ -244,6 +300,36 @@ function changeIcon(): void {
   });
 }
 
+function stepBlock(this: HTMLElement): void {
+  const u = this.dataset.u!;
+  const dir = +(this.dataset.dir || 0);
+  const reg = getRegiment();
+  if (!reg || !selectedRegiment) return;
+  const unitTypes = Military.getUnitTypes();
+  const ut = unitTypes[u];
+  const blockSize = ut?.men || 100;
+
+  reg.units ??= [];
+  if (dir > 0) {
+    if (reg.units.length >= 20) {
+      tip("Army cannot exceed 20 unit slots", false, "error");
+      return;
+    }
+    reg.units.push({ type: u, count: blockSize, exp: 0 });
+  } else if (dir < 0) {
+    const idx = reg.units.map(s => s.type).lastIndexOf(u);
+    if (idx >= 0) {
+      reg.units.splice(idx, 1);
+    } else {
+      return;
+    }
+  }
+  Military.setUnitSlots(reg.state, reg.i, reg.units);
+  updateRegimentData(reg);
+  selectedRegiment.querySelector("text")!.innerHTML = String(Military.getTotal(reg));
+  refreshEditors();
+}
+
 function changeUnit(this: HTMLInputElement): void {
   const u = this.dataset.u!;
   const reg = getRegiment();
@@ -251,6 +337,7 @@ function changeUnit(this: HTMLInputElement): void {
   const count = (value: number) => Math.max(0, Math.round(value || 0)); // older maps may hold fractional troops
   const units = Object.fromEntries(Object.entries(reg.u).map(([name, value]) => [name, count(value)]));
   Military.setUnits(reg.state, reg.i, { ...units, [u]: count(+this.value) });
+  updateRegimentData(reg);
   selectedRegiment.querySelector("text")!.innerHTML = String(Military.getTotal(reg));
 
   refreshEditors();
@@ -268,11 +355,7 @@ function splitRegiment(): void {
     return;
   }
 
-  ensureEl("regimentComposition")
-    .querySelectorAll<HTMLInputElement>("input")
-    .forEach(el => {
-      el.value = String(reg.u[el.dataset.u!] || 0);
-    });
+  updateRegimentData(reg);
   selectedRegiment.querySelector("text")!.innerHTML = String(Military.getTotal(reg));
   drawRegiment(pack.states[state].military!.find(r => r.i === newId)!, state); // draw new reg below
 

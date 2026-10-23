@@ -23,6 +23,7 @@ import { declareFont } from "@/services/fonts";
 import { logStats } from "@/services/logging";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
 import { emptyHistory } from "@/types/history";
+import { assignStateRoster } from "@/conquest/engine/common/content";
 import { ensureEl, escapeHtml, last, link, parseError, rn, safeParseJSON } from "@/utils";
 
 async function quickLoad(): Promise<void> {
@@ -549,6 +550,9 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
       pack.states.forEach(state => {
         if (state.removed) return;
+        if (state.i && !state.rosterId) {
+          state.rosterId = assignStateRoster(state, pack.cultures);
+        }
 
         const stateBurgs = pack.burgs.filter(b => b.state === state.i && !b.removed);
         const capitalBurgs = stateBurgs.filter(b => b.capital);

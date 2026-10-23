@@ -305,54 +305,35 @@ function armiesFromRegiments(
   playerFactionId: number | null,
   playerFactionIds?: number[]
 ): TwArmy[] {
-  const grouped = new Map<
-    number,
-    { state: FmgState; troops: number; regiments: number; cell: number; x: number; y: number; fleet: boolean }
-  >();
-  for (const state of world.states ?? []) {
-    if (!state || state.removed) continue;
-    for (const regiment of state.military ?? []) {
-      const entry = grouped.get(regiment.a);
-      if (entry) {
-        entry.troops += regiment.t || 0;
-        entry.regiments += 1;
-        entry.fleet = entry.fleet || !!regiment.n;
-      } else {
-        grouped.set(regiment.a, {
-          state,
-          troops: regiment.t || 0,
-          regiments: 1,
-          cell: regiment.cell,
-          x: regiment.x,
-          y: regiment.y,
-          fleet: !!regiment.n
-        });
-      }
-    }
-  }
+  const armies: TwArmy[] = [];
   const isOwn = (fid: number): boolean => {
     if (playerFactionIds && playerFactionIds.length > 0) return playerFactionIds.includes(fid);
     if (playerFactionIds && playerFactionIds.length === 0) return false;
     return playerFactionId != null && fid === playerFactionId;
   };
-  return [...grouped.entries()]
-    .map(([armyId, entry]) => {
-      const point = pointAt(points, entry.cell);
-      return {
-        id: `fm-${armyId}`,
-        name: `${entry.state.name || "Army"} army ${armyId}`,
-        cell: entry.cell,
-        x: point ? point[0] : entry.x,
-        y: point ? point[1] : entry.y,
-        factionId: entry.state.i,
-        color: entry.state.color || "#94a3b8",
-        troops: entry.troops,
-        regiments: entry.regiments,
-        fleet: entry.fleet,
-        own: isOwn(entry.state.i)
-      };
-    })
-    .sort((a, b) => a.id.localeCompare(b.id));
+
+  for (const state of world.states ?? []) {
+    if (!state || state.removed) continue;
+    for (const regiment of state.military ?? []) {
+      const troops = regiment.a || regiment.t || 0;
+      const point = pointAt(points, regiment.cell);
+      const regId = regiment.i ?? 0;
+      armies.push({
+        id: `fm-${state.i}-${regId}`,
+        name: regiment.name || `${state.name || "State"} regiment ${regId}`,
+        cell: regiment.cell,
+        x: point ? point[0] : regiment.x,
+        y: point ? point[1] : regiment.y,
+        factionId: state.i,
+        color: state.color || "#94a3b8",
+        troops,
+        regiments: 1,
+        fleet: !!regiment.n,
+        own: isOwn(state.i)
+      });
+    }
+  }
+  return armies.sort((a, b) => a.id.localeCompare(b.id));
 }
 
 import { currentSession } from "../store/session";

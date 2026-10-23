@@ -27,6 +27,7 @@ import type { Label } from "./labels-generator";
 import type { Regiment } from "./military-generator";
 import { Population } from "./population-generator";
 import type { Province } from "./provinces-generator";
+import { assignStateRoster } from "@/conquest/engine/common/content";
 
 declare global {
   var States: StatesModule;
@@ -41,6 +42,7 @@ export interface State {
   center: number;
   culture: number;
   coa: Emblem;
+  rosterId?: string;
   lock?: boolean;
   removed?: boolean;
   pole?: [number, number];
@@ -275,6 +277,7 @@ class StatesModule {
       const expansionism = rn(Math.random() * options.generation.states.sizeVariety + 1, 1);
       const coa = Emblems.generate(capital.coa, 0.3, null, pack.cultures[culture].type);
       coa.shield = capital.coa?.shield;
+      const rosterId = assignStateRoster({ culture, type }, pack.cultures);
       newStates.push({
         i: stateId,
         name,
@@ -284,6 +287,7 @@ class StatesModule {
         culture,
         expansionism,
         coa,
+        rosterId,
         salesTax: 0,
         pollTax: 0,
         treasury: 0
@@ -307,6 +311,7 @@ class StatesModule {
       const type = pack.cultures[burg.culture!].type;
       const coa = Emblems.generate(null, null, null, type);
       coa.shield = Emblems.getShield(burg.culture!);
+      const rosterId = assignStateRoster({ culture: burg.culture!, type }, pack.cultures);
       states.push({
         i: burg.i,
         name,
@@ -316,6 +321,7 @@ class StatesModule {
         center: burg.cell,
         culture: burg.culture!,
         coa,
+        rosterId,
         salesTax: 0,
         pollTax: 0,
         treasury: 0
@@ -978,7 +984,14 @@ class StatesModule {
   setCulture(stateId: number, cultureId: number): void {
     const culture = pack.cultures[cultureId];
     if (!culture || culture.removed) throw new Error(`Culture ${cultureId} does not exist`);
-    this.living(stateId).culture = cultureId;
+    const state = this.living(stateId);
+    state.culture = cultureId;
+    state.rosterId = assignStateRoster({ culture: cultureId, type: state.type }, pack.cultures);
+  }
+
+  /** Set a state's military unit roster */
+  setRoster(stateId: number, rosterId: string): void {
+    this.living(stateId).rosterId = rosterId;
   }
 
   /** Set a state's type, which steers its expansion: Generic, Hunting, Highland, River, Lake, Naval or Nomadic */
@@ -1087,6 +1100,9 @@ class StatesModule {
     capital.capital = 1;
     Burgs.changeGroup(capital, null);
 
+    const culture = capital.culture ?? cells.culture[capital.cell];
+    const rosterId = assignStateRoster({ culture, type: "Generic" }, pack.cultures);
+
     states.push({
       i,
       name,
@@ -1097,7 +1113,8 @@ class StatesModule {
       capital: capitalId,
       type: "Generic",
       center: capital.cell,
-      culture: capital.culture ?? cells.culture[capital.cell],
+      culture,
+      rosterId,
       military: [],
       alert: 1,
       coa,
