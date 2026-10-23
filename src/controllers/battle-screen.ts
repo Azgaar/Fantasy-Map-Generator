@@ -1,5 +1,5 @@
 import { select, sum } from "d3";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
+import { closeDialogs, refreshEditors } from "@/components/dialog/dialog-helpers";
 import { applySortingByHeader } from "@/components/dialog/sorting";
 import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
@@ -150,8 +150,12 @@ function createRegimentEntry(r: Regiment, bx: number, by: number, unitTypes: Rec
   if (!r.units || r.units.length === 0) {
     reconcileRegimentBlocks(r, unitTypes);
   }
-  const startingUnits = (r.units ?? []).map(u => ({ type: u.type, count: u.count, exp: u.exp ?? 0 }));
-  const currentUnits = (r.units ?? []).map(u => ({ type: u.type, count: u.count, exp: u.exp ?? 0 }));
+  const startingUnits = (r.units ?? [])
+    .filter(u => u.count > 0)
+    .map(u => ({ type: u.type, count: u.count, exp: u.exp ?? 0 }));
+  const currentUnits = (r.units ?? [])
+    .filter(u => u.count > 0)
+    .map(u => ({ type: u.type, count: u.count, exp: u.exp ?? 0 }));
   const state = pack.states[r.state];
   const distance = Math.round(Math.hypot(by - r.by, bx - r.bx) * options.map.units.distance.scale);
 
@@ -163,6 +167,35 @@ function createRegimentEntry(r: Regiment, bx: number, by: number, unitTypes: Rec
     currentUnits,
     roundCasualties: 0
   };
+}
+
+function syncSessionToEntries(side: "attackers" | "defenders"): void {
+  if (!activeBattle) return;
+  const entries = activeBattle[side];
+  const sessionUnits = side === "attackers" ? activeBattle.session.attackerUnits : activeBattle.session.defenderUnits;
+  let unitIdx = 0;
+  for (const entry of entries) {
+    let entryRoundLosses = 0;
+    for (const u of entry.currentUnits) {
+      if (unitIdx < sessionUnits.length) {
+        const newCount = sessionUnits[unitIdx].count;
+        const loss = u.count - newCount;
+        if (loss > 0) entryRoundLosses += loss;
+        u.count = newCount;
+        unitIdx++;
+      }
+    }
+    entry.roundCasualties = entryRoundLosses;
+  }
+}
+
+function disablePreBattleControls(): void {
+  const addBtn = document.getElementById("battleAddRegiment") as HTMLButtonElement | null;
+  if (addBtn) addBtn.disabled = true;
+  for (const id of ["modWalls", "modRiver", "modEncamped", "modAmbush"]) {
+    const el = document.getElementById(id) as HTMLButtonElement | null;
+    if (el) el.disabled = true;
+  }
 }
 
 function rebuildSession(): void {
@@ -474,6 +507,9 @@ function renderSideTable(containerId: string, side: RegimentEntry[], unitTypes: 
     const clr = entry.state.color || "#777";
     const href = escapeHtml(Icons.href(reg.icon ?? ""));
     const regIcon = `<svg width="1.1em" height="1.1em" style="margin-bottom:-2px;"><rect width="100%" height="100%" fill="${clr}"></rect><use href="${href}" width="100%" height="100%"></use></svg>`;
+    const entryStart = sum(entry.startingUnits.map(u => u.count));
+    const entryCurrent = sum(entry.currentUnits.map(u => u.count));
+    const entryLoss = entryStart - entryCurrent;
 
     html += `<div style="margin-bottom:6px; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom:4px;">
       <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.88em; font-weight:600; margin-bottom:3px;">
@@ -482,7 +518,7 @@ function renderSideTable(containerId: string, side: RegimentEntry[], unitTypes: 
           <span>${escapeHtml(reg.name)}</span>
           <span style="font-size:0.85em; opacity:0.8; font-weight:normal;">(${escapeHtml(entry.state.fullName || entry.state.name)})</span>
         </div>
-        <div style="font-size:0.8em; opacity:0.8;">Base: ${entry.distance} ${options.map.units.distance.unit}</div>
+        <div style="font-size:0.8em; opacity:0.8;">${entryCurrent}/${entryStart} men ${entryLoss > 0 ? `(-${entryLoss})` : ""} · Base: ${entry.distance} ${options.map.units.distance.unit}</div>
       </div>
       <table style="width:100%; border-collapse:collapse; font-size:0.82em;">
         <thead>
@@ -514,13 +550,22 @@ function renderSideTable(containerId: string, side: RegimentEntry[], unitTypes: 
         <td style="text-align:right; opacity:0.85;">${start}</td>
         <td style="text-align:right; color:#e74c3c; font-weight:500;">${dead > 0 ? `-${dead}` : "0"}</td>
         <td style="text-align:right;">
-          <span style="color:#27ae60; font-weight:bold;">${u.count}</span>
+          <span style="color:${u.count > 0 ? "#27ae60" : "#e74c3c"}; font-weight:bold;">${u.count}</span>
           <span style="font-size:0.8em; opacity:0.75;">(${pct}%)</span>
         </td>
       </tr>`;
     }
 
-    html += `</tbody></table></div>`;
+    html += `</tbody>
+        <tfoot>
+          <tr style="border-top:1px solid rgba(0,0,0,0.12); font-weight:600; opacity:0.9;">
+            <td colspan="3">Total</td>
+            <td style="text-align:right;">${entryStart}</td>
+            <td style="text-align:right; color:#e74c3c;">${entryLoss > 0 ? `-${entryLoss}` : "0"}</td>
+            <td style="text-align:right; color:${entryCurrent > 0 ? "#27ae60" : "#e74c3c"};">${entryCurrent}</td>
+          </tr>
+        </tfoot>
+      </table></div>`;
   }
 
   container.innerHTML = html || "<div style='font-size:0.85em; opacity:0.6; padding:4px;'>No units</div>";
@@ -556,6 +601,10 @@ function stepRound(): void {
     defender: b.defenderOrder
   });
 
+  disablePreBattleControls();
+  syncSessionToEntries("attackers");
+  syncSessionToEntries("defenders");
+
   updateOddsAndMorale();
   renderRosters();
   renderHistory();
@@ -570,12 +619,17 @@ function autoResolve(): void {
   const b = activeBattle;
   const config = currentContent().config;
 
+  disablePreBattleControls();
+
   while (b.session.status === "active" && b.session.round < config.battle.maxRounds) {
     stepBattleRound(b.session, Math.random, {
       attacker: b.attackerOrder,
       defender: b.defenderOrder
     });
   }
+
+  syncSessionToEntries("attackers");
+  syncSessionToEntries("defenders");
 
   updateOddsAndMorale();
   renderRosters();
@@ -587,6 +641,11 @@ function handleBattleEnded(): void {
   if (!activeBattle) return;
   const b = activeBattle;
   b.finalOutcome = finalizeBattle(b.session, Math.random);
+
+  syncSessionToEntries("attackers");
+  syncSessionToEntries("defenders");
+  updateOddsAndMorale();
+  renderRosters();
 
   // Disable round action buttons
   ensureEl<HTMLButtonElement>("battleStepRound").disabled = true;
@@ -675,6 +734,8 @@ function applyResults(): void {
   const b = activeBattle;
   if (!b.finalOutcome) {
     b.finalOutcome = finalizeBattle(b.session, Math.random);
+    syncSessionToEntries("attackers");
+    syncSessionToEntries("defenders");
   }
 
   const outcome = b.finalOutcome;
@@ -727,22 +788,28 @@ function applyResults(): void {
   Layers.draw("markers");
 
   tip(`${b.name} concluded: ${outcome.winner === "attacker" ? "Attacker Victory" : "Defender Victory"}`, true, "success", 4000);
+  refreshEditors();
   closeBattleScreen();
 }
 
 function applyEntryResults(entry: RegimentEntry, isWinner: boolean, isAttacker: boolean, b: ActiveBattle): void {
   const reg = entry.regiment;
-  reg.units = entry.currentUnits.filter(u => u.count > 0);
+  reg.units = entry.currentUnits.map(u => ({ ...u })).filter(u => u.count > 0);
   syncRegimentTotals(reg, b.unitTypes);
 
   // If wiped out, remove regiment
   if (reg.a <= 0) {
     Military.remove(reg.state, reg.i);
-    document.querySelector(`#armies #regiment${reg.state}-${reg.i}`)?.remove();
+    document.getElementById(`regiment${reg.state}-${reg.i}`)?.remove();
     return;
   }
 
-  // Update box text
+  // Update box text on map SVG
+  const regEl = document.getElementById(`regiment${reg.state}-${reg.i}`);
+  if (regEl) {
+    const textEl = regEl.querySelector("text");
+    if (textEl) textEl.textContent = String(Military.getTotal(reg));
+  }
   select<SVGGElement, unknown>("#armies")
     .select(`g#regiment${reg.state}-${reg.i} > text`)
     .text(Military.getTotal(reg));
@@ -833,6 +900,9 @@ function openRegimentSelector(): void {
       const rId = +btn.dataset.id!;
       const reg = pack.states[sId]?.military?.find(r => r.i === rId);
       if (reg && activeBattle) {
+        reg.px ??= reg.x;
+        reg.py ??= reg.y;
+        moveRegiment(reg, activeBattle.x, activeBattle.y);
         activeBattle[side].push(createRegimentEntry(reg, activeBattle.x, activeBattle.y, activeBattle.unitTypes));
         rebuildSession();
         $("#regimentSelectorScreen").dialog("close");

@@ -9,6 +9,7 @@ import {
 } from "../engine/game/battle";
 import { resolveConfig } from "../engine/game/config";
 import type { UnitType } from "../engine/common/content";
+import { syncRegimentTotals, type Regiment } from "../../generators/military-generator";
 
 describe("Phase 3: Steppable Lanchester Battle Simulator", () => {
   const config = resolveConfig({});
@@ -227,5 +228,90 @@ describe("Phase 3: Steppable Lanchester Battle Simulator", () => {
     const odds = estimateOdds(config, strongAttacker, weakDefender, dummyModifiers, types);
     expect(odds.attackerWinPct).toBeGreaterThan(80);
     expect(odds.attackerPower).toBeGreaterThan(odds.defenderPower);
+  });
+
+  it("applies round casualties and updates regiment block totals", () => {
+    const regAttacker: Regiment = {
+      i: 1,
+      name: "1st Attackers",
+      state: 1,
+      a: 400,
+      u: { spear: 300, archers: 100 },
+      units: [
+        { type: "spear", count: 300, exp: 0 },
+        { type: "archers", count: 100, exp: 1 }
+      ],
+      cell: 10,
+      x: 100,
+      y: 100,
+      bx: 100,
+      by: 100,
+      n: 0,
+      icon: "icon"
+    };
+
+    const regDefender: Regiment = {
+      i: 2,
+      name: "1st Defenders",
+      state: 2,
+      a: 400,
+      u: { spear: 300, archers: 100 },
+      units: [
+        { type: "spear", count: 300, exp: 0 },
+        { type: "archers", count: 100, exp: 0 }
+      ],
+      cell: 10,
+      x: 100,
+      y: 100,
+      bx: 100,
+      by: 100,
+      n: 0,
+      icon: "icon"
+    };
+
+    const session = initBattleSession({
+      config,
+      unitTypes: types,
+      attacker: { factionId: 1, armyId: "fm-1-1", units: regAttacker.units! },
+      defender: { factionId: 2, armyId: "fm-2-2", units: regDefender.units! },
+      cell: 10,
+      regionId: 1,
+      assault: false,
+      modifiers: dummyModifiers
+    });
+
+    const log = stepBattleRound(session, prng, { attacker: "balanced", defender: "balanced" });
+    expect(log.round).toBe(1);
+    expect(log.attackerLossMen).toBeGreaterThan(0);
+    expect(log.defenderLossMen).toBeGreaterThan(0);
+
+    // Sync session units back to regiment unit blocks
+    for (let i = 0; i < regAttacker.units!.length; i++) {
+      regAttacker.units![i]!.count = session.attackerUnits[i]!.count;
+    }
+    syncRegimentTotals(regAttacker, types);
+
+    expect(regAttacker.a).toBe(400 - log.attackerLossMen);
+    expect(regAttacker.u.spear! + regAttacker.u.archers!).toBe(regAttacker.a);
+
+    // Wiped out regiment test
+    const wipedReg: Regiment = {
+      i: 3,
+      name: "3rd Lost",
+      state: 1,
+      a: 100,
+      u: { spear: 100 },
+      units: [{ type: "spear", count: 0, exp: 0 }],
+      cell: 10,
+      x: 100,
+      y: 100,
+      bx: 100,
+      by: 100,
+      n: 0,
+      icon: "icon"
+    };
+    syncRegimentTotals(wipedReg, types);
+    expect(wipedReg.a).toBe(0);
+    expect(Object.keys(wipedReg.u)).toHaveLength(0);
   });
 });

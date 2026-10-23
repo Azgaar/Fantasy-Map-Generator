@@ -58,7 +58,7 @@ export function getCategoryForUnit(
 }
 
 export function syncRegimentTotals(regiment: Regiment, _unitTypes?: Record<string, UnitType>): void {
-  if (regiment.units && regiment.units.length > 0) {
+  if (regiment.units) {
     const u: Record<string, number> = {};
     let total = 0;
     for (const slot of regiment.units) {
@@ -67,7 +67,7 @@ export function syncRegimentTotals(regiment: Regiment, _unitTypes?: Record<strin
         total += slot.count;
       }
     }
-    if (regiment.n && regiment.u.fleet && !u.fleet) {
+    if (regiment.n && regiment.u?.fleet && !u.fleet) {
       u.fleet = regiment.u.fleet;
       total += u.fleet;
     }
