@@ -69,8 +69,8 @@ class Resampler {
     Ice.generate();
     Measurers.createDefaultRuler();
 
-    MapRestoration.restore(snapshot, { projection, inverse, scale, rivers: "restore" });
-    pack.relief = []; // placed anew for the new scale on the first draw
+    // relief is placed anew for the new scale on the first draw
+    MapRestoration.restore(snapshot, { projection, inverse, scale, rivers: "restore", relief: false });
   }
 }
 

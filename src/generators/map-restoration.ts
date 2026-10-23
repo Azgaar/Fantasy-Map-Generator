@@ -2,13 +2,15 @@
 import { quadtree } from "d3";
 import { clipPolyline } from "lineclip";
 import type { Point } from "@/types/global";
-import type { JourneyPoint } from "@/types/Journey";
+import type { JourneyPoint, JourneySegment } from "@/types/Journey";
 import type { PackedGraph, TypedArray } from "@/types/PackedGraph";
 import { getPolesOfInaccessibility, isWater, rn } from "@/utils";
 import type { Burg } from "./burgs-generator";
 import { GraphOverride } from "./graph-override";
 import type { Label } from "./labels-generator";
 import type { Regiment } from "./military-generator";
+import { Population } from "./population-generator";
+import type { Province } from "./provinces-generator";
 import type { LockedRiver, River } from "./river-generator";
 
 type Projection = (x: number, y: number) => Point;
@@ -25,6 +27,7 @@ interface RestoreOptions {
   scale?: number; // linear scale of the projection
   rivers: "restore" | "generate"; // carry the snapshot rivers over, or generate them for the new graph around the locked ones
   previousHeights?: Uint8Array; // the grid heights the snapshot was built on, when the grid is the same
+  relief?: boolean; // carry the relief icons over, else all of them are placed anew on the first draw
 }
 
 interface CellLinks {
@@ -116,7 +119,7 @@ class MapRestorationModule {
   /** restore the snapshot data onto the current graph, already built and marked up */
   restore(
     snapshot: MapSnapshot,
-    { projection = identity, inverse = identity, scale = 1, rivers, previousHeights }: RestoreOptions
+    { projection = identity, inverse = identity, scale = 1, rivers, previousHeights, relief = true }: RestoreOptions
   ) {
     const parent = snapshot.pack;
     const links = this.linkCells(parent, inverse, snapshot.spacing * LINK_RADIUS);
@@ -126,11 +129,12 @@ class MapRestorationModule {
     else Rivers.generate(true, this.restoreLockedRivers(snapshot, links, projection, scale));
     this.restoreCells(parent, links, scale);
     const features = this.restoreFeatures(parent, links, rivers === "restore");
-    this.restoreRelief(parent, links, projection);
+    if (relief) this.restoreRelief(parent, links, projection);
+    else pack.relief = [];
     this.restoreCultures(parent, projection);
-    this.restoreBurgs(parent, projection, scale);
-    this.restoreStates(parent, projection);
-    this.restoreProvinces(parent, projection);
+    const strayed = this.restoreBurgs(parent, projection, scale);
+    this.restoreStates(parent, projection, strayed);
+    this.restoreProvinces(parent, projection, strayed);
     States.findNeighbors();
     States.collectStatistics();
     this.restoreReligions(parent, projection);
@@ -233,10 +237,10 @@ class MapRestorationModule {
     if (reached(cell)) return walk;
 
     const previous = new Map<number, number>([[cell, -1]]);
-    for (let queue = [cell]; queue.length && !reached(queue[0]); queue.shift()) {
-      for (const neighbor of c[queue[0]]) {
+    for (let queue = [cell], head = 0; head < queue.length && !reached(queue[head]); head++) {
+      for (const neighbor of c[queue[head]]) {
         if (previous.has(neighbor)) continue;
-        previous.set(neighbor, queue[0]);
+        previous.set(neighbor, queue[head]);
         queue.push(neighbor);
       }
     }
@@ -276,6 +280,11 @@ class MapRestorationModule {
     return isWater(cell, pack) ? pole() : cell;
   }
 
+  /** a culture that left the map falls back to the wildlands, as when it is removed */
+  private keptCulture(culture = 0) {
+    return pack.cultures[culture]?.removed ? 0 : culture;
+  }
+
   /** a custom label path and offset follow the projection, a default label stays default */
   private projectLabel<T extends { label?: Label }>(entity: T, projection: Projection): T {
     const { label } = entity;
@@ -294,27 +303,39 @@ class MapRestorationModule {
     return { ...entity, label: projected };
   }
 
-  /** a snapshot river on the current graph, its course found again by its anchors; none if it is not on the map */
+  /**
+   * A snapshot river on the current graph, its course found again by its anchors; none if it is not on the map.
+   * Of a course crossing the map edge the longest stretch stays
+   */
   private projectRiver(snapshot: MapSnapshot, index: number, projection: Projection, scale: number): River | null {
     const river = snapshot.pack.rivers[index];
-    const points: Point[] = [];
-    const cells: number[] = [];
-    let wasInMap = true;
-    snapshot.riverAnchors[index].forEach((anchor, k) => {
+    const stretches: [number, number, number][][] = [[]];
+    for (const [k, anchor] of snapshot.riverAnchors[index].entries()) {
       const [x, y] = projection(...anchor).map(value => rn(value, 2));
       const inMap = this.isInMap(x, y);
-      if (inMap || wasInMap) {
-        points.push([x, y]);
-        // a river leaving the map ends with -1, as when it is generated
-        const offMap = river.cells[k] === -1 || (!inMap && points.length > 1);
-        cells.push(offMap ? -1 : this.findCell(x, y));
-      }
-      wasInMap = inMap;
-    });
-    if (points.length < 2) return null;
+      const stretch = stretches.at(-1)!;
+      if (!inMap && !stretch.length) continue; // a stretch starts where the course enters the map
+      // a river leaving the map ends with -1, as when it is generated
+      const cell = river.cells[k] === -1 || !inMap ? -1 : this.findCell(x, y);
+      if (cell !== -1 && cell === stretch.at(-1)?.[2]) continue; // a coarser graph: one point per cell
+      stretch.push([x, y, cell]);
+      if (cell === -1) stretches.push([]);
+    }
+    const longest = stretches.reduce((best, stretch) => (stretch.length > best.length ? stretch : best));
+    if (longest.length < 2) return null;
+
+    // a finer graph: the cells between two anchors fill the gap, so the river cells are neighbors
+    const outlet = longest.at(-1)![2] === -1 ? longest.pop()! : null;
+    const course = longest.length > 1 ? this.fillPathGaps(longest) : longest;
+    if (outlet) course.push(outlet);
+    const points = course.map(([x, y]): Point => [x, y]);
+    const cells = course.map(([, , cell]) => cell);
 
     const widthFactor = river.widthFactor * scale;
-    const restored = { ...river, cells, points, source: cells[0], mouth: cells.at(-2)!, widthFactor };
+    const sourceWidth = river.sourceWidth && rn(river.sourceWidth * scale, 2);
+    const width = rn(river.width * scale, 2);
+    const mouth = cells.at(-2)!;
+    const restored = { ...river, cells, points, source: cells[0], mouth, widthFactor, sourceWidth, width };
     return this.projectLabel(restored, projection);
   }
 
@@ -346,22 +367,53 @@ class MapRestorationModule {
       const projected = this.projectRiver(snapshot, index, projection, scale);
       return (projected && this.cutAtSea(projected)) ?? [];
     });
-    for (const river of pack.rivers) {
-      for (const cell of river.cells) {
-        if (cell < 0 || isWater(cell, pack)) continue;
-        // a confluence keeps the flux it had, which settlement ranking reads
-        if (cells.r[cell] && cells.r[cell] !== river.i) {
-          const source = links.sameType[cell];
-          cells.conf[cell] = source === -1 ? 1 : snapshot.pack.cells.conf[source];
-        } else cells.r[cell] = river.i;
-      }
-    }
+    const claim = (cell: number, riverId: number) => {
+      if (cell < 0 || isWater(cell, pack)) return;
+      // a confluence keeps the flux it had, which settlement ranking reads
+      if (cells.r[cell] && cells.r[cell] !== riverId)
+        cells.conf[cell] = snapshot.pack.cells.conf[links.sameType[cell]] || 1;
+      else cells.r[cell] = riverId;
+    };
+    // a river's last cell is where it flows into another, not its own course
+    for (const river of pack.rivers) for (const cell of river.cells.slice(0, -1)) claim(cell, river.i);
+    for (const river of pack.rivers) claim(river.cells.at(-1)!, river.i);
 
+    const riversById = new Map(pack.rivers.map(river => [river.i, river]));
+    for (const river of pack.rivers) {
+      const parentId = this.findRiverParent(river, riversById);
+      river.parent = this.flowsInto(parentId, river.i, riversById) ? 0 : parentId; // a loop has no parent
+    }
     for (const river of pack.rivers) {
       river.parent = Rivers.getParent(river.i);
       river.basin = Rivers.getBasin(river.i);
       river.length = Rivers.getApproximateLength(Rivers.addMeandering(river.cells, river.points) as unknown as Point[]);
+      // a mouth that moved takes the new discharge and width; the width formula works at the snapshot scale
+      if (cells.fl[river.mouth] === river.discharge) continue;
+      river.discharge = cells.fl[river.mouth];
+      const unscaled = { ...river, widthFactor: river.widthFactor / scale, sourceWidth: river.sourceWidth / scale };
+      Rivers.updateWidth(unscaled);
+      river.width = rn(unscaled.width * scale, 2);
     }
+  }
+
+  /** the river a restored river flows into: none where it now reaches the sea or the map edge */
+  private findRiverParent(river: River, riversById: Map<number, River>): number {
+    const { cells, features } = pack;
+    const last = river.cells.at(-1)!;
+    if (last < 0 || features[cells.f[last]]?.type === "ocean") return 0;
+    if (isWater(last, pack)) return river.parent; // a lake keeps its outlet
+    if (riversById.get(river.parent)?.cells.includes(last)) return river.parent;
+    return cells.r[last] === river.i ? 0 : cells.r[last];
+  }
+
+  /** whether a river is reached walking down its parents from another one */
+  private flowsInto(from: number, riverId: number, riversById: Map<number, River>): boolean {
+    const seen = new Set<number>();
+    for (let id = from; id && !seen.has(id); id = riversById.get(id)?.parent ?? 0) {
+      if (id === riverId) return true;
+      seen.add(id);
+    }
+    return false;
   }
 
   /** locked rivers keep their course on the new graph, ending where it now runs into the sea */
@@ -387,7 +439,7 @@ class MapRestorationModule {
   private cutAtSea(river: River): River | null {
     const { cells, features } = pack;
     const isOcean = (cell: number) => cell >= 0 && features[cells.f[cell]]?.type === "ocean";
-    const start = river.cells.findIndex(cell => !isOcean(cell));
+    const start = river.cells.findIndex(cell => cell >= 0 && !isOcean(cell));
     if (start === -1) return null;
     const end = river.cells.findIndex((cell, k) => k > start && isOcean(cell));
     const range = [start, end === -1 ? undefined : end + 1] as const;
@@ -413,6 +465,7 @@ class MapRestorationModule {
     cells.province = new Uint16Array(n);
     cells.good = new Uint16Array(n);
 
+    const unlinked: number[] = [];
     for (let cell = 0; cell < n; cell++) {
       const source = links.sameType[cell];
       if (source !== -1) cells.good[cell] = from.good[source]; // goods sit on water too (fish)
@@ -422,6 +475,7 @@ class MapRestorationModule {
         const gridCell = cells.g[cell];
         const { prec, temp } = grid.cells;
         cells.biome[cell] = Biomes.getId(prec[gridCell], temp[gridCell], cells.h[cell], Boolean(cells.r[cell]));
+        unlinked.push(cell);
         continue;
       }
 
@@ -434,6 +488,17 @@ class MapRestorationModule {
       cells.state[cell] = from.state[source];
       cells.religion[cell] = from.religion[source];
       cells.province[cell] = from.province[source];
+    }
+    if (!unlinked.length) return;
+
+    // land far from the snapshot land is ranked as generation does
+    const { s, pop } = cells;
+    Population.rankCells();
+    const [ranked, rankedPop] = [cells.s, cells.pop];
+    [cells.s, cells.pop] = [s, pop];
+    for (const cell of unlinked) {
+      cells.s[cell] = ranked[cell];
+      cells.pop[cell] = rankedPop[cell];
     }
   }
 
@@ -533,23 +598,44 @@ class MapRestorationModule {
       );
       return { ...item, center };
     });
+    forgetRemovedOrigins(pack.cultures);
   }
 
-  /** a burg keeps its place or moves to the closest free land cell, capitals choose first. Removed if no land is left */
-  private restoreBurgs(parent: PackedGraph, projection: Projection, scale: number) {
+  /**
+   * A burg keeps its place or moves to the closest free land cell. Burgs whose place is still free land keep it first,
+   * then the others move, capitals choosing first. Removed if no land is left.
+   * Returns the burgs that moved beyond the cells next to their place
+   */
+  private restoreBurgs(parent: PackedGraph, projection: Projection, scale: number): Set<number> {
     const { cells } = pack;
-    const findLandCell = createAvailableLandCellFinder(cells);
     const living = parent.burgs.filter(burg => burg.i && !burg.removed);
     const byCapitalsFirst = [...living.filter(burg => burg.capital), ...living.filter(burg => !burg.capital)];
     const placed = new Map<number, number>(); // burg -> cell
+    const taken = new Set<number>();
+    const displaced: [number, number, number][] = []; // [x, y, burg]
     for (const burg of byCapitalsFirst) {
       const [x, y] = projection(burg.x, burg.y).map(value => rn(value, 2));
       // a port can lie just off the map edge: its cell decides whether the burg is still on the map
       const home = this.projectPoint(parent, burg.cell, projection) ?? [x, y];
-      const cell = this.isInMap(...home) ? findLandCell(x, y) : undefined;
-      if (cell !== undefined) placed.set(burg.i, cell);
+      if (!this.isInMap(...home)) continue;
+      const under = this.findCell(x, y);
+      if (cells.h[under] < 20 || taken.has(under)) {
+        displaced.push([x, y, burg.i]);
+        continue;
+      }
+      placed.set(burg.i, under);
+      taken.add(under);
+    }
+    const findLandCell = createAvailableLandCellFinder({
+      h: cells.h.map((height, cell) => (taken.has(cell) ? 0 : height)),
+      p: cells.p
+    });
+    for (const [x, y, burgId] of displaced) {
+      const cell = findLandCell(x, y);
+      if (cell !== undefined) placed.set(burgId, cell);
     }
 
+    const strayed = new Set<number>();
     pack.burgs = parent.burgs.map(burg => {
       if (!burg.i || burg.removed) return burg;
       const cell = placed.get(burg.i);
@@ -561,15 +647,19 @@ class MapRestorationModule {
       cells.burg[cell] = burg.i;
       const [x, y] = projection(burg.x, burg.y).map(value => rn(value, 2));
       const haven = cells.haven[cell];
-      const moved = this.findCell(x, y) !== cell;
-      const [bx, by] = !moved ? [x, y] : burg.port && haven ? this.getEdgePoint(cell, haven) : cells.p[cell];
-      const port = burg.port ? Burgs.getPortWater(cell) : burg.port;
-      const population = burg.population! * scale;
-      const restored = { ...burg, cell, x: bx, y: by, feature: cells.f[cell], port, population };
+      const under = this.findCell(x, y);
+      const moved = under !== cell;
+      if (moved && !cells.c[under].includes(cell)) strayed.add(burg.i);
+      const port = burg.port ? Burgs.getPortWater(cell) : 0;
+      const [bx, by] = !moved ? [x, y] : port && haven ? this.getEdgePoint(cell, haven) : cells.p[cell];
+      const population = rn(burg.population! * scale, 4);
+      const culture = this.keptCulture(burg.culture);
+      const restored = { ...burg, cell, x: bx, y: by, feature: cells.f[cell], port, population, culture };
       // a custom layout no longer fits a burg that moved, as when it is moved by hand
       if (moved && burg.label) return { ...restored, label: { ...burg.label, dx: 0, dy: 0, pathPoints: undefined } };
       return this.projectLabel(restored, projection);
     });
+    return strayed;
   }
 
   private getEdgePoint(cell: number, neighbor: number): Point {
@@ -581,24 +671,51 @@ class MapRestorationModule {
     return [rn(x0 + 0.95 * ((x1 + x2) / 2 - x0), 2), rn(y0 + 0.95 * ((y1 + y2) / 2 - y0), 2)];
   }
 
-  private restoreStates(parent: PackedGraph, projection: Projection) {
+  private restoreStates(parent: PackedGraph, projection: Projection, strayed: Set<number>) {
     const { cells, burgs } = pack;
+    for (const state of parent.states) {
+      if (!state.i || state.removed) continue;
+      const capital = burgs[state.capital];
+      if (!capital?.i || capital.removed || strayed.has(capital.i) || cells.state[capital.cell] === state.i) continue;
+      // a shifted border does not take a capital from its state: the cell returns to it and to the capital's province
+      const province = parent.cells.province[parent.burgs[state.capital].cell];
+      const ownProvince = parent.provinces[province];
+      cells.state[capital.cell] = state.i;
+      cells.province[capital.cell] =
+        ownProvince && !ownProvince.removed && ownProvince.state === state.i ? province : 0;
+    }
+
     const present = new Set(cells.state);
+    const removed: number[] = [];
     pack.states = parent.states.map(state => {
       if (!state.i || state.removed) return state;
-      if (!present.has(state.i)) return { ...state, removed: true, lock: false };
-      return this.projectLabel(state, projection);
+      if (present.has(state.i))
+        return this.projectLabel({ ...state, culture: this.keptCulture(state.culture) }, projection);
+      removed.push(state.i);
+      return { ...state, removed: true, lock: false };
     });
+    States.pruneTariffs({ states: removed });
+
+    // a burg belongs to the state whose land it is on; a capital moved off its state's land turns ordinary
+    for (const burg of burgs) {
+      if (!burg.i || burg.removed) continue;
+      const state = cells.state[burg.cell];
+      if (burg.capital && state !== burg.state) {
+        burg.capital = 0;
+        Burgs.changeGroup(burg);
+      }
+      burg.state = state;
+    }
 
     States.getPoles();
 
     for (const state of pack.states) {
       if (!state.i || state.removed) continue;
       const capital = burgs[state.capital];
-      if (!capital?.i || capital.removed) {
-        // the capital left the map: the most populous burg on the state's land takes over
+      if (!capital?.i || capital.removed || !capital.capital) {
+        // the capital is lost: the most populous burg on the state's land takes over
         state.capital = 0;
-        const successor = this.findMostPopulous(burg => burg.state === state.i && cells.state[burg.cell] === state.i);
+        const successor = this.findMostPopulous(burg => burg.state === state.i);
         if (successor) Burgs.setCapital(successor.i);
       }
       state.center = state.capital
@@ -625,8 +742,19 @@ class MapRestorationModule {
     return candidates.sort((a, b) => (b.population ?? 0) - (a.population ?? 0))[0];
   }
 
-  private restoreProvinces(parent: PackedGraph, projection: Projection) {
+  private restoreProvinces(parent: PackedGraph, projection: Projection, strayed: Set<number>) {
     const { cells, burgs, states } = pack;
+    const keepsCapital = (province: Province) => {
+      const capital = burgs[province.burg];
+      if (!capital?.i || capital.removed || cells.state[capital.cell] !== province.state) return false;
+      return !strayed.has(capital.i) || cells.province[capital.cell] === province.i;
+    };
+    // a shifted border does not take a capital from its province, a capital that strayed off it is lost
+    for (const province of parent.provinces) {
+      if (province.i && !province.removed && keepsCapital(province))
+        cells.province[burgs[province.burg].cell] = province.i;
+    }
+
     const present = new Set(cells.province);
     pack.provinces = parent.provinces.map(province => {
       if (!province.i || province.removed) return province;
@@ -638,16 +766,20 @@ class MapRestorationModule {
 
     Provinces.getPoles();
 
+    const capitals = new Set(pack.provinces.filter(p => p.i && !p.removed && keepsCapital(p)).map(p => p.burg));
     for (const province of pack.provinces) {
       if (!province.i || province.removed) continue;
-      const capital = burgs[province.burg];
-      if (capital?.i && !capital.removed) {
-        province.center = capital.cell;
+      if (keepsCapital(province)) {
+        province.center = burgs[province.burg].cell;
         continue;
       }
-      const successor = this.findMostPopulous(burg => cells.province[burg.cell] === province.i);
+      // a province that had a capital takes the most populous burg left on its land
+      const successor =
+        province.burg &&
+        this.findMostPopulous(burg => cells.province[burg.cell] === province.i && !capitals.has(burg.i));
       if (successor) {
         Provinces.setCapital(province.i, successor.i);
+        capitals.add(successor.i);
         continue;
       }
       province.center = this.keepCenter(parent, projection, province.center, cells.province, province.i, province.pole);
@@ -665,8 +797,9 @@ class MapRestorationModule {
       const center = this.findOrigin(parent, projection, item.center, () =>
         this.findPoleCell(religion, item.i, poles[item.i])
       );
-      return { ...item, center };
+      return { ...item, center, culture: this.keptCulture(item.culture) };
     });
+    forgetRemovedOrigins(pack.religions);
   }
 
   /** a point cut at the map edge takes the cell under it */
@@ -678,9 +811,10 @@ class MapRestorationModule {
     const bbox: [number, number, number, number] = [-margin, -margin, width + margin, height + margin];
     const routes = parent.routes.map(route => {
       const projected = route.points.map(([x, y, cell]) => [...projection(x, y), cell]);
-      // lineclip keeps the inner points as given and adds [x, y] points where the line is cut
-      const [clipped] = clipPolyline(projected as Point[], bbox) as unknown as number[][][];
-      if (!clipped || clipped.length < 2) return null;
+      // lineclip keeps the inner points as given and adds [x, y] points where the line is cut; of the parts the longest stays
+      const parts = clipPolyline(projected as Point[], bbox) as unknown as number[][][];
+      const clipped = parts.reduce((longest, part) => (part.length > longest.length ? part : longest), []);
+      if (clipped.length < 2) return null;
       const points = this.fillPathGaps(
         clipped.map(([x, y, cell]): [number, number, number] => {
           const [px, py] = [rn(x, 2), rn(y, 2)];
@@ -694,7 +828,8 @@ class MapRestorationModule {
       const wasWater = !parent.features[route.feature]?.land;
       const firstCell = points.find(([, , cell]) => isWater(cell, pack) === wasWater)?.[2] ?? points[0][2];
       const feature = featureIds.get(route.feature) ?? cells.f[firstCell];
-      return this.projectLabel({ ...route, feature, points }, projection);
+      const routeCells = route.cells && { cells: points.map(([, , cell]) => cell) };
+      return this.projectLabel({ ...route, feature, points, ...routeCells }, projection);
     });
     pack.routes = routes.filter(route => route !== null);
     cells.routes = Routes.buildLinks(pack.routes);
@@ -729,33 +864,46 @@ class MapRestorationModule {
 
   private restoreJourneys(parent: PackedGraph, projection: Projection) {
     let dropped = 0;
+    const restoreSegment = (segment: JourneySegment): JourneySegment | null => {
+      let points: JourneyPoint[] = [];
+      for (const [parentX, parentY, cell] of segment.points) {
+        const [x, y] = projection(parentX, parentY).map(value => rn(value, 2));
+        // a clipped path can't stay valid cell-by-cell, so a segment leaving the map goes whole
+        if (!this.isInMap(x, y)) return null;
+        points.push([x, y, this.findPathCell(parent, projection, cell, x, y)]);
+      }
+      if (!points.length) return null;
+      points = this.fillPathGaps(points);
+      const from = segment.from === undefined ? undefined : points[0][2];
+      const to = segment.to === undefined ? undefined : points.at(-1)![2];
+      return { ...segment, points, from, to, distance: Journeys.getPathLength(points) };
+    };
+
     const journeys = (parent.journeys ?? []).map(journey => {
-      const segments = journey.segments.flatMap(segment => {
-        let points: JourneyPoint[] = [];
-        for (const [parentX, parentY, cell] of segment.points) {
-          const [x, y] = projection(parentX, parentY).map(value => rn(value, 2));
-          // a clipped path can't stay valid cell-by-cell, so a segment leaving the map goes whole
-          if (!this.isInMap(x, y)) return [];
-          points.push([x, y, this.findPathCell(parent, projection, cell, x, y)]);
-        }
-        if (!points.length) return [];
-        points = this.fillPathGaps(points);
-        const from = segment.from === undefined ? undefined : points[0][2];
-        const to = segment.to === undefined ? undefined : points.at(-1)![2];
-        return [{ ...segment, points, from, to, distance: Journeys.getPathLength(points) }];
-      });
+      // each segment starts where the previous one ends: of the runs left on the map the longest stays
+      const runs: JourneySegment[][] = [[]];
+      for (const segment of journey.segments) {
+        const restored = restoreSegment(segment);
+        if (restored) runs.at(-1)!.push(restored);
+        else if (runs.at(-1)!.length) runs.push([]);
+      }
+      const segments = runs.reduce((longest, run) => (run.length > longest.length ? run : longest));
       dropped += journey.segments.length - segments.length;
       return segments.length ? { ...journey, segments } : null;
     });
     pack.journeys = journeys.filter(journey => journey !== null);
 
-    if (dropped) WARN && console.warn(`Map restoration: dropped ${dropped} journey segment(s) outside the map`);
+    if (dropped)
+      WARN && console.warn(`Map restoration: dropped ${dropped} journey segment(s) off or cut off by the map edge`);
   }
 
+  /** a label stays while its point or path is on the map */
   private restoreAddedLabels(parent: PackedGraph, projection: Projection) {
-    pack.addedLabels = (parent.addedLabels ?? []).map(addedLabel => {
+    pack.addedLabels = (parent.addedLabels ?? []).flatMap(addedLabel => {
       const [x, y] = projection(addedLabel.x, addedLabel.y).map(value => rn(value, 2));
-      return this.projectLabel({ ...addedLabel, x, y }, projection);
+      const restored = this.projectLabel({ ...addedLabel, x, y }, projection);
+      const onMap = this.isInMap(x, y) || restored.label.pathPoints?.some(point => this.isInMap(...point));
+      return onMap ? [restored] : [];
     });
   }
 
@@ -764,20 +912,36 @@ class MapRestorationModule {
     pack.goods = parent.goods;
     pack.markets = (parent.markets ?? []).filter(market => {
       const burg = pack.burgs[market.centerBurgId];
-      return Boolean(burg && !burg.removed);
+      return Boolean(burg?.i && !burg.removed);
     });
 
-    if (pack.goods?.length) {
-      // a rerun adds a round of income: the burgs keep the balance they had
-      const treasuries = new Map(pack.burgs.map(burg => [burg, burg?.treasury]));
-      Production.regenerateEconomy();
-      for (const [burg, treasury] of treasuries) if (burg?.i) burg.treasury = treasury;
+    if (!pack.goods?.length) {
+      Goods.generate();
+      Markets.generate();
+      Production.produce();
+      States.collectTaxes();
       return;
     }
-    Goods.generate();
-    Markets.generate();
-    Production.produce();
-    States.collectTaxes();
+
+    // a rerun adds a round of income: the burgs keep the balance they had
+    const treasuries = new Map(pack.burgs.map(burg => [burg, burg?.treasury]));
+    if (pack.markets.length || !parent.markets?.length) Production.regenerateEconomy();
+    else {
+      // every market center left the map
+      Goods.sync();
+      Markets.regenerate();
+      Production.regenerate();
+    }
+    for (const [burg, treasury] of treasuries) if (burg?.i) burg.treasury = treasury;
+  }
+}
+
+/** origins that left the map are forgotten, as when they are removed */
+function forgetRemovedOrigins(items: { i: number; removed?: boolean; origins?: (number | null)[] | null }[]) {
+  for (const item of items) {
+    if (!item.i || item.removed || !item.origins) continue;
+    item.origins = item.origins.filter(origin => !items[origin ?? 0]?.removed);
+    if (!item.origins.length) item.origins = [0];
   }
 }
 
