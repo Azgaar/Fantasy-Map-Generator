@@ -172,7 +172,8 @@ describe("Risk heightmap edit", () => {
 
     const kept = pack.rivers.find(r => r.i === river.i)!;
     expect(kept).toMatchObject({ name: river.name, lock: true });
-    expect(kept.points).toEqual(points.slice(0, kept.points!.length));
+    const keptPoints = Rivers.getRiverPoints(kept.cells, kept.points ?? null);
+    expect(keptPoints).toEqual(points.slice(0, keptPoints.length));
   });
 
   it("leaves the map as it was when the restore fails", async () => {
@@ -195,6 +196,13 @@ describe("Submap and Transform", () => {
   type Projection = (x: number, y: number) => [number, number];
   const resample = (projection: Projection, inverse: Projection, scale: number) =>
     MapRestoration.transaction(() => Resample.process({ projection, inverse, scale }));
+  /** a turn around the map center */
+  const turn =
+    (angle: number): Projection =>
+    (x, y) => {
+      const [cos, sin, cx, cy] = [Math.cos(angle), Math.sin(angle), width / 2, height / 2];
+      return [cx + (x - cx) * cos - (y - cy) * sin, cy + (x - cx) * sin + (y - cy) * cos];
+    };
 
   it("a ×2 submap keeps the map sound", async () => {
     await generateMap({ seed: "restoration-submap" });
@@ -230,13 +238,7 @@ describe("Submap and Transform", () => {
   it("a rotated transform keeps route and journey paths continuous", async () => {
     await generateMap({ seed: "restoration-rotation" });
     const before = violations();
-    const [cos, sin] = [Math.cos(Math.PI / 6), Math.sin(Math.PI / 6)];
-    const [cx, cy] = [width / 2, height / 2];
-    const turn =
-      (angle: number): Projection =>
-      (x, y) => [cx + (x - cx) * cos - angle * (y - cy) * sin, cy + angle * (x - cx) * sin + (y - cy) * cos];
-
-    resample(turn(1), turn(-1), 1);
+    resample(turn(Math.PI / 6), turn(-Math.PI / 6), 1);
 
     expect(newViolations(before)).toEqual([]);
     expect(violations().has("route-steps")).toBe(false);
@@ -274,6 +276,43 @@ describe("Submap and Transform", () => {
     }
     expect(violations().has("state-capitals")).toBe(false);
   }, 15000);
+
+  it("a submap founds a capital for a state left with land but no burg", async () => {
+    await generateMap({ seed: "restoration-founded-capital" });
+    const before = violations();
+    const firstNewBurg = pack.burgs.length;
+    const [x0, y0, scale] = [420, 230, 8];
+
+    resample(
+      (x, y) => [(x - x0) * scale, (y - y0) * scale],
+      (x, y) => [x / scale + x0, y / scale + y0],
+      scale
+    );
+
+    expect(newViolations(before)).toEqual([]);
+    const founded = living(pack.states).filter(state => state.capital >= firstNewBurg);
+    expect(founded.length).toBeGreaterThan(0); // the region was chosen so a state keeps no burg
+    for (const state of living(pack.states)) {
+      const capital = pack.burgs[state.capital];
+      expect(capital).toMatchObject({ capital: 1, state: state.i, cell: state.center });
+      expect(pack.cells.state[capital.cell]).toBe(state.i);
+    }
+  }, 15000);
+
+  for (const [name, projection, inverse, scale] of [
+    ["a ×2 submap", (x, y) => [(x - 240) * 2, (y - 135) * 2], (x, y) => [x / 2 + 240, y / 2 + 135], 2],
+    ["a rotation", turn(Math.PI / 6), turn(-Math.PI / 6), 1]
+  ] as [string, Projection, Projection, number][]) {
+    it(`a Risk edit that changes no height after ${name} keeps the map as it was`, async () => {
+      await generateMap({ seed: "restoration-fixed-point" });
+      resample(projection, inverse, scale);
+      const before = fingerprint();
+
+      riskEdit(() => {}, false);
+
+      expect(fingerprint()).toEqual(before); // a restore of a restored map changes nothing
+    }, 15000);
+  }
 
   it("leaves the map as it was when resampling fails", async () => {
     await generateMap({ seed: "restoration-resample-rollback" });

@@ -218,14 +218,15 @@ and each one is a site that can silently fall behind when a generation step is a
 - **Burgs** keep their place or move to the nearest free land cell, capitals first; a burg is removed
   only when no land is left for it. Feature and port water are found again.
 - **Centers**: states and provinces center on their capital. One whose capital left the map takes its
-  most populous burg as the new capital; one with no burg left keeps its center while it is its own,
-  else moves to its pole. Cultures and religions
+  most populous burg as the new capital. A state with no burg left founds one at its center; a province
+  with none keeps its center while it is its own, else moves to its pole. Cultures and religions
   keep their origin while it is land on the map. An entity left without cells is removed.
 - **Paths**: route and journey points keep the cell they were routed through while it is under or next
   to the point, else they take the cell under it. Where two consecutive cells are no longer neighbors,
-  the cells between are filled in, on the line the path is drawn along. Rivers keep their anchors, and
-  start and end where their course leaves and reaches the sea, so a river whose land sank ends at the new
-  coast; one with no land left is dropped. With `rivers: "generate"`
+  the cells between are filled in, on the line the path is drawn along where it crosses them. Rivers keep
+  their anchors and pass each cell once. They start and end where their course leaves and reaches the sea,
+  so a river whose land sank ends at the new coast; one with no land left is dropped. A river ends with -1
+  only off the map: an old outlet the map now shows becomes its last cell. With `rivers: "generate"`
   they are generated for the new graph around the locked ones, which keep their course up to where it
   now runs into the sea; each generated river takes the name, type, note, tags and label of the matched
   old river.

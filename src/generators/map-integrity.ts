@@ -18,6 +18,8 @@ const RULES = [
   "river-ends", // source and mouth are cells
   "river-parent", // the parent is a river
   "river-sea", // the course does not cross the sea before its end
+  "river-unique", // the course does not come back to a cell it left
+  "river-outlet", // -1 only ends a course, at a point on the map edge or off it
   "route-points", // a point's cell is under it or next to it
   "route-steps", // consecutive cells are neighbors
   "route-links", // cells.routes links cells along existing routes
@@ -89,6 +91,8 @@ class MapIntegrityModule {
     const living = <T extends { i: number; removed?: boolean }>(list: T[] = []) => list.filter(e => e.i && !e.removed);
     const alive = (list: { i: number; removed?: boolean }[], id: number) => Boolean(list[id]?.i && !list[id].removed);
     const isOcean = (cell: number) => valid(cell) && features[cells.f[cell]]?.type === "ocean";
+    const { width, height } = options.map.graph;
+    const inside = (x: number, y: number) => x > 0 && x < width && y > 0 && y < height;
 
     const riverIds = new Set(pack.rivers.map(river => river.i));
     for (const river of pack.rivers) {
@@ -100,6 +104,12 @@ class MapIntegrityModule {
       if (!valid(river.source) || !(valid(river.mouth) || river.mouth === -1)) fail("river-ends", river.i);
       if (river.parent && !riverIds.has(river.parent)) fail("river-parent", river.i);
       if (river.cells.slice(0, -1).some(isOcean)) fail("river-sea", river.i);
+      // generation can pour a river into a lake cell twice in a row: not a loop
+      const course = river.cells.filter((cell, k) => cell !== -1 && cell !== river.cells[k - 1]);
+      if (new Set(course).size !== course.length) fail("river-unique", river.i);
+      const outlet = river.cells.indexOf(-1);
+      const end = river.points?.at(-1);
+      if (outlet !== -1 && (outlet < river.cells.length - 1 || (end && inside(...end)))) fail("river-outlet", river.i);
     }
 
     const routeIds = new Set(pack.routes.map(route => route.i));

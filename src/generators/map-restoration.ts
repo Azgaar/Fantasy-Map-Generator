@@ -131,6 +131,7 @@ class MapRestorationModule {
     const features = this.restoreFeatures(parent, links, rivers === "restore");
     if (relief) this.restoreRelief(parent, links, projection);
     else pack.relief = [];
+    this.restoreRoutes(parent, projection, features); // before the states: a new capital connects to the roads
     this.restoreCultures(parent, projection);
     const strayed = this.restoreBurgs(parent, projection, scale);
     this.restoreStates(parent, projection, strayed);
@@ -138,7 +139,6 @@ class MapRestorationModule {
     States.findNeighbors();
     States.collectStatistics();
     this.restoreReligions(parent, projection);
-    this.restoreRoutes(parent, projection, features);
     this.restoreMarkers(parent, projection);
     this.restoreZones(parent, links);
     this.restoreJourneys(parent, projection);
@@ -177,6 +177,11 @@ class MapRestorationModule {
     return x >= 0 && x <= options.map.graph.width && y >= 0 && y <= options.map.graph.height;
   }
 
+  /** on the map and off its edge */
+  private isInside(x: number, y: number) {
+    return x > 0 && x < options.map.graph.width && y > 0 && y < options.map.graph.height;
+  }
+
   private findCell(x: number, y: number): number {
     return Pack.findCell(x, y, Infinity)!;
   }
@@ -198,10 +203,10 @@ class MapRestorationModule {
   /**
    * Consecutive path cells must be neighbors, for the links and pathfinding along them. A gap left by the new graph
    * is filled with the cells a walk toward the next cell crosses, each placed on the line between the two points where
-   * that line passes it, so the path is drawn as before
+   * that line crosses it, so the path is drawn as before, else at its center
    */
   private fillPathGaps(points: [number, number, number][]): [number, number, number][] {
-    const { c, p } = pack.cells;
+    const { p } = pack.cells;
     const filled = [points[0]];
     for (let k = 1; k < points.length; k++) {
       const [x0, y0, from] = points[k - 1];
@@ -212,8 +217,7 @@ class MapRestorationModule {
         // where the cell is nearest the line, never back along it
         t = Math.max(t, Math.min(1, ((p[cell][0] - x0) * dx + (p[cell][1] - y0) * dy) / (dx * dx + dy * dy || 1)));
         const [x, y] = [rn(x0 + t * dx, 2), rn(y0 + t * dy, 2)];
-        const under = this.findCell(x, y);
-        filled.push(under === cell || c[cell].includes(under) ? [x, y, cell] : [...p[cell], cell]);
+        filled.push(this.findCell(x, y) === cell ? [x, y, cell] : [...p[cell], cell]);
       }
       filled.push(points[k]);
     }
@@ -315,8 +319,9 @@ class MapRestorationModule {
       const inMap = this.isInMap(x, y);
       const stretch = stretches.at(-1)!;
       if (!inMap && !stretch.length) continue; // a stretch starts where the course enters the map
-      // a river leaving the map ends with -1, as when it is generated
-      const cell = river.cells[k] === -1 || !inMap ? -1 : this.findCell(x, y);
+      // a river leaving the map ends with -1, as when it is generated; an outlet the map now shows ends at its cell
+      const leaves = !inMap || (river.cells[k] === -1 && !this.isInside(x, y));
+      const cell = leaves ? -1 : this.findCell(x, y);
       if (cell !== -1 && cell === stretch.at(-1)?.[2]) continue; // a coarser graph: one point per cell
       stretch.push([x, y, cell]);
       if (cell === -1) stretches.push([]);
@@ -326,15 +331,23 @@ class MapRestorationModule {
 
     // a finer graph: the cells between two anchors fill the gap, so the river cells are neighbors
     const outlet = longest.at(-1)![2] === -1 ? longest.pop()! : null;
-    const course = longest.length > 1 ? this.fillPathGaps(longest) : longest;
-    if (outlet) course.push(outlet);
-    const points = course.map(([x, y]): Point => [x, y]);
+    const filled = longest.length > 1 ? this.fillPathGaps(longest) : longest;
+    if (outlet) filled.push(outlet);
+    const course = cutLoops(filled);
+    if (course.length < 2) return null;
+    const { p } = pack.cells;
+    // a course through the cell centers keeps no points, as when it is generated
+    const centered =
+      !river.points && course.every(([x, y, cell]) => cell === -1 || (x === p[cell][0] && y === p[cell][1]));
+    const points = centered ? river.points : course.map(([x, y]): Point => [x, y]);
     const cells = course.map(([, , cell]) => cell);
 
     const widthFactor = river.widthFactor * scale;
     const sourceWidth = river.sourceWidth && rn(river.sourceWidth * scale, 2);
     const width = rn(river.width * scale, 2);
-    const mouth = cells.at(-2)!;
+    // a drawn river ending on land is its own mouth there
+    const endsOnOwnCell = river.mouth === river.cells.at(-1) && cells.at(-1) !== -1;
+    const mouth = endsOnOwnCell ? cells.at(-1)! : cells.at(-2)!;
     const restored = { ...river, cells, points, source: cells[0], mouth, widthFactor, sourceWidth, width };
     return this.projectLabel(restored, projection);
   }
@@ -369,18 +382,22 @@ class MapRestorationModule {
     });
     const claim = (cell: number, riverId: number) => {
       if (cell < 0 || isWater(cell, pack)) return;
-      // a confluence keeps the flux it had, which settlement ranking reads
-      if (cells.r[cell] && cells.r[cell] !== riverId)
-        cells.conf[cell] = snapshot.pack.cells.conf[links.sameType[cell]] || 1;
-      else cells.r[cell] = riverId;
+      if (!cells.r[cell]) cells.r[cell] = riverId;
+      else if (cells.r[cell] !== riverId) {
+        // a confluence keeps the flux it had, which settlement ranking reads, and its river while it still meets there
+        const old = links.sameType[cell];
+        cells.conf[cell] = snapshot.pack.cells.conf[old] || 1;
+        if (snapshot.pack.cells.r[old] === riverId) cells.r[cell] = riverId;
+      }
     };
     // a river's last cell is where it flows into another, not its own course
     for (const river of pack.rivers) for (const cell of river.cells.slice(0, -1)) claim(cell, river.i);
+    const through = cells.r.slice(); // the river flowing through each cell
     for (const river of pack.rivers) claim(river.cells.at(-1)!, river.i);
 
     const riversById = new Map(pack.rivers.map(river => [river.i, river]));
     for (const river of pack.rivers) {
-      const parentId = this.findRiverParent(river, riversById);
+      const parentId = this.findRiverParent(river, riversById, through);
       river.parent = this.flowsInto(parentId, river.i, riversById) ? 0 : parentId; // a loop has no parent
     }
     for (const river of pack.rivers) {
@@ -397,13 +414,13 @@ class MapRestorationModule {
   }
 
   /** the river a restored river flows into: none where it now reaches the sea or the map edge */
-  private findRiverParent(river: River, riversById: Map<number, River>): number {
+  private findRiverParent(river: River, riversById: Map<number, River>, through: Uint16Array): number {
     const { cells, features } = pack;
     const last = river.cells.at(-1)!;
     if (last < 0 || features[cells.f[last]]?.type === "ocean") return 0;
     if (isWater(last, pack)) return river.parent; // a lake keeps its outlet
     if (riversById.get(river.parent)?.cells.includes(last)) return river.parent;
-    return cells.r[last] === river.i ? 0 : cells.r[last];
+    return through[last] === river.i ? 0 : through[last];
   }
 
   /** whether a river is reached walking down its parents from another one */
@@ -446,7 +463,9 @@ class MapRestorationModule {
     const riverCells = river.cells.slice(...range);
     if (riverCells.length < 2 || !riverCells.some(cell => cell >= 0 && !isWater(cell, pack))) return null;
     const points = river.points?.slice(...range);
-    return { ...river, cells: riverCells, points, source: riverCells[0], mouth: riverCells.at(-2)! };
+    // a river cut where it reaches the sea flows into it, else it keeps its mouth
+    const mouth = end === -1 || end === river.cells.length - 1 ? river.mouth : riverCells.at(-2)!;
+    return { ...river, cells: riverCells, points, source: riverCells[0], mouth };
   }
 
   private restoreCells(parent: PackedGraph, links: CellLinks, scale: number) {
@@ -650,7 +669,7 @@ class MapRestorationModule {
       const under = this.findCell(x, y);
       const moved = under !== cell;
       if (moved && !cells.c[under].includes(cell)) strayed.add(burg.i);
-      const port = burg.port ? Burgs.getPortWater(cell) : 0;
+      const port = burg.port && Burgs.getPortWater(cell);
       const [bx, by] = !moved ? [x, y] : port && haven ? this.getEdgePoint(cell, haven) : cells.p[cell];
       const population = rn(burg.population! * scale, 4);
       const culture = this.keptCulture(burg.culture);
@@ -713,14 +732,13 @@ class MapRestorationModule {
       if (!state.i || state.removed) continue;
       const capital = burgs[state.capital];
       if (!capital?.i || capital.removed || !capital.capital) {
-        // the capital is lost: the most populous burg on the state's land takes over
+        // the capital is lost: the most populous burg on the state's land takes over, else one is founded at its center
         state.capital = 0;
-        const successor = this.findMostPopulous(burg => burg.state === state.i);
-        if (successor) Burgs.setCapital(successor.i);
+        const successor = this.findMostPopulous(burg => burg.state === state.i)?.i;
+        const center = () => this.keepCenter(parent, projection, state.center, cells.state, state.i, state.pole);
+        Burgs.setCapital(successor ?? Burgs.add(...cells.p[center()]));
       }
-      state.center = state.capital
-        ? burgs[state.capital].cell
-        : this.keepCenter(parent, projection, state.center, cells.state, state.i, state.pole);
+      state.center = burgs[state.capital].cell;
 
       const restoreRegiment = (regiment: Regiment): Regiment => {
         const [x, y] = projection(regiment.x, regiment.y);
@@ -934,6 +952,20 @@ class MapRestorationModule {
     }
     for (const [burg, treasury] of treasuries) if (burg?.i) burg.treasury = treasury;
   }
+}
+
+/** a course back on a cell it passed goes on from its first pass there, so it passes each cell once */
+function cutLoops(course: [number, number, number][]): [number, number, number][] {
+  const cut: [number, number, number][] = [];
+  const indexOf = new Map<number, number>(); // cell -> index in the cut course
+  for (const point of course) {
+    const index = indexOf.get(point[2]);
+    if (index === undefined) {
+      indexOf.set(point[2], cut.length);
+      cut.push(point);
+    } else for (const [, , cell] of cut.splice(index + 1)) indexOf.delete(cell);
+  }
+  return cut;
 }
 
 /** origins that left the map are forgotten, as when they are removed */

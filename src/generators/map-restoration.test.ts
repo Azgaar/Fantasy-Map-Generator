@@ -77,46 +77,81 @@ describe("restoreRivers", () => {
   beforeEach(() => {
     vi.stubGlobal("Pack", { findCell: findOnLine });
     vi.stubGlobal("Rivers", {
-      getParent: (i: number) => i,
+      getParent: (i: number) => pack.rivers.find(river => river.i === i)?.parent || i,
       getBasin: (i: number) => i,
       getApproximateLength: () => 1,
-      addMeandering: () => []
+      addMeandering: () => [],
+      updateWidth: (river: { width: number }) => {
+        river.width = 1;
+      }
     });
   });
 
-  it("finds the cells again by position, keeps the flow off the map edge and takes the flux under the cells", () => {
-    // cell 3 is a lake: a river crossing it goes on
-    const cells = { ...lineCells([30, 30, 30, 10]), f: [1, 1, 1, 2] };
-    vi.stubGlobal("pack", graph({ cells, features: [0, { type: "island" }, { type: "lake" }] }));
+  // cells 0-3 on a line, cell 3 a lake: a river crossing it goes on. Cell 4 lies above cell 1, next to it only
+  const junction = (oldOwner: number) => {
+    const p = [...lineCells([0, 0, 0, 0]).p, [10, 10]];
+    const nearest = (x: number, y: number) =>
+      p.reduce(
+        (best, [px, py], cell) =>
+          Math.hypot(px - x, py - y) < Math.hypot(p[best][0] - x, p[best][1] - y) ? cell : best,
+        0
+      );
+    vi.stubGlobal("Pack", { findCell: nearest });
+    const cells = {
+      i: [0, 1, 2, 3, 4],
+      p,
+      c: [[1], [0, 2, 4], [1, 3], [2], [1]],
+      h: Uint8Array.from([30, 30, 30, 10, 30])
+    };
+    vi.stubGlobal(
+      "pack",
+      graph({ cells: { ...cells, f: [1, 1, 1, 2, 1] }, features: [0, { type: "island" }, { type: "lake" }] })
+    );
     const parent = graph({
-      cells: { fl: [0, 5, 6, 7, 8], conf: [0, 0, 300, 0, 0] },
+      cells: { fl: [0, 5, 6, 7, 8, 9], conf: [0, 0, 300, 0, 0, 0], r: [0, 1, oldOwner, 0, 0, 2] },
       rivers: [
         { i: 1, cells: [91, 92, 93, -1], widthFactor: 1 },
-        { i: 2, cells: [94, 95], widthFactor: 1 }
+        { i: 2, cells: [94, 92], widthFactor: 1, parent: 1 }
       ]
     });
     const riverAnchors: [number, number][][] = [
       [
-        [0, 0],
-        [10, 0],
-        [30, 0],
-        [1000, 0]
+        [0, 2],
+        [10, 2],
+        [30, 2],
+        [1000, 2]
       ],
       [
-        [10, 0],
-        [20, 0]
+        [10, 10],
+        [10, 0]
       ]
     ];
+    internals.restoreRivers({ pack: parent, spacing: 10, riverAnchors }, links([1, 2, 3, 4, 5]), identity, 2);
+  };
 
-    internals.restoreRivers({ pack: parent, spacing: 10, riverAnchors }, links([1, 2, 3, 4]), identity, 2);
+  it("finds the cells again by position, keeps the flow off the map edge and takes the flux under the cells", () => {
+    junction(1);
 
     const [first, second] = pack.rivers;
-    expect(first).toMatchObject({ cells: [0, 1, 3, -1], source: 0, mouth: 3, widthFactor: 2 });
-    expect(first.points).toEqual(riverAnchors[0]);
-    expect(Array.from(pack.cells.r)).toEqual([1, 1, 2, 0]); // the water cell gets no river
-    expect(Array.from(pack.cells.conf)).toEqual([0, 300, 0, 0]); // the second river joins the first: the confluence keeps its flux
-    expect(second.cells).toEqual([1, 2]);
-    expect(Array.from(pack.cells.fl)).toEqual([5, 6, 7, 8]); // water too: a lake outlet holds flux
+    expect(first).toMatchObject({ cells: [0, 1, 2, 3, -1], source: 0, mouth: 3, widthFactor: 2 });
+    expect(first.points).toEqual([
+      [0, 2],
+      [10, 2],
+      [20, 2], // cells 1 and 3 are not neighbors: the cell between is filled in
+      [30, 2],
+      [1000, 2]
+    ]);
+    expect(second).toMatchObject({ cells: [4, 1], parent: 1 });
+    expect(Array.from(pack.cells.r)).toEqual([1, 1, 1, 0, 2]); // the water cell gets no river
+    expect(Array.from(pack.cells.conf)).toEqual([0, 300, 0, 0, 0]); // the second river joins the first: the confluence keeps its flux
+    expect(Array.from(pack.cells.fl)).toEqual([5, 6, 7, 8, 9]); // water too: a lake outlet holds flux
+  });
+
+  it("leaves a confluence to the river that held it, as generation gives it to the river with the lower id", () => {
+    junction(2);
+
+    expect(Array.from(pack.cells.r)).toEqual([1, 2, 1, 0, 2]);
+    expect(pack.rivers[1].parent).toBe(1);
   });
 
   it("ends a river where its land went under the sea, and drops one left without land", () => {
@@ -139,7 +174,7 @@ describe("restoreRivers", () => {
     );
 
     expect(pack.rivers).toHaveLength(1);
-    expect(pack.rivers[0]).toMatchObject({ cells: [0, 1, 2], points: anchors([0, 10, 20]), source: 0, mouth: 1 });
+    expect(pack.rivers[0]).toMatchObject({ cells: [0, 1, 2], source: 0, mouth: 1 });
     expect(Array.from(pack.cells.r)).toEqual([1, 1, 0, 0]);
   });
 
@@ -165,6 +200,43 @@ describe("restoreRivers", () => {
     );
 
     expect(pack.rivers).toEqual([]);
+  });
+
+  const restoreOne = (river: object, xs: number[], projection = identity) => {
+    vi.stubGlobal("pack", graph({ cells: { ...lineCells([30, 30, 30]), f: [1, 1, 1] }, features: [0, {}] }));
+    const parent = graph({ cells: { fl: [], conf: [] }, rivers: [{ i: 1, widthFactor: 1, ...river }] });
+    const riverAnchors = [xs.map((x): [number, number] => [x, 0])];
+    internals.restoreRivers({ pack: parent, spacing: 10, riverAnchors }, links([0, 1, 2]), projection, 1);
+    return pack.rivers[0];
+  };
+
+  it("cuts the loop a coarser graph makes, so the course passes each cell once", () => {
+    const river = restoreOne({ cells: [91, 92, 93, 94, 95] }, [0, 10, 0, 10, 20]);
+
+    expect(river).toMatchObject({ cells: [0, 1, 2], mouth: 1 });
+  });
+
+  it("keeps no points for a course through the cell centers, as generation does", () => {
+    const shifted: Projection = (x, y) => [x + 2, y];
+
+    expect(restoreOne({ cells: [91, 92, 93] }, [0, 10, 20]).points).toBeUndefined();
+    expect(restoreOne({ cells: [91, 92, 93] }, [0, 10, 20], shifted).points).toEqual([
+      [2, 0],
+      [12, 0],
+      [22, 0]
+    ]);
+  });
+
+  it("ends a river at the cell of its old outlet when the map now shows it, and off the map when on its edge", () => {
+    const down: Projection = (x, y) => [x, y + 5]; // off the top edge
+
+    expect(restoreOne({ cells: [91, 92, -1] }, [0, 10, 20], down).cells).toEqual([0, 1, 2]);
+    expect(restoreOne({ cells: [91, 92, -1] }, [0, 10, 20]).cells).toEqual([0, 1, -1]);
+  });
+
+  it("keeps the mouth of a drawn river ending on land at its last cell", () => {
+    expect(restoreOne({ cells: [91, 92, 93], mouth: 93 }, [0, 10, 20]).mouth).toBe(2);
+    expect(restoreOne({ cells: [91, 92, 93], mouth: 92 }, [0, 10, 20]).mouth).toBe(1);
   });
 });
 
@@ -271,7 +343,8 @@ describe("restoreBurgs", () => {
           f: Uint16Array.from(heights.map((_, i) => i + 1)),
           haven: new Uint16Array(heights.length),
           burg: new Uint16Array(heights.length)
-        }
+        },
+        cultures: [{}]
       })
     );
 
@@ -475,8 +548,8 @@ describe("fillPathGaps", () => {
 
     expect(filled).toEqual([
       [0, 0, 0],
-      [0, 0, 1], // on the line, next to cell 1
-      [10, 30, 2], // the line passes far from cell 2: its center
+      [-10, 0, 1], // the line passes next to cell 1, not through it: its center
+      [10, 30, 2],
       [30, 0, 3]
     ]);
   });
@@ -764,7 +837,6 @@ describe("restoreLockedRivers", () => {
     const [{ river, flux }] = restore([{ i: 4, lock: true, cells: [0, 1, 2, 3, 4, 5], widthFactor: 1 }]);
 
     expect(river).toMatchObject({ i: 4, cells: [0, 1, 2, 3], source: 0, mouth: 2 });
-    expect(river.points).toEqual(anchors([0, 1, 2, 3]));
     expect(flux).toEqual([10, 20, 30, 0]);
   });
 
