@@ -364,6 +364,12 @@ function togglePercentageMode(): void {
 function militaryCustomize(): void {
   renderOptions();
   const types = ["melee", "ranged", "mounted", "machinery", "naval", "armored", "aviation", "magical"];
+  const LIMIT_TIPS = {
+    biomes: t("Select allowed biomes"),
+    states: t("Select allowed states"),
+    cultures: t("Select allowed cultures"),
+    religions: t("Select allowed religions")
+  };
   const tableBody = ensureEl("militaryOptions").querySelector("tbody")!;
   removeUnitLines();
   options.map.military.units.map(unit => addUnitLine(unit));
@@ -447,13 +453,6 @@ function militaryCustomize(): void {
   function getLimitTip(attr: number[] | undefined, items: readonly LimitationItem[]): string {
     return attr?.length ? limitationTip(attr, items) : "";
   }
-
-  const LIMIT_TIPS = {
-    biomes: t("Select allowed biomes"),
-    states: t("Select allowed states"),
-    cultures: t("Select allowed cultures"),
-    religions: t("Select allowed religions")
-  };
 
   function addUnitLine(unit: MilitaryUnit): void {
     const { type, icon, name, rural, urban, power, crew, separate } = unit;
