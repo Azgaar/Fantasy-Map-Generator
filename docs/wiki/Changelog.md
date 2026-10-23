@@ -12,26 +12,23 @@ Check out [Dev board](https://github.com/users/Azgaar/projects/3/views/1?sumFiel
 
 Current version of the Fantasy Map Generator is the latest `master` branch. You can download it here: https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip. Also see [the wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#can-i-use-the-generator-offline).
 
-**[1.155.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.155.0) - 2026-10-22**:
+**[1.155.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.155.0) - 2026-10-23**:
 
 - Interface translation: 29 languages besides English
 - The Google Translate widget removed
 - Map context menu
+- Options: Advanced options dialog
 - Advanced options: configurable map lattice
-- Options: Advanced Options dialog
 - Trade tariffs and embargoes
-- Free-text tags for states and other entities
 - View-only mode for saved maps
-- Save to machine creates a new file each time
+- Free-text tags for states and other entities
 - CSV upload for most entities
 - Color picker rework
 - Regenerate provinces for selected states
-- Heightmap Risk mode: map data is carried over to the new coastline reliably
-- Heightmap Risk mode: names of rivers, lakes and islands are kept
-- Heightmap Risk mode: relief icons follow the new coastline
+- Heightmap Risk mode: map restoration algorithm rework
 - Rivers: lock a river to keep it through regeneration
-- Submap and Transform: custom label paths follow the map
-- Submap and Transform: a state or province whose capital is left out gets a new capital
+- Submap and Transform fixes,
+- Save to machine creates a new file each time
 - Population layer: Shading land by population density by _[inviktos](https://github.com/inviktos)_
 - Altitude legend: heightmap colors by _[Avengium](https://github.com/Avengium)_
 - Rulers style: line and dash colors and a toggle to hide the measured values by _[Avengium](https://github.com/Avengium)_

@@ -19,25 +19,31 @@ import { confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { dialogState } from "@/components/dialog/state";
 import { Pins } from "@/components/pins";
 import { tip } from "@/components/tooltips";
-import { LANGUAGE_CODES } from "@/data/languages";
 import { findEl } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { isElectron } from "./platform";
 
 export const VERSION = "1.155.0";
 
-// new changes on top, translated: a function as the catalog is read when the window opens
+// new changes on top, never translated
 const latestPublicChanges = (): string[] => [
-  t("Interface translated into {{languages}} languages", { languages: LANGUAGE_CODES.length - 1 }),
-  t("Map context menu"),
-  t("Advanced Options: configurable map lattice"),
-  t("Trade tariffs and embargoes"),
-  t("View-only mode for saved maps"),
-  t("Free-text tags for states and other entities (hidden by default)"),
-  t("Color picker rework"),
-  t("CSV upload for states, religions, provinces, burgs, rivers, routes, markers, zones, biomes and features"),
-  t("Population layer: colored cells style"),
-  t("Altitude legend: heightmap colors")
+  "Interface translated into 29 languages",
+  "Map context menu",
+  "Advanced Options: configurable map lattice",
+  "Trade tariffs and embargoes",
+  "View-only mode for saved maps",
+  "Free-text tags for states and other entities (hidden by default)",
+  "CSV upload for most entities",
+  "Color picker rework",
+  "Regenerate provinces for selected states",
+  "Heightmap Risk mode: map restoration algorithm rework",
+  "Submap and Transform fixes",
+  "Rivers: lock a river to keep it through regeneration",
+  "Paint editor: lock elements from being painted over",
+  "Military forces: hide/show individual regiments",
+  "Shift + Click to bypass confirmation",
+  "Population layer: colored cells style",
+  "Altitude legend: heightmap colors"
 ];
 
 export function parseMapVersion(version: string): string {
