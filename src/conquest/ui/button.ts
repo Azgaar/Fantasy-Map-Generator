@@ -43,20 +43,18 @@ import { openDialog } from "./panels/dialog";
 import { applyPreset, currentPreset, PRESETS } from "./presets";
 import { lastRebase, showRebaseReport } from "./rebase";
 
-const BUTTON_ID = "totalWarButton";
 const FALLBACK_ID = "totalWarFallback";
 const MENU_ID = "tw-menu";
 
 let menu: HTMLElement | null = null;
-let button: HTMLButtonElement | null = null;
 let fallback: HTMLButtonElement | null = null;
 
 /** Which trigger the menu should hang from: FMG's top bar when it is on screen,
  *  the compact viewport trigger when it is not. */
 function anchor(): HTMLElement | null {
-  if (button && button.getBoundingClientRect().width > 0) return button;
+  fallback ??= document.getElementById(FALLBACK_ID) as HTMLButtonElement | null;
   if (fallback && !fallback.hasAttribute("hidden")) return fallback;
-  return button ?? fallback;
+  return fallback;
 }
 
 /**
@@ -67,6 +65,7 @@ function anchor(): HTMLElement | null {
 function placeMenu(): void {
   const host = anchor();
   if (!menu || !host) return;
+  if (typeof host.getBoundingClientRect !== "function" || typeof menu.getBoundingClientRect !== "function") return;
   const rect = host.getBoundingClientRect();
   const menuRect = menu.getBoundingClientRect();
   const gap = 6;
@@ -91,12 +90,10 @@ function layerHint(id: string): string | undefined {
 }
 
 function toggleMenu(open?: boolean): void {
-  if (!menu || !button) return;
+  if (!menu) return;
   const next = open ?? !menu.classList.contains("is-open");
   menu.classList.toggle("is-open", next);
-  button?.classList.toggle("is-open", next);
   fallback?.classList.toggle("is-open", next);
-  button?.setAttribute("aria-expanded", String(next));
   fallback?.setAttribute("aria-expanded", String(next));
   // Render BEFORE placing: the placement reads the menu's own height to decide
   // whether it fits below its anchor, and an empty menu always "fits".
@@ -458,12 +455,16 @@ function wireMenu(): void {
  * `display` on `#options`) rather than guessing from layout, and we never touch
  * FMG's own visibility either way.
  */
-function syncFallback(): void {
+export function setFallbackVisible(visible: boolean): void {
+  fallback ??= document.getElementById(FALLBACK_ID) as HTMLButtonElement | null;
   if (!fallback) return;
-  const options = document.getElementById("options");
-  const barVisible = !!button && button.getBoundingClientRect().width > 0;
-  fallback.hidden = barVisible || !options;
+  fallback.hidden = !visible;
   if (!fallback.hidden) placeMenu();
+}
+
+function syncFallback(): void {
+  if (!fallback || fallback.hidden) return;
+  placeMenu();
 }
 
 function watchFmgPanel(): void {
@@ -474,60 +475,19 @@ function watchFmgPanel(): void {
   window.addEventListener("resize", () => syncFallback());
 }
 
-/** Install the ⚔ button into FMG's top bar. Idempotent. */
+/** Install the ⚔ button and menu. Idempotent. */
 export function installButton(): void {
-  if (document.getElementById(BUTTON_ID)) return;
-  const sticked = document.getElementById("sticked");
-  if (!sticked) {
-    twWarn("no #sticked in FMG's top bar — the ⚔ button is not installed");
-    return;
-  }
+  if (document.getElementById(FALLBACK_ID)) return;
 
-  const host = document.createElement("span");
-  host.className = "tw-host";
-  host.style.position = "relative";
-  host.style.marginLeft = "auto";
-
-  button = document.createElement("button");
-  button.id = BUTTON_ID;
-  button.textContent = "⚔ OpenConquest";
-  button.setAttribute("data-tip", "OpenConquest: Atlas Invictus — campaign menu, layers and presets");
-  button.setAttribute("aria-haspopup", "true");
-  button.setAttribute("aria-expanded", "false");
-
-  button.addEventListener("click", event => {
-    event.stopPropagation();
-    toggleMenu();
-  });
-
-  // C.4: the button names the campaign it is attached to — a campaign that lives
-  // in a file has to be identifiable from the outside, or "continue" means nothing.
-  // The fallback stays compact (it shares the corner with FMG's zoom controls)
-  // but still shows the turn.
-  const label = (): string => {
-    const campaign = currentSession()?.store.state;
-    return campaign ? `⚔ OpenConquest · ${campaign.id} · T${campaign.turn}` : "⚔ OpenConquest";
-  };
   const fallbackLabel = (): string => {
     const campaign = currentSession()?.store.state;
     return campaign ? `⚔ T${campaign.turn}` : "⚔";
   };
   onSession(() => {
-    if (button && button.textContent !== label()) button.textContent = label();
     if (fallback && fallback.textContent !== fallbackLabel()) fallback.textContent = fallbackLabel();
-    // A menu that is open while the session changes would otherwise lie: rows
-    // rendered before an async restore finished stay disabled after it lands.
-    // Campaign work is often async (the mirror reads IndexedDB), so this is the
-    // normal case, not an edge case.
     if (menu?.classList.contains("is-open")) renderMenu();
   });
 
-  host.append(button);
-  sticked.append(host);
-
-  // The menu lives on the body, not inside the bar: its anchor changes with
-  // FMG's panel, and a menu trapped inside a collapsed container would be
-  // unopenable.
   menu = document.createElement("div");
   menu.id = MENU_ID;
   menu.setAttribute("role", "menu");
@@ -549,10 +509,10 @@ export function installButton(): void {
 
   syncFallback();
 
-  // Click-away and Escape, matching how FMG's own menus behave.
   document.addEventListener("click", event => {
     if (!menu?.classList.contains("is-open")) return;
-    if (!host.contains(event.target as Node)) toggleMenu(false);
+    if (fallback && fallback.contains(event.target as Node)) return;
+    toggleMenu(false);
   });
   document.addEventListener("keydown", event => {
     if (event.key === "Escape" && menu?.classList.contains("is-open")) toggleMenu(false);

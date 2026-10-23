@@ -45,11 +45,11 @@ const LAYERS: TwLayerParams[] = [twRegions, twSettlements, twArmies, twMovePaths
 
 /** The Layers-tab button + hotkey for each OpenConquest layer. */
 const LAYER_BUTTONS: { id: string; label: string; shortcut?: string; hint?: string }[] = [
-  { id: "twRegions", label: "OpenConquest Re<u>g</u>ions", shortcut: "Quote", hint: "' (apostrophe)" },
-  { id: "twSettlements", label: "OpenConquest Se<u>t</u>tlements", shortcut: "Comma", hint: ", (comma)" },
-  { id: "twArmies", label: "OpenConquest A<u>r</u>mies", shortcut: "Period", hint: ". (period)" },
-  { id: "twMovePaths", label: "OpenConquest Move Pa<u>t</u>hs", shortcut: "Backslash", hint: "\\ (backslash)" },
-  { id: "twSelection", label: "OpenConquest Selection" }
+  { id: "twRegions", label: "⚔️ Re<u>g</u>ions", shortcut: "Quote", hint: "' (apostrophe)" },
+  { id: "twSettlements", label: "⚔️ Se<u>t</u>tlements", shortcut: "Comma", hint: ", (comma)" },
+  { id: "twArmies", label: "⚔️ A<u>r</u>mies", shortcut: "Period", hint: ". (period)" },
+  { id: "twMovePaths", label: "⚔️ Move Pa<u>t</u>hs", shortcut: "Backslash", hint: "\\ (backslash)" },
+  { id: "twSelection", label: "⚔️ Selection" }
 ];
 
 /** Layer ids Total War owns, in registration (z-)order. */
