@@ -23,6 +23,10 @@ import rosterdefault from "./docs/rosters/default.json" with { type: "json" };
 import rosterdwarf from "./docs/rosters/dwarf.json" with { type: "json" };
 import rosterelf from "./docs/rosters/elf.json" with { type: "json" };
 import rosterorc from "./docs/rosters/orc.json" with { type: "json" };
+import rosterEastAsia from "./docs/rosters/east_asia.json" with { type: "json" };
+import rosterMughal from "./docs/rosters/mughal.json" with { type: "json" };
+import rosterOttoman from "./docs/rosters/ottoman.json" with { type: "json" };
+import rosterRenaissance from "./docs/rosters/renaissance.json" with { type: "json" };
 import rostersteppe from "./docs/rosters/steppe.json" with { type: "json" };
 import victoryStandard from "./docs/victory/standard.json" with { type: "json" };
 
@@ -33,6 +37,10 @@ export const BUNDLED_DOCS: RawContentDocs = {
     { file: "rosters/dwarf.json", doc: rosterdwarf },
     { file: "rosters/elf.json", doc: rosterelf },
     { file: "rosters/orc.json", doc: rosterorc },
+    { file: "rosters/east_asia.json", doc: rosterEastAsia },
+    { file: "rosters/mughal.json", doc: rosterMughal },
+    { file: "rosters/ottoman.json", doc: rosterOttoman },
+    { file: "rosters/renaissance.json", doc: rosterRenaissance },
     { file: "rosters/steppe.json", doc: rostersteppe }
   ],
   culturesDocs: [],

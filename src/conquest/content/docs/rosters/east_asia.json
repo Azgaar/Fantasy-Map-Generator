@@ -1,0 +1,193 @@
+{
+  "id": "eastAsiaBase",
+  "name": "East Asia",
+  "roster": {
+    "id": "eastAsiaBase",
+    "extends": "commonBase",
+    "units": {
+      "nagae_yari": {
+        "name": "Long Spear Infantry",
+        "category": "melee",
+        "blocks": 0.18,
+        "attack": 5,
+        "defense": 13,
+        "charge": 2,
+        "missile": 0,
+        "cost": 240,
+        "upkeep": 32,
+        "capacityCost": {
+          "m": 2,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "matchlock_ashigaru": {
+        "name": "Matchlock Musketeers",
+        "category": "ranged",
+        "blocks": 0.12,
+        "attack": 3,
+        "defense": 5,
+        "charge": 1,
+        "missile": 13,
+        "cost": 360,
+        "upkeep": 45,
+        "capacityCost": {
+          "m": 1,
+          "w": 2,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "repeating_crossbows": {
+        "name": "Zhuge Crossbowmen",
+        "category": "ranged",
+        "blocks": 0.12,
+        "attack": 4,
+        "defense": 5,
+        "charge": 1,
+        "missile": 10,
+        "cost": 310,
+        "upkeep": 40,
+        "capacityCost": {
+          "m": 1,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "samurai_swordsmen": {
+        "name": "Samurai Retainers",
+        "category": "melee",
+        "blocks": 0.1,
+        "requiresGood": 4,
+        "attack": 11,
+        "defense": 10,
+        "charge": 6,
+        "missile": 0,
+        "cost": 480,
+        "upkeep": 58,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 1,
+          "c": 0
+        }
+      },
+      "mounted_samurai": {
+        "name": "Mounted Samurai",
+        "category": "cavalry",
+        "blocks": 0.08,
+        "requiresGood": 18,
+        "attack": 9,
+        "defense": 10,
+        "charge": 9,
+        "missile": 3,
+        "cost": 540,
+        "upkeep": 65,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "iron_pagoda": {
+        "name": "Iron Pagoda Heavy Cavalry",
+        "category": "cavalry",
+        "blocks": 0.06,
+        "requiresGood": 18,
+        "attack": 10,
+        "defense": 13,
+        "charge": 11,
+        "missile": 0,
+        "cost": 610,
+        "upkeep": 72,
+        "capacityCost": {
+          "m": 2,
+          "w": 4,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "hwacha_battery": {
+        "name": "Hwacha Rocket Battery",
+        "category": "artillery",
+        "blocks": 0.04,
+        "requiresGood": 4,
+        "attack": 2,
+        "defense": 3,
+        "charge": 0,
+        "missile": 15,
+        "cost": 780,
+        "upkeep": 75,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "levy_yari": {
+        "name": "Levy Conscripts",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 3,
+        "defense": 8,
+        "charge": 2,
+        "missile": 0,
+        "cost": 90,
+        "upkeep": 14,
+        "capacityCost": {
+          "m": 1,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "levy_bows": {
+        "name": "Levy Bowmen",
+        "category": "ranged",
+        "blocks": 0.12,
+        "attack": 2,
+        "defense": 4,
+        "charge": 1,
+        "missile": 8,
+        "cost": 110,
+        "upkeep": 16,
+        "capacityCost": {
+          "m": 1,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      }
+    },
+    "recruitable": [
+      "nagae_yari",
+      "matchlock_ashigaru",
+      "repeating_crossbows",
+      "samurai_swordsmen",
+      "mounted_samurai",
+      "iron_pagoda",
+      "hwacha_battery"
+    ],
+    "garrison": {
+      "melee": "levy_yari",
+      "ranged": "levy_bows"
+    },
+    "regimentMap": {
+      "infantry": "nagae_yari",
+      "archers": "matchlock_ashigaru",
+      "cavalry": "mounted_samurai",
+      "artillery": "hwacha_battery"
+    },
+    "caps": {
+      "samurai_swordsmen": 4,
+      "iron_pagoda": 3,
+      "hwacha_battery": 3
+    }
+  },
+  "tech": [],
+  "buildings": []
+}
