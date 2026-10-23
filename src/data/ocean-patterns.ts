@@ -18,5 +18,6 @@ export const OCEAN_PATTERNS = {
   "./images/pattern6.png": "Pattern 6",
   "./images/kiwiroo.png": "Kiwiroo",
   "./images/waves.png": "Waves",
-  "./images/whitecaps.png": "Whitecaps"
+  "./images/whitecaps.png": "Whitecaps",
+  "./images/textures/starfield.png": "Starfield"
 };

@@ -170,6 +170,7 @@ export const mapSchema = z.strictObject({
   lore,
   units,
   style: z.strictObject({ preset: z.string().min(1) }),
+  astral: z.boolean().default(false),
   burgs: z.strictObject({ groups: z.array(burgGroup) }),
   labels: z.strictObject({ groups: z.array(labelGroup) }),
   military: z.strictObject({ units: z.array(militaryUnit) }),

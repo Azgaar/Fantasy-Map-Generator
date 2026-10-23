@@ -1,4 +1,5 @@
 import type { LayerId } from "@/components/layers";
+import { isAstralView } from "@/components/options/view-mode";
 import { Controllers } from "@/controllers";
 import type { Point } from "@/types/global";
 import { capitalize } from "@/utils/stringUtils";
@@ -86,6 +87,7 @@ interface EntityDefinition {
 
 const ELEMENT_PATTERNS: [RegExp, EntityType][] = [
   [/^burg(?:Label)?(\d+)$/, "burg"],
+  [/^system(\d+)$/, "burg"], // the Astral marker for the same burg
   [/^marker(\d+)$/, "marker"],
   [/^state(?:Label)?(\d+)$/, "state"],
   [/^province(?:Label)?(\d+)$/, "province"],
@@ -154,7 +156,7 @@ class EntityLookup {
       kind: "Burg",
       icon: "icon-home",
       scale: 8,
-      layers: ["burgIcons", "labels"],
+      layers: () => (isAstralView() ? ["systems", "labels"] : ["burgIcons", "labels"]),
       collection: {
         field: "burgs",
         indexed: true,
@@ -163,6 +165,7 @@ class EntityLookup {
       name: id => this.byId(pack.burgs, id)?.name || "",
       refs: () => this.refsOf("burg", pack.burgs, true),
       element: id => `burg${id}`,
+      highlight: id => `#burg${id}, #system${id}`,
       position: id => {
         const burg = this.byId(pack.burgs, id);
         return burg && [burg.x, burg.y];
@@ -638,7 +641,7 @@ class EntityLookup {
         const ref = this.parseKey(`${type}:${id}`);
         if (ref) return ref;
       }
-      if (id !== null && element.closest("#burgIcons")) {
+      if (id !== null && element.closest("#burgIcons, #systems")) {
         const ref = this.parseKey(`burg:${id}`);
         if (ref) return ref;
       }

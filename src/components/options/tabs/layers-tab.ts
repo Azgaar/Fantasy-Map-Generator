@@ -1,7 +1,10 @@
 // Layers tab: a projection of the Layers registry. Renders the layer buttons and wires them up.
 import type { LayerId } from "@/components/layers";
 import { Layers } from "@/components/layers";
-import { LAYER_TOGGLES } from "@/data/layer-labels";
+import { isAstralView, subscribeAstralView } from "@/components/options/view-mode";
+import { ASTRAL_LAYER_TOGGLES } from "@/data/astral-layer-labels";
+import { ASTRAL_DEFAULT_PRESET, ASTRAL_PRESETS } from "@/data/astral-layers";
+import { LAYER_TOGGLES, type LayerButton } from "@/data/layer-labels";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { isCtrlClick } from "@/utils";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
@@ -23,19 +26,19 @@ export const LAYER_PRESETS: Record<string, string> = {
   landmass: "Pure landmass"
 };
 
+export { ASTRAL_LAYER_TOGGLES } from "@/data/astral-layer-labels";
 export { LAYER_TOGGLES } from "@/data/layer-labels";
 
+const toggles = (): Map<LayerId, LayerButton> => (isAstralView() ? ASTRAL_LAYER_TOGGLES : LAYER_TOGGLES);
+
 export const getLayerByShortcut = (code: string): LayerId | undefined =>
-  [...LAYER_TOGGLES].find(([, button]) => button.shortcut === code)?.[0];
+  [...toggles()].find(([, button]) => button.shortcut === code)?.[0];
+
+const ASTRAL_PRESET_IDS = new Set(Object.keys(ASTRAL_PRESETS));
 
 const TEMPLATE = /* html */ `
   <p data-tip="Select a map layers preset" style="display: inline-block">Layers preset:</p>
-  <select data-tip="Select a map layers preset" id="layersPreset" style="width: 45%">
-    ${Object.entries(LAYER_PRESETS)
-      .map(([id, label]) => `<option value="${id}">${label}</option>`)
-      .join("")}
-    <option hidden value="custom">Custom (not saved)</option>
-  </select>
+  <select data-tip="Select a map layers preset" id="layersPreset" style="width: 45%"></select>
   <button
     id="savePresetButton"
     data-tip="Click to save displayed layers as a new preset"
@@ -68,15 +71,42 @@ const TEMPLATE = /* html */ `
       3D scene
     </button>
     <button data-tip="Project map on globe. Cannot be used for editing" id="viewGlobe">Globe</button>
+    <button data-tip="Astral view: star chart layers, nebulae and systems" id="viewAstral">Astral</button>
   </div>
 `;
 
 ensureEl("layersContent").innerHTML = TEMPLATE;
 
+function renderPresetOptions(): void {
+  const select = ensureEl<HTMLSelectElement>("layersPreset");
+  const known = new Set(Array.from(select.options, option => option.value));
+
+  for (const [id, label] of Object.entries(LAYER_PRESETS)) {
+    if (!known.has(id)) select.add(new Option(label, id));
+  }
+  for (const [id, preset] of Object.entries(ASTRAL_PRESETS)) {
+    if (!known.has(id)) select.add(new Option(preset.name, id));
+  }
+  if (!known.has("custom")) select.add(new Option("Custom (not saved)", "custom"));
+
+  const astral = isAstralView();
+  for (const option of Array.from(select.options)) {
+    option.hidden = astral
+      ? !ASTRAL_PRESET_IDS.has(option.value) && option.value !== "custom"
+      : ASTRAL_PRESET_IDS.has(option.value);
+  }
+
+  const fallback = astral ? ASTRAL_DEFAULT_PRESET : "political";
+  const current = Array.from(select.options).find(option => option.value === select.value && !option.hidden);
+  if (!current) select.value = fallback;
+}
+
 function render(): void {
+  renderPresetOptions();
+  const activeToggles = toggles();
   ensureEl("mapLayers").replaceChildren(
     ...Layers.all.flatMap(layer => {
-      const button = LAYER_TOGGLES.get(layer.id);
+      const button = activeToggles.get(layer.id);
       if (!button) return [];
 
       const item = document.createElement("li");
@@ -114,6 +144,7 @@ $("#mapLayers").sortable({
 });
 
 Layers.subscribe(render);
+subscribeAstralView(render);
 Layers.subscribe(() => ViewportLayers.renderNow());
 
 // the 3d view renders the map as a texture: refresh it on any layer change, once the batch has settled

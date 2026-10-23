@@ -31,6 +31,7 @@ beforeEach(() => {
 describe("resolveElementId", () => {
   it.each([
     ["burg7", { type: "burg", id: 7 }],
+    ["system7", { type: "burg", id: 7 }], // the Astral marker for the same burg
     ["burgLabel7", { type: "burg", id: 7 }],
     ["stateLabel3", { type: "state", id: 3 }],
     ["provinceLabel2", { type: "province", id: 2 }],
@@ -223,6 +224,7 @@ describe("shared entity geometry and context", () => {
 describe("map event targets", () => {
   it.each([
     ['<g id="burgIcons"><g data-id="0"><circle id="target"/></g></g>', { type: "burg", id: 0 }],
+    ['<g id="systems"><g id="system5" data-id="5"><circle class="star" id="target"/></g></g>', { type: "burg", id: 5 }],
     [
       '<g id="labels"><text data-label-type="burg" data-id="2"><tspan id="target"/></text></g>',
       { type: "burg", id: 2 }

@@ -1,8 +1,12 @@
 // Layer presets: named sets of layers the user can switch between, stored in localStorage
+
+import { ASTRAL_LAYER_TOGGLES } from "@/data/astral-layer-labels";
+import { ASTRAL_DEFAULT_PRESET, ASTRAL_PRESETS } from "@/data/astral-layers";
 import { ensureEl } from "@/utils";
 import { confirmationDialog } from "./dialog/dialog-helpers";
 import { type LayerId, Layers } from "./layers";
 import { LAYER_TOGGLES } from "./options/tabs/layers-tab";
+import { isAstralView } from "./options/view-mode";
 
 const DEFAULT_PRESETS: Record<string, LayerId[]> = {
   political: ["borders", "burgIcons", "ice", "labels", "lakes", "rivers", "routes", "scaleBar", "states", "vignette"],
@@ -46,6 +50,15 @@ const DEFAULT_PRESETS: Record<string, LayerId[]> = {
 const presets: Record<string, string[]> = { ...DEFAULT_PRESETS };
 restoreCustomPresets();
 
+const activePresets = (): Record<string, string[]> =>
+  isAstralView()
+    ? Object.fromEntries(Object.entries(ASTRAL_PRESETS).map(([id, preset]) => [id, preset.layers]))
+    : presets;
+
+const activeToggles = () => (isAstralView() ? ASTRAL_LAYER_TOGGLES : LAYER_TOGGLES);
+
+const defaultPreset = (): string => (isAstralView() ? ASTRAL_DEFAULT_PRESET : "political");
+
 function restoreCustomPresets(): void {
   const stored: Record<string, string[]> | null = JSON.parse(localStorage.getItem("presets") || "null");
   if (!stored) return;
@@ -59,11 +72,14 @@ function restoreCustomPresets(): void {
 
 /** run on map generation: the layers are drawn right after, so the state is applied without drawing */
 export function applyLayersPreset(): void {
-  const stored = localStorage.getItem("preset") || ensureEl<HTMLSelectElement>("layersPreset").value;
-  const name = stored in presets ? stored : "political"; // the stored preset may have been removed
+  const available = activePresets();
+  const stored = isAstralView()
+    ? ""
+    : localStorage.getItem("preset") || ensureEl<HTMLSelectElement>("layersPreset").value;
+  const name = stored in available ? stored : defaultPreset(); // the stored preset may have been removed
   setPresetName(name);
 
-  Layers.restore({ order: Layers.state.order, active: presets[name] });
+  Layers.restore({ order: Layers.state.order, active: available[name] });
 }
 
 /** Apply ?preset= or ?layers= from the URL. Layer names are canonical LayerId values and layers takes precedence. */
@@ -84,9 +100,10 @@ export function applyURLLayers(params: URLSearchParams): void {
 
   const presetParam = params.get("preset");
   const presetName = presetParam && findPresetName(presetParam);
+  const available = activePresets();
   if (presetName) {
     setPresetName(presetName);
-    Layers.set(presets[presetName]);
+    Layers.set(available[presetName]);
   } else if (presetParam) {
     ERROR && console.error(`URL param preset="${presetParam}" is invalid`);
   }
@@ -94,18 +111,25 @@ export function applyURLLayers(params: URLSearchParams): void {
 
 /** Find a preset by its case-insensitive key or displayed name. */
 function findPresetName(param: string): string | undefined {
+  const available = activePresets();
   const needle = param.toLowerCase().trim();
-  const byKey = Object.keys(presets).find(key => key.toLowerCase() === needle);
+  const byKey = Object.keys(available).find(key => key.toLowerCase() === needle);
   if (byKey) return byKey;
 
   const option = Array.from(ensureEl<HTMLSelectElement>("layersPreset").options).find(
     option => option.text.toLowerCase() === needle
   );
-  return option?.value && option.value in presets ? option.value : undefined;
+  return option?.value && option.value in available ? option.value : undefined;
 }
 
 function setPresetName(name: string): void {
   ensureEl<HTMLSelectElement>("layersPreset").value = name;
+  if (isAstralView()) {
+    ensureEl("removePresetButton").style.display = "none";
+    ensureEl("savePresetButton").style.display = "none";
+    return;
+  }
+
   localStorage.setItem("preset", name);
   ensureEl("removePresetButton").style.display = DEFAULT_PRESETS[name] ? "none" : "inline-block";
   ensureEl("savePresetButton").style.display = "none";
@@ -113,9 +137,10 @@ function setPresetName(name: string): void {
 
 /** Switch the displayed layers to a preset, built-in or saved by the user */
 export function applyPreset(name: string): void {
-  if (!(name in presets)) return;
+  const available = activePresets();
+  if (!(name in available)) return;
   setPresetName(name);
-  Layers.set(presets[name]);
+  Layers.set(available[name]);
 }
 
 export function savePreset(): void {
@@ -128,7 +153,7 @@ export function savePreset(): void {
       if (!name) return;
 
       const activeUserLayers = Layers.all
-        .filter(layer => LAYER_TOGGLES.has(layer.id) && Layers.isOn(layer.id))
+        .filter(layer => activeToggles().has(layer.id) && Layers.isOn(layer.id))
         .map(layer => layer.id);
 
       presets[name] = activeUserLayers;
@@ -160,11 +185,19 @@ function removePreset(): void {
 function highlightCurrentPreset(): void {
   const asSet = (ids: readonly string[]): string => [...ids].sort().join(",");
   const active = asSet(
-    Layers.all.filter(layer => LAYER_TOGGLES.has(layer.id) && Layers.isOn(layer.id)).map(layer => layer.id)
+    Layers.all.filter(layer => activeToggles().has(layer.id) && Layers.isOn(layer.id)).map(layer => layer.id)
   );
-  const current = Object.keys(presets).find(name => asSet(presets[name]) === active);
+  const available = activePresets();
+  const current = Object.keys(available).find(name => asSet(available[name]) === active);
+  const astral = isAstralView();
 
   ensureEl<HTMLSelectElement>("layersPreset").value = current ?? "custom";
+  if (astral) {
+    ensureEl("removePresetButton").style.display = "none";
+    ensureEl("savePresetButton").style.display = "none";
+    return;
+  }
+
   ensureEl("removePresetButton").style.display = current && !DEFAULT_PRESETS[current] ? "inline-block" : "none";
   ensureEl("savePresetButton").style.display = current ? "none" : "inline-block";
 }

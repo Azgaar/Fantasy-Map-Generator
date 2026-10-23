@@ -1131,6 +1131,44 @@
       "boxSize": 4
     }
   },
+  "nebulae": {
+    "attrs": {
+      "opacity": 1,
+      "filter": null,
+      "mask": "url(#land)"
+    },
+    "options": {
+      "count": 4,
+      "size": 18,
+      "softness": 4
+    },
+    "groups": {
+      "ion": {
+        "attrs": {
+          "opacity": 0.8,
+          "fill": "#5b3cff",
+          "fill-opacity": 0.25,
+          "filter": null
+        }
+      },
+      "dust": {
+        "attrs": {
+          "opacity": 0.7,
+          "fill": "#ff4fa3",
+          "fill-opacity": 0.18,
+          "filter": null
+        }
+      },
+      "neutral": {
+        "attrs": {
+          "opacity": 0.75,
+          "fill": "#4fc3ff",
+          "fill-opacity": 0.2,
+          "filter": null
+        }
+      }
+    }
+  },
   "ocean": {
     "options": {
       "bands": {
@@ -1341,6 +1379,68 @@
       }
     }
   },
+  "starDensity": {
+    "attrs": {
+      "opacity": 0.9,
+      "filter": null,
+      "mask": "url(#land)"
+    },
+    "options": {
+      "levels": 5,
+      "reach": 12,
+      "populationWeight": 0.35
+    },
+    "groups": {
+      "band1": {
+        "attrs": {
+          "opacity": 0.5,
+          "fill": "#123b6d",
+          "fill-opacity": 0.45,
+          "filter": null
+        }
+      },
+      "band2": {
+        "attrs": {
+          "opacity": 0.6,
+          "fill": "#155e8a",
+          "fill-opacity": 0.5,
+          "filter": null
+        }
+      },
+      "band3": {
+        "attrs": {
+          "opacity": 0.7,
+          "fill": "#168fa8",
+          "fill-opacity": 0.55,
+          "filter": null
+        }
+      },
+      "band4": {
+        "attrs": {
+          "opacity": 0.8,
+          "fill": "#35c2c2",
+          "fill-opacity": 0.6,
+          "filter": null
+        }
+      },
+      "band5": {
+        "attrs": {
+          "opacity": 0.9,
+          "fill": "#a6f4e8",
+          "fill-opacity": 0.7,
+          "filter": null
+        }
+      },
+      "band6": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#ffffff",
+          "fill-opacity": 0.8,
+          "filter": null
+        }
+      }
+    }
+  },
   "states": {
     "groups": {
       "statesBody": {
@@ -1354,6 +1454,125 @@
           "opacity": 0.4,
           "stroke-width": 10,
           "filter": "blur(6px)"
+        }
+      }
+    }
+  },
+  "systems": {
+    "attrs": {
+      "opacity": 1,
+      "filter": null
+    },
+    "options": {
+      "glow": true
+    },
+    "groups": {
+      "G": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#ffe28a",
+          "fill-opacity": 1,
+          "stroke": "#ffd25e",
+          "stroke-opacity": 1,
+          "stroke-width": 0.35,
+          "stroke-dasharray": null,
+          "stroke-linecap": "round",
+          "stroke-linejoin": "round",
+          "filter": null
+        },
+        "options": {
+          "size": 1.2,
+          "glow": true
+        }
+      },
+      "F": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#fff8dc",
+          "fill-opacity": 1,
+          "stroke": "#ffe8ae",
+          "stroke-opacity": 1,
+          "stroke-width": 0.35,
+          "stroke-dasharray": null,
+          "stroke-linecap": "round",
+          "stroke-linejoin": "round",
+          "filter": null
+        },
+        "options": {
+          "size": 1,
+          "glow": true
+        }
+      },
+      "K": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#ffb46b",
+          "fill-opacity": 1,
+          "stroke": "#ff9848",
+          "stroke-opacity": 1,
+          "stroke-width": 0.35,
+          "stroke-dasharray": null,
+          "stroke-linecap": "round",
+          "stroke-linejoin": "round",
+          "filter": null
+        },
+        "options": {
+          "size": 0.9,
+          "glow": true
+        }
+      },
+      "A": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#ffffff",
+          "fill-opacity": 1,
+          "stroke": "#d8e9ff",
+          "stroke-opacity": 1,
+          "stroke-width": 0.35,
+          "stroke-dasharray": null,
+          "stroke-linecap": "round",
+          "stroke-linejoin": "round",
+          "filter": null
+        },
+        "options": {
+          "size": 0.8,
+          "glow": true
+        }
+      },
+      "B": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#8cc8ff",
+          "fill-opacity": 1,
+          "stroke": "#59a8ff",
+          "stroke-opacity": 1,
+          "stroke-width": 0.35,
+          "stroke-dasharray": null,
+          "stroke-linecap": "round",
+          "stroke-linejoin": "round",
+          "filter": null
+        },
+        "options": {
+          "size": 0.7,
+          "glow": true
+        }
+      },
+      "M": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#ff6b6b",
+          "fill-opacity": 1,
+          "stroke": "#ff4747",
+          "stroke-opacity": 1,
+          "stroke-width": 0.35,
+          "stroke-dasharray": null,
+          "stroke-linecap": "round",
+          "stroke-linejoin": "round",
+          "filter": null
+        },
+        "options": {
+          "size": 0.6,
+          "glow": true
         }
       }
     }

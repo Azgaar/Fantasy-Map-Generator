@@ -230,7 +230,7 @@ the repo the single home for everything the remaining work builds on.
 
 ## Out of scope (for now)
 
-- Astral **visual reskin** (galactic plane, nebulae, system markers) — a renderers/layers project
-  after the content lands; the mod's mapping data is its input.
-- Style presets for sci-fi charts.
+- Astral **visual reskin** (galactic plane, nebulae, system markers) — moved out of this plan into
+  [astral-ui-overhaul.md](astral-ui-overhaul.md), a renderers/layers project built on the mapping.
+- Style presets for sci-fi charts — the `astral` preset is part of that overhaul.
 - Conquest multiplayer or campaign-in-`.map`.

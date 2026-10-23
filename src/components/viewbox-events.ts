@@ -47,6 +47,10 @@ const GRAND_EDITORS: Record<string, Opener> = {
 
 const GREAT_EDITORS: Record<string, Opener> = {
   burgIcons: target => Controllers.BurgEditor.open(Number(target.dataset.id)),
+  systems: (_target, parent) => {
+    const id = Number(parent.dataset.id); // the marker group for a burg, read as a system
+    if (Number.isInteger(id)) Controllers.BurgEditor.open(id);
+  },
   markers: target => Controllers.MarkersEditor.open(undefined, target),
   ruler: () => Controllers.MeasurersEditor.open(),
   armies: (_target, parent) => Controllers.RegimentEditor.open(`#${parent.id}`)

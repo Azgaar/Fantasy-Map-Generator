@@ -1,6 +1,8 @@
 import { select } from "d3";
 import { Layers } from "@/components/layers";
 import { MapEntities } from "@/components/map-entities";
+import { isAstralView } from "@/components/options/view-mode";
+import { systemTip, toSystem } from "@/generators/astral-naming";
 import { Notes } from "@/generators/notes";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
 import type { Point } from "@/types/global";
@@ -104,11 +106,14 @@ interface TipContext {
  */
 function getElementTip({ group, target, event, path, cellId }: TipContext): string | undefined {
   const parent = target.parentNode as SVGElement;
-  const burgElement = target.closest<SVGElement>("[data-label-type='burg'][data-id], #burgIcons [data-id]");
+  const burgElement = target.closest<SVGElement>(
+    "[data-label-type='burg'][data-id], #burgIcons [data-id], #systems [data-id]"
+  );
   if (burgElement) {
     const burgId = Number(burgElement.dataset.id);
     const burg = pack.burgs[burgId];
     if (!burg) return "Click to edit the Burg";
+    if (isAstralView()) return systemTip(toSystem(burg));
     const port = burg.port ? " port" : "";
     const population = si(
       (burg.population || 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate

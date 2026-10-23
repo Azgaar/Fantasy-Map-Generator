@@ -2,6 +2,7 @@
 // sectors. It is an action, not a generation step: a world stays a fantasy world until the
 // author asks for this. See docs/astral/README.md
 import { confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
+import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import { applyNaming, groupsOf } from "@/generators/astral-naming";
 
@@ -25,6 +26,7 @@ function apply(): void {
     confirm: "Apply",
     onConfirm: () => {
       const { polities, sectors, renamed } = applyNaming();
+      Layers.draw("labels"); // the map keeps the old words on screen until it draws them again
       refreshEditors();
       tip(
         `Applied Astral naming: ${polities} polities${renamed ? ` (${renamed} renamed after their capitals)` : ""}, ${sectors} sectors`,

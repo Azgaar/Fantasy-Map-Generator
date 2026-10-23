@@ -1,4 +1,7 @@
 // Global layers registry: owns layers list, order, and svg skeleton
+import { drawNebulae } from "@/renderers/astral/draw-nebulae";
+import { drawStarDensity } from "@/renderers/astral/draw-star-density";
+import { drawSystems } from "@/renderers/astral/draw-systems";
 import { drawBiomes } from "@/renderers/draw-biomes";
 import { drawBorders } from "@/renderers/draw-borders";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
@@ -302,6 +305,19 @@ const mapLayers = [
   new Layer({ id: "landmass", parent: "viewbox", permanent: true, keepContent: true, draw: drawLandmass }),
   new Layer({ id: "texture", element: "texture", parent: "viewbox", draw: drawTexture }),
   new Layer({
+    id: "nebulae",
+    parent: "viewbox",
+    attrs: { "pointer-events": "none" }, // decorative
+    children: ["ion", "dust", "neutral"].map(id => ({ id, tag: "g" })),
+    draw: drawNebulae
+  }),
+  new Layer({
+    id: "starDensity",
+    parent: "viewbox",
+    children: ["band1", "band2", "band3", "band4", "band5", "band6"].map(id => ({ id, tag: "g" })),
+    draw: drawStarDensity
+  }),
+  new Layer({
     id: "heightmap",
     element: "terrs",
     parent: "viewbox",
@@ -396,6 +412,7 @@ const mapLayers = [
     erase: removeEmblems
   }),
   new Layer({ id: "burgIcons", parent: "viewbox", draw: drawBurgIcons }),
+  new Layer({ id: "systems", parent: "viewbox", draw: drawSystems }),
   new Layer({
     id: "labels",
     parent: "viewbox",

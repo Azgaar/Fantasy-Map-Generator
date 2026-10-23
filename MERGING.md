@@ -89,6 +89,80 @@ git fetch upstream && git merge upstream/master
 - *Note*: the mapping is **not** a generation step. A world stays a fantasy world until the author
   applies the naming, so the pipeline is untouched by it.
 
+### Astral visual overhaul — Phase 1 (Astral view)
+
+- **`src/components/options/tabs/layers-tab.ts`**: fourth `#viewMode` button (`viewAstral`), the
+  mode-aware layer toggle map, and the standard/Astral preset options in one select.
+- **`src/components/options/view-mode.ts`**: the Astral flag, its subscription, and the
+  `viewAstral` branch; standard/3D leave the mode first.
+- **`src/components/layers.ts`**: three placeholder layer ids — `nebulae`, `starDensity`, `systems`
+  — at their z-positions. Their renderers land in Phase 3/4.
+- **`src/components/options-schema.ts`** / **`src/components/options-model.ts`**: `map.astral`
+  (default `false`, carried across regeneration).
+- **`src/components/lifecycle.ts`**: `AstralMode.hydrate()` after the options are restored.
+- **`src/controllers/astral-mode.ts`** (new): enter/exit/toggle/hydrate, the layer snapshot and the
+  cross-reload fallback.
+- **`src/controllers/index.ts`**: one registry entry (`AstralMode`).
+- **`src/components/map-commands.ts`**: `viewAstral`, and the 3D commands leave Astral first.
+- **`src/data/astral-layers.ts`** / **`src/data/astral-layer-labels.ts`** (new): presets and the
+  Astral button table.
+- **`src/data/layer-labels.ts`**: `layerLabel` falls back to the Astral table for Astral-only ids.
+- *Conflict resolution strategy*: the three layer entries are append-only at fixed z-positions; the
+  new option has a schema default, so older maps load as Standard.
+
+### Astral visual overhaul — Phase 2 (style)
+
+- **`src/generators/styles-schema.ts`**: `nebulae`, `starDensity` and `systems` elements, with their
+  grouped children and field meta.
+- **`src/generators/default-styles.json`**: the same three sections' defaults.
+- **`public/styles/astral.json`** (new): the complete sector-chart preset. The other shipped presets
+  gain the three new sections through the converter.
+- **`src/data/textures.ts`** / **`src/data/ocean-patterns.ts`**: the starfield image in the texture
+  and ocean-pattern choices.
+- **`public/images/textures/starfield.png`** (new): the tiled starfield used by sector dust and the
+  void.
+- **`src/services/style-presets.ts`** / **`scripts/render-style-thumbnails.mjs`**: `astral` in the
+  system preset list.
+- **`public/images/style-presets/astral.avif`** (new): the preset card thumbnail.
+- *Conflict resolution strategy*: the schema additions are one contiguous block; old maps and
+  presets repair the missing sections from defaults.
+
+### Astral visual overhaul — Phase 3 (nebulae and density)
+
+- **`src/components/layers.ts`**: the `nebulae` and `starDensity` placeholder layers gain their
+  renderers (`draw-nebulae`, `draw-star-density`); the `systems` layer stays a placeholder until
+  Phase 4.
+- **`src/renderers/astral/draw-nebulae.ts`** / **`nebula-shapes.ts`** (new): seeded ellipse
+  clusters, one turbulence filter per cluster, fade gradients in the `speed` performance preset.
+- **`src/renderers/astral/draw-star-density.ts`** / **`star-density-field.ts`** (new): a
+  population-weighted sparse kernel banded through `getIsolines` into the six `bandN` groups.
+- *Conflict resolution strategy*: the renderers are new files; the registry edits stay inside the
+  appended Astral layer entries.
+
+### Astral visual overhaul — Phase 4 (systems and interaction)
+
+- **`src/renderers/astral/draw-systems.ts`** (new): the star markers — one per live burg, recreated
+  per reconcile as one `data-group` per spectral class, sized on a log population ladder, with
+  capital rings, port orbit ticks and a style-gated halo. A `ViewportLayers` layer, so it culls and
+  follows zoom like `burgIcons`.
+- **`src/renderers/astral/system-markers.ts`** (new): the pure geometry — class grouping and the
+  size ladder.
+- **`src/generators/astral-naming.ts`**: `StarSystem` gains `x`/`y` (the renderer places markers by
+  them); new `systemTip()` writes the class/traits tooltip line.
+- **`src/components/layers.ts`**: the `systems` layer entry gains its renderer.
+- **`src/components/viewport.ts`**: `systems` added to `ZOOM_CURVES` (the burgIcons near-natural
+  curve) — a second stock touch point in the zoomed-layer list.
+- **`src/components/map-tooltip.ts`**: `#systems [data-id]` joins the burg tooltip targets; in
+  Astral the tooltip names the class and traits.
+- **`src/components/map-entities.ts`**: `/^system(\d+)$/` maps to the burg ref, the
+  `#burgIcons` target special case extends to `#systems`, the burg reveal layers are mode-aware
+  (`systems` in Astral), and the burg highlight covers `#burg{id}` and `#system{id}`.
+- **`src/components/viewbox-events.ts`**: a `systems` entry opens the Burg Editor for the marker's
+  burg.
+- *Conflict resolution strategy*: the renderer seams mirror the `burgIcons` paths — if upstream
+  changes how burgs resolve, click or highlight, re-apply the same change to the `system{id}`
+  element path.
+
 ### Toolchain & Windows Environment Compatibility
 
 - **`package.json`**:

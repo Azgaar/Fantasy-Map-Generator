@@ -35,6 +35,7 @@ export async function boot(): Promise<void> {
 
   Options.restore();
   await Options.restoreIcons(); // kept in IndexedDB, and needed before the first map draws
+  await Controllers.AstralMode.hydrate();
   adoptLegacyIconSlots(options.map.military.units); // the unit types a browser kept from before v1.154.0
   syncOptionInputs();
   restoreUi();
