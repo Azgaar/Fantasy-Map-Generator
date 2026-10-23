@@ -163,6 +163,24 @@ git fetch upstream && git merge upstream/master
   changes how burgs resolve, click or highlight, re-apply the same change to the `system{id}`
   element path.
 
+### Astral visual overhaul — Phase 5 (polish and docs)
+
+- **`src/controllers/astral-mode.ts`**: `hintNaming()` — a one-per-session "apply Astral naming" tip
+  shown on entering the mode, gated on the map having Astral peoples (`groupsOf`). Purely additive.
+- **`src/services/style-presets.ts`** / **`scripts/render-style-thumbnails.mjs`**: `astralSchematic`
+  added to the system preset list (the second Astral style, a cyan/green phosphor blueprint).
+- **`public/styles/astralSchematic.json`** (new): the complete schematic preset, authored from
+  `astral.json`.
+- **`public/images/style-presets/astralSchematic.avif`** (new): the preset card thumbnail.
+- **`tests/e2e/astral-mode.spec.ts`** / **`astral-systems.spec.ts`** / **`astral-round-trip.spec.ts`**
+  (new): the mode enter/exit/3D-exclusivity and export smoke, the systems hit-testing parity
+  (tooltip, click, reveal, zoom culling) and the save/reload/exit round trip.
+- **`src/generators/styles-legacy.test.ts`**: the shipped-preset count (15→16 presets, 16→17 files).
+- **`docs/wiki/User-Interface.md`** / **`docs/astral/README.md`** / **`README.md`** /
+  **`docs/plans/astral-ui-overhaul.md`**: the Astral view section, the preset list and the roadmap.
+- *Conflict resolution strategy*: the preset entries are two one-line additions in the existing
+  lists; the e2e specs are new files and carry no upstream conflict surface.
+
 ### Toolchain & Windows Environment Compatibility
 
 - **`package.json`**:

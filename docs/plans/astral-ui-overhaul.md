@@ -422,11 +422,15 @@ Burg Editor.
 **Acceptance:** every burg is a marker with the right class colour and size; clicking it opens the
 Burg Editor; the map tooltip names the class and traits; zoom culling works.
 
-### Phase 5 — Polish and docs
+### Phase 5 — Polish and docs ✅
 
 - Astral layer preset table; save/remove hidden in the mode;
 - e2e coverage, README and wiki updates, `MERGING.md` checklist;
-- optional: a "Apply Astral naming" hint in the mode, and a second `astralSchematic` preset.
+- a "Apply Astral naming" hint in the mode, and a second `astralSchematic` preset.
+
+Shipped: the e2e specs (`astral-mode`, `astral-systems`, `astral-round-trip`), the one-per-session
+naming hint shown on entering the mode, the `astralSchematic` blueprint preset and its registration,
+and the README, wiki and `MERGING.md` updates.
 
 **Acceptance:** lint, unit tests, build and the new e2e specs pass; the README roadmap links this
 plan.

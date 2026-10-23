@@ -262,6 +262,14 @@ For example, the group of layers called "political map", contains (and toggle) t
 
 Available presets: Political map, Cultural map, Religions map, Provinces map, Biomes map, Heightmap, Physical map, Places of interest, Goods map, Trade animation, Military map, Emblems and Pure landmass.
 
+## View mode
+
+At the top of the Layers tab, the **View mode** row chooses what the map shows: **Standard**, **3D scene**, **Globe** or **Astral**. Standard is the fantasy map; 3D scene and Globe are the three-dimensional views.
+
+**Astral** turns the map into a star chart of one chosen sector. Entering it swaps the layer buttons for the Astral list — Sector Dust, Nebulae, Star Density, Star Systems, Empires, Sectors, Borders, Hyperlanes, Anomalies and Labels — and applies the Astral style: the void becomes deep space, the land becomes a starry dust sheet, nebulae and a stellar-density heatmap appear, and every burg is drawn as a class-coloured star. There is no galactic core or spiral arm; the map is one sector, not a galaxy.
+
+Astral and the 3D views are mutually exclusive, so entering one leaves the other. Leaving Astral restores the layer set and style you had before. The mode is saved with the map, so a reloaded Astral map reopens as a chart. While in the mode the layer preset dropdown lists only the Astral presets (Astral chart, Empires, Survey scan, Systems and lanes) and the save/remove preset buttons are hidden; to keep the look permanently, pick the **Astral** or **astralSchematic** preset in the Style tab instead.
+
 ## Biomes
 
 This layer shows the division of the land into biomes.
@@ -434,7 +442,7 @@ The preset button shows the current preset and allows you to choose a set of des
 
 Each of those sets defines its design settings for each of the elements, for example the ancient preset defines the texture of the land to be with the image setting to be ancient small, and the Clipping setting to be No clipping.
 
-Available presets: default, ancient, gloom, pale, light, watercolor, clean, atlas, darkSeas, cyberpunk, astral, night, monochrome, ink, cinderwood and frostbite. The **+** button saves the current style as a custom preset.
+Available presets: default, ancient, gloom, pale, light, watercolor, clean, atlas, darkSeas, cyberpunk, astral, astralSchematic, night, monochrome, ink, cinderwood and frostbite. The **+** button saves the current style as a custom preset.
 
 Clicking the preset button opens the **Style presets** dialog: a gallery with a screenshot of every system preset (all rendered from the same map), the current one outlined. Clicking a card applies the preset, and the dialog stays open. Custom presets are listed with a neutral tile; hover one and click its trash button to remove it.
 

@@ -36,6 +36,7 @@ const SYSTEM_PRESETS = [
   "darkSeas",
   "cyberpunk",
   "astral",
+  "astralSchematic",
   "night",
   "monochrome",
   "ink",

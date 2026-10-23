@@ -6,6 +6,7 @@ import { tip } from "@/components/tooltips";
 import { invokeActiveZooming } from "@/components/zoom";
 import { Controllers } from "@/controllers";
 import { ASTRAL_DEFAULT_PRESET, ASTRAL_PRESETS } from "@/data/astral-layers";
+import { groupsOf } from "@/generators/astral-naming";
 import { StylePresetsService } from "@/services/style-presets";
 import type { StylesData } from "@/types/styles";
 import { findEl } from "@/utils";
@@ -36,6 +37,21 @@ interface Profile extends StoredProfile {
 
 let profile: Profile | null = null;
 let transition = 0;
+let hintedNaming = false;
+
+/** One hint per session: the mode is a view, and the naming action that completes it stays in Tools */
+function hintNaming(): void {
+  if (hintedNaming) return;
+  const hasAstralPeoples = pack.states?.some(state => state.i && !state.removed && groupsOf(state.culture ?? 0));
+  if (!hasAstralPeoples) return;
+  hintedNaming = true;
+  tip(
+    "For a full star chart apply Astral naming under Tools: polities take their words, provinces become sectors",
+    false,
+    "info",
+    8000
+  );
+}
 
 function saveProfile(value: StoredProfile): void {
   try {
@@ -110,6 +126,7 @@ async function enter(): Promise<void> {
   Options.persist();
   applyButtonState(true);
   applyLayers(ASTRAL_PRESETS[ASTRAL_DEFAULT_PRESET].layers);
+  hintNaming();
 
   if (!styled) return;
   const loaded = await StylePresetsService.load("astral");
