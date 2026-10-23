@@ -6,8 +6,9 @@ import { Markers } from "@/model/story/markers-generator";
 import { Layers } from "@/renderers/layers";
 import { refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/ui/map/map-placement";
-import { ensureEl, findEl, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
 
 function toggle(baseMarker?: Marker): void {
   if (findEl("addMarker")?.classList.contains("pressed")) {

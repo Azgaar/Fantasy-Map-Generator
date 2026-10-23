@@ -10,8 +10,11 @@ import { goodIconLines } from "@/renderers/draw-goods";
 import { Layers } from "@/renderers/layers";
 import { destroyDialog, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
-import { capitalize, ensureEl, escapeHtml, findEl, getRandomColor, rn } from "@/utils";
+import { getRandomColor } from "@/utils/colorUtils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
+import { capitalize, escapeHtml } from "@/utils/stringUtils";
 
 function open(editedGood?: Good, onUpdate?: () => void): void {
   const demandCoverageState: Partial<Record<DemandCategory, number>> = { ...(editedGood?.demandCoverage || {}) };

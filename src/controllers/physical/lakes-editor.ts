@@ -5,18 +5,21 @@ import { type Feature, Features, LAKE_SUBTYPES } from "@/model/physical/features
 import { Names } from "@/model/society/names-generator";
 import { Styles } from "@/model/styles/styles";
 import { Tags } from "@/model/tags";
+import { getArea, getAreaUnit, getHeight } from "@/model/units";
 import { Layers } from "@/renderers/layers";
 import { isGroupNameFree } from "@/renderers/style-groups";
+import { speak } from "@/services/speech";
 import { closeDialogs, confirmationDialog, destroyDialog, noteButton } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
-import { ensureEl, getArea, getAreaUnit, rand, si, speak } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
-import { getHeight } from "@/utils/unitUtils";
+import { ensureEl } from "@/utils/nodeUtils";
+import { si } from "@/utils/numberUtils";
+import { rand } from "@/utils/probabilityUtils";
 
 let selectedLake: Selection<SVGElement, unknown, HTMLElement, unknown>;
 
 function open(element: SVGElement): void {
-  if (customization) return;
+  if (options.app.mode) return;
   closeDialogs(".stable");
   Layers.hide("cells");
 

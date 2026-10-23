@@ -21,7 +21,7 @@
 - `src/data/`: Static content / reference data.
 - `src/locales/`: Interface strings per language.
 - `src/types/`: Shared TypeScript interfaces and domain models.
-- `src/utils/`: Generic helper functions.
+- `src/utils/`: Pure helper functions: no app state, imported from their own file (there is no `@/utils` barrel).
 - `public/`: Static assets.
 - `electron/`: Main process, preload script and self-update of the desktop app.
 - `docs/`: Domain, architectural documentation and user-facing wiki.
@@ -63,6 +63,19 @@
 - **Desktop App**: `npm run electron`, `npm run electron dist`
 - **CI/CD**: GitHub Actions enforce linting, building, and playwright tests on PRs.
 
+# Browser Console
+
+`window.FMG` ([src/app/fmg.ts](src/app/fmg.ts)) is the app's console surface, also used by the Assistant's `read_map` scripts. App code never reads it. Use it to check a change in the running app (`npm run dev`, then `http://localhost:5173/Fantasy-Map-Generator/`), for example through the browser pane's JavaScript tool:
+
+- **State**: `FMG.pack`, `FMG.grid`, `FMG.options`, `FMG.styles` are live getters; `FMG.mapHistory` lists the maps of this session.
+- **Model and helpers**: every model singleton (`FMG.Burgs`, `FMG.States`, `FMG.Rivers`…), `FMG.Layers`, `FMG.Controllers`, `FMG.Services` and the `utils/` helpers (`FMG.rn`, `FMG.P`…).
+- **Wait for a map**: the boot generates one; `FMG.mapHistory.length > 0` means it is on screen. A new one with a fixed seed: `await new Promise(done => { addEventListener("map:generated", done, { once: true }); FMG.regenerateMap({ seed: "42" }); })`.
+- **Drive the UI**: `await FMG.Controllers.BurgsOverview.open()`, `FMG.Layers.show("relief")`, `FMG.Layers.drawAll()`, `FMG.zoomTo(x, y, scale, 0)`, `FMG.closeDialogs()`.
+- **Debug drawing**: `FMG.drawCellsValue(FMG.pack.cells.h)`, `FMG.drawPolygons(values)`, `FMG.drawPoint([x, y], {})` draw into the `#debug` layer.
+- **Anything not on FMG**: in dev, import the module by its served path, `await import("/Fantasy-Map-Generator/model/physical/coastline-generator.ts")` (the path under `src/`, without `src/`); it is the same instance the app uses.
+- **Logging**: `TIME`, `INFO`, `WARN`, `ERROR` are plain globals; set one to `false` to silence it.
+- **Viewport**: a browser pane can open at zero width, and then the map fails to generate. Resize the window and reload before trusting a result.
+
 # Domain Knowledge
 
 - **Grid**: The underlying Voronoi structure.
@@ -75,7 +88,7 @@
 
 # Sharp Edges
 
-- **Ambient state**: `pack`, `grid`, `options`, `styles` and `customization` are still globals, read bare across the app; everything else is imported. Be cautious when turning them into explicit parameters.
-- **`window.FMG`**: the browser console and the Assistant's `read_map` scripts reach the app through `window.FMG` ([src/app/fmg.ts](src/app/fmg.ts)). App code never reads it.
+- **Ambient state**: `pack`, `grid`, `options` and `styles` are still globals, read bare across the app; everything else is imported. Be cautious when turning them into explicit parameters.
+- **Edit mode**: `options.app.mode` names the edit mode the user is in (`"heightmap"`, `"paint"`, `"addState"`…) or is `null`. While it is set, other editors, saving and regeneration stay off. It is never stored, so a reload starts outside any mode.
 - **`index.html`**: The shared app-shell and map SVG template. It can easily break if structural tags are accidentally nested incorrectly.
 - **Playwright**: Never automatically run Playwright tests when developing, they are too slow and cause PC freezes.

@@ -5,7 +5,7 @@ import { LAYER_TOGGLES, underlineHotkey } from "@/data/layer-labels";
 import type { LayerId } from "@/renderers/layers";
 import { Layers } from "@/renderers/layers";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
-import { isCtrlClick } from "@/utils";
+import { isCtrlClick } from "@/utils/commonUtils";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
 

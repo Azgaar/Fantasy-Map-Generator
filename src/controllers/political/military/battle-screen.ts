@@ -10,22 +10,14 @@ import { Layers } from "@/renderers/layers";
 import { closeDialogs } from "@/ui/dialog/dialog-helpers";
 import { applySorting, applySortingByHeader } from "@/ui/dialog/sorting";
 import { tip } from "@/ui/tooltips";
-import {
-  capitalize,
-  ensureEl,
-  escapeHtml,
-  findEl,
-  getAdjective,
-  last,
-  list,
-  minmax,
-  P,
-  Pint,
-  rand,
-  rn,
-  wiki
-} from "@/utils";
+import { last } from "@/utils/arrayUtils";
+import { wiki } from "@/utils/commonUtils";
 import { sentences, t } from "@/utils/i18n";
+import { getAdjective, list } from "@/utils/languageUtils";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { minmax, rn } from "@/utils/numberUtils";
+import { P, Pint, rand } from "@/utils/probabilityUtils";
+import { capitalize, escapeHtml } from "@/utils/stringUtils";
 
 type Side = "attackers" | "defenders";
 
@@ -55,9 +47,9 @@ interface BattleState {
 let battle: BattleState | null = null;
 
 function open(attacker: Regiment, defender: Regiment): void {
-  if (customization) return;
+  if (options.app.mode) return;
   closeDialogs(".stable");
-  customization = 13; // enter customization to avoid unwanted dialogs
+  options.app.mode = "battle"; // an edit mode keeps other dialogs from opening
 
   renderDialog();
 
@@ -1411,7 +1403,7 @@ function closeBattleScreen(): void {
 }
 
 function cleanData(): void {
-  customization = 0; // exit edit mode
+  options.app.mode = null; // exit edit mode
 
   // clean temp data
   if (battle) {

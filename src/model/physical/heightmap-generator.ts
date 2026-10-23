@@ -4,7 +4,8 @@ import { heightmapTemplates } from "@/data/heightmap-templates";
 import { Lattice } from "@/model/graph/lattice";
 import type { MapData } from "@/model/options/options-schema";
 import type { GridGraph } from "@/types/GridGraph";
-import { getNumberInRange, lim, minmax, P, rand } from "@/utils";
+import { lim, minmax } from "@/utils/numberUtils";
+import { getNumberInRange, P, rand } from "@/utils/probabilityUtils";
 
 type Tool = "Hill" | "Pit" | "Range" | "Trough" | "Strait" | "Mask" | "Invert" | "Add" | "Multiply" | "Smooth";
 

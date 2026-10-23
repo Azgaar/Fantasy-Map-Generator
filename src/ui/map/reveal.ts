@@ -7,7 +7,7 @@ import { highlightArea, highlightElement } from "@/renderers/overlays/highlight"
 import { viewport } from "@/renderers/viewport/viewport";
 import type { Point } from "@/types/global";
 import { zoomTo } from "@/ui/map/zoom";
-import { findEl } from "@/utils";
+import { findEl } from "@/utils/nodeUtils";
 import { type Box, getBounds } from "@/utils/pathUtils";
 
 // Showing things on the map: zoom to fit, show their layers, outline or ring them

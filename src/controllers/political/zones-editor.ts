@@ -3,6 +3,7 @@ import { Controllers } from "@/controllers";
 import type { Zone } from "@/model/political/zones-generator";
 import { Zones } from "@/model/political/zones-generator";
 import { Tags } from "@/model/tags";
+import { getArea, getAreaUnit } from "@/model/units";
 import { zonesFilter } from "@/renderers/draw-zones";
 import { Layers } from "@/renderers/layers";
 import { LegendBoxes } from "@/renderers/legend-boxes";
@@ -22,8 +23,10 @@ import {
 } from "@/ui/dialog/table";
 import type { FillBoxElement } from "@/ui/elements/fill-box";
 import { tip } from "@/ui/tooltips";
-import { ensureEl, findEl, getArea, getAreaUnit, rn, si, unique } from "@/utils";
+import { unique } from "@/utils/arrayUtils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { rn, si } from "@/utils/numberUtils";
 import { errorText } from "@/utils/stringUtils";
 
 const dialogId = "zonesEditor" as const;

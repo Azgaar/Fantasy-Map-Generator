@@ -1,6 +1,7 @@
 import { range, select } from "d3";
 import { viewport } from "@/renderers/viewport/viewport";
-import { ensureEl, rn } from "../utils";
+import { ensureEl } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
 
 export function drawScaleBar(
   parent?: SVGSVGElement,

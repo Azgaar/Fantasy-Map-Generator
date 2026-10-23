@@ -6,8 +6,9 @@ import { Icons } from "@/model/icons";
 import type { ReliefRule } from "@/model/options/options-schema";
 import type { ReliefPool, ReliefSet } from "@/model/physical/relief-generator";
 import { Relief } from "@/model/physical/relief-generator";
-import { capitalize, escapeHtml, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { rn } from "@/utils/numberUtils";
+import { capitalize, escapeHtml } from "@/utils/stringUtils";
 
 /** a relief set symbol in the relief style's stroke, as the map draws it, to be cropped by `fitReliefArt` */
 export function reliefArtHtml(id: string, attributes = ""): string {

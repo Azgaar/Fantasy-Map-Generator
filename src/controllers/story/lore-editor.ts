@@ -7,8 +7,8 @@ import { Pins } from "@/model/options/pins";
 import { Names } from "@/model/society/names-generator";
 import { Lore } from "@/model/story/lore";
 import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
-import { ensureEl, findEl } from "@/utils";
 import { t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
 
 const DIALOG_ID = "loreEditor";
 

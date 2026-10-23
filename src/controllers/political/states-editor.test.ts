@@ -33,7 +33,6 @@ describe("StatesEditor", () => {
     dialogState.remove("statesEditor", "columns");
 
     document.body.innerHTML = /* html */ `<div id="dialogs"></div><svg id="viewbox"><g id="deftemp"><g id="fog"></g></g></svg>`;
-    vi.stubGlobal("customization", 0);
     vi.stubGlobal("$", () => ({
       dialog: vi.fn(),
       one: vi.fn(),
@@ -45,6 +44,7 @@ describe("StatesEditor", () => {
       setLocked: vi.fn()
     });
     vi.stubGlobal("options", {
+      app: { mode: null },
       map: {
         units: {
           distance: { scale: 1, unit: "mi" },

@@ -7,6 +7,7 @@ import {
   resolveCellPlace
 } from "@/model/story/journeys/journey-places";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
+import { convertSpeed, formatSpeed, getDistanceUnit, parseSpeed } from "@/model/units";
 import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
@@ -31,8 +32,10 @@ import {
 } from "@/ui/dialog/table";
 import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
-import { convertSpeed, ensureEl, escapeHtml, findEl, formatSpeed, getDistanceUnit, parseSpeed, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
+import { escapeHtml } from "@/utils/stringUtils";
 import { domainMismatchMessage, JourneyPathEditor, recomputeSegment } from "./journey-path-editor";
 
 const dialogId = "journeyEditor" as const;
@@ -68,7 +71,7 @@ const segmentsTable = initEditorTable<JourneySegment>({
 const pathEditor = new JourneyPathEditor({ getJourney, getSegment, refresh: segmentsTable.refresh });
 
 function open(journeyId: number): void {
-  if (customization) return;
+  if (options.app.mode) return;
 
   if (editingJourneyId === journeyId) {
     // an armed on-map mode owns the click that got us here, e.g. drawing over the journey's own path

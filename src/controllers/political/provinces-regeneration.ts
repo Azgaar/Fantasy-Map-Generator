@@ -4,13 +4,13 @@ import { Layers } from "@/renderers/layers";
 import { unfog } from "@/renderers/overlays/fogging";
 import { destroyDialog, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
-import { ensureEl } from "@/utils";
 import { t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/nodeUtils";
 
 const DIALOG_ID = "provincesRegeneration";
 
 function open(): void {
-  if (customization) return;
+  if (options.app.mode) return;
   destroyDialog(DIALOG_ID);
   ensureEl("dialogs").insertAdjacentHTML("beforeend", `<div id="${DIALOG_ID}" class="dialog"></div>`);
   render();

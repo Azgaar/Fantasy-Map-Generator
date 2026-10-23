@@ -10,9 +10,9 @@ import type { Journey, JourneyPoint, JourneySegment } from "@/types/Journey";
 import { alertDialog, confirmationDialog } from "@/ui/dialog/dialog-helpers";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { ensureEl, findEl, getPointer, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
-import { createEl } from "@/utils/nodeUtils";
+import { createEl, ensureEl, findEl, getPointer } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
 
 const OVERLAY_ID = "journeyOverlay";
 const ERROR_TIP_TIME = 8000;

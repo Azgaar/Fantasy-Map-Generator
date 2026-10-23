@@ -1,5 +1,5 @@
 import { select } from "d3";
-import { ensureEl } from "@/utils";
+import { ensureEl } from "@/utils/nodeUtils";
 
 export function drawGrid(): void {
   const gridOverlay = select(ensureEl<SVGGElement>("gridOverlay"));

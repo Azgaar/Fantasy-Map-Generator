@@ -9,8 +9,10 @@ import { FORMATS, isLabelStyle } from "@/model/styles/styles-formats";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
 import { getLabelsIndex } from "@/renderers/labels/label-data";
 import type { StandardControl, StyleControl } from "@/types/styles";
-import { ensureEl, escapeHtml, findEl, htmlEl, rn } from "@/utils";
 import { t } from "@/utils/i18n";
+import { ensureEl, findEl, htmlEl } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
+import { escapeHtml } from "@/utils/stringUtils";
 import {
   openAddFontDialog,
   openFontDialog,

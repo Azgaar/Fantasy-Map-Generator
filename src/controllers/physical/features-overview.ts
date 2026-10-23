@@ -10,6 +10,7 @@ import {
   OCEAN_SUBTYPES
 } from "@/model/physical/features-generator";
 import { Tags } from "@/model/tags";
+import { getArea, getAreaUnit } from "@/model/units";
 import { Layers } from "@/renderers/layers";
 import { highlightArea, highlightOutline } from "@/renderers/overlays/highlight";
 import { Csv } from "@/services/io/csv";
@@ -26,8 +27,11 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
-import { ensureEl, escapeHtml, findEl, getArea, getAreaUnit, getVertexPath, si } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { si } from "@/utils/numberUtils";
+import { getVertexPath } from "@/utils/pathUtils";
+import { escapeHtml } from "@/utils/stringUtils";
 
 const dialogId = "featuresOverview" as const;
 const CSV_COLUMNS = ["Id", "Name", "Type", "Subtype", "Group", "Tags", "Area", "Map area", "Cut by border"];
@@ -110,7 +114,7 @@ const featuresTable = initEditorTable<Feature>({
 });
 
 function open(): void {
-  if (customization) return;
+  if (options.app.mode) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ search: "", type: "all", subtype: "all" }));
   closeDialogs(`#${dialogId}, .stable`);
 

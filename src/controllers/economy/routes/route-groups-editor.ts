@@ -4,17 +4,15 @@ import { Routes } from "@/model/economy/routes-generator";
 import { Layers } from "@/renderers/layers";
 import { isGroupNameFree } from "@/renderers/style-groups";
 import { confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { promptDialog } from "@/ui/dialog/prompt-dialog";
 import { tip } from "@/ui/tooltips";
-import { ensureEl, findEl } from "@/utils";
 import { t } from "@/utils/i18n";
-
-// custom legacy 3-arg prompt from commonUtils.initializePrompt (collides with lib.dom's var prompt)
-declare const prompt: (text: string, options: { default: string }, callback: (value: string) => void) => void;
+import { ensureEl, findEl } from "@/utils/nodeUtils";
 
 const DEFAULT_GROUPS = ["roads", "trails", "searoutes"];
 
 function open(): void {
-  if (customization) return;
+  if (options.app.mode) return;
   Layers.show("routes");
 
   renderDialog();
@@ -73,7 +71,7 @@ function addLines(): void {
 }
 
 function addGroup(): void {
-  prompt(t("Group name"), { default: "route-group-new" }, v => {
+  promptDialog(t("Group name"), { default: "route-group-new" }, v => {
     let group = v
       .toLowerCase()
       .replace(/ /g, "_")

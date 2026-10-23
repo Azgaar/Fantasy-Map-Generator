@@ -5,8 +5,8 @@ import { Layers } from "@/renderers/layers";
 import { closeDialogs, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/ui/map/map-placement";
 import { tip } from "@/ui/tooltips";
-import { findEl } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { findEl } from "@/utils/nodeUtils";
 import { errorText } from "@/utils/stringUtils";
 
 function toggle(): void {

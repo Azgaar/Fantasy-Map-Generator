@@ -12,8 +12,8 @@ import { destroyDialog } from "@/ui/dialog/dialog-helpers";
 import type { FillBoxElement } from "@/ui/elements/fill-box";
 import { MapBrush } from "@/ui/map/map-brush";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { ensureEl } from "@/utils";
 import { t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/nodeUtils";
 
 export interface PaintEditorItem {
   id: number;
@@ -60,18 +60,17 @@ interface PaintEditorState {
 
 const dialogId = "paintEditor" as const;
 const historyLimit = 100;
-const customizationMode = 2;
 const defaultBrushRadius = 12;
 const eraseAllValue = -1;
 
 let state: PaintEditorState | null = null;
 let brush: MapBrush | null = null;
 
-function open(options: OpenPaintEditorOptions): void {
-  if (customization) return;
+function open(config: OpenPaintEditorOptions): void {
+  if (options.app.mode) return;
 
-  $(`#${options.parentDialogId}`).dialog("close");
-  customization = customizationMode;
+  $(`#${config.parentDialogId}`).dialog("close");
+  options.app.mode = "paint";
 
   brush = new MapBrush({
     id: "paintEditorBrush",
@@ -84,9 +83,9 @@ function open(options: OpenPaintEditorOptions): void {
     onMove: showCellTip
   });
 
-  const items = sortItems(options.items);
+  const items = sortItems(config.items);
   state = {
-    options,
+    options: config,
     itemsById: new Map(items.map(item => [item.id, item])),
     changes: new Map(),
     history: [],
@@ -95,13 +94,13 @@ function open(options: OpenPaintEditorOptions): void {
   };
 
   try {
-    renderDialog(options, items);
+    renderDialog(config, items);
     renderItems(items);
     openPaintOverlay();
     addListeners();
 
     $(ensureEl(dialogId)).dialog({
-      title: options.title,
+      title: config.title,
       resizable: false,
       position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
       close: cancel
@@ -109,7 +108,7 @@ function open(options: OpenPaintEditorOptions): void {
 
     tip(t("Click to select, drag to paint. Shift + drag resizes the brush, Space + drag pans the map"), true);
   } catch (error) {
-    close(options.onClose);
+    close(config.onClose);
     throw error;
   }
 }
@@ -342,7 +341,7 @@ function cleanup(): void {
   brush?.detach();
   brush = null;
   clearMainTip();
-  if (customization === customizationMode) customization = 0;
+  if (options.app.mode === "paint") options.app.mode = null;
 }
 
 function close(onClose: () => void): void {

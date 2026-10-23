@@ -1,8 +1,9 @@
 // The "About" dialog: what the generator is, where to get help and how to support it.
 // A component, not a controller — it is opened over the map but knows nothing about it
 
-import { ensureEl, link } from "@/utils";
+import { link } from "@/utils/commonUtils";
 import { t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/nodeUtils";
 
 const COMMUNITY = {
   discord: link("https://discordapp.com/invite/X7E84HU", "Discord"),

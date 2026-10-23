@@ -58,6 +58,7 @@ import { Markers } from "@/model/story/markers-generator";
 import { Notes } from "@/model/story/notes";
 import { Styles } from "@/model/styles/styles";
 import { Tags } from "@/model/tags";
+import * as units from "@/model/units";
 import { fitLegendBox } from "@/renderers/draw-legend";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { getLabelsData } from "@/renderers/labels/label-data";
@@ -68,12 +69,25 @@ import { Services } from "@/services";
 import { setScriptScope } from "@/services/assistant/provider/runtime";
 import { initiateAutosave, toggleSaveReminder } from "@/services/autosave";
 import { fonts } from "@/services/fonts";
+import { getFileName } from "@/services/io/file-name";
+import { speak } from "@/services/speech";
 import { copyMapURL } from "@/services/url-params";
 import { cleanupData, VERSION } from "@/services/versioning";
 import { closeDialogs, confirmationDialog } from "@/ui/dialog/dialog-helpers";
 import { invokeActiveZooming, resetZoom, setMapZoom, setTranslateExtent, setZoomExtent, zoomTo } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import * as utils from "@/utils";
+import * as arrayUtils from "@/utils/arrayUtils";
+import * as colorUtils from "@/utils/colorUtils";
+import * as commonUtils from "@/utils/commonUtils";
+import * as fileUtils from "@/utils/fileUtils";
+import * as heightUtils from "@/utils/heightUtils";
+import * as languageUtils from "@/utils/languageUtils";
+import * as nodeUtils from "@/utils/nodeUtils";
+import * as numberUtils from "@/utils/numberUtils";
+import * as objectUtils from "@/utils/objectUtils";
+import * as pathUtils from "@/utils/pathUtils";
+import * as probabilityUtils from "@/utils/probabilityUtils";
+import * as stringUtils from "@/utils/stringUtils";
 
 const FMG = {
   // replaced wholesale on regeneration and load, so read through getters
@@ -89,11 +103,23 @@ const FMG = {
   get styles() {
     return styles;
   },
-  get customization() {
-    return customization;
-  },
 
-  ...utils,
+  // helpers
+  ...arrayUtils,
+  ...colorUtils,
+  ...commonUtils,
+  ...fileUtils,
+  ...heightUtils,
+  ...languageUtils,
+  ...nodeUtils,
+  ...numberUtils,
+  ...objectUtils,
+  ...pathUtils,
+  ...probabilityUtils,
+  ...stringUtils,
+  ...units,
+  speak,
+  getFileName,
   VERSION,
   mapHistory,
   fonts,
@@ -194,7 +220,7 @@ const FMG = {
   drawRouteConnections: () => drawRouteConnections(pack),
   drawPoint,
   drawPath,
-  getVertexPath: (cells: number[]) => utils.getVertexPath(cells, pack)
+  getVertexPath: (cells: number[]) => pathUtils.getVertexPath(cells, pack)
 };
 
 Object.defineProperty(window, "FMG", { value: FMG });

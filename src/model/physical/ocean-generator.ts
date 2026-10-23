@@ -1,4 +1,4 @@
-import { clipPoly } from "@/utils";
+import { clipPoly } from "@/utils/commonUtils";
 
 /**
  * Ocean outlines: closed rings traced around the coast at a given distance from it. `t` is the

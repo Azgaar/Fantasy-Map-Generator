@@ -4,12 +4,15 @@ import { ICON_GROUPS } from "@/data/icons-list";
 import { ICON_GROUP_LABELS } from "@/data/id-labels";
 import { type IconSetId, IconSets } from "@/model/icon-sets";
 import { type CustomIcon, CustomIcons, type IconPicture, Icons } from "@/model/icons";
+import { getFileName } from "@/services/io/file-name";
 import { IconsArchive } from "@/services/io/icons-archive";
 import type { IconSet } from "@/types/icons";
 import { confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
-import { capitalize, createFileInput, downloadFile, ensureEl, escapeHtml, getFileName } from "@/utils";
+import { createFileInput, downloadFile } from "@/utils/fileUtils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/nodeUtils";
+import { capitalize, escapeHtml } from "@/utils/stringUtils";
 import { IconPictures, type PictureProfile } from "./pictures";
 import { closePositioner, openPositioner } from "./positioner";
 

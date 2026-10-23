@@ -1,6 +1,7 @@
 import { isMobile } from "@/services/platform";
-import { debounce, findEl } from "@/utils";
+import { debounce } from "@/utils/commonUtils";
 import { sentences, t } from "@/utils/i18n";
+import { findEl } from "@/utils/nodeUtils";
 
 type TipType = "info" | "success" | "warn" | "error";
 

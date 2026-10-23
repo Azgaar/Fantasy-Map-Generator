@@ -1,10 +1,6 @@
 import { clipPolygon } from "lineclip";
 import { last } from "./arrayUtils";
-import { distanceSquared } from "./functionUtils";
-import { t } from "./i18n";
-import { findEl } from "./nodeUtils";
-import { rn } from "./numberUtils";
-import { rand } from "./probabilityUtils";
+import { distanceSquared, rn } from "./numberUtils";
 
 /**
  * Clip polygon points to graph boundaries
@@ -157,40 +153,6 @@ export const parseError = (error: Error): string => {
 };
 
 /**
- * Convert a URL to base64 encoded data
- * @param url - The URL to convert
- * @param callback - Callback function that receives the base64 data
- */
-export const getBase64 = (url: string, callback: (result: string | ArrayBuffer | null) => void): void => {
-  const xhr = new XMLHttpRequest();
-  xhr.onload = () => {
-    const blob = xhr.response as Blob | null;
-    // don't inline error pages (e.g. a 404 html document) as image data
-    if (xhr.status < 200 || xhr.status >= 300 || !blob?.type.startsWith("image/")) {
-      ERROR && console.error(`Cannot load image ${url}: status ${xhr.status}, type ${blob?.type || "unknown"}`);
-      return callback(null);
-    }
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      callback(reader.result);
-    };
-    reader.readAsDataURL(blob);
-  };
-  xhr.onerror = () => {
-    ERROR && console.error(`Cannot load image ${url}: network error`);
-    callback(null);
-  };
-  xhr.ontimeout = () => {
-    ERROR && console.error(`Cannot load image ${url}: timed out`);
-    callback(null);
-  };
-  xhr.open("GET", url);
-  xhr.timeout = 15000; // a host that never answers must not hang an export
-  xhr.responseType = "blob";
-  xhr.send();
-};
-
-/**
  * Open URL in a new tab or window
  * @param url - The URL to open
  */
@@ -224,20 +186,6 @@ export const link = (URL: string, description: string): string => {
 export const isCtrlClick = (event: MouseEvent | KeyboardEvent): boolean => {
   // meta key is cmd key on MacOs
   return event.ctrlKey || event.metaKey;
-};
-
-/**
- * Generate a random date within a specified range
- * @param from - Start year (default is 100)
- * @param to - End year (default is 1000)
- * @returns Formatted date string
- */
-export const generateDate = (from: number = 100, to: number = 1000): string => {
-  return new Date(rand(from, to), rand(11), rand(1, 28)).toLocaleDateString("en", {
-    year: "numeric",
-    month: "long",
-    day: "numeric"
-  });
 };
 
 /**
@@ -283,96 +231,4 @@ export const getCoordinates = (
   decimals: number = 2
 ): [number, number] => {
   return [getLongitude(x, mapCoordinates, graphWidth, decimals), getLatitude(y, mapCoordinates, graphHeight, decimals)];
-};
-
-/**
- * Prompt options interface
- */
-export interface PromptOptions {
-  default: number | string;
-  step?: number;
-  min?: number;
-  max?: number;
-  required?: boolean;
-}
-
-/**
- * Initialize custom prompt function (prompt does not work in Electron)
- * This should be called once when the DOM is ready
- */
-export const initializePrompt = (): void => {
-  const prompt = findEl("prompt");
-  if (!prompt) return;
-
-  const form = prompt.querySelector<HTMLFormElement>("#promptForm");
-  if (!form) return;
-
-  const defaultText = t("Please provide an input");
-  const defaultOptions: PromptOptions = {
-    default: 1,
-    step: 0.01,
-    min: 0,
-    max: 100,
-    required: true
-  };
-
-  (window as any).prompt = (
-    promptText: string = defaultText,
-    options: PromptOptions = defaultOptions,
-    callback?: (value: number | string) => void
-  ) => {
-    if (options.default === undefined)
-      return ERROR && console.error("Prompt: options object does not have default value defined");
-
-    const input = prompt.querySelector("#promptInput") as HTMLInputElement;
-    const promptTextElement = prompt.querySelector("#promptText") as HTMLElement;
-
-    if (!input || !promptTextElement) return;
-
-    promptTextElement.innerHTML = promptText;
-
-    const type = typeof options.default === "number" ? "number" : "text";
-    input.type = type;
-
-    if (options.step !== undefined) input.step = options.step.toString();
-    if (options.min !== undefined) input.min = options.min.toString();
-    if (options.max !== undefined) input.max = options.max.toString();
-
-    input.required = options.required !== false;
-    input.placeholder = `type a ${type}`;
-    input.value = options.default.toString();
-    input.style.width = promptText.length > 10 ? "100%" : "auto";
-    prompt.style.display = "block";
-
-    form.onsubmit = (event: SubmitEvent) => {
-      event.preventDefault();
-      prompt.style.display = "none";
-      form.onsubmit = null;
-      const v = type === "number" ? +input.value : input.value;
-      if (callback) callback(v);
-    };
-  };
-
-  const cancel = prompt.querySelector("#promptCancel");
-  if (cancel) {
-    cancel.addEventListener("click", () => {
-      prompt.style.display = "none";
-      form.onsubmit = null;
-    });
-  }
-};
-
-/**
- * Read a text out loud using the voice selected in the options
- * @param text - The text to speak
- */
-export const speak = (text: string): void => {
-  const speaker = new SpeechSynthesisUtterance(text);
-
-  const voices = speechSynthesis.getVoices();
-  if (voices.length) {
-    speaker.voice = voices[Number(options.app.ui.speakerVoice)] ?? speaker.voice;
-  }
-
-  speechSynthesis.speak(speaker);
 };

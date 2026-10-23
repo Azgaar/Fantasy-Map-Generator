@@ -2,7 +2,7 @@ import { polygonArea } from "d3";
 import { GraphOverride } from "@/model/graph/graph-override";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/types/global";
-import { minmax } from "@/utils";
+import { minmax } from "@/utils/numberUtils";
 
 const BUDGET = 3; // a vertex may travel this far relative to its average original edge
 const AREA_MARGIN = 0.25; // a cell keeps at least this share of the area it had when the stroke started

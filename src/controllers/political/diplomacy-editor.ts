@@ -9,9 +9,9 @@ import type { Point } from "@/types/global";
 import { destroyDialog, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { ensureEl, findEl } from "@/utils";
 import { createBrushStroke } from "@/utils/brushUtils";
 import { t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
 
 interface EditorOptions {
   /** another state was picked in the editor */
@@ -26,7 +26,7 @@ const dialogId = "diplomacyEditor";
 
 let stateId = 0;
 let chosenRelation = Object.keys(RELATIONS)[0]; // kept between openings
-let options: EditorOptions = {};
+let editorConfig: EditorOptions = {};
 let strokes: Stroke[] = [];
 let activeStroke: Stroke | null = null;
 let frame = 0;
@@ -36,18 +36,18 @@ const isValidState = (id: number): boolean => !!id && !!pack.states[id] && !pack
 /** Open the editor for the state; an open editor switches to it */
 function open(state = 0, editorOptions?: EditorOptions): void {
   if (findEl(dialogId)) {
-    if (editorOptions) options = editorOptions;
+    if (editorOptions) editorConfig = editorOptions;
     selectState(state);
     return;
   }
-  if (customization) return;
+  if (options.app.mode) return;
 
   const states = pack.states.filter(s => s.i && !s.removed);
   if (states.length < 2) {
     tip(t("There should be at least 2 states to edit the diplomacy"), false, "error");
     return;
   }
-  if (editorOptions) options = editorOptions;
+  if (editorOptions) editorConfig = editorOptions;
   stateId = isValidState(state) ? state : states[0].i;
 
   renderDialog(states);
@@ -129,7 +129,7 @@ function selectState(id: number): void {
   stateId = id;
   ensureEl<HTMLSelectElement>("diplomacyEditorState").value = String(id);
   showRelations(id);
-  options.onSelect?.(id);
+  editorConfig.onSelect?.(id);
 }
 
 function getStateAt([x, y]: Point): number {
@@ -257,8 +257,8 @@ function onDialogClose(): void {
   destroyDialog(dialogId);
   if (changed) refreshEditors();
 
-  const { onClose } = options;
-  options = {};
+  const { onClose } = editorConfig;
+  editorConfig = {};
   onClose?.();
 }
 

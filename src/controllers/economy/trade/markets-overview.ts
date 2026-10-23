@@ -6,6 +6,7 @@ import { Markets } from "@/model/economy/markets-generator";
 import { Production } from "@/model/economy/production-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Burg } from "@/model/political/burgs-generator";
+import { formatPrice } from "@/model/units";
 import { highlightMarketOff, highlightMarketOn } from "@/renderers/draw-markets";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
@@ -29,8 +30,9 @@ import {
 import type { FillBoxElement } from "@/ui/elements/fill-box";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { ensureEl, findEl, formatPrice, getPointer, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, findEl, getPointer } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
 
 const dialogId = "marketsOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -71,7 +73,7 @@ const columns: EditorColumn<MarketRow>[] = [
 const marketsTable = initEditorTable<MarketRow>({ getData: getMarketsData, onUpdate: renderMarketsPage });
 
 function open(): void {
-  if (customization) return;
+  if (options.app.mode) return;
   closeDialogs("#marketsOverview, .stable");
   Layers.show("markets");
 
@@ -123,7 +125,7 @@ function renderDialog(): void {
   ensureEl("marketsOverviewPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("marketsManually").addEventListener("click", openPaintEditor);
   ensureEl("marketsAdd").addEventListener("click", () => {
-    if (customization === 16) exitAddMarketMode();
+    if (options.app.mode === "addMarket") exitAddMarketMode();
     else enterAddMarketMode();
   });
   ensureEl("marketsRegenerate").addEventListener("click", regenerateMarkets);
@@ -299,14 +301,14 @@ function applyMarketPaint(changes: ReadonlyMap<number, number>): void {
 }
 
 function enterAddMarketMode(): void {
-  customization = 16;
+  options.app.mode = "addMarket";
   ensureEl("marketsAdd").classList.add("pressed");
   tip(sentences(t("Click on a burg on the map to create a new market there"), t("Hold Shift to add multiple")), true);
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", addMarketOnClick);
 }
 
 function exitAddMarketMode(): void {
-  customization = 0;
+  options.app.mode = null;
   ensureEl("marketsAdd").classList.remove("pressed");
   applyDefaultViewboxEvents();
   clearMainTip();
@@ -497,7 +499,7 @@ function downloadMarketsCsv(): void {
 }
 
 function closeMarketsOverview(): void {
-  if (customization === 16) exitAddMarketMode();
+  if (options.app.mode === "addMarket") exitAddMarketMode();
   ColorPicker.close();
   $("#marketsOverview").dialog("destroy");
   ensureEl("marketsOverview").remove();

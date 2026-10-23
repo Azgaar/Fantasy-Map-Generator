@@ -8,17 +8,21 @@ import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
 import { redrawRiver as redrawRiverShape, setEditedRiver } from "@/renderers/draw-rivers";
 import { Layers } from "@/renderers/layers";
+import { speak } from "@/services/speech";
 import { closeDialogs, confirmationDialog, destroyDialog, noteButton } from "@/ui/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { ensureEl, findEl, getPointer, getSegmentId, rand, rn, speak } from "@/utils";
+import { getSegmentId } from "@/utils/commonUtils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, findEl, getPointer } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
+import { rand } from "@/utils/probabilityUtils";
 
 let selectedRiver: Selection<SVGElement, unknown, HTMLElement, unknown>;
 
 let isCellsLayerForced = false; // the cells layer is turned on for the editing mode
 
 function open(id: string): void {
-  if (customization) return;
+  if (options.app.mode) return;
   if (findEl("riverEditor") && id === selectedRiver.attr("id")) return;
   closeDialogs(".stable");
   Layers.show("rivers");

@@ -11,8 +11,9 @@ import { logStats } from "@/services/logging";
 import { destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { resetZoom } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
-import { ensureEl, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
 
 let mouseIsDown = false;
 let mouseX = 0;

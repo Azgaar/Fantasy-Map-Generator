@@ -31,7 +31,7 @@ describe("MarkersOverview", () => {
     dialogState.remove("markersOverview", "filters");
     dialogState.remove("markersOverview", "sorting");
     document.body.innerHTML = '<div id="dialogs"></div>';
-    vi.stubGlobal("customization", 0);
+    options.app.mode = null;
     vi.stubGlobal("$", () => ({
       dialog: vi.fn(),
       one: vi.fn(),

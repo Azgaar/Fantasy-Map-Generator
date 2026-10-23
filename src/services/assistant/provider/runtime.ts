@@ -1,7 +1,4 @@
-// Executes model-authored JavaScript against the live map. The script body becomes an async function
-// that sees every `window.FMG` member (pack, grid, Burgs, Layers, Controllers…) by name.
-// Only the returned value and console output travel back.
-
+// Executes model-authored JavaScript against the live map
 import { errorText } from "@/utils/stringUtils";
 
 const MAX_RESULT_CHARS = 8000;

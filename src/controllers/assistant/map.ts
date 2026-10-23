@@ -2,17 +2,6 @@ import { Controllers } from "@/controllers";
 import type { Note } from "@/controllers/story/notes-editor";
 import { type EntityType, MapEntities } from "@/model/map-entities";
 import { mapHistory } from "@/model/map-history";
-import { Layers } from "@/renderers/layers";
-import { viewport } from "@/renderers/viewport/viewport";
-import type { ChangeRow, ChartRow, Chat, Choice, Widget } from "@/services/assistant/chats";
-import type { Tool } from "@/services/assistant/provider/answerer";
-import { WIKI_PAGES } from "@/services/assistant/provider/knowledge";
-import { imageBlock, type ToolDefinition, type ToolInput } from "@/services/assistant/provider/providers";
-import { runScript } from "@/services/assistant/provider/runtime";
-import type { Region } from "@/services/io/export";
-import type { Emblem } from "@/types/emblems";
-import { rn } from "@/utils/numberUtils";
-import { getBounds } from "@/utils/pathUtils";
 import {
   convertTemperature,
   formatPrice,
@@ -23,9 +12,19 @@ import {
   getDistanceUnit,
   getHeight,
   getPeople,
-  getPrecipitation,
-  si
-} from "@/utils/unitUtils";
+  getPrecipitation
+} from "@/model/units";
+import { Layers } from "@/renderers/layers";
+import { viewport } from "@/renderers/viewport/viewport";
+import type { ChangeRow, ChartRow, Chat, Choice, Widget } from "@/services/assistant/chats";
+import type { Tool } from "@/services/assistant/provider/answerer";
+import { WIKI_PAGES } from "@/services/assistant/provider/knowledge";
+import { imageBlock, type ToolDefinition, type ToolInput } from "@/services/assistant/provider/providers";
+import { runScript } from "@/services/assistant/provider/runtime";
+import type { Region } from "@/services/io/export";
+import type { Emblem } from "@/types/emblems";
+import { rn, si } from "@/utils/numberUtils";
+import { getBounds } from "@/utils/pathUtils";
 import { ProposalCard } from "./proposal-card";
 import { Proposals } from "./proposals";
 import { frameRegion } from "./region";

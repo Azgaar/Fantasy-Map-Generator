@@ -9,17 +9,20 @@ import { Features } from "@/model/physical/features-generator";
 import { Precipitation } from "@/model/physical/precipitation-generator";
 import { Rivers } from "@/model/physical/river-generator";
 import { Temperature } from "@/model/physical/temperature-generator";
+import { convertTemperature, getKmInDistanceUnit } from "@/model/units";
 import { Layers } from "@/renderers/layers";
 import { destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
-import { convertTemperature, ensureEl, findEl, getKmInDistanceUnit, parseTransform, rn, round } from "../utils";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
+import { parseTransform, round } from "@/utils/stringUtils";
 
 const projection = geoOrthographic().translate([100, 100]).scale(100);
 const path = geoPath(projection);
 
 function open(): void {
-  if (customization) return;
+  if (options.app.mode) return;
 
   renderDialog();
   updateInputValues();

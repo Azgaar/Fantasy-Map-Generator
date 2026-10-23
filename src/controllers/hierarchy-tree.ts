@@ -5,7 +5,10 @@ import { Religions } from "@/model/society/religions-generator";
 import { closeDialogs } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { abbreviate, ensureEl, escapeHtml, minmax } from "../utils";
+import { abbreviate } from "@/utils/languageUtils";
+import { ensureEl } from "@/utils/nodeUtils";
+import { minmax } from "@/utils/numberUtils";
+import { escapeHtml } from "@/utils/stringUtils";
 
 type HierarchyElement = {
   i: number;

@@ -27,8 +27,9 @@ import { closeDialogs, confirmationDialog, initDialogPositionPersistence } from 
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { invokeActiveZooming, resetZoom } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { debounce, ensureEl, findEl, parseError } from "@/utils";
+import { debounce, parseError } from "@/utils/commonUtils";
 import { t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
 
 /** Bring the app up */
 export async function boot(): Promise<void> {
@@ -124,7 +125,7 @@ export const regenerateMap = debounce(async (config?: GenerationConfig | string)
   shouldShowLoading && showLoading();
 
   closeDialogs("#worldConfigurator, #options3d");
-  customization = 0;
+  options.app.mode = null;
   resetZoom(1000);
   undraw();
   await generate(typeof config === "string" ? undefined : config);
@@ -140,7 +141,7 @@ export const regenerateMap = debounce(async (config?: GenerationConfig | string)
 
 /** Ask before throwing away a map the user has been working on for a while */
 export function regeneratePrompt(config?: GenerationConfig): void {
-  if (customization) {
+  if (options.app.mode) {
     tip(t("New map cannot be generated when edit mode is active, please exit the mode and retry"), false, "error");
     return;
   }

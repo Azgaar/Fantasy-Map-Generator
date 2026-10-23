@@ -5,9 +5,9 @@ import { type IconSetId, IconSets } from "@/model/icon-sets";
 import { Options } from "@/model/options/options-model";
 import type { IconPaint } from "@/types/icons";
 import { tip } from "@/ui/tooltips";
-import { findEl } from "@/utils";
 import { sanitizeSvgIcon } from "@/utils/fileUtils";
 import { t } from "@/utils/i18n";
+import { findEl } from "@/utils/nodeUtils";
 import { escapeHtml } from "@/utils/stringUtils";
 
 /** where a reference resolves: a built-in set, a glyph built from its text, or a picture the map carries */

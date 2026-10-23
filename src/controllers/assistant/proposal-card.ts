@@ -1,11 +1,11 @@
 import { layerLabel } from "@/data/layer-labels";
 import { Icons } from "@/model/icons";
 import { MapEntities } from "@/model/map-entities";
+import { formatPrice, getArea, getAreaUnit, getPeople } from "@/model/units";
 import type { ChangeRow, Proposal } from "@/services/assistant/chats";
 import { t } from "@/utils/i18n";
-import { rn } from "@/utils/numberUtils";
+import { rn, si } from "@/utils/numberUtils";
 import { capitalize, escapeHtml } from "@/utils/stringUtils";
-import { formatPrice, getArea, getAreaUnit, getPeople, si } from "@/utils/unitUtils";
 import { isSafeHtml } from "@/utils/validationUtils";
 import { CELL_FIELDS } from "./fields";
 import { type Action, Proposals } from "./proposals";

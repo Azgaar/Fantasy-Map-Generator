@@ -3,6 +3,7 @@ import type { Deal } from "@/model/economy/markets-generator";
 import type { Point } from "@/model/graph/voronoi";
 import { Icons } from "@/model/icons";
 import type { Burg } from "@/model/political/burgs-generator";
+import { formatPrice } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
 import { clearHighlight, highlight } from "@/renderers/draw-trade-animation";
 import type { TradeBatch } from "@/renderers/trade-animation";
@@ -18,8 +19,9 @@ import {
   type TableView
 } from "@/ui/dialog/table";
 import { zoomTo } from "@/ui/map/zoom";
-import { ensureEl, formatPrice, rn } from "@/utils";
 import { t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
 
 let activeBatch: TradeBatch;
 let activePoints: Point[] = [];

@@ -8,6 +8,7 @@ import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
 import { removeRelationsMark, showRelations } from "@/renderers/overlays/diplomacy";
 import { Csv } from "@/services/io/csv";
+import { getFileName } from "@/services/io/file-name";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
@@ -21,8 +22,9 @@ import {
 } from "@/ui/dialog/table";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { downloadFile, ensureEl, findEl, getFileName, getPointer } from "@/utils";
+import { downloadFile } from "@/utils/fileUtils";
 import { t } from "@/utils/i18n";
+import { ensureEl, findEl, getPointer } from "@/utils/nodeUtils";
 
 const dialogId = "diplomacyOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -60,7 +62,7 @@ let selectedDiplomacyId = 0;
 const isEditing = (): boolean => Boolean(findEl("diplomacyEditor"));
 
 function open(): void {
-  if (customization) return;
+  if (options.app.mode) return;
   if (pack.states.filter(s => s.i && !s.removed).length < 2) {
     tip(t("There should be at least 2 states to edit the diplomacy"), false, "error");
     return;
@@ -210,7 +212,7 @@ function renderDiplomacyPage(view: TableView<State>): void {
 function stateHighlightOn(event: Event): void {
   if (!Layers.isOn("states")) return;
   const state = +(event.target as HTMLElement).dataset.id!;
-  if (customization || !state) return;
+  if (options.app.mode || !state) return;
   const d = select<SVGGElement, unknown>("#regions").select(`#state${state}`).attr("d");
 
   const path = select("#debug")

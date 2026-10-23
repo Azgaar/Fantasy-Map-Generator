@@ -7,23 +7,19 @@ import { Grid } from "@/model/graph/grid-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
 import type { Feature } from "@/model/physical/features-generator";
-import { destroyDialog } from "@/ui/dialog/dialog-helpers";
 import {
   convertTemperature,
-  debounce,
-  ensureEl,
   getArea,
   getAreaUnit,
   getCellPopulation,
   getFriendlyPrecipitation,
-  getHeight,
-  getLatitude,
-  getLongitude,
-  getPointer,
-  rn,
-  si
-} from "@/utils";
+  getHeight
+} from "@/model/units";
+import { destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { debounce, getLatitude, getLongitude } from "@/utils/commonUtils";
 import { t } from "@/utils/i18n";
+import { ensureEl, getPointer } from "@/utils/nodeUtils";
+import { rn, si } from "@/utils/numberUtils";
 
 function open(): void {
   cleanup();

@@ -1,7 +1,7 @@
 import type { State } from "@/model/political/states-generator";
 import type { Point } from "@/types/global";
 import type { TypedArray } from "@/types/PackedGraph";
-import { minmax, rn } from "@/utils";
+import { minmax, rn } from "@/utils/numberUtils";
 import { getGroupStyle } from "./label-groups";
 import { ANGLES, findBestRayPair, type Ray, raycast } from "./label-raycast";
 

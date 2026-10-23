@@ -36,10 +36,13 @@ import { toggleSaveReminder } from "@/services/autosave";
 import { copyMapURL } from "@/services/url-params";
 import { confirmCleanupData } from "@/services/versioning";
 import { confirmationDialog, refreshEditors } from "@/ui/dialog/dialog-helpers";
+import { promptDialog } from "@/ui/dialog/prompt-dialog";
 import { changeMapZoom, resetZoom } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
-import { findEl, gauss, isCtrlClick } from "@/utils";
+import { isCtrlClick } from "@/utils/commonUtils";
 import { t } from "@/utils/i18n";
+import { findEl } from "@/utils/nodeUtils";
+import { gauss } from "@/utils/probabilityUtils";
 
 export interface MapCommand {
   id: string;
@@ -923,12 +926,7 @@ function regenerateZones(event?: MouseEvent): void {
     return;
   }
 
-  const promptForNumber = window.prompt as unknown as (
-    message: string,
-    options: { default: number; step: number; min: number; max: number },
-    callback: (value: number | string) => void
-  ) => void;
-  promptForNumber(t("Please provide zones number multiplier"), { default: 1, step: 0.01, min: 0, max: 100 }, value =>
-    applyZonesRegeneration(Number(value))
+  promptDialog(t("Please provide zones number multiplier"), { default: 1, step: 0.01, min: 0, max: 100 }, value =>
+    applyZonesRegeneration(value)
   );
 }

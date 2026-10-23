@@ -1,6 +1,6 @@
 import type { LabelType } from "@/model/annotations/labels-generator";
 import type { Point } from "@/types/global";
-import { rn } from "@/utils";
+import { rn } from "@/utils/numberUtils";
 import { estimateTextWidth } from "./fit-state-label";
 import { getGroupStyle } from "./label-groups";
 

@@ -14,8 +14,9 @@ import { drawHeights } from "@/renderers/heightmap/draw-heightmap";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
 import type { GridGraph } from "@/types/GridGraph";
 import { closeDialogs, confirmationDialog } from "@/ui/dialog/dialog-helpers";
-import { ensureEl, generateSeed } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/nodeUtils";
+import { generateSeed } from "@/utils/probabilityUtils";
 
 const initialSeed = generateSeed();
 type GraphConfig = ReturnType<typeof getGraphConfig>;

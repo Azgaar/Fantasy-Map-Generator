@@ -50,24 +50,29 @@ import { Icons } from "@/model/icons";
 import { States } from "@/model/political/states-generator";
 import { Names } from "@/model/society/names-generator";
 import { Notes } from "@/model/story/notes";
+import { convertTemperature, getFriendlyHeight } from "@/model/units";
 import type { PackedGraph } from "@/types/PackedGraph";
-import {
-  capitalize,
-  convertTemperature,
-  gauss,
-  generateDate,
-  getAdjective,
-  getFriendlyHeight,
-  last,
-  list,
-  P,
-  ra,
-  rand,
-  rn,
-  rw
-} from "@/utils";
+import { last } from "@/utils/arrayUtils";
 import { requireColor } from "@/utils/colorUtils";
+import { getAdjective, list } from "@/utils/languageUtils";
+import { rn } from "@/utils/numberUtils";
+import { gauss, P, ra, rand, rw } from "@/utils/probabilityUtils";
+import { capitalize } from "@/utils/stringUtils";
 import { requireName, requireOneOf } from "@/utils/validationUtils";
+
+/**
+ * Generate a random date within a specified range
+ * @param from - Start year (default is 100)
+ * @param to - End year (default is 1000)
+ * @returns Formatted date string
+ */
+const generateDate = (from: number = 100, to: number = 1000): string => {
+  return new Date(rand(from, to), rand(11), rand(1, 28)).toLocaleDateString("en", {
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  });
+};
 
 /** Fallback for a marker with no generated name: "hot-springs" -> "Hot springs" */
 export function getDefaultMarkerName(type: string | undefined): string {

@@ -29,11 +29,11 @@ import {
 import { askProvider } from "@/services/assistant/provider/answerer";
 import * as Connection from "@/services/assistant/provider/connection";
 import { PROVIDERS } from "@/services/assistant/provider/providers";
-import { ensureEl, findEl } from "@/utils";
 import { t } from "@/utils/i18n";
 import { renderMarkdown } from "@/utils/markdown";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { si } from "@/utils/numberUtils";
 import { errorText, escapeHtml } from "@/utils/stringUtils";
-import { si } from "@/utils/unitUtils";
 import { AssistantImages } from "./images";
 import { KeySheet } from "./key-sheet";
 import { AssistantMap } from "./map";

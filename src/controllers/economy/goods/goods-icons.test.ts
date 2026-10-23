@@ -23,7 +23,7 @@ vi.mock("@/ui/tooltips", () => ({
 beforeEach(() => {
   vi.mocked(Icons.retry).mockClear();
   document.body.innerHTML = '<div id="dialogs"></div><svg id="defElements"><defs/></svg>';
-  globalThis.customization = 1; // every dialog bails out before touching its markup
+  options.app.mode = "heightmap"; // every dialog bails out before touching its markup
   globalThis.pack = { goods: [], burgs: [] } as unknown as typeof pack;
   Object.assign(Markets, { get: () => undefined });
 });

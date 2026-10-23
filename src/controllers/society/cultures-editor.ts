@@ -7,6 +7,7 @@ import { Emblems } from "@/model/political/emblems-generator";
 import { CULTURE_TYPES, type Culture, Cultures } from "@/model/society/cultures-generator";
 import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
+import { getArea, getAreaUnit } from "@/model/units";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
 import { LegendBoxes } from "@/renderers/legend-boxes";
@@ -30,21 +31,13 @@ import {
 import type { FillBoxElement } from "@/ui/elements/fill-box";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import {
-  debounce,
-  ensureEl,
-  findEl,
-  getArea,
-  getAreaUnit,
-  getPointer,
-  groupByValue,
-  isLand,
-  parseTransform,
-  rn,
-  si
-} from "@/utils";
+import { groupByValue } from "@/utils/arrayUtils";
+import { debounce } from "@/utils/commonUtils";
+import { isLand } from "@/utils/heightUtils";
 import { sentences, t } from "@/utils/i18n";
-import { errorText } from "@/utils/stringUtils";
+import { ensureEl, findEl, getPointer } from "@/utils/nodeUtils";
+import { rn, si } from "@/utils/numberUtils";
+import { errorText, parseTransform } from "@/utils/stringUtils";
 
 const dialogId = "culturesEditor" as const;
 const LEGEND_NAME = "Cultures"; // the legend box this editor toggles
@@ -166,7 +159,7 @@ const culturesTable = initEditorTable<Culture>({
 });
 
 function open(): void {
-  if (customization) return;
+  if (options.app.mode) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ search: "" }));
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("cultures");
@@ -541,7 +534,7 @@ function getShapeOptions(isDiversiform: boolean, selected: string): string {
 
 const cultureHighlightOn = debounce((event: any) => {
   if (!Layers.isOn("cultures")) return;
-  if (customization) return;
+  if (options.app.mode) return;
 
   const animate = transition().duration(2000).ease(easeSinIn);
 
@@ -760,8 +753,6 @@ function changePopulation(this: HTMLElement): void {
 }
 
 function cultureRegenerateBurgs(this: HTMLElement): void {
-  if (customization === 4) return;
-
   const cultureId = +(this.closest(".states") as HTMLElement).dataset.id!;
   const base = pack.cultures[cultureId].base;
   if (!Names.nameBases[base]) {
@@ -794,7 +785,7 @@ function cultureHighlightElement(this: HTMLElement): void {
 }
 
 function cultureRemovePrompt(this: HTMLElement): void {
-  if (customization) return;
+  if (options.app.mode) return;
 
   const cultureId = +(this.closest(".states") as HTMLElement).dataset.id!;
   confirmationDialog({
@@ -898,7 +889,7 @@ function togglePercentageMode(): void {
 }
 
 async function showHierarchy(): Promise<void> {
-  if (customization) return;
+  if (options.app.mode) return;
 
   const getDescription = (culture: any) => {
     if (culture.shadow) return t("{{- ancestry}} ancestry", { ancestry: culture.name });
@@ -977,7 +968,7 @@ function enterAddCulturesMode(this: HTMLElement): void {
     return;
   }
 
-  customization = 9;
+  options.app.mode = "addCulture";
   this.classList.add("pressed");
   tip(t("Click on the map to add a new culture"), true);
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", addCulture);
@@ -989,7 +980,7 @@ function enterAddCulturesMode(this: HTMLElement): void {
 }
 
 function exitAddCultureMode(): void {
-  customization = 0;
+  options.app.mode = null;
   applyDefaultViewboxEvents();
   clearMainTip();
   ensureEl("culturesBody")
@@ -1051,7 +1042,7 @@ function downloadCulturesCsv(): void {
 
 function closeCulturesEditor(): void {
   select("#debug #cultureCenters").remove();
-  if (customization === 9) exitAddCultureMode();
+  if (options.app.mode === "addCulture") exitAddCultureMode();
   $("#culturesEditor").dialog("destroy");
   ensureEl("culturesEditor").remove();
 }
@@ -1108,7 +1099,7 @@ async function uploadCulturesCsv(text: string): Promise<void> {
 }
 
 function updateLockStatus(this: HTMLElement): void {
-  if (customization) return;
+  if (options.app.mode) return;
 
   const cultureId = +(this.closest(".states") as HTMLElement).dataset.id!;
   const classList = this.classList;

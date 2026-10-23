@@ -20,6 +20,7 @@ import { Grid } from "@/model/graph/grid-generator";
 import { MapRestoration } from "@/model/map-restoration";
 import { Options } from "@/model/options/options-model";
 import { HeightmapGenerator } from "@/model/physical/heightmap-generator";
+import { getHeightUnitRatio, heightToMeters } from "@/model/units";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
 import { Layers } from "@/renderers/layers";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
@@ -28,39 +29,26 @@ import { undraw } from "@/renderers/undraw";
 import { changeViewMode } from "@/renderers/view-mode";
 import { viewport } from "@/renderers/viewport/viewport";
 import { Services } from "@/services";
+import { getFileName } from "@/services/io/file-name";
 import { closeDialogs, destroyDialog, refreshEditors } from "@/ui/dialog/dialog-helpers";
+import { promptDialog } from "@/ui/dialog/prompt-dialog";
 import { dialogState } from "@/ui/dialog/state";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { resetZoom } from "@/ui/map/zoom";
 import { clearMainTip, showMainTip, tip } from "@/ui/tooltips";
-import {
-  createFileInput,
-  downloadFile,
-  ensureEl,
-  findEl,
-  generateSeed,
-  getFileName,
-  getHeightUnitRatio,
-  getPointer,
-  heightToMeters,
-  last,
-  lim,
-  link,
-  minmax,
-  openURL,
-  rn,
-  uploadFile,
-  wiki
-} from "@/utils";
+import { last } from "@/utils/arrayUtils";
 import { createBrushStroke } from "@/utils/brushUtils";
-import type { PromptOptions } from "@/utils/commonUtils";
+import { link, openURL, wiki } from "@/utils/commonUtils";
+import { createFileInput, downloadFile, uploadFile } from "@/utils/fileUtils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, findEl, getPointer } from "@/utils/nodeUtils";
+import { lim, minmax, rn } from "@/utils/numberUtils";
+import { generateSeed } from "@/utils/probabilityUtils";
 
 // the palette the image converter paints heights with: spectral, blue-low to red-high
 const heightColor = scaleSequential(interpolateSpectral);
 
 // Legacy app prompt shadows the DOM built-in (same pattern as burg-editor / route-groups-editor). TODO: replace with dialog
-declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
 
 type FilterState = { cellType: "all" | "land" | "water" };
 const dialogId = "heightmapEditor";
@@ -338,7 +326,7 @@ function toggleDrainage(): void {
 
 // the overlay follows the heightmap, the erosion setting and the lake elevation limit, while the editor is active
 function redrawDrainage(): void {
-  if (customization !== 1 || !options.app.heightmapEditor.showDrainage) return;
+  if (options.app.mode !== "heightmap" || !options.app.heightmapEditor.showDrainage) return;
   // erosion turns deep depressions into lakes, but not in Keep mode where it never runs
   const mode = ensureEl("heightmapEditMode").innerHTML;
   drawDrainage(mode !== "keep" && options.app.heightmapEditor.allowErosion);
@@ -377,7 +365,7 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
   storedLayers = Layers.state.active;
   Layers.set([]); // turn off all layers
 
-  customization = 1;
+  options.app.mode = "heightmap";
   closeDialogs();
   tip(t("Heightmap edit mode is active. Click on “Exit Customization” to finalize the heightmap"), true);
 
@@ -498,7 +486,7 @@ async function finalizeHeightmap(): Promise<void> {
   setHistoryButtonsDisabled(true, true);
   HeightmapGenerator.clearData(); // the edited grid is no longer needed once the editor is left
 
-  customization = 0;
+  options.app.mode = null;
   ensureEl("customizationMenu").style.display = "none";
   if (ensureEl("options").querySelector<HTMLElement>(".tab > button.active")!.id === "toolsTab") {
     ensureEl("toolsContent").style.display = "block";
@@ -1422,7 +1410,7 @@ function setRange(event: Event): void {
   const target = event.target as HTMLSelectElement;
   if (target.value !== "interval") return;
 
-  prompt(
+  promptDialog(
     t("Set a height interval. Avoid space, use hyphen as a separator"),
     {
       default: "17-20"
@@ -1825,7 +1813,7 @@ function autoAssing(type: string): void {
 }
 
 function setConvertColorsNumber(): void {
-  prompt(
+  promptDialog(
     `${t("Set maximum number of colors")}<br>${t("An actual number is usually lower and depends on color scheme")}`,
     {
       default: +ensureEl<HTMLInputElement>("convertColors").value,

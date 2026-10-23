@@ -8,15 +8,16 @@ import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { stopMapPlacement } from "@/ui/map/map-placement";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { ensureEl, getPointer, minmax, rn } from "@/utils";
 import { t } from "@/utils/i18n";
+import { ensureEl, getPointer } from "@/utils/nodeUtils";
+import { minmax, rn } from "@/utils/numberUtils";
 
 let creatorPoints: number[][] = [];
 
 let isCellsLayerForced = false; // the cells layer is turned on for the editing mode
 
 function open(defaultGroup?: string): void {
-  if (customization) return;
+  if (options.app.mode) return;
   stopMapPlacement();
   closeDialogs();
   Layers.show("routes");

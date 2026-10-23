@@ -1,5 +1,7 @@
 import { mean, min } from "d3";
-import { isLand, rn, unique } from "@/utils";
+import { unique } from "@/utils/arrayUtils";
+import { isLand } from "@/utils/heightUtils";
+import { rn } from "@/utils/numberUtils";
 import type { Feature } from "./features-generator";
 
 export class LakesModule {

@@ -7,6 +7,7 @@ import {
 } from "@/model/economy/transports-generator";
 import { Options } from "@/model/options/options-model";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
+import { convertSpeed, getDistanceUnit, parseSpeed } from "@/model/units";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
 import {
   type EditorColumn,
@@ -18,8 +19,9 @@ import {
   type TableView
 } from "@/ui/dialog/table";
 import { tip } from "@/ui/tooltips";
-import { convertSpeed, ensureEl, escapeHtml, getDistanceUnit, parseSpeed } from "@/utils";
 import { t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/nodeUtils";
+import { escapeHtml } from "@/utils/stringUtils";
 
 const dialogId = "transportEditor" as const;
 const position = { my: "center", at: "center", of: "svg", collision: "fit" };
@@ -46,7 +48,7 @@ const DOMAIN_LABEL: Record<TransportDomain, string> = {
 const DOMAINS = Object.keys(DOMAIN_LABEL) as TransportDomain[];
 
 function open(): void {
-  if (customization) return;
+  if (options.app.mode) return;
   closeDialogs(`#${dialogId}, .stable`);
 
   Journeys.sync();

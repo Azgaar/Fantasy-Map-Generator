@@ -1,4 +1,4 @@
-import { ensureEl, findEl } from "@/utils";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
 import { type DialogSort, dialogState } from "./state";
 import type { EditorColumn } from "./table";
 

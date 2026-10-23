@@ -7,13 +7,14 @@ import type { BurgGroup } from "@/types/burg-groups";
 import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { type LimitationItem, pickLimitation } from "@/ui/dialog/limitation-picker";
 import { tip } from "@/ui/tooltips";
-import { ensureEl, isValidJSON } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/nodeUtils";
+import { isValidJSON } from "@/utils/stringUtils";
 
 const GROUP_NAME_REGEXP = /^[\p{L}_][\p{L}\p{N}_-]*$/u;
 
 function editBurgGroups(): void {
-  if (customization) return;
+  if (options.app.mode) return;
   closeDialogs(".stable");
   renderDialog();
   addRows();

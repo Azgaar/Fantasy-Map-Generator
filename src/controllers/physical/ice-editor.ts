@@ -7,13 +7,14 @@ import { Layers } from "@/renderers/layers";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { ensureEl, findEl, getPointer, parseTransform } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, findEl, getPointer } from "@/utils/nodeUtils";
+import { parseTransform } from "@/utils/stringUtils";
 
 let selectedIce: Selection<SVGElement, unknown, HTMLElement, unknown>;
 
 function open(element: SVGElement): void {
-  if (customization) return;
+  if (options.app.mode) return;
   if (findEl("iceEditor") && element === selectedIce.node()) return;
 
   closeDialogs(".stable");

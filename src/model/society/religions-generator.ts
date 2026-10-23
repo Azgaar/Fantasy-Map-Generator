@@ -1,21 +1,11 @@
 import { quadtree } from "d3";
 import { Routes } from "@/model/economy/routes-generator";
 import { Pack } from "@/model/graph/pack-generator";
-import {
-  abbreviate,
-  each,
-  gauss,
-  getAdjective,
-  getMixedColor,
-  getRandomColor,
-  isWater,
-  ra,
-  rand,
-  rw,
-  trimVowels
-} from "@/utils";
-import { requireColor } from "@/utils/colorUtils";
+import { getMixedColor, getRandomColor, requireColor } from "@/utils/colorUtils";
 import { FlatQueue } from "@/utils/flatQueue";
+import { isWater } from "@/utils/heightUtils";
+import { abbreviate, getAdjective, trimVowels } from "@/utils/languageUtils";
+import { each, gauss, ra, rand, rw } from "@/utils/probabilityUtils";
 import { requireCode, requireName, requireOneOf, requireOrigins } from "@/utils/validationUtils";
 import { Names } from "./names-generator";
 import { Population } from "./population-generator";

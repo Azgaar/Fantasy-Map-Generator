@@ -10,8 +10,11 @@ import { closeDialogs, confirmationDialog, destroyDialog } from "@/ui/dialog/dia
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { zoomTo } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { ensureEl, getSegmentId, last, rn } from "@/utils";
+import { last } from "@/utils/arrayUtils";
+import { getSegmentId } from "@/utils/commonUtils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
 
 type MeasurerEl = Selection<SVGGElement, unknown, null, undefined>;
 type MeasurerDragEvent<E extends Element = SVGGElement> = D3DragEvent<E, unknown, unknown>;
@@ -22,7 +25,7 @@ function measurerDrag<E extends Element>() {
 }
 
 function open(): void {
-  if (customization) return;
+  if (options.app.mode) return;
 
   closeDialogs("#measurersEditor, .stable");
   Layers.show("rulers");

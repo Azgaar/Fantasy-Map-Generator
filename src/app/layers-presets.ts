@@ -2,8 +2,8 @@
 
 import { type LayerId, Layers } from "@/renderers/layers";
 import { confirmationDialog } from "@/ui/dialog/dialog-helpers";
-import { ensureEl } from "@/utils";
 import { t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/nodeUtils";
 import { LAYER_TOGGLES } from "./chrome/tabs/layers-tab";
 
 const DEFAULT_PRESETS: Record<string, LayerId[]> = {

@@ -5,7 +5,7 @@ import type { Point } from "@/model/graph/voronoi";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Layers } from "@/renderers/layers";
 import { FlatQueue } from "@/utils/flatQueue";
-import { ra } from "../utils";
+import { ra } from "@/utils/probabilityUtils";
 import { clear, draw } from "./draw-trade-animation";
 
 export type TradeBatch = {

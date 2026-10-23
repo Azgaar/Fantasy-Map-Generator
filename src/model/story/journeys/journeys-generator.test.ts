@@ -221,21 +221,6 @@ describe("land pathfinding stays on land", () => {
    *                  └────── sea route ─────┘
    */
   beforeEach(async () => {
-    // Minimal stand-in for the legacy FlatQueue global used by A*
-    (globalThis as any).FlatQueue = class {
-      items: { id: number; priority: number }[] = [];
-      get length() {
-        return this.items.length;
-      }
-      push(id: number, priority: number) {
-        this.items.push({ id, priority });
-        this.items.sort((a, b) => a.priority - b.priority);
-      }
-      pop() {
-        return this.items.shift()?.id;
-      }
-    };
-
     (globalThis as any).pack = {
       cells: {
         h: [30, 30, 5, 30], // cell 2 is water
@@ -322,21 +307,6 @@ describe("Journeys.isValidPath", () => {
   });
 });
 
-/** Minimal FlatQueue polyfill (correct, not optimised — tests only). */
-class TestFlatQueue {
-  private items: Array<{ id: number; value: number }> = [];
-  get length() {
-    return this.items.length;
-  }
-  push(id: number, value: number) {
-    this.items.push({ id, value });
-    this.items.sort((a, b) => a.value - b.value);
-  }
-  pop() {
-    return this.items.shift()?.id;
-  }
-}
-
 /**
  * A 9x9 land grid, 10px apart, 4-way connected. Cell id = row * 9 + col.
  * Everything is lowland grassland until a test paints harsher ground on it.
@@ -387,8 +357,6 @@ describe("land pathfinding respects terrain", () => {
   const rowsOf = (points: any[]) => points.map(([, , cellId]) => Math.floor(cellId / TERRAIN_GRID));
 
   beforeEach(async () => {
-    (globalThis as any).FlatQueue = TestFlatQueue;
-
     (globalThis as any).pack = makeTerrainPack();
     await import("@/model/economy/transports-generator");
     options.map.units.distance = { unit: "km", scale: 1 };

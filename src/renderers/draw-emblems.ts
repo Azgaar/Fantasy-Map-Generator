@@ -6,7 +6,8 @@ import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
 import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import type { Emblem } from "@/types/emblems";
-import { ensureEl, findEl, minmax, rn } from "@/utils";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { minmax, rn } from "@/utils/numberUtils";
 
 export type EmblemType = "state" | "province" | "burg";
 

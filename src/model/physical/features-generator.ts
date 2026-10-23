@@ -1,7 +1,12 @@
 import Alea from "alea";
 import { polygonArea } from "d3";
 import { Names } from "@/model/society/names-generator";
-import { clipPoly, connectVertices, distanceSquared, isLand, isWater, P, ra, rn, TYPED_ARRAY_MAX } from "@/utils";
+import { TYPED_ARRAY_MAX } from "@/utils/arrayUtils";
+import { clipPoly } from "@/utils/commonUtils";
+import { isLand, isWater } from "@/utils/heightUtils";
+import { distanceSquared, rn } from "@/utils/numberUtils";
+import { connectVertices } from "@/utils/pathUtils";
+import { P, ra } from "@/utils/probabilityUtils";
 import { requireName, requireOneOf } from "@/utils/validationUtils";
 import { Coastline, type CoastlineSettings } from "./coastline-generator";
 import { Lakes } from "./lakes";

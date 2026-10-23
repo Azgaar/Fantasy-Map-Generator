@@ -8,16 +8,18 @@ import { isDealRecord, isMfgRecord } from "@/model/economy/production-generator"
 import { Icons } from "@/model/icons";
 import type { Burg } from "@/model/political/burgs-generator";
 import { States } from "@/model/political/states-generator";
+import { formatPrice } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
 import { tip } from "@/ui/tooltips";
-import { ensureEl, formatPrice, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
 
 type Type = "MFG" | "BUY" | "SELL" | "LOCAL";
 
 function open(burgId: number): void {
   void Icons.retry("goods");
-  if (customization) return;
+  if (options.app.mode) return;
   const burg = pack.burgs[burgId];
   if (!burg || burg.removed) {
     tip(t("Invalid burg. The selected burg does not exist or was removed."), true, "error", 5000);

@@ -1,4 +1,5 @@
-import { minmax, rn, SEA_LEVEL } from "@/utils";
+import { SEA_LEVEL } from "@/utils/heightUtils";
+import { minmax, rn } from "@/utils/numberUtils";
 
 class TemperatureModule {
   /** calculate the temperature of every grid cell from its latitude and altitude */

@@ -19,8 +19,8 @@ import {
 } from "@/ui/dialog/table";
 import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
-import { ensureEl, findEl } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
 
 const dialogId = "labelsOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -67,7 +67,7 @@ const labelsTable = initEditorTable<LabelData>({
 });
 
 function open(group: string = ALL): void {
-  if (customization) return;
+  if (options.app.mode) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ group: ALL, type: ALL, search: ALL }));
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("labels");

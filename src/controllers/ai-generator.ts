@@ -1,8 +1,8 @@
 import { destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
-import { openURL } from "@/utils";
+import { openURL } from "@/utils/commonUtils";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "../utils";
+import { ensureEl } from "@/utils/nodeUtils";
 
 type Provider = "openai" | "anthropic" | "ollama";
 

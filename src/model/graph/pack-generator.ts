@@ -2,7 +2,10 @@
 import { polygonArea, type Quadtree, quadtree } from "d3";
 import type { Point } from "@/types/global";
 import type { PackedGraph } from "@/types/PackedGraph";
-import { findAllInQuadtree, rn, SEA_LEVEL, TYPED_ARRAY_MAX } from "@/utils";
+import { TYPED_ARRAY_MAX } from "@/utils/arrayUtils";
+import { SEA_LEVEL } from "@/utils/heightUtils";
+import { rn } from "@/utils/numberUtils";
+import { findAllInQuadtree } from "@/utils/quadtree";
 import { DEFAULT_JITTER, Lattice } from "./lattice";
 import { calculateVoronoi } from "./voronoi";
 

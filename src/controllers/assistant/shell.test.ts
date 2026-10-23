@@ -34,7 +34,7 @@ vi.mock("@/services/assistant/azgaar-server/answerer", () => ({ askServer: state
 import { Catalog } from "@/utils/i18n";
 import { Assistant } from "./index";
 
-vi.mock("@/utils/localDB", () => ({
+vi.mock("@/services/local-db", () => ({
   LocalDB: { isSupported: () => true, get: vi.fn(async () => []), set: vi.fn(async () => {}) }
 }));
 

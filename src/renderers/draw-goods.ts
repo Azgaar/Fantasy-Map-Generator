@@ -10,7 +10,8 @@ import {
   type ViewportRenderContext
 } from "@/renderers/viewport/viewport-renderer";
 import type { PackedGraph } from "@/types/PackedGraph";
-import { findEl, normalize, rn } from "../utils";
+import { findEl } from "@/utils/nodeUtils";
+import { normalize, rn } from "@/utils/numberUtils";
 
 const layer = ViewportLayers.register({ id: "goods", render: reconcileGoods });
 let cellProduction: CellProduction[] = [];

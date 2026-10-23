@@ -1,7 +1,7 @@
 import { mean } from "d3";
 import type { ReliefPool } from "@/model/physical/relief-generator";
-import { rn } from "@/utils";
 import { requireColor } from "@/utils/colorUtils";
+import { rn } from "@/utils/numberUtils";
 import { requireName } from "@/utils/validationUtils";
 
 export interface Biome {

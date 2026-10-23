@@ -19,7 +19,7 @@ import { MarkersEditor } from "./markers-editor";
 
 it("renames through Markers.rename, the same method the Assistant proposes", () => {
   document.body.innerHTML = '<div id="dialogs"></div><svg><svg id="marker4"></svg></svg>';
-  vi.stubGlobal("customization", 0);
+  options.app.mode = null;
   vi.stubGlobal("pack", { markers: [{ i: 4, name: "Old Well" }] });
   vi.stubGlobal("$", () => ({ dialog: vi.fn() }));
   const rename = vi.fn();

@@ -2,7 +2,9 @@
 import { polygonArea } from "d3";
 import type { Point } from "@/types/global";
 import type { PackedGraph } from "@/types/PackedGraph";
-import { clipPoly, rn, TYPED_ARRAY_MAX, unique } from "@/utils";
+import { TYPED_ARRAY_MAX, unique } from "@/utils/arrayUtils";
+import { clipPoly } from "@/utils/commonUtils";
+import { rn } from "@/utils/numberUtils";
 import { Pack } from "./pack-generator";
 
 type OverrideValue = number | number[];

@@ -1,7 +1,8 @@
 // Diplomacy view: states colored by their relation to one state
 import { color as d3Color } from "d3";
 import { NO_RELATION_COLOR, RELATIONS } from "@/data/diplomacy";
-import { findEl, getVertexPath } from "@/utils";
+import { findEl } from "@/utils/nodeUtils";
+import { getVertexPath } from "@/utils/pathUtils";
 
 const MARK_ID = "diplomacyMark";
 

@@ -6,12 +6,15 @@ import type { ReliefRule } from "@/model/options/options-schema";
 import { Biomes } from "@/model/physical/biomes-generator";
 import type { ReliefPool } from "@/model/physical/relief-generator";
 import { Relief } from "@/model/physical/relief-generator";
+import { getHeight } from "@/model/units";
 import { redrawRelief } from "@/renderers/draw-relief-icons";
 import { Layers } from "@/renderers/layers";
 import { confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
-import { ensureEl, escapeHtml, getHeight, minmax, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/nodeUtils";
+import { minmax, rn } from "@/utils/numberUtils";
+import { escapeHtml } from "@/utils/stringUtils";
 import { fitReliefArt, poolEntryHtml, poolEntryName, reliefPatchHtml } from "./relief-previews";
 
 const DIALOG = "reliefPoolEditor";

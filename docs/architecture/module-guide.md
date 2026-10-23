@@ -29,7 +29,10 @@ these three tests — a large feature usually splits across four or five folders
   the colour picker) → `controllers/`.
 - **Does it read `pack`/`grid`?** Then it is not a `service`, whatever else it is.
 - **Does it read an ambient global, or have only one consumer?** Then it is not a `util` —
-  put it in the module that uses it, or pass the state in as an argument.
+  put it in the module that uses it, or pass the state in as an argument. Values in the map's own
+  units read `options.map.units`, so they are model code (`model/units.ts`); speech and browser storage
+  are platform services (`services/speech.ts`, `services/local-db.ts`); the name a download is saved
+  under belongs to io (`services/io/file-name.ts`).
 
 If a file is **static content** (a constant list, a template table) it goes in `data/`. If it
 manages **browser/app lifecycle** (PWA install, auto-update, io, preferences) it goes in
@@ -42,7 +45,7 @@ manages **browser/app lifecycle** (PWA install, auto-update, io, preferences) it
 - Prefer **module getters over re-implementing lookups**: `Markets.get(id)`,
   `Goods.get(id)` (both `=> T | undefined`) instead of `pack.markets.find(...)`.
 - **Path alias**: `@/*` resolves to `src/*` (configured in `vite.config.ts` and
-  `tsconfig.json`). Prefer it to deep `../../` chains — e.g. `@/utils`,
+  `tsconfig.json`). Prefer it to deep `../../` chains — e.g. `@/utils/numberUtils`,
   `@/model/economy/markets-generator`. Sibling imports stay relative (`./box`).
 
 ## Imports, not globals
@@ -50,12 +53,16 @@ manages **browser/app lifecycle** (PWA install, auto-update, io, preferences) it
 - **Import what you call.** A module reaches another module's functions, singletons and
   constants through an `import`, and only downhill (app → controllers/services → ui → renderers →
   model → utils). Never through `window`, and never with a `declare global` for app code.
-- **The world state is the exception.** `pack`, `grid`, `options`, `styles` and `customization` are
+- **Import from the file that defines it.** There are no barrel `index.ts` files that re-export a
+  folder: `import { rn } from "@/utils/numberUtils"`, not from `@/utils`. A barrel makes every importer
+  load the whole folder and its own imports, which drags unrelated modules into import cycles. The
+  `index.ts` of `controllers/` and `services/` are registries, not barrels.
+- **The world state is the exception.** `pack`, `grid`, `options` and `styles` are
   read bare; they are declared beside their owners ([`model/globals.ts`](../../src/model/globals.ts),
   [`options-model.ts`](../../src/model/options/options-model.ts), [`styles.ts`](../../src/model/styles/styles.ts)).
   Read them inside functions, never at module top level.
 - **`declare global` is for the platform only:** a browser API the DOM typings lack (`showSaveFilePicker`),
-  the Electron bridge, a polyfill.
+  the Electron bridge.
 - **The console and the Assistant** reach the app through `window.FMG` ([architecture.md](./architecture.md#scripting-surface)).
   A new public singleton or command is one line in [`src/app/fmg.ts`](../../src/app/fmg.ts).
 - **DOM elements** are never globals: `ensureEl<HTMLInputElement>("brushSize")` when the element must
@@ -151,7 +158,7 @@ The layer itself is declared in the registry in `renderers/layers.ts`, which cal
 ```ts
 // src/controllers/<domain>/module-editor.ts
 // thin: intent → state change/redraw
-import { ensureEl } from "@/utils";
+import { ensureEl } from "@/utils/nodeUtils";
 
 let controllerState: unknown; // optional, for a panel that preserves some UI state across opens
 

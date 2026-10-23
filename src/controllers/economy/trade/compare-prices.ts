@@ -1,6 +1,7 @@
 import { Goods } from "@/model/economy/goods-generator";
 import type { Market } from "@/model/economy/markets-generator";
 import { Markets } from "@/model/economy/markets-generator";
+import { formatPrice } from "@/model/units";
 import { Csv } from "@/services/io/csv";
 import { destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
@@ -12,8 +13,9 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
-import { ensureEl, formatPrice, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
 
 const dialogId = "marketsGoodCompare" as const;
 const position = { my: "right top", at: "left-10 top", collision: "fit" };

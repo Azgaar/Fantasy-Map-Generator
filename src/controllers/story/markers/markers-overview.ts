@@ -21,8 +21,10 @@ import {
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { zoomTo } from "@/ui/map/zoom";
 import { clearMainTip } from "@/ui/tooltips";
-import { ensureEl, escapeHtml, findEl, getLatitude, getLongitude } from "@/utils";
+import { getLatitude, getLongitude } from "@/utils/commonUtils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { escapeHtml } from "@/utils/stringUtils";
 
 const dialogId = "markersOverview" as const;
 const CSV_COLUMNS = [
@@ -69,7 +71,7 @@ const columns: EditorColumn<Marker>[] = [
 const markersTable = initEditorTable<Marker>({ getData: getFilteredMarkers, onUpdate: renderMarkersPage });
 
 function open(): void {
-  if (customization) return;
+  if (options.app.mode) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ search: "", state: "", culture: "", type: "" }));
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("markers");

@@ -9,7 +9,7 @@ import {
   heightToMeters,
   metersToHeight,
   parseSpeed
-} from "./unitUtils";
+} from "./units";
 
 // The default (no targetScale) path reads options.map.units.temperature.unit and is
 // covered end-to-end in tests/e2e/temperature-units.spec.ts

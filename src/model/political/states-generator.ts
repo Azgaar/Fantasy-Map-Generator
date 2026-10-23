@@ -10,26 +10,13 @@ import { Names } from "@/model/society/names-generator";
 import { Population } from "@/model/society/population-generator";
 import { Tags } from "@/model/tags";
 import type { Emblem } from "@/types/emblems";
-import {
-  each,
-  escapeHtml,
-  gauss,
-  generateSeed,
-  getAdjective,
-  getMixedColor,
-  getPolesOfInaccessibility,
-  getRandomColor,
-  minmax,
-  P,
-  ra,
-  rand,
-  rn,
-  rw,
-  trimVowels
-} from "@/utils";
-import { requireColor } from "@/utils/colorUtils";
+import { getMixedColor, getRandomColor, requireColor } from "@/utils/colorUtils";
 import { FlatQueue } from "@/utils/flatQueue";
-import { replaceWholeWord } from "@/utils/languageUtils";
+import { getAdjective, replaceWholeWord, trimVowels } from "@/utils/languageUtils";
+import { minmax, rn } from "@/utils/numberUtils";
+import { getPolesOfInaccessibility } from "@/utils/pathUtils";
+import { each, gauss, generateSeed, P, ra, rand, rw } from "@/utils/probabilityUtils";
+import { escapeHtml } from "@/utils/stringUtils";
 import { requireName, requireOneOf } from "@/utils/validationUtils";
 import { Burgs } from "./burgs-generator";
 import type { Regiment } from "./military-generator";

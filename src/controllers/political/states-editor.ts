@@ -8,6 +8,7 @@ import { Burgs } from "@/model/political/burgs-generator";
 import { STATE_FORMS, type State, States, type TariffRule } from "@/model/political/states-generator";
 import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
+import { formatPrice, getArea, getAreaUnit } from "@/model/units";
 import { redrawEmblem, removeEmblem } from "@/renderers/draw-emblems";
 import { goodBadge } from "@/renderers/draw-goods";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
@@ -16,6 +17,7 @@ import { LegendBoxes } from "@/renderers/legend-boxes";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement, highlightOutline } from "@/renderers/overlays/highlight";
 import { Csv } from "@/services/io/csv";
+import { speak } from "@/services/speech";
 import type { LegendItem } from "@/types/Legend";
 import { closeDialogs, confirmationDialog, destroyDialog, noteIcon, updateDialog } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
@@ -34,23 +36,13 @@ import { createAnnexMode } from "@/ui/map/annex-mode";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { zoomTo } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import {
-  applyOption,
-  ensureEl,
-  findEl,
-  formatPrice,
-  getAdjective,
-  getArea,
-  getAreaUnit,
-  getPointer,
-  groupByValue,
-  isLand,
-  rand,
-  rn,
-  si,
-  speak
-} from "@/utils";
+import { groupByValue } from "@/utils/arrayUtils";
+import { isLand } from "@/utils/heightUtils";
 import { sentences, t } from "@/utils/i18n";
+import { getAdjective } from "@/utils/languageUtils";
+import { applyOption, ensureEl, findEl, getPointer } from "@/utils/nodeUtils";
+import { rn, si } from "@/utils/numberUtils";
+import { rand } from "@/utils/probabilityUtils";
 import { errorText } from "@/utils/stringUtils";
 
 const dialogId = "statesEditor" as const;
@@ -216,7 +208,7 @@ const statesTable = initEditorTable<State>({
 });
 
 function open(): void {
-  if (customization) return;
+  if (options.app.mode) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ search: "" }));
 
   closeDialogs(`#${dialogId}, .stable`);
@@ -365,7 +357,7 @@ function stateChangeTags(stateId: number, line: HTMLElement, input: HTMLInputEle
 }
 
 function closeStatesEditor(): void {
-  if (customization === 3) exitAddStateMode();
+  if (options.app.mode === "addState") exitAddStateMode();
   statesAnnex.exit();
   Controllers.ColorPicker.close();
   select("#debug").selectAll(".highlight").remove();
@@ -603,7 +595,7 @@ function stateHighlightOn(event: any): void {
   if (select("#deftemp").select("#fog path").size()) return;
 
   const state = +event.target.dataset.id;
-  if (customization || !state) return;
+  if (options.app.mode || !state) return;
   highlightOutline(select("#regions").select(`#state${state}`).attr("d"));
 }
 
@@ -1223,7 +1215,7 @@ function stateChangeExpansionism(state: number, line: HTMLElement, value: string
 }
 
 function toggleFog(state: number, cl: DOMTokenList): void {
-  if (customization) return;
+  if (options.app.mode) return;
   const path = select("#statesBody").select(`#state${state}`).attr("d");
   const id = `focusState${state}`;
   cl.contains("inactive") ? fog(id, path) : unfog(id);
@@ -1231,7 +1223,7 @@ function toggleFog(state: number, cl: DOMTokenList): void {
 }
 
 function stateRemovePrompt(state: number): void {
-  if (customization) return;
+  if (options.app.mode) return;
 
   confirmationDialog({
     title: t("Remove"),
@@ -1519,7 +1511,7 @@ function enterAddStateMode(this: HTMLElement): void {
     exitAddStateMode();
     return;
   }
-  customization = 3;
+  options.app.mode = "addState";
   this.classList.add("pressed");
   tip(t("Click on the map to create a new capital or promote an existing burg"), true);
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", addState);
@@ -1550,7 +1542,7 @@ function addState(this: SVGElement, event: MouseEvent): void {
 }
 
 function exitAddStateMode(): void {
-  customization = 0;
+  options.app.mode = null;
   applyDefaultViewboxEvents();
   clearMainTip();
   ensureEl("statesBodySection")

@@ -105,6 +105,9 @@ Two rules keep the boundary sharp. **"Show all regardless of zoom" is a preferen
 style record. And **a preference the user has not set
 is `null`, not a guess** — interface size follows the screen and the viewport follows the window
 until someone chooses otherwise, so a control's reset writes `null` rather than today's number.
+One value lives here for the session only: `app.mode`, the edit mode the user is in (`"heightmap"`,
+`"paint"`, `"addState"`…, or `null`). While it is set, other editors, saving and regeneration stay
+off. It is never written to localStorage, so a reload always starts outside any mode.
 
 The **viewport** is the clearest case of the last rule, and the one most often confused with the
 extent: the extent is the coordinate space the map's geometry lives in, fixed for the life of its

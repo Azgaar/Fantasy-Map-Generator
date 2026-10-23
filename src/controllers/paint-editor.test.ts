@@ -53,7 +53,7 @@ async function dragBrush(
 beforeEach(() => {
   document.body.innerHTML =
     '<div id="dialogs"><div id="parentDialog" class="dialog"></div></div><div id="tooltip"></div><svg><g id="viewbox"></g><g id="debug"></g></svg>';
-  globalThis.customization = 0;
+  options.app.mode = null;
   vi.spyOn(Pack, "findCell").mockReturnValue(3);
   globalThis.pack = {
     cells: {
@@ -116,13 +116,13 @@ describe("PaintEditor", () => {
     expect(document.getElementById("parentDialog")).not.toBeNull();
   });
 
-  it("owns customization and clears it when cancelled", () => {
+  it("owns the edit mode and clears it when cancelled", () => {
     PaintEditor.open(getOptions());
-    expect(globalThis.customization).toBe(2);
+    expect(options.app.mode).toBe("paint");
 
     document.getElementById("paintEditorCancel")?.click();
 
-    expect(globalThis.customization).toBe(0);
+    expect(options.app.mode).toBeNull();
     expect(document.getElementById("paintEditor")).toBeNull();
     expect(document.getElementById("paintEditorOverlay")).toBeNull();
   });
@@ -180,7 +180,7 @@ describe("PaintEditor", () => {
     const changes = onApply.mock.calls[0][0] as ReadonlyMap<number, number>;
     expect([...changes]).toEqual([[3, 1]]);
     expect(calls).toEqual(["apply", "close"]);
-    expect(globalThis.customization).toBe(0);
+    expect(options.app.mode).toBeNull();
   });
 
   it("paints the whole path of a fast swipe, not only where the pointer events landed", async () => {

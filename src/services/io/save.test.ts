@@ -10,7 +10,7 @@ beforeEach(() => {
   window.dispatchEvent(new Event("map:generated"));
   document.body.innerHTML = '<div id="tooltip"></div><div id="alertMessage"></div>';
   localStorage.clear();
-  vi.stubGlobal("customization", 0);
+  options.app.mode = null;
   vi.stubGlobal("alertMessage", document.getElementById("alertMessage"));
   vi.useFakeTimers();
 });
@@ -61,7 +61,7 @@ describe("save feedback", () => {
 
 describe("Save.toMachine", () => {
   it("refuses a view-only map before opening the picker", async () => {
-    vi.stubGlobal("options", { map: { viewOnly: true } });
+    vi.stubGlobal("options", { app: { mode: null }, map: { viewOnly: true } });
     const picker = vi.fn();
     vi.stubGlobal("showSaveFilePicker", picker);
     await Save.toMachine();
@@ -70,7 +70,7 @@ describe("Save.toMachine", () => {
   });
 
   it("suggests a view-only copy its own filename", async () => {
-    vi.stubGlobal("options", { map: { lore: { name: "Ovis" } } });
+    vi.stubGlobal("options", { app: { mode: null }, map: { lore: { name: "Ovis" } } });
     vi.stubGlobal("$", () => ({ not: () => ({ each: vi.fn() }) }));
     const picker = vi.fn().mockRejectedValue(Object.assign(new Error("cancelled"), { name: "AbortError" }));
     vi.stubGlobal("showSaveFilePicker", picker);
@@ -79,7 +79,7 @@ describe("Save.toMachine", () => {
   });
 
   it("rejects saving in edit mode before opening the picker", async () => {
-    vi.stubGlobal("customization", 1);
+    options.app.mode = "heightmap";
     const picker = vi.fn();
     vi.stubGlobal("showSaveFilePicker", picker);
     await Save.toMachine();

@@ -59,7 +59,7 @@ async function openBulkMode(button: "reliefBulkAdd" | "reliefBulkRemove"): Promi
 beforeEach(() => {
   document.body.innerHTML =
     '<div id="dialogs"></div><div id="tooltip"></div><svg id="map"><g id="viewbox"><g id="terrain"></g></g><g id="debug"></g></svg>';
-  globalThis.customization = 0;
+  options.app.mode = null;
   globalThis.styles = Styles.parse(undefined);
   vi.spyOn(Pack, "findCell").mockReturnValue(0);
   globalThis.pack = { cells: { h: new Uint8Array([30]) }, relief: [] } as unknown as typeof pack;

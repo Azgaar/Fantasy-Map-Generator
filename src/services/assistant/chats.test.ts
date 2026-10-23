@@ -2,7 +2,7 @@
 import { beforeEach, expect, it, vi } from "vitest";
 
 const localDB = vi.hoisted(() => ({ isSupported: () => true, get: vi.fn(), set: vi.fn() }));
-vi.mock("@/utils/localDB", () => ({ LocalDB: localDB }));
+vi.mock("@/services/local-db", () => ({ LocalDB: localDB }));
 
 const storage = new Map<string, unknown>();
 beforeEach(() => {

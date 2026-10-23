@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getBase64, getCoordinates, getLatitude, getLongitude, parseError } from "./commonUtils";
+import { getCoordinates, getLatitude, getLongitude, parseError } from "./commonUtils";
+import { getBase64 } from "./fileUtils";
 
 describe("getLongitude", () => {
   const mapCoordinates = { lonW: -10, lonT: 20 };

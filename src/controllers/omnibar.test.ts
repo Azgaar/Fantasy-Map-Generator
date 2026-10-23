@@ -76,7 +76,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.open.mockResolvedValue(undefined);
   mocks.labels.mockReturnValue([]);
-  globalThis.customization = 0;
+  options.app.mode = null;
   globalThis.pack = {
     cells: {
       i: [0, 1],
@@ -244,7 +244,7 @@ describe("Omnibar public behavior", () => {
   });
 
   it("keeps disabled commands visible without activating them", () => {
-    globalThis.customization = 1;
+    options.app.mode = "heightmap";
     Omnibar.open();
     search("> add burg");
     expect(rows()[0].getAttribute("aria-disabled")).toBe("true");

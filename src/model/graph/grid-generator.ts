@@ -4,7 +4,8 @@ import { min } from "d3";
 import type { MapData } from "@/model/options/options-schema";
 import type { GridCells, GridGraph } from "@/types/GridGraph";
 import type { Point } from "@/types/global";
-import { rn, SEA_LEVEL } from "@/utils";
+import { SEA_LEVEL } from "@/utils/heightUtils";
+import { rn } from "@/utils/numberUtils";
 import { Lattice } from "./lattice";
 import { calculateVoronoi } from "./voronoi";
 

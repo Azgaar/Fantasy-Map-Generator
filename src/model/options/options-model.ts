@@ -24,9 +24,9 @@ import { Relief } from "@/model/physical/relief-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Military } from "@/model/political/military-generator";
 import { Names } from "@/model/society/names-generator";
+import { LocalDB } from "@/services/local-db";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
-import { LocalDB } from "@/utils/localDB";
 import { rn } from "@/utils/numberUtils";
 import { deepMerge } from "@/utils/objectUtils";
 import { gauss, rand, rw } from "@/utils/probabilityUtils";
@@ -101,6 +101,7 @@ class OptionsModel {
         burgs: { limit: 1000 }
       },
       app: {
+        mode: null,
         notesPinned: false,
         emblems: { showAll: false, shape: "culture" },
         labels: { showAll: false },
@@ -149,9 +150,10 @@ class OptionsModel {
     clearTimeout(this.saveTimer);
     this.saveTimer = 0;
     const { customIcons, viewOnly, ...map } = options.map; // view-only belongs to the loaded file, not this browser
+    const { mode, ...app } = options.app; // an edit mode ends with the session
     this.persistIcons(customIcons);
     try {
-      localStorage.setItem(OPTIONS_STORAGE_KEY, JSON.stringify({ ...options, map }));
+      localStorage.setItem(OPTIONS_STORAGE_KEY, JSON.stringify({ ...options, map, app }));
     } catch (error) {
       // a full storage keeps the last options; the map file still holds the map's own
       if (!(error instanceof DOMException && error.name === "QuotaExceededError")) throw error;

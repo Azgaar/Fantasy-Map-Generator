@@ -28,7 +28,7 @@ afterEach(() => {
 
 it("does not reparent a loaded preview when opening or closing the dialog", () => {
   document.body.innerHTML = '<div id="dialogs"></div><svg id="labels"></svg><svg id="burgIcons"></svg>';
-  vi.stubGlobal("customization", 0);
+  options.app.mode = null;
   vi.stubGlobal("grid", { cells: { temp: [20] } });
   vi.stubGlobal("pack", {
     burgs: [null, { i: 1, cell: 0, state: 0, name: "Polmabas", group: "city", population: 10 }],

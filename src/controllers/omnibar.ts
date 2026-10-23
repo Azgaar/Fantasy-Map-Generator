@@ -6,8 +6,8 @@ import type { LayerId } from "@/renderers/layers";
 import { Layers } from "@/renderers/layers";
 import { openEntity, reveal, revealEntity } from "@/ui/map/reveal";
 import { tip } from "@/ui/tooltips";
-import { findEl } from "@/utils";
 import { t } from "@/utils/i18n";
+import { findEl } from "@/utils/nodeUtils";
 
 interface SearchFields {
   name: string;
@@ -697,7 +697,7 @@ function match(text: string, query: string): number {
 
 function getMapActionUnavailable(): string {
   if (typeof pack === "undefined" || !pack.cells?.i?.length) return t("Generate or load a map first");
-  if (typeof customization !== "undefined" && customization) return t("Exit customization mode first");
+  if (options.app.mode) return t("Exit customization mode first");
   if (findEl("canvas3d")) return t("Switch to the 2D map first");
   return "";
 }

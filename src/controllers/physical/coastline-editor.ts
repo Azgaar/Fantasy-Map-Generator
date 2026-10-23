@@ -7,8 +7,9 @@ import { drawFeaturePath } from "@/renderers/draw-landmass";
 import { Layers } from "@/renderers/layers";
 import type { Point } from "@/types/global";
 import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
-import { ensureEl, escapeHtml, findEl } from "@/utils";
 import { t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { escapeHtml } from "@/utils/stringUtils";
 
 interface InputParams {
   id: string;
@@ -166,7 +167,7 @@ const position = { my: "right top", at: "right-10 top+10", of: "svg", collision:
 let selectedFeature: Feature | null = null; // the feature the editor shapes, or the whole map
 
 function open(featureId?: number): void {
-  if (customization) return;
+  if (options.app.mode) return;
   closeDialogs(".stable");
   destroyDialog("coastlineSettingsDialog");
   ensureEl("dialogs").insertAdjacentHTML(

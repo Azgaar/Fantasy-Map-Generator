@@ -15,7 +15,8 @@ import { Population } from "@/model/society/population-generator";
 import type { BurgGroup } from "@/types/burg-groups";
 import type { Emblem } from "@/types/emblems";
 import type { IconSet } from "@/types/icons";
-import { each, gauss, minmax, normalize, P, rn } from "@/utils";
+import { minmax, normalize, rn } from "@/utils/numberUtils";
+import { each, gauss, P } from "@/utils/probabilityUtils";
 import { safeParseJSON } from "@/utils/stringUtils";
 import { requireName, requireOneOf } from "@/utils/validationUtils";
 

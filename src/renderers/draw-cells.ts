@@ -2,11 +2,12 @@ import { Grid } from "@/model/graph/grid-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { Layers } from "@/renderers/layers";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
-import { ensureEl, rn } from "@/utils";
+import { ensureEl } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
 
 const layer = ViewportLayers.register({ id: "cellIndexes", render: reconcileIndexes });
 
-const isGridMode = () => customization === 1; // the heightmap editor works on the grid graph
+const isGridMode = () => options.app.mode === "heightmap"; // the heightmap editor works on the grid graph
 
 export function drawCells(): void {
   const cellIds = (isGridMode() ? grid.cells.i : pack.cells.i) as ArrayLike<number>;

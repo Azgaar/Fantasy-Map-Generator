@@ -57,16 +57,19 @@ function memberDeclaration(name) {
   return `${name}: typeof ${name};`;
 }
 
-function utilsNames() {
-  const list = read("src/utils/index.ts").match(/export \{\n([\s\S]*?)\n\};/)?.[1] ?? "";
-  return list.split(",").map(name => name.trim()).filter(Boolean);
+// the exported names of a module spread into FMG whole (`...units`)
+function spreadNames(namespace) {
+  const spec = fmgSource.match(new RegExp(`import \\* as ${namespace} from "(@\\/[^"]+)";`))?.[1];
+  if (!spec) throw new Error(`${FMG} spreads ${namespace} without importing it`);
+  return [...read(modulePath(spec)).matchAll(/^export (?:async )?(?:function|const|class) (\w+)/gm)].map(([, name]) => name);
 }
 
 function fmgMembers() {
   return fmgBody.split("\n").flatMap(line => {
     const getter = line.match(/^ {2}get (\w+)\(\)/)?.[1];
     if (getter) return [`${getter}: ${globalType(getter) ?? "unknown"};`];
-    if (/^ {2}\.\.\.utils,/.test(line)) return [`// helpers from src/utils: ${utilsNames().join(", ")}`];
+    const spread = line.match(/^ {2}\.\.\.(\w+),$/)?.[1];
+    if (spread) return [`// from ${spread}: ${spreadNames(spread).join(", ")}`];
     const wrapper = line.match(/^ {2}(\w+): (\([^)]*\)) =>/);
     if (wrapper) return [`${wrapper[1]}${wrapper[2]};`];
     const member = line.match(/^ {2}(\w+),?$/)?.[1];

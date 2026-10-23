@@ -1,5 +1,5 @@
 import { select } from "d3";
-import { rn } from "../utils";
+import { rn } from "@/utils/numberUtils";
 
 const GROUP_ID = "markerRadiusRing";
 

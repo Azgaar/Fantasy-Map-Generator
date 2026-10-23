@@ -10,8 +10,10 @@ import {
   scaleSequential,
   select
 } from "d3";
+import { convertTemperature } from "@/model/units";
 import { viewport } from "@/renderers/viewport/viewport";
-import { connectVertices, convertTemperature, round } from "../utils";
+import { connectVertices } from "@/utils/pathUtils";
+import { round } from "@/utils/stringUtils";
 
 const temperatureRenderer = (): void => {
   TIME && console.time("drawTemperature");

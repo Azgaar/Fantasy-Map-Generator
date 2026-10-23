@@ -184,23 +184,6 @@ describe("RoutesModule.findWaterPath", () => {
   function setupTwoPortsPack(destinationHaven: number) {
     globalThis.TIME = false;
     globalThis.window = globalThis.window || ({} as any);
-    // Minimal stand-in for the legacy FlatQueue global the shared findPath uses
-    (globalThis as any).window.FlatQueue = class {
-      items: { id: number; priority: number }[] = [];
-      get length() {
-        return this.items.length;
-      }
-      push(id: number, priority: number) {
-        this.items.push({ id, priority });
-        this.items.sort((a, b) => a.priority - b.priority);
-      }
-      peekValue() {
-        return this.items[0]?.priority;
-      }
-      pop() {
-        return this.items.shift()?.id;
-      }
-    };
     globalThis.grid = { cells: { temp: [20, 20, 20, 20, 20] } } as any;
     globalThis.pack = {
       cells: {

@@ -2,9 +2,10 @@
 import { color, hsl, rgb } from "d3";
 import { Hatches } from "@/renderers/hatches";
 import { destroyDialog } from "@/ui/dialog/dialog-helpers";
-import { ensureEl, findEl, minmax } from "@/utils";
 import { getRandomColor } from "@/utils/colorUtils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { minmax } from "@/utils/numberUtils";
 
 const DIALOG = "colorPicker";
 const PRESETS = Array.from({ length: 12 }, (_, i) => hsl(i * 30, 0.7, 0.7).formatHex());

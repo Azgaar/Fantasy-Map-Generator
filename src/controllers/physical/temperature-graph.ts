@@ -1,7 +1,10 @@
 import { axisBottom, axisLeft, curveBasis, line, pointer, scaleLinear, scaleTime, select, timeFormat } from "d3";
+import { convertTemperature } from "@/model/units";
 import { tip } from "@/ui/tooltips";
-import { convertTemperature, ensureEl, rn, round } from "@/utils";
 import { t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
+import { round } from "@/utils/stringUtils";
 
 const MONTHS = [
   t("January"),

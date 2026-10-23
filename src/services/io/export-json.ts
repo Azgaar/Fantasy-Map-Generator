@@ -1,10 +1,10 @@
 import { mapHistory } from "@/model/map-history";
 import { Names } from "@/model/society/names-generator";
+import { getFileName } from "@/services/io/file-name";
 import { savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
 import { closeDialogs } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
-import { getFileName } from "@/utils";
 import { t } from "@/utils/i18n";
 
 type ExportJsonType = "Full" | "Minimal" | "PackCells" | "GridCells";
@@ -17,7 +17,7 @@ const typeMap = {
 };
 
 function exportToJson(type: ExportJsonType): void {
-  if (customization) {
+  if (options.app.mode) {
     tip(t("Data cannot be exported when edit mode is active, please exit the mode and retry"), false, "error");
     return;
   }

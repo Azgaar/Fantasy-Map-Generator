@@ -26,7 +26,7 @@ beforeEach(() => {
       { type: "hill", variant: 1, set: "gray", x: 10, y: 10, s: 10 }
     ]
   } as typeof pack;
-  globalThis.customization = 0;
+  options.app.mode = null;
   setViewportSize(1000, 1000);
   window.URL.createObjectURL = vi.fn(() => "blob:export");
   window.URL.revokeObjectURL = vi.fn();

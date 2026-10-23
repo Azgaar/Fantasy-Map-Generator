@@ -28,6 +28,7 @@ import { undraw } from "@/renderers/undraw";
 import { Services } from "@/services";
 import { declareFont, fonts } from "@/services/fonts";
 import { MapRepair } from "@/services/io/map-repair";
+import { LocalDB } from "@/services/local-db";
 import { logStats } from "@/services/logging";
 import { focusOn, generateMapOnLoad } from "@/services/url-params";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
@@ -35,9 +36,11 @@ import { closeDialogs, confirmationDialog } from "@/ui/dialog/dialog-helpers";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { invokeActiveZooming, resetZoom } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { ensureEl, link, parseError, rn, safeParseJSON } from "@/utils";
+import { link, parseError } from "@/utils/commonUtils";
 import { sentences, t } from "@/utils/i18n";
-import { LocalDB } from "@/utils/localDB";
+import { ensureEl } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
+import { safeParseJSON } from "@/utils/stringUtils";
 
 async function quickLoad(): Promise<void> {
   const blob = await LocalDB.get("lastMap");
@@ -185,13 +188,7 @@ function uploadMap(file: Blob, callback?: () => void): void {
 async function uncompress(compressedData: ArrayBuffer): Promise<Uint8Array | null> {
   try {
     const uncompressedStream = new Blob([compressedData]).stream().pipeThrough(new DecompressionStream("gzip"));
-
-    let uncompressedData: number[] = [];
-    for await (const chunk of uncompressedStream) {
-      uncompressedData = uncompressedData.concat(Array.from(chunk));
-    }
-
-    return new Uint8Array(uncompressedData);
+    return new Uint8Array(await new Response(uncompressedStream).arrayBuffer());
   } catch (error) {
     ERROR && console.error(error);
     return null;
@@ -267,7 +264,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     const { migrateLegacySettings, resolveVersionConflicts } = await import("./auto-update"); // TODO: don't load if not required
 
     closeDialogs();
-    customization = 0;
+    options.app.mode = null;
     if (ensureEl("customizationMenu").offsetParent) ensureEl("styleTab").click();
 
     migrateLegacySettings(mapVersion!, data);

@@ -7,22 +7,29 @@ import { Grid } from "@/model/graph/grid-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { MapEntities } from "@/model/map-entities";
 import { Notes } from "@/model/story/notes";
+import { convertTemperature, getCellPopulation, getFriendlyHeight, getFriendlyPrecipitation } from "@/model/units";
 import { Layers } from "@/renderers/layers";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
 import type { Point } from "@/types/global";
 import { showMainTip, tip } from "@/ui/tooltips";
-import {
-  convertTemperature,
-  escapeHtml,
-  findEl,
-  getCellPopulation,
-  getComposedPath,
-  getFriendlyHeight,
-  getFriendlyPrecipitation,
-  getPointer,
-  si
-} from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { findEl, getPointer } from "@/utils/nodeUtils";
+import { si } from "@/utils/numberUtils";
+import { escapeHtml } from "@/utils/stringUtils";
+
+/**
+ * Get the composed path of a node (including shadow DOM and window)
+ * @param {Node | Window} node - The starting node or window
+ * @returns {Array<Node>} - The composed path as an array
+ */
+const getComposedPath = (node: any): Array<Node | Window> => {
+  let parent: Node | Window | undefined;
+  if (node.parentNode) parent = node.parentNode;
+  else if (node.host) parent = node.host;
+  else if (node.defaultView) parent = node.defaultView;
+  if (parent !== undefined) return [node].concat(getComposedPath(parent));
+  return [node];
+};
 
 export function handleMouseMove(event: MouseEvent | TouchEvent): void {
   const node = event.currentTarget as SVGElement | null;

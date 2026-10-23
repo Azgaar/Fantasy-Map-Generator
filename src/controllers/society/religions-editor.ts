@@ -5,6 +5,7 @@ import { Pack } from "@/model/graph/pack-generator";
 import type { Religion } from "@/model/society/religions-generator";
 import { Religions } from "@/model/society/religions-generator";
 import { Tags } from "@/model/tags";
+import { getArea, getAreaUnit } from "@/model/units";
 import { Layers } from "@/renderers/layers";
 import { LegendBoxes } from "@/renderers/legend-boxes";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -24,21 +25,13 @@ import {
 } from "@/ui/dialog/table";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import {
-  debounce,
-  ensureEl,
-  findEl,
-  getArea,
-  getAreaUnit,
-  getPointer,
-  groupByValue,
-  isLand,
-  parseTransform,
-  rn,
-  si
-} from "@/utils";
+import { groupByValue } from "@/utils/arrayUtils";
+import { debounce } from "@/utils/commonUtils";
+import { isLand } from "@/utils/heightUtils";
 import { sentences, t } from "@/utils/i18n";
-import { errorText } from "@/utils/stringUtils";
+import { ensureEl, findEl, getPointer } from "@/utils/nodeUtils";
+import { rn, si } from "@/utils/numberUtils";
+import { errorText, parseTransform } from "@/utils/stringUtils";
 
 const dialogId = "religionsEditor" as const;
 const CSV_COLUMNS = [
@@ -154,7 +147,7 @@ const religionsTable = initEditorTable<Religion>({
 });
 
 function open(): void {
-  if (customization) return;
+  if (options.app.mode) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ showExtinct: false, search: "" }));
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("religions");
@@ -556,7 +549,7 @@ const religionHighlightOn = debounce((event: any) => {
   if ($el) $el.classList.add("active");
 
   if (!Layers.isOn("religions")) return;
-  if (customization) return;
+  if (options.app.mode) return;
 
   const animate = transition().duration(2000).ease(easeSinIn);
   select("#relig")
@@ -731,7 +724,7 @@ function religionChangeExpansionism(this: HTMLInputElement): void {
 }
 
 function religionRemovePrompt(this: HTMLElement): void {
-  if (customization) return;
+  if (options.app.mode) return;
 
   const religionId = +(this.closest(".states") as HTMLElement).dataset.id!;
   confirmationDialog({
@@ -842,7 +835,7 @@ function togglePercentageMode(): void {
 }
 
 async function showHierarchy(): Promise<void> {
-  if (customization) return;
+  if (options.app.mode) return;
 
   const getDescription = (religion: any) => {
     const { name, type, form, rural, urban } = religion;
@@ -925,7 +918,7 @@ function enterAddReligionMode(this: HTMLElement): void {
     return;
   }
 
-  customization = 8;
+  options.app.mode = "addReligion";
   this.classList.add("pressed");
   tip(t("Click on the map to add a new religion"), true);
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", addReligion);
@@ -937,7 +930,7 @@ function enterAddReligionMode(this: HTMLElement): void {
 }
 
 function exitAddReligionMode(): void {
-  customization = 0;
+  options.app.mode = null;
   applyDefaultViewboxEvents();
   clearMainTip();
   ensureEl("religionsBody")
@@ -1001,7 +994,7 @@ function highlightReligion(this: HTMLElement): void {
 }
 
 function updateLockStatus(this: HTMLElement): void {
-  if (customization) return;
+  if (options.app.mode) return;
 
   const religionId = +(this.closest(".states") as HTMLElement).dataset.id!;
   const classList = this.classList;
@@ -1023,7 +1016,7 @@ function recalculateReligions(must?: boolean): void {
 
 function closeReligionsEditor(): void {
   select("#debug").select("#religionCenters").remove();
-  if (customization === 8) exitAddReligionMode();
+  if (options.app.mode === "addReligion") exitAddReligionMode();
   Controllers.ColorPicker.close();
   const view = religionsTable.view();
   view.rows = [];

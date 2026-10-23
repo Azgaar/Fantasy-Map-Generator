@@ -2,7 +2,7 @@
 
 import { Pack } from "@/model/graph/pack-generator";
 import { viewport } from "@/renderers/viewport/viewport";
-import { unique } from "@/utils";
+import { unique } from "@/utils/arrayUtils";
 import { createEl, ensureEl, findEl } from "@/utils/nodeUtils";
 
 const getGroup = (): SVGGElement => {

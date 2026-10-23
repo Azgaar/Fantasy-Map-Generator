@@ -8,7 +8,7 @@ import type {
   HeraldicEmblem,
   PictureEmblem
 } from "@/types/emblems";
-import { ensureEl, findEl } from "@/utils";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
 import { colors } from "./colors";
 import { componyDashes } from "./compony";
 import { diapers } from "./diapers";

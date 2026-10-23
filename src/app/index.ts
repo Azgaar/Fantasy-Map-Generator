@@ -4,7 +4,6 @@ import "@/model/globals";
 import "@/model/options/options-defaults";
 import "./chrome/tabs";
 
-import "@/utils";
 import "@/data/supporters";
 import "@/data/heightmap-templates";
 import "@/data/precreated-heightmaps";

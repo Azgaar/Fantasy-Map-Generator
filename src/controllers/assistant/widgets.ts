@@ -2,6 +2,7 @@ import { schemeTableau10 } from "d3";
 import { isLinkable, MAP_COMMANDS } from "@/app/map-commands";
 import { ENTITY_TYPES, type EntityRef, isEntityType, MapEntities, RECORD_TYPES } from "@/model/map-entities";
 import type { State } from "@/model/political/states-generator";
+import { formatPrice, getArea, getAreaUnit, getPeople } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import type { ChartRow, Widget } from "@/services/assistant/chats";
@@ -10,12 +11,11 @@ import type { Emblem } from "@/types/emblems";
 import type { Point } from "@/types/global";
 import { clearEntityMarks, markEntities, openEntity as openEditor, reveal, revealEntity } from "@/ui/map/reveal";
 import { tip } from "@/ui/tooltips";
-import { findEl } from "@/utils";
 import { t } from "@/utils/i18n";
 import { type LinkResolver, renderMarkdown } from "@/utils/markdown";
-import { rn } from "@/utils/numberUtils";
+import { findEl } from "@/utils/nodeUtils";
+import { rn, si } from "@/utils/numberUtils";
 import { escapeHtml } from "@/utils/stringUtils";
-import { formatPrice, getArea, getAreaUnit, getPeople, si } from "@/utils/unitUtils";
 import { frameRegion } from "./region";
 
 // Widgets: links in answers and the items the show tool places. See docs/prd/assistant.md

@@ -5,9 +5,9 @@ import type { LabelType } from "@/model/annotations/labels-generator";
 import { dragLegendBox, legendBoxFromEvent } from "@/renderers/draw-legend";
 import { LegendBoxes } from "@/renderers/legend-boxes";
 import { tip } from "@/ui/tooltips";
-import { findEl } from "@/utils";
 import { debounce } from "@/utils/commonUtils";
 import { sentences, t } from "@/utils/i18n";
+import { findEl } from "@/utils/nodeUtils";
 import { handleMouseMove } from "./map-tooltip";
 import { applyZoomBehavior } from "./zoom";
 
@@ -103,7 +103,7 @@ function onClick(event: MouseEvent): void {
 
 /** Right-click on the map belongs to the context menu; Shift+right-click keeps the browser's own */
 function onContextMenu(event: MouseEvent): void {
-  if (event.shiftKey || customization || options.map.viewOnly) return;
+  if (event.shiftKey || options.app.mode || options.map.viewOnly) return;
   event.preventDefault();
   Controllers.ContextMenu.open(event);
 }

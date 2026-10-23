@@ -21,12 +21,16 @@ import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
 import { Production } from "@/model/economy/production-generator";
 import { mapHistory } from "@/model/map-history";
+import { convertTemperature, formatPrice, getArea, getAreaUnit, getHeight, getPrecipitation } from "@/model/units";
 import { Csv } from "@/services/io/csv";
+import { getFileName } from "@/services/io/file-name";
 import { closeDialogs, destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
-import { downloadFile, findEl, getArea, getAreaUnit, getFileName, getHeight, getPrecipitation } from "@/utils";
+import { downloadFile } from "@/utils/fileUtils";
+import { isWater } from "@/utils/heightUtils";
 import { t } from "@/utils/i18n";
-import { convertTemperature, ensureEl, formatPrice, isWater, rn, si } from "../utils";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { rn, si } from "@/utils/numberUtils";
 
 interface Dimension {
   label: string;

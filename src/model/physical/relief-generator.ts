@@ -3,7 +3,7 @@ import { RELIEF_SETS } from "@/data/style-choices";
 import { Pack } from "@/model/graph/pack-generator";
 import type { ReliefRule } from "@/model/options/options-schema";
 import type { IconAlias, IconSet } from "@/types/icons";
-import { minmax, rn } from "@/utils";
+import { minmax, rn } from "@/utils/numberUtils";
 
 const TYPES = [
   { type: "mount", label: "Mountain", variants: 6 },

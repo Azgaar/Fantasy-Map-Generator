@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { isImageIcon, sanitizeSvgIcon, scopeSvgIcon, svgToDataUri } from "./fileUtils";
+import { isImageIcon, sanitizeSvgIcon, scopeSvgIcon } from "./fileUtils";
 
 describe("sanitizeSvgIcon", () => {
   it("returns the svg element from the file markup", () => {
@@ -130,22 +130,6 @@ describe("sanitizeSvgIcon external css", () => {
     expect(svg.querySelector("style")?.textContent).toContain('url( "#a")');
     expect(svg.querySelector("path")?.getAttribute("style")).toBe("fill:none");
     expect(svg.querySelector("path")?.getAttribute("fill")).toBe("url(data:image/png;base64,AA)");
-  });
-});
-
-describe("svgToDataUri", () => {
-  it("encodes markup as a base64 svg data uri", () => {
-    const markup = '<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0h10"/></svg>';
-    const uri = svgToDataUri(markup);
-    expect(uri.startsWith("data:image/svg+xml;base64,")).toBe(true);
-    const decoded = Buffer.from(uri.split(",")[1], "base64").toString("utf8");
-    expect(decoded).toBe(markup);
-  });
-
-  it("round-trips non-latin characters", () => {
-    const markup = '<svg xmlns="http://www.w3.org/2000/svg"><text>Привет 城市</text></svg>';
-    const decoded = Buffer.from(svgToDataUri(markup).split(",")[1], "base64").toString("utf8");
-    expect(decoded).toBe(markup);
   });
 });
 

@@ -50,3 +50,27 @@ export const normalize = (val: number, min: number, max: number) => {
 export const lerp = (a: number, b: number, t: number) => {
   return a + (b - a) * t;
 };
+
+/**
+ * Convert number to short string with SI postfix
+ * @param {number} n - The number to convert
+ * @returns {string} - The converted string
+ */
+export const si = (n: number): string => {
+  if (n >= 1e9) return `${rn(n / 1e9, 1)}B`;
+  if (n >= 1e8) return `${rn(n / 1e6)}M`;
+  if (n >= 1e6) return `${rn(n / 1e6, 1)}M`;
+  if (n >= 1e4) return `${rn(n / 1e3)}K`;
+  if (n >= 1e3) return `${rn(n / 1e3, 1)}K`;
+  return rn(n).toString();
+};
+
+/**
+ * Calculate squared distance between two points
+ * @param {[number, number]} p1 - First point [x1, y1]
+ * @param {[number, number]} p2 - Second point [x2, y2]
+ * @returns {number} - Squared distance between p1 and p2
+ */
+export const distanceSquared = ([x1, y1]: [number, number], [x2, y2]: [number, number]) => {
+  return (x1 - x2) ** 2 + (y1 - y2) ** 2;
+};

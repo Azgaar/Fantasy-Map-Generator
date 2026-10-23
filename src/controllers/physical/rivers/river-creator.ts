@@ -6,8 +6,8 @@ import { Layers } from "@/renderers/layers";
 import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { ensureEl, getPointer } from "@/utils";
 import { t } from "@/utils/i18n";
+import { ensureEl, getPointer } from "@/utils/nodeUtils";
 import { errorText } from "@/utils/stringUtils";
 
 let creatorCells: number[] = [];
@@ -15,7 +15,7 @@ let creatorCells: number[] = [];
 let isCellsLayerForced = false; // the cells layer is turned on for the editing mode
 
 function open(): void {
-  if (customization) return;
+  if (options.app.mode) return;
   closeDialogs();
   Layers.show("rivers");
 

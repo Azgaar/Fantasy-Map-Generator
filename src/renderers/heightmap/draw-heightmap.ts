@@ -26,8 +26,8 @@ import type { GridRaster } from "@/model/graph/grid-generator";
 import { Grid } from "@/model/graph/grid-generator";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
 import { tip } from "@/ui/tooltips";
-import { round } from "@/utils";
 import { t } from "@/utils/i18n";
+import { round } from "@/utils/stringUtils";
 import { getHeightContours, smoothContourHeights } from "./heightmap-contours";
 import { getHachures } from "./heightmap-hachures";
 
@@ -67,7 +67,7 @@ export const hasHeightTints = (heightOptions: HeightsOptions): boolean =>
   heightOptions.contours.mode !== "only" && heightOptions.hachures.mode !== "only";
 
 export const drawHeightmap = (): void => {
-  if (customization === 1)
+  if (options.app.mode === "heightmap")
     return void tip(t("The Layer control is not available in the heightmap edit mode"), false, "error");
 
   TIME && console.time("drawHeightmap");

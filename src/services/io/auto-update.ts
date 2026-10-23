@@ -56,9 +56,13 @@ import { compareVersions } from "@/services/versioning";
 import type { LegendItem } from "@/types/Legend";
 import type { StylesData } from "@/types/styles";
 import { confirmationDialog } from "@/ui/dialog/dialog-helpers";
-import { minmax, parseTransform, rn, rw, safeParseJSON, sanitizeSvgIcon, scopeSvgIcon, unique } from "@/utils";
+import { unique } from "@/utils/arrayUtils";
+import { sanitizeSvgIcon, scopeSvgIcon } from "@/utils/fileUtils";
 import { t } from "@/utils/i18n";
+import { minmax, rn } from "@/utils/numberUtils";
 import { parsePathPoints } from "@/utils/pathUtils";
+import { rw } from "@/utils/probabilityUtils";
+import { parseTransform, safeParseJSON } from "@/utils/stringUtils";
 import { Csv } from "./csv";
 
 type LegacyBurgGroup = Omit<MapData["burgs"]["groups"][number], "biomes" | "states" | "cultures" | "religions"> & {

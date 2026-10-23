@@ -1,12 +1,13 @@
 // Showing and hiding the legend boxes: the map data changes, then the legend layer draws it
 import { color, extent } from "d3";
 import { Legends } from "@/model/annotations/legends";
+import { getHeightUnitRatio, metersToHeight } from "@/model/units";
 import { hasHeightTints } from "@/renderers/heightmap/draw-heightmap";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
 import { legendPositions } from "@/renderers/legend-positions";
 import type { LegendItem } from "@/types/Legend";
 import { tip } from "@/ui/tooltips";
-import { getHeightUnitRatio, metersToHeight, SEA_LEVEL } from "@/utils";
+import { SEA_LEVEL } from "@/utils/heightUtils";
 import { t } from "@/utils/i18n";
 import { Layers } from "./layers";
 

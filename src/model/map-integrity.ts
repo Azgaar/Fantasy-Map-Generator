@@ -3,7 +3,7 @@
 import { Routes } from "@/model/economy/routes-generator";
 import { Transports } from "@/model/economy/transports-generator";
 import { Pack } from "@/model/graph/pack-generator";
-import { isWater } from "@/utils";
+import { isWater } from "@/utils/heightUtils";
 
 export type IntegrityRule = (typeof RULES)[number];
 

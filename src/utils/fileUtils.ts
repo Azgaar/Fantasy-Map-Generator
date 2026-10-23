@@ -1,22 +1,5 @@
 // Reading and writing local files, plus naming downloads and exports.
 
-/** Build a filename from the map name, optional type and current time */
-export function getFileName(dataType?: string): string {
-  const pad = (value: number) => String(value).padStart(2, "0");
-
-  const date = new Date();
-  const dateString = [
-    date.getFullYear(),
-    pad(date.getMonth() + 1),
-    pad(date.getDate()),
-    pad(date.getHours()),
-    pad(date.getMinutes())
-  ].join("-");
-
-  const type = dataType ? `${dataType} ` : "";
-  return `${options.map.lore.name} ${type}${dateString}`;
-}
-
 /** Download data as a file */
 export function downloadFile(data: BlobPart, name: string, type = "text/plain"): void {
   const url = window.URL.createObjectURL(new Blob([data], { type }));
@@ -124,14 +107,6 @@ function scopeCss(css: string, scope: string, selector: (value: string) => strin
   return Array.from(sheet.cssRules, rule => rule.cssText).join("");
 }
 
-/** UTF-8 safe base64 data URI */
-export function svgToDataUri(svgText: string): string {
-  const bytes = new TextEncoder().encode(svgText);
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return `data:image/svg+xml;base64,${btoa(binary)}`;
-}
-
 /** Whether an icon value is an image URL rather than an emoji or text glyph */
 export function isImageIcon(icon: string): boolean {
   return /^(https?:\/\/|data:image\/)/.test(icon);
@@ -157,3 +132,37 @@ export function uploadFile(input: HTMLInputElement, callback: (data: string) => 
   input.value = "";
   fileReader.onload = loaded => callback(loaded.target?.result as string);
 }
+
+/**
+ * Convert a URL to base64 encoded data
+ * @param url - The URL to convert
+ * @param callback - Callback function that receives the base64 data
+ */
+export const getBase64 = (url: string, callback: (result: string | ArrayBuffer | null) => void): void => {
+  const xhr = new XMLHttpRequest();
+  xhr.onload = () => {
+    const blob = xhr.response as Blob | null;
+    // don't inline error pages (e.g. a 404 html document) as image data
+    if (xhr.status < 200 || xhr.status >= 300 || !blob?.type.startsWith("image/")) {
+      ERROR && console.error(`Cannot load image ${url}: status ${xhr.status}, type ${blob?.type || "unknown"}`);
+      return callback(null);
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      callback(reader.result);
+    };
+    reader.readAsDataURL(blob);
+  };
+  xhr.onerror = () => {
+    ERROR && console.error(`Cannot load image ${url}: network error`);
+    callback(null);
+  };
+  xhr.ontimeout = () => {
+    ERROR && console.error(`Cannot load image ${url}: timed out`);
+    callback(null);
+  };
+  xhr.open("GET", url);
+  xhr.timeout = 15000; // a host that never answers must not hang an export
+  xhr.responseType = "blob";
+  xhr.send();
+};

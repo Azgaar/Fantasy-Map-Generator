@@ -5,6 +5,7 @@ import { fitReliefArt, poolPreviewHtml } from "@/controllers/physical/relief/rel
 import type { Biome } from "@/model/physical/biomes-generator";
 import { Biomes } from "@/model/physical/biomes-generator";
 import { Population } from "@/model/society/population-generator";
+import { getArea, getAreaUnit } from "@/model/units";
 import { Layers } from "@/renderers/layers";
 import { LegendBoxes } from "@/renderers/legend-boxes";
 import { Csv } from "@/services/io/csv";
@@ -23,8 +24,13 @@ import {
 } from "@/ui/dialog/table";
 import type { FillBoxElement } from "@/ui/elements/fill-box";
 import { tip } from "@/ui/tooltips";
-import { ensureEl, findEl, getArea, getAreaUnit, getRandomColor, groupByValue, isLand, openURL, rn, si } from "@/utils";
+import { groupByValue } from "@/utils/arrayUtils";
+import { getRandomColor } from "@/utils/colorUtils";
+import { openURL } from "@/utils/commonUtils";
+import { isLand } from "@/utils/heightUtils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { rn, si } from "@/utils/numberUtils";
 
 const dialogId = "biomesEditor" as const;
 const CSV_COLUMNS = ["Id", "Biome", "Color", "Habitability", "Cells", "Area", "Population"];
@@ -92,7 +98,7 @@ const biomesTable = initEditorTable<Biome>({
 });
 
 function open(): void {
-  if (customization) return;
+  if (options.app.mode) return;
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("biomes");
   Layers.hide("states", "cultures");
@@ -322,14 +328,12 @@ function editReliefPool(el: HTMLElement): void {
 }
 
 function biomeHighlightOn(event: Event): void {
-  if (customization === 6) return;
   const biome = +(event.target as HTMLElement).dataset.id!;
   const animate = transition().duration(2000).ease(easeSinIn);
   select(`#biomes > #biome${biome}`).raise().transition(animate).attr("stroke-width", 2).attr("stroke", "#cd4c11");
 }
 
 function biomeHighlightOff(event: Event): void {
-  if (customization === 6) return;
   const biome = +(event.target as HTMLElement).dataset.id!;
   const color = pack.biomes[biome].color;
   select(`#biomes > #biome${biome}`).transition().attr("stroke-width", 0.7).attr("stroke", color);

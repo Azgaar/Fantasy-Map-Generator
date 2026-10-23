@@ -1,7 +1,8 @@
 import { curveCatmullRom, easeLinear, line, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { Point } from "@/model/graph/voronoi";
-import { ensureEl, minmax } from "../utils";
+import { ensureEl } from "@/utils/nodeUtils";
+import { minmax } from "@/utils/numberUtils";
 import type { TradeBatch } from "./trade-animation";
 
 const lineGen = line<Point>().curve(curveCatmullRom.alpha(0.1));

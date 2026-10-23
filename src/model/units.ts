@@ -1,7 +1,8 @@
+// Map values in the map's own units, as `options.map.units` sets them
 import { Grid } from "@/model/graph/grid-generator";
 import { Pack } from "@/model/graph/pack-generator";
-import type { PackedGraph } from "../types/PackedGraph";
-import { rn } from "./numberUtils";
+import type { PackedGraph } from "@/types/PackedGraph";
+import { rn } from "@/utils/numberUtils";
 
 type TemperatureScale = "°C" | "°F" | "K" | "°R" | "°De" | "°N" | "°Ré" | "°Rø";
 /**
@@ -23,33 +24,6 @@ export const convertTemperature = (temperatureInCelsius: number, targetScale?: T
     "°Rø": (temp: number) => `${rn((temp * 21) / 40 + 7.5)}°Rø`
   };
   return temperatureConversionMap[scale](temperatureInCelsius);
-};
-
-/**
- * Convert number to short string with SI postfix
- * @param {number} n - The number to convert
- * @returns {string} - The converted string
- */
-export const si = (n: number): string => {
-  if (n >= 1e9) return `${rn(n / 1e9, 1)}B`;
-  if (n >= 1e8) return `${rn(n / 1e6)}M`;
-  if (n >= 1e6) return `${rn(n / 1e6, 1)}M`;
-  if (n >= 1e4) return `${rn(n / 1e3)}K`;
-  if (n >= 1e3) return `${rn(n / 1e3, 1)}K`;
-  return rn(n).toString();
-};
-
-/**
- * Convert string with SI postfix to integer
- * @param {string} value - The string to convert
- * @returns {number} - The converted integer
- */
-export const getIntegerFromSI = (value: string): number => {
-  const metric = value.slice(-1);
-  if (metric === "K") return parseInt(value.slice(0, -1), 10) * 1e3;
-  if (metric === "M") return parseInt(value.slice(0, -1), 10) * 1e6;
-  if (metric === "B") return parseInt(value.slice(0, -1), 10) * 1e9;
-  return parseInt(value, 10);
 };
 
 /**

@@ -91,7 +91,7 @@ function handleZoomEnd(): void {
 
 /** Mirror the map transform onto the heightmap tracing canvas */
 function redrawTracedImage(): void {
-  if (customization !== 1) return;
+  if (options.app.mode !== "heightmap") return;
   const canvas = findEl<HTMLCanvasElement>("canvas");
   if (!canvas || canvas.style.opacity === "0") return;
   const image = findEl<HTMLImageElement>("imageToConvert");
@@ -114,7 +114,7 @@ export function invokeActiveZooming(): void {
   applyZoomFontSize();
   ViewportLayers.renderNow();
 
-  if (!customization && options.app.performance.stateHalos) {
+  if (!options.app.mode && options.app.performance.stateHalos) {
     const statesHalo = select("#statesHalo");
     const desired = styles.states.groups.statesHalo.attrs["stroke-width"] ?? 0;
     const haloSize = rn(desired / viewport.scale ** 0.8, 2);

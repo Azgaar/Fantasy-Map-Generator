@@ -31,9 +31,9 @@ beforeEach(() => {
   });
 
   Object.assign(globalThis, {
-    customization: 0,
     options: {
       app: {
+        mode: null,
         performance: {
           shapeRendering: "optimizeSpeed",
           stateHalos: false,

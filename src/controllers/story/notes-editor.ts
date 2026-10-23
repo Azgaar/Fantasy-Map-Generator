@@ -7,11 +7,12 @@ import { highlightElement } from "@/renderers/overlays/highlight";
 import { viewport } from "@/renderers/viewport/viewport";
 import { fonts } from "@/services/fonts";
 import { Csv } from "@/services/io/csv";
+import { speak } from "@/services/speech";
 import { alertDialog, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
-import { ensureEl, findEl, speak } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
 import { errorText } from "@/utils/stringUtils";
 import {
   canEditAsRichText,

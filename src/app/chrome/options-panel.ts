@@ -58,7 +58,7 @@ function selectTab(id: string): void {
     content.style.display = "none";
   }
 
-  const shown = id === "toolsTab" && customization === 1 ? "customizationMenu" : TAB_CONTENT[id];
+  const shown = id === "toolsTab" && options.app.mode === "heightmap" ? "customizationMenu" : TAB_CONTENT[id];
   if (shown) ensureEl(shown).style.display = "block";
   if (id === "styleTab") void Controllers.StyleEditor.open();
 }

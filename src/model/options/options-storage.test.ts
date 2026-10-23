@@ -16,3 +16,13 @@ it("is empty when nothing readable is stored", () => {
   localStorage.setItem(OPTIONS_STORAGE_KEY, "42");
   expect(readStoredOptions()).toEqual({});
 });
+
+it("never stores the edit mode, so a reload starts outside it", async () => {
+  const { Options } = await import("./options-model");
+  Options.restore();
+  options.app.mode = "heightmap";
+  Options.persist();
+  expect(readStoredOptions().app).not.toHaveProperty("mode");
+  Options.restore();
+  expect(options.app.mode).toBeNull();
+});

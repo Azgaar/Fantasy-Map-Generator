@@ -1,6 +1,7 @@
 import { isMobile } from "@/services/platform";
-import { capitalize, findEl } from "@/utils";
 import { t } from "@/utils/i18n";
+import { findEl } from "@/utils/nodeUtils";
+import { capitalize } from "@/utils/stringUtils";
 import { dialogState } from "./state";
 
 const EDITOR_PAGE_SIZE = 100;

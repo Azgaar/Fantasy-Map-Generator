@@ -5,6 +5,7 @@ import type { Burg } from "@/model/political/burgs-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
+import { convertTemperature, getHeight, getTemperatureLikeness } from "@/model/units";
 import { removeEmblem } from "@/renderers/draw-emblems";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
@@ -22,18 +23,10 @@ import {
 } from "@/ui/dialog/table";
 import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
-import {
-  convertTemperature,
-  ensureEl,
-  findEl,
-  getHeight,
-  getLatitude,
-  getLongitude,
-  getTemperatureLikeness,
-  rn,
-  si
-} from "@/utils";
+import { getLatitude, getLongitude } from "@/utils/commonUtils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { rn, si } from "@/utils/numberUtils";
 
 type Filters = { stateId?: number | null; cultureId?: number | null };
 type FilterState = { search: string; stateId: number; cultureId: number };
@@ -178,7 +171,7 @@ const burgsTable = initEditorTable<Burg>({
 });
 
 function open(filters: Filters = {}): void {
-  if (customization) return;
+  if (options.app.mode) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ search: "", stateId: -1, cultureId: -1 }));
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("burgIcons", "labels");

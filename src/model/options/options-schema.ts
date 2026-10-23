@@ -8,6 +8,22 @@ import { Icons } from "@/model/icons";
 import type { LayerId } from "@/renderers/layers";
 import { count, degrees, hexColor, ids, nonNegative, percent, positive, ratio } from "@/utils/schemaUtils";
 
+/** the map edit modes: while one is on, other editors, saving and regeneration stay off */
+export const EDIT_MODES = [
+  "heightmap",
+  "paint",
+  "addState",
+  "addReligion",
+  "addCulture",
+  "addProvince",
+  "battle",
+  "assignGoods",
+  "addMarket",
+  "annex",
+  "wrap"
+] as const;
+export type EditMode = (typeof EDIT_MODES)[number];
+
 /** the burg request at its maximum stands for "as many burgs as the land supports" */
 export const AUTO_BURG_LIMIT = 1000;
 
@@ -212,6 +228,7 @@ export const optionsSchema = z.strictObject({
 
   /** how the app itself behaves: applied at once, generating nothing, describing no map */
   app: z.strictObject({
+    mode: z.enum(EDIT_MODES).nullable(), // this session only: never stored
     notesPinned: z.boolean(),
     emblems: z.strictObject({ showAll: z.boolean(), shape: z.string().min(1) }),
     labels: z.strictObject({ showAll: z.boolean() }),

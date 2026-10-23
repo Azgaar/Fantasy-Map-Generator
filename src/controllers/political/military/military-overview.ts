@@ -21,8 +21,11 @@ import {
   type TableView
 } from "@/ui/dialog/table";
 import { tip } from "@/ui/tooltips";
-import { capitalize, ensureEl, escapeHtml, rn, sanitizeId, si, wiki } from "@/utils";
+import { wiki } from "@/utils/commonUtils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/nodeUtils";
+import { rn, si } from "@/utils/numberUtils";
+import { capitalize, escapeHtml, sanitizeId } from "@/utils/stringUtils";
 
 const dialogId = "militaryOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -42,7 +45,7 @@ const militaryTable = initEditorTable<MilitaryRow>({
 });
 
 function open(): void {
-  if (customization) return;
+  if (options.app.mode) return;
   closeDialogs("#militaryOverview, .stable");
   Layers.show("states", "borders", "military");
 
@@ -320,7 +323,7 @@ function updateFooter(view: TableView<MilitaryRow>): void {
 function stateHighlightOn(event: Event): void {
   const target = event.target as HTMLElement;
   const state = +target.dataset.id!;
-  if (customization || !state) return;
+  if (options.app.mode || !state) return;
   select<SVGGElement, unknown>(`#armies > g > g#army${state}`).transition().duration(2000).style("fill", "#ff0000");
 
   if (!Layers.isOn("states")) return;

@@ -4,13 +4,14 @@ import { Markers } from "@/model/story/markers-generator";
 import { Layers } from "@/renderers/layers";
 import { destroyDialog, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
-import { ensureEl, escapeHtml } from "@/utils";
 import { t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/nodeUtils";
+import { escapeHtml } from "@/utils/stringUtils";
 
 const DIALOG_ID = "markersSettings";
 
 function open(): void {
-  if (customization) return;
+  if (options.app.mode) return;
   destroyDialog(DIALOG_ID);
   ensureEl("dialogs").insertAdjacentHTML("beforeend", `<div id="${DIALOG_ID}" class="dialog"></div>`);
   drawConfigTable();

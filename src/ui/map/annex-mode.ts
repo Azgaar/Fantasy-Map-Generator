@@ -2,7 +2,7 @@
 import { select } from "d3";
 import { Pack } from "@/model/graph/pack-generator";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { ensureEl, getPointer } from "@/utils";
+import { ensureEl, getPointer } from "@/utils/nodeUtils";
 import { applyDefaultViewboxEvents } from "./viewbox-events";
 
 interface AnnexTips {
@@ -24,11 +24,8 @@ interface AnnexModeOptions {
   commit: (parentId: number, annexed: number[]) => void;
 }
 
-// any non-zero customization keeps the other editors, saving and regeneration off while annexing
-const ANNEX_MODE = 17;
-
-export function createAnnexMode(options: AnnexModeOptions) {
-  const { buttonId, bodySectionId, tips, ownerOf, colorOf, nameOf, rejectReason, commit } = options;
+export function createAnnexMode(config: AnnexModeOptions) {
+  const { buttonId, bodySectionId, tips, ownerOf, colorOf, nameOf, rejectReason, commit } = config;
   let active = false;
   let parent = 0;
   const staged = new Set<number>();
@@ -42,7 +39,7 @@ export function createAnnexMode(options: AnnexModeOptions) {
 
   function enter(): void {
     active = true;
-    customization = ANNEX_MODE;
+    options.app.mode = "annex";
     ensureEl(buttonId).classList.add("pressed");
     select("#debug").append("g").attr("class", "annex-preview");
     tip(tips.start, true);
@@ -126,7 +123,7 @@ export function createAnnexMode(options: AnnexModeOptions) {
   function exit(): void {
     if (!active) return;
     active = false;
-    customization = 0;
+    options.app.mode = null;
     parent = 0;
     staged.clear();
     preview().remove();

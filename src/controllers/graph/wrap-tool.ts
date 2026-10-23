@@ -5,8 +5,8 @@ import type { Point } from "@/types/global";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { MapBrush } from "@/ui/map/map-brush";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { ensureEl } from "@/utils";
 import { t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/nodeUtils";
 import { findVertices, VertexBrush } from "./vertex-brush";
 
 type Edit = { before: Map<number, Point>; after: Map<number, Point> };
@@ -21,11 +21,11 @@ let events: AbortController | null = null;
 let closeConfirmed = false;
 
 function open(): void {
-  if (customization || source) return;
+  if (options.app.mode || source) return;
   closeDialogs();
 
   source = pack.vertices;
-  customization = 18;
+  options.app.mode = "wrap";
   brush = new MapBrush({
     id: "wrapRadius",
     label: `${t("Radius")}:`,
@@ -265,7 +265,7 @@ function cleanup(): void {
 
   closeConfirmed = false;
   source = null;
-  customization = 0;
+  options.app.mode = null;
   events?.abort();
   events = null;
   brush?.detach();

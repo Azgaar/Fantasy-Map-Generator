@@ -9,11 +9,11 @@ import { Controllers } from "@/controllers";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Layers } from "@/renderers/layers";
 import { Services } from "@/services";
+import { LocalDB } from "@/services/local-db";
 import { getRequestedMapSize } from "@/services/map-size";
 import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
-import { LocalDB } from "@/utils/localDB";
 import { ensureEl } from "@/utils/nodeUtils";
 
 const MAP_LINK_PATTERN = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-/]))?/;

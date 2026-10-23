@@ -15,11 +15,11 @@ import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { Layers } from "@/renderers/layers";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
-import { ensureEl } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/nodeUtils";
 
 function open(): void {
-  if (customization) return;
+  if (options.app.mode) return;
   closeDialogs(".stable");
   renderDialog();
   addRows();

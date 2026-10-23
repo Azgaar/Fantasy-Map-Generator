@@ -15,17 +15,20 @@ import type { LabelData } from "@/renderers/labels/labels";
 import { getSceneLabel, redrawLabel } from "@/renderers/labels/labels-renderer";
 import { Layers } from "@/renderers/layers";
 import { viewport } from "@/renderers/viewport/viewport";
+import { speak } from "@/services/speech";
 import { closeDialogs, confirmationDialog, destroyDialog, noteButton } from "@/ui/dialog/dialog-helpers";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { showMainTip, tip } from "@/ui/tooltips";
-import { ensureEl, getPointer, rn, round, speak } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, getPointer } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
+import { round } from "@/utils/stringUtils";
 
 let lastSelectedGroup = ""; // the default group for newly added labels
 let label: LabelData;
 
 function open(type: LabelType, id: number): void {
-  if (customization) return;
+  if (options.app.mode) return;
   closeDialogs(".stable");
   Layers.show("labels");
 

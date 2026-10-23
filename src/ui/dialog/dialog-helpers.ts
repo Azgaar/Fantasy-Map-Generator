@@ -1,8 +1,9 @@
 // Building blocks shared by every editor dialog
 
 import { dialogState } from "@/ui/dialog/state";
-import { ensureEl, findEl, minmax } from "@/utils";
 import { t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { minmax } from "@/utils/numberUtils";
 
 /** The note button every entity dialog puts in its toolbar, with its translated tooltip */
 export function noteButton(id: string, tip: string): string {

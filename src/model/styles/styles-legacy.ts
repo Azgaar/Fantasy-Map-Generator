@@ -7,10 +7,10 @@ import { CustomIcons, Icons, IMAGE_FRAME } from "@/model/icons";
 import { Relief } from "@/model/physical/relief-generator";
 import { Layers } from "@/renderers/layers";
 import type { StylesData } from "@/types/styles";
-import { safeParseJSON } from "@/utils";
 import { toColorHex } from "@/utils/colorUtils";
 import { isImageIcon } from "@/utils/fileUtils";
 import { getPath } from "@/utils/objectUtils";
+import { safeParseJSON } from "@/utils/stringUtils";
 import { Styles } from "./styles";
 import { stylesSchema } from "./styles-schema";
 

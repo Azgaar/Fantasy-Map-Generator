@@ -3,8 +3,8 @@ import { globeResolutionFor, timeOfDayPresets } from "@/data/view-3d-options";
 import { is3dView } from "@/renderers/view-mode";
 import { viewport } from "@/renderers/viewport/viewport";
 import { tip } from "@/ui/tooltips";
-import { ensureEl, findEl } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
 
 // View3d controller: enters/exits the 3D view and owns the 3D settings dialog.
 // Configuration lives on the global `options.app.threeD` (not in this controller);

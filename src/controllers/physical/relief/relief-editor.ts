@@ -17,9 +17,11 @@ import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, showMainTip, tip } from "@/ui/tooltips";
-import { ensureEl, findAllInQuadtree, getPointer, rn } from "@/utils";
 import { createBrushStroke } from "@/utils/brushUtils";
 import { t } from "@/utils/i18n";
+import { ensureEl, getPointer } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
+import { findAllInQuadtree } from "@/utils/quadtree";
 import { fitReliefArt, reliefArtHtml } from "./relief-previews";
 
 let selectedIcon: ReliefIcon | null = null;
@@ -58,7 +60,7 @@ function matchesTypeTile(icon: ReliefIcon, symbol: string | undefined): boolean 
 }
 
 function open(element: SVGElement): void {
-  if (customization) return;
+  if (options.app.mode) return;
   closeDialogs(".stable");
   Layers.show("relief");
 

@@ -21,8 +21,8 @@ import { Services } from "@/services";
 import { confirmationDialog } from "@/ui/dialog/dialog-helpers";
 import { dialogState } from "@/ui/dialog/state";
 import { tip } from "@/ui/tooltips";
-import { ensureEl, findEl } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
 import { isElectron } from "./platform";
 
 export const VERSION = "1.156.0";

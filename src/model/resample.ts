@@ -10,7 +10,7 @@ import { Ice } from "@/model/physical/ice-generator";
 import { Temperature } from "@/model/physical/temperature-generator";
 import type { GridGraph } from "@/types/GridGraph";
 import type { PackedGraph } from "@/types/PackedGraph";
-import { isWater } from "@/utils";
+import { isWater } from "@/utils/heightUtils";
 
 interface ResamplerProcessOptions {
   projection: (x: number, y: number) => [number, number];

@@ -1,7 +1,7 @@
 // The Desktop App dialog: what the app is and which file this visitor needs
 
-import { ensureEl } from "@/utils";
 import { t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/nodeUtils";
 import { isMobile } from "./platform";
 
 const RELEASES_API = "https://api.github.com/repos/Azgaar/Fantasy-Map-Generator/releases/latest";

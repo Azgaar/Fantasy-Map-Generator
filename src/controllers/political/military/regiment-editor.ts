@@ -13,6 +13,7 @@ import {
   updateRegimentIcon
 } from "@/renderers/draw-military";
 import { Layers } from "@/renderers/layers";
+import { speak } from "@/services/speech";
 import {
   closeDialogs,
   confirmationDialog,
@@ -22,13 +23,15 @@ import {
 } from "@/ui/dialog/dialog-helpers";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { capitalize, ensureEl, findEl, getPointer, rn, speak } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, findEl, getPointer } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
+import { capitalize } from "@/utils/stringUtils";
 
 let selectedRegiment: SVGGElement | null = null;
 
 function editRegiment(selector: string): void {
-  if (customization) return;
+  if (options.app.mode) return;
   closeDialogs(".stable");
   Layers.show("military");
 

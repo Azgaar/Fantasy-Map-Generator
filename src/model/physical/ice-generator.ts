@@ -3,7 +3,10 @@ import { min } from "d3";
 import { Grid } from "@/model/graph/grid-generator";
 import type { Point } from "@/model/graph/voronoi";
 import { redrawGlacier, redrawIceberg } from "@/renderers/draw-ice";
-import { clipPoly, getIsolines, lerp, minmax, normalize, P, ra, rand, rn } from "@/utils";
+import { clipPoly } from "@/utils/commonUtils";
+import { lerp, minmax, normalize, rn } from "@/utils/numberUtils";
+import { getIsolines } from "@/utils/pathUtils";
+import { P, ra, rand } from "@/utils/probabilityUtils";
 
 export type Ice = Glacier | Iceberg;
 

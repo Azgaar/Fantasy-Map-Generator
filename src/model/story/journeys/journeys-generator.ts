@@ -4,10 +4,11 @@ import { Routes } from "@/model/economy/routes-generator";
 import { MAX_HOURS_PER_DAY, type TransportDomain, Transports } from "@/model/economy/transports-generator";
 import { Rivers } from "@/model/physical/river-generator";
 import type { Burg } from "@/model/political/burgs-generator";
+import { getDistanceUnitRatio } from "@/model/units";
 import type { Journey, JourneyPoint, JourneySegment } from "@/types/Journey";
-import { getDistanceUnitRatio, isLand } from "@/utils";
 import { getCardinalColor, requireColor } from "@/utils/colorUtils";
 import { FlatQueue } from "@/utils/flatQueue";
+import { isLand } from "@/utils/heightUtils";
 import { requireName } from "@/utils/validationUtils";
 import { generateStoryJourney } from "./journey-story";
 

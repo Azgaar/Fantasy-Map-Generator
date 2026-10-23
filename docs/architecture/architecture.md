@@ -22,7 +22,7 @@ Main goals:
 
 The overall desired architecture model is as below:
 
-````
+```
                  settings
                     │
                     ▼
@@ -38,20 +38,7 @@ The overall desired architecture model is as below:
       │                           │
       ▼                           ▼
 data mutations            SVG or WebGL Canvas
-
-The architecture is conceptually divided into four major layers:
-
-Or more formally:
-
-```text
-world data + styles (state)
-        ↑↓
-generators (model)
-        ↑↓
-editors (controllers)
-        ↓
-renderers (view)
-````
+```
 
 All the map-related state should be represented by a single gigantic `map` object. When the `.map` file is saved, the object is transformed into a single json file.
 
@@ -376,7 +363,7 @@ as a dependency.
 - Talks to the Azgaar server on the user's behalf → `services/assistant/azgaar-server/`
 - Talks to the user's own AI provider → `services/assistant/provider/`
 - A constant list or template, no behavior → `data/`
-- A helper that reads no ambient state and has ≥2 consumers → `utils/`
+- A helper that reads no ambient state and has ≥2 consumers → `utils/`, imported from its own file
 - A shared type / interface → `types/`
 
 ## Imports point down, never up
@@ -846,18 +833,28 @@ what the user is looking at now — not everything they have opened this session
 
 ---
 
-# Evolution
+# Migration Plan
 
-The project is too large for a rewrite, so it changes one module at a time, and every step leaves a
-working app. The code is TypeScript throughout and imports what it calls. What remains between it and
-the target model above:
-
-- **One world object.** `pack`, `grid`, `options`, `styles` and `customization` are still ambient
-  globals; they become the single `map` object of [future-data-model.md](./future-data-model.md), with
-  the `.map` file as its JSON.
-- **Native dialogs.** The jQuery UI dialogs give way to a small dialog primitive in `ui/dialog/`, which
-  retires the last vendored scripts but three.js.
-- **Strict typing.** `any` goes, module by module, as each one is touched.
-
-For the `src/` layout and where each new file belongs, see [Project Structure](#project-structure)
-and the [module guide](./module-guide.md).
+1. **One world object and its `.map` file.** `pack`, `grid`, `options` and `styles` are still ambient
+   globals. They become the single `map` object of [future-data-model.md](./future-data-model.md), and
+   the `.map` file becomes that object as JSON instead of today's line-based format. Rendering no
+   longer depends on the file's SVG part, so the format can change on its own schedule.
+2. **Native dialogs.** jQuery, jQuery UI and Touch Punch still run every dialog (about 350
+   `$(…).dialog` calls in 90 files). A small dialog primitive in `ui/dialog/` replaces them, controller
+   by controller, and retires the three vendored scripts.
+3. **three.js from npm.** The 3D view and the erosion bake load vendored three.js r140 and its add-ons
+   (`OrbitControls`, `MapControls`, `OBJExporter`, loop subdivision) as globals. Moving to the npm
+   `three` needs the lights and colors retuned: r155 changed light intensities and color management.
+4. **Layering exceptions.** A few imports still point up the stack. The model and the 3D renderer show
+   tips through `ui/tooltips`, and the 3D renderer names its screenshots through `services/io/file-name`; the trade animation renderer opens `Controllers.TradeDetails`; the
+   highlight overlay calls `zoomTo` from `ui/map/zoom`; `services/io/load` and `services/url-params`
+   call into `app/lifecycle`; the options model keeps custom icons through `services/local-db`; a
+   few generators touch the DOM (the cultures alert, a route measuring path, the heightmap image
+   canvas). Each one moves its message or command to the controller that owns the interaction, or
+   takes a callback from its caller.
+5. **Logging flags.** `TIME`, `INFO`, `WARN`, `ERROR` and `DEBUG` are ambient globals. They become one
+   exported `log` object, which `window.FMG` exposes for switching from the console.
+6. **No `any`.** About 260 remain and Biome's `noExplicitAny` is off. They go module by module as each
+   one is touched, then the rule is turned on.
+7. **The Dropbox sign-in page.** `public/dropbox.html` loads the Dropbox SDK from a CDN. It can become
+   a page of the Vite build that uses the npm `dropbox` package the app already bundles.

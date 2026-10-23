@@ -6,12 +6,15 @@ import type { State } from "@/model/political/states-generator";
 import { Layers } from "@/renderers/layers";
 import { isGlobeView, setViewMode } from "@/renderers/view-mode";
 import { Services } from "@/services";
+import { getFileName } from "@/services/io/file-name";
 import { savedMessage } from "@/services/platform";
 import { tip } from "@/ui/tooltips";
-import { downloadFile, findEl, getFileName } from "@/utils";
+import { throttle } from "@/utils/commonUtils";
+import { downloadFile } from "@/utils/fileUtils";
 import { t } from "@/utils/i18n";
+import { findEl } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
 import { clampTextureResolution, timeOfDayPresets } from "../data/view-3d-options";
-import { rn, throttle } from "../utils";
 import {
   disposeRiverFlowTexture,
   disposeSatelliteTexture,

@@ -1,8 +1,9 @@
 import { curveBasisClosed, line } from "d3";
 import { Grid } from "@/model/graph/grid-generator";
 import { Ocean } from "@/model/physical/ocean-generator";
-import { findEl, rn, round } from "@/utils";
-import { ensureEl } from "@/utils/nodeUtils";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
+import { round } from "@/utils/stringUtils";
 import { getCoastalDistances, getCoastalWaves } from "./coastal-waves";
 import { drawCoastalBands, getCoastalBandReach, removeCoastalBands } from "./draw-coastal-bands";
 import { cacheOceanLayer, clearOceanCache } from "./ocean-cache";

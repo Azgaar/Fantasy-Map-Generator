@@ -33,8 +33,9 @@ import {
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { zoomTo } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { ensureEl, getPointer, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, getPointer } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
 
 let production: ReturnType<typeof getProduction> = {};
 let stockData: ReturnType<typeof getAllStockData> = {};
@@ -94,7 +95,7 @@ const goodsTable = initEditorTable<Good>({ getData: getGoodsData, onUpdate: rend
 /** With a good id, the Goods layer shows only that good */
 function open(goodId?: number): void {
   void Icons.retry("goods");
-  if (customization) return;
+  if (options.app.mode) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ visibleTags: [] as string[] }));
   closeDialogs("#goodsEditor, .stable");
 
@@ -555,7 +556,7 @@ function togglePercentageMode() {
 
 function enterResourceAssignMode(this: HTMLElement) {
   if (this.classList.contains("pressed")) return exitResourceAssignMode();
-  customization = 14;
+  options.app.mode = "assignGoods";
   this.classList.add("pressed");
   Layers.show("goods");
   if (!Layers.isOn("cells")) {
@@ -573,7 +574,7 @@ function enterResourceAssignMode(this: HTMLElement) {
 }
 
 function selectResourceOnLineClick(this: HTMLElement) {
-  if (customization !== 14) return;
+  if (options.app.mode !== "assignGoods") return;
   const body = ensureEl("goodsBody");
   body.querySelector<HTMLElement>("div.selected")?.classList.remove("selected");
   this.classList.add("selected");
@@ -605,7 +606,7 @@ let isCellsLayerForced = false; // the cells layer is turned on for the assignme
 
 function exitResourceAssignMode(close?: string) {
   const body = ensureEl("goodsBody");
-  customization = 0;
+  options.app.mode = null;
   ensureEl("goodsAssign").classList.remove("pressed");
 
   if (isCellsLayerForced) {
@@ -755,7 +756,7 @@ function removeGood(good: Good) {
 }
 
 function closeGoodsEditor() {
-  if (customization === 14) exitResourceAssignMode("close");
+  if (options.app.mode === "assignGoods") exitResourceAssignMode("close");
   $("#goodsEditor").dialog("destroy");
   ensureEl("goodsEditor").remove();
 }

@@ -3,7 +3,9 @@ import Alea from "alea";
 import { mean, range } from "d3";
 import { Grid } from "@/model/graph/grid-generator";
 import { Lattice } from "@/model/graph/lattice";
-import { minmax, rand, SEA_LEVEL } from "@/utils";
+import { SEA_LEVEL } from "@/utils/heightUtils";
+import { minmax } from "@/utils/numberUtils";
+import { rand } from "@/utils/probabilityUtils";
 
 type WindBand = [number, number, number]; // [firstCellId, latitudeModifier, windTier]
 type Winds = { westerly: WindBand[]; easterly: WindBand[]; northerly: number; southerly: number };

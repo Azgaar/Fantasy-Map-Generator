@@ -12,7 +12,7 @@ import { IconSets } from "@/model/icon-sets";
 import { Icons } from "@/model/icons";
 import type { Emblem, EmblemCharge, EmblemOrdinary, HeraldicEmblem } from "@/types/emblems";
 import type { IconSet } from "@/types/icons";
-import { P, rw } from "@/utils";
+import { P, rw } from "@/utils/probabilityUtils";
 import { Burgs } from "./burgs-generator";
 
 // shapes that resolve per entity rather than fixing one shield for the whole map (the "Diversiform" option group)

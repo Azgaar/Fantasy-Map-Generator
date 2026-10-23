@@ -4,6 +4,7 @@ import { Grid } from "@/model/graph/grid-generator";
 import { type IconSetId, IconSets } from "@/model/icon-sets";
 import { Icons } from "@/model/icons";
 import { Rivers } from "@/model/physical/river-generator";
+import { getCellPopulation, getFriendlyHeight } from "@/model/units";
 import { renderEmblemDefinitions } from "@/renderers/draw-emblems";
 import { drawScaleBar } from "@/renderers/draw-scalebar";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
@@ -12,22 +13,16 @@ import { restoreOceanVectors } from "@/renderers/ocean-cache";
 import { viewport, ZOOM_CURVES, type ZoomedLayer, zoomFontSize } from "@/renderers/viewport/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
+import { getFileName } from "@/services/io/file-name";
 import { savedMessage } from "@/services/platform";
 import { tip } from "@/ui/tooltips";
-import {
-  connectVertices,
-  downloadFile,
-  ensureEl,
-  findEl,
-  getBase64,
-  getCellPopulation,
-  getCoordinates,
-  getFileName,
-  getFriendlyHeight,
-  rn,
-  unique
-} from "@/utils";
+import { unique } from "@/utils/arrayUtils";
+import { getCoordinates } from "@/utils/commonUtils";
+import { downloadFile, getBase64 } from "@/utils/fileUtils";
 import { t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
+import { connectVertices } from "@/utils/pathUtils";
 import {
   convertBlurFilters,
   getReferencedDefinitions,
@@ -449,7 +444,7 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
 
     if (type === "svg") removeUnusedElements(clone);
     relocateRootFilter(cloneEl); // Firefox drops a root-svg filter when the svg is rasterized via an image
-    if (customization && type === "mesh") updateMeshCells(clone);
+    if (options.app.mode && type === "mesh") updateMeshCells(clone);
     inlineStyle(clone);
 
     const referencedDefinitions = getReferencedDefinitions(cloneEl);

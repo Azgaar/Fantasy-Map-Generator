@@ -1,25 +1,21 @@
 import { max as d3max, min as d3min, mean, median } from "d3";
 import { Names } from "@/model/society/names-generator";
+import { getFileName } from "@/services/io/file-name";
+import { speak } from "@/services/speech";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
-import {
-  createFileInput,
-  downloadFile,
-  ensureEl,
-  escapeHtml,
-  getFileName,
-  openURL,
-  rn,
-  speak,
-  unique,
-  uploadFile
-} from "@/utils";
+import { unique } from "@/utils/arrayUtils";
+import { openURL } from "@/utils/commonUtils";
+import { createFileInput, downloadFile, uploadFile } from "@/utils/fileUtils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
+import { escapeHtml } from "@/utils/stringUtils";
 
 let namesbaseInput: HTMLInputElement | null = null;
 
 function open(): void {
-  if (customization) return;
+  if (options.app.mode) return;
   closeDialogs("#namesbaseEditor, .stable");
 
   renderDialog();

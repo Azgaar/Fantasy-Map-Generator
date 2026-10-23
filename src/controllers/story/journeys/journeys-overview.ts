@@ -1,6 +1,7 @@
 import { Controllers } from "@/controllers";
 import { cellEndpointLabel, getCellPoint } from "@/model/story/journeys/journey-places";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
+import { convertSpeed, formatSpeed, getDistanceUnit } from "@/model/units";
 import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
 import { Layers } from "@/renderers/layers";
 import { highlightElement } from "@/renderers/overlays/highlight";
@@ -21,8 +22,10 @@ import {
 } from "@/ui/dialog/table";
 import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
-import { convertSpeed, ensureEl, escapeHtml, findEl, formatSpeed, getDistanceUnit, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
+import { escapeHtml } from "@/utils/stringUtils";
 
 const dialogId = "journeysOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -87,7 +90,7 @@ function getFilteredJourneys(): Journey[] {
 }
 
 function open(): void {
-  if (customization) return;
+  if (options.app.mode) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ search: "" }));
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("journeys");

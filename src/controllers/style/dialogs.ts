@@ -11,8 +11,11 @@ import { VERSION } from "@/services/versioning";
 import type { StyleElement, StyleSelection } from "@/types/styles";
 import { destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
-import { ensureEl, escapeHtml, findEl, htmlEl, link, toHEX } from "@/utils";
+import { toHEX } from "@/utils/colorUtils";
+import { link } from "@/utils/commonUtils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, findEl, htmlEl } from "@/utils/nodeUtils";
+import { escapeHtml } from "@/utils/stringUtils";
 import { groupEntriesFor, hasGroups, listElements } from "./elements";
 
 const controlDialogs = new Set<string>(); // opened by a form control: they go with the form

@@ -5,12 +5,14 @@ import type { Province } from "@/model/political/provinces-generator";
 import { Provinces } from "@/model/political/provinces-generator";
 import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
+import { getArea, getAreaUnit } from "@/model/units";
 import { redrawEmblem, redrawEmblems, removeEmblem } from "@/renderers/draw-emblems";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement, highlightOutline } from "@/renderers/overlays/highlight";
 import { Csv } from "@/services/io/csv";
+import { speak } from "@/services/speech";
 import { closeDialogs, confirmationDialog, destroyDialog, noteIcon, updateDialog } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
@@ -28,23 +30,13 @@ import { createAnnexMode } from "@/ui/map/annex-mode";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { zoomTo } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import {
-  applyOption,
-  ensureEl,
-  findEl,
-  getArea,
-  getAreaUnit,
-  getPointer,
-  getRandomColor,
-  groupByValue,
-  isLand,
-  rand,
-  rn,
-  si,
-  speak,
-  unique
-} from "@/utils";
+import { groupByValue, unique } from "@/utils/arrayUtils";
+import { getRandomColor } from "@/utils/colorUtils";
+import { isLand } from "@/utils/heightUtils";
 import { sentences, t } from "@/utils/i18n";
+import { applyOption, ensureEl, findEl, getPointer } from "@/utils/nodeUtils";
+import { rn, si } from "@/utils/numberUtils";
+import { rand } from "@/utils/probabilityUtils";
 import { errorText } from "@/utils/stringUtils";
 
 const dialogId = "provincesEditor" as const;
@@ -140,7 +132,7 @@ const columns: EditorColumn<Province>[] = [
 const provincesTable = initEditorTable<Province>({ getData: getProvincesData, onUpdate: renderProvincesPage });
 
 function open(): void {
-  if (customization) return;
+  if (options.app.mode) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ stateId: 1, search: "" }));
   closeDialogs("#provincesEditor, .stable");
   Layers.show("provinces", "borders");
@@ -267,7 +259,7 @@ function renderDialog(): void {
   ensureEl("provincesRecolor").addEventListener("click", recolorProvinces);
 
   ensureEl("provincesBodySection").addEventListener("click", (ev: Event) => {
-    if (customization) return;
+    if (options.app.mode) return;
     const el = ev.target as HTMLElement;
     const cl = el.classList;
     const line = el.closest<HTMLElement>(".states");
@@ -480,7 +472,7 @@ function provinceHighlightOn(event: Event): void {
   if (el) el.classList.add("active");
 
   if (!Layers.isOn("provinces")) return;
-  if (customization) return;
+  if (options.app.mode) return;
   const animate = transition().duration(2000).ease(easeSinIn);
   select<SVGGElement, unknown>("#provs")
     .select(`#province${province}`)
@@ -1103,7 +1095,7 @@ function enterAddProvinceMode(this: HTMLElement): void {
     return;
   }
 
-  customization = 12;
+  options.app.mode = "addProvince";
   this.classList.add("pressed");
   tip(t("Click on the map to place a new province center"), true);
   select<SVGElement, unknown>("#viewbox").style("cursor", "crosshair").on("click", addProvince);
@@ -1136,7 +1128,7 @@ function addProvince(this: SVGElement, event: any): void {
 }
 
 function exitAddProvinceMode(): void {
-  customization = 0;
+  options.app.mode = null;
   applyDefaultViewboxEvents();
   clearMainTip();
   ensureEl("provincesBodySection")
@@ -1216,7 +1208,7 @@ function removeAllProvinces(): void {
 }
 
 function closeProvincesEditor(): void {
-  if (customization === 12) exitAddProvinceMode();
+  if (options.app.mode === "addProvince") exitAddProvinceMode();
   provincesAnnex.exit();
   Controllers.ColorPicker.close();
   const view = provincesTable.view();

@@ -8,8 +8,8 @@ import { Services } from "@/services";
 import { isElectron, isLocalhost } from "@/services/platform";
 import { alertDialog, closeDialogs, confirmationDialog } from "@/ui/dialog/dialog-helpers";
 import { showDataTip } from "@/ui/tooltips";
-import { ensureEl, findEl } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
 import { fitMapToScreen } from "./canvas";
 
 /** Wire the window up: the svg layer scaffold and the browser-level behaviours around it. Called by boot() */

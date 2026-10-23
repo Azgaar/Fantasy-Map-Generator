@@ -6,6 +6,7 @@ import { Markets } from "@/model/economy/markets-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
 import type { Burg } from "@/model/political/burgs-generator";
+import { formatPrice } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
@@ -22,8 +23,9 @@ import {
 } from "@/ui/dialog/table";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { ensureEl, formatPrice, getPointer, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, getPointer } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
 
 let activeMarketId = 0;
 const dialogId = "marketOverview" as const;
@@ -62,7 +64,7 @@ const marketOverviewTable = initEditorTable<MarketGoodRow>({
 
 function open(marketId: number): void {
   void Icons.retry("goods");
-  if (customization) return;
+  if (options.app.mode) return;
 
   const market = Markets.get(marketId);
   if (!market) {

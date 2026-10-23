@@ -14,14 +14,15 @@ import {
 } from "@/ui/dialog/dialog-helpers";
 import { stopMapPlacement } from "@/ui/map/map-placement";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { ensureEl, findEl, minmax, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { minmax, rn } from "@/utils/numberUtils";
 
 let selectedElement: SVGSVGElement;
 let selectedMarker: Marker;
 
 function open(markerI?: number, target?: Element): void {
-  if (customization) return;
+  if (options.app.mode) return;
   closeDialogs(".stable");
 
   const found = getElement(markerI, target);

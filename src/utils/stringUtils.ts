@@ -38,49 +38,6 @@ export const escapeHtml = (inputString: string): string =>
     .replace(/'/g, "&#39;");
 
 /**
- * Set or remove one property in an inline style string, keeping the other declarations
- * @param {string|null} style - The current inline style, null when not set
- * @param {string} property - The css property name, lowercase
- * @param {string} value - The new value; an empty string removes the property
- * @returns {string|null} - The merged style, null when no declarations remain
- */
-export const setInlineStyleProperty = (style: string | null, property: string, value: string): string | null => {
-  const declarations = (style || "")
-    .split(";")
-    .map(declaration => declaration.trim())
-    .filter(declaration => declaration && declaration.split(":")[0].trim().toLowerCase() !== property);
-  if (value) declarations.push(`${property}: ${value}`);
-  return declarations.join("; ") || null;
-};
-
-/**
- * Split a string into two parts, trying to balance their lengths
- * @param {string} inputString - The input string
- * @returns {[string, string]} - An array with two parts of the string
- */
-export const splitInTwo = (inputString: string): string[] => {
-  const half = inputString.length / 2;
-  const ar = inputString.split(" ");
-  if (ar.length < 2) return ar; // only one word
-  let first = "",
-    last = "",
-    middle = "",
-    rest = "";
-
-  ar.forEach((w, d) => {
-    if (d + 1 !== ar.length) w += " ";
-    rest += w;
-    if (!first || rest.length < half) first += w;
-    else if (!middle) middle = w;
-    else last += w;
-  });
-
-  if (!last) return [first, middle];
-  if (first.length < last.length) return [first + middle, last];
-  return [first, middle + last];
-};
-
-/**
  * Parse an SVG transform string into an array of numbers
  * @param {string} string - The SVG transform string
  * @returns {[number, number, number, number, number, number]} - The parsed transform as an array

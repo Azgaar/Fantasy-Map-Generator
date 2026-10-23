@@ -8,8 +8,8 @@ import { createLabelArc } from "@/renderers/labels/label-arc";
 import { Layers } from "@/renderers/layers";
 import { closeDialogs } from "@/ui/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/ui/map/map-placement";
-import { findEl } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { findEl } from "@/utils/nodeUtils";
 
 function toggle(): void {
   if (findEl("addLabel")?.classList.contains("pressed")) {

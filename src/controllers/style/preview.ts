@@ -3,8 +3,8 @@
 import { FILTER_LABELS } from "@/data/id-labels";
 import { Icons } from "@/model/icons";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
-import { findEl } from "@/utils";
 import { t } from "@/utils/i18n";
+import { findEl } from "@/utils/nodeUtils";
 
 export type PreviewValues = { attrs: Record<string, unknown>; options: Record<string, unknown> };
 

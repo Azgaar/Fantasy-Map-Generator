@@ -5,17 +5,20 @@ import { Pack } from "@/model/graph/pack-generator";
 import { Tags } from "@/model/tags";
 import { redrawRoute as redrawRouteShape, setEditedRoute } from "@/renderers/draw-routes";
 import { Layers } from "@/renderers/layers";
+import { speak } from "@/services/speech";
 import { closeDialogs, confirmationDialog, destroyDialog, noteButton } from "@/ui/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { ensureEl, findEl, getPointer, getSegmentId, rn, speak } from "@/utils";
+import { getSegmentId } from "@/utils/commonUtils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, findEl, getPointer } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
 
 let selectedRoute: Selection<SVGElement, unknown, HTMLElement, unknown>;
 
 let isCellsLayerForced = false; // the cells layer is turned on for the editing mode
 
 function open(id: string): void {
-  if (customization) return;
+  if (options.app.mode) return;
   if (findEl("routeEditor") && id === selectedRoute.attr("id")) return;
   closeDialogs(".stable");
 

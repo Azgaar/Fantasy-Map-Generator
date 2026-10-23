@@ -12,11 +12,16 @@ import { colors } from "@/renderers/emblems/colors";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
 import { cloneEmblem, emblemURL, loadEmblemIcons } from "@/services/io/emblem-image";
+import { getFileName } from "@/services/io/file-name";
 import type { Emblem, EmblemCharge, HeraldicEmblem } from "@/types/emblems";
 import { destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { capitalize, downloadFile, ensureEl, escapeHtml, findEl, getFileName, minmax, openURL, rn } from "@/utils";
+import { openURL } from "@/utils/commonUtils";
+import { downloadFile } from "@/utils/fileUtils";
 import { t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { minmax, rn } from "@/utils/numberUtils";
+import { capitalize, escapeHtml } from "@/utils/stringUtils";
 import { ARMORIA_API, ARMORIA_GUI, armoriaRenderUrl, parseArmoria } from "./armoria";
 import { ArmoriaSessions } from "./armoria-sessions";
 import { isDrawable } from "./drawability";
@@ -98,7 +103,7 @@ async function openDefault(): Promise<void> {
 }
 
 function open(type?: EmblemType, id?: string, el?: EmblemEntity, target?: SVGElement): void {
-  if (customization) return;
+  if (options.app.mode) return;
   if (!id && target) defineEmblemData(target);
   else {
     if (!type || !id || !el?.coa) return;

@@ -1,5 +1,6 @@
 import { color as d3Color } from "d3";
-import { ensureEl, getIsolines } from "@/utils";
+import { ensureEl } from "@/utils/nodeUtils";
+import { getIsolines } from "@/utils/pathUtils";
 import { buildFillPaths } from "./isoline-fills";
 
 export function drawStates(): void {

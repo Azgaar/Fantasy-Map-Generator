@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-vi.mock("@/utils/localDB", () => ({
+vi.mock("@/services/local-db", () => ({
   LocalDB: { isSupported: () => true, get: vi.fn(async () => []), set: vi.fn(async () => {}) }
 }));
 

@@ -3,7 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 
 // fonts populates the font selector at import time, which needs the real app dom
 vi.mock("@/services/fonts", () => ({ getUsedFonts: vi.fn(), loadFontsAsDataURI: vi.fn() }));
-vi.mock("@/utils", async original => ({ ...(await original<typeof import("@/utils")>()), getBase64: vi.fn() }));
+vi.mock("@/utils/fileUtils", async original => ({
+  ...(await original<typeof import("@/utils/fileUtils")>()),
+  getBase64: vi.fn()
+}));
 
 import "@/model/physical/relief-generator"; // the models own the set namespaces a custom icon id is told apart from
 import "@/model/political/burgs-generator";
@@ -240,7 +243,7 @@ describe("flattenSymbolReferences", () => {
 
 describe("inlineLinkedImages", () => {
   it("inlines linked custom icons the host serves and drops those it does not, leaving other images alone", async () => {
-    const { getBase64 } = await import("@/utils");
+    const { getBase64 } = await import("@/utils/fileUtils");
     const svg = document.createElementNS(SVG_NS, "svg");
     svg.innerHTML = `<defs>
         <symbol id="custom-a"><image href="https://ok.test/a.png"/></symbol>

@@ -11,8 +11,9 @@ import { Csv } from "@/services/io/csv";
 import { closeDialogs, confirmationDialog, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { zoomTo } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { ensureEl, findEl, getLatitude, getLongitude } from "@/utils";
+import { getLatitude, getLongitude } from "@/utils/commonUtils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/nodeUtils";
 
 let center: Marker | null = null;
 let lastRadius = 0;
@@ -34,7 +35,7 @@ function markerName(marker: Marker): string {
 }
 
 function open(marker: Marker): void {
-  if (customization) return;
+  if (options.app.mode) return;
   closeDialogs(".stable");
   Layers.show("markers");
 

@@ -8,13 +8,16 @@ import { Layers } from "@/renderers/layers";
 import { restoreOceanVectors } from "@/renderers/ocean-cache";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
+import { getFileName } from "@/services/io/file-name";
+import { LocalDB } from "@/services/local-db";
 import { isElectron, savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
 import { closeDialogs } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
-import { ensureEl, getFileName, link, parseError, rn } from "@/utils";
+import { link, parseError } from "@/utils/commonUtils";
 import { sentences, t } from "@/utils/i18n";
-import { LocalDB } from "@/utils/localDB";
+import { ensureEl } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
 import { type SaveOutcome, saveToFileSystem } from "./save-to-file";
 
 type Writer = () => Promise<void>;
@@ -29,7 +32,7 @@ const toDropbox = (viewOnly = false): Promise<void> =>
 const mapFileName = (viewOnly: boolean): string => `${getFileName()}${viewOnly ? " view" : ""}.map`;
 
 async function save(write: Writer): Promise<void> {
-  if (customization)
+  if (options.app.mode)
     return tip(t("Map cannot be saved in EDIT mode, please complete the edit and retry"), false, "error");
   if (options.map.viewOnly) return tip(t("The map is in view-only mode and cannot be saved"), false, "warn");
   closeDialogs("#alert");

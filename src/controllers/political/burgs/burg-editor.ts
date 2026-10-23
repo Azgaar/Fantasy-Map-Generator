@@ -9,31 +9,24 @@ import type { Burg } from "@/model/political/burgs-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
+import { convertTemperature, getHeight, getTemperatureLikeness } from "@/model/units";
 import { removeEmblem } from "@/renderers/draw-emblems";
 import { goodIconLines } from "@/renderers/draw-goods";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
+import { speak } from "@/services/speech";
 import { closeDialogs, confirmationDialog, destroyDialog, noteButton } from "@/ui/dialog/dialog-helpers";
+import { promptDialog } from "@/ui/dialog/prompt-dialog";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { zoomTo } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import {
-  convertTemperature,
-  ensureEl,
-  getHeight,
-  getPointer,
-  getTemperatureLikeness,
-  openURL,
-  rand,
-  rn,
-  speak
-} from "@/utils";
-import type { PromptOptions } from "@/utils/commonUtils";
+import { openURL } from "@/utils/commonUtils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, getPointer } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
 import { MAX_ZOOM, PAN_ZOOM_IDENTITY, type PanZoom, panBy, zoomAt } from "@/utils/panZoomUtils";
+import { rand } from "@/utils/probabilityUtils";
 import { errorText } from "@/utils/stringUtils";
-
-declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
 
 let selected: Selection<any, any, any, any> | null = null;
 let selectedId: number | null = null;
@@ -44,7 +37,7 @@ let previewSettleTimer = 0;
 let previewLayoutLocked = false;
 
 function open(id: number | string): void {
-  if (customization) return;
+  if (options.app.mode) return;
   closeDialogs(".stable");
   Layers.show("burgIcons", "labels");
 
@@ -702,7 +695,7 @@ function setCustomPreview(): void {
   const id = getSelectedId();
   const burg = pack.burgs[id];
 
-  prompt(
+  promptDialog(
     t(
       "Provide custom URL to the burg map. It can be a link to a generator or just an image. Leave empty to use the default map preview"
     ),

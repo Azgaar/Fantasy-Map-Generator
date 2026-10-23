@@ -4,10 +4,10 @@ import { Grid } from "@/model/graph/grid-generator";
 import { Precipitation } from "@/model/physical/precipitation-generator";
 import { MIN_FLUX_TO_FORM_RIVER } from "@/model/physical/river-generator";
 import { Temperature } from "@/model/physical/temperature-generator";
-import { minmax, rn } from "@/utils";
 import { FlatQueue } from "@/utils/flatQueue";
 import { SEA_LEVEL } from "@/utils/heightUtils";
 import { createEl, ensureEl, findEl } from "@/utils/nodeUtils";
+import { minmax, rn } from "@/utils/numberUtils";
 
 // arrow style per flux class: two below the river threshold in faint gray, three rivers in solid blue. Widths are at the reference spacing
 const ARROW_CLASSES = [

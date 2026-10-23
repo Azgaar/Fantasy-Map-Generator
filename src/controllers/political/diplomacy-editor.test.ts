@@ -9,8 +9,8 @@ import { tip } from "@/ui/tooltips";
 import { DiplomacyEditor } from "./diplomacy-editor";
 
 vi.mock("@/renderers/layers", () => ({ Layers: { show: vi.fn(), hide: vi.fn(), draw: vi.fn() } }));
-vi.mock("@/utils", async importOriginal => ({
-  ...(await importOriginal<typeof import("@/utils")>()),
+vi.mock("@/utils/pathUtils", async importOriginal => ({
+  ...(await importOriginal<typeof import("@/utils/pathUtils")>()),
   getVertexPath: (cells: number[]) => `M${cells.join()}`
 }));
 vi.mock("@/ui/tooltips", () => ({ tip: vi.fn(), clearMainTip: vi.fn(), loadingTip: { start: vi.fn(), end: vi.fn() } }));
@@ -84,7 +84,7 @@ beforeEach(() => {
   ] as State[];
   vi.stubGlobal("pack", { states, cells: { i: [0, 1, 2, 3, 4, 5], state: Uint16Array.from([0, 1, 2, 3, 4, 99]) } });
   Object.assign(Pack, { findCell: (x: number) => (x < 6 ? x : undefined) });
-  vi.stubGlobal("customization", 0);
+  options.app.mode = null;
 });
 
 afterEach(() => {

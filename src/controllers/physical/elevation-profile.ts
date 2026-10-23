@@ -17,13 +17,18 @@ import type { Feature } from "@/model/physical/features-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import type { Province } from "@/model/political/provinces-generator";
 import type { State } from "@/model/political/states-generator";
+import { getHeight } from "@/model/units";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
 import { Csv } from "@/services/io/csv";
+import { getFileName } from "@/services/io/file-name";
 import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
-import { downloadFile, ensureEl, getFileName, getHeight, getLatitude, getLongitude, getPointer, rn } from "@/utils";
+import { getLatitude, getLongitude } from "@/utils/commonUtils";
+import { downloadFile } from "@/utils/fileUtils";
 import { t } from "@/utils/i18n";
+import { ensureEl, getPointer } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
 
 function open(cells: number[], routeLen: number, isRiver: boolean): void {
   closeDialogs("#elevationProfile, .stable");

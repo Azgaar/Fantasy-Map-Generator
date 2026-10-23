@@ -22,8 +22,12 @@ import {
 } from "@/ui/dialog/table";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { capitalize, ensureEl, findEl, getLatitude, getLongitude, getPointer, last, si } from "@/utils";
+import { last } from "@/utils/arrayUtils";
+import { getLatitude, getLongitude } from "@/utils/commonUtils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, findEl, getPointer } from "@/utils/nodeUtils";
+import { si } from "@/utils/numberUtils";
+import { capitalize } from "@/utils/stringUtils";
 
 const dialogId = "regimentsOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -34,7 +38,7 @@ let columns: EditorColumn<RegimentRow>[] = [];
 const regimentsTable = initEditorTable<RegimentRow>({ getData: getRegimentsData, onUpdate: renderRegimentsPage });
 
 function open(state?: number): void {
-  if (customization) return;
+  if (options.app.mode) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ stateId: -1, search: "" }));
   filterState.search ??= "";
   filterState.stateId ??= -1;
@@ -308,7 +312,7 @@ function regimentHighlightOn(event: Event): void {
   const target = event.target as HTMLElement;
   const state = +target.dataset.s!;
   const id = +target.dataset.id!;
-  if (customization || !state) return;
+  if (options.app.mode || !state) return;
   select<SVGGElement, unknown>(`#armies > g > g#regiment${state}-${id}`)
     .transition()
     .duration(2000)

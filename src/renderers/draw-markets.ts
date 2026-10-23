@@ -3,7 +3,7 @@ import { Icons } from "@/model/icons";
 import { Layers } from "@/renderers/layers";
 import { boundsIntersect, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import type { PackedGraph } from "@/types/PackedGraph";
-import { findEl } from "@/utils";
+import { findEl } from "@/utils/nodeUtils";
 import { rn } from "@/utils/numberUtils";
 import { getIsolines } from "@/utils/pathUtils";
 import { escapeHtml } from "@/utils/stringUtils";

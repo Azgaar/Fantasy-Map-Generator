@@ -3,8 +3,8 @@
 import { Options } from "@/model/options/options-model";
 import { Services } from "@/services";
 import { tip } from "@/ui/tooltips";
-import { ra } from "@/utils";
 import { t } from "@/utils/i18n";
+import { ra } from "@/utils/probabilityUtils";
 
 const MINUTE = 60000; // minute in milliseconds
 
@@ -17,7 +17,7 @@ export function initiateAutosave(): void {
 
     const diffInMinutes = (Date.now() - lastSavedAt) / MINUTE;
     if (diffInMinutes < timeoutMinutes) return;
-    if (customization) return tip(t("Autosave: map cannot be saved in edit mode"), false, "warn", 2000);
+    if (options.app.mode) return tip(t("Autosave: map cannot be saved in edit mode"), false, "warn", 2000);
 
     try {
       tip(t("Autosave: saving map..."), false, "warn", 3000);
@@ -58,7 +58,7 @@ function startSaveReminder(): void {
   const interval = 15 * MINUTE; // remind every 15 minutes
 
   reminderInterval = setInterval(() => {
-    if (customization) return;
+    if (options.app.mode) return;
     tip(ra(message), true, "warn", 2500);
   }, interval);
   reminderActive = true;

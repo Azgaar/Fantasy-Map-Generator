@@ -1,5 +1,7 @@
 // Where the map sits on the globe: its share of the world and the resulting lat/lon box
-import { gauss, P, rn } from "@/utils";
+
+import { rn } from "@/utils/numberUtils";
+import { gauss, P } from "@/utils/probabilityUtils";
 
 type SizeAndPosition = [size: number, latitude: number, longitude: number];
 

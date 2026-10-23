@@ -3,6 +3,7 @@ import type { Deal } from "@/model/economy/markets-generator";
 import { Markets } from "@/model/economy/markets-generator";
 import { Icons } from "@/model/icons";
 import type { Burg } from "@/model/political/burgs-generator";
+import { formatPrice } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
 import { Csv } from "@/services/io/csv";
 import { destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
@@ -18,8 +19,9 @@ import {
 } from "@/ui/dialog/table";
 import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
-import { ensureEl, formatPrice, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
 
 let activeMarketId = 0;
 type FilterState = { scope: "all" | "local" | "global" };

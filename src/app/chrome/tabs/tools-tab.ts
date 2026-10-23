@@ -1,8 +1,8 @@
 // Tools tab: buttons dispatch the same commands as global search.
 import { MAP_COMMANDS } from "@/app/map-commands";
 import { tip } from "@/ui/tooltips";
-import { ensureEl } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/nodeUtils";
 
 const TEMPLATE = /* html */ `
   <div class="separator">${t("Edit")}</div>
@@ -225,7 +225,7 @@ const TEMPLATE = /* html */ `
 ensureEl("toolsContent").innerHTML = TEMPLATE;
 
 ensureEl("toolsContent").addEventListener("click", event => {
-  if (customization) return tip(t("Exit customization mode first"), false, "error");
+  if (options.app.mode) return tip(t("Exit customization mode first"), false, "error");
   if (!(event instanceof MouseEvent) || !(event.target instanceof HTMLElement)) return;
   if (event.target.tagName !== "BUTTON") return;
   const command = MAP_COMMANDS.find(command => command.id === (event.target as HTMLElement).id);

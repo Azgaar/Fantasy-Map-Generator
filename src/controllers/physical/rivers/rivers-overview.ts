@@ -21,8 +21,9 @@ import {
   type TableView
 } from "@/ui/dialog/table";
 import { tip } from "@/ui/tooltips";
-import { ensureEl, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/nodeUtils";
+import { rn } from "@/utils/numberUtils";
 
 const dialogId = "riversOverview" as const;
 const CSV_COLUMNS = ["Id", "River", "Type", "Discharge", "Length", "Width", "Basin", "Tags"];
@@ -114,7 +115,7 @@ const riversTable = initEditorTable<River>({
 });
 
 function open(): void {
-  if (customization) return;
+  if (options.app.mode) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ search: "" }));
   closeDialogs(`#${dialogId}, .stable`);
   Layers.show("rivers");

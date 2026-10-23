@@ -10,7 +10,7 @@ vi.mock("@/renderers/layers", () => ({ Layers: { isOn: () => true, draw: vi.fn()
 beforeEach(() => {
   document.body.innerHTML = '<svg id="map"><g id="cells"><g id="cellIndexes"></g></g></svg>';
   Styles.set(Styles.parse(Styles.defaults));
-  globalThis.customization = 0;
+  options.app.mode = null;
   globalThis.grid = { spacing: 10 } as unknown as typeof grid;
   globalThis.pack = {
     cells: {

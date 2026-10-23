@@ -8,7 +8,7 @@ import { type LayerId, Layers } from "@/renderers/layers";
 import type { ChangeRow, Proposal } from "@/services/assistant/chats";
 import { refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { invokeActiveZooming } from "@/ui/map/zoom";
-import { findEl } from "@/utils";
+import { findEl } from "@/utils/nodeUtils";
 import { getPath } from "@/utils/objectUtils";
 import { errorText } from "@/utils/stringUtils";
 import { Change, type Side } from "./change";

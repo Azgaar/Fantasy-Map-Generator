@@ -1,7 +1,10 @@
 import { getDefaultNameBases, type NameBase } from "@/data/name-bases";
 import { tip } from "@/ui/tooltips";
-import { capitalize, isVowel, last, P, ra, rand } from "@/utils";
+import { last } from "@/utils/arrayUtils";
 import { sentences, t } from "@/utils/i18n";
+import { isVowel } from "@/utils/languageUtils";
+import { P, ra, rand } from "@/utils/probabilityUtils";
+import { capitalize } from "@/utils/stringUtils";
 
 // Markov chain lookup table: key is a letter (or empty string for word start), value is array of possible next syllables
 // Note: Uses array with string keys (sparse array) to match original JS behavior

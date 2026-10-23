@@ -8,9 +8,12 @@ import type { River } from "@/model/physical/river-generator";
 import { Rivers } from "@/model/physical/river-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Tags } from "@/model/tags";
-import { distanceSquared, findPath, getAdjective, isLand, ra, rn, round, rw } from "@/utils";
-import { replaceWholeWord } from "@/utils/languageUtils";
-import { meander } from "@/utils/pathUtils";
+import { isLand } from "@/utils/heightUtils";
+import { getAdjective, replaceWholeWord } from "@/utils/languageUtils";
+import { distanceSquared, rn } from "@/utils/numberUtils";
+import { findPath, meander } from "@/utils/pathUtils";
+import { ra, rw } from "@/utils/probabilityUtils";
+import { round } from "@/utils/stringUtils";
 import { requireName, requireOneOf } from "@/utils/validationUtils";
 
 const ROUTES_SHARP_ANGLE = 135;

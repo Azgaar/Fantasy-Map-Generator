@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import "./options-model";
-import { LocalDB } from "@/utils/localDB";
+import { LocalDB } from "@/services/local-db";
 import { ICONS_STORAGE_KEY, Options } from "./options-model";
 import { OPTIONS_STORAGE_KEY as STORAGE_KEY } from "./options-storage";
 
