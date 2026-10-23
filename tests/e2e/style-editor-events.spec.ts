@@ -9,8 +9,8 @@ declare const options: {
 };
 declare const regeneratePrompt: (config?: { seed?: string }) => void;
 
-// Real-control regression for the schema-driven style editor (src/controllers/style-editor): every
-// control reads/writes the store (src/generators/styles.ts) instead of DOM attributes, and
+// Real-control regression for the schema-driven style editor (src/controllers/style): every
+// control reads/writes the store (src/model/styles/styles.ts) instead of DOM attributes, and
 // invokeActiveZooming() re-derives the rendered value from the store on every zoom settle. Each case
 // drives the actual control with a real DOM event and checks: (1) the immediate effect, (2) the typed
 // store value, (3) survival across invokeActiveZooming() at a changed zoom, (4) the retired attribute

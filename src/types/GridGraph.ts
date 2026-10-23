@@ -1,6 +1,6 @@
-import type { GridFeature } from "@/generators/features-generator";
-import type { Sampling } from "@/generators/lattice";
-import type { Cells, Vertices } from "@/generators/voronoi";
+import type { Sampling } from "@/model/graph/lattice";
+import type { Cells, Vertices } from "@/model/graph/voronoi";
+import type { GridFeature } from "@/model/physical/features-generator";
 import type { Point } from "./global";
 
 /** cells of the initial graph: `Cells` fields come from the Voronoi diagram, the rest is generated on top of it */

@@ -210,7 +210,7 @@ element is a tree of three kinds of node:
 - `options` — renderer inputs (`scheme`, `icon`, …), read from the store, never written to the DOM
 - `groups` — a record of user-named entries (label groups, lake types, …) sharing one shape
 
-The record is declared once, as a zod schema (`src/generators/styles-schema.ts`). The TypeScript
+The record is declared once, as a zod schema (`src/model/styles/styles-schema.ts`). The TypeScript
 type, the defaults, validation on load and the Style tab's form are all derived from that one
 declaration: a style field cannot exist without a type, a default and a control.
 
@@ -239,18 +239,53 @@ schema-driven editor — is in [style.md](./style.md).
 
 The four-layer model above (state → generators → editors → renderers) is the _conceptual_
 core, but a real application also needs code that is none of those: persistence,
-app-shell lifecycle, static content, and shared helpers.
+app-shell lifecycle, reusable UI, static content, and shared helpers.
 
-| Folder             | Layer       | Holds                                                |
-| ------------------ | ----------- | ---------------------------------------------------- |
-| `src/generators/`  | Model       | procedural generators & domain logic                 |
-| `src/renderers/`   | View        | code that draws SVG / WebGL layers                   |
-| `src/controllers/` | Controller  | transient editors, tools, dialogs, panels, overviews |
-| `src/components/`  | Application | application state and reusable UI                    |
-| `src/data/`        | —           | static content / reference data                      |
-| `src/services/`    | —           | app-shell & platform infra                           |
-| `src/utils/`       | —           | pure helpers: no ambient state, min 2 consumers      |
-| `src/types/`       | Shape       | shared TypeScript interfaces / domain models         |
+| Folder             | Role        | Holds                                                                      |
+| ------------------ | ----------- | -------------------------------------------------------------------------- |
+| `src/model/`       | Model       | world data definitions, generators, model classes and their edits, options |
+| `src/renderers/`   | View (map)  | code that draws SVG / WebGL layers, the layers registry, the viewport      |
+| `src/ui/`          | View (UI)   | reusable UI: dialogs, tables, tooltips, web components, map interaction    |
+| `src/controllers/` | Controller  | transient editors, tools, dialogs, panels, overviews                       |
+| `src/app/`         | Application | composition root: boot, lifecycle, shell, hotkeys, always-on chrome        |
+| `src/services/`    | —           | serialization, app-shell & platform infra                                  |
+| `src/data/`        | —           | static content / reference data                                            |
+| `src/utils/`       | —           | pure helpers: no ambient state, min 2 consumers                            |
+| `src/types/`       | Shape       | shared TypeScript interfaces / domain models                               |
+
+Read as MVC: the model is `model/`, the view is `renderers/` (the map) plus `ui/` (widgets), and the
+controller is `controllers/`. `app/` wires them together. The fit is loose on purpose — a controller
+renders its own dialog markup — so folders are named by role, not by MVC letter.
+
+## Domains inside a role
+
+The role is always the top-level folder, so the layer a file belongs to stays visible in its path.
+Inside the two large role folders, `model/` and `controllers/`, files are grouped by **domain**:
+
+| Domain         | Covers                                                                      |
+| -------------- | --------------------------------------------------------------------------- |
+| `graph/`       | the grid and packed Voronoi graph, and the tools that rebuild it            |
+| `physical/`    | heightmap, climate, features, coastline, lakes, rivers, ice, biomes, relief |
+| `society/`     | population, cultures, religions, names                                      |
+| `political/`   | states, provinces, burgs, diplomacy, military, zones, emblems               |
+| `economy/`     | goods, production, markets and trade, transports, routes                    |
+| `story/`       | markers, notes, lore, journeys                                              |
+| `annotations/` | labels, rulers, the legend: what the map adds on top of the world           |
+| `styles/`      | the style record, its schema, formats and legacy conversion (`model/` only) |
+| `style/`       | the Style editor and presets (`controllers/` only)                          |
+
+Inside a domain, an entity gets its own folder once it has **three or more files** there
+(`controllers/political/burgs/`, `controllers/economy/routes/`); below that the files sit in the
+domain folder. A module that serves the whole map rather than one domain (`map-entities`,
+`pipeline`, `omnibar`, `context-menu`) stays at the role's root. `renderers/`, `ui/` and `app/` are
+small enough to stay flat, with a subject folder only for a cluster such as `renderers/heightmap/`.
+
+## What the model is
+
+`src/model/` holds everything that defines the world and its configuration: the generators
+(`*-generator.ts`), the model classes that own each entity's edits, styles, the options model and
+schema (`model/options/`), icon references (`icons`, `icon-sets`) and the entity registry
+(`map-entities`). A model module never opens a dialog or reaches a controller.
 
 ## What a "controller" is
 
@@ -268,32 +303,36 @@ The unifying rule: _UI that is **opened and closed**, and that **mutates or pres
 state**._ A controller does **not** hold pure static data, services, or serialization
 — those have their own folders.
 
-## What a "component" is
+## What `ui/` is
 
-`src/components/` holds Application state and UI that is **not owned by one editor**. Four kinds:
+`src/ui/` holds UI that is **not owned by one editor** and that several callers share rather than copy:
 
-- **Application state** — statefull application-level modules, active layers and their order,
-  viewport zoom and position.
-- **Web components** — reusable custom elements with no map knowledge (`fill-box`,
-  `slider-input`).
-- **App-level UI** — dialogs and widgets that are opened over the map but say nothing about it:
-  the About dialog (`app-info`). They have a controller's lifecycle but not a controller's
-  subject, so they live here and load with the shell.
-- **Shared editor behaviour** — interaction helpers several editors call rather than copy:
-  dialog helpers, tooltips, the default map events (`viewbox-events`), the brush over the map
-  (`map-brush`, which owns the size control, radius circle and gestures while each tool supplies
-  what a stroke does), and map modes such as `annex-mode`, which the States and Provinces editors
-  both drive with their own merge logic.
+- `ui/dialog/` — dialog helpers, editor tables, sorting, line highlighting, the per-browser dialog state
+- `ui/elements/` — reusable custom elements with no map knowledge (`fill-box`, `slider-input`)
+- `ui/tooltips.ts` — the tip line
+- `ui/map/` — interaction with the map canvas: pan and zoom, the default map events (`viewbox-events`),
+  the hover tooltip, the brush (`map-brush`, which owns the size control, radius circle and gestures
+  while each tool supplies what a stroke does), placement, `reveal`, and map modes such as `annex-mode`,
+  which the States and Provinces editors both drive with their own merge logic
 
-Widgets like `hierarchy-tree` and `minimap` may move to `components/` if they generalize.
+Widgets like `hierarchy-tree` and `minimap` may move to `ui/` if they generalize.
+
+## What `app/` is
+
+`src/app/` is the composition root. `app/index.ts` loads every eager module in order and exports
+`boot`; `lifecycle`, `shell`, `canvas`, `seed`, `hotkeys` and `map-commands` drive the application.
+`app/chrome/` is the UI that is always there and loads with the shell: the options panel and its
+tabs, the load/save/export panes, the Assistant bubble and the About dialog (`app-info`). Nothing
+below `app/` imports it.
 
 ## Cross-layer subsystems
 
-Most folders are flat. When a feature spans layers, each part stays under the folder for
-its role. Heraldry is the current example:
+When a feature spans layers, each part stays under the folder for its role, in the same domain.
+Heraldry is the current example:
 
 - `src/data/emblems/` — static heraldry catalogs
-- `src/generators/emblems-generator.ts` — emblem generation (registers `window.Emblems`)
+- `src/model/political/emblems-generator.ts` — emblem generation (registers `window.Emblems`)
+- `src/controllers/political/emblems/` — the Emblems editor and the Armoria bridge
 - `src/renderers/emblems/` — SVG drawing of emblems (registers `window.EmblemRenderer`). Its shields, lines,
   patterns, templates and diapers are ported from [Armoria](https://github.com/Azgaar/Armoria), and `public/charges/`
   is a verbatim copy of Armoria's charges: sync both from Armoria rather than editing them here
@@ -302,9 +341,7 @@ its role. Heraldry is the current example:
 
 Folders are named by **role**, never by vague importance. A generic `core/` becomes a
 junk drawer — everything feels "core," so unrelated code accretes there and the name
-stops meaning anything. If a genuinely foundational bucket is ever needed, prefer a
-meaningful name like `src/state/` (the `pack`/`grid` container and the serialization
-contract) over `core/`.
+stops meaning anything. The same goes for a catch-all `components/`: name the role instead.
 
 ## Libraries
 
@@ -320,17 +357,19 @@ classic needs it.
 
 ## Where does my file go?
 
-- Mutates world state from user input → **editor** in `controllers/`
-- Presents map state read-only in a dialog the user opens and closes → **overview** in `controllers/`
-- Presents map state but is _always_ on screen → **chrome** in `components/`
-- A dialog or widget that knows nothing about the map and loads with the shell (About) → `components/`
+- Mutates world state from user input → **editor** in `controllers/<domain>/`
+- Presents map state read-only in a dialog the user opens and closes → **overview** in `controllers/<domain>/`
 - Transient UI loaded only when opened (for example, the color picker) → `controllers/`
+- UI that is always on screen or loads with the shell (options panel, About) → **chrome** in `app/chrome/`
+- Boots, regenerates or wires the application together → `app/`
+- A dialog helper, widget or custom element several modules share → `ui/`
+- Interaction with the map canvas shared by editors (zoom, brush, map modes) → `ui/map/`
 - Draws an SVG / WebGL layer (incl. stateful animation engines like `trade-animation`) → `renderers/`
-  — and the layer itself is declared in the registry in `components/layers.ts`
+  — and the layer itself is declared in the registry in `renderers/layers.ts`
 - Turns coordinates into path data for one layer, or derives data only that drawing needs
   → `renderers/<subject>.ts`, no `draw-` prefix (see [Renderers](#renderers-view))
 - Draws transient feedback that removes itself (highlight, brush circle, fog) → `renderers/overlays/`
-- Generates or simulates world data → `generators/`
+- Generates, simulates or defines world data → `model/<domain>/`; map options → `model/options/`
 - Serializes, saves, loads, or exports state → `services/io/`
 - Manages browser/app lifecycle, a platform asset, or app preferences → `services/`
 - Talks to the Azgaar server on the user's behalf → `services/assistant/azgaar-server/`
@@ -347,21 +386,28 @@ through its `window.*` global. The globals exist for classic `public/**/*.js`, n
 But an import is also a dependency, and dependencies only run **downhill**:
 
 ```text
-components / controllers / services      ← may import anything below
+             app                          ← may import anything
               ↑
-          renderers                       ← utils, types, data, generators
+   controllers / services                 ← ui, renderers, model, below
               ↑
-          generators                      ← utils, types, data
+              ui                          ← renderers, model, below
+              ↑
+          renderers                       ← model, utils, types, data
+              ↑
+            model                         ← utils, types, data
               ↑
         utils / types / data              ← only each other
 ```
 
-So `states-editor` imports `tip` from `components/tooltips`, but a **generator or a
-renderer that wants to show a tooltip may not** — that import would point up the stack. Those
-few call sites keep the `window` bridge with a comment saying why; the real fix is to move the
-message to the controller that owns the interaction, not to import across the layer boundary.
-`utils/registry.ts` is the standing example: it shows a loading tip through `window.tip`
-because utils must never depend on the UI.
+The `Controllers` and `Services` registries are lazy handles, not eager dependencies: `ui/` may
+dispatch through them (`viewbox-events` opens an editor on click), the model and renderers may not.
+Type-only imports (`import type { LayerId }`) carry no runtime dependency and may cross.
+
+So `states-editor` imports `tip` from `ui/tooltips`, but a **model or a renderer module that wants
+to show a tooltip may not** — that import would point up the stack. Those few call sites keep the
+`window` bridge with a comment saying why; the real fix is to move the message to the controller
+that owns the interaction, not to import across the layer boundary. `utils/registry.ts` is the
+standing example: it shows a loading tip through `window.tip` because utils must never depend on the UI.
 
 ---
 
@@ -535,7 +581,7 @@ two typed registries — `Controllers` (built in `src/controllers/index.ts`) and
 - **Same handle everywhere.** Migrated TS imports `{ Controllers }` / `{ Services }`; legacy
   `public/**/*.js` and inline handlers use the `window.Controllers` / `window.Services` globals.
 
-Generators, renderers, and components are different: they are **eager** and self-register their
+Model, renderers, `ui/` and `app/` modules are different: they are **eager** and self-register their
 own globals (`window.Markets`, `window.drawRoutes`, `window.tip`) because classic code calls them
 directly and, in chrome's case, because there is no moment at which they would be "opened". See
 [lazy-loading.md](./lazy-loading.md) for the full pattern and how to add a module.
@@ -546,7 +592,7 @@ directly and, in chrome's case, because there is no moment at which they would b
 
 A map layer is one slot in the map's z-order: an SVG group, the code that draws it, and whether it
 is currently on. Layers are the unit the user toggles, reorders and saves, so they are **application
-state**, not style and not world data. They live in one registry — `src/components/layers.ts` —
+state**, not style and not world data. They live in one registry — `src/renderers/layers.ts` —
 which is the single source of truth for layer identity, order and visibility.
 
 Each layer is declared exactly once, as a value in one ordered list. **Registration order is the

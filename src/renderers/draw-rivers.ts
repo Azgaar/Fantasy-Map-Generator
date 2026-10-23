@@ -1,5 +1,5 @@
-import { Layers } from "@/components/layers";
-import type { River } from "@/generators/river-generator";
+import type { River } from "@/model/physical/river-generator";
+import { Layers } from "@/renderers/layers";
 import {
   boundsIntersect,
   Scene,

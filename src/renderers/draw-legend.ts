@@ -2,7 +2,7 @@
 // A box is keyed by its title; where it sits is the viewer's own (legend-positions)
 
 import { type D3DragEvent, select } from "d3";
-import { viewport } from "@/components/viewport";
+import { viewport } from "@/renderers/viewport/viewport";
 import type { LegendItem } from "@/types/Legend";
 import { findEl, minmax, parseTransform, rn } from "@/utils";
 import { type LegendPosition, legendPositions } from "./legend-positions";

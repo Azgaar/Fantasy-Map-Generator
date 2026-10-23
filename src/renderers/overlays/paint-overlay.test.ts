@@ -3,7 +3,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { openPaintOverlay, removePaintOverlay, removePaintOverlayCells, updatePaintOverlay } from "./paint-overlay";
-import "@/generators/pack-generator"; // registers the Pack global the overlay builds polygons with
+import "@/model/graph/pack-generator"; // registers the Pack global the overlay builds polygons with
 
 const graph = {
   cells: {

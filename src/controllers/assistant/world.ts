@@ -1,5 +1,5 @@
-import { MapEntities } from "@/components/map-entities";
-import { Styles } from "@/generators/styles";
+import { MapEntities } from "@/model/map-entities";
+import { Styles } from "@/model/styles/styles";
 import type { StylesData } from "@/types/styles";
 
 export type Item = { i: number } & Record<string, unknown>;

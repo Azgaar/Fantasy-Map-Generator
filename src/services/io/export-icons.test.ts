@@ -1,15 +1,15 @@
 // @vitest-environment jsdom
 import { beforeEach, expect, test, vi } from "vitest";
-import { Icons } from "@/components/icons";
-import { setViewportSize } from "@/components/viewport";
-import { Styles } from "@/generators/styles";
-import "@/generators/burgs-generator"; // the models own the set definitions the export resolves ids against
-import "@/generators/goods-generator";
-import "@/generators/relief-generator";
+import { Icons } from "@/model/icons";
+import { Styles } from "@/model/styles/styles";
+import { setViewportSize } from "@/renderers/viewport/viewport";
+import "@/model/political/burgs-generator"; // the models own the set definitions the export resolves ids against
+import "@/model/economy/goods-generator";
+import "@/model/physical/relief-generator";
 import { drawRelief } from "@/renderers/draw-relief-icons";
 import { ExportMap } from "./export";
 
-vi.mock("@/components/layers", () => ({ Layers: { isOn: (id: string) => id === "relief", draw: vi.fn() } }));
+vi.mock("@/renderers/layers", () => ({ Layers: { isOn: (id: string) => id === "relief", draw: vi.fn() } }));
 vi.mock("@/services/fonts", () => ({ getUsedFonts: () => [], loadFontsAsDataURI: vi.fn() }));
 beforeEach(() => {
   vi.clearAllMocks();

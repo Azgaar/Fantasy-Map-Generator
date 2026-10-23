@@ -1,4 +1,4 @@
-import { Layers } from "@/components/layers";
+import { Layers } from "@/renderers/layers";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import { ensureEl, rn } from "@/utils";
 

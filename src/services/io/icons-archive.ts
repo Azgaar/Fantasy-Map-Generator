@@ -1,6 +1,6 @@
 // Custom icons as a zip: `icons.json` restores them under the same ids, the picture files are there to look at
-import { type CustomIcon, CustomIcons } from "@/components/icons";
-import { customIcon } from "@/components/options-schema";
+import { type CustomIcon, CustomIcons } from "@/model/icons";
+import { customIcon } from "@/model/options/options-schema";
 import { loadScript } from "@/utils";
 
 const MANIFEST = "icons.json";

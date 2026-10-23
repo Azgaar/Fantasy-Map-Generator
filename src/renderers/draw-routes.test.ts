@@ -1,14 +1,14 @@
 // @vitest-environment jsdom
 import { beforeEach, expect, test, vi } from "vitest";
-import type { Layer } from "@/components/layers";
-import { setViewportSize, setViewportTransform } from "@/components/viewport";
-import type { Route } from "@/generators/routes-generator";
+import type { Route } from "@/model/economy/routes-generator";
+import type { Layer } from "@/renderers/layers";
+import { setViewportSize, setViewportTransform } from "@/renderers/viewport/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 
 const mocks = vi.hoisted(() => ({ layerOn: true }));
-vi.mock("@/components/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
+vi.mock("@/renderers/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
 
-import "@/generators/styles";
+import "@/model/styles/styles";
 import { drawRoutes, getRouteBox, redrawRoute, removeRoutes, setEditedRoute, setTempRoute } from "./draw-routes";
 
 const routesLayer = { getEl: () => document.getElementById("routes") } as unknown as Layer;

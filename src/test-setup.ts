@@ -67,7 +67,7 @@ for (const flag of ["INFO", "TIME", "ERROR", "WARN", "DEBUG"]) {
 // The configuration global the app installs at boot, so a unit test gets the same defaults. The
 // model is loaded last and dynamically: it reaches the modules that own each default, and those
 // expect the stubs above to be in place
-const { Options } = await import("@/components/options-model");
+const { Options } = await import("@/model/options/options-model");
 
 (globalThis as Record<string, unknown>).options ??= Options.getDefaultOptions();
 

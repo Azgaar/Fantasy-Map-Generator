@@ -1,5 +1,5 @@
-import { type Layer, Layers } from "@/components/layers";
-import type { Route } from "@/generators/routes-generator";
+import type { Route } from "@/model/economy/routes-generator";
+import { type Layer, Layers } from "@/renderers/layers";
 import {
   boundsIntersect,
   Scene,

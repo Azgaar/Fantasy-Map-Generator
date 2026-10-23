@@ -1,5 +1,5 @@
-import { Icons } from "@/components/icons";
-import { Emblems } from "@/generators/emblems-generator";
+import { Icons } from "@/model/icons";
+import { Emblems } from "@/model/political/emblems-generator";
 import type {
   Emblem,
   EmblemCharge,

@@ -1,5 +1,5 @@
 import { geoEquirectangular, geoGraticule, geoPath, select } from "d3";
-import { viewport } from "@/components/viewport";
+import { viewport } from "@/renderers/viewport/viewport";
 import { ensureEl, rn, round } from "@/utils";
 
 const STEPS = [0.5, 1, 2, 5, 10, 15, 30]; // possible distances between the graticule lines, in degrees

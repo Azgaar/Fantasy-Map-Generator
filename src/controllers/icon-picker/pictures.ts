@@ -1,6 +1,6 @@
 // Turns a file or a link into a custom icon's picture: its kind, content and a frame fitted to what it shows.
 // Stateless; every thrown message is meant for the author
-import { type IconPicture, Icons, IMAGE_FRAME } from "@/components/icons";
+import { type IconPicture, Icons, IMAGE_FRAME } from "@/model/icons";
 import { sanitizeSvgIcon, scopeSvgIcon } from "@/utils/fileUtils";
 import { t } from "@/utils/i18n";
 import { rn } from "@/utils/numberUtils";

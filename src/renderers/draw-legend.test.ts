@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
-import "@/generators/styles";
-import { setViewportSize } from "@/components/viewport";
-import { Legends } from "@/generators/legends";
+import "@/model/styles/styles";
+import { Legends } from "@/model/annotations/legends";
+import { setViewportSize } from "@/renderers/viewport/viewport";
 import type { LegendItem } from "@/types/Legend";
 import { dragLegendBox, fitLegendBox, redrawLegend } from "./draw-legend";
 import { legendPositions } from "./legend-positions";

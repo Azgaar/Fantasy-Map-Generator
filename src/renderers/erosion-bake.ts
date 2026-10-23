@@ -1,7 +1,7 @@
 // GPU erosion-detail bake, a noise-based erosion appearance filter for the 3D view
 
 import type * as THREEType from "three";
-import { Coastline } from "@/generators/coastline-generator";
+import { Coastline } from "@/model/physical/coastline-generator";
 
 export type BakeParams = {
   strength: number;

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import defaults from "@/generators/default-styles.json";
+import defaults from "@/model/styles/default-styles.json";
 import { drawOcean } from "./draw-ocean";
 
 beforeEach(() => {

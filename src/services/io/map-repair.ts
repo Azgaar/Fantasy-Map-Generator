@@ -1,6 +1,7 @@
 // Fixes the broken links a loaded map can carry, then logs what was fixed and what is still broken
-import type { Burg } from "@/generators/burgs-generator";
-import { type IntegrityViolation, MapIntegrity } from "@/generators/map-integrity";
+
+import { type IntegrityViolation, MapIntegrity } from "@/model/map-integrity";
+import type { Burg } from "@/model/political/burgs-generator";
 import { last } from "@/utils";
 
 class MapRepairService {

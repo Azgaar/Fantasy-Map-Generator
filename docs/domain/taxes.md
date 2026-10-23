@@ -68,8 +68,8 @@ When loading an older save (`auto-update.ts`), the migration runs `States.define
 
 ## Sources
 
-- [`src/generators/states-generator.ts`](../../src/generators/states-generator.ts) — rate generation, `collectTaxes`
-- [`src/generators/markets-generator.ts`](../../src/generators/markets-generator.ts) — `sell`, `runGlobalTrade` tax wiring
-- [`src/generators/production-generator.ts`](../../src/generators/production-generator.ts) — burg-sell deduction
-- [`src/controllers/states-editor.ts`](../../src/controllers/states-editor.ts) — Treasury column + dialog
+- [`src/model/political/states-generator.ts`](../../src/model/political/states-generator.ts) — rate generation, `collectTaxes`
+- [`src/model/economy/markets-generator.ts`](../../src/model/economy/markets-generator.ts) — `sell`, `runGlobalTrade` tax wiring
+- [`src/model/economy/production-generator.ts`](../../src/model/economy/production-generator.ts) — burg-sell deduction
+- [`src/controllers/political/states-editor.ts`](../../src/controllers/political/states-editor.ts) — Treasury column + dialog
 - [`src/services/io/auto-update.ts`](../../src/services/io/auto-update.ts) — migration

@@ -1,6 +1,6 @@
-import { Icons } from "@/components/icons";
-import { Layers } from "@/components/layers";
-import type { ReliefIcon } from "@/generators/relief-generator";
+import { Icons } from "@/model/icons";
+import type { ReliefIcon } from "@/model/physical/relief-generator";
+import { Layers } from "@/renderers/layers";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import { escapeHtml } from "@/utils/stringUtils";
 

@@ -1,6 +1,6 @@
-import { Icons } from "@/components/icons";
-import { MapEntities } from "@/components/map-entities";
 import { layerLabel } from "@/data/layer-labels";
+import { Icons } from "@/model/icons";
+import { MapEntities } from "@/model/map-entities";
 import type { ChangeRow, Proposal } from "@/services/assistant/chats";
 import { t } from "@/utils/i18n";
 import { rn } from "@/utils/numberUtils";

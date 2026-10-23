@@ -10,7 +10,7 @@ import {
   scaleSequential,
   select
 } from "d3";
-import { viewport } from "@/components/viewport";
+import { viewport } from "@/renderers/viewport/viewport";
 import { connectVertices, convertTemperature, round } from "../utils";
 
 const temperatureRenderer = (): void => {

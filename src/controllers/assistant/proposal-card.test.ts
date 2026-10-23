@@ -3,8 +3,8 @@ import { expect, it, vi } from "vitest";
 import type { Proposal } from "@/services/assistant/chats";
 
 vi.mock("./proposals", () => ({ Proposals: { ready: () => true } }));
-vi.mock("@/components/icons", () => ({ Icons: { html: () => "" } }));
-vi.mock("@/components/map-entities", () => ({
+vi.mock("@/model/icons", () => ({ Icons: { html: () => "" } }));
+vi.mock("@/model/map-entities", () => ({
   MapEntities: {
     parseKey: (key: string) => ({ type: key.split(":")[0], id: Number(key.split(":")[1]) }),
     get: () => undefined,

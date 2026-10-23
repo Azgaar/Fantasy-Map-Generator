@@ -1,5 +1,5 @@
 import { curveCatmullRom, easeLinear, line, select } from "d3";
-import type { Point } from "../generators/voronoi";
+import type { Point } from "@/model/graph/voronoi";
 import { ensureEl, minmax } from "../utils";
 import type { TradeBatch } from "./trade-animation";
 

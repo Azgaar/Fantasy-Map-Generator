@@ -1,8 +1,8 @@
 // The icon picker's positioner: zoom and pan a custom icon's picture inside its frame
 
-import { destroyDialog } from "@/components/dialog/dialog-helpers";
-import { CustomIcons, Icons } from "@/components/icons";
-import { tip } from "@/components/tooltips";
+import { CustomIcons, Icons } from "@/model/icons";
+import { destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { tip } from "@/ui/tooltips";
 import { ensureEl, escapeHtml, findEl } from "@/utils";
 import { t } from "@/utils/i18n";
 import { IconPictures } from "./pictures";

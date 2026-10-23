@@ -1,5 +1,5 @@
-import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
-import { viewport } from "@/components/viewport";
+import { viewport } from "@/renderers/viewport/viewport";
+import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { t } from "@/utils/i18n";
 import { ensureEl, findEl, minmax, rn } from "../utils";
 

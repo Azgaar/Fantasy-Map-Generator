@@ -1,0 +1,550 @@
+import { easeSinIn, select, sum, transition } from "d3";
+import { Controllers } from "@/controllers";
+import { ReliefPoolEditor } from "@/controllers/physical/relief/relief-pool-editor";
+import { fitReliefArt, poolPreviewHtml } from "@/controllers/physical/relief/relief-previews";
+import type { Biome } from "@/model/physical/biomes-generator";
+import { Population } from "@/model/society/population-generator";
+import { Layers } from "@/renderers/layers";
+import { LegendBoxes } from "@/renderers/legend-boxes";
+import { Csv } from "@/services/io/csv";
+import type { LegendItem } from "@/types/Legend";
+import type { PackedGraph } from "@/types/PackedGraph";
+import { closeDialogs, destroyDialog, noteIcon, updateDialog } from "@/ui/dialog/dialog-helpers";
+import { applyLineHighlighting } from "@/ui/dialog/highlighting";
+import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
+import {
+  type EditorColumn,
+  initColumnVisibility,
+  initEditorTable,
+  renderEditorHeader,
+  renderEditorPagination,
+  type TableView
+} from "@/ui/dialog/table";
+import type { FillBoxElement } from "@/ui/elements/fill-box";
+import { tip } from "@/ui/tooltips";
+import { ensureEl, findEl, getArea, getAreaUnit, getRandomColor, groupByValue, isLand, openURL, rn, si } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
+
+const dialogId = "biomesEditor" as const;
+const CSV_COLUMNS = ["Id", "Biome", "Color", "Habitability", "Cells", "Area", "Population"];
+const LEGEND_NAME = "Biomes"; // the legend box this editor toggles
+const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+let currentBiomeStatistics: BiomeStatistics[] = [];
+const columns: EditorColumn<Biome>[] = [
+  {
+    key: "name",
+    label: t("Biome"),
+    width: "15em",
+    permanent: true,
+    sortBy: biome => biome.name,
+    sortType: "alpha"
+  },
+  {
+    key: "habitability",
+    label: t("Habitability"),
+    width: "6.5em",
+    sortBy: biome => biome.habitability
+  },
+  {
+    key: "relief",
+    label: t("Relief"),
+    width: "6.5em",
+    sortBy: biome => biome.iconsDensity
+  },
+  {
+    key: "cells",
+    label: t("Cells"),
+    width: "5em",
+    sortBy: biome => currentBiomeStatistics[biome.i]?.cells ?? 0,
+    defaultSort: "desc"
+  },
+  {
+    key: "area",
+    label: t("Area"),
+    width: "7em",
+    mobileHidden: true,
+    sortBy: biome => currentBiomeStatistics[biome.i]?.area ?? 0
+  },
+  {
+    key: "population",
+    label: t("Population"),
+    width: "6.2em",
+    mobileHidden: true,
+    sortBy: biome => {
+      const statistics = currentBiomeStatistics[biome.i];
+      return statistics ? statistics.rural + statistics.urban : 0;
+    }
+  },
+  { key: "note", width: "1.1em" },
+  { key: "wiki", width: "1.1em" },
+  { key: "remove", width: "1.4em", permanent: true }
+];
+
+const biomesTable = initEditorTable<Biome>({
+  getData: () =>
+    sortDataByColumns(
+      dialogId,
+      pack.biomes.filter(biome => biome.i && !biome.removed),
+      columns
+    ),
+  onUpdate: view => biomesEditorAddLines(view, currentBiomeStatistics)
+});
+
+function open(): void {
+  if (customization) return;
+  closeDialogs(`#${dialogId}, .stable`);
+  Layers.show("biomes");
+  Layers.hide("states", "cultures");
+  Layers.hide("religions", "provinces");
+
+  renderDialog();
+  currentBiomeStatistics = biomesCollectStatistics();
+  biomesTable.reset();
+
+  $(`#${dialogId}`).dialog({ title: t("Biomes Editor"), resizable: false, close: closeBiomesEditor, position });
+}
+
+function renderDialog(): void {
+  destroyDialog(dialogId);
+  const html = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
+      ${renderEditorHeader({ dialogId, columns })}
+      <div id="biomesBody" class="table" data-type="absolute"></div>
+      <div id="biomesFooter" class="totalLine">
+        <div data-tip="${t("Number of land biomes")}" style="margin-left: 12px">
+          ${t("Biomes")}:&nbsp;<span id="biomesFooterBiomes">0</span>
+        </div>
+        <div data-col="cells" data-tip="${t("Number of land cells")}" style="margin-left: 12px">
+          ${t("Cells")}:&nbsp;<span id="biomesFooterCells">0</span>
+        </div>
+        <div data-col="area" data-tip="${t("Total land area")}" style="margin-left: 12px">
+          ${t("Land area")}:&nbsp;<span id="biomesFooterArea">0</span>
+        </div>
+        <div data-col="population" data-tip="${t("Total population")}" style="margin-left: 12px">
+          ${t("Population")}:&nbsp;<span id="biomesFooterPopulation">0</span>
+        </div>
+      </div>
+      <div id="biomesBottom">
+        <button id="biomesEditorRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
+        <button id="biomesEditStyle" data-tip="${t("Edit style in Style Editor")}" class="icon-adjust"></button>
+        <button id="biomesLegend" data-tip="${t("Toggle Legend box")}" class="icon-list-bullet"></button>
+        <button
+          id="biomesPercentage"
+          data-tip="${t("Toggle percentage / absolute values views")}"
+          class="icon-percent"
+        ></button>
+        <button
+          id="biomesManually"
+          data-tip="${t("Manually re-assign biomes to not follow the default moisture/temperature pattern")}"
+          class="icon-brush"
+        ></button>
+        <button id="biomesReliefRules" data-tip="${t("Edit the relief rules: hills, mountains and other relief placed by elevation")}" class="icon-mountain"></button>
+        <button id="biomesAdd" data-tip="${t("Add")}" class="icon-plus"></button>
+        <button
+          id="biomesRestore"
+          data-tip="${t("Restore the defaults and re-define biomes based on current moisture and temperature")}"
+          class="icon-history"
+        ></button>
+        <button
+          id="biomesExport"
+          data-tip="${t("Save data as a CSV file")}"
+          class="icon-download"
+        ></button>
+        <button id="biomesImport" data-tip="${t("Upload data from a CSV file")}" class="icon-upload"></button>
+      </div>
+    </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+  initColumnVisibility({
+    dialogId,
+    columns,
+    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+  });
+
+  ensureEl("biomesEditorRefresh").addEventListener("click", refreshBiomesEditor);
+  ensureEl("biomesEditStyle").addEventListener("click", () => void Controllers.StyleEditor.open("biomes"));
+  ensureEl("biomesLegend").addEventListener("click", toggleLegend);
+  ensureEl("biomesPercentage").addEventListener("click", togglePercentageMode);
+  ensureEl("biomesManually").addEventListener("click", openPaintEditor);
+  ensureEl("biomesRestore").addEventListener("click", restoreInitialBiomes);
+  ensureEl("biomesReliefRules").addEventListener("click", () => void Controllers.ReliefRulesEditor.open());
+  ensureEl("biomesAdd").addEventListener("click", addCustomBiome);
+  ensureEl("biomesExport").addEventListener("click", downloadBiomesData);
+  ensureEl("biomesImport").addEventListener("click", () => Csv.pick(uploadBiomesCsv));
+
+  bindColumnSorting(dialogId, biomesTable.reset);
+  applyLineHighlighting(dialogId, ({ cellId }) => cellId && pack.cells.biome[cellId]);
+
+  ensureEl("biomesBody").addEventListener("click", ev => {
+    const el = ev.target as HTMLElement;
+    const cl = el.classList;
+    if (el.tagName === "FILL-BOX") biomeChangeColor(el as FillBoxElement);
+    else if (cl.contains("icon-book")) editBiomeNote(el);
+    else if (cl.contains("icon-info-circled")) openWiki(el);
+    else if (cl.contains("icon-trash-empty")) removeCustomBiomeLine(el);
+    else if (el.closest(".biomeRelief")) editReliefPool(el);
+  });
+
+  ensureEl("biomesBody").addEventListener("change", ev => {
+    const el = ev.target as HTMLInputElement;
+    const cl = el.classList;
+    if (cl.contains("biomeName")) biomeChangeName(el);
+    else if (cl.contains("biomeHabitability")) biomeChangeHabitability(el);
+  });
+}
+
+function refreshBiomesEditor(): void {
+  currentBiomeStatistics = biomesCollectStatistics();
+  biomesTable.refresh();
+}
+
+export type BiomeStatistics = { cells: number; area: number; rural: number; urban: number };
+
+type BiomeStatisticsSource = {
+  biomes: Biome[];
+  cells: Pick<PackedGraph["cells"], "i" | "h" | "biome" | "area" | "pop" | "burg">;
+  burgs: Array<{ population?: number }>;
+};
+
+export function collectBiomeStatistics(source: BiomeStatisticsSource = pack): BiomeStatistics[] {
+  const { cells } = source;
+  const statistics = source.biomes.map(() => ({ cells: 0, area: 0, rural: 0, urban: 0 }));
+
+  for (const i of cells.i) {
+    if (cells.h[i] < 20) continue;
+    const biomeStatistics = statistics[cells.biome[i]];
+    biomeStatistics.cells++;
+    biomeStatistics.area += cells.area[i];
+    biomeStatistics.rural += cells.pop[i];
+    const burg = cells.burg[i] ? source.burgs[cells.burg[i]] : null;
+    if (burg) biomeStatistics.urban += burg.population ?? 0;
+  }
+
+  return statistics;
+}
+
+function biomesCollectStatistics(): BiomeStatistics[] {
+  return collectBiomeStatistics(pack);
+}
+
+function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistics[]): void {
+  const unit = ` ${getAreaUnit()}`;
+  let lines = "";
+  let totalArea = 0;
+  let totalPopulation = 0;
+
+  for (const biome of view.rows) {
+    const { i, name, color, habitability } = biome;
+    const { cells, area: rawArea, rural: rawRural, urban: rawUrban } = statistics[i];
+    const area = getArea(rawArea);
+    const rural = rawRural * options.map.units.population.scale;
+    const urban = rawUrban * options.map.units.population.scale * options.map.units.population.urbanization.rate;
+    const population = rn(rural + urban);
+    const populationTip = sentences(
+      `${t("Total population")}: ${si(population)}`,
+      `${t("Rural population")}: ${si(rural)}`,
+      `${t("Urban population")}: ${si(urban)}`
+    );
+    lines += /* html */ `
+      <div
+        class="states biomes"
+        data-id="${i}"
+        data-name="${name}"
+        data-habitability="${habitability}"
+        data-cells=${cells}
+        data-area=${area}
+        data-population=${population}
+        data-color=${color}
+      >
+        <div data-col="name">
+          <fill-box fill="${color}"></fill-box>
+          <input data-tip="${sentences(t("Name"), t("Click and type to change"))}" class="biomeName" value="${name}" autocorrect="off" spellcheck="false" />
+        </div>
+        <div data-col="habitability" class="hide">
+          <span data-tip="${t("Biome habitability percent")}">%</span>
+          <input data-tip="${sentences(t("Biome habitability percent"), t("Click and type to change"))}" type="number" min="0" max="9999" class="biomeHabitability" value=${habitability} />
+        </div>
+        <div data-col="relief" class="hide">${reliefPoolHtml(biome)}</div>
+        <div data-col="cells" class="hide"><span data-tip="${t("Number of cells")}" class="icon-check-empty"></span><span data-tip="${t("Number of cells")}" class="biomeCells">${cells}</span></div>
+        <div data-col="area" class="hide"><span data-tip="${t("Biome area")}" class="icon-map-o" style="padding-right: 2px"></span><span data-tip="${t("Biome area")}" class="biomeArea">${si(area) + unit}</span></div>
+        <div data-col="population" class="hide"><span data-tip="${populationTip}" class="icon-male"></span><span data-tip="${populationTip}" class="biomePopulation">${si(population)}</span></div>
+        ${noteIcon(t("Edit free text notes (legend)"))}
+        <span data-col="wiki" data-tip="${t("Open Wikipedia article about the biome")}" class="icon-info-circled pointer"></span>
+        <span data-col="remove" ${i > 12 && !cells ? `data-tip="${t("Remove")}" class="icon-trash-empty"` : ""}></span>
+      </div>
+    `;
+  }
+  const body = ensureEl("biomesBody");
+  body.innerHTML = lines;
+  void fitReliefArt(body, styles.relief.options.set);
+
+  // update footer
+  for (const biome of view.all) {
+    const statistic = statistics[biome.i];
+    totalArea += getArea(statistic.area);
+    totalPopulation += rn(
+      statistic.rural * options.map.units.population.scale +
+        statistic.urban * options.map.units.population.scale * options.map.units.population.urbanization.rate
+    );
+  }
+  const totalMapArea = getArea(sum(pack.cells.area));
+  ensureEl("biomesFooterBiomes").innerHTML = String(view.all.length);
+  ensureEl("biomesFooterCells").innerHTML = String(pack.cells.h.filter(h => h >= 20).length);
+  const footerArea = ensureEl("biomesFooterArea");
+  footerArea.innerHTML = si(totalArea) + unit;
+  ensureEl("biomesFooterPopulation").innerHTML = si(totalPopulation);
+  footerArea.dataset.area = String(totalArea);
+  footerArea.dataset.mapArea = String(totalMapArea);
+  ensureEl("biomesFooterPopulation").dataset.population = String(totalPopulation);
+  renderEditorPagination(ensureEl("biomesFooter"), view, biomesTable.goto);
+
+  // add listeners
+  body.querySelectorAll("div.biomes").forEach(el => {
+    el.addEventListener("mouseenter", biomeHighlightOn);
+  });
+  body.querySelectorAll("div.biomes").forEach(el => {
+    el.addEventListener("mouseleave", biomeHighlightOff);
+  });
+
+  if (body.dataset.type === "percentage") {
+    body.dataset.type = "absolute";
+    togglePercentageMode();
+  }
+  updateDialog(dialogId, { width: "fit-content", position });
+}
+
+function reliefPoolHtml({ icons, iconsDensity }: Biome): string {
+  return poolPreviewHtml(icons, iconsDensity, "biomeRelief");
+}
+
+function editReliefPool(el: HTMLElement): void {
+  const biome = Number(el.closest<HTMLElement>(".biomes")!.dataset.id);
+  ReliefPoolEditor.open({ biome, onApply: refreshBiomesEditor });
+}
+
+function biomeHighlightOn(event: Event): void {
+  if (customization === 6) return;
+  const biome = +(event.target as HTMLElement).dataset.id!;
+  const animate = transition().duration(2000).ease(easeSinIn);
+  select(`#biomes > #biome${biome}`).raise().transition(animate).attr("stroke-width", 2).attr("stroke", "#cd4c11");
+}
+
+function biomeHighlightOff(event: Event): void {
+  if (customization === 6) return;
+  const biome = +(event.target as HTMLElement).dataset.id!;
+  const color = pack.biomes[biome].color;
+  select(`#biomes > #biome${biome}`).transition().attr("stroke-width", 0.7).attr("stroke", color);
+}
+
+function biomeChangeColor(fillBox: FillBoxElement): void {
+  const currentFill = fillBox.getAttribute("fill")!;
+  const biomeId = +fillBox.closest<HTMLElement>(".biomes")!.dataset.id!;
+
+  const callback = (newFill: string): void => {
+    (fillBox as any).fill = newFill;
+    pack.biomes[biomeId].color = newFill;
+    Layers.draw("biomes");
+  };
+
+  void Controllers.ColorPicker.open(currentFill, callback);
+}
+
+function biomeChangeName(el: HTMLInputElement): void {
+  const line = el.closest<HTMLElement>(".biomes")!;
+  const biome = +line.dataset.id!;
+  if (!el.value.trim()) {
+    el.value = pack.biomes[biome].name;
+    return;
+  }
+  Biomes.rename(biome, el.value);
+  line.dataset.name = pack.biomes[biome].name;
+}
+
+function biomeChangeHabitability(el: HTMLInputElement): void {
+  const line = el.closest<HTMLElement>(".biomes")!;
+  const biome = +line.dataset.id!;
+  const failed = Number.isNaN(+el.value) || +el.value < 0 || +el.value > 9999;
+  if (failed) {
+    el.value = String(pack.biomes[biome].habitability);
+    tip(t("Please provide a valid number in range 0-9999"), false, "error");
+    return;
+  }
+  Biomes.setHabitability(biome, +el.value);
+  line.dataset.habitability = el.value;
+  regeneratePopulation();
+  refreshBiomesEditor();
+}
+
+function editBiomeNote(el: HTMLElement): void {
+  const id = +(el.closest<HTMLElement>(".biomes")?.dataset.id || 0);
+  void Controllers.NotesEditor.open({ type: "biome", id });
+}
+
+function openWiki(el: HTMLElement): void {
+  const biomeName = el.closest<HTMLElement>(".biomes")?.dataset.name;
+  if (biomeName === "Custom" || !biomeName) {
+    tip(t("Please fill in the biome name"), false, "error");
+    return;
+  }
+
+  const wikiBase = "https://en.wikipedia.org/wiki/";
+  const pages: Record<string, string> = {
+    "Hot desert": "Desert_climate#Hot_desert_climates",
+    "Cold desert": "Desert_climate#Cold_desert_climates",
+    Savanna: "Tropical_and_subtropical_grasslands,_savannas,_and_shrublands",
+    Grassland: "Temperate_grasslands,_savannas,_and_shrublands",
+    "Tropical seasonal forest": "Seasonal_tropical_forest",
+    "Temperate deciduous forest": "Temperate_deciduous_forest",
+    "Tropical rainforest": "Tropical_rainforest",
+    "Temperate rainforest": "Temperate_rainforest",
+    Taiga: "Taiga",
+    Tundra: "Tundra",
+    Glacier: "Glacier",
+    Wetland: "Wetland"
+  };
+  const customBiomeLink = `https://en.wikipedia.org/w/index.php?search=${biomeName}`;
+  const link = pages[biomeName] ? wikiBase + pages[biomeName] : customBiomeLink;
+  openURL(link);
+}
+
+function toggleLegend(): void {
+  const getItems = () => {
+    const statistics = biomesCollectStatistics();
+    return pack.biomes
+      .filter(({ i }) => statistics[i].cells)
+      .sort((a, b) => statistics[b.i].area - statistics[a.i].area)
+      .map(({ i, color, name }): LegendItem => [i, color, name]);
+  };
+  LegendBoxes.toggle(LEGEND_NAME, getItems, t("No biomes to show"));
+}
+
+function togglePercentageMode(): void {
+  const body = ensureEl("biomesBody");
+  if (body.dataset.type === "absolute") {
+    body.dataset.type = "percentage";
+    const totalCells = +ensureEl("biomesFooterCells").innerHTML;
+    const footerArea = ensureEl("biomesFooterArea");
+    const totalArea = +footerArea.dataset.area!;
+    const totalMapArea = +footerArea.dataset.mapArea!;
+    const totalPopulation = +ensureEl("biomesFooterPopulation").dataset.population!;
+
+    body.querySelectorAll<HTMLElement>(":scope > div").forEach(el => {
+      el.querySelector(".biomeCells")!.innerHTML = `${rn((+el.dataset.cells! / totalCells) * 100)}%`;
+      el.querySelector(".biomeArea")!.innerHTML = `${rn((+el.dataset.area! / totalArea) * 100)}%`;
+      el.querySelector(".biomePopulation")!.innerHTML = `${rn((+el.dataset.population! / totalPopulation) * 100)}%`;
+    });
+
+    // update footer to show land percentage of total map
+    footerArea.innerHTML = `${rn((totalArea / totalMapArea) * 100)}%`;
+  } else {
+    body.dataset.type = "absolute";
+    biomesTable.refresh();
+  }
+}
+
+function addCustomBiome(): void {
+  try {
+    Biomes.add("Custom", getRandomColor(), 50);
+  } catch {
+    tip(t("Maximum number of biomes reached (255), data cleansing is required"), false, "error");
+    return;
+  }
+
+  currentBiomeStatistics = biomesCollectStatistics();
+  biomesTable.refresh();
+}
+
+function removeCustomBiomeLine(el: HTMLElement): void {
+  const line = el.closest<HTMLElement>(".biomes")!;
+  const biome = +line.dataset.id!;
+  try {
+    Biomes.remove(biome);
+  } catch {
+    return;
+  }
+  currentBiomeStatistics = biomesCollectStatistics();
+  biomesTable.refresh();
+}
+
+function downloadBiomesData(): void {
+  const unit =
+    options.map.units.area.unit === "square" ? `${options.map.units.distance.unit}2` : options.map.units.area.unit;
+  const { scale, urbanization } = options.map.units.population;
+  const statistics = biomesCollectStatistics();
+  const rows = pack.biomes
+    .filter(biome => biome.i && !biome.removed)
+    .map(biome => {
+      const { cells, area, rural, urban } = statistics[biome.i];
+      const population = rn(rural * scale + urban * scale * urbanization.rate);
+      return [biome.i, biome.name, biome.color, `${biome.habitability}%`, cells, getArea(area), population];
+    });
+  Csv.download(
+    "Biomes",
+    CSV_COLUMNS.map(column => (column === "Area" ? `Area ${unit}` : column)),
+    rows
+  );
+}
+
+function openPaintEditor(): void {
+  Layers.show("biomes");
+  void Controllers.PaintEditor.open({
+    title: t("Paint Biomes"),
+    parentDialogId: dialogId,
+    onClose: open,
+    items: pack.biomes
+      .filter(biome => biome.i && !biome.removed)
+      .map(biome => ({ id: biome.i, name: biome.name, color: biome.color })),
+    getValue: cell => pack.cells.biome[cell],
+    filterCell: cell => isLand(cell, pack),
+    onApply: applyBiomesChange
+  });
+}
+
+function applyBiomesChange(changes: ReadonlyMap<number, number>): void {
+  for (const [biome, cells] of groupByValue(changes)) Biomes.setCells(biome, cells);
+  if (changes.size) {
+    Layers.draw("biomes");
+    if (findEl(dialogId)) refreshBiomesEditor();
+  }
+}
+
+function restoreInitialBiomes(): void {
+  Biomes.restore();
+  Layers.draw("biomes");
+  regeneratePopulation();
+  refreshBiomesEditor();
+}
+
+function closeBiomesEditor(): void {
+  $("#biomesEditor").dialog("destroy");
+  ensureEl("biomesEditor").remove();
+}
+
+function regeneratePopulation(): void {
+  Population.regenerate();
+  Layers.draw("population", "goods");
+}
+
+/** Update existing biomes from a CSV in the export format */
+async function uploadBiomesCsv(text: string): Promise<void> {
+  const find = (id: number) => (id && pack.biomes[id] && !pack.biomes[id].removed ? pack.biomes[id] : undefined);
+  const updated = await Controllers.CsvUpload.update(
+    text,
+    CSV_COLUMNS,
+    { find, units: ["Area"], text: ["Biome"] },
+    (id, row) => {
+      const biome = find(id)!;
+      row.apply("Biome", name => Biomes.rename(biome.i, name), biome.name);
+      row.apply("Color", color => Biomes.recolor(biome.i, color), biome.color);
+      row.apply(
+        "Habitability",
+        value => Biomes.setHabitability(biome.i, Number.parseFloat(value)),
+        `${biome.habitability}%`
+      );
+    }
+  );
+  if (!updated) return;
+
+  Layers.draw("biomes");
+  refreshBiomesEditor();
+}
+
+export const BiomesEditor = { open, exportCsv: downloadBiomesData };

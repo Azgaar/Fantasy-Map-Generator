@@ -1,7 +1,7 @@
 /**
  * One icon set: a directory of SVG files under `src/assets/icons/`, loaded as one lazy chunk.
  * Symbol id = `<id>-<file path within the folder, "/" → "-">`; nothing else composes ids.
- * A model declares its sets; `components/icon-sets.ts` loads any of them the same way.
+ * A model declares its sets; `model/icon-sets.ts` loads any of them the same way.
  */
 export interface IconSet {
   /** the chunk id and the symbol id prefix; its folder is the id with the first "-" as "/" (`relief-simple` → `relief/simple`) */

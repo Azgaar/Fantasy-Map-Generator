@@ -1,7 +1,7 @@
-import { Icons } from "@/components/icons";
-import { Layers } from "@/components/layers";
-import { zoomFontSize } from "@/components/viewport";
-import type { Marker } from "@/generators/markers-generator";
+import { Icons } from "@/model/icons";
+import type { Marker } from "@/model/story/markers-generator";
+import { Layers } from "@/renderers/layers";
+import { zoomFontSize } from "@/renderers/viewport/viewport";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import { rn } from "@/utils/numberUtils";
 import { escapeHtml } from "@/utils/stringUtils";

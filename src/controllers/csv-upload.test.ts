@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { alertDialog, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { alertDialog, confirmationDialog } from "@/ui/dialog/dialog-helpers";
 import { CsvUpload } from "./csv-upload";
 
-vi.mock("@/components/tooltips", () => ({ tip: vi.fn() }));
-vi.mock("@/components/dialog/dialog-helpers", () => ({ alertDialog: vi.fn(), confirmationDialog: vi.fn() }));
+vi.mock("@/ui/tooltips", () => ({ tip: vi.fn() }));
+vi.mock("@/ui/dialog/dialog-helpers", () => ({ alertDialog: vi.fn(), confirmationDialog: vi.fn() }));
 
 type Entity = { i: number; name: string; tags: string; people: [number, number] };
 const COLUMNS = ["Id", "Name", "Tags", "Total Population", "Rural Population", "Urban Population"];

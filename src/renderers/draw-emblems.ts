@@ -1,12 +1,12 @@
 import { forceCollide, forceSimulation, type SimulationNodeDatum, timeout } from "d3";
-import { Layers } from "@/components/layers";
-import type { Province } from "@/generators/provinces-generator";
+import type { Burg } from "@/model/political/burgs-generator";
+import type { Province } from "@/model/political/provinces-generator";
+import type { State } from "@/model/political/states-generator";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
+import { Layers } from "@/renderers/layers";
 import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import type { Emblem } from "@/types/emblems";
 import { ensureEl, findEl, minmax, rn } from "@/utils";
-import type { Burg } from "../generators/burgs-generator";
-import type { State } from "../generators/states-generator";
 
 export type EmblemType = "state" | "province" | "burg";
 

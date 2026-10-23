@@ -10,7 +10,7 @@ const PRESETS = [
 
 function pinnedAttrs(preset: string): {oceanFill: string; landmassFill: string} {
   const file =
-    preset === "default" ? "../../src/generators/default-styles.json" : `../../public/styles/${preset}.json`;
+    preset === "default" ? "../../src/model/styles/default-styles.json" : `../../public/styles/${preset}.json`;
   const json = JSON.parse(fs.readFileSync(path.join(__dirname, file), "utf8"));
   return {oceanFill: json.ocean.groups.base.attrs.fill, landmassFill: json.landmass.attrs.fill};
 }
@@ -21,7 +21,7 @@ async function switchTo(page: Page, preset: string) {
   }, preset);
 }
 
-// Relief.changeSize (src/generators/relief-generator.ts) writes the resized value into
+// Relief.changeSize (src/model/physical/relief-generator.ts) writes the resized value into
 // pack.relief[i].s, and the viewport renderer copies that straight into the <use> width/height
 // attrs (src/renderers/draw-relief-icons.ts) - so a stuck-shrunk icon is observable on a specific
 // icon's width attr without forcing a full relief regeneration.

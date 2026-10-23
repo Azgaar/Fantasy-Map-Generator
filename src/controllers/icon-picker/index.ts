@@ -1,12 +1,13 @@
 // The icon picker: one dialog for every icon slot, the Icon Library's sources in a side list
-import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
-import { type IconSetId, IconSets } from "@/components/icon-sets";
-import { type CustomIcon, CustomIcons, type IconPicture, Icons } from "@/components/icons";
-import { tip } from "@/components/tooltips";
+
 import { ICON_GROUPS } from "@/data/icons-list";
 import { ICON_GROUP_LABELS } from "@/data/id-labels";
+import { type IconSetId, IconSets } from "@/model/icon-sets";
+import { type CustomIcon, CustomIcons, type IconPicture, Icons } from "@/model/icons";
 import { IconsArchive } from "@/services/io/icons-archive";
 import type { IconSet } from "@/types/icons";
+import { confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { tip } from "@/ui/tooltips";
 import { capitalize, createFileInput, downloadFile, ensureEl, escapeHtml, getFileName } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { IconPictures, type PictureProfile } from "./pictures";

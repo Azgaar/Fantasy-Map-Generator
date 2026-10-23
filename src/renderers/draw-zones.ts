@@ -1,4 +1,4 @@
-import type { Zone } from "@/generators/zones-generator";
+import type { Zone } from "@/model/political/zones-generator";
 import { ensureEl, getVertexPath } from "@/utils";
 
 // not read off the editor's select: the paint editor destroys that dialog mid-redraw (#1810)

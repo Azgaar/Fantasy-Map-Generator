@@ -1,10 +1,10 @@
-import "@/components/layers";
+import "@/renderers/layers";
 import "./draw-borders";
 import "./draw-biomes";
 import "./draw-burg-icons";
 import "./labels/labels-renderer";
 import "./draw-emblems";
-import "./draw-heightmap";
+import "./heightmap/draw-heightmap";
 import "./draw-ice";
 import "./draw-legend";
 import "./draw-markers";

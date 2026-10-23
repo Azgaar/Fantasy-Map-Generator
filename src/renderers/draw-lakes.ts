@@ -1,4 +1,4 @@
-import type { Layer } from "@/components/layers";
+import type { Layer } from "@/renderers/layers";
 import { findEl } from "@/utils";
 import { getLakeRipples } from "./lake-ripples";
 import { syncStyleGroups } from "./style-groups";

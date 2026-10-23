@@ -42,7 +42,7 @@ Global trade (`Markets.runGlobalTrade`) currently models only exporter-side fric
 
 ## Data Model Changes
 
-### `TariffRule` and `State` (`src/generators/states-generator.ts`)
+### `TariffRule` and `State` (`src/model/political/states-generator.ts`)
 
 Each non-neutral `State` carries a `tariffs` array:
 
@@ -62,7 +62,7 @@ export type TariffRule = {
 
 There is no separate `state.tariff` scalar; the baseline tariff for all foreign states and all goods is represented by `{ states: "all", goods: "all", rate: 0 }`. If no matching rule exists for a pair, the effective tariff rate is `0`.
 
-### `Deal` (`src/generators/markets-generator.ts`)
+### `Deal` (`src/model/economy/markets-generator.ts`)
 
 `Deal` gains an optional `tariff` field alongside `tax`:
 
@@ -170,7 +170,7 @@ Validation / setter method on `StatesModule`:
 
 - `States.setTariffs(stateId: number, tariffs: TariffRule[]): void` validates that `stateId` is a living non-neutral state, filters out invalid/removed state or good IDs and empty array rules, clamps numeric rates to `[0, 10]` rounded to 4 decimals, and assigns `state.tariffs`.
 
-### 5. UI Design — Taxes and Treasury Dialog (`src/controllers/states-editor.ts`)
+### 5. UI Design — Taxes and Treasury Dialog (`src/controllers/political/states-editor.ts`)
 
 Clicking a state's Treasury cell in the States Editor opens `openTreasuryDialog(stateId)`:
 
@@ -202,13 +202,13 @@ Good tests verify observable outputs (deals produced, prices recorded, treasury 
 
 ### Modules to Test
 
-1. **`MarketsModule.runGlobalTrade` (`src/generators/markets-generator.test.ts`)**:
+1. **`MarketsModule.runGlobalTrade` (`src/model/economy/markets-generator.test.ts`)**:
    - Base `all`/`all` tariff increases `deal.price` by `tariffRate × exporterPrice`, records `deal.tariff`, and skips trades that become unprofitable under the tariff.
    - Domestic market-to-market trade (`exporterState === importerState`) applies `0` tariff and ignores embargoes.
    - Override precedence: `states[] + goods[]` > `states[] + "all"` > `"all" + goods[]` > `"all" + "all"`.
    - Bidirected embargo: an `"embargo"` rule on either the importer state or the exporter state blocks trade of the covered good(s) in both directions while leaving other goods/states unaffected.
 
-2. **`StatesModule` (`src/generators/states-generator.test.ts`)**:
+2. **`StatesModule` (`src/model/political/states-generator.test.ts`)**:
    - `States.collectTaxes()` credits `deal.tax` to the exporter state's treasury and `deal.tariff` to the importer state's treasury.
    - `States.defineTariffs()` seeds the `0` baseline plus `0` (`Ally`/`Friendly`/`Vassal`/`Suzerain`), `0.2` (`Suspicion`), `0.3` (`Rival`), and `"embargo"` (`Enemy`), omitting `Neutral` and `Unknown`.
    - `States.remove()` and `States.merge()` prune removed state IDs from other states' `tariffs` and drop rules whose `states` array becomes empty.

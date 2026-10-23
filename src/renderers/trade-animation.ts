@@ -1,8 +1,8 @@
-import { Layers } from "@/components/layers";
 import { DEFAULT_TRADE_ANIMATION } from "@/data/trade-animation-options";
-import type { Burg } from "../generators/burgs-generator";
-import type { Deal } from "../generators/markets-generator";
-import type { Point } from "../generators/voronoi";
+import type { Deal } from "@/model/economy/markets-generator";
+import type { Point } from "@/model/graph/voronoi";
+import type { Burg } from "@/model/political/burgs-generator";
+import { Layers } from "@/renderers/layers";
 import { ra } from "../utils";
 import { clear, draw } from "./draw-trade-animation";
 

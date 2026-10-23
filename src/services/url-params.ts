@@ -1,16 +1,16 @@
 // Everything the app reads from, or writes to, its own URL: what to load on start-up, where to focus,
 // and the shareable link. Deep links come from the wiki, from shared maps and from MFCG
 import { leastIndex, select } from "d3";
-import { toggleAssistant } from "@/components/assistant-bubble";
-import { fitMapToScreen } from "@/components/canvas";
-import { Layers } from "@/components/layers";
-import { applyLayersPreset, applyURLLayers } from "@/components/layers-presets";
-import { type GenerationConfig, generate } from "@/components/lifecycle";
-import { tip } from "@/components/tooltips";
-import { zoomTo } from "@/components/zoom";
-import type { Burg } from "@/generators/burgs-generator";
+import { fitMapToScreen } from "@/app/canvas";
+import { toggleAssistant } from "@/app/chrome/assistant-bubble";
+import { applyLayersPreset, applyURLLayers } from "@/app/layers-presets";
+import { type GenerationConfig, generate } from "@/app/lifecycle";
+import type { Burg } from "@/model/political/burgs-generator";
+import { Layers } from "@/renderers/layers";
 import { Services } from "@/services";
 import { getRequestedMapSize } from "@/services/map-size";
+import { zoomTo } from "@/ui/map/zoom";
+import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/nodeUtils";
 

@@ -11,9 +11,11 @@
 
 # Repository Structure
 
-- `src/generators/`: Generators containing simulation logic.
+- `src/model/`: World data definitions, generators, model classes and their edits, options. Grouped by domain, like `src/controllers/`.
 - `src/controllers/`: The UI layer — editors, overviews and tools that present and mutate state.
-- `src/renderers/`: Code responsible for transforming world data into SVG layers.
+- `src/renderers/`: Code responsible for transforming world data into SVG layers; the layers registry.
+- `src/ui/`: Shared UI — dialog toolkit, tooltips, custom elements, map canvas interaction.
+- `src/app/`: Composition root — boot, lifecycle, shell, hotkeys; always-on chrome in `src/app/chrome/`.
 - `src/services/io/`: Serialization and persistence — save, load, export, and `auto-update.ts`.
 - `src/services/`: App-shell & platform lifecycle, unrelated to map state.
 - `src/data/`: Static content / reference data.

@@ -1,4 +1,4 @@
-import type { LabelGroup, LabelType } from "@/generators/labels-generator";
+import type { LabelGroup, LabelType } from "@/model/annotations/labels-generator";
 import type { StylesData } from "@/types/styles";
 
 type LabelGroupStyle = StylesData["labels"]["groups"][string];

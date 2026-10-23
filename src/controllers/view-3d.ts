@@ -1,7 +1,7 @@
-import { is3dView } from "@/components/options/view-mode";
-import { tip } from "@/components/tooltips";
-import { viewport } from "@/components/viewport";
 import { globeResolutionFor, timeOfDayPresets } from "@/data/view-3d-options";
+import { is3dView } from "@/renderers/view-mode";
+import { viewport } from "@/renderers/viewport/viewport";
+import { tip } from "@/ui/tooltips";
 import { ensureEl, findEl } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 

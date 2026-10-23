@@ -19,7 +19,7 @@ vi.mock("@/services/io/emblem-image", () => ({ emblemPng: async () => "data:imag
 const regionImage = vi.hoisted(() => vi.fn(async () => "data:image/jpeg;base64,SlBH"));
 vi.mock("@/services/io/export", () => ({ ExportMap: { getRegionImage: regionImage } }));
 
-import { viewport } from "@/components/viewport";
+import { viewport } from "@/renderers/viewport/viewport";
 import type { Chat, Proposal } from "@/services/assistant/chats";
 import { AssistantMap } from "./map";
 

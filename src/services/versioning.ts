@@ -15,10 +15,10 @@
  * For the changes that may be interesting for end users, update the `latestPublicChanges` below.
  */
 
-import { confirmationDialog } from "@/components/dialog/dialog-helpers";
-import { dialogState } from "@/components/dialog/state";
-import { Pins } from "@/components/pins";
-import { tip } from "@/components/tooltips";
+import { Pins } from "@/model/options/pins";
+import { confirmationDialog } from "@/ui/dialog/dialog-helpers";
+import { dialogState } from "@/ui/dialog/state";
+import { tip } from "@/ui/tooltips";
 import { findEl } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { isElectron } from "./platform";

@@ -5,9 +5,9 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("@/services/fonts", () => ({ getUsedFonts: vi.fn(), loadFontsAsDataURI: vi.fn() }));
 vi.mock("@/utils", async original => ({ ...(await original<typeof import("@/utils")>()), getBase64: vi.fn() }));
 
-import "@/generators/relief-generator"; // the models own the set namespaces a custom icon id is told apart from
-import "@/generators/burgs-generator";
-import "@/generators/goods-generator";
+import "@/model/physical/relief-generator"; // the models own the set namespaces a custom icon id is told apart from
+import "@/model/political/burgs-generator";
+import "@/model/economy/goods-generator";
 import { flattenSymbolReferences, inlineLinkedImages, relocateRootFilter } from "./export";
 
 const SVG_NS = "http://www.w3.org/2000/svg";

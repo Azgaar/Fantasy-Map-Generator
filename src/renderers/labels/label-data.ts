@@ -1,10 +1,10 @@
-import type { AddedLabel } from "@/generators/added-labels";
-import type { Burg } from "@/generators/burgs-generator";
-import type { Label, LabelType } from "@/generators/labels-generator";
-import type { Province } from "@/generators/provinces-generator";
-import type { River } from "@/generators/river-generator";
-import type { Route } from "@/generators/routes-generator";
-import type { State } from "@/generators/states-generator";
+import type { AddedLabel } from "@/model/annotations/added-labels";
+import type { Label, LabelType } from "@/model/annotations/labels-generator";
+import type { Route } from "@/model/economy/routes-generator";
+import type { River } from "@/model/physical/river-generator";
+import type { Burg } from "@/model/political/burgs-generator";
+import type { Province } from "@/model/political/provinces-generator";
+import type { State } from "@/model/political/states-generator";
 import type { LabelData } from "@/renderers/labels/labels";
 import type { Point } from "@/types/global";
 import { fitStateLabel } from "./fit-state-label";

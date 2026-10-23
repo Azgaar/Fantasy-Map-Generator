@@ -1,5 +1,5 @@
-import { tip } from "@/components/tooltips";
 import type { StylesData } from "@/types/styles";
+import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
 
 declare global {

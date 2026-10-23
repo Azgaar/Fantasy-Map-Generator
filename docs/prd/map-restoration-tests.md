@@ -1,6 +1,6 @@
 # Map restoration: release test round
 
-Tests for `src/generators/map-restoration.ts`, which Risk heightmap edits, Submap and Transform run on.
+Tests for `src/model/map-restoration.ts`, which Risk heightmap edits, Submap and Transform run on.
 
 ## Why fixes keep coming back
 

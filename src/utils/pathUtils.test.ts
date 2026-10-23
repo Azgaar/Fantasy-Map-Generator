@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Point } from "../generators/voronoi";
+import type { Point } from "@/model/graph/voronoi";
 import { getLabelPath } from "../renderers/labels/label-markup";
 import { meander, parsePathPoints } from "./pathUtils";
 

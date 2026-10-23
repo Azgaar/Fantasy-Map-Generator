@@ -7,8 +7,8 @@
 //   getLink(path): get a shareable link for a file
 //   initialize(): restore access tokens from storage if possible, else authenticate
 
-import { tip } from "@/components/tooltips";
 import { isElectron } from "@/services/platform";
+import { tip } from "@/ui/tooltips";
 import { loadScript } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 

@@ -1,7 +1,7 @@
 // The fill picker: a Chrome-like color dialog; a fill is a color, optionally drawn as a hatching pattern
 import { color, hsl, rgb } from "d3";
-import { destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Hatches } from "@/renderers/hatches";
+import { destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { ensureEl, findEl, minmax } from "@/utils";
 import { getRandomColor } from "@/utils/colorUtils";
 import { sentences, t } from "@/utils/i18n";

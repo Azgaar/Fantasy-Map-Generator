@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 import { beforeEach, expect, test, vi } from "vitest";
-import { setViewportSize, setViewportTransform } from "@/components/viewport";
-import type { River } from "@/generators/river-generator";
+import type { River } from "@/model/physical/river-generator";
+import { setViewportSize, setViewportTransform } from "@/renderers/viewport/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 
 const mocks = vi.hoisted(() => ({ layerOn: true }));
-vi.mock("@/components/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
+vi.mock("@/renderers/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
 
 import {
   drawRivers,

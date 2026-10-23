@@ -1,4 +1,4 @@
-import type { Layer } from "@/components/layers";
+import type { Layer } from "@/renderers/layers";
 
 export function drawCoastline(layer: Layer): void {
   const groups = Array.from(layer.getEl().children);

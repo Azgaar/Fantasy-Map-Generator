@@ -1,14 +1,15 @@
 // Save the whole .map project to storage, machine or cloud
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
-import { Layers } from "@/components/layers";
-import { tip } from "@/components/tooltips";
-import { GraphOverride } from "@/generators/graph-override";
-import { Notes } from "@/generators/notes";
+
+import { GraphOverride } from "@/model/graph/graph-override";
+import { Notes } from "@/model/story/notes";
+import { Layers } from "@/renderers/layers";
 import { restoreOceanVectors } from "@/renderers/ocean-cache";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
 import { isElectron, savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
+import { closeDialogs } from "@/ui/dialog/dialog-helpers";
+import { tip } from "@/ui/tooltips";
 import { ensureEl, getFileName, link, parseError, rn } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { type SaveOutcome, saveToFileSystem } from "./save-to-file";

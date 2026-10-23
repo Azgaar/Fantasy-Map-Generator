@@ -30,7 +30,7 @@ function globalDeclarations() {
 
 function generatorNames() {
   const names = sources
-    .filter((_, index) => dirname(paths[index]) === "generators")
+    .filter((_, index) => /^model(\/(?!options$)[\w-]+)?$/.test(dirname(paths[index]))) // model modules, not options
     .flatMap(extractGlobalBlocks)
     .flatMap(body => [...body.matchAll(/^\s*var ([A-Z]\w*):/gm)].map(([, name]) => name));
   return [...new Set(names)].sort().join(", ");

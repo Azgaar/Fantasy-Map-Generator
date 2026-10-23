@@ -10,7 +10,7 @@ async function load(): Promise<Map<string, { title: string; text: string }>> {
     import("../../../../docs/architecture/configuration.md?raw"),
     import("../../../types/PackedGraph.ts?raw"),
     import("@/data/emblems"),
-    import("@/components/map-commands")
+    import("@/app/map-commands")
   ]);
   const map = new Map<string, string>();
   for (const part of (dataModel.default as string).split(/(?=^#{1,2} )/m)) {

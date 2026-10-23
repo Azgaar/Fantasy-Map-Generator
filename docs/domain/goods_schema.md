@@ -137,10 +137,10 @@ Coverage is used during the burg worker loop to calculate demand effects (boosti
 
 ## Source Files
 
-- [`src/generators/goods-generator.ts`](../../src/generators/goods-generator.ts) — `Good` interface, `GOODS_DATA`, `GoodsModule`
-- [`src/generators/production-generator.ts`](../../src/generators/production-generator.ts) — `getModifiers`, production channels, `getCellProduction`
-- [`src/controllers/goods-editor.ts`](../../src/controllers/goods-editor.ts) — Goods Editor (the catalogue list UI)
-- [`src/controllers/good-editor.ts`](../../src/controllers/good-editor.ts) — single-good editor: multiplier popups, biome output, demand coverage
-- [`src/controllers/goods-distribution-editor.ts`](../../src/controllers/goods-distribution-editor.ts) — visual builder for a good's `distribution` expression
+- [`src/model/economy/goods-generator.ts`](../../src/model/economy/goods-generator.ts) — `Good` interface, `GOODS_DATA`, `GoodsModule`
+- [`src/model/economy/production-generator.ts`](../../src/model/economy/production-generator.ts) — `getModifiers`, production channels, `getCellProduction`
+- [`src/controllers/economy/goods/goods-editor.ts`](../../src/controllers/economy/goods/goods-editor.ts) — Goods Editor (the catalogue list UI)
+- [`src/controllers/economy/goods/good-editor.ts`](../../src/controllers/economy/goods/good-editor.ts) — single-good editor: multiplier popups, biome output, demand coverage
+- [`src/controllers/economy/goods/goods-distribution-editor.ts`](../../src/controllers/economy/goods/goods-distribution-editor.ts) — visual builder for a good's `distribution` expression
 - [`docs/domain/production_schema.md`](production_schema.md) — production pipeline in detail
 - [`docs/prd/good-multipliers.md`](../prd/good-multipliers.md) — multiplier design decisions

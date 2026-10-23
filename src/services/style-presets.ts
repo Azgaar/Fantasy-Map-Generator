@@ -1,6 +1,6 @@
 import { STYLE_PRESET_LABELS } from "@/data/id-labels";
-import { Styles } from "@/generators/styles";
-import { isLegacyPreset, isStoreStyles, normalizeStyles, presetFromLegacy } from "@/generators/styles-legacy";
+import { Styles } from "@/model/styles/styles";
+import { isLegacyPreset, isStoreStyles, normalizeStyles, presetFromLegacy } from "@/model/styles/styles-legacy";
 import { VERSION } from "@/services/versioning";
 import type { StylesData } from "@/types/styles";
 import { t } from "@/utils/i18n";
@@ -58,7 +58,7 @@ function parse(json: unknown): StylesData | undefined {
 }
 
 async function fetchSystem(name: string): Promise<unknown> {
-  // the default preset ships in the bundle (src/generators/default-styles.json)
+  // the default preset ships in the bundle (src/model/styles/default-styles.json)
   if (name === "default") return Styles.defaults;
   const response = await fetch(`./styles/${name}.json?v=${VERSION}`);
   if (!response.ok) throw new Error(`Style preset ${name} is not available (${response.status})`);

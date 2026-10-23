@@ -1,6 +1,6 @@
 import polylabel from "polylabel";
+import type { Vertices } from "@/model/graph/voronoi";
 import type { Point } from "@/types/global";
-import type { Vertices } from "../generators/voronoi";
 import type { PackedGraph } from "../types/PackedGraph";
 import { rn } from "./numberUtils";
 

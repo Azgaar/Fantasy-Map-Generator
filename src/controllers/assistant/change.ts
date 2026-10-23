@@ -1,5 +1,5 @@
-import type { LayerId } from "@/components/layers";
-import { MapEntities } from "@/components/map-entities";
+import { MapEntities } from "@/model/map-entities";
+import type { LayerId } from "@/renderers/layers";
 import type { ChangeRow } from "@/services/assistant/chats";
 import { CELL_FIELDS } from "./fields";
 import { layersFor } from "./redraw";

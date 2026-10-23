@@ -1,8 +1,8 @@
 import { geoGraticule, geoOrthographic, geoPath, interpolateSpectral, range, scaleSequential, select } from "d3";
-import { destroyDialog } from "@/components/dialog/dialog-helpers";
-import { Layers } from "@/components/layers";
-import { Pins } from "@/components/pins";
-import { tip } from "@/components/tooltips";
+import { Pins } from "@/model/options/pins";
+import { Layers } from "@/renderers/layers";
+import { destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
 import { convertTemperature, ensureEl, findEl, getKmInDistanceUnit, parseTransform, rn, round } from "../utils";
 

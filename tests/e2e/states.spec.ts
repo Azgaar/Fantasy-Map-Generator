@@ -193,8 +193,8 @@ declare const Services: {
   Load: { uploadMap: (file: File) => void };
 };
 declare const pack: {
-  states: import("@/generators/states-generator").State[];
-  provinces: import("@/generators/provinces-generator").Province[];
+  states: import("@/model/political/states-generator").State[];
+  provinces: import("@/model/political/provinces-generator").Province[];
   cells: { state: Uint16Array; province: Uint16Array; p: [number, number][] };
 };
 declare const Layers: { isOn: (id: string) => boolean };

@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 const discovery = vi.hoisted(() => ({ list: vi.fn() }));
-vi.mock("@/components/map-commands", () => ({ MAP_COMMANDS: [], isLinkable: () => false })); // its import touches the DOM
+vi.mock("@/app/map-commands", () => ({ MAP_COMMANDS: [], isLinkable: () => false })); // its import touches the DOM
 vi.mock("./map", () => ({
   AssistantMap: {
     id: () => 1,

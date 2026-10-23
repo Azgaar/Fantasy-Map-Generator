@@ -1,14 +1,14 @@
 import { schemeTableau10 } from "d3";
-import { isLinkable, MAP_COMMANDS } from "@/components/map-commands";
-import { ENTITY_TYPES, type EntityRef, isEntityType, MapEntities, RECORD_TYPES } from "@/components/map-entities";
-import { clearEntityMarks, markEntities, reveal, revealEntity } from "@/components/reveal";
-import { tip } from "@/components/tooltips";
-import type { State } from "@/generators/states-generator";
+import { isLinkable, MAP_COMMANDS } from "@/app/map-commands";
+import { ENTITY_TYPES, type EntityRef, isEntityType, MapEntities, RECORD_TYPES } from "@/model/map-entities";
+import type { State } from "@/model/political/states-generator";
 import { goodBadge } from "@/renderers/draw-goods";
 import type { ChartRow, Widget } from "@/services/assistant/chats";
 import type { Region } from "@/services/io/export";
 import type { Emblem } from "@/types/emblems";
 import type { Point } from "@/types/global";
+import { clearEntityMarks, markEntities, openEntity as openEditor, reveal, revealEntity } from "@/ui/map/reveal";
+import { tip } from "@/ui/tooltips";
 import { findEl } from "@/utils";
 import { t } from "@/utils/i18n";
 import { type LinkResolver, renderMarkdown } from "@/utils/markdown";
@@ -364,7 +364,7 @@ function revealInset(widget: Of<"inset">): void {
 function openEntity(key: string): void {
   const ref = MapEntities.resolveKey(key);
   if (!ref) return;
-  if (revealEntity(ref, panel()) || MapEntities.open(ref)) return;
+  if (revealEntity(ref, panel()) || openEditor(ref)) return;
   tip(t("This element has no map location"), false, "warn", 4000);
 }
 

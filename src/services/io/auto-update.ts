@@ -1,22 +1,21 @@
 // Update an old map file to the current version
 
 import { min, select } from "d3";
-import { confirmationDialog } from "@/components/dialog/dialog-helpers";
-import { CustomIcons, IMAGE_FRAME } from "@/components/icons";
-import { type LayerId, Layers, type LayersState } from "@/components/layers";
-import { type EntityRef, MapEntities } from "@/components/map-entities";
-import { normalizeLegacyBurgGroupFilters } from "@/components/options-legacy";
-import type { MapData } from "@/components/options-schema";
 import { IconPictures } from "@/controllers/icon-picker/pictures";
-import { Emblems } from "@/generators/emblems-generator";
-import { type Feature, LAKE_SUBTYPES, OCEAN_SUBTYPES } from "@/generators/features-generator";
-import type { GraphOverrides } from "@/generators/graph-override";
-import { type Label, type LabelNameMode, Labels as LabelsGenerator } from "@/generators/labels-generator";
-import { getDefaultMarkerName, type Marker } from "@/generators/markers-generator";
-import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
-import { Notes } from "@/generators/notes";
-import { Relief, type ReliefIcon, type ReliefIconType, type ReliefSet } from "@/generators/relief-generator";
-import { Styles } from "@/generators/styles";
+import { type Label, type LabelNameMode, Labels as LabelsGenerator } from "@/model/annotations/labels-generator";
+import type { Measurer, MeasurerType } from "@/model/annotations/measurers-generator";
+import type { GraphOverrides } from "@/model/graph/graph-override";
+import type { Point } from "@/model/graph/voronoi";
+import { CustomIcons, IMAGE_FRAME } from "@/model/icons";
+import { type EntityRef, MapEntities } from "@/model/map-entities";
+import { normalizeLegacyBurgGroupFilters } from "@/model/options/options-legacy";
+import type { MapData } from "@/model/options/options-schema";
+import { type Feature, LAKE_SUBTYPES, OCEAN_SUBTYPES } from "@/model/physical/features-generator";
+import { Relief, type ReliefIcon, type ReliefIconType, type ReliefSet } from "@/model/physical/relief-generator";
+import { Emblems } from "@/model/political/emblems-generator";
+import { getDefaultMarkerName, type Marker } from "@/model/story/markers-generator";
+import { Notes } from "@/model/story/notes";
+import { Styles } from "@/model/styles/styles";
 import {
   adoptLegacyIconSlots,
   type LegacySvg,
@@ -27,14 +26,15 @@ import {
   restoreStrippedLayerStyles,
   stripDisplay,
   stylesFromMap
-} from "@/generators/styles-legacy";
-import type { Point } from "@/generators/voronoi";
+} from "@/model/styles/styles-legacy";
 import { Hatches } from "@/renderers/hatches";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
+import { type LayerId, Layers, type LayersState } from "@/renderers/layers";
 import { StylePresetsService } from "@/services/style-presets";
 import { compareVersions } from "@/services/versioning";
 import type { LegendItem } from "@/types/Legend";
 import type { StylesData } from "@/types/styles";
+import { confirmationDialog } from "@/ui/dialog/dialog-helpers";
 import { minmax, parseTransform, rn, rw, safeParseJSON, sanitizeSvgIcon, scopeSvgIcon, unique } from "@/utils";
 import { t } from "@/utils/i18n";
 import { parsePathPoints } from "@/utils/pathUtils";

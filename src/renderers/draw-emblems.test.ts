@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Province } from "@/generators/provinces-generator";
+import type { Province } from "@/model/political/provinces-generator";
 
 const mocks = vi.hoisted(() => ({
   bounds: { scale: 1, x0: 0, y0: 0, x1: 100, y1: 100 },
@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => ({
   layerOn: true
 }));
 
-vi.mock("@/components/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
+vi.mock("@/renderers/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
 
 vi.mock("@/renderers/emblems/renderer", () => ({ EmblemRenderer: mocks.emblemRenderer }));
 vi.mock("@/renderers/viewport/viewport-renderer", async importOriginal => {
@@ -48,7 +48,7 @@ vi.mock("d3", async importOriginal => {
   };
 });
 
-import "@/generators/styles";
+import "@/model/styles/styles";
 import { drawEmblems, redrawEmblem, removeEmblem, renderEmblemDefinitions } from "./draw-emblems";
 
 function renderViewport(): void {

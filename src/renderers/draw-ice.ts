@@ -1,5 +1,5 @@
 import { select } from "d3";
-import type { Ice } from "@/generators/ice-generator";
+import type { Ice } from "@/model/physical/ice-generator";
 
 export const drawIce = (): void => {
   TIME && console.time("drawIce");

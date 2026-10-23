@@ -1,8 +1,8 @@
 // The Cell Info panel: everything known about the cell under the cursor
 import { select } from "d3";
-import { destroyDialog } from "@/components/dialog/dialog-helpers";
-import type { Feature } from "@/generators/features-generator";
-import type { Point } from "@/generators/voronoi";
+import type { Point } from "@/model/graph/voronoi";
+import type { Feature } from "@/model/physical/features-generator";
+import { destroyDialog } from "@/ui/dialog/dialog-helpers";
 import {
   convertTemperature,
   debounce,

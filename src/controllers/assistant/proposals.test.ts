@@ -1,15 +1,15 @@
 // @vitest-environment jsdom
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/components/layers", () => ({ Layers: { draw: vi.fn(), has: () => true } }));
-vi.mock("@/components/zoom", () => ({ invokeActiveZooming: vi.fn() }));
-vi.mock("@/controllers/style-preset", () => ({ ensureGroupStyles: vi.fn() }));
+vi.mock("@/renderers/layers", () => ({ Layers: { draw: vi.fn(), has: () => true } }));
+vi.mock("@/ui/map/zoom", () => ({ invokeActiveZooming: vi.fn() }));
+vi.mock("@/controllers/style/style-preset", () => ({ ensureGroupStyles: vi.fn() }));
 vi.mock("@/services/style-presets", () => ({
   StylePresetsService: {
     isSystem: (name: string) => name === "ink",
     listCustom: () => [],
     load: async (name: string) => {
-      const { Styles } = await import("@/generators/styles");
+      const { Styles } = await import("@/model/styles/styles");
       const record = Styles.parse(Styles.defaults);
       record.ocean.groups.base.attrs.fill = "#000000";
       record.relief.options.density = 0.7;
@@ -18,12 +18,12 @@ vi.mock("@/services/style-presets", () => ({
     parse: (record: unknown) => record
   }
 }));
-vi.mock("@/components/dialog/dialog-helpers", () => ({ refreshEditors: vi.fn() }));
+vi.mock("@/ui/dialog/dialog-helpers", () => ({ refreshEditors: vi.fn() }));
 vi.mock("@/controllers", () => ({ Controllers: { NotesEditor: { refresh: vi.fn() } } }));
-vi.mock("@/components/options-model", () => ({ Options: { save: vi.fn() } }));
+vi.mock("@/model/options/options-model", () => ({ Options: { save: vi.fn() } }));
 
-import { Layers } from "@/components/layers";
-import { Options } from "@/components/options-model";
+import { Options } from "@/model/options/options-model";
+import { Layers } from "@/renderers/layers";
 import type { Proposal } from "@/services/assistant/chats";
 import { Proposals } from "./proposals";
 
@@ -37,10 +37,10 @@ const rename = (id: number, name: string) => ({ op: "Burgs.rename", args: [id, n
 const proposeOk = (operations: unknown) => propose("Rename", operations, 1, MAP) as Proposal;
 
 beforeAll(async () => {
-  await import("@/generators/burgs-generator");
-  await import("@/generators/states-generator");
-  await import("@/generators/zones-generator");
-  await import("@/generators/markers-generator");
+  await import("@/model/political/burgs-generator");
+  await import("@/model/political/states-generator");
+  await import("@/model/political/zones-generator");
+  await import("@/model/story/markers-generator");
 });
 
 beforeEach(() => {
@@ -170,7 +170,7 @@ it("previews, applies and undoes lore edits", () => {
 });
 
 it("previews, applies and undoes style edits, writing the attr onto its element", async () => {
-  const { Styles } = await import("@/generators/styles");
+  const { Styles } = await import("@/model/styles/styles");
   Styles.set(Styles.parse(Styles.defaults));
   vi.stubGlobal("CSS", { escape: (name: string) => name });
   document.body.innerHTML = `<g data-layer="ocean"><g data-group="base"></g></g>`;
@@ -189,7 +189,7 @@ it("previews, applies and undoes style edits, writing the attr onto its element"
 });
 
 it("refuses a style value that regenerates the relief, which Undo cannot restore", async () => {
-  const { Styles } = await import("@/generators/styles");
+  const { Styles } = await import("@/model/styles/styles");
   Styles.set(Styles.parse(Styles.defaults));
   const density = styles.relief.options.density === 0.5 ? 0.6 : 0.5;
   expect(propose("Relief", [{ op: "Styles.setValue", args: ["relief.options.density", density] }], 1, MAP)).toMatch(
@@ -198,7 +198,7 @@ it("refuses a style value that regenerates the relief, which Undo cannot restore
 });
 
 it("applies a whole style preset once loaded, keeping the relief density, and undoes it", async () => {
-  const { Styles } = await import("@/generators/styles");
+  const { Styles } = await import("@/model/styles/styles");
   Styles.set(Styles.parse(Styles.defaults));
   vi.stubGlobal("CSS", { escape: (name: string) => name });
   const [was, density] = [styles.ocean.groups.base.attrs.fill, styles.relief.options.density];

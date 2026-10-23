@@ -1,7 +1,7 @@
-import { alertDialog, confirmationDialog } from "@/components/dialog/dialog-helpers";
-import { tip } from "@/components/tooltips";
 import { World } from "@/controllers/assistant/world";
 import { Csv } from "@/services/io/csv";
+import { alertDialog, confirmationDialog } from "@/ui/dialog/dialog-helpers";
+import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
 import { errorText, escapeHtml } from "@/utils/stringUtils";
 

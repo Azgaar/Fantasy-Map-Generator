@@ -1,17 +1,17 @@
 declare global {
   interface Window {
-    tip: typeof import("../components/tooltips").tip;
-    clearMainTip: typeof import("../components/tooltips").clearMainTip;
-    showElementLockTip: typeof import("../components/tooltips").showElementLockTip;
+    tip: typeof import("@/ui/tooltips").tip;
+    clearMainTip: typeof import("@/ui/tooltips").clearMainTip;
+    showElementLockTip: typeof import("@/ui/tooltips").showElementLockTip;
     fitLegendBox: typeof import("../renderers/draw-legend").fitLegendBox;
     applyOption: typeof import("../utils").applyOption;
-    closeDialogs: typeof import("../components/dialog/dialog-helpers").closeDialogs;
-    confirmationDialog: typeof import("../components/dialog/dialog-helpers").confirmationDialog;
+    closeDialogs: typeof import("@/ui/dialog/dialog-helpers").closeDialogs;
+    confirmationDialog: typeof import("@/ui/dialog/dialog-helpers").confirmationDialog;
     downloadFile: typeof import("../utils").downloadFile;
     uploadFile: typeof import("../utils").uploadFile;
-    setMapZoom: typeof import("../components/zoom").setMapZoom;
-    setZoomExtent: typeof import("../components/zoom").setZoomExtent;
-    setTranslateExtent: typeof import("../components/zoom").setTranslateExtent;
+    setMapZoom: typeof import("@/ui/map/zoom").setMapZoom;
+    setZoomExtent: typeof import("@/ui/map/zoom").setZoomExtent;
+    setTranslateExtent: typeof import("@/ui/map/zoom").setTranslateExtent;
     getLabelsData: typeof import("../renderers/labels/label-data").getLabelsData;
   }
 

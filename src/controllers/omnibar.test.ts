@@ -12,19 +12,19 @@ const mocks = vi.hoisted(() => ({
   labels: vi.fn(() => []),
   tip: vi.fn()
 }));
-vi.mock("@/components/layers", () => ({
+vi.mock("@/renderers/layers", () => ({
   Layers: { draw: vi.fn(), show: mocks.show, toggle: mocks.toggle, has: () => true, isOn: () => false }
 }));
-vi.mock("@/components/options/tabs/layers-tab", () => ({
+vi.mock("@/app/chrome/tabs/layers-tab", () => ({
   LAYER_TOGGLES: new Map([["rivers", { label: "Rivers" }]]),
   LAYER_PRESETS: {}
 }));
-vi.mock("@/components/app-info", () => ({ showInfo: vi.fn() }));
-vi.mock("@/components/layers-presets", () => ({ applyPreset: vi.fn(), savePreset: vi.fn() }));
-vi.mock("@/components/lifecycle", () => ({ regeneratePrompt: vi.fn() }));
-vi.mock("@/components/options/io-panes", () => ({}));
-vi.mock("@/components/options/options-panel", () => ({ openTab: vi.fn(), toggleOptions: vi.fn() }));
-vi.mock("@/components/seed", () => ({ showSeedHistoryDialog: vi.fn() }));
+vi.mock("@/app/chrome/app-info", () => ({ showInfo: vi.fn() }));
+vi.mock("@/app/layers-presets", () => ({ applyPreset: vi.fn(), savePreset: vi.fn() }));
+vi.mock("@/app/lifecycle", () => ({ regeneratePrompt: vi.fn() }));
+vi.mock("@/app/chrome/io-panes", () => ({}));
+vi.mock("@/app/chrome/options-panel", () => ({ openTab: vi.fn(), toggleOptions: vi.fn() }));
+vi.mock("@/app/seed", () => ({ showSeedHistoryDialog: vi.fn() }));
 vi.mock("@/services", () => ({ Services: {} }));
 vi.mock("@/services/autosave", () => ({ toggleSaveReminder: vi.fn() }));
 vi.mock("@/services/url-params", () => ({ copyMapURL: vi.fn() }));
@@ -33,11 +33,11 @@ vi.mock("@/renderers/overlays/highlight", () => ({
   highlightElement: mocks.highlight,
   highlightArea: mocks.highlightArea
 }));
-vi.mock("@/components/zoom", () => ({ zoomTo: mocks.zoom }));
-vi.mock("@/components/viewport", () => ({ viewport: { width: 1000, height: 800, scale: 1 } }));
+vi.mock("@/ui/map/zoom", () => ({ zoomTo: mocks.zoom }));
+vi.mock("@/renderers/viewport/viewport", () => ({ viewport: { width: 1000, height: 800, scale: 1 } }));
 vi.mock("@/renderers/labels/label-data", () => ({ getLabelsIndex: mocks.labels }));
-vi.mock("@/components/dialog/dialog-helpers", () => ({ refreshEditors: vi.fn() }));
-vi.mock("@/components/tooltips", () => ({ tip: mocks.tip }));
+vi.mock("@/ui/dialog/dialog-helpers", () => ({ refreshEditors: vi.fn() }));
+vi.mock("@/ui/tooltips", () => ({ tip: mocks.tip }));
 vi.mock("@/controllers", () => ({
   Controllers: new Proxy(
     {},
@@ -45,7 +45,7 @@ vi.mock("@/controllers", () => ({
   )
 }));
 
-import { MAP_COMMANDS } from "@/components/map-commands";
+import { MAP_COMMANDS } from "@/app/map-commands";
 import { Omnibar } from "./omnibar";
 
 function input(): HTMLInputElement {

@@ -1,8 +1,8 @@
-import { IconSets } from "@/components/icon-sets";
-import { Icons } from "@/components/icons";
-import { Layers } from "@/components/layers";
-import { zoomFontSize } from "@/components/viewport";
-import type { Burg } from "@/generators/burgs-generator";
+import { IconSets } from "@/model/icon-sets";
+import { Icons } from "@/model/icons";
+import type { Burg } from "@/model/political/burgs-generator";
+import { Layers } from "@/renderers/layers";
+import { zoomFontSize } from "@/renderers/viewport/viewport";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import type { StylesData } from "@/types/styles";
 import { rn } from "@/utils/numberUtils";

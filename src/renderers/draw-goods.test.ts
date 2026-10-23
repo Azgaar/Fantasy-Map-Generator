@@ -1,15 +1,15 @@
 // @vitest-environment jsdom
 import { beforeEach, expect, test, vi } from "vitest";
-import { setViewportSize, setViewportTransform } from "@/components/viewport";
+import { setViewportSize, setViewportTransform } from "@/renderers/viewport/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 
 const mocks = vi.hoisted(() => ({ layerOn: true }));
-vi.mock("@/components/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
-vi.mock("@/components/icons", () => ({
+vi.mock("@/renderers/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
+vi.mock("@/model/icons", () => ({
   Icons: { load: vi.fn().mockResolvedValue(undefined), href: (id: string) => `#${id}` }
 }));
 
-import "@/generators/styles";
+import "@/model/styles/styles";
 import { drawGoods } from "./draw-goods";
 
 // two cells, one at the origin and one far to the right, each producing one good

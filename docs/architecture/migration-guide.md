@@ -6,26 +6,26 @@ runtime globals, into a typed module inside Vite's graph. See also [lazy-loading
 
 ## Where the file goes
 
-Pick the layer by responsibility, name the file `kebab-case.ts`:
+Pick the layer by responsibility, then the domain folder inside it ([architecture.md](./architecture.md#domains-inside-a-role)), name the file `kebab-case.ts`:
 
-| Layer                     | Holds                                                   |
-| ------------------------- | ------------------------------------------------------- |
-| `src/generators/`         | domain generators / data logic                          |
-| `src/renderers/`          | code that draws SVG layers                              |
-| `src/renderers/overlays/` | transient feedback that removes itself (highlight, fog) |
-| `src/controllers/`        | map UI you open and close: editors, tools, overviews    |
-| `src/components/`         | web components + UI opened over the map that ignores it |
-| `src/components/dialog/`  | the shared dialog toolkit                               |
-| `src/services/`           | app-shell & platform infra, incl. preferences           |
-| `src/data/`               | static content / reference lists                        |
-| `src/utils/`              | pure helpers — no ambient state, ≥2 consumers           |
+| Layer                     | Holds                                                          |
+| ------------------------- | -------------------------------------------------------------- |
+| `src/model/`              | world data definitions, generators, model classes, options     |
+| `src/renderers/`          | code that draws SVG layers, the layers registry                |
+| `src/renderers/overlays/` | transient feedback that removes itself (highlight, fog)        |
+| `src/ui/`                 | shared UI: dialog toolkit, tooltips, elements, map interaction |
+| `src/controllers/`        | map UI you open and close: editors, tools, overviews           |
+| `src/app/`                | boot, lifecycle, shell; always-on chrome in `app/chrome/`      |
+| `src/services/`           | app-shell & platform infra, incl. preferences                  |
+| `src/data/`               | static content / reference lists                               |
+| `src/utils/`              | pure helpers — no ambient state, ≥2 consumers                  |
 
 Not everything is Model/View/Controller. Before reaching for `controllers/` or `utils/`, apply
 these three tests — a big classic module usually splits across four or five folders:
 
 - **Does the user open and close it, _and_ is it about the map?** Both yes → `controllers/`.
-  Always on screen → `components/`. Opened but not about the map (an About dialog, a
-  shell-loaded widget) → `components/`. Transient UI loaded only when first opened (such as
+  Always on screen, or opened but not about the map and loaded with the shell (an About
+  dialog) → `app/chrome/`. Shared by several editors → `ui/`. Transient UI loaded only when first opened (such as
   the colour picker) → `controllers/`.
 - **Does it read `pack`/`grid`?** Then it is not a `service`, whatever else it is.
 - **Does it read an ambient global, or have only one consumer?** Then it is not a `util` —
@@ -43,7 +43,7 @@ manages **browser/app lifecycle** (PWA install, auto-update, io, preferences) it
   `Goods.get(id)` (both `=> T | undefined`) instead of `pack.markets.find(...)`.
 - **Path alias**: `@/*` resolves to `src/*` (configured in `vite.config.ts` and
   `tsconfig.json`). Prefer it to deep `../../` chains — e.g. `@/utils`,
-  `@/generators/markets-generator`. Sibling imports stay relative (`./box`).
+  `@/model/markets-generator`. Sibling imports stay relative (`./box`).
 
 ## Globals: import what's migrated, declare the rest in `global.ts`
 
@@ -53,7 +53,7 @@ and **never** use module-local `declare const` or `as any` to paper over one.
 1. **It lives in `src/` (migrated)** → **import it** — never call it through its `window.*`
    global; that bridge exists for classic `public/` code, not for bundled modules. The one
    exception is direction: imports may only point **down** the stack
-   (components/controllers/services → renderers → generators → utils).
+   (app → controllers/services → ui → renderers → model → utils).
 
 2. **It lives only in classic `public/` code** → **declare it once in
    [`src/types/global.ts`](../../src/types/global.ts)** as `var X: …`, beside the
@@ -120,7 +120,7 @@ without the app), then add a thin `window` bridge at the bottom that wires those
 to the ambient globals classic callers expect. The bridge is a temporary interop
 concession — keep it to a few lines and delete it once every caller is TypeScript. Globals
 referenced bare (`pack`, `grid`, `seed`, `TIME`, `customization`, `$`, `layerIsOn`, …) come
-from legacy `public/` code and are typed in [`src/components/globals.ts`](../../src/components/globals.ts),
+from legacy `public/` code and are typed in [`src/model/globals.ts`](../../src/model/globals.ts),
 [`src/types/global.ts`](../../src/types/global.ts) or
 by the owning module — import or declare, never `as any`.
 
@@ -148,7 +148,7 @@ declare global {
 }
 window.Module = {
   generate: () => void (pack[module] = generate(pack, seed)),
-  get: i => getWidget(pack.widgets, i)
+  get: (i) => getWidget(pack.widgets, i),
 };
 ```
 
@@ -163,9 +163,7 @@ const MODULE_DATA = [{ name: "Cog", value: 1 } /* … */] as const;
 
 // split out once large
 export const charges = {
-  types: {
-    /* … */
-  }
+  types: {/* … */},
 };
 ```
 
@@ -271,7 +269,7 @@ export const Something = { init };
 
 [`src/main.ts`](../../src/main.ts) is the single module entry: it imports
 [`services/logging.ts`](../../src/services/logging.ts) and
-[`components/globals.ts`](../../src/components/globals.ts) first, then every layer, then runs
+[`model/globals.ts`](../../src/model/globals.ts) first, then every layer, then runs
 the boot sequence on `DOMContentLoaded`. Two ordering rules follow from that:
 
 - **A bundled module must not read a _late_ global at module top level.** `pack`, `grid`, `options`

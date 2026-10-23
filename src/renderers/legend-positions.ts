@@ -2,7 +2,7 @@
 // treatment a dialog's position gets, in the same store. The map file carries the boxes; where a
 // viewer has dragged them is their own business.
 
-import { dialogState } from "@/components/dialog/state";
+import { dialogState } from "@/ui/dialog/state";
 
 const DIALOG_ID = "legend";
 

@@ -1,6 +1,6 @@
 import { curveBundle, line, max, min, select } from "d3";
-import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
-import type { Point } from "../generators/voronoi";
+import type { Point } from "@/model/graph/voronoi";
+import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
 import { C_12 } from "./colorUtils";
 import { normalize } from "./numberUtils";
 import { round } from "./stringUtils";

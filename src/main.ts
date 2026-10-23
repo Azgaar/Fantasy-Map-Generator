@@ -1,7 +1,7 @@
 // Azgaar and contributors, 2017-2026. MIT License
 // https://github.com/Azgaar/Fantasy-Map-Generator
 
-import { readStoredOptions } from "@/components/options-storage";
+import { readStoredOptions } from "@/model/options/options-storage";
 import { resolveLanguage } from "@/services/language";
 import { Catalog, t } from "@/utils/i18n";
 

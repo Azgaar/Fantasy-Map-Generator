@@ -1,17 +1,17 @@
 import type { Selection } from "d3";
 import { select } from "d3";
-import { type IconSetId, IconSets } from "@/components/icon-sets";
-import { Icons } from "@/components/icons";
-import { Layers } from "@/components/layers";
-import { tip } from "@/components/tooltips";
-import { viewport, ZOOM_CURVES, type ZoomedLayer, zoomFontSize } from "@/components/viewport";
+import { type IconSetId, IconSets } from "@/model/icon-sets";
+import { Icons } from "@/model/icons";
 import { renderEmblemDefinitions } from "@/renderers/draw-emblems";
 import { drawScaleBar } from "@/renderers/draw-scalebar";
-import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
+import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
+import { Layers } from "@/renderers/layers";
 import { restoreOceanVectors } from "@/renderers/ocean-cache";
+import { viewport, ZOOM_CURVES, type ZoomedLayer, zoomFontSize } from "@/renderers/viewport/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
 import { savedMessage } from "@/services/platform";
+import { tip } from "@/ui/tooltips";
 import {
   connectVertices,
   downloadFile,

@@ -7,7 +7,7 @@ const state = vi.hoisted(() => ({
   note: null as string | null,
   close: undefined as (() => void) | undefined
 }));
-vi.mock("@/components/map-commands", () => ({ MAP_COMMANDS: [], isLinkable: () => false })); // its import touches the DOM
+vi.mock("@/app/map-commands", () => ({ MAP_COMMANDS: [], isLinkable: () => false })); // its import touches the DOM
 vi.mock("./map", () => ({
   AssistantMap: {
     id: () => state.mapId,

@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Options } from "@/components/options-model";
-import "@/generators/added-labels";
-import "@/generators/features-generator";
-import { Labels } from "@/generators/labels-generator";
-import "@/generators/styles";
+import { Options } from "@/model/options/options-model";
+import "@/model/annotations/added-labels";
+import "@/model/physical/features-generator";
+import { Labels } from "@/model/annotations/labels-generator";
+import "@/model/styles/styles";
 import * as versioning from "@/services/versioning";
 import { resolveVersionConflicts } from "./auto-update";
 

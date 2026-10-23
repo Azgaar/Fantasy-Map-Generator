@@ -1,7 +1,7 @@
 // Browser-mode test (vitest.browser.config.ts): label groups carry their shift as a transform
 // derived from the store, not as retired data-dx/data-dy attributes.
 import { expect, test } from "vitest";
-import "@/generators/styles";
+import "@/model/styles/styles";
 import { writeGroupStyle } from "./label-groups";
 
 test("writeGroupStyle applies the CSS text without stamping data attrs", () => {

@@ -1,19 +1,19 @@
 // @vitest-environment jsdom
 
 import { beforeEach, expect, test, vi } from "vitest";
-import { CustomIcons, type IconPicture, Icons } from "@/components/icons";
-import { ReliefPoolEditor } from "@/controllers/relief-pool-editor";
+import { ReliefPoolEditor } from "@/controllers/physical/relief/relief-pool-editor";
+import { CustomIcons, type IconPicture, Icons } from "@/model/icons";
 import { IconPicker } from ".";
 import { openPositioner } from "./positioner";
-import "@/generators/relief-generator";
-import "@/generators/burgs-generator";
-import "@/generators/goods-generator";
-import "@/components/shared/slider-input";
+import "@/model/physical/relief-generator";
+import "@/model/political/burgs-generator";
+import "@/model/economy/goods-generator";
+import "@/ui/elements/slider-input";
 import Alea from "alea";
 
 const pictures = vi.hoisted(() => ({ fromLink: vi.fn(), fromFile: vi.fn(), fit: vi.fn() }));
 vi.mock("./pictures", () => ({ IconPictures: pictures }));
-vi.mock("@/components/icon-sets", () => ({ IconSets: { sets: () => [], setForId: () => undefined } }));
+vi.mock("@/model/icon-sets", () => ({ IconSets: { sets: () => [], setForId: () => undefined } }));
 vi.mock("@/controllers", async () => ({ Controllers: { IconPicker: (await import(".")).IconPicker } }));
 
 type DialogSettings = { close?: () => void; buttons?: Record<string, (this: HTMLElement) => void> };

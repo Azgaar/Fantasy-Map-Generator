@@ -1,16 +1,16 @@
 // @vitest-environment jsdom
 import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import "@/generators/added-labels";
-import "@/generators/biomes-generator"; // the 1.139 step reads the default biomes
-import "@/generators/features-generator"; // migrations call the Features module through its global
-import "@/generators/burgs-generator"; // the burg sets that tell style icon references from text
-import "@/generators/goods-generator"; // the goods icon namespace the 1.154 step migrates into
-import "@/generators/relief-generator"; // the relief set namespace the 1.154 step migrates into
-import { confirmationDialog } from "@/components/dialog/dialog-helpers";
-import { Styles } from "@/generators/styles";
+import "@/model/annotations/added-labels";
+import "@/model/physical/biomes-generator"; // the 1.139 step reads the default biomes
+import "@/model/physical/features-generator"; // migrations call the Features module through its global
+import "@/model/political/burgs-generator"; // the burg sets that tell style icon references from text
+import "@/model/economy/goods-generator"; // the goods icon namespace the 1.154 step migrates into
+import "@/model/physical/relief-generator"; // the relief set namespace the 1.154 step migrates into
+import { Styles } from "@/model/styles/styles";
 import * as versioning from "@/services/versioning";
 import { VERSION } from "@/services/versioning";
+import { confirmationDialog } from "@/ui/dialog/dialog-helpers";
 import { safeParseJSON } from "@/utils/stringUtils";
 import { migrateLegacySettings, resolveVersionConflicts } from "./auto-update";
 import { Csv } from "./csv";
@@ -591,7 +591,7 @@ describe("v1.61 ocean pattern migration", () => {
   });
 });
 
-vi.mock("@/components/dialog/dialog-helpers", () => ({ confirmationDialog: vi.fn(), destroyDialog: vi.fn() }));
+vi.mock("@/ui/dialog/dialog-helpers", () => ({ confirmationDialog: vi.fn(), destroyDialog: vi.fn() }));
 vi.mock("./csv", () => ({ Csv: { download: vi.fn() } }));
 
 describe("v1.152.0 notes moved onto entities", () => {

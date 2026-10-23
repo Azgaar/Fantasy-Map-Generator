@@ -1,5 +1,5 @@
-import { IconSets } from "@/components/icon-sets";
-import { Icons } from "@/components/icons";
+import { IconSets } from "@/model/icon-sets";
+import { Icons } from "@/model/icons";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { inlineLinkedImages } from "@/services/io/export";
 import type { Emblem } from "@/types/emblems";

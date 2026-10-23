@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { expect, it, vi } from "vitest";
-import { Lore } from "@/generators/lore";
-import { Notes } from "@/generators/notes";
-import { Styles } from "@/generators/styles";
+import { Lore } from "@/model/story/lore";
+import { Notes } from "@/model/story/notes";
+import { Styles } from "@/model/styles/styles";
 import { OPERATIONS, runOperation } from "./operations";
 import { StylePresets } from "./style-presets";
 

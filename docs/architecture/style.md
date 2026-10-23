@@ -7,7 +7,7 @@ architectural summary is in [architecture.md](./architecture.md#map-styling).
 
 ## The idea
 
-- **One record, one declaration.** The shape is a zod schema (`src/generators/styles-schema.ts`).
+- **One record, one declaration.** The shape is a zod schema (`src/model/styles/styles-schema.ts`).
   The `Styles` TypeScript type is inferred from it, the defaults are parsed by it, a loaded record is
   validated by it, and the editor's form is built from it. A field declared in the schema exists
   everywhere at once.
@@ -76,7 +76,7 @@ mirrors the DOM tree: every `groups` entry addresses one `data-group` child of i
   and keyed by the map's own group names — the editor's group select lists those.
 - **A font size is an attr**, in px on the layer (`legend.attrs["font-size"]: "13px"`), and its
   texts size by inheritance; a label group's is a `%` of the labels layer font size. The zoom sets
-  the font size of the layers in `ZOOM_CURVES` (components/viewport.ts), 100px at scale 1 and each on
+  the font size of the layers in `ZOOM_CURVES` (renderers/viewport/viewport.ts), 100px at scale 1 and each on
   its own curve between a map-fixed and a screen-fixed size: the labels on the arithmetic mean, the
   markers on the geometric mean, the burg icons close to map-fixed. Anything under them sized in `%`
   or `em` (label groups, markers, burg icons) follows the zoom, per frame or once it settles as
@@ -95,7 +95,7 @@ mirrors the DOM tree: every `groups` entry addresses one `data-group` child of i
 
 A string attr is an SVG attribute and stays one — `Styles.write` applies it without a redraw. The
 packed ones are not split into options; instead the schema pins the format
-(`src/generators/styles-formats.ts`) and the control that knows the format parses it into parts and
+(`src/model/styles/styles-formats.ts`) and the control that knows the format parses it into parts and
 composes it back. The store never holds a half-written string.
 
 | attr                    | format                                                                                               |
@@ -148,11 +148,11 @@ the control's.
 
 ## The store — `Styles`
 
-`src/generators/styles.ts` owns the `styles` global and the API over it. It is a class singleton
+`src/model/styles/styles.ts` owns the `styles` global and the API over it. It is a class singleton
 (`StylesStore`) holding the record the global points at, so it lives with the generators, not in `data/`.
 
 ```ts
-Styles.defaults; // the parsed default preset (src/generators/default-styles.json), deep-readonly
+Styles.defaults; // the parsed default preset (src/model/styles/default-styles.json), deep-readonly
 Styles.parse(json); // unknown → Styles: per-section validation, repair from defaults, one warning
 Styles.set(record); // replace the global wholesale
 Styles.write(...elements); // walk the element's tree and put every attr on its data-layer/data-group element
@@ -201,7 +201,7 @@ record (custom → `localStorage`, `default` → bundle, else fetch) and falls b
 a comparison does not; `saveCustom`, `removeCustom`, `listCustom`, `displayName`, `isSystem` are the
 rest. It reads no map state and shows no UI.
 
-`Controllers.StylePresetsEditor` (`src/controllers/style-preset.ts`) applies a preset to the map:
+`Controllers.StylePresetsEditor` (`src/controllers/style/style-preset.ts`) applies a preset to the map:
 
 1. `parsePreset` — a legacy selector-keyed file is converted, a store-shaped one is `Styles.parse`d;
    anything else is refused with a tip.
@@ -218,7 +218,7 @@ downloads / uploads it as JSON; `−` removes a custom one. System names are pro
 
 ### Legacy
 
-`src/generators/styles-legacy.ts` is the only code that understands the old shapes, and it is
+`src/model/styles/styles-legacy.ts` is the only code that understands the old shapes, and it is
 reached only from the load migrations (`auto-update.ts`) and `parsePreset`:
 
 - selector-keyed presets (`"#stateBorders": { … }`, `"#labels > #states"`) → `presetFromLegacy`
@@ -252,7 +252,7 @@ stylesSchema + styleMeta  ──►  SchemaForm.render(schema, node, …)  ─�
 
 ### The shell
 
-`src/components/options/tabs/style-tab.ts` injects the static part into the Options panel: the
+`src/app/chrome/tabs/style-tab.ts` injects the static part into the Options panel: the
 preset row (select, `+`, `−`, gallery button), the element select with the elements-dialog button,
 the group select, and an empty `#styleForm`. No rows, no state. Selecting the tab calls
 `StyleEditor.open()`; other editors call `open(element, group)`. An editor may still name an element
@@ -275,7 +275,7 @@ card inside the group.
 
 ### The form engine — `SchemaForm`
 
-`src/controllers/style-editor/schema-form.ts` is generic: it takes any zod object schema, a value, a meta
+`src/controllers/style/schema-form.ts` is generic: it takes any zod object schema, a value, a meta
 registry, an `onChange`, and optional extra controls. It knows nothing of `styles`, `Layers` or
 `pack` and is tested in jsdom against a mini schema.
 

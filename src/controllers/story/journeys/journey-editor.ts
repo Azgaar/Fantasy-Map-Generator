@@ -1,0 +1,687 @@
+import { Controllers } from "@/controllers";
+import {
+  type CellPlace,
+  cellEndpointLabel,
+  getCellPoint,
+  resolveCellPlace
+} from "@/model/story/journeys/journey-places";
+import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
+import { Layers } from "@/renderers/layers";
+import { Csv } from "@/services/io/csv";
+import type { Journey, JourneySegment } from "@/types/Journey";
+import {
+  alertDialog,
+  closeDialogs,
+  confirmationDialog,
+  destroyDialog,
+  noteButton,
+  updateDialog
+} from "@/ui/dialog/dialog-helpers";
+import { applyLineHighlighting } from "@/ui/dialog/highlighting";
+import {
+  type EditorColumn,
+  getRowId,
+  initColumnVisibility,
+  initEditorTable,
+  renderEditorHeader,
+  renderEditorPagination,
+  type TableView
+} from "@/ui/dialog/table";
+import { tip } from "@/ui/tooltips";
+import { convertSpeed, ensureEl, escapeHtml, findEl, formatSpeed, getDistanceUnit, parseSpeed, rn } from "@/utils";
+import { sentences, t } from "@/utils/i18n";
+import { domainMismatchMessage, JourneyPathEditor, recomputeSegment } from "./journey-path-editor";
+
+const dialogId = "journeyEditor" as const;
+const MAP_POSITION = { my: "left top", at: "left+10 top+10", of: "#map", collision: "fit" };
+const OVERVIEW_POSITION = { my: "right top", at: "right bottom+10", of: "#journeysOverview", collision: "fit" };
+
+let editingJourneyId: number | null = null;
+
+const columns: EditorColumn<JourneySegment>[] = [
+  { key: "color", width: "1.2em" },
+  { key: "name", label: t("Name"), width: "14em", permanent: true },
+  { key: "from", label: t("From"), width: "11em", mobileHidden: true },
+  { key: "to", label: t("To"), width: "11em", mobileHidden: true },
+  { key: "transport", label: t("Transport"), width: "10em" },
+  { key: "distance", label: t("Distance"), width: "5em" },
+  { key: "speed", label: t("Speed", { context: "column" }), width: "5em", mobileHidden: true },
+  { key: "time", label: t("Time"), width: "5em" },
+  { key: "roads", width: "1.4em", mobileHidden: true },
+  { key: "visible", width: "1.4em", mobileHidden: true },
+  { key: "note", width: "1.4em", mobileHidden: true },
+  { key: "points", width: "1.4em", mobileHidden: true },
+  { key: "draw", width: "1.4em", mobileHidden: true },
+  { key: "reset", width: "1.4em" },
+  { key: "move", width: "1.4em", mobileHidden: true },
+  { key: "delete", width: "1.4em", permanent: true }
+];
+
+const segmentsTable = initEditorTable<JourneySegment>({
+  getData: () => getJourney()?.segments ?? [],
+  onUpdate: renderSegmentsPage
+});
+
+const pathEditor = new JourneyPathEditor({ getJourney, getSegment, refresh: segmentsTable.refresh });
+
+function open(journeyId: number): void {
+  if (customization) return;
+
+  if (editingJourneyId === journeyId) {
+    // an armed on-map mode owns the click that got us here, e.g. drawing over the journey's own path
+    if (pathEditor.isActive()) return;
+    // re-opening the journey already being edited should not rebuild the dialog
+    if (findEl(dialogId)?.offsetParent) {
+      segmentsTable.refresh();
+      return;
+    }
+  }
+
+  teardown();
+  closeDialogs(`#${dialogId}, .stable`);
+  Layers.show("journeys");
+
+  Journeys.sync();
+  editingJourneyId = journeyId;
+
+  const journey = getJourney();
+  if (!journey) {
+    tip(t("Journey not found"), true, "error", 6000);
+    return;
+  }
+
+  renderDialog(journey);
+  segmentsTable.reset();
+
+  $(`#${dialogId}`).dialog({
+    title: t("Edit Journey"),
+    resizable: false,
+    width: "fit-content",
+    position: findEl("journeysOverview") ? OVERVIEW_POSITION : MAP_POSITION,
+    close: onClose
+  });
+}
+
+function teardown(): void {
+  stopJourneyTravel();
+  pathEditor.cancel();
+}
+
+function getJourney(): Journey | undefined {
+  if (editingJourneyId === null) return undefined;
+  return pack.journeys.find(journey => journey.i === editingJourneyId);
+}
+
+function getSegment(id: number): JourneySegment | undefined {
+  return getJourney()?.segments.find(segment => segment.i === id);
+}
+
+const getLineSegment = (el: HTMLElement): JourneySegment | undefined => getSegment(getRowId(el));
+
+function renderDialog(journey: Journey): void {
+  destroyDialog(dialogId);
+
+  const html = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
+    <div id="segmentsBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
+
+    <div id="journeyControls" class="editorFilters" style="flex-direction: row; align-items: center">
+      <input id="journeyColor" type="color" value="${journey.color}" style="flex: none; width: 1.2em; height: 1.2em; padding: 0" data-tip="${sentences(t("Journey color"), t("Click to change"))}" />
+      <label for="journeyName" data-tip="${t("Name")}" style="flex: 1; grid-template-columns: 3.2em 1fr">${t("Name")}:
+        <input id="journeyName" type="text" value="${escapeHtml(journey.name)}" />
+      </label>
+      <label for="journeyType" data-tip="${t("Kind of travel this is: a quest, a caravan, a campaign")}"
+        style="flex: 0 1 14em; grid-template-columns: 3.2em 1fr">${t("Type")}:
+        <input id="journeyType" type="text" value="${escapeHtml(journey.type)}" />
+      </label>
+    </div>
+
+    <div id="journeyFooter" class="totalLine">
+      <div data-tip="${t("Total distance")}" data-col="distance">${t("Distance")}:&nbsp;<span id="journeyTotalDistance">0</span></div>
+      <div data-tip="${t("Average speed, moving segments only")}" style="margin-left: 12px" data-col="speed">${t("Avg speed")}:&nbsp;<span id="journeyAvgSpeed">0</span></div>
+      <div data-tip="${t("Total time")}" style="margin-left: 12px" data-col="time">${t("Total time")}:&nbsp;<span id="journeyTotalTime">0</span></div>
+      <div data-tip="${t("Travel time")}" style="margin-left: 12px" data-col="time">${t("Travel time")}:&nbsp;<span id="journeyTravelTime">0</span></div>
+    </div>
+
+    <div id="journeyBottom" class="editorToolbar">
+      <button id="journeyEditorRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
+      <button id="journeyAddSegment" data-tip="${t("Add a segment to the journey")}" class="icon-plus"></button>
+      <button id="journeyEditTransport" data-tip="${t("Edit transport types")}" class="icon-cog"></button>
+      ${noteButton("journeyLegend", t("Edit free text notes (legend)"))}
+      <button id="journeyExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
+      <button id="journeyRemove" data-tip="${t("Remove")}" class="icon-trash"></button>
+    </div>
+  </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
+
+  applyLineHighlighting(dialogId, ({ target }) => {
+    const path = target.closest<SVGElement>("#journeys path[id^='segment']");
+    if (!path) return undefined;
+    const [journeyId, segmentId] = path.id.slice("segment".length).split("_").map(Number);
+    return journeyId === editingJourneyId ? segmentId : undefined;
+  });
+
+  ensureEl("journeyEditorRefresh").addEventListener("click", segmentsTable.refresh);
+  initColumnVisibility({
+    dialogId,
+    columns,
+    onUpdate: () =>
+      updateDialog(dialogId, {
+        width: "fit-content",
+        position: findEl("journeysOverview") ? OVERVIEW_POSITION : MAP_POSITION
+      })
+  });
+  ensureEl("journeyName").addEventListener("input", onNameInput);
+  ensureEl("journeyType").addEventListener("input", onTypeInput);
+  ensureEl("journeyColor").addEventListener("input", onColorInput);
+  ensureEl("journeyAddSegment").addEventListener("click", addSegment);
+  ensureEl("journeyEditTransport").addEventListener("click", () => void Controllers.TransportEditor.open());
+  ensureEl("journeyLegend").addEventListener("click", editJourneyNote);
+  ensureEl("journeyExport").addEventListener("click", downloadSegmentsData);
+  ensureEl("journeyRemove").addEventListener("click", triggerJourneyRemove);
+}
+
+function editJourneyNote(): void {
+  const journey = getJourney();
+  if (journey) void Controllers.NotesEditor.open({ type: "journey", id: journey.i });
+}
+
+function renderSegmentsPage(view: TableView<JourneySegment>): void {
+  const journey = getJourney();
+  if (!journey) return;
+
+  const body = ensureEl("segmentsBody");
+  // removed rows never fire mouseleave, so a hover-started travel animation would loop forever
+  stopJourneyTravel();
+  body.querySelectorAll(":scope > .states").forEach(row => {
+    row.remove();
+  });
+  body.insertAdjacentHTML("beforeend", view.rows.map(segment => renderSegmentLine(journey, segment)).join(""));
+
+  const on = (selector: string, event: string, handler: EventListener) => {
+    body.querySelectorAll<HTMLElement>(selector).forEach(el => void el.addEventListener(event, handler));
+  };
+
+  on(".segName", "input", onSegNameInput);
+  on(".segTransport", "change", onSegTransportChange);
+  on(".segSpeed:not([disabled])", "input", onSegSpeedInput);
+  on(".segDuration", "input", onSegDurationInput);
+  on(".segLocate.pointer", "click", onLocateEndpoint);
+  on(".segFrom", "click", onPickFrom);
+  on(".segTo", "click", onPickTo);
+  on(".segRoads.pointer", "click", onToggleAvoidRoads);
+  on(".segColor", "input", onSegColorInput);
+  on(".segVisible", "click", onToggleSegVisible);
+  on(".segNote", "click", onEditSegNote);
+  on(".segPoints.pointer", "click", onToggleEditPoints);
+  on(".segDraw.pointer", "click", onToggleDrawPath);
+  on(".segReset", "click", onSegReset);
+  on(".segUp.pointer", "click", onSegMoveUp);
+  on(".segDelete", "click", onSegDelete);
+  on(".states", "mouseenter", segmentHighlightOn);
+  on(".states", "mouseleave", segmentHighlightOff);
+
+  updateTotals(journey);
+  renderEditorPagination(ensureEl("journeyFooter"), view, segmentsTable.goto);
+
+  Layers.draw("journeys");
+  pathEditor.drawOverlays();
+}
+
+function renderSegmentLine(journey: Journey, segment: JourneySegment): string {
+  const unit = getDistanceUnit();
+  const index = journey.segments.indexOf(segment);
+  const domain = Transports.getDomain(segment.transport);
+  const isStay = domain === "stay";
+
+  const isEditingPoints = pathEditor.isEditing(segment.i, "points");
+  const isDrawing = pathEditor.isEditing(segment.i, "draw");
+  const canEditPoints = segment.points.length >= 2 && !isStay;
+
+  const hours = Journeys.getSegmentTime(segment);
+
+  return /* html */ `<div class="states" data-id="${segment.i}">
+    <div data-col="color">
+      <input class="segColor" type="color" value="${segment.color || journey.color}" style="flex: none; width: 1em; height: 1em; padding: 0" data-tip="${sentences(t("Segment color"), t("Click to change"))}" />
+    </div>
+    <div data-col="name" style="width: 95%; overflow: hidden">
+      <input class="segName" value="${escapeHtml(segment.name)}" data-tip="${t("Segment name: {{segment}}", { segment: segment.name })}" />
+    </div>
+    ${renderEndpointCell("from", segment)}
+    ${renderEndpointCell("to", segment)}
+    <div data-col="transport"><select class="segTransport" data-tip="${t("Transport type, sets the default speed and where the segment may go")}">${Transports.all
+      .map(
+        type =>
+          `<option value="${escapeHtml(type.name)}" ${type.name === segment.transport ? "selected" : ""}>${escapeHtml(type.name)}</option>`
+      )
+      .join("")}</select></div>
+    <div data-tip="${t("Segment distance")}" data-col="distance">${rn(Journeys.getSegmentDistance(segment))} ${unit}</div>
+    <div data-col="speed">
+      <input class="segSpeed" type="number" step="0.1" min="0" value="${convertSpeed(segment.speed)}" ${isStay ? "disabled" : ""}
+        data-tip="${isStay ? t("A stay covers no ground, so it has no speed") : sentences(t("Average travel speed in {{unit}}/h, type to override", { unit }), ...(segment.avoidRoads ? [t("Off-road speed: {{speed}}", { speed: convertSpeed(Journeys.getEffectiveSpeed(segment)) })] : []))}" />
+    </div>
+    <div data-col="time" data-tip="${timeCellTip(segment)}">
+      <input class="segDuration" type="number" min="0" step="0.1" value="${rn(hours, 1)}"/>
+    </div>
+    <div data-col="roads">
+      <span class="segRoads pointer ${segment.avoidRoads ? "icon-tree" : "icon-map-signs"} ${domain === "land" ? "" : "hidden"}" data-tip="${segment.avoidRoads ? t("Off-road: avoids the road network. Click to follow roads.") : t("On-road: follows the road network at full speed. Click to go off-road.")}"></span>
+    </div>
+    <div data-col="visible">
+      <span class="segVisible pointer ${segment.visible === false ? "icon-eye-off" : "icon-eye"}" data-tip="${t("Toggle segment visibility")}"></span>
+    </div>
+    <div data-col="note">
+      <span class="segNote pointer icon-book ${segment.note ? "" : "inactive"}" data-tip="${segment.note ? escapeHtml(segment.note) : t("Edit segment note")}"></span>
+    </div>
+    <div data-col="points">
+      <span class="segPoints icon-pencil ${canEditPoints ? "pointer" : "inactive"}" ${isEditingPoints ? ` style="color: #2a6e2a"` : ""}
+        data-tip="${!canEditPoints ? t("Set both endpoints first") : isEditingPoints ? t("Finish editing path points") : t("Edit path points")}"></span>
+    </div>
+    <div data-col="draw">
+      <span class="segDraw icon-brush ${isStay ? "inactive" : "pointer"}" ${isDrawing ? ` style="color: #2a6e2a"` : ""}
+        data-tip="${isDrawing ? t("Click to finish drawing (Esc to cancel)") : t("Draw a custom path cell by cell")}"></span>
+    </div>
+    <div data-col="reset">
+      <span class="segReset pointer icon-cw" data-tip="${t("Reset the segment: recompute the path and restore the default color, speed and time")}"></span>
+    </div>
+    <div data-col="move">
+      <span class="segUp icon-up-open ${index ? "pointer" : "inactive"}" data-tip="${t("Move the segment up")}"></span>
+    </div>
+    <div data-col="delete">
+      <span class="segDelete pointer icon-trash-empty" data-tip="${t("Remove")}"></span>
+    </div>
+  </div>`;
+}
+
+/** What the time column explains: the hours in the input, spelled out at the transport's travel day */
+function timeCellTip(segment: JourneySegment): string {
+  const hoursPerDay = Journeys.getSegmentHoursPerDay(segment); // each transport sustains its own travel day
+  const full = Journeys.formatTravelTimeFull(Journeys.getSegmentElapsedHours(segment));
+  return t("Travel time in hours, type to override. Takes {{time}} at {{hours}}h of travel per day", {
+    time: full,
+    hours: hoursPerDay
+  });
+}
+
+/**
+ * Re-render the row's time cell alone. Used while the speed input next to it has focus, where
+ * rebuilding the whole row would take the field the user is typing in with it.
+ */
+function syncTimeCell(el: HTMLElement, segment: JourneySegment): void {
+  const cell = el.closest<HTMLElement>(".states")?.querySelector<HTMLElement>('[data-col="time"]');
+  const duration = cell?.querySelector<HTMLInputElement>(".segDuration");
+  if (!cell || !duration) return;
+
+  cell.dataset.tip = timeCellTip(segment);
+  if (document.activeElement !== duration) duration.value = String(rn(Journeys.getSegmentTime(segment), 1));
+}
+
+/** Longer endpoint tooltip; distinguishes the three cases explicitly */
+function cellEndpointTooltip(cellId: number | undefined, place: CellPlace): string {
+  if (cellId === undefined) return t("Not set: click, then click a cell on the map to set this endpoint");
+  const what = !place
+    ? t("Cell {{- cell}}", { cell: cellId })
+    : place.nearby
+      ? t("{{- burg}} vicinity", { burg: place.burg.name })
+      : place.burg.name;
+  return t("{{- place}}, click to pick a different cell", { place: what });
+}
+
+/** Locate icon to zoom to the place, then the place name itself to re-pick the cell */
+function renderEndpointCell(endpoint: "from" | "to", segment: JourneySegment): string {
+  const cellId = segment[endpoint];
+  const isSet = cellId !== undefined;
+  const place = isSet ? resolveCellPlace(cellId) : null; // resolved once, worded twice below
+  const label = escapeHtml(cellEndpointLabel(cellId, place)); // burg names are user-editable
+
+  return /* html */ `<div data-col="${endpoint}">
+    <span class="segLocate icon-target ${isSet ? "pointer" : "inactive"}" data-endpoint="${endpoint}"
+      data-tip="${isSet ? t("Zoom to {{place}}", { place: label }) : t("Set the endpoint first")}"></span>
+    <span class="seg${endpoint === "from" ? "From" : "To"} pointer" data-tip="${escapeHtml(cellEndpointTooltip(cellId, place))}"
+      ${isSet ? "" : 'style="opacity: 0.55; font-style: italic"'}>${label}</span>
+  </div>`;
+}
+
+function updateTotals(journey: Journey): void {
+  const unit = getDistanceUnit();
+  const { totalDistance, totalHours, avgSpeed, elapsedHours, hiddenSegments } = Journeys.getTotals(journey);
+  const hiddenNote = hiddenSegments
+    ? ` ${t("Hidden segments left out: {{segments}}", { segments: hiddenSegments })}.`
+    : "";
+
+  ensureEl("journeyTotalDistance").innerHTML = `${rn(totalDistance)} ${unit}`;
+  ensureEl("journeyAvgSpeed").innerHTML = avgSpeed ? formatSpeed(avgSpeed) : "-";
+
+  // the two clocks the journey runs on: days on the calendar, hours actually spent on the road
+  const totalTime = ensureEl("journeyTotalTime");
+  totalTime.innerHTML = Journeys.formatTravelTime(elapsedHours);
+  totalTime.parentElement!.dataset.tip =
+    t(
+      "Time from start to finish: {{time}}. A day of travel fills a whole day, however many hours the transport sustains.",
+      {
+        time: Journeys.formatTravelTimeFull(elapsedHours)
+      }
+    ) + hiddenNote;
+
+  const travelTime = ensureEl("journeyTravelTime");
+  travelTime.innerHTML = Journeys.formatHours(totalHours);
+  travelTime.parentElement!.dataset.tip =
+    t(
+      "Hours spent moving or waiting: {{hours}}h, the sum of the segment times. Rest between travel days is not counted.",
+      {
+        hours: rn(totalHours, 1)
+      }
+    ) + hiddenNote;
+}
+
+function onNameInput(this: HTMLInputElement): void {
+  const journey = getJourney();
+  if (journey && this.value.trim()) Journeys.rename(journey.i, this.value);
+}
+
+function onTypeInput(this: HTMLInputElement): void {
+  const journey = getJourney();
+  if (journey && this.value.trim()) Journeys.setType(journey.i, this.value);
+}
+
+function onColorInput(this: HTMLInputElement): void {
+  const journey = getJourney();
+  if (!journey) return;
+  Journeys.recolor(journey.i, this.value);
+  segmentsTable.refresh();
+}
+
+function onSegNameInput(this: HTMLInputElement): void {
+  const segment = getLineSegment(this);
+  const journey = getJourney();
+  if (segment && journey && this.value.trim()) Journeys.setSegment(journey.i, segment.i, { name: this.value });
+}
+
+function onSegTransportChange(this: HTMLSelectElement): void {
+  const segment = getLineSegment(this);
+  if (!segment) return;
+
+  const previousType = segment.transport;
+  const newType = Transports.get(this.value);
+  if (!newType) return;
+
+  // Stay: clear the pathfinding-derived state, keeping the endpoints as anchors
+  if (newType.domain === "stay") {
+    Object.assign(segment, { transport: newType.name, speed: 0, duration: segment.duration ?? 1 });
+    segment.avoidRoads = false;
+    segment.custom = false;
+    recomputeSegment(segment);
+    segmentsTable.refresh();
+    return;
+  }
+
+  const message = domainMismatchMessage(segment, newType.domain);
+  if (message) {
+    this.value = previousType;
+    alertDialog({
+      title: t("Can't switch to {{- transport}}", { transport: newType.name }),
+      message: `${message}<br/><br/>${t("Pick different endpoints first, then change the transport type or use an air transport type, which accepts any endpoints.")}`
+    });
+    return;
+  }
+
+  const applyChange = () => {
+    segment.transport = newType.name;
+    segment.speed = newType.speed;
+    if (Transports.getDomain(previousType) === "stay") delete segment.duration;
+    recomputeSegment(segment);
+    segmentsTable.refresh();
+  };
+
+  // endpoints were checked above, but a custom-drawn path body can still clash with the new domain
+  if (segment.custom && !Journeys.isValidPath(segment.points, newType.domain)) {
+    this.value = previousType;
+    confirmationDialog({
+      title: t("Overwrite custom path?"),
+      message: t(
+        "Segment “{{segment}}” has a custom-drawn path that {{transport}} can't follow. Replace it with the pathfinder's route?",
+        {
+          segment: segment.name,
+          transport: newType.name
+        }
+      ),
+      confirm: t("Replace"),
+      onConfirm: () => {
+        this.value = newType.name;
+        segment.custom = false;
+        applyChange();
+      }
+    });
+    return;
+  }
+
+  applyChange();
+}
+
+function onSegSpeedInput(this: HTMLInputElement): void {
+  const segment = getLineSegment(this);
+  const journey = getJourney();
+  if (!segment || !journey) return;
+
+  Journeys.setSegment(journey.i, segment.i, { speed: Math.max(0, parseSpeed(+this.value || 0)) }); // stored in km/h, typed in the user distance unit
+  // a full refresh would tear this very input out of the DOM mid-keystroke, so update in place
+  syncTimeCell(this, segment);
+  updateTotals(journey);
+}
+
+function onSegDurationInput(this: HTMLInputElement): void {
+  const segment = getLineSegment(this);
+  const journey = getJourney();
+  if (!segment || !journey) return;
+
+  // an emptied field is not a zero-hour leg: it gives the segment back to distance/speed
+  Journeys.setSegment(journey.i, segment.i, {
+    duration: this.value.trim() === "" ? null : Math.max(0, +this.value || 0)
+  });
+  updateTotals(journey);
+}
+
+function onSegColorInput(this: HTMLInputElement): void {
+  const segment = getLineSegment(this);
+  if (!segment) return;
+  Journeys.setSegment(getJourney()!.i, segment.i, { color: this.value });
+  Layers.draw("journeys"); // a table refresh would tear out the input while its picker is open
+}
+
+function onToggleSegVisible(this: HTMLElement): void {
+  const segment = getLineSegment(this);
+  if (!segment) return;
+
+  Journeys.setSegment(getJourney()!.i, segment.i, { hidden: segment.visible !== false });
+  if (segment.visible === false) pathEditor.stopEditing(segment.i); // a hidden segment can't be edited on the map
+  segmentsTable.refresh();
+}
+
+function onToggleAvoidRoads(this: HTMLElement): void {
+  const segment = getLineSegment(this);
+  if (!segment) return;
+  segment.avoidRoads = !segment.avoidRoads;
+  recomputeSegment(segment);
+  segmentsTable.refresh();
+}
+
+function onLocateEndpoint(this: HTMLElement): void {
+  const segment = getLineSegment(this);
+  const point = getCellPoint(segment?.[this.dataset.endpoint as "from" | "to"]);
+  if (point) zoomTo(point[0], point[1], 8, 2000);
+}
+
+function onPickFrom(this: HTMLElement): void {
+  pathEditor.pickEndpoint(getRowId(this), "from");
+}
+
+function onPickTo(this: HTMLElement): void {
+  pathEditor.pickEndpoint(getRowId(this), "to");
+}
+
+function onToggleEditPoints(this: HTMLElement): void {
+  pathEditor.togglePointEdit(getRowId(this));
+}
+
+function onToggleDrawPath(this: HTMLElement): void {
+  pathEditor.toggleDrawing(getRowId(this));
+}
+
+/** Drop every manual override on the segment and re-run the pathfinder for it */
+function onSegReset(this: HTMLElement): void {
+  const segment = getLineSegment(this);
+  if (!segment) return;
+
+  const reset = () => {
+    const isStay = Transports.getDomain(segment.transport) === "stay";
+    delete segment.color;
+    segment.speed = Transports.get(segment.transport)?.speed ?? segment.speed;
+    // a stay has no speed to derive its time from, so it falls back to the default one hour
+    if (isStay) segment.duration = 1;
+    else delete segment.duration;
+    segment.custom = false;
+    recomputeSegment(segment);
+    segmentsTable.refresh();
+  };
+  if (!segment.custom) {
+    reset();
+    return;
+  }
+
+  confirmationDialog({
+    title: t("Overwrite custom path?"),
+    message: sentences(
+      t("Segment “{{segment}}” has a custom-drawn path", { segment: segment.name }),
+      t("Resetting replaces it with the pathfinder's route"),
+      t("Continue?")
+    ),
+    confirm: t("Reset"),
+    onConfirm: reset
+  });
+}
+
+function onSegMoveUp(this: HTMLElement): void {
+  const journey = getJourney();
+  if (!journey) return;
+
+  const index = journey.segments.findIndex(segment => segment.i === getRowId(this));
+  if (index <= 0) return;
+  Journeys.moveSegment(journey.i, journey.segments[index].i, index - 1);
+  segmentsTable.refresh();
+}
+
+function onSegDelete(this: HTMLElement): void {
+  const journey = getJourney();
+  const segment = getLineSegment(this);
+  if (!journey || !segment) return;
+
+  confirmationDialog({
+    title: t("Remove"),
+    message: `${t("Remove segment {{segment}}?", { segment: segment.name })}<br>${t("This action cannot be reverted")}`,
+    confirm: t("Remove"),
+    onConfirm: () => {
+      pathEditor.stopEditing(segment.i);
+      Journeys.removeSegment(journey.i, segment.i);
+      segmentsTable.refresh();
+    }
+  });
+}
+
+function onEditSegNote(this: HTMLElement): void {
+  const segment = getLineSegment(this);
+  const journey = getJourney();
+  if (!segment || !journey) return;
+
+  void Controllers.NotesEditor.open({ type: "journey", id: journey.i, sub: segment.i });
+}
+
+function segmentHighlightOn(this: HTMLElement): void {
+  Layers.show("journeys");
+  if (editingJourneyId !== null) startJourneyTravel(editingJourneyId, getRowId(this));
+}
+
+function segmentHighlightOff(): void {
+  stopJourneyTravel();
+}
+
+function addSegment(): void {
+  const journey = getJourney();
+  if (!journey) return;
+
+  const isFirst = !journey.segments.length;
+  const i = Journeys.addSegment(journey.i);
+  segmentsTable.refresh();
+
+  if (isFirst) pathEditor.pickEndpoint(i, "from", true);
+  else pathEditor.pickEndpoint(i, "to");
+}
+
+function downloadSegmentsData(): void {
+  const journey = getJourney();
+  if (!journey) return;
+
+  const unit = getDistanceUnit();
+  const headers = [
+    "Idx",
+    "Name",
+    "Transport",
+    `Speed(${unit}/h)`,
+    `EffectiveSpeed(${unit}/h)`,
+    "DistancePx",
+    `Distance(${unit})`,
+    "TimeHours",
+    "From",
+    "To",
+    "AvoidRoads",
+    "Custom",
+    "Visible",
+    "Color",
+    "Note"
+  ];
+  const rows = journey.segments.map((segment, index) => [
+    index + 1,
+    segment.name,
+    segment.transport,
+    convertSpeed(segment.speed),
+    convertSpeed(Journeys.getEffectiveSpeed(segment)),
+    rn(segment.distance, 2),
+    rn(Journeys.getSegmentDistance(segment), 2),
+    rn(Journeys.getSegmentTime(segment), 2),
+    segment.from,
+    segment.to,
+    segment.avoidRoads ? "yes" : "no",
+    segment.custom ? "yes" : "no",
+    segment.visible === false ? "no" : "yes",
+    segment.color,
+    segment.note
+  ]);
+  Csv.download(journey.name || "Journey", headers, rows);
+}
+
+function triggerJourneyRemove(): void {
+  const journey = getJourney();
+  if (!journey) return;
+
+  confirmationDialog({
+    title: t("Remove"),
+    message: `${t("Remove journey {{journey}}?", { journey: journey.name })}<br>${t("This action cannot be reverted")}`,
+    confirm: t("Remove"),
+    onConfirm: () => {
+      Journeys.remove(journey.i);
+      Layers.draw("journeys");
+      $(`#${dialogId}`).dialog("close");
+    }
+  });
+}
+
+function onClose(): void {
+  teardown();
+  editingJourneyId = null;
+  destroyDialog(dialogId);
+}
+
+export const JourneyEditor = { open };
+
+if (typeof window !== "undefined") {
+  window.addEventListener("notes:context-changed", () => {
+    if (findEl(dialogId)) segmentsTable.refresh();
+  });
+}

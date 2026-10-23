@@ -1,9 +1,10 @@
 // The Units Editor: the distance, altitude, temperature and population scales a map is read in
-import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
-import { Layers } from "@/components/layers";
-import { LegendBoxes } from "@/components/legend-boxes";
-import { Pins } from "@/components/pins";
-import { updateGridSizeReadout } from "@/controllers/style-editor/controls";
+
+import { updateGridSizeReadout } from "@/controllers/style/controls";
+import { Pins } from "@/model/options/pins";
+import { Layers } from "@/renderers/layers";
+import { LegendBoxes } from "@/renderers/legend-boxes";
+import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { t } from "@/utils/i18n";
 import { applyOption, ensureEl } from "../utils";
 import type { PromptOptions } from "../utils/commonUtils";

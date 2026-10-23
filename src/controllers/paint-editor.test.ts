@@ -4,11 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Point } from "@/types/global";
 import type { PaintEditorOptions } from "./paint-editor";
 import { PaintEditor } from "./paint-editor";
-import "@/generators/pack-generator"; // registers the Pack global the editor finds cells with
+import "@/model/graph/pack-generator"; // registers the Pack global the editor finds cells with
 
-vi.mock("@/components/viewbox-events", () => ({ applyDefaultViewboxEvents: vi.fn() }));
-vi.mock("@/components/dialog/dialog-helpers", async importOriginal => ({
-  ...(await importOriginal<typeof import("@/components/dialog/dialog-helpers")>()),
+vi.mock("@/ui/map/viewbox-events", () => ({ applyDefaultViewboxEvents: vi.fn() }));
+vi.mock("@/ui/dialog/dialog-helpers", async importOriginal => ({
+  ...(await importOriginal<typeof import("@/ui/dialog/dialog-helpers")>()),
   closeDialogs: vi.fn()
 }));
 

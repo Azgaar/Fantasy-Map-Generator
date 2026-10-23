@@ -1,10 +1,10 @@
 // Browser-mode tests (vitest.browser.config.ts): the sources and tiles the icon picker opens with
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { IconSets } from "@/components/icon-sets";
-import { CustomIcons, Icons } from "@/components/icons";
-import "@/generators/relief-generator"; // the models own the set definitions the picker lists
-import "@/generators/burgs-generator";
-import "@/generators/goods-generator";
+import { IconSets } from "@/model/icon-sets";
+import { CustomIcons, Icons } from "@/model/icons";
+import "@/model/physical/relief-generator"; // the models own the set definitions the picker lists
+import "@/model/political/burgs-generator";
+import "@/model/economy/goods-generator";
 import { IconPicker } from ".";
 
 const pictures = vi.hoisted(() => ({ fromLink: vi.fn(), fromFile: vi.fn(), fit: vi.fn() }));

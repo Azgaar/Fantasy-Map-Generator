@@ -1,4 +1,4 @@
-import type { LayerId } from "@/components/layers";
+import type { LayerId } from "@/renderers/layers";
 import type { ChangeRow } from "@/services/assistant/chats";
 import { CELL_FIELDS, PROVINCES, TERRITORY } from "./fields";
 

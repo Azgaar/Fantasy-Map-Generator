@@ -1,6 +1,6 @@
 import { color, curveBasisClosed, line } from "d3";
-import { Icons } from "@/components/icons";
-import { Layers } from "@/components/layers";
+import { Icons } from "@/model/icons";
+import { Layers } from "@/renderers/layers";
 import { boundsIntersect, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { findEl } from "@/utils";

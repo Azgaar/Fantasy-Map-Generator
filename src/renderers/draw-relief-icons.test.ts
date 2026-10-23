@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 import { beforeEach, expect, test, vi } from "vitest";
-import { setViewportSize } from "@/components/viewport";
-import "@/generators/relief-generator"; // installs the Relief global
-import { Styles } from "@/generators/styles";
+import { setViewportSize } from "@/renderers/viewport/viewport";
+import "@/model/physical/relief-generator"; // installs the Relief global
+import { Styles } from "@/model/styles/styles";
 import { drawRelief } from "./draw-relief-icons";
 
-vi.mock("@/components/layers", () => ({ Layers: { isOn: () => true, draw: vi.fn() } }));
-vi.mock("@/components/icons", () => ({
+vi.mock("@/renderers/layers", () => ({ Layers: { isOn: () => true, draw: vi.fn() } }));
+vi.mock("@/model/icons", () => ({
   Icons: { loadAll: vi.fn().mockResolvedValue(undefined), href: (id: string) => `#${id}` }
 }));
 

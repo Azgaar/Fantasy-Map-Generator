@@ -1,9 +1,9 @@
-import { Layers } from "@/components/layers";
-import { type EntityRef, MapEntities } from "@/components/map-entities";
-import { revealEntity } from "@/components/reveal";
-import { openEditor } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { type EntityRef, MapEntities } from "@/model/map-entities";
+import { Layers } from "@/renderers/layers";
 import * as Connection from "@/services/assistant/provider/connection";
+import { openEntity, revealEntity } from "@/ui/map/reveal";
+import { openEditor } from "@/ui/map/viewbox-events";
 import { escapeHtml, findEl, getPointer, rn } from "@/utils";
 import { t } from "@/utils/i18n";
 
@@ -223,7 +223,7 @@ class ContextMenuController {
     const row = this.rowOf(button);
     this.close();
     if (!row || (row.element && openEditor(row.element))) return;
-    if (!MapEntities.open(row.ref)) revealEntity(row.ref);
+    if (!openEntity(row.ref)) revealEntity(row.ref);
   }
 
   private ask(): void {

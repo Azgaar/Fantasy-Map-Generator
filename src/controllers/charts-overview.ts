@@ -17,9 +17,9 @@ import {
   stackOrderNone,
   sum
 } from "d3";
-import { closeDialogs, destroyDialog, updateDialog } from "@/components/dialog/dialog-helpers";
-import { tip } from "@/components/tooltips";
 import { Csv } from "@/services/io/csv";
+import { closeDialogs, destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
+import { tip } from "@/ui/tooltips";
 import { downloadFile, findEl, getArea, getAreaUnit, getFileName, getHeight, getPrecipitation } from "@/utils";
 import { t } from "@/utils/i18n";
 import { convertTemperature, ensureEl, formatPrice, isWater, rn, si } from "../utils";

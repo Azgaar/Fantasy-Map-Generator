@@ -1,5 +1,5 @@
 // Water drainage over a raw heightmap: flow arrows, the depressions that get filled and the lakes to be
-import { MIN_FLUX_TO_FORM_RIVER } from "@/generators/river-generator";
+import { MIN_FLUX_TO_FORM_RIVER } from "@/model/physical/river-generator";
 import { minmax, rn } from "@/utils";
 import { SEA_LEVEL } from "@/utils/heightUtils";
 import { createEl, ensureEl, findEl } from "@/utils/nodeUtils";

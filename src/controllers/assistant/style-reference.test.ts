@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { expect, it } from "vitest";
-import { Styles } from "@/generators/styles";
+import { Styles } from "@/model/styles/styles";
 import { styleFields, styleOverview } from "./style-reference";
 
 it("lists the elements, choices and how to read an element's fields", () => {

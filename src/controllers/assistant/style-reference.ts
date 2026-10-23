@@ -1,10 +1,10 @@
 // The map style as the model reads it through read_docs: elements, formats and choices, then each element's paths
 import type { z } from "zod";
-import { type FieldSpec, SchemaForm } from "@/controllers/style-editor/schema-form";
+import { type FieldSpec, SchemaForm } from "@/controllers/style/schema-form";
 import { layerLabel } from "@/data/layer-labels";
 import { TEXTURES } from "@/data/textures";
-import { styleMeta, stylesSchema } from "@/generators/styles-schema";
-import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
+import { styleMeta, stylesSchema } from "@/model/styles/styles-schema";
+import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
 import { SYSTEM_PRESETS } from "@/services/style-presets";
 import type { StyleElement } from "@/types/styles";
 

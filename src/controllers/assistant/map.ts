@@ -1,6 +1,7 @@
-import { type EntityType, MapEntities } from "@/components/map-entities";
-import { viewport } from "@/components/viewport";
 import { Controllers } from "@/controllers";
+import type { Note } from "@/controllers/story/notes-editor";
+import { type EntityType, MapEntities } from "@/model/map-entities";
+import { viewport } from "@/renderers/viewport/viewport";
 import type { ChangeRow, ChartRow, Chat, Choice, Widget } from "@/services/assistant/chats";
 import type { Tool } from "@/services/assistant/provider/answerer";
 import { WIKI_PAGES } from "@/services/assistant/provider/knowledge";
@@ -23,7 +24,6 @@ import {
   getPrecipitation,
   si
 } from "@/utils/unitUtils";
-import type { Note } from "../notes-editor";
 import { ProposalCard } from "./proposal-card";
 import { Proposals } from "./proposals";
 import { frameRegion } from "./region";

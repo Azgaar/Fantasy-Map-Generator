@@ -1,8 +1,8 @@
 import type * as THREE from "three";
-import { Layers } from "@/components/layers";
-import { isGlobeView, setViewMode } from "@/components/options/view-mode";
-import type { Burg } from "@/generators/burgs-generator";
-import type { State } from "@/generators/states-generator";
+import type { Burg } from "@/model/political/burgs-generator";
+import type { State } from "@/model/political/states-generator";
+import { Layers } from "@/renderers/layers";
+import { isGlobeView, setViewMode } from "@/renderers/view-mode";
 import { Services } from "@/services";
 import { savedMessage } from "@/services/platform";
 import { downloadFile, findEl, getFileName } from "@/utils";

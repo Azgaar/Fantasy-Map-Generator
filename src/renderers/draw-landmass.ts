@@ -1,6 +1,6 @@
-import type { Layer } from "@/components/layers";
-import { Coastline } from "@/generators/coastline-generator";
-import type { Feature } from "@/generators/features-generator";
+import { Coastline } from "@/model/physical/coastline-generator";
+import type { Feature } from "@/model/physical/features-generator";
+import type { Layer } from "@/renderers/layers";
 import { ensureEl, findEl } from "@/utils";
 
 /**

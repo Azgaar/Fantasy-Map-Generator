@@ -1,16 +1,16 @@
 // @vitest-environment jsdom
 import { beforeEach, expect, test, vi } from "vitest";
-import { setViewportSize, setViewportTransform } from "@/components/viewport";
-import type { Marker } from "@/generators/markers-generator";
+import type { Marker } from "@/model/story/markers-generator";
+import { setViewportSize, setViewportTransform } from "@/renderers/viewport/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 
 const mocks = vi.hoisted(() => ({ layerOn: true }));
-vi.mock("@/components/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
+vi.mock("@/renderers/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
 
-import "@/generators/styles";
-import "@/generators/relief-generator"; // the models own the icon sets references resolve against
-import "@/generators/burgs-generator";
-import "@/generators/goods-generator";
+import "@/model/styles/styles";
+import "@/model/physical/relief-generator"; // the models own the icon sets references resolve against
+import "@/model/political/burgs-generator";
+import "@/model/economy/goods-generator";
 import { drawMarkers, setEditedMarker, setMarkersFilter } from "./draw-markers";
 
 function marker(i: number, x = 50, y = 50): Marker {

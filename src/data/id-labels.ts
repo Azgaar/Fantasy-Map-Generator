@@ -1,8 +1,9 @@
 // Interface names for ids the data stores in English: a select shows the label, keeps the id as its value
-import type { DemandCategory } from "@/generators/goods-generator";
-import type { LabelType } from "@/generators/labels-generator";
-import type { Sampling } from "@/generators/lattice";
-import type { TransportDomain } from "@/generators/transports-generator";
+
+import type { LabelType } from "@/model/annotations/labels-generator";
+import type { DemandCategory } from "@/model/economy/goods-generator";
+import type { TransportDomain } from "@/model/economy/transports-generator";
+import type { Sampling } from "@/model/graph/lattice";
 import { t } from "@/utils/i18n";
 
 export const FEATURE_SUBTYPE_LABELS: Record<string, string> = {

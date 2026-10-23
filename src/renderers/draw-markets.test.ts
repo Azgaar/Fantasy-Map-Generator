@@ -1,20 +1,20 @@
 // @vitest-environment jsdom
 import { beforeEach, expect, test, vi } from "vitest";
-import { setViewportSize, setViewportTransform } from "@/components/viewport";
+import { setViewportSize, setViewportTransform } from "@/renderers/viewport/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getIsolines } from "@/utils/pathUtils";
 
 const mocks = vi.hoisted(() => ({ layerOn: true }));
-vi.mock("@/components/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
+vi.mock("@/renderers/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
 vi.mock("@/utils/pathUtils", async importOriginal => ({
   ...(await importOriginal<typeof import("@/utils/pathUtils")>()),
   getIsolines: vi.fn()
 }));
 
-import "@/generators/styles";
-import "@/generators/relief-generator"; // the models own the icon sets references resolve against
-import "@/generators/burgs-generator";
-import "@/generators/goods-generator";
+import "@/model/styles/styles";
+import "@/model/physical/relief-generator"; // the models own the icon sets references resolve against
+import "@/model/political/burgs-generator";
+import "@/model/economy/goods-generator";
 import { drawMarkets, highlightMarketOff, highlightMarketOn } from "./draw-markets";
 
 function territory(x: number, y = 0, size = 100): { polygons: [number, number][][] } {

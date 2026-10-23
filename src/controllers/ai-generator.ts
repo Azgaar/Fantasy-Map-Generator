@@ -1,5 +1,5 @@
-import { destroyDialog } from "@/components/dialog/dialog-helpers";
-import { tip } from "@/components/tooltips";
+import { destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { tip } from "@/ui/tooltips";
 import { openURL } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "../utils";

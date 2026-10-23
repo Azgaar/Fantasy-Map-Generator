@@ -1,0 +1,172 @@
+// About tab: credits, links and the supporters list
+import { alertDialog } from "@/ui/dialog/dialog-helpers";
+import { link } from "@/utils/commonUtils";
+import { sentences, t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/nodeUtils";
+
+const REPOSITORY = "https://github.com/Azgaar/Fantasy-Map-Generator";
+const WIKI = `${REPOSITORY}/wiki`;
+
+const TEMPLATE = /* html */ `
+  <div class="aboutActions">
+    <button
+      id="startTourButton"
+      onclick="window.Services.UiTour.start()"
+      data-tip="${t("Take an interactive tour of the map generator")}"
+      style="flex: 1; border: 1px solid var(--header);"
+    >
+      ${t("Interactive Tour")}
+    </button>
+    <button
+      id="getAppButton"
+      onclick="window.Services.AppOffer.open()"
+      data-tip="${t("Install the Generator on your computer")}"
+      style="flex: 1; border: 1px solid var(--header);"
+    >
+      ${t("Desktop App")}
+    </button>
+  </div>
+  <p>
+    ${sentences(
+      t("{{- generator}} is an {{- openSource}} tool by Azgaar and Team.", {
+        generator: link(REPOSITORY, t("Fantasy Map Generator")),
+        openSource: link(`${REPOSITORY}/blob/master/LICENSE`, t("open source"))
+      }),
+      t("You may use maps as they are, edit them or even create a new map from scratch."),
+      t("Check out the {{- quickStart}}, {{- qaa}}, {{- video}} and {{- hotkeys}} for guidance.", {
+        quickStart: link(`${WIKI}/Quick-Start-Tutorial`, t("Quick start tutorial")),
+        qaa: link(`${WIKI}/Q&A`, t("Q&A page")),
+        video: link("https://youtube.com/playlist?list=PLtgiuDC8iVR2gIG8zMTRn7T_L0arl9h1C", t("Video tutorial")),
+        hotkeys: link(`${WIKI}/Hotkeys`, t("hotkeys"))
+      })
+    )}
+  </p>
+  <p>
+    ${sentences(
+      t("Join our {{- discord}} and {{- reddit}} to ask questions, get help and share maps.", {
+        discord: link("https://discordapp.com/invite/X7E84HU", t("Discord server")),
+        reddit: link("https://www.reddit.com/r/FantasyMapGenerator/", t("Reddit community"))
+      }),
+      t("The created maps can be used for free, even for commercial purposes.")
+    )}
+  </p>
+  <p>
+    ${sentences(
+      t("The project is under active development."),
+      t("Creator and main maintainer: Azgaar."),
+      t("To track the development progress see the {{- devboard}}.", {
+        devboard: link("https://trello.com/b/7x832DG4/fantasy-map-generator", t("devboard"))
+      }),
+      t("For older versions see the {{- changelog}}.", { changelog: link(`${WIKI}/Changelog`, t("changelog")) }),
+      t("Please report bugs {{- here}}.", { here: link(`${REPOSITORY}/issues`, t("here")) }),
+      t("You can also contact me directly via {{- email}}.", {
+        email: `<a href="mailto:azgaar.fmg@yandex.by" target="_blank">${t("email")}</a>`
+      })
+    )}
+  </p>
+  <div
+    style="
+      background-color: #e85b46;
+      padding: 0.4em;
+      width: max-content;
+      margin: 0.6em auto 0 auto;
+      border: 1px solid #943838;
+    "
+  >
+    <a
+      href="https://www.patreon.com/azgaar"
+      target="_blank"
+      style="color: white; text-decoration: none; font-family: sans-serif"
+    >
+      <div>
+        <div style="width: 0.8em; display: inline-block; padding: 0 0.2em; fill: white">
+          <svg viewBox="0 0 569 546">
+            <circle cx="362.589996" cy="204.589996" data-fill="1" id="Oval" r="204.589996" />
+            <rect data-fill="2" height="545.799988" id="Rectangle" width="100" x="0" y="0" />
+          </svg>
+        </div>
+        ${t("SUPPORT ON PATREON")}
+      </div>
+    </a>
+  </div>
+  <p>
+    ${t("Thanks for all supporters on {{- patreon}}!", { patreon: `<a data-tip="${t("Click to see list of supporters")}" onclick="showSupporters()">Patreon</a>` })}
+  </p>
+  <div style="display: flex; justify-content: center; padding: 0.4em; font-family: cursive">
+    <a href="https://u24.gov.ua/" style="width: 80%" data-tip="${t("Support Ukraine")}" target="_blank">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200">
+        <rect width="100%" height="100%" fill="#005bbb"></rect>
+        <rect y="50%" width="100%" height="50%" fill="#ffd500"></rect>
+        <text x="50%" text-anchor="middle" font-size="5em" y="32%" fill="#f5f5f5">${t("Support Ukraine")}</text>
+        <text x="50%" text-anchor="middle" font-size="4em" y="78%" fill="#005bdd">u24.gov.ua</text>
+      </svg>
+    </a>
+  </div>
+  <div style="text-align: left">
+    <p>${t("Check out our other projects")}:</p>
+    <div>• <a href="https://azgaar.github.io/Armoria" target="_blank">Armoria</a>: ${t("a tool for creating coats of arms")}</div>
+    <div>• <a href="https://deorum.vercel.app" target="_blank">Deorum</a>: ${t("gallery of fantasy characters")}</div>
+  </div>
+  <ul class="share-buttons">
+    <li>
+      <a
+        href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator%2F&quote="
+        data-tip="${t("Share on Facebook")}"
+        target="_blank"
+        ><img alt="${t("Share on Facebook")}" src="images/Facebook.png" loading="lazy"
+      /></a>
+    </li>
+    <li>
+      <a
+        href="https://twitter.com/intent/tweet?source=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator&text=%23FantasyMapGenerator%0A%0Ahttps%3A//azgaar.github.io/Fantasy-Map-Generator"
+        target="_blank"
+        data-tip="${t("Tweet")}"
+        ><img alt="${t("Tweet")}" src="images/Twitter.png" loading="lazy"
+      /></a>
+    </li>
+    <li>
+      <a
+        href="http://pinterest.com/pin/create/button/?url=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator"
+        target="_blank"
+        data-tip="${t("Pin it")}"
+        ><img alt="${t("Pin it")}" src="images/Pinterest.png" loading="lazy"
+      /></a>
+    </li>
+    <li>
+      <a
+        href="http://www.reddit.com/submit?url=https%3A%2F%2Fazgaar.github.io%2FFantasy-Map-Generator"
+        target="_blank"
+        data-tip="${t("Submit to Reddit")}"
+        ><img alt="${t("Submit to Reddit")}" src="images/Reddit.png" loading="lazy"
+      /></a>
+    </li>
+    <li>
+      <a href="https://discord.gg/X7E84HU" target="_blank" data-tip="${t("Join Discord server")}"
+        ><img alt="${t("Join Discord server")}" src="images/Discord.png" loading="lazy"
+      /></a>
+    </li>
+  </ul>
+`;
+
+ensureEl("aboutContent").innerHTML = TEMPLATE;
+
+/** The list of Patreon supporters, updated by hand with each release */
+function showSupporters(): void {
+  const columns = window.innerWidth < 800 ? 2 : 5;
+  const names = window.Supporters.split("\n").sort();
+  alertDialog({
+    title: t("Patreon Supporters"),
+    width: "min-width",
+    message: /* html */ `<ul style="column-count: ${columns}; column-gap: 2em">${names
+      .map(name => `<li>${name}</li>`)
+      .join("")}</ul>`
+  });
+}
+
+// Legacy seam: the credits block wires the dialog with an inline onclick
+declare global {
+  interface Window {
+    showSupporters: typeof showSupporters;
+  }
+}
+window.showSupporters = showSupporters;

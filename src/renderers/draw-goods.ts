@@ -1,5 +1,5 @@
-import { Icons } from "@/components/icons";
-import { Layers } from "@/components/layers";
+import { Icons } from "@/model/icons";
+import { Layers } from "@/renderers/layers";
 import {
   type Box,
   boundsIntersect,

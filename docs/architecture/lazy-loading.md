@@ -40,7 +40,7 @@ exist at startup. They hold only loader thunks, so the eager cost is a few bytes
    `export const <Name> = { open, ... }`.
 
 2. **Never import it statically** from anything in the eager graph reachable from
-   `controllers/index.ts` / `generators/index.ts` / `renderers/index.ts` — that graph is the main
+   `controllers/index.ts` / `model/index.ts` / `renderers/index.ts` — that graph is the main
    chunk. (The loader thunk's `import()` does not count as static.)
 
 3. **Add one line to the right bucket** — `Controllers` in `controllers/index.ts`, `Services` in
@@ -85,7 +85,7 @@ click's user activation, which a module download would outlive.
   and for symbol keys, so `await Registry.Name` is a no-op rather than a phantom method call. Keep
   that guard if you touch `registry.ts`.
 - If a lazy module needs another not-yet-declared global, add it to `src/types/global.ts` under the
-  existing ambient-global convention (see `src/components/globals.ts`) — don't `as any` around it.
+  existing ambient-global convention (see `src/model/globals.ts`) — don't `as any` around it.
 - Use **d3 v7 via named imports** (`import { select } from "d3"`), not the `window.d3` global. See
   [migration-guide.md](./migration-guide.md#d3-v7-named-imports-only).
 
@@ -97,6 +97,6 @@ ls dist/assets | grep market-overview   # expect market-overview-<hash>.js as it
 ```
 
 If the module's code shows up inside the main entry chunk instead of its own file, something in the
-eager graph is importing it statically — check `controllers/index.ts` / `generators/index.ts` and
+eager graph is importing it statically — check `controllers/index.ts` / `model/index.ts` and
 anything they pull in.
 ```

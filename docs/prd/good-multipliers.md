@@ -22,7 +22,7 @@ This PRD introduces a unified five-dimension multiplier system on `Good`, replac
 
 ## Data model changes
 
-### `Good` interface (`src/generators/goods-generator.ts`)
+### `Good` interface (`src/model/economy/goods-generator.ts`)
 
 ```typescript
 export interface Good {
@@ -60,7 +60,7 @@ export interface Good {
 }
 ```
 
-### `GOODS_DATA` (`src/generators/goods-generator.ts`)
+### `GOODS_DATA` (`src/model/economy/goods-generator.ts`)
 
 - Every `biome: {...}` entry → `biomeOutput: {...}`.
 - Every `culture: {...}` entry → `multipliers: { cultureType: {...} }`.
@@ -78,7 +78,7 @@ Example diff:
 
 Update to read `good.biomeOutput` instead of `good.biome`.
 
-## Production logic changes (`src/generators/production-generator.ts`)
+## Production logic changes (`src/model/economy/production-generator.ts`)
 
 ### New helper: `getModifiers`
 
@@ -138,7 +138,7 @@ The variable name `cultureModifier` is retained to minimise diff scope. The exis
 
 Two additional calls to `good.culture?.[burgType]` exist for cost/profitability estimation. Replace both with `getModifiers(good, state.burg.cell)` using the same pattern.
 
-## Editor UI (`src/controllers/goods-editor.ts`)
+## Editor UI (`src/controllers/economy/goods/goods-editor.ts`)
 
 ### Edit good dialog — Multipliers section
 
@@ -203,20 +203,20 @@ The existing `renderCulture` function and its grid are removed. Replace with a `
 
 ### Modified
 
-- `src/generators/goods-generator.ts`
+- `src/model/economy/goods-generator.ts`
   - Update `Good` interface: rename `biome` → `biomeOutput`, move `culture` → `multipliers.cultureType`, add remaining multiplier dimensions
   - Update all `GOODS_DATA` entries: rename fields as above
   - Update `getBiomesProduction` to read `good.biomeOutput`
   - Update `GoodData` type alias accordingly
 
-- `src/generators/production-generator.ts`
+- `src/model/economy/production-generator.ts`
   - Add `getModifiers(good, cellId)` helper
   - Update `getCellProduction`: replace per-good modifier with `getModifiers`
   - Update `executeManufacture`: replace `cultureModifier` lookup with `getModifiers`
   - Update both `makeProductionDecision` cost/profitability paths (lines ~439 and ~484)
   - Remove now-unused `DEFAULT_CULTURE_TYPE` import if applicable
 
-- `src/controllers/goods-editor.ts`
+- `src/controllers/economy/goods/goods-editor.ts`
   - Replace inline culture modifier grid with five-row multipliers section + per-dimension popups
   - Add `renderMultiplierSummary(dim, values, nameResolver)` helper
   - Add `openMultiplierPopup(good, dim, nameResolver, onApply)` helper

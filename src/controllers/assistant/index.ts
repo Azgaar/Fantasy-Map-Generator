@@ -1,4 +1,4 @@
-import { markAssistantOpen } from "@/components/assistant-bubble";
+import { markAssistantOpen } from "@/app/chrome/assistant-bubble";
 import { Controllers } from "@/controllers";
 import { askServer } from "@/services/assistant/azgaar-server/answerer";
 import {

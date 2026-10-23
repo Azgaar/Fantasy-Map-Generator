@@ -1,4 +1,4 @@
-// The app announces a finished map by appending to `window.mapHistory` (see src/components/lifecycle.ts).
+// The app announces a finished map by appending to `window.mapHistory` (see src/app/lifecycle.ts).
 // It records every map produced this session, so one seam answers both "is a map ready?" and "is this
 // a different map from the one I saw before?" - which a bare boolean flag cannot.
 import type { Page } from "@playwright/test";

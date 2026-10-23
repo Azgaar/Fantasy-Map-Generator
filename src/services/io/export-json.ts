@@ -1,7 +1,7 @@
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
-import { tip } from "@/components/tooltips";
 import { savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
+import { closeDialogs } from "@/ui/dialog/dialog-helpers";
+import { tip } from "@/ui/tooltips";
 import { getFileName } from "@/utils";
 import { t } from "@/utils/i18n";
 

@@ -1,4 +1,4 @@
-import type { State } from "@/generators/states-generator";
+import type { State } from "@/model/political/states-generator";
 import type { Point } from "@/types/global";
 import type { TypedArray } from "@/types/PackedGraph";
 import { minmax, rn } from "@/utils";

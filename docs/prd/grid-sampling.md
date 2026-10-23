@@ -177,7 +177,7 @@ This is accepted, because every Voronoi vertex still touches exactly three Cells
 
 ### Advanced options dialog
 
-- A component next to Performance Settings (`components/options/advanced-options.ts`). The Options tab mounts its markup into `#dialogs` once and binds its controls through the same option bindings as its own, so values, locks, persistence and randomization work unchanged; the dialog only shows and hides them. It opens from the Advanced button in the Options panel's Configure row.
+- A component next to Performance Settings (`app/chrome/advanced-options.ts`). The Options tab mounts its markup into `#dialogs` once and binds its controls through the same option bindings as its own, so values, locks, persistence and randomization work unchanged; the dialog only shows and hides them. It opens from the Advanced button in the Options panel's Configure row.
 - **Map settings** section (apply to new maps): Map size, then:
   - **Lattice** select, a preset that sets Sampling and Jitter together, because a user picking hexes rarely knows a board also needs jitter 0: Default (square, 0.9), which also takes the user back to the classic look, Organic hexes (hexPointy, 0.5), Hex board pointy and flat, Square board and Isometric board (diamond), all at jitter 0. It is derived from the two values, not stored, and reads Custom when they match no preset.
   - **Sampling** select with the five labels above.

@@ -74,11 +74,11 @@ The agreed product name is **Wrap Tool**. Watabou's reference calls the interact
 
 ## Implementation Decisions
 
-Four files carry the feature: `src/controllers/wrap-tool.ts` (dialog, lifecycle, history, redraw),
-`src/controllers/vertex-brush.ts` (vertex lookup, falloff, limits, geometric validation),
+Four files carry the feature: `src/controllers/graph/wrap-tool.ts` (dialog, lifecycle, history, redraw),
+`src/controllers/graph/vertex-brush.ts` (vertex lookup, falloff, limits, geometric validation),
 `src/renderers/overlays/vertex-mesh.ts` (the structure overlay), and `movePackVertices` / `revert` on
-`src/generators/graph-override.ts`. The gestures are not the tool's own: they come from
-`src/components/map-brush.ts`, the brush instrument shared with the paint editor (see below). Two
+`src/model/graph/graph-override.ts`. The gestures are not the tool's own: they come from
+`src/ui/map/map-brush.ts`, the brush instrument shared with the paint editor (see below). Two
 shared modules gain an entry: the Tools tab button and the `Shift + W` hotkey. No new dependency.
 
 The controller follows [migration-guide.md](../architecture/migration-guide.md): a named export over
@@ -89,8 +89,8 @@ markup — nothing for it exists in `index.html` — and is lazy-loaded through 
 ### Controller and lifecycle
 
 - Registered lazily as `WrapTool` in `src/controllers/index.ts`; the Tools tab opens it from
-  the `openWrapTool` button in the Create group (`src/components/options/tabs/tools-tab.ts`), and
-  `Shift + W` opens it from `src/components/hotkeys.ts`.
+  the `openWrapTool` button in the Create group (`src/app/chrome/tabs/tools-tab.ts`), and
+  `Shift + W` opens it from `src/app/hotkeys.ts`.
 - `open()` is a no-op while `customization` is active (heightmap editing owns the graph) or while the
   tool is already open, and closes other dialogs first. It then **takes customization itself**
   (`CUSTOMIZATION_MODE = 18`, released in `cleanup()`), so for as long as the tool is open no other
@@ -110,7 +110,7 @@ markup — nothing for it exists in `index.html` — and is lazy-loaded through 
 
 ### The shared brush instrument
 
-`MapBrush` (`src/components/map-brush.ts`) is the brush every tool over the map should use: it owns the
+`MapBrush` (`src/ui/map/map-brush.ts`) is the brush every tool over the map should use: it owns the
 size control's markup and id, the radius, the radius circle, and the gestures — drag, `Shift` + drag to
 resize, `Space` + drag to pan, `+`/`-` through the hotkey module, and the crosshair — plus `attach()` /
 `detach()`, which restores the default map events. A tool supplies only what a stroke does: `onStart`
@@ -305,18 +305,18 @@ reaches past its own session — only Revert all does.
 
 `src/controllers/coastline-vertex-editor.ts` is deleted, along with its `CoastlineVertexEditor` registry
 entry and the `coastline` entry in the `GRAND_EDITORS` map in
-`src/components/viewbox-events.ts` — clicking a coastline no longer opens an editor.
+`src/ui/map/viewbox-events.ts` — clicking a coastline no longer opens an editor.
 The coastline settings editor, the coastline generator and renderer, Style's coastline controls, saved
 coastline groups and their appearance are all untouched; no style schema is migrated and no group
 management is rewritten as part of this story.
 
 ## Testing Decisions
 
-- **`VertexBrush` geometry** — `src/controllers/vertex-brush.test.ts` covers the fold rules on small
+- **`VertexBrush` geometry** — `src/controllers/graph/vertex-brush.test.ts` covers the fold rules on small
   synthetic graphs: `isSimple` on a convex polygon and a bowtie, a vertex dragged across the opposite
   edge kept simple, and the backoff still moving it as far as the cell stays simple. Falloff, budget and
   `findVertices` are exercised through the manual pass below, not by unit tests.
-- **`GraphOverride`** — `src/generators/graph-override.test.ts` covers original/custom values, derived
+- **`GraphOverride`** — `src/model/graph/graph-override.test.ts` covers original/custom values, derived
   areas, `revert()`, and restoration against a rebuilt graph. `movePackVertices` batching has no
   dedicated case.
 - **History** — undo, redo, reset, apply and close are verified in the manual pass; there is no

@@ -1,6 +1,6 @@
 import { expect, it, vi } from "vitest";
 
-vi.mock("@/components/map-commands", () => ({
+vi.mock("@/app/map-commands", () => ({
   // its import touches the DOM
   MAP_COMMANDS: [
     { id: "editHeightmapButton", name: "Edit Heightmap" },

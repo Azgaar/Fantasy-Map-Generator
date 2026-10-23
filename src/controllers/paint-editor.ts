@@ -1,8 +1,4 @@
-import "@/components/shared/fill-box";
-import { destroyDialog } from "@/components/dialog/dialog-helpers";
-import { MapBrush } from "@/components/map-brush";
-import type { FillBoxElement } from "@/components/shared/fill-box";
-import { clearMainTip, tip } from "@/components/tooltips";
+import "@/ui/elements/fill-box";
 import {
   openPaintOverlay,
   type PaintOverlayCell,
@@ -11,6 +7,10 @@ import {
   updatePaintOverlay
 } from "@/renderers/overlays/paint-overlay";
 import type { Point } from "@/types/global";
+import { destroyDialog } from "@/ui/dialog/dialog-helpers";
+import type { FillBoxElement } from "@/ui/elements/fill-box";
+import { MapBrush } from "@/ui/map/map-brush";
+import { clearMainTip, tip } from "@/ui/tooltips";
 import { ensureEl } from "@/utils";
 import { t } from "@/utils/i18n";
 

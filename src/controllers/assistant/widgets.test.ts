@@ -7,27 +7,27 @@ const mocks = vi.hoisted(() => ({
   mark: vi.fn(() => true),
   clear: vi.fn(),
   run: vi.fn(),
-  openGood: vi.fn(async () => {}),
+  openGood: vi.fn(async (_id: number) => {}),
   emblem: vi.fn(async () => {}),
   image: vi.fn(async () => "data:image/png;base64,AA")
 }));
-vi.mock("@/components/map-commands", () => ({
+vi.mock("@/app/map-commands", () => ({
   MAP_COMMANDS: [
     { id: "editHeightmapButton", name: "Edit Heightmap", run: mocks.run },
     { id: "newMap", name: "Generate New Map", run: mocks.run }
   ],
   isLinkable: ({ id }: { id: string }) => id !== "newMap"
 }));
-vi.mock("@/components/reveal", () => ({
+vi.mock("@/ui/map/reveal", () => ({
   reveal: mocks.revealBox,
   revealEntity: mocks.reveal,
+  openEntity: ({ type, id }: { type: string; id: number }) => (type === "good" ? mocks.openGood(id) : undefined),
   markEntities: mocks.mark,
   clearEntityMarks: mocks.clear
 }));
-vi.mock("@/components/tooltips", () => ({ tip: vi.fn() }));
+vi.mock("@/ui/tooltips", () => ({ tip: vi.fn() }));
 vi.mock("@/renderers/draw-goods", () => ({ goodBadge: ({ icon }: { icon: string }) => `<use href="#${icon}"/>` }));
 vi.mock("@/services/io/export", () => ({ ExportMap: { getRegionImage: mocks.image } }));
-vi.mock("@/controllers", () => ({ Controllers: { GoodsEditor: { open: mocks.openGood } } }));
 
 import type { Widget } from "@/services/assistant/chats";
 import { AssistantWidgets } from "./widgets";

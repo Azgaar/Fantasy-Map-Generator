@@ -8,9 +8,9 @@ const mocks = vi.hoisted(() => ({
   openEditor: vi.fn((_element: Element) => true),
   reveal: vi.fn()
 }));
-vi.mock("@/components/layers", () => ({ Layers: { isOn: mocks.isOn } }));
-vi.mock("@/components/reveal", () => ({ revealEntity: mocks.reveal }));
-vi.mock("@/components/viewbox-events", () => ({ openEditor: mocks.openEditor }));
+vi.mock("@/renderers/layers", () => ({ Layers: { isOn: mocks.isOn } }));
+vi.mock("@/ui/map/reveal", () => ({ openEntity: () => undefined, revealEntity: mocks.reveal }));
+vi.mock("@/ui/map/viewbox-events", () => ({ openEditor: mocks.openEditor }));
 vi.mock("@/controllers", () => ({ Controllers: { Assistant: { ask: mocks.ask } } }));
 vi.mock("@/services/assistant/provider/connection", () => ({ isConnected: mocks.connected }));
 vi.mock("@/utils", async original => ({ ...(await original<object>()), getPointer: () => [30, 40] }));

@@ -33,7 +33,7 @@ reasoning are in [the PRD](../prd/translation.md); this page is the contributor'
   The same control in every dialog shares one tooltip that does not name its subject (“Locate on map”,
   “Save data as a CSV file”), and a numbered name is composed: `` `${t("Blur")} 3` ``.
 - Use “ ” rather than straight double quotes in visible text.
-- `index.html` keeps only the shell; its text is set from the table in `components/shell.ts`.
+- `index.html` keeps only the shell; its text is set from the table in `app/shell.ts`.
 
 ## What stays English
 

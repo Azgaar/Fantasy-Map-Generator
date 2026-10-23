@@ -1,6 +1,6 @@
 // Traveler marker tweened along a hovered journey (or one of its segments), drawn on #debug
 import { easeLinear, easeSinInOut, select } from "d3";
-import { viewport } from "@/components/viewport";
+import { viewport } from "@/renderers/viewport/viewport";
 import type { Journey, JourneyPoint, JourneySegment } from "@/types/Journey";
 import { getSegmentPathData } from "./draw-journeys";
 

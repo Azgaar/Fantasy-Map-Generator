@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
-import type { Layer } from "@/components/layers";
-import defaults from "@/generators/default-styles.json";
-import { stylesSchema } from "@/generators/styles-schema";
+import defaults from "@/model/styles/default-styles.json";
+import { stylesSchema } from "@/model/styles/styles-schema";
+import type { Layer } from "@/renderers/layers";
 import { drawLakes } from "./draw-lakes";
 
 const createLayer = (groups: string[]) => {

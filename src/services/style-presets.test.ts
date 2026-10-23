@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import "@/generators/relief-generator"; // the models own the icon sets that tell references from text
-import "@/generators/burgs-generator";
-import "@/generators/goods-generator";
-import { Styles } from "@/generators/styles";
+import "@/model/physical/relief-generator"; // the models own the icon sets that tell references from text
+import "@/model/political/burgs-generator";
+import "@/model/economy/goods-generator";
+import { Styles } from "@/model/styles/styles";
 import { CUSTOM_PREFIX, StylePresetsService, SYSTEM_PRESETS } from "./style-presets";
 
 const fetchMock = vi.fn();

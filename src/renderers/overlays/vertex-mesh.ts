@@ -1,6 +1,6 @@
 // The cell structure under a vertex brush, drawn on #debug while the tool is active
 
-import { viewport } from "@/components/viewport";
+import { viewport } from "@/renderers/viewport/viewport";
 import { unique } from "@/utils";
 import { createEl, ensureEl, findEl } from "@/utils/nodeUtils";
 

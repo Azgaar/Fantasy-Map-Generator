@@ -1,9 +1,9 @@
 // The system prompt: one compact static block, cached by the provider. The map context opens each question
 // instead, and reference material stays out of it; the model fetches it with read_docs.
 
-import { ENTITY_TYPES, RECORD_TYPES } from "@/components/map-entities";
 import { METHODS } from "@/controllers/assistant/operations";
 import { RELATIONS } from "@/data/diplomacy";
+import { ENTITY_TYPES, RECORD_TYPES } from "@/model/map-entities";
 import { DATA_FIELDS, GENERATOR_NAMES } from "./context.generated";
 
 const KEY_TYPES = [...ENTITY_TYPES, ...RECORD_TYPES].join(", ");
