@@ -94,7 +94,9 @@ As detailed in [`docs/plans/mod-merge-plan.md`](../plans/mod-merge-plan.md):
   nebula/density/system style sections.
 - **Shipped (Phase 3)**: The nebula renderer (seeded cloud clusters) and the stellar-density
   heatmap (a population-weighted kernel over the burgs, banded on the cell graph).
-- **Planned**: The system markers with their tooltip and editor seams.
+- **Shipped (Phase 4)**: The star systems drawn as class-coloured markers on the chart, with the
+  tooltip, click-to-edit, reveal and highlight seams, capital rings and port orbit ticks.
+- **Planned**: Polish and docs — e2e coverage, README/wiki updates and the merge checklist.
   Planned in [`docs/plans/astral-ui-overhaul.md`](../plans/astral-ui-overhaul.md).
 
 ---

@@ -6,7 +6,8 @@ export const viewport = { width: 0, height: 0, scale: 1, x: 0, y: 0 };
 export const ZOOM_CURVES = {
   labels: (scale: number) => (100 + 100 / scale) / 2, // arithmetic
   markers: (scale: number) => 100 / Math.sqrt(scale), // geometric
-  burgIcons: (scale: number) => 100 / (1 + (scale - 1) / 80) // near natural
+  burgIcons: (scale: number) => 100 / (1 + (scale - 1) / 80), // near natural
+  systems: (scale: number) => 100 / (1 + (scale - 1) / 80) // near natural, like the burgs they stand for
 } satisfies Record<string, (scale: number) => number>;
 
 export type ZoomedLayer = keyof typeof ZOOM_CURVES;

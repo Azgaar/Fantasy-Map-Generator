@@ -1,6 +1,7 @@
 // Global layers registry: owns layers list, order, and svg skeleton
 import { drawNebulae } from "@/renderers/astral/draw-nebulae";
 import { drawStarDensity } from "@/renderers/astral/draw-star-density";
+import { drawSystems } from "@/renderers/astral/draw-systems";
 import { drawBiomes } from "@/renderers/draw-biomes";
 import { drawBorders } from "@/renderers/draw-borders";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
@@ -411,7 +412,7 @@ const mapLayers = [
     erase: removeEmblems
   }),
   new Layer({ id: "burgIcons", parent: "viewbox", draw: drawBurgIcons }),
-  new Layer({ id: "systems", parent: "viewbox" }),
+  new Layer({ id: "systems", parent: "viewbox", draw: drawSystems }),
   new Layer({
     id: "labels",
     parent: "viewbox",

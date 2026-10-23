@@ -330,6 +330,7 @@ src/renderers/astral/nebula-shapes.ts
 src/renderers/astral/draw-star-density.ts
 src/renderers/astral/star-density-field.ts
 src/renderers/astral/draw-systems.ts
+src/renderers/astral/system-markers.ts
 public/styles/astral.json
 public/images/style-presets/astral.avif
 public/images/textures/starfield.png
@@ -345,9 +346,12 @@ src/components/options/view-mode.ts       astral flag, subscription, button bran
 src/components/options-model.ts           map.astral default and carry
 src/components/options-schema.ts          map.astral
 src/components/lifecycle.ts               hydrate after options restore
+src/generators/astral-naming.ts          StarSystem coordinates, the tooltip line
 src/components/map-commands.ts            viewAstral command
 src/components/map-tooltip.ts             systems as burg targets
 src/components/map-entities.ts            system element and reveal/highlight
+src/components/viewbox-events.ts          a marker click opens the Burg Editor
+src/components/viewport.ts                the systems zoom curve
 src/controllers/index.ts                  AstralMode registry entry
 src/data/layer-labels.ts                  layerLabel checks the Astral map
 src/data/ocean-patterns.ts                starfield pattern
@@ -402,11 +406,18 @@ in the `speed` preset), `draw-star-density` (population-weighted sparse kernel, 
 **Acceptance:** the same seed yields the same sky; nebulae and density toggle cleanly; a 100k-cell
 map draws both without blocking the UI for an unreasonable time.
 
-### Phase 4 — Systems and interaction
+### Phase 4 — Systems and interaction ✅
 
 - star marker renderer;
 - tooltip, click, reveal and highlight seams;
 - class colours and capital/port accents.
+
+Shipped: `draw-systems` (a `ViewportLayers` layer like `burgIcons`, one `data-group` per spectral
+class, marker size on a log population ladder, capital rings and port orbit ticks, style-gated
+glow), the `systems` zoom curve in `viewport.ts`, and the three seams — `map-tooltip.ts` reads
+`#systems [data-id]` and names the class and traits, `map-entities.ts` maps `system{id}` to the
+burg with mode-aware reveal layers and a two-selector highlight, and a click on a marker opens the
+Burg Editor.
 
 **Acceptance:** every burg is a marker with the right class colour and size; clicking it opens the
 Burg Editor; the map tooltip names the class and traits; zoom culling works.

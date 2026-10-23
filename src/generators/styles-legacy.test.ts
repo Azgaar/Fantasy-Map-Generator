@@ -163,13 +163,13 @@ test("labelGroupFromLegacy drops the zoom auto-visibility display from the style
 
 const presetDir = path.join(__dirname, "../../public/styles");
 
-test("all 14 shipped presets parse as the new format with zero warnings", () => {
+test("all 15 shipped presets parse as the new format with zero warnings", () => {
   const files = fs
     .readdirSync(presetDir)
     .filter(f => f.endsWith(".json"))
     .map(f => path.join(presetDir, f));
   files.push(path.join(__dirname, "default-styles.json"));
-  expect(files).toHaveLength(15);
+  expect(files).toHaveLength(16);
   const warn = vi.spyOn(console, "warn");
   warn.mockClear();
   for (const file of files) {

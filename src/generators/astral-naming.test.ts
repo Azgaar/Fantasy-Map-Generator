@@ -8,7 +8,9 @@ import {
   polityWordFor,
   sectorWordFor,
   starClass,
-  systemTraits
+  systemTip,
+  systemTraits,
+  toSystem
 } from "./astral-naming";
 import { Names } from "./names-generator";
 
@@ -146,6 +148,23 @@ describe("the star classes", () => {
       "shielding"
     ]);
     expect(systemTraits({})).toEqual([]);
+  });
+});
+
+describe("the star systems", () => {
+  it("reads a burg as a system in its place", () => {
+    const system = toSystem(pack.burgs[1]);
+    expect(system.id).toBe(1);
+    expect(system.x).toBe(10);
+    expect(system.y).toBe(10);
+  });
+
+  it("writes the tooltip line from the class and the traits", () => {
+    const system = toSystem(pack.burgs[1]);
+    expect(system.class).toBe("M"); // 500 people is a red dwarf
+    const homeworld = { ...system, class: "G", className: "yellow dwarf", traits: ["shipyard", "bastion"] };
+    expect(systemTip(homeworld)).toBe("G-class yellow dwarf. Shipyard, bastion. Click to edit");
+    expect(systemTip({ ...homeworld, traits: [] })).toBe("G-class yellow dwarf. Click to edit");
   });
 });
 

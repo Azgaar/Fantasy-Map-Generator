@@ -127,6 +127,42 @@ git fetch upstream && git merge upstream/master
 - *Conflict resolution strategy*: the schema additions are one contiguous block; old maps and
   presets repair the missing sections from defaults.
 
+### Astral visual overhaul — Phase 3 (nebulae and density)
+
+- **`src/components/layers.ts`**: the `nebulae` and `starDensity` placeholder layers gain their
+  renderers (`draw-nebulae`, `draw-star-density`); the `systems` layer stays a placeholder until
+  Phase 4.
+- **`src/renderers/astral/draw-nebulae.ts`** / **`nebula-shapes.ts`** (new): seeded ellipse
+  clusters, one turbulence filter per cluster, fade gradients in the `speed` performance preset.
+- **`src/renderers/astral/draw-star-density.ts`** / **`star-density-field.ts`** (new): a
+  population-weighted sparse kernel banded through `getIsolines` into the six `bandN` groups.
+- *Conflict resolution strategy*: the renderers are new files; the registry edits stay inside the
+  appended Astral layer entries.
+
+### Astral visual overhaul — Phase 4 (systems and interaction)
+
+- **`src/renderers/astral/draw-systems.ts`** (new): the star markers — one per live burg, recreated
+  per reconcile as one `data-group` per spectral class, sized on a log population ladder, with
+  capital rings, port orbit ticks and a style-gated halo. A `ViewportLayers` layer, so it culls and
+  follows zoom like `burgIcons`.
+- **`src/renderers/astral/system-markers.ts`** (new): the pure geometry — class grouping and the
+  size ladder.
+- **`src/generators/astral-naming.ts`**: `StarSystem` gains `x`/`y` (the renderer places markers by
+  them); new `systemTip()` writes the class/traits tooltip line.
+- **`src/components/layers.ts`**: the `systems` layer entry gains its renderer.
+- **`src/components/viewport.ts`**: `systems` added to `ZOOM_CURVES` (the burgIcons near-natural
+  curve) — a second stock touch point in the zoomed-layer list.
+- **`src/components/map-tooltip.ts`**: `#systems [data-id]` joins the burg tooltip targets; in
+  Astral the tooltip names the class and traits.
+- **`src/components/map-entities.ts`**: `/^system(\d+)$/` maps to the burg ref, the
+  `#burgIcons` target special case extends to `#systems`, the burg reveal layers are mode-aware
+  (`systems` in Astral), and the burg highlight covers `#burg{id}` and `#system{id}`.
+- **`src/components/viewbox-events.ts`**: a `systems` entry opens the Burg Editor for the marker's
+  burg.
+- *Conflict resolution strategy*: the renderer seams mirror the `burgIcons` paths — if upstream
+  changes how burgs resolve, click or highlight, re-apply the same change to the `system{id}`
+  element path.
+
 ### Toolchain & Windows Environment Compatibility
 
 - **`package.json`**:

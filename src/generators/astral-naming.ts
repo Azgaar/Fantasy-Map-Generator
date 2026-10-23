@@ -130,6 +130,9 @@ export function systemTraits(burg: {
 export interface StarSystem {
   id: number;
   name: string;
+  /** the system's place in the sector */
+  x: number;
+  y: number;
   /** the star's spectral class */
   class: string;
   /** what the class is called in words */
@@ -151,6 +154,8 @@ export function toSystem(burg: (typeof pack.burgs)[number]): StarSystem {
   return {
     id: burg.i,
     name: burg.name ?? "",
+    x: burg.x,
+    y: burg.y,
     class: starType,
     className,
     population,
@@ -165,6 +170,13 @@ export function toSystem(burg: (typeof pack.burgs)[number]): StarSystem {
 /** Every system on the map, in burg order */
 export function systemsOf(): StarSystem[] {
   return pack.burgs.filter(burg => burg?.i && !burg.removed).map(toSystem);
+}
+
+/** The map tooltip line for a system: its class, its traits, and the invitation */
+export function systemTip(system: StarSystem): string {
+  const traits = system.traits.join(", ");
+  const installations = traits && traits.charAt(0).toUpperCase() + traits.slice(1);
+  return `${system.class}-class ${system.className}${installations ? `. ${installations}` : ""}. Click to edit`;
 }
 
 declare global {
