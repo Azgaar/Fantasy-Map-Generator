@@ -49,8 +49,9 @@ test.describe("Astral round trip", () => {
       order: [...Layers.state.order]
     }));
     expect(charted.astral).toBe(true);
-    expect(charted.active).toContain("nebulae");
     expect(charted.active).toContain("systems");
+    expect(charted.active).toContain("states");
+    expect(charted.active).not.toContain("nebulae"); // off by default, still one click away
 
     const downloadPromise = page.waitForEvent("download");
     await page.evaluate(() => {
@@ -85,10 +86,10 @@ test.describe("Astral round trip", () => {
     expect(after.active).toEqual(charted.active);
     expect(after.order).toEqual(charted.order);
     expect(after.buttonPressed).toBe(true); // hydrate adopts the flag without re-applying
-    expect(after.listItem).toBe(true);
+    expect(after.listItem).toBe(true); // the nebulae button is there, the layer is simply off
     expect(after.standardItem).toBe(false);
     expect(after.markers).toBeGreaterThan(0);
-    expect(after.clouds).toBeGreaterThan(0);
+    expect(after.clouds).toBe(0); // the chart came back with the same off-by-default layers
 
     // leaving after the reload reads the cross-reload profile store and restores the standard world
     await openLayersTab(page);

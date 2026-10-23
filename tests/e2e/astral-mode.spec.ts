@@ -6,7 +6,10 @@ import { waitForMap } from "./wait-for-map";
 // exactly what was there before — list, preset value, layer state and style.
 
 declare const options: { map: { astral: boolean; style: { preset: string } } };
-declare const styles: { texture: { options: { href: string } } };
+declare const styles: {
+  texture: { options: { href: string } };
+  borders: { groups: { stateBorders: { attrs: { opacity: number } } } };
+};
 declare const Layers: { isOn(id: string): boolean; state: { order: string[]; active: string[] } };
 declare const pack: import("@/types/PackedGraph").PackedGraph;
 declare const Services: { ExportMap: { getMapURL(type: string): Promise<string> } };
@@ -83,15 +86,60 @@ test.describe("Astral view mode", () => {
     expect(await page.evaluate(() => options.map.style.preset)).toBe("astral");
     await expect.poll(() => page.evaluate(() => styles.texture.options.href)).toContain("starfield");
 
-    // the chart is drawn: nebula clouds with filters, density bands and a marker per burg
-    await expect(page.locator("#nebulae ellipse").first()).toBeVisible();
-    expect(await page.locator("#nebulae defs filter").count()).toBeGreaterThan(0);
-    await expect(page.locator("#starDensity [data-group] path").first()).toBeAttached();
+    // the default chart draws systems, empires and hyperlanes; dust, nebulae and density stay off by
+    // button — each is one click away in the same Astral list
+    expect(await page.evaluate(() => Layers.isOn("systems"))).toBe(true);
+    expect(await page.evaluate(() => Layers.isOn("states"))).toBe(true);
+    expect(await page.evaluate(() => Layers.isOn("routes"))).toBe(true);
+    expect(await page.evaluate(() => Layers.isOn("nebulae"))).toBe(false);
+    expect(await page.evaluate(() => Layers.isOn("starDensity"))).toBe(false);
+    for (const id of ["texture", "nebulae", "starDensity"])
+      await expect(page.locator(layerItem(id))).toBeVisible();
+
+    // a marker per burg, and the hyperlanes really are drawn
     const markers = await page.locator("#systems [data-id]").count();
     const burgs = await page.evaluate(
       () => pack.burgs.filter(burg => burg && burg.i && !burg.removed).length
     );
     expect(markers).toBe(burgs);
+    expect(await page.locator("#routes path").count()).toBeGreaterThan(0);
+  });
+
+  test("Borders is off on entry and switches the state-matched inner borders", async ({ page }) => {
+    await enterAstral(page);
+    const halo = page.locator("#statesHalo");
+
+    // off by default, and the shared border path the Standard view draws is faded out in Astral so it
+    // cannot compete with the blue hyperlanes
+    expect(await page.evaluate(() => Layers.isOn("borders"))).toBe(false);
+    expect(await page.evaluate(() => document.getElementById("statesHalo")!.style.display)).toBe("none");
+    expect(await page.evaluate(() => styles.borders.groups.stateBorders.attrs.opacity)).toBe(0);
+    expect(await page.evaluate(() => getComputedStyle(document.getElementById("stateBorders")!).opacity)).toBe("0");
+
+    // the button brings them on: one path per empire, clipped to itself so only its inner half shows
+    await page.locator(layerItem("borders")).click();
+    await expect.poll(() => page.evaluate(() => Layers.isOn("borders"))).toBe(true);
+    await expect.poll(() => page.evaluate(() => document.getElementById("statesHalo")!.style.display)).not.toBe(
+      "none"
+    );
+    await expect(halo.locator("path").first()).toBeAttached();
+
+    const drawn = await page.evaluate(() =>
+      Array.from(document.querySelectorAll<SVGPathElement>("#statesHalo path")).map(path => ({
+        stroke: path.getAttribute("stroke"),
+        clip: path.getAttribute("clip-path")
+      }))
+    );
+    expect(drawn.length).toBeGreaterThan(1);
+    expect(drawn.every(border => /^#[0-9a-f]{6}$/i.test(border.stroke ?? ""))).toBe(true);
+    expect(drawn.every(border => border.clip?.startsWith("url(#state-clip"))).toBe(true);
+    // neighbouring empires each keep their own colour instead of sharing one unattributable line
+    expect(new Set(drawn.map(border => border.stroke)).size).toBeGreaterThan(1);
+
+    // pressing it again takes them away
+    await page.locator(layerItem("borders")).click();
+    await expect.poll(() => page.evaluate(() => Layers.isOn("borders"))).toBe(false);
+    expect(await page.evaluate(() => document.getElementById("statesHalo")!.style.display)).toBe("none");
   });
 
   test("leaving restores the previous list, preset, layers and style", async ({ page }) => {

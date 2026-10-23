@@ -19,8 +19,12 @@ describe("the Astral layer profiles", () => {
     expect(new Set(shortcuts).size).toBe(shortcuts.length);
   });
 
-  it("includes sector dust and the three Astral layers in the default profile", () => {
-    const ids = new Set(ASTRAL_PRESETS[ASTRAL_DEFAULT_PRESET].layers);
-    for (const id of ["texture", "nebulae", "starDensity", "systems"]) expect(ids.has(id)).toBe(true);
+  it("shows only empires, hyperlanes, systems, labels and the scale bar by default", () => {
+    const ids = ASTRAL_PRESETS[ASTRAL_DEFAULT_PRESET].layers;
+    expect([...ids].sort()).toEqual(["labels", "routes", "scaleBar", "states", "systems"]);
+  });
+
+  it("keeps no vignette in any Astral profile", () => {
+    for (const preset of Object.values(ASTRAL_PRESETS)) expect(preset.layers).not.toContain("vignette");
   });
 });

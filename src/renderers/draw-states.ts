@@ -1,4 +1,5 @@
 import { color as d3Color } from "d3";
+import { isStateHaloVisible } from "@/components/performance";
 import { ensureEl, getIsolines } from "@/utils";
 import { buildFillPaths } from "./isoline-fills";
 
@@ -6,7 +7,7 @@ export function drawStates(): void {
   TIME && console.time("drawStates");
   const { cells, states } = pack;
 
-  const renderHalo = options.app.performance.stateHalos;
+  const renderHalo = isStateHaloVisible();
   const isolines = getIsolines(pack, cellId => cells.state[cellId], { fill: true, waterGap: true, halo: renderHalo });
 
   const clipPaths: string[] = [];

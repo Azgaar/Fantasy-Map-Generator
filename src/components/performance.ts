@@ -47,13 +47,26 @@ function change(write: (o: OptionsData) => void): void {
   for (const listener of listeners) listener();
 }
 
+/** Astral hands the halo to the Borders button; Standard leaves it on the quality setting */
+let haloOwnedByBorders = false;
+
+export function setHaloOwnedByBorders(on: boolean): void {
+  haloOwnedByBorders = on;
+  applyPerformanceSettings();
+}
+
+export function isStateHaloVisible(): boolean {
+  return haloOwnedByBorders ? Layers.isOn("borders") : options.app.performance.stateHalos;
+}
+
 /** Put the settings onto the map on screen. `viewportRedraw` needs nothing: the zoom reads it live */
 export function applyPerformanceSettings(): void {
-  const { shapeRendering, stateHalos } = options.app.performance;
+  const { shapeRendering } = options.app.performance;
   findEl("viewbox")?.setAttribute("shape-rendering", shapeRendering);
 
   const halo = findEl("statesHalo");
   if (!halo) return;
-  halo.style.display = stateHalos ? "" : "none";
-  if (stateHalos && pack.cells && !halo.childElementCount) Layers.draw("states");
+  const visible = isStateHaloVisible();
+  halo.style.display = visible ? "" : "none";
+  if (visible && pack.cells && !halo.childElementCount) Layers.draw("states");
 }

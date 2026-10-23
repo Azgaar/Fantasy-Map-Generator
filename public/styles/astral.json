@@ -10,7 +10,7 @@
       "stateBorders": {
         "attrs": {
           "stroke": "#63d7ff",
-          "opacity": 0.95,
+          "opacity": 0,
           "stroke-width": 0.8,
           "stroke-dasharray": "4 3",
           "stroke-linecap": "round",
@@ -20,7 +20,7 @@
       "provinceBorders": {
         "attrs": {
           "stroke": "#3d7fa8",
-          "opacity": 0.55,
+          "opacity": 0,
           "stroke-width": 0.35,
           "stroke-dasharray": "2 4",
           "stroke-linecap": "round",
@@ -1452,8 +1452,8 @@
       "statesHalo": {
         "attrs": {
           "opacity": 1,
-          "stroke-width": 10,
-          "filter": "blur(6px)"
+          "stroke-width": 2,
+          "filter": null
         }
       }
     }

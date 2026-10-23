@@ -266,7 +266,11 @@ Available presets: Political map, Cultural map, Religions map, Provinces map, Bi
 
 At the top of the Layers tab, the **View mode** row chooses what the map shows: **Standard**, **3D scene**, **Globe** or **Astral**. Standard is the fantasy map; 3D scene and Globe are the three-dimensional views.
 
-**Astral** turns the map into a star chart of one chosen sector. Entering it swaps the layer buttons for the Astral list — Sector Dust, Nebulae, Star Density, Star Systems, Empires, Sectors, Borders, Hyperlanes, Anomalies and Labels — and applies the Astral style: the void becomes deep space, the land becomes a starry dust sheet, nebulae and a stellar-density heatmap appear, and every burg is drawn as a class-coloured star. There is no galactic core or spiral arm; the map is one sector, not a galaxy.
+**Astral** turns the map into a star chart of one chosen sector. Entering it swaps the layer buttons for the Astral list — Sector Dust, Nebulae, Population, Star Systems, Empires, Sectors, Borders, Hyperlanes, Anomalies and Labels — and applies the Astral style: the void becomes deep space and every burg is drawn as a class-coloured star. There is no galactic core or spiral arm; the map is one sector, not a galaxy.
+
+The default **Astral chart** preset shows Empires, Hyperlanes, Systems, Labels and the Scale Bar. Sector Dust, Nebulae and Population are off by default and are one click away in the same list. The scale bar reads in light years (ly) while the mode is on; your saved distance units are unchanged.
+
+**Borders** is off by default too. Switching it on draws each empire's edge *inside its own territory*, in a darkened shade of that empire's own colour, so two neighbouring empires each show their own line instead of one shared line you cannot attribute. The shared border path the Standard view uses is faded out in Astral, so borders never compete with the blue hyperlanes.
 
 Astral and the 3D views are mutually exclusive, so entering one leaves the other. Leaving Astral restores the layer set and style you had before. The mode is saved with the map, so a reloaded Astral map reopens as a chart. While in the mode the layer preset dropdown lists only the Astral presets (Astral chart, Empires, Survey scan, Systems and lanes) and the save/remove preset buttons are hidden; to keep the look permanently, pick the **Astral** or **astralSchematic** preset in the Style tab instead.
 

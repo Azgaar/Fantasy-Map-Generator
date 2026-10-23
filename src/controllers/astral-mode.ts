@@ -2,6 +2,7 @@
 import { Layers, type LayersState } from "@/components/layers";
 import { is3dView, isAstralView, setAstralView } from "@/components/options/view-mode";
 import { Options } from "@/components/options-model";
+import { applyPerformanceSettings, setHaloOwnedByBorders } from "@/components/performance";
 import { tip } from "@/components/tooltips";
 import { invokeActiveZooming } from "@/components/zoom";
 import { Controllers } from "@/controllers";
@@ -121,6 +122,7 @@ async function enter(): Promise<void> {
   const current = ++transition;
 
   setAstralView(true);
+  setHaloOwnedByBorders(true); // the Borders button owns the halo while the mode is on
   options.map.astral = true;
   if (styled) options.map.style.preset = "astral";
   Options.persist();
@@ -142,6 +144,7 @@ async function exit(): Promise<void> {
   const restoreStyle = previous?.styled ?? StylePresetsService.isSystem("astral");
 
   setAstralView(false);
+  setHaloOwnedByBorders(false);
   options.map.astral = false;
   options.map.style.preset = previous?.stylePreset ?? "default";
   Options.persist();
@@ -168,8 +171,12 @@ const toggle = async (): Promise<void> => (isAstralView() ? exit() : enter());
 function hydrate(): void {
   const astral = options.map.astral === true;
   setAstralView(astral);
+  setHaloOwnedByBorders(astral);
   applyButtonState(astral);
 }
+
+// the halo lives on the states layer but is switched by the Borders one, so re-check it on every change
+Layers.subscribe(() => applyPerformanceSettings());
 
 window.addEventListener("map:generated", hydrate);
 
