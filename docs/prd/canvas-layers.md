@@ -13,6 +13,8 @@ every frame of a gesture repaints all of it.
 Node count is no longer the main problem: labels, relief, burg icons, markers, routes and rivers are already
 viewport-culled. What is left is the per-pixel cost of the layers that culling cannot reduce.
 
+What users judge is perceived performance: the map follows the hand during a gesture and never stalls. For now speed comes first and rendering quality second: a gesture frame may be coarser as long as it arrives on time, and full quality returns when the view settles.
+
 ## Solution
 
 **Canvas Layers.** The map is drawn per layer: a layer is either SVG, as today, or drawn on the GPU straight
@@ -24,6 +26,8 @@ The preferred shape, to be confirmed by the [required investigations](#required-
   Reordering moves one element, toggling shows or hides one. Alternatives: [R2](#r2-layer-composition).
 - **One camera.** Each camera frame writes the transform to every visible SVG root and redraws every visible
   canvas.
+- **Speed over quality during gestures.** While the camera moves, GPU layers draw at a lower render scale and with less detail; on settle they redraw at full scale. Alternatives: [R8](#r8-gesture-frames).
+- **Data as textures.** A GPU layer reads map data from textures: a cell-id raster and per-cell attributes. Its frame cost depends on pixels, not on cell count; an edit updates a few texels; hover is a uniform.
 - **One GPU renderer.** A three.js `WebGPURenderer` draws every canvas layer, switching its `CanvasTarget` per
   layer, so pipelines and textures are shared. WebGPU on Chrome (about 90% of users), its automatic WebGL2
   fallback elsewhere, slower but working; later the same renderer serves the 3D view. Alternatives:
@@ -73,13 +77,14 @@ SVG-shaped migrations, and alternative renderers become possible.
 
 ### Done
 
-| Attempt                                                        | Where                                                                      | Result                                                                                                                                   |
-| -------------------------------------------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Ocean bands and waves cached as an `<image>`                   | [#1967](https://github.com/Azgaar/Fantasy-Map-Generator/pull/1967), merged | Pan frame 53–164 ms → 22–31 ms on five presets (SwiftShader). Ocean-only. Stays for Vector                                               |
-| Camera as a CSS transform with `will-change` during pans       | Local experiment, not kept                                                 | −70% pan painting in `npm run benchmark`, which rasters on the CPU. On a GPU: no gain, and Atlas and Cinderwood pans at 2× twice as slow |
-| Raster view: whole map and tiles rasterized from SVG snapshots | Branch `raster-view` (local), reverted from master                         | Pans at display rate once bitmaps exist (8.8 ms vs 33.8 ms on Frostbite), but producing them stays slow. Worse than Vector in practice   |
-| Relief through three.js in a `foreignObject`                   | [#1352](https://github.com/Azgaar/Fantasy-Map-Generator/pull/1352), draft  | Stale; `foreignObject` brings Safari, pointer and export problems                                                                        |
-| GPU burg icons, SDF burg labels, `LayerHost`                   | barrulus's fork, June–August 2026                                          | All removed; see below                                                                                                                   |
+| Attempt                                                        | Where                                                                                          | Result                                                                                                                                   |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Ocean bands and waves cached as an `<image>`                   | [#1967](https://github.com/Azgaar/Fantasy-Map-Generator/pull/1967), merged                     | Pan frame 53–164 ms → 22–31 ms on five presets (SwiftShader). Ocean-only. Stays for Vector                                               |
+| Camera as a CSS transform with `will-change` during pans       | Local experiment, not kept                                                                     | −70% pan painting in `npm run benchmark`, which rasters on the CPU. On a GPU: no gain, and Atlas and Cinderwood pans at 2× twice as slow |
+| Raster view: whole map and tiles rasterized from SVG snapshots | Branch `raster-view` (local), reverted from master                                             | Pans at display rate once bitmaps exist (8.8 ms vs 33.8 ms on Frostbite), but producing them stays slow. Worse than Vector in practice   |
+| Relief through three.js in a `foreignObject`                   | [#1352](https://github.com/Azgaar/Fantasy-Map-Generator/pull/1352), draft                      | Stale; `foreignObject` brings Safari, pointer and export problems                                                                        |
+| GPU burg icons, SDF burg labels, `LayerHost`                   | barrulus's fork, June–August 2026                                                              | All removed; see below                                                                                                                   |
+| One fragment shader over per-cell data textures                | [khalidibnwalid/map-generator](https://github.com/khalidibnwalid/map-generator), measured live | Feels instant. Main thread about 1 ms a frame, GPU 4–5 ms at 1×; forced to DPR 2, 16–19 ms. The speed comes mostly from rendering at 1×  |
 
 #### Raster view, in more detail
 
@@ -118,29 +123,91 @@ GPU attempt, then removed it after measuring. The record is in its
   - A second renderer for the same layer is a permanent tax: every feature built twice and kept consistent.
   - `LayerHost`'s conditional split collided with the layers registry and doubled code paths.
 
+#### khalidibnwalid's map generator
+
+[khalidibnwalid/map-generator](https://github.com/khalidibnwalid/map-generator)
+([live](https://khalidibnwalid.github.io/map-generator/)) feels exceptionally fast: pan and zoom follow the hand
+from the whole world down to single trees, with no stall and no blank frame. Measured 2026-10-23 on an M1 Pro in
+Chrome, 1024×768 viewport at DPR 2, with GPU timer queries around its draw call.
+
+- **How it draws.** The world is a regular grid of 800×450 to 3200×1800 cells, and each cell is one texel of
+  RGBA data textures: climate, a 16-bit signed distance to the coast, nation and province ids, a thematic color,
+  night lights. One full-screen fragment shader computes biomes, ocean bands, coastline, borders, hover, ice,
+  seasons, weather and night per pixel. Layer toggles and the three styles are uniforms. Rivers, roads, cities
+  and labels go on one Canvas 2D overlay above it. Raw WebGL2, about 550 lines plus a 970-line shader, no
+  dependencies.
+- **Why it feels fast.**
+  - It renders at 1×: canvases are sized in CSS pixels, and `devicePixelRatio` is ignored outside poster export.
+  - Little main-thread work: 0.5–1.5 ms a frame. Input only updates the camera; one render per animation frame
+    reads it.
+  - Gestures trade detail for time. A 150 ms debounced `isInteracting` drops fine detail in the shader and
+    reuses the overlay bitmap, transformed, while the zoom stays within 0.4–2.5× of it. Full detail redraws on
+    settle.
+  - Hover is a uniform; an edit uploads only the changed rows of a texture.
+  - Zoom is quick: continent to street in a few wheel flicks, anchored at the cursor.
+- **Measured.**
+
+  | Backing store             | GPU per frame, moving | GPU, settled | Main thread |
+  | ------------------------- | --------------------- | ------------ | ----------- |
+  | 1024×768 (1×, as shipped) | 4–5 ms                | 4–9 ms       | 0.5–1.5 ms  |
+  | 2048×1536 (DPR 2, forced) | 16–19 ms              | 11–17 ms     | under 1 ms  |
+
+  GPU cost is per pixel, about 5.6 ns per device pixel at both scales, and flat across zoom levels. Dropping
+  detail while moving saves little. In a 1600×900 window at DPR 2 the same shader would take about 32 ms: no
+  faster than FMG's SVG today.
+
+- **What it gives up.** Cell squares show in biome patches at regional zoom; text and lines are soft on high-DPR
+  screens; layer order is fixed; three fixed styles instead of editable ones; export is raster only.
+- **Lessons.**
+  - Perceived speed is decided by gesture frames: a cheap main thread, a frame on every animation frame,
+    quality refined on settle.
+  - A shader is not free: GPU cost is per pixel and adds up with every full-screen pass. Render scale is the
+    biggest lever.
+  - Data as textures makes frame cost independent of cell count and edits cheap.
+  - Frame intervals can hide GPU cost: in a hidden browser pane they stayed at 8.3 ms while the draw took 18 ms
+    of GPU. Measure GPU time with timer queries.
+  - Ocean bands as a shader over a coast distance texture work. The field comes from a CPU distance transform;
+    no compute shader was needed.
+
 #### Settled
 
 | Question             | Options                                                              | Choice                                                                                                                                                                     |
 | -------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Raster or GPU-native | SVG raster caching; textures of SVG bitmaps; GPU rendering from data | GPU from data, per layer                                                                                                                                                   |
 | WebGPU only          | WebGPU only; WebGPU with a WebGL2 fallback                           | A WebGL2 fallback is required: WebGPU is missing on older Safari, parts of Firefox and older tablets. A slower fallback is acceptable, as about 90% of users are on Chrome |
+| Speed or quality     | Full quality every frame; speed first, quality on settle             | Speed first. Gesture frames may drop render scale and detail; full quality returns on settle                                                                               |
+| Parity with SVG      | Pixel parity; visual parity                                          | Visual parity at settled views, within a tolerance. A GPU layer may look simpler than its SVG renderer while speed is the priority                                         |
 
 ### Required investigations
 
 #### R1. Cost per layer
 
 Frame time on a 100k-cell map with relief, Cinderwood and Frostbite, at 2× and 8× zoom, with each layer
-turned off in turn: headed Chromium on a GPU at DPR 2, one preset per run. Picks the first GPU layers.
+turned off in turn: headed Chromium on a GPU at DPR 2, one preset per run. Picks the first GPU layers. Each
+candidate's GPU approach then gets a GPU-time budget in nanoseconds per device pixel.
 
 Expected first candidates:
 
-| Layer                      | Why SVG is slow                                           | GPU approach                              |
-| -------------------------- | --------------------------------------------------------- | ----------------------------------------- |
-| Ocean bands and waves      | Full-map masks re-rendered every frame                    | A shader over a distance-to-coast texture |
-| Texture, heightmap, biomes | Large textured or filtered fills                          | Triangulated polygons, texture sampling   |
-| Relief, zoomed out         | Thousands of icons on screen at once; culling cannot help | Instanced sprites from an icon atlas      |
+| Layer                      | Why SVG is slow                                           | GPU approach                                                  |
+| -------------------------- | --------------------------------------------------------- | ------------------------------------------------------------- |
+| Ocean bands and waves      | Full-map masks re-rendered every frame                    | A shader over a distance-to-coast texture                     |
+| Texture, heightmap, biomes | Large textured or filtered fills                          | A pass over the cell-id raster and attribute textures (below) |
+| Relief, zoomed out         | Thousands of icons on screen at once; culling cannot help | Instanced sprites from an icon atlas                          |
 
 Not expected: labels, burg icons, markers, routes and rivers. Culling already keeps them cheap.
+
+**Map data on the GPU.** FMG's `pack` cells are irregular Voronoi polygons, not a grid, so per-cell data needs a
+lookup per pixel:
+
+- A **cell-id raster**: pack polygons drawn once into an integer texture, rebuilt only when the map is
+  regenerated.
+- **Attribute textures** indexed by cell id (height, biome, state, province), and **palettes** indexed by
+  entity id (state colors). Recoloring a state changes one texel; painting changes a few.
+- A **coast distance texture** from a CPU distance transform of the land mask.
+
+The grid textures that `draw-satellite-texture.ts` builds for the 3D view are prior art. To measure: raster
+size against the cell edges' look when zoomed in, and the cost of rebuilding the raster. Triangulated polygons
+with per-vertex attributes stay the alternative when the raster looks blocky up close.
 
 #### R2. Layer composition
 
@@ -156,8 +223,13 @@ How SVG and GPU layers share one z-order that users reorder freely.
 | F. three.js DOM overlays               | `CSS3DRenderer` or `SVGRenderer` around one canvas                            | Comes with three.js                                                                                                   | Overlays sit wholly above or below the canvas; no interleaving                                                            |
 
 To measure for A, B and C: frame time and GPU memory with 1, 4, 8 and 15 canvases; context behaviour of the
-WebGL2 fallback; reorder and toggle cost. A is preferred unless canvas memory or contexts rule it out; then
-B only for adjacent GPU layers, inside the renderer, not as a system-wide split.
+WebGL2 fallback; reorder and toggle cost; GPU time of adjacent GPU layers as separate full-screen passes against
+one merged pass. A is preferred unless canvas memory, contexts or per-pixel cost rule it out; then B only for
+adjacent GPU layers, inside the renderer, not as a system-wide split.
+
+Every full-screen pass pays the per-pixel cost again, so adjacent GPU layers drawn as one pass are likely: the
+bottom run (ocean, lakes, landmass, texture, heightmap, biomes) is rarely split by users. khalidibnwalid's
+generator draws all its terrain layers in one pass, toggled by uniforms.
 
 #### R3. GPU API and library
 
@@ -172,6 +244,11 @@ B only for adjacent GPU layers, inside the renderer, not as a system-wide split.
 To verify: three.js's WebGL2 fallback with `CanvasTarget` (one context per canvas, copies, or neither); frame
 time of the same layer on WebGPU and on the fallback; startup cost and whether the GPU path can load lazily
 on first use; instancing and polygon throughput for R1's candidates.
+
+A pass over data textures needs little from a library: texture uploads, one quad, uniforms. khalidibnwalid's
+whole map is about 550 lines of raw WebGL2, and WebGPU gains little for a single fragment-bound pass. Raw WebGL2
+is competitive on speed and size; three.js stays preferred only if sharing the renderer with the 3D view is
+worth its startup cost.
 
 #### R4. Text
 
@@ -192,24 +269,41 @@ textures. Frame time and memory as canvases are added, on Chrome and on the WebG
 #### R6. Hit testing from data
 
 A canvas layer has no DOM nodes to click. A spatial index over its features answers the same clicks,
-tooltips and drags the SVG did, with the same priority between layers.
+tooltips and drags the SVG did, with the same priority between layers. Cell layers need little: the pack
+quadtree already finds the cell under the cursor, and the hovered or selected cell, state or province reaches
+the shader as a uniform.
 
 #### R7. Export from renderers
 
 SVG and PNG export assembled from every layer's SVG renderer into one document, in layer order, matching
-today's output. Needed by the FMG 2.0 dependency anyway.
+today's output. Needed by the FMG 2.0 dependency anyway. A PNG can instead draw GPU layers directly, in tiles at
+the export resolution, as khalidibnwalid's poster export does: faster and sharper than rasterizing SVG.
+
+#### R8. Gesture frames
+
+Perceived speed is decided while the camera moves. Options, combinable:
+
+| Option                       | How                                                                                                                  | For                                                         | Against                                                     |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------- |
+| Lower render scale (default) | GPU layers draw at 1× or below while moving, at full scale on settle                                                 | 4× fewer pixels at DPR 2; khalidibnwalid's main lever       | Softer image while moving; a visible refine on settle       |
+| Less detail                  | Shaders skip fine noise and small features while moving                                                              | Free to add                                                 | Small gain in khalidibnwalid's shader                       |
+| Reproject the last frame     | Keep the settled frame as a texture and transform it while moving; redraw on settle or when the zoom leaves 0.4–2.5× | Constant cost per frame, however heavy the layer            | Empty edges when panning past the frame; stale when zooming |
+| Adaptive scale               | Pick the gesture scale from the last frames' GPU time to hold the display rate                                       | Holds the frame rate on weak GPUs; full quality where cheap | A feedback loop to tune; scale may flicker                  |
+
+To measure: GPU time and felt smoothness of each at DPR 2 on the heavy presets; the settle delay
+(khalidibnwalid uses 150 ms); whether the settled frame needs full DPR or a cap.
 
 ## Implementation Plan
 
-| Phase              | Work                                                                                                                                                                                                                                         | Depends on             |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| 0. Investigate     | R1–R7, as spikes outside the main code                                                                                                                                                                                                       | Nothing; can start now |
-| 1. Data-only maps  | Every layer redrawn from data on load; record 5 ignored; exports built from renderers (R7)                                                                                                                                                   | FMG 2.0 work           |
-| 2. Layer stage     | The registry creates one element per layer (or R2's choice), all SVG; single-root assumptions migrated (46 files, about 146 `#viewbox` references, 21 to `#map`); the whole-map style filter moves to the container. Same pixels, same speed | Phase 1, R2            |
-| 3. Map renderer    | The GPU renderer singleton (R3's choice), the shared camera, hit testing from data (R6). No layer moved yet                                                                                                                                  | Phase 2, R3, R5, R6    |
-| 4. First GPU layer | R1's top candidate, likely ocean bands and waves, behind a per-layer switch; pixel parity with its SVG renderer; measured against it                                                                                                         | Phase 3, R1            |
-| 5. More layers     | One at a time, each kept only if the measurement shows a clear gain                                                                                                                                                                          | Phase 4                |
-| Later              | The 3D view on the same renderer; WebGPU compute for the coast distance field and other fields                                                                                                                                               | Phase 3                |
+| Phase              | Work                                                                                                                                                                                                                                         | Depends on              |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| 0. Investigate     | R1–R8, as spikes outside the main code                                                                                                                                                                                                       | Nothing; can start now  |
+| 1. Data-only maps  | Every layer redrawn from data on load; record 5 ignored; exports built from renderers (R7)                                                                                                                                                   | FMG 2.0 work            |
+| 2. Layer stage     | The registry creates one element per layer (or R2's choice), all SVG; single-root assumptions migrated (46 files, about 146 `#viewbox` references, 21 to `#map`); the whole-map style filter moves to the container. Same pixels, same speed | Phase 1, R2             |
+| 3. Map renderer    | The GPU renderer singleton (R3's choice), the shared camera, gesture frames (R8), map data as textures, hit testing from data (R6). No layer moved yet                                                                                       | Phase 2, R3, R5, R6, R8 |
+| 4. First GPU layer | R1's top candidate, likely ocean bands and waves, behind a per-layer switch; visual parity with its SVG renderer; measured against it in GPU time                                                                                            | Phase 3, R1             |
+| 5. More layers     | One at a time, each kept only if the measurement shows a clear gain                                                                                                                                                                          | Phase 4                 |
+| Later              | The 3D view on the same renderer; WebGPU compute for fields the CPU makes slowly                                                                                                                                                             | Phase 3                 |
 
 Each phase ships on its own and leaves the map working. Phase 2 changes no pixels, so a regression there is a
 structure problem, not a rendering one.
@@ -218,15 +312,17 @@ structure problem, not a rendering one.
 
 1. As a map author with a large map and a heavy style, I want panning and zooming to stay smooth, so that I can
    explore the whole map.
-2. As a map author, I want every layer to look the same as before, so that moving a layer to the GPU changes
-   speed, not my map.
-3. As a map author, I want to reorder and toggle layers freely, so that a layer's renderer never limits the
+2. As a map author, I want the map to follow my gestures at once, even if detail fills in a moment later, so
+   that navigation feels instant.
+3. As a map author, I want every layer to look like before once the view settles, so that moving a layer to
+   the GPU changes speed, not my map.
+4. As a map author, I want to reorder and toggle layers freely, so that a layer's renderer never limits the
    order I choose.
-4. As a map author, I want clicks, tooltips and editors to work on every layer, so that editing does not
+5. As a map author, I want clicks, tooltips and editors to work on every layer, so that editing does not
    depend on how a layer is drawn.
-5. As a map author, I want my old `.map` files to open and my SVG exports to look the same, so that the change
+6. As a map author, I want my old `.map` files to open and my SVG exports to look the same, so that the change
    costs me nothing.
-6. As a map author on a browser without WebGPU, I want the map to work, slower, so that nobody is locked out.
+7. As a map author on a browser without WebGPU, I want the map to work, slower, so that nobody is locked out.
 
 ## Implementation Decisions
 
@@ -235,10 +331,15 @@ structure problem, not a rendering one.
 - **A map renderer singleton** owns the GPU renderer, the per-layer canvas targets and the shared camera. A
   GPU layer gives it a draw function and its data; it does not own a context.
 - **The camera** stays in `zoom.ts`. Per frame it writes the SVG transforms and asks the map renderer to draw.
+  Input handlers only update the camera; drawing happens once per animation frame.
+- **Speed first.** The map renderer owns the render scale: lower while the camera moves, full on settle
+  ([R8](#r8-gesture-frames)). A GPU layer may also skip detail while moving.
+- **Map data as textures.** The map renderer owns the cell-id raster and the attribute textures, rebuilt on
+  regenerate and updated texel by texel on edits. Hover and selection are uniforms, never uploads.
 - **No migration.** Nothing in a `.map` describes the DOM once the FMG 2.0 dependency is met, so old files open
   through the same data path as new ones.
-- **A GPU layer keeps an SVG renderer** for export only. That is the one place two renderers of a layer
-  coexist, and export parity tests keep them aligned.
+- **A GPU layer keeps an SVG renderer** for SVG export only. That is the one place two renderers of a layer
+  coexist, and export tests keep them visually aligned.
 - **Culling first.** A GPU layer culls on the CPU before it uploads or draws, with the viewport renderer's
   bounds.
 
@@ -246,8 +347,13 @@ structure problem, not a rendering one.
 
 - Every performance claim comes from headed Chromium on a GPU at DPR 2, against the current SVG path, with
   interleaved rounds and medians. `npm run benchmark` rasters on the CPU and only guards page work.
+- Perceived performance is judged on gesture frames: the 95th-percentile frame during pan and zoom, main-thread
+  time per frame, and GPU time per layer from timer queries (`EXT_disjoint_timer_query_webgl2`, WebGPU
+  timestamp queries). Frame intervals alone can hide GPU cost.
+- The browser stays visible during a run: a hidden or occluded page throttles animation frames.
 - One browser and one preset per run: the measurements are heavy enough to stall the machine.
-- A GPU layer is compared pixel by pixel with its SVG renderer at settled views.
+- A GPU layer is compared with its SVG renderer at settled views by a perceptual diff with a tolerance.
+  Gesture frames are not compared.
 - Unit tests cover the stack: order, toggling, reordering, the camera reaching every root, export assembling
   one SVG in layer order.
 
@@ -259,8 +365,8 @@ structure problem, not a rendering one.
 
 ## Further Notes
 
-- **WebGPU compute** fits jobs the CPU does today: the distance-to-coast field for ocean bands, heightmap
-  contours and hachures, the erosion bake.
+- **WebGPU compute** fits jobs the CPU does slowly today: heightmap contours and hachures, the erosion bake.
+  The distance-to-coast field is likely not one: khalidibnwalid computes it with a CPU distance transform.
 - **Raster view findings** worth reusing, on the local `raster-view` branch: `createImageBitmap` rasterizes SVG
   off the main thread; an export clone must be mounted off-screen, or it flashes on screen while the export
   awaits; the ocean cache needs a way to be suspended when another renderer draws the ocean.
