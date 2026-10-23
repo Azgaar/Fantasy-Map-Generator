@@ -1,6 +1,5 @@
 {
   "#map": {
-    "background-color": "#000000",
     "width": "1280",
     "height": "720"
   },
@@ -8,15 +7,14 @@
     "fill-opacity": "1",
     "stroke": "#000000",
     "stroke-width": "0.6",
-    "font-size": "8",
     "style": "display: none;"
   },
   "#biomes": {
     "opacity": "0.7",
-    "mask": "url(#land)",
     "style": "display: none;"
   },
   "#borders": {
+    "fill": "none",
     "style": "display: none;"
   },
   "#stateBorders": {
@@ -43,8 +41,7 @@
     "opacity": "0.6",
     "stroke": "#1f3846",
     "stroke-width": "0.7",
-    "filter": "none",
-    "style": "filter: none;"
+    "filter": "none"
   },
   "#lake_island": {
     "opacity": "1",
@@ -53,7 +50,6 @@
   },
   "#compass": {
     "opacity": "0.9",
-    "shape-rendering": "optimizespeed",
     "style": "display: none;"
   },
   "#coordinates": {
@@ -85,8 +81,6 @@
     "mask": "url(#fog)"
   },
   "#goods": {
-    "stroke-width": "0.32",
-    "filter": "url(#dropShadow01)",
     "style": "display: none;"
   },
   "#goodsCells": {},
@@ -197,9 +191,6 @@
   },
   "#provs": {
     "opacity": "0.2",
-    "fill": "#933e3e",
-    "font-size": "8",
-    "font-family": "Orbitron",
     "style": "display: none;"
   },
   "#regions": {
@@ -225,6 +216,7 @@
     "fill": "#6738bc"
   },
   "#routes": {
+    "fill": "none",
     "style": "display: none;"
   },
   "#roads": {
@@ -263,7 +255,6 @@
     "fill": "#05001f",
     "stroke": "#000000",
     "stroke-width": "1",
-    "filter": "",
     "x": "-12",
     "y": "-23",
     "height": "36.60000038146973"

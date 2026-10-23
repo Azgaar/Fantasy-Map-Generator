@@ -19,6 +19,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
+import { LegendBoxes } from "@/components/legend-boxes";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -27,11 +28,11 @@ import { CULTURE_TYPE_LABELS, SHIELD_LABELS } from "@/data/id-labels";
 import { CULTURE_TYPES, type Culture } from "@/generators/cultures-generator";
 import { Emblems } from "@/generators/emblems-generator";
 import { Tags } from "@/generators/tags";
-import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { Csv } from "@/services/io/csv";
 import type { Emblem } from "@/types/emblems";
+import type { LegendItem } from "@/types/Legend";
 import { findEl, getArea, getAreaUnit, groupByValue } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { errorText } from "@/utils/stringUtils";
@@ -858,17 +859,12 @@ function cultureCenterDrag(this: any, event: any): void {
 }
 
 function toggleLegend(): void {
-  if (hasLegend(LEGEND_NAME)) {
-    clearLegend(LEGEND_NAME); // hide this box alone, keeping the other legends
-    return;
-  }
-
-  const data = pack.cultures
-    .filter(c => c.i && !c.removed && c.cells)
-    .sort((a, b) => (b.area ?? 0) - (a.area ?? 0))
-    .map(c => [c.i, c.color, c.name]);
-  if (!data.length) return void tip(t("No cultures to show"), false, "error");
-  drawLegend(LEGEND_NAME, data);
+  const getItems = () =>
+    pack.cultures
+      .filter(c => c.i && !c.removed && c.cells)
+      .sort((a, b) => (b.area ?? 0) - (a.area ?? 0))
+      .map((c): LegendItem => [c.i, c.color ?? "", c.name]);
+  LegendBoxes.toggle(LEGEND_NAME, getItems, t("No cultures to show"));
 }
 
 function togglePercentageMode(): void {

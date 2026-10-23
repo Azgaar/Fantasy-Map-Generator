@@ -1,6 +1,6 @@
 // Update an old map file to the current version
 
-import { color, min, select } from "d3";
+import { min, select } from "d3";
 import { confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { CustomIcons, IMAGE_FRAME } from "@/components/icons";
 import { type LayerId, Layers, type LayersState } from "@/components/layers";
@@ -19,6 +19,7 @@ import { Relief, type ReliefIcon, type ReliefIconType, type ReliefSet } from "@/
 import { Styles } from "@/generators/styles";
 import {
   adoptLegacyIconSlots,
+  type LegacySvg,
   labelGroupFromLegacy,
   lakeGroupFromSvg,
   migrateStyles,
@@ -30,22 +31,11 @@ import {
 import type { Point } from "@/generators/voronoi";
 import { Hatches } from "@/renderers/hatches";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
-import { unfog } from "@/renderers/overlays/fogging";
 import { StylePresetsService } from "@/services/style-presets";
 import { compareVersions } from "@/services/versioning";
+import type { LegendItem } from "@/types/Legend";
 import type { StylesData } from "@/types/styles";
-import {
-  ensureEl,
-  findEl,
-  minmax,
-  parseTransform,
-  rn,
-  rw,
-  safeParseJSON,
-  sanitizeSvgIcon,
-  scopeSvgIcon,
-  unique
-} from "@/utils";
+import { minmax, parseTransform, rn, rw, safeParseJSON, sanitizeSvgIcon, scopeSvgIcon, unique } from "@/utils";
 import { t } from "@/utils/i18n";
 import { parsePathPoints } from "@/utils/pathUtils";
 import { Csv } from "./csv";
@@ -93,7 +83,22 @@ const LEGACY_LAYER_IDS: Record<string, LayerId> = {
 };
 
 export async function resolveVersionConflicts(mapVersion: string, data: string[]): Promise<void> {
+  const isLegacy = compareVersions(mapVersion, "1.156.0").isOlder;
+  if (isLegacy && !data[5])
+    WARN && console.warn("[Auto-update] The svg record is missing: data kept only there is lost");
+  const legacySvg = isLegacy && data[5] ? parseLegacySvg(data[5]) : null;
+  try {
+    await migrateLegacyMap(mapVersion, data, legacySvg ?? new DocumentFragment());
+  } finally {
+    legacySvg?.host.remove();
+  }
+}
+
+async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacySvg): Promise<void> {
   const isOlderThan = (tagVersion: string) => compareVersions(mapVersion, tagVersion).isOlder;
+  const selectInSvg = (selector: string) => select(svg as unknown as Element).select(selector);
+  const findInSvg = <T extends Element = HTMLElement>(id: string) => svg.getElementById(id) as T | null;
+  const attrInSvg = (id: string, name: string) => findInSvg(id)?.getAttribute(name) ?? null; // an absent element has none
   const noteRenames = new Map<string, string>(); // legacy element id -> the id the element has now
   type LegacyReliefIcon = { icon: string; x: number; y: number; s: number };
   let extractedRelief: LegacyReliefIcon[] | null = null; // read by the 1.154 relief step
@@ -133,12 +138,12 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.0.0")) {
     // v1.0 added a new religions layer
-    select("#viewbox").insert("g", "#terrain").attr("id", "relig");
+    selectInSvg("#viewbox").insert("g", "#terrain").attr("id", "relig");
     Religions.generate();
 
     // v1.0 added a legend box
-    select("#map").append("g").attr("id", "legend");
-    select("#legend")
+    selectInSvg("#map").append("g").attr("id", "legend");
+    selectInSvg("#legend")
       .attr("font-family", "Almendra SC")
       .attr("font-size", 13)
       .attr("data-size", 13)
@@ -150,22 +155,22 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       .attr("stroke-linecap", "round");
 
     // v1.0 separated drawBorders fron drawStates()
-    select("#borders").append("g").attr("id", "stateBorders");
-    select("#borders").append("g").attr("id", "provinceBorders");
-    select("#borders")
+    selectInSvg("#borders").append("g").attr("id", "stateBorders");
+    selectInSvg("#borders").append("g").attr("id", "provinceBorders");
+    selectInSvg("#borders")
       .attr("opacity", null)
       .attr("stroke", null)
       .attr("stroke-width", null)
       .attr("stroke-dasharray", null)
       .attr("stroke-linecap", null)
       .attr("filter", null);
-    select("#stateBorders")
+    selectInSvg("#stateBorders")
       .attr("opacity", 0.8)
       .attr("stroke", "#56566d")
       .attr("stroke-width", 1)
       .attr("stroke-dasharray", "2")
       .attr("stroke-linecap", "butt");
-    select("#provinceBorders")
+    selectInSvg("#provinceBorders")
       .attr("opacity", 0.8)
       .attr("stroke", "#56566d")
       .attr("stroke-width", 0.5)
@@ -173,7 +178,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       .attr("stroke-linecap", "butt");
 
     // v1.0 added state relations, provinces, forms and full names
-    select("#viewbox").insert("g", "#borders").attr("id", "provs").attr("opacity", 0.6);
+    selectInSvg("#viewbox").insert("g", "#borders").attr("id", "provs").attr("opacity", 0.6);
     States.collectStatistics();
     States.generateCampaigns();
     States.generateDiplomacy();
@@ -182,43 +187,24 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     Provinces.getPoles();
 
     // v1.0 added zones layer
-    select("#viewbox").insert("g", "#borders").attr("id", "zones").attr("display", "none");
-    select("#zones")
+    selectInSvg("#viewbox").insert("g", "#borders").attr("id", "zones").attr("display", "none");
+    selectInSvg("#zones")
       .attr("opacity", 0.6)
       .attr("stroke", null)
       .attr("stroke-width", 0)
       .attr("stroke-dasharray", null)
       .attr("stroke-linecap", "butt");
     Zones.generate();
-    if (!select("#markers").selectAll("*").size()) Markers.generate();
-
-    // v1.0 add fogging layer (state focus)
-    select("#viewbox")
-      .insert("g", "#ruler")
-      .attr("id", "fogging-cont")
-      .attr("mask", "url(#fog)")
-      .append("g")
-      .attr("id", "fogging")
-      .style("display", "none");
-    select("#fogging").append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
-    select("#deftemp")
-      .append("mask")
-      .attr("id", "fog")
-      .append("rect")
-      .attr("x", 0)
-      .attr("y", 0)
-      .attr("width", "100%")
-      .attr("height", "100%")
-      .attr("fill", "white");
+    if (!selectInSvg("#markers").selectAll("*").size()) Markers.generate();
 
     // v1.0 changes states opacity bask to regions level
-    if (select("#statesBody").attr("opacity")) {
-      select("#regions").attr("opacity", select("#statesBody").attr("opacity"));
-      select("#statesBody").attr("opacity", null);
+    if (attrInSvg("statesBody", "opacity")) {
+      selectInSvg("#regions").attr("opacity", attrInSvg("statesBody", "opacity"));
+      selectInSvg("#statesBody").attr("opacity", null);
     }
 
     // v1.0 changed labels to multi-lined
-    select("#labels")
+    selectInSvg("#labels")
       .selectAll<SVGTextPathElement, unknown>("textPath")
       .each(function () {
         const text = this.textContent;
@@ -229,7 +215,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.1.0")) {
     // v1.0 code had a bug with religion layer id
-    if (!select("#relig").size()) select("#viewbox").insert("g", "#terrain").attr("id", "relig");
+    if (!selectInSvg("#relig").size()) selectInSvg("#viewbox").insert("g", "#terrain").attr("id", "relig");
 
     // v1.0 had Sympathy status then relaced with Friendly
     for (const s of pack.states) {
@@ -238,7 +224,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     }
 
     // labels should be toggled via style attribute, so remove display attribute
-    select("#labels").attr("display", null);
+    selectInSvg("#labels").attr("display", null);
 
     // v1.0 added religions heirarchy tree
     if (pack.religions[1] && !pack.religions[1].code) {
@@ -250,9 +236,9 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         });
     }
 
-    if (!findEl("freshwater")) {
-      select("#lakes").append("g").attr("id", "freshwater");
-      select("#lakes")
+    if (!findInSvg("freshwater")) {
+      selectInSvg("#lakes").append("g").attr("id", "freshwater");
+      selectInSvg("#lakes")
         .select("#freshwater")
         .attr("opacity", 0.5)
         .attr("fill", "#a6c1fd")
@@ -261,9 +247,9 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         .attr("filter", null);
     }
 
-    if (!findEl("salt")) {
-      select("#lakes").append("g").attr("id", "salt");
-      select("#lakes")
+    if (!findInSvg("salt")) {
+      selectInSvg("#lakes").append("g").attr("id", "salt");
+      selectInSvg("#lakes")
         .select("#salt")
         .attr("opacity", 0.5)
         .attr("fill", "#409b8a")
@@ -273,25 +259,25 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     }
 
     // v1.1 added new lake and coast groups
-    if (!findEl("sinkhole")) {
-      select("#lakes").append("g").attr("id", "sinkhole");
-      select("#lakes").append("g").attr("id", "frozen");
-      select("#lakes").append("g").attr("id", "lava");
-      select("#lakes")
+    if (!findInSvg("sinkhole")) {
+      selectInSvg("#lakes").append("g").attr("id", "sinkhole");
+      selectInSvg("#lakes").append("g").attr("id", "frozen");
+      selectInSvg("#lakes").append("g").attr("id", "lava");
+      selectInSvg("#lakes")
         .select("#sinkhole")
         .attr("opacity", 1)
         .attr("fill", "#5bc9fd")
         .attr("stroke", "#53a3b0")
         .attr("stroke-width", 0.7)
         .attr("filter", null);
-      select("#lakes")
+      selectInSvg("#lakes")
         .select("#frozen")
         .attr("opacity", 0.95)
         .attr("fill", "#cdd4e7")
         .attr("stroke", "#cfe0eb")
         .attr("stroke-width", 0)
         .attr("filter", null);
-      select("#lakes")
+      selectInSvg("#lakes")
         .select("#lava")
         .attr("opacity", 0.7)
         .attr("fill", "#90270d")
@@ -299,15 +285,15 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         .attr("stroke-width", 2)
         .attr("filter", "url(#crumpled)");
 
-      select("#coastline").append("g").attr("id", "sea_island");
-      select("#coastline").append("g").attr("id", "lake_island");
-      select("#coastline")
+      selectInSvg("#coastline").append("g").attr("id", "sea_island");
+      selectInSvg("#coastline").append("g").attr("id", "lake_island");
+      selectInSvg("#coastline")
         .select("#sea_island")
         .attr("opacity", 0.5)
         .attr("stroke", "#1f3846")
         .attr("stroke-width", 0.7)
         .attr("filter", null);
-      select("#coastline")
+      selectInSvg("#coastline")
         .select("#lake_island")
         .attr("opacity", 1)
         .attr("stroke", "#7c8eaf")
@@ -316,21 +302,21 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     }
 
     // v1.1 features stores more data
-    select("#deftemp").select("#land").selectAll("path").remove();
-    select("#deftemp").select("#water").selectAll("path").remove();
-    select("#coastline").selectAll("path").remove();
-    select("#lakes").selectAll("path").remove();
-
     Features.markupPack();
     Measurers.createDefaultRuler();
   }
 
   if (isOlderThan("1.11.0")) {
     // v1.11 added new attributes
-    select("#terrs").attr("scheme", "bright").attr("terracing", 0).attr("skip", 5).attr("relax", 0).attr("curve", 0);
-    select("#map").select("#oceanic > *").attr("id", "oceanicPattern");
-    select("#oceanLayers").attr("layers", "-6,-3,-1");
-    select("#gridOverlay").attr("type", "pointyHex").attr("size", 10);
+    selectInSvg("#terrs")
+      .attr("scheme", "bright")
+      .attr("terracing", 0)
+      .attr("skip", 5)
+      .attr("relax", 0)
+      .attr("curve", 0);
+    selectInSvg("#map").select("#oceanic > *").attr("id", "oceanicPattern");
+    selectInSvg("#oceanLayers").attr("layers", "-6,-3,-1");
+    selectInSvg("#gridOverlay").attr("type", "pointyHex").attr("size", 10);
 
     // v1.11 added cultures heirarchy tree
     if (pack.cultures[1] && !pack.cultures[1].code) {
@@ -342,20 +328,17 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         });
     }
 
-    // v1.11 had an issue with fogging being displayed on load
-    select("#fog").selectAll("path").remove();
-
     // v1.2 added new terrain attributes
-    const terrain = select("#terrain");
-    if (!terrain.attr("set")) terrain.attr("set", "simple");
-    if (!terrain.attr("size")) terrain.attr("size", 1);
-    if (!terrain.attr("density")) terrain.attr("density", 0.4);
+    const terrain = selectInSvg("#terrain");
+    if (!attrInSvg("terrain", "set")) terrain.attr("set", "simple");
+    if (!attrInSvg("terrain", "size")) terrain.attr("size", 1);
+    if (!attrInSvg("terrain", "density")) terrain.attr("density", 0.4);
   }
 
   if (isOlderThan("1.21.0")) {
     // v1.11 replaced "display" attribute by "display" style. Only "none" hid the element: layers
     // that were on carry "block" (compass, prec, fogging), so those just lose the attribute
-    select("#viewbox")
+    selectInSvg("#viewbox")
       .selectAll<SVGGraphicsElement, unknown>("[display]")
       .each(function () {
         if (this.getAttribute("display") === "none") this.style.display = "none";
@@ -364,7 +347,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
     // v1.21 added rivers data to pack
     pack.rivers = []; // rivers data
-    select("#rivers")
+    selectInSvg("#rivers")
       .selectAll<SVGPathElement, unknown>("path")
       .each(function () {
         const i = +this.id.slice(5);
@@ -401,7 +384,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     States.generateCampaigns();
 
     // v1.3 added militry layer
-    select("#viewbox")
+    selectInSvg("#viewbox")
       .insert("g", "#icons") // the pre-1.154 layer group; #burgIcons is nested inside it
       .attr("id", "armies")
       .attr("opacity", 1)
@@ -415,9 +398,9 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.4.0")) {
     // v1.35 added dry lakes
-    if (!select("#lakes").select("#dry").size()) {
-      select("#lakes").append("g").attr("id", "dry");
-      select("#lakes")
+    if (!selectInSvg("#lakes").select("#dry").size()) {
+      selectInSvg("#lakes").append("g").attr("id", "dry");
+      selectInSvg("#lakes")
         .select("#dry")
         .attr("opacity", 1)
         .attr("fill", "#c9bfa7")
@@ -427,8 +410,8 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     }
 
     // v1.4 added ice layer
-    select("#viewbox").insert("g", "#coastline").attr("id", "ice").style("display", "none");
-    select("#ice")
+    selectInSvg("#viewbox").insert("g", "#coastline").attr("id", "ice").style("display", "none");
+    selectInSvg("#ice")
       .attr("opacity", null)
       .attr("fill", "#e8f0f6")
       .attr("stroke", "#e8f0f6")
@@ -465,16 +448,15 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     });
 
     // v1.5 added emblems
-    select("#deftemp").append("g").attr("id", "defs-emblems");
-    select("#viewbox").insert("g", "#population").attr("id", "emblems").style("display", "none");
-    select("#emblems").append("g").attr("id", "burgEmblems");
-    select("#emblems").append("g").attr("id", "provinceEmblems");
-    select("#emblems").append("g").attr("id", "stateEmblems");
+    selectInSvg("#viewbox").insert("g", "#population").attr("id", "emblems").style("display", "none");
+    selectInSvg("#emblems").append("g").attr("id", "burgEmblems");
+    selectInSvg("#emblems").append("g").attr("id", "provinceEmblems");
+    selectInSvg("#emblems").append("g").attr("id", "stateEmblems");
     Emblems.regenerate();
-    ensureEl("emblems").style.display = "";
+    findInSvg("emblems")?.style.setProperty("display", "");
 
     // v1.5 changed releif icons data
-    select("#terrain")
+    selectInSvg("#terrain")
       .selectAll<SVGUseElement, unknown>("use")
       .each(function () {
         const type = this.getAttribute("data-type") || this.getAttribute("xlink:href");
@@ -488,11 +470,9 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   if (isOlderThan("1.6.0")) {
     // v1.6 changed rivers data
     for (const river of pack.rivers) {
-      const el = findEl(`river${river.i}`);
+      const el = findInSvg(`river${river.i}`);
       if (el) {
         river.widthFactor = +el.getAttribute("data-width")!;
-        el.removeAttribute("data-width");
-        el.removeAttribute("data-increment");
         river.discharge = pack.cells.fl[river.mouth] || 1;
         river.width = rn(river.length / 100, 2);
         river.sourceWidth = 0.1;
@@ -520,10 +500,10 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.61.0")) {
     // v1.61 changed rulers data
-    select("#ruler").style("display", null);
+    selectInSvg("#ruler").style("display", null);
     pack.measurers = [];
 
-    select("#ruler")
+    selectInSvg("#ruler")
       .selectAll<SVGLineElement, unknown>(".ruler > .white")
       .each(function () {
         const x1 = +this.getAttribute("x1")!;
@@ -538,7 +518,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         pack.measurers.push({ type: "Ruler", points });
       });
 
-    select("#ruler")
+    selectInSvg("#ruler")
       .selectAll<SVGGElement, unknown>("g.opisometer")
       .each(function () {
         const pointsString = this.dataset.points;
@@ -547,7 +527,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         pack.measurers.push({ type: "Opisometer", points });
       });
 
-    select("#ruler")
+    selectInSvg("#ruler")
       .selectAll<SVGPathElement, unknown>("path.planimeter")
       .each(function () {
         const length = this.getTotalLength();
@@ -564,49 +544,49 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         pack.measurers.push({ type: "Planimeter", points });
       });
 
-    select("#ruler").selectAll("*").remove();
-
     // the measurers are redrawn by the load routine once the layer state is restored
-    const ruler = findEl("ruler");
+    const ruler = findInSvg("ruler");
     if (ruler) ruler.style.display = pack.measurers.length ? "" : "none";
 
     // 1.61 changed oceanicPattern from rect to image
-    const pattern = ensureEl("oceanic");
-    const filter = pattern.firstElementChild!.getAttribute("filter");
-    const href = filter ? `./images/${filter.replace("url(#", "").replace(")", "")}.png` : "";
-    pattern.innerHTML = /* html */ `<image id="oceanicPattern" href="${href}" width="100" height="100" opacity="0.2"></image>`;
+    const pattern = findInSvg("oceanic");
+    if (pattern) {
+      const filter = pattern.firstElementChild?.getAttribute("filter");
+      const href = filter ? `./images/${filter.replace("url(#", "").replace(")", "")}.png` : "";
+      pattern.innerHTML = /* html */ `<image id="oceanicPattern" href="${href}" width="100" height="100" opacity="0.2"></image>`;
+    }
   }
 
   if (isOlderThan("1.62.0")) {
     // v1.62 changed grid data
-    select("#gridOverlay").attr("size", null);
+    selectInSvg("#gridOverlay").attr("size", null);
   }
 
   if (isOlderThan("1.63.0")) {
     // v1.63 changed ocean pattern opacity element
-    const oceanPattern = findEl("oceanPattern");
+    const oceanPattern = findInSvg("oceanPattern");
     if (oceanPattern) oceanPattern.removeAttribute("opacity");
-    const oceanicPattern = findEl("oceanicPattern");
+    const oceanicPattern = findInSvg("oceanicPattern");
     if (oceanicPattern && !oceanicPattern.getAttribute("opacity")) oceanicPattern.setAttribute("opacity", "0.2");
   }
 
   if (isOlderThan("1.64.0")) {
     // v1.64 change states style
-    const opacity = select("#regions").attr("opacity");
-    const filter = select("#regions").attr("filter");
-    select("#statesBody").attr("opacity", opacity).attr("filter", filter);
-    select("#statesHalo").attr("opacity", opacity).attr("filter", "blur(5px)");
-    select("#regions").attr("opacity", null).attr("filter", null);
+    const opacity = attrInSvg("regions", "opacity");
+    const filter = attrInSvg("regions", "filter");
+    selectInSvg("#statesBody").attr("opacity", opacity).attr("filter", filter);
+    selectInSvg("#statesHalo").attr("opacity", opacity).attr("filter", "blur(5px)");
+    selectInSvg("#regions").attr("opacity", null).attr("filter", null);
   }
 
   if (isOlderThan("1.65.0")) {
     // v1.65 changed rivers data
-    select("#rivers").attr("style", null); // remove style to unhide layer
+    selectInSvg("#rivers").attr("style", null); // remove style to unhide layer
     const { cells, rivers } = pack;
     const defaultWidthFactor = rn(1 / (options.map.graph.points / 10000) ** 0.25, 2);
 
     for (const river of rivers) {
-      const node = findEl<SVGPathElement>(`river${river.i}`);
+      const node = findInSvg<SVGPathElement>(`river${river.i}`);
       if (node && !river.cells) {
         const riverCells = [];
         const riverPoints: [number, number][] = [];
@@ -643,14 +623,14 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.652.0")) {
     // remove style to unhide layers
-    select("#rivers").attr("style", null);
-    select("#borders").attr("style", null);
+    selectInSvg("#rivers").attr("style", null);
+    selectInSvg("#borders").attr("style", null);
   }
 
   if (isOlderThan("1.7.0")) {
     // v1.7 changed markers data
-    const defs = findEl("defs-markers");
-    const markersGroup = findEl("markers");
+    const defs = findInSvg("defs-markers");
+    const markersGroup = findInSvg("markers");
 
     if (defs && markersGroup) {
       const markerElements = markersGroup.querySelectorAll<SVGUseElement>("use");
@@ -696,29 +676,15 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
         return marker;
       }) as unknown as typeof pack.markers;
-
-      (markersGroup as HTMLElement).style.display = "";
-      defs?.remove();
-      markerElements.forEach(el => {
-        el.remove();
-      });
     }
   }
 
   if (isOlderThan("1.73.0")) {
-    // v1.73 moved the hatching patterns out of the user's SVG
-    findEl("hatching")?.remove();
-
     // v1.73 added zone type to UI, ensure type is populated
-    const zones = Array.from(document.querySelectorAll<SVGGElement>("#zones > g"));
+    const zones = Array.from(svg.querySelectorAll<SVGGElement>("#zones > g"));
     zones.forEach(zone => {
       if (!zone.dataset.type) zone.dataset.type = "Unknown";
     });
-  }
-
-  if (isOlderThan("1.85.0")) {
-    // v1.84.0 moved intial screen out of maon svg
-    select("#map").select("#initial").remove();
   }
 
   if (isOlderThan("1.86.0")) {
@@ -755,22 +721,6 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       if ((burg.coa as unknown) === "custom") burg.coa = { custom: true } as unknown as typeof burg.coa;
     });
 
-    // from 1.91.00 emblems don't have transform attribute
-    select("#emblems")
-      .selectAll<SVGUseElement, unknown>("use")
-      .each(function () {
-        const transform = this.getAttribute("transform");
-        if (!transform) return;
-
-        const [dx, dy] = parseTransform(transform);
-        const x = Number(this.getAttribute("x")) + Number(dx);
-        const y = Number(this.getAttribute("y")) + Number(dy);
-
-        this.setAttribute("x", String(x));
-        this.setAttribute("y", String(y));
-        this.removeAttribute("transform");
-      });
-
     // from 1.91.00 coaSize is moved to coa object
     pack.states.forEach(state => {
       const s = state as typeof state & { coaSize?: number };
@@ -797,47 +747,22 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     });
   }
 
-  if (isOlderThan("1.92.0")) {
-    // v1.92 change labels text-anchor from 'start' to 'middle'
-    select("#labels")
-      .selectAll<SVGTSpanElement, unknown>("tspan")
-      .each(function () {
-        this.setAttribute("x", "0");
-      });
-  }
-
   if (isOlderThan("1.94.0")) {
     // from v1.94.00 texture image is removed when layer is off
-    select("#texture").style("display", null);
-
-    const textureImage = select("#texture").select<SVGImageElement>("image");
+    const textureImage = selectInSvg("#texture").select<SVGImageElement>("image");
     if (textureImage.size()) {
       // restore parameters
       const x = Number(textureImage.attr("x") || 0);
       const y = Number(textureImage.attr("y") || 0);
       const href = textureImage.attr("xlink:href") || textureImage.attr("href") || textureImage.attr("src");
       // save parameters to parent element
-      select("#texture").attr("data-href", href).attr("data-x", x).attr("data-y", y);
+      selectInSvg("#texture").attr("data-href", href).attr("data-x", x).attr("data-y", y);
     }
   }
 
   if (isOlderThan("1.95.0")) {
     // v1.95.00 added vignette visual layer
-    const mask = select("#deftemp").append("mask").attr("id", "vignette-mask");
-    mask.append("rect").attr("fill", "white").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%");
-    mask
-      .append("rect")
-      .attr("id", "vignette-rect")
-      .attr("fill", "black")
-      .attr("x", "0.3%")
-      .attr("y", "0.4%")
-      .attr("width", "99.4%")
-      .attr("height", "99.2%")
-      .attr("rx", "5%")
-      .attr("ry", "5%")
-      .attr("filter", "blur(20px)");
-
-    const vignette = select("#map")
+    const vignette = selectInSvg("#map")
       .append("g")
       .attr("id", "vignette")
       .attr("mask", "url(#vignette-mask)")
@@ -849,19 +774,19 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.96.0")) {
     // v1.96 added ocean rendering for heightmap
-    select("#terrs").selectAll("*").remove();
+    selectInSvg("#terrs").selectAll("*").remove();
 
-    const opacity = select("#terrs").attr("opacity");
-    const filter = select("#terrs").attr("filter");
-    const scheme = select("#terrs").attr("scheme") || "bright";
-    const terracing = select("#terrs").attr("terracing");
-    const skip = select("#terrs").attr("skip");
-    const relax = select("#terrs").attr("relax");
+    const opacity = attrInSvg("terrs", "opacity");
+    const filter = attrInSvg("terrs", "filter");
+    const scheme = attrInSvg("terrs", "scheme") || "bright";
+    const terracing = attrInSvg("terrs", "terracing");
+    const skip = attrInSvg("terrs", "skip");
+    const relax = attrInSvg("terrs", "relax");
 
     const curveTypes: Record<number, string> = { 0: "curveBasisClosed", 1: "curveLinear", 2: "curveStep" };
-    const curve = curveTypes[+select("#terrs").attr("curve")] || "curveBasisClosed";
+    const curve = curveTypes[Number(attrInSvg("terrs", "curve"))] || "curveBasisClosed";
 
-    select("#terrs")
+    selectInSvg("#terrs")
       .attr("opacity", null)
       .attr("filter", null)
       .attr("mask", null)
@@ -871,7 +796,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       .attr("relax", null)
       .attr("curve", null);
 
-    select("#terrs")
+    selectInSvg("#terrs")
       .append("g")
       .attr("id", "oceanHeights")
       .attr("data-render", 0)
@@ -883,7 +808,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       .attr("relax", 1)
       .attr("curve", curve);
 
-    select("#terrs")
+    selectInSvg("#terrs")
       .append("g")
       .attr("id", "landHeights")
       .attr("opacity", opacity)
@@ -896,8 +821,8 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       .attr("mask", "url(#land)");
 
     // v1.96.00 moved scaleBar options from units editor to style
-    select("#scaleBar").remove();
-    select("#map")
+    selectInSvg("#scaleBar").remove();
+    selectInSvg("#map")
       .insert("g", "#viewbox + *")
       .attr("id", "scaleBar")
       .attr("opacity", 1)
@@ -907,7 +832,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       .attr("data-x", 99)
       .attr("data-y", 99)
       .attr("data-label", "");
-    select("#scaleBar")
+    selectInSvg("#scaleBar")
       .append("rect")
       .attr("id", "scaleBarBack")
       .attr("data-group", "back")
@@ -920,29 +845,13 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       .attr("data-right", 15)
       .attr("data-bottom", 15)
       .attr("data-left", 10);
-
-    // v1.96.00 changed coloring approach for regiments
-    select("#armies")
-      .selectAll<SVGGElement, unknown>(":scope > g")
-      .each(function () {
-        const fill = this.getAttribute("fill");
-        if (!fill) return;
-        const darkerColor = color(fill)!.darker().formatHex();
-        this.setAttribute("color", darkerColor);
-        this.querySelectorAll("g > rect:nth-child(2)").forEach(rect => {
-          rect.setAttribute("fill", "currentColor");
-        });
-      });
   }
 
   if (isOlderThan("1.98.0")) {
-    // v1.98.00 changed compass layer and rose element id
-    const rose = select("#compass").select("use");
-    rose.attr("xlink:href", "#defs-compass-rose");
-
-    if (!select("#compass").selectAll("*").size()) {
-      select("#compass").style("display", "none");
-      select("#compass")
+    // v1.98.00 changed compass layer
+    if (!selectInSvg("#compass").selectAll("*").size()) {
+      selectInSvg("#compass").style("display", "none");
+      selectInSvg("#compass")
         .append("use")
         .attr("xlink:href", "#defs-compass-rose")
         .attr("transform", styles.compass.groups.compassRose.attrs.transform);
@@ -951,15 +860,12 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.99.0")) {
     // v1.99.00 changed routes generation algorithm and data format
-    select("#routes").attr("display", null).attr("style", null);
-
-    delete (select("#cells") as unknown as Record<string, unknown>).road;
-    delete (select("#cells") as unknown as Record<string, unknown>).crossroad;
+    selectInSvg("#routes").attr("display", null).attr("style", null);
 
     pack.routes = [];
     const POINT_DISTANCE = grid.spacing * 0.75;
 
-    for (const g of document.querySelectorAll("#viewbox > #routes > g")) {
+    for (const g of svg.querySelectorAll("#viewbox > #routes > g")) {
       const group = g.id;
       if (!group) continue;
 
@@ -1000,7 +906,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         } as unknown as (typeof pack.routes)[number]);
       }
     }
-    select("#routes").selectAll("path").remove();
+    selectInSvg("#routes").selectAll("path").remove();
 
     pack.cells.routes = {};
     const links = pack.cells.routes;
@@ -1023,7 +929,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   if (isOlderThan("1.100.0")) {
     // v1.100.00 added zones to pack data
     pack.zones = [];
-    select("#zones")
+    selectInSvg("#zones")
       .selectAll<SVGGElement, unknown>("g")
       .each(function () {
         const i = pack.zones.length;
@@ -1033,7 +939,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         const cells = this.dataset.cells!.split(",").map(Number);
         pack.zones.push({ i, name, type, cells, color, tags: [] } as unknown as (typeof pack.zones)[number]);
       });
-    select("#zones").style("display", null).selectAll("*").remove();
+    selectInSvg("#zones").style("display", null).selectAll("*").remove();
   }
 
   if (isOlderThan("1.104.0")) {
@@ -1044,22 +950,18 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.105.0")) {
     // v1.104.0 introduced some bugs with layers visibility
-    select("#viewbox").select("#icons").style("display", null);
-    select("#viewbox").select("#ice").style("display", null);
-    select("#viewbox").select("#regions").style("display", null);
-    select("#viewbox").select("#armies").style("display", null);
+    selectInSvg("#viewbox").select("#icons").style("display", null);
+    selectInSvg("#viewbox").select("#ice").style("display", null);
+    selectInSvg("#viewbox").select("#regions").style("display", null);
+    selectInSvg("#viewbox").select("#armies").style("display", null);
   }
 
   if (isOlderThan("1.106.0")) {
-    // v1.104.0 introduced bugs with coastlines. Redraw features
-    select("#deftemp").select("#featurePaths").remove();
-    select("#deftemp").append("g").attr("id", "featurePaths");
-    select("#deftemp").select("#land").selectAll("path, use").remove();
-    select("#deftemp").select("#water").selectAll("path, use").remove();
-    select("#viewbox").select("#coastline").selectAll("path, use").remove();
+    // v1.104.0 introduced bugs with coastlines: the feature placement is read again from the data
+    selectInSvg("#viewbox").select("#coastline").selectAll("path, use").remove();
 
     // v1.104.0 introduced bugs with state borders
-    select("#regions")
+    selectInSvg("#regions")
       .attr("opacity", null)
       .attr("stroke-width", null)
       .attr("letter-spacing", null)
@@ -1079,14 +981,14 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     });
 
     // some old maps has incorrect "heights" groups
-    select("#viewbox").selectAll("#heights").remove();
+    selectInSvg("#viewbox").selectAll("#heights").remove();
   }
 
   if (isOlderThan("1.109.0")) {
     // v1.109.0 added customizable burg groups and icons
     options.map.burgs.groups = [];
 
-    select("#burgIcons")
+    selectInSvg("#burgIcons")
       .selectAll<SVGElement, unknown>("circle, use")
       .each(function () {
         const group = (this.parentNode as Element).id;
@@ -1095,7 +997,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         if (group && burg) burg.group = group;
       });
 
-    select("#burgIcons")
+    selectInSvg("#burgIcons")
       .selectAll<SVGGElement, unknown>("g")
       .each(function (_el, index) {
         const name = this.id;
@@ -1114,7 +1016,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       options.map.burgs.groups[0].isDefault = true;
     }
 
-    select("#anchors")
+    selectInSvg("#anchors")
       .selectAll<SVGGElement, unknown>("g")
       .each(function () {
         const size = Number(this.getAttribute("size") || 1);
@@ -1122,7 +1024,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         this.setAttribute("font-size", String(size));
       });
 
-    select("#burgLabels")
+    selectInSvg("#burgLabels")
       .selectAll<SVGGElement, unknown>("g")
       .each(function () {
         if (!this.dataset.dy) this.dataset.dy = "-0.4";
@@ -1153,7 +1055,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       pack.ice = [];
       let iceId = 0;
 
-      const iceGroup = findEl("ice");
+      const iceGroup = findInSvg("ice");
       if (iceGroup) {
         // Migrate glaciers (type="iceShield")
         iceGroup.querySelectorAll<SVGPolygonElement>("polygon[type='iceShield']").forEach(polygon => {
@@ -1196,15 +1098,10 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
           }
           pack.ice.push(iceElement as unknown as (typeof pack.ice)[number]);
         });
-
-        // Clear old SVG elements
-        iceGroup.querySelectorAll("*").forEach(el => {
-          el.remove();
-        });
       } else {
         // If ice layer element doesn't exist, create it
-        select("#viewbox").insert("g", "#coastline").attr("id", "ice");
-        select("#ice")
+        selectInSvg("#viewbox").insert("g", "#coastline").attr("id", "ice");
+        selectInSvg("#ice")
           .attr("opacity", null)
           .attr("fill", "#e8f0f6")
           .attr("stroke", "#e8f0f6")
@@ -1223,17 +1120,21 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.124.0")) {
     // v1.124.0 added goods, markets, deals and trade animation data
-    select("#viewbox")
+    selectInSvg("#viewbox")
       .insert("g", "#emblems")
       .attr("id", "goods")
       .style("display", "none")
       .attr("stroke-width", "0.32")
       .attr("filter", "url(#dropShadow01)");
-    select("#goods").append("g").attr("id", "goodsCells");
-    select("#goods").append("g").attr("id", "goodsIcons").attr("data-circle", "1");
-    select("#goods").append("g").attr("id", "goodsBurgs");
-    select("#viewbox").insert("g", "#emblems").attr("id", "markets").attr("fill-opacity", "0").style("display", "none");
-    select("#viewbox").insert("g", "#goods").attr("id", "tradeAnimation").style("display", "none");
+    selectInSvg("#goods").append("g").attr("id", "goodsCells");
+    selectInSvg("#goods").append("g").attr("id", "goodsIcons").attr("data-circle", "1");
+    selectInSvg("#goods").append("g").attr("id", "goodsBurgs");
+    selectInSvg("#viewbox")
+      .insert("g", "#emblems")
+      .attr("id", "markets")
+      .attr("fill-opacity", "0")
+      .style("display", "none");
+    selectInSvg("#viewbox").insert("g", "#goods").attr("id", "tradeAnimation").style("display", "none");
 
     for (const state of pack.states) {
       if (!state) continue;
@@ -1287,8 +1188,12 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.139.0")) {
     // fix for old issue with heightmap getting styles on top level
-    const terrs = select("#terrs");
-    if (terrs.attr("opacity") !== null || terrs.attr("filter") !== null || terrs.attr("scheme") !== null) {
+    const terrs = selectInSvg("#terrs");
+    if (
+      attrInSvg("terrs", "opacity") !== null ||
+      attrInSvg("terrs", "filter") !== null ||
+      attrInSvg("terrs", "scheme") !== null
+    ) {
       terrs
         .attr("opacity", null)
         .attr("filter", null)
@@ -1303,11 +1208,11 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
   if (isOlderThan("1.140.0")) {
     // v1.140.0 migrated label data and styles to the unified flat Label Group model
-    let labels = document.querySelector<SVGGElement>("#labels");
+    let labels = svg.querySelector<SVGGElement>("#labels");
     if (!labels) {
       labels = document.createElementNS("http://www.w3.org/2000/svg", "g");
       labels.setAttribute("id", "labels");
-      document.querySelector("#viewbox")?.appendChild(labels);
+      svg.querySelector("#viewbox")?.appendChild(labels);
     }
     labels.setAttribute("font-size", "100px");
 
@@ -1346,7 +1251,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       return modern ? structuredClone(modern.zoom) : legacyBurgLabelZoom(fontSize);
     }
 
-    const burgGroups = Array.from(document.querySelectorAll<SVGGElement>("#burgLabels > g"));
+    const burgGroups = Array.from(svg.querySelectorAll<SVGGElement>("#burgLabels > g"));
     for (const burgGroup of burgGroups) {
       const name = burgGroup.id;
       const oldStyle = deriveLabelsStyle(burgGroup);
@@ -1372,7 +1277,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       options.map.labels.groups[0].isDefault = true;
 
     // migrate manually shifted burg labels to pack.burgs[burgId].label
-    for (const textEl of document.querySelectorAll<SVGTextElement>("#burgLabels > g > text")) {
+    for (const textEl of svg.querySelectorAll<SVGTextElement>("#burgLabels > g > text")) {
       const burgId = +textEl.id.slice(9);
       const burg = pack.burgs[burgId];
       if (!burg) continue;
@@ -1385,8 +1290,8 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       if (dx || dy) burg.label = { dx, dy };
     }
 
-    const provs = document.querySelector<SVGGElement>("#provs");
-    const provinceGroup = document.querySelector<SVGGElement>("#provs #provinceLabels");
+    const provs = svg.querySelector<SVGGElement>("#provs");
+    const provinceGroup = svg.querySelector<SVGGElement>("#provs #provinceLabels");
     if (provs && provinceGroup) {
       const oldStyle = deriveLabelsStyle(provs);
       const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
@@ -1406,7 +1311,8 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     }
 
     pack.addedLabels = [];
-    const addedGroups = Array.from(labels.querySelectorAll<SVGGElement>(":scope > g:not(#states):not(#burgLabels)"));
+    const labelGroups = Array.from(labels.children) as SVGGElement[];
+    const addedGroups = labelGroups.filter(el => el.tagName === "g" && el.id !== "states" && el.id !== "burgLabels");
     for (const addedGroup of addedGroups) {
       let name = addedGroup.id === "addedLabels" ? "added" : addedGroup.id;
       const isExisting = options.map.labels.groups.find(group => group.name === name);
@@ -1423,8 +1329,8 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       });
       styles.labels.groups[name] = labelGroupFromLegacy(oldStyle);
 
-      for (const textEl of addedGroup.querySelectorAll<SVGTextElement>(":scope > text")) {
-        const pathEl = findEl<SVGPathElement>(`textPath_${textEl.id}`);
+      for (const textEl of Array.from(addedGroup.children).filter(el => el.tagName === "text") as SVGTextElement[]) {
+        const pathEl = findInSvg<SVGPathElement>(`textPath_${textEl.id}`);
         if (!pathEl) continue;
 
         const label = getPathLabel({ textEl, pathEl });
@@ -1436,7 +1342,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       }
     }
 
-    const stateGroup = labels.querySelector<SVGGElement>(":scope > #states");
+    const stateGroup = labelGroups.find(el => el.id === "states");
     if (stateGroup) {
       const oldStyle = deriveLabelsStyle(stateGroup);
       const fontSize = Number.parseFloat(oldStyle["font-size"] as string);
@@ -1454,12 +1360,12 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       styles.labels.groups.state = getGroupStyle({ name: "state", type: "state" });
     }
 
-    for (const textEl of document.querySelectorAll<SVGTextElement>("#labels #states > text")) {
+    for (const textEl of svg.querySelectorAll<SVGTextElement>("#labels #states > text")) {
       const stateId = +textEl.id.slice(10);
       const state = pack.states[stateId];
       if (!state) continue;
 
-      const pathEl = findEl<SVGPathElement>(`textPath_${textEl.id}`);
+      const pathEl = findInSvg<SVGPathElement>(`textPath_${textEl.id}`);
       // the renderer reproduces only one of the two names; a label showing the other must be pinned
       const renderedName = stateMode === "short" ? state.name : state.fullName || state.name;
       if (pathEl) state.label = getPathLabel({ textEl, pathEl, names: [renderedName] });
@@ -1531,20 +1437,16 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       );
     }
 
-    provinceGroup?.remove();
-    findEl("textPaths")?.replaceChildren();
-    labels.replaceChildren();
-    // record the state for the 1.144 migration to read: the content this wiped is redrawn by the load routine,
-    // so an empty group must not be mistaken for a layer that was off
+    // record the state for the 1.144 migration to read: the display was reset above
     labels.dataset.layerActive = String(hadVisibleLabels);
 
     // other changes
-    select("#coastline > #sea_island").attr("filter", null);
+    selectInSvg("#coastline > #sea_island").attr("filter", null);
   }
 
   if (isOlderThan("1.142.0")) {
     // v1.142.0 moved relief icons from the svg to pack.relief, rendered within the viewport only
-    const terrainEl = findEl("terrain");
+    const terrainEl = findInSvg("terrain");
     if (terrainEl) {
       // v1.142.0 moved the relief style from the #terrain attributes to the style store
       const set = terrainEl.getAttribute("set");
@@ -1554,7 +1456,6 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         size: Number(terrainEl.getAttribute("size")) || 1,
         density: Number(terrainEl.getAttribute("density")) || 0.4
       };
-      for (const attribute of ["set", "size", "density"]) terrainEl.removeAttribute(attribute);
 
       const iconElements = Array.from(terrainEl.querySelectorAll("use"));
       if (iconElements.length) {
@@ -1564,19 +1465,11 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
           y: rn(Number(useEl.getAttribute("y")), 2),
           s: rn(Number(useEl.getAttribute("width")), 2)
         }));
-        terrainEl.replaceChildren();
       } else {
         terrainEl.style.display = "none";
       }
     }
   }
-
-  // Legacy fog wrappers and duplicates can survive in maps resaved with a current version.
-  for (const container of document.querySelectorAll("#map g#fogging-cont")) {
-    container.replaceWith(...container.querySelectorAll("g#fogging"));
-  }
-  const [, ...duplicateFogging] = document.querySelectorAll("#map g#fogging");
-  for (const group of duplicateFogging) group.remove();
 
   if (isOlderThan("1.144.0")) {
     // v1.144.0 replaced the toggleLayer ids with layer ids
@@ -1589,26 +1482,29 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       localStorage.setItem("presets", JSON.stringify(Object.fromEntries(remapped)));
     }
 
-    // v1.144.0 made the compass rose a declared layer child, so it needs the id the registry looks up
-    findEl("compass")?.querySelector("use")?.setAttribute("id", "compassRose");
+    // legacy fog wrappers and duplicates hide the fogging layer from the order recovered below
+    for (const container of svg.querySelectorAll("#map g#fogging-cont")) {
+      container.replaceWith(...container.querySelectorAll("g#fogging"));
+    }
+    const [, ...duplicateFogging] = svg.querySelectorAll("#map g#fogging");
+    for (const group of duplicateFogging) group.remove();
 
-    // v1.144.0 moved the layers state into data[50]
-    data[50] = JSON.stringify(recoverLayersState());
-    if (findEl("fog") && findEl("fogging")) unfog();
+    // v1.144.0 moved the layers state into data[50]; without the svg there is none to recover
+    if (findInSvg("map")) data[50] = JSON.stringify(recoverLayersState());
 
     function recoverLayersState(): LayersState {
       // legacy maps can hide layers with the `display` presentation attribute
       for (const layer of Layers.all) {
-        const el = findEl<SVGGElement>(layer.elementId);
+        const el = findInSvg<SVGGElement>(layer.elementId);
         if (el?.getAttribute("display") !== "none") continue;
         el.removeAttribute("display");
         el.style.display = "none";
       }
 
-      const filled = (id: string) => Boolean(findEl(id)?.hasChildNodes());
-      const has = (id: string, selector: string) => Boolean(findEl(id)?.querySelector(selector));
-      const shown = (id: string) => findEl(id) && findEl(id)?.style.display !== "none";
-      const labelsGroup = findEl("labels");
+      const filled = (id: string) => Boolean(findInSvg(id)?.hasChildNodes());
+      const has = (id: string, selector: string) => Boolean(findInSvg(id)?.querySelector(selector));
+      const shown = (id: string) => findInSvg(id) && findInSvg(id)?.style.display !== "none";
+      const labelsGroup = findInSvg("labels");
       const labelsState = labelsGroup?.dataset.layerActive;
       delete labelsGroup?.dataset.layerActive; // read once: data[50] owns the state from here on
 
@@ -1648,7 +1544,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       ].filter(Boolean) as string[];
 
       const positions = new Map(
-        Array.from(ensureEl("map").querySelectorAll("#viewbox > *, #map > g"), (node, index) => [node.id, index])
+        Array.from(svg.querySelectorAll("#viewbox > *, #map > g"), (node, index) => [node.id, index])
       );
       const order = Layers.all
         .filter(layer => positions.has(layer.elementId))
@@ -1663,7 +1559,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     // Old maps can have duplicate groups
     const groups = new Set<SVGGElement>();
     for (const layer of Layers.all) {
-      for (const group of document.querySelectorAll<SVGGElement>(`#map g#${layer.elementId}`)) {
+      for (const group of svg.querySelectorAll<SVGGElement>(`#map g#${layer.elementId}`)) {
         groups.add(group);
         for (const child of group.querySelectorAll<SVGGElement>("g[id]")) groups.add(child);
       }
@@ -1703,7 +1599,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     }
 
     // the placement stored in the svg wins over the derived group
-    for (const use of Array.from(document.querySelectorAll("#coastline > g > use[data-f], #lakes > g > use[data-f]"))) {
+    for (const use of Array.from(svg.querySelectorAll("#coastline > g > use[data-f], #lakes > g > use[data-f]"))) {
       const feature = pack.features[Number(use.getAttribute("data-f"))];
       const group = (use.parentNode as SVGGElement).id;
       if (feature && group) feature.group = group;
@@ -1721,7 +1617,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
 
       const chains: string[][] = [];
       for (const layerId of FILL_LAYERS) {
-        const paths = Array.from(findEl(layerId)?.querySelectorAll("path") || []);
+        const paths = Array.from(findInSvg(layerId)?.querySelectorAll("path") || []);
 
         for (const path of paths) {
           if (path.getAttribute("fill") === "none") continue; // stroked gap paths are not full vertex chains
@@ -1801,57 +1697,14 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     }
   }
 
-  if (isOlderThan("1.148.0")) {
-    const DEFTEMP = /* html */ `<g id="deftemp">
-      <g id="featurePaths"></g>
-      <g id="textPaths"></g>
-      <g id="statePaths"></g>
-      <g id="defs-emblems"></g>
-        <mask id="land"></mask>
-        <mask id="water"></mask>
-        <mask id="fog" style="stroke-width: 10; stroke: black; stroke-linejoin: round; stroke-opacity: 0.1">
-          <rect x="0" y="0" width="100%" height="100%" fill="white" stroke="none"></rect>
-        </mask>
-      </g>
-      <mask id="vignette-mask">
-        <rect x="0" y="0" width="100%" height="100%" fill="white"></rect>
-        <rect id="vignette-rect" fill="black" x="0.3%" y="0.4%" width="99.4%" height="99.2%" rx="5%" ry="5%" filter="blur(20px)"></rect>
-      </mask>
-    `;
-
-    restoreMissingDefTemp();
-    function restoreMissingDefTemp(): void {
-      const defs = document.querySelector<SVGDefsElement>("#map defs");
-      if (!defs) return;
-      const template = new DOMParser().parseFromString(
-        `<svg xmlns="http://www.w3.org/2000/svg">${DEFTEMP}</svg>`,
-        "image/svg+xml"
-      ).documentElement;
-
-      const restored: string[] = [];
-      const restore = (node: Element, parent: Element) => {
-        const existing = findEl(node.id);
-        if (!existing) {
-          parent.append(node.cloneNode(true));
-          restored.push(node.id);
-          return;
-        }
-        for (const child of Array.from(node.children)) if (child.id) restore(child, existing);
-      };
-
-      for (const node of Array.from(template.children)) restore(node, defs);
-      if (restored.length) WARN && console.warn("[Auto-update] Restored missing svg defs:", restored.join(", "));
-    }
-  }
-
   if (isOlderThan("1.150.0")) {
     // v1.145-1.147 stripped the layer style from saved maps; the migration harvest reads what this re-seeds
     if (!isOlderThan("1.145.0") && isOlderThan("1.148.0")) {
       const { styles: preset } = await StylePresetsService.load(options.map.style.preset || "default");
-      restoreStrippedLayerStyles(preset as Record<string, unknown>);
+      restoreStrippedLayerStyles(svg, preset as Record<string, unknown>);
     }
     // v1.150.0 made the styles store the source of truth
-    data[48] = await migrateStyles(data[48]);
+    data[48] = await migrateStyles(svg, data[48]);
   }
 
   if (isOlderThan("1.151.2")) {
@@ -1970,9 +1823,8 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       if (!record.lakes.groups) record.lakes = { groups: record.lakes };
       const groups: StylesData["lakes"]["groups"] = record.lakes.groups;
       const template = groups.freshwater || Object.values(groups)[0];
-      for (const el of Array.from(document.querySelectorAll<SVGGElement>("#lakes > g"))) {
+      for (const el of Array.from(svg.querySelectorAll<SVGGElement>("#lakes > g"))) {
         if (!el.id) continue;
-        el.dataset.group = el.id; // the registry stamps only its declared groups
         if (!groups[el.id] && template) groups[el.id] = lakeGroupFromSvg(el, template);
       }
     }
@@ -1982,7 +1834,7 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
     });
     if (empty.length) {
       // the harvest is already the merged shape; split it back into the two records this version keeps
-      const harvested = stylesFromMap();
+      const harvested = stylesFromMap(svg);
       for (const type of empty) {
         record.burgIcons[type].groups = Object.fromEntries(
           Object.entries(harvested.burgIcons.groups).map(([name, entry]) => [
@@ -1998,8 +1850,6 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
   if (isOlderThan("1.153.2")) {
     // the 1.61 step wrote the "no pattern" href unquoted, leaving the text width="100" as the pattern
     const isBroken = (href: unknown) => typeof href === "string" && href !== "" && !/^(\.\/images\/|data:)/.test(href);
-    const image = findEl("oceanicPattern");
-    if (image && isBroken(image.getAttribute("href"))) image.setAttribute("href", "");
     const record = data[48] ? safeParseJSON(data[48]) : undefined;
     if (isBroken(record?.ocean?.options?.pattern)) {
       record.ocean.options.pattern = "";
@@ -2034,13 +1884,6 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       }
       data[48] = JSON.stringify(record);
     }
-    // the ocean pattern tile lives in its layer now, and an id clash would shadow it
-    for (const tile of document.querySelectorAll("pattern#oceanic")) if (!tile.closest("#oceanPattern")) tile.remove();
-    // a burg group element hangs directly off the layer now, with its anchor part inside it
-    findEl("anchors")?.remove();
-    findEl("burgIcons")?.remove();
-    findEl("icons")?.remove(); // the layer group itself: it is #burgIcons now
-    findEl("labels")?.removeAttribute("font-size"); // the zoom sets the layer font the groups size from
 
     // v1.154.0 changed the relief icons data format
     const { set: incomingSet, size: incomingSize } = Styles.parse(data[48] ? safeParseJSON(data[48]) : undefined).relief
@@ -2145,11 +1988,10 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
         for (const entity of entities) {
           const coa = entity.coa as typeof entity.coa & { custom?: boolean };
           if (!coa?.custom) continue;
-          const definition = findEl(`${type}COA${entity.i}`);
+          const definition = findInSvg(`${type}COA${entity.i}`);
           // a removed entity is never drawn again, so its picture would only clutter the Custom icons
           const icon = entity.removed ? "" : legacyEmblemIcon(definition, pictures);
           entity.coa = { icon, size: coa.size, x: coa.x, y: coa.y };
-          definition?.remove();
           if (icon) used.add(icon);
         }
       }
@@ -2244,9 +2086,6 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       }
     }
 
-    // a single-box legend dragged then hidden left its offset on the layer, pushing new boxes off the canvas
-    findEl("legend")?.removeAttribute("transform");
-
     // journeys take plain colors only since v1.155.0: a hatching keeps its color
     for (const journey of pack.journeys ?? []) {
       for (const item of [journey, ...(journey.segments ?? [])]) {
@@ -2255,6 +2094,46 @@ export async function resolveVersionConflicts(mapVersion: string, data: string[]
       }
     }
   }
+
+  if (isOlderThan("1.156.0")) {
+    // v1.156.0 moved the legend boxes from the svg to pack.legends
+    const layer = findInSvg("legend");
+    const boxes: { name: string; data: string | null }[] = [];
+    if (layer?.hasAttribute("data")) {
+      // a map saved before the legend could hold several boxes kept its one box on the layer
+      boxes.push({
+        name: layer.querySelector("#legendLabel")?.textContent || "Legend",
+        data: layer.getAttribute("data")
+      });
+    } else {
+      for (const box of Array.from(layer?.children ?? [])) {
+        const name = box.getAttribute("data-legend");
+        // the 1.155 Altitude rows hold rgb() colours with commas; the box is shown again from its toggle
+        if (name !== null && name !== "Altitude") boxes.push({ name, data: box.getAttribute("data") });
+      }
+    }
+
+    // a row is "id,color,label", and the label is the rest of it: it can hold commas
+    const toItem = (row: string): LegendItem => {
+      const [id = "", color = "", ...label] = row.split(",");
+      return [id, color, label.join(",")];
+    };
+    pack.legends = boxes.map(({ name, data }) => ({
+      name,
+      items: (data || "").split("|").filter(Boolean).map(toItem)
+    }));
+  }
+}
+
+// rendered for the geometry the steps measure, in a shadow root so its ids never meet the live map's
+function parseLegacySvg(markup: string): ShadowRoot {
+  const host = document.createElement("div");
+  host.style.cssText =
+    "position: fixed; width: 0; height: 0; overflow: hidden; visibility: hidden; pointer-events: none";
+  document.body.append(host);
+  const root = host.attachShadow({ mode: "open" });
+  root.innerHTML = markup;
+  return root;
 }
 
 export function migrateLegacySettings(mapVersion: string, data: string[]): void {

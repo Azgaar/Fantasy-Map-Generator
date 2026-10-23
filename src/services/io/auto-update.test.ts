@@ -1,20 +1,25 @@
 // @vitest-environment jsdom
 import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import indexHtml from "@/index.html?raw";
 import "@/generators/added-labels";
+import "@/generators/biomes-generator"; // the 1.139 step reads the default biomes
 import "@/generators/features-generator"; // migrations call the Features module through its global
 import "@/generators/burgs-generator"; // the burg sets that tell style icon references from text
 import "@/generators/goods-generator"; // the goods icon namespace the 1.154 step migrates into
 import "@/generators/relief-generator"; // the relief set namespace the 1.154 step migrates into
 import { confirmationDialog } from "@/components/dialog/dialog-helpers";
-import { Layers } from "@/components/layers";
 import { Styles } from "@/generators/styles";
 import * as versioning from "@/services/versioning";
 import { VERSION } from "@/services/versioning";
 import { safeParseJSON } from "@/utils/stringUtils";
 import { migrateLegacySettings, resolveVersionConflicts } from "./auto-update";
 import { Csv } from "./csv";
+
+/** the record an old map keeps its svg in: the migrations read it, never the live map */
+const savedSvg = (markup: string, data: string[] = []): string[] => {
+  data[5] = markup;
+  return data;
+};
 
 beforeEach(() => {
   document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox"></g></svg>`;
@@ -32,8 +37,11 @@ it.each([18, 180])("keeps legacy custom labels after saving and reloading a font
   const data = readFileSync("tests/fixtures/1.139.4.map", "utf8").split("\r\n");
   migrateLegacySettings("1.139.4", data);
   Options.applyLoaded(JSON.parse(data[1]));
-  document.body.innerHTML = data[5];
-  document.getElementById("forests")!.dataset.size = String(fontSize);
+  data[5] = data[5].replace(
+    'letter-spacing="0" data-size="18" font-size="9.45" font-family="Cinzel"',
+    'letter-spacing="0" font-size="9.45" font-family="Cinzel"'
+  );
+  data[5] = data[5].replace('id="forests" opacity="1"', `id="forests" data-size="${fontSize}" opacity="1"`);
   globalThis.pack = {
     states: JSON.parse(data[14]),
     burgs: JSON.parse(data[15]),
@@ -42,7 +50,11 @@ it.each([18, 180])("keeps legacy custom labels after saving and reloading a font
 
   // Exercise the label migration without unrelated versions' graph and DOM setup.
   const compare = vi.spyOn(versioning, "compareVersions");
-  compare.mockImplementation((_a, b) => ({ isOlder: b === "1.140.0", isNewer: false, isEqual: false }));
+  compare.mockImplementation((_a, b) => ({
+    isOlder: b === "1.140.0" || b === "1.156.0",
+    isNewer: false,
+    isEqual: false
+  }));
   try {
     await resolveVersionConflicts("1.139.4", data);
   } finally {
@@ -58,47 +70,6 @@ it.each([18, 180])("keeps legacy custom labels after saving and reloading a font
 });
 
 describe("v1.144 layer id migration", () => {
-  it.each(["1.143.0", VERSION])(
-    "repairs nested duplicate fogging groups in %s saves across reload",
-    async mapVersion => {
-      document.body.innerHTML = /* html */ `<svg id="map">
-      <defs id="deftemp"><mask id="fog"><rect></rect><path id="focusState1"></path></mask></defs>
-      <g id="viewbox"><g id="fogging-cont" mask="url(#fog)">
-        <g id="fogging" opacity="0.7"><rect></rect></g>
-      </g><g id="fogging-cont"><g id="fogging"><rect></rect></g></g></g>
-    </svg>`;
-      const data: string[] = [];
-      await resolveVersionConflicts(mapVersion, data);
-      Layers.restore(data[50] ? JSON.parse(data[50]) : { order: [], active: [] });
-
-      const clone = document.getElementById("map")!.cloneNode(true);
-      const savedSvg = new XMLSerializer().serializeToString(clone);
-      const savedLayers = JSON.stringify(Layers.state);
-      document.getElementById("map")!.remove();
-      document.body.insertAdjacentHTML("afterbegin", savedSvg);
-      await resolveVersionConflicts(VERSION, data);
-      Layers.restore(JSON.parse(savedLayers));
-
-      expect(document.querySelectorAll("#fogging")).toHaveLength(1);
-      expect(document.querySelectorAll("#viewbox > #fogging")).toHaveLength(1);
-      expect(document.getElementById("fogging-cont")).toBeNull();
-      expect(document.getElementById("fogging")?.getAttribute("opacity")).toBe("0.7");
-      expect(document.querySelectorAll("#fog path, #fogging rect")).toHaveLength(mapVersion === VERSION ? 2 : 0);
-    }
-  );
-
-  it("clears legacy fogging state", () => {
-    document.body.innerHTML = /* html */ `<svg id="map">
-      <defs id="deftemp"><mask id="fog"><rect></rect><path id="focusState1"></path></mask></defs>
-      <g id="viewbox"><g id="fogging-cont"><g id="fogging"><rect></rect></g></g></g>
-    </svg>`;
-
-    resolveVersionConflicts("1.143.0", []);
-
-    expect(document.querySelectorAll("#fog path")).toHaveLength(0);
-    expect(document.querySelectorAll("#fogging rect")).toHaveLength(0);
-  });
-
   it("maps exceptional legacy toggle ids and preserves unknown dependencies", () => {
     const groups = ["toggleHeight", "toggleMarketsLayer", "toggleBurgIcons", "toggleScaleBar", "customLayer"].map(
       (layerDependency, index) => ({
@@ -123,7 +94,19 @@ describe("v1.144 layer id migration", () => {
       "scaleBar",
       "customLayer"
     ]);
-    expect(JSON.parse(data[50])).toEqual({ order: [], active: [] });
+    expect(data[50]).toBeUndefined(); // no saved svg, so no layer state to recover: the current one stays
+  });
+
+  it("recovers the layer state from the saved svg", () => {
+    const data = savedSvg(/* html */ `<svg id="map"><g id="viewbox">
+      <g id="rivers"><path></path></g><g id="biomes"></g><g id="ruler" style="display: none;"></g>
+    </g></svg>`);
+
+    resolveVersionConflicts("1.143.0", data);
+
+    const { order, active } = JSON.parse(data[50]);
+    expect(order).toEqual(["rivers", "biomes", "rulers"]);
+    expect(active).toEqual(["rivers"]);
   });
 
   // the presets outlive the map file in localStorage, so they carry the old ids until this pass rewrites them
@@ -162,68 +145,33 @@ describe("v1.144 layer id migration", () => {
 });
 
 describe("v1.145 svg layer cleanup", () => {
-  it("removes empty groups and keeps one non-empty group for duplicated ids", () => {
-    document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox">
+  it("harvests the styles of the one non-empty group of duplicated ids", () => {
+    const data = savedSvg(/* html */ `<svg id="map"><g id="viewbox">
       <g id="routes">
-        <g id="roads"> </g>
-        <g id="roads"><path id="road1"></path></g>
-        <g id="trails"><path id="trail1"></path></g>
-        <g id="trails"><path id="trail2"></path></g>
-        <g id="empty"> </g>
+        <g id="roads" stroke="#999999"> </g>
+        <g id="roads" stroke="#123456"><path id="road1"></path></g>
       </g>
-    </g></svg>`;
+    </g></svg>`);
 
-    resolveVersionConflicts("1.144.0", []);
+    resolveVersionConflicts("1.144.0", data);
 
-    expect(document.querySelectorAll("#routes > #roads")).toHaveLength(1);
-    expect(document.querySelector("#routes > #roads #road1")).not.toBeNull();
-    expect(document.querySelectorAll("#routes > #trails")).toHaveLength(1);
-    expect(document.querySelector("#routes > #trails #trail1")).not.toBeNull();
-    expect(document.querySelector("#routes > #empty")).toBeNull();
+    expect(styles.routes.groups.roads.attrs.stroke).toBe("#123456");
   });
 
-  it("keeps an empty layer group that is the only one with its id", () => {
-    document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox">
-      <g id="cults" opacity="0.6" stroke="#777777" stroke-width="0.5" style="display: none;"></g>
-      <g id="texture" data-href="./images/textures/marble-big.jpg" mask="url(#land)" style="display: none;"></g>
-    </g></svg>`;
-
-    resolveVersionConflicts("1.144.0", []);
-
-    const cults = document.querySelector("#cults");
-    expect(cults).not.toBeNull();
-    expect(cults?.getAttribute("stroke")).toBe("#777777");
-    expect(cults?.getAttribute("stroke-width")).toBe("0.5");
-    // the style migration harvests store-owned attrs off the DOM: the href now lives in the store
-    expect(document.querySelector("#texture")).not.toBeNull();
-    expect(document.querySelector("#texture")?.getAttribute("data-href")).toBeNull();
-    expect((globalThis as any).styles.texture.options.href).toBe("./images/textures/marble-big.jpg");
-  });
-
-  it("keeps an empty declared child group that is the only one with its id", () => {
-    document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox">
+  it("keeps an empty group that is the only one with its id", () => {
+    const data = savedSvg(/* html */ `<svg id="map"><g id="viewbox">
       <g id="routes">
         <g id="roads" stroke="#d06324" stroke-width="0.35"><path id="road1"></path></g>
         <g id="searoutes" stroke="#ffffff" stroke-width="0.35" stroke-dasharray="1 2"></g>
       </g>
-    </g></svg>`;
+      <g id="texture" data-href="./images/textures/marble-big.jpg" mask="url(#land)" style="display: none;"></g>
+    </g></svg>`);
 
-    resolveVersionConflicts("1.144.0", []);
+    resolveVersionConflicts("1.144.0", data);
 
-    const searoutes = document.querySelector("#routes > #searoutes");
-    expect(searoutes).not.toBeNull();
-    expect(searoutes?.getAttribute("stroke")).toBe("#ffffff");
-    expect(searoutes?.getAttribute("stroke-width")).toBe("0.35");
-  });
-
-  it("does not clean current maps", () => {
-    document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox">
-      <g id="routes"><g id="empty"></g></g>
-    </g></svg>`;
-
-    resolveVersionConflicts("1.145.0", []);
-
-    expect(document.querySelector("#routes > #empty")).not.toBeNull();
+    expect(styles.routes.groups.searoutes.attrs.stroke).toBe("#ffffff");
+    expect(styles.routes.groups.searoutes.attrs["stroke-width"]).toBe(0.35);
+    expect(styles.texture.options.href).toBe("./images/textures/marble-big.jpg");
   });
 });
 
@@ -257,8 +205,7 @@ describe("v1.145.2 moved vertices recovery", () => {
   });
 
   it("recovers a vertex dragged out of its generated position", () => {
-    document.body.innerHTML = withStates("M0,0 L20,0 24.5,21 0,20 Z"); // vertex 3 was dragged
-    const data: string[] = [];
+    const data = savedSvg(withStates("M0,0 L20,0 24.5,21 0,20 Z")); // vertex 3 was dragged
 
     resolveVersionConflicts("1.145.1", data);
 
@@ -277,8 +224,7 @@ describe("v1.145.2 moved vertices recovery", () => {
   });
 
   it("keeps out of the way when nothing was dragged", () => {
-    document.body.innerHTML = withStates("M0,0 L20,0 20,20 0,20 Z");
-    const data: string[] = [];
+    const data = savedSvg(withStates("M0,0 L20,0 20,20 0,20 Z"));
 
     resolveVersionConflicts("1.145.1", data);
 
@@ -286,8 +232,7 @@ describe("v1.145.2 moved vertices recovery", () => {
   });
 
   it("ignores an svg that does not match the graph", () => {
-    document.body.innerHTML = withStates("M1,1 L2,2 3,3 4,4 5,5 6,6 7,7 8,8 Z");
-    const data: string[] = [];
+    const data = savedSvg(withStates("M1,1 L2,2 3,3 4,4 5,5 6,6 7,7 8,8 Z"));
 
     resolveVersionConflicts("1.145.1", data);
 
@@ -295,8 +240,7 @@ describe("v1.145.2 moved vertices recovery", () => {
   });
 
   it("does not touch maps that carry the data", () => {
-    document.body.innerHTML = withStates("M0,0 L20,0 24.5,21 0,20 Z");
-    const data: string[] = [];
+    const data = savedSvg(withStates("M0,0 L20,0 24.5,21 0,20 Z"));
     data[51] = "{}";
 
     resolveVersionConflicts("1.145.1", data);
@@ -307,6 +251,8 @@ describe("v1.145.2 moved vertices recovery", () => {
 });
 
 describe("v1.146 rendering groups", () => {
+  let placement = "";
+
   beforeEach(() => {
     globalThis.pack = {
       cells: { culture: [0], p: [[10, 10]] },
@@ -321,7 +267,7 @@ describe("v1.146 rendering groups", () => {
     } as unknown as typeof globalThis.pack;
     globalThis.Names = { getCulture: () => "Named" } as unknown as typeof Names;
 
-    document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox">
+    placement = /* html */ `<svg id="map"><g id="viewbox">
       <g id="coastline">
         <g id="sea_island"><use data-f="1"></use></g>
         <g id="lake_island"><use data-f="2"></use></g>
@@ -334,7 +280,7 @@ describe("v1.146 rendering groups", () => {
   });
 
   it("adopts the svg placement of every feature", () => {
-    resolveVersionConflicts("1.145.1", []);
+    resolveVersionConflicts("1.145.1", savedSvg(placement));
 
     expect(pack.features.slice(1).map(feature => feature.group)).toEqual([
       "sea_island",
@@ -351,9 +297,7 @@ describe("v1.146 rendering groups", () => {
   });
 
   it("derives a group for features the svg does not place", () => {
-    document.body.innerHTML = '<svg id="map"><g id="viewbox"></g></svg>'; // nothing was drawn
-
-    resolveVersionConflicts("1.145.1", []);
+    resolveVersionConflicts("1.145.1", savedSvg('<svg id="map"><g id="viewbox"></g></svg>')); // nothing was drawn
 
     expect(pack.features.slice(1).map(feature => feature.group)).toEqual([
       "sea_island",
@@ -426,11 +370,10 @@ describe("v1.153.0 empty burg style groups", () => {
   }
 
   it("recovers empty records from the saved SVG and preserves them across saving", async () => {
-    document.body.innerHTML = `<svg id="map">
+    const data = savedSvg(`<svg id="map">
       <g id="burgIcons"><g id="cities" font-size="18"></g></g>
       <g id="anchors"><g id="cities" font-size="18"></g><g id="towns" font-size="12"></g></g>
-    </svg>`;
-    const data: string[] = [];
+    </svg>`);
     data[48] = JSON.stringify(legacyBurgRecord());
 
     await resolveVersionConflicts("1.152.0", data);
@@ -497,22 +440,11 @@ describe("v1.154.0 style record normalization", () => {
     expect(groups.town.groups.anchors.attrs["stroke-width"]).toBe(0.5);
     expect(groups.city.groups.icons.attrs["stroke-width"]).toBe(1.5);
   });
-
-  it("drops the old #icons layer element so the #burgIcons layer takes over", async () => {
-    document.body.innerHTML = `<svg id="map"><g id="viewbox">
-      <g id="icons" data-layer="burgIcons"><g id="burgIcons"><g id="towns"></g></g><g id="anchors"></g></g>
-    </g></svg>`;
-
-    await resolveVersionConflicts("1.153.0", []);
-
-    // all three old elements go; the registry recreates #burgIcons under #viewbox
-    expect(document.getElementById("icons")).toBeNull();
-    expect(document.getElementById("burgIcons")).toBeNull();
-    expect(document.getElementById("anchors")).toBeNull();
-  });
 });
 
 describe("v1.153.0 feature subtype and lake group styles", () => {
+  let lakesSvg = "";
+
   function stylesRecord() {
     const record = structuredClone(Styles.defaults) as unknown as { lakes: Record<string, unknown> };
     const groups = record.lakes.groups as Record<string, { attrs: { fill: string } }>;
@@ -548,7 +480,7 @@ describe("v1.153.0 feature subtype and lake group styles", () => {
     globalThis.grid = { cells: { i: new Array(1000) } } as unknown as typeof grid;
     globalThis.Names = { getCulture: () => "Named" } as unknown as typeof Names;
 
-    document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox">
+    lakesSvg = /* html */ `<svg id="map"><g id="viewbox">
       <g id="lakes">
         <g id="freshwater" data-group="freshwater"><use data-f="4"></use></g>
         <g id="my_lakes" fill="#123456" opacity="0.3"><use data-f="3"></use></g>
@@ -591,7 +523,7 @@ describe("v1.153.0 feature subtype and lake group styles", () => {
   });
 
   it("nests the stock lake styles under groups and harvests custom groups from the svg", () => {
-    const data: string[] = [];
+    const data = savedSvg(lakesSvg);
     data[48] = JSON.stringify(stylesRecord());
 
     resolveVersionConflicts("1.152.0", data);
@@ -602,7 +534,6 @@ describe("v1.153.0 feature subtype and lake group styles", () => {
     expect(groups.my_lakes.attrs.fill).toBe("#123456");
     expect(groups.my_lakes.attrs.opacity).toBe(0.3);
     expect(groups.my_lakes.attrs.stroke).toBe(groups.freshwater.attrs.stroke); // the rest follows freshwater
-    expect(document.getElementById("my_lakes")?.dataset.group).toBe("my_lakes");
   });
 
   it("is harmless on a record already in the new shape", () => {
@@ -629,25 +560,25 @@ describe("v1.153.0 feature subtype and lake group styles", () => {
 
 describe("v1.61 ocean pattern migration", () => {
   it("writes an empty href for a map that had no pattern", async () => {
-    document.body.innerHTML = /* html */ `<svg id="map"><defs><pattern id="oceanic"><rect></rect></pattern></defs><g id="viewbox"></g></svg>`;
+    const data = savedSvg(
+      /* html */ `<svg id="map"><defs><pattern id="oceanic"><rect></rect></pattern></defs><g id="viewbox"></g></svg>`
+    );
+    const steps = ["1.61.0", "1.150.0", "1.156.0"];
     const compare = vi.spyOn(versioning, "compareVersions");
-    compare.mockImplementation((_a, b) => ({ isOlder: b === "1.61.0", isNewer: false, isEqual: false }));
+    compare.mockImplementation((_a, b) => ({ isOlder: steps.includes(b ?? ""), isNewer: false, isEqual: false }));
     try {
-      await resolveVersionConflicts("1.60.0", []);
+      await resolveVersionConflicts("1.60.0", data);
     } finally {
       compare.mockRestore();
     }
 
-    const image = document.getElementById("oceanicPattern")!;
-    expect(image.getAttribute("href")).toBe("");
-    expect(image.getAttribute("width")).toBe("100");
+    expect(Styles.parse(JSON.parse(data[48])).ocean.groups.pattern.attrs.href).toBe("");
   });
 
   it.each([
     ['width="100"', ""],
     ["./images/pattern3.png", "./images/pattern3.png"]
   ])("v1.153.2 heals the stored pattern %s to %s", async (pattern, expected) => {
-    document.body.innerHTML = /* html */ `<svg id="map"><defs><pattern id="oceanic"><image id="oceanicPattern" href="${pattern}"></image></pattern></defs><g id="viewbox"></g></svg>`;
     // a pre-1.154.0 record kept the pattern in the ocean options; the 1.154.0 step moves it to the pattern group
     const record = structuredClone(Styles.defaults) as unknown as { ocean: { options: Record<string, unknown> } };
     record.ocean.options.pattern = pattern;
@@ -657,83 +588,6 @@ describe("v1.61 ocean pattern migration", () => {
     await resolveVersionConflicts("1.153.1", data);
 
     expect(JSON.parse(data[48]).ocean.groups.pattern.attrs.href).toBe(expected);
-    expect(document.getElementById("oceanicPattern")).toBeNull(); // the stray defs tile is dropped; the renderer rebuilds it
-  });
-});
-
-describe("missing svg defs", () => {
-  const getDeftempIds = () => Array.from(document.querySelectorAll("#deftemp > *"), node => node.id);
-
-  it("recreates the defs an old saved svg never had", () => {
-    document.body.innerHTML = /* html */ `<svg id="map"><defs></defs><g id="viewbox"></g></svg>`;
-
-    resolveVersionConflicts("1.147.0", []);
-
-    expect(getDeftempIds()).toEqual([
-      "featurePaths",
-      "textPaths",
-      "statePaths",
-      "defs-emblems",
-      "land",
-      "water",
-      "fog"
-    ]);
-    expect(document.querySelector("#fog rect")).not.toBeNull();
-    expect(document.getElementById("vignette-rect")).not.toBeNull();
-  });
-
-  // a pre-v1.104 svg: the feature geometry is inlined into the masks and #featurePaths is absent
-  it("adds only what is missing, leaving the existing defs alone", () => {
-    document.body.innerHTML = /* html */ `<svg id="map">
-      <defs>
-        <g id="deftemp">
-          <mask id="land"><path id="land_2"></path></mask>
-          <mask id="water"><path id="water_2"></path></mask>
-          <g id="textPaths"><path id="textPath_1"></path></g>
-          <g id="statePaths"></g>
-          <mask id="fog"><rect></rect></mask>
-        </g>
-      </defs>
-      <g id="viewbox"></g>
-    </svg>`;
-
-    resolveVersionConflicts("1.147.0", []);
-
-    expect(getDeftempIds()).toEqual([
-      "land",
-      "water",
-      "textPaths",
-      "statePaths",
-      "fog",
-      "featurePaths",
-      "defs-emblems"
-    ]);
-    expect(document.querySelectorAll("#textPaths path")).toHaveLength(1); // existing content is left alone
-    expect(document.getElementById("vignette-rect")).not.toBeNull();
-  });
-
-  it("leaves current maps alone", () => {
-    document.body.innerHTML = /* html */ `<svg id="map"><defs></defs><g id="viewbox"></g></svg>`;
-
-    resolveVersionConflicts(VERSION, []);
-
-    expect(document.getElementById("deftemp")).toBeNull();
-  });
-
-  // the migration carries its own copy of the markup, so it drifts the moment index.html gains a
-  // defs element it does not know about. #filters is out of scope: it is large, static and old maps have it
-  it("restores every defs element index.html declares", () => {
-    const defs = indexHtml.slice(
-      indexHtml.indexOf("<defs>", indexHtml.indexOf('id="map"')),
-      indexHtml.indexOf("</defs>")
-    );
-    const declared = Array.from(defs.replace(/<g id="filters">[\s\S]*?<\/g>/, "").matchAll(/\bid="([^"]+)"/g));
-
-    document.body.innerHTML = /* html */ `<svg id="map"><defs></defs><g id="viewbox"></g></svg>`;
-    resolveVersionConflicts("1.147.0", []);
-
-    const restored = Array.from(document.querySelectorAll("#map defs [id]"), node => node.id);
-    expect(restored).toEqual(declared.map(([, id]) => id));
   });
 });
 
@@ -741,12 +595,17 @@ vi.mock("@/components/dialog/dialog-helpers", () => ({ confirmationDialog: vi.fn
 vi.mock("./csv", () => ({ Csv: { download: vi.fn() } }));
 
 describe("v1.152.0 notes moved onto entities", () => {
-  async function migrate(notes: object[], versions = ["1.152.0"]) {
+  async function migrate(notes: object[], versions = ["1.152.0"], svg = "") {
     const data = Array<string>(52).fill("");
     data[4] = JSON.stringify(notes);
+    data[5] = svg;
 
     const compare = vi.spyOn(versioning, "compareVersions");
-    compare.mockImplementation((_a, b) => ({ isOlder: versions.includes(b ?? ""), isNewer: false, isEqual: false }));
+    compare.mockImplementation((_a, b) => ({
+      isOlder: [...versions, "1.156.0"].includes(b ?? ""),
+      isNewer: false,
+      isEqual: false
+    }));
     try {
       await resolveVersionConflicts("1.151.2", data);
     } finally {
@@ -816,15 +675,15 @@ describe("v1.152.0 notes moved onto entities", () => {
   });
 
   it("follows renumbered roads and offers lore from a road that cannot be migrated", async () => {
-    document.body.innerHTML = /* html */ `<svg id="map"><g id="viewbox"><g id="routes"><g id="roads">
+    const roads = /* html */ `<svg id="map"><g id="viewbox"><g id="routes"><g id="roads">
       <path id="road0"></path><path id="road7"></path><path id="road1"></path>
     </g></g></g></svg>`;
-    for (const node of document.querySelectorAll("path")) {
-      Object.assign(node, {
-        getTotalLength: () => (node.id === "road0" ? 0 : 10),
-        getPointAtLength: (length: number) => ({ x: length, y: 0 })
-      });
-    }
+    // jsdom measures no geometry
+    const element = SVGElement.prototype as unknown as Record<string, unknown>;
+    element.getTotalLength = function (this: Element) {
+      return this.id === "road0" ? 0 : 10;
+    };
+    element.getPointAtLength = (length: number) => ({ x: length, y: 0 });
     pack.cells = { f: new Uint16Array([1, 1]) } as typeof pack.cells;
     vi.stubGlobal("grid", { spacing: 10 });
     vi.stubGlobal("Pack", { findCell: (x: number) => (x < 5 ? 0 : 1) });
@@ -835,10 +694,13 @@ describe("v1.152.0 notes moved onto entities", () => {
           { id: "road7", name: "road7", legend: "First road lore" },
           { id: "road1", name: "road1", legend: "Second road lore" }
         ],
-        ["1.99.0", "1.152.0"]
+        ["1.99.0", "1.152.0"],
+        roads
       );
     } finally {
       vi.unstubAllGlobals();
+      delete element.getTotalLength;
+      delete element.getPointAtLength;
     }
 
     expect(pack.routes.map(({ i, note }) => ({ i, note }))).toEqual([
@@ -982,7 +844,7 @@ describe("v1.154 relief descriptors", () => {
   const runMigration = async (mapVersion: string, data: string[], versions: string[]): Promise<void> => {
     const compare = vi.spyOn(versioning, "compareVersions");
     compare.mockImplementation((_a, b) => ({
-      isOlder: !!b && versions.includes(b),
+      isOlder: !!b && [...versions, "1.156.0"].includes(b),
       isNewer: false,
       isEqual: false
     }));
@@ -994,7 +856,6 @@ describe("v1.154 relief descriptors", () => {
   };
 
   const migrate = async (icons: unknown[], set: string, size = 1): Promise<typeof pack.relief> => {
-    document.body.innerHTML = '<svg id="map"><defs id="deftemp"/><g id="viewbox"><g id="terrain"></g></g></svg>';
     const data: string[] = [];
     data[48] = stylesPayload(set, size);
     globalThis.pack = { relief: structuredClone(icons) } as unknown as typeof pack;
@@ -1003,7 +864,6 @@ describe("v1.154 relief descriptors", () => {
   };
 
   it("turns a biome's list of repeated relief entries into weights, in order of first appearance", async () => {
-    document.body.innerHTML = '<svg id="map"><defs id="deftemp"/><g id="viewbox"><g id="terrain"></g></g></svg>';
     const data: string[] = [];
     data[48] = stylesPayload("colored");
     globalThis.pack = {
@@ -1024,7 +884,6 @@ describe("v1.154 relief descriptors", () => {
   });
 
   it("renames goods symbols into the set namespace and uploads into the reserved custom one", async () => {
-    document.body.innerHTML = '<svg id="map"><defs id="deftemp"/><g id="viewbox"><g id="terrain"></g></g></svg>';
     const data: string[] = [];
     data[48] = stylesPayload("colored");
     globalThis.pack = {
@@ -1041,7 +900,6 @@ describe("v1.154 relief descriptors", () => {
   });
 
   it("moves goods uploads and inline images into custom icons, and text into glyphs", async () => {
-    document.body.innerHTML = '<svg id="map"><defs id="deftemp"/><g id="viewbox"><g id="terrain"></g></g></svg>';
     const data: string[] = [];
     const legacyStyles = JSON.parse(stylesPayload("colored"));
     legacyStyles.markets.options.icon = "⚖️";
@@ -1115,9 +973,9 @@ describe("v1.154 relief descriptors", () => {
   });
 
   it("lifts SVG relief out of #terrain and resolves its descriptor", async () => {
-    document.body.innerHTML =
-      '<svg id="map"><defs id="deftemp"/><g id="viewbox"><g id="terrain" set="gray" size="1" density="0.4"><use href="#relief-mount-3-bw" x="12" y="23" width="14"/></g></g></svg>';
-    const data: string[] = [];
+    const data = savedSvg(
+      '<svg id="map"><defs id="deftemp"/><g id="viewbox"><g id="terrain" set="gray" size="1" density="0.4"><use href="#relief-mount-3-bw" x="12" y="23" width="14"/></g></g></svg>'
+    );
     data[48] = stylesPayload("gray");
     globalThis.pack = { relief: [], features: [] } as unknown as typeof pack;
     await runMigration("1.141.0", data, ["1.142.0", "1.154.0"]);
@@ -1129,9 +987,9 @@ describe("v1.154 relief descriptors", () => {
     // data[48], and the 1.154 step must read the record rather than the global the previously open map left
     globalThis.styles = Styles.parse(undefined);
     styles.relief.options.set = "simple";
-    document.body.innerHTML =
-      '<svg id="map"><defs id="deftemp"/><g id="viewbox"><g id="terrain" set="colored" size="2" density="0.4"><use href="#relief-mount-3" x="10" y="20" width="12"/><use href="#relief-mount-1" x="0" y="0" width="4"/></g></g></svg>';
-    const data: string[] = [];
+    const data = savedSvg(
+      '<svg id="map"><defs id="deftemp"/><g id="viewbox"><g id="terrain" set="colored" size="2" density="0.4"><use href="#relief-mount-3" x="10" y="20" width="12"/><use href="#relief-mount-1" x="0" y="0" width="4"/></g></g></svg>'
+    );
     globalThis.pack = { relief: [], features: [] } as unknown as typeof pack;
     await runMigration("1.141.0", data, ["1.142.0", "1.150.0", "1.154.0"]);
     expect(Styles.parse(safeParseJSON(data[48])).relief.options).toMatchObject({ set: "colored", size: 2 });
@@ -1179,5 +1037,81 @@ describe("v1.154.1 relief pool density", () => {
 
   it("leaves current maps alone", async () => {
     expect(await load("1.154.1")).toEqual([0, 3, 20, 120]);
+  });
+});
+
+describe("an old map with an empty svg record", () => {
+  it("migrates its data without failing on the steps that read the svg", async () => {
+    globalThis.pack = { features: [], cultures: [] } as unknown as typeof pack;
+    const steps = ["1.11.0", "1.64.0", "1.96.0", "1.139.0", "1.144.0", "1.156.0"];
+    const compare = vi.spyOn(versioning, "compareVersions");
+    compare.mockImplementation((_a, b) => ({ isOlder: steps.includes(b ?? ""), isNewer: false, isEqual: false }));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const data: string[] = [];
+    data[3] = "||"; // the pre-1.139 biomes record
+    try {
+      await resolveVersionConflicts("1.10.0", data);
+    } finally {
+      compare.mockRestore();
+      warn.mockRestore();
+    }
+
+    expect(data[50]).toBeUndefined(); // no layer state to recover: the current one stays
+    expect(pack.legends).toEqual([]);
+  });
+});
+
+describe("v1.156 legend migration", () => {
+  const load = async (version: string, legend: string) => {
+    const data: string[] = [];
+    data[5] = /* html */ `<svg id="map"><g id="viewbox"></g>${legend}</svg>`;
+    await resolveVersionConflicts(version, data);
+    return pack.legends;
+  };
+
+  it("moves the legend boxes out of the saved svg", async () => {
+    const legends = await load(
+      "1.155.0",
+      /* html */ `<g id="legend">
+        <g data-legend="States" data="state1,#ff0000,Alpha|state2,#00ff00,Beta"></g>
+        <g data-legend="Zones" data=""></g>
+      </g>`
+    );
+    expect(legends).toEqual([
+      {
+        name: "States",
+        items: [
+          ["state1", "#ff0000", "Alpha"],
+          ["state2", "#00ff00", "Beta"]
+        ]
+      },
+      { name: "Zones", items: [] }
+    ]);
+  });
+
+  it("keeps the commas of a label and leaves the 1.155 Altitude box to its toggle", async () => {
+    const legends = await load(
+      "1.155.0",
+      /* html */ `<g id="legend">
+        <g data-legend="Zones" data="zone1,#0000ff,Gamma, delta"></g>
+        <g data-legend="Altitude" data="0,rgb(1, 2, 3),0–100m"></g>
+      </g>`
+    );
+    expect(legends).toEqual([{ name: "Zones", items: [["zone1", "#0000ff", "Gamma, delta"]] }]);
+  });
+
+  it("moves the single box of a map saved before the legend could hold several", async () => {
+    const legends = await load(
+      "1.143.0",
+      /* html */ `<g id="legend" data="state1,#ff0000,Alpha"><g><text id="legendLabel">States</text></g></g>`
+    );
+    expect(legends).toEqual([{ name: "States", items: [["state1", "#ff0000", "Alpha"]] }]);
+  });
+
+  it("never mounts the saved svg of a current map", async () => {
+    pack.legends = [];
+    await load(VERSION, /* html */ `<g id="legend"><g data-legend="States" data="state1,#ff0000,Alpha"></g></g>`);
+    expect(pack.legends).toEqual([]);
+    expect(document.querySelector("#legend")).toBeNull(); // the live map is the beforeEach one
   });
 });

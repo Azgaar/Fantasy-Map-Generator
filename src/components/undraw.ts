@@ -2,6 +2,7 @@
 // A leaf on purpose - the editors that erase a map must not have to pull in the whole app lifecycle
 import { Layers } from "@/components/layers";
 import { removeLakeEmbellishments } from "@/renderers/draw-lakes";
+import { legendPositions } from "@/renderers/legend-positions";
 import { unfog } from "@/renderers/overlays/fogging";
 import { ensureEl } from "@/utils/nodeUtils";
 
@@ -12,4 +13,5 @@ export function undraw(): void {
   removeLakeEmbellishments();
   ensureEl("coas").innerHTML = ""; // auto-generated emblems are re-created on demand
   unfog();
+  legendPositions.releaseAll(); // the boxes of the next map stack afresh
 }

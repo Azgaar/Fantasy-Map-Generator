@@ -42,15 +42,9 @@ The preferred shape, to be confirmed by the [required investigations](#required-
 Canvas Layers lands only once a `.map` no longer depends on its stored SVG. Then the map's DOM is not part of
 the file format and can change shape without migrating a single file.
 
-Today it is part of the format:
-
-- Record 5 of a `.map` is the serialized `#map` SVG. Loading replaces `#map` with it as it is
-  (`load.ts`, `data[5]`).
-- The layers registry adopts the loaded content without redrawing it (`Layers.restore`).
-- `auto-update.ts` migrates old files by rewriting groups inside that SVG.
-- Some content may survive only there: layers that keep their content (`landmass`, `legend`, `debug`) and any
-  group a renderer does not redraw on load. To inventory.
-
+Since v1.156.0 a current file no longer does: loading draws every layer from the map data into the live `#map`, and
+record 5 is read only by the auto-update migration of older files. Saving still writes it as a temporary safety
+measure for the next few versions.
 Splitting `#map` into per-layer roots while that holds would mean migrating every old file's SVG into the new
 structure, and keeping that migration forever.
 

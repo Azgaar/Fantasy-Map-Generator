@@ -2,10 +2,13 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import "@/generators/styles";
 import { setViewportSize } from "@/components/viewport";
-import { clearLegend, dragLegendBox, drawLegend, fitLegendBox, hasLegend, redrawLegend } from "./draw-legend";
+import { Legends } from "@/generators/legends";
+import type { LegendItem } from "@/types/Legend";
+import { dragLegendBox, fitLegendBox, redrawLegend } from "./draw-legend";
 import { legendPositions } from "./legend-positions";
 
 beforeEach(() => {
+  globalThis.pack = { legends: [] } as unknown as typeof pack;
   document.body.innerHTML = /* html */ `<svg id="map" width="800" height="600">
       <g id="legend" font-size="13" data-x="99" data-y="93"></g>
     </svg>
@@ -25,12 +28,24 @@ beforeEach(() => {
   legendPositions.clear();
 });
 
-const items = [
+// what LegendBoxes does: change the boxes in the map data, then draw the layer
+const drawLegend = (name: string, items: LegendItem[]) => {
+  Legends.set(name, items);
+  redrawLegend();
+};
+const clearLegend = (name: string) => {
+  Legends.remove(name);
+  legendPositions.release(name);
+  redrawLegend();
+};
+const hasLegend = (name: string) => Legends.has(name);
+
+const items: LegendItem[] = [
   ["state1", "#ff0000", "Alpha"],
   ["state2", "#00ff00", "Beta"]
 ];
 
-const zones = [["zone1", "#0000ff", "Gamma"]];
+const zones: LegendItem[] = [["zone1", "#0000ff", "Gamma"]];
 
 const boxOf = (name: string) => document.querySelector(`#legend > g[data-legend="${name}"]`);
 
@@ -134,6 +149,10 @@ describe("several legend boxes", () => {
     expect(hasLegend("Zones")).toBe(true);
     expect(document.querySelectorAll("#legend > g[data-legend]")).toHaveLength(2);
     expect(boxOf("Zones")!.querySelector(".legendLabel")?.textContent).toBe("Zones");
+    expect(pack.legends).toEqual([
+      { name: "States", items },
+      { name: "Zones", items: zones }
+    ]);
   });
 
   it("stacks a new box on top of the shown one instead of covering it", () => {
@@ -174,16 +193,15 @@ describe("several legend boxes", () => {
     expect({ States: legendPositions.get("States"), Zones: legendPositions.get("Zones") }).toEqual(placement);
   });
 
-  it("clears one box by name and every box when no name is given", () => {
+  it("clears one box by name, keeping the others", () => {
     drawLegend("States", items);
     drawLegend("Zones", zones);
 
     clearLegend("States");
     expect(hasLegend("States")).toBe(false);
     expect(hasLegend("Zones")).toBe(true);
-
-    clearLegend();
-    expect(document.querySelectorAll("#legend > g[data-legend]")).toHaveLength(0);
+    expect(boxOf("States")).toBeNull();
+    expect(pack.legends).toEqual([{ name: "Zones", items: zones }]);
   });
 
   it("gives an auto-placed slot back when the box is hidden, but keeps a dragged one", () => {
@@ -222,7 +240,6 @@ describe("several legend boxes", () => {
 
   it("redraws a box with no items as empty, not as one blank row", () => {
     drawLegend("Zones", []); // every zone filtered out
-    expect(boxOf("Zones")!.getAttribute("data")).toBe("");
 
     redrawLegend();
 
@@ -231,17 +248,13 @@ describe("several legend boxes", () => {
     expect(boxOf("Zones")!.textContent).toBe("Zones"); // the title alone, no "undefined" row
   });
 
-  it("adopts the single box of a map saved before the legend could hold several", () => {
-    const legend = document.getElementById("legend")!;
-    legend.setAttribute("data", "state1,#ff0000,Alpha|state2,#00ff00,Beta");
-    legend.setAttribute("transform", "translate(100,100)");
-    legend.innerHTML = /* html */ `<rect id="legendBox" /><g><text id="legendLabel">States</text></g>`;
+  it("draws the boxes of the map and drops the ones it has not", () => {
+    drawLegend("Zones", zones);
+    pack.legends = [{ name: "States", items }]; // another map took over
 
     redrawLegend();
 
-    expect(legend.hasAttribute("data")).toBe(false);
-    expect(document.querySelectorAll("#legend > g[data-legend]")).toHaveLength(1);
-    expect(boxOf("States")!.getAttribute("data")).toBe("state1,#ff0000,Alpha|state2,#00ff00,Beta");
-    expect(boxOf("States")!.querySelector(".legendLabel")?.textContent).toBe("States");
+    expect(boxOf("Zones")).toBeNull();
+    expect(boxOf("States")!.querySelectorAll("rect:not(.legendBox)")).toHaveLength(2);
   });
 });

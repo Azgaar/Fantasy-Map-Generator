@@ -273,6 +273,23 @@ test.describe("Map loading", () => {
     ]);
   });
 
+  test("an old map is migrated from its saved svg without replacing the live map", async ({ page }) => {
+    await page.evaluate(() => {
+      (window as any).liveMap = document.getElementById("map");
+    });
+    await page.locator("#mapToLoad").setInputFiles(path.join(__dirname, "../fixtures/1.139.4.map"));
+    await expect(page.locator("#tooltip")).toContainText("Map is successfully loaded", { timeout: 120000 });
+
+    const state = await page.evaluate(() => ({
+      sameMap: (window as any).liveMap === document.getElementById("map"),
+      maps: document.querySelectorAll("svg#map").length,
+      sandboxes: Array.from(document.body.children).filter(el => el.shadowRoot).length,
+      addedLabels: (window as any).pack.addedLabels.length // read from the saved svg
+    }));
+    expect(state).toMatchObject({ sameMap: true, maps: 1, sandboxes: 0 });
+    expect(state.addedLabels).toBeGreaterThan(0);
+  });
+
   // 1.112.1.map wraps its fogging layer into the pre-1.143 masked #fogging-cont container. Unwrapping it must
   // leave the layer in its own slot — right before the ruler — not at the end of the z-order
   test("legacy fogging container should be unwrapped in place", async ({ page }) => {
@@ -295,6 +312,8 @@ test.describe("Map loading", () => {
     expect(fogging.hasContainer).toBe(false);
     expect(fogging.parent).toBe("viewbox");
     expect(fogging.mask).toBe("url(#fog)");
+    // the saved slot is after markers, the registration one before them
+    expect(fogging.order.indexOf("fogging")).toBeGreaterThan(fogging.order.indexOf("markers"));
     expect(fogging.order.indexOf("fogging")).toBeLessThan(fogging.order.indexOf("rulers"));
     expect(fogging.groups.indexOf("fogging")).toBeLessThan(fogging.groups.indexOf("ruler"));
 

@@ -547,6 +547,13 @@ A journey segment is one leg: a stretch of travel, or a halt:
 - `custom`: `boolean` - optional. `true` when the user drew the path cell by cell; the pathfinder will not silently overwrite it
 - `visible`: `boolean` - optional. `false` hides the segment. Absent means visible
 
+## Legends
+
+The legend boxes shown on the map are stored in `pack.legends: Legend[]`, in display order. A generated map has none. Where a box sits on the canvas is the viewer's own (`legendPositions`), not map data. Object structure:
+
+- `name`: `string` - box title, unique among the boxes. Editors address their box by it
+- `items`: `[id, color, label][]` - the rows, each a swatch color and its label
+
 ## Transports
 
 Transport types are configuration, not map state: they live in `options.map.transports: Transport[]`. Object structure:

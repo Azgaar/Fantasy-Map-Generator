@@ -18,8 +18,10 @@ test.describe("layer teardown keeps user data", () => {
   test("routes keep custom groups and their styles across a hide/show round trip", async ({ page }) => {
     const custom = page.locator("#routes > #caravans");
 
-    // the Route Groups editor appends a styled <g> under #routes and assigns routes to it
+    // the Route Groups editor seeds the store entry, appends a styled <g> under #routes and assigns routes to it
     await page.evaluate(() => {
+      styles.routes.groups.caravans = structuredClone(styles.routes.groups.roads);
+      Object.assign(styles.routes.groups.caravans.attrs, { stroke: "#aa3333", "stroke-width": 0.7 });
       const routes = document.getElementById("routes")!;
       const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
       group.id = "caravans";

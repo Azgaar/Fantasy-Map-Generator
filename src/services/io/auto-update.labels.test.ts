@@ -23,6 +23,8 @@ const fixture = (states: string, labelsAttrs = "") => /* html */ `<svg id="map">
   </g>
 </g></svg>`;
 
+const savedSvg = (markup: string): string[] => Object.assign([], { 5: markup });
+
 const label = (id: number, text: string) =>
   `<text id="stateLabel${id}"><textPath href="#textPath_stateLabel${id}">${text}</textPath></text>`;
 
@@ -41,7 +43,7 @@ describe("v1.140 label group migration", () => {
     } as unknown as typeof globalThis.pack;
     // Isolate the label migration from later migrations that need a complete map.
     vi.spyOn(versioning, "compareVersions").mockImplementation((_a, b) => ({
-      isOlder: b === "1.140.0",
+      isOlder: b === "1.140.0" || b === "1.156.0", // the svg is read from 1.156 back
       isNewer: false,
       isEqual: false
     }));
@@ -50,8 +52,7 @@ describe("v1.140 label group migration", () => {
   afterEach(() => vi.restoreAllMocks());
 
   it("does not invent a stroke for a label group that never had one", async () => {
-    document.body.innerHTML = fixture("");
-    await resolveVersionConflicts("1.139.9", []);
+    await resolveVersionConflicts("1.139.9", savedSvg(fixture("")));
 
     // #towns carried a stroke-width with no stroke, so nothing was ever stroked
     expect(styles.labels.groups.towns.attrs["stroke-width"]).toBe(0);
@@ -60,16 +61,17 @@ describe("v1.140 label group migration", () => {
   });
 
   it("keeps the stroke width when the stroke is inherited from an ancestor", async () => {
-    document.body.innerHTML = fixture("", 'stroke="#123456"');
-    await resolveVersionConflicts("1.139.9", []);
+    await resolveVersionConflicts("1.139.9", savedSvg(fixture("", 'stroke="#123456"')));
 
     expect(styles.labels.groups.towns.attrs.stroke).toBe("#123456");
     expect(styles.labels.groups.towns.attrs["stroke-width"]).toBe(3.02);
   });
 
   it("pins a state label whose saved text the renderer would not reproduce", async () => {
-    document.body.innerHTML = fixture(label(1, "Liga Schwarzwaldzka") + label(2, "Duchy of Kept"));
-    await resolveVersionConflicts("1.139.9", []);
+    await resolveVersionConflicts(
+      "1.139.9",
+      savedSvg(fixture(label(1, "Liga Schwarzwaldzka") + label(2, "Duchy of Kept")))
+    );
 
     // auto mode renders fullName, so a label that showed the short name must be pinned
     expect(pack.states[1].label?.text).toBe("Liga Schwarzwaldzka");
@@ -78,8 +80,7 @@ describe("v1.140 label group migration", () => {
 
   it("does not pin a short-name label when the map's state label mode is short", async () => {
     options.map.labels.groups = [{ ...Labels.getFallbackGroup("state"), mode: "short" }];
-    document.body.innerHTML = fixture(label(1, "Liga Schwarzwaldzka"));
-    await resolveVersionConflicts("1.139.9", []);
+    await resolveVersionConflicts("1.139.9", savedSvg(fixture(label(1, "Liga Schwarzwaldzka"))));
 
     expect(pack.states[1].label?.text).toBeUndefined();
   });

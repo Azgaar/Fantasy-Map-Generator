@@ -76,16 +76,17 @@ function prepareMapData(viewOnly = false): string {
   const settings = JSON.stringify(viewOnly ? { ...options.map, viewOnly } : options.map); // the requests and preferences stay out
   const measurers = JSON.stringify(pack.measurers ?? []);
   const journeys = JSON.stringify(pack.journeys ?? []);
+  const legends = JSON.stringify(pack.legends);
   const fonts = JSON.stringify(
     getUsedFonts(
-      ensureEl("map") as Element as SVGSVGElement,
+      styles,
       Notes.list().map(entry => entry.note)
     )
   );
   const layers = JSON.stringify(Layers.state);
   const graphOverride = JSON.stringify(GraphOverride.state);
 
-  // save svg
+  // TEMPORARY SAFETY MEASURE for the next few versions: record 5 keeps the svg no current map reads; drop this block then
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
 
   restoreOceanVectors(cloneEl);
@@ -151,7 +152,7 @@ function prepareMapData(viewOnly = false): string {
     "", // deprecated separate mapCoordinates, now options.map.geography.coordinates
     biomes,
     "", // deprecated notes array, now a note field on the entity it describes
-    serializedSVG,
+    serializedSVG, // temporary, see above
     gridGeneral,
     grid.cells.h,
     grid.cells.prec,
@@ -198,7 +199,8 @@ function prepareMapData(viewOnly = false): string {
     relief,
     layers,
     graphOverride,
-    journeys
+    journeys,
+    legends
   ].join("\r\n");
   return mapData;
 }

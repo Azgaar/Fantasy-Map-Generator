@@ -208,8 +208,6 @@ class MapRepairService {
         continue;
       }
       repairs.push(`Marker ${marker.i} has non-unique id. Changing to ${nextId}`);
-      const elements = document.querySelectorAll<HTMLElement>(`#marker${marker.i}`);
-      if (elements[1]) elements[1].id = `marker${nextId}`;
       marker.i = nextId++;
     }
     pack.markers.sort((a, b) => a.i - b.i);

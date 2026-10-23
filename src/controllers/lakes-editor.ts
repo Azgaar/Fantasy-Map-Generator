@@ -7,10 +7,10 @@ import { FEATURE_SUBTYPE_LABELS } from "@/data/id-labels";
 import { type Feature, LAKE_SUBTYPES } from "@/generators/features-generator";
 import { Styles } from "@/generators/styles";
 import { Tags } from "@/generators/tags";
-import { drawLakeEmbellishments } from "@/renderers/draw-lakes";
+import { isGroupNameFree } from "@/renderers/style-groups";
 import { getArea, getAreaUnit, speak } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl, rand, si } from "../utils";
+import { ensureEl, rand, si } from "../utils";
 import { getHeight } from "../utils/unitUtils";
 
 let selectedLake: Selection<SVGElement, unknown, HTMLElement, unknown>;
@@ -182,13 +182,7 @@ function changeLakeSubtype(this: HTMLSelectElement): void {
 }
 
 const isStockGroup = (group: string) => group in Styles.defaults.lakes.groups;
-function assignGroup(elements: Element[], group: string): void {
-  for (const element of elements) {
-    if (!element.hasAttribute("data-f")) continue;
-    const feature = pack.features[+(element.getAttribute("data-f") || 0)];
-    if (feature) feature.group = group;
-  }
-}
+const lakesOf = (group: string) => pack.features.filter(feature => feature?.type === "lake" && feature.group === group);
 
 function selectLakeGroup(): void {
   const lake = getLake();
@@ -196,17 +190,14 @@ function selectLakeGroup(): void {
 
   const groupSelect = ensureEl<HTMLSelectElement>("lakeGroup");
   groupSelect.options.length = 0; // remove all options
-  select<SVGGElement, unknown>("#lakes")
-    .selectAll<SVGGElement, unknown>("g")
-    .each(function () {
-      groupSelect.options.add(new Option(this.id, this.id, false, this.id === currentGroup));
-    });
+  for (const group of Object.keys(styles.lakes.groups)) {
+    groupSelect.options.add(new Option(group, group, false, group === currentGroup));
+  }
 }
 
 function changeLakeGroup(this: HTMLSelectElement): void {
-  ensureEl(this.value).appendChild(selectedLake.node()!);
-  assignGroup([selectedLake.node()!], this.value);
-  drawLakeEmbellishments(Layers.get("lakes"));
+  getLake().group = this.value;
+  Layers.draw("lakes");
 }
 
 function toggleNewGroupInput(): void {
@@ -232,7 +223,7 @@ function createNewGroup(this: HTMLInputElement): void {
     .replace(/ /g, "_")
     .replace(/[^\w\s]/gi, "");
 
-  if (findEl(group)) {
+  if (!isGroupNameFree(styles.lakes.groups, group)) {
     tip(t("Element with this name already exists. Provide a unique name"), false, "error");
     return;
   }
@@ -242,48 +233,36 @@ function createNewGroup(this: HTMLInputElement): void {
     return;
   }
 
-  // just rename if only 1 element left
-  const oldGroup = selectedLake.node()!.parentNode as SVGGElement;
-  // the store is authoritative: seed an entry so style edits and presets can address the group
-  const template = styles.lakes.groups[oldGroup.id] || styles.lakes.groups.freshwater;
-  styles.lakes.groups[group] ??= structuredClone(template);
-
-  const basic = isStockGroup(oldGroup.id);
-  if (!basic && oldGroup.childElementCount === 1) {
-    ensureEl<HTMLSelectElement>("lakeGroup").selectedOptions[0].remove();
-    ensureEl<HTMLSelectElement>("lakeGroup").options.add(new Option(group, group, false, true));
-    if (oldGroup.id !== group) delete styles.lakes.groups[oldGroup.id];
-    oldGroup.id = group;
-    oldGroup.dataset.group = group;
-    assignGroup(Array.from(oldGroup.children), group);
-    drawLakeEmbellishments(Layers.get("lakes"));
-    toggleNewGroupInput();
-    ensureEl<HTMLInputElement>("lakeGroupName").value = "";
-    return;
+  // the store is the only record of a group: a new one starts with the style of the lake's current group
+  const lake = getLake();
+  const oldGroup = lake.group;
+  const groups = styles.lakes.groups;
+  const groupSelect = ensureEl<HTMLSelectElement>("lakeGroup");
+  if (!isStockGroup(oldGroup) && lakesOf(oldGroup).length === 1) {
+    // a group renamed keeps its place in the store, and so in the drawing order
+    const entries = Object.entries(groups);
+    for (const [name] of entries) delete groups[name];
+    for (const [name, entry] of entries) groups[name === oldGroup ? group : name] = entry;
+    groupSelect.selectedOptions[0].remove();
+  } else {
+    groups[group] = structuredClone(groups[oldGroup] || groups.freshwater);
   }
-
-  // create a new group
-  const newGroup = (selectedLake.node()!.parentNode as SVGGElement).cloneNode(false) as SVGGElement;
-  ensureEl("lakes").appendChild(newGroup);
-  newGroup.id = group;
-  newGroup.dataset.group = group;
-  ensureEl<HTMLSelectElement>("lakeGroup").options.add(new Option(group, group, false, true));
-  ensureEl(group).appendChild(selectedLake.node()!);
-  assignGroup([selectedLake.node()!], group);
-  drawLakeEmbellishments(Layers.get("lakes"));
+  groupSelect.options.add(new Option(group, group, false, true));
+  lake.group = group;
+  Layers.draw("lakes"); // the layer makes the group element from the store and moves the lake into it
 
   toggleNewGroupInput();
   ensureEl<HTMLInputElement>("lakeGroupName").value = "";
 }
 
 function removeLakeGroup(): void {
-  const group = (selectedLake.node()!.parentNode as SVGGElement).id;
+  const group = getLake().group;
   if (isStockGroup(group)) {
     tip(t("This is one of the default groups, it cannot be removed"), false, "error");
     return;
   }
 
-  const count = (selectedLake.node()!.parentNode as SVGGElement).querySelectorAll("use[data-f]").length;
+  const count = lakesOf(group).length;
   confirmationDialog({
     title: t("Remove"),
     message: sentences(
@@ -292,15 +271,9 @@ function removeLakeGroup(): void {
     ),
     confirm: t("Remove"),
     onConfirm: () => {
-      const freshwater = ensureEl("freshwater");
-      const groupEl = ensureEl(group);
-      assignGroup(Array.from(groupEl.children), "freshwater");
-      while (groupEl.childNodes.length) {
-        freshwater.appendChild(groupEl.childNodes[0]);
-      }
-      groupEl.remove();
-      drawLakeEmbellishments(Layers.get("lakes"));
+      for (const lake of lakesOf(group)) lake.group = "freshwater";
       delete styles.lakes.groups[group];
+      Layers.draw("lakes");
       ensureEl<HTMLSelectElement>("lakeGroup").selectedOptions[0].remove();
       ensureEl<HTMLSelectElement>("lakeGroup").value = "freshwater";
     }
@@ -308,8 +281,7 @@ function removeLakeGroup(): void {
 }
 
 function editGroupStyle(): void {
-  const g = (selectedLake.node()!.parentNode as SVGGElement).id;
-  void Controllers.StyleEditor.open("lakes", g);
+  void Controllers.StyleEditor.open("lakes", getLake().group);
 }
 
 function changeLakeTags(this: HTMLInputElement): void {

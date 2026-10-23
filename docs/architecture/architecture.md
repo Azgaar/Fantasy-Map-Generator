@@ -555,11 +555,10 @@ cannot drift apart. A declaration names the layer's id, the SVG group and its pa
 permanent child elements and static attributes, and the `draw` / `erase` functions.
 
 The active set and the layer order are serialized with the map (`data[50]`) and re-applied with
-`Layers.restore` on load, which adopts the state without redrawing content the loaded SVG already
-carries. `restore` tolerates version skew in both directions: unknown ids are ignored, and layers
-the file predates slot in after their registration-order predecessor. A layer id never changes; when
-a layer's svg group id does, `auto-update` removes the stale group before the restore and the
-registry recreates it under the current id.
+`Layers.restore` on load; the load then draws every layer from the map data, as generation does.
+`restore` tolerates version skew in both directions: unknown ids are ignored, and layers
+the file predates slot in after their registration-order predecessor. A layer id never changes, while
+its svg group id is the registry's own: a file carries no groups for the load to adopt.
 
 ---
 

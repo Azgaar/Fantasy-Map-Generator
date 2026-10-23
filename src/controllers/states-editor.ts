@@ -19,6 +19,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
+import { LegendBoxes } from "@/components/legend-boxes";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -28,11 +29,11 @@ import { STATE_FORMS, type State, type TariffRule } from "@/generators/states-ge
 import { Tags } from "@/generators/tags";
 import { redrawEmblem, removeEmblem } from "@/renderers/draw-emblems";
 import { goodBadge } from "@/renderers/draw-goods";
-import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement, highlightOutline } from "@/renderers/overlays/highlight";
 import { Csv } from "@/services/io/csv";
+import type { LegendItem } from "@/types/Legend";
 import { applyOption, findEl, getArea, getAreaUnit, groupByValue, speak } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { errorText } from "@/utils/stringUtils";
@@ -1237,17 +1238,12 @@ function stateRemove(stateId: number): void {
 }
 
 function toggleLegend(): void {
-  if (hasLegend(LEGEND_NAME)) {
-    clearLegend(LEGEND_NAME); // hide the states legend, keeping the other boxes
-    return;
-  }
-
-  const data = pack.states
-    .filter(s => s.i && !s.removed && s.cells)
-    .sort((a, b) => (b.area ?? 0) - (a.area ?? 0))
-    .map(s => [s.i, s.color, s.name]);
-  if (!data.length) return void tip(t("No states to show"), false, "error");
-  drawLegend(LEGEND_NAME, data);
+  const getItems = () =>
+    pack.states
+      .filter(s => s.i && !s.removed && s.cells)
+      .sort((a, b) => (b.area ?? 0) - (a.area ?? 0))
+      .map((s): LegendItem => [s.i, s.color ?? "", s.name]);
+  LegendBoxes.toggle(LEGEND_NAME, getItems, t("No states to show"));
 }
 
 function togglePercentageMode(): void {

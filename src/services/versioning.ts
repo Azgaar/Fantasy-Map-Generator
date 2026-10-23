@@ -23,7 +23,7 @@ import { findEl } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { isElectron } from "./platform";
 
-export const VERSION = "1.155.0";
+export const VERSION = "1.156.0";
 
 // new changes on top, never translated
 const latestPublicChanges = (): string[] => [

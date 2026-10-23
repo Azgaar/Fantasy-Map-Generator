@@ -143,6 +143,7 @@ class MapRestorationModule {
     this.restoreZones(parent, links);
     this.restoreJourneys(parent, projection);
     this.restoreAddedLabels(parent, projection);
+    pack.legends = parent.legends; // the boxes are static color keys, not bound to the graph
     if (rivers === "generate") {
       Rivers.specify();
       this.restoreRiverData(parent, links, projection);

@@ -6,7 +6,7 @@ import { Layers } from "@/components/layers";
 import { OCEAN_PATTERNS } from "@/data/ocean-patterns";
 import { FONT_STYLES, FONT_WEIGHTS, LINECAPS, LINEJOINS, MAP_FILTERS, TEXT_DECORATIONS } from "@/data/style-choices";
 import type { StylesData } from "@/types/styles";
-import { findEl, safeParseJSON } from "@/utils";
+import { safeParseJSON } from "@/utils";
 import { toColorHex } from "@/utils/colorUtils";
 import { isImageIcon } from "@/utils/fileUtils";
 import { getPath } from "@/utils/objectUtils";
@@ -165,14 +165,15 @@ const COLOR_KEYS = new Set(["fill", "stroke", "color", "shore"]);
 const LABEL_SCHEMA_ATTRS = Object.keys(Object.values(Styles.defaults.labels.groups)[0].attrs);
 const BURG_SCHEMA_ATTRS = Object.keys(Object.values(Styles.defaults.burgIcons.groups)[0].groups.icons.attrs);
 
+// the root of a legacy map's saved svg
+export type LegacySvg = NonElementParentNode & ParentNode;
+
 // The v1.150.0 style migration auto-update
-export async function migrateStyles(legacyStyleString: string | undefined): Promise<string> {
+export async function migrateStyles(svg: LegacySvg, legacyStyleString: string | undefined): Promise<string> {
   const legacyStyleObj = legacyStyleString ? safeParseJSON(legacyStyleString) : undefined;
   if (legacyStyleObj) migrateLegacyStyleObj(legacyStyleObj); // updates pre-v1.150 style object
 
-  harvestStylesFromSvg({ hasStyleRecord: Boolean(legacyStyleObj) });
-
-  stripMigratedAttributes();
+  harvestStylesFromSvg(svg, { hasStyleRecord: Boolean(legacyStyleObj) });
   return JSON.stringify(styles);
 }
 
@@ -284,9 +285,9 @@ export function stylesFromMap(root: ParentNode = document): StylesData {
   return presetFromLegacy(bags, { onUnknown: "skip" });
 }
 
-// migration for pre v1.150 maps: harvest the DOM
-export function harvestStylesFromSvg({ hasStyleRecord = false } = {}): void {
-  const harvested = stylesFromMap();
+// migration for pre v1.150 maps: harvest the saved svg
+export function harvestStylesFromSvg(svg: LegacySvg, { hasStyleRecord = false } = {}): void {
+  const harvested = stylesFromMap(svg);
   harvested.labels = structuredClone(styles.labels);
   // Empty legacy records need the saved SVG styles.
   if (hasStyleRecord && Object.keys(styles.burgIcons.groups).length) {
@@ -307,41 +308,45 @@ export function harvestStylesFromSvg({ hasStyleRecord = false } = {}): void {
     anchors: Object.values(harvested.burgIcons.groups).map(entry => entry.groups.anchors)
   };
   for (const [layer, groups] of Object.entries(strandedOpacity)) {
-    const opacity = findEl(layer)?.getAttribute("opacity");
+    const opacity = svg.getElementById(layer)?.getAttribute("opacity");
     if (opacity === null || opacity === undefined) continue;
     for (const group of groups) group.attrs.opacity = Number(opacity) || null;
   }
 
-  if (!findEl("legend")?.hasAttribute("data-columns")) harvested.legend.options.columns = styles.legend.options.columns;
+  if (!svg.getElementById("legend")?.hasAttribute("data-columns"))
+    harvested.legend.options.columns = styles.legend.options.columns;
   for (const key of ["stateEmblems", "provinceEmblems", "burgEmblems"] as const) {
-    if (!findEl(key)?.hasAttribute("data-size"))
+    if (!svg.getElementById(key)?.hasAttribute("data-size"))
       harvested.emblems.groups[key].options = structuredClone(styles.emblems.groups[key].options);
   }
   // per-key: goodsIcons' circle and markets' fontSize/icon are still attr-authoritative
-  if (!findEl("goodsIcons")?.hasAttribute("data-size"))
+  if (!svg.getElementById("goodsIcons")?.hasAttribute("data-size"))
     harvested.goods.groups.goodsIcons.options.size = styles.goods.groups.goodsIcons.options.size;
-  if (!findEl("goodsBurgs")?.hasAttribute("data-size"))
+  if (!svg.getElementById("goodsBurgs")?.hasAttribute("data-size"))
     harvested.goods.groups.goodsBurgs.options = structuredClone(styles.goods.groups.goodsBurgs.options);
-  if (!findEl("markets")?.hasAttribute("data-size")) harvested.markets.options.size = styles.markets.options.size;
+  if (!svg.getElementById("markets")?.hasAttribute("data-size"))
+    harvested.markets.options.size = styles.markets.options.size;
   for (const key of ["landHeights", "oceanHeights"] as const) {
-    if (!findEl(key)?.hasAttribute("scheme"))
+    if (!svg.getElementById(key)?.hasAttribute("scheme"))
       harvested.heightmap.groups[key].options = structuredClone(styles.heightmap.groups[key].options);
   }
-  if (!findEl("armies")?.hasAttribute("box-size"))
+  if (!svg.getElementById("armies")?.hasAttribute("box-size"))
     harvested.military.options = structuredClone(styles.military.options);
-  if (!findEl("gridOverlay")?.hasAttribute("type")) harvested.grid.options = structuredClone(styles.grid.options);
-  if (!findEl("markets")?.hasAttribute("font-size"))
+  if (!svg.getElementById("gridOverlay")?.hasAttribute("type"))
+    harvested.grid.options = structuredClone(styles.grid.options);
+  if (!svg.getElementById("markets")?.hasAttribute("font-size"))
     harvested.markets.options.iconSize = styles.markets.options.iconSize;
-  if (!findEl("markets")?.hasAttribute("data-icon")) harvested.markets.options.icon = styles.markets.options.icon;
-  if (!findEl("goodsIcons")?.hasAttribute("data-circle"))
+  if (!svg.getElementById("markets")?.hasAttribute("data-icon"))
+    harvested.markets.options.icon = styles.markets.options.icon;
+  if (!svg.getElementById("goodsIcons")?.hasAttribute("data-circle"))
     harvested.goods.groups.goodsIcons.options.circle = styles.goods.groups.goodsIcons.options.circle;
-  if (!findEl("texture")?.hasAttribute("data-href"))
+  if (!svg.getElementById("texture")?.hasAttribute("data-href"))
     harvested.texture.options = structuredClone(styles.texture.options);
-  if (!findEl("oceanLayers")?.hasAttribute("layers"))
+  if (!svg.getElementById("oceanLayers")?.hasAttribute("layers"))
     harvested.ocean.groups.oceanLayers.options.outline = styles.ocean.groups.oceanLayers.options.outline;
-  if (!findEl("scaleBar")?.hasAttribute("data-bar-size"))
+  if (!svg.getElementById("scaleBar")?.hasAttribute("data-bar-size"))
     harvested.scaleBar.options = structuredClone(styles.scaleBar.options);
-  if (!findEl("scaleBarBack")?.hasAttribute("data-top"))
+  if (!svg.getElementById("scaleBarBack")?.hasAttribute("data-top"))
     harvested.scaleBar.groups.back.options = structuredClone(styles.scaleBar.groups.back.options);
   // the layer registry stamps its declared attrs after this runs, so a map predating one
   // harvests it as null; the store keeps the attr until the element itself carries it
@@ -349,7 +354,7 @@ export function harvestStylesFromSvg({ hasStyleRecord = false } = {}): void {
     const node = (harvested as unknown as Record<string, { attrs?: Record<string, unknown> }>)[layer.id]?.attrs;
     const stored = (styles as unknown as Record<string, { attrs?: Record<string, unknown> }>)[layer.id]?.attrs;
     if (!node || !stored) continue;
-    const el = findEl(layer.elementId);
+    const el = svg.getElementById(layer.elementId);
     for (const attr of Object.keys(layer.params.attrs ?? {})) {
       if (attr in node && !el?.hasAttribute(attr)) node[attr] = stored[attr];
     }
@@ -509,7 +514,7 @@ export function presetBagFor(
 }
 
 // v1.145-1.147 saved maps with the layer styling stripped out; `preset` is the map's style preset record
-export function restoreStrippedLayerStyles(preset: Record<string, unknown>): void {
+export function restoreStrippedLayerStyles(svg: LegacySvg, preset: Record<string, unknown>): void {
   const isBareGroup = (group: Element, declared: Record<string, string> = {}): boolean => {
     const ignored = new Set(["id", "style", "data-layer", "data-group", ...Object.keys(declared)]);
     return Array.from(group.attributes).every(attribute => ignored.has(attribute.name));
@@ -520,7 +525,7 @@ export function restoreStrippedLayerStyles(preset: Record<string, unknown>): voi
     style: Record<string, string | number | null> | undefined,
     declared?: Record<string, string>
   ): void => {
-    const group = findEl(id);
+    const group = svg.getElementById(id);
     if (!style || group?.tagName !== "g" || !isBareGroup(group, declared)) return;
 
     for (const [name, value] of Object.entries(style)) {
@@ -535,42 +540,6 @@ export function restoreStrippedLayerStyles(preset: Record<string, unknown>): voi
     for (const child of layer.children) {
       restore(child.id, presetBagFor(preset, `#${child.id}`, `#${layer.elementId} > #${child.id}`), child.attrs);
     }
-  }
-}
-
-// the attributes the store took over. They are dropped rather than left in place because the
-// harvest above reads them: a stale one beside a store record would outrank it forever
-export function stripMigratedAttributes(): void {
-  const strip = (id: string, ...attrs: string[]) => {
-    const el = findEl(id);
-    for (const attr of attrs) el?.removeAttribute(attr);
-  };
-
-  // layer-level opacity the style groups took over on harvest: left here it composites over them
-  for (const layer of STRANDED_OPACITY_LAYERS) strip(layer, "opacity");
-  // the store keeps the legacy opacity of these as stroke-opacity; left here it composites over it
-  for (const id of ["cells", "temperature"]) strip(id, "opacity");
-  strip("markers", "rescale", "pinned");
-  strip("statesHalo", "data-width");
-  strip("coordinates", "data-size");
-  strip("ruler", "data-size", "font-size");
-  strip("legend", "data-size", "data-x", "data-y", "data-columns");
-  for (const id of ["stateEmblems", "provinceEmblems", "burgEmblems", "goodsBurgs"]) strip(id, "data-size");
-  for (const id of ["landHeights", "oceanHeights"]) strip(id, "scheme", "terracing", "skip", "relax", "curve");
-  strip("oceanHeights", "data-render");
-  strip("armies", "box-size");
-  strip("gridOverlay", "type", "scale", "dx", "dy");
-  strip("map", "data-filter");
-  strip("sea_island", "auto-filter");
-  strip("markets", "data-size", "font-size", "data-icon");
-  strip("goodsIcons", "data-size", "data-circle");
-  strip("texture", "data-href", "data-x", "data-y");
-  strip("oceanLayers", "layers");
-  strip("scaleBar", "data-bar-size", "data-x", "data-y", "data-label");
-  strip("scaleBarBack", "data-top", "data-right", "data-bottom", "data-left");
-  for (const el of document.querySelectorAll("#labels > *")) {
-    el.removeAttribute("data-dx");
-    el.removeAttribute("data-dy");
   }
 }
 

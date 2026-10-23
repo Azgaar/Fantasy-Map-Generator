@@ -1,4 +1,4 @@
-import { Layers } from "@/components/layers";
+import { type Layer, Layers } from "@/components/layers";
 import type { Route } from "@/generators/routes-generator";
 import {
   boundsIntersect,
@@ -6,6 +6,7 @@ import {
   ViewportLayers,
   type ViewportRenderContext
 } from "@/renderers/viewport/viewport-renderer";
+import { syncStyleGroups } from "./style-groups";
 
 interface RouteShape {
   id: string;
@@ -18,13 +19,13 @@ interface RouteShape {
 }
 
 const scene = new Scene<RouteShape>();
-const layer = ViewportLayers.register({ id: "routes", render: reconcileRoutes });
+const viewportLayer = ViewportLayers.register({ id: "routes", render: reconcileRoutes });
 const rendered = new WeakMap<Element, RouteShape>();
 
 let editedRouteId: string | null = null; // edited route is rendered even when off-screen
 let tempRoute: RouteShape | null = null; // route being drawn in the Route Creator
 
-export function drawRoutes(): void {
+export function drawRoutes(layer: Layer): void {
   TIME && console.time("drawRoutes");
   const shapes: RouteShape[] = [];
   for (const route of pack.routes) {
@@ -32,7 +33,8 @@ export function drawRoutes(): void {
     if (shape) shapes.push(shape);
   }
   scene.replace(shapes);
-  layer.render();
+  syncStyleGroups(layer.getEl(), styles.routes.groups);
+  viewportLayer.render();
   TIME && console.timeEnd("drawRoutes");
 }
 
@@ -47,7 +49,7 @@ export function redrawRoute(route: Route): void {
   const shape = buildShape(route);
   if (!shape || !scene.valid) return;
   scene.set(shape);
-  layer.render();
+  viewportLayer.render();
 }
 
 /** Bounding box of the rendered route, available whether or not the route is currently materialized */
@@ -58,13 +60,13 @@ export function getRouteBox(routeId: number): DOMRect | null {
 
 export function setEditedRoute(routeId: number | null): void {
   editedRouteId = routeId === null ? null : `route${routeId}`;
-  layer.render();
+  viewportLayer.render();
 }
 
 const TEMP_ID = "routeTemp";
 export function setTempRoute(route: { group: string; points: number[][] } | null): void {
   tempRoute = route && route.points.length > 1 ? buildShape({ ...route, i: -1 } as Route, TEMP_ID) : null;
-  layer.render();
+  viewportLayer.render();
 }
 
 function buildShape(route: Route, id = `route${route.i}`): RouteShape | null {
@@ -113,8 +115,6 @@ function reconcileRoutes({ root, bounds }: ViewportRenderContext): void {
   if (tempRoute && root === document) show(tempRoute);
 
   for (const group of Array.from(container.querySelectorAll<SVGGElement>(":scope > g"))) {
-    // custom groups from loaded maps miss the data-group the layer registry stamps on declared ones
-    group.dataset.group = group.id;
     const shapes = visibleByGroup.get(group.id) ?? [];
     const shapeIds = new Set(shapes.map(shape => shape.id));
 

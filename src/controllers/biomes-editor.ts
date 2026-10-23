@@ -11,6 +11,7 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
+import { LegendBoxes } from "@/components/legend-boxes";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
@@ -18,8 +19,8 @@ import { ReliefPoolEditor } from "@/controllers/relief-pool-editor";
 import { fitReliefArt, poolPreviewHtml } from "@/controllers/relief-previews";
 import type { Biome } from "@/generators/biomes-generator";
 import { Population } from "@/generators/population-generator";
-import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { Csv } from "@/services/io/csv";
+import type { LegendItem } from "@/types/Legend";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { findEl, getArea, getAreaUnit, groupByValue, openURL } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
@@ -406,17 +407,14 @@ function openWiki(el: HTMLElement): void {
 }
 
 function toggleLegend(): void {
-  if (hasLegend(LEGEND_NAME)) {
-    clearLegend(LEGEND_NAME); // hide this box alone, keeping the other legends
-    return;
-  }
-  const statistics = biomesCollectStatistics();
-  const data = pack.biomes
-    .filter(({ i }) => statistics[i].cells)
-    .sort((a, b) => statistics[b.i].area - statistics[a.i].area)
-    .map(({ i, color, name }) => [i, color, name]);
-  if (!data.length) return void tip(t("No biomes to show"), false, "error");
-  drawLegend(LEGEND_NAME, data);
+  const getItems = () => {
+    const statistics = biomesCollectStatistics();
+    return pack.biomes
+      .filter(({ i }) => statistics[i].cells)
+      .sort((a, b) => statistics[b.i].area - statistics[a.i].area)
+      .map(({ i, color, name }): LegendItem => [i, color, name]);
+  };
+  LegendBoxes.toggle(LEGEND_NAME, getItems, t("No biomes to show"));
 }
 
 function togglePercentageMode(): void {

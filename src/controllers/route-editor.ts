@@ -132,11 +132,9 @@ function updateRouteData(route: Route): void {
 
   const routeGroup = ensureEl<HTMLSelectElement>("routeGroup");
   routeGroup.options.length = 0;
-  select("#routes")
-    .selectAll<HTMLElement, unknown>("g")
-    .each(function () {
-      routeGroup.options.add(new Option(this.id, this.id, false, this.id === route.group));
-    });
+  for (const group of Object.keys(styles.routes.groups)) {
+    routeGroup.options.add(new Option(group, group, false, group === route.group));
+  }
 
   updateRouteLength(route);
 

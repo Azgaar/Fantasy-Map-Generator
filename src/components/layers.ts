@@ -1,5 +1,4 @@
 // Global layers registry: owns layers list, order, and svg skeleton
-import { AltitudeLegend } from "@/renderers/altitude-legend";
 import { drawBiomes } from "@/renderers/draw-biomes";
 import { drawBorders } from "@/renderers/draw-borders";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
@@ -38,6 +37,7 @@ import { drawLabels, removeLabels } from "@/renderers/labels/labels-renderer";
 import { drawFogging } from "@/renderers/overlays/fogging";
 import { TradeAnimation } from "@/renderers/trade-animation";
 import { createEl, ensureEl, findEl } from "@/utils/nodeUtils";
+import { LegendBoxes } from "./legend-boxes";
 
 interface LayerParams<Id extends string = string> {
   id: Id; // canonical identity, persisted in the .map file
@@ -218,7 +218,7 @@ export class LayersRegistry<Id extends string = string> {
     };
   }
 
-  /** apply stored state: the content is already in the DOM, so nothing is drawn or erased */
+  /** apply stored state; nothing is drawn or erased, the caller draws */
   restore({ order, active }: LayersState): void {
     const ranks = new Map<string, number>();
     let previous = -1;
@@ -296,7 +296,7 @@ const mapLayers = [
     children: ["oceanHeights", "landHeights"].map(id => ({ id, tag: "g" })),
     draw: () => {
       drawHeightmap();
-      AltitudeLegend.refresh(); // the legend shows the heightmap colours
+      LegendBoxes.refreshAltitude(); // the legend shows the heightmap colours
     }
   }),
   new Layer({

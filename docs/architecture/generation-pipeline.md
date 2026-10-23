@@ -76,7 +76,7 @@ the pipeline, since it depends only on name bases and the seeded random source.
 | Naming polish            | `riversSpecify`, `featureNames`                               | river and feature (island, ocean, lake) names                                   |
 | Economy                  | `markets`, `production`, `taxes`                              | `pack.markets`, `cells.market`, `pack.deals`, burg/state treasuries             |
 | Overlays                 | `military`, `markers`, `zones`, `addedLabels`                 | regiments, markers, zones, labels                                               |
-| Finalise                 | `journeys`                                                    | journeys                                                                        |
+| Finalise                 | `journeys`, `legends`                                         | journeys, empty legend boxes                                                    |
 
 Two constraints are easy to break when replicating a slice of this:
 
@@ -123,7 +123,7 @@ flowchart TD
     names["riversSpecify + featureNames"]
     econ["markets + production + taxes<br/><i>writes: pack.markets, deals, cells.market</i>"]
     mil["military + markers + zones + addedLabels"]
-    journeys["journeys"]
+    journeys["journeys + legends"]
 
     gg --> hm --> mg --> lakes --> coord --> temp --> prec --> repack --> ruler --> rivers --> biomes --> fg --> ice --> goods --> rank --> cult --> burgs --> states --> routes --> relig --> spec --> prov --> names --> econ --> mil --> journeys
 
@@ -163,7 +163,7 @@ a step id that does not exist in the canonical list is a compile error, but the 
 sync by hand. Differences, all deliberate:
 
 - **Dropped:** `grid`, `heightmap` (the user just edited the heights), `mapSize`
-  and `defaultRuler` (map bounds don't change on an edit), `addedLabels` and `journeys` (not touched).
+  and `defaultRuler` (map bounds don't change on an edit), `addedLabels`, `journeys` and `legends` (not touched).
 - **`erosion` context:** `addLakesInDeepDepressions` and `openNearSeaLakes` run only when erosion is
   allowed; `rivers` calls `Rivers.generate(erosion)` and, when it isn't, snaps `pack.cells.h` back to
   the grid heights wherever the land/water side didn't flip.

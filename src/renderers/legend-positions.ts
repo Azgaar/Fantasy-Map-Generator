@@ -28,6 +28,11 @@ export const legendPositions = {
     write(positions);
   },
 
+  /** Forget every auto-placed box, keeping the dragged ones */
+  releaseAll(): void {
+    write(Object.fromEntries(Object.entries(read()).filter(([, position]) => position.dragged)));
+  },
+
   clear(): void {
     dialogState.remove(DIALOG_ID, "legend");
   }

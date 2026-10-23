@@ -17,15 +17,16 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
+import { LegendBoxes } from "@/components/legend-boxes";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
 import { Tags } from "@/generators/tags";
 import type { Zone } from "@/generators/zones-generator";
-import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { zonesFilter } from "@/renderers/draw-zones";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { Csv } from "@/services/io/csv";
+import type { LegendItem } from "@/types/Legend";
 import { findEl, getArea, getAreaUnit } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { errorText } from "@/utils/stringUtils";
@@ -424,17 +425,13 @@ function toggleFog(zone: Zone, cl: DOMTokenList): void {
 }
 
 function toggleLegend(): void {
-  if (hasLegend(LEGEND_NAME)) {
-    clearLegend(LEGEND_NAME); // hide this box alone, keeping the other legends
-    return;
-  }
-
-  const filterBy = zonesFilter.type;
-  const isFiltered = filterBy !== "all";
-  const visibleZones = pack.zones.filter(zone => !zone.hidden && (!isFiltered || zone.type === filterBy));
-  const data = visibleZones.map(({ i, name, color }) => [`zone${i}`, color, name]);
-  if (!data.length) return void tip(t("No zones to show"), false, "error");
-  drawLegend(LEGEND_NAME, data);
+  const getItems = () => {
+    const filterBy = zonesFilter.type;
+    const isFiltered = filterBy !== "all";
+    const visibleZones = pack.zones.filter(zone => !zone.hidden && (!isFiltered || zone.type === filterBy));
+    return visibleZones.map(({ i, name, color }): LegendItem => [`zone${i}`, color, name]);
+  };
+  LegendBoxes.toggle(LEGEND_NAME, getItems, t("No zones to show"));
 }
 
 function togglePercentageMode(): void {

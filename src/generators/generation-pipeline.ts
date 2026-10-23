@@ -1,5 +1,6 @@
 // Canonical generation sequence, as a declared pipeline instead of a hand-written call list. See docs/architecture/generation-pipeline.md.
 import { GraphOverride } from "@/generators/graph-override";
+import { Legends } from "@/generators/legends";
 import { Pipeline, type PipelineStep } from "@/generators/pipeline";
 import { Population } from "@/generators/population-generator";
 import type { GridGraph } from "@/types/GridGraph";
@@ -45,7 +46,8 @@ const generationPipelineSteps = [
   { id: "markers", run: () => Markers.generate() },
   { id: "zones", run: () => Zones.generate() },
   { id: "addedLabels", run: () => AddedLabels.initiate() },
-  { id: "journeys", run: () => Journeys.generate() }
+  { id: "journeys", run: () => Journeys.generate() },
+  { id: "legends", run: () => Legends.initiate() }
 ] as const satisfies PipelineStep<string, GenerationContext>[];
 
 type GenerationPipelineStepId = (typeof generationPipelineSteps)[number]["id"];

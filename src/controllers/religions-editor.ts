@@ -18,15 +18,16 @@ import {
   type TableView
 } from "@/components/dialog/table";
 import { Layers } from "@/components/layers";
+import { LegendBoxes } from "@/components/legend-boxes";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { RELIGION_EXPANSION_LABELS, RELIGION_TYPE_LABELS } from "@/data/id-labels";
 import type { Religion } from "@/generators/religions-generator";
 import { Tags } from "@/generators/tags";
-import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { highlightElement } from "@/renderers/overlays/highlight";
 import { Csv } from "@/services/io/csv";
+import type { LegendItem } from "@/types/Legend";
 import { findEl, getArea, getAreaUnit, groupByValue } from "@/utils";
 import { sentences, t } from "@/utils/i18n";
 import { errorText } from "@/utils/stringUtils";
@@ -805,17 +806,12 @@ function religionCenterDrag(this: any, event: any): void {
 }
 
 function toggleLegend(): void {
-  if (hasLegend(LEGEND_NAME)) {
-    clearLegend(LEGEND_NAME); // hide this box alone, keeping the other legends
-    return;
-  }
-
-  const data = pack.religions
-    .filter(r => r.i && !r.removed && r.area)
-    .sort((a, b) => (b.area ?? 0) - (a.area ?? 0))
-    .map(r => [r.i, r.color, r.name]);
-  if (!data.length) return void tip(t("No religions to show"), false, "error");
-  drawLegend(LEGEND_NAME, data);
+  const getItems = () =>
+    pack.religions
+      .filter(r => r.i && !r.removed && r.area)
+      .sort((a, b) => (b.area ?? 0) - (a.area ?? 0))
+      .map((r): LegendItem => [r.i, r.color, r.name]);
+  LegendBoxes.toggle(LEGEND_NAME, getItems, t("No religions to show"));
 }
 
 function togglePercentageMode(): void {

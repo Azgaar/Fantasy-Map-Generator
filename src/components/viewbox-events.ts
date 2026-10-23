@@ -2,10 +2,13 @@
 import { drag, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { LabelType } from "@/generators/labels-generator";
-import { dragLegendBox } from "@/renderers/draw-legend";
+import { dragLegendBox, legendBoxFromEvent } from "@/renderers/draw-legend";
 import { findEl } from "@/utils";
 import { debounce } from "@/utils/commonUtils";
+import { sentences, t } from "@/utils/i18n";
+import { LegendBoxes } from "./legend-boxes";
 import { handleMouseMove } from "./map-tooltip";
+import { tip } from "./tooltips";
 import { applyZoomBehavior } from "./zoom";
 
 const onMouseMove = debounce(handleMouseMove, 100);
@@ -20,7 +23,16 @@ export function applyDefaultViewboxEvents(): void {
     .on("contextmenu", onContextMenu)
     .on("touchmove mousemove", onMouseMove);
 
-  select<SVGGElement, unknown>("#legend").call(drag<SVGGElement, unknown>().on("start", dragLegendBox));
+  select<SVGGElement, unknown>("#legend")
+    .on("mousemove", () => tip(sentences(t("Drag to change the position"), t("Click to hide the legend box"))))
+    .on("click", hideLegendBox)
+    .call(drag<SVGGElement, unknown>().on("start", dragLegendBox));
+}
+
+/** A click on a legend box hides that box alone */
+function hideLegendBox(event: MouseEvent): void {
+  const name = legendBoxFromEvent(event)?.dataset.legend;
+  if (name) LegendBoxes.hide(name);
 }
 
 // map group id -> editor to open. The click target is resolved by walking up its ancestors

@@ -1,8 +1,10 @@
 import type { Layer } from "@/components/layers";
 import { findEl } from "@/utils";
 import { getLakeRipples } from "./lake-ripples";
+import { syncStyleGroups } from "./style-groups";
 
 export function drawLakes(layer: Layer): void {
+  syncStyleGroups(layer.getEl(), styles.lakes.groups);
   const groups = Array.from(layer.getEl().children);
   const groupIds = new Set(groups.map(group => group.id));
   const existing = new Map(

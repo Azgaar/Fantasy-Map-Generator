@@ -1,4 +1,3 @@
-import { select } from "d3";
 import { fitMapToScreen } from "@/components/canvas";
 import { closeDialogs, confirmationDialog } from "@/components/dialog/dialog-helpers";
 import { Icons } from "@/components/icons";
@@ -14,7 +13,6 @@ import { resetZoom } from "@/components/zoom";
 import { Controllers } from "@/controllers";
 import { GraphOverride } from "@/generators/graph-override";
 import { Styles } from "@/generators/styles";
-import { onLegendClick } from "@/renderers/draw-legend";
 import { applyVignetteOptions } from "@/renderers/draw-vignette";
 import { zonesFilter } from "@/renderers/draw-zones";
 import { Hatches } from "@/renderers/hatches";
@@ -151,7 +149,7 @@ function uploadMap(file: Blob, callback?: () => void): void {
     const result = fileLoadedEvent.target!.result as ArrayBuffer;
     const { mapData, mapVersion } = await parseLoadedResult(result);
 
-    const isInvalid = !mapData || !isValidVersion(mapVersion!) || mapData.length < 10 || !mapData[5];
+    const isInvalid = !mapData || !isValidVersion(mapVersion!) || mapData.length < 10;
     if (isInvalid) return showUploadMessage("invalid", mapData, mapVersion);
 
     const isUpdated = compareVersions(mapVersion!, VERSION).isEqual;
@@ -196,14 +194,9 @@ async function parseLoadedResult(
     const isDelimited = resultAsString.substring(0, 10).includes("|");
     let content = isDelimited ? resultAsString : decodeURIComponent(atob(resultAsString));
 
-    // fix if svg part has CRLF line endings instead of LF
-    const svgMatch = content.match(/<svg[^>]*id="map"[\s\S]*?<\/svg>/);
-    const svgContent = svgMatch![0];
-    const hasCrlfEndings = svgContent.includes("\r\n");
-    if (hasCrlfEndings) {
-      const correctedSvgContent = svgContent.replace(/\r\n/g, "\n");
-      content = content.replace(svgContent, correctedSvgContent);
-    }
+    // CRLF line endings inside the svg record would break the split by records
+    const svgContent = content.match(/<svg[^>]*id="map"[\s\S]*?<\/svg>/)?.[0];
+    if (svgContent?.includes("\r\n")) content = content.replace(svgContent, svgContent.replace(/\r\n/g, "\n"));
 
     const mapData = content.split("\r\n"); // split by CRLF
     const mapVersion = parseMapVersion(mapData[0].split("|")[0] || mapData[0] || "");
@@ -287,20 +280,9 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       });
     }
 
-    undraw(); // every layer releases its scene and content before the loaded map takes over
-    select("#map").remove();
-    document.body.insertAdjacentHTML("afterbegin", data[5]);
-    ensureEl("map").dataset.layer = "map"; // pre-1.154 maps lack it, and styles address the root by it
+    undraw(); // the loaded map is drawn from its data into the live svg, as a generated one is
     zonesFilter.type = "all"; // the dropped map's zone types say nothing about the loaded one
 
-    // TODO: check if we need it or if LayersRegistry resolves it automatically?
-    const viewbox = select("#viewbox");
-    if (!select("#texture").size()) {
-      viewbox.insert("g", "#landmass").attr("id", "texture").attr("data-href", "./images/textures/plaster.jpg");
-    }
-    if (!select("#emblems").size()) {
-      viewbox.insert("g", "#labels").attr("id", "emblems").style("display", "none");
-    }
     grid = JSON.parse(data[6]);
     Grid.rebuildGraph(grid);
     GraphOverride.clear(); // the loaded world replaces the previous one
@@ -369,6 +351,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.addedLabels = data[47] ? JSON.parse(data[47]) : [];
     pack.relief = data[49] ? JSON.parse(data[49]) : [];
     pack.journeys = data[52] ? JSON.parse(data[52]) : [];
+    pack.legends = data[53] ? JSON.parse(data[53]) : [];
 
     // save omits names that equal the default base at the same index
     const defaultNameBases = Names.getNameBases();
@@ -403,13 +386,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     TradeAnimation.sync();
     Journeys.sync();
 
-    select("#scaleBar")
-      .on("mousemove", () => tip(t("Units Editor")))
-      .on("click", () => window.Controllers.UnitsEditor.open());
-    select("#legend")
-      .on("mousemove", () => tip(sentences(t("Drag to change the position"), t("Click to hide the legend box"))))
-      .on("click", onLegendClick);
-
     // add custom heightmap color scheme if any
     for (const { scheme } of [
       styles.heightmap.groups.oceanHeights.options,
@@ -423,7 +399,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     Layers.drawAll();
     Styles.writeAll();
     applyVignetteOptions(); // the vignette mask is renderer-owned; its applier shapes it from the store
-    applyPerformanceSettings(); // the file's SVG carries the attributes of the browser that saved it
+    applyPerformanceSettings();
     applyDefaultViewboxEvents();
     fitMapToScreen();
     resetZoom(0); // an opened map is shown fitted, whatever window size it was made on

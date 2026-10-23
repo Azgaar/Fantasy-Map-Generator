@@ -1,9 +1,9 @@
 // The Units Editor: the distance, altitude, temperature and population scales a map is read in
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
+import { LegendBoxes } from "@/components/legend-boxes";
 import { Pins } from "@/components/pins";
 import { updateGridSizeReadout } from "@/controllers/style-editor/controls";
-import { AltitudeLegend } from "@/renderers/altitude-legend";
 import { t } from "@/utils/i18n";
 import { applyOption, ensureEl } from "../utils";
 import type { PromptOptions } from "../utils/commonUtils";
@@ -188,7 +188,7 @@ function fillInputs(): void {
  */
 function addListeners(): void {
   ensureEl(DIALOG_ID).addEventListener("change", onUnitChange);
-  ensureEl("unitsAltitudeLegend").addEventListener("click", AltitudeLegend.toggle);
+  ensureEl("unitsAltitudeLegend").addEventListener("click", LegendBoxes.toggleAltitude);
   ensureEl("unitsRestore").addEventListener("click", restoreDefaultUnits);
 }
 
@@ -261,7 +261,7 @@ function onUnitChange(event: Event): void {
       return;
   }
 
-  AltitudeLegend.refresh(); // reads the height unit and exponent
+  LegendBoxes.refreshAltitude(); // reads the height unit and exponent
   Options.save();
 }
 
@@ -283,7 +283,7 @@ function askForCustomUnit(select: HTMLInputElement, kind: "distance" | "height")
       } else {
         options.map.units.height.unit = name;
         Pins.set("heightUnit", name);
-        AltitudeLegend.refresh();
+        LegendBoxes.refreshAltitude();
       }
       Options.save();
     }
@@ -304,7 +304,7 @@ function restoreDefaultUnits(): void {
   fillInputs();
   Temperature.generate();
   redrawDistances();
-  AltitudeLegend.refresh();
+  LegendBoxes.refreshAltitude();
 }
 
 export const UnitsEditor = { open };

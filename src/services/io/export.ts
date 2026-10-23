@@ -567,7 +567,7 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
     }
 
     // load fonts
-    const usedFonts = getUsedFonts(cloneEl);
+    const usedFonts = getUsedFonts(styles);
     const fontsToLoad = usedFonts.filter(font => font.src);
     if (fontsToLoad.length) {
       const dataURLfonts = await loadFontsAsDataURI(fontsToLoad);

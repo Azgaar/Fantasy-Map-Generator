@@ -31,13 +31,9 @@ function open(defaultGroup?: string): void {
   renderDialog();
 
   // update route groups
-  ensureEl("routeCreatorGroupSelect").innerHTML = select("#routes")
-    .selectAll<SVGGElement, unknown>("g")
-    .nodes()
-    .map(el => {
-      const selected = defaultGroup || "roads";
-      return `<option value="${el.id}" ${el.id === selected ? "selected" : ""}>${el.id}</option>`;
-    })
+  const selected = defaultGroup || "roads";
+  ensureEl("routeCreatorGroupSelect").innerHTML = Object.keys(styles.routes.groups)
+    .map(group => `<option value="${group}" ${group === selected ? "selected" : ""}>${group}</option>`)
     .join("");
 
   $("#routeCreator").dialog({

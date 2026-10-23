@@ -21,7 +21,6 @@ vi.mock("@/renderers/draw-emblems", () => ({ redrawEmblem: vi.fn(), removeEmblem
 vi.mock("@/renderers/emblems/renderer", () => ({ EmblemRenderer: { trigger: vi.fn() } }));
 vi.mock("@/renderers/overlays/fogging", () => ({ fog: vi.fn(), unfog: vi.fn() }));
 vi.mock("@/renderers/overlays/highlight", () => ({ highlightElement: vi.fn(), highlightOutline: vi.fn() }));
-vi.mock("@/renderers/draw-legend", () => ({ clearLegend: vi.fn(), drawLegend: vi.fn(), hasLegend: () => false }));
 
 import { dialogState } from "@/components/dialog/state";
 import { StatesEditor } from "./states-editor";

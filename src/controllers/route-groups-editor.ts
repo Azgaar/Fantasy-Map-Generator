@@ -1,8 +1,8 @@
-import { select } from "d3";
 import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
 import type { Route } from "@/generators/routes-generator";
+import { isGroupNameFree } from "@/renderers/style-groups";
 import { t } from "@/utils/i18n";
 import { ensureEl, findEl } from "../utils";
 
@@ -56,19 +56,16 @@ function onBodyClick(ev: Event): void {
 function addLines(): void {
   ensureEl("routeGroupsEditorBody").innerHTML = "";
 
-  const lines = select("#routes")
-    .selectAll<SVGGElement, unknown>("g")
-    .nodes()
-    .map(el => {
-      const count = pack.routes.filter((route: Route) => route.group === el.id).length;
-      return /* html */ `<div data-id="${el.id}" class="states" style="display: flex; justify-content: space-between;">
-          <span>${el.id} (${count})</span>
+  const lines = Object.keys(styles.routes.groups).map(group => {
+    const count = pack.routes.filter((route: Route) => route.group === group).length;
+    return /* html */ `<div data-id="${group}" class="states" style="display: flex; justify-content: space-between;">
+          <span>${group} (${count})</span>
           <div style="width: auto; display: flex; gap: 0.4em;">
             <span data-tip="${t("Edit style")}" class="editStyle icon-brush pointer" style="font-size: smaller;"></span>
             <span data-tip="${t("Remove")}" class="removeGroup icon-trash pointer"></span>
           </div>
         </div>`;
-    });
+  });
 
   ensureEl("routeGroupsEditorBody").innerHTML = lines.join("");
 }
@@ -82,7 +79,8 @@ function addGroup(): void {
 
     if (!group) return tip(t("Invalid group name"), false, "error");
     if (!group.startsWith("route-")) group = `route-${group}`;
-    if (findEl(group)) return tip(t("Element with this name already exists. Provide a unique name"), false, "error");
+    if (!isGroupNameFree(styles.routes.groups, group))
+      return tip(t("Element with this name already exists. Provide a unique name"), false, "error");
     if (Number.isFinite(+group.charAt(0))) return tip(t("Group name should start with a letter"), false, "error");
 
     // the store is authoritative: seed an entry so style edits and presets can address the group
@@ -95,15 +93,11 @@ function addGroup(): void {
       "stroke-linecap": "butt"
     });
     styles.routes.groups[group] = groupStyle;
+    Layers.draw("routes"); // the layer makes the group element from the store
 
-    const groupEl = select("#routes").append("g").attr("id", group).attr("data-group", group);
-    for (const [attr, value] of Object.entries(groupStyle.attrs)) {
-      if (value !== null && value !== undefined) groupEl.attr(attr, value);
-    }
-    ensureEl<HTMLSelectElement>("routeGroup").options.add(new Option(group, group));
+    findEl<HTMLSelectElement>("routeGroup")?.options.add(new Option(group, group));
+    findEl<HTMLSelectElement>("routeCreatorGroupSelect")?.options.add(new Option(group, group));
     addLines();
-
-    ensureEl<HTMLSelectElement>("routeCreatorGroupSelect").options.add(new Option(group, group));
   });
 }
 
@@ -118,10 +112,7 @@ function removeGroup(group: string): void {
         .forEach(route => {
           Routes.remove(route.i);
         });
-      if (!DEFAULT_GROUPS.includes(group)) {
-        select("#routes").select(`#${group}`).remove();
-        delete styles.routes.groups[group];
-      }
+      if (!DEFAULT_GROUPS.includes(group)) delete styles.routes.groups[group];
       Layers.draw("routes", "labels");
       addLines();
     }
