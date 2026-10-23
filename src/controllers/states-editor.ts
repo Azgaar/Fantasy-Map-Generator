@@ -30,6 +30,7 @@ import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement, highlightOutline } from "@/renderers/overlays/highlight";
 import { applyOption, downloadFile, getArea, getAreaUnit, getFileName, groupByValue, speak } from "@/utils";
 import { errorText } from "@/utils/stringUtils";
+import { getRosterOptions } from "@/conquest/content/store";
 import { ensureEl, formatPrice, getAdjective, getPointer, isLand, rand, rn, si } from "../utils";
 
 const dialogId = "statesEditor" as const;
@@ -67,6 +68,15 @@ const columns: EditorColumn<State>[] = [
     width: "10em",
     mobileHidden: true,
     sortBy: s => (s.i ? pack.cultures[s.culture]?.name || "" : ""),
+    sortType: "alpha"
+  },
+  {
+    key: "roster",
+    label: "Roster",
+    width: "7.5em",
+    mobileHidden: true,
+    tip: "Military unit roster. Click to sort",
+    sortBy: s => (s.i ? s.rosterId || "" : ""),
     sortType: "alpha"
   },
   {
@@ -260,6 +270,7 @@ function renderDialog(): void {
     if (!line) return;
     const state = +line.dataset.id!;
     if (classList.contains("stateCulture")) stateChangeCulture(state, line, $element.value);
+    else if (classList.contains("stateRoster")) stateChangeRoster(state, line, $element.value);
     else if (classList.contains("cultureType")) stateChangeType(state, line, $element.value);
     else if (classList.contains("statePower")) stateChangeExpansionism(state, line, $element.value);
   });
@@ -336,6 +347,7 @@ function renderStatesPage(view: TableView<State>): void {
           <div class="stateCapital placeholder"></div>
         </div>
         <select class="stateCulture placeholder" data-col="culture">${getCultureOptions(0)}</select>
+        <select class="stateRoster placeholder" data-col="roster"></select>
         <div data-col="burgs">
           <span data-tip="Click to overview neutral burgs" class="icon-dot-circled pointer" style="padding-right: 1px"></span>
           <div data-tip="Burgs count" class="stateBurgs">${s.burgs}</div>
@@ -395,6 +407,9 @@ function renderStatesPage(view: TableView<State>): void {
       </div>
       <select data-tip="Dominant culture. Click to change" class="stateCulture" data-col="culture">${getCultureOptions(
         s.culture
+      )}</select>
+      <select data-tip="Military unit roster. Click to change" class="stateRoster" data-col="roster">${getRosterOptions(
+        s.rosterId
       )}</select>
       <div data-col="burgs">
         <span data-tip="Click to overview state burgs" style="padding-right: 1px" class="icon-dot-circled pointer"></span>
@@ -819,6 +834,13 @@ function stateCapitalZoomIn(state: number): void {
 function stateChangeCulture(state: number, line: HTMLElement, value: string): void {
   States.setCulture(state, +value);
   line.dataset.base = String(+value);
+  const rosterSelect = line.querySelector<HTMLSelectElement>(".stateRoster");
+  if (rosterSelect) rosterSelect.innerHTML = getRosterOptions(pack.states[state].rosterId);
+}
+
+function stateChangeRoster(state: number, line: HTMLElement, value: string): void {
+  States.setRoster(state, value);
+  line.dataset.roster = value;
 }
 
 function stateChangeType(state: number, line: HTMLElement, value: string): void {

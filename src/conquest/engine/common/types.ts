@@ -237,6 +237,7 @@ export interface Faction {
   color: string;
   culture: number;
   religion: number;
+  rosterId?: string;
   /** Azgaar expansionism (seeds AI aggression, total-war/.plans/PLAN.md §5.11). */
   expansionism: number;
   /** Azgaar starting treasury. */

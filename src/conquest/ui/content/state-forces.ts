@@ -130,7 +130,7 @@ function upsertStateDef(docs: RawContentDocs, stateId: number, patch: Partial<St
   (file.doc as Record<string, unknown>).factions = list;
 }
 
-function getBoundRoster(state: { id: number; cultureName: string }, docs: RawContentDocs): BoundRoster {
+function getBoundRoster(state: { id: number; cultureName: string; rosterId?: string }, docs: RawContentDocs): BoundRoster {
   const content = currentContent().content;
   const existingDefs = stateDefsOf(docs);
   const def = existingDefs.get(state.id);
@@ -148,7 +148,10 @@ function getBoundRoster(state: { id: number; cultureName: string }, docs: RawCon
     rostersMap,
     docs.meta.defaultRoster || Object.keys(content.rosters)[0] || "default"
   );
-  const rosterId = def?.rosterId && rostersMap[def.rosterId] ? def.rosterId : inferredId;
+  const rosterId =
+    (def?.rosterId && rostersMap[def.rosterId] ? def.rosterId : undefined) ??
+    (state.rosterId && rostersMap[state.rosterId] ? state.rosterId : undefined) ??
+    inferredId;
 
   const rosterObj =
     content.rosters[rosterId] ?? content.rosters[docs.meta.defaultRoster] ?? Object.values(content.rosters)[0]!;
@@ -472,6 +475,9 @@ export function openStateForcesDialog(): void {
           buildings: undefined,
           tech: undefined
         });
+        if (fmg()?.pack?.states?.[s.id]) {
+          fmg()!.pack!.states![s.id]!.rosterId = bound.id;
+        }
       }
 
       clearErrors(document.body);

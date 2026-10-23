@@ -123,6 +123,8 @@ export interface FmgState {
   name: string;
   color?: string;
   capital?: number;
+  culture?: number;
+  rosterId?: string;
   /** FMG types this as boolean, but the data carries 1/0 — so treat it as truthy */
   removed?: boolean | number;
   military?: FmgRegiment[];

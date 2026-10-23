@@ -774,6 +774,7 @@ function buildPack(raw: AzgaarMap): MapPack {
       formName: s.formName || s.form,
       color: s.color,
       culture: s.culture,
+      rosterId: s.rosterId,
       religion: 0, // patched below from regions
       expansionism: s.expansionism,
       treasury: s.treasury,

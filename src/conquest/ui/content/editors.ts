@@ -387,7 +387,13 @@ interface FactionEditorRow {
   traits: string[];
 }
 
-export function getActiveStates(): { id: number; name: string; color: string; cultureName: string }[] {
+export function getActiveStates(): {
+  id: number;
+  name: string;
+  color: string;
+  cultureName: string;
+  rosterId?: string;
+}[] {
   const session = currentSession();
   if (session?.store?.pack?.factions && session.store.pack.factions.length > 0) {
     const pack = session.store.pack;
@@ -397,7 +403,8 @@ export function getActiveStates(): { id: number; name: string; color: string; cu
         id: f.id,
         name: f.name,
         color: f.color || "#888888",
-        cultureName: cultureObj?.name ?? (f.culture > 0 ? `Culture ${f.culture}` : "None")
+        cultureName: cultureObj?.name ?? (f.culture > 0 ? `Culture ${f.culture}` : "None"),
+        rosterId: f.rosterId
       };
     });
   }
@@ -415,7 +422,8 @@ export function getActiveStates(): { id: number; name: string; color: string; cu
       id: s.i,
       name: s.name,
       color: s.color || "#888888",
-      cultureName: cultureObj?.name ?? (cultureId > 0 ? `Culture ${cultureId}` : "None")
+      cultureName: cultureObj?.name ?? (cultureId > 0 ? `Culture ${cultureId}` : "None"),
+      rosterId: s.rosterId
     };
   });
 }
@@ -486,7 +494,11 @@ export function openFactionEditor(): void {
       docs.meta.defaultRoster || rosterList[0]!.id
     );
     const rosterId =
-      existing?.rosterId && rosterList.some(r => r.id === existing.rosterId) ? existing.rosterId : inferredRoster;
+      existing?.rosterId && rosterList.some(r => r.id === existing.rosterId)
+        ? existing.rosterId
+        : s.rosterId && rosterList.some(r => r.id === s.rosterId)
+          ? s.rosterId
+          : inferredRoster;
 
     let playerVal: string;
     if (existing?.player) {
@@ -597,6 +609,9 @@ export function openFactionEditor(): void {
           mechanics: { corruption: hasCorruption, confederation: r.confederation },
           traits: [...r.traits]
         });
+        if (fmg()?.pack?.states?.[r.id]) {
+          fmg()!.pack!.states![r.id]!.rosterId = r.rosterId;
+        }
       }
       applyDraft(docs, ok => {
         if (ok) toasts("Faction rules applied — the campaign's log was re-replayed.");

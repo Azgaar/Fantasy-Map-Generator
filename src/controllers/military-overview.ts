@@ -18,6 +18,7 @@ import { Controllers } from "@/controllers";
 import type { State } from "@/generators/states-generator";
 import type { MilitaryUnit } from "@/types/Military";
 import { downloadFile, getFileName } from "@/utils";
+import { getRosterOptions } from "@/conquest/content/store";
 import { capitalize, ensureEl, escapeHtml, rn, sanitizeId, si, wiki } from "../utils";
 
 const dialogId = "militaryOverview" as const;
@@ -115,10 +116,14 @@ function renderDialog(): void {
   ensureEl("militaryWiki").addEventListener("click", () => wiki("Military-Forces"));
 
   body.addEventListener("change", event => {
-    const el = event.target as HTMLInputElement;
+    const el = event.target as HTMLInputElement | HTMLSelectElement;
     const line = el.closest<HTMLElement>(".states");
     if (!line) return;
     const state = +line.dataset.id!;
+    if (el.classList.contains("stateRoster")) {
+      pack.states[state].rosterId = el.value;
+      return;
+    }
     changeAlert(state, +el.value);
   });
 
@@ -183,6 +188,14 @@ function getMilitaryColumns(): EditorColumn<MilitaryRow>[] {
       width: "5.5em",
       sortBy: row => row.alert,
       tip: "War Alert. Modifier to military forces number, depends on political situation. Click to sort"
+    },
+    {
+      key: "roster",
+      label: "Roster",
+      width: "6.5em",
+      mobileHidden: true,
+      tip: "Assigned military unit roster. Click to change",
+      sortBy: row => row.state.rosterId || ""
     },
     { key: "regiments", width: "1.4em", permanent: true }
   ];
@@ -265,6 +278,7 @@ function renderMilitaryPage(view: TableView<MilitaryRow>): void {
         <div data-col="population" data-tip="State population">${percentage ? percent(row.population, totals.population) : si(row.population)}</div>
         <div data-col="rate" data-tip="Military personnel rate (% of state population). Depends on war alert">${rn(row.rate, 2)}%</div>
         <input data-col="alert" data-tip="War Alert. Editable modifier to military forces number, depends on political situation" type="number" min="0" step=".01" value="${rn(row.alert, 2)}" />
+        <select data-col="roster" data-tip="Assigned military unit roster. Click to change" class="stateRoster">${getRosterOptions(row.state.rosterId)}</select>
         <span data-col="regiments" data-tip="Show regiments list" class="icon-list-bullet pointer"></span>
       </div>`;
     })

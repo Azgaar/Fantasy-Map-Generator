@@ -94,6 +94,7 @@ export interface AzgaarState {
   capital: number;
   center: number;
   culture: number;
+  rosterId?: string;
   expansionism: number;
   treasury: number;
   /** Azgaar sales tax (0–1) — taken on deals this state sells. */
