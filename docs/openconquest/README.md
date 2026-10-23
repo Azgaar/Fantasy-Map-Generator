@@ -164,10 +164,10 @@ Armies navigate the cell graph using A* pathfinding. Before issuing a move order
 | `raid` | ×1.0 | Plunders enemy territory, transferring Wealth into booty and destabilizing local public order. |
 
 ### Battles: The Auto-Resolve Model
-Combat is resolved through an auditable, deterministic statistical model:
+Combat is resolved through an auditable, deterministic statistical model grounded in [Lanchester Combat Laws](lanchester-model.md):
 1. **Power Calculation**: Each unit contributes `(attack + defense + charge/2 + missile×0.6)`, modulated by current unit strength, veterancy experience, and unit category.
 2. **Matchup Matrix**: Tactical interactions scale effectiveness (cavalry counters missile ×1.3, missile punishes slow melee ×1.1, spearmen blunt cavalry ×0.8, artillery softens dense infantry ×1.2).
-3. **Attrition Rounds**: Combat simulates up to 6 rounds where casualties compound based on relative force disparity.
+3. **Attrition Rounds**: Combat simulates up to 6 rounds where casualties compound based on relative force disparity (Lanchester loss pressure). For a complete mathematical breakdown of Linear vs. Square laws and frontage constraints, see [`lanchester-model.md`](lanchester-model.md).
 4. **Rout & Pursuit**: Armies rout when falling below 25% initial combat power; losing forces suffer an additional 30% casualty rate during pursuit.
 5. **Contextual Modifiers**: Wall tiers, river crossings, encamped defender bonuses, and commanding lord skills are explicitly listed in the final battle report.
 
