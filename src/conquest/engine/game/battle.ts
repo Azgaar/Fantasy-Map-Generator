@@ -78,12 +78,52 @@ export function armyPower(units: ArmyUnit[], types: Record<string, UnitType>): n
   );
 }
 
-/** Effective power given the opponent's category mix. */
-const effectivePower = (
+export type BattleTacticalOrder = "balanced" | "skirmish" | "press" | "charge" | "brace" | "withdraw";
+
+export interface BattleRoundLog {
+  round: number;
+  attackerOrder: BattleTacticalOrder;
+  defenderOrder: BattleTacticalOrder;
+  attackerEffectivePower: number;
+  defenderEffectivePower: number;
+  attackerLossMen: number;
+  defenderLossMen: number;
+  attackerRemainingMen: number;
+  defenderRemainingMen: number;
+  attackerPowerFrac: number;
+  defenderPowerFrac: number;
+}
+
+export interface BattleSession {
+  attacker: BattleSide;
+  defender: BattleSide;
+  attackerUnits: ArmyUnit[];
+  defenderUnits: ArmyUnit[];
+  attackerInit: { men: number; power: number };
+  defenderInit: { men: number; power: number };
+  attackerMult: number;
+  defenderMult: number;
+  modifiers: BattleModifiers;
+  config: import("./config").CampaignConfig;
+  unitTypes: Record<string, UnitType>;
+  round: number;
+  history: BattleRoundLog[];
+  status: "active" | "attacker_won" | "defender_won" | "draw";
+  withdrawnSide?: "attacker" | "defender";
+  labels: string[];
+  cell: number;
+  regionId: number;
+  assault: boolean;
+}
+
+/** Effective power given the opponent's category mix and tactical orders. */
+export const effectivePower = (
   units: ArmyUnit[],
   opponent: ArmyUnit[],
   mult: number,
-  types: Record<string, UnitType>
+  types: Record<string, UnitType>,
+  order: BattleTacticalOrder = "balanced",
+  opponentOrder: BattleTacticalOrder = "balanced"
 ): number => {
   const theirs = categoryShares(opponent, types);
   let total = 0;
@@ -93,17 +133,26 @@ const effectivePower = (
     for (const [other, share] of Object.entries(theirs)) {
       blend += share * MATCHUP[cat][other as keyof (typeof MATCHUP)[typeof cat]]!;
     }
-    total += unitPower(u, types) * blend;
+    let p = unitPower(u, types) * blend;
+    if (order === "skirmish" && (cat === "ranged" || cat === "artillery")) p *= 1.25;
+    else if (order === "press" && cat === "melee") p *= 1.2;
+    else if (order === "charge" && cat === "cavalry") p *= 1.35;
+    else if (order === "brace") p *= 0.8;
+
+    if (opponentOrder === "brace" && cat === "cavalry") p *= 0.7;
+    if (opponentOrder === "skirmish" && cat === "cavalry" && order === "charge") p *= 1.25;
+
+    total += p;
   }
   return total * mult;
 };
 
-/** Distribute `lossMen` across units, proportional to size; jitter via campaign PRNG. */
-const applyLosses = (units: ArmyUnit[], lossMen: number, jitterRng: () => number): void => {
+/** Distribute `lossMen` across units, proportional to size; jitter via PRNG. */
+export const applyLosses = (units: ArmyUnit[], lossMen: number, jitterRng: () => number): void => {
   const total = units.reduce((a, u) => a + u.count, 0);
   if (total === 0 || lossMen <= 0) return;
   let remaining = Math.round(lossMen);
-  // Deterministic jitter: ±15% per unit via campaign PRNG.
+  // Deterministic jitter: ±15% per unit via PRNG.
   const weights = units.map(u => u.count * (0.85 + 0.3 * jitterRng()));
   const weightSum = weights.reduce((a, b) => a + b, 0);
   for (let i = 0; i < units.length; i++) {
@@ -115,41 +164,38 @@ const applyLosses = (units: ArmyUnit[], lossMen: number, jitterRng: () => number
   }
 };
 
-export function resolveBattle(
-  campaign: Campaign,
-  opts: {
-    config: import("./config").CampaignConfig;
-    unitTypes: Record<string, UnitType>;
-    attacker: BattleSide;
-    defender: BattleSide;
-    cell: number;
-    regionId: number;
-    assault: boolean;
-    modifiers: BattleModifiers;
-  }
-): BattleOutcome {
-  const { config, unitTypes: types } = opts;
-  const labels = [...opts.modifiers.labels];
+export function initBattleSession(opts: {
+  config: import("./config").CampaignConfig;
+  unitTypes: Record<string, UnitType>;
+  attacker: BattleSide;
+  defender: BattleSide;
+  cell: number;
+  regionId: number;
+  assault: boolean;
+  modifiers: BattleModifiers;
+}): BattleSession {
+  const { config, unitTypes: types, modifiers } = opts;
+  const labels = [...modifiers.labels];
 
   const defenderMult =
     (1 +
-      opts.modifiers.walls * config.battle.wallBonusPerTier +
-      (opts.modifiers.defenderEncamped ? config.battle.encampBonus : 0) +
-      (opts.modifiers.attackerCrossedRiver ? config.battle.riverDefenderBonus : 0)) *
-    (opts.modifiers.defenderLordMult ?? 1);
+      modifiers.walls * config.battle.wallBonusPerTier +
+      (modifiers.defenderEncamped ? config.battle.encampBonus : 0) +
+      (modifiers.attackerCrossedRiver ? config.battle.riverDefenderBonus : 0)) *
+    (modifiers.defenderLordMult ?? 1);
   const attackerMult =
-    (opts.modifiers.defenderAmbushed ? 1 + config.battle.ambushBonus : 1) * (opts.modifiers.attackerLordMult ?? 1);
-  if (opts.modifiers.walls > 0) labels.push(`walls t${opts.modifiers.walls}`);
-  if (opts.modifiers.defenderEncamped) labels.push("defender encamped");
-  if (opts.modifiers.defenderAmbushed) labels.push("ambush!");
-  if (opts.modifiers.attackerCrossedRiver) labels.push("river crossing");
-  if ((opts.modifiers.attackerLordMult ?? 1) > 1) labels.push("inspiring lord");
-  if ((opts.modifiers.defenderLordMult ?? 1) > 1) labels.push("stalwart defender");
+    (modifiers.defenderAmbushed ? 1 + config.battle.ambushBonus : 1) * (modifiers.attackerLordMult ?? 1);
+  if (modifiers.walls > 0) labels.push(`walls t${modifiers.walls}`);
+  if (modifiers.defenderEncamped) labels.push("defender encamped");
+  if (modifiers.defenderAmbushed) labels.push("ambush!");
+  if (modifiers.attackerCrossedRiver) labels.push("river crossing");
+  if ((modifiers.attackerLordMult ?? 1) > 1) labels.push("inspiring lord");
+  if ((modifiers.defenderLordMult ?? 1) > 1) labels.push("stalwart defender");
   if (
-    opts.modifiers.walls === 0 &&
-    !opts.modifiers.defenderEncamped &&
-    !opts.modifiers.defenderAmbushed &&
-    !opts.modifiers.attackerCrossedRiver
+    modifiers.walls === 0 &&
+    !modifiers.defenderEncamped &&
+    !modifiers.defenderAmbushed &&
+    !modifiers.attackerCrossedRiver
   ) {
     labels.push("open field");
   }
@@ -164,52 +210,177 @@ export function resolveBattle(
   const attackerInit = init(attackerUnits, attackerMult);
   const defenderInit = init(defenderUnits, defenderMult);
 
-  let rounds = 0;
-  let winner: "attacker" | "defender" = "defender";
-  let decided = false;
+  return {
+    attacker: opts.attacker,
+    defender: opts.defender,
+    attackerUnits,
+    defenderUnits,
+    attackerInit,
+    defenderInit,
+    attackerMult,
+    defenderMult,
+    modifiers,
+    config,
+    unitTypes: types,
+    round: 0,
+    history: [],
+    status: "active",
+    labels,
+    cell: opts.cell,
+    regionId: opts.regionId,
+    assault: opts.assault
+  };
+}
+
+export function stepBattleRound(
+  session: BattleSession,
+  prng: () => number,
+  orders?: { attacker?: BattleTacticalOrder; defender?: BattleTacticalOrder }
+): BattleRoundLog {
+  if (session.status !== "active") {
+    throw new Error(`battle session is already resolved (${session.status})`);
+  }
+
+  session.round++;
+  const attackerOrder = orders?.attacker ?? "balanced";
+  const defenderOrder = orders?.defender ?? "balanced";
+
+  if (attackerOrder === "withdraw" || defenderOrder === "withdraw") {
+    if (attackerOrder === "withdraw" && defenderOrder === "withdraw") {
+      session.status = "draw";
+      session.withdrawnSide = "attacker";
+    } else if (attackerOrder === "withdraw") {
+      session.status = "defender_won";
+      session.withdrawnSide = "attacker";
+    } else {
+      session.status = "attacker_won";
+      session.withdrawnSide = "defender";
+    }
+
+    const log: BattleRoundLog = {
+      round: session.round,
+      attackerOrder,
+      defenderOrder,
+      attackerEffectivePower: 0,
+      defenderEffectivePower: 0,
+      attackerLossMen: 0,
+      defenderLossMen: 0,
+      attackerRemainingMen: session.attackerUnits.reduce((a, u) => a + u.count, 0),
+      defenderRemainingMen: session.defenderUnits.reduce((a, u) => a + u.count, 0),
+      attackerPowerFrac:
+        sidePower(session.attackerUnits, session.attackerMult, session.unitTypes) /
+        Math.max(1e-9, session.attackerInit.power),
+      defenderPowerFrac:
+        sidePower(session.defenderUnits, session.defenderMult, session.unitTypes) /
+        Math.max(1e-9, session.defenderInit.power)
+    };
+    session.history.push(log);
+    return log;
+  }
+
+  const { attackerUnits, defenderUnits, attackerMult, defenderMult, unitTypes: types, config } = session;
+
+  const aEff = effectivePower(attackerUnits, defenderUnits, attackerMult, types, attackerOrder, defenderOrder);
+  const dEff = effectivePower(defenderUnits, attackerUnits, defenderMult, types, defenderOrder, attackerOrder);
+  const totalEff = aEff + dEff;
+
+  if (totalEff <= 0) {
+    session.status = "draw";
+    const log: BattleRoundLog = {
+      round: session.round,
+      attackerOrder,
+      defenderOrder,
+      attackerEffectivePower: 0,
+      defenderEffectivePower: 0,
+      attackerLossMen: 0,
+      defenderLossMen: 0,
+      attackerRemainingMen: 0,
+      defenderRemainingMen: 0,
+      attackerPowerFrac: 0,
+      defenderPowerFrac: 0
+    };
+    session.history.push(log);
+    return log;
+  }
+
+  let pressureA = config.battle.attritionScale;
+  let pressureD = config.battle.attritionScale;
+  if (attackerOrder === "skirmish") pressureA *= 0.65;
+  if (defenderOrder === "skirmish") pressureD *= 0.65;
+  if (attackerOrder === "press") pressureA *= 1.2;
+  if (defenderOrder === "press") pressureD *= 1.2;
+  if (attackerOrder === "charge" && defenderOrder === "brace") pressureA *= 1.25;
+  if (defenderOrder === "charge" && attackerOrder === "brace") pressureD *= 1.25;
+
+  const aLossFrac = Math.min(0.5, Math.max(0.02, pressureA * (dEff / totalEff) * 2));
+  const dLossFrac = Math.min(0.5, Math.max(0.02, pressureD * (aEff / totalEff) * 2));
+
+  const aMenBefore = attackerUnits.reduce((a, u) => a + u.count, 0);
+  const dMenBefore = defenderUnits.reduce((a, u) => a + u.count, 0);
+
+  applyLosses(attackerUnits, aMenBefore * aLossFrac, prng);
+  applyLosses(defenderUnits, dMenBefore * dLossFrac, prng);
+
+  const aMenAfter = attackerUnits.reduce((a, u) => a + u.count, 0);
+  const dMenAfter = defenderUnits.reduce((a, u) => a + u.count, 0);
+
+  const aFrac = sidePower(attackerUnits, attackerMult, types) / Math.max(1e-9, session.attackerInit.power);
+  const dFrac = sidePower(defenderUnits, defenderMult, types) / Math.max(1e-9, session.defenderInit.power);
+
   const routThreshold = config.battle.routThreshold;
 
-  while (rounds < config.battle.maxRounds && !decided) {
-    rounds++;
-    const aEff = effectivePower(attackerUnits, defenderUnits, attackerMult, types);
-    const dEff = effectivePower(defenderUnits, attackerUnits, defenderMult, types);
-    const totalEff = aEff + dEff;
-    if (totalEff <= 0) break;
-
-    const pressure = config.battle.attritionScale;
-    // Stronger side inflicts more loss pressure (Lanchester-flavored, §5.4 step 2).
-    const aLossFrac = Math.min(0.5, Math.max(0.02, pressure * (dEff / totalEff) * 2));
-    const dLossFrac = Math.min(0.5, Math.max(0.02, pressure * (aEff / totalEff) * 2));
-
-    applyLosses(attackerUnits, attackerUnits.reduce((a, u) => a + u.count, 0) * aLossFrac, () => rng(campaign));
-    applyLosses(defenderUnits, defenderUnits.reduce((a, u) => a + u.count, 0) * dLossFrac, () => rng(campaign));
-
-    const aFrac = sidePower(attackerUnits, attackerMult, types) / Math.max(1e-9, attackerInit.power);
-    const dFrac = sidePower(defenderUnits, defenderMult, types) / Math.max(1e-9, defenderInit.power);
-    const aMen = attackerUnits.reduce((s, u) => s + u.count, 0);
-    const dMen = defenderUnits.reduce((s, u) => s + u.count, 0);
-
-    if (aFrac < routThreshold && dFrac < routThreshold) {
-      winner = aFrac >= dFrac ? "attacker" : "defender";
-      decided = true;
-    } else if (aFrac < routThreshold || aMen === 0) {
-      winner = "defender";
-      decided = true;
-    } else if (dFrac < routThreshold || dMen === 0) {
-      winner = "attacker";
-      decided = true;
-    }
-  }
-  if (!decided) {
-    // Fought to max rounds without a rout: higher remaining power fraction holds the field.
-    const aFrac = sidePower(attackerUnits, attackerMult, types) / Math.max(1e-9, attackerInit.power);
-    const dFrac = sidePower(defenderUnits, defenderMult, types) / Math.max(1e-9, defenderInit.power);
-    winner = aFrac >= dFrac ? "attacker" : "defender";
+  if (aFrac < routThreshold && dFrac < routThreshold) {
+    session.status = aFrac >= dFrac ? "attacker_won" : "defender_won";
+  } else if (aFrac < routThreshold || aMenAfter === 0) {
+    session.status = "defender_won";
+  } else if (dFrac < routThreshold || dMenAfter === 0) {
+    session.status = "attacker_won";
+  } else if (session.round >= config.battle.maxRounds) {
+    session.status = aFrac >= dFrac ? "attacker_won" : "defender_won";
   }
 
-  // Loser takes rout casualties: extra 30% of remaining men flee/die.
-  const loserUnits = winner === "attacker" ? defenderUnits : attackerUnits;
-  applyLosses(loserUnits, loserUnits.reduce((a, u) => a + u.count, 0) * 0.3, () => rng(campaign));
+  const log: BattleRoundLog = {
+    round: session.round,
+    attackerOrder,
+    defenderOrder,
+    attackerEffectivePower: Math.round(aEff),
+    defenderEffectivePower: Math.round(dEff),
+    attackerLossMen: aMenBefore - aMenAfter,
+    defenderLossMen: dMenBefore - dMenAfter,
+    attackerRemainingMen: aMenAfter,
+    defenderRemainingMen: dMenAfter,
+    attackerPowerFrac: aFrac,
+    defenderPowerFrac: dFrac
+  };
+  session.history.push(log);
+  return log;
+}
+
+export function finalizeBattle(session: BattleSession, prng: () => number): BattleOutcome {
+  if (session.status === "active") {
+    const aFrac =
+      sidePower(session.attackerUnits, session.attackerMult, session.unitTypes) /
+      Math.max(1e-9, session.attackerInit.power);
+    const dFrac =
+      sidePower(session.defenderUnits, session.defenderMult, session.unitTypes) /
+      Math.max(1e-9, session.defenderInit.power);
+    session.status = aFrac >= dFrac ? "attacker_won" : "defender_won";
+  }
+
+  const winner: "attacker" | "defender" = session.status === "attacker_won" ? "attacker" : "defender";
+
+  if (session.withdrawnSide) {
+    const loserUnits = session.withdrawnSide === "attacker" ? session.attackerUnits : session.defenderUnits;
+    const opponentOrder =
+      session.withdrawnSide === "attacker"
+        ? session.history.at(-1)?.defenderOrder
+        : session.history.at(-1)?.attackerOrder;
+    const routPenalty = opponentOrder === "charge" ? 0.25 : 0.15;
+    applyLosses(loserUnits, loserUnits.reduce((a, u) => a + u.count, 0) * routPenalty, prng);
+  } else {
+    const loserUnits = winner === "attacker" ? session.defenderUnits : session.attackerUnits;
+    applyLosses(loserUnits, loserUnits.reduce((a, u) => a + u.count, 0) * 0.3, prng);
+  }
 
   const report = (
     factionId: number,
@@ -228,23 +399,55 @@ export function resolveBattle(
   });
 
   const summary: BattleSummary = {
-    cell: opts.cell,
-    regionId: opts.regionId,
-    attacker: report(opts.attacker.factionId, opts.attacker.armyId, attackerUnits, attackerInit, winner !== "attacker"),
-    defender: report(opts.defender.factionId, opts.defender.armyId, defenderUnits, defenderInit, winner !== "defender"),
+    cell: session.cell,
+    regionId: session.regionId,
+    attacker: report(
+      session.attacker.factionId,
+      session.attacker.armyId,
+      session.attackerUnits,
+      session.attackerInit,
+      winner !== "attacker"
+    ),
+    defender: report(
+      session.defender.factionId,
+      session.defender.armyId,
+      session.defenderUnits,
+      session.defenderInit,
+      winner !== "defender"
+    ),
     winner,
-    rounds,
-    modifiers: labels,
-    assault: opts.assault,
+    rounds: session.round,
+    modifiers: session.labels,
+    assault: session.assault,
     regionCaptured: false // patched by command layer on capture
   };
 
   return {
     winner,
-    attacker: { units: attackerUnits, report: summary.attacker },
-    defender: { units: defenderUnits, report: summary.defender },
+    attacker: { units: session.attackerUnits, report: summary.attacker },
+    defender: { units: session.defenderUnits, report: summary.defender },
     summary
   };
+}
+
+export function resolveBattle(
+  campaign: Campaign,
+  opts: {
+    config: import("./config").CampaignConfig;
+    unitTypes: Record<string, UnitType>;
+    attacker: BattleSide;
+    defender: BattleSide;
+    cell: number;
+    regionId: number;
+    assault: boolean;
+    modifiers: BattleModifiers;
+  }
+): BattleOutcome {
+  const session = initBattleSession(opts);
+  while (session.status === "active" && session.round < opts.config.battle.maxRounds) {
+    stepBattleRound(session, () => rng(campaign));
+  }
+  return finalizeBattle(session, () => rng(campaign));
 }
 
 /** Expectation-only odds (§5.4 "battle bar"): analytic sigmoid on effective power. */

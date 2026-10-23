@@ -6,7 +6,6 @@ import {
   syncRegimentTotals,
   Military
 } from "./military-generator";
-import type { ArmyUnit } from "@/conquest/engine/common/types";
 import type { UnitType } from "@/conquest/engine/common/content";
 
 describe("Phase 2: Roster Units & Regiment Blocks", () => {
