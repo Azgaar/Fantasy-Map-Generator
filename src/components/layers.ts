@@ -2,6 +2,7 @@
 import { AltitudeLegend } from "@/renderers/altitude-legend";
 import { drawBiomes } from "@/renderers/draw-biomes";
 import { drawBorders } from "@/renderers/draw-borders";
+import { drawAlliances } from "@/renderers/draw-alliances";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
 import { drawCells } from "@/renderers/draw-cells";
 import { drawCoastline } from "@/renderers/draw-coastline";
@@ -343,6 +344,7 @@ const mapLayers = [
     children: ["statesBody", "statesHalo"].map(id => ({ id, tag: "g" })),
     draw: drawStates
   }),
+  new Layer({ id: "alliances", parent: "viewbox", children: [{ id: "alliancesBody", tag: "g" }], draw: drawAlliances }),
   new Layer({ id: "provinces", element: "provs", parent: "viewbox", draw: drawProvinces }),
   new Layer({ id: "zones", parent: "viewbox", draw: drawZones }),
   new Layer({
