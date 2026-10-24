@@ -17,6 +17,10 @@ export const ASTRAL_PRESETS: Record<string, AstralPreset> = {
     name: "Empires",
     layers: ["texture", "nebulae", "states", "provinces", "borders", "labels", "scaleBar"]
   },
+  dustDensity: {
+    name: "Dust Density",
+    layers: ["texture", "dustDensity", "scaleBar"]
+  },
   survey: {
     name: "Survey scan",
     layers: ["texture", "starDensity", "coordinates", "scaleBar"]

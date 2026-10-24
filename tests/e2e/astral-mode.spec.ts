@@ -64,7 +64,7 @@ test.describe("Astral view mode", () => {
     await expect(page.locator("#viewStandard")).not.toHaveClass(/pressed/);
 
     // the Astral list replaces the standard one
-    for (const id of ["texture", "nebulae", "starDensity", "systems", "states", "markers"])
+    for (const id of ["texture", "nebulae", "starDensity", "dustDensity", "systems", "states", "markers"])
       await expect(page.locator(layerItem(id))).toBeVisible();
     for (const id of ["heightmap", "rivers", "religions", "temperature"])
       await expect(page.locator(layerItem(id))).toHaveCount(0);
@@ -79,7 +79,7 @@ test.describe("Astral view mode", () => {
         .map(option => option.value)
         .sort()
     );
-    expect(visiblePresets).toEqual(["astral", "empires", "survey", "systems"]);
+    expect(visiblePresets).toEqual(["astral", "dustDensity", "empires", "survey", "systems"]);
 
     // the mode flag and the chart style are on
     expect(await page.evaluate(() => options.map.astral)).toBe(true);
@@ -93,6 +93,7 @@ test.describe("Astral view mode", () => {
     expect(await page.evaluate(() => Layers.isOn("routes"))).toBe(true);
     expect(await page.evaluate(() => Layers.isOn("nebulae"))).toBe(false);
     expect(await page.evaluate(() => Layers.isOn("starDensity"))).toBe(false);
+    expect(await page.evaluate(() => Layers.isOn("dustDensity"))).toBe(false);
     for (const id of ["texture", "nebulae", "starDensity"])
       await expect(page.locator(layerItem(id))).toBeVisible();
 
@@ -140,6 +141,22 @@ test.describe("Astral view mode", () => {
     await page.locator(layerItem("borders")).click();
     await expect.poll(() => page.evaluate(() => Layers.isOn("borders"))).toBe(false);
     expect(await page.evaluate(() => document.getElementById("statesHalo")!.style.display)).toBe("none");
+  });
+
+  test("Dust Density bands the terrain and starts off", async ({ page }) => {
+    await enterAstral(page);
+    const bands = page.locator("#dustDensity [data-group] path");
+
+    expect(await page.evaluate(() => Layers.isOn("dustDensity"))).toBe(false);
+    expect(await bands.count()).toBe(0);
+
+    await page.locator(layerItem("dustDensity")).click();
+    await expect.poll(() => page.evaluate(() => Layers.isOn("dustDensity"))).toBe(true);
+    await expect(bands.first()).toBeAttached();
+
+    await page.locator(layerItem("dustDensity")).click();
+    await expect.poll(() => page.evaluate(() => Layers.isOn("dustDensity"))).toBe(false);
+    await expect(bands).toHaveCount(0);
   });
 
   test("leaving restores the previous list, preset, layers and style", async ({ page }) => {
@@ -208,14 +225,17 @@ test.describe("Astral view mode", () => {
 
   test("export smoke: the exported SVG carries the chart", async ({ page }) => {
     await enterAstral(page);
+    // Sector Dust is off in the default chart; switch it on so the texture-inlining assertion has
+    // something to see — the starfield PNG travels inlined as a base64 image
+    await page.locator(layerItem("texture")).click();
     const svg = await page.evaluate(async () => {
       const url = await Services.ExportMap.getMapURL("svg");
       return await (await fetch(url)).text();
     });
-    expect(svg).toContain('id="nebulae"');
+    // the default chart carries systems and hyperlanes; empty optional layers are not emitted
     expect(svg).toContain('id="systems"');
-    // the starfield texture travels with the export, inlined as a base64 image
-    expect(svg).toMatch(/<image[^>]+href="data:image\/png;base64/);
     expect(svg).toMatch(/data-group="[GFKABM]"/);
+    expect(svg).toContain('id="routes"');
+    expect(svg).toMatch(/<image[^>]+href="data:image\/png;base64/);
   });
 });

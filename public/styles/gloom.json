@@ -464,6 +464,66 @@
       "filter": null
     }
   },
+  "dustDensity": {
+    "attrs": {
+      "opacity": 0.85,
+      "filter": null,
+      "mask": "url(#land)"
+    },
+    "options": {
+      "levels": 4
+    },
+    "groups": {
+      "band1": {
+        "attrs": {
+          "opacity": 0.45,
+          "fill": "#1b2f6e",
+          "fill-opacity": 0.4,
+          "filter": null
+        }
+      },
+      "band2": {
+        "attrs": {
+          "opacity": 0.55,
+          "fill": "#33358a",
+          "fill-opacity": 0.45,
+          "filter": null
+        }
+      },
+      "band3": {
+        "attrs": {
+          "opacity": 0.65,
+          "fill": "#5a3aa8",
+          "fill-opacity": 0.5,
+          "filter": null
+        }
+      },
+      "band4": {
+        "attrs": {
+          "opacity": 0.75,
+          "fill": "#7f42c4",
+          "fill-opacity": 0.55,
+          "filter": null
+        }
+      },
+      "band5": {
+        "attrs": {
+          "opacity": 0.85,
+          "fill": "#b04ad8",
+          "fill-opacity": 0.65,
+          "filter": null
+        }
+      },
+      "band6": {
+        "attrs": {
+          "opacity": 0.95,
+          "fill": "#f05ad8",
+          "fill-opacity": 0.75,
+          "filter": null
+        }
+      }
+    }
+  },
   "emblems": {
     "attrs": {
       "opacity": 0.6,
@@ -1118,13 +1178,13 @@
   "military": {
     "attrs": {
       "opacity": 1,
+      "fill-opacity": 1,
       "stroke": "#000",
       "stroke-opacity": null,
       "stroke-width": 0.3,
       "stroke-dasharray": null,
       "stroke-linecap": null,
       "stroke-linejoin": null,
-      "fill-opacity": 1,
       "filter": null
     },
     "options": {
@@ -1266,9 +1326,9 @@
   "relief": {
     "attrs": {
       "opacity": 0.9,
+      "stroke": "#5c5c70",
       "filter": null,
-      "mask": null,
-      "stroke": "#5c5c70"
+      "mask": null
     },
     "options": {
       "set": "simple",

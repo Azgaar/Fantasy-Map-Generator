@@ -1,4 +1,5 @@
 // Global layers registry: owns layers list, order, and svg skeleton
+import { drawDustDensity } from "@/renderers/astral/draw-dust-density";
 import { drawNebulae } from "@/renderers/astral/draw-nebulae";
 import { drawStarDensity } from "@/renderers/astral/draw-star-density";
 import { drawSystems } from "@/renderers/astral/draw-systems";
@@ -316,6 +317,12 @@ const mapLayers = [
     parent: "viewbox",
     children: ["band1", "band2", "band3", "band4", "band5", "band6"].map(id => ({ id, tag: "g" })),
     draw: drawStarDensity
+  }),
+  new Layer({
+    id: "dustDensity",
+    parent: "viewbox",
+    children: ["band1", "band2", "band3", "band4", "band5", "band6"].map(id => ({ id, tag: "g" })),
+    draw: drawDustDensity
   }),
   new Layer({
     id: "heightmap",

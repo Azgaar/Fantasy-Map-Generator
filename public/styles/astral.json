@@ -464,6 +464,66 @@
       "filter": "url(#splotch)"
     }
   },
+  "dustDensity": {
+    "attrs": {
+      "opacity": 0.85,
+      "filter": null,
+      "mask": "url(#land)"
+    },
+    "options": {
+      "levels": 4
+    },
+    "groups": {
+      "band1": {
+        "attrs": {
+          "opacity": 0.45,
+          "fill": "#1b2f6e",
+          "fill-opacity": 0.4,
+          "filter": null
+        }
+      },
+      "band2": {
+        "attrs": {
+          "opacity": 0.55,
+          "fill": "#33358a",
+          "fill-opacity": 0.45,
+          "filter": null
+        }
+      },
+      "band3": {
+        "attrs": {
+          "opacity": 0.65,
+          "fill": "#5a3aa8",
+          "fill-opacity": 0.5,
+          "filter": null
+        }
+      },
+      "band4": {
+        "attrs": {
+          "opacity": 0.75,
+          "fill": "#7f42c4",
+          "fill-opacity": 0.55,
+          "filter": null
+        }
+      },
+      "band5": {
+        "attrs": {
+          "opacity": 0.85,
+          "fill": "#b04ad8",
+          "fill-opacity": 0.65,
+          "filter": null
+        }
+      },
+      "band6": {
+        "attrs": {
+          "opacity": 0.95,
+          "fill": "#f05ad8",
+          "fill-opacity": 0.75,
+          "filter": null
+        }
+      }
+    }
+  },
   "emblems": {
     "attrs": {
       "opacity": 0.75,
@@ -1433,7 +1493,7 @@
       },
       "band6": {
         "attrs": {
-          "opacity": 1.0,
+          "opacity": 1,
           "fill": "#ffffff",
           "fill-opacity": 0.8,
           "filter": null
@@ -1517,7 +1577,7 @@
           "filter": null
         },
         "options": {
-          "size": 1.0,
+          "size": 1,
           "glow": true
         }
       },

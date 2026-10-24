@@ -726,6 +726,20 @@ export const stylesSchema = z.strictObject({
     }),
     { effect: "draw" }
   ),
+  dustDensity: z.strictObject({
+    attrs: z.strictObject({ opacity, filter, mask: clip }),
+    options: z.strictObject({
+      levels: count(1, 6, { label: "Bands", tip: "Number of dust density bands over the land" })
+    }),
+    groups: z.strictObject({
+      band1: variant(densityBand, { label: "Band 1" }),
+      band2: variant(densityBand, { label: "Band 2" }),
+      band3: variant(densityBand, { label: "Band 3" }),
+      band4: variant(densityBand, { label: "Band 4" }),
+      band5: variant(densityBand, { label: "Band 5" }),
+      band6: variant(densityBand, { label: "Band 6" })
+    })
+  }),
   starDensity: z.strictObject({
     attrs: z.strictObject({ opacity, filter, mask: clip }),
     options: z.strictObject({
