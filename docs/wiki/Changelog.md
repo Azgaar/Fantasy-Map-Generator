@@ -15,6 +15,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 **[1.157.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.157.0) - 2026-10-30**:
 
 - Editors: long column names are cut instead of overlapping the next column
+- Hovering a cut value shows its full text in the tooltip
 
 # Releases
 

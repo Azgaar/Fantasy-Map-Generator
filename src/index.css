@@ -1060,6 +1060,13 @@ fieldset {
 
 #battleBody > table .regiment {
   width: 13em;
+  max-width: 13em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#battleBody > table .battleInitial .regiment {
   font-weight: bold;
 }
 

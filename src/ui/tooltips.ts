@@ -3,6 +3,7 @@ import { isMobile } from "@/utils/environment";
 import { sentences, t } from "@/utils/i18n";
 import { findEl } from "@/utils/node-utils";
 import { onNotice } from "@/utils/notices";
+import { escapeHtml } from "@/utils/string-utils";
 
 type TipType = "info" | "success" | "warn" | "error";
 
@@ -92,7 +93,7 @@ export function clearMainTip(): void {
   tooltip.innerHTML = "";
 }
 
-/** Show the data-tip of the hovered element, appending its shortcut on desktop */
+/** Show the data-tip of the hovered element, led by its full text if it is cut, with its shortcut on desktop */
 export function showDataTip(event: Event): void {
   const target = event.target as HTMLElement | null;
   if (!target) return;
@@ -102,7 +103,11 @@ export function showDataTip(event: Event): void {
   }
 
   const parent = target.parentNode as HTMLElement | null;
-  let dataTip = target.dataset?.tip || parent?.dataset?.tip;
+  let dataTip = target.dataset?.tip || parent?.dataset?.tip || "";
+  const clippedText = getClippedText(target);
+  if (clippedText && !dataTip.includes(clippedText)) {
+    dataTip = dataTip ? sentences(escapeHtml(clippedText), dataTip) : escapeHtml(clippedText);
+  }
   if (!dataTip) return;
 
   const shortcut = target.dataset.shortcut;
@@ -117,6 +122,13 @@ export function showDataTip(event: Event): void {
   if (isRemove && !isMobile() && !dataTip.includes(removeHint)) dataTip = sentences(dataTip, removeHint);
 
   tip(dataTip);
+}
+
+/** Full text of an element that cuts it to fit, or "" if it fits */
+function getClippedText(element: HTMLElement): string {
+  if (element.scrollWidth <= element.clientWidth || getComputedStyle(element).overflowX === "visible") return "";
+  const text = element instanceof HTMLInputElement ? element.value : element.textContent;
+  return text?.trim() ?? "";
 }
 
 function showLockTip(target: HTMLElement): void {

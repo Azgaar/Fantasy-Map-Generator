@@ -564,13 +564,8 @@ function addRegimentToSide(side: Side, regiment: Regiment): void {
       <use href="${href}" x="10%" y="10%" width="80%" height="80%" stroke="none"></use></svg>`;
   const body = `<tbody id="battle${state.i}-${regiment.i}">`;
 
-  let initial = `<tr class="battleInitial"><td>${icon}</td><td class="regiment" data-tip="${
-    regiment.name
-  }">${regiment.name.slice(0, 24)}</td>`;
-  let casualtiesRow = `<tr class="battleCasualties"><td></td><td data-tip="${state.fullName}">${state.fullName!.slice(
-    0,
-    26
-  )}</td>`;
+  let initial = `<tr class="battleInitial"><td>${icon}</td><td class="regiment">${regiment.name}</td>`;
+  let casualtiesRow = `<tr class="battleCasualties"><td></td><td class="regiment">${state.fullName}</td>`;
   let survivorsRow = `<tr class="battleSurvivors"><td></td><td data-tip="${t("Supply line length, affects morale")}">${t("Distance to base")}: ${distance} ${options.map.units.distance.unit}</td>`;
 
   for (const u of options.map.military.units) {
