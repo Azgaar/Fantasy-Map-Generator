@@ -318,9 +318,18 @@ and a dimmer glow-off variant in `astralSchematic.json`.
 **Acceptance:** every mount-family relief icon becomes exactly one remnant, classified by height;
 zoom culling works; nothing appears on a map with no mountains; Anomalies and Remnants coexist.
 
-### Phase 4 — Core–Rim
+### Phase 4 — Core–Rim ✅
 
 Gradient wash + direction derivation + flip option + button.
+
+Shipped: `core-rim.ts` (`coreRimAxis` reads the argmax/argmin of `grid.cells.temp` over
+`grid.points` — first index wins ties, a flat field yields null), `draw-core-rim.ts` — one
+full-extent `<rect>` on a `userSpaceOnUse` linearGradient spanning the extent's extreme
+projections along the axis, three stops whose opacities scale with `intensity`, coordinates
+rounded to map units — the `coreRim` style element (`Flip` + `Intensity`), the button
+("Core–Rim", no hotkey, like Empires) at the head of the Astral list, the layer registered
+between `landmass` and `texture` with `pointer-events: none`, **Survey scan** gaining `coreRim`,
+and dimmer defaults in `astralSchematic.json`.
 
 **Acceptance:** the hot end lands on the warm side of the map; `flip` inverts it; the wash sits
 under the dust sheet and never obscures it; a whole-globe map degrades to irradiation bands without

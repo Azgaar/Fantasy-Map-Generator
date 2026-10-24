@@ -745,6 +745,13 @@ export const stylesSchema = z.strictObject({
       volatiles: variant(densityBand, { label: "Volatiles" })
     })
   }),
+  coreRim: z.strictObject({
+    attrs: z.strictObject({ opacity, filter, mask: clip }),
+    options: z.strictObject({
+      flip: flag({ label: "Flip", tip: "Reverse the axis: the hot end lands on the other side" }),
+      intensity: number({ label: "Intensity", range: [0, 1], step: 0.05, tip: "How far the wash reaches" })
+    })
+  }),
   dustDensity: z.strictObject({
     attrs: z.strictObject({ opacity, filter, mask: clip }),
     options: z.strictObject({

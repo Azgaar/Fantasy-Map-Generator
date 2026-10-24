@@ -493,6 +493,17 @@
       "mask": null
     }
   },
+  "coreRim": {
+    "attrs": {
+      "opacity": 0.9,
+      "filter": null,
+      "mask": null
+    },
+    "options": {
+      "flip": false,
+      "intensity": 0.4
+    }
+  },
   "cultures": {
     "attrs": {
       "opacity": 0.4,

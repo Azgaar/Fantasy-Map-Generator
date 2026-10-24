@@ -27,7 +27,7 @@ export const ASTRAL_PRESETS: Record<string, AstralPreset> = {
   },
   survey: {
     name: "Survey scan",
-    layers: ["texture", "starDensity", "coordinates", "scaleBar"]
+    layers: ["texture", "starDensity", "coordinates", "scaleBar", "coreRim"]
   },
   systems: {
     name: "Systems and lanes",

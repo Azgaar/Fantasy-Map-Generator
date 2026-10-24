@@ -19,6 +19,10 @@ describe("the Astral layer profiles", () => {
     expect(new Set(shortcuts).size).toBe(shortcuts.length);
   });
 
+  it("puts Core–Rim in the Survey scan profile", () => {
+    expect(ASTRAL_PRESETS.survey.layers).toContain("coreRim");
+  });
+
   it("shows only empires, hyperlanes, systems, labels and the scale bar by default", () => {
     const ids = ASTRAL_PRESETS[ASTRAL_DEFAULT_PRESET].layers;
     expect([...ids].sort()).toEqual(["labels", "routes", "scaleBar", "states", "systems"]);

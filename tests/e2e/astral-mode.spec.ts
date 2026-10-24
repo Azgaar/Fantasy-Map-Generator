@@ -9,9 +9,15 @@ declare const options: { map: { astral: boolean; style: { preset: string } } };
 declare const styles: {
   texture: { options: { href: string } };
   borders: { groups: { stateBorders: { attrs: { opacity: number } } } };
+  coreRim: { options: { flip: boolean; intensity: number } };
 };
-declare const Layers: { isOn(id: string): boolean; state: { order: string[]; active: string[] } };
+declare const Layers: {
+  isOn(id: string): boolean;
+  state: { order: string[]; active: string[] };
+  draw(...ids: string[]): void;
+};
 declare const pack: import("@/types/PackedGraph").PackedGraph;
+declare const grid: import("@/types/GridGraph").GridGraph;
 declare const Services: { ExportMap: { getMapURL(type: string): Promise<string> } };
 
 const layerItem = (id: string) => `#mapLayers > li[data-layer="${id}"]`;
@@ -78,7 +84,7 @@ test.describe("Astral view mode", () => {
     await expect(page.locator("#viewStandard")).not.toHaveClass(/pressed/);
 
     // the Astral list replaces the standard one
-    for (const id of ["texture", "composition", "nebulae", "starDensity", "dustDensity", "systems", "remnants", "states", "markers"])
+    for (const id of ["coreRim", "texture", "composition", "nebulae", "starDensity", "dustDensity", "systems", "remnants", "states", "markers"])
       await expect(page.locator(layerItem(id))).toBeVisible();
     for (const id of ["heightmap", "rivers", "religions", "temperature"])
       await expect(page.locator(layerItem(id))).toHaveCount(0);
@@ -105,6 +111,7 @@ test.describe("Astral view mode", () => {
     expect(await page.evaluate(() => Layers.isOn("systems"))).toBe(true);
     expect(await page.evaluate(() => Layers.isOn("states"))).toBe(true);
     expect(await page.evaluate(() => Layers.isOn("routes"))).toBe(true);
+    expect(await page.evaluate(() => Layers.isOn("coreRim"))).toBe(false);
     expect(await page.evaluate(() => Layers.isOn("composition"))).toBe(false);
     expect(await page.evaluate(() => Layers.isOn("nebulae"))).toBe(false);
     expect(await page.evaluate(() => Layers.isOn("starDensity"))).toBe(false);
@@ -189,6 +196,64 @@ test.describe("Astral view mode", () => {
     await page.locator(layerItem("composition")).click();
     await expect.poll(() => page.evaluate(() => Layers.isOn("composition"))).toBe(false);
     await expect(fills).toHaveCount(0);
+  });
+
+  test("Core–Rim washes from the warm edge, flips, and sits under the dust", async ({ page }) => {
+    await enterAstral(page);
+    const rect = page.locator("#coreRim rect");
+
+    expect(await page.evaluate(() => Layers.isOn("coreRim"))).toBe(false);
+    expect(await rect.count()).toBe(0);
+
+    await page.locator(layerItem("coreRim")).click();
+    await expect.poll(() => page.evaluate(() => Layers.isOn("coreRim"))).toBe(true);
+    await expect(rect).toBeAttached();
+
+    // the hot stop lands on the warm side of the map, finite coordinates throughout
+    const axis = await page.evaluate(() => {
+      const gradient = document.querySelector<SVGLinearGradientElement>("#coreRim linearGradient")!;
+      const attrs = ["x1", "y1", "x2", "y2"].map(name => gradient.getAttribute(name)!);
+      let warmest = 0;
+      for (let i = 1; i < grid.cells.temp.length; i++)
+        if (grid.cells.temp[i] > grid.cells.temp[warmest]) warmest = i;
+      const [wx, wy] = grid.points[warmest];
+      const [x1, y1, x2, y2] = attrs.map(Number);
+      return {
+        attrs,
+        hotDistance: Math.hypot(x1 - wx, y1 - wy),
+        coldDistance: Math.hypot(x2 - wx, y2 - wy),
+        stops: document.querySelectorAll("#coreRim stop").length
+      };
+    });
+    expect(axis.attrs.join()).not.toContain("NaN");
+    expect(axis.stops).toBe(3);
+    expect(axis.hotDistance).toBeLessThan(axis.coldDistance);
+
+    // flip inverts the axis: the endpoints swap
+    await page.evaluate(() => {
+      styles.coreRim.options.flip = true;
+      Layers.draw("coreRim");
+    });
+    const flipped = await page.evaluate(() => {
+      const gradient = document.querySelector<SVGLinearGradientElement>("#coreRim linearGradient")!;
+      return ["x1", "y1", "x2", "y2"].map(name => gradient.getAttribute(name));
+    });
+    expect(flipped.slice(0, 2)).toEqual(axis.attrs.slice(2));
+    expect(flipped.slice(2)).toEqual(axis.attrs.slice(0, 2));
+    await page.evaluate(() => {
+      styles.coreRim.options.flip = false;
+      Layers.draw("coreRim");
+    });
+
+    // the wash sits under the dust sheet: coreRim precedes dustDensity in the chart
+    await page.locator(layerItem("dustDensity")).click();
+    await expect.poll(() => page.evaluate(() => Layers.isOn("dustDensity"))).toBe(true);
+    const washUnderDust = await page.evaluate(
+      () =>
+        (document.querySelector("#coreRim")!.compareDocumentPosition(document.querySelector("#dustDensity")!) &
+          Node.DOCUMENT_POSITION_FOLLOWING) !== 0
+    );
+    expect(washUnderDust).toBe(true);
   });
 
   test("Remnants mark the mountains, cull to the viewport and share the chart with Anomalies", async ({
