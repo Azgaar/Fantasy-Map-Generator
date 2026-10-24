@@ -2,6 +2,7 @@
 import { drawComposition } from "@/renderers/astral/draw-composition";
 import { drawDustDensity } from "@/renderers/astral/draw-dust-density";
 import { drawNebulae } from "@/renderers/astral/draw-nebulae";
+import { drawRemnants } from "@/renderers/astral/draw-remnants";
 import { drawStarDensity } from "@/renderers/astral/draw-star-density";
 import { drawSystems } from "@/renderers/astral/draw-systems";
 import { drawBiomes } from "@/renderers/draw-biomes";
@@ -428,6 +429,12 @@ const mapLayers = [
   }),
   new Layer({ id: "burgIcons", parent: "viewbox", draw: drawBurgIcons }),
   new Layer({ id: "systems", parent: "viewbox", draw: drawSystems }),
+  new Layer({
+    id: "remnants",
+    parent: "viewbox",
+    attrs: { "pointer-events": "none" }, // decorative objects
+    draw: drawRemnants
+  }),
   new Layer({
     id: "labels",
     parent: "viewbox",

@@ -303,9 +303,17 @@ desaturated variant in `astralSchematic.json` (0.14), defaults injected into eve
 **Acceptance:** four tints over the dust sheet, none of them drowning the starfield texture; the
 void is untouched (marine never emitted); toggling is clean.
 
-### Phase 3 — Remnants
+### Phase 3 — Remnants ✅
 
 Classification + viewport renderer + three class groups + button.
+
+Shipped: `remnants.ts` (`isMountFamily` keeps the mount family, the `remnantClass` elevation
+ladder, `collectRemnants` resolving each icon's cell through `Pack.findCell`), `draw-remnants.ts`
+— a `ViewportLayers` registration mirroring `systems`, glyphs in em of a new `remnants` zoom curve
+(ring-with-dot singularity, concentric pulse rings, a rotated diamond; halo while `glow` is on;
+culling by viewport bounds with a 1.4em margin), the `remnants` style element with the `Glow`
+option, the button ("Remnants", `KeyR`) after Systems, **Systems and lanes** gaining `remnants`,
+and a dimmer glow-off variant in `astralSchematic.json`.
 
 **Acceptance:** every mount-family relief icon becomes exactly one remnant, classified by height;
 zoom culling works; nothing appears on a map with no mountains; Anomalies and Remnants coexist.

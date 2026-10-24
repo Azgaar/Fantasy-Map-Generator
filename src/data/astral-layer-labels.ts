@@ -9,6 +9,7 @@ export const ASTRAL_LAYER_TOGGLES = new Map<LayerId, LayerButton>([
   ["starDensity", { label: "<u>P</u>opulation", shortcut: "KeyP" }],
   ["dustDensity", { label: "Dust D<u>e</u>nsity", shortcut: "KeyE" }],
   ["systems", { label: "S<u>y</u>stems", shortcut: "KeyY" }],
+  ["remnants", { label: "<u>R</u>emnants", shortcut: "KeyR" }],
   ["states", { label: "<u>E</u>mpires" }],
   ["provinces", { label: "<u>S</u>ectors", shortcut: "KeyS" }],
   ["borders", { label: "<u>B</u>orders", shortcut: "KeyB" }],

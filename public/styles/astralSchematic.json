@@ -1389,6 +1389,47 @@
       "filter": "url(#splotch)"
     }
   },
+  "remnants": {
+    "attrs": {
+      "opacity": 0.85,
+      "filter": null
+    },
+    "options": {
+      "glow": false
+    },
+    "groups": {
+      "blackHole": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#0b1220",
+          "fill-opacity": 1,
+          "stroke": "#93c5fd",
+          "stroke-opacity": 1,
+          "filter": null
+        }
+      },
+      "pulsar": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#bae6fd",
+          "fill-opacity": 1,
+          "stroke": "#7dd3fc",
+          "stroke-opacity": 1,
+          "filter": null
+        }
+      },
+      "neutron": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#e0f2fe",
+          "fill-opacity": 1,
+          "stroke": "#38bdf8",
+          "stroke-opacity": 1,
+          "filter": null
+        }
+      }
+    }
+  },
   "rivers": {
     "attrs": {
       "opacity": null,

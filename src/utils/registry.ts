@@ -4,15 +4,18 @@
 type Loader<T> = () => Promise<T>;
 type DispatchFn = (...args: unknown[]) => unknown;
 
+const LOADING_TIP = "Loading…";
+
 let pendingLoads = 0;
 function trackLoad<T>(promise: Promise<T>): Promise<T> {
   pendingLoads++;
-  window.tip("Loading…", false, "info");
+  window.tip(LOADING_TIP, false, "info");
   return promise.finally(() => {
-    if (--pendingLoads <= 0) {
-      pendingLoads = 0;
+    if (--pendingLoads > 0) return;
+    pendingLoads = 0;
+    // clear only our own message: a hover tip that replaced it while we loaded must stay up
+    if (typeof document !== "undefined" && document.getElementById("tooltip")?.innerHTML === LOADING_TIP)
       window.clearMainTip();
-    }
   });
 }
 

@@ -31,6 +31,6 @@ export const ASTRAL_PRESETS: Record<string, AstralPreset> = {
   },
   systems: {
     name: "Systems and lanes",
-    layers: ["texture", "nebulae", "systems", "routes", "labels", "scaleBar"]
+    layers: ["texture", "nebulae", "systems", "remnants", "routes", "labels", "scaleBar"]
   }
 };
