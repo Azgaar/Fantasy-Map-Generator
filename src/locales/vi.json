@@ -1590,6 +1590,7 @@
   "Manufacturing step": "Bước chế tạo",
   "Map": "Bản đồ",
   "Map URL is copied to clipboard": "Đã sao chép URL bản đồ vào bộ nhớ tạm",
+  "Map cannot be loaded in EDIT mode, please complete the edit and retry": "Không thể tải bản đồ ở chế độ CHỈNH SỬA, vui lòng hoàn tất chỉnh sửa và thử lại",
   "Map cannot be saved in EDIT mode, please complete the edit and retry": "Không thể lưu bản đồ ở chế độ CHỈNH SỬA, vui lòng hoàn tất chỉnh sửa và thử lại",
   "Map coordinates on globe": "Tọa độ bản đồ trên địa cầu",
   "Map is saved to the browser storage": "Đã lưu bản đồ vào bộ nhớ trình duyệt",

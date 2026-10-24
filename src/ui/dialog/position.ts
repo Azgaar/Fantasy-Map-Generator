@@ -4,7 +4,6 @@ export type DialogPosition = {
   my?: string;
   at?: string;
   of?: string | Element | Window;
-  collision?: string; // always "fit"
 };
 
 type Box = { left: number; top: number; width: number; height: number };

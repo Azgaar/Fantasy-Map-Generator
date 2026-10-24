@@ -1590,6 +1590,7 @@
   "Manufacturing step": "Productiestap",
   "Map": "Kaart",
   "Map URL is copied to clipboard": "Kaart-URL is naar het klembord gekopieerd",
+  "Map cannot be loaded in EDIT mode, please complete the edit and retry": "De kaart kan niet worden geladen in de bewerkingsmodus; rond de bewerking af en probeer opnieuw",
   "Map cannot be saved in EDIT mode, please complete the edit and retry": "De kaart kan niet worden opgeslagen in de bewerkingsmodus; rond de bewerking af en probeer opnieuw",
   "Map coordinates on globe": "Kaartcoördinaten op de globe",
   "Map is saved to the browser storage": "Kaart is opgeslagen in de browseropslag",

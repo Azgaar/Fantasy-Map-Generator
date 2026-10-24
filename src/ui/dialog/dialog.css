@@ -109,8 +109,8 @@
   overflow: auto;
 }
 
-.dialog-minimized > .dialog-content,
-.dialog-minimized > .dialog-buttonpane {
+.dialog-window.dialog-minimized > .dialog-content,
+.dialog-window.dialog-minimized > .dialog-buttonpane {
   display: none;
 }
 
@@ -333,8 +333,4 @@
   height: 100%;
   background: #aaaaaa;
   opacity: 0.3;
-}
-
-.pointer-dragging iframe {
-  pointer-events: none;
 }

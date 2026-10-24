@@ -27,7 +27,7 @@ import { rn } from "@/utils/number-utils";
 let activeBatch: TradeBatch;
 let activePoints: Point[] = [];
 const dialogId = "tradeDetails" as const;
-const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 type TradeDetailRow = { goodId: number; good: string; units: number; price: number; value: number };
 const columns: EditorColumn<TradeDetailRow>[] = [
   { key: "icon", width: "2.5em", permanent: true },

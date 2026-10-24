@@ -1,4 +1,5 @@
 // All app configuration options, options.map saved to `.map` file as settings; docs/architecture/configuration.md
+
 import { z } from "zod";
 import { CULTURE_SETS } from "@/data/culture-sets";
 import { MAX_DENSITY, MIN_DENSITY } from "@/data/graph-density";
@@ -6,6 +7,7 @@ import { LANGUAGE_CODES } from "@/data/languages";
 import { MAX_JITTER, SAMPLINGS } from "@/model/graph/lattice";
 import { Icons } from "@/model/icons";
 import type { LayerId } from "@/renderers/layers";
+import { log } from "@/utils/logger";
 import { count, degrees, hexColor, ids, nonNegative, percent, positive, ratio } from "@/utils/schema-utils";
 
 /** the map edit modes: while one is on, other editors, saving and regeneration stay off */
@@ -98,7 +100,7 @@ export const customIcon = z.strictObject({
 const customIcons = z.preprocess(value => {
   if (!Array.isArray(value)) return [];
   const valid = value.filter(icon => customIcon.safeParse(icon).success);
-  if (valid.length < value.length) console.warn(`Dropped ${value.length - valid.length} invalid custom icon(s)`);
+  if (valid.length < value.length) log.warn(`Dropped ${value.length - valid.length} invalid custom icon(s)`);
   return valid;
 }, z.array(customIcon));
 

@@ -8,6 +8,7 @@ import type {
   HeraldicEmblem,
   PictureEmblem
 } from "@/types/emblems";
+import { log } from "@/utils/logger";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { colors } from "./colors";
 import { componyDashes } from "./compony";
@@ -337,7 +338,7 @@ class EmblemRendererModule {
 
   /** render the coa unless the rendered one is already up to date: a reassigned coa replaces its shield */
   async trigger(id: string, coa: Emblem | undefined) {
-    if (!coa) return console.warn(`Emblem ${id} is undefined`);
+    if (!coa) return log.warn(`Emblem ${id} is undefined`);
 
     const serialized = JSON.stringify(coa);
     const rendered = findEl(id);

@@ -1590,6 +1590,7 @@
   "Manufacturing step": "Vervaardigingstap",
   "Map": "Kaart",
   "Map URL is copied to clipboard": "Kaart-URL is na die knipbord gekopieer",
+  "Map cannot be loaded in EDIT mode, please complete the edit and retry": "Die kaart kan nie in WYSIG-modus gelaai word nie; voltooi asseblief die wysiging en probeer weer",
   "Map cannot be saved in EDIT mode, please complete the edit and retry": "Die kaart kan nie in WYSIG-modus gestoor word nie; voltooi asseblief die wysiging en probeer weer",
   "Map coordinates on globe": "Kaartkoördinate op die aardbol",
   "Map is saved to the browser storage": "Kaart is in die blaaierberging gestoor",

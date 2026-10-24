@@ -72,7 +72,7 @@ function open(state = 0, editorOptions?: EditorOptions): void {
   Dialog.open(dialogId, {
     title: t("Diplomacy Editor"),
     width: "fit-content",
-    position: { my: "right top-27", at: "left-10 top", of: "#diplomacyOverview", collision: "fit" },
+    position: { my: "right top-27", at: "left-10 top", of: "#diplomacyOverview" },
     onClose: onDialogClose
   });
   tip(t("Click or drag over states to set their relation. Shift + click to select another state"), true);

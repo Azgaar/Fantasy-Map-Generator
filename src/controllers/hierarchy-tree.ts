@@ -152,9 +152,16 @@ function closeTree(): void {
   clearTreeState();
 }
 
-/** Release the last-viewed entities and callbacks when the tree closes */
+/** Release the last-viewed entities, callbacks and detached svg selections when the tree closes */
 function clearTreeState(): void {
   oldRoot = null;
+  svg = null!;
+  viewbox = null!;
+  primaryLinks = null!;
+  secondaryLinks = null!;
+  nodes = null!;
+  dragLine = null!;
+  model = null!;
   dataElements = null!;
   validElements = null!;
   onNodeEnter = null!;

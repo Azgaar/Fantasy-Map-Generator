@@ -29,7 +29,7 @@ import { rn, si } from "@/utils/number-utils";
 import { capitalize, escapeHtml, sanitizeId } from "@/utils/string-utils";
 
 const dialogId = "militaryOverview" as const;
-const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 type MilitaryRow = {
   state: State;
   forces: Record<string, number>;

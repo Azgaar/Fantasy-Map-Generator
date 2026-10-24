@@ -125,7 +125,7 @@ function open(): void {
 
   Dialog.open("unitsEditor", {
     title: t("Units Editor"),
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
+    position: { my: "right top", at: "right-10 top+10", of: "svg" }
   });
 }
 

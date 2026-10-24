@@ -1590,6 +1590,7 @@
   "Manufacturing step": "加工步驟",
   "Map": "地圖",
   "Map URL is copied to clipboard": "地圖 URL 已複製到剪貼簿",
+  "Map cannot be loaded in EDIT mode, please complete the edit and retry": "編輯模式下無法載入地圖，請完成編輯後重試",
   "Map cannot be saved in EDIT mode, please complete the edit and retry": "編輯模式下無法儲存地圖，請完成編輯後重試",
   "Map coordinates on globe": "地圖在地球儀上的座標",
   "Map is saved to the browser storage": "地圖已儲存到瀏覽器儲存",

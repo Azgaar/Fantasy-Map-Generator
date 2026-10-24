@@ -48,7 +48,7 @@ import { errorText } from "@/utils/string-utils";
 
 const dialogId = "statesEditor" as const;
 const LEGEND_NAME = "States"; // the legend box this editor toggles
-const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 let filterState: { search: string };
 
 const columns: EditorColumn<State>[] = [

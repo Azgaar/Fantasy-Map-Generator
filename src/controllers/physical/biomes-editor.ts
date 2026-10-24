@@ -36,7 +36,7 @@ import { rn, si } from "@/utils/number-utils";
 const dialogId = "biomesEditor" as const;
 const CSV_COLUMNS = ["Id", "Biome", "Color", "Habitability", "Cells", "Area", "Population"];
 const LEGEND_NAME = "Biomes"; // the legend box this editor toggles
-const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 let currentBiomeStatistics: BiomeStatistics[] = [];
 const columns: EditorColumn<Biome>[] = [
   {

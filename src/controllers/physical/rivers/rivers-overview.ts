@@ -28,7 +28,7 @@ import { rn } from "@/utils/number-utils";
 
 const dialogId = "riversOverview" as const;
 const CSV_COLUMNS = ["Id", "River", "Type", "Discharge", "Length", "Width", "Basin", "Tags"];
-const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 let filterState: { search: string };
 
 const columns: EditorColumn<River>[] = [

@@ -90,6 +90,7 @@ class DialogManager {
     const existing = this.#dialogs.get(id);
     if (existing?.content === content && existing.window.isConnected) {
       if (options) {
+        if (existing.options.className) existing.window.classList.remove(existing.options.className);
         existing.options = { ...options };
         if (options.rememberPosition === false) existing.manual = null; // a new message starts where its caller asks
       }
@@ -115,6 +116,8 @@ class DialogManager {
     const instance = this.#get(id);
     if (!instance) return;
 
+    if ("className" in options && instance.options.className)
+      instance.window.classList.remove(instance.options.className);
     Object.assign(instance.options, options);
     if ("title" in options) this.#setTitle(instance);
     if ("buttons" in options || "footer" in options) this.#renderButtonpane(instance);
@@ -162,6 +165,8 @@ class DialogManager {
 
   /** Remove a dialog and its content without running its close callbacks, as before rendering it anew */
   destroy(id: string): void {
+    this.#dialogs.get(id)?.overlay?.remove();
+    this.#dialogs.delete(id);
     const content = findEl(id);
     if (!content) return;
     content.closest(".dialog-window")?.remove();

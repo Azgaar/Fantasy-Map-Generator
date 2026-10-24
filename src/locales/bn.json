@@ -1590,6 +1590,7 @@
   "Manufacturing step": "উৎপাদন ধাপ",
   "Map": "মানচিত্র",
   "Map URL is copied to clipboard": "মানচিত্রের URL ক্লিপবোর্ডে কপি হয়েছে",
+  "Map cannot be loaded in EDIT mode, please complete the edit and retry": "সম্পাদনা মোডে মানচিত্র লোড করা যাবে না, সম্পাদনা শেষ করে আবার চেষ্টা করুন",
   "Map cannot be saved in EDIT mode, please complete the edit and retry": "সম্পাদনা মোডে মানচিত্র সংরক্ষণ করা যাবে না, সম্পাদনা শেষ করে আবার চেষ্টা করুন",
   "Map coordinates on globe": "গ্লোবে মানচিত্রের স্থানাঙ্ক",
   "Map is saved to the browser storage": "মানচিত্র ব্রাউজার স্টোরেজে সংরক্ষিত হয়েছে",

@@ -1590,6 +1590,7 @@
   "Manufacturing step": "Langkah manufaktur",
   "Map": "Peta",
   "Map URL is copied to clipboard": "URL peta disalin ke papan klip",
+  "Map cannot be loaded in EDIT mode, please complete the edit and retry": "Peta tidak dapat dimuat dalam mode EDIT, selesaikan sunting lalu coba lagi",
   "Map cannot be saved in EDIT mode, please complete the edit and retry": "Peta tidak dapat disimpan dalam mode EDIT, selesaikan sunting lalu coba lagi",
   "Map coordinates on globe": "Koordinat peta pada bola dunia",
   "Map is saved to the browser storage": "Peta disimpan ke penyimpanan peramban",

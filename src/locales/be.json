@@ -1590,6 +1590,7 @@
   "Manufacturing step": "Этап вытворчасці",
   "Map": "Мапа",
   "Map URL is copied to clipboard": "Спасылка на мапу скапіравана ў буфер абмену",
+  "Map cannot be loaded in EDIT mode, please complete the edit and retry": "Мапу нельга загрузіць у рэжыме рэдагавання. Завяршыце рэдагаванне і паўтарыце спробу",
   "Map cannot be saved in EDIT mode, please complete the edit and retry": "Мапу нельга захаваць у рэжыме рэдагавання. Завяршыце рэдагаванне і паўтарыце спробу",
   "Map coordinates on globe": "Каардынаты мапы на глобусе",
   "Map is saved to the browser storage": "Мапа захавана ў сховішчы браўзера",

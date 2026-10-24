@@ -8,7 +8,7 @@ type SortableOptions = {
   onReorder?: (item: HTMLElement) => void; // after a drag that changed the order
 };
 
-/** Items swap places as the dragged one passes the middle of another; a click right after a reorder is swallowed */
+/** Items swap places as the dragged one passes the middle of another; a click right after a drag is swallowed */
 export function sortableList(container: HTMLElement, { items, handle, onReorder }: SortableOptions): void {
   const itemOf = (target: EventTarget | null) =>
     Array.from(container.children).find(
@@ -34,10 +34,10 @@ export function sortableList(container: HTMLElement, { items, handle, onReorder 
       },
       moved => {
         item.classList.remove("sortable-dragging");
-        if (!moved || item.nextElementSibling === before) return;
+        if (!moved) return;
         window.addEventListener("click", swallow, { capture: true, once: true });
         setTimeout(() => window.removeEventListener("click", swallow, { capture: true }));
-        onReorder?.(item);
+        if (item.nextElementSibling !== before) onReorder?.(item);
       }
     );
   });

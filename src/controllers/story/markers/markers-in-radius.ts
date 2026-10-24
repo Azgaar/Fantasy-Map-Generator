@@ -48,7 +48,7 @@ function open(marker: Marker): void {
     title: t("Markers in Radius"),
     width: "fit-content",
     onClose: closeMarkersInRadius,
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
+    position: { my: "right top", at: "right-10 top+10", of: "svg" }
   });
 }
 

@@ -27,7 +27,7 @@ function open(): void {
   Dialog.open("labelGroupsConfigurator", {
     title: t("Configure Label Groups"),
     maxHeight: Math.max(window.innerHeight - 40, 300),
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
+    position: { my: "right top", at: "right-10 top+10", of: "svg" },
     onClose: close,
     buttons: [
       {

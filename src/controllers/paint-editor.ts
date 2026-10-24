@@ -102,7 +102,7 @@ function open(config: OpenPaintEditorOptions): void {
 
     Dialog.open(dialogId, {
       title: config.title,
-      position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
+      position: { my: "right top", at: "right-10 top+10", of: "svg" },
       onClose: cancel
     });
 

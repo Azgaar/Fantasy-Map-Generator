@@ -1590,6 +1590,7 @@
   "Manufacturing step": "Etap wytwarzania",
   "Map": "Mapa",
   "Map URL is copied to clipboard": "Adres URL mapy skopiowano do schowka",
+  "Map cannot be loaded in EDIT mode, please complete the edit and retry": "Mapy nie można wczytać w trybie EDYCJI; zakończ edycję i spróbuj ponownie",
   "Map cannot be saved in EDIT mode, please complete the edit and retry": "Mapy nie można zapisać w trybie EDYCJI; zakończ edycję i spróbuj ponownie",
   "Map coordinates on globe": "Współrzędne mapy na globie",
   "Map is saved to the browser storage": "Mapa została zapisana w pamięci przeglądarki",

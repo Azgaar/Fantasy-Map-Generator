@@ -65,7 +65,7 @@
 
 # Browser Console
 
-`window.FMG` ([src/app/fmg.ts](src/app/fmg.ts)) is the app's console surface, also used by the Assistant's `read_map` scripts. App code never reads it. Use it to check a change in the running app (`npm run dev`, then `http://localhost:5173/Fantasy-Map-Generator/`), for example through the browser pane's JavaScript tool:
+`window.FMG` ([src/app/fmg.ts](src/app/fmg.ts)) is the app's console surface, also used by the Assistant's `read_map` scripts. App code never reads it; only the `read_map` runtime spreads it into a script's scope. Use it to check a change in the running app (`npm run dev`, then `http://localhost:5173/Fantasy-Map-Generator/`), for example through the browser pane's JavaScript tool:
 
 - **State**: `FMG.pack`, `FMG.grid`, `FMG.options`, `FMG.styles` are live getters; `FMG.mapHistory` lists the maps of this session.
 - **Model and helpers**: every model singleton (`FMG.Burgs`, `FMG.States`, `FMG.Rivers`…), `FMG.Layers`, `FMG.Controllers`, `FMG.Services` and the `utils/` helpers (`FMG.rn`, `FMG.P`…).
@@ -89,6 +89,6 @@
 # Sharp Edges
 
 - **Ambient state**: `pack`, `grid`, `options` and `styles` are still globals, read bare across the app; everything else is imported. Be cautious when turning them into explicit parameters.
-- **Edit mode**: `options.app.mode` names the edit mode the user is in (`"heightmap"`, `"paint"`, `"addState"`…) or is `null`. While it is set, other editors, saving and regeneration stay off. It is never stored, so a reload starts outside any mode.
+- **Edit mode**: `options.app.mode` names the edit mode the user is in (`"heightmap"`, `"paint"`, `"addState"`…) or is `null`. While it is set, other editors, saving, loading and regeneration stay off. It is never stored, so a reload starts outside any mode.
 - **`index.html`**: The shared app-shell and map SVG template. It can easily break if structural tags are accidentally nested incorrectly.
 - **Playwright**: Never automatically run Playwright tests when developing, they are too slow and cause PC freezes.

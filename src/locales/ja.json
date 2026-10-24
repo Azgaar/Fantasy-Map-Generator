@@ -1590,6 +1590,7 @@
   "Manufacturing step": "製造の段階",
   "Map": "地図",
   "Map URL is copied to clipboard": "地図の URL をクリップボードにコピーしました",
+  "Map cannot be loaded in EDIT mode, please complete the edit and retry": "編集モードでは地図を読み込めません。編集を完了してから再試行してください",
   "Map cannot be saved in EDIT mode, please complete the edit and retry": "編集モードでは地図を保存できません。編集を完了してから再試行してください",
   "Map coordinates on globe": "地球儀上の地図の座標",
   "Map is saved to the browser storage": "地図をブラウザーの保存領域に保存しました",

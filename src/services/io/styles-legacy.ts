@@ -1,4 +1,5 @@
 // Conversions between the legacy `style` object shapes and the styles store
+
 import type { z } from "zod";
 import { OCEAN_PATTERNS } from "@/data/ocean-patterns";
 import { FONT_STYLES, FONT_WEIGHTS, LINECAPS, LINEJOINS, MAP_FILTERS, TEXT_DECORATIONS } from "@/data/style-choices";
@@ -11,6 +12,7 @@ import { Layers } from "@/renderers/layers";
 import type { StylesData } from "@/types/styles";
 import { toColorHex } from "@/utils/color-utils";
 import { isImageIcon } from "@/utils/file-utils";
+import { log } from "@/utils/logger";
 import { getPath } from "@/utils/object-utils";
 import { safeParseJSON } from "@/utils/string-utils";
 
@@ -382,7 +384,7 @@ function routeFor(selector: string): PresetRoute | undefined {
 }
 
 function fail(onUnknown: "throw" | "skip", message: string): void {
-  if (onUnknown === "skip") console.warn(message);
+  if (onUnknown === "skip") log.warn(message);
   else throw new Error(message);
 }
 

@@ -25,7 +25,7 @@ import { ensureEl } from "@/utils/node-utils";
 import { escapeHtml } from "@/utils/string-utils";
 
 const dialogId = "transportEditor" as const;
-const position = { my: "center", at: "center", of: "svg", collision: "fit" };
+const position = { my: "center", at: "center", of: "svg" };
 
 const columns: EditorColumn<Transport>[] = [
   { key: "name", label: t("Name"), width: "14em", permanent: true },

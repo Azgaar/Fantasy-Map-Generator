@@ -6,6 +6,7 @@ import { GraphOverride } from "@/model/graph/graph-override";
 import { Grid } from "@/model/graph/grid-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
+import { mapHistory, registerMap } from "@/model/map-history";
 import { Options } from "@/model/options/options-model";
 import { Features } from "@/model/physical/features-generator";
 import { HeightmapGenerator } from "@/model/physical/heightmap-generator";
@@ -24,7 +25,6 @@ import { Services } from "@/services";
 import { declareFont, fonts } from "@/services/fonts";
 import { MapRepair } from "@/services/io/map-repair";
 import { LocalDB } from "@/services/local-db";
-import { mapHistory, registerMap } from "@/services/map-history";
 import { focusOn, generateMapOnLoad } from "@/services/url-params";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
 import { App } from "@/ui/app-commands";
@@ -52,7 +52,7 @@ async function quickLoad(): Promise<void> {
 async function loadFromDropbox(): Promise<void> {
   const mapPath = ensureEl<HTMLInputElement>("loadFromDropboxSelect").value;
 
-  console.info("Loading map from Dropbox:", mapPath);
+  log.info("Loading map from Dropbox:", mapPath);
   const blob = await Services.Cloud.load(mapPath);
   uploadMap(blob);
 }
@@ -158,6 +158,11 @@ function showUploadErrorMessage(error: string, maplink: string, random?: boolean
 let uploadTimeStart = 0;
 
 function uploadMap(file: Blob, callback?: () => void): void {
+  if (options.app.mode) {
+    callback?.();
+    tip(t("Map cannot be loaded in EDIT mode, please complete the edit and retry"), false, "error");
+    return;
+  }
   uploadTimeStart = performance.now();
 
   const fileReader = new FileReader();
@@ -270,8 +275,6 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     const { migrateLegacySettings, resolveVersionConflicts } = await import("./auto-update"); // TODO: don't load if not required
 
     Dialog.closeAll();
-    options.app.mode = null;
-    if (ensureEl("heightmapMenu").offsetParent) ensureEl("styleTab").click();
 
     migrateLegacySettings(mapVersion!, data);
     const settings = data[1] ? safeParseJSON(data[1]) : null;

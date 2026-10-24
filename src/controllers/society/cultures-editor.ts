@@ -42,7 +42,7 @@ import { errorText, parseTransform } from "@/utils/string-utils";
 
 const dialogId = "culturesEditor" as const;
 const LEGEND_NAME = "Cultures"; // the legend box this editor toggles
-const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 let filterState: { search: string };
 const CSV_COLUMNS = [
   "Id",

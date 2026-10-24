@@ -1,3 +1,4 @@
+import { log } from "@/utils/logger";
 /**
  * Version Control Guidelines
  * --------------------------
@@ -189,7 +190,7 @@ function showUpdateWindow(storedVersion: string | null): void {
 }
 
 function announceVersion(): void {
-  if (parseMapVersion(VERSION) !== VERSION) console.error("versioning: Invalid format or parsing function");
+  if (parseMapVersion(VERSION) !== VERSION) log.error("versioning: Invalid format or parsing function");
 
   document.title += ` v${VERSION}`;
   const loadingScreenVersion = findEl("versionText");

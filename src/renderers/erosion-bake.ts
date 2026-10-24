@@ -1026,7 +1026,7 @@ export async function bake(renderer: THREE.WebGLRenderer, params: BakeParams): P
     log.timeEnd("erosionBake");
     return cached;
   } catch (error) {
-    console.error("3D erosion bake failed:", error);
+    log.error("3D erosion bake failed:", error);
     cached = null;
     return null;
   }

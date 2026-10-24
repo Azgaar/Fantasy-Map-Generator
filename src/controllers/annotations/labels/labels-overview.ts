@@ -25,7 +25,7 @@ import { log } from "@/utils/logger";
 import { ensureEl, findEl } from "@/utils/node-utils";
 
 const dialogId = "labelsOverview" as const;
-const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 const ALL = "";
 let filterState: { group: string; type: string; search: string };
 

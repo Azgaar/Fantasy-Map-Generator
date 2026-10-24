@@ -164,7 +164,7 @@ const COAST_PRESETS: Record<string, Omit<CoastlineSettings, "enabled" | "variant
   }
 };
 
-const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 let selectedFeature: Feature | null = null; // the feature the editor shapes, or the whole map
 
 function open(featureId?: number): void {

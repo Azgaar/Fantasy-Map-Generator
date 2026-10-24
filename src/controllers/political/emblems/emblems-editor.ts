@@ -126,7 +126,7 @@ function open(type?: EmblemType, id?: string, el?: EmblemEntity, target?: SVGEle
     resizable: true,
     width: "22em",
     height: "auto",
-    position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" },
+    position: { my: "left top", at: "left+10 top+10", of: "svg" },
     onClose: closeEmblemEditor
   });
 }

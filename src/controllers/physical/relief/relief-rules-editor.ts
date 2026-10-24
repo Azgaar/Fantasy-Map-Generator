@@ -17,7 +17,7 @@ import { confirmReplace, ReliefPoolEditor } from "./relief-pool-editor";
 import { fitReliefArt, poolPreviewHtml } from "./relief-previews";
 
 const dialogId = "reliefRulesEditor" as const;
-const position = { my: "center", at: "center", of: "svg", collision: "fit" };
+const position = { my: "center", at: "center", of: "svg" };
 
 const columns: EditorColumn[] = [
   { key: "reorder", width: "1.1em", permanent: true },

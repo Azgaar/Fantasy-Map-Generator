@@ -1590,6 +1590,7 @@
   "Manufacturing step": "Tillverkningssteg",
   "Map": "Karta",
   "Map URL is copied to clipboard": "Kartans URL har kopierats till urklipp",
+  "Map cannot be loaded in EDIT mode, please complete the edit and retry": "Kartan kan inte läsas in i REDIGERINGSLÄGE, slutför redigeringen och försök igen",
   "Map cannot be saved in EDIT mode, please complete the edit and retry": "Kartan kan inte sparas i REDIGERINGSLÄGE, slutför redigeringen och försök igen",
   "Map coordinates on globe": "Kartans koordinater på jordklotet",
   "Map is saved to the browser storage": "Kartan sparades i webbläsarens lagring",

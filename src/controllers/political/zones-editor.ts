@@ -34,7 +34,7 @@ import { errorText } from "@/utils/string-utils";
 const dialogId = "zonesEditor" as const;
 const CSV_COLUMNS = ["Id", "Color", "Description", "Type", "Tags", "Cells", "Area", "Population"];
 const LEGEND_NAME = "Zones"; // the legend box this editor toggles
-const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 let filterState: { search: string };
 
 type ZoneRow = { zone: Zone; area: number; rural: number; urban: number; population: number };

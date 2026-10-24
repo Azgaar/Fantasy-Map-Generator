@@ -42,7 +42,7 @@ const CSV_COLUMNS = [
   "Longitude",
   "Tags"
 ];
-const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 let filterState: { search: string; state: string; culture: string; type: string };
 
 const columns: EditorColumn<Marker>[] = [

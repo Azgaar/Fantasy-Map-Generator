@@ -1,10 +1,10 @@
 import { cellsDensityColor, POINTS_BY_DENSITY } from "@/data/graph-density";
+import { registerMap } from "@/model/map-history";
 import { MapRestoration } from "@/model/map-restoration";
 import { Resample } from "@/model/resample";
 import { Layers } from "@/renderers/layers";
 import { undraw } from "@/renderers/undraw";
 import { Services } from "@/services";
-import { registerMap } from "@/services/map-history";
 import { App } from "@/ui/app-commands";
 import { Dialog } from "@/ui/dialog/dialog";
 

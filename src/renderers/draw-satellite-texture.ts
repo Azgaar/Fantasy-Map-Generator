@@ -2,6 +2,7 @@ import { color as parseColor } from "d3";
 import * as THREE from "three";
 import { Biomes } from "@/model/physical/biomes-generator";
 import { Rivers } from "@/model/physical/river-generator";
+import { log } from "@/utils/logger";
 import { buildGridTexture, type ErosionBakeResult, gridSize, heightAt } from "./erosion-bake";
 
 let renderTarget: THREE.WebGLRenderTarget | null = null;
@@ -560,7 +561,7 @@ export function generateSatelliteTexture(
 
     return target.texture;
   } catch (error) {
-    console.error("Satellite texture generation failed:", error);
+    log.error("Satellite texture generation failed:", error);
     disposeSatelliteTexture();
     return null;
   } finally {

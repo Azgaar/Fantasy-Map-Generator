@@ -1590,6 +1590,7 @@
   "Manufacturing step": "ขั้นตอนการผลิต",
   "Map": "แผนที่",
   "Map URL is copied to clipboard": "คัดลอก URL แผนที่ไปยังคลิปบอร์ดแล้ว",
+  "Map cannot be loaded in EDIT mode, please complete the edit and retry": "โหลดแผนที่ในโหมดแก้ไขไม่ได้ โปรดแก้ไขให้เสร็จแล้วลองอีกครั้ง",
   "Map cannot be saved in EDIT mode, please complete the edit and retry": "บันทึกแผนที่ในโหมดแก้ไขไม่ได้ โปรดแก้ไขให้เสร็จแล้วลองอีกครั้ง",
   "Map coordinates on globe": "พิกัดแผนที่บนลูกโลก",
   "Map is saved to the browser storage": "บันทึกแผนที่ลงที่เก็บข้อมูลเบราว์เซอร์แล้ว",

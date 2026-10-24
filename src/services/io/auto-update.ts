@@ -3,14 +3,8 @@
 import { min, select } from "d3";
 import { IconPictures } from "@/controllers/icon-picker/pictures";
 import { AddedLabels } from "@/model/annotations/added-labels";
-import {
-  type Label,
-  type LabelNameMode,
-  Labels,
-  Labels as LabelsGenerator
-} from "@/model/annotations/labels-generator";
-import type { Measurer, MeasurerType } from "@/model/annotations/measurers-generator";
-import { Measurers } from "@/model/annotations/measurers-generator";
+import { type Label, type LabelNameMode, Labels } from "@/model/annotations/labels-generator";
+import { type Measurer, Measurers, type MeasurerType } from "@/model/annotations/measurers-generator";
 import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
 import { Production } from "@/model/economy/production-generator";
@@ -1271,8 +1265,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
     function legacyBurgGroupZoom(name: string, fontSize: number): { min: number | null; max: number | null } {
       const modernName = LEGACY_BURG_GROUP_EQUIVALENTS[name];
       const modern =
-        modernName &&
-        LabelsGenerator.getDefaultGroups().find(group => group.type === "burg" && group.name === modernName);
+        modernName && Labels.getDefaultGroups().find(group => group.type === "burg" && group.name === modernName);
       return modern ? structuredClone(modern.zoom) : legacyBurgLabelZoom(fontSize);
     }
 
@@ -1954,7 +1947,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       try {
         return [migrateReliefIcon(icon, incomingSet, incomingSize || 1)];
       } catch {
-        console.warn(`Skipping unknown legacy relief icon: ${icon.icon}`);
+        log.warn(`Skipping unknown legacy relief icon: ${icon.icon}`);
         return [];
       }
     });

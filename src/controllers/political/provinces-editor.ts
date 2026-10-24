@@ -66,7 +66,7 @@ const CSV_COLUMNS = [
   "Burgs",
   "Tags"
 ];
-const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 let filterState: { stateId: number; search?: string };
 
 const getProvinceArea = (province: Province) => getArea(province.area!);

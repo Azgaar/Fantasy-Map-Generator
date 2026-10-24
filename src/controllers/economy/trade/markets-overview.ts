@@ -29,7 +29,7 @@ import { ensureEl, findEl, getPointer } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 
 const dialogId = "marketsOverview" as const;
-const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 
 type MarketRow = {
   market: Market;

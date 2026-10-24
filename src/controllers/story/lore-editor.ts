@@ -77,7 +77,7 @@ function open(): void {
     title: t("Setup Lore"),
     width: "auto",
     minWidth: 340,
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
+    position: { my: "right top", at: "right-10 top+10", of: "svg" }
   });
 }
 

@@ -1590,6 +1590,7 @@
   "Manufacturing step": "Etapa de fabricare",
   "Map": "Hartă",
   "Map URL is copied to clipboard": "URL-ul hărții a fost copiat în clipboard",
+  "Map cannot be loaded in EDIT mode, please complete the edit and retry": "Harta nu poate fi încărcată în modul EDITARE; finalizează editarea și reîncearcă",
   "Map cannot be saved in EDIT mode, please complete the edit and retry": "Harta nu poate fi salvată în modul EDITARE; finalizează editarea și reîncearcă",
   "Map coordinates on globe": "Coordonatele hărții pe glob",
   "Map is saved to the browser storage": "Harta este salvată în stocarea browserului",

@@ -24,6 +24,7 @@ import { Pack } from "@/model/graph/pack-generator";
 import { IconSets } from "@/model/icon-sets";
 import { CustomIcons, Icons } from "@/model/icons";
 import { MapEntities } from "@/model/map-entities";
+import { mapHistory } from "@/model/map-history";
 import { MapIntegrity } from "@/model/map-integrity";
 import { MapRestoration } from "@/model/map-restoration";
 import { Options } from "@/model/options/options-model";
@@ -65,11 +66,9 @@ import { Layers } from "@/renderers/layers";
 import { TradeAnimation } from "@/renderers/trade-animation";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { Services } from "@/services";
-import { setScriptScope } from "@/services/assistant/provider/runtime";
 import { initiateAutosave, toggleSaveReminder } from "@/services/autosave";
 import { fonts } from "@/services/fonts";
 import { getFileName } from "@/services/io/file-name";
-import { mapHistory } from "@/services/map-history";
 import { speak } from "@/services/speech";
 import { copyMapURL } from "@/services/url-params";
 import { cleanupData, VERSION } from "@/services/versioning";
@@ -226,4 +225,3 @@ const FMG = {
 };
 
 Object.defineProperty(window, "FMG", { value: FMG });
-setScriptScope(FMG);

@@ -39,7 +39,7 @@ function open(markerI?: number, target?: Element): void {
 
   Dialog.open("markerEditor", {
     title: t("Edit Marker"),
-    position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" },
+    position: { my: "left top", at: "left+10 top+10", of: "svg" },
     onClose: closeMarkerEditor
   });
 }

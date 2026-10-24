@@ -31,7 +31,7 @@ import { si } from "@/utils/number-utils";
 import { capitalize } from "@/utils/string-utils";
 
 const dialogId = "regimentsOverview" as const;
-const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 let filterState: { stateId: number; search: string };
 
 type RegimentRow = { state: State; regiment: Regiment };

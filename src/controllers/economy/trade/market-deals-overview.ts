@@ -29,7 +29,7 @@ type FilterState = { scope: "all" | "local" | "global" };
 let filterState: FilterState;
 
 const dialogId = "marketDeals" as const;
-const position = { my: "right top", at: "right bottom+10", of: "#marketOverview", collision: "fit" };
+const position = { my: "right top", at: "right bottom+10", of: "#marketOverview" };
 const columns: EditorColumn<Deal>[] = [
   { key: "icon", width: "2em", permanent: true },
   {

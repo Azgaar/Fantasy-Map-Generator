@@ -1590,6 +1590,7 @@
   "Manufacturing step": "제조 단계",
   "Map": "지도",
   "Map URL is copied to clipboard": "지도 URL이 클립보드에 복사되었습니다",
+  "Map cannot be loaded in EDIT mode, please complete the edit and retry": "편집 모드에서는 지도를 불러올 수 없습니다. 편집을 마친 후 다시 시도하세요",
   "Map cannot be saved in EDIT mode, please complete the edit and retry": "편집 모드에서는 지도를 저장할 수 없습니다. 편집을 마친 후 다시 시도하세요",
   "Map coordinates on globe": "지구본 위 지도 좌표",
   "Map is saved to the browser storage": "지도가 브라우저 저장소에 저장되었습니다",

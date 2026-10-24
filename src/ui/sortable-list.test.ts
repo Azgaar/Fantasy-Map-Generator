@@ -48,3 +48,22 @@ it("ignores presses outside the handle and items it does not sort", () => {
   expect(items()).toEqual(["a", "b", "c"]);
   expect(onReorder).not.toHaveBeenCalled();
 });
+
+it("swallows the click after a drag that ends where it started, without reporting a reorder", () => {
+  const onReorder = vi.fn();
+  const list = document.getElementById("list")!;
+  sortableList(list, { items: "li:not(.fixed)", handle: ".grip", onReorder });
+  document.elementFromPoint = () => document.getElementById("a");
+
+  const grip = document.querySelector("#a .grip")!;
+  pointer(grip, "pointerdown", 10);
+  pointer(list, "pointermove", 15);
+  pointer(list, "pointerup", 15);
+
+  expect(items()).toEqual(["a", "b", "c"]);
+  expect(onReorder).not.toHaveBeenCalled();
+  const click = vi.fn();
+  list.addEventListener("click", click);
+  document.getElementById("a")!.click();
+  expect(click).not.toHaveBeenCalled();
+});

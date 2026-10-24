@@ -1590,6 +1590,7 @@
   "Manufacturing step": "Herstellungsschritt",
   "Map": "Karte",
   "Map URL is copied to clipboard": "Karten-URL wurde in die Zwischenablage kopiert",
+  "Map cannot be loaded in EDIT mode, please complete the edit and retry": "Im BEARBEITUNGSmodus kann keine Karte geladen werden, bitte schließe die Bearbeitung ab und versuche es erneut",
   "Map cannot be saved in EDIT mode, please complete the edit and retry": "Im BEARBEITUNGSmodus kann die Karte nicht gespeichert werden, bitte schließe die Bearbeitung ab und versuche es erneut",
   "Map coordinates on globe": "Kartenkoordinaten auf dem Globus",
   "Map is saved to the browser storage": "Karte wurde im Browserspeicher gespeichert",

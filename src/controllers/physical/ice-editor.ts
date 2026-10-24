@@ -42,7 +42,7 @@ function open(element: SVGElement): void {
 
   Dialog.open("iceEditor", {
     title: t("Edit {{- type}}", { type }),
-    position: { my: "center top+60", at: "top", of: "svg", collision: "fit" },
+    position: { my: "center top+60", at: "top", of: "svg" },
     onClose: closeEditor
   });
 }

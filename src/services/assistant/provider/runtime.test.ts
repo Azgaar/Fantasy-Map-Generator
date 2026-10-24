@@ -1,5 +1,5 @@
 import { expect, it, describe as suite, test } from "vitest";
-import { describe, runScript, serialize, setScriptScope } from "./runtime";
+import { describe, runScript, serialize } from "./runtime";
 
 suite("runScript", () => {
   test("returns the script's value", async () => {
@@ -16,17 +16,17 @@ suite("runScript", () => {
 
   test("sees the scripting scope by name, reading getters at each run", async () => {
     let live = 1;
-    setScriptScope({
+    (globalThis as Record<string, unknown>).FMG = {
       fixed: 7,
       get live() {
         return live;
       }
-    });
+    };
     expect((await runScript("return fixed + live")).value).toBe("8");
     live = 2;
     expect((await runScript("return live")).value).toBe("2");
     expect(describe("live")).toMatchObject({ path: "live", type: "number" });
-    setScriptScope({});
+    delete (globalThis as Record<string, unknown>).FMG;
   });
 
   test("reports the error and stack instead of throwing", async () => {

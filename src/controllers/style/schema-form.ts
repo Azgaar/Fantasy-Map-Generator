@@ -1,7 +1,9 @@
 // A form built from a zod object schema
+
 import { z } from "zod";
 import type { FieldMeta, StandardControl } from "@/types/styles";
 import { t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
 import { htmlEl } from "@/utils/node-utils";
 import { getPath } from "@/utils/object-utils";
 
@@ -350,7 +352,7 @@ function renderRow(spec: FieldSpec, value: unknown, ctx: Ctx): HTMLElement {
 function control(spec: FieldSpec, value: unknown, ctx: Ctx, set: (value: unknown) => void): HTMLElement {
   const factory = ctx.controls[spec.kind];
   if (factory) return factory(spec, value, set);
-  console.error(`SchemaForm: no control registered for "${spec.kind}" at ${spec.path.join(".")}`);
+  log.error(`SchemaForm: no control registered for "${spec.kind}" at ${spec.path.join(".")}`);
   return htmlEl("span", { textContent: `unknown control: ${spec.kind}` });
 }
 

@@ -1590,6 +1590,7 @@
   "Manufacturing step": "Gyártási lépés",
   "Map": "Térkép",
   "Map URL is copied to clipboard": "A térkép URL-je a vágólapra másolva",
+  "Map cannot be loaded in EDIT mode, please complete the edit and retry": "A térkép nem tölthető be SZERKESZTÉS módban, fejezze be a szerkesztést, és próbálja újra",
   "Map cannot be saved in EDIT mode, please complete the edit and retry": "A térkép nem menthető SZERKESZTÉS módban, fejezze be a szerkesztést, és próbálja újra",
   "Map coordinates on globe": "Térképkoordináták a földgömbön",
   "Map is saved to the browser storage": "A térkép mentve a böngészőtárba",

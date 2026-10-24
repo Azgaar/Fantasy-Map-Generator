@@ -15,15 +15,9 @@ export interface RunResult {
   ms: number;
 }
 
-let scope: Record<string, unknown> = {};
-
-/** The scripting surface the composition root publishes as `window.FMG` */
-export function setScriptScope(api: Record<string, unknown>): void {
-  scope = api;
-}
-
-// read at each run: the map state members are getters over objects a regeneration replaces
+// scripts see `window.FMG` members by name; read at each run, as its map state members are getters
 const scopeEntries = (): [string[], unknown[]] => {
+  const scope = (globalThis as { FMG?: Record<string, unknown> }).FMG ?? {};
   const names = Object.keys(scope);
   return [names, names.map(name => scope[name])];
 };

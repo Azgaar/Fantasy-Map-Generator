@@ -17,7 +17,7 @@ function open(): void {
   Dialog.open("minimap", {
     title: t("Minimap"),
     width: "auto",
-    position: { my: "left bottom", at: "left+10 bottom-25", of: "svg", collision: "fit" },
+    position: { my: "left bottom", at: "left+10 bottom-25", of: "svg" },
     onClose: closeMinimap
   });
 }

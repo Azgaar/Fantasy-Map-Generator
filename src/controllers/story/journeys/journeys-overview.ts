@@ -29,7 +29,7 @@ import { rn } from "@/utils/number-utils";
 import { escapeHtml } from "@/utils/string-utils";
 
 const dialogId = "journeysOverview" as const;
-const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 let filterState: { search: string };
 
 const columns: EditorColumn<Journey>[] = [

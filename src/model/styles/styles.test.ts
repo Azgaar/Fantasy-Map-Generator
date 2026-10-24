@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
-import { describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { log } from "@/utils/logger";
 import "@/model/physical/relief-generator"; // the models own the icon sets that tell references from text
 import "@/model/political/burgs-generator";
 import "@/model/economy/goods-generator";
@@ -7,6 +8,14 @@ import { normalizeStyles } from "@/services/io/styles-legacy";
 import { Styles } from "./styles";
 import { FORMATS, isLabelStyle } from "./styles-formats";
 import { stylesSchema } from "./styles-schema";
+
+// these tests check warnings, which the test setup silences
+beforeEach(() => {
+  log.enabled.warn = true;
+});
+afterEach(() => {
+  log.enabled.warn = false;
+});
 
 const readPreset = (name: string) => JSON.parse(readFileSync(`public/styles/${name}.json`, "utf8"));
 const cinderwood = readPreset("cinderwood");

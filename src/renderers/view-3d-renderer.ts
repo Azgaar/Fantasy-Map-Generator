@@ -11,6 +11,7 @@ import { Layers } from "@/renderers/layers";
 import { isGlobeView, setViewMode } from "@/renderers/view-mode";
 import { throttle } from "@/utils/common-utils";
 import { t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
 import { findEl } from "@/utils/node-utils";
 import { notify } from "@/utils/notices";
 import { rn } from "@/utils/number-utils";
@@ -95,7 +96,7 @@ const create = async (canvas: HTMLCanvasElement, type = "viewMesh") => {
   active = true;
 
   const started = await (isGlobe ? newGlobe(canvas) : newMesh(canvas)).catch(error => {
-    console.error("3D view failed to start:", error); // three needs WebGL 2
+    log.error("3D view failed to start:", error); // three needs WebGL 2
     notify(t("Cannot load 3d library"), "error", 4000);
     return false;
   });
@@ -728,7 +729,7 @@ async function buildMesh(build: number, width: number, height: number) {
       bakeResolution: Math.min(desiredBakeResolution, maxBakeResolution)
     });
     if (!bakeResult && options.app.threeD.erosion) {
-      console.warn("3D erosion bake failed, falling back to standard mesh");
+      log.warn("3D erosion bake failed, falling back to standard mesh");
       notify(t("Eroded terrain is not supported on this device"), "warn", 4000);
       Options.set(o => (o.app.threeD.erosion = false));
       syncErosionUI();

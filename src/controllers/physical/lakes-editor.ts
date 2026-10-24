@@ -32,7 +32,7 @@ function open(element: SVGElement): void {
 
   Dialog.open("lakeEditor", {
     title: t("Edit Lake"),
-    position: { my: "center top+20", at: "top", of: "svg", collision: "fit" },
+    position: { my: "center top+20", at: "top", of: "svg" },
     onClose: closeLakesEditor
   });
 }

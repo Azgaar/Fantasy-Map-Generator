@@ -48,7 +48,7 @@ function open(type: LabelType, id: number): void {
   Dialog.open("labelEditor", {
     title: t("Edit Label"),
     width: "fit-content",
-    position: { my: "center top+10", at: "bottom", of: textEl, collision: "fit" },
+    position: { my: "center top+10", at: "bottom", of: textEl },
     onClose: closeLabelEditor
   });
 

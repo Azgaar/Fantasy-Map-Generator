@@ -26,6 +26,7 @@ import { Military } from "@/model/political/military-generator";
 import { Names } from "@/model/society/names-generator";
 import { LocalDB } from "@/services/local-db";
 import { t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
 import { notify } from "@/utils/notices";
 import { rn } from "@/utils/number-utils";
 import { deepMerge } from "@/utils/object-utils";
@@ -157,7 +158,7 @@ class OptionsModel {
     } catch (error) {
       // a full storage keeps the last options; the map file still holds the map's own
       if (!(error instanceof DOMException && error.name === "QuotaExceededError")) throw error;
-      console.error(error);
+      log.error(error);
       const message = t(
         "Browser storage is full, so the latest settings are not kept in this browser. They are safe in the .map file: save the map to keep them"
       );

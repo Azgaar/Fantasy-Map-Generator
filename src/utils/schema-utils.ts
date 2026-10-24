@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { log } from "./logger";
 
 export const positive = z.number().positive();
 export const nonNegative = z.number().nonnegative();
@@ -40,14 +41,14 @@ export function parseSections<T extends Record<string, unknown>>(
 
     if (reparsed?.success) {
       const stripped = parsed.error.issues.every(issue => issue.code === "unrecognized_keys");
-      console.warn(
+      log.warn(
         stripped
           ? `${label}: unknown "${section}" keys stripped`
           : `${label}: invalid "${section}" values replaced with defaults`
       );
       result[section] = reparsed.data;
     } else {
-      console.warn(`${label}: invalid or missing "${section}", default used`);
+      log.warn(`${label}: invalid or missing "${section}", default used`);
       result[section] = fallback;
     }
   }

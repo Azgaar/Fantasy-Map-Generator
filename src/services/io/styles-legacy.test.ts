@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import { expect, test, vi } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { log } from "@/utils/logger";
 import "@/model/physical/relief-generator"; // the models own the icon sets that tell references from text
 import "@/model/political/burgs-generator";
 import "@/model/economy/goods-generator";
@@ -20,6 +21,14 @@ import {
 } from "./styles-legacy";
 import fixture from "./styles-legacy-default.fixture.json";
 import serializerFixture from "./styles-legacy-serializer.fixture.json";
+
+// these tests check warnings, which the test setup silences
+beforeEach(() => {
+  log.enabled.warn = true;
+});
+afterEach(() => {
+  log.enabled.warn = false;
+});
 
 test("detects the legacy selector-keyed format", () => {
   expect(isLegacyPreset(fixture)).toBe(true);

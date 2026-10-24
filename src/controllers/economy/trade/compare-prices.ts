@@ -19,7 +19,7 @@ import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 
 const dialogId = "marketsGoodCompare" as const;
-const position = { my: "right top", at: "left-10 top", collision: "fit" };
+const position = { my: "right top", at: "left-10 top" };
 const columns: EditorColumn<Market>[] = [
   { key: "color", width: "1.6em", permanent: true },
   {

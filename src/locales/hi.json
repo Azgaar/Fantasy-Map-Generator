@@ -1590,6 +1590,7 @@
   "Manufacturing step": "निर्माण का चरण",
   "Map": "मानचित्र",
   "Map URL is copied to clipboard": "मानचित्र का URL क्लिपबोर्ड पर कॉपी हो गया",
+  "Map cannot be loaded in EDIT mode, please complete the edit and retry": "मानचित्र EDIT मोड में लोड नहीं किया जा सकता, कृपया संपादन पूरा करें और फिर प्रयास करें",
   "Map cannot be saved in EDIT mode, please complete the edit and retry": "मानचित्र EDIT मोड में सहेजा नहीं जा सकता, कृपया संपादन पूरा करें और फिर प्रयास करें",
   "Map coordinates on globe": "ग्लोब पर मानचित्र के निर्देशांक",
   "Map is saved to the browser storage": "मानचित्र ब्राउज़र स्टोरेज में सहेजा गया",

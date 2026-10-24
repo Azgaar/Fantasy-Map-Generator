@@ -36,7 +36,7 @@ import { escapeHtml } from "@/utils/string-utils";
 
 const dialogId = "featuresOverview" as const;
 const CSV_COLUMNS = ["Id", "Name", "Type", "Subtype", "Group", "Tags", "Area", "Map area", "Cut by border"];
-const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 let filterState: { search: string; type: string; subtype: string };
 
 const columns: EditorColumn<Feature>[] = [

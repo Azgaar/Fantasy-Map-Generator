@@ -592,7 +592,8 @@ layers registry, `Controllers`, `Services` and a few app commands. `read_map` sc
 by name, so `pack.burgs` works there as `FMG.pack.burgs` does in the console.
 
 - **One-way.** The app never reads `window.FMG`, and TypeScript does not declare it: a module imports
-  what it calls.
+  what it calls. The one reader is the `read_map` runtime, which is the script side: it spreads the
+  members into each script's scope at run time.
 - **Add, don't bridge.** A new public singleton or command is one line in `fmg.ts`. The Assistant's
   Globals doc is generated from that file (`npm run generate:assistant-context`), so it stays in step.
 

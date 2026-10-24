@@ -1,4 +1,4 @@
-// The app announces a finished map by appending to `FMG.mapHistory` (see src/services/map-history.ts).
+// The app announces a finished map by appending to `FMG.mapHistory` (see src/model/map-history.ts).
 // It records every map produced this session, so one seam answers both "is a map ready?" and "is this
 // a different map from the one I saw before?" - which a bare boolean flag cannot.
 import type { Page } from "@playwright/test";

@@ -6,6 +6,7 @@ import { Options } from "@/model/options/options-model";
 import type { IconPaint } from "@/types/icons";
 import { sanitizeSvgIcon } from "@/utils/file-utils";
 import { t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
 import { findEl } from "@/utils/node-utils";
 import { notify } from "@/utils/notices";
 import { escapeHtml } from "@/utils/string-utils";
@@ -367,7 +368,7 @@ class IconLibrary {
       () => void this.settled.set(set, "loaded"),
       error => {
         this.settled.set(set, "failed");
-        console.error(`Failed to load ${set} icons`, error);
+        log.error(`Failed to load ${set} icons`, error);
         notify(t("Cannot load {{set}} icons. Reload the page or retry the action.", { set }), "error", 8000);
       }
     );

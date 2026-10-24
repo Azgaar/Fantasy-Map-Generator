@@ -33,8 +33,8 @@ import { escapeHtml } from "@/utils/string-utils";
 import { domainMismatchMessage, JourneyPathEditor, recomputeSegment } from "./journey-path-editor";
 
 const dialogId = "journeyEditor" as const;
-const MAP_POSITION = { my: "left top", at: "left+10 top+10", of: "#map", collision: "fit" };
-const OVERVIEW_POSITION = { my: "right top", at: "right bottom+10", of: "#journeysOverview", collision: "fit" };
+const MAP_POSITION = { my: "left top", at: "left+10 top+10", of: "#map" };
+const OVERVIEW_POSITION = { my: "right top", at: "right bottom+10", of: "#journeysOverview" };
 
 let editingJourneyId: number | null = null;
 

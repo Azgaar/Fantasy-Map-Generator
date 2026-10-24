@@ -382,4 +382,21 @@ describe("Dialog messages", () => {
     expect(document.querySelector(".dialog-window")).toBeNull();
     expect(Dialog.isOpen("test")).toBe(false);
   });
+
+  it("takes a destroyed modal's overlay with it", () => {
+    addContent("test");
+    Dialog.open("test", { modal: true });
+    Dialog.destroy("test");
+    expect(document.querySelector(".dialog-overlay")).toBeNull();
+  });
+
+  it("replaces the class of the previous options when reopened or updated", () => {
+    addContent("test");
+    Dialog.open("test", { className: "first" });
+    Dialog.open("test", { className: "second" });
+    expect(windowOf("test").classList.contains("first")).toBe(false);
+    expect(windowOf("test").classList.contains("second")).toBe(true);
+    Dialog.update("test", { className: "third" });
+    expect([...windowOf("test").classList].filter(name => ["second", "third"].includes(name))).toEqual(["third"]);
+  });
 });

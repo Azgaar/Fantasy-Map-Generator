@@ -1590,6 +1590,7 @@
   "Manufacturing step": "Етап виробництва",
   "Map": "Карта",
   "Map URL is copied to clipboard": "URL карти скопійовано в буфер обміну",
+  "Map cannot be loaded in EDIT mode, please complete the edit and retry": "Карту не можна завантажити в режимі редагування. Завершіть редагування й повторіть спробу",
   "Map cannot be saved in EDIT mode, please complete the edit and retry": "Карту не можна зберегти в режимі редагування. Завершіть редагування й повторіть спробу",
   "Map coordinates on globe": "Координати карти на глобусі",
   "Map is saved to the browser storage": "Карту збережено в сховищі браузера",

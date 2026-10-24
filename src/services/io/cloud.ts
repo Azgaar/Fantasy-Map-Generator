@@ -43,7 +43,6 @@ interface DropboxTokenResult {
 interface DropboxProvider {
   name: string;
   clientId: string;
-  authWindow: Window | null;
   pendingAuth: Promise<void> | null;
   token: string | null;
   api: Dropbox | null;
@@ -72,7 +71,6 @@ const getTokenExpiry = (provider: string) => Number(localStorage.getItem(`${lSKe
 const dropbox: DropboxProvider = {
   name: "dropbox",
   clientId: "pdr9ae64ip0qno4",
-  authWindow: null,
   pendingAuth: null,
   token: null,
   api: null,
@@ -158,7 +156,6 @@ const dropbox: DropboxProvider = {
     const left = window.innerWidth / 2 - width / 2;
     const top = window.innerHeight / 2 - height / 2.5;
     const popup = window.open("./dropbox.html", "auth", `width=${width}, height=${height}, top=${top}, left=${left}`);
-    this.authWindow = popup;
     if (!popup) {
       const message = sentences(t("Dropbox sign-in window was blocked"), t("Allow popups for this site and retry"));
       this.returnError(message);

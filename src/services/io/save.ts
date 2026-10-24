@@ -1,6 +1,7 @@
 // Save the whole .map project to storage, machine or cloud
 
 import { GraphOverride } from "@/model/graph/graph-override";
+import { mapHistory } from "@/model/map-history";
 import { Names } from "@/model/society/names-generator";
 import { Notes } from "@/model/story/notes";
 import { Layers } from "@/renderers/layers";
@@ -9,7 +10,6 @@ import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
 import { getFileName } from "@/services/io/file-name";
 import { LocalDB } from "@/services/local-db";
-import { mapHistory } from "@/services/map-history";
 import { savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
 import { Dialog } from "@/ui/dialog/dialog";

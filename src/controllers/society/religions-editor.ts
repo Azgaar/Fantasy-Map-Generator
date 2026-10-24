@@ -53,7 +53,7 @@ const CSV_COLUMNS = [
   "Tags"
 ];
 const LEGEND_NAME = "Religions"; // the legend box this editor toggles
-const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 let filterState: { showExtinct: boolean; search?: string };
 
 const columns: EditorColumn<Religion>[] = [

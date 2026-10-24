@@ -62,6 +62,10 @@ iframe {
   width: 100%;
 }
 
+.pointer-dragging iframe {
+  pointer-events: none; /* an iframe would swallow the pointer of a drag passing over it */
+}
+
 #map {
   background-color: #000000;
   mask-mode: alpha;

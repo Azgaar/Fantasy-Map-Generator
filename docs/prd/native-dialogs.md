@@ -149,7 +149,7 @@ export const Dialog = new DialogManager();
 - `open` wraps an existing content element (rendered by the controller into `#dialogs`, as today) in a window and shows it synchronously. Code after `open` can rely on the window existing, which replaces the `open` callback.
 - Re-opening an open id updates its options and raises it without creating a second window.
 - `close` (from ✕, Escape, `closeAll` or a direct call) runs `beforeClose`. If that returns `false` the dialog stays open. Otherwise the overlay is removed, focus is restored, `onClose` and `dialog:close` run exactly once, and the window **and** its content are removed. No separate destroy step exists and no wrapper can be orphaned.
-- A `persistent` dialog is hidden instead of removed and keeps its content: the Assistant (draft, scroll and in-flight work), the shared `#alert` message window and the panes built once at load (save, load, export, PNG tiles, advanced options).
+- A `persistent` dialog is hidden instead of removed and keeps its content: the Assistant (draft, scroll and in-flight work) and the panes built once at load (save, load, export, PNG tiles, advanced options). Messages are not persistent: each gets a window of its own, removed on close.
 - `isOpen(id)` replaces the `offsetParent` and `ui-dialog-content` checks.
 - A window is never reparented after creation, and raising doesn't move it in the DOM. `burg-editor` keeps setting its iframe `src` only after `open`.
 
@@ -170,12 +170,12 @@ export const Dialog = new DialogManager();
   - from `index.css`: `.ui-widget-header`, `button.ui-button:disabled`, `.ui-dialog` `user-select`, `button.pressed`, range and number inputs, `.disabled`, `.dialog` scrollbars, `max-width` and the `> div` width rule.
 - No other stylesheet or injected `<style>` targets the chrome's internal classes. Controllers style only their own content. A controller that needs a chrome variation gets it from an option (`className`) or a documented CSS custom property, not from selectors on internals. The minimap's zero padding and the Assistant's layout are rewritten that way.
 - Content stays in the light DOM, so the app's global content styles (icons, buttons, tables, `data-tip` tooltips) apply unchanged.
-- The window classes are `.dialog-window`, `.dialog-titlebar`, `.dialog-title`, `.dialog-titlebar-button` (plus `-reset`, `-collapse`, `-close`), `.dialog-buttonpane`, `.dialog-buttonset`, `.dialog-resize-{n,e,s,w,ne,nw,se,sw}` and `.dialog-overlay`. Content keeps its `.dialog` class.
+- The window classes are `.dialog-window`, `.dialog-titlebar`, `.dialog-title`, `.dialog-titlebar-button` (plus `-reset`, `-collapse`, `-close`), `.dialog-buttonpane`, `.dialog-buttonset`, `.dialog-resize-{n,e,s,w,ne,nw,se,sw}` and `.dialog-overlay`. Content keeps its `.dialog` class. The overlay is the window's sibling, so it is the one rule not scoped under `.dialog-window`; the `.pointer-dragging` iframe rule belongs to `ui/pointer-drag.ts` and lives in `index.css`.
 
 ### Placement
 
 - Accepts the existing `{ my, at, of }` syntax: horizontal `left|center|right` and vertical `top|center|bottom` keywords with `±N` pixel or `%` offsets. `of` takes a selector, an element or `window`. A missing `of` element falls back to `window`. The default is `{ my: "center", at: "center", of: window }`.
-- Placement always fits, as `collision: "fit"` does: the window is shifted to stay inside the viewport, and the top edge and titlebar are never above it.
+- Placement always fits, so there is no `collision` option: the window is shifted to stay inside the viewport, and the top edge and titlebar are never above it.
 - A saved position overrides the default and is clamped to the viewport. Saved `{ top, left }` values keep their meaning (viewport pixels of the window's top-left), so existing `fmg-dialog-state` entries stay valid.
 - A drag stop makes the dropped spot the dialog's position for later re-placement, as jQuery does.
 

@@ -1,9 +1,9 @@
 // The map seed: where it comes from, and the UI to revisit or share it
 
 import Alea from "alea";
+import { mapHistory } from "@/model/map-history";
 import { Options } from "@/model/options/options-model";
 import { Pins } from "@/model/options/pins";
-import { mapHistory } from "@/services/map-history";
 import { Dialog } from "@/ui/dialog/dialog";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";

@@ -1604,6 +1604,7 @@
   "Manufacturing step": "Manufacturing step",
   "Map": "Map",
   "Map URL is copied to clipboard": "Map URL is copied to clipboard",
+  "Map cannot be loaded in EDIT mode, please complete the edit and retry": "Map cannot be loaded in EDIT mode, please complete the edit and retry",
   "Map cannot be saved in EDIT mode, please complete the edit and retry": "Map cannot be saved in EDIT mode, please complete the edit and retry",
   "Map coordinates on globe": "Map coordinates on globe",
   "Map is saved to the browser storage": "Map is saved to the browser storage",

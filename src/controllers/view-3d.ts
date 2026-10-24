@@ -190,7 +190,7 @@ function toggleOptions(): void {
   Dialog.open("options3d", {
     title: t("3D mode settings"),
     width: "fit-content",
-    position: { my: "right top", at: "right-30 top+10", of: "svg", collision: "fit" },
+    position: { my: "right top", at: "right-30 top+10", of: "svg" },
     onClose: closeOptionsDialog
   });
 

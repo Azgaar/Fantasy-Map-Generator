@@ -1,11 +1,20 @@
 // @vitest-environment jsdom
 // The invariants `options` exists to guarantee, and what a `.map` file carries of it.
 // See docs/architecture/configuration.md#invariants
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getPointsNumber, POINTS_BY_DENSITY } from "@/data/graph-density";
+import { log } from "@/utils/logger";
 import { Options } from "./options-model";
 import type { MapData } from "./options-schema";
 import { Pins } from "./pins";
+
+// these tests check warnings, which the test setup silences
+beforeEach(() => {
+  log.enabled.warn = true;
+});
+afterEach(() => {
+  log.enabled.warn = false;
+});
 
 const UNIT = { icon: "u", name: "cavalry", rural: 0.2, urban: 0.1, crew: 2, power: 1, type: "melee", separate: 0 };
 

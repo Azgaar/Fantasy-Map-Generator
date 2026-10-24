@@ -19,10 +19,10 @@ vi.mock("@/services/io/emblem-image", () => ({ emblemPng: async () => "data:imag
 const regionImage = vi.hoisted(() => vi.fn(async () => "data:image/jpeg;base64,SlBH"));
 vi.mock("@/services/io/export", () => ({ ExportMap: { getRegionImage: regionImage } }));
 
+import { mapHistory } from "@/model/map-history";
 import { Layers } from "@/renderers/layers";
 import { viewport } from "@/renderers/viewport/viewport";
 import type { Chat, Proposal } from "@/services/assistant/chats";
-import { mapHistory } from "@/services/map-history";
 import { AssistantMap } from "./map";
 
 const mapOptions = {

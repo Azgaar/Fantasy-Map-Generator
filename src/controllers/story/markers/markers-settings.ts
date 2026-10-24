@@ -19,7 +19,7 @@ function open(): void {
   Dialog.open(DIALOG_ID, {
     title: t("Markers generation settings"),
     maxHeight: 600,
-    position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" },
+    position: { my: "left top", at: "left+10 top+10", of: "svg" },
     buttons: [
       {
         label: t("Regenerate"),

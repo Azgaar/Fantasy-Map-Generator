@@ -146,8 +146,7 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
     position: {
       my: "center bottom",
       at: "center bottom-40px",
-      of: "svg",
-      collision: "fit"
+      of: "svg"
     }
   });
 

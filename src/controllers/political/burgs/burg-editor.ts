@@ -53,7 +53,7 @@ function open(id: number | string): void {
   Dialog.open("burgEditor", {
     title: t("Edit Burg"),
     onClose: closeBurgEditor,
-    position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" }
+    position: { my: "left top", at: "left+10 top+10", of: "svg" }
   });
   updateBurgValues(); // after opening: moving a loading iframe into the window would restart its navigation
 }

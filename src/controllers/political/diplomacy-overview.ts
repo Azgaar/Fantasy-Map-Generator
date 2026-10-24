@@ -27,7 +27,7 @@ import { t } from "@/utils/i18n";
 import { ensureEl, findEl, getPointer } from "@/utils/node-utils";
 
 const dialogId = "diplomacyOverview" as const;
-const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 
 const columns: EditorColumn<State>[] = [
   {

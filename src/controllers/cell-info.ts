@@ -30,7 +30,7 @@ function open(): void {
   Dialog.open("cellInfo", {
     width: "22em",
     title: t("Cell Details"),
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
+    position: { my: "right top", at: "right-10 top+10", of: "svg" },
     onClose: cleanup
   });
 }

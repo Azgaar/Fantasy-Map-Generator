@@ -1,6 +1,15 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
+import { log } from "@/utils/logger";
 import { parseSections } from "./schema-utils";
+
+// these tests check warnings, which the test setup silences
+beforeEach(() => {
+  log.enabled.warn = true;
+});
+afterEach(() => {
+  log.enabled.warn = false;
+});
 
 const schema = z.strictObject({
   scalar: z.string(),

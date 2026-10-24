@@ -30,7 +30,7 @@ import { rn } from "@/utils/number-utils";
 
 let activeMarketId = 0;
 const dialogId = "marketOverview" as const;
-const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
+const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 type MarketGoodRow = { goodId: number; good: string; stock: number; price: number };
 const columns: EditorColumn<MarketGoodRow>[] = [
   { key: "icon", width: "2.5em", permanent: true },
