@@ -2,7 +2,7 @@ import { color as parseColor } from "d3";
 import * as THREE from "three";
 import { Biomes } from "@/model/physical/biomes-generator";
 import { Rivers } from "@/model/physical/river-generator";
-import { buildGridTexture, type ErosionBakeResult, heightAt } from "./erosion-bake";
+import { buildGridTexture, type ErosionBakeResult, gridSize, heightAt } from "./erosion-bake";
 
 let renderTarget: THREE.WebGLRenderTarget | null = null;
 
@@ -292,14 +292,13 @@ const fragmentShader = /* glsl */ `
     color = mix(color, GOLD * (1.0 + breakup * 0.2), smoothstep(0.15, 0.4, patch) * grassy * 0.4);
     color *= 1.0 + macro * 0.12 + breakup * 0.1;
 
-    // drainage lines read as damp ground: a touch darker and greener, and
-    // only the strongest streams pick up a hint of wet sediment; kept off
-    // steep walls so carved canyons still show rock
-    float riparian = smoothstep(0.1, 0.7, drainage);
+    // drainage lines read as damp ground: a touch darker and greener, ragged
+    // so the valley never shows as a stroked corridor; kept off steep walls so
+    // carved canyons still show rock. Wet sediment hugs the true river banks
+    // below: drainage is flat across the whole valley floor, far wider than the water
+    float riparian = smoothstep(0.1, 0.7, drainage + clump * 0.15);
     float flatGround = 1.0 - smoothstep(ROCK_SLOPE_LO, ROCK_SLOPE_HI, slope);
     color = mix(color, color * vec3(0.78, 0.95, 0.72), riparian * 0.5 * flatGround);
-    float stream = smoothstep(0.8, 0.97, drainage);
-    color = mix(color, SEDIMENT * (1.0 + breakup * 0.2), stream * 0.25 * flatGround);
 
     // dirt breaks through on moderate slopes and collects in eroded gullies
     float dirtBlend = smoothstep(ROCK_SLOPE_LO - 0.35, ROCK_SLOPE_LO + 0.15, slope + breakup * 0.5);
@@ -531,7 +530,7 @@ export function generateSatelliteTexture(
         uBiome: { value: biomeTexture },
         uResolution: { value: new THREE.Vector2(outputW, outputH) },
         uFieldSize: { value: new THREE.Vector2(cols, rows) },
-        uGridSize: { value: new THREE.Vector2(climateTexture.image.width, climateTexture.image.height) },
+        uGridSize: { value: gridSize() },
         uSlopeScale: {
           value: new THREE.Vector2(
             worldPerHeight / (options.map.graph.width / cols),

@@ -118,6 +118,8 @@ river drops).
 - **Screenshot** button: saves the current 3D view as a JPEG.
 - **OBJ export** button: exports the current terrain mesh (dense if eroded terrain is active)
   as a `.obj` file. Hidden in Globe mode.
+- **Reset** button: after a confirmation, restores every 3D setting to its default and reopens
+  the scene with them.
 
 ## Globe view
 
@@ -131,8 +133,10 @@ river drops).
 
 ## Settings & lifecycle notes
 
-- All 3D options live in `ThreeD.options` (an in-memory object, not persisted across page
-  reloads — every session starts from the defaults described above).
+- All 3D options live in `options.app.threeD` and are saved with the app options, so they
+  survive reloads; the Reset button brings back the defaults described above.
+- A scene build (opening the view, or a setting that rebuilds the mesh or globe) pins a
+  "Loading…" tooltip over any edit-mode hint until the new scene is on screen.
 - `ThreeD.update()` refreshes the current scene (texture/heightmap) without rebuilding camera
   controls; `ThreeD.redraw()` rebuilds the mesh/geometry — used after settings that change
   geometry or baked data.
@@ -140,4 +144,5 @@ river drops).
   configuration changes all trigger a 3D refresh automatically if a 3D canvas is open.
 - `ThreeD.stop()` (called when returning to Standard view) disposes all three.js resources —
   geometry, materials, textures, the erosion bake cache, satellite/river-flow textures, and
-  animation loops — to avoid leaking GPU memory between sessions.
+  animation loops — then drops its references to the scene graph, so neither GPU nor heap
+  memory outlives the session.

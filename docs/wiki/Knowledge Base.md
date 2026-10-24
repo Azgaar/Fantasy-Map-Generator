@@ -830,7 +830,7 @@ Open Tools -> Markets and click on the compare button, or open a good in the Goo
 
 ### Is there a 3D view?
 
-Yes. Open the Layers tab and use the View mode buttons at its bottom: Standard, 3D scene and Globe. The 3D scene shows your heightmap as a 3D landscape. The settings dialog opens with it (press O to toggle it) and lets you change height scale, lighting, sun position, time of day presets, sky and water, 3D labels and more. The 3D view is presentation-only, you cannot edit the map while it's open
+Yes. Open the Layers tab and use the View mode buttons at its bottom: Standard, 3D scene and Globe. The 3D scene shows your heightmap as a 3D landscape. The settings dialog opens with it (press O to toggle it) and lets you change height scale, lighting, sun position, time of day presets, sky and water, 3D labels and more; its reset button restores the default settings. The 3D view is presentation-only, you cannot edit the map while it's open
 
 ### Can I see my map as a globe?
 

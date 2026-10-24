@@ -38,6 +38,14 @@ const setMapImageSource = (source: MapImage): void => {
   mapImage = source;
 };
 
+type BuildListener = (building: boolean) => void;
+let onBuild: BuildListener = () => {};
+
+/** The controller hears when a scene (re)build starts and when the latest one is on screen */
+const setBuildListener = (listener: BuildListener): void => {
+  onBuild = listener;
+};
+
 type LabelOptions = {
   text: string;
   font: string;
@@ -91,15 +99,13 @@ const create = async (canvas: HTMLCanvasElement, type = "viewMesh") => {
     notify(t("Cannot load 3d library"), "error", 4000);
     return false;
   });
-  if (!started) {
-    active = false;
-    setViewMode("standard"); // the scene never came up, so the flat map is what is on screen
-  }
+  if (!started) stop(); // free what was built before the failure; the flat map is what is on screen
   return started;
 };
 
 // redraw 3d scene
 const redraw = () => {
+  if (!active) return;
   deleteLabels();
   scene.remove(mesh);
   Renderer.setSize(Renderer.domElement.width, Renderer.domElement.height);
@@ -110,6 +116,7 @@ const redraw = () => {
 
 // update 3d texture
 const update = () => {
+  if (!active) return;
   if (isGlobeView()) updateGlobeTexure();
   else update3dTexture();
 };
@@ -118,6 +125,9 @@ const update = () => {
 const stop = () => {
   active = false;
   sceneBuild++;
+  setViewMode("standard");
+  onBuild(false);
+  if (!Renderer) return; // never started, or stopped already
   if (controls) controls.dispose();
   stopAnimation();
   if (texture) texture.dispose();
@@ -146,9 +156,15 @@ const stop = () => {
   scene.remove(ambientLight);
   scene.remove(waterMesh);
 
+  // dispose() frees GPU memory only: drop the scene graph so geometry arrays, texture images and the canvas can be collected
   texture = null;
-
-  setViewMode("standard");
+  Renderer = undefined!;
+  scene = undefined!;
+  camera = undefined!;
+  controls = undefined!;
+  material = undefined!;
+  geometry = undefined!;
+  mesh = undefined!;
 };
 
 const setScale = (scale: number) => {
@@ -228,6 +244,18 @@ const toggle3dSubdivision = () => {
   Options.set(o => (o.app.threeD.subdivide = !o.app.threeD.subdivide));
   redraw();
 };
+
+// Keep r140's mouse feel. r186 scales the wheel step by deltaY, which crawls on trackpads and macOS wheels;
+// r140 zoomed a fixed step per event. r186 MapControls drags the ground point under the cursor 1:1, ignoring
+// panSpeed; r140 panned by the screen delta times panSpeed, as OrbitControls still does
+const orbitMousePan = (OrbitControls.prototype as unknown as { _handleMouseMovePan: (event: PointerEvent) => void })
+  ._handleMouseMovePan;
+function withR140Input<T extends OrbitControls>(controls: T): T {
+  return Object.assign(controls, {
+    _getZoomScale: () => 0.95 ** controls.zoomSpeed,
+    _handleMouseMovePan: orbitMousePan
+  });
+}
 
 function syncErosionUI() {
   const checkbox = findEl<HTMLInputElement>("options3dErosion");
@@ -340,7 +368,7 @@ async function newMesh(canvas: HTMLCanvasElement) {
 
   camera = new THREE.PerspectiveCamera(70, canvas.width / canvas.height, 0.1, 2000);
   camera.position.set(0, 400, 500); // Set initial camera position for isometric view
-  controls = new MapControls(camera, canvas); // Google Maps-style navigation
+  controls = withR140Input(new MapControls(camera, canvas)); // Google Maps-style navigation
 
   // Set initial target at map center
   if (controls.target) controls.target.set(0, 0, 0);
@@ -629,6 +657,24 @@ function setMapTexture(next: THREE.Texture | null) {
 async function createMesh(width: number, height: number) {
   if (!scene || !Renderer) return;
   const build = ++sceneBuild;
+  onBuild(true);
+  try {
+    await paintedFrame(); // the bake blocks the main thread: let the loading tip show first
+    if (build !== sceneBuild) return;
+    await buildMesh(build, width, height);
+  } finally {
+    if (build === sceneBuild) onBuild(false); // a newer build reports for itself
+  }
+}
+
+// a rendered frame, or a short timeout where a background tab holds animation frames back
+const paintedFrame = () =>
+  new Promise<void>(resolve => {
+    requestAnimationFrame(() => setTimeout(resolve));
+    setTimeout(resolve, 100);
+  });
+
+async function buildMesh(build: number, width: number, height: number) {
   stopWaterAnimation(); // restarted below if the satellite texture applies
 
   // Build lookup map from grid cell index to pack cell index
@@ -866,7 +912,7 @@ async function newGlobe(canvas: HTMLCanvasElement) {
   camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height, 0.1, 1000);
   camera.translateZ(5);
 
-  controls = new OrbitControls(camera, Renderer.domElement);
+  controls = withR140Input(new OrbitControls(camera, Renderer.domElement));
   controls.zoomSpeed = 0.25;
   controls.minDistance = 1.5;
   controls.maxDistance = 10;
@@ -890,6 +936,7 @@ async function newGlobe(canvas: HTMLCanvasElement) {
 
 async function updateGlobeTexure(addMesh?: boolean) {
   const build = addMesh ? ++sceneBuild : sceneBuild; // a texture refresh must not cancel a pending rebuild
+  if (addMesh) onBuild(true);
   const world = options.map.geography.coordinates.latT > 179; // define if map covers whole world
 
   // texture size
@@ -925,9 +972,18 @@ async function updateGlobeTexure(addMesh?: boolean) {
     ctx.drawImage(img2, dx, dy, mapWidth, mapHeight);
     setMapTexture(new THREE.CanvasTexture(ctx.canvas));
     material.map = texture;
-    if (addMesh) addGlobe3dMesh();
+    if (!addMesh) return;
+    addGlobe3dMesh();
+    onBuild(false);
   };
-  img2.src = await mapImage("mesh", { noScaleBar: true, fullMap: true, noVignette: true });
+  const failed = () => {
+    if (addMesh && build === sceneBuild) onBuild(false);
+  };
+  img2.onerror = failed;
+  img2.src = await mapImage("mesh", { noScaleBar: true, fullMap: true, noVignette: true }).catch(error => {
+    failed();
+    throw error;
+  });
 }
 
 function addGlobe3dMesh() {
@@ -1102,6 +1158,7 @@ export {
   exportOBJ,
   redraw,
   screenshotUrl,
+  setBuildListener,
   setColors,
   setErosionDetail,
   setErosionOctaves,

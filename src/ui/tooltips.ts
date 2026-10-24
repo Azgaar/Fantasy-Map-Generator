@@ -54,9 +54,24 @@ export const loadingTip = {
   end(): void {
     if (--pendingLoads > 0) return;
     pendingLoads = 0;
-    clearMainTip();
+    showMainTip(); // back to whatever is pinned, e.g. an edit mode's hint
   }
 };
+
+/** Pin a message over the main tip; the returned function puts the covered one back, unless another was pinned
+ * since. A timed tip is not brought back: its time ran while covered */
+export function overlayMainTip(message: string, type: TipType = "info"): () => void {
+  const tooltip = getTooltip();
+  if (!tooltip) return () => {};
+  const covered = autoClearTimeout ? { main: "", color: "" } : { ...tooltip.dataset };
+  tip(message, true, type);
+  return () => {
+    if (tooltip.dataset.main !== message) return;
+    tooltip.dataset.main = covered.main || "";
+    tooltip.dataset.color = covered.color || "";
+    showMainTip();
+  };
+}
 
 export function showMainTip(): void {
   const tooltip = getTooltip();

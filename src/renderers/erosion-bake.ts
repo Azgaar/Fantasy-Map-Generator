@@ -117,14 +117,76 @@ function buildHeightTexture() {
   return buildGridTexture(data);
 }
 
-/** linear-filtered RGBA texture over the grid raster from 4 bytes per grid cell */
+const GRID_TEXTURE_WIDTH = 1024; // upsampled texels across: ~8 output px each at 8K, too fine to show a lattice
+
+/** linear-filtered RGBA texture over the grid raster from 4 bytes per grid cell. Bilinear filtering of one texel
+ * per cell paints cells as squares and creases slopes along the lattice, so the raster is Catmull-Rom upsampled,
+ * kept in half floats: bytes would terrace the smooth slopes. Shaders read the same 0..1 values and address the
+ * texture in cells, by gridSize() */
 export function buildGridTexture(cellData: Uint8Array): THREE.DataTexture {
   const raster = Grid.getRaster();
-  const pixels = Grid.rasterize(cellData, raster, 4);
-  const texture = new THREE.DataTexture(pixels, raster.width, raster.height, THREE.RGBAFormat, THREE.UnsignedByteType);
+  const factor = Math.max(1, Math.min(8, Math.round(GRID_TEXTURE_WIDTH / raster.width)));
+  const pixels = upsampleCubic(Grid.rasterize(cellData, raster, 4), raster.width, raster.height, factor);
+  const [width, height] = [raster.width * factor, raster.height * factor];
+  const texture = new THREE.DataTexture(pixels, width, height, THREE.RGBAFormat, THREE.HalfFloatType);
   texture.minFilter = texture.magFilter = THREE.LinearFilter;
   texture.needsUpdate = true;
   return texture;
+}
+
+/** grid raster size in cells, the unit grid-texture shaders measure in */
+export function gridSize(): THREE.Vector2 {
+  const raster = Grid.getRaster();
+  return new THREE.Vector2(raster.width, raster.height);
+}
+
+// output texel o samples the source at (o + 0.5) / factor - 0.5: the same extent, cell centers kept in place
+function cubicTaps(size: number, factor: number) {
+  const index = new Int32Array(size * factor * 4);
+  const weight = new Float32Array(size * factor * 4);
+  for (let o = 0; o < size * factor; o++) {
+    const s = (o + 0.5) / factor - 0.5;
+    const i = Math.floor(s);
+    const t = s - i;
+    const t2 = t * t;
+    const t3 = t2 * t;
+    const w = [(-t3 + 2 * t2 - t) / 2, (3 * t3 - 5 * t2 + 2) / 2, (-3 * t3 + 4 * t2 + t) / 2, (t3 - t2) / 2];
+    for (let k = 0; k < 4; k++) {
+      index[o * 4 + k] = Math.min(Math.max(i - 1 + k, 0), size - 1);
+      weight[o * 4 + k] = w[k];
+    }
+  }
+  return { index, weight };
+}
+
+// separable Catmull-Rom: passes through each cell's value with a continuous slope; bytes in, 0..1 half floats out
+function upsampleCubic(src: Uint8Array, width: number, height: number, factor: number): Uint16Array {
+  const outWidth = width * factor;
+  const xs = cubicTaps(width, factor);
+  const ys = cubicTaps(height, factor);
+
+  const rows = new Float32Array(outWidth * height * 4);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < outWidth; x++) {
+      for (let c = 0; c < 4; c++) {
+        let value = 0;
+        for (let k = 0; k < 4; k++) value += xs.weight[x * 4 + k] * src[(y * width + xs.index[x * 4 + k]) * 4 + c];
+        rows[(y * outWidth + x) * 4 + c] = value;
+      }
+    }
+  }
+
+  const out = new Uint16Array(outWidth * height * factor * 4);
+  for (let y = 0; y < height * factor; y++) {
+    for (let x = 0; x < outWidth; x++) {
+      for (let c = 0; c < 4; c++) {
+        let value = 0;
+        for (let k = 0; k < 4; k++) value += ys.weight[y * 4 + k] * rows[(ys.index[y * 4 + k] * outWidth + x) * 4 + c];
+        out[(y * outWidth + x) * 4 + c] = THREE.DataUtils.toHalfFloat(Math.min(Math.max(value / 255, 0), 1)); // clamps the overshoot
+      }
+    }
+  }
+  return out;
 }
 
 // R: land mask blurred so its 0.5 contour sits exactly on the true vector
@@ -352,7 +414,67 @@ function chaikinSmooth(points: RiverPoint[], iterations: number): RiverPoint[] {
   return result;
 }
 
-// Valley: rivers stroked in widening, dimming passes
+const VALLEY_REACH = 7; // core half-widths from the centerline where the valley fades out
+const WIDTH_STEPS = 4; // core width is carried in G in quarter pixels: cores are 1-3 px on low-res bakes
+
+// 1 at the core edge (g = 1 half-width from the centerline) easing to 0 at VALLEY_REACH; fitted to the stepped
+// strokes it replaces (255/140/70/30 at 1/2/3.4/5.2), whose plateaus drew hard-edged corridors and terraced beds
+function valleyProfile(g: number) {
+  const t = Math.min(Math.max((g - 5) / (VALLEY_REACH - 5), 0), 1);
+  return Math.exp(-0.55 * (g - 1)) * (1 - t * t * (3 - 2 * t));
+}
+
+// two-pass chamfer distance from the stroked cores, carrying each pixel's nearest core width along
+function spreadValleys(ctx: CanvasRenderingContext2D) {
+  const { width, height } = ctx.canvas;
+  const image = ctx.getImageData(0, 0, width, height);
+  const px = image.data;
+  const dist = new Float32Array(width * height).fill(Infinity);
+  const halfWidth = new Float32Array(width * height);
+  // seeded from antialiased coverage, not a threshold: thin diagonal cores would break into beads
+  for (let i = 0; i < dist.length; i++) {
+    const coverage = px[i * 4];
+    if (!coverage) continue;
+    dist[i] = 1 - coverage / 255;
+    halfWidth[i] = (px[i * 4 + 1] * 255) / coverage / WIDTH_STEPS / 2; // the edge dims G with R
+  }
+
+  const relax = (i: number, j: number, step: number) => {
+    if (dist[j] + step < dist[i]) {
+      dist[i] = dist[j] + step;
+      halfWidth[i] = halfWidth[j];
+    }
+  };
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = y * width + x;
+      if (x > 0) relax(i, i - 1, 1);
+      if (y === 0) continue;
+      relax(i, i - width, 1);
+      if (x > 0) relax(i, i - width - 1, Math.SQRT2);
+      if (x < width - 1) relax(i, i - width + 1, Math.SQRT2);
+    }
+  }
+  for (let y = height - 1; y >= 0; y--) {
+    for (let x = width - 1; x >= 0; x--) {
+      const i = y * width + x;
+      if (x < width - 1) relax(i, i + 1, 1);
+      if (y === height - 1) continue;
+      relax(i, i + width, 1);
+      if (x < width - 1) relax(i, i + width + 1, Math.SQRT2);
+      if (x > 0) relax(i, i + width - 1, Math.SQRT2);
+    }
+  }
+
+  for (let i = 0; i < dist.length; i++) {
+    const g = 1 + dist[i] / Math.max(halfWidth[i], 0.5);
+    const value = g < VALLEY_REACH ? 255 * valleyProfile(g) : 0;
+    px[i * 4] = px[i * 4 + 1] = px[i * 4 + 2] = value;
+  }
+  ctx.putImageData(image, 0, 0);
+}
+
+// Valley: river cores stroked once, then a smooth falloff by distance to the nearest core
 function buildRiverCanvas(bakeW: number, bakeH: number) {
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(256, Math.round(bakeW / 4));
@@ -389,31 +511,25 @@ function buildRiverCanvas(bakeW: number, bakeH: number) {
 
   const scale = canvas.width / options.map.graph.width;
   const valleyBase = grid.spacing * 0.6; // minimum valley width in map units
-  const passes = [
-    { grow: 1, gray: 255 },
-    { grow: 2, gray: 140 },
-    { grow: 3.4, gray: 70 },
-    { grow: 5.2, gray: 30 }
-  ];
 
+  // R marks the core, G carries its width for the falloff to scale by
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   ctx.globalCompositeOperation = "lighten";
-  for (const { grow, gray } of passes) {
-    ctx.strokeStyle = `rgb(${gray},${gray},${gray})`;
-    for (const points of riverLines) {
-      for (let k = 0; k < points.length - 1; k++) {
-        const [x0, y0, w0] = points[k];
-        const [x1, y1, w1] = points[k + 1];
-        const valleyWidth = valleyBase + ((w0 + w1) / 2) * 3;
-        ctx.lineWidth = Math.max(1, valleyWidth * grow * scale);
-        ctx.beginPath();
-        ctx.moveTo(x0 * scale, y0 * scale);
-        ctx.lineTo(x1 * scale, y1 * scale);
-        ctx.stroke();
-      }
+  for (const points of riverLines) {
+    for (let k = 0; k < points.length - 1; k++) {
+      const [x0, y0, w0] = points[k];
+      const [x1, y1, w1] = points[k + 1];
+      const coreWidth = Math.max(1, (valleyBase + ((w0 + w1) / 2) * 3) * scale);
+      ctx.strokeStyle = `rgb(255,${Math.min(Math.round(coreWidth * WIDTH_STEPS), 255)},0)`;
+      ctx.lineWidth = coreWidth;
+      ctx.beginPath();
+      ctx.moveTo(x0 * scale, y0 * scale);
+      ctx.lineTo(x1 * scale, y1 * scale);
+      ctx.stroke();
     }
   }
+  spreadValleys(ctx);
 
   // faint drainage channels below the river threshold
   const RIVER_FLUX = 20;
@@ -745,7 +861,7 @@ function runErosionPass(
       uHeight: { value: textures.height },
       uCoast: { value: textures.coast },
       uRivers: { value: textures.rivers },
-      uGridSize: { value: new THREE.Vector2(textures.height.image.width, textures.height.image.height) },
+      uGridSize: { value: gridSize() },
       uResolution: { value: new THREE.Vector2(bakeW, bakeH) },
       uAspect: { value: options.map.graph.height / options.map.graph.width },
       uSeed: { value: (Number.parseInt(options.map.seed, 10) % 1e5 || 1) / 1e5 + 1 },
