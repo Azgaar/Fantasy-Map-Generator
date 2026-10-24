@@ -22,6 +22,9 @@ const TEMPLATE = /* html */ `
     <button id="editCulturesButton" data-tip="${t("Cultures Editor")}" data-shortcut="Shift + C">
       ${t("Cultures")}
     </button>
+    <button id="editAlliancesButton" data-tip="${t("Alliances Editor")}">
+      ${t("Alliances")}
+    </button>
     <button
       id="editDiplomacyButton"
       data-tip="${t("Diplomacy Overview")}"
