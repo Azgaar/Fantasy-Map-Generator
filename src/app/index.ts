@@ -3,12 +3,15 @@ import "@/services/logging";
 import "@/model/globals";
 import "@/model/options/options-defaults";
 import "./chrome/tabs";
+import { changeCellsDensity, syncOptionInputs } from "./chrome/tabs/options-tab";
+import { isLinkable, MAP_COMMANDS } from "./map-commands";
 
 import "@/data/supporters";
 import "@/data/heightmap-templates";
 import "@/data/precreated-heightmaps";
 import "@/model/options/options-model";
 import "@/ui/dialog/system-dialogs";
+import { bindApp } from "@/ui/app-commands";
 import "./chrome/app-info";
 import "@/ui/tooltips";
 import "@/ui/map/map-tooltip";
@@ -16,13 +19,13 @@ import "@/ui/map/zoom";
 import "@/ui/map/viewbox-events";
 import "./hotkeys";
 import "@/renderers/layers";
-import "./layers-presets";
+import { applyLayersPreset, applyURLLayers } from "./layers-presets";
 import "@/ui/map/canvas";
-import "./chrome/io-panes";
+import { pickMapFile, showExportPane } from "./chrome/io-panes";
 import "@/renderers/view-mode";
-import "./chrome/options-panel";
+import { openTab } from "./chrome/options-panel";
 import "./seed";
-import "./lifecycle";
+import { generate, regenerateMap, regeneratePrompt } from "./lifecycle";
 import "@/ui/dialog/dialog-helpers";
 import "@/ui/dialog/sorting";
 import "@/ui/elements/fill-box";
@@ -52,11 +55,3 @@ bindApp({
 });
 
 export { boot } from "./lifecycle";
-
-import { bindApp } from "@/ui/app-commands";
-import { pickMapFile, showExportPane } from "./chrome/io-panes";
-import { openTab } from "./chrome/options-panel";
-import { changeCellsDensity, syncOptionInputs } from "./chrome/tabs/options-tab";
-import { applyLayersPreset, applyURLLayers } from "./layers-presets";
-import { generate, regenerateMap, regeneratePrompt } from "./lifecycle";
-import { isLinkable, MAP_COMMANDS } from "./map-commands";

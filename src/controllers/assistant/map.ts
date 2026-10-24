@@ -1,7 +1,6 @@
 import { Controllers } from "@/controllers";
 import type { Note } from "@/controllers/story/notes-editor";
 import { type EntityType, MapEntities } from "@/model/map-entities";
-import { mapHistory } from "@/model/map-history";
 import {
   convertTemperature,
   formatPrice,
@@ -22,6 +21,7 @@ import { WIKI_PAGES } from "@/services/assistant/provider/knowledge";
 import { imageBlock, type ToolDefinition, type ToolInput } from "@/services/assistant/provider/providers";
 import { runScript } from "@/services/assistant/provider/runtime";
 import type { Region } from "@/services/io/export";
+import { mapHistory } from "@/services/map-history";
 import type { Emblem } from "@/types/emblems";
 import { rn, si } from "@/utils/number-utils";
 import { getBounds } from "@/utils/path-utils";

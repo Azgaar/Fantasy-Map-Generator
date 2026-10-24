@@ -20,10 +20,10 @@ import {
 import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
 import { Production } from "@/model/economy/production-generator";
-import { mapHistory } from "@/model/map-history";
 import { convertTemperature, formatPrice, getArea, getAreaUnit, getHeight, getPrecipitation } from "@/model/units";
 import { Csv } from "@/services/io/csv";
 import { getFileName } from "@/services/io/file-name";
+import { mapHistory } from "@/services/map-history";
 import { closeDialogs, destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
 import { downloadFile } from "@/utils/file-utils";

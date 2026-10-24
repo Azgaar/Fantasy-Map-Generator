@@ -1,6 +1,6 @@
-import { mapHistory } from "@/model/map-history";
 import { Names } from "@/model/society/names-generator";
 import { getFileName } from "@/services/io/file-name";
+import { mapHistory } from "@/services/map-history";
 import { savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
 import { closeDialogs } from "@/ui/dialog/dialog-helpers";

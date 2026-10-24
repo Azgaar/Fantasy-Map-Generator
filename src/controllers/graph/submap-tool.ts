@@ -1,5 +1,4 @@
 import { cellsDensityColor, POINTS_BY_DENSITY } from "@/data/graph-density";
-import { registerMap } from "@/model/map-history";
 import { MapRestoration } from "@/model/map-restoration";
 import { Options } from "@/model/options/options-model";
 import { Burgs } from "@/model/political/burgs-generator";
@@ -8,6 +7,7 @@ import { Layers } from "@/renderers/layers";
 import { undraw } from "@/renderers/undraw";
 import { viewport } from "@/renderers/viewport/viewport";
 import { logStats } from "@/services/logging";
+import { registerMap } from "@/services/map-history";
 import { App } from "@/ui/app-commands";
 import { destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { applyGraphSize, fitMapToScreen, redrawMap } from "@/ui/map/canvas";
