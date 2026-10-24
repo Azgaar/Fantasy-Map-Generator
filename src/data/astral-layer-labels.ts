@@ -4,6 +4,7 @@ import type { LayerButton } from "./layer-labels";
 
 export const ASTRAL_LAYER_TOGGLES = new Map<LayerId, LayerButton>([
   ["texture", { label: "Sector <u>D</u>ust", shortcut: "KeyD" }],
+  ["composition", { label: "<u>C</u>omposition", shortcut: "KeyC" }],
   ["nebulae", { label: "<u>N</u>ebulae", shortcut: "KeyN" }],
   ["starDensity", { label: "<u>P</u>opulation", shortcut: "KeyP" }],
   ["dustDensity", { label: "Dust D<u>e</u>nsity", shortcut: "KeyE" }],

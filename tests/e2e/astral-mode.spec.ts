@@ -64,7 +64,7 @@ test.describe("Astral view mode", () => {
     await expect(page.locator("#viewStandard")).not.toHaveClass(/pressed/);
 
     // the Astral list replaces the standard one
-    for (const id of ["texture", "nebulae", "starDensity", "dustDensity", "systems", "states", "markers"])
+    for (const id of ["texture", "composition", "nebulae", "starDensity", "dustDensity", "systems", "states", "markers"])
       await expect(page.locator(layerItem(id))).toBeVisible();
     for (const id of ["heightmap", "rivers", "religions", "temperature"])
       await expect(page.locator(layerItem(id))).toHaveCount(0);
@@ -79,18 +79,19 @@ test.describe("Astral view mode", () => {
         .map(option => option.value)
         .sort()
     );
-    expect(visiblePresets).toEqual(["astral", "dustDensity", "empires", "survey", "systems"]);
+    expect(visiblePresets).toEqual(["astral", "composition", "dustDensity", "empires", "survey", "systems"]);
 
     // the mode flag and the chart style are on
     expect(await page.evaluate(() => options.map.astral)).toBe(true);
     expect(await page.evaluate(() => options.map.style.preset)).toBe("astral");
     await expect.poll(() => page.evaluate(() => styles.texture.options.href)).toContain("starfield");
 
-    // the default chart draws systems, empires and hyperlanes; dust, nebulae and density stay off by
-    // button — each is one click away in the same Astral list
+    // the default chart draws systems, empires and hyperlanes; dust, composition, nebulae and
+    // density stay off by button — each is one click away in the same Astral list
     expect(await page.evaluate(() => Layers.isOn("systems"))).toBe(true);
     expect(await page.evaluate(() => Layers.isOn("states"))).toBe(true);
     expect(await page.evaluate(() => Layers.isOn("routes"))).toBe(true);
+    expect(await page.evaluate(() => Layers.isOn("composition"))).toBe(false);
     expect(await page.evaluate(() => Layers.isOn("nebulae"))).toBe(false);
     expect(await page.evaluate(() => Layers.isOn("starDensity"))).toBe(false);
     expect(await page.evaluate(() => Layers.isOn("dustDensity"))).toBe(false);
@@ -157,6 +158,22 @@ test.describe("Astral view mode", () => {
     await page.locator(layerItem("dustDensity")).click();
     await expect.poll(() => page.evaluate(() => Layers.isOn("dustDensity"))).toBe(false);
     await expect(bands).toHaveCount(0);
+  });
+
+  test("Composition tints the biomes and starts off", async ({ page }) => {
+    await enterAstral(page);
+    const fills = page.locator("#composition [data-group] path");
+
+    expect(await page.evaluate(() => Layers.isOn("composition"))).toBe(false);
+    expect(await fills.count()).toBe(0);
+
+    await page.locator(layerItem("composition")).click();
+    await expect.poll(() => page.evaluate(() => Layers.isOn("composition"))).toBe(true);
+    await expect(fills.first()).toBeAttached();
+
+    await page.locator(layerItem("composition")).click();
+    await expect.poll(() => page.evaluate(() => Layers.isOn("composition"))).toBe(false);
+    await expect(fills).toHaveCount(0);
   });
 
   test("leaving restores the previous list, preset, layers and style", async ({ page }) => {

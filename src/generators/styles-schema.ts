@@ -726,6 +726,15 @@ export const stylesSchema = z.strictObject({
     }),
     { effect: "draw" }
   ),
+  composition: z.strictObject({
+    attrs: z.strictObject({ opacity, filter, mask: clip }),
+    groups: z.strictObject({
+      irradiated: variant(densityBand, { label: "Irradiated" }),
+      arable: variant(densityBand, { label: "Arable" }),
+      biomass: variant(densityBand, { label: "Biomass" }),
+      volatiles: variant(densityBand, { label: "Volatiles" })
+    })
+  }),
   dustDensity: z.strictObject({
     attrs: z.strictObject({ opacity, filter, mask: clip }),
     options: z.strictObject({

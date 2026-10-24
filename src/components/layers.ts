@@ -1,4 +1,5 @@
 // Global layers registry: owns layers list, order, and svg skeleton
+import { drawComposition } from "@/renderers/astral/draw-composition";
 import { drawDustDensity } from "@/renderers/astral/draw-dust-density";
 import { drawNebulae } from "@/renderers/astral/draw-nebulae";
 import { drawStarDensity } from "@/renderers/astral/draw-star-density";
@@ -305,6 +306,13 @@ const mapLayers = [
   }),
   new Layer({ id: "landmass", parent: "viewbox", permanent: true, keepContent: true, draw: drawLandmass }),
   new Layer({ id: "texture", element: "texture", parent: "viewbox", draw: drawTexture }),
+  new Layer({
+    id: "composition",
+    parent: "viewbox",
+    attrs: { "pointer-events": "none" }, // decorative tint
+    children: ["irradiated", "arable", "biomass", "volatiles"].map(id => ({ id, tag: "g" })),
+    draw: drawComposition
+  }),
   new Layer({
     id: "nebulae",
     parent: "viewbox",

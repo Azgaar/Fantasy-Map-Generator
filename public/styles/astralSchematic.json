@@ -440,6 +440,47 @@
       }
     }
   },
+  "composition": {
+    "attrs": {
+      "opacity": 0.14,
+      "filter": null,
+      "mask": "url(#land)"
+    },
+    "groups": {
+      "irradiated": {
+        "attrs": {
+          "opacity": 0.8,
+          "fill": "#b99a45",
+          "fill-opacity": 0.8,
+          "filter": null
+        }
+      },
+      "arable": {
+        "attrs": {
+          "opacity": 0.8,
+          "fill": "#6faf7a",
+          "fill-opacity": 0.8,
+          "filter": null
+        }
+      },
+      "biomass": {
+        "attrs": {
+          "opacity": 0.8,
+          "fill": "#3f7f66",
+          "fill-opacity": 0.8,
+          "filter": null
+        }
+      },
+      "volatiles": {
+        "attrs": {
+          "opacity": 0.8,
+          "fill": "#6fb6cc",
+          "fill-opacity": 0.8,
+          "filter": null
+        }
+      }
+    }
+  },
   "coordinates": {
     "attrs": {
       "stroke": "#0f8fa8",

@@ -289,9 +289,16 @@ standalone **Dust Density** layer preset.
 outlines the terrain the hyperlanes visibly avoid; Population and Dust Density can be on together
 without one erasing the other.
 
-### Phase 2 — Composition
+### Phase 2 — Composition ✅
 
 Mapping + renderer + four class groups + button.
+
+Shipped: `biomeClass` (the 13 biomes collapse to four classes; marine is never emitted; custom
+biomes fold into volatiles), `draw-composition` (class isoline fills into the
+`irradiated`/`arable`/`biomass`/`volatiles` groups), the `composition` style element, the Astral
+button ("Composition", `KeyC`) directly above Nebulae, the standalone **Composition** preset
+(texture + composition + scaleBar), a light tint in `astral.json` (layer opacity 0.2) and a
+desaturated variant in `astralSchematic.json` (0.14), defaults injected into every shipped preset.
 
 **Acceptance:** four tints over the dust sheet, none of them drowning the starfield texture; the
 void is untouched (marine never emitted); toggling is clean.
