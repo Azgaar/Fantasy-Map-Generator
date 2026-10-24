@@ -143,8 +143,7 @@ export function renderEditorHeader({ dialogId, columns }: { dialogId: string; co
       .join(" ");
 
     const style = [
-      "white-space:nowrap",
-      column.align ? `text-align:${column.align}` : "",
+      column.align === "right" ? "justify-content:flex-end" : "",
       column.marginLeft ? `margin-left:${column.marginLeft}` : ""
     ]
       .filter(Boolean)
@@ -154,7 +153,8 @@ export function renderEditorHeader({ dialogId, columns }: { dialogId: string; co
       index === lastVisibleIndex
         ? `<button id="${dialogId}ColumnsButton" data-tip="${t("Show or hide columns")}" class="icon-sliders" style="line-height: 0;padding: 0 .2em;"></button>`
         : "";
-    return `<div ${attributes} style="${style}">${column.label ?? ""}${button}</div>`;
+    const label = column.label ? `<span>${column.label}</span>` : "";
+    return `<div ${attributes}${style ? ` style="${style}"` : ""}>${label}${button}</div>`;
   });
   return `<div id="${dialogId}Header" class="header">${cells.join("")}</div>`;
 }

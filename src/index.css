@@ -1338,6 +1338,20 @@ div.header {
   padding: 0 0.2em;
 }
 
+/* a long label is cut with an ellipsis instead of spilling over the next column; the sort icon stays visible */
+.editorDialog .header > [data-col] {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.editorDialog .header > [data-col] > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: normal;
+}
+
 /* cells size to their grid track, not their own content, so long values shrink instead of widening the row */
 .editorDialog .states > * {
   display: flex;
