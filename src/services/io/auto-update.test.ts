@@ -1121,3 +1121,23 @@ describe("v1.156 legend migration", () => {
     expect(document.querySelector("#legend")).toBeNull(); // the live map is the beforeEach one
   });
 });
+
+describe("v1.109 burg groups", () => {
+  it("limits the legacy cities group to the capitals it held", async () => {
+    globalThis.pack = { burgs: [{}] } as unknown as typeof globalThis.pack;
+    const compare = vi.spyOn(versioning, "compareVersions");
+    compare.mockImplementation((_a, b) => ({
+      isOlder: b === "1.109.0" || b === "1.156.0",
+      isNewer: false,
+      isEqual: false
+    }));
+    const svg = /* html */ `<svg id="map"><g id="viewbox"><g id="burgIcons"><g id="cities"></g><g id="towns"></g></g></g></svg>`;
+    await resolveVersionConflicts("1.108.0", savedSvg(svg));
+    compare.mockRestore();
+
+    const [cities, towns] = options.map.burgs.groups;
+    expect(cities).toMatchObject({ name: "cities", features: { capital: true } });
+    expect(towns).toMatchObject({ name: "towns", isDefault: true });
+    expect(towns.features).toBeUndefined();
+  });
+});

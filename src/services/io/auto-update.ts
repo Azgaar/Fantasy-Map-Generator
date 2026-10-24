@@ -1021,7 +1021,16 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       .each(function (_el, index) {
         const name = this.id;
         const isDefault = name === "towns";
-        options.map.burgs.groups.push({ name, active: true, order: index + 1, isDefault, preview: "watabou-city" });
+        // "cities" held the capitals: unconditional, as the first group it would claim every burg
+        const features = name === "cities" ? { capital: true } : undefined;
+        options.map.burgs.groups.push({
+          name,
+          active: true,
+          order: index + 1,
+          isDefault,
+          features,
+          preview: "watabou-city"
+        });
         if (!this.dataset.icon) this.dataset.icon = "#icon-circle";
 
         const size = Number(this.getAttribute("size") || 2) * 2;
