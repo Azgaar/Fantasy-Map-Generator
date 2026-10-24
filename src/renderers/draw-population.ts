@@ -1,5 +1,6 @@
 import { easeSinIn, extent, hsl, select, transition } from "d3";
 import { getCellPopulation } from "@/model/units";
+import { log } from "@/utils/logger";
 import { ensureEl } from "@/utils/node-utils";
 import { getIsolines } from "@/utils/path-utils";
 import { buildFillPaths } from "./isoline-fills";
@@ -57,7 +58,7 @@ function appendBars(
 
 // hue goes from blue (rural) to red (urban) by the urban share; the denser, the darker (log scale from the least to the most populated cell)
 function drawCells(): void {
-  TIME && console.time("drawPopulationCells");
+  log.time("drawPopulationCells");
   const { cells } = pack;
 
   const land = Array.from(cells.i as ArrayLike<number>).filter(cellId => cells.h[cellId] >= 20);
@@ -81,5 +82,5 @@ function drawCells(): void {
   const isolines = getIsolines(pack, cellId => cellColors[cellId] || null, { fill: true, waterGap: true });
   ensureEl("populationCells").innerHTML = buildFillPaths("populationCell", isolines, index => colors[index - 1]);
 
-  TIME && console.timeEnd("drawPopulationCells");
+  log.timeEnd("drawPopulationCells");
 }

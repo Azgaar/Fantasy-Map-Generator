@@ -4,6 +4,7 @@ import { getInverseRelation, RELATIONS } from "@/data/diplomacy";
 import type { Label } from "@/model/annotations/labels-generator";
 import { Markets } from "@/model/economy/markets-generator";
 import { Pack } from "@/model/graph/pack-generator";
+import type { Feature } from "@/model/physical/features-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import { CULTURE_TYPES } from "@/model/society/cultures-generator";
 import { Names } from "@/model/society/names-generator";
@@ -13,6 +14,7 @@ import type { Emblem } from "@/types/emblems";
 import { getMixedColor, getRandomColor, requireColor } from "@/utils/color-utils";
 import { FlatQueue } from "@/utils/flat-queue";
 import { getAdjective, replaceWholeWord, trimVowels } from "@/utils/language-utils";
+import { log } from "@/utils/logger";
 import { minmax, rn } from "@/utils/number-utils";
 import { getPolesOfInaccessibility } from "@/utils/path-utils";
 import { each, gauss, generateSeed, P, ra, rand, rw } from "@/utils/probability-utils";
@@ -57,7 +59,6 @@ export interface State {
   form?: string;
   military?: Regiment[];
   provinces?: number[];
-  temp?: any;
   alert?: number;
   salesTax: number;
   pollTax: number;
@@ -340,8 +341,8 @@ class StatesModule {
     return pack.biomes[biome].cost; // general non-native biome penalty
   }
 
-  private getHeightCost(f: any, h: number, type: string) {
-    if (type === "Lake" && f.type === "lake") return 10; // low lake crossing penalty for Lake cultures
+  private getHeightCost(f: Feature | undefined, h: number, type: string) {
+    if (type === "Lake" && f?.type === "lake") return 10; // low lake crossing penalty for Lake cultures
     if (type === "Naval" && h < 20) return 300; // low sea crossing penalty for Navals
     if (type === "Nomadic" && h < 20) return 10000; // giant sea crossing penalty for Nomads
     if (h < 20) return 1000; // general sea crossing penalty
@@ -352,7 +353,7 @@ class StatesModule {
     return 0;
   }
 
-  private getRiverCost(r: any, i: number, type: string) {
+  private getRiverCost(r: number, i: number, type: string) {
     if (type === "River") return r ? 0 : 100; // penalty for river cultures
     if (!r) return 0; // no penalty for others if there is no river
     return minmax(pack.cells.fl[i] / 10, 20, 100); // river penalty from 20 to 100 based on flux
@@ -377,7 +378,7 @@ class StatesModule {
   }
 
   expandStates() {
-    TIME && console.time("expandStates");
+    log.time("expandStates");
     const { cells, states, cultures, burgs } = pack;
 
     cells.state = cells.state || new Uint16Array(cells.i.length);
@@ -440,11 +441,11 @@ class StatesModule {
       .forEach(b => {
         b.state = cells.state[b.cell]; // assign state to burgs
       });
-    TIME && console.timeEnd("expandStates");
+    log.timeEnd("expandStates");
   }
 
   normalize() {
-    TIME && console.time("normalizeStates");
+    log.time("normalizeStates");
     const { cells, burgs } = pack;
 
     for (const i of cells.i) {
@@ -459,7 +460,7 @@ class StatesModule {
       if (adversaries.length <= buddies.length) continue;
       cells.state[i] = cells.state[adversaries[0]];
     }
-    TIME && console.timeEnd("normalizeStates");
+    log.timeEnd("normalizeStates");
   }
 
   // calculate pole of inaccessibility for each state
@@ -580,11 +581,11 @@ class StatesModule {
 
   // generate Diplomatic Relationships
   generateDiplomacy() {
-    TIME && console.time("generateDiplomacy");
+    log.time("generateDiplomacy");
     const { cells, states } = pack;
     states[0].diplomacy = [];
     // FIRST STATE IS ALWAYS NEUTRAL and contains the history of diplomacy
-    const chronicle = states[0].diplomacy;
+    const chronicle = this.getChronicle();
     const valid = states.filter(s => s.i && !s.removed); // will filter out neutral as i is 0 => false
 
     // Pre-Calculate state area since collectStatistics() hasn't run yet.
@@ -766,13 +767,12 @@ class StatesModule {
           states[a].diplomacy![d] = states[d].diplomacy![a] = "Enemy";
         });
       });
-      // TODO: record war in chronicle to keep state interface clean
-      chronicle.push(war as any); // add a record to diplomatical history
+      chronicle.push(war); // add a record to diplomatical history
     }
     valid.forEach(s => {
       s.tariffs = this.defineTariffs(s);
     });
-    TIME && console.timeEnd("generateDiplomacy");
+    log.timeEnd("generateDiplomacy");
   }
 
   defineTariffs(state: State): TariffRule[] {
@@ -881,7 +881,7 @@ class StatesModule {
       else if (isAnarchy) s.form = "Anarchy";
       else s.form = s.type === "Naval" ? rw(naval) : rw(generic);
 
-      const selectForm = (s: any, tier: number) => {
+      const selectForm = (s: State, tier: number) => {
         const base = pack.cultures[s.culture].base;
 
         if (s.form === "Monarchy") {
@@ -890,8 +890,8 @@ class StatesModule {
           if (s.diplomacy) {
             if (
               form === "Duchy" &&
-              s.neighbors.length > 1 &&
-              rand(6) < s.neighbors.length &&
+              s.neighbors!.length > 1 &&
+              rand(6) < s.neighbors!.length &&
               s.diplomacy.includes("Vassal")
             )
               return "Marches"; // some vassal duchies on borderland
@@ -917,7 +917,7 @@ class StatesModule {
           // Default name is from weighted array, special case for small states with only 1 burg
           if (tier < 2 && s.burgs === 1) {
             if (trimVowels(s.name) === trimVowels(pack.burgs[s.capital].name!)) {
-              s.name = pack.burgs[s.capital].name;
+              s.name = pack.burgs[s.capital].name!;
               return "Free City";
             }
             if (P(0.3)) return "City-state";

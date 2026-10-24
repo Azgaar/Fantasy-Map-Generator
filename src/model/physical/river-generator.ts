@@ -5,6 +5,7 @@ import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
 import { Names } from "@/model/society/names-generator";
 import { replaceWholeWord } from "@/utils/language-utils";
+import { log } from "@/utils/logger";
 import { rn } from "@/utils/number-utils";
 import { meander, projectToNearestEdge } from "@/utils/path-utils";
 import { each, rw } from "@/utils/probability-utils";
@@ -234,7 +235,7 @@ class RiverModule {
 
         // create lake outlet if lake is not in deep depression and flux > evaporation
         const lakes = lakeOutCells[i]
-          ? features.filter((feature: any) => i === feature.outCell && feature.flux > feature.evaporation)
+          ? features.filter(feature => i === feature.outCell && feature.flux > feature.evaporation)
           : [];
         for (const lake of lakes) {
           const lakeCell = cells.c[i].find((c: number) => h[c] < 20 && cells.f[c] === lake.i)!;
@@ -276,7 +277,7 @@ class RiverModule {
         // downhill cell (make sure it's not in the source lake)
         let min = null;
         if (lakeOutCells[i]) {
-          const filtered = cells.c[i].filter((c: number) => !lakes.map((lake: any) => lake.i).includes(cells.f[c]));
+          const filtered = cells.c[i].filter((c: number) => !lakes.map(lake => lake.i).includes(cells.f[c]));
           min = filtered.sort((a: number, b: number) => h[a] - h[b])[0];
         } else if (cells.haven[i]) {
           min = cells.haven[i];
@@ -593,7 +594,7 @@ class RiverModule {
       prevDepressions = depressions;
     }
 
-    depressions && WARN && console.warn(`Unresolved depressions: ${depressions}. Edit heightmap to fix`);
+    depressions && log.warn(`Unresolved depressions: ${depressions}. Edit heightmap to fix`);
   }
 
   addMeandering(riverCells: number[], riverPoints: Point[] | null = null): [number, number, number][] {

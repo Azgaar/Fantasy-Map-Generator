@@ -6,6 +6,7 @@ import { Tags } from "@/model/tags";
 import type { IconSet } from "@/types/icons";
 import type { PackedGraph } from "@/types/packed-graph";
 import { requireColor } from "@/utils/color-utils";
+import { log } from "@/utils/logger";
 import { requireName } from "@/utils/validation-utils";
 
 export interface Good {
@@ -1030,7 +1031,7 @@ export class GoodsModule {
     const good = this.get(goodId);
     if (!good) return;
 
-    TIME && console.time("regenerateGoodPlacement");
+    log.time("regenerateGoodPlacement");
     this.cells = pack.cells;
     if (!this.cells.good || this.cells.good.length !== this.cells.i.length) {
       this.cells.good = new Uint16Array(this.cells.i.length);
@@ -1041,7 +1042,7 @@ export class GoodsModule {
     }
 
     if (!good.distribution || !good.chance) {
-      TIME && console.timeEnd("regenerateGoodPlacement");
+      log.timeEnd("regenerateGoodPlacement");
       return;
     }
 
@@ -1065,7 +1066,7 @@ export class GoodsModule {
       resources[good.i] = (resources[good.i] || 0) + 1;
     }
 
-    TIME && console.timeEnd("regenerateGoodPlacement");
+    log.timeEnd("regenerateGoodPlacement");
   }
 
   restoreDefaults() {
@@ -1112,7 +1113,7 @@ export class GoodsModule {
   }
 
   getStroke(colorHex: string): string {
-    return (color(colorHex) as any).darker(2).hex();
+    return color(colorHex)!.darker(2).hex();
   }
 
   get(i: number): Good | undefined {

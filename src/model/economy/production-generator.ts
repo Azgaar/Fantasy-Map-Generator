@@ -3,6 +3,7 @@ import type { Burg } from "@/model/political/burgs-generator";
 import { States } from "@/model/political/states-generator";
 import type { Zone } from "@/model/political/zones-generator";
 import { DEFAULT_CULTURE_TYPE } from "@/model/society/cultures-generator";
+import { log } from "@/utils/logger";
 import { minmax, rn } from "@/utils/number-utils";
 import type { DemandCategory, Good } from "./goods-generator";
 import { DEMAND_PRIORITY, Goods, getDemandTargets } from "./goods-generator";
@@ -96,10 +97,7 @@ export class ProductionModule {
     const burgPopulation = rn(burg.population || 0, 2);
     const population = Math.min(burgPopulation, MAX_WORKERS);
     if (population < burgPopulation) {
-      WARN &&
-        console.warn(
-          `Burg ${burg.name} (${burg.i}) population ${burgPopulation} is capped at ${MAX_WORKERS} for production`
-        );
+      log.warn(`Burg ${burg.name} (${burg.i}) population ${burgPopulation} is capped at ${MAX_WORKERS} for production`);
     }
     const inventory: number[] = [];
     const demandTargets = getDemandTargets(population);
@@ -181,7 +179,7 @@ export class ProductionModule {
         deal = Markets.buy({ burg: state.burg, good: Goods.get(ingredientId)!, units: fromMarket });
         if (!deal) {
           const message = `Failed to acquire ${rn(fromMarket, 2)} units of ${Goods.get(ingredientId)?.name} from market for production of ${good.name}`;
-          ERROR && console.error(message);
+          log.error(message);
           return;
         }
       }
@@ -208,7 +206,7 @@ export class ProductionModule {
 
     const record: MfgRecord = { goodId: good.i, units: produced, recipe };
     if (cultureModifier !== 1) record.cultureModifier = cultureModifier;
-    if (DEBUG.production) record.candidates = decision.candidates;
+    if (log.debug.production) record.candidates = decision.candidates;
     state.records.push(record);
   }
 
@@ -883,7 +881,7 @@ type MfgRecord = {
   units: number;
   recipe: ProductionRecipeEntry[];
   cultureModifier?: number; // omitted when 1
-  candidates?: readonly ProductionCandidate[]; // recorded only when DEBUG.production is on
+  candidates?: readonly ProductionCandidate[]; // recorded only when log.debug.production is on
 };
 
 type LocalRecord = { goodId: number; units: number };

@@ -316,7 +316,7 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
       .append("g")
       .attr("id", "epxaxis")
       .attr("transform", `translate(${xOffset},${chartHeight + yOffset + 20})`)
-      .call(xAxis as any)
+      .call(xAxis)
       .selectAll("text")
       .style("text-anchor", "center");
 
@@ -324,10 +324,10 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
       .append("g")
       .attr("id", "epyaxis")
       .attr("transform", `translate(${xOffset - 10},${yOffset})`)
-      .call(yAxis as any);
+      .call(yAxis);
 
     // Grid lines
-    const gridStyle = (g: Selection<SVGGElement, unknown, null, undefined>): void => {
+    const gridStyle = (g: Selection<SVGGElement, unknown, HTMLElement, unknown>): void => {
       g.attr("stroke", "lightgrey").attr("stroke-opacity", "0.2").attr("stroke-width", "0.5");
       g.selectAll("path").attr("stroke-width", "0");
     };
@@ -338,7 +338,7 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
       .attr("class", "epgrid")
       .attr("stroke-dasharray", "4 1")
       .attr("transform", `translate(${xOffset},${chartHeight + yOffset})`)
-      .call(gridStyle as any);
+      .call(gridStyle);
 
     chart
       .append("g")
@@ -346,7 +346,7 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
       .attr("class", "epgrid")
       .attr("stroke-dasharray", "4 1")
       .attr("transform", `translate(${xOffset},${yOffset})`)
-      .call(gridStyle as any);
+      .call(gridStyle);
 
     // Burg labels anchored above their curve point with all-pairs overlap avoidance
     const labelsG = chart.append("g").attr("id", "epburglabels");

@@ -46,7 +46,7 @@ export const escapeHtml = (inputString: string): string =>
  * parseTransform("matrix(1, 0, 0, 1, 100, 200)") // returns [1, 0, 0, 1, 100, 200]
  * parseTransform("translate(50, 75)") // returns [50, 75, 0, 0, 0, 1]
  */
-export const parseTransform = (string: string) => {
+export const parseTransform = (string: string | null | undefined) => {
   if (!string) return [0, 0, 0, 0, 0, 1];
 
   const a = string

@@ -1,3 +1,4 @@
+import { log } from "./logger";
 // Reading and writing local files, plus naming downloads and exports.
 
 /** Download data as a file */
@@ -144,7 +145,7 @@ export const getBase64 = (url: string, callback: (result: string | ArrayBuffer |
     const blob = xhr.response as Blob | null;
     // don't inline error pages (e.g. a 404 html document) as image data
     if (xhr.status < 200 || xhr.status >= 300 || !blob?.type.startsWith("image/")) {
-      ERROR && console.error(`Cannot load image ${url}: status ${xhr.status}, type ${blob?.type || "unknown"}`);
+      log.error(`Cannot load image ${url}: status ${xhr.status}, type ${blob?.type || "unknown"}`);
       return callback(null);
     }
     const reader = new FileReader();
@@ -154,11 +155,11 @@ export const getBase64 = (url: string, callback: (result: string | ArrayBuffer |
     reader.readAsDataURL(blob);
   };
   xhr.onerror = () => {
-    ERROR && console.error(`Cannot load image ${url}: network error`);
+    log.error(`Cannot load image ${url}: network error`);
     callback(null);
   };
   xhr.ontimeout = () => {
-    ERROR && console.error(`Cannot load image ${url}: timed out`);
+    log.error(`Cannot load image ${url}: timed out`);
     callback(null);
   };
   xhr.open("GET", url);

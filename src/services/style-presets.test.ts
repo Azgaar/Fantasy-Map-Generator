@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
+
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { log } from "@/utils/logger";
 import "@/model/physical/relief-generator"; // the models own the icon sets that tell references from text
 import "@/model/political/burgs-generator";
 import "@/model/economy/goods-generator";
@@ -11,11 +13,14 @@ const fetchMock = vi.fn();
 beforeEach(() => {
   localStorage.clear();
   vi.stubGlobal("fetch", fetchMock);
-  vi.stubGlobal("ERROR", true);
+  log.enabled.error = true;
   fetchMock.mockReset();
 });
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  log.enabled.error = false;
+});
 
 describe("StylePresets.load", () => {
   test("the default preset comes from the bundle, not the network", async () => {

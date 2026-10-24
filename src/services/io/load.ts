@@ -24,7 +24,6 @@ import { Services } from "@/services";
 import { declareFont, fonts } from "@/services/fonts";
 import { MapRepair } from "@/services/io/map-repair";
 import { LocalDB } from "@/services/local-db";
-import { logStats } from "@/services/logging";
 import { mapHistory, registerMap } from "@/services/map-history";
 import { focusOn, generateMapOnLoad } from "@/services/url-params";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
@@ -36,6 +35,7 @@ import { invokeActiveZooming, resetZoom } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { link, parseError } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 import { safeParseJSON } from "@/utils/string-utils";
@@ -45,7 +45,7 @@ async function quickLoad(): Promise<void> {
   if (blob) loadMapPrompt(blob);
   else {
     tip(t("No map stored. Save map to browser storage first"), true, "error", 2000);
-    ERROR && console.error("No map stored");
+    log.error("No map stored");
   }
 }
 
@@ -71,7 +71,7 @@ async function createSharableDropboxLink(): Promise<void> {
     sharableLink.setAttribute("href", finalLink);
     sharableLinkContainer.style.display = "block";
   } catch (error) {
-    ERROR && console.error(error);
+    log.error(error);
     return tip(t("Dropbox API error. Can not create link."), true, "error", 2000);
   }
 }
@@ -92,11 +92,11 @@ function loadMapPrompt(blob: Blob): void {
   });
 
   function loadLastSavedMap() {
-    WARN && console.warn("Load last saved map");
+    log.warn("Load last saved map");
     try {
       uploadMap(blob);
     } catch (error) {
-      ERROR && console.error(error);
+      log.error(error);
       tip(t("Cannot load last saved map"), true, "error", 2000);
     }
   }
@@ -127,7 +127,7 @@ async function loadMapFromURL(maplink: string, random?: boolean): Promise<void> 
 }
 
 function showUploadErrorMessage(error: string, maplink: string, random?: boolean): void {
-  ERROR && console.error(error);
+  log.error(error);
   const source = link(maplink, t("link provided"));
   Dialog.message({
     message: random
@@ -192,7 +192,7 @@ async function uncompress(compressedData: ArrayBuffer): Promise<Uint8Array | nul
     const uncompressedStream = new Blob([compressedData]).stream().pipeThrough(new DecompressionStream("gzip"));
     return new Uint8Array(await new Response(uncompressedStream).arrayBuffer());
   } catch (error) {
-    ERROR && console.error(error);
+    log.error(error);
     return null;
   }
 }
@@ -219,7 +219,7 @@ async function parseLoadedResult(
     const uncompressedData = await uncompress(result as ArrayBuffer); // file can be gzip compressed
     if (uncompressedData) return parseLoadedResult(uncompressedData);
 
-    ERROR && console.error(error);
+    log.error(error);
     return { mapData: null, mapVersion: null };
   }
 }
@@ -242,7 +242,7 @@ function showUploadMessage(type: string, mapData: string[] | null, mapVersion: s
     message = `${t("The map version you are trying to load ({{version}}) is newer than the current version.", { version: mapVersion })}<br>${t("Please load the file in the appropriate version")}`;
     title = t("Newer file");
   } else if (type === "outdated") {
-    INFO && console.info(`Loading map. Auto-updating from ${mapVersion} to ${VERSION}`);
+    log.info(`Loading map. Auto-updating from ${mapVersion} to ${VERSION}`);
     parseLoadedData(mapData!, mapVersion);
     return;
   }
@@ -281,7 +281,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     App.syncOptionInputs();
     await Controllers.StylePresetsEditor.init(); // the preset row follows the loaded map
 
-    INFO && console.group(options.map.seed ? `Loaded Map ${options.map.seed}` : "Loaded Map");
+    log.group(options.map.seed ? `Loaded Map ${options.map.seed}` : "Loaded Map");
     isLogGroupOpen = true;
 
     if (data[34]) {
@@ -423,13 +423,12 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     focusOn();
     invokeActiveZooming();
 
-    WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadTimeStart) / 1000, 2)}s`);
+    log.warn(`TOTAL: ${rn((performance.now() - uploadTimeStart) / 1000, 2)}s`);
 
     Options.persist(); // the migrations run after the adoption, and they change the map too
 
     const mapCreatedAt = +data[0].split("|")[6] || Date.now();
     registerMap(mapCreatedAt);
-    logStats();
     MapRepair.report(repairs);
     const loaded = t("Map is successfully loaded");
     tip(
@@ -439,7 +438,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       7000
     );
   } catch (error) {
-    ERROR && console.error(error);
+    log.error(error);
     clearMainTip();
 
     Dialog.message({

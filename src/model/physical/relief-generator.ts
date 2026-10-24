@@ -3,6 +3,7 @@ import { RELIEF_SETS } from "@/data/style-choices";
 import { Pack } from "@/model/graph/pack-generator";
 import type { ReliefRule } from "@/model/options/options-schema";
 import type { IconAlias, IconSet } from "@/types/icons";
+import { log } from "@/utils/logger";
 import { minmax, rn } from "@/utils/number-utils";
 
 const TYPES = [
@@ -92,7 +93,7 @@ class ReliefModel {
   }
 
   generate(): ReliefIcon[] {
-    TIME && console.time("generateRelief");
+    log.time("generateRelief");
 
     const relief: ReliefIcon[] = [];
     const placed: PoolPoints = new Map();
@@ -102,7 +103,7 @@ class ReliefModel {
     relief.sort(this.byBottom);
     pack.relief = relief;
 
-    TIME && console.timeEnd("generateRelief");
+    log.timeEnd("generateRelief");
     return relief;
   }
 

@@ -3,6 +3,7 @@ import { Dialog } from "@/ui/dialog/dialog";
 import { tip } from "@/ui/tooltips";
 import { openURL } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
 import { ensureEl } from "@/utils/node-utils";
 
 type Provider = "openai" | "anthropic" | "ollama";
@@ -154,7 +155,7 @@ async function handleStream(response: Response, getContent: (json: StreamChunk) 
       const json = await response.json();
       errorMessage = json.error?.message || json.error || errorMessage;
     } catch (error) {
-      ERROR && console.error("Failed to parse AI provider error response", error);
+      log.error("Failed to parse AI provider error response", error);
     }
     throw new Error(errorMessage);
   }
@@ -180,7 +181,7 @@ async function handleStream(response: Response, getContent: (json: StreamChunk) 
         const parsed = line.startsWith("data: ") ? JSON.parse(line.slice(6)) : JSON.parse(line);
         getContent(parsed);
       } catch (error) {
-        ERROR && console.error("Failed to parse line:", line, error);
+        log.error("Failed to parse line:", line, error);
       }
     }
 

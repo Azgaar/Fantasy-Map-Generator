@@ -68,7 +68,6 @@ beforeEach(() => {
   `;
 
   Object.assign(globalThis, {
-    TIME: false,
     pack: {
       cells: {
         p: [

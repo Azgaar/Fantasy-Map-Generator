@@ -6,6 +6,7 @@ import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
 import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import type { Emblem } from "@/types/emblems";
+import { log } from "@/utils/logger";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { minmax, rn } from "@/utils/number-utils";
 
@@ -71,7 +72,7 @@ function getEmblemSize(type: EmblemType, count: number): number {
 }
 
 export function drawEmblems(): void {
-  TIME && console.time("drawEmblems");
+  log.time("drawEmblems");
   const version = ++drawVersion;
   isDrawPending = true;
   needsFullRedraw = false;
@@ -109,7 +110,7 @@ export function drawEmblems(): void {
     if (needsFullRedraw) {
       // the snapshot was taken before an edit landed: rebuild it from the current data
       needsFullRedraw = false;
-      TIME && console.timeEnd("drawEmblems");
+      log.timeEnd("drawEmblems");
       drawEmblems();
       return;
     }
@@ -128,7 +129,7 @@ export function drawEmblems(): void {
       scene.replace(next);
     }
     layer.render();
-    TIME && console.timeEnd("drawEmblems");
+    log.timeEnd("drawEmblems");
   });
 }
 

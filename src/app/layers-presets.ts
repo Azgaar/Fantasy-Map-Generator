@@ -4,6 +4,7 @@ import { LAYER_TOGGLES } from "@/data/layer-labels";
 import { type LayerId, Layers } from "@/renderers/layers";
 import { Dialog } from "@/ui/dialog/dialog";
 import { t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
 import { ensureEl } from "@/utils/node-utils";
 
 const DEFAULT_PRESETS: Record<string, LayerId[]> = {
@@ -79,7 +80,7 @@ export function applyURLLayers(params: URLSearchParams): void {
     if (ids.length) {
       Layers.set(ids);
     } else {
-      ERROR && console.error(`URL param layers="${layersParam}" has no valid layer ids`);
+      log.error(`URL param layers="${layersParam}" has no valid layer ids`);
     }
     return;
   }
@@ -90,7 +91,7 @@ export function applyURLLayers(params: URLSearchParams): void {
     setPresetName(presetName);
     Layers.set(presets[presetName]);
   } else if (presetParam) {
-    ERROR && console.error(`URL param preset="${presetParam}" is invalid`);
+    log.error(`URL param preset="${presetParam}" is invalid`);
   }
 }
 

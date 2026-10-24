@@ -92,7 +92,7 @@ export function renderEditorPagination(
   });
 }
 
-export type EditorColumn<T = any> = {
+export type EditorColumn<T = never> = {
   key: string;
   label?: string;
   width?: string;

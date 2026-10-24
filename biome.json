@@ -27,7 +27,7 @@
         "noNonNullAssertion": "off"
       },
       "suspicious": {
-        "noExplicitAny": "off",
+        "noExplicitAny": "error",
         "noGlobalIsNan": {
           "level": "error",
           "fix": "safe"
@@ -49,6 +49,10 @@
     {
       "includes": ["**", "!src/e2e/**"],
       "linter": { "rules": { "correctness": { "usePlaywrightValidDescribeCallback": "off" } } }
+    },
+    {
+      "includes": ["**/*.test.ts", "src/test-setup.ts"],
+      "linter": { "rules": { "suspicious": { "noExplicitAny": "off" } } }
     }
   ],
   "javascript": {

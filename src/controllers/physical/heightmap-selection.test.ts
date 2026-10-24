@@ -21,7 +21,6 @@ vi.mock("@/app/chrome/tabs/options-tab", () => ({ syncOptionInputs: vi.fn() }));
 vi.mock("@/app/shell", () => ({ initShell: vi.fn(), warnIfServerless: vi.fn() }));
 vi.mock("@/ui/map/zoom", () => ({ invokeActiveZooming: vi.fn(), resetZoom: vi.fn() }));
 vi.mock("@/services/url-params", () => ({ checkLoadParameters: vi.fn() }));
-vi.mock("@/services/logging", () => ({ logStats: vi.fn() }));
 vi.mock("@/services", () => ({ Services: {} }));
 vi.mock("@/data/heightmap-templates", () => ({
   heightmapTemplates: { test: { name: "Test", probability: 1, template: "Hill 1 40 75-75 75-75" } }

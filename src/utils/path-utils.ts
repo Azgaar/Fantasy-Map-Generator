@@ -1,8 +1,10 @@
+import { type CurveFactory, line } from "d3";
 import polylabel from "polylabel";
 import type { Vertices } from "@/model/graph/voronoi";
 import type { Point } from "@/types/global";
 import type { PackedGraph } from "../types/packed-graph";
 import { FlatQueue } from "./flat-queue";
+import { log } from "./logger";
 import { rn } from "./number-utils";
 
 /**
@@ -308,17 +310,17 @@ export const connectVertices = ({
 
     // a hull half-edge has no opposite triangle, so `vertices.v` holds -1 for it
     if (next < 0 || next >= vertices.c.length) {
-      ERROR && console.error("ConnectVertices: next vertex is out of bounds");
+      log.error("ConnectVertices: next vertex is out of bounds");
       break;
     }
 
     if (next === current) {
-      ERROR && console.error("ConnectVertices: next vertex is not found", { startingVertex, current });
+      log.error("ConnectVertices: next vertex is not found", { startingVertex, current });
       break;
     }
 
     if (i === MAX_ITERATIONS) {
-      ERROR && console.error("ConnectVertices: max iterations reached", MAX_ITERATIONS);
+      log.error("ConnectVertices: max iterations reached", MAX_ITERATIONS);
       break;
     }
   }
@@ -587,4 +589,41 @@ export function wavyDash(x: number, y: number, length: number, halves: number, a
   const step = length / halves;
   const f = (v: number) => v.toFixed(2);
   return `M${f(x)},${f(y)}q${f(step / 2)},${f(amplitude)} ${f(step)},0${`t${f(step)},0`.repeat(halves - 1)}`;
+}
+
+const BEZIER_STEPS = 16;
+
+/** Length of the curve `line().curve(curve)` draws through the points, measured without an SVG element */
+export function curveLength(points: [number, number][], curve: CurveFactory): number {
+  let length = 0;
+  let x = 0;
+  let y = 0;
+  let [startX, startY] = [0, 0];
+  const lineTo = (nx: number, ny: number) => {
+    length += Math.hypot(nx - x, ny - y);
+    x = nx;
+    y = ny;
+  };
+  const context: Pick<CanvasPath, "moveTo" | "lineTo" | "bezierCurveTo" | "closePath"> = {
+    moveTo(nx, ny) {
+      [x, y, startX, startY] = [nx, ny, nx, ny];
+    },
+    lineTo,
+    bezierCurveTo(x1, y1, x2, y2, ex, ey) {
+      const [x0, y0] = [x, y];
+      for (let step = 1; step <= BEZIER_STEPS; step++) {
+        const t = step / BEZIER_STEPS;
+        const u = 1 - t;
+        const [a, b, c, d] = [u * u * u, 3 * u * u * t, 3 * u * t * t, t * t * t];
+        lineTo(a * x0 + b * x1 + c * x2 + d * ex, a * y0 + b * y1 + c * y2 + d * ey);
+      }
+    },
+    closePath() {
+      lineTo(startX, startY);
+    }
+  };
+  line()
+    .curve(curve)
+    .context(context as CanvasRenderingContext2D)(points);
+  return length;
 }

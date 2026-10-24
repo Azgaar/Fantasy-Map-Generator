@@ -7,6 +7,7 @@ import {
   ViewportLayers,
   type ViewportRenderContext
 } from "@/renderers/viewport/viewport-renderer";
+import { log } from "@/utils/logger";
 import { syncStyleGroups } from "./style-groups";
 
 interface RouteShape {
@@ -27,7 +28,7 @@ let editedRouteId: string | null = null; // edited route is rendered even when o
 let tempRoute: RouteShape | null = null; // route being drawn in the Route Creator
 
 export function drawRoutes(layer: Layer): void {
-  TIME && console.time("drawRoutes");
+  log.time("drawRoutes");
   const shapes: RouteShape[] = [];
   for (const route of pack.routes) {
     const shape = buildShape(route);
@@ -36,7 +37,7 @@ export function drawRoutes(layer: Layer): void {
   scene.replace(shapes);
   syncStyleGroups(layer.getEl(), styles.routes.groups);
   viewportLayer.render();
-  TIME && console.timeEnd("drawRoutes");
+  log.timeEnd("drawRoutes");
 }
 
 /** drop the paths, keeping the route groups: they are user data carrying the group styles */

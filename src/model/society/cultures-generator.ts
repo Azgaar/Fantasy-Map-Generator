@@ -3,11 +3,13 @@ import { CULTURE_SETS } from "@/data/culture-sets";
 import { Pack } from "@/model/graph/pack-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import type { Emblem } from "@/types/emblems";
+import type { PackedGraph } from "@/types/packed-graph";
 import { Dialog } from "@/ui/dialog/dialog";
 import { getColors, getRandomColor, requireColor } from "@/utils/color-utils";
 import { FlatQueue } from "@/utils/flat-queue";
 import { t } from "@/utils/i18n";
 import { abbreviate } from "@/utils/language-utils";
+import { log } from "@/utils/logger";
 import { minmax, rn } from "@/utils/number-utils";
 import { biased, P, rand, rw } from "@/utils/probability-utils";
 import { requireCode, requireName, requireOneOf, requireOrigins } from "@/utils/validation-utils";
@@ -46,7 +48,7 @@ export type CultureType = (typeof CULTURE_TYPES)[number];
 export const DEFAULT_CULTURE_TYPE: CultureType = "Generic";
 
 class CulturesGenerator {
-  cells: any;
+  cells!: PackedGraph["cells"];
 
   getRandomShield() {
     const type = rw(Emblems.shields.types);
@@ -1065,7 +1067,7 @@ class CulturesGenerator {
     if (populated.length < count * 25) {
       count = Math.floor(populated.length / 50);
       if (!count) {
-        WARN && console.warn(`There are no populated cells. Cannot generate cultures`);
+        log.warn(`There are no populated cells. Cannot generate cultures`);
         pack.cultures = [
           {
             name: "Wildlands",
@@ -1084,7 +1086,7 @@ class CulturesGenerator {
         });
         return;
       } else {
-        WARN && console.warn(`Not enough populated cells (${populated.length}). Will generate only ${count} cultures`);
+        log.warn(`Not enough populated cells (${populated.length}). Will generate only ${count} cultures`);
         Dialog.message({
           message: [
             t("There are only {{populated}} populated cells and it's insufficient livable area.", {
@@ -1128,7 +1130,7 @@ class CulturesGenerator {
 
     const cultures = selectCultures(count);
     pack.cultures = cultures;
-    const centers = quadtree<number>();
+    const centers = quadtree<[number, number]>();
     const colors = getColors(count);
     const emblemShape = Emblems.shape;
 
@@ -1184,7 +1186,8 @@ class CulturesGenerator {
 
       if (c.lock) {
         codes.push(c.code as string);
-        centers.add(c.center as number);
+        const lockedCenter = c.center === undefined ? undefined : this.cells.p[c.center];
+        if (lockedCenter) centers.add(lockedCenter);
 
         for (const i of this.cells.i) {
           if (this.cells.culture[i] === c.i) cultureIds[i] = newId;
@@ -1228,7 +1231,7 @@ class CulturesGenerator {
 
     // make sure all bases exist in Names.nameBases
     if (!Names.nameBases.length) {
-      ERROR && console.error("Name base is empty, default nameBases will be applied");
+      log.error("Name base is empty, default nameBases will be applied");
       Names.nameBases = Names.getNameBases();
     }
 

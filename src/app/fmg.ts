@@ -83,6 +83,7 @@ import * as commonUtils from "@/utils/common-utils";
 import * as fileUtils from "@/utils/file-utils";
 import * as heightUtils from "@/utils/height-utils";
 import * as languageUtils from "@/utils/language-utils";
+import { log } from "@/utils/logger";
 import * as nodeUtils from "@/utils/node-utils";
 import * as numberUtils from "@/utils/number-utils";
 import * as objectUtils from "@/utils/object-utils";
@@ -123,6 +124,7 @@ const FMG = {
   getFileName,
   VERSION,
   mapHistory,
+  log,
   fonts,
   heightmapTemplates,
   precreatedHeightmaps,
@@ -216,7 +218,7 @@ const FMG = {
 
   // debugging aids for the devtools prompt, drawn into the #debug layer
   drawCellsValue: (data: unknown[], points = pack.cells.p) => drawCellsValue(data, points),
-  drawPolygons: (data: number[]) => drawPolygons(data, undefined, grid),
+  drawPolygons: (data: number[]) => drawPolygons(data, grid),
   drawRouteConnections: () => drawRouteConnections(pack),
   drawPoint,
   drawPath,

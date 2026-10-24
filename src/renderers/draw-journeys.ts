@@ -1,15 +1,16 @@
 import { curveCatmullRom, line } from "d3";
 import type { Journey, JourneyPoint, JourneySegment } from "@/types/journey";
+import { log } from "@/utils/logger";
 import { ensureEl } from "@/utils/node-utils";
 import { round } from "@/utils/string-utils";
 
 export function drawJourneys(): void {
-  TIME && console.time("drawJourneys");
+  log.time("drawJourneys");
 
   const journeys = (pack.journeys ?? []).filter(j => j.visible !== false);
   ensureEl("journeys").innerHTML = journeys.map(getJourneyPaths).join("");
 
-  TIME && console.timeEnd("drawJourneys");
+  log.timeEnd("drawJourneys");
 }
 
 const curve = line<JourneyPoint>()

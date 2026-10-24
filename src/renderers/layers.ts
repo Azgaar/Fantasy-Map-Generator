@@ -37,6 +37,7 @@ import { drawHeightmap } from "@/renderers/heightmap/draw-heightmap";
 import { drawLabels, removeLabels } from "@/renderers/labels/labels-renderer";
 import { drawFogging } from "@/renderers/overlays/fogging";
 import { TradeAnimation } from "@/renderers/trade-animation";
+import { log } from "@/utils/logger";
 import { createEl, ensureEl, findEl } from "@/utils/node-utils";
 import { LegendBoxes } from "./legend-boxes";
 
@@ -178,17 +179,17 @@ export class LayersRegistry<Id extends string = string> {
   }
 
   drawAll(): void {
-    INFO && console.group("Layers Rendering");
-    TIME && console.time("Layers Rendering");
+    log.group("Layers Rendering");
+    log.time("Layers Rendering");
     const start = performance.now();
 
     try {
       this.draw(...this.layers.map(layer => layer.id));
     } finally {
       // a throwing renderer must not leave the group open: every later render would nest inside it
-      TIME && console.timeEnd("Layers Rendering");
+      log.timeEnd("Layers Rendering");
       performance.measure("Layers Rendering", { start });
-      INFO && console.groupEnd();
+      log.groupEnd();
     }
   }
 

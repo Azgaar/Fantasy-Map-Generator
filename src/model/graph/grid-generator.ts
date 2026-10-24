@@ -5,6 +5,7 @@ import type { MapData } from "@/model/options/options-schema";
 import type { Point } from "@/types/global";
 import type { GridCells, GridGraph } from "@/types/grid-graph";
 import { SEA_LEVEL } from "@/utils/height-utils";
+import { log } from "@/utils/logger";
 import { rn } from "@/utils/number-utils";
 import { Lattice } from "./lattice";
 import { calculateVoronoi } from "./voronoi";
@@ -33,12 +34,12 @@ class GridModule {
 
     const { width, height, points: cellsDesired, sampling, jitter } = settings;
     const spacing = this.getSpacing(cellsDesired, width, height);
-    TIME && console.time("placePoints");
+    log.time("placePoints");
     const { cellsX, cellsY, points, boundary } = Lattice.placePoints(
       { sampling, width, height, spacing, jitter },
       Math.random
     );
-    TIME && console.timeEnd("placePoints");
+    log.timeEnd("placePoints");
 
     const { cells, vertices } = calculateVoronoi(points, boundary);
     const graph = { sampling, spacing, cellsX, cellsY, boundary, points, cells, vertices } as GridGraph;

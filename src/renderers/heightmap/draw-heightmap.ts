@@ -24,8 +24,11 @@ import {
 } from "d3";
 import type { GridRaster } from "@/model/graph/grid-generator";
 import { Grid } from "@/model/graph/grid-generator";
+import type { Vertices } from "@/model/graph/voronoi";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
+import type { GridGraph } from "@/types/grid-graph";
 import { t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
 import { notify } from "@/utils/notices";
 import { round } from "@/utils/string-utils";
 import { getHeightContours, smoothContourHeights } from "./heightmap-contours";
@@ -70,7 +73,7 @@ export const drawHeightmap = (): void => {
   if (options.app.mode === "heightmap")
     return void notify(t("The Layer control is not available in the heightmap edit mode"), "error");
 
-  TIME && console.time("drawHeightmap");
+  log.time("drawHeightmap");
 
   const ocean = select("#terrs").select<SVGGElement>("#oceanHeights");
   const land = select("#terrs").select<SVGGElement>("#landHeights");
@@ -263,7 +266,13 @@ export const drawHeightmap = (): void => {
   }
 
   // connect vertices to chain: specific case for heightmap
-  function connectVertices(cells: any, vertices: any, start: number, h: number, used: Uint8Array): number[] {
+  function connectVertices(
+    cells: GridGraph["cells"],
+    vertices: Vertices,
+    start: number,
+    h: number,
+    used: Uint8Array
+  ): number[] {
     const MAX_ITERATIONS = vertices.c.length;
 
     const n = cells.i.length;
@@ -284,11 +293,11 @@ export const drawHeightmap = (): void => {
       else if (v[2] !== prev && c0 !== c2) current = v[2];
       // a hull half-edge has no opposite triangle, so `vertices.v` holds -1 for it
       if (current < 0 || current >= vertices.c.length) {
-        ERROR && console.error("Next vertex is out of bounds");
+        log.error("Next vertex is out of bounds");
         break;
       }
       if (current === chain[chain.length - 1]) {
-        ERROR && console.error("Next vertex is not found");
+        log.error("Next vertex is not found");
         break;
       }
     }
@@ -301,7 +310,7 @@ export const drawHeightmap = (): void => {
     return chain.filter((_d, i) => i % n === 0);
   }
 
-  TIME && console.timeEnd("drawHeightmap");
+  log.timeEnd("drawHeightmap");
 };
 
 /** heightmap preview image as a data URL: per-cell heights drawn over the grid raster */

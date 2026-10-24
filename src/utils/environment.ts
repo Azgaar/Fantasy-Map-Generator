@@ -18,7 +18,11 @@ declare global {
     electron?: ElectronBridge;
   }
   interface Navigator {
-    userAgentData?: { mobile?: boolean };
+    userAgentData?: {
+      mobile?: boolean;
+      platform?: string;
+      getHighEntropyValues?(hints: string[]): Promise<{ architecture?: string }>;
+    };
     standalone?: boolean;
   }
 }

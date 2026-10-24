@@ -1,5 +1,5 @@
 import Alea from "alea";
-import { curveCatmullRom, line } from "d3";
+import { type CurveFactory, curveCatmullRom, line } from "d3";
 import Delaunator from "delaunator";
 import type { Label } from "@/model/annotations/labels-generator";
 import { Pack } from "@/model/graph/pack-generator";
@@ -10,8 +10,9 @@ import type { Burg } from "@/model/political/burgs-generator";
 import { Tags } from "@/model/tags";
 import { isLand } from "@/utils/height-utils";
 import { getAdjective, replaceWholeWord } from "@/utils/language-utils";
+import { log } from "@/utils/logger";
 import { distanceSquared, rn } from "@/utils/number-utils";
-import { findPath, meander } from "@/utils/path-utils";
+import { curveLength, findPath, meander } from "@/utils/path-utils";
 import { ra, rw } from "@/utils/probability-utils";
 import { round } from "@/utils/string-utils";
 import { requireName, requireOneOf } from "@/utils/validation-utils";
@@ -424,7 +425,7 @@ class RoutesModule {
   }
 
   private generateMainRoads() {
-    TIME && console.time("generateMainRoads");
+    log.time("generateMainRoads");
     const { capitalsByFeature } = this.sortBurgsByFeature(pack.burgs);
     const mainRoads: Route[] = [];
 
@@ -443,7 +444,7 @@ class RoutesModule {
       });
     }
 
-    TIME && console.timeEnd("generateMainRoads");
+    log.timeEnd("generateMainRoads");
     return mainRoads;
   }
 
@@ -459,7 +460,7 @@ class RoutesModule {
   }
 
   private generateTrails() {
-    TIME && console.time("generateTrails");
+    log.time("generateTrails");
     const { burgsByFeature } = this.sortBurgsByFeature(pack.burgs);
     const trails: Route[] = [];
 
@@ -478,12 +479,12 @@ class RoutesModule {
       });
     }
 
-    TIME && console.timeEnd("generateTrails");
+    log.timeEnd("generateTrails");
     return trails;
   }
 
   private generateSeaRoutes() {
-    TIME && console.time("generateSeaRoutes");
+    log.time("generateSeaRoutes");
     const { portsByFeature } = this.sortBurgsByFeature(pack.burgs);
     const seaRoutes: Route[] = [];
 
@@ -502,7 +503,7 @@ class RoutesModule {
       });
     }
 
-    TIME && console.timeEnd("generateSeaRoutes");
+    log.timeEnd("generateSeaRoutes");
     return seaRoutes;
   }
 
@@ -1040,7 +1041,7 @@ class RoutesModule {
     return `${ra(prefixes)} ${suffix}`; // no burg on the route, fall back to the burg-free model
   }
 
-  private ROUTE_CURVES: Record<string, any> = {
+  private ROUTE_CURVES: Record<string, CurveFactory> = {
     roads: curveCatmullRom.alpha(0.1),
     trails: curveCatmullRom.alpha(0.1),
     searoutes: curveCatmullRom.alpha(0.5),
@@ -1059,10 +1060,11 @@ class RoutesModule {
     const route = pack.routes.find(route => route.i === routeId);
     if (!route) return 0;
 
-    // measured off-DOM: the rendered layer only holds the routes currently in the viewport
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("d", this.getPath(route));
-    return path.getTotalLength();
+    const curve = this.ROUTE_CURVES[route.group] || this.ROUTE_CURVES.default;
+    return curveLength(
+      route.points.map(([x, y]) => [x, y]),
+      curve
+    );
   }
 
   // run on map load to restore connections based on routes data

@@ -2,6 +2,7 @@ import { color, easeSinInOut, select, transition } from "d3";
 import { Icons } from "@/model/icons";
 import type { Regiment } from "@/model/political/military-generator";
 import { Military } from "@/model/political/military-generator";
+import { log } from "@/utils/logger";
 import { rn } from "@/utils/number-utils";
 
 /** the icon box inside the square left of a regiment box at x1, y1 of height h */
@@ -28,7 +29,7 @@ export function updateRegimentIcon(use: SVGUseElement, regiment: Regiment): void
 }
 
 export const drawMilitary = (): void => {
-  TIME && console.time("drawMilitary");
+  log.time("drawMilitary");
 
   select<SVGGElement, unknown>("#armies").selectAll("g").remove();
   // regiment labels size by inheritance from the group, in step with the box
@@ -38,7 +39,7 @@ export const drawMilitary = (): void => {
     drawRegimentsRenderer(state.military || [], state.i);
   }
 
-  TIME && console.timeEnd("drawMilitary");
+  log.timeEnd("drawMilitary");
 };
 
 const drawRegimentsRenderer = (regiments: Regiment[], s: number): void => {
@@ -187,25 +188,16 @@ export const moveRegiment = (reg: Regiment, x: number, y: number): void => {
   const y1 = (y: number) => rn(y - size, 2);
 
   const move = transition().duration(duration).ease(easeSinInOut);
-  el.select("rect")
-    .transition(move as any)
-    .attr("x", x1(x))
-    .attr("y", y1(y));
-  el.select("text.regimentTotal")
-    .transition(move as any)
-    .attr("x", x)
-    .attr("y", y);
+  el.select("rect").transition(move).attr("x", x1(x)).attr("y", y1(y));
+  el.select("text.regimentTotal").transition(move).attr("x", x).attr("y", y);
   el.selectAll("rect:nth-of-type(2)")
-    .transition(move as any)
+    .transition(move)
     .attr("x", x1(x) - h)
     .attr("y", y1(y));
   const box = regimentIconBox(x1(x), y1(y), h, reg.icon);
-  el.select(".regimentIcon")
-    .transition(move as any)
-    .attr("x", box.x)
-    .attr("y", box.y);
+  el.select(".regimentIcon").transition(move).attr("x", box.x).attr("y", box.y);
   el.select("text.regimentName")
-    .transition(move as any)
+    .transition(move)
     .attr("x", rn(x - size, 2))
     .attr("y", rn(y + size * 2.3, 2));
 };

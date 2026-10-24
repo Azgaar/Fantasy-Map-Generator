@@ -29,7 +29,7 @@ import { MAX_ZOOM, PAN_ZOOM_IDENTITY, type PanZoom, panBy, zoomAt } from "@/util
 import { rand } from "@/utils/probability-utils";
 import { errorText } from "@/utils/string-utils";
 
-let selected: Selection<any, any, any, any> | null = null;
+let selected: Selection<SVGElement, unknown, HTMLElement, unknown> | null = null;
 let selectedId: number | null = null;
 let previewTransform: PanZoom = { ...PAN_ZOOM_IDENTITY };
 let previewMaxZoom = MAX_ZOOM;
@@ -43,8 +43,8 @@ function open(id: number | string): void {
   Layers.show("burgIcons", "labels");
 
   selectedId = +id;
-  selected = select<any, unknown>("#labels").select(`[data-label-type='burg'][data-id='${id}']`);
-  if (!selected.size()) selected = select<any, unknown>("#burgIcons").select(`[data-id='${id}']`);
+  selected = select<SVGElement, unknown>("#labels").select<SVGElement>(`[data-label-type='burg'][data-id='${id}']`);
+  if (!selected.size()) selected = select<SVGElement, unknown>("#burgIcons").select<SVGElement>(`[data-id='${id}']`);
 
   renderDialog();
   ensureEl("burgEditor").dataset.entity = `burg:${selectedId}`;
@@ -442,7 +442,7 @@ function toggleFeature(this: HTMLElement): void {
   else if (feature === "capital") toggleCapital(burgId);
   else Burgs.setBuilding(burgId, feature, Boolean(value));
 
-  this.classList.toggle("inactive", !(burg as any)[feature]);
+  this.classList.toggle("inactive", !burg[feature as keyof Burg]);
 
   updateBurgPreview(burg);
 }
@@ -741,7 +741,7 @@ function toggleRelocateBurg(): void {
   }
 }
 
-function relocateBurgOnClick(this: SVGGElement, event: any): void {
+function relocateBurgOnClick(this: SVGGElement, event: MouseEvent): void {
   const [x, y] = getPointer(event, this);
   if (!tryEdit(() => Burgs.move(getSelectedId(), x, y))) return;
   Layers.draw("burgIcons", "labels");

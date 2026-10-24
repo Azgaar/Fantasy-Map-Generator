@@ -1,4 +1,4 @@
-import { drag, type Selection, select } from "d3";
+import { type D3DragEvent, drag, type Selection, select } from "d3";
 import { Controllers } from "@/controllers";
 import { type Route, Routes, UNNAMED_ROUTE } from "@/model/economy/routes-generator";
 import { Pack } from "@/model/graph/pack-generator";
@@ -11,6 +11,7 @@ import { noteButton } from "@/ui/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { getSegmentId } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
 import { ensureEl, findEl, getPointer } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 
@@ -171,20 +172,23 @@ function drawCells(points: number[][]): void {
     .attr("points", (p: number[]) => String(Pack.getPolygon(p[2])));
 }
 
-function dragControlPoint(event: any): void {
+type PointDrag = D3DragEvent<SVGCircleElement, number[], number[]>;
+
+function dragControlPoint(event: PointDrag): void {
   const route = getRoute();
   const initCell = event.subject[2];
   const pointIndex = route.points.indexOf(event.subject);
 
-  event.on("drag", function (this: any, dragEvent: any) {
-    this.setAttribute("cx", dragEvent.x);
-    this.setAttribute("cy", dragEvent.y);
+  event.on("drag", function (this: SVGCircleElement, dragEvent: PointDrag) {
+    this.setAttribute("cx", String(dragEvent.x));
+    this.setAttribute("cy", String(dragEvent.y));
 
     const x = rn(dragEvent.x, 2);
     const y = rn(dragEvent.y, 2);
     const cellId = Pack.findCell(x, y);
 
-    this.__data__ = route.points[pointIndex] = [x, y, cellId!];
+    route.points[pointIndex] = [x, y, cellId!];
+    select(this).datum(route.points[pointIndex]);
     redrawRoute(route);
     drawCells(route.points);
   });
@@ -215,7 +219,7 @@ function redrawRoute(route: Route): void {
   Layers.draw("labels");
 }
 
-function addControlPoint(this: any, event: any): void {
+function addControlPoint(this: SVGElement, event: MouseEvent): void {
   const route = getRoute();
   const [x, y] = getPointer(event, this);
   const cellId = Pack.findCell(x, y);
@@ -231,8 +235,8 @@ function addControlPoint(this: any, event: any): void {
     const prev = route.points[index - 1];
     const next = route.points[index + 1];
 
-    if (!prev) ERROR && console.error("Can't add control point to the start of the route");
-    if (!next) ERROR && console.error("Can't add control point to the end of the route");
+    if (!prev) log.error("Can't add control point to the start of the route");
+    if (!next) log.error("Can't add control point to the end of the route");
     if (!prev || !next) return;
 
     removeConnection(prev[2], next[2]);
@@ -246,7 +250,7 @@ function addControlPoint(this: any, event: any): void {
   redrawRoute(route);
 }
 
-function handleControlPointClick(this: any): void {
+function handleControlPointClick(this: SVGCircleElement): void {
   const controlPoint = select(this);
   const point = controlPoint.datum() as number[];
   const route = getRoute();
@@ -269,7 +273,7 @@ function handleControlPointClick(this: any): void {
     ensureEl("routeSplit").classList.remove("pressed");
   }
 
-  function removeControlPoint(controlPoint: any): void {
+  function removeControlPoint(controlPoint: Selection<SVGCircleElement, unknown, null, undefined>): void {
     const isOnlyPointInCell = route.points.filter(p => p[2] === point[2]).length === 1;
     if (isOnlyPointInCell) {
       const prev = route.points[index - 1];

@@ -1,5 +1,6 @@
 import { range, select } from "d3";
 import { viewport } from "@/renderers/viewport/viewport";
+import { log } from "@/utils/logger";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 
@@ -18,7 +19,7 @@ export function drawScaleBar(
 
   const renderedContent = scaleBar.select("#scaleBarContent");
   const isRendered = Boolean(renderedContent.size());
-  TIME && !isRendered && console.time("drawScaleBar");
+  !isRendered && log.time("drawScaleBar");
 
   const unit = options.map.units.distance.unit;
   const { barSize: size, label, x: posX, y: posY } = styles.scaleBar.options;
@@ -102,7 +103,7 @@ export function drawScaleBar(
     scaleBar.attr("transform", `translate(${x},${y})`);
   }
 
-  TIME && !isRendered && console.timeEnd("drawScaleBar");
+  !isRendered && log.timeEnd("drawScaleBar");
 
   function getLength(): number {
     const init = 100;

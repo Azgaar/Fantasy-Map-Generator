@@ -4,7 +4,6 @@ import { Routes } from "./routes-generator";
 
 describe("RoutesModule river-aware water cost", () => {
   beforeEach(async () => {
-    globalThis.TIME = false;
     globalThis.window = globalThis.window || ({} as any);
     // Defaults overridden per-test; needs to exist before module import so window.Routes wires up
     globalThis.pack = {
@@ -182,7 +181,6 @@ describe("RoutesModule.findWaterPath", () => {
   // Two coastal ports (land cells 0 and 4) with three sea cells between them.
   // Cell 0's haven is cell 1; cell 4's haven is set per test.
   function setupTwoPortsPack(destinationHaven: number) {
-    globalThis.TIME = false;
     globalThis.window = globalThis.window || ({} as any);
     globalThis.grid = { cells: { temp: [20, 20, 20, 20, 20] } } as any;
     globalThis.pack = {
@@ -246,7 +244,6 @@ describe("RoutesModule.findWaterPath", () => {
 
 describe("RoutesModule.addMeandering", () => {
   beforeEach(async () => {
-    globalThis.TIME = false;
     globalThis.window = globalThis.window || ({} as any);
     options.map.graph = { width: 1000, height: 1000, points: 10000, sampling: "square", jitter: 0.9 };
     globalThis.pack = {
@@ -531,7 +528,6 @@ describe("RoutesModule.addMeandering", () => {
 
 describe("RoutesModule.remove", () => {
   beforeEach(async () => {
-    globalThis.TIME = false;
     globalThis.window = globalThis.window || ({} as any);
     // d3 select() needs a document in the node env
     globalThis.document = { querySelector: () => null, documentElement: {} } as any;
@@ -561,7 +557,6 @@ describe("RoutesModule.remove", () => {
 
 describe("ensureRouteGroupStyles", () => {
   it("seeds styles for route groups missing from the store, keeping existing entries", async () => {
-    globalThis.TIME = false;
     globalThis.window = globalThis.window || ({} as any);
     globalThis.grid = { cells: { temp: [20] } } as any;
     globalThis.pack = {
@@ -588,7 +583,6 @@ describe("ensureRouteGroupStyles", () => {
 
 describe("ensureRouteGroupStyles before a map exists", () => {
   it("is a no-op when the pack has no routes yet (style preset applied on initial load)", async () => {
-    globalThis.TIME = false;
     globalThis.window = globalThis.window || ({} as any);
     globalThis.grid = { cells: { temp: [20] } } as any;
     globalThis.pack = {} as any;

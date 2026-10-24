@@ -1,4 +1,4 @@
-import { drag, easeSinIn, select, transition } from "d3";
+import { type D3DragEvent, drag, easeSinIn, select, transition } from "d3";
 import { Controllers } from "@/controllers";
 import { CULTURE_TYPE_LABELS, SHIELD_LABELS } from "@/data/id-labels";
 import { Pack } from "@/model/graph/pack-generator";
@@ -261,19 +261,19 @@ function refreshCulturesEditor(): void {
 }
 
 function culturesCollectStatistics(): void {
-  const { cells, cultures, burgs } = pack as any;
-  cultures.forEach((c: any) => {
+  const { cells, cultures, burgs } = pack;
+  cultures.forEach(c => {
     c.cells = c.area = c.rural = c.urban = 0;
   });
 
   for (const i of cells.i) {
     if (cells.h[i] < 20) continue;
     const cultureId = cells.culture[i];
-    cultures[cultureId].cells += 1;
-    cultures[cultureId].area += cells.area[i];
-    cultures[cultureId].rural += cells.pop[i];
+    cultures[cultureId].cells! += 1;
+    cultures[cultureId].area! += cells.area[i];
+    cultures[cultureId].rural! += cells.pop[i];
     const burgId = cells.burg[i];
-    if (burgId) cultures[cultureId].urban += burgs[burgId].population;
+    if (burgId) cultures[cultureId].urban! += burgs[burgId].population!;
   }
 }
 
@@ -532,14 +532,20 @@ function getShapeOptions(isDiversiform: boolean, selected: string): string {
   return `<select data-tip="${sentences(t("Emblem shape associated with culture"), t("Click to change"))}" class="cultureEmblems">${options}</select>`;
 }
 
-const cultureHighlightOn = debounce((event: any) => {
+// a table row or center circle event, or a hierarchy tree node
+type HighlightSource = Event | { id?: string; data: { name: string; shadow?: boolean } };
+const highlightedId = (source: HighlightSource) =>
+  Number("data" in source ? source.id : (source.target as HTMLElement | null)?.dataset.id);
+const shadowAncestry = (source: HighlightSource) => ("data" in source && source.data.shadow ? source.data.name : null);
+
+const cultureHighlightOn = debounce((event: HighlightSource) => {
   if (!Layers.isOn("cultures")) return;
   if (options.app.mode) return;
 
   const animate = transition().duration(2000).ease(easeSinIn);
 
-  if (event.data?.shadow) {
-    const ancestry = event.data.name;
+  const ancestry = shadowAncestry(event);
+  if (ancestry !== null) {
     const matching = pack.cultures.filter(c => c.i && !c.removed && c.ancestry?.trim() === ancestry);
     for (const c of matching) {
       select("#cults")
@@ -558,7 +564,7 @@ const cultureHighlightOn = debounce((event: any) => {
     return;
   }
 
-  const cultureId = Number(event.id || event.target?.dataset?.id);
+  const cultureId = highlightedId(event);
   select("#cults")
     .select(`#culture${cultureId}`)
     .raise()
@@ -573,11 +579,11 @@ const cultureHighlightOn = debounce((event: any) => {
     .attr("stroke", "#d0240f");
 }, 200);
 
-function cultureHighlightOff(event: any): void {
+function cultureHighlightOff(event: HighlightSource): void {
   if (!Layers.isOn("cultures")) return;
 
-  if (event.data?.shadow) {
-    const ancestry = event.data.name;
+  const ancestry = shadowAncestry(event);
+  if (ancestry !== null) {
     const matching = pack.cultures.filter(c => c.i && !c.removed && c.ancestry?.trim() === ancestry);
     for (const c of matching) {
       select("#cults").select(`#culture${c.i}`).transition().attr("stroke-width", null).attr("stroke", null);
@@ -586,7 +592,7 @@ function cultureHighlightOff(event: any): void {
     return;
   }
 
-  const cultureId = Number(event.id || event.target?.dataset?.id);
+  const cultureId = highlightedId(event);
   select("#cults").select(`#culture${cultureId}`).transition().attr("stroke-width", null).attr("stroke", null);
   select("#debug").select(`#cultureCenter${cultureId}`).transition().attr("r", 2).attr("stroke", null);
 }
@@ -810,32 +816,32 @@ function drawCultureCenters(): void {
     .data(data)
     .enter()
     .append("circle")
-    .attr("id", (d: any) => `cultureCenter${d.i}`)
-    .attr("data-id", (d: any) => d.i)
+    .attr("id", d => `cultureCenter${d.i}`)
+    .attr("data-id", d => d.i)
     .attr("r", 2)
-    .attr("fill", (d: any) => d.color)
-    .attr("cx", (d: any) => pack.cells.p[d.center][0])
-    .attr("cy", (d: any) => pack.cells.p[d.center][1])
-    .on("mouseenter", (event: any, d: any) => {
+    .attr("fill", d => d.color ?? null)
+    .attr("cx", d => pack.cells.p[d.center!][0])
+    .attr("cy", d => pack.cells.p[d.center!][1])
+    .on("mouseenter", (event: MouseEvent, d) => {
       tip(tooltip, true);
       ensureEl("culturesBody").querySelector(`div[data-id='${d.i}']`)?.classList.add("selected");
       cultureHighlightOn(event);
     })
-    .on("mouseleave", (event: any, d: any) => {
+    .on("mouseleave", (event: MouseEvent, d) => {
       tip("", true);
       ensureEl("culturesBody").querySelector(`div[data-id='${d.i}']`)?.classList.remove("selected");
       cultureHighlightOff(event);
     })
-    .call(drag<SVGCircleElement, any>().on("start", cultureCenterDrag));
+    .call(drag<SVGCircleElement, Culture>().on("start", cultureCenterDrag));
 }
 
-function cultureCenterDrag(this: any, event: any): void {
+function cultureCenterDrag(this: SVGCircleElement, event: D3DragEvent<SVGCircleElement, Culture, Culture>): void {
   const cultureId = +this.id.slice(13);
   const tr = parseTransform(this.getAttribute("transform"));
   const x0 = +tr[0] - event.x;
   const y0 = +tr[1] - event.y;
 
-  function handleDrag(this: any, dragEvent: any) {
+  function handleDrag(this: SVGCircleElement, dragEvent: D3DragEvent<SVGCircleElement, Culture, Culture>) {
     const { x, y } = dragEvent;
     this.setAttribute("transform", `translate(${x0 + x},${y0 + y})`);
     const cell = Pack.findCell(x, y);
@@ -888,19 +894,19 @@ function togglePercentageMode(): void {
 async function showHierarchy(): Promise<void> {
   if (options.app.mode) return;
 
-  const getDescription = (culture: any) => {
+  const getDescription = (culture: Culture & { shadow?: boolean }) => {
     if (culture.shadow) return t("{{- ancestry}} ancestry", { ancestry: culture.name });
     const { name, type, rural, urban } = culture;
 
     const population =
-      rural * options.map.units.population.scale +
-      urban * options.map.units.population.scale * options.map.units.population.urbanization.rate;
+      (rural ?? 0) * options.map.units.population.scale +
+      (urban ?? 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     const populationText =
       population > 0 ? t("{{- population}} people", { population: si(rn(population)) }) : t("Extinct");
     return sentences(t("{{- culture}} culture", { culture: name }), CULTURE_TYPE_LABELS[type] ?? type, populationText);
   };
 
-  const getShape = ({ type, shadow }: any) => {
+  const getShape = ({ type, shadow }: Culture & { shadow?: boolean }) => {
     if (shadow) return "circle";
     if (type === "Generic") return "circle";
     if (type === "River") return "diamond";
@@ -913,7 +919,7 @@ async function showHierarchy(): Promise<void> {
 
   Controllers.HierarchyTree.open({
     type: "cultures",
-    data: pack.cultures as any,
+    data: pack.cultures,
     onNodeEnter: cultureHighlightOn,
     onNodeLeave: cultureHighlightOff,
     getDescription,

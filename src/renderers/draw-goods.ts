@@ -10,6 +10,7 @@ import {
   type ViewportRenderContext
 } from "@/renderers/viewport/viewport-renderer";
 import type { PackedGraph } from "@/types/packed-graph";
+import { log } from "@/utils/logger";
 import { findEl } from "@/utils/node-utils";
 import { normalize, rn } from "@/utils/number-utils";
 
@@ -76,11 +77,11 @@ interface BurgPlate {
 }
 
 export async function drawGoods(): Promise<void> {
-  TIME && console.time("drawGoods");
+  log.time("drawGoods");
   await Icons.load("goods");
   buildScene();
   layer.render();
-  TIME && console.timeEnd("drawGoods");
+  log.timeEnd("drawGoods");
 }
 
 function buildScene(): void {

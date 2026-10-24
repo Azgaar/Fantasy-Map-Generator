@@ -1,5 +1,6 @@
 import Alea from "alea";
 import {
+  type D3DragEvent,
   drag,
   easeSinInOut,
   hsl,
@@ -43,6 +44,7 @@ import { createBrushStroke } from "@/utils/brush-utils";
 import { link, openURL, wiki } from "@/utils/common-utils";
 import { createFileInput, downloadFile, uploadFile } from "@/utils/file-utils";
 import { sentences, t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
 import { ensureEl, findEl, getPointer } from "@/utils/node-utils";
 import { lim, minmax, rn } from "@/utils/number-utils";
 import { generateSeed } from "@/utils/probability-utils";
@@ -432,7 +434,7 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
   else openBrushesPanel();
 }
 
-function moveCursor(this: SVGElement, event: any): void {
+function moveCursor(this: SVGElement, event: Event): void {
   const [x, y] = getPointer(event, this);
   const cell = Grid.findCell(x, y);
   ensureEl("heightmapInfoX").innerHTML = String(rn(x));
@@ -504,7 +506,7 @@ async function finalizeHeightmap(): Promise<void> {
     else if (mode === "risk") restoreRiskedData();
   } catch (error) {
     // the editor is exited anyway, so the user isn't stuck in it; a Risk edit leaves the map as it was
-    ERROR && console.error(error);
+    log.error(error);
     const failed = t("Failed to apply the edited heightmap: {{error}}", { error: (error as Error).message });
     tip(mode === "risk" ? sentences(failed, t("The map is unchanged")) : failed, false, "error", 6000);
   }
@@ -589,7 +591,7 @@ function mockHeightmapSelection(selection: number[]): void {
   const renderOcean = options.app.heightmapEditor.renderOcean;
 
   selection.forEach(i => {
-    let cell: any = select<SVGElement, unknown>("#viewbox").select("#heights").select(`#cell${i}`);
+    let cell = select<SVGElement, unknown>("#viewbox").select("#heights").select<SVGPolygonElement>(`#cell${i}`);
     if (!renderOcean && grid.cells.h[i] < 20) {
       cell.remove();
       return;
@@ -880,7 +882,7 @@ function toggleBrushMode(event: Event): void {
   }
 }
 
-function placeLinearFeature(this: SVGElement, event: any): void {
+function placeLinearFeature(this: SVGElement, event: MouseEvent): void {
   const [x, y] = getPointer(event, this);
   const toCell = Grid.findCell(x, y);
 
@@ -938,7 +940,7 @@ function placeLinearFeature(this: SVGElement, event: any): void {
   updateHistory();
 }
 
-function applyFillBrush(this: SVGElement, event: any): void {
+function applyFillBrush(this: SVGElement, event: MouseEvent): void {
   const [x, y] = getPointer(event, this);
   const start = Grid.findCell(x, y);
   const startHeight = grid.cells.h[start];
@@ -1049,7 +1051,7 @@ function applyConeToSelection(selection: number[], isWaterFill: boolean, targetH
   return changed;
 }
 
-function dragBrush(this: SVGElement, event: any): void {
+function dragBrush(this: SVGElement, event: D3DragEvent<SVGElement, unknown, unknown>): void {
   const r = ensureEl<HTMLInputElement>("heightmapBrushRadius").valueAsNumber;
   const [startX, startY] = getPointer(event, this);
   const start = Grid.findCell(startX, startY); // fixed once per drag: Align replicates this cell's height
@@ -1069,7 +1071,7 @@ function dragBrush(this: SVGElement, event: any): void {
   const stroke = createBrushStroke(r / 2, applyAt);
   stroke.moveTo(startX, startY); // so a plain click changes height
 
-  event.on("drag", (dragEvent: any) => {
+  event.on("drag", (dragEvent: D3DragEvent<SVGElement, unknown, unknown>) => {
     const [x, y] = getPointer(dragEvent, this);
     moveCircle(x, y, r);
     stroke.moveTo(x, y);
@@ -1543,7 +1545,7 @@ function uploadTemplate(dataLoaded: string): void {
   for (const s of steps) {
     const step = s.split(" ");
     if (step.length !== 5) {
-      ERROR && console.error("Cannot parse step, wrong arguments count", s);
+      log.error("Cannot parse step, wrong arguments count", s);
       continue;
     }
     addStep(step[0], step[1], step[2], step[3], step[4]);

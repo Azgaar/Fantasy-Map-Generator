@@ -732,7 +732,7 @@ Split rarely-used features into on-demand chunks so the initial bundle stays sma
 
 ## Measure, don't guess
 
-Guard hot paths with `TIME && console.time(…)` / `console.timeEnd(…)` and keep the guards.
+Time hot paths with `log.time(…)` / `log.timeEnd(…)` from `utils/logger.ts` and keep the timers.
 Profile real maps at large cell counts and optimise the measured bottleneck.
 
 ---
@@ -850,12 +850,5 @@ what the user is looking at now — not everything they have opened this session
    the `.map` file becomes that object as JSON instead of today's line-based format. Rendering no
    longer depends on the file's SVG part, so the format can change on its own schedule.
 2. **Model code that touches the DOM.** The style store writes attributes to the map's SVG, the icon
-   library mounts `#icons-library`, the cultures generator opens a message dialog, a route measurement
-   builds a path element and the heightmap image import draws to a canvas. Each moves to the renderer
-   or controller that owns it.
-3. **Logging flags.** `TIME`, `INFO`, `WARN`, `ERROR` and `DEBUG` are ambient globals. They become one
-   exported `log` object, which `window.FMG` exposes for switching from the console.
-4. **No `any`.** About 260 remain and Biome's `noExplicitAny` is off. They go module by module as each
-   one is touched, then the rule is turned on.
-5. **The Dropbox sign-in page.** `public/dropbox.html` loads the Dropbox SDK from a CDN. It can become
-   a page of the Vite build that uses the npm `dropbox` package the app already bundles.
+   library mounts `#icons-library`, the cultures generator opens a message dialog and the heightmap
+   image import draws to a canvas. Each moves to the renderer or controller that owns it.

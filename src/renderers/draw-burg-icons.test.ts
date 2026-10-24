@@ -22,7 +22,6 @@ beforeEach(() => {
   mocks.layerOn = true;
   setViewportSize(100, 100);
   setViewportTransform(1, 0, 0);
-  (globalThis as Record<string, unknown>).TIME = false;
   document.body.innerHTML = `<svg id="map">
       <g id="burgIcons"></g>
     </svg>`;

@@ -1,3 +1,5 @@
+import { log } from "@/utils/logger";
+
 // Make window === globalThis, as in the browser, for modules that touch window in Node
 if (typeof window === "undefined") {
   (globalThis as Record<string, unknown>).window = globalThis;
@@ -48,12 +50,8 @@ if (typeof Range !== "undefined" && typeof Range.prototype.getBoundingClientRect
     }) as unknown as DOMRectList;
 }
 
-// Logging flags owned by services/logging.ts and referenced bare by bundled modules
-for (const flag of ["INFO", "TIME", "ERROR", "WARN", "DEBUG"]) {
-  if (typeof (globalThis as Record<string, unknown>)[flag] === "undefined") {
-    (globalThis as Record<string, unknown>)[flag] = false;
-  }
-}
+// Tests run silent; a test that checks a log turns its level back on
+Object.assign(log.enabled, { time: false, info: false, warn: false, error: false });
 
 // The configuration global the app installs at boot, so a unit test gets the same defaults. The
 // model is loaded last and dynamically: it reaches the modules that own each default, and those

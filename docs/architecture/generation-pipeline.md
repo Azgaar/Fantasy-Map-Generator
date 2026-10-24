@@ -35,8 +35,8 @@ new Pipeline<Id, TContext>(name, steps).run(context): Promise<void>;
 - **Per-call parameters arrive through `context`**, not through closure state — see `GenerationContext`
   and `EraseContext`. A step that behaves differently between paths reads a flag off the context
   instead of being conditionally omitted from the list.
-- **Logging and timing belong to the runner.** Each run is an `INFO`-gated `console.group(name)` with a
-  `TIME`-gated timer per step id, and every step is recorded as a `performance.measure` (the DevTools
+- **Logging and timing belong to the runner.** Each run is a `log.group(name)` with a `log.time` timer
+  per step id, and every step is recorded as a `performance.measure` (the DevTools
   Performance panel shows them). Generators no longer time themselves at the top level; the timers
   that remain inside them (`expandStates`, `generateTrails`, `calculateVoronoi`, …) are sub-phase
   detail nested under their step.
@@ -56,7 +56,7 @@ map implicitly. A grid explicitly selected in the heightmap gallery is used as s
 heights cleared before terrain generation. Map naming belongs to `Options.randomize()` before
 the pipeline, since it depends only on name bases and the seeded random source.
 
-`generate(config)` in `app/lifecycle.ts` resolves what the pipeline doesn't own (`setSeed`, `Options.randomize`, `applyGraphSize`), calls `await GenerationPipeline.run({graph})`, then reports (`logStats`,
+`generate(config)` in `app/lifecycle.ts` resolves what the pipeline doesn't own (`setSeed`, `Options.randomize`, `applyGraphSize`), calls `await GenerationPipeline.run({graph})`, then registers the map (`registerMap` logs its summary and fires `map:generated`,
 `TOTAL` timing) or shows the generation error dialog.
 
 | Phase                    | Step ids                                        | Writes (selection)                                                              |

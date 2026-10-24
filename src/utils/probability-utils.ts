@@ -99,7 +99,6 @@ export const biased = (min: number, max: number, ex: number): number => {
   return Math.round(min + (max - min) * Math.random() ** ex);
 };
 
-const ERROR = false;
 /**
  * Get number from string in format "1-3" or "2" or "0.5"
  * @param {string} r - range string
@@ -107,7 +106,6 @@ const ERROR = false;
  */
 export const getNumberInRange = (r: string): number => {
   if (typeof r !== "string") {
-    ERROR && console.error("Range value should be a string", r);
     return 0;
   }
   if (!Number.isNaN(+r)) return ~~r + +P(+r - ~~r);
@@ -115,12 +113,10 @@ export const getNumberInRange = (r: string): number => {
   if (Number.isNaN(+r[0])) r = r.slice(1);
   const range = r.includes("-") ? r.split("-") : null;
   if (!range) {
-    ERROR && console.error("Cannot parse the number. Check the format", r);
     return 0;
   }
   const count = rand(parseFloat(range[0]) * sign, +parseFloat(range[1]));
   if (Number.isNaN(count) || count < 0) {
-    ERROR && console.error("Cannot parse number. Check the format", r);
     return 0;
   }
   return count;

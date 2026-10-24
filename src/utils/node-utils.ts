@@ -1,4 +1,5 @@
 import { pointer } from "d3";
+import { log } from "./logger";
 
 /**
  * @param id - The ID of the element to retrieve
@@ -9,7 +10,7 @@ export const ensureEl = <T extends Element = HTMLElement>(id: string): T => {
   const el = document.getElementById(id);
   if (!el) {
     // TODO: throw an error instead of logging it, and handle it properly in the caller
-    ERROR && console.error(`Element with id "${id}" not found.`);
+    log.error(`Element with id "${id}" not found.`);
     // TOBE: throw new Error(`Element with id "${id}" not found.`);
   }
   return el as unknown as T;
@@ -60,15 +61,18 @@ export const createEl = <T extends Element = SVGElement>(
  * Get pointer coordinates relative to a node, supporting both mouse and touch events.
  * d3 v7 pointer() unwraps to the source event and reads clientX from it, which TouchEvents lack.
  * d3 v5 mouse() read changedTouches[0]; this helper restores that behavior.
- * @param {any} event - A native event or d3 event wrapper (e.g. a drag event)
+ * @param event - A native event or d3 event wrapper (e.g. a drag event)
  * @param {Element} node - The node to compute coordinates relative to
  * @returns {[number, number]} - The [x, y] coordinates relative to the node
  */
-export const getPointer = (event: any, node?: Element | null): [number, number] => {
+type PointerInput = Event | { sourceEvent: PointerInput };
+
+export const getPointer = (event: PointerInput, node?: Element | null): [number, number] => {
   let source = event;
-  while (source.sourceEvent) source = source.sourceEvent;
-  const touch = source.changedTouches?.[0] ?? source.touches?.[0];
-  return pointer(touch ?? source, node ?? source.currentTarget);
+  while ("sourceEvent" in source && source.sourceEvent) source = source.sourceEvent;
+  const { changedTouches, touches, currentTarget } = source as Partial<TouchEvent>;
+  const touch = changedTouches?.[0] ?? touches?.[0];
+  return pointer(touch ?? source, node ?? currentTarget);
 };
 
 /**

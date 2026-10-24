@@ -1,7 +1,8 @@
+import { curveCatmullRom, curveLinear, curveLinearClosed } from "d3";
 import { describe, expect, it } from "vitest";
 import type { Point } from "@/model/graph/voronoi";
 import { getLabelPath } from "../renderers/labels/label-markup";
-import { meander, parsePathPoints } from "./path-utils";
+import { curveLength, meander, parsePathPoints } from "./path-utils";
 
 describe("parsePathPoints", () => {
   it("restores knots from a natural curve path", () => {
@@ -194,5 +195,48 @@ describe("addMeandering", () => {
       expect(actual[0]).toBe(overrideAnchors[k][0]);
       expect(actual[1]).toBe(overrideAnchors[k][1]);
     }
+  });
+});
+
+describe("curveLength", () => {
+  it("measures a polyline exactly", () => {
+    const points: [number, number][] = [
+      [0, 0],
+      [3, 4],
+      [3, 10]
+    ];
+    expect(curveLength(points, curveLinear)).toBe(11);
+  });
+
+  it("measures a closed curve with its closing segment", () => {
+    const square: [number, number][] = [
+      [0, 0],
+      [10, 0],
+      [10, 10],
+      [0, 10]
+    ];
+    expect(curveLength(square, curveLinearClosed)).toBe(40);
+  });
+
+  it("measures a straight Catmull-Rom curve as its chord", () => {
+    const points: [number, number][] = [
+      [0, 0],
+      [10, 0],
+      [30, 0]
+    ];
+    expect(curveLength(points, curveCatmullRom.alpha(0.5))).toBeCloseTo(30, 6);
+  });
+
+  it("measures a bent curve longer than the polyline through its points", () => {
+    const points: [number, number][] = [
+      [0, 0],
+      [10, 10],
+      [20, 0],
+      [30, 10]
+    ];
+    const polyline = curveLength(points, curveLinear);
+    const curve = curveLength(points, curveCatmullRom.alpha(0.1));
+    expect(curve).toBeGreaterThan(polyline);
+    expect(curve).toBeLessThan(polyline * 1.2);
   });
 });

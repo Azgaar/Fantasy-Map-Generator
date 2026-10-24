@@ -1,6 +1,7 @@
 import { quadtree, sum } from "d3";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
+import type { MilitaryUnit } from "@/types/military";
 import { nth } from "@/utils/language-utils";
 import { minmax, rn, si } from "@/utils/number-utils";
 import { gauss, ra, rand } from "@/utils/probability-utils";
@@ -206,8 +207,11 @@ class MilitaryModule {
       }
     };
 
+    // per state: the unit modifiers and the platoons that merge into its regiments
+    const drafts = new Map<number, { modifiers: Record<string, number>; platoons: Platoon[] }>();
     valid.forEach(s => {
-      s.temp = {};
+      const draft = { modifiers: {} as Record<string, number>, platoons: [] as Platoon[] };
+      drafts.set(s.i, draft);
       const d = s.diplomacy!;
 
       const expansionRate = minmax(s.expansionism / expn / (s.area! / area), 0.25, 4); // how much state expansionism is realized
@@ -223,8 +227,6 @@ class MilitaryModule {
         .reduce((s, r) => s + rate[r as keyof typeof rate], 0.5);
       const neighborsRate = minmax(neighborsRateRaw, 0.3, 3); // neighbors rate
       s.alert = minmax(rn(expansionRate * diplomacyRate * neighborsRate, 2), 0.1, 5); // alert rate (area modifier)
-      s.temp.platoons = [];
-
       // apply overall state modifiers for unit types based on state features
       for (const unit of options.map.military.units) {
         if (!stateModifier[unit.type as keyof typeof stateModifier]) continue;
@@ -235,7 +237,7 @@ class MilitaryModule {
           ] || 1;
         if (unit.type === "mounted" && s.formName?.includes("Horde")) modifier *= 2;
         else if (unit.type === "naval" && s.form === "Republic") modifier *= 1.2;
-        s.temp[unit.name] = modifier * s.alert;
+        draft.modifiers[unit.name] = modifier * s.alert;
       }
     });
 
@@ -246,7 +248,7 @@ class MilitaryModule {
       return "generic";
     };
 
-    function passUnitLimits(unit: any, biome: number, state: number, culture: number, religion: number) {
+    function passUnitLimits(unit: MilitaryUnit, biome: number, state: number, culture: number, religion: number) {
       if (unit.biomes && !unit.biomes.includes(biome)) return false;
       if (unit.states && !unit.states.includes(state)) return false;
       if (unit.cultures && !unit.cultures.includes(culture)) return false;
@@ -264,7 +266,8 @@ class MilitaryModule {
       const religion = cells.religion[i];
 
       const stateObj = states[state];
-      if (!state || stateObj.removed) continue;
+      const draft = drafts.get(state);
+      if (!state || stateObj.removed || !draft) continue;
 
       let modifier = cells.pop[i] / 100; // basic rural army in percentages
       if (culture !== stateObj.culture) modifier = stateObj.form === "Union" ? modifier / 1.2 : modifier / 2; // non-dominant culture
@@ -276,7 +279,7 @@ class MilitaryModule {
 
       for (const unit of options.map.military.units) {
         const perc = +unit.rural;
-        if (Number.isNaN(perc) || perc <= 0 || !stateObj.temp[unit.name]) continue;
+        if (Number.isNaN(perc) || perc <= 0 || !draft.modifiers[unit.name]) continue;
         if (!passUnitLimits(unit, biome, state, culture, religion)) continue;
         if (unit.type === "naval" && !cells.haven[i]) continue; // only near-ocean cells create naval units
 
@@ -287,7 +290,7 @@ class MilitaryModule {
                 unit.type as keyof (typeof cellTypeModifier)[keyof typeof cellTypeModifier]
               ]; // cell specific modifier
         const army = modifier * perc * cellTypeMod; // rural cell army
-        const total = rn(army * stateObj.temp[unit.name] * options.map.units.population.scale); // total troops
+        const total = rn(army * draft.modifiers[unit.name] * options.map.units.population.scale); // total troops
         if (!total) continue;
 
         let [x, y] = p[i];
@@ -300,7 +303,7 @@ class MilitaryModule {
           n = 1;
         }
 
-        stateObj.temp.platoons.push({
+        draft.platoons.push({
           cell: i,
           a: total,
           t: total,
@@ -324,6 +327,8 @@ class MilitaryModule {
       const religion = cells.religion[b.cell];
 
       const stateObj = states[state];
+      const draft = drafts.get(state);
+      if (!draft) continue;
       let m = (b.population * options.map.units.population.urbanization.rate) / 100; // basic urban army in percentages
       if (b.capital) m *= 1.2; // capital has household troops
       if (culture !== stateObj.culture) m = stateObj.form === "Union" ? m / 1.2 : m / 2; // non-dominant culture
@@ -333,7 +338,7 @@ class MilitaryModule {
 
       for (const unit of options.map.military.units) {
         const perc = +unit.urban;
-        if (Number.isNaN(perc) || perc <= 0 || !stateObj.temp[unit.name]) continue;
+        if (Number.isNaN(perc) || perc <= 0 || !draft.modifiers[unit.name]) continue;
         if (!passUnitLimits(unit, biome, state, culture!, religion)) continue;
         if (unit.type === "naval" && (!b.port || !cells.haven[b.cell])) continue; // only ports create naval units
 
@@ -344,7 +349,7 @@ class MilitaryModule {
                 unit.type as keyof (typeof burgTypeModifier)[keyof typeof burgTypeModifier]
               ]; // cell specific modifier
         const army = m * perc * mod; // urban cell army
-        const total = rn(army * stateObj.temp[unit.name] * options.map.units.population.scale); // total troops
+        const total = rn(army * draft.modifiers[unit.name] * options.map.units.population.scale); // total troops
         if (!total) continue;
 
         let [x, y] = p[b.cell];
@@ -357,7 +362,7 @@ class MilitaryModule {
           n = 1;
         }
 
-        stateObj.temp.platoons.push({
+        draft.platoons.push({
           cell: b.cell,
           a: total,
           t: total,
@@ -383,10 +388,7 @@ class MilitaryModule {
       );
 
       // add n0 to n1's ultimate parent
-      const merge = (
-        n0: { s: number; u: string; t: number; children?: any[] },
-        n1: { s: number; u: string; t: number; children?: any[] }
-      ) => {
+      const merge = (n0: Platoon, n1: Platoon) => {
         if (!n1.children) n1.children = [n0];
         else n1.children.push(n0);
         if (n0.children)
@@ -454,8 +456,7 @@ class MilitaryModule {
 
     // get regiments for each state
     valid.forEach(s => {
-      s.military = createRegiments(s.temp.platoons, s);
-      delete s.temp; // do not store temp data
+      s.military = createRegiments(drafts.get(s.i)!.platoons, s);
     });
   }
 

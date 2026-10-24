@@ -12,7 +12,6 @@ describe("MarketsModule", () => {
       marketsModule = new MarketsModule();
       Object.assign(Markets, marketsModule);
       options.map.graph = { width: 1000, height: 800, points: 10000, sampling: "square", jitter: 0.9 };
-      globalThis.TIME = false;
       Object.assign(States, {
         getSalesTax: (burg: { state?: number }) => {
           const stateId = burg?.state || 0;

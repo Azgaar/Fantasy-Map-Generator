@@ -1,4 +1,4 @@
-import { drag, type Selection, select } from "d3";
+import { type D3DragEvent, drag, type Selection, select } from "d3";
 import { Controllers } from "@/controllers";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
@@ -228,7 +228,9 @@ function drawCells(cells: number[]): void {
     .attr("points", (d: number) => String(Pack.getPolygon(d)));
 }
 
-function dragControlPoint(event: any): void {
+type PointDrag = D3DragEvent<SVGCircleElement, Point, Point>;
+
+function dragControlPoint(event: PointDrag): void {
   const { r, fl } = pack.cells;
   const river = getRiver();
 
@@ -237,15 +239,15 @@ function dragControlPoint(event: any): void {
 
   let movedToCell: number | null = null;
 
-  event.on("drag", function (this: any, dragEvent: any) {
+  event.on("drag", function (this: SVGCircleElement, dragEvent: PointDrag) {
     const { x, y } = dragEvent;
     const currentCell = Pack.findCell(x, y);
 
     movedToCell = initCell !== currentCell ? currentCell! : null;
 
-    this.setAttribute("cx", x);
-    this.setAttribute("cy", y);
-    this.__data__ = [rn(x, 1), rn(y, 1)];
+    this.setAttribute("cx", String(x));
+    this.setAttribute("cy", String(y));
+    select<SVGCircleElement, Point>(this).datum([rn(x, 1), rn(y, 1)]);
     redrawRiver();
     drawCells(river.cells);
   });
@@ -275,7 +277,7 @@ function redrawRiver(): void {
   if (findEl("elevationProfile")) showRiverElevationProfile();
 }
 
-function addControlPoint(this: any, event: any): void {
+function addControlPoint(this: SVGElement, event: MouseEvent): void {
   const [x, y] = getPointer(event, this);
   const point: Point = [rn(x, 1), rn(y, 1)];
 
@@ -288,7 +290,7 @@ function addControlPoint(this: any, event: any): void {
   redrawRiver();
 }
 
-function removeControlPoint(this: any): void {
+function removeControlPoint(this: SVGCircleElement): void {
   this.remove();
   redrawRiver();
 

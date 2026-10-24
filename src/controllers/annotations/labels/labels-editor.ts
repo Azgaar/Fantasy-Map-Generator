@@ -282,9 +282,9 @@ function drawControlPoint(point: Point): void {
     .on("click", clickControlPoint);
 }
 
-function dragControlPoint(this: SVGCircleElement, event: any): void {
-  this.setAttribute("cx", event.x);
-  this.setAttribute("cy", event.y);
+function dragControlPoint(this: SVGCircleElement, event: D3DragEvent<SVGCircleElement, unknown, unknown>): void {
+  this.setAttribute("cx", String(event.x));
+  this.setAttribute("cy", String(event.y));
   redrawLabelPath();
 }
 
@@ -310,7 +310,7 @@ function clickControlPoint(this: SVGCircleElement): void {
   redrawLabelPath();
 }
 
-function addInterimControlPoint(this: SVGPathElement, event: any): void {
+function addInterimControlPoint(this: SVGPathElement, event: MouseEvent): void {
   const point = getPointer(event, this);
 
   const dists: number[] = [];

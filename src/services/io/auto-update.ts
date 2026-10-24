@@ -59,6 +59,7 @@ import { Dialog } from "@/ui/dialog/dialog";
 import { unique } from "@/utils/array-utils";
 import { sanitizeSvgIcon, scopeSvgIcon } from "@/utils/file-utils";
 import { t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
 import { minmax, rn } from "@/utils/number-utils";
 import { parsePathPoints } from "@/utils/path-utils";
 import { rw } from "@/utils/probability-utils";
@@ -109,8 +110,7 @@ const LEGACY_LAYER_IDS: Record<string, LayerId> = {
 
 export async function resolveVersionConflicts(mapVersion: string, data: string[]): Promise<void> {
   const isLegacy = compareVersions(mapVersion, "1.156.0").isOlder;
-  if (isLegacy && !data[5])
-    WARN && console.warn("[Auto-update] The svg record is missing: data kept only there is lost");
+  if (isLegacy && !data[5]) log.warn("[Auto-update] The svg record is missing: data kept only there is lost");
   const legacySvg = isLegacy && data[5] ? parseLegacySvg(data[5]) : null;
   try {
     await migrateLegacyMap(mapVersion, data, legacySvg ?? new DocumentFragment());
@@ -898,7 +898,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
         if (node.id) noteRenames.set(node.id, ""); // a skipped road must not match a reused route id
         const totalLength = node.getTotalLength();
         if (!totalLength) {
-          ERROR && console.error("Route path has zero length", node);
+          log.error("Route path has zero length", node);
           continue;
         }
 
@@ -914,7 +914,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
         }
 
         if (points.length < 2) {
-          ERROR && console.error("Route path has less than 2 points", node);
+          log.error("Route path has less than 2 points", node);
           continue;
         }
 
@@ -1396,7 +1396,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       if (pathEl) state.label = getPathLabel({ textEl, pathEl, names: [renderedName] });
     }
 
-    delete (options as any).stateLabelsMode; // migrated to group settings
+    Reflect.deleteProperty(options, "stateLabelsMode"); // migrated to group settings
 
     function deriveLabelsStyle(groupEl: SVGGElement): Record<string, string | number | null> {
       // strokes inherit and default to none: a width with no stroke above it was never stroked
@@ -1673,7 +1673,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       if (!Object.keys(moved).length) return null;
       if (unresolved > points * 0.05) return null; // the svg does not match the graph, the result is not trustworthy
 
-      INFO && console.info(`Recovered ${Object.keys(moved).length} moved vertices from the map svg`);
+      log.info(`Recovered ${Object.keys(moved).length} moved vertices from the map svg`);
       return { pack: { vertices: { p: moved } } };
     }
 
@@ -1802,7 +1802,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
 
     // a note with nothing left to describe cannot be kept, so the text is offered back to the user
     if (unattachedNotes.length) {
-      WARN && console.warn(`[Auto-update] ${unattachedNotes.length} note(s) belong to no map element`);
+      log.warn(`[Auto-update] ${unattachedNotes.length} note(s) belong to no map element`);
 
       const rows = unattachedNotes.map(note => [note.id, note.name, note.legend]);
 

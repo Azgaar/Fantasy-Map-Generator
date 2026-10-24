@@ -39,13 +39,13 @@ async function open(): Promise<void> {
 
 /** A narrow desktop window is not a phone: ask the device before trusting the viewport width */
 function isHandheld(): boolean {
-  const mobile = (navigator as any).userAgentData?.mobile;
+  const mobile = navigator.userAgentData?.mobile;
   return mobile ?? (isMobile() && matchMedia("(pointer: coarse)").matches);
 }
 
 /** Which file this visitor needs, so that nobody has to know what an architecture is */
 async function detectTarget(): Promise<string | undefined> {
-  const agent = (navigator as any).userAgentData;
+  const agent = navigator.userAgentData;
   const signature = `${agent?.platform ?? navigator.platform ?? ""} ${navigator.userAgent}`;
 
   const os: Os | undefined = /win/i.test(signature)

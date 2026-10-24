@@ -21,6 +21,7 @@ import { highlightElement } from "@/ui/map/highlight";
 import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
 import { ensureEl, findEl } from "@/utils/node-utils";
 
 const dialogId = "labelsOverview" as const;
@@ -460,7 +461,7 @@ async function spreadLabels(): Promise<void> {
     finishSpreadPreview();
     Layers.draw("labels");
     syncSpreadControls();
-    ERROR && console.error(error);
+    log.error(error);
   }
 }
 

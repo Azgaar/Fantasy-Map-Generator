@@ -1,4 +1,4 @@
-import { pack as packLayout, select, stratify } from "d3";
+import { type HierarchyCircularNode, pack as packLayout, select, stratify } from "d3";
 import { Controllers } from "@/controllers";
 import { Markets } from "@/model/economy/markets-generator";
 import type { Burg } from "@/model/political/burgs-generator";
@@ -547,6 +547,33 @@ function regenerateNames(): void {
   Layers.draw("labels");
 }
 
+// a group (state, culture, province) or a burg in the bubble chart; the parent field depends on the grouping
+type BubbleDatum = {
+  id: number;
+  name?: string;
+  color?: string;
+  i?: number;
+  state?: number | null;
+  culture?: number | null;
+  province?: number | null;
+  parent?: number | null;
+  population?: number;
+  capital?: number;
+  x?: number;
+  y?: number;
+};
+type Bubble = HierarchyCircularNode<BubbleDatum>;
+
+const stratifyBubbles = (data: BubbleDatum[], parentOf: (d: BubbleDatum) => number | null | undefined) =>
+  stratify<BubbleDatum>()
+    .id(d => String(d.id))
+    .parentId(d => {
+      const parent = parentOf(d);
+      return parent == null ? parent : String(parent);
+    })(data)
+    .sum(d => d.population ?? 0)
+    .sort((a, b) => b.value! - a.value!);
+
 function showBurgsChart(): void {
   // build hierarchy tree
   const states = pack.states.map(s => {
@@ -577,16 +604,13 @@ function showBurgsChart(): void {
         y: b.y
       };
     });
-  const data: any[] = (states as any[]).concat(burgs);
+  const data: BubbleDatum[] = [...states, ...burgs];
   if (data.length < 2) {
     tip(t("No burgs to show"), false, "error");
     return;
   }
 
-  const root = (stratify() as any)
-    .parentId((d: any) => d.state)(data)
-    .sum((d: any) => d.population)
-    .sort((a: any, b: any) => b.value - a.value);
+  const root = stratifyBubbles(data, d => d.state);
 
   const uiSize = ensureEl<HTMLInputElement>("uiSize").valueAsNumber;
   const width = 150 + 200 * uiSize;
@@ -594,7 +618,7 @@ function showBurgsChart(): void {
   const margin = { top: 0, right: -50, bottom: -10, left: -50 };
   const w = width - margin.left - margin.right;
   const h = height - margin.top - margin.bottom;
-  const treeLayout = packLayout().size([w, h]).padding(3);
+  const treeLayout = packLayout<BubbleDatum>().size([w, h]).padding(3);
 
   // prepare svg
   const chart = document.createElement("div");
@@ -613,27 +637,28 @@ function showBurgsChart(): void {
   const graph = svg.append("g").attr("transform", `translate(-50, -10)`);
   chart.querySelector("#burgsTreeType")!.addEventListener("change", updateChart);
 
-  treeLayout(root);
-
   const node = graph
-    .selectAll("circle")
-    .data(root.leaves())
+    .selectAll<SVGCircleElement, Bubble>("circle")
+    .data(treeLayout(root).leaves())
     .join("circle")
-    .attr("data-id", (d: any) => d.data.i)
-    .attr("r", (d: any) => d.r)
-    .attr("fill", (d: any) => d.parent.data.color)
-    .attr("cx", (d: any) => d.x)
-    .attr("cy", (d: any) => d.y)
-    .on("mouseenter", (event: any, d: any) => showInfo(event, d))
-    .on("mouseleave", (event: any) => hideInfo(event))
-    .on("click", (_event: any, d: any) => zoomTo(d.data.x, d.data.y, 8, 2000));
+    .attr("data-id", d => d.data.i ?? null)
+    .attr("r", d => d.r)
+    .attr("fill", d => d.parent!.data.color!)
+    .attr("cx", d => d.x)
+    .attr("cy", d => d.y)
+    .on("mouseenter", (event: MouseEvent, d) => showInfo(event, d))
+    .on("mouseleave", (event: MouseEvent) => hideInfo(event))
+    .on("click", (_event, d) => zoomTo(d.data.x!, d.data.y!, 8, 2000));
 
-  function showInfo(ev: any, d: any): void {
-    select(ev.target).transition().duration(1500).attr("stroke", "#c13119");
+  function showInfo(ev: MouseEvent, d: Bubble): void {
+    select(ev.target as SVGCircleElement)
+      .transition()
+      .duration(1500)
+      .attr("stroke", "#c13119");
     const name = d.data.name;
-    const parent = d.parent.data.name;
+    const parent = d.parent!.data.name;
     const population = si(
-      d.value * options.map.units.population.scale * options.map.units.population.urbanization.rate
+      d.value! * options.map.units.population.scale * options.map.units.population.urbanization.rate
     );
 
     ensureEl("burgsInfo").innerHTML = /* html */ `${name}. ${parent}. ${`${t("Population")}: ${population}`}`;
@@ -641,11 +666,13 @@ function showBurgsChart(): void {
     tip(t("Click to zoom"));
   }
 
-  function hideInfo(ev: any): void {
+  function hideInfo(ev: MouseEvent): void {
     burgHighlightOff();
     if (!ensureEl("burgsInfo")) return;
     ensureEl("burgsInfo").innerHTML = "&#8205;";
-    select(ev.target).transition().attr("stroke", null);
+    select(ev.target as SVGCircleElement)
+      .transition()
+      .attr("stroke", null);
     tip("");
   }
 
@@ -674,7 +701,7 @@ function showBurgsChart(): void {
         .map(p => {
           return { id: p.i + states.length - 1, parent: p.state, color: p.color, name: p.fullName };
         });
-      return (states as any[]).concat(provinces);
+      return [...states, ...provinces];
     };
 
     const getProvincesData = () =>
@@ -684,14 +711,14 @@ function showBurgsChart(): void {
         return { id: p.i ? p.i : 0, province: p.i ? 0 : null, color, name };
       });
 
-    const value = (d: any) => {
+    const value = (d: BubbleDatum) => {
       if (this.value === "states") return d.state;
       if (this.value === "cultures") return d.culture;
       if (this.value === "parent") return d.parent;
       if (this.value === "provinces") return d.province;
     };
 
-    const mapping: Record<string, () => any[]> = {
+    const mapping: Record<string, () => BubbleDatum[]> = {
       states: getStatesData,
       cultures: getCulturesData,
       parent: getParentData,
@@ -703,22 +730,17 @@ function showBurgsChart(): void {
       b.id = b.i + base.length - 1;
     });
 
-    const data: any[] = base.concat(burgs);
-
-    const root = (stratify() as any)
-      .parentId((d: any) => value(d))(data)
-      .sum((d: any) => d.population)
-      .sort((a: any, b: any) => b.value - a.value);
+    const root = stratifyBubbles([...base, ...burgs], value);
 
     node
-      .data((treeLayout(root) as any).leaves())
+      .data(treeLayout(root).leaves())
       .transition()
       .duration(2000)
-      .attr("data-id", (d: any) => d.data.i)
-      .attr("fill", (d: any) => d.parent.data.color)
-      .attr("cx", (d: any) => d.x)
-      .attr("cy", (d: any) => d.y)
-      .attr("r", (d: any) => d.r);
+      .attr("data-id", d => d.data.i ?? null)
+      .attr("fill", d => d.parent!.data.color!)
+      .attr("cx", d => d.x)
+      .attr("cy", d => d.y)
+      .attr("r", d => d.r);
   }
 
   Dialog.message({

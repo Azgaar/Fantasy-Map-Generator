@@ -337,7 +337,6 @@ describe("restoreFeatures", () => {
 
 describe("restoreBurgs", () => {
   beforeEach(() => {
-    vi.stubGlobal("WARN", false);
     Object.assign(Pack, { findCell: findOnLine });
     Object.assign(Burgs, { getPortWater: () => 7 });
   });
@@ -593,7 +592,6 @@ describe("restoreZones", () => {
 
 describe("restoreJourneys", () => {
   beforeEach(() => {
-    vi.stubGlobal("WARN", false);
     Object.assign(Pack, { findCell: (x: number) => Math.round(x) });
     Object.assign(Journeys, { getPathLength: (points: unknown[]) => points.length });
     // cells 20 apart are neighbors too, so the points below need no filling
@@ -834,7 +832,6 @@ describe("restoreLockedRivers", () => {
     );
 
   beforeEach(() => {
-    vi.stubGlobal("WARN", false);
     Object.assign(Pack, { findCell: findOnLine });
     // cell 3 went under the sea
     const cells = { ...lineCells([25, 25, 25, 10, 25, 25]), f: Uint16Array.from([1, 1, 1, 2, 1, 1]) };

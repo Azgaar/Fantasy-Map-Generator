@@ -131,7 +131,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
           if (errors.length) return;
 
           function buildFinalMultipliers(): Good["multipliers"] {
-            const result: Good["multipliers"] = {};
+            const result: NonNullable<Good["multipliers"]> = {};
             for (const [dimKey, vals] of Object.entries(multipliers) as [
               MultiplierDimKey,
               Partial<Record<string, number>>
@@ -139,7 +139,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
               const nonDefault = Object.fromEntries(
                 Object.entries(vals ?? {}).filter(([, v]) => v !== undefined && v !== 1)
               );
-              if (Object.keys(nonDefault).length) (result as any)[dimKey] = nonDefault;
+              if (Object.keys(nonDefault).length) result[dimKey] = nonDefault;
             }
             return Object.keys(result).length ? result : undefined;
           }

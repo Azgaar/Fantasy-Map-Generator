@@ -3,7 +3,6 @@ import { MIN_NAVIGABLE_FLUX, Rivers } from "./river-generator";
 
 describe("RiverModule helpers", () => {
   beforeEach(async () => {
-    globalThis.TIME = false;
     globalThis.window = globalThis.window || ({} as any);
     globalThis.pack = {
       cells: { r: [], fl: [], f: [] },
@@ -180,7 +179,6 @@ describe("locked rivers", () => {
     ({ i, cells, parent: i, widthFactor: 1, sourceWidth: 0, ...data }) as River;
 
   beforeEach(async () => {
-    globalThis.TIME = false;
     globalThis.window = globalThis.window || ({} as typeof window);
     globalThis.pack = {
       cells: {

@@ -3,6 +3,7 @@ import { Icons } from "@/model/icons";
 import { Layers } from "@/renderers/layers";
 import { boundsIntersect, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import type { PackedGraph } from "@/types/packed-graph";
+import { log } from "@/utils/logger";
 import { findEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 import { getIsolines } from "@/utils/path-utils";
@@ -16,10 +17,10 @@ let sourcePack: PackedGraph | null = null;
 let sourceMarkets: Uint16Array | null = null;
 
 export function drawMarkets(): void {
-  TIME && console.time("drawMarkets");
+  log.time("drawMarkets");
   buildTerritories();
   layer.render();
-  TIME && console.timeEnd("drawMarkets");
+  log.timeEnd("drawMarkets");
 }
 
 function buildTerritories(): void {

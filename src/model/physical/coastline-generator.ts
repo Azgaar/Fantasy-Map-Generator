@@ -2,6 +2,7 @@ import Alea from "alea";
 import { Options } from "@/model/options/options-model";
 import type { Point } from "@/types/global";
 import { clipPoly } from "@/utils/common-utils";
+import { log } from "@/utils/logger";
 import { minmax } from "@/utils/number-utils";
 import { simplify } from "@/utils/simplify";
 import { round } from "@/utils/string-utils";
@@ -84,7 +85,7 @@ class CoastlineGenerator {
   getFeatureOutline(feature: Feature): Point[] {
     const points = feature.vertices.map(vertex => pack.vertices.p[vertex]);
     if (points.some(point => point === undefined)) {
-      ERROR && console.error("Undefined point in getFeatureOutline");
+      log.error("Undefined point in getFeatureOutline");
       return [];
     }
 

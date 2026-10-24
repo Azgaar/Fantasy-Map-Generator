@@ -6,7 +6,6 @@ import { Resample } from "@/model/resample";
 import { Layers } from "@/renderers/layers";
 import { undraw } from "@/renderers/undraw";
 import { viewport } from "@/renderers/viewport/viewport";
-import { logStats } from "@/services/logging";
 import { registerMap } from "@/services/map-history";
 import { App } from "@/ui/app-commands";
 import { Dialog } from "@/ui/dialog/dialog";
@@ -16,6 +15,7 @@ import { resetZoom } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { getLatitude, getLongitude } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
 import { ensureEl } from "@/utils/node-utils";
 import { minmax, rn } from "@/utils/number-utils";
 
@@ -89,7 +89,7 @@ function handlePointsInput(e: Event): void {
 }
 
 function generateSubmap(): void {
-  INFO && console.group("generateSubmap");
+  log.group("generateSubmap");
 
   const { x0, y0, scale } = getSubmapRegion();
   try {
@@ -110,11 +110,11 @@ function generateSubmap(): void {
       Resample.process({ projection, inverse, scale });
     });
   } catch (error) {
-    ERROR && console.error(error);
+    log.error(error);
     redrawMap();
     const failed = t("Failed to create the submap: {{error}}", { error: (error as Error).message });
     tip(sentences(failed, t("The map is unchanged")), false, "error", 6000);
-    INFO && console.groupEnd();
+    log.groupEnd();
     return;
   }
 
@@ -122,9 +122,8 @@ function generateSubmap(): void {
   Layers.drawAll();
 
   registerMap(); // a submap is a new map: it gets its own id and history entry
-  logStats();
 
-  INFO && console.groupEnd();
+  log.groupEnd();
 }
 
 /**

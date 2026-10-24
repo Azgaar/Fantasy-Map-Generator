@@ -1,6 +1,7 @@
 // Map values in the map's own units, as `options.map.units` sets them
 import { Grid } from "@/model/graph/grid-generator";
 import { Pack } from "@/model/graph/pack-generator";
+import type { GridGraph } from "@/types/grid-graph";
 import type { PackedGraph } from "@/types/packed-graph";
 import { rn } from "@/utils/number-utils";
 
@@ -64,12 +65,12 @@ export function getPrecipitation(prec: number): string {
 }
 
 /** Get user-friendly precipitation value in a cell */
-export function getFriendlyPrecipitation(cellId: number, pack: PackedGraph, grid: any): string {
+export function getFriendlyPrecipitation(cellId: number, pack: PackedGraph, grid: GridGraph): string {
   return getPrecipitation(grid.cells.prec[pack.cells.g[cellId]]);
 }
 
 /** Get user-friendly height value at a point */
-export function getFriendlyHeight([x, y]: [number, number], pack: PackedGraph, grid: any): string {
+export function getFriendlyHeight([x, y]: [number, number], pack: PackedGraph, grid: GridGraph): string {
   const packH = pack.cells.h[Pack.findCell(x, y, Infinity, pack) as number];
   const gridH = grid.cells.h[Grid.findCell(x, y, grid)];
   return getHeight(packH < 20 ? gridH : packH);

@@ -22,7 +22,6 @@ describe("MarkersModule.addEncounter", () => {
   beforeEach(async () => {
     originalNavigatorDescriptor = Object.getOwnPropertyDescriptor(globalThis, NAV_KEY);
 
-    globalThis.TIME = false;
     options.map.cultures.set = "world";
     globalThis.window = globalThis.window || ({} as any);
 

@@ -22,13 +22,10 @@ import { escapeHtml } from "@/utils/string-utils";
  * @param {Node | Window} node - The starting node or window
  * @returns {Array<Node>} - The composed path as an array
  */
-const getComposedPath = (node: any): Array<Node | Window> => {
-  let parent: Node | Window | undefined;
-  if (node.parentNode) parent = node.parentNode;
-  else if (node.host) parent = node.host;
-  else if (node.defaultView) parent = node.defaultView;
-  if (parent !== undefined) return [node].concat(getComposedPath(parent));
-  return [node];
+const getComposedPath = (node: Node | Window): Array<Node | Window> => {
+  const { parentNode, host, defaultView } = node as Partial<Pick<Node, "parentNode"> & ShadowRoot & Document>;
+  const parent = parentNode || host || defaultView;
+  return parent ? [node, ...getComposedPath(parent)] : [node];
 };
 
 export function handleMouseMove(event: MouseEvent | TouchEvent): void {

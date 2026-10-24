@@ -1,5 +1,6 @@
 import { clipPolygon } from "lineclip";
 import { last } from "./array-utils";
+import { log } from "./logger";
 import { distanceSquared, rn } from "./number-utils";
 
 /**
@@ -14,7 +15,7 @@ import { distanceSquared, rn } from "./number-utils";
 export const clipPoly = (points: [number, number][], graphWidth: number, graphHeight: number, secure?: number) => {
   if (points.length < 2) return points;
   if (points.some(point => point === undefined)) {
-    ERROR && console.error("Undefined point in clipPoly", points);
+    log.error("Undefined point in clipPoly", points);
     return points;
   }
 
@@ -76,10 +77,10 @@ export const getSegmentId = (points: [number, number][], point: [number, number]
  * @param ms - The number of milliseconds to delay
  * @returns The debounced function
  */
-export const debounce = <T extends (...args: any[]) => any>(func: T, ms: number) => {
+export const debounce = <A extends unknown[], This>(func: (this: This, ...args: A) => unknown, ms: number) => {
   let isCooldown = false;
 
-  return function (this: any, ...args: Parameters<T>) {
+  return function (this: This, ...args: A) {
     if (isCooldown) return;
     func.apply(this, args);
     isCooldown = true;
@@ -95,12 +96,12 @@ export const debounce = <T extends (...args: any[]) => any>(func: T, ms: number)
  * @param ms - The number of milliseconds to throttle invocations to
  * @returns The throttled function
  */
-export const throttle = <T extends (...args: any[]) => any>(func: T, ms: number) => {
+export const throttle = <A extends unknown[], This>(func: (this: This, ...args: A) => unknown, ms: number) => {
   let isThrottled = false;
-  let savedArgs: any[] | null = null;
-  let savedThis: any = null;
+  let savedArgs: A | null = null;
+  let savedThis: This | null = null;
 
-  function wrapper(this: any, ...args: Parameters<T>) {
+  function wrapper(this: This, ...args: A) {
     if (isThrottled) {
       savedArgs = args;
       savedThis = this;
@@ -113,7 +114,7 @@ export const throttle = <T extends (...args: any[]) => any>(func: T, ms: number)
     setTimeout(() => {
       isThrottled = false;
       if (savedArgs) {
-        wrapper.apply(savedThis, savedArgs as Parameters<T>);
+        wrapper.apply(savedThis as This, savedArgs);
         savedArgs = savedThis = null;
       }
     }, ms);
@@ -188,6 +189,8 @@ export const isCtrlClick = (event: MouseEvent | KeyboardEvent): boolean => {
   return event.ctrlKey || event.metaKey;
 };
 
+type MapCoordinates = { latN: number; latT: number; lonW: number; lonT: number };
+
 /**
  * Convert x coordinate to longitude
  * @param x - The x coordinate
@@ -196,7 +199,12 @@ export const isCtrlClick = (event: MouseEvent | KeyboardEvent): boolean => {
  * @param decimals - Number of decimal places (default is 2)
  * @returns Longitude value
  */
-export const getLongitude = (x: number, mapCoordinates: any, graphWidth: number, decimals: number = 2): number => {
+export const getLongitude = (
+  x: number,
+  mapCoordinates: Pick<MapCoordinates, "lonW" | "lonT">,
+  graphWidth: number,
+  decimals: number = 2
+): number => {
   return rn(mapCoordinates.lonW + (x / graphWidth) * mapCoordinates.lonT, decimals);
 };
 
@@ -208,7 +216,12 @@ export const getLongitude = (x: number, mapCoordinates: any, graphWidth: number,
  * @param decimals - Number of decimal places (default is 2)
  * @returns Latitude value
  */
-export const getLatitude = (y: number, mapCoordinates: any, graphHeight: number, decimals: number = 2): number => {
+export const getLatitude = (
+  y: number,
+  mapCoordinates: Pick<MapCoordinates, "latN" | "latT">,
+  graphHeight: number,
+  decimals: number = 2
+): number => {
   return rn(mapCoordinates.latN - (y / graphHeight) * mapCoordinates.latT, decimals);
 };
 
@@ -225,7 +238,7 @@ export const getLatitude = (y: number, mapCoordinates: any, graphHeight: number,
 export const getCoordinates = (
   x: number,
   y: number,
-  mapCoordinates: any,
+  mapCoordinates: MapCoordinates,
   graphWidth: number,
   graphHeight: number,
   decimals: number = 2

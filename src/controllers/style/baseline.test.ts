@@ -33,7 +33,6 @@ async function baseline(): Promise<Baseline> {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.stubGlobal("ERROR", false);
   vi.stubGlobal("styles", {
     rivers: { attrs: { opacity: null, fill: "#5d97bb", filter: null } },
     labels: {

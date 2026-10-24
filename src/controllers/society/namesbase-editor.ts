@@ -8,6 +8,7 @@ import { unique } from "@/utils/array-utils";
 import { openURL } from "@/utils/common-utils";
 import { createFileInput, downloadFile, uploadFile } from "@/utils/file-utils";
 import { sentences, t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 import { escapeHtml } from "@/utils/string-utils";
@@ -376,12 +377,12 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
       });
     } catch (e) {
       errors.push({ id: index + 1, line, error: (e as Error).message });
-      ERROR && console.error(e);
+      log.error(e);
     }
   });
 
   if (errors.length > 0) {
-    ERROR && console.error("Namesbase upload errors", errors);
+    log.error("Namesbase upload errors", errors);
     const errorItems = errors
       .map(
         ({ id, line, error }) => /* html */ `<li style="padding:0.6em 0;border-top:1px solid #ddd;">

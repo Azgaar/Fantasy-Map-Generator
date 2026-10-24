@@ -1,5 +1,6 @@
 import { LocalDB } from "@/services/local-db";
 import { t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
 import type { Message, Usage } from "./provider/providers";
 import type { RunResult } from "./provider/runtime";
 
@@ -179,7 +180,7 @@ function persist(): void {
         await LocalDB.set(STORAGE_KEY, chats);
       }
     } catch (error) {
-      ERROR && console.error("Assistant chats could not be saved", error); // the next change tries again
+      log.error("Assistant chats could not be saved", error); // the next change tries again
     } finally {
       saving = false;
     }

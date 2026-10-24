@@ -1,10 +1,11 @@
 import { color as d3Color } from "d3";
+import { log } from "@/utils/logger";
 import { ensureEl } from "@/utils/node-utils";
 import { getIsolines } from "@/utils/path-utils";
 import { buildFillPaths } from "./isoline-fills";
 
 export function drawStates(): void {
-  TIME && console.time("drawStates");
+  log.time("drawStates");
   const { cells, states } = pack;
 
   const renderHalo = options.app.performance.stateHalos;
@@ -26,5 +27,5 @@ export function drawStates(): void {
   ensureEl("statePaths").innerHTML = clipPaths.join("");
   ensureEl("statesHalo").innerHTML = haloPaths.join("");
 
-  TIME && console.timeEnd("drawStates");
+  log.timeEnd("drawStates");
 }

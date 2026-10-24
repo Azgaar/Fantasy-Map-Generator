@@ -5,7 +5,6 @@ describe("GoodsModule", () => {
   let goodsModule: any;
 
   beforeEach(async () => {
-    globalThis.TIME = false;
     options.map.seed = "seed";
     globalThis.window = globalThis.window || ({} as any);
     globalThis.grid = { cells: { temp: [20, 20, 20, 20] } } as any;

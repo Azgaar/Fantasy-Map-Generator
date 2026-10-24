@@ -14,6 +14,7 @@ import { fitMapToScreen } from "@/ui/map/canvas";
 import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
 import { ensureEl } from "@/utils/node-utils";
 
 const MAP_LINK_PATTERN = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-/]))?/;
@@ -29,7 +30,7 @@ export async function checkLoadParameters(): Promise<void> {
 
   const maplink = params.get("maplink");
   if (maplink) {
-    WARN && console.warn("Load map from URL");
+    log.warn("Load map from URL");
     if (MAP_LINK_PATTERN.test(maplink)) {
       setTimeout(() => Services.Load.loadMapFromURL(maplink, true), 1000);
       return;
@@ -39,7 +40,7 @@ export async function checkLoadParameters(): Promise<void> {
 
   // a seed provided by the user or by MFCG: generate the map it describes
   if (params.get("seed")) {
-    WARN && console.warn("Generate map for seed", params.get("seed"));
+    log.warn("Generate map for seed", params.get("seed"));
     await generateMapOnLoad(size);
     return;
   }
@@ -48,16 +49,16 @@ export async function checkLoadParameters(): Promise<void> {
     try {
       const blob = await LocalDB.get("lastMap");
       if (blob) {
-        WARN && console.warn("Loading last stored map");
+        log.warn("Loading last stored map");
         Services.Load.uploadMap(blob);
         return;
       }
     } catch (error) {
-      ERROR && console.error(error);
+      log.error(error);
     }
   }
 
-  WARN && console.warn("Generate random map");
+  log.warn("Generate random map");
   generateMapOnLoad(size);
 }
 
@@ -118,7 +119,7 @@ export function focusOn(): void {
 function findBurgForMFCG(params: URLSearchParams): void {
   const { cells } = pack;
   const burgs = pack.burgs;
-  if (burgs.length < 2) return void (ERROR && console.error("Cannot select a burg for MFCG"));
+  if (burgs.length < 2) return void log.error("Cannot select a burg for MFCG");
 
   const size = +(params.get("size") ?? 0);
   const coast = +(params.get("coast") ?? 0);
@@ -143,7 +144,7 @@ function findBurgForMFCG(params: URLSearchParams): void {
   const distance = (burg: Burg) => Math.abs((burg.population ?? 0) - size);
   const closest = leastIndex(selection, (a, b) => distance(a) - distance(b));
   const burgId = closest === undefined ? 0 : selection[closest].i;
-  if (!burgId) return void (ERROR && console.error("Cannot select a burg for MFCG"));
+  if (!burgId) return void log.error("Cannot select a burg for MFCG");
 
   const burg = burgs[burgId];
   for (const [key, value] of new URL(document.referrer).searchParams) {

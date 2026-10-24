@@ -1,5 +1,4 @@
 // The app's modules, loaded once the interface language's strings are: their markup is translated as they load
-import "@/services/logging";
 import "@/model/globals";
 import "@/model/options/options-defaults";
 import "./chrome/tabs";

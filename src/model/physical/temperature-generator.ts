@@ -1,4 +1,5 @@
 import { SEA_LEVEL } from "@/utils/height-utils";
+import { log } from "@/utils/logger";
 import { minmax, rn } from "@/utils/number-utils";
 
 class TemperatureModule {
@@ -49,7 +50,7 @@ class TemperatureModule {
         options.map.geography.coordinates.latN -
         (y / options.map.graph.height) * options.map.geography.coordinates.latT; // [90; -90]
       const seaLevelTemp = getSeaLevelTemperature(rowLatitude);
-      DEBUG.temperature && console.info(`${rn(rowLatitude)}° sea temperature: ${rn(seaLevelTemp)}°C`);
+      log.debug.temperature && log.info(`${rn(rowLatitude)}° sea temperature: ${rn(seaLevelTemp)}°C`);
 
       for (let cellId = rowCellId; cellId < rowCellId + cellsX; cellId++) {
         temp[cellId] = minmax(seaLevelTemp - getAltitudeDrop(h[cellId]), -128, 127);

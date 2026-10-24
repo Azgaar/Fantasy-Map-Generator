@@ -4,13 +4,14 @@ import { heightmapTemplates } from "@/data/heightmap-templates";
 import { Lattice } from "@/model/graph/lattice";
 import type { MapData } from "@/model/options/options-schema";
 import type { GridGraph } from "@/types/grid-graph";
+import { log } from "@/utils/logger";
 import { lim, minmax } from "@/utils/number-utils";
 import { getNumberInRange, P, rand } from "@/utils/probability-utils";
 
 type Tool = "Hill" | "Pit" | "Range" | "Trough" | "Strait" | "Mask" | "Invert" | "Add" | "Multiply" | "Smooth";
 
 class HeightmapModule {
-  grid: any = null;
+  grid: GridGraph | null = null;
   heights: Uint8Array | null = null;
   blobPower: number = 0;
   linePower: number = 0;
@@ -64,7 +65,7 @@ class HeightmapModule {
 
   private getPointInRange(range: string, length: number): number | undefined {
     if (typeof range !== "string") {
-      ERROR && console.error("Range should be a string");
+      log.error("Range should be a string");
       return;
     }
 
@@ -85,7 +86,8 @@ class HeightmapModule {
 
   addHill(count: string, height: string, rangeX: string, rangeY: string): void {
     const addOneHill = () => {
-      if (!this.heights || !this.grid) return;
+      const { grid } = this;
+      if (!this.heights || !grid) return;
       const change = new Uint8Array(this.heights.length);
       let limit = 0;
       let start: number;
@@ -95,7 +97,7 @@ class HeightmapModule {
         const x = this.getPointInRange(rangeX, this.width);
         const y = this.getPointInRange(rangeY, this.height);
         if (x === undefined || y === undefined) return;
-        start = Lattice.findSlot(x, y, this.grid);
+        start = Lattice.findSlot(x, y, grid);
         limit++;
       } while (this.heights[start] + h > 90 && limit < 50);
       change[start] = h;
@@ -103,7 +105,7 @@ class HeightmapModule {
       while (queue.length) {
         const q = queue.shift() as number;
 
-        for (const c of this.grid.cells.c[q]) {
+        for (const c of grid.cells.c[q]) {
           if (change[c]) continue;
           change[c] = change[q] ** this.blobPower * (Math.random() * 0.2 + 0.9);
           if (change[c] > 1) queue.push(c);
@@ -121,7 +123,8 @@ class HeightmapModule {
 
   addPit(count: string, height: string, rangeX: string, rangeY: string): void {
     const addOnePit = () => {
-      if (!this.heights || !this.grid) return;
+      const { grid } = this;
+      if (!this.heights || !grid) return;
       const used = new Uint8Array(this.heights.length);
       let limit = 0;
       let start: number;
@@ -131,7 +134,7 @@ class HeightmapModule {
         const x = this.getPointInRange(rangeX, this.width);
         const y = this.getPointInRange(rangeY, this.height);
         if (x === undefined || y === undefined) return;
-        start = Lattice.findSlot(x, y, this.grid);
+        start = Lattice.findSlot(x, y, grid);
         limit++;
       } while (this.heights[start] < 20 && limit < 50);
 
@@ -141,7 +144,7 @@ class HeightmapModule {
         h = h ** this.blobPower * (Math.random() * 0.2 + 0.9);
         if (h < 1) return;
 
-        this.grid.cells.c[q].forEach((c: number) => {
+        grid.cells.c[q].forEach((c: number) => {
           if (used[c] || this.heights === null) return;
           this.heights[c] = lim(this.heights[c] - h * (Math.random() * 0.2 + 0.9));
           used[c] = 1;
@@ -165,20 +168,22 @@ class HeightmapModule {
     endCellId?: number,
     randomness = 0.15
   ): void {
-    if (!this.heights || !this.grid) return;
+    const { grid } = this;
+    if (!this.heights || !grid) return;
 
     const addOneRange = () => {
-      if (!this.heights || !this.grid) return;
+      const { grid } = this;
+      if (!this.heights || !grid) return;
 
       // get main ridge
       const getRange = (cur: number, end: number) => {
         const range = [cur];
-        const p = this.grid.points;
+        const p = grid.points;
         used[cur] = 1;
 
         while (cur !== end) {
           let min = Infinity;
-          this.grid.cells.c[cur].forEach((e: number) => {
+          grid.cells.c[cur].forEach((e: number) => {
             if (used[e]) return;
             let diff = (p[end][0] - p[e][0]) ** 2 + (p[end][1] - p[e][1]) ** 2;
             // compare against the top of the [0,1) range to keep seeded generation identical to the legacy `> 0.85`/`> 0.8` checks
@@ -216,8 +221,8 @@ class HeightmapModule {
           limit++;
         } while ((dist < this.width / 8 || dist > this.width / 3) && limit < 50);
 
-        startCellId = Lattice.findSlot(startX, startY, this.grid);
-        endCellId = Lattice.findSlot(endX, endY, this.grid);
+        startCellId = Lattice.findSlot(startX, startY, grid);
+        endCellId = Lattice.findSlot(endX, endY, grid);
       }
 
       const range = getRange(startCellId as number, endCellId as number);
@@ -236,7 +241,7 @@ class HeightmapModule {
         h = h ** this.linePower - 1;
         if (h < 2) break;
         frontier.forEach((f: number) => {
-          this.grid.cells.c[f].forEach((i: number) => {
+          grid.cells.c[f].forEach((i: number) => {
             if (!used[i]) {
               queue.push(i);
               used[i] = 1;
@@ -249,12 +254,9 @@ class HeightmapModule {
       range.forEach((cur: number, d: number) => {
         if (d % 6 !== 0) return;
         for (const _l of d3Range(i)) {
-          const index = leastIndex(
-            this.grid.cells.c[cur],
-            (a: number, b: number) => this.heights![a] - this.heights![b]
-          );
+          const index = leastIndex(grid.cells.c[cur], (a: number, b: number) => this.heights![a] - this.heights![b]);
           if (index === undefined) continue;
-          const min = this.grid.cells.c[cur][index]; // downhill cell
+          const min = grid.cells.c[cur][index]; // downhill cell
           this.heights![min] = (this.heights![cur] * 2 + this.heights![min]) / 3;
           cur = min;
         }
@@ -277,17 +279,18 @@ class HeightmapModule {
     randomness = 0.2
   ): void {
     const addOneTrough = () => {
-      if (!this.heights || !this.grid) return;
+      const { grid } = this;
+      if (!this.heights || !grid) return;
 
       // get main ridge
       const getRange = (cur: number, end: number) => {
         const range = [cur];
-        const p = this.grid.points;
+        const p = grid.points;
         used[cur] = 1;
 
         while (cur !== end) {
           let min = Infinity;
-          this.grid.cells.c[cur].forEach((e: number) => {
+          grid.cells.c[cur].forEach((e: number) => {
             if (used[e]) return;
             let diff = (p[end][0] - p[e][0]) ** 2 + (p[end][1] - p[e][1]) ** 2;
             // compare against the top of the [0,1) range to keep seeded generation identical to the legacy `> 0.85`/`> 0.8` checks
@@ -319,7 +322,7 @@ class HeightmapModule {
         do {
           startX = this.getPointInRange(rangeX, this.width) as number;
           startY = this.getPointInRange(rangeY, this.height) as number;
-          startCellId = Lattice.findSlot(startX, startY, this.grid);
+          startCellId = Lattice.findSlot(startX, startY, grid);
           limit++;
         } while (this.heights[startCellId] < 20 && limit < 50);
 
@@ -331,7 +334,7 @@ class HeightmapModule {
           limit++;
         } while ((dist < this.width / 8 || dist > this.width / 2) && limit < 50);
 
-        endCellId = Lattice.findSlot(endX, endY, this.grid);
+        endCellId = Lattice.findSlot(endX, endY, grid);
       }
 
       const range = getRange(startCellId as number, endCellId as number);
@@ -349,7 +352,7 @@ class HeightmapModule {
         h = h ** this.linePower - 1;
         if (h < 2) break;
         frontier.forEach((f: number) => {
-          this.grid.cells.c[f].forEach((i: number) => {
+          grid.cells.c[f].forEach((i: number) => {
             if (!used[i]) {
               queue.push(i);
               used[i] = 1;
@@ -362,12 +365,9 @@ class HeightmapModule {
       range.forEach((cur: number, d: number) => {
         if (d % 6 !== 0) return;
         for (const _l of d3Range(i)) {
-          const index = leastIndex(
-            this.grid.cells.c[cur],
-            (a: number, b: number) => this.heights![a] - this.heights![b]
-          );
+          const index = leastIndex(grid.cells.c[cur], (a: number, b: number) => this.heights![a] - this.heights![b]);
           if (index === undefined) continue;
-          const min = this.grid.cells.c[cur][index]; // downhill cell
+          const min = grid.cells.c[cur][index]; // downhill cell
           //debug.append("circle").attr("cx", p[min][0]).attr("cy", p[min][1]).attr("r", 1);
           this.heights![min] = (this.heights![cur] * 2 + this.heights![min]) / 3;
           cur = min;
@@ -382,8 +382,9 @@ class HeightmapModule {
   }
 
   addStrait(width: string, direction = "vertical"): void {
-    if (!this.heights || !this.grid) return;
-    const desiredWidth = Math.min(getNumberInRange(width), this.grid.cellsX / 3);
+    const { grid } = this;
+    if (!this.heights || !grid) return;
+    const desiredWidth = Math.min(getNumberInRange(width), grid.cellsX / 3);
     if (desiredWidth < 1 && P(desiredWidth)) return;
     const used = new Uint8Array(this.heights.length);
     const vert = direction === "vertical";
@@ -396,16 +397,16 @@ class HeightmapModule {
       ? this.height - 5
       : Math.floor(this.height - startY - this.height * 0.1 + Math.random() * this.height * 0.2);
 
-    const start = Lattice.findSlot(startX, startY, this.grid);
-    const end = Lattice.findSlot(endX, endY, this.grid);
+    const start = Lattice.findSlot(startX, startY, grid);
+    const end = Lattice.findSlot(endX, endY, grid);
 
     const getRange = (cur: number, end: number) => {
       const range = [];
-      const p = this.grid.points;
+      const p = grid.points;
 
       while (cur !== end) {
         let min = Infinity;
-        this.grid.cells.c[cur].forEach((e: number) => {
+        grid.cells.c[cur].forEach((e: number) => {
           let diff = (p[end][0] - p[e][0]) ** 2 + (p[end][1] - p[e][1]) ** 2;
           if (Math.random() > 0.8) diff = diff / 2;
           if (diff < min) {
@@ -427,7 +428,7 @@ class HeightmapModule {
       const remainingWidth = desiredWidth - i;
       const exp = 0.9 - step * remainingWidth;
       range.forEach((r: number) => {
-        this.grid.cells.c[r].forEach((e: number) => {
+        grid.cells.c[r].forEach((e: number) => {
           if (used[e]) return;
           used[e] = 1;
           query.push(e);
@@ -456,10 +457,11 @@ class HeightmapModule {
   }
 
   smooth(fr = 2, add = 0): void {
-    if (!this.heights || !this.grid) return;
+    const { grid } = this;
+    if (!this.heights || !grid) return;
     this.heights = this.heights.map((h, i) => {
       const a = [h];
-      this.grid.cells.c[i].forEach((c: number) => {
+      grid.cells.c[i].forEach((c: number) => {
         a.push(this.heights![c]);
       });
       if (fr === 1) return (mean(a) as number) + add;
@@ -468,11 +470,12 @@ class HeightmapModule {
   }
 
   mask(power = 1): void {
-    if (!this.heights || !this.grid) return;
+    const { grid } = this;
+    if (!this.heights || !grid) return;
     const fr = power ? Math.abs(power) : 1;
 
     this.heights = this.heights.map((h, i) => {
-      const [x, y] = this.grid.points[i];
+      const [x, y] = grid.points[i];
       const nx = (2 * x) / this.width - 1; // [-1, 1], 0 is center
       const ny = (2 * y) / this.height - 1; // [-1, 1], 0 is center
       let distance = (1 - nx ** 2) * (1 - ny ** 2); // 1 is center, 0 is edge

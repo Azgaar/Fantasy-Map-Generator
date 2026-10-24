@@ -4,7 +4,6 @@ import { Resample } from "@/model/resample";
 import { Layers } from "@/renderers/layers";
 import { undraw } from "@/renderers/undraw";
 import { Services } from "@/services";
-import { logStats } from "@/services/logging";
 import { registerMap } from "@/services/map-history";
 import { App } from "@/ui/app-commands";
 import { Dialog } from "@/ui/dialog/dialog";
@@ -13,6 +12,7 @@ import { applyGraphSize, fitMapToScreen, redrawMap } from "@/ui/map/canvas";
 import { resetZoom } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 
@@ -208,7 +208,7 @@ function handleWheel(e: WheelEvent): void {
 }
 
 function transformMap(): void {
-  INFO && console.group("transformMap");
+  log.group("transformMap");
 
   try {
     MapRestoration.transaction(() => {
@@ -225,20 +225,19 @@ function transformMap(): void {
       Resample.process({ projection, inverse, scale: 1 });
     });
   } catch (error) {
-    ERROR && console.error(error);
+    log.error(error);
     redrawMap();
     const failed = t("Failed to transform the map: {{error}}", { error: (error as Error).message });
     tip(sentences(failed, t("The map is unchanged")), false, "error", 6000);
-    INFO && console.groupEnd();
+    log.groupEnd();
     return;
   }
 
   Layers.drawAll();
 
   registerMap(); // a transformed map is a new map: it gets its own id and history entry
-  logStats();
 
-  INFO && console.groupEnd();
+  log.groupEnd();
 }
 
 function getProjection(): [(x: number, y: number) => [number, number], (x: number, y: number) => [number, number]] {

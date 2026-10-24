@@ -17,6 +17,7 @@ import { tip } from "@/ui/tooltips";
 import { link, parseError } from "@/utils/common-utils";
 import { isElectron } from "@/utils/environment";
 import { sentences, t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 import { type SaveOutcome, saveToFileSystem } from "./save-to-file";
@@ -41,7 +42,7 @@ async function save(write: Writer): Promise<void> {
   try {
     await write();
   } catch (error) {
-    ERROR && console.error(error);
+    log.error(error);
     const saveError = error instanceof Error ? error : new Error(String(error));
     Dialog.message({
       message: /* html */ `${t(

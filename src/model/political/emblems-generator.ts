@@ -10,6 +10,7 @@ import { IconSets } from "@/model/icon-sets";
 import { Icons } from "@/model/icons";
 import type { Emblem, EmblemCharge, EmblemOrdinary, HeraldicEmblem } from "@/types/emblems";
 import type { IconSet } from "@/types/icons";
+import { log } from "@/utils/logger";
 import { P, rw } from "@/utils/probability-utils";
 import { Burgs } from "./burgs-generator";
 
@@ -613,7 +614,7 @@ export class EmblemsGenerator {
 
     if (emblemShape === "state" && state && pack.states[state].coa) return pack.states[state].coa!.shield!;
     if (pack.cultures[culture].shield) return pack.cultures[culture].shield!;
-    ERROR && console.error("Shield shape is not defined on culture level", pack.cultures[culture]);
+    log.error("Shield shape is not defined on culture level", pack.cultures[culture]);
     return "heater";
   }
 

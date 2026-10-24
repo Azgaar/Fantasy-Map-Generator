@@ -40,8 +40,10 @@ manages **browser/app lifecycle** (PWA install, auto-update, io, preferences) it
 
 ## TypeScript — avoid `any`
 
-- **No `any`.** Use precise types; reach for `unknown` (then narrow) when a type
-  is genuinely open. `any` silently disables checking and spreads.
+- **No `any`.** Biome's `noExplicitAny` fails it outside tests. Use precise types; reach for `unknown`
+  (then narrow) when a type is genuinely open. `any` silently disables checking and spreads.
+- **Logging goes through `log`** from `utils/logger.ts` (`log.time`, `log.info`, `log.warn`, `log.error`),
+  never a bare `console` call gated by a flag. Per-feature diagnostics read `log.debug.<feature>`.
 - Prefer **module getters over re-implementing lookups**: `Markets.get(id)`,
   `Goods.get(id)` (both `=> T | undefined`) instead of `pack.markets.find(...)`.
 - **Path alias**: `@/*` resolves to `src/*` (configured in `vite.config.ts` and

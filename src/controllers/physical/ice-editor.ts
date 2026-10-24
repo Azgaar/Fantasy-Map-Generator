@@ -1,4 +1,4 @@
-import { drag, type Selection, select } from "d3";
+import { type D3DragEvent, drag, type Selection, select } from "d3";
 import { Controllers } from "@/controllers";
 import { Grid } from "@/model/graph/grid-generator";
 import { Ice } from "@/model/physical/ice-generator";
@@ -120,13 +120,13 @@ function removeIce(): void {
   });
 }
 
-function dragElement(this: SVGElement, event: any): void {
+function dragElement(this: SVGElement, event: D3DragEvent<SVGElement, unknown, unknown>): void {
   const selectedId = +selectedIce.attr("data-id");
   const initialTransform = parseTransform(this.getAttribute("transform") ?? "");
   const dx = +initialTransform[0] - event.x;
   const dy = +initialTransform[1] - event.y;
 
-  event.on("drag", function (this: SVGElement, dragEvent: any) {
+  event.on("drag", function (this: SVGElement, dragEvent: D3DragEvent<SVGElement, unknown, unknown>) {
     const x = dragEvent.x;
     const y = dragEvent.y;
     this.setAttribute("transform", `translate(${dx + x},${dy + y})`);

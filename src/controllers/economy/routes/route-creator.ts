@@ -78,7 +78,7 @@ function onBodyClick(ev: Event): void {
   if (target.classList.contains("icon-trash-empty")) removePoint((target.parentNode as HTMLElement).dataset.point!);
 }
 
-function onClick(this: any, event: any): void {
+function onClick(this: SVGElement, event: MouseEvent): void {
   const [px, py] = getPointer(event, this);
   const x = minmax(px, 0, options.map.graph.width); // a route point must be on the map
   const y = minmax(py, 0, options.map.graph.height);

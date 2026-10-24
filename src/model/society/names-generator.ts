@@ -2,6 +2,7 @@ import { getDefaultNameBases, type NameBase } from "@/data/name-bases";
 import { last } from "@/utils/array-utils";
 import { sentences, t } from "@/utils/i18n";
 import { isVowel } from "@/utils/language-utils";
+import { log } from "@/utils/logger";
 import { notify } from "@/utils/notices";
 import { P, ra, rand } from "@/utils/probability-utils";
 import { capitalize } from "@/utils/string-utils";
@@ -72,16 +73,16 @@ class NamesGenerator {
   // generate name using Markov's chain
   getBase(base: number, min?: number, max?: number, dupl?: string): string {
     if (base === undefined) {
-      ERROR && console.error("Please define a base");
+      log.error("Please define a base");
       return "ERROR";
     }
 
     if (this.nameBases[base] === undefined) {
       if (this.nameBases[0]) {
-        WARN && console.warn(`Namebase ${base} is not found. First available namebase will be used`);
+        log.warn(`Namebase ${base} is not found. First available namebase will be used`);
         base = 0;
       } else {
-        ERROR && console.error(`Namebase ${base} is not found`);
+        log.error(`Namebase ${base} is not found`);
         return "ERROR";
       }
     }
@@ -91,7 +92,7 @@ class NamesGenerator {
     const data = this.chains[base];
     if (!data || data[""] === undefined) {
       notify(sentences(t("Namesbase {{base}} is incorrect", { base }), t("Please check in namesbase editor")), "error");
-      ERROR && console.error(`Namebase ${base} is incorrect!`);
+      log.error(`Namebase ${base} is incorrect!`);
       return "ERROR";
     }
 
@@ -145,7 +146,7 @@ class NamesGenerator {
         .join("");
 
     if (name.length < 2) {
-      ERROR && console.error("Name is too short! Random name will be selected");
+      log.error("Name is too short! Random name will be selected");
       name = ra(this.nameBases[base].b.split(","));
     }
 
@@ -155,7 +156,7 @@ class NamesGenerator {
   // generate name for culture
   getCulture(culture: number, min?: number, max?: number, dupl?: string): string {
     if (culture === undefined) {
-      ERROR && console.error("Please define a culture");
+      log.error("Please define a culture");
       return "ERROR";
     }
     const base = pack.cultures[culture].base;
@@ -165,7 +166,7 @@ class NamesGenerator {
   // generate short name for culture
   getCultureShort(culture: number): string {
     if (culture === undefined) {
-      ERROR && console.error("Please define a culture");
+      log.error("Please define a culture");
       return "ERROR";
     }
     return this.getBaseShort(pack.cultures[culture].base);
@@ -198,11 +199,11 @@ class NamesGenerator {
   // generate state name based on capital or random name and culture-specific suffix
   getState(name: string, culture: number, base?: number): string {
     if (name === undefined) {
-      ERROR && console.error("Please define a base name");
+      log.error("Please define a base name");
       return "ERROR";
     }
     if (culture === undefined && base === undefined) {
-      ERROR && console.error("Please define a culture");
+      log.error("Please define a culture");
       return "ERROR";
     }
     if (base === undefined) base = pack.cultures[culture].base;

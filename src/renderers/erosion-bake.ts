@@ -3,7 +3,9 @@
 import * as THREE from "three";
 import { Grid } from "@/model/graph/grid-generator";
 import { Coastline } from "@/model/physical/coastline-generator";
+import type { Feature } from "@/model/physical/features-generator";
 import { Rivers } from "@/model/physical/river-generator";
+import { log } from "@/utils/logger";
 
 export type BakeParams = {
   strength: number;
@@ -197,7 +199,7 @@ function upsampleCubic(src: Uint8Array, width: number, height: number, factor: n
 function buildCoastTexture(bakeW: number, bakeH: number) {
   const scaleX = bakeW / options.map.graph.width;
   const scaleY = bakeH / options.map.graph.height;
-  const isLand = (feature: any) => feature && feature.type !== "ocean" && feature.type !== "lake";
+  const isLand = (feature: Feature | undefined) => feature && feature.type !== "ocean" && feature.type !== "lake";
 
   const maskCanvas = document.createElement("canvas");
   maskCanvas.width = bakeW;
@@ -998,7 +1000,7 @@ export async function bake(renderer: THREE.WebGLRenderer, params: BakeParams): P
   if (cached && cached.key === key) return cached;
 
   try {
-    TIME && console.time("erosionBake");
+    log.time("erosionBake");
     const [bakeW, bakeH] = getBakeSize(params.bakeResolution);
 
     const coast = buildCoastTexture(bakeW, bakeH);
@@ -1021,7 +1023,7 @@ export async function bake(renderer: THREE.WebGLRenderer, params: BakeParams): P
     const result: ErosionBakeResult = { key, heights, pixels, coast: coast.data, cols: bakeW, rows: bakeH };
     if (params.riverDepth > 0) enforceDownhillCourses(result);
     cached = result;
-    TIME && console.timeEnd("erosionBake");
+    log.timeEnd("erosionBake");
     return cached;
   } catch (error) {
     console.error("3D erosion bake failed:", error);

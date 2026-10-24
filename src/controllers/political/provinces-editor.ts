@@ -1,8 +1,18 @@
-import { color as d3Color, easeSinIn, interpolate, select, stratify, transition, treemap } from "d3";
+import {
+  color as d3Color,
+  easeSinIn,
+  type HierarchyRectangularNode,
+  interpolate,
+  select,
+  stratify,
+  transition,
+  treemap
+} from "d3";
 import { Controllers } from "@/controllers";
 import type { Burg } from "@/model/political/burgs-generator";
 import type { Province } from "@/model/political/provinces-generator";
 import { Provinces } from "@/model/political/provinces-generator";
+import type { State } from "@/model/political/states-generator";
 import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
 import { getArea, getAreaUnit } from "@/model/units";
@@ -847,14 +857,26 @@ function togglePercentageMode(): void {
   provincesTable.refresh();
 }
 
-type TreeNode = any;
+// a state or a province in the treemap
+type ProvinceDatum = {
+  id: number;
+  state: number | null;
+  color?: string;
+  i?: number;
+  name?: string;
+  fullName?: string;
+  area?: number;
+  urban?: number;
+  rural?: number;
+};
+type TreeNode = HierarchyRectangularNode<ProvinceDatum>;
 
 function showChart(): void {
   collectStatistics(); // the chart can open from search before the editor ever did
 
   // build hierarchy tree
-  const getColor = (s: TreeNode): string =>
-    !s.i || s.removed || s.color[0] !== "#" ? "#666" : String(d3Color(s.color)!.darker());
+  const getColor = (s: State): string =>
+    !s.i || s.removed || s.color?.[0] !== "#" ? "#666" : String(d3Color(s.color!)!.darker());
   const states = pack.states.map(s => ({ id: s.i, state: s.i ? 0 : null, color: getColor(s) }));
   const provinces = pack.provinces
     .filter(p => p.i && !p.removed)
@@ -869,10 +891,11 @@ function showChart(): void {
       urban: p.urban,
       rural: p.rural
     }));
-  const data: TreeNode[] = [...states, ...provinces];
-  const root = stratify<TreeNode>()
-    .parentId((d: TreeNode) => d.state)(data)
-    .sum((d: TreeNode) => d.area);
+  const data: ProvinceDatum[] = [...states, ...provinces];
+  const root = stratify<ProvinceDatum>()
+    .id(d => String(d.id))
+    .parentId(d => (d.state == null ? null : String(d.state)))(data)
+    .sum(d => d.area ?? 0);
 
   const uiSizeValue = +ensureEl<HTMLInputElement>("uiSize").value;
   const width = 300 + 300 * uiSizeValue;
@@ -880,7 +903,7 @@ function showChart(): void {
   const margin = { top: 10, right: 10, bottom: 0, left: 10 };
   const w = width - margin.left - margin.right;
   const h = height - margin.top - margin.bottom;
-  const treeLayout = treemap<TreeNode>().size([w, h]).padding(2);
+  const treeLayout = treemap<ProvinceDatum>().size([w, h]).padding(2);
 
   // prepare svg
   const chart = document.createElement("div");
@@ -899,28 +922,26 @@ function showChart(): void {
   const graph = svg.append("g").attr("transform", `translate(10, 0)`);
   chart.querySelector("#provincesTreeType")!.addEventListener("change", updateChart);
 
-  treeLayout(root);
-
   const node = graph
     .selectAll<SVGGElement, TreeNode>("g")
-    .data(root.leaves())
+    .data(treeLayout(root).leaves())
     .enter()
     .append("g")
-    .attr("data-id", (d: TreeNode) => d.data.i)
-    .on("mouseenter", (event: any, d: TreeNode) => showInfo(event, d))
-    .on("mouseleave", (event: any) => hideInfo(event));
+    .attr("data-id", d => d.data.i ?? null)
+    .on("mouseenter", (event: MouseEvent, d: TreeNode) => showInfo(event, d))
+    .on("mouseleave", (event: MouseEvent) => hideInfo(event));
 
-  function showInfo(ev: any, d: TreeNode): void {
+  function showInfo(ev: MouseEvent, d: TreeNode): void {
     select(ev.currentTarget as SVGGElement)
       .select("rect")
       .classed("selected", true);
     const name = d.data.fullName;
-    const state = pack.states[d.data.state].fullName;
+    const state = pack.states[d.data.state!].fullName;
 
-    const area = `${getArea(d.data.area)} ${getAreaUnit()}`;
-    const rural = rn(d.data.rural * options.map.units.population.scale);
+    const area = `${getArea(d.data.area!)} ${getAreaUnit()}`;
+    const rural = rn(d.data.rural! * options.map.units.population.scale);
     const urban = rn(
-      d.data.urban * options.map.units.population.scale * options.map.units.population.urbanization.rate
+      d.data.urban! * options.map.units.population.scale * options.map.units.population.urbanization.rate
     );
 
     const typeValue = ensureEl<HTMLSelectElement>("provincesTreeType").value;
@@ -937,7 +958,7 @@ function showChart(): void {
     provinceHighlightOn(ev);
   }
 
-  function hideInfo(ev: any): void {
+  function hideInfo(ev: MouseEvent): void {
     provinceHighlightOff(ev);
     if (!findEl("provinceInfo")) return;
     ensureEl("provinceInfo").innerHTML = "&#8205;";
@@ -948,25 +969,25 @@ function showChart(): void {
 
   node
     .append("rect")
-    .attr("stroke", (d: TreeNode) => d.parent.data.color)
+    .attr("stroke", d => d.parent!.data.color ?? null)
     .attr("stroke-width", 1)
-    .attr("fill", (d: TreeNode) => d.data.color)
-    .attr("x", (d: TreeNode) => d.x0)
-    .attr("y", (d: TreeNode) => d.y0)
-    .attr("width", (d: TreeNode) => d.x1 - d.x0)
-    .attr("height", (d: TreeNode) => d.y1 - d.y0);
+    .attr("fill", d => d.data.color ?? null)
+    .attr("x", d => d.x0)
+    .attr("y", d => d.y0)
+    .attr("width", d => d.x1 - d.x0)
+    .attr("height", d => d.y1 - d.y0);
 
   node
     .append("text")
     .attr("text-rendering", "optimizeSpeed")
     .attr("dx", ".2em")
     .attr("dy", "1em")
-    .attr("x", (d: TreeNode) => d.x0)
-    .attr("y", (d: TreeNode) => d.y0);
+    .attr("x", d => d.x0)
+    .attr("y", d => d.y0);
 
   function hideNonfittingLabels(): void {
-    node.select<SVGTextElement>("text").each(function (d: TreeNode) {
-      this.innerHTML = d.data.name;
+    node.select<SVGTextElement>("text").each(function (d) {
+      this.innerHTML = d.data.name ?? "";
       let b = this.getBBox();
       if (b.y + b.height > d.y1 + 1) this.innerHTML = "";
 
@@ -982,14 +1003,14 @@ function showChart(): void {
   }
 
   function updateChart(this: HTMLSelectElement): void {
-    const value: (d: TreeNode) => number =
+    const value: (d: ProvinceDatum) => number =
       this.value === "area"
-        ? (d: TreeNode) => d.area
+        ? d => d.area ?? 0
         : this.value === "rural"
-          ? (d: TreeNode) => d.rural
+          ? d => d.rural ?? 0
           : this.value === "urban"
-            ? (d: TreeNode) => d.urban
-            : (d: TreeNode) => d.rural + d.urban;
+            ? d => d.urban ?? 0
+            : d => (d.rural ?? 0) + (d.urban ?? 0);
 
     root.sum(value);
     node.data(treeLayout(root).leaves());
@@ -998,17 +1019,17 @@ function showChart(): void {
       .select("rect")
       .transition()
       .duration(1500)
-      .attr("x", (d: TreeNode) => d.x0)
-      .attr("y", (d: TreeNode) => d.y0)
-      .attr("width", (d: TreeNode) => d.x1 - d.x0)
-      .attr("height", (d: TreeNode) => d.y1 - d.y0);
+      .attr("x", d => d.x0)
+      .attr("y", d => d.y0)
+      .attr("width", d => d.x1 - d.x0)
+      .attr("height", d => d.y1 - d.y0);
 
     node
       .select("text")
       .transition()
       .duration(1500)
-      .attr("x", (d: TreeNode) => d.x0)
-      .attr("y", (d: TreeNode) => d.y0);
+      .attr("x", d => d.x0)
+      .attr("y", d => d.y0);
 
     setTimeout(hideNonfittingLabels, 2000);
   }
@@ -1104,7 +1125,7 @@ function enterAddProvinceMode(this: HTMLElement): void {
     });
 }
 
-function addProvince(this: SVGElement, event: any): void {
+function addProvince(this: SVGElement, event: MouseEvent): void {
   const [x, y] = getPointer(event, this);
   let province: number;
   try {

@@ -1,5 +1,6 @@
 // The one-time migration out of the pre-`fmg-options` world
 import { Coastline } from "@/model/physical/coastline-generator";
+import { log } from "@/utils/logger";
 
 const ADOPTED_KEYS = [
   // preferences, one key per control
@@ -71,7 +72,7 @@ const LEGACY_KEYS: readonly string[] = [...ADOPTED_KEYS, ...DISCARDED_KEYS];
 
 export function adoptLegacyOptions(): Record<string, unknown> | null {
   if (!LEGACY_KEYS.some(key => localStorage.getItem(key) !== null)) return null;
-  WARN && console.warn("Migrating settings from the pre-fmg-options storage");
+  log.warn("Migrating settings from the pre-fmg-options storage");
 
   const migrated: Record<string, unknown> = {};
 
@@ -105,7 +106,7 @@ export function adoptLegacyOptions(): Record<string, unknown> | null {
     try {
       take(JSON.parse(stored));
     } catch {
-      WARN && console.warn(`Legacy "${key}" is not valid JSON, dropped`);
+      log.warn(`Legacy "${key}" is not valid JSON, dropped`);
     }
   };
 

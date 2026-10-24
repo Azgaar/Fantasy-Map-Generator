@@ -17,7 +17,6 @@ import { stashCallbackToken } from "@/services/assistant/azgaar-server/auth";
 import { initiateAutosave } from "@/services/autosave";
 import { declareDefaultFonts } from "@/services/fonts";
 import { adoptLegacyIconSlots } from "@/services/io/styles-legacy";
-import { logStats } from "@/services/logging";
 import { mapHistory, registerMap } from "@/services/map-history";
 import { registerServiceWorker } from "@/services/platform";
 import { checkLoadParameters } from "@/services/url-params";
@@ -30,6 +29,7 @@ import { invokeActiveZooming, resetZoom } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { debounce, parseError } from "@/utils/common-utils";
 import { t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
 import { findEl } from "@/utils/node-utils";
 
 /** Bring the app up */
@@ -85,10 +85,9 @@ export async function generate(config?: GenerationConfig): Promise<void> {
 
     syncOptionInputs();
     registerMap();
-    logStats();
     invokeActiveZooming();
   } catch (error) {
-    ERROR && console.error(error);
+    log.error(error);
     clearMainTip();
 
     Dialog.message({
@@ -119,7 +118,7 @@ export async function generate(config?: GenerationConfig): Promise<void> {
 /** Replace the current map with a new one. Debounced: the hotkey and the button both fire it */
 export const regenerateMap = debounce(async (config?: GenerationConfig | string) => {
   const reason = typeof config === "string" ? config : "user request";
-  WARN && console.warn(`Generate new random map: ${reason}`);
+  log.warn(`Generate new random map: ${reason}`);
 
   // a big grid takes long enough that the splash is worth showing. The size asked for, not the
   // one on screen: the map being replaced says nothing about how long the next one will take

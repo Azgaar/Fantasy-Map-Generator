@@ -22,6 +22,7 @@ import type { Point } from "@/types/global";
 import type { JourneyPoint, JourneySegment } from "@/types/journey";
 import type { PackedGraph, TypedArray } from "@/types/packed-graph";
 import { isWater } from "@/utils/height-utils";
+import { log } from "@/utils/logger";
 import { rn } from "@/utils/number-utils";
 import { getPolesOfInaccessibility } from "@/utils/path-utils";
 import type { Label } from "./annotations/labels-generator";
@@ -460,7 +461,7 @@ class MapRestorationModule {
       const projected = this.projectRiver(snapshot, index, projection, scale);
       const restored = projected && this.cutAtSea(projected);
       if (!restored) {
-        WARN && console.warn(`Locked river ${river.name} (${river.i}) has no land left on the map and is removed`);
+        log.warn(`Locked river ${river.name} (${river.i}) has no land left on the map and is removed`);
         return [];
       }
 
@@ -679,7 +680,7 @@ class MapRestorationModule {
       if (!burg.i || burg.removed) return burg;
       const cell = placed.get(burg.i);
       if (cell === undefined) {
-        WARN && console.warn(`Burg ${burg.name} (${burg.i}) has no land left on the map and is removed`);
+        log.warn(`Burg ${burg.name} (${burg.i}) has no land left on the map and is removed`);
         return { ...burg, removed: true, lock: false, capital: 0 };
       }
 
@@ -931,8 +932,7 @@ class MapRestorationModule {
     });
     pack.journeys = journeys.filter(journey => journey !== null);
 
-    if (dropped)
-      WARN && console.warn(`Map restoration: dropped ${dropped} journey segment(s) off or cut off by the map edge`);
+    if (dropped) log.warn(`Map restoration: dropped ${dropped} journey segment(s) off or cut off by the map edge`);
   }
 
   /** a label stays while its point or path is on the map */

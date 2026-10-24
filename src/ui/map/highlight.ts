@@ -1,5 +1,6 @@
 import { easeBounceOut, easeLinear, easeSinIn, interpolateString, select, transition } from "d3";
 import { viewport } from "@/renderers/viewport/viewport";
+import type { Point } from "@/types/global";
 import { minmax } from "@/utils/number-utils";
 import { parseTransform } from "@/utils/string-utils";
 import { zoomTo } from "./zoom";
@@ -73,7 +74,9 @@ export function highlightArea(box: Box, zoom?: number, transformAttr: string | n
 }
 
 /** Animate the area or place an emblem belongs to */
-export function highlightEmblemElement(type: string, element: { i: number; [key: string]: any }) {
+type EmblemOwner = { i: number; x?: number; y?: number; pole?: Point; center?: number };
+
+export function highlightEmblemElement(type: string, element: EmblemOwner) {
   const { cells } = pack;
   const animation = transition().duration(1000).ease(easeSinIn);
   const layer = debugLayer();
@@ -81,8 +84,8 @@ export function highlightEmblemElement(type: string, element: { i: number; [key:
   if (type === "burg") {
     layer
       .append("circle")
-      .attr("cx", element.x)
-      .attr("cy", element.y)
+      .attr("cx", element.x ?? 0)
+      .attr("cy", element.y ?? 0)
       .attr("r", 0)
       .attr("fill", "none")
       .attr("stroke", "#d0240f")
@@ -96,7 +99,7 @@ export function highlightEmblemElement(type: string, element: { i: number; [key:
     return;
   }
 
-  const [x, y] = element.pole || cells.p[element.center];
+  const [x, y] = element.pole || cells.p[element.center ?? 0];
   const owner = type === "state" ? cells.state : cells.province;
   const borderCells = Array.from(cells.i).filter(
     id => owner[id] === element.i && cells.c[id].some(n => owner[n] !== element.i)

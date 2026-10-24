@@ -3,6 +3,7 @@ import type { Marker } from "@/model/story/markers-generator";
 import { Layers } from "@/renderers/layers";
 import { zoomFontSize } from "@/renderers/viewport/viewport";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
+import { log } from "@/utils/logger";
 import { rn } from "@/utils/number-utils";
 import { escapeHtml } from "@/utils/string-utils";
 
@@ -51,9 +52,9 @@ export const setMarkersFilter = (ids: number[] | null): void => {
 };
 
 export const drawMarkers = (): void => {
-  TIME && console.time("drawMarkers");
+  log.time("drawMarkers");
   layer.render();
-  TIME && console.timeEnd("drawMarkers");
+  log.timeEnd("drawMarkers");
 };
 
 function reconcileMarkers({ root, bounds }: ViewportRenderContext): void {

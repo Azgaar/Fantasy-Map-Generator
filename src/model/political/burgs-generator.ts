@@ -15,6 +15,7 @@ import { Population } from "@/model/society/population-generator";
 import type { BurgGroup } from "@/types/burg-groups";
 import type { Emblem } from "@/types/emblems";
 import type { IconSet } from "@/types/icons";
+import { log } from "@/utils/logger";
 import { minmax, normalize, rn } from "@/utils/number-utils";
 import { each, gauss, P } from "@/utils/probability-utils";
 import { safeParseJSON } from "@/utils/string-utils";
@@ -80,12 +81,12 @@ class BurgModule {
   generate() {
     const { cells } = pack;
 
-    let burgs: Burg[] = [0 as any]; // burgs array
+    let burgs: Burg[] = [0 as unknown as Burg]; // burgs array
     cells.burg = new Uint16Array(cells.i.length);
 
     const populatedCells = cells.i.filter(i => cells.s[i] > 0 && cells.culture[i]);
     if (!populatedCells.length) {
-      ERROR && console.error("There is no populated cells with culture assigned. Cannot generate states");
+      log.error("There is no populated cells with culture assigned. Cannot generate states");
       pack.burgs = burgs;
       return burgs;
     }
@@ -111,10 +112,10 @@ class BurgModule {
 
         // reset if all cells were checked
         if (i === sorted.length - 1) {
-          WARN && console.warn("Cannot place capitals with current spacing. Trying again with reduced spacing");
+          log.warn("Cannot place capitals with current spacing. Trying again with reduced spacing");
           burgsQuadtree = quadtree();
           i = -1;
-          burgs = [0 as any];
+          burgs = [0 as unknown as Burg];
           spacing /= 1.2;
         }
       }
@@ -184,7 +185,7 @@ class BurgModule {
 
       if (populatedCells.length < number * 10) {
         number = Math.floor(populatedCells.length / 10);
-        WARN && console.warn(`Not enough populated cells. Generating only ${number} capitals/states`);
+        log.warn(`Not enough populated cells. Generating only ${number} capitals/states`);
       }
 
       return number;
@@ -542,7 +543,7 @@ class BurgModule {
 
     const defaultGroup = options.map.burgs.groups.find(g => g.isDefault);
     if (!defaultGroup) {
-      ERROR && console.error("No default group defined");
+      log.error("No default group defined");
       return;
     }
     burg.group = defaultGroup.name;

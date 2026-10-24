@@ -3,6 +3,7 @@
 
 import { StylePresetsService } from "@/services/style-presets";
 import type { StylesData } from "@/types/styles";
+import { log } from "@/utils/logger";
 import { getPath } from "@/utils/object-utils";
 
 export class Baseline {
@@ -20,7 +21,7 @@ export class Baseline {
         const record = StylePresetsService.parse(styles);
         return record && new Baseline(record);
       } catch (error) {
-        ERROR && console.error(`Cannot parse style preset ${name} for comparison`, error);
+        log.error(`Cannot parse style preset ${name} for comparison`, error);
         return undefined;
       }
     });

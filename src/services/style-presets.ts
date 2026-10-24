@@ -4,6 +4,7 @@ import { isLegacyPreset, isStoreStyles, normalizeStyles, presetFromLegacy } from
 import { VERSION } from "@/services/versioning";
 import type { StylesData } from "@/types/styles";
 import { t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
 import { isValidJSON } from "@/utils/string-utils";
 
 export const SYSTEM_PRESETS = [
@@ -72,7 +73,7 @@ async function load(name: string): Promise<{ name: string; styles: unknown; erro
       return { name, styles: await fetchSystem(name) };
     } catch (error) {
       const message = t("Cannot fetch style preset {{- name}}", { name });
-      ERROR && console.error(`${message}. Applying default style`, error);
+      log.error(`${message}. Applying default style`, error);
       return { name: "default", styles: Styles.defaults, error: message };
     }
   }
@@ -83,7 +84,7 @@ async function load(name: string): Promise<{ name: string; styles: unknown; erro
   const error = stored
     ? t("Custom style {{- name}} stored in localStorage is not valid", { name })
     : t("Custom style {{- name}} is not found in localStorage", { name });
-  ERROR && console.error(error);
+  log.error(error);
   return { name: "default", styles: await fetchSystem("default"), error };
 }
 

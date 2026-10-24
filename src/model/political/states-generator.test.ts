@@ -8,7 +8,6 @@ describe("StatesModule.collectTaxes", () => {
   let StatesModule: any;
 
   beforeEach(async () => {
-    globalThis.TIME = false;
     globalThis.window = globalThis.window || ({} as any);
     globalThis.pack = {
       states: [],
@@ -191,7 +190,6 @@ describe("StatesModule.generateDiplomacy", () => {
   let StatesModule: any;
 
   beforeEach(async () => {
-    globalThis.TIME = false;
     globalThis.options = { year: 100 } as any;
     // 0.5 makes P(0.8) true and rw() pick no Rival, so the vassal branch runs and no war is declared
     vi.spyOn(Math, "random").mockReturnValue(0.5);

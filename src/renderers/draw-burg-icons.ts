@@ -6,13 +6,14 @@ import { Layers } from "@/renderers/layers";
 import { zoomFontSize } from "@/renderers/viewport/viewport";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import type { StylesData } from "@/types/styles";
+import { log } from "@/utils/logger";
 import { rn } from "@/utils/number-utils";
 import { escapeHtml } from "@/utils/string-utils";
 
 const layer = ViewportLayers.register({ id: "burgIcons", render: reconcileBurgIcons });
 
 export async function drawBurgIcons(): Promise<void> {
-  TIME && console.time("drawBurgIcons");
+  log.time("drawBurgIcons");
   const icons = Object.values(styles.burgIcons.groups).flatMap(({ groups }) => [
     groups.icons.options.icon,
     groups.anchors.options.icon
@@ -20,7 +21,7 @@ export async function drawBurgIcons(): Promise<void> {
   const referenced = icons.map(icon => icon && IconSets.setForId(icon)).filter(set => !!set);
   await Icons.loadAll([...new Set([...Burgs.iconSets.map(set => set.id), ...referenced])]);
   layer.render();
-  TIME && console.timeEnd("drawBurgIcons");
+  log.timeEnd("drawBurgIcons");
 }
 
 type BurgPart =

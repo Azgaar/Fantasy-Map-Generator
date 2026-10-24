@@ -4,6 +4,7 @@ import { Options } from "@/model/options/options-model";
 import { Services } from "@/services";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
 import { ra } from "@/utils/probability-utils";
 
 const MINUTE = 60000; // minute in milliseconds
@@ -26,7 +27,7 @@ export function initiateAutosave(): void {
 
       lastSavedAt = Date.now();
     } catch (error) {
-      ERROR && console.error(error);
+      log.error(error);
       tip(
         t("Autosave failed: {{error}}", { error: (error as Error)?.message || t("Unknown error") }),
         true,

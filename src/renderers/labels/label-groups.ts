@@ -1,5 +1,6 @@
 import type { LabelGroup, LabelType } from "@/model/annotations/labels-generator";
 import type { StylesData } from "@/types/styles";
+import { log } from "@/utils/logger";
 
 type LabelGroupStyle = StylesData["labels"]["groups"][string];
 
@@ -68,7 +69,7 @@ export function getGroupStyle(group: { name: string; type: LabelType }): LabelGr
   if (stored) return stored;
 
   const fontSize = FALLBACK_FONT_SIZES[group.type];
-  if (!fontSize) ERROR && console.error(`No fallback style for label group ${group.name} of type ${group.type}`);
+  if (!fontSize) log.error(`No fallback style for label group ${group.name} of type ${group.type}`);
   return {
     attrs: { ...BASE_ATTRS, "font-size": fontSize ?? BASE_ATTRS["font-size"] }
   };

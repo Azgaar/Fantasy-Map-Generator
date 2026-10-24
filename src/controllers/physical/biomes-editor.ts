@@ -345,7 +345,7 @@ function biomeChangeColor(fillBox: FillBoxElement): void {
   const biomeId = +fillBox.closest<HTMLElement>(".biomes")!.dataset.id!;
 
   const callback = (newFill: string): void => {
-    (fillBox as any).fill = newFill;
+    fillBox.fill = newFill;
     pack.biomes[biomeId].color = newFill;
     Layers.draw("biomes");
   };

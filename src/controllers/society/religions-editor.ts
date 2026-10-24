@@ -1,4 +1,4 @@
-import { drag, easeSinIn, select, transition } from "d3";
+import { type D3DragEvent, drag, easeSinIn, select, transition } from "d3";
 import { Controllers } from "@/controllers";
 import { RELIGION_EXPANSION_LABELS, RELIGION_TYPE_LABELS } from "@/data/id-labels";
 import { Pack } from "@/model/graph/pack-generator";
@@ -23,6 +23,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
+import type { FillBoxElement } from "@/ui/elements/fill-box";
 import { highlightElement } from "@/ui/map/highlight";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
@@ -260,19 +261,19 @@ function refreshReligionsEditor(): void {
 }
 
 function religionsCollectStatistics(): void {
-  const { cells, religions, burgs } = pack as any;
-  religions.forEach((r: any) => {
+  const { cells, religions, burgs } = pack;
+  religions.forEach(r => {
     r.cells = r.area = r.rural = r.urban = 0;
   });
 
   for (const i of cells.i) {
     if (cells.h[i] < 20) continue;
     const religionId = cells.religion[i];
-    religions[religionId].cells += 1;
-    religions[religionId].area += cells.area[i];
-    religions[religionId].rural += cells.pop[i];
+    religions[religionId].cells! += 1;
+    religions[religionId].area! += cells.area[i];
+    religions[religionId].rural! += cells.pop[i];
     const burgId = cells.burg[i];
-    if (burgId) religions[religionId].urban += burgs[burgId].population;
+    if (burgId) religions[religionId].urban! += burgs[burgId].population!;
   }
 }
 
@@ -497,7 +498,7 @@ function getTypeOptions(type: string): string {
   return options;
 }
 
-function getExpansionColumns(r: any): string {
+function getExpansionColumns(r: Religion): string {
   if (r.type === "Folk") {
     const folkTip = t(
       "Folk religions are not competitive and do not expand. Initially they cover all cells of their parent culture, but get ousted by organized religions when they expand"
@@ -543,8 +544,13 @@ function getExtentOptions(type: string): string {
   return options;
 }
 
-const religionHighlightOn = debounce((event: any) => {
-  const religionId = Number(event.id || event.target.dataset.id);
+// a table row or center circle event, or a hierarchy tree node
+type HighlightSource = Event | { id?: string; data: { name: string; shadow?: boolean } };
+const highlightedId = (source: HighlightSource) =>
+  Number("data" in source ? source.id : (source.target as HTMLElement | null)?.dataset.id);
+
+const religionHighlightOn = debounce((event: HighlightSource) => {
+  const religionId = highlightedId(event);
   const $el = ensureEl("religionsBody").querySelector(`div[data-id='${religionId}']`);
   if ($el) $el.classList.add("active");
 
@@ -566,8 +572,8 @@ const religionHighlightOn = debounce((event: any) => {
     .attr("stroke", "#d0240f");
 }, 200);
 
-function religionHighlightOff(event: any): void {
-  const religionId = Number(event.id || event.target.dataset.id);
+function religionHighlightOff(event: HighlightSource): void {
+  const religionId = highlightedId(event);
   const $el = ensureEl("religionsBody").querySelector(`div[data-id='${religionId}']`);
   if ($el) $el.classList.remove("active");
 
@@ -575,12 +581,12 @@ function religionHighlightOff(event: any): void {
   select("#debug").select(`#religionsCenter${religionId}`).transition().attr("r", 2).attr("stroke", null);
 }
 
-function religionChangeColor(this: HTMLElement): void {
+function religionChangeColor(this: FillBoxElement): void {
   const currentFill = this.getAttribute("fill") || "#ffffff";
   const religionId = +(this.parentNode as HTMLElement).dataset.id!;
 
   const callback = (newFill: string) => {
-    (this as any).fill = newFill;
+    this.fill = newFill;
     pack.religions[religionId].color = newFill;
     select("#relig").select(`#religion${religionId}`).attr("fill", newFill);
     select("#debug").select(`#religionsCenter${religionId}`).attr("fill", newFill);
@@ -760,30 +766,30 @@ function drawReligionCenters(): void {
     .data(data)
     .enter()
     .append("circle")
-    .attr("id", (d: any) => `religionsCenter${d.i}`)
-    .attr("data-id", (d: any) => d.i)
+    .attr("id", d => `religionsCenter${d.i}`)
+    .attr("data-id", d => d.i)
     .attr("r", 2)
-    .attr("fill", (d: any) => d.color)
-    .attr("cx", (d: any) => pack.cells.p[d.center][0])
-    .attr("cy", (d: any) => pack.cells.p[d.center][1])
-    .on("mouseenter", (event: any, d: any) => {
+    .attr("fill", d => d.color)
+    .attr("cx", d => pack.cells.p[d.center][0])
+    .attr("cy", d => pack.cells.p[d.center][1])
+    .on("mouseenter", (event: MouseEvent, d) => {
       tip(t("{{religion}}. Drag to move the religion center", { religion: d.name }), true);
       religionHighlightOn(event);
     })
-    .on("mouseleave", (event: any) => {
+    .on("mouseleave", (event: MouseEvent) => {
       tip("", true);
       religionHighlightOff(event);
     })
-    .call(drag<SVGCircleElement, any>().on("start", religionCenterDrag));
+    .call(drag<SVGCircleElement, Religion>().on("start", religionCenterDrag));
 }
 
-function religionCenterDrag(this: any, event: any): void {
-  const religionId = +this.dataset.id;
+function religionCenterDrag(this: SVGCircleElement, event: D3DragEvent<SVGCircleElement, Religion, Religion>): void {
+  const religionId = Number(this.dataset.id);
   const tr = parseTransform(this.getAttribute("transform"));
   const x0 = +tr[0] - event.x;
   const y0 = +tr[1] - event.y;
 
-  function handleDrag(this: any, dragEvent: any) {
+  function handleDrag(this: SVGCircleElement, dragEvent: D3DragEvent<SVGCircleElement, Religion, Religion>) {
     const { x, y } = dragEvent;
     this.setAttribute("transform", `translate(${x0 + x},${y0 + y})`);
     const cell = Pack.findCell(x, y);
@@ -834,7 +840,7 @@ function togglePercentageMode(): void {
 async function showHierarchy(): Promise<void> {
   if (options.app.mode) return;
 
-  const getDescription = (religion: any) => {
+  const getDescription = (religion: Religion) => {
     const { name, type, form, rural, urban } = religion;
 
     const getTypeText = () => {
@@ -845,15 +851,15 @@ async function showHierarchy(): Promise<void> {
     };
 
     const population =
-      rural * options.map.units.population.scale +
-      urban * options.map.units.population.scale * options.map.units.population.urbanization.rate;
+      (rural ?? 0) * options.map.units.population.scale +
+      (urban ?? 0) * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     const populationText =
       population > 0 ? t("{{- population}} people", { population: si(rn(population)) }) : t("Extinct");
 
     return sentences(...[name, getTypeText(), form === type ? "" : form, populationText].filter(Boolean));
   };
 
-  const getShape = ({ type }: any) => {
+  const getShape = ({ type }: Religion) => {
     if (type === "Folk") return "circle";
     if (type === "Organized") return "square";
     if (type === "Cult") return "hexagon";
@@ -862,7 +868,7 @@ async function showHierarchy(): Promise<void> {
 
   Controllers.HierarchyTree.open({
     type: "religions",
-    data: pack.religions as any,
+    data: pack.religions,
     onNodeEnter: religionHighlightOn,
     onNodeLeave: religionHighlightOff,
     getDescription,

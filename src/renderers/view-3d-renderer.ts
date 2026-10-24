@@ -842,7 +842,7 @@ function getMeshHeight(i: number) {
     const featureId = pack.cells.f[packCellIndex];
     if (featureId === undefined) return 0;
 
-    const feature: any = pack.features[featureId];
+    const feature = pack.features[featureId];
     const waterHeight = feature.type === "lake" && feature.height ? feature.height : 20;
     return ((waterHeight - LOWER_BY_WATER) / DIVIDER) * options.app.threeD.scale;
   }

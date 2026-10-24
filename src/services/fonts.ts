@@ -1,6 +1,7 @@
 import type { StylesData } from "@/types/styles";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
 
 export type FontDefinition = {
   family: string;
@@ -311,7 +312,7 @@ async function fetchGoogleFont(family: string) {
 
     return fonts;
   } catch (err) {
-    ERROR && console.error(err);
+    log.error(err);
     return null;
   }
 }
@@ -385,7 +386,7 @@ export async function addGoogleFont(family: string): Promise<string | undefined>
     for (const fontFace of await Promise.all(faces.map(face => face.load()))) document.fonts.add(fontFace);
   } catch (error) {
     tip(t("Failed to load Google font {{family}}", { family }), true, "error", 4000);
-    ERROR && console.error(error);
+    log.error(error);
     return undefined;
   }
   fonts.push(...fontRanges);

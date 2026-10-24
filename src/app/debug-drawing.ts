@@ -2,6 +2,8 @@ import { curveBundle, line, max, min, select } from "d3";
 import { Grid } from "@/model/graph/grid-generator";
 import type { Point } from "@/model/graph/voronoi";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
+import type { GridGraph } from "@/types/grid-graph";
+import type { PackedGraph } from "@/types/packed-graph";
 import { C_12 } from "@/utils/color-utils";
 import { normalize } from "@/utils/number-utils";
 import { round } from "@/utils/string-utils";
@@ -25,9 +27,9 @@ export const drawCellsValue = (data: unknown[], points: Point[]): void => {
 /**
  * Drawing polygons colored according to data values for debugging purposes
  * @param {number[]} data - Array of numerical values corresponding to each cell
- * @param {any} terrs - The SVG group element where the polygons will be drawn
+ * @param grid - The grid whose cells the values belong to
  */
-export const drawPolygons = (data: number[], _terrs: any, grid: any): void => {
+export const drawPolygons = (data: number[], grid: GridGraph): void => {
   const maximum: number = max(data) as number;
   const minimum: number = min(data) as number;
   const scheme = HeightmapColorSchemes.get(styles.heightmap.groups.landHeights.options.scheme);
@@ -46,9 +48,9 @@ export const drawPolygons = (data: number[], _terrs: any, grid: any): void => {
 
 /**
  * Drawing route connections for debugging purposes
- * @param {any} pack - The packed graph object containing cell positions and routes
+ * @param packedGraph - The packed graph object containing cell positions and routes
  */
-export const drawRouteConnections = (packedGraph: any): void => {
+export const drawRouteConnections = (packedGraph: PackedGraph): void => {
   select("#debug").select("#connections").remove();
   const routes = select("#debug").append("g").attr("id", "connections").attr("stroke-width", 0.8);
 

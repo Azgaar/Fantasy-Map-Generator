@@ -5,6 +5,7 @@ import { getMixedColor, getRandomColor, requireColor } from "@/utils/color-utils
 import { FlatQueue } from "@/utils/flat-queue";
 import { isWater } from "@/utils/height-utils";
 import { abbreviate, getAdjective, trimVowels } from "@/utils/language-utils";
+import { log } from "@/utils/logger";
 import { each, gauss, ra, rand, rw } from "@/utils/probability-utils";
 import { requireCode, requireName, requireOneOf, requireOrigins } from "@/utils/validation-utils";
 import { Names } from "./names-generator";
@@ -728,7 +729,7 @@ class ReligionsModule {
         }
       }
 
-      WARN && console.warn(`Placed only ${religionCells.length} of ${requiredReligionsNumber} religions`);
+      log.warn(`Placed only ${religionCells.length} of ${requiredReligionsNumber} religions`);
       return religionCells;
     }
 
@@ -1461,7 +1462,7 @@ class ReligionsModule {
   // get supreme deity name
   getDeityName(culture: number): string | undefined {
     if (culture === undefined) {
-      ERROR && console.error("Please define a culture");
+      log.error("Please define a culture");
       return;
     }
     const meaning = this.generateMeaning();
@@ -1527,7 +1528,7 @@ class ReligionsModule {
     if (a === "Adjective + Animal + of + Genitive")
       return `${ra(base.adjective)} ${ra(base.animal)} of ${ra(base.genitive)}`;
 
-    ERROR && console.error("Unknown generation approach");
+    log.error("Unknown generation approach");
     return ra(base.being);
   }
 }

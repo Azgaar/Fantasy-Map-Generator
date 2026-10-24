@@ -20,6 +20,7 @@ import { unique } from "@/utils/array-utils";
 import { getCoordinates } from "@/utils/common-utils";
 import { downloadFile, getBase64 } from "@/utils/file-utils";
 import { t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 import { connectVertices } from "@/utils/path-utils";
@@ -60,7 +61,7 @@ export interface Region {
 }
 
 async function exportToSvg(): Promise<void> {
-  TIME && console.time("exportToSvg");
+  log.time("exportToSvg");
   try {
     const url = await getMapURL("svg", { fullMap: true });
     const link = document.createElement("a");
@@ -71,7 +72,7 @@ async function exportToSvg(): Promise<void> {
     const message = savedMessage(link.download);
     tip(message, true, "success", 5000);
   } catch (error) {
-    ERROR && console.error(error);
+    log.error(error);
     tip(
       t("SVG export failed: {{error}}", { error: (error as Error)?.message || t("Unknown error") }),
       true,
@@ -79,12 +80,12 @@ async function exportToSvg(): Promise<void> {
       5000
     );
   } finally {
-    TIME && console.timeEnd("exportToSvg");
+    log.timeEnd("exportToSvg");
   }
 }
 
 async function exportToPng(): Promise<void> {
-  TIME && console.time("exportToPng");
+  log.time("exportToPng");
   try {
     const url = await getMapURL("png");
     const resolution = options.app.export.pngResolution;
@@ -118,7 +119,7 @@ async function exportToPng(): Promise<void> {
     const message = `${savedMessage(link.download)}. ${t("You can set image scale in options")}`;
     tip(message, true, "success", 5000);
   } catch (error) {
-    ERROR && console.error(error);
+    log.error(error);
     tip(
       t("PNG export failed: {{error}}", { error: (error as Error)?.message || t("Unknown error") }),
       true,
@@ -126,7 +127,7 @@ async function exportToPng(): Promise<void> {
       5000
     );
   } finally {
-    TIME && console.timeEnd("exportToPng");
+    log.timeEnd("exportToPng");
   }
 }
 
@@ -157,7 +158,7 @@ async function getRegionImage(
 }
 
 async function exportToJpeg(): Promise<void> {
-  TIME && console.time("exportToJpeg");
+  log.time("exportToJpeg");
   try {
     const url = await getMapURL("png");
     const resolution = options.app.export.pngResolution;
@@ -191,7 +192,7 @@ async function exportToJpeg(): Promise<void> {
     tip(savedMessage(link.download), true, "success", 7000);
     window.setTimeout(() => window.URL.revokeObjectURL(link.href), 5000);
   } catch (error) {
-    ERROR && console.error(error);
+    log.error(error);
     tip(
       t("JPEG export failed: {{error}}", { error: (error as Error)?.message || t("Unknown error") }),
       true,
@@ -199,7 +200,7 @@ async function exportToJpeg(): Promise<void> {
       5000
     );
   } finally {
-    TIME && console.timeEnd("exportToJpeg");
+    log.timeEnd("exportToJpeg");
   }
 }
 
@@ -281,7 +282,7 @@ async function exportToPngTiles(): Promise<void> {
       setTimeout(() => URL.revokeObjectURL(link.href), 5000);
     })
     .catch((error: Error) => {
-      ERROR && console.error(error);
+      log.error(error);
       status.innerHTML = t("Tiles export failed");
       tip(
         t("PNG tiles export failed: {{error}}", { error: error?.message || t("Unknown error") }),
@@ -366,7 +367,7 @@ function captureIconDefinitions(clone: SVGSVGElement, source: SVGSVGElement): ()
     },
     // the set loaded but has no such symbol (a stale reference): its uses draw nothing, as in the app
     id => {
-      if (IconSets.setForId(id)) WARN && console.warn(`Export: missing icon definition ${id}`);
+      if (IconSets.setForId(id)) log.warn(`Export: missing icon definition ${id}`);
     }
   );
 

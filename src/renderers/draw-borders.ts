@@ -1,7 +1,8 @@
 import { select } from "d3";
+import { log } from "@/utils/logger";
 
 const bordersRenderer = () => {
-  TIME && console.time("drawBorders");
+  log.time("drawBorders");
   const { cells, vertices } = pack;
 
   const statePath: string[] = [];
@@ -157,7 +158,7 @@ const bordersRenderer = () => {
     return chain;
   }
 
-  TIME && console.timeEnd("drawBorders");
+  log.timeEnd("drawBorders");
 };
 
 export { bordersRenderer as drawBorders };

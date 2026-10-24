@@ -121,6 +121,8 @@ type MarkerConfig = {
   add: (marker: Marker, cell: number) => void;
 };
 
+type MarkerBase = Pick<MarkerConfig, "icon" | "type" | "dx" | "dy" | "px" | "size" | "pin" | "fill" | "stroke">;
+
 type MarkerDetails = { name?: string; note?: string; icon?: string };
 
 export type MarkerAppearance = Partial<
@@ -189,7 +191,7 @@ class MarkersModule {
     const base = this.config.find(c => c.type === marker.type);
     if (base) {
       const { icon, type, dx, dy, px, size, pin, fill, stroke } = base;
-      marker = this.addMarker({ icon, type, dx, dy, px, size, pin, fill, stroke }, marker);
+      marker = this.addMarker({ icon, type, dx, dy, px, size, pin, fill, stroke }, marker)!; // a full marker has its cell
       base.add(marker, marker.cell);
       return marker;
     }
@@ -700,25 +702,35 @@ class MarkersModule {
     this.occupied = [];
   }
 
-  private getQuantity(array: any[], min: number, each: number, multiplier: number) {
+  private getQuantity(array: unknown[], min: number, each: number, multiplier: number) {
     if (!array.length || array.length < min / multiplier) return 0;
     const requestQty = Math.ceil((array.length / each) * multiplier);
     return Math.min(array.length, requestQty);
   }
 
-  private extractAnyElement(array: any[]) {
+  private extractAnyElement<T>(array: T[]): T[] {
     const index = Math.floor(Math.random() * array.length);
     return array.splice(index, 1);
   }
 
-  private addMarker(base: any, marker: any) {
-    if (marker.cell === undefined) return;
+  private addMarker(base: MarkerBase, draft: Partial<Marker>): Marker | undefined {
+    const { cell } = draft;
+    if (cell === undefined) return;
     const i = last(pack.markers)?.i + 1 || 0;
-    const [x, y] = this.getMarkerCoordinates(marker.cell);
-    marker = { ...base, x, y, ...marker, i, tags: marker.tags ?? [] };
-    marker.name ||= getDefaultMarkerName(marker.type);
+    const [x, y] = this.getMarkerCoordinates(cell);
+    const type = draft.type ?? base.type;
+    const marker: Marker = {
+      ...base,
+      x,
+      y,
+      ...draft,
+      cell,
+      i,
+      name: draft.name || getDefaultMarkerName(type),
+      tags: draft.tags ?? []
+    };
     pack.markers.push(marker);
-    this.occupied[marker.cell] = true;
+    this.occupied[cell] = true;
     return marker;
   }
 

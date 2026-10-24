@@ -12,11 +12,12 @@ import {
 } from "d3";
 import { convertTemperature } from "@/model/units";
 import { viewport } from "@/renderers/viewport/viewport";
+import { log } from "@/utils/logger";
 import { connectVertices } from "@/utils/path-utils";
 import { round } from "@/utils/string-utils";
 
 const temperatureRenderer = (): void => {
-  TIME && console.time("drawTemperature");
+  log.time("drawTemperature");
 
   select("#temperature").selectAll("*").remove();
   const lineGen = line<[number, number]>().curve(curveBasisClosed);
@@ -131,7 +132,7 @@ const temperatureRenderer = (): void => {
     labels.push([x, y, t]);
   }
 
-  TIME && console.timeEnd("drawTemperature");
+  log.timeEnd("drawTemperature");
 };
 
 export { temperatureRenderer as drawTemperature };

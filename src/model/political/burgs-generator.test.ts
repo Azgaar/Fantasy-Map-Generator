@@ -69,7 +69,6 @@ function makeBurgs() {
 
 describe("BurgsModule.assignPorts — open-lake port promotion", () => {
   beforeEach(async () => {
-    globalThis.TIME = false;
     globalThis.window = globalThis.window || ({} as any);
     globalThis.grid = { cells: { temp: new Array(10).fill(20) } } as any;
 
@@ -340,7 +339,6 @@ describe("BurgsModule.assignPorts — open-lake port promotion", () => {
 
 describe("BurgsModule.assignPorts — river-bank shift", () => {
   beforeEach(async () => {
-    globalThis.TIME = false;
     globalThis.window = globalThis.window || ({} as any);
     globalThis.grid = { cells: { temp: new Array(10).fill(20) } } as any;
 
@@ -477,7 +475,6 @@ describe("ensureBurgGroupStyles", () => {
 
 describe("BurgsModule.parseStoredGroups", () => {
   beforeEach(async () => {
-    globalThis.TIME = false;
     globalThis.window = globalThis.window || ({} as any);
     await import("./burgs-generator");
   });
@@ -551,7 +548,6 @@ describe("BurgModule.rename", () => {
 
 describe("BurgsModule.generate", () => {
   it("leaves an empty burg list when no cell is habitable", async () => {
-    globalThis.ERROR = false;
     globalThis.pack = { burgs: undefined, cells: { i: [0, 1, 2], s: [0, 0, 0], culture: [0, 0, 0] } } as any;
     await import("./burgs-generator");
 
