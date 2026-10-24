@@ -21,7 +21,7 @@ const getAlliances = (): Alliance[] => {
 };
 const escape = (value: string): string => value.replace(/[&<>"']/g, char => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-})[char]!);
+} as Record<string, string>)[char]);
 
 function render(): void {
   const alliances = getAlliances();
