@@ -70,6 +70,7 @@
     "quill": "^2.0.3",
     "rgbquant": "^1.1.2",
     "three": "^0.186.1",
+    "three-subdivide": "^1.1.5",
     "zod": "^4.6.7"
   },
   "engines": {

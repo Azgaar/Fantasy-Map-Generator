@@ -8,7 +8,8 @@ The source build uses these runtime packages:
 - [Delaunator](https://github.com/mapbox/delaunator) by Vladimir Agafonkin
 - [Polylabel](https://github.com/mapbox/polylabel) by Vladimir Agafonkin
 - [Lineclip](https://github.com/mapbox/lineclip) by Vladimir Agafonkin
-- [Three.js](https://github.com/mrdoob/three.js) by mrdoob and Three.js contributors
+- [Three.js](https://github.com/mrdoob/three.js) by mrdoob and Three.js contributors — the 3D scene, loaded on demand
+- [three-subdivide](https://github.com/stevinz/three-subdivide) by Stephens Nunnally — smooth geometry in the 3D view
 - [Driver.js](https://driverjs.com) for the guided UI tour
 - [Quill 2](https://quilljs.com) — the rich text editor in the Notes editor
 - [Alea](https://github.com/coverslide/node-alea) for seeded random numbers
@@ -19,12 +20,6 @@ The source build uses these runtime packages:
 Two small libraries are kept as typed source in `src/utils/` rather than as dependencies: [flatqueue](https://github.com/mourner/flatqueue) and [simplify.js](https://mourner.github.io/simplify-js/) by Volodymyr Agafonkin — the generators' priority queue and coastline simplification.
 
 Vite, TypeScript, Vitest, Playwright and Biome are used as development tools. Node.js 24 or newer is required to build.
-
-## Vendored browser bundles
-
-`public/libs/` holds the browser bundles the app still loads as classic scripts. They are not npm dependencies.
-
-- [Three.js](https://threejs.org) r140 with `OrbitControls`, `mapControls`, `loopsubdivison` and `OBJExporter` — the 3D scene, loaded on demand
 
 ## Services
 

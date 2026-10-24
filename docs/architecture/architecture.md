@@ -336,9 +336,8 @@ New bundled code imports third-party dependencies from **npm**; Vite tree-shakes
 into the graph (e.g. d3 v7 via `import { select } from "d3"`). There is **no vendored
 `libs/` under `src/`**.
 
-A library loaded by a `<script>` tag as a runtime global is the exception that is being removed.
-`public/libs/` holds only three.js r140 with its add-ons for the 3D view, which moves to the npm
-`three` and is not extended in the meantime. A library of a
+A large library used by one feature is reached through that feature's dynamic `import()`, so it
+lands in a lazy chunk: three.js and its add-ons load with the 3D renderer. A library of a
 few dozen lines is kept in `utils/` as typed source (`flat-queue.ts`, `simplify.ts`) rather than added
 as a dependency.
 
@@ -850,16 +849,13 @@ what the user is looking at now — not everything they have opened this session
    globals. They become the single `map` object of [future-data-model.md](./future-data-model.md), and
    the `.map` file becomes that object as JSON instead of today's line-based format. Rendering no
    longer depends on the file's SVG part, so the format can change on its own schedule.
-2. **three.js from npm.** The 3D view and the erosion bake load vendored three.js r140 and its add-ons
-   (`OrbitControls`, `MapControls`, `OBJExporter`, loop subdivision) as globals. Moving to the npm
-   `three` needs the lights and colors retuned: r155 changed light intensities and color management.
-3. **Model code that touches the DOM.** The style store writes attributes to the map's SVG, the icon
+2. **Model code that touches the DOM.** The style store writes attributes to the map's SVG, the icon
    library mounts `#icons-library`, the cultures generator opens a message dialog, a route measurement
    builds a path element and the heightmap image import draws to a canvas. Each moves to the renderer
    or controller that owns it.
-4. **Logging flags.** `TIME`, `INFO`, `WARN`, `ERROR` and `DEBUG` are ambient globals. They become one
+3. **Logging flags.** `TIME`, `INFO`, `WARN`, `ERROR` and `DEBUG` are ambient globals. They become one
    exported `log` object, which `window.FMG` exposes for switching from the console.
-5. **No `any`.** About 260 remain and Biome's `noExplicitAny` is off. They go module by module as each
+4. **No `any`.** About 260 remain and Biome's `noExplicitAny` is off. They go module by module as each
    one is touched, then the rule is turned on.
-6. **The Dropbox sign-in page.** `public/dropbox.html` loads the Dropbox SDK from a CDN. It can become
+5. **The Dropbox sign-in page.** `public/dropbox.html` loads the Dropbox SDK from a CDN. It can become
    a page of the Vite build that uses the npm `dropbox` package the app already bundles.

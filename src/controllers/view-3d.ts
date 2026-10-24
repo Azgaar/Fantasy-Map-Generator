@@ -11,6 +11,7 @@ import { tip } from "@/ui/tooltips";
 import { downloadFile } from "@/utils/file-utils";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl } from "@/utils/node-utils";
+import { notify } from "@/utils/notices";
 
 // View3d controller: enters/exits the 3D view and owns the 3D settings dialog.
 // Configuration lives on the global `options.app.threeD` (not in this controller);
@@ -28,7 +29,14 @@ const loadRenderer = (): Promise<Renderer> =>
       });
 
 // --- renderer bridge ---------------------------------------------------------
-const create = (canvas: HTMLCanvasElement, type = "viewMesh") => loadRenderer().then(m => m.create(canvas, type));
+const create = (canvas: HTMLCanvasElement, type = "viewMesh") =>
+  loadRenderer().then(
+    m => m.create(canvas, type),
+    () => {
+      notify(t("Cannot load 3d library"), "error", 4000);
+      return false;
+    }
+  );
 const redraw = () => loadRenderer().then(m => m.redraw());
 const update = () => loadRenderer().then(m => m.update());
 const stop = () => loadRenderer().then(m => m.stop());
@@ -107,7 +115,7 @@ async function open(type: string): Promise<void> {
   }
 
   const started = await create(canvas, type);
-  if (!started) return;
+  if (!started) return enterStandard();
 
   canvas.style.display = "block";
   canvas.onmouseenter = () => {

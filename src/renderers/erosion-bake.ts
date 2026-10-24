@@ -1,6 +1,6 @@
 // GPU erosion-detail bake, a noise-based erosion appearance filter for the 3D view
 
-import type * as THREEType from "three";
+import * as THREE from "three";
 import { Grid } from "@/model/graph/grid-generator";
 import { Coastline } from "@/model/physical/coastline-generator";
 import { Rivers } from "@/model/physical/river-generator";
@@ -118,7 +118,7 @@ function buildHeightTexture() {
 }
 
 /** linear-filtered RGBA texture over the grid raster from 4 bytes per grid cell */
-export function buildGridTexture(cellData: Uint8Array): THREEType.DataTexture {
+export function buildGridTexture(cellData: Uint8Array): THREE.DataTexture {
   const raster = Grid.getRaster();
   const pixels = Grid.rasterize(cellData, raster, 4);
   const texture = new THREE.DataTexture(pixels, raster.width, raster.height, THREE.RGBAFormat, THREE.UnsignedByteType);
@@ -723,11 +723,11 @@ const fragmentShader = /* glsl */ `
   `;
 
 function runErosionPass(
-  renderer: THREEType.WebGLRenderer,
+  renderer: THREE.WebGLRenderer,
   params: BakeParams,
   bakeW: number,
   bakeH: number,
-  textures: { height: THREEType.DataTexture; coast: THREEType.DataTexture; rivers: THREEType.Texture }
+  textures: { height: THREE.DataTexture; coast: THREE.DataTexture; rivers: THREE.Texture }
 ) {
   const renderTarget = new THREE.WebGLRenderTarget(bakeW, bakeH, {
     format: THREE.RGBAFormat,
@@ -877,7 +877,7 @@ function enforceDownhillCourses(bakeResult: ErosionBakeResult) {
   }
 }
 
-export async function bake(renderer: THREEType.WebGLRenderer, params: BakeParams): Promise<ErosionBakeResult | null> {
+export async function bake(renderer: THREE.WebGLRenderer, params: BakeParams): Promise<ErosionBakeResult | null> {
   const key = makeKey(params);
   if (cached && cached.key === key) return cached;
 

@@ -1,10 +1,10 @@
 import { color as parseColor } from "d3";
-import type * as THREEType from "three";
+import * as THREE from "three";
 import { Biomes } from "@/model/physical/biomes-generator";
 import { Rivers } from "@/model/physical/river-generator";
 import { buildGridTexture, type ErosionBakeResult, heightAt } from "./erosion-bake";
 
-let renderTarget: THREEType.WebGLRenderTarget | null = null;
+let renderTarget: THREE.WebGLRenderTarget | null = null;
 
 // biome id -> satellite albedo and vegetation density
 const BIOME_SATELLITE: Array<{ color: [number, number, number]; density: number }> = [
@@ -466,19 +466,19 @@ const fragmentShader = /* glsl */ `
 // material.map, or null on failure. The texture is regenerated on every
 // mesh rebuild and on height-scale changes (slope thresholds depend on it)
 export function generateSatelliteTexture(
-  renderer: THREEType.WebGLRenderer,
+  renderer: THREE.WebGLRenderer,
   bakeResult: ErosionBakeResult,
   { scale, maxOutput }: { scale: number; maxOutput: number }
-): THREEType.Texture | null {
+): THREE.Texture | null {
   if (!bakeResult?.pixels || !bakeResult?.coast) return null;
   disposeSatelliteTexture();
 
-  let fieldTexture!: THREEType.DataTexture;
-  let coastTexture!: THREEType.DataTexture;
-  let climateTexture!: THREEType.DataTexture;
-  let biomeTexture!: THREEType.DataTexture;
-  let material!: THREEType.RawShaderMaterial;
-  let geometry!: THREEType.BufferGeometry;
+  let fieldTexture!: THREE.DataTexture;
+  let coastTexture!: THREE.DataTexture;
+  let climateTexture!: THREE.DataTexture;
+  let biomeTexture!: THREE.DataTexture;
+  let material!: THREE.RawShaderMaterial;
+  let geometry!: THREE.BufferGeometry;
 
   try {
     const { cols, rows } = bakeResult;
@@ -505,13 +505,11 @@ export function generateSatelliteTexture(
     const outputW = Math.round(cols * outputScale);
     const outputH = Math.round(rows * outputScale);
 
-    // mipmaps need WebGL2 for the non-power-of-two bake size
-    const isWebGL2 = renderer.capabilities.isWebGL2;
     const target = new THREE.WebGLRenderTarget(outputW, outputH, {
       format: THREE.RGBAFormat,
       type: THREE.UnsignedByteType,
-      generateMipmaps: isWebGL2,
-      minFilter: isWebGL2 ? THREE.LinearMipmapLinearFilter : THREE.LinearFilter,
+      generateMipmaps: true,
+      minFilter: THREE.LinearMipmapLinearFilter,
       magFilter: THREE.LinearFilter,
       depthBuffer: false,
       stencilBuffer: false
@@ -584,7 +582,7 @@ export function disposeSatelliteTexture(): void {
 }
 
 const FLOW_WAVELENGTH = 10; // map units per flow animation cycle
-let flowTexture: THREEType.Texture | null = null;
+let flowTexture: THREE.Texture | null = null;
 
 // Flow phase field for the mesh material's river animation: each course is
 // stroked with per-channel linear gradients encoding sin/cos of the arc
@@ -597,7 +595,7 @@ let flowTexture: THREEType.Texture | null = null;
 // shows — so a low resolution is fine. CanvasTexture default flipY puts
 // canvas row 0 (map top) at v=1, matching how the satellite render target
 // drapes onto the mesh uvs
-export function generateRiverFlowTexture(): THREEType.Texture {
+export function generateRiverFlowTexture(): THREE.Texture {
   disposeRiverFlowTexture();
 
   const scale = 1024 / Math.max(options.map.graph.width, options.map.graph.height);
