@@ -163,6 +163,13 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => Controllers.ReliefRulesEditor.open()
   },
   {
+    id: "editAlliancesButton",
+    name: t("Alliances Editor"),
+    link: true,
+    aliases: "alliance coalition pact membership countries",
+    run: () => Controllers.AlliancesEditor.open()
+  },
+  {
     id: "editDiplomacyButton",
     name: t("Diplomacy Overview"),
     link: true,
