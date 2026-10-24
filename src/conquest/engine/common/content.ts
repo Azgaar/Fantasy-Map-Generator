@@ -16,7 +16,24 @@ import type { CapacityPoints } from "./types";
 // Contract types
 // ---------------------------------------------------------------------------
 
-export type UnitCategory = "melee" | "ranged" | "cavalry" | "artillery";
+export type UnitCategory = "melee" | "ranged" | "cavalry" | "artillery" | "monster" | "spellcaster";
+
+/**
+ * Declarative battle powers, each a fraction (or count) per unit at full strength.
+ * Scaled by the unit's fill and clamped by `battle.magic` caps; see openconquest-magic-system.md.
+ */
+export interface UnitPowers {
+  /** Fraction off the owner's casualty rate. */
+  ward?: number;
+  /** Fraction added to the enemy's casualty rate. */
+  hex?: number;
+  /** Men restored per round, never past the battle-start count. */
+  heal?: number;
+  /** Added to the enemy's rout threshold. */
+  terror?: number;
+  /** Wall tiers ignored when assaulting. */
+  arcaneSiege?: number;
+}
 
 /**
  * Men represented by one AER **block** — the CAPACITY-PLAN Phase 4b
@@ -124,6 +141,10 @@ export interface UnitType {
    * cannot be raised until the realm holds a region with Stone Walls.
    */
   requiresWallTier?: number;
+  /** Battle powers; valid on any category, so monsters and elites can carry them. */
+  powers?: UnitPowers;
+  /** 0..1 damping of enemy `hex`, `terror` and `arcaneSiege`. */
+  resistArcane?: number;
 }
 
 /** A roster: a unit pool + how Azgaar regiment categories map onto it. */
@@ -364,17 +385,24 @@ export interface ResolvedContent {
 // Validation helpers
 // ---------------------------------------------------------------------------
 
-const CATEGORIES: UnitCategory[] = ["melee", "ranged", "cavalry", "artillery"];
+const CATEGORIES: UnitCategory[] = ["melee", "ranged", "cavalry", "artillery", "monster", "spellcaster"];
+
+const POWER_KEYS = ["ward", "hex", "heal", "terror", "arcaneSiege"] as const;
+/** Powers expressed as 0..1 fractions; `heal` and `arcaneSiege` are counts. */
+const FRACTIONAL_POWERS: readonly string[] = ["ward", "hex", "terror"];
 
 /**
  * Matchup multiplier matrix[attackerCategory][defenderCategory] (total-war/.plans/PLAN.md §5.4):
- * cavalry shred ranged, spears hold melee, artillery punishes dense infantry.
+ * cavalry shred ranged, spears hold melee, artillery punishes dense infantry; casters
+ * shred massed foot but die to cavalry, monsters maul everything but are shot down.
  */
 export const MATCHUP: Record<UnitCategory, Record<UnitCategory, number>> = {
-  melee: { melee: 1.0, ranged: 1.1, cavalry: 0.8, artillery: 1.2 },
-  ranged: { melee: 1.1, ranged: 1.0, cavalry: 0.7, artillery: 1.0 },
-  cavalry: { melee: 0.9, ranged: 1.3, cavalry: 1.0, artillery: 1.4 },
-  artillery: { melee: 1.2, ranged: 1.1, cavalry: 0.6, artillery: 1.0 }
+  melee: { melee: 1.0, ranged: 1.1, cavalry: 0.8, artillery: 1.2, monster: 0.8, spellcaster: 1.4 },
+  ranged: { melee: 1.1, ranged: 1.0, cavalry: 0.7, artillery: 1.0, monster: 1.25, spellcaster: 1.2 },
+  cavalry: { melee: 0.9, ranged: 1.3, cavalry: 1.0, artillery: 1.4, monster: 0.85, spellcaster: 1.5 },
+  artillery: { melee: 1.2, ranged: 1.1, cavalry: 0.6, artillery: 1.0, monster: 1.3, spellcaster: 0.9 },
+  monster: { melee: 1.3, ranged: 0.8, cavalry: 1.1, artillery: 1.4, monster: 1.0, spellcaster: 1.4 },
+  spellcaster: { melee: 1.25, ranged: 1.0, cavalry: 0.5, artillery: 1.2, monster: 1.1, spellcaster: 1.0 }
 };
 
 export function didYouMean(input: string, candidates: string[]): string {
@@ -485,6 +513,33 @@ interface RawRoster {
   caps?: Record<string, number>;
 }
 
+/** A number in [0, 1]. */
+function unitFraction(file: string, obj: Record<string, unknown>, key: string, v: Validator): number {
+  const value = v.num(file, obj, key);
+  if (value > 1) {
+    v.warn(file, `field '${key}' must be between 0 and 1, got ${value}`);
+    return 0;
+  }
+  return value;
+}
+
+function parsePowers(file: string, raw: unknown, v: Validator, warnings: string[]): UnitPowers {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+    v.warn(file, "field 'powers' must be an object");
+    return {};
+  }
+  const body = raw as Record<string, unknown>;
+  v.unknownKeys(`${file}.powers`, body, [...POWER_KEYS], warnings);
+  const out: UnitPowers = {};
+  for (const key of POWER_KEYS) {
+    if (body[key] === undefined) continue;
+    out[key] = FRACTIONAL_POWERS.includes(key)
+      ? unitFraction(`${file}.powers`, body, key, v)
+      : v.num(`${file}.powers`, body, key);
+  }
+  return out;
+}
+
 function parseRoster(file: string, doc: unknown, v: Validator, warnings: string[]): RawRoster | null {
   const root = doc as Record<string, unknown>;
   const body = (root?.roster as Record<string, unknown> | undefined) ?? root;
@@ -511,7 +566,9 @@ function parseRoster(file: string, doc: unknown, v: Validator, warnings: string[
     "upkeep",
     "capacityCost",
     "requiresGood",
-    "requiresWallTier"
+    "requiresWallTier",
+    "powers",
+    "resistArcane"
   ];
   for (const [uid, def] of Object.entries(unitsRaw)) {
     const d = (def ?? {}) as Record<string, unknown>;
@@ -572,7 +629,9 @@ function parseRoster(file: string, doc: unknown, v: Validator, warnings: string[
       ...(d.requiresGood !== undefined ? { requiresGood: v.num(`${file}#${uid}`, d, "requiresGood", 1) } : {}),
       ...(d.requiresWallTier !== undefined
         ? { requiresWallTier: v.num(`${file}#${uid}`, d, "requiresWallTier", 1) }
-        : {})
+        : {}),
+      ...(d.powers !== undefined ? { powers: parsePowers(`${file}#${uid}`, d.powers, v, warnings) } : {}),
+      ...(d.resistArcane !== undefined ? { resistArcane: unitFraction(`${file}#${uid}`, d, "resistArcane", v) } : {})
     };
     units[uid] = unit;
   }

@@ -26,8 +26,8 @@ You open the generator and play: the map you were designing or editing *is* the 
 
 | | |
 |---|---|
-| **Architecture** | **Full Fork Methodology** — OpenConquest is integrated directly in-tree under [`src/conquest/`](file:///C:/Users/ellsworthnm/Documents/Fantasy-Map-Generator/src/conquest) as a self-contained vertical. No injected external scripts, no standalone dev harness, and no fragile runtime patches. |
-| **Upstream Discipline** | Touches stock FMG files only through four minimal, append-only seams (`Layers` registry, `LAYER_TOGGLES`, `MAP_COMMANDS`, and controller entry in `main.ts`). Documented in [`MERGING.md`](file:///C:/Users/ellsworthnm/Documents/Fantasy-Map-Generator/MERGING.md). |
+| **Architecture** | **Full Fork Methodology** — OpenConquest is integrated directly in-tree under [`src/conquest/`](../../src/conquest) as a self-contained vertical. No injected external scripts, no standalone dev harness, and no fragile runtime patches. |
+| **Upstream Discipline** | Touches stock FMG files only through minimal, append-only seams (view mode controller, battle screen, military generation, capital burg markers, and bootstrap in `main.ts`). Documented in [`MERGING.md`](../../MERGING.md). |
 | **Persistence** | Campaigns are sessions *over* a world, stored in browser storage (IndexedDB via `ldb`) keyed by **map ID**. Stock `.map` files remain 100% clean and standard. Campaign sessions can be exported and imported as JSON archives (`campaigns/*.json`). |
 | **Runtime** | TypeScript bundled natively with Vite. The simulation engine runs in a Web Worker with automatic fallback to the main thread. |
 | **Playability** | Any world generated or loaded in FMG is immediately playable. Live map edits (moving borders, shifting burgs) trigger an automatic tolerant rebase of the campaign. |
@@ -44,7 +44,8 @@ You open the generator and play: the map you were designing or editing *is* the 
    - [Factions and the World](#factions-and-the-world)
    - [Turns and Seasons](#turns-and-seasons)
    - [Armies, Movement, and Stances](#armies-movement-and-stances)
-   - [Battles: The Auto-Resolve Model](#battles-the-auto-resolve-model)
+   - [Battles: Tactical & Auto-Resolve Simulation](#battles-tactical--auto-resolve-simulation)
+   - [Magic, Monsters & Arcane Warfare](#magic-monsters--arcane-warfare)
    - [Sieges and Capturing Regions](#sieges-and-capturing-regions)
    - [Economy: Power as a Stock (Capacity M/W/S/C)](#economy-power-as-a-stock-capacity-mwsc)
    - [Public Order and Rebellions](#public-order-and-rebellions)
@@ -78,8 +79,8 @@ Open your browser at the local dev URL (e.g. `http://localhost:5173`).
 
 ### Playing a Campaign
 1. **Boot or load any world**: Generate a new map using FMG's procedural generator, or load an existing `.map` file from disk via **File ▸ Load**.
-2. **Start OpenConquest**: Click the **⚔ OpenConquest** button in the generator's top bar, select **OpenConquest** from the **Tools** tab, or trigger `openconquest` via the omnibar (`F1` / map commands).
-3. **Compile & Play**: The world compiles into a strategic game board in a background Web Worker. Choose **Start campaign** from the ⚔ menu — your starting faction is assigned, and the strategic overlays appear.
+2. **Start OpenConquest**: Click the **⚔ OpenConquest** button in the generator's top bar, select **Conquest** mode in the bottom view-mode bar, select **OpenConquest** from the **Tools** tab, or trigger `openconquest` via the omnibar (`F1` / map commands).
+3. **Compile & Play**: The world compiles into a strategic game board in a background Web Worker. Choose **Start campaign** from the ⚔ menu — your starting faction is assigned, and the campaign interface appears.
 4. **End Turn & Save**: Maneuver your armies, recruit units, construct fortifications, and click **End Turn**. Campaigns are automatically persisted to IndexedDB keyed to the map ID. To share a campaign session, select **Export campaign…** from the ⚔ menu to download a portable JSON archive.
 
 ### Live Map Editing & Rebasing
@@ -97,8 +98,8 @@ You can edit the world while a campaign is underway:
 In earlier designs, OpenConquest operated as an external mod bolted onto a pinned client using an injected script (`total-war.js`), three patch files, a standalone development server harness, and a proprietary slot appended to the `.map` file. 
 
 Under the **Full Fork Methodology** ([`docs/plans/mod-merge-plan.md`](../plans/mod-merge-plan.md)), that approach has been superseded:
-- **In-Tree Vertical**: OpenConquest is now a first-class vertical under [`src/conquest/`](file:///C:/Users/ellsworthnm/Documents/Fantasy-Map-Generator/src/conquest) inside the unified repository.
-- **Native Architectural Alignment**: The game engine compiles from a completed FMG world rather than intercepting generation steps. It adheres to FMG 2.0 principles: UI logic is separated from simulation, world state remains clean, and rendering integrates directly into FMG's native `LayersRegistry`.
+- **In-Tree Vertical**: OpenConquest is now a first-class vertical under [`src/conquest/`](../../src/conquest) inside the unified repository.
+- **Native Architectural Alignment**: The game engine compiles from a completed FMG world rather than intercepting generation steps. It adheres to FMG 2.0 principles: UI logic is separated from simulation, world state remains clean, and rendering leverages FMG's native layers and burg symbols directly without redundant duplicate layers.
 - **Pure Deterministic Simulation**: The engine (`src/conquest/engine/`) is a pure function of `(map pack, ruleset, seed, commands) => state`. It has no dependencies on the DOM, wall clocks, or external servers.
 - **Background Web Worker**: World compilation runs off the main thread in a Web Worker using Vite's native module worker support (`new Worker(new URL(...), { type: "module" })`). Large maps with thousands of cells and hundreds of burgs compile seamlessly without freezing UI interactions.
 - **Session-Based Storage (Clean `.map` Compatibility)**: Rather than polluting the `.map` file format with custom mod slots, campaigns are treated as **sessions over a world**. They are stored in browser IndexedDB (`ldb`) keyed by map ID. The `.map` format remains 100% backward-compatible with stock FMG. Standalone campaign JSON exports provide portability.
@@ -107,17 +108,16 @@ Under the **Full Fork Methodology** ([`docs/plans/mod-merge-plan.md`](../plans/m
 
 ## Upstream Seams & Touch Points
 
-To maintain easy upstream synchronisation with [Azgaar's upstream repository](https://github.com/Azgaar/Fantasy-Map-Generator), all modifications to stock FMG files are strictly append-only, as catalogued in [`MERGING.md`](file:///C:/Users/ellsworthnm/Documents/Fantasy-Map-Generator/MERGING.md):
+To maintain easy upstream synchronisation with [Azgaar's upstream repository](https://github.com/Azgaar/Fantasy-Map-Generator), all modifications to stock FMG files are strictly append-only, as catalogued in [`MERGING.md`](../../MERGING.md):
 
-1. **Layer Registry** ([`src/components/layers.ts`](file:///C:/Users/ellsworthnm/Documents/Fantasy-Map-Generator/src/components/layers.ts)):
-   - `LayersRegistry.register(...)` allows feature modules to register custom map layers dynamically.
-   - Widened `LayerId` type to accept registered string keys (`armies`, `regions`, `settlements`, `move-paths`, `selection`).
-2. **Layer Toggles** ([`src/data/layer-labels.ts`](file:///C:/Users/ellsworthnm/Documents/Fantasy-Map-Generator/src/data/layer-labels.ts)):
-   - `LAYER_TOGGLES` published to `window` so Conquest layers appear in the native *Layers* tab with dedicated hotkeys.
-3. **Map Commands** ([`src/components/map-commands.ts`](file:///C:/Users/ellsworthnm/Documents/Fantasy-Map-Generator/src/components/map-commands.ts)):
-   - Registers omnibar commands (`openConquest`) and links the Conquest controller to the Tools tab.
-4. **App Entry Point** ([`src/main.ts`](file:///C:/Users/ellsworthnm/Documents/Fantasy-Map-Generator/src/main.ts)):
-   - Appends `import "@/conquest/entry"` so Conquest layers and command listeners register during app bootstrap before any map loads, ensuring `Layers.restore()` properly restores campaign layer visibility.
+1. **View Mode & Controller Integration** ([`src/controllers/conquest-mode.ts`](../../src/controllers/conquest-mode.ts), [`src/components/options/view-mode.ts`](../../src/components/options/view-mode.ts)):
+   - Registered as a first-class view mode (`Controllers.ConquestMode`) toggleable via the view mode bar alongside Standard, 3D, and Astral views.
+2. **Core FMG Cartographic Rendering** ([`src/renderers/draw-burg-icons.ts`](../../src/renderers/draw-burg-icons.ts)):
+   - Renders state capitals with circled star markers (`burgs-atlas-star-circled`) and province capitals with smaller star markers (`burgs-atlas-star`), eliminating the need for redundant custom settlements or regions layers.
+3. **Military & Battle Pipeline** ([`src/generators/military-generator.ts`](../../src/generators/military-generator.ts), [`src/controllers/battle-screen.ts`](../../src/controllers/battle-screen.ts)):
+   - Allocates native `ArmyUnit[]` blocks for FMG regiments directly from each state's bound roster (`state.rosterId`), feeding seamlessly into both the campaign compiler and the turn-by-turn Lanchester battle simulator.
+4. **Map Commands & App Entry Point** ([`src/components/map-commands.ts`](../../src/components/map-commands.ts), [`src/main.ts`](../../src/main.ts)):
+   - Registers omnibar commands (`openConquest`) and appends `import "@/conquest/entry"` so Conquest controllers and listeners register during app bootstrap.
 
 ---
 
@@ -163,13 +163,28 @@ Armies navigate the cell graph using A* pathfinding. Before issuing a move order
 | `ambush` | ×0.7 | Concealed force: attacks initiated from ambush receive a +30% combat power bonus. |
 | `raid` | ×1.0 | Plunders enemy territory, transferring Wealth into booty and destabilizing local public order. |
 
-### Battles: The Auto-Resolve Model
-Combat is resolved through an auditable, deterministic statistical model grounded in [Lanchester Combat Laws](lanchester-model.md):
+### Battles: Tactical & Auto-Resolve Simulation
+Combat is resolved through an auditable, deterministic statistical model grounded in [Lanchester Combat Laws](lanchester-model.md). Engagements can be auto-resolved instantaneously or commanded round-by-round in the interactive **Battle Screen** ([`src/controllers/battle-screen.ts`](../../src/controllers/battle-screen.ts)):
 1. **Power Calculation**: Each unit contributes `(attack + defense + charge/2 + missile×0.6)`, modulated by current unit strength, veterancy experience, and unit category.
-2. **Matchup Matrix**: Tactical interactions scale effectiveness (cavalry counters missile ×1.3, missile punishes slow melee ×1.1, spearmen blunt cavalry ×0.8, artillery softens dense infantry ×1.2).
-3. **Attrition Rounds**: Combat simulates up to 6 rounds where casualties compound based on relative force disparity (Lanchester loss pressure). For a complete mathematical breakdown of Linear vs. Square laws and frontage constraints, see [`lanchester-model.md`](lanchester-model.md).
-4. **Rout & Pursuit**: Armies rout when falling below 25% initial combat power; losing forces suffer an additional 30% casualty rate during pursuit.
-5. **Contextual Modifiers**: Wall tiers, river crossings, encamped defender bonuses, and commanding lord skills are explicitly listed in the final battle report.
+2. **Matchup Matrix**: Tactical interactions scale effectiveness across a complete 6×6 archetype matrix (`melee`, `ranged`, `cavalry`, `artillery`, `monster`, `spellcaster`). For instance, cavalry counters missile (×1.3) and spellcasters (×1.5), monsters crush melee lines (×1.3) but suffer concentrated missile fire (×1.25), and spellcasters blast dense infantry (×1.25).
+3. **Attrition Rounds & Stances**: Combat simulates up to 6 rounds where casualties compound based on relative force disparity (Lanchester loss pressure). In the interactive Battle Screen, commanders can assign per-round tactical stances (Shock, Flank, Skirmish, Brace, Retreat) and step through engagements round-by-round.
+4. **Rout & Pursuit**: Armies rout when falling below their threshold (base 25%, modified by enemy `terror`); losing forces suffer an additional 30% casualty rate during pursuit.
+5. **Contextual Modifiers & Troop Sync**: Wall tiers, river crossings, encamped defender bonuses, arcane siege breaches, and commanding lord skills are evaluated per round. Final battle outcomes synchronize surviving `ArmyUnit[]` blocks directly back to regiments on the map. For a complete mathematical breakdown of Linear vs. Square laws and frontage constraints, see [`lanchester-model.md`](lanchester-model.md).
+
+### Magic, Monsters & Arcane Warfare
+OpenConquest models asymmetric fantasy warfare through a deterministic magic and monster system ([`docs/plans/openconquest-magic-system.md`](../plans/openconquest-magic-system.md)):
+- **Expanded Archetypes**: Units are classified across six core categories: `melee`, `ranged`, `cavalry`, `artillery`, `monster`, and `spellcaster`.
+- **6×6 Tactical Matchup Matrix**:
+  - **Spellcasters**: Devastate massed infantry (×1.25) and artillery (×1.2), but are vulnerable when ridden down by cavalry (0.5× defense, cavalry gains ×1.5) or sniped by ranged units (×1.2).
+  - **Monsters**: Smash infantry frontlines (×1.3), trample artillery (×1.4), and hunt casters (×1.4), but are large targets vulnerable to concentrated missile fire (ranged ×1.25, artillery ×1.3).
+- **Declarative Unit Powers (`powers`)**:
+  - `ward`: Multiplicatively mitigates incoming round attrition (`lossFrac × (1 - ownWard)`).
+  - `hex`: Amplifies enemy round attrition (`lossFrac × (1 + enemyHex)`).
+  - `heal`: Regenerates casualties up to the unit's starting battle headcount each round, prioritizing the most-damaged living units.
+  - `terror`: Elevates the enemy's breaking point (`routThreshold + enemyTerror`), causing opponents to rout sooner.
+  - `arcaneSiege`: Directly reduces defender fortification wall tiers before siege calculations.
+- **Arcane Resistance (`resistArcane`)**: Cultural and unit trait (e.g. Dwarven runic wards) that proportionally dampens incoming enemy spell powers.
+- **Configurable Caps**: Global engine caps in `game.json` (`wardCap: 0.3`, `hexCap: 0.3`, `healCap: 40`, `terrorCap: 0.15`, `arcaneSiegeCap: 2`, `resistCap: 0.5`) ensure magical dominance remains balanced against mundane arms.
 
 ### Sieges and Capturing Regions
 Settlement fortifications consist of walls and citadels. To capture a region, an invading army must occupy its major settlement and choose between immediate **Assault** or **Laying Siege**. Each turn of siege weakens defenders by 15% (down to a 40% floor).
@@ -230,17 +245,21 @@ OpenConquest is designed around data-driven configuration:
 ```
 src/conquest/content/docs/
 ├── game.json            # core engine parameters (movement, combat, capacity rules)
-├── buildings.json       # construction chains, capacity yields, fortification stats
-├── tech.json            # research trees and faction unlocks
-├── rosters/             # unit pools & Azgaar regiment mapping per culture group
-│   ├── commonBase.json
-│   ├── dwarfBase.json
-│   ├── elfBase.json
-│   ├── orcBase.json
-│   └── steppeBase.json
+├── rosters/             # unit pools, building chains, tech trees & FMG regiment mapping
+│   ├── default.json     # Standard fantasy roster (commonBase)
+│   ├── dwarf.json       # Dwarven mountain hold roster (dwarfBase)
+│   ├── elf.json         # Elven woodland roster (elfBase)
+│   ├── orc.json         # Orc warband roster (orcBase)
+│   ├── steppe.json      # Steppe nomad cavalry roster (steppeBase)
+│   ├── east_asia.json   # East Asian imperial roster
+│   ├── mughal.json      # Mughal gunpowder & war elephant roster
+│   ├── ottoman.json     # Ottoman Janissary & Sipahi roster
+│   └── renaissance.json # European Renaissance pike-and-shot roster
 ├── victory/             # short, long, and faction-specific victory conditions
 └── events/              # scripted narrative events and dilemmas
 ```
+
+Buildings and research technologies are packaged directly within each roster document to ensure tight thematic cohesion and distinct racial/cultural playstyles.
 
 ### In-App Editors
 You can modify game balance live during an active campaign via the ⚔ menu:
@@ -264,7 +283,7 @@ src/conquest/
 ├── store/               # campaign sessions, command log replay, IndexedDB storage
 ├── ui/                  # user interface and presentation components
 │   ├── button.ts        # top bar ⚔ button & menu controller
-│   ├── layers/          # native FMG layers (armies, regions, settlements, paths)
+│   ├── layers/          # FMG integration seam, style presets & zoom triggers
 │   ├── panels/          # campaign rail, faction overview, settlement inspector
 │   └── content/         # tabbed live config & state dialog editors
 ├── content/             # shipped ruleset JSON documents & ContentPack store
@@ -297,9 +316,13 @@ Test suites cover:
 | Phase | Milestone | Status |
 |---|---|---|
 | **Phase 0–F** | Standalone mod architecture (layers, Web Worker engine, live JSON editing, capacity pivot) | ✅ Completed |
-| **Phase B (In-Tree)** | In-tree transplant into [`src/conquest/`](file:///C:/Users/ellsworthnm/Documents/Fantasy-Map-Generator/src/conquest), native `LayersRegistry` integration, and Web Worker build | ✅ Completed |
+| **Phase B (In-Tree)** | In-tree transplant into [`src/conquest/`](../../src/conquest), native view mode integration, and Web Worker build | ✅ Completed |
 | **Phase C (In-Tree)** | Unified Tools menu entry, map command registration, and IndexedDB session storage | ✅ Completed |
-| **Next Horizons** | Tactical battle map visualization, fog-of-war exploration, and expanded fantasy roster packs | 📋 Planned |
+| **Military Integration** | Native `ArmyUnit[]` rosters for regiments, state roster binding, and turn-by-turn Lanchester battle sim | ✅ Completed |
+| **Magic & Arcane Warfare** | 6×6 Lanchester matchup matrix, spellcasters, monsters, declarative powers, and arcane siege | ✅ Completed |
+| **Expanded Content** | Renaissance Europe, East Asia, Mughal, and Ottoman historical rosters | ✅ Completed |
+| **Old World Fantasy Rosters** | Asymmetric Warhammer-inspired Old World faction rosters ([`openconquest-old-world-rosters.md`](../plans/openconquest-old-world-rosters.md)) | 📋 Planned |
+| **Next Horizons** | Tactical battle map visualization, fog-of-war exploration, and custom scenario scripting | 📋 Planned |
 
 ---
 

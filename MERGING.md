@@ -34,12 +34,16 @@ git fetch upstream && git merge upstream/master
 
 ### OpenConquest: Atlas Invictus (the campaign game)
 
-- **`src/components/layers.ts`**: `LayersRegistry.register(...)` added and `LayerParams` exported, so a feature module can register its own layers; `LayerId` widened to accept registered string ids.
-- **`src/data/layer-labels.ts`**: `LAYER_TOGGLES` published on `window` (the conquest layers' tab buttons and hotkeys).
+- **`src/controllers/conquest-mode.ts`**: new controller (`Controllers.ConquestMode`) managing Conquest as a native view mode.
+- **`src/components/options/view-mode.ts`**: view mode toggle added (`viewConquest`) switching between Standard, 3D, Astral, and Conquest modes.
+- **`src/controllers/battle-screen.ts`**: steppable Lanchester combat simulator with round-by-round tactical commands, odds calculations, and map troop loss sync.
+- **`src/generators/military-generator.ts`**: roster-native unit allocation (`ArmyUnit[]`) and composition calculation for state military forces.
+- **`src/generators/states-generator.ts`**: deterministic roster assignment (`state.rosterId`) with culture/state auto-inference.
+- **`src/renderers/draw-burg-icons.ts`**: renders circled stars for state capitals and smaller stars for province capitals.
 - **`src/components/map-commands.ts`**: `MAP_COMMANDS` published on `window` (the campaign's omnibar entries).
-- **`src/main.ts`**: one import appended (`@/conquest/entry`) — the layers must be registered before a map loads, or `Layers.restore()` would not see them.
-- **`src/conquest/**`**: new file tree — the campaign engine, world compiler, content packs, session store and UI. Self-contained; it touches stock files only through the three seams above.
-- *Conflict resolution strategy*: if upstream grows its own `register()` or publishes the same globals, reconcile rather than duplicate — the conquest code only needs `Layers.register`, `LAYER_TOGGLES` and `MAP_COMMANDS`.
+- **`src/main.ts`**: one import appended (`@/conquest/entry`) — registers Conquest commands and boot lifecycle.
+- **`src/conquest/**`**: self-contained campaign engine, Web Worker compiler, content packs (9 fantasy & historical rosters), session store and UI rail.
+- *Conflict resolution strategy*: reconcile imports and registry additions; the Conquest engine itself is fully self-contained in `src/conquest/`.
 
 ### Phase A: Astral Cartographer Content in Core (Bases + Culture Sets)
 

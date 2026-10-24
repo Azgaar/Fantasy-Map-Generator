@@ -20,6 +20,7 @@ const testDir = path.dirname(fileURLToPath(import.meta.url));
 import { currentContent } from "@/conquest/content/store";
 import {
   didYouMean,
+  MATCHUP,
   MEN_PER_BLOCK,
   type RawContentDocs,
   resolveForPack,
@@ -175,9 +176,19 @@ describe("the shipped ruleset (total-war/content/docs)", () => {
     expect(loaded.warnings).toEqual([]);
   });
 
-  test("expected inventory: 5 rosters, and nothing state-specific", () => {
-    expect(Object.keys(content.rosters)).toEqual(
-      ["commonBase", "dwarfBase", "elfBase", "orcBase", "steppeBase"].sort()
+  test("expected inventory: 9 rosters, and nothing state-specific", () => {
+    expect(Object.keys(content.rosters).sort()).toEqual(
+      [
+        "commonBase",
+        "dwarfBase",
+        "eastAsiaBase",
+        "elfBase",
+        "mughalBase",
+        "orcBase",
+        "ottomanBase",
+        "renaissanceBase",
+        "steppeBase"
+      ].sort()
     );
     // Faction defs and culture groups are per-map now: states resolve from the
     // active world, groups live in the browser's config. The shipped pack is
@@ -435,6 +446,133 @@ describe("validation with human errors (§6 principle 4)", () => {
     expect(errors.some(e => e.includes("'men' was retired") && e.includes("blocks: 0.15"))).toBe(true);
     // Reported once, as an error — not also buried as an unknown-key warning.
     expect(warnings.some(w => w.includes("unknown key 'men'"))).toBe(false);
+  });
+
+  describe("magic: spellcaster / monster categories, powers, resistArcane", () => {
+    const unit = (extra: Record<string, unknown>): Record<string, unknown> => ({
+      name: "Mage",
+      category: "spellcaster",
+      blocks: 0.02,
+      attack: 3,
+      defense: 4,
+      charge: 0,
+      missile: 15,
+      cost: 500,
+      upkeep: 50,
+      ...extra
+    });
+    const withUnit = (extra: Record<string, unknown>) =>
+      validateAndResolve(
+        docs({
+          rosterDocs: [
+            {
+              file: "rosters/base.json",
+              doc: y({
+                roster: {
+                  id: "commonBase",
+                  units: {
+                    mage: unit(extra),
+                    spear: { ...unit({}), name: "Spear", category: "melee", blocks: 0.15 },
+                    archers: { ...unit({}), name: "Archers", category: "ranged", blocks: 0.12 }
+                  },
+                  garrison: { melee: "spear", ranged: "archers" },
+                  regimentMap: { infantry: "spear", archers: "archers", cavalry: "spear", artillery: "spear" }
+                }
+              })
+            }
+          ]
+        })
+      );
+
+    test("monster and spellcaster categories validate, with powers and resistArcane carried through", () => {
+      const { content, errors } = withUnit({
+        powers: { ward: 0.1, hex: 0.08, heal: 6, terror: 0.05, arcaneSiege: 1 },
+        resistArcane: 0.2
+      });
+      expect(errors).toEqual([]);
+      const mage = content!.unitTypes.mage!;
+      expect(mage.category).toBe("spellcaster");
+      expect(mage.men).toBeCloseTo(20);
+      expect(mage.powers).toEqual({ ward: 0.1, hex: 0.08, heal: 6, terror: 0.05, arcaneSiege: 1 });
+      expect(mage.resistArcane).toBe(0.2);
+    });
+
+    test("powers are optional and absent powers stay absent", () => {
+      const { content, errors } = withUnit({});
+      expect(errors).toEqual([]);
+      expect(content!.unitTypes.mage!.powers).toBeUndefined();
+      expect(content!.unitTypes.mage!.resistArcane).toBeUndefined();
+    });
+
+    test("fractional powers and resistArcane above 1 are refused", () => {
+      expect(withUnit({ powers: { ward: 1.5 } }).errors.some(e => e.includes("'ward' must be between 0 and 1"))).toBe(
+        true
+      );
+      expect(withUnit({ powers: { hex: 1.2 } }).errors.some(e => e.includes("'hex' must be between 0 and 1"))).toBe(
+        true
+      );
+      expect(
+        withUnit({ powers: { terror: 1.1 } }).errors.some(e => e.includes("'terror' must be between 0 and 1"))
+      ).toBe(true);
+      expect(withUnit({ resistArcane: 2 }).errors.some(e => e.includes("'resistArcane' must be between 0 and 1"))).toBe(
+        true
+      );
+    });
+
+    test("negative powers, non-object powers and unknown power keys are flagged", () => {
+      expect(withUnit({ powers: { heal: -1 } }).errors.some(e => e.includes("'heal' must be a number ≥ 0"))).toBe(true);
+      expect(
+        withUnit({ powers: { arcaneSiege: -2 } }).errors.some(e => e.includes("'arcaneSiege' must be a number ≥ 0"))
+      ).toBe(true);
+      expect(withUnit({ powers: { ward: -0.1 } }).errors.some(e => e.includes("'ward' must be a number ≥ 0"))).toBe(
+        true
+      );
+      expect(withUnit({ resistArcane: -0.1 }).errors.some(e => e.includes("'resistArcane' must be a number ≥ 0"))).toBe(
+        true
+      );
+      expect(withUnit({ powers: "ward" }).errors.some(e => e.includes("'powers' must be an object"))).toBe(true);
+      const { warnings } = withUnit({ powers: { fireball: 3 } });
+      expect(warnings.some(w => w.includes("unknown key 'fireball'"))).toBe(true);
+    });
+
+    test("monster category validates correctly with powers", () => {
+      const { content, errors } = withUnit({
+        name: "War Hydra",
+        category: "monster",
+        blocks: 0.05,
+        powers: { terror: 0.1, heal: 20 }
+      });
+      expect(errors).toEqual([]);
+      const hydra = content!.unitTypes.mage!;
+      expect(hydra.category).toBe("monster");
+      expect(hydra.men).toBe(50);
+      expect(hydra.powers).toEqual({ terror: 0.1, heal: 20 });
+    });
+
+    test("MATCHUP is a complete 6x6 matrix matching the specification", () => {
+      const cats = Object.keys(MATCHUP);
+      expect(cats.sort()).toEqual(["artillery", "cavalry", "melee", "monster", "ranged", "spellcaster"]);
+      expect(MATCHUP).toEqual({
+        melee: { melee: 1.0, ranged: 1.1, cavalry: 0.8, artillery: 1.2, monster: 0.8, spellcaster: 1.4 },
+        ranged: { melee: 1.1, ranged: 1.0, cavalry: 0.7, artillery: 1.0, monster: 1.25, spellcaster: 1.2 },
+        cavalry: { melee: 0.9, ranged: 1.3, cavalry: 1.0, artillery: 1.4, monster: 0.85, spellcaster: 1.5 },
+        artillery: { melee: 1.2, ranged: 1.1, cavalry: 0.6, artillery: 1.0, monster: 1.3, spellcaster: 0.9 },
+        monster: { melee: 1.3, ranged: 0.8, cavalry: 1.1, artillery: 1.4, monster: 1.0, spellcaster: 1.4 },
+        spellcaster: { melee: 1.25, ranged: 1.0, cavalry: 0.5, artillery: 1.2, monster: 1.1, spellcaster: 1.0 }
+      });
+    });
+
+    test("the shipped game config carries battle.magic caps", () => {
+      expect(DEFAULT_CONFIG.battle.magic).toEqual({
+        wardCap: 0.3,
+        hexCap: 0.3,
+        healCap: 40,
+        terrorCap: 0.15,
+        arcaneSiegeCap: 2,
+        resistCap: 0.5
+      });
+      expect(currentContent().config.battle.magic).toEqual(DEFAULT_CONFIG.battle.magic);
+    });
   });
 
   test("authoring 'capacity' on a unit is refused by name", () => {

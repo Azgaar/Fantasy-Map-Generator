@@ -53,7 +53,14 @@ type MockEl = {
   setAttribute: (attr: string, val: string) => void;
   removeAttribute: (attr: string) => void;
   querySelectorAll?: (selector: string) => MockEl[];
-  getBoundingClientRect?: () => { top: number; bottom: number; left: number; right: number; width: number; height: number };
+  getBoundingClientRect?: () => {
+    top: number;
+    bottom: number;
+    left: number;
+    right: number;
+    width: number;
+    height: number;
+  };
 };
 
 function createMockEl(id: string, initialClasses: string[] = []): MockEl {

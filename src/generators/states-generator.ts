@@ -1,4 +1,5 @@
 import { mean, median, quadtree, sum } from "d3";
+import { assignStateRoster } from "@/conquest/engine/common/content";
 import { getInverseRelation, RELATIONS } from "@/data/diplomacy";
 import { Emblems } from "@/generators/emblems-generator";
 import type { Emblem } from "@/types/emblems";
@@ -27,7 +28,6 @@ import type { Label } from "./labels-generator";
 import type { Regiment } from "./military-generator";
 import { Population } from "./population-generator";
 import type { Province } from "./provinces-generator";
-import { assignStateRoster } from "@/conquest/engine/common/content";
 
 declare global {
   var States: StatesModule;

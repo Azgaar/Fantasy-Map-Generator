@@ -14,11 +14,11 @@ import {
 import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
+import { getRosterOptions } from "@/conquest/content/store";
 import { Controllers } from "@/controllers";
 import type { State } from "@/generators/states-generator";
 import type { MilitaryUnit } from "@/types/Military";
 import { downloadFile, getFileName } from "@/utils";
-import { getRosterOptions } from "@/conquest/content/store";
 import { capitalize, ensureEl, escapeHtml, rn, sanitizeId, si, wiki } from "../utils";
 
 const dialogId = "militaryOverview" as const;
@@ -236,6 +236,10 @@ function getMilitaryData(): MilitaryRow[] {
           if (!matchedUnit) {
             const cat = Military.getCategory(uId);
             matchedUnit = options.map.military.units.find(u => {
+              if (cat === "spellcaster")
+                return u.type === "magical" || u.name === "spellcasters" || u.type === "ranged" || u.name === "archers";
+              if (cat === "monster")
+                return u.type === "armored" || u.name === "monsters" || u.type === "melee" || u.name === "infantry";
               if (cat === "melee") return u.type === "melee" || u.name === "infantry";
               if (cat === "ranged") return u.type === "ranged" || u.name === "archers";
               if (cat === "cavalry") return u.type === "mounted" || u.name === "cavalry";

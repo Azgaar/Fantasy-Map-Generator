@@ -104,7 +104,7 @@ Because numerical superiority is squared:
 
 ## 4. Application in the OpenConquest Wargame Engine
 
-OpenConquest implements these dynamics inside its statistical auto-resolve engine ([`src/conquest/engine/game/battle.ts`](file:///C:/Users/ellsworthnm/Documents/Fantasy-Map-Generator/src/conquest/engine/game/battle.ts)):
+OpenConquest implements these dynamics inside its statistical combat engine ([`src/conquest/engine/game/battle.ts`](../../src/conquest/engine/game/battle.ts)), powering both strategic campaign auto-resolve and the interactive turn-by-turn Battle Screen ([`src/controllers/battle-screen.ts`](../../src/controllers/battle-screen.ts)):
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -129,13 +129,15 @@ OpenConquest implements these dynamics inside its statistical auto-resolve engin
 ```
 
 ### 1. Mixed Category Dynamics (Blended Matchups)
-In fantasy armies, forces combine melee frontlines (governed by Linear constraints) with ranged archers and artillery (governed by Square laws).
+In fantasy armies, forces combine melee frontlines (governed by Linear constraints) with ranged archers and artillery (governed by Square laws), alongside specialized monsters and spellcasters.
 - OpenConquest evaluates unit power per category:
   $$\text{unitPower} = (\text{attack} + \text{defense} + \text{charge}/2 + \text{missile} \times 0.6) \times \text{expMult} \times \text{fill}$$
-- Category interaction weights (`MATCHUP`) scale efficiency based on the composition mix:
-  - **Cavalry vs. Ranged ($\times 1.3$)**: Cavalry breaches engagement distance rapidly, converting ranged square-law superiority into melee linear attrition.
-  - **Ranged vs. Slow Melee ($\times 1.1$)**: Sustained direct fire exploits square-law concentration before melee lines meet.
-  - **Spears vs. Cavalry ($\times 0.8$)**: Fortified spear walls neutralize charge speed and compress cavalry into close quarters.
+- Category interaction weights (`MATCHUP`) form a complete 6×6 matrix that scales efficiency based on composition mix:
+  - **Cavalry vs. Ranged ($\times 1.3$) & Casters ($\times 1.5$)**: Cavalry breaches engagement distance rapidly, converting ranged square-law superiority into close-quarters melee attrition.
+  - **Ranged vs. Slow Melee ($\times 1.1$) & Monsters ($\times 1.25$)**: Sustained direct fire exploits square-law concentration against large or slow targets before lines meet.
+  - **Spears vs. Cavalry ($\times 0.8$)**: Fortified spear walls neutralize charge velocity and compress cavalry into close quarters.
+  - **Spellcasters vs. Dense Melee ($\times 1.25$) & Artillery ($\times 1.2$)**: Area spells punish dense formations and static artillery batteries, but casters defend poorly against cavalry ($\times 0.5$).
+  - **Monsters vs. Melee ($\times 1.3$), Artillery ($\times 1.4$) & Casters ($\times 1.4$)**: Monstrous shock overruns battle lines, though concentrated artillery ($\times 1.3$) and missile fire exploit their large profile.
 
 ### 2. Terrain & Fortifications as Frontage Bottlenecks
 Under pure Square Law conditions, a large army will annihilate a smaller army with negligible losses. Fortifications and terrain features alter the mathematical regime:
@@ -144,7 +146,7 @@ Under pure Square Law conditions, a large army will annihilate a smaller army wi
 - **Entrenchment (`defenderEncamped`)**: Grants $+10\%$ defense bonus and limits the attacker's line-of-sight targeting advantages.
 
 ### 3. The Attrition & Rout Mechanics
-In [`src/conquest/engine/game/battle.ts`](file:///C:/Users/ellsworthnm/Documents/Fantasy-Map-Generator/src/conquest/engine/game/battle.ts):
+In [`src/conquest/engine/game/battle.ts`](../../src/conquest/engine/game/battle.ts):
 ```ts
 const aEff = effectivePower(attackerUnits, defenderUnits, attackerMult, types);
 const dEff = effectivePower(defenderUnits, attackerUnits, defenderMult, types);
@@ -155,7 +157,21 @@ const aLossRate = Math.min(0.45, (dEff / totalEff) * pressure);
 const dLossRate = Math.min(0.45, (aEff / totalEff) * pressure);
 ```
 - Attrition scales proportionally with the opponent's relative share of effective power.
-- Armies break when reduced below `routThreshold` (default $25\%$), preventing mathematically total annihilation while preserving the decisive advantage of concentrated force.
+- Armies break when reduced below `routThreshold` (default $25\%$, elevated by enemy `terror`), preventing mathematically total annihilation while preserving the decisive advantage of concentrated force.
+
+### 4. Magic Powers, Attrition Modification & Regeneration
+OpenConquest integrates magic deterministically into the Lanchester attrition cycle:
+- **Attritional Modification (`ward` & `hex`)**:
+  Rather than contributing raw headcount, magical powers bend the differential attrition rate:
+  $$\text{aLossFrac} = \text{clamp}\!\left(\text{baseALoss} \times (1 + \text{dHex}) \times (1 - \text{aWard}),\, 0.02,\, 0.50\right)$$
+  $$\text{dLossFrac} = \text{clamp}\!\left(\text{baseDLoss} \times (1 + \text{aHex}) \times (1 - \text{dWard}),\, 0.02,\, 0.50\right)$$
+- **Regeneration & Necromancy (`heal`)**:
+  Following casualty distribution each round, magical healing restores casualties up to each unit's battle-start headcount ($\le \text{initialUnitCount}$), prioritizing the most severely depleted living units first.
+- **Arcane Breaches (`arcaneSiege`)**:
+  Reduces effective fortification wall tiers ($\text{effectiveWalls} = \max(0, \text{walls} - \text{arcaneSiege})$), mitigating the defender's frontage chokepoint advantage before combat calculations.
+- **Arcane Resistance (`resistArcane`)**:
+  Sides with innate anti-magic (such as Dwarven runecraft) dampen enemy `ward`, `hex`, and `terror` magnitudes proportionally:
+  $$\text{power}_{\text{effective}} = \text{power}_{\text{raw}} \times (1 - \text{enemyResistArcane})$$
 
 ---
 

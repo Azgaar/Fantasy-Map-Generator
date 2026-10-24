@@ -11,6 +11,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { undraw } from "@/components/undraw";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { resetZoom } from "@/components/zoom";
+import { assignStateRoster } from "@/conquest/engine/common/content";
 import { Controllers } from "@/controllers";
 import { GraphOverride } from "@/generators/graph-override";
 import { Styles } from "@/generators/styles";
@@ -23,7 +24,6 @@ import { declareFont } from "@/services/fonts";
 import { logStats } from "@/services/logging";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
 import { emptyHistory } from "@/types/history";
-import { assignStateRoster } from "@/conquest/engine/common/content";
 import { ensureEl, escapeHtml, last, link, parseError, rn, safeParseJSON } from "@/utils";
 
 async function quickLoad(): Promise<void> {

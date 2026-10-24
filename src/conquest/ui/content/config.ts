@@ -72,7 +72,7 @@ function rosterIdOf(file: { doc: unknown }): string {
   return (doc.id as string) || (roster?.id as string) || "";
 }
 
-const CATEGORIES = ["melee", "ranged", "cavalry", "artillery"];
+const CATEGORIES = ["melee", "ranged", "cavalry", "artillery", "monster", "spellcaster"];
 const UNIT_NUMBERS: (keyof UnitDraft)[] = ["blocks", "attack", "defense", "charge", "missile", "cost", "upkeep"];
 
 function rosterFields(r: RosterDraft, unitIds: string[]): Field[] {

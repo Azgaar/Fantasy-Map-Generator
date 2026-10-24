@@ -16,9 +16,7 @@ export async function drawBurgIcons(): Promise<void> {
     groups.icons.options.icon,
     groups.anchors.options.icon
   ]);
-  const referenced = icons
-    .map(icon => icon && IconSets.setForId(icon))
-    .filter((set): set is IconSetId => Boolean(set));
+  const referenced = icons.map(icon => icon && IconSets.setForId(icon)).filter((set): set is IconSetId => Boolean(set));
   const setIds: readonly IconSetId[] = [
     ...new Set([...Burgs.iconSets.map(set => set.id), ...referenced, "burgs" as const])
   ];

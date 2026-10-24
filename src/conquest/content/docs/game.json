@@ -24,7 +24,15 @@
     "encampBonus": 0.1,
     "ambushBonus": 0.3,
     "riverDefenderBonus": 0.15,
-    "marchAttackPenalty": 0
+    "marchAttackPenalty": 0,
+    "magic": {
+      "wardCap": 0.3,
+      "hexCap": 0.3,
+      "healCap": 40,
+      "terrorCap": 0.15,
+      "arcaneSiegeCap": 2,
+      "resistCap": 0.5
+    }
   },
   "economy": {
     "taxPer1000Pop": 2.5,
