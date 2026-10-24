@@ -4,7 +4,8 @@ import { Grid } from "@/model/graph/grid-generator";
 import { Ice } from "@/model/physical/ice-generator";
 import { redrawGlacier, redrawIceberg } from "@/renderers/draw-ice";
 import { Layers } from "@/renderers/layers";
-import { closeDialogs, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
@@ -17,7 +18,7 @@ function open(element: SVGElement): void {
   if (options.app.mode) return;
   if (findEl("iceEditor") && element === selectedIce.node()) return;
 
-  closeDialogs(".stable");
+  Dialog.closeAll(".stable");
   Layers.show("ice");
 
   selectedIce = select<SVGElement, unknown>(element) as unknown as typeof selectedIce;
@@ -39,16 +40,15 @@ function open(element: SVGElement): void {
     .classed("draggable", true)
     .call(drag<SVGElement, unknown>().on("drag", dragElement));
 
-  $("#iceEditor").dialog({
+  Dialog.open("iceEditor", {
     title: t("Edit {{- type}}", { type }),
-    resizable: false,
     position: { my: "center top+60", at: "top", of: "svg", collision: "fit" },
-    close: closeEditor
+    onClose: closeEditor
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("iceEditor");
+  Dialog.destroy("iceEditor");
 
   const html = /* html */ `<div id="iceEditor" class="dialog">
     <button id="iceEditStyle" data-tip="${t("Edit style in Style Editor")}" class="icon-brush"></button>
@@ -104,7 +104,7 @@ function addIcebergOnClick(event: PointerEvent): void {
 
 function removeIce(): void {
   const isGlacier = selectedIce.attr("type") === "glacier";
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: isGlacier
       ? t("Are you sure you want to remove the glacier?")
@@ -115,7 +115,7 @@ function removeIce(): void {
       Ice.removeIce(id);
       if (isGlacier) redrawGlacier(id);
       else redrawIceberg(id);
-      $("#iceEditor").dialog("close");
+      Dialog.close("iceEditor");
     }
   });
 }
@@ -146,7 +146,7 @@ function closeEditor(): void {
   clearMainTip();
   ensureEl("iceNew").classList.remove("pressed");
   if (wasAdding) applyDefaultViewboxEvents();
-  destroyDialog("iceEditor");
+  Dialog.destroy("iceEditor");
   selectedIce = null!;
 }
 

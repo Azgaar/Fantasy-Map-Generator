@@ -10,7 +10,6 @@ import "@/data/supporters";
 import "@/data/heightmap-templates";
 import "@/data/precreated-heightmaps";
 import "@/model/options/options-model";
-import "@/ui/dialog/system-dialogs";
 import { bindApp } from "@/ui/app-commands";
 import "./chrome/app-info";
 import "@/ui/tooltips";
@@ -26,7 +25,7 @@ import "@/renderers/view-mode";
 import { openTab } from "./chrome/options-panel";
 import "./seed";
 import { generate, regenerateMap, regeneratePrompt } from "./lifecycle";
-import "@/ui/dialog/dialog-helpers";
+import "@/ui/dialog/dialog"; // tracks Shift for confirmations from boot
 import "@/ui/dialog/sorting";
 import "@/ui/elements/fill-box";
 import "@/ui/elements/slider-input";

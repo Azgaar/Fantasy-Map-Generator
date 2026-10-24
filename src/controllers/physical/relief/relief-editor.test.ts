@@ -6,6 +6,7 @@ import type { ReliefIcon, ReliefIconType } from "@/model/physical/relief-generat
 import { Relief } from "@/model/physical/relief-generator";
 import { Styles } from "@/model/styles/styles";
 import { getReliefIcon } from "@/renderers/draw-relief-icons";
+import { dialogButton } from "@/ui/dialog/dialog-testing";
 import { ReliefEditor } from "./relief-editor";
 
 vi.mock("@/model/icons", () => ({
@@ -25,10 +26,6 @@ vi.mock("@/controllers", () => ({ Controllers }));
 vi.mock("@/ui/map/viewbox-events", () => ({ applyDefaultViewboxEvents: vi.fn() }));
 vi.mock("@/renderers/layers", () => ({ Layers: { show: vi.fn(), draw: vi.fn() } }));
 vi.mock("@/renderers/draw-relief-icons", () => ({ redrawRelief: vi.fn(), getReliefIcon: vi.fn() }));
-vi.mock("@/ui/dialog/dialog-helpers", async importOriginal => ({
-  ...(await importOriginal<typeof import("@/ui/dialog/dialog-helpers")>()),
-  closeDialogs: vi.fn()
-}));
 
 /** One fast swipe along y=50: mousedown at x0, a single mousemove to x1, mouseup */
 async function swipe(x0: number, x1: number): Promise<void> {
@@ -63,7 +60,6 @@ beforeEach(() => {
   globalThis.styles = Styles.parse(undefined);
   vi.spyOn(Pack, "findCell").mockReturnValue(0);
   globalThis.pack = { cells: { h: new Uint8Array([30]) }, relief: [] } as unknown as typeof pack;
-  window.$ = vi.fn(() => ({ dialog: vi.fn() })) as unknown as typeof window.$;
 });
 
 afterEach(() => {
@@ -89,16 +85,8 @@ describe("ReliefEditor bulk brushes", () => {
     const type = await openBulkMode("reliefBulkRemove");
     const reference = { icon: Relief.symbolId({ type }, styles.relief.options.set), x: 8, y: 48, s: 4 };
     pack.relief = [{ type, x: 8, y: 48, s: 4 }, reference];
-    document.body.insertAdjacentHTML("beforeend", '<div id="alertMessage"></div>');
-    let remove: () => void = () => {};
-    window.$ = vi.fn(() => ({
-      dialog: (settings: { buttons?: { Remove?: () => void } }) => {
-        if (settings.buttons?.Remove) remove = settings.buttons.Remove;
-      }
-    })) as unknown as typeof window.$;
-
     document.getElementById("reliefRemove")!.click();
-    remove();
+    dialogButton("Remove").click();
 
     expect(pack.relief).toEqual([reference]);
   });

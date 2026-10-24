@@ -10,6 +10,7 @@ import type { Burg } from "@/model/political/burgs-generator";
 import { States } from "@/model/political/states-generator";
 import { formatPrice } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
+import { Dialog } from "@/ui/dialog/dialog";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
@@ -384,7 +385,13 @@ function open(burgId: number): void {
     empty: t("No goods manufactured")
   });
 
-  ensureEl("alertMessage").innerHTML = /*html*/ `
+  Dialog.message({
+    width: "48em",
+    resizable: true,
+    title: t("Production Overview: {{- burg}}", { burg: burg.name }),
+    buttons: [],
+    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
+    message: /*html*/ `
     <div id="productionOverviewContent">
       ${statsHtml}
       ${renderSection(t("Manufactured Goods"), producedTable, t("Goods manufactured by this burg in this production cycle."))}
@@ -394,36 +401,23 @@ function open(burgId: number): void {
         t("Chronological local production, market purchases, sales, and demand-fill operations for this burg.")
       )}
     </div>
-  `;
-
-  const overviewContent = ensureEl("alertMessage").querySelector<HTMLElement>("#productionOverviewContent");
-  if (overviewContent) {
-    overviewContent.onclick = event => {
-      const target = event.target as HTMLElement;
-      const row = target.closest<HTMLTableRowElement>("tr[data-target]");
-      if (!row) return;
-
-      const targetId = row.dataset.target;
-      if (!targetId) return;
-      const detailsRow = overviewContent.querySelector<HTMLTableRowElement>(`#${targetId}`);
-      if (!detailsRow) return;
-
-      const isOpen = detailsRow.style.display !== "none";
-      detailsRow.style.display = isOpen ? "none" : "table-row";
-    };
-  }
-
-  $("#alert").dialog({
-    width: "48em",
-    resizable: true,
-    title: t("Production Overview: {{- burg}}", { burg: burg.name }),
-    position: {
-      my: "right top",
-      at: "right-10 top+10",
-      of: "svg",
-      collision: "fit"
-    }
+  `
   });
+
+  const overviewContent = ensureEl("productionOverviewContent");
+  overviewContent.onclick = event => {
+    const target = event.target as HTMLElement;
+    const row = target.closest<HTMLTableRowElement>("tr[data-target]");
+    if (!row) return;
+
+    const targetId = row.dataset.target;
+    if (!targetId) return;
+    const detailsRow = overviewContent.querySelector<HTMLTableRowElement>(`#${targetId}`);
+    if (!detailsRow) return;
+
+    const isOpen = detailsRow.style.display !== "none";
+    detailsRow.style.display = isOpen ? "none" : "table-row";
+  };
 }
 
 export const ProductionOverview = { open };

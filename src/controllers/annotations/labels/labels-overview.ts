@@ -5,7 +5,8 @@ import { LABEL_TYPES, type Label, Labels, type LabelType } from "@/model/annotat
 import { getLabelsData, getLabelsIndex } from "@/renderers/labels/label-data";
 import type { LabelData } from "@/renderers/labels/labels";
 import { Layers } from "@/renderers/layers";
-import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import { dialogState } from "@/ui/dialog/state";
 import {
@@ -69,7 +70,7 @@ const labelsTable = initEditorTable<LabelData>({
 function open(group: string = ALL): void {
   if (options.app.mode) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ group: ALL, type: ALL, search: ALL }));
-  closeDialogs(`#${dialogId}, .stable`);
+  Dialog.closeAll(`#${dialogId}, .stable`);
   Layers.show("labels");
 
   isBulkMode = false;
@@ -83,16 +84,15 @@ function open(group: string = ALL): void {
   ensureEl<HTMLInputElement>("labelsSearch").value = filterState.search;
   labelsTable.reset();
 
-  $(`#${dialogId}`).dialog({
+  Dialog.open(dialogId, {
     title: t("Labels Overview"),
-    resizable: false,
     position,
-    close
+    onClose: close
   });
 }
 
 function renderDialog(): void {
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
 
   const html = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
     ${renderEditorHeader({ dialogId, columns })}
@@ -142,7 +142,7 @@ function renderDialog(): void {
   initColumnVisibility({
     dialogId,
     columns,
-    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+    onUpdate: () => Dialog.update(dialogId, { width: "fit-content", position })
   });
 
   ensureEl("labelsBody").addEventListener("click", onBodyClick);
@@ -163,7 +163,7 @@ function renderDialog(): void {
 function close(): void {
   clearTimeout(searchTimeout);
   cancelSpread();
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
 }
 
 function refresh(): void {
@@ -244,7 +244,7 @@ function renderLabelsPage(view: TableView<LabelData>): void {
   renderEditorPagination(ensureEl("labelsFooter"), view, labelsTable.goto);
 
   updateSelectedCount();
-  updateDialog(dialogId, { width: "fit-content", position });
+  Dialog.update(dialogId, { width: "fit-content", position });
 }
 
 function createLine(label: LabelData): string {
@@ -375,7 +375,7 @@ function assignGroup(labels: LabelData[], groupName: string): void {
           t("It's better to avoid such cross-type assignment")
         );
 
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Assign cross-type Label Group"),
     message,
     confirm: t("Assign"),

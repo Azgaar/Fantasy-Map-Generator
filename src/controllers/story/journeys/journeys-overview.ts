@@ -6,7 +6,8 @@ import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-trave
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
 import type { Journey } from "@/types/journey";
-import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import { dialogState } from "@/ui/dialog/state";
@@ -92,18 +93,18 @@ function getFilteredJourneys(): Journey[] {
 function open(): void {
   if (options.app.mode) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ search: "" }));
-  closeDialogs(`#${dialogId}, .stable`);
+  Dialog.closeAll(`#${dialogId}, .stable`);
   Layers.show("journeys");
 
   Journeys.sync();
   renderDialog();
   journeysTable.reset();
 
-  $(`#${dialogId}`).dialog({ title: t("Journeys Overview"), resizable: false, position, close: onClose });
+  Dialog.open(dialogId, { title: t("Journeys Overview"), position, onClose: onClose });
 }
 
 function renderDialog(): void {
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
 
   const html = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
     <div id="journeysBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
@@ -143,7 +144,7 @@ function renderDialog(): void {
   initColumnVisibility({
     dialogId,
     columns,
-    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+    onUpdate: () => Dialog.update(dialogId, { width: "fit-content", position })
   });
   ensureEl("journeyCreateNew").addEventListener("click", createEmptyJourney);
   ensureEl("journeyGenerateStory").addEventListener("click", generateRandomJourney);
@@ -335,7 +336,7 @@ function toggleLockAll(): void {
 
 function triggerJourneyRemove(this: HTMLElement): void {
   const journeyId = getRowId(this);
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: `${t("Are you sure you want to remove the journey?")}<br>${t("This action cannot be reverted")}`,
     confirm: t("Remove"),
@@ -354,7 +355,7 @@ function triggerAllJourneysRemove(): void {
     return;
   }
 
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove all journeys"),
     message: sentences(
       t("Remove all unlocked journeys ({{journeys}})?", { journeys: unlocked.length }),
@@ -403,7 +404,7 @@ function downloadJourneysData(): void {
 
 function onClose(): void {
   stopJourneyTravel();
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
 }
 
 export const JourneysOverview = { open };

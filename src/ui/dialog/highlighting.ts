@@ -29,13 +29,13 @@ export function applyLineHighlighting(
   const cleanup = () => {
     viewbox.removeEventListener("mousemove", highlight);
     viewbox.removeEventListener("touchmove", highlight);
-    $(dialog).off("dialogclose.mapHoverHighlighting");
+    dialog.removeEventListener("dialog:close", cleanup);
     cleanups.delete(dialogId);
   };
 
   viewbox.addEventListener("mousemove", highlight);
   viewbox.addEventListener("touchmove", highlight);
-  $(dialog).one("dialogclose.mapHoverHighlighting", cleanup);
+  dialog.addEventListener("dialog:close", cleanup, { once: true });
   cleanups.set(dialogId, cleanup);
 }
 

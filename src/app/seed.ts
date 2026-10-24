@@ -4,7 +4,7 @@ import Alea from "alea";
 import { Options } from "@/model/options/options-model";
 import { Pins } from "@/model/options/pins";
 import { mapHistory } from "@/services/map-history";
-import { alertDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
@@ -53,11 +53,11 @@ export function showSeedHistoryDialog(): void {
     )}</li>`;
   });
 
-  alertDialog({
+  const text = Dialog.message({
     title: t("Seed history"),
     message: /* html */ `<ol style="margin: 0; padding-left: 1.5em">${lines.join("")}</ol>`
   });
-  for (const button of document.querySelectorAll<HTMLElement>("#alertMessage .optionsSeedRestore")) {
+  for (const button of text.querySelectorAll<HTMLElement>(".optionsSeedRestore")) {
     button.addEventListener("click", () => restoreSeed(Number(button.dataset.index)));
   }
 }

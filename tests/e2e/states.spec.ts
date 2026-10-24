@@ -47,9 +47,9 @@ test.describe("States", () => {
     // Click the trash icon to remove the state
     await page.click(`#statesBodySection > div[data-id="${stateId}"] .icon-trash-empty`);
 
-    // Confirm the removal in the jQuery dialog - look for "Remove" button in the dialog buttonpane
-    await page.waitForSelector(".ui-dialog:has(#alert) .ui-dialog-buttonpane", {state: "visible", timeout: 3000});
-    await page.click(".ui-dialog:has(#alert) .ui-dialog-buttonpane button:first-child"); // "Remove" is first button
+    // Confirm the removal - the "Remove" button is in the dialog button pane
+    await page.waitForSelector(".dialog-window:has(.message) .dialog-buttonpane", {state: "visible", timeout: 3000});
+    await page.click(".dialog-window:has(.message) .dialog-buttonpane button:first-child"); // "Remove" is first button
     await page.waitForTimeout(500);
 
     // Verify the state is no longer in neighbors of any other state
@@ -60,8 +60,8 @@ test.describe("States", () => {
 
     expect(neighborsAfter).toBe(0);
 
-    // Close the States Editor - the close button is in the jQuery UI dialog wrapper
-    await page.click(".ui-dialog:has(#statesEditor) .ui-dialog-titlebar-close");
+    // Close the States Editor from its titlebar
+    await page.click(".dialog-window:has(#statesEditor) .dialog-titlebar-close");
     await page.waitForTimeout(200);
 
     // Now click "Military" regenerate button and verify no errors
@@ -108,10 +108,10 @@ test.describe("States", () => {
     await page.click("#statesMerge");
     await page.check(`#mergeStatesForm input[name="rulingState"][value="${ruler.i}"]`);
     await page.click(`label[for="selectState${child.i}"]`);
-    await page.click(".ui-dialog:has(#alert) .ui-dialog-buttonpane button:first-child");
+    await page.click(".dialog-window:has(#mergeStatesForm) .dialog-buttonpane button:first-child");
 
     await page.check("#mergeStatesAsProvinces");
-    await page.click(".ui-dialog:has(#alert) .ui-dialog-buttonpane button:first-child");
+    await page.click(".dialog-window:has(#mergeStatesAsProvinces) .dialog-buttonpane button:first-child");
     await page.waitForTimeout(300);
 
     const result = await page.evaluate(
@@ -286,10 +286,10 @@ test.describe("Diplomacy", () => {
 
       if (exit === "Discard") await page.locator("#diplomacyEditorDiscard").click();
       else if (exit === "titlebar")
-        await page.locator(".ui-dialog:has(#diplomacyEditor) .ui-dialog-titlebar-close").click();
+        await page.locator(".dialog-window:has(#diplomacyEditor) .dialog-titlebar-close").click();
       else
         await page
-          .locator(".ui-dialog:has(#diplomacyOverview) .ui-dialog-titlebar-close")
+          .locator(".dialog-window:has(#diplomacyOverview) .dialog-titlebar-close")
           .evaluate((button: HTMLButtonElement) => button.click());
 
       expect(await diplomacy(page)).toBe(before);

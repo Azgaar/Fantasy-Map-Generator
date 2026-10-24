@@ -73,7 +73,8 @@ import { mapHistory } from "@/services/map-history";
 import { speak } from "@/services/speech";
 import { copyMapURL } from "@/services/url-params";
 import { cleanupData, VERSION } from "@/services/versioning";
-import { closeDialogs, confirmationDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { invokeActiveZooming, resetZoom, setMapZoom, setTranslateExtent, setZoomExtent, zoomTo } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import * as arrayUtils from "@/utils/array-utils";
@@ -190,8 +191,7 @@ const FMG = {
 
   tip,
   clearMainTip,
-  closeDialogs,
-  confirmationDialog,
+  Dialog,
   zoomTo,
   resetZoom,
   setMapZoom,

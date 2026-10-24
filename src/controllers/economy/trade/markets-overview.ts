@@ -10,14 +10,8 @@ import { formatPrice } from "@/model/units";
 import { highlightMarketOff, highlightMarketOn } from "@/renderers/draw-markets";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
-import {
-  closeDialogs,
-  confirmationDialog,
-  destroyDialog,
-  noteIcon,
-  refreshEditors,
-  updateDialog
-} from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+import { noteIcon, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import {
   type EditorColumn,
@@ -74,23 +68,22 @@ const marketsTable = initEditorTable<MarketRow>({ getData: getMarketsData, onUpd
 
 function open(): void {
   if (options.app.mode) return;
-  closeDialogs("#marketsOverview, .stable");
+  Dialog.closeAll("#marketsOverview, .stable");
   Layers.show("markets");
 
   renderDialog();
   marketsTable.reset();
 
-  $("#marketsOverview").dialog({
+  Dialog.open("marketsOverview", {
     title: t("Markets Overview"),
-    resizable: false,
     width: "auto",
-    close: closeMarketsOverview,
+    onClose: closeMarketsOverview,
     position
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("marketsOverview");
+  Dialog.destroy("marketsOverview");
   const editorHtml = /* html */ `<div id="marketsOverview" class="dialog stable editorDialog">
       ${renderEditorHeader({ dialogId, columns })}
       <div id="marketsOverviewBody" class="table" data-type="absolute" style="max-height:40em; cursor:pointer"></div>
@@ -116,7 +109,7 @@ function renderDialog(): void {
   initColumnVisibility({
     dialogId,
     columns,
-    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+    onUpdate: () => Dialog.update(dialogId, { width: "fit-content", position })
   });
 
   ensureEl("marketsOverviewRefresh").addEventListener("click", marketsTable.refresh);
@@ -225,7 +218,7 @@ function renderMarketsPage(view: TableView<MarketRow>): void {
     count ? rn(totals.value / count, 2) : 0
   );
   renderEditorPagination(ensureEl("marketsOverviewFooter"), view, marketsTable.goto);
-  updateDialog(dialogId, { width: "fit-content", position });
+  Dialog.update(dialogId, { width: "fit-content", position });
 }
 
 function renderMarketRow(
@@ -339,7 +332,7 @@ function confirmRemoveMarket(marketId: number): void {
   if (!market) return;
   const name = Markets.getName(market);
 
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: `${t("Are you sure you want to remove the market “{{market}}”?", {
       market: name
@@ -442,7 +435,7 @@ function getOwnerStateName(market: Market): string {
 }
 
 function regenerateMarkets() {
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Regenerate Markets"),
     message: /* html */ `${t("Are you sure you want to regenerate markets and their territories?")}
       <label style="display:flex; align-items:center; gap:.4em; margin-top:.6em;">
@@ -464,7 +457,7 @@ function regenerateMarkets() {
 }
 
 function regenerateProduction() {
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Regenerate Production"),
     message: t(
       "Are you sure you want to regenerate production and trade for all goods? Generation will be based on the current Goods settings and bonus goods placement"
@@ -501,8 +494,7 @@ function downloadMarketsCsv(): void {
 function closeMarketsOverview(): void {
   if (options.app.mode === "addMarket") exitAddMarketMode();
   ColorPicker.close();
-  $("#marketsOverview").dialog("destroy");
-  ensureEl("marketsOverview").remove();
+  Dialog.destroy("marketsOverview");
 }
 
 export const MarketsOverview = { open, exportCsv: downloadMarketsCsv };

@@ -11,9 +11,9 @@ import { Rivers } from "@/model/physical/river-generator";
 import { Temperature } from "@/model/physical/temperature-generator";
 import { convertTemperature, getKmInDistanceUnit } from "@/model/units";
 import { Layers } from "@/renderers/layers";
-import { destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { bindPinIcons } from "@/ui/pin-icons";
-import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
@@ -31,28 +31,18 @@ function open(): void {
   updateGlobePosition();
   updateWindDirections();
 
-  $("#worldConfigurator").dialog({
+  Dialog.open("worldConfigurator", {
     title: t("Configure World"),
-    resizable: false,
-    width: "minmax(40em, 85vw)",
-    buttons: { [t("Update world")]: updateWorld },
-    open: function (this: HTMLElement) {
-      const checkbox = /* html */ `<div class="dontAsk" data-tip="${t("Automatically update world on input changes and button clicks")}">
-        <input id="wcAutoChange" class="checkbox" type="checkbox" checked />
-        <label for="wcAutoChange" class="checkbox-label"><i>${t("auto-apply changes")}</i></label>
-      </div>`;
-      const pane = this.parentElement?.querySelector(".ui-dialog-buttonpane");
-      pane?.insertAdjacentHTML("afterbegin", checkbox);
-
-      const button = this.parentElement?.querySelector(".ui-dialog-buttonset > button");
-      button?.addEventListener("mousemove", () => tip(t("Apply current settings to the map")));
-    },
-    close: () => destroyDialog("worldConfigurator")
+    buttons: [{ label: t("Update world"), onClick: updateWorld, tip: t("Apply current settings to the map") }],
+    footer: /* html */ `<div class="dontAsk" data-tip="${t("Automatically update world on input changes and button clicks")}">
+      <input id="wcAutoChange" class="checkbox" type="checkbox" checked />
+      <label for="wcAutoChange" class="checkbox-label"><i>${t("auto-apply changes")}</i></label>
+    </div>`
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("worldConfigurator");
+  Dialog.destroy("worldConfigurator");
   ensureEl("dialogs").insertAdjacentHTML("beforeend", createDialogHtml());
   addListeners();
 }

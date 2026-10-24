@@ -8,7 +8,8 @@ import { goodBadge } from "@/renderers/draw-goods";
 import { clearHighlight, highlight } from "@/renderers/draw-trade-animation";
 import type { TradeBatch } from "@/renderers/trade-animation";
 import { TradeAnimation } from "@/renderers/trade-animation";
-import { destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import {
   type EditorColumn,
@@ -82,19 +83,18 @@ function open(batch: TradeBatch): void {
   tradeDetailsTable.reset();
   highlight(path.points);
 
-  $(`#${dialogId}`).dialog({
+  Dialog.open(dialogId, {
     title: t("Trade: {{- from}} to {{- to}}", {
       from: pack.burgs[batch.startBurgId]?.name,
       to: pack.burgs[batch.endBurgId]?.name
     }),
-    resizable: false,
     position,
-    close: closeTradeDetails
+    onClose: closeTradeDetails
   });
 }
 
 function renderDialog(): void {
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
       <div>
         <div id="tradeDetailsSummary" class="totalLine"></div>
@@ -112,7 +112,7 @@ function renderDialog(): void {
   initColumnVisibility({
     dialogId,
     columns,
-    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+    onUpdate: () => Dialog.update(dialogId, { width: "fit-content", position })
   });
 
   ensureEl("tradeDetailsSummary").addEventListener("click", event => {
@@ -187,7 +187,7 @@ function renderTradeDetailsPage(view: TableView<TradeDetailRow>): void {
   ensureEl("tradeDetailsFooterValue").innerHTML = formatPrice(totalValue);
 
   renderEditorPagination(ensureEl("tradeDetailsFooter"), view, tradeDetailsTable.goto);
-  updateDialog(dialogId, { width: "fit-content", position });
+  Dialog.update(dialogId, { width: "fit-content", position });
 }
 
 function getClientType(deal: Deal, burg: Burg, direction: "from" | "to"): string {
@@ -199,8 +199,7 @@ function getClientType(deal: Deal, burg: Burg, direction: "from" | "to"): string
 function closeTradeDetails(): void {
   clearHighlight();
   activePoints = [];
-  $(`#${dialogId}`).dialog("destroy");
-  ensureEl(dialogId).remove();
+  Dialog.destroy(dialogId);
 }
 
 export const TradeDetails = { open };

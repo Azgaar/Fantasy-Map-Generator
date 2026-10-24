@@ -16,7 +16,8 @@ import { getSceneLabel, redrawLabel } from "@/renderers/labels/labels-renderer";
 import { Layers } from "@/renderers/layers";
 import { viewport } from "@/renderers/viewport/viewport";
 import { speak } from "@/services/speech";
-import { closeDialogs, confirmationDialog, destroyDialog, noteButton } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+import { noteButton } from "@/ui/dialog/dialog-helpers";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { showMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
@@ -29,7 +30,7 @@ let label: LabelData;
 
 function open(type: LabelType, id: number): void {
   if (options.app.mode) return;
-  closeDialogs(".stable");
+  Dialog.closeAll(".stable");
   Layers.show("labels");
 
   const textEl = document.querySelector<SVGTextElement>(`#labels text[data-label-type='${type}'][data-id='${id}']`);
@@ -44,12 +45,11 @@ function open(type: LabelType, id: number): void {
 
   renderDialog();
 
-  $("#labelEditor").dialog({
+  Dialog.open("labelEditor", {
     title: t("Edit Label"),
-    resizable: false,
     width: "fit-content",
     position: { my: "center top+10", at: "bottom", of: textEl, collision: "fit" },
-    close: closeLabelEditor
+    onClose: closeLabelEditor
   });
 
   drawControlPointsAndLine();
@@ -59,7 +59,7 @@ function open(type: LabelType, id: number): void {
 }
 
 function renderDialog(): void {
-  destroyDialog("labelEditor");
+  Dialog.destroy("labelEditor");
   const editorHtml = /* html */ `<div id="labelEditor" class="dialog">
       <button id="labelGroupShow" data-tip="${t("Show")}" class="icon-tags"></button>
       <div id="labelGroupSection" style="display: none">
@@ -379,7 +379,7 @@ function changeGroup(this: HTMLSelectElement): void {
   };
   if (targetType === label.type) return void apply();
 
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Assign cross-type Label Group"),
     message: sentences(
       t("Assign this {{type}} label to the {{targetType}} group “{{group}}”?", {
@@ -534,7 +534,7 @@ function editLabelLegend(): void {
 }
 
 function removeSelectedLabel(): void {
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: t("Are you sure you want to remove the label?"),
     confirm: t("Remove"),
@@ -542,7 +542,7 @@ function removeSelectedLabel(): void {
       if (label.type !== "added") return;
       AddedLabels.remove(label.entityId);
       Layers.draw("labels");
-      $("#labelEditor").dialog("close");
+      Dialog.close("labelEditor");
     }
   });
 }
@@ -580,8 +580,7 @@ function closeLabelEditor(): void {
   select("#debug").select("#controlPoints").remove();
   select(`#${label.id}`).on(".drag", null).classed("draggable", false);
   applyDefaultViewboxEvents();
-  $("#labelEditor").dialog("destroy");
-  ensureEl("labelEditor").remove();
+  Dialog.destroy("labelEditor");
 }
 
 // An edited label always stores its geometry explicitly, so an empty path is kept as an empty array

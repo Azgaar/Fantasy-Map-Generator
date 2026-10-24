@@ -3,7 +3,8 @@ import type { Market } from "@/model/economy/markets-generator";
 import { Markets } from "@/model/economy/markets-generator";
 import { formatPrice } from "@/model/units";
 import { Csv } from "@/services/io/csv";
-import { destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import {
   type EditorColumn,
@@ -64,15 +65,15 @@ function open(goodId?: number, anchor = "#marketsOverview"): void {
   rebuildGoodSelect();
   comparePricesTable.reset();
 
-  $(`#${dialogId}`).dialog({
+  Dialog.open(dialogId, {
     title: t("Compare Prices"),
     position: { ...position, of: anchor },
-    close: closeComparePrices
+    onClose: closeComparePrices
   });
 }
 
 function renderDialog(): void {
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog editorDialog">
       <div style="display:flex; align-items:center; gap:.5em; padding:.2em 0 .4em; font-size:.9em;">
         <label for="marketsGoodCompareSelect" data-tip="${t("Select good to compare stock across markets")}">${t("Good")}:</label>
@@ -95,7 +96,7 @@ function renderDialog(): void {
   initColumnVisibility({
     dialogId,
     columns,
-    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position: { ...position, of: activeAnchor } })
+    onUpdate: () => Dialog.update(dialogId, { width: "fit-content", position: { ...position, of: activeAnchor } })
   });
 
   ensureEl("marketsGoodCompareSelect").addEventListener("change", () => {
@@ -108,8 +109,7 @@ function renderDialog(): void {
 }
 
 function closeComparePrices(): void {
-  $(`#${dialogId}`).dialog("destroy");
-  ensureEl(dialogId).remove();
+  Dialog.destroy(dialogId);
 }
 
 function renderComparePricesPage(view: TableView<Market>): void {
@@ -144,7 +144,7 @@ function renderComparePricesPage(view: TableView<Market>): void {
   body.innerHTML = lines.join("");
   updateFooter(rn(totalStock, 2), view.all.length ? rn(priceSum / view.all.length, 2) : 0);
   renderEditorPagination(ensureEl("marketsGoodCompareFooter"), view, comparePricesTable.goto);
-  updateDialog(dialogId, { width: "fit-content", position: { ...position, of: activeAnchor } });
+  Dialog.update(dialogId, { width: "fit-content", position: { ...position, of: activeAnchor } });
 }
 
 function updateFooter(totalStock: number, avgPrice: number): void {

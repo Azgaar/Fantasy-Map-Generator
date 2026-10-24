@@ -10,7 +10,8 @@ import { LegendBoxes } from "@/renderers/legend-boxes";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { Csv } from "@/services/io/csv";
 import type { LegendItem } from "@/types/legend";
-import { closeDialogs, confirmationDialog, destroyDialog, noteIcon, updateDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+import { noteIcon } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { dialogState } from "@/ui/dialog/state";
 import {
@@ -22,6 +23,7 @@ import {
   type TableView
 } from "@/ui/dialog/table";
 import type { FillBoxElement } from "@/ui/elements/fill-box";
+import { sortableList } from "@/ui/sortable-list";
 import { tip } from "@/ui/tooltips";
 import { unique } from "@/utils/array-utils";
 import { sentences, t } from "@/utils/i18n";
@@ -57,7 +59,7 @@ const columns: EditorColumn<ZoneRow>[] = [
 const zonesTable = initEditorTable<ZoneRow>({ getData: getZonesData, onUpdate: renderZonesPage });
 
 function open(): void {
-  closeDialogs("#zonesEditor, .stable");
+  Dialog.closeAll("#zonesEditor, .stable");
   Layers.show("zones");
 
   filterState = dialogState.get(dialogId, "filters", () => ({ search: "" }));
@@ -67,16 +69,15 @@ function open(): void {
   updateFilters();
   zonesTable.reset();
 
-  $("#zonesEditor").dialog({
+  Dialog.open("zonesEditor", {
     title: t("Zones Editor"),
-    resizable: false,
-    close: closeZonesEditor,
+    onClose: closeZonesEditor,
     position
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("zonesEditor");
+  Dialog.destroy("zonesEditor");
   const editorHtml = /* html */ `<div id="zonesEditor" class="dialog stable editorDialog">
       ${renderEditorHeader({ dialogId, columns })}
       <div id="zonesBodySection" class="table" data-type="absolute"></div>
@@ -124,7 +125,7 @@ function renderDialog(): void {
   initColumnVisibility({
     dialogId,
     columns,
-    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+    onUpdate: () => Dialog.update(dialogId, { width: "fit-content", position })
   });
   applyLineHighlighting("zonesEditor", ({ target }) => {
     const zone = target.closest<SVGElement>("#zones [id^='zone']");
@@ -189,13 +190,7 @@ function renderDialog(): void {
     }
   });
 
-  $(body).sortable({
-    items: "div.states",
-    handle: ".icon-resize-vertical",
-    containment: "parent",
-    axis: "y",
-    update: movezone
-  });
+  sortableList(body, { items: "div.states", handle: ".icon-resize-vertical", onReorder: movezone });
 }
 
 function closeZonesEditor(): void {
@@ -203,8 +198,7 @@ function closeZonesEditor(): void {
   const view = zonesTable.view();
   view.rows = [];
   view.all = [];
-  $("#zonesEditor").dialog("destroy");
-  ensureEl("zonesEditor").remove();
+  Dialog.destroy("zonesEditor");
 }
 
 // update type filter with a list of used types
@@ -312,7 +306,7 @@ function renderZonesPage(view: TableView<ZoneRow>): void {
     el.addEventListener("mouseleave", zoneHighlightOff);
   });
 
-  updateDialog(dialogId, { width: "fit-content", position });
+  Dialog.update(dialogId, { width: "fit-content", position });
 }
 
 function zoneHighlightOn(this: HTMLElement): void {
@@ -331,13 +325,12 @@ function filterZonesByType(): void {
   zonesTable.reset();
 }
 
-function movezone(_ev: unknown, ui: { item: ArrayLike<HTMLElement> & { index(): number } }): void {
-  const zone = pack.zones.find(z => z.i === +ui.item[0].dataset.id!);
+function movezone(item: HTMLElement): void {
+  const zone = pack.zones.find(z => z.i === +item.dataset.id!);
   if (!zone) return;
-  const nextId =
-    ui.item[0].nextElementSibling instanceof HTMLElement ? +ui.item[0].nextElementSibling.dataset.id! : null;
+  const nextId = item.nextElementSibling instanceof HTMLElement ? +item.nextElementSibling.dataset.id! : null;
   const previousId =
-    ui.item[0].previousElementSibling instanceof HTMLElement ? +ui.item[0].previousElementSibling.dataset.id! : null;
+    item.previousElementSibling instanceof HTMLElement ? +item.previousElementSibling.dataset.id! : null;
   pack.zones.splice(pack.zones.indexOf(zone), 1);
   const nextIndex = nextId === null ? -1 : pack.zones.findIndex(item => item.i === nextId);
   const previousIndex = previousId === null ? -1 : pack.zones.findIndex(item => item.i === previousId);
@@ -497,10 +490,22 @@ function changePopulation(zone: Zone): void {
   const total = rural + urban;
   const l = (n: number): string => Number(n).toLocaleString();
 
-  ensureEl("alertMessage").innerHTML =
-    /* html */ `${t("Rural")}: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" /> ${t("Urban")}:
+  Dialog.message({
+    message: /* html */ `${t("Rural")}: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" /> ${t("Urban")}:
     <input type="number" min="0" step="1" id="urbanPop" value=${urban} style="width:6em" ${burgs.length ? "" : "disabled"} />
-    <p>${t("Total population")}: ${l(total)} ⇒ <span id="totalPop">${l(total)}</span> (<span id="totalPopPerc">100</span>%)</p>`;
+    <p>${t("Total population")}: ${l(total)} ⇒ <span id="totalPop">${l(total)}</span> (<span id="totalPopPerc">100</span>%)</p>`,
+    title: t("Change zone population"),
+    width: "24em",
+    buttons: [
+      {
+        label: t("Apply"),
+        onClick: () => {
+          applyPopulationChange();
+        }
+      },
+      { label: t("Cancel") }
+    ]
+  });
 
   const ruralPop = ensureEl<HTMLInputElement>("ruralPop");
   const urbanPop = ensureEl<HTMLInputElement>("urbanPop");
@@ -515,22 +520,6 @@ function changePopulation(zone: Zone): void {
   ruralPop.oninput = () => update();
   urbanPop.oninput = () => update();
 
-  $("#alert").dialog({
-    resizable: false,
-    title: t("Change zone population"),
-    width: "24em",
-    buttons: {
-      [t("Apply")]: function (this: HTMLElement) {
-        applyPopulationChange();
-        $(this).dialog("close");
-      },
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    },
-    position: { my: "center", at: "center", of: "svg" }
-  });
-
   function applyPopulationChange(): void {
     try {
       Zones.setPopulation(zone.i, +ruralPop.value || 0, +urbanPop.value || 0);
@@ -544,7 +533,7 @@ function changePopulation(zone: Zone): void {
 }
 
 function zoneRemove(zone: Zone): void {
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: `${t("Are you sure you want to remove the zone?")}<br>${t("This action cannot be reverted")}`,
     confirm: t("Remove"),

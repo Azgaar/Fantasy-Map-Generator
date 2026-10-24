@@ -25,7 +25,7 @@ test.describe("removing a river removes its label", () => {
 
     await page.evaluate(riverId => (window as any).FMG.Controllers.RiverEditor.open(`river${riverId}`), id);
     await page.click("#riverRemove");
-    await page.click('.ui-dialog-buttonpane button:has-text("Remove")');
+    await page.click('.dialog-buttonpane button:has-text("Remove")');
 
     await expect(page.locator(`#riverLabel${id}`)).toHaveCount(0);
   });
@@ -33,7 +33,7 @@ test.describe("removing a river removes its label", () => {
   test("through remove all rivers", async ({ page }) => {
     await page.evaluate(() => (window as any).FMG.Controllers.RiversOverview.open());
     await page.click("#riversRemoveAll");
-    await page.click('.ui-dialog-buttonpane button:has-text("Remove")');
+    await page.click('.dialog-buttonpane button:has-text("Remove")');
 
     await expect(page.locator("#labels [id^=riverLabel]")).toHaveCount(0);
   });

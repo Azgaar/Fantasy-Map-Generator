@@ -15,7 +15,8 @@ import {
   getFriendlyPrecipitation,
   getHeight
 } from "@/model/units";
-import { destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { debounce, getLatitude, getLongitude } from "@/utils/common-utils";
 import { t } from "@/utils/i18n";
 import { ensureEl, getPointer } from "@/utils/node-utils";
@@ -26,18 +27,17 @@ function open(): void {
   renderDialog();
   select<SVGGElement, unknown>("#viewbox").on("touchmove.cellInfo mousemove.cellInfo", updateCellInfo);
 
-  $("#cellInfo").dialog({
-    resizable: false,
+  Dialog.open("cellInfo", {
     width: "22em",
     title: t("Cell Details"),
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
-    close: cleanup
+    onClose: cleanup
   });
 }
 
 function cleanup(): void {
   select<SVGGElement, unknown>("#viewbox").on(".cellInfo", null);
-  destroyDialog("cellInfo");
+  Dialog.destroy("cellInfo");
 }
 
 function renderDialog(): void {

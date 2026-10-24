@@ -7,7 +7,8 @@ import { setMarkersFilter } from "@/renderers/draw-markers";
 import { Layers } from "@/renderers/layers";
 import { viewport } from "@/renderers/viewport/viewport";
 import { Csv } from "@/services/io/csv";
-import { closeDialogs, confirmationDialog, refreshEditors } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+import { refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { highlightElement } from "@/ui/map/highlight";
 import { zoomTo } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
@@ -36,18 +37,17 @@ function markerName(marker: Marker): string {
 
 function open(marker: Marker): void {
   if (options.app.mode) return;
-  closeDialogs(".stable");
+  Dialog.closeAll(".stable");
   Layers.show("markers");
 
   center = marker;
   renderDialog();
   applyRadius(getRadius());
 
-  $("#markersInRadius").dialog({
+  Dialog.open("markersInRadius", {
     title: t("Markers in Radius"),
-    resizable: false,
     width: "fit-content",
-    close: closeMarkersInRadius,
+    onClose: closeMarkersInRadius,
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
   });
 }
@@ -157,7 +157,7 @@ function toggleLock(marker: Marker, el: HTMLElement): void {
 }
 
 function confirmRemove(marker: Marker): void {
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: sentences(t("Are you sure you want to remove this marker?"), t("This action cannot be reverted")),
     confirm: t("Remove"),
@@ -206,8 +206,7 @@ function closeMarkersInRadius(): void {
   inRangeMarkers = [];
   center = null;
   clearMainTip();
-  $("#markersInRadius").dialog("destroy");
-  findEl("markersInRadius")?.remove();
+  Dialog.destroy("markersInRadius");
 }
 
 export const MarkersInRadius = { open };

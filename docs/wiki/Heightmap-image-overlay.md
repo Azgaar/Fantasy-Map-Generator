@@ -23,7 +23,7 @@ Still on the Texture style, change Clipping to "No Clipping".
 
 
 Go to Layers, choose the Heightmap preset.
-Enable the Texture layer, then drag the Texture layer before the Heightmap layer.
+Enable the Texture layer, then open the layer order (the sort button at the end of the *Layers preset* row) and drag Texture below Heightmap (the list shows the topmost layer first).
 
 ![Texture and Heightmap layers both enabled](https://evolvedexperiment.github.io/FMGImages/images/style_texture3.png)
 

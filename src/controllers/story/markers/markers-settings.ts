@@ -2,8 +2,8 @@ import { Controllers } from "@/controllers";
 import { Icons } from "@/model/icons";
 import { Markers } from "@/model/story/markers-generator";
 import { Layers } from "@/renderers/layers";
-import { destroyDialog, refreshEditors } from "@/ui/dialog/dialog-helpers";
-import { tip } from "@/ui/tooltips";
+import { Dialog } from "@/ui/dialog/dialog";
+import { refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { escapeHtml } from "@/utils/string-utils";
@@ -12,33 +12,29 @@ const DIALOG_ID = "markersSettings";
 
 function open(): void {
   if (options.app.mode) return;
-  destroyDialog(DIALOG_ID);
+  Dialog.destroy(DIALOG_ID);
   ensureEl("dialogs").insertAdjacentHTML("beforeend", `<div id="${DIALOG_ID}" class="dialog"></div>`);
   drawConfigTable();
 
-  $(`#${DIALOG_ID}`).dialog({
-    resizable: false,
+  Dialog.open(DIALOG_ID, {
     title: t("Markers generation settings"),
     maxHeight: 600,
     position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" },
-    buttons: {
-      [t("Regenerate")]: function () {
-        applyChanges();
-        Markers.regenerate();
-        Layers.draw("markers");
-        refreshEditors();
-        $(this).dialog("close");
+    buttons: [
+      {
+        label: t("Regenerate"),
+        tip: t("Apply changes and regenerate markers"),
+        onClick: () => {
+          applyChanges();
+          Markers.regenerate();
+          Layers.draw("markers");
+          refreshEditors();
+          Dialog.close(DIALOG_ID);
+        }
       },
-      [t("Close")]: function () {
-        $(this).dialog("close");
-      }
-    },
-    open: function () {
-      const buttons = $(this).dialog("widget").find(".ui-dialog-buttonset > button");
-      buttons[0].addEventListener("mousemove", () => tip(t("Apply changes and regenerate markers")));
-      buttons[1].addEventListener("mousemove", () => tip(t("Close the window")));
-    },
-    close: cleanup
+      { label: t("Close"), tip: t("Close the window"), onClick: () => Dialog.close(DIALOG_ID) }
+    ],
+    onClose: cleanup
   });
 }
 
@@ -95,7 +91,7 @@ function drawConfigTable(): void {
 }
 
 function cleanup(): void {
-  destroyDialog(DIALOG_ID);
+  Dialog.destroy(DIALOG_ID);
 }
 
 export const MarkersSettings = { open };

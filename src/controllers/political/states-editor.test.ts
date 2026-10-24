@@ -33,12 +33,6 @@ describe("StatesEditor", () => {
     dialogState.remove("statesEditor", "columns");
 
     document.body.innerHTML = /* html */ `<div id="dialogs"></div><svg id="viewbox"><g id="deftemp"><g id="fog"></g></g></svg>`;
-    vi.stubGlobal("$", () => ({
-      dialog: vi.fn(),
-      one: vi.fn(),
-      not: vi.fn().mockReturnThis(),
-      each: vi.fn()
-    }));
     Object.assign(States, {
       collectStatistics: vi.fn(),
       setLocked: vi.fn()
@@ -128,6 +122,19 @@ describe("StatesEditor", () => {
     const tagsInput = valoriaRow?.querySelector(".stateTags") as HTMLInputElement;
     expect(tagsInput).not.toBeNull();
     expect(tagsInput.value).toBe("coastal, naval");
+  });
+
+  it("opens in a dialog window and tears it down on close", async () => {
+    const { Controllers } = await import("@/controllers");
+    StatesEditor.open();
+
+    const window = document.getElementById("statesEditor")?.closest(".dialog-window");
+    expect(window?.querySelector(".dialog-title")?.textContent).toBe("States Editor");
+
+    window?.querySelector<HTMLElement>(".dialog-titlebar-close")?.click();
+    expect(document.getElementById("statesEditor")).toBeNull();
+    expect(document.querySelector(".dialog-window")).toBeNull();
+    expect(Controllers.ColorPicker.close).toHaveBeenCalled();
   });
 
   it("filters states by name via search bar", () => {

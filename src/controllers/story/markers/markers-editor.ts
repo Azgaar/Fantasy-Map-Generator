@@ -5,13 +5,8 @@ import type { Marker, MarkerAppearance } from "@/model/story/markers-generator";
 import { Markers } from "@/model/story/markers-generator";
 import { Tags } from "@/model/tags";
 import { drawMarkers, setEditedMarker } from "@/renderers/draw-markers";
-import {
-  closeDialogs,
-  confirmationDialog,
-  destroyDialog,
-  noteButton,
-  refreshEditors
-} from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+import { noteButton, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { stopMapPlacement } from "@/ui/map/map-placement";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
@@ -23,7 +18,7 @@ let selectedMarker: Marker;
 
 function open(markerI?: number, target?: Element): void {
   if (options.app.mode) return;
-  closeDialogs(".stable");
+  Dialog.closeAll(".stable");
 
   const found = getElement(markerI, target);
   if (!found) return;
@@ -42,16 +37,15 @@ function open(markerI?: number, target?: Element): void {
   ensureEl("markerEditor").dataset.entity = `marker:${selectedMarker.i}`;
   updateInputs();
 
-  $("#markerEditor").dialog({
+  Dialog.open("markerEditor", {
     title: t("Edit Marker"),
-    resizable: false,
     position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" },
-    close: closeMarkerEditor
+    onClose: closeMarkerEditor
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("markerEditor");
+  Dialog.destroy("markerEditor");
 
   const html = /* html */ `<div id="markerEditor" class="dialog">
     <div id="markerBody" style="padding-bottom: 0.3em">
@@ -315,7 +309,7 @@ function toggleAddMarker(): void {
 }
 
 function confirmMarkerDeletion(): void {
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: sentences(t("Are you sure you want to remove this marker?"), t("This action cannot be reverted")),
     confirm: t("Remove"),
@@ -326,7 +320,7 @@ function confirmMarkerDeletion(): void {
 function deleteMarker(): void {
   Markers.remove(selectedMarker.i);
   drawMarkers();
-  $("#markerEditor").dialog("close");
+  Dialog.close("markerEditor");
   refreshEditors();
 }
 
@@ -335,7 +329,7 @@ function closeMarkerEditor(): void {
   setEditedMarker(null);
   if (ensureEl("addMarker").classList.contains("pressed")) stopMapPlacement();
   clearMainTip();
-  destroyDialog("markerEditor");
+  Dialog.destroy("markerEditor");
   selectedElement = null!;
   selectedMarker = null!;
 }

@@ -7,7 +7,8 @@ import { Tags } from "@/model/tags";
 import { getRiverBox, toggleBasinHighlight } from "@/renderers/draw-rivers";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
-import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import { dialogState } from "@/ui/dialog/state";
@@ -117,23 +118,22 @@ const riversTable = initEditorTable<River>({
 function open(): void {
   if (options.app.mode) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ search: "" }));
-  closeDialogs(`#${dialogId}, .stable`);
+  Dialog.closeAll(`#${dialogId}, .stable`);
   Layers.show("rivers");
 
   renderDialog();
   riversTable.reset();
 
-  $(`#${dialogId}`).dialog({
+  Dialog.open(dialogId, {
     title: t("Rivers Overview"),
-    resizable: false,
     width: "fit-content",
     position,
-    close: closeRiversOverview
+    onClose: closeRiversOverview
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("riversOverview");
+  Dialog.destroy("riversOverview");
 
   const html = /* html */ `<div id="riversOverview" class="dialog stable editorDialog">
     <div id="riversBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
@@ -171,7 +171,7 @@ function renderDialog(): void {
   initColumnVisibility({
     dialogId,
     columns,
-    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+    onUpdate: () => Dialog.update(dialogId, { width: "fit-content", position })
   });
   ensureEl("addNewRiver").addEventListener("click", () => void Controllers.RiverAutoCreator.toggle());
   ensureEl("riverCreateNew").addEventListener("click", createNewRiver);
@@ -188,7 +188,7 @@ function renderDialog(): void {
 }
 
 function closeRiversOverview(): void {
-  destroyDialog("riversOverview");
+  Dialog.destroy("riversOverview");
   const view = riversTable.view();
   view.rows = [];
   view.all = [];
@@ -331,7 +331,7 @@ function openRiverEditor(this: HTMLElement): void {
 
 function triggerRiverRemove(this: HTMLElement): void {
   const river = +(this.closest(".states") as HTMLElement).dataset.id!;
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: t("Are you sure you want to remove the river? All tributaries will be auto-removed"),
     confirm: t("Remove"),
@@ -368,7 +368,7 @@ function triggerAllRiversRemove(): void {
   }
 
   const locked = pack.rivers.length - toRemove;
-  confirmationDialog({
+  Dialog.confirm({
     title: locked ? t("Remove unlocked rivers") : t("Remove all rivers"),
     message: locked
       ? sentences(

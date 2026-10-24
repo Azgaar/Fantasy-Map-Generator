@@ -6,7 +6,8 @@ import { Features } from "@/model/physical/features-generator";
 import { drawFeaturePath } from "@/renderers/draw-landmass";
 import { Layers } from "@/renderers/layers";
 import type { Point } from "@/types/global";
-import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { t } from "@/utils/i18n";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { escapeHtml } from "@/utils/string-utils";
@@ -168,23 +169,22 @@ let selectedFeature: Feature | null = null; // the feature the editor shapes, or
 
 function open(featureId?: number): void {
   if (options.app.mode) return;
-  closeDialogs(".stable");
-  destroyDialog("coastlineSettingsDialog");
+  Dialog.closeAll(".stable");
+  Dialog.destroy("coastlineSettingsDialog");
   ensureEl("dialogs").insertAdjacentHTML(
     "beforeend",
     `<div id="coastlineSettingsDialog" style="display:none" class="dialog"></div>`
   );
-  $("#coastlineSettingsDialog").dialog({
+  Dialog.open("coastlineSettingsDialog", {
     title: t("Coastline Settings"),
-    resizable: false,
     position,
-    close: () => {
+    onClose: () => {
       selectedFeature = null;
-      destroyDialog("coastlineSettingsDialog");
+      Dialog.destroy("coastlineSettingsDialog");
     }
   });
   setFeature(featureId ? pack.features[featureId] : null); // once shown: the previews measure the canvas
-  $("#coastlineSettingsDialog").dialog("option", "position", position); // content is in: re-fit to its real size
+  Dialog.update("coastlineSettingsDialog", { position }); // content is in: re-fit to its real size
 }
 
 /** the whole dialog follows the scope: the controls show its settings, the previews its shape */

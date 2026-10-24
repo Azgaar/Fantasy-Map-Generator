@@ -32,7 +32,7 @@ test.describe("Notes Editor", () => {
 
   test.afterEach(async ({ page }) => {
     // nothing the editor does may surface as an alert dialog
-    await expect(page.locator(".ui-dialog:has(#alert):visible")).toHaveCount(0);
+    await expect(page.locator(".dialog-window:has(.message):visible")).toHaveCount(0);
   });
 
   test("lists notes grouped by entity type and opens on the requested entity", async ({ page }) => {
@@ -116,7 +116,7 @@ test.describe("Notes Editor", () => {
     await page.click("#burglLegend");
 
     await page.click("#notesRemove");
-    await page.click(".ui-dialog:visible button:has-text('Remove')");
+    await page.click(".dialog-window:visible button:has-text('Remove')");
 
     expect(await noteOf(page, `burgs[${burgId}]`)).toBeUndefined();
   });

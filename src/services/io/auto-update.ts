@@ -55,7 +55,7 @@ import { StylePresetsService } from "@/services/style-presets";
 import { compareVersions } from "@/services/versioning";
 import type { LegendItem } from "@/types/legend";
 import type { StylesData } from "@/types/styles";
-import { confirmationDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
 import { unique } from "@/utils/array-utils";
 import { sanitizeSvgIcon, scopeSvgIcon } from "@/utils/file-utils";
 import { t } from "@/utils/i18n";
@@ -1806,7 +1806,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
 
       const rows = unattachedNotes.map(note => [note.id, note.name, note.legend]);
 
-      confirmationDialog({
+      Dialog.confirm({
         title: t("Notes without an element"),
         message: `${t("Notes describing an element that no longer exists cannot be kept: {{notes}}", { notes: unattachedNotes.length })}<br>${t("Download them to keep the text outside the generator.")}`,
         confirm: t("Download"),

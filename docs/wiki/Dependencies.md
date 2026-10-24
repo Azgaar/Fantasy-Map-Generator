@@ -24,8 +24,6 @@ Vite, TypeScript, Vitest, Playwright and Biome are used as development tools. No
 
 `public/libs/` holds the browser bundles the app still loads as classic scripts. They are not npm dependencies.
 
-- [jQuery](https://jquery.com) and [jQuery UI](https://jqueryui.com) by the jQuery team — dialogs and sortable lists, loaded on page load
-- [jQuery UI Touch Punch](https://github.com/furf/jquery-ui-touch-punch) — touch support for the jQuery UI widgets
 - [Three.js](https://threejs.org) r140 with `OrbitControls`, `mapControls`, `loopsubdivison` and `OBJExporter` — the 3D scene, loaded on demand
 
 ## Services

@@ -236,7 +236,7 @@ For example, the "Rivers" layer will display the rivers on the map. Clicking aga
 
 Some full-map layers, such as Heightmap, Biomes, and Texture, compete for the same visual area; opacity, clipping, and layer order determine how they combine.
 
-You can drag the different layers and thus change their display order.
+The sort button at the end of the *Layers preset* row opens the layer order, where you drag the layers to change their display order.
 
 When a certain layer is pressed, and you hover over some element in the map that is relevant to the layer, the lower label will display relevant information. For example, if the Heightmap layer is on, hovering over a cell will display its height.
 
@@ -252,7 +252,7 @@ Texture, Heightmap, Biomes.
 
 These layers cover the map area and can obscure other layers depending on their current opacity and clipping settings.
 
-The one that will be displayed is the one that appears last in the order of the layers (to change, you can drag the layers and change their display order).
+The one that will be displayed is the one that appears last in the order of the layers (to change it, open the layer order and drag the layers).
 
 The other layers can hide parts of other layers, but they cannot hide the entire map.
 

@@ -8,7 +8,8 @@ import {
 import { Options } from "@/model/options/options-model";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
 import { convertSpeed, getDistanceUnit, parseSpeed } from "@/model/units";
-import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import {
   type EditorColumn,
   getRowId,
@@ -49,17 +50,17 @@ const DOMAINS = Object.keys(DOMAIN_LABEL) as TransportDomain[];
 
 function open(): void {
   if (options.app.mode) return;
-  closeDialogs(`#${dialogId}, .stable`);
+  Dialog.closeAll(`#${dialogId}, .stable`);
 
   Journeys.sync();
   renderDialog();
   typesTable.reset();
 
-  $(`#${dialogId}`).dialog({ title: t("Transport Types"), position, close: onClose });
+  Dialog.open(dialogId, { title: t("Transport Types"), position, onClose: onClose });
 }
 
 function renderDialog(): void {
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
 
   const html = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
     <div id="transportBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
@@ -81,7 +82,7 @@ function renderDialog(): void {
   initColumnVisibility({
     dialogId,
     columns,
-    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+    onUpdate: () => Dialog.update(dialogId, { width: "fit-content", position })
   });
   ensureEl("transportAdd").addEventListener("click", addType);
   ensureEl("transportRestore").addEventListener("click", triggerDefaultsRestore);
@@ -216,7 +217,7 @@ function triggerTypeRemove(this: HTMLElement): void {
     return;
   }
 
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: t("Remove transport type {{transport}}?", { transport: type.name }),
     confirm: t("Remove"),
@@ -228,7 +229,7 @@ function triggerTypeRemove(this: HTMLElement): void {
 }
 
 function triggerDefaultsRestore(): void {
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Restore default transport types"),
     message: t(
       "Restore the default transport types? Custom ones will be removed. Segments referencing a removed type keep its name but will no longer resolve."
@@ -242,7 +243,7 @@ function triggerDefaultsRestore(): void {
 }
 
 function onClose(): void {
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
 }
 
 export const TransportEditor = { open };

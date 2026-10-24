@@ -9,7 +9,7 @@ import { convertTemperature, getHeight, getTemperatureLikeness } from "@/model/u
 import { removeEmblem } from "@/renderers/draw-emblems";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
-import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import { dialogState } from "@/ui/dialog/state";
@@ -173,7 +173,7 @@ const burgsTable = initEditorTable<Burg>({
 function open(filters: Filters = {}): void {
   if (options.app.mode) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ search: "", stateId: -1, cultureId: -1 }));
-  closeDialogs(`#${dialogId}, .stable`);
+  Dialog.closeAll(`#${dialogId}, .stable`);
   Layers.show("burgIcons", "labels");
 
   if (filters.stateId != null) filterState.stateId = filters.stateId;
@@ -183,17 +183,16 @@ function open(filters: Filters = {}): void {
   updateLockAllIcon();
   burgsTable.reset();
 
-  $(`#${dialogId}`).dialog({
+  Dialog.open(dialogId, {
     title: t("Burgs Overview"),
-    resizable: false,
-    close: closeBurgsOverview,
+    onClose: closeBurgsOverview,
     width: "fit-content",
     position
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("burgsOverview");
+  Dialog.destroy("burgsOverview");
   const HTML = /* html */ `<div id="burgsOverview" class="dialog stable editorDialog">
       <div id="burgsBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
       <div id="burgsFilters" data-tip="${t("Apply a filter")}" class="editorFilters">
@@ -263,7 +262,7 @@ function renderDialog(): void {
   initColumnVisibility({
     dialogId,
     columns,
-    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+    onUpdate: () => Dialog.update(dialogId, { width: "fit-content", position })
   });
 
   ensureEl("burgsOverviewRefresh").addEventListener("click", refreshBurgsEditor);
@@ -282,8 +281,7 @@ function renderDialog(): void {
 
 function closeBurgsOverview(): void {
   if (findEl("addBurgTool")?.classList.contains("pressed")) void Controllers.BurgCreator.stop();
-  $("#burgsOverview").dialog("destroy");
-  ensureEl("burgsOverview").remove();
+  Dialog.destroy("burgsOverview");
 }
 
 function refreshBurgsEditor(): void {
@@ -525,7 +523,7 @@ function triggerBurgRemove(this: HTMLElement): void {
     return;
   }
 
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: `${t("Are you sure you want to remove the burg?")}<br>${t("This action cannot be reverted")}`,
     confirm: t("Remove"),
@@ -599,22 +597,21 @@ function showBurgsChart(): void {
   const treeLayout = packLayout().size([w, h]).padding(3);
 
   // prepare svg
-  ensureEl("alertMessage").innerHTML =
-    /* html */ `<select id="burgsTreeType" style="display:block; margin-left:13px; font-size:11px">
+  const chart = document.createElement("div");
+  chart.innerHTML = /* html */ `<select id="burgsTreeType" style="display:block; margin-left:13px; font-size:11px">
       <option value="states" selected>${t("Group by state")}</option>
       <option value="cultures">${t("Group by culture")}</option>
       <option value="parent">${t("Group by province and state")}</option>
       <option value="provinces">${t("Group by province")}</option>
-    </select>`;
-  ensureEl("alertMessage").innerHTML += `<div id='burgsInfo' class='chartInfo'>&#8205;</div>`;
-  const svg = select("#alertMessage")
+    </select><div id='burgsInfo' class='chartInfo'>&#8205;</div>`;
+  const svg = select(chart)
     .insert("svg", "#burgsInfo")
     .attr("id", "burgsTree")
     .attr("width", width)
     .attr("height", height - 10)
     .attr("stroke-width", 2);
   const graph = svg.append("g").attr("transform", `translate(-50, -10)`);
-  ensureEl("burgsTreeType").addEventListener("change", updateChart);
+  chart.querySelector("#burgsTreeType")!.addEventListener("change", updateChart);
 
   treeLayout(root);
 
@@ -724,12 +721,12 @@ function showBurgsChart(): void {
       .attr("r", (d: any) => d.r);
   }
 
-  $("#alert").dialog({
+  Dialog.message({
+    message: chart,
     title: t("Burgs bubble chart"),
     width: "fit-content",
     position: { my: "left bottom", at: "left+10 bottom-10", of: "svg" },
-    buttons: {},
-    close: () => (ensureEl("alertMessage").innerHTML = "")
+    buttons: []
   });
 }
 
@@ -788,7 +785,7 @@ function triggerAllBurgsRemove(): void {
     pack.burgs.filter(
       b => b.i && !b.removed && !(b.capital || b.lock) && !pack.markets?.some(m => m.centerBurgId === b.i)
     );
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove burgs ({{burgs}})", { burgs: removable().length }),
     message: `${t("Are you sure you want to remove all unlocked burgs except for capitals and market centers?")}<br><i>${t("To remove a capital you have to remove its state first")}</i>`,
     confirm: t("Remove"),

@@ -3,14 +3,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/types/global";
+import { Dialog } from "@/ui/dialog/dialog";
 import type { PaintEditorOptions } from "./paint-editor";
 import { PaintEditor } from "./paint-editor";
 
 vi.mock("@/ui/map/viewbox-events", () => ({ applyDefaultViewboxEvents: vi.fn() }));
-vi.mock("@/ui/dialog/dialog-helpers", async importOriginal => ({
-  ...(await importOriginal<typeof import("@/ui/dialog/dialog-helpers")>()),
-  closeDialogs: vi.fn()
-}));
 
 const getOptions = (overrides: Partial<PaintEditorOptions> = {}): PaintEditorOptions => ({
   title: "Paint states",
@@ -74,26 +71,7 @@ beforeEach(() => {
       ]
     }
   } as unknown as typeof pack;
-  const dialogOptions = new WeakMap<HTMLElement, Record<string, unknown>>();
-  window.$ = vi.fn((target: string | HTMLElement) => {
-    const element = typeof target === "string" ? document.querySelector<HTMLElement>(target) : target;
-    const dialog = vi.fn((command: unknown, key?: string, value?: unknown) => {
-      if (!element) return;
-      const options = dialogOptions.get(element) ?? {};
-      if (typeof command === "object") {
-        dialogOptions.set(element, { ...options, ...command });
-        element.classList.add("ui-dialog-content");
-      } else if (command === "option" && value === undefined) return options[key!];
-      else if (command === "option") dialogOptions.set(element, { ...options, [key!]: value });
-      else if (command === "close") {
-        element.style.display = "none";
-        if (typeof options.close === "function") options.close();
-      } else if (command === "open") element.style.removeProperty("display");
-    });
-    return { dialog };
-  }) as unknown as typeof window.$;
-  const parentDialog = document.getElementById("parentDialog")!;
-  $(parentDialog).dialog({ close: () => parentDialog.remove() });
+  Dialog.open("parentDialog");
 });
 
 afterEach(() => {

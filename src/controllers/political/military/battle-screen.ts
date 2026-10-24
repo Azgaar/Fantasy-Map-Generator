@@ -7,7 +7,8 @@ import { Names } from "@/model/society/names-generator";
 import type { Marker } from "@/model/story/markers-generator";
 import { moveRegiment } from "@/renderers/draw-military";
 import { Layers } from "@/renderers/layers";
-import { closeDialogs } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { applySorting, applySortingByHeader } from "@/ui/dialog/sorting";
 import { tip } from "@/ui/tooltips";
 import { last } from "@/utils/array-utils";
@@ -48,7 +49,7 @@ let battle: BattleState | null = null;
 
 function open(attacker: Regiment, defender: Regiment): void {
   if (options.app.mode) return;
-  closeDialogs(".stable");
+  Dialog.closeAll(".stable");
   options.app.mode = "battle"; // an edit mode keeps other dialogs from opening
 
   renderDialog();
@@ -81,12 +82,11 @@ function open(attacker: Regiment, defender: Regiment): void {
   calculateStrength("defenders");
   getInitialMorale();
 
-  $("#battleScreen").dialog({
+  Dialog.open("battleScreen", {
     title: battle.name,
-    resizable: false,
     width: "fit-content",
     position: { my: "center", at: "center", of: "#map" },
-    close: cancelResults
+    onClose: cancelResults
   });
 }
 
@@ -625,17 +625,16 @@ function addSide(): void {
     })
     .join("");
 
-  $("#regimentSelectorScreen").dialog({
-    resizable: false,
+  Dialog.open("regimentSelectorScreen", {
     width: "fit-content",
     title: t("Add regiment to the battle"),
     position: { my: "left center", at: "right+10 center", of: "#battleScreen" },
-    close: addSideClosed,
-    buttons: {
-      [t("Add to attackers")]: () => addSideClicked("attackers"),
-      [t("Add to defenders")]: () => addSideClicked("defenders"),
-      [t("Cancel")]: () => $("#regimentSelectorScreen").dialog("close")
-    }
+    onClose: addSideClosed,
+    buttons: [
+      { label: t("Add to attackers"), onClick: () => addSideClicked("attackers") },
+      { label: t("Add to defenders"), onClick: () => addSideClicked("defenders") },
+      { label: t("Cancel"), onClick: () => Dialog.close("regimentSelectorScreen") }
+    ]
   });
 
   applySorting(ensureEl("regimentSelectorHeader"));
@@ -657,7 +656,7 @@ function addSide(): void {
       return;
     }
 
-    $("#regimentSelectorScreen").dialog("close");
+    Dialog.close("regimentSelectorScreen");
     selected.forEach(line => {
       const state = pack.states[+line.dataset.s!];
       const regiment = state.military!.find(r => r.i === +line.dataset.i!)!;
@@ -701,7 +700,7 @@ function hideNameSection(): void {
 function changeName(event: Event): void {
   const value = (event.target as HTMLInputElement).value;
   battle!.name = value;
-  $("#battleScreen").dialog({ title: value });
+  Dialog.open("battleScreen", { title: value });
 }
 
 function generateBattleName(type: "culture" | "random"): void {
@@ -714,7 +713,7 @@ function generateBattleName(type: "culture" | "random"): void {
   ensureEl<HTMLInputElement>("battleNamePlace").value = place;
   b.name = defineBattleName();
   ensureEl<HTMLInputElement>("battleNameFull").value = b.name;
-  $("#battleScreen").dialog({ title: b.name });
+  Dialog.open("battleScreen", { title: b.name });
 }
 
 function getJoinedForces(regiments: Regiment[]): Record<string, number> {
@@ -1229,7 +1228,7 @@ function changeType(event: Event): void {
   calculateStrength("attackers");
   calculateStrength("defenders");
   b.name = defineBattleName();
-  $("#battleScreen").dialog({ title: b.name });
+  Dialog.open("battleScreen", { title: b.name });
 }
 
 function changePhase(event: Event, side: Side): void {
@@ -1394,12 +1393,8 @@ function cancelResults(): void {
 }
 
 function closeBattleScreen(): void {
-  $("#battleScreen").dialog("destroy");
-  ensureEl("battleScreen").remove();
-
-  const regimentSelector = findEl("regimentSelectorScreen");
-  if (regimentSelector?.classList.contains("ui-dialog-content")) $("#regimentSelectorScreen").dialog("destroy");
-  regimentSelector?.remove();
+  Dialog.destroy("battleScreen");
+  Dialog.destroy("regimentSelectorScreen");
 }
 
 function cleanData(): void {

@@ -30,8 +30,8 @@ async function openEditor(page: Page, buttonId: string, dialogId: string) {
   await page.waitForTimeout(300);
 }
 
-const confirmButton = ".ui-dialog:has(#alert) .ui-dialog-buttonpane button:first-child";
-const cancelButton = ".ui-dialog:has(#alert) .ui-dialog-buttonpane button:last-child";
+const confirmButton = ".dialog-window:has(.message) .dialog-buttonpane button:first-child";
+const cancelButton = ".dialog-window:has(.message) .dialog-buttonpane button:last-child";
 
 test.describe("Annex by clicking on the map", () => {
   test.beforeEach(async ({ page }) => {
@@ -66,7 +66,7 @@ test.describe("Annex by clicking on the map", () => {
     await clickMapAt(page, child.pole);
 
     await page.waitForSelector(confirmButton, {state: "visible", timeout: 3000});
-    await expect(page.locator(".ui-dialog:has(#alert)")).toContainText("removed");
+    await expect(page.locator(".dialog-window:has(.message)")).toContainText("removed");
     const parentFill = await page.locator(`#statesBody #state${parent.i}`).getAttribute("d");
     await page.click(confirmButton);
     await page.waitForTimeout(300);
@@ -120,7 +120,7 @@ test.describe("Annex by clicking on the map", () => {
     await clickMapAt(page, child.pole);
     await page.keyboard.up("Shift");
 
-    expect(await page.locator(".ui-dialog:has(#alert):visible").count()).toBe(0);
+    expect(await page.locator(".dialog-window:has(.message):visible").count()).toBe(0);
     await expect(page.locator("#statesAnnex")).toHaveClass(/pressed/);
     expect(await page.locator("#debug .annex-preview polygon").count()).toBeGreaterThan(0);
 
@@ -199,7 +199,7 @@ test.describe("Annex by clicking on the map", () => {
     await clickMapAt(page, foreign.pole);
     await page.waitForTimeout(200);
 
-    expect(await page.locator(".ui-dialog:has(#alert):visible").count()).toBe(0);
+    expect(await page.locator(".dialog-window:has(.message):visible").count()).toBe(0);
     await expect(page.locator("#provincesAnnex")).toHaveClass(/pressed/);
     expect(await page.locator("#debug .annex-preview .annex-child").count()).toBe(0);
     const removed = await page.evaluate(c => Boolean((window as any).pack.provinces[c].removed), foreign.i);

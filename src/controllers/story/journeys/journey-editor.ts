@@ -12,14 +12,8 @@ import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-trave
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
 import type { Journey, JourneySegment } from "@/types/journey";
-import {
-  alertDialog,
-  closeDialogs,
-  confirmationDialog,
-  destroyDialog,
-  noteButton,
-  updateDialog
-} from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+import { noteButton } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import {
   type EditorColumn,
@@ -84,7 +78,7 @@ function open(journeyId: number): void {
   }
 
   teardown();
-  closeDialogs(`#${dialogId}, .stable`);
+  Dialog.closeAll(`#${dialogId}, .stable`);
   Layers.show("journeys");
 
   Journeys.sync();
@@ -99,12 +93,11 @@ function open(journeyId: number): void {
   renderDialog(journey);
   segmentsTable.reset();
 
-  $(`#${dialogId}`).dialog({
+  Dialog.open(dialogId, {
     title: t("Edit Journey"),
-    resizable: false,
     width: "fit-content",
     position: findEl("journeysOverview") ? OVERVIEW_POSITION : MAP_POSITION,
-    close: onClose
+    onClose: onClose
   });
 }
 
@@ -125,7 +118,7 @@ function getSegment(id: number): JourneySegment | undefined {
 const getLineSegment = (el: HTMLElement): JourneySegment | undefined => getSegment(getRowId(el));
 
 function renderDialog(journey: Journey): void {
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
 
   const html = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
     <div id="segmentsBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
@@ -171,7 +164,7 @@ function renderDialog(journey: Journey): void {
     dialogId,
     columns,
     onUpdate: () =>
-      updateDialog(dialogId, {
+      Dialog.update(dialogId, {
         width: "fit-content",
         position: findEl("journeysOverview") ? OVERVIEW_POSITION : MAP_POSITION
       })
@@ -422,7 +415,7 @@ function onSegTransportChange(this: HTMLSelectElement): void {
   const message = domainMismatchMessage(segment, newType.domain);
   if (message) {
     this.value = previousType;
-    alertDialog({
+    Dialog.message({
       title: t("Can't switch to {{- transport}}", { transport: newType.name }),
       message: `${message}<br/><br/>${t("Pick different endpoints first, then change the transport type or use an air transport type, which accepts any endpoints.")}`
     });
@@ -440,7 +433,7 @@ function onSegTransportChange(this: HTMLSelectElement): void {
   // endpoints were checked above, but a custom-drawn path body can still clash with the new domain
   if (segment.custom && !Journeys.isValidPath(segment.points, newType.domain)) {
     this.value = previousType;
-    confirmationDialog({
+    Dialog.confirm({
       title: t("Overwrite custom path?"),
       message: t(
         "Segment “{{segment}}” has a custom-drawn path that {{transport}} can't follow. Replace it with the pathfinder's route?",
@@ -552,7 +545,7 @@ function onSegReset(this: HTMLElement): void {
     return;
   }
 
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Overwrite custom path?"),
     message: sentences(
       t("Segment “{{segment}}” has a custom-drawn path", { segment: segment.name }),
@@ -579,7 +572,7 @@ function onSegDelete(this: HTMLElement): void {
   const segment = getLineSegment(this);
   if (!journey || !segment) return;
 
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: `${t("Remove segment {{segment}}?", { segment: segment.name })}<br>${t("This action cannot be reverted")}`,
     confirm: t("Remove"),
@@ -666,14 +659,14 @@ function triggerJourneyRemove(): void {
   const journey = getJourney();
   if (!journey) return;
 
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: `${t("Remove journey {{journey}}?", { journey: journey.name })}<br>${t("This action cannot be reverted")}`,
     confirm: t("Remove"),
     onConfirm: () => {
       Journeys.remove(journey.i);
       Layers.draw("journeys");
-      $(`#${dialogId}`).dialog("close");
+      Dialog.close(dialogId);
     }
   });
 }
@@ -681,7 +674,7 @@ function triggerJourneyRemove(): void {
 function onClose(): void {
   teardown();
   editingJourneyId = null;
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
 }
 
 export const JourneyEditor = { open };

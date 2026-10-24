@@ -9,7 +9,8 @@ import { Relief } from "@/model/physical/relief-generator";
 import { getHeight } from "@/model/units";
 import { redrawRelief } from "@/renderers/draw-relief-icons";
 import { Layers } from "@/renderers/layers";
-import { confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
@@ -134,7 +135,7 @@ function open(request: ReliefPoolEditorOptions): void {
     ? `<div class="heights"><span>${getHeight(rule.height.min)}</span><span>${t("Height")}</span><span>${getHeight(rule.height.max)}</span></div>`
     : "";
 
-  destroyDialog(DIALOG);
+  Dialog.destroy(DIALOG);
   ensureEl("dialogs").insertAdjacentHTML(
     "beforeend",
     /* html */ `<div id="${DIALOG}" class="dialog">
@@ -281,42 +282,46 @@ function open(request: ReliefPoolEditorOptions): void {
     target.write(draft);
     request.onApply?.();
   };
-  const close = () => $(dialog).dialog("close");
+  const close = () => Dialog.close(DIALOG);
   const gone = () =>
     tip(t("{{target}} no longer exists: nothing is applied", { target: target.title }), false, "error");
 
-  $(dialog).dialog({
+  Dialog.open(DIALOG, {
     title: target.title,
     width: "28em",
-    resizable: false,
     position: { my: "center", at: "center", of: "svg" },
-    close: () => destroyDialog(DIALOG),
-    buttons: {
-      [t("Apply")]: () => {
-        if (target.exists()) apply();
-        else gone();
-        close();
-      },
-      [t("Apply and re-place")]: () => {
-        if (target.exists()) {
-          confirmReplace(target.place, target.covers, () => {
-            apply();
-            close();
-          });
-        } else {
-          gone();
+    buttons: [
+      {
+        label: t("Apply"),
+        onClick: () => {
+          if (target.exists()) apply();
+          else gone();
           close();
         }
       },
-      [t("Cancel")]: close
-    }
+      {
+        label: t("Apply and re-place"),
+        onClick: () => {
+          if (target.exists()) {
+            confirmReplace(target.place, target.covers, () => {
+              apply();
+              close();
+            });
+          } else {
+            gone();
+            close();
+          }
+        }
+      },
+      { label: t("Cancel"), onClick: close }
+    ]
   });
 }
 
 /** place the covered cells' relief anew, once confirmed; `before` writes what the new relief follows */
 export function confirmReplace(place: string, covers: (cell: number) => boolean, before?: () => void): void {
   const count = pack.relief?.length ? Relief.iconsOn(covers).length : 0;
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Re-place relief"),
     message: sentences(
       t("Replace relief icons on {{place}} with new ones ({{icons}})?", { place, icons: count }),

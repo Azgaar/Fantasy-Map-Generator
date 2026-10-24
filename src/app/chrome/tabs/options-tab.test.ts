@@ -5,7 +5,7 @@ import { Options } from "@/model/options/options-model";
 import { Pins } from "@/model/options/pins";
 import { Emblems } from "@/model/political/emblems-generator";
 import { toggleAssistant } from "@/ui/assistant-bubble";
-import { confirmationDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
 import { setMapZoom, setZoomExtent } from "@/ui/map/zoom";
 
 vi.mock("@/renderers/layers", () => ({ Layers: { draw: vi.fn() } }));
@@ -28,10 +28,10 @@ vi.mock("@/app/chrome/io-panes", () => ({
 }));
 vi.mock("@/renderers/view-mode", () => ({ changeViewMode: vi.fn() }));
 vi.mock("@/services/url-params", () => ({ copyMapURL: vi.fn() }));
-vi.mock("@/ui/dialog/dialog-helpers", async importOriginal => ({
-  ...(await importOriginal<typeof import("@/ui/dialog/dialog-helpers")>()),
-  confirmationDialog: vi.fn()
-}));
+vi.mock("@/ui/dialog/dialog", async importOriginal => {
+  const { Dialog } = await importOriginal<typeof import("@/ui/dialog/dialog")>();
+  return { Dialog: Object.assign(Dialog, { confirm: vi.fn() }) };
+});
 vi.mock("@/ui/assistant-bubble", () => ({ toggleAssistant: vi.fn() }));
 
 let tab: typeof import("./options-tab");
@@ -47,7 +47,6 @@ beforeAll(async () => {
   const html = readFileSync("src/index.html", "utf8");
   document.body.innerHTML = new DOMParser().parseFromString(html, "text/html").body.innerHTML;
   document.body.insertAdjacentHTML("beforeend", '<div id="viewMode"></div>');
-  vi.stubGlobal("$", () => ({ draggable: vi.fn(), disableSelection: vi.fn() }));
   vi.stubGlobal("pack", { cells: {}, cultures: [], states: [], provinces: [], burgs: [] });
   vi.stubGlobal("styles", { labels: { groups: { capital: { attrs: {} }, states: { attrs: {} } } } });
   await import("@/ui/elements/slider-input");
@@ -250,19 +249,19 @@ describe("interface language", () => {
     return select;
   };
   beforeEach(() => {
-    vi.mocked(confirmationDialog).mockClear();
+    vi.mocked(Dialog.confirm).mockClear();
   });
 
   it("stores the choice and offers the reload that applies it", () => {
     const select = choose("ru");
     expect(select.value).toBe("ru");
     expect(JSON.parse(localStorage.getItem("fmg-options")!).app.language).toBe("ru");
-    expect(confirmationDialog).toHaveBeenCalledWith(expect.objectContaining({ confirm: "Reload", cancel: "Not now" }));
+    expect(Dialog.confirm).toHaveBeenCalledWith(expect.objectContaining({ confirm: "Reload", cancel: "Not now" }));
   });
 
   it("stores a switch back to the current language without asking to reload", () => {
     choose("en");
     expect(options.app.language).toBe("en");
-    expect(confirmationDialog).not.toHaveBeenCalled();
+    expect(Dialog.confirm).not.toHaveBeenCalled();
   });
 });

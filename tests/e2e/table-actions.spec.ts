@@ -186,9 +186,9 @@ test.describe("Goods display filter", () => {
 
   async function filterGoods(page: Page) {
     await page.click("#goodsTagsFilter");
-    await page.locator('#alert input[value="batch-a"]').check();
-    await page.locator('#alert input[value="batch-b"]').check();
-    await page.locator(".ui-dialog:has(#alert)").getByRole("button", { name: "Apply", exact: true }).click();
+    await page.locator('.message input[value="batch-a"]').check();
+    await page.locator('.message input[value="batch-b"]').check();
+    await page.locator(".dialog-window:has(.message)").getByRole("button", { name: "Apply", exact: true }).click();
   }
 
   async function expectFilteredVisibility(page: Page, visible: boolean) {
@@ -278,7 +278,7 @@ test.describe("Goods display filter", () => {
   test("clearing the filter restores bulk actions and counts for the whole catalogue", async ({ page }) => {
     await filterGoods(page);
     await page.click("#goodsTagsFilter");
-    await page.locator(".ui-dialog:has(#alert)").getByRole("button", { name: "Clear filter", exact: true }).click();
+    await page.locator(".dialog-window:has(.message)").getByRole("button", { name: "Clear filter", exact: true }).click();
     await page.locator("#goodsDisplayAll").check();
     expect(await page.evaluate(() => pack.goods.every(good => good.visible))).toBe(true);
     await expect(page.locator("#goodsDisplayed")).toHaveText(String(initial.length));

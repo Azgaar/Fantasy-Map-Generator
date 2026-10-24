@@ -3,7 +3,8 @@ import { Controllers } from "@/controllers";
 import { Pack } from "@/model/graph/pack-generator";
 import { Rivers } from "@/model/physical/river-generator";
 import { Layers } from "@/renderers/layers";
-import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
@@ -16,7 +17,7 @@ let isCellsLayerForced = false; // the cells layer is turned on for the editing 
 
 function open(): void {
   if (options.app.mode) return;
-  closeDialogs();
+  Dialog.closeAll();
   Layers.show("rivers");
 
   isCellsLayerForced = !Layers.isOn("cells");
@@ -29,16 +30,15 @@ function open(): void {
   creatorCells = [];
   renderDialog();
 
-  $("#riverCreator").dialog({
+  Dialog.open("riverCreator", {
     title: t("Create River"),
-    resizable: false,
     position: { my: "left top", at: "left+10 top+10", of: "#map" },
-    close: closeRiverCreator
+    onClose: closeRiverCreator
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("riverCreator");
+  Dialog.destroy("riverCreator");
 
   const html = /* html */ `<div id="riverCreator" class="dialog">
     <div id="riverCreatorBody" class="table"></div>
@@ -56,7 +56,7 @@ function renderDialog(): void {
 }
 
 function cancelCreation(): void {
-  $("#riverCreator").dialog("close");
+  Dialog.close("riverCreator");
 }
 
 function onBodyClick(ev: Event): void {
@@ -128,7 +128,7 @@ function closeRiverCreator(): void {
   if (isCellsLayerForced) Layers.hide("cells");
   isCellsLayerForced = false;
 
-  destroyDialog("riverCreator");
+  Dialog.destroy("riverCreator");
 }
 
 export const RiverCreator = { open };

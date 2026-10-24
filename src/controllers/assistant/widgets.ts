@@ -46,7 +46,7 @@ let insetCount = 0;
 let marked: Of<"entities"> | null = null;
 
 /** The Assistant panel over the map: what it reveals is centred beside it */
-const panel = () => findEl("assistant")?.closest(".ui-dialog")?.getBoundingClientRect();
+const panel = () => findEl("assistant")?.getBoundingClientRect();
 
 function linkableCommand(id: string) {
   const command = App.mapCommands.find(command => command.id === id);

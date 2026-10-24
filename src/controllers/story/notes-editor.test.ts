@@ -6,6 +6,7 @@ vi.mock("@/ui/map/highlight", () => ({ highlightElement: () => {} }));
 vi.mock("@/ui/tooltips", () => ({ tip: () => {}, loadingTip: { start: vi.fn(), end: vi.fn() } }));
 
 import { Notes } from "@/model/story/notes";
+import { Dialog } from "@/ui/dialog/dialog";
 import { NotesEditor } from "./notes-editor";
 
 const w = globalThis as unknown as Record<string, unknown>;
@@ -18,7 +19,6 @@ beforeEach(() => {
     markers: [{ i: 0, name: "Old Well" }]
   };
   w.fonts = [];
-  window.$ = vi.fn(() => ({ dialog: vi.fn() })) as unknown as typeof window.$;
 });
 
 afterEach(() => {
@@ -93,12 +93,6 @@ it("keeps the selected note excerpt after focus moves to the Assistant and clear
 it("announces note context changes when selecting and closing notes", () => {
   const changed = vi.fn();
   window.addEventListener("notes:context-changed", changed);
-  let close: (() => void) | undefined;
-  window.$ = vi.fn(() => ({
-    dialog: (options: unknown) => {
-      if (options && typeof options === "object" && "close" in options) close = options.close as () => void;
-    }
-  })) as unknown as typeof window.$;
   NotesEditor.open(burg);
   expect(changed).toHaveBeenCalledTimes(1);
   Notes.set({ type: "burg", id: 2 }, "<p>Other</p>");
@@ -108,7 +102,7 @@ it("announces note context changes when selecting and closing notes", () => {
   select.value = "burg:2";
   select.dispatchEvent(new Event("change"));
   expect(changed).toHaveBeenCalledTimes(3);
-  close!();
+  Dialog.close("notesEditor");
   expect(changed).toHaveBeenCalledTimes(4);
   expect(NotesEditor.current()).toBeNull();
   window.removeEventListener("notes:context-changed", changed);

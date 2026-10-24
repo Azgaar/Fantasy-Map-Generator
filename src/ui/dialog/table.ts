@@ -265,8 +265,8 @@ function bindColumnsPicker({
 
   const button = findEl(`${dialogId}ColumnsButton`);
   if (!button) return;
-  // a destroyDialog() close does not fire dialogclose, so the mousedown handler below also cleans up
-  if (dialog) $(dialog).one("dialogclose", cleanup);
+  // a Dialog.destroy() close fires no dialog:close, so the mousedown handler below also cleans up
+  dialog?.addEventListener("dialog:close", cleanup, { once: true });
   button.addEventListener("click", () => {
     const existing = findEl(popupId);
     if (existing) {
@@ -353,7 +353,7 @@ function bindColumnsPicker({
     };
 
     const close = (event: MouseEvent) => {
-      // the owning dialog may be gone (destroyDialog does not fire dialogclose); drop the stale handler
+      // the owning dialog may be gone (Dialog.destroy fires no dialog:close); drop the stale handler
       if (!button.isConnected || (!popup.contains(event.target as Node) && event.target !== button)) cleanup();
     };
     document.addEventListener("mousedown", close);

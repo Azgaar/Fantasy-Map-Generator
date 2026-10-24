@@ -49,7 +49,7 @@ test("a submap of a map larger than the window is the area on screen", async ({ 
 
   const submapped = await countMaps(page);
   await page.evaluate(() => (window as any).FMG.Controllers.SubmapTool.open());
-  await page.locator(".ui-dialog-buttonset button", { hasText: "Submap" }).click();
+  await page.locator(".dialog-buttonset button", { hasText: "Submap" }).click();
   await waitForNextMap(page, submapped);
 
   const submap = await page.evaluate(() => {

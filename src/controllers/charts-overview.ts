@@ -24,7 +24,8 @@ import { convertTemperature, formatPrice, getArea, getAreaUnit, getHeight, getPr
 import { Csv } from "@/services/io/csv";
 import { getFileName } from "@/services/io/file-name";
 import { mapHistory } from "@/services/map-history";
-import { closeDialogs, destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { tip } from "@/ui/tooltips";
 import { downloadFile } from "@/utils/file-utils";
 import { isWater } from "@/utils/height-utils";
@@ -372,7 +373,7 @@ function open() {
   changeViewColumns();
   updateMetricInfo();
 
-  closeDialogs("#chartsOverview, .stable");
+  Dialog.closeAll("#chartsOverview, .stable");
 
   const currentMap = mapHistory.at(-1)?.created;
   if (chartedMap !== currentMap) {
@@ -383,17 +384,18 @@ function open() {
   if (!charts.length) addChart();
   else for (const chart of charts) renderChart(chart);
 
-  $("#chartsOverview").dialog({
+  Dialog.open("chartsOverview", {
+    resizable: true,
     title: t("Data Charts"),
     width: "60vw",
     height: "auto",
     position: { my: "center", at: "center", of: "svg" },
-    close: handleClose
+    onClose: handleClose
   });
 }
 
 function renderDialog() {
-  destroyDialog("chartsOverview");
+  Dialog.destroy("chartsOverview");
   const entities = Object.entries(entitiesMap).map(([entity, { label }]): [string, string] => [entity, label]);
   const plotBy = Object.entries(quantizationMap).map(([plotBy, { label }]): [string, string] => [plotBy, label]);
 
@@ -914,12 +916,11 @@ function changeViewColumns() {
 }
 
 function updateDialogPosition() {
-  updateDialog("chartsOverview", { position: { my: "center", at: "center", of: "svg", collision: "fit" } });
+  Dialog.update("chartsOverview", { position: { my: "center", at: "center", of: "svg", collision: "fit" } });
 }
 
 function handleClose() {
-  $("#chartsOverview").dialog("destroy");
-  ensureEl("chartsOverview").remove();
+  Dialog.destroy("chartsOverview");
   findEl("chartsOverviewStyle")?.remove();
 }
 

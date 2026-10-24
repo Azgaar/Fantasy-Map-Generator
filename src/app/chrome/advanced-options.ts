@@ -3,7 +3,7 @@
 import { regeneratePrompt } from "@/app/lifecycle";
 import { SAMPLING_LABELS } from "@/data/id-labels";
 import { DEFAULT_JITTER, MAX_JITTER, SAMPLINGS, type Sampling } from "@/model/graph/lattice";
-import { closeDialogs } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
 import { t } from "@/utils/i18n";
 
 export const ADVANCED_OPTIONS_ID = "advancedOptions";
@@ -263,13 +263,13 @@ export function getAdvancedOptionsHTML(): string {
 }
 
 function open(): void {
-  closeDialogs(`#${ADVANCED_OPTIONS_ID}, .stable`);
-  $(`#${ADVANCED_OPTIONS_ID}`).dialog({
+  Dialog.closeAll(`#${ADVANCED_OPTIONS_ID}, .stable`);
+  Dialog.open(ADVANCED_OPTIONS_ID, {
     title: t("Advanced Options"),
-    resizable: false,
     width: "auto",
     position: { my: "right top", at: "right-10 top+10", of: "svg" },
-    buttons: { [t("New Map")]: () => regeneratePrompt() }
+    buttons: [{ label: t("New Map"), onClick: () => regeneratePrompt() }],
+    persistent: true
   });
 }
 

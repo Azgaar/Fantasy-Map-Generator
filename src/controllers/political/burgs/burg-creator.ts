@@ -2,7 +2,8 @@ import { pointer } from "d3";
 import { Burgs } from "@/model/political/burgs-generator";
 import { redrawEmblem } from "@/renderers/draw-emblems";
 import { Layers } from "@/renderers/layers";
-import { closeDialogs, refreshEditors } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+import { refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/ui/map/map-placement";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
@@ -15,7 +16,7 @@ function toggle(): void {
     return;
   }
 
-  closeDialogs(".stable");
+  Dialog.closeAll(".stable");
   toggleMapPlacement(
     "addBurgTool",
     addOnClick,

@@ -13,7 +13,8 @@ import { Tags } from "@/model/tags";
 import { getArea, getAreaUnit } from "@/model/units";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
-import { closeDialogs, destroyDialog, noteIcon, updateDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+import { noteIcon } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import { dialogState } from "@/ui/dialog/state";
@@ -116,24 +117,23 @@ const featuresTable = initEditorTable<Feature>({
 function open(): void {
   if (options.app.mode) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ search: "", type: "all", subtype: "all" }));
-  closeDialogs(`#${dialogId}, .stable`);
+  Dialog.closeAll(`#${dialogId}, .stable`);
 
   oceanPaths.clear();
   renderDialog();
   updateSubtypeFilter();
   featuresTable.reset();
 
-  $(`#${dialogId}`).dialog({
+  Dialog.open(dialogId, {
     title: t("Geographical Features Overview"),
-    resizable: false,
     width: "fit-content",
     position,
-    close: closeFeaturesOverview
+    onClose: closeFeaturesOverview
   });
 }
 
 function renderDialog(): void {
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
 
   const html = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
     <div id="featuresBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
@@ -168,7 +168,7 @@ function renderDialog(): void {
   initColumnVisibility({
     dialogId,
     columns,
-    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+    onUpdate: () => Dialog.update(dialogId, { width: "fit-content", position })
   });
 
   ensureEl("featuresOverviewRefresh").addEventListener("click", refreshOverview);
@@ -182,7 +182,7 @@ function renderDialog(): void {
 }
 
 function closeFeaturesOverview(): void {
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
   oceanPaths.clear();
   const view = featuresTable.view();
   view.rows = [];

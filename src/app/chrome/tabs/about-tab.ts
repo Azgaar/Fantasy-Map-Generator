@@ -2,7 +2,7 @@
 
 import { supporters } from "@/data/supporters";
 import { Services } from "@/services";
-import { alertDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
 import { link } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
@@ -155,7 +155,7 @@ ensureEl("aboutContent").innerHTML = TEMPLATE;
 function showSupporters(): void {
   const columns = window.innerWidth < 800 ? 2 : 5;
   const names = supporters.split("\n").sort();
-  alertDialog({
+  Dialog.message({
     title: t("Patreon supporters"),
     width: "min-width",
     message: /* html */ `<ul style="column-count: ${columns}; column-gap: 2em">${names

@@ -3,11 +3,11 @@ import { CULTURE_SETS } from "@/data/culture-sets";
 import { Pack } from "@/model/graph/pack-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import type { Emblem } from "@/types/emblems";
+import { Dialog } from "@/ui/dialog/dialog";
 import { getColors, getRandomColor, requireColor } from "@/utils/color-utils";
 import { FlatQueue } from "@/utils/flat-queue";
 import { t } from "@/utils/i18n";
 import { abbreviate } from "@/utils/language-utils";
-import { ensureEl } from "@/utils/node-utils";
 import { minmax, rn } from "@/utils/number-utils";
 import { biased, P, rand, rw } from "@/utils/probability-utils";
 import { requireCode, requireName, requireOneOf, requireOrigins } from "@/utils/validation-utils";
@@ -1078,39 +1078,25 @@ class CulturesGenerator {
         ];
         this.cells.culture = cultureIds;
 
-        ensureEl("alertMessage").innerHTML =
-          `${t("The climate is harsh and people cannot live in this world.")}<br>${t("No cultures, states and burgs will be created.")}<br>${t("Please consider changing climate settings in the World Configurator")}`;
-
-        $("#alert").dialog({
-          resizable: false,
-          title: t("Extreme climate warning"),
-          buttons: {
-            [t("OK")]: function () {
-              $(this).dialog("close");
-            }
-          }
+        Dialog.message({
+          message: `${t("The climate is harsh and people cannot live in this world.")}<br>${t("No cultures, states and burgs will be created.")}<br>${t("Please consider changing climate settings in the World Configurator")}`,
+          title: t("Extreme climate warning")
         });
         return;
       } else {
         WARN && console.warn(`Not enough populated cells (${populated.length}). Will generate only ${count} cultures`);
-        ensureEl("alertMessage").innerHTML = [
-          t("There are only {{populated}} populated cells and it's insufficient livable area.", {
-            populated: populated.length
-          }),
-          t("Cultures to generate: {{cultures}}, requested: {{limit}}", {
-            cultures: count,
-            limit: options.generation.cultures.limit
-          }),
-          t("Please consider changing climate settings in the World Configurator")
-        ].join("<br>");
-        $("#alert").dialog({
-          resizable: false,
-          title: t("Extreme climate warning"),
-          buttons: {
-            [t("OK")]: function () {
-              $(this).dialog("close");
-            }
-          }
+        Dialog.message({
+          message: [
+            t("There are only {{populated}} populated cells and it's insufficient livable area.", {
+              populated: populated.length
+            }),
+            t("Cultures to generate: {{cultures}}, requested: {{limit}}", {
+              cultures: count,
+              limit: options.generation.cultures.limit
+            }),
+            t("Please consider changing climate settings in the World Configurator")
+          ].join("<br>"),
+          title: t("Extreme climate warning")
         });
       }
     }

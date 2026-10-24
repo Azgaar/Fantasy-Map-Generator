@@ -7,10 +7,6 @@ vi.mock("@/renderers/layers", () => ({
 vi.mock("@/renderers/draw-markers", () => ({
   setMarkersFilter: vi.fn()
 }));
-vi.mock("@/ui/dialog/dialog-helpers", async importActual => ({
-  ...(await importActual<typeof import("@/ui/dialog/dialog-helpers")>()),
-  closeDialogs: vi.fn()
-}));
 vi.mock("@/controllers", () => ({
   Controllers: {
     MarkerCreator: { toggle: vi.fn() },
@@ -32,12 +28,6 @@ describe("MarkersOverview", () => {
     dialogState.remove("markersOverview", "sorting");
     document.body.innerHTML = '<div id="dialogs"></div>';
     options.app.mode = null;
-    vi.stubGlobal("$", () => ({
-      dialog: vi.fn(),
-      one: vi.fn(),
-      not: vi.fn().mockReturnThis(),
-      each: vi.fn()
-    }));
     Object.assign(Markers, {
       getConfig: () => [{ type: "volcano", icon: "🌋" }],
       setPinned: vi.fn(),

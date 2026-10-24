@@ -9,7 +9,8 @@ import { addGoogleFont, addLocalFont, addWebFont, fonts } from "@/services/fonts
 import { StylePresetsService, SYSTEM_PRESETS } from "@/services/style-presets";
 import { VERSION } from "@/services/versioning";
 import type { StyleElement, StyleSelection } from "@/types/styles";
-import { destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { tip } from "@/ui/tooltips";
 import { toHEX } from "@/utils/color-utils";
 import { link } from "@/utils/common-utils";
@@ -27,7 +28,7 @@ export function trackControlDialog(id: string): void {
 
 /** Dialogs a control may have left open; the editor calls it on close */
 export function destroyControlDialogs(): void {
-  for (const id of controlDialogs) destroyDialog(id);
+  for (const id of controlDialogs) Dialog.destroy(id);
   controlDialogs.clear();
 }
 
@@ -81,13 +82,13 @@ export class ElementsDialog {
     dialog.querySelector(".tree")!.addEventListener("click", event => this.onClick(event));
     this.unsubscribe = Layers.subscribe(() => this.render());
 
-    $(dialog).dialog({
+    Dialog.open(ELEMENTS_ID, {
       title: t("Style elements"),
       width: "20em",
       height: "auto",
       maxHeight: Math.round(window.innerHeight * 0.7),
       position: { my: "left top", at: "right+10 top", of: "#options" },
-      close: () => this.close()
+      onClose: () => this.close()
     });
     this.render();
   }
@@ -95,7 +96,7 @@ export class ElementsDialog {
   close(): void {
     this.unsubscribe?.();
     this.unsubscribe = undefined;
-    destroyDialog(ELEMENTS_ID);
+    Dialog.destroy(ELEMENTS_ID);
   }
 
   /** Re-render when the selection or a group list changed elsewhere; a no-op while closed */
@@ -240,12 +241,11 @@ export class PresetSelector {
         void Controllers.StylePresetsEditor.requestChange(name);
     });
 
-    $(dialog).dialog({
+    Dialog.open(PRESETS_ID, {
       title: t("Style Presets"),
       width: 480,
       maxHeight: Math.round(window.innerHeight * 0.75),
-      position: { my: "left top", at: "right+10 top", of: "#options" },
-      close: () => destroyDialog(PRESETS_ID)
+      position: { my: "left top", at: "right+10 top", of: "#options" }
     });
     this.render();
   }
@@ -256,7 +256,7 @@ export class PresetSelector {
   }
 
   close(): void {
-    destroyDialog(PRESETS_ID);
+    Dialog.destroy(PRESETS_ID);
   }
 
   private render(): void {
@@ -335,7 +335,7 @@ function fontChoices(sample: string, selected: string): string {
 }
 
 export function openFontDialog({ selected, sample, onPick, onAdd }: FontDialogOptions): void {
-  destroyDialog(FONT_DIALOG);
+  Dialog.destroy(FONT_DIALOG);
   trackControlDialog(FONT_DIALOG);
   ensureEl("dialogs").insertAdjacentHTML(
     "beforeend",
@@ -368,23 +368,28 @@ export function openFontDialog({ selected, sample, onPick, onAdd }: FontDialogOp
     if (button) select(button.dataset.family!);
   });
 
-  $(dialog).dialog({
+  Dialog.open(FONT_DIALOG, {
     title: t("Select font"),
     width: "24em",
     position: { my: "center", at: "center", of: "svg" },
     maxHeight: Math.round(window.innerHeight * 0.7),
-    close: () => destroyDialog(FONT_DIALOG),
-    buttons: {
-      [t("Add font")]: () =>
-        onAdd(family => {
-          list.innerHTML = fontChoices(sample, family);
-          filter();
-          select(family);
-        }),
-      [t("Close")]: function (this: HTMLElement) {
-        $(this).dialog("close");
+    buttons: [
+      {
+        label: t("Add font"),
+        onClick: () =>
+          onAdd(family => {
+            list.innerHTML = fontChoices(sample, family);
+            filter();
+            select(family);
+          })
+      },
+      {
+        label: t("Close"),
+        onClick: () => {
+          Dialog.close(FONT_DIALOG);
+        }
       }
-    }
+    ]
   });
   list.querySelector(".pressed")?.scrollIntoView({ block: "center" });
 }
@@ -392,7 +397,7 @@ export function openFontDialog({ selected, sample, onPick, onAdd }: FontDialogOp
 const GOOGLE_FONTS = "https://fonts.google.com/";
 
 export function openAddFontDialog(onAdded: (family: string) => void): void {
-  destroyDialog("addFontDialog");
+  Dialog.destroy("addFontDialog");
   trackControlDialog("addFontDialog");
   const dialog = htmlEl("div", { id: "addFontDialog", className: "dialog", style: "display: none" });
   dialog.innerHTML = /* html */ `
@@ -469,26 +474,22 @@ export function openAddFontDialog(onAdded: (family: string) => void): void {
           ? await addGoogleFont(family)
           : addLocalFont(family);
     if (added) onAdded(added);
-    $(dialog).dialog("close");
+    Dialog.close("addFontDialog");
   };
 
-  $(dialog).dialog({
+  Dialog.open("addFontDialog", {
     title: t("Add custom font"),
     width: "26em",
     position: { my: "center", at: "center", of: "svg" },
-    close: () => destroyDialog("addFontDialog"),
-    buttons: {
-      // jQuery 3.1 takes an async function for a props object, so the button handler stays sync
-      [t("Add")]: () => void add(),
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+    buttons: [
+      { label: t("Add"), onClick: () => void add() },
+      { label: t("Cancel"), onClick: () => Dialog.close("addFontDialog") }
+    ]
   });
 }
 
 export function openSchemeBuilder(current: string, onCreate: (stops: string) => void): void {
-  destroyDialog("heightmapSchemeDialog");
+  Dialog.destroy("heightmapSchemeDialog");
   trackControlDialog("heightmapSchemeDialog");
   const dialog = htmlEl("div", { id: "heightmapSchemeDialog", className: "dialog", style: "display: none" });
   dialog.innerHTML = /* html */ `<div>
@@ -566,28 +567,32 @@ export function openSchemeBuilder(current: string, onCreate: (stops: string) => 
   };
   renderAll();
 
-  $(dialog).dialog({
-    resizable: false,
+  Dialog.open("heightmapSchemeDialog", {
     title: t("Create heightmap color scheme"),
     position: { my: "center top+150", at: "center top", of: "svg" },
-    close: () => destroyDialog("heightmapSchemeDialog"),
-    buttons: {
-      [t("Create")]: function (this: HTMLElement) {
-        const name = stops.join(",");
-        if (HeightmapColorSchemes.has(name)) return tip(t("This scheme already exists"), false, "error");
-        HeightmapColorSchemes.add(name);
-        onCreate(name);
-        $(this).dialog("close");
+    buttons: [
+      {
+        label: t("Create"),
+        onClick: () => {
+          const name = stops.join(",");
+          if (HeightmapColorSchemes.has(name)) return tip(t("This scheme already exists"), false, "error");
+          HeightmapColorSchemes.add(name);
+          onCreate(name);
+          Dialog.close("heightmapSchemeDialog");
+        }
       },
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
+      {
+        label: t("Cancel"),
+        onClick: () => {
+          Dialog.close("heightmapSchemeDialog");
+        }
       }
-    }
+    ]
   });
 }
 
 export function openTextureUrlDialog(onApply: (url: string) => void): void {
-  destroyDialog("textureUrlDialog");
+  Dialog.destroy("textureUrlDialog");
   trackControlDialog("textureUrlDialog");
   const dialog = htmlEl("div", { id: "textureUrlDialog", className: "dialog", style: "display: none" });
   dialog.innerHTML = /* html */ `${t("Provide a texture image URL")}:
@@ -606,20 +611,24 @@ export function openTextureUrlDialog(onApply: (url: string) => void): void {
     image.src = input.value;
   });
 
-  $(dialog).dialog({
-    resizable: false,
+  Dialog.open("textureUrlDialog", {
     title: t("Load custom texture"),
     width: "28em",
-    close: () => destroyDialog("textureUrlDialog"),
-    buttons: {
-      [t("Apply")]: function (this: HTMLElement) {
-        if (!input.value) return tip(t("Please provide a valid URL"), false, "error");
-        onApply(input.value);
-        $(this).dialog("close");
+    buttons: [
+      {
+        label: t("Apply"),
+        onClick: () => {
+          if (!input.value) return tip(t("Please provide a valid URL"), false, "error");
+          onApply(input.value);
+          Dialog.close("textureUrlDialog");
+        }
       },
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
+      {
+        label: t("Cancel"),
+        onClick: () => {
+          Dialog.close("textureUrlDialog");
+        }
       }
-    }
+    ]
   });
 }

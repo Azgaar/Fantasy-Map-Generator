@@ -1,7 +1,8 @@
 import { pointer } from "d3";
 import { Rivers } from "@/model/physical/river-generator";
 import { Layers } from "@/renderers/layers";
-import { closeDialogs, refreshEditors } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+import { refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/ui/map/map-placement";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
@@ -14,7 +15,7 @@ function toggle(): void {
     return;
   }
 
-  closeDialogs(".stable");
+  Dialog.closeAll(".stable");
   toggleMapPlacement(
     "addRiver",
     addOnClick,

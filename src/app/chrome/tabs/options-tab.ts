@@ -32,7 +32,7 @@ import { viewport } from "@/renderers/viewport/viewport";
 import { copyMapURL } from "@/services/url-params";
 import { confirmCleanupData } from "@/services/versioning";
 import { toggleAssistant } from "@/ui/assistant-bubble";
-import { confirmationDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
 import { applyZoomExtent, fitMapToScreen, setViewport } from "@/ui/map/canvas";
 import { constrainZoom, setMapZoom, setTranslateExtent, setZoomExtent } from "@/ui/map/zoom";
 import { bindPinIcons } from "@/ui/pin-icons";
@@ -905,7 +905,7 @@ function changeLanguage(select: HTMLSelectElement): void {
   Options.persist();
   if (code === Catalog.language) return;
 
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Change language"),
     message: sentences(
       t("The interface switches to {{language}} after a reload", { language: LANGUAGES[code] }),

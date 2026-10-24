@@ -6,7 +6,8 @@ import { Tags } from "@/model/tags";
 import { redrawRoute as redrawRouteShape, setEditedRoute } from "@/renderers/draw-routes";
 import { Layers } from "@/renderers/layers";
 import { speak } from "@/services/speech";
-import { closeDialogs, confirmationDialog, destroyDialog, noteButton } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+import { noteButton } from "@/ui/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { getSegmentId } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
@@ -20,7 +21,7 @@ let isCellsLayerForced = false; // the cells layer is turned on for the editing 
 function open(id: string): void {
   if (options.app.mode) return;
   if (findEl("routeEditor") && id === selectedRoute.attr("id")) return;
-  closeDialogs(".stable");
+  Dialog.closeAll(".stable");
 
   Layers.show("routes");
   isCellsLayerForced = !Layers.isOn("cells");
@@ -51,16 +52,15 @@ function open(id: string): void {
     updateLockIcon();
   }
 
-  $("#routeEditor").dialog({
+  Dialog.open("routeEditor", {
     title: t("Edit Route"),
-    resizable: false,
     position: { my: "left top", at: "left+10 top+10", of: "#map" },
-    close: closeRouteEditor
+    onClose: closeRouteEditor
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("routeEditor");
+  Dialog.destroy("routeEditor");
 
   const html = /* html */ `<div id="routeEditor" class="dialog">
     <div id="routeBody" style="padding-bottom: 0.3em">
@@ -309,26 +309,25 @@ function openJoinRoutesDialog(): void {
       const length = `${rn(r.length * options.map.units.distance.scale)} ${options.map.units.distance.unit}`;
       return `<option value="${r.i}">${r.name} (${length})</option>`;
     });
-    ensureEl("alertMessage").innerHTML = /* html */ `<div>${t("Route to join with")}:
+    const text = Dialog.message({
+      message: /* html */ `<div>${t("Route to join with")}:
         <select>${routeOptions.join("")}</select>
-      </div>`;
-
-    $("#alert").dialog({
+      </div>`,
       title: t("Join routes"),
       width: "fit-content",
       position: { my: "left top", at: "left+10 top+150", of: "#map" },
-      buttons: {
-        [t("Cancel")]: () => {
-          $("#alert").dialog("close");
-        },
-        [t("Join")]: () => {
-          const selectedRouteId = +ensureEl("alertMessage").querySelector("select")!.value;
-          const selectedRoute = pack.routes.find((r: Route) => r.i === selectedRouteId) as Route;
-          joinRoutes(route, selectedRoute);
-          tip(t("Routes joined"), false, "success", 5000);
-          $("#alert").dialog("close");
+      buttons: [
+        { label: t("Cancel") },
+        {
+          label: t("Join"),
+          onClick: () => {
+            const selectedRouteId = +text.querySelector("select")!.value;
+            const selectedRoute = pack.routes.find((r: Route) => r.i === selectedRouteId) as Route;
+            joinRoutes(route, selectedRoute);
+            tip(t("Routes joined"), false, "success", 5000);
+          }
         }
-      }
+      ]
     });
   } else {
     tip(
@@ -439,13 +438,13 @@ function updateLockIcon(): void {
 }
 
 function removeRoute(): void {
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: `${t("Are you sure you want to remove the route?")}<br>${t("This action cannot be reverted")}`,
     confirm: t("Remove"),
     onConfirm: () => {
       Routes.remove(getRoute().i);
-      $("#routeEditor").dialog("close");
+      Dialog.close("routeEditor");
       Layers.draw("routes", "labels");
     }
   });
@@ -462,7 +461,7 @@ function closeRouteEditor(): void {
   if (isCellsLayerForced) Layers.hide("cells");
   isCellsLayerForced = false;
 
-  destroyDialog("routeEditor");
+  Dialog.destroy("routeEditor");
   selectedRoute = null!;
 }
 

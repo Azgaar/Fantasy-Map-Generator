@@ -2,7 +2,8 @@ import { GraphOverride } from "@/model/graph/graph-override";
 import { Layers } from "@/renderers/layers";
 import { drawMesh, removeMesh } from "@/renderers/overlays/vertex-mesh";
 import type { Point } from "@/types/global";
-import { closeDialogs, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { MapBrush } from "@/ui/map/map-brush";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
@@ -22,7 +23,7 @@ let closeConfirmed = false;
 
 function open(): void {
   if (options.app.mode || source) return;
-  closeDialogs();
+  Dialog.closeAll();
 
   source = pack.vertices;
   options.app.mode = "wrap";
@@ -71,14 +72,13 @@ function render(): void {
   </div>`
   );
 
-  $("#wrapTool").dialog({
+  Dialog.open("wrapTool", {
     title: t("Wrap Tool"),
-    resizable: false,
     width: "auto",
     closeOnEscape: false,
     position: { my: "right top", at: "right-10 top+10", of: "svg" },
     beforeClose: confirmClose,
-    close: cleanup
+    onClose: cleanup
   });
 }
 
@@ -168,7 +168,7 @@ function applyEdits(): void {
 /** drop every vertex edit on the map, including the ones loaded from the file */
 function revert(): void {
   abortStroke();
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Revert vertex edits"),
     message: t(
       "All vertex edits made on this map, including the ones made in earlier sessions, will be reverted. The action cannot be undone"
@@ -239,14 +239,14 @@ function redraw(): void {
 }
 
 function close(): void {
-  $("#wrapTool").dialog("close"); // the dialog calls cleanup back
+  Dialog.close("wrapTool"); // the dialog calls cleanup back
 }
 
 /** unapplied edits are lost on close, so ask first; a stale source has nothing to keep */
 function confirmClose(): boolean {
   abortStroke();
   if (closeConfirmed || source !== pack.vertices || !restorable().size) return true;
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Discard edits"),
     message: t("The edits not applied yet will be discarded. Apply them first to keep them"),
     confirm: t("Discard"),
@@ -276,7 +276,7 @@ function cleanup(): void {
   history = [];
   index = 0;
   baseline.clear();
-  destroyDialog("wrapTool");
+  Dialog.destroy("wrapTool");
 }
 
 export const WrapTool = { open };

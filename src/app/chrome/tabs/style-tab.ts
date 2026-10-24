@@ -28,13 +28,9 @@ const STYLE = /* css */ `
     --style-card-head: rgba(255, 255, 255, .2);
     --style-group-line: rgba(0, 0, 0, .15);
   }
-  #styleContent .head { display: flex; align-items: center; gap: .4em; margin: .3em 0; }
-  #styleContent .head > p { flex: 0 0 8.5em; margin: 0; }
-  #styleContent .head > select { flex: 1 1 auto; min-width: 0; }
   #stylePreset { flex: 1 1 auto; min-width: 0; height: 1.6em; margin: 0; padding: 0 .3em; font-size: smaller; display: flex; align-items: center; gap: .4em; background: #fff; color: #000; border: .5px solid #dbdfe6; border-top-color: #abadb3; border-radius: .5px; text-transform: capitalize; cursor: pointer; }
   #stylePreset > span { flex: 1 1 auto; min-width: 0; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #stylePreset::after { content: "▾"; opacity: .6; }
-  #styleContent .head > button.sideButton { flex: none; margin-block: 0; }
   #styleForm { margin-top: .4em; }
   #styleForm .banner { color: darkred; font-weight: 700; margin: .3em 0; }
   #styleForm .banner a { cursor: pointer; text-decoration: underline; }

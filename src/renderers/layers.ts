@@ -81,9 +81,11 @@ export class Layer<Id extends string = string> {
 export class LayersRegistry<Id extends string = string> {
   private active = new Set<Id>();
   private listeners = new Set<() => void>();
+  private readonly defaultOrder: Id[]; // the registration order
 
   constructor(private layers: Layer<Id>[]) {
     for (const layer of layers) if (layer.params.permanent) this.active.add(layer.id);
+    this.defaultOrder = layers.map(layer => layer.id);
   }
 
   /** create missing layer groups, order them by registration order and apply the current state */
@@ -210,6 +212,11 @@ export class LayersRegistry<Id extends string = string> {
 
     this.init();
     this.emit();
+  }
+
+  /** put every layer back in registration order, keeping which ones are on */
+  resetOrder(): void {
+    this.restore({ order: this.defaultOrder, active: this.state.active });
   }
 
   get state(): LayersState {

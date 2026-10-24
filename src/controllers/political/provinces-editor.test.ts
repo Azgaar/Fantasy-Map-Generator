@@ -21,13 +21,11 @@ vi.mock("@/renderers/emblems/renderer", () => ({ EmblemRenderer: { trigger: vi.f
 vi.mock("@/renderers/overlays/fogging", () => ({ fog: vi.fn(), unfog: vi.fn() }));
 vi.mock("@/ui/map/highlight", () => ({ highlightElement: vi.fn(), highlightOutline: vi.fn() }));
 
+import { DIALOGS_MARKUP } from "@/ui/dialog/dialog-testing";
 import { ProvincesEditor } from "./provinces-editor";
 
 beforeEach(() => {
-  document.body.innerHTML = /* html */ `<svg></svg><input id="uiSize" value="1" />
-    <div id="alert"><div id="alertMessage"></div></div>`;
-  (globalThis as Record<string, unknown>).alertMessage = document.getElementById("alertMessage");
-  vi.stubGlobal("$", () => ({ dialog: vi.fn() }));
+  document.body.innerHTML = /* html */ `<svg></svg><input id="uiSize" value="1" />${DIALOGS_MARKUP}`;
   (SVGElement.prototype as unknown as { getBBox: () => object }).getBBox = () => ({ x: 0, y: 0, width: 0, height: 0 });
 
   // a fresh map: the generator leaves province statistics for the editor to collect

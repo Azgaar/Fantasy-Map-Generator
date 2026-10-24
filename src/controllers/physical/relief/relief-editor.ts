@@ -14,7 +14,8 @@ import { Relief } from "@/model/physical/relief-generator";
 import { getReliefIcon, redrawRelief } from "@/renderers/draw-relief-icons";
 import { Layers } from "@/renderers/layers";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
-import { closeDialogs, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, showMainTip, tip } from "@/ui/tooltips";
 import { createBrushStroke } from "@/utils/brush-utils";
@@ -61,7 +62,7 @@ function matchesTypeTile(icon: ReliefIcon, symbol: string | undefined): boolean 
 
 function open(element: SVGElement): void {
   if (options.app.mode) return;
-  closeDialogs(".stable");
+  Dialog.closeAll(".stable");
   Layers.show("relief");
 
   selectedIcon = getIconData(element);
@@ -76,17 +77,16 @@ function open(element: SVGElement): void {
   void loadPreviews();
   updateReliefSizeInput();
 
-  $("#reliefEditor").dialog({
+  Dialog.open("reliefEditor", {
     title: t("Edit Relief Icons"),
-    resizable: false,
     width: "27em",
     position: { my: "left top", at: "left+10 top+10", of: "#map" },
-    close: closeReliefEditor
+    onClose: closeReliefEditor
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("reliefEditor");
+  Dialog.destroy("reliefEditor");
   const SLIDER_LABELS: Record<string, string> = {
     Size: `${t("Size")}:`,
     Radius: `${t("Radius")}:`,
@@ -479,7 +479,7 @@ function removeIcon(): void {
       ? t("Are you sure you want to remove all {{icon}} icons ({{icons}})?", { icon, icons: doomed.size })
       : t("Are you sure you want to remove all icons ({{icons}})?", { icons: doomed.size });
 
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message,
     confirm: t("Remove"),
@@ -487,7 +487,7 @@ function removeIcon(): void {
       pack.relief = pack.relief.filter(reliefIcon => !doomed.has(reliefIcon));
       selectedIcon = null;
       redrawRelief();
-      $("#reliefEditor").dialog("close");
+      Dialog.close("reliefEditor");
     }
   });
 }
@@ -506,8 +506,7 @@ function closeReliefEditor(): void {
   removeCircle();
   if (wasUsingBrush) applyDefaultViewboxEvents();
   clearMainTip();
-  $("#reliefEditor").dialog("destroy");
-  ensureEl("reliefEditor").remove();
+  Dialog.destroy("reliefEditor");
 }
 
 export const ReliefEditor = { open };

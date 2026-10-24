@@ -14,7 +14,8 @@ import { LegendBoxes } from "@/renderers/legend-boxes";
 import { Csv } from "@/services/io/csv";
 import type { Emblem } from "@/types/emblems";
 import type { LegendItem } from "@/types/legend";
-import { closeDialogs, confirmationDialog, destroyDialog, noteIcon, updateDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+import { noteIcon } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import { dialogState } from "@/ui/dialog/state";
@@ -161,7 +162,7 @@ const culturesTable = initEditorTable<Culture>({
 function open(): void {
   if (options.app.mode) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ search: "" }));
-  closeDialogs(`#${dialogId}, .stable`);
+  Dialog.closeAll(`#${dialogId}, .stable`);
   Layers.show("cultures");
   Layers.hide("states", "biomes");
   Layers.hide("religions", "provinces");
@@ -171,11 +172,10 @@ function open(): void {
   drawCultureCenters();
   culturesTable.reset();
 
-  $(`#${dialogId}`).dialog({
+  Dialog.open(dialogId, {
     title: t("Cultures Editor"),
-    resizable: false,
     width: "fit-content",
-    close: closeCulturesEditor,
+    onClose: closeCulturesEditor,
     position
   });
 }
@@ -191,7 +191,7 @@ function renderDialog(): void {
   const ancestryCol = columns.find(c => c.key === "ancestry");
   if (ancestryCol) ancestryCol.hidden = !hasAncestry;
 
-  destroyDialog("culturesEditor");
+  Dialog.destroy("culturesEditor");
   const editorHtml = /* html */ `<div id="culturesEditor" class="dialog stable editorDialog">
     <div id="culturesBody" class="table" data-type="absolute">${renderEditorHeader({ dialogId, columns })}</div>
     <div id="culturesFilters" data-tip="${t("Apply a filter")}" class="editorFilters">
@@ -240,7 +240,7 @@ function renderDialog(): void {
   initColumnVisibility({
     dialogId,
     columns,
-    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+    onUpdate: () => Dialog.update(dialogId, { width: "fit-content", position })
   });
   ensureEl("culturesEditStyle").addEventListener("click", () => void Controllers.StyleEditor.open("cultures"));
   ensureEl("culturesLegend").addEventListener("click", toggleLegend);
@@ -501,7 +501,7 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
     ensureEl("culturesBody").dataset.type = "absolute";
     togglePercentageMode();
   }
-  updateDialog(dialogId, { width: "fit-content", position });
+  Dialog.update(dialogId, { width: "fit-content", position });
 }
 
 function getTypeOptions(type: string): string {
@@ -701,7 +701,8 @@ function changePopulation(this: HTMLElement): void {
   const format = (n: number) => Number(n).toLocaleString();
   const burgs = pack.burgs.filter(b => !b.removed && b.culture === cultureId);
 
-  ensureEl("alertMessage").innerHTML = /* html */ `<div>
+  Dialog.message({
+    message: /* html */ `<div>
     <i>${t("Change population of all cells assigned to the culture")}</i>
     <div style="margin: 0.5em 0">
       ${t("Rural")}: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" />
@@ -711,7 +712,26 @@ function changePopulation(this: HTMLElement): void {
     <div>${t("Total population")}: ${format(total)} ⇒ <span id="totalPop">${format(total)}</span>
       (<span id="totalPopPerc">100</span>%)
     </div>
-  </div>`;
+  </div>`,
+    title: t("Change culture population"),
+    width: "24em",
+    buttons: [
+      {
+        label: t("Apply"),
+        onClick: () => {
+          try {
+            Cultures.setPopulation(cultureId, +ruralPop.value || 0, +urbanPop.value || 0);
+          } catch (error) {
+            tip(errorText(error), false, "error");
+            return false;
+          }
+          Layers.draw("population");
+          refreshCulturesEditor();
+        }
+      },
+      { label: t("Cancel") }
+    ]
+  });
 
   const ruralPop = ensureEl<HTMLInputElement>("ruralPop");
   const urbanPop = ensureEl<HTMLInputElement>("urbanPop");
@@ -727,29 +747,6 @@ function changePopulation(this: HTMLElement): void {
 
   ruralPop.oninput = () => update();
   urbanPop.oninput = () => update();
-
-  $("#alert").dialog({
-    resizable: false,
-    title: t("Change culture population"),
-    width: "24em",
-    buttons: {
-      [t("Apply")]: function (this: HTMLElement) {
-        try {
-          Cultures.setPopulation(cultureId, +ruralPop.value || 0, +urbanPop.value || 0);
-        } catch (error) {
-          tip(errorText(error), false, "error");
-          return;
-        }
-        Layers.draw("population");
-        refreshCulturesEditor();
-        $(this).dialog("close");
-      },
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    },
-    position: { my: "center", at: "center", of: "svg" }
-  });
 }
 
 function cultureRegenerateBurgs(this: HTMLElement): void {
@@ -788,7 +785,7 @@ function cultureRemovePrompt(this: HTMLElement): void {
   if (options.app.mode) return;
 
   const cultureId = +(this.closest(".states") as HTMLElement).dataset.id!;
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: `${t("Are you sure you want to remove the culture?")}<br>${t("This action cannot be reverted")}`,
     confirm: t("Remove"),
@@ -1043,8 +1040,7 @@ function downloadCulturesCsv(): void {
 function closeCulturesEditor(): void {
   select("#debug #cultureCenters").remove();
   if (options.app.mode === "addCulture") exitAddCultureMode();
-  $("#culturesEditor").dialog("destroy");
-  ensureEl("culturesEditor").remove();
+  Dialog.destroy("culturesEditor");
 }
 
 const originNames = (culture: Culture) =>

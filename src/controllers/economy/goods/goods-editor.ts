@@ -11,14 +11,8 @@ import { Tags } from "@/model/tags";
 import { goodBadge } from "@/renderers/draw-goods";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
-import {
-  closeDialogs,
-  confirmationDialog,
-  destroyDialog,
-  noteIcon,
-  refreshEditors,
-  updateDialog
-} from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+import { noteIcon, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import { dialogState } from "@/ui/dialog/state";
 import {
@@ -97,7 +91,7 @@ function open(goodId?: number): void {
   void Icons.retry("goods");
   if (options.app.mode) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ visibleTags: [] as string[] }));
-  closeDialogs("#goodsEditor, .stable");
+  Dialog.closeAll("#goodsEditor, .stable");
 
   if (goodId !== undefined) {
     for (const good of pack.goods) good.visible = good.i === goodId;
@@ -112,9 +106,9 @@ function open(goodId?: number): void {
   renderDialog();
   goodsTable.reset();
 
-  $("#goodsEditor").dialog({
+  Dialog.open("goodsEditor", {
     title: t("Goods Editor"),
-    close: closeGoodsEditor,
+    onClose: closeGoodsEditor,
     position
   });
 }
@@ -129,7 +123,7 @@ function refreshEditor() {
 }
 
 function renderDialog(): void {
-  destroyDialog("goodsEditor");
+  Dialog.destroy("goodsEditor");
   const editorHtml = /* html */ `<div id="goodsEditor" class="dialog stable editorDialog">
       ${renderEditorHeader({ dialogId, columns })}
       <div id="goodsBody" class="table" style="max-height: 50vh;" data-type="absolute"></div>
@@ -168,7 +162,7 @@ function renderDialog(): void {
   initColumnVisibility({
     dialogId,
     columns,
-    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+    onUpdate: () => Dialog.update(dialogId, { width: "fit-content", position })
   });
 
   ensureEl("goodsEditorRefresh").addEventListener("click", goodsTable.refresh);
@@ -288,7 +282,7 @@ function renderGoodsPage(view: TableView<Good>) {
   });
 
   updateDisplayAllCheckbox();
-  updateDialog(dialogId, { width: "fit-content", position });
+  Dialog.update(dialogId, { width: "fit-content", position });
 }
 
 function openProducersDialog(goodId: number) {
@@ -301,10 +295,8 @@ function openProducersDialog(goodId: number) {
     .filter(({ units }) => units > 0)
     .sort((a, b) => b.units - a.units);
 
-  if (!producers.length) {
-    ensureEl("alertMessage").innerHTML =
-      `<i style="color:#888">${t("No burgs produced {{good}}.", { good: good.name })}</i>`;
-  } else {
+  let message = `<i style="color:#888">${t("No burgs produced {{good}}.", { good: good.name })}</i>`;
+  if (producers.length) {
     const header = /*html*/ `
           <div class="header" style="grid-template-columns: 1.6em 7em 4em;">
             <div></div>
@@ -321,25 +313,17 @@ function openProducersDialog(goodId: number) {
           </div>`
       )
       .join("");
-    ensureEl("alertMessage").innerHTML = header + rows;
-    ensureEl("alertMessage")
-      .querySelectorAll<HTMLElement>(".states")
-      .forEach(row => {
-        row.addEventListener("click", () => {
-          zoomTo(Number(row.dataset.x), Number(row.dataset.y), 8, 2000);
-        });
-      });
+    message = header + rows;
   }
 
-  $("#alert").dialog({
-    resizable: false,
+  const text = Dialog.message({
+    message,
     title: t("{{- good}} producers", { good: good.name }),
-    buttons: {
-      [t("Close")]: function () {
-        $(this).dialog("close");
-      }
-    }
+    buttons: [{ label: t("Close") }]
   });
+  for (const row of text.querySelectorAll<HTMLElement>(".states")) {
+    row.addEventListener("click", () => zoomTo(Number(row.dataset.x), Number(row.dataset.y), 8, 2000));
+  }
 }
 
 type StockSource = { name: string; type: "market" | "burg"; x: number; y: number; id: number; stock: number };
@@ -416,10 +400,8 @@ function openStockDialog(goodId: number) {
   const data = stockData[goodId];
   const sources = data?.sources ?? [];
 
-  if (!sources.length) {
-    ensureEl("alertMessage").innerHTML =
-      `<i style="color:#888">${t("No stock of {{good}} found in any market or burg inventory.", { good: good.name })}</i>`;
-  } else {
+  let message = `<i style="color:#888">${t("No stock of {{good}} found in any market or burg inventory.", { good: good.name })}</i>`;
+  if (sources.length) {
     const header = /*html*/ `
       <div class="header" style="grid-template-columns: 1.6em 7em 4em;">
         <div></div>
@@ -437,25 +419,17 @@ function openStockDialog(goodId: number) {
         </div>`
       )
       .join("");
-    ensureEl("alertMessage").innerHTML = header + rows;
-    ensureEl("alertMessage")
-      .querySelectorAll<HTMLElement>(".states")
-      .forEach(row => {
-        row.addEventListener("click", () => {
-          zoomTo(Number(row.dataset.x), Number(row.dataset.y), 8, 2000);
-        });
-      });
+    message = header + rows;
   }
 
-  $("#alert").dialog({
-    resizable: false,
+  const text = Dialog.message({
+    message,
     title: t("{{- good}} stock", { good: good.name }),
-    buttons: {
-      [t("Close")]: function () {
-        $(this).dialog("close");
-      }
-    }
+    buttons: [{ label: t("Close") }]
   });
+  for (const row of text.querySelectorAll<HTMLElement>(".states")) {
+    row.addEventListener("click", () => zoomTo(Number(row.dataset.x), Number(row.dataset.y), 8, 2000));
+  }
 }
 
 function getProduction() {
@@ -494,33 +468,31 @@ function openTagsVisibilityDialog() {
     ? tags.map(renderTag).join("")
     : `<div style="color:#666">${t("No tags available")}</div>`;
 
-  ensureEl("alertMessage").innerHTML = `
+  const text = Dialog.message({
+    message: `
     <div data-tip="${t("Only goods with at least one selected tag remain visible in the editor list")}" style="display: grid; grid-template-columns: 1fr 1fr 1fr; column-gap: 0.3em;">${tagsMarkup}</div>
-  `;
-
-  $("#alert").dialog({
-    resizable: false,
+  `,
     title: t("Filter goods by tags"),
-    buttons: {
-      [t("Cancel")]: function () {
-        $(this).dialog("close");
+    buttons: [
+      { label: t("Cancel") },
+      {
+        label: t("Clear filter"),
+        onClick: () => {
+          filterState.visibleTags = [];
+          dialogState.set(dialogId, "filters", filterState);
+          applyTagVisibilityFilter();
+        }
       },
-      [t("Clear filter")]: function () {
-        filterState.visibleTags = [];
-        dialogState.set(dialogId, "filters", filterState);
-        applyTagVisibilityFilter();
-        $(this).dialog("close");
-      },
-      [t("Apply")]: function () {
-        const checks = Array.from(
-          ensureEl("alertMessage").querySelectorAll<HTMLInputElement>("input[type=checkbox]:checked")
-        );
-        filterState.visibleTags = checks.map(check => check.value);
-        dialogState.set(dialogId, "filters", filterState);
-        applyTagVisibilityFilter();
-        $(this).dialog("close");
+      {
+        label: t("Apply"),
+        onClick: () => {
+          const checks = Array.from(text.querySelectorAll<HTMLInputElement>("input[type=checkbox]:checked"));
+          filterState.visibleTags = checks.map(check => check.value);
+          dialogState.set(dialogId, "filters", filterState);
+          applyTagVisibilityFilter();
+        }
       }
-    }
+    ]
   });
 }
 
@@ -531,7 +503,7 @@ function applyTagVisibilityFilter() {
 }
 
 function goodsRestoreDefaults() {
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Restore default goods"),
     message: `${t("Are you sure you want to restore default goods?")}<br>${t("This action cannot be reverted")}`,
     confirm: t("Restore"),
@@ -567,7 +539,7 @@ function enterResourceAssignMode(this: HTMLElement) {
   setModeHiddenColumns(dialogId, ["display", "unit", "produced", "stock", "price", "note", "edit", "remove"]);
   ensureEl("goodsFooter").style.display = "none";
 
-  updateDialog(dialogId, { position });
+  Dialog.update(dialogId, { position });
 
   tip(t("Select good line in editor, click on cells to remove or add a bonus resource"), true);
   select<SVGElement, unknown>("#viewbox").on("click", changeResourceOnCellClick);
@@ -707,7 +679,7 @@ function updateDisplayAllCheckbox() {
 }
 
 function requestGoodsRegeneration() {
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Regenerate bonus goods placement"),
     message: t(
       "Are you sure you want to regenerate bonus goods placement? Generation will be based on the current Goods settings and won't affect production or trade"
@@ -722,7 +694,7 @@ function requestGoodsRegeneration() {
 }
 
 function requestProductionRegeneration() {
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Regenerate Production"),
     message: t(
       "Are you sure you want to regenerate production and trade for all goods? Generation will be based on the current Goods settings and bonus goods placement"
@@ -752,13 +724,12 @@ function removeGood(good: Good) {
     goodsTable.refresh();
     Layers.draw("goods");
   };
-  confirmationDialog({ title: t("Remove"), message, confirm: t("Remove"), onConfirm });
+  Dialog.confirm({ title: t("Remove"), message, confirm: t("Remove"), onConfirm });
 }
 
 function closeGoodsEditor() {
   if (options.app.mode === "assignGoods") exitResourceAssignMode("close");
-  $("#goodsEditor").dialog("destroy");
-  ensureEl("goodsEditor").remove();
+  Dialog.destroy("goodsEditor");
 }
 
 export const GoodsEditor = { open, exportCsv: downloadGoodsData };

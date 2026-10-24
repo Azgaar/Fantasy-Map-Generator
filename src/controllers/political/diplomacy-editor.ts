@@ -6,7 +6,8 @@ import { States } from "@/model/political/states-generator";
 import { Layers } from "@/renderers/layers";
 import { removeRelationsMark, showRelations } from "@/renderers/overlays/diplomacy";
 import type { Point } from "@/types/global";
-import { destroyDialog, refreshEditors } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+import { refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { createBrushStroke } from "@/utils/brush-utils";
@@ -68,18 +69,17 @@ function open(state = 0, editorOptions?: EditorOptions): void {
         .on("start", startStroke)
     );
 
-  $(`#${dialogId}`).dialog({
+  Dialog.open(dialogId, {
     title: t("Diplomacy Editor"),
-    resizable: false,
     width: "fit-content",
     position: { my: "right top-27", at: "left-10 top", of: "#diplomacyOverview", collision: "fit" },
-    close: onDialogClose
+    onClose: onDialogClose
   });
   tip(t("Click or drag over states to set their relation. Shift + click to select another state"), true);
 }
 
 function close(): void {
-  if (findEl(dialogId)) $(`#${dialogId}`).dialog("close");
+  if (findEl(dialogId)) Dialog.close(dialogId);
 }
 
 function renderDialog(states: typeof pack.states): void {
@@ -254,7 +254,7 @@ function onDialogClose(): void {
   removeRelationsMark();
   Layers.draw("states");
   clearMainTip();
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
   if (changed) refreshEditors();
 
   const { onClose } = editorConfig;

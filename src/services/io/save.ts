@@ -12,7 +12,7 @@ import { LocalDB } from "@/services/local-db";
 import { mapHistory } from "@/services/map-history";
 import { savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
-import { closeDialogs } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
 import { tip } from "@/ui/tooltips";
 import { link, parseError } from "@/utils/common-utils";
 import { isElectron } from "@/utils/environment";
@@ -36,32 +36,29 @@ async function save(write: Writer): Promise<void> {
   if (options.app.mode)
     return tip(t("Map cannot be saved in EDIT mode, please complete the edit and retry"), false, "error");
   if (options.map.viewOnly) return tip(t("The map is in view-only mode and cannot be saved"), false, "warn");
-  closeDialogs("#alert");
+  Dialog.closeAll(undefined, { keepMessages: true }); // save may be asked from a message
 
   try {
     await write();
   } catch (error) {
     ERROR && console.error(error);
     const saveError = error instanceof Error ? error : new Error(String(error));
-    ensureEl("alertMessage").innerHTML = /* html */ `${t(
-      "An error occurred while saving the map. If the issue persists, please copy the message below and report it on {{- github}}.",
-      { github: link("https://github.com/Azgaar/Fantasy-Map-Generator/issues", "GitHub") }
-    )} <p id="errorBox">${parseError(saveError)}</p>`;
-
-    $("#alert").dialog({
-      resizable: false,
+    Dialog.message({
+      message: /* html */ `${t(
+        "An error occurred while saving the map. If the issue persists, please copy the message below and report it on {{- github}}.",
+        { github: link("https://github.com/Azgaar/Fantasy-Map-Generator/issues", "GitHub") }
+      )} <p id="errorBox">${parseError(saveError)}</p>`,
       title: t("Saving error"),
       width: "28em",
-      buttons: {
-        [t("Retry")]: function (this: HTMLElement) {
-          $(this).dialog("close");
-          save(write);
+      buttons: [
+        {
+          label: t("Retry"),
+          onClick: () => {
+            save(write);
+          }
         },
-        [t("Close")]: function (this: HTMLElement) {
-          $(this).dialog("close");
-        }
-      },
-      position: { my: "center", at: "center", of: "svg" }
+        { label: t("Close") }
+      ]
     });
   }
 }

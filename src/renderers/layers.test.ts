@@ -478,3 +478,23 @@ describe("subscribe", () => {
     expect(listener).toHaveBeenCalledTimes(2);
   });
 });
+
+describe("resetOrder", () => {
+  it("puts the layers back in registration order, keeping which ones are on", () => {
+    registry(
+      new Layer({ id: "a", element: "a-el", parent: "viewbox" }),
+      new Layer({ id: "b", element: "b-el", parent: "viewbox" }),
+      new Layer({ id: "c", element: "c-el", parent: "viewbox" })
+    );
+    Layers.show("b");
+    Layers.move("a");
+    expect(groupIds()).toEqual(["b-el", "c-el", "a-el"]);
+
+    const listener = vi.fn();
+    Layers.subscribe(listener);
+    Layers.resetOrder();
+    expect(groupIds()).toEqual(["a-el", "b-el", "c-el"]);
+    expect(Layers.state).toEqual({ order: ["a", "b", "c"], active: ["b"] });
+    expect(listener).toHaveBeenCalledOnce();
+  });
+});

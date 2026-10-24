@@ -6,7 +6,8 @@ import { Tags } from "@/model/tags";
 import { setMarkersFilter } from "@/renderers/draw-markers";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
-import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import { dialogState } from "@/ui/dialog/state";
 import {
@@ -73,22 +74,21 @@ const markersTable = initEditorTable<Marker>({ getData: getFilteredMarkers, onUp
 function open(): void {
   if (options.app.mode) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ search: "", state: "", culture: "", type: "" }));
-  closeDialogs(`#${dialogId}, .stable`);
+  Dialog.closeAll(`#${dialogId}, .stable`);
   Layers.show("markers");
 
   renderDialog();
   markersTable.reset();
 
-  $(`#${dialogId}`).dialog({
+  Dialog.open(dialogId, {
     title: t("Markers Overview"),
-    resizable: false,
-    close: closeMarkersOverview,
+    onClose: closeMarkersOverview,
     position
   });
 }
 
 function renderDialog(): void {
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
 
   const html = /* html */ `
     <div id="${dialogId}" class="dialog stable editorDialog">
@@ -132,7 +132,7 @@ function renderDialog(): void {
   initColumnVisibility({
     dialogId,
     columns,
-    onUpdate: () => updateDialog(dialogId, { position })
+    onUpdate: () => Dialog.update(dialogId, { position })
   });
 
   ensureEl("markersBody").addEventListener("click", handleLineClick);
@@ -212,8 +212,7 @@ function closeMarkersOverview(): void {
   applyDefaultViewboxEvents();
   clearMainTip();
 
-  $(`#${dialogId}`).dialog("destroy");
-  ensureEl(dialogId).remove();
+  Dialog.destroy(dialogId);
 }
 
 function regenerateMarkers(): void {
@@ -334,7 +333,7 @@ function renderMarkersPage(view: TableView<Marker>): void {
   ensureEl("markersFooterNumber").textContent = String(view.all.length);
   ensureEl("markersFooterTotal").textContent = String(pack.markers.length);
   renderEditorPagination(ensureEl("markersFooter"), view, markersTable.goto);
-  updateDialog(dialogId, { position });
+  Dialog.update(dialogId, { position });
 }
 
 function markerChangeTags(this: HTMLInputElement): void {
@@ -411,7 +410,7 @@ function toggleLockStatus(el: HTMLElement, i: number): void {
 }
 
 function triggerRemove(i: number): void {
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: sentences(t("Are you sure you want to remove this marker?"), t("This action cannot be reverted")),
     confirm: t("Remove"),
@@ -438,7 +437,7 @@ function removeMarker(i: number): void {
 }
 
 function triggerRemoveAll(): void {
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove all markers"),
     message: sentences(
       t("Are you sure you want to remove all non-locked markers?"),

@@ -46,7 +46,7 @@ test.describe("legend boxes", () => {
     await page.locator("#culturesLegend").click();
     await expect(page.locator("#legend > g[data-legend]")).toHaveCount(2);
 
-    await page.evaluate(() => (window as any).FMG.closeDialogs());
+    await page.evaluate(() => (window as any).FMG.Dialog.closeAll());
     // the item and title texts are siblings of the background rect and paint over it, so clicking
     // the rect's centre can land on a glyph and fail the hit-target check; the group owns them all
     await page.locator('#legend > g[data-legend="Cultures"]').click();

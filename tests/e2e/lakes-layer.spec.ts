@@ -23,12 +23,12 @@ test.describe("Lakes layer", () => {
     // Lakes should be visible by default
     await expect(lakes).toBeVisible();
 
-    // Click the toggle button to hide; wait for jQuery fadeOut to complete
-    await page.locator("#mapLayers > li[data-layer='lakes']").click();
+    // Click the toggle button to hide; wait for the fade-out to complete
+    await page.locator("#mapLayers > button[data-layer='lakes']").click();
     await expect(lakes).toBeHidden();
 
-    // Click again to show; wait for jQuery fadeIn to complete
-    await page.locator("#mapLayers > li[data-layer='lakes']").click();
+    // Click again to show; wait for the fade-in to complete
+    await page.locator("#mapLayers > button[data-layer='lakes']").click();
     await expect(lakes).toBeVisible();
   });
 
@@ -38,11 +38,11 @@ test.describe("Lakes layer", () => {
     // Lakes should be visible by default
     await expect(lakes).toBeVisible();
 
-    // Press Q to hide lakes; wait for jQuery fadeOut to complete
+    // Press Q to hide lakes; wait for the fade-out to complete
     await page.keyboard.press("q");
     await expect(lakes).toBeHidden();
 
-    // Press Q again to show lakes; wait for jQuery fadeIn to complete
+    // Press Q again to show lakes; wait for the fade-in to complete
     await page.keyboard.press("q");
     await expect(lakes).toBeVisible();
   });
@@ -52,7 +52,7 @@ test.describe("Lakes layer", () => {
   }) => {
     const [lakesIndex, heightmapIndex] = await page.evaluate(() => {
       const items = Array.from(
-        document.querySelectorAll("#mapLayers > li")
+        document.querySelectorAll("#mapLayers > button")
       ) as HTMLElement[];
       return [
         items.findIndex((li) => li.dataset.layer === "lakes"),

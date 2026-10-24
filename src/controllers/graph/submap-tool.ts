@@ -9,7 +9,8 @@ import { viewport } from "@/renderers/viewport/viewport";
 import { logStats } from "@/services/logging";
 import { registerMap } from "@/services/map-history";
 import { App } from "@/ui/app-commands";
-import { destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { applyGraphSize, fitMapToScreen, redrawMap } from "@/ui/map/canvas";
 import { resetZoom } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
@@ -22,26 +23,31 @@ function open(): void {
   renderDialog();
   addListeners();
 
-  $("#submapTool").dialog({
+  Dialog.open("submapTool", {
     title: t("Create Submap"),
-    resizable: false,
     width: "32em",
     position: { my: "center", at: "center", of: "svg" },
-    close: cleanup,
-    buttons: {
-      [t("Submap")]: function (this: HTMLElement) {
-        generateSubmap();
-        $(this).dialog("close");
+    onClose: cleanup,
+    buttons: [
+      {
+        label: t("Submap"),
+        onClick: () => {
+          generateSubmap();
+          Dialog.close("submapTool");
+        }
       },
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
+      {
+        label: t("Cancel"),
+        onClick: () => {
+          Dialog.close("submapTool");
+        }
       }
-    }
+    ]
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("submapTool");
+  Dialog.destroy("submapTool");
 
   const pointsValue = String(options.generation.graph.density);
   const cells = POINTS_BY_DENSITY[+pointsValue];
@@ -72,7 +78,7 @@ function addListeners(): void {
 }
 
 function cleanup(): void {
-  destroyDialog("submapTool");
+  Dialog.destroy("submapTool");
 }
 
 function handlePointsInput(e: Event): void {

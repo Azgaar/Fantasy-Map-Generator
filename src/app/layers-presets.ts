@@ -2,7 +2,7 @@
 
 import { LAYER_TOGGLES } from "@/data/layer-labels";
 import { type LayerId, Layers } from "@/renderers/layers";
-import { confirmationDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
 import { t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 
@@ -121,7 +121,7 @@ export function applyPreset(name: string): void {
 }
 
 export function savePreset(): void {
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Save Layers Preset"),
     message: /*html*/ `<label>${t("Preset name")}: <input id="layersPresetName" type="text" autocomplete="off" /></label>`,
     confirm: t("Save"),

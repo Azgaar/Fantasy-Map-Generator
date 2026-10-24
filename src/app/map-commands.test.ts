@@ -5,7 +5,6 @@ const mocks = vi.hoisted(() => ({
   draw: vi.fn(),
   refresh: vi.fn(),
   regenerate: vi.fn(),
-  dialog: vi.fn(),
   applyPreset: vi.fn(),
   save: vi.fn()
 }));
@@ -33,20 +32,16 @@ vi.mock("@/services/versioning", () => ({ cleanupData: vi.fn() }));
 
 import { Routes } from "@/model/economy/routes-generator";
 import { Rivers } from "@/model/physical/river-generator";
+import { DIALOGS_MARKUP, dialogButton } from "@/ui/dialog/dialog-testing";
 import { isLinkable, MAP_COMMANDS } from "./map-commands";
 
 beforeEach(() => {
-  document.body.innerHTML = '<div id="alert"><div id="alertMessage"></div></div>';
+  document.body.innerHTML = DIALOGS_MARKUP;
   sessionStorage.clear();
   vi.clearAllMocks();
   Object.assign(Rivers, { regenerate: mocks.regenerate });
   Object.assign(Routes, { sync: () => {} });
-  vi.stubGlobal("$", () => ({ dialog: mocks.dialog }));
 });
-
-function confirmation() {
-  return mocks.dialog.mock.calls[0][0] as { buttons: { Proceed: () => void; Cancel: () => void } };
-}
 
 it("offers overwriting the saved file in command search without another save button", () => {
   MAP_COMMANDS.find(command => command.id === "saveToMachine")!.run();
@@ -59,7 +54,7 @@ describe("shared regeneration commands", () => {
   it("waits for confirmation before changing the map and refreshing its views", () => {
     MAP_COMMANDS.find(command => command.id === "regenerateRivers")!.run();
     expect(mocks.regenerate).not.toHaveBeenCalled();
-    confirmation().buttons.Proceed.call(document.getElementById("alert"));
+    dialogButton("Proceed").click();
     expect(mocks.regenerate).toHaveBeenCalledOnce();
     expect(mocks.draw).toHaveBeenCalledWith("rivers");
     expect(mocks.refresh).toHaveBeenCalledOnce();
@@ -67,7 +62,7 @@ describe("shared regeneration commands", () => {
 
   it("leaves the map unchanged when regeneration is cancelled", () => {
     MAP_COMMANDS.find(command => command.id === "regenerateRivers")!.run();
-    confirmation().buttons.Cancel.call(document.getElementById("alert"));
+    dialogButton("Cancel").click();
     expect(mocks.regenerate).not.toHaveBeenCalled();
     expect(mocks.refresh).not.toHaveBeenCalled();
   });
@@ -76,7 +71,7 @@ describe("shared regeneration commands", () => {
     sessionStorage.setItem("regenerateFeatureDontAsk", "true");
     MAP_COMMANDS.find(command => command.id === "regenerateRivers")!.run();
     expect(mocks.regenerate).toHaveBeenCalledOnce();
-    expect(mocks.dialog).not.toHaveBeenCalled();
+    expect(document.querySelector(".message")).toBeNull();
   });
 
   it("offers every built-in layers preset as a command", () => {

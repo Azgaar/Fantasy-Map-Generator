@@ -7,7 +7,8 @@ import { viewport } from "@/renderers/viewport/viewport";
 import { fonts } from "@/services/fonts";
 import { Csv } from "@/services/io/csv";
 import { speak } from "@/services/speech";
-import { alertDialog, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { highlightElement } from "@/ui/map/highlight";
 import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
@@ -25,7 +26,7 @@ import {
 
 let quill: Quill | null = null;
 let lastSelection: { index: number; length: number } | null = null;
-let windowed: { width: number; height: number; top: string; left: string } | null = null;
+let fullscreen = false;
 
 /** Open the editor on the given entity, or on the first note when called with no reference */
 function open(ref?: EntityRef): void {
@@ -65,12 +66,13 @@ function open(ref?: EntityRef): void {
     window.dispatchEvent(new Event("notes:context-changed"));
   }
 
-  $("#notesEditor").dialog({
+  Dialog.open("notesEditor", {
     title: t("Notes Editor"),
     width: viewport.width * 0.8,
     height: viewport.height * 0.75,
     position: { my: "center", at: "center", of: "svg" },
-    close: closeNotesEditor
+    resizable: true,
+    onClose: closeNotesEditor
   });
 }
 
@@ -96,7 +98,7 @@ function fillSelect(select: HTMLSelectElement, entries: NoteEntry[], ref?: Entit
 
 const STYLES = /* html */ `
     <style>
-      /* jQuery UI sets the dialog content height inline; the layout column fills it, the editor takes the rest */
+      /* the dialog sets its content height inline; the layout column fills it, the editor takes the rest */
       #notesLayout { display: flex; flex-direction: column; height: 100%; width: auto; }
       #notesHead { display: flex; align-items: center; gap: 0.4em; flex-shrink: 0; margin-bottom: 5px; }
       #notesHead select { flex: 0 1 12em; min-width: 5em; }
@@ -160,9 +162,9 @@ const STYLES = /* html */ `
     </style>`;
 
 function renderDialog(): void {
-  destroyDialog("notesEditor");
+  Dialog.destroy("notesEditor");
   quill = null;
-  windowed = null;
+  fullscreen = false;
 
   const editorHtml = /* html */ `<div id="notesEditor" class="dialog stable">
     ${STYLES}
@@ -208,8 +210,7 @@ function renderDialog(): void {
 function closeNotesEditor(): void {
   quill = null;
   lastSelection = null;
-  $("#notesEditor").dialog("destroy");
-  ensureEl("notesEditor").remove();
+  Dialog.destroy("notesEditor");
   window.dispatchEvent(new Event("notes:context-changed"));
 }
 
@@ -269,29 +270,10 @@ function applyTableAction(this: HTMLSelectElement): void {
   this.dispatchEvent(new Event("change")); // Quill's picker only syncs its label from a change event
 }
 
-// the restored position is read off the widget: a position saved between sessions is applied as css and
-// never reaches the dialog's own position option, which still holds the hard-coded one from open()
 function toggleFullscreen(): void {
-  const dialog = $("#notesEditor");
-  const widget = dialog.dialog("widget");
-
-  if (windowed) {
-    dialog.dialog("option", "width", windowed.width);
-    dialog.dialog("option", "height", windowed.height);
-    widget.css({ top: windowed.top, left: windowed.left });
-    windowed = null;
-  } else {
-    windowed = {
-      width: dialog.dialog("option", "width"),
-      height: dialog.dialog("option", "height"),
-      top: widget.css("top"),
-      left: widget.css("left")
-    };
-    dialog.dialog("option", "width", window.innerWidth);
-    dialog.dialog("option", "height", window.innerHeight);
-    widget.css({ top: 0, left: 0 });
-  }
-  ensureEl("notesFullscreen").classList.toggle("pressed", Boolean(windowed));
+  fullscreen = !fullscreen;
+  Dialog.update("notesEditor", { fullscreen });
+  ensureEl("notesFullscreen").classList.toggle("pressed", fullscreen);
 }
 
 function updateLegend(): void {
@@ -318,7 +300,7 @@ function validateHighlightElement(): void {
   if (!ref) return;
 
   if (!MapEntities.get(ref)) {
-    confirmationDialog({
+    Dialog.confirm({
       title: t("Element not found"),
       message: sentences(t("Note element is not found"), t("Would you like to remove the note?")),
       confirm: t("Remove"),
@@ -346,7 +328,7 @@ function removeSelectedNote(): void {
 
   const [first] = Notes.list();
   if (!first) {
-    $("#notesEditor").dialog("close");
+    Dialog.close("notesEditor");
     return;
   }
 
@@ -371,11 +353,11 @@ function uploadLegends(text: string): void {
   try {
     rows = Csv.parse(text).filter(row => row.length >= 3 && row[0].trim() !== "type");
   } catch (error) {
-    alertDialog({ message: errorText(error) });
+    Dialog.message({ message: errorText(error) });
     return;
   }
   if (!rows.length) {
-    alertDialog({ message: sentences(t("Cannot load the file"), t("Please check the data format")) });
+    Dialog.message({ message: sentences(t("Cannot load the file"), t("Please check the data format")) });
     return;
   }
 
@@ -388,7 +370,7 @@ function uploadLegends(text: string): void {
   }
 
   if (!applied) {
-    alertDialog({ message: t("No note matched an element on this map. Nothing was loaded") });
+    Dialog.message({ message: t("No note matched an element on this map. Nothing was loaded") });
     return;
   }
 
@@ -402,7 +384,7 @@ function uploadLegends(text: string): void {
 }
 
 function triggerNotesRemove(): void {
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: t("Are you sure you want to remove the selected note? There is no way to undo this action"),
     confirm: t("Remove"),

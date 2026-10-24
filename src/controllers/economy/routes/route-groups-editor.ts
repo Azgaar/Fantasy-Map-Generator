@@ -3,8 +3,8 @@ import type { Route } from "@/model/economy/routes-generator";
 import { Routes } from "@/model/economy/routes-generator";
 import { Layers } from "@/renderers/layers";
 import { isGroupNameFree } from "@/renderers/style-groups";
-import { confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
-import { promptDialog } from "@/ui/dialog/prompt-dialog";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
 import { ensureEl, findEl } from "@/utils/node-utils";
@@ -18,16 +18,15 @@ function open(): void {
   renderDialog();
   addLines();
 
-  $("#routeGroupsEditor").dialog({
+  Dialog.open("routeGroupsEditor", {
     title: t("Edit route groups"),
-    resizable: false,
     position: { my: "left top", at: "left+10 top+140", of: "#map" },
-    close: closeRouteGroupsEditor
+    onClose: closeRouteGroupsEditor
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("routeGroupsEditor");
+  Dialog.destroy("routeGroupsEditor");
 
   const html = /* html */ `<div id="routeGroupsEditor" class="dialog">
     <div id="routeGroupsEditorBody" class="table" style="padding: 0.3em 0; width: 100%"></div>
@@ -43,7 +42,7 @@ function renderDialog(): void {
 }
 
 function closeRouteGroupsEditor(): void {
-  destroyDialog("routeGroupsEditor");
+  Dialog.destroy("routeGroupsEditor");
 }
 
 function onBodyClick(ev: Event): void {
@@ -71,7 +70,7 @@ function addLines(): void {
 }
 
 function addGroup(): void {
-  promptDialog(t("Group name"), { default: "route-group-new" }, v => {
+  Dialog.prompt(t("Group name"), { default: "route-group-new" }, v => {
     let group = v
       .toLowerCase()
       .replace(/ /g, "_")
@@ -102,7 +101,7 @@ function addGroup(): void {
 }
 
 function removeGroup(group: string): void {
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: `${t("Are you sure you want to remove the entire route group? All routes in this group will be removed.")}<br>${t("This action cannot be reverted")}`,
     confirm: t("Remove"),

@@ -8,7 +8,8 @@ import {
   updatePaintOverlay
 } from "@/renderers/overlays/paint-overlay";
 import type { Point } from "@/types/global";
-import { destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import type { FillBoxElement } from "@/ui/elements/fill-box";
 import { MapBrush } from "@/ui/map/map-brush";
 import { clearMainTip, tip } from "@/ui/tooltips";
@@ -69,7 +70,7 @@ let brush: MapBrush | null = null;
 function open(config: OpenPaintEditorOptions): void {
   if (options.app.mode) return;
 
-  $(`#${config.parentDialogId}`).dialog("close");
+  Dialog.close(config.parentDialogId);
   options.app.mode = "paint";
 
   brush = new MapBrush({
@@ -99,11 +100,10 @@ function open(config: OpenPaintEditorOptions): void {
     openPaintOverlay();
     addListeners();
 
-    $(ensureEl(dialogId)).dialog({
+    Dialog.open(dialogId, {
       title: config.title,
-      resizable: false,
       position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
-      close: cancel
+      onClose: cancel
     });
 
     tip(t("Click to select, drag to paint. Shift + drag resizes the brush, Space + drag pans the map"), true);
@@ -120,7 +120,7 @@ function sortItems(items: readonly PaintEditorItem[]): PaintEditorItem[] {
 }
 
 function renderDialog(options: OpenPaintEditorOptions, items: readonly PaintEditorItem[]): void {
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
 
   const selectedColor = items[0]?.color ?? "#ffffff";
 
@@ -336,7 +336,7 @@ function finish(shouldApply: boolean): void {
 
 function cleanup(): void {
   state = null;
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
   removePaintOverlay();
   brush?.detach();
   brush = null;

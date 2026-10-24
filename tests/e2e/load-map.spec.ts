@@ -84,7 +84,7 @@ test.describe("Map loading", () => {
     await context.clearCookies();
     // With no stored version the app raises its "updated to version ..." dialog 6 seconds after the
     // page loads (services/versioning.ts), which on a slow runner lands inside a test and trips the
-    // "no #alert is open" guards below. "99.99.99" rather than the real VERSION so this cannot drift:
+    // "no message is open" guards below. "99.99.99" rather than the real VERSION so this cannot drift:
     // the announcement fires only for a stored version older than the build's.
     await context.addInitScript(() => localStorage.setItem("version", "99.99.99"));
 
@@ -354,7 +354,7 @@ test.describe("Map loading", () => {
         notedMarkers: (window as any).pack.markers.filter((marker: any) => marker.note).length,
         notedRegiments: (window as any).pack.states.flatMap((state: any) => state.military || [])
           .filter((regiment: any) => regiment.note).length,
-        unattachedPrompt: document.getElementById("alert")?.offsetParent !== null
+        unattachedPrompt: document.querySelector(".message") !== null
       };
     });
 
@@ -386,7 +386,7 @@ test.describe("Map loading", () => {
     const migrated = await page.evaluate(() => ({
       notes: (window as any).pack.addedLabels.map((added: any) => added.note).filter(Boolean),
       // an id the rename map failed to translate would be reported as belonging to no element
-      unattachedPrompt: document.getElementById("alert")?.offsetParent !== null
+      unattachedPrompt: document.querySelector(".message") !== null
     }));
 
     expect(migrated.unattachedPrompt).toBe(false);

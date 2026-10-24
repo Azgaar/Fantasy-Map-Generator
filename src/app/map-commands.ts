@@ -36,8 +36,8 @@ import { Services } from "@/services";
 import { toggleSaveReminder } from "@/services/autosave";
 import { copyMapURL } from "@/services/url-params";
 import { confirmCleanupData } from "@/services/versioning";
-import { confirmationDialog, refreshEditors } from "@/ui/dialog/dialog-helpers";
-import { promptDialog } from "@/ui/dialog/prompt-dialog";
+import { Dialog } from "@/ui/dialog/dialog";
+import { refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { changeMapZoom, resetZoom } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { isCtrlClick } from "@/utils/common-utils";
@@ -811,7 +811,7 @@ function confirmRegeneration(action: () => void): void {
     if (findEl<HTMLInputElement>("regenerateDontAsk")?.checked)
       sessionStorage.setItem("regenerateFeatureDontAsk", "true");
   };
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Regenerate element"),
     message: /* html */ `${t("Regeneration will remove all the custom changes for the element.")}<br><br>${t("Are you sure you want to proceed?")}
       <div style="margin-top: 0.6em">
@@ -927,7 +927,7 @@ function regenerateZones(event?: MouseEvent): void {
     return;
   }
 
-  promptDialog(t("Please provide zones number multiplier"), { default: 1, step: 0.01, min: 0, max: 100 }, value =>
+  Dialog.prompt(t("Please provide zones number multiplier"), { default: 1, step: 0.01, min: 0, max: 100 }, value =>
     applyZonesRegeneration(value)
   );
 }

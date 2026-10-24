@@ -9,7 +9,8 @@ import { Tags } from "@/model/tags";
 import { drawRegiment } from "@/renderers/draw-military";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
-import { closeDialogs, destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import { dialogState } from "@/ui/dialog/state";
 import {
@@ -42,7 +43,7 @@ function open(state?: number): void {
   filterState = dialogState.get(dialogId, "filters", () => ({ stateId: -1, search: "" }));
   filterState.search ??= "";
   filterState.stateId ??= -1;
-  closeDialogs(".stable");
+  Dialog.closeAll(".stable");
   Layers.show("military");
 
   if (state !== undefined) filterState.stateId = state;
@@ -50,18 +51,17 @@ function open(state?: number): void {
   updateFilter();
   regimentsTable.reset();
 
-  $("#regimentsOverview").dialog({
+  Dialog.open("regimentsOverview", {
     title: t("Regiments Overview"),
-    resizable: false,
     width: "fit-content",
-    close: closeRegimentsOverview,
+    onClose: closeRegimentsOverview,
     position
   });
 }
 
 function renderDialog(): void {
   columns = getRegimentColumns();
-  destroyDialog("regimentsOverview");
+  Dialog.destroy("regimentsOverview");
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
       <div id="regimentsBody" class="table" data-type="absolute">
         ${renderEditorHeader({ dialogId, columns })}
@@ -96,7 +96,7 @@ function renderDialog(): void {
   initColumnVisibility({
     dialogId,
     columns,
-    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+    onUpdate: () => Dialog.update(dialogId, { width: "fit-content", position })
   });
 
   const body = ensureEl("regimentsBody");
@@ -139,8 +139,7 @@ function renderDialog(): void {
 
 function closeRegimentsOverview(): void {
   if (ensureEl("regimentsAddNew").classList.contains("pressed")) toggleAdd();
-  $("#regimentsOverview").dialog("destroy");
-  ensureEl("regimentsOverview").remove();
+  Dialog.destroy("regimentsOverview");
 }
 
 const unitColumnKey = (name: string) => `unit:${name}`;
@@ -280,7 +279,7 @@ function renderRegimentsPage(view: TableView<RegimentRow>): void {
   body.querySelectorAll<HTMLInputElement>(".regimentTags").forEach(el => {
     void el.addEventListener("change", regimentChangeTags);
   });
-  updateDialog(dialogId, { width: "fit-content", position });
+  Dialog.update(dialogId, { width: "fit-content", position });
 }
 
 function regimentChangeTags(this: HTMLInputElement): void {

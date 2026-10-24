@@ -35,6 +35,7 @@ export const Controllers = createRegistry(
     IceEditor: () => import("@/controllers/physical/ice-editor").then(m => m.IceEditor),
     JourneyEditor: () => import("@/controllers/story/journeys/journey-editor").then(m => m.JourneyEditor),
     JourneysOverview: () => import("@/controllers/story/journeys/journeys-overview").then(m => m.JourneysOverview),
+    LayersOrder: () => import("@/controllers/layers-order").then(m => m.LayersOrder),
     LabelsEditor: () => import("@/controllers/annotations/labels/labels-editor").then(m => m.LabelsEditor),
     LabelGroupsConfigurator: () =>
       import("@/controllers/annotations/labels/labels-group-editor").then(m => m.LabelGroupsConfigurator),

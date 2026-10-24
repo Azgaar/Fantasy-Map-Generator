@@ -3,6 +3,7 @@ import { showExportPane, showLoadPane, showSavePane } from "@/app/chrome/io-pane
 import { regeneratePrompt } from "@/app/lifecycle";
 import { Controllers } from "@/controllers";
 import { ARROW_TIP_KEY } from "@/services/versioning";
+import { makeDraggable } from "@/ui/draggable";
 import { resetZoom } from "@/ui/map/zoom";
 import { clearMainTip } from "@/ui/tooltips";
 import { changeViewMode } from "@/ui/view-mode-switch";
@@ -79,9 +80,8 @@ function onPanelInput(event: Event): void {
 }
 
 function initialize(): void {
-  $("#optionsContainer").draggable({ handle: ".drag-trigger", snap: "svg", snapMode: "both" });
-  $("#heightmapFinalize").draggable({ handle: "div" });
-  $("#mapLayers").disableSelection();
+  makeDraggable(ensureEl("optionsContainer"), ".drag-trigger");
+  makeDraggable(ensureEl("heightmapFinalize"), "div");
 
   if (localStorage.getItem(ARROW_TIP_KEY)) {
     clearMainTip();

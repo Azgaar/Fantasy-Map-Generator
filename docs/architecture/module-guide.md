@@ -161,22 +161,23 @@ The layer itself is declared in the registry in `renderers/layers.ts`, which cal
 ```ts
 // src/controllers/<domain>/module-editor.ts
 // thin: intent → state change/redraw
+import { Dialog } from "@/ui/dialog/dialog";
 import { ensureEl } from "@/utils/node-utils";
 
 let controllerState: unknown; // optional, for a panel that preserves some UI state across opens
 
 function open(id: number): void {
-  const dialog = render();
-  addListeners(dialog);
+  render();
+  addListeners();
 
-  dialog.open({ title: "Module Editor", onClose: cleanup });
+  Dialog.open("moduleEditor", { title: "Module Editor", onClose: cleanup });
 }
 
 function render(): void {
-  /* build innerHTML, set values from pack */
+  /* insert the dialog markup into #dialogs, set values from pack */
 }
 
-function addListeners(dialog): void {
+function addListeners(): void {
   /* wire event handlers to update pack, redraw, etc. */
 }
 

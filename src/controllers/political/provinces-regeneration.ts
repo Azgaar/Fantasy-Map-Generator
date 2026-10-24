@@ -2,7 +2,8 @@ import { Provinces } from "@/model/political/provinces-generator";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
 import { unfog } from "@/renderers/overlays/fogging";
-import { destroyDialog, refreshEditors } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+import { refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
@@ -11,23 +12,24 @@ const DIALOG_ID = "provincesRegeneration";
 
 function open(): void {
   if (options.app.mode) return;
-  destroyDialog(DIALOG_ID);
+  Dialog.destroy(DIALOG_ID);
   ensureEl("dialogs").insertAdjacentHTML("beforeend", `<div id="${DIALOG_ID}" class="dialog"></div>`);
   render();
 
-  $(`#${DIALOG_ID}`).dialog({
-    resizable: false,
+  Dialog.open(DIALOG_ID, {
     title: t("Regenerate Provinces"),
     width: "32em",
     maxHeight: 600,
     position: { my: "center", at: "center", of: "svg" },
-    buttons: {
-      [t("Regenerate")]: regenerate,
-      [t("Close")]: function () {
-        $(this).dialog("close");
+    buttons: [
+      { label: t("Regenerate"), onClick: regenerate },
+      {
+        label: t("Close"),
+        onClick: () => {
+          Dialog.close(DIALOG_ID);
+        }
       }
-    },
-    close: () => destroyDialog(DIALOG_ID)
+    ]
   });
 }
 
@@ -80,7 +82,7 @@ function regenerate(): void {
   unfog();
   Layers.draw("borders", "provinces", "labels", "emblems");
   refreshEditors();
-  $(`#${DIALOG_ID}`).dialog("close");
+  Dialog.close(DIALOG_ID);
 }
 
 export const ProvincesRegeneration = { open };

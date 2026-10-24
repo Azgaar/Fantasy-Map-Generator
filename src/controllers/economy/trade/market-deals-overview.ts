@@ -6,7 +6,8 @@ import type { Burg } from "@/model/political/burgs-generator";
 import { formatPrice } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
 import { Csv } from "@/services/io/csv";
-import { destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import { dialogState } from "@/ui/dialog/state";
 import {
@@ -90,15 +91,15 @@ function open(marketId: number): void {
   ensureEl<HTMLSelectElement>("marketDealsFilter").value = filterState.scope;
   marketDealsTable.reset();
 
-  $(`#${dialogId}`).dialog({
+  Dialog.open(dialogId, {
     title: t("{{- market}} Market Deals", { market: Markets.getName(market) }),
     position,
-    close: closeMarketDeals
+    onClose: closeMarketDeals
   });
 }
 
 function renderDialog(): void {
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
       <div>
         ${renderEditorHeader({ dialogId, columns })}
@@ -125,7 +126,7 @@ function renderDialog(): void {
   initColumnVisibility({
     dialogId,
     columns,
-    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+    onUpdate: () => Dialog.update(dialogId, { width: "fit-content", position })
   });
 
   ensureEl("marketDealsRefresh").addEventListener("click", marketDealsTable.refresh);
@@ -147,8 +148,7 @@ function renderDialog(): void {
 }
 
 function closeMarketDeals(): void {
-  $(`#${dialogId}`).dialog("destroy");
-  ensureEl(dialogId).remove();
+  Dialog.destroy(dialogId);
 }
 
 function getFilteredMarketDeals(): Deal[] {
@@ -176,7 +176,7 @@ function renderMarketDealsPage(view: TableView<Deal>): void {
   ensureEl("marketDealsFooterDeals").innerHTML = String(view.all.length);
   ensureEl("marketDealsFooterNet").innerHTML = formatPrice(netFlow);
   renderEditorPagination(ensureEl("marketDealsFooter"), view, marketDealsTable.goto);
-  updateDialog(dialogId, { width: "fit-content", position });
+  Dialog.update(dialogId, { width: "fit-content", position });
 }
 
 export function getMarketDeals(deals: readonly Deal[], marketId: number): Deal[] {

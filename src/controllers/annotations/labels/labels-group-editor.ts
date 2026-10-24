@@ -12,45 +12,57 @@ import { Options } from "@/model/options/options-model";
 import { getLabelsIndex } from "@/renderers/labels/label-data";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { Layers } from "@/renderers/layers";
-import { closeDialogs, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 
 function open(): void {
   if (options.app.mode) return;
-  closeDialogs(".stable");
+  Dialog.closeAll(".stable");
   renderDialog();
   addRows();
 
-  $("#labelGroupsConfigurator").dialog({
+  Dialog.open("labelGroupsConfigurator", {
     title: t("Configure Label Groups"),
-    resizable: false,
     maxHeight: Math.max(window.innerHeight - 40, 300),
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
-    close,
-    buttons: {
-      [t("Apply")]: () => {
-        ensureEl<HTMLFormElement>("labelGroupsForm").requestSubmit();
+    onClose: close,
+    buttons: [
+      {
+        label: t("Apply"),
+        onClick: () => {
+          ensureEl<HTMLFormElement>("labelGroupsForm").requestSubmit();
+        }
       },
-      [t("Add")]: () => {
-        const group: LabelGroup = { name: "", type: "state", zoom: { min: null, max: null } };
-        ensureEl("labelGroupsBody").insertAdjacentHTML("beforeend", createRow(group, true, 0));
+      {
+        label: t("Add"),
+        onClick: () => {
+          const group: LabelGroup = { name: "", type: "state", zoom: { min: null, max: null } };
+          ensureEl("labelGroupsBody").insertAdjacentHTML("beforeend", createRow(group, true, 0));
+        }
       },
-      [t("Restore")]: () => {
-        const defaults = Labels.getDefaultOptions();
-        ensureEl<HTMLInputElement>("labelsShowAll").checked = defaults.showAll;
-        addRows(defaults.groups);
+      {
+        label: t("Restore"),
+        onClick: () => {
+          const defaults = Labels.getDefaultOptions();
+          ensureEl<HTMLInputElement>("labelsShowAll").checked = defaults.showAll;
+          addRows(defaults.groups);
+        }
       },
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
+      {
+        label: t("Cancel"),
+        onClick: () => {
+          Dialog.close("labelGroupsConfigurator");
+        }
       }
-    }
+    ]
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("labelGroupsConfigurator");
+  Dialog.destroy("labelGroupsConfigurator");
   const html = /* html */ `<div id="labelGroupsConfigurator" class="dialog stable">
     <form id="labelGroupsForm">
       <table class="table" style="white-space:nowrap; overflow-x:auto; max-width:100%">
@@ -229,7 +241,7 @@ function removeRow(row: HTMLTableRowElement): void {
     return;
   }
 
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: t("Remove the group? This won't affect labels unless the changes are applied."),
     confirm: t("Remove"),
@@ -310,7 +322,7 @@ function submitForm(event: Event): void {
   for (const group of options.map.labels.groups) styles.labels.groups[group.name] ??= getGroupStyle(group);
 
   Layers.draw("labels");
-  $("#labelGroupsConfigurator").dialog("close");
+  Dialog.close("labelGroupsConfigurator");
 }
 
 function rowToGroup(row: HTMLTableRowElement): LabelGroup {
@@ -334,7 +346,7 @@ function rowToGroup(row: HTMLTableRowElement): LabelGroup {
 }
 
 function close(): void {
-  destroyDialog("labelGroupsConfigurator");
+  Dialog.destroy("labelGroupsConfigurator");
 }
 
 export const LabelGroupsConfigurator = { open };

@@ -9,14 +9,14 @@ import "@/model/physical/heightmap-generator";
 import { Grid } from "@/model/graph/grid-generator";
 import { Options } from "@/model/options/options-model";
 import { HeightmapGenerator } from "@/model/physical/heightmap-generator";
+import { dialogButton } from "@/ui/dialog/dialog-testing";
 
 const { regenerate } = vi.hoisted(() => ({ regenerate: vi.fn() }));
 vi.mock("@/ui/app-commands", () => ({ App: { syncOptionInputs: vi.fn(), regeneratePrompt: regenerate } }));
-vi.mock("@/ui/dialog/dialog-helpers", () => ({
-  closeDialogs: vi.fn(),
-  confirmationDialog: vi.fn(),
-  destroyDialog: vi.fn()
-}));
+vi.mock("@/ui/dialog/dialog", async importOriginal => {
+  const { Dialog } = await importOriginal<typeof import("@/ui/dialog/dialog")>();
+  return { Dialog: Object.assign(Dialog, { confirm: vi.fn() }) };
+});
 vi.mock("@/app/chrome/tabs/options-tab", () => ({ syncOptionInputs: vi.fn() }));
 vi.mock("@/app/shell", () => ({ initShell: vi.fn(), warnIfServerless: vi.fn() }));
 vi.mock("@/ui/map/zoom", () => ({ invokeActiveZooming: vi.fn(), resetZoom: vi.fn() }));
@@ -32,7 +32,6 @@ vi.mock("@/renderers/heightmap/draw-heightmap", () => ({
   drawHeights: vi.fn(() => "data:image/png;base64,")
 }));
 
-const dialog = vi.fn();
 let selection: typeof import("./heightmap-selection");
 
 beforeAll(async () => {
@@ -42,7 +41,6 @@ beforeAll(async () => {
   options.map.graph = { width: 800, height: 600, points: 1000, sampling: "square", jitter: 0.9 };
   options.generation.graph = { width: 800, height: 600, density: 1, sampling: "square", jitter: 0.9 };
   globalThis.grid = Grid.generate("old");
-  vi.stubGlobal("$", () => ({ dialog }));
   vi.spyOn(GenerationPipeline, "run").mockImplementation(async ({ graph }) => {
     Grid.prepare(graph);
     await HeightmapGenerator.generate();
@@ -72,8 +70,7 @@ it.each([
   expect(options.map).toEqual(original);
 
   const previewHeights = Array.from(vi.mocked(drawHeights).mock.calls.at(-1)![0].heights);
-  const settings = dialog.mock.calls.at(-1)![0];
-  settings.buttons["New Map"].call(document.getElementById("heightmapSelection"));
+  dialogButton("New Map", "heightmapSelection").click();
   const config = regenerate.mock.calls.at(-1)![0];
   expect(config).toMatchObject({ width: requested.width, height: requested.height, points: requested.points });
 

@@ -13,7 +13,8 @@ import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-sch
 import { Layers } from "@/renderers/layers";
 import { IconsArchive } from "@/services/io/icons-archive";
 import { CUSTOM_PREFIX, LEGACY_PREFIX, StylePresetsService } from "@/services/style-presets";
-import { alertDialog, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { invokeActiveZooming } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { openURL } from "@/utils/common-utils";
@@ -102,7 +103,7 @@ const CONFIRMED_KEY = "fmg-style-change-confirmed"; // session-scoped: ask once 
 function requestChange(name: string): void {
   if (sessionStorage.getItem(CONFIRMED_KEY)) return void change(name);
 
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Change style preset"),
     message: t("Are you sure you want to change the style preset? All unsaved style changes will be lost"),
     confirm: t("Change"),
@@ -129,7 +130,7 @@ function applyWithUiRefresh(preset: unknown): void {
 }
 
 function openSaver(): void {
-  destroyDialog("styleSaver");
+  Dialog.destroy("styleSaver");
   const dialog = document.createElement("div");
   dialog.id = "styleSaver";
   dialog.className = "dialog stable textual";
@@ -194,7 +195,7 @@ function openSaver(): void {
     StylePresetsService.removeCustom(LEGACY_PREFIX + desiredName); // the saved preset replaces a legacy one
     applyWithUiRefresh(JSON.parse(json));
     tip(t("Style preset is saved and applied"), false, "success", 4000);
-    $(dialog).dialog("close");
+    Dialog.close("styleSaver");
   };
 
   const download = () => {
@@ -228,11 +229,10 @@ function openSaver(): void {
   );
   fileInput.addEventListener("change", upload);
 
-  $(dialog).dialog({
+  Dialog.open("styleSaver", {
     title: t("Style Saver"),
     width: "26em",
-    position: { my: "center", at: "center", of: "svg" },
-    close: () => destroyDialog("styleSaver")
+    position: { my: "center", at: "center", of: "svg" }
   });
 }
 
@@ -249,9 +249,9 @@ function offerCustomIcons(json: string, name: string): void {
       t("Custom icons used by the style: {{icons}}", { icons: ids.size }),
       t("Custom icons are stored in the map, not in the style, so they must be re-uploaded on the target map")
     ) + absent;
-  if (!icons.length) return void alertDialog({ title: t("Custom icons"), message });
+  if (!icons.length) return void Dialog.message({ title: t("Custom icons"), message });
 
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Custom icons"),
     message: `${message}<br><br>${t("Download the icons as a zip? Import it on the target map via the icon picker: Custom → Import zip")}`,
     confirm: t("Download icons"),
@@ -270,7 +270,7 @@ function offerCustomIcons(json: string, name: string): void {
 function remove(name: string): void {
   if (StylePresetsService.isSystem(name)) return void tip(t("Cannot remove system preset"), false, "error");
 
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: t("Are you sure you want to remove the “{{preset}}” preset? This action cannot be undone.", {
       preset: StylePresetsService.displayName(name)

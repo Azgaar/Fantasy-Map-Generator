@@ -23,7 +23,7 @@ reasoning are in [the PRD](../prd/translation.md); this page is the contributor'
   (`t("Remove burgs ({{burgs}})")`), which reads right for any number in any language. A `count`
   option picks a plural form; use it only when no such wording works.
 - `{{name}}` is HTML-escaped; `{{- name}}` is for markup built in code (a link, `<code>`) or a value
-  going to a sink that escapes on its own (a jQuery UI dialog `title`, `textContent`).
+  going to a sink that escapes on its own (a dialog `title`, `textContent`).
 - The same English with two meanings gets a context: `t("Close", { context: "button" })`.
 - A label placed into one sentence may be translated in the form that sentence needs (a case, an
   article). Give a label used in several places a separate key for each grammatical role.

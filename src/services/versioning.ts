@@ -18,12 +18,12 @@
 import { Options } from "@/model/options/options-model";
 import { Pins } from "@/model/options/pins";
 import { Services } from "@/services";
-import { confirmationDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
 import { dialogState } from "@/ui/dialog/state";
 import { tip } from "@/ui/tooltips";
 import { isElectron } from "@/utils/environment";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/node-utils";
+import { findEl } from "@/utils/node-utils";
 
 export const VERSION = "1.156.0";
 
@@ -109,7 +109,7 @@ export async function clearCache(): Promise<void> {
 
 /** cleanupData once the user agrees: it wipes every option and reloads the page */
 export function confirmCleanupData(): void {
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Reset Options"),
     message: sentences(
       t("All options return to their defaults and the page reloads"),
@@ -141,13 +141,14 @@ function showUpdateWindow(storedVersion: string | null): void {
   const discord = "https://discordapp.com/invite/X7E84HU";
   const patreon = "https://www.patreon.com/azgaar";
 
-  ensureEl("alertMessage").innerHTML = /* html */ `${t(
-    "The Fantasy Map Generator is updated up to version {{version}}. This version is compatible with {{- previous}}, loaded save files will be auto-updated.",
-    {
-      version: VERSION,
-      previous: `<a href="${changelog}" target="_blank" style="white-space: nowrap">${t("previous versions")}</a>`
-    }
-  )}
+  Dialog.message({
+    message: /* html */ `${t(
+      "The Fantasy Map Generator is updated up to version {{version}}. This version is compatible with {{- previous}}, loaded save files will be auto-updated.",
+      {
+        version: VERSION,
+        previous: `<a href="${changelog}" target="_blank" style="white-space: nowrap">${t("previous versions")}</a>`
+      }
+    )}
     ${storedVersion ? `<span>${t("In case of errors reload the page to update the code.")}</span>` : ""}
 
     <ul>
@@ -166,23 +167,24 @@ function showUpdateWindow(storedVersion: string | null): void {
         reddit: `<a href="${reddit}" target="_blank">${t("Reddit community")}</a>`
       }
     )}</p>
-    <span><i>${t("Thanks for all supporters on {{- patreon}}!", { patreon: `<a href="${patreon}" target="_blank">Patreon</a>` })}</i></span>`;
-  findEl("updateAppOffer")?.addEventListener("click", event => {
-    event.preventDefault();
-    Services.AppOffer.open();
-  });
-
-  $("#alert").dialog({
-    resizable: false,
+    <span><i>${t("Thanks for all supporters on {{- patreon}}!", { patreon: `<a href="${patreon}" target="_blank">Patreon</a>` })}</i></span>`,
     title: t("Fantasy Map Generator update"),
     width: "28em",
     position: { my: "center center-4em", at: "center", of: "svg" },
-    buttons: {
-      [t("Clear cache")]: () => clearCache(),
-      [t("Don't show again")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+    buttons: [
+      {
+        label: t("Clear cache"),
+        onClick: () => {
+          clearCache();
+          return false;
+        }
+      },
+      { label: t("Don't show again") }
+    ]
+  });
+  findEl("updateAppOffer")?.addEventListener("click", event => {
+    event.preventDefault();
+    Services.AppOffer.open();
   });
 }
 

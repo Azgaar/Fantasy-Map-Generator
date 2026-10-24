@@ -17,10 +17,7 @@ async function openIconPicker(page: Page): Promise<void> {
 }
 
 async function closeIconPicker(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    const iconPicker = document.getElementById("iconPicker");
-    if (iconPicker) (window as any).$(iconPicker).dialog("close");
-  });
+  await page.locator(".dialog-window:has(#iconPicker) .dialog-titlebar-close").click();
   await page.waitForFunction(() => !document.getElementById("iconPicker"), { timeout: 5000 });
 }
 

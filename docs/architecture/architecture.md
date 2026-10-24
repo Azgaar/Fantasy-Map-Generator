@@ -294,7 +294,7 @@ state**._ A controller does **not** hold pure static data, services, or serializ
 
 `src/ui/` holds UI that is **not owned by one editor** and that several callers share rather than copy:
 
-- `ui/dialog/` — dialog helpers, editor tables, sorting, line highlighting, the per-browser dialog state
+- `ui/dialog/` — the `Dialog` window, dialog helpers, editor tables, sorting, line highlighting, the per-browser dialog state
 - `ui/elements/` — reusable custom elements with no map knowledge (`fill-box`, `slider-input`)
 - `ui/tooltips.ts` — the tip line
 - `ui/map/` — interaction with the map canvas: pan and zoom, the default map events (`viewbox-events`),
@@ -337,9 +337,8 @@ into the graph (e.g. d3 v7 via `import { select } from "d3"`). There is **no ven
 `libs/` under `src/`**.
 
 A library loaded by a `<script>` tag as a runtime global is the exception that is being removed.
-`public/libs/` holds only two: jQuery with jQuery UI and Touch Punch, which run the dialogs, and
-three.js r140 with its add-ons for the 3D view. The dialogs move to a native primitive in
-`ui/dialog/`, the 3D view to the npm `three`; neither is extended in the meantime. A library of a
+`public/libs/` holds only three.js r140 with its add-ons for the 3D view, which moves to the npm
+`three` and is not extended in the meantime. A library of a
 few dozen lines is kept in `utils/` as typed source (`flat-queue.ts`, `simplify.ts`) rather than added
 as a dependency.
 
@@ -708,9 +707,9 @@ generation, load, transform and heightmap edit. Almost every leak is one of a fe
   (a running flag) with a single cancellation point; teardown resets the flag, cancels the handle
   and releases what the loop touched. Async work that can resolve after teardown checks an
   `active` flag before touching the scene.
-- **Destroy dialogs, don't remove them.** Close a jQuery-UI dialog with `destroyDialog(id)` /
-  `.dialog("destroy")` so the widget, its `.ui-dialog` wrapper and the detached subtree go
-  together; a raw `element.remove()` on live dialog content orphans the wrapper.
+- **Close dialogs, don't remove them.** `Dialog.close(id)` runs the dialog's `onClose` and removes
+  its window with the content; `Dialog.destroy(id)` drops one silently before it is rendered anew.
+  Markup built once and reused is opened `persistent`, so closing only hides it.
 - **One listener per element, owned by the module.** Bind with property assignment, `.on(...)` or
   an `AbortController` — never `addEventListener` on a page-lifetime element from code that runs
   per open. Create transient inputs in the module that uses them (`createFileInput`) instead of
@@ -851,19 +850,16 @@ what the user is looking at now — not everything they have opened this session
    globals. They become the single `map` object of [future-data-model.md](./future-data-model.md), and
    the `.map` file becomes that object as JSON instead of today's line-based format. Rendering no
    longer depends on the file's SVG part, so the format can change on its own schedule.
-2. **Native dialogs.** jQuery, jQuery UI and Touch Punch still run every dialog (about 350
-   `$(…).dialog` calls in 90 files). A small dialog primitive in `ui/dialog/` replaces them, controller
-   by controller, and retires the three vendored scripts.
-3. **three.js from npm.** The 3D view and the erosion bake load vendored three.js r140 and its add-ons
+2. **three.js from npm.** The 3D view and the erosion bake load vendored three.js r140 and its add-ons
    (`OrbitControls`, `MapControls`, `OBJExporter`, loop subdivision) as globals. Moving to the npm
    `three` needs the lights and colors retuned: r155 changed light intensities and color management.
-4. **Model code that touches the DOM.** The style store writes attributes to the map's SVG, the icon
-   library mounts `#icons-library`, the cultures generator fills the alert dialog, a route measurement
+3. **Model code that touches the DOM.** The style store writes attributes to the map's SVG, the icon
+   library mounts `#icons-library`, the cultures generator opens a message dialog, a route measurement
    builds a path element and the heightmap image import draws to a canvas. Each moves to the renderer
    or controller that owns it.
-5. **Logging flags.** `TIME`, `INFO`, `WARN`, `ERROR` and `DEBUG` are ambient globals. They become one
+4. **Logging flags.** `TIME`, `INFO`, `WARN`, `ERROR` and `DEBUG` are ambient globals. They become one
    exported `log` object, which `window.FMG` exposes for switching from the console.
-6. **No `any`.** About 260 remain and Biome's `noExplicitAny` is off. They go module by module as each
+5. **No `any`.** About 260 remain and Biome's `noExplicitAny` is off. They go module by module as each
    one is touched, then the rule is turned on.
-7. **The Dropbox sign-in page.** `public/dropbox.html` loads the Dropbox SDK from a CDN. It can become
+6. **The Dropbox sign-in page.** `public/dropbox.html` loads the Dropbox SDK from a CDN. It can become
    a page of the Vite build that uses the npm `dropbox` package the app already bundles.

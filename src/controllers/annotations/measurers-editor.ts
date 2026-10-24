@@ -5,7 +5,8 @@ import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
 import { Layers } from "@/renderers/layers";
 import { viewport } from "@/renderers/viewport/viewport";
-import { closeDialogs, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { highlightElement } from "@/ui/map/highlight";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { zoomTo } from "@/ui/map/zoom";
@@ -27,23 +28,22 @@ function measurerDrag<E extends Element>() {
 function open(): void {
   if (options.app.mode) return;
 
-  closeDialogs("#measurersEditor, .stable");
+  Dialog.closeAll("#measurersEditor, .stable");
   Layers.show("rulers");
 
   renderDialog();
   select("#ruler").classed("editable", true); // interactive cursor while the editor is open
   redraw();
 
-  $("#measurersEditor").dialog({
+  Dialog.open("measurersEditor", {
     title: t("Measurers Editor"),
-    resizable: false,
     position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
-    close: onClose
+    onClose: onClose
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("measurersEditor");
+  Dialog.destroy("measurersEditor");
 
   const html = /* html */ `<div id="measurersEditor" class="dialog">
     <div id="measurersBody" class="table" style="margin-bottom: 0.3em"></div>
@@ -71,7 +71,7 @@ function onClose(): void {
   if (ensureEl("measurersBottom").querySelector(".pressed")) exitDrawingMode();
   select("#ruler").classed("editable", false);
   Layers.draw("rulers");
-  destroyDialog("measurersEditor");
+  Dialog.destroy("measurersEditor");
 }
 
 // every data change goes through a full redraw
@@ -116,7 +116,7 @@ function onListClick(event: Event): void {
 
 function removeAllMeasurers(): void {
   if (!pack.measurers.length) return;
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove all measurers"),
     message: `${t("Are you sure you want to remove all placed measurers?")}<br>${t("If you just want to hide them, toggle the Rulers layer off in Menu")}`,
     confirm: t("Remove"),

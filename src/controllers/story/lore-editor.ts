@@ -6,7 +6,8 @@ import { Options } from "@/model/options/options-model";
 import { Pins } from "@/model/options/pins";
 import { Names } from "@/model/society/names-generator";
 import { Lore } from "@/model/story/lore";
-import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { bindPinIcons } from "@/ui/pin-icons";
 import { t } from "@/utils/i18n";
 import { ensureEl, findEl } from "@/utils/node-utils";
@@ -69,20 +70,19 @@ const TEMPLATE = /* html */ `
 `;
 
 function open(): void {
-  closeDialogs("#loreEditor, .stable");
+  Dialog.closeAll("#loreEditor, .stable");
   renderDialog();
 
-  $(`#${DIALOG_ID}`).dialog({
+  Dialog.open(DIALOG_ID, {
     title: t("Setup Lore"),
     width: "auto",
     minWidth: 340,
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
-    close: () => destroyDialog(DIALOG_ID)
+    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
   });
 }
 
 function renderDialog(): void {
-  destroyDialog(DIALOG_ID);
+  Dialog.destroy(DIALOG_ID);
   ensureEl("dialogs").insertAdjacentHTML(
     "beforeend",
     /* html */ `<div id="${DIALOG_ID}" class="dialog stable">${TEMPLATE}</div>`

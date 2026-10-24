@@ -8,7 +8,8 @@ import { drawRegiment } from "@/renderers/draw-military";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
 import type { MilitaryUnit } from "@/types/military";
-import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { type LimitationItem, limitationTip, pickLimitation } from "@/ui/dialog/limitation-picker";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
@@ -46,24 +47,23 @@ const militaryTable = initEditorTable<MilitaryRow>({
 
 function open(): void {
   if (options.app.mode) return;
-  closeDialogs("#militaryOverview, .stable");
+  Dialog.closeAll("#militaryOverview, .stable");
   Layers.show("states", "borders", "military");
 
   renderDialog();
   militaryTable.reset();
 
-  $("#militaryOverview").dialog({
+  Dialog.open("militaryOverview", {
     title: t("Military Overview"),
-    resizable: false,
     width: "fit-content",
-    close: closeMilitaryOverview,
+    onClose: closeMilitaryOverview,
     position
   });
 }
 
 function renderDialog(): void {
   columns = getMilitaryColumns();
-  destroyDialog("militaryOverview");
+  Dialog.destroy("militaryOverview");
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
       <div id="militaryBody" class="table" data-type="absolute">
         ${renderEditorHeader({ dialogId, columns })}
@@ -139,8 +139,7 @@ function renderDialog(): void {
 }
 
 function closeMilitaryOverview(): void {
-  $("#militaryOverview").dialog("destroy");
-  ensureEl("militaryOverview").remove();
+  Dialog.destroy("militaryOverview");
 }
 
 async function openRegimentsOverview(state: number): Promise<void> {
@@ -208,7 +207,7 @@ function bindMilitaryColumns(): void {
   initColumnVisibility({
     dialogId,
     columns,
-    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+    onUpdate: () => Dialog.update(dialogId, { width: "fit-content", position })
   });
 }
 
@@ -296,7 +295,7 @@ function renderMilitaryPage(view: TableView<MilitaryRow>): void {
     line.addEventListener("mouseenter", stateHighlightOn);
     line.addEventListener("mouseleave", stateHighlightOff);
   });
-  updateDialog(dialogId, { width: "fit-content", position });
+  Dialog.update(dialogId, { width: "fit-content", position });
 }
 
 function changeAlert(state: number, alert: number): void {
@@ -379,41 +378,39 @@ function militaryCustomize(): void {
   removeUnitLines();
   options.map.military.units.map(unit => addUnitLine(unit));
 
-  $("#militaryOptions").dialog({
+  Dialog.open("militaryOptions", {
     title: t("Edit Military Units"),
-    resizable: false,
     width: "fit-content",
     position: { my: "center", at: "center", of: "svg" },
-    close: closeMilitaryOptions,
-    buttons: {
-      [t("Apply")]: applyMilitaryOptions,
-      [t("Add")]: () =>
-        addUnitLine({
-          icon: Icons.glyph("🛡️"),
-          name: `custom${ensureEl<HTMLTableElement>("militaryOptionsTable").rows.length}`,
-          rural: 0.2,
-          urban: 0.5,
-          crew: 1,
-          power: 1,
-          type: "melee",
-          separate: 0
-        }),
-      [t("Restore")]: restoreDefaultUnits,
-      [t("Cancel")]: function () {
-        $(this).dialog("close");
+    onClose: closeMilitaryOptions,
+    buttons: [
+      {
+        label: t("Apply"),
+        onClick: applyMilitaryOptions,
+        tip: `${t("Apply military units settings.")} <span style="color:#cb5858">${t("All forces will be recalculated!")}</span>`
+      },
+      {
+        label: t("Add"),
+        tip: t("Add"),
+        onClick: () =>
+          addUnitLine({
+            icon: Icons.glyph("🛡️"),
+            name: `custom${ensureEl<HTMLTableElement>("militaryOptionsTable").rows.length}`,
+            rural: 0.2,
+            urban: 0.5,
+            crew: 1,
+            power: 1,
+            type: "melee",
+            separate: 0
+          })
+      },
+      { label: t("Restore"), onClick: restoreDefaultUnits, tip: t("Restore default military units and settings") },
+      {
+        label: t("Cancel"),
+        tip: t("Close the window without saving the changes"),
+        onClick: () => Dialog.close("militaryOptions")
       }
-    },
-    open: function () {
-      const buttons = $(this).dialog("widget").find(".ui-dialog-buttonset > button");
-      buttons[0].addEventListener("mousemove", () =>
-        tip(
-          `${t("Apply military units settings.")} <span style="color:#cb5858">${t("All forces will be recalculated!")}</span>`
-        )
-      );
-      buttons[1].addEventListener("mousemove", () => tip(t("Add")));
-      buttons[2].addEventListener("mousemove", () => tip(t("Restore default military units and settings")));
-      buttons[3].addEventListener("mousemove", () => tip(t("Close the window without saving the changes")));
-    }
+    ]
   });
 
   // renderOptions() rebuilds the dialog markup on every open, so the listener is bound to the fresh
@@ -539,7 +536,7 @@ function militaryCustomize(): void {
       return;
     }
 
-    $("#militaryOptions").dialog("close");
+    Dialog.close("militaryOptions");
 
     const units = unitLines.map((r, i) => {
       const elements = Array.from(
@@ -588,7 +585,7 @@ function militaryCustomize(): void {
     Options.save(); // the roster is this map's, and what the next map starts from
     rebuildMilitaryColumns();
 
-    confirmationDialog({
+    Dialog.confirm({
       title: t("Recalculate military"),
       message: `${t("Units are saved. Recalculate military forces for all states?")}<br>${t("Regiments for all states will be regenerated, so manual changes to them will be lost")}`,
       confirm: t("Recalculate"),
@@ -603,7 +600,7 @@ function militaryCustomize(): void {
 }
 
 function renderOptions(): void {
-  destroyDialog("militaryOptions");
+  Dialog.destroy("militaryOptions");
   const optionsHtml = /* html */ `<div id="militaryOptions" class="dialog stable">
       <div class="table">
         <table id="militaryOptionsTable">
@@ -633,12 +630,11 @@ function renderOptions(): void {
 }
 
 function closeMilitaryOptions(): void {
-  $("#militaryOptions").dialog("destroy");
-  ensureEl("militaryOptions").remove();
+  Dialog.destroy("militaryOptions");
 }
 
 function militaryRecalculate(): void {
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Recalculate military"),
     message: `${t("Are you sure you want to recalculate military forces for all states?")}<br>${t("Regiments for all states will be regenerated")}`,
     confirm: t("Recalculate"),

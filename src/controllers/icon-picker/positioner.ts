@@ -1,7 +1,8 @@
 // The icon picker's positioner: zoom and pan a custom icon's picture inside its frame
 
 import { CustomIcons, Icons } from "@/model/icons";
-import { destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
 import { ensureEl, findEl } from "@/utils/node-utils";
@@ -32,7 +33,7 @@ type Frame = { x: number; y: number; side: number };
 /** Cancel the positioner, or only the one positioning icon `id`: its frame is stale once the picture changes */
 export function closePositioner(id?: string): void {
   const dialog = findEl(DIALOG);
-  if (dialog && (!id || dialog.dataset.icon === id)) $(dialog).dialog("close");
+  if (dialog && (!id || dialog.dataset.icon === id)) Dialog.close(DIALOG);
 }
 
 export function openPositioner(id: string): void {
@@ -138,24 +139,30 @@ export function openPositioner(id: string): void {
   });
 
   let applied = false;
-  $(dialog).dialog({
+  Dialog.open(DIALOG, {
     title: t("Position icon"),
     width: "20em",
     position: { my: "center", at: "center", of: "svg" },
-    close: () => {
+    onClose: () => {
       if (!applied) setSymbolFrame(original);
-      destroyDialog(DIALOG);
+      Dialog.destroy(DIALOG);
     },
-    buttons: {
-      [t("Apply")]: function (this: HTMLElement) {
-        applied = true;
-        CustomIcons.update(id, { viewBox: toViewBox(frame) });
-        $(this).dialog("close");
+    buttons: [
+      {
+        label: t("Apply"),
+        onClick: () => {
+          applied = true;
+          CustomIcons.update(id, { viewBox: toViewBox(frame) });
+          Dialog.close(DIALOG);
+        }
       },
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
+      {
+        label: t("Cancel"),
+        onClick: () => {
+          Dialog.close(DIALOG);
+        }
       }
-    }
+    ]
   });
 }
 

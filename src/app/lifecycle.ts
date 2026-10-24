@@ -23,21 +23,20 @@ import { registerServiceWorker } from "@/services/platform";
 import { checkLoadParameters } from "@/services/url-params";
 import { cleanupData } from "@/services/versioning";
 import type { GridGraph } from "@/types/grid-graph";
-import { closeDialogs, confirmationDialog, initDialogPositionPersistence } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
 import { applyGraphSize, fitMapToScreen } from "@/ui/map/canvas";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { invokeActiveZooming, resetZoom } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { debounce, parseError } from "@/utils/common-utils";
 import { t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/node-utils";
+import { findEl } from "@/utils/node-utils";
 
 /** Bring the app up */
 export async function boot(): Promise<void> {
   stashCallbackToken(); // before anything reads the URL: the OAuth fragment is not a load parameter
   registerServiceWorker();
   initShell();
-  initDialogPositionPersistence();
   declareDefaultFonts();
 
   Options.restore();
@@ -92,25 +91,27 @@ export async function generate(config?: GenerationConfig): Promise<void> {
     ERROR && console.error(error);
     clearMainTip();
 
-    ensureEl("alertMessage").innerHTML =
-      /* html */ `${t("An error has occurred on map generation. Please retry.")}<br>${t("If error is critical, clear the stored data and try again.")}
-      <p id="errorBox">${parseError(error as Error)}</p>`;
-
-    $("#alert").dialog({
-      resizable: false,
+    Dialog.message({
+      message: /* html */ `${t("An error has occurred on map generation. Please retry.")}<br>${t("If error is critical, clear the stored data and try again.")}
+      <p id="errorBox">${parseError(error as Error)}</p>`,
       title: t("Generation error"),
       width: "32em",
-      buttons: {
-        [t("Cleanup data")]: () => cleanupData(),
-        [t("Regenerate")]: function (this: HTMLElement) {
-          regenerateMap("generation error");
-          $(this).dialog("close");
+      buttons: [
+        {
+          label: t("Cleanup data"),
+          onClick: () => {
+            cleanupData();
+            return false;
+          }
         },
-        [t("Ignore")]: function (this: HTMLElement) {
-          $(this).dialog("close");
-        }
-      },
-      position: { my: "center", at: "center", of: "svg" }
+        {
+          label: t("Regenerate"),
+          onClick: () => {
+            regenerateMap("generation error");
+          }
+        },
+        { label: t("Ignore") }
+      ]
     });
   }
 }
@@ -125,7 +126,7 @@ export const regenerateMap = debounce(async (config?: GenerationConfig | string)
   const shouldShowLoading = getPointsNumber(options.generation.graph.density) > 10000;
   shouldShowLoading && showLoading();
 
-  closeDialogs("#worldConfigurator, #options3d");
+  Dialog.closeAll("#worldConfigurator, #options3d");
   options.app.mode = null;
   resetZoom(1000);
   undraw();
@@ -154,12 +155,12 @@ export function regeneratePrompt(config?: GenerationConfig): void {
     return;
   }
 
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Generate New Map"),
     message: `${t("Are you sure you want to generate a new map?")}<br>${t("All unsaved changes made to the current map will be lost")}`,
     confirm: t("Generate"),
     onConfirm: () => {
-      closeDialogs();
+      Dialog.closeAll();
       regenerateMap(config);
     }
   });

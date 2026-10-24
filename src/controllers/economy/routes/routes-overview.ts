@@ -5,7 +5,8 @@ import { Tags } from "@/model/tags";
 import { getRouteBox } from "@/renderers/draw-routes";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
-import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import { dialogState } from "@/ui/dialog/state";
 import {
@@ -86,23 +87,22 @@ const routesTable = initEditorTable<Route>({
 function open(): void {
   if (options.app.mode) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ search: "" }));
-  closeDialogs(`#${dialogId}, .stable`);
+  Dialog.closeAll(`#${dialogId}, .stable`);
   Layers.show("routes");
 
   renderDialog();
   routesTable.reset();
 
-  $(`#${dialogId}`).dialog({
+  Dialog.open(dialogId, {
     title: t("Routes Overview"),
-    resizable: false,
     width: "fit-content",
     position,
-    close: closeRoutesOverview
+    onClose: closeRoutesOverview
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("routesOverview");
+  Dialog.destroy("routesOverview");
 
   const html = /* html */ `<div id="routesOverview" class="dialog stable editorDialog">
     <div id="routesBody" class="table">${renderEditorHeader({ dialogId, columns })}</div>
@@ -131,7 +131,7 @@ function renderDialog(): void {
   initColumnVisibility({
     dialogId,
     columns,
-    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+    onUpdate: () => Dialog.update(dialogId, { width: "fit-content", position })
   });
   ensureEl("routesCreateNew").addEventListener("click", createNewRoute);
   ensureEl("routesExport").addEventListener("click", downloadRoutesData);
@@ -146,7 +146,7 @@ function renderDialog(): void {
 }
 
 function closeRoutesOverview(): void {
-  destroyDialog("routesOverview");
+  Dialog.destroy("routesOverview");
   const view = routesTable.view();
   view.rows = [];
   view.all = [];
@@ -303,7 +303,7 @@ function toggleLockAll(): void {
 
 function triggerRouteRemove(this: HTMLElement): void {
   const routeId = +(this.closest(".states") as HTMLElement).dataset.id!;
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: `${t("Are you sure you want to remove the route?")}<br>${t("This action cannot be reverted")}`,
     confirm: t("Remove"),
@@ -328,7 +328,7 @@ function triggerAllRoutesRemove(): void {
   }
 
   const lockedCount = pack.routes.length - toRemove.length;
-  confirmationDialog({
+  Dialog.confirm({
     title: lockedCount > 0 ? t("Remove unlocked routes") : t("Remove all routes"),
     message:
       lockedCount > 0

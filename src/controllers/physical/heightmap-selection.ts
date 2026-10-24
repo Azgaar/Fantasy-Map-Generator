@@ -12,7 +12,8 @@ import { drawHeights } from "@/renderers/heightmap/draw-heightmap";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
 import type { GridGraph } from "@/types/grid-graph";
 import { App } from "@/ui/app-commands";
-import { closeDialogs, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { generateSeed } from "@/utils/probability-utils";
@@ -23,7 +24,7 @@ let graphConfig: GraphConfig | null = null;
 let graph: GridGraph | null = null;
 
 function open(): void {
-  closeDialogs(".stable");
+  Dialog.closeAll(".stable");
   graphConfig = getGraphConfig();
   graph = getGraph();
   appendStyleSheet();
@@ -37,43 +38,51 @@ function open(): void {
   );
   redrawAll();
 
-  $("#heightmapSelection").dialog({
+  Dialog.open("heightmapSelection", {
     title: t("Select Heightmap"),
-    resizable: false,
     position: { my: "center", at: "center", of: "svg" },
-    close: onClose,
-    buttons: {
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
+    onClose: onClose,
+    buttons: [
+      {
+        label: t("Cancel"),
+        onClick: () => {
+          Dialog.close("heightmapSelection");
+        }
       },
-      [t("Select")]: function (this: HTMLElement) {
-        const id = getSelected();
-        if (!id) return;
-        Options.set(o => (o.generation.template = id));
-        App.syncOptionInputs();
-        Pins.set("template", options.generation.template);
+      {
+        label: t("Select"),
+        onClick: () => {
+          const id = getSelected();
+          if (!id) return;
+          Options.set(o => (o.generation.template = id));
+          App.syncOptionInputs();
+          Pins.set("template", options.generation.template);
 
-        $(this).dialog("close");
+          Dialog.close("heightmapSelection");
+        }
       },
-      [t("New Map")]: function (this: HTMLElement) {
-        const id = getSelected();
-        if (!id) return;
-        Options.set(o => (o.generation.template = id));
-        App.syncOptionInputs();
-        Pins.set("template", options.generation.template);
+      {
+        label: t("New Map"),
+        onClick: () => {
+          const id = getSelected();
+          if (!id) return;
+          Options.set(o => (o.generation.template = id));
+          App.syncOptionInputs();
+          Pins.set("template", options.generation.template);
 
-        const seed = getSeed();
-        const previewGraph = graph;
-        const previewConfig = graphConfig;
-        $(this).dialog("close"); // closing destroys the dialog, and a regeneration closes every dialog
-        if (previewGraph && previewConfig) App.regeneratePrompt({ seed, graph: previewGraph, ...previewConfig });
+          const seed = getSeed();
+          const previewGraph = graph;
+          const previewConfig = graphConfig;
+          Dialog.close("heightmapSelection"); // closing destroys the dialog, and a regeneration closes every dialog
+          if (previewGraph && previewConfig) App.regeneratePrompt({ seed, graph: previewGraph, ...previewConfig });
+        }
       }
-    }
+    ]
   });
 }
 
 function onClose(): void {
-  destroyDialog("heightmapSelection");
+  Dialog.destroy("heightmapSelection");
   findEl("heightmapSelectionStyle")?.remove();
   graph = null;
   graphConfig = null;
@@ -191,7 +200,7 @@ function appendStyleSheet(): void {
 }
 
 function insertHtml(): void {
-  destroyDialog("heightmapSelection");
+  Dialog.destroy("heightmapSelection");
   const previewGraph = graph;
   const previewConfig = graphConfig;
   if (!previewGraph || !previewConfig) return;
@@ -376,7 +385,7 @@ function confirmHeightmapEdit(el: HTMLElement): void {
   const tool = el.dataset.tool;
   if (!tool) return;
 
-  confirmationDialog({
+  Dialog.confirm({
     title: el.dataset.tip ?? "",
     message: sentences(t("Opening the tool will erase the current map"), t("Are you sure you want to proceed?")),
     confirm: t("Continue"),

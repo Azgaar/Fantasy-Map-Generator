@@ -14,6 +14,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 
 **[1.156.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.156.0) - 2026-10-30**:
 
+- Migration: jQuery is no longer used
 - Loading draws the map from its data; the stored SVG is read only to update older maps
 - Legend boxes are saved as map data
 

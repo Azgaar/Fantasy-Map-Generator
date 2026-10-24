@@ -13,7 +13,8 @@ import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { cloneEmblem, emblemURL, loadEmblemIcons } from "@/services/io/emblem-image";
 import { getFileName } from "@/services/io/file-name";
 import type { Emblem, EmblemCharge, HeraldicEmblem } from "@/types/emblems";
-import { destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { highlightEmblemElement } from "@/ui/map/highlight";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { openURL } from "@/utils/common-utils";
@@ -120,18 +121,18 @@ function open(type?: EmblemType, id?: string, el?: EmblemEntity, target?: SVGEle
 
   updateElementSelectors();
 
-  $("#emblemEditor").dialog({
+  Dialog.open("emblemEditor", {
     title: t("Edit Emblem"),
     resizable: true,
     width: "22em",
     height: "auto",
     position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" },
-    close: closeEmblemEditor
+    onClose: closeEmblemEditor
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("emblemEditor");
+  Dialog.destroy("emblemEditor");
   const editorHtml = /* html */ `<div id="emblemEditor" class="dialog stable">
       <style>${STYLE}</style>
       <div class="preview"><svg viewBox="0 0 200 200"><use id="emblemImage"></use></svg></div>
@@ -919,8 +920,7 @@ function closeEmblemEditor(): void {
     .selectAll<SVGUseElement, unknown>("use")
     .on(".drag", null)
     .attr("class", null);
-  $("#emblemEditor").dialog("destroy");
-  ensureEl("emblemEditor").remove();
+  Dialog.destroy("emblemEditor");
 }
 
 export const EmblemsEditor = { open, openDefault };

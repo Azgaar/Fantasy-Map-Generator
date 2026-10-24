@@ -4,7 +4,8 @@ import { Routes } from "@/model/economy/routes-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { setTempRoute } from "@/renderers/draw-routes";
 import { Layers } from "@/renderers/layers";
-import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { stopMapPlacement } from "@/ui/map/map-placement";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
@@ -19,7 +20,7 @@ let isCellsLayerForced = false; // the cells layer is turned on for the editing 
 function open(defaultGroup?: string): void {
   if (options.app.mode) return;
   stopMapPlacement();
-  closeDialogs();
+  Dialog.closeAll();
   Layers.show("routes");
 
   isCellsLayerForced = !Layers.isOn("cells");
@@ -39,16 +40,15 @@ function open(defaultGroup?: string): void {
     .map(group => `<option value="${group}" ${group === selected ? "selected" : ""}>${group}</option>`)
     .join("");
 
-  $("#routeCreator").dialog({
+  Dialog.open("routeCreator", {
     title: t("Create Route"),
-    resizable: false,
     position: { my: "left top", at: "left+10 top+10", of: "#map" },
-    close: closeRouteCreator
+    onClose: closeRouteCreator
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("routeCreator");
+  Dialog.destroy("routeCreator");
 
   const html = /* html */ `<div id="routeCreator" class="dialog">
     <div>${t("Click on map to add/remove route points")}</div>
@@ -69,7 +69,7 @@ function renderDialog(): void {
   ensureEl("routeCreatorGroupSelect").addEventListener("change", () => drawRoute(creatorPoints));
   ensureEl("routeCreatorGroupEdit").addEventListener("click", () => void Controllers.RouteGroupsEditor.open());
   ensureEl("routeCreatorComplete").addEventListener("click", completeCreation);
-  ensureEl("routeCreatorCancel").addEventListener("click", () => $("#routeCreator").dialog("close"));
+  ensureEl("routeCreatorCancel").addEventListener("click", () => Dialog.close("routeCreator"));
   ensureEl("routeCreatorBody").addEventListener("click", onBodyClick);
 }
 
@@ -153,7 +153,7 @@ function closeRouteCreator(): void {
   if (isCellsLayerForced) Layers.hide("cells");
   isCellsLayerForced = false;
 
-  destroyDialog("routeCreator");
+  Dialog.destroy("routeCreator");
 }
 
 export const RouteCreator = { open };

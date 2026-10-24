@@ -6,6 +6,7 @@ import { Styles } from "@/model/styles/styles";
 import { ReliefPoolEditor } from "./relief-pool-editor";
 import "@/ui/elements/slider-input";
 import { Relief } from "@/model/physical/relief-generator";
+import { dialogButton } from "@/ui/dialog/dialog-testing";
 
 const picked = vi.hoisted(() => ({ id: "" }));
 vi.mock("@/model/icons", () => ({
@@ -24,13 +25,11 @@ vi.mock("@/controllers", () => ({
 vi.mock("@/ui/tooltips", () => ({ tip: vi.fn(), loadingTip: { start: vi.fn(), end: vi.fn() } }));
 vi.mock("@/renderers/layers", () => ({ Layers: { isOn: () => true, show: vi.fn() } }));
 vi.mock("@/renderers/draw-relief-icons", () => ({ redrawRelief: vi.fn() }));
-vi.mock("@/ui/dialog/dialog-helpers", async importOriginal => ({
-  ...(await importOriginal<typeof import("@/ui/dialog/dialog-helpers")>()),
-  confirmationDialog: ({ onConfirm }: { onConfirm: () => void }) => onConfirm()
-}));
+vi.mock("@/ui/dialog/dialog", async importOriginal => {
+  const { Dialog } = await importOriginal<typeof import("@/ui/dialog/dialog")>();
+  return { Dialog: Object.assign(Dialog, { confirm: ({ onConfirm }: { onConfirm?: () => void }) => onConfirm?.() }) };
+});
 
-type Buttons = Record<string, () => void>;
-let buttons: Buttons = {};
 const biome = (): Biome => pack.biomes[1];
 const entries = () =>
   Array.from(document.querySelectorAll<HTMLElement>("#reliefPoolEditor .entry"), entry => [
@@ -55,11 +54,6 @@ beforeEach(() => {
     ],
     relief: []
   } as unknown as typeof pack;
-  window.$ = vi.fn(() => ({
-    dialog: (options: unknown) => {
-      if (typeof options === "object") buttons = (options as { buttons: Buttons }).buttons;
-    }
-  })) as unknown as typeof window.$;
   ReliefPoolEditor.open({ biome: 1 });
 });
 
@@ -93,7 +87,7 @@ describe("ReliefPoolEditor", () => {
     click('.entry[data-entry="deciduous"] .icon-trash-empty');
     document.querySelector<HTMLInputElement>("#reliefPoolEditor slider-input input[type=number]")!.value = "40";
 
-    buttons.Apply();
+    dialogButton("Apply").click();
 
     expect(biome().icons).toEqual({ conifer: { weight: 5 } });
     expect(biome().iconsDensity).toBe(40);
@@ -101,7 +95,7 @@ describe("ReliefPoolEditor", () => {
 
   it("writes nothing on Cancel", () => {
     click('#reliefPoolEditor .types button[data-entry="grass"]');
-    buttons.Cancel();
+    dialogButton("Cancel").click();
     expect(biome().icons).toEqual({ deciduous: { weight: 3 }, conifer: { weight: 1 } });
   });
 
@@ -114,7 +108,7 @@ describe("ReliefPoolEditor", () => {
     const isPoolCell = vi.spyOn(Relief, "isPoolCell").mockReturnValue(true);
     click('#reliefPoolEditor .types button[data-entry="grass"]');
 
-    buttons["Apply and re-place"]();
+    dialogButton("Apply and re-place").click();
 
     expect(regenerate).toHaveBeenCalledOnce();
     regenerate.mock.calls[0][0](7);
@@ -126,7 +120,7 @@ describe("ReliefPoolEditor", () => {
     const save = vi.spyOn(Options, "save").mockImplementation(() => {});
     ReliefPoolEditor.open({ rule });
     click('#reliefPoolEditor .types button[data-entry="vulcan"]');
-    buttons.Apply();
+    dialogButton("Apply").click();
 
     expect(rule.icons).toEqual({ hill: { weight: 1 }, vulcan: { weight: 1 } });
     expect(rule.density).toBe(Relief.getDefaultRules()[2].density);
@@ -140,7 +134,7 @@ describe("ReliefPoolEditor", () => {
     ReliefPoolEditor.open({ rule });
     options.map.relief.rules = options.map.relief.rules.filter(other => other !== rule);
     click('#reliefPoolEditor .types button[data-entry="vulcan"]');
-    buttons.Apply();
+    dialogButton("Apply").click();
 
     expect(rule.icons).toEqual({ hill: { weight: 1 } });
     expect(save).not.toHaveBeenCalled();
@@ -150,7 +144,7 @@ describe("ReliefPoolEditor", () => {
     const old = biome();
     pack.biomes = [{}, { ...old, icons: {} }] as typeof pack.biomes;
     click('#reliefPoolEditor .types button[data-entry="grass"]');
-    buttons["Apply and re-place"]();
+    dialogButton("Apply and re-place").click();
 
     expect(old.icons).toEqual({ deciduous: { weight: 3 }, conifer: { weight: 1 } });
     expect(biome().icons).toEqual({});
@@ -160,14 +154,14 @@ describe("ReliefPoolEditor", () => {
     const size = document.querySelector<HTMLInputElement>('.entry[data-entry="conifer"] .size')!;
     size.value = "1.5";
     size.dispatchEvent(new Event("change", { bubbles: true }));
-    buttons.Apply();
+    dialogButton("Apply").click();
     expect(biome().icons).toEqual({ deciduous: { weight: 3 }, conifer: { weight: 1, size: 1.5 } });
 
     ReliefPoolEditor.open({ biome: 1 });
     const reset = document.querySelector<HTMLInputElement>('.entry[data-entry="conifer"] .size')!;
     reset.value = "1";
     reset.dispatchEvent(new Event("change", { bubbles: true }));
-    buttons.Apply();
+    dialogButton("Apply").click();
     expect(biome().icons.conifer).toEqual({ weight: 1 });
   });
 
@@ -179,7 +173,7 @@ describe("ReliefPoolEditor", () => {
     min.value = "20";
     min.dispatchEvent(new Event("change", { bubbles: true }));
     expect(document.querySelector<HTMLInputElement>('.ruleSize [data-bound="max"]')!.value).toBe("20");
-    buttons.Apply();
+    dialogButton("Apply").click();
     expect(rule.size).toEqual({ min: 20, max: 20 });
   });
 
@@ -228,7 +222,7 @@ describe("ReliefPoolEditor", () => {
     ]); // biome 1 is the hot desert on a new map
     expect(biome().icons).toEqual({ deciduous: { weight: 3 }, conifer: { weight: 1 } });
 
-    buttons.Apply();
+    dialogButton("Apply").click();
     expect(biome().icons).toEqual({ dune: { weight: 3 }, cactus: { weight: 6 }, deadTree: { weight: 1 } });
     expect(biome().iconsDensity).toBe(27);
   });
@@ -241,7 +235,7 @@ describe("ReliefPoolEditor", () => {
     click("#reliefPoolEditor .restore");
     const { icons, density, size } = Relief.getDefaultRules()[2];
     expect(document.querySelector<HTMLInputElement>('.ruleSize [data-bound="max"]')!.value).toBe(String(size.max));
-    buttons.Apply();
+    dialogButton("Apply").click();
     expect(hills).toMatchObject({ icons, density, size });
 
     ReliefPoolEditor.open({ rule: { ...hills, name: "Desert hills" } });

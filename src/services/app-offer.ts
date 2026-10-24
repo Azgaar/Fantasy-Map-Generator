@@ -1,8 +1,8 @@
 // The Desktop App dialog: what the app is and which file this visitor needs
 
+import { Dialog } from "@/ui/dialog/dialog";
 import { isMobile } from "@/utils/environment";
 import { t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/node-utils";
 
 const RELEASES_API = "https://api.github.com/repos/Azgaar/Fantasy-Map-Generator/releases/latest";
 const RELEASES_PAGE = "https://github.com/Azgaar/Fantasy-Map-Generator/releases/latest";
@@ -27,20 +27,14 @@ const DOWNLOADS: { os: Os; label: string; suffix: string }[] = [
 const INTRO = /* html */ `<p>${t("The Desktop App is the Generator packaged as a program for your computer. It has the same features as this page, but runs in its own window and works without an internet connection. It checks for new versions on its own and installs them for you, except on macOS and Debian, where it points you at the download.")}</p>`;
 
 async function open(): Promise<void> {
-  $("#alert").dialog({
-    resizable: false,
+  const text = Dialog.message({
+    message: `<p>${t("Checking the latest version…")}</p>`,
     title: t("Desktop App"),
     width: "30em",
     position: { my: "center", at: "center", of: window },
-    buttons: {
-      [t("Close")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+    buttons: [{ label: t("Close") }]
   });
-
-  ensureEl("alertMessage").innerHTML = `<p>${t("Checking the latest version…")}</p>`;
-  ensureEl("alertMessage").innerHTML = await renderOffer();
+  text.innerHTML = await renderOffer();
 }
 
 /** A narrow desktop window is not a phone: ask the device before trusting the viewport width */

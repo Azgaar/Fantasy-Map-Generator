@@ -3,7 +3,8 @@ import type { Good } from "@/model/economy/goods-generator";
 import { Goods } from "@/model/economy/goods-generator";
 import { Icons } from "@/model/icons";
 import { goodIconLines } from "@/renderers/draw-goods";
-import { destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { tip } from "@/ui/tooltips";
 import { C_12 } from "@/utils/color-utils";
 import { t } from "@/utils/i18n";
@@ -145,18 +146,18 @@ function open(): void {
   const svgEl = contentEl.querySelector<SVGSVGElement>("#chains-svg");
   if (svgEl) attachGraphInteractions(svgEl, layout);
 
-  $("#productionChainsDialog").dialog({
+  Dialog.open("productionChainsDialog", {
     title: t("Production Chains"),
     resizable: true,
     width: dialogSize.width,
     height: dialogSize.height,
     position: { my: "center", at: "center", of: window },
-    close: closeProductionChains
+    onClose: closeProductionChains
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("productionChainsDialog");
+  Dialog.destroy("productionChainsDialog");
   const editorHtml = /* html */ `<div id="productionChainsDialog" class="dialog" style="padding:0">
       <div id="productionChainsContent" style="overflow:auto"></div>
     </div>`;
@@ -164,8 +165,7 @@ function renderDialog(): void {
 }
 
 function closeProductionChains(): void {
-  $("#productionChainsDialog").dialog("destroy");
-  ensureEl("productionChainsDialog").remove();
+  Dialog.destroy("productionChainsDialog");
 }
 
 function getChainGoods(goods: Good[]): Good[] {

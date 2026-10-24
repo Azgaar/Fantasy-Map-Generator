@@ -538,7 +538,7 @@ Tools -> Heightmap -> Erase or Risk and make sure that whatever cells you put un
 
 ### Is there a way to make relief icons render above routes?
 
-You can change the layer order on the Layers Tab by draging the toggle button. It can be done for most of layers
+You can change the layer order on the Layers Tab: the sort button at the end of the *Layers preset* row opens a list where you drag the layers. It can be done for most of layers
 
 ### My map colors are inverted, how can I fix it?
 

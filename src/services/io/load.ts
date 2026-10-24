@@ -29,7 +29,7 @@ import { mapHistory, registerMap } from "@/services/map-history";
 import { focusOn, generateMapOnLoad } from "@/services/url-params";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
 import { App } from "@/ui/app-commands";
-import { closeDialogs, confirmationDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
 import { fitMapToScreen } from "@/ui/map/canvas";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { invokeActiveZooming, resetZoom } from "@/ui/map/zoom";
@@ -84,7 +84,7 @@ function loadMapPrompt(blob: Blob): void {
     return;
   }
 
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Load saved map"),
     message: `${t("Are you sure you want to load saved map?")}<br>${t("All unsaved changes made to the current map will be lost")}`,
     confirm: t("Load"),
@@ -129,25 +129,29 @@ async function loadMapFromURL(maplink: string, random?: boolean): Promise<void> 
 function showUploadErrorMessage(error: string, maplink: string, random?: boolean): void {
   ERROR && console.error(error);
   const source = link(maplink, t("link provided"));
-  ensureEl("alertMessage").innerHTML = random
-    ? sentences(
-        t("Cannot load map from the {{- source}}", { source }),
-        t("A new random map is generated"),
-        t("Please ensure the linked file is reachable and CORS is allowed on server side")
-      )
-    : sentences(
-        t("Cannot load map from the {{- source}}", { source }),
-        t("Please ensure the linked file is reachable and CORS is allowed on server side")
-      );
-  $("#alert").dialog({
+  Dialog.message({
+    message: random
+      ? sentences(
+          t("Cannot load map from the {{- source}}", { source }),
+          t("A new random map is generated"),
+          t("Please ensure the linked file is reachable and CORS is allowed on server side")
+        )
+      : sentences(
+          t("Cannot load map from the {{- source}}", { source }),
+          t("Please ensure the linked file is reachable and CORS is allowed on server side")
+        ),
     title: t("Loading error"),
     width: "32em",
-    buttons: {
-      [t("Clear cache")]: () => clearCache(),
-      [t("OK")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+    buttons: [
+      {
+        label: t("Clear cache"),
+        onClick: () => {
+          clearCache();
+          return false;
+        }
+      },
+      { label: t("OK") }
+    ]
   });
 }
 
@@ -243,15 +247,19 @@ function showUploadMessage(type: string, mapData: string[] | null, mapVersion: s
     return;
   }
 
-  ensureEl("alertMessage").innerHTML = message;
-  $("#alert").dialog({
+  Dialog.message({
+    message: message,
     title,
-    buttons: {
-      [t("Clear cache")]: () => clearCache(),
-      [t("OK")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+    buttons: [
+      {
+        label: t("Clear cache"),
+        onClick: () => {
+          clearCache();
+          return false;
+        }
+      },
+      { label: t("OK") }
+    ]
   });
 }
 
@@ -261,7 +269,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
   try {
     const { migrateLegacySettings, resolveVersionConflicts } = await import("./auto-update"); // TODO: don't load if not required
 
-    closeDialogs();
+    Dialog.closeAll();
     options.app.mode = null;
     if (ensureEl("heightmapMenu").offsetParent) ensureEl("styleTab").click();
 
@@ -434,29 +442,32 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     ERROR && console.error(error);
     clearMainTip();
 
-    ensureEl("alertMessage").innerHTML =
-      /* html */ `${t("An error occurred while loading the map. Select a different file to load, generate a new random map or cancel the loading.")}<br>${t("Map version: {{map}}. Generator version: {{generator}}.", { map: mapVersion, generator: VERSION })}
-      <p id="errorBox">${parseError(error as Error)}</p>`;
-
-    $("#alert").dialog({
-      resizable: false,
+    Dialog.message({
+      message: /* html */ `${t("An error occurred while loading the map. Select a different file to load, generate a new random map or cancel the loading.")}<br>${t("Map version: {{map}}. Generator version: {{generator}}.", { map: mapVersion, generator: VERSION })}
+      <p id="errorBox">${parseError(error as Error)}</p>`,
       title: t("Loading error"),
-      maxWidth: "40em",
-      buttons: {
-        [t("Clear cache")]: () => clearCache(),
-        [t("Select file")]: function (this: HTMLElement) {
-          $(this).dialog("close");
-          App.pickMapFile();
+      buttons: [
+        {
+          label: t("Clear cache"),
+          onClick: () => {
+            clearCache();
+            return false;
+          }
         },
-        [t("New Map")]: function (this: HTMLElement) {
-          $(this).dialog("close");
-          App.regenerateMap("loading error");
+        {
+          label: t("Select file"),
+          onClick: () => {
+            App.pickMapFile();
+          }
         },
-        [t("Cancel")]: function (this: HTMLElement) {
-          $(this).dialog("close");
-        }
-      },
-      position: { my: "center", at: "center", of: "svg" }
+        {
+          label: t("New Map"),
+          onClick: () => {
+            App.regenerateMap("loading error");
+          }
+        },
+        { label: t("Cancel") }
+      ]
     });
   } finally {
     if (isLogGroupOpen) console.groupEnd();

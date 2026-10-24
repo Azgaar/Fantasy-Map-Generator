@@ -5,6 +5,8 @@ import { viewport } from "@/renderers/viewport/viewport";
 import { Services } from "@/services";
 import { getFileName } from "@/services/io/file-name";
 import { savedMessage } from "@/services/platform";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { tip } from "@/ui/tooltips";
 import { downloadFile } from "@/utils/file-utils";
 import { sentences, t } from "@/utils/i18n";
@@ -68,8 +70,8 @@ function teardown(): void {
   if (!findEl("canvas3d")) return;
   void stop();
   findEl("canvas3d")?.remove();
-  if (findEl("options3d")) $("#options3d").dialog("close");
-  if (findEl("preview3d")) $("#preview3d").dialog("close");
+  if (findEl("options3d")) Dialog.close("options3d");
+  if (findEl("preview3d")) Dialog.close("preview3d");
 }
 
 function enterStandard(): void {
@@ -122,12 +124,12 @@ async function open(type: string): Promise<void> {
   if (type === "heightmap3DView") {
     renderPreviewDialog();
     ensureEl("preview3d").appendChild(canvas);
-    $("#preview3d").dialog({
+    Dialog.open("preview3d", {
       title: t("3D Preview"),
       resizable: true,
       position: { my: "left bottom", at: "left+10 bottom-20", of: "svg" },
-      resizeStop: resize3d,
-      close: closePreview3d
+      onResize: resize3d,
+      onClose: closePreview3d
     });
   } else document.body.insertBefore(canvas, ensureEl("optionsContainer"));
 
@@ -141,8 +143,7 @@ function renderPreviewDialog(): void {
 }
 
 function closePreview3d(): void {
-  $("#preview3d").dialog("destroy");
-  ensureEl("preview3d").remove();
+  Dialog.destroy("preview3d");
   enterStandard();
 }
 
@@ -158,18 +159,17 @@ function resize3d(): void {
 // --- settings dialog ---------------------------------------------------------
 function toggleOptions(): void {
   if (findEl("options3d")) {
-    $("#options3d").dialog("close");
+    Dialog.close("options3d");
     return;
   }
 
   renderOptionsDialog();
 
-  $("#options3d").dialog({
+  Dialog.open("options3d", {
     title: t("3D mode settings"),
-    resizable: false,
     width: "fit-content",
     position: { my: "right top", at: "right-30 top+10", of: "svg", collision: "fit" },
-    close: closeOptionsDialog
+    onClose: closeOptionsDialog
   });
 
   updateValues();
@@ -381,8 +381,7 @@ function renderOptionsDialog(): void {
 }
 
 function closeOptionsDialog(): void {
-  $("#options3d").dialog("destroy");
-  ensureEl("options3d").remove();
+  Dialog.destroy("options3d");
 }
 
 function setInput(id: string, value: string | number): void {

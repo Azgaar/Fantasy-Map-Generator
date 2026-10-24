@@ -13,7 +13,6 @@ vi.mock("@/controllers", () => ({
 vi.mock("@/services", () => ({ Services: { Save: { toMachine: mocks.save } } }));
 vi.mock("@/services/autosave", () => ({ toggleSaveReminder: vi.fn() }));
 vi.mock("./chrome/app-info", () => ({ showInfo: vi.fn() }));
-vi.mock("@/ui/dialog/dialog-helpers", () => ({ closeDialogs: vi.fn() }));
 vi.mock("./chrome/tabs/layers-tab", () => ({ getLayerByShortcut: mocks.getLayer }));
 vi.mock("@/ui/map/zoom", () => ({
   changeMapZoom: vi.fn(),

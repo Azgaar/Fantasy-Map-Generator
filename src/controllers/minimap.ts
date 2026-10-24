@@ -1,5 +1,6 @@
 import { viewport } from "@/renderers/viewport/viewport";
-import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { onViewportChange, zoomTo } from "@/ui/map/zoom";
 import { t } from "@/utils/i18n";
 import { ensureEl, findEl } from "@/utils/node-utils";
@@ -8,25 +9,21 @@ import { minmax, rn } from "@/utils/number-utils";
 let stopFollowing: (() => void) | undefined;
 
 function open(): void {
-  closeDialogs("#minimap, .stable");
+  Dialog.closeAll("#minimap, .stable");
   renderDialog();
   updateMinimap();
   stopFollowing ??= onViewportChange(updateMinimap);
 
-  $("#minimap").dialog({
+  Dialog.open("minimap", {
     title: t("Minimap"),
-    resizable: false,
     width: "auto",
     position: { my: "left bottom", at: "left+10 bottom-25", of: "svg", collision: "fit" },
-    open: function (this: HTMLElement) {
-      $(this).parent().addClass("minimap-dialog");
-    },
-    close: closeMinimap
+    onClose: closeMinimap
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("minimap");
+  Dialog.destroy("minimap");
   const html = /* html */ `<div id="minimap" class="dialog stable">
       <div id="minimapViewportWrap">
         <svg id="minimapSurface" preserveAspectRatio="xMidYMid meet" aria-label="${t("Map minimap")}">
@@ -42,13 +39,9 @@ function renderDialog(): void {
   const style = document.createElement("style");
   style.id = "minimapStyles";
   style.textContent = /* css */ `
-    .minimap-dialog .ui-dialog-content {
-      padding: 0 !important;
-      overflow: hidden;
-    }
-
     #minimap {
-      padding: 0 !important;
+      padding: 0;
+      overflow: hidden;
       background: transparent;
     }
 
@@ -84,8 +77,7 @@ function renderDialog(): void {
 function closeMinimap(): void {
   stopFollowing?.();
   stopFollowing = undefined;
-  $("#minimap").dialog("destroy");
-  ensureEl("minimap").remove();
+  Dialog.destroy("minimap");
   findEl("minimapStyles")?.remove();
 }
 

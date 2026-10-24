@@ -6,8 +6,8 @@ import { Pins } from "@/model/options/pins";
 import { Temperature } from "@/model/physical/temperature-generator";
 import { Layers } from "@/renderers/layers";
 import { LegendBoxes } from "@/renderers/legend-boxes";
-import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
-import { promptDialog } from "@/ui/dialog/prompt-dialog";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { bindPinIcons } from "@/ui/pin-icons";
 import { t } from "@/utils/i18n";
 import { applyOption, ensureEl } from "@/utils/node-utils";
@@ -120,18 +120,17 @@ const TEMPLATE = /* html */ `
 `;
 
 function open(): void {
-  closeDialogs("#unitsEditor, .stable");
+  Dialog.closeAll("#unitsEditor, .stable");
   renderDialog();
 
-  $("#unitsEditor").dialog({
+  Dialog.open("unitsEditor", {
     title: t("Units Editor"),
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
-    close: () => destroyDialog(DIALOG_ID)
+    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" }
   });
 }
 
 function renderDialog(): void {
-  destroyDialog(DIALOG_ID);
+  Dialog.destroy(DIALOG_ID);
   ensureEl("dialogs").insertAdjacentHTML(
     "beforeend",
     /* html */ `<div id="${DIALOG_ID}" class="dialog stable">${TEMPLATE}</div>`
@@ -270,7 +269,7 @@ function onUnitChange(event: Event): void {
 /** "custom_name" is not a unit: it asks for one, and puts the answer where the value belongs */
 function askForCustomUnit(select: HTMLInputElement, kind: "distance" | "height"): void {
   fillInputs(); // the sentinel is not a unit, so the select goes back to the one in use right away
-  promptDialog(
+  Dialog.prompt(
     kind === "distance" ? t("Provide a custom name for a distance unit") : t("Provide a custom name for a height unit"),
     { default: "" },
     custom => {

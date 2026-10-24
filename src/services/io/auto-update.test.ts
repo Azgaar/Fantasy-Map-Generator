@@ -13,7 +13,7 @@ import { Names } from "@/model/society/names-generator";
 import { Styles } from "@/model/styles/styles";
 import * as versioning from "@/services/versioning";
 import { VERSION } from "@/services/versioning";
-import { confirmationDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
 import { safeParseJSON } from "@/utils/string-utils";
 import { migrateLegacySettings, resolveVersionConflicts } from "./auto-update";
 import { Csv } from "./csv";
@@ -594,7 +594,10 @@ describe("v1.61 ocean pattern migration", () => {
   });
 });
 
-vi.mock("@/ui/dialog/dialog-helpers", () => ({ confirmationDialog: vi.fn(), destroyDialog: vi.fn() }));
+vi.mock("@/ui/dialog/dialog", async importOriginal => {
+  const { Dialog } = await importOriginal<typeof import("@/ui/dialog/dialog")>();
+  return { Dialog: Object.assign(Dialog, { confirm: vi.fn(), destroy: vi.fn() }) };
+});
 vi.mock("./csv", () => ({ Csv: { download: vi.fn() } }));
 
 describe("v1.152.0 notes moved onto entities", () => {
@@ -618,7 +621,7 @@ describe("v1.152.0 notes moved onto entities", () => {
   }
 
   beforeEach(() => {
-    vi.mocked(confirmationDialog).mockClear();
+    vi.mocked(Dialog.confirm).mockClear();
     vi.mocked(Csv.download).mockClear();
     globalThis.pack = {
       burgs: [0, { i: 1, name: "Vaeltown" }],
@@ -650,7 +653,7 @@ describe("v1.152.0 notes moved onto entities", () => {
 
     expect(pack.burgs[1].note).toBe("A river port");
     expect(data[4]).toBe("");
-    expect(confirmationDialog).not.toHaveBeenCalled();
+    expect(Dialog.confirm).not.toHaveBeenCalled();
   });
 
   it("collides the two notes of a river, the element note first", async () => {
@@ -674,7 +677,7 @@ describe("v1.152.0 notes moved onto entities", () => {
     expect(pack.features[0].note).toBe("<p>The drowned city lies below.</p>");
     expect(pack.routes[0].note).toBe("<h3>The King's March</h3><p>The king never returned.</p>");
     expect(data[4]).toBe("");
-    expect(confirmationDialog).not.toHaveBeenCalled();
+    expect(Dialog.confirm).not.toHaveBeenCalled();
   });
 
   it("follows renumbered roads and offers lore from a road that cannot be migrated", async () => {
@@ -710,8 +713,8 @@ describe("v1.152.0 notes moved onto entities", () => {
       { i: 0, note: "First road lore" },
       { i: 1, note: "Second road lore" }
     ]);
-    expect(confirmationDialog).toHaveBeenCalledOnce();
-    const [dialog] = vi.mocked(confirmationDialog).mock.calls[0];
+    expect(Dialog.confirm).toHaveBeenCalledOnce();
+    const [dialog] = vi.mocked(Dialog.confirm).mock.calls[0];
     expect(dialog.message).toContain("cannot be kept: 1");
     dialog.onConfirm?.();
     expect(Csv.download).toHaveBeenCalledWith(
@@ -743,7 +746,7 @@ describe("v1.152.0 notes moved onto entities", () => {
 
     expect(pack.rivers[1].note).toBeUndefined();
     expect(pack.burgs[1].note).toBeUndefined();
-    expect(confirmationDialog).not.toHaveBeenCalled();
+    expect(Dialog.confirm).not.toHaveBeenCalled();
   });
 
   it("does not turn an untitled note's element id into a heading", async () => {
@@ -762,7 +765,7 @@ describe("v1.152.0 notes moved onto entities", () => {
   it("does not offer an empty note whose element is gone", async () => {
     await migrate([{ id: "burg99", name: "Lost Town", legend: "" }]);
 
-    expect(confirmationDialog).not.toHaveBeenCalled();
+    expect(Dialog.confirm).not.toHaveBeenCalled();
   });
 
   it("does not repeat the short name the labels editor titled a state note with", async () => {
@@ -805,7 +808,7 @@ describe("v1.152.0 notes moved onto entities", () => {
       const data = await migrate([{ id, name: "Old Regiment", legend: "Formed in 900 AD" }]);
 
       expect(data[4]).toBe("");
-      expect(confirmationDialog).not.toHaveBeenCalled();
+      expect(Dialog.confirm).not.toHaveBeenCalled();
       expect(Csv.download).not.toHaveBeenCalled();
       expect(pack.states[1].military![0].note).toBeUndefined();
     }
@@ -822,9 +825,9 @@ describe("v1.152.0 notes moved onto entities", () => {
 
     expect(pack.burgs[1].note).toBe("kept");
     expect(pack.states[1].military![0].note).toBe("Formed in 900 AD");
-    expect(confirmationDialog).toHaveBeenCalledOnce();
+    expect(Dialog.confirm).toHaveBeenCalledOnce();
 
-    const [dialog] = vi.mocked(confirmationDialog).mock.calls[0];
+    const [dialog] = vi.mocked(Dialog.confirm).mock.calls[0];
     expect(dialog.message).toContain("cannot be kept: 2");
 
     dialog.onConfirm?.();

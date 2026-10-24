@@ -18,11 +18,6 @@ vi.mock("@/ui/map/viewbox-events", () => ({
   applyDefaultViewboxEvents: vi.fn(() => select("#viewbox").on("click", null).on(".drag", null))
 }));
 
-interface DialogOptions {
-  close?: () => void;
-}
-
-let dialogs: Map<HTMLElement, DialogOptions>;
 let states: State[];
 
 function element<T extends Element = HTMLElement>(selector: string): T {
@@ -62,19 +57,9 @@ const fill = (id: number) => element(`#state${id}`).getAttribute("fill");
 
 beforeEach(() => {
   vi.clearAllMocks();
-  dialogs = new Map();
   document.body.innerHTML = `<div id="dialogs"></div>
     <svg><g id="viewbox"><g id="statesBody"><path id="state1" d="M1,0" /><path id="state2" d="M2,0" /><path id="state3" d="M3,0" /></g>
     <g id="statesHalo"></g><g id="debug"></g></g></svg>`;
-  vi.stubGlobal("$", (target: string | HTMLElement) => {
-    const el = typeof target === "string" ? element<HTMLElement>(target) : target;
-    return {
-      dialog: (options: string | DialogOptions) => {
-        if (options === "close") dialogs.get(el)?.close?.();
-        else if (typeof options === "object") dialogs.set(el, options);
-      }
-    };
-  });
   states = [
     { i: 0, name: "Neutrals", diplomacy: [] },
     { i: 1, name: "One", fullName: "State One", diplomacy: ["x", "x", "Rival", "Neutral", "x"] },

@@ -8,14 +8,12 @@ vi.mock("@/controllers", () => ({ Controllers: {} }));
 vi.mock("@/renderers/draw-emblems", () => ({ removeEmblem: vi.fn() }));
 vi.mock("@/renderers/emblems/renderer", () => ({ EmblemRenderer: { trigger: vi.fn() } }));
 vi.mock("@/ui/dialog/dialog-helpers", async importActual => ({
-  noteButton: (await importActual<typeof import("@/ui/dialog/dialog-helpers")>()).noteButton,
-  closeDialogs: vi.fn(),
-  confirmationDialog: vi.fn(),
-  destroyDialog: vi.fn()
+  noteButton: (await importActual<typeof import("@/ui/dialog/dialog-helpers")>()).noteButton
 }));
 
 import { Production } from "@/model/economy/production-generator";
 import { Burgs } from "@/model/political/burgs-generator";
+import { Dialog } from "@/ui/dialog/dialog";
 import { BurgEditor } from "./burg-editor";
 
 const preview = "https://watabou.github.io/city-generator/?seed=1&size=55&preview=1";
@@ -41,37 +39,25 @@ it("does not reparent a loaded preview when opening or closing the dialog", () =
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
 
   const reparentedPreviews: string[] = [];
-  let visible = false;
-  let close: (() => void) | undefined;
-  const dialog = vi.fn((argument: { autoOpen?: boolean; close: () => void } | "open" | "destroy") => {
-    const editor = document.getElementById("burgEditor")!;
-    if (argument === "open") {
-      visible = true;
-      expect(editor.querySelector<HTMLInputElement>("#burgName")!.value).toBe("Polmabas");
-    } else if (argument === "destroy") {
-      reparentedPreviews.push(...Array.from(editor.querySelectorAll("iframe"), frame => frame.src));
-      document.body.append(editor);
-    } else {
-      close = argument.close;
-      reparentedPreviews.push(...Array.from(editor.querySelectorAll("iframe"), frame => frame.src));
-      const wrapper = document.createElement("div");
-      wrapper.className = "ui-dialog";
-      document.body.append(wrapper);
-      wrapper.append(editor);
-      visible = argument.autoOpen !== false;
+  const append = HTMLElement.prototype.append;
+  vi.spyOn(HTMLElement.prototype, "append").mockImplementation(function (this: HTMLElement, ...nodes) {
+    for (const node of nodes) {
+      if (node instanceof HTMLElement && node.id === "burgEditor")
+        reparentedPreviews.push(...Array.from(node.querySelectorAll("iframe"), frame => frame.src));
     }
+    return append.apply(this, nodes);
   });
-  vi.stubGlobal("$", () => ({ dialog }));
 
   BurgEditor.open(1);
 
   expect(reparentedPreviews).toEqual([]);
-  expect(visible).toBe(true);
-  const frames = document.querySelectorAll<HTMLIFrameElement>(".ui-dialog #burgPreviewObject iframe");
+  expect(Dialog.isOpen("burgEditor")).toBe(true);
+  expect(document.querySelector<HTMLInputElement>("#burgName")!.value).toBe("Polmabas");
+  const frames = document.querySelectorAll<HTMLIFrameElement>(".dialog-window #burgPreviewObject iframe");
   expect(frames).toHaveLength(1);
   expect(frames[0].src).toBe(preview);
 
-  close!();
+  Dialog.close("burgEditor");
 
   expect(reparentedPreviews).toEqual([]);
   expect(document.getElementById("burgEditor")).toBeNull();

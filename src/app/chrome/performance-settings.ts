@@ -5,7 +5,8 @@ import {
   type PerformanceSettings as Settings,
   setPerformanceSetting
 } from "@/renderers/performance";
-import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 
@@ -69,23 +70,22 @@ const PRESET_LABELS: Record<string, string> = {
 };
 
 function open(): void {
-  closeDialogs(`#${DIALOG_ID}, .stable`);
+  Dialog.closeAll(`#${DIALOG_ID}, .stable`);
   render();
   const unsubscribe = onPerformanceChange(sync); // a preset picked on the Options tab shows here too
 
-  $(`#${DIALOG_ID}`).dialog({
+  Dialog.open(DIALOG_ID, {
     title: t("Performance Settings"),
-    resizable: false,
     position: { my: "right top", at: "right-10 top+10", of: "svg" },
-    close: () => {
+    onClose: () => {
       unsubscribe();
-      destroyDialog(DIALOG_ID);
+      Dialog.destroy(DIALOG_ID);
     }
   });
 }
 
 function render(): void {
-  destroyDialog(DIALOG_ID);
+  Dialog.destroy(DIALOG_ID);
   ensureEl("dialogs").insertAdjacentHTML("beforeend", buildDialogHTML());
 
   for (const { key } of SETTINGS) {

@@ -2,7 +2,7 @@ import { max as d3max, min as d3min, mean, median } from "d3";
 import { Names } from "@/model/society/names-generator";
 import { getFileName } from "@/services/io/file-name";
 import { speak } from "@/services/speech";
-import { closeDialogs, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
 import { tip } from "@/ui/tooltips";
 import { unique } from "@/utils/array-utils";
 import { openURL } from "@/utils/common-utils";
@@ -16,22 +16,23 @@ let namesbaseInput: HTMLInputElement | null = null;
 
 function open(): void {
   if (options.app.mode) return;
-  closeDialogs("#namesbaseEditor, .stable");
+  Dialog.closeAll("#namesbaseEditor, .stable");
 
   renderDialog();
   createBasesList();
   updateInputs();
 
-  $("#namesbaseEditor").dialog({
+  Dialog.open("namesbaseEditor", {
+    resizable: true,
     title: t("Namesbase Editor"),
     width: "60vw",
     position: { my: "center", at: "center", of: "svg" },
-    close: closeNamesbaseEditor
+    onClose: closeNamesbaseEditor
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("namesbaseEditor");
+  Dialog.destroy("namesbaseEditor");
   const editorHtml = /* html */ `<div id="namesbaseEditor" class="dialog stable textual">
       <div id="namesbaseBasesTop">
         <span>${t("Select base")}: </span>
@@ -137,8 +138,7 @@ function renderDialog(): void {
 }
 
 function closeNamesbaseEditor(): void {
-  $("#namesbaseEditor").dialog("destroy");
-  ensureEl("namesbaseEditor").remove();
+  Dialog.destroy("namesbaseEditor");
 }
 
 function createBasesList(): void {
@@ -273,7 +273,8 @@ function analyzeNamesbase(): void {
     return `<span data-tip="${t("Namesbase variety is good")}" style="color:green">[${t("good")}]</span>`;
   };
 
-  ensureEl("alertMessage").innerHTML = /* html */ `<div style="line-height: 1.6em; max-width: 20em">
+  Dialog.message({
+    message: /* html */ `<div style="line-height: 1.6em; max-width: 20em">
       <div data-tip="${t("Number of names provided")}">${t("Namesbase length")}: ${length} ${getLengthQuality()}</div>
       <div data-tip="${t("Average number of generation variants for each key in the chain")}">${t("Namesbase variety")}: ${variety} ${getVarietyLevel()}</div>
       <hr />
@@ -286,18 +287,10 @@ function analyzeNamesbase(): void {
       <div data-tip="${t("Characters that are frequently (more than 3 times) doubled")}">${t("Doubled chars")}: ${doubledStr}</div>
       <div data-tip="${t("Names used more than one time")}">${t("Duplicates")}: ${duplicates}</div>
       <div data-tip="${t("Percentage of names containing space character")}">${t("Multi-word names")}: ${rn(multiwordRate * 100, 2)}%</div>
-    </div>`;
-
-  $("#alert").dialog({
-    resizable: false,
+    </div>`,
     title: t("Data Analysis"),
     width: "auto",
-    position: { my: "left top-30", at: "right+10 top", of: "#namesbaseEditor" },
-    buttons: {
-      [t("OK")]: function () {
-        $(this).dialog("close");
-      }
-    }
+    position: { my: "left top-30", at: "right+10 top", of: "#namesbaseEditor" }
   });
 }
 
@@ -325,7 +318,7 @@ function namesbaseAdd(): void {
 }
 
 function namesbaseRestoreDefault(): void {
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Restore default data"),
     message: t("Are you sure you want to restore default namesbase?"),
     confirm: t("Restore"),
@@ -403,7 +396,8 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
       )
       .join("");
 
-    ensureEl("alertMessage").innerHTML = /* html */ `<div>
+    Dialog.message({
+      message: /* html */ `<div>
         <p style="margin:0.75em;">
           <strong>${t("File parsing error. Only {{added}} out of {{total}} namebases added.", {
             added: lines.length - errors.length,
@@ -424,18 +418,11 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
             ${errorItems}
           </ul>
         </div>
-      </div>`;
-
-    $("#alert").dialog({
-      resizable: false,
+      </div>`,
       title: t("Parsing error"),
       width: "min(72vw, 68em)",
       position: { my: "center center-4em", at: "center", of: "svg" },
-      buttons: {
-        [t("Continue")]: function () {
-          $(this).dialog("close");
-        }
-      }
+      buttons: [{ label: t("Continue") }]
     });
   }
 

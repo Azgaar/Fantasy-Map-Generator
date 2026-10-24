@@ -9,7 +9,8 @@ import { Tags } from "@/model/tags";
 import { redrawRiver as redrawRiverShape, setEditedRiver } from "@/renderers/draw-rivers";
 import { Layers } from "@/renderers/layers";
 import { speak } from "@/services/speech";
-import { closeDialogs, confirmationDialog, destroyDialog, noteButton } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+import { noteButton } from "@/ui/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { getSegmentId } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
@@ -24,7 +25,7 @@ let isCellsLayerForced = false; // the cells layer is turned on for the editing 
 function open(id: string): void {
   if (options.app.mode) return;
   if (findEl("riverEditor") && id === selectedRiver.attr("id")) return;
-  closeDialogs(".stable");
+  Dialog.closeAll(".stable");
   Layers.show("rivers");
 
   isCellsLayerForced = !Layers.isOn("cells");
@@ -55,16 +56,15 @@ function open(id: string): void {
   drawControlPoints(riverPoints);
   drawCells(cells);
 
-  $("#riverEditor").dialog({
+  Dialog.open("riverEditor", {
     title: t("Edit River"),
-    resizable: false,
     position: { my: "left top", at: "left+10 top+10", of: "#map" },
-    close: closeRiverEditor
+    onClose: closeRiverEditor
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("riverEditor");
+  Dialog.destroy("riverEditor");
 
   const html = /* html */ `<div id="riverEditor" class="dialog">
     <div id="riverBody" style="padding-bottom: 0.3em">
@@ -369,7 +369,7 @@ function editRiverLegend(): void {
 }
 
 function removeRiver(): void {
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: t("Are you sure you want to remove the river? All tributaries will be auto-removed"),
     confirm: t("Remove"),
@@ -377,7 +377,7 @@ function removeRiver(): void {
     onConfirm: () => {
       const river = +selectedRiver.attr("id").slice(5);
       Rivers.remove(river);
-      $("#riverEditor").dialog("close");
+      Dialog.close("riverEditor");
       Layers.draw("rivers", "labels");
     }
   });
@@ -394,7 +394,7 @@ function closeRiverEditor(): void {
   if (isCellsLayerForced) Layers.hide("cells");
   isCellsLayerForced = false;
 
-  destroyDialog("riverEditor");
+  Dialog.destroy("riverEditor");
   selectedRiver = null!;
 }
 

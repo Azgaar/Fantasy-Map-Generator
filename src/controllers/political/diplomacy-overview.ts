@@ -9,7 +9,7 @@ import { Layers } from "@/renderers/layers";
 import { removeRelationsMark, showRelations } from "@/renderers/overlays/diplomacy";
 import { Csv } from "@/services/io/csv";
 import { getFileName } from "@/services/io/file-name";
-import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import {
@@ -71,7 +71,7 @@ function open(): void {
     selectedDiplomacyId = pack.states.find(state => state.i && !state.removed)!.i;
   }
 
-  closeDialogs(`#${dialogId}, .stable`);
+  Dialog.closeAll(`#${dialogId}, .stable`);
   Layers.show("states", "borders");
   Layers.hide("provinces", "cultures", "biomes", "religions");
 
@@ -79,17 +79,16 @@ function open(): void {
   refreshDiplomacyOverview();
   attachMapSelection();
 
-  $(`#${dialogId}`).dialog({
+  Dialog.open(dialogId, {
     title: t("Diplomacy Overview"),
-    resizable: false,
     width: "fit-content",
-    close: closeDiplomacyOverview,
+    onClose: closeDiplomacyOverview,
     position
   });
 }
 
 function renderDialog(): void {
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
       ${renderEditorHeader({ dialogId, columns })}
       <div id="diplomacyBodySection" class="table"></div>
@@ -117,7 +116,7 @@ function renderDialog(): void {
   initColumnVisibility({
     dialogId,
     columns,
-    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+    onUpdate: () => Dialog.update(dialogId, { width: "fit-content", position })
   });
 
   ensureEl("diplomacyOverviewRefresh").addEventListener("click", refreshDiplomacyOverview);
@@ -206,7 +205,7 @@ function renderDiplomacyPage(view: TableView<State>): void {
 
   ensureEl("diplomacyFooterStates").textContent = String(view.all.length + 1);
   renderEditorPagination(ensureEl("diplomacyFooter"), view, diplomacyTable.goto);
-  updateDialog(dialogId, { width: "fit-content", position });
+  Dialog.update(dialogId, { width: "fit-content", position });
 }
 
 function stateHighlightOn(event: Event): void {
@@ -257,7 +256,7 @@ function selectState(stateId: number): void {
 }
 
 function regenerateRelations(): void {
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Regenerate relations"),
     message: `${t("Are you sure you want to regenerate relations of all states?")}<br>${t("This action cannot be reverted")}`,
     confirm: t("Regenerate"),
@@ -287,33 +286,32 @@ function showHistory(): void {
     message += /* html */ `<div><div contenteditable="true" data-id="0-0">${t("No historical records")}</div>&#8205;</div>`;
   }
 
-  ensureEl("alertMessage").innerHTML =
-    `${message}</div><div class="info-line">${t("Type to edit. Press Enter to add a new line, empty the element to remove it")}</div>`;
-  ensureEl("alertMessage")
-    .querySelectorAll("div[contenteditable='true']")
-    .forEach(el => {
-      el.addEventListener("input", changeReliationsHistory);
-    });
-
-  $("#alert").dialog({
+  const content = Dialog.message({
     title: t("Relations history"),
-    position: { my: "center", at: "center", of: "svg" },
-    buttons: {
-      [t("Save")]: function (this: HTMLElement) {
-        // biome-ignore lint/performance/useDomNodeTextContent: innerText yields a line per nested div
-        const data = this.querySelector("div")!.innerText.split("\n").join("\r\n");
-        const name = `${getFileName("Relations history")}.txt`;
-        downloadFile(data, name);
+    message: `${message}</div><div class="info-line">${t("Type to edit. Press Enter to add a new line, empty the element to remove it")}</div>`,
+    buttons: [
+      {
+        label: t("Save"),
+        onClick: () => {
+          // biome-ignore lint/performance/useDomNodeTextContent: innerText yields a line per nested div
+          const data = content.querySelector("div")!.innerText.split("\n").join("\r\n");
+          const name = `${getFileName("Relations history")}.txt`;
+          downloadFile(data, name);
+          return false;
+        }
       },
-      [t("Clear")]: function (this: HTMLElement) {
-        pack.states[0].diplomacy = [] as unknown as string[];
-        $(this).dialog("close");
+      {
+        label: t("Clear"),
+        onClick: () => {
+          pack.states[0].diplomacy = [] as unknown as string[];
+        }
       },
-      [t("Close")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+      { label: t("Close") }
+    ]
   });
+  for (const line of content.querySelectorAll("div[contenteditable='true']")) {
+    line.addEventListener("input", changeReliationsHistory);
+  }
 }
 
 function changeReliationsHistory(this: HTMLElement): void {
@@ -351,16 +349,16 @@ function showMatrix(): void {
   table += `</tbody></table>`;
   diplomacyMatrixBody.innerHTML = table;
 
-  $("#diplomacyMatrix").dialog({
+  Dialog.open("diplomacyMatrix", {
     title: t("Relations matrix"),
     position: { my: "center", at: "center", of: "svg" },
-    close: closeDiplomacyMatrix,
-    buttons: {}
+    onClose: closeDiplomacyMatrix,
+    buttons: []
   });
 }
 
 function renderMatrix(): void {
-  destroyDialog("diplomacyMatrix");
+  Dialog.destroy("diplomacyMatrix");
   const matrixHtml = /* html */ `<div id="diplomacyMatrix" class="dialog">
       <div id="diplomacyMatrixBody" class="matrix-table"></div>
     </div>`;
@@ -368,8 +366,7 @@ function renderMatrix(): void {
 }
 
 function closeDiplomacyMatrix(): void {
-  $("#diplomacyMatrix").dialog("destroy");
-  ensureEl("diplomacyMatrix").remove();
+  Dialog.destroy("diplomacyMatrix");
 }
 
 function exportCsv(): void {
@@ -389,8 +386,7 @@ function closeDiplomacyOverview(): void {
   select("#debug").selectAll(".highlight").remove();
   removeRelationsMark();
   Layers.draw("states");
-  $(`#${dialogId}`).dialog("destroy");
-  ensureEl(dialogId).remove();
+  Dialog.destroy(dialogId);
 }
 
 export const DiplomacyOverview = { open, showHistory, exportCsv };

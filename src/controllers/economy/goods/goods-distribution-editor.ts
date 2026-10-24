@@ -1,5 +1,6 @@
 import { Goods } from "@/model/economy/goods-generator";
 import { convertTemperature, getHeight } from "@/model/units";
+import { Dialog } from "@/ui/dialog/dialog";
 import { t } from "@/utils/i18n";
 import { list } from "@/utils/language-utils";
 import { ensureEl } from "@/utils/node-utils";
@@ -209,7 +210,6 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
   }
 
   const popupEl = document.createElement("div");
-  document.body.appendChild(popupEl);
 
   function updateOutput() {
     const expr = generateExpression();
@@ -220,7 +220,6 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
 
   function openBiomePicker(cond: DistCondition, onApplied: () => void) {
     const pickerEl = document.createElement("div");
-    document.body.appendChild(pickerEl);
 
     const grid = document.createElement("div");
     grid.style.cssText =
@@ -247,30 +246,26 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
       });
     pickerEl.appendChild(grid);
 
-    $(pickerEl).dialog({
+    Dialog.message({
+      id: "distributionBiomes",
+      message: pickerEl,
       title: t("Select Biomes"),
       width: "34em",
-      resizable: false,
-      buttons: {
-        [t("Cancel")]: function () {
-          $(this).dialog("close");
-        },
-        [t("Apply")]: function () {
-          cond.biomeIds = entries.filter(e => e.cb.checked).map(e => e.id);
-          onApplied();
-          $(this).dialog("close");
+      buttons: [
+        { label: t("Cancel") },
+        {
+          label: t("Apply"),
+          onClick: () => {
+            cond.biomeIds = entries.filter(e => e.cb.checked).map(e => e.id);
+            onApplied();
+          }
         }
-      },
-      close: () => {
-        $(pickerEl).dialog("destroy");
-        pickerEl.remove();
-      }
+      ]
     });
   }
 
   function openFeatureTypePicker(cond: DistCondition, onApplied: () => void) {
     const pickerEl = document.createElement("div");
-    document.body.appendChild(pickerEl);
 
     const list = document.createElement("div");
     list.style.cssText = "display:flex; flex-direction:column; gap:5px; padding:2px 0;";
@@ -290,30 +285,26 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
     });
     pickerEl.appendChild(list);
 
-    $(pickerEl).dialog({
+    Dialog.message({
+      id: "distributionFeatureTypes",
+      message: pickerEl,
       title: t("Select Feature Types"),
       width: "18em",
-      resizable: false,
-      buttons: {
-        [t("Cancel")]: function () {
-          $(this).dialog("close");
-        },
-        [t("Apply")]: function () {
-          cond.typeValues = entries.filter(e => e.cb.checked).map(e => e.value);
-          onApplied();
-          $(this).dialog("close");
+      buttons: [
+        { label: t("Cancel") },
+        {
+          label: t("Apply"),
+          onClick: () => {
+            cond.typeValues = entries.filter(e => e.cb.checked).map(e => e.value);
+            onApplied();
+          }
         }
-      },
-      close: () => {
-        $(pickerEl).dialog("destroy");
-        pickerEl.remove();
-      }
+      ]
     });
   }
 
   function openShorePicker(cond: DistCondition, onApplied: () => void) {
     const pickerEl = document.createElement("div");
-    document.body.appendChild(pickerEl);
 
     const list = document.createElement("div");
     list.style.cssText = "display:flex; flex-direction:column; gap:5px; padding:2px 0;";
@@ -333,24 +324,21 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
     });
     pickerEl.appendChild(list);
 
-    $(pickerEl).dialog({
+    Dialog.message({
+      id: "distributionShores",
+      message: pickerEl,
       title: t("Select Shore Proximity"),
       width: "18em",
-      resizable: false,
-      buttons: {
-        [t("Cancel")]: function () {
-          $(this).dialog("close");
-        },
-        [t("Apply")]: function () {
-          cond.shoreValues = entries.filter(e => e.cb.checked).map(e => e.value);
-          onApplied();
-          $(this).dialog("close");
+      buttons: [
+        { label: t("Cancel") },
+        {
+          label: t("Apply"),
+          onClick: () => {
+            cond.shoreValues = entries.filter(e => e.cb.checked).map(e => e.value);
+            onApplied();
+          }
         }
-      },
-      close: () => {
-        $(pickerEl).dialog("destroy");
-        pickerEl.remove();
-      }
+      ]
     });
   }
 
@@ -677,24 +665,22 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
     updateOutput();
   });
 
-  $(popupEl).dialog({
+  Dialog.message({
+    id: "distributionEditor",
+    message: popupEl,
     title: t("Distribution Editor"),
     width: "60em",
     resizable: true,
-    buttons: {
-      [t("Cancel")]: function () {
-        $(this).dialog("close");
-      },
-      [t("Apply")]: function () {
-        const expr = generateExpression();
-        onApply(expr);
-        $(this).dialog("close");
+    buttons: [
+      { label: t("Cancel") },
+      {
+        label: t("Apply"),
+        onClick: () => {
+          const expr = generateExpression();
+          onApply(expr);
+        }
       }
-    },
-    close: () => {
-      $(popupEl).dialog("destroy");
-      popupEl.remove();
-    }
+    ]
   });
 }
 

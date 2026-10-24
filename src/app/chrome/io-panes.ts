@@ -3,7 +3,7 @@ import { select } from "d3";
 import { Options } from "@/model/options/options-model";
 import { Layers } from "@/renderers/layers";
 import { Services } from "@/services";
-import { closeDialogs } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
 import { tip } from "@/ui/tooltips";
 import { link } from "@/utils/common-utils";
 import { createFileInput } from "@/utils/file-utils";
@@ -175,44 +175,40 @@ function syncViewOnlyCopy(): void {
   ensureEl<HTMLButtonElement>("saveToStorageButton").disabled = isViewOnlyCopy();
 }
 
-const closeButton = {
-  [t("Close")]: function (this: HTMLElement) {
-    $(this).dialog("close");
-  }
-};
+const closeButton = (id: string) => [{ label: t("Close"), onClick: () => Dialog.close(id) }];
 
 function showSavePane(): void {
   ensureEl<HTMLInputElement>("saveViewOnly").checked = false; // a view-only save is chosen each time
   syncViewOnlyCopy();
 
-  $("#saveMapData").dialog({
+  Dialog.open("saveMapData", {
     title: t("Save map"),
-    resizable: false,
     width: "25em",
     position: { my: "center", at: "center", of: "svg" },
-    buttons: closeButton
+    buttons: closeButton("saveMapData"),
+    persistent: true
   });
 }
 
 function showExportPane(): void {
   ensureEl<HTMLInputElement>("showLabels").checked = options.app.labels.showAll;
 
-  $("#exportMapData").dialog({
+  Dialog.open("exportMapData", {
     title: t("Export map data"),
-    resizable: false,
     width: "26em",
     position: { my: "center", at: "center", of: "svg" },
-    buttons: closeButton
+    buttons: closeButton("exportMapData"),
+    persistent: true
   });
 }
 
 async function showLoadPane(): Promise<void> {
-  $("#loadMapData").dialog({
+  Dialog.open("loadMapData", {
     title: t("Load Map"),
-    resizable: false,
     width: "auto",
     position: { my: "center", at: "center", of: "svg" },
-    buttons: closeButton
+    buttons: closeButton("loadMapData"),
+    persistent: true
   });
 
   // Electron has no Dropbox integration, the whole block is removed from the DOM there
@@ -264,50 +260,54 @@ function copyLinkToClipboard(): void {
 const URL_PATTERN = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-/]))?/;
 
 function loadURL(): void {
-  ensureEl("alertMessage").innerHTML = /* html */ `${t("Provide URL to map file")}:
+  Dialog.message({
+    message: /* html */ `${t("Provide URL to map file")}:
     <input id="mapURL" type="url" style="width: 24em" placeholder="https://e-cloud.com/test.map" />
-    <br /><i>${t("Please note server should allow CORS for file to be loaded. If CORS is not allowed, save file to Dropbox and provide a direct link")}</i>`;
-
-  $("#alert").dialog({
-    resizable: false,
+    <br /><i>${t("Please note server should allow CORS for file to be loaded. If CORS is not allowed, save file to Dropbox and provide a direct link")}</i>`,
     title: t("Load Map from URL"),
     width: "27em",
-    buttons: {
-      [t("Load")]: function (this: HTMLElement) {
-        const value = ensureEl<HTMLInputElement>("mapURL").value;
-        if (!URL_PATTERN.test(value)) return tip(t("Please provide a valid URL"), false, "error");
-        void Services.Load.loadMapFromURL(value);
-        $(this).dialog("close");
+    buttons: [
+      {
+        label: t("Load"),
+        onClick: () => {
+          const value = ensureEl<HTMLInputElement>("mapURL").value;
+          if (!URL_PATTERN.test(value)) {
+            tip(t("Please provide a valid URL"), false, "error");
+            return false;
+          }
+          void Services.Load.loadMapFromURL(value);
+        }
       },
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+      { label: t("Cancel") }
+    ]
   });
 }
 
 function openExportToPngTiles(): void {
   ensureEl("tileStatus").innerHTML = "";
-  closeDialogs();
+  Dialog.closeAll();
   updateTilesOptions();
 
   const inputs = Array.from(ensureEl("exportToPngTilesScreen").querySelectorAll("input"));
   for (const input of inputs) input.addEventListener("input", onTileInput);
 
-  $("#exportToPngTilesScreen").dialog({
-    resizable: false,
+  Dialog.open("exportToPngTilesScreen", {
     title: t("Download tiles"),
     width: "23em",
-    buttons: {
-      [t("Download")]: () => Services.ExportMap.exportToPngTiles(),
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
+    buttons: [
+      { label: t("Download"), onClick: () => Services.ExportMap.exportToPngTiles() },
+      {
+        label: t("Cancel"),
+        onClick: () => {
+          Dialog.close("exportToPngTilesScreen");
+        }
       }
-    },
-    close: () => {
+    ],
+    onClose: () => {
       for (const input of inputs) input.removeEventListener("input", onTileInput);
       select("#debug").selectAll("*").remove();
-    }
+    },
+    persistent: true
   });
 }
 
@@ -377,7 +377,7 @@ mapInput.id = "mapToLoad";
 mapInput.onchange = () => {
   const file = mapInput.files?.[0];
   mapInput.value = "";
-  closeDialogs();
+  Dialog.closeAll();
   if (file) void Services.Load.uploadMap(file);
 };
 

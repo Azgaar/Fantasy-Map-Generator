@@ -21,7 +21,7 @@ By default the map shows the world’s political situation, but it’s not the o
 
 To make it simple each layer has a shortcut assigned. Hover the mouse over the layer button to see a tooltip showing what the button does and which key is assigned to it. Check out [the Hotkeys](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys) wiki-page to get a full list of shortcuts. Click on the plus button next to the presets list to save the current layers as a custom preset. On Generator reload the map preset will be defaulted to the the previously selected one.
 
-Some layers may not be visible if an upper (top) layer is toggled on. You can drag the layer button to change the layer's order.
+Some layers may not be visible if an upper (top) layer is toggled on. To change the layer order, click the sort button at the end of the *Layers preset* row and drag the layers in the list.
 
 ## Styling and filters
 There are cases when you may want to see several full map-covering layers simultaneously. The only way you can do it is to make the upper layer partially transparent. Open the _Style_ and choose the required layer from the _Select element_ drop-down list and change the opacity slider. Note that this may not work if clipping is enabled.

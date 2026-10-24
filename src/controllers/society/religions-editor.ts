@@ -10,7 +10,8 @@ import { Layers } from "@/renderers/layers";
 import { LegendBoxes } from "@/renderers/legend-boxes";
 import { Csv } from "@/services/io/csv";
 import type { LegendItem } from "@/types/legend";
-import { closeDialogs, confirmationDialog, destroyDialog, noteIcon, updateDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+import { noteIcon } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import { dialogState } from "@/ui/dialog/state";
@@ -149,7 +150,7 @@ const religionsTable = initEditorTable<Religion>({
 function open(): void {
   if (options.app.mode) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ showExtinct: false, search: "" }));
-  closeDialogs(`#${dialogId}, .stable`);
+  Dialog.closeAll(`#${dialogId}, .stable`);
   Layers.show("religions");
   Layers.hide("states", "biomes");
   Layers.hide("cultures", "provinces");
@@ -159,11 +160,10 @@ function open(): void {
   drawReligionCenters();
   religionsTable.reset();
 
-  $(`#${dialogId}`).dialog({
+  Dialog.open(dialogId, {
     title: t("Religions Editor"),
-    resizable: false,
     width: "fit-content",
-    close: closeReligionsEditor,
+    onClose: closeReligionsEditor,
     position
   });
 }
@@ -175,7 +175,7 @@ function onSearchInput(): void {
 }
 
 function renderDialog(): void {
-  destroyDialog("religionsEditor");
+  Dialog.destroy("religionsEditor");
   const editorHtml = /* html */ `<div id="religionsEditor" class="dialog stable editorDialog">
     <div id="religionsBody" class="table" data-type="absolute">${renderEditorHeader({ dialogId, columns })}</div>
     <div id="religionsFilters" data-tip="${t("Apply a filter")}" class="editorFilters">
@@ -240,7 +240,7 @@ function renderDialog(): void {
   initColumnVisibility({
     dialogId,
     columns,
-    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+    onUpdate: () => Dialog.update(dialogId, { width: "fit-content", position })
   });
   ensureEl("religionsEditStyle").addEventListener("click", () => void Controllers.StyleEditor.open("religions"));
   ensureEl("religionsLegend").addEventListener("click", toggleLegend);
@@ -485,7 +485,7 @@ function religionsEditorAddLines(view: TableView<Religion>): void {
     togglePercentageMode();
   }
 
-  updateDialog(dialogId, { width: "fit-content", position });
+  Dialog.update(dialogId, { width: "fit-content", position });
 }
 
 function getTypeOptions(type: string): string {
@@ -651,7 +651,8 @@ function changePopulation(this: HTMLElement): void {
   const format = (n: number) => Number(n).toLocaleString();
   const burgs = pack.burgs.filter(b => !b.removed && pack.cells.religion[b.cell] === religionId);
 
-  ensureEl("alertMessage").innerHTML = /* html */ `<div>
+  Dialog.message({
+    message: /* html */ `<div>
     <i>${t("All population of religion territory is considered believers of this religion. It means believers number change will directly affect population")}</i>
     <div style="margin: 0.5em 0">
       ${t("Rural")}: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" />
@@ -661,7 +662,19 @@ function changePopulation(this: HTMLElement): void {
     <div>${t("Total population")}: ${format(total)} ⇒ <span id="totalPop">${format(total)}</span>
       (<span id="totalPopPerc">100</span>%)
     </div>
-  </div>`;
+  </div>`,
+    title: t("Change believers number"),
+    width: "24em",
+    buttons: [
+      {
+        label: t("Apply"),
+        onClick: () => {
+          applyPopulationChange();
+        }
+      },
+      { label: t("Cancel") }
+    ]
+  });
 
   const ruralPop = ensureEl<HTMLInputElement>("ruralPop");
   const urbanPop = ensureEl<HTMLInputElement>("urbanPop");
@@ -677,22 +690,6 @@ function changePopulation(this: HTMLElement): void {
 
   ruralPop.oninput = () => update();
   urbanPop.oninput = () => update();
-
-  $("#alert").dialog({
-    resizable: false,
-    title: t("Change believers number"),
-    width: "24em",
-    buttons: {
-      [t("Apply")]: function (this: HTMLElement) {
-        applyPopulationChange();
-        $(this).dialog("close");
-      },
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    },
-    position: { my: "center", at: "center", of: "svg" }
-  });
 
   function applyPopulationChange() {
     try {
@@ -727,7 +724,7 @@ function religionRemovePrompt(this: HTMLElement): void {
   if (options.app.mode) return;
 
   const religionId = +(this.closest(".states") as HTMLElement).dataset.id!;
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: `${t("Are you sure you want to remove the religion?")}<br>${t("This action cannot be reverted")}`,
     confirm: t("Remove"),
@@ -1021,8 +1018,7 @@ function closeReligionsEditor(): void {
   const view = religionsTable.view();
   view.rows = [];
   view.all = [];
-  $("#religionsEditor").dialog("destroy");
-  ensureEl("religionsEditor").remove();
+  Dialog.destroy("religionsEditor");
 }
 
 const originNames = (religion: Religion) =>

@@ -1,9 +1,9 @@
 // The "About" dialog: what the generator is, where to get help and how to support it.
 // A component, not a controller — it is opened over the map but knows nothing about it
 
+import { Dialog } from "@/ui/dialog/dialog";
 import { link } from "@/utils/common-utils";
 import { t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/node-utils";
 
 const COMMUNITY = {
   discord: link("https://discordapp.com/invite/X7E84HU", "Discord"),
@@ -55,17 +55,5 @@ function render(): string {
 
 /** Show info about the generator in a popup */
 export function showInfo(): void {
-  ensureEl("alertMessage").innerHTML = render();
-
-  $("#alert").dialog({
-    resizable: false,
-    title: document.title,
-    width: "28em",
-    buttons: {
-      [t("OK")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    },
-    position: { my: "center", at: "center", of: "svg" }
-  });
+  Dialog.message({ message: render(), title: document.title, width: "28em" });
 }

@@ -6,7 +6,7 @@ import { Pack } from "@/model/graph/pack-generator";
 import { Names } from "@/model/society/names-generator";
 import { createLabelArc } from "@/renderers/labels/label-arc";
 import { Layers } from "@/renderers/layers";
-import { closeDialogs } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
 import { stopMapPlacement, toggleMapPlacement } from "@/ui/map/map-placement";
 import { sentences, t } from "@/utils/i18n";
 import { findEl } from "@/utils/node-utils";
@@ -17,7 +17,7 @@ function toggle(): void {
     return;
   }
 
-  closeDialogs(".stable");
+  Dialog.closeAll(".stable");
   toggleMapPlacement(
     "addLabel",
     addOnClick,

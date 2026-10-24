@@ -1,4 +1,7 @@
 // Pick which entities (biomes, states, cultures, religions) something is limited to; an empty list allows all
+
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
@@ -11,6 +14,8 @@ export interface LimitationItem {
   color?: string;
   removed?: boolean;
 }
+
+const DIALOG_ID = "limitationPicker";
 
 /** the entities a limitation can name: id 0 (marine, neutrals, no religion) and removed ones never */
 const choices = (items: readonly LimitationItem[]) => items.filter(item => item.i && !item.removed);
@@ -43,26 +48,36 @@ export function pickLimitation({
       </td>
     </tr>`
   );
-  const message = ensureEl("alertMessage");
-  message.innerHTML = /* html */ `<b>${escapeHtml(heading)}:</b>
-    <table style="margin-top:.3em"><tbody>${rows.join("")}</tbody></table>`;
-  const inputs = () => Array.from(message.querySelectorAll<HTMLInputElement>("input"));
+  Dialog.destroy(DIALOG_ID);
+  ensureEl("dialogs").insertAdjacentHTML(
+    "beforeend",
+    /* html */ `<div id="${DIALOG_ID}" class="dialog"><b>${escapeHtml(heading)}:</b>
+      <table style="margin-top:.3em"><tbody>${rows.join("")}</tbody></table>
+    </div>`
+  );
+  const inputs = () => Array.from(ensureEl(DIALOG_ID).querySelectorAll<HTMLInputElement>("input"));
 
-  $("#alert").dialog({
+  Dialog.open(DIALOG_ID, {
     width: "fit-content",
     title,
-    close: () => $("#alert").dialog("option", "buttons", {}), // release the closure over the live pack arrays
-    buttons: {
-      [t("Invert")]: () => {
-        for (const input of inputs()) input.checked = !input.checked;
+    position: { my: "center", at: "center", of: "svg" },
+    buttons: [
+      {
+        label: t("Invert"),
+        onClick: () => {
+          for (const input of inputs()) input.checked = !input.checked;
+        }
       },
-      [t("Apply")]: () => {
-        const checked = inputs().filter(input => input.checked);
-        if (!checked.length) return tip(t("Select at least one element"), false, "error");
-        onApply(checked.length === inputs().length ? [] : checked.map(input => Number(input.dataset.i)));
-        $("#alert").dialog("close");
+      {
+        label: t("Apply"),
+        onClick: () => {
+          const checked = inputs().filter(input => input.checked);
+          if (!checked.length) return tip(t("Select at least one element"), false, "error");
+          onApply(checked.length === inputs().length ? [] : checked.map(input => Number(input.dataset.i)));
+          Dialog.close(DIALOG_ID);
+        }
       },
-      [t("Cancel")]: () => $("#alert").dialog("close")
-    }
+      { label: t("Cancel"), onClick: () => Dialog.close(DIALOG_ID) }
+    ]
   });
 }

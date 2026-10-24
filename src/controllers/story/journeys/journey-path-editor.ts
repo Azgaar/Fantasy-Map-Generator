@@ -7,7 +7,7 @@ import type { CellKind } from "@/model/story/journeys/journeys-generator";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
 import { Layers } from "@/renderers/layers";
 import type { Journey, JourneyPoint, JourneySegment } from "@/types/journey";
-import { alertDialog, confirmationDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
@@ -220,7 +220,7 @@ export class JourneyPathEditor {
 
     // recomputeSegment never overwrites a custom path, so a silent endpoint change would desync it
     if (seg.custom) {
-      confirmationDialog({
+      Dialog.confirm({
         title: t("Overwrite custom path?"),
         message: sentences(
           t("Segment “{{segment}}” has a custom-drawn path", { segment: seg.name }),
@@ -397,7 +397,7 @@ export function recomputeSegment(seg: JourneySegment): void {
   if (!result?.warning) return;
   const domain = Transports.getDomain(seg.transport);
   if (result.errorCode) {
-    alertDialog({
+    Dialog.message({
       title: t("Can't use {{- transport}} here", { transport: seg.transport }),
       message: t("Segment “{{segment}}”: {{- problem}}", {
         segment: seg.name,

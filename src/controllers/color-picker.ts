@@ -1,10 +1,10 @@
 // The fill picker: a Chrome-like color dialog; a fill is a color, optionally drawn as a hatching pattern
 import { color, hsl, rgb } from "d3";
 import { Hatches } from "@/renderers/hatches";
-import { destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
 import { getRandomColor } from "@/utils/color-utils";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/node-utils";
+import { ensureEl } from "@/utils/node-utils";
 import { minmax } from "@/utils/number-utils";
 
 const DIALOG = "colorPicker";
@@ -50,8 +50,7 @@ const EYEDROPPER_ICON = /* html */ `<svg viewBox="0 0 16 16"><path d="M13.4 2.6a
 
 /** Close the picker if it is open, releasing the caller callback */
 function close(): void {
-  const dialog = findEl(DIALOG);
-  if (dialog) $(dialog).dialog("close");
+  Dialog.close(DIALOG);
 }
 
 /** Open the picker for the current fill, calling back on every pick */
@@ -189,12 +188,10 @@ function open(fill: string, callback: (fill: string) => void): void {
   buildFields();
   render();
 
-  $(dialog).dialog({
+  Dialog.open(DIALOG, {
     title: t("Color Picker"),
-    resizable: false,
     width: "26em",
-    position: { my: "center", at: "center", of: "svg" },
-    close: () => destroyDialog(DIALOG)
+    position: { my: "center", at: "center", of: "svg" }
   });
 }
 

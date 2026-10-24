@@ -11,7 +11,8 @@ import { LegendBoxes } from "@/renderers/legend-boxes";
 import { Csv } from "@/services/io/csv";
 import type { LegendItem } from "@/types/legend";
 import type { PackedGraph } from "@/types/packed-graph";
-import { closeDialogs, destroyDialog, noteIcon, updateDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+import { noteIcon } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import {
@@ -99,7 +100,7 @@ const biomesTable = initEditorTable<Biome>({
 
 function open(): void {
   if (options.app.mode) return;
-  closeDialogs(`#${dialogId}, .stable`);
+  Dialog.closeAll(`#${dialogId}, .stable`);
   Layers.show("biomes");
   Layers.hide("states", "cultures");
   Layers.hide("religions", "provinces");
@@ -108,11 +109,11 @@ function open(): void {
   currentBiomeStatistics = biomesCollectStatistics();
   biomesTable.reset();
 
-  $(`#${dialogId}`).dialog({ title: t("Biomes Editor"), resizable: false, close: closeBiomesEditor, position });
+  Dialog.open(dialogId, { title: t("Biomes Editor"), onClose: closeBiomesEditor, position });
 }
 
 function renderDialog(): void {
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
   const html = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
       ${renderEditorHeader({ dialogId, columns })}
       <div id="biomesBody" class="table" data-type="absolute"></div>
@@ -163,7 +164,7 @@ function renderDialog(): void {
   initColumnVisibility({
     dialogId,
     columns,
-    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+    onUpdate: () => Dialog.update(dialogId, { width: "fit-content", position })
   });
 
   ensureEl("biomesEditorRefresh").addEventListener("click", refreshBiomesEditor);
@@ -315,7 +316,7 @@ function biomesEditorAddLines(view: TableView<Biome>, statistics: BiomeStatistic
     body.dataset.type = "absolute";
     togglePercentageMode();
   }
-  updateDialog(dialogId, { width: "fit-content", position });
+  Dialog.update(dialogId, { width: "fit-content", position });
 }
 
 function reliefPoolHtml({ icons, iconsDensity }: Biome): string {
@@ -519,8 +520,7 @@ function restoreInitialBiomes(): void {
 }
 
 function closeBiomesEditor(): void {
-  $("#biomesEditor").dialog("destroy");
-  ensureEl("biomesEditor").remove();
+  Dialog.destroy("biomesEditor");
 }
 
 function regeneratePopulation(): void {

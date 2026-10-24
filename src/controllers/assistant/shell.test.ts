@@ -4,8 +4,7 @@ import { afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   mapId: 1,
   send: vi.fn(),
-  note: null as string | null,
-  close: undefined as (() => void) | undefined
+  note: null as string | null
 }));
 vi.mock("./map", () => ({
   AssistantMap: {
@@ -30,6 +29,7 @@ vi.mock("@/controllers", () => ({
 }));
 vi.mock("@/services/assistant/azgaar-server/answerer", () => ({ askServer: state.send }));
 
+import { Dialog } from "@/ui/dialog/dialog";
 import { Catalog } from "@/utils/i18n";
 import { Assistant } from "./index";
 
@@ -43,7 +43,6 @@ beforeAll(() => Catalog.load("en"));
 beforeEach(() => {
   state.mapId++;
   state.note = null;
-  state.close = undefined;
   localStorage.clear();
   state.send.mockReset();
   state.send.mockImplementation(
@@ -61,18 +60,6 @@ beforeEach(() => {
   );
   document.body.innerHTML = '<div id="dialogs"></div>';
   localStorage.setItem("fmg-help-gateway", "http://localhost:9876");
-  window.$ = vi.fn(() => ({
-    dialog: (options: string | { close?: () => void }) => {
-      if (typeof options === "string") return;
-      state.close = options.close;
-      const panel = document.getElementById("assistant")!;
-      const wrapper = document.createElement("div");
-      wrapper.className = "ui-dialog";
-      wrapper.innerHTML = '<div class="ui-dialog-titlebar"></div>';
-      panel.replaceWith(wrapper);
-      wrapper.append(panel);
-    }
-  })) as unknown as typeof window.$;
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => new Response(JSON.stringify({ tier: "anonymous", remaining: 5, resetsAt: "" }), { status: 200 }))
@@ -80,7 +67,7 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
-  state.close?.();
+  Dialog.close("assistant");
   const ask = document.getElementById("assistantAsk");
   if (ask?.classList.contains("busy")) ask.click(); // closing no longer stops an answer
   await new Promise(resolve => setTimeout(resolve, 0));
@@ -204,7 +191,7 @@ it("keeps a selected read-only chat when reopening the panel or reloading the sa
   clickText("Read-only history");
   const count = chats.list().length;
   window.dispatchEvent(new Event("map:generated"));
-  state.close?.();
+  Dialog.close("assistant");
   Assistant.open();
   await vi.waitFor(() =>
     expect(document.getElementById("assistantTranscript")?.textContent).toContain("Read-only history")
@@ -230,13 +217,13 @@ it("keeps the panel, its draft and a running answer when closed", async () => {
   const input = document.getElementById("assistantQuestion") as HTMLTextAreaElement;
   input.value = "Read";
   document.getElementById("assistantAsk")!.click();
-  const close = state.close;
-  close?.();
+  const frame = document.getElementById("assistant")!.closest(".dialog-window");
+  Dialog.close("assistant");
   input.value = "draft";
   finish?.();
   await vi.waitFor(() => expect(document.getElementById("assistantAsk")?.classList.contains("busy")).toBe(false));
   Assistant.open();
-  expect(state.close).toBe(close); // reopened, not rebuilt
+  expect(document.getElementById("assistant")!.closest(".dialog-window")).toBe(frame); // reopened, not rebuilt
   expect(document.getElementById("assistantQuestion")).toBe(input);
   expect(input.value).toBe("draft");
   expect(document.getElementById("assistantTranscript")?.textContent).toContain("Read");

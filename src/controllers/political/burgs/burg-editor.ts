@@ -15,8 +15,9 @@ import { goodIconLines } from "@/renderers/draw-goods";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
 import { speak } from "@/services/speech";
-import { closeDialogs, confirmationDialog, destroyDialog, noteButton } from "@/ui/dialog/dialog-helpers";
-import { promptDialog } from "@/ui/dialog/prompt-dialog";
+import { Dialog } from "@/ui/dialog/dialog";
+import { noteButton } from "@/ui/dialog/dialog-helpers";
+
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { zoomTo } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
@@ -38,7 +39,7 @@ let previewLayoutLocked = false;
 
 function open(id: number | string): void {
   if (options.app.mode) return;
-  closeDialogs(".stable");
+  Dialog.closeAll(".stable");
   Layers.show("burgIcons", "labels");
 
   selectedId = +id;
@@ -49,20 +50,16 @@ function open(id: number | string): void {
   ensureEl("burgEditor").dataset.entity = `burg:${selectedId}`;
   updateGroupsList();
 
-  $("#burgEditor").dialog({
-    autoOpen: false,
+  Dialog.open("burgEditor", {
     title: t("Edit Burg"),
-    resizable: false,
-    close: closeBurgEditor,
+    onClose: closeBurgEditor,
     position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" }
   });
-  // Loading the iframe before dialog creation would restart its navigation when reparented.
-  updateBurgValues();
-  $("#burgEditor").dialog("open");
+  updateBurgValues(); // after opening: moving a loading iframe into the window would restart its navigation
 }
 
 function renderDialog(): void {
-  destroyDialog("burgEditor");
+  Dialog.destroy("burgEditor");
   const editorHtml = /* html */ `<div id="burgEditor" class="dialog" data-burg-id="${getSelectedId()}">
       <div id="burgBody" style="padding-bottom: 0.3em">
         <div style="display: flex; align-items: center">
@@ -451,7 +448,7 @@ function toggleFeature(this: HTMLElement): void {
 }
 
 function confirmRemoveMarket(market: Market): void {
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: `${t("This burg is the center of the market “{{market}}”. Remove the market?", {
       market: Markets.getName(market)
@@ -524,20 +521,20 @@ function hideStyleSection(): void {
 // the style editor selects groups by bare name, never by the DOM id of the rendered node
 function editGroupLabelStyle(): void {
   const burg = pack.burgs[getSelectedId()];
-  closeDialogs(".stable");
+  Dialog.closeAll(".stable");
   void Controllers.StyleEditor.open("labels", burg.label?.group || burg.group);
 }
 
 function editBurgLabel(): void {
   const id = getSelectedId();
-  $("#burgEditor").dialog("close");
+  Dialog.close("burgEditor");
   Controllers.LabelsEditor.open("burg", id);
 }
 
 // the group form carries both the icons and the anchors parts
 function editGroupStyle(): void {
   const burg = pack.burgs[getSelectedId()];
-  closeDialogs(".stable");
+  Dialog.closeAll(".stable");
   void Controllers.StyleEditor.open("burgIcons", burg.group);
 }
 
@@ -695,7 +692,7 @@ function setCustomPreview(): void {
   const id = getSelectedId();
   const burg = pack.burgs[id];
 
-  promptDialog(
+  Dialog.prompt(
     t(
       "Provide custom URL to the burg map. It can be a link to a generator or just an image. Leave empty to use the default map preview"
     ),
@@ -770,31 +767,17 @@ function removeSelectedBurg(): void {
   const burg = pack.burgs[burgId];
 
   if (burg.capital) {
-    ensureEl("alertMessage").innerHTML =
-      /* html */ `${sentences(t("You cannot remove the capital"), t("You must change the state capital first"))}`;
-    $("#alert").dialog({
-      resizable: false,
-      title: t("Remove"),
-      buttons: {
-        [t("OK")]: function (this: HTMLElement) {
-          $(this).dialog("close");
-        }
-      }
+    Dialog.message({
+      message: /* html */ `${sentences(t("You cannot remove the capital"), t("You must change the state capital first"))}`,
+      title: t("Remove")
     });
   } else if (pack.markets?.some(m => m.centerBurgId === burgId)) {
-    ensureEl("alertMessage").innerHTML =
-      /* html */ `${t("You cannot remove a market center burg. Please remove the market first")}`;
-    $("#alert").dialog({
-      resizable: false,
-      title: t("Remove"),
-      buttons: {
-        [t("OK")]: function (this: HTMLElement) {
-          $(this).dialog("close");
-        }
-      }
+    Dialog.message({
+      message: /* html */ `${t("You cannot remove a market center burg. Please remove the market first")}`,
+      title: t("Remove")
     });
   } else {
-    confirmationDialog({
+    Dialog.confirm({
       title: t("Remove"),
       message: `${t("Are you sure you want to remove the burg?")}<br>${t("This action cannot be reverted")}`,
       confirm: t("Remove"),
@@ -802,7 +785,7 @@ function removeSelectedBurg(): void {
         Burgs.remove(burgId);
         removeEmblem("burg", burgId);
         Layers.draw("burgIcons", "labels");
-        $("#burgEditor").dialog("close");
+        Dialog.close("burgEditor");
       }
     });
   }
@@ -817,8 +800,7 @@ function closeBurgEditor(): void {
   if (ensureEl("burgRelocate").classList.contains("pressed")) toggleRelocateBurg();
   selected = null;
   ensureEl("burgPreviewObject").replaceChildren();
-  $("#burgEditor").dialog("destroy");
-  ensureEl("burgEditor").remove();
+  Dialog.destroy("burgEditor");
 }
 
 function getProduction(pool: Record<number, number>): string {

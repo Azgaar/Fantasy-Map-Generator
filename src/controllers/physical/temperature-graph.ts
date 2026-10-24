@@ -1,8 +1,8 @@
 import { axisBottom, axisLeft, curveBasis, line, pointer, scaleLinear, scaleTime, select, timeFormat } from "d3";
 import { convertTemperature } from "@/model/units";
+import { Dialog } from "@/ui/dialog/dialog";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 import { round } from "@/utils/string-utils";
 
@@ -148,19 +148,15 @@ function open(id: number): void {
     tempMax.push([x, yscale(tempAverage + tempDelta) + yOffset]);
   });
 
+  const graph = document.createElement("div");
   drawGraph();
-
-  $("#alert").dialog({
-    title: t("Average temperature in {{- burg}}", { burg: b.name }),
-    position: { my: "center", at: "center", of: "svg" }
-  });
+  Dialog.message({ message: graph, title: t("Average temperature in {{- burg}}", { burg: b.name }) });
 
   function drawGraph(): void {
-    ensureEl("alertMessage").innerHTML = "";
     const getCurve = (data: [number, number][]): string => round(line().curve(curveBasis)(data) ?? "", 2);
 
     const legendSize = 60;
-    const chart = select("#alertMessage")
+    const chart = select(graph)
       .append("svg")
       .attr("width", chartWidth + 120)
       .attr("height", chartHeight + yOffset + legendSize);

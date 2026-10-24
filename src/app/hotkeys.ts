@@ -3,7 +3,7 @@ import { Controllers } from "@/controllers";
 import { Layers } from "@/renderers/layers";
 import { Services } from "@/services";
 import { toggleSaveReminder } from "@/services/autosave";
-import { closeDialogs } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
 import { changeMapZoom, panMap, resetZoom, setMapZoom } from "@/ui/map/zoom";
 import { t } from "@/utils/i18n";
 import { findEl } from "@/utils/node-utils";
@@ -51,7 +51,7 @@ function handleKeyup(event: KeyboardEvent): void {
   else if (code === "F9") Services.Load.quickLoad();
   else if (code === "Tab") toggleOptions(event);
   else if (code === "Escape") {
-    closeDialogs();
+    Dialog.closeAll();
     hideOptions();
   } else if (code === "Delete") removeElementOnKey();
   else if (code === "KeyO" && findEl("canvas3d")) Controllers.View3d.toggleOptions();

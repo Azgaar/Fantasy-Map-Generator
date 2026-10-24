@@ -8,9 +8,6 @@ vi.mock("@/renderers/draw-markers", () => ({ drawMarkers: vi.fn(), setEditedMark
 vi.mock("@/controllers", () => ({ Controllers: {} }));
 vi.mock("@/ui/dialog/dialog-helpers", async importActual => ({
   noteButton: (await importActual<typeof import("@/ui/dialog/dialog-helpers")>()).noteButton,
-  closeDialogs: vi.fn(),
-  confirmationDialog: vi.fn(),
-  destroyDialog: vi.fn(),
   refreshEditors: vi.fn()
 }));
 
@@ -21,7 +18,6 @@ it("renames through Markers.rename, the same method the Assistant proposes", () 
   document.body.innerHTML = '<div id="dialogs"></div><svg><svg id="marker4"></svg></svg>';
   options.app.mode = null;
   vi.stubGlobal("pack", { markers: [{ i: 4, name: "Old Well" }] });
-  vi.stubGlobal("$", () => ({ dialog: vi.fn() }));
   const rename = vi.fn();
   Object.assign(Markers, { rename });
   MarkersEditor.open(4);

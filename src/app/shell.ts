@@ -5,7 +5,8 @@ import { Options } from "@/model/options/options-model";
 import { Pins } from "@/model/options/pins";
 import { Layers } from "@/renderers/layers";
 import { Services } from "@/services";
-import { alertDialog, closeDialogs, confirmationDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { fitMapToScreen } from "@/ui/map/canvas";
 import { showDataTip } from "@/ui/tooltips";
 import { isElectron, isLocalhost } from "@/utils/environment";
@@ -19,7 +20,6 @@ export function initShell(): void {
 
   window.addEventListener("resize", onResize);
   window.addEventListener("vite:preloadError", onChunkLoadError);
-  document.addEventListener("touchstart", onTitlebarButtonTouch, { capture: true, passive: true });
   addDragToUpload();
   initTourPromptButton();
   initAssistantBubble();
@@ -86,15 +86,6 @@ function initAssistantBubble(): void {
 }
 
 /**
- * touch-punch preventDefaults touch sequences started on a dialog titlebar (the drag handle),
- * so taps on the titlebar buttons never produce a click. Stop the sequence from reaching it
- */
-function onTitlebarButtonTouch(event: TouchEvent): void {
-  const target = event.target as HTMLElement | null;
-  if (target?.closest?.(".ui-dialog-titlebar button")) event.stopPropagation();
-}
-
-/**
  * Each release replaces the content-hashed chunk files on the server, so a page opened before
  * the release 404s when it lazy-loads a chunk it has not requested yet ("Failed to fetch
  * dynamically imported module"). Offer a reload to pick up the new build. Offline the same error
@@ -102,14 +93,14 @@ function onTitlebarButtonTouch(event: TouchEvent): void {
  */
 function onChunkLoadError(): void {
   if (!navigator.onLine) {
-    alertDialog({
+    Dialog.message({
       title: t("You are offline"),
       message: t("This part of the app was not downloaded before the connection was lost. Reconnect and try again")
     });
     return;
   }
 
-  confirmationDialog({
+  Dialog.confirm({
     title: t("New version released"),
     message: `${t("This part of the app failed to load because a new version was released while the page was open.")}<br>${sentences(t("Reload the page to get the new version"), t("If you have unsaved changes, save the map first"))}`,
     confirm: t("Reload"),
@@ -148,7 +139,7 @@ function addDragToUpload(): void {
     if (!file) return;
 
     if (!file.name.endsWith(".map") && !file.name.endsWith(".gz")) {
-      return alertDialog({
+      return Dialog.message({
         title: t("Invalid file format"),
         message: t("Please upload a map file (.map or .gz formats) you have previously downloaded")
       });
@@ -156,7 +147,7 @@ function addDragToUpload(): void {
 
     mapOverlay.style.display = null as unknown as string;
     mapOverlay.innerHTML = `${t("Uploading")}<span>.</span><span>.</span><span>.</span>`;
-    closeDialogs();
+    Dialog.closeAll();
     Services.Load.uploadMap(file, () => {
       mapOverlay.style.display = "none";
       mapOverlay.innerHTML = t("Drop a map file to open");
@@ -191,7 +182,7 @@ export function warnIfServerless(): boolean {
   if (location.hostname) return false;
 
   const wiki = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally";
-  alertDialog({
+  Dialog.message({
     title: t("Loading error"),
     width: "28em",
     message: t(

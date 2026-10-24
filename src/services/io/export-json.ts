@@ -3,7 +3,7 @@ import { getFileName } from "@/services/io/file-name";
 import { mapHistory } from "@/services/map-history";
 import { savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
-import { closeDialogs } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
 
@@ -21,7 +21,7 @@ function exportToJson(type: ExportJsonType): void {
     tip(t("Data cannot be exported when edit mode is active, please exit the mode and retry"), false, "error");
     return;
   }
-  closeDialogs("#alert");
+  Dialog.closeAll(undefined, { keepMessages: true });
 
   TIME && console.time("exportToJson");
   const mapData = typeMap[type]();

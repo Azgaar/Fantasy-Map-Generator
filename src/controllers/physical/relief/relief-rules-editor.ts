@@ -4,9 +4,11 @@ import { Options } from "@/model/options/options-model";
 import type { ReliefRule } from "@/model/options/options-schema";
 import { Relief } from "@/model/physical/relief-generator";
 import { getHeight } from "@/model/units";
-import { confirmationDialog, destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { limitationTip, pickLimitation } from "@/ui/dialog/limitation-picker";
 import { type EditorColumn, initColumnVisibility, renderEditorHeader } from "@/ui/dialog/table";
+import { sortableList } from "@/ui/sortable-list";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { minmax } from "@/utils/number-utils";
@@ -45,7 +47,7 @@ const STYLE = /* css */ `
 `;
 
 function open(): void {
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
   ensureEl("dialogs").insertAdjacentHTML(
     "beforeend",
     /* html */ `<div id="${dialogId}" class="dialog editorDialog">
@@ -65,30 +67,22 @@ function open(): void {
   initColumnVisibility({
     dialogId,
     columns,
-    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+    onUpdate: () => Dialog.update(dialogId, { width: "fit-content", position })
   });
 
   const body = ensureEl(`${dialogId}Body`);
   body.addEventListener("change", event => onChange(event.target as HTMLInputElement));
   body.addEventListener("click", event => onClick(event.target as Element));
-  $(body).sortable({
-    items: "div.states",
-    handle: ".icon-resize-vertical",
-    containment: "parent",
-    axis: "y",
-    update: reorder
-  });
+  sortableList(body, { items: "div.states", handle: ".icon-resize-vertical", onReorder: reorder });
   ensureEl(`${dialogId}Add`).addEventListener("click", addRule);
   ensureEl(`${dialogId}Restore`).addEventListener("click", restoreDefaults);
   ensureEl(`${dialogId}Replace`).addEventListener("click", replaceClaimed);
   render();
 
-  $(`#${dialogId}`).dialog({
+  Dialog.open(dialogId, {
     title: t("Relief Rules"),
     width: "fit-content",
-    resizable: false,
-    position,
-    close: () => destroyDialog(dialogId)
+    position
   });
 }
 
@@ -204,7 +198,7 @@ function addRule(): void {
 }
 
 function restoreDefaults(): void {
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Restore relief rules"),
     message: t("Replace the relief rules with the default hills and mountains?"),
     confirm: t("Restore"),

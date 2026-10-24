@@ -14,13 +14,8 @@ import {
 } from "@/renderers/draw-military";
 import { Layers } from "@/renderers/layers";
 import { speak } from "@/services/speech";
-import {
-  closeDialogs,
-  confirmationDialog,
-  destroyDialog,
-  noteButton,
-  refreshEditors
-} from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+import { noteButton, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
@@ -32,7 +27,7 @@ let selectedRegiment: SVGGElement | null = null;
 
 function editRegiment(selector: string): void {
   if (options.app.mode) return;
-  closeDialogs(".stable");
+  Dialog.closeAll(".stable");
   Layers.show("military");
 
   bindRegiments();
@@ -47,10 +42,9 @@ function editRegiment(selector: string): void {
   drawBase();
   drawRotationControl();
 
-  $("#regimentEditor").dialog({
+  Dialog.open("regimentEditor", {
     title: t("Edit Regiment"),
-    resizable: false,
-    close: closeEditor,
+    onClose: closeEditor,
     position: { my: "left top", at: "left+10 top+10", of: "#map" }
   });
 }
@@ -62,7 +56,7 @@ function bindRegiments(): void {
 }
 
 function renderDialog(): void {
-  destroyDialog("regimentEditor");
+  Dialog.destroy("regimentEditor");
   const editorHtml = /* html */ `<div id="regimentEditor" class="dialog">
     <div id="regimentBody" style="padding-bottom: 0.3em">
       <div style="padding-bottom: 0.2em">
@@ -475,7 +469,7 @@ async function attackRegimentOnClick(this: SVGGElement, event: MouseEvent): Prom
     .remove();
 
   clearMainTip();
-  $("#regimentEditor").dialog("close");
+  Dialog.close("regimentEditor");
 }
 
 function toggleAttach(): void {
@@ -518,7 +512,7 @@ function attachRegimentOnClick(this: SVGGElement, event: MouseEvent): void {
   selectedRegiment.remove();
 
   refreshEditors();
-  $("#regimentEditor").dialog("close");
+  Dialog.close("regimentEditor");
   Controllers.RegimentEditor.open(`#${regSelected.id}`);
 }
 
@@ -536,7 +530,7 @@ function editLegend(): void {
 }
 
 function removeRegiment(): void {
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: t("Are you sure you want to remove the regiment?"),
     confirm: t("Remove"),
@@ -548,7 +542,7 @@ function removeRegiment(): void {
       selectedRegiment.remove();
 
       refreshEditors();
-      $("#regimentEditor").dialog("close");
+      Dialog.close("regimentEditor");
     }
   });
 }
@@ -634,8 +628,7 @@ function closeEditor(): void {
   ensureEl("regimentAttach").classList.remove("pressed");
   applyDefaultViewboxEvents();
   selectedRegiment = null;
-  $("#regimentEditor").dialog("destroy");
-  ensureEl("regimentEditor").remove();
+  Dialog.destroy("regimentEditor");
 }
 
 export const RegimentEditor = { open: editRegiment };

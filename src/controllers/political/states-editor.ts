@@ -18,7 +18,8 @@ import { fog, unfog } from "@/renderers/overlays/fogging";
 import { Csv } from "@/services/io/csv";
 import { speak } from "@/services/speech";
 import type { LegendItem } from "@/types/legend";
-import { closeDialogs, confirmationDialog, destroyDialog, noteIcon, updateDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+import { noteIcon } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import { dialogState } from "@/ui/dialog/state";
@@ -211,7 +212,7 @@ function open(): void {
   if (options.app.mode) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ search: "" }));
 
-  closeDialogs(`#${dialogId}, .stable`);
+  Dialog.closeAll(`#${dialogId}, .stable`);
   Layers.show("states", "borders");
   Layers.hide("cultures", "biomes", "religions");
 
@@ -219,16 +220,16 @@ function open(): void {
   States.collectStatistics();
   statesTable.reset();
 
-  $(`#${dialogId}`).dialog({
+  Dialog.open(dialogId, {
     title: t("States Editor"),
     resizable: false,
     position,
-    close: closeStatesEditor
+    onClose: closeStatesEditor
   });
 }
 
 function renderDialog(): void {
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
     <div id="statesBodySection" class="table" data-type="absolute">
       ${renderEditorHeader({ dialogId, columns })}
@@ -284,7 +285,7 @@ function renderDialog(): void {
   initColumnVisibility({
     dialogId,
     columns,
-    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+    onUpdate: () => Dialog.update(dialogId, { width: "fit-content", position })
   });
 
   ensureEl("statesSearch").addEventListener("input", onSearchInput);
@@ -364,7 +365,6 @@ function closeStatesEditor(): void {
   const view = statesTable.view();
   view.rows = [];
   view.all = [];
-  destroyDialog(dialogId);
 }
 
 function refreshStatesEditor(): void {
@@ -568,7 +568,7 @@ function renderStatesPage(view: TableView<State>): void {
     ensureEl("statesBodySection").dataset.type = "absolute";
     togglePercentageMode();
   }
-  updateDialog(dialogId, { width: "fit-content", position });
+  Dialog.update(dialogId, { width: "fit-content", position });
 }
 
 function getCultureOptions(culture: number): string {
@@ -640,20 +640,20 @@ function editStateName(state: number): void {
   applyOption(stateNameEditorSelectForm, s.formName || "");
   ensureEl<HTMLInputElement>("stateNameEditorFull").value = s.fullName || "";
 
-  $("#stateNameEditor").dialog({
+  Dialog.open("stateNameEditor", {
     resizable: false,
     title: t("Change state name"),
-    buttons: {
-      [t("Apply")]: function (this: HTMLElement) {
-        applyNameChange(s);
-        $(this).dialog("close");
+    buttons: [
+      {
+        label: t("Apply"),
+        onClick: () => {
+          applyNameChange(s);
+          Dialog.close("stateNameEditor");
+        }
       },
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    },
-    position: { my: "center", at: "center", of: "svg" },
-    close: closeStateNameEditor
+      { label: t("Cancel"), onClick: () => Dialog.close("stateNameEditor") }
+    ],
+    position: { my: "center", at: "center", of: "svg" }
   });
 
   ensureEl("stateNameEditorShortCulture").addEventListener("click", regenerateShortNameCulture);
@@ -724,7 +724,7 @@ function editStateName(state: number): void {
 }
 
 function renderNameEditor(): void {
-  destroyDialog("stateNameEditor");
+  Dialog.destroy("stateNameEditor");
   const nameEditorHtml = /* html */ `<div id="stateNameEditor" class="dialog" data-state="0">
       <div>
         <div data-tip="${t("Short name")}" class="label">${t("Short name")}:</div>
@@ -791,11 +791,6 @@ function renderNameEditor(): void {
   ensureEl("dialogs").insertAdjacentHTML("beforeend", nameEditorHtml);
 }
 
-function closeStateNameEditor(): void {
-  $("#stateNameEditor").dialog("destroy");
-  ensureEl("stateNameEditor").remove();
-}
-
 function changePopulation(stateId: number): void {
   const state = pack.states[stateId];
   if (!state.cells) {
@@ -810,7 +805,8 @@ function changePopulation(stateId: number): void {
   const total = rural + urban;
   const format = (n: number) => Number(n).toLocaleString();
 
-  ensureEl("alertMessage").innerHTML = /* html */ `<div>
+  Dialog.message({
+    message: /* html */ `<div>
     <i>${t("Change population of all cells assigned to the state")}</i>
     <div style="margin: 0.5em 0">
       ${t("Rural")}: <input type="number" min="0" step="1" id="ruralPop" value=${rural} style="width:6em" />
@@ -819,7 +815,19 @@ function changePopulation(stateId: number): void {
     <div>${t("Total population")}: ${format(total)} ⇒ <span id="totalPop">${format(total)}</span>
       (<span id="totalPopPerc">100</span>%)
     </div>
-  </div>`;
+  </div>`,
+    title: t("Change state population"),
+    width: "24em",
+    buttons: [
+      {
+        label: t("Apply"),
+        onClick: () => {
+          applyPopulationChange();
+        }
+      },
+      { label: t("Cancel") }
+    ]
+  });
 
   const ruralPop = ensureEl<HTMLInputElement>("ruralPop");
   const urbanPop = ensureEl<HTMLInputElement>("urbanPop");
@@ -835,22 +843,6 @@ function changePopulation(stateId: number): void {
 
   ruralPop.oninput = () => update();
   urbanPop.oninput = () => update();
-
-  $("#alert").dialog({
-    resizable: false,
-    title: t("Change state population"),
-    width: "24em",
-    buttons: {
-      [t("Apply")]: function (this: HTMLElement) {
-        applyPopulationChange();
-        $(this).dialog("close");
-      },
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    },
-    position: { my: "center", at: "center", of: "svg" }
-  });
 
   function applyPopulationChange() {
     try {
@@ -912,8 +904,8 @@ function openTreasuryDialog(stateId: number): void {
     return { label: label || t("None"), tip: sentences(names.join(", ") || t("None"), t("Click to select")) };
   };
 
-  ensureEl("alertMessage").innerHTML =
-    /* html */ `<div data-tip="${t("Sales tax is applied to deals with a seller from the state. Poll tax is applied to all population of the state. Tariffs are applied to foreign goods imported into the state's markets. Tax changes take effect on Production regeneration")}" style="margin: 0.6em 0; display: grid; grid-template-columns: 7em auto auto; row-gap: 0.4em; align-items: center">
+  Dialog.message({
+    message: /* html */ `<div data-tip="${t("Sales tax is applied to deals with a seller from the state. Poll tax is applied to all population of the state. Tariffs are applied to foreign goods imported into the state's markets. Tax changes take effect on Production regeneration")}" style="margin: 0.6em 0; display: grid; grid-template-columns: 7em auto auto; row-gap: 0.4em; align-items: center">
       <label for="stateSalesTaxInput">${t("Sales Tax")}:</label>
       <input id="stateSalesTaxInput" type="number" min="0" max="1" step="0.01" value="${state.salesTax}" style="width: 6em"/> = ${formatPrice(salesTaxRevenue)}
       <label for="statePollTaxInput">${t("Poll Tax")}:</label>
@@ -931,7 +923,32 @@ function openTreasuryDialog(stateId: number): void {
         <button id="stateTariffAdd" type="button" class="icon-plus" data-tip="${t("Add tariff or embargo rule")}"> ${t("Add")}</button>
       </div>
     </div>
-    <div id="stateTariffsList" style="max-height: 15em; overflow-y: auto; display: flex; flex-direction: column; row-gap: 0.25em;"></div>`;
+    <div id="stateTariffsList" style="max-height: 15em; overflow-y: auto; display: flex; flex-direction: column; row-gap: 0.25em;"></div>`,
+    title: t("Taxes and Treasury: {{- state}}", { state: state.name }),
+    width: "32em",
+    buttons: [
+      {
+        label: t("Apply"),
+        onClick: () => {
+          const salesInput = ensureEl<HTMLInputElement>("stateSalesTaxInput");
+          const pollInput = ensureEl<HTMLInputElement>("statePollTaxInput");
+          const treasuryInput = ensureEl<HTMLInputElement>("stateTreasuryInput");
+          const newSales = Math.max(0, Math.min(1, +salesInput.value));
+          const newPoll = Math.max(0, +pollInput.value);
+          const newTreasury = +treasuryInput.value;
+          States.setTaxes(
+            stateId,
+            Number.isFinite(newSales) ? newSales : state.salesTax,
+            Number.isFinite(newPoll) ? newPoll : state.pollTax
+          );
+          States.setTariffs(stateId, draftRules);
+          if (Number.isFinite(newTreasury)) States.setTreasury(stateId, newTreasury);
+          refreshStatesEditor();
+        }
+      },
+      { label: t("Cancel") }
+    ]
+  });
 
   const listEl = ensureEl("stateTariffsList");
 
@@ -1029,36 +1046,6 @@ function openTreasuryDialog(stateId: number): void {
     const val = Math.max(0, Math.min(10, +target.value));
     rule.rate = Number.isFinite(val) ? rn(val, 4) : 0;
   });
-
-  $("#alert").dialog({
-    resizable: false,
-    title: t("Taxes and Treasury: {{- state}}", { state: state.name }),
-    width: "32em",
-    close: () => destroyDialog("tariffSelectorDialog"),
-    buttons: {
-      [t("Apply")]: function (this: HTMLElement) {
-        const salesInput = ensureEl<HTMLInputElement>("stateSalesTaxInput");
-        const pollInput = ensureEl<HTMLInputElement>("statePollTaxInput");
-        const treasuryInput = ensureEl<HTMLInputElement>("stateTreasuryInput");
-        const newSales = Math.max(0, Math.min(1, +salesInput.value));
-        const newPoll = Math.max(0, +pollInput.value);
-        const newTreasury = +treasuryInput.value;
-        States.setTaxes(
-          stateId,
-          Number.isFinite(newSales) ? newSales : state.salesTax,
-          Number.isFinite(newPoll) ? newPoll : state.pollTax
-        );
-        States.setTariffs(stateId, draftRules);
-        if (Number.isFinite(newTreasury)) States.setTreasury(stateId, newTreasury);
-        refreshStatesEditor();
-        $(this).dialog("close");
-      },
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    },
-    position: { my: "center", at: "center", of: "svg" }
-  });
 }
 
 function openTariffStatesSelector(stateId: number, rule: TariffRule, onApply: () => void): void {
@@ -1124,7 +1111,7 @@ function openTariffChecklistDialog({
   emptyWarning: string;
   onSave: (value: number[] | "all") => void;
 }): void {
-  destroyDialog("tariffSelectorDialog");
+  Dialog.destroy("tariffSelectorDialog");
   const dialogEl = document.createElement("div");
   dialogEl.id = "tariffSelectorDialog";
   dialogEl.className = "dialog";
@@ -1162,30 +1149,27 @@ function openTariffChecklistDialog({
     allCheck.checked = itemChecks.length > 0 && itemChecks.every(c => c.checked);
   });
 
-  $(dialogEl).dialog({
+  const close = () => Dialog.close("tariffSelectorDialog");
+  Dialog.open("tariffSelectorDialog", {
     resizable: false,
     title,
     width: "24em",
-    close: () => destroyDialog("tariffSelectorDialog"),
-    buttons: {
-      [t("Apply")]: function () {
-        if (allCheck.checked) {
-          onSave("all");
-          $(this).dialog("close");
-          return;
+    buttons: [
+      {
+        label: t("Apply"),
+        onClick: () => {
+          if (allCheck.checked) {
+            onSave("all");
+            return close();
+          }
+          const checkedIds = itemChecks.filter(c => c.checked).map(c => +c.value);
+          if (!checkedIds.length) return tip(emptyWarning, false, "error");
+          onSave(checkedIds.length === itemChecks.length ? "all" : checkedIds);
+          close();
         }
-        const checkedIds = itemChecks.filter(c => c.checked).map(c => +c.value);
-        if (!checkedIds.length) {
-          tip(emptyWarning, false, "error");
-          return;
-        }
-        onSave(checkedIds.length === itemChecks.length ? "all" : checkedIds);
-        $(this).dialog("close");
       },
-      [t("Cancel")]: function () {
-        $(this).dialog("close");
-      }
-    }
+      { label: t("Cancel"), onClick: close }
+    ]
   });
 }
 
@@ -1225,7 +1209,7 @@ function toggleFog(state: number, cl: DOMTokenList): void {
 function stateRemovePrompt(state: number): void {
   if (options.app.mode) return;
 
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: `${t("Are you sure you want to remove the state?")}<br>${t("This action cannot be reverted")}`,
     confirm: t("Remove"),
@@ -1299,17 +1283,16 @@ function showStatesChart(): void {
   const treeLayout = packLayout<any>().size([w, h]).padding(3);
 
   // prepare svg
-  ensureEl("alertMessage").innerHTML =
-    /* html */ `<select id="statesTreeType" style="display:block; margin-left:13px; font-size:11px">
+  const chart = document.createElement("div");
+  chart.innerHTML = /* html */ `<select id="statesTreeType" style="display:block; margin-left:13px; font-size:11px">
     <option value="area" selected>${t("Area")}</option>
     <option value="population">${t("Total population")}</option>
     <option value="rural">${t("Rural population")}</option>
     <option value="urban">${t("Urban population")}</option>
     <option value="burgs">${t("Number of burgs")}</option>
-  </select>`;
-  ensureEl("alertMessage").innerHTML += `<div id='statesInfo' class='chartInfo'>&#8205;</div>`;
+  </select><div id='statesInfo' class='chartInfo'>&#8205;</div>`;
 
-  const svg = select("#alertMessage")
+  const svg = select(chart)
     .insert("svg", "#statesInfo")
     .attr("id", "statesTree")
     .attr("width", size)
@@ -1318,7 +1301,7 @@ function showStatesChart(): void {
     .attr("text-anchor", "middle")
     .attr("dominant-baseline", "central");
   const graph = svg.append("g").attr("transform", `translate(-50, 0)`);
-  ensureEl("statesTreeType").addEventListener("change", updateChart);
+  chart.querySelector("#statesTreeType")!.addEventListener("change", updateChart);
 
   treeLayout(root);
 
@@ -1415,14 +1398,12 @@ function showStatesChart(): void {
       .style("font-size", (d: any) => `${rn((d.r ** 0.97 * 4) / lp(d.data.name), 2)}px`);
   }
 
-  $("#alert").dialog({
+  Dialog.message({
+    message: chart,
     title: t("States bubble chart"),
     width: "fit-content",
     position: { my: "left bottom", at: "left+10 bottom-10", of: "svg" },
-    buttons: {},
-    close: () => {
-      ensureEl("alertMessage").innerHTML = "";
-    }
+    buttons: []
   });
 }
 
@@ -1572,7 +1553,9 @@ function openStateMergeDialog(): void {
     )
     .join("");
 
-  ensureEl("alertMessage").innerHTML = /* html */ `
+  Dialog.message({
+    id: "mergeStates",
+    message: /* html */ `
     <form id='mergeStatesForm' style="overflow: hidden; display: flex; flex-direction: column; gap: 1em;">
       <p style="margin:0">
         ${t("Check the checkbox next to each state you want to merge. Use the radio button to pick the ruling state that will absorb all others (its name, color, and capital will be kept). Hover over a row to highlight the state on the map.")}
@@ -1581,7 +1564,38 @@ function openStateMergeDialog(): void {
         ${statesSelector}
       </main>
     </form>
-  `;
+  `,
+    width: 600,
+    title: t("Merge states"),
+    onClose: stateHighlightOff,
+    buttons: [
+      {
+        label: t("Merge"),
+        onClick: () => {
+          const formData = new FormData(ensureEl<HTMLFormElement>("mergeStatesForm"));
+
+          const rulingStateId = Number(formData.get("rulingState"));
+          if (!rulingStateId) {
+            tip(t("Please select a state to merge into"), false, "error");
+            return false;
+          }
+
+          const statesToMerge = formData
+            .getAll("statesToMerge")
+            .map(Number)
+            .filter(stateId => stateId !== rulingStateId);
+          if (!statesToMerge.length) {
+            tip(t("Please select several states to merge"), false, "error");
+            return false;
+          }
+
+          confirmStatesMerge(statesToMerge, rulingStateId, () => Dialog.close("mergeStates"));
+          return false; // stays open until the merge is confirmed
+        }
+      },
+      { label: t("Cancel") }
+    ]
+  });
 
   ensureEl("mergeStatesForm")
     .querySelectorAll("div[data-id]")
@@ -1589,7 +1603,7 @@ function openStateMergeDialog(): void {
       el.addEventListener("mouseenter", highlightStateOnMergeHover);
       el.addEventListener("mouseleave", stateHighlightOff);
     });
-  applyLineHighlighting("alert", ({ cellId }) => pack.cells.state[cellId]);
+  applyLineHighlighting("mergeStates", ({ cellId }) => pack.cells.state[cellId]);
 
   function highlightStateOnMergeHover(event: any) {
     if (!Layers.isOn("states")) return;
@@ -1601,43 +1615,12 @@ function openStateMergeDialog(): void {
     stateHighlightOff();
     highlightOutline(d);
   }
-
-  $("#alert").dialog({
-    width: 600,
-    title: t("Merge states"),
-    close: stateHighlightOff,
-    buttons: {
-      [t("Merge")]: function (this: HTMLElement) {
-        const formData = new FormData(ensureEl<HTMLFormElement>("mergeStatesForm"));
-
-        const rulingStateId = Number(formData.get("rulingState"));
-        if (!rulingStateId) {
-          tip(t("Please select a state to merge into"), false, "error");
-          return;
-        }
-
-        const statesToMerge = formData
-          .getAll("statesToMerge")
-          .map(Number)
-          .filter(stateId => stateId !== rulingStateId);
-        if (!statesToMerge.length) {
-          tip(t("Please select several states to merge"), false, "error");
-          return;
-        }
-
-        confirmStatesMerge(statesToMerge, rulingStateId, () => $(this).dialog("close"));
-      },
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
-  });
 }
 
 function confirmStatesMerge(statesToMerge: number[], rulingStateId: number, onConfirm?: () => void): void {
   const rulingState = pack.states[rulingStateId];
   const ruler = `${stateEmblem(rulingState.i)}${rulingState.name}`;
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Merge states"),
     // prettier-ignore
     message: /* html */ `

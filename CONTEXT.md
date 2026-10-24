@@ -70,7 +70,7 @@
 - **State**: `FMG.pack`, `FMG.grid`, `FMG.options`, `FMG.styles` are live getters; `FMG.mapHistory` lists the maps of this session.
 - **Model and helpers**: every model singleton (`FMG.Burgs`, `FMG.States`, `FMG.Rivers`…), `FMG.Layers`, `FMG.Controllers`, `FMG.Services` and the `utils/` helpers (`FMG.rn`, `FMG.P`…).
 - **Wait for a map**: the boot generates one; `FMG.mapHistory.length > 0` means it is on screen. A new one with a fixed seed: `await new Promise(done => { addEventListener("map:generated", done, { once: true }); FMG.regenerateMap({ seed: "42" }); })`.
-- **Drive the UI**: `await FMG.Controllers.BurgsOverview.open()`, `FMG.Layers.show("relief")`, `FMG.Layers.drawAll()`, `FMG.zoomTo(x, y, scale, 0)`, `FMG.closeDialogs()`.
+- **Drive the UI**: `await FMG.Controllers.BurgsOverview.open()`, `FMG.Layers.show("relief")`, `FMG.Layers.drawAll()`, `FMG.zoomTo(x, y, scale, 0)`, `FMG.Dialog.closeAll()`.
 - **Debug drawing**: `FMG.drawCellsValue(FMG.pack.cells.h)`, `FMG.drawPolygons(values)`, `FMG.drawPoint([x, y], {})` draw into the `#debug` layer.
 - **Anything not on FMG**: in dev, import the module by its served path, `await import("/Fantasy-Map-Generator/model/physical/coastline-generator.ts")` (the path under `src/`, without `src/`); it is the same instance the app uses.
 - **Logging**: `TIME`, `INFO`, `WARN`, `ERROR` are plain globals; set one to `false` to silence it.

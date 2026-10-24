@@ -9,7 +9,8 @@ import { getArea, getAreaUnit, getHeight } from "@/model/units";
 import { Layers } from "@/renderers/layers";
 import { isGroupNameFree } from "@/renderers/style-groups";
 import { speak } from "@/services/speech";
-import { closeDialogs, confirmationDialog, destroyDialog, noteButton } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+import { noteButton } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
@@ -20,7 +21,7 @@ let selectedLake: Selection<SVGElement, unknown, HTMLElement, unknown>;
 
 function open(element: SVGElement): void {
   if (options.app.mode) return;
-  closeDialogs(".stable");
+  Dialog.closeAll(".stable");
   Layers.hide("cells");
 
   renderDialog();
@@ -29,16 +30,15 @@ function open(element: SVGElement): void {
   updateLakeValues();
   selectLakeGroup();
 
-  $("#lakeEditor").dialog({
+  Dialog.open("lakeEditor", {
     title: t("Edit Lake"),
-    resizable: false,
     position: { my: "center top+20", at: "top", of: "svg", collision: "fit" },
-    close: closeLakesEditor
+    onClose: closeLakesEditor
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("lakeEditor");
+  Dialog.destroy("lakeEditor");
 
   const html = /* html */ `<div id="lakeEditor" class="dialog">
     <div id="lakeBody" style="padding-bottom: 0.3em">
@@ -266,7 +266,7 @@ function removeLakeGroup(): void {
   }
 
   const count = lakesOf(group).length;
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: sentences(
       t("Are you sure you want to remove the group?"),
@@ -299,7 +299,7 @@ function editLakeLegend(): void {
 }
 
 function closeLakesEditor(): void {
-  destroyDialog("lakeEditor");
+  Dialog.destroy("lakeEditor");
   selectedLake = null!;
 }
 

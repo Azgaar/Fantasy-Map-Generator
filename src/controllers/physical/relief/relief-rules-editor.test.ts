@@ -27,13 +27,18 @@ vi.mock("@/ui/dialog/limitation-picker", () => ({
 vi.mock("@/ui/tooltips", () => ({ tip: vi.fn(), loadingTip: { start: vi.fn(), end: vi.fn() } }));
 vi.mock("@/renderers/layers", () => ({ Layers: { isOn: () => true, show: vi.fn() } }));
 vi.mock("@/renderers/draw-relief-icons", () => ({ redrawRelief: vi.fn() }));
-vi.mock("@/ui/dialog/dialog-helpers", async importOriginal => ({
-  ...(await importOriginal<typeof import("@/ui/dialog/dialog-helpers")>()),
-  confirmationDialog: ({ onConfirm }: { onConfirm: () => void }) => onConfirm()
-}));
+vi.mock("@/ui/dialog/dialog", async importOriginal => {
+  const { Dialog } = await importOriginal<typeof import("@/ui/dialog/dialog")>();
+  return { Dialog: Object.assign(Dialog, { confirm: ({ onConfirm }: { onConfirm?: () => void }) => onConfirm?.() }) };
+});
 
 const click = (element: Element) => element.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 let dragged: () => void = () => {};
+vi.mock("@/ui/sortable-list", () => ({
+  sortableList: (_list: HTMLElement, { onReorder }: { onReorder: () => void }) => {
+    dragged = onReorder;
+  }
+}));
 const names = () =>
   Array.from(
     document.querySelectorAll<HTMLInputElement>('#reliefRulesEditor [data-field="name"]'),
@@ -55,13 +60,6 @@ beforeEach(() => {
   globalThis.styles = Styles.parse(undefined);
   globalThis.options = Options.getDefaultOptions();
   globalThis.pack = { biomes: [] } as unknown as typeof pack;
-  window.$ = vi.fn(() => ({
-    dialog: vi.fn(),
-    one: vi.fn(),
-    sortable: ({ update }: { update: () => void }) => {
-      dragged = update;
-    }
-  })) as unknown as typeof window.$;
   ReliefRulesEditor.open();
 });
 

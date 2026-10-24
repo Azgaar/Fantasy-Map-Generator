@@ -4,6 +4,8 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { Pack } from "@/model/graph/pack-generator";
 import type { State } from "@/model/political/states-generator";
 import { States } from "@/model/political/states-generator";
+import { Dialog } from "@/ui/dialog/dialog";
+import { dialogButton } from "@/ui/dialog/dialog-testing";
 import { DiplomacyOverview } from "./diplomacy-overview";
 
 vi.mock("@/renderers/layers", () => ({ Layers: { show: vi.fn(), hide: vi.fn(), draw: vi.fn(), isOn: () => false } }));
@@ -21,10 +23,6 @@ vi.mock("@/ui/dialog/sorting", () => ({
   bindColumnSorting: vi.fn(),
   sortDataByColumns: (_id: string, rows: State[]) => rows
 }));
-vi.mock("@/ui/dialog/dialog-helpers", async importOriginal => ({
-  ...(await importOriginal<typeof import("@/ui/dialog/dialog-helpers")>()),
-  closeDialogs: vi.fn()
-}));
 vi.mock("@/ui/dialog/table", () => ({
   initColumnVisibility: vi.fn(),
   renderEditorHeader: () => "",
@@ -37,12 +35,6 @@ vi.mock("@/ui/dialog/table", () => ({
   })
 }));
 
-interface DialogOptions {
-  close?: () => void;
-  buttons?: Record<string, (this: HTMLElement) => void>;
-}
-
-let dialogs: Map<HTMLElement, DialogOptions>;
 let states: State[];
 
 function element<T extends Element = HTMLElement>(selector: string): T {
@@ -51,14 +43,9 @@ function element<T extends Element = HTMLElement>(selector: string): T {
   return el;
 }
 
-function close(selector: string): void {
-  dialogs.get(element<HTMLElement>(selector))?.close?.();
-}
-
 /** press a button of the confirmation dialog */
 function confirmWith(label: string): void {
-  const alert = element<HTMLElement>("#alert");
-  dialogs.get(alert)!.buttons![label].call(alert);
+  dialogButton(label).click();
 }
 
 function action(label: "Apply" | "Discard" | "Undo"): void {
@@ -100,25 +87,9 @@ const chronicle = () => states[0].diplomacy as unknown as string[][];
 
 beforeEach(() => {
   vi.clearAllMocks();
-  dialogs = new Map();
-  document.body.innerHTML = `<div id="dialogs"><div id="alert"><div id="alertMessage"></div></div></div>
+  document.body.innerHTML = `<div id="dialogs"></div>
     <svg><g id="viewbox"><g id="statesBody"><path id="state1" d="M1,0" /><path id="state2" d="M2,0" /><path id="state3" d="M3,0" /></g>
     <g id="statesHalo"></g><g id="debug"></g></g></svg>`;
-  vi.stubGlobal("$", (target: string | HTMLElement) => {
-    const el = typeof target === "string" ? element<HTMLElement>(target) : target;
-    return {
-      dialog: (options: string | DialogOptions) => {
-        if (options === "close") dialogs.get(el)?.close?.();
-        else if (options === "destroy") {
-          dialogs.delete(el);
-          el.classList.remove("ui-dialog-content");
-        } else if (typeof options === "object") {
-          dialogs.set(el, { ...dialogs.get(el), ...options });
-          el.classList.add("ui-dialog-content");
-        }
-      }
-    };
-  });
   states = [
     { i: 0, name: "Neutrals", diplomacy: [] },
     { i: 1, name: "One", fullName: "State One", diplomacy: ["x", "x", "Rival", "Neutral", "x"] },
@@ -134,7 +105,7 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
-  if (document.getElementById("diplomacyOverview")) close("#diplomacyOverview");
+  if (document.getElementById("diplomacyOverview")) Dialog.close("diplomacyOverview");
   await vi.dynamicImportSettled();
   vi.unstubAllGlobals();
 });
@@ -173,7 +144,7 @@ describe("Diplomacy Editor", () => {
     const before = JSON.stringify(states);
     await openEditor("Enemy");
     await paint([2, 3]);
-    close("#diplomacyEditor");
+    Dialog.close("diplomacyEditor");
     expect(JSON.stringify(states)).toBe(before);
     expect(element('[data-id="2"] [data-col="relations"]').textContent).toContain("Rival");
     mapClick(3);
@@ -184,7 +155,7 @@ describe("Diplomacy Editor", () => {
     const before = JSON.stringify(states);
     await openEditor("Enemy");
     await paint([2]);
-    close("#diplomacyOverview");
+    Dialog.close("diplomacyOverview");
     await vi.dynamicImportSettled();
     expect(document.getElementById("diplomacyEditor")).toBeNull();
     expect(JSON.stringify(states)).toBe(before);

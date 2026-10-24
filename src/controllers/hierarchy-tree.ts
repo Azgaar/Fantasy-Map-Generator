@@ -2,7 +2,8 @@ import type { BaseType, D3DragEvent, D3ZoomEvent, Selection } from "d3";
 import { drag, mean, select, stratify, tree, zoom } from "d3";
 import { Cultures } from "@/model/society/cultures-generator";
 import { Religions } from "@/model/society/religions-generator";
-import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { abbreviate } from "@/utils/language-utils";
@@ -71,7 +72,7 @@ let getDescription: (dataElement: HierarchyElement) => string;
 let getShape: (dataElement: HierarchyElement) => string | undefined;
 
 function open(props: OpenProps): void {
-  closeDialogs("#hierarchyTree, .stable");
+  Dialog.closeAll("#hierarchyTree, .stable");
 
   dataElements = props.data;
   model = props.type === "cultures" ? Cultures : Religions;
@@ -116,19 +117,20 @@ function open(props: OpenProps): void {
   ]);
   svg.attr("viewBox", `0, 0, ${width}, ${height}`);
 
-  $("#hierarchyTree").dialog({
+  Dialog.open("hierarchyTree", {
+    resizable: true,
     title: props.type === "cultures" ? t("Cultures tree") : t("Religions tree"),
     position: { my: "left center", at: "left+10 center", of: "svg" },
     width,
-    close: closeTree
+    onClose: closeTree
   });
 
   renderTree(root, treeLayout);
 }
 
 function closeTree(): void {
-  destroyDialog("hierarchyTree_originSelector");
-  destroyDialog("hierarchyTree");
+  Dialog.destroy("hierarchyTree_originSelector");
+  Dialog.destroy("hierarchyTree");
   findEl("hierarchyTreeStyle")?.remove();
   clearTreeState();
 }
@@ -230,7 +232,7 @@ function appendStyleSheet(): void {
 }
 
 function insertHtml(): void {
-  destroyDialog("hierarchyTree");
+  Dialog.destroy("hierarchyTree");
   const html = /* html */ `<div id="hierarchyTree" class="dialog" style="overflow: hidden;">
     <svg>
       <g id="hierarchyTree_viewbox" style="text-anchor: middle; dominant-baseline: central">
@@ -600,30 +602,36 @@ function selectElement(d: any): void {
       </form>
     `;
 
-    $("#hierarchyTree_originSelector").dialog({
+    Dialog.open("hierarchyTree_originSelector", {
       title: t("Select origins"),
       position: { my: "center", at: "center", of: "svg" },
-      buttons: {
-        [t("Select")]: () => {
-          $("#hierarchyTree_originSelector").dialog("close");
-          const $selector = ensureEl("hierarchyTree_originSelector");
-          const selectedRadio = $selector.querySelector<HTMLInputElement>("input[type='radio']:checked");
-          const selectedCheckboxes = $selector.querySelectorAll<HTMLInputElement>("input[type='checkbox']:checked");
+      buttons: [
+        {
+          label: t("Select"),
+          onClick: () => {
+            Dialog.close("hierarchyTree_originSelector");
+            const $selector = ensureEl("hierarchyTree_originSelector");
+            const selectedRadio = $selector.querySelector<HTMLInputElement>("input[type='radio']:checked");
+            const selectedCheckboxes = $selector.querySelectorAll<HTMLInputElement>("input[type='checkbox']:checked");
 
-          const primary = selectedRadio ? Number(selectedRadio.value) : 0;
-          const secondary = Array.from(selectedCheckboxes)
-            .map(input => Number(input.dataset.id))
-            .filter(origin => origin !== primary);
+            const primary = selectedRadio ? Number(selectedRadio.value) : 0;
+            const secondary = Array.from(selectedCheckboxes)
+              .map(input => Number(input.dataset.id))
+              .filter(origin => origin !== primary);
 
-          if (!setOrigins(dataElement.i, [primary, ...secondary])) return;
+            if (!setOrigins(dataElement.i, [primary, ...secondary])) return;
 
-          updateTree();
-          createOriginButtons();
+            updateTree();
+            createOriginButtons();
+          }
         },
-        [t("Cancel")]: () => {
-          $("#hierarchyTree_originSelector").dialog("close");
+        {
+          label: t("Cancel"),
+          onClick: () => {
+            Dialog.close("hierarchyTree_originSelector");
+          }
         }
-      }
+      ]
     });
   };
 

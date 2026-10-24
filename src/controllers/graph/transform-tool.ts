@@ -7,12 +7,13 @@ import { Services } from "@/services";
 import { logStats } from "@/services/logging";
 import { registerMap } from "@/services/map-history";
 import { App } from "@/ui/app-commands";
-import { destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { applyGraphSize, fitMapToScreen, redrawMap } from "@/ui/map/canvas";
 import { resetZoom } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/node-utils";
+import { ensureEl, findEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 
 let mouseIsDown = false;
@@ -24,25 +25,30 @@ function open(): void {
   addListeners();
   void loadPreview();
 
-  $("#transformTool").dialog({
+  Dialog.open("transformTool", {
     title: t("Transform Map"),
-    resizable: false,
     position: { my: "center", at: "center", of: "svg" },
-    close: cleanup,
-    buttons: {
-      [t("Transform")]: function (this: HTMLElement) {
-        transformMap();
-        $(this).dialog("close");
+    onClose: cleanup,
+    buttons: [
+      {
+        label: t("Transform"),
+        onClick: () => {
+          transformMap();
+          Dialog.close("transformTool");
+        }
       },
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
+      {
+        label: t("Cancel"),
+        onClick: () => {
+          Dialog.close("transformTool");
+        }
       }
-    }
+    ]
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("transformTool");
+  Dialog.destroy("transformTool");
 
   const pointsValue = String(options.generation.graph.density);
   const cells = POINTS_BY_DENSITY[+pointsValue];
@@ -110,7 +116,7 @@ function addListeners(): void {
 
 function cleanup(): void {
   mouseIsDown = false;
-  destroyDialog("transformTool");
+  Dialog.destroy("transformTool");
 }
 
 async function loadPreview(): Promise<void> {
@@ -128,7 +134,8 @@ async function loadPreview(): Promise<void> {
   const img = new Image();
   img.src = url;
   img.onload = () => {
-    const $canvas = ensureEl<HTMLCanvasElement>("transformPreviewCanvas");
+    const $canvas = findEl<HTMLCanvasElement>("transformPreviewCanvas");
+    if (!$canvas) return; // closed before the preview loaded
     $canvas.style.width = `${width}px`;
     $canvas.style.height = `${height}px`;
     $canvas.width = width * SCALE;

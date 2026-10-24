@@ -11,7 +11,8 @@ import { goodBadge } from "@/renderers/draw-goods";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
-import { closeDialogs, destroyDialog, noteButton, updateDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+import { noteButton } from "@/ui/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import {
   type EditorColumn,
@@ -73,22 +74,22 @@ function open(marketId: number): void {
   }
   activeMarketId = marketId;
 
-  closeDialogs(`#${dialogId}, .stable`);
+  Dialog.closeAll(`#${dialogId}, .stable`);
 
   renderDialog();
   marketOverviewTable.reset();
   refreshNameInput(market);
 
-  $(`#${dialogId}`).dialog({
+  Dialog.open(dialogId, {
     title: t("Market Stock: {{- market}}", { market: Markets.getName(market) }),
     width: "auto",
-    close: closeMarketOverview,
+    onClose: closeMarketOverview,
     position
   });
 }
 
 function renderDialog(): void {
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
   const html = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
       ${renderEditorHeader({ dialogId, columns })}
       <div id="marketOverviewGoodsBody" class="table" style="max-height:40em"></div>
@@ -127,7 +128,7 @@ function renderDialog(): void {
   initColumnVisibility({
     dialogId,
     columns,
-    onUpdate: () => updateDialog(dialogId, { width: "fit-content", position })
+    onUpdate: () => Dialog.update(dialogId, { width: "fit-content", position })
   });
 
   ensureEl("marketOverviewRefresh").addEventListener("click", marketOverviewTable.refresh);
@@ -156,7 +157,7 @@ function onRenameInput(this: HTMLInputElement): void {
   const market = Markets.get(activeMarketId);
   if (!market) return;
   Markets.rename(market.i, this.value);
-  $("#marketOverview").dialog("option", "title", t("Market Stock: {{- market}}", { market: Markets.getName(market) }));
+  Dialog.update("marketOverview", { title: t("Market Stock: {{- market}}", { market: Markets.getName(market) }) });
 }
 
 function resetMarketName(): void {
@@ -164,7 +165,7 @@ function resetMarketName(): void {
   if (!market) return;
   Markets.rename(market.i, "");
   ensureEl<HTMLInputElement>("marketOverviewName").value = "";
-  $("#marketOverview").dialog("option", "title", t("Market Stock: {{- market}}", { market: Markets.getName(market) }));
+  Dialog.update("marketOverview", { title: t("Market Stock: {{- market}}", { market: Markets.getName(market) }) });
 }
 
 function getMarketGoods(): MarketGoodRow[] {
@@ -224,7 +225,7 @@ function renderMarketOverviewPage(view: TableView<MarketGoodRow>): void {
     <div data-col="stock" style="margin-left:12px">${t("Stock")}: ${rn(totalUnits, 2)}</div>`;
 
   renderEditorPagination(ensureEl("marketOverviewSummary"), view, marketOverviewTable.goto);
-  updateDialog(dialogId, { width: "fit-content", position });
+  Dialog.update(dialogId, { width: "fit-content", position });
 }
 
 function toggleRelocateMarket(): void {
@@ -270,7 +271,7 @@ function relocateMarketOnClick(this: SVGGElement, event: MouseEvent): void {
   Layers.draw("markets");
 
   refreshNameInput(market);
-  $("#marketOverview").dialog("option", "title", t("Market Stock: {{- market}}", { market: Markets.getName(market) }));
+  Dialog.update("marketOverview", { title: t("Market Stock: {{- market}}", { market: Markets.getName(market) }) });
   marketOverviewTable.refresh();
 }
 
@@ -290,8 +291,7 @@ function downloadStockCsv() {
 
 function closeMarketOverview() {
   if (ensureEl("marketOverviewRelocate").classList.contains("pressed")) toggleRelocateMarket();
-  $(`#${dialogId}`).dialog("destroy");
-  ensureEl(dialogId).remove();
+  Dialog.destroy(dialogId);
 }
 
 export const MarketOverview = { open };

@@ -27,7 +27,6 @@ beforeEach(() => {
   localStorage.clear();
   discovery.list.mockReset().mockResolvedValue([]);
   document.body.innerHTML = '<div id="dialogs"></div>';
-  window.$ = vi.fn(() => ({ dialog: vi.fn() })) as unknown as typeof window.$;
 });
 
 afterEach(() => {

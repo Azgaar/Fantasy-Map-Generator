@@ -4,7 +4,8 @@ import { Options } from "@/model/options/options-model";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Layers } from "@/renderers/layers";
 import type { BurgGroup } from "@/types/burg-groups";
-import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+import { refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { type LimitationItem, pickLimitation } from "@/ui/dialog/limitation-picker";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
@@ -15,37 +16,48 @@ const GROUP_NAME_REGEXP = /^[\p{L}_][\p{L}\p{N}_-]*$/u;
 
 function editBurgGroups(): void {
   if (options.app.mode) return;
-  closeDialogs(".stable");
+  Dialog.closeAll(".stable");
   renderDialog();
   addRows();
 
-  $("#burgGroupsEditor").dialog({
+  Dialog.open("burgGroupsEditor", {
     title: t("Configure burg groups"),
-    resizable: false,
     position: { my: "center", at: "center", of: "svg" },
-    close: closeBurgGroupsEditor,
-    buttons: {
-      [t("Apply")]: () => {
-        ensureEl<HTMLFormElement>("burgGroupsForm").requestSubmit();
+    onClose: closeBurgGroupsEditor,
+    buttons: [
+      {
+        label: t("Apply"),
+        onClick: () => {
+          ensureEl<HTMLFormElement>("burgGroupsForm").requestSubmit();
+        }
       },
-      [t("Add")]: () => {
-        const maxOrder = Math.max(0, ...options.map.burgs.groups.map(({ order }) => order));
-        const group: BurgGroup = { name: "", order: maxOrder + 1, active: true };
-        ensureEl("burgGroupsBody").insertAdjacentHTML("beforeend", createRow(group));
+      {
+        label: t("Add"),
+        onClick: () => {
+          const maxOrder = Math.max(0, ...options.map.burgs.groups.map(({ order }) => order));
+          const group: BurgGroup = { name: "", order: maxOrder + 1, active: true };
+          ensureEl("burgGroupsBody").insertAdjacentHTML("beforeend", createRow(group));
+        }
       },
-      [t("Restore")]: () => {
-        // restore the form only, the changes are applied on Apply, so Cancel still discards them
-        addRows(Burgs.getDefaultGroups());
+      {
+        label: t("Restore"),
+        onClick: () => {
+          // restore the form only, the changes are applied on Apply, so Cancel still discards them
+          addRows(Burgs.getDefaultGroups());
+        }
       },
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
+      {
+        label: t("Cancel"),
+        onClick: () => {
+          Dialog.close("burgGroupsEditor");
+        }
       }
-    }
+    ]
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("burgGroupsEditor");
+  Dialog.destroy("burgGroupsEditor");
 
   const html = /* html */ `<div id="burgGroupsEditor" class="dialog stable">
     <form id="burgGroupsForm">
@@ -120,8 +132,7 @@ function renderDialog(): void {
 }
 
 function closeBurgGroupsEditor(): void {
-  $("#burgGroupsEditor").dialog("destroy");
-  ensureEl("burgGroupsEditor").remove();
+  Dialog.destroy("burgGroupsEditor");
 }
 
 function addRows(groups: BurgGroup[] = options.map.burgs.groups): void {
@@ -223,7 +234,8 @@ function selectFeaturesLimitation(el: HTMLElement): void {
         </tr>`
   );
 
-  ensureEl("alertMessage").innerHTML = /* html */ `
+  Dialog.message({
+    message: /* html */ `
       <form id="featuresLimitationForm">
         <table>
           <thead style="font-weight:bold">
@@ -236,29 +248,26 @@ function selectFeaturesLimitation(el: HTMLElement): void {
             ${rows.join("")}
           </tbody>
         </table>
-      </form>`;
-
-  $("#alert").dialog({
+      </form>`,
     width: "fit-content",
     title: t("Limit group by features"),
-    buttons: {
-      [t("Apply")]: function (this: HTMLElement) {
-        const form = ensureEl<HTMLFormElement>("featuresLimitationForm");
-        const values = features.reduce<Record<string, boolean>>((acc, { name }) => {
-          const featureValue = (form[name] as RadioNodeList).value;
-          if (featureValue !== "undefined") acc[name] = featureValue === "true";
-          return acc;
-        }, {});
+    buttons: [
+      {
+        label: t("Apply"),
+        onClick: () => {
+          const form = ensureEl<HTMLFormElement>("featuresLimitationForm");
+          const values = features.reduce<Record<string, boolean>>((acc, { name }) => {
+            const featureValue = (form[name] as RadioNodeList).value;
+            if (featureValue !== "undefined") acc[name] = featureValue === "true";
+            return acc;
+          }, {});
 
-        (el.previousElementSibling as HTMLInputElement).value = JSON.stringify(values);
-        el.innerHTML = Object.keys(values).length ? t("Some") : t("Any");
-
-        $(this).dialog("close");
+          (el.previousElementSibling as HTMLInputElement).value = JSON.stringify(values);
+          el.innerHTML = Object.keys(values).length ? t("Some") : t("Any");
+        }
       },
-      [t("Cancel")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+      { label: t("Cancel") }
+    ]
   });
 }
 
@@ -269,7 +278,7 @@ function removeRow(row: HTMLElement): void {
     return;
   }
 
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Remove"),
     message: `${t("Are you sure you want to remove the group?")}<br>${t("This WON'T change the burgs unless the changes are applied")}`,
     confirm: t("Remove"),
@@ -397,7 +406,7 @@ function submitForm(event: Event): void {
   Layers.draw("labels");
   refreshEditors();
 
-  $("#burgGroupsEditor").dialog("close");
+  Dialog.close("burgGroupsEditor");
 }
 
 export const BurgGroupEditor = { open: editBurgGroups };

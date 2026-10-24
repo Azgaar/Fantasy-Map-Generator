@@ -21,7 +21,8 @@ import { getHeight } from "@/model/units";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
 import { Csv } from "@/services/io/csv";
 import { getFileName } from "@/services/io/file-name";
-import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
+
 import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { getLatitude, getLongitude } from "@/utils/common-utils";
@@ -31,7 +32,7 @@ import { ensureEl, getPointer } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 
 function open(cells: number[], routeLen: number, isRiver: boolean): void {
-  closeDialogs("#elevationProfile, .stable");
+  Dialog.closeAll("#elevationProfile, .stable");
   renderDialog();
   ensureEl("epCurve").addEventListener("change", draw);
   ensureEl("epSave").addEventListener("click", downloadCSV);
@@ -139,10 +140,9 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
 
   draw();
 
-  $("#elevationProfile").dialog({
+  Dialog.open("elevationProfile", {
     title: t("Elevation profile"),
-    resizable: false,
-    close: closeElevationProfile,
+    onClose: closeElevationProfile,
     position: {
       my: "center bottom",
       at: "center bottom-40px",
@@ -591,13 +591,12 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
   }
 
   function closeElevationProfile(): void {
-    $("#elevationProfile").dialog("destroy");
-    ensureEl("elevationProfile").remove();
+    Dialog.destroy("elevationProfile");
   }
 }
 
 function renderDialog(): void {
-  destroyDialog("elevationProfile");
+  Dialog.destroy("elevationProfile");
   const editorHtml = /* html */ `<div id="elevationProfile" class="dialog" width="100%">
       <div id="elevationGraph" data-tip="${t("Elevation profile")}"></div>
       <div style="text-align: center">
