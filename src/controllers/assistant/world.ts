@@ -7,7 +7,7 @@ export type Cells = Record<number, unknown>;
 type Lore = Record<string, unknown>;
 
 /** An entity found by its key, with the list holding it */
-export interface Found {
+interface Found {
   list: Item[];
   indexed: boolean; // the list keeps each entity at the index of its id
   i: number;

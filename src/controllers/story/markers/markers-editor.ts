@@ -15,8 +15,8 @@ import {
 import { stopMapPlacement } from "@/ui/map/map-placement";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
-import { minmax, rn } from "@/utils/numberUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { minmax, rn } from "@/utils/number-utils";
 
 let selectedElement: SVGSVGElement;
 let selectedMarker: Marker;

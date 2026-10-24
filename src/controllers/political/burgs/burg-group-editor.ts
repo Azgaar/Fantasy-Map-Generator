@@ -8,8 +8,8 @@ import { closeDialogs, confirmationDialog, destroyDialog, refreshEditors } from 
 import { type LimitationItem, pickLimitation } from "@/ui/dialog/limitation-picker";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
-import { isValidJSON } from "@/utils/stringUtils";
+import { ensureEl } from "@/utils/node-utils";
+import { isValidJSON } from "@/utils/string-utils";
 
 const GROUP_NAME_REGEXP = /^[\p{L}_][\p{L}\p{N}_-]*$/u;
 

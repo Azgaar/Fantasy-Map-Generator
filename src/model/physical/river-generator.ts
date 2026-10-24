@@ -4,12 +4,12 @@ import type { Label } from "@/model/annotations/labels-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
 import { Names } from "@/model/society/names-generator";
-import { replaceWholeWord } from "@/utils/languageUtils";
-import { rn } from "@/utils/numberUtils";
-import { meander, projectToNearestEdge } from "@/utils/pathUtils";
-import { each, rw } from "@/utils/probabilityUtils";
-import { round } from "@/utils/stringUtils";
-import { requireName } from "@/utils/validationUtils";
+import { replaceWholeWord } from "@/utils/language-utils";
+import { rn } from "@/utils/number-utils";
+import { meander, projectToNearestEdge } from "@/utils/path-utils";
+import { each, rw } from "@/utils/probability-utils";
+import { round } from "@/utils/string-utils";
+import { requireName } from "@/utils/validation-utils";
 import { Features } from "./features-generator";
 import { Lakes } from "./lakes";
 

@@ -1,6 +1,6 @@
 // Grid point lattices: rows of `cellsX` slots, one point per slot, so row-and-column readers work on every sampling
 import type { Point } from "@/types/global";
-import { rn } from "@/utils/numberUtils";
+import { rn } from "@/utils/number-utils";
 
 export const SAMPLINGS = ["square", "hexPointy", "hexFlat", "diamond", "triangle"] as const;
 export type Sampling = (typeof SAMPLINGS)[number];

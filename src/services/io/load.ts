@@ -1,8 +1,3 @@
-import { fitMapToScreen } from "@/app/canvas";
-import { pickMapFile } from "@/app/chrome/io-panes";
-import { syncOptionInputs } from "@/app/chrome/tabs/options-tab";
-import { regenerateMap, registerMap } from "@/app/lifecycle";
-import { applyPerformanceSettings } from "@/app/performance";
 import { Controllers } from "@/controllers";
 import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
@@ -11,7 +6,7 @@ import { GraphOverride } from "@/model/graph/graph-override";
 import { Grid } from "@/model/graph/grid-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
-import { mapHistory } from "@/model/map-history";
+import { mapHistory, registerMap } from "@/model/map-history";
 import { Options } from "@/model/options/options-model";
 import { Features } from "@/model/physical/features-generator";
 import { HeightmapGenerator } from "@/model/physical/heightmap-generator";
@@ -23,6 +18,7 @@ import { zonesFilter } from "@/renderers/draw-zones";
 import { Hatches } from "@/renderers/hatches";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
 import { Layers } from "@/renderers/layers";
+import { applyPerformanceSettings } from "@/renderers/performance";
 import { TradeAnimation } from "@/renderers/trade-animation";
 import { undraw } from "@/renderers/undraw";
 import { Services } from "@/services";
@@ -32,15 +28,17 @@ import { LocalDB } from "@/services/local-db";
 import { logStats } from "@/services/logging";
 import { focusOn, generateMapOnLoad } from "@/services/url-params";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
+import { App } from "@/ui/app-commands";
 import { closeDialogs, confirmationDialog } from "@/ui/dialog/dialog-helpers";
+import { fitMapToScreen } from "@/ui/map/canvas";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { invokeActiveZooming, resetZoom } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { link, parseError } from "@/utils/commonUtils";
+import { link, parseError } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
-import { safeParseJSON } from "@/utils/stringUtils";
+import { ensureEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
+import { safeParseJSON } from "@/utils/string-utils";
 
 async function quickLoad(): Promise<void> {
   const blob = await LocalDB.get("lastMap");
@@ -265,14 +263,14 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     closeDialogs();
     options.app.mode = null;
-    if (ensureEl("customizationMenu").offsetParent) ensureEl("styleTab").click();
+    if (ensureEl("heightmapMenu").offsetParent) ensureEl("styleTab").click();
 
     migrateLegacySettings(mapVersion!, data);
     const settings = data[1] ? safeParseJSON(data[1]) : null;
     if (!settings) throw new Error("Map settings are missing or malformed");
     Options.applyLoaded(settings);
     if (new URL(window.location.href).searchParams.get("view") === "1") options.map.viewOnly = true;
-    syncOptionInputs();
+    App.syncOptionInputs();
     await Controllers.StylePresetsEditor.init(); // the preset row follows the loaded map
 
     INFO && console.group(options.map.seed ? `Loaded Map ${options.map.seed}` : "Loaded Map");
@@ -448,11 +446,11 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         [t("Clear cache")]: () => clearCache(),
         [t("Select file")]: function (this: HTMLElement) {
           $(this).dialog("close");
-          pickMapFile();
+          App.pickMapFile();
         },
         [t("New Map")]: function (this: HTMLElement) {
           $(this).dialog("close");
-          regenerateMap("loading error");
+          App.regenerateMap("loading error");
         },
         [t("Cancel")]: function (this: HTMLElement) {
           $(this).dialog("close");

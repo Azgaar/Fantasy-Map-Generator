@@ -6,13 +6,13 @@ import { Pack } from "@/model/graph/pack-generator";
 import type { CellKind } from "@/model/story/journeys/journeys-generator";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
 import { Layers } from "@/renderers/layers";
-import type { Journey, JourneyPoint, JourneySegment } from "@/types/Journey";
+import type { Journey, JourneyPoint, JourneySegment } from "@/types/journey";
 import { alertDialog, confirmationDialog } from "@/ui/dialog/dialog-helpers";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { createEl, ensureEl, findEl, getPointer } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
+import { createEl, ensureEl, findEl, getPointer } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
 
 const OVERLAY_ID = "journeyOverlay";
 const ERROR_TIP_TIME = 8000;

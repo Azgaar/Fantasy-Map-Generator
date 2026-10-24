@@ -2,7 +2,7 @@ import Alea from "alea";
 import type { Point } from "@/types/global";
 import { getHeightContourChains } from "./heightmap-contours";
 
-export interface HachureParams {
+interface HachureParams {
   points: Point[]; // cell centers, then the boundary pseudo-points
   heights: ArrayLike<number>; // one per point
   neighbors: number[][]; // one per cell: the boundary points have none
@@ -165,7 +165,7 @@ export function getHachures(params: HachureParams): string {
 }
 
 /** the outline of a straight stroke: `rootWidth` wide at (x, y), a sharp point at (x + dx, y + dy) */
-export function taper(x: number, y: number, dx: number, dy: number, rootWidth: number): string {
+function taper(x: number, y: number, dx: number, dy: number, rootWidth: number): string {
   const d = Math.hypot(dx, dy) || 1;
   const ax = -dy / d; // across the stroke
   const ay = dx / d;

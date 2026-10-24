@@ -1,6 +1,6 @@
 import { Pack } from "@/model/graph/pack-generator";
-import { debounce } from "@/utils/commonUtils";
-import { findEl, getPointer } from "@/utils/nodeUtils";
+import { debounce } from "@/utils/common-utils";
+import { findEl, getPointer } from "@/utils/node-utils";
 
 const cleanups = new Map<string, () => void>();
 

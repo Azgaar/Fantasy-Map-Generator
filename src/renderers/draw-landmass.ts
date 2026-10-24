@@ -1,7 +1,7 @@
 import { Coastline } from "@/model/physical/coastline-generator";
 import type { Feature } from "@/model/physical/features-generator";
 import type { Layer } from "@/renderers/layers";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
 
 /**
  * The landmass is a plain rect shown through the land mask. The layer also owns the shared feature

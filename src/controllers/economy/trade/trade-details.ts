@@ -20,8 +20,8 @@ import {
 } from "@/ui/dialog/table";
 import { zoomTo } from "@/ui/map/zoom";
 import { t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
+import { ensureEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
 
 let activeBatch: TradeBatch;
 let activePoints: Point[] = [];

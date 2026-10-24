@@ -10,7 +10,6 @@ import { redrawEmblem, redrawEmblems, removeEmblem } from "@/renderers/draw-embl
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
 import { fog, unfog } from "@/renderers/overlays/fogging";
-import { highlightElement, highlightOutline } from "@/renderers/overlays/highlight";
 import { Csv } from "@/services/io/csv";
 import { speak } from "@/services/speech";
 import { closeDialogs, confirmationDialog, destroyDialog, noteIcon, updateDialog } from "@/ui/dialog/dialog-helpers";
@@ -27,17 +26,18 @@ import {
 } from "@/ui/dialog/table";
 import type { FillBoxElement } from "@/ui/elements/fill-box";
 import { createAnnexMode } from "@/ui/map/annex-mode";
+import { highlightElement, highlightOutline } from "@/ui/map/highlight";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { zoomTo } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { groupByValue, unique } from "@/utils/arrayUtils";
-import { getRandomColor } from "@/utils/colorUtils";
-import { isLand } from "@/utils/heightUtils";
+import { groupByValue, unique } from "@/utils/array-utils";
+import { getRandomColor } from "@/utils/color-utils";
+import { isLand } from "@/utils/height-utils";
 import { sentences, t } from "@/utils/i18n";
-import { applyOption, ensureEl, findEl, getPointer } from "@/utils/nodeUtils";
-import { rn, si } from "@/utils/numberUtils";
-import { rand } from "@/utils/probabilityUtils";
-import { errorText } from "@/utils/stringUtils";
+import { applyOption, ensureEl, findEl, getPointer } from "@/utils/node-utils";
+import { rn, si } from "@/utils/number-utils";
+import { rand } from "@/utils/probability-utils";
+import { errorText } from "@/utils/string-utils";
 
 const dialogId = "provincesEditor" as const;
 const CSV_COLUMNS = [

@@ -12,9 +12,9 @@ import { speak } from "@/services/speech";
 import { closeDialogs, confirmationDialog, destroyDialog, noteButton } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
-import { si } from "@/utils/numberUtils";
-import { rand } from "@/utils/probabilityUtils";
+import { ensureEl } from "@/utils/node-utils";
+import { si } from "@/utils/number-utils";
+import { rand } from "@/utils/probability-utils";
 
 let selectedLake: Selection<SVGElement, unknown, HTMLElement, unknown>;
 

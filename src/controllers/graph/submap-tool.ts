@@ -1,7 +1,5 @@
-import { applyGraphSize, fitMapToScreen, redrawMap } from "@/app/canvas";
-import { cellsDensityColor, changeCellsDensity } from "@/app/chrome/tabs/options-tab";
-import { registerMap } from "@/app/lifecycle";
-import { POINTS_BY_DENSITY } from "@/data/graph-density";
+import { cellsDensityColor, POINTS_BY_DENSITY } from "@/data/graph-density";
+import { registerMap } from "@/model/map-history";
 import { MapRestoration } from "@/model/map-restoration";
 import { Options } from "@/model/options/options-model";
 import { Burgs } from "@/model/political/burgs-generator";
@@ -10,13 +8,15 @@ import { Layers } from "@/renderers/layers";
 import { undraw } from "@/renderers/undraw";
 import { viewport } from "@/renderers/viewport/viewport";
 import { logStats } from "@/services/logging";
+import { App } from "@/ui/app-commands";
 import { destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { applyGraphSize, fitMapToScreen, redrawMap } from "@/ui/map/canvas";
 import { resetZoom } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
-import { getLatitude, getLongitude } from "@/utils/commonUtils";
+import { getLatitude, getLongitude } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
-import { minmax, rn } from "@/utils/numberUtils";
+import { ensureEl } from "@/utils/node-utils";
+import { minmax, rn } from "@/utils/number-utils";
 
 function open(): void {
   renderDialog();
@@ -92,7 +92,7 @@ function generateSubmap(): void {
 
       const submapPointsValue = ensureEl<HTMLInputElement>("submapPointsInput").value;
       const globalPointsValue = String(options.generation.graph.density);
-      if (submapPointsValue !== globalPointsValue) changeCellsDensity(+submapPointsValue);
+      if (submapPointsValue !== globalPointsValue) App.changeCellsDensity(+submapPointsValue);
 
       const projection = (x: number, y: number): [number, number] => [(x - x0) * scale, (y - y0) * scale];
       const inverse = (x: number, y: number): [number, number] => [x / scale + x0, y / scale + y0];

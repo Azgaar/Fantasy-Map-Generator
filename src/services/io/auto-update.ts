@@ -37,6 +37,9 @@ import { Religions } from "@/model/society/religions-generator";
 import { getDefaultMarkerName, type Marker, Markers } from "@/model/story/markers-generator";
 import { Notes } from "@/model/story/notes";
 import { Styles } from "@/model/styles/styles";
+import { Hatches } from "@/renderers/hatches";
+import { getGroupStyle } from "@/renderers/labels/label-groups";
+import { type LayerId, Layers, type LayersState } from "@/renderers/layers";
 import {
   adoptLegacyIconSlots,
   type LegacySvg,
@@ -47,22 +50,19 @@ import {
   restoreStrippedLayerStyles,
   stripDisplay,
   stylesFromMap
-} from "@/model/styles/styles-legacy";
-import { Hatches } from "@/renderers/hatches";
-import { getGroupStyle } from "@/renderers/labels/label-groups";
-import { type LayerId, Layers, type LayersState } from "@/renderers/layers";
+} from "@/services/io/styles-legacy";
 import { StylePresetsService } from "@/services/style-presets";
 import { compareVersions } from "@/services/versioning";
-import type { LegendItem } from "@/types/Legend";
+import type { LegendItem } from "@/types/legend";
 import type { StylesData } from "@/types/styles";
 import { confirmationDialog } from "@/ui/dialog/dialog-helpers";
-import { unique } from "@/utils/arrayUtils";
-import { sanitizeSvgIcon, scopeSvgIcon } from "@/utils/fileUtils";
+import { unique } from "@/utils/array-utils";
+import { sanitizeSvgIcon, scopeSvgIcon } from "@/utils/file-utils";
 import { t } from "@/utils/i18n";
-import { minmax, rn } from "@/utils/numberUtils";
-import { parsePathPoints } from "@/utils/pathUtils";
-import { rw } from "@/utils/probabilityUtils";
-import { parseTransform, safeParseJSON } from "@/utils/stringUtils";
+import { minmax, rn } from "@/utils/number-utils";
+import { parsePathPoints } from "@/utils/path-utils";
+import { rw } from "@/utils/probability-utils";
+import { parseTransform, safeParseJSON } from "@/utils/string-utils";
 import { Csv } from "./csv";
 
 type LegacyBurgGroup = Omit<MapData["burgs"]["groups"][number], "biomes" | "states" | "cultures" | "religions"> & {

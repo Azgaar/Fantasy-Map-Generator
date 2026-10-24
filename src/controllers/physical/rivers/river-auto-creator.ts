@@ -5,8 +5,8 @@ import { closeDialogs, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/ui/map/map-placement";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
-import { findEl } from "@/utils/nodeUtils";
-import { errorText } from "@/utils/stringUtils";
+import { findEl } from "@/utils/node-utils";
+import { errorText } from "@/utils/string-utils";
 
 function toggle(): void {
   if (findEl("addRiver")?.classList.contains("pressed")) {

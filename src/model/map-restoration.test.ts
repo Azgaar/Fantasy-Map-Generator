@@ -7,7 +7,7 @@ import { Rivers } from "@/model/physical/river-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Provinces } from "@/model/political/provinces-generator";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
-import type { PackedGraph } from "@/types/PackedGraph";
+import type { PackedGraph } from "@/types/packed-graph";
 import { createAvailableLandCellFinder, MapRestoration } from "./map-restoration";
 import type { LockedRiver } from "./physical/river-generator";
 

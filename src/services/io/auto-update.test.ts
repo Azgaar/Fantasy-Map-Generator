@@ -14,7 +14,7 @@ import { Styles } from "@/model/styles/styles";
 import * as versioning from "@/services/versioning";
 import { VERSION } from "@/services/versioning";
 import { confirmationDialog } from "@/ui/dialog/dialog-helpers";
-import { safeParseJSON } from "@/utils/stringUtils";
+import { safeParseJSON } from "@/utils/string-utils";
 import { migrateLegacySettings, resolveVersionConflicts } from "./auto-update";
 import { Csv } from "./csv";
 

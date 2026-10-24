@@ -1,5 +1,5 @@
-import { ensureEl } from "@/utils/nodeUtils";
-import { getIsolines } from "@/utils/pathUtils";
+import { ensureEl } from "@/utils/node-utils";
+import { getIsolines } from "@/utils/path-utils";
 import { buildFillPaths } from "./isoline-fills";
 
 export function drawBiomes(): void {

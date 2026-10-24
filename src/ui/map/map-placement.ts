@@ -1,6 +1,6 @@
 import { select } from "d3";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { ensureEl } from "@/utils/nodeUtils";
+import { ensureEl } from "@/utils/node-utils";
 import { applyDefaultViewboxEvents } from "./viewbox-events";
 
 let cleanupActivePlacement: (() => void) | undefined;

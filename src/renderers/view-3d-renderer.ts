@@ -5,15 +5,11 @@ import type { Burg } from "@/model/political/burgs-generator";
 import type { State } from "@/model/political/states-generator";
 import { Layers } from "@/renderers/layers";
 import { isGlobeView, setViewMode } from "@/renderers/view-mode";
-import { Services } from "@/services";
-import { getFileName } from "@/services/io/file-name";
-import { savedMessage } from "@/services/platform";
-import { tip } from "@/ui/tooltips";
-import { throttle } from "@/utils/commonUtils";
-import { downloadFile } from "@/utils/fileUtils";
+import { throttle } from "@/utils/common-utils";
 import { t } from "@/utils/i18n";
-import { findEl } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
+import { findEl } from "@/utils/node-utils";
+import { notify } from "@/utils/notices";
+import { rn } from "@/utils/number-utils";
 import { clampTextureResolution, timeOfDayPresets } from "../data/view-3d-options";
 import {
   disposeRiverFlowTexture,
@@ -27,6 +23,14 @@ import { getGroupStyle } from "./labels/label-groups";
 export { heightAt, isCached } from "./erosion-bake";
 
 let Three!: typeof import("three");
+
+type MapImage = (type: "mesh", options: Record<string, boolean>) => Promise<string>;
+let mapImage: MapImage = () => Promise.reject(new Error("The 3D view has no map image source"));
+
+/** The controller passes the map export the scene textures are drawn from */
+const setMapImageSource = (source: MapImage): void => {
+  mapImage = source;
+};
 let threeLoadPromise: Promise<boolean> | null = null;
 
 type Controls = {
@@ -328,28 +332,16 @@ const setResolution = (resolution: number) => {
   redraw();
 };
 
-// download screenshot
-const saveScreenshot = async () => {
-  const URL = Renderer.domElement.toDataURL("image/jpeg");
-  const link = document.createElement("a");
-  link.download = `${getFileName()}.jpeg`;
-  link.href = URL;
-  link.click();
-  tip(savedMessage(t("Screenshot")), true, "success", 7000);
-  window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
-};
+/** The scene as a JPEG data URL */
+const screenshotUrl = (): string => Renderer.domElement.toDataURL("image/jpeg");
 
-const saveOBJ = async () => {
-  const objexporter = await OBJExporter();
-  const obj = await objexporter.parse(mesh);
-
-  downloadFile(obj, `${getFileName()}.obj`, "text/plain;charset=UTF-8");
-};
+/** The mesh as Wavefront OBJ text */
+const exportOBJ = async (): Promise<string> => (await OBJExporter()).parse(mesh);
 
 // start 3d view and heightmap edit preview
 async function newMesh(canvas: HTMLCanvasElement) {
   const loaded = await loadTHREE();
-  if (!loaded) return tip(t("Cannot load 3d library"), false, "error", 4000);
+  if (!loaded) return notify(t("Cannot load 3d library"), "error", 4000);
   scene = new Three.Scene();
 
   // light
@@ -621,7 +613,7 @@ function deleteLabels() {
 }
 
 async function createMeshTextureUrl(): Promise<string> {
-  const url = await Services.ExportMap.getMapURL("mesh", {
+  const url = await mapImage("mesh", {
     noLabels: options.app.threeD.labels3d,
     noWater: options.app.threeD.extendedWater,
     noViewbox: true,
@@ -724,7 +716,7 @@ async function createMesh(width: number, height: number) {
     });
     if (!bakeResult && options.app.threeD.erosion) {
       console.warn("3D erosion bake failed, falling back to standard mesh");
-      tip(t("Eroded terrain is not supported on this device"), false, "warn", 4000);
+      notify(t("Eroded terrain is not supported on this device"), "warn", 4000);
       Options.set(o => (o.app.threeD.erosion = false));
       syncErosionUI();
     }
@@ -880,7 +872,7 @@ async function update3dTexture() {
 async function newGlobe(canvas: HTMLCanvasElement) {
   const loaded = await loadTHREE();
   if (!loaded) {
-    tip(t("Cannot load 3d library"), false, "error", 4000);
+    notify(t("Cannot load 3d library"), "error", 4000);
     return false;
   }
 
@@ -995,7 +987,7 @@ async function updateGlobeTexure(addMesh?: boolean) {
     material.map = texture;
     if (addMesh) addGlobe3dMesh();
   };
-  img2.src = await Services.ExportMap.getMapURL("mesh", { noScaleBar: true, fullMap: true, noVignette: true });
+  img2.src = await mapImage("mesh", { noScaleBar: true, fullMap: true, noVignette: true });
 }
 
 function addGlobe3dMesh() {
@@ -1209,15 +1201,16 @@ function OBJExporter(): any {
 
 export {
   create,
+  exportOBJ,
   redraw,
-  saveOBJ,
-  saveScreenshot,
+  screenshotUrl,
   setColors,
   setErosionDetail,
   setErosionOctaves,
   setErosionRiverDepth,
   setErosionStrength,
   setLightness,
+  setMapImageSource,
   setResolution,
   setResolutionScale,
   setRotation,

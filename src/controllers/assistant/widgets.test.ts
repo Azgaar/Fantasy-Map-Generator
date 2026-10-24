@@ -11,12 +11,14 @@ const mocks = vi.hoisted(() => ({
   emblem: vi.fn(async () => {}),
   image: vi.fn(async () => "data:image/png;base64,AA")
 }));
-vi.mock("@/app/map-commands", () => ({
-  MAP_COMMANDS: [
-    { id: "editHeightmapButton", name: "Edit Heightmap", run: mocks.run },
-    { id: "newMap", name: "Generate New Map", run: mocks.run }
-  ],
-  isLinkable: ({ id }: { id: string }) => id !== "newMap"
+vi.mock("@/ui/app-commands", () => ({
+  App: {
+    mapCommands: [
+      { id: "editHeightmapButton", name: "Edit Heightmap", run: mocks.run },
+      { id: "newMap", name: "Generate New Map", run: mocks.run }
+    ],
+    isLinkable: ({ id }: { id: string }) => id !== "newMap"
+  }
 }));
 vi.mock("@/ui/map/reveal", () => ({
   reveal: mocks.revealBox,

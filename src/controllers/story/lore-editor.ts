@@ -7,8 +7,9 @@ import { Pins } from "@/model/options/pins";
 import { Names } from "@/model/society/names-generator";
 import { Lore } from "@/model/story/lore";
 import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { bindPinIcons } from "@/ui/pin-icons";
 import { t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
 
 const DIALOG_ID = "loreEditor";
 
@@ -89,7 +90,7 @@ function renderDialog(): void {
 
   fillInputs();
   addListeners();
-  Pins.bindIcons(ensureEl(DIALOG_ID), loreValue);
+  bindPinIcons(ensureEl(DIALOG_ID), loreValue);
 }
 
 /** What each lock icon in this dialog pins; the era icon pins its abbreviation alongside */

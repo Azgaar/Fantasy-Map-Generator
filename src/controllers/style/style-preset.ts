@@ -16,11 +16,11 @@ import { CUSTOM_PREFIX, LEGACY_PREFIX, StylePresetsService } from "@/services/st
 import { alertDialog, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { invokeActiveZooming } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
-import { openURL } from "@/utils/commonUtils";
-import { downloadFile, uploadFile } from "@/utils/fileUtils";
+import { openURL } from "@/utils/common-utils";
+import { downloadFile, uploadFile } from "@/utils/file-utils";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
-import { escapeHtml, isValidJSON } from "@/utils/stringUtils";
+import { ensureEl } from "@/utils/node-utils";
+import { escapeHtml, isValidJSON } from "@/utils/string-utils";
 
 let wired = false;
 

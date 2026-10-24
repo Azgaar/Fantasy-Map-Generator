@@ -2,7 +2,7 @@
 import type JSZip from "jszip";
 import { type CustomIcon, CustomIcons } from "@/model/icons";
 import { customIcon } from "@/model/options/options-schema";
-import { safeParseJSON } from "@/utils/stringUtils";
+import { safeParseJSON } from "@/utils/string-utils";
 
 const MANIFEST = "icons.json";
 

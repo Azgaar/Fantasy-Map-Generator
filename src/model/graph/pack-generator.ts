@@ -1,10 +1,10 @@
 // The packed graph: a second Voronoi diagram built from the grid points that actually matter for the map
 import { polygonArea, type Quadtree, quadtree } from "d3";
 import type { Point } from "@/types/global";
-import type { PackedGraph } from "@/types/PackedGraph";
-import { TYPED_ARRAY_MAX } from "@/utils/arrayUtils";
-import { SEA_LEVEL } from "@/utils/heightUtils";
-import { rn } from "@/utils/numberUtils";
+import type { PackedGraph } from "@/types/packed-graph";
+import { TYPED_ARRAY_MAX } from "@/utils/array-utils";
+import { SEA_LEVEL } from "@/utils/height-utils";
+import { rn } from "@/utils/number-utils";
 import { findAllInQuadtree } from "@/utils/quadtree";
 import { DEFAULT_JITTER, Lattice } from "./lattice";
 import { calculateVoronoi } from "./voronoi";

@@ -1,11 +1,11 @@
 import Alea from "alea";
 import type { Point } from "@/types/global";
 import type { StylesData } from "@/types/styles";
-import { wavyDash } from "@/utils/pathUtils";
+import { wavyDash } from "@/utils/path-utils";
 
 export type LakeEmbellishment = StylesData["lakes"]["groups"][string]["options"];
 
-export interface LakeRipples {
+interface LakeRipples {
   path: string;
   x: number; // bounds of the lake, for the mask
   y: number;

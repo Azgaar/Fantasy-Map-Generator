@@ -12,7 +12,6 @@ import {
 import { Tags } from "@/model/tags";
 import { getArea, getAreaUnit } from "@/model/units";
 import { Layers } from "@/renderers/layers";
-import { highlightArea, highlightOutline } from "@/renderers/overlays/highlight";
 import { Csv } from "@/services/io/csv";
 import { closeDialogs, destroyDialog, noteIcon, updateDialog } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
@@ -27,11 +26,12 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
+import { highlightArea, highlightOutline } from "@/ui/map/highlight";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
-import { si } from "@/utils/numberUtils";
-import { getVertexPath } from "@/utils/pathUtils";
-import { escapeHtml } from "@/utils/stringUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { si } from "@/utils/number-utils";
+import { getVertexPath } from "@/utils/path-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 const dialogId = "featuresOverview" as const;
 const CSV_COLUMNS = ["Id", "Name", "Type", "Subtype", "Group", "Tags", "Area", "Map area", "Cut by border"];

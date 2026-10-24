@@ -1,11 +1,11 @@
-import { clipPoly } from "@/utils/commonUtils";
+import { clipPoly } from "@/utils/common-utils";
 
 /**
  * Ocean outlines: closed rings traced around the coast at a given distance from it. `t` is the
  * distance-from-coast marker held in grid.cells.t, negative for water: -1 is the ring hugging the
  * coast, -2 the one behind it, and so on down to -9
  */
-export interface OceanOutline {
+interface OceanOutline {
   t: number;
   rings: [number, number][][];
 }

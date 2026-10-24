@@ -3,10 +3,10 @@ import { type D3DragEvent, drag, pointer, select } from "d3";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import type { Point } from "@/types/global";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
-import { createBrushStroke } from "@/utils/brushUtils";
+import { createBrushStroke } from "@/utils/brush-utils";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
-import { minmax } from "@/utils/numberUtils";
+import { ensureEl } from "@/utils/node-utils";
+import { minmax } from "@/utils/number-utils";
 
 /** what one stroke does with the points it passes over; the tool keeps its per-stroke state in the closure */
 type Stamp = (point: Point) => void;

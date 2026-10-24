@@ -16,7 +16,7 @@ The river renderer already solves the geometry problem: [RiverModule.addMeanderi
 
 Reuse `addMeandering` on the river-following sub-stretches of every sea route. The route line and the trade animation curve along the same geometry the river polygon uses, with matching meander phase, so the route stays inside the river.
 
-The function moves from `RiverModule` to `src/utils/pathUtils.ts` as a pure helper under the name `meander`. Its signature is generalised: it returns geometry plus anchor-position metadata, with the third-coordinate convention left to the caller. River-polygon callers pass a `flux`-supplier, route callers pass a `cellId`-supplier; the function itself doesn't know about either.
+The function moves from `RiverModule` to `src/utils/path-utils.ts` as a pure helper under the name `meander`. Its signature is generalised: it returns geometry plus anchor-position metadata, with the third-coordinate convention left to the caller. River-polygon callers pass a `flux`-supplier, route callers pass a `cellId`-supplier; the function itself doesn't know about either.
 
 The route generator augments its existing `riverAdjacency` map into a direction-aware `riverEdges` map. When emitting route points, it walks the cells of each sea route, groups maximal runs of cells that share a river edge, calls `meander` once per run (in the river's source→mouth order so perpendicular meanders point the right way, with a `startStep` that matches the river polygon's phase), and reverses the per-run output if the route traverses mouth→source. Non-river cells emit a single anchor as today. Trade animation does the same in its path reconstruction.
 
@@ -69,7 +69,7 @@ The pathfinder already restricts route hops to river-adjacent steps along the ac
 Current shape: an instance method on `RiverModule` that reaches into `pack.cells.fl`, `pack.cells.h`, `pack.cells.p`, `graphWidth`, `graphHeight`. Three callers exist ([layers.js drawRivers](../../public/modules/ui/layers.js:816), [rivers-editor.js](../../public/modules/ui/rivers-editor.js), [export.js](../../public/modules/io/export.js:587), [rivers-creator.js](../../public/modules/ui/rivers-creator.js), [resample.ts](../../src/model/resample.ts:35), [tools.ts](../../src/components/tools.ts)). New shape:
 
 ```ts
-// src/utils/pathUtils.ts
+// src/utils/path-utils.ts
 export type Meandered = {
   points: Point[];          // [x, y][] — the full curve including interior meander points
   anchorIndices: number[];  // anchorIndices[k] === index in points[] where input cells[k] sits
@@ -201,7 +201,7 @@ The third coord on `points: [x, y, cellId][]` stays a real cell id everywhere. N
 
 Tests follow the existing Vitest pattern in `src/model/*.test.ts` and `src/utils/*.test.ts`. `addMeandering` becoming pure makes its tests trivial — no `pack` fabrication needed.
 
-**`pathUtils.addMeandering`** (new file `src/utils/pathUtils.test.ts` additions):
+**`pathUtils.addMeandering`** (new file `src/utils/path-utils.test.ts` additions):
 
 - Returns one entry in `anchorIndices` per input cell, with `anchorIndices[0] === 0`.
 - Anchor positions in the output equal the input anchor positions (interpolation does not move anchors).

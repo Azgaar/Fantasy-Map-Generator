@@ -5,9 +5,9 @@ import { Icons } from "@/model/icons";
 import { goodIconLines } from "@/renderers/draw-goods";
 import { destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
-import { C_12 } from "@/utils/colorUtils";
+import { C_12 } from "@/utils/color-utils";
 import { t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
+import { ensureEl } from "@/utils/node-utils";
 
 const CARD_WIDTH = 98;
 const CARD_HEIGHT = 34;

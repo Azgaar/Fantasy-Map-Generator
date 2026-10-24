@@ -76,18 +76,18 @@ import { cleanupData, VERSION } from "@/services/versioning";
 import { closeDialogs, confirmationDialog } from "@/ui/dialog/dialog-helpers";
 import { invokeActiveZooming, resetZoom, setMapZoom, setTranslateExtent, setZoomExtent, zoomTo } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import * as arrayUtils from "@/utils/arrayUtils";
-import * as colorUtils from "@/utils/colorUtils";
-import * as commonUtils from "@/utils/commonUtils";
-import * as fileUtils from "@/utils/fileUtils";
-import * as heightUtils from "@/utils/heightUtils";
-import * as languageUtils from "@/utils/languageUtils";
-import * as nodeUtils from "@/utils/nodeUtils";
-import * as numberUtils from "@/utils/numberUtils";
-import * as objectUtils from "@/utils/objectUtils";
-import * as pathUtils from "@/utils/pathUtils";
-import * as probabilityUtils from "@/utils/probabilityUtils";
-import * as stringUtils from "@/utils/stringUtils";
+import * as arrayUtils from "@/utils/array-utils";
+import * as colorUtils from "@/utils/color-utils";
+import * as commonUtils from "@/utils/common-utils";
+import * as fileUtils from "@/utils/file-utils";
+import * as heightUtils from "@/utils/height-utils";
+import * as languageUtils from "@/utils/language-utils";
+import * as nodeUtils from "@/utils/node-utils";
+import * as numberUtils from "@/utils/number-utils";
+import * as objectUtils from "@/utils/object-utils";
+import * as pathUtils from "@/utils/path-utils";
+import * as probabilityUtils from "@/utils/probability-utils";
+import * as stringUtils from "@/utils/string-utils";
 
 const FMG = {
   // replaced wholesale on regeneration and load, so read through getters

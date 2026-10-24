@@ -1,4 +1,4 @@
-import { downloadFile } from "@/utils/fileUtils";
+import { downloadFile } from "@/utils/file-utils";
 import { t } from "@/utils/i18n";
 
 export type SaveOutcome = { type: "saved"; filename: string } | { type: "downloaded-fallback" } | { type: "cancelled" };

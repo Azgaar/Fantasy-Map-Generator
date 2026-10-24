@@ -2,8 +2,8 @@ import { Grid } from "@/model/graph/grid-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { Layers } from "@/renderers/layers";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
-import { ensureEl } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
+import { ensureEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
 
 const layer = ViewportLayers.register({ id: "cellIndexes", render: reconcileIndexes });
 

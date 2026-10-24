@@ -7,8 +7,8 @@ import { Layers } from "@/renderers/layers";
 import { refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/ui/map/map-placement";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
 
 function toggle(baseMarker?: Marker): void {
   if (findEl("addMarker")?.classList.contains("pressed")) {

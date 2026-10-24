@@ -39,7 +39,7 @@ test.describe("Burgs.add", () => {
       const [x, y] = cells.p[inlandCellId];
 
       // Add a new burg at this inland location
-      const Burgs = (window as any).Burgs;
+      const Burgs = (window as any).FMG.Burgs;
       const burgId = Burgs.add(x, y);
       const burg = burgs[burgId];
 
@@ -76,7 +76,7 @@ test.describe("Burgs.add", () => {
         const hasNoBurg = !cells.burg[i];
         if (isLand && hasNoHarbor && hasNoBurg) {
           const [x, y] = cells.p[i];
-          return (window as any).Burgs.add(x, y);
+          return (window as any).FMG.Burgs.add(x, y);
         }
       }
       return null;
@@ -85,11 +85,11 @@ test.describe("Burgs.add", () => {
     expect(burgId).not.toBeNull();
 
     // render the new burg, the way BurgCreator does after Burgs.add
-    await page.evaluate(() => (window as any).Layers.draw("burgIcons", "labels"));
+    await page.evaluate(() => (window as any).FMG.Layers.draw("burgIcons", "labels"));
 
     // Open the burg editor
     await page.evaluate((id: number) => {
-      (window as any).Controllers.BurgEditor.open(id);
+      (window as any).FMG.Controllers.BurgEditor.open(id);
     }, burgId!);
 
     // Wait for the editor dialog to appear

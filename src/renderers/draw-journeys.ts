@@ -1,7 +1,7 @@
 import { curveCatmullRom, line } from "d3";
-import type { Journey, JourneyPoint, JourneySegment } from "@/types/Journey";
-import { ensureEl } from "@/utils/nodeUtils";
-import { round } from "@/utils/stringUtils";
+import type { Journey, JourneyPoint, JourneySegment } from "@/types/journey";
+import { ensureEl } from "@/utils/node-utils";
+import { round } from "@/utils/string-utils";
 
 export function drawJourneys(): void {
   TIME && console.time("drawJourneys");

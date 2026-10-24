@@ -8,7 +8,7 @@ import {
   scaleSequential
 } from "d3";
 
-export type ColorScheme = (t: number) => string;
+type ColorScheme = (t: number) => string;
 
 const schemes: Record<string, ColorScheme> = {
   bright: scaleSequential(interpolateSpectral),

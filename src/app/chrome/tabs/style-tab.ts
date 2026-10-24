@@ -2,7 +2,7 @@
 // rendered by Controllers.StyleEditor from the styles schema; the preset row is wired by StylePresetsEditor
 
 import { t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
+import { ensureEl } from "@/utils/node-utils";
 
 const TEMPLATE = /* html */ `
   <div class="head">

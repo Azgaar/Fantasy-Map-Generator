@@ -6,13 +6,13 @@ interface Crossing {
   neighbors: string[];
 }
 
-export interface HeightContour {
+interface HeightContour {
   height: number;
   major: boolean;
   path: string;
 }
 
-export interface HeightContourChain {
+interface HeightContourChain {
   height: number;
   closed: boolean;
   points: Point[];

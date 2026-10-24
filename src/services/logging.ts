@@ -1,4 +1,4 @@
-import { safeParseJSON } from "@/utils/stringUtils";
+import { safeParseJSON } from "@/utils/string-utils";
 
 globalThis.DEBUG = safeParseJSON(localStorage.getItem("debug") ?? "") || {};
 globalThis.INFO = true;

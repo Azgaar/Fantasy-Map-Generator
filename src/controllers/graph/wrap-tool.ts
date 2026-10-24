@@ -6,7 +6,7 @@ import { closeDialogs, confirmationDialog, destroyDialog } from "@/ui/dialog/dia
 import { MapBrush } from "@/ui/map/map-brush";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
+import { ensureEl } from "@/utils/node-utils";
 import { findVertices, VertexBrush } from "./vertex-brush";
 
 type Edit = { before: Map<number, Point>; after: Map<number, Point> };

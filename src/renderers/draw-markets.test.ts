@@ -2,12 +2,12 @@
 import { beforeEach, expect, test, vi } from "vitest";
 import { setViewportSize, setViewportTransform } from "@/renderers/viewport/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
-import { getIsolines } from "@/utils/pathUtils";
+import { getIsolines } from "@/utils/path-utils";
 
 const mocks = vi.hoisted(() => ({ layerOn: true }));
 vi.mock("@/renderers/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
-vi.mock("@/utils/pathUtils", async importOriginal => ({
-  ...(await importOriginal<typeof import("@/utils/pathUtils")>()),
+vi.mock("@/utils/path-utils", async importOriginal => ({
+  ...(await importOriginal<typeof import("@/utils/path-utils")>()),
   getIsolines: vi.fn()
 }));
 

@@ -1,10 +1,10 @@
 // User edits applied on top of the generated graph
 import { polygonArea } from "d3";
 import type { Point } from "@/types/global";
-import type { PackedGraph } from "@/types/PackedGraph";
-import { TYPED_ARRAY_MAX, unique } from "@/utils/arrayUtils";
-import { clipPoly } from "@/utils/commonUtils";
-import { rn } from "@/utils/numberUtils";
+import type { PackedGraph } from "@/types/packed-graph";
+import { TYPED_ARRAY_MAX, unique } from "@/utils/array-utils";
+import { clipPoly } from "@/utils/common-utils";
+import { rn } from "@/utils/number-utils";
 import { Pack } from "./pack-generator";
 
 type OverrideValue = number | number[];

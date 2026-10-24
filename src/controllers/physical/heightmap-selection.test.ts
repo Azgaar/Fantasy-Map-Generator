@@ -11,8 +11,12 @@ import { Options } from "@/model/options/options-model";
 import { HeightmapGenerator } from "@/model/physical/heightmap-generator";
 
 const { regenerate } = vi.hoisted(() => ({ regenerate: vi.fn() }));
-vi.mock("@/app/lifecycle", async original => ({ ...(await original<object>()), regeneratePrompt: regenerate }));
-vi.mock("@/ui/dialog/dialog-helpers", () => ({ closeDialogs: vi.fn(), confirmationDialog: vi.fn() }));
+vi.mock("@/ui/app-commands", () => ({ App: { syncOptionInputs: vi.fn(), regeneratePrompt: regenerate } }));
+vi.mock("@/ui/dialog/dialog-helpers", () => ({
+  closeDialogs: vi.fn(),
+  confirmationDialog: vi.fn(),
+  destroyDialog: vi.fn()
+}));
 vi.mock("@/app/chrome/tabs/options-tab", () => ({ syncOptionInputs: vi.fn() }));
 vi.mock("@/app/shell", () => ({ initShell: vi.fn(), warnIfServerless: vi.fn() }));
 vi.mock("@/ui/map/zoom", () => ({ invokeActiveZooming: vi.fn(), resetZoom: vi.fn() }));

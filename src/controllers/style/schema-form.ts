@@ -2,8 +2,8 @@
 import { z } from "zod";
 import type { FieldMeta, StandardControl } from "@/types/styles";
 import { t } from "@/utils/i18n";
-import { htmlEl } from "@/utils/nodeUtils";
-import { getPath } from "@/utils/objectUtils";
+import { htmlEl } from "@/utils/node-utils";
+import { getPath } from "@/utils/object-utils";
 
 export type FieldSpec = {
   path: string[]; // from the schema root passed in, e.g. ["attrs", "fill"]
@@ -27,7 +27,7 @@ export type FieldSpec = {
 
 export type ControlFactory = (spec: FieldSpec, value: unknown, set: (value: unknown) => void) => HTMLElement;
 
-export type WalkedField = { spec: FieldSpec; hidden: boolean; gate: boolean }; // a gate renders in its section's header
+type WalkedField = { spec: FieldSpec; hidden: boolean; gate: boolean }; // a gate renders in its section's header
 
 type Registry<M extends FieldMeta<string> = FieldMeta<string>> = z.core.$ZodRegistry<M>;
 
@@ -499,7 +499,7 @@ const text: ControlFactory = (spec, value, set) => {
 };
 
 /** "#abc" → "#aabbcc": the swatch only takes 6-digit hex */
-export function toColorInput(value: unknown): string {
+function toColorInput(value: unknown): string {
   if (typeof value !== "string") return "#000000";
   const hex = value.trim().replace(/^#/, "").toLowerCase();
   if (/^[0-9a-f]{3}$/.test(hex)) return `#${[...hex].map(c => c + c).join("")}`;

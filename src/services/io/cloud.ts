@@ -7,11 +7,11 @@
 //   getLink(path): get a shareable link for a file
 //   initialize(): restore access tokens from storage if possible, else authenticate
 
-import { isElectron } from "@/services/platform";
 import { tip } from "@/ui/tooltips";
+import { isElectron } from "@/utils/environment";
 import { sentences, t } from "@/utils/i18n";
 
-export interface CloudFile {
+interface CloudFile {
   name: string;
   updated: string;
   size: number;
@@ -196,8 +196,6 @@ const dropbox: DropboxProvider = {
     return resp.result.url;
   }
 };
-
-export const Cloud = { providers: { dropbox } };
 
 // Method facade so the registry (which dispatches method calls, not property
 // reads) can reach cloud storage uniformly as `Services.Cloud.<method>()`.

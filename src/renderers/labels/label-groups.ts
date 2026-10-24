@@ -13,7 +13,7 @@ export function renderLabelGroups(root: ParentNode = document): void {
   }
 }
 
-export function renderLabelGroup(labels: SVGGElement, groupOptions: LabelGroup): SVGGElement {
+function renderLabelGroup(labels: SVGGElement, groupOptions: LabelGroup): SVGGElement {
   const group = labels.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "g");
   group.id = `labels-${groupOptions.name}`;
   group.dataset.group = groupOptions.name;

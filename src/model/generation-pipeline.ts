@@ -28,7 +28,7 @@ import { Population } from "@/model/society/population-generator";
 import { Religions } from "@/model/society/religions-generator";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
 import { Markers } from "@/model/story/markers-generator";
-import type { GridGraph } from "@/types/GridGraph";
+import type { GridGraph } from "@/types/grid-graph";
 import { Coordinates } from "./physical/coordinates";
 
 const generationPipelineSteps = [

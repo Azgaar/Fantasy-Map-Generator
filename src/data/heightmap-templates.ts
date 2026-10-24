@@ -150,7 +150,7 @@ const fractious = `Hill 12-15 50-80 5-95 5-95
   Add -20 30-100 0 0
   Range 6-8 40-50 5-95 10-90`;
 
-export type HeightmapTemplate = {
+type HeightmapTemplate = {
   id: number;
   name: string;
   template: string;

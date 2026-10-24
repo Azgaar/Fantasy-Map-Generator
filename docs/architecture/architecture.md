@@ -258,7 +258,7 @@ Inside the two large role folders, `model/` and `controllers/`, files are groupe
 | `economy/`     | goods, production, markets and trade, transports, routes                    |
 | `story/`       | markers, notes, lore, journeys                                              |
 | `annotations/` | labels, rulers, the legend: what the map adds on top of the world           |
-| `styles/`      | the style record, its schema, formats and legacy conversion (`model/` only) |
+| `styles/`      | the style record, its schema and formats (`model/` only)                    |
 | `style/`       | the Style editor and presets (`controllers/` only)                          |
 
 Inside a domain, an entity gets its own folder once it has **three or more files** there
@@ -340,7 +340,7 @@ A library loaded by a `<script>` tag as a runtime global is the exception that i
 `public/libs/` holds only two: jQuery with jQuery UI and Touch Punch, which run the dialogs, and
 three.js r140 with its add-ons for the 3D view. The dialogs move to a native primitive in
 `ui/dialog/`, the 3D view to the npm `three`; neither is extended in the meantime. A library of a
-few dozen lines is kept in `utils/` as typed source (`flatQueue.ts`, `simplify.ts`) rather than added
+few dozen lines is kept in `utils/` as typed source (`flat-queue.ts`, `simplify.ts`) rather than added
 as a dependency.
 
 ## Where does my file go?
@@ -396,6 +396,18 @@ to show a tooltip may not** — that import would point up the stack. Move the m
 controller that owns the interaction, or let the caller pass the behavior down: `createRegistry` in
 `utils/registry.ts` takes its loading feedback from the registry that builds it, and the minimap
 follows the camera through `onViewportChange` in `ui/map/zoom.ts` rather than being called by it.
+
+Two seams carry what still has to travel up:
+
+- **`notify`** (`utils/notices.ts`): a model or renderer message for the user; `ui/tooltips` shows it.
+- **`App`** (`ui/app-commands.ts`): the composition root's commands — generate or regenerate the map,
+  sync the options panel, open a tab, the command catalog — bound by `app/index.ts` at start-up, so a
+  controller or a service calls `App.regeneratePrompt()` without importing `app/`.
+
+A few direct upward imports are accepted where a seam would only add indirection: the style store
+redraws through the layers registry (`Styles.apply` → `Layers.draw`), the options model keeps custom
+icons in `services/local-db`, and the legend positions are stored with the dialog layouts in
+`ui/dialog/state`.
 
 ---
 
@@ -561,7 +573,7 @@ two typed registries — `Controllers` (built in `src/controllers/index.ts`) and
   object whose properties are its public methods — `export const StatesEditor = { open }`,
   `export const Save = { toStorage, toMachine, toDropbox, prepareMapData, writeToStorage }`. The registry key matches
   that export name. A module exposing data or a nested object wraps it in a method facade (e.g.
-  `CloudStorage` flattens `Cloud.providers.dropbox`) so it fits the dispatch contract.
+  `CloudStorage` wraps the Dropbox provider) so it fits the dispatch contract.
 - **Lazy by default, async at the call site.** `Controllers.X.method(...)` dynamically imports
   the module on first use (its own code-split chunk, evaluated once) and then dispatches — so
   every call returns a Promise. The factory infers each module's real signatures, so callers
@@ -845,13 +857,10 @@ what the user is looking at now — not everything they have opened this session
 3. **three.js from npm.** The 3D view and the erosion bake load vendored three.js r140 and its add-ons
    (`OrbitControls`, `MapControls`, `OBJExporter`, loop subdivision) as globals. Moving to the npm
    `three` needs the lights and colors retuned: r155 changed light intensities and color management.
-4. **Layering exceptions.** A few imports still point up the stack. The model and the 3D renderer show
-   tips through `ui/tooltips`, and the 3D renderer names its screenshots through `services/io/file-name`; the trade animation renderer opens `Controllers.TradeDetails`; the
-   highlight overlay calls `zoomTo` from `ui/map/zoom`; `services/io/load` and `services/url-params`
-   call into `app/lifecycle`; the options model keeps custom icons through `services/local-db`; a
-   few generators touch the DOM (the cultures alert, a route measuring path, the heightmap image
-   canvas). Each one moves its message or command to the controller that owns the interaction, or
-   takes a callback from its caller.
+4. **Model code that touches the DOM.** The style store writes attributes to the map's SVG, the icon
+   library mounts `#icons-library`, the cultures generator fills the alert dialog, a route measurement
+   builds a path element and the heightmap image import draws to a canvas. Each moves to the renderer
+   or controller that owns it.
 5. **Logging flags.** `TIME`, `INFO`, `WARN`, `ERROR` and `DEBUG` are ambient globals. They become one
    exported `log` object, which `window.FMG` exposes for switching from the console.
 6. **No `any`.** About 260 remain and Biome's `noExplicitAny` is off. They go module by module as each

@@ -10,9 +10,9 @@ import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-sch
 import { getLabelsIndex } from "@/renderers/labels/label-data";
 import type { StandardControl, StyleControl } from "@/types/styles";
 import { t } from "@/utils/i18n";
-import { ensureEl, findEl, htmlEl } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
-import { escapeHtml } from "@/utils/stringUtils";
+import { ensureEl, findEl, htmlEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 import {
   openAddFontDialog,
   openFontDialog,

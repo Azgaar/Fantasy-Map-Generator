@@ -4,13 +4,13 @@ import { getFileName } from "@/services/io/file-name";
 import { speak } from "@/services/speech";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
-import { unique } from "@/utils/arrayUtils";
-import { openURL } from "@/utils/commonUtils";
-import { createFileInput, downloadFile, uploadFile } from "@/utils/fileUtils";
+import { unique } from "@/utils/array-utils";
+import { openURL } from "@/utils/common-utils";
+import { createFileInput, downloadFile, uploadFile } from "@/utils/file-utils";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
-import { escapeHtml } from "@/utils/stringUtils";
+import { ensureEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 let namesbaseInput: HTMLInputElement | null = null;
 

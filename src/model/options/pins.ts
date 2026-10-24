@@ -1,15 +1,12 @@
 // The values the user pinned so a new map does not re-roll them
 
 import { pinSchemas } from "@/model/options/options-schema";
-import { tip } from "@/ui/tooltips";
-import { t } from "@/utils/i18n";
-import { safeParseJSON } from "@/utils/stringUtils";
+import { safeParseJSON } from "@/utils/string-utils";
 
 const STORAGE_KEY = "fmg-locks";
-const LOCKED_TIP = t("Click to lock the option and always use the current value on new map generation");
-const UNLOCKED_TIP = t("Click to unlock the option and allow it to be randomized on new map generation");
 
 class PinStore {
+  private readonly listeners = new Set<() => void>();
   /** `?options=default` asks for the map a fresh browser would make, so every pin is ignored */
   get ignored(): boolean {
     return new URL(window.location.href).searchParams.get("options") === "default";
@@ -53,7 +50,7 @@ class PinStore {
     const pins = this.all();
     pins[key] = parsed.data;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(pins));
-    this.paintIcons();
+    this.changed();
   }
 
   /** Let a new map roll the value again */
@@ -61,46 +58,22 @@ class PinStore {
     const pins = this.all();
     delete pins[key];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(pins));
-    this.paintIcons();
+    this.changed();
   }
 
   /** Throw every pin away: a reset browser must not go on generating values nobody asked for */
   clearAll(): void {
     localStorage.removeItem(STORAGE_KEY);
-    this.paintIcons();
+    this.changed();
   }
 
-  /** Wire the lock icons of a dialog and paint them */
-  bindIcons(root: Element, pinnedValue: (key: string) => unknown): void {
-    for (const icon of root.querySelectorAll<HTMLElement>("[data-locked]")) {
-      const keys = icon.dataset.ids ? icon.dataset.ids.split(",") : [icon.id.slice(5)];
-
-      icon.addEventListener("mouseover", event => {
-        event.stopPropagation();
-        tip(icon.className === "icon-lock" ? UNLOCKED_TIP : LOCKED_TIP);
-      });
-
-      icon.addEventListener("click", () => {
-        const pinning = icon.className !== "icon-lock";
-        for (const key of keys) {
-          if (pinning) this.set(key, pinnedValue(key));
-          else this.clear(key);
-        }
-      });
-    }
-
-    this.paintIcons();
+  /** Call `listener` after every change, for the lock icons to repaint */
+  subscribe(listener: () => void): void {
+    this.listeners.add(listener);
   }
 
-  /** Paint every lock icon on the page with the state of the setting it stands for */
-  paintIcons(): void {
-    const pins = this.all();
-    for (const icon of document.querySelectorAll<HTMLElement>("[data-locked]")) {
-      const keys = icon.dataset.ids ? icon.dataset.ids.split(",") : [icon.id.slice(5)];
-      const locked = keys.some(key => Object.hasOwn(pins, key));
-      icon.dataset.locked = locked ? "1" : "0";
-      icon.className = locked ? "icon-lock" : "icon-lock-open";
-    }
+  private changed(): void {
+    for (const listener of this.listeners) listener();
   }
 }
 

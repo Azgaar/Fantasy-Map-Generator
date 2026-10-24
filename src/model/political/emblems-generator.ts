@@ -1,18 +1,16 @@
-import {
-  charges,
-  divisions,
-  lineWeights,
-  ordinaries,
-  positions,
-  shields,
-  tinctures,
-  typeMapping
-} from "@/data/emblems";
+import { charges } from "@/data/emblems/charges";
+import { divisions } from "@/data/emblems/divisions";
+import { lineWeights } from "@/data/emblems/line-weights";
+import { ordinaries } from "@/data/emblems/ordinaries";
+import { positions } from "@/data/emblems/positions";
+import { shields } from "@/data/emblems/shields";
+import { tinctures } from "@/data/emblems/tinctures";
+import { typeMapping } from "@/data/emblems/type-mapping";
 import { IconSets } from "@/model/icon-sets";
 import { Icons } from "@/model/icons";
 import type { Emblem, EmblemCharge, EmblemOrdinary, HeraldicEmblem } from "@/types/emblems";
 import type { IconSet } from "@/types/icons";
-import { P, rw } from "@/utils/probabilityUtils";
+import { P, rw } from "@/utils/probability-utils";
 import { Burgs } from "./burgs-generator";
 
 // shapes that resolve per entity rather than fixing one shield for the whole map (the "Diversiform" option group)

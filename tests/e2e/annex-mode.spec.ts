@@ -1,6 +1,9 @@
 import {test, expect, type Page} from "@playwright/test";
 import { waitForMap } from "./wait-for-map";
 
+// the app's console surface, see src/app/fmg.ts
+declare const FMG: any;
+
 // Map click at a pack coordinate; callers filter out points hidden under a dialog or the options panel
 async function clickMapAt(page: Page, point: [number, number]) {
   const screen = await page.evaluate(([x, y]) => {
@@ -72,7 +75,7 @@ test.describe("Annex by clicking on the map", () => {
     expect(await page.locator(`#statesBody #state${parent.i}`).getAttribute("d")).not.toBe(parentFill);
     expect(await page.locator(`#statesBody #state${child.i}`).count()).toBe(0);
     const borders = await page.locator("#borders").innerHTML();
-    await page.evaluate(() => Layers.draw("borders"));
+    await page.evaluate(() => FMG.Layers.draw("borders"));
     expect(await page.locator("#borders").innerHTML()).toBe(borders);
 
     const result = await page.evaluate(
@@ -86,7 +89,7 @@ test.describe("Annex by clicking on the map", () => {
     );
     expect(result).toEqual({removed: true, parentAlive: true, childCells: 0});
     await expect(page.locator("#statesAnnex")).not.toHaveClass(/pressed/);
-    expect(await page.evaluate(() => (0, eval)("customization"))).toBe(0);
+    expect(await page.evaluate(() => (window as any).options.app.mode)).toBeNull();
   });
 
   test("cancelling the confirmation leaves states untouched and clears the preview", async ({page}) => {
@@ -204,7 +207,7 @@ test.describe("Annex by clicking on the map", () => {
   });
 });
 
-declare const pack: import("@/types/PackedGraph").PackedGraph;
+declare const pack: import("@/types/packed-graph").PackedGraph;
 
 test.describe("State and province refresh", () => {
   let errors: string[];
@@ -228,7 +231,7 @@ test.describe("State and province refresh", () => {
         const provinces = await page.evaluate(() => pack.provinces.filter(p => p.i && !p.removed));
         const state = filtered ? provinces[0].state : -1;
         await page.selectOption("#provincesFilterState", String(state));
-        if (!visible) await page.evaluate(() => Layers.hide("provinces"));
+        if (!visible) await page.evaluate(() => FMG.Layers.hide("provinces"));
         await page.click("#provincesRecolor");
 
         const after = await page.evaluate(() => pack.provinces.filter(p => p.i && !p.removed));
@@ -238,11 +241,11 @@ test.describe("State and province refresh", () => {
           expect(changed.every(p => p.state === state)).toBe(true);
           expect(provinces.some(p => p.state !== state)).toBe(true);
         }
-        expect(await page.evaluate(() => Layers.isOn("provinces"))).toBe(visible);
+        expect(await page.evaluate(() => FMG.Layers.isOn("provinces"))).toBe(visible);
         if (!visible) {
           await expect(page.locator("#provs")).toBeHidden();
           await expect(page.locator("#provs path")).toHaveCount(0);
-          await page.evaluate(() => Layers.show("provinces"));
+          await page.evaluate(() => FMG.Layers.show("provinces"));
         }
         const mismatches = await page.evaluate(() => {
           const map = pack.provinces
@@ -268,7 +271,7 @@ test.describe("State and province refresh", () => {
 
     test(`creating a state refreshes fills and borders with layers ${visible ? "on" : "off"}`, async ({ page }) => {
       await openEditor(page, "editStatesButton", "statesEditor");
-      if (!visible) await page.evaluate(() => Layers.hide("states", "borders"));
+      if (!visible) await page.evaluate(() => FMG.Layers.hide("states", "borders"));
       const candidates = await page.evaluate(() => {
         const { cells, burgs } = pack;
         return Array.from(cells.i)
@@ -295,28 +298,28 @@ test.describe("State and province refresh", () => {
       await clickMapAt(page, target!.point);
 
       expect(await page.evaluate(i => pack.cells.state[i], target!.i)).toBe(newState);
-      expect(await page.evaluate(() => [Layers.isOn("states"), Layers.isOn("borders")])).toEqual([visible, visible]);
+      expect(await page.evaluate(() => [FMG.Layers.isOn("states"), FMG.Layers.isOn("borders")])).toEqual([visible, visible]);
       if (!visible) {
         await expect(page.locator("#regions")).toBeHidden();
         await expect(page.locator("#borders")).toBeHidden();
         await expect(page.locator("#statesBody path, #borders path")).toHaveCount(0);
-        await page.evaluate(() => Layers.show("states", "borders"));
+        await page.evaluate(() => FMG.Layers.show("states", "borders"));
       }
       await expect(page.locator(`#statesBody #state${newState}`)).toHaveAttribute("d", /\S/);
       expect(await page.locator("#borders").innerHTML()).not.toBe(oldBorders);
       const rendered = await page.evaluate(() =>
         ["statesBody", "borders"].map(id => document.getElementById(id)!.innerHTML)
       );
-      await page.evaluate(() => Layers.draw("states", "borders"));
+      await page.evaluate(() => FMG.Layers.draw("states", "borders"));
       expect(
         await page.evaluate(() => ["statesBody", "borders"].map(id => document.getElementById(id)!.innerHTML))
       ).toEqual(rendered);
-      expect(await page.evaluate(() => [Layers.isOn("states"), Layers.isOn("borders")])).toEqual([true, true]);
+      expect(await page.evaluate(() => [FMG.Layers.isOn("states"), FMG.Layers.isOn("borders")])).toEqual([true, true]);
     });
   }
 
   test("locating a province capital works before labels have been enabled", async ({ page }) => {
-    expect(await page.evaluate(() => Layers.isOn("labels"))).toBe(false);
+    expect(await page.evaluate(() => FMG.Layers.isOn("labels"))).toBe(false);
     await expect(page.locator("#labels text")).toHaveCount(0);
     await openEditor(page, "editProvincesButton", "provincesEditor");
     await page.selectOption("#provincesFilterState", "-1");
@@ -339,7 +342,7 @@ test.describe("State and province refresh", () => {
         }, burg)
       )
       .toBe(true);
-    expect(await page.evaluate(() => Layers.isOn("labels"))).toBe(false);
+    expect(await page.evaluate(() => FMG.Layers.isOn("labels"))).toBe(false);
     await expect(page.locator("#labels text")).toHaveCount(0);
   });
 });

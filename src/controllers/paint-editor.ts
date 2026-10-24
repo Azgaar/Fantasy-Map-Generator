@@ -13,9 +13,9 @@ import type { FillBoxElement } from "@/ui/elements/fill-box";
 import { MapBrush } from "@/ui/map/map-brush";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
+import { ensureEl } from "@/utils/node-utils";
 
-export interface PaintEditorItem {
+interface PaintEditorItem {
   id: number;
   name: string;
   color: string;

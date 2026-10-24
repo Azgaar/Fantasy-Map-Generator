@@ -37,7 +37,7 @@ test.describe("Notes Editor", () => {
 
   test("lists notes grouped by entity type and opens on the requested entity", async ({ page }) => {
     const { burgId, burgName } = await seedNotes(page);
-    await page.evaluate(id => (window as any).Controllers.BurgEditor.open(id), burgId);
+    await page.evaluate(id => (window as any).FMG.Controllers.BurgEditor.open(id), burgId);
     await page.click("#burglLegend");
     await expect(page.locator("#notesEditor")).toBeVisible();
 
@@ -50,7 +50,7 @@ test.describe("Notes Editor", () => {
 
   test("edits a note in the bundled rich text editor and writes it onto the entity", async ({ page }) => {
     const { burgId } = await seedNotes(page);
-    await page.evaluate(id => (window as any).Controllers.BurgEditor.open(id), burgId);
+    await page.evaluate(id => (window as any).FMG.Controllers.BurgEditor.open(id), burgId);
     await page.click("#burglLegend");
 
     const editor = page.locator("#notesEditor .ql-editor");
@@ -65,7 +65,7 @@ test.describe("Notes Editor", () => {
 
   test("switching the selected element loads that entity's note", async ({ page }) => {
     const { burgId, stateId } = await seedNotes(page);
-    await page.evaluate(id => (window as any).Controllers.BurgEditor.open(id), burgId);
+    await page.evaluate(id => (window as any).FMG.Controllers.BurgEditor.open(id), burgId);
     await page.click("#burglLegend");
 
     await page.selectOption("#notesSelect", `regiment:${stateId}-0`);
@@ -77,7 +77,7 @@ test.describe("Notes Editor", () => {
 
   test("inserts a table from the table menu", async ({ page }) => {
     const { burgId } = await seedNotes(page);
-    await page.evaluate(id => (window as any).Controllers.BurgEditor.open(id), burgId);
+    await page.evaluate(id => (window as any).FMG.Controllers.BurgEditor.open(id), burgId);
     await page.click("#burglLegend");
 
     await page.locator("#notesEditor .ql-editor").click();
@@ -91,7 +91,7 @@ test.describe("Notes Editor", () => {
 
   test("opens a note with markup the editor cannot hold as HTML source", async ({ page }) => {
     const { burgId, embedId } = await seedNotes(page);
-    await page.evaluate(id => (window as any).Controllers.BurgEditor.open(id), burgId);
+    await page.evaluate(id => (window as any).FMG.Controllers.BurgEditor.open(id), burgId);
     await page.click("#burglLegend");
     await page.selectOption("#notesSelect", `burg:${embedId}`);
 
@@ -112,7 +112,7 @@ test.describe("Notes Editor", () => {
 
   test("removing a note clears the field on the entity", async ({ page }) => {
     const { burgId } = await seedNotes(page);
-    await page.evaluate(id => (window as any).Controllers.BurgEditor.open(id), burgId);
+    await page.evaluate(id => (window as any).FMG.Controllers.BurgEditor.open(id), burgId);
     await page.click("#burglLegend");
 
     await page.click("#notesRemove");
@@ -143,7 +143,7 @@ test.describe("Notes Editor", () => {
       return pack.burgs.find((b: any) => b?.i && !b.removed).i;
     });
 
-    await page.evaluate(id => (window as any).Controllers.BurgEditor.open(id), clean);
+    await page.evaluate(id => (window as any).FMG.Controllers.BurgEditor.open(id), clean);
     await page.click("#burglLegend");
 
     await expect(page.locator("#notesSelect")).toHaveValue(`burg:${clean}`);

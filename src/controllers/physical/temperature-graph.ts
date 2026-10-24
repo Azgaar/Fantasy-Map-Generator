@@ -2,9 +2,9 @@ import { axisBottom, axisLeft, curveBasis, line, pointer, scaleLinear, scaleTime
 import { convertTemperature } from "@/model/units";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
-import { round } from "@/utils/stringUtils";
+import { ensureEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
+import { round } from "@/utils/string-utils";
 
 const MONTHS = [
   t("January"),

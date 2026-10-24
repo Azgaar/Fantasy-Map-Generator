@@ -2,7 +2,7 @@ import { color, easeSinInOut, select, transition } from "d3";
 import { Icons } from "@/model/icons";
 import type { Regiment } from "@/model/political/military-generator";
 import { Military } from "@/model/political/military-generator";
-import { rn } from "@/utils/numberUtils";
+import { rn } from "@/utils/number-utils";
 
 /** the icon box inside the square left of a regiment box at x1, y1 of height h */
 export const regimentIconBox = (x1: number, y1: number, h: number, icon: string) => {

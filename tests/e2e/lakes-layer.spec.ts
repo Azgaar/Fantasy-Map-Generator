@@ -18,7 +18,7 @@ test.describe("Lakes layer", () => {
     const lakes = page.locator("#lakes");
 
     // Open the options panel (layers tab) so the toggle button is reachable
-    await page.evaluate(() => (window as any).showOptions());
+    await page.evaluate(() => document.getElementById("optionsTrigger")!.click());
 
     // Lakes should be visible by default
     await expect(lakes).toBeVisible();
@@ -78,7 +78,7 @@ test.describe("Lakes layer", () => {
 
     // Simulate the drag of Lakes above Heightmap in the panel
     await page.evaluate(() => {
-      const Layers = (window as any).Layers;
+      const Layers = (window as any).FMG.Layers;
       Layers.move("lakes", "heightmap");
     });
 
@@ -100,7 +100,7 @@ test.describe("Lakes layer", () => {
       const featureId = Number(use.dataset.f);
       const subtypeBefore = win.pack.features[featureId].subtype;
 
-      await win.Controllers.LakesEditor.open(use);
+      await win.FMG.Controllers.LakesEditor.open(use);
 
       // create a custom group for the lake, as the editor's "+" flow does
       const nameInput = document.getElementById("lakeGroupName") as HTMLInputElement;
@@ -124,7 +124,7 @@ test.describe("Lakes layer", () => {
     // the placement has to survive a redraw of the layer, which is what happens on load
     const parentAfterRedraw = await page.evaluate(featureId => {
       const win = window as any;
-      win.Layers.draw("lakes");
+      win.FMG.Layers.draw("lakes");
       return document.querySelector(`#lakes use[data-f="${featureId}"]`)?.parentElement?.id;
     }, moved.featureId);
 

@@ -24,7 +24,7 @@ import {
 } from "@/data/style-choices";
 import type { StyleMeta } from "@/types/styles";
 import { sentences, t } from "@/utils/i18n";
-import { hexColor } from "@/utils/schemaUtils";
+import { hexColor } from "@/utils/schema-utils";
 import { FORMATS, isLabelStyle } from "./styles-formats";
 
 export const styleMeta = z.registry<StyleMeta>();

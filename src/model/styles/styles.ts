@@ -1,8 +1,8 @@
 // The style store: the record every layer reads, and the SVG projection written from it
 import { type LayerId, Layers } from "@/renderers/layers";
 import { NODE_KEYS, type StyleElement, type StylesData } from "@/types/styles";
-import { getPath } from "@/utils/objectUtils";
-import { parseSections, type TemplateLookup } from "@/utils/schemaUtils";
+import { getPath } from "@/utils/object-utils";
+import { parseSections, type TemplateLookup } from "@/utils/schema-utils";
 import defaultStyles from "./default-styles.json";
 import { stylesSchema } from "./styles-schema";
 

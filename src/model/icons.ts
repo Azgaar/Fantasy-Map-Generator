@@ -4,14 +4,14 @@ import { emojiName } from "@/data/icons-list";
 import { type IconSetId, IconSets } from "@/model/icon-sets";
 import { Options } from "@/model/options/options-model";
 import type { IconPaint } from "@/types/icons";
-import { tip } from "@/ui/tooltips";
-import { sanitizeSvgIcon } from "@/utils/fileUtils";
+import { sanitizeSvgIcon } from "@/utils/file-utils";
 import { t } from "@/utils/i18n";
-import { findEl } from "@/utils/nodeUtils";
-import { escapeHtml } from "@/utils/stringUtils";
+import { findEl } from "@/utils/node-utils";
+import { notify } from "@/utils/notices";
+import { escapeHtml } from "@/utils/string-utils";
 
 /** where a reference resolves: a built-in set, a glyph built from its text, or a picture the map carries */
-export type IconKind = "set" | "glyph" | "custom";
+type IconKind = "set" | "glyph" | "custom";
 
 type IconOwner = { icon?: string };
 
@@ -53,7 +53,7 @@ const SLOTS = {
     owners: () => options.map.relief.rules.flatMap(rule => Object.keys(rule.icons).map(icon => ({ icon })))
   }
 } satisfies Record<string, { label: string; owners: () => readonly IconOwner[] }>;
-export type IconUseKind = keyof typeof SLOTS;
+type IconUseKind = keyof typeof SLOTS;
 
 export interface CustomIcon {
   id: string; // the symbol id: `custom-<8 hex>`, or `custom-goods-<id>` for uploads kept from older maps
@@ -368,7 +368,7 @@ class IconLibrary {
       error => {
         this.settled.set(set, "failed");
         console.error(`Failed to load ${set} icons`, error);
-        tip(t("Cannot load {{set}} icons. Reload the page or retry the action.", { set }), false, "error", 8000);
+        notify(t("Cannot load {{set}} icons. Reload the page or retry the action.", { set }), "error", 8000);
       }
     );
     this.loading.set(set, attempt);

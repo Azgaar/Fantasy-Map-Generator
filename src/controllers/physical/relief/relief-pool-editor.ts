@@ -12,9 +12,9 @@ import { Layers } from "@/renderers/layers";
 import { confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
-import { minmax, rn } from "@/utils/numberUtils";
-import { escapeHtml } from "@/utils/stringUtils";
+import { ensureEl } from "@/utils/node-utils";
+import { minmax, rn } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 import { fitReliefArt, poolEntryHtml, poolEntryName, reliefPatchHtml } from "./relief-previews";
 
 const DIALOG = "reliefPoolEditor";

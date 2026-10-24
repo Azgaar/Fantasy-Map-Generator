@@ -11,7 +11,7 @@ async function loadMap(page: Page): Promise<void> {
 
 async function openIconPicker(page: Page): Promise<void> {
   await page.evaluate(async () => {
-    await (window as any).Controllers.IconPicker.open({ current: "", onPick: () => {} });
+    await (window as any).FMG.Controllers.IconPicker.open({ current: "", onPick: () => {} });
   });
   await expect(page.locator("#iconPicker")).toHaveCount(1);
 }

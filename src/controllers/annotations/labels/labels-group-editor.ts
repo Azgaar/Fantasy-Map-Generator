@@ -1,7 +1,6 @@
-import { LAYER_TOGGLES } from "@/app/chrome/tabs/layers-tab";
 import { Controllers } from "@/controllers";
 import { LABEL_MODE_LABELS, LABEL_TYPE_LABELS } from "@/data/id-labels";
-import { layerLabel } from "@/data/layer-labels";
+import { LAYER_TOGGLES, layerLabel } from "@/data/layer-labels";
 import {
   LABEL_TYPES,
   type LabelGroup,
@@ -16,7 +15,7 @@ import { Layers } from "@/renderers/layers";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
+import { ensureEl } from "@/utils/node-utils";
 
 function open(): void {
   if (options.app.mode) return;

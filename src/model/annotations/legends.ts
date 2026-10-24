@@ -1,5 +1,5 @@
 // Legend boxes: the titled color keys editors put on the map. The legend layer draws them
-import type { LegendItem } from "@/types/Legend";
+import type { LegendItem } from "@/types/legend";
 
 class LegendsModule {
   initiate(): void {

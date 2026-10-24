@@ -3,7 +3,7 @@ import { Icons } from "@/model/icons";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { inlineLinkedImages } from "@/services/io/export";
 import type { Emblem } from "@/types/emblems";
-import { findEl } from "@/utils/nodeUtils";
+import { findEl } from "@/utils/node-utils";
 
 // An emblem as a standalone picture: for downloads, and for the Assistant to look at
 

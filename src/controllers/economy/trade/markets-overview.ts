@@ -31,8 +31,8 @@ import type { FillBoxElement } from "@/ui/elements/fill-box";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl, getPointer } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
+import { ensureEl, findEl, getPointer } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
 
 const dialogId = "marketsOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };

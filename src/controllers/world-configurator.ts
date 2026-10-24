@@ -12,11 +12,12 @@ import { Temperature } from "@/model/physical/temperature-generator";
 import { convertTemperature, getKmInDistanceUnit } from "@/model/units";
 import { Layers } from "@/renderers/layers";
 import { destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { bindPinIcons } from "@/ui/pin-icons";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
-import { parseTransform, round } from "@/utils/stringUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
+import { parseTransform, round } from "@/utils/string-utils";
 
 const projection = geoOrthographic().translate([100, 100]).scale(100);
 const path = geoPath(projection);
@@ -227,7 +228,7 @@ function addListeners(): void {
   ensureEl("wcTropical").addEventListener("click", () => applyWorldPreset(33, 50));
   ensureEl("wcSouthern").addEventListener("click", () => applyWorldPreset(33, 75));
 
-  Pins.bindIcons(ensureEl("worldConfigurator"), currentValue);
+  bindPinIcons(ensureEl("worldConfigurator"), currentValue);
 }
 
 /** What each lock icon in this dialog pins */

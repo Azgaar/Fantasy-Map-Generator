@@ -2,7 +2,7 @@
 import type { LayerId } from "@/renderers/layers";
 import { t } from "@/utils/i18n";
 
-export interface LayerButton {
+interface LayerButton {
   label: string; // plain button text; the shortcut letter is underlined when rendered
   shortcut?: string; // KeyboardEvent.code
   hint?: string; // shortcut as shown in the tip, defaults to the code without the "Key" prefix

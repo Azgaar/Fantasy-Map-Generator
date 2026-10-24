@@ -4,10 +4,11 @@ import { Controllers } from "@/controllers";
 import type { LabelType } from "@/model/annotations/labels-generator";
 import { dragLegendBox, legendBoxFromEvent } from "@/renderers/draw-legend";
 import { LegendBoxes } from "@/renderers/legend-boxes";
+import type { TradeBatch } from "@/renderers/trade-animation";
 import { tip } from "@/ui/tooltips";
-import { debounce } from "@/utils/commonUtils";
+import { debounce } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
-import { findEl } from "@/utils/nodeUtils";
+import { findEl } from "@/utils/node-utils";
 import { handleMouseMove } from "./map-tooltip";
 import { applyZoomBehavior } from "./zoom";
 
@@ -58,6 +59,7 @@ const GRAND_EDITORS: Record<string, Opener> = {
   goodsIcons: () => Controllers.GoodsEditor.open(),
   goodsBurgs: (_target, parent) => Controllers.ProductionOverview.open(Number(parent.dataset.id)),
   lakes: target => Controllers.LakesEditor.open(target),
+  tradeAnimation: (_target, parent) => Controllers.TradeDetails.open(select<SVGElement, TradeBatch>(parent).datum()),
   markets: (target, parent) => {
     if (target.tagName !== "path") Controllers.MarketOverview.open(Number(parent.dataset.id));
   }

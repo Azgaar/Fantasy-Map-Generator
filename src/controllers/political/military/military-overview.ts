@@ -7,7 +7,7 @@ import type { State } from "@/model/political/states-generator";
 import { drawRegiment } from "@/renderers/draw-military";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
-import type { MilitaryUnit } from "@/types/Military";
+import type { MilitaryUnit } from "@/types/military";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { type LimitationItem, limitationTip, pickLimitation } from "@/ui/dialog/limitation-picker";
@@ -21,11 +21,11 @@ import {
   type TableView
 } from "@/ui/dialog/table";
 import { tip } from "@/ui/tooltips";
-import { wiki } from "@/utils/commonUtils";
+import { wiki } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
-import { rn, si } from "@/utils/numberUtils";
-import { capitalize, escapeHtml, sanitizeId } from "@/utils/stringUtils";
+import { ensureEl } from "@/utils/node-utils";
+import { rn, si } from "@/utils/number-utils";
+import { capitalize, escapeHtml, sanitizeId } from "@/utils/string-utils";
 
 const dialogId = "militaryOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };

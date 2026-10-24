@@ -22,9 +22,9 @@ import {
 } from "@/ui/dialog/table";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { downloadFile } from "@/utils/fileUtils";
+import { downloadFile } from "@/utils/file-utils";
 import { t } from "@/utils/i18n";
-import { ensureEl, findEl, getPointer } from "@/utils/nodeUtils";
+import { ensureEl, findEl, getPointer } from "@/utils/node-utils";
 
 const dialogId = "diplomacyOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };

@@ -29,7 +29,7 @@ vi.mock("@/services", () => ({ Services: {} }));
 vi.mock("@/services/autosave", () => ({ toggleSaveReminder: vi.fn() }));
 vi.mock("@/services/url-params", () => ({ copyMapURL: vi.fn() }));
 vi.mock("@/services/versioning", () => ({ cleanupData: vi.fn() }));
-vi.mock("@/renderers/overlays/highlight", () => ({
+vi.mock("@/ui/map/highlight", () => ({
   highlightElement: mocks.highlight,
   highlightArea: mocks.highlightArea
 }));
@@ -45,10 +45,13 @@ vi.mock("@/controllers", () => ({
   )
 }));
 
-import { MAP_COMMANDS } from "@/app/map-commands";
+import { isLinkable, MAP_COMMANDS } from "@/app/map-commands";
 import { Routes } from "@/model/economy/routes-generator";
 import { Rivers } from "@/model/physical/river-generator";
+import { bindApp } from "@/ui/app-commands";
 import { Omnibar } from "./omnibar";
+
+bindApp({ mapCommands: MAP_COMMANDS, isLinkable } as Parameters<typeof bindApp>[0]);
 
 function input(): HTMLInputElement {
   return document.querySelector<HTMLInputElement>("#omnibar-input")!;

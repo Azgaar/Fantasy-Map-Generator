@@ -8,9 +8,8 @@ import { Tags } from "@/model/tags";
 import { getArea, getAreaUnit } from "@/model/units";
 import { Layers } from "@/renderers/layers";
 import { LegendBoxes } from "@/renderers/legend-boxes";
-import { highlightElement } from "@/renderers/overlays/highlight";
 import { Csv } from "@/services/io/csv";
-import type { LegendItem } from "@/types/Legend";
+import type { LegendItem } from "@/types/legend";
 import { closeDialogs, confirmationDialog, destroyDialog, noteIcon, updateDialog } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
@@ -23,15 +22,16 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
+import { highlightElement } from "@/ui/map/highlight";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { groupByValue } from "@/utils/arrayUtils";
-import { debounce } from "@/utils/commonUtils";
-import { isLand } from "@/utils/heightUtils";
+import { groupByValue } from "@/utils/array-utils";
+import { debounce } from "@/utils/common-utils";
+import { isLand } from "@/utils/height-utils";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl, getPointer } from "@/utils/nodeUtils";
-import { rn, si } from "@/utils/numberUtils";
-import { errorText, parseTransform } from "@/utils/stringUtils";
+import { ensureEl, findEl, getPointer } from "@/utils/node-utils";
+import { rn, si } from "@/utils/number-utils";
+import { errorText, parseTransform } from "@/utils/string-utils";
 
 const dialogId = "religionsEditor" as const;
 const CSV_COLUMNS = [

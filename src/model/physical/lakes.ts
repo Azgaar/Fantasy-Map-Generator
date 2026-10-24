@@ -1,10 +1,10 @@
 import { mean, min } from "d3";
-import { unique } from "@/utils/arrayUtils";
-import { isLand } from "@/utils/heightUtils";
-import { rn } from "@/utils/numberUtils";
+import { unique } from "@/utils/array-utils";
+import { isLand } from "@/utils/height-utils";
+import { rn } from "@/utils/number-utils";
 import type { Feature } from "./features-generator";
 
-export class LakesModule {
+class LakesModule {
   private LAKE_ELEVATION_DELTA = 0.1;
 
   getHeight(feature: Feature) {

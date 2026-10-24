@@ -1,13 +1,14 @@
-import { MAP_COMMANDS, type MapCommand } from "@/app/map-commands";
+import type { MapCommand } from "@/app/map-commands";
 import { ENTITY_TYPES, type EntityDisplay, type EntityTarget, MapEntities } from "@/model/map-entities";
 import { Tags } from "@/model/tags";
 import { getLabelsIndex, type LabelIndexEntry } from "@/renderers/labels/label-data";
 import type { LayerId } from "@/renderers/layers";
 import { Layers } from "@/renderers/layers";
+import { App } from "@/ui/app-commands";
 import { openEntity, reveal, revealEntity } from "@/ui/map/reveal";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
-import { findEl } from "@/utils/nodeUtils";
+import { findEl } from "@/utils/node-utils";
 
 interface SearchFields {
   name: string;
@@ -95,7 +96,7 @@ class OmnibarController {
   }
 
   private collect(): Result[] {
-    const commands: CommandResult[] = (options.map.viewOnly ? [] : MAP_COMMANDS).map(command => ({
+    const commands: CommandResult[] = (options.map.viewOnly ? [] : App.mapCommands).map(command => ({
       kind: "command",
       id: command.id,
       name: command.name,

@@ -3,8 +3,8 @@ import { dialogState } from "./state";
 
 // the layout the tables default to depends on the device, which only platform.ts answers for
 const { device } = vi.hoisted(() => ({ device: { isMobile: false } }));
-vi.mock("@/services/platform", async importOriginal => ({
-  ...(await importOriginal<typeof import("@/services/platform")>()),
+vi.mock("@/utils/environment", async importOriginal => ({
+  ...(await importOriginal<typeof import("@/utils/environment")>()),
   isMobile: () => device.isMobile
 }));
 

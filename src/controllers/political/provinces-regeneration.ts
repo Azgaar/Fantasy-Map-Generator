@@ -5,7 +5,7 @@ import { unfog } from "@/renderers/overlays/fogging";
 import { destroyDialog, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
+import { ensureEl } from "@/utils/node-utils";
 
 const DIALOG_ID = "provincesRegeneration";
 

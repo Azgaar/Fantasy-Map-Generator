@@ -2,9 +2,13 @@ import { Controllers } from "@/controllers";
 import { globeResolutionFor, timeOfDayPresets } from "@/data/view-3d-options";
 import { is3dView } from "@/renderers/view-mode";
 import { viewport } from "@/renderers/viewport/viewport";
+import { Services } from "@/services";
+import { getFileName } from "@/services/io/file-name";
+import { savedMessage } from "@/services/platform";
 import { tip } from "@/ui/tooltips";
+import { downloadFile } from "@/utils/file-utils";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
 
 // View3d controller: enters/exits the 3D view and owns the 3D settings dialog.
 // Configuration lives on the global `options.app.threeD` (not in this controller);
@@ -13,7 +17,13 @@ import { ensureEl, findEl } from "@/utils/nodeUtils";
 type Renderer = typeof import("@/renderers/view-3d-renderer");
 let renderer: Renderer | null = null;
 const loadRenderer = (): Promise<Renderer> =>
-  renderer ? Promise.resolve(renderer) : import("@/renderers/view-3d-renderer").then(m => (renderer = m));
+  renderer
+    ? Promise.resolve(renderer)
+    : import("@/renderers/view-3d-renderer").then(m => {
+        m.setMapImageSource((type, options) => Services.ExportMap.getMapURL(type, options));
+        renderer = m;
+        return m;
+      });
 
 // --- renderer bridge ---------------------------------------------------------
 const create = (canvas: HTMLCanvasElement, type = "viewMesh") => loadRenderer().then(m => m.create(canvas, type));
@@ -39,8 +49,16 @@ const toggleSky = () => loadRenderer().then(m => m.toggleSky());
 const setResolution = (resolution: number) => loadRenderer().then(m => m.setResolution(resolution));
 const setColors = (sky: string, water: string) => loadRenderer().then(m => m.setColors(sky, water));
 const setTimeOfDay = (presetName: string) => loadRenderer().then(m => m.setTimeOfDay(presetName));
-const saveScreenshot = () => loadRenderer().then(m => m.saveScreenshot());
-const saveOBJ = () => loadRenderer().then(m => m.saveOBJ());
+const saveScreenshot = async () => {
+  const url = (await loadRenderer()).screenshotUrl();
+  const link = document.createElement("a");
+  link.download = `${getFileName()}.jpeg`;
+  link.href = url;
+  link.click();
+  tip(savedMessage(t("Screenshot")), true, "success", 7000);
+};
+const saveOBJ = async () =>
+  downloadFile(await (await loadRenderer()).exportOBJ(), `${getFileName()}.obj`, "text/plain;charset=UTF-8");
 // read access to view/erosion state (used by label/icon placement and e2e tests)
 const isOn = () => is3dView();
 const isCached = (key?: string) => loadRenderer().then(m => m.isCached(key));

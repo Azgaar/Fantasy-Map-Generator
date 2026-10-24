@@ -13,7 +13,7 @@ vi.mock("@/ui/map/reveal", () => ({ openEntity: () => undefined, revealEntity: m
 vi.mock("@/ui/map/viewbox-events", () => ({ openEditor: mocks.openEditor }));
 vi.mock("@/controllers", () => ({ Controllers: { Assistant: { ask: mocks.ask } } }));
 vi.mock("@/services/assistant/provider/connection", () => ({ isConnected: mocks.connected }));
-vi.mock("@/utils/nodeUtils", async original => ({ ...(await original<object>()), getPointer: () => [30, 40] }));
+vi.mock("@/utils/node-utils", async original => ({ ...(await original<object>()), getPointer: () => [30, 40] }));
 
 import { Pack } from "@/model/graph/pack-generator";
 import { ContextMenu } from "./context-menu";

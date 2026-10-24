@@ -1,6 +1,4 @@
 import Alea from "alea";
-import { syncOptionInputs } from "@/app/chrome/tabs/options-tab";
-import { regeneratePrompt } from "@/app/lifecycle";
 import { Controllers } from "@/controllers";
 import { getPointsNumber } from "@/data/graph-density";
 import { heightmapTemplates } from "@/data/heightmap-templates";
@@ -12,27 +10,27 @@ import { Pins } from "@/model/options/pins";
 import { HeightmapGenerator } from "@/model/physical/heightmap-generator";
 import { drawHeights } from "@/renderers/heightmap/draw-heightmap";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
-import type { GridGraph } from "@/types/GridGraph";
-import { closeDialogs, confirmationDialog } from "@/ui/dialog/dialog-helpers";
+import type { GridGraph } from "@/types/grid-graph";
+import { App } from "@/ui/app-commands";
+import { closeDialogs, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
-import { generateSeed } from "@/utils/probabilityUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { generateSeed } from "@/utils/probability-utils";
 
 const initialSeed = generateSeed();
 type GraphConfig = ReturnType<typeof getGraphConfig>;
-let graphConfig: GraphConfig | null = getGraphConfig();
-let graph: GridGraph | null = getGraph();
-
-appendStyleSheet();
-insertHtml();
-addListeners();
+let graphConfig: GraphConfig | null = null;
+let graph: GridGraph | null = null;
 
 function open(): void {
   closeDialogs(".stable");
-
-  setSelected(options.generation.template);
   graphConfig = getGraphConfig();
   graph = getGraph();
+  appendStyleSheet();
+  insertHtml();
+  addListeners();
+
+  setSelected(options.generation.template);
   ensureEl("heightmapSelection").style.setProperty(
     "--preview-aspect-ratio",
     `${graphConfig.width}/${graphConfig.height}`
@@ -52,7 +50,7 @@ function open(): void {
         const id = getSelected();
         if (!id) return;
         Options.set(o => (o.generation.template = id));
-        syncOptionInputs();
+        App.syncOptionInputs();
         Pins.set("template", options.generation.template);
 
         $(this).dialog("close");
@@ -61,28 +59,31 @@ function open(): void {
         const id = getSelected();
         if (!id) return;
         Options.set(o => (o.generation.template = id));
-        syncOptionInputs();
+        App.syncOptionInputs();
         Pins.set("template", options.generation.template);
 
         const seed = getSeed();
         const previewGraph = graph;
         const previewConfig = graphConfig;
-        if (previewGraph && previewConfig) regeneratePrompt({ seed, graph: previewGraph, ...previewConfig });
-
-        $(this).dialog("close");
+        $(this).dialog("close"); // closing destroys the dialog, and a regeneration closes every dialog
+        if (previewGraph && previewConfig) App.regeneratePrompt({ seed, graph: previewGraph, ...previewConfig });
       }
     }
   });
 }
 
 function onClose(): void {
+  destroyDialog("heightmapSelection");
+  findEl("heightmapSelectionStyle")?.remove();
   graph = null;
   graphConfig = null;
   HeightmapGenerator.clearData(); // the generator pins the preview graph it last measured
 }
 
 function appendStyleSheet(): void {
+  if (findEl("heightmapSelectionStyle")) return;
   const style = document.createElement("style");
+  style.id = "heightmapSelectionStyle";
   style.textContent = /* css */ `
     div.dialog > div.heightmap-selection {
       width: 70vw;
@@ -190,6 +191,7 @@ function appendStyleSheet(): void {
 }
 
 function insertHtml(): void {
+  destroyDialog("heightmapSelection");
   const previewGraph = graph;
   const previewConfig = graphConfig;
   if (!previewGraph || !previewConfig) return;

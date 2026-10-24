@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { PackedGraph } from "@/types/PackedGraph";
+import type { PackedGraph } from "@/types/packed-graph";
 import "./pack-generator";
 import { Pack } from "./pack-generator";
 

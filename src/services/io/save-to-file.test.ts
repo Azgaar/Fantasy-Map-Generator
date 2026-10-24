@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { downloadFile } from "@/utils/fileUtils";
+import { downloadFile } from "@/utils/file-utils";
 import { saveToFileSystem } from "./save-to-file";
 
-vi.mock("@/utils/fileUtils", () => ({ downloadFile: vi.fn() }));
+vi.mock("@/utils/file-utils", () => ({ downloadFile: vi.fn() }));
 
 function makeHandle(name = "Chosen.map") {
   const stream = {

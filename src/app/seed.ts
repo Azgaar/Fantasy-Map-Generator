@@ -7,8 +7,8 @@ import { Pins } from "@/model/options/pins";
 import { alertDialog } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
-import { generateSeed } from "@/utils/probabilityUtils";
+import { ensureEl } from "@/utils/node-utils";
+import { generateSeed } from "@/utils/probability-utils";
 import { regeneratePrompt } from "./lifecycle";
 
 export function setSeed(precreatedSeed?: string): void {

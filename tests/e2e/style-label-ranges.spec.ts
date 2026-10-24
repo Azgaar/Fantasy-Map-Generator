@@ -19,14 +19,14 @@ test.describe("Style editor slider ranges", () => {
   });
 
   test("a label group's stroke width has its own narrow range", async ({ page }) => {
-    await page.evaluate(() => (window as any).Controllers.StyleEditor.open("labels", "river"));
+    await page.evaluate(() => (window as any).FMG.Controllers.StyleEditor.open("labels", "river"));
     expect(await sliderRange(page, "attrs.stroke-width")).toMatchObject({ min: 0, max: 2 });
   });
 
   test("a stored value beyond the range stays reachable", async ({ page }) => {
     await page.evaluate(() => {
       (window as any).styles.labels.groups.river.attrs["stroke-width"] = 4;
-      (window as any).Controllers.StyleEditor.open("labels", "river");
+      (window as any).FMG.Controllers.StyleEditor.open("labels", "river");
     });
     const range = await sliderRange(page, "attrs.stroke-width");
     expect(range.value).toBe(4);
@@ -34,7 +34,7 @@ test.describe("Style editor slider ranges", () => {
   });
 
   test("other elements get the default stroke range", async ({ page }) => {
-    await page.evaluate(() => (window as any).Controllers.StyleEditor.open("borders"));
+    await page.evaluate(() => (window as any).FMG.Controllers.StyleEditor.open("borders"));
     expect((await sliderRange(page, "groups.stateBorders.attrs.stroke-width")).max).toBe(10);
   });
 });

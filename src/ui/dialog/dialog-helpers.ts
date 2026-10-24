@@ -2,8 +2,8 @@
 
 import { dialogState } from "@/ui/dialog/state";
 import { t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
-import { minmax } from "@/utils/numberUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { minmax } from "@/utils/number-utils";
 
 /** The note button every entity dialog puts in its toolbar, with its translated tooltip */
 export function noteButton(id: string, tip: string): string {
@@ -90,7 +90,6 @@ export function confirmationDialog(options: ConfirmationOptions): void {
   const isShift =
     Boolean((event as MouseEvent)?.shiftKey) ||
     isShiftPressed ||
-    (typeof window !== "undefined" && window.event instanceof MouseEvent && window.event.shiftKey) ||
     Boolean(lastClickEvent?.shiftKey && Date.now() - lastClickTime < 300);
 
   if (isShift) {

@@ -8,18 +8,18 @@ import type { River } from "@/model/physical/river-generator";
 import { Rivers } from "@/model/physical/river-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Tags } from "@/model/tags";
-import { isLand } from "@/utils/heightUtils";
-import { getAdjective, replaceWholeWord } from "@/utils/languageUtils";
-import { distanceSquared, rn } from "@/utils/numberUtils";
-import { findPath, meander } from "@/utils/pathUtils";
-import { ra, rw } from "@/utils/probabilityUtils";
-import { round } from "@/utils/stringUtils";
-import { requireName, requireOneOf } from "@/utils/validationUtils";
+import { isLand } from "@/utils/height-utils";
+import { getAdjective, replaceWholeWord } from "@/utils/language-utils";
+import { distanceSquared, rn } from "@/utils/number-utils";
+import { findPath, meander } from "@/utils/path-utils";
+import { ra, rw } from "@/utils/probability-utils";
+import { round } from "@/utils/string-utils";
+import { requireName, requireOneOf } from "@/utils/validation-utils";
 
 const ROUTES_SHARP_ANGLE = 135;
 const ROUTES_VERY_SHARP_ANGLE = 115;
 
-export const MIN_PASSABLE_SEA_TEMP = -4;
+const MIN_PASSABLE_SEA_TEMP = -4;
 const RIVER_TYPE_MODIFIER = 1.5;
 const ROUTE_TYPE_MODIFIERS: Record<string, number> = {
   "-1": 1, // coastline

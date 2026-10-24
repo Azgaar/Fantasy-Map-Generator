@@ -4,9 +4,8 @@ import { Journeys } from "@/model/story/journeys/journeys-generator";
 import { convertSpeed, formatSpeed, getDistanceUnit } from "@/model/units";
 import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
 import { Layers } from "@/renderers/layers";
-import { highlightElement } from "@/renderers/overlays/highlight";
 import { Csv } from "@/services/io/csv";
-import type { Journey } from "@/types/Journey";
+import type { Journey } from "@/types/journey";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
@@ -20,12 +19,13 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
+import { highlightElement } from "@/ui/map/highlight";
 import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
-import { escapeHtml } from "@/utils/stringUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 const dialogId = "journeysOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };

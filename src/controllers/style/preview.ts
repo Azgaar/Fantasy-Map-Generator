@@ -4,11 +4,11 @@ import { FILTER_LABELS } from "@/data/id-labels";
 import { Icons } from "@/model/icons";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
 import { t } from "@/utils/i18n";
-import { findEl } from "@/utils/nodeUtils";
+import { findEl } from "@/utils/node-utils";
 
 export type PreviewValues = { attrs: Record<string, unknown>; options: Record<string, unknown> };
 
-export type PreviewContext = {
+type PreviewContext = {
   sample: string; // the words a font sample shows, read from the map's own labels
   off: boolean; // the card's gate is off: the look is stored but not drawn
   neutral?: string; // the tone a card that sets no colour of its own is sampled in

@@ -2,7 +2,7 @@
 import { MAP_COMMANDS } from "@/app/map-commands";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
+import { ensureEl } from "@/utils/node-utils";
 
 const TEMPLATE = /* html */ `
   <div class="separator">${t("Edit")}</div>

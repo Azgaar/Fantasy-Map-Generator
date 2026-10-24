@@ -6,12 +6,12 @@ import { Emblems } from "@/model/political/emblems-generator";
 import { Names } from "@/model/society/names-generator";
 import { Population } from "@/model/society/population-generator";
 import type { Emblem } from "@/types/emblems";
-import { getMixedColor, requireColor } from "@/utils/colorUtils";
-import { FlatQueue } from "@/utils/flatQueue";
-import { replaceWholeWord } from "@/utils/languageUtils";
-import { getPolesOfInaccessibility } from "@/utils/pathUtils";
-import { gauss, generateSeed, P, rand, rw } from "@/utils/probabilityUtils";
-import { requireName } from "@/utils/validationUtils";
+import { getMixedColor, requireColor } from "@/utils/color-utils";
+import { FlatQueue } from "@/utils/flat-queue";
+import { replaceWholeWord } from "@/utils/language-utils";
+import { getPolesOfInaccessibility } from "@/utils/path-utils";
+import { gauss, generateSeed, P, rand, rw } from "@/utils/probability-utils";
+import { requireName } from "@/utils/validation-utils";
 import { Burgs } from "./burgs-generator";
 import { States } from "./states-generator";
 

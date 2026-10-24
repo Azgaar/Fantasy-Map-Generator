@@ -26,11 +26,11 @@ import { Csv } from "@/services/io/csv";
 import { getFileName } from "@/services/io/file-name";
 import { closeDialogs, destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
-import { downloadFile } from "@/utils/fileUtils";
-import { isWater } from "@/utils/heightUtils";
+import { downloadFile } from "@/utils/file-utils";
+import { isWater } from "@/utils/height-utils";
 import { t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
-import { rn, si } from "@/utils/numberUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { rn, si } from "@/utils/number-utils";
 
 interface Dimension {
   label: string;

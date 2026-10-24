@@ -12,7 +12,7 @@ test.describe("removing a river removes its label", () => {
       const river = w.pack.rivers.find((r: any) => r.cells?.length && r.name);
       const [x, y] = w.pack.cells.p[river.cells[Math.floor(river.cells.length / 2)]];
       const group = w.options.map.labels.groups.find((g: any) => g.name === "river");
-      w.zoomTo(x, y, (group?.zoom?.min ?? 9) + 1, 0);
+      w.FMG.zoomTo(x, y, (group?.zoom?.min ?? 9) + 1, 0);
     });
     await page.waitForFunction(() => document.querySelector("#labels [id^=riverLabel]") !== null, { timeout: 10000 });
   });
@@ -23,7 +23,7 @@ test.describe("removing a river removes its label", () => {
   test("through the river editor", async ({ page }) => {
     const id = await labelledRiverId(page);
 
-    await page.evaluate(riverId => (window as any).Controllers.RiverEditor.open(`river${riverId}`), id);
+    await page.evaluate(riverId => (window as any).FMG.Controllers.RiverEditor.open(`river${riverId}`), id);
     await page.click("#riverRemove");
     await page.click('.ui-dialog-buttonpane button:has-text("Remove")');
 
@@ -31,7 +31,7 @@ test.describe("removing a river removes its label", () => {
   });
 
   test("through remove all rivers", async ({ page }) => {
-    await page.evaluate(() => (window as any).Controllers.RiversOverview.open());
+    await page.evaluate(() => (window as any).FMG.Controllers.RiversOverview.open());
     await page.click("#riversRemoveAll");
     await page.click('.ui-dialog-buttonpane button:has-text("Remove")');
 

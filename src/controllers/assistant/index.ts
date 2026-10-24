@@ -1,4 +1,3 @@
-import { markAssistantOpen } from "@/app/chrome/assistant-bubble";
 import { Controllers } from "@/controllers";
 import { askServer } from "@/services/assistant/azgaar-server/answerer";
 import {
@@ -29,11 +28,12 @@ import {
 import { askProvider } from "@/services/assistant/provider/answerer";
 import * as Connection from "@/services/assistant/provider/connection";
 import { PROVIDERS } from "@/services/assistant/provider/providers";
+import { markAssistantOpen } from "@/ui/assistant-bubble";
 import { t } from "@/utils/i18n";
 import { renderMarkdown } from "@/utils/markdown";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
-import { si } from "@/utils/numberUtils";
-import { errorText, escapeHtml } from "@/utils/stringUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { si } from "@/utils/number-utils";
+import { errorText, escapeHtml } from "@/utils/string-utils";
 import { AssistantImages } from "./images";
 import { KeySheet } from "./key-sheet";
 import { AssistantMap } from "./map";

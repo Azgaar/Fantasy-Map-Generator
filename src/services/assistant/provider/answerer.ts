@@ -1,4 +1,4 @@
-import { errorText } from "@/utils/stringUtils";
+import { errorText } from "@/utils/string-utils";
 import type { Chat, TranscriptItem } from "../chats";
 import { get } from "./connection";
 import { SYSTEM_PROMPT } from "./context";
@@ -14,7 +14,7 @@ import {
   type ToolResultBlock
 } from "./providers";
 
-export interface ToolOutcome {
+interface ToolOutcome {
   content: ToolResultBlock["content"];
   item?: TranscriptItem;
   isError?: boolean;
@@ -80,7 +80,7 @@ const DECLINED = /\bproposed nothing\b|\bnothing (?:to propose|proposed)\b/i;
 const UNPROPOSED =
   "Your answer says something was proposed, but no propose_change call succeeded in this question, so the user sees no card. Call propose_change now, or say plainly that nothing was proposed.";
 
-export interface ProviderOptions {
+interface ProviderOptions {
   tools: Tool[]; // map tools, beside the knowledge ones
   context: () => Promise<string>;
   onStatus?: (status: string) => void;

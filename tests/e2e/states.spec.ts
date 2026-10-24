@@ -1,6 +1,9 @@
 import {test, expect, type Page} from "@playwright/test";
 import { countMaps, waitForMap, waitForNextMap } from "./wait-for-map";
 
+// the app's console surface, see src/app/fmg.ts
+declare const FMG: any;
+
 test.describe("States", () => {
   test.beforeEach(async ({ page }) => {
     // Navigate with seed parameter and wait for full load
@@ -126,7 +129,7 @@ test.describe("States", () => {
           provinceCells,
           oldProvincesRemoved: oldProvinces.every((i: number) => provinces[i].removed),
           listed: states[r].provinces!.includes(province.i),
-          layerOn: Layers.isOn("provinces")
+          layerOn: FMG.Layers.isOn("provinces")
         };
       },
       [ruler.i, child.i, child.provinces] as const
@@ -187,17 +190,11 @@ test.describe("States", () => {
   });
 });
 
-declare const Controllers: { DiplomacyOverview: { open: () => Promise<void> } };
-declare const Services: {
-  Save: { prepareMapData: () => string };
-  Load: { uploadMap: (file: File) => void };
-};
 declare const pack: {
   states: import("@/model/political/states-generator").State[];
   provinces: import("@/model/political/provinces-generator").Province[];
   cells: { state: Uint16Array; province: Uint16Array; p: [number, number][] };
 };
-declare const Layers: { isOn: (id: string) => boolean };
 
 test.describe("Diplomacy", () => {
   let ids: number[];
@@ -245,7 +242,7 @@ test.describe("Diplomacy", () => {
       pack.states[0].diplomacy = [];
       return [a.i, b.i, c.i];
     });
-    await page.evaluate(() => Controllers.DiplomacyOverview.open());
+    await page.evaluate(() => FMG.Controllers.DiplomacyOverview.open());
     await expect(page.locator("#diplomacyOverview")).toBeVisible();
     await expect(selfId(page)).toHaveAttribute("data-id", String(ids[0]));
   });
@@ -302,7 +299,7 @@ test.describe("Diplomacy", () => {
         return;
       }
       await expect(page.locator("#diplomacyEditor")).toHaveCount(0);
-      if (exit === "parent") await page.evaluate(() => Controllers.DiplomacyOverview.open());
+      if (exit === "parent") await page.evaluate(() => FMG.Controllers.DiplomacyOverview.open());
       await mapClick(page, ids[2]); // a click selects again instead of painting
       await expect(selfId(page)).toHaveAttribute("data-id", String(ids[2]));
       expect(await diplomacy(page)).toBe(before);
@@ -322,11 +319,11 @@ test.describe("Diplomacy", () => {
     await page.locator("#diplomacyEditorApply").click();
     await expect(pair).toContainText("Vassal");
 
-    const saved = await page.evaluate(() => Services.Save.prepareMapData());
+    const saved = await page.evaluate(() => FMG.Services.Save.prepareMapData());
     await page.goto("/?seed=diplomacy-reload&width=1600&height=1000");
     await waitForMap(page);
     const previous = await countMaps(page);
-    await page.evaluate(data => Services.Load.uploadMap(new File([data], "diplomacy.map")), saved);
+    await page.evaluate(data => FMG.Services.Load.uploadMap(new File([data], "diplomacy.map")), saved);
     await waitForNextMap(page, previous);
     expect(await page.evaluate(([a, b]) => [pack.states[a].diplomacy![b], pack.states[b].diplomacy![a]], ids)).toEqual([
       "Suzerain",

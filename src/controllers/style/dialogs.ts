@@ -11,11 +11,11 @@ import { VERSION } from "@/services/versioning";
 import type { StyleElement, StyleSelection } from "@/types/styles";
 import { destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
-import { toHEX } from "@/utils/colorUtils";
-import { link } from "@/utils/commonUtils";
+import { toHEX } from "@/utils/color-utils";
+import { link } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl, htmlEl } from "@/utils/nodeUtils";
-import { escapeHtml } from "@/utils/stringUtils";
+import { ensureEl, findEl, htmlEl } from "@/utils/node-utils";
+import { escapeHtml } from "@/utils/string-utils";
 import { groupEntriesFor, hasGroups, listElements } from "./elements";
 
 const controlDialogs = new Set<string>(); // opened by a form control: they go with the form

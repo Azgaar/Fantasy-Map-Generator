@@ -19,7 +19,7 @@ vi.mock("@/model/political/emblems-generator", () => ({ Emblems: {} }));
 vi.mock("@/renderers/draw-emblems", () => ({ redrawEmblem: vi.fn(), redrawEmblems: vi.fn(), removeEmblem: vi.fn() }));
 vi.mock("@/renderers/emblems/renderer", () => ({ EmblemRenderer: { trigger: vi.fn() } }));
 vi.mock("@/renderers/overlays/fogging", () => ({ fog: vi.fn(), unfog: vi.fn() }));
-vi.mock("@/renderers/overlays/highlight", () => ({ highlightElement: vi.fn(), highlightOutline: vi.fn() }));
+vi.mock("@/ui/map/highlight", () => ({ highlightElement: vi.fn(), highlightOutline: vi.fn() }));
 
 import { ProvincesEditor } from "./provinces-editor";
 

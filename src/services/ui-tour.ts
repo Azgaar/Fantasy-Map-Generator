@@ -1,9 +1,9 @@
 import { type DriveStep, driver } from "driver.js";
 import { closeDialogs } from "@/ui/dialog/dialog-helpers";
-import { ensureEl } from "@/utils/nodeUtils";
+import { ensureEl } from "@/utils/node-utils";
 import "driver.js/dist/driver.css";
-import { showExportPane } from "@/app/chrome/io-panes";
 import { Controllers } from "@/controllers";
+import { App } from "@/ui/app-commands";
 import { t } from "@/utils/i18n";
 
 function closeOptionsPanel() {
@@ -282,13 +282,13 @@ function start() {
         }
       },
       {
-        element: "#customizationMenu",
+        element: "#heightmapMenu",
         disableActiveInteraction: false,
         onHighlightStarted: () => {
           const toolsContent = ensureEl("toolsContent");
-          const customizationMenu = ensureEl("customizationMenu");
+          const heightmapMenu = ensureEl("heightmapMenu");
           toolsContent.style.display = "none";
-          customizationMenu.style.display = "block";
+          heightmapMenu.style.display = "block";
         },
         onDeselected: () => {
           hideHeightmapCustomizationPanel();
@@ -351,7 +351,7 @@ function start() {
         element: "#exportMapData",
         disableActiveInteraction: false,
         onHighlightStarted: () => {
-          showExportPane();
+          App.showExportPane();
         },
         popover: {
           title: t("Export Options"),
@@ -421,7 +421,7 @@ const EDITING_STEPS = [
   "#worldConfigurator",
   "#toolsTab",
   "#editHeightmapButton",
-  "#customizationMenu",
+  "#heightmapMenu",
   "#saveButton"
 ];
 
@@ -431,9 +431,9 @@ function browsingSteps(steps: DriveStep[]): DriveStep[] {
 }
 
 function hideHeightmapCustomizationPanel() {
-  const customizationMenu = ensureEl("customizationMenu");
-  if (customizationMenu.style.display !== "block") return;
-  customizationMenu.style.display = "none";
+  const heightmapMenu = ensureEl("heightmapMenu");
+  if (heightmapMenu.style.display !== "block") return;
+  heightmapMenu.style.display = "none";
   ensureEl("toolsContent").style.display = "block";
 }
 

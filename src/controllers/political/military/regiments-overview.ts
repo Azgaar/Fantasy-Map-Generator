@@ -22,12 +22,12 @@ import {
 } from "@/ui/dialog/table";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { last } from "@/utils/arrayUtils";
-import { getLatitude, getLongitude } from "@/utils/commonUtils";
+import { last } from "@/utils/array-utils";
+import { getLatitude, getLongitude } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl, getPointer } from "@/utils/nodeUtils";
-import { si } from "@/utils/numberUtils";
-import { capitalize } from "@/utils/stringUtils";
+import { ensureEl, findEl, getPointer } from "@/utils/node-utils";
+import { si } from "@/utils/number-utils";
+import { capitalize } from "@/utils/string-utils";
 
 const dialogId = "regimentsOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };

@@ -5,7 +5,6 @@ import { Markers } from "@/model/story/markers-generator";
 import { Tags } from "@/model/tags";
 import { setMarkersFilter } from "@/renderers/draw-markers";
 import { Layers } from "@/renderers/layers";
-import { highlightArea, highlightElement } from "@/renderers/overlays/highlight";
 import { Csv } from "@/services/io/csv";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
@@ -18,13 +17,14 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
+import { highlightArea, highlightElement } from "@/ui/map/highlight";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { zoomTo } from "@/ui/map/zoom";
 import { clearMainTip } from "@/ui/tooltips";
-import { getLatitude, getLongitude } from "@/utils/commonUtils";
+import { getLatitude, getLongitude } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
-import { escapeHtml } from "@/utils/stringUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 const dialogId = "markersOverview" as const;
 const CSV_COLUMNS = [

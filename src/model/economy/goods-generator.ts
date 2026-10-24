@@ -4,9 +4,9 @@ import { Icons } from "@/model/icons";
 import { CULTURE_TYPES, type CultureType } from "@/model/society/cultures-generator";
 import { Tags } from "@/model/tags";
 import type { IconSet } from "@/types/icons";
-import type { PackedGraph } from "@/types/PackedGraph";
-import { requireColor } from "@/utils/colorUtils";
-import { requireName } from "@/utils/validationUtils";
+import type { PackedGraph } from "@/types/packed-graph";
+import { requireColor } from "@/utils/color-utils";
+import { requireName } from "@/utils/validation-utils";
 
 export interface Good {
   i: number;
@@ -44,7 +44,7 @@ export interface Good {
   note?: string;
 }
 
-export type ProductionRules = Partial<{
+type ProductionRules = Partial<{
   chance: number | null;
   recipes: Record<number, number>[] | null;
   biomeOutput: Partial<Record<number, number>> | null;

@@ -24,11 +24,11 @@ import { getFileName } from "@/services/io/file-name";
 import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
-import { getLatitude, getLongitude } from "@/utils/commonUtils";
-import { downloadFile } from "@/utils/fileUtils";
+import { getLatitude, getLongitude } from "@/utils/common-utils";
+import { downloadFile } from "@/utils/file-utils";
 import { t } from "@/utils/i18n";
-import { ensureEl, getPointer } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
+import { ensureEl, getPointer } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
 
 function open(cells: number[], routeLen: number, isRiver: boolean): void {
   closeDialogs("#elevationProfile, .stable");

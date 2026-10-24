@@ -1,5 +1,5 @@
 // Executes model-authored JavaScript against the live map
-import { errorText } from "@/utils/stringUtils";
+import { errorText } from "@/utils/string-utils";
 
 const MAX_RESULT_CHARS = 8000;
 const MAX_ARRAY_ITEMS = 200;

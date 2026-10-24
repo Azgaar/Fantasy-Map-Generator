@@ -8,7 +8,7 @@ import "@/model/graph/grid-generator";
 import { Grid } from "@/model/graph/grid-generator";
 import { HeightmapGenerator } from "@/model/physical/heightmap-generator";
 import { migrateLegacySettings } from "@/services/io/auto-update";
-import { safeParseJSON } from "@/utils/stringUtils";
+import { safeParseJSON } from "@/utils/string-utils";
 import { Options } from "./options-model";
 import { Pins } from "./pins";
 

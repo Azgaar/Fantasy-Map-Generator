@@ -3,8 +3,8 @@ import type { Marker } from "@/model/story/markers-generator";
 import { Layers } from "@/renderers/layers";
 import { zoomFontSize } from "@/renderers/viewport/viewport";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
-import { rn } from "@/utils/numberUtils";
-import { escapeHtml } from "@/utils/stringUtils";
+import { rn } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 const layer = ViewportLayers.register({ id: "markers", render: reconcileMarkers });
 let editedMarker: Marker | null = null;

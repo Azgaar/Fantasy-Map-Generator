@@ -1,5 +1,5 @@
 import { Pack } from "@/model/graph/pack-generator";
-import { requireName, requireOneOf } from "@/utils/validationUtils";
+import { requireName, requireOneOf } from "@/utils/validation-utils";
 import type { Label } from "./labels-generator";
 import { Labels } from "./labels-generator";
 

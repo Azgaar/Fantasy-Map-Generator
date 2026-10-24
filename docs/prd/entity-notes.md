@@ -209,7 +209,7 @@ cover `name` alongside `note` — it is the same lookup. Serves `heightmap-edito
 - `src/model/political/states-generator.ts`, `provinces-generator.ts`, `river-generator.ts`,
   `routes-generator.ts`, `features.ts`, `zones-generator.ts`, `markets-generator.ts`,
   `cultures-generator.ts`, `religions-generator.ts`, `biomes-generator.ts`, `goods-generator.ts`,
-  `added-labels.ts`, `src/types/Journey.ts` — add `note?`.
+  `added-labels.ts`, `src/types/journey.ts` — add `note?`.
 - `src/model/political/military-generator.ts` — add `note?` to `Regiment` (`:9`); set it in
   `generateNote`; keep the
   deliberate wipe at `:450` (regenerated regiments cease to exist), now a field reset.

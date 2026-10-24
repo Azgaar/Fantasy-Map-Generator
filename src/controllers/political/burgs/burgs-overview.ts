@@ -23,10 +23,10 @@ import {
 } from "@/ui/dialog/table";
 import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
-import { getLatitude, getLongitude } from "@/utils/commonUtils";
+import { getLatitude, getLongitude } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
-import { rn, si } from "@/utils/numberUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { rn, si } from "@/utils/number-utils";
 
 type Filters = { stateId?: number | null; cultureId?: number | null };
 type FilterState = { search: string; stateId: number; cultureId: number };

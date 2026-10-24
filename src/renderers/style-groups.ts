@@ -1,5 +1,5 @@
 // Route and lake groups are open-ended: the style store is their only record, so their elements are made from it
-import { createEl } from "@/utils/nodeUtils";
+import { createEl } from "@/utils/node-utils";
 
 type StyleGroups = Record<string, { attrs: Record<string, string | number | null | undefined> }>;
 

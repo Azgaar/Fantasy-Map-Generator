@@ -9,8 +9,8 @@ import { getArea, getAreaUnit } from "@/model/units";
 import { Layers } from "@/renderers/layers";
 import { LegendBoxes } from "@/renderers/legend-boxes";
 import { Csv } from "@/services/io/csv";
-import type { LegendItem } from "@/types/Legend";
-import type { PackedGraph } from "@/types/PackedGraph";
+import type { LegendItem } from "@/types/legend";
+import type { PackedGraph } from "@/types/packed-graph";
 import { closeDialogs, destroyDialog, noteIcon, updateDialog } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
@@ -24,13 +24,13 @@ import {
 } from "@/ui/dialog/table";
 import type { FillBoxElement } from "@/ui/elements/fill-box";
 import { tip } from "@/ui/tooltips";
-import { groupByValue } from "@/utils/arrayUtils";
-import { getRandomColor } from "@/utils/colorUtils";
-import { openURL } from "@/utils/commonUtils";
-import { isLand } from "@/utils/heightUtils";
+import { groupByValue } from "@/utils/array-utils";
+import { getRandomColor } from "@/utils/color-utils";
+import { openURL } from "@/utils/common-utils";
+import { isLand } from "@/utils/height-utils";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
-import { rn, si } from "@/utils/numberUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { rn, si } from "@/utils/number-utils";
 
 const dialogId = "biomesEditor" as const;
 const CSV_COLUMNS = ["Id", "Biome", "Color", "Habitability", "Cells", "Area", "Population"];
@@ -203,7 +203,7 @@ function refreshBiomesEditor(): void {
   biomesTable.refresh();
 }
 
-export type BiomeStatistics = { cells: number; area: number; rural: number; urban: number };
+type BiomeStatistics = { cells: number; area: number; rural: number; urban: number };
 
 type BiomeStatisticsSource = {
   biomes: Biome[];

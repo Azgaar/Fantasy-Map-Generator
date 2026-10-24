@@ -24,9 +24,9 @@ import {
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl, getPointer } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
-import { capitalize } from "@/utils/stringUtils";
+import { ensureEl, findEl, getPointer } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
+import { capitalize } from "@/utils/string-utils";
 
 let selectedRegiment: SVGGElement | null = null;
 

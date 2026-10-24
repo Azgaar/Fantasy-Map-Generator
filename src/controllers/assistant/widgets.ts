@@ -1,5 +1,4 @@
 import { schemeTableau10 } from "d3";
-import { isLinkable, MAP_COMMANDS } from "@/app/map-commands";
 import { ENTITY_TYPES, type EntityRef, isEntityType, MapEntities, RECORD_TYPES } from "@/model/map-entities";
 import type { State } from "@/model/political/states-generator";
 import { formatPrice, getArea, getAreaUnit, getPeople } from "@/model/units";
@@ -9,13 +8,14 @@ import type { ChartRow, Widget } from "@/services/assistant/chats";
 import type { Region } from "@/services/io/export";
 import type { Emblem } from "@/types/emblems";
 import type { Point } from "@/types/global";
+import { App } from "@/ui/app-commands";
 import { clearEntityMarks, markEntities, openEntity as openEditor, reveal, revealEntity } from "@/ui/map/reveal";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
 import { type LinkResolver, renderMarkdown } from "@/utils/markdown";
-import { findEl } from "@/utils/nodeUtils";
-import { rn, si } from "@/utils/numberUtils";
-import { escapeHtml } from "@/utils/stringUtils";
+import { findEl } from "@/utils/node-utils";
+import { rn, si } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 import { frameRegion } from "./region";
 
 // Widgets: links in answers and the items the show tool places. See docs/prd/assistant.md
@@ -49,8 +49,8 @@ let marked: Of<"entities"> | null = null;
 const panel = () => findEl("assistant")?.closest(".ui-dialog")?.getBoundingClientRect();
 
 function linkableCommand(id: string) {
-  const command = MAP_COMMANDS.find(command => command.id === id);
-  return command && isLinkable(command) ? command : undefined;
+  const command = App.mapCommands.find(command => command.id === id);
+  return command && App.isLinkable(command) ? command : undefined;
 }
 
 /** A good shows its own badge, as the map draws it; other entities their type's icon */

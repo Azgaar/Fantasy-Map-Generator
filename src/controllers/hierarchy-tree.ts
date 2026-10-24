@@ -1,14 +1,14 @@
-import type { D3DragEvent, D3ZoomEvent } from "d3";
+import type { BaseType, D3DragEvent, D3ZoomEvent, Selection } from "d3";
 import { drag, mean, select, stratify, tree, zoom } from "d3";
 import { Cultures } from "@/model/society/cultures-generator";
 import { Religions } from "@/model/society/religions-generator";
-import { closeDialogs } from "@/ui/dialog/dialog-helpers";
+import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { abbreviate } from "@/utils/languageUtils";
-import { ensureEl } from "@/utils/nodeUtils";
-import { minmax } from "@/utils/numberUtils";
-import { escapeHtml } from "@/utils/stringUtils";
+import { abbreviate } from "@/utils/language-utils";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { minmax } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 type HierarchyElement = {
   i: number;
@@ -32,9 +32,6 @@ type OpenProps = {
   getShape: (dataElement: HierarchyElement) => string | undefined;
 };
 
-appendStyleSheet();
-insertHtml();
-
 const MARGINS = { top: 10, right: 10, bottom: -5, left: 10 };
 
 const handleZoom = (event: D3ZoomEvent<SVGSVGElement, unknown>) =>
@@ -44,13 +41,25 @@ const zoomBehavior = zoom<SVGSVGElement, unknown>().scaleExtent([0.2, 1.5]).on("
 // store old root for transitions
 let oldRoot: any;
 
-// define svg elements
-const svg = select<SVGSVGElement, unknown>("#hierarchyTree > svg").call(zoomBehavior);
-const viewbox = svg.select("g#hierarchyTree_viewbox");
-const primaryLinks = viewbox.select("g#hierarchyTree_linksPrimary");
-const secondaryLinks = viewbox.select("g#hierarchyTree_linksSecondary");
-const nodes = viewbox.select("g#hierarchyTree_nodes");
-const dragLine = viewbox.select("path#hierarchyTree_dragLine");
+// the tree's svg elements, built on open
+type Group = Selection<BaseType, unknown, HTMLElement, unknown>;
+let svg: Selection<SVGSVGElement, unknown, HTMLElement, unknown>;
+let viewbox: Group;
+let primaryLinks: Group;
+let secondaryLinks: Group;
+let nodes: Group;
+let dragLine: Group;
+
+function build(): void {
+  appendStyleSheet();
+  insertHtml();
+  svg = select<SVGSVGElement, unknown>("#hierarchyTree > svg").call(zoomBehavior);
+  viewbox = svg.select("g#hierarchyTree_viewbox");
+  primaryLinks = viewbox.select("g#hierarchyTree_linksPrimary");
+  secondaryLinks = viewbox.select("g#hierarchyTree_linksSecondary");
+  nodes = viewbox.select("g#hierarchyTree_nodes");
+  dragLine = viewbox.select("path#hierarchyTree_dragLine");
+}
 
 // properties
 let dataElements: HierarchyElement[]; // {i, name, type, origins}[], e.g. path.religions
@@ -100,6 +109,7 @@ function open(props: OpenProps): void {
   const width = minmax(treeWidth, 300, innerWidth * 0.75);
   const height = minmax(treeHeight, 200, innerHeight * 0.75);
 
+  build();
   zoomBehavior.extent([
     [0, 0],
     [width, height]
@@ -110,10 +120,17 @@ function open(props: OpenProps): void {
     title: props.type === "cultures" ? t("Cultures tree") : t("Religions tree"),
     position: { my: "left center", at: "left+10 center", of: "svg" },
     width,
-    close: clearTreeState
+    close: closeTree
   });
 
   renderTree(root, treeLayout);
+}
+
+function closeTree(): void {
+  destroyDialog("hierarchyTree_originSelector");
+  destroyDialog("hierarchyTree");
+  findEl("hierarchyTreeStyle")?.remove();
+  clearTreeState();
 }
 
 /** Release the last-viewed entities and callbacks when the tree closes */
@@ -128,7 +145,9 @@ function clearTreeState(): void {
 }
 
 function appendStyleSheet(): void {
+  if (findEl("hierarchyTreeStyle")) return;
   const style = document.createElement("style");
+  style.id = "hierarchyTreeStyle";
   style.textContent = /* css */ `
     #hierarchyTree_selectedOrigins > button {
       margin: 0 2px;
@@ -211,6 +230,7 @@ function appendStyleSheet(): void {
 }
 
 function insertHtml(): void {
+  destroyDialog("hierarchyTree");
   const html = /* html */ `<div id="hierarchyTree" class="dialog" style="overflow: hidden;">
     <svg>
       <g id="hierarchyTree_viewbox" style="text-anchor: middle; dominant-baseline: central">

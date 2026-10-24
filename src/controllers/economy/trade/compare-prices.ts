@@ -14,8 +14,8 @@ import {
   type TableView
 } from "@/ui/dialog/table";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
+import { ensureEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
 
 const dialogId = "marketsGoodCompare" as const;
 const position = { my: "right top", at: "left-10 top", collision: "fit" };

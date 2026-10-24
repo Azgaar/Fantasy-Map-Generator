@@ -9,7 +9,7 @@ import { Layers } from "@/renderers/layers";
 import { LegendBoxes } from "@/renderers/legend-boxes";
 import { fog, unfog } from "@/renderers/overlays/fogging";
 import { Csv } from "@/services/io/csv";
-import type { LegendItem } from "@/types/Legend";
+import type { LegendItem } from "@/types/legend";
 import { closeDialogs, confirmationDialog, destroyDialog, noteIcon, updateDialog } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { dialogState } from "@/ui/dialog/state";
@@ -23,11 +23,11 @@ import {
 } from "@/ui/dialog/table";
 import type { FillBoxElement } from "@/ui/elements/fill-box";
 import { tip } from "@/ui/tooltips";
-import { unique } from "@/utils/arrayUtils";
+import { unique } from "@/utils/array-utils";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
-import { rn, si } from "@/utils/numberUtils";
-import { errorText } from "@/utils/stringUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { rn, si } from "@/utils/number-utils";
+import { errorText } from "@/utils/string-utils";
 
 const dialogId = "zonesEditor" as const;
 const CSV_COLUMNS = ["Id", "Color", "Description", "Type", "Tags", "Cells", "Area", "Population"];

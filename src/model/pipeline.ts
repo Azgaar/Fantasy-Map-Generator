@@ -1,5 +1,5 @@
 // Generic ordered-steps runner
-import { errorText } from "@/utils/stringUtils";
+import { errorText } from "@/utils/string-utils";
 
 export interface PipelineStep<Id extends string = string, TContext = void> {
   id: Id;

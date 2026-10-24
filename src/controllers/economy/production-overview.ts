@@ -12,8 +12,8 @@ import { formatPrice } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
+import { ensureEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
 
 type Type = "MFG" | "BUY" | "SELL" | "LOCAL";
 

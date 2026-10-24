@@ -1,7 +1,7 @@
 // Diplomatic relations, keyed by the value a state stores in `diplomacy` for another state
 import { t } from "@/utils/i18n";
 
-export interface Relation {
+interface Relation {
   /** the relation's name as the interface shows it */
   label: string;
   /** "subject is an ally of object", in the interface language */

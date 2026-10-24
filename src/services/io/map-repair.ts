@@ -5,7 +5,7 @@ import { Pack } from "@/model/graph/pack-generator";
 import { type IntegrityViolation, MapIntegrity } from "@/model/map-integrity";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Burgs } from "@/model/political/burgs-generator";
-import { last } from "@/utils/arrayUtils";
+import { last } from "@/utils/array-utils";
 
 class MapRepairService {
   /** repairs the loaded map in place; returns what was repaired */

@@ -1,10 +1,10 @@
 import Alea from "alea";
 import { Options } from "@/model/options/options-model";
 import type { Point } from "@/types/global";
-import { clipPoly } from "@/utils/commonUtils";
-import { minmax } from "@/utils/numberUtils";
+import { clipPoly } from "@/utils/common-utils";
+import { minmax } from "@/utils/number-utils";
 import { simplify } from "@/utils/simplify";
-import { round } from "@/utils/stringUtils";
+import { round } from "@/utils/string-utils";
 import type { Feature } from "./features-generator";
 
 export interface CoastlineSettings {

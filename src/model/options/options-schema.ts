@@ -6,10 +6,10 @@ import { LANGUAGE_CODES } from "@/data/languages";
 import { MAX_JITTER, SAMPLINGS } from "@/model/graph/lattice";
 import { Icons } from "@/model/icons";
 import type { LayerId } from "@/renderers/layers";
-import { count, degrees, hexColor, ids, nonNegative, percent, positive, ratio } from "@/utils/schemaUtils";
+import { count, degrees, hexColor, ids, nonNegative, percent, positive, ratio } from "@/utils/schema-utils";
 
 /** the map edit modes: while one is on, other editors, saving and regeneration stay off */
-export const EDIT_MODES = [
+const EDIT_MODES = [
   "heightmap",
   "paint",
   "addState",
@@ -22,7 +22,6 @@ export const EDIT_MODES = [
   "annex",
   "wrap"
 ] as const;
-export type EditMode = (typeof EDIT_MODES)[number];
 
 /** the burg request at its maximum stands for "as many burgs as the land supports" */
 export const AUTO_BURG_LIMIT = 1000;
@@ -34,7 +33,7 @@ const cultureSetId = z.enum(Object.keys(CULTURE_SETS) as [string, ...string[]]);
 const sampling = z.enum(SAMPLINGS); // the lattice the grid points sit on
 const jitter = ratio.max(MAX_JITTER); // how far a grid point may move off its lattice slot
 
-export const labelGroup = z.strictObject({
+const labelGroup = z.strictObject({
   name: z.string(),
   type: z.enum(LABEL_TYPES),
   active: z.boolean().optional(),
@@ -47,7 +46,7 @@ export const labelGroup = z.strictObject({
   isDefault: z.boolean().optional()
 });
 
-export const burgGroup = z.strictObject({
+const burgGroup = z.strictObject({
   name: z.string(),
   order: z.number(),
   active: z.boolean().optional(),
@@ -64,7 +63,7 @@ export const burgGroup = z.strictObject({
   preview: z.string().optional()
 });
 
-export const militaryUnit = z.strictObject({
+const militaryUnit = z.strictObject({
   icon: z.string(),
   name: z.string(),
   rural: nonNegative,
@@ -79,7 +78,7 @@ export const militaryUnit = z.strictObject({
   religions: ids
 });
 
-export const transport = z.strictObject({
+const transport = z.strictObject({
   i: z.number().int(),
   name: z.string(),
   speed: nonNegative,
@@ -104,7 +103,7 @@ const customIcons = z.preprocess(value => {
 }, z.array(customIcon));
 
 /** read at render time to build every feature outline */
-export const coastlineSettings = z.strictObject({
+const coastlineSettings = z.strictObject({
   enabled: z.boolean(),
   maxDepth: count,
   baseAmplitude: nonNegative,
@@ -118,7 +117,7 @@ export const coastlineSettings = z.strictObject({
 });
 
 /** a relief rule: which land cells it claims, and the relief it places there */
-export const reliefRule = z.strictObject({
+const reliefRule = z.strictObject({
   name: z.string(),
   height: z.strictObject({ min: percent.int(), max: percent.int() }),
   temperature: z.strictObject({ min: z.number().int().nullable(), max: z.number().int().nullable() }), // °C, null is open
@@ -295,7 +294,6 @@ export const optionsSchema = z.strictObject({
 });
 
 export type OptionsData = z.infer<typeof optionsSchema>;
-export type OptionsSection = keyof OptionsData;
 
 /** What a `.map` file stores, and what every generator, renderer and editor reads */
 export type MapData = z.infer<typeof mapSchema>;

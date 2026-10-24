@@ -8,8 +8,8 @@ import { Layers } from "@/renderers/layers";
 import type { Point } from "@/types/global";
 import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
-import { escapeHtml } from "@/utils/stringUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 interface InputParams {
   id: string;

@@ -1,9 +1,9 @@
 import { Goods } from "@/model/economy/goods-generator";
 import { convertTemperature, getHeight } from "@/model/units";
 import { t } from "@/utils/i18n";
-import { list } from "@/utils/languageUtils";
-import { ensureEl } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
+import { list } from "@/utils/language-utils";
+import { ensureEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
 
 type ParamType = "none" | "number" | "biomes" | "shore" | "featureType";
 

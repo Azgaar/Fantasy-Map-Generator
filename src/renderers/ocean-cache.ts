@@ -1,4 +1,4 @@
-import { createEl, findEl } from "@/utils/nodeUtils";
+import { createEl, findEl } from "@/utils/node-utils";
 import { type Box, ViewportLayers, type ViewportRenderContext } from "./viewport/viewport-renderer";
 
 interface RasterRegion extends Box {

@@ -16,10 +16,10 @@ import {
   getHeight
 } from "@/model/units";
 import { destroyDialog } from "@/ui/dialog/dialog-helpers";
-import { debounce, getLatitude, getLongitude } from "@/utils/commonUtils";
+import { debounce, getLatitude, getLongitude } from "@/utils/common-utils";
 import { t } from "@/utils/i18n";
-import { ensureEl, getPointer } from "@/utils/nodeUtils";
-import { rn, si } from "@/utils/numberUtils";
+import { ensureEl, getPointer } from "@/utils/node-utils";
+import { rn, si } from "@/utils/number-utils";
 
 function open(): void {
   cleanup();

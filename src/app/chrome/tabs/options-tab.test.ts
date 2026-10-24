@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { readFileSync } from "node:fs";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { toggleAssistant } from "@/app/chrome/assistant-bubble";
 import { Options } from "@/model/options/options-model";
 import { Pins } from "@/model/options/pins";
 import { Emblems } from "@/model/political/emblems-generator";
+import { toggleAssistant } from "@/ui/assistant-bubble";
 import { confirmationDialog } from "@/ui/dialog/dialog-helpers";
 import { setMapZoom, setZoomExtent } from "@/ui/map/zoom";
 
@@ -16,7 +16,7 @@ vi.mock("@/ui/map/zoom", () => ({
   setTranslateExtent: vi.fn(),
   setZoomExtent: vi.fn()
 }));
-vi.mock("@/app/canvas", () => ({
+vi.mock("@/ui/map/canvas", () => ({
   applyZoomExtent: vi.fn(),
   fitMapToScreen: vi.fn(),
   setViewport: vi.fn()
@@ -32,7 +32,7 @@ vi.mock("@/ui/dialog/dialog-helpers", async importOriginal => ({
   ...(await importOriginal<typeof import("@/ui/dialog/dialog-helpers")>()),
   confirmationDialog: vi.fn()
 }));
-vi.mock("@/app/chrome/assistant-bubble", () => ({ toggleAssistant: vi.fn() }));
+vi.mock("@/ui/assistant-bubble", () => ({ toggleAssistant: vi.fn() }));
 
 let tab: typeof import("./options-tab");
 const control = (key: string): HTMLInputElement => document.querySelector(`[data-option="${key}"]`)!;
@@ -51,7 +51,7 @@ beforeAll(async () => {
   vi.stubGlobal("pack", { cells: {}, cultures: [], states: [], provinces: [], burgs: [] });
   vi.stubGlobal("styles", { labels: { groups: { capital: { attrs: {} }, states: { attrs: {} } } } });
   await import("@/ui/elements/slider-input");
-  await import("./customization-tab");
+  await import("./heightmap-tab");
   tab = await import("./options-tab");
   await import("@/app/chrome/options-panel");
 

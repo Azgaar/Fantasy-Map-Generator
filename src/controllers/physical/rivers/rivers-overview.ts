@@ -6,7 +6,6 @@ import { Rivers } from "@/model/physical/river-generator";
 import { Tags } from "@/model/tags";
 import { getRiverBox, toggleBasinHighlight } from "@/renderers/draw-rivers";
 import { Layers } from "@/renderers/layers";
-import { highlightArea } from "@/renderers/overlays/highlight";
 import { Csv } from "@/services/io/csv";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
@@ -20,10 +19,11 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
+import { highlightArea } from "@/ui/map/highlight";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
+import { ensureEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
 
 const dialogId = "riversOverview" as const;
 const CSV_COLUMNS = ["Id", "River", "Type", "Discharge", "Length", "Width", "Basin", "Tags"];

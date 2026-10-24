@@ -9,8 +9,8 @@ import { stopMapPlacement } from "@/ui/map/map-placement";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
-import { ensureEl, getPointer } from "@/utils/nodeUtils";
-import { minmax, rn } from "@/utils/numberUtils";
+import { ensureEl, getPointer } from "@/utils/node-utils";
+import { minmax, rn } from "@/utils/number-utils";
 
 let creatorPoints: number[][] = [];
 

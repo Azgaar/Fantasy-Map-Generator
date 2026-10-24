@@ -2,11 +2,11 @@ import { max, mean } from "d3";
 import { Routes } from "@/model/economy/routes-generator";
 import { Names } from "@/model/society/names-generator";
 import { Population } from "@/model/society/population-generator";
-import { requireColor } from "@/utils/colorUtils";
-import { FlatQueue } from "@/utils/flatQueue";
-import { getAdjective } from "@/utils/languageUtils";
-import { gauss, P, ra, rand, rw } from "@/utils/probabilityUtils";
-import { requireName } from "@/utils/validationUtils";
+import { requireColor } from "@/utils/color-utils";
+import { FlatQueue } from "@/utils/flat-queue";
+import { getAdjective } from "@/utils/language-utils";
+import { gauss, P, ra, rand, rw } from "@/utils/probability-utils";
+import { requireName } from "@/utils/validation-utils";
 
 export interface Zone {
   i: number;

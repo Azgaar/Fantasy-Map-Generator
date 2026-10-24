@@ -1,7 +1,7 @@
 import Alea from "alea";
 import { describe, expect, it } from "vitest";
 import type { Point } from "@/types/global";
-import { rn } from "@/utils/numberUtils";
+import { rn } from "@/utils/number-utils";
 import { Lattice, MAX_JITTER, SAMPLINGS, type Sampling } from "./lattice";
 import { calculateVoronoi } from "./voronoi";
 

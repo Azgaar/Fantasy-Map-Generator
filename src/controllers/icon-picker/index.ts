@@ -9,10 +9,10 @@ import { IconsArchive } from "@/services/io/icons-archive";
 import type { IconSet } from "@/types/icons";
 import { confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
-import { createFileInput, downloadFile } from "@/utils/fileUtils";
+import { createFileInput, downloadFile } from "@/utils/file-utils";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
-import { capitalize, escapeHtml } from "@/utils/stringUtils";
+import { ensureEl } from "@/utils/node-utils";
+import { capitalize, escapeHtml } from "@/utils/string-utils";
 import { IconPictures, type PictureProfile } from "./pictures";
 import { closePositioner, openPositioner } from "./positioner";
 
@@ -27,7 +27,7 @@ interface Entry {
   set?: IconSetId;
 }
 
-export interface IconPickerOptions {
+interface IconPickerOptions {
   current: string;
   onPick: (id: string) => void; // on Apply; `live` also calls it on every selection and with `current` on cancel
   live?: boolean;

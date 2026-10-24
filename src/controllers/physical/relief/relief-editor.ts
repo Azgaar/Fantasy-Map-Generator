@@ -17,10 +17,10 @@ import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, showMainTip, tip } from "@/ui/tooltips";
-import { createBrushStroke } from "@/utils/brushUtils";
+import { createBrushStroke } from "@/utils/brush-utils";
 import { t } from "@/utils/i18n";
-import { ensureEl, getPointer } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
+import { ensureEl, getPointer } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
 import { findAllInQuadtree } from "@/utils/quadtree";
 import { fitReliefArt, reliefArtHtml } from "./relief-previews";
 

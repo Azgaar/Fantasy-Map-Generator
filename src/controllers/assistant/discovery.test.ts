@@ -6,7 +6,6 @@ vi.mock("@/services/local-db", () => ({
 }));
 
 const discovery = vi.hoisted(() => ({ list: vi.fn() }));
-vi.mock("@/app/map-commands", () => ({ MAP_COMMANDS: [], isLinkable: () => false })); // its import touches the DOM
 vi.mock("./map", () => ({
   AssistantMap: {
     id: () => 1,

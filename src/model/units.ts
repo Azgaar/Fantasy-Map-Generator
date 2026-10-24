@@ -1,8 +1,8 @@
 // Map values in the map's own units, as `options.map.units` sets them
 import { Grid } from "@/model/graph/grid-generator";
 import { Pack } from "@/model/graph/pack-generator";
-import type { PackedGraph } from "@/types/PackedGraph";
-import { rn } from "@/utils/numberUtils";
+import type { PackedGraph } from "@/types/packed-graph";
+import { rn } from "@/utils/number-utils";
 
 type TemperatureScale = "°C" | "°F" | "K" | "°R" | "°De" | "°N" | "°Ré" | "°Rø";
 /**

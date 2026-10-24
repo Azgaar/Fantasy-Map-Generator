@@ -11,7 +11,7 @@ import { convertSpeed, formatSpeed, getDistanceUnit, parseSpeed } from "@/model/
 import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
-import type { Journey, JourneySegment } from "@/types/Journey";
+import type { Journey, JourneySegment } from "@/types/journey";
 import {
   alertDialog,
   closeDialogs,
@@ -33,9 +33,9 @@ import {
 import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
-import { escapeHtml } from "@/utils/stringUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 import { domainMismatchMessage, JourneyPathEditor, recomputeSegment } from "./journey-path-editor";
 
 const dialogId = "journeyEditor" as const;

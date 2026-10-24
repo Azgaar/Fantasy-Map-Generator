@@ -2,11 +2,10 @@ import Alea from "alea";
 import { min } from "d3";
 import { Grid } from "@/model/graph/grid-generator";
 import type { Point } from "@/model/graph/voronoi";
-import { redrawGlacier, redrawIceberg } from "@/renderers/draw-ice";
-import { clipPoly } from "@/utils/commonUtils";
-import { lerp, minmax, normalize, rn } from "@/utils/numberUtils";
-import { getIsolines } from "@/utils/pathUtils";
-import { P, ra, rand } from "@/utils/probabilityUtils";
+import { clipPoly } from "@/utils/common-utils";
+import { lerp, minmax, normalize, rn } from "@/utils/number-utils";
+import { getIsolines } from "@/utils/path-utils";
+import { P, ra, rand } from "@/utils/probability-utils";
 
 export type Ice = Glacier | Iceberg;
 
@@ -95,13 +94,14 @@ class IceModule {
     pack.ice = [];
   }
 
-  addIceberg(cellId: number, size: number) {
+  /** Add an iceberg over the cell; returns its id */
+  addIceberg(cellId: number, size: number): number {
     const [cx, cy] = grid.points[cellId];
     const points = Grid.getPolygon(cellId).map(([x, y]): Point => [rn(lerp(cx, x, size), 2), rn(lerp(cy, y, size), 2)]);
     const id = this.getNextId();
     const ice: Iceberg = { i: id, points, type: "iceberg", cellId, size };
     pack.ice.push(ice);
-    redrawIceberg(id);
+    return id;
   }
 
   removeIce(id: number) {
@@ -109,11 +109,6 @@ class IceModule {
     if (ice) {
       const index = pack.ice.indexOf(ice);
       pack.ice.splice(index, 1);
-      if (ice.type === "glacier") {
-        redrawGlacier(id);
-      } else {
-        redrawIceberg(id);
-      }
     }
   }
 

@@ -3,17 +3,17 @@ import { Controllers } from "@/controllers";
 import { ENTITY_TYPES, type EntityRef, MapEntities } from "@/model/map-entities";
 import { Options } from "@/model/options/options-model";
 import { type NoteEntry, Notes } from "@/model/story/notes";
-import { highlightElement } from "@/renderers/overlays/highlight";
 import { viewport } from "@/renderers/viewport/viewport";
 import { fonts } from "@/services/fonts";
 import { Csv } from "@/services/io/csv";
 import { speak } from "@/services/speech";
 import { alertDialog, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { highlightElement } from "@/ui/map/highlight";
 import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
-import { errorText } from "@/utils/stringUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { errorText } from "@/utils/string-utils";
 import {
   canEditAsRichText,
   createRichTextEditor,

@@ -1,5 +1,4 @@
 import { hsl } from "d3";
-import { applyZoomExtent, fitMapToScreen, setViewport } from "@/app/canvas";
 import {
   ADVANCED_OPTIONS_ID,
   AdvancedOptions,
@@ -7,18 +6,11 @@ import {
   getAdvancedOptionsHTML,
   getGraphPreset
 } from "@/app/chrome/advanced-options";
-import { toggleAssistant } from "@/app/chrome/assistant-bubble";
 import { PerformanceSettings } from "@/app/chrome/performance-settings";
-import {
-  applyPerformancePreset,
-  applyPerformanceSettings,
-  onPerformanceChange,
-  resolvePerformancePreset
-} from "@/app/performance";
 import { generateMapWithSeed, showSeedHistoryDialog } from "@/app/seed";
 import { Controllers } from "@/controllers";
 import { CULTURE_SETS } from "@/data/culture-sets";
-import { getPointsNumber } from "@/data/graph-density";
+import { cellsDensityColor, getPointsNumber } from "@/data/graph-density";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { isLanguage, LANGUAGES } from "@/data/languages";
 import { precreatedHeightmaps } from "@/data/precreated-heightmaps";
@@ -30,15 +22,24 @@ import { isAutoBurgLimit } from "@/model/political/burgs-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import { Cultures } from "@/model/society/cultures-generator";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
+import {
+  applyPerformancePreset,
+  applyPerformanceSettings,
+  onPerformanceChange,
+  resolvePerformancePreset
+} from "@/renderers/performance";
 import { viewport } from "@/renderers/viewport/viewport";
 import { copyMapURL } from "@/services/url-params";
 import { confirmCleanupData } from "@/services/versioning";
+import { toggleAssistant } from "@/ui/assistant-bubble";
 import { confirmationDialog } from "@/ui/dialog/dialog-helpers";
+import { applyZoomExtent, fitMapToScreen, setViewport } from "@/ui/map/canvas";
 import { constrainZoom, setMapZoom, setTranslateExtent, setZoomExtent } from "@/ui/map/zoom";
+import { bindPinIcons } from "@/ui/pin-icons";
 import { tip } from "@/ui/tooltips";
 import { Catalog, sentences, t } from "@/utils/i18n";
-import { applyOption, ensureEl, findEl } from "@/utils/nodeUtils";
-import { minmax, rn } from "@/utils/numberUtils";
+import { applyOption, ensureEl, findEl } from "@/utils/node-utils";
+import { minmax, rn } from "@/utils/number-utils";
 
 interface OptionBinding {
   read: (config: OptionsData) => string | number | null;
@@ -709,10 +710,6 @@ export function changeCellsDensity(density: number): void {
   syncCellsDensity();
 }
 
-/** green at the default density, amber above it, red where performance starts to suffer */
-export const cellsDensityColor = (cells: number): string =>
-  cells > 50000 ? "#b12117" : cells === 10000 ? "#053305" : "#dfdf12";
-
 /** Re-shield every emblem that has not been customised, and re-render the ones on screen */
 function changeEmblemShape(shape: string): void {
   Emblems.setShape(shape);
@@ -936,8 +933,8 @@ export function restoreUi(): void {
     applyOption(optionInput("template"), template, name);
   }
 
-  Pins.bindIcons(ensureEl("options"), currentValue);
-  Pins.bindIcons(ensureEl(ADVANCED_OPTIONS_ID), currentValue);
+  bindPinIcons(ensureEl("options"), currentValue);
+  bindPinIcons(ensureEl(ADVANCED_OPTIONS_ID), currentValue);
 
   // `syncInputs` has already put every preference in its control; these are the ones that also do
   // something the moment they are read back. See docs/architecture/configuration.md

@@ -1,6 +1,9 @@
 import { test, expect } from "@playwright/test";
 import { waitForMap } from "./wait-for-map";
 
+// the app's console surface, see src/app/fmg.ts
+declare const FMG: any;
+
 // Firefox ignores a filter set on the root svg element when the svg is rasterized through an image,
 // so exports apply it to an untransformed group containing the map and viewport overlays
 test("zoomed-out raster export filters the map and overlays without clipping", async ({ page }) => {
@@ -9,7 +12,7 @@ test("zoomed-out raster export filters the map and overlays without clipping", a
   await waitForMap(page);
 
   const result = await page.evaluate(async () => {
-    const app = window as unknown as {
+    const app = FMG as {
       resetZoom(duration: number): void;
       Services: { ExportMap: { getMapURL(type: string): Promise<string> } };
     };

@@ -8,8 +8,9 @@ import { Layers } from "@/renderers/layers";
 import { LegendBoxes } from "@/renderers/legend-boxes";
 import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { promptDialog } from "@/ui/dialog/prompt-dialog";
+import { bindPinIcons } from "@/ui/pin-icons";
 import { t } from "@/utils/i18n";
-import { applyOption, ensureEl } from "@/utils/nodeUtils";
+import { applyOption, ensureEl } from "@/utils/node-utils";
 
 const DIALOG_ID = "unitsEditor";
 
@@ -138,7 +139,7 @@ function renderDialog(): void {
 
   fillInputs();
   addListeners();
-  Pins.bindIcons(ensureEl(DIALOG_ID), unitValue);
+  bindPinIcons(ensureEl(DIALOG_ID), unitValue);
 }
 
 /** Every unit this dialog edits: the control that shows it, and where it lives in `options.map` */

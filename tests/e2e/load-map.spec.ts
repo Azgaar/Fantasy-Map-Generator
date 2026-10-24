@@ -73,7 +73,7 @@ function getReliefState(page: Page) {
     return {
       relief: (window as any).pack.relief,
       style: (window as any).styles.relief.options,
-      layerIsOn: (window as any).Layers.isOn("relief"),
+      layerIsOn: (window as any).FMG.Layers.isOn("relief"),
       terrainStyle: terrain?.getAttribute("style") ?? null
     };
   });
@@ -131,7 +131,7 @@ test.describe("Map loading", () => {
         hasBurgs: pack.burgs && pack.burgs.length > 1,
         hasCells: pack.cells && pack.cells.i && pack.cells.i.length > 0,
         hasRivers: pack.rivers && pack.rivers.length > 0,
-        mapsGenerated: (window as any).mapHistory.length
+        mapsGenerated: (window as any).FMG.mapHistory.length
       };
     });
 
@@ -303,7 +303,7 @@ test.describe("Map loading", () => {
       hasContainer: Boolean(document.getElementById("fogging-cont")),
       parent: document.getElementById("fogging")?.parentElement?.id,
       mask: document.getElementById("fogging")?.getAttribute("mask"),
-      order: (window as any).Layers.state.order as string[],
+      order: (window as any).FMG.Layers.state.order as string[],
       groups: Array.from(document.querySelectorAll("#viewbox > *"), node => node.id),
       rects: document.querySelectorAll("#fogging rect").length,
       revealed: document.querySelectorAll("#fog path").length
@@ -427,11 +427,11 @@ test.describe("Map loading", () => {
 
     const borders = page.locator("#borders");
     expect(await borders.getAttribute("display")).toBeNull(); // converted to inline style on migration
-    expect(await page.evaluate(() => (window as any).Layers.isOn("borders"))).toBe(false);
+    expect(await page.evaluate(() => (window as any).FMG.Layers.isOn("borders"))).toBe(false);
     await expect(borders).toBeHidden();
 
     // the layer used to migrate as active while staying invisible, with no way to reveal it
-    await page.evaluate(() => (window as any).Layers.show("borders"));
+    await page.evaluate(() => (window as any).FMG.Layers.show("borders"));
     await expect(borders).toBeVisible();
   });
 
@@ -448,7 +448,7 @@ test.describe("Map loading", () => {
         count: uses.length,
         id: uses[0]?.id,
         transform: uses[0]?.getAttribute("transform"),
-        layerIsOn: (window as any).Layers.isOn("compass")
+        layerIsOn: (window as any).FMG.Layers.isOn("compass")
       };
     });
 
@@ -533,9 +533,9 @@ test.describe("Map loading", () => {
     await page.waitForFunction(() => Boolean((window as any).pack?.cells?.i?.length), { timeout: 120000 });
 
     const savedLayers = await page.evaluate(async () => {
-      (window as any).Layers.show("labels");
+      (window as any).FMG.Layers.show("labels");
       document.getElementById("labels")?.replaceChildren();
-      const mapData = await (window as any).Services.Save.prepareMapData();
+      const mapData = await (window as any).FMG.Services.Save.prepareMapData();
       return JSON.parse(mapData.split("\r\n")[50]);
     });
 
@@ -631,7 +631,7 @@ test.describe("Map loading", () => {
   test("loading a map should restore default namebases over the session's ones", async ({ page }) => {
     await waitForMap(page);
     await page.evaluate(() => {
-      const Names = (window as any).Names;
+      const Names = (window as any).FMG.Names;
       Names.nameBases = [{ name: "Custom", i: 0, min: 4, max: 8, d: "", m: 0, b: "Aaa,Bbb,Ccc" }];
       Names.getBase(0); // caches the custom chain
     });
@@ -641,7 +641,7 @@ test.describe("Map loading", () => {
     await waitForNextMap(page, maps);
 
     const result = await page.evaluate(() => {
-      const Names = (window as any).Names;
+      const Names = (window as any).FMG.Names;
       const defaults = Names.getNameBases();
       return {
         count: Names.nameBases.length,

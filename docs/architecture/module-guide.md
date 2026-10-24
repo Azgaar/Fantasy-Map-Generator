@@ -45,7 +45,7 @@ manages **browser/app lifecycle** (PWA install, auto-update, io, preferences) it
 - Prefer **module getters over re-implementing lookups**: `Markets.get(id)`,
   `Goods.get(id)` (both `=> T | undefined`) instead of `pack.markets.find(...)`.
 - **Path alias**: `@/*` resolves to `src/*` (configured in `vite.config.ts` and
-  `tsconfig.json`). Prefer it to deep `../../` chains — e.g. `@/utils/numberUtils`,
+  `tsconfig.json`). Prefer it to deep `../../` chains — e.g. `@/utils/number-utils`,
   `@/model/economy/markets-generator`. Sibling imports stay relative (`./box`).
 
 ## Imports, not globals
@@ -54,9 +54,12 @@ manages **browser/app lifecycle** (PWA install, auto-update, io, preferences) it
   constants through an `import`, and only downhill (app → controllers/services → ui → renderers →
   model → utils). Never through `window`, and never with a `declare global` for app code.
 - **Import from the file that defines it.** There are no barrel `index.ts` files that re-export a
-  folder: `import { rn } from "@/utils/numberUtils"`, not from `@/utils`. A barrel makes every importer
+  folder: `import { rn } from "@/utils/number-utils"`, not from `@/utils`. A barrel makes every importer
   load the whole folder and its own imports, which drags unrelated modules into import cycles. The
   `index.ts` of `controllers/` and `services/` are registries, not barrels.
+- **App commands go through `App`.** A controller or service that has to regenerate the map, sync the
+  options panel or open a tab calls `App.…` from `ui/app-commands.ts`, which `app/index.ts` binds at
+  start-up; a model or renderer message for the user goes through `notify` in `utils/notices.ts`.
 - **The world state is the exception.** `pack`, `grid`, `options` and `styles` are
   read bare; they are declared beside their owners ([`model/globals.ts`](../../src/model/globals.ts),
   [`options-model.ts`](../../src/model/options/options-model.ts), [`styles.ts`](../../src/model/styles/styles.ts)).
@@ -158,7 +161,7 @@ The layer itself is declared in the registry in `renderers/layers.ts`, which cal
 ```ts
 // src/controllers/<domain>/module-editor.ts
 // thin: intent → state change/redraw
-import { ensureEl } from "@/utils/nodeUtils";
+import { ensureEl } from "@/utils/node-utils";
 
 let controllerState: unknown; // optional, for a panel that preserves some UI state across opens
 

@@ -1,5 +1,5 @@
 // The app and map lifecycle: start the app, erase what is on screen, generate a new world, put it back
-import { applyGraphSize, fitMapToScreen } from "@/app/canvas";
+
 import { restoreUi, syncOptionInputs } from "@/app/chrome/tabs/options-tab";
 import { hideLoading, showLoading } from "@/app/loading";
 import { setSeed } from "@/app/seed";
@@ -8,9 +8,8 @@ import { Controllers } from "@/controllers";
 import { getPointsNumber } from "@/data/graph-density";
 import { GenerationPipeline } from "@/model/generation-pipeline";
 import { Icons } from "@/model/icons";
-import { mapHistory } from "@/model/map-history";
+import { mapHistory, registerMap } from "@/model/map-history";
 import { Options } from "@/model/options/options-model";
-import { adoptLegacyIconSlots } from "@/model/styles/styles-legacy";
 import { Layers } from "@/renderers/layers";
 import { undraw } from "@/renderers/undraw";
 import { is3dView } from "@/renderers/view-mode";
@@ -18,18 +17,20 @@ import { setViewportSize } from "@/renderers/viewport/viewport";
 import { stashCallbackToken } from "@/services/assistant/azgaar-server/auth";
 import { initiateAutosave } from "@/services/autosave";
 import { declareDefaultFonts } from "@/services/fonts";
+import { adoptLegacyIconSlots } from "@/services/io/styles-legacy";
 import { logStats } from "@/services/logging";
 import { registerServiceWorker } from "@/services/platform";
 import { checkLoadParameters } from "@/services/url-params";
 import { cleanupData } from "@/services/versioning";
-import type { GridGraph } from "@/types/GridGraph";
+import type { GridGraph } from "@/types/grid-graph";
 import { closeDialogs, confirmationDialog, initDialogPositionPersistence } from "@/ui/dialog/dialog-helpers";
+import { applyGraphSize, fitMapToScreen } from "@/ui/map/canvas";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { invokeActiveZooming, resetZoom } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { debounce, parseError } from "@/utils/commonUtils";
+import { debounce, parseError } from "@/utils/common-utils";
 import { t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
 
 /** Bring the app up */
 export async function boot(): Promise<void> {
@@ -162,22 +163,4 @@ export function regeneratePrompt(config?: GenerationConfig): void {
       regenerateMap(config);
     }
   });
-}
-
-const MAP_HISTORY_LIMIT = 100;
-
-/** Take note of a map that is now on screen, and announce it */
-export function registerMap(created: number = Date.now()): void {
-  mapHistory.push({
-    seed: options.map.seed,
-    width: options.map.graph.width,
-    height: options.map.graph.height,
-    template: options.generation.template,
-    created: created,
-    registeredAt: Date.now()
-  });
-  if (mapHistory.length > MAP_HISTORY_LIMIT) mapHistory.splice(0, mapHistory.length - MAP_HISTORY_LIMIT);
-
-  // the public seam test automation and external integrations wait on; the id is the creation date
-  window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed: options.map.seed, mapId: created } }));
 }

@@ -2,14 +2,14 @@ import { drag, type Selection, select } from "d3";
 import { Controllers } from "@/controllers";
 import { Grid } from "@/model/graph/grid-generator";
 import { Ice } from "@/model/physical/ice-generator";
-import { redrawIceberg } from "@/renderers/draw-ice";
+import { redrawGlacier, redrawIceberg } from "@/renderers/draw-ice";
 import { Layers } from "@/renderers/layers";
 import { closeDialogs, confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl, getPointer } from "@/utils/nodeUtils";
-import { parseTransform } from "@/utils/stringUtils";
+import { ensureEl, findEl, getPointer } from "@/utils/node-utils";
+import { parseTransform } from "@/utils/string-utils";
 
 let selectedIce: Selection<SVGElement, unknown, HTMLElement, unknown>;
 
@@ -97,7 +97,7 @@ function addIcebergOnClick(event: PointerEvent): void {
   const i = Grid.findCell(x, y);
   const size = +ensureEl<HTMLInputElement>("iceSize").value || 1;
 
-  Ice.addIceberg(i, size);
+  redrawIceberg(Ice.addIceberg(i, size));
 
   if (event.shiftKey === false) toggleAdd();
 }
@@ -111,7 +111,10 @@ function removeIce(): void {
       : t("Are you sure you want to remove the iceberg?"),
     confirm: t("Remove"),
     onConfirm: () => {
-      Ice.removeIce(+selectedIce.attr("data-id"));
+      const id = +selectedIce.attr("data-id");
+      Ice.removeIce(id);
+      if (isGlacier) redrawGlacier(id);
+      else redrawIceberg(id);
       $("#iceEditor").dialog("close");
     }
   });

@@ -14,7 +14,7 @@ export type LabelSpreadPatch =
   | { type: PathLabelType; entityId: number; startOffset: number }
   | { type: PointLabelType; entityId: number; dx?: number; dy?: number };
 
-export interface LabelSpreadResult {
+interface LabelSpreadResult {
   patches: LabelSpreadPatch[];
   displayedLabels: number;
   initialOverlaps: number;

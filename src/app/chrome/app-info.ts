@@ -1,9 +1,9 @@
 // The "About" dialog: what the generator is, where to get help and how to support it.
 // A component, not a controller — it is opened over the map but knows nothing about it
 
-import { link } from "@/utils/commonUtils";
+import { link } from "@/utils/common-utils";
 import { t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
+import { ensureEl } from "@/utils/node-utils";
 
 const COMMUNITY = {
   discord: link("https://discordapp.com/invite/X7E84HU", "Discord"),
@@ -69,5 +69,3 @@ export function showInfo(): void {
     position: { my: "center", at: "center", of: "svg" }
   });
 }
-
-export const AppInfo = { open: showInfo };

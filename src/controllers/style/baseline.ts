@@ -3,7 +3,7 @@
 
 import { StylePresetsService } from "@/services/style-presets";
 import type { StylesData } from "@/types/styles";
-import { getPath } from "@/utils/objectUtils";
+import { getPath } from "@/utils/object-utils";
 
 export class Baseline {
   // system presets never change; a custom one can be re-saved, so it is read again on every load

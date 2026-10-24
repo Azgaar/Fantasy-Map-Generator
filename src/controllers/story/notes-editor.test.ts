@@ -2,7 +2,7 @@
 import Quill from "quill";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/renderers/overlays/highlight", () => ({ highlightElement: () => {} }));
+vi.mock("@/ui/map/highlight", () => ({ highlightElement: () => {} }));
 vi.mock("@/ui/tooltips", () => ({ tip: () => {}, loadingTip: { start: vi.fn(), end: vi.fn() } }));
 
 import { Notes } from "@/model/story/notes";

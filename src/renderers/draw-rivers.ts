@@ -8,7 +8,7 @@ import {
   type ViewportRenderContext
 } from "@/renderers/viewport/viewport-renderer";
 import type { Point } from "@/types/global";
-import { findEl } from "@/utils/nodeUtils";
+import { findEl } from "@/utils/node-utils";
 
 interface RiverShape {
   id: string;

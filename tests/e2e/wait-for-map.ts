@@ -1,11 +1,11 @@
-// The app announces a finished map by appending to `window.mapHistory` (see src/app/lifecycle.ts).
+// The app announces a finished map by appending to `FMG.mapHistory` (see src/model/map-history.ts).
 // It records every map produced this session, so one seam answers both "is a map ready?" and "is this
 // a different map from the one I saw before?" - which a bare boolean flag cannot.
 import type { Page } from "@playwright/test";
 
 const DEFAULT_TIMEOUT = 120000;
 
-const readCount = () => (window as unknown as { mapHistory?: unknown[] }).mapHistory?.length ?? 0;
+const readCount = () => (window as any).FMG?.mapHistory?.length ?? 0;
 
 /** Wait until the app has generated or loaded a map */
 export function waitForMap(page: Page, timeout = DEFAULT_TIMEOUT): Promise<unknown> {
@@ -20,7 +20,7 @@ export function countMaps(page: Page): Promise<number> {
 /** Wait until the app has produced a map beyond the `previous` count */
 export function waitForNextMap(page: Page, previous: number, timeout = DEFAULT_TIMEOUT): Promise<unknown> {
   return page.waitForFunction(
-    seen => ((window as unknown as { mapHistory?: unknown[] }).mapHistory?.length ?? 0) > seen,
+    seen => ((window as any).FMG?.mapHistory?.length ?? 0) > seen,
     previous,
     { timeout }
   );

@@ -3,9 +3,9 @@ import { describe, expect, test, vi } from "vitest";
 import "@/model/physical/relief-generator"; // the models own the icon sets that tell references from text
 import "@/model/political/burgs-generator";
 import "@/model/economy/goods-generator";
+import { normalizeStyles } from "@/services/io/styles-legacy";
 import { Styles } from "./styles";
 import { FORMATS, isLabelStyle } from "./styles-formats";
-import { normalizeStyles } from "./styles-legacy";
 import { stylesSchema } from "./styles-schema";
 
 const readPreset = (name: string) => JSON.parse(readFileSync(`public/styles/${name}.json`, "utf8"));

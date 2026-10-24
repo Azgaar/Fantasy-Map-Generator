@@ -7,7 +7,7 @@ import { confirmationDialog, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { promptDialog } from "@/ui/dialog/prompt-dialog";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
 
 const DEFAULT_GROUPS = ["roads", "trails", "searoutes"];
 

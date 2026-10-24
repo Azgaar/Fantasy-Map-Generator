@@ -5,15 +5,15 @@ import { Markers } from "@/model/story/markers-generator";
 import { clearMarkerRadius, drawMarkerRadius } from "@/renderers/draw-marker-radius";
 import { setMarkersFilter } from "@/renderers/draw-markers";
 import { Layers } from "@/renderers/layers";
-import { highlightElement } from "@/renderers/overlays/highlight";
 import { viewport } from "@/renderers/viewport/viewport";
 import { Csv } from "@/services/io/csv";
 import { closeDialogs, confirmationDialog, refreshEditors } from "@/ui/dialog/dialog-helpers";
+import { highlightElement } from "@/ui/map/highlight";
 import { zoomTo } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { getLatitude, getLongitude } from "@/utils/commonUtils";
+import { getLatitude, getLongitude } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
 
 let center: Marker | null = null;
 let lastRadius = 0;

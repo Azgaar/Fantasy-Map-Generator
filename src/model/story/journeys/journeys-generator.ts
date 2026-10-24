@@ -5,11 +5,11 @@ import { MAX_HOURS_PER_DAY, type TransportDomain, Transports } from "@/model/eco
 import { Rivers } from "@/model/physical/river-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import { getDistanceUnitRatio } from "@/model/units";
-import type { Journey, JourneyPoint, JourneySegment } from "@/types/Journey";
-import { getCardinalColor, requireColor } from "@/utils/colorUtils";
-import { FlatQueue } from "@/utils/flatQueue";
-import { isLand } from "@/utils/heightUtils";
-import { requireName } from "@/utils/validationUtils";
+import type { Journey, JourneyPoint, JourneySegment } from "@/types/journey";
+import { getCardinalColor, requireColor } from "@/utils/color-utils";
+import { FlatQueue } from "@/utils/flat-queue";
+import { isLand } from "@/utils/height-utils";
+import { requireName } from "@/utils/validation-utils";
 import { generateStoryJourney } from "./journey-story";
 
 const COARSE_UNIT_THRESHOLD = 10;
@@ -36,7 +36,7 @@ const CELL_KINDS: Record<CellKind, string> = {
   inland: "inland land"
 };
 
-export type SegmentFields = Partial<{
+type SegmentFields = Partial<{
   name: string;
   color: string | null;
   hidden: boolean;

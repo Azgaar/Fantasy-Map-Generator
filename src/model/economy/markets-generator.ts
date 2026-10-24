@@ -2,11 +2,11 @@ import Alea from "alea";
 import { quadtree } from "d3-quadtree";
 import type { Burg } from "@/model/political/burgs-generator";
 import { States } from "@/model/political/states-generator";
-import { tip } from "@/ui/tooltips";
-import { getColors, getRandomColor, requireFill } from "@/utils/colorUtils";
-import { FlatQueue } from "@/utils/flatQueue";
+import { getColors, getRandomColor, requireFill } from "@/utils/color-utils";
+import { FlatQueue } from "@/utils/flat-queue";
 import { t } from "@/utils/i18n";
-import { minmax, rn } from "@/utils/numberUtils";
+import { notify } from "@/utils/notices";
+import { minmax, rn } from "@/utils/number-utils";
 import type { DemandCategory, Good } from "./goods-generator";
 import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS, Goods } from "./goods-generator";
 import { Production } from "./production-generator";
@@ -292,7 +292,7 @@ export class MarketsModule {
     if (!burg || burg.removed) return null;
 
     if (pack.markets.some(m => m.centerBurgId === burgId)) {
-      tip(t("This burg is already a market center"), false, "error");
+      notify(t("This burg is already a market center"), "error");
       return null;
     }
 

@@ -10,14 +10,14 @@ import { Names } from "@/model/society/names-generator";
 import { Population } from "@/model/society/population-generator";
 import { Tags } from "@/model/tags";
 import type { Emblem } from "@/types/emblems";
-import { getMixedColor, getRandomColor, requireColor } from "@/utils/colorUtils";
-import { FlatQueue } from "@/utils/flatQueue";
-import { getAdjective, replaceWholeWord, trimVowels } from "@/utils/languageUtils";
-import { minmax, rn } from "@/utils/numberUtils";
-import { getPolesOfInaccessibility } from "@/utils/pathUtils";
-import { each, gauss, generateSeed, P, ra, rand, rw } from "@/utils/probabilityUtils";
-import { escapeHtml } from "@/utils/stringUtils";
-import { requireName, requireOneOf } from "@/utils/validationUtils";
+import { getMixedColor, getRandomColor, requireColor } from "@/utils/color-utils";
+import { FlatQueue } from "@/utils/flat-queue";
+import { getAdjective, replaceWholeWord, trimVowels } from "@/utils/language-utils";
+import { minmax, rn } from "@/utils/number-utils";
+import { getPolesOfInaccessibility } from "@/utils/path-utils";
+import { each, gauss, generateSeed, P, ra, rand, rw } from "@/utils/probability-utils";
+import { escapeHtml } from "@/utils/string-utils";
+import { requireName, requireOneOf } from "@/utils/validation-utils";
 import { Burgs } from "./burgs-generator";
 import type { Regiment } from "./military-generator";
 import { Military } from "./military-generator";
@@ -149,11 +149,11 @@ export const STATE_FORMS = {
   ],
   Anarchy: ["Commune", "Community", "Council", "Free Territory", "Tribes"]
 } as const satisfies Record<string, readonly string[]>;
-export type StateForm = keyof typeof STATE_FORMS;
+type StateForm = keyof typeof STATE_FORMS;
 const FORMS = Object.keys(STATE_FORMS) as StateForm[];
 
 /** The form of government a listed form name belongs to */
-export const getStateForm = (formName: string): StateForm | undefined =>
+const getStateForm = (formName: string): StateForm | undefined =>
   FORMS.find(form => (STATE_FORMS[form] as readonly string[]).includes(formName));
 
 type TaxBases = { salesTax: number; pollTax: number };

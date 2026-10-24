@@ -4,7 +4,6 @@ import type { IntegrityRule, IntegrityViolation } from "./map-integrity";
 Object.assign(globalThis, { grid: undefined, pack: {} });
 
 const { GenerationPipeline } = await import("./generation-pipeline");
-await import("./");
 const { MapIntegrity } = await import("./map-integrity");
 const { MapRestoration } = await import("./map-restoration");
 

@@ -5,7 +5,6 @@ import { LABEL_TYPES, type Label, Labels, type LabelType } from "@/model/annotat
 import { getLabelsData, getLabelsIndex } from "@/renderers/labels/label-data";
 import type { LabelData } from "@/renderers/labels/labels";
 import { Layers } from "@/renderers/layers";
-import { highlightElement } from "@/renderers/overlays/highlight";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import { dialogState } from "@/ui/dialog/state";
@@ -17,10 +16,11 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
+import { highlightElement } from "@/ui/map/highlight";
 import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
 
 const dialogId = "labelsOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };

@@ -6,9 +6,9 @@ import * as Connection from "@/services/assistant/provider/connection";
 import { openEntity, revealEntity } from "@/ui/map/reveal";
 import { openEditor } from "@/ui/map/viewbox-events";
 import { t } from "@/utils/i18n";
-import { findEl, getPointer } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
-import { escapeHtml } from "@/utils/stringUtils";
+import { findEl, getPointer } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 /** An entity at the spot, with its topmost element under the cursor when it is drawn there */
 interface Row {

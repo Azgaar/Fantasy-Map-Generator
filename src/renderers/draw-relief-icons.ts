@@ -3,7 +3,7 @@ import type { ReliefIcon } from "@/model/physical/relief-generator";
 import { Relief } from "@/model/physical/relief-generator";
 import { Layers } from "@/renderers/layers";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
-import { escapeHtml } from "@/utils/stringUtils";
+import { escapeHtml } from "@/utils/string-utils";
 
 const layer = ViewportLayers.register({ id: "relief", render: reconcileRelief });
 let isDrawn = false; // an erased layer draws nothing, an empty one still draws

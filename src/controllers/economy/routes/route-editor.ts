@@ -8,10 +8,10 @@ import { Layers } from "@/renderers/layers";
 import { speak } from "@/services/speech";
 import { closeDialogs, confirmationDialog, destroyDialog, noteButton } from "@/ui/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { getSegmentId } from "@/utils/commonUtils";
+import { getSegmentId } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl, getPointer } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
+import { ensureEl, findEl, getPointer } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
 
 let selectedRoute: Selection<SVGElement, unknown, HTMLElement, unknown>;
 

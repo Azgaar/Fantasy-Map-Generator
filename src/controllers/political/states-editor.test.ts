@@ -20,7 +20,7 @@ vi.mock("@/controllers", () => ({
 vi.mock("@/renderers/draw-emblems", () => ({ redrawEmblem: vi.fn(), removeEmblem: vi.fn() }));
 vi.mock("@/renderers/emblems/renderer", () => ({ EmblemRenderer: { trigger: vi.fn() } }));
 vi.mock("@/renderers/overlays/fogging", () => ({ fog: vi.fn(), unfog: vi.fn() }));
-vi.mock("@/renderers/overlays/highlight", () => ({ highlightElement: vi.fn(), highlightOutline: vi.fn() }));
+vi.mock("@/ui/map/highlight", () => ({ highlightElement: vi.fn(), highlightOutline: vi.fn() }));
 
 import { States } from "@/model/political/states-generator";
 import { dialogState } from "@/ui/dialog/state";

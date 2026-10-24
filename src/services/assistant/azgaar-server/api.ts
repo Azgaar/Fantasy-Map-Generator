@@ -4,7 +4,7 @@ import { clearToken, getToken, signInAt } from "./auth";
 export const AZGAAR_SERVER_URL = "https://ask.azgaarsfmg.com";
 export const OFFICIAL_ORIGIN = "https://azgaar.github.io";
 
-export interface AskResponse {
+interface AskResponse {
   // always present on a 200, refusals included — always adopt the returned id
   conversationId: string;
   requestId: number | null;
@@ -19,7 +19,7 @@ export interface Limits {
   resetsAt: string;
 }
 
-export type AzgaarServerErrorCode =
+type AzgaarServerErrorCode =
   | "rate_limited"
   | "quota"
   | "cap_reached"
@@ -110,7 +110,7 @@ export const ask = async (question: string, conversationId?: string, signal?: Ab
   return result;
 };
 
-export type FeedbackRating = "up" | "down";
+type FeedbackRating = "up" | "down";
 
 // Idempotent per requestId server-side: a second rating replaces the first.
 export const sendFeedback = (requestId: number, rating: FeedbackRating): Promise<void> =>

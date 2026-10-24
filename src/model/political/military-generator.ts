@@ -1,11 +1,11 @@
 import { quadtree, sum } from "d3";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
-import { nth } from "@/utils/languageUtils";
-import { minmax, rn, si } from "@/utils/numberUtils";
-import { gauss, ra, rand } from "@/utils/probabilityUtils";
+import { nth } from "@/utils/language-utils";
+import { minmax, rn, si } from "@/utils/number-utils";
+import { gauss, ra, rand } from "@/utils/probability-utils";
 import { findAllInQuadtree } from "@/utils/quadtree";
-import { requireName, requireOneOf } from "@/utils/validationUtils";
+import { requireName, requireOneOf } from "@/utils/validation-utils";
 import type { State } from "./states-generator";
 
 export interface Regiment {

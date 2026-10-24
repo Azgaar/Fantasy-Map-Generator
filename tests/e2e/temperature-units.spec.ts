@@ -18,7 +18,7 @@ test.describe("Temperature units", () => {
     // Pick a scale in the Units Editor. Kelvin is never a default, so a reading in K proves the
     // selected scale was used rather than the one the browser locale would have given anyway
     await page.evaluate(async () => {
-      await (window as any).Controllers.UnitsEditor.open();
+      await (window as any).FMG.Controllers.UnitsEditor.open();
       const select = document.getElementById("temperatureScale") as HTMLSelectElement;
       select.value = "K";
       select.dispatchEvent(new Event("change", { bubbles: true }));
@@ -31,7 +31,7 @@ test.describe("Temperature units", () => {
   test("burg editor should show temperature in the selected scale", async ({ page }) => {
     await page.evaluate(async () => {
       const burg = (window as any).pack.burgs.find((b: any) => b.i && !b.removed);
-      await (window as any).Controllers.BurgEditor.open(burg.i);
+      await (window as any).FMG.Controllers.BurgEditor.open(burg.i);
     });
 
     const temperature = await page.locator("#burgTemperature").textContent();
@@ -40,7 +40,7 @@ test.describe("Temperature units", () => {
 
   test("burgs CSV export should use the selected scale", async ({ page }) => {
     await page.evaluate(async () => {
-      await (window as any).Controllers.BurgsOverview.open();
+      await (window as any).FMG.Controllers.BurgsOverview.open();
     });
 
     const downloadPromise = page.waitForEvent("download");

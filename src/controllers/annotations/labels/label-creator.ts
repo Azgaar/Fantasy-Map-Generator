@@ -9,7 +9,7 @@ import { Layers } from "@/renderers/layers";
 import { closeDialogs } from "@/ui/dialog/dialog-helpers";
 import { stopMapPlacement, toggleMapPlacement } from "@/ui/map/map-placement";
 import { sentences, t } from "@/utils/i18n";
-import { findEl } from "@/utils/nodeUtils";
+import { findEl } from "@/utils/node-utils";
 
 function toggle(): void {
   if (findEl("addLabel")?.classList.contains("pressed")) {

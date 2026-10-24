@@ -1,7 +1,6 @@
 // The Style tab's editor
 import "@/ui/elements/slider-input";
 import type { z } from "zod";
-import { openTab } from "@/app/chrome/options-panel";
 import { VIGNETTE_PRESET_LABELS } from "@/data/id-labels";
 import { layerLabel } from "@/data/layer-labels";
 import { VIGNETTE_PRESETS } from "@/data/vignette-presets";
@@ -12,10 +11,11 @@ import { applyVignetteOptions } from "@/renderers/draw-vignette";
 import { type LayerId, Layers } from "@/renderers/layers";
 import { StylePresetsService } from "@/services/style-presets";
 import type { StyleElement, StyleSelection } from "@/types/styles";
+import { App } from "@/ui/app-commands";
 import { invokeActiveZooming } from "@/ui/map/zoom";
 import { t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
-import { getPath } from "@/utils/objectUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { getPath } from "@/utils/object-utils";
 import { Baseline } from "./baseline";
 import { CUSTOM_CONTROLS, fontSample, updateGridSizeReadout } from "./controls";
 import { destroyControlDialogs, ElementsDialog, PresetSelector } from "./dialogs";
@@ -57,7 +57,7 @@ class StyleEditorController {
       else this.groupSelect.replaceChildren();
     }
     const wasActive = findEl("styleTab")?.classList.contains("active");
-    openTab("styleTab"); // opens the editor through selectTab when the tab was not active
+    App.openTab("styleTab"); // opens the editor through selectTab when the tab was not active
     if (wasActive) this.render();
     if (element) this.glow(Boolean(group));
   }

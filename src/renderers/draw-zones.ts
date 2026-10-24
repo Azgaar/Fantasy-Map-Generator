@@ -1,6 +1,6 @@
 import type { Zone } from "@/model/political/zones-generator";
-import { ensureEl } from "@/utils/nodeUtils";
-import { getVertexPath } from "@/utils/pathUtils";
+import { ensureEl } from "@/utils/node-utils";
+import { getVertexPath } from "@/utils/path-utils";
 
 // not read off the editor's select: the paint editor destroys that dialog mid-redraw (#1810)
 export const zonesFilter = { type: "all" };

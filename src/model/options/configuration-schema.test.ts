@@ -3,8 +3,8 @@ import type { LabelGroup } from "@/model/annotations/labels-generator";
 import type { Transport } from "@/model/economy/transports-generator";
 import type { CoastlineSettings } from "@/model/physical/coastline-generator";
 import type { BurgGroup } from "@/types/burg-groups";
-import type { MilitaryUnit } from "@/types/Military";
-import { parseSections } from "@/utils/schemaUtils";
+import type { MilitaryUnit } from "@/types/military";
+import { parseSections } from "@/utils/schema-utils";
 import { Options } from "./options-model";
 import { type MapData, mapSchema, type OptionsData, optionsSchema } from "./options-schema";
 

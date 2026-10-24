@@ -5,7 +5,7 @@ const zoomTo = vi.hoisted(() => vi.fn());
 vi.mock("@/ui/map/zoom", () => ({ zoomTo }));
 vi.mock("@/renderers/viewport/viewport", () => ({ viewport: { width: 1000, height: 600, scale: 1 } }));
 vi.mock("@/renderers/layers", () => ({ Layers: { show: vi.fn() } }));
-vi.mock("@/renderers/overlays/highlight", () => ({ highlightArea: vi.fn(), highlightElement: vi.fn() }));
+vi.mock("@/ui/map/highlight", () => ({ highlightArea: vi.fn(), highlightElement: vi.fn() }));
 vi.mock("@/model/map-entities", () => ({ MapEntities: {} }));
 
 import { reveal } from "./reveal";

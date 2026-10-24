@@ -5,8 +5,8 @@ import { Layers } from "@/renderers/layers";
 import { destroyDialog, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
-import { escapeHtml } from "@/utils/stringUtils";
+import { ensureEl } from "@/utils/node-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 const DIALOG_ID = "markersSettings";
 

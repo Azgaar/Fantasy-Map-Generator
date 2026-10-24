@@ -1,8 +1,8 @@
 // Asking for one value in the app's own dialog: the native prompt does not work in Electron
 import { t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
 
-export interface PromptOptions {
+interface PromptOptions {
   default: number | string;
   step?: number;
   min?: number;

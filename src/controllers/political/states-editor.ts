@@ -15,10 +15,9 @@ import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
 import { LegendBoxes } from "@/renderers/legend-boxes";
 import { fog, unfog } from "@/renderers/overlays/fogging";
-import { highlightElement, highlightOutline } from "@/renderers/overlays/highlight";
 import { Csv } from "@/services/io/csv";
 import { speak } from "@/services/speech";
-import type { LegendItem } from "@/types/Legend";
+import type { LegendItem } from "@/types/legend";
 import { closeDialogs, confirmationDialog, destroyDialog, noteIcon, updateDialog } from "@/ui/dialog/dialog-helpers";
 import { applyLineHighlighting } from "@/ui/dialog/highlighting";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
@@ -33,17 +32,18 @@ import {
 } from "@/ui/dialog/table";
 import type { FillBoxElement } from "@/ui/elements/fill-box";
 import { createAnnexMode } from "@/ui/map/annex-mode";
+import { highlightElement, highlightOutline } from "@/ui/map/highlight";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { zoomTo } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { groupByValue } from "@/utils/arrayUtils";
-import { isLand } from "@/utils/heightUtils";
+import { groupByValue } from "@/utils/array-utils";
+import { isLand } from "@/utils/height-utils";
 import { sentences, t } from "@/utils/i18n";
-import { getAdjective } from "@/utils/languageUtils";
-import { applyOption, ensureEl, findEl, getPointer } from "@/utils/nodeUtils";
-import { rn, si } from "@/utils/numberUtils";
-import { rand } from "@/utils/probabilityUtils";
-import { errorText } from "@/utils/stringUtils";
+import { getAdjective } from "@/utils/language-utils";
+import { applyOption, ensureEl, findEl, getPointer } from "@/utils/node-utils";
+import { rn, si } from "@/utils/number-utils";
+import { rand } from "@/utils/probability-utils";
+import { errorText } from "@/utils/string-utils";
 
 const dialogId = "statesEditor" as const;
 const LEGEND_NAME = "States"; // the legend box this editor toggles

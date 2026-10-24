@@ -8,9 +8,9 @@ import { Coordinates } from "@/model/physical/coordinates";
 import { Features } from "@/model/physical/features-generator";
 import { Ice } from "@/model/physical/ice-generator";
 import { Temperature } from "@/model/physical/temperature-generator";
-import type { GridGraph } from "@/types/GridGraph";
-import type { PackedGraph } from "@/types/PackedGraph";
-import { isWater } from "@/utils/heightUtils";
+import type { GridGraph } from "@/types/grid-graph";
+import type { PackedGraph } from "@/types/packed-graph";
+import { isWater } from "@/utils/height-utils";
 
 interface ResamplerProcessOptions {
   projection: (x: number, y: number) => [number, number];

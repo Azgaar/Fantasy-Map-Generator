@@ -1,5 +1,5 @@
 // Where `Options` keeps this browser's choices. Light: main.ts reads the interface language from it before the app modules load
-import { safeParseJSON } from "@/utils/stringUtils";
+import { safeParseJSON } from "@/utils/string-utils";
 
 export const OPTIONS_STORAGE_KEY = "fmg-options";
 

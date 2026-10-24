@@ -30,7 +30,7 @@ await import("../src/model/physical/relief-generator.ts");
 await import("../src/model/political/burgs-generator.ts");
 await import("../src/model/economy/goods-generator.ts");
 const { Styles } = await import("../src/model/styles/styles.ts");
-const { normalizeStyles } = await import("../src/model/styles/styles-legacy.ts");
+const { normalizeStyles } = await import("../src/services/io/styles-legacy.ts");
 for (const file of presets) rewrite(file, json => byElement(Styles.parse(normalizeStyles(json))));
 
 function rewrite(file, parse) {

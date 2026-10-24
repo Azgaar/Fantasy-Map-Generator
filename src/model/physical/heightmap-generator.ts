@@ -3,9 +3,9 @@ import { range as d3Range, leastIndex, mean } from "d3";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { Lattice } from "@/model/graph/lattice";
 import type { MapData } from "@/model/options/options-schema";
-import type { GridGraph } from "@/types/GridGraph";
-import { lim, minmax } from "@/utils/numberUtils";
-import { getNumberInRange, P, rand } from "@/utils/probabilityUtils";
+import type { GridGraph } from "@/types/grid-graph";
+import { lim, minmax } from "@/utils/number-utils";
+import { getNumberInRange, P, rand } from "@/utils/probability-utils";
 
 type Tool = "Hill" | "Pit" | "Range" | "Trough" | "Strait" | "Mask" | "Invert" | "Add" | "Multiply" | "Smooth";
 

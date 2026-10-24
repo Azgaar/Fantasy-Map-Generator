@@ -1,8 +1,8 @@
 // Pick which entities (biomes, states, cultures, religions) something is limited to; an empty list allows all
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
-import { escapeHtml } from "@/utils/stringUtils";
+import { ensureEl } from "@/utils/node-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 export interface LimitationItem {
   i: number;

@@ -20,8 +20,6 @@ export type FieldMeta<Control extends string = StandardControl> = {
   group?: string; // a caption over the consecutive fields sharing it; their labels read under it ("Stroke" → "Width")
 };
 
-// --- the style form (src/model/styles/styles-schema.ts) -------------------------------------------------
-
 /** The controls the style editor registers over the standard ones (src/controllers/style/controls.ts) */
 export type StyleControl =
   | StandardControl
@@ -53,8 +51,6 @@ export type StyleElement = keyof StylesData;
 
 /** The bags every style node may carry; reserved, so a group name may never be one of them */
 export const NODE_KEYS: ReadonlySet<string> = new Set(["attrs", "options", "groups"]);
-
-// --- the editor (src/controllers/style) --------------------------------------------------------
 
 /** What the Style tab shows: an element, its group when it has a record of them, and the layer it is drawn on */
 export type StyleSelection = { element: StyleElement; group?: string; layer?: LayerId };

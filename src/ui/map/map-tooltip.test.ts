@@ -4,7 +4,7 @@ import { MapEntities } from "@/model/map-entities";
 
 vi.mock("@/renderers/layers", () => ({ Layers: { isOn: vi.fn(() => false) } }));
 vi.mock("@/ui/tooltips", () => ({ tip: vi.fn(), showMainTip: vi.fn(), loadingTip: { start: vi.fn(), end: vi.fn() } }));
-vi.mock("@/renderers/overlays/highlight", () => ({ highlightEmblemElement: vi.fn() }));
+vi.mock("@/ui/map/highlight", () => ({ highlightEmblemElement: vi.fn() }));
 
 import { Layers } from "@/renderers/layers";
 import { tip } from "@/ui/tooltips";

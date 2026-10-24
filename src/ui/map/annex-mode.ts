@@ -2,7 +2,7 @@
 import { select } from "d3";
 import { Pack } from "@/model/graph/pack-generator";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { ensureEl, getPointer } from "@/utils/nodeUtils";
+import { ensureEl, getPointer } from "@/utils/node-utils";
 import { applyDefaultViewboxEvents } from "./viewbox-events";
 
 interface AnnexTips {

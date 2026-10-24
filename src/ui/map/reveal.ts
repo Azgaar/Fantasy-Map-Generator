@@ -3,12 +3,12 @@ import { Controllers } from "@/controllers";
 import { type EntityRef, MapEntities } from "@/model/map-entities";
 import type { LayerId } from "@/renderers/layers";
 import { Layers } from "@/renderers/layers";
-import { highlightArea, highlightElement } from "@/renderers/overlays/highlight";
 import { viewport } from "@/renderers/viewport/viewport";
 import type { Point } from "@/types/global";
+import { highlightArea, highlightElement } from "@/ui/map/highlight";
 import { zoomTo } from "@/ui/map/zoom";
-import { findEl } from "@/utils/nodeUtils";
-import { type Box, getBounds } from "@/utils/pathUtils";
+import { findEl } from "@/utils/node-utils";
+import { type Box, getBounds } from "@/utils/path-utils";
 
 // Showing things on the map: zoom to fit, show their layers, outline or ring them
 

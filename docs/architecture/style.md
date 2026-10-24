@@ -218,7 +218,7 @@ downloads / uploads it as JSON; `−` removes a custom one. System names are pro
 
 ### Legacy
 
-`src/model/styles/styles-legacy.ts` is the only code that understands the old shapes, and it is
+`src/services/io/styles-legacy.ts` is the only code that understands the old shapes, and it is
 reached only from the load migrations (`auto-update.ts`) and `parsePreset`:
 
 - selector-keyed presets (`"#stateBorders": { … }`, `"#labels > #states"`) → `presetFromLegacy`

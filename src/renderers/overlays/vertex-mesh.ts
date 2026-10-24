@@ -2,8 +2,8 @@
 
 import { Pack } from "@/model/graph/pack-generator";
 import { viewport } from "@/renderers/viewport/viewport";
-import { unique } from "@/utils/arrayUtils";
-import { createEl, ensureEl, findEl } from "@/utils/nodeUtils";
+import { unique } from "@/utils/array-utils";
+import { createEl, ensureEl, findEl } from "@/utils/node-utils";
 
 const getGroup = (): SVGGElement => {
   const existing = findEl<SVGGElement>("vertices");

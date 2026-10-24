@@ -1,20 +1,20 @@
 // Everything the app reads from, or writes to, its own URL: what to load on start-up, where to focus,
 // and the shareable link. Deep links come from the wiki, from shared maps and from MFCG
 import { leastIndex, select } from "d3";
-import { fitMapToScreen } from "@/app/canvas";
-import { toggleAssistant } from "@/app/chrome/assistant-bubble";
-import { applyLayersPreset, applyURLLayers } from "@/app/layers-presets";
-import { type GenerationConfig, generate } from "@/app/lifecycle";
+import type { GenerationConfig } from "@/app/lifecycle";
 import { Controllers } from "@/controllers";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Layers } from "@/renderers/layers";
 import { Services } from "@/services";
 import { LocalDB } from "@/services/local-db";
 import { getRequestedMapSize } from "@/services/map-size";
+import { App } from "@/ui/app-commands";
+import { toggleAssistant } from "@/ui/assistant-bubble";
+import { fitMapToScreen } from "@/ui/map/canvas";
 import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
+import { ensureEl } from "@/utils/node-utils";
 
 const MAP_LINK_PATTERN = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-/]))?/;
 
@@ -64,8 +64,8 @@ export async function checkLoadParameters(): Promise<void> {
 /** The start-up path: style, world, layers, then wherever the URL says to look */
 export async function generateMapOnLoad(config?: GenerationConfig): Promise<void> {
   await Controllers.StylePresetsEditor.applyOnLoad(); // the previously selected default or custom style
-  await generate(config);
-  applyLayersPreset();
+  await App.generate(config);
+  App.applyLayersPreset();
   Layers.drawAll();
   fitMapToScreen();
   focusOn();
@@ -75,7 +75,7 @@ export async function generateMapOnLoad(config?: GenerationConfig): Promise<void
 /** Apply the layer and viewport parameters once the map exists */
 export function focusOn(): void {
   const params = searchParams();
-  applyURLLayers(params);
+  App.applyURLLayers(params);
 
   if (params.get("from") === "MFCG" && document.referrer) {
     const mfcgSeed = params.get("seed") ?? "";

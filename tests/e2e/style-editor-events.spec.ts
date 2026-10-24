@@ -1,13 +1,15 @@
 import { test, expect, type Page } from "@playwright/test";
 import { countMaps, waitForMap, waitForNextMap } from "./wait-for-map";
 
+// the app's console surface, see src/app/fmg.ts
+declare const FMG: any;
+
 declare const options: {
   map: {
     burgs: { groups: { name: string; isDefault?: boolean; active?: boolean; features?: Record<string, boolean>; preview?: string }[] };
     labels: { groups: { name: string; type: string; zoom: { min: number; max: number | null } }[] };
   };
 };
-declare const regeneratePrompt: (config?: { seed?: string }) => void;
 
 // Real-control regression for the schema-driven style editor (src/controllers/style): every
 // control reads/writes the store (src/model/styles/styles.ts) instead of DOM attributes, and
@@ -22,7 +24,7 @@ const rn = (v: number, d = 0): number => Math.round(v * 10 ** d) / 10 ** d;
 const f = (path: string): string => `#styleForm [data-field="${path}"]`;
 
 async function openStyleElement(page: Page, element: string): Promise<void> {
-  await page.evaluate(() => (window as any).showOptions());
+  await page.evaluate(() => document.getElementById("optionsTrigger")!.click());
   await page.locator("#styleTab").click();
   await page.locator("#styleElementSelect").selectOption(element);
   await page.locator("#styleForm .row").first().waitFor({ state: "attached" }); // a gated card may hide its rows
@@ -56,7 +58,7 @@ test.describe("style editor events drive the store", () => {
         y: (window as any).options.map.graph.height / 2,
         cell: 0
       });
-      (window as any).Layers.show("markers");
+      (window as any).FMG.Layers.show("markers");
       return i;
     });
 
@@ -64,9 +66,9 @@ test.describe("style editor events drive the store", () => {
     await expect(marker).toHaveAttribute("width", "0.3em");
     const before = await marker.evaluate(el => el.getBoundingClientRect().width);
 
-    await page.evaluate(() => (window as any).setMapZoom(4));
+    await page.evaluate(() => (window as any).FMG.setMapZoom(4));
     await page.waitForTimeout(50);
-    await page.evaluate(() => (window as any).invokeActiveZooming());
+    await page.evaluate(() => (window as any).FMG.invokeActiveZooming());
     await expect(page.locator("#markers")).toHaveAttribute("font-size", "50px"); // 100 / sqrt(4)
     const after = await marker.evaluate(el => el.getBoundingClientRect().width);
     expect(after / before).toBeCloseTo(4 * 0.5, 1); // the map scaled 4x, the em 0.5x
@@ -77,7 +79,7 @@ test.describe("style editor events drive the store", () => {
   test("states halo width slider writes the store and re-derives stroke-width on zoom", async ({ page }) => {
     // invokeActiveZooming only re-derives the halo width when the halos are on, which the default
     // "balance" preset leaves off - switch to "quality" through the real Options tab
-    await page.evaluate(() => (window as any).showOptions());
+    await page.evaluate(() => document.getElementById("optionsTrigger")!.click());
     await page.locator("#optionsTab").click();
     await page.locator("#performancePreset").selectOption("quality");
 
@@ -100,9 +102,9 @@ test.describe("style editor events drive the store", () => {
 
     // (3) survival across invokeActiveZooming() at a changed zoom: re-derived from the store
     // base (5), not from the stroke-width attribute the handler just wrote
-    await page.evaluate(() => (window as any).setMapZoom(4));
+    await page.evaluate(() => (window as any).FMG.setMapZoom(4));
     await page.waitForTimeout(50);
-    await page.evaluate(() => (window as any).invokeActiveZooming());
+    await page.evaluate(() => (window as any).FMG.invokeActiveZooming());
 
     const scale = await currentScale(page);
     const expected = String(rn(5 / scale ** 0.8, 2));
@@ -113,7 +115,7 @@ test.describe("style editor events drive the store", () => {
   });
 
   test("coordinates size input writes the store and the renderer derives from it", async ({ page }) => {
-    await page.evaluate(() => (window as any).Layers.show("coordinates"));
+    await page.evaluate(() => (window as any).FMG.Layers.show("coordinates"));
     await openStyleElement(page, "coordinates");
 
     await page.locator(`${f("attrs.font-size")} input[type=number]`).fill("24");
@@ -123,9 +125,9 @@ test.describe("style editor events drive the store", () => {
     expect(stored).toBe("24px");
 
     // (1)+(3) rendered size re-derived from the store base on redraw at a changed zoom
-    await page.evaluate(() => (window as any).setMapZoom(4));
+    await page.evaluate(() => (window as any).FMG.setMapZoom(4));
     await page.waitForTimeout(50);
-    await page.evaluate(() => (window as any).Layers.draw("coordinates"));
+    await page.evaluate(() => (window as any).FMG.Layers.draw("coordinates"));
     const scale = await currentScale(page);
     const fontSize = await page.locator("#coordinates").getAttribute("font-size");
     expect(parseFloat(fontSize!)).toBeCloseTo(rn(24 / scale ** 0.8, 2), 1);
@@ -136,8 +138,8 @@ test.describe("style editor events drive the store", () => {
 
   test("ruler size input writes the store and sizes drawn rulers", async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).Measurers.createDefaultRuler();
-      (window as any).Layers.show("rulers");
+      (window as any).FMG.Measurers.createDefaultRuler();
+      (window as any).FMG.Layers.show("rulers");
     });
     await openStyleElement(page, "rulers");
 
@@ -188,7 +190,7 @@ test.describe("style editor events drive the store", () => {
   });
 
   test("goods size inputs write the store and size the drawn icons", async ({ page }) => {
-    await page.evaluate(() => (window as any).Layers.show("goods"));
+    await page.evaluate(() => (window as any).FMG.Layers.show("goods"));
     await openStyleElement(page, "goods");
 
     await page.locator(`${f("groups.goodsIcons.options.size")} input[type=number]`).fill("9");
@@ -205,7 +207,7 @@ test.describe("style editor events drive the store", () => {
   });
 
   test("markets size input writes the store and sizes the drawn plates", async ({ page }) => {
-    await page.evaluate(() => (window as any).Layers.show("markets"));
+    await page.evaluate(() => (window as any).FMG.Layers.show("markets"));
     await openStyleElement(page, "markets");
 
     await page.locator(`${f("options.size")} input[type=number]`).fill("6");
@@ -221,7 +223,7 @@ test.describe("style editor events drive the store", () => {
   });
 
   test("heightmap controls write the store per group and the renderer derives from it", async ({ page }) => {
-    await page.evaluate(() => (window as any).Layers.show("heightmap"));
+    await page.evaluate(() => (window as any).FMG.Layers.show("heightmap"));
     await openStyleElement(page, "heightmap");
 
     // ocean subsection: the render-ocean gate in its header, then scheme select and terracing slider
@@ -263,7 +265,7 @@ test.describe("style editor events drive the store", () => {
   });
 
   test("armies size input writes the store and the renderer derives from it", async ({ page }) => {
-    await page.evaluate(() => (window as any).Layers.show("military"));
+    await page.evaluate(() => (window as any).FMG.Layers.show("military"));
     await openStyleElement(page, "military");
 
     await page.locator(`${f("options.boxSize")} input[type=number]`).fill("4");
@@ -280,7 +282,7 @@ test.describe("style editor events drive the store", () => {
   });
 
   test("grid controls write the store and restyle the pattern", async ({ page }) => {
-    await page.evaluate(() => (window as any).Layers.show("grid"));
+    await page.evaluate(() => (window as any).FMG.Layers.show("grid"));
     await openStyleElement(page, "grid");
 
     await page.locator(`${f("options.type")} select`).selectOption("pointyHex");
@@ -318,8 +320,8 @@ test.describe("style editor events drive the store", () => {
 
   test("markets icon size and goods circle write the store and drive the renderer", async ({ page }) => {
     await page.evaluate(() => {
-      (window as any).Layers.show("goods");
-      (window as any).Layers.show("markets");
+      (window as any).FMG.Layers.show("goods");
+      (window as any).FMG.Layers.show("markets");
     });
 
     await openStyleElement(page, "markets");
@@ -343,7 +345,7 @@ test.describe("style editor events drive the store", () => {
   });
 
   test("texture controls write the store and the renderer rebuilds the image", async ({ page }) => {
-    await page.evaluate(() => (window as any).Layers.show("texture"));
+    await page.evaluate(() => (window as any).FMG.Layers.show("texture"));
     await openStyleElement(page, "texture");
 
     await page.locator(`${f("options.x")} input[type=number]`).fill("40");
@@ -369,7 +371,7 @@ test.describe("style editor events drive the store", () => {
   });
 
   test("scale bar controls write the store and the renderer derives from them", async ({ page }) => {
-    await page.evaluate(() => (window as any).Layers.show("scaleBar"));
+    await page.evaluate(() => (window as any).FMG.Layers.show("scaleBar"));
     await openStyleElement(page, "scaleBar");
 
     for (const [input, value] of [
@@ -405,7 +407,7 @@ test.describe("style editor events drive the store", () => {
   // regression: these five were DOM-only writes, so the store kept the preset's values and
   // Styles.write restored them over the edit on the next load
   test("scale bar background paint writes the store and survives a store write", async ({ page }) => {
-    await page.evaluate(() => (window as any).Layers.show("scaleBar"));
+    await page.evaluate(() => (window as any).FMG.Layers.show("scaleBar"));
     await openStyleElement(page, "scaleBar");
 
     await page.locator(`${f("groups.back.attrs.opacity")} input[type=number]`).fill("0.65");
@@ -422,7 +424,7 @@ test.describe("style editor events drive the store", () => {
     expect(await page.evaluate(() => (window as any).styles.scaleBar.groups.back.attrs)).toMatchObject(expected);
 
     // a preset apply rewrites every element from the store, the way a load does: the edit must survive it
-    await page.evaluate(() => (window as any).Controllers.StylePresetsEditor.applyPreset((window as any).styles));
+    await page.evaluate(() => (window as any).FMG.Controllers.StylePresetsEditor.applyPreset((window as any).styles));
     const back = page.locator("#scaleBarBack");
     await expect(back).toHaveAttribute("opacity", "0.65");
     await expect(back).toHaveAttribute("fill", "#123456");
@@ -486,13 +488,13 @@ test.describe("style editor events drive the store", () => {
 
   test("label group dropdown counts come from the label data, not the culled DOM", async ({ page }) => {
     // zoom in so some label tiers are culled from the DOM while their data still exists
-    await page.evaluate(() => (window as any).setMapZoom(6));
+    await page.evaluate(() => (window as any).FMG.setMapZoom(6));
     await page.waitForTimeout(200);
     await openStyleElement(page, "labels");
 
     const { optionCounts, dataCounts } = await page.evaluate(() => {
       const dataCounts: Record<string, number> = {};
-      for (const label of (window as any).getLabelsData()) {
+      for (const label of (window as any).FMG.getLabelsData()) {
         dataCounts[label.group] = (dataCounts[label.group] || 0) + 1;
       }
       const optionCounts: Record<string, number> = {};
@@ -560,7 +562,7 @@ test.describe("style editor events drive the store", () => {
     expect(stored).toEqual({ size: 2.5, fillOpacity: 0.6, linejoin: "round" });
 
     // the live group part carries the presentation; a full redraw keeps the store values
-    await page.evaluate(() => (window as any).Layers.draw("burgIcons"));
+    await page.evaluate(() => (window as any).FMG.Layers.draw("burgIcons"));
     const el = page.locator(`#burgIcons > g#${group} > [data-group="icons"]`);
     await expect(el).toHaveAttribute("font-size", "2.5%");
     await expect(el).toHaveAttribute("fill-opacity", "0.6");
@@ -585,7 +587,7 @@ test.describe("style editor events drive the store", () => {
     });
 
     const mapsBefore = await countMaps(page);
-    await page.evaluate(() => regeneratePrompt({ seed: "registry-reset-test" }));
+    await page.evaluate(() => FMG.regeneratePrompt({ seed: "registry-reset-test" }));
     await waitForNextMap(page, mapsBefore);
     await page.waitForTimeout(500);
 
@@ -623,7 +625,7 @@ test.describe("style editor events drive the store", () => {
   });
 
   test("vignette controls write the store and shape the mask rect", async ({ page }) => {
-    await page.evaluate(() => (window as any).Layers.show("vignette"));
+    await page.evaluate(() => (window as any).FMG.Layers.show("vignette"));
     await openStyleElement(page, "vignette");
 
     await page.locator(`${f("options.x")} input[type=number]`).fill("7");
@@ -648,14 +650,14 @@ test.describe("style editor events drive the store", () => {
     const layers = ["labels", "markers", "burgIcons"];
     const fontSizes = () =>
       page.evaluate(ids => ids.map(id => document.getElementById(id)?.getAttribute("font-size")), layers);
-    await page.evaluate(() => (window as any).setMapZoom(4));
+    await page.evaluate(() => (window as any).FMG.setMapZoom(4));
     await page.waitForTimeout(300);
     const zoomed = await fontSizes();
     expect(zoomed).not.toContain("100px");
 
     await page.evaluate(async () => {
       sessionStorage.setItem("fmg-style-change-confirmed", "true");
-      await (window as any).Controllers.StylePresetsEditor.change("pale");
+      await (window as any).FMG.Controllers.StylePresetsEditor.change("pale");
     });
     await page.waitForTimeout(200);
 
@@ -664,7 +666,7 @@ test.describe("style editor events drive the store", () => {
   });
 
   test("compass shift writes the rose transform through the store", async ({ page }) => {
-    await page.evaluate(() => (window as any).Layers.show("compass"));
+    await page.evaluate(() => (window as any).FMG.Layers.show("compass"));
     await openStyleElement(page, "compass");
 
     await page.locator(`${f("groups.compassRose.attrs.transform")} input[type=number]`).first().fill("30");

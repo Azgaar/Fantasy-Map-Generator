@@ -34,8 +34,8 @@ import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { zoomTo } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, getPointer } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
+import { ensureEl, getPointer } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
 
 let production: ReturnType<typeof getProduction> = {};
 let stockData: ReturnType<typeof getAllStockData> = {};

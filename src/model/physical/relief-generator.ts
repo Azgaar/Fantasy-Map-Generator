@@ -3,7 +3,7 @@ import { RELIEF_SETS } from "@/data/style-choices";
 import { Pack } from "@/model/graph/pack-generator";
 import type { ReliefRule } from "@/model/options/options-schema";
 import type { IconAlias, IconSet } from "@/types/icons";
-import { minmax, rn } from "@/utils/numberUtils";
+import { minmax, rn } from "@/utils/number-utils";
 
 const TYPES = [
   { type: "mount", label: "Mountain", variants: 6 },
@@ -39,10 +39,10 @@ type SlotCatalogEntry = Pick<ReliefType, "type" | "variants" | "fallback">;
 // the map stores this ref as it is; the renderer resolves the absent variant to 1 and the absent set to the style
 export type ReliefIconRef = { type: ReliefIconType; variant?: number; set?: ReliefSet };
 /** a feature drawn with any Icon Library icon instead of a type slot */
-export type ReliefLibraryRef = { icon: string };
+type ReliefLibraryRef = { icon: string };
 export type ReliefIcon = (ReliefIconRef | ReliefLibraryRef) & { x: number; y: number; s: number };
 /** how often a pool entry is picked, relative to the others, and its icon size as a multiple of the pool's (absent is 1) */
-export type ReliefPoolEntry = { weight: number; size?: number };
+type ReliefPoolEntry = { weight: number; size?: number };
 /** a biome's relief pool: relief types and icon references, each with its weight and size */
 export type ReliefPool = Record<string, ReliefPoolEntry>;
 
@@ -51,7 +51,7 @@ const SIZE_GROWTH = 0.8; // what a rule's icon size gains per height unit above 
 /** the icons each pool (a biome or a rule) placed so far in a pass, so its spacing holds across cells */
 type PoolPoints = Map<object, Quadtree<[number, number]>>;
 
-export class ReliefModel {
+class ReliefModel {
   readonly sets = RELIEF_SETS;
   readonly types = TYPES;
   /** one icon set per relief set: its directory, plus a symbol for every union slot it draws no file for */

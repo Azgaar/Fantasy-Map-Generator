@@ -25,12 +25,12 @@ import { Burgs } from "@/model/political/burgs-generator";
 import { Military } from "@/model/political/military-generator";
 import { Names } from "@/model/society/names-generator";
 import { LocalDB } from "@/services/local-db";
-import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
-import { rn } from "@/utils/numberUtils";
-import { deepMerge } from "@/utils/objectUtils";
-import { gauss, rand, rw } from "@/utils/probabilityUtils";
-import { parseSections } from "@/utils/schemaUtils";
+import { notify } from "@/utils/notices";
+import { rn } from "@/utils/number-utils";
+import { deepMerge } from "@/utils/object-utils";
+import { gauss, rand, rw } from "@/utils/probability-utils";
+import { parseSections } from "@/utils/schema-utils";
 import { OPTIONS_STORAGE_KEY, readStoredOptions } from "./options-storage";
 
 declare global {
@@ -161,7 +161,7 @@ class OptionsModel {
       const message = t(
         "Browser storage is full, so the latest settings are not kept in this browser. They are safe in the .map file: save the map to keep them"
       );
-      tip(message, false, "error", 10000);
+      notify(message, "error", 10000);
     }
   }
 

@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { LegendItem } from "@/types/Legend";
-import { tip } from "@/ui/tooltips";
+import type { LegendItem } from "@/types/legend";
+import { notify } from "@/utils/notices";
 import { Layers } from "./layers";
 import { getAltitudeBands, LegendBoxes } from "./legend-boxes";
 
 vi.mock("./layers", () => ({ Layers: { draw: vi.fn() } }));
-vi.mock("@/ui/tooltips", () => ({ tip: vi.fn(), loadingTip: { start: vi.fn(), end: vi.fn() } }));
+vi.mock("@/utils/notices", () => ({ notify: vi.fn() }));
 vi.mock("@/renderers/legend-positions", () => ({ legendPositions: { release: vi.fn() } }));
 
 describe("LegendBoxes", () => {
@@ -14,7 +14,7 @@ describe("LegendBoxes", () => {
   beforeEach(() => {
     globalThis.pack = { legends: [] } as unknown as typeof pack;
     vi.mocked(Layers.draw).mockClear();
-    vi.mocked(tip).mockClear();
+    vi.mocked(notify).mockClear();
   });
 
   it("toggles a box in the map data and draws the legend layer each time", () => {
@@ -30,7 +30,7 @@ describe("LegendBoxes", () => {
   it("reports a box with nothing to list instead of showing it", () => {
     LegendBoxes.toggle("States", () => [], "No states");
     expect(pack.legends).toEqual([]);
-    expect(tip).toHaveBeenCalledWith("No states", false, "error");
+    expect(notify).toHaveBeenCalledWith("No states", "error");
   });
 
   it("hides the named box alone", () => {

@@ -6,8 +6,8 @@ import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { Layers } from "@/renderers/layers";
 import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import type { Emblem } from "@/types/emblems";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
-import { minmax, rn } from "@/utils/numberUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { minmax, rn } from "@/utils/number-utils";
 
 export type EmblemType = "state" | "province" | "burg";
 
@@ -179,7 +179,7 @@ export function removeEmblem(type: EmblemType, i: number): void {
  * Drop the scenes without touching the markup: a loaded map brings its own svg, and reconciling the
  * previous map's nodes against the new data would materialize emblems at stale positions.
  */
-export function invalidateEmblems(): void {
+function invalidateEmblems(): void {
   for (const type of TYPES) scenes[type].invalidate();
 }
 

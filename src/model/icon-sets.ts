@@ -10,7 +10,7 @@ import type { IconSet } from "@/types/icons";
 export type IconSetId = ReliefIconSetId | BurgIconSetId | typeof Goods.iconSet.id | ChargeIconSetId;
 
 /** The catalog of the built-in sets: their files and the symbols they make; `Icons` puts them in the page */
-export class IconSetRegistry {
+class IconSetRegistry {
   private readonly sources = import.meta.glob("@/assets/icons/**/*.svg", { query: "?raw", import: "default" });
   private readonly folders = new Map<string, Map<string, () => Promise<unknown>>>(); // the glob never changes
   private catalog: readonly IconSet[] | null = null; // the models' sets never change either

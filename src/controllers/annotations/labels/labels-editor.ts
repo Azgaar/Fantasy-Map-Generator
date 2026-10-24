@@ -20,9 +20,9 @@ import { closeDialogs, confirmationDialog, destroyDialog, noteButton } from "@/u
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { showMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, getPointer } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
-import { round } from "@/utils/stringUtils";
+import { ensureEl, getPointer } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
+import { round } from "@/utils/string-utils";
 
 let lastSelectedGroup = ""; // the default group for newly added labels
 let label: LabelData;

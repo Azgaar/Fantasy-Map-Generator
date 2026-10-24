@@ -4,8 +4,8 @@ import { CustomIcons, Icons } from "@/model/icons";
 import { destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
-import { escapeHtml } from "@/utils/stringUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { escapeHtml } from "@/utils/string-utils";
 import { IconPictures } from "./pictures";
 
 const DIALOG = "iconPositioner";

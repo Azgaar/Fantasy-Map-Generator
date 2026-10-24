@@ -1,5 +1,5 @@
 import type { Layer } from "@/renderers/layers";
-import { findEl } from "@/utils/nodeUtils";
+import { findEl } from "@/utils/node-utils";
 import { getLakeRipples } from "./lake-ripples";
 import { syncStyleGroups } from "./style-groups";
 
@@ -32,7 +32,7 @@ export function removeLakeEmbellishments(): void {
   for (const node of document.querySelectorAll("[data-lake-embellishment]")) node.remove();
 }
 
-export function drawLakeEmbellishments(layer: Layer): void {
+function drawLakeEmbellishments(layer: Layer): void {
   removeLakeEmbellishments();
   const defs = findEl("deftemp");
   if (!defs) return;

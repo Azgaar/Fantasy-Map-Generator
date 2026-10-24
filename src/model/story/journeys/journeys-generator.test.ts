@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { Transports } from "@/model/economy/transports-generator";
 import { Rivers } from "@/model/physical/river-generator";
-import type { Journey, JourneySegment } from "@/types/Journey";
+import type { Journey, JourneySegment } from "@/types/journey";
 import { Journeys } from "./journeys-generator";
 
 const makeSeg = (

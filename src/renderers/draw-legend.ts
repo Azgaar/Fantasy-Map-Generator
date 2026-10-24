@@ -3,10 +3,10 @@
 
 import { type D3DragEvent, select } from "d3";
 import { viewport } from "@/renderers/viewport/viewport";
-import type { LegendItem } from "@/types/Legend";
-import { findEl } from "@/utils/nodeUtils";
-import { minmax, rn } from "@/utils/numberUtils";
-import { parseTransform } from "@/utils/stringUtils";
+import type { LegendItem } from "@/types/legend";
+import { findEl } from "@/utils/node-utils";
+import { minmax, rn } from "@/utils/number-utils";
+import { parseTransform } from "@/utils/string-utils";
 import { type LegendPosition, legendPositions } from "./legend-positions";
 
 const STACK_GAP = 10; // px kept between the boxes when a new one is placed automatically

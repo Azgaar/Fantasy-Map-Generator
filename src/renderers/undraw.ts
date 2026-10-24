@@ -5,7 +5,7 @@ import { removeLakeEmbellishments } from "@/renderers/draw-lakes";
 import { Layers } from "@/renderers/layers";
 import { legendPositions } from "@/renderers/legend-positions";
 import { unfog } from "@/renderers/overlays/fogging";
-import { ensureEl } from "@/utils/nodeUtils";
+import { ensureEl } from "@/utils/node-utils";
 
 /** Clear the map: every layer and the transient defs */
 export function undraw(): void {

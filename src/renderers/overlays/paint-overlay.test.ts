@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { beforeEach, describe, expect, it } from "vitest";
-import type { PackedGraph } from "@/types/PackedGraph";
+import type { PackedGraph } from "@/types/packed-graph";
 import { openPaintOverlay, removePaintOverlay, removePaintOverlayCells, updatePaintOverlay } from "./paint-overlay";
 
 const graph = {

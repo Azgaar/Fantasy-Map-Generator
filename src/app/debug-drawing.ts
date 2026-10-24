@@ -2,9 +2,9 @@ import { curveBundle, line, max, min, select } from "d3";
 import { Grid } from "@/model/graph/grid-generator";
 import type { Point } from "@/model/graph/voronoi";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
-import { C_12 } from "@/utils/colorUtils";
-import { normalize } from "@/utils/numberUtils";
-import { round } from "@/utils/stringUtils";
+import { C_12 } from "@/utils/color-utils";
+import { normalize } from "@/utils/number-utils";
+import { round } from "@/utils/string-utils";
 
 /**
  * Drawing cell values and polygons for debugging purposes

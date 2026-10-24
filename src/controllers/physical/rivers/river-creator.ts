@@ -7,8 +7,8 @@ import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
-import { ensureEl, getPointer } from "@/utils/nodeUtils";
-import { errorText } from "@/utils/stringUtils";
+import { ensureEl, getPointer } from "@/utils/node-utils";
+import { errorText } from "@/utils/string-utils";
 
 let creatorCells: number[] = [];
 

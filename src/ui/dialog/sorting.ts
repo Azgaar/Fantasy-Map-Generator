@@ -1,4 +1,4 @@
-import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
 import { type DialogSort, dialogState } from "./state";
 import type { EditorColumn } from "./table";
 
@@ -39,7 +39,7 @@ function toggleSortIcon(dialogId: string, header: HTMLElement): void {
 }
 
 /** Toggle the sorting order of the clicked header and re-sort the lines */
-export function sortLines(dialogId: string, header: HTMLElement): void {
+function sortLines(dialogId: string, header: HTMLElement): void {
   toggleSortIcon(dialogId, header);
   applySorting(header.parentNode as HTMLElement);
 }

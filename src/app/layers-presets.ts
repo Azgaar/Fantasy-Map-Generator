@@ -1,10 +1,10 @@
 // Layer presets: named sets of layers the user can switch between, stored in localStorage
 
+import { LAYER_TOGGLES } from "@/data/layer-labels";
 import { type LayerId, Layers } from "@/renderers/layers";
 import { confirmationDialog } from "@/ui/dialog/dialog-helpers";
 import { t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
-import { LAYER_TOGGLES } from "./chrome/tabs/layers-tab";
+import { ensureEl } from "@/utils/node-utils";
 
 const DEFAULT_PRESETS: Record<string, LayerId[]> = {
   political: ["borders", "burgIcons", "ice", "labels", "lakes", "rivers", "routes", "scaleBar", "states", "vignette"],

@@ -1,7 +1,8 @@
-import { isMobile } from "@/services/platform";
-import { debounce } from "@/utils/commonUtils";
+import { debounce } from "@/utils/common-utils";
+import { isMobile } from "@/utils/environment";
 import { sentences, t } from "@/utils/i18n";
-import { findEl } from "@/utils/nodeUtils";
+import { findEl } from "@/utils/node-utils";
+import { onNotice } from "@/utils/notices";
 
 type TipType = "info" | "success" | "warn" | "error";
 
@@ -113,7 +114,7 @@ function showLockTip(target: HTMLElement): void {
 }
 
 // non-svg containers holding elements with data-tip
-const TIP_CONTAINERS = ["dialogs", "optionsContainer", "exitCustomization", "tourPromptButton"];
+const TIP_CONTAINERS = ["dialogs", "optionsContainer", "heightmapFinalize", "tourPromptButton"];
 
 function initialize(): void {
   const onDataTipMove = debounce(showDataTip, 50);
@@ -121,3 +122,5 @@ function initialize(): void {
 }
 
 initialize();
+
+onNotice((message, type, time) => tip(message, false, type, time));

@@ -2,7 +2,7 @@
 
 Building a world is one long, strictly ordered sequence of generator calls. The generators talk to
 each other almost entirely through the two shared globals — `grid` (the raw graph on a sampling lattice,
-typed as [`GridGraph`](../../src/types/GridGraph.ts)) and `pack` (the repacked graph everything
+typed as [`GridGraph`](../../src/types/grid-graph.ts)) and `pack` (the repacked graph everything
 downstream is indexed against) — so **the execution order _is_ the dependency graph**: a step depends
 on every earlier step that last wrote a global it reads.
 
@@ -42,7 +42,7 @@ new Pipeline<Id, TContext>(name, steps).run(context): Promise<void>;
   detail nested under their step.
 - **Failures name the phase.** A throwing step is rethrown as
   `` `${pipelineName} failed at step "${id}": ${reason}` `` with the original error as `cause`.
-  [`parseError`](../../src/utils/commonUtils.ts) walks the `cause` chain, so the generation error
+  [`parseError`](../../src/utils/common-utils.ts) walks the `cause` chain, so the generation error
   dialog shows both the phase and the underlying stack.
 
 There is deliberately no declared dependency graph. An earlier design gave each step a `dependsOn`

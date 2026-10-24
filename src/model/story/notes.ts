@@ -1,6 +1,6 @@
 // Entity notes are optional HTML fields
 import { ENTITY_TYPES, type EntityRef, MapEntities } from "@/model/map-entities";
-import { isSafeHtml } from "@/utils/validationUtils";
+import { isSafeHtml } from "@/utils/validation-utils";
 
 export interface NoteEntry {
   ref: EntityRef;

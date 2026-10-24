@@ -57,7 +57,7 @@ export interface EmblemOrdinary extends EmblemPlacement {
   gyronny?: number; // bordure and orle sector count
 }
 
-export interface EmblemDivision {
+interface EmblemDivision {
   division: string;
   t: string;
   line?: string;

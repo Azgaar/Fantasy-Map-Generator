@@ -16,13 +16,13 @@ import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
 import { getFileName } from "@/services/io/file-name";
 import { savedMessage } from "@/services/platform";
 import { tip } from "@/ui/tooltips";
-import { unique } from "@/utils/arrayUtils";
-import { getCoordinates } from "@/utils/commonUtils";
-import { downloadFile, getBase64 } from "@/utils/fileUtils";
+import { unique } from "@/utils/array-utils";
+import { getCoordinates } from "@/utils/common-utils";
+import { downloadFile, getBase64 } from "@/utils/file-utils";
 import { t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
-import { connectVertices } from "@/utils/pathUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
+import { connectVertices } from "@/utils/path-utils";
 import {
   convertBlurFilters,
   getReferencedDefinitions,
@@ -37,7 +37,7 @@ type MapSelection = Selection<SVGSVGElement, unknown, null, undefined>;
 const toGeoCoordinates = (x: number, y: number) =>
   getCoordinates(x, y, options.map.geography.coordinates, options.map.graph.width, options.map.graph.height, 4);
 
-export interface GetMapURLOptions {
+interface GetMapURLOptions {
   debug?: boolean;
   noLabels?: boolean;
   noWater?: boolean;

@@ -21,9 +21,9 @@ import { Services } from "@/services";
 import { confirmationDialog } from "@/ui/dialog/dialog-helpers";
 import { dialogState } from "@/ui/dialog/state";
 import { tip } from "@/ui/tooltips";
+import { isElectron } from "@/utils/environment";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
-import { isElectron } from "./platform";
+import { ensureEl, findEl } from "@/utils/node-utils";
 
 export const VERSION = "1.156.0";
 
@@ -187,7 +187,7 @@ function showUpdateWindow(storedVersion: string | null): void {
 }
 
 function announceVersion(): void {
-  if (parseMapVersion(VERSION) !== VERSION) alert("versioning: Invalid format or parsing function");
+  if (parseMapVersion(VERSION) !== VERSION) console.error("versioning: Invalid format or parsing function");
 
   document.title += ` v${VERSION}`;
   const loadingScreenVersion = findEl("versionText");

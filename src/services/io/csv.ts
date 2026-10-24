@@ -1,6 +1,6 @@
 import { csvFormatRows, csvParseRows } from "d3";
 import { getFileName } from "@/services/io/file-name";
-import { createFileInput, downloadFile } from "@/utils/fileUtils";
+import { createFileInput, downloadFile } from "@/utils/file-utils";
 import { t } from "@/utils/i18n";
 
 type Cell = string | number | boolean | null | undefined;

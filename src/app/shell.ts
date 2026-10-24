@@ -5,12 +5,12 @@ import { Options } from "@/model/options/options-model";
 import { Pins } from "@/model/options/pins";
 import { Layers } from "@/renderers/layers";
 import { Services } from "@/services";
-import { isElectron, isLocalhost } from "@/services/platform";
 import { alertDialog, closeDialogs, confirmationDialog } from "@/ui/dialog/dialog-helpers";
+import { fitMapToScreen } from "@/ui/map/canvas";
 import { showDataTip } from "@/ui/tooltips";
+import { isElectron, isLocalhost } from "@/utils/environment";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
-import { fitMapToScreen } from "./canvas";
+import { ensureEl, findEl } from "@/utils/node-utils";
 
 /** Wire the window up: the svg layer scaffold and the browser-level behaviours around it. Called by boot() */
 export function initShell(): void {
@@ -45,7 +45,7 @@ const SHELL_TEXT: [string, string | null, string | null][] = [
   ["#loadButton", t("Load"), t("Load fully-functional map (.map or .gz formats)")],
   ["#zoomReset", t("Zoom Out", { context: "button" }), t("Reset map zoom")],
   ["#searchButton", t("Search", { context: "button" }), t("Search map and commands")],
-  ["#exitCustomization > div", null, t("Drag to move the pane")],
+  ["#heightmapFinalize > div", null, t("Drag to move the pane")],
   ["#finalizeHeightmap", t("Exit Customization"), t("Finalize the heightmap and exit the edit mode")],
   ["#assistantBubble", null, t("Azgaar Assistant")],
   ["#mapOverlay", t("Drop a map file to open"), null],

@@ -22,9 +22,9 @@ import type { Transport, TransportDomain } from "@/model/economy/transports-gene
 import { Transports } from "@/model/economy/transports-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Names } from "@/model/society/names-generator";
-import type { Journey, JourneyPoint, JourneySegment } from "@/types/Journey";
-import { getAdjective } from "@/utils/languageUtils";
-import { P, ra, rand, rw } from "@/utils/probabilityUtils";
+import type { Journey, JourneyPoint, JourneySegment } from "@/types/journey";
+import { getAdjective } from "@/utils/language-utils";
+import { P, ra, rand, rw } from "@/utils/probability-utils";
 import { cellPlacePhrase } from "./journey-places";
 import type { PathfindingResult } from "./journeys-generator";
 

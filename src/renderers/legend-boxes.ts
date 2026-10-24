@@ -5,17 +5,17 @@ import { getHeightUnitRatio, metersToHeight } from "@/model/units";
 import { hasHeightTints } from "@/renderers/heightmap/draw-heightmap";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
 import { legendPositions } from "@/renderers/legend-positions";
-import type { LegendItem } from "@/types/Legend";
-import { tip } from "@/ui/tooltips";
-import { SEA_LEVEL } from "@/utils/heightUtils";
+import type { LegendItem } from "@/types/legend";
+import { SEA_LEVEL } from "@/utils/height-utils";
 import { t } from "@/utils/i18n";
+import { notify } from "@/utils/notices";
 import { Layers } from "./layers";
 
 /** Show the named box with the items, or report that there is nothing to list */
 function show(name: string, items: LegendItem[], emptyMessage: string): void {
   if (!items.length) {
     hide(name);
-    return void tip(emptyMessage, false, "error");
+    return void notify(emptyMessage, "error");
   }
   Legends.set(name, items);
   Layers.draw("legend");
@@ -42,7 +42,7 @@ const MIN_BAND = 4; // generator heights a band spans at least, so neighbouring 
 const ROUND_VALUES = Array.from({ length: 21 }, (_, i) => [1, 2, 5][i % 3] * 10 ** Math.floor(i / 3)).reverse();
 
 /** A band from one round value to the next (open-ended when `to` is absent), with its mid generator height */
-export interface AltitudeBand {
+interface AltitudeBand {
   from: number;
   to?: number;
   height: number;

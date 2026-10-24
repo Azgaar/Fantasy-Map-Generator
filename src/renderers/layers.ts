@@ -1,4 +1,5 @@
 // Global layers registry: owns layers list, order, and svg skeleton
+
 import { drawBiomes } from "@/renderers/draw-biomes";
 import { drawBorders } from "@/renderers/draw-borders";
 import { drawBurgIcons } from "@/renderers/draw-burg-icons";
@@ -36,7 +37,7 @@ import { drawHeightmap } from "@/renderers/heightmap/draw-heightmap";
 import { drawLabels, removeLabels } from "@/renderers/labels/labels-renderer";
 import { drawFogging } from "@/renderers/overlays/fogging";
 import { TradeAnimation } from "@/renderers/trade-animation";
-import { createEl, ensureEl, findEl } from "@/utils/nodeUtils";
+import { createEl, ensureEl, findEl } from "@/utils/node-utils";
 import { LegendBoxes } from "./legend-boxes";
 
 interface LayerParams<Id extends string = string> {

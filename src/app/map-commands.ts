@@ -8,11 +8,12 @@ import {
   showSavePane
 } from "@/app/chrome/io-panes";
 import { openTab, toggleOptions } from "@/app/chrome/options-panel";
-import { LAYER_PRESETS, LAYER_TOGGLES } from "@/app/chrome/tabs/layers-tab";
+import { LAYER_PRESETS } from "@/app/chrome/tabs/layers-tab";
 import { applyPreset, savePreset } from "@/app/layers-presets";
 import { regeneratePrompt } from "@/app/lifecycle";
 import { showSeedHistoryDialog } from "@/app/seed";
 import { Controllers } from "@/controllers";
+import { LAYER_TOGGLES } from "@/data/layer-labels";
 import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
 import { Production } from "@/model/economy/production-generator";
@@ -39,10 +40,10 @@ import { confirmationDialog, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { promptDialog } from "@/ui/dialog/prompt-dialog";
 import { changeMapZoom, resetZoom } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
-import { isCtrlClick } from "@/utils/commonUtils";
+import { isCtrlClick } from "@/utils/common-utils";
 import { t } from "@/utils/i18n";
-import { findEl } from "@/utils/nodeUtils";
-import { gauss } from "@/utils/probabilityUtils";
+import { findEl } from "@/utils/node-utils";
+import { gauss } from "@/utils/probability-utils";
 
 export interface MapCommand {
   id: string;

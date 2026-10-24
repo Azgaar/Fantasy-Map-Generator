@@ -683,14 +683,14 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   color: white;
 }
 
-#exitCustomization {
+#heightmapFinalize {
   right: 10px;
   bottom: 10px;
   position: absolute;
   display: none;
 }
 
-#exitCustomization > div {
+#heightmapFinalize > div {
   width: 12em;
   background: var(--dark-solid);
   cursor: move;

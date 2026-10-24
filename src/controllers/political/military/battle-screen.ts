@@ -10,14 +10,14 @@ import { Layers } from "@/renderers/layers";
 import { closeDialogs } from "@/ui/dialog/dialog-helpers";
 import { applySorting, applySortingByHeader } from "@/ui/dialog/sorting";
 import { tip } from "@/ui/tooltips";
-import { last } from "@/utils/arrayUtils";
-import { wiki } from "@/utils/commonUtils";
+import { last } from "@/utils/array-utils";
+import { wiki } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
-import { getAdjective, list } from "@/utils/languageUtils";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
-import { minmax, rn } from "@/utils/numberUtils";
-import { P, Pint, rand } from "@/utils/probabilityUtils";
-import { capitalize, escapeHtml } from "@/utils/stringUtils";
+import { getAdjective, list } from "@/utils/language-utils";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { minmax, rn } from "@/utils/number-utils";
+import { P, Pint, rand } from "@/utils/probability-utils";
+import { capitalize, escapeHtml } from "@/utils/string-utils";
 
 type Side = "attackers" | "defenders";
 

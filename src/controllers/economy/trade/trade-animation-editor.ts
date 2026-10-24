@@ -3,7 +3,7 @@ import { Layers } from "@/renderers/layers";
 import { TradeAnimation } from "@/renderers/trade-animation";
 import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
+import { ensureEl } from "@/utils/node-utils";
 
 const DEFAULTS = TradeAnimation.getDefaultOptions();
 const INPUTS = [

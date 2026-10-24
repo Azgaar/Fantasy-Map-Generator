@@ -89,7 +89,7 @@ test.describe("Zone Export", () => {
 
     // Call the production code (loaded on demand via the service registry)
     await page.evaluate(async () => {
-      await (window as any).Services.ExportMap.saveGeoJsonZones();
+      await (window as any).FMG.Services.ExportMap.saveGeoJsonZones();
     });
 
     const download = await downloadPromise;

@@ -10,7 +10,7 @@ const updateSchema = z.object({
   svg: z.string()
 });
 
-export interface ArmoriaUpdate<T> {
+interface ArmoriaUpdate<T> {
   target: T;
   coa: HeraldicEmblem;
   svg: string;

@@ -12,7 +12,7 @@ type AsyncMethods<T> = {
   [K in keyof T]: T[K] extends (...args: infer A) => infer R ? (...args: A) => Promise<Awaited<R>> : T[K];
 };
 
-export type Registry<T> = {
+type Registry<T> = {
   [K in keyof T]: AsyncMethods<T[K]>;
 };
 

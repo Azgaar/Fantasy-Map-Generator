@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import "@/model/styles/styles";
 import { Legends } from "@/model/annotations/legends";
 import { setViewportSize } from "@/renderers/viewport/viewport";
-import type { LegendItem } from "@/types/Legend";
+import type { LegendItem } from "@/types/legend";
 import { dragLegendBox, fitLegendBox, redrawLegend } from "./draw-legend";
 import { legendPositions } from "./legend-positions";
 

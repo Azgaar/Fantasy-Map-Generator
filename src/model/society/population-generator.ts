@@ -1,9 +1,9 @@
 import { max, mean, median, sum } from "d3";
 import { Goods } from "@/model/economy/goods-generator";
 import type { Burg } from "@/model/political/burgs-generator";
-import { isWater } from "@/utils/heightUtils";
-import { normalize, rn } from "@/utils/numberUtils";
-import { gauss } from "@/utils/probabilityUtils";
+import { isWater } from "@/utils/height-utils";
+import { normalize, rn } from "@/utils/number-utils";
+import { gauss } from "@/utils/probability-utils";
 
 // suitability bonus (or penalty) for a coastal cell, by what it is coastal to
 const COAST_SCORES: Record<string, number> = {

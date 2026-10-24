@@ -3,9 +3,9 @@
 import { supporters } from "@/data/supporters";
 import { Services } from "@/services";
 import { alertDialog } from "@/ui/dialog/dialog-helpers";
-import { link } from "@/utils/commonUtils";
+import { link } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
+import { ensureEl } from "@/utils/node-utils";
 
 const REPOSITORY = "https://github.com/Azgaar/Fantasy-Map-Generator";
 const WIKI = `${REPOSITORY}/wiki`;

@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 import { beforeEach, expect, test, vi } from "vitest";
-import { tip } from "@/ui/tooltips";
+import { notify } from "@/utils/notices";
 import "@/model/physical/relief-generator"; // the models own the set definitions the loader resolves
 import "@/model/political/burgs-generator";
 import "@/model/economy/goods-generator";
 
-vi.mock("@/ui/tooltips", () => ({ tip: vi.fn(), loadingTip: { start: vi.fn(), end: vi.fn() } }));
+vi.mock("@/utils/notices", () => ({ notify: vi.fn() }));
 
 beforeEach(() => {
   vi.resetModules();
@@ -34,8 +34,8 @@ test("failure is atomic, reported once, cached across redraws, and explicitly re
   await Icons.load("goods");
   await Icons.load("goods");
   expect(log).toHaveBeenCalledExactlyOnceWith("Failed to load goods icons", error);
-  expect(tip).toHaveBeenCalledTimes(1);
-  expect(tip).toHaveBeenCalledWith(expect.stringContaining("goods"), false, "error", 8000);
+  expect(notify).toHaveBeenCalledTimes(1);
+  expect(notify).toHaveBeenCalledWith(expect.stringContaining("goods"), "error", 8000);
   expect(append).toHaveBeenCalledTimes(1);
 
   // an explicit demand starts a fresh attempt

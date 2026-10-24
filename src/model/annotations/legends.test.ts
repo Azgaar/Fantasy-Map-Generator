@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import type { LegendItem } from "@/types/Legend";
+import type { LegendItem } from "@/types/legend";
 import { Legends } from "./legends";
 
 const states: LegendItem[] = [[1, "#ff0000", "Alpha"]];

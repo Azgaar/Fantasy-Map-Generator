@@ -8,9 +8,9 @@ import { confirmationDialog, destroyDialog, updateDialog } from "@/ui/dialog/dia
 import { limitationTip, pickLimitation } from "@/ui/dialog/limitation-picker";
 import { type EditorColumn, initColumnVisibility, renderEditorHeader } from "@/ui/dialog/table";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
-import { minmax } from "@/utils/numberUtils";
-import { escapeHtml } from "@/utils/stringUtils";
+import { ensureEl } from "@/utils/node-utils";
+import { minmax } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 import { confirmReplace, ReliefPoolEditor } from "./relief-pool-editor";
 import { fitReliefArt, poolPreviewHtml } from "./relief-previews";
 

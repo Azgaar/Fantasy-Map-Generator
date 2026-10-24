@@ -9,7 +9,7 @@ vi.mock("@/renderers/viewport/viewport-renderer", () => ({
 import "@/model/styles/styles";
 import { setViewportSize, setViewportTransform, viewport } from "@/renderers/viewport/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
-import { rn } from "@/utils/numberUtils";
+import { rn } from "@/utils/number-utils";
 import { applyZoomBehavior, invokeActiveZooming, setMapZoom, setTranslateExtent, setZoomExtent, zoomTo } from "./zoom";
 
 beforeEach(() => {

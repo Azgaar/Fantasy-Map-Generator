@@ -5,9 +5,9 @@ import { LAYER_TOGGLES, underlineHotkey } from "@/data/layer-labels";
 import type { LayerId } from "@/renderers/layers";
 import { Layers } from "@/renderers/layers";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
-import { isCtrlClick } from "@/utils/commonUtils";
+import { isCtrlClick } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
 
 // built-in layer presets, in the order the select shows them; the layer sets live in layers-presets
 export const LAYER_PRESETS: Record<string, string> = {
@@ -25,8 +25,6 @@ export const LAYER_PRESETS: Record<string, string> = {
   emblems: t("Emblems"),
   landmass: t("Pure landmass")
 };
-
-export { LAYER_TOGGLES } from "@/data/layer-labels";
 
 export const getLayerByShortcut = (code: string): LayerId | undefined =>
   [...LAYER_TOGGLES].find(([, button]) => button.shortcut === code)?.[0];

@@ -51,14 +51,14 @@ import { States } from "@/model/political/states-generator";
 import { Names } from "@/model/society/names-generator";
 import { Notes } from "@/model/story/notes";
 import { convertTemperature, getFriendlyHeight } from "@/model/units";
-import type { PackedGraph } from "@/types/PackedGraph";
-import { last } from "@/utils/arrayUtils";
-import { requireColor } from "@/utils/colorUtils";
-import { getAdjective, list } from "@/utils/languageUtils";
-import { rn } from "@/utils/numberUtils";
-import { gauss, P, ra, rand, rw } from "@/utils/probabilityUtils";
-import { capitalize } from "@/utils/stringUtils";
-import { requireName, requireOneOf } from "@/utils/validationUtils";
+import type { PackedGraph } from "@/types/packed-graph";
+import { last } from "@/utils/array-utils";
+import { requireColor } from "@/utils/color-utils";
+import { getAdjective, list } from "@/utils/language-utils";
+import { rn } from "@/utils/number-utils";
+import { gauss, P, ra, rand, rw } from "@/utils/probability-utils";
+import { capitalize } from "@/utils/string-utils";
+import { requireName, requireOneOf } from "@/utils/validation-utils";
 
 /**
  * Generate a random date within a specified range
@@ -121,7 +121,7 @@ type MarkerConfig = {
   add: (marker: Marker, cell: number) => void;
 };
 
-export type MarkerDetails = { name?: string; note?: string; icon?: string };
+type MarkerDetails = { name?: string; note?: string; icon?: string };
 
 export type MarkerAppearance = Partial<
   Record<"size" | "px" | "dx" | "dy", number | null> &

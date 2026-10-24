@@ -2,10 +2,10 @@
 import Alea from "alea";
 import { min } from "d3";
 import type { MapData } from "@/model/options/options-schema";
-import type { GridCells, GridGraph } from "@/types/GridGraph";
 import type { Point } from "@/types/global";
-import { SEA_LEVEL } from "@/utils/heightUtils";
-import { rn } from "@/utils/numberUtils";
+import type { GridCells, GridGraph } from "@/types/grid-graph";
+import { SEA_LEVEL } from "@/utils/height-utils";
+import { rn } from "@/utils/number-utils";
 import { Lattice } from "./lattice";
 import { calculateVoronoi } from "./voronoi";
 

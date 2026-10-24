@@ -23,8 +23,8 @@ import { imageBlock, type ToolDefinition, type ToolInput } from "@/services/assi
 import { runScript } from "@/services/assistant/provider/runtime";
 import type { Region } from "@/services/io/export";
 import type { Emblem } from "@/types/emblems";
-import { rn, si } from "@/utils/numberUtils";
-import { getBounds } from "@/utils/pathUtils";
+import { rn, si } from "@/utils/number-utils";
+import { getBounds } from "@/utils/path-utils";
 import { ProposalCard } from "./proposal-card";
 import { Proposals } from "./proposals";
 import { frameRegion } from "./region";

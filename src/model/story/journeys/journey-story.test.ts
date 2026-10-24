@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { JOURNEY_ARCHETYPES } from "@/data/journey-lore";
 import type { TransportDomain } from "@/model/economy/transports-generator";
-import type { JourneyPoint, JourneySegment } from "@/types/Journey";
+import type { JourneyPoint, JourneySegment } from "@/types/journey";
 import { generateStoryJourney, type JourneyPathfinder } from "./journey-story";
 import "@/model/economy/transports-generator";
 import { Transports } from "@/model/economy/transports-generator";

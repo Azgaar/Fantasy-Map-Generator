@@ -5,11 +5,11 @@ import { Layers } from "@/renderers/layers";
 import { Services } from "@/services";
 import { closeDialogs } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
-import { link } from "@/utils/commonUtils";
-import { createFileInput } from "@/utils/fileUtils";
+import { link } from "@/utils/common-utils";
+import { createFileInput } from "@/utils/file-utils";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
 
 const TEMPLATE = /* html */ `
   <div id="exportMapData" style="display: none" class="dialog">

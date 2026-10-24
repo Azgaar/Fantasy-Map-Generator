@@ -1,19 +1,19 @@
-import { applyGraphSize, fitMapToScreen, redrawMap } from "@/app/canvas";
-import { cellsDensityColor, changeCellsDensity } from "@/app/chrome/tabs/options-tab";
-import { registerMap } from "@/app/lifecycle";
-import { POINTS_BY_DENSITY } from "@/data/graph-density";
+import { cellsDensityColor, POINTS_BY_DENSITY } from "@/data/graph-density";
+import { registerMap } from "@/model/map-history";
 import { MapRestoration } from "@/model/map-restoration";
 import { Resample } from "@/model/resample";
 import { Layers } from "@/renderers/layers";
 import { undraw } from "@/renderers/undraw";
 import { Services } from "@/services";
 import { logStats } from "@/services/logging";
+import { App } from "@/ui/app-commands";
 import { destroyDialog } from "@/ui/dialog/dialog-helpers";
+import { applyGraphSize, fitMapToScreen, redrawMap } from "@/ui/map/canvas";
 import { resetZoom } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
+import { ensureEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
 
 let mouseIsDown = false;
 let mouseX = 0;
@@ -207,7 +207,7 @@ function transformMap(): void {
     MapRestoration.transaction(() => {
       const transformPointsValue = ensureEl<HTMLInputElement>("transformPointsInput").value;
       const globalPointsValue = String(options.generation.graph.density);
-      if (transformPointsValue !== globalPointsValue) changeCellsDensity(+transformPointsValue);
+      if (transformPointsValue !== globalPointsValue) App.changeCellsDensity(+transformPointsValue);
 
       const [projection, inverse] = getProjection();
 

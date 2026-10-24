@@ -4,7 +4,6 @@ import { type Route, Routes, UNNAMED_ROUTE } from "@/model/economy/routes-genera
 import { Tags } from "@/model/tags";
 import { getRouteBox } from "@/renderers/draw-routes";
 import { Layers } from "@/renderers/layers";
-import { highlightArea } from "@/renderers/overlays/highlight";
 import { Csv } from "@/services/io/csv";
 import { closeDialogs, confirmationDialog, destroyDialog, updateDialog } from "@/ui/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
@@ -17,10 +16,11 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
+import { highlightArea } from "@/ui/map/highlight";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
-import { rn } from "@/utils/numberUtils";
+import { ensureEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
 
 const dialogId = "routesOverview" as const;
 const CSV_COLUMNS = ["Id", "Route", "Group", "Length", "Tags"];

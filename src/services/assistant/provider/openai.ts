@@ -1,7 +1,7 @@
 // Translates the Assistant's Anthropic-shaped chat into the OpenAI chat/completions format
 // spoken by OpenAI, Gemini, Mistral, Qwen (DashScope compatible mode) and DeepSeek, and back.
 
-import { errorText } from "@/utils/stringUtils";
+import { errorText } from "@/utils/string-utils";
 import type { SystemBlock } from "./context";
 import {
   bearerHeaders,

@@ -4,10 +4,10 @@ import {
   resolvePerformancePreset,
   type PerformanceSettings as Settings,
   setPerformanceSetting
-} from "@/app/performance";
+} from "@/renderers/performance";
 import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/nodeUtils";
+import { ensureEl } from "@/utils/node-utils";
 
 const DIALOG_ID = "performanceSettings";
 const DEFAULTS = PERFORMANCE_PRESETS.balance;

@@ -1,10 +1,10 @@
 import { type EntityRef, MapEntities } from "@/model/map-entities";
 
-export interface Taggable {
+interface Taggable {
   tags?: string[];
 }
 
-export class TagsModule {
+class TagsModule {
   /** Parse a comma/semicolon-separated string or string array into trimmed, lowercase, unique tags */
   parse(input?: string | string[] | null): string[] {
     if (!input) return [];

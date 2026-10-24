@@ -6,7 +6,7 @@ import { Names } from "@/model/society/names-generator";
 import type { LayerId } from "@/renderers/layers";
 import type { Point } from "@/types/global";
 import { t } from "@/utils/i18n";
-import { capitalize } from "@/utils/stringUtils";
+import { capitalize } from "@/utils/string-utils";
 
 export const ENTITY_TYPES = [
   "state",
@@ -42,7 +42,7 @@ export interface EntityRef {
   sub?: number;
 }
 
-export interface MapEntity {
+interface MapEntity {
   i: number;
   name?: string;
   removed?: boolean;

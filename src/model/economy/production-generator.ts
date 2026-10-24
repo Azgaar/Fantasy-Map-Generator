@@ -3,7 +3,7 @@ import type { Burg } from "@/model/political/burgs-generator";
 import { States } from "@/model/political/states-generator";
 import type { Zone } from "@/model/political/zones-generator";
 import { DEFAULT_CULTURE_TYPE } from "@/model/society/cultures-generator";
-import { minmax, rn } from "@/utils/numberUtils";
+import { minmax, rn } from "@/utils/number-utils";
 import type { DemandCategory, Good } from "./goods-generator";
 import { DEMAND_PRIORITY, Goods, getDemandTargets } from "./goods-generator";
 import type { Deal, Market } from "./markets-generator";
@@ -811,7 +811,7 @@ type PlannedAction = {
 };
 
 type Recipe = { good: Good; ingredients: Ingredient[] };
-export type Ingredient = { goodId: number; amount: number };
+type Ingredient = { goodId: number; amount: number };
 
 type ProductionIndex = {
   goods: Good[];
@@ -874,11 +874,11 @@ type GoalActionPlan = {
   candidate: ProductionCandidate;
 };
 
-export type ProductionRecipeEntry = { goodId: number; units: number };
+type ProductionRecipeEntry = { goodId: number; units: number };
 
-export type DealRecord = { dealId: number };
+type DealRecord = { dealId: number };
 
-export type MfgRecord = {
+type MfgRecord = {
   goodId: number;
   units: number;
   recipe: ProductionRecipeEntry[];
@@ -886,7 +886,7 @@ export type MfgRecord = {
   candidates?: readonly ProductionCandidate[]; // recorded only when DEBUG.production is on
 };
 
-export type LocalRecord = { goodId: number; units: number };
+type LocalRecord = { goodId: number; units: number };
 
 export type ProductionRecord = DealRecord | MfgRecord | LocalRecord;
 

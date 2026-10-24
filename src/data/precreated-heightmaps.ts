@@ -1,7 +1,8 @@
 import { t } from "@/utils/i18n";
+
 // Pre-created heightmaps: each key matches a grayscale image in public/heightmaps/<key>.png
 
-export type PrecreatedHeightmap = {
+type PrecreatedHeightmap = {
   id: number;
   name: string;
 };

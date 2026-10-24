@@ -1,7 +1,7 @@
 import { easeSinIn, extent, hsl, select, transition } from "d3";
 import { getCellPopulation } from "@/model/units";
-import { ensureEl } from "@/utils/nodeUtils";
-import { getIsolines } from "@/utils/pathUtils";
+import { ensureEl } from "@/utils/node-utils";
+import { getIsolines } from "@/utils/path-utils";
 import { buildFillPaths } from "./isoline-fills";
 
 type Bar = [x: number, base: number, top: number];

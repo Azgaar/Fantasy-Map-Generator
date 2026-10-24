@@ -3,7 +3,7 @@ import { Csv } from "@/services/io/csv";
 import { alertDialog, confirmationDialog } from "@/ui/dialog/dialog-helpers";
 import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
-import { errorText, escapeHtml } from "@/utils/stringUtils";
+import { errorText, escapeHtml } from "@/utils/string-utils";
 
 interface UpdateOptions {
   find: (id: number) => { name?: unknown } | undefined; // the living entity with this id
@@ -22,7 +22,7 @@ interface CsvRow {
 }
 
 /** A value the upload sets, or could not set and why (markup, already escaped) */
-export interface CsvOutcome {
+interface CsvOutcome {
   id: string;
   name: string;
   column: string;

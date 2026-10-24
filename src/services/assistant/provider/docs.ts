@@ -1,16 +1,28 @@
 // Reference material the model reads on demand through read_docs, kept out of the system prompt
 
+import { App } from "@/ui/app-commands";
 import { GLOBAL_DECLARATIONS, OPERATION_TYPES, OPERATIONS, REGISTRY_KEYS } from "./context.generated";
 
 let topics: Map<string, { title: string; text: string }> | null = null; // by lowercase title
 
+const loadHeraldry = async () => {
+  const [{ charges }, { divisions }, { lineWeights }, { ordinaries }, { shields }, { tinctures }] = await Promise.all([
+    import("@/data/emblems/charges"),
+    import("@/data/emblems/divisions"),
+    import("@/data/emblems/line-weights"),
+    import("@/data/emblems/ordinaries"),
+    import("@/data/emblems/shields"),
+    import("@/data/emblems/tinctures")
+  ]);
+  return { charges, divisions, lineWeights, ordinaries, shields, tinctures };
+};
+
 async function load(): Promise<Map<string, { title: string; text: string }>> {
-  const [dataModel, configuration, packedGraph, heraldry, { MAP_COMMANDS, isLinkable }] = await Promise.all([
+  const [dataModel, configuration, packedGraph, heraldry] = await Promise.all([
     import("../../../../docs/architecture/data-model.md?raw"),
     import("../../../../docs/architecture/configuration.md?raw"),
-    import("../../../types/PackedGraph.ts?raw"),
-    import("@/data/emblems"),
-    import("@/app/map-commands")
+    import("../../../types/packed-graph.ts?raw"),
+    loadHeraldry()
   ]);
   const map = new Map<string, string>();
   for (const part of (dataModel.default as string).split(/(?=^#{1,2} )/m)) {
@@ -29,7 +41,7 @@ async function load(): Promise<Map<string, { title: string; text: string }>> {
     `Operations for \`propose_change\`, with argument types:\n\`\`\`ts\n${OPERATIONS}\n\`\`\`\n\nThe types they name:\n\`\`\`ts\n${OPERATION_TYPES}\n\`\`\``
   );
   map.set("Emblems", emblemVocabulary(heraldry));
-  const commands = MAP_COMMANDS.filter(isLinkable).map(({ id, name }) => `${id}: ${name}`);
+  const commands = App.mapCommands.filter(App.isLinkable).map(({ id, name }) => `${id}: ${name}`);
   map.set("Commands", `Command ids for \`[label](command:id)\` links, as \`id: name\`:\n${commands.join("\n")}`);
   return new Map([...map].map(([title, text]) => [title.toLowerCase(), { title, text }]));
 }
@@ -94,7 +106,7 @@ function emblemVocabulary({
   ordinaries,
   shields,
   tinctures
-}: typeof import("@/data/emblems")) {
+}: Awaited<ReturnType<typeof loadHeraldry>>) {
   const names = (record: object) => Object.keys(record).join(", ");
   const table = charges as unknown as Record<string, Record<string, number>>;
   const categories = Object.keys(charges.types).filter(category => table[category]);

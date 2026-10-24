@@ -9,13 +9,13 @@ import { MapEntities } from "@/model/map-entities";
 import { Notes } from "@/model/story/notes";
 import { convertTemperature, getCellPopulation, getFriendlyHeight, getFriendlyPrecipitation } from "@/model/units";
 import { Layers } from "@/renderers/layers";
-import { highlightEmblemElement } from "@/renderers/overlays/highlight";
 import type { Point } from "@/types/global";
+import { highlightEmblemElement } from "@/ui/map/highlight";
 import { showMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
-import { findEl, getPointer } from "@/utils/nodeUtils";
-import { si } from "@/utils/numberUtils";
-import { escapeHtml } from "@/utils/stringUtils";
+import { findEl, getPointer } from "@/utils/node-utils";
+import { si } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 /**
  * Get the composed path of a node (including shadow DOM and window)

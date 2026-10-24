@@ -9,9 +9,9 @@ import type { Point } from "@/types/global";
 import { destroyDialog, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
-import { createBrushStroke } from "@/utils/brushUtils";
+import { createBrushStroke } from "@/utils/brush-utils";
 import { t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
 
 interface EditorOptions {
   /** another state was picked in the editor */

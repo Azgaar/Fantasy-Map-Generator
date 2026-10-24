@@ -59,14 +59,14 @@ async function zoomToCapital(page) {
   await page.evaluate(zoom => {
     const [state] = pack.states.filter(s => s.i && !s.removed).sort((a, b) => b.area - a.area);
     const { x, y } = pack.burgs[state.capital];
-    window.zoomTo(x, y, zoom, 0);
+    window.FMG.zoomTo(x, y, zoom, 0);
   }, ZOOM);
 }
 
 // rasterise the view at full size, in the page: the export URL is same-origin there
 function capture(page) {
   return page.evaluate(async () => {
-    const src = await window.Services.ExportMap.getMapURL("png", { noScaleBar: true });
+    const src = await window.FMG.Services.ExportMap.getMapURL("png", { noScaleBar: true });
     const image = await new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => resolve(img);
@@ -108,7 +108,7 @@ function writeAvif(base64, file) {
 
 async function render(page, name) {
   await page.evaluate(async preset => {
-    await window.Controllers.StylePresetsEditor.change(preset);
+    await window.FMG.Controllers.StylePresetsEditor.change(preset);
     await document.fonts.ready;
   }, name);
   await page.waitForTimeout(800); // the viewport layers redraw, web fonts render
@@ -124,7 +124,7 @@ async function main() {
   try {
     const query = `seed=${encodeURIComponent(seed)}&width=${MAP_WIDTH}&height=${MAP_HEIGHT}`;
     await page.goto(`${url}${url.includes("?") ? "&" : "?"}${query}`);
-    await page.waitForFunction(() => (window.mapHistory?.length ?? 0) > 0, undefined, { timeout: 120000 });
+    await page.waitForFunction(() => (window.FMG.mapHistory?.length ?? 0) > 0, undefined, { timeout: 120000 });
     await zoomToCapital(page);
 
     for (const name of presets) {

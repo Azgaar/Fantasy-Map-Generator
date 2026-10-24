@@ -8,8 +8,8 @@ import { DiplomacyOverview } from "./diplomacy-overview";
 
 vi.mock("@/renderers/layers", () => ({ Layers: { show: vi.fn(), hide: vi.fn(), draw: vi.fn(), isOn: () => false } }));
 vi.mock("@/renderers/emblems/renderer", () => ({ EmblemRenderer: { trigger: vi.fn() } }));
-vi.mock("@/utils/pathUtils", async importOriginal => ({
-  ...(await importOriginal<typeof import("@/utils/pathUtils")>()),
+vi.mock("@/utils/path-utils", async importOriginal => ({
+  ...(await importOriginal<typeof import("@/utils/path-utils")>()),
   getVertexPath: (cells: number[]) => `M${cells.join()}`
 }));
 vi.mock("@/ui/tooltips", () => ({ tip: vi.fn(), clearMainTip: vi.fn(), loadingTip: { start: vi.fn(), end: vi.fn() } }));

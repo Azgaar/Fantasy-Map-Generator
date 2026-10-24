@@ -12,8 +12,8 @@ import {
 } from "d3";
 import { convertTemperature } from "@/model/units";
 import { viewport } from "@/renderers/viewport/viewport";
-import { connectVertices } from "@/utils/pathUtils";
-import { round } from "@/utils/stringUtils";
+import { connectVertices } from "@/utils/path-utils";
+import { round } from "@/utils/string-utils";
 
 const temperatureRenderer = (): void => {
   TIME && console.time("drawTemperature");

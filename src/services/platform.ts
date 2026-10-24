@@ -1,17 +1,5 @@
+import { isElectron, isProduction } from "@/utils/environment";
 import { sentences, t } from "@/utils/i18n";
-export type ElectronBridge = {
-  isElectron: true;
-  platform: string;
-  versions: { electron: string; chrome: string; node: string };
-};
-
-export const isElectron = (): boolean => Boolean(window.electron?.isElectron);
-
-export const isLocalhost = (): boolean => location.hostname === "localhost" || location.hostname === "127.0.0.1";
-
-export const isProduction = (): boolean => Boolean(location.hostname) && !isLocalhost();
-
-export const isMobile = (): boolean => window.innerWidth < 600 || Boolean(navigator.userAgentData?.mobile);
 
 export const savedMessage = (name: string): string =>
   isElectron()
@@ -44,14 +32,4 @@ export function registerServiceWorker(): void {
   // the app boots after the interface strings load, which may be after the page's load event
   if (document.readyState === "complete") void register();
   else window.addEventListener("load", () => void register());
-}
-
-declare global {
-  interface Window {
-    electron?: ElectronBridge;
-  }
-  interface Navigator {
-    userAgentData?: { mobile?: boolean };
-    standalone?: boolean;
-  }
 }

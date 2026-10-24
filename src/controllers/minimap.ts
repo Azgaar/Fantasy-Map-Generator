@@ -2,8 +2,8 @@ import { viewport } from "@/renderers/viewport/viewport";
 import { closeDialogs, destroyDialog } from "@/ui/dialog/dialog-helpers";
 import { onViewportChange, zoomTo } from "@/ui/map/zoom";
 import { t } from "@/utils/i18n";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
-import { minmax, rn } from "@/utils/numberUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { minmax, rn } from "@/utils/number-utils";
 
 let stopFollowing: (() => void) | undefined;
 

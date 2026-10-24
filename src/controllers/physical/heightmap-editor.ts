@@ -26,7 +26,6 @@ import { Layers } from "@/renderers/layers";
 import { moveCircle, removeCircle } from "@/renderers/overlays/brush-circle";
 import { drawDrainage, removeDrainage } from "@/renderers/overlays/drainage";
 import { undraw } from "@/renderers/undraw";
-import { changeViewMode } from "@/renderers/view-mode";
 import { viewport } from "@/renderers/viewport/viewport";
 import { Services } from "@/services";
 import { getFileName } from "@/services/io/file-name";
@@ -36,14 +35,15 @@ import { dialogState } from "@/ui/dialog/state";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { resetZoom } from "@/ui/map/zoom";
 import { clearMainTip, showMainTip, tip } from "@/ui/tooltips";
-import { last } from "@/utils/arrayUtils";
-import { createBrushStroke } from "@/utils/brushUtils";
-import { link, openURL, wiki } from "@/utils/commonUtils";
-import { createFileInput, downloadFile, uploadFile } from "@/utils/fileUtils";
+import { changeViewMode } from "@/ui/view-mode-switch";
+import { last } from "@/utils/array-utils";
+import { createBrushStroke } from "@/utils/brush-utils";
+import { link, openURL, wiki } from "@/utils/common-utils";
+import { createFileInput, downloadFile, uploadFile } from "@/utils/file-utils";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl, findEl, getPointer } from "@/utils/nodeUtils";
-import { lim, minmax, rn } from "@/utils/numberUtils";
-import { generateSeed } from "@/utils/probabilityUtils";
+import { ensureEl, findEl, getPointer } from "@/utils/node-utils";
+import { lim, minmax, rn } from "@/utils/number-utils";
+import { generateSeed } from "@/utils/probability-utils";
 
 // the palette the image converter paints heights with: spectral, blue-low to red-high
 const heightColor = scaleSequential(interpolateSpectral);
@@ -375,7 +375,7 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
       tabcontent.style.display = "none";
     });
   ensureEl("options").querySelector(".tab > .active")!.classList.remove("active");
-  ensureEl("customizationMenu").style.display = "block";
+  ensureEl("heightmapMenu").style.display = "block";
   ensureEl("toolsTab").classList.add("active");
   ensureEl("heightmapEditMode").innerHTML = mode;
   for (const key of EDITOR_OPTIONS) ensureEl<HTMLInputElement>(key).checked = options.app.heightmapEditor[key];
@@ -405,16 +405,16 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
   ensureEl("allowErosionBox").style.display = mode === "keep" ? "none" : "inline-block";
 
   // show finalize button
-  const exitCustomization = ensureEl("exitCustomization");
+  const heightmapFinalize = ensureEl("heightmapFinalize");
   if (!sessionStorage.getItem("noExitButtonAnimation")) {
     sessionStorage.setItem("noExitButtonAnimation", "true");
-    exitCustomization.style.opacity = "0";
+    heightmapFinalize.style.opacity = "0";
     const width = 12 * +ensureEl<HTMLInputElement>("uiSize").value * 11;
-    exitCustomization.style.right = `${(viewport.width - width) / 2}px`;
-    exitCustomization.style.bottom = `${viewport.height / 2}px`;
-    exitCustomization.style.transform = "scale(2)";
-    exitCustomization.style.display = "block";
-    select("#exitCustomization")
+    heightmapFinalize.style.right = `${(viewport.width - width) / 2}px`;
+    heightmapFinalize.style.bottom = `${viewport.height / 2}px`;
+    heightmapFinalize.style.transform = "scale(2)";
+    heightmapFinalize.style.display = "block";
+    select("#heightmapFinalize")
       .transition()
       .duration(1000)
       .style("opacity", 1)
@@ -424,7 +424,7 @@ function enterHeightmapEditMode(mode: string, tool?: string): void {
       .style("right", "10px")
       .style("bottom", "10px")
       .style("transform", "scale(1)");
-  } else exitCustomization.style.display = "block";
+  } else heightmapFinalize.style.display = "block";
 
   const layersPreset = ensureEl<HTMLSelectElement>("layersPreset");
   layersPreset.value = "heightmap";
@@ -487,12 +487,12 @@ async function finalizeHeightmap(): Promise<void> {
   HeightmapGenerator.clearData(); // the edited grid is no longer needed once the editor is left
 
   options.app.mode = null;
-  ensureEl("customizationMenu").style.display = "none";
+  ensureEl("heightmapMenu").style.display = "none";
   if (ensureEl("options").querySelector<HTMLElement>(".tab > button.active")!.id === "toolsTab") {
     ensureEl("toolsContent").style.display = "block";
   }
   ensureEl<HTMLSelectElement>("layersPreset").disabled = false;
-  ensureEl("exitCustomization").style.display = "none"; // hide finalize button
+  ensureEl("heightmapFinalize").style.display = "none"; // hide finalize button
 
   closeDialogs();
   applyDefaultViewboxEvents();

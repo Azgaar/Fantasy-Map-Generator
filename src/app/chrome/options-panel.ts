@@ -2,11 +2,11 @@
 import { showExportPane, showLoadPane, showSavePane } from "@/app/chrome/io-panes";
 import { regeneratePrompt } from "@/app/lifecycle";
 import { Controllers } from "@/controllers";
-import { changeViewMode } from "@/renderers/view-mode";
 import { ARROW_TIP_KEY } from "@/services/versioning";
 import { resetZoom } from "@/ui/map/zoom";
 import { clearMainTip } from "@/ui/tooltips";
-import { ensureEl, findEl } from "@/utils/nodeUtils";
+import { changeViewMode } from "@/ui/view-mode-switch";
+import { ensureEl, findEl } from "@/utils/node-utils";
 
 const TAB_CONTENT: Record<string, string> = {
   layersTab: "layersContent",
@@ -58,7 +58,7 @@ function selectTab(id: string): void {
     content.style.display = "none";
   }
 
-  const shown = id === "toolsTab" && options.app.mode === "heightmap" ? "customizationMenu" : TAB_CONTENT[id];
+  const shown = id === "toolsTab" && options.app.mode === "heightmap" ? "heightmapMenu" : TAB_CONTENT[id];
   if (shown) ensureEl(shown).style.display = "block";
   if (id === "styleTab") void Controllers.StyleEditor.open();
 }
@@ -80,7 +80,7 @@ function onPanelInput(event: Event): void {
 
 function initialize(): void {
   $("#optionsContainer").draggable({ handle: ".drag-trigger", snap: "svg", snapMode: "both" });
-  $("#exitCustomization").draggable({ handle: "div" });
+  $("#heightmapFinalize").draggable({ handle: "div" });
   $("#mapLayers").disableSelection();
 
   if (localStorage.getItem(ARROW_TIP_KEY)) {

@@ -1,10 +1,10 @@
 import { STYLE_PRESET_LABELS } from "@/data/id-labels";
 import { Styles } from "@/model/styles/styles";
-import { isLegacyPreset, isStoreStyles, normalizeStyles, presetFromLegacy } from "@/model/styles/styles-legacy";
+import { isLegacyPreset, isStoreStyles, normalizeStyles, presetFromLegacy } from "@/services/io/styles-legacy";
 import { VERSION } from "@/services/versioning";
 import type { StylesData } from "@/types/styles";
 import { t } from "@/utils/i18n";
-import { isValidJSON } from "@/utils/stringUtils";
+import { isValidJSON } from "@/utils/string-utils";
 
 export const SYSTEM_PRESETS = [
   "default",
