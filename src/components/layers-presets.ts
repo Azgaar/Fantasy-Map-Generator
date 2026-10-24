@@ -7,6 +7,7 @@ import { LAYER_TOGGLES } from "./options/tabs/layers-tab";
 
 const DEFAULT_PRESETS: Record<string, LayerId[]> = {
   political: ["borders", "burgIcons", "ice", "labels", "lakes", "rivers", "routes", "scaleBar", "states", "vignette"],
+  alliances: ["alliances", "borders", "burgIcons", "ice", "labels", "lakes", "rivers", "routes", "scaleBar", "vignette"],
   cultural: ["borders", "burgIcons", "cultures", "labels", "lakes", "rivers", "routes", "scaleBar", "vignette"],
   religions: ["borders", "burgIcons", "labels", "lakes", "religions", "rivers", "routes", "scaleBar", "vignette"],
   provinces: ["borders", "burgIcons", "labels", "lakes", "provinces", "rivers", "scaleBar", "vignette"],
