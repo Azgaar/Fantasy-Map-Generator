@@ -1,0 +1,258 @@
+{
+  "id": "lizardmenBase",
+  "name": "Saurian Temple-Cities",
+  "roster": {
+    "id": "lizardmenBase",
+    "units": {
+      "saurus_cohorts": {
+        "name": "Primeval Saurus Cohorts",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 9,
+        "defense": 14,
+        "charge": 4,
+        "missile": 0,
+        "cost": 380,
+        "upkeep": 50,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 1,
+          "c": 0
+        }
+      },
+      "temple_guard": {
+        "name": "Star-Chamber Temple Guard",
+        "category": "melee",
+        "blocks": 0.12,
+        "requiresGood": 4,
+        "attack": 11,
+        "defense": 16,
+        "charge": 5,
+        "missile": 0,
+        "cost": 620,
+        "upkeep": 75,
+        "capacityCost": {
+          "m": 3,
+          "w": 3,
+          "s": 2,
+          "c": 0
+        },
+        "resistArcane": 0.2,
+        "powers": {
+          "ward": 0.08
+        }
+      },
+      "skink_blowpipes": {
+        "name": "Crested Skink Poison-Darts",
+        "category": "ranged",
+        "blocks": 0.14,
+        "attack": 3,
+        "defense": 5,
+        "charge": 1,
+        "missile": 11,
+        "cost": 320,
+        "upkeep": 40,
+        "capacityCost": {
+          "m": 1,
+          "w": 1,
+          "s": 1,
+          "c": 1
+        },
+        "powers": {
+          "hex": 0.04
+        }
+      },
+      "horned_one_riders": {
+        "name": "Cold-Blooded Raptor Cavalry",
+        "category": "cavalry",
+        "blocks": 0.06,
+        "requiresGood": 18,
+        "attack": 12,
+        "defense": 12,
+        "charge": 12,
+        "missile": 0,
+        "cost": 650,
+        "upkeep": 75,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 1,
+          "c": 0
+        }
+      },
+      "kroxigors": {
+        "name": "Sacred River-Kroxigors",
+        "category": "monster",
+        "blocks": 0.05,
+        "attack": 13,
+        "defense": 12,
+        "charge": 10,
+        "missile": 0,
+        "cost": 720,
+        "upkeep": 80,
+        "capacityCost": {
+          "m": 3,
+          "w": 2,
+          "s": 1,
+          "c": 0
+        },
+        "powers": {
+          "terror": 0.04
+        }
+      },
+      "ancient_stegadon": {
+        "name": "Engine-of-the-Gods Stegadon",
+        "category": "monster",
+        "blocks": 0.02,
+        "attack": 15,
+        "defense": 17,
+        "charge": 14,
+        "missile": 12,
+        "cost": 1150,
+        "upkeep": 135,
+        "capacityCost": {
+          "m": 4,
+          "w": 4,
+          "s": 2,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.08,
+          "terror": 0.07
+        }
+      },
+      "alpha_carnosaur": {
+        "name": "Apex Sun-Carnosaur",
+        "category": "monster",
+        "blocks": 0.02,
+        "attack": 18,
+        "defense": 14,
+        "charge": 15,
+        "missile": 0,
+        "cost": 1200,
+        "upkeep": 140,
+        "capacityCost": {
+          "m": 4,
+          "w": 4,
+          "s": 1,
+          "c": 0
+        },
+        "powers": {
+          "terror": 0.08
+        }
+      },
+      "slann_star_priest": {
+        "name": "Palanquin Star-Priest",
+        "category": "spellcaster",
+        "blocks": 0.01,
+        "attack": 2,
+        "defense": 8,
+        "charge": 0,
+        "missile": 18,
+        "cost": 1100,
+        "upkeep": 130,
+        "capacityCost": {
+          "m": 1,
+          "w": 3,
+          "s": 5,
+          "c": 1
+        },
+        "resistArcane": 0.3,
+        "powers": {
+          "ward": 0.16,
+          "hex": 0.12,
+          "heal": 10,
+          "arcaneSiege": 2
+        }
+      },
+      "solar_bastiladon": {
+        "name": "Solar-Crystal Bastiladon",
+        "category": "artillery",
+        "blocks": 0.03,
+        "requiresGood": 4,
+        "attack": 6,
+        "defense": 15,
+        "charge": 4,
+        "missile": 16,
+        "cost": 850,
+        "upkeep": 90,
+        "capacityCost": {
+          "m": 2,
+          "w": 4,
+          "s": 2,
+          "c": 0
+        },
+        "powers": {
+          "heal": 6
+        }
+      },
+      "cohort_spears": {
+        "name": "Cohort Spearmen Levy",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 4,
+        "defense": 9,
+        "charge": 2,
+        "missile": 0,
+        "cost": 110,
+        "upkeep": 16,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "skink_watch": {
+        "name": "Skink Sentry Watch",
+        "category": "ranged",
+        "blocks": 0.12,
+        "attack": 2,
+        "defense": 4,
+        "charge": 1,
+        "missile": 7,
+        "cost": 120,
+        "upkeep": 18,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      }
+    },
+    "recruitable": [
+      "saurus_cohorts",
+      "temple_guard",
+      "skink_blowpipes",
+      "horned_one_riders",
+      "kroxigors",
+      "ancient_stegadon",
+      "alpha_carnosaur",
+      "slann_star_priest",
+      "solar_bastiladon"
+    ],
+    "garrison": {
+      "melee": "cohort_spears",
+      "ranged": "skink_watch"
+    },
+    "regimentMap": {
+      "infantry": "saurus_cohorts",
+      "archers": "skink_blowpipes",
+      "cavalry": "horned_one_riders",
+      "artillery": "solar_bastiladon"
+    },
+    "caps": {
+      "temple_guard": 4,
+      "horned_one_riders": 3,
+      "kroxigors": 3,
+      "ancient_stegadon": 2,
+      "alpha_carnosaur": 2,
+      "slann_star_priest": 2,
+      "solar_bastiladon": 3
+    }
+  },
+  "tech": [],
+  "buildings": []
+}

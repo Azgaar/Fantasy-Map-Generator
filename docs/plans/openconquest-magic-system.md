@@ -1,7 +1,7 @@
 # Plan — OpenConquest Magic, Monsters & Arcane Warfare System
 
-**Status:** In Progress (Phases 1–4 Completed)  
-**Updated:** 2026-10-23  
+**Status:** Completed (All Phases 1–5 Finished)  
+**Updated:** 2026-10-24  
 **Companion Roster Plan (Phase 5):** [**`openconquest-old-world-rosters.md`**](openconquest-old-world-rosters.md) *(Warhammer: The Old World equivalent faction rosters & unit specifications)*  
 **Context:** To expand OpenConquest with asymmetric fantasy rosters inspired by *Warhammer: The Old World* (Imperial Collegia, Chivalric Damsels, Vampiric Necromancers, Tomb Liche Priests, Ruinous Sorcerers, Saurian Star-Priests, Under-Empire Warlocks, and Dwarven Runesmiths), the combat and content engines need first-class support for **spellcasters**, **monsters**, **magical powers**, and **arcane resistance**.
 
@@ -209,4 +209,4 @@ Extract a pure helper `aggregateSideMagic(units, unitTypes, magicConfig)` in `ba
 | **Phase 2: Battle Engine & Odds Refactor** | ✅ Completed | Extract shared `computeBattleSetup` & `aggregateSideMagic`, wire `ward`/`hex`/`heal`/`terror`/`arcaneSiege`/`resistArcane` into `stepBattleRound` and `estimateOdds`. | `src/conquest/engine/game/battle.ts` |
 | **Phase 3: UI, Generators & Battle Screen** | ✅ Completed | Update `military-generator.ts`, `battle-screen.ts`, `military-overview.ts`, `regiments-overview.ts`, and `conquest/ui/content/config.ts` to support the new categories and round healing logs. | `src/generators/military-generator.ts`<br>`src/controllers/battle-screen.ts`<br>`src/conquest/ui/content/config.ts`<br>`src/controllers/military-overview.ts`<br>`src/controllers/regiments-overview.ts` |
 | **Phase 4: Unit Tests & Baseline Verification** | ✅ Completed | Add unit tests covering `powers` math, `resistArcane` damping, `arcaneSiege` wall reduction, `heal` capping, 6×6 matchups, and content validation. | `src/conquest/test/battle-turn.test.ts`<br>`src/conquest/test/content.test.ts` |
-| **Phase 5: Old World Fantasy Rosters** | 📋 Next | Upgrade existing fantasy rosters (`dwarf`, `elf`, `orc`) with casters/monsters/runes and author the 10 new *Warhammer: The Old World* equivalent rosters. Full specification in [**`openconquest-old-world-rosters.md`**](openconquest-old-world-rosters.md). | `src/conquest/content/docs/rosters/*.json`<br>`src/conquest/content/bundled.ts`<br>`src/conquest/engine/common/content.ts` |
+| **Phase 5: Old World Fantasy Rosters** | ✅ Completed | Upgrade existing fantasy rosters (`dwarf`, `elf`, `orc`) with casters/monsters/runes and author the 10 new *Warhammer: The Old World* equivalent rosters. Full specification in [**`openconquest-old-world-rosters.md`**](openconquest-old-world-rosters.md). | `src/conquest/content/docs/rosters/*.json`<br>`src/conquest/content/bundled.ts`<br>`src/conquest/engine/common/content.ts` |

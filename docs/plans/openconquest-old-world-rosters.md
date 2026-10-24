@@ -1,7 +1,7 @@
 # Plan — Phase 5: *Warhammer: The Old World* Equivalent Faction Rosters
 
-**Status:** Proposed  
-**Updated:** 2026-10-23  
+**Status:** Completed  
+**Updated:** 2026-10-24  
 **Prerequisite / Companion Plan:** [**`openconquest-magic-system.md`**](openconquest-magic-system.md) *(Phases 1–4: `spellcaster` & `monster` categories, 6×6 `MATCHUP` matrix, declarative `powers`, and `resistArcane`)*  
 **Context:** Once the Magic & Monster system from [`openconquest-magic-system.md`](openconquest-magic-system.md) is in place, Phase 5 expands `src/conquest/content/docs/rosters/` to cover the complete lineup of *Warhammer: The Old World* factions using legally distinct, lore-evocative names and asymmetric mechanics.
 
@@ -256,14 +256,14 @@ Update `DEFAULT_ROSTER_MAP` and `inferRosterForCulture` in [`src/conquest/engine
 ## 5. Implementation Checklist
 
 1. **Complete Magic Engine Prerequisites ([`openconquest-magic-system.md`](openconquest-magic-system.md)):**
-   - Implement Phases 1–4 (`spellcaster` & `monster` categories, 6×6 `MATCHUP`, `powers`, `resistArcane`, `BattleSession` refactor, and unit tests).
+   - ✅ Implemented Phases 1–4 (`spellcaster` & `monster` categories, 6×6 `MATCHUP`, `powers`, `resistArcane`, `BattleSession` refactor, and unit tests).
 2. **Upgrade Existing Fantasy Rosters:**
-   - Update [`src/conquest/content/docs/rosters/dwarf.json`](../../src/conquest/content/docs/rosters/dwarf.json), [`elf.json`](../../src/conquest/content/docs/rosters/elf.json), and [`orc.json`](../../src/conquest/content/docs/rosters/orc.json) with runic resistance, high magic, monsters, and faction buildings/tech.
+   - ✅ Updated [`src/conquest/content/docs/rosters/dwarf.json`](../../src/conquest/content/docs/rosters/dwarf.json), [`elf.json`](../../src/conquest/content/docs/rosters/elf.json), and [`orc.json`](../../src/conquest/content/docs/rosters/orc.json) with runic resistance, high magic, monsters, and faction buildings/tech.
 3. **Author New Old World Roster JSON Files:**
-   - Create `empire.json`, `chivalric.json`, `wood_elf.json`, `tomb_kings.json`, `vampire.json`, `chaos.json`, `dark_elf.json`, `skaven.json`, `lizardmen.json`, and `infernal_dwarf.json` under `src/conquest/content/docs/rosters/`.
+   - ✅ Created `empire.json`, `chivalric.json`, `wood_elf.json`, `tomb_kings.json`, `vampire.json`, `chaos.json`, `dark_elf.json`, `skaven.json`, `lizardmen.json`, and `infernal_dwarf.json` under `src/conquest/content/docs/rosters/`.
 4. **Register & Bind in Engine:**
-   - Import and register all new rosters in [`src/conquest/content/bundled.ts`](../../src/conquest/content/bundled.ts).
-   - Expand `DEFAULT_ROSTER_MAP` and `inferRosterForCulture` in [`src/conquest/engine/common/content.ts`](../../src/conquest/engine/common/content.ts).
+   - ✅ Imported and registered all new rosters in [`src/conquest/content/bundled.ts`](../../src/conquest/content/bundled.ts).
+   - ✅ Expanded `DEFAULT_ROSTER_MAP` and `inferRosterForCulture` in [`src/conquest/engine/common/content.ts`](../../src/conquest/engine/common/content.ts).
 5. **Verify & Document:**
-   - Add roster validation and battle matchup tests in [`src/conquest/test/content.test.ts`](../../src/conquest/test/content.test.ts).
-   - Update [`docs/openconquest/README.md`](../openconquest/README.md) with the expanded roster catalog.
+   - ✅ Added roster validation, archetype coverage, and culture inference tests in [`src/conquest/test/content.test.ts`](../../src/conquest/test/content.test.ts).
+   - ✅ Updated [`docs/openconquest/README.md`](../openconquest/README.md) with the expanded roster catalog.

@@ -24,7 +24,7 @@ Engagements can be resolved either automatically using the deterministic Lanches
 The _Campaign log…_ entry in the menu shows every event of the campaign as it happens: battles, sieges, constructions, diplomacy, and the AI's decisions.
 
 ### Rules and factions
-The rules the campaign plays by are editable while it runs: game config (turns, movement, battles, economy, military), faction forces (the units, buildings, and technology each people fields across 9 shipped fantasy and historical rosters), and individual state assignments. Editing the rules re-runs the campaign's log under them — if the campaign cannot continue under the new rules, the edit is refused and the campaign keeps the rules it was born with.
+The rules the campaign plays by are editable while it runs: game config (turns, movement, battles, economy, military), faction forces (the units, buildings, and technology each people fields across 19 shipped fantasy and historical rosters, including full *Warhammer: The Old World* equivalent factions), and individual state assignments. Editing the rules re-runs the campaign's log under them — if the campaign cannot continue under the new rules, the edit is refused and the campaign keeps the rules it was born with.
 
 ### Saving and resuming
 A campaign is a session over a world, not part of the world itself: it is stored in your browser, keyed to the map, and it is not written into the `.map` file. Use _Export campaign…_ to download it as a JSON file you can keep, share or re-import later.

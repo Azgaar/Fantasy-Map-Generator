@@ -247,14 +247,24 @@ src/conquest/content/docs/
 ├── game.json            # core engine parameters (movement, combat, capacity rules)
 ├── rosters/             # unit pools, building chains, tech trees & FMG regiment mapping
 │   ├── default.json     # Standard fantasy roster (commonBase)
-│   ├── dwarf.json       # Dwarven mountain hold roster (dwarfBase)
-│   ├── elf.json         # Elven woodland roster (elfBase)
-│   ├── orc.json         # Orc warband roster (orcBase)
+│   ├── dwarf.json       # Karaz Mountain Holds (dwarfBase)
+│   ├── elf.json         # Highborne Elven Realms (elfBase)
+│   ├── orc.json         # Orc & Goblin War-Tribes (orcBase)
+│   ├── empire.json      # Grand Electoral Empire (empireBase)
+│   ├── chivalric.json   # Kingdom of the Sacred Grail (chivalricBase)
+│   ├── wood_elf.json    # Sylvan Deepwood Realms (woodElfBase)
+│   ├── tomb_kings.json  # Undying Sun-Dynasties (tombKingsBase)
+│   ├── vampire.json     # Vampiric Blood-Counts (vampireBase)
+│   ├── chaos.json       # Hordes of the Ruinous Wastes (chaosBase)
+│   ├── dark_elf.json    # Dread-Corsair Principalities (darkElfBase)
+│   ├── skaven.json      # Blighted Under-Empire (skavenBase)
+│   ├── lizardmen.json   # Saurian Temple-Cities (lizardmenBase)
+│   ├── infernal_dwarf.json # Infernal Forge-Citadels (infernalDwarfBase)
 │   ├── steppe.json      # Steppe nomad cavalry roster (steppeBase)
-│   ├── east_asia.json   # East Asian imperial roster
-│   ├── mughal.json      # Mughal gunpowder & war elephant roster
-│   ├── ottoman.json     # Ottoman Janissary & Sipahi roster
-│   └── renaissance.json # European Renaissance pike-and-shot roster
+│   ├── east_asia.json   # East Asian imperial roster (eastAsiaBase)
+│   ├── mughal.json      # Mughal gunpowder & war elephant roster (mughalBase)
+│   ├── ottoman.json     # Ottoman Janissary & Sipahi roster (ottomanBase)
+│   └── renaissance.json # European Renaissance pike-and-shot roster (renaissanceBase)
 ├── victory/             # short, long, and faction-specific victory conditions
 └── events/              # scripted narrative events and dilemmas
 ```
@@ -321,7 +331,7 @@ Test suites cover:
 | **Military Integration** | Native `ArmyUnit[]` rosters for regiments, state roster binding, and turn-by-turn Lanchester battle sim | ✅ Completed |
 | **Magic & Arcane Warfare** | 6×6 Lanchester matchup matrix, spellcasters, monsters, declarative powers, and arcane siege | ✅ Completed |
 | **Expanded Content** | Renaissance Europe, East Asia, Mughal, and Ottoman historical rosters | ✅ Completed |
-| **Old World Fantasy Rosters** | Asymmetric Warhammer-inspired Old World faction rosters ([`openconquest-old-world-rosters.md`](../plans/openconquest-old-world-rosters.md)) | 📋 Planned |
+| **Old World Fantasy Rosters** | Asymmetric Warhammer-inspired Old World faction rosters ([`openconquest-old-world-rosters.md`](../plans/openconquest-old-world-rosters.md)) | ✅ Completed |
 | **Next Horizons** | Tactical battle map visualization, fog-of-war exploration, and custom scenario scripting | 📋 Planned |
 
 ---

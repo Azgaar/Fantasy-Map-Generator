@@ -1,0 +1,265 @@
+{
+  "id": "empireBase",
+  "name": "Grand Electoral Empire",
+  "roster": {
+    "id": "empireBase",
+    "units": {
+      "state_halberdiers": {
+        "name": "Electoral Halberdiers",
+        "category": "melee",
+        "blocks": 0.16,
+        "attack": 7,
+        "defense": 13,
+        "charge": 3,
+        "missile": 0,
+        "cost": 290,
+        "upkeep": 40,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "state_handgunners": {
+        "name": "Nuln State Handgunners",
+        "category": "ranged",
+        "blocks": 0.12,
+        "attack": 3,
+        "defense": 5,
+        "charge": 1,
+        "missile": 14,
+        "cost": 400,
+        "upkeep": 50,
+        "capacityCost": {
+          "m": 1,
+          "w": 2,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "elector_greatswords": {
+        "name": "Elector's Stubborn Greatswords",
+        "category": "melee",
+        "blocks": 0.12,
+        "requiresGood": 4,
+        "attack": 12,
+        "defense": 13,
+        "charge": 6,
+        "missile": 0,
+        "cost": 580,
+        "upkeep": 70,
+        "capacityCost": {
+          "m": 3,
+          "w": 3,
+          "s": 1,
+          "c": 0
+        }
+      },
+      "outrider_pistoleers": {
+        "name": "Outrider Repeaters",
+        "category": "cavalry",
+        "blocks": 0.06,
+        "requiresGood": 18,
+        "attack": 7,
+        "defense": 8,
+        "charge": 6,
+        "missile": 11,
+        "cost": 500,
+        "upkeep": 60,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "inner_circle_knights": {
+        "name": "Grand Order Knights",
+        "category": "cavalry",
+        "blocks": 0.06,
+        "requiresGood": 18,
+        "attack": 11,
+        "defense": 13,
+        "charge": 13,
+        "missile": 0,
+        "cost": 650,
+        "upkeep": 80,
+        "capacityCost": {
+          "m": 3,
+          "w": 4,
+          "s": 1,
+          "c": 0
+        }
+      },
+      "demigryph_knights": {
+        "name": "Demigryph Halberd-Knights",
+        "category": "monster",
+        "blocks": 0.04,
+        "attack": 14,
+        "defense": 14,
+        "charge": 14,
+        "missile": 0,
+        "cost": 850,
+        "upkeep": 100,
+        "capacityCost": {
+          "m": 3,
+          "w": 4,
+          "s": 1,
+          "c": 0
+        },
+        "powers": {
+          "terror": 0.04
+        }
+      },
+      "templar_priests": {
+        "name": "Hammer-Priests & War-Altar",
+        "category": "spellcaster",
+        "blocks": 0.03,
+        "attack": 9,
+        "defense": 11,
+        "charge": 4,
+        "missile": 8,
+        "cost": 800,
+        "upkeep": 90,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 3,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.1,
+          "heal": 6
+        }
+      },
+      "collegiate_wizards": {
+        "name": "Collegiate Battle Wizards",
+        "category": "spellcaster",
+        "blocks": 0.02,
+        "attack": 3,
+        "defense": 4,
+        "charge": 0,
+        "missile": 17,
+        "cost": 950,
+        "upkeep": 110,
+        "capacityCost": {
+          "m": 1,
+          "w": 3,
+          "s": 3,
+          "c": 2
+        },
+        "powers": {
+          "hex": 0.1,
+          "arcaneSiege": 1
+        }
+      },
+      "steam_behemoth": {
+        "name": "Ironclad Steam Tank",
+        "category": "monster",
+        "blocks": 0.02,
+        "requiresGood": 4,
+        "attack": 14,
+        "defense": 18,
+        "charge": 14,
+        "missile": 14,
+        "cost": 1100,
+        "upkeep": 130,
+        "capacityCost": {
+          "m": 3,
+          "w": 5,
+          "s": 1,
+          "c": 0
+        },
+        "powers": {
+          "terror": 0.06
+        }
+      },
+      "helstorm_battery": {
+        "name": "Helblaster & Rocket Battery",
+        "category": "artillery",
+        "blocks": 0.04,
+        "requiresGood": 4,
+        "attack": 2,
+        "defense": 4,
+        "charge": 0,
+        "missile": 18,
+        "cost": 900,
+        "upkeep": 90,
+        "capacityCost": {
+          "m": 2,
+          "w": 4,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "militia_spears": {
+        "name": "Town Spearmen Levy",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 4,
+        "defense": 9,
+        "charge": 2,
+        "missile": 0,
+        "cost": 100,
+        "upkeep": 15,
+        "capacityCost": {
+          "m": 1,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "free_company_crossbows": {
+        "name": "Free Company Crossbows",
+        "category": "ranged",
+        "blocks": 0.12,
+        "attack": 2,
+        "defense": 4,
+        "charge": 1,
+        "missile": 8,
+        "cost": 120,
+        "upkeep": 18,
+        "capacityCost": {
+          "m": 1,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      }
+    },
+    "recruitable": [
+      "state_halberdiers",
+      "state_handgunners",
+      "elector_greatswords",
+      "outrider_pistoleers",
+      "inner_circle_knights",
+      "demigryph_knights",
+      "templar_priests",
+      "collegiate_wizards",
+      "steam_behemoth",
+      "helstorm_battery"
+    ],
+    "garrison": {
+      "melee": "militia_spears",
+      "ranged": "free_company_crossbows"
+    },
+    "regimentMap": {
+      "infantry": "state_halberdiers",
+      "archers": "state_handgunners",
+      "cavalry": "inner_circle_knights",
+      "artillery": "helstorm_battery"
+    },
+    "caps": {
+      "elector_greatswords": 4,
+      "inner_circle_knights": 4,
+      "demigryph_knights": 3,
+      "templar_priests": 2,
+      "collegiate_wizards": 2,
+      "steam_behemoth": 2,
+      "helstorm_battery": 3
+    }
+  },
+  "tech": [],
+  "buildings": []
+}

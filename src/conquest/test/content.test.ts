@@ -20,6 +20,7 @@ const testDir = path.dirname(fileURLToPath(import.meta.url));
 import { currentContent } from "@/conquest/content/store";
 import {
   didYouMean,
+  inferRosterForCulture,
   MATCHUP,
   MEN_PER_BLOCK,
   type RawContentDocs,
@@ -176,18 +177,28 @@ describe("the shipped ruleset (total-war/content/docs)", () => {
     expect(loaded.warnings).toEqual([]);
   });
 
-  test("expected inventory: 9 rosters, and nothing state-specific", () => {
+  test("expected inventory: 19 rosters, and nothing state-specific", () => {
     expect(Object.keys(content.rosters).sort()).toEqual(
       [
+        "chaosBase",
+        "chivalricBase",
         "commonBase",
+        "darkElfBase",
         "dwarfBase",
         "eastAsiaBase",
         "elfBase",
+        "empireBase",
+        "infernalDwarfBase",
+        "lizardmenBase",
         "mughalBase",
         "orcBase",
         "ottomanBase",
         "renaissanceBase",
-        "steppeBase"
+        "skavenBase",
+        "steppeBase",
+        "tombKingsBase",
+        "vampireBase",
+        "woodElfBase"
       ].sort()
     );
     // Faction defs and culture groups are per-map now: states resolve from the
@@ -210,13 +221,13 @@ describe("the shipped ruleset (total-war/content/docs)", () => {
   });
 
   test("race inference lands on the right states without any bindings", () => {
-    // The "(Race)" suffix drives inference: Elfish/Orkish/Dwarven/Arachnid map
-    // to their rosters, Human falls through to the default.
-    expect(resolved.factions["1"]!.rosterId).toBe("elfBase"); // Trow (Dark Elfish)
+    // The "(Race)" suffix drives inference: Dark Elfish, Elfish, Orkish, Arachnid, Dwarven map
+    // to their specific rosters, Human falls through to the default.
+    expect(resolved.factions["1"]!.rosterId).toBe("darkElfBase"); // Trow (Dark Elfish)
     expect(resolved.factions["6"]!.rosterId).toBe("elfBase"); // Eldar (Elfish)
     expect(resolved.factions["14"]!.rosterId).toBe("orcBase"); // Ugluk (Orkish)
     expect(resolved.factions["15"]!.rosterId).toBe("orcBase"); // Uruk (Orkish)
-    expect(resolved.factions["10"]!.rosterId).toBe("orcBase"); // Arago (Arachnid)
+    expect(resolved.factions["10"]!.rosterId).toBe("skavenBase"); // Arago (Arachnid)
     expect(resolved.factions["8"]!.rosterId).toBe("dwarfBase"); // Khazadur (Dwarven)
     expect(resolved.factions["2"]!.rosterId).toBe("commonBase"); // Dulandir (Human)
     expect(resolved.factions["7"]!.rosterId).toBe("commonBase"); // Anor (Human)
@@ -229,6 +240,101 @@ describe("the shipped ruleset (total-war/content/docs)", () => {
     expect(steppe.units.cavalry!.missile).toBe(4);
     expect(steppe.caps.artillery).toBe(2); // overridden
     expect(steppe.caps.sword).toBe(8); // inherited
+  });
+
+  test("Old World fantasy rosters: complete archetype coverage with monsters, casters, and powers", () => {
+    const oldWorldRosters = [
+      "dwarfBase",
+      "elfBase",
+      "orcBase",
+      "empireBase",
+      "chivalricBase",
+      "woodElfBase",
+      "tombKingsBase",
+      "vampireBase",
+      "chaosBase",
+      "darkElfBase",
+      "skavenBase",
+      "lizardmenBase",
+      "infernalDwarfBase"
+    ];
+
+    for (const rId of oldWorldRosters) {
+      const roster = content.rosters[rId];
+      expect(roster, `roster ${rId} should exist`).toBeDefined();
+      expect(roster!.recruitable.length, `${rId} should have recruitable units`).toBeGreaterThanOrEqual(8);
+      expect(roster!.garrison.melee, `${rId} garrison melee`).toBeDefined();
+      expect(roster!.garrison.ranged, `${rId} garrison ranged`).toBeDefined();
+      expect(roster!.regimentMap.infantry, `${rId} regiment infantry`).toBeDefined();
+      expect(roster!.regimentMap.archers, `${rId} regiment archers`).toBeDefined();
+      expect(roster!.regimentMap.cavalry, `${rId} regiment cavalry`).toBeDefined();
+      expect(roster!.regimentMap.artillery, `${rId} regiment artillery`).toBeDefined();
+
+      // Check unit types in content.unitTypes
+      for (const u of Object.values(roster!.units)) {
+        expect(u.blocks, `${u.id} blocks must be positive`).toBeGreaterThan(0);
+        expect(u.men, `${u.id} men must derive from blocks`).toBe(Math.round(u.blocks * 1000));
+        if (u.powers) {
+          if (u.powers.ward !== undefined) expect(u.powers.ward).toBeGreaterThan(0);
+          if (u.powers.hex !== undefined) expect(u.powers.hex).toBeGreaterThan(0);
+          if (u.powers.heal !== undefined) expect(u.powers.heal).toBeGreaterThan(0);
+          if (u.powers.terror !== undefined) expect(u.powers.terror).toBeGreaterThan(0);
+          if (u.powers.arcaneSiege !== undefined) expect(u.powers.arcaneSiege).toBeGreaterThanOrEqual(1);
+        }
+        if (u.resistArcane !== undefined) {
+          expect(u.resistArcane).toBeGreaterThan(0);
+          expect(u.resistArcane).toBeLessThanOrEqual(1);
+        }
+      }
+    }
+
+    // Specific faction archetype checks
+    const dwarf = content.rosters.dwarfBase!;
+    expect(dwarf.units.runesmith_anvil?.category).toBe("spellcaster");
+    expect(dwarf.units.runesmith_anvil?.resistArcane).toBe(0.35);
+
+    const elf = content.rosters.elfBase!;
+    expect(elf.units.star_dragon?.category).toBe("monster");
+    expect(elf.units.high_archmage?.category).toBe("spellcaster");
+    expect(elf.units.high_archmage?.powers?.heal).toBe(8);
+
+    const skaven = content.rosters.skavenBase!;
+    expect(skaven.units.pit_abomination?.category).toBe("monster");
+    expect(skaven.units.pit_abomination?.powers?.heal).toBe(10);
+    expect(skaven.units.grey_seers?.category).toBe("spellcaster");
+
+    const lizardmen = content.rosters.lizardmenBase!;
+    expect(lizardmen.units.slann_star_priest?.powers?.arcaneSiege).toBe(2);
+    expect(lizardmen.units.slann_star_priest?.resistArcane).toBe(0.3);
+
+    const empire = content.rosters.empireBase!;
+    expect(empire.units.demigryph_knights?.category).toBe("monster");
+    expect(empire.units.collegiate_wizards?.category).toBe("spellcaster");
+    expect(empire.units.steam_behemoth?.category).toBe("monster");
+  });
+
+  test("Old World culture name inference maps to appropriate base rosters", () => {
+    const testCases: [string, string][] = [
+      ["Schwarzen", "empireBase"],
+      ["Luarian", "chivalricBase"],
+      ["Quenian (Elfish)", "elfBase"],
+      ["Dunirr (Dwarven)", "dwarfBase"],
+      ["Khazadur (Dwarven)", "dwarfBase"],
+      ["Aj'Snaga (Serpents)", "lizardmenBase"],
+      ["Trow (Dark Elfish)", "darkElfBase"],
+      ["Arago (Arachnid)", "skavenBase"],
+      ["Ugluk (Orkish)", "orcBase"],
+      ["Sylvan Weald", "woodElfBase"],
+      ["Khemri Dynasties", "tombKingsBase"],
+      ["Sylvania Barrow", "vampireBase"],
+      ["Chaos Wastes", "chaosBase"],
+      ["Zharr Forge", "infernalDwarfBase"]
+    ];
+
+    for (const [cultureName, expectedRoster] of testCases) {
+      const rosterId = inferRosterForCulture(cultureName, content.rosters, "commonBase");
+      expect(rosterId, `culture '${cultureName}' should resolve to '${expectedRoster}'`).toBe(expectedRoster);
+    }
   });
 
   test("a per-state def — what the state editor writes — drives everything", () => {
@@ -270,10 +376,10 @@ describe("the shipped ruleset (total-war/content/docs)", () => {
     expect(r.factions["12"]!.victorySetId).toBe("standardShort");
     expect(r.factions["12"]!.mechanics.confederation).toBe("cultureGroup");
     // …and its units are untouched by the other state's patch.
-    expect(r.factions["1"]!.roster.units.elf_spears).toMatchObject({ name: "Elven Spearmen" });
+    expect(r.factions["1"]!.roster.units.dreadspears).toMatchObject({ name: "Dread-Spire Spearmen" });
     // A def with only traits leaves the roster alone.
     expect(r.factions["1"]!.traits).toContain("riverRiders");
-    expect(r.factions["1"]!.rosterId).toBe("elfBase");
+    expect(r.factions["1"]!.rosterId).toBe("darkElfBase");
   });
 
   test("content hash is stable across loads", () => {
