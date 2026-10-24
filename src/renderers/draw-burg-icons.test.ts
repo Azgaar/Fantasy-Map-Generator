@@ -1,13 +1,13 @@
 // @vitest-environment jsdom
 import { beforeEach, expect, test, vi } from "vitest";
-import { setViewportSize, setViewportTransform } from "@/components/viewport";
+import { setViewportSize, setViewportTransform } from "@/renderers/viewport/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 
 const mocks = vi.hoisted(() => ({ layerOn: true }));
-vi.mock("@/components/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
+vi.mock("@/renderers/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
 // set art is anchored at its frame's corner here, so a group's translate is its shift alone
-vi.mock("@/components/icon-sets", () => ({ IconSets: { setForId: () => undefined } }));
-vi.mock("@/components/icons", () => ({
+vi.mock("@/model/icon-sets", () => ({ IconSets: { setForId: () => undefined } }));
+vi.mock("@/model/icons", () => ({
   Icons: {
     loadAll: vi.fn().mockResolvedValue(undefined),
     href: (id: string) => `#${id}`,
@@ -15,14 +15,13 @@ vi.mock("@/components/icons", () => ({
   }
 }));
 
-import "@/generators/styles";
+import "@/model/styles/styles";
 import { drawBurgIcons } from "./draw-burg-icons";
 
 beforeEach(() => {
   mocks.layerOn = true;
   setViewportSize(100, 100);
   setViewportTransform(1, 0, 0);
-  (globalThis as Record<string, unknown>).TIME = false;
   document.body.innerHTML = `<svg id="map">
       <g id="burgIcons"></g>
     </svg>`;

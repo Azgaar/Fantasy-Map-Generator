@@ -1,42 +1,43 @@
 // The Cell Info panel: everything known about the cell under the cursor
 import { select } from "d3";
-import { destroyDialog } from "@/components/dialog/dialog-helpers";
-import type { Feature } from "@/generators/features-generator";
-import type { Point } from "@/generators/voronoi";
+import { Goods } from "@/model/economy/goods-generator";
+import { Markets } from "@/model/economy/markets-generator";
+import { Production } from "@/model/economy/production-generator";
+import { Grid } from "@/model/graph/grid-generator";
+import { Pack } from "@/model/graph/pack-generator";
+import type { Point } from "@/model/graph/voronoi";
+import type { Feature } from "@/model/physical/features-generator";
 import {
   convertTemperature,
-  debounce,
-  ensureEl,
   getArea,
   getAreaUnit,
   getCellPopulation,
   getFriendlyPrecipitation,
-  getHeight,
-  getLatitude,
-  getLongitude,
-  getPointer,
-  rn,
-  si
-} from "@/utils";
+  getHeight
+} from "@/model/units";
+import { Dialog } from "@/ui/dialog/dialog";
+
+import { debounce, getLatitude, getLongitude } from "@/utils/common-utils";
 import { t } from "@/utils/i18n";
+import { ensureEl, getPointer } from "@/utils/node-utils";
+import { rn, si } from "@/utils/number-utils";
 
 function open(): void {
   cleanup();
   renderDialog();
   select<SVGGElement, unknown>("#viewbox").on("touchmove.cellInfo mousemove.cellInfo", updateCellInfo);
 
-  $("#cellInfo").dialog({
-    resizable: false,
+  Dialog.open("cellInfo", {
     width: "22em",
     title: t("Cell Details"),
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
-    close: cleanup
+    position: { my: "right top", at: "right-10 top+10", of: "svg" },
+    onClose: cleanup
   });
 }
 
 function cleanup(): void {
   select<SVGGElement, unknown>("#viewbox").on(".cellInfo", null);
-  destroyDialog("cellInfo");
+  Dialog.destroy("cellInfo");
 }
 
 function renderDialog(): void {

@@ -1,5 +1,5 @@
-import { MapEntities } from "@/components/map-entities";
-import { Styles } from "@/generators/styles";
+import { MapEntities } from "@/model/map-entities";
+import { Styles } from "@/model/styles/styles";
 import type { StylesData } from "@/types/styles";
 
 export type Item = { i: number } & Record<string, unknown>;
@@ -7,7 +7,7 @@ export type Cells = Record<number, unknown>;
 type Lore = Record<string, unknown>;
 
 /** An entity found by its key, with the list holding it */
-export interface Found {
+interface Found {
   list: Item[];
   indexed: boolean; // the list keeps each entity at the index of its id
   i: number;

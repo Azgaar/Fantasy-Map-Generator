@@ -10,13 +10,13 @@ Visible consequences:
 2. **Trade animation does the same.** The ship marker travels in straight diagonals between cell centers, ignoring the river's actual course.
 3. **Lakes and open water still look fine** because cell-center chords through open water match user expectations; the problem is specific to the river-following sub-stretches of a route.
 
-The river renderer already solves the geometry problem: [RiverModule.addMeandering](../../src/generators/river-generator.ts:372) inserts 0–2 perpendicular interpolation points per cell-pair, producing the curved polygon the user sees. Routes don't reuse it.
+The river renderer already solves the geometry problem: [RiverModule.addMeandering](../../src/model/physical/river-generator.ts:372) inserts 0–2 perpendicular interpolation points per cell-pair, producing the curved polygon the user sees. Routes don't reuse it.
 
 ## Solution
 
 Reuse `addMeandering` on the river-following sub-stretches of every sea route. The route line and the trade animation curve along the same geometry the river polygon uses, with matching meander phase, so the route stays inside the river.
 
-The function moves from `RiverModule` to `src/utils/pathUtils.ts` as a pure helper under the name `meander`. Its signature is generalised: it returns geometry plus anchor-position metadata, with the third-coordinate convention left to the caller. River-polygon callers pass a `flux`-supplier, route callers pass a `cellId`-supplier; the function itself doesn't know about either.
+The function moves from `RiverModule` to `src/utils/path-utils.ts` as a pure helper under the name `meander`. Its signature is generalised: it returns geometry plus anchor-position metadata, with the third-coordinate convention left to the caller. River-polygon callers pass a `flux`-supplier, route callers pass a `cellId`-supplier; the function itself doesn't know about either.
 
 The route generator augments its existing `riverAdjacency` map into a direction-aware `riverEdges` map. When emitting route points, it walks the cells of each sea route, groups maximal runs of cells that share a river edge, calls `meander` once per run (in the river's source→mouth order so perpendicular meanders point the right way, with a `startStep` that matches the river polygon's phase), and reverses the per-run output if the route traverses mouth→source. Non-river cells emit a single anchor as today. Trade animation does the same in its path reconstruction.
 
@@ -46,13 +46,13 @@ A sea route whose cells follow a navigable river is rendered as a Catmull-Rom cu
 Three things converge:
 
 **1. River meanders are not in the data model.**  
-[RiverModule.defineRivers](../../src/generators/river-generator.ts:191) stores `river.cells: number[]` and an optional anchor override `river.points?: Point[]` (used by the river editor). Neither carries the meander interpolation. The visible meander is computed at draw time by [addMeandering](../../src/generators/river-generator.ts:372) and discarded after every render. Storing it would bloat saves without buying anything callers can't recompute.
+[RiverModule.defineRivers](../../src/model/physical/river-generator.ts:191) stores `river.cells: number[]` and an optional anchor override `river.points?: Point[]` (used by the river editor). Neither carries the meander interpolation. The visible meander is computed at draw time by [addMeandering](../../src/model/physical/river-generator.ts:372) and discarded after every render. Storing it would bloat saves without buying anything callers can't recompute.
 
 **2. The route generator doesn't ask the river module for geometry.**  
-[RoutesModule.getPoints](../../src/generators/routes-generator.ts:464) takes the route's cell list and maps each to its anchor (`pointsArray[cellId]`). No call into river code; no awareness that a sub-sequence of those cells is actually a river course.
+[RoutesModule.getPoints](../../src/model/economy/routes-generator.ts:464) takes the route's cell list and maps each to its anchor (`pointsArray[cellId]`). No call into river code; no awareness that a sub-sequence of those cells is actually a river course.
 
 **3. `riverAdjacency` knows pairs but not direction.**  
-[RoutesModule.buildRiverAdjacency](../../src/generators/routes-generator.ts:183) records `Map<cellA, Set<cellB>>` — enough for the cost function to enforce "the next step must be along a river course", not enough to recover which river the edge belongs to or which direction is downstream. Without those, the route generator can't call `addMeandering` in a way that matches the river polygon's perpendicular direction.
+[RoutesModule.buildRiverAdjacency](../../src/model/economy/routes-generator.ts:183) records `Map<cellA, Set<cellB>>` — enough for the cost function to enforce "the next step must be along a river course", not enough to recover which river the edge belongs to or which direction is downstream. Without those, the route generator can't call `addMeandering` in a way that matches the river polygon's perpendicular direction.
 
 ### Why naively calling `addMeandering(routeCells)` is wrong
 
@@ -66,10 +66,10 @@ The pathfinder already restricts route hops to river-adjacent steps along the ac
 
 ### `addMeandering` moves to `pathUtils` and becomes pure
 
-Current shape: an instance method on `RiverModule` that reaches into `pack.cells.fl`, `pack.cells.h`, `pack.cells.p`, `graphWidth`, `graphHeight`. Three callers exist ([layers.js drawRivers](../../public/modules/ui/layers.js:816), [rivers-editor.js](../../public/modules/ui/rivers-editor.js), [export.js](../../public/modules/io/export.js:587), [rivers-creator.js](../../public/modules/ui/rivers-creator.js), [resample.ts](../../src/generators/resample.ts:35), [tools.ts](../../src/components/tools.ts)). New shape:
+Current shape: an instance method on `RiverModule` that reaches into `pack.cells.fl`, `pack.cells.h`, `pack.cells.p`, `graphWidth`, `graphHeight`. Three callers exist ([layers.js drawRivers](../../public/modules/ui/layers.js:816), [rivers-editor.js](../../public/modules/ui/rivers-editor.js), [export.js](../../public/modules/io/export.js:587), [rivers-creator.js](../../public/modules/ui/rivers-creator.js), [resample.ts](../../src/model/resample.ts:35), [tools.ts](../../src/components/tools.ts)). New shape:
 
 ```ts
-// src/utils/pathUtils.ts
+// src/utils/path-utils.ts
 export type Meandered = {
   points: Point[];          // [x, y][] — the full curve including interior meander points
   anchorIndices: number[];  // anchorIndices[k] === index in points[] where input cells[k] sits
@@ -97,8 +97,8 @@ Pure: takes everything it needs as arguments, returns geometry and anchor metada
 
 Callers attach their third coordinate themselves:
 
-- **River polygon** ([RiverModule.getRiverPath](../../src/generators/river-generator.ts:470) consumers): map `points[]` → `[x, y, flux][]` by using `anchorIndices` to know which entries are anchors and looking up `pack.cells.fl[cells[k]]` for each.
-- **Routes**: map `points[]` → `[x, y, cellId][]` the same way, using `cells[k]` as the cellId for anchors. Interior meander points carry the _preceding_ anchor's cellId, so [RoutesModule.buildLinks](../../src/generators/routes-generator.ts:198) sees `cellA, cellA, cellA, cellB, cellB, ...` and its `cellId !== nextCellId` guard naturally skips duplicates without needing a sentinel value.
+- **River polygon** ([RiverModule.getRiverPath](../../src/model/physical/river-generator.ts:470) consumers): map `points[]` → `[x, y, flux][]` by using `anchorIndices` to know which entries are anchors and looking up `pack.cells.fl[cells[k]]` for each.
+- **Routes**: map `points[]` → `[x, y, cellId][]` the same way, using `cells[k]` as the cellId for anchors. Interior meander points carry the _preceding_ anchor's cellId, so [RoutesModule.buildLinks](../../src/model/economy/routes-generator.ts:198) sees `cellA, cellA, cellA, cellB, cellB, ...` and its `cellId !== nextCellId` guard naturally skips duplicates without needing a sentinel value.
 
 `RiverModule.getRiverPoints` and `RiverModule.getBorderPoint` move with `addMeandering` (they're its helpers). `RiverModule.getRiverPath` stays put; it gains a tiny adapter at top to walk the new `{points, anchorIndices}` shape.
 
@@ -114,7 +114,7 @@ private riverEdges: Map<number, Map<number, { riverId: number; fromIndex: number
 
 Built in the same single pass that `buildRiverAdjacency` runs today, with two values stored per edge instead of just membership. `fromIndex` is the position of cell `cellA` in `river.cells`; the next cell `cellB` sits at `fromIndex + 1` (downstream direction). The downstream direction is `cells[fromIndex] → cells[fromIndex + 1]`; if a route step is `cellB → cellA`, the metadata is found under `riverEdges[cellB][cellA]` with `fromIndex = indexOfCellB`, and we know the route is going upstream relative to the river.
 
-The cost function in [getWaterPathCost](../../src/generators/routes-generator.ts:304) and the approach guard in [findPathSegments](../../src/generators/routes-generator.ts:356) keep working — they only need `riverEdges.get(current)?.has(next)`, which still works because the inner `Map<cellB, …>` answers `.has()`. Two-line change at most.
+The cost function in [getWaterPathCost](../../src/model/economy/routes-generator.ts:304) and the approach guard in [findPathSegments](../../src/model/economy/routes-generator.ts:356) keep working — they only need `riverEdges.get(current)?.has(next)`, which still works because the inner `Map<cellB, …>` answers `.has()`. Two-line change at most.
 
 ### `addMeandering` helper
 
@@ -145,7 +145,7 @@ Run termination at confluences is critical for user story 4 from the prior PRD: 
 
 ### Where `addMeandering` plugs in
 
-[RoutesModule.getPoints](../../src/generators/routes-generator.ts:464) becomes the sole hook for `searoutes`:
+[RoutesModule.getPoints](../../src/model/economy/routes-generator.ts:464) becomes the sole hook for `searoutes`:
 
 ```ts
 if (group === "searoutes") {
@@ -154,7 +154,7 @@ if (group === "searoutes") {
 // roads/trails branch unchanged (still does sharp-angle resolution)
 ```
 
-`anchorsFor(cells, pointsArray)` just builds the per-cell anchor array using burg overrides — same logic as today's [preparePointsArray](../../src/generators/routes-generator.ts:455), reused here.
+`anchorsFor(cells, pointsArray)` just builds the per-cell anchor array using burg overrides — same logic as today's [preparePointsArray](../../src/model/economy/routes-generator.ts:455), reused here.
 
 Sharp-angle resolution stays disabled for `searoutes` (its existing guard) — the new geometry doesn't need it.
 
@@ -199,9 +199,9 @@ The third coord on `points: [x, y, cellId][]` stays a real cell id everywhere. N
 
 ## Testing Decisions
 
-Tests follow the existing Vitest pattern in `src/generators/*.test.ts` and `src/utils/*.test.ts`. `addMeandering` becoming pure makes its tests trivial — no `pack` fabrication needed.
+Tests follow the existing Vitest pattern in `src/model/*.test.ts` and `src/utils/*.test.ts`. `addMeandering` becoming pure makes its tests trivial — no `pack` fabrication needed.
 
-**`pathUtils.addMeandering`** (new file `src/utils/pathUtils.test.ts` additions):
+**`pathUtils.addMeandering`** (new file `src/utils/path-utils.test.ts` additions):
 
 - Returns one entry in `anchorIndices` per input cell, with `anchorIndices[0] === 0`.
 - Anchor positions in the output equal the input anchor positions (interpolation does not move anchors).

@@ -1,4 +1,4 @@
-import { chargeData } from "./chargeData";
+import { chargeData } from "./charge-data";
 
 export const charges = {
   types: {

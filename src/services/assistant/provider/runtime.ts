@@ -1,8 +1,5 @@
-// Executes model-authored JavaScript against the live map. The script body becomes an async
-// function evaluated in page scope, so every global (pack, grid, Burgs, Layers, Controllers…)
-// resolves without being injected. Only the returned value and console output travel back.
-
-import { errorText } from "@/utils/stringUtils";
+// Executes model-authored JavaScript against the live map
+import { errorText } from "@/utils/string-utils";
 
 const MAX_RESULT_CHARS = 8000;
 const MAX_ARRAY_ITEMS = 200;
@@ -18,6 +15,13 @@ export interface RunResult {
   ms: number;
 }
 
+// scripts see `window.FMG` members by name; read at each run, as its map state members are getters
+const scopeEntries = (): [string[], unknown[]] => {
+  const scope = (globalThis as { FMG?: Record<string, unknown> }).FMG ?? {};
+  const names = Object.keys(scope);
+  return [names, names.map(name => scope[name])];
+};
+
 const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor as new (
   ...args: string[]
 ) => (...args: unknown[]) => Promise<unknown>;
@@ -29,8 +33,9 @@ export async function runScript(code: string, helpers: Record<string, unknown> =
   const started = performance.now();
 
   try {
-    const script = new AsyncFunction("describe", ...Object.keys(helpers), code);
-    const value = await script(describe, ...Object.values(helpers));
+    const [names, values] = scopeEntries();
+    const script = new AsyncFunction(...names, "describe", ...Object.keys(helpers), code);
+    const value = await script(...values, describe, ...Object.values(helpers));
     return { ok: true, value: serialize(value), logs, ms: elapsed(started) };
   } catch (thrown) {
     const error = thrown instanceof Error ? thrown : new Error(String(thrown));
@@ -52,7 +57,8 @@ const typed = (value: unknown): Typed | undefined =>
 export function describe(target: unknown): unknown {
   if (typeof target === "string") {
     try {
-      const resolved = new Function(`return (${target})`)();
+      const [names, values] = scopeEntries();
+      const resolved = new Function(...names, `return (${target})`)(...values);
       return { path: target, ...inspect(resolved), ...styleHint(/^styles\b/.test(target)) };
     } catch {
       // not a resolvable expression — fall through and describe the string itself

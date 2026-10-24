@@ -1,20 +1,10 @@
-// The lazy module registry. Note it calls `tip`/`clearMainTip` through the window bridge, not an
-// import: utils sits below the UI layer and must never import from components/
-import { t } from "./i18n";
-
+// The lazy module registry. The caller passes the loading feedback: utils sits below the UI layer
 type Loader<T> = () => Promise<T>;
 type DispatchFn = (...args: unknown[]) => unknown;
 
-let pendingLoads = 0;
-function trackLoad<T>(promise: Promise<T>): Promise<T> {
-  pendingLoads++;
-  window.tip(`${t("Loading")}…`, false, "info");
-  return promise.finally(() => {
-    if (--pendingLoads <= 0) {
-      pendingLoads = 0;
-      window.clearMainTip();
-    }
-  });
+interface LoadProgress {
+  start(): void;
+  end(): void;
 }
 
 // Every method of a registered module becomes async
@@ -22,7 +12,7 @@ type AsyncMethods<T> = {
   [K in keyof T]: T[K] extends (...args: infer A) => infer R ? (...args: A) => Promise<Awaited<R>> : T[K];
 };
 
-export type Registry<T> = {
+type Registry<T> = {
   [K in keyof T]: AsyncMethods<T[K]>;
 };
 
@@ -34,7 +24,8 @@ export const eager =
 export function createRegistry<T extends Record<string, object>>(
   loaders: {
     [K in keyof T]: Loader<T[K]>;
-  }
+  },
+  progress?: LoadProgress
 ): Registry<T> {
   const modulePromises = new Map<string, Promise<unknown>>();
   const entryProxies = new Map<string, object>();
@@ -45,7 +36,8 @@ export function createRegistry<T extends Record<string, object>>(
   const load = (name: string): Promise<unknown> => {
     let promise = modulePromises.get(name);
     if (!promise) {
-      promise = trackLoad(loaderByName[name]());
+      progress?.start();
+      promise = loaderByName[name]().finally(() => progress?.end());
       modulePromises.set(name, promise);
     }
     return promise;

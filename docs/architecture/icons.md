@@ -39,14 +39,14 @@ interface IconSet {
 - `Goods.iconSet` — `goods`.
 - `Emblems.iconSets` — one per charge category; `prepare` frames Armoria artwork and scopes internal ids.
 
-`components/icon-sets.ts` (`IconSets`) is the family-agnostic catalog of the built-in sets and touches no
+`model/icon-sets.ts` (`IconSets`) is the family-agnostic catalog of the built-in sets and touches no
 DOM: `sets()` lists the models in picker order, `files(set)` lists a directory synchronously (pickers need no chunk
 to list choices), `fileOf(id)` names the set and file a symbol is drawn from, and `read(set)` turns a set
 into symbols — glob the directory (`import.meta.glob(?raw)`, one hashed lazy chunk per set via
 `manualChunks` in `vite.config.ts`), turn each `<svg>` root into `<symbol id>`, keep an anchored set's frame
 unclipped, append `aliases` if declared.
 
-`components/icons.ts` (`Icons`) puts them in the page, as `<g data-set="<set>">` in
+`model/icons.ts` (`Icons`) puts them in the page, as `<g data-set="<set>">` in
 `#defElements defs > g#icons-library`. `load` returns the shared attempt and never rejects, `retry` starts a
 fresh attempt for an explicit demand (a picker), `require` retries and rejects for a demand that must succeed.
 Failed attempts leave no partial definitions, report once, and stay failed until a `retry`; renderer redraws
@@ -88,7 +88,7 @@ relief; a relief rule (`options.map.relief.rules`, see [the data model](data-mod
 own pool for the cells it claims. Generation picks an entry with one roll against the cumulative weights in record order — the same
 entry the older list of repeated entries gave, so seeds reproduce — and a type entry then rolls its
 variant. An entry's `size` multiplies the icon size and spends no roll, so it never shifts a seed. Interface previews of relief art — the Relief Editor tiles, the pool dialog, the Biomes Editor
-column — are painted in the relief style and cropped to the drawn art (`controllers/relief-previews.ts`),
+column — are painted in the relief style and cropped to the drawn art (`controllers/physical/relief/relief-previews.ts`),
 since relief art sits small in its frame. The pool dialog also draws an uncropped sample patch at the map's sizes and spacing,
 from its own seeded rolls, three a point, so resizing or reweighting one entry leaves the other icons in place.
 
@@ -171,7 +171,7 @@ written (`Icons.href`). `Icons` is the one entry point for a reference, whatever
   so a box of `n` draws it as large as `n`-sized text did. It sets no font, fill or shadow, so it takes them
   from where it is drawn, and no stroke, which would outline emoji.
 - **Custom icons** — `custom-<8 hex>` (`custom-goods-<id>` for uploads kept from older maps), the
-  pictures in `options.map.customIcons` (`CustomIcons`, beside `Icons` in `components/icons.ts`), which this browser
+  pictures in `options.map.customIcons` (`CustomIcons`, beside `Icons` in `model/icons.ts`), which this browser
   keeps in IndexedDB rather than `localStorage` ([configuration](configuration.md)). Each is SVG markup or an image
   URL with its frame. `Icons.syncCustom()` rebuilds the `custom` group from the list
   on generation and after a load; `CustomIcons` rebuilds one icon's symbol on every add, update and remove. SVG content is sanitised again on the way, since a
@@ -247,7 +247,7 @@ fixed; custom art gets no outline; a raster keeps its colours. Picking an icon f
 charge (`Emblems.chargeOf` stores a charge set icon by its name, so blazons stay Armoria's); Shape _None_ turns
 that charge into a Picture emblem, and choosing a shape puts a picture back on a field as its charge.
 
-`controllers/emblems/armoria.ts` reads Armoria edit links, API links and COA strings without the DOM. The
+`controllers/political/emblems/armoria.ts` reads Armoria edit links, API links and COA strings without the DOM. The
 drawability check in `drawability.ts` uses the renderer's known names. Drawable COAs stay heraldic; others
 link Armoria's SVG API render. The GUI and API URLs are constants in the reader.
 For local round-trip testing, `VITE_ARMORIA_GUI` can point an FMG development server at a local Armoria

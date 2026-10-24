@@ -238,7 +238,7 @@ Yes, we have a dedicated Discord server and Reddit community. Both have a very a
 
 ### Can I underline at the name of the capitals?
 
-You cannot using the UI, but if you are comfortable with dev tools, you can amend the svg part directly. Open the console (F12) and run: `d3.select('#labels-capital').style('text-decoration', 'underline')`. Use another burg group name instead of `capital` if needed. The change may be lost when labels are re-rendered
+You cannot using the UI, but if you are comfortable with dev tools, you can amend the svg part directly. Open the console (F12) and run: `document.querySelector('#labels-capital').style.textDecoration = 'underline'`. Use another burg group name instead of `capital` if needed. The change may be lost when labels are re-rendered
 
 ### I have a height map but it doesn’t work in Roblox Studio. How do I get the map on Roblox?
 
@@ -538,7 +538,7 @@ Tools -> Heightmap -> Erase or Risk and make sure that whatever cells you put un
 
 ### Is there a way to make relief icons render above routes?
 
-You can change the layer order on the Layers Tab by draging the toggle button. It can be done for most of layers
+You can change the layer order on the Layers Tab: the sort button at the end of the *Layers preset* row opens a list where you drag the layers. It can be done for most of layers
 
 ### My map colors are inverted, how can I fix it?
 
@@ -830,7 +830,7 @@ Open Tools -> Markets and click on the compare button, or open a good in the Goo
 
 ### Is there a 3D view?
 
-Yes. Open the Layers tab and use the View mode buttons at its bottom: Standard, 3D scene and Globe. The 3D scene shows your heightmap as a 3D landscape. The settings dialog opens with it (press O to toggle it) and lets you change height scale, lighting, sun position, time of day presets, sky and water, 3D labels and more. The 3D view is presentation-only, you cannot edit the map while it's open
+Yes. Open the Layers tab and use the View mode buttons at its bottom: Standard, 3D scene and Globe. The 3D scene shows your heightmap as a 3D landscape. The settings dialog opens with it (press O to toggle it) and lets you change height scale, lighting, sun position, time of day presets, sky and water, 3D labels and more; its reset button restores the default settings. The 3D view is presentation-only, you cannot edit the map while it's open
 
 ### Can I see my map as a globe?
 

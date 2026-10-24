@@ -1,13 +1,18 @@
-import { Icons } from "@/components/icons";
-import { Layers } from "@/components/layers";
+import { Goods } from "@/model/economy/goods-generator";
+import { Production } from "@/model/economy/production-generator";
+import { Pack } from "@/model/graph/pack-generator";
+import { Icons } from "@/model/icons";
+import { Layers } from "@/renderers/layers";
 import {
   type Box,
   boundsIntersect,
   ViewportLayers,
   type ViewportRenderContext
 } from "@/renderers/viewport/viewport-renderer";
-import type { PackedGraph } from "@/types/PackedGraph";
-import { findEl, normalize, rn } from "../utils";
+import type { PackedGraph } from "@/types/packed-graph";
+import { log } from "@/utils/logger";
+import { findEl } from "@/utils/node-utils";
+import { normalize, rn } from "@/utils/number-utils";
 
 const layer = ViewportLayers.register({ id: "goods", render: reconcileGoods });
 let cellProduction: CellProduction[] = [];
@@ -72,11 +77,11 @@ interface BurgPlate {
 }
 
 export async function drawGoods(): Promise<void> {
-  TIME && console.time("drawGoods");
+  log.time("drawGoods");
   await Icons.load("goods");
   buildScene();
   layer.render();
-  TIME && console.timeEnd("drawGoods");
+  log.timeEnd("drawGoods");
 }
 
 function buildScene(): void {

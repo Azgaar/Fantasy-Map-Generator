@@ -1,5 +1,6 @@
-import { Layers } from "@/components/layers";
-import type { River } from "@/generators/river-generator";
+import type { River } from "@/model/physical/river-generator";
+import { Rivers } from "@/model/physical/river-generator";
+import { Layers } from "@/renderers/layers";
 import {
   boundsIntersect,
   Scene,
@@ -7,7 +8,8 @@ import {
   type ViewportRenderContext
 } from "@/renderers/viewport/viewport-renderer";
 import type { Point } from "@/types/global";
-import { findEl } from "@/utils";
+import { log } from "@/utils/logger";
+import { findEl } from "@/utils/node-utils";
 
 interface RiverShape {
   id: string;
@@ -26,7 +28,7 @@ let editedRiverId: string | null = null; // edited river is rendered even when o
 let basinColors: Map<string, string> | null = null;
 
 export function drawRivers(): void {
-  TIME && console.time("drawRivers");
+  log.time("drawRivers");
   const shapes: RiverShape[] = [];
   for (const river of pack.rivers) {
     const shape = buildShape(river);
@@ -35,7 +37,7 @@ export function drawRivers(): void {
   scene.replace(shapes);
   if (basinColors) basinColors = getBasinColors();
   layer.render();
-  TIME && console.timeEnd("drawRivers");
+  log.timeEnd("drawRivers");
 }
 
 /** Drop the paths and the scene behind them: a hidden layer must not keep a map's worth of geometry */
@@ -94,8 +96,7 @@ function buildShape(river: River): RiverShape | null {
 
   let points: Point[] | undefined = river.points;
   if (points && points.length !== cells.length) {
-    ERROR &&
-      console.error(`River ${i} has ${cells.length} cells, but only ${points.length} points. Resetting points data`);
+    log.error(`River ${i} has ${cells.length} cells, but only ${points.length} points. Resetting points data`);
     points = undefined;
   }
 

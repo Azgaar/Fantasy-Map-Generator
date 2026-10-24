@@ -97,7 +97,7 @@ object. World-level prose already has a home in `options.map.lore.description`.
 
 ## Note resolution
 
-`src/components/map-entities.ts` maps SVG elements to shared entity references and provides names, context, positions, and geometry. Tooltips, the Notes Editor, map search, and migration use this lookup:
+`src/model/map-entities.ts` maps SVG elements to shared entity references and provides names, context, positions, and geometry. Tooltips, the Notes Editor, map search, and migration use this lookup:
 
 ```
 burg{i} | burgLabel{i}   → burgs[i]
@@ -202,39 +202,39 @@ cover `name` alongside `note` — it is the same lookup. Serves `heightmap-edito
 
 ### Modified — data model
 
-- `src/generators/markers-generator.ts` — add `name` to `Marker`; set `name`/`note` on the ~60 push
+- `src/model/story/markers-generator.ts` — add `name` to `Marker`; set `name`/`note` on the ~60 push
   sites; drop the note removal in `remove`/`deleteMarker`.
-- `src/generators/burgs-generator.ts` — add `note?` to `Burg`; delete the note filter and the two id
+- `src/model/political/burgs-generator.ts` — add `note?` to `Burg`; delete the note filter and the two id
   remaps at `:787-909`.
-- `src/generators/states-generator.ts`, `provinces-generator.ts`, `river-generator.ts`,
+- `src/model/political/states-generator.ts`, `provinces-generator.ts`, `river-generator.ts`,
   `routes-generator.ts`, `features.ts`, `zones-generator.ts`, `markets-generator.ts`,
   `cultures-generator.ts`, `religions-generator.ts`, `biomes-generator.ts`, `goods-generator.ts`,
-  `added-labels.ts`, `src/types/Journey.ts` — add `note?`.
-- `src/generators/military-generator.ts` — add `note?` to `Regiment` (`:9`); set it in
+  `added-labels.ts`, `src/types/journey.ts` — add `note?`.
+- `src/model/political/military-generator.ts` — add `note?` to `Regiment` (`:9`); set it in
   `generateNote`; keep the
   deliberate wipe at `:450` (regenerated regiments cease to exist), now a field reset.
-- `src/generators/added-labels.ts:33` — drop the note filter on remove.
-- `src/generators/resample.ts` — drop `notes` from the parent-map snapshot type and the splice at
+- `src/model/annotations/added-labels.ts:33` — drop the note filter on remove.
+- `src/model/resample.ts` — drop `notes` from the parent-map snapshot type and the splice at
   `:280`.
 - `src/generators/features.ts` — feature note/name restoration helper.
 
 ### Modified — UI
 
-- `src/controllers/notes-editor.ts` — aggregate list, entity-name header, CSV upload/download.
-- `src/controllers/markers-editor.ts`, `markers-overview.ts` — read `marker.name`/`marker.note`;
+- `src/controllers/story/notes-editor.ts` — aggregate list, entity-name header, CSV upload/download.
+- `src/controllers/story/markers/markers-editor.ts`, `markers-overview.ts` — read `marker.name`/`marker.note`;
   drop the note filters at `markers-overview.ts:390,411`.
-- `src/controllers/states-editor.ts` — delete the regiment note cleanup at `:985` and the id rewrite
+- `src/controllers/political/states-editor.ts` — delete the regiment note cleanup at `:985` and the id rewrite
   at `:1698` (the merge already spreads the regiment object, so `note` rides along); add the row
   note button.
-- `src/controllers/lakes-editor.ts:343` — resolve the feature via `data-f`, fixing the null-id bug.
-- `src/controllers/burg-editor.ts`, `river-editor.ts`, `route-editor.ts`, `regiment-editor.ts`,
+- `src/controllers/physical/lakes-editor.ts:343` — resolve the feature via `data-f`, fixing the null-id bug.
+- `src/controllers/political/burgs/burg-editor.ts`, `river-editor.ts`, `route-editor.ts`, `regiment-editor.ts`,
   `labels-editor.ts` — pass an entity reference instead of an element id.
-- `src/controllers/provinces-editor.ts`, `cultures-editor.ts`, `religions-editor.ts`,
+- `src/controllers/political/provinces-editor.ts`, `cultures-editor.ts`, `religions-editor.ts`,
   `biomes-editor.ts`, `zones-editor.ts`, `goods-editor.ts`, `markets-overview.ts`,
   `journey/journey-editor.ts` — new note button.
-- `src/controllers/markers-in-radius.ts`, `battle-screen.ts` — read `marker.name`.
-- `src/components/map-tooltip.ts:45` — resolve through the new module.
-- `src/components/undraw.ts:12`, `globals.ts:7,13` — remove the global.
+- `src/controllers/story/markers/markers-in-radius.ts`, `battle-screen.ts` — read `marker.name`.
+- `src/ui/map/map-tooltip.ts:45` — resolve through the new module.
+- `src/renderers/undraw.ts:12`, `globals.ts:7,13` — remove the global.
 - `src/controllers/index.ts` — `NotesEditor.open` signature.
 
 ### Modified — IO
@@ -248,9 +248,9 @@ cover `name` alongside `note` — it is the same lookup. Serves `heightmap-edito
 
 ### New
 
-- `src/generators/notes.ts` — the `Notes` model: note get/set/clear, sanitized writes and aggregation for the editor and font scan.
-- `src/components/dialog/dialog-helpers.ts` — `noteButton` / `noteIcon`, the note controls every entity dialog and table renders.
-- `src/components/map-entities.ts` — shared entity definitions, lookup, references, names, context, geometry, and SVG resolution.
+- `src/model/story/notes.ts` — the `Notes` model: note get/set/clear, sanitized writes and aggregation for the editor and font scan.
+- `src/ui/dialog/dialog-helpers.ts` — `noteButton` / `noteIcon`, the note controls every entity dialog and table renders.
+- `src/model/map-entities.ts` — shared entity definitions, lookup, references, names, context, geometry, and SVG resolution.
 
 ### Docs
 
@@ -264,10 +264,10 @@ cover `name` alongside `note` — it is the same lookup. Serves `heightmap-edito
 
 - `src/services/io/auto-update.test.ts` — migration: resolution, duplicate concatenation, name
   folding, marker names, orphan collection.
-- `src/generators/markers-generator.test.ts` — markers get names.
-- `src/generators/resample.test.ts`, `added-labels.test.ts`, `src/services/fonts.test.ts`,
-  `src/components/configuration.test.ts` — drop `globalThis.notes`.
-- `src/controllers/notes-rich-text.test.ts` — unchanged, verify.
+- `src/model/story/markers-generator.test.ts` — markers get names.
+- `src/model/resample.test.ts`, `added-labels.test.ts`, `src/services/fonts.test.ts`,
+  `src/model/options/configuration.test.ts` — drop `globalThis.notes`.
+- `src/controllers/story/notes-rich-text.test.ts` — unchanged, verify.
 - New: feature note restoration across a heightmap edit.
 - `tests/e2e/notes-editor.spec.ts`, `tests/e2e/load-map.spec.ts` — update.
 

@@ -2,17 +2,12 @@ import fs from "fs";
 import { expect, test } from "@playwright/test";
 import { waitForMap } from "./wait-for-map";
 
+// the app's console surface, see src/app/fmg.ts
+declare const FMG: any;
+
 // data[50] exists so that the layers the user had enabled — and the order they put them in —
 // come back exactly as they were. Save the state, reload it, assert nothing drifted.
 
-declare const Layers: {
-  state: { order: string[]; active: string[] };
-  get: (id: string) => { id: string } | undefined;
-  show: (...layers: unknown[]) => void;
-  hide: (...layers: unknown[]) => void;
-  move: (layer: unknown, before?: unknown) => void;
-};
-declare const Services: { Save: { toMachine: () => Promise<void> } };
 
 test.describe("layers round-trip", () => {
   test("saved layer state and custom order survive a save and load", async ({ page }) => {
@@ -21,10 +16,10 @@ test.describe("layers round-trip", () => {
 
     // a state that differs from the default preset in both membership and order
     const before = await page.evaluate(() => {
-      Layers.show("biomes", "cells");
-      Layers.hide("labels");
-      Layers.move("texture", "relief"); // texture is no longer in its registration slot
-      return Layers.state;
+      FMG.Layers.show("biomes", "cells");
+      FMG.Layers.hide("labels");
+      FMG.Layers.move("texture", "relief"); // texture is no longer in its registration slot
+      return FMG.Layers.state;
     });
 
     expect(before.active).toContain("biomes");
@@ -35,7 +30,7 @@ test.describe("layers round-trip", () => {
     await page.evaluate(() => {
       // This round trip captures a download, not the native file picker.
       Object.defineProperty(window, "showSaveFilePicker", { value: undefined, configurable: true });
-      return Services.Save.toMachine();
+      return FMG.Services.Save.toMachine();
     });
     const download = await downloadPromise;
     const buffer = fs.readFileSync(await download.path());
@@ -47,7 +42,7 @@ test.describe("layers round-trip", () => {
     await page.locator("#mapToLoad").setInputFiles({ name: "round-trip.map", mimeType: "text/plain", buffer });
     await expect(page.locator("#tooltip")).toContainText("Map is successfully loaded", { timeout: 120000 });
 
-    const after = await page.evaluate(() => Layers.state);
+    const after = await page.evaluate(() => FMG.Layers.state);
     expect(after).toEqual(before);
 
     // the registry order is the document order of the svg groups
@@ -68,10 +63,10 @@ test.describe("layers round-trip", () => {
     await page.locator("#mapToLoad").setInputFiles([]);
     await page.locator("#mapToLoad").setInputFiles({ name: "round-trip.map", mimeType: "text/plain", buffer });
     await page.waitForFunction(
-      () => JSON.stringify(Layers.state.active.slice().sort()) === JSON.stringify(["burgIcons", "scaleBar"])
+      () => JSON.stringify(FMG.Layers.state.active.slice().sort()) === JSON.stringify(["burgIcons", "scaleBar"])
     );
 
-    expect(await page.evaluate(() => Layers.state.active.slice().sort())).toEqual(["burgIcons", "scaleBar"]);
+    expect(await page.evaluate(() => FMG.Layers.state.active.slice().sort())).toEqual(["burgIcons", "scaleBar"]);
     await expect(page.locator("#layersPreset")).toHaveValue("custom");
   });
 });

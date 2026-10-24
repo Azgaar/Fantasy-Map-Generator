@@ -37,7 +37,7 @@ the way they do, not a copy of what they contain.
    one value, and never two forms of one — a density step and the cell count it stands for are the
    same request said twice, so only the step is stored.
 4. **A value belongs in `map` if and only if the map cannot be operated correctly without it.**
-5. **The model is the store.** `options` is a global the model declares and initializes, written
+5. **The model is the store.** `options` is the ambient object the model declares, written
    plainly — `options.map.units.area.unit = …` — because a value takes effect where it is written.
    What remembers it is `Options.save()` (debounced) or `Options.persist()` for the few places that
    must not wait: boot, reset, and the end of a generation or a load.
@@ -105,6 +105,9 @@ Two rules keep the boundary sharp. **"Show all regardless of zoom" is a preferen
 style record. And **a preference the user has not set
 is `null`, not a guess** — interface size follows the screen and the viewport follows the window
 until someone chooses otherwise, so a control's reset writes `null` rather than today's number.
+One value lives here for the session only: `app.mode`, the edit mode the user is in (`"heightmap"`,
+`"paint"`, `"addState"`…, or `null`). While it is set, other editors, saving, loading and regeneration
+stay off. It is never written to localStorage, so a reload always starts outside any mode.
 
 The **viewport** is the clearest case of the last rule, and the one most often confused with the
 extent: the extent is the coordinate space the map's geometry lives in, fixed for the life of its

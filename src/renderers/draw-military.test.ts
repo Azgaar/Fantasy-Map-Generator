@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { beforeEach, expect, test, vi } from "vitest";
-import "@/generators/styles";
-import type { Regiment } from "@/generators/military-generator";
+import "@/model/styles/styles";
+import type { Regiment } from "@/model/political/military-generator";
 import { drawMilitary, drawRegiment, moveRegiment, updateRegimentIcon } from "./draw-military";
 
-vi.mock("@/components/icons", () => ({
+vi.mock("@/model/icons", () => ({
   Icons: { href: (id: string) => `#${id}`, kind: (id: string) => (id.startsWith("glyph-") ? "glyph" : "set") }
 }));
 

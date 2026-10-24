@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, expect, test } from "vitest";
-import { requireFill } from "@/utils/colorUtils";
+import { requireFill } from "@/utils/color-utils";
 import { Hatches } from "./hatches";
 
 beforeEach(() => {

@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { waitForMap } from "./wait-for-map";
 
-declare const Services: { Save: { prepareMapData: () => Promise<string> } };
+// the app's console surface, see src/app/fmg.ts
+declare const FMG: any;
+
 declare const options: { map: { lore: { name: string } } };
 
 declare global {
@@ -50,13 +52,13 @@ test("Ctrl+S saves a new file each time and Ctrl+Shift+S overwrites the last one
   const read = (index: number) =>
     page.evaluate(async i => (await window.saveTest.handles[i].getFile()).text(), index);
 
-  const initial = await page.evaluate(() => Services.Save.prepareMapData());
+  const initial = await page.evaluate(() => FMG.Services.Save.prepareMapData());
   await save("Control+s", "Chosen-1.map");
   expect(await read(0)).toBe(initial);
 
   const edited = await page.evaluate(async () => {
     options.map.lore.name = "Edited after saving";
-    return Services.Save.prepareMapData();
+    return FMG.Services.Save.prepareMapData();
   });
   await save("Control+Shift+s", "Chosen-1.map");
   expect(await read(0)).toBe(edited);
@@ -64,7 +66,7 @@ test("Ctrl+S saves a new file each time and Ctrl+Shift+S overwrites the last one
 
   const backup = await page.evaluate(async () => {
     options.map.lore.name = "Edited again";
-    return Services.Save.prepareMapData();
+    return FMG.Services.Save.prepareMapData();
   });
   await save("Control+s", "Chosen-2.map");
   expect(await read(1)).toBe(backup);
@@ -92,7 +94,7 @@ test("cancelling a save retains the overwrite destination and loading a map clea
   await expect(page.locator("#tooltip")).toContainText('Map is saved to “Chosen-1.map”');
   expect(await page.evaluate(() => window.saveTest.picks)).toBe(2);
 
-  const data = await page.evaluate(() => Services.Save.prepareMapData());
+  const data = await page.evaluate(() => FMG.Services.Save.prepareMapData());
   await page.locator("#mapToLoad").setInputFiles({
     name: "Reloaded.map",
     mimeType: "text/plain",

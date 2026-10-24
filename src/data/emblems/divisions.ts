@@ -1,4 +1,4 @@
-import { lineWeights } from "./lineWeights";
+import { lineWeights } from "./line-weights";
 
 export const divisions = {
   variants: {

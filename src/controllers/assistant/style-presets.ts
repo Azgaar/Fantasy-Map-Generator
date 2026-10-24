@@ -23,7 +23,7 @@ class StylePresetOperations {
     // loaded here, not at the top: they reach the app shell, which the operation registry must not
     const [{ StylePresetsService: service }, { ensureGroupStyles }] = await Promise.all([
       import("@/services/style-presets"),
-      import("@/controllers/style-preset")
+      import("@/controllers/style/style-preset")
     ]);
     this.ensureGroupStyles = ensureGroupStyles;
     for (const name of names) {

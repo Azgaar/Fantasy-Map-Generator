@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 import { expect, it } from "vitest";
-import { Styles } from "@/generators/styles";
+import { Styles } from "@/model/styles/styles";
+import { fonts } from "@/services/fonts";
 import { styleFields, styleOverview } from "./style-reference";
 
 it("lists the elements, choices and how to read an element's fields", () => {
   document.body.innerHTML = `<svg><defs><g id="filters"><filter id="filter-sepia" name="Sepia"></filter></g></defs></svg>`;
-  globalThis.fonts = [{ family: "Almendra SC" }];
+  fonts.splice(0, fonts.length, { family: "Almendra SC" });
   const overview = styleOverview();
   expect(overview).toContain("ocean (Ocean)");
   expect(overview).toContain("url(#filter-sepia) Sepia");

@@ -1,8 +1,10 @@
 import { type DriveStep, driver } from "driver.js";
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
-import { ensureEl } from "@/utils/nodeUtils";
+
+import { ensureEl } from "@/utils/node-utils";
 import "driver.js/dist/driver.css";
-import { showExportPane } from "@/components/options/io-panes";
+import { Controllers } from "@/controllers";
+import { App } from "@/ui/app-commands";
+import { Dialog } from "@/ui/dialog/dialog";
 import { t } from "@/utils/i18n";
 
 function closeOptionsPanel() {
@@ -49,7 +51,7 @@ function start() {
       activeTour = null;
       document.removeEventListener("keydown", handleKeydown);
       hideHeightmapCustomizationPanel();
-      closeDialogs();
+      Dialog.closeAll();
       closeOptionsPanel();
     },
     steps: browsingSteps([
@@ -139,7 +141,7 @@ function start() {
         popover: {
           title: t("Toggle Individual Layers"),
           description: t(
-            "Click any layer name to toggle it on or off. Layers can be reordered by dragging and dropping them."
+            "Click any layer name to toggle it on or off. The button at the end of the preset row changes the layer order."
           ),
           side: "right"
         }
@@ -216,7 +218,7 @@ function start() {
       {
         element: "#configureWorld",
         onHighlightStarted: () => {
-          closeDialogs();
+          Dialog.closeAll();
           ensureEl("optionsTab")?.click();
         },
         popover: {
@@ -243,7 +245,7 @@ function start() {
           ),
           side: "right",
           onNextClick: () => {
-            closeDialogs();
+            Dialog.closeAll();
             ensureEl("toolsTab")?.click();
             advanceTour(tour);
           }
@@ -281,13 +283,13 @@ function start() {
         }
       },
       {
-        element: "#customizationMenu",
+        element: "#heightmapMenu",
         disableActiveInteraction: false,
         onHighlightStarted: () => {
           const toolsContent = ensureEl("toolsContent");
-          const customizationMenu = ensureEl("customizationMenu");
+          const heightmapMenu = ensureEl("heightmapMenu");
           toolsContent.style.display = "none";
-          customizationMenu.style.display = "block";
+          heightmapMenu.style.display = "block";
         },
         onDeselected: () => {
           hideHeightmapCustomizationPanel();
@@ -333,7 +335,7 @@ function start() {
       {
         element: "#exportButton",
         onHighlightStarted: () => {
-          closeDialogs();
+          Dialog.closeAll();
         },
         popover: {
           title: t("Export"),
@@ -350,7 +352,7 @@ function start() {
         element: "#exportMapData",
         disableActiveInteraction: false,
         onHighlightStarted: () => {
-          showExportPane();
+          App.showExportPane();
         },
         popover: {
           title: t("Export Options"),
@@ -359,7 +361,7 @@ function start() {
           ),
           side: "top",
           onNextClick: () => {
-            closeDialogs();
+            Dialog.closeAll();
             advanceTour(tour);
           }
         }
@@ -420,7 +422,7 @@ const EDITING_STEPS = [
   "#worldConfigurator",
   "#toolsTab",
   "#editHeightmapButton",
-  "#customizationMenu",
+  "#heightmapMenu",
   "#saveButton"
 ];
 
@@ -430,9 +432,9 @@ function browsingSteps(steps: DriveStep[]): DriveStep[] {
 }
 
 function hideHeightmapCustomizationPanel() {
-  const customizationMenu = ensureEl("customizationMenu");
-  if (customizationMenu.style.display !== "block") return;
-  customizationMenu.style.display = "none";
+  const heightmapMenu = ensureEl("heightmapMenu");
+  if (heightmapMenu.style.display !== "block") return;
+  heightmapMenu.style.display = "none";
   ensureEl("toolsContent").style.display = "block";
 }
 

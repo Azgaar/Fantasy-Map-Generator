@@ -1,16 +1,13 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/types/global";
+import { Dialog } from "@/ui/dialog/dialog";
 import type { PaintEditorOptions } from "./paint-editor";
 import { PaintEditor } from "./paint-editor";
-import "@/generators/pack-generator"; // registers the Pack global the editor finds cells with
 
-vi.mock("@/components/viewbox-events", () => ({ applyDefaultViewboxEvents: vi.fn() }));
-vi.mock("@/components/dialog/dialog-helpers", async importOriginal => ({
-  ...(await importOriginal<typeof import("@/components/dialog/dialog-helpers")>()),
-  closeDialogs: vi.fn()
-}));
+vi.mock("@/ui/map/viewbox-events", () => ({ applyDefaultViewboxEvents: vi.fn() }));
 
 const getOptions = (overrides: Partial<PaintEditorOptions> = {}): PaintEditorOptions => ({
   title: "Paint states",
@@ -53,7 +50,7 @@ async function dragBrush(
 beforeEach(() => {
   document.body.innerHTML =
     '<div id="dialogs"><div id="parentDialog" class="dialog"></div></div><div id="tooltip"></div><svg><g id="viewbox"></g><g id="debug"></g></svg>';
-  globalThis.customization = 0;
+  options.app.mode = null;
   vi.spyOn(Pack, "findCell").mockReturnValue(3);
   globalThis.pack = {
     cells: {
@@ -74,26 +71,7 @@ beforeEach(() => {
       ]
     }
   } as unknown as typeof pack;
-  const dialogOptions = new WeakMap<HTMLElement, Record<string, unknown>>();
-  window.$ = vi.fn((target: string | HTMLElement) => {
-    const element = typeof target === "string" ? document.querySelector<HTMLElement>(target) : target;
-    const dialog = vi.fn((command: unknown, key?: string, value?: unknown) => {
-      if (!element) return;
-      const options = dialogOptions.get(element) ?? {};
-      if (typeof command === "object") {
-        dialogOptions.set(element, { ...options, ...command });
-        element.classList.add("ui-dialog-content");
-      } else if (command === "option" && value === undefined) return options[key!];
-      else if (command === "option") dialogOptions.set(element, { ...options, [key!]: value });
-      else if (command === "close") {
-        element.style.display = "none";
-        if (typeof options.close === "function") options.close();
-      } else if (command === "open") element.style.removeProperty("display");
-    });
-    return { dialog };
-  }) as unknown as typeof window.$;
-  const parentDialog = document.getElementById("parentDialog")!;
-  $(parentDialog).dialog({ close: () => parentDialog.remove() });
+  Dialog.open("parentDialog");
 });
 
 afterEach(() => {
@@ -116,13 +94,13 @@ describe("PaintEditor", () => {
     expect(document.getElementById("parentDialog")).not.toBeNull();
   });
 
-  it("owns customization and clears it when cancelled", () => {
+  it("owns the edit mode and clears it when cancelled", () => {
     PaintEditor.open(getOptions());
-    expect(globalThis.customization).toBe(2);
+    expect(options.app.mode).toBe("paint");
 
     document.getElementById("paintEditorCancel")?.click();
 
-    expect(globalThis.customization).toBe(0);
+    expect(options.app.mode).toBeNull();
     expect(document.getElementById("paintEditor")).toBeNull();
     expect(document.getElementById("paintEditorOverlay")).toBeNull();
   });
@@ -180,7 +158,7 @@ describe("PaintEditor", () => {
     const changes = onApply.mock.calls[0][0] as ReadonlyMap<number, number>;
     expect([...changes]).toEqual([[3, 1]]);
     expect(calls).toEqual(["apply", "close"]);
-    expect(globalThis.customization).toBe(0);
+    expect(options.app.mode).toBeNull();
   });
 
   it("paints the whole path of a fast swipe, not only where the pointer events landed", async () => {

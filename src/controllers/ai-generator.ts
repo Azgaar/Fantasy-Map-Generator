@@ -1,8 +1,10 @@
-import { destroyDialog } from "@/components/dialog/dialog-helpers";
-import { tip } from "@/components/tooltips";
-import { openURL } from "@/utils";
+import { Dialog } from "@/ui/dialog/dialog";
+
+import { tip } from "@/ui/tooltips";
+import { openURL } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "../utils";
+import { log } from "@/utils/logger";
+import { ensureEl } from "@/utils/node-utils";
 
 type Provider = "openai" | "anthropic" | "ollama";
 
@@ -153,7 +155,7 @@ async function handleStream(response: Response, getContent: (json: StreamChunk) 
       const json = await response.json();
       errorMessage = json.error?.message || json.error || errorMessage;
     } catch (error) {
-      ERROR && console.error("Failed to parse AI provider error response", error);
+      log.error("Failed to parse AI provider error response", error);
     }
     throw new Error(errorMessage);
   }
@@ -179,7 +181,7 @@ async function handleStream(response: Response, getContent: (json: StreamChunk) 
         const parsed = line.startsWith("data: ") ? JSON.parse(line.slice(6)) : JSON.parse(line);
         getContent(parsed);
       } catch (error) {
-        ERROR && console.error("Failed to parse line:", line, error);
+        log.error("Failed to parse line:", line, error);
       }
     }
 
@@ -191,30 +193,37 @@ function open(defaultPrompt: string, onApply: (result: string) => void): void {
   renderDialog();
   setInitialValues(defaultPrompt);
 
-  $("#aiGenerator").dialog({
+  Dialog.open("aiGenerator", {
     title: t("AI Text Generator"),
     position: { my: "center", at: "center", of: "svg" },
-    resizable: false,
-    close: () => destroyDialog("aiGenerator"),
-    buttons: {
-      [t("Generate")]: (e: Event) => {
-        void generate(e.target as HTMLButtonElement);
+    buttons: [
+      {
+        label: t("Generate"),
+        onClick: (e: Event) => {
+          void generate(e.target as HTMLButtonElement);
+        }
       },
-      [t("Apply")]: function (this: HTMLElement) {
-        const result = ensureEl<HTMLTextAreaElement>("aiGeneratorResult").value;
-        if (!result) return tip(t("No result to apply"), true, "error", 4000);
-        onApply(result);
-        $(this).dialog("close");
+      {
+        label: t("Apply"),
+        onClick: () => {
+          const result = ensureEl<HTMLTextAreaElement>("aiGeneratorResult").value;
+          if (!result) return tip(t("No result to apply"), true, "error", 4000);
+          onApply(result);
+          Dialog.close("aiGenerator");
+        }
       },
-      [t("Close")]: function (this: HTMLElement) {
-        $(this).dialog("close");
+      {
+        label: t("Close"),
+        onClick: () => {
+          Dialog.close("aiGenerator");
+        }
       }
-    }
+    ]
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("aiGenerator");
+  Dialog.destroy("aiGenerator");
 
   const html = /* html */ `<div id="aiGenerator" class="dialog stable">
     <div style="display: flex; flex-direction: column; gap: 0.3em; width: 100%">

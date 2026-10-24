@@ -1,5 +1,5 @@
-import type { LayerId } from "@/components/layers";
-import type { EntityType } from "@/components/map-entities";
+import type { EntityType } from "@/model/map-entities";
+import type { LayerId } from "@/renderers/layers";
 import { t } from "@/utils/i18n";
 
 // The layers a territory's edits redraw, shared by its entity and its cells

@@ -1,9 +1,9 @@
 // The system prompt: one compact static block, cached by the provider. The map context opens each question
 // instead, and reference material stays out of it; the model fetches it with read_docs.
 
-import { ENTITY_TYPES, RECORD_TYPES } from "@/components/map-entities";
 import { METHODS } from "@/controllers/assistant/operations";
 import { RELATIONS } from "@/data/diplomacy";
+import { ENTITY_TYPES, RECORD_TYPES } from "@/model/map-entities";
 import { DATA_FIELDS, GENERATOR_NAMES } from "./context.generated";
 
 const KEY_TYPES = [...ENTITY_TYPES, ...RECORD_TYPES].join(", ");
@@ -32,9 +32,10 @@ const SCRIPTS = `# Scripts (read_map)
   never return a whole entity array. Plan first: one script gathers all the answer needs, and independent calls
   share one turn. Stop reading once you can answer. On an error, fix and retry.
 - Unsure of a shape? \`return describe("pack.burgs[1]")\`, an object (also works on singletons, e.g.
-  \`describe("States")\`), or call \`read_docs\`. Declarations lag the code mid-migration, so check when it matters.
-- Globals: \`pack\` (map data), \`grid\` (pre-repack grid), \`options\` (\`options.map\` holds the map's settings),
-  \`styles\`, \`mapHistory\`, and generator singletons: ${GENERATOR_NAMES}. Guard anything else with \`typeof\`.
+  \`describe("States")\`), or call \`read_docs\`. Declarations summarize the code, so check when it matters.
+- In scope by name, as \`FMG.*\` in the console: \`pack\` (map data), \`grid\` (pre-repack grid), \`options\`
+  (\`options.map\` holds the map's settings), \`styles\`, \`mapHistory\`, the app's helpers and singletons such as
+  ${GENERATOR_NAMES}. \`read_docs(["Globals"])\` lists every member.
 - \`downloadFile(content, "name.csv", "text/csv")\` saves a file for the user; name it in the answer.
 - Do not call \`draw*\` functions: applying a proposal redraws the map.`;
 

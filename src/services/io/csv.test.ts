@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { downloadFile } from "@/utils/fileUtils";
+import { downloadFile } from "@/utils/file-utils";
 import { Csv } from "./csv";
 
-vi.mock("@/utils/fileUtils", async importOriginal => ({
-  ...(await importOriginal<typeof import("@/utils/fileUtils")>()),
+vi.mock("@/utils/file-utils", async importOriginal => ({
+  ...(await importOriginal<typeof import("@/utils/file-utils")>()),
   downloadFile: vi.fn()
 }));
 

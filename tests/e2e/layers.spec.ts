@@ -205,12 +205,12 @@ test.describe("map layers", () => {
       const before = count();
 
       stateGroup.active = false;
-      (window as any).Layers.draw("labels");
+      (window as any).FMG.Layers.draw("labels");
       await new Promise(resolve => setTimeout(resolve, 300));
       const deactivated = count();
 
       delete stateGroup.active;
-      (window as any).Layers.draw("labels");
+      (window as any).FMG.Layers.draw("labels");
       await new Promise(resolve => setTimeout(resolve, 300));
       return { before, deactivated, reactivated: count() };
     });
@@ -257,9 +257,9 @@ test.describe("map layers", () => {
     await sharedPage.evaluate(() => {
       // only the first good is visible by default; make all of them visible for this test
       (window as any).pack.goods.forEach((good: any) => (good.visible = true));
-      (window as any).Layers.toggle("goods");
+      (window as any).FMG.Layers.toggle("goods");
       // markets render in a standalone layer, toggled independently
-      (window as any).Layers.toggle("markets");
+      (window as any).FMG.Layers.toggle("markets");
     });
     await sharedPage.waitForTimeout(300);
 
@@ -288,8 +288,8 @@ test.describe("map layers", () => {
 
     // Restore: toggle goods and markets layers off
     await sharedPage.evaluate(() => {
-      (window as any).Layers.toggle("goods");
-      (window as any).Layers.toggle("markets");
+      (window as any).FMG.Layers.toggle("goods");
+      (window as any).FMG.Layers.toggle("markets");
     });
   });
 

@@ -1,0 +1,336 @@
+/* Dialog window chrome. Nothing outside this file styles these classes.
+   Linked before index.css, so the app's own rules of equal weight still win */
+
+.dialog-window {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  outline: 0;
+  padding: 0;
+  border: 1px solid #5e4fa2;
+  background-color: inherit;
+  color: #333333;
+  font-family: var(--sans-serif);
+  user-select: none;
+  min-width: 150px;
+}
+
+.dialog-window[hidden] {
+  display: none;
+}
+
+.dialog-window a {
+  color: #333333;
+}
+
+.dialog-window input,
+.dialog-window select,
+.dialog-window textarea,
+.dialog-window button {
+  font-family: var(--sans-serif);
+  font-size: 1em;
+}
+
+.dialog-window button[class^="icon-"] {
+  padding: 1px 6px;
+}
+
+/* Titlebar */
+
+.dialog-titlebar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-sizing: border-box; /* its padding fits in the window's minimum width */
+  min-width: 150px;
+  padding: 0.3em 0.8em;
+  border-bottom: 1px solid var(--dark-solid);
+  background: var(--header);
+  color: #ffffff;
+  font-size: 1.2em;
+  font-weight: bold;
+  cursor: move;
+  touch-action: none;
+}
+
+.dialog-title {
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* sized in em, so the titlebar follows the UI size */
+.dialog-titlebar > .dialog-titlebar-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.6em;
+  height: 1.5em;
+  margin-left: 0.4em;
+  padding: 0;
+  border: 1px solid #c5c5c5;
+  background: none;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.dialog-titlebar > .dialog-titlebar-button:active {
+  border: 1px solid #5d4651;
+}
+
+.dialog-titlebar > .dialog-titlebar-reset::before {
+  font-size: 0.62em;
+}
+
+.dialog-titlebar > .dialog-titlebar-button[hidden] {
+  display: none;
+}
+
+/* bigger tap targets for fingers */
+@media (pointer: coarse) {
+  .dialog-titlebar > .dialog-titlebar-button {
+    width: 2.2em;
+    height: 2em;
+    margin-left: 0.5em;
+  }
+}
+
+/* Content */
+
+.dialog-window > .dialog-content {
+  position: relative;
+  padding: 0.5em 1em;
+  border: 0;
+  background: none;
+  color: #333333;
+  overflow: auto;
+}
+
+.dialog-window.dialog-minimized > .dialog-content,
+.dialog-window.dialog-minimized > .dialog-buttonpane {
+  display: none;
+}
+
+.dialog-window button.pressed {
+  box-shadow: inset 1px 1px 0 0 #ccc;
+  border-color: #a6a6da;
+  background-color: #ecd8d8;
+  border-radius: 10%;
+}
+
+.dialog-window input[type="range"] {
+  padding: 0;
+  height: 2px;
+  background: #d4d4d4;
+  position: relative;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.dialog-window input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  border-radius: 15%;
+  width: 1em;
+  height: 1em;
+  background: #e9e9e9;
+  border: 1px solid #9b9b9b;
+  cursor: pointer;
+}
+
+.dialog-window input[type="range"]::-moz-range-thumb {
+  appearance: none;
+  border-radius: 15%;
+  width: 1em;
+  height: 1em;
+  background: #e9e9e9;
+  border: 1px solid #9b9b9b;
+  cursor: pointer;
+}
+
+.dialog-window input[type="number"] {
+  width: 4.5em;
+}
+
+.dialog-window .disabled {
+  opacity: 0.2;
+}
+
+/* Message windows */
+
+.dialog-message {
+  max-width: 75vw;
+  max-height: 70vh;
+  margin: 0;
+  overflow: auto;
+  user-select: text;
+}
+
+.dialog-message ul {
+  margin: 1em 0;
+  padding-left: 1.2em;
+}
+
+.dialog-message::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  background-color: transparent;
+}
+
+.dialog-message::-webkit-scrollbar-thumb {
+  background-color: #aaa;
+  border-radius: 6px;
+}
+
+.dialog-message::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+.dialog-prompt {
+  display: block;
+  width: 100%;
+  margin-top: 0.6em;
+}
+
+/* Button pane */
+
+.dialog-buttonpane {
+  margin-top: 0.5em;
+  padding: 0.3em 1em 0.5em 0.4em;
+  border: 1px solid #dddddd;
+  border-width: 1px 0 0 0;
+  color: #333333;
+  text-align: left;
+}
+
+.dialog-buttonpane::before,
+.dialog-buttonpane::after {
+  content: "";
+  display: table;
+  border-collapse: collapse;
+}
+
+.dialog-buttonpane::after {
+  clear: both;
+}
+
+.dialog-buttonset {
+  float: right;
+}
+
+.dialog-buttonpane .dialog-buttonset > button {
+  display: inline-block;
+  position: relative;
+  margin: 0.5em 0.4em 0.5em 0;
+  padding: 0.4em 1em;
+  border: 1px solid #c5c5c5;
+  background: #f6f6f6;
+  color: #454545;
+  font-weight: normal;
+  line-height: normal;
+  text-align: center;
+  text-decoration: none;
+  vertical-align: middle;
+  overflow: visible;
+  cursor: pointer;
+  user-select: none;
+}
+
+.dialog-buttonpane .dialog-buttonset > button:active {
+  border-color: #5d4651;
+  color: #5d4651;
+}
+
+.dialog-buttonpane .dialog-buttonset > button:disabled {
+  filter: brightness(0.95);
+  cursor: default;
+}
+
+/* Resize handles: 2px edges and 7px corners, flush with the border */
+
+.dialog-resize {
+  position: absolute;
+  display: block;
+  font-size: 0.1px;
+  touch-action: none;
+}
+
+.dialog-resize-n,
+.dialog-resize-s {
+  left: 0;
+  width: 100%;
+  height: 2px;
+}
+
+.dialog-resize-e,
+.dialog-resize-w {
+  top: 0;
+  width: 2px;
+  height: 100%;
+}
+
+.dialog-resize-se,
+.dialog-resize-sw,
+.dialog-resize-ne,
+.dialog-resize-nw {
+  width: 7px;
+  height: 7px;
+}
+
+.dialog-resize-n {
+  top: 0;
+  cursor: n-resize;
+}
+
+.dialog-resize-s {
+  bottom: 0;
+  cursor: s-resize;
+}
+
+.dialog-resize-e {
+  right: 0;
+  cursor: e-resize;
+}
+
+.dialog-resize-w {
+  left: 0;
+  cursor: w-resize;
+}
+
+.dialog-resize-se {
+  right: 0;
+  bottom: 0;
+  cursor: se-resize;
+}
+
+.dialog-resize-sw {
+  left: 0;
+  bottom: 0;
+  cursor: sw-resize;
+}
+
+.dialog-resize-ne {
+  right: 0;
+  top: 0;
+  cursor: ne-resize;
+}
+
+.dialog-resize-nw {
+  left: 0;
+  top: 0;
+  cursor: nw-resize;
+}
+
+/* Modal overlay */
+
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #aaaaaa;
+  opacity: 0.3;
+}

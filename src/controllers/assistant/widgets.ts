@@ -1,20 +1,21 @@
 import { schemeTableau10 } from "d3";
-import { isLinkable, MAP_COMMANDS } from "@/components/map-commands";
-import { ENTITY_TYPES, type EntityRef, isEntityType, MapEntities, RECORD_TYPES } from "@/components/map-entities";
-import { clearEntityMarks, markEntities, reveal, revealEntity } from "@/components/reveal";
-import { tip } from "@/components/tooltips";
-import type { State } from "@/generators/states-generator";
+import { ENTITY_TYPES, type EntityRef, isEntityType, MapEntities, RECORD_TYPES } from "@/model/map-entities";
+import type { State } from "@/model/political/states-generator";
+import { formatPrice, getArea, getAreaUnit, getPeople } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
+import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import type { ChartRow, Widget } from "@/services/assistant/chats";
 import type { Region } from "@/services/io/export";
 import type { Emblem } from "@/types/emblems";
 import type { Point } from "@/types/global";
-import { findEl } from "@/utils";
+import { App } from "@/ui/app-commands";
+import { clearEntityMarks, markEntities, openEntity as openEditor, reveal, revealEntity } from "@/ui/map/reveal";
+import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
 import { type LinkResolver, renderMarkdown } from "@/utils/markdown";
-import { rn } from "@/utils/numberUtils";
-import { escapeHtml } from "@/utils/stringUtils";
-import { formatPrice, getArea, getAreaUnit, getPeople, si } from "@/utils/unitUtils";
+import { findEl } from "@/utils/node-utils";
+import { rn, si } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 import { frameRegion } from "./region";
 
 // Widgets: links in answers and the items the show tool places. See docs/prd/assistant.md
@@ -45,11 +46,11 @@ let insetCount = 0;
 let marked: Of<"entities"> | null = null;
 
 /** The Assistant panel over the map: what it reveals is centred beside it */
-const panel = () => findEl("assistant")?.closest(".ui-dialog")?.getBoundingClientRect();
+const panel = () => findEl("assistant")?.getBoundingClientRect();
 
 function linkableCommand(id: string) {
-  const command = MAP_COMMANDS.find(command => command.id === id);
-  return command && isLinkable(command) ? command : undefined;
+  const command = App.mapCommands.find(command => command.id === id);
+  return command && App.isLinkable(command) ? command : undefined;
 }
 
 /** A good shows its own badge, as the map draws it; other entities their type's icon */
@@ -211,7 +212,7 @@ function cardHtml(widget: Of<"card">, live: boolean): string {
 
 /** An emblem shown by reference, rendered on first use */
 function emblemSvg(id: string, coa: Emblem | undefined, className = ""): string {
-  if (coa) void window.EmblemRenderer?.trigger(id, coa);
+  if (coa) void EmblemRenderer?.trigger(id, coa);
   return `<svg${className && ` class="${className}"`} viewBox="0 0 200 200" aria-hidden="true"><use href="#${id}"></use></svg>`;
 }
 
@@ -364,7 +365,7 @@ function revealInset(widget: Of<"inset">): void {
 function openEntity(key: string): void {
   const ref = MapEntities.resolveKey(key);
   if (!ref) return;
-  if (revealEntity(ref, panel()) || MapEntities.open(ref)) return;
+  if (revealEntity(ref, panel()) || openEditor(ref)) return;
   tip(t("This element has no map location"), false, "warn", 4000);
 }
 

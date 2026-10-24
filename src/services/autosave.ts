@@ -1,9 +1,11 @@
 // Background save lifecycle: the autosave timer and the periodic "remember to save" reminder
 
-import { tip } from "@/components/tooltips";
+import { Options } from "@/model/options/options-model";
 import { Services } from "@/services";
-import { ra } from "@/utils";
+import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
+import { ra } from "@/utils/probability-utils";
 
 const MINUTE = 60000; // minute in milliseconds
 
@@ -16,7 +18,7 @@ export function initiateAutosave(): void {
 
     const diffInMinutes = (Date.now() - lastSavedAt) / MINUTE;
     if (diffInMinutes < timeoutMinutes) return;
-    if (customization) return tip(t("Autosave: map cannot be saved in edit mode"), false, "warn", 2000);
+    if (options.app.mode) return tip(t("Autosave: map cannot be saved in edit mode"), false, "warn", 2000);
 
     try {
       tip(t("Autosave: saving map..."), false, "warn", 3000);
@@ -25,7 +27,7 @@ export function initiateAutosave(): void {
 
       lastSavedAt = Date.now();
     } catch (error) {
-      ERROR && console.error(error);
+      log.error(error);
       tip(
         t("Autosave failed: {{error}}", { error: (error as Error)?.message || t("Unknown error") }),
         true,
@@ -57,7 +59,7 @@ function startSaveReminder(): void {
   const interval = 15 * MINUTE; // remind every 15 minutes
 
   reminderInterval = setInterval(() => {
-    if (customization) return;
+    if (options.app.mode) return;
     tip(ra(message), true, "warn", 2500);
   }, interval);
   reminderActive = true;
@@ -75,13 +77,3 @@ export function toggleSaveReminder(): void {
     startSaveReminder();
   }
 }
-
-declare global {
-  interface Window {
-    initiateAutosave: typeof initiateAutosave;
-    toggleSaveReminder: typeof toggleSaveReminder;
-  }
-}
-
-window.initiateAutosave = initiateAutosave;
-window.toggleSaveReminder = toggleSaveReminder;

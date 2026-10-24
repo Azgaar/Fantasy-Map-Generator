@@ -1,4 +1,3 @@
-import { markAssistantOpen } from "@/components/assistant-bubble";
 import { Controllers } from "@/controllers";
 import { askServer } from "@/services/assistant/azgaar-server/answerer";
 import {
@@ -29,11 +28,13 @@ import {
 import { askProvider } from "@/services/assistant/provider/answerer";
 import * as Connection from "@/services/assistant/provider/connection";
 import { PROVIDERS } from "@/services/assistant/provider/providers";
-import { ensureEl, findEl } from "@/utils";
+import { markAssistantOpen } from "@/ui/assistant-bubble";
+import { Dialog } from "@/ui/dialog/dialog";
 import { t } from "@/utils/i18n";
 import { renderMarkdown } from "@/utils/markdown";
-import { errorText, escapeHtml } from "@/utils/stringUtils";
-import { si } from "@/utils/unitUtils";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { si } from "@/utils/number-utils";
+import { errorText, escapeHtml } from "@/utils/string-utils";
 import { AssistantImages } from "./images";
 import { KeySheet } from "./key-sheet";
 import { AssistantMap } from "./map";
@@ -85,7 +86,7 @@ let unseen = false; // the transcript changed while hidden, so reopen at its end
 const el = <T extends HTMLElement = HTMLElement>(id: string): T => ensureEl<T>(id);
 
 function toggle(): void {
-  if (showing) $(`#${dialogId}`).dialog("close");
+  if (showing) Dialog.close(dialogId);
   else open();
 }
 
@@ -94,7 +95,7 @@ function open(): void {
     showing = true;
     build();
   } else {
-    $(`#${dialogId}`).dialog(showing ? "moveToTop" : "open");
+    Dialog.open(dialogId);
     if (!showing) {
       showing = true;
       render(!unseen); // sign-in and proposal availability may have changed while hidden
@@ -108,7 +109,7 @@ function open(): void {
 function build(): void {
   view = "chat";
   renderDialog();
-  $(`#${dialogId}`).dialog({
+  Dialog.open(dialogId, {
     title: t("Azgaar Assistant"),
     position: { my: "right bottom", at: "right-16 bottom-44", of: window },
     width: Math.min(340, window.innerWidth - 24),
@@ -116,9 +117,20 @@ function build(): void {
     minWidth: 300,
     minHeight: 320,
     resizable: true,
-    close: closeAssistant
+    persistent: true,
+    titlebarButtons: [
+      {
+        id: "assistantOpenChats",
+        label: "Chats",
+        tip: t("Chats"),
+        className: "icon-list-bullet",
+        onClick: () => {
+          if (!busy && initialized) showView(view === "chats" ? "chat" : "chats");
+        }
+      }
+    ],
+    onClose: closeAssistant
   });
-  addChatsButton();
   ready = initialize();
 }
 
@@ -130,13 +142,13 @@ function closeAssistant(): void {
 
 const STYLES = /* html */ `
   <style>
-    #assistant.ui-dialog-content { display: flex; flex-direction: column; gap: .5em; overflow: hidden; padding: .6em .7em .5em; font-family: var(--sans-serif); }
+    #assistant { display: flex; flex-direction: column; gap: .5em; overflow: hidden; padding: .6em .7em .5em; font-family: var(--sans-serif); }
     #assistant > * { width: auto; }
     #assistant [hidden] { display: none !important; }
     #assistant button { cursor: pointer; font: inherit; }
     #assistant button:disabled { cursor: default; opacity: .5; }
     #assistant pre, #assistant code { font-family: var(--monospace); }
-    .ui-dialog .ui-dialog-titlebar #assistantOpenChats { font-size: .62em; }
+    #assistantOpenChats { font-size: .62em; }
 
     #assistantTranscript, #assistantChats, #assistantKey { flex: 1; min-height: 0; overflow: hidden auto; padding-right: .2em; line-height: 1.45; }
 
@@ -397,26 +409,6 @@ function renderDialog(): void {
     connect();
   });
   KeySheet.wire();
-}
-
-// The titlebar only exists once jQuery UI has built the dialog
-function addChatsButton(): void {
-  const titlebar = el(dialogId).closest(".ui-dialog")?.querySelector(".ui-dialog-titlebar");
-  if (!titlebar) return;
-  const button = document.createElement("button");
-  button.id = "assistantOpenChats";
-  button.type = "button";
-  button.className = "icon-list-bullet";
-  button.dataset.tip = t("Chats");
-  button.setAttribute("aria-label", "Chats");
-  button.addEventListener("click", () => {
-    if (!busy && initialized) showView(view === "chats" ? "chat" : "chats");
-  });
-  titlebar.insertBefore(button, titlebar.querySelector(".ui-dialog-titlebar-reset, .ui-dialog-titlebar-collapse"));
-  titlebar
-    .querySelector(".ui-dialog-titlebar-collapse")
-    ?.setAttribute("aria-label", t("Minimize or restore Assistant"));
-  titlebar.querySelector(".ui-dialog-titlebar-close")?.setAttribute("aria-label", "Close Assistant");
 }
 
 function handleClick(event: MouseEvent): void {

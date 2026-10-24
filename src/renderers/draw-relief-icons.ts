@@ -1,20 +1,22 @@
-import { Icons } from "@/components/icons";
-import { Layers } from "@/components/layers";
-import type { ReliefIcon } from "@/generators/relief-generator";
+import { Icons } from "@/model/icons";
+import type { ReliefIcon } from "@/model/physical/relief-generator";
+import { Relief } from "@/model/physical/relief-generator";
+import { Layers } from "@/renderers/layers";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
-import { escapeHtml } from "@/utils/stringUtils";
+import { log } from "@/utils/logger";
+import { escapeHtml } from "@/utils/string-utils";
 
 const layer = ViewportLayers.register({ id: "relief", render: reconcileRelief });
 let isDrawn = false; // an erased layer draws nothing, an empty one still draws
 let frameId: number | null = null;
 
 export async function drawRelief(): Promise<void> {
-  TIME && console.time("drawRelief");
+  log.time("drawRelief");
   if (!pack.relief?.length) Relief.generate();
   isDrawn = true;
   await Icons.loadAll(Relief.requiredIconSets(pack.relief, styles.relief.options.set));
   layer.render();
-  TIME && console.timeEnd("drawRelief");
+  log.timeEnd("drawRelief");
 }
 
 export const redrawRelief = (): void => {

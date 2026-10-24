@@ -154,7 +154,7 @@ the right owner, because the pool is where generation already decides what grows
   from the picker, unchanged.
 - Relief art sits small in its frame (vegetation fills 10–40% of it), so previews of a type are cropped to
   the drawn art once its set is in the page, and painted in the relief style
-  (`controllers/relief-previews.ts`, shared by the Relief Editor tiles, the pool dialog and the Biome Editor
+  (`controllers/physical/relief/relief-previews.ts`, shared by the Relief Editor tiles, the pool dialog and the Biome Editor
   column).
 - "Restore defaults" in the Biome Editor restores the default pools and densities with the rest of the
   biome data, as it does today; it does not re-place relief.
@@ -185,7 +185,7 @@ Implemented on `icon-library` in three steps:
 2. **Pool model and generation.** The weight record, default pools as records, the one-roll weighted pick,
    reference entries, the empty-pool rule, the scoped re-place (`Relief.regenerateBiome`,
    `Relief.lowlandIcons`, `Relief.insert`), the migration and the `biome` use kind.
-3. **Biome Editor.** The Relief column, the pool dialog (`controllers/relief-pool-editor.ts`), fitted
+3. **Biome Editor.** The Relief column, the pool dialog (`controllers/physical/relief/relief-pool-editor.ts`), fitted
    previews, Apply and re-place.
 
 ## Testing Decisions

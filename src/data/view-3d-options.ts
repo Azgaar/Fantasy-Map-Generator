@@ -1,6 +1,6 @@
-import { minmax } from "@/utils/numberUtils";
+import { minmax } from "@/utils/number-utils";
 
-export type ThreeDOptions = {
+type ThreeDOptions = {
   scale: number;
   lightness: number;
   shadow: number;
@@ -23,7 +23,7 @@ export type ThreeDOptions = {
   satellite: boolean;
 };
 
-export type TimeOfDayPreset = {
+type TimeOfDayPreset = {
   sun: { x: number; y: number; z: number };
   sunColor: string;
   lightness: number;

@@ -1,5 +1,5 @@
-import { Icons } from "@/components/icons";
-import { Emblems } from "@/generators/emblems-generator";
+import { Icons } from "@/model/icons";
+import { Emblems } from "@/model/political/emblems-generator";
 import type {
   Emblem,
   EmblemCharge,
@@ -8,7 +8,8 @@ import type {
   HeraldicEmblem,
   PictureEmblem
 } from "@/types/emblems";
-import { ensureEl, findEl } from "@/utils";
+import { log } from "@/utils/logger";
+import { ensureEl, findEl } from "@/utils/node-utils";
 import { colors } from "./colors";
 import { componyDashes } from "./compony";
 import { diapers } from "./diapers";
@@ -16,12 +17,6 @@ import { lines } from "./lines";
 import { patterns } from "./patterns";
 import { DEFAULT_SHIELD_BOX, INESCUTCHEON, inescutcheonShape, shieldShapes } from "./shields";
 import { divisionTemplates, ordinaryTemplates, type Template } from "./templates";
-
-declare global {
-  interface Window {
-    EmblemRenderer: EmblemRendererModule;
-  }
-}
 
 const SIZE_MODIFIERS: Record<string, number> = { small: 0.8, smaller: 0.5, smallest: 0.25, big: 1.6, bigger: 2 };
 
@@ -343,7 +338,7 @@ class EmblemRendererModule {
 
   /** render the coa unless the rendered one is already up to date: a reassigned coa replaces its shield */
   async trigger(id: string, coa: Emblem | undefined) {
-    if (!coa) return console.warn(`Emblem ${id} is undefined`);
+    if (!coa) return log.warn(`Emblem ${id} is undefined`);
 
     const serialized = JSON.stringify(coa);
     const rendered = findEl(id);
@@ -379,4 +374,3 @@ class EmblemRendererModule {
 }
 
 export const EmblemRenderer = new EmblemRendererModule();
-window.EmblemRenderer = EmblemRenderer;

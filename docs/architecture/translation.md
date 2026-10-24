@@ -23,7 +23,7 @@ reasoning are in [the PRD](../prd/translation.md); this page is the contributor'
   (`t("Remove burgs ({{burgs}})")`), which reads right for any number in any language. A `count`
   option picks a plural form; use it only when no such wording works.
 - `{{name}}` is HTML-escaped; `{{- name}}` is for markup built in code (a link, `<code>`) or a value
-  going to a sink that escapes on its own (a jQuery UI dialog `title`, `textContent`).
+  going to a sink that escapes on its own (a dialog `title`, `textContent`).
 - The same English with two meanings gets a context: `t("Close", { context: "button" })`.
 - A label placed into one sentence may be translated in the form that sentence needs (a case, an
   article). Give a label used in several places a separate key for each grammatical role.
@@ -33,7 +33,7 @@ reasoning are in [the PRD](../prd/translation.md); this page is the contributor'
   The same control in every dialog shares one tooltip that does not name its subject (“Locate on map”,
   “Save data as a CSV file”), and a numbered name is composed: `` `${t("Blur")} 3` ``.
 - Use “ ” rather than straight double quotes in visible text.
-- `index.html` keeps only the shell; its text is set from the table in `components/shell.ts`.
+- `index.html` keeps only the shell; its text is set from the table in `app/shell.ts`.
 
 ## What stays English
 

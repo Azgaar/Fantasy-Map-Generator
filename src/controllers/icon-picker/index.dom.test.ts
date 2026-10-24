@@ -1,33 +1,21 @@
 // Browser-mode tests (vitest.browser.config.ts): the sources and tiles the icon picker opens with
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { IconSets } from "@/components/icon-sets";
-import { CustomIcons, Icons } from "@/components/icons";
-import "@/generators/relief-generator"; // the models own the set definitions the picker lists
-import "@/generators/burgs-generator";
-import "@/generators/goods-generator";
+import { IconSets } from "@/model/icon-sets";
+import { CustomIcons, Icons } from "@/model/icons";
+import "@/model/physical/relief-generator"; // the models own the set definitions the picker lists
+import "@/model/political/burgs-generator";
+import "@/model/economy/goods-generator";
+import { DIALOGS_MARKUP, dialogButton } from "@/ui/dialog/dialog-testing";
 import { IconPicker } from ".";
 
 const pictures = vi.hoisted(() => ({ fromLink: vi.fn(), fromFile: vi.fn(), fit: vi.fn() }));
 vi.mock("./pictures", () => ({ IconPictures: pictures }));
 
-const confirm = vi.hoisted(() => ({
-  onConfirm: undefined as undefined | (() => void),
-  apply: undefined as undefined | (() => void)
-}));
-
 beforeEach(() => {
   vi.spyOn(Icons, "load");
   (globalThis as Record<string, unknown>).options = { map: { customIcons: [] } };
   (globalThis as Record<string, unknown>).Options = { save: vi.fn(), iconsChanged: vi.fn() };
-  document.body.innerHTML =
-    '<div id="dialogs"></div><div id="alert"><p id="alertMessage"></p></div><div id="tooltip"></div><svg id="defElements"><defs></defs></svg>';
-  // the dialog stub keeps a confirmation's Remove button, to press it as the author would
-  (globalThis as Record<string, unknown>).$ = () => ({
-    dialog: (settings: { buttons?: Record<string, () => void> }) => {
-      confirm.onConfirm = settings?.buttons?.Remove;
-      if (settings?.buttons?.Apply) confirm.apply = settings.buttons.Apply;
-    }
-  });
+  document.body.innerHTML = `${DIALOGS_MARKUP}<div id="tooltip"></div><svg id="defElements"><defs></defs></svg>`;
 });
 
 afterEach(async () => {
@@ -104,7 +92,7 @@ test("without live, the pick is handed back on Apply only", () => {
   IconPicker.open({ current: "goods-wood", onPick });
   document.querySelector<HTMLElement>('#iconPicker button[data-icon="goods-iron"]')!.click();
   expect(onPick).not.toHaveBeenCalled();
-  confirm.apply!();
+  dialogButton("Apply", "iconPicker").click();
   expect(onPick).toHaveBeenCalledExactlyOnceWith("goods-iron");
 });
 
@@ -189,8 +177,8 @@ test("removing tells how many slots use the icon, and removes it once confirmed"
   vi.spyOn(Icons, "uses").mockReturnValue({ marker: 12, good: 1 });
   const { dialog } = open("custom-1a2b3c4d");
   dialog.querySelector<HTMLElement>('.currentActions [data-action="remove"]')!.click();
-  expect(document.getElementById("alertMessage")!.textContent).toContain("markers (12), goods (1)");
-  confirm.onConfirm?.();
+  expect(document.querySelector(".dialog-message")!.textContent).toContain("markers (12), goods (1)");
+  dialogButton("Remove").click();
   expect(CustomIcons.all).toEqual([]);
   expect(dialog.querySelector(".panel [data-icon]")).toBeNull();
   expect(dialog.querySelector(".currentActions")).toBeNull();

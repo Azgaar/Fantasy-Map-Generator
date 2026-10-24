@@ -1,16 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { alertDialog, confirmationDialog } from "@/components/dialog/dialog-helpers";
+import { Dialog } from "@/ui/dialog/dialog";
 import { CsvUpload } from "./csv-upload";
 
-vi.mock("@/components/tooltips", () => ({ tip: vi.fn() }));
-vi.mock("@/components/dialog/dialog-helpers", () => ({ alertDialog: vi.fn(), confirmationDialog: vi.fn() }));
+vi.mock("@/ui/tooltips", () => ({ tip: vi.fn(), loadingTip: { start: vi.fn(), end: vi.fn() } }));
+vi.mock("@/ui/dialog/dialog", async importOriginal => {
+  const { Dialog } = await importOriginal<typeof import("@/ui/dialog/dialog")>();
+  return { Dialog: Object.assign(Dialog, { confirm: vi.fn(), message: vi.fn() }) };
+});
 
 type Entity = { i: number; name: string; tags: string; people: [number, number] };
 const COLUMNS = ["Id", "Name", "Tags", "Total Population", "Rural Population", "Urban Population"];
 const items = () => (globalThis.pack as unknown as { items: Entity[] }).items;
 const find = (id: number) => items().find(entity => entity.i === id);
-const lastAlert = () => vi.mocked(alertDialog).mock.calls.at(-1)?.[0].message;
-const dialog = () => vi.mocked(confirmationDialog).mock.calls.at(-1)![0];
+const lastAlert = () => vi.mocked(Dialog.message).mock.calls.at(-1)?.[0].message;
+const dialog = () => vi.mocked(Dialog.confirm).mock.calls.at(-1)![0];
 
 const rename = (text: string, options = {}) =>
   CsvUpload.update(text, COLUMNS, { find, ...options }, (id, row) => {
@@ -22,7 +25,7 @@ const rename = (text: string, options = {}) =>
 
 describe("CsvUpload.update", () => {
   beforeEach(() => {
-    vi.mocked(confirmationDialog).mockClear();
+    vi.mocked(Dialog.confirm).mockClear();
     globalThis.pack = {
       items: [
         { i: 1, name: "A", tags: "x", people: [74.6, 25.2] },
@@ -33,7 +36,7 @@ describe("CsvUpload.update", () => {
 
   it("stops before any change when an id is unknown", async () => {
     expect(await rename("Id,Name\n1,Z\n9,Y\n,X")).toBe(false);
-    expect(confirmationDialog).not.toHaveBeenCalled();
+    expect(Dialog.confirm).not.toHaveBeenCalled();
     expect(lastAlert()).toContain("Missing keys: 9, ?");
   });
 
@@ -58,7 +61,7 @@ describe("CsvUpload.update", () => {
 
   it("reports nothing to change instead of a preview", async () => {
     expect(await rename('Id,Name\n1,A\n2,"Kin ""B"""')).toBe(false);
-    expect(confirmationDialog).not.toHaveBeenCalled();
+    expect(Dialog.confirm).not.toHaveBeenCalled();
     expect(lastAlert()).toContain("No changes found in the file");
   });
 
@@ -71,7 +74,7 @@ describe("CsvUpload.update", () => {
   it("offers no Apply when nothing in the file can be applied", async () => {
     expect(await rename("Id,Name\n1,<b>Z</b>", { text: ["Name"] })).toBe(false);
     expect(await rename("Id,Name,Colour\n1,A,red")).toBe(false);
-    expect(confirmationDialog).not.toHaveBeenCalled();
+    expect(Dialog.confirm).not.toHaveBeenCalled();
     expect(lastAlert()).toContain("Nothing in the file can be applied");
     expect(lastAlert()).toContain("Unknown column: Colour");
     expect(lastAlert()).not.toContain("Values to update");
@@ -79,7 +82,7 @@ describe("CsvUpload.update", () => {
 
   it("reports after Apply only the failures the preview did not list", async () => {
     let runs = 0;
-    vi.mocked(alertDialog).mockClear();
+    vi.mocked(Dialog.message).mockClear();
     const done = CsvUpload.update("Id,Name,Tags\n1,Z,t", COLUMNS, { find }, (_, row) => {
       runs++;
       row.apply("Name", () => {

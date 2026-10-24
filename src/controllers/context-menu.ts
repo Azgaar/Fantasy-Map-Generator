@@ -1,11 +1,14 @@
-import { Layers } from "@/components/layers";
-import { type EntityRef, MapEntities } from "@/components/map-entities";
-import { revealEntity } from "@/components/reveal";
-import { openEditor } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { Pack } from "@/model/graph/pack-generator";
+import { type EntityRef, MapEntities } from "@/model/map-entities";
+import { Layers } from "@/renderers/layers";
 import * as Connection from "@/services/assistant/provider/connection";
-import { escapeHtml, findEl, getPointer, rn } from "@/utils";
+import { openEntity, revealEntity } from "@/ui/map/reveal";
+import { openEditor } from "@/ui/map/viewbox-events";
 import { t } from "@/utils/i18n";
+import { findEl, getPointer } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 /** An entity at the spot, with its topmost element under the cursor when it is drawn there */
 interface Row {
@@ -223,7 +226,7 @@ class ContextMenuController {
     const row = this.rowOf(button);
     this.close();
     if (!row || (row.element && openEditor(row.element))) return;
-    if (!MapEntities.open(row.ref)) revealEntity(row.ref);
+    if (!openEntity(row.ref)) revealEntity(row.ref);
   }
 
   private ask(): void {

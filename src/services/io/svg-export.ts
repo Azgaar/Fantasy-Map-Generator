@@ -1,4 +1,4 @@
-import { createEl } from "@/utils/nodeUtils";
+import { createEl } from "@/utils/node-utils";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const XLINK_NS = "http://www.w3.org/1999/xlink";

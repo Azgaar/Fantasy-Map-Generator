@@ -1,10 +1,11 @@
 import { STYLE_PRESET_LABELS } from "@/data/id-labels";
-import { Styles } from "@/generators/styles";
-import { isLegacyPreset, isStoreStyles, normalizeStyles, presetFromLegacy } from "@/generators/styles-legacy";
+import { Styles } from "@/model/styles/styles";
+import { isLegacyPreset, isStoreStyles, normalizeStyles, presetFromLegacy } from "@/services/io/styles-legacy";
 import { VERSION } from "@/services/versioning";
 import type { StylesData } from "@/types/styles";
 import { t } from "@/utils/i18n";
-import { isValidJSON } from "@/utils/stringUtils";
+import { log } from "@/utils/logger";
+import { isValidJSON } from "@/utils/string-utils";
 
 export const SYSTEM_PRESETS = [
   "default",
@@ -58,7 +59,7 @@ function parse(json: unknown): StylesData | undefined {
 }
 
 async function fetchSystem(name: string): Promise<unknown> {
-  // the default preset ships in the bundle (src/generators/default-styles.json)
+  // the default preset ships in the bundle (src/model/styles/default-styles.json)
   if (name === "default") return Styles.defaults;
   const response = await fetch(`./styles/${name}.json?v=${VERSION}`);
   if (!response.ok) throw new Error(`Style preset ${name} is not available (${response.status})`);
@@ -72,7 +73,7 @@ async function load(name: string): Promise<{ name: string; styles: unknown; erro
       return { name, styles: await fetchSystem(name) };
     } catch (error) {
       const message = t("Cannot fetch style preset {{- name}}", { name });
-      ERROR && console.error(`${message}. Applying default style`, error);
+      log.error(`${message}. Applying default style`, error);
       return { name: "default", styles: Styles.defaults, error: message };
     }
   }
@@ -83,7 +84,7 @@ async function load(name: string): Promise<{ name: string; styles: unknown; erro
   const error = stored
     ? t("Custom style {{- name}} stored in localStorage is not valid", { name })
     : t("Custom style {{- name}} is not found in localStorage", { name });
-  ERROR && console.error(error);
+  log.error(error);
   return { name: "default", styles: await fetchSystem("default"), error };
 }
 

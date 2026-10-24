@@ -1,6 +1,9 @@
 import {test, expect, type Page} from "@playwright/test";
 import { countMaps, waitForMap, waitForNextMap } from "./wait-for-map";
 
+// the app's console surface, see src/app/fmg.ts
+declare const FMG: any;
+
 test.describe("States", () => {
   test.beforeEach(async ({ page }) => {
     // Navigate with seed parameter and wait for full load
@@ -44,9 +47,9 @@ test.describe("States", () => {
     // Click the trash icon to remove the state
     await page.click(`#statesBodySection > div[data-id="${stateId}"] .icon-trash-empty`);
 
-    // Confirm the removal in the jQuery dialog - look for "Remove" button in the dialog buttonpane
-    await page.waitForSelector(".ui-dialog:has(#alert) .ui-dialog-buttonpane", {state: "visible", timeout: 3000});
-    await page.click(".ui-dialog:has(#alert) .ui-dialog-buttonpane button:first-child"); // "Remove" is first button
+    // Confirm the removal - the "Remove" button is in the dialog button pane
+    await page.waitForSelector(".dialog-window:has(.message) .dialog-buttonpane", {state: "visible", timeout: 3000});
+    await page.click(".dialog-window:has(.message) .dialog-buttonpane button:first-child"); // "Remove" is first button
     await page.waitForTimeout(500);
 
     // Verify the state is no longer in neighbors of any other state
@@ -57,8 +60,8 @@ test.describe("States", () => {
 
     expect(neighborsAfter).toBe(0);
 
-    // Close the States Editor - the close button is in the jQuery UI dialog wrapper
-    await page.click(".ui-dialog:has(#statesEditor) .ui-dialog-titlebar-close");
+    // Close the States Editor from its titlebar
+    await page.click(".dialog-window:has(#statesEditor) .dialog-titlebar-close");
     await page.waitForTimeout(200);
 
     // Now click "Military" regenerate button and verify no errors
@@ -105,10 +108,10 @@ test.describe("States", () => {
     await page.click("#statesMerge");
     await page.check(`#mergeStatesForm input[name="rulingState"][value="${ruler.i}"]`);
     await page.click(`label[for="selectState${child.i}"]`);
-    await page.click(".ui-dialog:has(#alert) .ui-dialog-buttonpane button:first-child");
+    await page.click(".dialog-window:has(#mergeStatesForm) .dialog-buttonpane button:first-child");
 
     await page.check("#mergeStatesAsProvinces");
-    await page.click(".ui-dialog:has(#alert) .ui-dialog-buttonpane button:first-child");
+    await page.click(".dialog-window:has(#mergeStatesAsProvinces) .dialog-buttonpane button:first-child");
     await page.waitForTimeout(300);
 
     const result = await page.evaluate(
@@ -126,7 +129,7 @@ test.describe("States", () => {
           provinceCells,
           oldProvincesRemoved: oldProvinces.every((i: number) => provinces[i].removed),
           listed: states[r].provinces!.includes(province.i),
-          layerOn: Layers.isOn("provinces")
+          layerOn: FMG.Layers.isOn("provinces")
         };
       },
       [ruler.i, child.i, child.provinces] as const
@@ -187,17 +190,11 @@ test.describe("States", () => {
   });
 });
 
-declare const Controllers: { DiplomacyOverview: { open: () => Promise<void> } };
-declare const Services: {
-  Save: { prepareMapData: () => string };
-  Load: { uploadMap: (file: File) => void };
-};
 declare const pack: {
-  states: import("@/generators/states-generator").State[];
-  provinces: import("@/generators/provinces-generator").Province[];
+  states: import("@/model/political/states-generator").State[];
+  provinces: import("@/model/political/provinces-generator").Province[];
   cells: { state: Uint16Array; province: Uint16Array; p: [number, number][] };
 };
-declare const Layers: { isOn: (id: string) => boolean };
 
 test.describe("Diplomacy", () => {
   let ids: number[];
@@ -245,7 +242,7 @@ test.describe("Diplomacy", () => {
       pack.states[0].diplomacy = [];
       return [a.i, b.i, c.i];
     });
-    await page.evaluate(() => Controllers.DiplomacyOverview.open());
+    await page.evaluate(() => FMG.Controllers.DiplomacyOverview.open());
     await expect(page.locator("#diplomacyOverview")).toBeVisible();
     await expect(selfId(page)).toHaveAttribute("data-id", String(ids[0]));
   });
@@ -289,10 +286,10 @@ test.describe("Diplomacy", () => {
 
       if (exit === "Discard") await page.locator("#diplomacyEditorDiscard").click();
       else if (exit === "titlebar")
-        await page.locator(".ui-dialog:has(#diplomacyEditor) .ui-dialog-titlebar-close").click();
+        await page.locator(".dialog-window:has(#diplomacyEditor) .dialog-titlebar-close").click();
       else
         await page
-          .locator(".ui-dialog:has(#diplomacyOverview) .ui-dialog-titlebar-close")
+          .locator(".dialog-window:has(#diplomacyOverview) .dialog-titlebar-close")
           .evaluate((button: HTMLButtonElement) => button.click());
 
       expect(await diplomacy(page)).toBe(before);
@@ -302,7 +299,7 @@ test.describe("Diplomacy", () => {
         return;
       }
       await expect(page.locator("#diplomacyEditor")).toHaveCount(0);
-      if (exit === "parent") await page.evaluate(() => Controllers.DiplomacyOverview.open());
+      if (exit === "parent") await page.evaluate(() => FMG.Controllers.DiplomacyOverview.open());
       await mapClick(page, ids[2]); // a click selects again instead of painting
       await expect(selfId(page)).toHaveAttribute("data-id", String(ids[2]));
       expect(await diplomacy(page)).toBe(before);
@@ -322,11 +319,11 @@ test.describe("Diplomacy", () => {
     await page.locator("#diplomacyEditorApply").click();
     await expect(pair).toContainText("Vassal");
 
-    const saved = await page.evaluate(() => Services.Save.prepareMapData());
+    const saved = await page.evaluate(() => FMG.Services.Save.prepareMapData());
     await page.goto("/?seed=diplomacy-reload&width=1600&height=1000");
     await waitForMap(page);
     const previous = await countMaps(page);
-    await page.evaluate(data => Services.Load.uploadMap(new File([data], "diplomacy.map")), saved);
+    await page.evaluate(data => FMG.Services.Load.uploadMap(new File([data], "diplomacy.map")), saved);
     await waitForNextMap(page, previous);
     expect(await page.evaluate(([a, b]) => [pack.states[a].diplomacy![b], pack.states[b].diplomacy![a]], ids)).toEqual([
       "Suzerain",

@@ -1,3 +1,4 @@
+import { log } from "@/utils/logger";
 /**
  * Version Control Guidelines
  * --------------------------
@@ -15,15 +16,17 @@
  * For the changes that may be interesting for end users, update the `latestPublicChanges` below.
  */
 
-import { confirmationDialog } from "@/components/dialog/dialog-helpers";
-import { dialogState } from "@/components/dialog/state";
-import { Pins } from "@/components/pins";
-import { tip } from "@/components/tooltips";
-import { findEl } from "@/utils";
+import { Options } from "@/model/options/options-model";
+import { Pins } from "@/model/options/pins";
+import { Services } from "@/services";
+import { Dialog } from "@/ui/dialog/dialog";
+import { dialogState } from "@/ui/dialog/state";
+import { tip } from "@/ui/tooltips";
+import { isElectron } from "@/utils/environment";
 import { sentences, t } from "@/utils/i18n";
-import { isElectron } from "./platform";
+import { findEl } from "@/utils/node-utils";
 
-export const VERSION = "1.155.0";
+export const VERSION = "1.156.0";
 
 // new changes on top, never translated
 const latestPublicChanges = (): string[] => [
@@ -107,7 +110,7 @@ export async function clearCache(): Promise<void> {
 
 /** cleanupData once the user agrees: it wipes every option and reloads the page */
 export function confirmCleanupData(): void {
-  confirmationDialog({
+  Dialog.confirm({
     title: t("Reset Options"),
     message: sentences(
       t("All options return to their defaults and the page reloads"),
@@ -139,13 +142,14 @@ function showUpdateWindow(storedVersion: string | null): void {
   const discord = "https://discordapp.com/invite/X7E84HU";
   const patreon = "https://www.patreon.com/azgaar";
 
-  alertMessage.innerHTML = /* html */ `${t(
-    "The Fantasy Map Generator is updated up to version {{version}}. This version is compatible with {{- previous}}, loaded save files will be auto-updated.",
-    {
-      version: VERSION,
-      previous: `<a href="${changelog}" target="_blank" style="white-space: nowrap">${t("previous versions")}</a>`
-    }
-  )}
+  Dialog.message({
+    message: /* html */ `${t(
+      "The Fantasy Map Generator is updated up to version {{version}}. This version is compatible with {{- previous}}, loaded save files will be auto-updated.",
+      {
+        version: VERSION,
+        previous: `<a href="${changelog}" target="_blank" style="white-space: nowrap">${t("previous versions")}</a>`
+      }
+    )}
     ${storedVersion ? `<span>${t("In case of errors reload the page to update the code.")}</span>` : ""}
 
     <ul>
@@ -155,7 +159,7 @@ function showUpdateWindow(storedVersion: string | null): void {
         .join("")}
     </ul>
 
-    ${isElectron() ? "" : `<p>${t("The Generator is also available as a {{- app}} that works offline.", { app: `<a href="#" onclick="window.Services.AppOffer.open(); return false">${t("desktop app")}</a>` })}</p>`}
+    ${isElectron() ? "" : `<p>${t("The Generator is also available as a {{- app}} that works offline.", { app: `<a id="updateAppOffer" href="#">${t("desktop app")}</a>` })}</p>`}
 
     <p>${t(
       "Join our {{- discord}} and {{- reddit}} to ask questions, share maps, discuss the Generator and Worldbuilding, report bugs and propose new features.",
@@ -164,24 +168,29 @@ function showUpdateWindow(storedVersion: string | null): void {
         reddit: `<a href="${reddit}" target="_blank">${t("Reddit community")}</a>`
       }
     )}</p>
-    <span><i>${t("Thanks for all supporters on {{- patreon}}!", { patreon: `<a href="${patreon}" target="_blank">Patreon</a>` })}</i></span>`;
-
-  $("#alert").dialog({
-    resizable: false,
+    <span><i>${t("Thanks for all supporters on {{- patreon}}!", { patreon: `<a href="${patreon}" target="_blank">Patreon</a>` })}</i></span>`,
     title: t("Fantasy Map Generator update"),
     width: "28em",
     position: { my: "center center-4em", at: "center", of: "svg" },
-    buttons: {
-      [t("Clear cache")]: () => clearCache(),
-      [t("Don't show again")]: function (this: HTMLElement) {
-        $(this).dialog("close");
-      }
-    }
+    buttons: [
+      {
+        label: t("Clear cache"),
+        onClick: () => {
+          clearCache();
+          return false;
+        }
+      },
+      { label: t("Don't show again") }
+    ]
+  });
+  findEl("updateAppOffer")?.addEventListener("click", event => {
+    event.preventDefault();
+    Services.AppOffer.open();
   });
 }
 
 function announceVersion(): void {
-  if (parseMapVersion(VERSION) !== VERSION) alert("versioning: Invalid format or parsing function");
+  if (parseMapVersion(VERSION) !== VERSION) log.error("versioning: Invalid format or parsing function");
 
   document.title += ` v${VERSION}`;
   const loadingScreenVersion = findEl("versionText");
@@ -203,13 +212,4 @@ function announceVersion(): void {
 
 announceVersion();
 
-declare global {
-  // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
-  var VERSION: string;
-  // biome-ignore lint/suspicious/noRedeclare: exposed on window for legacy JS
-  var cleanupData: () => Promise<void>;
-}
-
 // temp legacy compatibility
-window.VERSION = VERSION;
-window.cleanupData = cleanupData;

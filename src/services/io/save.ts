@@ -1,16 +1,25 @@
 // Save the whole .map project to storage, machine or cloud
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
-import { Layers } from "@/components/layers";
-import { tip } from "@/components/tooltips";
-import { GraphOverride } from "@/generators/graph-override";
-import { Notes } from "@/generators/notes";
+
+import { GraphOverride } from "@/model/graph/graph-override";
+import { mapHistory } from "@/model/map-history";
+import { Names } from "@/model/society/names-generator";
+import { Notes } from "@/model/story/notes";
+import { Layers } from "@/renderers/layers";
 import { restoreOceanVectors } from "@/renderers/ocean-cache";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
-import { isElectron, savedMessage } from "@/services/platform";
+import { getFileName } from "@/services/io/file-name";
+import { LocalDB } from "@/services/local-db";
+import { savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
-import { ensureEl, getFileName, link, parseError, rn } from "@/utils";
+import { Dialog } from "@/ui/dialog/dialog";
+import { tip } from "@/ui/tooltips";
+import { link, parseError } from "@/utils/common-utils";
+import { isElectron } from "@/utils/environment";
 import { sentences, t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
+import { ensureEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
 import { type SaveOutcome, saveToFileSystem } from "./save-to-file";
 
 type Writer = () => Promise<void>;
@@ -25,35 +34,32 @@ const toDropbox = (viewOnly = false): Promise<void> =>
 const mapFileName = (viewOnly: boolean): string => `${getFileName()}${viewOnly ? " view" : ""}.map`;
 
 async function save(write: Writer): Promise<void> {
-  if (customization)
+  if (options.app.mode)
     return tip(t("Map cannot be saved in EDIT mode, please complete the edit and retry"), false, "error");
   if (options.map.viewOnly) return tip(t("The map is in view-only mode and cannot be saved"), false, "warn");
-  closeDialogs("#alert");
+  Dialog.closeAll(undefined, { keepMessages: true }); // save may be asked from a message
 
   try {
     await write();
   } catch (error) {
-    ERROR && console.error(error);
+    log.error(error);
     const saveError = error instanceof Error ? error : new Error(String(error));
-    alertMessage.innerHTML = /* html */ `${t(
-      "An error occurred while saving the map. If the issue persists, please copy the message below and report it on {{- github}}.",
-      { github: link("https://github.com/Azgaar/Fantasy-Map-Generator/issues", "GitHub") }
-    )} <p id="errorBox">${parseError(saveError)}</p>`;
-
-    $("#alert").dialog({
-      resizable: false,
+    Dialog.message({
+      message: /* html */ `${t(
+        "An error occurred while saving the map. If the issue persists, please copy the message below and report it on {{- github}}.",
+        { github: link("https://github.com/Azgaar/Fantasy-Map-Generator/issues", "GitHub") }
+      )} <p id="errorBox">${parseError(saveError)}</p>`,
       title: t("Saving error"),
       width: "28em",
-      buttons: {
-        [t("Retry")]: function (this: HTMLElement) {
-          $(this).dialog("close");
-          save(write);
+      buttons: [
+        {
+          label: t("Retry"),
+          onClick: () => {
+            save(write);
+          }
         },
-        [t("Close")]: function (this: HTMLElement) {
-          $(this).dialog("close");
-        }
-      },
-      position: { my: "center", at: "center", of: "svg" }
+        { label: t("Close") }
+      ]
     });
   }
 }
@@ -76,16 +82,17 @@ function prepareMapData(viewOnly = false): string {
   const settings = JSON.stringify(viewOnly ? { ...options.map, viewOnly } : options.map); // the requests and preferences stay out
   const measurers = JSON.stringify(pack.measurers ?? []);
   const journeys = JSON.stringify(pack.journeys ?? []);
+  const legends = JSON.stringify(pack.legends);
   const fonts = JSON.stringify(
     getUsedFonts(
-      ensureEl("map") as Element as SVGSVGElement,
+      styles,
       Notes.list().map(entry => entry.note)
     )
   );
   const layers = JSON.stringify(Layers.state);
   const graphOverride = JSON.stringify(GraphOverride.state);
 
-  // save svg
+  // TEMPORARY SAFETY MEASURE for the next few versions: record 5 keeps the svg no current map reads; drop this block then
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
 
   restoreOceanVectors(cloneEl);
@@ -151,7 +158,7 @@ function prepareMapData(viewOnly = false): string {
     "", // deprecated separate mapCoordinates, now options.map.geography.coordinates
     biomes,
     "", // deprecated notes array, now a note field on the entity it describes
-    serializedSVG,
+    serializedSVG, // temporary, see above
     gridGeneral,
     grid.cells.h,
     grid.cells.prec,
@@ -198,7 +205,8 @@ function prepareMapData(viewOnly = false): string {
     relief,
     layers,
     graphOverride,
-    journeys
+    journeys,
+    legends
   ].join("\r\n");
   return mapData;
 }
@@ -206,7 +214,7 @@ function prepareMapData(viewOnly = false): string {
 // save map file to indexedDB
 async function writeToStorage(mapData: string, showTip = false): Promise<void> {
   const blob = new Blob([mapData], { type: "text/plain" });
-  await ldb.set("lastMap", blob);
+  await LocalDB.set("lastMap", blob);
   showTip && tip(t("Map is saved to the browser storage"), false, "success");
 }
 

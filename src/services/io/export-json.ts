@@ -1,9 +1,12 @@
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
-import { tip } from "@/components/tooltips";
+import { mapHistory } from "@/model/map-history";
+import { Names } from "@/model/society/names-generator";
+import { getFileName } from "@/services/io/file-name";
 import { savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
-import { getFileName } from "@/utils";
+import { Dialog } from "@/ui/dialog/dialog";
+import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
 
 type ExportJsonType = "Full" | "Minimal" | "PackCells" | "GridCells";
 
@@ -15,13 +18,13 @@ const typeMap = {
 };
 
 function exportToJson(type: ExportJsonType): void {
-  if (customization) {
+  if (options.app.mode) {
     tip(t("Data cannot be exported when edit mode is active, please exit the mode and retry"), false, "error");
     return;
   }
-  closeDialogs("#alert");
+  Dialog.closeAll(undefined, { keepMessages: true });
 
-  TIME && console.time("exportToJson");
+  log.time("exportToJson");
   const mapData = typeMap[type]();
   const blob = new Blob([mapData], { type: "application/json" });
   const URL = window.URL.createObjectURL(blob);
@@ -31,7 +34,7 @@ function exportToJson(type: ExportJsonType): void {
   link.click();
   tip(savedMessage(link.download), true, "success", 7000);
   window.URL.revokeObjectURL(URL);
-  TIME && console.timeEnd("exportToJson");
+  log.timeEnd("exportToJson");
 }
 
 function getFullDataJson(): string {

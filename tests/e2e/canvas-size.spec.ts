@@ -59,7 +59,7 @@ test.describe("canvas size", () => {
     await page.waitForTimeout(500);
 
     const previous = await countMaps(page);
-    await page.evaluate(() => (window as any).regenerateMap("resized window"));
+    await page.evaluate(() => (window as any).FMG.regenerateMap("resized window"));
     await waitForNextMap(page, previous);
 
     const regenerated = await page.evaluate(() => ({ ...(window as any).options.map.graph }));
@@ -114,7 +114,7 @@ test.describe("canvas size", () => {
     await page.waitForTimeout(500);
 
     const previous = await countMaps(page);
-    await page.evaluate(() => (window as any).regenerateMap("pinned size"));
+    await page.evaluate(() => (window as any).FMG.regenerateMap("pinned size"));
     await waitForNextMap(page, previous);
 
     const regenerated = await page.evaluate(() => ({ ...(window as any).options.map.graph }));

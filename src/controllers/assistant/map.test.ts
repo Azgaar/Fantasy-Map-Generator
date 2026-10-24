@@ -19,7 +19,9 @@ vi.mock("@/services/io/emblem-image", () => ({ emblemPng: async () => "data:imag
 const regionImage = vi.hoisted(() => vi.fn(async () => "data:image/jpeg;base64,SlBH"));
 vi.mock("@/services/io/export", () => ({ ExportMap: { getRegionImage: regionImage } }));
 
-import { viewport } from "@/components/viewport";
+import { mapHistory } from "@/model/map-history";
+import { Layers } from "@/renderers/layers";
+import { viewport } from "@/renderers/viewport/viewport";
 import type { Chat, Proposal } from "@/services/assistant/chats";
 import { AssistantMap } from "./map";
 
@@ -63,7 +65,7 @@ beforeEach(() => {
   notesEditor.open = { id: "burg:1", name: "Old", legend: "<p>Old</p>" };
   notesEditor.selection = null;
   propose.mockReset();
-  vi.stubGlobal("mapHistory", [{ created: 42 }]);
+  Object.assign(mapHistory, [{ created: 42 }]);
   vi.stubGlobal("options", mapOptions);
   vi.stubGlobal("pack", { cells: { i: [0] }, states: [], burgs: [0, { i: 1, name: "Vel" }, { i: 2, removed: true }] });
 });
@@ -346,7 +348,7 @@ it("returns an emblem as an image for the model and shows it to the user", async
 });
 
 it("shows the model the whole map, the user's view or an entity, as a JPEG", async () => {
-  vi.stubGlobal("Layers", { state: { active: ["states", "rivers"] } });
+  vi.spyOn(Layers, "state", "get").mockReturnValue({ active: ["states", "rivers"] } as unknown as typeof Layers.state);
   const outcome = await mapTool("view_map").handle({ target: "map" });
   expect(regionImage).toHaveBeenLastCalledWith(
     { x0: 0, y0: 0, x1: 100, y1: 50, width: 1024, height: 512 },

@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
-import type { Layer } from "@/components/layers";
-import defaults from "@/generators/default-styles.json";
-import { stylesSchema } from "@/generators/styles-schema";
+import defaults from "@/model/styles/default-styles.json";
+import { stylesSchema } from "@/model/styles/styles-schema";
+import type { Layer } from "@/renderers/layers";
 import { drawLakes } from "./draw-lakes";
 
 const createLayer = (groups: string[]) => {
@@ -21,6 +21,8 @@ beforeEach(() => {
       { i: 4, type: "island", subtype: "continent", group: "sea_island" }
     ]
   } as unknown as typeof globalThis.pack;
+  globalThis.styles = stylesSchema.parse(defaults);
+  styles.lakes.groups.my_lakes = structuredClone(styles.lakes.groups.salt); // a user-created group
 });
 
 describe("drawLakes", () => {
@@ -35,6 +37,21 @@ describe("drawLakes", () => {
     expect(groupOf(3)).toBe("freshwater"); // the group is gone, the lake falls back instead of vanishing
     expect(groupOf(5)).toBe("freshwater");
     expect(groupOf(4)).toBeUndefined(); // not a lake
+  });
+});
+
+describe("lake groups", () => {
+  it("are made from the style store, which is their only record", () => {
+    const layer = createLayer(["freshwater", "stale_group"]);
+    styles.lakes.groups.my_lakes.attrs.fill = "#123456";
+
+    drawLakes(layer);
+
+    const ids = Array.from(layer.getEl().children, group => group.id);
+    expect(ids).toEqual(["freshwater", "salt", "sinkhole", "frozen", "lava", "dry", "my_lakes"]);
+    expect(document.getElementById("my_lakes")?.getAttribute("fill")).toBe("#123456");
+    expect(document.getElementById("my_lakes")?.dataset.group).toBe("my_lakes");
+    expect(document.querySelector('use[data-f="2"]')?.parentElement?.id).toBe("my_lakes");
   });
 });
 

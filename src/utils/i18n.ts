@@ -1,9 +1,9 @@
 // Interface text catalog: strings keyed by their English text, i18next v4 JSON shape. See docs/prd/translation.md
-import { escapeHtml } from "./stringUtils";
+import { escapeHtml } from "./string-utils";
 
-export type Strings = Record<string, string>;
+type Strings = Record<string, string>;
 
-export interface TranslateOptions {
+interface TranslateOptions {
   /** disambiguates the same English text with different meanings: "Close" + "button" */
   context?: string;
   /** picks the plural form and fills `{{count}}` */

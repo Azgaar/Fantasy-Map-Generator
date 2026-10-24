@@ -45,7 +45,7 @@ The expression can only call the built-in functions below. They make the syntax 
 * 11: Glacier;
 * 12: Wetland.
 
-These are the default biomes. Biomes can be edited in the _Biomes Editor_, so to get the actual ids of your map run `pack.biomes.map(b => b.i + ". " + b.name)` in the browser console (F12).
+These are the default biomes. Biomes can be edited in the _Biomes Editor_, so to get the actual ids of your map run `FMG.pack.biomes.map(b => b.i + ". " + b.name)` in the browser console (F12).
 
 # Examples
 

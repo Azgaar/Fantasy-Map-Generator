@@ -1,17 +1,6 @@
+import { isElectron, isProduction } from "@/utils/environment";
 import { sentences, t } from "@/utils/i18n";
-export type ElectronBridge = {
-  isElectron: true;
-  platform: string;
-  versions: { electron: string; chrome: string; node: string };
-};
-
-export const isElectron = (): boolean => Boolean(window.electron?.isElectron);
-
-export const isLocalhost = (): boolean => location.hostname === "localhost" || location.hostname === "127.0.0.1";
-
-export const isProduction = (): boolean => Boolean(location.hostname) && !isLocalhost();
-
-export const isMobile = (): boolean => window.innerWidth < 600 || Boolean(navigator.userAgentData?.mobile);
+import { log } from "@/utils/logger";
 
 export const savedMessage = (name: string): string =>
   isElectron()
@@ -28,7 +17,7 @@ export function registerServiceWorker(): void {
 
     navigator.serviceWorker.ready
       .then(({ active }) => active?.postMessage({ type: "CACHE_OFFLINE" }))
-      .catch(error => console.error("Offline caching request failed: ", error));
+      .catch(error => log.error("Offline caching request failed: ", error));
   };
 
   window.addEventListener("appinstalled", () => cacheOffline(true));
@@ -40,18 +29,8 @@ export function registerServiceWorker(): void {
     navigator.serviceWorker
       .register("./sw.js")
       .then(() => cacheOffline())
-      .catch(error => console.error("ServiceWorker registration failed: ", error));
+      .catch(error => log.error("ServiceWorker registration failed: ", error));
   // the app boots after the interface strings load, which may be after the page's load event
   if (document.readyState === "complete") void register();
   else window.addEventListener("load", () => void register());
-}
-
-declare global {
-  interface Window {
-    electron?: ElectronBridge;
-  }
-  interface Navigator {
-    userAgentData?: { mobile?: boolean };
-    standalone?: boolean;
-  }
 }

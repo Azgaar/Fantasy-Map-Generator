@@ -16,7 +16,7 @@ export const POINTS_BY_DENSITY: Record<number, number> = {
   13: 100000
 };
 
-export const DENSITY_STEPS = Object.keys(POINTS_BY_DENSITY).map(Number);
+const DENSITY_STEPS = Object.keys(POINTS_BY_DENSITY).map(Number);
 export const MIN_DENSITY = Math.min(...DENSITY_STEPS);
 export const MAX_DENSITY = Math.max(...DENSITY_STEPS);
 export const DEFAULT_DENSITY = 4;
@@ -24,3 +24,7 @@ export const DEFAULT_DENSITY = 4;
 export function getPointsNumber(density: number): number {
   return POINTS_BY_DENSITY[density] ?? POINTS_BY_DENSITY[DEFAULT_DENSITY];
 }
+
+/** green at the default density, amber above it, red where performance starts to suffer */
+export const cellsDensityColor = (cells: number): string =>
+  cells > 50000 ? "#b12117" : cells === 10000 ? "#053305" : "#dfdf12";

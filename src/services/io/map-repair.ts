@@ -1,7 +1,12 @@
 // Fixes the broken links a loaded map can carry, then logs what was fixed and what is still broken
-import type { Burg } from "@/generators/burgs-generator";
-import { type IntegrityViolation, MapIntegrity } from "@/generators/map-integrity";
-import { last } from "@/utils";
+
+import { Transports } from "@/model/economy/transports-generator";
+import { Pack } from "@/model/graph/pack-generator";
+import { type IntegrityViolation, MapIntegrity } from "@/model/map-integrity";
+import type { Burg } from "@/model/political/burgs-generator";
+import { Burgs } from "@/model/political/burgs-generator";
+import { last } from "@/utils/array-utils";
+import { log } from "@/utils/logger";
 
 class MapRepairService {
   /** repairs the loaded map in place; returns what was repaired */
@@ -30,13 +35,13 @@ class MapRepairService {
     try {
       broken = MapIntegrity.check();
     } catch (error) {
-      ERROR && console.error("[Data integrity] Check failed", error); // the check must never stop a load
+      log.error("[Data integrity] Check failed", error); // the check must never stop a load
     }
     if (!repairs.length && !broken.length) return;
 
     const rules = broken.map(({ rule, count, examples }) => `${rule}: ${count} (${examples.join(", ")})`);
     const title = `[Data integrity] ${repairs.length} repaired, ${broken.length} rules broken:`;
-    WARN && console.warn([title, ...repairs, ...rules].join("\n"));
+    log.warn([title, ...repairs, ...rules].join("\n"));
   }
 
   private repairCellOwners(): string[] {
@@ -208,8 +213,6 @@ class MapRepairService {
         continue;
       }
       repairs.push(`Marker ${marker.i} has non-unique id. Changing to ${nextId}`);
-      const elements = document.querySelectorAll<HTMLElement>(`#marker${marker.i}`);
-      if (elements[1]) elements[1].id = `marker${nextId}`;
       marker.i = nextId++;
     }
     pack.markers.sort((a, b) => a.i - b.i);

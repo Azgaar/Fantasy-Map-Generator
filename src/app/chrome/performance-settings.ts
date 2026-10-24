@@ -1,0 +1,144 @@
+import {
+  onPerformanceChange,
+  PERFORMANCE_PRESETS,
+  resolvePerformancePreset,
+  type PerformanceSettings as Settings,
+  setPerformanceSetting
+} from "@/renderers/performance";
+import { Dialog } from "@/ui/dialog/dialog";
+
+import { t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/node-utils";
+
+const DIALOG_ID = "performanceSettings";
+const DEFAULTS = PERFORMANCE_PRESETS.balance;
+
+interface Choice {
+  value: string;
+  label: string;
+}
+
+interface Setting {
+  key: keyof Settings;
+  label: string;
+  tip: string;
+  choices: Choice[];
+}
+
+// one row per field of options.app.performance; the choices are the field's values, nothing derived
+const SETTINGS: Setting[] = [
+  {
+    key: "shapeRendering",
+    label: t("Shape rendering"),
+    tip: t(
+      "SVG shape-rendering hint for the map. Crisp edges drops anti-aliasing. Chromium-based browsers rasterize on the GPU and ignore the hint for speed purposes, so it makes no difference there"
+    ),
+    choices: [
+      { value: "geometricPrecision", label: t("Geometric precision") },
+      { value: "auto", label: t("Auto") },
+      { value: "optimizeSpeed", label: t("Optimize speed") },
+      { value: "crispEdges", label: t("Crisp edges") }
+    ]
+  },
+  {
+    key: "stateHalos",
+    label: t("State halos"),
+    tip: t("Blurred glow along state borders. It is an SVG blur filter, which is costly on big maps"),
+    choices: [
+      { value: "true", label: t("Shown") },
+      { value: "false", label: t("Hidden") }
+    ]
+  },
+  {
+    key: "viewportRedraw",
+    label: t("Redraw on zoom"),
+    tip: t(
+      "When labels, icons and relief are redrawn and text re-sized during a zoom or pan. 'After zoom' does it once per gesture: faster on big maps, but new content appears all at once"
+    ),
+    choices: [
+      { value: "continuous", label: t("While zooming") },
+      { value: "settled", label: t("After zoom") }
+    ]
+  }
+];
+
+const PRESET_LABELS: Record<string, string> = {
+  quality: t("Quality"),
+  balance: t("Balance"),
+  speed: t("Speed"),
+  custom: t("Custom")
+};
+
+function open(): void {
+  Dialog.closeAll(`#${DIALOG_ID}, .stable`);
+  render();
+  const unsubscribe = onPerformanceChange(sync); // a preset picked on the Options tab shows here too
+
+  Dialog.open(DIALOG_ID, {
+    title: t("Performance Settings"),
+    position: { my: "right top", at: "right-10 top+10", of: "svg" },
+    onClose: () => {
+      unsubscribe();
+      Dialog.destroy(DIALOG_ID);
+    }
+  });
+}
+
+function render(): void {
+  Dialog.destroy(DIALOG_ID);
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", buildDialogHTML());
+
+  for (const { key } of SETTINGS) {
+    const select = ensureEl<HTMLSelectElement>(`${DIALOG_ID}_${key}`);
+    select.addEventListener("change", () => update(key, select.value));
+    ensureEl(`${DIALOG_ID}_${key}Reset`).addEventListener("click", () => update(key, String(DEFAULTS[key])));
+  }
+}
+
+/** A select carries strings; the field decides what the string means */
+function update(key: keyof Settings, raw: string): void {
+  if (key === "stateHalos") setPerformanceSetting(key, raw === "true");
+  else setPerformanceSetting(key, raw as Settings[typeof key]);
+}
+
+/** The dialog is a view of options.app.performance, whoever wrote it */
+function sync(): void {
+  const current = options.app.performance;
+  for (const { key } of SETTINGS) ensureEl<HTMLSelectElement>(`${DIALOG_ID}_${key}`).value = String(current[key]);
+  ensureEl(`${DIALOG_ID}Preset`).textContent = presetLabel();
+}
+
+const presetLabel = (): string => PRESET_LABELS[resolvePerformancePreset(options.app.performance)];
+
+function buildDialogHTML(): string {
+  const current = options.app.performance;
+  const rows = SETTINGS.map(({ key, label, tip, choices }) => {
+    const value = String(current[key]);
+    const optionsHtml = choices
+      .map(
+        choice => `<option value="${choice.value}" ${choice.value === value ? "selected" : ""}>${choice.label}</option>`
+      )
+      .join("");
+    return /* html */ `
+      <tr data-tip="${tip}">
+        <td>${label}</td>
+        <td><select id="${DIALOG_ID}_${key}" style="width: 100%">${optionsHtml}</select></td>
+        <td>
+          <button id="${DIALOG_ID}_${key}Reset" data-tip="${t("Reset to the Balance preset value")}"
+            style="font-size: .85em; padding: 1px 5px; margin-left: .3em">↺</button>
+        </td>
+      </tr>`;
+  }).join("");
+
+  return /* html */ `
+    <div id="${DIALOG_ID}" class="dialog" style="display: none">
+      <p data-tip="${t("The preset on the Options tab these settings amount to")}" style="margin: 0 0 .5em">
+        ${t("Preset")}: <b id="${DIALOG_ID}Preset">${presetLabel()}</b>
+      </p>
+      <table style="border-collapse: collapse; width: 100%">
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+export const PerformanceSettings = { open };

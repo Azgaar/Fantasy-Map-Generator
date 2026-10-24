@@ -1,8 +1,8 @@
 import Alea from "alea";
 import type { StylesData } from "@/types/styles";
-import { wavyDash } from "@/utils/pathUtils";
+import { wavyDash } from "@/utils/path-utils";
 
-export interface CoastalWaveParams {
+interface CoastalWaveParams {
   width: number;
   height: number;
   spacing: number; // cell spacing, the unit of every length below

@@ -1,9 +1,11 @@
-import { Layers } from "@/components/layers";
 import { DEFAULT_TRADE_ANIMATION } from "@/data/trade-animation-options";
-import type { Burg } from "../generators/burgs-generator";
-import type { Deal } from "../generators/markets-generator";
-import type { Point } from "../generators/voronoi";
-import { ra } from "../utils";
+import type { Deal } from "@/model/economy/markets-generator";
+import { Markets } from "@/model/economy/markets-generator";
+import type { Point } from "@/model/graph/voronoi";
+import type { Burg } from "@/model/political/burgs-generator";
+import { Layers } from "@/renderers/layers";
+import { FlatQueue } from "@/utils/flat-queue";
+import { ra } from "@/utils/probability-utils";
 import { clear, draw } from "./draw-trade-animation";
 
 export type TradeBatch = {
@@ -145,7 +147,7 @@ export class TradeAnimationModule {
     distArr[startCell * 2] = 0;
     distArr[startCell * 2 + 1] = 0;
 
-    const queue = new window.FlatQueue();
+    const queue = new FlatQueue();
     for (const nextStr of Object.keys(startNeighbors)) {
       const next = Number(nextStr);
       const water = isWaterRoute.get(startNeighbors[next]) ?? false;
@@ -362,10 +364,4 @@ export class TradeAnimationModule {
   }
 }
 
-declare global {
-  var TradeAnimation: TradeAnimationModule;
-}
-
-// biome-ignore lint/suspicious/noRedeclare: legacy seam
 export const TradeAnimation = new TradeAnimationModule();
-window.TradeAnimation = TradeAnimation;

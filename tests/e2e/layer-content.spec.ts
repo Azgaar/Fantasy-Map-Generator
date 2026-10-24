@@ -18,7 +18,7 @@ test.describe("layer content on hide and show", () => {
     await expect(emblems).toBeHidden();
     await expect(uses).toHaveCount(0);
 
-    await page.evaluate(() => (window as any).Layers.show("emblems"));
+    await page.evaluate(() => (window as any).FMG.Layers.show("emblems"));
     await expect(emblems).toBeVisible();
     await expect(uses.first()).toBeAttached(); // drawEmblems defers its DOM writes to a frame
     const drawn = await uses.count();
@@ -30,11 +30,11 @@ test.describe("layer content on hide and show", () => {
       .toBeGreaterThan(0);
 
     // no keepContent: hiding clears the viewport-rendered uses
-    await page.evaluate(() => (window as any).Layers.hide("emblems"));
+    await page.evaluate(() => (window as any).FMG.Layers.hide("emblems"));
     await expect(emblems).toBeHidden();
     await expect(uses).toHaveCount(0);
 
-    await page.evaluate(() => (window as any).Layers.show("emblems"));
+    await page.evaluate(() => (window as any).FMG.Layers.show("emblems"));
     await expect(emblems).toBeVisible();
     await expect.poll(async () => uses.count(), { timeout: 10000 }).toBe(drawn);
   });
@@ -47,11 +47,11 @@ test.describe("layer content on hide and show", () => {
     const drawn = await polygons.count();
     expect(drawn).toBeGreaterThan(0);
 
-    await page.evaluate(() => (window as any).Layers.hide("ice"));
+    await page.evaluate(() => (window as any).FMG.Layers.hide("ice"));
     await expect(ice).toBeHidden();
     expect(await polygons.count()).toBe(0); // no keepContent: the shapes are redrawn from pack.ice
 
-    await page.evaluate(() => (window as any).Layers.show("ice"));
+    await page.evaluate(() => (window as any).FMG.Layers.show("ice"));
     await expect(ice).toBeVisible();
     expect(await polygons.count()).toBe(drawn); // the same shapes come back
   });
@@ -69,20 +69,20 @@ test.describe("layer content on hide and show", () => {
       path.id = id;
       path.setAttribute("d", "M0,0 L200,0 L200,200 L0,200 Z");
       document.getElementById("fog")!.append(path);
-      (window as any).Layers.draw("fogging");
+      (window as any).FMG.Layers.draw("fogging");
     }, "focusState1");
     await expect(fogging).toBeVisible();
     expect(await rects.count()).toBe(2);
 
     // the old registry treated fogging as a user layer, so a preset silently hid it for good
-    await page.evaluate(() => (window as any).Layers.set(["states", "labels", "rivers"]));
+    await page.evaluate(() => (window as any).FMG.Layers.set(["states", "labels", "rivers"]));
     await expect(fogging).toBeVisible();
     expect(await rects.count()).toBe(2);
 
     // clearing the last revealed shape empties the overlay, the way unfog() does on a focus reset
     await page.evaluate(() => {
       document.querySelectorAll("#fog path").forEach(path => path.remove());
-      (window as any).Layers.draw("fogging");
+      (window as any).FMG.Layers.draw("fogging");
     });
     expect(await rects.count()).toBe(0); // no revealed area left: the overlay empties itself
   });

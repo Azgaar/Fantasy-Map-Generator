@@ -1,14 +1,16 @@
 // The Units Editor: the distance, altitude, temperature and population scales a map is read in
-import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
-import { Layers } from "@/components/layers";
-import { Pins } from "@/components/pins";
-import { updateGridSizeReadout } from "@/controllers/style-editor/controls";
-import { AltitudeLegend } from "@/renderers/altitude-legend";
-import { t } from "@/utils/i18n";
-import { applyOption, ensureEl } from "../utils";
-import type { PromptOptions } from "../utils/commonUtils";
 
-declare const prompt: (text: string, options: PromptOptions, callback: (value: string | number) => void) => void;
+import { updateGridSizeReadout } from "@/controllers/style/controls";
+import { Options } from "@/model/options/options-model";
+import { Pins } from "@/model/options/pins";
+import { Temperature } from "@/model/physical/temperature-generator";
+import { Layers } from "@/renderers/layers";
+import { LegendBoxes } from "@/renderers/legend-boxes";
+import { Dialog } from "@/ui/dialog/dialog";
+
+import { bindPinIcons } from "@/ui/pin-icons";
+import { t } from "@/utils/i18n";
+import { applyOption, ensureEl } from "@/utils/node-utils";
 
 const DIALOG_ID = "unitsEditor";
 
@@ -118,18 +120,17 @@ const TEMPLATE = /* html */ `
 `;
 
 function open(): void {
-  closeDialogs("#unitsEditor, .stable");
+  Dialog.closeAll("#unitsEditor, .stable");
   renderDialog();
 
-  $("#unitsEditor").dialog({
+  Dialog.open("unitsEditor", {
     title: t("Units Editor"),
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
-    close: () => destroyDialog(DIALOG_ID)
+    position: { my: "right top", at: "right-10 top+10", of: "svg" }
   });
 }
 
 function renderDialog(): void {
-  destroyDialog(DIALOG_ID);
+  Dialog.destroy(DIALOG_ID);
   ensureEl("dialogs").insertAdjacentHTML(
     "beforeend",
     /* html */ `<div id="${DIALOG_ID}" class="dialog stable">${TEMPLATE}</div>`
@@ -137,7 +138,7 @@ function renderDialog(): void {
 
   fillInputs();
   addListeners();
-  Pins.bindIcons(ensureEl(DIALOG_ID), unitValue);
+  bindPinIcons(ensureEl(DIALOG_ID), unitValue);
 }
 
 /** Every unit this dialog edits: the control that shows it, and where it lives in `options.map` */
@@ -188,7 +189,7 @@ function fillInputs(): void {
  */
 function addListeners(): void {
   ensureEl(DIALOG_ID).addEventListener("change", onUnitChange);
-  ensureEl("unitsAltitudeLegend").addEventListener("click", AltitudeLegend.toggle);
+  ensureEl("unitsAltitudeLegend").addEventListener("click", LegendBoxes.toggleAltitude);
   ensureEl("unitsRestore").addEventListener("click", restoreDefaultUnits);
 }
 
@@ -261,14 +262,14 @@ function onUnitChange(event: Event): void {
       return;
   }
 
-  AltitudeLegend.refresh(); // reads the height unit and exponent
+  LegendBoxes.refreshAltitude(); // reads the height unit and exponent
   Options.save();
 }
 
 /** "custom_name" is not a unit: it asks for one, and puts the answer where the value belongs */
 function askForCustomUnit(select: HTMLInputElement, kind: "distance" | "height"): void {
   fillInputs(); // the sentinel is not a unit, so the select goes back to the one in use right away
-  prompt(
+  Dialog.prompt(
     kind === "distance" ? t("Provide a custom name for a distance unit") : t("Provide a custom name for a height unit"),
     { default: "" },
     custom => {
@@ -283,7 +284,7 @@ function askForCustomUnit(select: HTMLInputElement, kind: "distance" | "height")
       } else {
         options.map.units.height.unit = name;
         Pins.set("heightUnit", name);
-        AltitudeLegend.refresh();
+        LegendBoxes.refreshAltitude();
       }
       Options.save();
     }
@@ -304,7 +305,7 @@ function restoreDefaultUnits(): void {
   fillInputs();
   Temperature.generate();
   redrawDistances();
-  AltitudeLegend.refresh();
+  LegendBoxes.refreshAltitude();
 }
 
 export const UnitsEditor = { open };

@@ -12,32 +12,32 @@ const mocks = vi.hoisted(() => ({
   labels: vi.fn(() => []),
   tip: vi.fn()
 }));
-vi.mock("@/components/layers", () => ({
+vi.mock("@/renderers/layers", () => ({
   Layers: { draw: vi.fn(), show: mocks.show, toggle: mocks.toggle, has: () => true, isOn: () => false }
 }));
-vi.mock("@/components/options/tabs/layers-tab", () => ({
+vi.mock("@/app/chrome/tabs/layers-tab", () => ({
   LAYER_TOGGLES: new Map([["rivers", { label: "Rivers" }]]),
   LAYER_PRESETS: {}
 }));
-vi.mock("@/components/app-info", () => ({ showInfo: vi.fn() }));
-vi.mock("@/components/layers-presets", () => ({ applyPreset: vi.fn(), savePreset: vi.fn() }));
-vi.mock("@/components/lifecycle", () => ({ regeneratePrompt: vi.fn() }));
-vi.mock("@/components/options/io-panes", () => ({}));
-vi.mock("@/components/options/options-panel", () => ({ openTab: vi.fn(), toggleOptions: vi.fn() }));
-vi.mock("@/components/seed", () => ({ showSeedHistoryDialog: vi.fn() }));
+vi.mock("@/app/chrome/app-info", () => ({ showInfo: vi.fn() }));
+vi.mock("@/app/layers-presets", () => ({ applyPreset: vi.fn(), savePreset: vi.fn() }));
+vi.mock("@/app/lifecycle", () => ({ regeneratePrompt: vi.fn() }));
+vi.mock("@/app/chrome/io-panes", () => ({}));
+vi.mock("@/app/chrome/options-panel", () => ({ openTab: vi.fn(), toggleOptions: vi.fn() }));
+vi.mock("@/app/seed", () => ({ showSeedHistoryDialog: vi.fn() }));
 vi.mock("@/services", () => ({ Services: {} }));
 vi.mock("@/services/autosave", () => ({ toggleSaveReminder: vi.fn() }));
 vi.mock("@/services/url-params", () => ({ copyMapURL: vi.fn() }));
 vi.mock("@/services/versioning", () => ({ cleanupData: vi.fn() }));
-vi.mock("@/renderers/overlays/highlight", () => ({
+vi.mock("@/ui/map/highlight", () => ({
   highlightElement: mocks.highlight,
   highlightArea: mocks.highlightArea
 }));
-vi.mock("@/components/zoom", () => ({ zoomTo: mocks.zoom }));
-vi.mock("@/components/viewport", () => ({ viewport: { width: 1000, height: 800, scale: 1 } }));
+vi.mock("@/ui/map/zoom", () => ({ zoomTo: mocks.zoom }));
+vi.mock("@/renderers/viewport/viewport", () => ({ viewport: { width: 1000, height: 800, scale: 1 } }));
 vi.mock("@/renderers/labels/label-data", () => ({ getLabelsIndex: mocks.labels }));
-vi.mock("@/components/dialog/dialog-helpers", () => ({ refreshEditors: vi.fn() }));
-vi.mock("@/components/tooltips", () => ({ tip: mocks.tip }));
+vi.mock("@/ui/dialog/dialog-helpers", () => ({ refreshEditors: vi.fn() }));
+vi.mock("@/ui/tooltips", () => ({ tip: mocks.tip, loadingTip: { start: vi.fn(), end: vi.fn() } }));
 vi.mock("@/controllers", () => ({
   Controllers: new Proxy(
     {},
@@ -45,8 +45,13 @@ vi.mock("@/controllers", () => ({
   )
 }));
 
-import { MAP_COMMANDS } from "@/components/map-commands";
+import { isLinkable, MAP_COMMANDS } from "@/app/map-commands";
+import { Routes } from "@/model/economy/routes-generator";
+import { Rivers } from "@/model/physical/river-generator";
+import { bindApp } from "@/ui/app-commands";
 import { Omnibar } from "./omnibar";
+
+bindApp({ mapCommands: MAP_COMMANDS, isLinkable } as Parameters<typeof bindApp>[0]);
 
 function input(): HTMLInputElement {
   return document.querySelector<HTMLInputElement>("#omnibar-input")!;
@@ -74,7 +79,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.open.mockResolvedValue(undefined);
   mocks.labels.mockReturnValue([]);
-  globalThis.customization = 0;
+  options.app.mode = null;
   globalThis.pack = {
     cells: {
       i: [0, 1],
@@ -242,7 +247,7 @@ describe("Omnibar public behavior", () => {
   });
 
   it("keeps disabled commands visible without activating them", () => {
-    globalThis.customization = 1;
+    options.app.mode = "heightmap";
     Omnibar.open();
     search("> add burg");
     expect(rows()[0].getAttribute("aria-disabled")).toBe("true");
@@ -254,8 +259,8 @@ describe("Omnibar public behavior", () => {
 
   it("calls generation directly and remembers only command IDs", async () => {
     const action = vi.fn();
-    vi.stubGlobal("Rivers", { regenerate: action });
-    vi.stubGlobal("Routes", { sync: () => {} });
+    Object.assign(Rivers, { regenerate: action });
+    Object.assign(Routes, { sync: () => {} });
     sessionStorage.setItem("regenerateFeatureDontAsk", "true");
     document.getElementById("regenerateRivers")!.remove();
     Omnibar.open();

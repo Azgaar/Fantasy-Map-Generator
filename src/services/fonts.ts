@@ -1,18 +1,16 @@
-import { tip } from "@/components/tooltips";
+import type { StylesData } from "@/types/styles";
+import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
 
-declare global {
-  var fonts: FontDefinition[];
-}
-
-type FontDefinition = {
+export type FontDefinition = {
   family: string;
   src?: string;
   unicodeRange?: string;
   variant?: string;
 };
 
-window.fonts = [
+export const fonts: FontDefinition[] = [
   { family: "Arial" },
   { family: "Brush Script MT" },
   { family: "Century Gothic" },
@@ -289,12 +287,8 @@ export function declareFont(font: FontDefinition): void {
   document.fonts.add(fontFace);
 }
 
-declareDefaultFonts(); // execute once on load
-
-function declareDefaultFonts() {
-  fonts.forEach(font => {
-    declareFont(font);
-  });
+export function declareDefaultFonts(): void {
+  for (const font of fonts) declareFont(font);
 }
 
 async function fetchGoogleFont(family: string) {
@@ -318,7 +312,7 @@ async function fetchGoogleFont(family: string) {
 
     return fonts;
   } catch (err) {
-    ERROR && console.error(err);
+    log.error(err);
     return null;
   }
 }
@@ -347,23 +341,14 @@ export async function loadFontsAsDataURI(fonts: FontDefinition[]): Promise<FontD
   return await Promise.all(promises);
 }
 
-/** Collect fonts referenced by the map and, when saving, its notes. */
-export function getUsedFonts(svg: SVGSVGElement, legends: string[] = []): FontDefinition[] {
-  const usedFontFamilies = new Set();
+/** Collect fonts the map styles and, when saving, its notes use */
+export function getUsedFonts(styles: StylesData, notes: string[] = []): FontDefinition[] {
+  const usedFontFamilies = new Set<string>();
+  collectStyleFonts(styles, usedFontFamilies);
 
-  const labelGroups = svg.querySelectorAll("#labels g");
-  for (const labelGroup of labelGroups) {
-    const font = labelGroup.getAttribute("font-family");
-    if (font) usedFontFamilies.add(font);
-  }
-
-  const legend = svg.querySelector("#legend");
-  const legendFont = legend?.getAttribute("font-family");
-  if (legendFont) usedFontFamilies.add(legendFont);
-
-  for (const legend of legends) {
+  for (const note of notes) {
     const template = document.createElement("template");
-    template.innerHTML = legend;
+    template.innerHTML = note;
     for (const el of template.content.querySelectorAll<HTMLElement>("[style], font[face]")) {
       const family = el.style.fontFamily || el.getAttribute("face") || "";
       for (const match of family.matchAll(/"([^"]+)"|'([^']+)'|([^,]+)/g)) {
@@ -374,6 +359,15 @@ export function getUsedFonts(svg: SVGSVGElement, legends: string[] = []): FontDe
 
   const usedFonts = fonts.filter(font => usedFontFamilies.has(font.family));
   return usedFonts;
+}
+
+// every font-family in the style tree, whether its layer is drawn or not
+function collectStyleFonts(node: unknown, families: Set<string>): void {
+  if (typeof node !== "object" || node === null) return;
+  for (const [key, value] of Object.entries(node)) {
+    if (key === "font-family" && typeof value === "string") families.add(value);
+    else collectStyleFonts(value, families);
+  }
 }
 
 /** Fetch a Google font by family name and register it; the family once loaded, undefined when it cannot be */
@@ -392,7 +386,7 @@ export async function addGoogleFont(family: string): Promise<string | undefined>
     for (const fontFace of await Promise.all(faces.map(face => face.load()))) document.fonts.add(fontFace);
   } catch (error) {
     tip(t("Failed to load Google font {{family}}", { family }), true, "error", 4000);
-    ERROR && console.error(error);
+    log.error(error);
     return undefined;
   }
   fonts.push(...fontRanges);

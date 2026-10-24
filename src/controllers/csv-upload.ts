@@ -1,9 +1,9 @@
-import { alertDialog, confirmationDialog } from "@/components/dialog/dialog-helpers";
-import { tip } from "@/components/tooltips";
 import { World } from "@/controllers/assistant/world";
 import { Csv } from "@/services/io/csv";
+import { Dialog } from "@/ui/dialog/dialog";
+import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
-import { errorText, escapeHtml } from "@/utils/stringUtils";
+import { errorText, escapeHtml } from "@/utils/string-utils";
 
 interface UpdateOptions {
   find: (id: number) => { name?: unknown } | undefined; // the living entity with this id
@@ -22,7 +22,7 @@ interface CsvRow {
 }
 
 /** A value the upload sets, or could not set and why (markup, already escaped) */
-export interface CsvOutcome {
+interface CsvOutcome {
   id: string;
   name: string;
   column: string;
@@ -60,7 +60,7 @@ async function update(
   try {
     table = Csv.read(text, known, { required: ["Id"], units: options.units });
   } catch (error) {
-    alertDialog({ message: errorText(error) });
+    Dialog.message({ message: errorText(error) });
     return false;
   }
 
@@ -71,7 +71,7 @@ async function update(
       "Upload only allows to update existing entries. Missing keys: {{ids}}. Create them first and then re-download CSV to check their ids",
       { ids: missing.map(id => id || "?").join(", ") }
     );
-    alertDialog({ message });
+    Dialog.message({ message });
     return false;
   }
 
@@ -137,7 +137,7 @@ async function update(
   const failed = run().filter(outcome => outcome.reason && !expected.has(key(outcome)));
   if (failed.length) {
     const lines = failed.map(({ id, column, reason }) => `${escapeHtml(id)} ${column}: ${reason}`);
-    alertDialog({ message: `${t("Some values were not applied")}<br>${lines.join("<br>")}` });
+    Dialog.message({ message: `${t("Some values were not applied")}<br>${lines.join("<br>")}` });
   } else tip(t("Data is updated"), false, "success", 4000);
   return true;
 }
@@ -146,17 +146,17 @@ async function update(
  * apply there is no Apply: the preview only tells why */
 function review(outcomes: CsvOutcome[], unknown: string[]): Promise<boolean> {
   if (!outcomes.length && !unknown.length) {
-    alertDialog({ message: t("No changes found in the file") });
+    Dialog.message({ message: t("No changes found in the file") });
     return Promise.resolve(false);
   }
   if (outcomes.every(outcome => outcome.reason)) {
     const message = `<p>${t("Nothing in the file can be applied")}</p>${previewMessage(outcomes, unknown)}`;
-    alertDialog({ title: t("Upload preview"), message, width: "auto" });
+    Dialog.message({ title: t("Upload preview"), message, width: "auto" });
     return Promise.resolve(false);
   }
 
   return new Promise(resolve =>
-    confirmationDialog({
+    Dialog.confirm({
       title: t("Upload preview"),
       message: previewMessage(outcomes, unknown),
       confirm: t("Apply"),

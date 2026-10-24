@@ -1,16 +1,29 @@
 import { geoGraticule, geoOrthographic, geoPath, interpolateSpectral, range, scaleSequential, select } from "d3";
-import { destroyDialog } from "@/components/dialog/dialog-helpers";
-import { Layers } from "@/components/layers";
-import { Pins } from "@/components/pins";
-import { tip } from "@/components/tooltips";
+import { Controllers } from "@/controllers";
+import { Routes } from "@/model/economy/routes-generator";
+import { Options } from "@/model/options/options-model";
+import { Pins } from "@/model/options/pins";
+import { Biomes } from "@/model/physical/biomes-generator";
+import { Coordinates } from "@/model/physical/coordinates";
+import { Features } from "@/model/physical/features-generator";
+import { Precipitation } from "@/model/physical/precipitation-generator";
+import { Rivers } from "@/model/physical/river-generator";
+import { Temperature } from "@/model/physical/temperature-generator";
+import { convertTemperature, getKmInDistanceUnit } from "@/model/units";
+import { Layers } from "@/renderers/layers";
+import { Dialog } from "@/ui/dialog/dialog";
+
+import { bindPinIcons } from "@/ui/pin-icons";
 import { t } from "@/utils/i18n";
-import { convertTemperature, ensureEl, findEl, getKmInDistanceUnit, parseTransform, rn, round } from "../utils";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
+import { parseTransform, round } from "@/utils/string-utils";
 
 const projection = geoOrthographic().translate([100, 100]).scale(100);
 const path = geoPath(projection);
 
 function open(): void {
-  if (customization) return;
+  if (options.app.mode) return;
 
   renderDialog();
   updateInputValues();
@@ -18,28 +31,18 @@ function open(): void {
   updateGlobePosition();
   updateWindDirections();
 
-  $("#worldConfigurator").dialog({
+  Dialog.open("worldConfigurator", {
     title: t("Configure World"),
-    resizable: false,
-    width: "minmax(40em, 85vw)",
-    buttons: { [t("Update world")]: updateWorld },
-    open: function (this: HTMLElement) {
-      const checkbox = /* html */ `<div class="dontAsk" data-tip="${t("Automatically update world on input changes and button clicks")}">
-        <input id="wcAutoChange" class="checkbox" type="checkbox" checked />
-        <label for="wcAutoChange" class="checkbox-label"><i>${t("auto-apply changes")}</i></label>
-      </div>`;
-      const pane = this.parentElement?.querySelector(".ui-dialog-buttonpane");
-      pane?.insertAdjacentHTML("afterbegin", checkbox);
-
-      const button = this.parentElement?.querySelector(".ui-dialog-buttonset > button");
-      button?.addEventListener("mousemove", () => tip(t("Apply current settings to the map")));
-    },
-    close: () => destroyDialog("worldConfigurator")
+    buttons: [{ label: t("Update world"), onClick: updateWorld, tip: t("Apply current settings to the map") }],
+    footer: /* html */ `<div class="dontAsk" data-tip="${t("Automatically update world on input changes and button clicks")}">
+      <input id="wcAutoChange" class="checkbox" type="checkbox" checked />
+      <label for="wcAutoChange" class="checkbox-label"><i>${t("auto-apply changes")}</i></label>
+    </div>`
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("worldConfigurator");
+  Dialog.destroy("worldConfigurator");
   ensureEl("dialogs").insertAdjacentHTML("beforeend", createDialogHtml());
   addListeners();
 }
@@ -215,7 +218,7 @@ function addListeners(): void {
   ensureEl("wcTropical").addEventListener("click", () => applyWorldPreset(33, 50));
   ensureEl("wcSouthern").addEventListener("click", () => applyWorldPreset(33, 75));
 
-  Pins.bindIcons(ensureEl("worldConfigurator"), currentValue);
+  bindPinIcons(ensureEl("worldConfigurator"), currentValue);
 }
 
 /** What each lock icon in this dialog pins */
@@ -317,7 +320,7 @@ function updateWorld(): void {
 
   Layers.draw("temperature", "precipitation");
   Layers.draw("biomes", "coordinates", "rivers");
-  if (findEl("canvas3d")) setTimeout(() => window.Controllers.View3d.update(), 500);
+  if (findEl("canvas3d")) setTimeout(() => Controllers.View3d.update(), 500);
 }
 
 function updateGlobePosition(): void {

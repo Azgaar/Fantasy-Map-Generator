@@ -1,14 +1,19 @@
 // The icon picker: one dialog for every icon slot, the Icon Library's sources in a side list
-import { confirmationDialog, destroyDialog } from "@/components/dialog/dialog-helpers";
-import { type IconSetId, IconSets } from "@/components/icon-sets";
-import { type CustomIcon, CustomIcons, type IconPicture, Icons } from "@/components/icons";
-import { tip } from "@/components/tooltips";
+
 import { ICON_GROUPS } from "@/data/icons-list";
 import { ICON_GROUP_LABELS } from "@/data/id-labels";
+import { type IconSetId, IconSets } from "@/model/icon-sets";
+import { type CustomIcon, CustomIcons, type IconPicture, Icons } from "@/model/icons";
+import { getFileName } from "@/services/io/file-name";
 import { IconsArchive } from "@/services/io/icons-archive";
 import type { IconSet } from "@/types/icons";
-import { capitalize, createFileInput, downloadFile, ensureEl, escapeHtml, getFileName } from "@/utils";
+import { Dialog } from "@/ui/dialog/dialog";
+
+import { tip } from "@/ui/tooltips";
+import { createFileInput, downloadFile } from "@/utils/file-utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/node-utils";
+import { capitalize, escapeHtml } from "@/utils/string-utils";
 import { IconPictures, type PictureProfile } from "./pictures";
 import { closePositioner, openPositioner } from "./positioner";
 
@@ -23,7 +28,7 @@ interface Entry {
   set?: IconSetId;
 }
 
-export interface IconPickerOptions {
+interface IconPickerOptions {
   current: string;
   onPick: (id: string) => void; // on Apply; `live` also calls it on every selection and with `current` on cancel
   live?: boolean;
@@ -96,7 +101,7 @@ function open({ current, onPick, live = false, preferCustom, profile = "icon" }:
   let query = "";
   let replacing: string | null = null; // the custom icon a new link or upload replaces
 
-  destroyDialog(ICON_PICKER);
+  Dialog.destroy(ICON_PICKER);
   ensureEl("dialogs").insertAdjacentHTML(
     "beforeend",
     /* html */ `<div id="${ICON_PICKER}" class="dialog">
@@ -157,7 +162,7 @@ function open({ current, onPick, live = false, preferCustom, profile = "icon" }:
   const apply = () => {
     applied = true;
     if (!live) onPick(current);
-    $(dialog).dialog("close");
+    Dialog.close(ICON_PICKER);
   };
 
   const setReplacing = (id: string | null) => {
@@ -235,7 +240,7 @@ function open({ current, onPick, live = false, preferCustom, profile = "icon" }:
       .finally(() => dialog.classList.remove("busy"));
   };
   const askToReplace = (conflicts: CustomIcon[]) => {
-    confirmationDialog({
+    Dialog.confirm({
       title: t("Import custom icons"),
       message: sentences(
         t("Archived icons with the id of a different icon on this map: {{icons}}", { icons: conflicts.length }),
@@ -257,7 +262,7 @@ function open({ current, onPick, live = false, preferCustom, profile = "icon" }:
     const id = current;
     const uses = Icons.uses(id);
     const count = Object.values(uses).reduce((total, used) => total + used, 0);
-    confirmationDialog({
+    Dialog.confirm({
       title: t("Remove"),
       message: count
         ? `${t("The icon is used by {{uses}}. They will show no icon.", {
@@ -318,18 +323,18 @@ function open({ current, onPick, live = false, preferCustom, profile = "icon" }:
   renderNav();
   renderPanel();
 
-  $(dialog).dialog({
+  Dialog.open(ICON_PICKER, {
     title: t("Select icon"),
     width: dialogWidth(),
     position: { my: "center", at: "center", of: "svg" },
-    close: () => {
+    onClose: () => {
       if (live && !applied && current !== initial) onPick(initial);
-      destroyDialog(ICON_PICKER);
+      Dialog.destroy(ICON_PICKER);
     },
-    buttons: {
-      [t("Apply")]: apply,
-      [t("Cancel")]: () => $(dialog).dialog("close")
-    }
+    buttons: [
+      { label: t("Apply"), onClick: apply },
+      { label: t("Cancel"), onClick: () => Dialog.close(ICON_PICKER) }
+    ]
   });
   reveal(); // the panel has its height only once the dialog is laid out
 }

@@ -650,9 +650,3 @@ Conor Pewterbaugh
 Warren
 f
 YeOldeRaven`;
-
-window.Supporters = supporters;
-
-declare global {
-  var Supporters: typeof supporters;
-}

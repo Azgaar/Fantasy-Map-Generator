@@ -1,7 +1,9 @@
 import { type Browser, expect, test } from "@playwright/test";
 import { waitForMap } from "./wait-for-map";
 
-declare const Services: { Save: { prepareMapData: () => Promise<string> } };
+// the app's console surface, see src/app/fmg.ts
+declare const FMG: any;
+
 
 const url = "/?seed=map-invariance&width=1280&height=720";
 
@@ -20,7 +22,7 @@ async function generateIn(browser: Browser, language: string): Promise<{ map: st
     Array.from(document.querySelectorAll("#burgIcons use")).every(use => document.querySelector(use.getAttribute("href")!))
   );
   // the header's last field is the map's creation time, so it differs between any two runs
-  const map = (await page.evaluate(() => Services.Save.prepareMapData())).replace(/\|\d+(\r?\n)/, "$1");
+  const map = (await page.evaluate(() => FMG.Services.Save.prepareMapData())).replace(/\|\d+(\r?\n)/, "$1");
   const cyrillic = /[А-Яа-яЁё]/.test(await page.locator("body").innerText());
   await context.close();
   return { map, cyrillic };

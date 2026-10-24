@@ -1,8 +1,9 @@
-import { Layers } from "@/components/layers";
-import type { LabelGroup, LabelType } from "@/generators/labels-generator";
+import type { LabelGroup, LabelType } from "@/model/annotations/labels-generator";
 import type { LabelData } from "@/renderers/labels/labels";
+import { Layers } from "@/renderers/layers";
 import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
-import { findEl } from "@/utils";
+import { log } from "@/utils/logger";
+import { findEl } from "@/utils/node-utils";
 import { getLabelsData } from "./label-data";
 import { renderLabelGroups } from "./label-groups";
 import { createLabelElements } from "./label-markup";
@@ -14,13 +15,13 @@ const labelsByGroup = new Map<string, LabelData[]>();
 export function drawLabels(): void {
   if (!Layers.isOn("labels")) return void removeLabels();
 
-  TIME && console.time("drawLabels");
+  log.time("drawLabels");
   renderLabelGroups();
   findEl("textPaths")?.replaceChildren();
   scene.replace(getLabelsData());
   indexLabelsByGroup();
   layer.render();
-  TIME && console.timeEnd("drawLabels");
+  log.timeEnd("drawLabels");
 }
 
 export function removeLabels(): void {

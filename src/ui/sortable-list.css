@@ -1,0 +1,5 @@
+/* The item being dragged within a sortable list */
+.sortable-dragging {
+  opacity: 0.6;
+  cursor: grabbing;
+}

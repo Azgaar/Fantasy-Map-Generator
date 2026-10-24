@@ -1,13 +1,14 @@
-import type { LayerId } from "@/components/layers";
-import { Layers } from "@/components/layers";
-import { MAP_COMMANDS, type MapCommand } from "@/components/map-commands";
-import { ENTITY_TYPES, type EntityDisplay, type EntityTarget, MapEntities } from "@/components/map-entities";
-import { reveal, revealEntity } from "@/components/reveal";
-import { tip } from "@/components/tooltips";
-import { Tags } from "@/generators/tags";
+import type { MapCommand } from "@/app/map-commands";
+import { ENTITY_TYPES, type EntityDisplay, type EntityTarget, MapEntities } from "@/model/map-entities";
+import { Tags } from "@/model/tags";
 import { getLabelsIndex, type LabelIndexEntry } from "@/renderers/labels/label-data";
-import { findEl } from "@/utils";
+import type { LayerId } from "@/renderers/layers";
+import { Layers } from "@/renderers/layers";
+import { App } from "@/ui/app-commands";
+import { openEntity, reveal, revealEntity } from "@/ui/map/reveal";
+import { tip } from "@/ui/tooltips";
 import { t } from "@/utils/i18n";
+import { findEl } from "@/utils/node-utils";
 
 interface SearchFields {
   name: string;
@@ -95,7 +96,7 @@ class OmnibarController {
   }
 
   private collect(): Result[] {
-    const commands: CommandResult[] = (options.map.viewOnly ? [] : MAP_COMMANDS).map(command => ({
+    const commands: CommandResult[] = (options.map.viewOnly ? [] : App.mapCommands).map(command => ({
       kind: "command",
       id: command.id,
       name: command.name,
@@ -586,7 +587,7 @@ class OmnibarController {
       } else if (result.kind === "label") {
         this.navigate(result.target, { label: result.label });
       } else {
-        const opened = !options.map.viewOnly && MapEntities.open(result.target.ref);
+        const opened = !options.map.viewOnly && openEntity(result.target.ref);
         if (opened) await opened;
         else this.navigate(result.target); // the entity has no editor, so reveal it instead
       }
@@ -697,7 +698,7 @@ function match(text: string, query: string): number {
 
 function getMapActionUnavailable(): string {
   if (typeof pack === "undefined" || !pack.cells?.i?.length) return t("Generate or load a map first");
-  if (typeof customization !== "undefined" && customization) return t("Exit customization mode first");
+  if (options.app.mode) return t("Exit customization mode first");
   if (findEl("canvas3d")) return t("Switch to the 2D map first");
   return "";
 }

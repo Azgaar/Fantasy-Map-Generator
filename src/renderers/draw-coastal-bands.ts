@@ -1,5 +1,5 @@
 import type { StylesData } from "@/types/styles";
-import { createEl, ensureEl, findEl } from "@/utils/nodeUtils";
+import { createEl, ensureEl, findEl } from "@/utils/node-utils";
 
 import { cacheOceanLayer, clearOceanCache } from "./ocean-cache";
 

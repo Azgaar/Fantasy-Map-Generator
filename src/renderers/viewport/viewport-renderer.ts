@@ -1,4 +1,4 @@
-import { viewport } from "@/components/viewport";
+import { viewport } from "@/renderers/viewport/viewport";
 
 interface ViewportLayerHandle {
   render: () => void;

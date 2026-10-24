@@ -10,18 +10,18 @@ const PRESETS = [
 
 function pinnedAttrs(preset: string): {oceanFill: string; landmassFill: string} {
   const file =
-    preset === "default" ? "../../src/generators/default-styles.json" : `../../public/styles/${preset}.json`;
+    preset === "default" ? "../../src/model/styles/default-styles.json" : `../../public/styles/${preset}.json`;
   const json = JSON.parse(fs.readFileSync(path.join(__dirname, file), "utf8"));
   return {oceanFill: json.ocean.groups.base.attrs.fill, landmassFill: json.landmass.attrs.fill};
 }
 
 async function switchTo(page: Page, preset: string) {
   await page.evaluate(async name => {
-    await (window as any).Controllers.StylePresetsEditor.change(name);
+    await (window as any).FMG.Controllers.StylePresetsEditor.change(name);
   }, preset);
 }
 
-// Relief.changeSize (src/generators/relief-generator.ts) writes the resized value into
+// Relief.changeSize (src/model/physical/relief-generator.ts) writes the resized value into
 // pack.relief[i].s, and the viewport renderer copies that straight into the <use> width/height
 // attrs (src/renderers/draw-relief-icons.ts) - so a stuck-shrunk icon is observable on a specific
 // icon's width attr without forcing a full relief regeneration.
@@ -105,7 +105,7 @@ test("relief icon size round-trips through a preset switch and back", async ({pa
   await page.evaluate(() => sessionStorage.setItem("styleChangeConfirmed", "true"));
 
   // the "relief" layer is off in the default layers preset - turn it on so the terrain icons render
-  await page.evaluate(() => (window as any).Layers.show("relief"));
+  await page.evaluate(() => (window as any).FMG.Layers.show("relief"));
   await page.waitForSelector("#terrain > use", {state: "attached", timeout: 60000});
 
   await switchTo(page, "default");
@@ -149,7 +149,7 @@ test("a saved custom preset carries the retired sizes from the store", async ({p
     styles.scaleBar.options.label = "posterity";
     styles.legend.options.columns = 5;
   });
-  await page.evaluate(() => (window as any).Controllers.StylePresetsEditor.openSaver());
+  await page.evaluate(() => (window as any).FMG.Controllers.StylePresetsEditor.openSaver());
 
   const raw = await page.locator("#styleSaverJSON").inputValue();
   // the saver emits the store format now: no legacy selector keys, parseable directly
@@ -207,7 +207,7 @@ test("a non-style JSON is rejected by the saver, not applied as defaults", async
   await waitForMap(page);
 
   const before = await page.evaluate(() => styles.rivers.attrs.fill);
-  await page.evaluate(() => (window as any).Controllers.StylePresetsEditor.openSaver());
+  await page.evaluate(() => (window as any).FMG.Controllers.StylePresetsEditor.openSaver());
   await page.evaluate(() => {
     (document.getElementById("styleSaverJSON") as HTMLTextAreaElement).value =
       JSON.stringify({road: "#D1B86E", roofType: "Gable", treeShape: "Cotton"});

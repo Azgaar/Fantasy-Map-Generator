@@ -4,14 +4,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/services/fonts", () => ({ getUsedFonts: vi.fn(() => []) }));
 vi.mock("@/services", () => ({ Services: { Cloud: { save: vi.fn() } } }));
 
+import { DIALOGS_MARKUP, dialogButton } from "@/ui/dialog/dialog-testing";
 import { notifySaveOutcome, Save } from "./save";
 
 beforeEach(() => {
   window.dispatchEvent(new Event("map:generated"));
-  document.body.innerHTML = '<div id="tooltip"></div><div id="alertMessage"></div>';
+  document.body.innerHTML = `<div id="tooltip"></div>${DIALOGS_MARKUP}`;
   localStorage.clear();
-  vi.stubGlobal("customization", 0);
-  vi.stubGlobal("alertMessage", document.getElementById("alertMessage"));
+  options.app.mode = null;
   vi.useFakeTimers();
 });
 
@@ -61,7 +61,7 @@ describe("save feedback", () => {
 
 describe("Save.toMachine", () => {
   it("refuses a view-only map before opening the picker", async () => {
-    vi.stubGlobal("options", { map: { viewOnly: true } });
+    vi.stubGlobal("options", { app: { mode: null }, map: { viewOnly: true } });
     const picker = vi.fn();
     vi.stubGlobal("showSaveFilePicker", picker);
     await Save.toMachine();
@@ -70,8 +70,7 @@ describe("Save.toMachine", () => {
   });
 
   it("suggests a view-only copy its own filename", async () => {
-    vi.stubGlobal("options", { map: { lore: { name: "Ovis" } } });
-    vi.stubGlobal("$", () => ({ not: () => ({ each: vi.fn() }) }));
+    vi.stubGlobal("options", { app: { mode: null }, map: { lore: { name: "Ovis" } } });
     const picker = vi.fn().mockRejectedValue(Object.assign(new Error("cancelled"), { name: "AbortError" }));
     vi.stubGlobal("showSaveFilePicker", picker);
     await Save.toMachine(false, true);
@@ -79,7 +78,7 @@ describe("Save.toMachine", () => {
   });
 
   it("rejects saving in edit mode before opening the picker", async () => {
-    vi.stubGlobal("customization", 1);
+    options.app.mode = "heightmap";
     const picker = vi.fn();
     vi.stubGlobal("showSaveFilePicker", picker);
     await Save.toMachine();
@@ -89,14 +88,9 @@ describe("Save.toMachine", () => {
 
   it("cancels without attempting serialization or showing an error dialog", async () => {
     vi.stubGlobal("showSaveFilePicker", vi.fn().mockRejectedValue(new DOMException("Cancelled", "AbortError")));
-    const dialog = vi.fn();
-    vi.stubGlobal(
-      "$",
-      vi.fn(() => ({ dialog, not: () => ({ each: () => {} }) }))
-    );
     await Save.toMachine();
     expect(window.showSaveFilePicker).toHaveBeenCalledOnce();
-    expect(dialog).not.toHaveBeenCalled();
+    expect(document.querySelector(".message")).toBeNull();
     expect(document.getElementById("tooltip")!.textContent).toBe("");
   });
 
@@ -106,16 +100,10 @@ describe("Save.toMachine", () => {
       .mockRejectedValueOnce(new DOMException("Permission denied", "SecurityError"))
       .mockRejectedValueOnce(new DOMException("Cancelled", "AbortError"));
     vi.stubGlobal("showSaveFilePicker", picker);
-    const dialog = vi.fn();
-    vi.stubGlobal(
-      "$",
-      vi.fn(() => ({ dialog, not: () => ({ each: () => {} }) }))
-    );
     await Save.toMachine();
-    expect(document.getElementById("alertMessage")!.textContent).toContain("Permission denied");
-    const config = dialog.mock.calls[0][0];
-    expect(config.title).toBe("Saving error");
-    config.buttons.Retry.call(document.getElementById("alertMessage"));
+    expect(document.querySelector(".dialog-message")!.textContent).toContain("Permission denied");
+    expect(document.querySelector(".dialog-window:has(.message) .dialog-title")?.textContent).toBe("Saving error");
+    dialogButton("Retry").click();
     await Promise.resolve();
     expect(picker).toHaveBeenCalledTimes(2);
   });

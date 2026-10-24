@@ -1,32 +1,29 @@
 import type { Selection } from "d3";
 import { select } from "d3";
-import { type IconSetId, IconSets } from "@/components/icon-sets";
-import { Icons } from "@/components/icons";
-import { Layers } from "@/components/layers";
-import { tip } from "@/components/tooltips";
-import { viewport, ZOOM_CURVES, type ZoomedLayer, zoomFontSize } from "@/components/viewport";
+import { Grid } from "@/model/graph/grid-generator";
+import { type IconSetId, IconSets } from "@/model/icon-sets";
+import { Icons } from "@/model/icons";
+import { Rivers } from "@/model/physical/river-generator";
+import { getCellPopulation, getFriendlyHeight } from "@/model/units";
 import { renderEmblemDefinitions } from "@/renderers/draw-emblems";
 import { drawScaleBar } from "@/renderers/draw-scalebar";
-import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
+import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
+import { Layers } from "@/renderers/layers";
 import { restoreOceanVectors } from "@/renderers/ocean-cache";
+import { viewport, ZOOM_CURVES, type ZoomedLayer, zoomFontSize } from "@/renderers/viewport/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { getUsedFonts, loadFontsAsDataURI } from "@/services/fonts";
+import { getFileName } from "@/services/io/file-name";
 import { savedMessage } from "@/services/platform";
-import {
-  connectVertices,
-  downloadFile,
-  ensureEl,
-  findEl,
-  getBase64,
-  getCellPopulation,
-  getCoordinates,
-  getFileName,
-  getFriendlyHeight,
-  loadScript,
-  rn,
-  unique
-} from "@/utils";
+import { tip } from "@/ui/tooltips";
+import { unique } from "@/utils/array-utils";
+import { getCoordinates } from "@/utils/common-utils";
+import { downloadFile, getBase64 } from "@/utils/file-utils";
 import { t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
+import { connectVertices } from "@/utils/path-utils";
 import {
   convertBlurFilters,
   getReferencedDefinitions,
@@ -41,7 +38,7 @@ type MapSelection = Selection<SVGSVGElement, unknown, null, undefined>;
 const toGeoCoordinates = (x: number, y: number) =>
   getCoordinates(x, y, options.map.geography.coordinates, options.map.graph.width, options.map.graph.height, 4);
 
-export interface GetMapURLOptions {
+interface GetMapURLOptions {
   debug?: boolean;
   noLabels?: boolean;
   noWater?: boolean;
@@ -64,7 +61,7 @@ export interface Region {
 }
 
 async function exportToSvg(): Promise<void> {
-  TIME && console.time("exportToSvg");
+  log.time("exportToSvg");
   try {
     const url = await getMapURL("svg", { fullMap: true });
     const link = document.createElement("a");
@@ -75,7 +72,7 @@ async function exportToSvg(): Promise<void> {
     const message = savedMessage(link.download);
     tip(message, true, "success", 5000);
   } catch (error) {
-    ERROR && console.error(error);
+    log.error(error);
     tip(
       t("SVG export failed: {{error}}", { error: (error as Error)?.message || t("Unknown error") }),
       true,
@@ -83,12 +80,12 @@ async function exportToSvg(): Promise<void> {
       5000
     );
   } finally {
-    TIME && console.timeEnd("exportToSvg");
+    log.timeEnd("exportToSvg");
   }
 }
 
 async function exportToPng(): Promise<void> {
-  TIME && console.time("exportToPng");
+  log.time("exportToPng");
   try {
     const url = await getMapURL("png");
     const resolution = options.app.export.pngResolution;
@@ -122,7 +119,7 @@ async function exportToPng(): Promise<void> {
     const message = `${savedMessage(link.download)}. ${t("You can set image scale in options")}`;
     tip(message, true, "success", 5000);
   } catch (error) {
-    ERROR && console.error(error);
+    log.error(error);
     tip(
       t("PNG export failed: {{error}}", { error: (error as Error)?.message || t("Unknown error") }),
       true,
@@ -130,7 +127,7 @@ async function exportToPng(): Promise<void> {
       5000
     );
   } finally {
-    TIME && console.timeEnd("exportToPng");
+    log.timeEnd("exportToPng");
   }
 }
 
@@ -161,7 +158,7 @@ async function getRegionImage(
 }
 
 async function exportToJpeg(): Promise<void> {
-  TIME && console.time("exportToJpeg");
+  log.time("exportToJpeg");
   try {
     const url = await getMapURL("png");
     const resolution = options.app.export.pngResolution;
@@ -195,7 +192,7 @@ async function exportToJpeg(): Promise<void> {
     tip(savedMessage(link.download), true, "success", 7000);
     window.setTimeout(() => window.URL.revokeObjectURL(link.href), 5000);
   } catch (error) {
-    ERROR && console.error(error);
+    log.error(error);
     tip(
       t("JPEG export failed: {{error}}", { error: (error as Error)?.message || t("Unknown error") }),
       true,
@@ -203,7 +200,7 @@ async function exportToJpeg(): Promise<void> {
       5000
     );
   } finally {
-    TIME && console.timeEnd("exportToJpeg");
+    log.timeEnd("exportToJpeg");
   }
 }
 
@@ -212,8 +209,8 @@ async function exportToPngTiles(): Promise<void> {
   status.innerHTML = t("Preparing files...");
 
   const urlSchema = await getMapURL("tiles", { debug: true, fullMap: true });
-  await loadScript("libs/jszip.min.js");
-  const zip = new window.JSZip();
+  const { default: JSZip } = await import("jszip");
+  const zip = new JSZip();
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d")!;
@@ -285,7 +282,7 @@ async function exportToPngTiles(): Promise<void> {
       setTimeout(() => URL.revokeObjectURL(link.href), 5000);
     })
     .catch((error: Error) => {
-      ERROR && console.error(error);
+      log.error(error);
       status.innerHTML = t("Tiles export failed");
       tip(
         t("PNG tiles export failed: {{error}}", { error: error?.message || t("Unknown error") }),
@@ -370,7 +367,7 @@ function captureIconDefinitions(clone: SVGSVGElement, source: SVGSVGElement): ()
     },
     // the set loaded but has no such symbol (a stale reference): its uses draw nothing, as in the app
     id => {
-      if (IconSets.setForId(id)) WARN && console.warn(`Export: missing icon definition ${id}`);
+      if (IconSets.setForId(id)) log.warn(`Export: missing icon definition ${id}`);
     }
   );
 
@@ -448,7 +445,7 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
 
     if (type === "svg") removeUnusedElements(clone);
     relocateRootFilter(cloneEl); // Firefox drops a root-svg filter when the svg is rasterized via an image
-    if (customization && type === "mesh") updateMeshCells(clone);
+    if (options.app.mode && type === "mesh") updateMeshCells(clone);
     inlineStyle(clone);
 
     const referencedDefinitions = getReferencedDefinitions(cloneEl);
@@ -567,7 +564,7 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
     }
 
     // load fonts
-    const usedFonts = getUsedFonts(cloneEl);
+    const usedFonts = getUsedFonts(styles);
     const fontsToLoad = usedFonts.filter(font => font.src);
     if (fontsToLoad.length) {
       const dataURLfonts = await loadFontsAsDataURI(fontsToLoad);
@@ -1000,13 +997,6 @@ function saveGeoJsonZones(): void {
 
   const fileName = `${getFileName("Zones")}.geojson`;
   downloadFile(JSON.stringify(json), fileName, "application/json");
-}
-
-// reached lazily via Services.ExportMap
-declare global {
-  interface Window {
-    JSZip: any; // registered on demand by libs/jszip.min.js (see exportToPngTiles)
-  }
 }
 
 export const ExportMap = {

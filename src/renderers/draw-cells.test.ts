@@ -1,16 +1,16 @@
 // @vitest-environment jsdom
 import { beforeEach, expect, test, vi } from "vitest";
-import { setViewportSize } from "@/components/viewport";
-import { Styles } from "@/generators/styles";
+import { Styles } from "@/model/styles/styles";
+import { setViewportSize } from "@/renderers/viewport/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import "./draw-cells";
 
-vi.mock("@/components/layers", () => ({ Layers: { isOn: () => true, draw: vi.fn() } }));
+vi.mock("@/renderers/layers", () => ({ Layers: { isOn: () => true, draw: vi.fn() } }));
 
 beforeEach(() => {
   document.body.innerHTML = '<svg id="map"><g id="cells"><g id="cellIndexes"></g></g></svg>';
   Styles.set(Styles.parse(Styles.defaults));
-  globalThis.customization = 0;
+  options.app.mode = null;
   globalThis.grid = { spacing: 10 } as unknown as typeof grid;
   globalThis.pack = {
     cells: {

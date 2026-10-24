@@ -3,6 +3,9 @@ import path from "path";
 import { expect, test, type Page } from "@playwright/test";
 import { countMaps, waitForMap, waitForNextMap } from "./wait-for-map";
 
+// the app's console surface, see src/app/fmg.ts
+declare const FMG: any;
+
 // Step 4 of the style-migration doc: styles.ts is now its own record (data[48]) in the map file.
 // These tests pin the round trips the doc promises: a store-format save/reload survives a preset
 // switch and a DOM-only editor write, an old, record-less map gets harvested into the store on
@@ -10,10 +13,6 @@ import { countMaps, waitForMap, waitForNextMap } from "./wait-for-map";
 // stays absent rather than getting backfilled from Styles.defaults, and a DOM-only #terrain write
 // survives because the relief overlay no longer clobbers it.
 
-declare const d3: { select: (selector: string) => { attr: (name: string, value: string) => unknown } };
-declare const Services: {
-  Save: { toMachine: () => Promise<void>; prepareMapData: () => string | Promise<string> };
-};
 declare const styles: any;
 declare const options: { map: { style: { preset: string } } };
 
@@ -26,7 +25,7 @@ async function saveAsDownload(page: Page): Promise<Buffer> {
   await page.evaluate(() => {
     // This round trip captures a download, not the native file picker.
     Object.defineProperty(window, "showSaveFilePicker", { value: undefined, configurable: true });
-    return Services.Save.toMachine();
+    return FMG.Services.Save.toMachine();
   });
   const download = await downloadPromise;
   return fs.readFileSync(await download.path());
@@ -47,7 +46,7 @@ test.describe("style persistence round trips", () => {
     await waitForMap(page);
 
     await page.evaluate(() => sessionStorage.setItem("styleChangeConfirmed", "true"));
-    await page.evaluate(() => (window as any).Controllers.StylePresetsEditor.change("ancient"));
+    await page.evaluate(() => (window as any).FMG.Controllers.StylePresetsEditor.change("ancient"));
 
     const expectedFill = readPreset("ancient").ocean.groups.base.attrs.fill;
     const beforeFill = await page.locator("#oceanBase").getAttribute("fill");
@@ -118,7 +117,7 @@ test.describe("style persistence round trips", () => {
     // now the save serializes the store and the reload applies it back over the rogue value
     const storeFill = await page.evaluate(() => styles.rivers.attrs.fill);
     await page.evaluate(() => {
-      d3.select("#rivers").attr("fill", "#ff0000");
+      document.querySelector("#rivers")!.setAttribute("fill", "#ff0000");
     });
     expect(await page.locator("#rivers").getAttribute("fill")).toBe("#ff0000");
 
@@ -170,7 +169,7 @@ test.describe("style persistence round trips", () => {
     expect(harvested.statesHaloWidth).toBe(13);
 
     const record48 = await page.evaluate(async () => {
-      const mapData = await Services.Save.prepareMapData();
+      const mapData = await FMG.Services.Save.prepareMapData();
       return mapData.split("\r\n")[48];
     });
     const parsed = JSON.parse(record48);
@@ -223,7 +222,7 @@ test.describe("style persistence round trips", () => {
     await waitForMap(page);
 
     await page.evaluate(() => sessionStorage.setItem("styleChangeConfirmed", "true"));
-    await page.evaluate(() => (window as any).Controllers.StylePresetsEditor.change("clean"));
+    await page.evaluate(() => (window as any).FMG.Controllers.StylePresetsEditor.change("clean"));
 
     expect(await page.locator("#statesHalo").getAttribute("filter")).toBeNull();
 
@@ -390,7 +389,7 @@ test.describe("style persistence round trips", () => {
     // DOM-only write is presentation that does not outlive the session
     await page.evaluate(() => {
       styles.relief.attrs.opacity = 0.42;
-      d3.select("#terrain").attr("opacity", "0.42");
+      document.querySelector("#terrain")!.setAttribute("opacity", "0.42");
     });
 
     const buffer = await saveAsDownload(page);

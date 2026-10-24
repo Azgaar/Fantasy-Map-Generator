@@ -4,7 +4,7 @@ import { waitForMap } from "./wait-for-map";
 /** how often the map breaks each integrity rule; a broken id never throws, so it is checked */
 function violations(page: Page): Promise<Record<string, number>> {
   return page.evaluate(() =>
-    Object.fromEntries((window as any).MapIntegrity.check().map((v: any) => [v.rule, v.count]))
+    Object.fromEntries((window as any).FMG.MapIntegrity.check().map((v: any) => [v.rule, v.count]))
   );
 }
 
@@ -18,7 +18,7 @@ function editInRiskMode(page: Page, erosion: boolean) {
   return page.evaluate(async erosion => {
     const w = window as any;
     w.options.app.heightmapEditor.allowErosion = erosion;
-    await w.Controllers.HeightmapEditor.open({ mode: "risk" });
+    await w.FMG.Controllers.HeightmapEditor.open({ mode: "risk" });
     const { width, height } = w.options.map.graph;
     const { h } = w.grid.cells;
     w.grid.points.forEach(([x, y]: [number, number], i: number) => {
@@ -58,7 +58,7 @@ test.describe("Risk mode heightmap edit", () => {
       });
     const map = await fingerprint();
     await page.evaluate(() => {
-      (window as any).Production.regenerateEconomy = () => {
+      (window as any).FMG.Production.regenerateEconomy = () => {
         throw new Error("injected");
       };
     });
@@ -72,7 +72,8 @@ test.describe("Risk mode heightmap edit", () => {
 
   test("keeps the course and data of a locked river when rivers are generated again", async ({ page }) => {
     const locked = await page.evaluate(() => {
-      const { pack, Rivers, options } = window as any;
+      const { pack, options, FMG } = window as any;
+      const { Rivers } = FMG;
       const { width, height } = options.map.graph;
       const clear = (cell: number) =>
         cell < 0 ||
@@ -92,7 +93,8 @@ test.describe("Risk mode heightmap edit", () => {
     await editInRiskMode(page, true);
 
     const river = await page.evaluate(i => {
-      const { pack, Rivers } = window as any;
+      const { pack, FMG } = window as any;
+      const { Rivers } = FMG;
       const river = pack.rivers.find((r: any) => r.i === i);
       return (
         river && {

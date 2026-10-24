@@ -1,9 +1,18 @@
-import { is3dView } from "@/components/options/view-mode";
-import { tip } from "@/components/tooltips";
-import { viewport } from "@/components/viewport";
-import { globeResolutionFor, timeOfDayPresets } from "@/data/view-3d-options";
-import { ensureEl, findEl } from "@/utils";
+import { Controllers } from "@/controllers";
+import { DEFAULT_THREE_D, globeResolutionFor, timeOfDayPresets } from "@/data/view-3d-options";
+import { Options } from "@/model/options/options-model";
+import { is3dView } from "@/renderers/view-mode";
+import { viewport } from "@/renderers/viewport/viewport";
+import { Services } from "@/services";
+import { getFileName } from "@/services/io/file-name";
+import { savedMessage } from "@/services/platform";
+import { Dialog } from "@/ui/dialog/dialog";
+
+import { overlayMainTip, tip } from "@/ui/tooltips";
+import { downloadFile } from "@/utils/file-utils";
 import { sentences, t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { notify } from "@/utils/notices";
 
 // View3d controller: enters/exits the 3D view and owns the 3D settings dialog.
 // Configuration lives on the global `options.app.threeD` (not in this controller);
@@ -12,10 +21,35 @@ import { sentences, t } from "@/utils/i18n";
 type Renderer = typeof import("@/renderers/view-3d-renderer");
 let renderer: Renderer | null = null;
 const loadRenderer = (): Promise<Renderer> =>
-  renderer ? Promise.resolve(renderer) : import("@/renderers/view-3d-renderer").then(m => (renderer = m));
+  renderer
+    ? Promise.resolve(renderer)
+    : import("@/renderers/view-3d-renderer").then(m => {
+        m.setMapImageSource((type, options) => Services.ExportMap.getMapURL(type, options));
+        m.setBuildListener(building => (building ? showLoading() : hideLoading()));
+        renderer = m;
+        return m;
+      });
 
 // --- renderer bridge ---------------------------------------------------------
-const create = (canvas: HTMLCanvasElement, type = "viewMesh") => loadRenderer().then(m => m.create(canvas, type));
+const create = (canvas: HTMLCanvasElement, type = "viewMesh") =>
+  loadRenderer().then(
+    m => m.create(canvas, type),
+    () => {
+      hideLoading();
+      notify(t("Cannot load 3d library"), "error", 4000);
+      return false;
+    }
+  );
+// the bake, textures and satellite pass take seconds on big maps; pinned over any edit-mode hint until the scene is
+// on screen, then that hint is back
+let restoreTip: (() => void) | null = null;
+const showLoading = () => {
+  restoreTip ??= overlayMainTip(`${t("Loading")}…`);
+};
+const hideLoading = () => {
+  restoreTip?.();
+  restoreTip = null;
+};
 const redraw = () => loadRenderer().then(m => m.redraw());
 const update = () => loadRenderer().then(m => m.update());
 const stop = () => loadRenderer().then(m => m.stop());
@@ -38,8 +72,16 @@ const toggleSky = () => loadRenderer().then(m => m.toggleSky());
 const setResolution = (resolution: number) => loadRenderer().then(m => m.setResolution(resolution));
 const setColors = (sky: string, water: string) => loadRenderer().then(m => m.setColors(sky, water));
 const setTimeOfDay = (presetName: string) => loadRenderer().then(m => m.setTimeOfDay(presetName));
-const saveScreenshot = () => loadRenderer().then(m => m.saveScreenshot());
-const saveOBJ = () => loadRenderer().then(m => m.saveOBJ());
+const saveScreenshot = async () => {
+  const url = (await loadRenderer()).screenshotUrl();
+  const link = document.createElement("a");
+  link.download = `${getFileName()}.jpeg`;
+  link.href = url;
+  link.click();
+  tip(savedMessage(t("Screenshot")), true, "success", 7000);
+};
+const saveOBJ = async () =>
+  downloadFile(await (await loadRenderer()).exportOBJ(), `${getFileName()}.obj`, "text/plain;charset=UTF-8");
 // read access to view/erosion state (used by label/icon placement and e2e tests)
 const isOn = () => is3dView();
 const isCached = (key?: string) => loadRenderer().then(m => m.isCached(key));
@@ -49,8 +91,8 @@ function teardown(): void {
   if (!findEl("canvas3d")) return;
   void stop();
   findEl("canvas3d")?.remove();
-  if (findEl("options3d")) $("#options3d").dialog("close");
-  if (findEl("preview3d")) $("#preview3d").dialog("close");
+  if (findEl("options3d")) Dialog.close("options3d");
+  if (findEl("preview3d")) Dialog.close("preview3d");
 }
 
 function enterStandard(): void {
@@ -74,8 +116,8 @@ async function open(type: string): Promise<void> {
   canvas.dataset.type = type;
 
   if (type === "heightmap3DView") {
-    const preview3d = ensureEl("preview3d");
-    canvas.width = parseFloat(preview3d.style.width) || options.map.graph.width / 3;
+    // the preview dialog is injected below and destroyed on close: until then there is no size to keep
+    canvas.width = parseFloat(findEl("preview3d")?.style.width ?? "") || options.map.graph.width / 3;
     canvas.height = canvas.width / (options.map.graph.width / options.map.graph.height);
     canvas.style.display = "block";
   } else {
@@ -85,8 +127,9 @@ async function open(type: string): Promise<void> {
     canvas.style.display = "none";
   }
 
+  showLoading(); // covers the renderer download too
   const started = await create(canvas, type);
-  if (!started) return;
+  if (!started) return enterStandard();
 
   canvas.style.display = "block";
   canvas.onmouseenter = () => {
@@ -103,12 +146,12 @@ async function open(type: string): Promise<void> {
   if (type === "heightmap3DView") {
     renderPreviewDialog();
     ensureEl("preview3d").appendChild(canvas);
-    $("#preview3d").dialog({
+    Dialog.open("preview3d", {
       title: t("3D Preview"),
       resizable: true,
       position: { my: "left bottom", at: "left+10 bottom-20", of: "svg" },
-      resizeStop: resize3d,
-      close: closePreview3d
+      onResize: resize3d,
+      onClose: closePreview3d
     });
   } else document.body.insertBefore(canvas, ensureEl("optionsContainer"));
 
@@ -122,8 +165,7 @@ function renderPreviewDialog(): void {
 }
 
 function closePreview3d(): void {
-  $("#preview3d").dialog("destroy");
-  ensureEl("preview3d").remove();
+  Dialog.destroy("preview3d");
   enterStandard();
 }
 
@@ -139,18 +181,17 @@ function resize3d(): void {
 // --- settings dialog ---------------------------------------------------------
 function toggleOptions(): void {
   if (findEl("options3d")) {
-    $("#options3d").dialog("close");
+    Dialog.close("options3d");
     return;
   }
 
   renderOptionsDialog();
 
-  $("#options3d").dialog({
+  Dialog.open("options3d", {
     title: t("3D mode settings"),
-    resizable: false,
     width: "fit-content",
-    position: { my: "right top", at: "right-30 top+10", of: "svg", collision: "fit" },
-    close: closeOptionsDialog
+    position: { my: "right top", at: "right-30 top+10", of: "svg" },
+    onClose: closeOptionsDialog
   });
 
   updateValues();
@@ -316,19 +357,22 @@ function renderOptionsDialog(): void {
       <div id="options3dBottom" style="margin-top: 0.2em">
         <button id="options3dUpdate" data-tip="${t("Update the scene")}" class="icon-cw"></button>
         <button
+          id="options3dConfigureWorld"
           data-tip="${t("Configure world and map size and climate settings")}"
-          onclick="window.Controllers.WorldConfigurator.open()"
           class="icon-globe"
         ></button>
         <button id="options3dSave" data-tip="${t("Save screenshot of the 3d scene")}" class="icon-button-screenshot"></button>
         <button id="options3dOBJSave" data-tip="${t("Save OBJ file of the 3d scene")}" class="icon-download"></button>
+        <button id="options3dReset" data-tip="${t("Reset to default")}" class="icon-ccw"></button>
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
 
   ensureEl("options3dUpdate").addEventListener("click", () => void update());
+  ensureEl("options3dConfigureWorld").addEventListener("click", () => Controllers.WorldConfigurator.open());
   ensureEl("options3dSave").addEventListener("click", () => void saveScreenshot());
   ensureEl("options3dOBJSave").addEventListener("click", () => void saveOBJ());
+  ensureEl("options3dReset").addEventListener("click", resetSettings);
   ensureEl("options3dScaleRange").addEventListener("input", onChangeHeightScale);
   ensureEl("options3dScaleNumber").addEventListener("change", onChangeHeightScale);
   ensureEl("options3dLightnessRange").addEventListener("input", onChangeLightness);
@@ -360,13 +404,28 @@ function renderOptionsDialog(): void {
   ensureEl("options3dSatellite").addEventListener("change", onToggleSatellite);
 }
 
+function resetSettings(event: MouseEvent): void {
+  Dialog.confirm({
+    event,
+    confirm: t("Reset"),
+    onConfirm: () => {
+      const type = findEl("canvas3d")?.dataset.type ?? "viewMesh";
+      Options.set(o => (o.app.threeD = structuredClone(DEFAULT_THREE_D)));
+      void open(type); // a fresh scene picks every default up: lights, colors, rotation, sky, bake
+    }
+  });
+}
+
 function closeOptionsDialog(): void {
-  $("#options3d").dialog("destroy");
-  ensureEl("options3d").remove();
+  Dialog.destroy("options3d");
 }
 
 function setInput(id: string, value: string | number): void {
   ensureEl<HTMLInputElement>(id).value = String(value);
+}
+
+function setChecked(id: string, checked: boolean): void {
+  ensureEl<HTMLInputElement>(id).checked = checked;
 }
 
 function updateValues(): void {
@@ -386,16 +445,16 @@ function updateValues(): void {
   setInput("options3dMeshSkinResolution", o.resolutionScale);
   setInput("options3dGlobeRotationRange", o.rotateGlobe);
   setInput("options3dGlobeRotationNumber", o.rotateGlobe);
-  setInput("options3dMeshLabels3d", String(o.labels3d));
-  setInput("options3dMeshSkyMode", String(o.extendedWater));
+  setChecked("options3dMeshLabels3d", Boolean(o.labels3d));
+  setChecked("options3dMeshSkyMode", Boolean(o.extendedWater));
   ensureEl("options3dColorSection").style.display = o.extendedWater ? "block" : "none";
   setInput("options3dMeshSky", o.skyColor);
   setInput("options3dMeshWater", o.waterColor);
   setInput("options3dGlobeResolution", globeResolutionFor(o.resolutionScale));
   setInput("options3dSunColor", o.sunColor);
-  setInput("options3dSubdivide", String(o.subdivide));
+  setChecked("options3dSubdivide", Boolean(o.subdivide));
   ensureEl<HTMLInputElement>("options3dSubdivide").disabled = Boolean(o.erosion);
-  ensureEl<HTMLInputElement>("options3dErosion").checked = Boolean(o.erosion);
+  setChecked("options3dErosion", Boolean(o.erosion));
   ensureEl("options3dErosionSection").style.display = o.erosion ? "block" : "none";
   setInput("options3dErosionDetail", o.erosionDetail);
   setInput("options3dErosionStrengthRange", o.erosionStrength);
@@ -403,7 +462,8 @@ function updateValues(): void {
   setInput("options3dErosionRiverDepthRange", o.erosionRiverDepth);
   setInput("options3dErosionRiverDepthNumber", o.erosionRiverDepth);
   setInput("options3dErosionOctaves", o.erosionOctaves);
-  ensureEl<HTMLInputElement>("options3dSatellite").checked = Boolean(o.satellite);
+  setChecked("options3dSatellite", Boolean(o.satellite));
+  setChecked("options3dMeshWireframeMode", Boolean(o.wireframe));
   updateTimeOfDayPreset();
 }
 

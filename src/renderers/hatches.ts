@@ -1,4 +1,4 @@
-import { findEl } from "@/utils";
+import { findEl } from "@/utils/node-utils";
 
 // Colored hatchings: a base pattern from #defs-hatching recolored on demand, "url(#hatch3-c0392b)"
 const HATCH_FILL = /^url\(#(hatch\d+)(?:-([\da-f]{6}))?\)$/;

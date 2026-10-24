@@ -1,16 +1,14 @@
 // Custom icons as a zip: `icons.json` restores them under the same ids, the picture files are there to look at
-import { type CustomIcon, CustomIcons } from "@/components/icons";
-import { customIcon } from "@/components/options-schema";
-import { loadScript } from "@/utils";
+import type JSZip from "jszip";
+import { type CustomIcon, CustomIcons } from "@/model/icons";
+import { customIcon } from "@/model/options/options-schema";
+import { safeParseJSON } from "@/utils/string-utils";
 
 const MANIFEST = "icons.json";
 
-async function loadJSZip(): Promise<any> {
-  if (!window.JSZip) await loadScript("libs/jszip.min.js");
-  return window.JSZip;
-}
+const loadJSZip = async (): Promise<typeof JSZip> => (await import("jszip")).default;
 
-function addPicture(zip: any, { id, kind, content, viewBox }: CustomIcon): void {
+function addPicture(zip: JSZip, { id, kind, content, viewBox }: CustomIcon): void {
   if (kind === "svg") {
     zip.file(`${id}.svg`, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}">${content}</svg>`);
     return;
@@ -41,7 +39,7 @@ async function unpack(
   });
   const manifest = await zip.file(MANIFEST)?.async("string");
   if (!manifest) throw new Error(`The archive has no ${MANIFEST}: it is not a custom icons archive`);
-  const listed: unknown = JSON.safeParse(manifest);
+  const listed: unknown = safeParseJSON(manifest);
   if (!Array.isArray(listed)) throw new Error(`The archive's ${MANIFEST} is not a list of icons`);
 
   const result = { added: 0, unchanged: 0, conflicts: [] as CustomIcon[], invalid: 0 };

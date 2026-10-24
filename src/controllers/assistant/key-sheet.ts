@@ -1,9 +1,9 @@
 import * as Connection from "@/services/assistant/provider/connection";
 import { listModels } from "@/services/assistant/provider/models";
 import { DEFAULT_PROVIDER, type ProviderSpec, providerById } from "@/services/assistant/provider/providers";
-import { ensureEl as el } from "@/utils";
 import { t } from "@/utils/i18n";
-import { errorText } from "@/utils/stringUtils";
+import { ensureEl as el } from "@/utils/node-utils";
+import { errorText } from "@/utils/string-utils";
 
 /** The "Connect your AI key" sheet: provider fields, model discovery and saving the connection.
  * Discovery doubles as the key check: a failure shows the provider's error but never blocks Connect */

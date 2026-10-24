@@ -1,7 +1,10 @@
 import { curveBasisClosed, line } from "d3";
-import { Ocean } from "@/generators/ocean-generator";
-import { findEl, rn, round } from "@/utils";
-import { ensureEl } from "@/utils/nodeUtils";
+import { Grid } from "@/model/graph/grid-generator";
+import { Ocean } from "@/model/physical/ocean-generator";
+import { log } from "@/utils/logger";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
+import { round } from "@/utils/string-utils";
 import { getCoastalDistances, getCoastalWaves } from "./coastal-waves";
 import { drawCoastalBands, getCoastalBandReach, removeCoastalBands } from "./draw-coastal-bands";
 import { cacheOceanLayer, clearOceanCache } from "./ocean-cache";
@@ -73,7 +76,7 @@ export function drawOcean(): void {
   const limits = Ocean.getLimits(styles.ocean.groups.oceanLayers.options.outline);
   if (!limits.length) return;
 
-  TIME && console.time("drawOcean");
+  log.time("drawOcean");
 
   const opacity = rn(0.4 / limits.length, 2);
   const lineGen = line().curve(curveBasisClosed);
@@ -84,7 +87,7 @@ export function drawOcean(): void {
 
   oceanLayers.insertAdjacentHTML("beforeend", paths.join(""));
 
-  TIME && console.timeEnd("drawOcean");
+  log.timeEnd("drawOcean");
 }
 
 /** drop the rings, waves and bands, keeping the two full-graph rects drawOceanBase owns */
@@ -107,7 +110,7 @@ function drawCoastalWaves(): void {
   if (!waveOptions.render) return;
   const group = ensureEl<SVGGElement>("oceanWaves");
 
-  TIME && console.time("drawCoastalWaves");
+  log.time("drawCoastalWaves");
   const { width, height } = options.map.graph;
   const { spacing, cells, features } = grid;
   const bandReach = getCoastalBandReach(styles.ocean.options.bands);
@@ -148,5 +151,5 @@ function drawCoastalWaves(): void {
       } opacity="${attrs.opacity ?? 1}" stroke-linecap="round" mask="url(#waves-mask)"></path>`
     : "";
   cacheOceanLayer(group, ["waves-mask"]);
-  TIME && console.timeEnd("drawCoastalWaves");
+  log.timeEnd("drawCoastalWaves");
 }

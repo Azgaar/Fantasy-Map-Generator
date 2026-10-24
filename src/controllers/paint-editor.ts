@@ -1,8 +1,5 @@
-import "@/components/shared/fill-box";
-import { destroyDialog } from "@/components/dialog/dialog-helpers";
-import { MapBrush } from "@/components/map-brush";
-import type { FillBoxElement } from "@/components/shared/fill-box";
-import { clearMainTip, tip } from "@/components/tooltips";
+import "@/ui/elements/fill-box";
+import { Pack } from "@/model/graph/pack-generator";
 import {
   openPaintOverlay,
   type PaintOverlayCell,
@@ -11,10 +8,15 @@ import {
   updatePaintOverlay
 } from "@/renderers/overlays/paint-overlay";
 import type { Point } from "@/types/global";
-import { ensureEl } from "@/utils";
-import { t } from "@/utils/i18n";
+import { Dialog } from "@/ui/dialog/dialog";
 
-export interface PaintEditorItem {
+import type { FillBoxElement } from "@/ui/elements/fill-box";
+import { MapBrush } from "@/ui/map/map-brush";
+import { clearMainTip, tip } from "@/ui/tooltips";
+import { t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/node-utils";
+
+interface PaintEditorItem {
   id: number;
   name: string;
   color: string;
@@ -59,18 +61,17 @@ interface PaintEditorState {
 
 const dialogId = "paintEditor" as const;
 const historyLimit = 100;
-const customizationMode = 2;
 const defaultBrushRadius = 12;
 const eraseAllValue = -1;
 
 let state: PaintEditorState | null = null;
 let brush: MapBrush | null = null;
 
-function open(options: OpenPaintEditorOptions): void {
-  if (customization) return;
+function open(config: OpenPaintEditorOptions): void {
+  if (options.app.mode) return;
 
-  $(`#${options.parentDialogId}`).dialog("close");
-  customization = customizationMode;
+  Dialog.close(config.parentDialogId);
+  options.app.mode = "paint";
 
   brush = new MapBrush({
     id: "paintEditorBrush",
@@ -83,9 +84,9 @@ function open(options: OpenPaintEditorOptions): void {
     onMove: showCellTip
   });
 
-  const items = sortItems(options.items);
+  const items = sortItems(config.items);
   state = {
-    options,
+    options: config,
     itemsById: new Map(items.map(item => [item.id, item])),
     changes: new Map(),
     history: [],
@@ -94,21 +95,20 @@ function open(options: OpenPaintEditorOptions): void {
   };
 
   try {
-    renderDialog(options, items);
+    renderDialog(config, items);
     renderItems(items);
     openPaintOverlay();
     addListeners();
 
-    $(ensureEl(dialogId)).dialog({
-      title: options.title,
-      resizable: false,
-      position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
-      close: cancel
+    Dialog.open(dialogId, {
+      title: config.title,
+      position: { my: "right top", at: "right-10 top+10", of: "svg" },
+      onClose: cancel
     });
 
     tip(t("Click to select, drag to paint. Shift + drag resizes the brush, Space + drag pans the map"), true);
   } catch (error) {
-    close(options.onClose);
+    close(config.onClose);
     throw error;
   }
 }
@@ -120,7 +120,7 @@ function sortItems(items: readonly PaintEditorItem[]): PaintEditorItem[] {
 }
 
 function renderDialog(options: OpenPaintEditorOptions, items: readonly PaintEditorItem[]): void {
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
 
   const selectedColor = items[0]?.color ?? "#ffffff";
 
@@ -336,12 +336,12 @@ function finish(shouldApply: boolean): void {
 
 function cleanup(): void {
   state = null;
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
   removePaintOverlay();
   brush?.detach();
   brush = null;
   clearMainTip();
-  if (customization === customizationMode) customization = 0;
+  if (options.app.mode === "paint") options.app.mode = null;
 }
 
 function close(onClose: () => void): void {

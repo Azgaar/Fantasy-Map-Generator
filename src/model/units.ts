@@ -1,0 +1,220 @@
+// Map values in the map's own units, as `options.map.units` sets them
+import { Grid } from "@/model/graph/grid-generator";
+import { Pack } from "@/model/graph/pack-generator";
+import type { GridGraph } from "@/types/grid-graph";
+import type { PackedGraph } from "@/types/packed-graph";
+import { rn } from "@/utils/number-utils";
+
+type TemperatureScale = "°C" | "°F" | "K" | "°R" | "°De" | "°N" | "°Ré" | "°Rø";
+/**
+ * Convert temperature from Celsius to other scales
+ * @param {number} temperatureInCelsius - Temperature in Celsius
+ * @param {string} targetScale - Target temperature scale
+ * @returns {string} - Converted temperature with unit
+ */
+export const convertTemperature = (temperatureInCelsius: number, targetScale?: TemperatureScale) => {
+  const scale = targetScale || (options.map.units.temperature.unit as TemperatureScale) || "°C";
+  const temperatureConversionMap: { [key: string]: (temp: number) => string } = {
+    "°C": (temp: number) => `${rn(temp)}°C`,
+    "°F": (temp: number) => `${rn((temp * 9) / 5 + 32)}°F`,
+    K: (temp: number) => `${rn(temp + 273.15)}K`,
+    "°R": (temp: number) => `${rn(((temp + 273.15) * 9) / 5)}°R`,
+    "°De": (temp: number) => `${rn(((100 - temp) * 3) / 2)}°De`,
+    "°N": (temp: number) => `${rn((temp * 33) / 100)}°N`,
+    "°Ré": (temp: number) => `${rn((temp * 4) / 5)}°Ré`,
+    "°Rø": (temp: number) => `${rn((temp * 21) / 40 + 7.5)}°Rø`
+  };
+  return temperatureConversionMap[scale](temperatureInCelsius);
+};
+
+/**
+ * Convert height value from generator scale to real-world height with unit
+ * @param {number} h - The height value from generator, [0, 100] scale
+ * @param {boolean} abs - Whether to return absolute height or signed height
+ * @returns {string} - The converted height with unit
+ */
+export function getHeight(h: number, abs = false): string {
+  const meters = heightToMeters(h);
+  return `${rn((abs ? Math.abs(meters) : meters) * getHeightUnitRatio())}${options.map.units.height.unit}`;
+}
+
+/** How many user height units make a meter; custom units are counted in feet */
+export function getHeightUnitRatio(): number {
+  const unit = options.map.units.height.unit;
+  if (unit === "m") return 1;
+  if (unit === "f") return 0.5468; // fathom
+  return 3.281; // foot
+}
+
+/** Real-world height in meters of a generator height, negative below sea level */
+export function heightToMeters(h: number): number {
+  if (h >= 20) return (h - 18) ** options.map.units.height.exponent;
+  if (h > 0) return ((h - 20) / h) * 50;
+  return -990;
+}
+
+/** Generator height of a real-world height in meters, the inverse of heightToMeters */
+export function metersToHeight(meters: number): number {
+  if (meters >= 0) return 18 + meters ** (1 / options.map.units.height.exponent);
+  return 1000 / (50 - meters);
+}
+
+/** Format precipitation in millimeters */
+export function getPrecipitation(prec: number): string {
+  return `${prec * 100} mm`;
+}
+
+/** Get user-friendly precipitation value in a cell */
+export function getFriendlyPrecipitation(cellId: number, pack: PackedGraph, grid: GridGraph): string {
+  return getPrecipitation(grid.cells.prec[pack.cells.g[cellId]]);
+}
+
+/** Get user-friendly height value at a point */
+export function getFriendlyHeight([x, y]: [number, number], pack: PackedGraph, grid: GridGraph): string {
+  const packH = pack.cells.h[Pack.findCell(x, y, Infinity, pack) as number];
+  const gridH = grid.cells.h[Grid.findCell(x, y, grid)];
+  return getHeight(packH < 20 ? gridH : packH);
+}
+
+/** People from population points: rural points plus urban points, which count urbanization */
+export function getPeople(rural = 0, urban = 0): number {
+  const { scale, urbanization } = options.map.units.population;
+  return Math.round(rural * scale + urban * scale * urbanization.rate);
+}
+
+/** Get [rural, urban] real-world population of a cell */
+export function getCellPopulation(cellId: number, pack: PackedGraph): [number, number] {
+  const rural = pack.cells.pop[cellId] * options.map.units.population.scale;
+  const burgId = pack.cells.burg[cellId];
+  const urban = burgId
+    ? (pack.burgs[burgId].population || 0) *
+      options.map.units.population.scale *
+      options.map.units.population.urbanization.rate
+    : 0;
+  return [rural, urban];
+}
+
+/**
+ * Format price value with currency symbol
+ * @param value - The price value to format
+ * @returns {string} - The formatted price string with money symbol
+ */
+export function formatPrice(value: number): string {
+  return `🟡 ${rn(value, 2)}`;
+}
+
+// in °C, array from -1 °C; source: https://en.wikipedia.org/wiki/List_of_city_by_average_temperature
+const meanTempCityMap: Record<number, string> = {
+  [-5]: "Snag (Yukon)",
+  [-4]: "Yellowknife (Canada)",
+  [-3]: "Okhotsk (Russia)",
+  [-2]: "Fairbanks (Alaska)",
+  [-1]: "Nuuk (Greenland)",
+  0: "Murmansk (Russia)",
+  1: "Arkhangelsk (Russia)",
+  2: "Anchorage (Alaska)",
+  3: "Tromsø (Norway)",
+  4: "Reykjavik (Iceland)",
+  5: "Harbin (China)",
+  6: "Stockholm (Sweden)",
+  7: "Montreal (Canada)",
+  8: "Prague (Czechia)",
+  9: "Copenhagen (Denmark)",
+  10: "London (England)",
+  11: "Antwerp (Belgium)",
+  12: "Paris (France)",
+  13: "Milan (Italy)",
+  14: "Washington (D.C.)",
+  15: "Rome (Italy)",
+  16: "Dubrovnik (Croatia)",
+  17: "Lisbon (Portugal)",
+  18: "Barcelona (Spain)",
+  19: "Marrakesh (Morocco)",
+  20: "Alexandria (Egypt)",
+  21: "Tegucigalpa (Honduras)",
+  22: "Guangzhou (China)",
+  23: "Rio de Janeiro (Brazil)",
+  24: "Dakar (Senegal)",
+  25: "Miami (USA)",
+  26: "Jakarta (Indonesia)",
+  27: "Mogadishu (Somalia)",
+  28: "Bangkok (Thailand)",
+  29: "Niamey (Niger)",
+  30: "Khartoum (Sudan)"
+};
+
+/**
+ * Get a real-world city with a similar average yearly temperature
+ * @param temperature - Average yearly temperature in °C
+ * @returns {string | null} - Name of a city with a similar temperature
+ */
+export function getTemperatureLikeness(temperature: number): string | null {
+  if (temperature < -5) return "Yakutsk (Russia)";
+  if (temperature > 30) return "Mecca (Saudi Arabia)";
+  return meanTempCityMap[temperature] || null;
+}
+
+// kilometers in one distance unit; a custom unit is taken as kilometers
+const KM_IN_DISTANCE_UNIT: Record<string, number> = {
+  km: 1,
+  mi: 1.609344,
+  lg: 4.828032, // land league: 3 miles
+  vr: 1.0668, // versta
+  nmi: 1.852,
+  nlg: 5.556 // nautical league: 3 nautical miles
+};
+
+/** The distance unit selected in the Units editor, e.g. "mi" */
+export function getDistanceUnit(): string {
+  return options.map.units.distance.unit || "km";
+}
+
+/** A length in map units in the user distance unit, e.g. "92 mi" */
+export function getDistance(length: number): string {
+  return `${rn(length * options.map.units.distance.scale)} ${getDistanceUnit()}`;
+}
+
+/** Kilometers in one user distance unit, 0 for an unrecognized (custom) unit */
+export function getKmInDistanceUnit(): number {
+  return KM_IN_DISTANCE_UNIT[getDistanceUnit()] ?? 0;
+}
+
+/** How many user distance units make a kilometer, 1 for unknown (custom) units */
+export function getDistanceUnitRatio(): number {
+  const km = getKmInDistanceUnit();
+  return km ? 1 / km : 1;
+}
+
+/** Convert a stored speed (always km/h) into the user distance unit per hour */
+export function convertSpeed(speedInKmH: number): number {
+  return rn(speedInKmH * getDistanceUnitRatio(), 1);
+}
+
+/** Format a stored km/h speed for display, e.g. "2.8 mi/h" */
+export function formatSpeed(speedInKmH: number): string {
+  return `${convertSpeed(speedInKmH)} ${getDistanceUnit()}/h`;
+}
+
+/** Convert a speed the user typed in their distance unit per hour back into stored km/h */
+export function parseSpeed(speedInUnits: number): number {
+  return speedInUnits / getDistanceUnitRatio();
+}
+
+/**
+ * Get the area unit as configured by the user
+ * @param squareMark - The mark appended to a linear unit to make it square
+ * @returns {string} - The area unit, e.g. "mi²"
+ */
+export function getAreaUnit(squareMark = "²"): string {
+  if (options.map.units.area.unit !== "square") return options.map.units.area.unit;
+  return options.map.units.distance.unit + squareMark;
+}
+
+/**
+ * Convert area from map units to real-world units
+ * @param rawArea - The area in map units
+ * @returns {number} - The area in real-world units
+ */
+export function getArea(rawArea: number): number {
+  return rawArea * options.map.units.distance.scale ** 2;
+}

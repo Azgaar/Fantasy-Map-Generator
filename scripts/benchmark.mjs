@@ -184,7 +184,7 @@ async function sample(browser, side) {
   await page.waitForFunction(
     () =>
       performance.getEntriesByName("Layers Rendering").length ||
-      (globalThis.mapHistory?.length && !performance.getEntriesByName("Generation Pipeline").length),
+      ((globalThis.FMG ?? globalThis).mapHistory?.length && !performance.getEntriesByName("Generation Pipeline").length), // FMG from v1.156
     undefined,
     { timeout: 120_000 }
   );

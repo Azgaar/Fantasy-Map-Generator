@@ -131,33 +131,9 @@
         }
       }
     </style>
-    <link
-      rel="preload"
-      href="index.css?v=003246c5"
-      as="style"
-      onload="
-        this.onload = null;
-        this.rel = 'stylesheet';
-      "
-    />
-    <link
-      rel="preload"
-      href="icons.css?v=1421ad39"
-      as="style"
-      onload="
-        this.onload = null;
-        this.rel = 'stylesheet';
-      "
-    />
-    <link
-      rel="preload"
-      href="libs/jquery-ui.css?v=f2ff5e58"
-      as="style"
-      onload="
-        this.onload = null;
-        this.rel = 'stylesheet';
-      "
-    />
+    <link rel="stylesheet" href="./ui/dialog/dialog.css" />
+    <link rel="stylesheet" href="./index.css" />
+    <link rel="stylesheet" href="./assets/icons.css" />
   </head>
   <body>
     <svg
@@ -358,7 +334,6 @@
           data-tip="Click to show the Menu"
           data-shortcut="Tab"
           class="options glow"
-          onclick="showOptions(event)"
         >
           ►
         </button>
@@ -366,7 +341,6 @@
           id="regenerate"
           data-tip="Click to generate a new map"
           data-shortcut="F2"
-          onclick="regeneratePrompt()"
           class="options"
           style="display: none"
         >
@@ -381,7 +355,6 @@
             data-tip="Click to hide the Menu"
             data-shortcut="Tab or Esc"
             class="options"
-            onclick="hideOptions(event)"
           >
             ◄
           </button>
@@ -395,7 +368,7 @@
         <div id="styleContent" class="tabcontent"></div>
         <div id="optionsContent" class="tabcontent"></div>
         <div id="toolsContent" class="tabcontent"></div>
-        <div id="customizationMenu" class="tabcontent"></div>
+        <div id="heightmapMenu" class="tabcontent"></div>
         <div id="aboutContent" class="tabcontent"></div>
         <div id="sticked">
           <button id="newMapButton" data-tip="Generate a new map based on options" data-shortcut="F2">New Map</button>
@@ -407,7 +380,7 @@
         </div>
       </div>
     </div>
-    <div id="exitCustomization">
+    <div id="heightmapFinalize">
       <div data-tip="Drag to move the pane">
         <button data-tip="Finalize the heightmap and exit the edit mode" id="finalizeHeightmap">
           Exit Customization
@@ -725,18 +698,7 @@
         <g id="trade-markers"></g>
       </defs>
     </svg>
-    <script src="libs/jquery-3.1.1.min.js"></script>
-    <script src="libs/jquery-ui.min.js"></script>
-    <script src="libs/d3.min.js"></script>
-    <script src="libs/flatqueue.js"></script>
-    <script src="libs/delaunator.min.js"></script>
-    <script src="libs/indexedDB.js?v=84a8bb23"></script>
 
     <script type="module" src="main.ts"></script>
-    <script defer src="libs/alea.min.js?v1.105.0"></script>
-    <script defer src="libs/polylabel.min.js?v1.105.0"></script>
-    <script defer src="libs/simplify.js?v1.105.6"></script>
-    <script defer src="libs/rgbquant.min.js"></script>
-    <script defer src="libs/jquery.ui.touch-punch.min.js"></script>
   </body>
 </html>

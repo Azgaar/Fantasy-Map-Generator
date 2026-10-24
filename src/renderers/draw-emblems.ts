@@ -1,12 +1,14 @@
 import { forceCollide, forceSimulation, type SimulationNodeDatum, timeout } from "d3";
-import { Layers } from "@/components/layers";
-import type { Province } from "@/generators/provinces-generator";
+import type { Burg } from "@/model/political/burgs-generator";
+import type { Province } from "@/model/political/provinces-generator";
+import type { State } from "@/model/political/states-generator";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
+import { Layers } from "@/renderers/layers";
 import { Scene, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import type { Emblem } from "@/types/emblems";
-import { ensureEl, findEl, minmax, rn } from "@/utils";
-import type { Burg } from "../generators/burgs-generator";
-import type { State } from "../generators/states-generator";
+import { log } from "@/utils/logger";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { minmax, rn } from "@/utils/number-utils";
 
 export type EmblemType = "state" | "province" | "burg";
 
@@ -70,7 +72,7 @@ function getEmblemSize(type: EmblemType, count: number): number {
 }
 
 export function drawEmblems(): void {
-  TIME && console.time("drawEmblems");
+  log.time("drawEmblems");
   const version = ++drawVersion;
   isDrawPending = true;
   needsFullRedraw = false;
@@ -108,7 +110,7 @@ export function drawEmblems(): void {
     if (needsFullRedraw) {
       // the snapshot was taken before an edit landed: rebuild it from the current data
       needsFullRedraw = false;
-      TIME && console.timeEnd("drawEmblems");
+      log.timeEnd("drawEmblems");
       drawEmblems();
       return;
     }
@@ -127,7 +129,7 @@ export function drawEmblems(): void {
       scene.replace(next);
     }
     layer.render();
-    TIME && console.timeEnd("drawEmblems");
+    log.timeEnd("drawEmblems");
   });
 }
 
@@ -178,7 +180,7 @@ export function removeEmblem(type: EmblemType, i: number): void {
  * Drop the scenes without touching the markup: a loaded map brings its own svg, and reconciling the
  * previous map's nodes against the new data would materialize emblems at stale positions.
  */
-export function invalidateEmblems(): void {
+function invalidateEmblems(): void {
   for (const type of TYPES) scenes[type].invalidate();
 }
 

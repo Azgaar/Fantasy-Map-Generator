@@ -1,4 +1,4 @@
-import type { Layer } from "@/components/layers";
+import type { Layer } from "@/renderers/layers";
 
 export function drawTexture(layer: Layer): void {
   const element = layer.getEl();

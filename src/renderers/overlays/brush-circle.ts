@@ -1,6 +1,7 @@
 // The brush radius circle, drawn on #debug while a brush tool is active
 
-import { findEl, rn } from "@/utils";
+import { findEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
 
 const DASHES = 16; // dashes and gaps around the circle, whatever its radius
 
