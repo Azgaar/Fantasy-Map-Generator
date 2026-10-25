@@ -2043,7 +2043,6 @@
   "Please don't forget to save your progress (saving to desktop is the best option)": "Vergeet niet je voortgang op te slaan (opslaan op de desktop is de beste optie)",
   "Please ensure the linked file is reachable and CORS is allowed on server side": "Zorg dat het gekoppelde bestand bereikbaar is en dat CORS aan de serverkant is toegestaan",
   "Please enter a prompt": "Voer een prompt in",
-  "Please exit the Image Conversion mode first": "Sluit eerst de modus voor afbeeldingsconversie af",
   "Please fill in the biome name": "Vul de naam van het bioom in",
   "Please keep using an {{- archive}}": "Blijf een {{- archive}} gebruiken",
   "Please load the file in the appropriate version": "Laad het bestand in de juiste versie",
@@ -3563,5 +3562,14 @@
   "Every fifth contour is heavier and carries the labels": "Elke vijfde hoogtelijn is dikker en draagt de labels",
   "Font size": "Lettergrootte",
   "Font size of the elevation labels on every fifth contour": "Lettergrootte van de hoogtelabels op elke vijfde hoogtelijn",
-  "Set to 0 to hide the labels": "Zet op 0 om de labels te verbergen"
+  "Set to 0 to hide the labels": "Zet op 0 om de labels te verbergen",
+  "Center": "Centreren",
+  "Center the image": "Afbeelding centreren",
+  "Drag to pan, scroll to zoom. Black area becomes ocean": "Slepen om te verschuiven, scrollen om te zoomen. Zwart gebied wordt oceaan",
+  "Fill map": "Kaart vullen",
+  "Place image": "Afbeelding plaatsen",
+  "Scale the image, in percent": "Afbeelding schalen, in procenten",
+  "Set how the image fits the map": "Instellen hoe de afbeelding op de kaart past",
+  "Stretch": "Uitrekken",
+  "Whole image": "Hele afbeelding"
 }

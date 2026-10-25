@@ -2043,7 +2043,6 @@
   "Please don't forget to save your progress (saving to desktop is the best option)": "進行状況を保存するのを忘れないでください（デスクトップに保存するのが最善です）",
   "Please ensure the linked file is reachable and CORS is allowed on server side": "リンクされたファイルに到達できること、サーバー側で CORS が許可されていることを確認してください",
   "Please enter a prompt": "プロンプトを入力してください",
-  "Please exit the Image Conversion mode first": "先に画像変換モードを終了してください",
   "Please fill in the biome name": "バイオーム名を入力してください",
   "Please keep using an {{- archive}}": "{{- archive}} を引き続き使用してください",
   "Please load the file in the appropriate version": "対応するバージョンでファイルを読み込んでください",
@@ -3563,5 +3562,14 @@
   "Every fifth contour is heavier and carries the labels": "5本ごとの等高線は太く、ラベルが付きます",
   "Font size": "フォントサイズ",
   "Font size of the elevation labels on every fifth contour": "5本ごとの等高線に付く標高ラベルのフォントサイズ",
-  "Set to 0 to hide the labels": "0にするとラベルを非表示にします"
+  "Set to 0 to hide the labels": "0にするとラベルを非表示にします",
+  "Center": "中央へ",
+  "Center the image": "画像を中央に配置",
+  "Drag to pan, scroll to zoom. Black area becomes ocean": "ドラッグで移動、スクロールで拡大。黒い部分は海洋になります",
+  "Fill map": "地図を埋める",
+  "Place image": "画像を配置",
+  "Scale the image, in percent": "画像の拡大率（%）",
+  "Set how the image fits the map": "画像を地図に合わせる方法を設定",
+  "Stretch": "引き伸ばす",
+  "Whole image": "画像全体"
 }

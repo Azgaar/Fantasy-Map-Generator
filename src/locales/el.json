@@ -2043,7 +2043,6 @@
   "Please don't forget to save your progress (saving to desktop is the best option)": "Μην ξεχνάτε να αποθηκεύετε την πρόοδό σας (η αποθήκευση στην επιφάνεια εργασίας είναι η καλύτερη επιλογή)",
   "Please ensure the linked file is reachable and CORS is allowed on server side": "Βεβαιωθείτε ότι το συνδεδεμένο αρχείο είναι προσβάσιμο και ότι το CORS επιτρέπεται από την πλευρά του διακομιστή",
   "Please enter a prompt": "Εισαγάγετε μια εντολή",
-  "Please exit the Image Conversion mode first": "Βγείτε πρώτα από τη λειτουργία μετατροπής εικόνας",
   "Please fill in the biome name": "Συμπληρώστε το όνομα του βιώματος",
   "Please keep using an {{- archive}}": "Συνεχίστε να χρησιμοποιείτε ένα {{- archive}}",
   "Please load the file in the appropriate version": "Φορτώστε το αρχείο στην κατάλληλη έκδοση",
@@ -3563,5 +3562,14 @@
   "Every fifth contour is heavier and carries the labels": "Κάθε πέμπτη ισοϋψής είναι εντονότερη και φέρει τις ετικέτες",
   "Font size": "Μέγεθος γραμματοσειράς",
   "Font size of the elevation labels on every fifth contour": "Μέγεθος γραμματοσειράς των υψομετρικών ετικετών σε κάθε πέμπτη ισοϋψή",
-  "Set to 0 to hide the labels": "Ορίστε 0 για απόκρυψη των ετικετών"
+  "Set to 0 to hide the labels": "Ορίστε 0 για απόκρυψη των ετικετών",
+  "Center": "Κεντράρισμα",
+  "Center the image": "Κεντράρισμα της εικόνας",
+  "Drag to pan, scroll to zoom. Black area becomes ocean": "Σύρετε για μετακίνηση, κύλιση για ζουμ. Η μαύρη περιοχή γίνεται ωκεανός",
+  "Fill map": "Γέμισμα χάρτη",
+  "Place image": "Τοποθέτηση εικόνας",
+  "Scale the image, in percent": "Κλίμακα της εικόνας, σε ποσοστό",
+  "Set how the image fits the map": "Ορισμός του τρόπου προσαρμογής της εικόνας στον χάρτη",
+  "Stretch": "Τέντωμα",
+  "Whole image": "Ολόκληρη η εικόνα"
 }

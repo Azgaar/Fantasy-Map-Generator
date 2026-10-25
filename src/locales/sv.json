@@ -2043,7 +2043,6 @@
   "Please don't forget to save your progress (saving to desktop is the best option)": "Glöm inte att spara dina framsteg (att spara på skrivbordet är bäst)",
   "Please ensure the linked file is reachable and CORS is allowed on server side": "Se till att den länkade filen är nåbar och att CORS är tillåtet på serversidan",
   "Please enter a prompt": "Ange en uppmaning",
-  "Please exit the Image Conversion mode first": "Avsluta först bildkonverteringsläget",
   "Please fill in the biome name": "Fyll i biomets namn",
   "Please keep using an {{- archive}}": "Fortsätt använda ett {{- archive}}",
   "Please load the file in the appropriate version": "Läs in filen i rätt version",
@@ -3563,5 +3562,14 @@
   "Every fifth contour is heavier and carries the labels": "Var femte kontur är kraftigare och bär etiketterna",
   "Font size": "Teckenstorlek",
   "Font size of the elevation labels on every fifth contour": "Teckenstorlek för höjdetiketterna på var femte kontur",
-  "Set to 0 to hide the labels": "Ange 0 för att dölja etiketterna"
+  "Set to 0 to hide the labels": "Ange 0 för att dölja etiketterna",
+  "Center": "Centrera",
+  "Center the image": "Centrera bilden",
+  "Drag to pan, scroll to zoom. Black area becomes ocean": "Dra för att panorera, scrolla för att zooma. Svart område blir ocean",
+  "Fill map": "Fyll kartan",
+  "Place image": "Placera bild",
+  "Scale the image, in percent": "Skala bilden i procent",
+  "Set how the image fits the map": "Ange hur bilden anpassas till kartan",
+  "Stretch": "Sträck ut",
+  "Whole image": "Hela bilden"
 }

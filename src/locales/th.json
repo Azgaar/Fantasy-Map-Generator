@@ -2043,7 +2043,6 @@
   "Please don't forget to save your progress (saving to desktop is the best option)": "อย่าลืมบันทึกความคืบหน้า (บันทึกลงเดสก์ท็อปเป็นตัวเลือกที่ดีที่สุด)",
   "Please ensure the linked file is reachable and CORS is allowed on server side": "โปรดตรวจสอบว่าเข้าถึงไฟล์ที่ลิงก์ได้และเซิร์ฟเวอร์อนุญาต CORS",
   "Please enter a prompt": "โปรดป้อนพรอมต์",
-  "Please exit the Image Conversion mode first": "โปรดออกจากโหมดแปลงรูปภาพก่อน",
   "Please fill in the biome name": "โปรดกรอกชื่อไบโอม",
   "Please keep using an {{- archive}}": "โปรดใช้{{- archive}}ต่อไป",
   "Please load the file in the appropriate version": "โปรดโหลดไฟล์ในเวอร์ชันที่เหมาะสม",
@@ -3563,5 +3562,14 @@
   "Every fifth contour is heavier and carries the labels": "เส้นที่ห้าทุกเส้นหนากว่าและมีป้ายชื่อ",
   "Font size": "ขนาดตัวอักษร",
   "Font size of the elevation labels on every fifth contour": "ขนาดตัวอักษรของป้ายความสูงบนเส้นชั้นความสูงทุกเส้นที่ห้า",
-  "Set to 0 to hide the labels": "ตั้งเป็น 0 เพื่อซ่อนป้ายชื่อ"
+  "Set to 0 to hide the labels": "ตั้งเป็น 0 เพื่อซ่อนป้ายชื่อ",
+  "Center": "จัดกึ่งกลาง",
+  "Center the image": "จัดรูปภาพให้อยู่กึ่งกลาง",
+  "Drag to pan, scroll to zoom. Black area becomes ocean": "ลากเพื่อเลื่อนดู เลื่อนล้อเพื่อซูม พื้นที่สีดำจะกลายเป็นมหาสมุทร",
+  "Fill map": "เต็มแผนที่",
+  "Place image": "วางรูปภาพ",
+  "Scale the image, in percent": "มาตราส่วนของรูปภาพ เป็นเปอร์เซ็นต์",
+  "Set how the image fits the map": "ตั้งวิธีที่รูปภาพพอดีกับแผนที่",
+  "Stretch": "ยืด",
+  "Whole image": "ทั้งรูปภาพ"
 }

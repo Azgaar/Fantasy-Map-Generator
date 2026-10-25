@@ -2043,7 +2043,6 @@
   "Please don't forget to save your progress (saving to desktop is the best option)": "कृपया अपनी प्रगति सहेजना न भूलें (डेस्कटॉप पर सहेजना सबसे अच्छा विकल्प है)",
   "Please ensure the linked file is reachable and CORS is allowed on server side": "कृपया सुनिश्चित करें कि लिंक की गई फ़ाइल तक पहुँचा जा सके और सर्वर की ओर से CORS की अनुमति हो",
   "Please enter a prompt": "कृपया एक प्रॉम्प्ट लिखें",
-  "Please exit the Image Conversion mode first": "कृपया पहले छवि रूपांतरण मोड से बाहर निकलें",
   "Please fill in the biome name": "कृपया बायोम का नाम भरें",
   "Please keep using an {{- archive}}": "कृपया {{- archive}} का उपयोग जारी रखें",
   "Please load the file in the appropriate version": "कृपया फ़ाइल उपयुक्त संस्करण में लोड करें",
@@ -3563,5 +3562,14 @@
   "Every fifth contour is heavier and carries the labels": "हर पाँचवाँ समोच्च मोटा होता है और उस पर लेबल होते हैं",
   "Font size": "फ़ॉन्ट आकार",
   "Font size of the elevation labels on every fifth contour": "हर पाँचवें समोच्च पर ऊँचाई लेबलों का फ़ॉन्ट आकार",
-  "Set to 0 to hide the labels": "लेबल छिपाने के लिए 0 रखें"
+  "Set to 0 to hide the labels": "लेबल छिपाने के लिए 0 रखें",
+  "Center": "केंद्र में करें",
+  "Center the image": "छवि को केंद्र में करें",
+  "Drag to pan, scroll to zoom. Black area becomes ocean": "खिसकाने के लिए खींचें, ज़ूम के लिए स्क्रॉल करें। काला क्षेत्र महासागर बनेगा",
+  "Fill map": "नक्शा भरें",
+  "Place image": "छवि रखें",
+  "Scale the image, in percent": "छवि का स्केल, प्रतिशत में",
+  "Set how the image fits the map": "सेट करें कि छवि नक्शे में कैसे फ़िट हो",
+  "Stretch": "खींचकर फैलाएँ",
+  "Whole image": "पूरी छवि"
 }

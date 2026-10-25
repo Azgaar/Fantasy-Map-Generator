@@ -2043,7 +2043,6 @@
   "Please don't forget to save your progress (saving to desktop is the best option)": "Nu uita să-ți salvezi progresul (salvarea pe desktop este cea mai bună opțiune)",
   "Please ensure the linked file is reachable and CORS is allowed on server side": "Asigură-te că fișierul legat este accesibil și că serverul permite CORS",
   "Please enter a prompt": "Scrie un prompt",
-  "Please exit the Image Conversion mode first": "Ieși mai întâi din modul de conversie a imaginii",
   "Please fill in the biome name": "Completează numele biomului",
   "Please keep using an {{- archive}}": "Continuă să folosești o {{- archive}}",
   "Please load the file in the appropriate version": "Încarcă fișierul în versiunea potrivită",
@@ -3563,5 +3562,14 @@
   "Every fifth contour is heavier and carries the labels": "Fiecare a cincea curbă este mai groasă și poartă etichetele",
   "Font size": "Mărimea fontului",
   "Font size of the elevation labels on every fifth contour": "Mărimea fontului etichetelor de altitudine pe fiecare a cincea curbă de nivel",
-  "Set to 0 to hide the labels": "Setați 0 pentru a ascunde etichetele"
+  "Set to 0 to hide the labels": "Setați 0 pentru a ascunde etichetele",
+  "Center": "Centrează",
+  "Center the image": "Centrează imaginea",
+  "Drag to pan, scroll to zoom. Black area becomes ocean": "Trage ca să deplasezi, derulează ca să mărești. Zona neagră devine ocean",
+  "Fill map": "Umple harta",
+  "Place image": "Plasează imaginea",
+  "Scale the image, in percent": "Scara imaginii, în procente",
+  "Set how the image fits the map": "Setează cum se potrivește imaginea pe hartă",
+  "Stretch": "Întinde",
+  "Whole image": "Întreaga imagine"
 }

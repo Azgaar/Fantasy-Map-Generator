@@ -2043,7 +2043,6 @@
   "Please don't forget to save your progress (saving to desktop is the best option)": "Nezapomeňte prosím uložit svůj postup (nejlepší je uložení do počítače)",
   "Please ensure the linked file is reachable and CORS is allowed on server side": "Ujistěte se prosím, že je odkazovaný soubor dostupný a server povoluje CORS",
   "Please enter a prompt": "Zadejte prosím dotaz",
-  "Please exit the Image Conversion mode first": "Nejprve ukončete režim převodu obrázku",
   "Please fill in the biome name": "Vyplňte prosím název biomu",
   "Please keep using an {{- archive}}": "Prosím používejte i nadále {{- archive}}",
   "Please load the file in the appropriate version": "Načtěte prosím soubor v příslušné verzi",
@@ -3563,5 +3562,14 @@
   "Every fifth contour is heavier and carries the labels": "Každá pátá vrstevnice je silnější a nese popisky",
   "Font size": "Velikost písma",
   "Font size of the elevation labels on every fifth contour": "Velikost písma výškových popisků na každé páté vrstevnici",
-  "Set to 0 to hide the labels": "Nastavte 0 pro skrytí popisků"
+  "Set to 0 to hide the labels": "Nastavte 0 pro skrytí popisků",
+  "Center": "Vystředit",
+  "Center the image": "Vystředit obrázek",
+  "Drag to pan, scroll to zoom. Black area becomes ocean": "Tažením posouváte, kolečkem přibližujete. Černá plocha se stane oceánem",
+  "Fill map": "Vyplnit mapu",
+  "Place image": "Umístit obrázek",
+  "Scale the image, in percent": "Měřítko obrázku v procentech",
+  "Set how the image fits the map": "Nastavit, jak se obrázek přizpůsobí mapě",
+  "Stretch": "Roztáhnout",
+  "Whole image": "Celý obrázek"
 }

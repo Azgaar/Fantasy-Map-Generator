@@ -20,6 +20,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Heightmap: elevation labels
 - Heightmap: contours are spaced in round height units
 - Measurers, regiment controls and editing handles keep their size on zoom
+- Image Converter: fit, zoom and move the image before converting it
 
 # Releases
 

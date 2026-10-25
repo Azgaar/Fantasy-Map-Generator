@@ -2043,7 +2043,6 @@
   "Please don't forget to save your progress (saving to desktop is the best option)": "Не забравяйте да запазвате напредъка си (най-добре е да го запазвате на компютъра)",
   "Please ensure the linked file is reachable and CORS is allowed on server side": "Уверете се, че свързаният файл е достъпен и че сървърът разрешава CORS",
   "Please enter a prompt": "Въведете подкана",
-  "Please exit the Image Conversion mode first": "Първо излезте от режима на конвертиране на изображения",
   "Please fill in the biome name": "Попълнете името на биома",
   "Please keep using an {{- archive}}": "Продължете да използвате {{- archive}}",
   "Please load the file in the appropriate version": "Заредете файла в подходящата версия",
@@ -3563,5 +3562,14 @@
   "Every fifth contour is heavier and carries the labels": "Всяка пета изохипса е по-плътна и носи надписите",
   "Font size": "Размер на шрифта",
   "Font size of the elevation labels on every fifth contour": "Размер на шрифта на надписите за височина на всяка пета изохипса",
-  "Set to 0 to hide the labels": "Задайте 0, за да скриете надписите"
+  "Set to 0 to hide the labels": "Задайте 0, за да скриете надписите",
+  "Center": "Центриране",
+  "Center the image": "Центриране на изображението",
+  "Drag to pan, scroll to zoom. Black area becomes ocean": "Влачете, за да преместите, превъртете, за да мащабирате. Черната област става океан",
+  "Fill map": "Запълване на картата",
+  "Place image": "Позициониране на изображението",
+  "Scale the image, in percent": "Мащаб на изображението в проценти",
+  "Set how the image fits the map": "Задаване как изображението се вписва в картата",
+  "Stretch": "Разтягане",
+  "Whole image": "Цялото изображение"
 }

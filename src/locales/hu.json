@@ -2043,7 +2043,6 @@
   "Please don't forget to save your progress (saving to desktop is the best option)": "Ne felejtse el menteni a haladását (az asztali gépre mentés a legjobb megoldás)",
   "Please ensure the linked file is reachable and CORS is allowed on server side": "Győződjön meg róla, hogy a hivatkozott fájl elérhető, és a kiszolgáló engedélyezi a CORS-t",
   "Please enter a prompt": "Adjon meg egy promptot",
-  "Please exit the Image Conversion mode first": "Előbb lépjen ki a képátalakítás módból",
   "Please fill in the biome name": "Adja meg a bióm nevét",
   "Please keep using an {{- archive}}": "Továbbra is használjon {{- archive}}",
   "Please load the file in the appropriate version": "Töltse be a fájlt a megfelelő verzióban",
@@ -3563,5 +3562,14 @@
   "Every fifth contour is heavier and carries the labels": "Minden ötödik szintvonal vastagabb, és ezen vannak a feliratok",
   "Font size": "Betűméret",
   "Font size of the elevation labels on every fifth contour": "A magassági feliratok betűmérete minden ötödik szintvonalon",
-  "Set to 0 to hide the labels": "Állítsa 0-ra a feliratok elrejtéséhez"
+  "Set to 0 to hide the labels": "Állítsa 0-ra a feliratok elrejtéséhez",
+  "Center": "Középre",
+  "Center the image": "A kép középre igazítása",
+  "Drag to pan, scroll to zoom. Black area becomes ocean": "Húzás — mozgatás, görgetés — nagyítás. A fekete terület óceán lesz",
+  "Fill map": "Térkép kitöltése",
+  "Place image": "Kép elhelyezése",
+  "Scale the image, in percent": "A kép mérete százalékban",
+  "Set how the image fits the map": "Annak megadása, hogyan illeszkedjen a kép a térképre",
+  "Stretch": "Nyújtás",
+  "Whole image": "Teljes kép"
 }

@@ -2043,7 +2043,6 @@
   "Please don't forget to save your progress (saving to desktop is the best option)": "অগ্রগতি সংরক্ষণ করতে ভুলবেন না (ডেস্কটপে সংরক্ষণ সবচেয়ে ভালো)",
   "Please ensure the linked file is reachable and CORS is allowed on server side": "নিশ্চিত করুন যে লিংক করা ফাইলটি পাওয়া যায় এবং সার্ভারে CORS অনুমোদিত",
   "Please enter a prompt": "একটি প্রম্পট লিখুন",
-  "Please exit the Image Conversion mode first": "আগে ছবি রূপান্তর মোড থেকে বেরিয়ে যান",
   "Please fill in the biome name": "বায়োমের নাম লিখুন",
   "Please keep using an {{- archive}}": "একটি {{- archive}} ব্যবহার চালিয়ে যান",
   "Please load the file in the appropriate version": "উপযুক্ত সংস্করণে ফাইলটি লোড করুন",
@@ -3563,5 +3562,14 @@
   "Every fifth contour is heavier and carries the labels": "প্রতি পঞ্চম রেখা মোটা এবং তাতে লেবেল থাকে",
   "Font size": "ফন্টের আকার",
   "Font size of the elevation labels on every fifth contour": "প্রতি পঞ্চম সমোন্নতি রেখায় উচ্চতার লেবেলের ফন্টের আকার",
-  "Set to 0 to hide the labels": "লেবেল লুকাতে 0 দিন"
+  "Set to 0 to hide the labels": "লেবেল লুকাতে 0 দিন",
+  "Center": "কেন্দ্রে আনুন",
+  "Center the image": "ছবিটি কেন্দ্রে আনুন",
+  "Drag to pan, scroll to zoom. Black area becomes ocean": "সরাতে টানুন, জুম করতে স্ক্রল করুন। কালো অংশ মহাসাগর হবে",
+  "Fill map": "মানচিত্র ভরান",
+  "Place image": "ছবি বসান",
+  "Scale the image, in percent": "ছবির স্কেল, শতাংশে",
+  "Set how the image fits the map": "ছবিটি মানচিত্রে কীভাবে বসবে তা সেট করুন",
+  "Stretch": "প্রসারিত করুন",
+  "Whole image": "পুরো ছবি"
 }

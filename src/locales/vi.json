@@ -2043,7 +2043,6 @@
   "Please don't forget to save your progress (saving to desktop is the best option)": "Đừng quên lưu tiến độ của bạn (lưu vào máy tính là lựa chọn tốt nhất)",
   "Please ensure the linked file is reachable and CORS is allowed on server side": "Hãy đảm bảo tệp được liên kết truy cập được và CORS được cho phép ở phía máy chủ",
   "Please enter a prompt": "Vui lòng nhập lời nhắc",
-  "Please exit the Image Conversion mode first": "Vui lòng thoát chế độ chuyển đổi ảnh trước",
   "Please fill in the biome name": "Vui lòng điền tên quần xã sinh vật",
   "Please keep using an {{- archive}}": "Vui lòng tiếp tục dùng {{- archive}}",
   "Please load the file in the appropriate version": "Vui lòng tải tệp ở phiên bản phù hợp",
@@ -3563,5 +3562,14 @@
   "Every fifth contour is heavier and carries the labels": "Cứ đường đồng mức thứ năm đậm hơn và mang nhãn",
   "Font size": "Cỡ chữ",
   "Font size of the elevation labels on every fifth contour": "Cỡ chữ của nhãn độ cao trên mỗi đường đồng mức thứ năm",
-  "Set to 0 to hide the labels": "Đặt 0 để ẩn nhãn"
+  "Set to 0 to hide the labels": "Đặt 0 để ẩn nhãn",
+  "Center": "Căn giữa",
+  "Center the image": "Căn giữa ảnh",
+  "Drag to pan, scroll to zoom. Black area becomes ocean": "Kéo để di chuyển, cuộn để thu phóng. Vùng đen sẽ thành đại dương",
+  "Fill map": "Lấp đầy bản đồ",
+  "Place image": "Đặt ảnh",
+  "Scale the image, in percent": "Tỷ lệ ảnh, theo phần trăm",
+  "Set how the image fits the map": "Đặt cách ảnh vừa với bản đồ",
+  "Stretch": "Kéo giãn",
+  "Whole image": "Toàn bộ ảnh"
 }

@@ -2043,7 +2043,6 @@
   "Please don't forget to save your progress (saving to desktop is the best option)": "Jangan lupa menyimpan progres Anda (menyimpan ke desktop adalah pilihan terbaik)",
   "Please ensure the linked file is reachable and CORS is allowed on server side": "Pastikan berkas tertaut dapat dijangkau dan CORS diizinkan di sisi server",
   "Please enter a prompt": "Masukkan prompt",
-  "Please exit the Image Conversion mode first": "Keluar dari mode Konversi Gambar terlebih dahulu",
   "Please fill in the biome name": "Isi nama bioma",
   "Please keep using an {{- archive}}": "Tetaplah memakai {{- archive}}",
   "Please load the file in the appropriate version": "Muat berkas dalam versi yang sesuai",
@@ -3563,5 +3562,14 @@
   "Every fifth contour is heavier and carries the labels": "Setiap kontur kelima lebih tebal dan memuat label",
   "Font size": "Ukuran huruf",
   "Font size of the elevation labels on every fifth contour": "Ukuran huruf label ketinggian pada setiap kontur kelima",
-  "Set to 0 to hide the labels": "Atur ke 0 untuk menyembunyikan label"
+  "Set to 0 to hide the labels": "Atur ke 0 untuk menyembunyikan label",
+  "Center": "Tengahkan",
+  "Center the image": "Tengahkan gambar",
+  "Drag to pan, scroll to zoom. Black area becomes ocean": "Seret untuk menggeser, gulir untuk zum. Area hitam menjadi samudra",
+  "Fill map": "Isi peta",
+  "Place image": "Tempatkan gambar",
+  "Scale the image, in percent": "Skala gambar, dalam persen",
+  "Set how the image fits the map": "Atur cara gambar menyesuaikan peta",
+  "Stretch": "Regangkan",
+  "Whole image": "Seluruh gambar"
 }

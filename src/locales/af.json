@@ -2043,7 +2043,6 @@
   "Please don't forget to save your progress (saving to desktop is the best option)": "Moenie vergeet om jou vordering te stoor nie (om op jou rekenaar te stoor, is die beste opsie)",
   "Please ensure the linked file is reachable and CORS is allowed on server side": "Maak asseblief seker dat die gekoppelde lêer bereikbaar is en dat CORS aan die bedienerkant toegelaat word",
   "Please enter a prompt": "Voer asseblief ’n opdrag in",
-  "Please exit the Image Conversion mode first": "Verlaat asseblief eers die beeldomskakelingsmodus",
   "Please fill in the biome name": "Vul asseblief die bioom se naam in",
   "Please keep using an {{- archive}}": "Gebruik asseblief steeds ’n {{- archive}}",
   "Please load the file in the appropriate version": "Laai asseblief die lêer in die toepaslike weergawe",
@@ -3563,5 +3562,14 @@
   "Every fifth contour is heavier and carries the labels": "Elke vyfde kontoerlyn is swaarder en dra die etikette",
   "Font size": "Lettergrootte",
   "Font size of the elevation labels on every fifth contour": "Lettergrootte van die hoogte-etikette op elke vyfde kontoerlyn",
-  "Set to 0 to hide the labels": "Stel op 0 om die etikette te verberg"
+  "Set to 0 to hide the labels": "Stel op 0 om die etikette te verberg",
+  "Center": "Sentreer",
+  "Center the image": "Sentreer die beeld",
+  "Drag to pan, scroll to zoom. Black area becomes ocean": "Sleep om te skuif, rol om te zoem. Swart area word oseaan",
+  "Fill map": "Vul kaart",
+  "Place image": "Plaas beeld",
+  "Scale the image, in percent": "Skaal die beeld, in persent",
+  "Set how the image fits the map": "Stel hoe die beeld op die kaart pas",
+  "Stretch": "Rek",
+  "Whole image": "Hele beeld"
 }

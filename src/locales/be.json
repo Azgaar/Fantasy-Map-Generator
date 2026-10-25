@@ -2043,7 +2043,6 @@
   "Please don't forget to save your progress (saving to desktop is the best option)": "Не забывайцеся захоўваць прагрэс (найлепш — захоўваць на камп’ютар)",
   "Please ensure the linked file is reachable and CORS is allowed on server side": "Пераканайцеся, што спасылка на файл даступная і сервер дазваляе CORS",
   "Please enter a prompt": "Увядзіце запыт",
-  "Please exit the Image Conversion mode first": "Спачатку выйдзіце з рэжыму пераўтварэння малюнка",
   "Please fill in the biome name": "Запоўніце назву біёма",
   "Please keep using an {{- archive}}": "Захоўвайце ў {{- archive}}",
   "Please load the file in the appropriate version": "Загрузіце файл у адпаведнай версіі",
@@ -3563,5 +3562,14 @@
   "Every fifth contour is heavier and carries the labels": "Кожны пяты контур цяжэйшы і нясе надпісы",
   "Font size": "Памер шрыфту",
   "Font size of the elevation labels on every fifth contour": "Памер шрыфту надпісаў вышыні на кожным пятым контуры",
-  "Set to 0 to hide the labels": "Пастаўце 0, каб схаваць надпісы"
+  "Set to 0 to hide the labels": "Пастаўце 0, каб схаваць надпісы",
+  "Center": "Па цэнтры",
+  "Center the image": "Размясціць малюнак па цэнтры",
+  "Drag to pan, scroll to zoom. Black area becomes ocean": "Цягніце, каб рухаць, пракручвайце, каб маштабаваць. Чорная вобласць стане акіянам",
+  "Fill map": "Запоўніць карту",
+  "Place image": "Размясціць малюнак",
+  "Scale the image, in percent": "Маштаб малюнка ў працэнтах",
+  "Set how the image fits the map": "Задаць, як малюнак упісваецца ў карту",
+  "Stretch": "Расцягнуць",
+  "Whole image": "Увесь малюнак"
 }

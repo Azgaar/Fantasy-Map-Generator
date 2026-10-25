@@ -2043,7 +2043,6 @@
   "Please don't forget to save your progress (saving to desktop is the best option)": "진행 상황을 저장하는 것을 잊지 마세요 (데스크톱에 저장하는 것이 가장 좋습니다)",
   "Please ensure the linked file is reachable and CORS is allowed on server side": "링크된 파일에 접근할 수 있고 서버 측에서 CORS가 허용되는지 확인하세요",
   "Please enter a prompt": "프롬프트를 입력하세요",
-  "Please exit the Image Conversion mode first": "먼저 이미지 변환 모드를 종료하세요",
   "Please fill in the biome name": "바이옴 이름을 입력하세요",
   "Please keep using an {{- archive}}": "계속 {{- archive}}을(를) 사용해 주세요",
   "Please load the file in the appropriate version": "해당 버전에 맞는 파일을 불러오세요",
@@ -3563,5 +3562,14 @@
   "Every fifth contour is heavier and carries the labels": "5번째마다 굵은 등고선에 라벨이 붙습니다",
   "Font size": "글꼴 크기",
   "Font size of the elevation labels on every fifth contour": "5번째 등고선마다 붙는 고도 라벨의 글꼴 크기",
-  "Set to 0 to hide the labels": "0으로 설정하면 라벨을 숨깁니다"
+  "Set to 0 to hide the labels": "0으로 설정하면 라벨을 숨깁니다",
+  "Center": "가운데로",
+  "Center the image": "이미지를 가운데로",
+  "Drag to pan, scroll to zoom. Black area becomes ocean": "드래그하여 이동, 스크롤하여 확대·축소. 검은 영역은 대양이 됩니다",
+  "Fill map": "지도 채우기",
+  "Place image": "이미지 배치",
+  "Scale the image, in percent": "이미지 배율(%)",
+  "Set how the image fits the map": "이미지를 지도에 맞추는 방식 설정",
+  "Stretch": "늘이기",
+  "Whole image": "이미지 전체"
 }

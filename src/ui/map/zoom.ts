@@ -92,11 +92,11 @@ function handleZoomEnd(): void {
 }
 
 /** Mirror the map transform onto the heightmap tracing canvas */
-function redrawTracedImage(): void {
+export function redrawTracedImage(): void {
   if (options.app.mode !== "heightmap") return;
   const canvas = findEl<HTMLCanvasElement>("canvas");
   if (!canvas || canvas.style.opacity === "0") return;
-  const image = findEl<HTMLImageElement>("imageToConvert");
+  const image = findEl<HTMLCanvasElement>("imageToConvert");
   const context = image && canvas.getContext("2d");
   if (!context) return;
 

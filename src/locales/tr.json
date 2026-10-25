@@ -2043,7 +2043,6 @@
   "Please don't forget to save your progress (saving to desktop is the best option)": "Lütfen ilerlemeni kaydetmeyi unutma (masaüstüne kaydetmek en iyi seçenektir)",
   "Please ensure the linked file is reachable and CORS is allowed on server side": "Lütfen bağlı dosyanın erişilebilir olduğundan ve sunucu tarafında CORS'a izin verildiğinden emin ol",
   "Please enter a prompt": "Lütfen bir istem gir",
-  "Please exit the Image Conversion mode first": "Lütfen önce Görsel dönüştürme modundan çık",
   "Please fill in the biome name": "Lütfen biyom adını doldur",
   "Please keep using an {{- archive}}": "Lütfen bir {{- archive}} kullanmaya devam et",
   "Please load the file in the appropriate version": "Lütfen dosyayı uygun sürümde yükle",
@@ -3563,5 +3562,14 @@
   "Every fifth contour is heavier and carries the labels": "Her beşinci eğri daha kalındır ve etiketleri taşır",
   "Font size": "Yazı boyutu",
   "Font size of the elevation labels on every fifth contour": "Her beşinci eş yükselti eğrisindeki yükseklik etiketlerinin yazı boyutu",
-  "Set to 0 to hide the labels": "Etiketleri gizlemek için 0 yapın"
+  "Set to 0 to hide the labels": "Etiketleri gizlemek için 0 yapın",
+  "Center": "Ortala",
+  "Center the image": "Görseli ortala",
+  "Drag to pan, scroll to zoom. Black area becomes ocean": "Kaydırmak için sürükle, yakınlaştırmak için tekerleği kullan. Siyah alan okyanus olur",
+  "Fill map": "Haritayı doldur",
+  "Place image": "Görseli yerleştir",
+  "Scale the image, in percent": "Görselin ölçeği, yüzde olarak",
+  "Set how the image fits the map": "Görselin haritaya nasıl sığacağını ayarla",
+  "Stretch": "Uzat",
+  "Whole image": "Görselin tamamı"
 }

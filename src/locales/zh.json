@@ -2043,7 +2043,6 @@
   "Please don't forget to save your progress (saving to desktop is the best option)": "请不要忘记保存进度（保存到桌面是最佳选择）",
   "Please ensure the linked file is reachable and CORS is allowed on server side": "请确保链接的文件可以访问，并且服务器允许 CORS",
   "Please enter a prompt": "请输入提示词",
-  "Please exit the Image Conversion mode first": "请先退出图像转换模式",
   "Please fill in the biome name": "请填写生物群系名称",
   "Please keep using an {{- archive}}": "请继续使用{{- archive}}",
   "Please load the file in the appropriate version": "请使用适当的版本加载文件",
@@ -3563,5 +3562,14 @@
   "Every fifth contour is heavier and carries the labels": "每五条等高线较粗并标注数值",
   "Font size": "字体大小",
   "Font size of the elevation labels on every fifth contour": "每五条等高线上高程标签的字体大小",
-  "Set to 0 to hide the labels": "设为 0 可隐藏标签"
+  "Set to 0 to hide the labels": "设为 0 可隐藏标签",
+  "Center": "居中",
+  "Center the image": "将图片居中",
+  "Drag to pan, scroll to zoom. Black area becomes ocean": "拖动平移，滚动缩放。黑色区域将成为海洋",
+  "Fill map": "填满地图",
+  "Place image": "放置图片",
+  "Scale the image, in percent": "图片缩放比例（%）",
+  "Set how the image fits the map": "设置图片如何适应地图",
+  "Stretch": "拉伸",
+  "Whole image": "完整图片"
 }

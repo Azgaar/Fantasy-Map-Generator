@@ -2043,7 +2043,6 @@
   "Please don't forget to save your progress (saving to desktop is the best option)": "Не забувайте зберігати прогрес (найкраще — зберігати на комп'ютер)",
   "Please ensure the linked file is reachable and CORS is allowed on server side": "Переконайтеся, що пов'язаний файл доступний, а на сервері дозволено CORS",
   "Please enter a prompt": "Введіть запит",
-  "Please exit the Image Conversion mode first": "Спершу вийдіть з режиму перетворення зображень",
   "Please fill in the biome name": "Заповніть назву біому",
   "Please keep using an {{- archive}}": "Будь ласка, продовжуйте користуватися {{- archive}}",
   "Please load the file in the appropriate version": "Завантажте файл у відповідній версії",
@@ -3563,5 +3562,14 @@
   "Every fifth contour is heavier and carries the labels": "Кожна п'ята горизонталь товща й має підписи",
   "Font size": "Розмір шрифту",
   "Font size of the elevation labels on every fifth contour": "Розмір шрифту підписів висот на кожній п'ятій горизонталі",
-  "Set to 0 to hide the labels": "Встановіть 0, щоб приховати підписи"
+  "Set to 0 to hide the labels": "Встановіть 0, щоб приховати підписи",
+  "Center": "По центру",
+  "Center the image": "Розташувати зображення по центру",
+  "Drag to pan, scroll to zoom. Black area becomes ocean": "Перетягніть для переміщення, прокрутіть для масштабу. Чорна область стане океаном",
+  "Fill map": "Заповнити карту",
+  "Place image": "Розташувати зображення",
+  "Scale the image, in percent": "Масштаб зображення у відсотках",
+  "Set how the image fits the map": "Задати, як зображення вписується в карту",
+  "Stretch": "Розтягнути",
+  "Whole image": "Усе зображення"
 }

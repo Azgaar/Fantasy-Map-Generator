@@ -2043,7 +2043,6 @@
   "Please don't forget to save your progress (saving to desktop is the best option)": "Non dimenticare di salvare i progressi (salvare sul desktop è l’opzione migliore)",
   "Please ensure the linked file is reachable and CORS is allowed on server side": "Assicurati che il file collegato sia raggiungibile e che il server consenta CORS",
   "Please enter a prompt": "Inserisci un prompt",
-  "Please exit the Image Conversion mode first": "Esci prima dalla modalità di conversione dell’immagine",
   "Please fill in the biome name": "Inserisci il nome del bioma",
   "Please keep using an {{- archive}}": "Continua a usare un {{- archive}}",
   "Please load the file in the appropriate version": "Carica il file nella versione appropriata",
@@ -3563,5 +3562,14 @@
   "Every fifth contour is heavier and carries the labels": "Ogni quinto contorno è più marcato e porta le etichette",
   "Font size": "Dimensione carattere",
   "Font size of the elevation labels on every fifth contour": "Dimensione del carattere delle quote su ogni quinto contorno",
-  "Set to 0 to hide the labels": "Imposta 0 per nascondere le etichette"
+  "Set to 0 to hide the labels": "Imposta 0 per nascondere le etichette",
+  "Center": "Centra",
+  "Center the image": "Centra l’immagine",
+  "Drag to pan, scroll to zoom. Black area becomes ocean": "Trascina per spostarti, scorri per zoomare. L’area nera diventa oceano",
+  "Fill map": "Riempi la mappa",
+  "Place image": "Posiziona l’immagine",
+  "Scale the image, in percent": "Scala dell’immagine, in percentuale",
+  "Set how the image fits the map": "Imposta come l’immagine si adatta alla mappa",
+  "Stretch": "Allunga",
+  "Whole image": "Immagine intera"
 }

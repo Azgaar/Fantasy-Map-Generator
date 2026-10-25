@@ -2043,7 +2043,6 @@
   "Please don't forget to save your progress (saving to desktop is the best option)": "Не забывайте сохранять прогресс (лучше всего — на компьютер)",
   "Please ensure the linked file is reachable and CORS is allowed on server side": "Убедитесь, что файл по ссылке доступен и сервер разрешает CORS",
   "Please enter a prompt": "Введите запрос",
-  "Please exit the Image Conversion mode first": "Сначала выйдите из режима преобразования изображения",
   "Please fill in the biome name": "Укажите название биома",
   "Please keep using an {{- archive}}": "Пользуйтесь {{- archive}}",
   "Please load the file in the appropriate version": "Загрузите файл в подходящей версии",
@@ -3563,5 +3562,14 @@
   "Every fifth contour is heavier and carries the labels": "Каждая пятая горизонталь толще и несёт подписи",
   "Font size": "Размер шрифта",
   "Font size of the elevation labels on every fifth contour": "Размер шрифта подписей высот на каждой пятой горизонтали",
-  "Set to 0 to hide the labels": "Поставьте 0, чтобы скрыть подписи"
+  "Set to 0 to hide the labels": "Поставьте 0, чтобы скрыть подписи",
+  "Center": "По центру",
+  "Center the image": "Поместить изображение по центру",
+  "Drag to pan, scroll to zoom. Black area becomes ocean": "Перетаскивание — сдвиг, колесо — масштаб. Чёрная область станет океаном",
+  "Fill map": "Заполнить карту",
+  "Place image": "Разместить изображение",
+  "Scale the image, in percent": "Масштаб изображения в процентах",
+  "Set how the image fits the map": "Как изображение вписывается в карту",
+  "Stretch": "Растянуть",
+  "Whole image": "Изображение целиком"
 }
