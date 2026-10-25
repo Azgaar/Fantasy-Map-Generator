@@ -141,11 +141,15 @@ list contains:
 
 | Group | Buttons |
 |---|---|
-| Background | **Sector Dust** (`texture`), **Nebulae**, **Star Density**, **Star Systems** |
+| Background | **Sector Dust** (`texture`), **Nebulae**, **Population** (`starDensity`), **Star Systems** |
 | Political | **Empires** (`states`), **Sectors** (`provinces`), **Borders**, **Zones** (`zones`) |
 | Routes | **Hyperlanes** (`routes`), **Anomalies** (`markers`) |
 | Labels | **Labels** |
-| Chart furniture | **Sensor Grid** (`coordinates`), **Scale Bar**, **Vignette** |
+| Chart furniture | **Sensor Grid** (`coordinates`), **Scale Bar** |
+
+Vignette has no Astral button: the mode is a flat chart, so the frame stays a Standard-mode layer.
+
+**Borders** keeps its button but starts off, and in Astral it switches something else. The shared `#stateBorders` path cannot be per-state coloured — `drawBorders` writes every border into one path — so the Astral style fades both border groups to opacity 0 and the button instead drives the state halo: one path per empire, stroked `darker(state.color)` and clipped to that empire, so each side of a boundary shows its own darker edge. Visibility is `isAstralView() ? Layers.isOn("borders") : options.app.performance.stateHalos` (`performance.ts`), which keeps the `stateHalos` quality setting authoritative in Standard and the Borders button authoritative in Astral.
 
 The other standard layer buttons are **not rendered** in Astral mode: heightmap, lakes, biomes, cells,
 grid, compass, rivers, relief, religions, cultures, temperature, ice, goods, markets, trade,
@@ -164,9 +168,9 @@ mode is active:
 
 | Preset | Layers |
 |---|---|
-| **Astral chart** (default) | texture, nebulae, density, systems, states, provinces, borders, routes, labels, markers, scaleBar, vignette |
+| **Astral chart** (default) | states, routes, systems, labels, scaleBar |
 | **Empires** | texture, nebulae, states, provinces, borders, labels, scaleBar |
-| **Survey scan** | texture, density, coordinates, scaleBar, vignette |
+| **Survey scan** | texture, density, coordinates, scaleBar |
 | **Systems and lanes** | texture, nebulae, systems, routes, labels, scaleBar |
 
 `layers-presets.ts` becomes mode-aware for reading and applying presets. The standard preset table is
@@ -422,11 +426,15 @@ Burg Editor.
 **Acceptance:** every burg is a marker with the right class colour and size; clicking it opens the
 Burg Editor; the map tooltip names the class and traits; zoom culling works.
 
-### Phase 5 — Polish and docs
+### Phase 5 — Polish and docs ✅
 
 - Astral layer preset table; save/remove hidden in the mode;
 - e2e coverage, README and wiki updates, `MERGING.md` checklist;
-- optional: a "Apply Astral naming" hint in the mode, and a second `astralSchematic` preset.
+- a "Apply Astral naming" hint in the mode, and a second `astralSchematic` preset.
+
+Shipped: the e2e specs (`astral-mode`, `astral-systems`, `astral-round-trip`), the one-per-session
+naming hint shown on entering the mode, the `astralSchematic` blueprint preset and its registration,
+and the README, wiki and `MERGING.md` updates.
 
 **Acceptance:** lint, unit tests, build and the new e2e specs pass; the README roadmap links this
 plan.

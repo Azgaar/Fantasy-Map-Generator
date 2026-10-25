@@ -1,5 +1,6 @@
 import { type D3ZoomEvent, interpolateZoom, select, type ZoomView, zoom, zoomIdentity, zoomTransform } from "d3";
 import { Layers } from "@/components/layers";
+import { isStateHaloVisible } from "@/components/performance";
 import { setViewportTransform, viewport, ZOOM_CURVES, type ZoomedLayer, zoomFontSize } from "@/components/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 import { ensureEl, findEl } from "@/utils/nodeUtils";
@@ -101,7 +102,7 @@ export function invokeActiveZooming(): void {
   applyZoomFontSize();
   ViewportLayers.renderNow();
 
-  if (!customization && options.app.performance.stateHalos) {
+  if (!customization && isStateHaloVisible()) {
     const statesHalo = select("#statesHalo");
     const desired = styles.states.groups.statesHalo.attrs["stroke-width"] ?? 0;
     const haloSize = rn(desired / viewport.scale ** 0.8, 2);

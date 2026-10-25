@@ -354,6 +354,16 @@ const starGroup = z.strictObject({
   })
 });
 
+const remnantGroup = z.strictObject({
+  attrs: z.strictObject({
+    opacity,
+    ...fillGroup,
+    stroke: strokeGroup.stroke,
+    "stroke-opacity": strokeGroup["stroke-opacity"],
+    filter
+  })
+});
+
 const padding = (side: string) =>
   number({ group: "Padding", label: side, range: [0, 50], step: 0.5, tip: "Background element padding in pixels" });
 
@@ -726,6 +736,47 @@ export const stylesSchema = z.strictObject({
     }),
     { effect: "draw" }
   ),
+  composition: z.strictObject({
+    attrs: z.strictObject({ opacity, filter, mask: clip }),
+    groups: z.strictObject({
+      irradiated: variant(densityBand, { label: "Irradiated" }),
+      arable: variant(densityBand, { label: "Arable" }),
+      biomass: variant(densityBand, { label: "Biomass" }),
+      volatiles: variant(densityBand, { label: "Volatiles" })
+    })
+  }),
+  coreRim: z.strictObject({
+    attrs: z.strictObject({ opacity, filter, mask: clip }),
+    options: z.strictObject({
+      flip: flag({ label: "Flip", tip: "Reverse the axis: the hot end lands on the other side" }),
+      intensity: number({ label: "Intensity", range: [0, 1], step: 0.05, tip: "How far the wash reaches" })
+    })
+  }),
+  dustDensity: z.strictObject({
+    attrs: z.strictObject({ opacity, filter, mask: clip }),
+    options: z.strictObject({
+      levels: count(1, 6, { label: "Bands", tip: "Number of dust density bands over the land" })
+    }),
+    groups: z.strictObject({
+      band1: variant(densityBand, { label: "Band 1" }),
+      band2: variant(densityBand, { label: "Band 2" }),
+      band3: variant(densityBand, { label: "Band 3" }),
+      band4: variant(densityBand, { label: "Band 4" }),
+      band5: variant(densityBand, { label: "Band 5" }),
+      band6: variant(densityBand, { label: "Band 6" })
+    })
+  }),
+  remnants: z.strictObject({
+    attrs: z.strictObject({ opacity, filter }),
+    options: z.strictObject({
+      glow: flag({ label: "Glow", tip: "Draw a soft halo around the remnants" })
+    }),
+    groups: z.strictObject({
+      blackHole: variant(remnantGroup, { label: "Black hole" }),
+      pulsar: variant(remnantGroup, { label: "Pulsar" }),
+      neutron: variant(remnantGroup, { label: "Neutron star" })
+    })
+  }),
   starDensity: z.strictObject({
     attrs: z.strictObject({ opacity, filter, mask: clip }),
     options: z.strictObject({

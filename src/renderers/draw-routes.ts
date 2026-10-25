@@ -1,5 +1,6 @@
 import { Layers } from "@/components/layers";
 import type { Route } from "@/generators/routes-generator";
+import { drawCurrents } from "@/renderers/astral/draw-currents";
 import {
   boundsIntersect,
   Scene,
@@ -33,6 +34,7 @@ export function drawRoutes(): void {
   }
   scene.replace(shapes);
   layer.render();
+  drawCurrents(); // Astral-only: emits or drops the currents group inside #routes
   TIME && console.timeEnd("drawRoutes");
 }
 
@@ -115,6 +117,7 @@ function reconcileRoutes({ root, bounds }: ViewportRenderContext): void {
   for (const group of Array.from(container.querySelectorAll<SVGGElement>(":scope > g"))) {
     // custom groups from loaded maps miss the data-group the layer registry stamps on declared ones
     group.dataset.group = group.id;
+    if (group.id === "currents") continue; // astral flow: owned by drawCurrents, not the route scene
     const shapes = visibleByGroup.get(group.id) ?? [];
     const shapeIds = new Set(shapes.map(shape => shape.id));
 

@@ -22,6 +22,11 @@ const presets = fs
   .filter(f => f.endsWith(".json"))
   .map(f => path.join("public/styles", f));
 
+// the models own the icon sets that tell references from text; they must exist before normalize runs
+await import("../src/generators/relief-generator.ts");
+await import("../src/generators/burgs-generator.ts");
+await import("../src/generators/goods-generator.ts");
+
 const { stylesSchema } = await import("../src/generators/styles-schema.ts");
 rewrite(DEFAULTS, json => byElement(repairDefaults(json)));
 

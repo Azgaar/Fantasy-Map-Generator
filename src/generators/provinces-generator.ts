@@ -5,7 +5,7 @@ import type { Emblem } from "@/types/emblems";
 import { requireColor } from "@/utils/colorUtils";
 import { replaceWholeWord } from "@/utils/languageUtils";
 import { requireName } from "@/utils/validationUtils";
-import { gauss, generateSeed, getMixedColor, getPolesOfInaccessibility, P, rand, rw } from "../utils";
+import { gauss, generateSeed, getPolesOfInaccessibility, getSectorColor, P, rand, rw } from "../utils";
 import type { Label } from "./labels-generator";
 import { Population } from "./population-generator";
 
@@ -137,7 +137,7 @@ class ProvinceModule {
         const formName = rw(form);
         form[formName] += 10;
         const fullName = `${name} ${formName}`;
-        const color = getMixedColor(s.color!);
+        const color = getSectorColor(s.color!, s.provinces.length);
         const kinship = nameByBurg ? 0.8 : 0.4;
         const type = Burgs.getType(center, burg.port);
         const coa = Emblems.generate(stateBurgs[i].coa, kinship, null, type);
@@ -263,7 +263,7 @@ class ProvinceModule {
         // generate "wild" province name
         const c = cells.culture[center];
         const f = pack.features[cells.f[center]];
-        const color = getMixedColor(s.color!);
+        const color = getSectorColor(s.color!, s.provinces.length);
 
         const provCells = stateNoProvince.filter(i => provinceIds[i] === provinceId);
         const singleIsle = provCells.length === f.cells && !provCells.find(i => cells.f[i] !== f.i);
@@ -420,7 +420,7 @@ class ProvinceModule {
       Burgs.getType(center, burg ? burgs[burg].port : undefined)
     );
     coa.shield = Emblems.getShield(culture, state);
-    const color = getMixedColor(states[state].color!, 0.2, 0);
+    const color = getSectorColor(states[state].color!, states[state].provinces?.length ?? 0);
     provinces.push({ i, state, center, burg, name, formName, fullName: `${name} ${formName}`, color, coa });
     states[state].provinces = [...(states[state].provinces ?? []), i];
 

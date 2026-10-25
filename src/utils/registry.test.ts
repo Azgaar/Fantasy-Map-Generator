@@ -1,5 +1,10 @@
-import { describe, expect, test, vi } from "vitest";
+// @vitest-environment jsdom
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { createRegistry, eager } from "./registry";
+
+afterEach(() => {
+  window.clearMainTip = () => {};
+});
 
 describe("createRegistry", () => {
   test("dispatches a method call to the resolved module with the given args", async () => {
@@ -52,5 +57,30 @@ describe("createRegistry", () => {
   test("symbol access on an entry resolves to undefined", () => {
     const registry = createRegistry({ Dialog: eager({ open: () => 1 }) });
     expect((registry.Dialog as Record<symbol, unknown>)[Symbol.iterator]).toBeUndefined();
+  });
+});
+
+describe("trackLoad", () => {
+  test("clears its own Loading tip when the load finishes", async () => {
+    const clear = vi.fn();
+    window.clearMainTip = clear;
+    document.body.innerHTML = '<div id="tooltip">Loading…</div>';
+
+    const registry = createRegistry({ Mod: () => Promise.resolve({ run: () => 1 }) });
+    await registry.Mod.run();
+
+    expect(clear).toHaveBeenCalledTimes(1);
+  });
+
+  test("leaves a hover tip alone: the load did not put it there", async () => {
+    const clear = vi.fn();
+    window.clearMainTip = clear;
+    document.body.innerHTML = '<div id="tooltip">A-class white star. Click to edit</div>';
+
+    const registry = createRegistry({ Mod: () => Promise.resolve({ run: () => 1 }) });
+    await registry.Mod.run();
+
+    expect(clear).not.toHaveBeenCalled();
+    expect(document.getElementById("tooltip")!.innerHTML).toBe("A-class white star. Click to edit");
   });
 });

@@ -1,5 +1,9 @@
 // Global layers registry: owns layers list, order, and svg skeleton
+import { drawComposition } from "@/renderers/astral/draw-composition";
+import { drawCoreRim } from "@/renderers/astral/draw-core-rim";
+import { drawDustDensity } from "@/renderers/astral/draw-dust-density";
 import { drawNebulae } from "@/renderers/astral/draw-nebulae";
+import { drawRemnants } from "@/renderers/astral/draw-remnants";
 import { drawStarDensity } from "@/renderers/astral/draw-star-density";
 import { drawSystems } from "@/renderers/astral/draw-systems";
 import { drawBiomes } from "@/renderers/draw-biomes";
@@ -303,7 +307,20 @@ const mapLayers = [
     erase: removeOcean
   }),
   new Layer({ id: "landmass", parent: "viewbox", permanent: true, keepContent: true, draw: drawLandmass }),
+  new Layer({
+    id: "coreRim",
+    parent: "viewbox",
+    attrs: { "pointer-events": "none" }, // decorative wash
+    draw: drawCoreRim
+  }),
   new Layer({ id: "texture", element: "texture", parent: "viewbox", draw: drawTexture }),
+  new Layer({
+    id: "composition",
+    parent: "viewbox",
+    attrs: { "pointer-events": "none" }, // decorative tint
+    children: ["irradiated", "arable", "biomass", "volatiles"].map(id => ({ id, tag: "g" })),
+    draw: drawComposition
+  }),
   new Layer({
     id: "nebulae",
     parent: "viewbox",
@@ -316,6 +333,12 @@ const mapLayers = [
     parent: "viewbox",
     children: ["band1", "band2", "band3", "band4", "band5", "band6"].map(id => ({ id, tag: "g" })),
     draw: drawStarDensity
+  }),
+  new Layer({
+    id: "dustDensity",
+    parent: "viewbox",
+    children: ["band1", "band2", "band3", "band4", "band5", "band6"].map(id => ({ id, tag: "g" })),
+    draw: drawDustDensity
   }),
   new Layer({
     id: "heightmap",
@@ -413,6 +436,12 @@ const mapLayers = [
   }),
   new Layer({ id: "burgIcons", parent: "viewbox", draw: drawBurgIcons }),
   new Layer({ id: "systems", parent: "viewbox", draw: drawSystems }),
+  new Layer({
+    id: "remnants",
+    parent: "viewbox",
+    attrs: { "pointer-events": "none" }, // decorative objects
+    draw: drawRemnants
+  }),
   new Layer({
     id: "labels",
     parent: "viewbox",

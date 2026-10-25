@@ -11,8 +11,8 @@ Azgaar's *Fantasy Map Generator* is the premier open-source tool for procedural 
 1. **[History Generator & Legends Browser](docs/history/README.md)** *(Shipped)*  
    Retroactively reconstructs the chronological history of generated worlds. Dates state foundings, wars, migrations, and schisms, seeds the ruins and battlefields of fallen empires, and provides an interactive in-app chronicle browser.
 
-2. **[Astral Cartographer](docs/astral/README.md)** *(Content Integrated)*  
-   Reimagines the procedural engine for science-fiction star sector cartography. Ships 12 sci-fi name bases and 3 culture sets (AstralTrek, AstralJammer, Grimdark) in core data, with upcoming stellar traits, celestial classifications, and space-map rendering.
+2. **[Astral Cartographer](docs/astral/README.md)** *(Integrated)*  
+   Reimagines the procedural engine for science-fiction star sector cartography. Ships 12 sci-fi name bases and 3 culture sets (AstralTrek, AstralJammer, Grimdark) in core data, the on-demand polity/sector naming and star classes, and an **Astral view** that turns any map into a star-sector chart — nebulae, a stellar-density heatmap and class-coloured star systems in place of burgs.
 
 3. **[OpenConquest: Atlas Invictus](docs/openconquest/README.md)** *(Integrated)*  
    Turns any generated map into an interactive, turn-based grand strategy campaign. Features strategic regions, settlement infrastructure, army recruitment, and deterministic battle mechanics running in a background Web Worker. Campaigns persist in the browser, keyed to the map.
@@ -61,6 +61,7 @@ The plans for the work that is not here yet live in [`docs/plans`](docs/plans):
 | [`history-generation.md`](docs/plans/history-generation.md) | the shipped chronicle: events, fallen realms, the Legends browser |
 | [`history-epochs.md`](docs/plans/history-epochs.md) | **epochs** — the political layer regenerated K times, so the past is causal and the borders can be scrubbed through time |
 | [`mod-merge-plan.md`](docs/plans/mod-merge-plan.md) | bringing the Astral Cartographer and OpenConquest mods in-tree (done) |
+| [`astral-ui-overhaul.md`](docs/plans/astral-ui-overhaul.md) | the **Astral view** — the star chart, nebulae, density and systems (shipped) |
 | [`mod-seams-proposal.md`](docs/plans/mod-seams-proposal.md) | the three upstream seams a mod needs to run on stock FMG (proposed upstream) |
 | [`openconquest-military-integration.md`](docs/plans/openconquest-military-integration.md) | deep integration of OpenConquest rosters, military regiments, and turn-by-turn Lanchester battle simulator (done) |
 | [`openconquest-magic-system.md`](docs/plans/openconquest-magic-system.md) | `spellcaster` & `monster` unit categories, 6×6 matchup matrix, declarative `powers`, and `resistArcane` (done) |
