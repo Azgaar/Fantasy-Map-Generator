@@ -521,8 +521,7 @@ export class EmblemsGenerator {
     if ("icon" in coa) {
       if (!Icons.kind(coa.icon)) throw new Error(`Icon ${coa.icon} does not exist`);
     } else this.requireHeraldic(coa);
-    const { size, x, y } = entity.coa ?? {};
-    entity.coa = { ...structuredClone(coa), size, x, y };
+    entity.coa = { ...structuredClone(coa), ...this.placement(entity.coa) };
   }
 
   /** Draw a new emblem for a state, province or burg, akin to its overlord's; its shield, size and position stay */
@@ -537,8 +536,14 @@ export class EmblemsGenerator {
       parent = province ? provinces[province] : states[entity.state ?? 0];
     }
     const shield = entity.coa?.shield || this.getShield(entity.culture || parent?.culture || 0, entity.state);
-    const { size, x, y } = entity.coa ?? {};
-    entity.coa = { ...this.generate(parent?.coa ?? null, 0.3, 0.1, undefined), shield, size, x, y };
+    entity.coa = { ...this.generate(parent?.coa ?? null, 0.3, 0.1, undefined), shield, ...this.placement(entity.coa) };
+  }
+
+  /** The map placement an emblem keeps when its art changes: only the fields it has */
+  placement(coa?: Emblem): Pick<Emblem, "size" | "x" | "y"> {
+    const placement: Pick<Emblem, "size" | "x" | "y"> = {};
+    for (const key of ["size", "x", "y"] as const) if (coa?.[key] !== undefined) placement[key] = coa[key];
+    return placement;
   }
 
   /** Place an emblem on the map: x and y in map units, size from 0 to 5. null returns a value to automatic */

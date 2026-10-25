@@ -225,8 +225,9 @@ describe("the definition sets carry to the next map", () => {
     expect(options.map.customIcons).toEqual([icon]);
 
     const theirs = { ...icon, id: "custom-5e6f7a8b" };
-    load(savedFile(map => (map.customIcons = [theirs])));
-    expect(options.map.customIcons).toEqual([theirs]);
+    const armoria = { ...icon, id: "custom-9c0d1e2f", kind: "svg" as const, content: "<g/>", coa: { t1: "gules" } };
+    load(savedFile(map => (map.customIcons = [theirs, armoria])));
+    expect(options.map.customIcons).toEqual([theirs, armoria]);
   });
 
   it("drops a broken custom icon on its own, keeping the others", () => {

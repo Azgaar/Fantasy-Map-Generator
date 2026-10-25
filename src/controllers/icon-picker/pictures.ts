@@ -1,6 +1,7 @@
 // Turns a file or a link into a custom icon's picture: its kind, content and a frame fitted to what it shows.
 // Stateless; every thrown message is meant for the author
 import { type IconPicture, Icons, IMAGE_FRAME } from "@/model/icons";
+import { Armoria } from "@/model/political/armoria";
 import { sanitizeSvgIcon, scopeSvgIcon } from "@/utils/file-utils";
 import { t } from "@/utils/i18n";
 import { rn } from "@/utils/number-utils";
@@ -29,9 +30,15 @@ function fromSvg(svg: Element): IconPicture {
   return { kind: "svg", content: `<g${paint}>${svg.innerHTML}</g>`, viewBox: Icons.formatFrame(frame) };
 }
 
-/** An uploaded svg or raster image as the picture of icon `id`, whose ids and classes it is scoped to */
+/** An uploaded svg or raster image as the picture of icon `id`, whose ids and classes it is scoped to.
+ * An emblem keeps the COA an image downloaded from Armoria carries */
 async function fromFile(file: File, id: string, profile: PictureProfile = "icon"): Promise<IconPicture> {
-  const limits = LIMITS[profile];
+  const picture = await readPicture(file, id, LIMITS[profile]);
+  const coa = profile === "emblem" ? await Armoria.fileCoa(file) : null;
+  return coa ? { ...picture, coa } : picture;
+}
+
+async function readPicture(file: File, id: string, limits: (typeof LIMITS)[PictureProfile]): Promise<IconPicture> {
   const isSvg = file.type === "image/svg+xml" || /\.svg$/i.test(file.name);
   if (isSvg) {
     if (file.size > limits.svg)

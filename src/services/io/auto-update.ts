@@ -2,6 +2,7 @@
 
 import { extent, min, select } from "d3";
 import { IconPictures } from "@/controllers/icon-picker/pictures";
+import { isDrawable } from "@/controllers/political/emblems/drawability";
 import { AddedLabels } from "@/model/annotations/added-labels";
 import { type Label, type LabelNameMode, Labels } from "@/model/annotations/labels-generator";
 import { type Measurer, Measurers, type MeasurerType } from "@/model/annotations/measurers-generator";
@@ -11,7 +12,7 @@ import { Production } from "@/model/economy/production-generator";
 import type { GraphOverrides } from "@/model/graph/graph-override";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
-import { CustomIcons, IMAGE_FRAME } from "@/model/icons";
+import { CustomIcons, Icons, IMAGE_FRAME } from "@/model/icons";
 import { type EntityRef, MapEntities } from "@/model/map-entities";
 import { normalizeLegacyBurgGroupFilters } from "@/model/options/options-legacy";
 import type { MapData } from "@/model/options/options-schema";
@@ -20,6 +21,7 @@ import { type Feature, Features, LAKE_SUBTYPES, OCEAN_SUBTYPES } from "@/model/p
 import { Lakes } from "@/model/physical/lakes";
 import { Relief, type ReliefIcon, type ReliefIconType, type ReliefSet } from "@/model/physical/relief-generator";
 import { Rivers } from "@/model/physical/river-generator";
+import { Armoria } from "@/model/political/armoria";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import { Military } from "@/model/political/military-generator";
@@ -2021,7 +2023,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
           const definition = findInSvg(`${type}COA${entity.i}`);
           // a removed entity is never drawn again, so its picture would only clutter the Custom icons
           const icon = entity.removed ? "" : legacyEmblemIcon(definition, pictures);
-          entity.coa = { icon, size: coa.size, x: coa.x, y: coa.y };
+          entity.coa = { icon, ...Emblems.placement(coa) };
           if (icon) used.add(icon);
         }
       }
@@ -2173,6 +2175,23 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
         ocean.interval = getContourInterval(count, -heightToMeters(low) * ratio);
       }
       data[48] = JSON.stringify(record);
+    }
+
+    // v1.157.0 draws Armoria API pictures as blazons where it can; the rest follow the API
+    const pictures = new Set<string>();
+    for (const entity of [...(pack.states ?? []), ...(pack.provinces ?? []), ...(pack.burgs ?? [])]) {
+      if (!entity?.coa || !("icon" in entity.coa)) continue;
+      const { icon } = entity.coa;
+      const blazon = Armoria.pictureCoa(CustomIcons.get(icon));
+      if (!blazon || !isDrawable(blazon)) continue;
+      entity.coa = { ...blazon, ...Emblems.placement(entity.coa) };
+      pictures.add(icon);
+    }
+    for (const icon of CustomIcons.all) {
+      if (icon.kind !== "image") continue;
+      const content = Armoria.migrateLink(icon.content);
+      if (pictures.has(icon.id) && !Object.keys(Icons.uses(icon.id)).length) CustomIcons.remove(icon.id);
+      else if (content !== icon.content) CustomIcons.update(icon.id, { content });
     }
   }
 }

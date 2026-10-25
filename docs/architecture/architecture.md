@@ -319,7 +319,8 @@ Heraldry is the current example:
 
 - `src/data/emblems/` — static heraldry catalogs
 - `src/model/political/emblems-generator.ts` — emblem generation
-- `src/controllers/political/emblems/` — the Emblems editor and the Armoria bridge
+- `src/model/political/armoria.ts` — `Armoria`, reading Armoria's COA format from links, pictures and files
+- `src/controllers/political/emblems/` — the Emblems editor and its Armoria editing sessions
 - `src/renderers/emblems/` — SVG drawing of emblems. Its shields, lines,
   patterns, templates and diapers are ported from [Armoria](https://github.com/Azgaar/Armoria), and `public/charges/`
   is a verbatim copy of Armoria's charges: sync both from Armoria rather than editing them here

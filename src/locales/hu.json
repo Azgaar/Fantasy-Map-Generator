@@ -2982,7 +2982,7 @@
   "There is no state here": "Itt nincs állam",
   "There should be at least 2 states to edit the diplomacy": "A diplomácia szerkesztéséhez legalább 2 államnak kell lennie",
   "These entities have no map location": "Ezeknek az entitásoknak nincs helye a térképen",
-  "This COA uses art FMG cannot draw; it shows as Armoria's picture": "Ez a címer olyan grafikát használ, amelyet az FMG nem tud megrajzolni; az Armoria képeként jelenik meg",
+  "This COA uses art FMG cannot draw": "Ez a címer olyan grafikát használ, amelyet az FMG nem tud megrajzolni",
   "This WON'T change the burgs unless the changes are applied": "Ez NEM változtatja meg a településeket, amíg a módosításokat nem alkalmazza",
   "This action cannot be reverted": "Ez a művelet nem vonható vissza",
   "This burg is NOT a port": "Ez a település NEM kikötő",
