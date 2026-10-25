@@ -189,6 +189,24 @@ saved cultures and a rename keeps its corpus.
   are permanent and must never be reassigned. If upstream changes the slot-31 format, reconcile in
   `name-bases-format.ts` — the loader also accepts the six-column legacy layout.
 
+### RPG Fantasy culture set & polity naming
+
+- **`src/data/name-bases.ts`**:
+  - Appended 11 RPG Fantasy name bases (indices 55..65, permanent ids `HALFL`..`TRIBA`): Halfling (`HALFL`), Fey (`FEYFO`), Infernal (`INFER`), Celestial (`CELES`), Grave (`GRAVE`), Merfolk (`MERFO`), Beastfolk (`BEAST`), Elemental (`ELEME`), Construct (`CONST`), Eldritch (`ELDRI`), Tribal (`TRIBA`).
+  - Added `polities` and `provinces` groups to all 11 bases for state government and province territorial titles.
+- **`src/generators/cultures-generator.ts`**:
+  - Appended `rpgFantasy: { name: "RPG Fantasy", max: 24, probability: 4 }` to `CULTURE_SETS`.
+  - Added `case "rpgFantasy"` branch to `CulturesGenerator.getDefault()` defining 43 cultures across 7 thematic groups with habitat scoring callbacks (`forest`, `highland`, `arid`, `polar`, `coastal`, `underworld`, `open`).
+- **`src/generators/polity-naming.ts`** (new):
+  - Extracted shared group reading and word picking (`readGroup`, `pickFor`, `polityWordFor`, `provinceWordFor`) from `astral-naming.ts`.
+- **`src/generators/astral-naming.ts`**:
+  - Re-exports shared polity naming functions from `polity-naming.ts`.
+- **`src/controllers/astral-names.ts`**:
+  - Made register-aware: adjusts modal confirmation, alert messaging, and fallback vocabulary based on the active culture set ("Apply RPG naming" vs "Apply Astral naming").
+- **`src/components/configuration-schema.test.ts`**, **`src/data/name-bases.test.ts`**, **`src/generators/polity-naming.test.ts`**, **`src/controllers/astral-names.test.ts`**:
+  - Dedicated unit tests for schema validation, RPG namebase content rules, habitat scoring, acceptance, polity naming, and controller register selection.
+- *Conflict resolution strategy*: keep the 11 bases appended with their permanent ids; keep the `case "rpgFantasy"` in `cultures-generator.ts` and the `rpgFantasy` entry in `CULTURE_SETS`.
+
 ### Toolchain & Windows Environment Compatibility
 
 - **`package.json`**:

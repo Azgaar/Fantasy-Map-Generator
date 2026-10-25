@@ -14,6 +14,7 @@ A culture set is the pool of cultures a map can draw from. It is picked in the _
 | AstralTrek   | 8                    | 8            |
 | AstralJammer | 8                    | 8            |
 | Grimdark     | 8                    | 8            |
+| RPG Fantasy  | 43                   | 24           |
 | Random       | generated on the fly | 100          |
 
 Every culture in a set has an _odd_ — a chance to be included at all — and a _sort_ function that scores cells to pick the culture center. That is why two maps with the same set rarely get the same cultures, and why e.g. Inuk tends to appear in cold regions and Maui on tropical islands.
@@ -228,3 +229,73 @@ The dark-fantasy register, industrial and cold: darklings, foundrymen, and the m
 - Calculators (Cold): those who calculate for them. Namesbase: Grimdark Machine.
 - Core Holds (Mixed): the fortified holds of the new order. Namesbase: Grimdark Core.
 - Rust Kingdoms (Mixed): the kingdoms that did not hold. Namesbase: Grimdark Core.
+
+### RPG Fantasy
+
+The comprehensive tabletop fantasy roster ("kitchen sink"): forty-three cultures defined across seven thematic groups, placing at most 24 on any single map. Each culture has an inclusion weight (`odd`) and a dedicated habitat scoring callback (`forest`, `highland`, `arid`, `polar`, `coastal`, `underworld`, or `open`), ensuring realistic geographical distribution and high variety across generated maps.
+
+The eleven dedicated RPG namebases carry specialized `polities` and `provinces` groups for state and territorial titles when applying the naming action.
+
+**Elves & kin**
+
+- Quenar (High Elf): Classical high elven civilization. Namesbase: Elven. Habitat: temperate forest.
+- Sylvan (Wood Elf): Woodland guardians and deep-forest clans. Namesbase: Elven. Habitat: deep forest.
+- Drow (Dark Elf): Subterranean elven kindred of deep chasms. Namesbase: Dark Elven. Habitat: underworld.
+- Aelvar (Sea Elf): Maritime elves and island voyagers. Namesbase: Merfolk. Habitat: coast and isles.
+
+**Dwarves & smallfolk**
+
+- Khazad (Mountain Dwarf): Mountain fortress builders and master smiths. Namesbase: Dwarven. Habitat: highland.
+- Hearthdwarf (Hill Dwarf): Highland clanfolk and trading redoubts. Namesbase: Dwarven. Habitat: highland.
+- Duergar (Deep Dwarf): Subterranean dwarf-folk of the deep beneath. Namesbase: Dwarven. Habitat: underworld.
+- Halfling (Hobbit): Peaceful pastoral smallfolk of river meadows. Namesbase: Halfling. Habitat: open fertile lowlands.
+- Gnome (Tinker): Burrow-dwellers, inventors, and hill illusionists. Namesbase: Halfling. Habitat: highland hills.
+
+**Goblinoids, giants & dragonspawn**
+
+- Orc: Warlike highland clans and raiders. Namesbase: Orc. Habitat: highland.
+- Goblin: Prolific denizens of cavern networks and dark recesses. Namesbase: Goblin. Habitat: underworld.
+- Hobgoblin (Legion): Disciplined martial legions of the open plains. Namesbase: Orc. Habitat: open plains.
+- Troll: Regenerating stalkers of frozen bogs and icy wastes. Namesbase: Giant. Habitat: polar.
+- Ogre: Crag-dwelling brutes and highland warbands. Namesbase: Giant. Habitat: highland.
+- Dragonborn: Proud scions of draconic ancestry holding mountain peaks. Namesbase: Draconic. Habitat: highland.
+- Kobold: Warren-dwelling tunnelers and dragon cultists. Namesbase: Goblin. Habitat: underworld.
+- Lizardfolk: Primeval reptilian clans of wetlands and bayous. Namesbase: Serpents. Habitat: coastal wetlands.
+
+**Beastfolk & fey**
+
+- Lionkin (Catfolk): Nomadic feline hunters of arid steppes and savannas. Namesbase: Beastfolk. Habitat: arid.
+- Wolfkin (Werefolk): Wolf-kin pack-dwellers of northern taiga and woods. Namesbase: Beastfolk. Habitat: forest.
+- Aarakocra (Birdfolk): Winged aerie sentinels of the highest crags. Namesbase: Beastfolk. Habitat: highland peaks.
+- Minotaur (Bullkin): Labyrinthine highland enclaves and horned warriors. Namesbase: Giant. Habitat: highland.
+- Fey (Fair Folk): Enchanted inhabitants of deep twilight groves. Namesbase: Fey. Habitat: deep forest.
+- Sidhe (Lake Fey): Luminous lake spirits and river wardens. Namesbase: Fey. Habitat: coastal lakes and waters.
+- Genasi (Elemental): Planar-touched kin thriving in extreme climates. Namesbase: Elemental. Habitat: polar/extreme.
+
+**Dark powers & divine**
+
+- Tiefling (Fiendblood): Cursed planar wanderers enduring harsh wastes. Namesbase: Infernal. Habitat: arid.
+- Demon (Fiend): Demonic hosts issuing forth from blighted depths. Namesbase: Infernal. Habitat: underworld.
+- Vampire (Nightblood): Aristocratic night-stalkers of gloomy, cold realms. Namesbase: Grave. Habitat: polar/cold.
+- Lich (Necromancer): Deathless sorcerer-kings raising ossuary empires. Namesbase: Grave. Habitat: polar/cold wastes.
+- Aasimar (Celestial): Scions of holy radiance presiding from mountain heights. Namesbase: Celestial. Habitat: highland.
+- Chosen (Oracle): Pious monastic orders along fertile river valleys. Namesbase: Celestial. Habitat: open lowlands.
+
+**Constructs & aberrations**
+
+- Warforged (Construct): Soulforged artificial soldiers adaptable to any frontier. Namesbase: Construct. Habitat: open/adaptable.
+- Aboleth (Eldritch): Primordial psychic leviathans lurking along remote coasts. Namesbase: Eldritch. Habitat: coastal.
+- Mindflayer (Eldritch): Psionic hive-lords plotting dominion across the lowlands. Namesbase: Eldritch. Habitat: open lowlands.
+
+**Humans**
+
+- Imperial (Human): Cosmopolitan, law-giving empire along major waterways. Namesbase: Roman. Habitat: open river valleys.
+- Feudal (Human): Agrarian medieval kingdoms and chivalric fiefdoms. Namesbase: Human Generic. Habitat: open lowlands.
+- Nordlander (Human): Seafaring raiders and longship clans of frigid shores. Namesbase: Nordic. Habitat: coastal.
+- Steppe Rider (Human): Mounted pastoralists and horse lords of the vast steppes. Namesbase: Mongolian. Habitat: arid grasslands.
+- Desert Nomad (Human): Oasis caravaneers and traders traversing harsh sands. Namesbase: Arabic. Habitat: arid deserts.
+- Islander (Human): Voyagers and canoe tribes of tropical archipelagos. Namesbase: Hawaiian. Habitat: coastal islands.
+- Jungle Tribe (Human): Resilient forest folk deep within tropical canopies. Namesbase: Tribal. Habitat: rainforest.
+- Tundra Tribe (Human): Hardened hunters thriving in frozen permafrost. Namesbase: Tribal. Habitat: polar tundra.
+- Eastern Empire (Human): Dynastic courtly realm of cities and trade roads. Namesbase: Japanese. Habitat: open.
+- Southern Kingdom (Human): Sun-drenched merchant kingdom of savanna trade routes. Namesbase: Swahili. Habitat: arid savanna.

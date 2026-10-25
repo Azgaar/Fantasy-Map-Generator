@@ -18,7 +18,8 @@ export const CULTURE_SETS: Record<string, { name: string; max: number; probabili
   random: { name: "Random", max: 100, probability: 1 },
   astralTrek: { name: "AstralTrek", max: 8, probability: 5 },
   astralJammer: { name: "AstralJammer", max: 8, probability: 4 },
-  grimdark: { name: "Grimdark", max: 8, probability: 3 }
+  grimdark: { name: "Grimdark", max: 8, probability: 3 },
+  rpgFantasy: { name: "RPG Fantasy", max: 24, probability: 4 }
 };
 
 declare global {
@@ -965,6 +966,77 @@ class CulturesGenerator {
           sort: (i: number) => 1 / (n(i) + 1),
           shield: "pavise"
         }
+      ];
+    }
+
+    if (options.map.cultures.set === "rpgFantasy") {
+      const habitat = {
+        forest: (i: number) => n(i) / bd(i, [6, 7, 8, 9], 10),
+        highland: (i: number) => n(i) + h[i],
+        arid: (i: number) => n(i) / td(i, 25),
+        polar: (i: number) => n(i) / td(i, -10),
+        coastal: (i: number) => n(i) * (cells.haven[i] ? 1 : 0.2),
+        underworld: (i: number) => n(i) / td(i, 20) + (sMax - h[i]),
+        open: (i: number) => n(i)
+      };
+
+      return [
+        // Elves & kin
+        { name: "Quenar (High Elf)", base: "ELVEN", odd: 1, sort: habitat.forest, shield: "noldor" },
+        { name: "Sylvan (Wood Elf)", base: "ELVEN", odd: 0.9, sort: habitat.forest, shield: "fantasy3" },
+        { name: "Drow (Dark Elf)", base: "DARKE", odd: 0.8, sort: habitat.underworld, shield: "hessen" },
+        { name: "Aelvar (Sea Elf)", base: "MERFO", odd: 0.35, sort: habitat.coastal, shield: "vesicaPiscis" },
+
+        // Dwarves & smallfolk
+        { name: "Khazad (Mountain Dwarf)", base: "DWARV", odd: 1, sort: habitat.highland, shield: "ironHills" },
+        { name: "Hearthdwarf (Hill Dwarf)", base: "DWARV", odd: 0.9, sort: habitat.highland, shield: "erebor" },
+        { name: "Duergar (Deep Dwarf)", base: "DWARV", odd: 0.45, sort: habitat.underworld, shield: "pavise" },
+        { name: "Halfling (Hobbit)", base: "HALFL", odd: 1, sort: habitat.open, shield: "round" },
+        { name: "Gnome (Tinker)", base: "HALFL", odd: 0.6, sort: habitat.highland, shield: "oval" },
+
+        // Goblinoids, giants & dragonspawn
+        { name: "Orc", base: "ORCIS", odd: 1, sort: habitat.highland, shield: "urukHai" },
+        { name: "Goblin", base: "GOBLI", odd: 1, sort: habitat.underworld, shield: "moriaOrc" },
+        { name: "Hobgoblin (Legion)", base: "ORCIS", odd: 0.6, sort: habitat.open, shield: "targe" },
+        { name: "Troll", base: "GIANT", odd: 0.5, sort: habitat.polar, shield: "swiss" },
+        { name: "Ogre", base: "GIANT", odd: 0.4, sort: habitat.highland, shield: "horsehead2" },
+        { name: "Dragonborn", base: "DRACO", odd: 0.6, sort: habitat.highland, shield: "fantasy2" },
+        { name: "Kobold", base: "GOBLI", odd: 0.3, sort: habitat.underworld, shield: "fantasy1" },
+        { name: "Lizardfolk", base: "SERPE", odd: 0.6, sort: habitat.coastal, shield: "fantasy4" },
+
+        // Beastfolk & fey
+        { name: "Lionkin (Catfolk)", base: "BEAST", odd: 0.45, sort: habitat.arid, shield: "horsehead" },
+        { name: "Wolfkin (Werefolk)", base: "BEAST", odd: 0.35, sort: habitat.forest, shield: "round" },
+        { name: "Aarakocra (Birdfolk)", base: "BEAST", odd: 0.35, sort: habitat.highland, shield: "vesicaPiscis" },
+        { name: "Minotaur (Bullkin)", base: "GIANT", odd: 0.35, sort: habitat.highland, shield: "spanish" },
+        { name: "Fey (Fair Folk)", base: "FEYFO", odd: 0.6, sort: habitat.forest, shield: "fantasy5" },
+        { name: "Sidhe (Lake Fey)", base: "FEYFO", odd: 0.3, sort: habitat.coastal, shield: "diamond" },
+        { name: "Genasi (Elemental)", base: "ELEME", odd: 0.4, sort: habitat.polar, shield: "hexagon" },
+
+        // Dark powers & divine
+        { name: "Tiefling (Fiendblood)", base: "INFER", odd: 0.55, sort: habitat.arid, shield: "targe2" },
+        { name: "Demon (Fiend)", base: "INFER", odd: 0.25, sort: habitat.underworld, shield: "no" },
+        { name: "Vampire (Nightblood)", base: "GRAVE", odd: 0.5, sort: habitat.polar, shield: "baroque" },
+        { name: "Lich (Necromancer)", base: "GRAVE", odd: 0.3, sort: habitat.polar, shield: "oldFrench" },
+        { name: "Aasimar (Celestial)", base: "CELES", odd: 0.35, sort: habitat.highland, shield: "boeotian" },
+        { name: "Chosen (Oracle)", base: "CELES", odd: 0.25, sort: habitat.open, shield: "flag" },
+
+        // Constructs & aberrations
+        { name: "Warforged (Construct)", base: "CONST", odd: 0.35, sort: habitat.open, shield: "square" },
+        { name: "Aboleth (Eldritch)", base: "ELDRI", odd: 0.2, sort: habitat.coastal, shield: "dovetail" },
+        { name: "Mindflayer (Eldritch)", base: "ELDRI", odd: 0.2, sort: habitat.open, shield: "wedged" },
+
+        // Humans
+        { name: "Imperial (Human)", base: "ROMAN", odd: 1, sort: habitat.open, shield: "roman" },
+        { name: "Feudal (Human)", base: "HUMAN", odd: 1, sort: habitat.open, shield: "heater" },
+        { name: "Nordlander (Human)", base: "NORDI", odd: 0.9, sort: habitat.coastal, shield: "french" },
+        { name: "Steppe Rider (Human)", base: "MONGO", odd: 0.8, sort: habitat.arid, shield: "banner" },
+        { name: "Desert Nomad (Human)", base: "ARABI", odd: 0.8, sort: habitat.arid, shield: "gonfalon" },
+        { name: "Islander (Human)", base: "HAWAI", odd: 0.5, sort: habitat.coastal, shield: "oval" },
+        { name: "Jungle Tribe (Human)", base: "TRIBA", odd: 0.6, sort: habitat.forest, shield: "pennon" },
+        { name: "Tundra Tribe (Human)", base: "TRIBA", odd: 0.4, sort: habitat.polar, shield: "guidon" },
+        { name: "Eastern Empire (Human)", base: "JAPAN", odd: 0.5, sort: habitat.open, shield: "dovetail" },
+        { name: "Southern Kingdom (Human)", base: "SWAHI", odd: 0.4, sort: habitat.arid, shield: "pennant" }
       ];
     }
 

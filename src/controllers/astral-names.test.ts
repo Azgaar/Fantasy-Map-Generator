@@ -65,4 +65,36 @@ describe("the Astral Names action", () => {
     expect(mocks.dialog).not.toHaveBeenCalled();
     expect(mocks.tip).toHaveBeenCalledWith(expect.stringContaining("no Astral peoples"), true, "error", 8000);
   });
+
+  describe("register selection", () => {
+    it("selects the RPG register when cultures.set is rpgFantasy", () => {
+      options.map.cultures.set = "rpgFantasy";
+      pack.cultures[1].base = "HALFL";
+
+      AstralNames.apply();
+      expect(mocks.dialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Apply RPG naming",
+          message: expect.stringContaining("RPG polities")
+        })
+      );
+
+      confirm();
+      expect(mocks.tip).toHaveBeenCalledWith(
+        expect.stringContaining("Applied RPG naming"),
+        true,
+        "success",
+        expect.any(Number)
+      );
+    });
+
+    it("refuses an RPG map when no RPG peoples are present", () => {
+      options.map.cultures.set = "rpgFantasy";
+      pack.cultures[1].base = "ENGLI";
+
+      AstralNames.apply();
+      expect(mocks.dialog).not.toHaveBeenCalled();
+      expect(mocks.tip).toHaveBeenCalledWith(expect.stringContaining("no RPG peoples"), true, "error", 8000);
+    });
+  });
 });

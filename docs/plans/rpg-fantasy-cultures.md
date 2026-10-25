@@ -1,9 +1,8 @@
 # Plan — RPG Fantasy Culture Set
 
-Updated: 2026-10-24. Status: **planned**, not started. Decisions taken: ~40 cultures defined
+Updated: 2026-10-25. Status: **implemented**. Decisions taken: 43 cultures defined
 with 24 placed, 11 new namebases (no separate Gnomish base), `Quenar (High Elf)`, Feudal humans on
-the `Human Generic` base, and faction titles deferred to a later phase as a generalized naming
-action.
+the `Human Generic` base, and faction titles implemented with register-aware naming.
 
 **Blocking dependency:** [namebase-ids.md](namebase-ids.md) — name bases must be identified by
 stable five-letter id before any of this lands. Under index identity, adding eleven bases is only
@@ -203,14 +202,14 @@ Design:
       Feudal humans on `Human Generic`, faction titles in Phase 3b.
 - [x] **1. Namebase ids** — [namebase-ids.md](namebase-ids.md). Done: bases carry five-letter ids and
       cultures reference them, so the eleven new bases cannot re-point saved maps.
-- [ ] **2. Bases** — add `HALFL`–`TRIBA` in batches of 3–4; extend `src/data/name-bases.test.ts`
+- [x] **2. Bases** — add `HALFL`–`TRIBA` in batches of 3–4; extend `src/data/name-bases.test.ts`
       with the content-rules suite for the new bases.
-- [ ] **3. Set** — `CULTURE_SETS` entry, `getDefault()` branch, habitat scorers.
-- [ ] **4a. Tests** — set acceptance (24 placed, bases inside the RPG family, real shields, callable
+- [x] **3. Set** — `CULTURE_SETS` entry, `getDefault()` branch, habitat scorers.
+- [x] **4a. Tests** — set acceptance (24 placed, bases inside the RPG family, real shields, callable
       sorts), habitat scoring, `configuration-schema.test.ts` accepts `rpgFantasy`.
-- [ ] **4b. Naming** — faction titles as described above, plus tests for register selection and the
+- [x] **4b. Naming** — faction titles as described above, plus tests for register selection and the
       no-group fallback.
-- [ ] **5. Docs** — `docs/wiki/Culture-sets.md` (table row + full section), `MERGING.md` touch
+- [x] **5. Docs** — `docs/wiki/Culture-sets.md` (table row + full section), `MERGING.md` touch
       points, README plan table.
 
 ## Verification

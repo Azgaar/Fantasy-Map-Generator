@@ -1,67 +1,16 @@
 // The Astral mapping: FMG's world read as a star map. Polities, sectors and star systems.
 // The content (the name bases and their groups) lives in src/data/name-bases.ts; this module
 // only reads it and applies it. See docs/astral/README.md
-import { isAstralBase } from "@/data/name-bases";
-import { Names } from "./names-generator";
-import { Provinces } from "./provinces-generator";
-import { States } from "./states-generator";
-
-/** The culture sets that speak in the star-map register */
-export const ASTRAL_SETS = ["astralTrek", "astralJammer", "grimdark"];
-
-/** Is the map drawn from one of the Astral culture sets? */
-export function isAstralMap(): boolean {
-  return (ASTRAL_SETS as string[]).includes(options.map.cultures.set);
-}
-
-/** The words a sector can be called */
-export const SECTOR_WORDS = ["Sector", "Reach", "Cluster", "Belt", "Orbit", "Shelf", "Quadrant", "Frontier"];
-
-/**
- * A stable pick from a list, seeded by a string.
- *
- * The same name always gets the same word: a map that reshuffles its polities
- * every time it is regenerated is a map nobody can read.
- */
-export function pickFor(words: string[], seed: string): string | undefined {
-  if (!words.length) return undefined;
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
-  return words[hash % words.length];
-}
-
-/** The name groups of the base a culture names from, when that base is one of ours */
-export function groupsOf(cultureId: number): Record<string, string[]> | undefined {
-  const baseId = pack.cultures[cultureId]?.base;
-  if (!baseId) return undefined;
-  const base = Names.getNameBase(baseId);
-  return base && isAstralBase(base) ? base.groups : undefined;
-}
-
-/**
- * The word a state should be called by, e.g. "United Federation".
- *
- * The word comes from the `polities` group of the culture's own base, so a
- * Trek state is a Federation and a Grimdark one a Compact. A culture that
- * names from a stock base keeps FMG's own word: the mapping renames the
- * sci-fi world, not the fantasy one.
- */
-export function polityWordFor(cultureId: number, seed: string): string | undefined {
-  const words = groupsOf(cultureId)?.polities;
-  if (!words?.length) return undefined;
-  // A word that carries its own "of" would read twice: "Church of the Ashen
-  // Star of Starvalere". Such words stay in the pool for a polity named on its
-  // own, but they are not the word in front of a state's name.
-  return pickFor(
-    words.filter(word => !/\bof\b/i.test(word)),
-    seed
-  );
-}
-
-/** The word a province should be called by, e.g. "Sector" */
-export function sectorWordFor(seed: string): string | undefined {
-  return pickFor(SECTOR_WORDS, seed);
-}
+export {
+  ASTRAL_SETS,
+  applyNaming,
+  groupsOf,
+  isAstralMap,
+  pickFor,
+  polityWordFor,
+  SECTOR_WORDS,
+  sectorWordFor
+} from "./polity-naming";
 
 export interface StarClass {
   /** the spectral class, as a letter */
@@ -184,47 +133,3 @@ declare global {
 }
 
 window.Astral = { systems: systemsOf };
-
-/**
- * Give the polities their words and the provinces their sectors.
- *
- * A state's word comes from its own culture, so a mixed map keeps each
- * people's register: the Astral states become federations and the stock ones
- * stay kingdoms. A province follows the culture of its capital burg.
- *
- * A polity is named by the system that holds it, so a state also takes the
- * name of its capital — no fantasy suffix, the way the Astral bases name
- * things. The words are picked by a hash of that name, so applying twice
- * changes nothing the second time.
- */
-export function applyNaming(): { polities: number; sectors: number; renamed: number } {
-  let polities = 0;
-  let renamed = 0;
-  for (const state of pack.states) {
-    if (!state.i || state.removed || !state.name) continue;
-    const culture = state.culture ?? 0;
-    if (!groupsOf(culture)) continue; // a stock culture's state stays a kingdom
-    const capital = state.capital ? pack.burgs[state.capital] : undefined;
-    const word = polityWordFor(culture, capital?.name || state.name);
-    if (!word) continue;
-    if (capital?.name && state.name !== capital.name) {
-      States.rename(state.i, capital.name);
-      renamed++;
-    }
-    States.setForm(state.i, word);
-    polities++;
-  }
-
-  let sectors = 0;
-  for (const province of pack.provinces) {
-    if (!province.i || province.removed || !province.name) continue;
-    const culture = pack.burgs[province.burg]?.culture ?? 0;
-    if (!groupsOf(culture)) continue; // a stock culture's province stays a county
-    const word = sectorWordFor(province.name);
-    if (!word) continue;
-    Provinces.setForm(province.i, word);
-    sectors++;
-  }
-
-  return { polities, sectors, renamed };
-}
