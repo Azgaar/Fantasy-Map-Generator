@@ -1,0 +1,236 @@
+{
+  "id": "infernalDwarfBase",
+  "name": "Infernal Forge-Citadels",
+  "roster": {
+    "id": "infernalDwarfBase",
+    "units": {
+      "hobgoblin_levy": {
+        "name": "Steppe-Thrall Cutthroats",
+        "category": "melee",
+        "blocks": 0.18,
+        "attack": 5,
+        "defense": 7,
+        "charge": 3,
+        "missile": 0,
+        "cost": 160,
+        "upkeep": 22,
+        "capacityCost": {
+          "m": 1,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "infernal_ironsworn": {
+        "name": "Obsidian Forge-Guard",
+        "category": "melee",
+        "blocks": 0.12,
+        "requiresGood": 4,
+        "attack": 10,
+        "defense": 17,
+        "charge": 4,
+        "missile": 0,
+        "cost": 650,
+        "upkeep": 78,
+        "capacityCost": {
+          "m": 3,
+          "w": 3,
+          "s": 1,
+          "c": 0
+        },
+        "resistArcane": 0.15,
+        "powers": {
+          "ward": 0.06
+        }
+      },
+      "hailshot_blunderbuss": {
+        "name": "Infernal Blunderbuss Line",
+        "category": "ranged",
+        "blocks": 0.12,
+        "attack": 5,
+        "defense": 9,
+        "charge": 1,
+        "missile": 15,
+        "cost": 480,
+        "upkeep": 60,
+        "capacityCost": {
+          "m": 1,
+          "w": 2,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "bull_centaurs": {
+        "name": "Brazen Bull-Centaur Renders",
+        "category": "cavalry",
+        "blocks": 0.05,
+        "requiresGood": 18,
+        "attack": 14,
+        "defense": 13,
+        "charge": 14,
+        "missile": 0,
+        "cost": 750,
+        "upkeep": 90,
+        "capacityCost": {
+          "m": 3,
+          "w": 3,
+          "s": 1,
+          "c": 0
+        },
+        "powers": {
+          "terror": 0.04
+        }
+      },
+      "kdaai_fireborn": {
+        "name": "Cinder-Bound Fire Daemons",
+        "category": "monster",
+        "blocks": 0.05,
+        "attack": 15,
+        "defense": 11,
+        "charge": 12,
+        "missile": 6,
+        "cost": 780,
+        "upkeep": 90,
+        "capacityCost": {
+          "m": 3,
+          "w": 3,
+          "s": 2,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.1,
+          "terror": 0.05
+        }
+      },
+      "kdaai_destroyer": {
+        "name": "Colossal Brazen Destroyer",
+        "category": "monster",
+        "blocks": 0.02,
+        "attack": 18,
+        "defense": 16,
+        "charge": 15,
+        "missile": 0,
+        "cost": 1250,
+        "upkeep": 145,
+        "capacityCost": {
+          "m": 4,
+          "w": 5,
+          "s": 2,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.08,
+          "terror": 0.08
+        }
+      },
+      "sorcerer_prophets": {
+        "name": "Daemonsmith Sorcerer-Prophets",
+        "category": "spellcaster",
+        "blocks": 0.02,
+        "attack": 6,
+        "defense": 11,
+        "charge": 2,
+        "missile": 16,
+        "cost": 1000,
+        "upkeep": 120,
+        "capacityCost": {
+          "m": 1,
+          "w": 3,
+          "s": 3,
+          "c": 2
+        },
+        "resistArcane": 0.2,
+        "powers": {
+          "hex": 0.12,
+          "arcaneSiege": 1
+        }
+      },
+      "dreadquake_mortar": {
+        "name": "Earthshaker Dread-Mortar",
+        "category": "artillery",
+        "blocks": 0.03,
+        "requiresGood": 4,
+        "attack": 3,
+        "defense": 6,
+        "charge": 0,
+        "missile": 20,
+        "cost": 950,
+        "upkeep": 100,
+        "capacityCost": {
+          "m": 2,
+          "w": 4,
+          "s": 1,
+          "c": 0
+        },
+        "powers": {
+          "hex": 0.06,
+          "arcaneSiege": 1
+        }
+      },
+      "thrall_spearmen": {
+        "name": "Thrall Spearmen Levy",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 3,
+        "defense": 7,
+        "charge": 1,
+        "missile": 0,
+        "cost": 80,
+        "upkeep": 12,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "hobgoblin_bows": {
+        "name": "Hobgoblin Bow Levy",
+        "category": "ranged",
+        "blocks": 0.12,
+        "attack": 2,
+        "defense": 4,
+        "charge": 1,
+        "missile": 7,
+        "cost": 100,
+        "upkeep": 15,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      }
+    },
+    "recruitable": [
+      "hobgoblin_levy",
+      "infernal_ironsworn",
+      "hailshot_blunderbuss",
+      "bull_centaurs",
+      "kdaai_fireborn",
+      "kdaai_destroyer",
+      "sorcerer_prophets",
+      "dreadquake_mortar"
+    ],
+    "garrison": {
+      "melee": "thrall_spearmen",
+      "ranged": "hobgoblin_bows"
+    },
+    "regimentMap": {
+      "infantry": "infernal_ironsworn",
+      "archers": "hailshot_blunderbuss",
+      "cavalry": "bull_centaurs",
+      "artillery": "dreadquake_mortar"
+    },
+    "caps": {
+      "infernal_ironsworn": 4,
+      "bull_centaurs": 3,
+      "kdaai_fireborn": 3,
+      "kdaai_destroyer": 2,
+      "sorcerer_prophets": 2,
+      "dreadquake_mortar": 3
+    }
+  },
+  "tech": [],
+  "buildings": []
+}

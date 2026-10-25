@@ -151,19 +151,36 @@ function updateRegimentData(regiment: Regiment): void {
     const legacy = options.map.military.units.find(u => u.name === uid);
     const name = ut?.name ?? capitalize(uid);
     const cat = ut?.category ?? Military.getCategory(uid);
+    const catColor: Record<string, string> = {
+      spellcaster: "#8e44ad",
+      monster: "#d35400",
+      cavalry: "#d4ac0d",
+      ranged: "#27ae60",
+      artillery: "#c0392b",
+      naval: "#2980b9",
+      melee: "#34495e"
+    };
+    const badgeBg = catColor[cat] ?? "#444";
     const menPerBlock = ut?.men ?? (legacy?.crew ? legacy.crew * 100 : 100);
     const count = regiment.u?.[uid] || 0;
     const blocks = regiment.units
       ? regiment.units.filter(s => s.type === uid).length
       : Math.ceil(count / (menPerBlock || 100));
 
+    const powersStr = ut?.powers
+      ? `&#10;Powers: ${Object.entries(ut.powers)
+          .map(([k, v]) => `${k} ${v}`)
+          .join(", ")}`
+      : "";
+    const resistStr = ut?.resistArcane ? `&#10;Resist Arcane: ${Math.round(ut.resistArcane * 100)}%` : "";
+
     const statTip = ut
-      ? `${ut.name} [${cat}]&#10;Men/Block: ${ut.men}&#10;Attack: ${ut.attack} | Defense: ${ut.defense}&#10;Charge: ${ut.charge} | Missile: ${ut.missile}`
+      ? `${ut.name} [${cat}]&#10;Men/Block: ${ut.men}&#10;Attack: ${ut.attack} | Defense: ${ut.defense}&#10;Charge: ${ut.charge} | Missile: ${ut.missile}${powersStr}${resistStr}`
       : `${name} [${cat}]&#10;Men: ${count}`;
 
     html += `<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;" data-tip="${statTip}">
       <div style="flex:1; display:flex; align-items:center; gap:5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-        <span style="font-size:0.75em; padding:1px 5px; border-radius:3px; background:#444; color:#eee;">${cat}</span>
+        <span style="font-size:0.75em; padding:1px 5px; border-radius:3px; background:${badgeBg}; color:#fff;">${cat}</span>
         <span style="font-weight:500;">${name}</span>
       </div>
       <div style="display:flex; align-items:center; gap:3px;">

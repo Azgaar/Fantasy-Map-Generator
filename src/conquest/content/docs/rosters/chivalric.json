@@ -1,0 +1,265 @@
+{
+  "id": "chivalricBase",
+  "name": "Kingdom of the Sacred Grail",
+  "roster": {
+    "id": "chivalricBase",
+    "units": {
+      "men_at_arms": {
+        "name": "Feudal Men-at-Arms",
+        "category": "melee",
+        "blocks": 0.18,
+        "attack": 5,
+        "defense": 11,
+        "charge": 2,
+        "missile": 0,
+        "cost": 200,
+        "upkeep": 28,
+        "capacityCost": {
+          "m": 1,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "peasant_longbows": {
+        "name": "Yeoman Stake-Bowmen",
+        "category": "ranged",
+        "blocks": 0.14,
+        "attack": 3,
+        "defense": 5,
+        "charge": 1,
+        "missile": 11,
+        "cost": 280,
+        "upkeep": 35,
+        "capacityCost": {
+          "m": 1,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "battle_pilgrims": {
+        "name": "Grail Reliquae Zealots",
+        "category": "melee",
+        "blocks": 0.14,
+        "attack": 8,
+        "defense": 12,
+        "charge": 4,
+        "missile": 0,
+        "cost": 420,
+        "upkeep": 50,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 2,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.06
+        }
+      },
+      "knights_errant": {
+        "name": "Knights of the Lance",
+        "category": "cavalry",
+        "blocks": 0.08,
+        "requiresGood": 18,
+        "attack": 10,
+        "defense": 11,
+        "charge": 12,
+        "missile": 0,
+        "cost": 520,
+        "upkeep": 65,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 1,
+          "c": 0
+        }
+      },
+      "questing_knights": {
+        "name": "Vow-Sworn Greatsword Knights",
+        "category": "cavalry",
+        "blocks": 0.06,
+        "requiresGood": 18,
+        "attack": 13,
+        "defense": 12,
+        "charge": 12,
+        "missile": 0,
+        "cost": 650,
+        "upkeep": 75,
+        "capacityCost": {
+          "m": 3,
+          "w": 3,
+          "s": 2,
+          "c": 0
+        }
+      },
+      "grail_knights": {
+        "name": "Living Saints of the Chalice",
+        "category": "cavalry",
+        "blocks": 0.06,
+        "requiresGood": 18,
+        "attack": 15,
+        "defense": 14,
+        "charge": 16,
+        "missile": 0,
+        "cost": 820,
+        "upkeep": 95,
+        "capacityCost": {
+          "m": 3,
+          "w": 4,
+          "s": 3,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.12,
+          "heal": 4
+        }
+      },
+      "pegasus_knights": {
+        "name": "Royal Pegasus Lancers",
+        "category": "monster",
+        "blocks": 0.04,
+        "attack": 13,
+        "defense": 12,
+        "charge": 15,
+        "missile": 0,
+        "cost": 800,
+        "upkeep": 90,
+        "capacityCost": {
+          "m": 3,
+          "w": 4,
+          "s": 2,
+          "c": 0
+        }
+      },
+      "hippogryph_lords": {
+        "name": "Hippogryph Companions",
+        "category": "monster",
+        "blocks": 0.02,
+        "attack": 16,
+        "defense": 14,
+        "charge": 15,
+        "missile": 0,
+        "cost": 1100,
+        "upkeep": 120,
+        "capacityCost": {
+          "m": 4,
+          "w": 4,
+          "s": 2,
+          "c": 0
+        },
+        "powers": {
+          "terror": 0.07
+        }
+      },
+      "chalice_damsels": {
+        "name": "Prophetesses of the Lady",
+        "category": "spellcaster",
+        "blocks": 0.02,
+        "attack": 3,
+        "defense": 6,
+        "charge": 1,
+        "missile": 13,
+        "cost": 950,
+        "upkeep": 110,
+        "capacityCost": {
+          "m": 1,
+          "w": 2,
+          "s": 4,
+          "c": 1
+        },
+        "resistArcane": 0.2,
+        "powers": {
+          "ward": 0.15,
+          "heal": 10
+        }
+      },
+      "blessed_trebuchet": {
+        "name": "Field Trebuchet",
+        "category": "artillery",
+        "blocks": 0.04,
+        "requiresGood": 4,
+        "attack": 2,
+        "defense": 3,
+        "charge": 0,
+        "missile": 15,
+        "cost": 680,
+        "upkeep": 65,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 1,
+          "c": 0
+        }
+      },
+      "peasant_spear_levy": {
+        "name": "Peasant Spear Levy",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 3,
+        "defense": 7,
+        "charge": 1,
+        "missile": 0,
+        "cost": 80,
+        "upkeep": 12,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "bowmen_levy": {
+        "name": "Peasant Bow Levy",
+        "category": "ranged",
+        "blocks": 0.12,
+        "attack": 2,
+        "defense": 3,
+        "charge": 1,
+        "missile": 6,
+        "cost": 90,
+        "upkeep": 14,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      }
+    },
+    "recruitable": [
+      "men_at_arms",
+      "peasant_longbows",
+      "battle_pilgrims",
+      "knights_errant",
+      "questing_knights",
+      "grail_knights",
+      "pegasus_knights",
+      "hippogryph_lords",
+      "chalice_damsels",
+      "blessed_trebuchet"
+    ],
+    "garrison": {
+      "melee": "peasant_spear_levy",
+      "ranged": "bowmen_levy"
+    },
+    "regimentMap": {
+      "infantry": "men_at_arms",
+      "archers": "peasant_longbows",
+      "cavalry": "knights_errant",
+      "artillery": "blessed_trebuchet"
+    },
+    "caps": {
+      "battle_pilgrims": 4,
+      "questing_knights": 4,
+      "grail_knights": 3,
+      "pegasus_knights": 3,
+      "hippogryph_lords": 2,
+      "chalice_damsels": 2,
+      "blessed_trebuchet": 3
+    }
+  },
+  "tech": [],
+  "buildings": []
+}

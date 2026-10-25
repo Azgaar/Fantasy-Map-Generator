@@ -345,7 +345,7 @@ function changeName(): void {
 }
 
 function generateNameRandom(): void {
-  const base = rand(Names.nameBases.length - 1);
+  const base = Names.nameBases[rand(Names.nameBases.length - 1)].id;
   ensureEl<HTMLInputElement>("burgName").value = Names.getBase(base);
   changeName();
 }

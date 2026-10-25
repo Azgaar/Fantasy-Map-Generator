@@ -1,7 +1,12 @@
 // Layers tab: a projection of the Layers registry. Renders the layer buttons and wires them up.
 import type { LayerId } from "@/components/layers";
 import { Layers } from "@/components/layers";
-import { isAstralView, isConquestEnabled, subscribeAstralView, subscribeConquestView } from "@/components/options/view-mode";
+import {
+  isAstralView,
+  isConquestEnabled,
+  subscribeAstralView,
+  subscribeConquestView
+} from "@/components/options/view-mode";
 import { ASTRAL_LAYER_TOGGLES } from "@/data/astral-layer-labels";
 import { ASTRAL_DEFAULT_PRESET, ASTRAL_PRESETS } from "@/data/astral-layers";
 import { LAYER_TOGGLES, type LayerButton } from "@/data/layer-labels";
@@ -31,14 +36,13 @@ export { LAYER_TOGGLES } from "@/data/layer-labels";
 
 const toggles = (): Map<LayerId, LayerButton> => (isAstralView() ? ASTRAL_LAYER_TOGGLES : LAYER_TOGGLES);
 
-export const getLayerByShortcut = (code: string): LayerId | undefined =>
-  {
-    const conquestActive = isConquestEnabled();
-    return [...toggles()].find(([id, button]) => {
-      if (!conquestActive && id.startsWith("tw")) return false;
-      return button.shortcut === code;
-    })?.[0];
-  };
+export const getLayerByShortcut = (code: string): LayerId | undefined => {
+  const conquestActive = isConquestEnabled();
+  return [...toggles()].find(([id, button]) => {
+    if (!conquestActive && id.startsWith("tw")) return false;
+    return button.shortcut === code;
+  })?.[0];
+};
 
 const ASTRAL_PRESET_IDS = new Set(Object.keys(ASTRAL_PRESETS));
 

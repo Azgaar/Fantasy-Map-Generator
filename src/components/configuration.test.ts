@@ -12,6 +12,9 @@ async function boot() {
   vi.resetModules();
   localStorage.clear();
   await import("./options-model"); // re-evaluating it installs a fresh `options` and `Options`
+  // A save scheduled by the previous module instance can land while that import transforms, so the
+  // slate is wiped again: every test starts from defaults, not from the previous test's settings.
+  localStorage.clear();
 }
 
 /** A `.map` file's settings block as a fresh browser would write it: what load.ts reads back */

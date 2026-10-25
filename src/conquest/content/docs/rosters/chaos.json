@@ -1,0 +1,259 @@
+{
+  "id": "chaosBase",
+  "name": "Hordes of the Ruinous Wastes",
+  "roster": {
+    "id": "chaosBase",
+    "units": {
+      "north_marauders": {
+        "name": "Northland Marauder Axes",
+        "category": "melee",
+        "blocks": 0.16,
+        "attack": 8,
+        "defense": 8,
+        "charge": 6,
+        "missile": 0,
+        "cost": 220,
+        "upkeep": 32,
+        "capacityCost": {
+          "m": 1,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "marauder_horsemen": {
+        "name": "Wasteland Javelin Horsemen",
+        "category": "ranged",
+        "blocks": 0.1,
+        "requiresGood": 18,
+        "attack": 7,
+        "defense": 6,
+        "charge": 7,
+        "missile": 10,
+        "cost": 440,
+        "upkeep": 55,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "chaos_warriors": {
+        "name": "Hell-Forged Chaos Warriors",
+        "category": "melee",
+        "blocks": 0.12,
+        "requiresGood": 4,
+        "attack": 12,
+        "defense": 15,
+        "charge": 6,
+        "missile": 0,
+        "cost": 580,
+        "upkeep": 70,
+        "capacityCost": {
+          "m": 3,
+          "w": 2,
+          "s": 1,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.05
+        }
+      },
+      "chosen_champions": {
+        "name": "Chosen of the Dark Pantheon",
+        "category": "melee",
+        "blocks": 0.1,
+        "requiresGood": 4,
+        "attack": 15,
+        "defense": 16,
+        "charge": 8,
+        "missile": 0,
+        "cost": 720,
+        "upkeep": 85,
+        "capacityCost": {
+          "m": 3,
+          "w": 3,
+          "s": 2,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.08,
+          "terror": 0.04
+        }
+      },
+      "chaos_knights": {
+        "name": "Barding-Clad Dread Knights",
+        "category": "cavalry",
+        "blocks": 0.06,
+        "requiresGood": 18,
+        "attack": 14,
+        "defense": 14,
+        "charge": 14,
+        "missile": 0,
+        "cost": 750,
+        "upkeep": 90,
+        "capacityCost": {
+          "m": 3,
+          "w": 3,
+          "s": 2,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.05,
+          "terror": 0.04
+        }
+      },
+      "minotaur_herd": {
+        "name": "Blood-Gorged Minotaurs",
+        "category": "monster",
+        "blocks": 0.05,
+        "attack": 14,
+        "defense": 10,
+        "charge": 13,
+        "missile": 0,
+        "cost": 750,
+        "upkeep": 85,
+        "capacityCost": {
+          "m": 3,
+          "w": 3,
+          "s": 1,
+          "c": 0
+        },
+        "powers": {
+          "terror": 0.05
+        }
+      },
+      "war_mammoth": {
+        "name": "Ruinous War-Mammoth & Dragon-Ogre",
+        "category": "monster",
+        "blocks": 0.02,
+        "attack": 18,
+        "defense": 16,
+        "charge": 15,
+        "missile": 8,
+        "cost": 1200,
+        "upkeep": 140,
+        "capacityCost": {
+          "m": 4,
+          "w": 4,
+          "s": 2,
+          "c": 0
+        },
+        "powers": {
+          "terror": 0.08
+        }
+      },
+      "ruin_sorcerers": {
+        "name": "Sorcerer-Lords of Ruin",
+        "category": "spellcaster",
+        "blocks": 0.02,
+        "attack": 6,
+        "defense": 8,
+        "charge": 2,
+        "missile": 17,
+        "cost": 980,
+        "upkeep": 115,
+        "capacityCost": {
+          "m": 1,
+          "w": 2,
+          "s": 3,
+          "c": 2
+        },
+        "powers": {
+          "hex": 0.14,
+          "arcaneSiege": 1,
+          "terror": 0.04
+        }
+      },
+      "hellcannon": {
+        "name": "Daemon-Bound Hellcannon",
+        "category": "artillery",
+        "blocks": 0.03,
+        "requiresGood": 4,
+        "attack": 8,
+        "defense": 8,
+        "charge": 2,
+        "missile": 18,
+        "cost": 950,
+        "upkeep": 100,
+        "capacityCost": {
+          "m": 3,
+          "w": 4,
+          "s": 1,
+          "c": 0
+        },
+        "powers": {
+          "terror": 0.05,
+          "arcaneSiege": 1
+        }
+      },
+      "brayherd_ungors": {
+        "name": "Brayherd Ungor Mob",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 4,
+        "defense": 6,
+        "charge": 3,
+        "missile": 0,
+        "cost": 90,
+        "upkeep": 14,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "chaos_warhounds": {
+        "name": "Chaos Warhounds",
+        "category": "ranged",
+        "blocks": 0.1,
+        "attack": 4,
+        "defense": 4,
+        "charge": 4,
+        "missile": 6,
+        "cost": 110,
+        "upkeep": 16,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      }
+    },
+    "recruitable": [
+      "north_marauders",
+      "marauder_horsemen",
+      "chaos_warriors",
+      "chosen_champions",
+      "chaos_knights",
+      "minotaur_herd",
+      "war_mammoth",
+      "ruin_sorcerers",
+      "hellcannon"
+    ],
+    "garrison": {
+      "melee": "brayherd_ungors",
+      "ranged": "chaos_warhounds"
+    },
+    "regimentMap": {
+      "infantry": "north_marauders",
+      "archers": "marauder_horsemen",
+      "cavalry": "chaos_knights",
+      "artillery": "hellcannon"
+    },
+    "caps": {
+      "chaos_warriors": 5,
+      "chosen_champions": 3,
+      "chaos_knights": 3,
+      "minotaur_herd": 3,
+      "war_mammoth": 2,
+      "ruin_sorcerers": 2,
+      "hellcannon": 2
+    }
+  },
+  "tech": [],
+  "buildings": []
+}

@@ -1,6 +1,7 @@
 export interface NameBase {
+  id: string; // stable identity, /^[A-Z]{5}$/, never derived from `name`
   name: string; // name of the base
-  i: number; // index of the base
+  i: number; // derived array position, maintained by Names.reindex(); UI references only
   min: number; // minimum length of generated names
   max: number; // maximum length of generated names
   d: string; // letters allowed to duplicate
@@ -9,15 +10,56 @@ export interface NameBase {
   groups?: Record<string, string[]>;
 }
 
+/** The identity format of a name base */
+export const BASE_ID_PATTERN = /^[A-Z]{5}$/;
+
+/**
+ * A stable id derived from a base name, for user-created and imported bases.
+ *
+ * The same name always yields the same id, so importing one file twice gives the same references.
+ * On collision the code is mutated rather than reused: two bases must never share an identity.
+ */
+export function deriveBaseId(name: string, taken: Set<string>): string {
+  const clean = name.toUpperCase().replace(/[^A-Z]/g, "");
+  const start = clean.slice(0, 5).padEnd(5, "X");
+  if (!taken.has(start)) return start;
+
+  let hash = 0;
+  for (let i = 0; i < clean.length; i++) hash = (hash * 31 + clean.charCodeAt(i)) >>> 0;
+  for (let attempt = 0; attempt < 10000; attempt++) {
+    let value = hash + attempt;
+    let id = "";
+    for (let c = 0; c < 5; c++) {
+      id += String.fromCharCode(65 + (value % 26));
+      value = Math.floor(value / 26);
+    }
+    if (!taken.has(id)) return id;
+  }
+
+  throw new Error(`Cannot derive a unique name base id for "${name}"`);
+}
+
+/** The identity codes reserved for the 12 Astral Cartographer bases */
+export const ASTRAL_BASE_IDS = new Set([
+  "TRKCO",
+  "TRKTE",
+  "TRKCN",
+  "TRKSY",
+  "JAMDE",
+  "JAMET",
+  "JAMST",
+  "JAMWI",
+  "GRMCO",
+  "GRMGO",
+  "GRMIR",
+  "GRMCH"
+]);
+
 /**
  * Is this base one of the Astral ones?
- *
- * The Astral bases carry name groups — the polities they can name — and those
- * groups are what makes them ours. A stock base has none, so a stock culture
- * keeps FMG's own words everywhere.
  */
 export function isAstralBase(base: NameBase | undefined): boolean {
-  return !!base?.groups?.polities?.length;
+  return !!base && ASTRAL_BASE_IDS.has(base.id);
 }
 
 export function getDefaultNameBases(): NameBase[] {
@@ -27,6 +69,7 @@ export function getDefaultNameBases(): NameBase[] {
     // real-world bases by Azgaar:
     {
       name: "German",
+      id: "GERMA",
       i: 0,
       min: 5,
       max: 12,
@@ -36,6 +79,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "English",
+      id: "ENGLI",
       i: 1,
       min: 6,
       max: 11,
@@ -45,6 +89,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "French",
+      id: "FRENC",
       i: 2,
       min: 5,
       max: 13,
@@ -54,6 +99,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Italian",
+      id: "ITALI",
       i: 3,
       min: 5,
       max: 12,
@@ -63,6 +109,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Castillian",
+      id: "CASTI",
       i: 4,
       min: 5,
       max: 11,
@@ -72,6 +119,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Ruthenian",
+      id: "RUTHE",
       i: 5,
       min: 5,
       max: 10,
@@ -81,6 +129,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Nordic",
+      id: "NORDI",
       i: 6,
       min: 6,
       max: 10,
@@ -90,6 +139,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Greek",
+      id: "GREEK",
       i: 7,
       min: 5,
       max: 11,
@@ -99,6 +149,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Roman",
+      id: "ROMAN",
       i: 8,
       min: 6,
       max: 11,
@@ -108,6 +159,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Finnic",
+      id: "FINNI",
       i: 9,
       min: 5,
       max: 11,
@@ -117,6 +169,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Korean",
+      id: "KOREA",
       i: 10,
       min: 5,
       max: 11,
@@ -126,6 +179,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Chinese",
+      id: "CHINE",
       i: 11,
       min: 5,
       max: 10,
@@ -135,6 +189,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Japanese",
+      id: "JAPAN",
       i: 12,
       min: 4,
       max: 10,
@@ -144,6 +199,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Portuguese",
+      id: "PORTU",
       i: 13,
       min: 5,
       max: 11,
@@ -153,6 +209,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Nahuatl",
+      id: "NAHUA",
       i: 14,
       min: 6,
       max: 13,
@@ -162,6 +219,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Hungarian",
+      id: "HUNGA",
       i: 15,
       min: 6,
       max: 13,
@@ -171,6 +229,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Turkish",
+      id: "TURKI",
       i: 16,
       min: 4,
       max: 10,
@@ -180,6 +239,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Amazigh",
+      id: "AMAZI",
       i: 17,
       min: 4,
       max: 10,
@@ -189,6 +249,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Arabic",
+      id: "ARABI",
       i: 18,
       min: 4,
       max: 9,
@@ -198,6 +259,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Inuit",
+      id: "INUIT",
       i: 19,
       min: 5,
       max: 15,
@@ -207,6 +269,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Basque",
+      id: "BASQU",
       i: 20,
       min: 4,
       max: 11,
@@ -216,6 +279,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Nigerian",
+      id: "NIGER",
       i: 21,
       min: 4,
       max: 10,
@@ -225,6 +289,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Celtic",
+      id: "CELTI",
       i: 22,
       min: 4,
       max: 12,
@@ -234,6 +299,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Mesopotamian",
+      id: "MESOP",
       i: 23,
       min: 4,
       max: 9,
@@ -243,6 +309,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Iranian",
+      id: "IRANI",
       i: 24,
       min: 5,
       max: 11,
@@ -252,6 +319,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Hawaiian",
+      id: "HAWAI",
       i: 25,
       min: 5,
       max: 10,
@@ -261,6 +329,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Karnataka",
+      id: "KARNA",
       i: 26,
       min: 5,
       max: 11,
@@ -270,6 +339,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Quechua",
+      id: "QUECH",
       i: 27,
       min: 6,
       max: 12,
@@ -279,6 +349,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Swahili",
+      id: "SWAHI",
       i: 28,
       min: 4,
       max: 9,
@@ -288,6 +359,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Vietnamese",
+      id: "VIETN",
       i: 29,
       min: 3,
       max: 12,
@@ -297,6 +369,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Cantonese",
+      id: "CANTO",
       i: 30,
       min: 5,
       max: 11,
@@ -306,6 +379,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Mongolian",
+      id: "MONGO",
       i: 31,
       min: 5,
       max: 12,
@@ -316,6 +390,7 @@ export function getDefaultNameBases(): NameBase[] {
     // fantasy bases by Dopu:
     {
       name: "Human Generic",
+      id: "HUMAN",
       i: 32,
       min: 6,
       max: 11,
@@ -325,6 +400,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Elven",
+      id: "ELVEN",
       i: 33,
       min: 6,
       max: 12,
@@ -334,6 +410,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Dark Elven",
+      id: "DARKE",
       i: 34,
       min: 6,
       max: 14,
@@ -343,6 +420,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Dwarven",
+      id: "DWARV",
       i: 35,
       min: 4,
       max: 11,
@@ -352,6 +430,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Goblin",
+      id: "GOBLI",
       i: 36,
       min: 4,
       max: 9,
@@ -361,6 +440,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Orc",
+      id: "ORCIS",
       i: 37,
       min: 4,
       max: 8,
@@ -370,6 +450,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Giant",
+      id: "GIANT",
       i: 38,
       min: 5,
       max: 10,
@@ -379,6 +460,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Draconic",
+      id: "DRACO",
       i: 39,
       min: 6,
       max: 14,
@@ -388,6 +470,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Arachnid",
+      id: "ARACH",
       i: 40,
       min: 4,
       max: 10,
@@ -397,6 +480,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Serpents",
+      id: "SERPE",
       i: 41,
       min: 5,
       max: 11,
@@ -407,6 +491,7 @@ export function getDefaultNameBases(): NameBase[] {
     // additional by Avengium:
     {
       name: "Levantine",
+      id: "LEVAN",
       i: 42,
       min: 4,
       max: 12,
@@ -417,6 +502,7 @@ export function getDefaultNameBases(): NameBase[] {
     // Astral Cartographer bases:
     {
       name: "Trek Core",
+      id: "TRKCO",
       i: 43,
       min: 4,
       max: 12,
@@ -480,6 +566,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Trek Terran",
+      id: "TRKTE",
       i: 44,
       min: 5,
       max: 12,
@@ -518,6 +605,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Trek Continental",
+      id: "TRKCN",
       i: 45,
       min: 5,
       max: 13,
@@ -551,6 +639,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Trek Synthetic",
+      id: "TRKSY",
       i: 46,
       min: 4,
       max: 12,
@@ -594,6 +683,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Jammer Deep",
+      id: "JAMDE",
       i: 47,
       min: 6,
       max: 16,
@@ -665,6 +755,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Jammer Ethereal",
+      id: "JAMET",
       i: 48,
       min: 6,
       max: 16,
@@ -698,6 +789,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Jammer Stoneborn",
+      id: "JAMST",
       i: 49,
       min: 4,
       max: 11,
@@ -731,6 +823,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Jammer Wild",
+      id: "JAMWI",
       i: 50,
       min: 3,
       max: 9,
@@ -764,6 +857,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Grimdark Core",
+      id: "GRMCO",
       i: 51,
       min: 3,
       max: 10,
@@ -819,6 +913,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Grimdark Gothic",
+      id: "GRMGO",
       i: 52,
       min: 5,
       max: 13,
@@ -852,6 +947,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Grimdark Iron",
+      id: "GRMIR",
       i: 53,
       min: 4,
       max: 11,
@@ -884,6 +980,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Grimdark Machine",
+      id: "GRMCH",
       i: 54,
       min: 4,
       max: 12,
@@ -915,6 +1012,292 @@ export function getDefaultNameBases(): NameBase[] {
           "The Unnamed",
           "The Null Procession"
         ]
+      }
+    },
+    // RPG Fantasy bases:
+    {
+      name: "Halfling",
+      id: "HALFL",
+      i: 55,
+      min: 5,
+      max: 12,
+      d: "lnst",
+      m: 0,
+      b: "Barleybottom,Thistlewick,Amblecote,Nettlebarrow,Honeyburrow,Bramblebrook,Appleford,Berryglen,Buttercup,Cobblehill,Copperkettle,Daisybank,Dumbleton,Elderberry,Fiddleford,Foxglove,Gamgeefold,Gooseberry,Hazelwood,Hobbithole,Kettlewell,Larkspur,Littlebrook,Marigold,Millhaven,Mossymead,Netherhill,Oatfield,Pennywhistle,Pippinvale,Plumtree,Puddlefoot,Rosewood,Rushbrook,Smallbridge,Sweetwater,Thimbleton,Tuckborough,Wheatley,Willowdale,Windymill,Woodbine,Woolpack,Cloverford,Barleyhill,Cherrywood,Dappledown,Fernybank,Greenhill,Heathercot,Kettlebrook,Merrymeadow,Oakapple,Pennycot,Ribbongrass,Strawberry,Thistledown,Bramblewood,Briarbank,Butterwell,Chalkford,Cobblecot,Crumbfoot,Daisyfield,Duckpond,Farthings,Fiddlewood,Goodmeadow,Highhollow,Honeycomb,Ivycottage,Littleweald,Longmeadow,Maggotfold,Middlecombe,Millpond,Muddyford,Nettlecomb,Overhill,Peartree,Pickledown,Pipkin,Pippinhill,Puddlecot,Radishfold,Rosecottage,Ryecombe,Sheepcot,Shortbottom,Softmead,Springwell,Stockwell,Thatchfold,Tookbank,Tumblebrook,Whitewell,Willowford,Windyridge,Woodcot,Woolford,Badgerhollow,Bakersfield,Birchmeadow,Bramblecot,Brimbleford,Celandale,Coppiceford,Cranberry,Elderford,Fairmeadow",
+      groups: {
+        polities: [
+          "The Shire",
+          "The Freehold",
+          "The Moot",
+          "The Boroughs",
+          "The Dale",
+          "The Commonweal",
+          "The Homesteads",
+          "The Folkmoot",
+          "The Greenways",
+          "The Valley",
+          "The Confederacy",
+          "The Villages",
+          "The Settlement",
+          "The Cantons"
+        ],
+        provinces: ["Shire", "Riding", "Hundred", "Tithing", "Vale", "Dale", "Borough", "Hold", "Grange", "Fief"]
+      }
+    },
+    {
+      name: "Fey",
+      id: "FEYFO",
+      i: 56,
+      min: 5,
+      max: 13,
+      d: "lrnm",
+      m: 0,
+      b: "Gossamer,Mothvale,Briarheart,Shimmerglade,Dreamthorn,Avelorn,Brambleveil,Celestia,Dewdrop,Eldergrove,Faeriebell,Glimmerwood,Hazelwhisper,Irisglen,Lilactip,Moonwillow,Nightbreeze,Oakwhisper,Petaldance,Quickwood,Roseglen,Silverleaves,Twilightfern,Unicornhorn,Velvetleaf,Willowwisp,Zephyrsong,Amberdew,Bellsong,Cobwebfold,Dawnspire,Elfinmeadow,Fernmist,Glintvale,Honeymist,Ivygloom,Lichenshade,Mistglade,Nimblewood,Opaldew,Palehollow,Rainwhisper,Starlight,Thornbloom,Vesperglen,Wistaria,Yewwhisper,Bramblesong,Cloverbreeze,Dapplewood,Etherglen,Flickergrove,Glisterfen,Heartleaf,Loomglen,Moonpetal,Nectardown,Pixiepool,Riddlewood,Shadowfern,Thimbleglen,Vervain,Weepingdell,Brightshiver,Chimeshade,Dreamdrift,Foxfire,Gleamhaven,Hallowveil,Lullaby,Moonglade,Nettlefrost,Prismwood,Silversong,Tanglebrier,Whisperingell,Brambledell,Dewwhisper,Elmglade,Frostfey,Gleamthorn,Honeyshimmer,Ivyveil,Moonspire,Palerose,Rimeglen,Starwhisper,Thistlefey,Vapourleaf,Wanderglade,Windfey,Blinkveil,Craneglen,Dragonfly,Evergreen,Featherdown,Glitterfen,Hushdell,Lunalight,Meadowfey",
+      groups: {
+        polities: [
+          "The Court",
+          "The Seelie Court",
+          "The Unseelie Court",
+          "The Circle",
+          "The Glade",
+          "The Bower",
+          "The Realm",
+          "The Weave",
+          "The Dominion",
+          "The Haven",
+          "The Sylvan Grove",
+          "The Enchantment"
+        ],
+        provinces: ["Domain", "Bower", "Glade", "Circle", "Grove", "Dell", "Vale", "Reach", "Ring"]
+      }
+    },
+    {
+      name: "Infernal",
+      id: "INFER",
+      i: 57,
+      min: 5,
+      max: 13,
+      d: "rxz",
+      m: 0,
+      b: "Malachar,Vexiron,Ashmaw,Brimstone,Carnifex,Abaddox,Balorath,Charon,Dispatis,Ereboth,Flaygate,Gorgorath,Hellspire,Ignis,Jurament,Kragthor,Lucifell,Moloch,Noxgorg,Orcusgate,Pyrost,Quenchor,Rancor,Sulfuron,Tormentis,Ur-Ghol,Vilemaw,Wrathfall,Xerxes,Yggron,Zulcher,Asmodeon,Bloodpeak,Cinderchasm,Dreadrift,Excoriat,Furnacis,Graveash,Hellfang,Ironcald,Juggernor,Kallidrak,Legionfort,Mordred,Nethermaw,Onyxgate,Pestilence,Quarryblight,Ruinspire,Scourgehold,Tartaros,Umbralpit,Venomcrag,Woeharbor,Xulvrak,Yronshackle,Zoraghar,Acheron,Blazebound,Charnelpit,Damnation,Embermaw,Fiendreach,Goreforge,Hatekeep,Infernus,Jundor,Karkorath,Lamentis,Malebolge,Necrosis,Oblivion,Painspire,Quakemaw,Rictus,Sinspire,Tormag,Ulzaron,Vilepyre,Warscythe,Xathrok,Yul-Kresh,Zul-Drak,Bilewell,Cindervoid,Duskfang,Ebonmaw,Foulcrag,Gorekeep,Ironlash,Kravalox,Magmador,Nocturnus,Obsidianpit,Plaguemire,Retchhold,Smoldergorge,Tantalus,Vexgorg,Wreckhall",
+      groups: {
+        polities: [
+          "The Dread Domain",
+          "The Hegemony",
+          "The Dominion",
+          "The Iron Legion",
+          "The Abyss",
+          "The Hellgate",
+          "The Scourge",
+          "The Covenant",
+          "The Desolation",
+          "The Furnace",
+          "The Empire",
+          "The Torment"
+        ],
+        provinces: ["Fief", "Hold", "March", "Domain", "Maw", "Trench", "Pit", "Furnace", "Barony"]
+      }
+    },
+    {
+      name: "Celestial",
+      id: "CELES",
+      i: 58,
+      min: 5,
+      max: 12,
+      d: "ln",
+      m: 0,
+      b: "Aureliel,Seraphel,Luminara,Sanctiel,Zenithar,Amariel,Baraquiel,Caelestis,Diviniel,Elysiel,Floriel,Gabriel,Harmoniel,Ithuriel,Jeremiel,Kariel,Luciel,Michael,Nuriel,Ophiel,Pelagiel,Quiriel,Raphael,Suriel,Turiel,Uriel,Valiel,Wisariel,Xaniel,Yezriel,Zadkiel,Blandiel,Charitiel,Dawnreach,Esperiel,Faithful,Gloriel,Halosun,Ivorypeak,Judiciel,Kharitiel,Lumenhall,Merciel,Novacael,Oribel,Praisiel,Radiant,Solaris,Throniel,Unity,Veritiel,Whitehaven,Xariel,Zophiel,Adoniel,Beliel,Choriel,Digniel,Empiriel,Felicitas,Gariel,Hesperiel,Illustriel,Joviel,Kadosh,Laudiel,Magniel,Nimbiel,Orifiel,Pietiel,Quintiel,Remiel,Splendor,Templiel,Ultracael,Veneriel,Wardiel,Xamiel,Yophiel,Zeliel,Alabaster,Benedictiel,Clementiel,Divinitas,Emaniel,Festiel,Graciel,Honorel,Illuminiel,Justitiel,Kemuel,Lucentiel,Majestiel,Numenor,Paxiel,Quietiel,Reliquiel,Sancael,Truthiel,Vesperiel",
+      groups: {
+        polities: [
+          "The Holy Order",
+          "The Sovereign Order",
+          "The High Realm",
+          "The Sanctuary",
+          "The Protectorate",
+          "The Ascendancy",
+          "The Covenant",
+          "The Concordat",
+          "The Holy See",
+          "The Host",
+          "The Domain of Light"
+        ],
+        provinces: ["Diocese", "Domain", "Parish", "Ward", "Sanctuary", "Hold", "March", "Enclave"]
+      }
+    },
+    {
+      name: "Grave",
+      id: "GRAVE",
+      i: 59,
+      min: 5,
+      max: 13,
+      d: "rn",
+      m: 0,
+      b: "Mournhold,Gravewell,Cryptmoor,Ossuary,Wraithfen,Barrowgate,Bonehollow,Cairnmarch,Carrionford,Deadmere,Duskhold,Eboncairn,Fenmort,Gloomhaven,Grimsepulchre,Hallowtomb,Necropolis,Nightsepulcher,Pallgrave,Phantomfen,Quietshroud,Rothefen,Sepulchra,Shadowmere,Shroudmoor,Skullcrag,Soulwell,Sorrowfell,Stillgrave,Tombrock,Umbralvale,Wailingdell,Weepingvault,Whispercrypt,Wormwood,Bleakcairn,Charnelmere,Coldgrave,Cryptkeep,Darkvault,Dreadcairn,Dullmoor,Fadefen,Ghostweald,Greysepulchre,Hollowcairn,Ironcrypt,Lichvale,Misttomb,Mornefell,Mortis,Mournpeak,Palebarrow,Quietgrave,Rattlebone,Restfall,Rustgrave,Sallowmere,Shiverdell,Silentmoor,Skullvault,Sorrowmire,Sterncairn,Stillmoor,Tarnmort,Tombhollow,Umbercrypt,Underbarrow,Vainhope,Voidgrave,Weepingcairn,Whispermort,Witherfen,Wraithgate,Bleaksepulchre,Bonevale,Carrionmoor,Chillcrypt,Dampgrave,Deathreach,Dimvault,Dirgefell,Duskbarrow,Ebonvault,Faintmoor,Gloomtomb,Greyvault,Grimbarrow,Hallowgrave,Hollowgrave,Ironvault,Lowgrave,Mornglen,Mortvault,Nightgrave,Palesepulchre,Phantomgrave,Shadowtomb,Shroudfell,Tombtower",
+      groups: {
+        polities: [
+          "The Necrocracy",
+          "The Ossuary",
+          "The Crypt",
+          "The Dread Kingdom",
+          "The Barrow Covenant",
+          "The Dynasty",
+          "The Shrouded Realm",
+          "The Sepulchre",
+          "The Barony",
+          "The Dominion",
+          "The Tomblands"
+        ],
+        provinces: ["Sepulchre", "Hold", "Barrow", "Crypt", "Domain", "Fief", "March", "Hollow"]
+      }
+    },
+    {
+      name: "Merfolk",
+      id: "MERFO",
+      i: 60,
+      min: 5,
+      max: 12,
+      d: "lrnm",
+      m: 0,
+      b: "Coralreach,Tidewell,Saltspire,Brineholm,Kelpgate,Abyssglen,Anemone,Atollhaven,Azuredeep,Barnacle,Bluecurrent,Breakerford,Calmsea,Cayhaven,Cresthaven,Currentfall,Deepreach,Driftwood,Drownspire,Ebbhaven,Flowgate,Foamhaven,Gorgonian,Gullhaven,Kelpmoor,Lagoondeep,Marinedell,Maelstrom,Murkwater,Nautilus,Neptuniel,Oceanreach,Oarhaven,Pearlcove,Pelagia,Reefhaven,Ripcurrent,Saltcove,Seabreach,Shallowdell,Shellcove,Shorerun,Sirenspire,Spraywell,Stormsurf,Sunderreef,Surfgate,Tidehaven,Trenchdeep,Tritonia,Wavebreak,Whalerun,Windwave,Abyssfall,Aquafell,Atollfall,Azurereach,Baygate,Bluehaven,Brinewell,Calmspray,Coralhaven,Deepwater,Driftgate,Ebbtide,Foamspire,Inlethaven,Islandreach,Kelpford,Lagoongate,Marineholm,Murkreef,Nautilusbay,Nereidell,Oceanhaven,Pearlspire,Pelagish,Reefcrest,Ripplegate,Saltmere,Seacrest,Shallowhaven,Shellhaven,Sirenscove,Sprayfall,Surfhollow,Swellhaven,Tidecrest,Trenchhaven,Wavecrest,Whalehaven,Whitefoam,Windsurf,Coralspire,Saltreef,Seabridge,Deepcrest,Wavegate,Tidalreach,Foamcrest",
+      groups: {
+        polities: [
+          "The Thalassocracy",
+          "The Reef Dominion",
+          "The Coral Realm",
+          "The Atoll League",
+          "The Undercurrent",
+          "The Tidehost",
+          "The Trench Enclave",
+          "The Deep Haven",
+          "The Abyssal Throne"
+        ],
+        provinces: ["Reef", "Reach", "Shelf", "Deep", "Sound", "Domain", "Trench", "Bay"]
+      }
+    },
+    {
+      name: "Beastfolk",
+      id: "BEAST",
+      i: 61,
+      min: 4,
+      max: 11,
+      d: "rk",
+      m: 0,
+      b: "Fangmoor,Clawreach,Howlstead,Tuskridge,Thundermane,Barkfell,Bearclough,Bloodsnarl,Bonefang,Brambleclaw,Bristlefur,Burrowden,Clawfell,Craghowl,Diremoor,Elkhorn,Fangrock,Feralglen,Foxlair,Furfold,Gnarlhorn,Gorefang,Greatclaw,Greyhowl,Grizzleden,Gutrock,Hardhorn,Hawkperch,Hornridge,Houndmoor,Huntcrag,Ironclaw,Jawrock,Laircrag,Lionden,Longfang,Moonhowl,Oxridge,Packrun,Pawreach,Pouncefell,Preycrag,Ramshorn,Redfur,Roarcliff,Roughmane,Sabretooth,Sharpfang,Snarlgate,Staghollow,Talonfell,Thickhide,Tigerfall,Trackend,Tuskhaven,Vipersnarl,Voleburrow,Warmclaw,Wildden,Wolfcrag,Bearhaven,Boarridge,Bramblepaw,Bristleback,Buckhorn,Bullrun,Carnivore,Clawcrag,Dogfell,Eagleperch,Fangcrest,Feralcrest,Ferretfold,Furhaven,Goretusk,Greymane,Grizzleback,Harshpaw,Horncrest,Houndrun,Jaggedjaw,Lioncrest,Lynxcrag,Maulerden,Otterrun,Pantherfall,Quickpaw,Roarcove,Sabrefell,Scratchford,Snarlmoor,Stagcrest,Talonreach,Tracksnarl,Tuskfell,Viperclough,Wildclaw,Wolfhaven,Wolfrun,Boarhound",
+      groups: {
+        polities: [
+          "The Pack",
+          "The Clan",
+          "The Horde",
+          "The Territory",
+          "The Pride",
+          "The Den",
+          "The Bloodline",
+          "The Great Pack",
+          "The Hunting Grounds",
+          "The Unity",
+          "The Roarhost"
+        ],
+        provinces: ["Range", "Den", "Territory", "Hold", "March", "Lair", "Run", "Hunting Ground"]
+      }
+    },
+    {
+      name: "Elemental",
+      id: "ELEME",
+      i: 62,
+      min: 5,
+      max: 12,
+      d: "lnr",
+      m: 0,
+      b: "Emberfall,Cinderpeak,Stoneheart,Aqualith,Frostcore,Aerolite,Ashflame,Basaltic,Blazecrest,Caldera,Chillrock,Cindermere,Cloudreach,Coldcore,Cryolith,Dustgale,Earthspire,Embercrag,Flamegate,Flarehold,Flintpeak,Frostspire,Galecrest,Geysir,Granitefall,Hailcrag,Heatstone,Icecrag,Ignilith,Ironstone,Lavacrest,Lightning,Magmawell,Moltenhold,Mudspire,Obsidiancrag,Pyrolith,Quakewell,Rainspire,Rimecrest,Sandspire,Scorched,Shardfell,Sleetpeak,Smokefall,Sparkglen,Steamrock,Stormfall,Terralith,Thermal,Thunderpeak,Torching,Vaporhold,Volcanis,Vortexglen,Windcrest,Zephyrcore,Aerocrest,Ashspire,Basaltcrest,Blazespire,Calderahall,Chillpeak,Cinderspire,Coldspire,Cryocrest,Earthcrest,Emberhold,Flamepeak,Flarestun,Flintspire,Frostcrag,Galefell,Geysirwell,Granitespire,Hailfall,Heatcore,Icefell,Ignispire,Lavawell,Magmacrest,Moltenpeak,Mudfall,Pyrocairn,Pyrocrypt,Quakecrest,Raincrest,Rimestone,Sandcore,Scorchpeak,Shardpeak,Sleetcrag,Smokerock,Sparkfall,Steamglen,Stormcore,Terracore,Thunderrock,Vaporwell,Vortexhold",
+      groups: {
+        polities: [
+          "The Nexus",
+          "The Conclave",
+          "The Caldera",
+          "The Monolith",
+          "The Core",
+          "The Vortex",
+          "The Dominion",
+          "The Primacy",
+          "The Convergence",
+          "The Pillar"
+        ],
+        provinces: ["Domain", "Shard", "Verge", "Reach", "Hold", "March", "Basin", "Fief"]
+      }
+    },
+    {
+      name: "Construct",
+      id: "CONST",
+      i: 63,
+      min: 5,
+      max: 12,
+      d: "rn",
+      m: 0,
+      b: "Ironwrought,Gearhold,Anvilgate,Brasswatch,Runespire,Alloyforge,Automafell,Batteryhall,Beambridge,Belthold,Boilergate,Boltspire,Brassforge,Bronzecore,Cablehaven,Camwheel,Castiron,Chainlink,Clocktower,Cogspire,Coppergate,Crankshaft,Cylinder,Dialkeep,Dynamocore,Enginegate,Flywheel,Forgegate,Foundryfell,Furnacehold,Gasketfall,Gearsmith,Girdergate,Hammerwell,Ingotkeep,Ironcog,Leverfall,Machinist,Metalwork,Millstone,Nutbolt,Pistonfall,Plategate,Pulleyrun,Ratchethall,Rivetkeep,Rodfall,Rotorhold,Scalefall,Screwgate,Shaftway,Smeltiron,Solderhold,Spindlekeep,Springgate,Sprockethall,Steamforge,Steelgate,Tankard,Tappetwell,Tinplate,Toolgate,Valvehold,Weldgate,Wheelwork,Wiregate,Workhold,Zincplate,Alloygate,Anvilkeep,Brassgate,Bronzefall,Cogmill,Crankhall,Dialwatch,Engineforge,Forgewell,Geargate,Hammergate,Ingotfall,Ironspire,Leverkeep,Metalcore,Millforge,Pistonkeep,Platestone,Rivethall,Rotorforge,Shaftgate,Soldergate,Spindlegate,Sprocketfall,Steelforge,Valvegate,Weldhall,Wheelgate,Wireforge,Zincgate,Brassmill,Steellink",
+      groups: {
+        polities: [
+          "The Assembly",
+          "The Foundry",
+          "The Forge",
+          "The Clockwork Union",
+          "The Directorate",
+          "The Engine",
+          "The Guild",
+          "The Iron Works",
+          "The Fabric",
+          "The Mechanism"
+        ],
+        provinces: ["Sector", "Foundry", "Ward", "District", "Hold", "Division", "Grid", "Works"]
+      }
+    },
+    {
+      name: "Eldritch",
+      id: "ELDRI",
+      i: 64,
+      min: 4,
+      max: 13,
+      d: "rl",
+      m: 0,
+      b: "Xulthar,Nyxhal,Vhor'ram,Thulgrave,Ommphalos,Azathokh,Bhal'gath,C'thunor,Dhol'mar,Eztokhl,Fha'zuhl,Gho'toth,H'karath,Ixnir'ul,Jhol'gath,Ktha'lug,L'ghek,Mnomquah,N'zothal,Ool'xar,Ph'rall,Qho'mor,R'lyeg,Shul'goth,Tza'koth,Ubb'sath,Vh'nak,W'zhar,Xal'atath,Y'golon,Zhul'kari,Aza'gor,B'khazar,C'noth,Dha'zul,E'goth,Fz'uhl,Gnor'lath,Hza'kuhl,I'zhol,J'karul,Kh'tolar,Lho'gath,M'thunar,Ngr'ath,O'xul,P'tolar,Q'nah,Rh'zhar,Sha'koth,T'lath,U'zhol,V'gath,Wx'al,Xh'toth,Yh'noth,Zt'uhl,Akh'zor,Bhol'rak,Ch'tuhl,Dhr'ol,Ek'thul,Flar'goth,Gz'khal,Hral'goth,Ikh'zul,Jhor'noth,Kra'thol,Lhur'goth,Mza'khul,Nyx'thor,Oth'vhar,Phr'ul,Qir'noth,Rhol'zhar,Sk'thal,Th'khal,Ul'vhar,Vrh'ol,Wh'zal,Xth'ol,Yz'gath,Zhol'moth,Ark'zul,Bhr'kal,Chz'ol,Dhn'ar,Ekh'tal,Ghz'or,Hrk'tal,Izt'hor,Jkz'al,Kth'or,Lxz'ar,Mrt'hul,Nkh'zor,Ozx'al,Pzk'ol,Qtx'ar,Rzx'ol,Skt'hul,Tzh'al",
+      groups: {
+        polities: [
+          "The Cult",
+          "The Incursion",
+          "The Tendril",
+          "The Void Circle",
+          "The Synod",
+          "The Convergence",
+          "The Horizon",
+          "The Shadow",
+          "The Mind",
+          "The Whisper"
+        ],
+        provinces: ["Domain", "Fissure", "Reach", "Bleed", "Maw", "Node", "Rift", "Deep"]
+      }
+    },
+    {
+      name: "Tribal",
+      id: "TRIBA",
+      i: 65,
+      min: 4,
+      max: 9,
+      d: "nk",
+      m: 0,
+      b: "Ugor,Tambo,Kesh,Wata,Boma,Bako,Chaka,Doma,Falo,Goma,Hato,Jala,Kobo,Luma,Mato,Nalo,Pako,Raka,Soko,Toko,Vumo,Walo,Yeno,Zuba,Atol,Bato,Daka,Enko,Fama,Guba,Huma,Joto,Kalo,Luba,Maka,Noma,Poto,Ruma,Sula,Tubi,Vola,Waka,Yaba,Zola,Biku,Diku,Foku,Giku,Haku,Joko,Katu,Laku,Miku,Nuku,Paku,Raku,Siku,Tuku,Vaku,Wuku,Yaku,Zuku,Boni,Dani,Fani,Gani,Hani,Joni,Koni,Loni,Mani,Nani,Poni,Roni,Sani,Toni,Vani,Wani,Yani,Zani,Boro,Doro,Foro,Goro,Horo,Joro,Koro,Loro,Moro,Noro,Poro,Roro,Soro,Toro,Voro,Woro,Yero,Zoro,Bala,Dala,Fala",
+      groups: {
+        polities: [
+          "The Tribe",
+          "The Clan",
+          "The Confederacy",
+          "The Horde",
+          "The Great Camp",
+          "The Moot",
+          "The Folk",
+          "The Blood",
+          "The Gathering",
+          "The Union"
+        ],
+        provinces: ["Lands", "Territory", "Hold", "Range", "Hills", "Camp", "March", "Domain"]
       }
     }
   ];

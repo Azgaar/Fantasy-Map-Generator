@@ -21,6 +21,7 @@ import { Layers } from "@/components/layers";
 import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
+import { getRosterOptions } from "@/conquest/content/store";
 import { Controllers } from "@/controllers";
 import { STATE_FORMS, type State } from "@/generators/states-generator";
 import { redrawEmblem, removeEmblem } from "@/renderers/draw-emblems";
@@ -30,7 +31,6 @@ import { fog, unfog } from "@/renderers/overlays/fogging";
 import { highlightElement, highlightOutline } from "@/renderers/overlays/highlight";
 import { applyOption, downloadFile, getArea, getAreaUnit, getFileName, groupByValue, speak } from "@/utils";
 import { errorText } from "@/utils/stringUtils";
-import { getRosterOptions } from "@/conquest/content/store";
 import { ensureEl, formatPrice, getAdjective, getPointer, isLand, rand, rn, si } from "../utils";
 
 const dialogId = "statesEditor" as const;
@@ -581,7 +581,7 @@ function editStateName(state: number): void {
   }
 
   function regenerateShortNameRandom() {
-    const base = rand(Names.nameBases.length - 1);
+    const base = Names.nameBases[rand(Names.nameBases.length - 1)].id;
     const name = Names.getState(Names.getBase(base), undefined as unknown as number, base);
     ensureEl<HTMLInputElement>("stateNameEditorShort").value = name;
   }

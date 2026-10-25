@@ -130,7 +130,10 @@ function upsertStateDef(docs: RawContentDocs, stateId: number, patch: Partial<St
   (file.doc as Record<string, unknown>).factions = list;
 }
 
-function getBoundRoster(state: { id: number; cultureName: string; rosterId?: string }, docs: RawContentDocs): BoundRoster {
+function getBoundRoster(
+  state: { id: number; cultureName: string; rosterId?: string },
+  docs: RawContentDocs
+): BoundRoster {
   const content = currentContent().content;
   const existingDefs = stateDefsOf(docs);
   const def = existingDefs.get(state.id);

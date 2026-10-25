@@ -11,6 +11,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { undraw } from "@/components/undraw";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { resetZoom } from "@/components/zoom";
+import { assignStateRoster } from "@/conquest/engine/common/content";
 import { Controllers } from "@/controllers";
 import { GraphOverride } from "@/generators/graph-override";
 import { Styles } from "@/generators/styles";
@@ -23,8 +24,8 @@ import { declareFont } from "@/services/fonts";
 import { logStats } from "@/services/logging";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
 import { emptyHistory } from "@/types/history";
-import { assignStateRoster } from "@/conquest/engine/common/content";
 import { ensureEl, escapeHtml, last, link, parseError, rn, safeParseJSON } from "@/utils";
+import { normalizeCultureBases, parseNameBases } from "./name-bases-format";
 
 async function quickLoad(): Promise<void> {
   const blob = await ldb.get("lastMap");
@@ -371,16 +372,13 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.journeys = data[52] ? JSON.parse(data[52]) : [];
     pack.history = data[53] ? JSON.parse(data[53]) : emptyHistory();
 
-    // save omits names that equal the default base at the same index
-    const defaultNameBases = Names.getNameBases();
-    Names.nameBases = data[31]
-      ? data[31].split("/").map((d, i) => {
-          const e = d.split("|");
-          const b = e[5].split(",").length > 2 || !defaultNameBases[i] ? e[5] : defaultNameBases[i].b;
-          return { name: e[0], i, min: +e[1], max: +e[2], d: e[3], m: +e[4], b };
-        })
-      : defaultNameBases;
+    // slot 31: id|name|min|max|d|m|names; legacy maps carry no id column
+    Names.nameBases = parseNameBases(data[31]);
+    Names.reindex();
     Names.clearChains();
+
+    // cultures stored a base position before ids; map it through the loaded list
+    normalizeCultureBases(pack.cultures, Names.nameBases);
 
     await resolveVersionConflicts(mapVersion!, data);
 

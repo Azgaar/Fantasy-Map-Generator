@@ -43,7 +43,7 @@ test("converts the frozen default preset without warnings", () => {
   expect(styles.states.groups.statesHalo.attrs["stroke-width"]).toBe(10);
   expect(styles.legend.options).toEqual({ columns: 8 });
   expect(styles.labels.groups.capital.attrs["font-family"]).toBe("Almendra SC");
-  expect(styles.burgIcons.groups.capital.groups.icons.options.icon).toBe("burgs-atlas-square");
+  expect(styles.burgIcons.groups.capital.groups.icons.options.icon).toBe("burgs-atlas-star-circled");
 });
 
 test("unknown selector throws by default, skips on request", () => {

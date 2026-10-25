@@ -1,11 +1,11 @@
 {
   "id": "elfBase",
-  "name": "Elf",
+  "name": "Highborne Elven Realms",
   "roster": {
     "id": "elfBase",
     "units": {
       "elf_spears": {
-        "name": "Elven Spearmen",
+        "name": "Highborne Spearmen",
         "category": "melee",
         "blocks": 0.15,
         "attack": 6,
@@ -22,7 +22,7 @@
         }
       },
       "elf_archers": {
-        "name": "Elven Archers",
+        "name": "Highborne Longbows",
         "category": "ranged",
         "blocks": 0.12,
         "attack": 4,
@@ -38,15 +38,73 @@
           "c": 0
         }
       },
+      "lott_seaguard": {
+        "name": "Sea-Wardens (Spear & Bow)",
+        "category": "ranged",
+        "blocks": 0.12,
+        "attack": 7,
+        "defense": 11,
+        "charge": 2,
+        "missile": 11,
+        "cost": 550,
+        "upkeep": 65,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 1,
+          "c": 0
+        }
+      },
+      "swordmasters": {
+        "name": "Blademasters of the White Tower",
+        "category": "melee",
+        "blocks": 0.1,
+        "requiresGood": 4,
+        "attack": 14,
+        "defense": 13,
+        "charge": 6,
+        "missile": 0,
+        "cost": 620,
+        "upkeep": 75,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 2,
+          "c": 0
+        },
+        "resistArcane": 0.15
+      },
+      "phoenix_guard": {
+        "name": "Sanctuary Halberdiers",
+        "category": "melee",
+        "blocks": 0.1,
+        "requiresGood": 4,
+        "attack": 10,
+        "defense": 17,
+        "charge": 4,
+        "missile": 0,
+        "cost": 650,
+        "upkeep": 80,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 2,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.12,
+          "terror": 0.03
+        }
+      },
       "elf_riders": {
-        "name": "Elven Riders",
+        "name": "Elven Reaver Outriders",
         "category": "cavalry",
         "blocks": 0.08,
         "requiresGood": 18,
         "attack": 9,
         "defense": 9,
         "charge": 10,
-        "missile": 0,
+        "missile": 6,
         "cost": 600,
         "upkeep": 70,
         "capacityCost": {
@@ -56,15 +114,81 @@
           "c": 0
         }
       },
+      "dragon_princes": {
+        "name": "Drake-Crested Heavy Lancers",
+        "category": "cavalry",
+        "blocks": 0.06,
+        "requiresGood": 18,
+        "attack": 13,
+        "defense": 13,
+        "charge": 14,
+        "missile": 0,
+        "cost": 750,
+        "upkeep": 90,
+        "capacityCost": {
+          "m": 3,
+          "w": 4,
+          "s": 2,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.06
+        }
+      },
+      "high_archmage": {
+        "name": "High Magic Conclave",
+        "category": "spellcaster",
+        "blocks": 0.02,
+        "attack": 4,
+        "defense": 6,
+        "charge": 1,
+        "missile": 16,
+        "cost": 1000,
+        "upkeep": 120,
+        "capacityCost": {
+          "m": 1,
+          "w": 3,
+          "s": 4,
+          "c": 1
+        },
+        "resistArcane": 0.2,
+        "powers": {
+          "ward": 0.12,
+          "hex": 0.08,
+          "heal": 8,
+          "arcaneSiege": 1
+        }
+      },
+      "star_dragon": {
+        "name": "Star-Drake & Frost-Phoenix",
+        "category": "monster",
+        "blocks": 0.02,
+        "attack": 18,
+        "defense": 16,
+        "charge": 15,
+        "missile": 12,
+        "cost": 1200,
+        "upkeep": 140,
+        "capacityCost": {
+          "m": 4,
+          "w": 4,
+          "s": 2,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.06,
+          "terror": 0.08
+        }
+      },
       "elf_bolt": {
-        "name": "Elven Bolt Throwers",
+        "name": "Eagle-Claw Bolt Throwers",
         "category": "artillery",
         "blocks": 0.04,
         "requiresGood": 4,
         "attack": 2,
-        "defense": 3,
+        "defense": 4,
         "charge": 0,
-        "missile": 13,
+        "missile": 14,
         "cost": 750,
         "upkeep": 75,
         "capacityCost": {
@@ -98,7 +222,7 @@
         "attack": 2,
         "defense": 5,
         "charge": 1,
-        "missile": 9,
+        "missile": 8,
         "cost": 150,
         "upkeep": 22,
         "capacityCost": {
@@ -112,7 +236,13 @@
     "recruitable": [
       "elf_spears",
       "elf_archers",
+      "lott_seaguard",
+      "swordmasters",
+      "phoenix_guard",
       "elf_riders",
+      "dragon_princes",
+      "high_archmage",
+      "star_dragon",
       "elf_bolt"
     ],
     "garrison": {
@@ -126,7 +256,12 @@
       "artillery": "elf_bolt"
     },
     "caps": {
-      "elf_riders": 8
+      "swordmasters": 4,
+      "phoenix_guard": 4,
+      "dragon_princes": 3,
+      "high_archmage": 2,
+      "star_dragon": 2,
+      "elf_bolt": 4
     }
   },
   "tech": [],

@@ -1,10 +1,14 @@
 import { max as d3max, min as d3min, mean, median } from "d3";
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { tip } from "@/components/tooltips";
+import { BASE_ID_PATTERN, deriveBaseId } from "@/data/name-bases";
 import { downloadFile, escapeHtml, getFileName, speak, uploadFile } from "@/utils";
 import { createFileInput, ensureEl, openURL, rn, unique } from "../utils";
 
 let namesbaseInput: HTMLInputElement | null = null;
+
+const selectedId = (): string => ensureEl<HTMLSelectElement>("namesbaseSelect").value;
+const takenIds = (): Set<string> => new Set(Names.nameBases.map(base => base.id));
 
 function open(): void {
   if (customization) return;
@@ -136,30 +140,30 @@ function closeNamesbaseEditor(): void {
 function createBasesList(): void {
   const select = ensureEl<HTMLSelectElement>("namesbaseSelect");
   select.innerHTML = "";
-  Names.nameBases.forEach((b, i) => {
-    select.options.add(new Option(b.name, String(i)));
+  Names.reindex();
+  Names.nameBases.forEach(base => {
+    select.options.add(new Option(base.name, base.id));
   });
 }
 
 function updateInputs(): void {
-  const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
-  if (!Names.nameBases[base]) {
-    tip(`Namesbase ${base} is not defined`, false, "error");
+  const base = Names.getNameBase(selectedId());
+  if (!base) {
+    tip(`Namesbase ${selectedId()} is not defined`, false, "error");
     return;
   }
-  (ensureEl("namesbaseTextarea") as HTMLTextAreaElement).value = Names.nameBases[base].b;
-  (ensureEl("namesbaseName") as HTMLInputElement).value = Names.nameBases[base].name;
-  (ensureEl("namesbaseMin") as HTMLInputElement).value = String(Names.nameBases[base].min);
-  (ensureEl("namesbaseMax") as HTMLInputElement).value = String(Names.nameBases[base].max);
-  (ensureEl("namesbaseDouble") as HTMLInputElement).value = Names.nameBases[base].d;
+  (ensureEl("namesbaseTextarea") as HTMLTextAreaElement).value = base.b;
+  (ensureEl("namesbaseName") as HTMLInputElement).value = base.name;
+  (ensureEl("namesbaseMin") as HTMLInputElement).value = String(base.min);
+  (ensureEl("namesbaseMax") as HTMLInputElement).value = String(base.max);
+  (ensureEl("namesbaseDouble") as HTMLInputElement).value = base.d;
   updateExamples();
 }
 
 function updateExamples(): void {
-  const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
   let examples = "";
   for (let i = 0; i < 7; i++) {
-    const example = Names.getBase(base);
+    const example = Names.getBase(selectedId());
     if (example === undefined) {
       examples = "Cannot generate examples. Please verify the data";
       break;
@@ -171,47 +175,51 @@ function updateExamples(): void {
 }
 
 function updateNamesData(): void {
-  const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
+  const base = Names.getNameBase(selectedId());
   const input = ensureEl<HTMLTextAreaElement>("namesbaseTextarea");
+  if (!base) return;
   if (input.value.split(",").length < 3) {
     tip("The names data provided is too short or incorrect", false, "error");
     return;
   }
   const securedNamesData = input.value.replace(/[/|]/g, "");
-  Names.nameBases[base].b = securedNamesData;
+  base.b = securedNamesData;
   input.value = securedNamesData;
-  Names.updateChain(base);
+  Names.updateChain(base.id);
 }
 
 function updateBaseName(rawName: string): void {
-  const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
+  const base = Names.getNameBase(selectedId());
+  if (!base) return;
   const select = ensureEl<HTMLSelectElement>("namesbaseSelect");
   const name = rawName.replace(/[/|]/g, "");
   select.options[select.selectedIndex].innerHTML = name;
-  Names.nameBases[base].name = name;
+  base.name = name;
 }
 
 function updateBaseMin(value: string): void {
-  const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
-  if (+value > Names.nameBases[base].max) {
+  const base = Names.getNameBase(selectedId());
+  if (!base) return;
+  if (+value > base.max) {
     tip("Minimal length cannot be greater than maximal", false, "error");
     return;
   }
-  Names.nameBases[base].min = +value;
+  base.min = +value;
 }
 
 function updateBaseMax(value: string): void {
-  const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
-  if (+value < Names.nameBases[base].min) {
+  const base = Names.getNameBase(selectedId());
+  if (!base) return;
+  if (+value < base.min) {
     tip("Maximal length should be greater than minimal", false, "error");
     return;
   }
-  Names.nameBases[base].max = +value;
+  base.max = +value;
 }
 
 function updateBaseDuplication(value: string): void {
-  const base = +ensureEl<HTMLSelectElement>("namesbaseSelect").value;
-  Names.nameBases[base].d = value;
+  const base = Names.getNameBase(selectedId());
+  if (base) base.d = value;
 }
 
 function analyzeNamesbase(): void {
@@ -294,22 +302,26 @@ function analyzeNamesbase(): void {
 }
 
 function namesbaseAdd(): void {
-  const baseId = Names.nameBases.length;
+  const serial = Names.nameBases.length;
+  const name = `Base${serial}`;
+  const id = deriveBaseId(name, takenIds());
   const b =
     "This,is,an,example,of,name,base,showing,correct,format,It,should,have,at,least,one,hundred,names,separated,with,comma";
   Names.nameBases.push({
-    name: `Base${baseId}`,
-    i: baseId,
+    id,
+    name,
+    i: serial,
     min: 5,
     max: 12,
     d: "",
     m: 0,
     b
   });
-  ensureEl<HTMLSelectElement>("namesbaseSelect").add(new Option(`Base${baseId}`, String(baseId)));
-  (ensureEl("namesbaseSelect") as HTMLSelectElement).value = String(baseId);
+  Names.reindex();
+  ensureEl<HTMLSelectElement>("namesbaseSelect").add(new Option(name, id));
+  (ensureEl("namesbaseSelect") as HTMLSelectElement).value = id;
   (ensureEl("namesbaseTextarea") as HTMLTextAreaElement).value = b;
-  (ensureEl("namesbaseName") as HTMLInputElement).value = `Base${baseId}`;
+  (ensureEl("namesbaseName") as HTMLInputElement).value = name;
   (ensureEl("namesbaseMin") as HTMLInputElement).value = "5";
   (ensureEl("namesbaseMax") as HTMLInputElement).value = "12";
   (ensureEl("namesbaseDouble") as HTMLInputElement).value = "";
@@ -326,6 +338,7 @@ function namesbaseRestoreDefault(): void {
         $(this).dialog("close");
         Names.clearChains();
         Names.nameBases = Names.getNameBases();
+        Names.reindex();
         createBasesList();
         updateInputs();
       },
@@ -337,7 +350,7 @@ function namesbaseRestoreDefault(): void {
 }
 
 function namesbaseDownload(): void {
-  const data = Names.nameBases.map(b => `${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${b.b}`).join("\r\n");
+  const data = Names.nameBases.map(b => `${b.id}|${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${b.b}`).join("\r\n");
   const name = `${getFileName("Namesbase")}.txt`;
   downloadFile(data, name);
 }
@@ -361,16 +374,29 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
 
   Names.clearChains();
   if (override) Names.nameBases = [];
+  const taken = takenIds();
 
   const errors: ParseError[] = [];
   lines.forEach((line, index) => {
     try {
-      const [rawName, min, max, d, m, rawNames] = line.split("|");
+      const fields = line.split("|");
+      // A well-formed id marks the new seven-column layout; anything else is legacy
+      const hasId = fields.length === 7 && BASE_ID_PATTERN.test(fields[0].trim().toUpperCase());
+      const [rawId, rawName = "", min = "5", max = "12", d = "", m = "0", rawNames = ""] = hasId
+        ? fields
+        : [undefined, ...fields.slice(0, 6)];
       const name = rawName?.replace(unsafe, "");
       if (!name) throw new Error("Name is missing");
       const names = rawNames?.replace(unsafe, "");
       if (!names) throw new Error("Names are missing");
+
+      const candidate = rawId?.trim().toUpperCase();
+      const id =
+        candidate && BASE_ID_PATTERN.test(candidate) && !taken.has(candidate) ? candidate : deriveBaseId(name, taken);
+      taken.add(id);
+
       Names.nameBases.push({
+        id,
         name,
         i: Names.nameBases.length,
         min: +min,
@@ -384,6 +410,7 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
       ERROR && console.error(e);
     }
   });
+  Names.reindex();
 
   if (errors.length > 0) {
     ERROR && console.error("Namesbase upload errors", errors);
@@ -404,8 +431,9 @@ function namesbaseUpload(dataLoaded: string, override = true): void {
     alertMessage.innerHTML = /* html */ `<div>
         <p style="margin:0.75em;">
           <strong>File parsing error. Only ${lines.length - errors.length} out of ${lines.length} namebases added.</strong>
-          Each namebase should be on its own line and follow the format: <code>name|min|max|duplication|m|names</code>. Parameters should be separated with the <code>|</code> character, and this character should not be used within the parameters. Another prohibited character is <code>/</code>. The most common issue is names and other parameters being on two separate lines.
+          Each namebase should be on its own line and follow the format: <code>id|name|min|max|duplication|m|names</code>. Files without the <code>id</code> column are still accepted; ids are then derived from the name. Parameters should be separated with the <code>|</code> character, and this character should not be used within the parameters. Another prohibited character is <code>/</code>. The most common issue is names and other parameters being on two separate lines.
           <ul style="margin:0.5em;">
+            <li><code>id</code>: stable identity of the base, five uppercase letters. It stays the same when the base is renamed.</li>
             <li><code>name</code>: name of the base.</li>
             <li><code>min</code>: minimal recommended length of generated names. It should be a number.</li>
             <li><code>max</code>: maximal recommended length of generated names. It should be a number greater than minimal length.</li>

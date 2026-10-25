@@ -1,30 +1,34 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mockLayersState = {
-  active: ["states", "borders", "burgIcons"],
-  order: ["states", "borders", "burgIcons"]
-};
+const { mockLayersState, mockLayers } = vi.hoisted(() => {
+  const state = {
+    active: ["states", "borders", "burgIcons"],
+    order: ["states", "borders", "burgIcons"]
+  };
 
-const mockLayers = {
-  state: mockLayersState,
-  all: [{ id: "states" }],
-  isOn: vi.fn((id: string) => mockLayersState.active.includes(id)),
-  show: vi.fn((id: string) => {
-    if (!mockLayersState.active.includes(id)) mockLayersState.active.push(id);
-  }),
-  hide: vi.fn((id: string) => {
-    const idx = mockLayersState.active.indexOf(id);
-    if (idx >= 0) mockLayersState.active.splice(idx, 1);
-  }),
-  set: vi.fn((ids: string[]) => {
-    mockLayersState.active = [...ids];
-  }),
-  restore: vi.fn((state: { active: string[]; order?: string[] }) => {
-    mockLayersState.active = [...state.active];
-    if (state.order) mockLayersState.order = [...state.order];
-  }),
-  drawAll: vi.fn()
-};
+  const layers = {
+    state,
+    all: [{ id: "states" }],
+    isOn: vi.fn((id: string) => state.active.includes(id)),
+    show: vi.fn((id: string) => {
+      if (!state.active.includes(id)) state.active.push(id);
+    }),
+    hide: vi.fn((id: string) => {
+      const idx = state.active.indexOf(id);
+      if (idx >= 0) state.active.splice(idx, 1);
+    }),
+    set: vi.fn((ids: string[]) => {
+      state.active = [...ids];
+    }),
+    restore: vi.fn((saved: { active: string[]; order?: string[] }) => {
+      state.active = [...saved.active];
+      if (saved.order) state.order = [...saved.order];
+    }),
+    drawAll: vi.fn()
+  };
+
+  return { mockLayersState: state, mockLayers: layers };
+});
 
 vi.mock("@/components/layers", () => ({ Layers: mockLayers }));
 vi.mock("@/components/options/view-mode", () => ({
@@ -53,7 +57,14 @@ type MockEl = {
   setAttribute: (attr: string, val: string) => void;
   removeAttribute: (attr: string) => void;
   querySelectorAll?: (selector: string) => MockEl[];
-  getBoundingClientRect?: () => { top: number; bottom: number; left: number; right: number; width: number; height: number };
+  getBoundingClientRect?: () => {
+    top: number;
+    bottom: number;
+    left: number;
+    right: number;
+    width: number;
+    height: number;
+  };
 };
 
 function createMockEl(id: string, initialClasses: string[] = []): MockEl {

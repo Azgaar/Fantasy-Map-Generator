@@ -124,7 +124,17 @@ function getRegimentUnitCount(
       const cat = Military.getCategory(uId);
       const opt = options.map.military.units.find(u => u.name === unitName);
       if (opt) {
-        if (cat === "melee" && (opt.type === "melee" || opt.name === "infantry")) matches = true;
+        if (
+          cat === "spellcaster" &&
+          (opt.type === "magical" || opt.name === "spellcasters" || opt.type === "ranged" || opt.name === "archers")
+        )
+          matches = true;
+        else if (
+          cat === "monster" &&
+          (opt.type === "armored" || opt.name === "monsters" || opt.type === "melee" || opt.name === "infantry")
+        )
+          matches = true;
+        else if (cat === "melee" && (opt.type === "melee" || opt.name === "infantry")) matches = true;
         else if (cat === "ranged" && (opt.type === "ranged" || opt.name === "archers")) matches = true;
         else if (cat === "cavalry" && (opt.type === "mounted" || opt.name === "cavalry")) matches = true;
         else if (cat === "artillery" && (opt.type === "machinery" || opt.name === "artillery")) matches = true;

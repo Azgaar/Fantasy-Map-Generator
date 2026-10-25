@@ -124,7 +124,7 @@ Secondary data available as a part of the `pack` object.
 Cultures (races, language zones) data is stored as an array of objects with strict element order. Element 0 is reserved by the _wildlands_ culture. If culture is removed, the element is not getting removed, but instead a `removed` attribute is added. Object structure:
 
 - `i`: `number` - culture id, always equal to the array index
-- `base`: `number` - _nameBase_ id, name base is used for names generation
+- `base`: `string` - stable id of the _nameBase_ used for names generation, e.g. `"GERMA"`. It is not the array position
 - `name`: `string` - culture name
 - `origins`: `number[]` - ids of origin cultures. Used to render cultures tree to show cultures evolution. The first array member is main link, other - supporting out-of-tree links
 - `shield`: `string` - shield type. Used for emblems rendering
@@ -556,10 +556,13 @@ Transport types are configuration, not map state: they live in `options.map.tran
 
 Name generator consumes training sets of real-world town names (with the exception of fantasy name bases) stored in `nameBases` array, that is available globally. Each array element represent a separate base. Base structure is:
 
-- `i`: `number` - base id, always equal to the array index
+- `id`: `string` - stable identity, five uppercase letters (e.g. `GERMA`). It never changes, even when the base is renamed
+- `i`: `number` - derived array position. It is maintained by the generator and used for editor references only; never treat it as identity
 - `name`: `string` - names base proper name
 - `b`: `string` - long string containing comma-separated list of names
 - `min`: `number` - recommended minimal length of generated names. Generator will adding new syllables until min length is reached
 - `max`: `number` - recommended maximal length of generated names. If max length is reached, generator will stop adding new syllables
 - `d`: `string` - letters that are allowed to be duplicated in generated names
 - `m`: `number` - if multi-word name is generated, how many of this cases should be transformed into a single word. `0` means multi-word names are not allowed, `1` - all generated multi-word names will stay as they are
+
+A culture references a base by its `id`, never by position. The `.map` stores bases as `id|name|min|max|d|m|names` rows joined with `/`, where an empty `names` field means the shipped corpus for that id. Maps saved before ids existed are migrated on load: each base takes the id of the shipped base at its position (or an id derived from its name), and every culture's numeric `base` is resolved through the loaded list.

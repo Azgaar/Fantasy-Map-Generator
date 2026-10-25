@@ -101,9 +101,9 @@ describe("the schema describes the value, not merely its type", () => {
     expect(repair("map", map).map.cultures.set).toBe(defaults.map.cultures.set);
   });
 
-  it("validates astral culture-set ids and accepts them in schema and pins", () => {
+  it("validates astral and rpg culture-set ids and accepts them in schema and pins", () => {
     const defaults = Options.getDefaultOptions();
-    for (const setId of ["astralTrek", "astralJammer", "grimdark"]) {
+    for (const setId of ["astralTrek", "astralJammer", "grimdark", "rpgFantasy"]) {
       const generation = {
         ...defaults.generation,
         cultures: { ...defaults.generation.cultures, set: setId }

@@ -15,7 +15,7 @@ vi.mock("@/components/dialog/dialog-helpers", () => ({
 
 import { AstralNames } from "./astral-names";
 
-const TREK_CORE = 43;
+const TREK_CORE = "TRKCO";
 
 describe("the Astral Names action", () => {
   beforeEach(() => {
@@ -29,7 +29,7 @@ describe("the Astral Names action", () => {
         { i: 1, name: "Gantia", culture: 1, capital: 1, fullName: "Kingdom of Gantia" }
       ],
       cultures: [
-        { i: 0, name: "Wildlings", base: 0 },
+        { i: 0, name: "Wildlings", base: "GERMA" },
         { i: 1, name: "Aeloran", base: TREK_CORE }
       ],
       burgs: [0, { i: 1, cell: 0, x: 10, y: 10, name: "Gant", culture: 1, population: 5 }],
@@ -60,9 +60,41 @@ describe("the Astral Names action", () => {
   });
 
   it("refuses a map with no Astral peoples", () => {
-    pack.cultures[1].base = 1;
+    pack.cultures[1].base = "ENGLI";
     AstralNames.apply();
     expect(mocks.dialog).not.toHaveBeenCalled();
     expect(mocks.tip).toHaveBeenCalledWith(expect.stringContaining("no Astral peoples"), true, "error", 8000);
+  });
+
+  describe("register selection", () => {
+    it("selects the RPG register when cultures.set is rpgFantasy", () => {
+      options.map.cultures.set = "rpgFantasy";
+      pack.cultures[1].base = "HALFL";
+
+      AstralNames.apply();
+      expect(mocks.dialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Apply RPG naming",
+          message: expect.stringContaining("RPG polities")
+        })
+      );
+
+      confirm();
+      expect(mocks.tip).toHaveBeenCalledWith(
+        expect.stringContaining("Applied RPG naming"),
+        true,
+        "success",
+        expect.any(Number)
+      );
+    });
+
+    it("refuses an RPG map when no RPG peoples are present", () => {
+      options.map.cultures.set = "rpgFantasy";
+      pack.cultures[1].base = "ENGLI";
+
+      AstralNames.apply();
+      expect(mocks.dialog).not.toHaveBeenCalled();
+      expect(mocks.tip).toHaveBeenCalledWith(expect.stringContaining("no RPG peoples"), true, "error", 8000);
+    });
   });
 });

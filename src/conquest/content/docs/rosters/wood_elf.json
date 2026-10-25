@@ -1,0 +1,276 @@
+{
+  "id": "woodElfBase",
+  "name": "Sylvan Deepwood Realms",
+  "roster": {
+    "id": "woodElfBase",
+    "units": {
+      "eternal_guard": {
+        "name": "Deepwood Eternal Spears",
+        "category": "melee",
+        "blocks": 0.14,
+        "attack": 8,
+        "defense": 14,
+        "charge": 3,
+        "missile": 0,
+        "cost": 380,
+        "upkeep": 50,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 1,
+          "c": 0
+        }
+      },
+      "dryad_spirits": {
+        "name": "Briar-Dryad Nymphs",
+        "category": "melee",
+        "blocks": 0.12,
+        "attack": 11,
+        "defense": 11,
+        "charge": 6,
+        "missile": 0,
+        "cost": 480,
+        "upkeep": 60,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 2,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.08,
+          "terror": 0.03
+        }
+      },
+      "wardancers": {
+        "name": "Bladedancer Troupe",
+        "category": "melee",
+        "blocks": 0.1,
+        "attack": 14,
+        "defense": 9,
+        "charge": 8,
+        "missile": 0,
+        "cost": 540,
+        "upkeep": 65,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 1,
+          "c": 1
+        },
+        "powers": {
+          "ward": 0.1
+        }
+      },
+      "glade_guard": {
+        "name": "Sylvan Starlight Archers",
+        "category": "ranged",
+        "blocks": 0.12,
+        "attack": 4,
+        "defense": 6,
+        "charge": 1,
+        "missile": 14,
+        "cost": 520,
+        "upkeep": 65,
+        "capacityCost": {
+          "m": 1,
+          "w": 2,
+          "s": 2,
+          "c": 0
+        }
+      },
+      "waywatchers": {
+        "name": "Shadow-Canopy Waywatchers",
+        "category": "ranged",
+        "blocks": 0.08,
+        "requiresGood": 4,
+        "attack": 7,
+        "defense": 8,
+        "charge": 2,
+        "missile": 17,
+        "cost": 720,
+        "upkeep": 85,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 2,
+          "c": 1
+        }
+      },
+      "wild_stag_riders": {
+        "name": "Wild Hunt Stag Knights",
+        "category": "cavalry",
+        "blocks": 0.06,
+        "requiresGood": 18,
+        "attack": 13,
+        "defense": 9,
+        "charge": 15,
+        "missile": 0,
+        "cost": 700,
+        "upkeep": 80,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 2,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.06,
+          "terror": 0.03
+        }
+      },
+      "tree_kin": {
+        "name": "Ironbark Tree-Kin",
+        "category": "monster",
+        "blocks": 0.05,
+        "attack": 12,
+        "defense": 15,
+        "charge": 9,
+        "missile": 0,
+        "cost": 780,
+        "upkeep": 90,
+        "capacityCost": {
+          "m": 3,
+          "w": 3,
+          "s": 2,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.08,
+          "heal": 5,
+          "terror": 0.04
+        }
+      },
+      "ancient_treeman": {
+        "name": "Ancient Elder-Treeman",
+        "category": "monster",
+        "blocks": 0.02,
+        "attack": 16,
+        "defense": 18,
+        "charge": 11,
+        "missile": 8,
+        "cost": 1150,
+        "upkeep": 130,
+        "capacityCost": {
+          "m": 4,
+          "w": 4,
+          "s": 3,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.1,
+          "heal": 8,
+          "terror": 0.08
+        }
+      },
+      "spellsingers": {
+        "name": "Weavers of the High Weald",
+        "category": "spellcaster",
+        "blocks": 0.02,
+        "attack": 4,
+        "defense": 6,
+        "charge": 1,
+        "missile": 14,
+        "cost": 950,
+        "upkeep": 115,
+        "capacityCost": {
+          "m": 1,
+          "w": 2,
+          "s": 4,
+          "c": 1
+        },
+        "powers": {
+          "ward": 0.1,
+          "hex": 0.1,
+          "heal": 10
+        }
+      },
+      "thorn_ballista": {
+        "name": "Living Root Bolt-Thrower",
+        "category": "artillery",
+        "blocks": 0.04,
+        "requiresGood": 4,
+        "attack": 3,
+        "defense": 4,
+        "charge": 0,
+        "missile": 13,
+        "cost": 700,
+        "upkeep": 70,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 1,
+          "c": 0
+        }
+      },
+      "kithband_wardens": {
+        "name": "Kithband Wardens",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 4,
+        "defense": 9,
+        "charge": 2,
+        "missile": 0,
+        "cost": 120,
+        "upkeep": 18,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "glade_scouts": {
+        "name": "Glade Scouts",
+        "category": "ranged",
+        "blocks": 0.12,
+        "attack": 3,
+        "defense": 4,
+        "charge": 1,
+        "missile": 8,
+        "cost": 140,
+        "upkeep": 20,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      }
+    },
+    "recruitable": [
+      "eternal_guard",
+      "dryad_spirits",
+      "wardancers",
+      "glade_guard",
+      "waywatchers",
+      "wild_stag_riders",
+      "tree_kin",
+      "ancient_treeman",
+      "spellsingers",
+      "thorn_ballista"
+    ],
+    "garrison": {
+      "melee": "kithband_wardens",
+      "ranged": "glade_scouts"
+    },
+    "regimentMap": {
+      "infantry": "eternal_guard",
+      "archers": "glade_guard",
+      "cavalry": "wild_stag_riders",
+      "artillery": "thorn_ballista"
+    },
+    "caps": {
+      "dryad_spirits": 5,
+      "wardancers": 4,
+      "waywatchers": 3,
+      "wild_stag_riders": 3,
+      "tree_kin": 3,
+      "ancient_treeman": 2,
+      "spellsingers": 2,
+      "thorn_ballista": 3
+    }
+  },
+  "tech": [],
+  "buildings": []
+}

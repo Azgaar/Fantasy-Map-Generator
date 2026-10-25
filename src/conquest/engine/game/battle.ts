@@ -12,10 +12,10 @@
 
 import type { UnitType } from "../common/content";
 import { MATCHUP } from "../common/content";
+import type { ArmyUnit } from "../common/types";
 import type { BattleSideReport, BattleSummary } from "./events";
 import type { Campaign } from "./state";
 import { rng } from "./state";
-import type { ArmyUnit } from "../common/types";
 
 export interface BattleSide {
   factionId: number;
@@ -52,7 +52,7 @@ const unitPower = (unit: ArmyUnit, types: Record<string, UnitType>): number => {
 };
 
 const categoryShares = (units: ArmyUnit[], types: Record<string, UnitType>) => {
-  const shares: Record<string, number> = { melee: 0, ranged: 0, cavalry: 0, artillery: 0 };
+  const shares: Record<string, number> = Object.fromEntries(Object.keys(MATCHUP).map(cat => [cat, 0]));
   let total = 0;
   for (const u of units) {
     const p = unitPower(u, types);
@@ -80,6 +80,15 @@ export function armyPower(units: ArmyUnit[], types: Record<string, UnitType>): n
 
 export type BattleTacticalOrder = "balanced" | "skirmish" | "press" | "charge" | "brace" | "withdraw";
 
+export interface SideMagic {
+  ward: number;
+  hex: number;
+  heal: number;
+  terror: number;
+  arcaneSiege: number;
+  resist: number;
+}
+
 export interface BattleRoundLog {
   round: number;
   attackerOrder: BattleTacticalOrder;
@@ -92,6 +101,8 @@ export interface BattleRoundLog {
   defenderRemainingMen: number;
   attackerPowerFrac: number;
   defenderPowerFrac: number;
+  attackerHealedMen?: number;
+  defenderHealedMen?: number;
 }
 
 export interface BattleSession {
@@ -101,6 +112,8 @@ export interface BattleSession {
   defenderUnits: ArmyUnit[];
   attackerInit: { men: number; power: number };
   defenderInit: { men: number; power: number };
+  attackerStartCounts: number[];
+  defenderStartCounts: number[];
   attackerMult: number;
   defenderMult: number;
   modifiers: BattleModifiers;
@@ -114,6 +127,167 @@ export interface BattleSession {
   cell: number;
   regionId: number;
   assault: boolean;
+}
+
+/**
+ * Aggregate active magic from living units on one side, scaled by unit fill
+ * and clamped by the ruleset's magic caps.
+ */
+export function aggregateSideMagic(
+  units: ArmyUnit[],
+  types: Record<string, UnitType>,
+  caps?: import("./config").CampaignConfig["battle"]["magic"]
+): SideMagic {
+  const defaults = {
+    wardCap: 0.3,
+    hexCap: 0.3,
+    healCap: 40,
+    terrorCap: 0.15,
+    arcaneSiegeCap: 2,
+    resistCap: 0.5
+  };
+  const c = caps ?? defaults;
+  let rawWard = 0;
+  let rawHex = 0;
+  let rawHeal = 0;
+  let rawTerror = 0;
+  let rawArcaneSiege = 0;
+  let rawResist = 0;
+
+  for (const u of units) {
+    if (u.count <= 0) continue;
+    const t = types[u.type];
+    if (!t) continue;
+    const fill = Math.min(1, u.count / Math.max(1, t.men));
+    if (t.powers) {
+      if (t.powers.ward) rawWard += t.powers.ward * fill;
+      if (t.powers.hex) rawHex += t.powers.hex * fill;
+      if (t.powers.heal) rawHeal += t.powers.heal * fill;
+      if (t.powers.terror) rawTerror += t.powers.terror * fill;
+      if (t.powers.arcaneSiege) rawArcaneSiege += t.powers.arcaneSiege * fill;
+    }
+    if (t.resistArcane) {
+      rawResist += t.resistArcane * fill;
+    }
+  }
+
+  return {
+    ward: Math.min(rawWard, c.wardCap),
+    hex: Math.min(rawHex, c.hexCap),
+    heal: Math.min(rawHeal, c.healCap),
+    terror: Math.min(rawTerror, c.terrorCap),
+    arcaneSiege: Math.min(rawArcaneSiege, c.arcaneSiegeCap),
+    resist: Math.min(rawResist, c.resistCap)
+  };
+}
+
+/**
+ * Distribute `healMen` across damaged friendly units (u.count < startCount),
+ * prioritizing units with the largest absolute casualty deficit first.
+ * Never heals beyond battle-start headcount and never resurrects units at 0 count.
+ * Returns the total men healed.
+ */
+export function applyHeal(units: ArmyUnit[], healMen: number, startCounts: number[]): number {
+  if (healMen <= 0 || units.length === 0) return 0;
+  let remaining = Math.round(healMen);
+  if (remaining <= 0) return 0;
+
+  const candidates = units
+    .map((u, i) => ({ unit: u, deficit: Math.max(0, (startCounts[i] ?? u.count) - u.count) }))
+    .filter(c => c.unit.count > 0 && c.deficit > 0);
+
+  if (candidates.length === 0) return 0;
+
+  // Sort by largest deficit first
+  candidates.sort((a, b) => b.deficit - a.deficit);
+
+  let totalHealed = 0;
+  for (const c of candidates) {
+    if (remaining <= 0) break;
+    const heal = Math.min(remaining, c.deficit);
+    c.unit.count += heal;
+    remaining -= heal;
+    totalHealed += heal;
+  }
+
+  return totalHealed;
+}
+
+export interface BattleSetup {
+  attackerMult: number;
+  defenderMult: number;
+  effectiveWalls: number;
+  attackerMagic: SideMagic;
+  defenderMagic: SideMagic;
+  labels: string[];
+}
+
+/**
+ * Shared pre-battle multipliers and magic setup for both initBattleSession and estimateOdds.
+ */
+export function computeBattleSetup(
+  config: import("./config").CampaignConfig,
+  modifiers: BattleModifiers,
+  attackerUnits: ArmyUnit[],
+  defenderUnits: ArmyUnit[],
+  types: Record<string, UnitType>
+): BattleSetup {
+  const labels = [...modifiers.labels];
+  const attackerMagic = aggregateSideMagic(attackerUnits, types, config.battle?.magic);
+  const defenderMagic = aggregateSideMagic(defenderUnits, types, config.battle?.magic);
+
+  // Attacker's offensive arcaneSiege vs Defender's resist:
+  const effArcaneSiege = attackerMagic.arcaneSiege * (1 - defenderMagic.resist);
+  const effectiveWalls = Math.max(0, modifiers.walls - effArcaneSiege);
+
+  const defenderMult =
+    (1 +
+      effectiveWalls * config.battle.wallBonusPerTier +
+      (modifiers.defenderEncamped ? config.battle.encampBonus : 0) +
+      (modifiers.attackerCrossedRiver ? config.battle.riverDefenderBonus : 0)) *
+    (modifiers.defenderLordMult ?? 1);
+
+  const attackerMult =
+    (modifiers.defenderAmbushed ? 1 + config.battle.ambushBonus : 1) * (modifiers.attackerLordMult ?? 1);
+
+  if (modifiers.walls > 0) {
+    if (effArcaneSiege > 0) {
+      labels.push(`walls t${modifiers.walls} (breached to t${effectiveWalls.toFixed(1)})`);
+      labels.push("arcane breach");
+    } else {
+      labels.push(`walls t${modifiers.walls}`);
+    }
+  }
+  if (modifiers.defenderEncamped) labels.push("defender encamped");
+  if (modifiers.defenderAmbushed) labels.push("ambush!");
+  if (modifiers.attackerCrossedRiver) labels.push("river crossing");
+  if ((modifiers.attackerLordMult ?? 1) > 1) labels.push("inspiring lord");
+  if ((modifiers.defenderLordMult ?? 1) > 1) labels.push("stalwart defender");
+
+  // Diagnostic magic labels
+  if (attackerMagic.ward > 0 || defenderMagic.ward > 0) labels.push("warded");
+  if (attackerMagic.hex > 0 || defenderMagic.hex > 0) labels.push("hexed");
+  if (attackerMagic.heal > 0 || defenderMagic.heal > 0) labels.push("regeneration");
+  if (attackerMagic.terror > 0 || defenderMagic.terror > 0) labels.push("terror");
+  if (attackerMagic.resist > 0 || defenderMagic.resist > 0) labels.push("spell resistance");
+
+  if (
+    modifiers.walls === 0 &&
+    !modifiers.defenderEncamped &&
+    !modifiers.defenderAmbushed &&
+    !modifiers.attackerCrossedRiver
+  ) {
+    labels.push("open field");
+  }
+
+  return {
+    attackerMult,
+    defenderMult,
+    effectiveWalls,
+    attackerMagic,
+    defenderMagic,
+    labels
+  };
 }
 
 /** Effective power given the opponent's category mix and tactical orders. */
@@ -134,13 +308,13 @@ export const effectivePower = (
       blend += share * MATCHUP[cat][other as keyof (typeof MATCHUP)[typeof cat]]!;
     }
     let p = unitPower(u, types) * blend;
-    if (order === "skirmish" && (cat === "ranged" || cat === "artillery")) p *= 1.25;
-    else if (order === "press" && cat === "melee") p *= 1.2;
-    else if (order === "charge" && cat === "cavalry") p *= 1.35;
+    if (order === "skirmish" && (cat === "ranged" || cat === "artillery" || cat === "spellcaster")) p *= 1.25;
+    else if (order === "press" && (cat === "melee" || cat === "monster")) p *= 1.2;
+    else if (order === "charge" && (cat === "cavalry" || cat === "monster")) p *= 1.35;
     else if (order === "brace") p *= 0.8;
 
-    if (opponentOrder === "brace" && cat === "cavalry") p *= 0.7;
-    if (opponentOrder === "skirmish" && cat === "cavalry" && order === "charge") p *= 1.25;
+    if (opponentOrder === "brace" && (cat === "cavalry" || cat === "monster")) p *= 0.7;
+    if (opponentOrder === "skirmish" && (cat === "cavalry" || cat === "monster") && order === "charge") p *= 1.25;
 
     total += p;
   }
@@ -175,40 +349,18 @@ export function initBattleSession(opts: {
   modifiers: BattleModifiers;
 }): BattleSession {
   const { config, unitTypes: types, modifiers } = opts;
-  const labels = [...modifiers.labels];
-
-  const defenderMult =
-    (1 +
-      modifiers.walls * config.battle.wallBonusPerTier +
-      (modifiers.defenderEncamped ? config.battle.encampBonus : 0) +
-      (modifiers.attackerCrossedRiver ? config.battle.riverDefenderBonus : 0)) *
-    (modifiers.defenderLordMult ?? 1);
-  const attackerMult =
-    (modifiers.defenderAmbushed ? 1 + config.battle.ambushBonus : 1) * (modifiers.attackerLordMult ?? 1);
-  if (modifiers.walls > 0) labels.push(`walls t${modifiers.walls}`);
-  if (modifiers.defenderEncamped) labels.push("defender encamped");
-  if (modifiers.defenderAmbushed) labels.push("ambush!");
-  if (modifiers.attackerCrossedRiver) labels.push("river crossing");
-  if ((modifiers.attackerLordMult ?? 1) > 1) labels.push("inspiring lord");
-  if ((modifiers.defenderLordMult ?? 1) > 1) labels.push("stalwart defender");
-  if (
-    modifiers.walls === 0 &&
-    !modifiers.defenderEncamped &&
-    !modifiers.defenderAmbushed &&
-    !modifiers.attackerCrossedRiver
-  ) {
-    labels.push("open field");
-  }
 
   const attackerUnits = opts.attacker.units.filter(u => u.count > 0).map(u => ({ ...u }));
   const defenderUnits = opts.defender.units.filter(u => u.count > 0).map(u => ({ ...u }));
+
+  const setup = computeBattleSetup(config, modifiers, attackerUnits, defenderUnits, types);
 
   const init = (units: ArmyUnit[], mult: number): { men: number; power: number } => ({
     men: units.reduce((a, u) => a + u.count, 0),
     power: sidePower(units, mult, types)
   });
-  const attackerInit = init(attackerUnits, attackerMult);
-  const defenderInit = init(defenderUnits, defenderMult);
+  const attackerInit = init(attackerUnits, setup.attackerMult);
+  const defenderInit = init(defenderUnits, setup.defenderMult);
 
   return {
     attacker: opts.attacker,
@@ -217,15 +369,17 @@ export function initBattleSession(opts: {
     defenderUnits,
     attackerInit,
     defenderInit,
-    attackerMult,
-    defenderMult,
+    attackerStartCounts: attackerUnits.map(u => u.count),
+    defenderStartCounts: defenderUnits.map(u => u.count),
+    attackerMult: setup.attackerMult,
+    defenderMult: setup.defenderMult,
     modifiers,
     config,
     unitTypes: types,
     round: 0,
     history: [],
     status: "active",
-    labels,
+    labels: setup.labels,
     cell: opts.cell,
     regionId: opts.regionId,
     assault: opts.assault
@@ -272,7 +426,9 @@ export function stepBattleRound(
         Math.max(1e-9, session.attackerInit.power),
       defenderPowerFrac:
         sidePower(session.defenderUnits, session.defenderMult, session.unitTypes) /
-        Math.max(1e-9, session.defenderInit.power)
+        Math.max(1e-9, session.defenderInit.power),
+      attackerHealedMen: 0,
+      defenderHealedMen: 0
     };
     session.history.push(log);
     return log;
@@ -297,11 +453,21 @@ export function stepBattleRound(
       attackerRemainingMen: 0,
       defenderRemainingMen: 0,
       attackerPowerFrac: 0,
-      defenderPowerFrac: 0
+      defenderPowerFrac: 0,
+      attackerHealedMen: 0,
+      defenderHealedMen: 0
     };
     session.history.push(log);
     return log;
   }
+
+  const aMagic = aggregateSideMagic(attackerUnits, types, config.battle?.magic);
+  const dMagic = aggregateSideMagic(defenderUnits, types, config.battle?.magic);
+
+  const aEffectiveHex = aMagic.hex * (1 - dMagic.resist);
+  const dEffectiveHex = dMagic.hex * (1 - aMagic.resist);
+  const aEffectiveTerror = aMagic.terror * (1 - dMagic.resist);
+  const dEffectiveTerror = dMagic.terror * (1 - aMagic.resist);
 
   let pressureA = config.battle.attritionScale;
   let pressureD = config.battle.attritionScale;
@@ -312,14 +478,23 @@ export function stepBattleRound(
   if (attackerOrder === "charge" && defenderOrder === "brace") pressureA *= 1.25;
   if (defenderOrder === "charge" && attackerOrder === "brace") pressureD *= 1.25;
 
-  const aLossFrac = Math.min(0.5, Math.max(0.02, pressureA * (dEff / totalEff) * 2));
-  const dLossFrac = Math.min(0.5, Math.max(0.02, pressureD * (aEff / totalEff) * 2));
+  const baseALoss = pressureA * (dEff / totalEff) * 2;
+  const baseDLoss = pressureD * (aEff / totalEff) * 2;
+
+  const aLossFrac = Math.min(0.5, Math.max(0.02, baseALoss * (1 + dEffectiveHex) * (1 - aMagic.ward)));
+  const dLossFrac = Math.min(0.5, Math.max(0.02, baseDLoss * (1 + aEffectiveHex) * (1 - dMagic.ward)));
 
   const aMenBefore = attackerUnits.reduce((a, u) => a + u.count, 0);
   const dMenBefore = defenderUnits.reduce((a, u) => a + u.count, 0);
 
   applyLosses(attackerUnits, aMenBefore * aLossFrac, prng);
   applyLosses(defenderUnits, dMenBefore * dLossFrac, prng);
+
+  const aLossMen = aMenBefore - attackerUnits.reduce((a, u) => a + u.count, 0);
+  const dLossMen = dMenBefore - defenderUnits.reduce((a, u) => a + u.count, 0);
+
+  const aHealedMen = applyHeal(attackerUnits, aMagic.heal, session.attackerStartCounts);
+  const dHealedMen = applyHeal(defenderUnits, dMagic.heal, session.defenderStartCounts);
 
   const aMenAfter = attackerUnits.reduce((a, u) => a + u.count, 0);
   const dMenAfter = defenderUnits.reduce((a, u) => a + u.count, 0);
@@ -328,12 +503,14 @@ export function stepBattleRound(
   const dFrac = sidePower(defenderUnits, defenderMult, types) / Math.max(1e-9, session.defenderInit.power);
 
   const routThreshold = config.battle.routThreshold;
+  const aRoutThreshold = routThreshold + dEffectiveTerror;
+  const dRoutThreshold = routThreshold + aEffectiveTerror;
 
-  if (aFrac < routThreshold && dFrac < routThreshold) {
+  if (aFrac < aRoutThreshold && dFrac < dRoutThreshold) {
     session.status = aFrac >= dFrac ? "attacker_won" : "defender_won";
-  } else if (aFrac < routThreshold || aMenAfter === 0) {
+  } else if (aFrac < aRoutThreshold || aMenAfter === 0) {
     session.status = "defender_won";
-  } else if (dFrac < routThreshold || dMenAfter === 0) {
+  } else if (dFrac < dRoutThreshold || dMenAfter === 0) {
     session.status = "attacker_won";
   } else if (session.round >= config.battle.maxRounds) {
     session.status = aFrac >= dFrac ? "attacker_won" : "defender_won";
@@ -345,12 +522,14 @@ export function stepBattleRound(
     defenderOrder,
     attackerEffectivePower: Math.round(aEff),
     defenderEffectivePower: Math.round(dEff),
-    attackerLossMen: aMenBefore - aMenAfter,
-    defenderLossMen: dMenBefore - dMenAfter,
+    attackerLossMen: aLossMen,
+    defenderLossMen: dLossMen,
     attackerRemainingMen: aMenAfter,
     defenderRemainingMen: dMenAfter,
     attackerPowerFrac: aFrac,
-    defenderPowerFrac: dFrac
+    defenderPowerFrac: dFrac,
+    attackerHealedMen: aHealedMen,
+    defenderHealedMen: dHealedMen
   };
   session.history.push(log);
   return log;
@@ -458,16 +637,19 @@ export function estimateOdds(
   modifiers: BattleModifiers,
   types: Record<string, UnitType>
 ): { attackerWinPct: number; attackerPower: number; defenderPower: number } {
-  const defenderMult =
-    (1 +
-      modifiers.walls * config.battle.wallBonusPerTier +
-      (modifiers.defenderEncamped ? config.battle.encampBonus : 0) +
-      (modifiers.attackerCrossedRiver ? config.battle.riverDefenderBonus : 0)) *
-    (modifiers.defenderLordMult ?? 1);
-  const attackerMult =
-    (modifiers.defenderAmbushed ? 1 + config.battle.ambushBonus : 1) * (modifiers.attackerLordMult ?? 1);
-  const a = effectivePower(attacker.units, defender.units, attackerMult, types);
-  const d = effectivePower(defender.units, attacker.units, defenderMult, types);
-  const logistic = 1 / (1 + Math.exp(-(a - d) / (0.3 * Math.max(1e-9, a + d))));
+  const setup = computeBattleSetup(config, modifiers, attacker.units, defender.units, types);
+  const a = effectivePower(attacker.units, defender.units, setup.attackerMult, types);
+  const d = effectivePower(defender.units, attacker.units, setup.defenderMult, types);
+
+  const { attackerMagic: aMagic, defenderMagic: dMagic } = setup;
+  const aEffHex = aMagic.hex * (1 - dMagic.resist);
+  const dEffHex = dMagic.hex * (1 - aMagic.resist);
+  const aEffTerror = aMagic.terror * (1 - dMagic.resist);
+  const dEffTerror = dMagic.terror * (1 - aMagic.resist);
+
+  const aProj = a * (1 + aEffHex) * (1 + aMagic.ward) * (1 + aEffTerror);
+  const dProj = d * (1 + dEffHex) * (1 + dMagic.ward) * (1 + dEffTerror);
+
+  const logistic = 1 / (1 + Math.exp(-(aProj - dProj) / (0.3 * Math.max(1e-9, aProj + dProj))));
   return { attackerWinPct: Math.round(logistic * 100), attackerPower: Math.round(a), defenderPower: Math.round(d) };
 }

@@ -125,7 +125,7 @@ describe("feature naming", () => {
           [5, 50]
         ]
       },
-      cultures: [{ base: 0 }, { base: 1 }, { base: 2 }],
+      cultures: [{ base: "GERMA" }, { base: "ENGLI" }, { base: "FRENC" }],
       features: [
         undefined,
         { i: 1, type: "island", firstCell: 0 },

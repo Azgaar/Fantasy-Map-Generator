@@ -19,11 +19,25 @@
 import { type ContentPack, type RawContentDocs, validateAndResolve } from "../engine/common/content";
 import eventSample from "./docs/events/sample.json" with { type: "json" };
 import gameDoc from "./docs/game.json" with { type: "json" };
+import rosterChaos from "./docs/rosters/chaos.json" with { type: "json" };
+import rosterChivalric from "./docs/rosters/chivalric.json" with { type: "json" };
+import rosterDarkElf from "./docs/rosters/dark_elf.json" with { type: "json" };
 import rosterdefault from "./docs/rosters/default.json" with { type: "json" };
 import rosterdwarf from "./docs/rosters/dwarf.json" with { type: "json" };
+import rosterEastAsia from "./docs/rosters/east_asia.json" with { type: "json" };
 import rosterelf from "./docs/rosters/elf.json" with { type: "json" };
+import rosterEmpire from "./docs/rosters/empire.json" with { type: "json" };
+import rosterInfernalDwarf from "./docs/rosters/infernal_dwarf.json" with { type: "json" };
+import rosterLizardmen from "./docs/rosters/lizardmen.json" with { type: "json" };
+import rosterMughal from "./docs/rosters/mughal.json" with { type: "json" };
 import rosterorc from "./docs/rosters/orc.json" with { type: "json" };
+import rosterOttoman from "./docs/rosters/ottoman.json" with { type: "json" };
+import rosterRenaissance from "./docs/rosters/renaissance.json" with { type: "json" };
+import rosterSkaven from "./docs/rosters/skaven.json" with { type: "json" };
 import rostersteppe from "./docs/rosters/steppe.json" with { type: "json" };
+import rosterTombKings from "./docs/rosters/tomb_kings.json" with { type: "json" };
+import rosterVampire from "./docs/rosters/vampire.json" with { type: "json" };
+import rosterWoodElf from "./docs/rosters/wood_elf.json" with { type: "json" };
 import victoryStandard from "./docs/victory/standard.json" with { type: "json" };
 
 /** The shipped ruleset, as raw docs — the input to `validateAndResolve`. */
@@ -33,7 +47,21 @@ export const BUNDLED_DOCS: RawContentDocs = {
     { file: "rosters/dwarf.json", doc: rosterdwarf },
     { file: "rosters/elf.json", doc: rosterelf },
     { file: "rosters/orc.json", doc: rosterorc },
-    { file: "rosters/steppe.json", doc: rostersteppe }
+    { file: "rosters/east_asia.json", doc: rosterEastAsia },
+    { file: "rosters/mughal.json", doc: rosterMughal },
+    { file: "rosters/ottoman.json", doc: rosterOttoman },
+    { file: "rosters/renaissance.json", doc: rosterRenaissance },
+    { file: "rosters/steppe.json", doc: rostersteppe },
+    { file: "rosters/empire.json", doc: rosterEmpire },
+    { file: "rosters/chivalric.json", doc: rosterChivalric },
+    { file: "rosters/wood_elf.json", doc: rosterWoodElf },
+    { file: "rosters/tomb_kings.json", doc: rosterTombKings },
+    { file: "rosters/vampire.json", doc: rosterVampire },
+    { file: "rosters/chaos.json", doc: rosterChaos },
+    { file: "rosters/dark_elf.json", doc: rosterDarkElf },
+    { file: "rosters/skaven.json", doc: rosterSkaven },
+    { file: "rosters/lizardmen.json", doc: rosterLizardmen },
+    { file: "rosters/infernal_dwarf.json", doc: rosterInfernalDwarf }
   ],
   culturesDocs: [],
   factionDocs: [],

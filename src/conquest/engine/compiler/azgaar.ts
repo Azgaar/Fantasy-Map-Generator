@@ -128,8 +128,8 @@ interface AzgaarRegiment {
 export interface AzgaarCulture {
   i: number;
   name: string;
-  /** nameBase index used for naming. */
-  base: number;
+  /** nameBase id used for naming. */
+  base: string;
 }
 
 interface AzgaarFeature {
@@ -161,6 +161,7 @@ interface AzgaarZone {
 }
 
 interface AzgaarNameBase {
+  id?: string;
   i: number;
   name: string;
   /** Comma-separated settlement name pool. */

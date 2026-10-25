@@ -4,29 +4,29 @@ import { applySortingByHeader } from "@/components/dialog/sorting";
 import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { tip } from "@/components/tooltips";
+import { currentContent } from "@/conquest/content/store";
+import type { UnitType } from "@/conquest/engine/common/content";
+import {
+  type BattleModifiers,
+  type BattleOutcome,
+  type BattleSession,
+  type BattleTacticalOrder,
+  type BattleSide as ConquestBattleSide,
+  estimateOdds,
+  finalizeBattle,
+  initBattleSession,
+  stepBattleRound
+} from "@/conquest/engine/game/battle";
 import { moveRegiment } from "@/renderers/draw-military";
 import type { Marker } from "../generators/markers-generator";
 import {
-  type Regiment,
+  getCategoryForUnit,
   Military,
+  type Regiment,
   reconcileRegimentBlocks,
-  syncRegimentTotals,
-  getCategoryForUnit
+  syncRegimentTotals
 } from "../generators/military-generator";
 import type { State } from "../generators/states-generator";
-import {
-  initBattleSession,
-  stepBattleRound,
-  finalizeBattle,
-  estimateOdds,
-  type BattleSession,
-  type BattleSide as ConquestBattleSide,
-  type BattleModifiers,
-  type BattleTacticalOrder,
-  type BattleOutcome
-} from "@/conquest/engine/game/battle";
-import type { UnitType } from "@/conquest/engine/common/content";
-import { currentContent } from "@/conquest/content/store";
 import { capitalize, ensureEl, escapeHtml, last, wiki } from "../utils";
 
 interface RegimentEntry {
@@ -539,13 +539,23 @@ function renderSideTable(containerId: string, side: RegimentEntry[], unitTypes: 
       const dead = start - u.count;
       const ut = unitTypes[u.type];
       const cat = ut?.category ?? getCategoryForUnit(u.type, unitTypes);
+      const catColor: Record<string, string> = {
+        spellcaster: "#8e44ad",
+        monster: "#d35400",
+        cavalry: "#d4ac0d",
+        ranged: "#27ae60",
+        artillery: "#c0392b",
+        naval: "#2980b9",
+        melee: "#34495e"
+      };
+      const badgeBg = catColor[cat] ?? "#444";
       const name = ut?.name ?? capitalize(u.type);
       const expStars = u.exp > 0 ? "★".repeat(Math.min(3, u.exp)) : "—";
       const pct = start > 0 ? Math.round((u.count / start) * 100) : 0;
 
       html += `<tr style="border-bottom:1px solid rgba(0,0,0,0.03);">
         <td style="font-weight:500;">${name}</td>
-        <td style="text-align:center;"><span style="font-size:0.75em; padding:1px 4px; border-radius:3px; background:#444; color:#fff;">${cat}</span></td>
+        <td style="text-align:center;"><span style="font-size:0.75em; padding:1px 4px; border-radius:3px; background:${badgeBg}; color:#fff;">${cat}</span></td>
         <td style="text-align:center; color:#f39c12;">${expStars}</td>
         <td style="text-align:right; opacity:0.85;">${start}</td>
         <td style="text-align:right; color:#e74c3c; font-weight:500;">${dead > 0 ? `-${dead}` : "0"}</td>
@@ -577,14 +587,17 @@ function renderHistory(): void {
   const b = activeBattle;
 
   if (b.session.history.length === 0) {
-    logContainer.innerHTML = "<div style='opacity:0.6; font-style:italic;'>Round 0: Armies formed lines and evaluated terrain.</div>";
+    logContainer.innerHTML =
+      "<div style='opacity:0.6; font-style:italic;'>Round 0: Armies formed lines and evaluated terrain.</div>";
     return;
   }
 
   let html = "";
   for (const log of b.session.history) {
+    const aHeal = log.attackerHealedMen ? ` (+${log.attackerHealedMen} healed)` : "";
+    const dHeal = log.defenderHealedMen ? ` (+${log.defenderHealedMen} healed)` : "";
     html += `<div style="margin-bottom:2px;">
-      <b>Round ${log.round}:</b> Attackers [${log.attackerOrder}] lost ${log.attackerLossMen} men; Defenders [${log.defenderOrder}] lost ${log.defenderLossMen} men.
+      <b>Round ${log.round}:</b> Attackers [${log.attackerOrder}] lost ${log.attackerLossMen} men${aHeal}; Defenders [${log.defenderOrder}] lost ${log.defenderLossMen} men${dHeal}.
     </div>`;
   }
   logContainer.innerHTML = html;
@@ -699,7 +712,7 @@ function pickTacticalOrderForSide(
   if (powerFrac < 0.25) return "withdraw";
 
   let totalMen = 0;
-  const cats: Record<string, number> = { melee: 0, ranged: 0, cavalry: 0, artillery: 0 };
+  const cats: Record<string, number> = { melee: 0, ranged: 0, cavalry: 0, artillery: 0, monster: 0, spellcaster: 0 };
   for (const u of myUnits) {
     if (u.count <= 0) continue;
     const cat = unitTypes[u.type]?.category ?? getCategoryForUnit(u.type, unitTypes);
@@ -709,21 +722,21 @@ function pickTacticalOrderForSide(
   if (totalMen === 0) return "balanced";
 
   let theirTotal = 0;
-  let theirCav = 0;
+  let theirShock = 0;
   for (const u of theirUnits) {
     if (u.count <= 0) continue;
     const cat = unitTypes[u.type]?.category ?? getCategoryForUnit(u.type, unitTypes);
-    if (cat === "cavalry") theirCav += u.count;
+    if (cat === "cavalry" || cat === "monster") theirShock += u.count;
     theirTotal += u.count;
   }
-  const theirCavRatio = theirTotal > 0 ? theirCav / theirTotal : 0;
+  const theirShockRatio = theirTotal > 0 ? theirShock / theirTotal : 0;
 
-  const cavRatio = (cats.cavalry || 0) / totalMen;
-  const rangedRatio = ((cats.ranged || 0) + (cats.artillery || 0)) / totalMen;
-  const meleeRatio = (cats.melee || 0) / totalMen;
+  const shockRatio = ((cats.cavalry || 0) + (cats.monster || 0)) / totalMen;
+  const rangedRatio = ((cats.ranged || 0) + (cats.artillery || 0) + (cats.spellcaster || 0)) / totalMen;
+  const meleeRatio = ((cats.melee || 0) + (cats.monster || 0)) / totalMen;
 
-  if (theirCavRatio > 0.35 && meleeRatio > 0.3) return "brace";
-  if (cavRatio > 0.35) return "charge";
+  if (theirShockRatio > 0.35 && meleeRatio > 0.3) return "brace";
+  if (shockRatio > 0.35) return "charge";
   if (rangedRatio > 0.4) return "skirmish";
   if (meleeRatio > 0.5) return "press";
   return "balanced";
@@ -779,7 +792,11 @@ function applyResults(): void {
   if (b.session.history.length > 0) {
     narrative += `<br><br>Engagement Progression:<br>`;
     narrative += b.session.history
-      .map(h => `Round ${h.round}: Attackers [${h.attackerOrder}] vs Defenders [${h.defenderOrder}] (-${h.attackerLossMen}/-${h.defenderLossMen})`)
+      .map(h => {
+        const aHeal = h.attackerHealedMen ? ` (+${h.attackerHealedMen} healed)` : "";
+        const dHeal = h.defenderHealedMen ? ` (+${h.defenderHealedMen} healed)` : "";
+        return `Round ${h.round}: Attackers [${h.attackerOrder}] vs Defenders [${h.defenderOrder}] (-${h.attackerLossMen}${aHeal}/-${h.defenderLossMen}${dHeal})`;
+      })
       .join("<br>");
   }
 
@@ -787,7 +804,12 @@ function applyResults(): void {
   pack.markers.push(marker);
   Layers.draw("markers");
 
-  tip(`${b.name} concluded: ${outcome.winner === "attacker" ? "Attacker Victory" : "Defender Victory"}`, true, "success", 4000);
+  tip(
+    `${b.name} concluded: ${outcome.winner === "attacker" ? "Attacker Victory" : "Defender Victory"}`,
+    true,
+    "success",
+    4000
+  );
   refreshEditors();
   closeBattleScreen();
 }
@@ -810,9 +832,7 @@ function applyEntryResults(entry: RegimentEntry, isWinner: boolean, isAttacker: 
     const textEl = regEl.querySelector("text");
     if (textEl) textEl.textContent = String(Military.getTotal(reg));
   }
-  select<SVGGElement, unknown>("#armies")
-    .select(`g#regiment${reg.state}-${reg.i} > text`)
-    .text(Military.getTotal(reg));
+  select<SVGGElement, unknown>("#armies").select(`g#regiment${reg.state}-${reg.i} > text`).text(Military.getTotal(reg));
 
   // If attacker won, take defender's spot; otherwise return to original base
   if (isAttacker && isWinner) {

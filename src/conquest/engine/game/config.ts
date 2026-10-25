@@ -21,6 +21,17 @@ export interface CampaignConfig {
     encampBonus: number;
     ambushBonus: number;
     riverDefenderBonus: number;
+    /** Ceilings on the summed per-side `UnitType.powers` / `resistArcane`. */
+    magic: {
+      wardCap: number;
+      hexCap: number;
+      /** Men per round. */
+      healCap: number;
+      terrorCap: number;
+      /** Wall tiers. */
+      arcaneSiegeCap: number;
+      resistCap: number;
+    };
   };
   economy: {
     taxPer1000Pop: number;
@@ -269,7 +280,8 @@ export const DEFAULT_CONFIG: CampaignConfig = {
     wallBonusPerTier: 0.1,
     encampBonus: 0.1,
     ambushBonus: 0.3,
-    riverDefenderBonus: 0.15
+    riverDefenderBonus: 0.15,
+    magic: { wardCap: 0.3, hexCap: 0.3, healCap: 40, terrorCap: 0.15, arcaneSiegeCap: 2, resistCap: 0.5 }
   },
   economy: {
     /**

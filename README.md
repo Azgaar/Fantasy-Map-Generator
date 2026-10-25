@@ -63,6 +63,11 @@ The plans for the work that is not here yet live in [`docs/plans`](docs/plans):
 | [`mod-merge-plan.md`](docs/plans/mod-merge-plan.md) | bringing the Astral Cartographer and OpenConquest mods in-tree (done) |
 | [`astral-ui-overhaul.md`](docs/plans/astral-ui-overhaul.md) | the **Astral view** — the star chart, nebulae, density and systems (shipped) |
 | [`mod-seams-proposal.md`](docs/plans/mod-seams-proposal.md) | the three upstream seams a mod needs to run on stock FMG (proposed upstream) |
+| [`openconquest-military-integration.md`](docs/plans/openconquest-military-integration.md) | deep integration of OpenConquest rosters, military regiments, and turn-by-turn Lanchester battle simulator (done) |
+| [`openconquest-magic-system.md`](docs/plans/openconquest-magic-system.md) | `spellcaster` & `monster` unit categories, 6×6 matchup matrix, declarative `powers`, and `resistArcane` (done) |
+| [`openconquest-old-world-rosters.md`](docs/plans/openconquest-old-world-rosters.md) | *Warhammer: The Old World* equivalent faction rosters and unit specifications (done) |
+| [`namebase-ids.md`](docs/plans/namebase-ids.md) | name bases keyed by stable five-letter ids instead of array position (done) |
+| [`rpg-fantasy-cultures.md`](docs/plans/rpg-fantasy-cultures.md) | **RPG Fantasy** — the kitchen-sink culture set: 43 defined / 24 placed, 11 new namebases, faction titles (done) |
 
 ---
 

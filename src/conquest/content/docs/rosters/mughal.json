@@ -1,0 +1,195 @@
+{
+  "id": "mughalBase",
+  "name": "Mughal",
+  "roster": {
+    "id": "mughalBase",
+    "extends": "commonBase",
+    "units": {
+      "shamshir_infantry": {
+        "name": "Shamshir Infantry",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 8,
+        "defense": 10,
+        "charge": 4,
+        "missile": 0,
+        "cost": 270,
+        "upkeep": 36,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "banduqchi": {
+        "name": "Banduqchi Matchlocks",
+        "category": "ranged",
+        "blocks": 0.12,
+        "attack": 3,
+        "defense": 6,
+        "charge": 1,
+        "missile": 14,
+        "cost": 390,
+        "upkeep": 48,
+        "capacityCost": {
+          "m": 1,
+          "w": 2,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "sowar_cavalry": {
+        "name": "Sowar Lancers",
+        "category": "cavalry",
+        "blocks": 0.08,
+        "requiresGood": 18,
+        "attack": 9,
+        "defense": 9,
+        "charge": 10,
+        "missile": 0,
+        "cost": 480,
+        "upkeep": 58,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "zamburak": {
+        "name": "Zamburak Camel Gunners",
+        "category": "cavalry",
+        "blocks": 0.06,
+        "requiresGood": 18,
+        "attack": 5,
+        "defense": 8,
+        "charge": 3,
+        "missile": 12,
+        "cost": 520,
+        "upkeep": 64,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "war_elephants": {
+        "name": "Armored War Elephants",
+        "category": "cavalry",
+        "blocks": 0.04,
+        "requiresGood": 4,
+        "attack": 13,
+        "defense": 14,
+        "charge": 14,
+        "missile": 3,
+        "cost": 850,
+        "upkeep": 95,
+        "capacityCost": {
+          "m": 2,
+          "w": 5,
+          "s": 1,
+          "c": 0
+        }
+      },
+      "topkhana_cannon": {
+        "name": "Topkhana Great Bombard",
+        "category": "artillery",
+        "blocks": 0.04,
+        "requiresGood": 4,
+        "attack": 2,
+        "defense": 4,
+        "charge": 0,
+        "missile": 16,
+        "cost": 880,
+        "upkeep": 90,
+        "capacityCost": {
+          "m": 2,
+          "w": 4,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "ahadi_guards": {
+        "name": "Ahadi Imperial Guard",
+        "category": "melee",
+        "blocks": 0.08,
+        "requiresGood": 4,
+        "attack": 11,
+        "defense": 12,
+        "charge": 5,
+        "missile": 4,
+        "cost": 580,
+        "upkeep": 70,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 1,
+          "c": 0
+        }
+      },
+      "paik_levy": {
+        "name": "Paik Conscripts",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 3,
+        "defense": 8,
+        "charge": 2,
+        "missile": 0,
+        "cost": 95,
+        "upkeep": 14,
+        "capacityCost": {
+          "m": 1,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "tirandaz_levy": {
+        "name": "Tirandaz Bowmen",
+        "category": "ranged",
+        "blocks": 0.12,
+        "attack": 2,
+        "defense": 4,
+        "charge": 1,
+        "missile": 8,
+        "cost": 110,
+        "upkeep": 16,
+        "capacityCost": {
+          "m": 1,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      }
+    },
+    "recruitable": [
+      "shamshir_infantry",
+      "banduqchi",
+      "sowar_cavalry",
+      "zamburak",
+      "war_elephants",
+      "topkhana_cannon",
+      "ahadi_guards"
+    ],
+    "garrison": {
+      "melee": "paik_levy",
+      "ranged": "tirandaz_levy"
+    },
+    "regimentMap": {
+      "infantry": "shamshir_infantry",
+      "archers": "banduqchi",
+      "cavalry": "sowar_cavalry",
+      "artillery": "topkhana_cannon"
+    },
+    "caps": {
+      "zamburak": 4,
+      "war_elephants": 2,
+      "ahadi_guards": 2,
+      "topkhana_cannon": 3
+    }
+  },
+  "tech": [],
+  "buildings": []
+}

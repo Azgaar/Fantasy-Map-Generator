@@ -1,11 +1,11 @@
 import { quadtree, sum } from "d3";
 import { Icons } from "@/components/icons";
+import { currentContent } from "@/conquest/content/store";
+import type { ResolvedRoster, UnitType } from "@/conquest/engine/common/content";
+import type { ArmyUnit } from "@/conquest/engine/common/types";
 import { requireName } from "@/utils/validationUtils";
 import { findAllInQuadtree, gauss, minmax, nth, ra, rand, rn, si } from "../utils";
 import type { State } from "./states-generator";
-import type { ArmyUnit } from "@/conquest/engine/common/types";
-import type { ResolvedRoster, UnitType } from "@/conquest/engine/common/content";
-import { currentContent } from "@/conquest/content/store";
 
 declare global {
   var Military: MilitaryModule;
@@ -38,18 +38,27 @@ export interface Regiment {
   note?: string;
 }
 
-export function getCategoryForUnit(
-  unitId: string,
-  unitTypes?: Record<string, UnitType>
-): "melee" | "ranged" | "cavalry" | "artillery" | "naval" {
+export type MilitaryCategory = "melee" | "ranged" | "cavalry" | "artillery" | "monster" | "spellcaster" | "naval";
+
+export function getCategoryForUnit(unitId: string, unitTypes?: Record<string, UnitType>): MilitaryCategory {
   if (unitId === "fleet" || unitId === "naval") return "naval";
   if (unitTypes && unitTypes[unitId]) {
     const cat = unitTypes[unitId].category;
     if (cat === "cavalry") return "cavalry";
     if (cat === "artillery") return "artillery";
     if (cat === "ranged") return "ranged";
+    if (cat === "monster") return "monster";
+    if (cat === "spellcaster") return "spellcaster";
     return "melee";
   }
+  if (/(mage|wizard|sorcerer|shaman|necromancer|priest|damsel|seer|caster|warlock|runesmith)/i.test(unitId))
+    return "spellcaster";
+  if (
+    /(dragon|giant|troll|ogre|hydra|griffon|gryphon|hippogryph|pegasus|sphinx|mammoth|demon|daemon|abomination|treeman|varghulf|terrorgheist|monster|behemoth|stegadon|carnosaur)/i.test(
+      unitId
+    )
+  )
+    return "monster";
   if (/(horse|cavalry|rider|warg)/i.test(unitId)) return "cavalry";
   if (/(bow|archer|crossbow|missile|sling|dart)/i.test(unitId)) return "ranged";
   if (/(bombard|artillery|siege|catapult|trebuchet|ballista|bolt)/i.test(unitId)) return "artillery";
@@ -78,11 +87,7 @@ export function syncRegimentTotals(regiment: Regiment, _unitTypes?: Record<strin
   }
 }
 
-export function reconcileRegimentBlocks(
-  regiment: Regiment,
-  unitTypes: Record<string, UnitType>,
-  maxUnits = 20
-): void {
+export function reconcileRegimentBlocks(regiment: Regiment, unitTypes: Record<string, UnitType>, maxUnits = 20): void {
   const existingSlots = regiment.units ?? [];
   const expByType = new Map<string, number[]>();
   for (const s of existingSlots) {
@@ -116,11 +121,12 @@ export function reconcileRegimentBlocks(
 }
 
 function selectRosterUnitForCategory(
-  category: "melee" | "ranged" | "mounted" | "machinery" | "naval",
+  category: "melee" | "ranged" | "mounted" | "machinery" | "naval" | "spellcaster" | "monster",
   roster: ResolvedRoster | undefined,
   isUrban: boolean,
   isCapital: boolean,
-  walls = 0
+  walls = 0,
+  hasTemple = false
 ): string {
   if (category === "naval") return "fleet";
   if (!roster) {
@@ -128,6 +134,8 @@ function selectRosterUnitForCategory(
     if (category === "ranged") return "archers";
     if (category === "mounted") return "cavalry";
     if (category === "machinery") return "artillery";
+    if (category === "spellcaster") return "archers";
+    if (category === "monster") return "infantry";
     return "infantry";
   }
 
@@ -137,6 +145,17 @@ function selectRosterUnitForCategory(
   const coreCavalry = map?.cavalry ?? "cavalry";
   const coreArtillery = map?.artillery ?? "artillery";
 
+  if (category === "spellcaster") {
+    const caster = Object.values(roster.units).find(u => u.category === "spellcaster");
+    if (caster) return caster.id;
+    return coreRanged;
+  }
+  if (category === "monster") {
+    const monster = Object.values(roster.units).find(u => u.category === "monster");
+    if (monster) return monster.id;
+    return coreMelee;
+  }
+
   if (!isUrban) {
     if (category === "melee") return coreMelee;
     if (category === "ranged") return coreRanged;
@@ -144,16 +163,34 @@ function selectRosterUnitForCategory(
     if (category === "machinery") return coreArtillery;
   }
 
-  // In burgs: allow elite / secondary units
+  // In burgs: allow elite / secondary / spellcaster / monster units
   if (category === "melee") {
     if (roster.id === "commonBase" && isCapital && walls >= 2 && roster.units.balbenGuard) return "balbenGuard";
-    if (roster.id === "dwarfBase" && walls >= 2 && roster.units.dwarf_slayer && Math.random() < 0.4) return "dwarf_slayer";
-    if (roster.id === "orcBase" && (isCapital || walls >= 2) && roster.units.troll && Math.random() < 0.35) return "troll";
+    if (roster.id === "dwarfBase" && walls >= 2 && roster.units.dwarf_slayer && Math.random() < 0.4)
+      return "dwarf_slayer";
+    if (roster.id === "orcBase" && (isCapital || walls >= 2) && roster.units.troll && Math.random() < 0.35)
+      return "troll";
     if (roster.id === "commonBase" && roster.units.sword && Math.random() < 0.5) return "sword";
+
+    // Capitals and temple burgs can spawn spellcasters or monsters if available in roster
+    if (isCapital || hasTemple) {
+      const caster = Object.values(roster.units).find(u => u.category === "spellcaster");
+      if (caster && Math.random() < 0.25) return caster.id;
+    }
+    if (isCapital || walls >= 2) {
+      const monster = Object.values(roster.units).find(u => u.category === "monster");
+      if (monster && Math.random() < 0.25) return monster.id;
+    }
     return coreMelee;
   }
 
-  if (category === "ranged") return coreRanged;
+  if (category === "ranged") {
+    if (isCapital || hasTemple) {
+      const caster = Object.values(roster.units).find(u => u.category === "spellcaster");
+      if (caster && Math.random() < 0.2) return caster.id;
+    }
+    return coreRanged;
+  }
   if (category === "mounted") return coreCavalry;
   if (category === "machinery") return coreArtillery;
 
@@ -426,13 +463,7 @@ class MilitaryModule {
           n = 1;
         }
 
-        const rosterUnitName = selectRosterUnitForCategory(
-          unit.type as any,
-          stateObj.temp.roster,
-          false,
-          false,
-          0
-        );
+        const rosterUnitName = selectRosterUnitForCategory(unit.type as any, stateObj.temp.roster, false, false, 0);
 
         stateObj.temp.platoons.push({
           cell: i,
@@ -496,7 +527,8 @@ class MilitaryModule {
           stateObj.temp.roster,
           true,
           Boolean(b.capital),
-          b.walls || 0
+          b.walls || 0,
+          Boolean(b.temple)
         );
 
         stateObj.temp.platoons.push({
@@ -680,11 +712,11 @@ class MilitaryModule {
     }
   }
 
-  getCategory(unitId: string): "melee" | "ranged" | "cavalry" | "artillery" | "naval" {
+  getCategory(unitId: string): MilitaryCategory {
     return getCategoryForUnit(unitId, this.getUnitTypes());
   }
 
-  getCategoryCount(reg: Regiment, cat: "melee" | "ranged" | "cavalry" | "artillery" | "naval"): number {
+  getCategoryCount(reg: Regiment, cat: MilitaryCategory): number {
     let count = 0;
     const unitTypes = this.getUnitTypes();
     for (const [unitId, men] of Object.entries(reg.u ?? {})) {
@@ -932,6 +964,8 @@ class MilitaryModule {
     const unit = options.map.military.units.find((u: { name: string; icon: string }) => u.name === mainUnit);
     if (unit) return unit.icon;
     const cat = this.getCategory(mainUnit);
+    if (cat === "spellcaster") return Icons.glyph("🔮");
+    if (cat === "monster") return Icons.glyph("🐉");
     if (cat === "cavalry") return Icons.glyph("🐴");
     if (cat === "ranged") return Icons.glyph("🏹");
     if (cat === "artillery") return Icons.glyph("💣");

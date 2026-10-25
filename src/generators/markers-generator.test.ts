@@ -16,6 +16,7 @@ describe("MarkersModule.addEncounter", () => {
   const CELL = 1;
   let originalNavigatorDescriptor: PropertyDescriptor | undefined;
 
+  // Each test re-imports the generator; the cold transform can outlast the default hook budget.
   beforeEach(async () => {
     originalNavigatorDescriptor = Object.getOwnPropertyDescriptor(globalThis, NAV_KEY);
 
@@ -37,7 +38,7 @@ describe("MarkersModule.addEncounter", () => {
 
     await import("./markers-generator");
     markers = globalThis.Markers;
-  });
+  }, 60000);
 
   afterEach(() => {
     if (originalNavigatorDescriptor) {

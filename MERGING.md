@@ -34,12 +34,16 @@ git fetch upstream && git merge upstream/master
 
 ### OpenConquest: Atlas Invictus (the campaign game)
 
-- **`src/components/layers.ts`**: `LayersRegistry.register(...)` added and `LayerParams` exported, so a feature module can register its own layers; `LayerId` widened to accept registered string ids.
-- **`src/data/layer-labels.ts`**: `LAYER_TOGGLES` published on `window` (the conquest layers' tab buttons and hotkeys).
+- **`src/controllers/conquest-mode.ts`**: new controller (`Controllers.ConquestMode`) managing Conquest as a native view mode.
+- **`src/components/options/view-mode.ts`**: view mode toggle added (`viewConquest`) switching between Standard, 3D, Astral, and Conquest modes.
+- **`src/controllers/battle-screen.ts`**: steppable Lanchester combat simulator with round-by-round tactical commands, odds calculations, and map troop loss sync.
+- **`src/generators/military-generator.ts`**: roster-native unit allocation (`ArmyUnit[]`) and composition calculation for state military forces.
+- **`src/generators/states-generator.ts`**: deterministic roster assignment (`state.rosterId`) with culture/state auto-inference.
+- **`src/renderers/draw-burg-icons.ts`**: renders circled stars for state capitals and smaller stars for province capitals.
 - **`src/components/map-commands.ts`**: `MAP_COMMANDS` published on `window` (the campaign's omnibar entries).
-- **`src/main.ts`**: one import appended (`@/conquest/entry`) — the layers must be registered before a map loads, or `Layers.restore()` would not see them.
-- **`src/conquest/**`**: new file tree — the campaign engine, world compiler, content packs, session store and UI. Self-contained; it touches stock files only through the three seams above.
-- *Conflict resolution strategy*: if upstream grows its own `register()` or publishes the same globals, reconcile rather than duplicate — the conquest code only needs `Layers.register`, `LAYER_TOGGLES` and `MAP_COMMANDS`.
+- **`src/main.ts`**: one import appended (`@/conquest/entry`) — registers Conquest commands and boot lifecycle.
+- **`src/conquest/**`**: self-contained campaign engine, Web Worker compiler, content packs (9 fantasy & historical rosters), session store and UI rail.
+- *Conflict resolution strategy*: reconcile imports and registry additions; the Conquest engine itself is fully self-contained in `src/conquest/`.
 
 ### Phase A: Astral Cartographer Content in Core (Bases + Culture Sets)
 
@@ -228,6 +232,46 @@ git fetch upstream && git merge upstream/master
   0.06 → 0.15, so the rotation reads over the chart (standard presets keep 0.7).
 - *Conflict resolution strategy*: keep the rotation at every site where upstream assigns a province
   color from its state; the index is the state's province count at assignment time.
+
+### Name bases by stable id
+
+A base is identified by a five-letter `id` instead of its array position, so new bases never re-point
+saved cultures and a rename keeps its corpus.
+
+- **`src/data/name-bases.ts`**: `NameBase.id`, `BASE_ID_PATTERN`, `deriveBaseId()`; every shipped
+  entry gains its permanent id.
+- **`src/generators/names-generator.ts`**: chains keyed by id; `getBase`/`getBaseShort`/`updateChain`
+  take an id; `getNameBase()` and `reindex()` added; the state suffix and fantasy rules compare ids.
+- **`src/generators/cultures-generator.ts`**: `Culture.base` is a string; every set branch uses id
+  literals (no name lookup); `setBase` takes an id.
+- **`src/generators/states-generator.ts`**, **`src/generators/astral-naming.ts`**: id comparisons and
+  id lookups.
+- **`src/controllers/*`**: editors read, write and import ids; new bases get a generated id.
+- **`src/services/io/name-bases-format.ts`** (new): the slot-31 row format and the legacy migration;
+  **`save.ts`** and **`load.ts`** call it.
+- **`src/conquest/engine/compiler/*`**: name pools are keyed by id, `AzgaarCulture.base` is a string,
+  `COMPILER_VERSION` is 0.2.0.
+- *Conflict resolution strategy*: if upstream adds bases, give them ids and append them; existing ids
+  are permanent and must never be reassigned. If upstream changes the slot-31 format, reconcile in
+  `name-bases-format.ts` — the loader also accepts the six-column legacy layout.
+
+### RPG Fantasy culture set & polity naming
+
+- **`src/data/name-bases.ts`**:
+  - Appended 11 RPG Fantasy name bases (indices 55..65, permanent ids `HALFL`..`TRIBA`): Halfling (`HALFL`), Fey (`FEYFO`), Infernal (`INFER`), Celestial (`CELES`), Grave (`GRAVE`), Merfolk (`MERFO`), Beastfolk (`BEAST`), Elemental (`ELEME`), Construct (`CONST`), Eldritch (`ELDRI`), Tribal (`TRIBA`).
+  - Added `polities` and `provinces` groups to all 11 bases for state government and province territorial titles.
+- **`src/generators/cultures-generator.ts`**:
+  - Appended `rpgFantasy: { name: "RPG Fantasy", max: 24, probability: 4 }` to `CULTURE_SETS`.
+  - Added `case "rpgFantasy"` branch to `CulturesGenerator.getDefault()` defining 43 cultures across 7 thematic groups with habitat scoring callbacks (`forest`, `highland`, `arid`, `polar`, `coastal`, `underworld`, `open`).
+- **`src/generators/polity-naming.ts`** (new):
+  - Extracted shared group reading and word picking (`readGroup`, `pickFor`, `polityWordFor`, `provinceWordFor`) from `astral-naming.ts`.
+- **`src/generators/astral-naming.ts`**:
+  - Re-exports shared polity naming functions from `polity-naming.ts`.
+- **`src/controllers/astral-names.ts`**:
+  - Made register-aware: adjusts modal confirmation, alert messaging, and fallback vocabulary based on the active culture set ("Apply RPG naming" vs "Apply Astral naming").
+- **`src/components/configuration-schema.test.ts`**, **`src/data/name-bases.test.ts`**, **`src/generators/polity-naming.test.ts`**, **`src/controllers/astral-names.test.ts`**:
+  - Dedicated unit tests for schema validation, RPG namebase content rules, habitat scoring, acceptance, polity naming, and controller register selection.
+- *Conflict resolution strategy*: keep the 11 bases appended with their permanent ids; keep the `case "rpgFantasy"` in `cultures-generator.ts` and the `rpgFantasy` entry in `CULTURE_SETS`.
 
 ### Toolchain & Windows Environment Compatibility
 

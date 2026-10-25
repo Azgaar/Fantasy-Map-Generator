@@ -361,7 +361,7 @@ export interface MapPack {
    */
   goods: Record<string, string>;
   /** Culture id → name + nameBase index (content bindings + name pools). */
-  cultures: { i: number; name: string; base: number }[];
+  cultures: { i: number; name: string; base: string }[];
   graph: {
     land: { cells: LandCell[]; edges: LandEdge[] };
     sea: { cells: SeaCell[]; edges: SeaEdge[] };

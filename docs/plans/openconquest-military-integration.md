@@ -1,6 +1,6 @@
 # Plan — Deep Integration of OpenConquest Rosters, Military & Battle Simulator
 
-**Status:** Proposed  
+**Status:** Completed  
 **Updated:** 2026-10-23  
 **Context:** Now that the repository is a unified fork (`README.md`, `docs/openconquest/README.md`), FMG and OpenConquest no longer need separate military abstractions bridged by a lossy converter (`regimentToUnits`). This plan unifies the military pipeline into a cohesive system across three core pillars:
 1. Assign a concrete roster to every state (`state.rosterId`).

@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import {
-  type Regiment,
-  getCategoryForUnit,
-  reconcileRegimentBlocks,
-  syncRegimentTotals,
-  Military
-} from "./military-generator";
 import type { UnitType } from "@/conquest/engine/common/content";
+import {
+  getCategoryForUnit,
+  Military,
+  type Regiment,
+  reconcileRegimentBlocks,
+  syncRegimentTotals
+} from "./military-generator";
 
 describe("Phase 2: Roster Units & Regiment Blocks", () => {
   const mockUnitTypes: Record<string, UnitType> = {
@@ -74,6 +74,32 @@ describe("Phase 2: Roster Units & Regiment Blocks", () => {
       missile: 12,
       cost: 300,
       upkeep: 60
+    },
+    battle_mage: {
+      id: "battle_mage",
+      name: "Battle Mage",
+      category: "spellcaster",
+      blocks: 0.02,
+      men: 20,
+      attack: 2,
+      defense: 3,
+      charge: 0,
+      missile: 16,
+      cost: 900,
+      upkeep: 110
+    },
+    war_hydra: {
+      id: "war_hydra",
+      name: "War Hydra",
+      category: "monster",
+      blocks: 0.05,
+      men: 50,
+      attack: 16,
+      defense: 12,
+      charge: 10,
+      missile: 0,
+      cost: 1200,
+      upkeep: 150
     }
   };
 
@@ -84,6 +110,8 @@ describe("Phase 2: Roster Units & Regiment Blocks", () => {
       expect(getCategoryForUnit("archers", mockUnitTypes)).toBe("ranged");
       expect(getCategoryForUnit("cavalry_knight", mockUnitTypes)).toBe("cavalry");
       expect(getCategoryForUnit("trebuchet", mockUnitTypes)).toBe("artillery");
+      expect(getCategoryForUnit("battle_mage", mockUnitTypes)).toBe("spellcaster");
+      expect(getCategoryForUnit("war_hydra", mockUnitTypes)).toBe("monster");
       expect(getCategoryForUnit("fleet", mockUnitTypes)).toBe("naval");
     });
 
@@ -93,6 +121,20 @@ describe("Phase 2: Roster Units & Regiment Blocks", () => {
       expect(getCategoryForUnit("longbowmen")).toBe("ranged");
       expect(getCategoryForUnit("bombard")).toBe("artillery");
       expect(getCategoryForUnit("war_galley")).toBe("naval");
+      // Spellcaster keyword fallbacks
+      expect(getCategoryForUnit("court_wizard")).toBe("spellcaster");
+      expect(getCategoryForUnit("chaos_sorcerer")).toBe("spellcaster");
+      expect(getCategoryForUnit("shaman_elder")).toBe("spellcaster");
+      expect(getCategoryForUnit("necromancer_cabal")).toBe("spellcaster");
+      expect(getCategoryForUnit("damsel_of_the_lady")).toBe("spellcaster");
+      expect(getCategoryForUnit("runesmith_elder")).toBe("spellcaster");
+      // Monster keyword fallbacks
+      expect(getCategoryForUnit("black_dragon")).toBe("monster");
+      expect(getCategoryForUnit("river_troll")).toBe("monster");
+      expect(getCategoryForUnit("frost_giant")).toBe("monster");
+      expect(getCategoryForUnit("griffon_knights")).toBe("monster");
+      expect(getCategoryForUnit("stegadon_ancient")).toBe("monster");
+      expect(getCategoryForUnit("blood_daemon")).toBe("monster");
     });
   });
 
@@ -231,7 +273,7 @@ describe("Phase 2: Roster Units & Regiment Blocks", () => {
     it("computes category counts across multi-unit regiments", () => {
       const reg: Regiment = {
         i: 0,
-        a: 570,
+        a: 640,
         cell: 100,
         x: 10,
         y: 10,
@@ -240,16 +282,20 @@ describe("Phase 2: Roster Units & Regiment Blocks", () => {
         u: {
           spear: 300,
           sword: 150,
-          archers: 120
+          archers: 120,
+          battle_mage: 20,
+          war_hydra: 50
         },
         n: 0,
-        name: "Combined Arms",
+        name: "Arcane Combined Arms",
         state: 1,
         icon: "⚔️"
       };
 
       expect(Military.getCategoryCount(reg, "melee")).toBe(450); // 300 spear + 150 sword
       expect(Military.getCategoryCount(reg, "ranged")).toBe(120); // 120 archers
+      expect(Military.getCategoryCount(reg, "spellcaster")).toBe(20); // 20 battle_mage
+      expect(Military.getCategoryCount(reg, "monster")).toBe(50); // 50 war_hydra
       expect(Military.getCategoryCount(reg, "cavalry")).toBe(0);
       expect(Military.getCategoryCount(reg, "artillery")).toBe(0);
     });
