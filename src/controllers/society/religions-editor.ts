@@ -568,7 +568,7 @@ const religionHighlightOn = debounce((event: HighlightSource) => {
     .select(`#religionsCenter${religionId}`)
     .raise()
     .transition(animate)
-    .attr("r", 3)
+    .attr("r", "6em")
     .attr("stroke", "#d0240f");
 }, 200);
 
@@ -578,7 +578,7 @@ function religionHighlightOff(event: HighlightSource): void {
   if ($el) $el.classList.remove("active");
 
   select("#relig").select(`#religion${religionId}`).transition().attr("stroke-width", null).attr("stroke", null);
-  select("#debug").select(`#religionsCenter${religionId}`).transition().attr("r", 2).attr("stroke", null);
+  select("#debug").select(`#religionsCenter${religionId}`).transition().attr("r", "4em").attr("stroke", null);
 }
 
 function religionChangeColor(this: FillBoxElement): void {
@@ -754,7 +754,6 @@ function drawReligionCenters(): void {
   const religionCenters = debugLayer
     .append("g")
     .attr("id", "religionCenters")
-    .attr("stroke-width", 0.8)
     .attr("stroke", "#444444")
     .style("cursor", "move");
 
@@ -768,7 +767,7 @@ function drawReligionCenters(): void {
     .append("circle")
     .attr("id", d => `religionsCenter${d.i}`)
     .attr("data-id", d => d.i)
-    .attr("r", 2)
+    .attr("r", "4em")
     .attr("fill", d => d.color)
     .attr("cx", d => pack.cells.p[d.center][0])
     .attr("cy", d => pack.cells.p[d.center][1])

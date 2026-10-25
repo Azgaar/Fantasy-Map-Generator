@@ -895,12 +895,10 @@ function placeLinearFeature(this: SVGElement, event: MouseEvent): void {
       .append("circle")
       .attr("data-cell", toCell)
       .attr("class", "lineCircle")
-      .attr("r", 6)
       .attr("cx", x)
       .attr("cy", y)
       .attr("fill", "yellow")
-      .attr("stroke", "#333")
-      .attr("stroke-width", 2);
+      .attr("stroke", "#333");
     return;
   }
 

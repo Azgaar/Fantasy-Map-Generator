@@ -477,6 +477,26 @@ A renderer is a pure projection of state into visuals.
   creation, attributes, and event wiring. Never commit a layer to the DOM through d3 selections
   (see [Renderers](#renderers-dom--svg--the-usual-bottleneck) below for why).
 
+### Sizes under zoom
+
+The map zooms as one transform on `#viewbox`, so a size in map units grows with the zoom. That is
+the default, and right for most content. Two kinds of drawing should not grow fully, and each has one
+mechanism, both driven from `ui/map/zoom.ts`:
+
+- **Content that grows slower than the map**: labels, markers and burg icons. The zoom writes each
+  layer's `font-size` along its curve in `ZOOM_CURVES` (`renderers/viewport/viewport.ts`), and the
+  content sizes in `%` or `em` under it. It follows the zoom per frame or once the gesture settles, as
+  `viewportRedraw` says, because these layers are big. See [the style record](style.md#the-record).
+- **UI that keeps its screen size**: editing handles, the regiment base and rotation control, and
+  measurer lines and labels. The zoom sets `--px`, one screen pixel in map units (`1 / scale`), on the
+  control containers (`CONTROL_CONTAINERS`), and CSS or the renderer sizes them as
+  `calc(N * var(--px))`. It updates every frame, since it restyles only those few nodes. Measurer
+  dashes stay in map units: stripes that hold still on screen look like they slide while you zoom.
+
+Both values are inherited, so the cost of a change is the subtree under the element it is set on.
+Never divide by `viewport.scale` while drawing: the value is out of date after the next zoom. An export
+that rescales the map sets both values on its clone for the export scale.
+
 ## Controllers (Editors)
 
 A controller is the thin seam between a user action and the state.

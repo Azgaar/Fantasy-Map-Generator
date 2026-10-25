@@ -214,7 +214,6 @@ function drawControlPoints(points: Point[]): void {
     .join("circle")
     .attr("cx", (d: Point) => d[0])
     .attr("cy", (d: Point) => d[1])
-    .attr("r", 0.6)
     .call(drag<SVGCircleElement, Point>().on("start", dragControlPoint))
     .on("click", removeControlPoint);
 }

@@ -408,6 +408,7 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
       for (const layer of Object.keys(ZOOM_CURVES) as ZoomedLayer[]) {
         clone.select(`#${layer}`).attr("font-size", `${zoomFontSize(layer, 1)}px`);
       }
+      clone.select("#ruler").style("--px", "1px");
 
       if (!noScaleBar) drawScaleBar(cloneEl, 1, options.map.graph.width, options.map.graph.height);
     }
@@ -423,6 +424,7 @@ async function getMapURL(type: string, config: GetMapURLOptions = {}): Promise<s
       for (const layer of Object.keys(ZOOM_CURVES) as ZoomedLayer[]) {
         clone.select(`#${layer}`).attr("font-size", `${zoomFontSize(layer, scale)}px`);
       }
+      clone.select("#ruler").style("--px", `${1 / scale}px`);
       bounds = { scale, x0: -x / scale, y0: -y / scale, x1: (width - x) / scale, y1: (height - y) / scale };
     }
 

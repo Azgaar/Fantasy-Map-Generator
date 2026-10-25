@@ -19,6 +19,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Trade animation follows edited and custom routes
 - Heightmap: elevation labels
 - Heightmap: contours are spaced in round height units
+- Measurers, regiment controls and editing handles keep their size on zoom
 
 # Releases
 

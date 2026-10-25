@@ -10,16 +10,20 @@ import { round } from "@/utils/string-utils";
 const openCurveGen = line<Point>().curve(curveCatmullRom.alpha(0.5));
 const closedCurveGen = line<Point>().curve(curveCatmullRomClosed.alpha(0.5));
 
-// the layer's stroke, baked into each measurer's parts; the font sizes by inheritance
-type MeasurerStyle = { strokeWidth: number; dasharray: string };
+// the layer's stroke, baked into each measurer's parts; the font sizes by inheritance.
+// Widths and labels in screen pixels, dashes in map units so the stripes zoom with the map
+type MeasurerStyle = { strokeWidth: string; dasharray: string };
+
+const toScreen = (value: number) => `calc(${value} * var(--px))`;
 
 function getMeasurerStyle(): MeasurerStyle {
   const { attrs } = styles.rulers;
-  return { strokeWidth: attrs["stroke-width"] ?? 1, dasharray: attrs["stroke-dasharray"] ?? "none" };
+  return { strokeWidth: toScreen(attrs["stroke-width"] ?? 1), dasharray: attrs["stroke-dasharray"] ?? "none" };
 }
 
 export function drawMeasurers(): void {
-  select("#ruler").selectAll("*").remove();
+  const fontSize = parseFloat(styles.rulers.attrs["font-size"] ?? "") || 20;
+  select("#ruler").style("font-size", toScreen(fontSize)).selectAll("*").remove();
   if (!pack.measurers) return;
   const style = getMeasurerStyle();
   for (const measurer of pack.measurers) RENDERERS[measurer.type](measurer, style);
@@ -39,20 +43,15 @@ function renderRuler(measurer: Measurer, { strokeWidth, dasharray }: MeasurerSty
   el.append("polyline")
     .attr("points", points)
     .attr("class", "white")
-    .attr("stroke-width", strokeWidth)
+    .style("stroke-width", strokeWidth)
     .attr("stroke-dasharray", "none");
   el.append("polyline")
     .attr("points", points)
     .attr("class", "gray")
-    .attr("stroke-width", strokeWidth)
+    .style("stroke-width", strokeWidth)
     .attr("stroke-dasharray", dasharray);
 
-  const circles = el
-    .append("g")
-    .attr("class", "rulerPoints")
-    .attr("stroke-width", 0.5 * strokeWidth)
-    .attr("stroke-dasharray", "none")
-    .attr("font-size", 2 * strokeWidth);
+  const circles = el.append("g").attr("class", "rulerPoints").attr("stroke-dasharray", "none");
   for (let i = 0; i < measurer.points.length; i++) {
     const [x, y] = measurer.points[i];
     const isEdge = i === 0 || i === measurer.points.length - 1;
@@ -82,22 +81,17 @@ function renderPathMeasurer(measurer: Measurer, { strokeWidth, dasharray }: Meas
     .append<SVGPathElement>("path")
     .attr("d", path)
     .attr("class", "white")
-    .attr("stroke-width", strokeWidth)
+    .style("stroke-width", strokeWidth)
     .attr("stroke-dasharray", "none");
   el.append("path")
     .attr("d", path)
     .attr("class", "gray")
-    .attr("stroke-width", strokeWidth)
+    .style("stroke-width", strokeWidth)
     .attr("stroke-dasharray", dasharray);
 
   const [x1, y1] = measurer.points[0];
   const [x2, y2] = last(measurer.points);
-  const circles = el
-    .append("g")
-    .attr("class", "rulerPoints")
-    .attr("stroke-width", 0.5 * strokeWidth)
-    .attr("stroke-dasharray", "none")
-    .attr("font-size", 2 * strokeWidth);
+  const circles = el.append("g").attr("class", "rulerPoints").attr("stroke-dasharray", "none");
   circles.append("circle").attr("r", "1em").attr("cx", x1).attr("cy", y1);
   circles.append("circle").attr("r", "1em").attr("cx", x2).attr("cy", y2);
 
@@ -112,7 +106,7 @@ function renderPlanimeter(measurer: Measurer, { strokeWidth, dasharray }: Measur
   el.append("path")
     .attr("d", path)
     .attr("class", "planimeter")
-    .attr("stroke-width", strokeWidth)
+    .style("stroke-width", strokeWidth)
     .attr("stroke-dasharray", dasharray);
 
   const text = el.append("text");

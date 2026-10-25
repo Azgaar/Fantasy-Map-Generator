@@ -120,8 +120,7 @@ function drawRoute(points: number[][]): void {
     .data(points)
     .join("circle")
     .attr("cx", (d: number[]) => d[0])
-    .attr("cy", (d: number[]) => d[1])
-    .attr("r", 0.6);
+    .attr("cy", (d: number[]) => d[1]);
 
   const group = ensureEl<HTMLSelectElement>("routeCreatorGroupSelect").value;
   setTempRoute({ group, points });

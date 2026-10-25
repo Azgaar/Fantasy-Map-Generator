@@ -315,12 +315,41 @@ i.icon-lock {
   stroke-width: 2;
 }
 
+#regimentBase {
+  stroke-width: var(--px);
+}
+
+#regimentBase circle {
+  r: calc(5 * var(--px));
+}
+
 .regimentDragLine {
   marker-end: url(#end-arrow);
   stroke: #333333;
-  stroke-dasharray: 5;
-  stroke-dashoffset: 1000;
+  stroke-dasharray: calc(5 * var(--px));
+  stroke-dashoffset: calc(1000 * var(--px));
   animation: dash 80s linear backwards;
+}
+
+#rotationControl {
+  r: calc(4 * var(--px));
+  stroke-width: var(--px);
+}
+
+#cultureCenters,
+#religionCenters {
+  font-size: var(--px);
+  stroke-width: calc(1.5 * var(--px));
+}
+
+#journeyOverlay circle {
+  r: calc(3 * var(--px));
+  stroke-width: var(--px);
+}
+
+.lineCircle {
+  r: calc(6 * var(--px));
+  stroke-width: calc(2 * var(--px));
 }
 
 .arrow {
@@ -1010,7 +1039,7 @@ fieldset {
 #controlPoints {
   fill: #ff0000;
   stroke: #841f1f;
-  stroke-width: 0.25;
+  stroke-width: var(--px);
   cursor: move;
   opacity: 0.8;
 }
@@ -1018,7 +1047,7 @@ fieldset {
 #controlPoints > path {
   fill: none;
   stroke: #0a0909;
-  stroke-width: 2;
+  stroke-width: calc(2 * var(--px));
   opacity: 0.4;
   cursor: pointer;
 }
@@ -1029,10 +1058,15 @@ fieldset {
   stroke: none;
 }
 
+#controlPoints > circle {
+  r: calc(3 * var(--px));
+}
+
 #vertices > circle {
+  r: calc(2.5 * var(--px));
   fill: #ff0000;
   stroke: #841f1f;
-  stroke-width: 0.1;
+  stroke-width: calc(0.5 * var(--px));
   cursor: move;
   opacity: 0.8;
 }
@@ -1040,7 +1074,7 @@ fieldset {
 #vertices > polygon {
   fill: none;
   stroke: #808080;
-  stroke-width: 0.1;
+  stroke-width: var(--px);
 }
 
 #controlPoints > circle:hover,
@@ -1689,6 +1723,8 @@ div.editorLine {
 }
 
 #ruler .rulerPoints {
+  font-size: calc(4 * var(--px));
+  stroke-width: var(--px);
   stroke: #4e5a69;
   fill: yellow;
   cursor: pointer;

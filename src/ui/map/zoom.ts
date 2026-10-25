@@ -16,6 +16,7 @@ const zoomBehavior = zoom<SVGSVGElement, unknown>().scaleExtent(DEFAULT_SCALE_EX
 
 export function applyZoomBehavior(): void {
   select<SVGSVGElement, unknown>("#map").call(zoomBehavior.on("zoom", onZoom).on("end", handleZoomEnd));
+  applyControlsScale();
 }
 
 let frameId: number | null = null;
@@ -65,6 +66,7 @@ function handleZoomPerFrame(): void {
 
   if (didScaleChange) {
     Layers.draw("scaleBar");
+    applyControlsScale();
     if (options.app.performance.viewportRedraw === "continuous") applyZoomFontSize();
   }
 
@@ -108,6 +110,18 @@ function applyZoomFontSize(): void {
   for (const layer of Object.keys(ZOOM_CURVES) as ZoomedLayer[]) {
     findEl(layer)?.setAttribute("font-size", `${zoomFontSize(layer, viewport.scale)}px`);
   }
+}
+
+const CONTROL_CONTAINERS = "#ruler, #debug, #regimentBase, #journeyOverlay";
+let controlsRule: CSSStyleRule | null = null;
+
+/** Control handles keep their screen size: `--px` is a screen pixel in map units. A rule restyles only the controls */
+function applyControlsScale(): void {
+  if (!controlsRule) {
+    const sheet = document.head.appendChild(document.createElement("style")).sheet!;
+    controlsRule = sheet.cssRules[sheet.insertRule(`${CONTROL_CONTAINERS} {}`)] as CSSStyleRule;
+  }
+  controlsRule.style.setProperty("--px", `${1 / viewport.scale}px`);
 }
 
 export function invokeActiveZooming(): void {
