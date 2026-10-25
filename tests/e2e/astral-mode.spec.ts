@@ -256,6 +256,49 @@ test.describe("Astral view mode", () => {
     expect(washUnderDust).toBe(true);
   });
 
+  test("Currents ride inside Hyperlanes and leave with the mode", async ({ page }) => {
+    // a standard map carries no currents node at all
+    expect(await page.locator("#routes #currents").count()).toBe(0);
+
+    await enterAstral(page);
+    await expect.poll(() => page.locator("#currents path").count()).toBeGreaterThan(0);
+
+    const stats = await page.evaluate(() => {
+      const group = document.getElementById("currents")!;
+      const paths = [...group.querySelectorAll("path")];
+      const rivers = pack.rivers.filter(river => river.cells.length > 1);
+      const widths = paths.map(path => Number(path.getAttribute("stroke-width")));
+      return {
+        layer: group.parentElement?.id,
+        dataGroup: group.dataset.group,
+        paths: paths.length,
+        rivers: rivers.length,
+        minPath: Math.min(...widths),
+        maxPath: Math.max(...widths),
+        broken: paths.filter(path => (path.getAttribute("d") ?? "").includes("NaN")).length
+      };
+    });
+    expect(stats.layer).toBe("routes"); // inside the Hyperlanes layer
+    expect(stats.dataGroup).toBe("currents");
+    expect(stats.paths).toBe(stats.rivers); // one path per river
+    expect(stats.broken).toBe(0);
+    expect(stats.maxPath).toBeGreaterThan(stats.minPath); // width tracks discharge
+
+    // Hyperlanes off takes the currents with it, back on restores them
+    await page.locator(layerItem("routes")).click();
+    await expect.poll(() => page.evaluate(() => Layers.isOn("routes"))).toBe(false);
+    expect(await page.locator("#currents path").count()).toBe(0);
+
+    await page.locator(layerItem("routes")).click();
+    await expect.poll(() => page.evaluate(() => Layers.isOn("routes"))).toBe(true);
+    await expect.poll(() => page.locator("#currents path").count()).toBeGreaterThan(0);
+
+    // leaving Astral drops the node: standard maps stay byte-identical
+    await page.click("#viewStandard");
+    await expect(page.locator("#viewStandard")).toHaveClass(/pressed/);
+    await expect(page.locator("#routes #currents")).toHaveCount(0);
+  });
+
   test("Remnants mark the mountains, cull to the viewport and share the chart with Anomalies", async ({
     page
   }) => {

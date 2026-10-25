@@ -181,6 +181,40 @@ git fetch upstream && git merge upstream/master
 - *Conflict resolution strategy*: the preset entries are two one-line additions in the existing
   lists; the e2e specs are new files and carry no upstream conflict surface.
 
+### Astral terrain layers — Dust Density, Composition, Remnants, Core–Rim, Currents
+
+- **`src/components/layers.ts`**: four Astral layer ids at their z-positions — `coreRim` (after
+  `landmass`), `composition` (after `texture`), `dustDensity` (after `starDensity`) and `remnants`
+  (after `systems`) — plus their renderer imports.
+- **`src/renderers/draw-routes.ts`**: `drawRoutes` calls `drawCurrents()` (Astral-only; it creates
+  or drops the `#currents` group inside `#routes`), and the reconcile loop skips that group — the
+  route scene owns trails/roads/searoutes, not the currents.
+- **`src/components/viewport.ts`**: the `remnants` zoom curve in `ZOOM_CURVES` (near-natural, like
+  `systems`).
+- **`src/components/map-tooltip.ts`**: the path-depth guard runs before `tip("")`, so stale detached
+  targets no longer blank the tooltip.
+- **`src/components/tooltips.ts`**: a timed tip expiry clears only its own message, so a hover tip
+  that replaced it stays up.
+- **`src/utils/registry.ts`**: `trackLoad` clears only its own "Loading…" message (the load-vs-hover
+  race that blanked tooltips after a load).
+- **`src/generators/styles-schema.ts`**: four elements — `coreRim`, `composition`, `dustDensity`,
+  `remnants`. `routes.groups` stays an open record, so the `currents` group is plain data.
+- **`src/generators/default-styles.json`**: the same four elements' defaults — no `currents`
+  section, the group ships only in the Astral presets.
+- **`public/styles/*.json`**: the converter injects the four elements into every shipped preset;
+  `astral.json` and `astralSchematic.json` additionally carry the `currents` group in
+  `routes.groups` (gold / acid flow, long dash).
+- **`scripts/convert-style-presets.mjs`**: the icon-owning models (relief, burgs, goods) are
+  imported before `normalizeStyles` runs, so references resolve during conversion.
+- **New**: `src/renderers/astral/{dust-bands, draw-dust-density, biome-classes, draw-composition,
+  remnants, draw-remnants, core-rim, draw-core-rim, currents, draw-currents}.ts`, the Astral button
+  and preset rows in `src/data/astral-layer-labels.ts` / `astral-layers.ts`, and the plan at
+  `docs/plans/astral-terrain-layers.md`.
+- *Conflict resolution strategy*: the four layer entries sit at fixed z-positions between stock
+  entries — re-place them if upstream reorders the registry; the `draw-routes.ts` seam is two lines
+  (the hook and the reconcile skip) — re-apply both; the tooltip fixes are small guards, keep them
+  even if upstream rewrites the functions.
+
 ### Toolchain & Windows Environment Compatibility
 
 - **`package.json`**:

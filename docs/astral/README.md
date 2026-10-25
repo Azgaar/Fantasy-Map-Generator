@@ -99,6 +99,9 @@ As detailed in [`docs/plans/mod-merge-plan.md`](../plans/mod-merge-plan.md):
 - **Shipped (Phase 5)**: Polish and docs — the e2e coverage, the one-per-session "apply Astral
   naming" hint, the second `astralSchematic` blueprint preset, and the README, wiki and merge
   checklist. The design is in [`docs/plans/astral-ui-overhaul.md`](../plans/astral-ui-overhaul.md).
+- **Shipped (terrain layers)**: the terrain reads — Dust Density, Composition, Remnants, Core–Rim,
+  and the rivers re-read as currents inside the Hyperlanes layer. The design is in
+  [`docs/plans/astral-terrain-layers.md`](../plans/astral-terrain-layers.md).
 
 ---
 *For upstream merge tracking, see [MERGING.md](../../MERGING.md).*

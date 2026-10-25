@@ -335,10 +335,23 @@ and dimmer defaults in `astralSchematic.json`.
 under the dust sheet and never obscures it; a whole-globe map degrades to irradiation bands without
 error.
 
-### Phase 5 — Currents and polish
+### Phase 5 — Currents and polish ✅
 
 `currents` group in registry + schema + both Astral presets; `drawRoutes` hook; docs and wiki;
 roadmap link; `MERGING.md`.
+
+Shipped: `currents.ts` (`currentWidth` — a clamped log ladder over discharge, 0.4–3 — and
+`currentPath`, the course as one rounded polyline), `draw-currents.ts` — one `<path>` per
+`pack.rivers` river resolved through `Rivers.getRiverPoints` (so `-1` mouths project to the map
+edge), the group's `stroke-width` acting as the scale over the ladder, `drawRoutes` calling it in
+Astral plus the reconcile loop skipping the group, a `subscribeAstralView` redraw so enter and exit
+emit or drop the node, and the `currents` group in `astral.json` (gold, long dash) and
+`astralSchematic.json` (acid, long dash).
+
+**Deviation:** the group is *not* declared in the `routes` registry children. Declared children are
+created eagerly by `init()` and recreated on every `restore()`, which would leak a `#currents` node
+into standard maps — the acceptance forbids exactly that. `drawCurrents()` creates the group on
+demand instead, stamping `data-group` so `applyStyle` still finds it.
 
 **Acceptance:** rivers render inside the Hyperlanes layer and toggle with it; width tracks
 discharge; standard maps are byte-identical to before (no `#currents` node outside Astral).
