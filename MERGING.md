@@ -215,6 +215,20 @@ git fetch upstream && git merge upstream/master
   (the hook and the reconcile skip) — re-apply both; the tooltip fixes are small guards, keep them
   even if upstream rewrites the functions.
 
+### Sector colors (provinces/sectors hue rotation)
+
+- **`src/utils/colorUtils.ts`**: `getSectorColor(polityColor, index)` — a sector keeps the polity's
+  chroma and lightness but the hue spins 75°–285° away, sequenced by the sector's index within its
+  polity (with a lightness ladder and a small deterministic jitter); achromatic polities fall back
+  to `getMixedColor`.
+- **`src/generators/provinces-generator.ts`** / **`src/generators/states-generator.ts`**: all five
+  province color sites use the rotation instead of `getMixedColor(state.color)` — the old mix sat
+  within ~20% of the state color, so every sector read as its polity.
+- **`public/styles/astral.json` / `astralSchematic.json`**: `provinces` opacity 0.2 → 0.5 and
+  0.06 → 0.15, so the rotation reads over the chart (standard presets keep 0.7).
+- *Conflict resolution strategy*: keep the rotation at every site where upstream assigns a province
+  color from its state; the index is the state's province count at assignment time.
+
 ### Toolchain & Windows Environment Compatibility
 
 - **`package.json`**:

@@ -14,6 +14,7 @@ import {
   getMixedColor,
   getPolesOfInaccessibility,
   getRandomColor,
+  getSectorColor,
   minmax,
   P,
   ra,
@@ -1339,7 +1340,7 @@ class StatesModule {
         name,
         formName,
         fullName: `${name} ${formName}`,
-        color: getMixedColor(states[stateId].color!),
+        color: getSectorColor(states[stateId].color!, states[stateId].provinces?.length ?? 0),
         coa
       } as Province);
       for (const cell of provinceCells) cells.province[cell] = id;
@@ -1361,7 +1362,7 @@ class StatesModule {
             continue;
           }
           province.state = stateId;
-          province.color = getMixedColor(states[stateId].color!);
+          province.color = getSectorColor(states[stateId].color!, states[stateId].provinces?.length ?? 0);
           states[stateId].provinces = [...(states[stateId].provinces ?? []), provinceId];
           continue;
         }
