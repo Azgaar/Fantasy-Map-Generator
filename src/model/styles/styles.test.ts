@@ -285,21 +285,47 @@ describe("parseStyles", () => {
     const doc = Styles.parse(Styles.defaults);
     doc.heightmap.groups.landHeights.options.contours = {
       mode: "only",
-      interval: 3,
+      interval: 50,
       color: "#654321",
       width: 0.6,
-      opacity: 0.8
+      opacity: 0.8,
+      fontSize: 5
     };
     expect(Styles.parse(JSON.parse(JSON.stringify(doc)))).toEqual(doc);
   });
 
-  test("invalid contour spacing is repaired without resetting the other contour settings", () => {
+  test("contours saved before labels parse without a warning, with labels off", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const doc = structuredClone(Styles.defaults) as any;
+    doc.heightmap.groups.landHeights.options.contours = {
+      mode: "overlay",
+      interval: 20,
+      color: "#654321",
+      width: 0.6,
+      opacity: 0.8
+    };
+    const { contours } = Styles.parse(doc).heightmap.groups.landHeights.options;
+    expect(contours).toEqual({
+      mode: "overlay",
+      interval: 20,
+      color: "#654321",
+      width: 0.6,
+      opacity: 0.8,
+      fontSize: 0
+    });
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  test("a contour spacing outside the offered values is repaired without resetting the other settings", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const doc = Styles.parse(Styles.defaults);
     doc.heightmap.groups.landHeights.options.contours.mode = "overlay";
-    doc.heightmap.groups.landHeights.options.contours.interval = 0;
+    (doc.heightmap.groups.landHeights.options.contours as { interval: number }).interval = 5;
     const parsed = Styles.parse(doc);
-    expect(parsed.heightmap.groups.landHeights.options.contours.interval).toBe(5);
+    expect(parsed.heightmap.groups.landHeights.options.contours.interval).toBe(200);
     expect(parsed.heightmap.groups.landHeights.options.contours.mode).toBe("overlay");
+    warn.mockRestore();
   });
 
   test("a valid document round-trips unchanged", () => {

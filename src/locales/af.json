@@ -978,7 +978,6 @@
   "Elevation": "Hoogte",
   "Elevation profile": "Hoogteprofiel",
   "Elevation profile: no data": "Hoogteprofiel: geen data nie",
-  "Elevation spacing between contours. Lower values show more detail; every fifth contour is heavier": "Hoogte-afstand tussen kontoerlyne. Laer waardes wys meer detail; elke vyfde kontoerlyn is dikker",
   "Embellishment": "Versiering",
   "Emblem shape": "Wapenvorm",
   "Emblem shape associated with culture": "Wapenvorm wat met die kultuur geassosieer word",
@@ -3559,5 +3558,10 @@
   "No states to regenerate provinces for": "Geen state om provinsies voor te hergenereer nie",
   "Please select at least one state": "Kies asseblief ten minste een staat",
   "Regenerate Provinces": "Hergenereer provinsies",
-  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Kies state om provinsies voor te hergenereer. Geslote provinsies sal bly soos hulle is"
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Kies state om provinsies voor te hergenereer. Geslote provinsies sal bly soos hulle is",
+  "Height between contours in the map's height unit": "Hoogte tussen kontoerlyne in die kaart se hoogte-eenheid",
+  "Every fifth contour is heavier and carries the labels": "Elke vyfde kontoerlyn is swaarder en dra die etikette",
+  "Font size": "Lettergrootte",
+  "Font size of the elevation labels on every fifth contour": "Lettergrootte van die hoogte-etikette op elke vyfde kontoerlyn",
+  "Set to 0 to hide the labels": "Stel op 0 om die etikette te verberg"
 }

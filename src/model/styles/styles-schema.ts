@@ -7,6 +7,7 @@ import { GRID_TYPES } from "@/data/grid-types";
 import { OCEAN_OUTLINES, OCEAN_PATTERNS } from "@/data/ocean-patterns";
 import {
   CLIPS,
+  CONTOUR_INTERVALS,
   CONTOUR_MODES,
   FONT_STYLES,
   FONT_WEIGHTS,
@@ -195,9 +196,12 @@ const contours = meta(
     mode: choice(CONTOUR_MODES, {
       tip: t("Draw smooth elevation contours over the heightmap colors, or show only contour lines")
     }),
-    interval: count(1, 20, {
+    interval: meta(z.literal(CONTOUR_INTERVALS), {
       label: t("Spacing"),
-      tip: t("Elevation spacing between contours. Lower values show more detail; every fifth contour is heavier")
+      tip: sentences(
+        t("Height between contours in the map's height unit"),
+        t("Every fifth contour is heavier and carries the labels")
+      )
     }),
     color: solidColor({ label: t("Color"), tip: t("Color of the contour lines") }),
     width: range(0.1, 2, {
@@ -205,10 +209,15 @@ const contours = meta(
       step: 0.05,
       tip: t("Width of minor contours. Every fifth contour is twice as wide")
     }),
-    opacity: range(0, 1, { label: t("Opacity"), step: 0.05, tip: t("Opacity of the contour lines") })
+    opacity: range(0, 1, { label: t("Opacity"), step: 0.05, tip: t("Opacity of the contour lines") }),
+    fontSize: range(0, 20, {
+      label: t("Font size"),
+      step: 0.1,
+      tip: sentences(t("Font size of the elevation labels on every fifth contour"), t("Set to 0 to hide the labels"))
+    }).default(0)
   }),
   { gate: "mode", label: t("Contours") }
-).default({ mode: "off", interval: 5, color: "#5c513e", width: 0.35, opacity: 0.5 });
+).default({ mode: "off", interval: 200, color: "#5c513e", width: 0.35, opacity: 0.5, fontSize: 0 });
 
 // downhill pen strokes, denser and longer on steeper slopes
 const hachures = meta(

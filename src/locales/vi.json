@@ -978,7 +978,6 @@
   "Elevation": "Độ cao",
   "Elevation profile": "Mặt cắt độ cao",
   "Elevation profile: no data": "Mặt cắt độ cao: không có dữ liệu",
-  "Elevation spacing between contours. Lower values show more detail; every fifth contour is heavier": "Khoảng cách độ cao giữa các đường đồng mức. Giá trị thấp hiện nhiều chi tiết hơn; cứ đường thứ năm đậm hơn",
   "Embellishment": "Họa tiết trang trí",
   "Emblem shape": "Hình dạng huy hiệu",
   "Emblem shape associated with culture": "Hình dạng huy hiệu gắn với văn hóa",
@@ -3559,5 +3558,10 @@
   "No states to regenerate provinces for": "Không có quốc gia nào để tạo lại tỉnh",
   "Please select at least one state": "Vui lòng chọn ít nhất một quốc gia",
   "Regenerate Provinces": "Tạo lại tỉnh",
-  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Chọn các quốc gia cần tạo lại tỉnh. Các tỉnh đã khóa sẽ giữ nguyên"
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Chọn các quốc gia cần tạo lại tỉnh. Các tỉnh đã khóa sẽ giữ nguyên",
+  "Height between contours in the map's height unit": "Khoảng cao đều giữa các đường đồng mức theo đơn vị độ cao của bản đồ",
+  "Every fifth contour is heavier and carries the labels": "Cứ đường đồng mức thứ năm đậm hơn và mang nhãn",
+  "Font size": "Cỡ chữ",
+  "Font size of the elevation labels on every fifth contour": "Cỡ chữ của nhãn độ cao trên mỗi đường đồng mức thứ năm",
+  "Set to 0 to hide the labels": "Đặt 0 để ẩn nhãn"
 }

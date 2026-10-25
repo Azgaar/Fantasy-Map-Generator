@@ -978,7 +978,6 @@
   "Elevation": "고도",
   "Elevation profile": "고도 단면도",
   "Elevation profile: no data": "고도 단면도: 데이터 없음",
-  "Elevation spacing between contours. Lower values show more detail; every fifth contour is heavier": "등고선 사이의 고도 간격. 값이 낮을수록 더 자세히 표시되며 5번째마다 굵은 선이 그려집니다",
   "Embellishment": "장식",
   "Emblem shape": "문장 모양",
   "Emblem shape associated with culture": "문화와 연결된 문장 모양",
@@ -3559,5 +3558,10 @@
   "No states to regenerate provinces for": "주를 다시 생성할 국가가 없습니다",
   "Please select at least one state": "국가를 하나 이상 선택하세요",
   "Regenerate Provinces": "주 다시 생성",
-  "Select states to regenerate provinces for. Locked provinces will remain as they are": "주를 다시 생성할 국가를 선택하세요. 잠긴 주는 그대로 유지됩니다"
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "주를 다시 생성할 국가를 선택하세요. 잠긴 주는 그대로 유지됩니다",
+  "Height between contours in the map's height unit": "지도 높이 단위로 나타낸 등고선 사이의 높이",
+  "Every fifth contour is heavier and carries the labels": "5번째마다 굵은 등고선에 라벨이 붙습니다",
+  "Font size": "글꼴 크기",
+  "Font size of the elevation labels on every fifth contour": "5번째 등고선마다 붙는 고도 라벨의 글꼴 크기",
+  "Set to 0 to hide the labels": "0으로 설정하면 라벨을 숨깁니다"
 }

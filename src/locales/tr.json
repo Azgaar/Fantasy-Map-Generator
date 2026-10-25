@@ -978,7 +978,6 @@
   "Elevation": "Yükseklik",
   "Elevation profile": "Yükseklik profili",
   "Elevation profile: no data": "Yükseklik profili: veri yok",
-  "Elevation spacing between contours. Lower values show more detail; every fifth contour is heavier": "Eş yükselti eğrileri arasındaki yükseklik aralığı. Düşük değerler daha fazla ayrıntı gösterir; her beşinci eğri daha kalındır",
   "Embellishment": "Süs",
   "Emblem shape": "Arma şekli",
   "Emblem shape associated with culture": "Kültürle ilişkili arma şekli",
@@ -3559,5 +3558,10 @@
   "No states to regenerate provinces for": "Eyaletleri yeniden oluşturulacak devlet yok",
   "Please select at least one state": "Lütfen en az bir devlet seç",
   "Regenerate Provinces": "Eyaletleri yeniden oluştur",
-  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Eyaletleri yeniden oluşturulacak devletleri seç. Kilitli eyaletler olduğu gibi kalır"
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Eyaletleri yeniden oluşturulacak devletleri seç. Kilitli eyaletler olduğu gibi kalır",
+  "Height between contours in the map's height unit": "Haritanın yükseklik biriminde eş yükselti eğrileri arasındaki yükseklik",
+  "Every fifth contour is heavier and carries the labels": "Her beşinci eğri daha kalındır ve etiketleri taşır",
+  "Font size": "Yazı boyutu",
+  "Font size of the elevation labels on every fifth contour": "Her beşinci eş yükselti eğrisindeki yükseklik etiketlerinin yazı boyutu",
+  "Set to 0 to hide the labels": "Etiketleri gizlemek için 0 yapın"
 }

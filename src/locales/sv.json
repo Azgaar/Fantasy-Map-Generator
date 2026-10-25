@@ -978,7 +978,6 @@
   "Elevation": "Höjd",
   "Elevation profile": "Höjdprofil",
   "Elevation profile: no data": "Höjdprofil: inga data",
-  "Elevation spacing between contours. Lower values show more detail; every fifth contour is heavier": "Höjdavstånd mellan konturer. Lägre värden visar mer detaljer; var femte kontur är tjockare",
   "Embellishment": "Utsmyckning",
   "Emblem shape": "Vapenform",
   "Emblem shape associated with culture": "Vapenform kopplad till kulturen",
@@ -3559,5 +3558,10 @@
   "No states to regenerate provinces for": "Inga stater att generera om provinser för",
   "Please select at least one state": "Välj minst en stat",
   "Regenerate Provinces": "Generera om provinser",
-  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Välj stater vars provinser ska genereras om. Låsta provinser förblir som de är"
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Välj stater vars provinser ska genereras om. Låsta provinser förblir som de är",
+  "Height between contours in the map's height unit": "Höjd mellan konturerna i kartans höjdenhet",
+  "Every fifth contour is heavier and carries the labels": "Var femte kontur är kraftigare och bär etiketterna",
+  "Font size": "Teckenstorlek",
+  "Font size of the elevation labels on every fifth contour": "Teckenstorlek för höjdetiketterna på var femte kontur",
+  "Set to 0 to hide the labels": "Ange 0 för att dölja etiketterna"
 }

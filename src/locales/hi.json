@@ -978,7 +978,6 @@
   "Elevation": "ऊँचाई",
   "Elevation profile": "ऊँचाई प्रोफ़ाइल",
   "Elevation profile: no data": "ऊँचाई प्रोफ़ाइल: कोई डेटा नहीं",
-  "Elevation spacing between contours. Lower values show more detail; every fifth contour is heavier": "समोच्चों के बीच ऊँचाई का अंतराल। कम मान अधिक विवरण दिखाते हैं; हर पाँचवाँ समोच्च मोटा होता है",
   "Embellishment": "एम्बेलिशमेंट",
   "Emblem shape": "प्रतीक-चिह्न का आकार",
   "Emblem shape associated with culture": "संस्कृति से जुड़ा प्रतीक-चिह्न का आकार",
@@ -3559,5 +3558,10 @@
   "No states to regenerate provinces for": "प्रांत फिर से बनाने के लिए कोई राज्य नहीं",
   "Please select at least one state": "कृपया कम से कम एक राज्य चुनें",
   "Regenerate Provinces": "प्रांत फिर से बनाएँ",
-  "Select states to regenerate provinces for. Locked provinces will remain as they are": "वे राज्य चुनें जिनके प्रांत फिर से बनाने हैं। लॉक किए गए प्रांत जैसे हैं वैसे रहेंगे"
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "वे राज्य चुनें जिनके प्रांत फिर से बनाने हैं। लॉक किए गए प्रांत जैसे हैं वैसे रहेंगे",
+  "Height between contours in the map's height unit": "मानचित्र की ऊँचाई इकाई में समोच्चों के बीच की ऊँचाई",
+  "Every fifth contour is heavier and carries the labels": "हर पाँचवाँ समोच्च मोटा होता है और उस पर लेबल होते हैं",
+  "Font size": "फ़ॉन्ट आकार",
+  "Font size of the elevation labels on every fifth contour": "हर पाँचवें समोच्च पर ऊँचाई लेबलों का फ़ॉन्ट आकार",
+  "Set to 0 to hide the labels": "लेबल छिपाने के लिए 0 रखें"
 }

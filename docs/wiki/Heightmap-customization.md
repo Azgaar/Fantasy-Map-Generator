@@ -17,10 +17,16 @@ To show contour lines on a finished map, enable the **Heightmap** layer, then op
 Choose the **landHeights** or **oceanHeights** group and set **Contours** to **Over colors** or **Lines only**.
 Ocean contours also require **Render ocean heights** to be enabled.
 
-Adjust **Contour spacing**, **color**, **width**, and **opacity** independently for each group. Lower spacing
-shows more detail; every fifth contour is twice as thick. Spacing uses the map's elevation scale, not meters
-or feet. The lines interpolate a gently smoothed surface without changing the terrain. These settings are
-saved with maps and custom style presets; contours are off by default.
+Adjust **Spacing**, **color**, **width**, and **opacity** independently for each group. Spacing is a round
+height in the map's height unit (Tools → Units), counted from sea level: land contours mark heights, ocean
+contours mark depths. Every fifth contour is twice as thick. Contours follow the height unit and exponent, so
+they crowd together on steep high ground as on a real map. The lines interpolate a gently smoothed surface
+without changing the terrain. These settings are saved with maps and custom style presets; contours are off
+by default.
+
+Set **Font size** above 0 to write the elevation along every fifth contour. As on a topographic map, a white
+halo breaks the line under the number, and the top of the number faces uphill, so some labels read upside
+down. Labels go on straight stretches of longer lines and keep clear of each other.
 
 ### Hachures
 

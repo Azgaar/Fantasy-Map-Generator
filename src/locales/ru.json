@@ -978,7 +978,6 @@
   "Elevation": "Высота",
   "Elevation profile": "Профиль высот",
   "Elevation profile: no data": "Профиль высот: нет данных",
-  "Elevation spacing between contours. Lower values show more detail; every fifth contour is heavier": "Шаг высот между горизонталями. Меньше — больше деталей; каждая пятая горизонталь толще",
   "Embellishment": "Украшение",
   "Emblem shape": "Форма эмблемы",
   "Emblem shape associated with culture": "Форма эмблемы, связанная с культурой",
@@ -3559,5 +3558,10 @@
   "No states to regenerate provinces for": "Нет стран, для которых можно пересоздать провинции",
   "Please select at least one state": "Выберите хотя бы одну страну",
   "Regenerate Provinces": "Пересоздать провинции",
-  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Выберите страны, для которых пересоздать провинции. Закреплённые провинции останутся как есть"
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Выберите страны, для которых пересоздать провинции. Закреплённые провинции останутся как есть",
+  "Height between contours in the map's height unit": "Сечение рельефа в единицах высоты карты",
+  "Every fifth contour is heavier and carries the labels": "Каждая пятая горизонталь толще и несёт подписи",
+  "Font size": "Размер шрифта",
+  "Font size of the elevation labels on every fifth contour": "Размер шрифта подписей высот на каждой пятой горизонтали",
+  "Set to 0 to hide the labels": "Поставьте 0, чтобы скрыть подписи"
 }

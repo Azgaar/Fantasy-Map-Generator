@@ -26,10 +26,11 @@ import { isElectron } from "@/utils/environment";
 import { sentences, t } from "@/utils/i18n";
 import { findEl } from "@/utils/node-utils";
 
-export const VERSION = "1.156.0";
+export const VERSION = "1.157.0";
 
 // new changes on top, never translated
 const latestPublicChanges = (): string[] => [
+  "Heightmap contours: elevation labels",
   "Interface translated into 29 languages",
   "Map context menu",
   "Advanced Options: configurable map lattice",

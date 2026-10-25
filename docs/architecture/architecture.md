@@ -472,11 +472,10 @@ A renderer is a pure projection of state into visuals.
   DOM — assemble an HTML/SVG string and inject it in one write. No virtual DOM, no component
   runtime, no diffing layer: the renderer keeps full, granular control over exactly what is
   emitted.
-- **Vanilla JS first.** d3.js carries a real memory cost and is
-  easy to over-reach for. Reserve it for what it is genuinely good at — geometry, paths,
-  scales, projections, quadtrees — and use plain strings / `createElement` for node creation,
-  attributes, and event wiring. Rerouting simple DOM work through d3 selections is a common,
-  avoidable source of bloat.
+- **Vanilla JS first.** Reserve d3 for what it is genuinely good at — geometry, paths, curves,
+  colors, scales, projections, quadtrees — and use plain strings / `createElement` for node
+  creation, attributes, and event wiring. Never commit a layer to the DOM through d3 selections
+  (see [Renderers](#renderers-dom--svg--the-usual-bottleneck) below for why).
 
 ## Controllers (Editors)
 
@@ -654,10 +653,13 @@ reflow. **Minimising element count is the single biggest rendering lever.**
 
 - **Build once, attach once.** Assemble a layer as one string and write it with a single
   injection, rather than appending nodes in a loop — one parse, one reflow.
-- **Don't build DOM with d3.** One cached selection doing a single `.html(str)` write is fine;
-  per-node `selectAll().data().enter().append()` chains retain data joins and closures at a
-  real per-element cost. Create nodes from strings / `createElement` and reserve d3 for
-  geometry, scales, and projections.
+- **Don't build DOM with d3.** A data join (`.data()` / `.datum()`) stores each datum on its node
+  as `__data__`, and `.on()` keeps its handlers on `__on`: both live as long as the node, so a
+  joined layer holds a second copy of its data in memory. A plain `.append().attr()` chain retains
+  nothing, but it is one live-DOM call per node and per attribute plus a throwaway selection per
+  step. Assemble the layer's markup as a string and write it once (`el.innerHTML = markup`), as
+  `drawBiomes` and `drawHeightmap` do; d3 stays for the pure helpers (`line` and curves, `color`,
+  scales, `quadtree`).
 - **Fewer, bigger paths.** Merge adjacent same-valued cells into a few region polygons /
   isolines instead of one path per cell.
 - **Reuse, don't duplicate.** Define a glyph once in `<defs>` and stamp it with

@@ -978,7 +978,6 @@
   "Elevation": "Altitudine",
   "Elevation profile": "Profilo altimetrico",
   "Elevation profile: no data": "Profilo altimetrico: nessun dato",
-  "Elevation spacing between contours. Lower values show more detail; every fifth contour is heavier": "Spaziatura altimetrica tra i contorni. Valori più bassi mostrano più dettaglio; ogni quinto contorno è più marcato",
   "Embellishment": "Ornamento",
   "Emblem shape": "Forma dello stemma",
   "Emblem shape associated with culture": "Forma dello stemma associata alla cultura",
@@ -3559,5 +3558,10 @@
   "No states to regenerate provinces for": "Nessuno stato di cui rigenerare le province",
   "Please select at least one state": "Seleziona almeno uno stato",
   "Regenerate Provinces": "Rigenera le province",
-  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Seleziona gli stati di cui rigenerare le province. Le province bloccate resteranno come sono"
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Seleziona gli stati di cui rigenerare le province. Le province bloccate resteranno come sono",
+  "Height between contours in the map's height unit": "Equidistanza tra i contorni nell'unità di altezza della mappa",
+  "Every fifth contour is heavier and carries the labels": "Ogni quinto contorno è più marcato e porta le etichette",
+  "Font size": "Dimensione carattere",
+  "Font size of the elevation labels on every fifth contour": "Dimensione del carattere delle quote su ogni quinto contorno",
+  "Set to 0 to hide the labels": "Imposta 0 per nascondere le etichette"
 }

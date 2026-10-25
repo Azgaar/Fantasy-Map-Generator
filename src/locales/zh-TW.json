@@ -978,7 +978,6 @@
   "Elevation": "海拔",
   "Elevation profile": "海拔剖面",
   "Elevation profile: no data": "海拔剖面：無資料",
-  "Elevation spacing between contours. Lower values show more detail; every fifth contour is heavier": "等高線之間的海拔間距。數值越小細節越多；每五條等高線會加粗",
   "Embellishment": "裝飾",
   "Emblem shape": "紋章形狀",
   "Emblem shape associated with culture": "與文化關聯的紋章形狀",
@@ -3559,5 +3558,10 @@
   "No states to regenerate provinces for": "沒有可重新生成省份的國家",
   "Please select at least one state": "請至少選擇一個國家",
   "Regenerate Provinces": "重新生成省份",
-  "Select states to regenerate provinces for. Locked provinces will remain as they are": "選擇要重新生成省份的國家。已鎖定的省份將保持原樣"
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "選擇要重新生成省份的國家。已鎖定的省份將保持原樣",
+  "Height between contours in the map's height unit": "以地圖高度單位計的等高距",
+  "Every fifth contour is heavier and carries the labels": "每五條等高線較粗並標註數值",
+  "Font size": "字型大小",
+  "Font size of the elevation labels on every fifth contour": "每五條等高線上高程標籤的字型大小",
+  "Set to 0 to hide the labels": "設為 0 可隱藏標籤"
 }

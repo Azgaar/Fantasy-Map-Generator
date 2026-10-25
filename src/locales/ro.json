@@ -978,7 +978,6 @@
   "Elevation": "Altitudine",
   "Elevation profile": "Profilul altitudinii",
   "Elevation profile: no data": "Profilul altitudinii: nu există date",
-  "Elevation spacing between contours. Lower values show more detail; every fifth contour is heavier": "Distanța de altitudine dintre curbele de nivel. Valorile mici arată mai multe detalii; fiecare a cincea curbă este mai groasă",
   "Embellishment": "Ornament",
   "Emblem shape": "Forma stemei",
   "Emblem shape associated with culture": "Forma stemei asociată culturii",
@@ -3559,5 +3558,10 @@
   "No states to regenerate provinces for": "Nu există state pentru care să regenerezi provinciile",
   "Please select at least one state": "Selectează cel puțin un stat",
   "Regenerate Provinces": "Regenerează provinciile",
-  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Selectează statele ale căror provincii se regenerează. Provinciile blocate vor rămâne așa cum sunt"
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Selectează statele ale căror provincii se regenerează. Provinciile blocate vor rămâne așa cum sunt",
+  "Height between contours in the map's height unit": "Echidistanța dintre curbele de nivel în unitatea de înălțime a hărții",
+  "Every fifth contour is heavier and carries the labels": "Fiecare a cincea curbă este mai groasă și poartă etichetele",
+  "Font size": "Mărimea fontului",
+  "Font size of the elevation labels on every fifth contour": "Mărimea fontului etichetelor de altitudine pe fiecare a cincea curbă de nivel",
+  "Set to 0 to hide the labels": "Setați 0 pentru a ascunde etichetele"
 }

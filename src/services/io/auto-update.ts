@@ -1,6 +1,6 @@
 // Update an old map file to the current version
 
-import { min, select } from "d3";
+import { extent, min, select } from "d3";
 import { IconPictures } from "@/controllers/icon-picker/pictures";
 import { AddedLabels } from "@/model/annotations/added-labels";
 import { type Label, type LabelNameMode, Labels } from "@/model/annotations/labels-generator";
@@ -31,7 +31,9 @@ import { Religions } from "@/model/society/religions-generator";
 import { getDefaultMarkerName, type Marker, Markers } from "@/model/story/markers-generator";
 import { Notes } from "@/model/story/notes";
 import { Styles } from "@/model/styles/styles";
+import { getHeightUnitRatio, heightToMeters } from "@/model/units";
 import { Hatches } from "@/renderers/hatches";
+import { getContourInterval } from "@/renderers/heightmap/heightmap-contours";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { type LayerId, Layers, type LayersState } from "@/renderers/layers";
 import {
@@ -52,6 +54,7 @@ import type { StylesData } from "@/types/styles";
 import { Dialog } from "@/ui/dialog/dialog";
 import { unique } from "@/utils/array-utils";
 import { sanitizeSvgIcon, scopeSvgIcon } from "@/utils/file-utils";
+import { SEA_LEVEL } from "@/utils/height-utils";
 import { t } from "@/utils/i18n";
 import { log } from "@/utils/logger";
 import { minmax, rn } from "@/utils/number-utils";
@@ -2149,6 +2152,28 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       name,
       items: (data || "").split("|").filter(Boolean).map(toItem)
     }));
+  }
+
+  if (isOlderThan("1.157.0")) {
+    // v1.157.0 spaces contours in height units, not generator heights (1 to 20): keep about as many lines
+    const record = data[48] ? safeParseJSON(data[48]) : undefined;
+    const land = record?.heightmap?.groups?.landHeights?.options?.contours;
+    const ocean = record?.heightmap?.groups?.oceanHeights?.options?.contours;
+    const isLegacy = (contours?: { interval?: number }) => Number(contours?.interval) >= 1 && contours!.interval! <= 20;
+    if (isLegacy(land) || isLegacy(ocean)) {
+      const [low = SEA_LEVEL, high = SEA_LEVEL] = extent(grid.cells.h);
+      const ratio = getHeightUnitRatio();
+      // the old levels ran from sea level in steps of the interval, up to 100 or down to 0
+      if (isLegacy(land)) {
+        const count = Math.ceil((Math.min(high, 100) - SEA_LEVEL) / land.interval) - 1;
+        land.interval = getContourInterval(count, heightToMeters(high) * ratio);
+      }
+      if (isLegacy(ocean)) {
+        const count = Math.ceil((SEA_LEVEL - Math.max(low, 0)) / ocean.interval) - 1;
+        ocean.interval = getContourInterval(count, -heightToMeters(low) * ratio);
+      }
+      data[48] = JSON.stringify(record);
+    }
   }
 }
 

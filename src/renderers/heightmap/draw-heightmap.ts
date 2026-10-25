@@ -18,23 +18,35 @@ import {
   curveStep,
   curveStepAfter,
   curveStepBefore,
+  extent,
   line,
-  range,
-  select
+  range
 } from "d3";
 import type { GridRaster } from "@/model/graph/grid-generator";
 import { Grid } from "@/model/graph/grid-generator";
 import type { Vertices } from "@/model/graph/voronoi";
+import { getHeightUnitRatio, heightToMeters, metersToHeight } from "@/model/units";
 import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
 import type { GridGraph } from "@/types/grid-graph";
+import { SEA_LEVEL } from "@/utils/height-utils";
 import { t } from "@/utils/i18n";
 import { log } from "@/utils/logger";
+import { ensureEl } from "@/utils/node-utils";
 import { notify } from "@/utils/notices";
+import { rn } from "@/utils/number-utils";
 import { round } from "@/utils/string-utils";
-import { getHeightContours, smoothContourHeights } from "./heightmap-contours";
+import {
+  type ContourLabel,
+  getContourLabels,
+  getContourLevels,
+  getHeightContourChains,
+  getHeightContours,
+  smoothContourHeights
+} from "./heightmap-contours";
 import { getHachures } from "./heightmap-hachures";
 
 const HACHURE_LEVEL = 4; // height units between the levels hachure strokes are seeded along
+const LABEL_SPACING = 60; // font sizes between the labels along one contour
 
 const CURVE_MAP: Record<string, CurveFactory> = {
   curveBasis,
@@ -63,11 +75,20 @@ function getContourSurface(smoothed: Float64Array): { points: [number, number][]
   return { points, elevations };
 }
 
-type HeightsOptions = typeof styles.heightmap.groups.landHeights.options;
-
 /** Whether the heights group is tinted by elevation, not drawn as contour or hachure lines alone */
-export const hasHeightTints = (heightOptions: HeightsOptions): boolean =>
+export const hasHeightTints = (heightOptions: typeof styles.heightmap.groups.landHeights.options): boolean =>
   heightOptions.contours.mode !== "only" && heightOptions.hachures.mode !== "only";
+
+// the labels, each over a white halo painted first that breaks the line under the text
+function getContourLabelsMarkup(labels: ContourLabel[], fontSize: number, fill: string): string {
+  if (!labels.length) return "";
+  const texts = labels.map(
+    ({ x, y, angle, text }) =>
+      `<text transform="translate(${rn(x, 2)} ${rn(y, 2)}) rotate(${rn(angle, 1)})" dy="0.35em">${text}</text>`
+  );
+  return /* html */ `<g class="heightmap-contour-labels" fill="${fill}" stroke="#ffffff" stroke-width="${rn(fontSize / 3, 2)}"
+    stroke-linejoin="round" paint-order="stroke" font-size="${fontSize}" text-anchor="middle">${texts.join("")}</g>`;
+}
 
 export const drawHeightmap = (): void => {
   if (options.app.mode === "heightmap")
@@ -75,21 +96,18 @@ export const drawHeightmap = (): void => {
 
   log.time("drawHeightmap");
 
-  const ocean = select("#terrs").select<SVGGElement>("#oceanHeights");
-  const land = select("#terrs").select<SVGGElement>("#landHeights");
-
-  ocean.selectAll("*").remove();
-  land.selectAll("*").remove();
-
   const paths: (string | undefined)[] = new Array(101);
   const { cells, vertices } = grid;
   const used = new Uint8Array(cells.i.length);
   const heights = Array.from(cells.i).sort((a, b) => cells.h[a] - cells.h[b]);
+  const { width, height } = options.map.graph;
 
   const landOptions = styles.heightmap.groups.landHeights.options;
   const oceanOptions = styles.heightmap.groups.oceanHeights.options;
   const landFillsVisible = hasHeightTints(landOptions);
   const oceanFillsVisible = hasHeightTints(oceanOptions);
+  const oceanMarkup: string[] = [];
+  const landMarkup: string[] = [];
 
   // ocean cells
   const renderOceanCells = oceanOptions.render;
@@ -145,93 +163,77 @@ export const drawHeightmap = (): void => {
   }
 
   // render paths
-  for (const height of range(0, 101)) {
-    const group = height < 20 ? ocean : land;
-    const heightOptions = height < 20 ? oceanOptions : landOptions;
-    const fillsVisible = height < 20 ? oceanFillsVisible : landFillsVisible;
-    if (!fillsVisible) continue;
+  const baseRect = (fill: string) => `<rect x="0" y="0" width="${width}" height="${height}" fill="${fill}"/>`;
+  for (let h = 0; h <= 100; h++) {
+    const isOcean = h < 20;
+    const heightOptions = isOcean ? oceanOptions : landOptions;
+    if (!(isOcean ? oceanFillsVisible : landFillsVisible)) continue;
+    const markup = isOcean ? oceanMarkup : landMarkup;
     const scheme = HeightmapColorSchemes.get(heightOptions.scheme);
 
-    if (height === 0 && renderOceanCells) {
-      // draw base ocean layer
-      group
-        .append("rect")
-        .attr("x", 0)
-        .attr("y", 0)
-        .attr("width", options.map.graph.width)
-        .attr("height", options.map.graph.height)
-        .attr("fill", scheme(1));
-    }
+    if (h === 0 && renderOceanCells) markup.push(baseRect(scheme(1))); // base ocean layer
+    if (h === 20) markup.push(baseRect(scheme(0.8))); // base land layer
 
-    if (height === 20) {
-      // draw base land layer
-      group
-        .append("rect")
-        .attr("x", 0)
-        .attr("y", 0)
-        .attr("width", options.map.graph.width)
-        .attr("height", options.map.graph.height)
-        .attr("fill", scheme(0.8));
+    const path = paths[h];
+    if (!path || path.length < 10) continue;
+    const terracing = heightOptions.terracing / 10 || 0;
+    const fill = HeightmapColorSchemes.getColor(h, scheme);
+    if (terracing) {
+      const shade = color(fill)!.darker(terracing).toString();
+      markup.push(`<path d="${path}" transform="translate(.7,1.4)" fill="${shade}" data-height="${h}"/>`);
     }
-
-    if (paths[height] && paths[height]!.length >= 10) {
-      const terracing = heightOptions.terracing / 10 || 0;
-      const fillColor = HeightmapColorSchemes.getColor(height, scheme);
-
-      if (terracing) {
-        group
-          .append("path")
-          .attr("d", paths[height]!)
-          .attr("transform", "translate(.7,1.4)")
-          .attr("fill", color(fillColor)!.darker(terracing).toString())
-          .attr("data-height", height);
-      }
-      group.append("path").attr("d", paths[height]!).attr("fill", fillColor).attr("data-height", height);
-    }
+    markup.push(`<path d="${path}" fill="${fill}" data-height="${h}"/>`);
   }
 
   let smoothedHeights: Float64Array | undefined; // shared by contours and hachures
   const getSmoothedHeights = () => (smoothedHeights ??= smoothContourHeights(cells.h, cells.c));
 
   if (landOptions.contours.mode !== "off" || (renderOceanCells && oceanOptions.contours.mode !== "off")) {
-    const { points, elevations } = getContourSurface(getSmoothedHeights());
+    const smoothed = getSmoothedHeights();
+    const { points, elevations } = getContourSurface(smoothed);
+    const ratio = getHeightUnitRatio();
+    const [min = SEA_LEVEL, max = SEA_LEVEL] = extent(cells.h);
 
-    for (const [group, options, isOcean] of [
-      [land, landOptions, false],
-      [ocean, oceanOptions, true]
+    for (const [markup, options, isOcean] of [
+      [landMarkup, landOptions, false],
+      [oceanMarkup, oceanOptions, true]
     ] as const) {
       const contours = options.contours;
       if (contours.mode === "off" || (isOcean && !renderOceanCells)) continue;
-      const thresholds = isOcean
-        ? range(20 - contours.interval, 0, -contours.interval)
-        : range(20 + contours.interval, 100, contours.interval);
-      const contourGroup = group
-        .append("g")
-        .attr("class", "heightmap-contours")
-        .attr("fill", "none")
-        .attr("stroke", contours.color)
-        .attr("stroke-linejoin", "round")
-        .attr("stroke-linecap", "round")
-        .attr("opacity", contours.opacity)
-        .attr("mask", isOcean ? "url(#water)" : "url(#land)")
-        .attr("pointer-events", "none");
-      for (const contour of getHeightContours(points, elevations, vertices.c, thresholds, contours.interval)) {
-        contourGroup
-          .append("path")
-          .attr("d", round(contour.path)) // full-precision coordinates bloat the saved map
-          .attr("data-height", contour.height)
-          .attr("stroke-width", contours.width * (contour.major ? 2 : 1));
-      }
+      const levels = isOcean
+        ? getContourLevels(contours.interval, -heightToMeters(min) * ratio, depth => metersToHeight(-depth / ratio))
+        : getContourLevels(contours.interval, heightToMeters(max) * ratio, value => metersToHeight(value / ratio));
+      const chains = getHeightContourChains(
+        points,
+        elevations,
+        vertices.c,
+        levels.map(level => level.height)
+      );
+      // full-precision coordinates bloat the saved map
+      const lines = getHeightContours(chains, levels).map(
+        ({ path, height, major }) =>
+          `<path d="${round(path)}" data-height="${height}" stroke-width="${contours.width * (major ? 2 : 1)}"/>`
+      );
+      const labels = contours.fontSize
+        ? getContourLabels(chains, levels, {
+            size: contours.fontSize,
+            spacing: contours.fontSize * LABEL_SPACING,
+            heightAt: (x, y) => smoothed[Grid.findCell(x, y)],
+            probe: grid.spacing
+          })
+        : [];
+      markup.push(/* html */ `<g class="heightmap-contours" fill="none" stroke="${contours.color}" stroke-linejoin="round"
+        stroke-linecap="round" opacity="${contours.opacity}" mask="url(#${isOcean ? "water" : "land"})" pointer-events="none"
+        >${lines.join("")}${getContourLabelsMarkup(labels, contours.fontSize, contours.color)}</g>`);
     }
   }
 
   if (landOptions.hachures.mode !== "off" || (renderOceanCells && oceanOptions.hachures.mode !== "off")) {
     const smoothed = smoothContourHeights(getSmoothedHeights(), cells.c); // twice: a calm fall line
     const { points, elevations } = getContourSurface(smoothed);
-    const { width, height } = options.map.graph;
-    for (const [group, heightOptions, isOcean] of [
-      [land, landOptions, false],
-      [ocean, oceanOptions, true]
+    for (const [markup, heightOptions, isOcean] of [
+      [landMarkup, landOptions, false],
+      [oceanMarkup, oceanOptions, true]
     ] as const) {
       const hachures = heightOptions.hachures;
       if (hachures.mode === "off" || (isOcean && !renderOceanCells)) continue;
@@ -252,18 +254,13 @@ export const drawHeightmap = (): void => {
         seed: options.map.seed
       });
       if (!path) continue;
-      group
-        .append("g")
-        .attr("class", "heightmap-hachures")
-        .attr("fill", hachures.color)
-        .attr("fill-rule", "nonzero")
-        .attr("opacity", hachures.opacity)
-        .attr("mask", isOcean ? "url(#water)" : "url(#land)")
-        .attr("pointer-events", "none")
-        .append("path")
-        .attr("d", path);
+      markup.push(/* html */ `<g class="heightmap-hachures" fill="${hachures.color}" fill-rule="nonzero"
+        opacity="${hachures.opacity}" mask="url(#${isOcean ? "water" : "land"})" pointer-events="none"><path d="${path}"/></g>`);
     }
   }
+
+  ensureEl("oceanHeights").innerHTML = oceanMarkup.join("");
+  ensureEl("landHeights").innerHTML = landMarkup.join("");
 
   // connect vertices to chain: specific case for heightmap
   function connectVertices(

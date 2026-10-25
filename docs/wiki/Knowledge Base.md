@@ -754,7 +754,7 @@ You cannot import it, but you can set it up using the Biomes Editor in Tools
 
 ### Can I draw contour lines or hachures on the heightmap?
 
-Yes. Open Style -> Heightmap. The Contours option draws elevation contours over the heightmap colors or as lines only, with configurable spacing and color (every fifth contour is heavier). The Hachures option adds short strokes along the slopes, with density, length and color settings. Both are rendering styles, they don't change the heights
+Yes. Open Style -> Heightmap. The Contours option draws elevation contours over the heightmap colors or as lines only, with configurable spacing in the map's height unit and color (every fifth contour is heavier). Set its Font size above 0 to write the elevation along every fifth contour, as on a topographic map. The Hachures option adds short strokes along the slopes, with density, length and color settings. Both are rendering styles, they don't change the heights
 
 ### How do I use the new Ink, Cinderwood and Frostbite styles?
 

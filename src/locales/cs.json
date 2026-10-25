@@ -978,7 +978,6 @@
   "Elevation": "Nadmořská výška",
   "Elevation profile": "Výškový profil",
   "Elevation profile: no data": "Výškový profil: žádná data",
-  "Elevation spacing between contours. Lower values show more detail; every fifth contour is heavier": "Výškový rozestup mezi vrstevnicemi. Nižší hodnoty ukazují více detailů; každá pátá vrstevnice je silnější",
   "Embellishment": "Ozdoba",
   "Emblem shape": "Tvar znaku",
   "Emblem shape associated with culture": "Tvar znaku přiřazený kultuře",
@@ -3559,5 +3558,10 @@
   "No states to regenerate provinces for": "Žádné státy, pro které by šlo znovu vygenerovat provincie",
   "Please select at least one state": "Vyberte prosím alespoň jeden stát",
   "Regenerate Provinces": "Vygenerovat znovu provincie",
-  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Vyberte státy, pro které se znovu vygenerují provincie. Zamčené provincie zůstanou, jak jsou"
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Vyberte státy, pro které se znovu vygenerují provincie. Zamčené provincie zůstanou, jak jsou",
+  "Height between contours in the map's height unit": "Výškový rozdíl mezi vrstevnicemi v jednotce výšky mapy",
+  "Every fifth contour is heavier and carries the labels": "Každá pátá vrstevnice je silnější a nese popisky",
+  "Font size": "Velikost písma",
+  "Font size of the elevation labels on every fifth contour": "Velikost písma výškových popisků na každé páté vrstevnici",
+  "Set to 0 to hide the labels": "Nastavte 0 pro skrytí popisků"
 }

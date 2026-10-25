@@ -978,7 +978,6 @@
   "Elevation": "Вышыня",
   "Elevation profile": "Профіль вышыні",
   "Elevation profile: no data": "Профіль вышыні: няма даных",
-  "Elevation spacing between contours. Lower values show more detail; every fifth contour is heavier": "Крок вышыні паміж контурамі. Меншыя значэнні паказваюць больш дэталей; кожны пяты контур таўшчэйшы",
   "Embellishment": "Упрыгожанне",
   "Emblem shape": "Форма герба",
   "Emblem shape associated with culture": "Форма герба, звязаная з культурай",
@@ -3559,5 +3558,10 @@
   "No states to regenerate provinces for": "Няма дзяржаў, для якіх можна перастварыць правінцыі",
   "Please select at least one state": "Выберыце хаця б адну дзяржаву",
   "Regenerate Provinces": "Перастварыць правінцыі",
-  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Выберыце дзяржавы, для якіх перастварыць правінцыі. Зафіксаваныя правінцыі застануцца такімі, як ёсць"
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Выберыце дзяржавы, для якіх перастварыць правінцыі. Зафіксаваныя правінцыі застануцца такімі, як ёсць",
+  "Height between contours in the map's height unit": "Вышыня паміж контурамі ў адзінках вышыні карты",
+  "Every fifth contour is heavier and carries the labels": "Кожны пяты контур цяжэйшы і нясе надпісы",
+  "Font size": "Памер шрыфту",
+  "Font size of the elevation labels on every fifth contour": "Памер шрыфту надпісаў вышыні на кожным пятым контуры",
+  "Set to 0 to hide the labels": "Пастаўце 0, каб схаваць надпісы"
 }

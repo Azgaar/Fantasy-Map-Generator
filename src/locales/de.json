@@ -978,7 +978,6 @@
   "Elevation": "Höhe",
   "Elevation profile": "Höhenprofil",
   "Elevation profile: no data": "Höhenprofil: keine Daten",
-  "Elevation spacing between contours. Lower values show more detail; every fifth contour is heavier": "Höhenabstand zwischen den Höhenlinien. Kleinere Werte zeigen mehr Details; jede fünfte Höhenlinie ist kräftiger",
   "Embellishment": "Verzierung",
   "Emblem shape": "Wappenform",
   "Emblem shape associated with culture": "Mit der Kultur verbundene Wappenform",
@@ -3559,5 +3558,10 @@
   "No states to regenerate provinces for": "Keine Staaten, deren Provinzen neu generiert werden können",
   "Please select at least one state": "Bitte wähle mindestens einen Staat",
   "Regenerate Provinces": "Provinzen neu generieren",
-  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Wähle die Staaten, deren Provinzen neu generiert werden. Gesperrte Provinzen bleiben, wie sie sind"
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Wähle die Staaten, deren Provinzen neu generiert werden. Gesperrte Provinzen bleiben, wie sie sind",
+  "Height between contours in the map's height unit": "Höhenabstand zwischen den Höhenlinien in der Höheneinheit der Karte",
+  "Every fifth contour is heavier and carries the labels": "Jede fünfte Höhenlinie ist kräftiger und trägt die Beschriftungen",
+  "Font size": "Schriftgröße",
+  "Font size of the elevation labels on every fifth contour": "Schriftgröße der Höhenangaben an jeder fünften Höhenlinie",
+  "Set to 0 to hide the labels": "Auf 0 setzen, um die Beschriftungen auszublenden"
 }

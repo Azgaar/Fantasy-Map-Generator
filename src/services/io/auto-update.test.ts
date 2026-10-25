@@ -1141,3 +1141,35 @@ describe("v1.109 burg groups", () => {
     expect(towns.features).toBeUndefined();
   });
 });
+
+describe("v1.157.0 contour spacing in height units", () => {
+  function stylesRecord(land: number, ocean: number) {
+    const record = structuredClone(Styles.defaults) as any;
+    record.heightmap.groups.landHeights.options.contours.interval = land;
+    record.heightmap.groups.oceanHeights.options.contours.interval = ocean;
+    return record;
+  }
+  const intervals = (data: string[]) => {
+    const { landHeights, oceanHeights } = JSON.parse(data[48]).heightmap.groups;
+    return [landHeights.options.contours.interval, oceanHeights.options.contours.interval];
+  };
+
+  beforeEach(() => {
+    globalThis.grid = { cells: { h: Uint8Array.from([5, 20, 70]) } } as unknown as typeof globalThis.grid;
+    options.map.units.height = { unit: "m", exponent: 2 };
+  });
+
+  it("turns generator-height spacing into the round height that draws about as many lines", async () => {
+    const data: string[] = [];
+    data[48] = JSON.stringify(stylesRecord(5, 5)); // 9 land levels up to 2704 m, 2 ocean levels down to 150 m
+    await resolveVersionConflicts("1.156.0", data);
+    expect(intervals(data)).toEqual([200, 100]);
+  });
+
+  it("leaves current maps alone", async () => {
+    const data: string[] = [];
+    data[48] = JSON.stringify(stylesRecord(20, 10));
+    await resolveVersionConflicts(VERSION, data);
+    expect(intervals(data)).toEqual([20, 10]);
+  });
+});

@@ -978,7 +978,6 @@
   "Elevation": "Magasság",
   "Elevation profile": "Magassági profil",
   "Elevation profile: no data": "Magassági profil: nincs adat",
-  "Elevation spacing between contours. Lower values show more detail; every fifth contour is heavier": "A szintvonalak közötti magasságköz. Kisebb érték több részletet mutat; minden ötödik szintvonal vastagabb",
   "Embellishment": "Díszítés",
   "Emblem shape": "Címer alakja",
   "Emblem shape associated with culture": "A kultúrához tartozó címer alakja",
@@ -3559,5 +3558,10 @@
   "No states to regenerate provinces for": "Nincs állam, amelynek tartományai újragenerálhatók",
   "Please select at least one state": "Válasszon ki legalább egy államot",
   "Regenerate Provinces": "Tartományok újragenerálása",
-  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Válassza ki az államokat, amelyek tartományait újragenerálja. A zárolt tartományok változatlanok maradnak"
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Válassza ki az államokat, amelyek tartományait újragenerálja. A zárolt tartományok változatlanok maradnak",
+  "Height between contours in the map's height unit": "Szintköz a térkép magassági mértékegységében",
+  "Every fifth contour is heavier and carries the labels": "Minden ötödik szintvonal vastagabb, és ezen vannak a feliratok",
+  "Font size": "Betűméret",
+  "Font size of the elevation labels on every fifth contour": "A magassági feliratok betűmérete minden ötödik szintvonalon",
+  "Set to 0 to hide the labels": "Állítsa 0-ra a feliratok elrejtéséhez"
 }

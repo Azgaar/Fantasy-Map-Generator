@@ -563,10 +563,11 @@
           "curve": "curveBasisClosed",
           "contours": {
             "mode": "off",
-            "interval": 5,
+            "interval": 200,
             "color": "#000000",
             "width": 0.25,
-            "opacity": 0.4
+            "opacity": 0.4,
+            "fontSize": 0
           },
           "hachures": {
             "mode": "only",
@@ -592,10 +593,11 @@
           "curve": "curveBasisClosed",
           "contours": {
             "mode": "only",
-            "interval": 5,
+            "interval": 100,
             "color": "#000000",
             "width": 0.25,
-            "opacity": 0.35
+            "opacity": 0.35,
+            "fontSize": 0
           },
           "hachures": {
             "mode": "off",

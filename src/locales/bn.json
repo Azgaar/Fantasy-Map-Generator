@@ -978,7 +978,6 @@
   "Elevation": "উচ্চতা",
   "Elevation profile": "উচ্চতার প্রোফাইল",
   "Elevation profile: no data": "উচ্চতার প্রোফাইল: কোনো তথ্য নেই",
-  "Elevation spacing between contours. Lower values show more detail; every fifth contour is heavier": "সমোন্নতি রেখার উচ্চতার ব্যবধান। কম মান বেশি বিস্তারিত দেখায়; প্রতি পঞ্চম রেখা মোটা হয়",
   "Embellishment": "অলংকরণ",
   "Emblem shape": "প্রতীকের আকৃতি",
   "Emblem shape associated with culture": "সংস্কৃতির সাথে যুক্ত প্রতীকের আকৃতি",
@@ -3559,5 +3558,10 @@
   "No states to regenerate provinces for": "প্রদেশ পুনরায় তৈরি করার মতো কোনো রাষ্ট্র নেই",
   "Please select at least one state": "অন্তত একটি রাষ্ট্র বাছাই করুন",
   "Regenerate Provinces": "প্রদেশ পুনরায় তৈরি করুন",
-  "Select states to regenerate provinces for. Locked provinces will remain as they are": "যেসব রাষ্ট্রের প্রদেশ পুনরায় তৈরি হবে সেগুলো বাছাই করুন। লক করা প্রদেশ যেমন আছে তেমনই থাকবে"
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "যেসব রাষ্ট্রের প্রদেশ পুনরায় তৈরি হবে সেগুলো বাছাই করুন। লক করা প্রদেশ যেমন আছে তেমনই থাকবে",
+  "Height between contours in the map's height unit": "মানচিত্রের উচ্চতার এককে সমোন্নতি রেখাগুলির মধ্যে উচ্চতা",
+  "Every fifth contour is heavier and carries the labels": "প্রতি পঞ্চম রেখা মোটা এবং তাতে লেবেল থাকে",
+  "Font size": "ফন্টের আকার",
+  "Font size of the elevation labels on every fifth contour": "প্রতি পঞ্চম সমোন্নতি রেখায় উচ্চতার লেবেলের ফন্টের আকার",
+  "Set to 0 to hide the labels": "লেবেল লুকাতে 0 দিন"
 }

@@ -978,7 +978,6 @@
   "Elevation": "Altitude",
   "Elevation profile": "Profil altimétrique",
   "Elevation profile: no data": "Profil altimétrique : aucune donnée",
-  "Elevation spacing between contours. Lower values show more detail; every fifth contour is heavier": "Équidistance entre les courbes de niveau. Une valeur plus faible montre plus de détail ; une courbe sur cinq est plus épaisse",
   "Embellishment": "Ornement",
   "Emblem shape": "Forme d’emblème",
   "Emblem shape associated with culture": "Forme d’emblème associée à la culture",
@@ -3559,5 +3558,10 @@
   "No states to regenerate provinces for": "Aucun État dont régénérer les provinces",
   "Please select at least one state": "Choisissez au moins un État",
   "Regenerate Provinces": "Régénérer les provinces",
-  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Choisissez les États dont les provinces seront régénérées. Les provinces verrouillées resteront inchangées"
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Choisissez les États dont les provinces seront régénérées. Les provinces verrouillées resteront inchangées",
+  "Height between contours in the map's height unit": "Équidistance des courbes dans l'unité d'altitude de la carte",
+  "Every fifth contour is heavier and carries the labels": "Une courbe sur cinq est plus épaisse et porte les étiquettes",
+  "Font size": "Taille de police",
+  "Font size of the elevation labels on every fifth contour": "Taille de police des cotes d'altitude sur une courbe sur cinq",
+  "Set to 0 to hide the labels": "Mettre à 0 pour masquer les étiquettes"
 }

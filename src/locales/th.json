@@ -978,7 +978,6 @@
   "Elevation": "ความสูง",
   "Elevation profile": "โปรไฟล์ความสูง",
   "Elevation profile: no data": "โปรไฟล์ความสูง: ไม่มีข้อมูล",
-  "Elevation spacing between contours. Lower values show more detail; every fifth contour is heavier": "ระยะห่างความสูงระหว่างเส้นชั้นความสูง ค่าต่ำแสดงรายละเอียดมากขึ้น เส้นที่ห้าทุกเส้นหนากว่า",
   "Embellishment": "ลวดลายตกแต่ง",
   "Emblem shape": "รูปร่างตราสัญลักษณ์",
   "Emblem shape associated with culture": "รูปร่างตราสัญลักษณ์ที่เชื่อมกับวัฒนธรรม",
@@ -3559,5 +3558,10 @@
   "No states to regenerate provinces for": "ไม่มีรัฐที่จะสร้างจังหวัดใหม่",
   "Please select at least one state": "โปรดเลือกอย่างน้อยหนึ่งรัฐ",
   "Regenerate Provinces": "สร้างจังหวัดใหม่",
-  "Select states to regenerate provinces for. Locked provinces will remain as they are": "เลือกรัฐที่จะสร้างจังหวัดใหม่ จังหวัดที่ล็อกไว้จะคงเดิม"
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "เลือกรัฐที่จะสร้างจังหวัดใหม่ จังหวัดที่ล็อกไว้จะคงเดิม",
+  "Height between contours in the map's height unit": "ความสูงระหว่างเส้นชั้นความสูงในหน่วยความสูงของแผนที่",
+  "Every fifth contour is heavier and carries the labels": "เส้นที่ห้าทุกเส้นหนากว่าและมีป้ายชื่อ",
+  "Font size": "ขนาดตัวอักษร",
+  "Font size of the elevation labels on every fifth contour": "ขนาดตัวอักษรของป้ายความสูงบนเส้นชั้นความสูงทุกเส้นที่ห้า",
+  "Set to 0 to hide the labels": "ตั้งเป็น 0 เพื่อซ่อนป้ายชื่อ"
 }

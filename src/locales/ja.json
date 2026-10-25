@@ -978,7 +978,6 @@
   "Elevation": "標高",
   "Elevation profile": "標高プロファイル",
   "Elevation profile: no data": "標高プロファイル：データがありません",
-  "Elevation spacing between contours. Lower values show more detail; every fifth contour is heavier": "等高線の標高間隔。値を小さくすると詳細になります。5本ごとの等高線が太く表示されます",
   "Embellishment": "装飾",
   "Emblem shape": "紋章の形",
   "Emblem shape associated with culture": "文化に関連付けられた紋章の形",
@@ -3559,5 +3558,10 @@
   "No states to regenerate provinces for": "州を再生成できる国家がありません",
   "Please select at least one state": "少なくとも1つの国家を選択してください",
   "Regenerate Provinces": "州を再生成",
-  "Select states to regenerate provinces for. Locked provinces will remain as they are": "州を再生成する国家を選択します。ロックされた州はそのまま残ります"
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "州を再生成する国家を選択します。ロックされた州はそのまま残ります",
+  "Height between contours in the map's height unit": "地図の高さ単位での等高線の間隔",
+  "Every fifth contour is heavier and carries the labels": "5本ごとの等高線は太く、ラベルが付きます",
+  "Font size": "フォントサイズ",
+  "Font size of the elevation labels on every fifth contour": "5本ごとの等高線に付く標高ラベルのフォントサイズ",
+  "Set to 0 to hide the labels": "0にするとラベルを非表示にします"
 }

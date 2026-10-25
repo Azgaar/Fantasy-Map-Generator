@@ -978,7 +978,6 @@
   "Elevation": "Надморска височина",
   "Elevation profile": "Профил на надморската височина",
   "Elevation profile: no data": "Профил на надморската височина: няма данни",
-  "Elevation spacing between contours. Lower values show more detail; every fifth contour is heavier": "Разстояние по височина между изохипсите. По-ниските стойности показват повече детайли; всяка пета изохипса е по-дебела",
   "Embellishment": "Декорация",
   "Emblem shape": "Форма на герба",
   "Emblem shape associated with culture": "Форма на герба, свързана с културата",
@@ -3559,5 +3558,10 @@
   "No states to regenerate provinces for": "Няма държави, за които да се генерират отново провинции",
   "Please select at least one state": "Изберете поне една държава",
   "Regenerate Provinces": "Регенериране на провинциите",
-  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Изберете държави, за които да се генерират отново провинциите. Заключените провинции ще останат такива, каквито са"
+  "Select states to regenerate provinces for. Locked provinces will remain as they are": "Изберете държави, за които да се генерират отново провинциите. Заключените провинции ще останат такива, каквито са",
+  "Height between contours in the map's height unit": "Височина между изохипсите в мерната единица за височина на картата",
+  "Every fifth contour is heavier and carries the labels": "Всяка пета изохипса е по-плътна и носи надписите",
+  "Font size": "Размер на шрифта",
+  "Font size of the elevation labels on every fifth contour": "Размер на шрифта на надписите за височина на всяка пета изохипса",
+  "Set to 0 to hide the labels": "Задайте 0, за да скриете надписите"
 }
