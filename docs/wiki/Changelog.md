@@ -21,6 +21,8 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Heightmap: contours are spaced in round height units
 - Measurers, regiment controls and editing handles keep their size on zoom
 - Image Converter: fit, zoom and move the image before converting it
+- Update window: the latest releases info; F1 opens it again
+- The tour button on the map is removed: start the tour from the update window or the About tab
 
 # Releases
 

@@ -13,7 +13,7 @@ import { log } from "@/utils/logger";
  * Example: 1.102.2 -> Major version 1, Minor version 102, Patch version 2
  * VERSION below is the only source of truth. Edit it by hand: the pre-commit hook copies it where needed.
  *
- * For the changes that may be interesting for end users, update the `latestPublicChanges` below.
+ * Changes that may be interesting for end users go to docs/wiki/Changelog.md: the update window lists them from there.
  */
 
 import { Options } from "@/model/options/options-model";
@@ -27,28 +27,6 @@ import { sentences, t } from "@/utils/i18n";
 import { findEl } from "@/utils/node-utils";
 
 export const VERSION = "1.157.0";
-
-// new changes on top, never translated
-const latestPublicChanges = (): string[] => [
-  "Heightmap contours: elevation labels",
-  "Interface translated into 29 languages",
-  "Map context menu",
-  "Advanced Options: configurable map lattice",
-  "Trade tariffs and embargoes",
-  "View-only mode for saved maps",
-  "Free-text tags for states and other entities (hidden by default)",
-  "CSV upload for most entities",
-  "Color picker rework",
-  "Regenerate provinces for selected states",
-  "Heightmap Risk mode: map restoration algorithm rework",
-  "Submap and Transform fixes",
-  "Rivers: lock a river to keep it through regeneration",
-  "Paint editor: lock elements from being painted over",
-  "Military forces: hide/show individual regiments",
-  "Shift + Click to bypass confirmation",
-  "Population layer: colored cells style",
-  "Altitude legend: heightmap colors"
-];
 
 export function parseMapVersion(version: string): string {
   let [major, minor, patch] = version.split(".");
@@ -135,61 +113,6 @@ export async function cleanupData(): Promise<void> {
   await clearCache();
 }
 
-function showUpdateWindow(storedVersion: string | null): void {
-  localStorage.setItem("version", VERSION);
-
-  const changelog = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Changelog";
-  const reddit = "https://www.reddit.com/r/FantasyMapGenerator";
-  const discord = "https://discordapp.com/invite/X7E84HU";
-  const patreon = "https://www.patreon.com/azgaar";
-
-  Dialog.message({
-    message: /* html */ `${t(
-      "The Fantasy Map Generator is updated up to version {{version}}. This version is compatible with {{- previous}}, loaded save files will be auto-updated.",
-      {
-        version: VERSION,
-        previous: `<a href="${changelog}" target="_blank" style="white-space: nowrap">${t("previous versions")}</a>`
-      }
-    )}
-    ${storedVersion ? `<span>${t("In case of errors reload the page to update the code.")}</span>` : ""}
-
-    <ul>
-      <strong>${t("Latest changes")}:</strong>
-      ${latestPublicChanges()
-        .map(change => `<li>${change}</li>`)
-        .join("")}
-    </ul>
-
-    ${isElectron() ? "" : `<p>${t("The Generator is also available as a {{- app}} that works offline.", { app: `<a id="updateAppOffer" href="#">${t("desktop app")}</a>` })}</p>`}
-
-    <p>${t(
-      "Join our {{- discord}} and {{- reddit}} to ask questions, share maps, discuss the Generator and Worldbuilding, report bugs and propose new features.",
-      {
-        discord: `<a href="${discord}" target="_blank">${t("Discord server")}</a>`,
-        reddit: `<a href="${reddit}" target="_blank">${t("Reddit community")}</a>`
-      }
-    )}</p>
-    <span><i>${t("Thanks for all supporters on {{- patreon}}!", { patreon: `<a href="${patreon}" target="_blank">Patreon</a>` })}</i></span>`,
-    title: t("Fantasy Map Generator update"),
-    width: "28em",
-    position: { my: "center center-4em", at: "center", of: "svg" },
-    buttons: [
-      {
-        label: t("Clear cache"),
-        onClick: () => {
-          clearCache();
-          return false;
-        }
-      },
-      { label: t("Don't show again") }
-    ]
-  });
-  findEl("updateAppOffer")?.addEventListener("click", event => {
-    event.preventDefault();
-    Services.AppOffer.open();
-  });
-}
-
 function announceVersion(): void {
   if (parseMapVersion(VERSION) !== VERSION) log.error("versioning: Invalid format or parsing function");
 
@@ -198,13 +121,11 @@ function announceVersion(): void {
   if (loadingScreenVersion) loadingScreenVersion.textContent = `v${VERSION}`;
 
   const storedVersion = localStorage.getItem("version");
-  if (!storedVersion) {
-    setTimeout(() => showUpdateWindow(null), 6000);
-    return;
-  }
-
-  if (compareVersions(storedVersion, VERSION, { major: true, minor: true, patch: false }).isOlder) {
-    setTimeout(() => showUpdateWindow(storedVersion), 6000);
+  if (!storedVersion || compareVersions(storedVersion, VERSION, { major: true, minor: true, patch: false }).isOlder) {
+    setTimeout(() => {
+      localStorage.setItem("version", VERSION); // stored once shown, so the window opens once
+      Services.ReleaseNotes.open({ afterUpdate: true });
+    }, 6000);
   } else if (compareVersions(storedVersion, VERSION).isOlder) {
     localStorage.setItem("version", VERSION);
     tip(t("Updated to v{{version}}. Reload the page if you get errors", { version: VERSION }), true, "success", 6000);
@@ -212,5 +133,3 @@ function announceVersion(): void {
 }
 
 announceVersion();
-
-// temp legacy compatibility

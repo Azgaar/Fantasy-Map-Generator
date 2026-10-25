@@ -942,7 +942,7 @@ Yes, use the focus (pin) icon. Open Tools -> States (or Provinces) and click on 
 
 ### Are there any keyboard shortcuts?
 
-Yes, plenty. The full list is on the Hotkeys wiki page: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys (F1 in the app opens the info dialog that links to it). The most used ones are Tab (toggle the menu), F2 (new map), Ctrl + S (save to machine as a new file), Ctrl + Shift + S (overwrite the last saved file), F6 and F9 (quick save to browser storage and quick load), single letters to toggle layers, and Shift + letter to open editors. Hold Shift while clicking a button that asks for confirmation (remove, restore, recalculate, load) to act immediately without the dialog; Enter confirms and Escape cancels an open confirmation
+Yes, plenty. The full list is on the Hotkeys wiki page: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys (F1 in the app opens the What's new window that links to it). The most used ones are Tab (toggle the menu), F2 (new map), Ctrl + S (save to machine as a new file), Ctrl + Shift + S (overwrite the last saved file), F6 and F9 (quick save to browser storage and quick load), single letters to toggle layers, and Shift + letter to open editors. Hold Shift while clicking a button that asks for confirmation (remove, restore, recalculate, load) to act immediately without the dialog; Enter confirms and Escape cancels an open confirmation
 
 ### Where can I find the documentation?
 
@@ -950,7 +950,7 @@ The wiki is the main documentation: https://github.com/Azgaar/Fantasy-Map-Genera
 
 ### Is there a guided tour for beginners?
 
-Yes. Open the About tab in the menu and click on 'Take an Interactive Tour'. It walks you through the map, the menu tabs, layers and presets, and the main tools step by step
+Yes. Press F1 or open the About tab in the menu, then click 'Interactive Tour'. It walks you through the map, the menu tabs, layers and presets, and the main tools step by step
 
 ### How do I generate the same map again? What is the seed?
 

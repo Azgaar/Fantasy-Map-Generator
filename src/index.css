@@ -2242,55 +2242,6 @@ svg.button {
   margin-left: 0.25em;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: var(--bg-opacity);
-  }
-}
-
-#tourPromptButton {
-  position: fixed;
-  bottom: 116px; /* stacked above the assistant bubble, sharing its column */
-  right: 18px;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background-color: var(--bg-main);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  user-select: none;
-  opacity: 0;
-  animation: fadeIn 1s ease-in 1s forwards;
-  z-index: 99;
-}
-
-#tourPromptButton button {
-  all: unset;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-#tourPromptButton svg path {
-  fill: #000000;
-  stroke: #000000;
-  fill-opacity: 1;
-  stroke-width: 0;
-  transition: all 0.3s ease-out;
-  stroke-linejoin: round;
-}
-
-#tourPromptButton:hover svg path {
-  fill-opacity: 0;
-  stroke-width: 5;
-}
-
 @media print {
   div,
   canvas {

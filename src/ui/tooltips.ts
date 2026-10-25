@@ -141,7 +141,7 @@ function showLockTip(target: HTMLElement): void {
 }
 
 // non-svg containers holding elements with data-tip
-const TIP_CONTAINERS = ["dialogs", "optionsContainer", "heightmapFinalize", "tourPromptButton"];
+const TIP_CONTAINERS = ["dialogs", "optionsContainer", "heightmapFinalize"];
 
 function initialize(): void {
   const onDataTipMove = debounce(showDataTip, 50);
