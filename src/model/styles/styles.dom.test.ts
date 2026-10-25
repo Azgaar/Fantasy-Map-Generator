@@ -28,14 +28,14 @@ afterEach(() => {
 
 describe("applyStyles", () => {
   test("writes attrs to the layer and its groups, removes nulls, skips options", () => {
-    const el = mount("rivers");
-    styles.rivers.attrs.fill = "#123456";
-    styles.rivers.attrs.filter = null;
+    const el = mount("landmass");
+    styles.landmass.attrs.fill = "#123456";
+    styles.landmass.attrs.filter = null;
     el.setAttribute("filter", "url(#stale)");
-    Styles.apply("rivers");
+    Styles.apply("landmass");
     expect(el.getAttribute("fill")).toBe("#123456");
     expect(el.hasAttribute("filter")).toBe(false);
-    expect(Layers.draw).toHaveBeenCalledWith("rivers");
+    expect(Layers.draw).toHaveBeenCalledWith("landmass");
 
     const routes = mount("routes", ["roads", "trails", "searoutes"]);
     styles.routes.groups.roads.attrs.stroke = "#803a2b";
@@ -101,16 +101,16 @@ describe("applyStyles", () => {
   });
 
   test("a missing layer element is a no-op, the rest still apply", () => {
-    const el = mount("rivers");
-    styles.rivers.attrs.fill = "#654321";
-    expect(() => Styles.apply("compass", "rivers")).not.toThrow();
+    const el = mount("landmass");
+    styles.landmass.attrs.fill = "#654321";
+    expect(() => Styles.apply("compass", "landmass")).not.toThrow();
     expect(el.getAttribute("fill")).toBe("#654321");
   });
 
   test("writeStyles writes attrs without drawing", () => {
-    const el = mount("rivers");
-    styles.rivers.attrs.fill = "hotpink";
-    Styles.write("rivers");
+    const el = mount("landmass");
+    styles.landmass.attrs.fill = "hotpink";
+    Styles.write("landmass");
     expect(el.getAttribute("fill")).toBe("hotpink");
     expect(Layers.draw).not.toHaveBeenCalled();
   });
@@ -118,14 +118,14 @@ describe("applyStyles", () => {
 
 describe("writeAttr", () => {
   test("sets or removes the one attribute at a store path, through groups and records", () => {
-    const rivers = mount("rivers");
-    styles.rivers.attrs.fill = "#abcdef";
-    Styles.writeAttr(["rivers", "attrs", "fill"]);
-    expect(rivers.getAttribute("fill")).toBe("#abcdef");
-    styles.rivers.attrs.filter = null;
-    rivers.setAttribute("filter", "url(#stale)");
-    Styles.writeAttr(["rivers", "attrs", "filter"]);
-    expect(rivers.hasAttribute("filter")).toBe(false);
+    const landmass = mount("landmass");
+    styles.landmass.attrs.fill = "#abcdef";
+    Styles.writeAttr(["landmass", "attrs", "fill"]);
+    expect(landmass.getAttribute("fill")).toBe("#abcdef");
+    styles.landmass.attrs.filter = null;
+    landmass.setAttribute("filter", "url(#stale)");
+    Styles.writeAttr(["landmass", "attrs", "filter"]);
+    expect(landmass.hasAttribute("filter")).toBe(false);
 
     const routes = mount("routes", ["roads"]);
     styles.routes.groups.roads.attrs.stroke = "#111111";

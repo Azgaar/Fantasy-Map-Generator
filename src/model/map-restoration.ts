@@ -597,8 +597,16 @@ class MapRestorationModule {
     pack.rivers = pack.rivers.map(river => {
       const old = matched.get(river.i);
       if (!old) return river;
-      const { name, type, note, tags, label } = old;
-      const restored = { ...river, name, type, ...(note && { note }), ...(tags && { tags }), ...(label && { label }) };
+      const { name, type, group, note, tags, label } = old;
+      const restored = {
+        ...river,
+        name,
+        type,
+        group,
+        ...(note && { note }),
+        ...(tags && { tags }),
+        ...(label && { label })
+      };
       return this.projectLabel(restored, projection);
     });
   }

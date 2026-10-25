@@ -848,14 +848,14 @@ function saveGeoJsonRoutes(): void {
 
 function saveGeoJsonRivers(): void {
   const features = pack.rivers.map(
-    ({ i, cells, points, source, mouth, parent, basin, widthFactor, sourceWidth, discharge, name, type }) => {
+    ({ i, cells, points, source, mouth, parent, basin, widthFactor, sourceWidth, discharge, name, type, group }) => {
       if (!cells || cells.length < 2) return null;
       const meanderedPoints = Rivers.addMeandering(cells, points);
       const coordinates = meanderedPoints.map(([x, y]) => toGeoCoordinates(x, y));
       return {
         type: "Feature",
         geometry: { type: "LineString", coordinates },
-        properties: { id: i, source, mouth, parent, basin, widthFactor, sourceWidth, discharge, name, type }
+        properties: { id: i, source, mouth, parent, basin, widthFactor, sourceWidth, discharge, name, type, group }
       };
     }
   );

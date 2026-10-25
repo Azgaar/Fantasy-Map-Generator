@@ -338,10 +338,10 @@ describe("parseStyles", () => {
   test("an invalid layer falls back to the default with one warning; the rest survive", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const doc = structuredClone(Styles.defaults) as any;
-    doc.rivers.attrs.fill = "#123456";
+    doc.landmass.attrs.fill = "#123456";
     (doc as Record<string, unknown>).markers = { attrs: { opacity: "not a number" } };
     const parsed = Styles.parse(doc);
-    expect(parsed.rivers.attrs.fill).toBe("#123456");
+    expect(parsed.landmass.attrs.fill).toBe("#123456");
     expect(parsed.markers).toEqual(Styles.defaults.markers);
     expect(warn).toHaveBeenCalledTimes(1);
     warn.mockRestore();
@@ -357,8 +357,8 @@ describe("parseStyles", () => {
 
   test("null survives — it means the attribute is not set", () => {
     const doc = structuredClone(Styles.defaults) as any;
-    doc.rivers.attrs.filter = null;
-    expect(Styles.parse(doc).rivers.attrs.filter).toBeNull();
+    doc.landmass.attrs.filter = null;
+    expect(Styles.parse(doc).landmass.attrs.filter).toBeNull();
   });
 
   test("numeric stroke-dasharray values are not coerced by the regular parser", () => {

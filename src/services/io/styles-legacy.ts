@@ -43,7 +43,7 @@ const PRESET_ROUTES: Record<string, PresetRoute> = {
   "#coordinates": { path: ["coordinates"], rename: { "data-size": "font-size" }, drop: ["font-size"] },
   "#compass": { path: ["compass"], drop: ["shape-rendering"] },
   "#compass > use": { path: ["compass", "groups", "compassRose"] },
-  "#rivers": { path: ["rivers"] },
+  "#rivers": { path: ["rivers", "groups", "regular"] },
   "#freshwater": { path: ["lakes", "groups", "freshwater"] },
   "#salt": { path: ["lakes", "groups", "salt"] },
   "#sinkhole": { path: ["lakes", "groups", "sinkhole"] },
@@ -161,6 +161,11 @@ const STRANDED_OPACITY_LAYERS = [
   "anchors"
 ] as const;
 
+// until v1.157 the layer registry declared the stock lake and route groups, so saved maps carry them as ids
+export const LEGACY_LAYER_CHILDREN: Record<string, string[]> = {
+  lakes: ["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"],
+  routes: ["trails", "roads", "searoutes"]
+};
 const DEFAULT_ROUTE_GROUPS = Object.keys(Styles.defaults.routes.groups);
 const DEFAULT_LAKE_GROUPS = Object.keys(Styles.defaults.lakes.groups);
 // the attr and option keys the schema types as colors
@@ -543,6 +548,9 @@ export function restoreStrippedLayerStyles(svg: LegacySvg, preset: Record<string
     for (const child of layer.children) {
       restore(child.id, presetBagFor(preset, `#${child.id}`, `#${layer.elementId} > #${child.id}`), child.attrs);
     }
+    for (const id of LEGACY_LAYER_CHILDREN[layer.id] ?? []) {
+      restore(id, presetBagFor(preset, `#${id}`, `#${layer.elementId} > #${id}`));
+    }
   }
 }
 
@@ -695,6 +703,17 @@ function upgradeShape(record: unknown): void {
   if (compassAttrs) delete compassAttrs["shape-rendering"];
   const landHeights = asNode(asNode(asNode(root.heightmap)?.groups)?.landHeights);
   if (landHeights?.options) delete landHeights.options.render;
+  groupRiverStyles(root);
+}
+
+/** v1.157.0 split the one rivers style into groups: the old style becomes the default group's, the stock groups join */
+export function groupRiverStyles(record: unknown): void {
+  const rivers = asNode(asNode(record)?.rivers);
+  if (!rivers?.attrs || rivers.groups) return;
+  const groups = structuredClone(Styles.defaults.rivers.groups) as Record<string, ShapeNode>;
+  Object.assign(groups.regular.attrs!, rivers.attrs);
+  rivers.groups = groups;
+  delete rivers.attrs;
 }
 
 /** Rewrite a store-format record in place so it matches the current schema: the shape and the string formats */

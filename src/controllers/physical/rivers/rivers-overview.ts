@@ -27,7 +27,7 @@ import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 
 const dialogId = "riversOverview" as const;
-const CSV_COLUMNS = ["Id", "River", "Type", "Discharge", "Length", "Width", "Basin", "Tags"];
+const CSV_COLUMNS = ["Id", "River", "Type", "Group", "Discharge", "Length", "Width", "Basin", "Tags"];
 const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 let filterState: { search: string };
 
@@ -47,6 +47,14 @@ const columns: EditorColumn<River>[] = [
     width: "5em",
     mobileHidden: true,
     sortBy: river => river.type || "",
+    sortType: "alpha"
+  },
+  {
+    key: "group",
+    label: t("Group"),
+    width: "5em",
+    mobileHidden: true,
+    sortBy: river => river.group,
     sortType: "alpha"
   },
   {
@@ -102,7 +110,7 @@ function getFilteredRivers(riversById: Map<number, River>): River[] {
   return pack.rivers.filter((r: River) => {
     const basin = riversById.get(r.basin);
     const basinName = basin ? basin.name || "" : "";
-    return Tags.matches(searchText, r.name, r.tags, [r.type, basinName]);
+    return Tags.matches(searchText, r.name, r.tags, [r.type, r.group, basinName]);
   });
 }
 
@@ -218,6 +226,7 @@ function renderRiversPage(view: TableView<River>): void {
         data-id=${r.i}
         data-name="${r.name}"
         data-type="${r.type}"
+        data-group="${r.group}"
         data-discharge="${r.discharge}"
         data-length="${r.length}"
         data-width="${r.width}"
@@ -226,6 +235,7 @@ function renderRiversPage(view: TableView<River>): void {
         <span data-tip="${t("Locate on map")}" class="icon-target" data-col="locate"></span>
         <div data-tip="${t("Name")}" data-col="name">${r.name}</div>
         <div data-tip="${t("River type name")}" data-col="type">${r.type}</div>
+        <div data-tip="${t("River group")}" data-col="group">${r.group}</div>
         <div data-tip="${t("River discharge (flux power)")}" data-col="discharge">${discharge}</div>
         <div data-tip="${t("River length from source to mouth")}" data-col="length">${length}</div>
         <div data-tip="${t("River mouth width")}" data-col="width">${width}</div>
@@ -315,6 +325,7 @@ function downloadRiversData(): void {
       r.i,
       r.name,
       r.type,
+      r.group,
       `${r.discharge} m³/s`,
       `${rn(r.length * scale)} ${unit}`,
       `${rn(r.width * scale, 3)} ${unit}`,
@@ -401,6 +412,7 @@ async function uploadRiversCsv(text: string): Promise<void> {
       const river = find(id)!;
       row.apply("River", name => Rivers.rename(river.i, name), river.name);
       row.apply("Type", type => Rivers.setType(river.i, type), river.type);
+      row.apply("Group", group => Rivers.setGroup(river.i, group), river.group);
       row.assign("Tags", tags => Tags.set(river, tags), Tags.format(river.tags));
     }
   );

@@ -2,7 +2,6 @@ import { Controllers } from "@/controllers";
 import type { Route } from "@/model/economy/routes-generator";
 import { Routes } from "@/model/economy/routes-generator";
 import { Layers } from "@/renderers/layers";
-import { isGroupNameFree } from "@/renderers/style-groups";
 import { Dialog } from "@/ui/dialog/dialog";
 
 import { tip } from "@/ui/tooltips";
@@ -78,7 +77,7 @@ function addGroup(): void {
 
     if (!group) return tip(t("Invalid group name"), false, "error");
     if (!group.startsWith("route-")) group = `route-${group}`;
-    if (!isGroupNameFree(styles.routes.groups, group))
+    if (Object.hasOwn(styles.routes.groups, group))
       return tip(t("Element with this name already exists. Provide a unique name"), false, "error");
     if (Number.isFinite(+group.charAt(0))) return tip(t("Group name should start with a letter"), false, "error");
 

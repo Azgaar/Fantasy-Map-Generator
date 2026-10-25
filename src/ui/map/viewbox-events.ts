@@ -44,7 +44,6 @@ function hideLegendBox(event: MouseEvent): void {
 type Opener = (target: SVGElement, parent: SVGElement) => void;
 
 const PARENT_EDITORS: Record<string, Opener> = {
-  rivers: target => Controllers.RiverEditor.open(target.id),
   ice: target => Controllers.IceEditor.open(target),
   terrain: target => Controllers.ReliefEditor.open(target),
   goodsCells: () => Controllers.GoodsEditor.open()
@@ -53,6 +52,7 @@ const PARENT_EDITORS: Record<string, Opener> = {
 const GRAND_EDITORS: Record<string, Opener> = {
   emblems: target => Controllers.EmblemsEditor.open(undefined, undefined, undefined, target),
   routes: target => Controllers.RouteEditor.open(target.id),
+  rivers: target => Controllers.RiverEditor.open(target.id),
   journeys: (_target, parent) => Controllers.JourneyEditor.open(Number(parent.id.replace("journey", ""))),
   markers: target => Controllers.MarkersEditor.open(undefined, target),
   ruler: () => Controllers.MeasurersEditor.open(),

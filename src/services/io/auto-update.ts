@@ -40,6 +40,8 @@ import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { type LayerId, Layers, type LayersState } from "@/renderers/layers";
 import {
   adoptLegacyIconSlots,
+  groupRiverStyles,
+  LEGACY_LAYER_CHILDREN,
   type LegacySvg,
   labelGroupFromLegacy,
   lakeGroupFromSvg,
@@ -1611,6 +1613,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
     for (const layer of Layers.all) {
       declared.add(layer.elementId);
       for (const child of layer.children) declared.add(child.id);
+      for (const id of LEGACY_LAYER_CHILDREN[layer.id] ?? []) declared.add(id);
     }
 
     const isEmpty = (group: SVGGElement) => group.childElementCount === 0;
@@ -2174,6 +2177,12 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
         const count = Math.ceil((SEA_LEVEL - Math.max(low, 0)) / ocean.interval) - 1;
         ocean.interval = getContourInterval(count, -heightToMeters(low) * ratio);
       }
+    }
+
+    // v1.157.0 draws rivers in style groups, as routes are: they all start in the default one
+    for (const river of pack.rivers ?? []) river.group ??= "regular";
+    if (record) {
+      groupRiverStyles(record);
       data[48] = JSON.stringify(record);
     }
 

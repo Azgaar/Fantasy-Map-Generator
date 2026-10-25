@@ -53,7 +53,7 @@ function reconcileBurgIcons({ root, bounds }: ViewportRenderContext): void {
     if (!entry) continue;
     const groupName = escapeHtml(name);
     const burgs = burgsByGroup.get(name) ?? [];
-    markup.push(`<g id="${groupName}" data-group="${groupName}">`);
+    markup.push(`<g data-group="${groupName}">`);
     markup.push(part("icons", entry.groups.icons, burgs, bounds, false));
     markup.push(part("anchors", entry.groups.anchors, burgs, bounds, true));
     markup.push("</g>");

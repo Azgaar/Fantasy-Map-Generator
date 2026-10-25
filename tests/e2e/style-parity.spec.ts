@@ -23,25 +23,30 @@ const BURG_GROUPS = [
   "capital", "city", "town", "village", "hamlet", "fort", "monastery", "caravanserai", "trading_post"
 ];
 const LABEL_GROUPS = [...BURG_GROUPS, "state", "province", "river", "route", "added"];
+const RIVER_GROUPS = ["regular", "frozen", "dry", "lava"];
+const LAKE_GROUPS = ["freshwater", "salt", "sinkhole", "frozen", "lava", "dry"];
+const ROUTE_GROUPS = ["roads", "trails", "searoutes"];
 
 const TARGETS = [
   "#map", "#armies", "#biomes", "#borders", "#stateBorders", "#provinceBorders",
   "#cells", "#coastline", "#sea_island", "#lake_island", "#compass", "#coordinates",
   "#cults", "#emblems", "#stateEmblems", "#provinceEmblems", "#burgEmblems", "#fogging",
   "#goods", "#goodsCells", "#goodsIcons", "#goodsBurgs", "#gridOverlay", "#ice", "#labels",
-  "#lakes", "#freshwater", "#salt", "#sinkhole", "#frozen", "#lava", "#dry", "#landmass",
+  "#lakes", "#landmass",
   "#legend", "#markers", "#markets", "#oceanLayers", "#oceanBase", "#oceanicPattern",
   "#population", "#rural", "#urban", "#prec", "#provs", "#regions", "#statesBody", "#statesHalo",
-  "#relig", "#rivers", "#routes", "#roads", "#trails", "#searoutes", "#ruler", "#scaleBar",
+  "#relig", "#rivers", "#routes", "#ruler", "#scaleBar",
   "#scaleBarBack", "#temperature", "#terrain", "#terrs", "#landHeights", "#oceanHeights",
   "#texture", "#tradeAnimation", "#vignette", "#vignette-rect", "#zones",
   // every burg-icon and anchor group type the two maps carry - the style tree addresses these
   // per group part, so a partial list would let a whole group class drift unnoticed
-  ...BURG_GROUPS.map(group => `#burgIcons > g#${group} > [data-group="icons"]`),
-  ...BURG_GROUPS.map(group => `#burgIcons > g#${group} > [data-group="anchors"]`),
-  // label groups render as <g id="labels-capital" data-group="capital">; addressed by data-group
-  // because that is what the group is keyed by everywhere but its element id
-  ...LABEL_GROUPS.map(group => `#labels > [data-group="${group}"]`)
+  ...BURG_GROUPS.map(group => `#burgIcons > [data-group="${group}"] > [data-group="icons"]`),
+  ...BURG_GROUPS.map(group => `#burgIcons > [data-group="${group}"] > [data-group="anchors"]`),
+  // user-named groups carry no ids, so they are addressed by data-group
+  ...LABEL_GROUPS.map(group => `#labels > [data-group="${group}"]`),
+  ...LAKE_GROUPS.map(group => `#lakes > [data-group="${group}"]`),
+  ...ROUTE_GROUPS.map(group => `#routes > [data-group="${group}"]`),
+  ...RIVER_GROUPS.map(group => `#rivers > [data-group="${group}"]`)
 ];
 
 function collectStyleSnapshot(page: Page) {

@@ -1,12 +1,14 @@
 // @vitest-environment jsdom
 import { beforeEach, expect, test, vi } from "vitest";
 import type { River } from "@/model/physical/river-generator";
+import type { Layer } from "@/renderers/layers";
 import { setViewportSize, setViewportTransform } from "@/renderers/viewport/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 
 const mocks = vi.hoisted(() => ({ layerOn: true }));
 vi.mock("@/renderers/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
 
+import "@/model/styles/styles";
 import { Rivers } from "@/model/physical/river-generator";
 import {
   drawRivers,
@@ -17,13 +19,16 @@ import {
   toggleBasinHighlight
 } from "./draw-rivers";
 
-function river(i: number, x: number, basin = i): River {
+const riversLayer = { getEl: () => document.getElementById("rivers") } as unknown as Layer;
+const pathsCount = () => document.querySelectorAll("#rivers path").length;
+
+function river(i: number, x: number, basin = i, group = "regular"): River {
   const points: [number, number][] = [
     [x, 10],
     [x + 20, 30],
     [x + 40, 50]
   ];
-  return { i, basin, points, cells: [1, 2, 3], widthFactor: 1, sourceWidth: 0.1 } as River;
+  return { i, basin, group, points, cells: [1, 2, 3], widthFactor: 1, sourceWidth: 0.1 } as River;
 }
 
 const addMeandering = vi.fn(
@@ -50,7 +55,7 @@ beforeEach(() => {
 });
 
 test("panning culls rivers and reuses the elements already materialized", () => {
-  drawRivers();
+  drawRivers(riversLayer);
   const first = document.getElementById("river1");
   expect(first).not.toBeNull();
   expect(document.getElementById("river2")).toBeNull();
@@ -67,7 +72,7 @@ test("panning culls rivers and reuses the elements already materialized", () => 
 });
 
 test("the edited river stays rendered off-screen and keeps its node across redraws", () => {
-  drawRivers();
+  drawRivers(riversLayer);
   setEditedRiver(2);
   const edited = document.getElementById("river2");
   expect(edited).not.toBeNull();
@@ -87,7 +92,7 @@ test("the edited river stays rendered off-screen and keeps its node across redra
 });
 
 test("basin highlight paints every river and is reapplied to newly materialized ones", () => {
-  drawRivers();
+  drawRivers(riversLayer);
   expect(toggleBasinHighlight()).toBe(true);
   expect(document.getElementById("river1")?.getAttribute("fill")).toBe("#1f77b4");
 
@@ -100,7 +105,7 @@ test("basin highlight paints every river and is reapplied to newly materialized 
 });
 
 test("redraw picks up new courses and removed rivers", () => {
-  drawRivers();
+  drawRivers(riversLayer);
   const oldPath = document.getElementById("river1")!.getAttribute("d");
 
   pack.rivers[0].cells = [1, 2];
@@ -109,45 +114,46 @@ test("redraw picks up new courses and removed rivers", () => {
     [25, 35]
   ];
   pack.rivers = [pack.rivers[0]];
-  drawRivers();
+  drawRivers(riversLayer);
   expect(document.getElementById("river1")?.getAttribute("d")).not.toBe(oldPath);
-  expect(document.getElementById("rivers")!.childElementCount).toBe(1);
+  expect(pathsCount()).toBe(1);
   expect(getRiverBox(2)).toBeNull();
 });
 
 test("a river bounding box is available whether or not the river is on screen", () => {
-  drawRivers();
+  drawRivers(riversLayer);
   const box = getRiverBox(2)!;
   expect(box.x).toBe(499); // the course inflated by the river width
   expect(box.width).toBe(42);
 });
 
 test("erasing the layer drops the scene, not just the paths", () => {
-  drawRivers();
+  drawRivers(riversLayer);
   removeRivers();
-  expect(document.getElementById("rivers")!.childElementCount).toBe(0);
+  expect(pathsCount()).toBe(0);
+  expect(document.querySelector('#rivers > g[data-group="regular"]')).not.toBeNull(); // the groups carry the styles
   expect(getRiverBox(1)).toBeNull(); // a hidden layer holds no geometry, of this map or the previous one
 
   ViewportLayers.renderNow();
-  expect(document.getElementById("rivers")!.childElementCount).toBe(0);
-  drawRivers();
+  expect(pathsCount()).toBe(0);
+  drawRivers(riversLayer);
   expect(getRiverBox(1)).not.toBeNull();
 });
 
 test("full-map export materializes every river at once, leaving the live map culled", () => {
-  drawRivers();
+  drawRivers(riversLayer);
   const clone = document.getElementById("map")!.cloneNode(true) as SVGSVGElement;
   ViewportLayers.renderTo(clone);
-  expect(clone.querySelectorAll("#rivers > path")).toHaveLength(2);
+  expect(clone.querySelectorAll("#rivers > g > path")).toHaveLength(2);
   expect(document.getElementById("river2")).toBeNull();
 });
 
 test("viewport rendering leaves a disabled layer empty", () => {
-  drawRivers();
+  drawRivers(riversLayer);
   mocks.layerOn = false;
-  document.getElementById("rivers")!.replaceChildren(); // the layer registry erases the content when hidden
+  for (const path of Array.from(document.querySelectorAll("#rivers path"))) path.remove(); // erased when hidden
   ViewportLayers.renderNow();
-  expect(document.getElementById("rivers")!.childElementCount).toBe(0);
+  expect(pathsCount()).toBe(0);
 
   mocks.layerOn = true;
   ViewportLayers.renderNow();
@@ -156,6 +162,25 @@ test("viewport rendering leaves a disabled layer empty", () => {
 
 test("rivers with mismatched points fall back to the cell course", () => {
   pack.rivers = [{ ...river(1, 0), points: [[0, 0]] } as River];
-  drawRivers();
+  drawRivers(riversLayer);
   expect(addMeandering).toHaveBeenCalledWith([1, 2, 3], undefined);
+});
+
+test("rivers are drawn in their style group, an unknown one falling back to the default", () => {
+  pack.rivers = [river(1, 0, 1, "lava"), river(2, 0, 2, "gone")];
+  drawRivers(riversLayer);
+  const groups = Array.from(document.querySelectorAll<SVGGElement>("#rivers > g"));
+  expect(groups.map(group => group.dataset.group)).toEqual(Object.keys(styles.rivers.groups));
+  expect(groups.every(group => !group.id)).toBe(true); // lake groups own the ids frozen, dry and lava
+  expect(document.getElementById("river1")?.parentElement?.dataset.group).toBe("lava");
+  expect(document.getElementById("river2")?.parentElement?.dataset.group).toBe("regular");
+});
+
+test("a river moved to another group keeps its node", () => {
+  drawRivers(riversLayer);
+  const node = document.getElementById("river1");
+  pack.rivers[0].group = "frozen";
+  redrawRiver(pack.rivers[0]);
+  expect(document.getElementById("river1")).toBe(node);
+  expect(node?.parentElement?.dataset.group).toBe("frozen");
 });

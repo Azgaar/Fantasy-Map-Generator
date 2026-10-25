@@ -84,8 +84,8 @@ describe("styles schema metadata", () => {
   });
 
   test("the shared constants carry their control and null semantics", () => {
-    expect(byPath["rivers.attrs.fill"].spec).toMatchObject({ kind: "color", nullable: true });
-    expect(byPath["rivers.attrs.opacity"].spec).toMatchObject({ kind: "slider", min: 0, max: 1, nullAs: 1 });
+    expect(byPath["landmass.attrs.fill"].spec).toMatchObject({ kind: "color", nullable: true });
+    expect(byPath["landmass.attrs.opacity"].spec).toMatchObject({ kind: "slider", min: 0, max: 1, nullAs: 1 });
     expect(byPath["zones.attrs.stroke-width"].spec).toMatchObject({ kind: "slider", min: 0, max: 10, nullAs: 0 });
     expect(byPath["zones.attrs.filter"].spec.kind).toBe("filter");
     expect(byPath["zones.attrs.stroke-dasharray"].spec.kind).toBe("dash");

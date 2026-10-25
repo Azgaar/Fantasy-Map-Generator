@@ -23,10 +23,8 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Image Converter: fit, zoom and move the image before converting it
 - Update window: the latest releases info; F1 opens it again
 - The tour button on the map is removed: start the tour from the update window or the About tab
-- Emblems: the Generator draws pasted COAs itself, and Armoria pictures in older maps become COAs where possible
-- Emblems: images downloaded from Armoria are added as their COA, not as pictures
-- Emblems: the COA field is a larger box with readable JSON
-- Emblems: Armoria pictures reopen in Armoria and are removed once unused; Armoria edits apply with the editor closed
+- Emblems: Armoria pictures in older maps become COAs where possible
+- Rivers: style groups: regular, frozen, dry, lava and custom
 
 # Releases
 

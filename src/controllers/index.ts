@@ -73,6 +73,7 @@ export const Controllers = createRegistry(
     RiverCreator: () => import("@/controllers/physical/rivers/river-creator").then(m => m.RiverCreator),
     RiverAutoCreator: () => import("@/controllers/physical/rivers/river-auto-creator").then(m => m.RiverAutoCreator),
     RiverEditor: () => import("@/controllers/physical/rivers/river-editor").then(m => m.RiverEditor),
+    RiverGroupsEditor: () => import("@/controllers/physical/rivers/river-groups-editor").then(m => m.RiverGroupsEditor),
     RiversOverview: () => import("@/controllers/physical/rivers/rivers-overview").then(m => m.RiversOverview),
     RouteCreator: () => import("@/controllers/economy/routes/route-creator").then(m => m.RouteCreator),
     RouteEditor: () => import("@/controllers/economy/routes/route-editor").then(m => m.RouteEditor),

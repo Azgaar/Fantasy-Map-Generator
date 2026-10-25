@@ -465,25 +465,25 @@ test.describe("style editor events drive the store", () => {
     await page.locator(`${f("attrs.fill")} input[type=color]`).dispatchEvent("input");
     await page.locator(`${f("attrs.stroke-width")} input[type=number]`).fill("3");
 
-    // flat element selection: rivers
-    await openStyleElement(page, "rivers");
+    // flat element selection: landmass
+    await openStyleElement(page, "landmass");
     await page.locator(`${f("attrs.opacity")} input[type=number]`).fill("0.4");
 
     const stored = await page.evaluate(() => ({
       lakeFill: (window as any).styles.lakes.groups.freshwater.attrs.fill,
       lakeStrokeWidth: (window as any).styles.lakes.groups.freshwater.attrs["stroke-width"],
-      riversOpacity: (window as any).styles.rivers.attrs.opacity
+      landmassOpacity: (window as any).styles.landmass.attrs.opacity
     }));
-    expect(stored).toEqual({ lakeFill: "#123456", lakeStrokeWidth: 3, riversOpacity: 0.4 });
+    expect(stored).toEqual({ lakeFill: "#123456", lakeStrokeWidth: 3, landmassOpacity: 0.4 });
     expect(typeof stored.lakeStrokeWidth).toBe("number");
-    expect(typeof stored.riversOpacity).toBe("number");
+    expect(typeof stored.landmassOpacity).toBe("number");
 
     // the DOM presentation is written identically
-    await expect(page.locator('#lakes [data-group="freshwater"], #freshwater').first()).toHaveAttribute(
+    await expect(page.locator('#lakes > [data-group="freshwater"]')).toHaveAttribute(
       "fill",
       "#123456"
     );
-    await expect(page.locator("#rivers")).toHaveAttribute("opacity", "0.4");
+    await expect(page.locator("#landmass")).toHaveAttribute("opacity", "0.4");
   });
 
   test("label group dropdown counts come from the label data, not the culled DOM", async ({ page }) => {
@@ -563,7 +563,7 @@ test.describe("style editor events drive the store", () => {
 
     // the live group part carries the presentation; a full redraw keeps the store values
     await page.evaluate(() => (window as any).FMG.Layers.draw("burgIcons"));
-    const el = page.locator(`#burgIcons > g#${group} > [data-group="icons"]`);
+    const el = page.locator(`#burgIcons > [data-group="${group}"] > [data-group="icons"]`);
     await expect(el).toHaveAttribute("font-size", "2.5%");
     await expect(el).toHaveAttribute("fill-opacity", "0.6");
 
@@ -575,7 +575,7 @@ test.describe("style editor events drive the store", () => {
       anchorGroup
     );
     expect(anchorStored).toBe(1.8);
-    const anchors = page.locator(`#burgIcons > g#${anchorGroup} > [data-group="anchors"]`);
+    const anchors = page.locator(`#burgIcons > [data-group="${anchorGroup}"] > [data-group="anchors"]`);
     expect(await anchors.getAttribute("data-size")).toBeNull();
   });
 

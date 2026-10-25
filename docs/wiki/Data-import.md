@@ -46,7 +46,7 @@ Tags are separated by `;`. Colors are HEX like `#a1b2c3`; a hatched fill is kept
 | Religions | `Name`, `Color`, `Type`, `Form`, `Supreme Deity`, `Potential`, `Expansionism`, `Believers` (population), `Origins` (religion names separated by commas, empty for none), `Tags` |
 | Provinces | `Province`, `Full Name`, `Form`, `Color`, `State` (moves the province), `Capital` (a burg of the province), population, `Tags` |
 | Burgs | `Burg`, `Culture`, `Group`, `Type`, `Population`, `Treasury`, `Capital` (makes it the state capital), `Port`, `Citadel`, `Walls`, `Plaza`, `Temple`, `Shanty Town` (any text adds it, empty removes it), `Preview link`, `Tags` |
-| Rivers | `River`, `Type`, `Tags` |
+| Rivers | `River`, `Type`, `Group` (regular, frozen, dry, lava or a custom group), `Tags` |
 | Routes | `Route`, `Group` (roads, trails, searoutes or a custom group), `Tags` |
 | Markers | `Name`, `Type`, `Tags`. Marker notes are uploaded in the Notes editor |
 | Zones | `Description`, `Color`, `Type`, `Population`, `Tags` |

@@ -20,8 +20,8 @@ test("stylesFromMap harvests attrs, options and dynamic groups with legacy prece
     <g id="burgIcons"><g id="capital" fill="#ffffff" font-size="2"></g></g>
   </svg>`;
   const styles = stylesFromMap(document);
-  expect(styles.rivers.attrs.fill).toBe("#5d97bb");
-  expect(styles.rivers.attrs.opacity).toBe(0.9);
+  expect(styles.rivers.groups.regular.attrs.fill).toBe("#5d97bb");
+  expect(styles.rivers.groups.regular.attrs.opacity).toBe(0.9);
   expect(styles.grid.options.type).toBe("pointyHex");
   expect(styles.labels.groups.state.attrs["font-size"]).toBe("22%"); // a group's size takes the unit the schema pins
   expect(styles.burgIcons.groups.capital.groups.icons.options.size).toBe(2);
@@ -32,7 +32,7 @@ test("inline style wins over the attribute; empty attribute still counts", () =>
     <g id="scaleBar" data-label=""></g></svg>`;
   const styles = stylesFromMap(document);
   // the browser normalizes the inline declaration to rgb(), which the harvest folds back to hex
-  expect(styles.rivers.attrs.fill).toBe("#bbbbbb");
+  expect(styles.rivers.groups.regular.attrs.fill).toBe("#bbbbbb");
 });
 
 test("syncStylesFromMap harvests the DOM but keeps store-authoritative domains", () => {
@@ -40,17 +40,17 @@ test("syncStylesFromMap harvests the DOM but keeps store-authoritative domains",
   styles.labels.groups.custom = structuredClone(styles.labels.groups.capital);
   styles.relief.options.size = 0.7;
   harvestStylesFromSvg(document);
-  expect(styles.rivers.attrs.fill).toBe("#123456");
+  expect(styles.rivers.groups.regular.attrs.fill).toBe("#123456");
   expect(styles.labels.groups.custom).toBeDefined();
   expect(styles.relief.options.size).toBe(0.7);
 });
 
 test("a schema attr the element omits harvests as an explicit null, not the seeded default", () => {
-  document.body.innerHTML = `<svg id="map"><g id="rivers" opacity="0.9"></g></svg>`;
+  document.body.innerHTML = `<svg id="map"><g id="landmass" opacity="0.9"></g></svg>`;
   const result = stylesFromMap(document);
-  expect(Styles.defaults.rivers.attrs.fill).not.toBeNull();
-  expect(result.rivers.attrs.fill).toBeNull();
-  expect(result.rivers.attrs.opacity).toBe(0.9);
+  expect(Styles.defaults.landmass.attrs.fill).not.toBeNull();
+  expect(result.landmass.attrs.fill).toBeNull();
+  expect(result.landmass.attrs.opacity).toBe(0.9);
 });
 
 test("an omitted option still defaults, unlike a schema attr", () => {

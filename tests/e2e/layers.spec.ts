@@ -181,7 +181,7 @@ test.describe("map layers", () => {
     const structure = await labels.evaluate(el => {
       const groups = Array.from(el.querySelectorAll<SVGGElement>(":scope > g"));
       return {
-        groupIds: groups.map(group => group.id),
+        groupNames: groups.map(group => group.dataset.group),
         nestedGroups: el.querySelectorAll(":scope > g > g").length,
         stateTextPaths: el.querySelectorAll("text[data-label-type='state'] textPath").length,
         burgLabels: el.querySelectorAll("text[data-label-type='burg']").length,
@@ -189,7 +189,7 @@ test.describe("map layers", () => {
       };
     });
 
-    expect(structure.groupIds).toEqual(expect.arrayContaining(["labels-state", "labels-town", "labels-added"]));
+    expect(structure.groupNames).toEqual(expect.arrayContaining(["state", "town", "added"]));
     expect(structure.nestedGroups).toBe(0);
     expect(structure.stateTextPaths).toBeGreaterThan(0);
     expect(structure.burgLabels).toBeGreaterThan(0);
@@ -201,7 +201,7 @@ test.describe("map layers", () => {
   test("deactivated labels group is not rendered", async () => {
     const counts = await sharedPage.evaluate(async () => {
       const stateGroup = options.map.labels.groups.find(group => group.name === "state")!;
-      const count = () => document.querySelectorAll("#labels-state > *").length;
+      const count = () => document.querySelectorAll('#labels > [data-group="state"] > *').length;
       const before = count();
 
       stateGroup.active = false;

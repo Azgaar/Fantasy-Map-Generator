@@ -282,6 +282,7 @@ Rivers data is stored as an unordered array of objects (so element id is _not_ t
 - `i`: `number` - river id
 - `name`: `string` - river name
 - `type`: `string` - river type, used to get river full name only
+- `group`: `string` - rendering group, a key of `styles.rivers.groups`: `regular` (default), `frozen`, `dry`, `lava` or a custom one
 - `source`: `number` - id of cell at river source
 - `mouth`: `number` - id of cell at river mouth
 - `parent`: `number` - parent river id. If river doesn't have a parent, the value is self id or `0`
@@ -380,8 +381,8 @@ Each `LabelGroupOptions` contains:
 - `zoom.min` and `zoom.max`: `number | null` - inclusive map-scale bounds
 - `mode`: `auto | short | full` - generated State and Province name policy
 
-The canonical protected groups are `states`, `provinces`, `added`, and every active Burg group. SVG group ids
-are implementation-safe `labels-${name}` values; the logical id is always read from `data-group`.
+The canonical protected groups are `states`, `provinces`, `added`, and every active Burg group. Their SVG
+groups carry no id; they are addressed by `data-group`.
 
 Optional group-level `data-dx` and `data-dy` values are retained in style data. Rendering derives one CSS
 translation on the parent SVG group, so the offset applies uniformly to every label in that group.
