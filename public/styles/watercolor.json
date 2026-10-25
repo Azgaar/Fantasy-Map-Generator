@@ -1298,24 +1298,10 @@
   },
   "rivers": {
     "groups": {
-      "regular": {
+      "lava": {
         "attrs": {
-          "opacity": null,
-          "fill": "#2e89c2",
-          "fill-opacity": null,
-          "stroke": null,
-          "stroke-opacity": null,
-          "stroke-width": null,
-          "stroke-dasharray": null,
-          "stroke-linecap": null,
-          "stroke-linejoin": null,
-          "filter": null
-        }
-      },
-      "frozen": {
-        "attrs": {
-          "opacity": 0.95,
-          "fill": "#cdd4e7",
+          "opacity": 1,
+          "fill": "#f25a0c",
           "fill-opacity": null,
           "stroke": null,
           "stroke-opacity": null,
@@ -1340,14 +1326,28 @@
           "filter": null
         }
       },
-      "lava": {
+      "frozen": {
         "attrs": {
-          "opacity": 1,
-          "fill": "#f25a0c",
+          "opacity": 0.95,
+          "fill": "#cdd4e7",
           "fill-opacity": null,
-          "stroke": "#90270d",
+          "stroke": null,
           "stroke-opacity": null,
-          "stroke-width": 0.15,
+          "stroke-width": null,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "stroke-linejoin": null,
+          "filter": null
+        }
+      },
+      "regular": {
+        "attrs": {
+          "opacity": null,
+          "fill": "#2e89c2",
+          "fill-opacity": null,
+          "stroke": null,
+          "stroke-opacity": null,
+          "stroke-width": null,
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "stroke-linejoin": null,

@@ -1258,24 +1258,10 @@
   },
   "rivers": {
     "groups": {
-      "regular": {
+      "lava": {
         "attrs": {
           "opacity": 1,
-          "fill": "#111111",
-          "fill-opacity": null,
-          "stroke": null,
-          "stroke-opacity": null,
-          "stroke-width": null,
-          "stroke-dasharray": null,
-          "stroke-linecap": null,
-          "stroke-linejoin": null,
-          "filter": null
-        }
-      },
-      "frozen": {
-        "attrs": {
-          "opacity": 0.95,
-          "fill": "#000000",
+          "fill": "#5d5d5d",
           "fill-opacity": null,
           "stroke": null,
           "stroke-opacity": null,
@@ -1300,14 +1286,28 @@
           "filter": null
         }
       },
-      "lava": {
+      "frozen": {
+        "attrs": {
+          "opacity": 0.95,
+          "fill": "#000000",
+          "fill-opacity": null,
+          "stroke": null,
+          "stroke-opacity": null,
+          "stroke-width": null,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "stroke-linejoin": null,
+          "filter": null
+        }
+      },
+      "regular": {
         "attrs": {
           "opacity": 1,
-          "fill": "#5d5d5d",
+          "fill": "#111111",
           "fill-opacity": null,
-          "stroke": "#000000",
+          "stroke": null,
           "stroke-opacity": null,
-          "stroke-width": 0.15,
+          "stroke-width": null,
           "stroke-dasharray": null,
           "stroke-linecap": null,
           "stroke-linejoin": null,
