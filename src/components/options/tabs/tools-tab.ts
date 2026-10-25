@@ -86,6 +86,9 @@ const TEMPLATE = /* html */ `
     <button id="applyAstralNaming" data-tip="Click to give the polities their own words and the provinces their sectors">
       Astral Names
     </button>
+    <button id="convertAstralAnomalies" data-tip="Click to rewrite the markers' legends and icons in the astral register">
+      Astral Anomalies
+    </button>
     <button id="openStarSystems" data-tip="Click to open the Star Systems overview">
       Star Systems
     </button>

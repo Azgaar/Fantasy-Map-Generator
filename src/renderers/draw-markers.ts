@@ -1,6 +1,8 @@
 import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
+import { isAstralView } from "@/components/options/view-mode";
 import { zoomFontSize } from "@/components/viewport";
+import { readingOf } from "@/data/astral-markers";
 import type { Marker } from "@/generators/markers-generator";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import { rn } from "@/utils/numberUtils";
@@ -92,17 +94,19 @@ function reconcileMarkers({ root, bounds }: ViewportRenderContext): void {
   }
 }
 
-function getMarkerContent({
-  icon,
-  dx = 50,
-  dy = 50,
-  px = 12,
-  pin,
-  fill,
-  stroke,
-  iconFill,
-  iconStroke
-}: Marker): string {
+/** The anomaly icon while Astral is on; only a type's default icon is re-read, a user's pick wins */
+function astralIcon(marker: Marker): string | undefined {
+  if (!isAstralView()) return undefined;
+  const reading = readingOf(marker.type);
+  if (!reading) return undefined;
+  const config = Markers.getConfig().find(entry => entry.type === marker.type);
+  const isDefault = !marker.icon || (config !== undefined && marker.icon === Icons.reference(config.icon));
+  return isDefault ? Icons.reference(reading.icon) : undefined;
+}
+
+function getMarkerContent(marker: Marker): string {
+  const { dx = 50, dy = 50, px = 12, pin, fill, stroke, iconFill, iconStroke } = marker;
+  const icon = astralIcon(marker) ?? marker.icon;
   // the icon box is centred on the dx/dy point of the pin box
   const x = rn((dx * 30) / 100 - px / 2, 2);
   const y = rn((dy * 30) / 100 - px / 2, 2);

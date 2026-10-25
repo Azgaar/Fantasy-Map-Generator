@@ -28,7 +28,7 @@ export function drawCurrents(): void {
   }
 
   TIME && console.timeEnd("drawCurrents");
-}/** the group the registry would have stamped, created under the Hyperlanes layer on demand */
+} /** the group the registry would have stamped, created under the Hyperlanes layer on demand */
 function createGroup(routes: Element): SVGGElement {
   const group = createEl<SVGGElement>("g", GROUP);
   group.dataset.group = GROUP; // styles address groups by data-group, not element id
@@ -65,4 +65,3 @@ function buildPaths(): string {
   }
   return paths.join("");
 }
-

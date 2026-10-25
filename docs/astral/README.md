@@ -80,6 +80,22 @@ bastion, shielding, civic core, shrine, drift — make it an empire's capital, m
 from the chart. In the Astral view it is the only dialog a system has; the Burg Editor stays where
 it belongs, in Standard view. Every write is a burg write, so the world stays one world.
 
+### The anomalies
+
+Markers become **anomalies** on the chart: a volcano is read as **nova remnants**, an inn as a
+**way station**, a dungeon as a **derelict**, a sea monster as a **void kraken**. Every reading is
+either a phenomenon of space or of a scale that matters to multi-system polities — the Anomalies
+layer shows what an empire would mark, claim, garrison or fear, never a planetary micro-feature.
+
+The reading is a view: in the Astral view the pins take their anomaly icons and the tooltips name
+the reading; leaving restores the map exactly, and the marker keeps its type. A marker with a
+hand-picked icon keeps it in both views.
+
+_Options_ → _Tools_ → **Astral Anomalies** is the conversion: it rewrites every marker's legend in
+the sector register and sets its anomaly icon in the record. The original text is kept below a
+divider, authored names survive, and applying it twice changes nothing the second time. It is
+one-way — the converted icon lives in the marker, so Standard view shows it too.
+
 ## The Astral view
 
 _Options_ → _Layers_ → **View mode** → **Astral** turns the map into a star chart of one chosen
@@ -113,6 +129,10 @@ As detailed in [`docs/plans/mod-merge-plan.md`](../plans/mod-merge-plan.md):
 - **Shipped (system dialog)**: clicking a star opens the System Editor — the burg read as a system,
   edited in the astral vocabulary, every write a burg write. The design is in
   [`docs/plans/astral-system-dialog.md`](../plans/astral-system-dialog.md).
+- **Shipped (anomalies)**: the markers read as anomalies — space phenomena and interstellar-scale
+  concerns — with anomaly icons and a conversion action that rewrites legends and icons in state,
+  keeping the original text. The design is in
+  [`docs/plans/astral-anomalies.md`](../plans/astral-anomalies.md).
 
 ---
 *For upstream merge tracking, see [MERGING.md](../../MERGING.md).*

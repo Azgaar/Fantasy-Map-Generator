@@ -2,11 +2,13 @@ import { select } from "d3";
 import { Layers } from "@/components/layers";
 import { MapEntities } from "@/components/map-entities";
 import { isAstralView } from "@/components/options/view-mode";
+import { readingOf } from "@/data/astral-markers";
 import { systemTip, toSystem } from "@/generators/astral-naming";
 import { Notes } from "@/generators/notes";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
 import type { Point } from "@/types/global";
 import {
+  capitalize,
   convertTemperature,
   findEl,
   getCellPopulation,
@@ -145,7 +147,16 @@ function getElementTip({ group, target, event, path, cellId }: TipContext): stri
 
   if (group === "terrain") return "Click to edit the Relief Icon";
 
-  if (group === "markers") return "Click to edit the Marker. Hold Shift to not close the assosiated note";
+  if (group === "markers") {
+    const shiftHint = "Click to edit the Marker. Hold Shift to not close the associated note";
+    if (!isAstralView()) return shiftHint;
+    const ref = MapEntities.resolveTarget(target);
+    const marker = ref?.type === "marker" ? pack.markers.find(item => item.i === ref.id) : undefined;
+    const reading = readingOf(marker?.type);
+    const name = marker?.name ? `${marker.name}. ` : "";
+    const anomaly = reading ? `${capitalize(reading.reading)}. ` : "";
+    return `${name}${anomaly}${shiftHint}`;
+  }
 
   if (group === "ruler")
     return findEl("measurersEditor") ? "Drag the measurer or its points to edit" : "Click to open the Measurers Editor";

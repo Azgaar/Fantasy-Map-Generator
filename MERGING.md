@@ -299,6 +299,30 @@ saved cultures and a rename keeps its corpus.
   dispatch, keep the Astral branch beside the stock Burg Editor branch; the marker emission must
   stay shared between the layer and the dialog; the class remains derived (no per-system state).
 
+### The anomalies (markers read and converted)
+
+- **`src/data/astral-markers.ts`** (new): `MARKER_READINGS` — one astral name and icon per default
+  marker config type; `ANOMALY_FAMILIES` and the seeded legend prose; `ANOMALY_DIVIDER`; `readingOf`.
+  Readings are space phenomena or interstellar-scale concerns, never planetary micro-features.
+- **`src/controllers/astral-markers.ts`** (new): the conversion action — rewrites each marker's
+  legend (original kept below the divider) and sets its anomaly icon in the record. Names survive;
+  applying twice is a no-op. Notes are written directly, like the generator's own notes, because
+  dungeon and encounter legends carry iframes the notes editor subset rejects.
+- **`src/renderers/draw-markers.ts`**: while Astral is on, a type's *default* icon draws as its
+  reading icon; a user-picked icon wins in both views.
+- **`src/components/map-tooltip.ts`**: the markers tip names the anomaly in Astral.
+- **`src/controllers/markers-editor.ts`**: the type field's tip appends the reading in Astral; the
+  field itself keeps the raw type string (the state key).
+- **`src/components/map-commands.ts`** / **`src/components/options/tabs/tools-tab.ts`**: the
+  `convertAstralAnomalies` command and its Tools button.
+- **`src/controllers/index.ts`**: one registry entry (`AstralMarkers`).
+- **`tests/e2e/astral-markers.spec.ts`** (new): the reading swaps and restores without touching the
+  record; the conversion keeps the original legend and converts idempotently.
+- **`docs/astral/README.md`** / **`docs/plans/astral-anomalies.md`**: the anomalies section and the
+  plan.
+- *Conflict resolution strategy*: the reading is a view — keep `draw-markers` resolving default
+  icons only; generation stays untouched, so a regenerated world needs the conversion re-applied.
+
 ### Toolchain & Windows Environment Compatibility
 
 - **`package.json`**:
