@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { waitForMap } from "./wait-for-map";
 
 // The star markers are a second visual representation of a burg: the tooltip reads them as systems,
-// a click opens the Burg Editor, search reveals them on the systems layer, and zoom culls them to
+// a click opens the System Editor, search reveals them on the systems layer, and zoom culls them to
 // the viewport. This spec is the hit-testing parity guard the plan calls for.
 
 declare const styles: { texture: { options: { href: string } } };
@@ -78,13 +78,13 @@ test.describe("Astral systems", () => {
     await expect(tooltip).toContainText("Click to edit");
   });
 
-  test("clicking a marker opens the Burg Editor", async ({ page }) => {
+  test("clicking a marker opens the System Editor", async ({ page }) => {
     await withSystems(page);
     const point = await centerOf(page, "#system1");
     await page.mouse.click(point.x, point.y);
 
-    await expect(page.locator("#burgEditor")).toBeVisible();
-    await page.locator(".ui-dialog:has(#burgEditor) .ui-dialog-titlebar-close").click();
+    await expect(page.locator("#astralSystemEditor")).toBeVisible();
+    await page.locator(".ui-dialog:has(#astralSystemEditor) .ui-dialog-titlebar-close").click();
   });
 
   test("search reveals the burg on the systems layer and outlines the marker", async ({ page }) => {

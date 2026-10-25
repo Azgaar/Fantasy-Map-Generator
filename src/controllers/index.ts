@@ -4,6 +4,7 @@ export const Controllers = createRegistry({
   AiGenerator: () => import("@/controllers/ai-generator").then(m => m.AiGenerator),
   AstralMode: () => import("@/controllers/astral-mode").then(m => m.AstralMode),
   AstralNames: () => import("@/controllers/astral-names").then(m => m.AstralNames),
+  AstralSystemEditor: () => import("@/controllers/astral-system-editor").then(m => m.AstralSystemEditor),
   AstralSystems: () => import("@/controllers/astral-systems").then(m => m.AstralSystems),
   BattleScreen: () => import("@/controllers/battle-screen").then(m => m.BattleScreen),
   BiomesEditor: () => import("@/controllers/biomes-editor").then(m => m.BiomesEditor),

@@ -1,5 +1,6 @@
 // Default interaction on the map canvas: pan/zoom, click-to-edit and hover tooltips
 import { drag, select } from "d3";
+import { isAstralView } from "@/components/options/view-mode";
 import { Controllers } from "@/controllers";
 import type { LabelType } from "@/generators/labels-generator";
 import { dragLegendBox } from "@/renderers/draw-legend";
@@ -46,15 +47,23 @@ const GRAND_EDITORS: Record<string, Opener> = {
 };
 
 const GREAT_EDITORS: Record<string, Opener> = {
-  burgIcons: target => Controllers.BurgEditor.open(Number(target.dataset.id)),
+  burgIcons: target => {
+    const id = Number(target.dataset.id);
+    if (isAstralView()) Controllers.AstralSystemEditor.open(id);
+    else Controllers.BurgEditor.open(id);
+  },
   systems: (_target, parent) => {
     const id = Number(parent.dataset.id); // the marker group for a burg, read as a system
-    if (Number.isInteger(id)) Controllers.BurgEditor.open(id);
+    if (Number.isInteger(id)) Controllers.AstralSystemEditor.open(id);
   },
   markers: target => Controllers.MarkersEditor.open(undefined, target),
   ruler: () => Controllers.MeasurersEditor.open(),
   armies: (_target, parent) => Controllers.RegimentEditor.open(`#${parent.id}`)
 };
+
+// a label click opens the label editor when an editor is already open for the same burg
+const isEditorOpenFor = (dialogId: string, attr: string, value: string): boolean =>
+  document.getElementById(dialogId)?.dataset[attr] === value;
 
 /** Handle a click on the map: open the editor for the clicked element */
 function onClick(event: MouseEvent): void {
@@ -70,10 +79,12 @@ function onClick(event: MouseEvent): void {
     const id = Number(label.dataset.id);
     const type = label.dataset.labelType as LabelType;
     if (type === "burg") {
-      const burgEditor = document.getElementById("burgEditor");
-      const isBurgEditorOpen = burgEditor?.dataset.burgId === String(id);
-      if (isBurgEditorOpen) Controllers.LabelsEditor.open(type, id);
-      else Controllers.BurgEditor.open(id);
+      if (isAstralView()) {
+        if (isEditorOpenFor("astralSystemEditor", "entity", `burg:${id}`)) Controllers.LabelsEditor.open(type, id);
+        else Controllers.AstralSystemEditor.open(id);
+      } else if (isEditorOpenFor("burgEditor", "burgId", String(id))) {
+        Controllers.LabelsEditor.open(type, id);
+      } else Controllers.BurgEditor.open(id);
     } else Controllers.LabelsEditor.open(type, id);
     return;
   }
