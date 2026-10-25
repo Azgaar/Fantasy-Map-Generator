@@ -419,10 +419,13 @@ type MeanderOptions = {
   cellCount?: number;
   isWaterCell?: boolean[];
   bounds?: { width: number; height: number };
+  endDirection?: Point; // flow of the course the path joins at its last anchor
 };
 
 const WATER_MEANDER_SCALE = 0.25;
 const RELAX_ITERATIONS = 4;
+const MAX_JOIN_ANGLE = Math.PI / 5;
+const MAX_JOIN_TURN = Math.PI / 5;
 
 export const meander = (cells: number[], cellPositions: Point[], options: MeanderOptions = {}) => {
   const meandering = options.meandering ?? 0.5;
@@ -485,8 +488,32 @@ export const meander = (cells: number[], cellPositions: Point[], options: Meande
   }
 
   relaxAcuteAngles(points, anchorIndices);
+  if (options.endDirection) alignJoin(points, anchorIndices, options.endDirection);
   return { points, anchorIndices };
 };
+
+// Gently bend the end toward the flow it joins, leaving the course before the last meander point as is
+function alignJoin(points: Point[], anchorIndices: number[], [dx, dy]: Point): void {
+  const last = points.length - 1;
+  if (anchorIndices.at(-1) !== last) return;
+
+  const [x, y] = points[last];
+  const [px, py] = points[last - 1];
+  const approach = Math.atan2(y - py, x - px);
+  const offFlow = approach - Math.atan2(dy, dx);
+  const deviation = Math.atan2(Math.sin(offFlow), Math.cos(offFlow));
+  if (Math.abs(deviation) <= MAX_JOIN_ANGLE) return;
+
+  const turn = Math.sign(deviation) * Math.min(Math.abs(deviation) - MAX_JOIN_ANGLE, MAX_JOIN_TURN);
+  const length = Math.hypot(x - px, y - py);
+  const back = (angle: number, distance: number): Point => [
+    x - Math.cos(angle) * distance,
+    y - Math.sin(angle) * distance
+  ];
+  if (anchorIndices.at(-2) !== last - 1) points[last - 1] = back(approach - turn / 2, length); // spread the turn
+  points.splice(last, 0, back(approach - turn, length / 2));
+  anchorIndices[anchorIndices.length - 1]++;
+}
 
 function cornerCos(a: Point, b: Point, c: Point): number {
   const ax = a[0] - b[0];

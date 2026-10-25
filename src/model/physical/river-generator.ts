@@ -604,15 +604,37 @@ class RiverModule {
     depressions && log.warn(`Unresolved depressions: ${depressions}. Edit heightmap to fix`);
   }
 
-  addMeandering(riverCells: number[], riverPoints: Point[] | null = null): [number, number, number][] {
-    const { fl, h, p } = pack.cells;
-    const { points, anchorIndices } = meander(riverCells, p, {
+  /** meandered course with the index of each cell's anchor among the points */
+  getCourse(riverCells: number[], riverPoints: Point[] | null = null) {
+    const { h, p } = pack.cells;
+    return meander(riverCells, p, {
       anchors: riverPoints ?? undefined,
       meandering: 0.5,
       startStep: h[riverCells[0]] < 20 ? 1 : 10,
       isWaterCell: riverCells.map(c => c !== -1 && h[c] < 20),
-      bounds: { width: options.map.graph.width, height: options.map.graph.height }
+      bounds: { width: options.map.graph.width, height: options.map.graph.height },
+      endDirection: this.getJoinDirection(riverCells)
     });
+  }
+
+  // flow of the river passing through the land cell this one ends in
+  getJoinDirection(riverCells: number[]): Point | undefined {
+    const end = riverCells.at(-1)!;
+    if (end < 0 || pack.cells.h[end] < 20) return;
+
+    for (const river of pack.rivers) {
+      const index = river.cells.indexOf(end);
+      if (index === -1 || index === river.cells.length - 1) continue;
+      const anchors = this.getRiverPoints(river.cells, river.points);
+      const [x0, y0] = anchors[Math.max(index - 1, 0)];
+      const [x1, y1] = anchors[index + 1];
+      return [x1 - x0, y1 - y0];
+    }
+  }
+
+  addMeandering(riverCells: number[], riverPoints: Point[] | null = null): [number, number, number][] {
+    const { fl } = pack.cells;
+    const { points, anchorIndices } = this.getCourse(riverCells, riverPoints);
 
     const flux: number[] = new Array(points.length).fill(0);
     anchorIndices.forEach((pointIndex, anchorIndex) => {

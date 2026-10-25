@@ -196,6 +196,29 @@ describe("addMeandering", () => {
       expect(actual[1]).toBe(overrideAnchors[k][1]);
     }
   });
+
+  it("bends only the end toward the flow it joins, by a limited turn", () => {
+    const cells = [0, 1, 2];
+    const positions: Point[] = [
+      [0, -40],
+      [0, -20],
+      [0, 0]
+    ];
+    const approach = ({ points }: { points: Point[] }) => {
+      const [[px, py], [x, y]] = points.slice(-2);
+      return Math.abs(Math.atan2(y - py, x - px));
+    };
+    const plain = meander(cells, positions, { startStep: 30 });
+    const joined = meander(cells, positions, { startStep: 30, endDirection: [1, 0] });
+
+    expect(joined.points.slice(0, -3)).toEqual(plain.points.slice(0, -2));
+    expect(joined.points.at(-1)).toEqual(positions[2]);
+    expect(joined.anchorIndices.at(-1)).toBe(joined.points.length - 1);
+    expect(approach(joined)).toBeCloseTo(approach(plain) - Math.PI / 5);
+
+    const alongFlow = meander(cells, positions, { startStep: 30, endDirection: [0, 1] });
+    expect(alongFlow.points).toEqual(plain.points);
+  });
 });
 
 describe("curveLength", () => {
