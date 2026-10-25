@@ -511,7 +511,7 @@ export function installButton(): void {
 
   document.addEventListener("click", event => {
     if (!menu?.classList.contains("is-open")) return;
-    if (fallback && fallback.contains(event.target as Node)) return;
+    if (fallback?.contains(event.target as Node)) return;
     toggleMenu(false);
   });
   document.addEventListener("keydown", event => {
