@@ -1,5 +1,6 @@
 import { type D3ZoomEvent, interpolateZoom, select, type ZoomView, zoom, zoomIdentity, zoomTransform } from "d3";
 import { Layers } from "@/renderers/layers";
+import { updateFeatureMaskBounds } from "@/renderers/viewport/mask-bounds";
 import {
   setViewportTransform,
   viewport,
@@ -62,6 +63,7 @@ function handleZoomPerFrame(): void {
     "transform",
     `translate(${viewport.x} ${viewport.y}) scale(${viewport.scale})`
   );
+  updateFeatureMaskBounds();
 
   if (didScaleChange) {
     Layers.draw("scaleBar");
@@ -111,6 +113,7 @@ function applyZoomFontSize(): void {
 }
 
 export function invokeActiveZooming(): void {
+  updateFeatureMaskBounds();
   applyZoomFontSize();
   ViewportLayers.renderNow();
 

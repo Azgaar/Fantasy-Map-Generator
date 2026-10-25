@@ -6,6 +6,7 @@ import { Names } from "@/model/society/names-generator";
 import { Notes } from "@/model/story/notes";
 import { Layers } from "@/renderers/layers";
 import { restoreOceanVectors } from "@/renderers/ocean-cache";
+import { restoreFeatureMaskBounds } from "@/renderers/viewport/mask-bounds";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
 import { getFileName } from "@/services/io/file-name";
@@ -96,6 +97,7 @@ function prepareMapData(viewOnly = false): string {
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
 
   restoreOceanVectors(cloneEl);
+  restoreFeatureMaskBounds(cloneEl);
 
   // reset transform values to default
   cloneEl.setAttribute("width", String(options.map.graph.width));
