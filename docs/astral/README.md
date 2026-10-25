@@ -72,6 +72,14 @@ The installations become the system's own: a port is a **shipyard**, a citadel a
 
 _Options_ → _Tools_ → **Star Systems** lists every system on the map with its class, its people and its traits; clicking a row zooms to it. In the browser console, `Astral.systems()` returns the same list as data.
 
+### The System Editor
+
+Clicking a star on the chart opens the **System Editor** — the burg read as a system. Rename it,
+grow or shrink its population (the class and the star follow), toggle its installations — shipyard,
+bastion, shielding, civic core, shrine, drift — make it an empire's capital, move it, or strike it
+from the chart. In the Astral view it is the only dialog a system has; the Burg Editor stays where
+it belongs, in Standard view. Every write is a burg write, so the world stays one world.
+
 ## The Astral view
 
 _Options_ → _Layers_ → **View mode** → **Astral** turns the map into a star chart of one chosen
@@ -102,6 +110,9 @@ As detailed in [`docs/plans/mod-merge-plan.md`](../plans/mod-merge-plan.md):
 - **Shipped (terrain layers)**: the terrain reads — Dust Density, Composition, Remnants, Core–Rim,
   and the rivers re-read as currents inside the Hyperlanes layer. The design is in
   [`docs/plans/astral-terrain-layers.md`](../plans/astral-terrain-layers.md).
+- **Shipped (system dialog)**: clicking a star opens the System Editor — the burg read as a system,
+  edited in the astral vocabulary, every write a burg write. The design is in
+  [`docs/plans/astral-system-dialog.md`](../plans/astral-system-dialog.md).
 
 ---
 *For upstream merge tracking, see [MERGING.md](../../MERGING.md).*

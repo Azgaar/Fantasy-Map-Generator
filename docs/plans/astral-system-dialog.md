@@ -164,12 +164,15 @@ and the e2e click expectation moved to `#astralSystemEditor`.
 System Editor in astral vocabulary; the same clicks in Standard still open the Burg Editor; every
 field edit changes the map; close/teardown leaves no listeners behind.
 
-### Phase 2 — Coverage and docs
+### Phase 2 — Coverage and docs ✅
 
 - e2e: the click test swaps its expectation to `#astralSystemEditor`; new tests — rename updates
   the label, a population change crosses a class threshold (readout, preview and marker colour all
   move), a trait toggle appears on the chart, remove closes the dialog;
 - README, MERGING.md.
+
+Shipped: the label-routing, rename, class-threshold, capital-toggle and removal e2e tests; the
+README "System Editor" section and roadmap entry; the MERGING.md touch-point section.
 
 **Acceptance:** lint, unit tests, build and the astral e2e specs pass; the standard burg specs pass
 unchanged.

@@ -3,12 +3,20 @@ import { waitForMap } from "./wait-for-map";
 
 // The star markers are a second visual representation of a burg: the tooltip reads them as systems,
 // a click opens the System Editor, search reveals them on the systems layer, and zoom culls them to
-// the viewport. This spec is the hit-testing parity guard the plan calls for.
+// the viewport. This spec is the hit-testing parity guard the plan calls for, and the editor
+// coverage: its edits are burg writes that redraw the chart.
 
-declare const styles: { texture: { options: { href: string } } };
+declare const styles: {
+  texture: { options: { href: string } };
+  systems: { options: { glow: boolean }; groups: Record<string, { attrs: { fill: string } }> };
+};
 declare const Layers: { isOn(id: string): boolean; hide(...ids: string[]): void };
 declare const pack: import("@/types/PackedGraph").PackedGraph;
-declare const Controllers: { AstralMode: { enter: () => Promise<void> }; Omnibar: { open: () => void } };
+declare const Controllers: {
+  AstralMode: { enter: () => Promise<void> };
+  AstralSystemEditor: { open: (id: number) => void };
+  Omnibar: { open: () => void };
+};
 
 /** Enter through the controller and wait until the markers are reconciled into the dom */
 async function withSystems(page: Page): Promise<void> {
@@ -87,6 +95,66 @@ test.describe("Astral systems", () => {
     await page.locator(".ui-dialog:has(#astralSystemEditor) .ui-dialog-titlebar-close").click();
   });
 
+  test("clicking a system's label in astral opens the System Editor", async ({ page }) => {
+    await withSystems(page);
+    await page.locator("#labels text[data-label-type='burg'][data-id='1']").first().click();
+    await expect(page.locator("#astralSystemEditor")).toBeVisible();
+  });
+
+  test("renaming a system updates its label", async ({ page }) => {
+    await withSystems(page);
+    await page.evaluate(() => Controllers.AstralSystemEditor.open(1));
+
+    await page.fill("#systemName", "Kessel");
+    await expect(page.locator("#labels text[data-label-type='burg'][data-id='1']").first()).toContainText("Kessel");
+  });
+
+  test("a population change crosses a class threshold on the readout, preview and chart", async ({ page }) => {
+    await withSystems(page);
+    await page.evaluate(() => Controllers.AstralSystemEditor.open(1));
+
+    await page.fill("#systemPopulation", "500");
+    await page.dispatchEvent("#systemPopulation", "change");
+
+    await expect(page.locator("#systemClass")).toContainText("M-class red dwarf");
+    const mFill = await page.evaluate(() => styles.systems.groups.M.attrs.fill);
+    await expect(page.locator("#systemStarShape")).toHaveAttribute("fill", mFill);
+    await expect(page.locator("#systems [data-group='M'] #system1")).toBeAttached();
+  });
+
+  test("a capital toggle draws its ring in the preview and on the chart", async ({ page }) => {
+    await withSystems(page);
+    const id = await page.evaluate(() => {
+      const burg = pack.burgs.find(
+        b => b.i && !b.removed && !b.capital && b.state && pack.states[b.state] && !pack.states[b.state].removed
+      );
+      Controllers.AstralSystemEditor.open(burg.i);
+      return burg.i;
+    });
+
+    await page.click("#systemCapital");
+
+    await expect(page.locator("#systemStarShape circle.capital")).toBeAttached();
+    await expect(page.locator(`#systems #system${id} circle.capital`)).toBeAttached();
+  });
+
+  test("removing a system closes the dialog and clears the marker", async ({ page }) => {
+    await withSystems(page);
+    const id = await page.evaluate(() => {
+      const burg = pack.burgs.find(
+        b => b.i && !b.removed && !b.capital && !pack.markets?.some(m => m.centerBurgId === b.i)
+      );
+      Controllers.AstralSystemEditor.open(burg.i);
+      return burg.i;
+    });
+
+    await page.click("#systemRemove");
+    await page.locator(".ui-dialog:has(#alert) button", { hasText: "Remove" }).click();
+
+    await expect(page.locator("#astralSystemEditor")).toHaveCount(0);
+    await expect(page.locator(`#systems #system${id}`)).toHaveCount(0);
+  });
+
   test("search reveals the burg on the systems layer and outlines the marker", async ({ page }) => {
     await withSystems(page);
     await page.evaluate(() => Layers.hide("systems"));
@@ -102,7 +170,7 @@ test.describe("Astral systems", () => {
 
     // the mode-aware reveal shows the systems layer, not burgIcons
     await expect.poll(() => page.evaluate(() => Layers.isOn("systems"))).toBe(true);
-    expect(await viewScale(page)).toBeGreaterThan(1);
+    await expect.poll(() => viewScale(page)).toBeGreaterThan(1);
     await expect(page.locator("#debug .highlighted")).toHaveCount(1, { timeout: 5000 });
   });
 

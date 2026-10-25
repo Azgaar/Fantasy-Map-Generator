@@ -161,8 +161,9 @@ git fetch upstream && git merge upstream/master
 - **`src/components/map-entities.ts`**: `/^system(\d+)$/` maps to the burg ref, the
   `#burgIcons` target special case extends to `#systems`, the burg reveal layers are mode-aware
   (`systems` in Astral), and the burg highlight covers `#burg{id}` and `#system{id}`.
-- **`src/components/viewbox-events.ts`**: a `systems` entry opens the Burg Editor for the marker's
-  burg.
+- **`src/components/viewbox-events.ts`**: a `systems` entry opens the System Editor for the
+  marker's burg (the Burg Editor at the time; the routing since became the System Editor's — see
+  _The system dialog_ below).
 - *Conflict resolution strategy*: the renderer seams mirror the `burgIcons` paths — if upstream
   changes how burgs resolve, click or highlight, re-apply the same change to the `system{id}`
   element path.
@@ -273,6 +274,31 @@ saved cultures and a rename keeps its corpus.
   - Dedicated unit tests for schema validation, RPG namebase content rules, habitat scoring, acceptance, polity naming, and controller register selection.
 - *Conflict resolution strategy*: keep the 11 bases appended with their permanent ids; keep the `case "rpgFantasy"` in `cultures-generator.ts` and the `rpgFantasy` entry in `CULTURE_SETS`.
 
+### The system dialog (Astral System Editor)
+
+- **`src/controllers/astral-system-editor.ts`** (new): the System Editor — a burg read as a star
+  system, edited in the astral vocabulary. Every write goes through the `Burgs` model (rename,
+  population, culture, installations, capital, treasury, lock, move, remove); the spectral class
+  stays a readout derived from population; the star preview is emitted by the same shape code as
+  the layer. In Astral it is the only dialog a system has.
+- **`src/renderers/astral/system-markers.ts`**: `starShape()` and `writeAttrs()` moved here from
+  `draw-systems.ts`, so the layer and the dialog emit identical markers.
+- **`src/renderers/astral/draw-systems.ts`**: imports the shape emission from `system-markers.ts`.
+- **`src/components/viewbox-events.ts`**: `#systems` marker clicks always open the System Editor;
+  burg label and `#burgIcons` clicks open it in Astral (`isAstralView()`) and the Burg Editor in
+  Standard; the label re-open trick (an editor already open for the same burg → LabelsEditor)
+  covers both dialogs.
+- **`src/controllers/index.ts`**: one registry entry (`AstralSystemEditor`).
+- **`tests/e2e/astral-systems.spec.ts`**: the click seam expects the System Editor; editing
+  coverage — label routing, rename, a class-threshold crossing, a capital toggle, removal.
+- **`src/services/assistant/provider/context.generated.ts`**: regenerated (the snapshot carries the
+  new controller).
+- **`docs/astral/README.md`** / **`docs/plans/astral-system-dialog.md`**: the editor section and
+  the plan.
+- *Conflict resolution strategy*: the routing seams stay mode-aware — if upstream reshapes the click
+  dispatch, keep the Astral branch beside the stock Burg Editor branch; the marker emission must
+  stay shared between the layer and the dialog; the class remains derived (no per-system state).
+
 ### Toolchain & Windows Environment Compatibility
 
 - **`package.json`**:
@@ -280,3 +306,5 @@ saved cultures and a rename keeps its corpus.
   - Added package overrides mapping `rollup` to `@rollup/wasm-node` and `esbuild` to `esbuild-wasm` (pure WebAssembly, zero native C++ DLL bindings).
   - Added `scripts/patch-esbuild.mjs` running on `postinstall` to adapt Go WASM runtime process spawning for Windows `cmd.exe`.
   - Provided `dev.cmd` and `dev.ps1` dev server launchers.
+  - **`scripts/generate-assistant-context.mjs`**: `read()` normalizes CRLF to LF, so a CRLF checkout
+    (`git autocrlf`) matches the script's LF-only regexes instead of failing the `METHODS` lookup.

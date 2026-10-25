@@ -10,7 +10,8 @@ import { fileURLToPath } from "node:url";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const target = "src/services/assistant/provider/context.generated.ts";
 
-const read = path => readFileSync(join(root, path), "utf8");
+// sources are compared and matched with LF-only regexes, so a CRLF checkout (git autocrlf) reads the same
+const read = path => readFileSync(join(root, path), "utf8").replaceAll("\r\n", "\n");
 
 // Every non-test source file under src, read once
 const paths = readdirSync(join(root, "src"), { recursive: true })
