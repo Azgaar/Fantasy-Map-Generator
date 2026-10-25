@@ -7,8 +7,14 @@ import { rn } from "@/utils/numberUtils";
 import { currentPath, currentWidth } from "./currents";
 
 const GROUP = "currents";
+let subscribed = false;
 
 export function drawCurrents(): void {
+  // lazy: the module can load mid-cycle through view-mode's conquest import, before it can take a listener
+  if (!subscribed) {
+    subscribed = true;
+    subscribeAstralView(drawCurrents);
+  }
   TIME && console.time("drawCurrents");
   const group = document.getElementById(GROUP) as SVGGElement | null;
   const routes = document.getElementById("routes");
@@ -22,9 +28,7 @@ export function drawCurrents(): void {
   }
 
   TIME && console.timeEnd("drawCurrents");
-}
-
-/** the group the registry would have stamped, created under the Hyperlanes layer on demand */
+}/** the group the registry would have stamped, created under the Hyperlanes layer on demand */
 function createGroup(routes: Element): SVGGElement {
   const group = createEl<SVGGElement>("g", GROUP);
   group.dataset.group = GROUP; // styles address groups by data-group, not element id
@@ -62,4 +66,3 @@ function buildPaths(): string {
   return paths.join("");
 }
 
-subscribeAstralView(drawCurrents); // entering and leaving redraw or drop the group
