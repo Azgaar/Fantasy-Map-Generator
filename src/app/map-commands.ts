@@ -842,7 +842,7 @@ function regenerateReliefIcons(): void {
 
 function regenerateRoutes(): void {
   Routes.regenerate();
-  Layers.draw("routes");
+  Layers.draw("routes", "trade");
 }
 
 function regenerateRivers(): void {

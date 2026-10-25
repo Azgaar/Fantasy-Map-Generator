@@ -138,7 +138,7 @@ function completeCreation(): void {
   const routeId = Routes.create(points, group);
 
   setTempRoute(null);
-  Layers.draw("routes");
+  Layers.draw("routes", "trade");
   void Controllers.RouteEditor.open(`route${routeId}`);
 }
 

@@ -16,6 +16,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 
 - Editors: long column names are cut instead of overlapping the next column
 - Hovering a cut value shows its full text in the tooltip
+- Trade animation follows edited and custom routes
 
 # Releases
 

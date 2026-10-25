@@ -519,7 +519,7 @@ describe("Zones, Markers, Routes, labels and regiments", () => {
     expect(() => Routes.setGroup(5, "canals")).toThrow("The group must be one of: roads, trails");
     Routes.remove(5);
     expect(pack.routes).toEqual([]);
-    expect(pack.cells.routes).toEqual({ 0: {}, 1: {} });
+    expect(pack.cells.routes).toEqual({});
   });
 
   it("renames and removes added labels and regiments", () => {

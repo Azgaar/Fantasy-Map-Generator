@@ -11,7 +11,6 @@ import { noteButton } from "@/ui/dialog/dialog-helpers";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { getSegmentId } from "@/utils/common-utils";
 import { sentences, t } from "@/utils/i18n";
-import { log } from "@/utils/logger";
 import { ensureEl, findEl, getPointer } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 
@@ -176,7 +175,6 @@ type PointDrag = D3DragEvent<SVGCircleElement, number[], number[]>;
 
 function dragControlPoint(event: PointDrag): void {
   const route = getRoute();
-  const initCell = event.subject[2];
   const pointIndex = route.points.indexOf(event.subject);
 
   event.on("drag", function (this: SVGCircleElement, dragEvent: PointDrag) {
@@ -193,23 +191,7 @@ function dragControlPoint(event: PointDrag): void {
     drawCells(route.points);
   });
 
-  event.on("end", () => {
-    const movedToCell = Pack.findCell(event.x, event.y);
-
-    if (movedToCell !== initCell) {
-      const prev = route.points[pointIndex - 1];
-      if (prev) {
-        removeConnection(initCell, prev[2]);
-        addConnection(movedToCell!, prev[2], route.i);
-      }
-
-      const next = route.points[pointIndex + 1];
-      if (next) {
-        removeConnection(initCell, next[2]);
-        addConnection(movedToCell!, next[2], route.i);
-      }
-    }
-  });
+  event.on("end", updateLinks);
 }
 
 function redrawRoute(route: Route): void {
@@ -225,29 +207,13 @@ function addControlPoint(this: SVGElement, event: MouseEvent): void {
   const cellId = Pack.findCell(x, y);
 
   const point = [rn(x, 2), rn(y, 2), cellId!];
-  const isNewCell = !route.points.some(p => p[2] === cellId);
-
   const index = getSegmentId(route.points as [number, number][], point as [number, number], 2);
   route.points.splice(index, 0, point);
 
-  // check if added point is in new cell
-  if (isNewCell) {
-    const prev = route.points[index - 1];
-    const next = route.points[index + 1];
-
-    if (!prev) log.error("Can't add control point to the start of the route");
-    if (!next) log.error("Can't add control point to the end of the route");
-    if (!prev || !next) return;
-
-    removeConnection(prev[2], next[2]);
-    addConnection(prev[2], cellId!, route.i);
-    addConnection(cellId!, next[2], route.i);
-
-    drawCells(route.points);
-  }
-
+  drawCells(route.points);
   drawControlPoints(route.points);
   redrawRoute(route);
+  updateLinks();
 }
 
 function handleControlPointClick(this: SVGCircleElement): void {
@@ -270,24 +236,17 @@ function handleControlPointClick(this: SVGCircleElement): void {
     drawCells(route.points);
     redrawRoute(route);
     redrawRouteShape(pack.routes.find((r: Route) => r.i === newRouteId)!);
+    Layers.draw("trade");
     ensureEl("routeSplit").classList.remove("pressed");
   }
 
   function removeControlPoint(controlPoint: Selection<SVGCircleElement, unknown, null, undefined>): void {
-    const isOnlyPointInCell = route.points.filter(p => p[2] === point[2]).length === 1;
-    if (isOnlyPointInCell) {
-      const prev = route.points[index - 1];
-      const next = route.points[index + 1];
-      if (prev) removeConnection(prev[2], point[2]);
-      if (next) removeConnection(point[2], next[2]);
-      if (prev && next) addConnection(prev[2], next[2], route.i);
-    }
-
     controlPoint.remove();
     route.points = route.points.filter(p => p !== point);
 
     drawCells(route.points);
     redrawRoute(route);
+    updateLinks();
   }
 }
 
@@ -345,7 +304,7 @@ function openJoinRoutesDialog(): void {
 
 function joinRoutes(route: Route, joinedRoute: Route): void {
   Routes.join(route.i, joinedRoute.i);
-  Layers.draw("routes");
+  Layers.draw("routes", "trade");
   drawControlPoints(route.points);
   redrawRoute(route);
   drawCells(route.points);
@@ -360,20 +319,10 @@ function togglePressed(this: HTMLElement): void {
   this.classList.toggle("pressed");
 }
 
-function removeConnection(from: number, to: number): void {
-  const cellRoutes = pack.cells.routes;
-  if (cellRoutes[from]) delete cellRoutes[from][to];
-  if (cellRoutes[to]) delete cellRoutes[to][from];
-}
-
-function addConnection(from: number, to: number, routeId: number): void {
-  const cellRoutes = pack.cells.routes;
-
-  if (!cellRoutes[from]) cellRoutes[from] = {};
-  cellRoutes[from][to] = routeId;
-
-  if (!cellRoutes[to]) cellRoutes[to] = {};
-  cellRoutes[to][from] = routeId;
+// trade paths follow the cell links and the route geometry
+function updateLinks(): void {
+  Routes.relink();
+  Layers.draw("trade");
 }
 
 function changeName(this: HTMLInputElement): void {
@@ -396,6 +345,7 @@ function changeGroup(this: HTMLInputElement): void {
   Routes.setGroup(route.i, this.value);
   redrawRouteShape(route); // the path is re-created under the new group, so re-bind the editor to it
   selectedRoute = select<SVGElement, unknown>(`#route${route.i}`).on("click", addControlPoint);
+  Layers.draw("trade"); // searoutes animate as ships
 }
 
 function changeTags(this: HTMLInputElement): void {
@@ -449,7 +399,7 @@ function removeRoute(): void {
     onConfirm: () => {
       Routes.remove(getRoute().i);
       Dialog.close("routeEditor");
-      Layers.draw("routes", "labels");
+      Layers.draw("routes", "labels", "trade");
     }
   });
 }

@@ -310,7 +310,7 @@ function triggerRouteRemove(this: HTMLElement): void {
     onConfirm: () => {
       const route = pack.routes.find((r: Route) => r.i === routeId) as Route;
       Routes.remove(route.i);
-      Layers.draw("routes", "labels");
+      Layers.draw("routes", "labels", "trade");
       routesTable.refresh();
     }
   });
@@ -349,11 +349,8 @@ function triggerAllRoutesRemove(): void {
         }
         return;
       }
-      for (const route of routesToRemove) {
-        Routes.remove(route.i);
-      }
-      pack.cells.routes = Routes.buildLinks(pack.routes);
-      Layers.draw("routes", "labels");
+      Routes.remove(...routesToRemove.map(route => route.i));
+      Layers.draw("routes", "labels", "trade");
       routesTable.refresh();
     }
   });
@@ -375,7 +372,7 @@ async function uploadRoutesCsv(text: string): Promise<void> {
   );
   if (!updated) return;
 
-  Layers.draw("routes", "labels");
+  Layers.draw("routes", "labels", "trade");
   routesTable.refresh();
 }
 
