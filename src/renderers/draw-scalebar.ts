@@ -1,4 +1,5 @@
 import { range, type Selection, select } from "d3";
+import { isAstralView } from "@/components/options/view-mode";
 import { tip } from "@/components/tooltips";
 import { viewport } from "@/components/viewport";
 import { Controllers } from "@/controllers";
@@ -28,7 +29,9 @@ export function drawScaleBar(
   const isRendered = Boolean(renderedContent.size());
   TIME && !isRendered && console.time("drawScaleBar");
 
-  const unit = options.map.units.distance.unit;
+  // in Astral the map reads as a sector of space, so the bar is labelled in light years;
+  // the numbers still come from the map's own distance scale, and the saved units are untouched
+  const unit = isAstralView() ? "ly" : options.map.units.distance.unit;
   const { barSize: size, label, x: posX, y: posY } = styles.scaleBar.options;
 
   renderedContent?.remove(); // redraw content every time, but not scaleBarBack

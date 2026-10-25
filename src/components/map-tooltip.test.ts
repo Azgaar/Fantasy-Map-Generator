@@ -6,7 +6,8 @@ vi.mock("@/components/layers", () => ({ Layers: { isOn: () => false } }));
 vi.mock("@/components/tooltips", () => ({ tip: vi.fn(), showMainTip: vi.fn() }));
 vi.mock("@/renderers/overlays/highlight", () => ({ highlightEmblemElement: vi.fn() }));
 
-import { showNotes } from "./map-tooltip";
+import { tip } from "@/components/tooltips";
+import { showMapTooltip, showNotes } from "./map-tooltip";
 
 beforeEach(() => {
   document.body.innerHTML = `
@@ -30,4 +31,17 @@ it("shows nested hover notes using shared references without computing geometry"
   expect(document.getElementById("notesBody")!.innerHTML).toBe("<p>A beacon</p>");
   expect(document.getElementById("notes")!.style.display).toBe("block");
   expect(points).not.toHaveBeenCalled();
+});
+
+it("a hover on a stale detached target leaves the current tip alone", () => {
+  // a viewport re-render can swap the element out from under the cursor; the follow-up hover event
+  // then has a short path, and clearing before the path guard would blank a perfectly good tip
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  const detached = document.createElementNS(SVG_NS, "g");
+  const child = document.createElementNS(SVG_NS, "circle");
+  detached.appendChild(child);
+  detached.addEventListener("mousemove", event => showMapTooltip([10, 20], event, 0, 0));
+  child.dispatchEvent(new MouseEvent("mousemove", { bubbles: true }));
+
+  expect(tip).not.toHaveBeenCalled();
 });

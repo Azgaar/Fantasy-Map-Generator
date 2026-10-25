@@ -163,6 +163,72 @@ git fetch upstream && git merge upstream/master
   changes how burgs resolve, click or highlight, re-apply the same change to the `system{id}`
   element path.
 
+### Astral visual overhaul — Phase 5 (polish and docs)
+
+- **`src/controllers/astral-mode.ts`**: `hintNaming()` — a one-per-session "apply Astral naming" tip
+  shown on entering the mode, gated on the map having Astral peoples (`groupsOf`). Purely additive.
+- **`src/services/style-presets.ts`** / **`scripts/render-style-thumbnails.mjs`**: `astralSchematic`
+  added to the system preset list (the second Astral style, a cyan/green phosphor blueprint).
+- **`public/styles/astralSchematic.json`** (new): the complete schematic preset, authored from
+  `astral.json`.
+- **`public/images/style-presets/astralSchematic.avif`** (new): the preset card thumbnail.
+- **`tests/e2e/astral-mode.spec.ts`** / **`astral-systems.spec.ts`** / **`astral-round-trip.spec.ts`**
+  (new): the mode enter/exit/3D-exclusivity and export smoke, the systems hit-testing parity
+  (tooltip, click, reveal, zoom culling) and the save/reload/exit round trip.
+- **`src/generators/styles-legacy.test.ts`**: the shipped-preset count (15→16 presets, 16→17 files).
+- **`docs/wiki/User-Interface.md`** / **`docs/astral/README.md`** / **`README.md`** /
+  **`docs/plans/astral-ui-overhaul.md`**: the Astral view section, the preset list and the roadmap.
+- *Conflict resolution strategy*: the preset entries are two one-line additions in the existing
+  lists; the e2e specs are new files and carry no upstream conflict surface.
+
+### Astral terrain layers — Dust Density, Composition, Remnants, Core–Rim, Currents
+
+- **`src/components/layers.ts`**: four Astral layer ids at their z-positions — `coreRim` (after
+  `landmass`), `composition` (after `texture`), `dustDensity` (after `starDensity`) and `remnants`
+  (after `systems`) — plus their renderer imports.
+- **`src/renderers/draw-routes.ts`**: `drawRoutes` calls `drawCurrents()` (Astral-only; it creates
+  or drops the `#currents` group inside `#routes`), and the reconcile loop skips that group — the
+  route scene owns trails/roads/searoutes, not the currents.
+- **`src/components/viewport.ts`**: the `remnants` zoom curve in `ZOOM_CURVES` (near-natural, like
+  `systems`).
+- **`src/components/map-tooltip.ts`**: the path-depth guard runs before `tip("")`, so stale detached
+  targets no longer blank the tooltip.
+- **`src/components/tooltips.ts`**: a timed tip expiry clears only its own message, so a hover tip
+  that replaced it stays up.
+- **`src/utils/registry.ts`**: `trackLoad` clears only its own "Loading…" message (the load-vs-hover
+  race that blanked tooltips after a load).
+- **`src/generators/styles-schema.ts`**: four elements — `coreRim`, `composition`, `dustDensity`,
+  `remnants`. `routes.groups` stays an open record, so the `currents` group is plain data.
+- **`src/generators/default-styles.json`**: the same four elements' defaults — no `currents`
+  section, the group ships only in the Astral presets.
+- **`public/styles/*.json`**: the converter injects the four elements into every shipped preset;
+  `astral.json` and `astralSchematic.json` additionally carry the `currents` group in
+  `routes.groups` (gold / acid flow, long dash).
+- **`scripts/convert-style-presets.mjs`**: the icon-owning models (relief, burgs, goods) are
+  imported before `normalizeStyles` runs, so references resolve during conversion.
+- **New**: `src/renderers/astral/{dust-bands, draw-dust-density, biome-classes, draw-composition,
+  remnants, draw-remnants, core-rim, draw-core-rim, currents, draw-currents}.ts`, the Astral button
+  and preset rows in `src/data/astral-layer-labels.ts` / `astral-layers.ts`, and the plan at
+  `docs/plans/astral-terrain-layers.md`.
+- *Conflict resolution strategy*: the four layer entries sit at fixed z-positions between stock
+  entries — re-place them if upstream reorders the registry; the `draw-routes.ts` seam is two lines
+  (the hook and the reconcile skip) — re-apply both; the tooltip fixes are small guards, keep them
+  even if upstream rewrites the functions.
+
+### Sector colors (provinces/sectors hue rotation)
+
+- **`src/utils/colorUtils.ts`**: `getSectorColor(polityColor, index)` — a sector keeps the polity's
+  chroma and lightness but the hue spins 75°–285° away, sequenced by the sector's index within its
+  polity (with a lightness ladder and a small deterministic jitter); achromatic polities fall back
+  to `getMixedColor`.
+- **`src/generators/provinces-generator.ts`** / **`src/generators/states-generator.ts`**: all five
+  province color sites use the rotation instead of `getMixedColor(state.color)` — the old mix sat
+  within ~20% of the state color, so every sector read as its polity.
+- **`public/styles/astral.json` / `astralSchematic.json`**: `provinces` opacity 0.2 → 0.5 and
+  0.06 → 0.15, so the rotation reads over the chart (standard presets keep 0.7).
+- *Conflict resolution strategy*: keep the rotation at every site where upstream assigns a province
+  color from its state; the index is the state's province count at assignment time.
+
 ### Toolchain & Windows Environment Compatibility
 
 - **`package.json`**:

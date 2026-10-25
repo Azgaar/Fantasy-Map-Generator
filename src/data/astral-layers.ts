@@ -11,31 +11,26 @@ export const ASTRAL_DEFAULT_PRESET = "astral";
 export const ASTRAL_PRESETS: Record<string, AstralPreset> = {
   astral: {
     name: "Astral chart",
-    layers: [
-      "texture",
-      "nebulae",
-      "starDensity",
-      "systems",
-      "states",
-      "provinces",
-      "borders",
-      "routes",
-      "labels",
-      "markers",
-      "scaleBar",
-      "vignette"
-    ]
+    layers: ["states", "routes", "systems", "labels", "scaleBar"]
   },
   empires: {
     name: "Empires",
     layers: ["texture", "nebulae", "states", "provinces", "borders", "labels", "scaleBar"]
   },
+  composition: {
+    name: "Composition",
+    layers: ["texture", "composition", "scaleBar"]
+  },
+  dustDensity: {
+    name: "Dust Density",
+    layers: ["texture", "dustDensity", "scaleBar"]
+  },
   survey: {
     name: "Survey scan",
-    layers: ["texture", "starDensity", "coordinates", "scaleBar", "vignette"]
+    layers: ["texture", "starDensity", "coordinates", "scaleBar", "coreRim"]
   },
   systems: {
     name: "Systems and lanes",
-    layers: ["texture", "nebulae", "systems", "routes", "labels", "scaleBar"]
+    layers: ["texture", "nebulae", "systems", "remnants", "routes", "labels", "scaleBar"]
   }
 };

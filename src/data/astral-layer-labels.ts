@@ -3,10 +3,14 @@ import type { LayerId } from "@/components/layers";
 import type { LayerButton } from "./layer-labels";
 
 export const ASTRAL_LAYER_TOGGLES = new Map<LayerId, LayerButton>([
+  ["coreRim", { label: "Core–R<u>i</u>m" }],
   ["texture", { label: "Sector <u>D</u>ust", shortcut: "KeyD" }],
+  ["composition", { label: "<u>C</u>omposition", shortcut: "KeyC" }],
   ["nebulae", { label: "<u>N</u>ebulae", shortcut: "KeyN" }],
-  ["starDensity", { label: "Star D<u>e</u>nsity", shortcut: "KeyE" }],
+  ["starDensity", { label: "<u>P</u>opulation", shortcut: "KeyP" }],
+  ["dustDensity", { label: "Dust D<u>e</u>nsity", shortcut: "KeyE" }],
   ["systems", { label: "S<u>y</u>stems", shortcut: "KeyY" }],
+  ["remnants", { label: "<u>R</u>emnants", shortcut: "KeyR" }],
   ["states", { label: "<u>E</u>mpires" }],
   ["provinces", { label: "<u>S</u>ectors", shortcut: "KeyS" }],
   ["borders", { label: "<u>B</u>orders", shortcut: "KeyB" }],
@@ -15,6 +19,5 @@ export const ASTRAL_LAYER_TOGGLES = new Map<LayerId, LayerButton>([
   ["markers", { label: "<u>A</u>nomalies", shortcut: "KeyA" }],
   ["labels", { label: "<u>L</u>abels", shortcut: "KeyL" }],
   ["coordinates", { label: "Sensor <u>G</u>rid", shortcut: "KeyG" }],
-  ["scaleBar", { label: "Scale Bar", shortcut: "Slash", hint: "/ (slash sign)" }],
-  ["vignette", { label: "Vignette", shortcut: "BracketLeft", hint: "[ (left square bracket)" }]
+  ["scaleBar", { label: "Scale Bar", shortcut: "Slash", hint: "/ (slash sign)" }]
 ]);

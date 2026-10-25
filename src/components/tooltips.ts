@@ -35,7 +35,12 @@ export function tip(message: string, main = false, type: TipType = "info", time 
   // must leave it alone, or moving the mouse would keep a timed message alive forever.
   if (main || time) {
     if (autoClearTimeout) clearTimeout(autoClearTimeout);
-    autoClearTimeout = time ? window.setTimeout(clearMainTip, time) : undefined;
+    // the expiry clears its own message only: a hover tip that replaced it stays up
+    autoClearTimeout = time
+      ? window.setTimeout(() => {
+          if (getTooltip().innerHTML === message) clearMainTip();
+        }, time)
+      : undefined;
   }
 }
 

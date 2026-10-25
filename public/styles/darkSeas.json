@@ -440,6 +440,47 @@
       }
     }
   },
+  "composition": {
+    "attrs": {
+      "opacity": 0.18,
+      "filter": null,
+      "mask": "url(#land)"
+    },
+    "groups": {
+      "irradiated": {
+        "attrs": {
+          "opacity": 0.9,
+          "fill": "#e0b049",
+          "fill-opacity": 0.9,
+          "filter": null
+        }
+      },
+      "arable": {
+        "attrs": {
+          "opacity": 0.9,
+          "fill": "#8fc46a",
+          "fill-opacity": 0.9,
+          "filter": null
+        }
+      },
+      "biomass": {
+        "attrs": {
+          "opacity": 0.9,
+          "fill": "#3d9960",
+          "fill-opacity": 0.9,
+          "filter": null
+        }
+      },
+      "volatiles": {
+        "attrs": {
+          "opacity": 0.9,
+          "fill": "#7ecfe0",
+          "fill-opacity": 0.9,
+          "filter": null
+        }
+      }
+    }
+  },
   "coordinates": {
     "attrs": {
       "stroke": "#d4d4d4",
@@ -452,6 +493,17 @@
       "mask": null
     }
   },
+  "coreRim": {
+    "attrs": {
+      "opacity": 0.9,
+      "filter": null,
+      "mask": null
+    },
+    "options": {
+      "flip": false,
+      "intensity": 0.4
+    }
+  },
   "cultures": {
     "attrs": {
       "opacity": 0.6,
@@ -462,6 +514,66 @@
       "stroke-linecap": null,
       "stroke-linejoin": null,
       "filter": null
+    }
+  },
+  "dustDensity": {
+    "attrs": {
+      "opacity": 0.85,
+      "filter": null,
+      "mask": "url(#land)"
+    },
+    "options": {
+      "levels": 4
+    },
+    "groups": {
+      "band1": {
+        "attrs": {
+          "opacity": 0.45,
+          "fill": "#1b2f6e",
+          "fill-opacity": 0.4,
+          "filter": null
+        }
+      },
+      "band2": {
+        "attrs": {
+          "opacity": 0.55,
+          "fill": "#33358a",
+          "fill-opacity": 0.45,
+          "filter": null
+        }
+      },
+      "band3": {
+        "attrs": {
+          "opacity": 0.65,
+          "fill": "#5a3aa8",
+          "fill-opacity": 0.5,
+          "filter": null
+        }
+      },
+      "band4": {
+        "attrs": {
+          "opacity": 0.75,
+          "fill": "#7f42c4",
+          "fill-opacity": 0.55,
+          "filter": null
+        }
+      },
+      "band5": {
+        "attrs": {
+          "opacity": 0.85,
+          "fill": "#b04ad8",
+          "fill-opacity": 0.65,
+          "filter": null
+        }
+      },
+      "band6": {
+        "attrs": {
+          "opacity": 0.95,
+          "fill": "#f05ad8",
+          "fill-opacity": 0.75,
+          "filter": null
+        }
+      }
     }
   },
   "emblems": {
@@ -1286,6 +1398,47 @@
       "stroke-linecap": null,
       "stroke-linejoin": null,
       "filter": null
+    }
+  },
+  "remnants": {
+    "attrs": {
+      "opacity": 0.95,
+      "filter": null
+    },
+    "options": {
+      "glow": true
+    },
+    "groups": {
+      "blackHole": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#0d0318",
+          "fill-opacity": 1,
+          "stroke": "#a78bfa",
+          "stroke-opacity": 1,
+          "filter": null
+        }
+      },
+      "pulsar": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#7dd3fc",
+          "fill-opacity": 1,
+          "stroke": "#38bdf8",
+          "stroke-opacity": 1,
+          "filter": null
+        }
+      },
+      "neutron": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#fde68a",
+          "fill-opacity": 1,
+          "stroke": "#f59e0b",
+          "stroke-opacity": 1,
+          "filter": null
+        }
+      }
     }
   },
   "rivers": {

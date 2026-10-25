@@ -262,6 +262,20 @@ For example, the group of layers called "political map", contains (and toggle) t
 
 Available presets: Political map, Cultural map, Religions map, Provinces map, Biomes map, Heightmap, Physical map, Places of interest, Goods map, Trade animation, Military map, Emblems and Pure landmass.
 
+## View mode
+
+At the top of the Layers tab, the **View mode** row chooses what the map shows: **Standard**, **3D scene**, **Globe** or **Astral**. Standard is the fantasy map; 3D scene and Globe are the three-dimensional views.
+
+**Astral** turns the map into a star chart of one chosen sector. Entering it swaps the layer buttons for the Astral list — Core–Rim, Sector Dust, Composition, Nebulae, Population, Dust Density, Star Systems, Remnants, Empires, Sectors, Borders, Hyperlanes, Anomalies and Labels — and applies the Astral style: the void becomes deep space and every burg is drawn as a class-coloured star. There is no galactic core or spiral arm; the map is one sector, not a galaxy.
+
+The default **Astral chart** preset shows Empires, Hyperlanes, Systems, Labels and the Scale Bar. Core–Rim, Sector Dust, Composition, Nebulae, Population, Dust Density and Remnants are off by default and are one click away in the same list — Core–Rim washes the field from the hot core-ward edge to the cold rim, reading the grid's temperature (on a whole-globe map the same wash reads as irradiation bands); Dust Density bands the land's elevation as the thickness of the dust sheet, its top band marking stellar nurseries the hyperlanes bend around; Composition reads the biomes as the resource character of a region: irradiated dust, arable worlds, biomass, volatiles; and Remnants puts a collapsed object on every mountain — a black hole where matter piled thickest, a pulsar below it, a neutron star further down. The scale bar reads in light years (ly) while the mode is on; your saved distance units are unchanged.
+
+**Hyperlanes** double as the sector's **currents**: in Astral every river is redrawn inside the Hyperlanes layer as a dashed flow line to the void, its width following discharge — the rivers that run widest read as the main trade lanes. The currents toggle with the Hyperlanes button and never exist outside the mode.
+
+**Borders** is off by default too. Switching it on draws each empire's edge *inside its own territory*, in a darkened shade of that empire's own colour, so two neighbouring empires each show their own line instead of one shared line you cannot attribute. The shared border path the Standard view uses is faded out in Astral, so borders never compete with the blue hyperlanes.
+
+Astral and the 3D views are mutually exclusive, so entering one leaves the other. Leaving Astral restores the layer set and style you had before. The mode is saved with the map, so a reloaded Astral map reopens as a chart. While in the mode the layer preset dropdown lists only the Astral presets (Astral chart, Empires, Composition, Dust Density, Survey scan, Systems and lanes) and the save/remove preset buttons are hidden; to keep the look permanently, pick the **Astral** or **astralSchematic** preset in the Style tab instead.
+
 ## Biomes
 
 This layer shows the division of the land into biomes.
@@ -434,7 +448,7 @@ The preset button shows the current preset and allows you to choose a set of des
 
 Each of those sets defines its design settings for each of the elements, for example the ancient preset defines the texture of the land to be with the image setting to be ancient small, and the Clipping setting to be No clipping.
 
-Available presets: default, ancient, gloom, pale, light, watercolor, clean, atlas, darkSeas, cyberpunk, astral, night, monochrome, ink, cinderwood and frostbite. The **+** button saves the current style as a custom preset.
+Available presets: default, ancient, gloom, pale, light, watercolor, clean, atlas, darkSeas, cyberpunk, astral, astralSchematic, night, monochrome, ink, cinderwood and frostbite. The **+** button saves the current style as a custom preset.
 
 Clicking the preset button opens the **Style presets** dialog: a gallery with a screenshot of every system preset (all rendered from the same map), the current one outlined. Clicking a card applies the preset, and the dialog stays open. Custom presets are listed with a neutral tile; hover one and click its trash button to remove it.
 

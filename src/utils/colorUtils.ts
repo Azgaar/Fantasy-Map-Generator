@@ -1,5 +1,6 @@
 import {
   color,
+  hcl,
   interpolate,
   interpolateRainbow,
   type RGBColor,
@@ -90,6 +91,27 @@ export const getMixedColor = (colorToMix: string, mix = 0.2, bright = 0.3): stri
   const c = colorToMix && colorToMix[0] === "#" ? colorToMix : getRandomColor(); // if provided color is not hex (e.g. harching), generate random one
   const mixedColor: RGBColor = color(interpolate(c, getRandomColor())(mix)) as RGBColor;
   return mixedColor.brighter(bright).formatHex();
+};
+
+/** the hue arc a polity's sectors rotate in, so a sector never sits closer than ~70° to the polity hue */
+const SECTOR_ARC = 210;
+const SECTOR_OFFSET = 75;
+
+/**
+ * A sector of a polity: the polity's chroma and lightness with the hue spun well clear of it.
+ * The sector's index within its polity sequences the rotation, so the sectors of one state differ
+ * from the polity and from each other; an achromatic polity falls back to a blend
+ * @param {string} polityColor - The polity color in HEX format
+ * @param {number} index - The sector's index within its polity, sequencing the rotation
+ * @returns {string} - The sector color in HEX format
+ */
+export const getSectorColor = (polityColor: string, index: number): string => {
+  const base = polityColor[0] === "#" ? hcl(polityColor) : null;
+  if (!base || !Number.isFinite(base.h)) return getMixedColor(polityColor, 0.5, 0.2); // achromatic: blend instead
+  const spin = SECTOR_OFFSET + ((index * 49) % SECTOR_ARC) + (((index * 17) % 11) - 5); // the tail jitters the ladder
+  base.h = (base.h + spin + 360) % 360;
+  base.l = Math.max(12, Math.min(92, base.l + ((index % 3) - 1) * 5)); // the lightness ladder separates wrapped spins
+  return base.formatHex();
 };
 
 declare global {

@@ -74,11 +74,12 @@ function getPopulationTip(cellId: number): string {
 
 /** Show the tooltip for the hovered map element or, failing that, for the active layer */
 export function showMapTooltip(point: Point, event: Event, cellId: number, gridCellId: number): void {
-  tip(""); // clear tip
-
   const target = event.target as SVGElement;
   const path = (event.composedPath ? event.composedPath() : getComposedPath(target)) as HTMLElement[];
+  // a stale or detached target has a short path: leave the current tip alone rather than blanking it
   if (!path[path.length - 8]) return;
+
+  tip(""); // clear tip
 
   const group = path[path.length - 7].id;
   const isLand = pack.cells.h[cellId] >= 20;

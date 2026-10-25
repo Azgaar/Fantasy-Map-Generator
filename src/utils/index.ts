@@ -2,7 +2,7 @@ import { groupByValue, last, TYPED_ARRAY_MAX, unique } from "./arrayUtils";
 import { abbreviate, getAdjective, isVowel, list, nth, trimVowels } from "./languageUtils";
 import { lerp, lim, minmax, normalize, rn } from "./numberUtils";
 import "./polyfills";
-import { C_12, getCardinalColor, getColors, getMixedColor, getRandomColor, toHEX } from "./colorUtils";
+import { C_12, getCardinalColor, getColors, getMixedColor, getRandomColor, getSectorColor, toHEX } from "./colorUtils";
 import {
   clipPoly,
   debounce,
@@ -200,6 +200,7 @@ export {
   getPolesOfInaccessibility,
   getPrecipitation,
   getRandomColor,
+  getSectorColor,
   getSegmentId,
   getTemperatureLikeness,
   getVertexPath,
