@@ -1,10 +1,9 @@
 import { max, quadtree, range } from "d3";
-import { getDefaultNameBases } from "@/data/name-bases";
 import { Emblems } from "@/generators/emblems-generator";
 import type { Emblem } from "@/types/emblems";
 import { requireColor } from "@/utils/colorUtils";
 import { requireCode, requireName, requireOneOf, requireOrigins } from "@/utils/validationUtils";
-import { abbreviate, biased, getColors, getRandomColor, minmax, P, rand, rn, rw } from "../utils";
+import { abbreviate, biased, getColors, getRandomColor, minmax, P, ra, rand, rn, rw } from "../utils";
 import { Population } from "./population-generator";
 
 /** The named culture sets the user picks from: how many cultures each holds and how often it is rolled */
@@ -29,7 +28,7 @@ declare global {
 export interface Culture {
   name: string;
   i: number;
-  base: number;
+  base: string; // name base id
   shield: string;
   lock?: boolean;
   code?: string;
@@ -84,105 +83,105 @@ class CulturesGenerator {
       return [
         {
           name: "Shwazen",
-          base: 0,
+          base: "GERMA",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 10) / bd(i, [6, 8]),
           shield: "swiss"
         },
         {
           name: "Angshire",
-          base: 1,
+          base: "ENGLI",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 10) / sf(i),
           shield: "wedged"
         },
         {
           name: "Luari",
-          base: 2,
+          base: "FRENC",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 12) / bd(i, [6, 8]),
           shield: "french"
         },
         {
           name: "Tallian",
-          base: 3,
+          base: "ITALI",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 15),
           shield: "horsehead"
         },
         {
           name: "Astellian",
-          base: 4,
+          base: "CASTI",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 16),
           shield: "spanish"
         },
         {
           name: "Slovan",
-          base: 5,
+          base: "RUTHE",
           odd: 1,
           sort: (i: number) => (n(i) / td(i, 6)) * t[i],
           shield: "polish"
         },
         {
           name: "Norse",
-          base: 6,
+          base: "NORDI",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 5),
           shield: "heater"
         },
         {
           name: "Elladan",
-          base: 7,
+          base: "GREEK",
           odd: 1,
           sort: (i: number) => (n(i) / td(i, 18)) * h[i],
           shield: "boeotian"
         },
         {
           name: "Romian",
-          base: 8,
+          base: "ROMAN",
           odd: 0.2,
           sort: (i: number) => n(i) / td(i, 15) / t[i],
           shield: "roman"
         },
         {
           name: "Soumi",
-          base: 9,
+          base: "FINNI",
           odd: 1,
           sort: (i: number) => (n(i) / td(i, 5) / bd(i, [9])) * t[i],
           shield: "pavise"
         },
         {
           name: "Portuzian",
-          base: 13,
+          base: "PORTU",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 17) / sf(i),
           shield: "renaissance"
         },
         {
           name: "Vengrian",
-          base: 15,
+          base: "HUNGA",
           odd: 1,
           sort: (i: number) => (n(i) / td(i, 11) / bd(i, [4])) * t[i],
           shield: "horsehead2"
         },
         {
           name: "Turchian",
-          base: 16,
+          base: "TURKI",
           odd: 0.05,
           sort: (i: number) => n(i) / td(i, 14),
           shield: "round"
         },
         {
           name: "Euskati",
-          base: 20,
+          base: "BASQU",
           odd: 0.05,
           sort: (i: number) => (n(i) / td(i, 15)) * h[i],
           shield: "oldFrench"
         },
         {
           name: "Keltan",
-          base: 22,
+          base: "CELTI",
           odd: 0.05,
           sort: (i: number) => (n(i) / td(i, 11) / bd(i, [6, 8])) * t[i],
           shield: "oval"
@@ -194,91 +193,91 @@ class CulturesGenerator {
       return [
         {
           name: "Koryo",
-          base: 10,
+          base: "KOREA",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 12) / t[i],
           shield: "round"
         },
         {
           name: "Hantzu",
-          base: 11,
+          base: "CHINE",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 13),
           shield: "banner"
         },
         {
           name: "Yamoto",
-          base: 12,
+          base: "JAPAN",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 15) / t[i],
           shield: "round"
         },
         {
           name: "Turchian",
-          base: 16,
+          base: "TURKI",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 12),
           shield: "round"
         },
         {
           name: "Amazi",
-          base: 17,
+          base: "AMAZI",
           odd: 0.2,
           sort: (i: number) => (n(i) / td(i, 19) / bd(i, [1, 2, 3], 7)) * t[i],
           shield: "oval"
         },
         {
           name: "Eurabic",
-          base: 18,
+          base: "ARABI",
           odd: 1,
           sort: (i: number) => (n(i) / td(i, 26) / bd(i, [1, 2], 7)) * t[i],
           shield: "oval"
         },
         {
           name: "Efratic",
-          base: 23,
+          base: "MESOP",
           odd: 0.1,
           sort: (i: number) => (n(i) / td(i, 22)) * t[i],
           shield: "round"
         },
         {
           name: "Tehrani",
-          base: 24,
+          base: "IRANI",
           odd: 1,
           sort: (i: number) => (n(i) / td(i, 18)) * h[i],
           shield: "round"
         },
         {
           name: "Maui",
-          base: 25,
+          base: "HAWAI",
           odd: 0.2,
           sort: (i: number) => n(i) / td(i, 24) / sf(i) / t[i],
           shield: "vesicaPiscis"
         },
         {
           name: "Carnatic",
-          base: 26,
+          base: "KARNA",
           odd: 0.5,
           sort: (i: number) => n(i) / td(i, 26),
           shield: "round"
         },
         {
           name: "Vietic",
-          base: 29,
+          base: "VIETN",
           odd: 0.8,
           sort: (i: number) => n(i) / td(i, 25) / bd(i, [7], 7) / t[i],
           shield: "banner"
         },
         {
           name: "Guantzu",
-          base: 30,
+          base: "CANTO",
           odd: 0.5,
           sort: (i: number) => n(i) / td(i, 17),
           shield: "banner"
         },
         {
           name: "Ulus",
-          base: 31,
+          base: "MONGO",
           odd: 1,
           sort: (i: number) => (n(i) / td(i, 5) / bd(i, [2, 4, 10], 7)) * t[i],
           shield: "banner"
@@ -287,18 +286,18 @@ class CulturesGenerator {
     }
 
     if (options.map.cultures.set === "english") {
-      const getName = () => Names.getBase(1, 5, 9, "");
+      const getName = () => Names.getBase("ENGLI", 5, 9, "");
       return [
-        { name: getName(), base: 1, odd: 1, shield: "heater" },
-        { name: getName(), base: 1, odd: 1, shield: "wedged" },
-        { name: getName(), base: 1, odd: 1, shield: "swiss" },
-        { name: getName(), base: 1, odd: 1, shield: "oldFrench" },
-        { name: getName(), base: 1, odd: 1, shield: "swiss" },
-        { name: getName(), base: 1, odd: 1, shield: "spanish" },
-        { name: getName(), base: 1, odd: 1, shield: "hessen" },
-        { name: getName(), base: 1, odd: 1, shield: "fantasy5" },
-        { name: getName(), base: 1, odd: 1, shield: "fantasy4" },
-        { name: getName(), base: 1, odd: 1, shield: "fantasy1" }
+        { name: getName(), base: "ENGLI", odd: 1, shield: "heater" },
+        { name: getName(), base: "ENGLI", odd: 1, shield: "wedged" },
+        { name: getName(), base: "ENGLI", odd: 1, shield: "swiss" },
+        { name: getName(), base: "ENGLI", odd: 1, shield: "oldFrench" },
+        { name: getName(), base: "ENGLI", odd: 1, shield: "swiss" },
+        { name: getName(), base: "ENGLI", odd: 1, shield: "spanish" },
+        { name: getName(), base: "ENGLI", odd: 1, shield: "hessen" },
+        { name: getName(), base: "ENGLI", odd: 1, shield: "fantasy5" },
+        { name: getName(), base: "ENGLI", odd: 1, shield: "fantasy4" },
+        { name: getName(), base: "ENGLI", odd: 1, shield: "fantasy1" }
       ];
     }
 
@@ -306,112 +305,112 @@ class CulturesGenerator {
       return [
         {
           name: "Roman",
-          base: 8,
+          base: "ROMAN",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 14) / t[i],
           shield: "roman"
         }, // Roman
         {
           name: "Roman",
-          base: 8,
+          base: "ROMAN",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 15) / sf(i),
           shield: "roman"
         }, // Roman
         {
           name: "Roman",
-          base: 8,
+          base: "ROMAN",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 16) / sf(i),
           shield: "roman"
         }, // Roman
         {
           name: "Roman",
-          base: 8,
+          base: "ROMAN",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 17) / t[i],
           shield: "roman"
         }, // Roman
         {
           name: "Hellenic",
-          base: 7,
+          base: "GREEK",
           odd: 1,
           sort: (i: number) => (n(i) / td(i, 18) / sf(i)) * h[i],
           shield: "boeotian"
         }, // Greek
         {
           name: "Hellenic",
-          base: 7,
+          base: "GREEK",
           odd: 1,
           sort: (i: number) => (n(i) / td(i, 19) / sf(i)) * h[i],
           shield: "boeotian"
         }, // Greek
         {
           name: "Macedonian",
-          base: 7,
+          base: "GREEK",
           odd: 0.5,
           sort: (i: number) => (n(i) / td(i, 12)) * h[i],
           shield: "round"
         }, // Greek
         {
           name: "Celtic",
-          base: 22,
+          base: "CELTI",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 11) ** 0.5 / bd(i, [6, 8]),
           shield: "round"
         },
         {
           name: "Germanic",
-          base: 0,
+          base: "GERMA",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 10) ** 0.5 / bd(i, [6, 8]),
           shield: "round"
         },
         {
           name: "Persian",
-          base: 24,
+          base: "IRANI",
           odd: 0.8,
           sort: (i: number) => (n(i) / td(i, 18)) * h[i],
           shield: "oval"
         }, // Iranian
         {
           name: "Scythian",
-          base: 24,
+          base: "IRANI",
           odd: 0.5,
           sort: (i: number) => n(i) / td(i, 11) ** 0.5 / bd(i, [4]),
           shield: "round"
         }, // Iranian
         {
           name: "Cantabrian",
-          base: 20,
+          base: "BASQU",
           odd: 0.5,
           sort: (i: number) => (n(i) / td(i, 16)) * h[i],
           shield: "oval"
         }, // Basque
         {
           name: "Estian",
-          base: 9,
+          base: "FINNI",
           odd: 0.2,
           sort: (i: number) => (n(i) / td(i, 5)) * t[i],
           shield: "pavise"
         }, // Finnic
         {
           name: "Carthaginian",
-          base: 42,
+          base: "LEVAN",
           odd: 0.3,
           sort: (i: number) => n(i) / td(i, 20) / sf(i),
           shield: "oval"
         }, // Levantine
         {
           name: "Hebrew",
-          base: 42,
+          base: "LEVAN",
           odd: 0.2,
           sort: (i: number) => (n(i) / td(i, 19)) * sf(i),
           shield: "oval"
         }, // Levantine
         {
           name: "Mesopotamian",
-          base: 23,
+          base: "MESOP",
           odd: 0.2,
           sort: (i: number) => n(i) / td(i, 22) / bd(i, [1, 2, 3]),
           shield: "oval"
@@ -424,91 +423,91 @@ class CulturesGenerator {
         // fantasy races
         {
           name: "Quenian (Elfish)",
-          base: 33,
+          base: "ELVEN",
           odd: 1,
           sort: (i: number) => (n(i) / bd(i, [6, 7, 8, 9], 10)) * t[i],
           shield: "gondor"
         }, // Elves
         {
           name: "Eldar (Elfish)",
-          base: 33,
+          base: "ELVEN",
           odd: 1,
           sort: (i: number) => (n(i) / bd(i, [6, 7, 8, 9], 10)) * t[i],
           shield: "noldor"
         }, // Elves
         {
           name: "Trow (Dark Elfish)",
-          base: 34,
+          base: "DARKE",
           odd: 0.9,
           sort: (i: number) => (n(i) / bd(i, [7, 8, 9, 12], 10)) * t[i],
           shield: "hessen"
         }, // Dark Elves
         {
           name: "Lothian (Dark Elfish)",
-          base: 34,
+          base: "DARKE",
           odd: 0.3,
           sort: (i: number) => (n(i) / bd(i, [7, 8, 9, 12], 10)) * t[i],
           shield: "wedged"
         }, // Dark Elves
         {
           name: "Dunirr (Dwarven)",
-          base: 35,
+          base: "DWARV",
           odd: 1,
           sort: (i: number) => n(i) + h[i],
           shield: "ironHills"
         }, // Dwarfs
         {
           name: "Khazadur (Dwarven)",
-          base: 35,
+          base: "DWARV",
           odd: 1,
           sort: (i: number) => n(i) + h[i],
           shield: "erebor"
         }, // Dwarfs
         {
           name: "Kobold (Goblin)",
-          base: 36,
+          base: "GOBLI",
           odd: 1,
           sort: (i: number) => t[i] - s[i],
           shield: "moriaOrc"
         }, // Goblin
         {
           name: "Uruk (Orkish)",
-          base: 37,
+          base: "ORCIS",
           odd: 1,
           sort: (i: number) => h[i] * t[i],
           shield: "urukHai"
         }, // Orc
         {
           name: "Ugluk (Orkish)",
-          base: 37,
+          base: "ORCIS",
           odd: 0.5,
           sort: (i: number) => (h[i] * t[i]) / bd(i, [1, 2, 10, 11]),
           shield: "moriaOrc"
         }, // Orc
         {
           name: "Yotunn (Giants)",
-          base: 38,
+          base: "GIANT",
           odd: 0.7,
           sort: (i: number) => td(i, -10),
           shield: "pavise"
         }, // Giant
         {
           name: "Rake (Drakonic)",
-          base: 39,
+          base: "DRACO",
           odd: 0.7,
           sort: (i: number) => -s[i],
           shield: "fantasy2"
         }, // Draconic
         {
           name: "Arago (Arachnid)",
-          base: 40,
+          base: "ARACH",
           odd: 0.7,
           sort: (i: number) => t[i] - s[i],
           shield: "horsehead2"
         }, // Arachnid
         {
           name: "Aj'Snaga (Serpents)",
-          base: 41,
+          base: "SERPE",
           odd: 0.7,
           sort: (i: number) => n(i) / bd(i, [12], 10),
           shield: "fantasy1"
@@ -516,28 +515,28 @@ class CulturesGenerator {
         // fantasy human
         {
           name: "Anor (Human)",
-          base: 32,
+          base: "HUMAN",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 10),
           shield: "fantasy5"
         },
         {
           name: "Dail (Human)",
-          base: 32,
+          base: "HUMAN",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 13),
           shield: "roman"
         },
         {
           name: "Rohand (Human)",
-          base: 16,
+          base: "TURKI",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 16),
           shield: "round"
         },
         {
           name: "Dulandir (Human)",
-          base: 31,
+          base: "MONGO",
           odd: 1,
           sort: (i: number) => (n(i) / td(i, 5) / bd(i, [2, 4, 10], 7)) * t[i],
           shield: "easterling"
@@ -550,42 +549,42 @@ class CulturesGenerator {
         // common real-world English
         {
           name: "Angshire",
-          base: 1,
+          base: "ENGLI",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 10) / sf(i),
           shield: "heater"
         },
         {
           name: "Enlandic",
-          base: 1,
+          base: "ENGLI",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 12),
           shield: "heater"
         },
         {
           name: "Westen",
-          base: 1,
+          base: "ENGLI",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 10),
           shield: "heater"
         },
         {
           name: "Nortumbic",
-          base: 1,
+          base: "ENGLI",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 7),
           shield: "heater"
         },
         {
           name: "Mercian",
-          base: 1,
+          base: "ENGLI",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 9),
           shield: "heater"
         },
         {
           name: "Kentian",
-          base: 1,
+          base: "ENGLI",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 12),
           shield: "heater"
@@ -593,35 +592,35 @@ class CulturesGenerator {
         // rare real-world western
         {
           name: "Norse",
-          base: 6,
+          base: "NORDI",
           odd: 0.7,
           sort: (i: number) => n(i) / td(i, 5) / sf(i),
           shield: "oldFrench"
         },
         {
           name: "Schwarzen",
-          base: 0,
+          base: "GERMA",
           odd: 0.3,
           sort: (i: number) => n(i) / td(i, 10) / bd(i, [6, 8]),
           shield: "gonfalon"
         },
         {
           name: "Luarian",
-          base: 2,
+          base: "FRENC",
           odd: 0.3,
           sort: (i: number) => n(i) / td(i, 12) / bd(i, [6, 8]),
           shield: "oldFrench"
         },
         {
           name: "Hetallian",
-          base: 3,
+          base: "ITALI",
           odd: 0.3,
           sort: (i: number) => n(i) / td(i, 15),
           shield: "oval"
         },
         {
           name: "Astellian",
-          base: 4,
+          base: "CASTI",
           odd: 0.3,
           sort: (i: number) => n(i) / td(i, 16),
           shield: "spanish"
@@ -629,98 +628,98 @@ class CulturesGenerator {
         // rare real-world exotic
         {
           name: "Kiswaili",
-          base: 28,
+          base: "SWAHI",
           odd: 0.05,
           sort: (i: number) => n(i) / td(i, 29) / bd(i, [1, 3, 5, 7]),
           shield: "vesicaPiscis"
         },
         {
           name: "Yoruba",
-          base: 21,
+          base: "NIGER",
           odd: 0.05,
           sort: (i: number) => n(i) / td(i, 15) / bd(i, [5, 7]),
           shield: "vesicaPiscis"
         },
         {
           name: "Koryo",
-          base: 10,
+          base: "KOREA",
           odd: 0.05,
           sort: (i: number) => n(i) / td(i, 12) / t[i],
           shield: "round"
         },
         {
           name: "Hantzu",
-          base: 11,
+          base: "CHINE",
           odd: 0.05,
           sort: (i: number) => n(i) / td(i, 13),
           shield: "banner"
         },
         {
           name: "Yamoto",
-          base: 12,
+          base: "JAPAN",
           odd: 0.05,
           sort: (i: number) => n(i) / td(i, 15) / t[i],
           shield: "round"
         },
         {
           name: "Guantzu",
-          base: 30,
+          base: "CANTO",
           odd: 0.05,
           sort: (i: number) => n(i) / td(i, 17),
           shield: "banner"
         },
         {
           name: "Ulus",
-          base: 31,
+          base: "MONGO",
           odd: 0.05,
           sort: (i: number) => (n(i) / td(i, 5) / bd(i, [2, 4, 10], 7)) * t[i],
           shield: "banner"
         },
         {
           name: "Turan",
-          base: 16,
+          base: "TURKI",
           odd: 0.05,
           sort: (i: number) => n(i) / td(i, 12),
           shield: "round"
         },
         {
           name: "Amazi",
-          base: 17,
+          base: "AMAZI",
           odd: 0.05,
           sort: (i: number) => (n(i) / td(i, 19) / bd(i, [1, 2, 3], 7)) * t[i],
           shield: "round"
         },
         {
           name: "Eurabic",
-          base: 18,
+          base: "ARABI",
           odd: 0.05,
           sort: (i: number) => (n(i) / td(i, 26) / bd(i, [1, 2], 7)) * t[i],
           shield: "round"
         },
         {
           name: "Slovan",
-          base: 5,
+          base: "RUTHE",
           odd: 0.05,
           sort: (i: number) => (n(i) / td(i, 6)) * t[i],
           shield: "round"
         },
         {
           name: "Keltan",
-          base: 22,
+          base: "CELTI",
           odd: 0.1,
           sort: (i: number) => n(i) / td(i, 11) ** 0.5 / bd(i, [6, 8]),
           shield: "vesicaPiscis"
         },
         {
           name: "Elladan",
-          base: 7,
+          base: "GREEK",
           odd: 0.2,
           sort: (i: number) => (n(i) / td(i, 18) / sf(i)) * h[i],
           shield: "boeotian"
         },
         {
           name: "Romian",
-          base: 8,
+          base: "ROMAN",
           odd: 0.2,
           sort: (i: number) => n(i) / td(i, 14) / t[i],
           shield: "roman"
@@ -728,63 +727,63 @@ class CulturesGenerator {
         // fantasy races
         {
           name: "Eldar",
-          base: 33,
+          base: "ELVEN",
           odd: 0.5,
           sort: (i: number) => (n(i) / bd(i, [6, 7, 8, 9], 10)) * t[i],
           shield: "fantasy5"
         }, // Elves
         {
           name: "Trow",
-          base: 34,
+          base: "DARKE",
           odd: 0.8,
           sort: (i: number) => (n(i) / bd(i, [7, 8, 9, 12], 10)) * t[i],
           shield: "hessen"
         }, // Dark Elves
         {
           name: "Durinn",
-          base: 35,
+          base: "DWARV",
           odd: 0.8,
           sort: (i: number) => n(i) + h[i],
           shield: "erebor"
         }, // Dwarven
         {
           name: "Kobblin",
-          base: 36,
+          base: "GOBLI",
           odd: 0.8,
           sort: (i: number) => t[i] - s[i],
           shield: "moriaOrc"
         }, // Goblin
         {
           name: "Uruk",
-          base: 37,
+          base: "ORCIS",
           odd: 0.8,
           sort: (i: number) => (h[i] * t[i]) / bd(i, [1, 2, 10, 11]),
           shield: "urukHai"
         }, // Orc
         {
           name: "Yotunn",
-          base: 38,
+          base: "GIANT",
           odd: 0.8,
           sort: (i: number) => td(i, -10),
           shield: "pavise"
         }, // Giant
         {
           name: "Drake",
-          base: 39,
+          base: "DRACO",
           odd: 0.9,
           sort: (i: number) => -s[i],
           shield: "fantasy2"
         }, // Draconic
         {
           name: "Rakhnid",
-          base: 40,
+          base: "ARACH",
           odd: 0.9,
           sort: (i: number) => t[i] - s[i],
           shield: "horsehead2"
         }, // Arachnid
         {
           name: "Aj'Snaga",
-          base: 41,
+          base: "SERPE",
           odd: 0.9,
           sort: (i: number) => n(i) / bd(i, [12], 10),
           shield: "fantasy1"
@@ -792,59 +791,54 @@ class CulturesGenerator {
       ];
     }
 
-    const getBase = (baseName: string) => {
-      const list = typeof Names !== "undefined" && Names.nameBases?.length ? Names.nameBases : getDefaultNameBases();
-      return list.findIndex(b => b.name === baseName);
-    };
-
     if (options.map.cultures.set === "astralTrek") {
       return [
         {
           name: "Terran (Human)",
-          base: getBase("Trek Terran"),
+          base: "TRKTE",
           odd: 1,
           sort: (i: number) => n(i) / td(i, 12),
           shield: "heater"
         },
-        { name: "Colonial (Human)", base: getBase("Trek Terran"), odd: 0.8, sort: (i: number) => n(i), shield: "kite" },
+        { name: "Colonial (Human)", base: "TRKTE", odd: 0.8, sort: (i: number) => n(i), shield: "kite" },
         {
           name: "Continental (Human)",
-          base: getBase("Trek Continental"),
+          base: "TRKCN",
           odd: 0.9,
           sort: (i: number) => n(i) / td(i, 12),
           shield: "french"
         },
         {
           name: "Highlander (Human)",
-          base: getBase("Trek Continental"),
+          base: "TRKCN",
           odd: 0.6,
           sort: (i: number) => (n(i) / td(i, 0)) * (h[i] || 1),
           shield: "hessen"
         },
         {
           name: "Synthetic (Machine)",
-          base: getBase("Trek Synthetic"),
+          base: "TRKSY",
           odd: 0.7,
           sort: (i: number) => n(i),
           shield: "hexagon"
         },
         {
           name: "Posthuman (Machine)",
-          base: getBase("Trek Synthetic"),
+          base: "TRKSY",
           odd: 0.5,
           sort: (i: number) => 1 / (n(i) + 1),
           shield: "diamond"
         },
         {
           name: "Core Worlds (Mixed)",
-          base: getBase("Trek Core"),
+          base: "TRKCO",
           odd: 0.8,
           sort: (i: number) => n(i),
           shield: "gonfalon"
         },
         {
           name: "Inner Reach (Mixed)",
-          base: getBase("Trek Core"),
+          base: "TRKCO",
           odd: 0.6,
           sort: (i: number) => 1 / (n(i) + 1),
           shield: "banner"
@@ -856,56 +850,56 @@ class CulturesGenerator {
       return [
         {
           name: "Ethereal (Kindred)",
-          base: getBase("Jammer Ethereal"),
+          base: "JAMET",
           odd: 1,
           sort: (i: number) => 1 / (n(i) + 1),
           shield: "vesicaPiscis"
         },
         {
           name: "Silver Kin (Kindred)",
-          base: getBase("Jammer Ethereal"),
+          base: "JAMET",
           odd: 0.8,
           sort: (i: number) => n(i),
           shield: "fantasy1"
         },
         {
           name: "Stoneborn (Deep)",
-          base: getBase("Jammer Stoneborn"),
+          base: "JAMST",
           odd: 0.9,
           sort: (i: number) => (n(i) / td(i, 0)) * (h[i] || 1),
           shield: "wedged"
         },
         {
           name: "Deepkin (Deep)",
-          base: getBase("Jammer Stoneborn"),
+          base: "JAMST",
           odd: 0.7,
           sort: (i: number) => (n(i) / td(i, 0)) * (h[i] || 1),
           shield: "fantasy2"
         },
         {
           name: "Wild (Ferals)",
-          base: getBase("Jammer Wild"),
+          base: "JAMWI",
           odd: 0.8,
           sort: (i: number) => (n(i) / td(i, 0)) * (h[i] || 1),
           shield: "moriaOrc"
         },
         {
           name: "Scavengers (Ferals)",
-          base: getBase("Jammer Wild"),
+          base: "JAMWI",
           odd: 0.6,
           sort: (i: number) => n(i),
           shield: "fantasy4"
         },
         {
           name: "Deep Choir (Collective)",
-          base: getBase("Jammer Deep"),
+          base: "JAMDE",
           odd: 0.7,
           sort: (i: number) => n(i),
           shield: "pavise"
         },
         {
           name: "Far Chorus (Collective)",
-          base: getBase("Jammer Deep"),
+          base: "JAMDE",
           odd: 0.5,
           sort: (i: number) => 1 / (n(i) + 1),
           shield: "fantasy5"
@@ -917,56 +911,56 @@ class CulturesGenerator {
       return [
         {
           name: "Gothic (Darkling)",
-          base: getBase("Grimdark Gothic"),
+          base: "GRMGO",
           odd: 1,
           sort: (i: number) => (n(i) / td(i, 0)) * (h[i] || 1),
           shield: "oldFrench"
         },
         {
           name: "Northerners (Darkling)",
-          base: getBase("Grimdark Gothic"),
+          base: "GRMGO",
           odd: 0.8,
           sort: (i: number) => (n(i) / td(i, 0)) * (h[i] || 1),
           shield: "horsehead"
         },
         {
           name: "Iron (Foundrymen)",
-          base: getBase("Grimdark Iron"),
+          base: "GRMIR",
           odd: 0.9,
           sort: (i: number) => n(i),
           shield: "square"
         },
         {
           name: "Yard Companies (Foundrymen)",
-          base: getBase("Grimdark Iron"),
+          base: "GRMIR",
           odd: 0.7,
           sort: (i: number) => n(i),
           shield: "targe"
         },
         {
           name: "Machine (Cold)",
-          base: getBase("Grimdark Machine"),
+          base: "GRMCH",
           odd: 0.7,
           sort: (i: number) => 1 / (n(i) + 1),
           shield: "embowed"
         },
         {
           name: "Calculators (Cold)",
-          base: getBase("Grimdark Machine"),
+          base: "GRMCH",
           odd: 0.5,
           sort: (i: number) => n(i),
           shield: "diamond"
         },
         {
           name: "Core Holds (Mixed)",
-          base: getBase("Grimdark Core"),
+          base: "GRMCO",
           odd: 0.8,
           sort: (i: number) => n(i),
           shield: "gonfalon"
         },
         {
           name: "Rust Kingdoms (Mixed)",
-          base: getBase("Grimdark Core"),
+          base: "GRMCO",
           odd: 0.6,
           sort: (i: number) => 1 / (n(i) + 1),
           shield: "pavise"
@@ -976,9 +970,9 @@ class CulturesGenerator {
 
     if (options.map.cultures.set === "random") {
       return range(count).map(() => {
-        const rnd = rand(Names.nameBases.length - 1);
-        const name = Names.getBaseShort(rnd);
-        return { name, base: rnd, odd: 1, shield: this.getRandomShield() };
+        const base = ra(Names.nameBases);
+        const name = Names.getBaseShort(base.id);
+        return { name, base: base.id, odd: 1, shield: this.getRandomShield() };
       });
     }
 
@@ -986,231 +980,231 @@ class CulturesGenerator {
     return [
       {
         name: "Shwazen",
-        base: 0,
+        base: "GERMA",
         odd: 0.7,
         sort: (i: number) => n(i) / td(i, 10) / bd(i, [6, 8]),
         shield: "hessen"
       },
       {
         name: "Angshire",
-        base: 1,
+        base: "ENGLI",
         odd: 1,
         sort: (i: number) => n(i) / td(i, 10) / sf(i),
         shield: "heater"
       },
       {
         name: "Luari",
-        base: 2,
+        base: "FRENC",
         odd: 0.6,
         sort: (i: number) => n(i) / td(i, 12) / bd(i, [6, 8]),
         shield: "oldFrench"
       },
       {
         name: "Tallian",
-        base: 3,
+        base: "ITALI",
         odd: 0.6,
         sort: (i: number) => n(i) / td(i, 15),
         shield: "horsehead2"
       },
       {
         name: "Astellian",
-        base: 4,
+        base: "CASTI",
         odd: 0.6,
         sort: (i: number) => n(i) / td(i, 16),
         shield: "spanish"
       },
       {
         name: "Slovan",
-        base: 5,
+        base: "RUTHE",
         odd: 0.7,
         sort: (i: number) => (n(i) / td(i, 6)) * t[i],
         shield: "round"
       },
       {
         name: "Norse",
-        base: 6,
+        base: "NORDI",
         odd: 0.7,
         sort: (i: number) => n(i) / td(i, 5),
         shield: "heater"
       },
       {
         name: "Elladan",
-        base: 7,
+        base: "GREEK",
         odd: 0.7,
         sort: (i: number) => (n(i) / td(i, 18)) * h[i],
         shield: "boeotian"
       },
       {
         name: "Romian",
-        base: 8,
+        base: "ROMAN",
         odd: 0.7,
         sort: (i: number) => n(i) / td(i, 15),
         shield: "roman"
       },
       {
         name: "Soumi",
-        base: 9,
+        base: "FINNI",
         odd: 0.3,
         sort: (i: number) => (n(i) / td(i, 5) / bd(i, [9])) * t[i],
         shield: "pavise"
       },
       {
         name: "Koryo",
-        base: 10,
+        base: "KOREA",
         odd: 0.1,
         sort: (i: number) => n(i) / td(i, 12) / t[i],
         shield: "round"
       },
       {
         name: "Hantzu",
-        base: 11,
+        base: "CHINE",
         odd: 0.1,
         sort: (i: number) => n(i) / td(i, 13),
         shield: "banner"
       },
       {
         name: "Yamoto",
-        base: 12,
+        base: "JAPAN",
         odd: 0.1,
         sort: (i: number) => n(i) / td(i, 15) / t[i],
         shield: "round"
       },
       {
         name: "Portuzian",
-        base: 13,
+        base: "PORTU",
         odd: 0.4,
         sort: (i: number) => n(i) / td(i, 17) / sf(i),
         shield: "spanish"
       },
       {
         name: "Nawatli",
-        base: 14,
+        base: "NAHUA",
         odd: 0.1,
         sort: (i: number) => h[i] / td(i, 18) / bd(i, [7]),
         shield: "square"
       },
       {
         name: "Vengrian",
-        base: 15,
+        base: "HUNGA",
         odd: 0.2,
         sort: (i: number) => (n(i) / td(i, 11) / bd(i, [4])) * t[i],
         shield: "wedged"
       },
       {
         name: "Turchian",
-        base: 16,
+        base: "TURKI",
         odd: 0.2,
         sort: (i: number) => n(i) / td(i, 13),
         shield: "round"
       },
       {
         name: "Amazi",
-        base: 17,
+        base: "AMAZI",
         odd: 0.1,
         sort: (i: number) => (n(i) / td(i, 19) / bd(i, [1, 2, 3], 7)) * t[i],
         shield: "round"
       },
       {
         name: "Eurabic",
-        base: 18,
+        base: "ARABI",
         odd: 0.2,
         sort: (i: number) => (n(i) / td(i, 26) / bd(i, [1, 2], 7)) * t[i],
         shield: "round"
       },
       {
         name: "Inuk",
-        base: 19,
+        base: "INUIT",
         odd: 0.05,
         sort: (i: number) => td(i, -1) / bd(i, [10, 11]) / sf(i),
         shield: "square"
       },
       {
         name: "Euskati",
-        base: 20,
+        base: "BASQU",
         odd: 0.05,
         sort: (i: number) => (n(i) / td(i, 15)) * h[i],
         shield: "spanish"
       },
       {
         name: "Yoruba",
-        base: 21,
+        base: "NIGER",
         odd: 0.05,
         sort: (i: number) => n(i) / td(i, 15) / bd(i, [5, 7]),
         shield: "vesicaPiscis"
       },
       {
         name: "Keltan",
-        base: 22,
+        base: "CELTI",
         odd: 0.05,
         sort: (i: number) => (n(i) / td(i, 11) / bd(i, [6, 8])) * t[i],
         shield: "vesicaPiscis"
       },
       {
         name: "Efratic",
-        base: 23,
+        base: "MESOP",
         odd: 0.05,
         sort: (i: number) => (n(i) / td(i, 22)) * t[i],
         shield: "diamond"
       },
       {
         name: "Tehrani",
-        base: 24,
+        base: "IRANI",
         odd: 0.1,
         sort: (i: number) => (n(i) / td(i, 18)) * h[i],
         shield: "round"
       },
       {
         name: "Maui",
-        base: 25,
+        base: "HAWAI",
         odd: 0.05,
         sort: (i: number) => n(i) / td(i, 24) / sf(i) / t[i],
         shield: "round"
       },
       {
         name: "Carnatic",
-        base: 26,
+        base: "KARNA",
         odd: 0.05,
         sort: (i: number) => n(i) / td(i, 26),
         shield: "round"
       },
       {
         name: "Inqan",
-        base: 27,
+        base: "QUECH",
         odd: 0.05,
         sort: (i: number) => h[i] / td(i, 13),
         shield: "square"
       },
       {
         name: "Kiswaili",
-        base: 28,
+        base: "SWAHI",
         odd: 0.1,
         sort: (i: number) => n(i) / td(i, 29) / bd(i, [1, 3, 5, 7]),
         shield: "vesicaPiscis"
       },
       {
         name: "Vietic",
-        base: 29,
+        base: "VIETN",
         odd: 0.1,
         sort: (i: number) => n(i) / td(i, 25) / bd(i, [7], 7) / t[i],
         shield: "banner"
       },
       {
         name: "Guantzu",
-        base: 30,
+        base: "CANTO",
         odd: 0.1,
         sort: (i: number) => n(i) / td(i, 17),
         shield: "banner"
       },
       {
         name: "Ulus",
-        base: 31,
+        base: "MONGO",
         odd: 0.1,
         sort: (i: number) => (n(i) / td(i, 5) / bd(i, [2, 4, 10], 7)) * t[i],
         shield: "banner"
       },
       {
         name: "Levent",
-        base: 42,
+        base: "LEVAN",
         odd: 0.2,
         sort: (i: number) => (n(i) / td(i, 18)) * sf(i),
         shield: "oval"
@@ -1236,7 +1230,7 @@ class CulturesGenerator {
           {
             name: "Wildlands",
             i: 0,
-            base: 1,
+            base: "ENGLI",
             shield: "round",
             type: DEFAULT_CULTURE_TYPE
           }
@@ -1391,7 +1385,7 @@ class CulturesGenerator {
     cultures.unshift({
       name: "Wildlands",
       i: 0,
-      base: 1,
+      base: "ENGLI",
       origins: [null],
       shield: "round",
       type: DEFAULT_CULTURE_TYPE
@@ -1404,7 +1398,7 @@ class CulturesGenerator {
     }
 
     cultures.forEach((c: Culture) => {
-      c.base = c.base % Names.nameBases.length;
+      if (!Names.getNameBase(c.base)) c.base = Names.nameBases[0].id;
     });
   }
 
@@ -1415,7 +1409,7 @@ class CulturesGenerator {
     if (pack.cultures.some(c => c.i && !c.removed && c.center === center))
       throw new Error(`Cell ${center} is already a culture center`);
     const defaultCultures = this.getDefault();
-    let culture: number, base: number, name: string;
+    let culture: number, base: string, name: string;
 
     if (pack.cultures.length < defaultCultures.length) {
       // add one of the default cultures
@@ -1565,9 +1559,9 @@ class CulturesGenerator {
     this.living(cultureId).type = requireOneOf(type, CULTURE_TYPES, "The type");
   }
 
-  /** Set the name base a culture takes its names from, by index in Names.nameBases */
-  setBase(cultureId: number, baseId: number): void {
-    if (!Names.nameBases[baseId]) throw new Error(`Name base ${baseId} does not exist`);
+  /** Set the name base a culture takes its names from, by id */
+  setBase(cultureId: number, baseId: string): void {
+    if (!Names.getNameBase(baseId)) throw new Error(`Name base ${baseId} does not exist`);
     this.living(cultureId).base = baseId;
   }
 

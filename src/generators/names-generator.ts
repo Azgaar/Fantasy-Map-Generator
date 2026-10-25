@@ -1,6 +1,6 @@
 import { tip } from "@/components/tooltips";
 import { getDefaultNameBases, type NameBase } from "@/data/name-bases";
-import { capitalize, isVowel, last, P, ra, rand } from "../utils";
+import { capitalize, isVowel, last, P, ra } from "../utils";
 
 declare global {
   var Names: NamesGenerator;
@@ -12,9 +12,12 @@ type MarkovChain = string[][] & Record<string, string[]>;
 
 const SYLLABIC = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
 
+/** The fantasy bases (Elven through Serpents) that take state names without a suffix */
+const FANTASY_BASE_IDS = new Set(["ELVEN", "DARKE", "DWARV", "GOBLI", "ORCIS", "GIANT", "DRACO", "ARACH", "SERPE"]);
+
 class NamesGenerator {
   nameBases: NameBase[] = this.getNameBases();
-  chains: (MarkovChain | null)[] = []; // Markov chains for namebases
+  chains: Record<string, MarkovChain | null> = {}; // Markov chains by base id
 
   calculateChain(namesList: string): MarkovChain {
     const chain: MarkovChain = [] as unknown as MarkovChain;
@@ -61,43 +64,57 @@ class NamesGenerator {
     return chain;
   }
 
-  updateChain(index: number): void {
-    this.chains[index] = this.nameBases[index]?.b ? this.calculateChain(this.nameBases[index].b) : null;
+  /** One base by its stable id */
+  getNameBase(id: string): NameBase | undefined {
+    return this.nameBases.find(base => base.id === id);
+  }
+
+  /** Refresh the derived array positions after the list is mutated */
+  reindex(): void {
+    this.nameBases.forEach((base, i) => {
+      base.i = i;
+    });
+  }
+
+  updateChain(id: string): void {
+    const base = this.getNameBase(id);
+    this.chains[id] = base?.b ? this.calculateChain(base.b) : null;
   }
 
   clearChains(): void {
-    this.chains = [];
+    this.chains = {};
   }
 
   // generate name using Markov's chain
-  getBase(base: number, min?: number, max?: number, dupl?: string): string {
-    if (base === undefined) {
+  getBase(id: string, min?: number, max?: number, dupl?: string): string {
+    if (id === undefined) {
       ERROR && console.error("Please define a base");
       return "ERROR";
     }
 
-    if (this.nameBases[base] === undefined) {
-      if (this.nameBases[0]) {
-        WARN && console.warn(`Namebase ${base} is not found. First available namebase will be used`);
-        base = 0;
-      } else {
-        ERROR && console.error(`Namebase ${base} is not found`);
+    let base = this.getNameBase(id);
+    if (!base) {
+      const fallback = this.nameBases[0];
+      if (!fallback) {
+        ERROR && console.error(`Namebase ${id} is not found`);
         return "ERROR";
       }
+      WARN && console.warn(`Namebase ${id} is not found. First available namebase will be used`);
+      base = fallback;
     }
 
-    if (!this.chains[base]) this.updateChain(base);
+    if (!this.chains[base.id]) this.updateChain(base.id);
 
-    const data = this.chains[base];
+    const data = this.chains[base.id];
     if (!data || data[""] === undefined) {
-      tip(`Namesbase ${base} is incorrect. Please check in namesbase editor`, false, "error");
-      ERROR && console.error(`Namebase ${base} is incorrect!`);
+      tip(`Namesbase ${base.id} is incorrect. Please check in namesbase editor`, false, "error");
+      ERROR && console.error(`Namebase ${base.id} is incorrect!`);
       return "ERROR";
     }
 
-    if (!min) min = this.nameBases[base].min;
-    if (!max) max = this.nameBases[base].max;
-    if (dupl !== "") dupl = this.nameBases[base].d;
+    if (!min) min = base.min;
+    if (!max) max = base.max;
+    if (dupl !== "") dupl = base.d;
 
     let v = data[""],
       cur = ra(v),
@@ -146,7 +163,7 @@ class NamesGenerator {
 
     if (name.length < 2) {
       ERROR && console.error("Name is too short! Random name will be selected");
-      name = ra(this.nameBases[base].b.split(","));
+      name = ra(base.b.split(","));
     }
 
     return name;
@@ -172,10 +189,11 @@ class NamesGenerator {
   }
 
   // generate short name for base
-  getBaseShort(base: number): string {
-    const min = this.nameBases[base] ? this.nameBases[base].min - 1 : undefined;
-    const max = min ? Math.max(this.nameBases[base].max - 2, min) : undefined;
-    return this.getBase(base, min, max, "");
+  getBaseShort(id: string): string {
+    const base = this.getNameBase(id);
+    const min = base ? base.min - 1 : undefined;
+    const max = base && min ? Math.max(base.max - 2, min) : undefined;
+    return this.getBase(id, min, max, "");
   }
 
   private validateSuffix(name: string, suffix: string): string {
@@ -196,7 +214,7 @@ class NamesGenerator {
   }
 
   // generate state name based on capital or random name and culture-specific suffix
-  getState(name: string, culture: number, base?: number): string {
+  getState(name: string, culture: number, base?: string): string {
     if (name === undefined) {
       ERROR && console.error("Please define a base name");
       return "ERROR";
@@ -212,15 +230,15 @@ class NamesGenerator {
     if (name.length > 6 && name.slice(-4) === "berg") name = name.slice(0, -4); // remove -berg for any
     if (name.length > 5 && name.slice(-3) === "ton") name = name.slice(0, -3); // remove -ton for any
 
-    if (base === 5 && ["sk", "ev", "ov"].includes(name.slice(-2))) name = name.slice(0, -2);
+    if (base === "RUTHE" && ["sk", "ev", "ov"].includes(name.slice(-2))) name = name.slice(0, -2);
     // remove -sk/-ev/-ov for Ruthenian
-    else if (base === 12) return isVowel(name.slice(-1)) ? name : `${name}u`;
+    else if (base === "JAPAN") return isVowel(name.slice(-1)) ? name : `${name}u`;
     // Japanese ends on any vowel or -u
-    else if (base === 18 && P(0.4))
+    else if (base === "ARABI" && P(0.4))
       name = isVowel(name.slice(0, 1).toLowerCase()) ? `Al${name.toLowerCase()}` : `Al ${name}`; // Arabic starts with -Al
 
     // no suffix for fantasy bases
-    if (base > 32 && base < 42) return name;
+    if (FANTASY_BASE_IDS.has(base)) return name;
 
     // define if suffix should be used
     if (name.length > 3 && isVowel(name.slice(-1))) {
@@ -236,53 +254,55 @@ class NamesGenerator {
 
     const rnd = Math.random(),
       l = name.length;
-    if (base === 3 && rnd < 0.03 && l < 7) suffix = "terra";
+    if (base === "ITALI" && rnd < 0.03 && l < 7) suffix = "terra";
     // Italian
-    else if (base === 4 && rnd < 0.03 && l < 7) suffix = "terra";
+    else if (base === "CASTI" && rnd < 0.03 && l < 7) suffix = "terra";
     // Spanish
-    else if (base === 13 && rnd < 0.03 && l < 7) suffix = "terra";
+    else if (base === "PORTU" && rnd < 0.03 && l < 7) suffix = "terra";
     // Portuguese
-    else if (base === 2 && rnd < 0.03 && l < 7) suffix = "terre";
+    else if (base === "FRENC" && rnd < 0.03 && l < 7) suffix = "terre";
     // French
-    else if (base === 0 && rnd < 0.5 && l < 7) suffix = "land";
+    else if (base === "GERMA" && rnd < 0.5 && l < 7) suffix = "land";
     // German
-    else if (base === 1 && rnd < 0.4 && l < 7) suffix = "land";
+    else if (base === "ENGLI" && rnd < 0.4 && l < 7) suffix = "land";
     // English
-    else if (base === 6 && rnd < 0.3 && l < 7) suffix = "land";
+    else if (base === "NORDI" && rnd < 0.3 && l < 7) suffix = "land";
     // Nordic
-    else if (base === 32 && rnd < 0.1 && l < 7) suffix = "land";
+    else if (base === "HUMAN" && rnd < 0.1 && l < 7) suffix = "land";
     // generic Human
-    else if (base === 7 && rnd < 0.1) suffix = "eia";
+    else if (base === "GREEK" && rnd < 0.1) suffix = "eia";
     // Greek
-    else if (base === 9 && rnd < 0.35) suffix = "maa";
+    else if (base === "FINNI" && rnd < 0.35) suffix = "maa";
     // Finnic
-    else if (base === 15 && rnd < 0.4 && l < 6) suffix = "orszag";
+    else if (base === "HUNGA" && rnd < 0.4 && l < 6) suffix = "orszag";
     // Hungarian
-    else if (base === 16) suffix = rnd < 0.6 ? "yurt" : "eli";
+    else if (base === "TURKI") suffix = rnd < 0.6 ? "yurt" : "eli";
     // Turkish
-    else if (base === 10) suffix = "guk";
+    else if (base === "KOREA") suffix = "guk";
     // Korean
-    else if (base === 11) suffix = " Guo";
+    else if (base === "CHINE") suffix = " Guo";
     // Chinese
-    else if (base === 14) suffix = rnd < 0.5 && l < 6 ? "tlan" : "co";
+    else if (base === "NAHUA") suffix = rnd < 0.5 && l < 6 ? "tlan" : "co";
     // Nahuatl
-    else if (base === 17 && rnd < 0.8) suffix = "a";
+    else if (base === "AMAZI" && rnd < 0.8) suffix = "a";
     // Amazigh
-    else if (base === 18 && rnd < 0.8) suffix = "a"; // Arabic
+    else if (base === "ARABI" && rnd < 0.8) suffix = "a"; // Arabic
 
     return this.validateSuffix(name, suffix);
   }
 
   // generate name for the map
   getMapName(): string {
-    const base = P(0.7) ? 2 : P(0.5) ? rand(0, 6) : rand(0, 31);
-    if (!this.nameBases[base]) {
+    const picked = P(0.7)
+      ? this.getNameBase("FRENC")
+      : ra(P(0.5) ? this.nameBases.slice(0, 7) : this.nameBases.slice(0, 32));
+    if (!picked) {
       tip("Namebase is not found", false, "error");
       return "";
     }
-    const min = this.nameBases[base].min - 1;
-    const max = Math.max(this.nameBases[base].max - 3, min);
-    const baseName = this.getBase(base, min, max, "") as string;
+    const min = picked.min - 1;
+    const max = Math.max(picked.max - 3, min);
+    const baseName = this.getBase(picked.id, min, max, "") as string;
     const name = P(0.7) ? this.addSuffix(baseName) : baseName;
     return name;
   }
@@ -293,7 +313,7 @@ class NamesGenerator {
 
   /** The calendar era: a name base plus "Era", weighted to the base most eras are built on */
   getEra(): string {
-    return `${this.getBaseShort(P(0.7) ? 1 : rand(this.nameBases.length))} Era`;
+    return `${this.getBaseShort(P(0.7) ? "ENGLI" : ra(this.nameBases).id)} Era`;
   }
 
   /** The abbreviation an era name suggests, which the user may override */

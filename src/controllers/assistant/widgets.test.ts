@@ -25,7 +25,11 @@ vi.mock("@/components/reveal", () => ({
   clearEntityMarks: mocks.clear
 }));
 vi.mock("@/components/tooltips", () => ({ tip: vi.fn() }));
-vi.mock("@/renderers/draw-goods", () => ({ goodBadge: ({ icon }: { icon: string }) => `<use href="#${icon}"/>` }));
+vi.mock("@/renderers/draw-goods", () => ({
+  goodBadge: ({ icon }: { icon: string }) => `<use href="#${icon}"/>`,
+  drawGoods: vi.fn(),
+  removeGoods: vi.fn()
+}));
 vi.mock("@/services/io/export", () => ({ ExportMap: { getRegionImage: mocks.image } }));
 vi.mock("@/controllers", () => ({ Controllers: { GoodsEditor: { open: mocks.openGood } } }));
 

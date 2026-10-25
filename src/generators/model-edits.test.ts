@@ -3,6 +3,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { Emblems } from "./emblems-generator";
 import { Lore } from "./lore";
 
+// The generators pull a large module graph; the cold import can outlast the default hook budget.
 beforeAll(async () => {
   await Promise.all([
     import("./burgs-generator"),
@@ -25,7 +26,7 @@ beforeAll(async () => {
     import("./goods-generator"),
     import("./markets-generator")
   ]);
-});
+}, 60000);
 
 beforeEach(() => {
   vi.stubGlobal("options", {
@@ -975,7 +976,11 @@ describe("Military", () => {
     expect(pack.states[1].military![1]).toMatchObject({ i: id, x: 5, y: 6, bx: 5, by: 6, n: 0, a: 0, name: "New" });
     Military.setUnits(1, id, { infantry: 4 });
     expect(pack.states[1].military![1]).toMatchObject({ u: { infantry: 4 }, a: 4 });
-    expect(() => Military.setUnits(1, id, { dragons: 1 })).toThrow("The unit must be one of");
+    Military.setUnits(1, id, { dragons: 1 }); // a unit type since removed stays attached
+    expect(pack.states[1].military![1]).toMatchObject({ u: { dragons: 1 } });
+    expect(() => Military.setUnits(1, id, { dragons: 1.5 })).toThrow(
+      "The number of dragons must be a non-negative integer"
+    );
     const half = Military.split(1, 0);
     expect(pack.states[1].military!.find(({ i }) => i === half)).toMatchObject({
       u: { infantry: 2, archers: 1 },

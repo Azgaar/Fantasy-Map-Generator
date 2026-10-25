@@ -167,6 +167,28 @@ git fetch upstream && git merge upstream/master
   changes how burgs resolve, click or highlight, re-apply the same change to the `system{id}`
   element path.
 
+### Name bases by stable id
+
+A base is identified by a five-letter `id` instead of its array position, so new bases never re-point
+saved cultures and a rename keeps its corpus.
+
+- **`src/data/name-bases.ts`**: `NameBase.id`, `BASE_ID_PATTERN`, `deriveBaseId()`; every shipped
+  entry gains its permanent id.
+- **`src/generators/names-generator.ts`**: chains keyed by id; `getBase`/`getBaseShort`/`updateChain`
+  take an id; `getNameBase()` and `reindex()` added; the state suffix and fantasy rules compare ids.
+- **`src/generators/cultures-generator.ts`**: `Culture.base` is a string; every set branch uses id
+  literals (no name lookup); `setBase` takes an id.
+- **`src/generators/states-generator.ts`**, **`src/generators/astral-naming.ts`**: id comparisons and
+  id lookups.
+- **`src/controllers/*`**: editors read, write and import ids; new bases get a generated id.
+- **`src/services/io/name-bases-format.ts`** (new): the slot-31 row format and the legacy migration;
+  **`save.ts`** and **`load.ts`** call it.
+- **`src/conquest/engine/compiler/*`**: name pools are keyed by id, `AzgaarCulture.base` is a string,
+  `COMPILER_VERSION` is 0.2.0.
+- *Conflict resolution strategy*: if upstream adds bases, give them ids and append them; existing ids
+  are permanent and must never be reassigned. If upstream changes the slot-31 format, reconcile in
+  `name-bases-format.ts` — the loader also accepts the six-column legacy layout.
+
 ### Toolchain & Windows Environment Compatibility
 
 - **`package.json`**:

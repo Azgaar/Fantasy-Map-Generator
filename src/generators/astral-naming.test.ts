@@ -14,7 +14,7 @@ import {
 } from "./astral-naming";
 import { Names } from "./names-generator";
 
-const ASTRAL_BASE = 43;
+const ASTRAL_BASE = "TRKCO";
 
 let savedBases: NameBase[];
 
@@ -34,9 +34,9 @@ beforeEach(() => {
       { i: 2, name: "Burgia", culture: 2, capital: 2 }
     ],
     cultures: [
-      { i: 0, name: "Wildlings", base: 0 },
+      { i: 0, name: "Wildlings", base: "GERMA" },
       { i: 1, name: "Aeloran", base: ASTRAL_BASE },
-      { i: 2, name: "Stockish", base: 1 }
+      { i: 2, name: "Stockish", base: "ENGLI" }
     ],
     burgs: [
       0,
@@ -86,26 +86,20 @@ describe("the Astral mapping", () => {
   });
 
   it("never puts a word with its own 'of' in front of a state's name", () => {
-    const bases = new Array(ASTRAL_BASE + 1).fill({
-      name: "Stock",
-      i: 0,
-      min: 4,
-      max: 12,
-      d: "",
-      m: 0,
-      b: ""
-    }) as NameBase[];
-    bases[ASTRAL_BASE] = {
-      name: "Trek Core",
-      i: ASTRAL_BASE,
-      min: 4,
-      max: 12,
-      d: "",
-      m: 0,
-      b: "",
-      groups: { polities: ["United Federation", "Church of the Star"] }
-    };
-    Names.nameBases = bases;
+    Names.nameBases = [
+      { id: "STOCK", name: "Stock", i: 0, min: 4, max: 12, d: "", m: 0, b: "" },
+      {
+        id: ASTRAL_BASE,
+        name: "Trek Core",
+        i: 1,
+        min: 4,
+        max: 12,
+        d: "",
+        m: 0,
+        b: "",
+        groups: { polities: ["United Federation", "Church of the Star"] }
+      }
+    ];
 
     for (const seed of ["A", "B", "C", "D", "E"]) {
       expect(polityWordFor(1, seed)).toBe("United Federation");

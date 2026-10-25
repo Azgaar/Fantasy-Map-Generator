@@ -160,7 +160,9 @@ function generateNameCulture(): void {
 
 function generateNameRandom(): void {
   const lake = getLake();
-  lake.name = ensureEl<HTMLInputElement>("lakeName").value = Names.getBase(rand(Names.nameBases.length - 1));
+  lake.name = ensureEl<HTMLInputElement>("lakeName").value = Names.getBase(
+    Names.nameBases[rand(Names.nameBases.length - 1)].id
+  );
 }
 
 function changeLakeSubtype(this: HTMLSelectElement): void {

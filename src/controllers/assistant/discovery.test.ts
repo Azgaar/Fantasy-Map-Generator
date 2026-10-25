@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 
 const discovery = vi.hoisted(() => ({ list: vi.fn() }));
 vi.mock("@/components/map-commands", () => ({ MAP_COMMANDS: [], isLinkable: () => false })); // its import touches the DOM
@@ -18,6 +18,12 @@ vi.mock("@/services/assistant/provider/models", async importOriginal => ({
   ...(await importOriginal<typeof import("@/services/assistant/provider/models")>()),
   listModels: discovery.list
 }));
+
+// The assistant UI is a large controller graph, and the first test imports it cold inside a 20s
+// budget. Pay that transform once, here, where the hook has room.
+beforeAll(async () => {
+  await import("./index");
+}, 60000);
 
 beforeEach(() => {
   vi.resetModules();

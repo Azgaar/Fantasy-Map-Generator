@@ -226,9 +226,9 @@ test("icons follow the layer font through the zoom and cull by their zoomed size
   expect(document.querySelector('[data-group="anchors"]')?.hasAttribute("style")).toBe(false);
 
   // at scale 4 the view (with overscan) starts at x = -20 and the icon em is 3% of 96.39px = 2.89 map units,
-  // so the padding is 2 * (2.89 + stroke 1) = 7.78 and a burg at -28 is out; a map-fixed 3-unit em would keep it
+  // so the padding is 2 * (2.89 * 2.5 + stroke 1) = 16.45 and a burg at -38 is out; a map-fixed em would keep it
   styles.burgIcons.groups.town.groups.icons.attrs["stroke-width"] = 1;
-  pack.burgs[1].x = -28;
+  pack.burgs[1].x = -38;
   setViewportTransform(4, 0, 0);
   ViewportLayers.renderNow();
   expect(document.getElementById("burg1")).toBeNull();

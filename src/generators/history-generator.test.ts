@@ -58,9 +58,9 @@ beforeEach(() => {
     ],
     cultures: [
       { i: 0, name: "Wildlings", base: 1 },
-      { i: 1, name: "Aeloran", base: 1, origins: [0] },
-      { i: 2, name: "Velic", base: 1, origins: [1] },
-      { i: 3, name: "Thornic", base: 1, origins: [2] }
+      { i: 1, name: "Aeloran", base: "ENGLI", origins: [0] },
+      { i: 2, name: "Velic", base: "ENGLI", origins: [1] },
+      { i: 3, name: "Thornic", base: "ENGLI", origins: [2] }
     ],
     religions: [
       { i: 0, name: "No religion", origins: null },
@@ -377,8 +377,8 @@ describe("Chronicle.generate fallen realms", () => {
       ],
       cultures: [
         { i: 0, name: "Wildlings", base: 1 },
-        { i: 1, name: "Aeloran", base: 1, origins: [0] },
-        { i: 2, name: "Velic", base: 1, origins: [1] }
+        { i: 1, name: "Aeloran", base: "ENGLI", origins: [0] },
+        { i: 2, name: "Velic", base: "ENGLI", origins: [1] }
       ],
       religions: [{ i: 0, name: "No religion", origins: null }]
     } as unknown as typeof pack;

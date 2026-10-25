@@ -27,7 +27,7 @@ import type {
 } from "../common/types";
 import type { AzgaarBurg, AzgaarCell, AzgaarCulture, AzgaarMap, AzgaarState } from "./azgaar";
 
-const COMPILER_VERSION = "0.1.0";
+const COMPILER_VERSION = "0.2.0";
 
 /** Max minor settlements allowed for any region. */
 export const MAX_MINOR_SETTLEMENTS = 3;
@@ -1018,7 +1018,7 @@ function buildPack(raw: AzgaarMap): MapPack {
         .map(n => n.trim()),
       ...(typeof nb.m === "string" ? nb.m.split(",").map(n => n.trim()) : [])
     ].filter(n => n.length > 0);
-    namePools[String(nb.i)] = [...new Set(names)].slice(0, MAX_NAMES_PER_POOL);
+    namePools[nb.id || String(nb.i)] = [...new Set(names)].slice(0, MAX_NAMES_PER_POOL);
   }
 
   // Trade good names, so a unit gate can say which good is missing.
@@ -1045,7 +1045,7 @@ function buildPack(raw: AzgaarMap): MapPack {
     goods,
     cultures: (pack.cultures ?? [])
       .filter((c): c is AzgaarCulture => Boolean(c) && typeof c === "object" && "i" in c)
-      .map(c => ({ i: c.i, name: c.name, base: typeof c.base === "number" ? c.base : -1 })),
+      .map(c => ({ i: c.i, name: c.name, base: typeof c.base === "string" ? c.base : String(c.base ?? "") })),
     graph: {
       land: { cells: landCells, edges: landEdges },
       sea: { cells: seaCells, edges: seaEdges },

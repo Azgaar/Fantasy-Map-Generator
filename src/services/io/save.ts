@@ -11,6 +11,7 @@ import { isElectron, savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
 import { emptyHistory } from "@/types/history";
 import { ensureEl, escapeHtml, getFileName, link, parseError, rn } from "@/utils";
+import { serializeNameBases } from "./name-bases-format";
 import { type SaveOutcome, saveToFileSystem } from "./save-to-file";
 
 type Writer = () => Promise<void>;
@@ -125,14 +126,8 @@ function prepareMapData(): string {
   const labels = JSON.stringify(pack.addedLabels || []);
   const styleData = JSON.stringify(styles);
 
-  // store name array only if not the same as default
-  const defaultNameBases = Names.getNameBases();
-  const namesData = Names.nameBases
-    .map((b, i) => {
-      const names = defaultNameBases[i] && defaultNameBases[i].b === b.b ? "" : b.b;
-      return `${b.name}|${b.min}|${b.max}|${b.d}|${b.m}|${names}`;
-    })
-    .join("/");
+  // store names only when they differ from the shipped base with the same id
+  const namesData = serializeNameBases(Names.nameBases);
 
   // round population to save space
   const pop = Array.from(pack.cells.pop).map(p => rn(p, 4));

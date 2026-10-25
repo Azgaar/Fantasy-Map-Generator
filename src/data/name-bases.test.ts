@@ -39,11 +39,19 @@ describe("Astral name bases content rules", () => {
     const all = getDefaultNameBases();
     const indices = all.map(b => b.i);
     expect(new Set(indices).size).toBe(all.length);
+    expect(indices).toEqual(all.map((_, i) => i));
 
     // Stock bases 0..42, Astral bases 43..54
     const astral = getAstralBases();
     expect(astral[0].i).toBe(43);
     expect(astral[astral.length - 1].i).toBe(54);
+  });
+
+  it("gives every base a unique five-letter id", () => {
+    const all = getDefaultNameBases();
+    const ids = all.map(b => b.id);
+    expect(new Set(ids).size).toBe(all.length);
+    for (const id of ids) expect(id).toMatch(/^[A-Z]{5}$/);
   });
 
   for (const baseName of ALL_ASTRAL_BASE_NAMES) {
@@ -143,10 +151,10 @@ describe("Astral culture sets", () => {
         expect(cultures).toHaveLength(8);
 
         const allBases = getDefaultNameBases();
-        const allowedIndices = baseNames.map(name => allBases.findIndex(b => b.name === name));
+        const allowedIds = baseNames.map(name => allBases.find(base => base.name === name)?.id);
 
         for (const culture of cultures) {
-          expect(allowedIndices).toContain(culture.base);
+          expect(allowedIds).toContain(culture.base);
           expect(typeof culture.sort).toBe("function");
           expect(culture.odd).toBeGreaterThan(0);
           expect(ALL_SHIELDS).toContain(culture.shield);
@@ -249,10 +257,10 @@ describe("Phase A acceptance", () => {
 
       const bases = getDefaultNameBases();
       for (const culture of cultures) {
-        const base = bases[culture.base];
+        const base = bases.find(candidate => candidate.id === culture.base);
         expect(base).toBeDefined();
-        expect(base.name.startsWith("Trek ")).toBe(true);
-        expect(base.b.length).toBeGreaterThan(0);
+        expect(base!.name.startsWith("Trek ")).toBe(true);
+        expect(base!.b.length).toBeGreaterThan(0);
       }
 
       expect(pinSchemas.culturesSet.safeParse("astralTrek").success).toBe(true);

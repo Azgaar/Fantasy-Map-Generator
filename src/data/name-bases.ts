@@ -1,12 +1,42 @@
 export interface NameBase {
+  id: string; // stable identity, /^[A-Z]{5}$/, never derived from `name`
   name: string; // name of the base
-  i: number; // index of the base
+  i: number; // derived array position, maintained by Names.reindex(); UI references only
   min: number; // minimum length of generated names
   max: number; // maximum length of generated names
   d: string; // letters allowed to duplicate
   m: number; // multi-word name rate [deprecated]
   b: string; // base string with names separated by comma
   groups?: Record<string, string[]>;
+}
+
+/** The identity format of a name base */
+export const BASE_ID_PATTERN = /^[A-Z]{5}$/;
+
+/**
+ * A stable id derived from a base name, for user-created and imported bases.
+ *
+ * The same name always yields the same id, so importing one file twice gives the same references.
+ * On collision the code is mutated rather than reused: two bases must never share an identity.
+ */
+export function deriveBaseId(name: string, taken: Set<string>): string {
+  const clean = name.toUpperCase().replace(/[^A-Z]/g, "");
+  const start = clean.slice(0, 5).padEnd(5, "X");
+  if (!taken.has(start)) return start;
+
+  let hash = 0;
+  for (let i = 0; i < clean.length; i++) hash = (hash * 31 + clean.charCodeAt(i)) >>> 0;
+  for (let attempt = 0; attempt < 10000; attempt++) {
+    let value = hash + attempt;
+    let id = "";
+    for (let c = 0; c < 5; c++) {
+      id += String.fromCharCode(65 + (value % 26));
+      value = Math.floor(value / 26);
+    }
+    if (!taken.has(id)) return id;
+  }
+
+  throw new Error(`Cannot derive a unique name base id for "${name}"`);
 }
 
 /**
@@ -27,6 +57,7 @@ export function getDefaultNameBases(): NameBase[] {
     // real-world bases by Azgaar:
     {
       name: "German",
+      id: "GERMA",
       i: 0,
       min: 5,
       max: 12,
@@ -36,6 +67,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "English",
+      id: "ENGLI",
       i: 1,
       min: 6,
       max: 11,
@@ -45,6 +77,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "French",
+      id: "FRENC",
       i: 2,
       min: 5,
       max: 13,
@@ -54,6 +87,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Italian",
+      id: "ITALI",
       i: 3,
       min: 5,
       max: 12,
@@ -63,6 +97,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Castillian",
+      id: "CASTI",
       i: 4,
       min: 5,
       max: 11,
@@ -72,6 +107,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Ruthenian",
+      id: "RUTHE",
       i: 5,
       min: 5,
       max: 10,
@@ -81,6 +117,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Nordic",
+      id: "NORDI",
       i: 6,
       min: 6,
       max: 10,
@@ -90,6 +127,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Greek",
+      id: "GREEK",
       i: 7,
       min: 5,
       max: 11,
@@ -99,6 +137,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Roman",
+      id: "ROMAN",
       i: 8,
       min: 6,
       max: 11,
@@ -108,6 +147,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Finnic",
+      id: "FINNI",
       i: 9,
       min: 5,
       max: 11,
@@ -117,6 +157,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Korean",
+      id: "KOREA",
       i: 10,
       min: 5,
       max: 11,
@@ -126,6 +167,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Chinese",
+      id: "CHINE",
       i: 11,
       min: 5,
       max: 10,
@@ -135,6 +177,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Japanese",
+      id: "JAPAN",
       i: 12,
       min: 4,
       max: 10,
@@ -144,6 +187,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Portuguese",
+      id: "PORTU",
       i: 13,
       min: 5,
       max: 11,
@@ -153,6 +197,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Nahuatl",
+      id: "NAHUA",
       i: 14,
       min: 6,
       max: 13,
@@ -162,6 +207,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Hungarian",
+      id: "HUNGA",
       i: 15,
       min: 6,
       max: 13,
@@ -171,6 +217,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Turkish",
+      id: "TURKI",
       i: 16,
       min: 4,
       max: 10,
@@ -180,6 +227,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Amazigh",
+      id: "AMAZI",
       i: 17,
       min: 4,
       max: 10,
@@ -189,6 +237,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Arabic",
+      id: "ARABI",
       i: 18,
       min: 4,
       max: 9,
@@ -198,6 +247,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Inuit",
+      id: "INUIT",
       i: 19,
       min: 5,
       max: 15,
@@ -207,6 +257,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Basque",
+      id: "BASQU",
       i: 20,
       min: 4,
       max: 11,
@@ -216,6 +267,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Nigerian",
+      id: "NIGER",
       i: 21,
       min: 4,
       max: 10,
@@ -225,6 +277,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Celtic",
+      id: "CELTI",
       i: 22,
       min: 4,
       max: 12,
@@ -234,6 +287,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Mesopotamian",
+      id: "MESOP",
       i: 23,
       min: 4,
       max: 9,
@@ -243,6 +297,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Iranian",
+      id: "IRANI",
       i: 24,
       min: 5,
       max: 11,
@@ -252,6 +307,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Hawaiian",
+      id: "HAWAI",
       i: 25,
       min: 5,
       max: 10,
@@ -261,6 +317,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Karnataka",
+      id: "KARNA",
       i: 26,
       min: 5,
       max: 11,
@@ -270,6 +327,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Quechua",
+      id: "QUECH",
       i: 27,
       min: 6,
       max: 12,
@@ -279,6 +337,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Swahili",
+      id: "SWAHI",
       i: 28,
       min: 4,
       max: 9,
@@ -288,6 +347,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Vietnamese",
+      id: "VIETN",
       i: 29,
       min: 3,
       max: 12,
@@ -297,6 +357,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Cantonese",
+      id: "CANTO",
       i: 30,
       min: 5,
       max: 11,
@@ -306,6 +367,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Mongolian",
+      id: "MONGO",
       i: 31,
       min: 5,
       max: 12,
@@ -316,6 +378,7 @@ export function getDefaultNameBases(): NameBase[] {
     // fantasy bases by Dopu:
     {
       name: "Human Generic",
+      id: "HUMAN",
       i: 32,
       min: 6,
       max: 11,
@@ -325,6 +388,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Elven",
+      id: "ELVEN",
       i: 33,
       min: 6,
       max: 12,
@@ -334,6 +398,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Dark Elven",
+      id: "DARKE",
       i: 34,
       min: 6,
       max: 14,
@@ -343,6 +408,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Dwarven",
+      id: "DWARV",
       i: 35,
       min: 4,
       max: 11,
@@ -352,6 +418,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Goblin",
+      id: "GOBLI",
       i: 36,
       min: 4,
       max: 9,
@@ -361,6 +428,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Orc",
+      id: "ORCIS",
       i: 37,
       min: 4,
       max: 8,
@@ -370,6 +438,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Giant",
+      id: "GIANT",
       i: 38,
       min: 5,
       max: 10,
@@ -379,6 +448,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Draconic",
+      id: "DRACO",
       i: 39,
       min: 6,
       max: 14,
@@ -388,6 +458,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Arachnid",
+      id: "ARACH",
       i: 40,
       min: 4,
       max: 10,
@@ -397,6 +468,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Serpents",
+      id: "SERPE",
       i: 41,
       min: 5,
       max: 11,
@@ -407,6 +479,7 @@ export function getDefaultNameBases(): NameBase[] {
     // additional by Avengium:
     {
       name: "Levantine",
+      id: "LEVAN",
       i: 42,
       min: 4,
       max: 12,
@@ -417,6 +490,7 @@ export function getDefaultNameBases(): NameBase[] {
     // Astral Cartographer bases:
     {
       name: "Trek Core",
+      id: "TRKCO",
       i: 43,
       min: 4,
       max: 12,
@@ -480,6 +554,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Trek Terran",
+      id: "TRKTE",
       i: 44,
       min: 5,
       max: 12,
@@ -518,6 +593,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Trek Continental",
+      id: "TRKCN",
       i: 45,
       min: 5,
       max: 13,
@@ -551,6 +627,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Trek Synthetic",
+      id: "TRKSY",
       i: 46,
       min: 4,
       max: 12,
@@ -594,6 +671,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Jammer Deep",
+      id: "JAMDE",
       i: 47,
       min: 6,
       max: 16,
@@ -665,6 +743,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Jammer Ethereal",
+      id: "JAMET",
       i: 48,
       min: 6,
       max: 16,
@@ -698,6 +777,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Jammer Stoneborn",
+      id: "JAMST",
       i: 49,
       min: 4,
       max: 11,
@@ -731,6 +811,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Jammer Wild",
+      id: "JAMWI",
       i: 50,
       min: 3,
       max: 9,
@@ -764,6 +845,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Grimdark Core",
+      id: "GRMCO",
       i: 51,
       min: 3,
       max: 10,
@@ -819,6 +901,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Grimdark Gothic",
+      id: "GRMGO",
       i: 52,
       min: 5,
       max: 13,
@@ -852,6 +935,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Grimdark Iron",
+      id: "GRMIR",
       i: 53,
       min: 4,
       max: 11,
@@ -884,6 +968,7 @@ export function getDefaultNameBases(): NameBase[] {
     },
     {
       name: "Grimdark Machine",
+      id: "GRMCH",
       i: 54,
       min: 4,
       max: 12,

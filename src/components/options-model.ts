@@ -151,6 +151,8 @@ class OptionsModel {
   persist(): void {
     clearTimeout(this.saveTimer);
     this.saveTimer = 0;
+    // a debounced save can outlive the page environment that scheduled it (tests, workers)
+    if (typeof localStorage === "undefined") return;
     const { customIcons, ...map } = options.map;
     this.persistIcons(customIcons);
     try {

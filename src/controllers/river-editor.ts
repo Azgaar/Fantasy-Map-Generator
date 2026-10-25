@@ -281,7 +281,7 @@ function generateNameCulture(): void {
 }
 
 function generateNameRandom(): void {
-  const name = Names.getBase(rand(Names.nameBases.length - 1));
+  const name = Names.getBase(Names.nameBases[rand(Names.nameBases.length - 1)].id);
   ensureEl<HTMLInputElement>("riverName").value = name;
   Rivers.rename(getRiver().i, name);
   Layers.draw("labels");

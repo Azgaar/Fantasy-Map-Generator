@@ -33,9 +33,9 @@ export function pickFor(words: string[], seed: string): string | undefined {
 /** The name groups of the base a culture names from, when that base is one of ours */
 export function groupsOf(cultureId: number): Record<string, string[]> | undefined {
   const baseId = pack.cultures[cultureId]?.base;
-  if (baseId === undefined) return undefined;
-  const base = Names.nameBases[baseId];
-  return isAstralBase(base) ? base.groups : undefined;
+  if (!baseId) return undefined;
+  const base = Names.getNameBase(baseId);
+  return base && isAstralBase(base) ? base.groups : undefined;
 }
 
 /**
