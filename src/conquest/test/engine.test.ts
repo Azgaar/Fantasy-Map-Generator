@@ -350,6 +350,64 @@ describe("war + capture flow (the Balben–Smotia border war)", () => {
     const owners = new Set(Object.values(campaign.regions).map(r => r.owner));
     expect(owners.size).toBeGreaterThan(1);
   });
+
+  test("armies holding minor settlements gain walls; undefended minor settlements can be assaulted and occupied", () => {
+    const { ctx, campaign } = bootstrap(1);
+    apply(ctx, { type: "DeclareWar", onFactionId: 9 });
+    apply(ctx, { type: "EndTurn" });
+
+    // Find an enemy minor settlement
+    const minorSettlement = pack.settlements.find(
+      s => s.kind === "minor" && campaign.regions[String(s.regionId)]?.owner === 9
+    )!;
+    expect(minorSettlement).toBeDefined();
+
+    const myArmy = Object.values(campaign.armies).find(a => !a.fleet && a.factionId === 1)!;
+    myArmy.cell = minorSettlement.cell;
+    myArmy.movementLeft = config.movement.basePoints;
+
+    const res = apply(ctx, { type: "AssaultSettlement", armyId: myArmy.id, policy: "occupy" });
+    expect(res.ok).toBe(true);
+
+    const regionState = campaign.regions[String(minorSettlement.regionId)]!;
+    // Region ownership remains tied to the capital (owner is still 9)
+    expect(regionState.owner).toBe(9);
+    // But minor settlement is occupied
+    expect(regionState.occupiedSettlements).toContain(minorSettlement.id);
+
+    const occEvent = res.events.find(e => e.type === "SettlementOccupied");
+    expect(occEvent).toBeDefined();
+    expect((occEvent as any).settlementId).toBe(minorSettlement.id);
+
+    // Re-assaulting an already occupied settlement is rejected
+    const reAssault = apply(ctx, { type: "AssaultSettlement", armyId: myArmy.id });
+    expect(reAssault.ok).toBe(false);
+    expect(reAssault.error).toMatch(/already occupied/i);
+  });
+
+  test("friendly army entering an occupied minor settlement liberates it", () => {
+    const { ctx, campaign } = bootstrap(1);
+    const minor = pack.settlements.find(s => s.kind === "minor")!;
+    expect(minor).toBeDefined();
+
+    const regState = campaign.regions[String(minor.regionId)]!;
+    regState.owner = 1;
+    regState.occupiedSettlements = [minor.id];
+
+    // Move friendly army to minor settlement
+    const myArmy = Object.values(campaign.armies).find(a => !a.fleet && a.factionId === 1)!;
+    const adjEdge = pack.graph.land.edges.find(e => e[0] === minor.cell || e[1] === minor.cell)!;
+    const fromCell = adjEdge[0] === minor.cell ? adjEdge[1]! : adjEdge[0]!;
+    myArmy.cell = fromCell;
+    myArmy.movementLeft = 100;
+
+    const moveRes = apply(ctx, { type: "MoveArmy", armyId: myArmy.id, path: [fromCell, minor.cell] });
+    expect(moveRes.ok).toBe(true);
+    expect(regState.occupiedSettlements).not.toContain(minor.id);
+    const libEvent = moveRes.events.find(e => e.type === "SettlementLiberated");
+    expect(libEvent).toBeDefined();
+    expect((libEvent as any).settlementId).toBe(minor.id);
+  });
 });
 
 describe("turn loop (§5.1)", () => {

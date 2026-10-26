@@ -111,10 +111,10 @@ function describeBattle(battle: BattleSummary): string {
   const defender = factionName(battle.defender.factionId);
   const winner = battle.winner === "attacker" ? attacker : defender;
   const loser = battle.winner === "attacker" ? defender : attacker;
-  const where = regionName(battle.regionId);
-  const what = battle.assault ? `assault on ${where}` : `field battle for ${where}`;
+  const where = battle.settlementId ? settlementName(battle.settlementId) : regionName(battle.regionId);
+  const what = battle.assault ? `assault on ${where}` : `battle for ${where}`;
   const modifiers = battle.modifiers.length ? ` [${battle.modifiers.join(", ")}]` : "";
-  const taken = battle.regionCaptured ? `; ${where} changed hands` : "";
+  const taken = battle.regionCaptured ? `; ${regionName(battle.regionId)} changed hands` : "";
   return `${winner} won the ${what} against ${loser}${modifiers}${taken}`;
 }
 
@@ -169,6 +169,14 @@ function describe(event: GameEvent, campaign: Campaign): string | null {
       return `The siege of ${regionName(event.regionId)} was lifted — ${event.reason}.`;
     case "RegionCaptured":
       return `${factionName(event.to)} took ${regionName(event.regionId)} from ${factionName(event.from)} and ${policyLabel(event.policy)} it (${num(event.gold)} gold).`;
+    case "SettlementOccupied":
+      return `${factionName(event.byFaction)} occupied ${settlementName(event.settlementId)} in ${regionName(
+        event.regionId
+      )} and ${policyLabel(event.policy)} it (${num(event.gold)} gold).`;
+    case "SettlementLiberated":
+      return `${factionName(event.byFaction)} liberated ${settlementName(event.settlementId)} in ${regionName(
+        event.regionId
+      )}.`;
 
     // -- diplomacy
     case "TreatyOffered":
@@ -288,6 +296,8 @@ const KIND: Record<GameEvent["type"], LogRow["kind"]> = {
   SiegeStarted: "battle",
   SiegeLifted: "battle",
   RegionCaptured: "battle",
+  SettlementOccupied: "battle",
+  SettlementLiberated: "battle",
   TreatyOffered: "diplomacy",
   TreatyAccepted: "diplomacy",
   TreatyRejected: "diplomacy",

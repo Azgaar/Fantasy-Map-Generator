@@ -188,9 +188,16 @@ OpenConquest models asymmetric fantasy warfare through a deterministic magic and
 - **Configurable Caps**: Global engine caps in `game.json` (`wardCap: 0.3`, `hexCap: 0.3`, `healCap: 40`, `terrorCap: 0.15`, `arcaneSiegeCap: 2`, `resistCap: 0.5`) ensure magical dominance remains balanced against mundane arms.
 
 ### Sieges and Capturing Regions
-Settlement fortifications consist of walls and citadels. To capture a region, an invading army must occupy its major settlement and choose between immediate **Assault** or **Laying Siege**. Each turn of siege weakens defenders by 15% (down to a 40% floor).
+Settlement fortifications consist of walls and citadels. To capture an entire region, an invading army must occupy its major settlement (capital) and choose between immediate **Assault** or **Laying Siege**. Each turn of siege weakens defenders by 15% (down to a 40% floor).
 
-Upon triumph, the conqueror selects a **Capture Policy**:
+#### Minor Settlements as Tactical Strongpoints
+Minor settlements (up to 3 per region) are tactical objectives that armies can hold and contest:
+- **Holding a Minor Settlement**: A friendly army stationed at a minor settlement holds it, receiving the settlement's defensive walls (`settlement.walls`) and local militia reinforcements when attacked.
+- **Assaulting Undefended Minor Settlements**: If no field army is present, an invading army can assault the minor settlement directly, facing its innate local militia garrison (`minorGarrisonUnits`) and defensive fortifications.
+- **Strategic Impact of Occupation**: Victorious attackers occupy the minor settlement, looting gold and inflicting a public order penalty on the province based on the chosen capture policy (`occupy`, `sack`, `loot`, `raze`). While occupied, the minor settlement's development capacity (+1 W / +1 S) and rough-terrain Cunning are denied to the region owner. Region ownership remains tied to the capital until the capital itself falls.
+- **Liberation**: When a friendly army re-enters an occupied minor settlement and clears any hostile presence, the settlement is automatically liberated and restores its capacity generation.
+
+Upon triumph at a major settlement, the conqueror selects a **Capture Policy**:
 - **Occupy**: Orderly transition; public order resets to 25.
 - **Sack**: Plunders 4× base booty; drops public order to 15.
 - **Loot**: Plunders 2× base booty; drops public order to 20.

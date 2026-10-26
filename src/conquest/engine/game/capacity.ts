@@ -86,8 +86,13 @@ export function developmentCap(ctx: EngineCtx, settlementId: number): number {
 export function developmentBonus(ctx: EngineCtx, regionId: number): number {
   const region = ctx.pack.regions.find(r => r.id === regionId);
   if (!region) return 0;
+  const rs = ctx.campaign.regions[String(regionId)];
+  const occupied = new Set(rs?.occupiedSettlements ?? []);
   let bonus = 0;
-  for (const sid of region.settlements) bonus += settlementDevelopment(ctx, sid);
+  for (const sid of region.settlements) {
+    if (occupied.has(sid)) continue;
+    bonus += settlementDevelopment(ctx, sid);
+  }
   return bonus;
 }
 

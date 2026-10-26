@@ -27,6 +27,8 @@ export interface BattleSummary {
   modifiers: string[];
   /** True when the battle was an assault on a settlement's garrison. */
   assault: boolean;
+  /** Settlement involved in the assault or defense, if any. */
+  settlementId?: number;
   regionCaptured: boolean;
   /** Capture policy applied on success (§5.5). */
   policy?: CapturePolicy;
@@ -60,6 +62,21 @@ export type GameEvent =
       byArmy: string;
       policy: CapturePolicy;
       gold: number;
+    }
+  | {
+      type: "SettlementOccupied";
+      settlementId: number;
+      regionId: number;
+      byFaction: number;
+      byArmy: string;
+      policy: CapturePolicy;
+      gold: number;
+    }
+  | {
+      type: "SettlementLiberated";
+      settlementId: number;
+      regionId: number;
+      byFaction: number;
     }
   // -- diplomacy (Phase 3) ----------------------------------------------------
   | { type: "TreatyOffered"; offerId: number; from: number; to: number; treaty: TreatyType; gold?: number }

@@ -229,12 +229,18 @@ let drilledSettlementId: number | null = null;
 
 /** The settlement view: one burg's stats, with a way back to its region. */
 function renderSettlement(summary: SettlementSummary, region: RegionSummary): string {
+  const session = currentSession();
+  const campaign = session?.store?.state;
+  const rs = campaign?.regions[String(region.id)];
+  const isOccupied = rs?.occupiedSettlements?.includes(summary.id);
+  const statusHtml = isOccupied ? row("Status", `<span style="color:#e06c75; font-weight:bold;">Occupied by Enemy</span>`) : "";
   return /* html */ `
     <button class="tw-link tw-back" data-tw-action="region">‹ ${escapeHtml(region.name)}</button>
     <p class="tw-title">${escapeHtml(summary.name)}</p>
     <div class="tw-sub">${summary.capital ? "Capital" : "Settlement"} of ${escapeHtml(region.name)}${
       region.owner ? ` (${escapeHtml(region.owner)})` : ""
     }</div>
+    ${statusHtml}
     ${row("Type", summary.capital ? "Capital" : "Settlement")}
     ${row("Population", summary.population.toLocaleString("en-US"))}
     ${row("Walls", wallLabel(summary.walls))}
@@ -249,21 +255,19 @@ function renderRegion(summary: RegionSummary): string {
   const owner = summary.owner ? `<span class="tw-owner">(${escapeHtml(summary.owner)})</span>` : "";
   const session = currentSession();
   const campaign = session?.store?.state;
+  const rs = campaign?.regions[String(summary.id)];
   let campaignHtml = "";
-  if (campaign) {
-    const rs = campaign.regions[String(summary.id)];
-    if (rs) {
-      campaignHtml += row("Public Order", `${rs.order} / 100`);
-      if (rs.construction) {
-        const c = rs.construction;
-        const checksText = c.checks
-          ? `M:${c.checks.m ? "✓" : "…"} W:${c.checks.w ? "✓" : "…"} S:${c.checks.s ? "✓" : "…"}${c.pityBonus ? ` (-${c.pityBonus})` : ""}`
-          : `${c.turnsLeft} turns`;
-        campaignHtml += row("Building", `${escapeHtml(c.buildingId)} (${checksText})`);
-      }
-      if (rs.buildings.length) {
-        campaignHtml += row("Buildings", escapeHtml(rs.buildings.join(", ")));
-      }
+  if (campaign && rs) {
+    campaignHtml += row("Public Order", `${rs.order} / 100`);
+    if (rs.construction) {
+      const c = rs.construction;
+      const checksText = c.checks
+        ? `M:${c.checks.m ? "✓" : "…"} W:${c.checks.w ? "✓" : "…"} S:${c.checks.s ? "✓" : "…"}${c.pityBonus ? ` (-${c.pityBonus})` : ""}`
+        : `${c.turnsLeft} turns`;
+      campaignHtml += row("Building", `${escapeHtml(c.buildingId)} (${checksText})`);
+    }
+    if (rs.buildings.length) {
+      campaignHtml += row("Buildings", escapeHtml(rs.buildings.join(", ")));
     }
   }
 
@@ -274,7 +278,12 @@ function renderRegion(summary: RegionSummary): string {
     ${row(
       "Settlements",
       summary.minors.length
-        ? summary.minors.map(settlement => settlementLink(settlement.id, settlement.name)).join(", ")
+        ? summary.minors
+            .map(settlement => {
+              const occ = rs?.occupiedSettlements?.includes(settlement.id);
+              return `${settlementLink(settlement.id, settlement.name)}${occ ? ' <span style="color:#e06c75; font-size:11px;">[Occupied]</span>' : ""}`;
+            })
+            .join(", ")
         : "—"
     )}
     ${campaignHtml}`;

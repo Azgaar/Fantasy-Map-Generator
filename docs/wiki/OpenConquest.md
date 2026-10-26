@@ -14,7 +14,7 @@ The menu carries the whole campaign lifecycle: start, end turn, duplicate, detac
 ### Map and settlements
 Conquest renders directly through FMG's high-performance native layers:
 - **Territory & Borders**: Provincial regions and state boundaries represent strategic ownership and taxation zones.
-- **Settlement Hierarchy**: Major and minor burgs appear with specialized cartographic markers — state capitals are marked with circled stars (`burgs-atlas-star-circled`) and province capitals with smaller star icons (`burgs-atlas-star`).
+- **Settlement Hierarchy**: Major and minor burgs appear with specialized cartographic markers — state capitals (`burgs-atlas-star-circled`), province capitals (`burgs-atlas-star`), and minor settlements. Minor settlements act as tactical strongpoints that field armies can hold (gaining wall and militia defenses) or assault to pillage and deny regional development capacity.
 - **Regiments & Armies**: Military forces on the map reflect each state's roster-native units.
 
 ### Battles: Tactical & Auto-Resolve

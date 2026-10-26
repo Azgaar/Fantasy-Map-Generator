@@ -36,7 +36,7 @@ import { effectiveValue, rollValueCheck } from "./saves";
 import { applyCapturePolicy, garrisonWeakenFactor, siegeOf, startSiege } from "./sieges";
 import { type Campaign, isPlayerFaction, type RegionState, rng, type Stance } from "./state";
 import { endTurn } from "./turn";
-import { garrisonUnits } from "./units";
+import { garrisonUnits, minorGarrisonUnits } from "./units";
 import { checkElimination, checkVictory } from "./victory";
 import { answerEvent, discoverPoisAt } from "./world";
 
@@ -148,8 +148,8 @@ function armiesAt(campaign: Campaign, cell: number): import("./state").Army[] {
   return Object.values(campaign.armies).filter(a => a.cell === cell);
 }
 
-function majorSettlementAt(pack: import("../common/types").MapPack, cell: number) {
-  return pack.settlements.find(s => s.kind === "major" && s.cell === cell) ?? null;
+function settlementAt(pack: import("../common/types").MapPack, cell: number) {
+  return pack.settlements.find(s => s.cell === cell) ?? null;
 }
 
 function hasPair(between: [number, number], a: number, b: number): boolean {
@@ -281,6 +281,19 @@ function moveArmy(ctx: EngineCtx, armyId: string, path: number[], internal: bool
       distance: Math.round(distance * 10) / 10
     });
     discoverPoisAt(ctx, army.factionId, after.cell);
+    const arrivedSettlement = settlementAt(pack, after.cell);
+    if (arrivedSettlement && arrivedSettlement.kind === "minor") {
+      const rs = campaign.regions[String(arrivedSettlement.regionId)];
+      if (rs && rs.owner === army.factionId && rs.occupiedSettlements?.includes(arrivedSettlement.id)) {
+        rs.occupiedSettlements = rs.occupiedSettlements.filter(id => id !== arrivedSettlement.id);
+        campaign.log.push({
+          type: "SettlementLiberated",
+          settlementId: arrivedSettlement.id,
+          regionId: arrivedSettlement.regionId,
+          byFaction: army.factionId
+        });
+      }
+    }
   } else {
     campaign.log.push({
       type: "MovementBlocked",
@@ -349,16 +362,19 @@ function runFieldBattle(
 ): BattleOutcome {
   const { campaign, pack, config, resolved } = ctx;
   const idx = graphIndex(pack);
-  const settlement = majorSettlementAt(pack, defender.cell);
+  const settlement = settlementAt(pack, defender.cell);
   const regionId = idx.cellRegion.get(defender.cell) ?? 0;
   const militia = getMilitiaDefenseUnits(ctx, regionId, defender.factionId);
 
   const modifiers: BattleModifiers = {
-    walls: (settlement?.walls ?? 0) + regionWalls(ctx, regionId),
+    walls: (settlement?.walls ?? 0) + (settlement?.kind === "major" ? regionWalls(ctx, regionId) : 0),
     defenderEncamped: defender.stance === "encamp",
     defenderAmbushed: attacker.stance === "ambush",
     attackerCrossedRiver: opts.river,
-    labels: militia.length > 0 ? [`militia defense (${militia.length} units)`] : [],
+    labels: [
+      ...(settlement ? [`defending ${settlement.name} (walls ${settlement.walls})`] : []),
+      ...(militia.length > 0 ? [`militia defense (${militia.length} units)`] : [])
+    ],
     attackerLordMult: lordCombatBonus(ctx, attacker.id),
     defenderLordMult: lordCombatBonus(ctx, defender.id)
   };
@@ -377,6 +393,7 @@ function runFieldBattle(
     assault: false,
     modifiers
   });
+  if (settlement) outcome.summary.settlementId = settlement.id;
 
   finalizeBattle(ctx, attacker, defender, outcome, opts);
   grantBattleXp(ctx, attacker.id, outcome.summary.winner === "attacker");
@@ -398,7 +415,7 @@ function finalizeBattle(
   outcome: BattleOutcome,
   opts: FieldBattleOpts
 ): void {
-  const { campaign } = ctx;
+  const { campaign, pack, config } = ctx;
   attacker.movementLeft = 0;
   defender.movementLeft = 0;
 
@@ -415,6 +432,49 @@ function finalizeBattle(
 
   if (opts.winnerTakesCell && outcome.summary.winner === "attacker" && campaign.armies[attacker.id]) {
     attacker.cell = defender.cell;
+  }
+
+  const settlement = settlementAt(pack, defender.cell);
+  if (settlement && settlement.kind === "minor") {
+    const regionState = campaign.regions[String(settlement.regionId)];
+    if (regionState) {
+      if (!regionState.occupiedSettlements) regionState.occupiedSettlements = [];
+      const winnerFaction = outcome.summary.winner === "attacker" ? attacker.factionId : defender.factionId;
+      if (winnerFaction === regionState.owner) {
+        if (regionState.occupiedSettlements.includes(settlement.id)) {
+          regionState.occupiedSettlements = regionState.occupiedSettlements.filter(id => id !== settlement.id);
+          campaign.log.push({
+            type: "SettlementLiberated",
+            settlementId: settlement.id,
+            regionId: settlement.regionId,
+            byFaction: winnerFaction
+          });
+        }
+      } else {
+        if (!regionState.occupiedSettlements.includes(settlement.id)) {
+          regionState.occupiedSettlements.push(settlement.id);
+          if (regionState.development?.settlementId === settlement.id) {
+            regionState.development = null;
+          }
+          const lootedGold = Math.max(10, Math.round(settlement.population * 2) || (settlement.tier * 25 + 25));
+          const raider = campaign.factions[String(winnerFaction)];
+          if (raider) {
+            if (config.economy.capacityMode) raider.purse += lootedGold;
+            else raider.treasury += lootedGold;
+          }
+          regionState.order = Math.max(0, regionState.order - 10);
+          campaign.log.push({
+            type: "SettlementOccupied",
+            settlementId: settlement.id,
+            regionId: settlement.regionId,
+            byFaction: winnerFaction,
+            byArmy: attacker.id,
+            policy: "occupy",
+            gold: lootedGold
+          });
+        }
+      }
+    }
   }
 
   campaign.log.push({ type: "BattleResolved", battle: outcome.summary });
@@ -475,13 +535,113 @@ function assaultSettlement(
   const army = campaign.armies[armyId]!;
   if (army.stance === "march") return "armies in march stance cannot assault";
 
-  const settlement = majorSettlementAt(pack, army.cell);
-  if (!settlement) return `no major settlement at cell ${army.cell}`;
+  const settlement = settlementAt(pack, army.cell);
+  if (!settlement) return `no settlement at cell ${army.cell}`;
   const regionState = campaign.regions[String(settlement.regionId)]!;
   const owner = regionState.owner;
   if (owner === army.factionId) return "you already own this region";
   if (!atWar(campaign, army.factionId, owner)) return `not at war with faction ${owner}`;
 
+  if (settlement.kind === "minor") {
+    if (!regionState.occupiedSettlements) regionState.occupiedSettlements = [];
+    if (regionState.occupiedSettlements.includes(settlement.id)) {
+      return `settlement '${settlement.name}' is already occupied`;
+    }
+    const ownerRoster = resolved.factions[String(owner)]!.roster;
+    const militia = getMilitiaDefenseUnits(ctx, settlement.regionId, owner);
+    const garrisonUnitsList = minorGarrisonUnits(
+      ownerRoster,
+      resolved.pack.unitTypes,
+      settlement.tier,
+      settlement.walls
+    );
+    const garrison: BattleSide = {
+      factionId: owner,
+      armyId: null,
+      units: [...garrisonUnitsList, ...militia]
+    };
+    const modifiers: BattleModifiers = {
+      walls: settlement.walls,
+      defenderEncamped: false,
+      defenderAmbushed: false,
+      attackerCrossedRiver: false,
+      labels: [
+        `minor settlement assault (${settlement.name}, walls ${settlement.walls})`,
+        ...(militia.length > 0 ? [`militia defense (${militia.length} units)`] : [])
+      ],
+      attackerLordMult: lordCombatBonus(ctx, army.id),
+      defenderLordMult: 1
+    };
+    const outcome = resolveBattle(campaign, {
+      config,
+      unitTypes: resolved.pack.unitTypes,
+      attacker: { factionId: army.factionId, armyId: army.id, units: army.units },
+      defender: garrison,
+      cell: army.cell,
+      regionId: settlement.regionId,
+      assault: true,
+      modifiers
+    });
+    outcome.summary.settlementId = settlement.id;
+    outcome.summary.regionCaptured = false;
+
+    army.movementLeft = 0;
+    army.units = outcome.attacker.units.filter(u => u.count > 0 && !u.temporaryMilitia);
+    if (army.units.length === 0) {
+      delete campaign.armies[army.id];
+      campaign.log.push({ type: "ArmyDisbanded", armyId: army.id, reason: "destroyed in the assault" });
+    }
+
+    if (outcome.winner === "attacker") {
+      regionState.occupiedSettlements.push(settlement.id);
+      if (regionState.development?.settlementId === settlement.id) {
+        regionState.development = null;
+      }
+      let gold = 0;
+      let orderHit = 5;
+      const baseVal = Math.max(10, Math.round(settlement.population * 2) || (settlement.tier * 25 + 25));
+      if (policy === "occupy") {
+        gold = baseVal;
+        orderHit = 5;
+      } else if (policy === "sack") {
+        gold = Math.round(baseVal * 2);
+        orderHit = 15;
+      } else if (policy === "loot") {
+        gold = Math.round(baseVal * 1.5);
+        orderHit = 10;
+      } else if (policy === "raze") {
+        gold = Math.round(baseVal * 2.5);
+        orderHit = 25;
+        settlement.population = Math.max(0, settlement.population - 1);
+      }
+      const victim = campaign.factions[String(owner)];
+      const raider = campaign.factions[String(army.factionId)];
+      if (gold > 0 && raider) {
+        if (config.economy.capacityMode && victim) {
+          const taken = Math.min(gold, victim.purse);
+          victim.purse = Math.round((victim.purse - taken) * 100) / 100;
+          raider.purse = Math.round((raider.purse + taken) * 100) / 100;
+        } else {
+          raider.treasury += gold;
+        }
+      }
+      regionState.order = Math.max(0, regionState.order - orderHit);
+      outcome.summary.policy = policy;
+      campaign.log.push({
+        type: "SettlementOccupied",
+        settlementId: settlement.id,
+        regionId: settlement.regionId,
+        byFaction: army.factionId,
+        byArmy: armyId,
+        policy,
+        gold
+      });
+    }
+    campaign.log.push({ type: "BattleResolved", battle: outcome.summary });
+    return null;
+  }
+
+  // Major settlement assault:
   // Garrison from the owner's roster (militia replenish — total-war/.plans/PLAN.md §5.5), weakened
   // by siege escalation when the settlement is under siege (§5.5).
   const ownerRoster = resolved.factions[String(owner)]!.roster;
@@ -521,6 +681,7 @@ function assaultSettlement(
     assault: true,
     modifiers
   });
+  outcome.summary.settlementId = settlement.id;
 
   army.movementLeft = 0;
   army.units = outcome.attacker.units.filter(u => u.count > 0 && !u.temporaryMilitia);
@@ -534,6 +695,7 @@ function assaultSettlement(
     const payout = applyCapturePolicy(ctx, settlement.regionId, policy);
     regionState.owner = army.factionId;
     regionState.order = payout.order;
+    regionState.occupiedSettlements = [];
     // CAPACITY-PLAN Phase 5: booty is purse gold in the capacity model, and it
     // comes *out of the victim's purse* rather than being minted — a realm's
     // gold is only ever as much as some realm converted out of its Wealth.
@@ -1443,10 +1605,10 @@ export function oddsFor(
   if (!attacker || !defender) return { error: "unknown army" };
   if (attacker.stance === "march") return { error: "march stance cannot attack" };
   const idx = graphIndex(pack);
-  const settlement = majorSettlementAt(pack, defender.cell);
+  const settlement = settlementAt(pack, defender.cell);
   const regionId = idx.cellRegion.get(defender.cell) ?? 0;
   const modifiers: BattleModifiers = {
-    walls: (settlement?.walls ?? 0) + regionWalls(ctx, regionId),
+    walls: (settlement?.walls ?? 0) + (settlement?.kind === "major" ? regionWalls(ctx, regionId) : 0),
     defenderEncamped: defender.stance === "encamp",
     defenderAmbushed: attacker.stance === "ambush",
     attackerCrossedRiver: riverCrossing(pack, attacker.cell, defender.cell),

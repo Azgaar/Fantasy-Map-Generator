@@ -142,6 +142,8 @@ export interface RegionState {
   lastIncome?: number;
   /** Corruption fraction applied last tick (§5.6) — for the region panel. */
   corruption?: number;
+  /** IDs of minor settlements currently occupied by foreign factions. */
+  occupiedSettlements?: number[];
 }
 
 interface ActiveWar {
@@ -362,7 +364,8 @@ export function createCampaign(opts: CreateOptions): Campaign {
       development: null,
       stability: 0,
       unrestTurns: 0,
-      populationScale: 1
+      populationScale: 1,
+      occupiedSettlements: []
     };
   }
 
