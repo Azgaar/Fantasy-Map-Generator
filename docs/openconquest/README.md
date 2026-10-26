@@ -264,7 +264,19 @@ src/conquest/content/docs/
 │   ├── east_asia.json   # East Asian imperial roster (eastAsiaBase)
 │   ├── mughal.json      # Mughal gunpowder & war elephant roster (mughalBase)
 │   ├── ottoman.json     # Ottoman Janissary & Sipahi roster (ottomanBase)
-│   └── renaissance.json # European Renaissance pike-and-shot roster (renaissanceBase)
+│   ├── renaissance.json # European Renaissance pike-and-shot roster (renaissanceBase)
+│   ├── ogre.json        # Maw-Tribe Ogre Kingdoms (ogreBase)
+│   ├── demon.json       # Legions of the Infernal Abyss (demonBase)
+│   ├── beastfolk.json   # Primal Beastfolk War-Herds (beastfolkBase)
+│   ├── halfling.json    # Shire-Moot & Tinker Guilds (halflingBase)
+│   ├── fey.json         # Seelie & Twilight Fey Courts (feyBase)
+│   ├── dragonborn.json  # Draconic Flame-Citadels (dragonbornBase)
+│   ├── celestial.json   # Radiant Celestial Host (celestialBase)
+│   ├── merfolk.json     # Pelagic Reef-Thalassocracies (merfolkBase)
+│   ├── elemental.json   # Primordial Elemental Nexus (elementalBase)
+│   ├── construct.json   # Clockwork & Golem Foundries (constructBase)
+│   ├── eldritch.json    # Void-Spawned Aberrant Synods (eldritchBase)
+│   └── tribal.json      # Primal Wildland Confederacies (tribalBase)
 ├── victory/             # short, long, and faction-specific victory conditions
 └── events/              # scripted narrative events and dilemmas
 ```
@@ -332,6 +344,7 @@ Test suites cover:
 | **Magic & Arcane Warfare** | 6×6 Lanchester matchup matrix, spellcasters, monsters, declarative powers, and arcane siege | ✅ Completed |
 | **Expanded Content** | Renaissance Europe, East Asia, Mughal, and Ottoman historical rosters | ✅ Completed |
 | **Old World Fantasy Rosters** | Asymmetric Warhammer-inspired Old World faction rosters ([`openconquest-old-world-rosters.md`](../plans/openconquest-old-world-rosters.md)) | ✅ Completed |
+| **RPG Fantasy Force Alignment** | Complete 44-culture RPG set alignment with 31 bespoke rosters ([`openconquest-rpg-rosters.md`](../plans/openconquest-rpg-rosters.md)) | ✅ Completed |
 | **Next Horizons** | Tactical battle map visualization, fog-of-war exploration, and custom scenario scripting | 📋 Planned |
 
 ---

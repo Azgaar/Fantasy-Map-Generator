@@ -221,7 +221,7 @@ describe("RPG Fantasy culture set", () => {
     .filter(([key]) => key !== "types")
     .flatMap(([, record]) => Object.keys(record));
 
-  it("getDefault() returns 43 cultures resolved to valid bases and real shields", () => {
+  it("getDefault() returns 44 cultures resolved to valid bases and real shields", () => {
     const origMap = options.map;
     const origPack = (globalThis as any).pack;
     const origGrid = (globalThis as any).grid;
@@ -248,7 +248,7 @@ describe("RPG Fantasy culture set", () => {
       };
 
       const cultures = Cultures.getDefault();
-      expect(cultures).toHaveLength(43);
+      expect(cultures).toHaveLength(44);
 
       const allBases = getDefaultNameBases();
       const allBaseIds = new Set(allBases.map(b => b.id));

@@ -1,0 +1,264 @@
+{
+  "id": "celestialBase",
+  "name": "Radiant Celestial Host",
+  "roster": {
+    "id": "celestialBase",
+    "units": {
+      "templar_spears": {
+        "name": "Sanctuary Templar Spearmen",
+        "category": "melee",
+        "blocks": 0.16,
+        "attack": 7,
+        "defense": 13,
+        "charge": 3,
+        "missile": 0,
+        "cost": 270,
+        "upkeep": 34,
+        "capacityCost": {
+          "m": 2,
+          "w": 1,
+          "s": 1,
+          "c": 0
+        },
+        "resistArcane": 0.15
+      },
+      "sanctified_phalanx": {
+        "name": "Radiant Halo-Shield Phalanx",
+        "category": "melee",
+        "blocks": 0.14,
+        "attack": 8,
+        "defense": 16,
+        "charge": 4,
+        "missile": 0,
+        "cost": 450,
+        "upkeep": 54,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 1,
+          "c": 0
+        },
+        "resistArcane": 0.2,
+        "powers": {
+          "ward": 0.06
+        }
+      },
+      "judicator_greatswords": {
+        "name": "Solar-Blade Judicators",
+        "category": "melee",
+        "blocks": 0.1,
+        "requiresGood": 4,
+        "attack": 14,
+        "defense": 14,
+        "charge": 7,
+        "missile": 0,
+        "cost": 640,
+        "upkeep": 76,
+        "capacityCost": {
+          "m": 3,
+          "w": 2,
+          "s": 2,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.08
+        }
+      },
+      "sunbow_chorus": {
+        "name": "Aasimar Sun-Bow Archers",
+        "category": "ranged",
+        "blocks": 0.12,
+        "attack": 4,
+        "defense": 8,
+        "charge": 1,
+        "missile": 15,
+        "cost": 460,
+        "upkeep": 56,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 1,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.05
+        }
+      },
+      "valkyrie_lancers": {
+        "name": "Winged Valkyrie & Pegasus Host",
+        "category": "cavalry",
+        "blocks": 0.06,
+        "attack": 14,
+        "defense": 13,
+        "charge": 15,
+        "missile": 0,
+        "cost": 740,
+        "upkeep": 88,
+        "capacityCost": {
+          "m": 3,
+          "w": 3,
+          "s": 2,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.08,
+          "heal": 4
+        }
+      },
+      "solar_lions": {
+        "name": "Celestial Winged Sun-Lions",
+        "category": "monster",
+        "blocks": 0.04,
+        "attack": 15,
+        "defense": 14,
+        "charge": 13,
+        "missile": 0,
+        "cost": 760,
+        "upkeep": 90,
+        "capacityCost": {
+          "m": 3,
+          "w": 3,
+          "s": 1,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.08,
+          "terror": 0.05
+        }
+      },
+      "seraph_archon": {
+        "name": "Six-Winged Seraphic Archon",
+        "category": "monster",
+        "blocks": 0.02,
+        "attack": 18,
+        "defense": 17,
+        "charge": 15,
+        "missile": 12,
+        "cost": 1200,
+        "upkeep": 135,
+        "capacityCost": {
+          "m": 4,
+          "w": 4,
+          "s": 3,
+          "c": 0
+        },
+        "resistArcane": 0.3,
+        "powers": {
+          "ward": 0.14,
+          "heal": 10,
+          "terror": 0.07
+        }
+      },
+      "oracle_hierophants": {
+        "name": "Chosen Oracles of the High See",
+        "category": "spellcaster",
+        "blocks": 0.02,
+        "attack": 4,
+        "defense": 8,
+        "charge": 1,
+        "missile": 15,
+        "cost": 980,
+        "upkeep": 112,
+        "capacityCost": {
+          "m": 1,
+          "w": 2,
+          "s": 4,
+          "c": 1
+        },
+        "resistArcane": 0.25,
+        "powers": {
+          "ward": 0.16,
+          "heal": 14,
+          "hex": 0.06
+        }
+      },
+      "sunfire_reliquary": {
+        "name": "Lumen-Pillar Chariot & Sun-Engine",
+        "category": "artillery",
+        "blocks": 0.04,
+        "attack": 3,
+        "defense": 6,
+        "charge": 0,
+        "missile": 17,
+        "cost": 840,
+        "upkeep": 86,
+        "capacityCost": {
+          "m": 2,
+          "w": 4,
+          "s": 2,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.06,
+          "arcaneSiege": 1
+        }
+      },
+      "temple_wardens": {
+        "name": "Temple Wardens Levy",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 4,
+        "defense": 7,
+        "charge": 1,
+        "missile": 0,
+        "cost": 80,
+        "upkeep": 10,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "acolyte_bows": {
+        "name": "Sanctuary Acolyte Bows",
+        "category": "ranged",
+        "blocks": 0.1,
+        "attack": 2,
+        "defense": 4,
+        "charge": 1,
+        "missile": 7,
+        "cost": 85,
+        "upkeep": 10,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      }
+    },
+    "recruitable": [
+      "templar_spears",
+      "sanctified_phalanx",
+      "judicator_greatswords",
+      "sunbow_chorus",
+      "valkyrie_lancers",
+      "solar_lions",
+      "seraph_archon",
+      "oracle_hierophants",
+      "sunfire_reliquary"
+    ],
+    "garrison": {
+      "melee": "temple_wardens",
+      "ranged": "acolyte_bows"
+    },
+    "regimentMap": {
+      "infantry": "sanctified_phalanx",
+      "archers": "sunbow_chorus",
+      "cavalry": "valkyrie_lancers",
+      "artillery": "sunfire_reliquary"
+    },
+    "caps": {
+      "judicator_greatswords": 4,
+      "sunbow_chorus": 4,
+      "valkyrie_lancers": 3,
+      "solar_lions": 3,
+      "seraph_archon": 2,
+      "oracle_hierophants": 2,
+      "sunfire_reliquary": 3
+    }
+  },
+  "tech": [],
+  "buildings": []
+}

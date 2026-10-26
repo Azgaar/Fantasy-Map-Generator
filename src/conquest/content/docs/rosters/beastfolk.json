@@ -1,0 +1,250 @@
+{
+  "id": "beastfolkBase",
+  "name": "Primal Beastfolk War-Herds",
+  "roster": {
+    "id": "beastfolkBase",
+    "units": {
+      "gor_raiders": {
+        "name": "Wildhorn Pack-Axes",
+        "category": "melee",
+        "blocks": 0.18,
+        "attack": 8,
+        "defense": 8,
+        "charge": 7,
+        "missile": 0,
+        "cost": 230,
+        "upkeep": 32,
+        "capacityCost": {
+          "m": 2,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "lionkin_spears": {
+        "name": "Savannah Mane-Guard Phalanx",
+        "category": "melee",
+        "blocks": 0.14,
+        "requiresGood": 4,
+        "attack": 11,
+        "defense": 12,
+        "charge": 8,
+        "missile": 0,
+        "cost": 480,
+        "upkeep": 58,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 1,
+          "c": 0
+        }
+      },
+      "aarakocra_harriers": {
+        "name": "Sky-Peak Javelin Harriers",
+        "category": "ranged",
+        "blocks": 0.1,
+        "attack": 7,
+        "defense": 7,
+        "charge": 8,
+        "missile": 13,
+        "cost": 460,
+        "upkeep": 55,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 0,
+          "c": 1
+        }
+      },
+      "centigor_chargers": {
+        "name": "Feral Centigor Outriders",
+        "category": "cavalry",
+        "blocks": 0.08,
+        "attack": 11,
+        "defense": 9,
+        "charge": 13,
+        "missile": 0,
+        "cost": 520,
+        "upkeep": 64,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "wolfkin_pack": {
+        "name": "Werefolk Skin-Wolf Berserkers",
+        "category": "monster",
+        "blocks": 0.06,
+        "attack": 14,
+        "defense": 10,
+        "charge": 12,
+        "missile": 0,
+        "cost": 620,
+        "upkeep": 75,
+        "capacityCost": {
+          "m": 3,
+          "w": 2,
+          "s": 0,
+          "c": 1
+        },
+        "powers": {
+          "heal": 6,
+          "terror": 0.04
+        }
+      },
+      "minotaur_bloodgorgers": {
+        "name": "Blood-Gorged Bullkin Herd",
+        "category": "monster",
+        "blocks": 0.05,
+        "attack": 15,
+        "defense": 11,
+        "charge": 14,
+        "missile": 0,
+        "cost": 700,
+        "upkeep": 82,
+        "capacityCost": {
+          "m": 3,
+          "w": 2,
+          "s": 1,
+          "c": 0
+        },
+        "powers": {
+          "terror": 0.06
+        }
+      },
+      "gorgon_behemoth": {
+        "name": "Four-Armed Herd-Ghorgon",
+        "category": "monster",
+        "blocks": 0.02,
+        "attack": 18,
+        "defense": 14,
+        "charge": 15,
+        "missile": 0,
+        "cost": 1100,
+        "upkeep": 125,
+        "capacityCost": {
+          "m": 4,
+          "w": 3,
+          "s": 1,
+          "c": 0
+        },
+        "powers": {
+          "heal": 8,
+          "terror": 0.08
+        }
+      },
+      "bray_shamans": {
+        "name": "Herdstone Bray-Shamans",
+        "category": "spellcaster",
+        "blocks": 0.02,
+        "attack": 5,
+        "defense": 6,
+        "charge": 2,
+        "missile": 14,
+        "cost": 880,
+        "upkeep": 100,
+        "capacityCost": {
+          "m": 1,
+          "w": 2,
+          "s": 3,
+          "c": 1
+        },
+        "powers": {
+          "hex": 0.12,
+          "ward": 0.08
+        }
+      },
+      "cygor_hurler": {
+        "name": "Soul-Sight Cygor Boulder-Hurler",
+        "category": "artillery",
+        "blocks": 0.03,
+        "attack": 9,
+        "defense": 10,
+        "charge": 6,
+        "missile": 16,
+        "cost": 850,
+        "upkeep": 88,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 1,
+          "c": 0
+        },
+        "resistArcane": 0.25,
+        "powers": {
+          "terror": 0.05,
+          "arcaneSiege": 1
+        }
+      },
+      "ungor_spears": {
+        "name": "Ungor Spear Levy",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 4,
+        "defense": 6,
+        "charge": 2,
+        "missile": 0,
+        "cost": 70,
+        "upkeep": 9,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "ungor_raiders": {
+        "name": "Ungor Raider Shortbows",
+        "category": "ranged",
+        "blocks": 0.1,
+        "attack": 2,
+        "defense": 4,
+        "charge": 1,
+        "missile": 7,
+        "cost": 80,
+        "upkeep": 10,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      }
+    },
+    "recruitable": [
+      "gor_raiders",
+      "lionkin_spears",
+      "aarakocra_harriers",
+      "centigor_chargers",
+      "wolfkin_pack",
+      "minotaur_bloodgorgers",
+      "gorgon_behemoth",
+      "bray_shamans",
+      "cygor_hurler"
+    ],
+    "garrison": {
+      "melee": "ungor_spears",
+      "ranged": "ungor_raiders"
+    },
+    "regimentMap": {
+      "infantry": "gor_raiders",
+      "archers": "aarakocra_harriers",
+      "cavalry": "centigor_chargers",
+      "artillery": "cygor_hurler"
+    },
+    "caps": {
+      "lionkin_spears": 5,
+      "aarakocra_harriers": 4,
+      "centigor_chargers": 4,
+      "wolfkin_pack": 3,
+      "minotaur_bloodgorgers": 3,
+      "gorgon_behemoth": 2,
+      "bray_shamans": 2,
+      "cygor_hurler": 3
+    }
+  },
+  "tech": [],
+  "buildings": []
+}

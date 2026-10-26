@@ -177,26 +177,38 @@ describe("the shipped ruleset (total-war/content/docs)", () => {
     expect(loaded.warnings).toEqual([]);
   });
 
-  test("expected inventory: 19 rosters, and nothing state-specific", () => {
+  test("expected inventory: 31 rosters, and nothing state-specific", () => {
     expect(Object.keys(content.rosters).sort()).toEqual(
       [
+        "beastfolkBase",
+        "celestialBase",
         "chaosBase",
         "chivalricBase",
         "commonBase",
+        "constructBase",
         "darkElfBase",
+        "demonBase",
+        "dragonbornBase",
         "dwarfBase",
         "eastAsiaBase",
+        "eldritchBase",
+        "elementalBase",
         "elfBase",
         "empireBase",
+        "feyBase",
+        "halflingBase",
         "infernalDwarfBase",
         "lizardmenBase",
+        "merfolkBase",
         "mughalBase",
+        "ogreBase",
         "orcBase",
         "ottomanBase",
         "renaissanceBase",
         "skavenBase",
         "steppeBase",
         "tombKingsBase",
+        "tribalBase",
         "vampireBase",
         "woodElfBase"
       ].sort()
@@ -256,7 +268,19 @@ describe("the shipped ruleset (total-war/content/docs)", () => {
       "darkElfBase",
       "skavenBase",
       "lizardmenBase",
-      "infernalDwarfBase"
+      "infernalDwarfBase",
+      "ogreBase",
+      "demonBase",
+      "beastfolkBase",
+      "halflingBase",
+      "feyBase",
+      "dragonbornBase",
+      "celestialBase",
+      "merfolkBase",
+      "elementalBase",
+      "constructBase",
+      "eldritchBase",
+      "tribalBase"
     ];
 
     for (const rId of oldWorldRosters) {
@@ -334,6 +358,61 @@ describe("the shipped ruleset (total-war/content/docs)", () => {
     for (const [cultureName, expectedRoster] of testCases) {
       const rosterId = inferRosterForCulture(cultureName, content.rosters, "commonBase");
       expect(rosterId, `culture '${cultureName}' should resolve to '${expectedRoster}'`).toBe(expectedRoster);
+    }
+  });
+
+  test("RPG Fantasy cultures resolve to dedicated force rosters with zero fallbacks", () => {
+    const rpgCultures: [string, string][] = [
+      ["Quenar (High Elf)", "elfBase"],
+      ["Sylvan (Wood Elf)", "woodElfBase"],
+      ["Drow (Dark Elf)", "darkElfBase"],
+      ["Aelvar (Sea Elf)", "merfolkBase"],
+      ["Khazad (Mountain Dwarf)", "dwarfBase"],
+      ["Hearthdwarf (Hill Dwarf)", "dwarfBase"],
+      ["Duergar (Deep Dwarf)", "infernalDwarfBase"],
+      ["Halfling (Hobbit)", "halflingBase"],
+      ["Gnome (Tinker)", "halflingBase"],
+      ["Orc", "orcBase"],
+      ["Goblin", "orcBase"],
+      ["Hobgoblin (Legion)", "orcBase"],
+      ["Skaven (Ratmen)", "skavenBase"],
+      ["Troll", "ogreBase"],
+      ["Ogre", "ogreBase"],
+      ["Dragonborn", "dragonbornBase"],
+      ["Kobold", "orcBase"],
+      ["Lizardfolk", "lizardmenBase"],
+      ["Lionkin (Catfolk)", "beastfolkBase"],
+      ["Wolfkin (Werefolk)", "beastfolkBase"],
+      ["Aarakocra (Birdfolk)", "beastfolkBase"],
+      ["Minotaur (Bullkin)", "beastfolkBase"],
+      ["Fey (Fair Folk)", "feyBase"],
+      ["Sidhe (Lake Fey)", "feyBase"],
+      ["Genasi (Elemental)", "elementalBase"],
+      ["Tiefling (Fiendblood)", "demonBase"],
+      ["Demon (Fiend)", "demonBase"],
+      ["Vampire (Nightblood)", "vampireBase"],
+      ["Lich (Necromancer)", "tombKingsBase"],
+      ["Aasimar (Celestial)", "celestialBase"],
+      ["Chosen (Oracle)", "celestialBase"],
+      ["Warforged (Construct)", "constructBase"],
+      ["Aboleth (Eldritch)", "eldritchBase"],
+      ["Mindflayer (Eldritch)", "eldritchBase"],
+      ["Imperial (Human)", "empireBase"],
+      ["Feudal (Human)", "chivalricBase"],
+      ["Nordlander (Human)", "chaosBase"],
+      ["Steppe Rider (Human)", "steppeBase"],
+      ["Desert Nomad (Human)", "ottomanBase"],
+      ["Islander (Human)", "tribalBase"],
+      ["Jungle Tribe (Human)", "tribalBase"],
+      ["Tundra Tribe (Human)", "tribalBase"],
+      ["Eastern Empire (Human)", "eastAsiaBase"],
+      ["Southern Kingdom (Human)", "mughalBase"]
+    ];
+
+    expect(rpgCultures).toHaveLength(44);
+    for (const [cultureName, expectedRoster] of rpgCultures) {
+      const rosterId = inferRosterForCulture(cultureName, content.rosters, "commonBase");
+      expect(rosterId, `rpg culture '${cultureName}' should resolve to '${expectedRoster}'`).toBe(expectedRoster);
     }
   });
 

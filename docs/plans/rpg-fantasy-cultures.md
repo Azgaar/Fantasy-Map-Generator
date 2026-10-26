@@ -1,6 +1,6 @@
 # Plan — RPG Fantasy Culture Set
 
-Updated: 2026-10-25. Status: **implemented**. Decisions taken: 43 cultures defined
+Updated: 2026-10-25. Status: **implemented**. Decisions taken: 44 cultures defined
 with 24 placed, 11 new namebases (no separate Gnomish base), `Quenar (High Elf)`, Feudal humans on
 the `Human Generic` base, and faction titles implemented with register-aware naming.
 
@@ -39,7 +39,7 @@ scale.
 - A culture references a base by **id** once [namebase-ids.md](namebase-ids.md) lands, so new bases
   never move existing references and the set branch can use id literals.
 
-## Roster — 40 defined, 24 placed
+## Roster — 44 defined, 24 placed
 
 `odd` is the inclusion weight, habitat is the `sort` intent. ★ marks a new base; numbers are
 stock base indices. Culture types are left to `defineCultureType()`.
@@ -70,6 +70,7 @@ stock base indices. Culture types are left to `defineCultureType()`.
 | Orc | Orc 37 | 1 | harsh, high | urukHai |
 | Goblin | Goblin 36 | 1 | warm lowland | moriaOrc |
 | Hobgoblin (Legion) | Orc 37 | 0.6 | temperate plains | targe |
+| Skaven (Ratmen) | Goblin 36 | 0.65 | underworld, caves | pavise |
 | Troll | Giant 38 | 0.5 | cold, wet | swiss |
 | Ogre | Giant 38 | 0.4 | dry hills | horsehead2 |
 | Dragonborn | Draconic 39 | 0.6 | mountains, desert | fantasy2 |

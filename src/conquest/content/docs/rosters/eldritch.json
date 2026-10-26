@@ -1,0 +1,262 @@
+{
+  "id": "eldritchBase",
+  "name": "Void-Spawned Aberrant Synods",
+  "roster": {
+    "id": "eldritchBase",
+    "units": {
+      "mind_thralls": {
+        "name": "Enthralled Husk-Host",
+        "category": "melee",
+        "blocks": 0.2,
+        "attack": 5,
+        "defense": 8,
+        "charge": 2,
+        "missile": 0,
+        "cost": 160,
+        "upkeep": 20,
+        "capacityCost": {
+          "m": 1,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "chitin_guard": {
+        "name": "Chitin-Plated Abyssal Guard",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 8,
+        "defense": 14,
+        "charge": 3,
+        "missile": 0,
+        "cost": 360,
+        "upkeep": 44,
+        "capacityCost": {
+          "m": 2,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        },
+        "resistArcane": 0.15
+      },
+      "deep_scions": {
+        "name": "Chitin-Clawed Deep Scions",
+        "category": "melee",
+        "blocks": 0.12,
+        "attack": 11,
+        "defense": 12,
+        "charge": 6,
+        "missile": 0,
+        "cost": 480,
+        "upkeep": 58,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 0,
+          "c": 1
+        },
+        "powers": {
+          "hex": 0.05
+        }
+      },
+      "psionic_adepts": {
+        "name": "Mind-Blast Psionic Thralls",
+        "category": "ranged",
+        "blocks": 0.1,
+        "attack": 4,
+        "defense": 6,
+        "charge": 1,
+        "missile": 14,
+        "cost": 460,
+        "upkeep": 55,
+        "capacityCost": {
+          "m": 1,
+          "w": 2,
+          "s": 1,
+          "c": 1
+        },
+        "resistArcane": 0.2,
+        "powers": {
+          "hex": 0.08,
+          "terror": 0.03
+        }
+      },
+      "void_skimmers": {
+        "name": "Phase-Spider & Tentacle Outriders",
+        "category": "cavalry",
+        "blocks": 0.06,
+        "attack": 12,
+        "defense": 10,
+        "charge": 13,
+        "missile": 0,
+        "cost": 620,
+        "upkeep": 74,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 0,
+          "c": 1
+        },
+        "powers": {
+          "ward": 0.08,
+          "terror": 0.04
+        }
+      },
+      "chuul_aberrations": {
+        "name": "Pincer-Shell Chuul Horrors",
+        "category": "monster",
+        "blocks": 0.05,
+        "attack": 14,
+        "defense": 13,
+        "charge": 10,
+        "missile": 0,
+        "cost": 700,
+        "upkeep": 82,
+        "capacityCost": {
+          "m": 3,
+          "w": 2,
+          "s": 1,
+          "c": 1
+        },
+        "resistArcane": 0.2,
+        "powers": {
+          "hex": 0.06,
+          "terror": 0.05
+        }
+      },
+      "aboleth_leviathan": {
+        "name": "Ancient Aboleth & Elder Brain-Drake",
+        "category": "monster",
+        "blocks": 0.02,
+        "attack": 17,
+        "defense": 15,
+        "charge": 13,
+        "missile": 12,
+        "cost": 1150,
+        "upkeep": 130,
+        "capacityCost": {
+          "m": 4,
+          "w": 4,
+          "s": 2,
+          "c": 1
+        },
+        "resistArcane": 0.3,
+        "powers": {
+          "ward": 0.1,
+          "hex": 0.1,
+          "terror": 0.09
+        }
+      },
+      "illithid_savants": {
+        "name": "Illithid Arcanist Synod",
+        "category": "spellcaster",
+        "blocks": 0.02,
+        "attack": 5,
+        "defense": 7,
+        "charge": 1,
+        "missile": 17,
+        "cost": 980,
+        "upkeep": 115,
+        "capacityCost": {
+          "m": 1,
+          "w": 2,
+          "s": 3,
+          "c": 3
+        },
+        "resistArcane": 0.3,
+        "powers": {
+          "hex": 0.16,
+          "terror": 0.06,
+          "arcaneSiege": 1
+        }
+      },
+      "rift_projector": {
+        "name": "Far-Realm Void-Rift Engine",
+        "category": "artillery",
+        "blocks": 0.03,
+        "attack": 2,
+        "defense": 4,
+        "charge": 0,
+        "missile": 17,
+        "cost": 840,
+        "upkeep": 85,
+        "capacityCost": {
+          "m": 2,
+          "w": 4,
+          "s": 1,
+          "c": 1
+        },
+        "powers": {
+          "hex": 0.06,
+          "arcaneSiege": 1
+        }
+      },
+      "thrall_watch": {
+        "name": "Thrall Militia Levy",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 3,
+        "defense": 5,
+        "charge": 1,
+        "missile": 0,
+        "cost": 55,
+        "upkeep": 7,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "cult_slingers": {
+        "name": "Cult Slinger Sentries",
+        "category": "ranged",
+        "blocks": 0.1,
+        "attack": 2,
+        "defense": 4,
+        "charge": 1,
+        "missile": 6,
+        "cost": 65,
+        "upkeep": 8,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      }
+    },
+    "recruitable": [
+      "mind_thralls",
+      "chitin_guard",
+      "deep_scions",
+      "psionic_adepts",
+      "void_skimmers",
+      "chuul_aberrations",
+      "aboleth_leviathan",
+      "illithid_savants",
+      "rift_projector"
+    ],
+    "garrison": {
+      "melee": "thrall_watch",
+      "ranged": "cult_slingers"
+    },
+    "regimentMap": {
+      "infantry": "chitin_guard",
+      "archers": "psionic_adepts",
+      "cavalry": "void_skimmers",
+      "artillery": "rift_projector"
+    },
+    "caps": {
+      "deep_scions": 4,
+      "psionic_adepts": 4,
+      "void_skimmers": 3,
+      "chuul_aberrations": 3,
+      "aboleth_leviathan": 2,
+      "illithid_savants": 2,
+      "rift_projector": 3
+    }
+  },
+  "tech": [],
+  "buildings": []
+}

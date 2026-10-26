@@ -1,0 +1,248 @@
+{
+  "id": "ogreBase",
+  "name": "Maw-Tribe Ogre Kingdoms",
+  "roster": {
+    "id": "ogreBase",
+    "units": {
+      "gnoblar_fighters": {
+        "name": "Scrap-Flint Gnoblar Mob",
+        "category": "melee",
+        "blocks": 0.22,
+        "attack": 4,
+        "defense": 6,
+        "charge": 2,
+        "missile": 0,
+        "cost": 120,
+        "upkeep": 16,
+        "capacityCost": {
+          "m": 1,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "ogre_bulls": {
+        "name": "Gut-Plate Ogre Bulls",
+        "category": "melee",
+        "blocks": 0.08,
+        "attack": 11,
+        "defense": 10,
+        "charge": 9,
+        "missile": 0,
+        "cost": 450,
+        "upkeep": 54,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "ironguts": {
+        "name": "Great-Mace Irongut Veterans",
+        "category": "melee",
+        "blocks": 0.06,
+        "requiresGood": 4,
+        "attack": 14,
+        "defense": 13,
+        "charge": 11,
+        "missile": 0,
+        "cost": 620,
+        "upkeep": 75,
+        "capacityCost": {
+          "m": 3,
+          "w": 3,
+          "s": 1,
+          "c": 0
+        }
+      },
+      "leadbelchers": {
+        "name": "Cannon-Tube Leadbelchers",
+        "category": "ranged",
+        "blocks": 0.06,
+        "requiresGood": 4,
+        "attack": 8,
+        "defense": 9,
+        "charge": 6,
+        "missile": 15,
+        "cost": 580,
+        "upkeep": 70,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "mournfang_cavalry": {
+        "name": "Mournfang Tusk-Cavalry",
+        "category": "cavalry",
+        "blocks": 0.05,
+        "attack": 14,
+        "defense": 13,
+        "charge": 15,
+        "missile": 0,
+        "cost": 740,
+        "upkeep": 88,
+        "capacityCost": {
+          "m": 3,
+          "w": 3,
+          "s": 1,
+          "c": 0
+        },
+        "powers": {
+          "terror": 0.04
+        }
+      },
+      "river_trolls": {
+        "name": "Regenerating Bile-Trolls",
+        "category": "monster",
+        "blocks": 0.06,
+        "attack": 13,
+        "defense": 10,
+        "charge": 8,
+        "missile": 0,
+        "cost": 600,
+        "upkeep": 70,
+        "capacityCost": {
+          "m": 3,
+          "w": 2,
+          "s": 0,
+          "c": 0
+        },
+        "resistArcane": 0.15,
+        "powers": {
+          "heal": 10,
+          "terror": 0.04
+        }
+      },
+      "stonehorn_behemoth": {
+        "name": "Frost-Peak Stonehorn & Thundertusk",
+        "category": "monster",
+        "blocks": 0.02,
+        "attack": 18,
+        "defense": 17,
+        "charge": 16,
+        "missile": 8,
+        "cost": 1150,
+        "upkeep": 130,
+        "capacityCost": {
+          "m": 4,
+          "w": 4,
+          "s": 1,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.06,
+          "terror": 0.08
+        }
+      },
+      "slaughter_butchers": {
+        "name": "Maw-Butchers & Firebellies",
+        "category": "spellcaster",
+        "blocks": 0.02,
+        "attack": 8,
+        "defense": 9,
+        "charge": 4,
+        "missile": 13,
+        "cost": 900,
+        "upkeep": 105,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 2,
+          "c": 1
+        },
+        "powers": {
+          "heal": 12,
+          "ward": 0.08,
+          "hex": 0.08
+        }
+      },
+      "ironblaster": {
+        "name": "Rhinox-Drawn Ironblaster Cannon",
+        "category": "artillery",
+        "blocks": 0.03,
+        "requiresGood": 4,
+        "attack": 9,
+        "defense": 10,
+        "charge": 8,
+        "missile": 18,
+        "cost": 880,
+        "upkeep": 90,
+        "capacityCost": {
+          "m": 2,
+          "w": 4,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "gnoblar_watch": {
+        "name": "Gnoblar Sentry Levy",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 3,
+        "defense": 5,
+        "charge": 1,
+        "missile": 0,
+        "cost": 50,
+        "upkeep": 6,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "gnoblar_trappers": {
+        "name": "Gnoblar Trapper Slingers",
+        "category": "ranged",
+        "blocks": 0.1,
+        "attack": 2,
+        "defense": 4,
+        "charge": 1,
+        "missile": 7,
+        "cost": 65,
+        "upkeep": 8,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      }
+    },
+    "recruitable": [
+      "gnoblar_fighters",
+      "ogre_bulls",
+      "ironguts",
+      "leadbelchers",
+      "mournfang_cavalry",
+      "river_trolls",
+      "stonehorn_behemoth",
+      "slaughter_butchers",
+      "ironblaster"
+    ],
+    "garrison": {
+      "melee": "gnoblar_watch",
+      "ranged": "gnoblar_trappers"
+    },
+    "regimentMap": {
+      "infantry": "ogre_bulls",
+      "archers": "leadbelchers",
+      "cavalry": "mournfang_cavalry",
+      "artillery": "ironblaster"
+    },
+    "caps": {
+      "ironguts": 4,
+      "leadbelchers": 4,
+      "mournfang_cavalry": 3,
+      "river_trolls": 4,
+      "stonehorn_behemoth": 2,
+      "slaughter_butchers": 2,
+      "ironblaster": 3
+    }
+  },
+  "tech": [],
+  "buildings": []
+}

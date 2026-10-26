@@ -1470,7 +1470,19 @@ export const DEFAULT_ROSTER_MAP: Record<string, boolean> = {
   darkElfBase: true,
   skavenBase: true,
   lizardmenBase: true,
-  infernalDwarfBase: true
+  infernalDwarfBase: true,
+  ogreBase: true,
+  demonBase: true,
+  beastfolkBase: true,
+  halflingBase: true,
+  feyBase: true,
+  dragonbornBase: true,
+  celestialBase: true,
+  merfolkBase: true,
+  elementalBase: true,
+  constructBase: true,
+  eldritchBase: true,
+  tribalBase: true
 };
 
 /**
@@ -1488,86 +1500,118 @@ export function inferRosterForCulture(
   if (!cultureName && !cultureType && !stateType) return defaultRoster;
   const race = raceOf(cultureName) || (cultureName ? cultureName.toLowerCase() : "");
   const name = cultureName ? cultureName.toLowerCase() : "";
+  const matches = (rx: RegExp) => rx.test(race) || rx.test(name);
 
   for (const id of Object.keys(rosters)) {
     if (name?.includes(id.toLowerCase())) return id;
   }
 
-  // 1. Undead factions (check before Sylvan to avoid Sylvania collision)
-  if (
-    /(vampir|undead|sylvania|sylvanian|barrow|necromanc)/i.test(race) ||
-    /(vampir|undead|sylvania|sylvanian|barrow|necromanc)/i.test(name)
-  ) {
-    if (rosters.vampireBase) return "vampireBase";
+  // 1. Undead factions (Tomb Kings / Lich before Vampire)
+  if (matches(/(tomb|khemri|nehekhar|mummy|pharaoh|lich|necromanc)/i) && rosters.tombKingsBase) {
+    return "tombKingsBase";
   }
-  if (/(tomb|khemri|nehekhar|mummy|pharaoh)/i.test(race) || /(tomb|khemri|nehekhar|mummy|pharaoh)/i.test(name)) {
-    if (rosters.tombKingsBase) return "tombKingsBase";
+  if (matches(/(vampir|nightblood|undead|sylvania|sylvanian|barrow)/i) && rosters.vampireBase) {
+    return "vampireBase";
   }
 
   // 2. Specialized Dwarfs & Elves before generic archetypes
-  if (/(infernal|chaos dwarf|hashut|zharr)/i.test(race) || /(infernal|chaos dwarf|hashut|zharr)/i.test(name)) {
-    if (rosters.infernalDwarfBase) return "infernalDwarfBase";
+  if (matches(/(infernal|chaos dwarf|hashut|zharr|duergar|deep dwarf)/i) && rosters.infernalDwarfBase) {
+    return "infernalDwarfBase";
   }
-  if (
-    /(dark elf|dark elvish|trow|lothian|drow|corsair)/i.test(race) ||
-    /(dark elf|dark elvish|trow|lothian|drow|corsair)/i.test(name)
-  ) {
-    if (rosters.darkElfBase) return "darkElfBase";
+  if (matches(/(dark elf|dark elvish|trow|lothian|drow|corsair|druchii)/i) && rosters.darkElfBase) {
+    return "darkElfBase";
   }
-  if (
-    /(wood elf|wood elvish|sylvan|weald|glade)/i.test(race) ||
-    /(wood elf|wood elvish|sylvan|weald|glade)/i.test(name)
-  ) {
-    if (rosters.woodElfBase) return "woodElfBase";
+  if (matches(/(wood elf|wood elvish|sylvan|weald|glade|asrai)/i) && rosters.woodElfBase) {
+    return "woodElfBase";
+  }
+  if (matches(/(sea elf|pelagic|merfolk|aelvar|triton|aquatic)/i) && rosters.merfolkBase) {
+    return "merfolkBase";
   }
 
-  // 3. Specialized Under-Empire & Beast/Monster factions
-  if (
-    /(skaven|ratmen|vermin|blight|arachnid|arago)/i.test(race) ||
-    /(skaven|ratmen|vermin|blight|arachnid|arago)/i.test(name)
-  ) {
-    if (rosters.skavenBase) return "skavenBase";
+  // 3. Specialized Under-Empire, Dragonborn & Beast/Monster factions
+  if (matches(/(skaven|ratmen|vermin|blight|arachnid|arago)/i) && rosters.skavenBase) {
+    return "skavenBase";
+  }
+  if (matches(/(dragonborn|drakonic|wyrm|dragon)/i) && rosters.dragonbornBase) {
+    return "dragonbornBase";
+  }
+  if (matches(/(lizard|saurian|serpent|snaga|rake)/i) && rosters.lizardmenBase) {
+    return "lizardmenBase";
+  }
+  if (matches(/(ogre|troll|stonehorn|mournfang|gutbuster)/i) && rosters.ogreBase) {
+    return "ogreBase";
   }
   if (
-    /(lizard|saurian|serpent|snaga|drakonic|rake)/i.test(race) ||
-    /(lizard|saurian|serpent|snaga|drakonic|rake)/i.test(name)
+    matches(/(beastfolk|beastmen|minotaur|bullkin|lionkin|catfolk|wolfkin|werefolk|aarakocra|birdfolk|brayherd)/i) &&
+    rosters.beastfolkBase
   ) {
-    if (rosters.lizardmenBase) return "lizardmenBase";
+    return "beastfolkBase";
+  }
+  if (matches(/(demon|daemon|fiend|tiefling|hellblade|abyssal)/i) && rosters.demonBase) {
+    return "demonBase";
+  }
+  if (matches(/(halfling|hobbit|gnome|tinker|moot)/i) && rosters.halflingBase) {
+    return "halflingBase";
+  }
+  if (matches(/(fey|fae|fair folk|sidhe|sprite|pixie|seelie|unseelie)/i) && rosters.feyBase) {
+    return "feyBase";
+  }
+  if (matches(/(celestial|aasimar|chosen|oracle|angelic|seraph)/i) && rosters.celestialBase) {
+    return "celestialBase";
+  }
+  if (matches(/(elemental|genasi|primordial)/i) && rosters.elementalBase) {
+    return "elementalBase";
+  }
+  if (matches(/(construct|warforged|automaton|golem|clockwork)/i) && rosters.constructBase) {
+    return "constructBase";
+  }
+  if (matches(/(eldritch|aboleth|mindflayer|illithid|aberration)/i) && rosters.eldritchBase) {
+    return "eldritchBase";
   }
 
-  // 3. Specialized Human / Chaos Realms
-  if (/(chivalr|breton|grail|luarian)/i.test(race) || /(chivalr|breton|grail|luarian)/i.test(name)) {
-    if (rosters.chivalricBase) return "chivalricBase";
+  // 4. Specialized Human Realms & Regional Traditions
+  if (
+    matches(/(eastern empire|east asia|cathay|yamoto|hantzu|koryo|guantzu|oriental|nihon)/i) &&
+    rosters.eastAsiaBase
+  ) {
+    return "eastAsiaBase";
   }
-  if (/(empire|elector|sigmar|schwarzen)/i.test(race) || /(empire|elector|sigmar|schwarzen)/i.test(name)) {
-    if (rosters.empireBase) return "empireBase";
+  if (matches(/(empire|imperial|elector|sigmar|schwarzen)/i) && rosters.empireBase) {
+    return "empireBase";
   }
-  if (/(chaos|yotunn|giant|wasteland|ruin)/i.test(race) || /(chaos|yotunn|giant|wasteland|ruin)/i.test(name)) {
-    if (rosters.chaosBase) return "chaosBase";
+  if (matches(/(chivalr|feudal|breton|grail|luarian)/i) && rosters.chivalricBase) {
+    return "chivalricBase";
+  }
+  if (matches(/(ottoman|desert nomad|arabi|eurabic|turchian|turan)/i) && rosters.ottomanBase) {
+    return "ottomanBase";
+  }
+  if (matches(/(mughal|southern kingdom|kiswaili|yoruba|indus)/i) && rosters.mughalBase) {
+    return "mughalBase";
+  }
+  if (matches(/(renaissance|pike and shot|condottieri|borgia)/i) && rosters.renaissanceBase) {
+    return "renaissanceBase";
+  }
+  if (matches(/(tribal|jungle tribe|tundra tribe|islander)/i) && rosters.tribalBase) {
+    return "tribalBase";
+  }
+  if (matches(/(chaos|yotunn|norse|norsca|nordlander|wasteland|ruin)/i) && rosters.chaosBase) {
+    return "chaosBase";
   }
 
-  // 4. Core Fantasy & Historical Fallbacks
-  if (/(dwarf|dwarv|dunirr|khazad)/i.test(race) || /(dwarf|dwarv|dunirr|khazad)/i.test(name)) {
-    if (rosters.dwarfBase) return "dwarfBase";
+  // 5. Core Fantasy & Historical Fallbacks
+  if (matches(/(dwarf|dwarv|dunirr|khazad)/i) && rosters.dwarfBase) {
+    return "dwarfBase";
   }
-  if (/(elf|elv|eldar|quenian)/i.test(race) || /(elf|elv|eldar|quenian)/i.test(name)) {
-    if (rosters.elfBase) return "elfBase";
+  if (matches(/(elf|elv|eldar|quenian|quenar)/i) && rosters.elfBase) {
+    return "elfBase";
   }
-  if (/(orc|ork|goblin|uruk|ugluk|kobold)/i.test(race) || /(orc|ork|goblin|uruk|ugluk|kobold)/i.test(name)) {
-    if (rosters.orcBase) return "orcBase";
+  if (matches(/(orc|ork|goblin|uruk|ugluk|kobold)/i) && rosters.orcBase) {
+    return "orcBase";
   }
-  if (
-    /(steppe|nomad)/i.test(race) ||
-    /(steppe|nomad)/i.test(name) ||
-    cultureType === "Nomadic" ||
-    stateType === "Nomadic"
-  ) {
+  if (matches(/(steppe|nomad)/i) || cultureType === "Nomadic" || stateType === "Nomadic") {
     if (rosters.steppeBase) return "steppeBase";
   }
-  if (
-    (cultureType === "Highland" || stateType === "Highland") &&
-    (/(mountain|hill|stone|rock)/i.test(name) || /(mountain|hill|stone|rock)/i.test(race))
-  ) {
+  if ((cultureType === "Highland" || stateType === "Highland") && matches(/(mountain|hill|stone|rock)/i)) {
     if (rosters.dwarfBase) return "dwarfBase";
   }
 
