@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Markets } from "@/model/economy/markets-generator";
+import { DEAL_KINDS, Markets } from "@/model/economy/markets-generator";
 import { Routes } from "@/model/economy/routes-generator";
 import { Names } from "@/model/society/names-generator";
 import { States } from "./states-generator";
@@ -53,7 +53,11 @@ describe("StatesModule.collectTaxes", () => {
       }
     ] as any;
 
-    globalThis.pack.burgs = [{ i: 0 }, { i: 1, state: 1, cell: 1 }, { i: 2, state: 2, cell: 2 }] as any;
+    globalThis.pack.burgs = [
+      { i: 0 },
+      { i: 1, state: 1, cell: 1, market: 1 },
+      { i: 2, state: 2, cell: 2, market: 2 }
+    ] as any;
 
     globalThis.pack.markets = [
       { i: 1, centerBurgId: 1, color: "", goods: {} },
@@ -61,51 +65,11 @@ describe("StatesModule.collectTaxes", () => {
     ] as any;
 
     globalThis.pack.deals = [
-      {
-        i: 0,
-        seller: 1,
-        sellerType: "burg",
-        buyer: 1,
-        buyerType: "market",
-        good: 0,
-        units: 10,
-        price: 5,
-        tax: 10 // 10 = 0.2 * 10 * 5
-      },
-      {
-        i: 1,
-        seller: 1,
-        sellerType: "market",
-        buyer: 2,
-        buyerType: "market",
-        good: 0,
-        units: 4,
-        price: 3,
-        tax: 2 // exporter market 1 -> state 1
-      },
-      {
-        i: 2,
-        seller: 2,
-        sellerType: "burg",
-        buyer: 2,
-        buyerType: "market",
-        good: 1,
-        units: 2,
-        price: 6,
-        tax: 1.2
-      },
-      {
-        i: 3,
-        seller: 2,
-        sellerType: "market",
-        buyer: 1,
-        buyerType: "burg",
-        good: 1,
-        units: 1,
-        price: 8
-        // no tax — pure buy from market
-      }
-    ] as any;
+      [1, 1, 0, DEAL_KINDS.sale, 10, 5, 10, 0, 0], // 10 = 0.2 * 10 * 5
+      [2, 1, 0, DEAL_KINDS.input, 4, 3, 2, 0, 0], // an import: exporter market 1 -> state 1
+      [2, 2, 1, DEAL_KINDS.sale, 2, 6, 1.2, 0, 0],
+      [1, 2, 1, DEAL_KINDS.demand, 1, 8, 0, 0, 0] // no tax: an import from an untaxed exporter
+    ];
 
     StatesModule.collectTaxes();
 
@@ -127,19 +91,7 @@ describe("StatesModule.collectTaxes", () => {
       { i: 1, state: 0, cell: 0 } // neutral burg
     ] as any;
     globalThis.pack.markets = [];
-    globalThis.pack.deals = [
-      {
-        i: 0,
-        seller: 1,
-        sellerType: "burg",
-        buyer: 1,
-        buyerType: "market",
-        good: 0,
-        units: 5,
-        price: 5,
-        tax: 2.5
-      }
-    ] as any;
+    globalThis.pack.deals = [[1, 1, 0, DEAL_KINDS.sale, 5, 5, 2.5, 0, 0]];
 
     StatesModule.collectTaxes();
 
@@ -155,27 +107,18 @@ describe("StatesModule.collectTaxes", () => {
       { i: 2, name: "B", salesTax: 0, pollTax: 0, treasury: 0 }
     ] as any;
 
-    globalThis.pack.burgs = [{ i: 0 }, { i: 1, state: 1, cell: 1 }, { i: 2, state: 2, cell: 2 }] as any;
+    globalThis.pack.burgs = [
+      { i: 0 },
+      { i: 1, state: 1, cell: 1, market: 1 },
+      { i: 2, state: 2, cell: 2, market: 2 }
+    ] as any;
 
     globalThis.pack.markets = [
       { i: 1, centerBurgId: 1, color: "", goods: {} },
       { i: 2, centerBurgId: 2, color: "", goods: {} }
     ] as any;
 
-    globalThis.pack.deals = [
-      {
-        i: 0,
-        seller: 1,
-        sellerType: "market",
-        buyer: 2,
-        buyerType: "market",
-        good: 0,
-        units: 10,
-        price: 5,
-        tax: 0,
-        tariff: 4.5
-      }
-    ] as any;
+    globalThis.pack.deals = [[2, 1, 0, DEAL_KINDS.input, 10, 5, 0, 4.5, 0]]; // burg 2 of market 2 imports from market 1
 
     StatesModule.collectTaxes();
 

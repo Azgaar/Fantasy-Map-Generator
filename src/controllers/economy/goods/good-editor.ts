@@ -1,11 +1,12 @@
 import { Controllers } from "@/controllers";
 import { CULTURE_TYPE_LABELS, DEMAND_CATEGORY_LABELS } from "@/data/id-labels";
 import type { DemandCategory, Good } from "@/model/economy/goods-generator";
-import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, Goods } from "@/model/economy/goods-generator";
+import { DEFAULT_CARRIAGE, DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, Goods } from "@/model/economy/goods-generator";
 import { Production } from "@/model/economy/production-generator";
 import { Icons } from "@/model/icons";
 import { CULTURE_TYPES } from "@/model/society/cultures-generator";
 import { Tags } from "@/model/tags";
+import { getDecima, getDistance } from "@/model/units";
 import { goodIconLines } from "@/renderers/draw-goods";
 import { Layers } from "@/renderers/layers";
 import { Dialog } from "@/ui/dialog/dialog";
@@ -92,6 +93,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
           const tagsInput = ensureEl<HTMLInputElement>("newGoodTags").value.trim();
           const tags = Tags.parse(tagsInput);
           const value = +ensureEl<HTMLInputElement>("newGoodValue").value;
+          const carriage = +ensureEl<HTMLInputElement>("newGoodCarriage").value;
           const chance = +ensureEl<HTMLInputElement>("newGoodChance").value;
           const unit = ensureEl<HTMLInputElement>("newGoodUnit").value.trim();
           const color = ensureEl<HTMLInputElement>("newGoodColor").value;
@@ -99,6 +101,8 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
 
           if (!name) errors.push(t("Name is required"));
           if (!Number.isFinite(value) || value < 0) errors.push(t("Value must be a valid non-negative number"));
+          if (!Number.isFinite(carriage) || carriage < 0)
+            errors.push(t("Carriage price must be a valid non-negative number"));
           if (!Number.isFinite(chance) || chance < 0 || chance > 100)
             errors.push(t("Chance must be between 0 and 100"));
 
@@ -151,6 +155,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             Goods.setIcon(id, icon);
             Goods.recolor(id, color);
             Goods.setPrice(id, value);
+            Goods.setCarriage(id, carriage);
             Goods.setUnit(id, unit);
             Goods.setProduction(id, {
               chance,
@@ -185,6 +190,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
               icon,
               color,
               value,
+              carriage,
               chance,
               unit,
               demandCoverage: demandCoverageState,
@@ -248,6 +254,9 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
 
           <label for="newGoodValue">${t("Base Price")}*</label>
           <span class="ge-inline"><input id="newGoodValue" class="ge-num" type="number" min="0" step="1" value="${editedGood?.value ?? 1}" /> 🟡</span>
+
+          <label for="newGoodCarriage" data-tip="${t("Price of carrying one unit over 1 decima (a tenth of the map's diagonal, here {{distance}}) along roads and sea routes. Bulky goods cost more to carry, dear ones pay for the risk", { distance: getDistance(getDecima()) })}">${t("Carriage Price")}*</label>
+          <span class="ge-inline"><input id="newGoodCarriage" class="ge-num" type="number" min="0" step="0.1" value="${editedGood?.carriage ?? DEFAULT_CARRIAGE}" /> 🟡</span>
 
           <label for="newGoodChance">${t("Chance")}</label>
           <input id="newGoodChance" class="ge-num" type="number" min="0" max="100" step="0.1" value="${editedGood?.chance ?? 1}" />

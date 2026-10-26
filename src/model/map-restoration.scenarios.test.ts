@@ -206,7 +206,6 @@ describe("Submap and Transform", () => {
       const [cos, sin, cx, cy] = [Math.cos(angle), Math.sin(angle), width / 2, height / 2];
       return [cx + (x - cx) * cos - (y - cy) * sin, cy + (x - cx) * sin + (y - cy) * cos];
     };
-
   it("a ×2 submap keeps the map sound", async () => {
     await generateMap({ seed: "restoration-submap" });
     const before = violations();
@@ -282,9 +281,20 @@ describe("Submap and Transform", () => {
 
   it("a submap founds a capital for a state left with land but no burg", async () => {
     await generateMap({ seed: "restoration-founded-capital" });
+    const [x0, y0, scale] = [420, 230, 8];
+    const inWindow = ([x, y]: number[]) => x >= x0 && x <= x0 + width / scale && y >= y0 && y <= y0 + height / scale;
+    // the state with the most land in the window loses its burgs there, whatever the generated map looks like
+    const land: number[] = [];
+    for (const cell of pack.cells.i)
+      if (inWindow(pack.cells.p[cell])) land[pack.cells.state[cell]] = (land[pack.cells.state[cell]] ?? 0) + 1;
+    const stateId = land.reduce((best, count, id) => (id && count > (best ? land[best] : 0) ? id : best), 0);
+    for (const burg of living(pack.burgs)) {
+      if (burg.state !== stateId || !inWindow([burg.x, burg.y])) continue;
+      Object.assign(burg, { removed: true, capital: 0 });
+      pack.cells.burg[burg.cell] = 0;
+    }
     const before = violations();
     const firstNewBurg = pack.burgs.length;
-    const [x0, y0, scale] = [420, 230, 8];
 
     resample(
       (x, y) => [(x - x0) * scale, (y - y0) * scale],
@@ -294,7 +304,7 @@ describe("Submap and Transform", () => {
 
     expect(newViolations(before)).toEqual([]);
     const founded = living(pack.states).filter(state => state.capital >= firstNewBurg);
-    expect(founded.length).toBeGreaterThan(0); // the region was chosen so a state keeps no burg
+    expect(founded.map(state => state.i)).toContain(stateId);
     for (const state of living(pack.states)) {
       const capital = pack.burgs[state.capital];
       expect(capital).toMatchObject({ capital: 1, state: state.i, cell: state.center });

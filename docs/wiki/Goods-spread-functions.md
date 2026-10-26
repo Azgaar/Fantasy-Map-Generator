@@ -77,7 +77,7 @@ The distributions used by the built-in goods, as a starting point for your own:
 | Salt | `shore(1) && type("salt", "dry") || (biome(1, 2) && random(70)) || (biome(12) && nth(10))` |
 | Dates | `biome(1)` |
 | Horses | `biome(3) || (biome(2) && nth(4))` |
-| Elephants | `biome(1, 3, 5, 7)` |
+| Ivory | `biome(1, 3, 5, 7)` |
 | Camels | `biome(1, 2)` |
 | Hemp | `biome(6, 7, 8)` |
 | Pearls | `shore(-1) && minTemp(18)` |
@@ -88,14 +88,14 @@ The distributions used by the built-in goods, as a starting point for your own:
 | Spices | `biome(7)` |
 | Amber | `shore(1) && biome(6, 7, 8, 9)` |
 | Furs | `biome(9) || (biome(10) && nth(2)) || (biome(6, 8) && nth(5)) || (biome(12) && nth(10))` |
-| Sheep | `(biome(3, 4) && !elevation()) || (biome(6) && random(70)) || (biome(5) && nth(5))` |
+| Wool | `(biome(3, 4) && !elevation()) || (biome(6) && random(70)) || (biome(5) && nth(5))` |
 | Slaves | `shore(1) && minHabitability(1) && !habitability()` |
 | Tar | `biome(1, 2) || (minHeight(50) && random(20))` |
 | Coal | `minHeight(40) || (minHeight(20) && elevation())` |
 | Oil | `biome(1, 2, 10) || (shore(-1) && minTemp(18) && random(15))` |
 | Mahogany | `biome(5, 7) && random(50)` |
-| Whales | `shore(-1) && type("ocean") && maxTemp(7)` |
-| Sugarcane | `biome(7)` |
+| Blubber | `shore(-1) && type("ocean") && maxTemp(7)` |
+| Sugar | `biome(7)` |
 | Tea | `minHeight(40) && (biome(5) || (biome(7) || biome(8)))` |
 | Tobacco | `random(20) && (biome(3) || (biome(5) || biome(6)))` |
 | Clay | `minTemp(8) && (shore(1) || river())` |

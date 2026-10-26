@@ -1,8 +1,8 @@
 import { curveCatmullRom, easeLinear, line, select } from "d3";
+import type { Deal } from "@/model/economy/markets-generator";
 import type { Point } from "@/model/graph/voronoi";
 import { ensureEl } from "@/utils/node-utils";
 import { minmax } from "@/utils/number-utils";
-import type { TradeBatch } from "./trade-animation";
 
 const lineGen = line<Point>().curve(curveCatmullRom.alpha(0.1));
 
@@ -35,7 +35,7 @@ function ensureSymbols(): Promise<void> {
 }
 
 export async function draw(
-  batch: TradeBatch,
+  deal: Deal,
   segments: { type: "land" | "water"; points: Point[] }[],
   onComplete?: () => void,
   isCancelled?: () => boolean
@@ -57,7 +57,7 @@ export async function draw(
     const segDuration =
       segment.type === "land" ? duration * options.app.trade.animation.landDurationModifier : duration;
 
-    const group = select("#tradeAnimation").append("g").datum(batch); // a click opens its details: ui/map/viewbox-events
+    const group = select("#tradeAnimation").append("g").datum(deal); // a click opens its details: ui/map/viewbox-events
     group
       .append("use")
       .attr("href", `#trade-marker-${segment.type}`)

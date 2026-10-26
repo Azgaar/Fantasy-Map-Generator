@@ -2,6 +2,7 @@ import Alea from "alea";
 import { quadtree } from "d3-quadtree";
 import type { Burg } from "@/model/political/burgs-generator";
 import { States } from "@/model/political/states-generator";
+import { getDecima } from "@/model/units";
 import { getColors, getRandomColor, requireFill } from "@/utils/color-utils";
 import { FlatQueue } from "@/utils/flat-queue";
 import { t } from "@/utils/i18n";
@@ -10,12 +11,14 @@ import { minmax, rn } from "@/utils/number-utils";
 import type { DemandCategory, Good } from "./goods-generator";
 import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS, Goods } from "./goods-generator";
 import { Production } from "./production-generator";
+import { TradeRoutes } from "./trade-routes";
 
 const PRICE_FLOOR_FACTOR = 0.1;
 const PRICE_CEILING_FACTOR = 5.0;
 const LAPLACE_PRICE_SMOOTHING = 5;
 const MARKET_PRESSURE_FACTOR = 0.01;
-const MARKET_MARGIN = 0.1;
+const MARKET_MARGIN = 0.05;
+const MAX_DECIMAS = 10; // the map's diagonal: the most carriage, paid with no route to the burg's own market
 
 export type Market = {
   i: number;
@@ -26,20 +29,38 @@ export type Market = {
   note?: string;
 };
 
-export type Deal = {
-  i: number;
-  seller: number;
-  sellerType: "burg" | "market";
-  buyer: number;
-  buyerType: "burg" | "market";
-  good: number;
-  units: number;
-  price: number;
-  tax: number;
-  tariff?: number;
-};
+/** Units the budget pays for at the price, rounded down to the hundredth so the cost stays within it */
+const affordable = (budget: number, price: number) => Math.floor((budget / price) * 100 + 1e-6) / 100;
+
+export const DEAL_KINDS = { sale: 0, input: 1, demand: 2 } as const;
+export type DealKind = (typeof DEAL_KINDS)[keyof typeof DEAL_KINDS];
+
+/** A burg's trade with a market in one good and kind, summed over the run; its id is its index in pack.deals */
+export type Deal = [
+  burg: number,
+  market: number,
+  good: number,
+  kind: DealKind,
+  units: number,
+  price: number, // average per unit
+  tax: number, // sales tax: the burg's on a sale, the exporter's on an import
+  tariff: number, // the importer's, on an import
+  carriage: number // average per unit: cost of carrying the goods between the market's center and the burg, in the price
+];
+
+/** One trade's amounts: price and carriage per unit, tax and tariff in total */
+export type Trade = { units: number; price: number; tax: number; tariff?: number; carriage?: number };
 
 type TariffRate = number | "embargo";
+type TradeCosts = { taxPerUnit: number; tariffPerUnit: number };
+type TradePair = {
+  taxRate: number;
+  exporterStateId: number;
+  importerStateId: number;
+  tariffs: TariffRate[]; // by good
+};
+export type TradeTerms = (exporter: Market, importer: Market, good: Good, price: number) => TradeCosts | null;
+export type ImportQuote = { source: Market; stock: number; buyPrice: number };
 type CompiledStateTariffs = {
   byStateAndGood: Map<number, Map<number, TariffRate>>;
   byStateAllGoods: Map<number, TariffRate>;
@@ -49,6 +70,9 @@ type CompiledStateTariffs = {
 
 export class MarketsModule {
   private marketById: Market[] = [];
+  private dealIds = new Map<string, number>(); // burg-market-good-kind -> deal index, for summing trades
+  private dealIdsSource: Deal[] | null = null;
+  private routeCosts: Float32Array[] | null = null; // by market then burg id, in map units
 
   regenerate(): Market[] {
     return this.generate(true);
@@ -338,14 +362,7 @@ export class MarketsModule {
     const centerBurg = pack.burgs[market.centerBurgId];
     if (centerBurg) centerBurg.plaza = 0;
 
-    // drop the deals tied to this market
-    pack.deals = pack.deals.filter(
-      deal =>
-        !(
-          (deal.sellerType === "market" && deal.seller === marketId) ||
-          (deal.buyerType === "market" && deal.buyer === marketId)
-        )
-    );
+    pack.deals = pack.deals.filter(([, dealMarket]) => dealMarket !== marketId);
 
     for (let i = 0; i < pack.cells.market.length; i++) {
       if (pack.cells.market[i] === marketId) pack.cells.market[i] = 0;
@@ -360,79 +377,132 @@ export class MarketsModule {
     this.indexMarkets();
   }
 
-  quoteMarket(market: Market, goodId: number): { stock: number; buyPrice: number; sellPrice: number } {
+  /** Prices at the market, or at the burg's door when a burg is given: buying adds the market's sales tax and the carriage, selling pays the carriage */
+  quoteMarket(market: Market, goodId: number, burg?: Burg): { stock: number; buyPrice: number; sellPrice: number } {
     const good = Goods.get(goodId);
     if (!good) return { stock: 0, buyPrice: 0, sellPrice: 0 };
     const row = this.getMarketGood(market, good);
+    const transport = burg ? this.getTransport(market, burg, good) : 0;
     return {
       stock: row.stock,
-      buyPrice: this.customerBuyPrice(row.price),
-      sellPrice: this.customerSellPrice(row.price)
+      buyPrice: rn(this.customerBuyPrice(row.price) + this.getSalesTaxPerUnit(market, row.price) + transport, 2),
+      sellPrice: rn(Math.max(0, this.customerSellPrice(row.price) - transport), 2)
     };
+  }
+
+  /** Measures the route network from every market's center, for the economy run to price carriage */
+  measureRoutes(): void {
+    this.routeCosts = TradeRoutes.measure();
+  }
+
+  /** Per-unit cost of carrying a good between the market's center and the burg; Infinity with no route to another market */
+  getTransport(market: Market, burg: Burg, good: Good): number {
+    if (burg.i === market.centerBurgId) return 0;
+    this.routeCosts ??= TradeRoutes.measure();
+    const distance = this.routeCosts[market.i]?.[burg.i!] ?? Infinity;
+    if (distance === Infinity && market.i !== burg.market) return Infinity;
+    return Math.min(distance / (getDecima() || 1), MAX_DECIMAS) * good.carriage;
   }
 
   buy({
     burg,
     good,
     units,
+    kind,
     budget = Infinity
   }: {
     burg: Burg;
     good: Good;
     units: number;
+    kind: DealKind;
     budget?: number;
-  }): Deal | null {
+  }): Trade | null {
     const market = this.get(burg.market);
     if (!market) return null;
 
     const marketGood = this.getMarketGood(market, good);
-    const unitPrice = this.customerBuyPrice(marketGood.price);
+    const transport = this.getTransport(market, burg, good);
+    const taxPerUnit = this.getSalesTaxPerUnit(market, marketGood.price);
+    const price = rn(this.customerBuyPrice(marketGood.price) + taxPerUnit + transport, 2);
 
-    const actualUnits = rn(Math.min(units, marketGood.stock, budget / unitPrice), 2);
+    const actualUnits = rn(Math.min(units, marketGood.stock, affordable(budget, price)), 2);
     if (actualUnits < 0.01) return null;
 
-    const deal: Deal = {
-      i: pack.deals.length,
-      seller: market.i,
-      sellerType: "market",
-      buyer: burg.i!,
-      buyerType: "burg",
-      good: good.i,
-      units: actualUnits,
-      price: unitPrice,
-      tax: 0
-    };
-    pack.deals.push(deal);
+    const trade = { units: actualUnits, price, tax: rn(taxPerUnit * actualUnits, 2), carriage: rn(transport, 2) };
+    this.recordDeal(burg.i!, market.i, good.i, kind, trade);
 
     marketGood.stock = rn(Math.max(0, marketGood.stock - actualUnits), 2);
     marketGood.price = rn(this.applyMarketPressure(good.value, marketGood.price, actualUnits), 2);
-    return deal;
+    return trade;
   }
 
-  sell({ burg, good, units, taxRate }: { burg: Burg; good: Good; units: number; taxRate: number }): Deal | null {
+  /** Sales tax the market's state levies per unit sold at the price */
+  private getSalesTaxPerUnit(market: Market, price: number): number {
+    return States.getSalesTax(pack.burgs[market.centerBurgId]) * price;
+  }
+
+  sell({ burg, good, units, taxRate }: { burg: Burg; good: Good; units: number; taxRate: number }): Trade | null {
     const market = this.get(burg.market);
     if (!market || units <= 0) return null;
 
     const marketGood = this.getMarketGood(market, good);
-    const price = this.customerSellPrice(marketGood.price);
+    const grossPrice = this.customerSellPrice(marketGood.price);
+    const transport = Math.min(this.getTransport(market, burg, good), grossPrice);
+    const price = rn(grossPrice - transport, 2);
     const tax = rn(units * price * taxRate, 2);
+    const trade = { units: rn(units, 2), price, tax, carriage: rn(transport, 2) };
+    this.recordDeal(burg.i!, market.i, good.i, DEAL_KINDS.sale, trade);
+
     marketGood.stock = rn(marketGood.stock + units, 2);
-
-    const deal: Deal = {
-      i: pack.deals.length,
-      seller: burg.i!,
-      sellerType: "burg",
-      buyer: market.i,
-      buyerType: "market",
-      good: good.i,
-      units: rn(units, 2),
-      price,
-      tax
-    };
-    pack.deals.push(deal);
-
     marketGood.price = rn(this.applyMarketPressure(good.value, marketGood.price, -units), 2);
-    return deal;
+    return trade;
+  }
+
+  /** Adds a trade to the burg's deal with the market in the good and kind */
+  recordDeal(burgId: number, marketId: number, goodId: number, kind: DealKind, trade: Trade) {
+    if (this.dealIdsSource !== pack.deals) {
+      this.dealIds = new Map(pack.deals.map(([b, m, g, k], i) => [`${b}-${m}-${g}-${k}`, i]));
+      this.dealIdsSource = pack.deals;
+    }
+
+    const { tariff = 0, carriage = 0 } = trade;
+    const key = `${burgId}-${marketId}-${goodId}-${kind}`;
+    const id = this.dealIds.get(key);
+    if (id === undefined) {
+      this.dealIds.set(key, pack.deals.length);
+      pack.deals.push([burgId, marketId, goodId, kind, trade.units, trade.price, trade.tax, tariff, carriage]);
+      return;
+    }
+
+    const deal = pack.deals[id];
+    const units = deal[4] + trade.units;
+    deal[5] = rn((deal[4] * deal[5] + trade.units * trade.price) / units, 2);
+    deal[8] = rn((deal[4] * deal[8] + trade.units * carriage) / units, 2);
+    deal[4] = rn(units, 2);
+    deal[6] = rn(deal[6] + trade.tax, 2);
+    deal[7] = rn(deal[7] + tariff, 2);
+  }
+
+  /** An import is a deal with a market other than the burg's own */
+  isImport([burgId, marketId]: Deal): boolean {
+    return pack.burgs[burgId]?.market !== marketId;
+  }
+
+  /** States the deal's sales tax and tariff go to: the seller's and the importing market's */
+  getTaxStates(deal: Deal): { taxState: number; tariffState: number } {
+    const [burgId, marketId, , kind] = deal;
+    const burg = pack.burgs[burgId];
+    const marketState = (id: number | undefined) => pack.burgs[this.get(id)?.centerBurgId ?? 0]?.state || 0;
+    return {
+      taxState: kind === DEAL_KINDS.sale ? burg?.state || 0 : marketState(marketId),
+      tariffState: marketState(burg?.market)
+    };
+  }
+
+  /** The tariff rate the importer state levies on the good from the exporter state, 0 under an embargo */
+  getTariffRate(importerStateId: number, exporterStateId: number, goodId: number): number {
+    const rate = this.compileTariffs()(importerStateId, exporterStateId, goodId);
+    return rate === "embargo" ? 0 : rate;
   }
 
   private compileTariffs(): (ownerStateId: number, otherStateId: number, goodId: number) => TariffRate {
@@ -491,158 +561,115 @@ export class MarketsModule {
     };
   }
 
-  runGlobalTrade(): void {
-    const consumerDemandFactors = this.collectConsumerDemand(pack.goods);
-    const industrialDemandFactors = this.collectIndustrialDemand(pack.goods, consumerDemandFactors);
-    const populationByMarket = this.calculatePopulationByMarket();
+  /** Per-unit taxes on a good moving between markets: the exporter's sales tax and the importer's tariff. Null under an embargo */
+  getTradeTerms(): TradeTerms {
     const resolveTariff = this.compileTariffs();
+    const pairs: (TradePair | null)[][] = []; // by exporter then importer id, filled on first use
 
-    const mapDiagonal = Math.hypot(options.map.graph.width, options.map.graph.height) || 1;
-    const TRADE_RESERVE_FACTOR = 0.2;
-    const MIN_UNIT = 0.1;
-    const MIN_PROFIT = 1;
-    const DISTANCE_COST_FACTOR = 1;
+    const buildPair = (exporter: Market, importer: Market): TradePair | null => {
+      const exporterCenter = pack.burgs[exporter.centerBurgId];
+      const importerCenter = pack.burgs[importer.centerBurgId];
+      if (!exporterCenter || !importerCenter) return null;
+      return {
+        taxRate: States.getSalesTax(exporterCenter),
+        exporterStateId: exporterCenter.state || 0,
+        importerStateId: importerCenter.state || 0,
+        tariffs: []
+      };
+    };
 
-    const travelCost: Record<number, Record<number, number>> = {};
-    for (const m1 of pack.markets) {
-      travelCost[m1.i] = {};
-      const burg1 = pack.burgs[m1.centerBurgId];
-      if (!burg1) continue;
+    const resolvePolicy = (pair: TradePair, goodId: number): TariffRate => {
+      const importerPolicy = resolveTariff(pair.importerStateId, pair.exporterStateId, goodId);
+      const exporterPolicy = resolveTariff(pair.exporterStateId, pair.importerStateId, goodId);
+      return importerPolicy === "embargo" || exporterPolicy === "embargo" ? "embargo" : importerPolicy;
+    };
 
-      for (const m2 of pack.markets) {
-        const burg2 = pack.burgs[m2.centerBurgId];
-        if (!burg2) continue;
+    return (exporter, importer, good, price) => {
+      pairs[exporter.i] ??= [];
+      const row = pairs[exporter.i];
+      if (row[importer.i] === undefined) row[importer.i] = buildPair(exporter, importer);
+      const pair = row[importer.i];
+      if (!pair) return null;
 
-        const dx = Math.abs(burg1.x - burg2.x);
-        const dy = Math.abs(burg1.y - burg2.y);
-        const distance = dx > dy ? dx + 0.414 * dy : dy + 0.414 * dx;
-        travelCost[m1.i][m2.i] = (distance / mapDiagonal) * DISTANCE_COST_FACTOR;
+      let tariffRate: TariffRate = 0;
+      if (pair.exporterStateId !== pair.importerStateId) {
+        pair.tariffs[good.i] ??= resolvePolicy(pair, good.i);
+        tariffRate = pair.tariffs[good.i];
+        if (tariffRate === "embargo") return null;
       }
+
+      return {
+        taxPerUnit: pair.taxRate * price,
+        tariffPerUnit: tariffRate * price
+      };
+    };
+  }
+
+  /** The market a good reaches the burg cheapest from, with its stock and the burg's buy price */
+  quoteImport(burg: Burg, good: Good, terms: TradeTerms): ImportQuote | null {
+    const market = this.get(burg.market);
+    if (!market) return null;
+
+    let best: ImportQuote | null = null;
+    for (const source of pack.markets) {
+      const row = source.goods[good.i];
+      if (source === market || !row || row.stock <= 0.01) continue;
+      const buyPrice = this.getImportPrice(source, market, burg, good, terms);
+      if (buyPrice !== null && (!best || buyPrice < best.buyPrice)) best = { source, stock: row.stock, buyPrice };
     }
+    return best;
+  }
 
-    for (const good of pack.goods) {
-      if (!good.distribution && !good.recipes?.length) continue;
+  /** Price with the margin, the source's sales tax, the tariff and the carriage from the source's center to the burg; null when it cannot come */
+  private getImportPrice(source: Market, market: Market, burg: Burg, good: Good, terms: TradeTerms): number | null {
+    const price = source.goods[good.i]?.price ?? good.value;
+    const costs = terms(source, market, good, price);
+    const transport = this.getTransport(source, burg, good);
+    if (!costs || transport === Infinity) return null;
+    return rn(this.customerBuyPrice(price) + costs.taxPerUnit + costs.tariffPerUnit + transport, 2);
+  }
 
-      const safetyReserves: number[] = [];
-      const exporters: { market: Market; reserve: number }[] = [];
-      const importers: { market: Market; reserve: number }[] = [];
+  /** The burg buys a good from another market, paying taxes, margin and carriage */
+  importForBurg({
+    burg,
+    source,
+    good,
+    units,
+    kind,
+    terms,
+    budget = Infinity
+  }: {
+    burg: Burg;
+    source: Market;
+    good: Good;
+    units: number;
+    kind: DealKind;
+    terms: TradeTerms;
+    budget?: number;
+  }): Trade | null {
+    const market = this.get(burg.market);
+    const row = source.goods[good.i];
+    if (!market || !row) return null;
 
-      for (const market of pack.markets) {
-        const population = populationByMarket[market.i] || 0;
-        const demand = population * ((consumerDemandFactors[good.i] || 0) + (industrialDemandFactors[good.i] || 0));
-        const reserve = demand * (1 + TRADE_RESERVE_FACTOR);
-        safetyReserves[market.i] = reserve;
+    const costs = terms(source, market, good, row.price);
+    const price = this.getImportPrice(source, market, burg, good, terms);
+    if (!costs || price === null) return null;
 
-        const marketGood = this.getMarketGood(market, good);
-        if (marketGood.stock > reserve) {
-          exporters.push({ market, reserve });
-        } else if (marketGood.stock < reserve) {
-          importers.push({ market, reserve });
-        }
-      }
+    const actualUnits = rn(Math.min(units, row.stock, affordable(budget, price)), 2);
+    if (actualUnits < 0.01) return null;
 
-      if (!exporters.length || !importers.length) continue;
+    const trade = {
+      units: actualUnits,
+      price,
+      tax: rn(costs.taxPerUnit * actualUnits, 2),
+      tariff: rn(costs.tariffPerUnit * actualUnits, 2),
+      carriage: rn(this.getTransport(source, burg, good), 2)
+    };
+    this.recordDeal(burg.i!, source.i, good.i, kind, trade);
 
-      const opportunities: {
-        exporter: Market;
-        importer: Market;
-        reserveExporter: number;
-        reserveImporter: number;
-        transportCost: number;
-        exporterTaxPerUnit: number;
-        tariffPerUnit: number;
-        units: number;
-        unitProfit: number;
-        totalProfit: number;
-      }[] = [];
-
-      for (const exporter of exporters) {
-        const distances = travelCost[exporter.market.i];
-        if (!distances) continue;
-
-        const exporterGood = this.getMarketGood(exporter.market, good);
-        const available = Math.max(0, exporterGood.stock - exporter.reserve);
-        if (available < MIN_UNIT) continue;
-
-        const exporterCenter = pack.burgs[exporter.market.centerBurgId];
-        const exporterStateId = exporterCenter?.state || 0;
-        const exporterTaxPerUnit = States.getSalesTax(exporterCenter) * exporterGood.price;
-
-        for (const importer of importers) {
-          const importerCenter = pack.burgs[importer.market.centerBurgId];
-          const importerStateId = importerCenter?.state || 0;
-
-          let tariffRate = 0;
-          if (exporterStateId !== importerStateId) {
-            const importerPolicy = resolveTariff(importerStateId, exporterStateId, good.i);
-            const exporterPolicy = resolveTariff(exporterStateId, importerStateId, good.i);
-            if (importerPolicy === "embargo" || exporterPolicy === "embargo") continue;
-            tariffRate = importerPolicy;
-          }
-          const tariffPerUnit = tariffRate * exporterGood.price;
-
-          const importerGood = this.getMarketGood(importer.market, good);
-          const needed = Math.max(0, importer.reserve - importerGood.stock);
-          const units = Math.min(available, needed);
-          if (units < MIN_UNIT) continue;
-
-          const transportCost = distances[importer.market.i] * good.value;
-          const unitProfit =
-            importerGood.price - (exporterGood.price + transportCost + exporterTaxPerUnit + tariffPerUnit);
-          const totalProfit = unitProfit * units;
-          if (totalProfit < MIN_PROFIT) continue;
-
-          opportunities.push({
-            exporter: exporter.market,
-            importer: importer.market,
-            reserveExporter: exporter.reserve,
-            reserveImporter: importer.reserve,
-            transportCost,
-            exporterTaxPerUnit,
-            tariffPerUnit,
-            units,
-            unitProfit,
-            totalProfit
-          });
-        }
-      }
-
-      opportunities.sort((a, b) => b.totalProfit - a.totalProfit || b.units - a.units);
-      for (const opportunity of opportunities) {
-        const exporterGood = this.getMarketGood(opportunity.exporter, good);
-        const importerGood = this.getMarketGood(opportunity.importer, good);
-
-        const available = Math.max(0, exporterGood.stock - opportunity.reserveExporter);
-        const needed = Math.max(0, opportunity.reserveImporter - importerGood.stock);
-        const units = Math.min(available, needed);
-        if (units < MIN_UNIT) continue;
-
-        const landedCost =
-          exporterGood.price + opportunity.transportCost + opportunity.exporterTaxPerUnit + opportunity.tariffPerUnit;
-        const totalProfit = (importerGood.price - landedCost) * units;
-        if (totalProfit < MIN_PROFIT) continue;
-
-        const tariff = rn(opportunity.tariffPerUnit * units, 2);
-        const deal: Deal = {
-          i: pack.deals.length,
-          seller: opportunity.exporter.i,
-          sellerType: "market",
-          buyer: opportunity.importer.i,
-          buyerType: "market",
-          good: good.i,
-          units: rn(units, 2),
-          price: rn(landedCost, 2),
-          tax: rn(opportunity.exporterTaxPerUnit * units, 2),
-          ...(tariff ? { tariff } : {})
-        };
-        pack.deals.push(deal);
-
-        exporterGood.price = rn(this.applyMarketPressure(good.value, exporterGood.price, units), 2);
-        importerGood.price = rn(this.applyMarketPressure(good.value, importerGood.price, -units), 2);
-        exporterGood.stock = rn(exporterGood.stock - units, 2);
-        importerGood.stock = rn(importerGood.stock + units, 2);
-      }
-    }
+    row.price = rn(this.applyMarketPressure(good.value, row.price, actualUnits), 2);
+    row.stock = rn(row.stock - actualUnits, 2);
+    return trade;
   }
 
   customerBuyPrice(midPrice: number): number {

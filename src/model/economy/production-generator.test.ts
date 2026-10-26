@@ -1,14 +1,17 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Burg } from "@/model/political/burgs-generator";
+import { rn } from "@/utils/number-utils";
 import type { Good } from "./goods-generator";
 import { Goods } from "./goods-generator";
-import { type Market, Markets } from "./markets-generator";
-import { isMfgRecord, ProductionModule } from "./production-generator";
+import { DEAL_KINDS, type Market, Markets } from "./markets-generator";
+import { ProductionModule } from "./production-generator";
+import { TradeRoutes } from "./trade-routes";
 
 const good = (i: number, name: string, value: number, recipes?: Good["recipes"]): Good => ({
   i,
   name,
   value,
+  carriage: value / 10,
   recipes,
   tags: [],
   unit: "unit",
@@ -37,7 +40,13 @@ beforeEach(() => {
     goods: Object.fromEntries(catalogue.map(g => [g.i, { stock: g.i <= 3 ? 10000 : 0, price: g.value }]))
   };
   burg = { i: 1, cell: 0, population: 100, market: 1 } as Burg;
-  globalThis.pack = { goods: catalogue, cells: { good: [0] }, markets: [market], deals: [] } as unknown as typeof pack;
+  globalThis.pack = {
+    goods: catalogue,
+    cells: { good: [0] },
+    burgs: [{ i: 0 }, burg],
+    markets: [market],
+    deals: []
+  } as unknown as typeof pack;
   Goods.sync();
 
   Markets.sync();
@@ -47,7 +56,7 @@ function prepare(inventory: number[] = []) {
   // biome-ignore lint/complexity/useLiteralKeys: private test access
   const index = production["buildProductionIndex"](catalogue);
   // biome-ignore lint/complexity/useLiteralKeys: private test access
-  const state = production["createBurgProductionState"](burg, market, index);
+  const state = production["createBurgProductionState"](burg, market);
   state.inventory = inventory;
   return { index, state };
 }
@@ -55,10 +64,7 @@ function prepare(inventory: number[] = []) {
 function plan(output: number, workers: number, inventory: number[] = []) {
   const { index, state } = prepare(inventory);
   // biome-ignore lint/complexity/useLiteralKeys: private test access
-  return production["planGoodAction"](index, state, catalogue[output - 1], 1, 1, workers, {
-    multiplier: 1,
-    category: null
-  });
+  return production["planGoodAction"](index, state, catalogue[output - 1], 1, 1, workers);
 }
 
 describe("manufacturing work with stocked inputs", () => {
@@ -67,7 +73,7 @@ describe("manufacturing work with stocked inputs", () => {
     const ship = plan(5, 2);
     expect(ship?.action.good.name).toBe("Engine");
     expect(ship?.workersNeeded).toBe(2);
-    expect(ship?.normalizedGain).toBeCloseTo((9000 - 14 * 1.1) / 2);
+    expect(ship?.normalizedGain).toBeCloseTo((10000 * 0.95 - 14 * 1.05) / 2);
     expect(plan(5, 100)?.workersNeeded).toBe(2);
   });
 
@@ -76,10 +82,7 @@ describe("manufacturing work with stocked inputs", () => {
     const { index, state } = prepare();
     // biome-ignore lint/complexity/useLiteralKeys: private test access
     production["runWorkerLoop"](index, state);
-    expect(state.records.filter(isMfgRecord).map(record => [record.goodId, record.units])).toEqual([
-      [4, 1],
-      [5, 1]
-    ]);
+    expect([state.produced[4], state.produced[5]]).toEqual([1, 1]);
     expect(state.inventory[4]).toBe(0);
     expect(state.inventory[5]).toBe(1);
     expect([1, 2, 3].map(id => market.goods[id].stock)).toEqual([9998, 9998, 9990]);
@@ -103,10 +106,7 @@ describe("manufacturing work with stocked inputs", () => {
     const { index, state } = prepare();
     // biome-ignore lint/complexity/useLiteralKeys: private test access
     production["runWorkerLoop"](index, state);
-    expect(state.records.filter(isMfgRecord).map(record => [record.goodId, record.units])).toEqual([
-      [4, 1],
-      [5, 1]
-    ]);
+    expect([state.produced[4], state.produced[5]]).toEqual([1, 1]);
     expect([1, 2, 3].map(id => market.goods[id].stock)).toEqual([0, 0, 0]);
   });
 
@@ -115,6 +115,16 @@ describe("manufacturing work with stocked inputs", () => {
     const ship = plan(5, 1);
     expect(ship?.action.good.name).toBe("Ship");
     expect(ship?.workersNeeded).toBe(1);
+  });
+
+  it("spends at most a turn's workers and reports when the burg runs out of them", () => {
+    burg.population = 12;
+    const { index, state } = prepare();
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    const turn = () => production["runWorkerLoop"](index, state, 5);
+    expect([turn(), state.workersUsed]).toEqual([true, 5]);
+    expect([turn(), state.workersUsed]).toEqual([true, 10]);
+    expect([turn(), state.workersUsed]).toEqual([false, 12]);
   });
 
   it("rejects a chain whose actual work exceeds the remaining budget", () => {
@@ -133,7 +143,7 @@ describe("manufacturing work with stocked inputs", () => {
     market.goods[1].stock = 4;
     const ship = plan(5, 3);
     expect(ship?.workersNeeded).toBe(3);
-    expect(ship?.marketCost).toBeCloseTo(28 * 1.1);
+    expect(ship?.marketCost).toBeCloseTo(28 * 1.05);
   });
 
   it("reserves shared inputs across the parent and its missing component", () => {
@@ -206,10 +216,79 @@ describe("freighter with 20 engines and a 700-steel hull", () => {
     const { index, state } = prepare();
     // biome-ignore lint/complexity/useLiteralKeys: private test access
     production["runWorkerLoop"](index, state);
-    const records = state.records.filter(isMfgRecord);
-    expect(records.filter(record => record.goodId === 3)).toHaveLength(900);
-    expect(records.filter(record => record.goodId === 4)).toHaveLength(20);
+    expect([state.produced[3], state.produced[4], state.produced[5]]).toEqual([900, 20, 1]);
     expect(state.inventory[5]).toBe(1);
     expect([1, 2, 6].map(id => market.goods[id].stock)).toEqual([0, 0, 0]);
+  });
+});
+
+describe("inputs missing in the burg's market", () => {
+  let source: Market;
+
+  beforeEach(() => {
+    options.map.graph = { width: 1000, height: 800, points: 10000, sampling: "square", jitter: 0.9 };
+    market.goods[3].stock = 0;
+    source = { i: 2, centerBurgId: 2, color: "#000000", goods: { 3: { stock: 100, price: 1 } } };
+    Object.assign(burg, { x: 0, y: 0 });
+    pack.markets.push(source);
+    pack.burgs = [{ i: 0 } as Burg, burg, { i: 2, x: 100, y: 0, market: 2 } as Burg];
+    Markets.sync();
+    // the two market centers are 100 apart along a route
+    vi.spyOn(TradeRoutes, "measure").mockReturnValue([
+      new Float32Array(),
+      Float32Array.from([Infinity, 0, 100]),
+      Float32Array.from([Infinity, 100, 0])
+    ]);
+    Markets.measureRoutes();
+  });
+
+  afterEach(() => vi.restoreAllMocks());
+
+  it("are imported from another market at price plus margin and carriage into one deal with the source", () => {
+    catalogue[4].recipes = [{ 4: 2 }]; // both workers make engines
+    burg.population = 2;
+    const { index, state } = prepare();
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    production["runWorkerLoop"](index, state);
+
+    const deliveredPrice = rn(1 * 1.05 + 100 / Math.hypot(1000, 800), 2);
+    const imports = pack.deals.filter(([, marketId]) => marketId === 2);
+    expect(imports.map(([burgId, , goodId, kind, units]) => [burgId, goodId, kind, units])).toEqual([
+      [1, 3, DEAL_KINDS.input, 20]
+    ]);
+    expect(imports[0][5]).toBeGreaterThanOrEqual(deliveredPrice); // the second import pays the raised price
+    expect([source.goods[3].stock, market.goods[3].stock]).toEqual([80, 0]);
+  });
+
+  it("are bought only locally while the burg's market stocks them, even when importing is cheaper", () => {
+    market.goods[3] = { stock: 20, price: 2 };
+    source.goods[3].price = 0.1;
+    burg.population = 1;
+    const { index, state } = prepare();
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    production["runWorkerLoop"](index, state);
+
+    expect(pack.deals.every(([, marketId]) => marketId === 1)).toBe(true);
+    expect([source.goods[3].stock, market.goods[3].stock]).toEqual([100, 10]);
+  });
+
+  it("are imported for the burg's demand within its treasury", () => {
+    catalogue[2].demandCoverage = { construction: 1 };
+    burg.treasury = 5;
+    const { index, state } = prepare();
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    production["fillDemand"](index, state);
+
+    const [[burgId, marketId, goodId, kind, units, price]] = pack.deals;
+    expect([burgId, marketId, goodId, kind]).toEqual([1, 2, 3, DEAL_KINDS.demand]);
+    expect(units).toBeCloseTo(5 / price, 1);
+    expect(burg.treasury).toBeCloseTo(0, 1);
+  });
+
+  it("are not imported under an embargo", () => {
+    burg.state = 1;
+    pack.burgs[2].state = 2;
+    pack.states = [{ i: 0 }, { i: 1, tariffs: [{ states: [2], goods: "all", rate: "embargo" }] }, { i: 2 }] as any;
+    expect(plan(4, 1)).toBeNull();
   });
 });

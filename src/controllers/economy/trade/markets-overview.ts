@@ -1,8 +1,8 @@
 import { select } from "d3";
 import { Controllers } from "@/controllers";
 import { ColorPicker } from "@/controllers/color-picker";
-import type { Deal, Market } from "@/model/economy/markets-generator";
-import { Markets } from "@/model/economy/markets-generator";
+import type { Market } from "@/model/economy/markets-generator";
+import { DEAL_KINDS, Markets } from "@/model/economy/markets-generator";
 import { Production } from "@/model/economy/production-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Burg } from "@/model/political/burgs-generator";
@@ -384,24 +384,17 @@ function getMarketFinancials(market: Market): {
   buys: number;
   value: number;
 } {
-  const marketId = market.i;
-  const deals: Deal[] = (pack.deals || []).filter(
-    (deal: Deal) =>
-      (deal.sellerType === "market" && deal.seller === marketId) ||
-      (deal.buyerType === "market" && deal.buyer === marketId)
-  );
   let sales = 0;
   let buys = 0;
   let tax = 0;
 
-  for (const deal of deals) {
-    const amount = deal.units * deal.price;
-    const marketIsSeller = deal.sellerType === "market" && deal.seller === marketId;
-    if (marketIsSeller) {
-      sales += amount;
-      tax += deal.tax || 0;
+  for (const [, marketId, , kind, units, price, dealTax] of pack.deals || []) {
+    if (marketId !== market.i) continue;
+    if (kind === DEAL_KINDS.sale) {
+      buys += units * price;
     } else {
-      buys += amount;
+      sales += units * price;
+      tax += dealTax;
     }
   }
 

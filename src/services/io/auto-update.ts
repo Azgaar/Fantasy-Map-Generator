@@ -7,7 +7,7 @@ import { AddedLabels } from "@/model/annotations/added-labels";
 import { type Label, type LabelNameMode, Labels } from "@/model/annotations/labels-generator";
 import { type Measurer, Measurers, type MeasurerType } from "@/model/annotations/measurers-generator";
 import { Goods } from "@/model/economy/goods-generator";
-import { Markets } from "@/model/economy/markets-generator";
+import { DEAL_KINDS, Markets } from "@/model/economy/markets-generator";
 import { Production } from "@/model/economy/production-generator";
 import type { GraphOverrides } from "@/model/graph/graph-override";
 import { Pack } from "@/model/graph/pack-generator";
@@ -2202,6 +2202,58 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       if (pictures.has(icon.id) && !Object.keys(Icons.uses(icon.id)).length) CustomIcons.remove(icon.id);
       else if (content !== icon.content) CustomIcons.update(icon.id, { content });
     }
+  }
+
+  // v1.157.0 keeps deals as burg-market tuples summed by good and kind, and a burg's production as totals
+  if (pack.deals?.some(deal => !Array.isArray(deal))) migrateLegacyEconomy();
+  // v1.157.0 records the carriage of each deal
+  for (const deal of (pack.deals ?? []) as number[][]) if (deal.length < 9) deal.push(0);
+
+  // v1.157.0 charges carriage per good: goods saved before it take the default
+  for (const good of pack.goods ?? []) good.carriage ??= Goods.getDefaultCarriage(good);
+}
+
+type LegacyDeal = {
+  i: number;
+  seller: number;
+  sellerType: "burg" | "market";
+  buyer: number;
+  buyerType: "burg" | "market";
+  good: number;
+  units: number;
+  price: number;
+  tax?: number;
+};
+type LegacyProductionRecord = { dealId: number } | { goodId: number; units: number };
+
+function migrateLegacyEconomy() {
+  const legacyDeals = pack.deals as unknown as LegacyDeal[];
+  const dealById = new Map(legacyDeals.map(deal => [deal.i, deal]));
+  const demandDealIds = new Set<number>(); // a burg filled its demand after its last sale
+
+  for (const burg of pack.burgs) {
+    const records = burg?.production as unknown as LegacyProductionRecord[] | undefined;
+    if (!records || Array.isArray(records[0])) continue;
+
+    const lastSale = records.findLastIndex(
+      record => "dealId" in record && dealById.get(record.dealId)?.sellerType === "burg"
+    );
+    const produced: number[] = [];
+    records.forEach((record, index) => {
+      if ("dealId" in record) {
+        if (index > lastSale) demandDealIds.add(record.dealId);
+      } else produced[record.goodId] = (produced[record.goodId] || 0) + record.units;
+    });
+    burg.production = produced.flatMap((units, goodId) => (units ? [[goodId, rn(units, 2)]] : []));
+  }
+
+  pack.deals = [];
+  for (const { i, seller, sellerType, buyer, buyerType, good, units, price, tax = 0 } of legacyDeals) {
+    if (sellerType === buyerType) continue; // market-to-market trade has no burg side
+    const isSale = sellerType === "burg";
+    const [burgId, marketId] = isSale ? [seller, buyer] : [buyer, seller];
+    const kind = isSale ? DEAL_KINDS.sale : demandDealIds.has(i) ? DEAL_KINDS.demand : DEAL_KINDS.input;
+    Markets.recordDeal(burgId, marketId, good, kind, { units, price, tax });
   }
 }
 

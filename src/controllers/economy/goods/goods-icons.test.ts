@@ -32,7 +32,7 @@ beforeEach(() => {
 test.each([
   ["market overview", () => MarketOverview.open(-1)],
   ["market deals overview", () => MarketDealsOverview.open(-1)],
-  ["trade details", () => TradeDetails.open({ deals: [] } as never)],
+  ["trade details", () => TradeDetails.open([0, 0, 0, 0, 0, 0, 0, 0, 0])],
   ["production overview", () => ProductionOverview.open(-1)],
   ["production chains", () => ProductionChains.open()],
   ["goods editor", () => GoodsEditor.open()]

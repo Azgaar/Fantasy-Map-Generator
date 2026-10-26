@@ -1,9 +1,9 @@
 import { select } from "d3";
 import { Controllers } from "@/controllers";
 import type { Good } from "@/model/economy/goods-generator";
-import { Goods } from "@/model/economy/goods-generator";
-import { Markets } from "@/model/economy/markets-generator";
-import { isDealRecord, isMfgRecord, Production } from "@/model/economy/production-generator";
+import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, Goods } from "@/model/economy/goods-generator";
+import { DEAL_KINDS, Markets } from "@/model/economy/markets-generator";
+import { Production } from "@/model/economy/production-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
 import { States } from "@/model/political/states-generator";
@@ -80,6 +80,38 @@ const columns: EditorColumn<Good>[] = [
     sortBy: good => good.value,
     tip: sentences(t("Base (initial) price"), t("Click to sort"))
   },
+  {
+    key: "carriage",
+    label: t("Carriage"),
+    width: "6em",
+    hidden: true,
+    sortBy: good => good.carriage,
+    tip: sentences(t("Price of carrying one unit over a decima, a tenth of the map's diagonal"), t("Click to sort"))
+  },
+  {
+    key: "chance",
+    label: t("Chance"),
+    width: "4.6em",
+    hidden: true,
+    sortBy: good => (good.distribution ? (good.chance ?? 0) : -1),
+    tip: sentences(t("Chance of a cell to hold the good as a bonus resource"), t("Click to sort"))
+  },
+  {
+    key: "coverage",
+    label: t("Demand Coverage"),
+    width: "9em",
+    hidden: true,
+    sortBy: good => Object.values(good.demandCoverage ?? {}).reduce((sum, share) => sum + (share ?? 0), 0),
+    tip: sentences(t("How much of each demand category one unit covers"), t("Click to sort"))
+  },
+  {
+    key: "tags",
+    label: t("Tags"),
+    width: "9em",
+    hidden: true,
+    sortBy: good => Tags.format(good.tags),
+    sortType: "alpha"
+  },
   { key: "note", width: "1.1em" },
   { key: "edit", width: "1.1em" },
   { key: "remove", width: "1.4em", permanent: true }
@@ -111,6 +143,13 @@ function open(goodId?: number): void {
     onClose: closeGoodsEditor,
     position
   });
+}
+
+function renderCoverage(good: Good): string {
+  return DEMAND_PRIORITY.flatMap(category => {
+    const share = good.demandCoverage?.[category];
+    return share ? [`${DEMAND_CATEGORY_ICONS[category]}${share}`] : [];
+  }).join(" ");
 }
 
 function getVisibleCount(goods = pack.goods): number {
@@ -244,6 +283,10 @@ function renderGoodsPage(view: TableView<Good>) {
           <div style="display: inline-block; width: 0.4em; font-size: 1.2em;">⛁</div>
         </div>
         <div data-col="price" data-tip="${sentences(t("Base (initial) price"), t("Click to compare prices across markets"))}" class="goodBasePrice pointer">🟡 ${good.value}</div>
+        <div data-col="carriage" data-tip="${t("Price of carrying one unit over a decima, a tenth of the map's diagonal")}">🟡 ${good.carriage}</div>
+        <div data-col="chance" data-tip="${t("Chance of a cell to hold the good as a bonus resource")}">${good.distribution ? `${good.chance ?? 0}%` : ""}</div>
+        <div data-col="coverage" data-tip="${t("How much of each demand category one unit covers")}">${renderCoverage(good)}</div>
+        <div data-col="tags" data-tip="${t("Tags")}">${Tags.format(good.tags)}</div>
         ${noteIcon(t("Edit free text notes (legend)"))}
         <span data-col="edit" data-tip="${t("Edit good")}" class="icon-pencil goodEdit"></span>
         <span data-col="remove" data-tip="${t("Remove")}" class="icon-trash-empty goodRemove"></span>
@@ -329,7 +372,6 @@ function openProducersDialog(goodId: number) {
 type StockSource = { name: string; type: "market" | "burg"; x: number; y: number; id: number; stock: number };
 
 function getAllStockData(): Record<number, { total: number; sources: StockSource[] }> {
-  const dealById = new Map((pack.deals || []).map(d => [d.i, d]));
   const result: Record<number, { total: number; sources: StockSource[] }> = {};
   for (const good of pack.goods) result[good.i] = { total: 0, sources: [] };
 
@@ -348,43 +390,22 @@ function getAllStockData(): Record<number, { total: number; sources: StockSource
     }
   }
 
-  for (const burg of pack.burgs) {
-    if (!burg?.i || burg.removed || !burg.production) continue;
+  // a burg sells or uses up all it makes and buys for production, so it holds only its demand purchases
+  const burgStocks = new Map<string, StockSource>();
+  for (const [burgId, , goodId, kind, units] of pack.deals || []) {
+    const burg = pack.burgs[burgId];
+    if (kind !== DEAL_KINDS.demand || !result[goodId] || !burg?.i || burg.removed) continue;
+    result[goodId].total += units;
 
-    const netInventory: Record<number, number> = {};
-    for (const record of burg.production) {
-      if (isMfgRecord(record)) {
-        netInventory[record.goodId] = (netInventory[record.goodId] || 0) + record.units;
-        for (const item of record.recipe) {
-          netInventory[item.goodId] = (netInventory[item.goodId] || 0) - item.units;
-        }
-      } else if (isDealRecord(record)) {
-        const deal = dealById.get(record.dealId);
-        if (!deal) continue;
-        if (deal.buyerType === "burg" && deal.buyer === burg.i) {
-          netInventory[deal.good] = (netInventory[deal.good] || 0) + deal.units;
-        } else if (deal.sellerType === "burg" && deal.seller === burg.i) {
-          netInventory[deal.good] = (netInventory[deal.good] || 0) - deal.units;
-        }
-      } else {
-        netInventory[record.goodId] = (netInventory[record.goodId] || 0) + record.units;
-      }
+    const source = burgStocks.get(`${burgId}-${goodId}`);
+    if (source) {
+      source.stock = rn(source.stock + units, 2);
+      continue;
     }
-
-    for (const [goodIdStr, units] of Object.entries(netInventory)) {
-      const goodId = +goodIdStr;
-      if (!result[goodId] || units <= 0.001) continue;
-      const roundedUnits = rn(units, 2);
-      result[goodId].total += roundedUnits;
-      result[goodId].sources.push({
-        name: burg.name || `Burg ${burg.i}`,
-        type: "burg",
-        x: burg.x ?? 0,
-        y: burg.y ?? 0,
-        id: burg.i,
-        stock: roundedUnits
-      });
-    }
+    const name = burg.name || `Burg ${burg.i}`;
+    const stock: StockSource = { name, type: "burg", x: burg.x ?? 0, y: burg.y ?? 0, id: burg.i, stock: units };
+    burgStocks.set(`${burgId}-${goodId}`, stock);
+    result[goodId].sources.push(stock);
   }
 
   for (const good of pack.goods) result[good.i].total = rn(result[good.i].total, 2);
@@ -536,7 +557,20 @@ function enterResourceAssignMode(this: HTMLElement) {
     isCellsLayerForced = true;
   }
 
-  setModeHiddenColumns(dialogId, ["display", "unit", "produced", "stock", "price", "note", "edit", "remove"]);
+  setModeHiddenColumns(dialogId, [
+    "display",
+    "unit",
+    "produced",
+    "stock",
+    "price",
+    "carriage",
+    "chance",
+    "coverage",
+    "tags",
+    "note",
+    "edit",
+    "remove"
+  ]);
   ensureEl("goodsFooter").style.display = "none";
 
   Dialog.update(dialogId, { position });
@@ -619,6 +653,7 @@ function downloadGoodsData() {
       types,
       good.tags.join(";"),
       good.value,
+      good.carriage,
       good.unit,
       demandCoverage,
       good.chance,
@@ -635,6 +670,7 @@ function downloadGoodsData() {
     "Type",
     "Tags",
     "Value",
+    "Carriage",
     "Unit",
     "Demand Coverage",
     "Chance",

@@ -1539,7 +1539,7 @@ class StatesModule {
   }
 
   collectTaxes() {
-    const { states, burgs, deals } = pack;
+    const { states, deals } = pack;
     if (!states?.length) return;
     for (const state of states) {
       if (!state.i || state.removed) continue;
@@ -1547,26 +1547,10 @@ class StatesModule {
     }
 
     for (const deal of deals ?? []) {
-      if (deal.tax) {
-        let sellerStateId = 0;
-        if (deal.sellerType === "burg") {
-          sellerStateId = burgs?.[deal.seller]?.state || 0;
-        } else if (deal.sellerType === "market") {
-          const market = Markets.get(deal.seller);
-          const centerBurgId = market?.centerBurgId;
-          sellerStateId = centerBurgId ? burgs?.[centerBurgId]?.state || 0 : 0;
-        }
-        const sellerState = sellerStateId ? states[sellerStateId] : undefined;
-        if (sellerState && !sellerState.removed) sellerState.treasury += deal.tax;
-      }
-
-      if (deal.tariff && deal.buyerType === "market") {
-        const market = Markets.get(deal.buyer);
-        const centerBurgId = market?.centerBurgId;
-        const buyerStateId = centerBurgId ? burgs?.[centerBurgId]?.state || 0 : 0;
-        const buyerState = buyerStateId ? states[buyerStateId] : undefined;
-        if (buyerState && !buyerState.removed) buyerState.treasury += deal.tariff;
-      }
+      const [, , , , , , tax, tariff] = deal;
+      const { taxState, tariffState } = Markets.getTaxStates(deal);
+      if (tax && taxState && !states[taxState]?.removed) states[taxState].treasury += tax;
+      if (tariff && tariffState && !states[tariffState]?.removed) states[tariffState].treasury += tariff;
     }
 
     for (const state of states) {

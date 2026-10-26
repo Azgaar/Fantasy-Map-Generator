@@ -108,9 +108,9 @@ describe("MarkersModule mines", () => {
       },
       burgs: [
         {},
-        { name: "Ironton", population: 1, production: [{ goodId: 1, units: 2 }] },
-        { name: "Farmton", population: 1, production: [{ goodId: 2, units: 2 }] },
-        { name: "Smithton", population: 1, production: [{ goodId: 1, units: 2, recipe: [] }] }
+        { name: "Ironton", population: 1, production: [[1, 2]] },
+        { name: "Farmton", population: 1, production: [[2, 2]] },
+        { name: "Smithton", population: 1, production: [[3, 2]] } // sits on iron but makes no iron
       ]
     } as any;
     const markers = Markers as any;

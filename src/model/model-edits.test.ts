@@ -1102,11 +1102,13 @@ describe("Goods and Markets", () => {
   it("edits goods and their production rules, never their distribution code", () => {
     Goods.rename(1, "Rock salt");
     Goods.setPrice(1, 3);
+    Goods.setCarriage(1, 0.3);
     Goods.setTags(1, ["Food", " food", "trade"]);
     Goods.setProduction(1, { chance: 20, recipes: [{ 2: 1 }], multipliers: { cultureType: { Naval: 2 } } });
     expect(pack.goods[0]).toMatchObject({
       name: "Rock salt",
       value: 3,
+      carriage: 0.3,
       tags: ["food", "trade"],
       chance: 20,
       recipes: [{ 2: 1 }],
@@ -1116,6 +1118,7 @@ describe("Goods and Markets", () => {
       "Unknown production rule distribution"
     );
     expect(() => Goods.setProduction(1, { recipes: [{ 9: 1 }] })).toThrow("unknown 9");
+    expect(() => Goods.setCarriage(1, -1)).toThrow("non-negative");
     Goods.setProduction(1, { recipes: null });
     expect("recipes" in pack.goods[0]).toBe(false);
   });

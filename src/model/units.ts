@@ -164,6 +164,11 @@ const KM_IN_DISTANCE_UNIT: Record<string, number> = {
   nlg: 5.556 // nautical league: 3 nautical miles
 };
 
+/** A decima, a tenth of the map's diagonal in map units: a distance measure that scales with the map */
+export function getDecima(): number {
+  return Math.hypot(options.map.graph.width, options.map.graph.height) / 10;
+}
+
 /** The distance unit selected in the Units editor, e.g. "mi" */
 export function getDistanceUnit(): string {
   return options.map.units.distance.unit || "km";

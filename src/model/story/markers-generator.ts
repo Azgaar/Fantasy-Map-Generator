@@ -43,7 +43,6 @@ import {
 import type { Good } from "@/model/economy/goods-generator";
 import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
-import { isDealRecord, isMfgRecord } from "@/model/economy/production-generator";
 import { Routes } from "@/model/economy/routes-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
@@ -799,9 +798,7 @@ class MarkersModule {
     const good = Goods.get(pack.cells.good[cell]);
     if (!good?.tags.some(tag => tag === "ore" || tag === "mineral")) return;
     const burg = pack.burgs[pack.cells.burg[cell]];
-    const extracts = burg?.production?.some(
-      record => !isDealRecord(record) && !isMfgRecord(record) && record.goodId === good.i
-    );
+    const extracts = burg?.production?.some(([goodId]) => goodId === good.i); // a raw good comes from the local bonus
     return extracts ? good : undefined;
   }
 
@@ -814,9 +811,8 @@ class MarkersModule {
     const goodIds = Object.keys(market.goods)
       .filter(id => market.goods[+id].stock > 0)
       .map(Number);
-    for (const { good, seller, sellerType, buyer, buyerType } of pack.deals ?? []) {
-      if ((sellerType === "market" && seller === marketId) || (buyerType === "market" && buyer === marketId))
-        goodIds.push(good);
+    for (const [, dealMarket, goodId] of pack.deals ?? []) {
+      if (dealMarket === marketId) goodIds.push(goodId);
     }
     return new Set(goodIds.map(id => Goods.get(id)?.name).filter(name => name !== undefined));
   }
@@ -1231,9 +1227,8 @@ class MarkersModule {
     const type = "Fair";
 
     const made = (burg.production ?? [])
-      .flatMap(record => (isDealRecord(record) ? [] : [record]))
-      .sort((a, b) => b.units - a.units)
-      .map(record => Goods.get(record.goodId)?.name.toLowerCase())
+      .toSorted((a, b) => b[1] - a[1])
+      .map(([goodId]) => Goods.get(goodId)?.name.toLowerCase())
       .filter(name => name !== undefined);
     const wares = [...new Set(made)].slice(0, 3);
     const offer = wares.length

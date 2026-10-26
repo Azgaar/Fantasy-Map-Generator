@@ -1,423 +1,445 @@
 import { DEMAND_CATEGORY_LABELS } from "@/data/id-labels";
-import type { DemandCategory } from "@/model/economy/goods-generator";
+import type { Good } from "@/model/economy/goods-generator";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS, Goods } from "@/model/economy/goods-generator";
-import type { Deal } from "@/model/economy/markets-generator";
-import { Markets } from "@/model/economy/markets-generator";
-import type { ProductionCandidate } from "@/model/economy/production-generator";
-import { isDealRecord, isMfgRecord } from "@/model/economy/production-generator";
+import type { Deal, DealKind, Trade } from "@/model/economy/markets-generator";
+import { DEAL_KINDS, Markets } from "@/model/economy/markets-generator";
+import type { ProductionCandidate, ProductionLogEntry } from "@/model/economy/production-generator";
+import { isMfgEntry, isTradeEntry } from "@/model/economy/production-generator";
 import { Icons } from "@/model/icons";
 import type { Burg } from "@/model/political/burgs-generator";
-import { States } from "@/model/political/states-generator";
 import { formatPrice } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
+import { Csv } from "@/services/io/csv";
 import { Dialog } from "@/ui/dialog/dialog";
+import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
+import { money, splitDealPrice, tradeCellTips, tradeColumnTips } from "./trade/deal-price";
 
-type Type = "MFG" | "BUY" | "SELL" | "LOCAL";
+type RowType = "LOCAL" | "BUY" | "MFG" | "SELL";
+type HistoryRow = {
+  type: RowType;
+  goodId: number;
+  units: number;
+  kind?: DealKind;
+  marketId?: number;
+  price?: number; // per unit, as the rest but the income: the goods' own price
+  carriage: number;
+  tax: number;
+  tariff: number;
+  income?: number;
+  formula?: string; // the price split, adding up to the income
+  details: string; // shown when the row expands
+};
+
+let activeBurgId = 0;
+const dialogId = "productionOverview" as const;
+const position = { my: "right top", at: "right-10 top+10", of: "svg" };
+const goodName = (row: HistoryRow) => Goods.get(row.goodId)?.name ?? "";
+const marketName = (row: HistoryRow) => {
+  const market = Markets.get(row.marketId);
+  return market ? Markets.getName(market) : "";
+};
 
 function open(burgId: number): void {
   void Icons.retry("goods");
   if (options.app.mode) return;
+
   const burg = pack.burgs[burgId];
   if (!burg || burg.removed) {
     tip(t("Invalid burg. The selected burg does not exist or was removed."), true, "error", 5000);
     return;
   }
-
-  const market = Markets.get(burg.market);
-  if (!market) {
+  if (!Markets.get(burg.market)) {
     tip(sentences(t("No market"), t("This burg is not connected to any market")), true, "error", 5000);
     return;
   }
-
-  const data = burg.production;
-  if (!data) {
+  if (!burg.production) {
     tip(t("No production data for this burg."), true, "error", 5000);
     return;
   }
+  activeBurgId = burgId;
 
-  const isBurgSeller = (deal: Deal) => deal.sellerType === "burg" && deal.seller === burgId;
-  const isBurgBuyer = (deal: Deal) => deal.buyerType === "burg" && deal.buyer === burgId;
+  renderDialog();
+  render();
 
-  const getDealSpent = (deal: Deal) => deal.units * deal.price;
-
-  const getDealTax = (deal: Deal) => {
-    if (!isBurgSeller(deal)) return 0;
-    if (deal.tax !== undefined) return deal.tax;
-    return deal.units * deal.price * States.getSalesTax(pack.burgs[deal.seller]);
-  };
-
-  const getDealRevenue = (deal: Deal) => deal.units * deal.price;
-
-  const getDealNetRevenue = (deal: Deal) => getDealRevenue(deal) - getDealTax(deal);
-
-  const styles = {
-    muted: "color:#777",
-    subtle: "color:#999",
-    divider: "color:#bbb",
-    positive: "color:#2a6",
-    negative: "color:#c44",
-    warning: "color:#c84",
-    sectionTitle: "font-weight:bold;border-bottom:1px solid #ccc;padding-bottom:.3em;margin-bottom:.45em",
-    topBar: "margin-bottom:.85em;display:flex;flex-wrap:wrap;column-gap:.85em;align-items: center",
-    table: "width:100%;table-layout:fixed;border-collapse:collapse;line-height:1",
-    headRow: "background:#eee",
-    bodyRow: "border-bottom:1px solid #f0f0f0",
-    cell: "padding:.4em .5em;vertical-align:top",
-    cellRight: "padding:.4em .5em;vertical-align:top;text-align:right",
-    detailsCell: "padding:0.5em 0.5em 1em;",
-    empty: "color:#888;font-style:italic"
-  };
-
-  const goodName = (id: number) => Goods.get(id)?.name ?? `#${id}`;
-
-  const goodDot = (id: number) => {
-    const good = Goods.get(id);
-    if (!good) return "";
-
-    return `<svg width="14" height="14" style="margin: -6px 2px -4px 0;">
-              ${goodBadge(good)}
-            </svg>`;
-  };
-
-  const typeBadge = (type: Type) => {
-    const commonStyles =
-      "display:inline-block;border-radius:3px;padding:0 .4em;font-size:0.8em;font-weight:bold;line-height:1.35";
-    if (type === "BUY")
-      return `<span style="${commonStyles};background:#f5d9d6;color:#a33" data-tip="${t("Local market purchase")}">${t("BUY")}</span>`;
-    if (type === "SELL")
-      return `<span style="${commonStyles};background:#dff0e2;color:#2f8a46" data-tip="${t("Sale to local market")}">${t("sell").toUpperCase()}</span>`;
-    if (type === "LOCAL")
-      return `<span style="${commonStyles};background:#d9e7f5;color:#346" data-tip="${t("Local production")}">${t("Local").toUpperCase()}</span>`;
-    return `<span style="${commonStyles};background:#f8e7bf;color:#b67a00" data-tip="${t("Manufacturing step")}">${t("MFG")}</span>`;
-  };
-  const modifierBadge = (modifier: number) =>
-    `<span style="display:inline-block;margin-left:4px;border-radius:3px;padding:0 .4em;font-size:0.8em;font-weight:bold;line-height:1.35;background:#edf1f4;color:#5f6f7a" data-tip="${t("Culture type production modifier. Produced units are multiplied by this value.")}">x${rn(modifier, 2)}</span>`;
-
-  const renderGoodLabel = (id: number, suffix = "") => `${goodDot(id)}${goodName(id)}${suffix}`;
-  const renderDataCell = (content: string | number, align: "left" | "right" = "left", extra = "") =>
-    `<td style="${align === "right" ? styles.cellRight : styles.cell}${extra ? `;${extra}` : ""}">${content}</td>`;
-  const renderHeaderCell = (content: string, align: "left" | "right" = "left", title = "") =>
-    `<th style="${align === "right" ? styles.cellRight : styles.cell}"${title ? ` data-tip="${title}"` : ""}>${content}</th>`;
-  const renderSection = (title: string, content: string, tooltip = "") =>
-    `<div style="margin-bottom:.9em"><div style="${styles.sectionTitle}"${tooltip ? ` data-tip="${tooltip}"` : ""}>${title}</div>${content}</div>`;
-  const renderIncomeCell = (value: number) => {
-    const extraStyle = value >= 0 ? styles.positive : styles.warning;
-    return `<td style="${styles.cellRight};${extraStyle}">${formatPrice(value)}</td>`;
-  };
-  const renderTable = (params: {
-    colWidths: string[];
-    headers: Array<{ label: string; align?: "left" | "right"; title?: string }>;
-    rows: string[];
-    empty: string;
-  }) => {
-    const { colWidths, headers, rows, empty } = params;
-    if (!rows.length) return `<i style="${styles.empty}">${empty}</i>`;
-
-    return /*html*/ `<table style="${styles.table}">
-      <colgroup>${colWidths.map(width => `<col style="width: ${width};">`).join("")}</colgroup>
-      <thead><tr style="${styles.headRow}">${headers
-        .map(header => renderHeaderCell(header.label, header.align || "left", header.title || ""))
-        .join("")}</tr></thead>
-      <tbody>${rows.join("")}</tbody>
-    </table>`;
-  };
-  const renderTaggedGood = (id: number, type: Type, suffix = "") =>
-    `${renderGoodLabel(id, suffix)} <span style="margin-left:4px">${typeBadge(type)}</span>`;
-  const renderLogRow = (targetId: string, detailsHtml: string) =>
-    detailsHtml
-      ? /*html*/ `<tr id="${targetId}" style="display:none">
-          <td colspan="4" style="${styles.detailsCell}">${detailsHtml}</td>
-        </tr>`
-      : "";
-  const renderDemand = (values: number[] | Partial<Record<DemandCategory, number>>, onlyPositive = false) => {
-    const entries = Array.isArray(values)
-      ? DEMAND_PRIORITY.flatMap((category, index) => {
-          const value = values[index] || 0;
-          if (onlyPositive && value <= 0.001) return [];
-          return `<span data-tip="${DEMAND_CATEGORY_LABELS[category]}">${DEMAND_CATEGORY_ICONS[category]} ${rn(value, 2)}</span>`;
-        })
-      : (Object.entries(values) as [DemandCategory, number][]).flatMap(([category, value]) => {
-          if (onlyPositive && value <= 0.001) return [];
-          return `<span data-tip="${DEMAND_CATEGORY_LABELS[category]}">${DEMAND_CATEGORY_ICONS[category]} ${rn(value, 2)}</span>`;
-        });
-
-    return entries.join(` <span style="${styles.divider}">•</span> `);
-  };
-  const calculateDemandCoverageTotals = (inventory: Record<number, number>) => {
-    const totals: number[] = Array(DEMAND_PRIORITY.length).fill(0);
-
-    for (const goodIdStr in inventory) {
-      const goodId = +goodIdStr;
-      const amount = inventory[goodId] || 0;
-      if (amount <= 0) continue;
-
-      const good = Goods.get(goodId);
-      if (!good) continue;
-
-      for (let categoryIndex = 0; categoryIndex < DEMAND_PRIORITY.length; categoryIndex++) {
-        const category = DEMAND_PRIORITY[categoryIndex] as DemandCategory;
-        const coveredAmount = good.demandCoverage?.[category] || 0;
-        if (!coveredAmount) continue;
-        totals[categoryIndex] += amount * coveredAmount;
-      }
-    }
-
-    return totals;
-  };
-  const renderCandidateScore = (score: number) =>
-    `<b style="${styles.positive}">${t("score {{score}}", { score: rn(score, 2) })}</b>`;
-  const renderDecisionCandidate = (candidate: ProductionCandidate) => {
-    const ingredients = candidate.ingredients
-      .map(ing => `${rn(ing.amount * candidate.units, 2)} ${goodDot(ing.goodId)}`)
-      .join(", ");
-
-    const prep = candidate.isPreparation
-      ? ` (${t("prep for {{- good}}", { good: goodDot(candidate.goalGoodId || -1) })})`
-      : "";
-    const demand =
-      candidate.demandCategory && candidate.demandMultiplier !== 1
-        ? `${t("x demand")} ${DEMAND_CATEGORY_ICONS[candidate.demandCategory]} ${rn(candidate.demandMultiplier, 2)}`
-        : "";
-    const culture = candidate.cultureModifier !== 1 ? ` ${modifierBadge(candidate.cultureModifier)}` : "";
-
-    let formula: string;
-    if (candidate.isPreparation) {
-      const workers = rn(candidate.workersNeeded || 1, 2);
-      const gain = ((candidate.gainPerWorker || 0) / candidate.demandMultiplier) * workers;
-      formula = `${t("goal sell")} ${formatPrice(gain)}${culture} ÷ ${t("workers")} ${workers} ${demand} × ${t("units")} ${rn(candidate.units, 2)} = ${renderCandidateScore(candidate.score)}`;
-    } else {
-      formula = `${t("sell")} ${formatPrice(candidate.sellPrice)}${culture} - ${t("cost")} ${formatPrice(candidate.ingredientCost)} = ${renderCandidateScore(candidate.score)}`;
-    }
-    return `<div>${typeBadge("MFG")} <b>${goodName(candidate.goodId)}</b>${prep}: ${formula}. <span style="${styles.muted}">${t("Ingredients")}: ${ingredients}</span></div>`;
-  };
-  const renderDecisionDetails = (candidates?: readonly ProductionCandidate[]) => {
-    if (!candidates || candidates.length === 0) return "";
-    const candidatesHtml = `<ul style="margin:.2em 0 0 1.1em;padding:0">${[...candidates]
-      .sort((a, b) => b.score - a.score)
-      .map(
-        (candidate: ProductionCandidate) => `<li style="margin-top:.25em">${renderDecisionCandidate(candidate)}</li>`
-      )
-      .join("")}</ul>`;
-    return /*html*/ `<div><b>${t("Decision basis")}:</b> ${t("highest score among feasible options ({{options}})", { options: candidates.length })}:</div>${candidatesHtml}`;
-  };
-  const renderCalculationDetails = (expression: string, value: number, label: string) =>
-    /*html*/ `<div><b>${t("Deal calculation")}:</b> ${expression} = <b>${formatPrice(value)}</b> ${label}</div>`;
-  const renderBuyDetails = (units: number, unitPrice: number, totalCost: number) =>
-    renderCalculationDetails(
-      t("unit {{units}} × buy price {{price}}", { units: rn(units, 2), price: rn(unitPrice, 2) }),
-      -totalCost,
-      t("spent")
-    );
-  const renderSaleDetails = (deal: Deal) =>
-    renderCalculationDetails(
-      t("unit {{units}} × sell price {{price}} - sales tax {{tax}}", {
-        units: rn(deal.units, 2),
-        price: rn(deal.price, 2),
-        tax: rn(getDealTax(deal), 2)
-      }),
-      getDealNetRevenue(deal),
-      t("income")
-    );
-  const renderExpandableDealRow = (params: {
-    targetId: string;
-    goodId: number;
-    type: Type;
-    units: number;
-    details: string;
-    income: number;
-    detailsHtml: string;
-  }) => {
-    const { targetId, goodId, type, units, details, income, detailsHtml } = params;
-    return [
-      /*html*/ `<tr data-target="${targetId}" style="${styles.bodyRow};cursor:pointer" data-tip="${t("Click to expand deal details")}">
-        ${renderDataCell(renderTaggedGood(goodId, type))}
-        ${renderDataCell(rn(units, 2), "right")}
-        <td style="${styles.cell}">${details}</td>
-        ${renderIncomeCell(income)}
-      </tr>`,
-      renderLogRow(targetId, detailsHtml)
-    ];
-  };
-  const population = burg.population || 0;
-  const treasuryAfter = burg.treasury || 0;
-
-  // Derive process rank from sorted burg order (same order as production run)
-  const sortedBurgIds = (pack.burgs as Burg[])
-    .filter(b => b.i && !b.removed)
-    .sort((a, b) => (a.population || 0) - (b.population || 0))
-    .map(b => b.i!);
-  const totalBurgs = sortedBurgIds.length;
-  const processRank = sortedBurgIds.indexOf(burgId) + 1;
-
-  const initialDemand = DEMAND_PRIORITY.map(category => population * DEMAND_TARGET_FACTORS[category]);
-  const producedByGood: Record<number, number> = {};
-
-  let totalTax = 0;
-  let stepIndex = 0;
-  const netInventory: Record<number, number> = {};
-
-  const dealById = new Map(pack.deals.map(d => [d.i, d]));
-  const allRows = data.flatMap(entry => {
-    if (isMfgRecord(entry)) {
-      const mfg = entry;
-      producedByGood[mfg.goodId] = (producedByGood[mfg.goodId] || 0) + mfg.units;
-      netInventory[mfg.goodId] = (netInventory[mfg.goodId] || 0) + mfg.units;
-      for (const item of mfg.recipe) netInventory[item.goodId] = (netInventory[item.goodId] || 0) - item.units;
-
-      const candidatesId = `candidates${stepIndex++}`;
-      const candidatesHtml = renderDecisionDetails(mfg.candidates);
-      const rowAttrs = candidatesHtml
-        ? ` data-target="${candidatesId}" style="${styles.bodyRow};cursor:pointer" data-tip="${t("Click to expand decision details")}"`
-        : ` style="${styles.bodyRow}"`;
-      const cultureModifier = mfg.cultureModifier ?? 1;
-      const cultureSuffix = cultureModifier !== 1 ? ` ${modifierBadge(cultureModifier)}` : "";
-      const allInputs = mfg.recipe.map(item => `${rn(item.units, 2)} ${goodDot(item.goodId)}`).join(` ${t("and")} `);
-
-      return [
-        /*html*/ `<tr${rowAttrs}>
-           ${renderDataCell(renderTaggedGood(mfg.goodId, "MFG", cultureSuffix))}
-           ${renderDataCell(rn(mfg.units, 2), "right")}
-           <td style="${styles.cell}">${t("Manufacturing from {{- inputs}}", { inputs: allInputs })}</td>
-           ${renderDataCell("", "right", styles.subtle)}
-         </tr>`,
-        renderLogRow(candidatesId, candidatesHtml)
-      ];
-    } else if (isDealRecord(entry)) {
-      const deal = dealById.get(entry.dealId);
-      if (!deal) return [];
-      const detailsId = `deal-details-${stepIndex++}`;
-      if (isBurgBuyer(deal)) {
-        netInventory[deal.good] = (netInventory[deal.good] || 0) + deal.units;
-        return renderExpandableDealRow({
-          targetId: detailsId,
-          goodId: deal.good,
-          type: "BUY",
-          units: deal.units,
-          details: t("Market purchase"),
-          income: -getDealSpent(deal),
-          detailsHtml: renderBuyDetails(deal.units, deal.price, getDealSpent(deal))
-        });
-      }
-      if (isBurgSeller(deal)) {
-        netInventory[deal.good] = (netInventory[deal.good] || 0) - deal.units;
-        totalTax += getDealTax(deal);
-        return renderExpandableDealRow({
-          targetId: detailsId,
-          goodId: deal.good,
-          type: "SELL",
-          units: deal.units,
-          details: t("Sale to local market"),
-          income: getDealNetRevenue(deal),
-          detailsHtml: renderSaleDetails(deal)
-        });
-      }
-    } else {
-      producedByGood[entry.goodId] = (producedByGood[entry.goodId] || 0) + entry.units;
-      netInventory[entry.goodId] = (netInventory[entry.goodId] || 0) + entry.units;
-      return /*html*/ `<tr style="${styles.bodyRow}">
-           ${renderDataCell(renderTaggedGood(entry.goodId, "LOCAL"))}
-           ${renderDataCell(entry.units, "right")}
-           <td style="${styles.cell}">${t("Local bonus resource")}</td>
-           ${renderDataCell("", "right", styles.subtle)}
-         </tr>`;
-    }
-    return [];
-  });
-
-  const grossProduct = Math.max(0, burg.product || 0);
-  const productPerCapita = population > 0 ? grossProduct / population : 0;
-
-  const jobsTable = renderTable({
-    colWidths: ["30%", "10%", "45%", "15%"],
-    headers: [
-      { label: t("Good") },
-      { label: t("Units"), align: "right" },
-      { label: t("Details") },
-      {
-        label: t("Income"),
-        align: "right",
-        title: t("Money flow for deal rows: negative for BUY, positive for SELL. Pure production rows are blank.")
-      }
-    ],
-    rows: allRows,
-    empty: t("No production actions recorded")
-  });
-
-  const finalDemandCoverage = calculateDemandCoverageTotals(netInventory);
-  const uncoveredDemand = initialDemand.map((target, index) => Math.max(0, target - finalDemandCoverage[index]));
-
-  const statsHtml = /*html*/ `
-    <div style="${styles.topBar}">
-      <div>
-        <span><b>${t("Population")}:</b> ${population}</span>
-        <span><b>${t("Order")}:</b> ${t("{{rank}} of {{total}}", { rank: processRank, total: totalBurgs })}</span>
-        <span><b>${t("Market")}:</b> ${market ? Markets.getName(market) : "unknown"} (${market?.i})</span>
-      </div>
-      <div><b>${t("Initial Demand")}:</b> ${renderDemand(initialDemand)}</div>
-      <div><b>${t("Uncovered Demand")}:</b> ${renderDemand(uncoveredDemand, true) || t("None")}</div>
-      <div>
-        <span data-tip="${t("Gross Product: local sale revenue minus purchased ingredient costs during the production.")}"><b>${t("Product")}:</b> <span style="${styles.positive}">${formatPrice(grossProduct)}</span></span>
-        <span data-tip="${t("Product per capita: gross product divided by population.")}"><b>${t("Wealth")}:</b> <span style="${productPerCapita >= 0 ? styles.positive : styles.negative}">${formatPrice(productPerCapita)}</span></span>
-        <span data-tip="${t("Sales Tax is paid by the seller on local sale deals. It is deducted from gross sale value and transferred to the state treasury.")}"><b>${t("Total Tax")}:</b> <span style="${totalTax >= 0 ? styles.warning : styles.subtle}">${formatPrice(totalTax)}</span></span>
-        <span data-tip="${t("Net burg treasury after local buying, local sales, and final local demand fill.")}"><b>${t("Treasury")}:</b> <span style="${treasuryAfter >= 0 ? styles.positive : styles.negative}">${formatPrice(treasuryAfter)}</span></span>
-      </div>
-    </div>`;
-
-  const producedRows = Object.entries(producedByGood)
-    .filter(([, units]) => units > 0)
-    .sort(([, a], [, b]) => b - a)
-    .map(([goodIdStr, units]) => {
-      const id = +goodIdStr;
-      return /*html*/ `<tr style="${styles.bodyRow}">
-        ${renderDataCell(renderGoodLabel(id))}
-        ${renderDataCell(rn(units, 2), "right")}
-      </tr>`;
-    });
-
-  const producedTable = renderTable({
-    colWidths: ["80%", "20%"],
-    headers: [{ label: t("Good") }, { label: t("Units"), align: "right" }],
-    rows: producedRows,
-    empty: t("No goods manufactured")
-  });
-
-  Dialog.message({
-    width: "48em",
-    resizable: true,
+  Dialog.open(dialogId, {
     title: t("Production Overview: {{- burg}}", { burg: burg.name }),
-    buttons: [],
-    position: { my: "right top", at: "right-10 top+10", of: "svg" },
-    message: /*html*/ `
-    <div id="productionOverviewContent">
-      ${statsHtml}
-      ${renderSection(t("Manufactured Goods"), producedTable, t("Goods manufactured by this burg in this production cycle."))}
-      ${renderSection(
-        t("Production and Trade history"),
-        jobsTable,
-        t("Chronological local production, market purchases, sales, and demand-fill operations for this burg.")
-      )}
-    </div>
-  `
+    width: "56em",
+    resizable: true,
+    onClose: () => Dialog.destroy(dialogId),
+    position
   });
+}
 
-  const overviewContent = ensureEl("productionOverviewContent");
-  overviewContent.onclick = event => {
-    const target = event.target as HTMLElement;
-    const row = target.closest<HTMLTableRowElement>("tr[data-target]");
-    if (!row) return;
+function renderDialog(): void {
+  Dialog.destroy(dialogId);
+  const html = /* html */ `<div id="${dialogId}" class="dialog stable">
+      <style>
+        #${dialogId} > div { width: auto }
+        #${dialogId}Stats { margin-bottom: 0.85em; line-height: 1.6em }
+        #${dialogId}Stats > div > span { margin-right: 0.6em }
+        #${dialogId} .productionGood { display: inline-flex; align-items: center; gap: 0.2em; vertical-align: middle }
+        #${dialogId} table { width: 100%; table-layout: fixed; border-collapse: collapse; line-height: 1 }
+        #${dialogId} thead th { position: sticky; top: 0; background: #eee }
+        #${dialogId} tbody tr { border-bottom: 1px solid #f0f0f0 }
+        #${dialogId} th, #${dialogId} td { padding: 0.4em 0.5em; vertical-align: top; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+        #${dialogId} .right { text-align: right }
+        #${dialogId} tr[data-expandable] { cursor: pointer }
+        #${dialogId} .historyDetails td { padding: 0.3em 0.5em 0.8em; line-height: 1.4; white-space: normal }
+        #${dialogId} .historyDetails ul { margin: 0.2em 0 0 1.1em; padding: 0 }
+        #${dialogId} .typeBadge { margin-left: 4px; border-radius: 3px; padding: 0 0.4em; font-size: 0.8em; font-weight: bold; line-height: 1.35 }
+        #${dialogId} .typeBadge.local { background: #d9e7f5; color: #346 }
+        #${dialogId} .typeBadge.buy { background: #f5d9d6; color: #a33 }
+        #${dialogId} .typeBadge.mfg { background: #f8e7bf; color: #b67a00 }
+        #${dialogId} .typeBadge.sell { background: #dff0e2; color: #2f8a46 }
+        #${dialogId} .positive { color: #2a6 }
+        #${dialogId} .negative { color: #c84 }
+      </style>
+      <div id="${dialogId}Stats"></div>
+      <div id="${dialogId}Body" class="table"></div>
+      <div id="${dialogId}Bottom">
+        <button id="${dialogId}Refresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
+        <button id="${dialogId}Export" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
+      </div>
+  </div>`;
+  ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
-    const targetId = row.dataset.target;
-    if (!targetId) return;
-    const detailsRow = overviewContent.querySelector<HTMLTableRowElement>(`#${targetId}`);
-    if (!detailsRow) return;
+  ensureEl(`${dialogId}Refresh`).addEventListener("click", render);
+  ensureEl(`${dialogId}Export`).addEventListener("click", downloadHistoryCsv);
+  ensureEl(`${dialogId}Body`).addEventListener("click", onBodyClick);
+}
 
-    const isOpen = detailsRow.style.display !== "none";
-    detailsRow.style.display = isOpen ? "none" : "table-row";
+function onBodyClick(event: MouseEvent): void {
+  const target = event.target as HTMLElement;
+  const zoom = target.closest<HTMLElement>("[data-zoom-market]");
+  if (zoom) {
+    const center = pack.burgs[Markets.get(Number(zoom.dataset.zoomMarket))?.centerBurgId ?? 0];
+    if (center?.i) zoomTo(center.x, center.y, 8, 2000);
+    return;
+  }
+
+  const row = target.closest<HTMLElement>("tr[data-expandable]");
+  const details = row?.nextElementSibling as HTMLElement | null;
+  if (!row || !details) return;
+  details.hidden = !details.hidden;
+  row.querySelector(".icon-right-open, .icon-down-open")!.className = details.hidden
+    ? "icon-right-open"
+    : "icon-down-open";
+}
+
+/** The run in order: the debug log step by step, otherwise summed as local bonus, inputs, manufacturing, sales and demand fill */
+function getHistoryRows(): HistoryRow[] {
+  const burg = pack.burgs[activeBurgId];
+  if (!burg?.production) return [];
+  return burg.productionLog?.map(getLogRow) ?? getSummaryRows(burg);
+}
+
+function getSummaryRows(burg: Burg): HistoryRow[] {
+  const production = burg.production ?? [];
+  const deals = pack.deals.filter(([dealBurg]) => dealBurg === burg.i);
+  const isLocal = (goodId: number) => goodId === pack.cells.good[burg.cell] && !Goods.get(goodId)?.recipes?.length;
+  const byValue = (a: Deal, b: Deal) => b[4] * b[5] - a[4] * a[5];
+  const dealRows = (kind: DealKind) =>
+    deals
+      .filter(deal => deal[3] === kind)
+      .toSorted(byValue)
+      .map(([, marketId, goodId, , units, price, tax, tariff, carriage]) =>
+        getTradeRow(goodId, marketId, kind, { units, price, tax, tariff, carriage })
+      );
+
+  // recipes the burg had every ingredient for: bought for production or made itself
+  const hadGoods = new Set([
+    ...deals.filter(deal => deal[3] === DEAL_KINDS.input).map(deal => deal[2]),
+    ...production.map(([goodId]) => goodId)
+  ]);
+  const recipeInputs = (goodId: number) => {
+    const recipes = Goods.get(goodId)?.recipes ?? [];
+    const used = recipes.filter(recipe => Object.keys(recipe).every(id => hadGoods.has(+id)));
+    return (used.length ? used : recipes)
+      .map(recipe =>
+        Object.keys(recipe)
+          .map(id => goodDot(+id))
+          .join(` ${t("and")} `)
+      )
+      .join(" / ");
   };
+
+  return [
+    ...production.filter(([goodId]) => isLocal(goodId)).map(([goodId, units]) => getLocalRow(goodId, units)),
+    ...dealRows(DEAL_KINDS.input),
+    ...production
+      .filter(([goodId]) => !isLocal(goodId))
+      .toSorted((a, b) => b[1] - a[1])
+      .map(([goodId, units]) => getMfgRow(goodId, units, recipeInputs(goodId))),
+    ...dealRows(DEAL_KINDS.sale),
+    ...dealRows(DEAL_KINDS.demand)
+  ];
+}
+
+function getLogRow(entry: ProductionLogEntry): HistoryRow {
+  if (isTradeEntry(entry)) return getTradeRow(entry.goodId, entry.market, entry.kind, entry);
+  if (!isMfgEntry(entry)) return getLocalRow(entry.goodId, entry.units);
+
+  const inputs = entry.recipe.map(item => `${rn(item.units, 2)} ${goodDot(item.goodId)}`).join(` ${t("and")} `);
+  const modifier = entry.cultureModifier ?? 1;
+  const modifierNote =
+    modifier !== 1
+      ? `. ${t("Culture type production modifier. Produced units are multiplied by this value.")}: x${rn(modifier, 2)}`
+      : "";
+  return getMfgRow(entry.goodId, entry.units, inputs, `${modifierNote}${renderDecision(entry.candidates)}`);
+}
+
+const getLocalRow = (goodId: number, units: number): HistoryRow => ({
+  type: "LOCAL",
+  goodId,
+  units,
+  tax: 0,
+  tariff: 0,
+  carriage: 0,
+  details: ""
+});
+
+const getMfgRow = (goodId: number, units: number, inputs: string, more = ""): HistoryRow => ({
+  type: "MFG",
+  goodId,
+  units,
+  tax: 0,
+  tariff: 0,
+  carriage: 0,
+  details: `${t("Manufacturing from {{- inputs}}", { inputs })}${more}`
+});
+
+function getTradeRow(goodId: number, marketId: number, kind: DealKind, trade: Trade): HistoryRow {
+  const isSale = kind === DEAL_KINDS.sale;
+  const { units } = trade;
+  const { goodsPrice, carriage, tax, tariff, value, formula } = splitDealPrice(trade, isSale);
+  return {
+    type: isSale ? "SELL" : "BUY",
+    goodId,
+    units,
+    kind,
+    price: goodsPrice,
+    marketId,
+    tax,
+    tariff,
+    carriage,
+    income: isSale ? value : -value,
+    formula,
+    details: ""
+  };
+}
+
+function renderDecision(candidates: readonly ProductionCandidate[]): string {
+  if (!candidates.length) return "";
+  const score = (value: number) => `<b class="positive">${t("score {{score}}", { score: rn(value, 2) })}</b>`;
+  const items = candidates
+    .toSorted((a, b) => b.score - a.score)
+    .map(candidate => {
+      const name = Goods.get(candidate.goodId)?.name ?? "";
+      const ingredients = candidate.ingredients
+        .map(ingredient => `${rn(ingredient.amount * candidate.units, 2)} ${goodDot(ingredient.goodId)}`)
+        .join(", ");
+      const prep = candidate.isPreparation
+        ? ` (${t("prep for {{- good}}", { good: goodDot(candidate.goalGoodId ?? -1) })})`
+        : "";
+      const workers = rn(candidate.workersNeeded || 1, 2);
+      const formula = candidate.isPreparation
+        ? `${t("goal sell")} ${formatPrice((candidate.gainPerWorker || 0) * workers)} ÷ ${t("workers")} ${workers} × ${t("units")} ${rn(candidate.units, 2)}`
+        : `${t("sell")} ${formatPrice(candidate.sellPrice)} - ${t("cost")} ${formatPrice(candidate.ingredientCost)}`;
+      return `<li><b>${name}</b>${prep}: ${formula} = ${score(candidate.score)}. ${t("Ingredients")}: ${ingredients}</li>`;
+    });
+  const basis = t("highest score among feasible options ({{options}})", { options: candidates.length });
+  return `<div><b>${t("Decision basis")}:</b> ${basis}:</div><ul>${items.join("")}</ul>`;
+}
+
+function goodDot(goodId: number): string {
+  const good = Goods.get(goodId);
+  return good ? `<svg width="14" height="14" style="margin: -6px 2px -4px 0">${goodBadge(good)}</svg>` : "";
+}
+
+function render(): void {
+  const burg = pack.burgs[activeBurgId];
+  if (!burg) return;
+
+  renderStats(burg);
+  const tips = tradeColumnTips();
+  const rows = getHistoryRows().map(renderHistoryLine);
+  ensureEl(`${dialogId}Body`).innerHTML = rows.length
+    ? /* html */ `<table>
+        <colgroup>
+          <col style="width: 2%" />
+          <col style="width: 22%" />
+          <col style="width: 13%" />
+          <col style="width: 13%" />
+          <col style="width: 10%" />
+          <col style="width: 9%" />
+          <col style="width: 9%" />
+          <col style="width: 8%" />
+          <col style="width: 12%" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th></th>
+            <th>${t("Good")}</th>
+            <th>${t("Market")}</th>
+            <th class="right" data-tip="${tips.net}">${t("Net")}</th>
+            <th class="right" data-tip="${tips.carriage}">${t("Carriage")}</th>
+            <th class="right" data-tip="${tips.tax}">${t("Tax")}</th>
+            <th class="right" data-tip="${tips.tariff}">${t("Tariff")}</th>
+            <th class="right" data-tip="${tips.units}">${t("Units")}</th>
+            <th class="right" data-tip="${tips.income}">${t("Income")}</th>
+          </tr>
+        </thead>
+        <tbody>${rows.join("")}</tbody>
+      </table>`
+    : `<i>${t("No production actions recorded")}</i>`;
+}
+
+const TYPE_LABELS: Record<RowType, () => string> = {
+  LOCAL: () => t("Local").toUpperCase(),
+  BUY: () => t("BUY"),
+  MFG: () => t("MFG"),
+  SELL: () => t("sell").toUpperCase()
+};
+
+function renderHistoryLine(row: HistoryRow): string {
+  const good = Goods.get(row.goodId);
+  if (!good) return "";
+
+  const purposes = [t("Sale to local market"), t("Purchase for production"), t("Purchase for demand")];
+  const typeTip =
+    row.kind !== undefined ? purposes[row.kind] : row.type === "MFG" ? t("Manufacturing step") : t("Local production");
+  const badge = `<span class="typeBadge ${row.type.toLowerCase()}" data-tip="${typeTip}">${TYPE_LABELS[row.type]()}</span>`;
+
+  // per unit; green adds to the burg's money, the negative color takes from it
+  const isSale = row.type === "SELL";
+  const isTrade = row.price !== undefined;
+  const income = row.income === undefined ? "" : formatPrice(row.income);
+  const tips = isTrade ? getCellTips(row, good) : undefined;
+  const cell = (content: string, tip?: string) => `<td class="right"${tip ? ` data-tip="${tip}"` : ""}>${content}</td>`;
+
+  return /* html */ `<tr${row.details ? " data-expandable" : ""}>
+      <td>${row.details ? '<span class="icon-right-open"></span>' : ""}</td>
+      <td>${goodDot(row.goodId)}${good.name}${badge}</td>
+      <td>${renderMarket(row.marketId)}</td>
+      ${cell(isTrade ? money(row.price!, isSale) : "", tips?.net)}
+      ${cell(isTrade ? money(row.carriage, false) || formatPrice(0) : "", tips?.carriage)}
+      ${cell(money(row.tax, false), tips?.tax)}
+      ${cell(money(row.tariff, false), tips?.tariff)}
+      ${cell(String(rn(row.units, 2)), tips?.units)}
+      <td class="right ${(row.income ?? 0) >= 0 ? "positive" : "negative"}" data-tip="${tips?.income ?? ""}">${income}</td>
+    </tr>${row.details ? `<tr class="historyDetails" hidden><td></td><td colspan="8">${row.details}</td></tr>` : ""}`;
+}
+
+function renderMarket(marketId: number | undefined): string {
+  const market = Markets.get(marketId);
+  if (!market) return "";
+  const name = Markets.getName(market);
+  const isImport = marketId !== pack.burgs[activeBurgId]?.market;
+  const zoomTip = isImport
+    ? sentences(t("Import from {{market}}", { market: name }), t("Click to zoom"))
+    : t("Click to zoom");
+  return `<span class="pointer" data-zoom-market="${marketId}" data-tip="${zoomTip}">${name}</span>`;
+}
+
+function getCellTips(row: HistoryRow, good: Good) {
+  const { goodId, marketId = 0, kind = DEAL_KINDS.sale } = row;
+  const { taxState, tariffState } = Markets.getTaxStates([activeBurgId, marketId, goodId, kind, 0, 0, 0, 0, 0]);
+  return tradeCellTips({
+    good,
+    units: row.units,
+    net: row.price ?? 0,
+    carriage: row.carriage,
+    tax: row.tax,
+    tariff: row.tariff,
+    income: row.income ?? 0,
+    taxStateId: taxState,
+    tariffStateId: tariffState,
+    formula: row.formula ?? ""
+  });
+}
+
+function renderStats(burg: Burg): void {
+  const population = burg.population || 0;
+  const burgs = pack.burgs.filter(b => b.i && !b.removed).sort((a, b) => (b.population || 0) - (a.population || 0));
+  const market = Markets.get(burg.market);
+
+  const targets = DEMAND_PRIORITY.map(category => population * DEMAND_TARGET_FACTORS[category]);
+  const covered = DEMAND_PRIORITY.map(() => 0);
+  let totalTax = 0;
+  for (const [dealBurg, , goodId, kind, units, , tax, tariff] of pack.deals) {
+    if (dealBurg !== burg.i) continue;
+    totalTax += tax + tariff;
+    if (kind !== DEAL_KINDS.demand) continue;
+    const coverage = Goods.get(goodId)?.demandCoverage ?? {};
+    DEMAND_PRIORITY.forEach((category, index) => {
+      covered[index] += units * (coverage[category] || 0);
+    });
+  }
+  const uncovered = targets.map((target, index) => Math.max(0, target - covered[index]));
+
+  const product = Math.max(0, burg.product || 0);
+  const wealth = population > 0 ? product / population : 0;
+  const treasury = burg.treasury || 0;
+
+  ensureEl(`${dialogId}Stats`).innerHTML = /* html */ `
+    <div>
+      <span><b>${t("Population")}:</b> ${population}</span>
+      <span><b>${t("Order")}:</b> ${t("{{rank}} of {{total}}", { rank: burgs.indexOf(burg) + 1, total: burgs.length })}</span>
+      <span><b>${t("Market")}:</b> ${market ? Markets.getName(market) : ""}</span>
+    </div>
+    <div><b>${t("Initial Demand")}:</b> ${renderDemand(targets)}</div>
+    <div><b>${t("Uncovered Demand")}:</b> ${renderDemand(uncovered, true) || t("None")}</div>
+    <div><b>${t("Production")}:</b> ${renderProduction(burg) || t("None")}</div>
+    <div>
+      <span data-tip="${t("Gross Product: local sale revenue minus purchased ingredient costs during the production.")}"><b>${t("Product")}:</b> <span class="positive">${formatPrice(product)}</span></span>
+      <span data-tip="${t("Product per capita: gross product divided by population.")}"><b>${t("Wealth")}:</b> <span class="positive">${formatPrice(wealth)}</span></span>
+      <span data-tip="${t("Sales tax and tariffs the burg paid: on its sales, deducted from the revenue; on its purchases, included in the price. Each goes to the treasury of the state that levies it")}"><b>${t("Total Tax")}:</b> <span class="negative">${formatPrice(totalTax)}</span></span>
+      <span data-tip="${t("Net burg treasury after local buying, local sales, and final local demand fill.")}"><b>${t("Treasury")}:</b> <span class="${treasury >= 0 ? "positive" : "negative"}">${formatPrice(treasury)}</span></span>
+    </div>`;
+}
+
+function renderDemand(values: number[], onlyShortage = false): string {
+  return DEMAND_PRIORITY.flatMap((category, index) => {
+    const value = rn(values[index] || 0, 2);
+    if (onlyShortage && value <= 0) return [];
+    return `<span data-tip="${DEMAND_CATEGORY_LABELS[category]}">${DEMAND_CATEGORY_ICONS[category]} ${value}</span>`;
+  }).join(" • ");
+}
+
+// as in the Burg Editor, with the goods-layer badges
+function renderProduction(burg: Burg): string {
+  return (burg.production ?? [])
+    .toSorted((a, b) => b[1] - a[1])
+    .map(([goodId, units]) => {
+      const good = Goods.get(goodId);
+      if (!good) return "";
+      const unit = units === 1 ? good.unit : `${good.unit}s`;
+      const goodTip = t("{{good}}: {{amount}} {{unit}} per day", { good: good.name, amount: units, unit });
+      return `<span class="productionGood" data-tip="${goodTip}"><svg width="1.6em" height="1.6em">${goodBadge(good)}</svg>${rn(units, 2)}</span>`;
+    })
+    .join(" ");
+}
+
+function downloadHistoryCsv(): void {
+  const perUnit = (amount: number) => (rn(amount, 2) ? rn(amount, 2) : "");
+  const rows = getHistoryRows().map(row => [
+    goodName(row),
+    row.type,
+    marketName(row),
+    row.price === undefined ? "" : rn(row.price, 2),
+    perUnit(row.carriage),
+    perUnit(row.tax),
+    perUnit(row.tariff),
+    rn(row.units, 2),
+    row.income === undefined ? "" : rn(row.income, 2)
+  ]);
+  const name = pack.burgs[activeBurgId]?.name ?? activeBurgId;
+  const headers = ["Good", "Type", "Market", "Net Unit Price", "Carriage", "Tax", "Tariff", "Units", "Income"];
+  Csv.download(`Production_${name}`, headers, rows);
 }
 
 export const ProductionOverview = { open };

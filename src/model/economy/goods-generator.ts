@@ -7,6 +7,7 @@ import type { IconSet } from "@/types/icons";
 import type { PackedGraph } from "@/types/packed-graph";
 import { requireColor } from "@/utils/color-utils";
 import { log } from "@/utils/logger";
+import { rn } from "@/utils/number-utils";
 import { requireName } from "@/utils/validation-utils";
 
 export interface Good {
@@ -35,6 +36,7 @@ export interface Good {
   name: string;
   tags: string[];
   value: number;
+  carriage: number; // price of carrying one unit over a decima, in the map's currency
   unit: string;
 
   // ui
@@ -53,6 +55,7 @@ type ProductionRules = Partial<{
   demandCoverage: Good["demandCoverage"] | null;
 }>;
 
+export const DEFAULT_CARRIAGE = 0.5; // carriage price of a new good
 export const DEMAND_PRIORITY = ["food", "utilities", "construction", "military", "luxury"] as const;
 export type DemandCategory = (typeof DEMAND_PRIORITY)[number];
 export const DEMAND_TARGET_FACTORS: Record<DemandCategory, number> = {
@@ -82,6 +85,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-wood",
     color: "#966F33",
     value: 1,
+    carriage: 1,
     chance: 4,
     distribution: "biome(5, 6, 7, 8, 9)",
     unit: "pile",
@@ -95,6 +99,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-stone",
     color: "#979EA2",
     value: 2,
+    carriage: 1.5,
     chance: 4,
     distribution: "(minHeight(40) || (minHeight(20) && elevation())) && biome(1, 2, 3, 4)",
     unit: "pallet",
@@ -108,6 +113,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-marble",
     color: "#d6d0bf",
     value: 6,
+    carriage: 2,
     chance: 1,
     distribution: "minHeight(60) || (minHeight(30) && elevation())",
     unit: "pallet",
@@ -120,6 +126,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-iron",
     color: "#5D686E",
     value: 3,
+    carriage: 1.3,
     chance: 5,
     distribution: "minHeight(60) || (biome(12) && nth(7)) || (minHeight(20) && nth(10))",
     unit: "wagon",
@@ -132,6 +139,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-copper",
     color: "#b87333",
     value: 4,
+    carriage: 1.3,
     chance: 2,
     distribution: "minHeight(60) || (minHeight(30) && elevation())",
     unit: "wagon",
@@ -143,6 +151,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-tin",
     color: "#454343",
     value: 4,
+    carriage: 1.3,
     chance: 2,
     distribution: "minHeight(60) || (minHeight(30) && elevation())",
     unit: "wagon",
@@ -154,6 +163,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-silver",
     color: "#C0C0C0",
     value: 8,
+    carriage: 0.3,
     chance: 2,
     distribution: "minHeight(60) || (minHeight(30) && elevation())",
     unit: "bullion",
@@ -165,6 +175,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-gold",
     color: "#ffd700",
     value: 15,
+    carriage: 0.4,
     chance: 2,
     distribution: "river() && minHeight(40)",
     unit: "bullion",
@@ -176,6 +187,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-grain",
     color: "#F5DEB3",
     value: 1,
+    carriage: 1,
     chance: 4,
     distribution: "minHabitability(20) && habitability()",
     unit: "wain",
@@ -189,6 +201,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-cattle",
     color: "#56b000",
     value: 2,
+    carriage: 0.3,
     chance: 4,
     distribution: "(biome(3, 4) && !elevation()) || (biome(6) && random(70)) || (biome(5) && nth(5))",
     unit: "head",
@@ -202,6 +215,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-fish",
     color: "#7fcdff",
     value: 1,
+    carriage: 1,
     chance: 4,
     distribution: 'shore(-1) && (type("ocean", "freshwater", "salt") || (river() && shore(1, 2)))',
     unit: "wain",
@@ -214,6 +228,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-game",
     color: "#c38a8a",
     value: 2,
+    carriage: 1,
     chance: 3,
     distribution: "biome(5, 6, 7, 8, 9)",
     unit: "wain",
@@ -227,6 +242,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-wine",
     color: "#963e48",
     value: 2,
+    carriage: 0.6,
     chance: 3,
     distribution: "biome(6) || (biome(4) && random(50) && river())",
     unit: "barrel",
@@ -240,6 +256,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-olives",
     color: "#BDBD7D",
     value: 2,
+    carriage: 0.6,
     chance: 3,
     distribution: "biome(3) && shore(1, 2)",
     unit: "barrel",
@@ -253,6 +270,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-honey",
     color: "#DCBC66",
     value: 2,
+    carriage: 0.6,
     chance: 3,
     distribution: "biome(6, 8, 9)",
     unit: "barrel",
@@ -266,6 +284,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-salt",
     color: "#E5E4E5",
     value: 2,
+    carriage: 0.4,
     chance: 3,
     distribution: 'shore(1) && type("salt", "dry") || (biome(1, 2) && random(70)) || (biome(12) && nth(10))',
     unit: "bag",
@@ -279,6 +298,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-dates",
     color: "#dbb2a3",
     value: 2,
+    carriage: 1,
     chance: 2,
     distribution: "biome(1)",
     unit: "wain",
@@ -292,6 +312,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-horses",
     color: "#ba7447",
     value: 5,
+    carriage: 0.4,
     chance: 4,
     distribution: "biome(3) || (biome(2) && nth(4))",
     unit: "head",
@@ -300,15 +321,16 @@ const GOODS_DATA: GoodData[] = [
     biomeOutput: { 4: 0.01 }
   },
   {
-    name: "Elephants",
-    tags: ["supply", "military"],
+    name: "Ivory",
+    tags: ["luxury"],
     icon: "goods-elephants",
     color: "#C5CACD",
     value: 7,
-    chance: 2,
+    carriage: 0.2,
+    chance: 1,
     distribution: "biome(1, 3, 5, 7)",
-    unit: "head",
-    demandCoverage: { utilities: 0.2, military: 0.8 },
+    unit: "tusk",
+    demandCoverage: { luxury: 1 },
     multipliers: { cultureType: { Highland: 0.2 } }
   },
   {
@@ -317,6 +339,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-camels",
     color: "#C19A6B",
     value: 5,
+    carriage: 0.4,
     chance: 3,
     distribution: "biome(1, 2)",
     unit: "head",
@@ -330,6 +353,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-hemp",
     color: "#069a06",
     value: 1,
+    carriage: 1,
     chance: 3,
     distribution: "biome(6, 7, 8)",
     unit: "wain",
@@ -342,6 +366,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-pearls",
     color: "#EAE0C8",
     value: 13,
+    carriage: 0.3,
     chance: 2,
     distribution: "shore(-1) && minTemp(18)",
     unit: "pearl",
@@ -354,6 +379,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-gemstones",
     color: "#e463e4",
     value: 15,
+    carriage: 0.4,
     chance: 2,
     distribution: "minHeight(60) || (minHeight(30) && elevation())",
     unit: "gem",
@@ -366,6 +392,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-dyes",
     color: "#fecdea",
     value: 5,
+    carriage: 0.5,
     chance: 1,
     distribution: "shore(-1) || minHabitability(1)",
     unit: "bag",
@@ -377,6 +404,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-incense",
     color: "#ebe5a7",
     value: 10,
+    carriage: 0.4,
     chance: 2,
     distribution: "biome(1, 7)",
     unit: "chest",
@@ -388,6 +416,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-silk",
     color: "#e0f0f8",
     value: 9,
+    carriage: 0.4,
     chance: 1,
     distribution: "biome(7)",
     unit: "bolt",
@@ -400,6 +429,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-spices",
     color: "#e99c75",
     value: 15,
+    carriage: 0.5,
     chance: 2,
     distribution: "biome(7)",
     unit: "chest",
@@ -412,6 +442,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-amber",
     color: "#e68200",
     value: 7,
+    carriage: 0.2,
     chance: 2,
     distribution: "shore(1) && biome(6, 7, 8, 9)",
     unit: "stone",
@@ -424,6 +455,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-furs",
     color: "#8a5e51",
     value: 4,
+    carriage: 0.3,
     chance: 2,
     distribution: "biome(9) || (biome(10) && nth(2)) || (biome(6, 8) && nth(5)) || (biome(12) && nth(10))",
     unit: "pelt",
@@ -432,15 +464,15 @@ const GOODS_DATA: GoodData[] = [
     biomeOutput: { 9: 0.02, 10: 0.02, 6: 0.02, 8: 0.02, 12: 0.02 }
   },
   {
-    name: "Sheep",
+    name: "Wool",
     tags: ["clothing"],
     icon: "goods-sheep",
     color: "#53b574",
     value: 2,
+    carriage: 0.4,
     chance: 3,
     distribution: "(biome(3, 4) && !elevation()) || (biome(6) && random(70)) || (biome(5) && nth(5))",
-    unit: "head",
-    demandCoverage: { food: 1 },
+    unit: "bale",
     multipliers: { cultureType: { Naval: 1.4, Highland: 1.4 } },
     biomeOutput: { 4: 0.1 }
   },
@@ -449,7 +481,8 @@ const GOODS_DATA: GoodData[] = [
     tags: ["supply"],
     icon: "goods-slaves",
     color: "#757575",
-    value: 8,
+    value: 9,
+    carriage: 3,
     chance: 2,
     distribution: "shore(1) && minHabitability(1) && !habitability()",
     unit: "slave",
@@ -461,7 +494,8 @@ const GOODS_DATA: GoodData[] = [
     tags: ["naval"],
     icon: "goods-tar",
     color: "#727272",
-    value: 3,
+    value: 5,
+    carriage: 0.7,
     chance: 0,
     unit: "barrel",
     demandCoverage: { utilities: 0.4, military: 0.1 },
@@ -474,6 +508,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-saltpeter",
     color: "#e6e3e3",
     value: 2,
+    carriage: 0.6,
     chance: 3,
     distribution: "biome(1, 2) || (minHeight(50) && random(20))",
     unit: "barrel",
@@ -485,6 +520,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-coal",
     color: "#5a6a75",
     value: 3,
+    carriage: 1.1,
     chance: 3,
     distribution: "minHeight(40) || (minHeight(20) && elevation(25))",
     unit: "wain",
@@ -496,12 +532,13 @@ const GOODS_DATA: GoodData[] = [
     tags: ["fuel"],
     icon: "goods-oil",
     color: "#565656",
-    value: 3,
+    value: 5,
+    carriage: 0.7,
     chance: 2,
     distribution: "biome(1, 2, 10) || (shore(-1) && minTemp(18) && random(15))",
     unit: "barrel",
     demandCoverage: { utilities: 1 },
-    recipes: [{ Olives: 1 }, { Whales: 1 }]
+    recipes: [{ Olives: 1 }, { Blubber: 1 }]
   },
   {
     name: "Mahogany",
@@ -509,17 +546,19 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-tropicalTimber",
     color: "#a45a52",
     value: 7,
+    carriage: 1.1,
     chance: 1,
     distribution: "biome(5, 7) && random(50)",
     unit: "pile",
     demandCoverage: { luxury: 1 }
   },
   {
-    name: "Whales",
+    name: "Blubber",
     tags: ["food", "aquatic", "fuel"],
     icon: "goods-whales",
     color: "#7fcdff",
     value: 1,
+    carriage: 0.6,
     chance: 3,
     distribution: "shore(-1) && type('ocean') && maxTemp(7)",
     unit: "barrel",
@@ -527,11 +566,12 @@ const GOODS_DATA: GoodData[] = [
     multipliers: { cultureType: { Naval: 1.4, Nomadic: 0.5 } }
   },
   {
-    name: "Sugarcane",
+    name: "Sugar",
     tags: ["preservative", "food"],
     icon: "goods-sugar",
     color: "#7abf87",
     value: 4,
+    carriage: 0.5,
     chance: 3,
     distribution: "biome(7)",
     unit: "bag",
@@ -543,6 +583,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-tea",
     color: "#d0f0c0",
     value: 5,
+    carriage: 0.5,
     chance: 2,
     distribution: "minHeight(40) && (biome(5) || (biome(7) || biome(8)))",
     unit: "bag",
@@ -555,6 +596,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-tobacco",
     color: "#6D5843",
     value: 5,
+    carriage: 0.5,
     chance: 1,
     distribution: "random(20) && (biome(3) || (biome(5) || biome(6)))",
     unit: "bag",
@@ -566,6 +608,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-clay",
     color: "#b07c60",
     value: 1,
+    carriage: 1,
     chance: 5,
     distribution: "minTemp(8) && (shore(1) || river())",
     unit: "wain",
@@ -578,6 +621,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-sand",
     color: "#e6d69c",
     value: 1,
+    carriage: 1,
     chance: 4,
     distribution: "minTemp(8) && (shore(1) || river())",
     unit: "wain",
@@ -589,6 +633,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-leather",
     color: "#8b5a2b",
     value: 4,
+    carriage: 0.4,
     chance: 0,
     recipes: [{ Cattle: 1 }, { Game: 1 }, { Horses: 1 }, { Camels: 1 }],
     unit: "roll",
@@ -599,9 +644,10 @@ const GOODS_DATA: GoodData[] = [
     tags: ["clothing"],
     icon: "goods-cloth",
     color: "#e8e69c",
-    value: 4,
+    value: 5,
+    carriage: 0.3,
     chance: 0,
-    recipes: [{ Sheep: 1 }, { Hemp: 1 }, { Silk: 0.5 }],
+    recipes: [{ Wool: 1 }, { Hemp: 1 }, { Silk: 0.5 }],
     unit: "bolt",
     demandCoverage: { utilities: 0.2 }
   },
@@ -610,7 +656,8 @@ const GOODS_DATA: GoodData[] = [
     tags: ["clothing"],
     icon: "goods-garments",
     color: "#bd21ec",
-    value: 9,
+    value: 12,
+    carriage: 0.5,
     chance: 0,
     recipes: [
       { Cloth: 1, Dyes: 0.5 },
@@ -625,6 +672,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-ceramics",
     color: "#c1440e",
     value: 6,
+    carriage: 1.1,
     chance: 0,
     recipes: [{ Clay: 1 }],
     unit: "wain",
@@ -636,6 +684,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-glass",
     color: "#a0c8e8",
     value: 7,
+    carriage: 1.1,
     chance: 0,
     recipes: [{ "White sand": 1 }],
     unit: "wain",
@@ -647,7 +696,8 @@ const GOODS_DATA: GoodData[] = [
     tags: ["naval", "construction"],
     icon: "goods-ropes",
     color: "#ba9773",
-    value: 4,
+    value: 6,
+    carriage: 0.5,
     chance: 0,
     recipes: [{ Hemp: 1 }],
     unit: "coil",
@@ -658,7 +708,8 @@ const GOODS_DATA: GoodData[] = [
     tags: ["ritual", "educational"],
     icon: "goods-paper",
     color: "#f5f5dc",
-    value: 5,
+    value: 7,
+    carriage: 0.3,
     chance: 0,
     recipes: [{ Hemp: 1 }],
     unit: "ream",
@@ -670,6 +721,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-ink",
     color: "#000000",
     value: 5,
+    carriage: 0.2,
     chance: 0,
     recipes: [{ Oil: 1 }, { Dyes: 0.5 }],
     unit: "bottle",
@@ -681,6 +733,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-books",
     color: "#deb887",
     value: 13,
+    carriage: 0.4,
     chance: 0,
     recipes: [
       { Paper: 1, Ink: 0.5 },
@@ -695,7 +748,8 @@ const GOODS_DATA: GoodData[] = [
     tags: ["naval"],
     icon: "goods-sails",
     color: "#ffffff",
-    value: 7,
+    value: 10,
+    carriage: 0.5,
     chance: 0,
     recipes: [{ Cloth: 1 }],
     unit: "set",
@@ -706,7 +760,8 @@ const GOODS_DATA: GoodData[] = [
     tags: ["naval"],
     icon: "goods-ships",
     color: "#654321",
-    value: 50,
+    value: 85,
+    carriage: 2.7,
     chance: 0,
     recipes: [{ Wood: 4, Sails: 4, Ropes: 4, Tar: 2 }],
     unit: "ship",
@@ -718,7 +773,8 @@ const GOODS_DATA: GoodData[] = [
     tags: ["clothing", "military"],
     icon: "goods-boots",
     color: "#654321",
-    value: 6,
+    value: 7,
+    carriage: 0.3,
     chance: 0,
     recipes: [{ Leather: 1 }, { Furs: 0.5 }],
     unit: "pair",
@@ -730,6 +786,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-harnesses",
     color: "#a0522d",
     value: 8,
+    carriage: 0.5,
     chance: 0,
     recipes: [
       { Leather: 0.5, Iron: 0.25 },
@@ -745,7 +802,8 @@ const GOODS_DATA: GoodData[] = [
     tags: ["naval", "storage"],
     icon: "goods-barrels",
     color: "#b46e3b",
-    value: 3,
+    value: 4,
+    carriage: 0.7,
     chance: 0,
     recipes: [{ Wood: 1 }],
     unit: "barrel",
@@ -757,6 +815,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-bronze",
     color: "#e46f21",
     value: 9,
+    carriage: 1.4,
     chance: 0,
     recipes: [
       { Copper: 0.5, Coal: 1 },
@@ -771,6 +830,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-tools",
     color: "#808080",
     value: 17,
+    carriage: 0.6,
     chance: 0,
     recipes: [
       { Iron: 0.5, Coal: 1 },
@@ -784,7 +844,8 @@ const GOODS_DATA: GoodData[] = [
     tags: ["military"],
     icon: "goods-arms",
     color: "#333333",
-    value: 25,
+    value: 23,
+    carriage: 0.8,
     chance: 0,
     recipes: [
       { Iron: 0.5, Coal: 1, Leather: 0.5 },
@@ -799,6 +860,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-gunpowder",
     color: "#b0c4de",
     value: 10,
+    carriage: 0.8,
     chance: 0,
     recipes: [{ Saltpeter: 0.5, Coal: 0.5 }],
     unit: "barrel",
@@ -810,6 +872,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-artillery",
     color: "#cd7f32",
     value: 21,
+    carriage: 2.4,
     chance: 0,
     recipes: [
       { Iron: 2, Coal: 1 },
@@ -824,6 +887,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-coins",
     color: "#ffd700",
     value: 25,
+    carriage: 0.7,
     chance: 0,
     recipes: [
       { Gold: 0.5, Coal: 1 },
@@ -838,6 +902,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-jewelry",
     color: "#34861b",
     value: 34,
+    carriage: 0.7,
     chance: 0,
     recipes: [
       { Gemstones: 1, Gold: 0.5 },
@@ -855,17 +920,16 @@ const GOODS_DATA: GoodData[] = [
     tags: ["food"],
     icon: "goods-salted-fish",
     color: "#c2b280",
-    value: 4,
+    value: 7,
+    carriage: 1.1,
     chance: 0,
     recipes: [
       { Fish: 1, Salt: 1 },
       { Cattle: 1, Salt: 1 },
       { Game: 1, Salt: 1 },
-      { Sheep: 1, Salt: 1 },
       { Fish: 1, Vinegar: 0.5 },
       { Cattle: 1, Vinegar: 0.5 },
       { Game: 1, Vinegar: 0.5 },
-      { Sheep: 1, Vinegar: 0.5 },
       { Fish: 1, Wood: 1 }
     ],
     unit: "wain",
@@ -876,7 +940,8 @@ const GOODS_DATA: GoodData[] = [
     tags: ["food", "preservative"],
     icon: "goods-vinegar",
     color: "#9b111e",
-    value: 2,
+    value: 8,
+    carriage: 0.8,
     chance: 0,
     recipes: [{ Wine: 1 }, { Honey: 1 }],
     unit: "barrel",
@@ -887,12 +952,11 @@ const GOODS_DATA: GoodData[] = [
     tags: ["food"],
     icon: "goods-cheese",
     color: "#f5e1a4",
-    value: 4,
+    value: 7,
+    carriage: 1.1,
     chance: 0,
     recipes: [
       { Cattle: 0.5, Salt: 0.25 },
-      { Sheep: 0.5, Salt: 0.25 },
-      { Sheep: 0.5, Vinegar: 0.25 },
       { Cattle: 0.5, Vinegar: 0.25 }
     ],
     unit: "wain",
@@ -903,7 +967,8 @@ const GOODS_DATA: GoodData[] = [
     tags: ["food"],
     icon: "goods-beer",
     color: "#fbb117",
-    value: 7,
+    value: 15,
+    carriage: 0.9,
     chance: 0,
     recipes: [
       { Grain: 1, Barrels: 1 },
@@ -917,7 +982,8 @@ const GOODS_DATA: GoodData[] = [
     tags: ["food", "luxury"],
     icon: "goods-liquor",
     color: "#8a0303",
-    value: 9,
+    value: 12,
+    carriage: 0.4,
     chance: 0,
     recipes: [
       { Grain: 2, Wood: 1, Barrels: 0.5 },
@@ -936,6 +1002,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-candles",
     color: "#fffacd",
     value: 8,
+    carriage: 0.4,
     chance: 0,
     recipes: [{ Honey: 2 }, { Oil: 1 }],
     unit: "block",
@@ -947,6 +1014,7 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-soap",
     color: "#e0e4cc",
     value: 5,
+    carriage: 0.7,
     chance: 0,
     recipes: [{ Olives: 1 }, { Cattle: 1 }],
     unit: "barrel",
@@ -957,12 +1025,13 @@ const GOODS_DATA: GoodData[] = [
     tags: ["luxury", "ritual"],
     icon: "goods-perfume",
     color: "#ff69b4",
-    value: 17,
+    value: 15,
+    carriage: 0.4,
     chance: 0,
     recipes: [
       { Olives: 1, Incense: 0.5, Glass: 0.5 },
       { Olives: 1, Game: 3, Glass: 0.5 },
-      { Liquor: 0.25, Incense: 0.5, Whales: 0.5, Ceramics: 0.5 }
+      { Liquor: 0.25, Incense: 0.5, Blubber: 0.5, Ceramics: 0.5 }
     ],
     unit: "bottle",
     demandCoverage: { luxury: 2 }
@@ -1140,6 +1209,18 @@ export class GoodsModule {
     if (typeof value !== "number" || !(value >= 0 && Number.isFinite(value)))
       throw new Error("The value must be a non-negative number");
     this.living(goodId).value = value;
+  }
+
+  /** Set the price of carrying one unit of a good over a decima, a tenth of the map's diagonal, in the map's currency; takes effect on the next economy run */
+  setCarriage(goodId: number, carriage: number): void {
+    if (typeof carriage !== "number" || !(carriage >= 0 && Number.isFinite(carriage)))
+      throw new Error("The carriage price must be a non-negative number");
+    this.living(goodId).carriage = carriage;
+  }
+
+  /** The default good's carriage price by name, otherwise a tenth of the good's value */
+  getDefaultCarriage(good: Pick<Good, "name" | "value">): number {
+    return GOODS_DATA.find(({ name }) => name === good.name)?.carriage ?? rn(good.value / 10, 1);
   }
 
   /** Set the unit a good is counted in, such as "barrel"; empty for none */

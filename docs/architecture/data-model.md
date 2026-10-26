@@ -164,7 +164,7 @@ Burgs (settlements) data is stored as an array of objects with strict element or
 - `capital`: `number` - `1` if burg is a capital, `0` if not (each state has only 1 capital)
 - `port`: `number` - if burg is not a port, then `0`, otherwise feature id of the water body the burg trades by. For coastal burgs this is the adjacent sea/lake; for burgs on a navigable river it is the water body the river ultimately drains into (the ocean, or a closed lake for endorheic basins), so river burgs join that body's sea-route network
 - `market`: `number` - id of the market this burg belongs to (`0` if none). Derived from `cells.market[burg.cell]` during market territory expansion
-- `production`: `object[]` - per-burg production/trade records from the last production run. Each record is one of: a local-bonus record `{good, units}`, a manufacture record `{good, units, recipe, cultureModifier?}`, or a deal reference `{dealId}` pointing into `pack.deals`. Used by the Production Overview and Production Chains UI
+- `production`: `[good: number, units: number][]` - units of each good made in the last production run, local bonus included. The burg's trades are its `pack.deals`. In production debug mode, `burg.productionLog` also keeps every step of the run in order (local bonus, manufacture with the decision candidates, trade)
 - `product`: `number` - net product (gross sell revenue minus ingredient costs) from the last production run
 - `treasury`: `number` - accumulated cash balance, updated by ingredient purchases, post-tax sale revenue, and demand-fill purchases. The Burg Editor can also set it by hand; production is not recalculated to match
 - `citadel`: `number` - `1` if burg has a castle, `0` if not. Used for MFCG
@@ -467,6 +467,7 @@ Goods (tradable resources and products) are stored in `pack.goods: Good[]`. Good
 - `name`: `string` - good name
 - `tags`: `string[]` - free-form classification tags (used for filtering in the Goods Editor)
 - `value`: `number` - base price per unit; the anchor for all market pricing
+- `carriage`: `number` - price of carrying one unit over a decima (a tenth of the map's diagonal) along routes, in the map's currency
 - `unit`: `string` - unit of measure label (e.g. `kg`, `barrel`)
 - `icon`: `string` - icon reference used for the good's map/UI icon: usually `goods-<file>` from the goods icon set, or any other icon, including a custom one (see `icons.md`)
 - `color`: `string` - good color in hex
@@ -507,18 +508,17 @@ The temperature and moisture lookup matrix used to assign default biome ids is g
 
 ## Deals
 
-Trade transaction log stored in `pack.deals: Deal[]`. Append-only within a production cycle, rebuilt on regeneration. Object structure:
+A burg's trades with a market, stored in `pack.deals: Deal[]` and rebuilt on regeneration. Each deal sums the run's trades of one burg with one market in one good and kind; its id is its index. A deal is a tuple:
 
-- `i`: `number` - deal id; equals the array index until deals are dropped with a removed market, so look up by `i`
-- `seller`: `number` - burg id or market id of the seller
-- `sellerType`: `"burg" | "market"` - what `seller` refers to
-- `buyer`: `number` - burg id or market id of the buyer
-- `buyerType`: `"burg" | "market"` - what `buyer` refers to
+- `burg`: `number` - burg id
+- `market`: `number` - market id: the burg's own market, or the source market of an import
 - `good`: `number` - good id
+- `kind`: `0 | 1 | 2` - sale, input purchase for production, or purchase for demand (`DEAL_KINDS`)
 - `units`: `number` - traded amount, rounded to 2 decimals
-- `price`: `number` - per-unit price at the time of the deal, rounded to 2 decimals. For inter-market trades this is the importer's landed cost (exporter price + transport + exporter sales tax + import tariff)
-- `tax`: `number` - optional. Absolute sales-tax amount in currency units, set on burg sells and inter-market trades when the seller's state has a non-zero `salesTax`. `States.collectTaxes()` sums it into the seller state's treasury
-- `tariff`: `number` - optional. Absolute import tariff amount in currency units, set on inter-market trades when the buyer's state charges a tariff on foreign imports. `States.collectTaxes()` sums it into the buyer market's state treasury
+- `price`: `number` - average price per unit at the burg's door, rounded to 2 decimals: a purchase includes the carriage from the market's center along routes, a sale is net of it. An import's price is (exporter price + exporter sales tax + import tariff) plus margin, plus carriage
+- `tax`: `number` - absolute sales tax: the burg's on a sale, the exporter's on an import. `States.collectTaxes()` sums it into the seller's state treasury
+- `tariff`: `number` - absolute import tariff, charged by the state of the burg's own market. `States.collectTaxes()` sums it into that state's treasury
+- `carriage`: `number` - average cost per unit of carrying the goods between the market's center and the burg, already in `price`: added to a purchase, taken off a sale. 0 for the market's center burg
 
 ## Journeys
 

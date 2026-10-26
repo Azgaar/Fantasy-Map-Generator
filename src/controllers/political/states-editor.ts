@@ -864,23 +864,10 @@ function openTreasuryDialog(stateId: number): void {
   let salesTaxRevenue = 0;
   let tariffRevenue = 0;
   for (const deal of pack.deals ?? []) {
-    if (deal.tax) {
-      let sellerStateId = 0;
-      if (deal.sellerType === "burg") {
-        sellerStateId = pack.burgs[deal.seller]?.state || 0;
-      } else if (deal.sellerType === "market") {
-        const market = Markets.get(deal.seller);
-        const centerBurgId = market?.centerBurgId;
-        sellerStateId = centerBurgId ? pack.burgs[centerBurgId]?.state || 0 : 0;
-      }
-      if (sellerStateId === stateId) salesTaxRevenue += deal.tax;
-    }
-    if (deal.tariff && deal.buyerType === "market") {
-      const market = Markets.get(deal.buyer);
-      const centerBurgId = market?.centerBurgId;
-      const buyerStateId = centerBurgId ? pack.burgs[centerBurgId]?.state || 0 : 0;
-      if (buyerStateId === stateId) tariffRevenue += deal.tariff;
-    }
+    const [, , , , , , tax, tariff] = deal;
+    const { taxState, tariffState } = Markets.getTaxStates(deal);
+    if (taxState === stateId) salesTaxRevenue += tax;
+    if (tariffState === stateId) tariffRevenue += tariff;
   }
 
   let draftRules: TariffRule[] = (state.tariffs ?? []).map(rule => ({
@@ -905,7 +892,7 @@ function openTreasuryDialog(stateId: number): void {
   };
 
   Dialog.message({
-    message: /* html */ `<div data-tip="${t("Sales tax is applied to deals with a seller from the state. Poll tax is applied to all population of the state. Tariffs are applied to foreign goods imported into the state's markets. Tax changes take effect on Production regeneration")}" style="margin: 0.6em 0; display: grid; grid-template-columns: 7em auto auto; row-gap: 0.4em; align-items: center">
+    message: /* html */ `<div data-tip="${t("Sales tax is levied on every sale by a seller from the state: its burgs selling to their market, and its markets selling to burgs. Poll tax is levied on all population of the state. Tariffs are levied on goods that burgs of the state's markets import from foreign markets. Tax changes take effect on Production regeneration")}" style="margin: 0.6em 0; display: grid; grid-template-columns: 7em auto auto; row-gap: 0.4em; align-items: center">
       <label for="stateSalesTaxInput">${t("Sales Tax")}:</label>
       <input id="stateSalesTaxInput" type="number" min="0" max="1" step="0.01" value="${state.salesTax}" style="width: 6em"/> = ${formatPrice(salesTaxRevenue)}
       <label for="statePollTaxInput">${t("Poll Tax")}:</label>

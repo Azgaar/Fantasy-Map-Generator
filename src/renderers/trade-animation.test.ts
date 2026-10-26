@@ -7,7 +7,7 @@ vi.mock("./draw-trade-animation", () => ({
   clearHighlight: vi.fn()
 }));
 
-import { Markets } from "@/model/economy/markets-generator";
+import { DEAL_KINDS, type Deal, Markets } from "@/model/economy/markets-generator";
 import { Routes } from "@/model/economy/routes-generator";
 import * as drawTrade from "./draw-trade-animation";
 import { TradeAnimationModule } from "./trade-animation";
@@ -71,60 +71,24 @@ beforeEach(() => {
   });
 });
 
-// ─── getPathCost ─────────────────────────────────────────────────────────────
+// burg 2 trades with market 1, centered at burg 1
+const purchase: Deal = [2, 1, 0, DEAL_KINDS.input, 1, 1, 0, 0, 0];
+const sale: Deal = [2, 1, 0, DEAL_KINDS.sale, 1, 1, 0, 0, 0];
 
-describe("getPathCost", () => {
-  it("returns 1 for a sea-route segment", () => {
-    globalThis.pack = makePack({ 0: { 1: 7 } }, [{ i: 7, group: "searoutes" }]) as any;
-    expect(ta.getPathCost(0, 1)).toBe(1);
+// ─── getEnds ─────────────────────────────────────────────────────────────────
+
+describe("getEnds", () => {
+  it("runs a purchase from the market's center to the burg", () => {
+    expect(ta.getEnds(purchase)).toEqual({ startBurgId: 1, endBurgId: 2 });
   });
 
-  it("returns 5 for a roads segment", () => {
-    globalThis.pack = makePack({ 0: { 1: 3 } }, [{ i: 3, group: "roads" }]) as any;
-    expect(ta.getPathCost(0, 1)).toBe(5);
+  it("runs a sale from the burg to the market's center", () => {
+    expect(ta.getEnds(sale)).toEqual({ startBurgId: 2, endBurgId: 1 });
   });
 
-  it("returns 5 for a trails segment", () => {
-    globalThis.pack = makePack({ 0: { 1: 4 } }, [{ i: 4, group: "trails" }]) as any;
-    expect(ta.getPathCost(0, 1)).toBe(5);
-  });
-
-  it("defaults to 5 (land) when the route is not found", () => {
-    globalThis.pack = makePack({ 0: { 1: 99 } }, []) as any;
-    expect(ta.getPathCost(0, 1)).toBe(5);
-  });
-});
-
-// ─── getDealBatches ───────────────────────────────────────────────────────────
-
-describe("getDealBatches", () => {
-  it("returns an empty array for no deals", () => {
-    expect(ta.getDealBatches([])).toEqual([]);
-  });
-
-  it("groups multiple deals between the same burg pair into one batch", () => {
-    const deals: any[] = [
-      { seller: 2, sellerType: "burg", buyer: 1, buyerType: "market" },
-      { seller: 2, sellerType: "burg", buyer: 1, buyerType: "market" }
-    ];
-    const batches = ta.getDealBatches(deals);
-    expect(batches).toHaveLength(1);
-    expect(batches[0].deals).toHaveLength(2);
-    expect(batches[0].startBurgId).toBe(2);
-    expect(batches[0].endBurgId).toBe(1);
-  });
-
-  it("creates separate batches for swapped seller/buyer on the same pair", () => {
-    const deals: any[] = [
-      { seller: 2, sellerType: "burg", buyer: 1, buyerType: "market" },
-      { seller: 1, sellerType: "market", buyer: 2, buyerType: "burg" }
-    ];
-    expect(ta.getDealBatches(deals)).toHaveLength(2);
-  });
-
-  it("skips deals whose market cannot be resolved", () => {
-    const deals: any[] = [{ seller: 2, sellerType: "burg", buyer: 99, buyerType: "market" }];
-    expect(ta.getDealBatches(deals)).toHaveLength(0);
+  it("skips deals whose market or burg cannot be resolved", () => {
+    expect(ta.getEnds([2, 99, 0, DEAL_KINDS.sale, 1, 1, 0, 0, 0])).toBeNull();
+    expect(ta.getEnds([99, 1, 0, DEAL_KINDS.sale, 1, 1, 0, 0, 0])).toBeNull();
   });
 });
 
@@ -132,18 +96,18 @@ describe("getDealBatches", () => {
 
 describe("getPath", () => {
   it("returns null when a burg does not exist", () => {
-    expect(ta.getPath({ id: "1-99", deals: [], startBurgId: 1, endBurgId: 99, type: "local" })).toBeNull();
+    expect(ta.getPath([99, 1, 0, DEAL_KINDS.input, 1, 1, 0, 0, 0])).toBeNull();
   });
 
   it("returns null when no route exists between the two burgs", () => {
     // cellRoutes = {} — no connections
-    expect(ta.getPath({ id: "1-2", deals: [], startBurgId: 1, endBurgId: 2, type: "local" })).toBeNull();
+    expect(ta.getPath(purchase)).toBeNull();
   });
 
   it("returns points and a land segment when a roads route connects the burgs", () => {
     // cell 0 (burg 1) ↔ cell 1 (burg 2) via road route 0
     globalThis.pack = makePack({ 0: { 1: 0 }, 1: { 0: 0 } }, [{ i: 0, group: "roads" }]) as any;
-    const result = ta.getPath({ id: "1-2", deals: [], startBurgId: 1, endBurgId: 2, type: "local" });
+    const result = ta.getPath(purchase);
     expect(result).not.toBeNull();
     expect(result!.points).toHaveLength(2);
     expect(result!.segments).toHaveLength(1);
@@ -172,7 +136,7 @@ describe("getPath", () => {
         { i: 1, group: "roads" }
       ]
     } as any;
-    const result = ta.getPath({ id: "1-2", deals: [], startBurgId: 1, endBurgId: 2, type: "local" });
+    const result = ta.getPath(purchase);
     expect(result).not.toBeNull();
     expect(result!.segments).toHaveLength(2);
     expect(result!.segments[0].type).toBe("water");
@@ -204,7 +168,7 @@ describe("getPath", () => {
         { i: 1, group: "roads" }
       ]
     } as any;
-    const result = ta.getPath({ id: "1-2", deals: [], startBurgId: 1, endBurgId: 2, type: "local" });
+    const result = ta.getPath(purchase);
     expect(result).not.toBeNull();
     expect(result!.segments).toHaveLength(2);
     expect(result!.segments[0].type).toBe("water");
@@ -215,28 +179,27 @@ describe("getPath", () => {
 // ─── trigger ─────────────────────────────────────────────────────────────────
 
 describe("trigger", () => {
-  it("does nothing when given an empty batch list", () => {
+  it("does nothing when given no deals", () => {
     ta.trigger([]);
     expect(drawTrade.draw).not.toHaveBeenCalled();
   });
 
   it("clears animations and returns when the layer is disabled", () => {
     isTradeLayerOn = false;
-    ta.trigger([{ id: "1-2", deals: [], startBurgId: 1, endBurgId: 2, type: "local" }]);
+    ta.trigger([purchase]);
     expect(drawTrade.clear).toHaveBeenCalled();
     expect(drawTrade.draw).not.toHaveBeenCalled();
   });
 
   it("draws animation when the layer is active and a route path exists", () => {
     globalThis.pack = makePack({ 0: { 1: 0 }, 1: { 0: 0 } }, [{ i: 0, group: "roads" }]) as any;
-    const batch = { id: "1-2", deals: [], startBurgId: 1, endBurgId: 2, type: "local" as const };
-    ta.trigger([batch]);
-    expect(drawTrade.draw).toHaveBeenCalledWith(batch, expect.any(Array));
+    ta.trigger([purchase]);
+    expect(drawTrade.draw).toHaveBeenCalledWith(purchase, expect.any(Array));
   });
 
   it("does not draw when no route path can be found", () => {
     // cellRoutes = {} — no connections
-    ta.trigger([{ id: "1-2", deals: [], startBurgId: 1, endBurgId: 2, type: "local" }]);
+    ta.trigger([purchase]);
     expect(drawTrade.draw).not.toHaveBeenCalled();
   });
 });

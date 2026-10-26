@@ -1,6 +1,6 @@
 import { Goods } from "@/model/economy/goods-generator";
 import type { Deal } from "@/model/economy/markets-generator";
-import { Markets } from "@/model/economy/markets-generator";
+import { DEAL_KINDS, Markets } from "@/model/economy/markets-generator";
 import { Icons } from "@/model/icons";
 import type { Burg } from "@/model/political/burgs-generator";
 import { formatPrice } from "@/model/units";
@@ -37,14 +37,14 @@ const columns: EditorColumn<Deal>[] = [
     label: t("Good"),
     width: "6.8em",
     permanent: true,
-    sortBy: deal => Goods.get(deal.good)?.name ?? "",
+    sortBy: ([, , goodId]) => Goods.get(goodId)?.name ?? "",
     sortType: "alpha"
   },
   {
     key: "direction",
     label: t("Type"),
     width: "5em",
-    sortBy: deal => getDirection(deal, activeMarketId),
+    sortBy: deal => getDirection(deal),
     sortType: "alpha"
   },
   {
@@ -58,14 +58,20 @@ const columns: EditorColumn<Deal>[] = [
     key: "units",
     label: t("Units"),
     width: "5em",
-    sortBy: deal => deal.units
+    sortBy: ([, , , , units]) => units
+  },
+  {
+    key: "carriage",
+    label: t("Carriage"),
+    width: "5em",
+    sortBy: ([, , , , , , , , carriage]) => carriage
   },
   {
     key: "income",
     label: t("Income"),
     width: "5em",
     permanent: true,
-    sortBy: deal => getDealNet(deal, activeMarketId)
+    sortBy: deal => getDealNet(deal)
   }
 ];
 
@@ -134,7 +140,7 @@ function renderDialog(): void {
   ensureEl("marketDealsBody").addEventListener("click", ev => {
     const el = ev.target as HTMLElement;
     const dealId = el.closest<HTMLElement>(".marketDealParty")?.closest<HTMLElement>(".marketDeal")?.dataset.id;
-    const deal = pack.deals.find(d => d.i === Number(dealId));
+    const deal = pack.deals[Number(dealId)];
     if (!deal) return;
 
     const party = getParty(deal);
@@ -159,18 +165,16 @@ function getFilteredMarketDeals(): Deal[] {
   }
 
   const allDeals = getMarketDeals(pack.deals, activeMarketId);
-  const deals = allDeals.filter(deal => {
-    if (filterState.scope === "all") return true;
-    const counterparty = getCounterparty(deal, activeMarketId);
-    return filterState.scope === "local" ? counterparty.type === "burg" : counterparty.type === "market";
-  });
+  const deals = allDeals.filter(
+    deal => filterState.scope === "all" || Markets.isImport(deal) === (filterState.scope === "global")
+  );
 
   return sortDataByColumns(dialogId, deals, columns);
 }
 
 function renderMarketDealsPage(view: TableView<Deal>): void {
   const lines = view.rows.map(renderDealLine).join("");
-  const netFlow = view.all.reduce((total, deal) => total + getDealNet(deal, activeMarketId), 0);
+  const netFlow = view.all.reduce((total, deal) => total + getDealNet(deal), 0);
 
   ensureEl("marketDealsBody").innerHTML = lines || t("No market deals recorded");
   ensureEl("marketDealsFooterDeals").innerHTML = String(view.all.length);
@@ -180,63 +184,51 @@ function renderMarketDealsPage(view: TableView<Deal>): void {
 }
 
 export function getMarketDeals(deals: readonly Deal[], marketId: number): Deal[] {
-  return deals.filter(
-    deal =>
-      (deal.sellerType === "market" && deal.seller === marketId) ||
-      (deal.buyerType === "market" && deal.buyer === marketId)
-  );
+  return deals.filter(([, dealMarket]) => dealMarket === marketId);
 }
 
-function isMarketSeller(deal: Deal, marketId: number): boolean {
-  return deal.sellerType === "market" && deal.seller === marketId;
-}
-
-export function getDirection(deal: Deal, marketId: number): "in" | "out" {
-  return isMarketSeller(deal, marketId) ? "out" : "in";
-}
-
-export function getCounterparty(deal: Deal, marketId: number): { id: number; type: "burg" | "market" } {
-  return isMarketSeller(deal, marketId)
-    ? { id: deal.buyer, type: deal.buyerType }
-    : { id: deal.seller, type: deal.sellerType };
+/** From the market's side: a burg's sale comes in, its purchase goes out */
+export function getDirection([, , , kind]: Deal): "in" | "out" {
+  return kind === DEAL_KINDS.sale ? "in" : "out";
 }
 
 function renderDealLine(deal: Deal): string {
-  const good = Goods.get(deal.good);
+  const [, , goodId, , units, , , , carriage] = deal;
+  const good = Goods.get(goodId);
   if (!good) return "";
 
-  const dealNet = getDealNet(deal, activeMarketId);
+  const dealNet = getDealNet(deal);
   const party = getParty(deal);
-  const counterparty = getCounterparty(deal, activeMarketId);
-  const direction = getDirection(deal, activeMarketId);
+  const direction = getDirection(deal);
+  const scope = Markets.isImport(deal) ? "global" : "local";
   const incomeColor = dealNet >= 0 ? "#2a6" : "#c44";
   const backColor = dealNet >= 0 ? "#dff0d8" : "#f2dede";
 
-  return /* html */ `<div class="states marketDeal" data-id="${deal.i}" data-good="${good.name}" data-direction="${direction}" data-units="${rn(deal.units, 2)}" data-counterparty="${counterparty.type}_${party?.name}" data-income="${dealNet}">
+  return /* html */ `<div class="states marketDeal" data-id="${pack.deals.indexOf(deal)}" data-good="${good.name}" data-direction="${direction}" data-units="${rn(units, 2)}" data-counterparty="${scope}_${party?.name}" data-income="${dealNet}">
       <svg data-col="icon" data-tip="${t("Good icon")}" width="1.3em" height="1.3em" class="goodIcon">
         ${goodBadge(good)}
       </svg>
       <div data-col="good" data-tip="${t("Name")}" class="goodName">${good.name}</div>
       <div data-col="direction"><span class="marketBadge" style="background:${backColor}; color:${incomeColor}">${direction.toUpperCase()}</span></div>
       <div data-col="counterparty" class="marketDealParty pointer" data-tip="${t("Click to zoom")}">
-        <div class="${counterparty.type === "burg" ? "icon-dot-circled" : "icon-store"}" style="display:inline-block; width: 0.8em; ${counterparty.type === "market" ? "font-size: 0.85em;" : ""}"></div>
+        <div class="${scope === "local" ? "icon-dot-circled" : "icon-store"}" style="display:inline-block; width: 0.8em; ${scope === "global" ? "font-size: 0.85em;" : ""}"></div>
         <div style="display:inline-block; width: 6.8em;">${party?.name}</div>
       </div>
-      <div data-col="units" class="marketDealUnits">${rn(deal.units, 2)}</div>
+      <div data-col="units" class="marketDealUnits">${rn(units, 2)}</div>
+      <div data-col="carriage">${formatPrice(carriage)}</div>
       <div data-col="income" class="marketDealIncome" style="color:${incomeColor}">${formatPrice(dealNet)}</div>
     </div>`;
 }
 
-function getParty(deal: Deal): Burg | null {
-  const counterparty = getCounterparty(deal, activeMarketId);
-  const burgId = counterparty.type === "burg" ? counterparty.id : Markets.get(counterparty.id)?.centerBurgId;
-  if (!burgId) return null;
+function getParty([burgId]: Deal): Burg | null {
   return pack.burgs[burgId] || null;
 }
 
-export function getDealNet(deal: Deal, marketId: number): number {
-  const value = rn(deal.units * deal.price, 2);
-  return isMarketSeller(deal, marketId) ? value : -value;
+/** The market's income from the deal: what the burg paid, or minus what the market paid the burg */
+export function getDealNet(deal: Deal): number {
+  const [, , , , units, price] = deal;
+  const value = rn(units * price, 2);
+  return getDirection(deal) === "out" ? value : -value;
 }
 
 function downloadDealsCsv(): void {
@@ -244,21 +236,27 @@ function downloadDealsCsv(): void {
   if (!market) return;
 
   const rows = getMarketDeals(pack.deals, activeMarketId).flatMap(deal => {
-    const good = Goods.get(deal.good);
+    const [, , goodId, , units, price, , , carriage] = deal;
+    const good = Goods.get(goodId);
     if (!good) return [];
     return [
       [
-        deal.i,
+        pack.deals.indexOf(deal),
         good.name,
-        getDirection(deal, activeMarketId),
+        getDirection(deal),
         getParty(deal)?.name ?? "",
-        rn(deal.units, 2),
-        rn(deal.price, 2),
-        rn(getDealNet(deal, activeMarketId), 2)
+        rn(units, 2),
+        rn(price, 2),
+        carriage,
+        rn(getDealNet(deal), 2)
       ]
     ];
   });
-  Csv.download(`Market_${activeMarketId}_Deals`, ["Id", "Good", "Type", "Client", "Units", "Price", "Net"], rows);
+  Csv.download(
+    `Market_${activeMarketId}_Deals`,
+    ["Id", "Good", "Type", "Client", "Units", "Price", "Carriage", "Net"],
+    rows
+  );
 }
 
 export const MarketDealsOverview = { open };

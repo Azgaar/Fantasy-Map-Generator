@@ -184,7 +184,7 @@ export const METHODS = {
     "setSegment",
     "resetSegment"
   ],
-  Goods: ["rename", "setIcon", "recolor", "setPrice", "setUnit", "setTags", "setProduction"],
+  Goods: ["rename", "setIcon", "recolor", "setPrice", "setCarriage", "setUnit", "setTags", "setProduction"],
   Markets: ["rename", "recolor"],
   Lore: ["rename", "setYear", "setEra", "setDescription"],
   Notes: ["write"],

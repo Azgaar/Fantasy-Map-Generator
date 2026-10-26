@@ -67,6 +67,8 @@ The full multiplier stack (`getModifiers`) is applied to bonus-resource producti
 
 During the burg worker loop, the production planner evaluates each recipe against available inventory and market stock, choosing the most profitable option. Input goods are sourced from inventory first, then bought from the local market. If any market buy fails, the step is aborted.
 
+Burgs give each worker to the best gain per worker, so a manufactured good is made only if its value leaves about 6–7 over its inputs' value for each worker its chain takes (Beer, which also needs a Barrel, takes two). Goods priced below that, like Vinegar at 2 from a Wine at 2 or Ships below their inputs, were never made, which is why their default prices were raised in 1.157.0.
+
 Recipes use `number` keys (good ids) at runtime. In `GOODS_DATA` the recipes are written with string-name keys (`{ Wood: 1 }`) and resolved to ids when `defaultGoods` is built.
 
 ## Multipliers
@@ -105,7 +107,11 @@ For burg manufacture, `burg.cell` is passed as `cellId`, so all five dimensions 
 food | utilities | construction | military | luxury
 ```
 
-Coverage is used during the burg worker loop to calculate demand effects (boosting production of goods that fill unmet high-priority demand), and during the demand-fill phase after global trade (where burgs buy goods from the market to cover personal needs).
+Coverage sets the consumer demand behind initial market prices, and drives the demand fill after production, where burgs buy goods, local or imported, to cover personal needs.
+
+## Carriage
+
+`good.carriage` is the price of carrying one unit over a decima, along the route network (see the trade schema's Carriage). A decima is a distance, a tenth of the map's diagonal (`getDecima` in `src/model/units.ts`), so it scales with the map. A default good's price is its bulk, from how it is packed (1 for a wain or pile, 1.2 for a pallet or wagon, 0.6 for a barrel, 0.1 for bullion, 0.05 for a gem, 2 for a cannon), plus 2% of its value for the risk, rounded to 0.1. Cheap bulky goods pay about their own value per decima (Wood, Grain, Clay 1) and stay near home; dear ones pay a few percent (Gold 0.4, Jewelry 0.7) and travel. A new good starts at `DEFAULT_CARRIAGE` (0.5). Goods saved without it take the default good's price by name, otherwise a tenth of their base value rounded to 0.1 (`Goods.getDefaultCarriage`), which keeps their former carriage.
 
 ## The `GoodsModule` Class
 

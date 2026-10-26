@@ -1173,3 +1173,68 @@ describe("v1.157.0 contour spacing in height units", () => {
     expect(intervals(data)).toEqual([20, 10]);
   });
 });
+
+describe("v1.157.0 deal tuples", () => {
+  const legacyDeal = (i: number, burgSells: boolean, good: number, units: number, price: number, tax = 0) => ({
+    i,
+    seller: 1,
+    sellerType: burgSells ? "burg" : "market",
+    buyer: 1,
+    buyerType: burgSells ? "market" : "burg",
+    good,
+    units,
+    price,
+    tax
+  });
+
+  it("sums a burg's deals by market, good and kind, and keeps its production as totals", async () => {
+    const records = [
+      { goodId: 5, units: 2 },
+      { dealId: 0 },
+      { goodId: 6, units: 1, recipe: [{ goodId: 3, units: 2 }] },
+      { dealId: 1 },
+      { dealId: 2 },
+      { dealId: 3 }
+    ];
+    globalThis.pack = {
+      features: [],
+      burgs: [0, { i: 1, market: 1, production: records }],
+      deals: [
+        legacyDeal(0, false, 3, 2, 1), // an input bought before the sale
+        legacyDeal(1, true, 6, 1, 9, 0.9),
+        legacyDeal(2, false, 4, 1, 2), // demand fill comes after the last sale
+        legacyDeal(3, false, 4, 3, 4),
+        { ...legacyDeal(4, false, 3, 5, 1), buyerType: "market", buyer: 2 } // market-to-market trade
+      ]
+    } as unknown as typeof pack;
+
+    await resolveVersionConflicts(VERSION, []);
+
+    expect(pack.deals).toEqual([
+      [1, 1, 3, 1, 2, 1, 0, 0, 0],
+      [1, 1, 6, 0, 1, 9, 0.9, 0, 0],
+      [1, 1, 4, 2, 4, 3.5, 0, 0, 0]
+    ]);
+    expect(pack.burgs[1].production).toEqual([
+      [5, 2],
+      [6, 1]
+    ]);
+  });
+});
+
+describe("v1.157.0 carriage per good", () => {
+  it("gives goods saved without a carriage price the default by name, or a tenth of their value", async () => {
+    globalThis.pack = {
+      features: [],
+      goods: [
+        { i: 1, name: "Wood", value: 1 },
+        { i: 2, name: "Dragon scales", value: 30 },
+        { i: 3, name: "Gold", value: 15, carriage: 2 }
+      ]
+    } as unknown as typeof pack;
+
+    await resolveVersionConflicts(VERSION, []);
+
+    expect(pack.goods.map(good => good.carriage)).toEqual([1, 3, 2]);
+  });
+});

@@ -1,6 +1,6 @@
 # Markets Schema
 
-Markets are the centralized economic layer. Every flow of goods or money passes through a market: rural cells seed stock, burgs buy ingredients and sell output, and surpluses move between markets via global trade. The hot path is array-based and avoids `Map` / `Set` / `Record` lookups.
+Markets are the centralized economic layer. Every flow of goods or money passes through a market: rural cells seed stock, burgs buy ingredients and sell output, and a burg imports what its market lacks through that market. The hot path is array-based and avoids `Map` / `Set` / `Record` lookups.
 
 ## Market creation
 
@@ -47,62 +47,66 @@ All prices are clamped to `[good.value × PRICE_FLOOR_FACTOR, good.value × PRIC
 
 Each market good stores a single midpoint `price`. Customer-facing prices are derived per call:
 
-    buyPrice  = price × (1 + MARKET_MARGIN)
-    sellPrice = price × (1 − MARKET_MARGIN)
+    buyPrice  = price × (1 + MARKET_MARGIN) + salesTax + carriage
+    sellPrice = max(0, price × (1 − MARKET_MARGIN) − carriage)
 
-`Markets.quoteMarket(market, goodId)` returns `{ stock, buyPrice, sellPrice }` for planning.
+`MARKET_MARGIN` is 5%. `salesTax = marketState.salesTax × price` is what the market's state levies on the sale (see [taxes.md](taxes.md)); a burg's own sales tax on what it sells comes off its revenue instead. `carriage` is the cost of moving one unit between the market's center and the burg (see Carriage); it is 0 at the center burg. `Markets.quoteMarket(market, goodId, burg?)` returns `{ stock, buyPrice, sellPrice }` for planning, at the burg's door when a burg is given.
+
+## Carriage
+
+Goods pay for the path they travel, the same path the trade animation draws:
+
+- `TradeRoutes.search(startCell, endCell?)` is a Dijkstra over the route network (`pack.cells.routes`). States are `cell × 2 + (isWater ? 1 : 0)`, so land and water arrivals at one cell are tracked apart. An edge costs its length (between burg positions, otherwise cell centers) × 1 on land routes or × `WATER_COST` (0.2) on sea routes, plus `SWITCH_SPACINGS` (4) cell spacings for loading when the path switches between land and water.
+- `Markets.measureRoutes()` runs it once per economy run from every market's center (`TradeRoutes.measure()`), keeping the cost to every burg.
+- `carriage = min(routeCost / decima, MAX_DECIMAS) × good.carriage` per unit (`Markets.getTransport`), where a decima is a tenth of the map's diagonal (`getDecima`) and `good.carriage` the good's price per unit and decima (see the goods schema). The cap, `MAX_DECIMAS` = 10, is the whole diagonal.
+- A burg with no route to its own market pays the cap. Another market with no route to the burg cannot sell to it.
 
 ## Buy phase (production)
 
-`Markets.buy({ burg, good, units, budget? })` is called when a burg needs recipe ingredients:
+`Markets.buy({ burg, good, units, kind, budget? })` is called when a burg needs recipe ingredients (`kind` input):
 
-- Caps the order at `min(units, marketStock, budget / buyPrice)` and rounds to 2 decimals.
+- Caps the order at `min(units, marketStock, budget / buyPrice)`, the affordable part rounded down to the hundredth so the cost stays within the budget.
 - If the resulting amount is < 0.01, returns `null`.
-- Records a deal with `seller = market.i / sellerType = "market"` and `buyer = burg.i / buyerType = "burg"`.
-- Reduces market stock; raises market price under buy pressure. No sales tax.
+- Adds the trade to the burg's deal with its market in the good and kind (see Deal log) and returns the trade `{ units, price, tax }`.
+- Records the market's state sales tax as the trade's `tax` (`taxPerUnit × units`), already in the price.
+- Reduces market stock; raises market price under buy pressure.
 
-The production module subtracts `deal.units × deal.price` from `burg.treasury` and accumulates it into a local `ingredientCosts` accumulator (per-burg, used to compute that burg's `product` at the end of the worker loop).
+The production module subtracts `units × price` from `burg.treasury` and accumulates it into a local `ingredientCosts` accumulator (per-burg, used to compute that burg's `product` at the end of the worker loop).
+
+When the burg's market has no stock of an ingredient, the burg imports it through that market:
+
+- `Markets.getTradeTerms()` returns the per-unit taxes on a good moving between two markets — `taxPerUnit` (exporter's sales tax) and `tariffPerUnit` (importer's tariff) — or `null` under an embargo (see Foreign trade).
+- `Markets.quoteImport(burg, good, terms)` picks the source that delivers to the burg cheapest and quotes its delivered price.
+- `Markets.importForBurg({ burg, source, good, units, kind, terms })` adds the trade to the burg's deal with the source market at the delivered price, with the exporter's `tax` and the importer's `tariff`; the source's stock falls and its price rises, and the burg's own market is untouched.
 
 ## Sell phase (production)
 
 `Markets.sell({ burg, good, units, taxRate? })` is called once per good when a burg sells its inventory after production:
 
-- Records a deal with `seller = burg.i / sellerType = "burg"` and `buyer = market.i / buyerType = "market"`.
-- Resolves the seller's sales tax (`taxRate` if passed, otherwise `state.salesTax` via `States.getSalesTax(burg)`) and persists the absolute tax amount on `deal.tax = units × price × rate`. `deal.tax` is always set (0 when the rate is zero, e.g. neutral burgs).
+- Adds the trade to the burg's sale deal with its market, with the absolute sales tax `units × price × rate` (the rate is the burg's `state.salesTax`, 0 for neutral burgs).
 - Increases market stock; lowers market price under sell pressure.
-- Returns the deal; the production module deducts `deal.tax` from gross revenue and adds the post-tax amount to `burg.treasury`. `States.collectTaxes()` later reads `deal.tax` to credit the seller's state treasury.
+- Returns the trade; the production module deducts its `tax` from gross revenue and adds the post-tax amount to `burg.treasury`. `States.collectTaxes()` later credits the deal's tax to the seller's state treasury.
 
 ## Demand-fill buy phase
 
-After global trade, each burg fills personal demand via `Markets.buy(...)` with a `budget` argument equal to the remaining `burg.treasury`:
+After production, each burg fills personal demand within its remaining `burg.treasury`, as the `budget`:
 
-- Sorts candidate goods per category by `buyPrice / coverageWeight` and buys the cheapest first.
-- Each purchase decreases stock, raises price, and reduces treasury.
-- Each purchase is recorded as a deal-reference record on `burg.production` (there is no carried-over inventory between cycles).
+- Quotes every candidate good of a category like production does: the local buy price while its market stocks the good, otherwise the cheapest import's delivered price.
+- Sorts the candidates by `buyPrice / coverageWeight` and buys the cheapest first, via `Markets.buy` or `Markets.importForBurg`.
+- Each purchase decreases the seller market's stock, raises its price, and reduces treasury.
+- Each purchase goes into the burg's demand deal with the seller market (there is no carried-over inventory between cycles).
 
-## Global redistribution
+## Foreign trade
 
-`Markets.runGlobalTrade()` runs after every burg has produced and sold. Tariff and embargo policies are compiled once into an $O(1)$ pre-indexed lookup prior to iterating goods. For each good:
+Markets do not trade with each other on their own. Every foreign deal starts with a burg that needs a good its market lacks — an ingredient during production or a demand good in the demand fill — and buys it from another market. The delivered price:
 
-1. Computes a per-market safety reserve = `population × (consumerDemand + industrialDemand) × (1 + TRADE_RESERVE_FACTOR)`.
-2. Splits markets into **exporters** (stock above reserve) and **importers** (stock below reserve). Skips the good entirely if either side is empty.
-3. For each (exporter, importer) pair, checks tariffs and embargoes:
-   - Domestic inter-market trade (`exporterStateId === importerStateId`): 0 tariff, never embargoed.
-   - Cross-state trade: evaluates bidirected embargo (`resolve(importerState, exporterState, good)` and `resolve(exporterState, importerState, good)`). If either side is `"embargo"`, the opportunity is skipped.
-   - Otherwise resolves `tariffRate` from the importer state's most specific rule (0 fallback).
-   - `transportCost = (octileDistance / mapDiagonal) × DISTANCE_COST_FACTOR × good.value` (a precomputed Chebyshev-octile straight-line cost between market center burgs).
-   - `exporterTaxPerUnit = exporterState.salesTax × exporterPrice` (0 for neutral exporters).
-   - `tariffPerUnit = tariffRate × exporterPrice`.
-   - `landedCost = exporterPrice + transportCost + exporterTaxPerUnit + tariffPerUnit`.
-   - `unitProfit = importerPrice − landedCost`.
-   - `units = min(exporterAvailable, importerNeeded)`.
-   - Skips if `unitProfit × units < MIN_PROFIT` or `units < MIN_UNIT`. High tariffs or taxes drop opportunities that become unprofitable.
-4. Sorts opportunities by total profit descending and executes them greedily, recomputing available / needed at execution time.
-5. Each executed transfer records a market-to-market deal at `price = landedCost` with `tax = exporterTaxPerUnit × units` and `tariff = tariffPerUnit × units` (omitted if 0), moves stock, and applies market pressure:
-   - **Exporter price rises** (lost stock → applyMarketPressure with positive `units`).
-   - **Importer price falls** (gained stock → applyMarketPressure with negative `units`).
+- `carriage` from the source market's center to the burg (see Carriage).
+- `taxPerUnit = exporterState.salesTax × exporterPrice` (0 for neutral exporters).
+- `tariffPerUnit = tariffRate × exporterPrice`, where `tariffRate` is the importer state's most specific rule (0 fallback). Markets of one state trade with no tariff and are never embargoed.
+- An embargo by either state (`resolve(importerState, exporterState, good)` or `resolve(exporterState, importerState, good)`) rules the source out.
+- `deliveredPrice = exporterPrice × (1 + MARKET_MARGIN) + taxPerUnit + tariffPerUnit + carriage`: the taxes come after the margin, as on a local buy.
 
-The recorded `deal.tax` flows to the exporter state's treasury, and `deal.tariff` flows to the importer market's state treasury via `States.collectTaxes()`. Markets have no treasury, so the deal price (gross of exporter tax and import tariff) is what the importer effectively paid.
+`getTradeTerms()` compiles the tariff and embargo rules once and caches each market pair's tax rate and per-good tariff on first use, as none of them change during a run. An import deal's `tax` flows to the exporter state's treasury and its `tariff` to the state of the burg's own market via `States.collectTaxes()`.
 
 ## Demand model
 
@@ -115,8 +119,6 @@ Demand is population-driven and category-based:
 The same demand model drives:
 
 - initial price computation (consumer + industrial demand factors),
-- the worker loop's demand-focus multiplier,
-- per-market safety reserves in `runGlobalTrade`,
 - final burg demand-fill prioritization (`cost per coverage`).
 
 There is no separate `updateMarketDemand` step; demand factors are recomputed per phase from `pack.goods` and burg population.
@@ -143,38 +145,38 @@ There is no separate `updateMarketDemand` step; demand factors are recomputed pe
 
 ## Deal log
 
-Every transaction is recorded in `pack.deals` as:
+Every deal is between a burg and a market, and `pack.deals` keeps one per burg, market, good and kind, summing the run's trades as they happen (`Markets.recordDeal`). A deal is a tuple, its id is its index:
 
-    Deal = {
-      i: number,                      // index in pack.deals
-      seller: number,                 // burg id or market id
-      sellerType: "burg" | "market",
-      buyer: number,                  // burg id or market id
-      buyerType: "burg" | "market",
-      good: number,                   // good id
-      units: number,                  // rounded to 2 decimals
-      price: number,                  // price per unit at time of deal, rounded to 2 decimals
-      tax: number                     // absolute sales-tax amount in currency units; 0 when the seller's state has no salesTax or the deal is a market→burg buy
-    }
+    Deal = [
+      burg: number,
+      market: number,                 // the burg's own market, or the source of an import
+      good: number,
+      kind: 0 | 1 | 2,                // DEAL_KINDS: sale, input purchase, demand purchase
+      units: number,                  // summed, rounded to 2 decimals
+      price: number,                  // volume-weighted average per unit
+      tax: number,                    // sales tax: the burg's on a sale, the exporter's on an import
+      tariff: number,                 // the importer's, on an import
+      carriage: number                // average per unit, as price: carrying the goods between the market's center and the burg
+    ]
 
-Deals are produced by three call sites: `Markets.buy` (market → burg), `Markets.sell` (burg → market), and `Markets.runGlobalTrade` (market → market). The deal log is the input for the trade animation layer, the trade details dialog, and `States.collectTaxes()` which sums `deal.tax` into the seller state's treasury.
+A deal with a market other than the burg's own is an import (`Markets.isImport`). `Markets.buy`, `Markets.sell` and `Markets.importForBurg` record deals; the step-by-step trades are kept only in `burg.productionLog`, in debug mode. The deal log is the input for the trade animation layer, the trade details dialog, the market views and `States.collectTaxes()`, which credits taxes to the states `Markets.getTaxStates(deal)` names.
 
 ## Trade animation
 
 A read-only visualization layer that turns the deal log into moving markers on the map. It does not mutate any market or burg state.
 
-- **Batching**: deals are grouped by ordered `(seller burg, buyer burg)`. Market parties resolve to their `centerBurgId`, so opposite-direction flows form separate batches.
-- **Pathfinding**: `findRoutePath(startCell, endCell)` runs a state-encoded Dijkstra over `pack.cells.routes`. State is encoded as `cell × 2 + (isWater ? 1 : 0)` so land and water arrivals at the same cell are tracked separately. Edge costs: water = 1, land = 5, land↔sea switch = 20; switches are only permitted at port burg cells. The resulting cell sequence is split into `"land"` / `"water"` segments.
+- **Flows**: each deal is one flow, between the burg and its market's center burg (`getEnds`): a sale runs to the market, a purchase from it. `displayType` "global" shows imports, "local" the rest.
+- **Pathfinding**: `findRoutePath(startCell, endCell)` takes the cheapest path from `TradeRoutes.search`, the same search that prices carriage (see Carriage), and splits its cells into `"land"` / `"water"` segments. A deal with no route is not animated.
 - **Rendering**: each segment animates one marker — wagon on land (rendered at `markerSize / 2`), ship on water (`markerSize`).
-- **Lifecycle**: `start / stop / restart / sync` follow the `toggleTrade` layer flag. Batches are computed once per `start()` and cached. A `concurrent`-sized pool of active animations is maintained via `topUp()`; each animation calls back on completion to immediately spawn a replacement. `trigger(batches)` is a one-shot variant that draws a specific set of batches without the pool lifecycle. `clear()` removes every animation SVG, and the cloned `tradeAnimation` group is wiped before `.map` save.
-- **Interaction**: clicking a marker opens `TradeDetails.open(batch)` — a dialog that groups the batch's deals by good, shows units / unit price / total value, and highlights the route in red. Endpoint zoom buttons recenter on the seller or buyer burg.
+- **Lifecycle**: `start / stop / restart / sync` follow the `toggleTrade` layer flag. The deals are filtered once per `start()` and cached. A `concurrent`-sized pool of active animations is maintained via `topUp()`; each animation calls back on completion to immediately spawn a replacement. `trigger(deals)` is a one-shot variant that draws specific deals without the pool lifecycle. `clear()` removes every animation SVG, and the cloned `tradeAnimation` group is wiped before `.map` save.
+- **Interaction**: clicking a marker opens `TradeDetails.open(deal)` — a dialog that lists the goods the deal's burg sells to its market or buys from a market, always from the burg's side ("Trade: burg sells to market" or "buys from market"), and highlights the route in red. Like the Production Overview, each good shows its net price per unit (the goods alone), the carriage, sales tax and tariff per unit (each tax naming the state it goes to), units, and the income to the burg: positive on a sale, negative on a purchase. Zoom buttons recenter on the burg or the market's center.
 - **Style controls**: `TradeAnimationEditor` exposes display type, concurrency, timing and size — `displayType` (`"both"` / `"local"` / `"global"`), `concurrent`, `duration`, `landDurationModifier`, `segmentChangePause`, `markerSize`. Path stroke color / dash live in the layer style editor.
 - **Sources**: [src/renderers/trade-animation.ts](../../src/renderers/trade-animation.ts), [src/renderers/draw-trade-animation.ts](../../src/renderers/draw-trade-animation.ts), [src/controllers/economy/trade/trade-details.ts](../../src/controllers/economy/trade/trade-details.ts), [src/controllers/economy/trade/trade-animation-editor.ts](../../src/controllers/economy/trade/trade-animation-editor.ts).
 
 ## Architectural intent
 
 - Rural production shapes local market conditions before any burg produces.
-- Burgs sell everything they produce and buy demand goods separately after global redistribution.
+- Burgs sell everything they produce and buy demand goods separately after production.
 - The local resource bonus gives burgs on resource cells a free supply advantage but does not bypass the market price signal.
 - Markets are the only mechanism for moving goods between rural producers, burg workshops, and other regions.
 
