@@ -343,6 +343,7 @@ export function createCampaign(opts: CreateOptions): Campaign {
   const tier1ByChain = new Map<string, string>();
   for (const b of opts.content?.buildings ?? []) {
     if (b.tier !== 1) continue;
+    if (b.kind && b.kind !== "structure") continue;
     if (tier1ByChain.has(b.chain)) continue;
     tier1ByChain.set(b.chain, b.id);
   }
@@ -355,6 +356,8 @@ export function createCampaign(opts: CreateOptions): Campaign {
     harbor: "maritime",
     temple: "order",
     shadows: "shadows",
+    school: "school",
+    militia: "militia",
     // "walls" and "barracks" are not recipe chains: since §4.5 they are a
     // province's *footing*, a tier resolved below against the content.
     walls: "defense",

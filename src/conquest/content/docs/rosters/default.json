@@ -142,6 +142,68 @@
           "s": 1,
           "c": 0
         }
+      },
+      "necromancer": {
+        "name": "Death-Cult Necromancer",
+        "category": "spellcaster",
+        "blocks": 0.02,
+        "attack": 5,
+        "defense": 6,
+        "charge": 1,
+        "missile": 10,
+        "cost": 700,
+        "upkeep": 80,
+        "capacityCost": {
+          "m": 1,
+          "w": 2,
+          "s": 2,
+          "c": 1
+        },
+        "powers": {
+          "hex": 0.08,
+          "heal": 6,
+          "terror": 0.05
+        }
+      },
+      "undead_swarm": {
+        "name": "Risen Undead Swarm",
+        "category": "melee",
+        "blocks": 0.2,
+        "attack": 4,
+        "defense": 8,
+        "charge": 2,
+        "missile": 0,
+        "cost": 150,
+        "upkeep": 20,
+        "capacityCost": {
+          "m": 1,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        },
+        "powers": {
+          "terror": 0.03
+        }
+      },
+      "dead_legion": {
+        "name": "Skeletal Dead Legion",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 9,
+        "defense": 13,
+        "charge": 4,
+        "missile": 0,
+        "cost": 450,
+        "upkeep": 50,
+        "capacityCost": {
+          "m": 3,
+          "w": 2,
+          "s": 1,
+          "c": 0
+        },
+        "powers": {
+          "terror": 0.05
+        }
       }
     },
     "recruitable": [
@@ -412,7 +474,8 @@
       "effects": {
         "capacity": {
           "m": 2
-        }
+        },
+        "freeGarrisonUnits": 1
       }
     },
     {
@@ -432,7 +495,8 @@
         },
         "upkeep": {
           "w": 1
-        }
+        },
+        "freeGarrisonUnits": 2
       }
     },
     {
@@ -453,6 +517,134 @@
         "upkeep": {
           "w": 1,
           "s": 1
+        },
+        "freeGarrisonUnits": 4
+      }
+    },
+    {
+      "id": "school1",
+      "name": "School",
+      "chain": "school",
+      "tier": 1,
+      "settlementKinds": [
+        "major",
+        "minor"
+      ],
+      "cost": 800,
+      "turns": 1,
+      "effects": {
+        "capacity": {
+          "w": 2
+        }
+      }
+    },
+    {
+      "id": "school2",
+      "name": "Academy",
+      "chain": "school",
+      "tier": 2,
+      "settlementKinds": [
+        "major"
+      ],
+      "cost": 1800,
+      "turns": 2,
+      "requires": "school1",
+      "effects": {
+        "capacity": {
+          "w": 4
+        },
+        "upkeep": {
+          "s": 1
+        }
+      }
+    },
+    {
+      "id": "school3",
+      "name": "Great Academy",
+      "chain": "school",
+      "tier": 3,
+      "settlementKinds": [
+        "major"
+      ],
+      "cost": 3500,
+      "turns": 3,
+      "requires": "school2",
+      "effects": {
+        "capacity": {
+          "w": 8
+        },
+        "upkeep": {
+          "s": 2
+        }
+      }
+    },
+    {
+      "id": "militia1",
+      "name": "Militia Muster",
+      "chain": "militia",
+      "tier": 1,
+      "settlementKinds": [
+        "major",
+        "minor"
+      ],
+      "cost": 500,
+      "turns": 1,
+      "effects": {
+        "capacity": {
+          "m": 1
+        },
+        "militiaDefense": {
+          "unitType": "levy_spear",
+          "count": 2
+        }
+      }
+    },
+    {
+      "id": "militia2",
+      "name": "Organized Militia",
+      "chain": "militia",
+      "tier": 2,
+      "settlementKinds": [
+        "major",
+        "minor"
+      ],
+      "cost": 1200,
+      "turns": 2,
+      "requires": "militia1",
+      "effects": {
+        "capacity": {
+          "m": 2
+        },
+        "upkeep": {
+          "w": 1
+        },
+        "militiaDefense": {
+          "unitType": "levy_spear",
+          "count": 4
+        }
+      }
+    },
+    {
+      "id": "militia3",
+      "name": "Veteran Guard",
+      "chain": "militia",
+      "tier": 3,
+      "settlementKinds": [
+        "major"
+      ],
+      "cost": 2600,
+      "turns": 3,
+      "requires": "militia2",
+      "effects": {
+        "capacity": {
+          "m": 4
+        },
+        "upkeep": {
+          "w": 2
+        },
+        "militiaDefense": {
+          "unitType": "sword",
+          "count": 4
         }
       }
     },
@@ -469,7 +661,7 @@
       "effects": {
         "incomePct": 0.06,
         "capacity": {
-          "w": 1
+          "w": 2
         }
       }
     },
@@ -530,6 +722,443 @@
         },
         "upkeep": {
           "w": 3
+        }
+      }
+    },
+    {
+      "id": "custom_brutal_tyranny",
+      "name": "Brutal Tyranny",
+      "kind": "custom",
+      "chain": "custom",
+      "tier": 1,
+      "settlementKinds": [
+        "major",
+        "minor"
+      ],
+      "cost": 1000,
+      "turns": 3,
+      "effects": {
+        "capacity": {
+          "m": 4
+        },
+        "atrocityMod": {
+          "gainMultiplier": 0.5,
+          "revoltMultiplier": 3
+        }
+      }
+    },
+    {
+      "id": "custom_burning_creed",
+      "name": "Burning Creed",
+      "kind": "custom",
+      "chain": "custom",
+      "tier": 1,
+      "settlementKinds": [
+        "major",
+        "minor"
+      ],
+      "cost": 1000,
+      "turns": 3,
+      "effects": {
+        "capacity": {
+          "s": 4
+        },
+        "unlockRoster": [
+          "elfBase"
+        ]
+      }
+    },
+    {
+      "id": "custom_democratic",
+      "name": "Democratic Traditions",
+      "kind": "custom",
+      "chain": "custom",
+      "tier": 1,
+      "settlementKinds": [
+        "major",
+        "minor"
+      ],
+      "cost": 1000,
+      "turns": 3,
+      "effects": {
+        "capacity": {
+          "w": 2,
+          "s": 2
+        },
+        "rollBonusPerTurn": 3
+      }
+    },
+    {
+      "id": "custom_devil_worshipers",
+      "name": "Devil Worshipers",
+      "kind": "custom",
+      "chain": "custom",
+      "tier": 1,
+      "settlementKinds": [
+        "major",
+        "minor"
+      ],
+      "cost": 1000,
+      "turns": 3,
+      "effects": {
+        "capacity": {
+          "m": 4,
+          "w": 4
+        },
+        "atrocityMod": {
+          "perTurnDelta": -1
+        },
+        "requiresGarrisonToProduce": true
+      }
+    },
+    {
+      "id": "custom_dwarf_friend",
+      "name": "Dwarf Friend",
+      "kind": "custom",
+      "chain": "custom",
+      "tier": 1,
+      "settlementKinds": [
+        "major",
+        "minor"
+      ],
+      "cost": 1000,
+      "turns": 3,
+      "incompatibleWith": [
+        "custom_slavery"
+      ],
+      "effects": {
+        "capacity": {
+          "w": 4
+        },
+        "unlockRoster": [
+          "dwarfBase"
+        ]
+      }
+    },
+    {
+      "id": "custom_halfling_affinity",
+      "name": "Halfling Affinity",
+      "kind": "custom",
+      "chain": "custom",
+      "tier": 1,
+      "settlementKinds": [
+        "major",
+        "minor"
+      ],
+      "cost": 1000,
+      "turns": 3,
+      "effects": {
+        "capacity": {
+          "w": 2,
+          "s": 2
+        },
+        "unlockRoster": [
+          "halflingBase"
+        ]
+      }
+    },
+    {
+      "id": "custom_mercantile",
+      "name": "Mercantile",
+      "kind": "custom",
+      "chain": "custom",
+      "tier": 1,
+      "settlementKinds": [
+        "major",
+        "minor"
+      ],
+      "cost": 1000,
+      "turns": 3,
+      "effects": {
+        "capacity": {
+          "w": 4
+        },
+        "chainMultiplier": {
+          "chain": "economy",
+          "pool": "w",
+          "factor": 2
+        }
+      }
+    },
+    {
+      "id": "custom_religious_fervor",
+      "name": "Religious Fervor",
+      "kind": "custom",
+      "chain": "custom",
+      "tier": 1,
+      "settlementKinds": [
+        "major",
+        "minor"
+      ],
+      "cost": 1000,
+      "turns": 3,
+      "effects": {
+        "capacity": {
+          "s": 4
+        },
+        "chainMultiplier": {
+          "chain": "order",
+          "pool": "s",
+          "factor": 2
+        }
+      }
+    },
+    {
+      "id": "custom_slavery",
+      "name": "Slavery",
+      "kind": "custom",
+      "chain": "custom",
+      "tier": 1,
+      "settlementKinds": [
+        "major",
+        "minor"
+      ],
+      "cost": 1000,
+      "turns": 3,
+      "incompatibleWith": [
+        "custom_dwarf_friend"
+      ],
+      "effects": {
+        "capacity": {
+          "w": 4
+        },
+        "upkeep": {
+          "s": 2
+        },
+        "freeBuildingUpkeepPerRegion": 1
+      }
+    },
+    {
+      "id": "custom_spartan_culture",
+      "name": "Spartan Culture",
+      "kind": "custom",
+      "chain": "custom",
+      "tier": 1,
+      "settlementKinds": [
+        "major",
+        "minor"
+      ],
+      "cost": 1000,
+      "turns": 3,
+      "effects": {
+        "capacity": {
+          "m": 4
+        },
+        "chainMultiplier": {
+          "chain": "military",
+          "pool": "m",
+          "factor": 2
+        }
+      }
+    },
+    {
+      "id": "custom_well_educated",
+      "name": "Well-Educated",
+      "kind": "custom",
+      "chain": "custom",
+      "tier": 1,
+      "settlementKinds": [
+        "major",
+        "minor"
+      ],
+      "cost": 1000,
+      "turns": 3,
+      "effects": {
+        "capacity": {
+          "w": 2,
+          "s": 2
+        },
+        "chainMultiplier": {
+          "chain": "school",
+          "pool": "w",
+          "factor": 2
+        }
+      }
+    },
+    {
+      "id": "community_aid",
+      "name": "Community Aid",
+      "kind": "unchained",
+      "chain": "unchained",
+      "tier": 1,
+      "settlementKinds": [
+        "major",
+        "minor"
+      ],
+      "cost": 600,
+      "turns": 1,
+      "effects": {
+        "capacity": {
+          "s": 1
+        },
+        "upkeep": {
+          "w": 2
+        },
+        "conversion": {
+          "from": "w",
+          "to": "s",
+          "ratio": 2
+        }
+      }
+    },
+    {
+      "id": "hell_shrine",
+      "name": "Hell Shrine",
+      "kind": "unchained",
+      "chain": "unchained",
+      "tier": 1,
+      "settlementKinds": [
+        "major",
+        "minor"
+      ],
+      "cost": 1500,
+      "turns": 3,
+      "effects": {
+        "capacity": {
+          "m": 2,
+          "w": 4,
+          "s": 2
+        },
+        "atrocityIgnore": 5
+      }
+    },
+    {
+      "id": "military_spending",
+      "name": "Military Spending",
+      "kind": "unchained",
+      "chain": "unchained",
+      "tier": 1,
+      "settlementKinds": [
+        "major",
+        "minor"
+      ],
+      "cost": 600,
+      "turns": 1,
+      "effects": {
+        "capacity": {
+          "m": 1
+        },
+        "upkeep": {
+          "w": 2
+        },
+        "conversion": {
+          "from": "w",
+          "to": "m",
+          "ratio": 2
+        }
+      }
+    },
+    {
+      "id": "necromantic_cult",
+      "name": "Necromantic Cult",
+      "kind": "unchained",
+      "chain": "unchained",
+      "tier": 1,
+      "settlementKinds": [
+        "major",
+        "minor"
+      ],
+      "cost": 1200,
+      "turns": 2,
+      "effects": {
+        "upkeep": {
+          "s": 2
+        },
+        "unlock": [
+          "necromancer",
+          "undead_swarm",
+          "dead_legion"
+        ],
+        "atrocityMod": {
+          "perRecruitPenalty": 2
+        }
+      }
+    },
+    {
+      "id": "processing_camp",
+      "name": "Processing Camp",
+      "kind": "resource",
+      "chain": "resource",
+      "tier": 1,
+      "settlementKinds": [
+        "major",
+        "minor"
+      ],
+      "cost": 700,
+      "turns": 2,
+      "effects": {
+        "capacity": {
+          "w": 2
+        },
+        "conversion": {
+          "from": "w",
+          "to": "m",
+          "ratio": 1
+        }
+      }
+    },
+    {
+      "id": "resource_extractor",
+      "name": "Resource Extractor",
+      "kind": "resource",
+      "chain": "resource",
+      "tier": 1,
+      "settlementKinds": [
+        "major",
+        "minor"
+      ],
+      "cost": 600,
+      "turns": 2,
+      "effects": {
+        "capacity": {
+          "w": 2
+        }
+      }
+    },
+    {
+      "id": "siege_supplies",
+      "name": "Siege Supplies",
+      "kind": "unchained",
+      "chain": "unchained",
+      "tier": 1,
+      "settlementKinds": [
+        "major",
+        "minor"
+      ],
+      "cost": 500,
+      "turns": 1,
+      "maxInstances": 2,
+      "effects": {
+        "upkeep": {
+          "m": 2
+        },
+        "siegeSupplies": 20
+      }
+    },
+    {
+      "id": "united_efforts",
+      "name": "United Efforts",
+      "kind": "unchained",
+      "chain": "unchained",
+      "tier": 1,
+      "settlementKinds": [
+        "major",
+        "minor"
+      ],
+      "cost": 600,
+      "turns": 1,
+      "effects": {
+        "capacity": {
+          "m": 1,
+          "s": 1
+        },
+        "upkeep": {
+          "w": 2
+        },
+        "conversion": {
+          "from": "w",
+          "to": "s",
+          "ratio": 2
         }
       }
     }

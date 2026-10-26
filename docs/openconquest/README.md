@@ -48,6 +48,7 @@ You open the generator and play: the map you were designing or editing *is* the 
    - [Magic, Monsters & Arcane Warfare](#magic-monsters--arcane-warfare)
    - [Sieges and Capturing Regions](#sieges-and-capturing-regions)
    - [Economy: Power as a Stock (Capacity M/W/S/C)](#economy-power-as-a-stock-capacity-mwsc)
+   - [Regional Assets & Building Infrastructure](#regional-assets--building-infrastructure)
    - [Public Order and Rebellions](#public-order-and-rebellions)
    - [Diplomacy & Treaties](#diplomacy--treaties)
    - [Characters: Lords & Agents](#characters-lords--agents)
@@ -209,6 +210,118 @@ The economy operates on a **capacity stock model** rather than an inflationary g
 - **Deficits**: If load exceeds generation, the realm experiences military **attrition** and public order unrest rather than monetary bankruptcy.
 - **Mobilisation Standard**: Unit costs derive from `MEN_PER_BLOCK = 1000`. Full-strength regiments load fractional capacity blocks (e.g. 150 men = 0.15 blocks = 0.3 M load).
 - **Gold as Diplomatic Purse**: Gold is strictly an exchange currency for diplomatic gifts, peace tributes, and ransoms. Free Wealth can be converted to purse gold using the `WithdrawTreasure` action with escalating costs.
+
+### Regional Assets & Building Infrastructure
+
+Regional assets represent permanent civil, martial, economic, and clandestine structures built in controlled settlements and provinces. They anchor the realm's capacity generation ($M/W/S/C$), strengthen fortifications against siege assaults, expand tax revenue, and maintain public order.
+
+#### Core Structural Rules
+- **One Structure Per Chain (Upgrade Consumption)**: A region can only maintain one asset from any given chain. Higher-tier structures *consume and replace* their lower-tier predecessors rather than stacking with them (e.g., constructing *Stone Walls* replaces the standing *Palisade*, ensuring fortification tiers and capacity yields do not stack multiplicatively).
+- **Settlement Eligibility (`settlementKinds`)**: Basic tier 1 outposts (*Palisade*, *Shrine*, *Informants*) can be erected in both minor settlements and major provincial capitals. Advanced infrastructure and civic centers require a major settlement (`major` burg or capital).
+- **Capacity Upkeep Counterweights**: To prevent unchecked building spam, advanced assets load ongoing capacity upkeep ($M/W/S/C$) in a different pool than what they generate (e.g., *Stone Walls* produce $+4\text{ M}$ but load $1\text{ W}$ upkeep; *Great Temples* produce $+8\text{ S}$ but load $2\text{ W}$ upkeep). Construction is barred if the realm lacks sufficient free capacity to shoulder the upkeep.
+- **Single Construction Queue**: Each region can have at most one building actively under construction at a time. While in progress, an asset generates no benefits and loads no upkeep.
+
+#### Default Regional Assets (Cost / Benefit)
+
+The standard ruleset (`commonBase` / [`default.json`](../../src/conquest/content/docs/rosters/default.json)) ships with 16 common assets available to all factions across six functional chains:
+
+| Asset (ID) | Chain & Tier | Allowed Settlements | Build Cost & Time | Upkeep (Capacity Load) | Benefits & Capacity Generation | Prerequisites |
+|---|---|---|---|---|---|---|
+| **Palisade** (`walls1`) | Defense · T1 | Major, Minor | 600g · 1 turn | — | +1 Wall Tier, +2 M Capacity | None |
+| **Stone Walls** (`walls2`) | Defense · T2 | Major | 1,500g · 2 turns | 1 W Capacity | +1 Wall Tier (upgrades T1), +4 M Capacity | Palisade (`walls1`) |
+| **Layered Walls** (`walls3`) | Defense · T3 | Major | 3,000g · 3 turns | 2 W Capacity | +1 Wall Tier (upgrades T2), +1 Order/turn, +8 M Capacity | Stone Walls (`walls2`) |
+| **Market** (`market1`) | Economy · T1 | Major | 700g · 1 turn | — | +5% Tax Income, +2 W Capacity | None |
+| **Trade Center** (`market2`) | Economy · T2 | Major | 1,800g · 2 turns | 1 M Capacity | +8% Tax Income, +4 W Capacity | Market (`market1`) |
+| **Mercantile Guilds** (`market3`) | Economy · T3 | Major | 3,000g · 3 turns | 1 M, 1 S Capacity | +12% Tax Income, +8 W Capacity | Trade Center (`market2`) |
+| **Shrine** (`temple1`) | Order · T1 | Major, Minor | 400g · 1 turn | — | +2 Public Order/turn, +2 S Capacity | None |
+| **Temple** (`temple2`) | Order · T2 | Major | 2,000g · 2 turns | 1 W Capacity | +3 Public Order/turn, +4 S Capacity | Shrine (`temple1`) |
+| **Great Temple** (`temple3`) | Order · T3 | Major | 3,000g · 3 turns | 2 W Capacity | +4 Public Order/turn, +8 S Capacity | Temple (`temple2`) |
+| **Barracks** (`barracks1`) | Military · T1 | Major | 900g · 2 turns | — | +2 M Capacity | None |
+| **Training Grounds** (`barracks2`) | Military · T2 | Major | 1,200g · 2 turns | 1 W Capacity | +4 M Capacity | Barracks (`barracks1`) |
+| **War Academy** (`barracks3`) | Military · T3 | Major | 1,200g · 2 turns | 1 W, 1 S Capacity | +8 M Capacity | Training Grounds (`barracks2`) |
+| **Harbor Works** (`port1`) | Maritime · T1 | Major | 900g · 2 turns | — | +6% Tax Income, +1 W Capacity | None |
+| **Informants** (`informants1`) | Shadows · T1 | Major, Minor | 500g · 1 turn | 1 W Capacity | +1 C Capacity | None |
+| **Spy Network** (`informants2`) | Shadows · T2 | Major | 1,400g · 2 turns | 2 W Capacity | +2 C Capacity | Informants (`informants1`) |
+| **Hidden Court** (`informants3`) | Shadows · T3 | Major | 3,000g · 3 turns | 3 W Capacity | +3 C Capacity | Spy Network (`informants2`) |
+
+---
+
+#### The Process of Creating Building Assets
+
+OpenConquest handles building assets across two operational workflows: **in-game strategic construction** by commanders and the AI, and **content authoring / modding** by world-builders.
+
+##### 1. In-Game Construction Workflow
+During a campaign, players and AI factions construct buildings to develop their provinces:
+
+1. **Inspection & Target Selection**:
+   - The player selects an owned region on the map or opens the settlement details in the right-hand **Campaign Rail** or via **⚔ OpenConquest ▸ Faction Forces ▸ Buildings**.
+   - The interface lists all standing structures, current public order, wall tier, and available building blueprints bound to the faction's roster.
+2. **Order Dispatch (`BuildBuilding`)**:
+   - Selecting a blueprint issues a `{ type: "BuildBuilding", regionId, buildingId }` command into the deterministic engine.
+3. **Engine Validation & Gate Checks**:
+   - **Ownership**: Confirms `regionState.owner === factionId`.
+   - **Settlement Kind**: Checks whether the target settlement matches the asset's `settlementKinds` (`major` vs. `minor`).
+   - **Availability**: Verifies the building belongs to the faction's culture roster or the common defaults pool.
+   - **Chain & Prerequisite Validation**: Verifies that any required prerequisite (`requires`) is currently standing in the region, and that no equal or higher tier of the same `chain` is already built.
+   - **No Active Construction**: Checks `regionState.construction === null`.
+   - **Capacity Upkeep Headroom**: Verifies that the faction has sufficient free capacity in the relevant pools to support the asset's `upkeep`. If free capacity is inadequate, the engine refuses the command (`capacityRefusal`).
+   - **Treasury Check**: In classic treasury mode, ensures adequate gold and deducts `building.cost`.
+4. **Construction Turn Cycle**:
+   - The engine assigns `regionState.construction = { buildingId, turnsLeft: turns }` and appends `BuildingQueued` to the campaign event log.
+   - While under construction, the project consumes no ongoing upkeep and generates no output.
+5. **Turn Tick & Completion**:
+   - During the end-of-turn economy phase, `turnsLeft` decrements.
+   - When `turnsLeft <= 0`, any lower-tier structure in the same chain is filtered out of `regionState.buildings` (upgrade consumption rule), and the new `buildingId` is appended.
+   - `BuildingCompleted` is logged, and `recomputeCapacity(ctx)` dynamically recalculates the faction's ledger, activating new capacity yields, upkeep loads, wall bonuses, or income percentages immediately.
+
+##### 2. Authoring & Modding Building Assets
+Developers and modders can define custom building chains in JSON rulesets or live through the in-game editor:
+
+1. **Data-Driven Definition (`BuildingDef`)**:
+   Buildings are declared in roster content documents (`src/conquest/content/docs/rosters/<roster>.json`) or custom mod packs:
+
+   ```json
+   {
+     "id": "dwarf_forge1",
+     "name": "Runic Smithy",
+     "chain": "forge",
+     "tier": 1,
+     "settlementKinds": ["major"],
+     "cost": 1200,
+     "turns": 2,
+     "effects": {
+       "capacity": { "m": 3, "w": 1 },
+       "upkeep": { "w": 1 },
+       "orderPerTurn": 1,
+       "unlock": ["ironbreakers"]
+     }
+   }
+   ```
+
+2. **Schema Field Reference**:
+   - `id` *(string, required)*: Unique identifier for the building.
+   - `name` *(string, required)*: Display title shown in campaign panels and tooltips.
+   - `chain` *(string, required)*: Identifier of the structural chain (e.g. `"defense"`, `"military"`, `"forge"`). Enforces single-structure-per-chain and upgrade consumption.
+   - `tier` *(number, required)*: Numerical rank in the chain ($1, 2, 3\dots$).
+   - `settlementKinds` *(array)*: Array containing `"major"`, `"minor"`, or both. Determines which settlement categories can house the building.
+   - `cost` *(number)*: Base gold cost for construction.
+   - `turns` *(number, optional)*: Turns required to construct (defaults to 1).
+   - `requires` *(string, optional)*: ID of the prerequisite building in the same chain.
+   - `group` *(string, optional)*: Roster ID binding. If omitted, the building is common to all factions.
+   - `effects` *(object)*:
+     - `capacity`: Object specifying capacity generated per turn (`{"m": 2, "w": 1, "s": 0, "c": 0}`).
+     - `upkeep`: Object specifying capacity loaded per turn (`{"w": 1}`). Provides the economic counterweight that prevents building spam.
+     - `walls`: Number of fortification tiers added to region defenses during assaults.
+     - `incomePct`: Decimal percentage multiplier to regional tax revenues (e.g., `0.08` for $+8\%$).
+     - `orderPerTurn`: Shift in public order per turn (positive for pacification, negative for oppressive industries).
+     - `unlock`: Array of unit IDs that become recruitable in the region once the building stands.
+
+3. **In-App Live Creation via Config Editor**:
+   - Open the **⚔ OpenConquest** top menu and select **Faction Forces / Config Editor**.
+   - Navigate to the **Buildings** tab.
+   - Select a culture roster from the sidebar (or common defaults).
+   - Click **Add Building** to declare a new asset ID, or edit existing fields (chain, tier, settlement eligibility, turns, capacity yields, upkeep loads, wall modifiers, and unit unlocks).
+   - Changes are verified against the engine's schema validator in real time and replayed directly through the command log without restarting the game or corrupting campaign state.
 
 ### Public Order and Rebellions
 Public order ranges from 0 to 100. Garrisoned armies stabilize provinces, while high taxes, looting, or neglect cause order to decline. If order remains below 25 for two consecutive turns, an uprising occurs, spawning hostile brigands or triggering a **Domain Save** (1d20 + Military modifier vs. DC 12).

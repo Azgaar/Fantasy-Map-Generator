@@ -222,6 +222,8 @@ interface FactionMechanics {
   confederation: "cultureGroup" | "never";
 }
 
+export type AssetKind = "structure" | "custom" | "unchained" | "resource";
+
 interface BuildingEffects {
   /** Adds fortification tiers in assaults (§5.5). */
   walls?: number;
@@ -231,6 +233,8 @@ interface BuildingEffects {
   orderPerTurn?: number;
   /** Unit ids recruitable only while this building stands in the region (§5.3 pools). */
   unlock?: string[];
+  /** Roster IDs accessible for recruitment while this asset stands (e.g. Burning Creed -> elfBase). */
+  unlockRoster?: string[];
   /**
    * Capacity this building *generates* for its holder, per pool (CAPACITY-PLAN
    * §1). Omitted keys default to 0, so a barracks writes `{"m": 2}` and nothing
@@ -248,14 +252,56 @@ interface BuildingEffects {
    * spam self-limiting: without it, assets only ever add capacity.
    */
   upkeep?: CapacityPoints;
+  /** Number of military units stationed in this region whose capacity upkeep is waived (Barracks 1/2/4). */
+  freeGarrisonUnits?: number;
+  /** Temporary defensive units spawned automatically when this location is attacked (Militia 1/2/3). */
+  militiaDefense?: {
+    unitType: string;
+    count: number;
+  };
+  /** Scales the capacity output of all buildings in a target chain across the Domain (Customs). */
+  chainMultiplier?: {
+    chain: string;
+    pool: "m" | "w" | "s" | "c";
+    factor: number;
+  };
+  /** Waives the upkeep of N building assets per region across the Domain (Slavery = 1). */
+  freeBuildingUpkeepPerRegion?: number;
+  /** Converts location capacity from one pool into another (Community Aid, Military Spending, Processing Camp, United Efforts). */
+  conversion?: {
+    from: "w" | "s";
+    to: "m" | "w" | "s";
+    ratio: number;
+  };
+  /** Siege supply hit dice stored (Siege Supplies = 20 HD). */
+  siegeSupplies?: number;
+  /** Atrocity points ignored by the Domain while this asset stands (Hell Shrine = 5). */
+  atrocityIgnore?: number;
+  /** Atrocity modifiers (Brutal Tyranny, Devil Worshipers, Necromantic Cult). */
+  atrocityMod?: {
+    gainMultiplier?: number;
+    revoltMultiplier?: number;
+    perTurnDelta?: number;
+    perRecruitPenalty?: number;
+  };
+  /** If true, regions in the Domain generate 0 capacity unless garrisoned by a friendly army (Devil Worshipers). */
+  requiresGarrisonToProduce?: boolean;
+  /** Bonus available once per turn to a Domain value check or save (Democratic Traditions = +3). */
+  rollBonusPerTurn?: number;
 }
 
 export interface BuildingDef {
   id: string;
   name: string;
+  /** Asset kind: "structure" (default chain building), "custom" (Domain-wide), "unchained" (standalone), or "resource". */
+  kind?: AssetKind;
   chain: string;
   tier: number;
   settlementKinds: ("major" | "minor")[];
+  /** Maximum copies allowed in a single region (default 1; 2 for Siege Supplies). */
+  maxInstances?: number;
+  /** Mutually exclusive asset IDs (e.g. Dwarf Friend vs. Slavery). */
+  incompatibleWith?: string[];
   cost: number;
   /** Turns to construct (default 1). */
   turns?: number;
@@ -487,6 +533,15 @@ class Validator {
       return [];
     }
     return v as number[];
+  }
+  bool(file: string, obj: Record<string, unknown>, key: string, fallback = false): boolean {
+    const v = obj[key];
+    if (v === undefined) return fallback;
+    if (typeof v !== "boolean") {
+      this.warn(file, `field '${key}' must be a boolean`);
+      return fallback;
+    }
+    return v;
   }
   unknownKeys(file: string, obj: Record<string, unknown>, allowed: string[], warnings: string[]): void {
     for (const key of Object.keys(obj)) {
@@ -765,7 +820,21 @@ function parseBuildingsDoc(
     v.warn(file, "expected top-level 'buildings:' list");
     return [];
   }
-  const allowed = ["id", "name", "chain", "tier", "settlementKinds", "cost", "turns", "requires", "group", "effects"];
+  const allowed = [
+    "id",
+    "name",
+    "kind",
+    "chain",
+    "tier",
+    "settlementKinds",
+    "maxInstances",
+    "incompatibleWith",
+    "cost",
+    "turns",
+    "requires",
+    "group",
+    "effects"
+  ];
   const out: BuildingDef[] = [];
   for (const entry of list) {
     const b = (entry ?? {}) as Record<string, unknown>;
@@ -775,19 +844,98 @@ function parseBuildingsDoc(
     v.unknownKeys(
       `${file}#${id}.effects`,
       effectsRaw,
-      ["walls", "incomePct", "orderPerTurn", "unlock", "capacity", "upkeep"],
+      [
+        "walls",
+        "incomePct",
+        "orderPerTurn",
+        "unlock",
+        "unlockRoster",
+        "capacity",
+        "upkeep",
+        "freeGarrisonUnits",
+        "militiaDefense",
+        "chainMultiplier",
+        "freeBuildingUpkeepPerRegion",
+        "conversion",
+        "siegeSupplies",
+        "atrocityIgnore",
+        "atrocityMod",
+        "requiresGarrisonToProduce",
+        "rollBonusPerTurn"
+      ],
       warnings
     );
     const kinds = v
       .strList(file, b, "settlementKinds")
       .filter((k): k is "major" | "minor" => k === "major" || k === "minor");
+
+    let militiaDefense: BuildingEffects["militiaDefense"];
+    if (effectsRaw.militiaDefense !== undefined) {
+      const md = (effectsRaw.militiaDefense ?? {}) as Record<string, unknown>;
+      v.unknownKeys(`${file}#${id}.effects.militiaDefense`, md, ["unitType", "count"], warnings);
+      militiaDefense = {
+        unitType: v.str(`${file}#${id}.effects.militiaDefense`, md, "unitType"),
+        count: v.num(`${file}#${id}.effects.militiaDefense`, md, "count", 1)
+      };
+    }
+
+    let chainMultiplier: BuildingEffects["chainMultiplier"];
+    if (effectsRaw.chainMultiplier !== undefined) {
+      const cm = (effectsRaw.chainMultiplier ?? {}) as Record<string, unknown>;
+      v.unknownKeys(`${file}#${id}.effects.chainMultiplier`, cm, ["chain", "pool", "factor"], warnings);
+      chainMultiplier = {
+        chain: v.str(`${file}#${id}.effects.chainMultiplier`, cm, "chain"),
+        pool: v.str(`${file}#${id}.effects.chainMultiplier`, cm, "pool") as "m" | "w" | "s" | "c",
+        factor: v.num(`${file}#${id}.effects.chainMultiplier`, cm, "factor", 1)
+      };
+    }
+
+    let conversion: BuildingEffects["conversion"];
+    if (effectsRaw.conversion !== undefined) {
+      const cv = (effectsRaw.conversion ?? {}) as Record<string, unknown>;
+      v.unknownKeys(`${file}#${id}.effects.conversion`, cv, ["from", "to", "ratio"], warnings);
+      conversion = {
+        from: v.str(`${file}#${id}.effects.conversion`, cv, "from") as "w" | "s",
+        to: v.str(`${file}#${id}.effects.conversion`, cv, "to") as "m" | "w" | "s",
+        ratio: v.num(`${file}#${id}.effects.conversion`, cv, "ratio", 1)
+      };
+    }
+
+    let atrocityMod: BuildingEffects["atrocityMod"];
+    if (effectsRaw.atrocityMod !== undefined) {
+      const am = (effectsRaw.atrocityMod ?? {}) as Record<string, unknown>;
+      v.unknownKeys(
+        `${file}#${id}.effects.atrocityMod`,
+        am,
+        ["gainMultiplier", "revoltMultiplier", "perTurnDelta", "perRecruitPenalty"],
+        warnings
+      );
+      atrocityMod = {
+        ...(am.gainMultiplier !== undefined
+          ? { gainMultiplier: v.num(`${file}#${id}.effects.atrocityMod`, am, "gainMultiplier", 0) }
+          : {}),
+        ...(am.revoltMultiplier !== undefined
+          ? { revoltMultiplier: v.num(`${file}#${id}.effects.atrocityMod`, am, "revoltMultiplier", 0) }
+          : {}),
+        ...(am.perTurnDelta !== undefined
+          ? { perTurnDelta: v.numSigned(`${file}#${id}.effects.atrocityMod`, am, "perTurnDelta") }
+          : {}),
+        ...(am.perRecruitPenalty !== undefined
+          ? { perRecruitPenalty: v.num(`${file}#${id}.effects.atrocityMod`, am, "perRecruitPenalty", 0) }
+          : {})
+      };
+    }
+
     out.push({
       id,
       name: v.str(file, b, "name"),
+      ...(b.kind !== undefined ? { kind: v.str(file, b, "kind") as AssetKind } : {}),
       chain: v.str(file, b, "chain"),
       tier: v.num(file, b, "tier", 1),
       settlementKinds: kinds,
       cost: v.num(file, b, "cost"),
+      ...(b.maxInstances !== undefined ? { maxInstances: v.num(file, b, "maxInstances", 1) } : {}),
+      ...(b.incompatibleWith !== undefined ? { incompatibleWith: v.strList(file, b, "incompatibleWith") } : {}),
       ...(b.turns !== undefined ? { turns: v.num(file, b, "turns", 1) } : {}),
       ...(b.requires !== undefined ? { requires: v.str(file, b, "requires") } : {}),
       ...(b.group !== undefined ? { group: v.str(file, b, "group") } : defaultGroup ? { group: defaultGroup } : {}),
@@ -798,11 +946,36 @@ function parseBuildingsDoc(
           ? { orderPerTurn: v.num(`${file}#${id}`, effectsRaw, "orderPerTurn") }
           : {}),
         ...(effectsRaw.unlock !== undefined ? { unlock: v.strList(`${file}#${id}`, effectsRaw, "unlock") } : {}),
+        ...(effectsRaw.unlockRoster !== undefined
+          ? { unlockRoster: v.strList(`${file}#${id}`, effectsRaw, "unlockRoster") }
+          : {}),
         ...(effectsRaw.capacity !== undefined
           ? { capacity: parseCapacity(`${file}#${id}.effects`, "capacity", effectsRaw.capacity, v, warnings) }
           : {}),
         ...(effectsRaw.upkeep !== undefined
           ? { upkeep: parseCapacity(`${file}#${id}.effects`, "upkeep", effectsRaw.upkeep, v, warnings) }
+          : {}),
+        ...(effectsRaw.freeGarrisonUnits !== undefined
+          ? { freeGarrisonUnits: v.num(`${file}#${id}.effects`, effectsRaw, "freeGarrisonUnits", 0) }
+          : {}),
+        ...(militiaDefense ? { militiaDefense } : {}),
+        ...(chainMultiplier ? { chainMultiplier } : {}),
+        ...(effectsRaw.freeBuildingUpkeepPerRegion !== undefined
+          ? { freeBuildingUpkeepPerRegion: v.num(`${file}#${id}.effects`, effectsRaw, "freeBuildingUpkeepPerRegion", 0) }
+          : {}),
+        ...(conversion ? { conversion } : {}),
+        ...(effectsRaw.siegeSupplies !== undefined
+          ? { siegeSupplies: v.num(`${file}#${id}.effects`, effectsRaw, "siegeSupplies", 0) }
+          : {}),
+        ...(effectsRaw.atrocityIgnore !== undefined
+          ? { atrocityIgnore: v.num(`${file}#${id}.effects`, effectsRaw, "atrocityIgnore", 0) }
+          : {}),
+        ...(atrocityMod ? { atrocityMod } : {}),
+        ...(effectsRaw.requiresGarrisonToProduce !== undefined
+          ? { requiresGarrisonToProduce: v.bool(`${file}#${id}.effects`, effectsRaw, "requiresGarrisonToProduce") }
+          : {}),
+        ...(effectsRaw.rollBonusPerTurn !== undefined
+          ? { rollBonusPerTurn: v.num(`${file}#${id}.effects`, effectsRaw, "rollBonusPerTurn", 0) }
           : {})
       }
     });
@@ -1340,9 +1513,11 @@ export function validateAndResolve(docs: RawContentDocs): {
   const seenChainTier = new Set<string>();
   const buildingIds = new Set(buildings.map(b => b.id));
   for (const b of buildings) {
-    const key = `${b.group ?? ""}:${b.chain}:${b.tier}`;
-    if (seenChainTier.has(key)) v.warn("buildings.yaml", `duplicate chain/tier ${b.chain}:${b.tier} on '${b.id}'`);
-    seenChainTier.add(key);
+    if ((!b.kind || b.kind === "structure") && b.chain !== "custom" && b.chain !== "unchained" && b.chain !== "resource") {
+      const key = `${b.group ?? ""}:${b.chain}:${b.tier}`;
+      if (seenChainTier.has(key)) v.warn("buildings.yaml", `duplicate chain/tier ${b.chain}:${b.tier} on '${b.id}'`);
+      seenChainTier.add(key);
+    }
     if (b.requires && !buildingIds.has(b.requires)) {
       v.warn(
         "buildings.yaml",
@@ -1368,6 +1543,34 @@ export function validateAndResolve(docs: RawContentDocs): {
       for (const uid of b.effects.unlock) {
         if (!allUnitIds.has(uid))
           v.warn("buildings.yaml", `unlock references unknown unit '${uid}'${didYouMean(uid, [...allUnitIds])}`);
+      }
+    }
+    if (b.effects.militiaDefense) {
+      if (!allUnitIds.has(b.effects.militiaDefense.unitType)) {
+        v.warn(
+          "buildings.yaml",
+          `militiaDefense references unknown unit '${b.effects.militiaDefense.unitType}'${didYouMean(b.effects.militiaDefense.unitType, [...allUnitIds])}`
+        );
+      }
+    }
+    if (b.effects.unlockRoster) {
+      for (const rId of b.effects.unlockRoster) {
+        if (!rosters[rId]) {
+          v.warn(
+            "buildings.yaml",
+            `unlockRoster references unknown roster '${rId}'${didYouMean(rId, Object.keys(rosters))}`
+          );
+        }
+      }
+    }
+    if (b.incompatibleWith) {
+      for (const otherId of b.incompatibleWith) {
+        if (!buildingIds.has(otherId)) {
+          v.warn(
+            "buildings.yaml",
+            `incompatibleWith references unknown building '${otherId}'${didYouMean(otherId, [...buildingIds])}`
+          );
+        }
       }
     }
   }
