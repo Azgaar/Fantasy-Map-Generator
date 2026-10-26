@@ -318,8 +318,7 @@ function refreshProvincesEditor(): void {
 function regenerateProvinceNames(): void {
   for (const province of getProvincesData()) {
     if (province.lock) continue;
-    const culture = pack.states[province.state]?.culture ?? pack.cells.culture[province.center] ?? 0;
-    if (!culture) continue;
+    const culture = pack.cells.culture[province.center];
     Provinces.rename(province.i, Names.getState(Names.getCultureShort(culture), culture));
   }
 
