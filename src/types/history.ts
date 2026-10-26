@@ -100,6 +100,10 @@ export interface History {
   realms: Realm[];
   eras: Era[];
   figures?: HistoricalFigure[];
+  epochs?: HistoryEpoch[]; // the political layers of the past
+  polities?: EpochPolity[]; // the lineages, one list for the whole history
+  /** the borders per epoch, held at runtime and stored in .map records 54+; never JSON-stringified */
+  snapshots?: Uint16Array[];
 }
 
 export const emptyHistory = (): History => ({ events: [], realms: [], eras: [] });

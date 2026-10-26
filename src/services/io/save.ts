@@ -9,8 +9,8 @@ import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
 import { isElectron, savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
-import { emptyHistory } from "@/types/history";
 import { ensureEl, escapeHtml, getFileName, link, parseError, rn } from "@/utils";
+import { serializeHistory } from "./epochs-format";
 import { serializeNameBases } from "./name-bases-format";
 import { type SaveOutcome, saveToFileSystem } from "./save-to-file";
 
@@ -69,7 +69,7 @@ function prepareMapData(): string {
   const settings = JSON.stringify(options.map); // what the map is; the requests and preferences stay out
   const measurers = JSON.stringify(pack.measurers ?? []);
   const journeys = JSON.stringify(pack.journeys ?? []);
-  const history = JSON.stringify(pack.history ?? emptyHistory());
+  const { json: history, snapshotRecords } = serializeHistory(pack.history, pack.cells.i.length);
   const fonts = JSON.stringify(
     getUsedFonts(
       ensureEl("map") as Element as SVGSVGElement,
@@ -187,7 +187,8 @@ function prepareMapData(): string {
     layers,
     graphOverride,
     journeys,
-    history
+    history,
+    ...snapshotRecords // records 54 and up: one border snapshot per epoch
   ].join("\r\n");
   return mapData;
 }
