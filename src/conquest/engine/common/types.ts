@@ -284,6 +284,8 @@ export interface ArmyUnit {
   count: number;
   /** Experience 0..9. */
   exp: number;
+  /** Temporary militia unit spawned for local defense. */
+  temporaryMilitia?: boolean;
 }
 
 export interface StartingArmy {

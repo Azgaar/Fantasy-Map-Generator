@@ -15,7 +15,7 @@ import type { EngineCtx } from "./context";
 export type { EngineCtx } from "./context";
 
 import type { BuildingDef, UnitType } from "../common/content";
-import type { CapacityPoints } from "../common/types";
+import type { ArmyUnit, CapacityPoints } from "../common/types";
 import { atWar } from "./ai";
 import { type BattleModifiers, type BattleOutcome, type BattleSide, estimateOdds, resolveBattle } from "./battle";
 import { capacityRefusal, developmentCap, freeCapacity, recomputeCapacity, settlementDevelopment } from "./capacity";
@@ -303,6 +303,32 @@ interface FieldBattleOpts {
   winnerTakesCell?: boolean;
 }
 
+export function getMilitiaDefenseUnits(
+  ctx: EngineCtx,
+  regionId: number,
+  defenderFactionId: number
+): ArmyUnit[] {
+  const regionState = ctx.campaign.regions[String(regionId)];
+  if (!regionState || regionState.owner !== defenderFactionId) return [];
+  const buildingById = new Map(ctx.content.buildings.map(b => [b.id, b]));
+  const militiaUnits: ArmyUnit[] = [];
+  for (const bid of regionState.buildings) {
+    const md = buildingById.get(bid)?.effects.militiaDefense;
+    if (!md) continue;
+    const ut = ctx.resolved.pack.unitTypes[md.unitType] ?? ctx.content.unitTypes[md.unitType];
+    const men = ut?.men ?? 100;
+    for (let i = 0; i < md.count; i++) {
+      militiaUnits.push({
+        type: md.unitType,
+        count: men,
+        exp: 0,
+        temporaryMilitia: true
+      });
+    }
+  }
+  return militiaUnits;
+}
+
 function runFieldBattle(
   ctx: EngineCtx,
   attacker: import("./state").Army,
@@ -313,19 +339,20 @@ function runFieldBattle(
   const idx = graphIndex(pack);
   const settlement = majorSettlementAt(pack, defender.cell);
   const regionId = idx.cellRegion.get(defender.cell) ?? 0;
+  const militia = getMilitiaDefenseUnits(ctx, regionId, defender.factionId);
 
   const modifiers: BattleModifiers = {
     walls: (settlement?.walls ?? 0) + regionWalls(ctx, regionId),
     defenderEncamped: defender.stance === "encamp",
     defenderAmbushed: attacker.stance === "ambush",
     attackerCrossedRiver: opts.river,
-    labels: [],
+    labels: militia.length > 0 ? [`militia defense (${militia.length} units)`] : [],
     attackerLordMult: lordCombatBonus(ctx, attacker.id),
     defenderLordMult: lordCombatBonus(ctx, defender.id)
   };
   const sides: { attacker: BattleSide; defender: BattleSide } = {
     attacker: { factionId: attacker.factionId, armyId: attacker.id, units: attacker.units },
-    defender: { factionId: defender.factionId, armyId: defender.id, units: defender.units }
+    defender: { factionId: defender.factionId, armyId: defender.id, units: [...defender.units, ...militia] }
   };
 
   const outcome = resolveBattle(campaign, {
@@ -363,8 +390,8 @@ function finalizeBattle(
   attacker.movementLeft = 0;
   defender.movementLeft = 0;
 
-  attacker.units = outcome.attacker.units.filter(u => u.count > 0);
-  defender.units = outcome.defender.units.filter(u => u.count > 0);
+  attacker.units = outcome.attacker.units.filter(u => u.count > 0 && !u.temporaryMilitia);
+  defender.units = outcome.defender.units.filter(u => u.count > 0 && !u.temporaryMilitia);
 
   const loser = outcome.summary.winner === "attacker" ? defender : attacker;
   if (loser.units.length === 0) {
@@ -447,20 +474,24 @@ function assaultSettlement(
   // by siege escalation when the settlement is under siege (§5.5).
   const ownerRoster = resolved.factions[String(owner)]!.roster;
   const weaken = garrisonWeakenFactor(ctx, settlement.regionId);
+  const militia = getMilitiaDefenseUnits(ctx, settlement.regionId, owner);
   const garrison: BattleSide = {
     factionId: owner,
     armyId: null,
-    units: garrisonUnits(ownerRoster, resolved.pack.unitTypes, settlement.walls).map(u => ({
-      ...u,
-      count: Math.max(1, Math.round(u.count * weaken))
-    }))
+    units: [
+      ...garrisonUnits(ownerRoster, resolved.pack.unitTypes, settlement.walls).map(u => ({
+        ...u,
+        count: Math.max(1, Math.round(u.count * weaken))
+      })),
+      ...militia
+    ]
   };
   const modifiers: BattleModifiers = {
     walls: settlement.walls + regionWalls(ctx, settlement.regionId),
     defenderEncamped: false,
     defenderAmbushed: false,
     attackerCrossedRiver: false,
-    labels: [],
+    labels: militia.length > 0 ? [`militia defense (${militia.length} units)`] : [],
     attackerLordMult: lordCombatBonus(ctx, army.id),
     defenderLordMult: 1
   };
@@ -480,7 +511,7 @@ function assaultSettlement(
   });
 
   army.movementLeft = 0;
-  army.units = outcome.attacker.units.filter(u => u.count > 0);
+  army.units = outcome.attacker.units.filter(u => u.count > 0 && !u.temporaryMilitia);
   if (army.units.length === 0) {
     delete campaign.armies[army.id];
     campaign.log.push({ type: "ArmyDisbanded", armyId: army.id, reason: "destroyed in the assault" });

@@ -163,6 +163,8 @@ export interface Siege {
   sinceTurn: number;
   /** Escalation ticks — each weakens the garrison (§5.5). */
   progress: number;
+  /** Remaining siege supplies in Hit Dice buffering the siege. */
+  suppliesRemaining?: number;
 }
 
 export type SkillBranch = "combat" | "campaign" | "economy";

@@ -21,7 +21,7 @@ import type { GameEvent } from "./events";
 import { graphIndex, regionDistance } from "./graph";
 import { maxMovement } from "./movement";
 import { assetCheckDifficulties, rollValueCheck } from "./saves";
-import { cleanupSieges } from "./sieges";
+import { cleanupSieges, regionSiegeSupplies } from "./sieges";
 import { season } from "./state";
 import { checkElimination, checkVictory } from "./victory";
 import { checkRebellions, scanEvents, seasonMovementMult } from "./world";
@@ -440,9 +440,17 @@ export function economyTick(ctx: EngineCtx): GameEvent[] {
   }
 
   for (const siege of campaign.sieges) {
-    siege.progress++;
-    const rs = campaign.regions[String(siege.regionId)];
-    if (rs) rs.order = Math.max(0, rs.order - config.sieges.orderDamagePerTick);
+    if (siege.suppliesRemaining === undefined && siege.progress === 0) {
+      siege.suppliesRemaining = regionSiegeSupplies(ctx, siege.regionId);
+    }
+    if ((siege.suppliesRemaining ?? 0) > 0) {
+      const consumed = Math.min(10, siege.suppliesRemaining!);
+      siege.suppliesRemaining! -= consumed;
+    } else {
+      siege.progress++;
+      const rs = campaign.regions[String(siege.regionId)];
+      if (rs) rs.order = Math.max(0, rs.order - config.sieges.orderDamagePerTick);
+    }
   }
   cleanupSieges(ctx);
 

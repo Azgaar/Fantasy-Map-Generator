@@ -18,8 +18,9 @@
  * Deterministic: iterates pack order, never a Map keyed by insertion.
  */
 
+import type { BuildingDef } from "../common/content";
 import { MEN_PER_BLOCK } from "../common/content";
-import type { CapacityPoints, FactionCapacity } from "../common/types";
+import type { ArmyUnit, CapacityPoints, FactionCapacity } from "../common/types";
 import type { EngineCtx } from "./context";
 
 /** The four pools, in the order the ledger reports them. */
@@ -94,6 +95,27 @@ export function developmentBonus(ctx: EngineCtx, regionId: number): number {
 // The ledger
 // ---------------------------------------------------------------------------
 
+/** Collect domain-wide customs held by a faction across unsuppressed regions (Phase 3). */
+export function factionCustoms(ctx: EngineCtx, factionId: number): BuildingDef[] {
+  const { campaign, pack, content } = ctx;
+  const buildingById = new Map(content.buildings.map(b => [b.id, b]));
+  const seen = new Set<string>();
+  const customs: BuildingDef[] = [];
+  for (const r of pack.regions) {
+    const rs = campaign.regions[String(r.id)];
+    if (!rs || rs.owner !== factionId) continue;
+    if ((rs.suppressedTurns ?? 0) > 0) continue;
+    for (const bid of rs.buildings) {
+      const b = buildingById.get(bid);
+      if (b && b.kind === "custom" && !seen.has(b.id)) {
+        seen.add(b.id);
+        customs.push(b);
+      }
+    }
+  }
+  return customs;
+}
+
 /**
  * Recompute every realm's capacity ledger and store it on the campaign.
  *
@@ -116,72 +138,207 @@ export function recomputeCapacity(ctx: EngineCtx): void {
     if (target) target[pool][field] += n;
   };
 
-  // Generation: static region capacity + the buildings standing in it. Assets
-  // standing also *load* their upkeep — the second column of the AER asset table
-  // (p1719). This is what stops building spam from being free: Stone Walls
-  // produces 4 M and costs 1 W, so a walled map pays for itself in Wealth.
   const buildingById = new Map(content.buildings.map(b => [b.id, b]));
+  const idx = cellRegionIndex(ctx);
+
+  const armiesByRegion = new Map<number, import("./state").Army[]>();
+  for (const army of Object.values(campaign.armies)) {
+    const rid = idx.cellRegion.get(army.cell);
+    if (rid !== undefined) {
+      let list = armiesByRegion.get(rid);
+      if (!list) {
+        list = [];
+        armiesByRegion.set(rid, list);
+      }
+      list.push(army);
+    }
+  }
+
+  // Phase 3: Domain-wide customs are deduplicated and counted once per faction.
+  const customsByFaction = new Map<number, BuildingDef[]>();
+  const seenCustomIds = new Map<number, Set<string>>();
+  for (const f of pack.factions) {
+    customsByFaction.set(f.id, []);
+    seenCustomIds.set(f.id, new Set());
+  }
+
+  for (const r of pack.regions) {
+    const rs = campaign.regions[String(r.id)];
+    if (!rs || rs.owner === 0 || (rs.suppressedTurns ?? 0) > 0) continue;
+    for (const bid of rs.buildings) {
+      const b = buildingById.get(bid);
+      if (b && b.kind === "custom") {
+        const seen = seenCustomIds.get(rs.owner);
+        if (seen && !seen.has(b.id)) {
+          seen.add(b.id);
+          customsByFaction.get(rs.owner)?.push(b);
+        }
+      }
+    }
+  }
+
+  for (const [factionId, customs] of customsByFaction) {
+    for (const c of customs) {
+      if (c.effects.capacity) {
+        add(factionId, "m", "gen", c.effects.capacity.m ?? 0);
+        add(factionId, "w", "gen", c.effects.capacity.w ?? 0);
+        add(factionId, "s", "gen", c.effects.capacity.s ?? 0);
+        add(factionId, "c", "gen", c.effects.capacity.c ?? 0);
+      }
+      if (c.effects.upkeep) {
+        add(factionId, "m", "load", c.effects.upkeep.m ?? 0);
+        add(factionId, "w", "load", c.effects.upkeep.w ?? 0);
+        add(factionId, "s", "load", c.effects.upkeep.s ?? 0);
+        add(factionId, "c", "load", c.effects.upkeep.c ?? 0);
+      }
+    }
+  }
+
+  // Generation: static region capacity + the buildings standing in it.
   for (const r of pack.regions) {
     const rs = campaign.regions[String(r.id)];
     if (!rs || rs.owner === 0) continue;
     const regionCap = r.stats.capacity;
-    // CAPACITY-PLAN Phase 6: a **sabotaged** region generates nothing. AER:
-    // sabotage hits generation, not load — the people still work and the
-    // garrison still stands; what stops is the output. So the whole region's
-    // generation is withheld for as long as the disruption lasts.
     const suppressed = (rs.suppressedTurns ?? 0) > 0;
-    if (!suppressed) {
+    const customs = customsByFaction.get(rs.owner) ?? [];
+    const reqGarrison = customs.some(c => c.effects.requiresGarrisonToProduce);
+    const regionArmies = armiesByRegion.get(r.id);
+    const garrisoned = regionArmies ? regionArmies.some(a => a.factionId === rs.owner) : false;
+    // Phase 3: Devil Worshipers requires a garrison in the region to produce.
+    const produces = !suppressed && (!reqGarrison || garrisoned);
+
+    if (produces) {
       add(rs.owner, "m", "gen", regionCap.m);
       add(rs.owner, "w", "gen", regionCap.w);
       add(rs.owner, "s", "gen", regionCap.s);
       add(rs.owner, "c", "gen", regionCap.c);
+
+      const bonus = developmentBonus(ctx, r.id);
+      add(rs.owner, "w", "gen", bonus);
+      add(rs.owner, "s", "gen", bonus);
     }
-    // Development (Phase 3): a settlement's *earned* tiers generate, +1 W and
-    // +1 S each. Base tiers do not — see `developmentBonus`.
-    const bonus = developmentBonus(ctx, r.id);
-    add(rs.owner, "w", "gen", bonus);
-    add(rs.owner, "s", "gen", bonus);
-    for (const bid of rs.buildings) {
-      const e = buildingById.get(bid)?.effects;
-      if (!e) continue;
-      if (e.capacity) {
-        add(rs.owner, "m", "gen", e.capacity.m);
-        add(rs.owner, "w", "gen", e.capacity.w);
-        add(rs.owner, "s", "gen", e.capacity.s);
-        add(rs.owner, "c", "gen", e.capacity.c);
-      }
-      if (e.upkeep) {
-        add(rs.owner, "m", "load", e.upkeep.m);
-        add(rs.owner, "w", "load", e.upkeep.w);
-        add(rs.owner, "s", "load", e.upkeep.s);
-        add(rs.owner, "c", "load", e.upkeep.c);
+
+    // Phase 3: Slavery waives the upkeep of N buildings per region.
+    const freeUpkeepSlots = customs.reduce((acc, c) => acc + (c.effects.freeBuildingUpkeepPerRegion ?? 0), 0);
+    const nonCustomBuildings = rs.buildings
+      .map(bid => buildingById.get(bid))
+      .filter((b): b is BuildingDef => b !== undefined && b.kind !== "custom");
+
+    const waivedBuildingSet = new Set<BuildingDef>();
+    if (freeUpkeepSlots > 0) {
+      const candidates = nonCustomBuildings
+        .map(b => {
+          const u = b.effects.upkeep;
+          const totalCost = (u?.m ?? 0) + (u?.w ?? 0) + (u?.s ?? 0) + (u?.c ?? 0);
+          return { b, totalCost };
+        })
+        .filter(c => c.totalCost > 0)
+        .sort((a, b) => b.totalCost - a.totalCost || a.b.id.localeCompare(b.b.id));
+      for (let i = 0; i < Math.min(freeUpkeepSlots, candidates.length); i++) {
+        waivedBuildingSet.add(candidates[i]!.b);
       }
     }
-    // A building under construction generates nothing and loads nothing. AER
-    // has no work-in-progress upkeep: establishing an asset is a Domain action
-    // resolved by value checks, not something a location carries. Its *gold*
-    // price is the retired cash-flow model's business and deliberately does not
-    // leak into the capacity ledger.
+
+    const multipliers = customs.map(c => c.effects.chainMultiplier).filter(Boolean);
+
+    for (const b of nonCustomBuildings) {
+      const e = b.effects;
+      // Phase 3: Conversion assets (Community Aid, Military Spending, Processing Camp, United Efforts)
+      if (e.conversion) {
+        const fromPool = e.conversion.from;
+        const baseFrom = produces
+          ? r.stats.capacity[fromPool] + (fromPool === "w" || fromPool === "s" ? developmentBonus(ctx, r.id) : 0)
+          : 0;
+        if (baseFrom >= e.conversion.ratio) {
+          if (b.id === "processing_camp") {
+            if (produces) {
+              add(rs.owner, "w", "gen", e.capacity?.w ?? 2);
+              add(rs.owner, "m", "gen", 1);
+            }
+            if (!waivedBuildingSet.has(b)) {
+              add(rs.owner, "w", "load", 1);
+            }
+          } else {
+            if (produces && e.capacity) {
+              for (const p of POOLS) {
+                let val = e.capacity[p] ?? 0;
+                for (const cm of multipliers) {
+                  if (cm!.chain === b.chain && cm!.pool === p) val *= cm!.factor;
+                }
+                add(rs.owner, p, "gen", val);
+              }
+            }
+            if (!waivedBuildingSet.has(b) && e.upkeep) {
+              add(rs.owner, "m", "load", e.upkeep.m ?? 0);
+              add(rs.owner, "w", "load", e.upkeep.w ?? 0);
+              add(rs.owner, "s", "load", e.upkeep.s ?? 0);
+              add(rs.owner, "c", "load", e.upkeep.c ?? 0);
+            }
+          }
+        }
+        continue;
+      }
+
+      if (produces && e.capacity) {
+        for (const p of POOLS) {
+          let val = e.capacity[p] ?? 0;
+          for (const cm of multipliers) {
+            if (cm!.chain === b.chain && cm!.pool === p) val *= cm!.factor;
+          }
+          add(rs.owner, p, "gen", val);
+        }
+      }
+      if (!waivedBuildingSet.has(b) && e.upkeep) {
+        add(rs.owner, "m", "load", e.upkeep.m ?? 0);
+        add(rs.owner, "w", "load", e.upkeep.w ?? 0);
+        add(rs.owner, "s", "load", e.upkeep.s ?? 0);
+        add(rs.owner, "c", "load", e.upkeep.c ?? 0);
+      }
+    }
   }
 
-  // Load: armies and characters. CAPACITY-PLAN Phase 4b — a unit is a fraction
-  // of an AER block, so it loads the *same fraction* of the unit's price:
-  // `(count ÷ MEN_PER_BLOCK) × capacityCost`. A full 150-man swordsmen unit is
-  // 0.15 of a block and costs 0.3 M, not 2 — the old flat price charged a full
-  // AER unit for a sixth of one, which is why the ledger read every faction
-  // over capacity. `count` is the fill, so a half-raised regiment costs half.
-  //
-  // Military units stay **cost-only**: they contribute to `load`, never `gen`.
-  // Only locations and assets produce (pinned by test).
+  // Phase 3: Barracks garrison upkeep waiver (freeGarrisonUnits: 1 / 2 / 4)
+  const waivedShareByUnit = new Map<ArmyUnit, number>();
+  for (const r of pack.regions) {
+    const rs = campaign.regions[String(r.id)];
+    if (!rs || rs.owner === 0) continue;
+    const freeGarrisonSlots = rs.buildings.reduce(
+      (sum, bid) => sum + (buildingById.get(bid)?.effects.freeGarrisonUnits ?? 0),
+      0
+    );
+    if (freeGarrisonSlots <= 0) continue;
+
+    const regionArmies = armiesByRegion.get(r.id);
+    if (!regionArmies || regionArmies.length === 0) continue;
+
+    const candidates: { unit: ArmyUnit; share: number; cost: number; armyId: string; uidx: number }[] = [];
+    for (const army of regionArmies) {
+      if (army.factionId !== rs.owner) continue;
+      army.units.forEach((u, uidx) => {
+        const uc = content.unitTypes[u.type]?.capacityCost;
+        const share = u.count / MEN_PER_BLOCK;
+        const cost = uc ? share * (uc.m ?? 0) : 0;
+        candidates.push({ unit: u, share, cost, armyId: army.id, uidx });
+      });
+    }
+    candidates.sort((a, b) => b.cost - a.cost || a.armyId.localeCompare(b.armyId) || a.uidx - b.uidx);
+    for (let i = 0; i < Math.min(freeGarrisonSlots, candidates.length); i++) {
+      const c = candidates[i]!;
+      waivedShareByUnit.set(c.unit, Math.min(c.share, 1.0));
+    }
+  }
+
   for (const army of Object.values(campaign.armies)) {
     for (const u of army.units) {
       const uc = content.unitTypes[u.type]?.capacityCost;
       if (!uc) continue;
-      const share = u.count / MEN_PER_BLOCK;
-      add(army.factionId, "m", "load", share * uc.m);
-      add(army.factionId, "w", "load", share * uc.w);
-      add(army.factionId, "s", "load", share * uc.s);
-      add(army.factionId, "c", "load", share * uc.c);
+      const totalShare = u.count / MEN_PER_BLOCK;
+      const waivedShare = waivedShareByUnit.get(u) ?? 0;
+      const netMShare = Math.max(0, totalShare - waivedShare);
+      if (netMShare > 0) add(army.factionId, "m", "load", netMShare * uc.m);
+      add(army.factionId, "w", "load", totalShare * uc.w);
+      add(army.factionId, "s", "load", totalShare * uc.s);
+      add(army.factionId, "c", "load", totalShare * uc.c);
     }
   }
 
