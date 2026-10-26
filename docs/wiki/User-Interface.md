@@ -270,7 +270,7 @@ A dropdown that displays a set of predefined layers.
 
 For example, the group of layers called "political map", contains (and toggle) the layers of the states, borders, rivers, etc.
 
-Available presets: Political map, Cultural map, Religions map, Provinces map, Biomes map, Heightmap, Physical map, Places of interest, Goods map, Economy map, Trade animation, Military map, Emblems and Pure landmass.
+Available presets: Political map, Cultural map, Religions map, Provinces map, Biomes map, Heightmap, Physical map, Places of interest, Economy map, Trade animation, Military map, Emblems and Pure landmass.
 
 ## Biomes
 

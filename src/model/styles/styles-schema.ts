@@ -572,10 +572,10 @@ export const stylesSchema = z.strictObject({
           }),
           options: z.strictObject({
             size: number({
-              label: t("Plate size"),
+              label: t("Size"),
               range: [1, 12],
               step: 0.5,
-              tip: t("Set burg production plate icon size in pixels. Plate and font scale together with it")
+              tip: t("Size of the burg production marks: the plates' icons, their font scaling with them, and the overview circles")
             })
           })
         }),

@@ -846,7 +846,7 @@ Yes. The 3D settings dialog has a screenshot button that saves the current view 
 
 ### How do I switch between political, cultural and other map types?
 
-Use the Layers preset select at the top of the Layers tab: Political, Cultural, Religions, Provinces, Biomes, Heightmap, Physical, Places of interest, Goods, Economy, Trade animation, Military, Emblems and Pure landmass. You can also toggle individual layers and save the current combination as your own preset with the plus button
+Use the Layers preset select at the top of the Layers tab: Political, Cultural, Religions, Provinces, Biomes, Heightmap, Physical, Places of interest, Economy, Trade animation, Military, Emblems and Pure landmass. You can also toggle individual layers and save the current combination as your own preset with the plus button
 
 ### Is there a search? How do I find a burg, state or river by name?
 
