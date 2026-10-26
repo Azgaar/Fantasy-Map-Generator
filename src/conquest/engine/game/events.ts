@@ -88,6 +88,18 @@ export type GameEvent =
     }
   | { type: "BuildingQueued"; regionId: number; buildingId: string; cost: number; turns: number }
   | { type: "BuildingCompleted"; regionId: number; buildingId: string }
+  | { type: "BuildingDisbanded"; regionId: number; buildingId: string }
+  | {
+      type: "AssetCheckRolled";
+      regionId: number;
+      buildingId: string;
+      pool: string;
+      roll: number;
+      modifier: number;
+      dc: number;
+      success: boolean;
+      pityBonus: number;
+    }
   // CAPACITY-PLAN Phase 3: a development queued and a settlement promoted.
   | { type: "DevelopmentQueued"; regionId: number; settlementId: number; turns: number }
   | { type: "SettlementDeveloped"; regionId: number; settlementId: number; tier: number }

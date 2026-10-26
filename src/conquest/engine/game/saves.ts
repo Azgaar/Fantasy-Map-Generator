@@ -27,6 +27,7 @@
  * threshold — and never touches a die, so flag-off runs stay bit-identical.
  */
 
+import type { BuildingDef } from "../common/content";
 import type { CapacityPoints } from "../common/types";
 import { developmentBonus } from "./capacity";
 import type { EngineCtx } from "./context";
@@ -331,3 +332,27 @@ export function rollValueCheck(ctx: EngineCtx, regionId: number, pool: Pool): Va
     roll
   };
 }
+
+/**
+ * Difficulty class for each Domain value check required to establish an asset.
+ *
+ * AER p1583 / p1719: establishing an asset requires three value checks (M, W, S)
+ * against DC = 12 + max(benefit, upkeep in that pool).
+ * Each failed check for this project grants a cumulative pity bonus (-1 DC).
+ * Minimum DC is 2 (a natural 1 on 1d20 always misses unless DC <= 1).
+ */
+export function assetCheckDifficulties(
+  building: BuildingDef,
+  pityBonus = 0
+): { m: number; w: number; s: number } {
+  const pools = ["m", "w", "s"] as const;
+  const out = { m: 12, w: 12, s: 12 };
+  for (const p of pools) {
+    const gen = building.effects.capacity?.[p] ?? 0;
+    const up = building.effects.upkeep?.[p] ?? 0;
+    const mag = Math.max(gen, up);
+    out[p] = Math.max(2, 12 + mag - pityBonus);
+  }
+  return out;
+}
+

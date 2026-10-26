@@ -215,6 +215,10 @@ function describe(event: GameEvent, campaign: Campaign): string | null {
       )} (${num(event.cost)} gold, ${event.turns} turn${event.turns === 1 ? "" : "s"}).`;
     case "BuildingCompleted":
       return `${buildingName(event.buildingId)} finished in ${regionName(event.regionId)}.`;
+    case "BuildingDisbanded":
+      return `${buildingName(event.buildingId)} in ${regionName(event.regionId)} was disbanded.`;
+    case "AssetCheckRolled":
+      return `${buildingName(event.buildingId)} in ${regionName(event.regionId)} rolled ${event.pool.toUpperCase()} check: d20 ${event.roll} +${event.modifier} = ${event.roll + event.modifier} vs DC ${event.dc} — ${event.success ? "passed" : "failed"}.`;
     case "DevelopmentQueued":
       return `${factionName(campaign.regions[event.regionId]?.owner ?? 0)} began developing ${settlementName(
         event.settlementId
@@ -294,6 +298,8 @@ const KIND: Record<GameEvent["type"], LogRow["kind"]> = {
   TreasuryTicked: "economy",
   BuildingQueued: "economy",
   BuildingCompleted: "economy",
+  BuildingDisbanded: "economy",
+  AssetCheckRolled: "economy",
   DevelopmentQueued: "economy",
   SettlementDeveloped: "economy",
   TreasureWithdrawn: "economy",

@@ -16,6 +16,8 @@ export type Command =
   | { type: "RecruitUnit"; armyId: string; unitType: string }
   // economy
   | { type: "BuildBuilding"; regionId: number; buildingId: string }
+  | { type: "DisbandBuilding"; regionId: number; buildingId: string; suppressCustom?: boolean }
+  | { type: "EstablishAssetStep"; regionId: number; spendTreasure?: number; useAtrocity?: boolean }
   // CAPACITY-PLAN Phase 3: grow a settlement's tier. It commits free Wealth
   // for a number of turns and promotes the settlement on completion.
   | { type: "Develop"; regionId: number; settlementId: number }

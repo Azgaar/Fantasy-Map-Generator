@@ -21,6 +21,7 @@ import { type BattleModifiers, type BattleOutcome, type BattleSide, estimateOdds
 import { capacityRefusal, developmentCap, freeCapacity, recomputeCapacity, settlementDevelopment } from "./capacity";
 import { agentAction, grantXp, lordCombatBonus, moveCharacter, recruitCharacter, spendSkillPoint } from "./characters";
 import { aiAcceptsConfederation, declareWarCore, hasTreaty, offerTreaty, setRelation } from "./diplomacy";
+import { advanceConstructionStep } from "./economy";
 import type { CapturePolicy, GameEvent, TreatyType } from "./events";
 import { graphIndex } from "./graph";
 import { edgeCost, findPath, riverCrossing } from "./movement";
@@ -73,6 +74,10 @@ function dispatch(ctx: EngineCtx, cmd: Command, internal: boolean): string | nul
       return recruitUnit(ctx, cmd.armyId, cmd.unitType, internal);
     case "BuildBuilding":
       return buildBuilding(ctx, cmd.regionId, cmd.buildingId);
+    case "DisbandBuilding":
+      return disbandBuilding(ctx, cmd.regionId, cmd.buildingId, cmd.suppressCustom);
+    case "EstablishAssetStep":
+      return establishAssetStep(ctx, cmd.regionId, cmd.spendTreasure, cmd.useAtrocity);
     case "Develop":
       return developSettlement(ctx, cmd.regionId, cmd.settlementId);
     case "WithdrawTreasure":
@@ -613,24 +618,93 @@ function buildBuilding(ctx: EngineCtx, regionId: number, buildingId: string, act
   if (!available.some(b => b.id === buildingId)) {
     return `'${building.name}' is not available to this faction`;
   }
-  if (regionState.buildings.includes(buildingId)) return `'${building.name}' already built here`;
+
+  const maxInstances = building.maxInstances ?? 1;
+  const standingCount = regionState.buildings.filter(bid => bid === buildingId).length;
+  if (standingCount >= maxInstances) return `'${building.name}' already built here`;
   if (regionState.construction) return "a building is already under construction here";
+
+  // Customs are unique across the whole domain (faction).
+  if (building.kind === "custom") {
+    for (const r of pack.regions) {
+      const rs = campaign.regions[String(r.id)];
+      if (rs && rs.owner === factionId) {
+        if (rs.buildings.includes(buildingId)) {
+          return `'${building.name}' custom has already been established in your domain`;
+        }
+        if (rs.construction?.buildingId === buildingId) {
+          return `'${building.name}' custom is already being established in your domain`;
+        }
+      }
+    }
+  }
+
+  // Mutually incompatible assets (e.g. Slavery vs Dwarf Friend).
+  if (building.incompatibleWith && building.incompatibleWith.length > 0) {
+    for (const r of pack.regions) {
+      const rs = campaign.regions[String(r.id)];
+      if (rs && rs.owner === factionId) {
+        for (const incId of building.incompatibleWith) {
+          if (rs.buildings.includes(incId) || rs.construction?.buildingId === incId) {
+            const inc = content.buildings.find(b => b.id === incId);
+            return `'${building.name}' is incompatible with '${inc?.name ?? incId}'`;
+          }
+        }
+      }
+    }
+  }
+  for (const r of pack.regions) {
+    const rs = campaign.regions[String(r.id)];
+    if (rs && rs.owner === factionId) {
+      for (const standingId of rs.buildings) {
+        const standing = content.buildings.find(b => b.id === standingId);
+        if (standing?.incompatibleWith?.includes(buildingId)) {
+          return `'${building.name}' is incompatible with standing '${standing.name}'`;
+        }
+      }
+      const con = rs.construction;
+      if (con) {
+        const underCon = content.buildings.find(b => b.id === con.buildingId);
+        if (underCon?.incompatibleWith?.includes(buildingId)) {
+          return `'${building.name}' is incompatible with '${underCon.name}' under construction`;
+        }
+      }
+    }
+  }
+
+  // Resource locations: Processing Camp and Resource Extractor require specialties or resource/mine POIs.
+  if (building.kind === "resource") {
+    const region = pack.regions.find(r => r.id === regionId);
+    const hasSpecialty = (region?.stats.specialties.length ?? 0) > 0;
+    const idx = graphIndex(pack);
+    const hasResourcePoi = pack.pois.some(poi => {
+      const poiRegion = idx.cellRegion.get(poi.cell);
+      return (
+        poiRegion === regionId &&
+        (poi.type.toLowerCase().includes("mine") ||
+          poi.type.toLowerCase().includes("resource") ||
+          poi.capacityType === "w")
+      );
+    });
+    if (!hasSpecialty && !hasResourcePoi) {
+      return `'${building.name}' can only be established in a resource location`;
+    }
+  }
 
   // AER p1591: *"only one structure of a given type can exist in a location"*,
   // and *"assets with a level higher than 1 ... consume the lesser asset"*. So
   // a region holds **one asset per chain**, and an upgrade replaces its
-  // predecessor rather than joining it. Before this rule the engine let a
-  // Stone Walls be built beside a Palisade, which silently summed their
-  // capacity, their upkeep and their fortification — the same word meaning
-  // two things in one region.
-  const sameChain = regionState.buildings
-    .map(bid => content.buildings.find(b => b.id === bid))
-    .filter((b): b is NonNullable<typeof b> => b !== undefined && b.chain === building.chain);
-  const standing = sameChain.find(b => b.tier >= building.tier);
-  if (standing) {
-    return standing.tier === building.tier
-      ? `'${building.name}' is already built here`
-      : `'${building.name}' cannot be built here — the ${standing.name} already standing is better`;
+  // predecessor rather than joining it.
+  if (!building.kind || building.kind === "structure") {
+    const sameChain = regionState.buildings
+      .map(bid => content.buildings.find(b => b.id === bid))
+      .filter((b): b is NonNullable<typeof b> => b !== undefined && (!b.kind || b.kind === "structure") && b.chain === building.chain);
+    const standing = sameChain.find(b => b.tier >= building.tier);
+    if (standing) {
+      return standing.tier === building.tier
+        ? `'${building.name}' is already built here`
+        : `'${building.name}' cannot be built here — the ${standing.name} already standing is better`;
+    }
   }
 
   const settlement = pack.settlements.find(s => s.kind === "major" && s.regionId === regionId);
@@ -657,8 +731,99 @@ function buildBuilding(ctx: EngineCtx, regionId: number, buildingId: string, act
   }
 
   const turns = building.turns ?? 1;
-  regionState.construction = { buildingId, turnsLeft: turns };
+  regionState.construction = {
+    buildingId,
+    turnsLeft: turns,
+    ...(config.saves.enabled ? { checks: { m: false, w: false, s: false }, pityBonus: 0 } : {})
+  };
   campaign.log.push({ type: "BuildingQueued", regionId, buildingId, cost: building.cost, turns });
+  return null;
+}
+
+function disbandBuilding(
+  ctx: EngineCtx,
+  regionId: number,
+  buildingId: string,
+  suppressCustom?: boolean,
+  actingFaction?: number
+): string | null {
+  const { campaign, content, pack } = ctx;
+  const regionState = campaign.regions[String(regionId)];
+  if (!regionState) return `unknown region ${regionId}`;
+  const factionId =
+    actingFaction ??
+    (isPlayerFaction(campaign, regionState.owner, ctx.resolved) ? regionState.owner : campaign.factionId);
+  if (regionState.owner !== factionId) return `region ${regionId} is not yours`;
+
+  const idx = regionState.buildings.indexOf(buildingId);
+  const isUnderCon = regionState.construction?.buildingId === buildingId;
+  if (idx < 0 && !isUnderCon) {
+    return `'${buildingId}' is neither standing nor under construction in region ${regionId}`;
+  }
+
+  const building = content.buildings.find(b => b.id === buildingId);
+  if (building?.kind === "custom") {
+    if (!suppressCustom) {
+      const cap = campaign.factions[String(factionId)]?.capacity;
+      const up = building.effects.upkeep;
+      const inDeficit =
+        cap &&
+        up &&
+        (((up.m ?? 0) > 0 && cap.m.load > cap.m.gen) ||
+          ((up.w ?? 0) > 0 && cap.w.load > cap.w.gen) ||
+          ((up.s ?? 0) > 0 && cap.s.load > cap.s.gen) ||
+          ((up.c ?? 0) > 0 && cap.c.load > cap.c.gen));
+      if (!inDeficit) {
+        return `cannot disband custom '${building.name}' without suppression penalty (suppressCustom: true)`;
+      }
+    } else {
+      for (const r of pack.regions) {
+        const rs = campaign.regions[String(r.id)];
+        if (rs && rs.owner === factionId) {
+          rs.order = Math.max(0, rs.order - 15);
+        }
+      }
+    }
+  }
+
+  if (idx >= 0) {
+    regionState.buildings.splice(idx, 1);
+  } else if (isUnderCon) {
+    regionState.construction = null;
+  }
+  campaign.log.push({ type: "BuildingDisbanded", regionId, buildingId });
+  return null;
+}
+
+function establishAssetStep(
+  ctx: EngineCtx,
+  regionId: number,
+  spendTreasure?: number,
+  useAtrocity?: boolean,
+  actingFaction?: number
+): string | null {
+  const { campaign, config } = ctx;
+  if (!config.saves.enabled) {
+    return "Domain value checks are disabled (config.saves.enabled is false)";
+  }
+  const regionState = campaign.regions[String(regionId)];
+  if (!regionState) return `unknown region ${regionId}`;
+  const factionId =
+    actingFaction ??
+    (isPlayerFaction(campaign, regionState.owner, ctx.resolved) ? regionState.owner : campaign.factionId);
+  if (regionState.owner !== factionId) return `region ${regionId} is not yours`;
+  if (!regionState.construction) return "no building under construction in this region";
+
+  const res = advanceConstructionStep(ctx, regionId, { spendTreasure, useAtrocity });
+  if (!res) return "failed to advance construction";
+
+  if (regionState.construction) {
+    regionState.construction.stepTakenThisTurn = true;
+  }
+  campaign.log.push(res.event);
+  if (res.completed) {
+    campaign.log.push({ type: "BuildingCompleted", regionId, buildingId: res.buildingId });
+  }
   return null;
 }
 

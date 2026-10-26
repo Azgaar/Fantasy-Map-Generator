@@ -5,6 +5,7 @@
  * seasonal movement/income, elimination + victory checks, YAML event scan.
  */
 
+import type { BuildingDef } from "../common/content";
 import {
   developmentCap,
   isGarrisoned,
@@ -19,6 +20,7 @@ import { setRelation } from "./diplomacy";
 import type { GameEvent } from "./events";
 import { graphIndex, regionDistance } from "./graph";
 import { maxMovement } from "./movement";
+import { assetCheckDifficulties, rollValueCheck } from "./saves";
 import { cleanupSieges } from "./sieges";
 import { season } from "./state";
 import { checkElimination, checkVictory } from "./victory";
@@ -39,6 +41,132 @@ import { checkRebellions, scanEvents, seasonMovementMult } from "./world";
 export function salesTaxFactor(salesTax: number): number {
   if (!Number.isFinite(salesTax)) return 1;
   return Math.min(1.4, Math.max(0.7, 0.8 + salesTax * 2));
+}
+
+export interface ConstructionStepResult {
+  completed: boolean;
+  buildingId: string;
+  event: GameEvent;
+}
+
+/** Advance an in-progress construction project by rolling the next AER value check. */
+export function advanceConstructionStep(
+  ctx: EngineCtx,
+  regionId: number,
+  opts: { spendTreasure?: number; useAtrocity?: boolean } = {}
+): ConstructionStepResult | null {
+  const { campaign, content, pack } = ctx;
+  const rs = campaign.regions[String(regionId)];
+  if (!rs || !rs.construction) return null;
+
+  const buildingId = rs.construction.buildingId;
+  const building = content.buildings.find(b => b.id === buildingId);
+  if (!building) return null;
+
+  rs.construction.checks ??= { m: false, w: false, s: false };
+  const checks = rs.construction.checks;
+  const pools = ["m", "w", "s"] as const;
+  const pool = pools.find(p => !checks[p]);
+
+  const isStructural = (b?: BuildingDef) => !b || !b.kind || b.kind === "structure";
+
+  if (!pool) {
+    if (isStructural(building)) {
+      rs.buildings = rs.buildings.filter(bid => {
+        const other = content.buildings.find(b => b.id === bid);
+        if (!other || !isStructural(other)) return true;
+        return other.chain !== building.chain || other.tier >= building.tier;
+      });
+    }
+    rs.buildings.push(buildingId);
+    rs.construction = null;
+    return {
+      completed: true,
+      buildingId,
+      event: {
+        type: "AssetCheckRolled",
+        regionId,
+        buildingId,
+        pool: "s",
+        roll: 20,
+        modifier: 0,
+        dc: 0,
+        success: true,
+        pityBonus: 0
+      }
+    };
+  }
+
+  const pityBonus = rs.construction.pityBonus ?? 0;
+  const dcs = assetCheckDifficulties(building, pityBonus);
+  const dc = dcs[pool];
+
+  const check = rollValueCheck(ctx, regionId, pool);
+  let total = check.roll + check.modifier;
+
+  // Democratic Traditions custom bonus (+3 to one check per turn across Domain).
+  const factionId = rs.owner;
+  const factionHoldsDemocratic = pack.regions.some(r => {
+    const rState = campaign.regions[String(r.id)];
+    return rState?.owner === factionId && rState.buildings.includes("custom_democratic");
+  });
+  if (factionHoldsDemocratic) {
+    total += 3;
+  }
+
+  if (opts.spendTreasure && opts.spendTreasure > 0) {
+    total += opts.spendTreasure;
+  }
+
+  const success = total >= dc;
+
+  if (success) {
+    checks[pool] = true;
+    const completed = checks.m && checks.w && checks.s;
+    if (completed) {
+      if (isStructural(building)) {
+        rs.buildings = rs.buildings.filter(bid => {
+          const other = content.buildings.find(b => b.id === bid);
+          if (!other || !isStructural(other)) return true;
+          return other.chain !== building.chain || other.tier >= building.tier;
+        });
+      }
+      rs.buildings.push(buildingId);
+      rs.construction = null;
+    }
+    return {
+      completed,
+      buildingId,
+      event: {
+        type: "AssetCheckRolled",
+        regionId,
+        buildingId,
+        pool,
+        roll: check.roll,
+        modifier: check.modifier,
+        dc,
+        success: true,
+        pityBonus
+      }
+    };
+  } else {
+    rs.construction.pityBonus = pityBonus + 1;
+    return {
+      completed: false,
+      buildingId,
+      event: {
+        type: "AssetCheckRolled",
+        regionId,
+        buildingId,
+        pool,
+        roll: check.roll,
+        modifier: check.modifier,
+        dc,
+        success: false,
+        pityBonus: rs.construction.pityBonus
+      }
+    };
+  }
 }
 
 export function economyTick(ctx: EngineCtx): GameEvent[] {
@@ -238,23 +366,37 @@ export function economyTick(ctx: EngineCtx): GameEvent[] {
   for (const r of pack.regions) {
     const rs = campaign.regions[String(r.id)]!;
     if (rs.construction) {
-      rs.construction.turnsLeft--;
-      if (rs.construction.turnsLeft <= 0) {
-        const done = rs.construction.buildingId;
-        // AER p1591: an upgrade *consumes* the lesser asset — it does not join
-        // it. Without this, a Stone Walls went up beside the Palisade it
-        // replaced and the region counted both their capacity, their upkeep
-        // and their fortification.
-        const built = buildingById.get(done);
-        if (built) {
-          rs.buildings = rs.buildings.filter(bid => {
-            const other = buildingById.get(bid);
-            return other === undefined || other.chain !== built.chain || other.tier >= built.tier;
-          });
+      if (config.saves.enabled && rs.construction.checks) {
+        if (rs.construction.stepTakenThisTurn) {
+          rs.construction.stepTakenThisTurn = false;
+        } else {
+          const res = advanceConstructionStep(ctx, r.id);
+          if (res) {
+            events.push(res.event);
+            if (res.completed) {
+              events.push({ type: "BuildingCompleted", regionId: r.id, buildingId: res.buildingId });
+            }
+          }
         }
-        rs.buildings.push(done);
-        rs.construction = null;
-        events.push({ type: "BuildingCompleted", regionId: r.id, buildingId: done });
+      } else {
+        rs.construction.turnsLeft--;
+        if (rs.construction.turnsLeft <= 0) {
+          const done = rs.construction.buildingId;
+          const built = buildingById.get(done);
+          if (built) {
+            const isStructural = (b?: BuildingDef) => !b || !b.kind || b.kind === "structure";
+            if (isStructural(built)) {
+              rs.buildings = rs.buildings.filter(bid => {
+                const other = buildingById.get(bid);
+                if (!other || !isStructural(other)) return true;
+                return other.chain !== built.chain || other.tier >= built.tier;
+              });
+            }
+          }
+          rs.buildings.push(done);
+          rs.construction = null;
+          events.push({ type: "BuildingCompleted", regionId: r.id, buildingId: done });
+        }
       }
     }
     if (rs.owner === 0) continue;

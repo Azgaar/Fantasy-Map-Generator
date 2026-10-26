@@ -21,10 +21,11 @@ import { currentContent } from "@/conquest/content/store";
 import { resolveForPack } from "@/conquest/engine/common/content";
 import type { MapPack } from "@/conquest/engine/common/types";
 import { compileAzgaar } from "@/conquest/engine/compiler/index";
-import type { Command, EngineCtx } from "@/conquest/engine/game/commands";
+import { applyCommand, type Command, type EngineCtx } from "@/conquest/engine/game/commands";
 import { type CampaignConfig, DEFAULT_CONFIG } from "@/conquest/engine/game/config";
 import {
   ACTIVITY_NAMES,
+  assetCheckDifficulties,
   DEFAULT_BAND_STEP,
   DEFAULT_BANDS,
   domainValue,
@@ -186,7 +187,7 @@ describe("Domain scope is the region (CAPACITY-PLAN Phase 4)", () => {
     // M is the one that grew, and it grew on purpose (§4.5).
     expect(worst.m).toBe(18);
     expect(worst.s).toBe(6);
-    expect(worst.w).toBe(7);
+    expect(worst.w).toBe(8);
     expect(worst.c).toBe(5);
   });
 
@@ -464,3 +465,124 @@ describe("region activities (AER line 467)", () => {
     }
   });
 });
+
+describe("Phase 2: 3-Check Establish an Asset & Disband", () => {
+  test("assetCheckDifficulties matches AER formula: 12 + max(benefit, upkeep) - pity", () => {
+    const palisade = content.buildings.find(b => b.id === "walls1")!;
+    const temple3 = content.buildings.find(b => b.id === "temple3")!;
+    expect(assetCheckDifficulties(palisade, 0)).toEqual({ m: 14, w: 12, s: 12 });
+    expect(assetCheckDifficulties(temple3, 0)).toEqual({ m: 12, w: 14, s: 20 });
+    // Pity bonus reduces DC by 1 per point down to min 2
+    expect(assetCheckDifficulties(palisade, 1)).toEqual({ m: 13, w: 11, s: 11 });
+    expect(assetCheckDifficulties(temple3, 10)).toEqual({ m: 2, w: 4, s: 10 });
+  });
+
+  test("maxInstances allows multiple copies up to limit (Siege Supplies: 2)", () => {
+    const { ctx } = boot(savesConfig(false));
+    const factionId = 1;
+    const regionId = pack.regions.find(r => ctx.campaign.regions[String(r.id)]!.owner === factionId)!.id;
+    const rs = ctx.campaign.regions[String(regionId)]!;
+    rs.buildings = [];
+    rs.construction = null;
+    ctx.campaign.factions[String(factionId)]!.treasury += 5000;
+
+    // First instance of siege_supplies
+    expect(applyCommand(ctx, { type: "BuildBuilding", regionId, buildingId: "siege_supplies" }).ok).toBe(true);
+    rs.buildings.push("siege_supplies");
+    rs.construction = null;
+
+    // Second instance allowed (maxInstances: 2)
+    expect(applyCommand(ctx, { type: "BuildBuilding", regionId, buildingId: "siege_supplies" }).ok).toBe(true);
+    rs.buildings.push("siege_supplies");
+    rs.construction = null;
+
+    // Third instance rejected
+    const third = applyCommand(ctx, { type: "BuildBuilding", regionId, buildingId: "siege_supplies" });
+    expect(third.ok).toBe(false);
+    expect(third.error).toContain("already built here");
+  });
+
+  test("incompatibleWith prevents conflicting assets (Slavery vs Dwarf Friend)", () => {
+    const { ctx } = boot(savesConfig(false));
+    const factionId = 1;
+    const regionId = pack.regions.find(r => ctx.campaign.regions[String(r.id)]!.owner === factionId)!.id;
+    const rs = ctx.campaign.regions[String(regionId)]!;
+    rs.buildings = ["custom_slavery"];
+    rs.construction = null;
+
+    // Trying to build custom_dwarf_friend when slavery is standing fails
+    const res = applyCommand(ctx, { type: "BuildBuilding", regionId, buildingId: "custom_dwarf_friend" });
+    expect(res.ok).toBe(false);
+    expect(res.error).toContain("incompatible");
+  });
+
+  test("customs are unique across the entire faction domain", () => {
+    const { ctx } = boot(savesConfig(false));
+    const factionId = 1;
+    const owned = pack.regions.filter(r => ctx.campaign.regions[String(r.id)]!.owner === factionId);
+    expect(owned.length).toBeGreaterThanOrEqual(2);
+    const r1 = owned[0]!.id;
+    const r2 = owned[1]!.id;
+
+    const rs1 = ctx.campaign.regions[String(r1)]!;
+    rs1.buildings.push("custom_mercantile");
+
+    // Building the same custom in a second region is rejected
+    const res = applyCommand(ctx, { type: "BuildBuilding", regionId: r2, buildingId: "custom_mercantile" });
+    expect(res.ok).toBe(false);
+    expect(res.error).toContain("already been established in your domain");
+  });
+
+  test("disbanding removes assets; customs require suppressCustom penalty unless in deficit", () => {
+    const { ctx } = boot(savesConfig(false));
+    const factionId = 1;
+    const regionId = pack.regions.find(r => ctx.campaign.regions[String(r.id)]!.owner === factionId)!.id;
+    const rs = ctx.campaign.regions[String(regionId)]!;
+    rs.buildings = ["walls1", "custom_spartan_culture"];
+
+    // Disband normal building
+    const disWalls = applyCommand(ctx, { type: "DisbandBuilding", regionId, buildingId: "walls1" });
+    expect(disWalls.ok).toBe(true);
+    expect(rs.buildings).not.toContain("walls1");
+
+    // Disband custom without suppressCustom is refused
+    const disCustomRefused = applyCommand(ctx, { type: "DisbandBuilding", regionId, buildingId: "custom_spartan_culture" });
+    expect(disCustomRefused.ok).toBe(false);
+    expect(disCustomRefused.error).toContain("suppressCustom");
+
+    // Disband custom with suppressCustom succeeds and inflicts order penalty
+    const orderBefore = rs.order;
+    const disCustomOk = applyCommand(ctx, { type: "DisbandBuilding", regionId, buildingId: "custom_spartan_culture", suppressCustom: true });
+    expect(disCustomOk.ok).toBe(true);
+    expect(rs.buildings).not.toContain("custom_spartan_culture");
+    expect(rs.order).toBe(Math.max(0, orderBefore - 15));
+  });
+
+  test("3-check construction lifecycle with saves.enabled", () => {
+    const { ctx } = boot(savesConfig(true));
+    const factionId = 1;
+    const regionId = pack.regions.find(r => ctx.campaign.regions[String(r.id)]!.owner === factionId)!.id;
+    const rs = ctx.campaign.regions[String(regionId)]!;
+    rs.buildings = [];
+    rs.construction = null;
+
+    // Queue palisade
+    const buildRes = applyCommand(ctx, { type: "BuildBuilding", regionId, buildingId: "walls1" });
+    expect(buildRes.ok).toBe(true);
+    expect(rs.construction).toBeDefined();
+    expect(rs.construction!.checks).toEqual({ m: false, w: false, s: false });
+    expect(rs.construction!.pityBonus).toBe(0);
+
+    // Explicit step advances checks
+    let stepCount = 0;
+    while (rs.construction && stepCount < 20) {
+      stepCount++;
+      const step = applyCommand(ctx, { type: "EstablishAssetStep", regionId, spendTreasure: 10 });
+      expect(step.ok).toBe(true);
+    }
+    // Completed building moves into buildings array
+    expect(rs.construction).toBeNull();
+    expect(rs.buildings).toContain("walls1");
+  });
+});
+

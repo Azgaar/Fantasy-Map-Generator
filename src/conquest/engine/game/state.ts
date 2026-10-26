@@ -78,6 +78,18 @@ interface FactionState {
   eliminatedOnTurn?: number;
 }
 
+export interface ConstructionProject {
+  buildingId: string;
+  /** Legacy turn countdown when `config.saves.enabled` is false. */
+  turnsLeft: number;
+  /** Three required AER value checks (M, W, S). */
+  checks?: { m: boolean; w: boolean; s: boolean };
+  /** Cumulative difficulty reduction (+1 per failed check while continuously establishing). */
+  pityBonus?: number;
+  /** Whether an EstablishAssetStep was already performed this turn. */
+  stepTakenThisTurn?: boolean;
+}
+
 interface RegionState {
   id: number;
   owner: number;
@@ -85,7 +97,7 @@ interface RegionState {
   /** Completed building ids. */
   buildings: string[];
   /** Single-slot construction queue. */
-  construction: { buildingId: string; turnsLeft: number } | null;
+  construction: ConstructionProject | null;
   /**
    * A development in progress (CAPACITY-PLAN Phase 3): the settlement being
    * grown, and the turns left. It commits Wealth for as long as it runs — the
