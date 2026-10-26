@@ -14,7 +14,7 @@ import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { peopleOf, starClass } from "@/generators/astral-naming";
+import { peopleOf, starClassFor } from "@/generators/astral-naming";
 import { type SystemDetails, systemDetailsFor } from "@/generators/astral-system";
 import type { Market } from "@/generators/markets-generator";
 import { type StarClassId, starShape, writeAttrs } from "@/renderers/astral/system-markers";
@@ -230,7 +230,7 @@ function updateSystemValues(): void {
 function updateStar(): void {
   const burg = pack.burgs[getSelectedId()];
   const population = peopleOf(burg);
-  const { class: cls, name: className } = starClass(population);
+  const { class: cls, name: className } = starClassFor(burg);
   ensureEl("systemClass").innerHTML = `${cls}-class ${escapeHtml(className)}`;
   ensureEl("systemStar").dataset.tip = `${cls}-class ${className}. The star, drawn as the chart draws it`;
 
@@ -439,7 +439,7 @@ function editLabelStyle(): void {
 function editClassStyle(): void {
   const burg = pack.burgs[getSelectedId()];
   closeDialogs(".stable");
-  void Controllers.StyleEditor.open("systems", starClass(peopleOf(burg)).class);
+  void Controllers.StyleEditor.open("systems", starClassFor(burg).class);
 }
 
 function editLabel(): void {

@@ -103,18 +103,19 @@ export interface GenerateStarOptions {
   forcedLumClass?: string;
 }
 
+/** The astro spectral table: type, roll weight, and how much the class leans toward companions. */
+export const SPECTRAL_TABLE = [
+  { type: "O", weight: 0.00003, multBias: 0.95 },
+  { type: "B", weight: 0.0013, multBias: 0.88 },
+  { type: "A", weight: 0.006, multBias: 0.7 },
+  { type: "F", weight: 0.03, multBias: 0.55 },
+  { type: "G", weight: 0.076, multBias: 0.5 },
+  { type: "K", weight: 0.12, multBias: 0.4 },
+  { type: "M", weight: 0.766, multBias: 0.28 }
+];
+
 /** Generate a star system's primary and any companions. */
 export function generateStar(rng: Rng, options: GenerateStarOptions = {}): StarSummary {
-  const spectralTable = [
-    { type: "O", weight: 0.00003, multBias: 0.95 },
-    { type: "B", weight: 0.0013, multBias: 0.88 },
-    { type: "A", weight: 0.006, multBias: 0.7 },
-    { type: "F", weight: 0.03, multBias: 0.55 },
-    { type: "G", weight: 0.076, multBias: 0.5 },
-    { type: "K", weight: 0.12, multBias: 0.4 },
-    { type: "M", weight: 0.766, multBias: 0.28 }
-  ];
-
   let primaryType: string;
   if (options.forcedType) {
     primaryType = options.forcedType;
@@ -123,8 +124,8 @@ export function generateStar(rng: Rng, options: GenerateStarOptions = {}): StarS
   } else {
     primaryType = pickWeighted(
       rng,
-      spectralTable.map(star => star.type),
-      spectralTable.map(star => star.weight)
+      SPECTRAL_TABLE.map(star => star.type),
+      SPECTRAL_TABLE.map(star => star.weight)
     );
   }
 
@@ -140,7 +141,7 @@ export function generateStar(rng: Rng, options: GenerateStarOptions = {}): StarS
     mass: +primaryMass.toFixed(3)
   };
 
-  const bias = spectralTable.find(star => star.type === primaryType)?.multBias ?? 0.3;
+  const bias = SPECTRAL_TABLE.find(star => star.type === primaryType)?.multBias ?? 0.3;
   const roll = rng.next();
   let multiplicity = 1;
   if (roll < bias * 0.55) multiplicity = 2;

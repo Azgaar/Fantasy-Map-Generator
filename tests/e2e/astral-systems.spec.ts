@@ -109,20 +109,25 @@ test.describe("Astral systems", () => {
     await expect(page.locator("#labels text[data-label-type='burg'][data-id='1']").first()).toContainText("Kessel");
   });
 
-  test("a population change crosses a class threshold on the readout, preview and chart", async ({ page }) => {
+  test("a population change rolls a star onto the readout, preview and chart", async ({ page }) => {
     await withSystems(page);
     await page.evaluate(() => Controllers.AstralSystemEditor.open(1));
 
     await page.fill("#systemPopulation", "500");
     await page.dispatchEvent("#systemPopulation", "change");
 
-    await expect(page.locator("#systemClass")).toContainText("M-class red dwarf");
-    const mFill = await page.evaluate(() => styles.systems.groups.M.attrs.fill);
-    await expect(page.locator("#systemStarShape")).toHaveAttribute("fill", mFill);
-    await expect(page.locator("#systems [data-group='M'] #system1")).toBeAttached();
+    // the class is a roll now: whatever came up, every reading of the burg must agree on it
+    const cls = await page.evaluate(() =>
+      (document.getElementById("systemClass")!.textContent ?? "").split("-class")[0].trim()
+    );
+    expect(cls).toMatch(/^[BAFGKM]$/);
+
+    const fill = await page.evaluate(letter => styles.systems.groups[letter].attrs.fill, cls);
+    await expect(page.locator("#systemStarShape")).toHaveAttribute("fill", fill);
+    await expect(page.locator(`#systems [data-group='${cls}'] #system1`)).toBeAttached();
 
     // the readout follows the class: the primary is the chart's star now
-    await expect(page.locator("#systemStarsBody tr").first()).toContainText("M V");
+    await expect(page.locator("#systemStarsBody tr").first()).toContainText(`${cls} V`);
   });
 
   test("opening a system shows the generated star and planet readout", async ({ page }) => {

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { starClassFor } from "@/generators/astral-naming";
 import { generateSystemDetails, systemDetailsFor } from "./details";
 
 const INPUT = { seed: "test-seed/astral/system/1", systemName: "Kessel", spectral: "G" };
@@ -118,14 +119,14 @@ describe("generated system details", () => {
 });
 
 describe("the burg wrapper", () => {
-  it("seeds from the map and the burg id, with the population's class", () => {
+  it("seeds from the map and the burg id, with the burg's rolled class", () => {
     const burg = { i: 7, name: "Kessel", population: 500 };
 
     expect(systemDetailsFor(burg)).toEqual(
       generateSystemDetails({
         seed: "map-seed/astral/system/7",
         systemName: "Kessel",
-        spectral: "A"
+        spectral: starClassFor(burg).class
       })
     );
   });

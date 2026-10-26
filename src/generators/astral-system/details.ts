@@ -1,6 +1,6 @@
 // The generated system readout: the astro port mapped to dialog rows.
 
-import { peopleOf, starClass } from "@/generators/astral-naming";
+import { starClassFor } from "@/generators/astral-naming";
 import type { Burg } from "@/generators/burgs-generator";
 import { starTypeData } from "./astrophysics";
 import { generateSystem } from "./system";
@@ -145,7 +145,7 @@ export function generateSystemDetails({ seed, systemName, spectral }: SystemDeta
 
 /** The readout for one burg, seeded by the map and the burg id. */
 export function systemDetailsFor(burg: Pick<Burg, "i" | "name" | "population">): SystemDetails {
-  const { class: spectral } = starClass(peopleOf(burg));
+  const { class: spectral } = starClassFor(burg);
   return generateSystemDetails({
     seed: `${options.map.seed}/astral/system/${burg.i}`,
     systemName: burg.name ?? "",

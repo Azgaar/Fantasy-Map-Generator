@@ -53,18 +53,22 @@ The words are picked by a hash of the name, so a polity keeps its word between r
 
 ### The star classes
 
-A burg is a star system: a star with a class, a population, and the installations that make it what it is. The class follows the population, and the ladder runs from the comfortable to the exotic as the population falls:
+A burg is a star system: a star with a class, a population, and the installations that make it what it is. The class is not a ladder rung but a **roll**: seeded by the map and the burg, drawn from the standard spectral distribution, so a system keeps its star across opens, edits and save/load.
 
-| People | Class | Star |
+- **Under 10 000 people** the roll is the standard astro distribution — a red-dwarf galaxy, with the comfortable stars behind it and the exotic ones rare:
+
+| Class | Star | Chance |
 |---|---|---|
-| over 1 000 000 | G | yellow dwarf — the Sun-like homeworld, the most habitable there is |
-| under 1 000 000 | F | white-yellow star — bright and comfortable |
-| under 250 000 | K | orange dwarf — hardy, long-lived |
-| under 50 000 | A | white star — hot and brilliant |
-| under 10 000 | B | blue giant — spectacular, and short-lived |
-| under 2 000 | M | red dwarf — flare-lit, tidal-locked, nobody's idea of a home |
+| M | red dwarf — flare-lit, tidal-locked, nobody's idea of a home | 76.6% |
+| K | orange dwarf — hardy, long-lived | 12.0% |
+| G | yellow dwarf — the Sun-like homeworld, the most habitable there is | 7.6% |
+| F | white-yellow star — bright and comfortable | 3.0% |
+| A | white star — hot and brilliant | 0.6% |
+| B | blue giant — spectacular, and short-lived | 0.13% |
 
-The big worlds sit on the comfortable stars; the small ones on the exotic, harsh fringe. The rare, spectacular types belong to the smaller worlds, because they are spectacular, not comfortable.
+- **At 10 000 and above** the roll narrows to the habitable band, and the busy worlds sit on the comfortable stars: **G 45%, K 30%, F 25%**.
+
+Every reading of a burg — the chart marker, the tooltip, the editor, the generated readout — asks the same seeded question, so they can never disagree. A population edit within a band changes nothing; crossing the 10 000 threshold rerolls the star.
 
 The installations become the system's own: a port is a **shipyard**, a citadel a **bastion**, a plaza a **civic core**, a shanty a **drift**, a temple a **shrine**, walls are **shielding**.
 
@@ -111,8 +115,8 @@ seed, the burg id, the burg's name and its population class.
   `${map seed}/astral/system/${burg id}`, so the same system always reads the same — on every
   open, after every save and load — while nothing at all is persisted: no burg field, no `.map`
   record, no cache. Close the dialog and the generated bodies are garbage-collected with it.
-- **The chart's class wins.** The primary's spectral class is the class already derived from
-  population, forced onto the generated star and pinned to a main-sequence `V`, so the marker, the
+- **The chart's class wins.** The primary's spectral class is the class already rolled for the
+  burg, forced onto the generated star and pinned to a main-sequence `V`, so the marker, the
   class line and the star table can never disagree. The astro tables' own spectral weights still
   shape the companions, whose masses, separations (Kepler's third law) and periods roll off the
   star stream.

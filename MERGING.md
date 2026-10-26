@@ -305,6 +305,10 @@ saved cultures and a rename keeps its corpus.
   `${options.map.seed}/astral/system/${burg.i}` and never stored — no burg field, no `.map`
   record. The chart's population-derived class forces the primary, with `lumClass` "V"; the astro
   pre-classification rides along as `planet.subtype`.
+- **`src/generators/astral-naming.ts`**: `starClassFor(burg)` — the spectral class is a seeded roll
+  from the astro spectral distribution (the standard table, minus the unstyled O, below the 10k
+  core threshold; the habitable F/G/K 25/45/30 pick at or above it). Stable per burg and across
+  save/load; an edit within a band changes nothing, crossing the threshold rerolls the star.
 - **`src/controllers/astral-system-editor.ts`**: the readout block in `renderDialog()` (stars
   table, totals line, scrollable planets table) and `renderSystemDetails()`, called from
   `updateSystemValues()` and `changeName()`. Render-only: no listeners, no cache.

@@ -1,6 +1,10 @@
 // The Astral mapping: FMG's world read as a star map. Polities, sectors and star systems.
 // The content (the name bases and their groups) lives in src/data/name-bases.ts; this module
 // only reads it and applies it. See docs/astral/README.md
+import { createRng } from "./astral-system/rng";
+import { SPECTRAL_TABLE } from "./astral-system/stars";
+import { pickWeighted } from "./astral-system/util";
+
 export {
   ASTRAL_SETS,
   applyNaming,
@@ -19,26 +23,45 @@ export interface StarClass {
   name: string;
 }
 
+/** What each spectral class is called in words */
+const CLASS_NAMES: Record<string, string> = {
+  O: "blue supergiant",
+  B: "blue giant",
+  A: "white star",
+  F: "white-yellow star",
+  G: "yellow dwarf",
+  K: "orange dwarf",
+  M: "red dwarf"
+};
+
+/** From this population up, the roll narrows to the habitable F/G/K band */
+const CORE_POPULATION = 10_000;
+/** The astro layer's own habitable pick */
+const CORE_WEIGHTS = [25, 45, 30];
+
 /**
- * The star's class, from how many people live in its system.
+ * The star's class, rolled from the standard astro spectral distribution.
  *
- * The ladder runs from the comfortable to the exotic as the population falls.
- * A world of a million sits on a Sun-like yellow dwarf — the most habitable
- * star there is; below that the stars get harder and stranger, until the
- * loneliest outposts sit on red dwarfs: flare-lit, tidal-locked, and nobody's
- * idea of a home. The rare, spectacular types — white stars and blue giants —
- * belong to the smaller worlds, because they are spectacular, not comfortable.
- *
- * The thresholds are FMG's town sizes: a hamlet, a town, a city, a capital, a
- * metropolis.
+ * The roll is seeded by the map seed and the burg id, so a system keeps its star across opens,
+ * edits and save/load. Below the core population the roll is the standard distribution - a
+ * red-dwarf galaxy with the exotic stars rare; at or above it, the roll narrows to the habitable
+ * F/G/K pick. Crossing the threshold rerolls the star; an edit within a band changes nothing.
+ * The chart styles no O group, so the fringe roll is the table minus O.
  */
-export function starClass(population: number): StarClass {
-  if (population > 1_000_000) return { class: "G", name: "yellow dwarf" };
-  if (population > 250_000) return { class: "F", name: "white-yellow star" };
-  if (population > 50_000) return { class: "K", name: "orange dwarf" };
-  if (population > 10_000) return { class: "A", name: "white star" };
-  if (population > 2_000) return { class: "B", name: "blue giant" };
-  return { class: "M", name: "red dwarf" };
+export function starClassFor(burg: { i: number; population?: number }): StarClass {
+  const people = peopleOf(burg);
+  const band = people < CORE_POPULATION ? "fringe" : "core";
+  const rng = createRng(`${options.map.seed}/astral/class/${burg.i}/${band}`);
+  const fringe = SPECTRAL_TABLE.filter(star => star.type !== "O");
+  const cls =
+    people < CORE_POPULATION
+      ? pickWeighted(
+          rng,
+          fringe.map(star => star.type),
+          fringe.map(star => star.weight)
+        )
+      : pickWeighted(rng, ["F", "G", "K"], CORE_WEIGHTS);
+  return { class: cls, name: CLASS_NAMES[cls] };
 }
 
 /** How many people live in a system, in people */
@@ -99,7 +122,7 @@ export interface StarSystem {
 /** One system, read from one burg */
 export function toSystem(burg: (typeof pack.burgs)[number]): StarSystem {
   const population = peopleOf(burg);
-  const { class: starType, name: className } = starClass(population);
+  const { class: starType, name: className } = starClassFor(burg);
   return {
     id: burg.i,
     name: burg.name ?? "",
