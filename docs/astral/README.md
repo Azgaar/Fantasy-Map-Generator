@@ -80,6 +80,57 @@ bastion, shielding, civic core, shrine, drift — make it an empire's capital, m
 from the chart. In the Astral view it is the only dialog a system has; the Burg Editor stays where
 it belongs, in Standard view. Every write is a burg write, so the world stays one world.
 
+#### What the dialog shows
+
+Below the form, two tables present the system's generated astronomy.
+
+**Star** — one row per star: the primary first, then any companions, each with its spectral class
+and luminosity class (`G V` reads as a main-sequence yellow dwarf; companions, which the source
+never rolls a class for, show `—`), mass in solar masses, luminosity in solar luminosities and —
+companions only — the binary separation in AU and the orbital period in years. A colour dot beside
+each class matches the chart's marker colour, and a companion's tooltip carries its mass ratio.
+Under the table one line sums the system up: the total mass, the **snow line** — the radius beyond
+which water condenses as ice, `2.7 · √L` AU, the divide between the rocky inner worlds and the gas
+giants — the planet count, and a "Habitable candidate" tag when a lone F/G/K main-sequence star
+earns it.
+
+**Planets** — one row per planet, named by Roman numeral ("Kessel I"), with its type, orbit,
+radius, surface gravity, temperature band, atmosphere, water cover, habitability and moon count.
+The tooltips carry the units and the details: the orbital period in days, the temperature in °C,
+the habitability index (`HI 1` earthlike … `HI 5` inimical) and the moons' names ("Kessel I a",
+"Kessel I b", …). The table scrolls inside the dialog, and a system with no planets is a valid
+reading — one "No planets detected" row, while the star table above still renders.
+
+#### How the readout is generated
+
+The readout is computed when the dialog opens — never during map generation, never at draw time —
+by the astro port in `src/generators/astral-system/`. It is a pure function of four inputs: the map
+seed, the burg id, the burg's name and its population class.
+
+- **The seed is the storage.** A system's bodies derive from
+  `${map seed}/astral/system/${burg id}`, so the same system always reads the same — on every
+  open, after every save and load — while nothing at all is persisted: no burg field, no `.map`
+  record, no cache. Close the dialog and the generated bodies are garbage-collected with it.
+- **The chart's class wins.** The primary's spectral class is the class already derived from
+  population, forced onto the generated star and pinned to a main-sequence `V`, so the marker, the
+  class line and the star table can never disagree. The astro tables' own spectral weights still
+  shape the companions, whose masses, separations (Kepler's third law) and periods roll off the
+  star stream.
+- **The orbits ride a Titius–Bode ladder** scaled to the system's total mass, capped at ten
+  planets. The smalls take the inner slots and the giants the outer ones, with the occasional hot
+  giant tucked in close; each world's coarse type — rocky, super-Earth/sub-Neptune, Neptune-like
+  or gas giant — comes from its radius.
+- **Each world rolls its own detail off its own seed stream** — planet `${seed}/${i}`, moon
+  `${seed}/${i}/${j}` — so radius, density, atmosphere, hydrographics and habitability (rough
+  black-body physics) never shift because a neighbour was added or changed. The coarse rocky/giant
+  split drives each world's physical roll; the generator's own finer pre-classification is what the
+  table shows as its type.
+
+Renaming the system relabels its planets without moving a single orbit. A population edit within
+the same class changes nothing; crossing a class threshold changes the primary's class and rerolls
+the system — exactly as it already recolours and resizes the marker. The full design, port map and
+test list are in [`docs/plans/astral-system-details.md`](../plans/astral-system-details.md).
+
 ### The anomalies
 
 Markers become **anomalies** on the chart: a volcano is read as **nova remnants**, an inn as a
@@ -132,6 +183,9 @@ As detailed in [`docs/plans/mod-merge-plan.md`](../plans/mod-merge-plan.md):
 - **Shipped (system dialog)**: clicking a star opens the System Editor — the burg read as a system,
   edited in the astral vocabulary, every write a burg write. The design is in
   [`docs/plans/astral-system-dialog.md`](../plans/astral-system-dialog.md).
+- **Shipped (system readout)**: the System Editor shows the generated stars and planets — a lazy,
+  stateless astro port seeded by the map and the burg. The design is in
+  [`docs/plans/astral-system-details.md`](../plans/astral-system-details.md).
 - **Shipped (anomalies)**: the markers read as anomalies — space phenomena and interstellar-scale
   concerns — with anomaly icons and a conversion action that rewrites legends and icons in state,
   keeping the original text. The design is in

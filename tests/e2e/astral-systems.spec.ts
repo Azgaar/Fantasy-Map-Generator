@@ -120,6 +120,69 @@ test.describe("Astral systems", () => {
     const mFill = await page.evaluate(() => styles.systems.groups.M.attrs.fill);
     await expect(page.locator("#systemStarShape")).toHaveAttribute("fill", mFill);
     await expect(page.locator("#systems [data-group='M'] #system1")).toBeAttached();
+
+    // the readout follows the class: the primary is the chart's star now
+    await expect(page.locator("#systemStarsBody tr").first()).toContainText("M V");
+  });
+
+  test("opening a system shows the generated star and planet readout", async ({ page }) => {
+    await withSystems(page);
+    await page.evaluate(() => Controllers.AstralSystemEditor.open(1));
+
+    await expect(page.locator("#systemStarsBody tr").first()).toContainText("Primary");
+    await expect(page.locator("#systemReadoutTotals")).toContainText("Total mass");
+    await expect(page.locator("#systemReadoutTotals")).toContainText("Snow line");
+
+    const counts = await page.evaluate(() => ({
+      totals: document.getElementById("systemReadoutTotals")!.textContent ?? "",
+      planets: document.getElementById("systemPlanetsBody")!.querySelectorAll("tr").length
+    }));
+    expect(counts.totals).toMatch(new RegExp(`\\b${counts.planets} planets?\\b`));
+    for (const row of await page.locator("#systemPlanetsBody tr").all())
+      await expect(row.locator("td")).toHaveCount(10);
+  });
+
+  test("the class line and the star table agree", async ({ page }) => {
+    await withSystems(page);
+    await page.evaluate(() => Controllers.AstralSystemEditor.open(1));
+
+    const classLine = (await page.locator("#systemClass").textContent()) ?? "";
+    const spectral = classLine.split("-class")[0].trim();
+    const primaryRow = page.locator("#systemStarsBody tr").first();
+    await expect(primaryRow).toContainText("Primary");
+    await expect(primaryRow).toContainText(spectral);
+    await expect(primaryRow).toContainText(" V");
+  });
+
+  test("closing and reopening leaves the readout byte-identical", async ({ page }) => {
+    await withSystems(page);
+    const readout = () =>
+      page.evaluate(() => ({
+        stars: document.getElementById("systemStarsBody")!.innerHTML,
+        totals: document.getElementById("systemReadoutTotals")!.innerHTML,
+        planets: document.getElementById("systemPlanetsBody")!.innerHTML
+      }));
+
+    await page.evaluate(() => Controllers.AstralSystemEditor.open(1));
+    const first = await readout();
+
+    await page.locator(".ui-dialog:has(#astralSystemEditor) .ui-dialog-titlebar-close").click();
+    await expect(page.locator("#astralSystemEditor")).toHaveCount(0);
+    await page.evaluate(() => Controllers.AstralSystemEditor.open(1));
+
+    expect(await readout()).toEqual(first);
+  });
+
+  test("opening the editor adds no keys to the burg record", async ({ page }) => {
+    await withSystems(page);
+    const keys = await page.evaluate(() => Object.keys(pack.burgs[1]).join(","));
+
+    await page.evaluate(() => Controllers.AstralSystemEditor.open(1));
+    await expect(page.locator("#systemPlanetsBody tr").first()).toBeAttached();
+    await page.locator(".ui-dialog:has(#astralSystemEditor) .ui-dialog-titlebar-close").click();
+    await expect(page.locator("#astralSystemEditor")).toHaveCount(0);
+
+    expect(await page.evaluate(() => Object.keys(pack.burgs[1]).join(","))).toBe(keys);
   });
 
   test("a capital toggle draws its ring in the preview and on the chart", async ({ page }) => {

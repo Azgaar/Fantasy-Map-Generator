@@ -295,6 +295,30 @@ saved cultures and a rename keeps its corpus.
   dispatch, keep the Astral branch beside the stock Burg Editor branch; the marker emission must
   stay shared between the layer and the dialog; the class remains derived (no per-system state).
 
+### The system readout (generated stars and planets)
+
+- **`src/generators/astral-system/`** (new): the astro port, one file per source module — `rng`
+  (the `createRng` surface over the repo's `alea`), `util`, `astrophysics`, `palette`, `layout`,
+  `stars`, `planet`, `system`, plus `details` (the `SystemDetails`/`StarRow`/`PlanetRow` readout
+  model, `generateSystemDetails(...)` and `systemDetailsFor(burg)`) and `index`. Stateless: the
+  readout is generated when the dialog opens from
+  `${options.map.seed}/astral/system/${burg.i}` and never stored — no burg field, no `.map`
+  record. The chart's population-derived class forces the primary, with `lumClass` "V"; the astro
+  pre-classification rides along as `planet.subtype`.
+- **`src/controllers/astral-system-editor.ts`**: the readout block in `renderDialog()` (stars
+  table, totals line, scrollable planets table) and `renderSystemDetails()`, called from
+  `updateSystemValues()` and `changeName()`. Render-only: no listeners, no cache.
+- **`tests/e2e/astral-systems.spec.ts`**: the readout coverage — tables on open, the class line and
+  the star table agreeing, close/reopen stability, the class-threshold crossing updating the
+  readout, and the no-new-burg-keys guard.
+- **`docs/astral/README.md`** / **`docs/plans/astral-system-dialog.md`** /
+  **`docs/plans/astral-system-details.md`** (new): the editor section, the follow-up link beside
+  the superseded "no generator changes" note, and the plan.
+- *Conflict resolution strategy*: the port is leaf modules with no generation-path callers — keep
+  it out of the pipeline; the editor seam is render-only, so an upstream dialog restyle only moves
+  the block. The burg record must never gain a system field; a reroll on a class-threshold
+  population edit is expected behaviour, not a bug.
+
 ### The anomalies (markers read and converted)
 
 - **`src/data/astral-markers.ts`** (new): `MARKER_READINGS` — one astral name and icon per default

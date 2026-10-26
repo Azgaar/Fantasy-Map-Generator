@@ -22,6 +22,9 @@ dialog for a system: there is no escape-hatch button back to the Burg Editor.
 - **No class field.** The spectral class is derived from population (`starClass`); it is a readout,
   not an editable value. An override would need new state.
 - **No generator changes, no new dependencies, no new `.map` records.**
+  _Update 2026-10-26: the generated star and planet readout extends this dialog —
+  [astral-system-details.md](astral-system-details.md) supersedes the "no generator changes" note.
+  Its "no new state" rule still holds: the readout is a lazy calculation, never stored._
 - **Standard view untouched.** `#burgIcons` clicks and burg label clicks outside Astral still open
   the Burg Editor; the existing burg specs must pass unchanged.
 

@@ -1,6 +1,7 @@
 // The System Editor: a burg read as a star system, edited in the astral vocabulary. Every write goes
 // through the Burgs model, so the world stays one world; the spectral class stays a readout derived
-// from population. See docs/plans/astral-system-dialog.md
+// from population. The generated star/planet readout is a pure calculation opened with the dialog —
+// see docs/plans/astral-system-dialog.md and docs/plans/astral-system-details.md
 import { select } from "d3";
 import {
   alertDialog,
@@ -14,6 +15,7 @@ import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
 import { peopleOf, starClass } from "@/generators/astral-naming";
+import { type SystemDetails, systemDetailsFor } from "@/generators/astral-system";
 import type { Market } from "@/generators/markets-generator";
 import { type StarClassId, starShape, writeAttrs } from "@/renderers/astral/system-markers";
 import { removeEmblem } from "@/renderers/draw-emblems";
@@ -104,6 +106,46 @@ function renderDialog(): void {
           </div>
         </div>
       </div>
+      <div
+        id="astralSystemReadout"
+        style="margin-top: 0.3em; padding: 0.35em 0.4em 0.15em; border-top: 1px solid rgba(0, 0, 0, 0.08); font-size: 0.9em"
+      >
+        <div style="font-weight: bold">Star</div>
+        <table style="border-collapse: collapse">
+          <thead>
+            <tr style="opacity: 0.75; border-bottom: 1px solid rgba(0, 0, 0, 0.08)">
+              <th style="text-align: left">Star</th>
+              <th style="text-align: left">Class</th>
+              <th style="text-align: right">Mass (M☉)</th>
+              <th style="text-align: right">Lum (L☉)</th>
+              <th style="text-align: right">Separation (AU)</th>
+              <th style="text-align: right">Period (yr)</th>
+            </tr>
+          </thead>
+          <tbody id="systemStarsBody"></tbody>
+        </table>
+        <div id="systemReadoutTotals" style="margin-top: 0.25em; opacity: 0.8"></div>
+        <div style="font-weight: bold; margin-top: 0.4em">Planets</div>
+        <div style="overflow: auto; max-height: 11em">
+          <table style="border-collapse: collapse; white-space: nowrap">
+            <thead>
+              <tr style="opacity: 0.75; border-bottom: 1px solid rgba(0, 0, 0, 0.08)">
+                <th style="text-align: left">Planet</th>
+                <th style="text-align: left">Type</th>
+                <th style="text-align: right">Orbit (AU)</th>
+                <th style="text-align: right">Radius (R⊕)</th>
+                <th style="text-align: right">Gravity (g)</th>
+                <th style="text-align: left">Temp</th>
+                <th style="text-align: left">Atmosphere</th>
+                <th style="text-align: right">Water</th>
+                <th style="text-align: left">Habitability</th>
+                <th style="text-align: right">Moons</th>
+              </tr>
+            </thead>
+            <tbody id="systemPlanetsBody"></tbody>
+          </table>
+        </div>
+      </div>
       <div id="astralSystemBottom">
         <button id="systemStyleShow" data-tip="Show style edit section" class="icon-brush"></button>
         <div id="systemStyleSection" style="display: none">
@@ -181,6 +223,7 @@ function updateSystemValues(): void {
 
   updateStar();
   updateLockIcon();
+  renderSystemDetails(systemDetailsFor(burg));
 }
 
 /** The star preview: the marker exactly as the systems layer draws it, from the same shape code */
@@ -199,11 +242,72 @@ function updateStar(): void {
     `<g id="systemStarShape" font-size="36" transform="translate(70 70)"${attrs}>${shape}</g>`;
 }
 
+const CELL_STYLE = "padding: 0.1em 0.9em 0.1em 0";
+const NO_VALUE = "—";
+const DOT_STYLE =
+  "display: inline-block; width: 0.65em; height: 0.65em; margin-right: 0.35em; border-radius: 50%; background:";
+
+/** The generated star/planet readout: rendered from the details, no listeners and no cache */
+function renderSystemDetails(details: SystemDetails): void {
+  const stars = details.stars
+    .map(star => {
+      const tip = star.massRatio == null ? "" : ` data-tip="Mass ratio ${star.massRatio}"`;
+      const separation = star.separationAU == null ? NO_VALUE : String(rn(star.separationAU, 2));
+      const period = star.periodYears == null ? NO_VALUE : String(rn(star.periodYears, 1));
+      return `<tr${tip}>
+        <td style="${CELL_STYLE}">${escapeHtml(star.role)}</td>
+        <td style="${CELL_STYLE}"><span style="${DOT_STYLE}${escapeHtml(star.color)}"></span>${escapeHtml(
+          `${star.spectral} ${star.luminosityClass ?? ""}`.trim()
+        )}</td>
+        <td style="${CELL_STYLE}; text-align: right">${rn(star.massSolar, 2)}</td>
+        <td style="${CELL_STYLE}; text-align: right">${rn(star.luminositySolar, 2)}</td>
+        <td style="${CELL_STYLE}; text-align: right">${separation}</td>
+        <td style="${CELL_STYLE}; text-align: right">${period}</td>
+      </tr>`;
+    })
+    .join("");
+  ensureEl("systemStarsBody").innerHTML = stars;
+
+  const totals = [
+    `Total mass ${rn(details.totalMassSolar, 2)} M☉`,
+    `Snow line ${rn(details.snowLineAU, 2)} AU`,
+    `${details.planetCount} planet${details.planetCount === 1 ? "" : "s"}`
+  ];
+  if (details.habitableCandidate) totals.push("Habitable candidate");
+  ensureEl("systemReadoutTotals").textContent = totals.join(" · ");
+
+  const planets = details.planets
+    .map(planet => {
+      const moons = planet.moons.length ? ` data-tip="${escapeHtml(planet.moons.join(", "))}"` : "";
+      return `<tr>
+        <td style="${CELL_STYLE}">${escapeHtml(planet.name)}</td>
+        <td style="${CELL_STYLE}">${escapeHtml(planet.type)}</td>
+        <td style="${CELL_STYLE}; text-align: right" data-tip="Period ${rn(planet.periodDays, 1)} days">${rn(
+          planet.orbitAU,
+          2
+        )}</td>
+        <td style="${CELL_STYLE}; text-align: right">${rn(planet.radiusEarth, 2)}</td>
+        <td style="${CELL_STYLE}; text-align: right">${escapeHtml(planet.gravity)}</td>
+        <td style="${CELL_STYLE}" data-tip="${escapeHtml(planet.temperatureC)} °C">${escapeHtml(planet.temperature)}</td>
+        <td style="${CELL_STYLE}">${escapeHtml(planet.atmosphere)}</td>
+        <td style="${CELL_STYLE}; text-align: right">${rn(planet.water)}%</td>
+        <td style="${CELL_STYLE}" data-tip="HI ${planet.hi}">${escapeHtml(planet.habitability)}</td>
+        <td style="${CELL_STYLE}; text-align: right"${moons}>${planet.moons.length}</td>
+      </tr>`;
+    })
+    .join("");
+  ensureEl("systemPlanetsBody").innerHTML = planets
+    ? planets
+    : `<tr><td colspan="10" style="${CELL_STYLE}; opacity: 0.7">No planets detected</td></tr>`;
+}
+
 function changeName(): void {
   const value = ensureEl<HTMLInputElement>("systemName").value;
   if (!value.trim()) return;
   Burgs.rename(getSelectedId(), value);
   Layers.draw("labels");
+  // the seed does not move: only the planet names follow the rename
+  renderSystemDetails(systemDetailsFor(pack.burgs[getSelectedId()]));
 }
 
 function generateNameRandom(): void {
