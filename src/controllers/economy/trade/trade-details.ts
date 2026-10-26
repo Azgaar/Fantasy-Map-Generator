@@ -21,7 +21,7 @@ import { zoomTo } from "@/ui/map/zoom";
 import { t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
-import { money, sortableTip, splitDealPrice, tradeCellTips, tradeColumnTips } from "./deal-price";
+import { money, sortableTip, splitDealPrice, tariffCell, tradeCellTips, tradeColumnTips } from "./deal-price";
 
 /** A burg's trades with one market in one direction: it sells to its market, or buys from a market */
 type Flow = { deals: Deal[]; burgId: number; marketId: number; isSale: boolean };
@@ -73,7 +73,7 @@ function open(deal: Deal): void {
 
   const isSale = kind === DEAL_KINDS.sale;
   const deals = pack.deals.filter(
-    ([b, m, , k]) => b === burgId && m === marketId && (k === DEAL_KINDS.sale) === isSale
+    ([b, m, , k]) => b === burgId && m === marketId && k !== DEAL_KINDS.kept && (k === DEAL_KINDS.sale) === isSale
   );
   activeFlow = { deals, burgId, marketId, isSale };
 
@@ -89,7 +89,9 @@ function open(deal: Deal): void {
   Dialog.open(dialogId, {
     title: isSale
       ? t("Trade: {{- burg}} sells to {{- market}}", names)
-      : t("Trade: {{- burg}} buys from {{- market}}", names),
+      : !Markets.isImport(deal)
+        ? t("Trade: {{- burg}} buys from {{- market}}", names)
+        : t("Trade: {{- burg}} imports from {{- market}}", names),
     position,
     onClose: closeTradeDetails
   });
@@ -100,7 +102,7 @@ function renderDialog(): void {
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
       <style>
         #${dialogId} .positive { color: #2a6 }
-        #${dialogId} .negative { color: #c84 }
+        #${dialogId} .negative { color: #a34a14 }
       </style>
       <div>
         <div id="tradeDetailsSummary" class="totalLine"></div>
@@ -171,11 +173,12 @@ function renderTradeDetailsPage(view: TableView<TradeDetailRow>): void {
   const { burgId, marketId, isSale, deals } = activeFlow;
   const burg = pack.burgs[burgId];
   const market = Markets.get(marketId);
+  const isImport = Markets.isImport(deals[0]);
   const zoom = (target: string) =>
     `<span class="icon-dot-circled pointer" data-zoom="${target}" data-tip="${t("Click to zoom")}"></span>`;
   ensureEl("tradeDetailsSummary").innerHTML = /* html */ `
     <span><b>${t("Burg")}</b>: ${burg?.name} ${zoom("burg")}</span>
-    <span style="margin-left:5px"><b>${isSale ? t("Sells to market") : t("Buys from market")}</b>: ${market ? Markets.getName(market) : ""} ${zoom("market")}</span>`;
+    <span style="margin-left:5px"><b>${isSale ? t("Sells to market") : isImport ? t("Imports from market") : t("Buys from market")}</b>: ${market ? Markets.getName(market) : ""} ${zoom("market")}</span>`;
 
   const { taxState: taxStateId, tariffState: tariffStateId } = Markets.getTaxStates(deals[0]);
   const html = view.rows.map(({ goodId, units, price, carriage, tax, tariff, income, formula }) => {
@@ -188,6 +191,7 @@ function renderTradeDetailsPage(view: TableView<TradeDetailRow>): void {
       tax,
       tariff,
       income,
+      isImport,
       taxStateId,
       tariffStateId,
       formula
@@ -201,7 +205,7 @@ function renderTradeDetailsPage(view: TableView<TradeDetailRow>): void {
     <div data-col="net" data-tip="${cellTips.net}">${money(price, isSale)}</div>
     <div data-col="carriage" data-tip="${cellTips.carriage}">${money(carriage, false)}</div>
     <div data-col="tax" data-tip="${cellTips.tax}">${money(tax, false)}</div>
-    <div data-col="tariff" data-tip="${cellTips.tariff}">${money(tariff, false)}</div>
+    <div data-col="tariff" data-tip="${cellTips.tariff}">${tariffCell(tariff, isImport)}</div>
     <div data-col="income" class="${income >= 0 ? "positive" : "negative"}" data-tip="${cellTips.income}">${formatPrice(rn(income, 2))}</div>
   </div>`;
   });

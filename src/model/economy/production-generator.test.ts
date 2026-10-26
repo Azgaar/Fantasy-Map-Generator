@@ -292,3 +292,34 @@ describe("inputs missing in the burg's market", () => {
     expect(plan(4, 1)).toBeNull();
   });
 });
+
+describe("demand fill", () => {
+  it("takes back what the burg sold to its market as if never sold, then buys the rest", () => {
+    catalogue[2].demandCoverage = { construction: 1 }; // 10 steel cover the burg's construction demand
+    burg.treasury = 100;
+    market.goods[3].stock = 20;
+    pack.deals.push([1, 1, 3, DEAL_KINDS.sale, 4, 1, 0.8, 0, 0]); // sold 4 steel at 1, 0.2 tax each: earned 0.8 each
+    const { index, state } = prepare();
+    state.produced[3] = 4;
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    production["fillDemand"](index, state);
+
+    const byKind = (kind: number) => pack.deals.find(([, , goodId, k]) => goodId === 3 && k === kind)!;
+    const [sale, kept, bought] = [DEAL_KINDS.sale, DEAL_KINDS.kept, DEAL_KINDS.demand].map(byKind);
+    expect([sale[4], sale[6]]).toEqual([0, 0]); // the tax is not owed on goods that never left
+    expect([kept[4], kept[5], kept[6]]).toEqual([4, 0, 0]);
+    expect(bought[4]).toBe(6);
+    expect(market.goods[3].stock).toBe(10);
+    expect(burg.treasury).toBeCloseTo(100 - 4 * 0.8 - 6 * bought[5], 1);
+  });
+
+  it("trims the sale and its tax by the share kept", () => {
+    market.goods[3].stock = 20;
+    pack.deals.push([1, 1, 3, DEAL_KINDS.sale, 10, 1, 2, 0, 0]);
+    const trade = Markets.keep({ burg, good: catalogue[2], units: 4 })!;
+
+    expect(trade).toEqual({ units: 4, price: 0.8, tax: 0 });
+    expect(pack.deals[0]).toEqual([1, 1, 3, DEAL_KINDS.sale, 6, 1, 1.2, 0, 0]);
+    expect(market.goods[3].stock).toBe(16);
+  });
+});

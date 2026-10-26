@@ -263,7 +263,6 @@ export const optionsSchema = z.strictObject({
     }),
     trade: z.strictObject({
       animation: z.strictObject({
-        displayType: z.enum(["local", "global", "both"]),
         concurrent: count.positive(),
         duration: positive,
         landDurationModifier: nonNegative,

@@ -32,6 +32,10 @@ export function splitDealPrice({ units, price, tax, tariff = 0, carriage = 0 }: 
   return { goodsPrice, carriage: unitCarriage, tax: unitTax, tariff: unitTariff, value, formula };
 }
 
+/** A tariff per unit: shown even when nothing is charged on an import, a dash where no tariff applies */
+export const tariffCell = (tariff: number, isImport: boolean) =>
+  isImport ? money(tariff, false) || formatPrice(0) : "—";
+
 /** A per-unit amount in green when it adds to the burg's money, in the negative color when it takes from it; blank when zero */
 export function money(amount: number, adds: boolean): string {
   if (!rn(amount, 2)) return "";
@@ -60,6 +64,7 @@ type TradeCell = {
   tax: number;
   tariff: number;
   income: number; // to the burg: positive on a sale, negative on a purchase
+  isImport: boolean;
   taxStateId: number;
   tariffStateId: number;
   formula: string;
@@ -67,7 +72,7 @@ type TradeCell = {
 
 /** A trade row's cell tips: the row's own figures with what they mean */
 export function tradeCellTips(cell: TradeCell) {
-  const { good, units, net, carriage, tax, tariff, income, taxStateId, tariffStateId, formula } = cell;
+  const { good, units, net, carriage, tax, tariff, income, isImport, taxStateId, tariffStateId, formula } = cell;
   const price = (amount: number) => formatPrice(rn(amount, 2));
   const state = (stateId: number) => pack.states[stateId]?.name || "";
   const rate = (value: number) => `${t("Rate")}: ${rn(value * 100, 1)}%`;
@@ -90,11 +95,13 @@ export function tradeCellTips(cell: TradeCell) {
       t("Paid by seller to state: {{- state}}", { state: state(taxStateId) }),
       rate(pack.states[taxStateId]?.salesTax || 0)
     ),
-    tariff: sentences(
-      `${t("Import tariff per unit")}: ${price(tariff)}`,
-      t("Paid by importer burg to state: {{- state}}", { state: state(tariffStateId) }),
-      rate(tariffRate)
-    ),
+    tariff: isImport
+      ? sentences(
+          `${t("Import tariff per unit")}: ${price(tariff)}`,
+          t("Paid by importer burg to state: {{- state}}", { state: state(tariffStateId) }),
+          rate(tariffRate)
+        )
+      : t("No tariff: not an import from another state"),
     income: sentences(`${t("Burg total income")}: ${price(income)}`, formula)
   };
 }

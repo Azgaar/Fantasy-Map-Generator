@@ -7,32 +7,33 @@ const SWITCH_SPACINGS = 4; // loading between land and water, in cell spacings
 /** A search over the route network; states are `cell * 2`, plus 1 when arriving by water */
 export type RouteSearch = { cost: Float64Array; prevCell: Int32Array; prevState: Int32Array };
 
+/** The route network as flat arrays: each cell's links from `offsets[cell]`, with their travel cost and mode */
+type RouteGraph = {
+  offsets: Int32Array;
+  targets: Int32Array;
+  costs: Float64Array;
+  water: Uint8Array;
+  isPort: Uint8Array; // by cell: goods switch between land and water only at a port
+  switchCost: number;
+};
+
 /** Travel over the route network, shared by trade prices and the trade animation: goods pay for the path they are drawn along */
 export class TradeRoutesModule {
   /** Cheapest travel from a cell over routes; with an end cell, stops there and returns its state, otherwise -1 */
-  search(startCell: number, endCell = -1): { search: RouteSearch; endState: number } {
-    const { cells, routes } = pack;
-    const states = cells.h.length * 2;
-    const search: RouteSearch = {
-      cost: new Float64Array(states).fill(Infinity),
-      prevCell: new Int32Array(states).fill(-1),
-      prevState: new Int32Array(states).fill(-1)
-    };
+  search(startCell: number, endCell = -1, graph = this.buildGraph(), search = this.createSearch()) {
+    const { offsets, targets, costs, water, isPort, switchCost } = graph;
     const { cost, prevCell, prevState } = search;
-    const isWaterRoute: boolean[] = [];
-    for (const route of routes) isWaterRoute[route.i] = route.group === "searoutes";
-    const switchCost = SWITCH_SPACINGS * (globalThis.grid?.spacing || 1);
-
+    cost.fill(Infinity);
     cost[startCell * 2] = 0;
     cost[startCell * 2 + 1] = 0;
     const queue = new FlatQueue();
-    const visit = (from: number, fromState: number, to: number, routeId: number, baseCost: number) => {
-      const water = isWaterRoute[routeId] ?? false;
-      const [x1, y1] = this.getCellPoint(from);
-      const [x2, y2] = this.getCellPoint(to);
-      const switching = fromState !== -1 && water !== ((fromState & 1) === 1);
-      const total = baseCost + Math.hypot(x2 - x1, y2 - y1) * (water ? WATER_COST : 1) + (switching ? switchCost : 0);
-      const state = to * 2 + (water ? 1 : 0);
+
+    const visit = (from: number, fromState: number, link: number, baseCost: number) => {
+      const isWater = water[link] === 1;
+      const switching = fromState !== -1 && isWater !== ((fromState & 1) === 1);
+      if (switching && !isPort[from]) return;
+      const total = baseCost + costs[link] + (switching ? switchCost : 0);
+      const state = targets[link] * 2 + (isWater ? 1 : 0);
       if (total >= cost[state]) return;
       cost[state] = total;
       prevCell[state] = from;
@@ -40,8 +41,7 @@ export class TradeRoutesModule {
       queue.push(state, total);
     };
 
-    const startLinks = cells.routes[startCell] ?? {};
-    for (const next in startLinks) visit(startCell, -1, +next, startLinks[+next], 0);
+    for (let link = offsets[startCell]; link < offsets[startCell + 1]; link++) visit(startCell, -1, link, 0);
 
     while (queue.length) {
       const stateCost = queue.peekValue();
@@ -50,9 +50,7 @@ export class TradeRoutesModule {
 
       const cell = state >> 1;
       if (cell === endCell) return { search, endState: state };
-
-      const links = cells.routes[cell] ?? {};
-      for (const next in links) visit(cell, state, +next, links[+next], stateCost);
+      for (let link = offsets[cell]; link < offsets[cell + 1]; link++) visit(cell, state, link, stateCost);
     }
 
     return { search, endState: -1 };
@@ -60,12 +58,14 @@ export class TradeRoutesModule {
 
   /** Travel cost from each market's center to every burg, by market then burg id; Infinity with no route */
   measure(): Float32Array[] {
+    const graph = this.buildGraph();
+    const search = this.createSearch();
     const costs: Float32Array[] = [];
     for (const market of pack.markets) {
       const center = pack.burgs[market.centerBurgId];
       if (!center) continue;
 
-      const { cost } = this.search(center.cell).search;
+      const { cost } = this.search(center.cell, -1, graph, search).search;
       const row = new Float32Array(pack.burgs.length).fill(Infinity);
       for (const burg of pack.burgs) {
         if (!burg?.i || burg.removed) continue;
@@ -74,6 +74,50 @@ export class TradeRoutesModule {
       costs[market.i] = row;
     }
     return costs;
+  }
+
+  private createSearch(): RouteSearch {
+    const states = pack.cells.h.length * 2;
+    return { cost: new Float64Array(states), prevCell: new Int32Array(states), prevState: new Int32Array(states) };
+  }
+
+  /** Each route link's travel cost: its length, a fifth of it on water */
+  private buildGraph(): RouteGraph {
+    const { cells, routes } = pack;
+    const isWaterRoute: boolean[] = [];
+    for (const route of routes) isWaterRoute[route.i] = route.group === "searoutes";
+
+    const cellCount = cells.h.length;
+    const offsets = new Int32Array(cellCount + 1);
+    const targets: number[] = [];
+    const costs: number[] = [];
+    const water: number[] = [];
+    for (let cell = 0; cell < cellCount; cell++) {
+      offsets[cell] = targets.length;
+      const links = cells.routes[cell];
+      if (!links) continue;
+      const [x1, y1] = this.getCellPoint(cell);
+      for (const next in links) {
+        const isWater = isWaterRoute[links[+next]] ?? false;
+        const [x2, y2] = this.getCellPoint(+next);
+        targets.push(+next);
+        costs.push(Math.hypot(x2 - x1, y2 - y1) * (isWater ? WATER_COST : 1));
+        water.push(isWater ? 1 : 0);
+      }
+    }
+    offsets[cellCount] = targets.length;
+
+    const isPort = new Uint8Array(cellCount);
+    for (const burg of pack.burgs) if (burg?.i && !burg.removed && burg.port) isPort[burg.cell] = 1;
+
+    return {
+      offsets,
+      targets: Int32Array.from(targets),
+      costs: Float64Array.from(costs),
+      water: Uint8Array.from(water),
+      isPort,
+      switchCost: SWITCH_SPACINGS * (globalThis.grid?.spacing || 1)
+    };
   }
 
   /** A burg's position on its cell, otherwise the cell's center */

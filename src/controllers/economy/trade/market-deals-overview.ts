@@ -9,7 +9,6 @@ import { Csv } from "@/services/io/csv";
 import { Dialog } from "@/ui/dialog/dialog";
 
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
-import { dialogState } from "@/ui/dialog/state";
 import {
   type EditorColumn,
   initColumnVisibility,
@@ -25,8 +24,6 @@ import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 
 let activeMarketId = 0;
-type FilterState = { scope: "all" | "local" | "global" };
-let filterState: FilterState;
 
 const dialogId = "marketDeals" as const;
 const position = { my: "right top", at: "right bottom+10", of: "#marketOverview" };
@@ -76,7 +73,7 @@ const columns: EditorColumn<Deal>[] = [
 ];
 
 const marketDealsTable = initEditorTable<Deal>({
-  getData: getFilteredMarketDeals,
+  getData: getSortedMarketDeals,
   onUpdate: renderMarketDealsPage
 });
 
@@ -88,13 +85,9 @@ function open(marketId: number): void {
     return;
   }
 
-  filterState = dialogState.get(dialogId, "filters", (): FilterState => ({ scope: "all" }));
-  if (!(["all", "local", "global"] as string[]).includes(filterState.scope)) filterState.scope = "all";
-  dialogState.set(dialogId, "filters", filterState);
   activeMarketId = marketId;
 
   renderDialog();
-  ensureEl<HTMLSelectElement>("marketDealsFilter").value = filterState.scope;
   marketDealsTable.reset();
 
   Dialog.open(dialogId, {
@@ -119,11 +112,6 @@ function renderDialog(): void {
         <div id="marketDealsBottom">
           <button id="marketDealsRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
           <button id="marketDealsExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
-          <select id="marketDealsFilter" data-tip="${t("Filter deals by scope")}" style="margin-left: 8px">
-            <option value="all">${t("All")}</option>
-            <option value="local">${t("Local")}</option>
-            <option value="global">${t("Global")}</option>
-          </select>
         </div>
       </div>
   </div>`;
@@ -146,30 +134,20 @@ function renderDialog(): void {
     const party = getParty(deal);
     if (party) zoomTo(party.x, party.y, 8, 2000);
   });
-  ensureEl("marketDealsFilter").addEventListener("change", ev => {
-    filterState.scope = (ev.target as HTMLSelectElement).value as typeof filterState.scope;
-    dialogState.set(dialogId, "filters", filterState);
-    marketDealsTable.reset();
-  });
 }
 
 function closeMarketDeals(): void {
   Dialog.destroy(dialogId);
 }
 
-function getFilteredMarketDeals(): Deal[] {
+function getSortedMarketDeals(): Deal[] {
   const market = Markets.get(activeMarketId);
   if (!market) {
     tip(sentences(t("Invalid market"), t("The selected market does not exist")), true, "error", 5000);
     return [];
   }
 
-  const allDeals = getMarketDeals(pack.deals, activeMarketId);
-  const deals = allDeals.filter(
-    deal => filterState.scope === "all" || Markets.isImport(deal) === (filterState.scope === "global")
-  );
-
-  return sortDataByColumns(dialogId, deals, columns);
+  return sortDataByColumns(dialogId, getMarketDeals(pack.deals, activeMarketId), columns);
 }
 
 function renderMarketDealsPage(view: TableView<Deal>): void {
@@ -183,8 +161,9 @@ function renderMarketDealsPage(view: TableView<Deal>): void {
   Dialog.update(dialogId, { width: "fit-content", position });
 }
 
+/** Deals the market traded: goods a burg kept back never left it */
 export function getMarketDeals(deals: readonly Deal[], marketId: number): Deal[] {
-  return deals.filter(([, dealMarket]) => dealMarket === marketId);
+  return deals.filter(([, dealMarket, , kind]) => dealMarket === marketId && kind !== DEAL_KINDS.kept);
 }
 
 /** From the market's side: a burg's sale comes in, its purchase goes out */
@@ -200,18 +179,17 @@ function renderDealLine(deal: Deal): string {
   const dealNet = getDealNet(deal);
   const party = getParty(deal);
   const direction = getDirection(deal);
-  const scope = Markets.isImport(deal) ? "global" : "local";
   const incomeColor = dealNet >= 0 ? "#2a6" : "#c44";
   const backColor = dealNet >= 0 ? "#dff0d8" : "#f2dede";
 
-  return /* html */ `<div class="states marketDeal" data-id="${pack.deals.indexOf(deal)}" data-good="${good.name}" data-direction="${direction}" data-units="${rn(units, 2)}" data-counterparty="${scope}_${party?.name}" data-income="${dealNet}">
+  return /* html */ `<div class="states marketDeal" data-id="${pack.deals.indexOf(deal)}" data-good="${good.name}" data-direction="${direction}" data-units="${rn(units, 2)}" data-counterparty="${party?.name}" data-income="${dealNet}">
       <svg data-col="icon" data-tip="${t("Good icon")}" width="1.3em" height="1.3em" class="goodIcon">
         ${goodBadge(good)}
       </svg>
       <div data-col="good" data-tip="${t("Name")}" class="goodName">${good.name}</div>
       <div data-col="direction"><span class="marketBadge" style="background:${backColor}; color:${incomeColor}">${direction.toUpperCase()}</span></div>
       <div data-col="counterparty" class="marketDealParty pointer" data-tip="${t("Click to zoom")}">
-        <div class="${scope === "local" ? "icon-dot-circled" : "icon-store"}" style="display:inline-block; width: 0.8em; ${scope === "global" ? "font-size: 0.85em;" : ""}"></div>
+        <div class="icon-dot-circled" style="display:inline-block; width: 0.8em"></div>
         <div style="display:inline-block; width: 6.8em;">${party?.name}</div>
       </div>
       <div data-col="units" class="marketDealUnits">${rn(units, 2)}</div>

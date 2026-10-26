@@ -9,11 +9,11 @@ Every deal is a burg trading with a market (see [trade_schema.md](trade_schema.m
 | Deal | Seller | Buyer | Sales tax: rate of, paid to | Tariff: rules of, paid to | Paid by |
 | --- | --- | --- | --- | --- | --- |
 | Sale | burg | its market | the burg's state | none | the burg, out of its revenue |
-| Local buy | its market | burg | the market's state | none | the burg, inside its buy price |
-| Import | another market | burg | that market's state | the state of the burg's own market | the burg, inside its buy price |
+| Buy | its market, or another market of the same state | burg | the market's state | none | the burg, inside its buy price |
+| Import | a market of another state | burg | that market's state | the state of the burg's own market | the burg, inside its buy price |
 | Poll tax | — | — | — | — | nobody: the state gets it outright |
 
-A market's state is the state of its center burg. The tariff follows the burg's own market, not the burg, so a burg in a market centered across a border pays that state's tariff.
+A market's state is the state of its center burg. A purchase is an import (`Markets.isImport`) when the selling market's state differs from the state of the burg's own market; only then may a tariff apply. The tariff follows the burg's own market, not the burg, so a burg in a market centered across a border pays that state's tariff.
 
 A good is taxed at every sale: a burg's product when the burg sells it to its market, and again when a burg buys it. Raw goods from rural cells enter markets untaxed and are taxed when burgs buy them.
 

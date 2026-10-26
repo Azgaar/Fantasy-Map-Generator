@@ -513,7 +513,7 @@ A burg's trades with a market, stored in `pack.deals: Deal[]` and rebuilt on reg
 - `burg`: `number` - burg id
 - `market`: `number` - market id: the burg's own market, or the source market of an import
 - `good`: `number` - good id
-- `kind`: `0 | 1 | 2` - sale, input purchase for production, or purchase for demand (`DEAL_KINDS`)
+- `kind`: `0 | 1 | 2 | 3` - sale, input purchase for production, purchase for demand, or own sale kept back for demand at price 0 (`DEAL_KINDS`)
 - `units`: `number` - traded amount, rounded to 2 decimals
 - `price`: `number` - average price per unit at the burg's door, rounded to 2 decimals: a purchase includes the carriage from the market's center along routes, a sale is net of it. An import's price is (exporter price + exporter sales tax + import tariff) plus margin, plus carriage
 - `tax`: `number` - absolute sales tax: the burg's on a sale, the exporter's on an import. `States.collectTaxes()` sums it into the seller's state treasury

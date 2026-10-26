@@ -3,7 +3,7 @@ import type { Burg } from "@/model/political/burgs-generator";
 import { States } from "@/model/political/states-generator";
 import { rn } from "@/utils/number-utils";
 import { Goods } from "./goods-generator";
-import { DEAL_KINDS, type Market, Markets, MarketsModule } from "./markets-generator";
+import { DEAL_KINDS, type Deal, type Market, Markets, MarketsModule } from "./markets-generator";
 import { Production } from "./production-generator";
 
 describe("MarketsModule", () => {
@@ -207,6 +207,17 @@ describe("MarketsModule", () => {
       const [deal] = globalThis.pack.deals;
       expect(deal[7]).toBeCloseTo(0.2 * 5 * 10, 2);
       expect(marketsModule.getTaxStates(deal).tariffState).toBe(2);
+    });
+
+    it("isImport() is a purchase from a market of another state", () => {
+      const { burg } = setupImport();
+      const remoteBuy: Deal = [2, 1, 0, DEAL_KINDS.input, 1, 1, 0, 0, 0];
+      const localBuy: Deal = [2, 2, 0, DEAL_KINDS.demand, 1, 1, 0, 0, 0];
+      const sale: Deal = [2, 2, 0, DEAL_KINDS.sale, 1, 1, 0, 0, 0];
+      expect([remoteBuy, localBuy, sale].map(deal => marketsModule.isImport(deal))).toEqual([true, false, false]);
+
+      globalThis.pack.burgs[1].state = burg.state; // the source market's center joins the burg's state
+      expect(marketsModule.isImport(remoteBuy)).toBe(false);
     });
 
     it("importForBurg() applies no tariff or embargo between markets of one state", () => {

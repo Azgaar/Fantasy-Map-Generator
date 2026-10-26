@@ -16,9 +16,9 @@ import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
-import { money, splitDealPrice, tradeCellTips, tradeColumnTips } from "./trade/deal-price";
+import { money, splitDealPrice, tariffCell, tradeCellTips, tradeColumnTips } from "./trade/deal-price";
 
-type RowType = "LOCAL" | "BUY" | "MFG" | "SELL";
+type RowType = "LOCAL" | "BUY" | "MFG" | "SELL" | "KEEP";
 type HistoryRow = {
   type: RowType;
   goodId: number;
@@ -95,8 +95,9 @@ function renderDialog(): void {
         #${dialogId} .typeBadge.buy { background: #f5d9d6; color: #a33 }
         #${dialogId} .typeBadge.mfg { background: #f8e7bf; color: #b67a00 }
         #${dialogId} .typeBadge.sell { background: #dff0e2; color: #2f8a46 }
+        #${dialogId} .typeBadge.keep { background: #e6e0f2; color: #5a4a8a }
         #${dialogId} .positive { color: #2a6 }
-        #${dialogId} .negative { color: #c84 }
+        #${dialogId} .negative { color: #a34a14 }
       </style>
       <div id="${dialogId}Stats"></div>
       <div id="${dialogId}Body" class="table"></div>
@@ -175,6 +176,7 @@ function getSummaryRows(burg: Burg): HistoryRow[] {
       .toSorted((a, b) => b[1] - a[1])
       .map(([goodId, units]) => getMfgRow(goodId, units, recipeInputs(goodId))),
     ...dealRows(DEAL_KINDS.sale),
+    ...dealRows(DEAL_KINDS.kept),
     ...dealRows(DEAL_KINDS.demand)
   ];
 }
@@ -213,6 +215,7 @@ const getMfgRow = (goodId: number, units: number, inputs: string, more = ""): Hi
 });
 
 function getTradeRow(goodId: number, marketId: number, kind: DealKind, trade: Trade): HistoryRow {
+  if (kind === DEAL_KINDS.kept) return getKeepRow(goodId, trade.units);
   const isSale = kind === DEAL_KINDS.sale;
   const { units } = trade;
   const { goodsPrice, carriage, tax, tariff, value, formula } = splitDealPrice(trade, isSale);
@@ -231,6 +234,18 @@ function getTradeRow(goodId: number, marketId: number, kind: DealKind, trade: Tr
     details: ""
   };
 }
+
+// nothing changes hands, so no prices
+const getKeepRow = (goodId: number, units: number): HistoryRow => ({
+  type: "KEEP",
+  goodId,
+  units,
+  kind: DEAL_KINDS.kept,
+  tax: 0,
+  tariff: 0,
+  carriage: 0,
+  details: ""
+});
 
 function renderDecision(candidates: readonly ProductionCandidate[]): string {
   if (!candidates.length) return "";
@@ -302,14 +317,20 @@ const TYPE_LABELS: Record<RowType, () => string> = {
   LOCAL: () => t("Local").toUpperCase(),
   BUY: () => t("BUY"),
   MFG: () => t("MFG"),
-  SELL: () => t("sell").toUpperCase()
+  SELL: () => t("sell").toUpperCase(),
+  KEEP: () => t("Keep").toUpperCase()
 };
 
 function renderHistoryLine(row: HistoryRow): string {
   const good = Goods.get(row.goodId);
   if (!good) return "";
 
-  const purposes = [t("Sale to local market"), t("Purchase for production"), t("Purchase for demand")];
+  const purposes = [
+    t("Sale to local market"),
+    t("Purchase for production"),
+    t("Purchase for demand"),
+    t("Produced locally and kept to cover the burg's demand")
+  ];
   const typeTip =
     row.kind !== undefined ? purposes[row.kind] : row.type === "MFG" ? t("Manufacturing step") : t("Local production");
   const badge = `<span class="typeBadge ${row.type.toLowerCase()}" data-tip="${typeTip}">${TYPE_LABELS[row.type]()}</span>`;
@@ -324,26 +345,29 @@ function renderHistoryLine(row: HistoryRow): string {
   return /* html */ `<tr${row.details ? " data-expandable" : ""}>
       <td>${row.details ? '<span class="icon-right-open"></span>' : ""}</td>
       <td>${goodDot(row.goodId)}${good.name}${badge}</td>
-      <td>${renderMarket(row.marketId)}</td>
+      <td>${renderMarket(row)}</td>
       ${cell(isTrade ? money(row.price!, isSale) : "", tips?.net)}
       ${cell(isTrade ? money(row.carriage, false) || formatPrice(0) : "", tips?.carriage)}
       ${cell(money(row.tax, false), tips?.tax)}
-      ${cell(money(row.tariff, false), tips?.tariff)}
+      ${cell(isTrade ? tariffCell(row.tariff, isImport(row)) : "", tips?.tariff)}
       ${cell(String(rn(row.units, 2)), tips?.units)}
       <td class="right ${(row.income ?? 0) >= 0 ? "positive" : "negative"}" data-tip="${tips?.income ?? ""}">${income}</td>
     </tr>${row.details ? `<tr class="historyDetails" hidden><td></td><td colspan="8">${row.details}</td></tr>` : ""}`;
 }
 
-function renderMarket(marketId: number | undefined): string {
+function renderMarket(row: HistoryRow): string {
+  const { marketId } = row;
   const market = Markets.get(marketId);
   if (!market) return "";
   const name = Markets.getName(market);
-  const isImport = marketId !== pack.burgs[activeBurgId]?.market;
-  const zoomTip = isImport
+  const zoomTip = isImport(row)
     ? sentences(t("Import from {{market}}", { market: name }), t("Click to zoom"))
     : t("Click to zoom");
   return `<span class="pointer" data-zoom-market="${marketId}" data-tip="${zoomTip}">${name}</span>`;
 }
+
+const isImport = ({ goodId, marketId = 0, kind = DEAL_KINDS.sale }: HistoryRow) =>
+  Markets.isImport([activeBurgId, marketId, goodId, kind, 0, 0, 0, 0, 0]);
 
 function getCellTips(row: HistoryRow, good: Good) {
   const { goodId, marketId = 0, kind = DEAL_KINDS.sale } = row;
@@ -356,6 +380,7 @@ function getCellTips(row: HistoryRow, good: Good) {
     tax: row.tax,
     tariff: row.tariff,
     income: row.income ?? 0,
+    isImport: isImport(row),
     taxStateId: taxState,
     tariffStateId: tariffState,
     formula: row.formula ?? ""
@@ -373,7 +398,7 @@ function renderStats(burg: Burg): void {
   for (const [dealBurg, , goodId, kind, units, , tax, tariff] of pack.deals) {
     if (dealBurg !== burg.i) continue;
     totalTax += tax + tariff;
-    if (kind !== DEAL_KINDS.demand) continue;
+    if (kind !== DEAL_KINDS.demand && kind !== DEAL_KINDS.kept) continue;
     const coverage = Goods.get(goodId)?.demandCoverage ?? {};
     DEMAND_PRIORITY.forEach((category, index) => {
       covered[index] += units * (coverage[category] || 0);

@@ -56,7 +56,7 @@ Each market good stores a single midpoint `price`. Customer-facing prices are de
 
 Goods pay for the path they travel, the same path the trade animation draws:
 
-- `TradeRoutes.search(startCell, endCell?)` is a Dijkstra over the route network (`pack.cells.routes`). States are `cell × 2 + (isWater ? 1 : 0)`, so land and water arrivals at one cell are tracked apart. An edge costs its length (between burg positions, otherwise cell centers) × 1 on land routes or × `WATER_COST` (0.2) on sea routes, plus `SWITCH_SPACINGS` (4) cell spacings for loading when the path switches between land and water.
+- `TradeRoutes.search(startCell, endCell?)` is a Dijkstra over the route network (`pack.cells.routes`). States are `cell × 2 + (isWater ? 1 : 0)`, so land and water arrivals at one cell are tracked apart. An edge costs its length (between burg positions, otherwise cell centers) × 1 on land routes or × `WATER_COST` (0.2) on sea routes, plus `SWITCH_SPACINGS` (4) cell spacings for loading when the path switches between land and water. A path switches only at a port burg's cell, never where a road merely crosses a sea route up a river.
 - `Markets.measureRoutes()` runs it once per economy run from every market's center (`TradeRoutes.measure()`), keeping the cost to every burg.
 - `carriage = min(routeCost / decima, MAX_DECIMAS) × good.carriage` per unit (`Markets.getTransport`), where a decima is a tenth of the map's diagonal (`getDecima`) and `good.carriage` the good's price per unit and decima (see the goods schema). The cap, `MAX_DECIMAS` = 10, is the whole diagonal.
 - A burg with no route to its own market pays the cap. Another market with no route to the burg cannot sell to it.
@@ -91,7 +91,8 @@ When the burg's market has no stock of an ingredient, the burg imports it throug
 
 After production, each burg fills personal demand within its remaining `burg.treasury`, as the `budget`:
 
-- Quotes every candidate good of a category like production does: the local buy price while its market stocks the good, otherwise the cheapest import's delivered price.
+- Quotes every candidate good of a category like production does: the local buy price while its market stocks the good, otherwise the cheapest import's delivered price. A good the burg sold to its market earlier in the run is quoted at what that sale earned it per unit, for up to the units sold and still in stock (`Markets.quoteKeep`).
+- `Markets.keep` takes such goods back as if they were never sold: the sale deal and its tax shrink by the share kept, the burg pays back what they earned, and a `kept` deal at price 0 records the units, so they count toward demand. Nothing moves, so the trade animation, Trade Details and the market's deals skip kept deals. A sale kept back whole is dropped after the demand fill. The rest is bought as usual.
 - Sorts the candidates by `buyPrice / coverageWeight` and buys the cheapest first, via `Markets.buy` or `Markets.importForBurg`.
 - Each purchase decreases the seller market's stock, raises its price, and reduces treasury.
 - Each purchase goes into the burg's demand deal with the seller market (there is no carried-over inventory between cycles).
@@ -151,7 +152,7 @@ Every deal is between a burg and a market, and `pack.deals` keeps one per burg, 
       burg: number,
       market: number,                 // the burg's own market, or the source of an import
       good: number,
-      kind: 0 | 1 | 2,                // DEAL_KINDS: sale, input purchase, demand purchase
+      kind: 0 | 1 | 2 | 3,            // DEAL_KINDS: sale, input purchase, demand purchase, kept back for demand
       units: number,                  // summed, rounded to 2 decimals
       price: number,                  // volume-weighted average per unit
       tax: number,                    // sales tax: the burg's on a sale, the exporter's on an import
@@ -165,12 +166,12 @@ A deal with a market other than the burg's own is an import (`Markets.isImport`)
 
 A read-only visualization layer that turns the deal log into moving markers on the map. It does not mutate any market or burg state.
 
-- **Flows**: each deal is one flow, between the burg and its market's center burg (`getEnds`): a sale runs to the market, a purchase from it. `displayType` "global" shows imports, "local" the rest.
+- **Flows**: each deal is one flow, between the burg and its market's center burg (`getEnds`): a sale runs to the market, a purchase from it.
 - **Pathfinding**: `findRoutePath(startCell, endCell)` takes the cheapest path from `TradeRoutes.search`, the same search that prices carriage (see Carriage), and splits its cells into `"land"` / `"water"` segments. A deal with no route is not animated.
 - **Rendering**: each segment animates one marker — wagon on land (rendered at `markerSize / 2`), ship on water (`markerSize`).
 - **Lifecycle**: `start / stop / restart / sync` follow the `toggleTrade` layer flag. The deals are filtered once per `start()` and cached. A `concurrent`-sized pool of active animations is maintained via `topUp()`; each animation calls back on completion to immediately spawn a replacement. `trigger(deals)` is a one-shot variant that draws specific deals without the pool lifecycle. `clear()` removes every animation SVG, and the cloned `tradeAnimation` group is wiped before `.map` save.
-- **Interaction**: clicking a marker opens `TradeDetails.open(deal)` — a dialog that lists the goods the deal's burg sells to its market or buys from a market, always from the burg's side ("Trade: burg sells to market" or "buys from market"), and highlights the route in red. Like the Production Overview, each good shows its net price per unit (the goods alone), the carriage, sales tax and tariff per unit (each tax naming the state it goes to), units, and the income to the burg: positive on a sale, negative on a purchase. Zoom buttons recenter on the burg or the market's center.
-- **Style controls**: `TradeAnimationEditor` exposes display type, concurrency, timing and size — `displayType` (`"both"` / `"local"` / `"global"`), `concurrent`, `duration`, `landDurationModifier`, `segmentChangePause`, `markerSize`. Path stroke color / dash live in the layer style editor.
+- **Interaction**: clicking a marker opens `TradeDetails.open(deal)` — a dialog that lists the goods the deal's burg sells to its market or buys from a market, always from the burg's side ("Trade: burg sells to market", "buys from market" or, from a market of another state, "imports from market"), and highlights the route in red. Like the Production Overview, each good shows its net price per unit (the goods alone), the carriage, sales tax and tariff per unit (each tax naming the state it goes to; the tariff shows 0 on a tariff-free import and a dash where the trade is no import), units, and the income to the burg: positive on a sale, negative on a purchase. Zoom buttons recenter on the burg or the market's center.
+- **Style controls**: `TradeAnimationEditor` exposes concurrency, timing and size — `concurrent`, `duration`, `landDurationModifier`, `segmentChangePause`, `markerSize`. Path stroke color / dash live in the layer style editor.
 - **Sources**: [src/renderers/trade-animation.ts](../../src/renderers/trade-animation.ts), [src/renderers/draw-trade-animation.ts](../../src/renderers/draw-trade-animation.ts), [src/controllers/economy/trade/trade-details.ts](../../src/controllers/economy/trade/trade-details.ts), [src/controllers/economy/trade/trade-animation-editor.ts](../../src/controllers/economy/trade/trade-animation-editor.ts).
 
 ## Architectural intent

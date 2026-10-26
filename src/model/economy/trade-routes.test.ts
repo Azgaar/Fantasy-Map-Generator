@@ -29,15 +29,26 @@ describe("TradeRoutes.search", () => {
     expect(search.cost[endState]).toBe(20);
   });
 
-  it("costs sea routes at a fifth of land, plus loading when switching between land and water", () => {
-    // land 0→1, then sea 1→2→3
+  it("costs sea routes at a fifth of land, plus loading when switching between land and water at a port", () => {
+    // land 0→1, then sea 1→2→3; cell 1 is a port
     globalThis.pack = line({ 0: { 1: 0 }, 1: { 0: 0, 2: 1 }, 2: { 1: 1, 3: 1 }, 3: { 2: 1 } }, [
       "roads",
       "searoutes"
     ]) as any;
+    globalThis.pack.cells.burg[1] = 2;
+    globalThis.pack.burgs.push({ i: 2, cell: 1, x: 10, y: 0, port: 1 } as any);
     const { search, endState } = tradeRoutes.search(0, 3);
     expect(endState).toBe(7);
     expect(search.cost[endState]).toBeCloseTo(10 + 20 * 0.2 + 4 * 10);
+  });
+
+  it("does not switch between land and water away from a port", () => {
+    // a road meets a sea route at cell 1, a river cell with no port
+    globalThis.pack = line({ 0: { 1: 0 }, 1: { 0: 0, 2: 1 }, 2: { 1: 1, 3: 1 }, 3: { 2: 1 } }, [
+      "roads",
+      "searoutes"
+    ]) as any;
+    expect(tradeRoutes.search(0, 3).endState).toBe(-1);
   });
 
   it("finds no path off the route network", () => {

@@ -46,15 +46,8 @@ export class TradeAnimationModule {
   }
 
   private spawnOne(deals: Deal[]): boolean {
-    const type = options.app.trade.animation.displayType || "both";
-
-    while (true) {
-      const enabledDeals =
-        type === "both" ? deals : deals.filter(deal => Markets.isImport(deal) === (type === "global"));
-      if (!enabledDeals.length) return false;
-
-      const deal = ra(enabledDeals);
-      if (!deal) return false;
+    while (deals.length) {
+      const deal = ra(deals);
 
       const path = this.getPath(deal);
       if (!path) {
@@ -77,6 +70,7 @@ export class TradeAnimationModule {
       );
       return true;
     }
+    return false;
   }
 
   trigger(deals: Deal[]): void {
@@ -99,6 +93,7 @@ export class TradeAnimationModule {
     const burg = pack.burgs[burgId];
     const center = centerId ? pack.burgs[centerId] : undefined;
     if (!burg?.i || burg.removed || !center?.i || center.removed || burg.cell === center.cell) return null;
+    if (kind === DEAL_KINDS.kept) return null; // nothing moves
     return kind === DEAL_KINDS.sale
       ? { startBurgId: burgId, endBurgId: center.i }
       : { startBurgId: center.i, endBurgId: burgId };
@@ -152,12 +147,12 @@ export class TradeAnimationModule {
 
     // Process the path edge-by-edge, extracting actual stored route geometry so the
     // animation follows the same adjusted/meandered points that the renderer draws.
-    const segments: { type: Segment; points: Point[] }[] = [];
+    type TaggedPoint = [number, number, number]; // [x, y, cell]
+    const segments: { type: Segment; points: TaggedPoint[] }[] = [];
     let currentType: Segment = waterEdges[0] ? "water" : "land";
 
     // First edge: take the full geometry (both endpoint cell runs).
-    const firstEdge = this.extractEdgePoints(cells[0], cells[1], pack.cells.routes[cells[0]]?.[cells[1]], routeById);
-    let currentPoints: Point[] = firstEdge.map(p => [p[0], p[1]] as Point);
+    let currentPoints = this.extractEdgePoints(cells[0], cells[1], pack.cells.routes[cells[0]]?.[cells[1]], routeById);
 
     for (let i = 1; i < cells.length - 1; i++) {
       const fromCell = cells[i];
@@ -181,30 +176,46 @@ export class TradeAnimationModule {
       if (k === 0)
         k = 1; // boundary point wasn't tagged fromCell — skip just it to avoid a duplicate
       else if (k >= edgePoints.length) k = edgePoints.length - 1; // keep at least the final point
-      for (; k < edgePoints.length; k++) currentPoints.push([edgePoints[k][0], edgePoints[k][1]]);
+      for (; k < edgePoints.length; k++) currentPoints.push(edgePoints[k]);
     }
     segments.push({ type: currentType, points: currentPoints });
 
-    // Snap the path's terminal points to the burg positions. Sea routes that run up a river anchor a
-    // port cell on the river course (the cell centre) rather than the burg marker, so a water segment
-    // (or a land segment ending at a river port) would otherwise start/end a few pixels off the burg
-    // it serves. getCellPoint returns the burg coordinate for burg cells, matching where the marker
-    // is drawn.
-    const firstSeg = segments[0].points;
-    const lastSeg = segments[segments.length - 1].points;
-    firstSeg[0] = TradeRoutes.getCellPoint(cells[0]);
-    lastSeg[lastSeg.length - 1] = TradeRoutes.getCellPoint(cells[cells.length - 1]);
+    // The goods leave and reach the burgs themselves, a port's straight from its harbor's center: the route's other points
+    // in those cells, such as the river course a sea route follows into a river port, would turn the path back on itself
+    const [startCell, endCell] = [cells[0], cells[cells.length - 1]];
+    const startHarbor = this.getHarbor(startCell, cells[1]);
+    const endHarbor = this.getHarbor(endCell, cells[cells.length - 2]);
+    const passes = ([, , cell]: TaggedPoint) => cell !== startCell && cell !== startHarbor;
+    const reaches = ([, , cell]: TaggedPoint) => cell !== endCell && cell !== endHarbor;
+    const at = (cell: number): TaggedPoint[] => (cell === -1 ? [] : [[...pack.cells.p[cell], cell]]);
+    const first = segments[0];
+    first.points = [
+      [...TradeRoutes.getCellPoint(startCell), startCell],
+      ...at(startHarbor),
+      ...first.points.filter(passes)
+    ];
+    const last = segments[segments.length - 1];
+    last.points = [...last.points.filter(reaches), ...at(endHarbor), [...TradeRoutes.getCellPoint(endCell), endCell]];
 
     // Flatten segments into a single points array (shared boundary points appear once).
     const points: Point[] = [];
     for (let si = 0; si < segments.length; si++) {
       for (let pk = 0; pk < segments[si].points.length; pk++) {
         if (pk === 0 && si > 0) continue;
-        points.push(segments[si].points[pk]);
+        points.push([segments[si].points[pk][0], segments[si].points[pk][1]]);
       }
     }
 
-    return { points, segments };
+    return {
+      points,
+      segments: segments.map(({ type, points }) => ({ type, points: points.map(([x, y]) => [x, y] as Point) }))
+    };
+  }
+
+  /** The water cell a port burg's goods leave from when the path goes that way, else -1 */
+  private getHarbor(burgCell: number, nextCell: number): number {
+    const burg = pack.burgs[pack.cells.burg[burgCell]];
+    return burg?.port && pack.cells.haven?.[burgCell] === nextCell ? nextCell : -1;
   }
 
   // Extract the actual rendered points for one route edge (fromCell → toCell), each tagged with the

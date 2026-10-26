@@ -65,6 +65,7 @@ export class ProductionModule {
     }
 
     for (const state of states) this.fillDemand(index, state);
+    pack.deals = pack.deals.filter(deal => deal[4] > 0); // sales kept back whole
 
     for (const { burg, produced, revenue, ingredientCosts, log } of states) {
       burg.product = rn(Math.max(0, revenue - ingredientCosts), 2);
@@ -244,6 +245,11 @@ export class ProductionModule {
     return imported ? { ...local, stock: imported.stock, buyPrice: imported.buyPrice } : local;
   }
 
+  /** The burg sold only what it made, so only that can be kept */
+  private quoteKeep(state: BurgProductionState, good: Good) {
+    return state.produced[good.i] ? Markets.quoteKeep(state.burg, good) : null;
+  }
+
   private sellInventoryToMarket(state: BurgProductionState): void {
     let phaseRevenue = 0;
     const taxRate = States.getSalesTax(state.burg);
@@ -257,7 +263,8 @@ export class ProductionModule {
       const trade = Markets.sell({ burg: state.burg, good, units, taxRate });
       if (!trade) continue;
 
-      phaseRevenue += trade.units * trade.price - trade.tax;
+      const revenue = trade.units * trade.price - trade.tax;
+      phaseRevenue += revenue;
       state.log?.push({ goodId, market: state.market.i, kind: DEAL_KINDS.sale, ...trade });
     }
 
@@ -327,9 +334,11 @@ export class ProductionModule {
 
       const sortedCandidates: { candidate: DemandGoodCandidate; costPerCoverage: number }[] = [];
       for (const candidate of index.demandGoodsByCategory[categoryIndex]) {
+        const own = this.quoteKeep(state, candidate.good);
         const quote = this.quote(index, state, candidate.goodId);
-        if (quote.stock <= 0.01) continue;
-        sortedCandidates.push({ candidate, costPerCoverage: quote.buyPrice / candidate.coverageWeight });
+        if (!own && quote.stock <= 0.01) continue;
+        const price = own ? Math.min(own.price, quote.buyPrice) : quote.buyPrice;
+        sortedCandidates.push({ candidate, costPerCoverage: price / candidate.coverageWeight });
       }
       sortedCandidates.sort((a, b) => a.costPerCoverage - b.costPerCoverage);
 
@@ -339,18 +348,29 @@ export class ProductionModule {
         const budget = burg.treasury || 0;
         if (budget <= 0.01) break;
 
-        const units = shortage / candidate.coverageWeight;
-        const trade = this.acquire(index, state, candidate.good, units, DEAL_KINDS.demand, budget);
-        if (!trade) continue;
+        const cover = (trade: Trade | null) => {
+          if (!trade) return;
+          burg.treasury = rn((burg.treasury || 0) - trade.units * trade.price, 2);
+          const coverage = index.demandCoverageByGood[candidate.goodId];
+          for (let coverageIndex = 0; coverageIndex < DEMAND_PRIORITY.length; coverageIndex++) {
+            demandCoverage[coverageIndex] += trade.units * (coverage[coverageIndex] || 0);
+          }
+          shortage = Math.max(0, demandTargets[categoryIndex] - demandCoverage[categoryIndex]);
+        };
 
-        burg.treasury = rn((burg.treasury || 0) - trade.units * trade.price, 2);
-
-        const coverage = index.demandCoverageByGood[candidate.goodId];
-        for (let coverageIndex = 0; coverageIndex < DEMAND_PRIORITY.length; coverageIndex++) {
-          demandCoverage[coverageIndex] += trade.units * (coverage[coverageIndex] || 0);
+        // what the burg sold to its own market is kept back first when that is cheaper than buying it
+        const own = this.quoteKeep(state, candidate.good);
+        if (own && own.price <= this.quote(index, state, candidate.goodId).buyPrice) {
+          const units = shortage / candidate.coverageWeight;
+          const kept = Markets.keep({ burg, good: candidate.good, units, budget });
+          if (kept)
+            state.log?.push({ goodId: candidate.goodId, market: state.market.i, kind: DEAL_KINDS.kept, ...kept });
+          cover(kept);
         }
+        if (shortage <= 0.001) continue;
 
-        shortage = Math.max(0, demandTargets[categoryIndex] - demandCoverage[categoryIndex]);
+        const units = shortage / candidate.coverageWeight;
+        cover(this.acquire(index, state, candidate.good, units, DEAL_KINDS.demand, burg.treasury || 0));
       }
     }
   }

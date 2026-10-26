@@ -390,11 +390,12 @@ function getAllStockData(): Record<number, { total: number; sources: StockSource
     }
   }
 
-  // a burg sells or uses up all it makes and buys for production, so it holds only its demand purchases
+  // a burg sells or uses up all it makes and buys for production, so it holds only what covers its demand
   const burgStocks = new Map<string, StockSource>();
   for (const [burgId, , goodId, kind, units] of pack.deals || []) {
     const burg = pack.burgs[burgId];
-    if (kind !== DEAL_KINDS.demand || !result[goodId] || !burg?.i || burg.removed) continue;
+    const covers = kind === DEAL_KINDS.demand || kind === DEAL_KINDS.kept;
+    if (!covers || !result[goodId] || !burg?.i || burg.removed) continue;
     result[goodId].total += units;
 
     const source = burgStocks.get(`${burgId}-${goodId}`);

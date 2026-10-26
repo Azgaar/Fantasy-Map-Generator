@@ -99,6 +99,7 @@ After every burg finishes producing:
 `fillDemand` walks the burgs in the same descending population order. There is no separate market-to-market trade step: a burg imports what its market lacks, as in production. For each burg and each demand category (in `DEMAND_PRIORITY` order):
 
 - Quotes the candidate goods from `demandGoodsByCategory` with the same input sourcing as production (local while stocked, else the cheapest import), dropping those with no stock anywhere.
+- A good the burg sold to its own market earlier in the run is quoted at what the sale earned it per unit, after tax and carriage, for up to the units sold and still in stock. Keeping its own goods is then cheaper than buying them at the market's buy price, but it is just another quote: the burg takes whatever covers demand cheapest. Kept goods undo that much of the sale (`Markets.keep`), so no sales tax is owed on them.
 - Sorts candidates by **cost per coverage** (`buyPrice / coverageWeight`).
 - Buys one good at a time, with the remaining treasury as `budget`, until the category shortage is covered, the treasury is empty, or the stock is exhausted.
 - Adds every purchase to the burg's demand deal with the seller market.
