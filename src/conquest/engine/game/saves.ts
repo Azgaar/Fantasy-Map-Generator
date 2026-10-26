@@ -29,7 +29,7 @@
 
 import type { BuildingDef } from "../common/content";
 import type { CapacityPoints } from "../common/types";
-import { developmentBonus, factionCustoms, isGarrisoned, POOLS } from "./capacity";
+import { addFactionAtrocity, developmentBonus, factionCustoms, isGarrisoned, POOLS } from "./capacity";
 import type { EngineCtx } from "./context";
 import { rng } from "./state";
 
@@ -314,6 +314,18 @@ export function rollSave(ctx: EngineCtx, regionId: number, kind: SaveKind, dcOve
   const modifier = valueModifier(value, cfg.bands, cfg.bandStep);
   const roll = 1 + Math.floor(rng(ctx.campaign) * 20);
   const dc = dcOverride ?? cfg.defaultDc;
+  if (roll === 1 && regionId > 0) {
+    const owner = ctx.campaign.regions[String(regionId)]?.owner;
+    if (owner && owner > 0) {
+      const holdsHellShrine = ctx.pack.regions.some(r => {
+        const rs = ctx.campaign.regions[String(r.id)];
+        return rs?.owner === owner && rs.buildings.includes("hell_shrine");
+      });
+      if (holdsHellShrine) {
+        addFactionAtrocity(ctx, owner, 2, "Hell Shrine natural 1 on saving throw");
+      }
+    }
+  }
   return {
     kind,
     pool,
@@ -353,6 +365,18 @@ export function rollValueCheck(ctx: EngineCtx, regionId: number, pool: Pool): Va
   const activity = regionActivity(ctx, regionId);
   const modifier = valueModifier(value, cfg.bands, cfg.bandStep);
   const roll = 1 + Math.floor(rng(ctx.campaign) * 20);
+  if (roll === 1 && regionId > 0) {
+    const owner = ctx.campaign.regions[String(regionId)]?.owner;
+    if (owner && owner > 0) {
+      const holdsHellShrine = ctx.pack.regions.some(r => {
+        const rs = ctx.campaign.regions[String(r.id)];
+        return rs?.owner === owner && rs.buildings.includes("hell_shrine");
+      });
+      if (holdsHellShrine) {
+        addFactionAtrocity(ctx, owner, 2, "Hell Shrine natural 1 on value check");
+      }
+    }
+  }
   return {
     pool,
     raw,
@@ -373,10 +397,18 @@ export function rollValueCheck(ctx: EngineCtx, regionId: number, pool: Pool): Va
  */
 export function assetCheckDifficulties(
   building: BuildingDef,
-  pityBonus = 0
+  pityBonus = 0,
+  domainAtrocity = 0
 ): { m: number; w: number; s: number } {
   const pools = ["m", "w", "s"] as const;
   const out = { m: 12, w: 12, s: 12 };
+  if (building.id === "scapegoat") {
+    const baseDc = 5 + domainAtrocity;
+    for (const p of pools) {
+      out[p] = Math.max(2, baseDc - pityBonus);
+    }
+    return out;
+  }
   for (const p of pools) {
     const gen = building.effects.capacity?.[p] ?? 0;
     const up = building.effects.upkeep?.[p] ?? 0;

@@ -1161,6 +1161,20 @@
           "ratio": 2
         }
       }
+    },
+    {
+      "id": "scapegoat",
+      "name": "Scapegoat",
+      "kind": "unchained",
+      "chain": "unchained",
+      "tier": 1,
+      "settlementKinds": [
+        "major",
+        "minor"
+      ],
+      "cost": 500,
+      "turns": 1,
+      "effects": {}
     }
   ]
 }

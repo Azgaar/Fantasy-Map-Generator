@@ -223,56 +223,101 @@ Regional assets represent permanent civil, martial, economic, and clandestine st
 
 #### Default Regional Assets (Cost / Benefit)
 
-The standard ruleset (`commonBase` / [`default.json`](../../src/conquest/content/docs/rosters/default.json)) ships with 16 common assets available to all factions across six functional chains:
+The standard ruleset (`commonBase` / [`default.json`](../../src/conquest/content/docs/rosters/default.json)) ships with **38 assets** covering the full domain management roster from *In Light Snow, Three Thousand Realms* alongside OpenConquest's maritime and espionage infrastructure:
 
-| Asset (ID) | Chain & Tier | Allowed Settlements | Build Cost & Time | Upkeep (Capacity Load) | Benefits & Capacity Generation | Prerequisites |
+##### 1. Tiered Structural Assets (6 Chains)
+
+| Asset (ID) | Chain & Tier | Allowed Settlements | Checks (M / W / S) | Upkeep | Capacity & Special Mechanical Effect | Prerequisites |
 |---|---|---|---|---|---|---|
-| **Palisade** (`walls1`) | Defense · T1 | Major, Minor | 600g · 1 turn | — | +1 Wall Tier, +2 M Capacity | None |
-| **Stone Walls** (`walls2`) | Defense · T2 | Major | 1,500g · 2 turns | 1 W Capacity | +1 Wall Tier (upgrades T1), +4 M Capacity | Palisade (`walls1`) |
-| **Layered Walls** (`walls3`) | Defense · T3 | Major | 3,000g · 3 turns | 2 W Capacity | +1 Wall Tier (upgrades T2), +1 Order/turn, +8 M Capacity | Stone Walls (`walls2`) |
-| **Market** (`market1`) | Economy · T1 | Major | 700g · 1 turn | — | +5% Tax Income, +2 W Capacity | None |
-| **Trade Center** (`market2`) | Economy · T2 | Major | 1,800g · 2 turns | 1 M Capacity | +8% Tax Income, +4 W Capacity | Market (`market1`) |
-| **Mercantile Guilds** (`market3`) | Economy · T3 | Major | 3,000g · 3 turns | 1 M, 1 S Capacity | +12% Tax Income, +8 W Capacity | Trade Center (`market2`) |
-| **Shrine** (`temple1`) | Order · T1 | Major, Minor | 400g · 1 turn | — | +2 Public Order/turn, +2 S Capacity | None |
-| **Temple** (`temple2`) | Order · T2 | Major | 2,000g · 2 turns | 1 W Capacity | +3 Public Order/turn, +4 S Capacity | Shrine (`temple1`) |
-| **Great Temple** (`temple3`) | Order · T3 | Major | 3,000g · 3 turns | 2 W Capacity | +4 Public Order/turn, +8 S Capacity | Temple (`temple2`) |
-| **Barracks** (`barracks1`) | Military · T1 | Major | 900g · 2 turns | — | +2 M Capacity | None |
-| **Training Grounds** (`barracks2`) | Military · T2 | Major | 1,200g · 2 turns | 1 W Capacity | +4 M Capacity | Barracks (`barracks1`) |
-| **War Academy** (`barracks3`) | Military · T3 | Major | 1,200g · 2 turns | 1 W, 1 S Capacity | +8 M Capacity | Training Grounds (`barracks2`) |
-| **Harbor Works** (`port1`) | Maritime · T1 | Major | 900g · 2 turns | — | +6% Tax Income, +1 W Capacity | None |
-| **Informants** (`informants1`) | Shadows · T1 | Major, Minor | 500g · 1 turn | 1 W Capacity | +1 C Capacity | None |
-| **Spy Network** (`informants2`) | Shadows · T2 | Major | 1,400g · 2 turns | 2 W Capacity | +2 C Capacity | Informants (`informants1`) |
-| **Hidden Court** (`informants3`) | Shadows · T3 | Major | 3,000g · 3 turns | 3 W Capacity | +3 C Capacity | Spy Network (`informants2`) |
+| **Palisade** (`walls1`) | Defense · T1 | Major, Minor | 14 / 12 / 12 | — | +1 Wall Tier, +2 M Capacity | None |
+| **Stone Walls** (`walls2`) | Defense · T2 | Major | 16 / 13 / 12 | 1 W | +1 Wall Tier, +4 M Capacity | Palisade (`walls1`) |
+| **Layered Walls** (`walls3`) | Defense · T3 | Major | 20 / 14 / 12 | 2 W | +1 Wall Tier, +1 Order/turn, +8 M Capacity | Stone Walls (`walls2`) |
+| **Barracks** (`barracks1`) | Military · T1 | Major | 14 / 12 / 12 | — | +2 M Capacity. Waives upkeep of **1 stationed unit** (`freeGarrisonUnits: 1`). | None |
+| **Training Grounds** (`barracks2`) | Military · T2 | Major | 16 / 13 / 12 | 1 W | +4 M Capacity. Waives upkeep of **2 stationed units** (`freeGarrisonUnits: 2`). | Barracks (`barracks1`) |
+| **War Academy** (`barracks3`) | Military · T3 | Major | 20 / 13 / 13 | 1 W, 1 S | +8 M Capacity. Waives upkeep of **4 stationed units** (`freeGarrisonUnits: 4`). | Training Grounds (`barracks2`) |
+| **Market** (`market1`) | Economy · T1 | Major | 12 / 14 / 12 | — | +5% Tax Income, +2 W Capacity | None |
+| **Trade Center** (`market2`) | Economy · T2 | Major | 13 / 16 / 12 | 1 M | +8% Tax Income, +4 W Capacity | Market (`market1`) |
+| **Mercantile Guilds** (`market3`) | Economy · T3 | Major | 13 / 20 / 13 | 1 M, 1 S | +12% Tax Income, +8 W Capacity | Trade Center (`market2`) |
+| **Shrine** (`temple1`) | Order · T1 | Major, Minor | 12 / 12 / 14 | — | +2 Public Order/turn, +2 S Capacity | None |
+| **Temple** (`temple2`) | Order · T2 | Major | 12 / 13 / 16 | 1 W | +3 Public Order/turn, +4 S Capacity | Shrine (`temple1`) |
+| **Great Temple** (`temple3`) | Order · T3 | Major | 12 / 14 / 20 | 2 W | +4 Public Order/turn, +8 S Capacity | Temple (`temple2`) |
+| **School** (`school1`) | School · T1 | Major | 12 / 14 / 12 | — | +2 W Capacity | None |
+| **Academy** (`school2`) | School · T2 | Major | 12 / 16 / 13 | 1 S | +4 W Capacity | School (`school1`) |
+| **Great Academy** (`school3`) | School · T3 | Major | 12 / 20 / 14 | 2 S | +8 W Capacity | Academy (`school2`) |
+| **Militia Muster** (`militia1`) | Militia · T1 | Major, Minor | 13 / 12 / 12 | — | +1 M Capacity. Spawns **2 Militia** (`levy_spear`) automatically on defense. | None |
+| **Organized Militia** (`militia2`) | Militia · T2 | Major | 14 / 13 / 12 | 1 W | +2 M Capacity. Spawns **4 Militia** (`levy_spear`) on defense. | Militia Muster (`militia1`) |
+| **Veteran Guard** (`militia3`) | Militia · T3 | Major | 16 / 14 / 12 | 2 W | +4 M Capacity. Spawns **4 Heavy Infantry** (`sword`) on defense. | Organized Militia (`militia2`) |
+
+##### 2. Maritime & Intrigue Assets
+
+| Asset (ID) | Chain & Tier | Allowed Settlements | Checks (M / W / S) | Upkeep | Capacity & Special Mechanical Effect | Prerequisites |
+|---|---|---|---|---|---|---|
+| **Harbor Works** (`port1`) | Maritime · T1 | Major | 12 / 13 / 12 | — | +6% Tax Income, +1 W Capacity | None |
+| **Informants** (`informants1`) | Shadows · T1 | Major, Minor | 12 / 13 / 12 | 1 W | +1 C Capacity | None |
+| **Spy Network** (`informants2`) | Shadows · T2 | Major | 12 / 14 / 12 | 2 W | +2 C Capacity | Informants (`informants1`) |
+| **Hidden Court** (`informants3`) | Shadows · T3 | Major | 12 / 15 / 12 | 3 W | +3 C Capacity | Spy Network (`informants2`) |
+
+##### 3. Domain Cultural Customs (Domain-Wide)
+
+Customs represent deeply ingrained traditions of a realm. They are unique across the entire faction domain and apply their effects to all held provinces:
+
+| Custom (ID) | Checks (M / W / S) | Upkeep | Benefits & Mechanical Effects | Incompatible With |
+|---|---|---|---|---|
+| **Brutal Tyranny** (`custom_brutal_tyranny`) | 16 / 12 / 12 | — | +4 M Capacity. Halves Atrocity point gains (rounded down); triples Atrocity rebel pool on uprisings. | None |
+| **Burning Creed** (`custom_burning_creed`) | 12 / 12 / 16 | — | +4 S Capacity. Unlocks elven auxiliary units (`elfBase` allies). | None |
+| **Democratic Traditions** (`custom_democratic`) | 12 / 14 / 14 | — | +2 W, +2 S Capacity. Grants +3 to one check/save per turn; natural 1 skips next turn action. | None |
+| **Devil Worshipers** (`custom_devil_worshipers`) | 16 / 16 / 12 | — | +4 M, +4 W Capacity. Atrocity decreases by 1/turn; ungarrisoned regions generate 0 M/W/S! | None |
+| **Dwarf Friend** (`custom_dwarf_friend`) | 12 / 16 / 12 | — | +4 W Capacity. Unlocks dwarven auxiliary units (`dwarfBase` allies). | Slavery |
+| **Halfling Affinity** (`custom_halfling_affinity`) | 12 / 14 / 14 | — | +2 W, +2 S Capacity. Unlocks halfling auxiliary units (`halflingBase` allies). | None |
+| **Mercantile** (`custom_mercantile`) | 12 / 16 / 12 | — | +4 W Capacity. Doubles Wealth capacity generated by all Markets, Trade Centers, and Guilds. | None |
+| **Religious Fervor** (`custom_religious_fervor`) | 12 / 12 / 16 | — | +4 S Capacity. Doubles Social capacity generated by all Shrines, Temples, and Great Temples. | None |
+| **Slavery** (`custom_slavery`) | 12 / 16 / 14 | 2 S | +4 W Capacity. Waives the upkeep of the costliest building in every held region. | Dwarf Friend |
+| **Spartan Culture** (`custom_spartan_culture`) | 16 / 12 / 12 | — | +4 M Capacity. Doubles Military capacity generated by Barracks, Training Grounds, and War Academies. | None |
+| **Well-Educated** (`custom_well_educated`) | 12 / 14 / 14 | — | +2 W, +2 S Capacity. Doubles Wealth capacity generated by all Schools, Academies, and Great Academies. | None |
+
+##### 4. Unchained & Resource Assets
+
+| Asset (ID) | Category | Checks (M / W / S) | Upkeep | Capacity & Special Mechanical Effect | Notes |
+|---|---|---|---|---|---|
+| **Community Aid** (`community_aid`) | Unchained | 12 / 14 / 13 | 2 W* | Converts location Wealth into Social: 2 W upkeep → +1 S generated (capped at location W output). | Standalone |
+| **Hell Shrine** (`hell_shrine`) | Unchained | 14 / 16 / 14 | — | +2 M, +4 W, +2 S Capacity. Ignores 5 Atrocity points; natural 1 on check/save adds +2 Atrocity. | Standalone |
+| **Military Spending** (`military_spending`) | Unchained | 13 / 14 / 12 | 2 W* | Converts location Wealth into Military: 2 W upkeep → +1 M generated (capped at location W output). | Standalone |
+| **Necromantic Cult** (`necromantic_cult`) | Unchained | 12 / 12 / 14 | 2 S | Unlocks Undead units (`necromancer`, `undead_swarm`, `dead_legion`); recruiting undead adds +2 Atrocity. | Standalone |
+| **Processing Camp** (`processing_camp`) | Resource | 12 / 14 / 12 | 1 W* | Resource location only. Generates +2 W; converts 1 W upkeep → +1 M generated. | Specialty/POI req. |
+| **Resource Extractor** (`resource_extractor`) | Resource | 12 / 14 / 12 | — | Resource location only. Generates +2 W Capacity. | Specialty/POI req. |
+| **Scapegoat** (`scapegoat`) | Unchained | 5 + Atrocity | — | Dummy asset established to be sacrificed via `PunishAtrocity` (-1d4+2 Atrocity, 4-turn cooldown). | Single-use |
+| **Siege Supplies** (`siege_supplies`) | Unchained | 14 / 12 / 12 | 2 M | Stores 20 HD of supplies (buffers siege attrition by 10 HD/turn). **May be built twice** (`maxInstances: 2`). | Buffer |
+| **United Efforts** (`united_efforts`) | Unchained | 13 / 14 / 13 | 2 W* | Converts location Wealth into Military & Social: 2 W upkeep → +1 M, +1 S generated. | Standalone |
 
 ---
 
 #### The Process of Creating Building Assets
 
-OpenConquest handles building assets across two operational workflows: **in-game strategic construction** by commanders and the AI, and **content authoring / modding** by world-builders.
+OpenConquest implements the authentic **3-Check Value Roll System ("Establish an Asset")** from the *AER Domain Management Rules*:
 
-##### 1. In-Game Construction Workflow
-During a campaign, players and AI factions construct buildings to develop their provinces:
+##### 1. The 3-Check Value Roll System
+Rather than relying on flat turn countdowns, establishing an asset requires overcoming three distinct Domain value checks — one each for **Military**, **Wealth**, and **Social**:
 
-1. **Inspection & Target Selection**:
-   - The player selects an owned region on the map or opens the settlement details in the right-hand **Campaign Rail** or via **⚔ OpenConquest ▸ Faction Forces ▸ Buildings**.
-   - The interface lists all standing structures, current public order, wall tier, and available building blueprints bound to the faction's roster.
-2. **Order Dispatch (`BuildBuilding`)**:
-   - Selecting a blueprint issues a `{ type: "BuildBuilding", regionId, buildingId }` command into the deterministic engine.
-3. **Engine Validation & Gate Checks**:
-   - **Ownership**: Confirms `regionState.owner === factionId`.
-   - **Settlement Kind**: Checks whether the target settlement matches the asset's `settlementKinds` (`major` vs. `minor`).
-   - **Availability**: Verifies the building belongs to the faction's culture roster or the common defaults pool.
-   - **Chain & Prerequisite Validation**: Verifies that any required prerequisite (`requires`) is currently standing in the region, and that no equal or higher tier of the same `chain` is already built.
-   - **No Active Construction**: Checks `regionState.construction === null`.
-   - **Capacity Upkeep Headroom**: Verifies that the faction has sufficient free capacity in the relevant pools to support the asset's `upkeep`. If free capacity is inadequate, the engine refuses the command (`capacityRefusal`).
-   - **Treasury Check**: In classic treasury mode, ensures adequate gold and deducts `building.cost`.
-4. **Construction Turn Cycle**:
-   - The engine assigns `regionState.construction = { buildingId, turnsLeft: turns }` and appends `BuildingQueued` to the campaign event log.
-   - While under construction, the project consumes no ongoing upkeep and generates no output.
-5. **Turn Tick & Completion**:
-   - During the end-of-turn economy phase, `turnsLeft` decrements.
-   - When `turnsLeft <= 0`, any lower-tier structure in the same chain is filtered out of `regionState.buildings` (upgrade consumption rule), and the new `buildingId` is appended.
-   - `BuildingCompleted` is logged, and `recomputeCapacity(ctx)` dynamically recalculates the faction's ledger, activating new capacity yields, upkeep loads, wall bonuses, or income percentages immediately.
+1. **Check Difficulty Class (DC)**:
+   For each value pool $p \in \{M, W, S\}$, the base difficulty reflects the magnitude of the asset's impact:
+   $$\text{magnitude}_p = \max\!\left(\text{benefit}_p,\, \text{upkeep}_p\right)$$
+   $$\text{DC}_p = \max\!\left(2,\, 12 + \text{magnitude}_p - \text{pityBonus}\right)$$
+   *(For Scapegoat assets, the base difficulty is $5 + \text{Domain Atrocity} - \text{pityBonus}$. Minimum DC is 2; a natural 1 always misses.)*
+2. **Value Modifiers**:
+   Each roll is $1d20 + \text{modifier}$, where the modifier derives from the region's raw generation pool according to the standard value ladder ($0\text{--}5: +0$, $6\text{--}10: +1$, $11\text{--}15: +2$, $16\text{--}20: +3$, $+1$ per $+5$). Upkeep costs do not subtract from a Domain's scores.
+3. **Continuous Effort & Pity Mechanic**:
+   Each failed check for a project decreases all difficulties for that asset by 1 point (`pityBonus += 1`), ensuring continuous construction efforts eventually prevail.
+4. **Treasure Reserves**:
+   - Commanders can pre-spend stored Treasure points to boost value checks ($+1$ to the roll per Treasure spent, up to 5 points).
+   - If a roll misses by $\le 2$ points, reserve Treasure automatically rescues the attempt at a cost of 2 Treasure per $+1$ needed (up to 4 Treasure spent).
+   - Factions accumulate portable Treasure using the `AccumulateTreasure` domain action (Wealth check vs $8 + \text{current Treasure}$ for $1d4$ points).
+5. **The Lure of Atrocity**:
+   - Rulers facing critical deadlines can force an asset check to succeed via the `useAtrocity` directive, crucifying dissidents or seizing forbidden resources to add $\text{DC} - \text{total}$ Atrocity points.
+   - Any Atrocity points inflict a severe domain-wide upkeep penalty ($2 + \lfloor \text{effectiveAtrocity} / 4 \rfloor$ added to Military, Wealth, and Social load).
+   - Atrocity can be alleviated by creating a *Scapegoat* asset and issuing the `PunishAtrocity` command to publicly purge the blame (removes $1d4 + 2$ Atrocity points, restricted to once per year / 4 turns).
+6. **Voluntary Disbanding & Deficits**:
+   - Assets can be dismantled via the `DisbandBuilding` command.
+   - Deeply held cultural customs resist disbanding unless the domain is in active capacity deficit for a pool loaded by the custom, or through forced suppression (`suppressCustom: true`), which inflames public outrage and inflicts a $-15$ public order penalty across the realm.
 
 ##### 2. Authoring & Modding Building Assets
 Developers and modders can define custom building chains in JSON rulesets or live through the in-game editor:

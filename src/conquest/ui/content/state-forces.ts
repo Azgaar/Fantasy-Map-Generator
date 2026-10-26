@@ -826,9 +826,20 @@ export function openStateForcesDialog(): void {
           const chain = bDef?.chain ?? "general";
           const tier = bDef?.tier ?? 1;
           const cost = bDef?.cost ?? 0;
+          const kind = bDef?.kind ?? "structure";
+          const badges: string[] = [];
+          if (bDef?.effects.freeGarrisonUnits) badges.push(`Garrison Upkeep: -${bDef.effects.freeGarrisonUnits}`);
+          if (bDef?.effects.militiaDefense) badges.push(`Militia: +${bDef.effects.militiaDefense.count}`);
+          if (bDef?.effects.chainMultiplier) badges.push(`${bDef.effects.chainMultiplier.chain} ×${bDef.effects.chainMultiplier.factor}`);
+          if (bDef?.effects.siegeSupplies) badges.push(`Supplies: ${bDef.effects.siegeSupplies} HD`);
+          if (bDef?.effects.atrocityIgnore) badges.push(`Ignore ${bDef.effects.atrocityIgnore} Atrocity`);
+          const badgeHtml = badges.length ? `<div style="font-size: 11px; color: #555; margin-top: 2px;">${badges.join(" · ")}</div>` : "";
 
           return `<tr>
-            <td style="font-weight: 600; color: #000;">${escapeHtml(name)}</td>
+            <td style="font-weight: 600; color: #000;">
+              ${escapeHtml(name)} <span class="tw-badge" style="font-size: 10px; padding: 2px 5px;">${escapeHtml(kind)}</span>
+              ${badgeHtml}
+            </td>
             <td>${escapeHtml(chain)} (Tier ${tier})</td>
             <td>${cost} gold</td>
             <td style="text-align: right;">
@@ -892,7 +903,7 @@ export function openStateForcesDialog(): void {
           <label class="tw-field" style="flex: 1;">
             <span>Construct Building (Bound Roster: ${escapeHtml(bound.name)})</span>
             <select class="tw-select" id="tw-add-building-id">
-              ${bound.buildings.map(b => `<option value="${escapeHtml(b.id)}">${escapeHtml(b.name)} — ${b.chain} Tier ${b.tier} (${b.cost}g)</option>`).join("")}
+              ${bound.buildings.map(b => `<option value="${escapeHtml(b.id)}">${b.kind ? `[${escapeHtml(b.kind)}] ` : ""}${escapeHtml(b.name)} — ${escapeHtml(b.chain)} T${b.tier} (${b.cost}g)</option>`).join("")}
             </select>
           </label>
           <button type="button" class="tw-btn" id="tw-add-building-btn">+ Construct Building</button>

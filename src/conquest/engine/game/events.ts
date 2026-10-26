@@ -105,6 +105,32 @@ export type GameEvent =
   | { type: "SettlementDeveloped"; regionId: number; settlementId: number; tier: number }
   // CAPACITY-PLAN Phase 5: Wealth converted into purse gold.
   | { type: "TreasureWithdrawn"; factionId: number; wealth: number; gold: number; purse: number }
+  | {
+      type: "TreasureAccumulated";
+      factionId: number;
+      regionId: number;
+      roll: number;
+      modifier: number;
+      dc: number;
+      success: boolean;
+      gain: number;
+      newTreasure: number;
+    }
+  | {
+      type: "AtrocityPunished";
+      factionId: number;
+      regionId: number;
+      sacrificedAssetId: string;
+      reduction: number;
+      newAtrocity: number;
+    }
+  | {
+      type: "AtrocityChanged";
+      factionId: number;
+      delta: number;
+      reason: string;
+      newAtrocity: number;
+    }
   | { type: "TechResearched"; factionId: number; techId: string; cost: number }
   // -- world (Phase 3) ---------------------------------------------------------
   | { type: "RebellionSpawned"; regionId: number; armyId: string }

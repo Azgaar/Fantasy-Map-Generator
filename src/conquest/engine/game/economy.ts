@@ -7,6 +7,7 @@
 
 import type { BuildingDef } from "../common/content";
 import {
+  addFactionAtrocity,
   developmentCap,
   isGarrisoned,
   recomputeCapacity,
@@ -98,14 +99,16 @@ export function advanceConstructionStep(
   }
 
   const pityBonus = rs.construction.pityBonus ?? 0;
-  const dcs = assetCheckDifficulties(building, pityBonus);
+  const factionId = rs.owner;
+  const factionState = campaign.factions[String(factionId)];
+  const currentAtrocity = factionState?.atrocity ?? 0;
+  const dcs = assetCheckDifficulties(building, pityBonus, currentAtrocity);
   const dc = dcs[pool];
 
   const check = rollValueCheck(ctx, regionId, pool);
   let total = check.roll + check.modifier;
 
   // Democratic Traditions custom bonus (+3 to one check per turn across Domain).
-  const factionId = rs.owner;
   const factionHoldsDemocratic = pack.regions.some(r => {
     const rState = campaign.regions[String(r.id)];
     return rState?.owner === factionId && rState.buildings.includes("custom_democratic");
@@ -114,8 +117,32 @@ export function advanceConstructionStep(
     total += 3;
   }
 
-  if (opts.spendTreasure && opts.spendTreasure > 0) {
-    total += opts.spendTreasure;
+  // Pre-spent Treasure (max 5 points, +1 per point spent).
+  if (opts.spendTreasure && opts.spendTreasure > 0 && factionState) {
+    const toSpend = Math.min(Math.min(opts.spendTreasure, 5), factionState.treasure ?? 0);
+    if (toSpend > 0) {
+      factionState.treasure = (factionState.treasure ?? 0) - toSpend;
+      total += toSpend;
+    }
+  }
+
+  // Post-roll auto-rescue with reserve Treasure: 2 Treasure per +1 needed, up to +2 (max 4 Treasure).
+  if (total < dc && factionState && (factionState.treasure ?? 0) >= 2) {
+    const deficit = dc - total;
+    if (deficit <= 2) {
+      const neededTreasure = deficit * 2;
+      if ((factionState.treasure ?? 0) >= neededTreasure) {
+        factionState.treasure = (factionState.treasure ?? 0) - neededTreasure;
+        total += deficit;
+      }
+    }
+  }
+
+  // Forced check via Atrocity override: adds (dc - total) Atrocity points.
+  if (opts.useAtrocity && total < dc) {
+    const deficit = dc - total;
+    addFactionAtrocity(ctx, factionId, deficit, `Forced asset check for ${building.name}`);
+    total = dc;
   }
 
   const success = total >= dc;
@@ -352,6 +379,21 @@ export function economyTick(ctx: EngineCtx): GameEvent[] {
     }
     state.lastIncome = Math.round(income);
     state.lastExpenses = Math.round(expenses);
+    // Phase 4: Atrocity per-turn delta (Devil Worshipers -1/turn).
+    const holdsDevilWorshipers = pack.regions.some(r => {
+      const rs = campaign.regions[String(r.id)];
+      return rs?.owner === f.id && rs.buildings.includes("custom_devil_worshipers");
+    });
+    if (holdsDevilWorshipers && (state.atrocity ?? 0) > 0) {
+      state.atrocity = Math.max(0, (state.atrocity ?? 0) - 1);
+      events.push({
+        type: "AtrocityChanged",
+        factionId: f.id,
+        delta: -1,
+        reason: "Devil Worshipers natural decay",
+        newAtrocity: state.atrocity
+      });
+    }
     events.push({
       type: "TreasuryTicked",
       factionId: f.id,

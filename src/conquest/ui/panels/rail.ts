@@ -25,6 +25,7 @@ const RAIL_ID = "tw-rail";
 
 /** A region row, as the rail renders it. Pure: unit-tested without a DOM. */
 interface RegionSummary {
+  id: number;
   name: string;
   /** the owning state, shown beside the name — null when the map leaves it unclaimed */
   owner: string | null;
@@ -65,6 +66,7 @@ function summarizeRegion(source: ReturnType<typeof getSource>, regionId: number)
   const inRegion = source.settlements().filter(settlement => settlement.regionId === region.id);
   const capital = inRegion.find(settlement => settlement.id === region.capitalId);
   return {
+    id: region.id,
     name: region.name,
     owner: region.ownerName,
     population: region.population,
@@ -182,6 +184,12 @@ function renderTurnPanel(): string {
         <p class="tw-title">${escapeHtml(titleText)}</p>
         ${subText}
         ${row("Turn", String(campaign.turn))}
+        ${
+          playerFactions.length === 1 && playerFactions[0]?.id && campaign.factions[String(playerFactions[0].id)]
+            ? row("Treasure", String(campaign.factions[String(playerFactions[0].id)]?.treasure ?? 0)) +
+              row("Atrocity", String(campaign.factions[String(playerFactions[0].id)]?.atrocity ?? 0))
+            : ""
+        }
         ${row("Commands", String(store.log.length))}
         ${row("Factions left", String(Object.values(campaign.factions).filter(f => f.alive).length))}
         <button class="tw-endturn" data-tw-action="endturn">End turn</button>
@@ -239,6 +247,26 @@ function renderSettlement(summary: SettlementSummary, region: RegionSummary): st
 /** The region view: who holds it, how big it is, and what stands on it. */
 function renderRegion(summary: RegionSummary): string {
   const owner = summary.owner ? `<span class="tw-owner">(${escapeHtml(summary.owner)})</span>` : "";
+  const session = currentSession();
+  const campaign = session?.store?.state;
+  let campaignHtml = "";
+  if (campaign) {
+    const rs = campaign.regions[String(summary.id)];
+    if (rs) {
+      campaignHtml += row("Public Order", `${rs.order} / 100`);
+      if (rs.construction) {
+        const c = rs.construction;
+        const checksText = c.checks
+          ? `M:${c.checks.m ? "✓" : "…"} W:${c.checks.w ? "✓" : "…"} S:${c.checks.s ? "✓" : "…"}${c.pityBonus ? ` (-${c.pityBonus})` : ""}`
+          : `${c.turnsLeft} turns`;
+        campaignHtml += row("Building", `${escapeHtml(c.buildingId)} (${checksText})`);
+      }
+      if (rs.buildings.length) {
+        campaignHtml += row("Buildings", escapeHtml(rs.buildings.join(", ")));
+      }
+    }
+  }
+
   return /* html */ `
     <p class="tw-title"><span class="tw-chip" style="background:${summary.color}"></span>${escapeHtml(summary.name)}${owner}</p>
     ${row("Population", summary.population.toLocaleString("en-US"))}
@@ -248,7 +276,8 @@ function renderRegion(summary: RegionSummary): string {
       summary.minors.length
         ? summary.minors.map(settlement => settlementLink(settlement.id, settlement.name)).join(", ")
         : "—"
-    )}`;
+    )}
+    ${campaignHtml}`;
 }
 
 function renderInspection(): string {

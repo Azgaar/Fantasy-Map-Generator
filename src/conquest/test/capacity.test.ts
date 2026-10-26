@@ -30,8 +30,6 @@ import {
   bindingPool,
   developmentBonus,
   developmentCap,
-  factionCustoms,
-  freeCapacity,
   isGarrisoned,
   recomputeCapacity,
   settlementTier

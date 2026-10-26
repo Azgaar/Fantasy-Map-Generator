@@ -18,15 +18,23 @@ import type { BuildingDef, UnitType } from "../common/content";
 import type { ArmyUnit, CapacityPoints } from "../common/types";
 import { atWar } from "./ai";
 import { type BattleModifiers, type BattleOutcome, type BattleSide, estimateOdds, resolveBattle } from "./battle";
-import { capacityRefusal, developmentCap, freeCapacity, recomputeCapacity, settlementDevelopment } from "./capacity";
+import {
+  addFactionAtrocity,
+  capacityRefusal,
+  developmentCap,
+  freeCapacity,
+  recomputeCapacity,
+  settlementDevelopment
+} from "./capacity";
 import { agentAction, grantXp, lordCombatBonus, moveCharacter, recruitCharacter, spendSkillPoint } from "./characters";
 import { aiAcceptsConfederation, declareWarCore, hasTreaty, offerTreaty, setRelation } from "./diplomacy";
 import { advanceConstructionStep } from "./economy";
 import type { CapturePolicy, GameEvent, TreatyType } from "./events";
 import { graphIndex } from "./graph";
 import { edgeCost, findPath, riverCrossing } from "./movement";
+import { effectiveValue, rollValueCheck } from "./saves";
 import { applyCapturePolicy, garrisonWeakenFactor, siegeOf, startSiege } from "./sieges";
-import { type Campaign, isPlayerFaction, type Stance } from "./state";
+import { type Campaign, isPlayerFaction, type RegionState, rng, type Stance } from "./state";
 import { endTurn } from "./turn";
 import { garrisonUnits } from "./units";
 import { checkElimination, checkVictory } from "./victory";
@@ -82,6 +90,10 @@ function dispatch(ctx: EngineCtx, cmd: Command, internal: boolean): string | nul
       return developSettlement(ctx, cmd.regionId, cmd.settlementId);
     case "WithdrawTreasure":
       return withdrawTreasure(ctx);
+    case "AccumulateTreasure":
+      return accumulateTreasureCmd(ctx, cmd.factionId, cmd.regionId, cmd.rerollWithGold);
+    case "PunishAtrocity":
+      return punishAtrocityCmd(ctx, cmd.factionId, cmd.regionId);
     case "ResearchTech":
       return researchTech(ctx, cmd.techId);
     case "DeclareWar":
@@ -626,6 +638,16 @@ function recruitUnit(ctx: EngineCtx, armyId: string, unitTypeId: string, interna
   }
   army.units.push({ type: unitTypeId, count: type.men, exp: 0 });
   campaign.log.push({ type: "UnitRecruited", armyId, unitType: unitTypeId, cost: type.cost });
+
+  // Phase 4: Necromantic Cult penalty (+2 Atrocity per recruited undead unit)
+  const holdsNecro = ctx.pack.regions.some(r => {
+    const rs = campaign.regions[String(r.id)];
+    return rs?.owner === army.factionId && rs.buildings.includes("necromantic_cult");
+  });
+  if (holdsNecro && (unitTypeId === "necromancer" || unitTypeId === "undead_swarm" || unitTypeId === "dead_legion")) {
+    addFactionAtrocity(ctx, army.factionId, 2, `Recruiting undead ${type.name}`);
+  }
+
   return null;
 }
 
@@ -968,6 +990,143 @@ function withdrawTreasure(ctx: EngineCtx, actingFaction?: number): string | null
     gold,
     purse: state.purse
   });
+  return null;
+}
+
+/**
+ * AER p1581: Accumulate Treasure.
+ * Wealth check against DC = 8 + current Treasure. On success, +1d4 Treasure points.
+ * Optionally spend 1,000 gp per point of Wealth to reroll if failed.
+ */
+function accumulateTreasureCmd(
+  ctx: EngineCtx,
+  factionId: number,
+  regionId?: number,
+  rerollWithGold?: boolean
+): string | null {
+  const { campaign, pack } = ctx;
+  const state = campaign.factions[String(factionId)];
+  if (!state || !state.alive) return `faction ${factionId} is not alive or does not exist`;
+
+  let targetRegionId: number;
+  if (regionId !== undefined) {
+    const rState = campaign.regions[String(regionId)];
+    if (!rState || rState.owner !== factionId) return `region ${regionId} is not owned by faction ${factionId}`;
+    targetRegionId = regionId;
+  } else {
+    const capital = pack.factions.find(f => f.id === factionId)?.capitalRegion;
+    const capOwner = capital ? campaign.regions[String(capital)]?.owner : undefined;
+    if (capOwner === factionId && capital !== undefined) {
+      targetRegionId = capital;
+    } else {
+      const owned = pack.regions.find(r => campaign.regions[String(r.id)]?.owner === factionId);
+      if (!owned) return `faction ${factionId} owns no regions`;
+      targetRegionId = owned.id;
+    }
+  }
+
+  const dc = 8 + (state.treasure ?? 0);
+  let check = rollValueCheck(ctx, targetRegionId, "w");
+  let total = check.roll + check.modifier;
+
+  if (rerollWithGold && total < dc) {
+    const wealthVal = effectiveValue(ctx, targetRegionId, "w");
+    const goldCost = Math.max(1000, 1000 * wealthVal);
+    const purse = ctx.config.economy.capacityMode;
+    const have = purse ? state.purse : state.treasury;
+    if (have >= goldCost) {
+      if (purse) state.purse = Math.round((state.purse - goldCost) * 100) / 100;
+      else state.treasury = Math.round((state.treasury - goldCost) * 100) / 100;
+      check = rollValueCheck(ctx, targetRegionId, "w");
+      total = check.roll + check.modifier;
+    }
+  }
+
+  const success = total >= dc;
+  let gain = 0;
+  if (success) {
+    gain = 1 + Math.floor(rng(campaign) * 4);
+    state.treasure = (state.treasure ?? 0) + gain;
+  }
+
+  campaign.log.push({
+    type: "TreasureAccumulated",
+    factionId,
+    regionId: targetRegionId,
+    roll: check.roll,
+    modifier: check.modifier,
+    dc,
+    success,
+    gain,
+    newTreasure: state.treasure ?? 0
+  });
+
+  return null;
+}
+
+/**
+ * AER p1583: Punish Atrocity.
+ * Consumes an established Scapegoat asset to fatally disband it and remove 1d4+2 Atrocity points.
+ * Cooldown: once per year (4 turns).
+ */
+function punishAtrocityCmd(
+  ctx: EngineCtx,
+  factionId: number,
+  regionId?: number
+): string | null {
+  const { campaign, pack } = ctx;
+  const state = campaign.factions[String(factionId)];
+  if (!state || !state.alive) return `faction ${factionId} is not alive or does not exist`;
+
+  if (
+    state.lastPunishAtrocityTurn !== undefined &&
+    campaign.turn - state.lastPunishAtrocityTurn < 4
+  ) {
+    const left = 4 - (campaign.turn - state.lastPunishAtrocityTurn);
+    return `Punish Atrocity may only be performed once per year (${left} turn${left === 1 ? "" : "s"} remaining)`;
+  }
+
+  let targetRegionState: RegionState | undefined;
+  if (regionId) {
+    const rs = campaign.regions[String(regionId)];
+    if (rs && rs.owner === factionId && rs.buildings.includes("scapegoat")) {
+      targetRegionState = rs;
+    } else {
+      return `region ${regionId} does not contain an established Scapegoat asset`;
+    }
+  } else {
+    for (const r of pack.regions) {
+      const rs = campaign.regions[String(r.id)];
+      if (rs && rs.owner === factionId && rs.buildings.includes("scapegoat")) {
+        targetRegionState = rs;
+        break;
+      }
+    }
+  }
+
+  if (!targetRegionState) {
+    return `faction ${factionId} has no established Scapegoat asset to punish`;
+  }
+
+  const idx = targetRegionState.buildings.indexOf("scapegoat");
+  if (idx >= 0) {
+    targetRegionState.buildings.splice(idx, 1);
+  }
+
+  const reduction = 2 + (1 + Math.floor(rng(campaign) * 4));
+  const oldAtrocity = state.atrocity ?? 0;
+  state.atrocity = Math.max(0, oldAtrocity - reduction);
+  state.lastPunishAtrocityTurn = campaign.turn;
+
+  campaign.log.push({
+    type: "AtrocityPunished",
+    factionId,
+    regionId: targetRegionState.id,
+    sacrificedAssetId: "scapegoat",
+    reduction,
+    newAtrocity: state.atrocity
+  });
+
   return null;
 }
 

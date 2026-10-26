@@ -76,6 +76,20 @@ interface FactionState {
    */
   withdrawalsThisTurn: number;
   eliminatedOnTurn?: number;
+  /**
+   * AER Domain Treasure points. Stored portable domain wealth accumulated via
+   * AccumulateTreasure domain actions, spent to boost asset checks or auto-rescue missed rolls.
+   */
+  treasure?: number;
+  /**
+   * AER Domain Atrocity score. Accumulates from ruthless ruler acts, forced checks,
+   * or dark cult assets; inflicts domain-wide capacity load penalties.
+   */
+  atrocity?: number;
+  /**
+   * Turn when PunishAtrocity scapegoat action was last used (cooldown: 4 turns / 1 year).
+   */
+  lastPunishAtrocityTurn?: number;
 }
 
 export interface ConstructionProject {
@@ -90,7 +104,7 @@ export interface ConstructionProject {
   stepTakenThisTurn?: boolean;
 }
 
-interface RegionState {
+export interface RegionState {
   id: number;
   owner: number;
   order: number;
@@ -314,7 +328,9 @@ export function createCampaign(opts: CreateOptions): Campaign {
       victorySetId: rf.victorySetId,
       reliability: 100,
       lastIncome: 0,
-      lastExpenses: 0
+      lastExpenses: 0,
+      treasure: 0,
+      atrocity: 0
     };
   }
   // Synthetic brigand faction — hostile to everyone, never in victory/AI scans.
@@ -330,7 +346,9 @@ export function createCampaign(opts: CreateOptions): Campaign {
     victorySetId: resolved.pack.defaultVictory,
     reliability: 100,
     lastIncome: 0,
-    lastExpenses: 0
+    lastExpenses: 0,
+    treasure: 0,
+    atrocity: 0
   };
 
   const regions: Record<string, RegionState> = {};

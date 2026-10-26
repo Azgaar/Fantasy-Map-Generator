@@ -276,7 +276,23 @@ function spawnBrigands(ctx: EngineCtx, regionId: number): void {
   const units = [];
   const melee = roster.garrison.melee;
   const ranged = roster.garrison.ranged;
-  const n = config.rebellion.brigandUnits;
+  let n = config.rebellion.brigandUnits;
+  const rs = campaign.regions[String(regionId)];
+  const owner = rs?.owner ?? 0;
+  if (owner > 0) {
+    const ownerState = campaign.factions[String(owner)];
+    const rawAtrocity = ownerState?.atrocity ?? 0;
+    if (rawAtrocity > 0) {
+      const hasBrutalTyranny = ctx.pack.regions.some(r => {
+        const otherRs = campaign.regions[String(r.id)];
+        return otherRs?.owner === owner && otherRs.buildings.includes("custom_brutal_tyranny");
+      });
+      const mult = hasBrutalTyranny ? 3 : 1;
+      const rebelPool = rawAtrocity * mult;
+      const extraUnits = Math.floor(rebelPool / 3);
+      n += extraUnits;
+    }
+  }
   for (let i = 0; i < n; i++) {
     const type = i % 3 === 2 ? ranged : melee;
     const t = unitTypes[type]!;

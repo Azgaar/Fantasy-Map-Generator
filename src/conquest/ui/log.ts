@@ -229,6 +229,12 @@ function describe(event: GameEvent, campaign: Campaign): string | null {
       return `${factionName(event.factionId)} withdrew ${num(event.wealth)} Wealth into ${num(
         event.gold
       )} purse gold (purse ${num(event.purse)}).`;
+    case "TreasureAccumulated":
+      return `${factionName(event.factionId)} attempted to accumulate treasure in ${regionName(event.regionId)}: roll ${event.roll} +${event.modifier} vs DC ${event.dc} — ${event.success ? `success (+${event.gain} treasure, total ${event.newTreasure})` : "failed"}.`;
+    case "AtrocityPunished":
+      return `${factionName(event.factionId)} punished atrocity via ${buildingName(event.sacrificedAssetId)} in ${regionName(event.regionId)}: -${event.reduction} atrocity (current ${event.newAtrocity}).`;
+    case "AtrocityChanged":
+      return `${factionName(event.factionId)} atrocity ${event.delta > 0 ? `+${event.delta}` : event.delta} (${event.reason}): current ${event.newAtrocity}.`;
     case "TechResearched":
       return `${factionName(event.factionId)} researched ${techName(event.techId)} for ${num(event.cost)} gold.`;
 
@@ -303,6 +309,9 @@ const KIND: Record<GameEvent["type"], LogRow["kind"]> = {
   DevelopmentQueued: "economy",
   SettlementDeveloped: "economy",
   TreasureWithdrawn: "economy",
+  TreasureAccumulated: "economy",
+  AtrocityPunished: "economy",
+  AtrocityChanged: "economy",
   TechResearched: "economy",
   RebellionSpawned: "world",
   DomainSave: "world",

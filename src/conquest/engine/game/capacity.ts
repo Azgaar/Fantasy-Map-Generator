@@ -375,6 +375,17 @@ export function recomputeCapacity(ctx: EngineCtx): void {
     }
   }
 
+  // Phase 4: Atrocity upkeep penalty (2 + floor(effectiveAtrocity / 4) to m, w, s).
+  for (const f of pack.factions) {
+    const eff = effectiveAtrocity(ctx, f.id);
+    const penalty = atrocityUpkeepPenalty(eff);
+    if (penalty > 0) {
+      add(f.id, "m", "load", penalty);
+      add(f.id, "w", "load", penalty);
+      add(f.id, "s", "load", penalty);
+    }
+  }
+
   // The tech tree, re-read as capacity (CAPACITY-PLAN Phase 6). `incomePct` was
   // a multiplier on a realm's gold income; the capacity model's output is its
   // *generation*, so it becomes a percentage of the Wealth generated. And
@@ -507,3 +518,63 @@ export const POOL_NAME: Record<Pool, string> = {
   s: "Social",
   c: "Cunning"
 };
+
+/** Net effective Atrocity points for a faction, subtracting points ignored by assets (e.g. Hell Shrine). */
+export function effectiveAtrocity(ctx: EngineCtx, factionId: number): number {
+  const { campaign, pack, content } = ctx;
+  const state = campaign.factions[String(factionId)];
+  if (!state) return 0;
+  const rawAtrocity = state.atrocity ?? 0;
+  if (rawAtrocity <= 0) return 0;
+  let ignore = 0;
+  const buildingById = new Map(content.buildings.map(b => [b.id, b]));
+  for (const r of pack.regions) {
+    const rs = campaign.regions[String(r.id)];
+    if (!rs || rs.owner !== factionId) continue;
+    for (const bid of rs.buildings) {
+      const b = buildingById.get(bid);
+      if (b?.effects.atrocityIgnore) ignore += b.effects.atrocityIgnore;
+    }
+  }
+  return Math.max(0, rawAtrocity - ignore);
+}
+
+/**
+ * AER p1641 / p1721: Atrocity upkeep penalty.
+ * Any effective Atrocity points inflict a 2-point penalty to M, W, and S.
+ * For each 4 full points of Atrocity, this penalty increases by 1.
+ */
+export function atrocityUpkeepPenalty(effective: number): number {
+  return effective > 0 ? 2 + Math.floor(effective / 4) : 0;
+}
+
+/** Add Atrocity points to a faction, taking Brutal Tyranny (half gains) into account. */
+export function addFactionAtrocity(
+  ctx: EngineCtx,
+  factionId: number,
+  rawPoints: number,
+  reason = ""
+): number {
+  if (rawPoints <= 0) return 0;
+  const { campaign, pack } = ctx;
+  const state = campaign.factions[String(factionId)];
+  if (!state) return 0;
+
+  const hasBrutalTyranny = pack.regions.some(r => {
+    const rs = campaign.regions[String(r.id)];
+    return rs?.owner === factionId && rs.buildings.includes("custom_brutal_tyranny");
+  });
+
+  const gain = hasBrutalTyranny ? Math.floor(rawPoints * 0.5) : rawPoints;
+  state.atrocity = (state.atrocity ?? 0) + gain;
+  if (gain > 0) {
+    campaign.log.push({
+      type: "AtrocityChanged",
+      factionId,
+      delta: gain,
+      reason,
+      newAtrocity: state.atrocity
+    });
+  }
+  return gain;
+}

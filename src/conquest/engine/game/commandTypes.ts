@@ -24,6 +24,8 @@ export type Command =
   // CAPACITY-PLAN Phase 5: convert free Wealth into purse gold. The n-th
   // conversion in a turn costs n Wealth (AER's escalating extraction).
   | { type: "WithdrawTreasure" }
+  | { type: "AccumulateTreasure"; factionId: number; regionId?: number; rerollWithGold?: boolean }
+  | { type: "PunishAtrocity"; factionId: number; regionId?: number }
   | { type: "ResearchTech"; techId: string }
   // diplomacy
   | { type: "DeclareWar"; onFactionId: number }
