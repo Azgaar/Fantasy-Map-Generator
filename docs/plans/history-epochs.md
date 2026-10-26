@@ -1,6 +1,6 @@
 # Plan — Epochs: Layered Political Regeneration
 
-Updated: 2026-10-21. Status: **future work**, not started. Companions: the shipped retroactive
+Updated: 2026-10-26. Status: **slice 1 shipped**; slices 2–5 future work. Companions: the shipped retroactive
 history in [history-generation.md](history-generation.md) (the Archaeologist), and the era concept
 that epochs would ground. The mod-merge plan's "Epochs" bullet in
 [history-generation.md](history-generation.md#future-phases-out-of-scope-for-now) is this document.
@@ -38,11 +38,12 @@ The visible map does not change. The user sees the same world, with a deeper pas
 
 | Piece | State |
 |---|---|
-| The Archaeologist | shipped (slices 1–4): one political state, dated backwards |
+| The Archaeologist | shipped (slices 1–5): one political state, dated backwards |
 | Eras | one per fallen realm (`The Launceston Era`), plus the configured present age |
-| Events | founded, wars, subjugations, migrations, schisms, collapses, golden ages, battles |
+| Events | founded, wars, subjugations, migrations, schisms, collapses, golden ages, battles, coronations, successions |
 | Realms | 1–3 invented empires whose partition explains the present borders |
-| Legends browser | timeline grouped by era, realms tab, filters, zoom links |
+| Figures | dynasties for the major states, a general per war; reigns dated backwards |
+| Legends browser | timeline grouped by era, realms tab, figures tab, filters, zoom links |
 | Epochs | not implemented — the political layer is generated once, so there is nothing to replay |
 
 Two gaps this plan closes: the eras are derived from invented realms rather than from anything
@@ -123,6 +124,7 @@ With epochs, the political events are written **as they happen**, not inferred:
 | `battle` | the war that decided a collapse, at a frontier cell |
 | `goldenAge` | a polity that survived the epoch and grew |
 | `migration`, `schism` | unchanged — these are deep time, still dated backwards |
+| `coronation`, `succession` | the figure events (shipped); deep time until slice 5 re-scopes their reigns |
 
 State ids are **not stable across epochs**: the third epoch's state 3 is not the first epoch's
 state 3. Every reference needs an epoch, so `HistRef` gains one (see below).
@@ -181,7 +183,7 @@ interface History {
 
 ```ts
 interface HistRef {
-  kind: "state" | "realm" | "burg" | "culture" | "religion" | "polity";
+  kind: "state" | "realm" | "burg" | "culture" | "religion" | "figure" | "polity";
   id: number;
   epoch?: number;   // the epoch this id belongs to; absent for deep-time entities
 }
@@ -251,8 +253,10 @@ belongs to an empire's age. That is a separate plan, and it needs the epochs fir
 
 ## Interaction with the rest of the fork
 
-- **Figures** (deferred, the history plan's slice 5): a dynasty belongs to a lineage and spans
-  epochs, so its rulers' reigns are epoch-scoped. The epochs make slice 5 better, not harder.
+- **Figures** (shipped, the history plan's slice 5): dynasties and generals are dated backwards
+  from the present and tied to a state id that is not stable across epochs. With epochs a reign
+  must be scoped to the epoch and the lineage, and a ruler whose polity falls mid-reign needs an
+  end date at the collapse — build order slice 5.
 - **Astral Cartographer**: the mapping is applied by hand to the present map, so it is unaffected.
   If the epochs ever grow era-flavored naming, the Astral names would follow the era.
 - **OpenConquest**: a campaign is compiled from the present world, so it is unaffected. The
@@ -263,7 +267,9 @@ belongs to an empire's age. That is a separate plan, and it needs the epochs fir
 
 ## Two modes
 
-`lore.history.mode` chooses between them:
+`lore.history.mode` chooses between them. The option does not exist yet: `lore.history` is a
+strict schema (`span`, `realms`, `density`, `echoes`, `renames`), so the mode is a new enum field
+and old files load with the `archaeologist` default.
 
 | Mode | What the political past is | Cost |
 |---|---|---|
@@ -318,11 +324,17 @@ the cost is not yet measured. Before committing to a default K:
 
 | # | Slice | Size | Acceptance |
 |---|---|---|---|
-| 1 | The engine: regenerate the political layer per epoch, with a collapse between | large | Two epochs produce different borders; the events describe what happened |
+| 1 ✅ | The engine: regenerate the political layer per epoch, with a collapse between | large | Two epochs produce different borders; the events describe what happened |
 | 2 | The data model and the save format: epochs, polities, snapshot records | medium | A map with epochs round-trips; an old map loads unchanged |
 | 3 | The mode switch: `lore.history.mode`, the epochs as the eras | medium | `archaeologist` is untouched; `epochs` replaces the invented eras with real ones |
 | 4 | The historical view and the slider | large | Dragging the year shows the past borders, the past legend, and the past events |
-| 5 | The figures, in epoch scope (the history plan's slice 5, done properly) | medium | Dynasties span epochs; a ruler's reign is epoch-scoped |
+| 5 | The figures (shipped) in epoch scope: reigns per epoch, a reign ending at its polity's collapse | medium | Dynasties span epochs; a ruler's reign is epoch-scoped |
+
+Slice 1 ships as `src/generators/epochs-generator.ts` (`Epochs.generate`): it returns the epochs,
+lineages, events and snapshots without touching the live pack. The per-epoch cast is expanded with
+the existing `States.expandStates()` cost model; a collapse empties the weakest polity's land and
+the next epoch's foundings flood it, recording the heirs as `successorOf`. Wiring the mode, the
+save format and the slider are slices 2–4.
 
 ## Risks
 

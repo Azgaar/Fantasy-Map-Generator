@@ -1,11 +1,12 @@
 // The map's chronicle: dated events, fallen realms and eras. See docs/plans/history-generation.md
 import type { Emblem } from "@/types/emblems";
 
-export type HistRefKind = "state" | "realm" | "burg" | "culture" | "religion" | "figure";
+export type HistRefKind = "state" | "realm" | "burg" | "culture" | "religion" | "figure" | "polity";
 
 export interface HistRef {
   kind: HistRefKind;
   id: number;
+  epoch?: number; // the epoch a state id belongs to; absent for stable, deep-time entities
 }
 
 export type HistoryEventType =
@@ -68,6 +69,30 @@ export interface HistoricalFigure {
   birth: number;
   death?: number;
   roles: HistoricalRole[];
+}
+
+/** a polity's stable identity: one lineage across epochs, even as its form and borders change */
+export interface EpochPolity {
+  id: number;
+  name: string;
+  form: string;
+  capital: number; // burg id
+  cells: number; // cells held in the last epoch it appears in
+  color: string;
+  founded: number;
+  fallen?: number;
+  successorOf?: number; // the lineage it grew out of
+  parent?: number; // the lineage it split from
+}
+
+/** one political layer of the past: its cast, its borders and the years it spans */
+export interface HistoryEpoch {
+  i: number;
+  from: number;
+  to: number;
+  era: string;
+  polities: EpochPolity[];
+  snapshot: number; // index into history.snapshots
 }
 
 export interface History {
