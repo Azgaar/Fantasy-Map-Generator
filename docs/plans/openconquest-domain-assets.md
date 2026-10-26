@@ -1,7 +1,7 @@
 # Plan — Aligning OpenConquest to TTRPG Domain Management & Asset Rules
 
-**Status:** Proposed  
-**Updated:** 2026-10-26  
+**Status:** Completed  
+**Completed:** 2026-10-26 (Commits: `4a65c971`, `1d6b9213`, `c28e0bcc`, `d8d1ae6c`)  
 **Source Material:** *In Light Snow, Three Thousand Realms* (AER Domain Management Rules)  
 **Target Module:** [`src/conquest/`](../../src/conquest) & [`docs/openconquest/README.md`](../openconquest/README.md)
 

@@ -348,11 +348,17 @@ Developers and modders can define custom building chains in JSON rulesets or liv
    - `name` *(string, required)*: Display title shown in campaign panels and tooltips.
    - `chain` *(string, required)*: Identifier of the structural chain (e.g. `"defense"`, `"military"`, `"forge"`). Enforces single-structure-per-chain and upgrade consumption.
    - `tier` *(number, required)*: Numerical rank in the chain ($1, 2, 3\dots$).
+   - `kind` *(string, optional)*: Asset category (`"building"`, `"chain"`, `"unchained"`, or `"custom"`). Customs apply domain-wide (limit 3 per domain).
    - `settlementKinds` *(array)*: Array containing `"major"`, `"minor"`, or both. Determines which settlement categories can house the building.
    - `cost` *(number)*: Base gold cost for construction.
    - `turns` *(number, optional)*: Turns required to construct (defaults to 1).
    - `requires` *(string, optional)*: ID of the prerequisite building in the same chain.
    - `group` *(string, optional)*: Roster ID binding. If omitted, the building is common to all factions.
+   - `freeGarrisonUnits` *(number, optional)*: Number of military units based in the region whose capacity upkeep is waived (e.g., Barracks waives 1, Training Grounds waives 2, War Academy waives 4).
+   - `siegeSupplies` *(number, optional)*: Hit-dice equivalent of stored supplies protecting besieged defenders from attrition (e.g., Siege Supplies provides 20 HD).
+   - `atrocityIgnore` *(number, optional)*: Points of domain Atrocity ignored when calculating capacity penalties (e.g., Hell Shrine ignores 5).
+   - `maxInstances` *(number, optional)*: Maximum copies allowed per region (e.g., Siege Supplies allows up to 2).
+   - `incompatibleWith` *(string[], optional)*: Mutually exclusive customs (e.g., Slavery and Dwarf Friend).
    - `effects` *(object)*:
      - `capacity`: Object specifying capacity generated per turn (`{"m": 2, "w": 1, "s": 0, "c": 0}`).
      - `upkeep`: Object specifying capacity loaded per turn (`{"w": 1}`). Provides the economic counterweight that prevents building spam.
