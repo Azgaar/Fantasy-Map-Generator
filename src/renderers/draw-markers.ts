@@ -100,7 +100,8 @@ function astralIcon(marker: Marker): string | undefined {
   const reading = readingOf(marker.type);
   if (!reading) return undefined;
   const config = Markers.getConfig().find(entry => entry.type === marker.type);
-  const isDefault = !marker.icon || (config !== undefined && marker.icon === Icons.reference(config.icon));
+  const isDefault =
+    !marker.icon || (config !== undefined && Icons.reference(marker.icon) === Icons.reference(config.icon));
   return isDefault ? Icons.reference(reading.icon) : undefined;
 }
 

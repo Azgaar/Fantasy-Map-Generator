@@ -76,6 +76,13 @@ test.describe("Astral anomalies", () => {
     await page.mouse.move(x + 1, y); // the handler is debounced: nudge it awake
     await expect(page.locator("#tooltip")).toContainText(reading, { timeout: 5000 });
 
+    // the note box reads the anomaly too: the fantasy legend is not shown in Astral
+    await expect(page.locator("#notes")).toBeVisible();
+    const shownNote = (await page.locator("#notesBody").textContent())?.trim() ?? "";
+    const storedNote = await page.evaluate(markerId => pack.markers.find(m => m.i === markerId)?.note ?? "", id);
+    expect(shownNote).not.toBe(storedNote.trim());
+    expect(shownNote.length).toBeGreaterThan(0);
+
     await page.evaluate(() => Controllers.AstralMode.exit());
     await showMarkers(page);
     await expect.poll(() => readIcon(page, id)).toBe(fantasyIcon);

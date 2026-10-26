@@ -48,44 +48,45 @@ export const MARKER_READINGS: Record<string, MarkerReading> = { ... };
 | type | reading | icon | why it belongs on a sector chart |
 |---|---|---|---|
 | volcanoes | nova remnants | 💥 | a star's death, still hot; a navigation hazard and a salvage prize |
-| hot-springs | plasma plumes | ♨️ | void jets that blind sensors and seed lanes with ion storms |
+| hot-springs | plasma plumes | 🌫️ | void jets that blind sensors and seed lanes with ion storms |
 | water-sources | ice claims | 🧊 | comet ice, the fleet's fuel; claimed and fought over |
 | mines | mines | ⛏️ | belt and asteroid mining rights, an empire's industrial base |
-| bridges | lane spans | 🌉 | megastructures crossing a current, tolled by whoever holds them |
+| bridges | lane spans | 🏗️ | megastructures crossing a current, tolled by whoever holds them |
 | inns | way stations | 🛎️ | lane-junction stations where every fleet stops and pays |
-| lighthouses | beacon relays | 🚨 | the chain that makes a lane survivable; cutting it strands a sector |
+| lighthouses | beacon relays | 📡 | the chain that makes a lane survivable; cutting it strands a sector |
 | waterfalls | plasma falls | ⚡ | a current of plasma dropping out of a rift, a landmark and a killer |
-| battlefields | wreck fields | ⚔️ | the debris of a fleet battle, still contested for salvage |
+| battlefields | wreck fields | ☄️ | the debris of a fleet battle, still contested for salvage |
 | dungeons | derelicts | 🛰️ | dead stations and hulks, boardable, worth a fleet's detour |
 | lake-monsters | drift leviathans | 🐋 | void fauna that take ships; lanes reroute around them |
-| sea-monsters | void krakens | 🦑 | the deep-void hunter every captain fears |
+| sea-monsters | void krakens | 🐙 | the deep-void hunter every captain fears |
 | hill-monsters | swarm fronts | 🐜 | locust-like swarms that strip a system and move on |
 | sacred-mountains | shrine worlds | 🛕 | a world of pilgrimage, its treaties binding several empires |
-| sacred-forests | garden worlds | 🌳 | protected biospheres; harming one is a casus belli |
-| sacred-pineries | preserve worlds | 🌲 | treaty-pinned wilderness, the sector's gene bank |
-| sacred-palm-groves | oasis worlds | 🌴 | terraformed oases, the only green for a dozen systems |
-| brigands | lane raiders | 💰 | raiders working the currents, bleeding a sector's trade |
+| sacred-forests | garden worlds | 🌎 | protected biospheres; harming one is a casus belli |
+| sacred-pineries | preserve worlds | 🏞️ | treaty-pinned wilderness, the sector's gene bank |
+| sacred-palm-groves | oasis worlds | 🏝️ | terraformed oases, the only green for a dozen systems |
+| brigands | lane raiders | 🥷 | raiders working the currents, bleeding a sector's trade |
 | pirates | void pirates | 🏴‍☠️ | fleets that hold a lane for ransom |
-| statues | precursor idols | 🗿 | alien colossi; whoever reads them claims the past |
+| statues | precursor idols | 👽 | alien colossi; whoever reads them claims the past |
 | ruins | ruins | 🏺 | dead precursor worlds, a whole fallen civilisation |
-| libraries | data archives | 📚 | a repository that outlasts empires; its keepers hold power |
-| circuses | spectacle stations | 🎪 | arenas that draw crowds from every system |
-| jousts | tournaments | 🤺 | fleet tournaments between houses, diplomacy by other means |
-| fairs | trade fairs | 🎠 | multi-system summits where prices and treaties are set |
-| canoes | courier shuttles | 🛶 | small craft plying a current; the sector's post and gossip |
-| migration | void migrations | 🐗 | herds crossing the dark, a season empires plan fleets around |
-| dances | festivals | 💃🏽 | sector-wide festivals, where politics happens off the record |
-| mirage | sensor mirages | 💦 | false readings that pull fleets off a lane |
-| caves | hollows | 🦇 | cavernous asteroid interiors, the smuggler's true port |
+| libraries | data archives | 💾 | a repository that outlasts empires; its keepers hold power |
+| circuses | spectacle stations | 🎭 | arenas that draw crowds from every system |
+| jousts | tournaments | 🏆 | fleet tournaments between houses, diplomacy by other means |
+| fairs | trade fairs | 🤝 | multi-system summits where prices and treaties are set |
+| canoes | courier shuttles | 📦 | small craft plying a current; the sector's post and gossip |
+| migration | void migrations | 🦌 | herds crossing the dark, a season empires plan fleets around |
+| dances | festivals | 🎉 | sector-wide festivals, where politics happens off the record |
+| mirage | sensor mirages | 📶 | false readings that pull fleets off a lane |
+| caves | hollows | 🕳️ | cavernous asteroid interiors, the smuggler's true port |
 | portals | wormholes | 🌀 | a stable way through; whoever holds both ends holds the lane |
 | rifts | rifts | 🎆 | tears in space, hazardous and invaluable to study |
-| disturbed-burials | grave fields | 💀 | tomb-ship orbits; disturbing them is taboo and profitable |
+| disturbed-burials | grave fields | ⚰️ | tomb-ship orbits; disturbing them is taboo and profitable |
 | necropolises | necropolises | 🪦 | tomb worlds and ship graveyards, holy to some, haunted to all |
 | encounters | encounters | 🛸 | first contacts and distress calls in the deep |
 | party | party | 🚩 | the expedition itself — where your own fleet currently is |
 
 A handful keep their word (mines, ruins, rifts, necropolises, encounters, party); the rest rename.
-Icons mostly survive — the emoji are neutral — and several swap (💥 🧊 🛰️ 🐋 🛸).
+A renamed reading gets its own icon, so the chart visibly changes; a reading that keeps the word
+keeps its icon, because the thing on the chart is the same thing in space.
 
 ## Phase 1 — The reading ✅
 
@@ -95,7 +96,10 @@ Icons mostly survive — the emoji are neutral — and several swap (💥 🧊 �
   wins in both views. Layer id stays `markers`, so the tooltip, click, reveal, highlight, hidden
   markers and viewport culling keep working with no new seams.
 - **`src/components/map-tooltip.ts`** — the markers tip becomes mode-aware:
-  `${name}. ${Reading}. Click to edit…` in Astral, the stock line otherwise.
+  `${name}. ${Reading}. Click to edit…` in Astral, the stock line otherwise. The note box
+  (`showNotes`) reads the anomaly too: in Astral an unconverted marker shows its derived legend,
+  and a converted one shows the part above the divider — the fantasy original stays in the record
+  and in Standard view.
 - **`src/controllers/markers-editor.ts`** — the type field keeps the raw type string (it is the
   state key and the per-type styling key); in Astral its `data-tip` appends the reading, so the
   field is honest about what the kind is called on this chart.
@@ -103,10 +107,11 @@ Icons mostly survive — the emoji are neutral — and several swap (💥 🧊 �
   unknown types — user-typed types simply read as themselves.
 
 Shipped: `MARKER_READINGS` (36 types) and `readingOf` in `src/data/astral-markers.ts`, the
-`astralIcon` guard in `draw-markers.ts`, the mode-aware tooltip and editor tip, the completeness
-unit test and the `draw-markers` swap test, and `tests/e2e/astral-markers.spec.ts` — the icon
-swaps in Astral, the tooltip names the anomaly, leaving restores the chart, and the record never
-changes.
+`astralIcon` guard in `draw-markers.ts` (it compares resolved glyphs, so a map that stored the
+emoji text still reads), the mode-aware tooltip and editor tip, the note box's derived legend, the
+completeness unit test and the `draw-markers` swap test, and `tests/e2e/astral-markers.spec.ts` —
+the icon swaps in Astral, the tooltip and the note box name the anomaly, leaving restores the
+chart, and the record never changes.
 
 ## Phase 2 — The conversion ✅
 

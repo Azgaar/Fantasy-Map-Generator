@@ -87,9 +87,11 @@ Markers become **anomalies** on the chart: a volcano is read as **nova remnants*
 either a phenomenon of space or of a scale that matters to multi-system polities — the Anomalies
 layer shows what an empire would mark, claim, garrison or fear, never a planetary micro-feature.
 
-The reading is a view: in the Astral view the pins take their anomaly icons and the tooltips name
-the reading; leaving restores the map exactly, and the marker keeps its type. A marker with a
-hand-picked icon keeps it in both views.
+The reading is a view: in the Astral view the pins take their anomaly icons, the tooltips name
+the reading, and the note box tells the anomaly's own legend instead of the fantasy prose; leaving
+restores the map exactly, and the marker keeps its type. A renamed kind gets a new icon — a bridge
+is a **lane span** 🏗️, a lighthouse a **beacon relay** 📡 — while a kind that keeps its word keeps
+its icon. A marker with a hand-picked icon keeps it in both views.
 
 _Options_ → _Tools_ → **Astral Anomalies** is the conversion: it rewrites every marker's legend in
 the sector register and sets its anomaly icon in the record. The original text is kept below a
