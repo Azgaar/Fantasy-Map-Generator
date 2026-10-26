@@ -19,6 +19,7 @@
 import { type ContentPack, type RawContentDocs, validateAndResolve } from "../engine/common/content";
 import eventSample from "./docs/events/sample.json" with { type: "json" };
 import gameDoc from "./docs/game.json" with { type: "json" };
+import rosterArachnid from "./docs/rosters/arachnid.json" with { type: "json" };
 import rosterBeastfolk from "./docs/rosters/beastfolk.json" with { type: "json" };
 import rosterCelestial from "./docs/rosters/celestial.json" with { type: "json" };
 import rosterChaos from "./docs/rosters/chaos.json" with { type: "json" };
@@ -85,7 +86,8 @@ export const BUNDLED_DOCS: RawContentDocs = {
     { file: "rosters/elemental.json", doc: rosterelemental },
     { file: "rosters/construct.json", doc: rosterConstruct },
     { file: "rosters/eldritch.json", doc: rosterEldritch },
-    { file: "rosters/tribal.json", doc: rosterTribal }
+    { file: "rosters/tribal.json", doc: rosterTribal },
+    { file: "rosters/arachnid.json", doc: rosterArachnid }
   ],
   culturesDocs: [],
   factionDocs: [],

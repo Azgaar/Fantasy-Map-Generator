@@ -1482,7 +1482,8 @@ export const DEFAULT_ROSTER_MAP: Record<string, boolean> = {
   elementalBase: true,
   constructBase: true,
   eldritchBase: true,
-  tribalBase: true
+  tribalBase: true,
+  arachnidBase: true
 };
 
 /**
@@ -1529,7 +1530,11 @@ export function inferRosterForCulture(
   }
 
   // 3. Specialized Under-Empire, Dragonborn & Beast/Monster factions
-  if (matches(/(skaven|ratmen|vermin|blight|arachnid|arago)/i) && rosters.skavenBase) {
+  if (matches(/(arachnid|arago|rakhnid|spider|brood hive|chitin)/i)) {
+    if (rosters.arachnidBase) return "arachnidBase";
+    if (rosters.skavenBase) return "skavenBase";
+  }
+  if (matches(/(skaven|ratmen|vermin|blight|under-empire|thaggoraki)/i) && rosters.skavenBase) {
     return "skavenBase";
   }
   if (matches(/(dragonborn|drakonic|wyrm|dragon)/i) && rosters.dragonbornBase) {

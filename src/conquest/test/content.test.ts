@@ -177,9 +177,10 @@ describe("the shipped ruleset (total-war/content/docs)", () => {
     expect(loaded.warnings).toEqual([]);
   });
 
-  test("expected inventory: 31 rosters, and nothing state-specific", () => {
+  test("expected inventory: 32 rosters, and nothing state-specific", () => {
     expect(Object.keys(content.rosters).sort()).toEqual(
       [
+        "arachnidBase",
         "beastfolkBase",
         "celestialBase",
         "chaosBase",
@@ -239,7 +240,7 @@ describe("the shipped ruleset (total-war/content/docs)", () => {
     expect(resolved.factions["6"]!.rosterId).toBe("elfBase"); // Eldar (Elfish)
     expect(resolved.factions["14"]!.rosterId).toBe("orcBase"); // Ugluk (Orkish)
     expect(resolved.factions["15"]!.rosterId).toBe("orcBase"); // Uruk (Orkish)
-    expect(resolved.factions["10"]!.rosterId).toBe("skavenBase"); // Arago (Arachnid)
+    expect(resolved.factions["10"]!.rosterId).toBe("arachnidBase"); // Arago (Arachnid)
     expect(resolved.factions["8"]!.rosterId).toBe("dwarfBase"); // Khazadur (Dwarven)
     expect(resolved.factions["2"]!.rosterId).toBe("commonBase"); // Dulandir (Human)
     expect(resolved.factions["7"]!.rosterId).toBe("commonBase"); // Anor (Human)
@@ -280,7 +281,8 @@ describe("the shipped ruleset (total-war/content/docs)", () => {
       "elementalBase",
       "constructBase",
       "eldritchBase",
-      "tribalBase"
+      "tribalBase",
+      "arachnidBase"
     ];
 
     for (const rId of oldWorldRosters) {
@@ -335,6 +337,11 @@ describe("the shipped ruleset (total-war/content/docs)", () => {
     expect(empire.units.demigryph_knights?.category).toBe("monster");
     expect(empire.units.collegiate_wizards?.category).toBe("spellcaster");
     expect(empire.units.steam_behemoth?.category).toBe("monster");
+
+    const arachnid = content.rosters.arachnidBase!;
+    expect(arachnid.units.brood_mother?.category).toBe("monster");
+    expect(arachnid.units.silk_weavers?.category).toBe("spellcaster");
+    expect(arachnid.units.brood_mother?.powers?.heal).toBe(10);
   });
 
   test("Old World culture name inference maps to appropriate base rosters", () => {
@@ -346,7 +353,9 @@ describe("the shipped ruleset (total-war/content/docs)", () => {
       ["Khazadur (Dwarven)", "dwarfBase"],
       ["Aj'Snaga (Serpents)", "lizardmenBase"],
       ["Trow (Dark Elfish)", "darkElfBase"],
-      ["Arago (Arachnid)", "skavenBase"],
+      ["Arago (Arachnid)", "arachnidBase"],
+      ["Rakhnid", "arachnidBase"],
+      ["Skaven (Ratmen)", "skavenBase"],
       ["Ugluk (Orkish)", "orcBase"],
       ["Sylvan Weald", "woodElfBase"],
       ["Khemri Dynasties", "tombKingsBase"],

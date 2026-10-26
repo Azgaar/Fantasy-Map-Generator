@@ -276,7 +276,8 @@ src/conquest/content/docs/
 │   ├── elemental.json   # Primordial Elemental Nexus (elementalBase)
 │   ├── construct.json   # Clockwork & Golem Foundries (constructBase)
 │   ├── eldritch.json    # Void-Spawned Aberrant Synods (eldritchBase)
-│   └── tribal.json      # Primal Wildland Confederacies (tribalBase)
+│   ├── tribal.json      # Primal Wildland Confederacies (tribalBase)
+│   └── arachnid.json    # Brood-Hive of the Chitin-Spiders (arachnidBase)
 ├── victory/             # short, long, and faction-specific victory conditions
 └── events/              # scripted narrative events and dilemmas
 ```
