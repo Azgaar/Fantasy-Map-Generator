@@ -58,7 +58,7 @@ Not on an already generated map directly, but you can rebuild the map with a dif
 
 ### What do the buttons at the bottom of the Options tab do?
 
-They form the Configure row. Climate opens the World Configurator: the map position on the globe, temperatures and precipitation. Lore opens the Lore Editor: the map name, calendar and world description. Advanced opens Advanced Options: map size, the cell grid, provinces ratio, size variety, growth rate, autosave interval, on load behavior, speaker voice and emblem shape; hover a setting to see what it does. Reset restores every option to its default and reloads the page; it asks for confirmation first, so save the map before confirming
+They form the Configure row. Climate opens the World Configurator: the map position on the globe, temperatures and precipitation. Lore opens the Lore Editor: the map name, calendar and world description. Advanced opens Advanced Options: map size, the cell grid, provinces ratio, size variety, growth rate, autosave interval, on load behavior, speaker voice, emblem shape and debugging diagnostics; hover a setting to see what it does. Reset restores every option to its default and reloads the page; it asks for confirmation first, so save the map before confirming
 
 ### Can I make a map with hexagonal or square cells?
 
@@ -798,7 +798,7 @@ Yes. Open Tools -> Goods and click on a good (or the plus button to add a new on
 
 ### What is a market?
 
-A market is a regional economic hub anchored at a burg. Markets are placed on the biggest burgs (capitals and ports get a bonus), most inhabited islands get one of their own, and their territories expand over the surrounding cells, preferring to stay within one state and one landmass. Every flow of goods passes through a market: rural cells deliver their production, burgs buy ingredients and sell products, and a burg buys from another market what its own market lacks. Markets do not trade with each other on their own. Toggle the Markets layer to see the territories, click on a territory to open the Market Stock dialog, or open Tools -> Markets for the overview
+A market is a regional economic hub anchored at a burg. Markets are placed on the biggest burgs (capitals and ports get a bonus), most inhabited islands get one of their own, and their territories expand over the surrounding cells, preferring to stay within one state and one landmass. Every flow of goods passes through a market: rural cells deliver their production, burgs buy ingredients and sell products, and a burg buys from another market what its own market lacks. Markets do not trade with each other on their own. Toggle the Markets layer to see the territories, click on a territory to open the Market Stock dialog, or open Tools -> Markets for the overview. Markets hold no money; the overview shows what passed through each: Sales (what burgs paid for its goods, carriage included, less the taxes and tariffs handed to the states), Buys (what it paid burgs for their goods) and Value (Sales minus Buys plus its unsold stock at its prices). The market keeps its margin and the carriage, as if its merchants carried the goods
 
 ### How is production calculated?
 

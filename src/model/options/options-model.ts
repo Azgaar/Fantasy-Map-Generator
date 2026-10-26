@@ -110,6 +110,7 @@ class OptionsModel {
         heightmapEditor: { renderOcean: false, showDrainage: false, allowErosion: true },
         performance: { shapeRendering: "optimizeSpeed", stateHalos: false, viewportRedraw: "continuous" }, // "balance"
         onLoad: "random",
+        debug: [],
         language: "",
         zoomExtent: { min: 1, max: 20 },
         viewport: null,
@@ -194,6 +195,7 @@ class OptionsModel {
   /** Throw this browser's options away and start from the defaults: a reset, never a repair */
   reset(): void {
     options = this.getDefaultOptions();
+    log.setDebug(options.app.debug);
     this.persist();
   }
 
@@ -209,6 +211,7 @@ class OptionsModel {
     delete options.map.viewOnly; // kept by earlier versions
     this.repairSets();
     this.setGraphSize(Pins.valueOr("mapWidth", window.innerWidth), Pins.valueOr("mapHeight", window.innerHeight));
+    log.setDebug(options.app.debug);
     this.persist();
   }
 

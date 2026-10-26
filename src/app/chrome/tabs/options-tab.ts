@@ -38,6 +38,7 @@ import { constrainZoom, setMapZoom, setTranslateExtent, setZoomExtent } from "@/
 import { bindPinIcons } from "@/ui/pin-icons";
 import { tip } from "@/ui/tooltips";
 import { Catalog, sentences, t } from "@/utils/i18n";
+import { DEBUG_MODES, log } from "@/utils/logger";
 import { applyOption, ensureEl, findEl } from "@/utils/node-utils";
 import { minmax, rn } from "@/utils/number-utils";
 
@@ -547,6 +548,23 @@ function addListeners(): void {
   };
   ensureEl("optionsContent").addEventListener("click", onClick);
   ensureEl(ADVANCED_OPTIONS_ID).addEventListener("click", onClick);
+  ensureEl(ADVANCED_OPTIONS_ID).addEventListener("change", onDebugChange);
+}
+
+/** The diagnostics checked in the Advanced options, kept for this browser */
+function onDebugChange(event: Event): void {
+  if (!(event.target as HTMLElement).dataset.debug) return;
+  const modes = DEBUG_MODES.filter(mode => findEl<HTMLInputElement>(`debug_${mode}`)?.checked);
+  Options.set(o => (o.app.debug = modes));
+  Options.persist();
+  log.setDebug(modes);
+}
+
+function syncDebugModes(): void {
+  for (const mode of DEBUG_MODES) {
+    const input = findEl<HTMLInputElement>(`debug_${mode}`);
+    if (input) input.checked = options.app.debug.includes(mode);
+  }
 }
 
 function optionInputs<T extends HTMLElement = HTMLInputElement>(key: string): NodeListOf<T> {
@@ -580,6 +598,7 @@ export function syncOptionInputs(): void {
   syncCultures();
   syncPngResolution();
   syncViewOnly();
+  syncDebugModes();
 }
 
 function syncViewOnly(): void {

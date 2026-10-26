@@ -62,6 +62,18 @@ type TradePair = {
 };
 export type TradeTerms = (source: Market, market: Market, good: Good, price: number) => TradeCosts | null;
 export type SourceQuote = { source: Market; stock: number; buyPrice: number };
+/** A market as a source of a good for a burg, at the burg's door, or why it cannot sell it there */
+export type SourceOption = {
+  market: number;
+  stock: number;
+  price: number; // with the margin
+  tax: number;
+  tariff: number;
+  carriage: number;
+  buyPrice: number;
+  isImport: boolean; // from another state than the burg's market: a tariff applies, even a zero one
+  excluded?: "stock" | "route" | "embargo";
+};
 type CompiledStateTariffs = {
   byStateAndGood: Map<number, Map<number, TariffRate>>;
   byStateAllGoods: Map<number, TariffRate>;
@@ -550,6 +562,16 @@ export class MarketsModule {
     return id === undefined ? undefined : pack.deals[id];
   }
 
+  /**
+   * The deal's money to its market: what a burg pays for goods, carriage included, less the taxes and tariff the
+   * market passes to the states; minus what the market pays a burg for its goods. Goods a burg kept never reach it
+   */
+  getMarketIncome([, , , kind, units, price, tax, tariff]: Deal): number {
+    if (kind === DEAL_KINDS.kept) return 0;
+    if (kind === DEAL_KINDS.sale) return -units * price;
+    return units * price - tax - tariff;
+  }
+
   /** An import is a purchase from a market of another state than the burg's own market: only an import may pay a tariff */
   isImport(deal: Deal): boolean {
     if (deal[3] === DEAL_KINDS.sale) return false;
@@ -675,6 +697,36 @@ export class MarketsModule {
   }
 
   /** The market a good reaches the burg cheapest from, with its stock and the burg's buy price */
+  /** Every market as a source of the good for the burg, cheapest first, then those that cannot sell it. Debug only: it prunes nothing */
+  listSources(burg: Burg, good: Good, terms: TradeTerms): SourceOption[] {
+    const own = this.get(burg.market);
+    if (!own) return [];
+    const stateOf = (market: Market) => pack.burgs[market.centerBurgId]?.state || 0;
+
+    const options = pack.markets.map(source => {
+      const row = source.goods[good.i];
+      const stock = row?.stock ?? 0;
+      const midPrice = row?.price ?? good.value;
+      const carriage = this.getTransport(source, burg, good);
+      const costs = terms(source, own, good, midPrice);
+      const excluded = stock <= 0.01 ? "stock" : carriage === Infinity ? "route" : !costs ? "embargo" : undefined;
+      const option: SourceOption = {
+        market: source.i,
+        stock: rn(stock, 2),
+        price: this.customerBuyPrice(midPrice),
+        tax: rn(costs?.taxPerUnit ?? 0, 2),
+        tariff: rn(costs?.tariffPerUnit ?? 0, 2),
+        isImport: stateOf(source) !== stateOf(own),
+        carriage: carriage === Infinity ? 0 : rn(carriage, 2),
+        buyPrice: 0
+      };
+      if (excluded) option.excluded = excluded;
+      else option.buyPrice = rn(option.price + option.tax + option.tariff + option.carriage, 2);
+      return option;
+    });
+    return options.sort((a, b) => Number(!!a.excluded) - Number(!!b.excluded) || a.buyPrice - b.buyPrice);
+  }
+
   quoteSource(burg: Burg, good: Good, terms: TradeTerms): SourceQuote | null {
     const market = this.get(burg.market);
     if (!market) return null;

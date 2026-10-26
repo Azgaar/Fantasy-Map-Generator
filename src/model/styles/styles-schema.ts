@@ -575,7 +575,9 @@ export const stylesSchema = z.strictObject({
               label: t("Size"),
               range: [1, 12],
               step: 0.5,
-              tip: t("Size of the burg production marks: the plates' icons, their font scaling with them, and the overview circles")
+              tip: t(
+                "Size of the burg production marks: the plates' icons, their font scaling with them, and the overview circles"
+              )
             })
           })
         }),

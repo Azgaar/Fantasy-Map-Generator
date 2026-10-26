@@ -164,7 +164,7 @@ Burgs (settlements) data is stored as an array of objects with strict element or
 - `capital`: `number` - `1` if burg is a capital, `0` if not (each state has only 1 capital)
 - `port`: `number` - if burg is not a port, then `0`, otherwise feature id of the water body the burg trades by. For coastal burgs this is the adjacent sea/lake; for burgs on a navigable river it is the water body the river ultimately drains into (the ocean, or a closed lake for endorheic basins), so river burgs join that body's sea-route network
 - `market`: `number` - id of the market this burg belongs to (`0` if none). Derived from `cells.market[burg.cell]` during market territory expansion
-- `production`: `[good: number, units: number][]` - units of each good made in the last production run, local bonus included. The burg's trades are its `pack.deals`. In production debug mode, `burg.productionLog` also keeps every step of the run in order (local bonus, manufacture with the decision candidates, trade)
+- `production`: `[good: number, units: number][]` - units of each good made in the last production run, local bonus included. The burg's trades are its `pack.deals`. Economy debug mode keeps every step of the run in memory, never in the burg (see `EconomyDebug` in the economy domain doc)
 - `product`: `number` - net product (gross sell revenue minus ingredient costs) from the last production run
 - `treasury`: `number` - cash balance after the last economy run: reset to 0 when production starts, then changed by ingredient purchases, post-tax sale revenue, and demand-fill purchases. The Burg Editor can also set it by hand; production is not recalculated to match, and the next run starts from 0 again
 - `citadel`: `number` - `1` if burg has a castle, `0` if not. Used for MFCG

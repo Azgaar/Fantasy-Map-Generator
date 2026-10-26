@@ -443,7 +443,7 @@ describe("market placement", () => {
       burgs: [
         { i: 0 } as Burg,
         burg(1, 0, 1, 100, 9),
-        burg(2, 100, 1, 50),
+        burg(2, 100, 1, 1), // never outscores the first, whatever the noise
         burg(3, 300, 2, 1), // a portless island next to the mainland
         burg(4, 400, 3, 1, 9), // a port island within half the spacing
         burg(5, 1200, 4, 1, 9) // a port island beyond it

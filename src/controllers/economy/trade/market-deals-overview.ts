@@ -198,11 +198,9 @@ export function getMarketSide([, , , kind]: Deal): "buy" | "sell" {
   return kind === DEAL_KINDS.sale ? "buy" : "sell";
 }
 
-/** The market's income from the deal: what the burg paid, or minus what the market paid the burg */
+/** The market's income from the deal: what the burg paid less the taxes passed on, or minus what it paid the burg */
 export function getDealNet(deal: Deal): number {
-  const [, , , , units, price] = deal;
-  const value = rn(units * price, 2);
-  return getMarketSide(deal) === "sell" ? value : -value;
+  return rn(Markets.getMarketIncome(deal), 2);
 }
 
 function getMarketDealRow(deal: Deal): MarketDealRow | null {
@@ -224,8 +222,19 @@ function getMarketDealRow(deal: Deal): MarketDealRow | null {
     tax: split.tax,
     tariff: split.tariff,
     income,
-    formula: `${side === "buy" ? "−" : ""}${formatPrice(price)} × ${rn(units, 2)} = ${formatPrice(income)}`
+    formula: getIncomeFormula(deal, income)
   };
+}
+
+/** price × units, less the sales tax and tariff a sale passes to the states: what the market keeps */
+function getIncomeFormula([, , , kind, units, price, tax, tariff]: Deal, income: number): string {
+  const paid = `${formatPrice(price)} × ${rn(units, 2)}`;
+  if (kind === DEAL_KINDS.sale) return `−${paid} = ${formatPrice(income)}`;
+  const passed = [
+    tax ? ` − ${t("Sales Tax")} ${formatPrice(rn(tax, 2))}` : "",
+    tariff ? ` − ${t("Tariff")} ${formatPrice(rn(tariff, 2))}` : ""
+  ].join("");
+  return `${paid}${passed} = ${formatPrice(income)}`;
 }
 
 function renderMarketDealsPage(view: TableView<MarketDealRow>): void {
@@ -285,7 +294,11 @@ function renderTotals(rows: MarketDealRow[]): void {
   ensureEl("marketDealsFooter").innerHTML = [
     total(t("Deals"), t("Deals count"), String(rows.length)),
     total(t("Bought"), t("Paid to burgs for the goods the market bought"), money(bought, false) || formatPrice(0)),
-    total(t("Sold"), t("Got from burgs for the goods the market sold"), money(sold, true) || formatPrice(0)),
+    total(
+      t("Sold"),
+      t("Got from burgs for the goods the market sold, less the taxes and tariffs passed to the states"),
+      money(sold, true) || formatPrice(0)
+    ),
     total(
       t("Carriage"),
       t("Carriage paid in all"),

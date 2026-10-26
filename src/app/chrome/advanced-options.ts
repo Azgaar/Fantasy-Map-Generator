@@ -5,6 +5,7 @@ import { SAMPLING_LABELS } from "@/data/id-labels";
 import { DEFAULT_JITTER, MAX_JITTER, SAMPLINGS, type Sampling } from "@/model/graph/lattice";
 import { Dialog } from "@/ui/dialog/dialog";
 import { t } from "@/utils/i18n";
+import { DEBUG_MODES, type DebugMode } from "@/utils/logger";
 
 export const ADVANCED_OPTIONS_ID = "advancedOptions";
 
@@ -146,6 +147,29 @@ const interfaceRows = () =>
     })
   ].join("");
 
+const DEBUG_LABELS: Record<DebugMode, { label: string; tip: string }> = {
+  economy: {
+    label: t("Economy"),
+    tip: t(
+      "The Production Overview shows every step of the burg's run: what it weighed before making each good, every market it could have bought from with the price at its door, and the goods that could cover each need. Recorded from the next production run, about three times slower"
+    )
+  },
+  temperature: {
+    label: t("Temperature"),
+    tip: t("Log sea temperatures by latitude to the console when the climate is generated")
+  },
+  cloud: { label: t("Cloud storage"), tip: t("Log cloud storage responses to the console") }
+};
+
+const debugRows = () =>
+  DEBUG_MODES.map(mode =>
+    row({
+      label: DEBUG_LABELS[mode].label,
+      tip: DEBUG_LABELS[mode].tip,
+      control: `<input id="debug_${mode}" data-debug="${mode}" class="checkbox" type="checkbox" /><label for="debug_${mode}" class="checkbox-label"></label>`
+    })
+  ).join("");
+
 const EMBLEM_SHAPE_GROUPS: [group: string, shapes: [id: string, label: string][]][] = [
   [
     t("Diversiform"),
@@ -258,6 +282,8 @@ export function getAdvancedOptionsHTML(): string {
         ${mapRows()}
         <tr><th colspan="3">${t("Interface settings")}</th></tr>
         ${interfaceRows()}
+        <tr data-tip="${t("Diagnostics for checking how the generator works. They may change the view and record more, but never what is saved in the map file")}"><th colspan="3">${t("Debugging")}</th></tr>
+        ${debugRows()}
       </table>
     </div>`;
 }

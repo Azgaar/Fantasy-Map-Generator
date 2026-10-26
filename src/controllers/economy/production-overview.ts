@@ -1,10 +1,11 @@
 import { DEMAND_CATEGORY_LABELS } from "@/data/id-labels";
+import { EconomyDebug } from "@/model/economy/economy-debug";
 import type { Good } from "@/model/economy/goods-generator";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS, Goods } from "@/model/economy/goods-generator";
-import type { Deal, DealKind, Trade } from "@/model/economy/markets-generator";
+import type { Deal, DealKind, SourceOption, Trade } from "@/model/economy/markets-generator";
 import { DEAL_KINDS, Markets } from "@/model/economy/markets-generator";
 import type { ProductionCandidate, ProductionLogEntry } from "@/model/economy/production-generator";
-import { isMfgEntry, isTradeEntry } from "@/model/economy/production-generator";
+import { isDemandEntry, isMfgEntry, isTradeEntry } from "@/model/economy/production-generator";
 import { Icons } from "@/model/icons";
 import type { Burg } from "@/model/political/burgs-generator";
 import { formatPrice, getMoneyUnit } from "@/model/units";
@@ -26,7 +27,7 @@ import {
   tradeColumnTips
 } from "./trade/deal-price";
 
-type RowType = "LOCAL" | "BUY" | "MFG" | "SELL" | "KEEP";
+type RowType = "LOCAL" | "BUY" | "MFG" | "SELL" | "KEEP" | "NEED";
 type HistoryRow = {
   type: RowType;
   goodId: number;
@@ -41,6 +42,7 @@ type HistoryRow = {
   formula?: string; // the price split, adding up to the income
   details: string; // shown when the row expands, in the debug log only
   goodTip?: string; // shown on hovering the good
+  label?: string; // in place of the good, on a row about no single good
 };
 
 let activeBurgId = 0;
@@ -105,6 +107,10 @@ function renderDialog(): void {
         #${dialogId} .typeBadge.mfg { background: #f8e7bf; color: #b67a00 }
         #${dialogId} .typeBadge.sell { background: #dff0e2; color: #2f8a46 }
         #${dialogId} .typeBadge.keep { background: #e6e0f2; color: #5a4a8a }
+        #${dialogId} .typeBadge.need { background: #e4e4e4; color: #555 }
+        #${dialogId} .sources { border-collapse: collapse; margin: 0.3em 0; width: auto; table-layout: auto }
+        #${dialogId} .sources td, #${dialogId} .sources th { padding: 0.1em 0.5em; border: 0 }
+        #${dialogId} .sources .chosen { font-weight: bold; background: #eef6ee }
         #${dialogId} .positive { color: #2a6 }
         #${dialogId} .negative { color: #a34a14 }
       </style>
@@ -147,7 +153,7 @@ function onBodyClick(event: MouseEvent): void {
 function getHistoryRows(): HistoryRow[] {
   const burg = pack.burgs[activeBurgId];
   if (!burg?.production) return [];
-  return burg.productionLog?.map(getLogRow) ?? getSummaryRows(burg);
+  return EconomyDebug.get(burg.i!)?.map(getLogRow) ?? getSummaryRows(burg);
 }
 
 function getSummaryRows(burg: Burg): HistoryRow[] {
@@ -197,7 +203,11 @@ function getSummaryRows(burg: Burg): HistoryRow[] {
 }
 
 function getLogRow(entry: ProductionLogEntry): HistoryRow {
-  if (isTradeEntry(entry)) return getTradeRow(entry.goodId, entry.market, entry.kind, entry);
+  if (isDemandEntry(entry)) return getNeedRow(entry);
+  if (isTradeEntry(entry)) {
+    const row = getTradeRow(entry.goodId, entry.market, entry.kind, entry);
+    return entry.sources ? { ...row, details: renderSources(entry.market, entry.sources) } : row;
+  }
   if (!isMfgEntry(entry)) return getLocalRow(entry.goodId, entry.units);
 
   const inputs = entry.recipe.map(item => `${rn(item.units, 2)} ${goodDot(item.goodId)}`).join(` ${t("and")} `);
@@ -334,15 +344,93 @@ function render(): void {
     : `<i>${t("No production actions recorded")}</i>`;
 }
 
+type DemandEntry = Extract<ProductionLogEntry, { category: number }>;
+
+// a category the burg came to cover: its shortage and every good it could cover it with
+const getNeedRow = ({ category, shortage, options }: DemandEntry): HistoryRow => {
+  const name = DEMAND_PRIORITY[category];
+  return {
+    type: "NEED",
+    goodId: -1,
+    units: shortage,
+    tax: 0,
+    tariff: 0,
+    carriage: 0,
+    label: `${DEMAND_CATEGORY_ICONS[name]} ${DEMAND_CATEGORY_LABELS[name]}`,
+    details: renderDemandOptions(options)
+  };
+};
+
+function renderDemandOptions(options: DemandEntry["options"]): string {
+  if (!options.length) return `<i>${t("No good that covers it is for sale anywhere")}</i>`;
+  const own = pack.burgs[activeBurgId]?.market;
+  const items = options.slice(0, 10).map(({ goodId, coverage, costPerCoverage, market, kept }) => {
+    const where = kept
+      ? t("kept from its own sales")
+      : market === own
+        ? t("from its own market")
+        : t("from {{- market}}", { market: Markets.getName(Markets.get(market)!) });
+    const per = coverage === 1 ? "" : ` (${t("{{coverage}} per unit", { coverage: rn(coverage, 2) })})`;
+    return `<li>${goodDot(goodId)}${Goods.get(goodId)?.name}: ${formatPrice(costPerCoverage)} ${t("per covered need")}${per}, ${where}</li>`;
+  });
+  const more = options.length > 10 ? `<li>${t("and {{count}} more", { count: options.length - 10 })}</li>` : "";
+  return `<div>${t("Goods that could cover it, cheapest first; the burg buys down the list until the need is met or its money runs out")}:</div><ul>${items.join("")}${more}</ul>`;
+}
+
+/** Every market the burg could have bought the good from, at its door, with the one it chose */
+function renderSources(chosen: number, sources: SourceOption[]): string {
+  const own = pack.burgs[activeBurgId]?.market;
+  const reason =
+    chosen === own
+      ? t("Its own market had the good in stock, and a burg buys there first")
+      : t("Its own market had none, so it bought from the market that delivers cheapest to its door");
+  const open = sources.filter(source => !source.excluded);
+  const shown = open.slice(0, 6);
+  const picked = open.find(source => source.market === chosen);
+  if (picked && !shown.includes(picked)) shown.push(picked);
+
+  const name = (market: number) => {
+    const label = Markets.getName(Markets.get(market)!);
+    return market === own ? `${label} (${t("own")})` : label;
+  };
+  const rows = shown.map(
+    source => /* html */ `<tr${source.market === chosen ? ' class="chosen"' : ""}>
+      <td>${name(source.market)}</td>
+      <td class="right">${source.stock}</td>
+      <td class="right">${formatPrice(source.price)}</td>
+      <td class="right">${formatPrice(source.tax)}</td>
+      <td class="right">${tariffCell(source.tariff, source.isImport)}</td>
+      <td class="right">${formatPrice(source.carriage)}</td>
+      <td class="right">${formatPrice(source.buyPrice)}</td>
+    </tr>`
+  );
+  const count = (reason: SourceOption["excluded"]) => sources.filter(source => source.excluded === reason).length;
+  const [none, unreachable, embargoed] = [count("stock"), count("route"), count("embargo")];
+  const excluded = [
+    none && t("{{count}} have none", { count: none }),
+    unreachable && t("{{count}} have no route to the burg", { count: unreachable }),
+    embargoed && t("{{count}} are under embargo", { count: embargoed })
+  ].filter(Boolean);
+
+  return /* html */ `<div>${reason}.</div>
+    <table class="sources">
+      <thead><tr><th>${t("Market")}</th><th class="right">${t("Stock")}</th><th class="right">${t("Price")}</th><th class="right">${t("Tax")}</th><th class="right">${t("Tariff")}</th><th class="right">${t("Carriage")}</th><th class="right">${t("At the door")}</th></tr></thead>
+      <tbody>${rows.join("")}</tbody>
+    </table>
+    ${excluded.length ? `<div>${t("Other markets")}: ${excluded.join(", ")}</div>` : ""}`;
+}
+
 const TYPE_LABELS: Record<RowType, () => string> = {
   LOCAL: () => t("Local").toUpperCase(),
   BUY: () => t("BUY"),
   MFG: () => t("MFG"),
   SELL: () => t("sell").toUpperCase(),
-  KEEP: () => t("Keep").toUpperCase()
+  KEEP: () => t("Keep").toUpperCase(),
+  NEED: () => t("Need").toUpperCase()
 };
 
 function renderHistoryLine(row: HistoryRow, expandable: boolean): string {
+  if (row.label) return renderLabelLine(row, expandable);
   const good = Goods.get(row.goodId);
   if (!good) return "";
 
@@ -375,6 +463,19 @@ function renderHistoryLine(row: HistoryRow, expandable: boolean): string {
       ${cell(isTrade ? tariffCell(row.tariff, isImport(row)) : "", tips?.tariff)}
       ${cell(String(rn(row.units, 2)), tips?.units)}
       <td class="right ${(row.income ?? 0) >= 0 ? "positive" : "negative"}" data-tip="${tips?.income ?? ""}">${income}</td>
+    </tr>${row.details ? `<tr class="historyDetails" hidden><td></td><td colspan="8">${row.details}</td></tr>` : ""}`;
+}
+
+// a row about no single good: only the label, the units and the details
+function renderLabelLine(row: HistoryRow, expandable: boolean): string {
+  const tip = t("A need the burg came to cover, with what was left of it. Expand to see the goods it could buy");
+  const badge = `<span class="typeBadge ${row.type.toLowerCase()}">${TYPE_LABELS[row.type]()}</span>`;
+  return /* html */ `<tr${row.details ? " data-expandable" : ""}>
+      ${expandable ? `<td>${row.details ? '<span class="icon-right-open"></span>' : ""}</td>` : ""}
+      <td data-tip="${tip}">${row.label}${badge}</td>
+      <td></td><td></td><td></td><td></td><td></td>
+      <td class="right">${rn(row.units, 2)}</td>
+      <td></td>
     </tr>${row.details ? `<tr class="historyDetails" hidden><td></td><td colspan="8">${row.details}</td></tr>` : ""}`;
 }
 
@@ -506,7 +607,7 @@ function renderStats(burg: Burg): void {
   ensureEl(`${dialogId}Stats`).innerHTML = /* html */ `
     <div>
       <span><b>${t("Population")}:</b> ${population}</span>
-      ${burg.productionLog ? `<span><b>${t("Order")}:</b> ${t("{{rank}} of {{total}}", { rank: burgs.indexOf(burg) + 1, total: burgs.length })}</span>` : ""}
+      ${EconomyDebug.get(burg.i!) ? `<span><b>${t("Order")}:</b> ${t("{{rank}} of {{total}}", { rank: burgs.indexOf(burg) + 1, total: burgs.length })}</span>` : ""}
       <span><b>${t("Market")}:</b> ${market ? Markets.getName(market) : ""}</span>
     </div>
     <div data-tip="${t("Uncovered of initial demand, by category: what the burg still lacks after its demand purchases and kept goods, of what its people need")}"><b>${t("Demand")}:</b> ${renderDemand(uncovered, targets)}</div>

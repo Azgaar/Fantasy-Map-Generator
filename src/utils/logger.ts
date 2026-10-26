@@ -1,12 +1,18 @@
 // Console output by level. Switch a level off from the console: `FMG.log.enabled.time = false`
-import { safeParseJSON } from "./string-utils";
 
-type DebugFlags = { [feature: string]: boolean | undefined };
+/** Diagnostics a user can turn on in the Advanced options. They may draw or record more, never change the map */
+export const DEBUG_MODES = ["economy", "temperature", "cloud"] as const;
+export type DebugMode = (typeof DEBUG_MODES)[number];
 
 class Logger {
   readonly enabled = { time: true, info: true, warn: true, error: true };
-  /** Diagnostics per feature, off unless set in localStorage `debug`, e.g. `{"production":true}` */
-  readonly debug: DebugFlags = safeParseJSON(globalThis.localStorage?.getItem("debug") ?? "") || {};
+  /** Diagnostics per feature, all off until `setDebug` turns some on */
+  readonly debug: Partial<Record<DebugMode, boolean>> = {};
+
+  /** Turns the listed diagnostics on and the rest off; `options.app.debug` keeps the list */
+  setDebug(modes: readonly DebugMode[]): void {
+    for (const mode of DEBUG_MODES) this.debug[mode] = modes.includes(mode);
+  }
 
   time(label: string): void {
     if (this.enabled.time) console.time(label);

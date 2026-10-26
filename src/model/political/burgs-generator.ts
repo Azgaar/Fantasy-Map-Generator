@@ -1,6 +1,6 @@
 import { quadtree } from "d3-quadtree";
 import type { Label } from "@/model/annotations/labels-generator";
-import type { BurgProduction, ProductionLogEntry } from "@/model/economy/production-generator";
+import type { BurgProduction } from "@/model/economy/production-generator";
 import { Routes } from "@/model/economy/routes-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
@@ -53,7 +53,6 @@ export interface Burg {
   link?: string;
   MFCG?: string;
   production?: BurgProduction; // units of each good made in the last production run
-  productionLog?: ProductionLogEntry[]; // steps of the last production run, logged in debug mode
   product?: number; // gross product from the last production run
   treasury?: number; // cash balance from the last economy run
   market?: number;

@@ -5,9 +5,10 @@ import type { Zone } from "@/model/political/zones-generator";
 import { DEFAULT_CULTURE_TYPE } from "@/model/society/cultures-generator";
 import { log } from "@/utils/logger";
 import { minmax, rn } from "@/utils/number-utils";
+import { EconomyDebug } from "./economy-debug";
 import type { DemandCategory, Good } from "./goods-generator";
 import { DEMAND_PRIORITY, Goods, getDemandTargets } from "./goods-generator";
-import type { DealKind, Market, SourceQuote, Trade, TradeTerms } from "./markets-generator";
+import type { DealKind, Market, SourceOption, SourceQuote, Trade, TradeTerms } from "./markets-generator";
 import { DEAL_KINDS, Markets } from "./markets-generator";
 
 const RURAL_OUTPUT_FACTOR = 3;
@@ -42,6 +43,7 @@ export class ProductionModule {
     Markets.collectRuralProduction();
     Markets.initializeMarketPrices();
     Markets.measureRoutes();
+    const recording = EconomyDebug.start();
 
     const index = this.buildProductionIndex(pack.goods);
     const sortedBurgs = pack.burgs
@@ -52,7 +54,7 @@ export class ProductionModule {
     for (const burg of sortedBurgs) {
       burg.treasury = 0; // every run starts from a clean slate
       const market = burg.market ? Markets.get(burg.market) : undefined;
-      if (market) states.push(this.createBurgProductionState(burg, market));
+      if (market) states.push(this.createBurgProductionState(burg, market, recording));
     }
 
     // burgs take turns, largest first, so the first in line cannot drain a market alone
@@ -71,8 +73,7 @@ export class ProductionModule {
     for (const { burg, produced, revenue, ingredientCosts, log } of states) {
       burg.product = rn(Math.max(0, revenue - ingredientCosts), 2);
       burg.production = produced.flatMap((units, goodId) => (units ? [[goodId, rn(units, 2)]] : []));
-      if (log) burg.productionLog = log;
-      else delete burg.productionLog;
+      if (log) EconomyDebug.set(burg.i!, log);
     }
   }
 
@@ -93,7 +94,7 @@ export class ProductionModule {
     };
   }
 
-  private createBurgProductionState(burg: Burg, market: Market): BurgProductionState {
+  private createBurgProductionState(burg: Burg, market: Market, recording = false): BurgProductionState {
     const burgPopulation = rn(burg.population || 0, 2);
     const population = Math.min(burgPopulation, MAX_WORKERS);
     if (population < burgPopulation) {
@@ -101,7 +102,7 @@ export class ProductionModule {
     }
     const inventory: number[] = [];
     const produced: number[] = [];
-    const productionLog: ProductionLogEntry[] | undefined = log.debug.production ? [] : undefined;
+    const productionLog: ProductionLogEntry[] | undefined = recording ? [] : undefined;
 
     const good = Goods.get(pack.cells.good[burg.cell]);
     if (good) {
@@ -219,6 +220,7 @@ export class ProductionModule {
     const { burg } = state;
     let market = state.market;
     let trade: Trade | null;
+    const sources = state.log && Markets.listSources(burg, good, index.tradeTerms); // before the trade moves them
     if ((market.goods[good.i]?.stock || 0) > 0.01) {
       trade = Markets.buy({ burg, good, units, kind, budget });
     } else {
@@ -229,7 +231,7 @@ export class ProductionModule {
       trade = Markets.buyFromSource({ burg, source: market, good, units, kind, terms: index.tradeTerms, budget });
     }
 
-    if (trade) state.log?.push({ goodId: good.i, market: market.i, kind, ...trade });
+    if (trade) state.log?.push({ goodId: good.i, market: market.i, kind, ...trade, sources: sources || undefined });
     return trade;
   }
 
@@ -249,6 +251,27 @@ export class ProductionModule {
   /** The burg sold only what it made, so only that can be kept */
   private quoteKeep(state: BurgProductionState, good: Good) {
     return state.produced[good.i] ? Markets.quoteKeep(state.burg, good) : null;
+  }
+
+  /** The category's shortage and every good that could cover it, cheapest coverage first, as the burg saw them */
+  private logDemand(
+    state: BurgProductionState,
+    category: number,
+    shortage: number,
+    sorted: { candidate: DemandGoodCandidate; costPerCoverage: number; kept: boolean }[]
+  ): void {
+    const options = sorted.map(({ candidate, costPerCoverage, kept }) => {
+      const local = (state.market.goods[candidate.goodId]?.stock || 0) > 0.01;
+      const market = kept || local ? state.market.i : (state.sources[candidate.goodId]?.source.i ?? 0);
+      return {
+        goodId: candidate.goodId,
+        coverage: candidate.coverageWeight,
+        costPerCoverage: rn(costPerCoverage, 2),
+        market,
+        kept
+      };
+    });
+    state.log!.push({ category, shortage: rn(shortage, 2), options });
   }
 
   private sellInventoryToMarket(state: BurgProductionState): void {
@@ -333,15 +356,17 @@ export class ProductionModule {
       let shortage = Math.max(0, demandTargets[categoryIndex] - demandCoverage[categoryIndex]);
       if (shortage <= 0.001) continue;
 
-      const sortedCandidates: { candidate: DemandGoodCandidate; costPerCoverage: number }[] = [];
+      const sortedCandidates: { candidate: DemandGoodCandidate; costPerCoverage: number; kept: boolean }[] = [];
       for (const candidate of index.demandGoodsByCategory[categoryIndex]) {
         const own = this.quoteKeep(state, candidate.good);
         const quote = this.quote(index, state, candidate.goodId);
         if (!own && quote.stock <= 0.01) continue;
         const price = own ? Math.min(own.price, quote.buyPrice) : quote.buyPrice;
-        sortedCandidates.push({ candidate, costPerCoverage: price / candidate.coverageWeight });
+        const kept = Boolean(own && own.price <= quote.buyPrice); // as the purchase below decides
+        sortedCandidates.push({ candidate, costPerCoverage: price / candidate.coverageWeight, kept });
       }
       sortedCandidates.sort((a, b) => a.costPerCoverage - b.costPerCoverage);
+      if (state.log) this.logDemand(state, categoryIndex, shortage, sortedCandidates);
 
       for (const { candidate } of sortedCandidates) {
         if (shortage <= 0.001) break;
@@ -749,6 +774,7 @@ export class ProductionModule {
 
 export const isMfgEntry = (entry: ProductionLogEntry): entry is MfgEntry => "recipe" in entry;
 export const isTradeEntry = (entry: ProductionLogEntry): entry is TradeEntry => "kind" in entry;
+export const isDemandEntry = (entry: ProductionLogEntry): entry is DemandEntry => "category" in entry;
 
 type PlannedAction = {
   good: Good;
@@ -832,9 +858,16 @@ type MfgEntry = {
   candidates: readonly ProductionCandidate[];
 };
 
-type TradeEntry = { goodId: number; market: number; kind: DealKind } & Trade;
+type TradeEntry = { goodId: number; market: number; kind: DealKind; sources?: SourceOption[] } & Trade;
+
+/** A demand category's shortage when the burg came to fill it, and the goods it could use, cheapest coverage first */
+type DemandEntry = {
+  category: number; // index in DEMAND_PRIORITY
+  shortage: number;
+  options: { goodId: number; coverage: number; costPerCoverage: number; market: number; kept: boolean }[];
+};
 
 /** One step of a burg's production run, logged in debug mode */
-export type ProductionLogEntry = LocalEntry | MfgEntry | TradeEntry;
+export type ProductionLogEntry = LocalEntry | MfgEntry | TradeEntry | DemandEntry;
 
 export const Production = new ProductionModule();

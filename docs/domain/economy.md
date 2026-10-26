@@ -6,15 +6,15 @@ The economy is **one frozen cycle: a typical day**, not a simulation over time. 
 
 ## Elements
 
-| Element                                           | Model                                                                                     | Persisted state                                                                       |
-| ------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Goods: the catalogue and bonus resources on cells | `Goods` ([goods-generator.ts](../../src/model/economy/goods-generator.ts))                | `pack.goods`, `pack.cells.good`                                                       |
-| Markets: regions, stock and prices                | `Markets` ([markets-generator.ts](../../src/model/economy/markets-generator.ts))          | `pack.markets`, `pack.cells.market`, `burg.market`                                    |
-| Production and the demand fill                    | `Production` ([production-generator.ts](../../src/model/economy/production-generator.ts)) | `burg.production`, `burg.product`, `burg.treasury`, `burg.productionLog` (debug only) |
-| Travel cost over routes                           | `TradeRoutes` ([trade-routes.ts](../../src/model/economy/trade-routes.ts))                | nothing: measured per run                                                             |
-| The deal log                                      | `Markets.recordDeal`                                                                      | `pack.deals`                                                                          |
-| Taxes and treasuries                              | `States` ([states-generator.ts](../../src/model/political/states-generator.ts))           | `state.salesTax`, `state.pollTax`, `state.tariffs`, `state.treasury`                  |
-| Trade animation                                   | `TradeAnimation` ([trade-animation.ts](../../src/renderers/trade-animation.ts))           | nothing: read-only view of the deals                                                  |
+| Element                                           | Model                                                                                     | Persisted state                                                      |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Goods: the catalogue and bonus resources on cells | `Goods` ([goods-generator.ts](../../src/model/economy/goods-generator.ts))                | `pack.goods`, `pack.cells.good`                                      |
+| Markets: regions, stock and prices                | `Markets` ([markets-generator.ts](../../src/model/economy/markets-generator.ts))          | `pack.markets`, `pack.cells.market`, `burg.market`                   |
+| Production and the demand fill                    | `Production` ([production-generator.ts](../../src/model/economy/production-generator.ts)) | `burg.production`, `burg.product`, `burg.treasury`                   |
+| Travel cost over routes                           | `TradeRoutes` ([trade-routes.ts](../../src/model/economy/trade-routes.ts))                | nothing: measured per run                                            |
+| The deal log                                      | `Markets.recordDeal`                                                                      | `pack.deals`                                                         |
+| Taxes and treasuries                              | `States` ([states-generator.ts](../../src/model/political/states-generator.ts))           | `state.salesTax`, `state.pollTax`, `state.tariffs`, `state.treasury` |
+| Trade animation                                   | `TradeAnimation` ([trade-animation.ts](../../src/renderers/trade-animation.ts))           | nothing: read-only view of the deals                                 |
 
 ## When it runs
 
@@ -67,7 +67,7 @@ Burgs are scored by population (capital ×2.5, port ×1.2, then random noise ×0
 
 ### Stock and price
 
-A market holds no money, only per-good `{ stock, price }`. `price` is a midpoint: burgs buy at +5% (`MARKET_MARGIN`) and sell at −5%. Each trade moves the price linearly by 1% of the good's base value per unit (up on buying, down on selling), clamped to 0.1–5 x of the value. Stock and prices are rebuilt from scratch by every run; what is saved is the state after the last run.
+A market holds no money, only per-good `{ stock, price }`; its figures in the market views are worked out from its deals (see The deal log). `price` is a midpoint: burgs buy at +5% (`MARKET_MARGIN`) and sell at −5%. Each trade moves the price linearly by 1% of the good's base value per unit (up on buying, down on selling), clamped to 0.1–5 x of the value. Stock and prices are rebuilt from scratch by every run; what is saved is the state after the last run.
 
 ## The run
 
@@ -78,7 +78,7 @@ A market holds no money, only per-good `{ stock, price }`. `price` is a midpoint
 3. **Route measurement.** One route search from every market center prices all carriage for the run.
 4. **Burg turns.** Burgs are sorted by population, largest first. Each burg with a bonus resource on its cell starts with free units of it (population × 1, clamped to 1–5, × multipliers). Then, round after round, each burg spends up to 5 workers (`WORKERS_PER_TURN`) and sells the round's output to its market, until its workers (its population, at most 1,000) are spent or nothing is worth making. Small turns let big burgs pick first without draining a market in one go; later burgs see the prices the earlier ones moved.
 5. **Demand fill.** Every burg, in the same order, spends its treasury on its demand.
-6. **Store.** `burg.production` (units made, bonus included), `burg.product` (sale revenue minus input costs) and, in debug mode, the step log. Sales a burg kept back in full are dropped from the deals.
+6. **Store.** `burg.production` (units made, bonus included), `burg.product` (sale revenue minus input costs) and, in debug mode, the step log, in memory only. Sales a burg kept back in full are dropped from the deals.
 
 ### How a burg decides what to make
 
@@ -168,8 +168,9 @@ Invariants:
 
 - A burg's treasury change over a run equals its deals: sale revenue (price × units − tax) minus purchases (price × units). Kept deals are free because the sale was reduced instead.
 - An **import** is a purchase from a market of another state (`Markets.isImport`); only an import may carry a tariff. A purchase from a different market of the same state is not an import.
+- A deal's money to its market (`Markets.getMarketIncome`) is what the burg paid, carriage included, less the sales tax and tariff passed to the states, when the market sells; minus price × units, when it buys (the price already excludes carriage, and the burg pays its own sales tax out of its share); 0 for a kept deal. The margin and carriage stay with the market, as its merchants'. The Markets overview sums it into **Sales** (positive) and **Buys** (negative), and **Value** is Sales − Buys + the stock at its prices. Burgs never read it: it only reports.
 - Deals are the input for state taxes, the trade animation, Trade Details, the Production Overview, market views and the goods editor's stock view. Kept deals count as covered demand but are skipped wherever goods are shown moving: the animation, Trade Details and a market's deals.
-- Step-by-step trades are not stored, except in the debug-only `burg.productionLog`.
+- Step-by-step trades are not stored. With Economy checked under Debugging in the Advanced options (`options.app.debug`), the run records each burg's steps in memory (`EconomyDebug`, never saved): manufacture with the candidates weighed, every trade with all the markets it could have used and their prices at the burg's door, and each demand category's shortage with the goods that could cover it. The Production Overview shows that log instead of the deal summary; with debug mode off nothing is recorded.
 
 ## What the user sees
 

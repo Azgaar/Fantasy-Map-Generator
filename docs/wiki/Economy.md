@@ -82,7 +82,13 @@ To call the money something else, open _Tools_ → _Units_ and pick another name
 
 ## Treasuries
 
-Burgs and states have a **treasury**. Markets hold no money.
+Burgs and states have a **treasury**. Markets hold no money, but the Markets overview shows how much passed through each of them:
+
+- **Sales**: what burgs paid the market for its goods, carriage included, less the sales tax and tariffs it hands to the states.
+- **Buys**: what the market paid burgs for their goods. A burg's own sales tax comes out of what it receives.
+- **Value**: Sales minus Buys, plus what the market's unsold stock is worth at its prices.
+
+The market keeps its margin and the carriage, as if its merchants did the carrying. A market's deals list the same income deal by deal; hover it to see the sum. Goods a burg kept for its people never pass through the market and are not counted.
 
 - A burg earns money by selling what it makes and spends it on ingredients and on its people's needs. Its treasury is shown in the _Burg Editor_, and you can type any value there to make a burg rich or broke. Every time the economy is regenerated, it starts again from zero, so a value you type lasts until the next regeneration.
 - A state's treasury is what it collected that day: its taxes plus a **poll tax** per population point. It is recalculated from scratch each time the economy runs.

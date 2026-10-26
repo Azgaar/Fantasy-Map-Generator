@@ -2155,6 +2155,9 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
   }
 
   if (isOlderThan("1.157.0")) {
+    // debug step logs were saved with burgs; they are kept in memory now (EconomyDebug)
+    for (const burg of pack.burgs ?? []) delete (burg as { productionLog?: unknown } | undefined)?.productionLog;
+
     // v1.157.0 spaces contours in height units, not generator heights (1 to 20): keep about as many lines
     const record = data[48] ? safeParseJSON(data[48]) : undefined;
     const land = record?.heightmap?.groups?.landHeights?.options?.contours;

@@ -3,7 +3,7 @@ import type { Burg } from "@/model/political/burgs-generator";
 import { rn } from "@/utils/number-utils";
 import type { Good } from "./goods-generator";
 import { Goods } from "./goods-generator";
-import { DEAL_KINDS, type Market, Markets } from "./markets-generator";
+import { DEAL_KINDS, type Market, Markets, type SourceOption } from "./markets-generator";
 import { ProductionModule } from "./production-generator";
 import { TradeRoutes } from "./trade-routes";
 
@@ -290,6 +290,30 @@ describe("inputs missing in the burg's market", () => {
     pack.burgs[2].state = 2;
     pack.states = [{ i: 0 }, { i: 1, tariffs: [{ states: [2], goods: "all", rate: "embargo" }] }, { i: 2 }] as any;
     expect(plan(4, 1)).toBeNull();
+  });
+
+  it("are logged with every market they could come from in debug mode only", () => {
+    catalogue[4].recipes = [{ 4: 2 }];
+    burg.population = 2;
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    const index = production["buildProductionIndex"](catalogue);
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    expect(production["createBurgProductionState"](burg, market).log).toBeUndefined();
+
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    const state = production["createBurgProductionState"](burg, market, true);
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    production["runWorkerLoop"](index, state);
+
+    const trade = state.log!.find(entry => "sources" in entry && entry.goodId === 3) as {
+      market: number;
+      sources: SourceOption[];
+    };
+    expect(trade.market).toBe(2);
+    expect(trade.sources.map(({ market, excluded }) => [market, excluded])).toEqual([
+      [2, undefined],
+      [1, "stock"]
+    ]);
   });
 });
 

@@ -2,7 +2,7 @@ import { select } from "d3";
 import { Controllers } from "@/controllers";
 import { ColorPicker } from "@/controllers/color-picker";
 import type { Market } from "@/model/economy/markets-generator";
-import { DEAL_KINDS, Markets } from "@/model/economy/markets-generator";
+import { Markets } from "@/model/economy/markets-generator";
 import { Production } from "@/model/economy/production-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Burg } from "@/model/political/burgs-generator";
@@ -51,15 +51,30 @@ const columns: EditorColumn<MarketRow>[] = [
   { key: "cells", label: t("Cells"), width: "4em", sortBy: row => row.cells },
   { key: "burgs", label: t("Burgs"), width: "5em", sortBy: row => row.burgs },
   { key: "stock", label: t("Stock"), width: "5em", sortBy: row => row.stock },
-  { key: "sales", label: t("Sales"), width: "5em", sortBy: row => row.sales },
-  { key: "buys", label: t("Buys"), width: "5em", sortBy: row => row.buys },
+  {
+    key: "sales",
+    label: t("Sales"),
+    width: "5em",
+    sortBy: row => row.sales,
+    tip: sentences(
+      t("Got from burgs for the goods the market sold, less the taxes and tariffs passed to the states"),
+      t("Click to sort")
+    )
+  },
+  {
+    key: "buys",
+    label: t("Buys"),
+    width: "5em",
+    sortBy: row => row.buys,
+    tip: sentences(t("Paid to burgs for the goods the market bought"), t("Click to sort"))
+  },
   {
     key: "value",
     label: t("Value"),
     width: "5em",
     sortBy: row => row.value,
     defaultSort: "desc",
-    tip: sentences(t("Market value: net trading flow plus unsold inventory value minus tax"), t("Click to sort"))
+    tip: sentences(t("Market value: sales less buys, plus the value of unsold stock"), t("Click to sort"))
   },
   { key: "note", width: "1.1em" },
   { key: "remove", width: "1.4em", permanent: true }
@@ -236,9 +251,9 @@ function renderMarketRow(
     <div data-col="cells" data-tip="${t("Number of cells in market territory")}" class="marketCells">${format("cells", cells)}</div>
     <div data-col="burgs" data-tip="${t("Number of burgs in market territory")}" class="marketBurgs">${format("burgs", burgs)}</div>
     <div data-col="stock" data-tip="${t("Total stock of all goods in this market")}" class="marketStock">${format("stock", stock)}</div>
-    <div data-col="sales" data-tip="${t("Total gross sales revenue")}" class="marketSales">${format("sales", sales, true)}</div>
-    <div data-col="buys" data-tip="${t("Total purchase spending")}" class="marketBuysCol">${format("buys", buys, true)}</div>
-    <div data-col="value" data-tip="${t("Market value: net trading flow plus unsold inventory value minus tax")}" class="marketValue">${format("value", value, true)}</div>
+    <div data-col="sales" data-tip="${t("Got from burgs for the goods the market sold, less the taxes and tariffs passed to the states")}" class="marketSales">${format("sales", sales, true)}</div>
+    <div data-col="buys" data-tip="${t("Paid to burgs for the goods the market bought")}" class="marketBuysCol">${format("buys", buys, true)}</div>
+    <div data-col="value" data-tip="${t("Market value: sales less buys, plus the value of unsold stock")}" class="marketValue">${format("value", value, true)}</div>
     ${noteIcon(t("Edit free text notes (legend)"))}
     <span data-col="remove" data-tip="${t("Remove")}" class="icon-trash-empty hiddenIcon" style="visibility:hidden"></span>
   </div>`;
@@ -389,16 +404,11 @@ function getMarketFinancials(market: Market): {
 } {
   let sales = 0;
   let buys = 0;
-  let tax = 0;
-
-  for (const [, marketId, , kind, units, price, dealTax] of pack.deals || []) {
-    if (marketId !== market.i) continue;
-    if (kind === DEAL_KINDS.sale) {
-      buys += units * price;
-    } else {
-      sales += units * price;
-      tax += dealTax;
-    }
+  for (const deal of pack.deals || []) {
+    if (deal[1] !== market.i) continue;
+    const income = Markets.getMarketIncome(deal);
+    if (income > 0) sales += income;
+    else buys -= income;
   }
 
   const stockValue = Object.values(market.goods).reduce((sum, g) => sum + (g.stock || 0) * (g.price || 0), 0);
@@ -406,7 +416,7 @@ function getMarketFinancials(market: Market): {
   return {
     sales: rn(sales, 2),
     buys: rn(buys, 2),
-    value: rn(buys - sales + stockValue - tax, 2)
+    value: rn(sales - buys + stockValue, 2)
   };
 }
 
