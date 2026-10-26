@@ -206,6 +206,11 @@ function renderDialog(): void {
         ></button>
         <button id="provincesChart" data-tip="${t("Provinces chart")}" class="icon-chart-area"></button>
         <button
+          id="regenerateProvinceNames"
+          data-tip="${t("Regenerate province names based on assigned culture")}"
+          class="icon-retweet"
+        ></button>
+        <button
           id="provincesExport"
           data-tip="${t("Save data as a CSV file")}"
           class="icon-download"
@@ -258,6 +263,7 @@ function renderDialog(): void {
   });
   ensureEl("provincesPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("provincesChart").addEventListener("click", showChart);
+  ensureEl("regenerateProvinceNames").addEventListener("click", regenerateProvinceNames);
   ensureEl("provincesExport").addEventListener("click", downloadProvincesData);
   ensureEl("provincesImport").addEventListener("click", () => Csv.pick(uploadProvincesCsv));
   ensureEl("provincesRemoveAll").addEventListener("click", removeAllProvinces);
@@ -307,6 +313,18 @@ function refreshProvincesEditor(): void {
   collectStatistics();
   updateFilter();
   provincesTable.reset();
+}
+
+function regenerateProvinceNames(): void {
+  for (const province of getProvincesData()) {
+    if (province.lock) continue;
+    const culture = pack.states[province.state]?.culture ?? pack.cells.culture[province.center] ?? 0;
+    if (!culture) continue;
+    Provinces.rename(province.i, Names.getState(Names.getCultureShort(culture), culture));
+  }
+
+  provincesTable.refresh();
+  Layers.draw("provinces", "labels");
 }
 
 function collectStatistics(): void {
