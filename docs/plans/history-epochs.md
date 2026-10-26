@@ -1,6 +1,6 @@
 # Plan — Epochs: Layered Political Regeneration
 
-Updated: 2026-10-26. Status: **slices 1–3 shipped**; slices 4–5 future work. Companions: the shipped retroactive
+Updated: 2026-10-26. Status: **slices 1–4 shipped**; slice 5 future work. Companions: the shipped retroactive
 history in [history-generation.md](history-generation.md) (the Archaeologist), and the era concept
 that epochs would ground. The mod-merge plan's "Epochs" bullet in
 [history-generation.md](history-generation.md#future-phases-out-of-scope-for-now) is this document.
@@ -44,7 +44,7 @@ The visible map does not change. The user sees the same world, with a deeper pas
 | Realms | 1–3 invented empires whose partition explains the present borders |
 | Figures | dynasties for the major states, a general per war; reigns dated backwards |
 | Legends browser | timeline grouped by era, realms tab, figures tab, filters, zoom links |
-| Epochs | the engine (`Epochs.generate`, slice 1), the `.map` slots (slice 2) and `lore.history.mode` with the epochs as the eras (slice 3) are shipped; the slider is not — nothing scrubs them yet |
+| Epochs | the engine (`Epochs.generate`, slice 1), the `.map` slots (slice 2), `lore.history.mode` with the epochs as the eras (slice 3), and the historical view (slice 4): the year slider under the Legends browser timeline scrubs `pack.cells.state`/`pack.states` to the epoch's snapshot and polity records, redraws states, borders, labels and the legend, and restores the pack on the way back |
 
 Two gaps this plan closes: the eras are derived from invented realms rather than from anything
 causal, and the events of a state's own past are inferred rather than remembered.
@@ -330,7 +330,7 @@ the cost is not yet measured. Before committing to a default K:
 | 1 ✅ | The engine: regenerate the political layer per epoch, with a collapse between | large | Two epochs produce different borders; the events describe what happened |
 | 2 ✅ | The data model and the save format: epochs, polities, snapshot records | medium | A map with epochs round-trips; an old map loads unchanged |
 | 3 ✅ | The mode switch: `lore.history.mode`, the epochs as the eras | medium | `archaeologist` is untouched; `epochs` replaces the invented eras with real ones |
-| 4 | The historical view and the slider | large | Dragging the year shows the past borders, the past legend, and the past events |
+| 4 ✅ | The historical view and the slider | large | Dragging the year shows the past borders, the past legend, and the past events |
 | 5 | The figures (shipped) in epoch scope: reigns per epoch, a reign ending at its polity's collapse | medium | Dynasties span epochs; a ruler's reign is epoch-scoped |
 
 Slice 1 ships as `src/generators/epochs-generator.ts` (`Epochs.generate`): it returns the epochs,
@@ -359,6 +359,23 @@ derives the eras from the epochs — each epoch's own `era` name, contiguous, wi
 figures are re-scoped in slice 5. The Legends browser resolves `polity` actors and filters them.
 The pre-created state foundings, wars and vassalages are *not* recorded in this mode: the polities
 own that story.
+
+Slice 4 ships the view: `src/controllers/historical-view.ts` swaps
+`pack.cells.state` and `pack.states` for the year's epoch — the snapshot remapped from lineage
+ids to compact state ids, one pseudo-`State` per cast polity (name, form, colour, capital burg
+for the label pole, `getFullName`'s scheme) with the present neutral in slot 0 — then redraws the
+states, borders and labels layers. The present States legend, when open, is replaced by a box of
+the epoch's polities (largest first, empties skipped) and restored on the way back; emblems,
+military and every Conquest layer are hidden while the past is up and shown again after. The view
+is read-only through the `customization` guard every editor opens with (the same rule the battle
+screen uses); anything that replaces the world closes the dialog, and the new-map prompt first
+leaves the view and the world token discards a stale restore instead of
+overwriting the new map. The slider lives under the Legends browser's body: dragging the year
+moves both the map and the timeline, which filters to the events recorded by the viewed year, and
+the currently-viewed era's header is marked. A `Now` button returns the present; leaving always
+restores the live pack exactly (throwing renderer included). Follow-ups, in slice order: an event
+clickable to jump the map to its epoch, the "epoch" filter dimension browsers gain from it,
+markers and the `emblems` of a past epoch, provinces drawn from the epoch.
 
 ## Risks
 
