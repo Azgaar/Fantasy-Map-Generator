@@ -125,9 +125,10 @@ As detailed in [`docs/plans/mod-merge-plan.md`](../plans/mod-merge-plan.md):
 - **Shipped (Phase 5)**: Polish and docs — the e2e coverage, the one-per-session "apply Astral
   naming" hint, the second `astralSchematic` blueprint preset, and the README, wiki and merge
   checklist. The design is in [`docs/plans/astral-ui-overhaul.md`](../plans/astral-ui-overhaul.md).
-- **Shipped (terrain layers)**: the terrain reads — Dust Density, Composition, Remnants, Core–Rim,
-  and the rivers re-read as currents inside the Hyperlanes layer. The design is in
-  [`docs/plans/astral-terrain-layers.md`](../plans/astral-terrain-layers.md).
+- **Shipped (terrain layers)**: the terrain reads — Dust Density, Composition, Remnants, Core–Rim.
+  The design is in [`docs/plans/astral-terrain-layers.md`](../plans/astral-terrain-layers.md).
+- **Removed (currents)**: the rivers are not drawn in Astral — the currents re-read was dropped on
+  2026-10-26 so the chart reads as a chart, not a river map.
 - **Shipped (system dialog)**: clicking a star opens the System Editor — the burg read as a system,
   edited in the astral vocabulary, every write a burg write. The design is in
   [`docs/plans/astral-system-dialog.md`](../plans/astral-system-dialog.md).
