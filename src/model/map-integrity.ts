@@ -33,6 +33,7 @@ const RULES = [
   "burg-cells", // a burg owns a land cell no other burg has
   "burg-positions", // a burg lies in its cell
   "burg-features", // feature and port water fit the cell
+  "burg-routes", // a burg is on the route network, so it can trade
   "cell-burgs", // cells.burg points at living burgs that point back
   "state-centers",
   "state-capitals", // a living state has a living capital
@@ -172,6 +173,7 @@ class MapIntegrityModule {
       if (valid(burg.cell) && Pack.findCell(burg.x, burg.y) !== burg.cell) fail("burg-positions", burg.i);
       const port = burg.port ? features[burg.port] : undefined;
       if (burg.feature !== cells.f[burg.cell] || (burg.port && (!port || port.land))) fail("burg-features", burg.i);
+      if (valid(burg.cell) && !Object.keys(cells.routes?.[burg.cell] ?? {}).length) fail("burg-routes", burg.i);
     }
     for (let cell = 0; cell < n; cell++) {
       const burgId = cells.burg[cell];

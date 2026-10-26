@@ -2,7 +2,8 @@ import type { Point } from "@/model/graph/voronoi";
 import { FlatQueue } from "@/utils/flat-queue";
 
 const WATER_COST = 0.2; // per map unit; land travel costs 1
-const SWITCH_SPACINGS = 4; // loading between land and water, in cell spacings
+const SWITCH_SPACINGS = 4; // loading between land and water at a port, in cell spacings
+const LANDING_SPACINGS = 40; // loading anywhere else a road meets a river route: taken only when there is no other way
 
 /** A search over the route network; states are `cell * 2`, plus 1 when arriving by water */
 export type RouteSearch = { cost: Float64Array; prevCell: Int32Array; prevState: Int32Array };
@@ -13,15 +14,16 @@ type RouteGraph = {
   targets: Int32Array;
   costs: Float64Array;
   water: Uint8Array;
-  isPort: Uint8Array; // by cell: goods switch between land and water only at a port
+  isPort: Uint8Array; // by cell
   switchCost: number;
+  landingCost: number;
 };
 
 /** Travel over the route network, shared by trade prices and the trade animation: goods pay for the path they are drawn along */
 export class TradeRoutesModule {
   /** Cheapest travel from a cell over routes; with an end cell, stops there and returns its state, otherwise -1 */
   search(startCell: number, endCell = -1, graph = this.buildGraph(), search = this.createSearch()) {
-    const { offsets, targets, costs, water, isPort, switchCost } = graph;
+    const { offsets, targets, costs, water, isPort, switchCost, landingCost } = graph;
     const { cost, prevCell, prevState } = search;
     cost.fill(Infinity);
     cost[startCell * 2] = 0;
@@ -31,8 +33,7 @@ export class TradeRoutesModule {
     const visit = (from: number, fromState: number, link: number, baseCost: number) => {
       const isWater = water[link] === 1;
       const switching = fromState !== -1 && isWater !== ((fromState & 1) === 1);
-      if (switching && !isPort[from]) return;
-      const total = baseCost + costs[link] + (switching ? switchCost : 0);
+      const total = baseCost + costs[link] + (switching ? (isPort[from] ? switchCost : landingCost) : 0);
       const state = targets[link] * 2 + (isWater ? 1 : 0);
       if (total >= cost[state]) return;
       cost[state] = total;
@@ -116,7 +117,8 @@ export class TradeRoutesModule {
       costs: Float64Array.from(costs),
       water: Uint8Array.from(water),
       isPort,
-      switchCost: SWITCH_SPACINGS * (globalThis.grid?.spacing || 1)
+      switchCost: SWITCH_SPACINGS * (globalThis.grid?.spacing || 1),
+      landingCost: LANDING_SPACINGS * (globalThis.grid?.spacing || 1)
     };
   }
 

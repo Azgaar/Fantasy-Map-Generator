@@ -42,13 +42,27 @@ describe("TradeRoutes.search", () => {
     expect(search.cost[endState]).toBeCloseTo(10 + 20 * 0.2 + 4 * 10);
   });
 
-  it("does not switch between land and water away from a port", () => {
-    // a road meets a sea route at cell 1, a river cell with no port
+  it("lands away from a port only at a much higher cost", () => {
+    // a road meets a sea route at cell 1, a river cell with no port, and goes on only by water
     globalThis.pack = line({ 0: { 1: 0 }, 1: { 0: 0, 2: 1 }, 2: { 1: 1, 3: 1 }, 3: { 2: 1 } }, [
       "roads",
       "searoutes"
     ]) as any;
-    expect(tradeRoutes.search(0, 3).endState).toBe(-1);
+    const { search, endState } = tradeRoutes.search(0, 3);
+    expect(endState).toBe(7);
+    expect(search.cost[endState]).toBeCloseTo(10 + 20 * 0.2 + 40 * 10);
+  });
+
+  it("keeps to the road rather than land away from a port for a cheaper river", () => {
+    // roads 0→1→2→3, and a sea route 1→2→3 joining at cell 1, which has no port
+    globalThis.pack = line(
+      { 0: { 1: 0 }, 1: { 0: 0, 2: 0, 12: 1 }, 2: { 1: 0, 3: 0 }, 3: { 2: 0, 12: 1 }, 12: { 1: 1, 3: 1 } },
+      ["roads", "searoutes"]
+    ) as any;
+    globalThis.pack.cells.p[12] = [20, 5];
+    const { search, endState } = tradeRoutes.search(0, 3);
+    expect(endState).toBe(6); // arriving by land
+    expect(search.cost[endState]).toBe(30);
   });
 
   it("finds no path off the route network", () => {

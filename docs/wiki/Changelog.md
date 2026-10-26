@@ -24,8 +24,8 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Update window: the latest releases info; F1 opens it again
 - The tour button on the map is removed: start the tour from the update window or the About tab
 - Emblems: Armoria pictures in older maps become COAs where possible
-- Rivers: style groups: regular, frozen, dry, lava and custom
-- Rivers: tributaries bend gently into the downstream flow at confluences
+- River style groups: regular, frozen, dry, lava and custom
+- Rivers: tributaries bend gently into the downstream flow
 
 # Releases
 

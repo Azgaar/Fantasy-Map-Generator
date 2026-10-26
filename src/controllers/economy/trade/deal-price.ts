@@ -6,7 +6,7 @@ import { rn } from "@/utils/number-utils";
 
 /**
  * A trade's price split per unit: goods' price, carriage, sales tax and tariff, with the trade's total value. The recorded price already holds carriage and, on an import, the taxes:
- * the goods' own price is what is left, and the formula adds them back up to what the trade is worth to the burg
+ * the goods' own price is what is left, and the formula adds them back up to the burg's income from the trade
  */
 export function splitDealPrice({ units, price, tax, tariff = 0, carriage = 0 }: Trade, isSale: boolean) {
   const perUnit = (total: number) => (units ? total / units : 0);
@@ -28,9 +28,18 @@ export function splitDealPrice({ units, price, tax, tariff = 0, carriage = 0 }: 
   const shown = terms
     .filter(([, amount]) => rn(amount, 2))
     .map(([label, amount]) => ` ${sign} ${label} ${formatPrice(rn(amount, 2))}`);
-  const formula = `(${t("Price")} ${formatPrice(rn(goodsPrice, 2))}${shown.join("")}) × ${t("Units")} ${rn(units, 2)} = ${formatPrice(rn(value, 2))}`;
+  const income = isSale ? value : -value;
+  const split = `(${t("Net")} ${formatPrice(rn(goodsPrice, 2))}${shown.join("")}) × ${rn(units, 2)}`;
+  const formula = `${isSale ? "" : "−"}${split} = ${formatPrice(rn(income, 2))}`;
   return { goodsPrice, carriage: unitCarriage, tax: unitTax, tariff: unitTariff, value, formula };
 }
+
+/** The route distance the carriage is paid for, in decimas and the map's distance unit */
+export const carriageDistance = (decimas: number) =>
+  t("Carriage distance: {{decimas}} decima ({{distance}})", {
+    decimas: rn(decimas, 2),
+    distance: getDistance(decimas * getDecima())
+  });
 
 /** A tariff per unit: shown even when nothing is charged on an import, a dash where no tariff applies */
 export const tariffCell = (tariff: number, isImport: boolean) =>
@@ -46,15 +55,11 @@ export function money(amount: number, adds: boolean): string {
 export const tradeColumnTips = () => ({
   units: t("Units traded"),
   net: sentences(t("Net unit price"), t("Market price before carriage and taxes")),
-  carriage: sentences(t("Carriage per unit"), t("Transportation price between the market's center and the burg")),
+  carriage: sentences(t("Carriage per unit"), t("Transportation price between the market and the burg")),
   tax: sentences(t("Sales tax per unit"), t("Paid by the seller to its state")),
   tariff: sentences(t("Import tariff per unit"), t("Paid by the importer burg to the state of its market")),
   income: sentences(t("Burg total income"), t("Positive on a sale, negative on a purchase"))
 });
-
-/** A column's tip with the hint that clicking sorts by it */
-export const sortableTip = (tip: string, column: string) =>
-  sentences(tip, t("Click to sort by {{column}}", { column }));
 
 type TradeCell = {
   good: Good;
@@ -63,7 +68,7 @@ type TradeCell = {
   carriage: number;
   tax: number;
   tariff: number;
-  income: number; // to the burg: positive on a sale, negative on a purchase
+  decimas: number; // carried between the market and the burg
   isImport: boolean;
   taxStateId: number;
   tariffStateId: number;
@@ -72,7 +77,7 @@ type TradeCell = {
 
 /** A trade row's cell tips: the row's own figures with what they mean */
 export function tradeCellTips(cell: TradeCell) {
-  const { good, units, net, carriage, tax, tariff, income, isImport, taxStateId, tariffStateId, formula } = cell;
+  const { good, units, net, carriage, tax, tariff, decimas, isImport, taxStateId, tariffStateId, formula } = cell;
   const price = (amount: number) => formatPrice(rn(amount, 2));
   const state = (stateId: number) => pack.states[stateId]?.name || "";
   const rate = (value: number) => `${t("Rate")}: ${rn(value * 100, 1)}%`;
@@ -87,8 +92,8 @@ export function tradeCellTips(cell: TradeCell) {
     ),
     carriage: sentences(
       `${t("Carriage per unit")}: ${price(carriage)}`,
-      t("Transportation price between the market's center and the burg"),
-      t("{{price}} per decima ({{distance}})", { price: price(good.carriage), distance: getDistance(getDecima()) })
+      t("Transportation price between the market and the burg"),
+      t("{{decimas}} decima × {{price}} per decima", { decimas: rn(decimas, 2), price: price(good.carriage) })
     ),
     tax: sentences(
       `${t("Sales tax per unit")}: ${price(tax)}`,
@@ -102,7 +107,7 @@ export function tradeCellTips(cell: TradeCell) {
           rate(tariffRate)
         )
       : t("No tariff: not an import from another state"),
-    income: sentences(`${t("Burg total income")}: ${price(income)}`, formula)
+    income: `${t("Burg total income")}: ${formula}`
   };
 }
 

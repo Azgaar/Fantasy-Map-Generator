@@ -5,7 +5,15 @@ import "./economy/transports-generator";
 import { type IntegrityRule, MapIntegrity } from "./map-integrity";
 
 // cells 0 and 1 lie on a line; cell 2 borders cell 1 only
-function check(rule: IntegrityRule, { routes = [], journeys = [] }: { routes?: unknown[]; journeys?: unknown[] }) {
+function check(
+  rule: IntegrityRule,
+  {
+    routes = [],
+    journeys = [],
+    burgs = [],
+    links = {}
+  }: { routes?: unknown[]; journeys?: unknown[]; burgs?: unknown[]; links?: object }
+) {
   globalThis.pack = {
     cells: {
       i: [0, 1, 2],
@@ -18,14 +26,14 @@ function check(rule: IntegrityRule, { routes = [], journeys = [] }: { routes?: u
       h: [30, 30, 30],
       f: [1, 1, 1],
       burg: [0, 0, 0],
-      routes: {}
+      routes: links
     },
     features: [0, { i: 1, type: "island", land: true, name: "Isle", group: "isle" }],
     rivers: [],
     routes,
     journeys,
     markers: [],
-    burgs: [],
+    burgs: [0, ...burgs],
     states: [],
     provinces: [],
     cultures: [],
@@ -64,4 +72,23 @@ it("lets a flight skip cells, but not a walk", () => {
   ];
   expect(check("journey-steps", journey("Dirigible", points))).toBeUndefined();
   expect(check("journey-steps", journey("On foot (light)", points))).toMatchObject({ count: 1 });
+});
+
+it("flags a burg off the route network", () => {
+  const routes = [
+    {
+      i: 0,
+      group: "trails",
+      points: [
+        [0, 0, 0],
+        [10, 0, 1]
+      ]
+    }
+  ];
+  const links = { 0: { 1: 0 }, 1: { 0: 0 } };
+  const burgs = [
+    { i: 1, cell: 1, x: 10, y: 0, feature: 1 },
+    { i: 2, cell: 2, x: 10, y: 8, feature: 1 }
+  ];
+  expect(check("burg-routes", { routes, links, burgs })).toMatchObject({ count: 1, examples: ["2"] });
 });

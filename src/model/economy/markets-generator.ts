@@ -397,14 +397,20 @@ export class MarketsModule {
     this.decima = getDecima() || 1;
   }
 
-  /** Per-unit cost of carrying a good between the market's center and the burg; Infinity with no route to another market */
-  getTransport(market: Market, burg: Burg, good: Good): number {
+  /** Decimas a good is carried between the market's center and the burg along routes; Infinity with no route to another market */
+  getDecimas(market: Market, burg: Burg): number {
     if (burg.i === market.centerBurgId) return 0;
     this.routeCosts ??= TradeRoutes.measure();
     this.decima ||= getDecima() || 1;
     const distance = this.routeCosts[market.i]?.[burg.i!] ?? Infinity;
     if (distance === Infinity && market.i !== burg.market) return Infinity;
-    return Math.min(distance / this.decima, MAX_DECIMAS) * good.carriage;
+    return Math.min(distance / this.decima, MAX_DECIMAS);
+  }
+
+  /** Per-unit cost of carrying a good between the market's center and the burg; Infinity with no route to another market */
+  getTransport(market: Market, burg: Burg, good: Good): number {
+    const decimas = this.getDecimas(market, burg);
+    return decimas === Infinity ? Infinity : decimas * good.carriage;
   }
 
   buy({

@@ -16,7 +16,14 @@ import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
-import { money, splitDealPrice, tariffCell, tradeCellTips, tradeColumnTips } from "./trade/deal-price";
+import {
+  carriageDistance,
+  money,
+  splitDealPrice,
+  tariffCell,
+  tradeCellTips,
+  tradeColumnTips
+} from "./trade/deal-price";
 
 type RowType = "LOCAL" | "BUY" | "MFG" | "SELL" | "KEEP";
 type HistoryRow = {
@@ -31,7 +38,8 @@ type HistoryRow = {
   tariff: number;
   income?: number;
   formula?: string; // the price split, adding up to the income
-  details: string; // shown when the row expands
+  details: string; // shown when the row expands, in the debug log only
+  goodTip?: string; // shown on hovering the good
 };
 
 let activeBurgId = 0;
@@ -101,6 +109,7 @@ function renderDialog(): void {
       </style>
       <div id="${dialogId}Stats"></div>
       <div id="${dialogId}Body" class="table"></div>
+      <div id="${dialogId}Totals" class="totalLine"></div>
       <div id="${dialogId}Bottom">
         <button id="${dialogId}Refresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
         <button id="${dialogId}Export" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
@@ -162,7 +171,7 @@ function getSummaryRows(burg: Burg): HistoryRow[] {
     return (used.length ? used : recipes)
       .map(recipe =>
         Object.keys(recipe)
-          .map(id => goodDot(+id))
+          .map(id => Goods.get(+id)?.name ?? "")
           .join(` ${t("and")} `)
       )
       .join(" / ");
@@ -174,7 +183,10 @@ function getSummaryRows(burg: Burg): HistoryRow[] {
     ...production
       .filter(([goodId]) => !isLocal(goodId))
       .toSorted((a, b) => b[1] - a[1])
-      .map(([goodId, units]) => getMfgRow(goodId, units, recipeInputs(goodId))),
+      .map(([goodId, units]) => ({
+        ...getMfgRow(goodId, units),
+        goodTip: t("Manufacturing from {{- inputs}}", { inputs: recipeInputs(goodId) })
+      })),
     ...dealRows(DEAL_KINDS.sale),
     ...dealRows(DEAL_KINDS.kept),
     ...dealRows(DEAL_KINDS.demand)
@@ -191,7 +203,10 @@ function getLogRow(entry: ProductionLogEntry): HistoryRow {
     modifier !== 1
       ? `. ${t("Culture type production modifier. Produced units are multiplied by this value.")}: x${rn(modifier, 2)}`
       : "";
-  return getMfgRow(entry.goodId, entry.units, inputs, `${modifierNote}${renderDecision(entry.candidates)}`);
+  return {
+    ...getMfgRow(entry.goodId, entry.units),
+    details: `${t("Manufacturing from {{- inputs}}", { inputs })}${modifierNote}${renderDecision(entry.candidates)}`
+  };
 }
 
 const getLocalRow = (goodId: number, units: number): HistoryRow => ({
@@ -204,14 +219,14 @@ const getLocalRow = (goodId: number, units: number): HistoryRow => ({
   details: ""
 });
 
-const getMfgRow = (goodId: number, units: number, inputs: string, more = ""): HistoryRow => ({
+const getMfgRow = (goodId: number, units: number): HistoryRow => ({
   type: "MFG",
   goodId,
   units,
   tax: 0,
   tariff: 0,
   carriage: 0,
-  details: `${t("Manufacturing from {{- inputs}}", { inputs })}${more}`
+  details: ""
 });
 
 function getTradeRow(goodId: number, marketId: number, kind: DealKind, trade: Trade): HistoryRow {
@@ -281,12 +296,15 @@ function render(): void {
 
   renderStats(burg);
   const tips = tradeColumnTips();
-  const rows = getHistoryRows().map(renderHistoryLine);
+  const historyRows = getHistoryRows();
+  const expandable = historyRows.some(row => row.details);
+  const rows = historyRows.map(row => renderHistoryLine(row, expandable));
+  renderTotals(historyRows);
   ensureEl(`${dialogId}Body`).innerHTML = rows.length
     ? /* html */ `<table>
         <colgroup>
-          <col style="width: 2%" />
-          <col style="width: 22%" />
+          ${expandable ? '<col style="width: 2%" />' : ""}
+          <col style="width: ${expandable ? 22 : 24}%" />
           <col style="width: 13%" />
           <col style="width: 13%" />
           <col style="width: 10%" />
@@ -297,7 +315,7 @@ function render(): void {
         </colgroup>
         <thead>
           <tr>
-            <th></th>
+            ${expandable ? "<th></th>" : ""}
             <th>${t("Good")}</th>
             <th>${t("Market")}</th>
             <th class="right" data-tip="${tips.net}">${t("Net")}</th>
@@ -321,7 +339,7 @@ const TYPE_LABELS: Record<RowType, () => string> = {
   KEEP: () => t("Keep").toUpperCase()
 };
 
-function renderHistoryLine(row: HistoryRow): string {
+function renderHistoryLine(row: HistoryRow, expandable: boolean): string {
   const good = Goods.get(row.goodId);
   if (!good) return "";
 
@@ -331,9 +349,11 @@ function renderHistoryLine(row: HistoryRow): string {
     t("Purchase for demand"),
     t("Produced locally and kept to cover the burg's demand")
   ];
-  const typeTip =
+  const purpose =
     row.kind !== undefined ? purposes[row.kind] : row.type === "MFG" ? t("Manufacturing step") : t("Local production");
-  const badge = `<span class="typeBadge ${row.type.toLowerCase()}" data-tip="${typeTip}">${TYPE_LABELS[row.type]()}</span>`;
+  const covers = row.kind === DEAL_KINDS.demand || row.kind === DEAL_KINDS.kept ? renderCoverage(good, row.units) : "";
+  const typeTip = covers ? sentences(purpose, t("Covers demand: {{- demand}}", { demand: covers })) : purpose;
+  const badge = `<span class="typeBadge ${row.type.toLowerCase()}">${TYPE_LABELS[row.type]()}</span>`;
 
   // per unit; green adds to the burg's money, the negative color takes from it
   const isSale = row.type === "SELL";
@@ -343,8 +363,8 @@ function renderHistoryLine(row: HistoryRow): string {
   const cell = (content: string, tip?: string) => `<td class="right"${tip ? ` data-tip="${tip}"` : ""}>${content}</td>`;
 
   return /* html */ `<tr${row.details ? " data-expandable" : ""}>
-      <td>${row.details ? '<span class="icon-right-open"></span>' : ""}</td>
-      <td>${goodDot(row.goodId)}${good.name}${badge}</td>
+      ${expandable ? `<td>${row.details ? '<span class="icon-right-open"></span>' : ""}</td>` : ""}
+      <td data-tip="${row.goodTip ?? typeTip}">${goodDot(row.goodId)}${good.name}${badge}</td>
       <td>${renderMarket(row)}</td>
       ${cell(isTrade ? money(row.price!, isSale) : "", tips?.net)}
       ${cell(isTrade ? money(row.carriage, false) || formatPrice(0) : "", tips?.carriage)}
@@ -355,16 +375,86 @@ function renderHistoryLine(row: HistoryRow): string {
     </tr>${row.details ? `<tr class="historyDetails" hidden><td></td><td colspan="8">${row.details}</td></tr>` : ""}`;
 }
 
+/** The demand categories the good's units cover, e.g. "🍖 food 2.14, 💎 luxury 0.5" */
+function renderCoverage(good: Good, units: number): string {
+  return DEMAND_PRIORITY.flatMap(category => {
+    const share = good.demandCoverage?.[category] || 0;
+    if (!share) return [];
+    return `${DEMAND_CATEGORY_ICONS[category]} ${DEMAND_CATEGORY_LABELS[category]} ${rn(units * share, 2)}`;
+  }).join(", ");
+}
+
+/** Sums of the run's trades in money: what the burg paid and got, and the carriage and taxes inside */
+function renderTotals(rows: HistoryRow[]): void {
+  const sum = (pick: (row: HistoryRow) => number) => rows.reduce((total, row) => total + pick(row), 0);
+  const purchases = -sum(row => (row.type === "BUY" ? (row.income ?? 0) : 0));
+  const sales = sum(row => (row.type === "SELL" ? (row.income ?? 0) : 0));
+  const income = sales - purchases;
+  const total = (label: string, tip: string, amount: string) =>
+    `<div style="margin-left: 12px" data-tip="${tip}">${label}: ${amount}</div>`;
+
+  ensureEl(`${dialogId}Totals`).innerHTML = [
+    total(
+      t("Purchases"),
+      t("Paid for goods bought, carriage and taxes included"),
+      money(purchases, false) || formatPrice(0)
+    ),
+    total(t("Sales"), t("Got for goods sold, carriage and sales tax taken off"), money(sales, true) || formatPrice(0)),
+    total(
+      t("Carriage"),
+      t("Carriage paid in all"),
+      formatPrice(
+        rn(
+          sum(row => row.carriage * row.units),
+          2
+        )
+      )
+    ),
+    total(
+      t("Tax"),
+      t("Sales tax paid in all"),
+      formatPrice(
+        rn(
+          sum(row => row.tax * row.units),
+          2
+        )
+      )
+    ),
+    total(
+      t("Tariff"),
+      t("Import tariffs paid in all"),
+      formatPrice(
+        rn(
+          sum(row => row.tariff * row.units),
+          2
+        )
+      )
+    ),
+    total(
+      t("Income"),
+      tradeColumnTips().income,
+      `<span class="${income >= 0 ? "positive" : "negative"}">${formatPrice(rn(income, 2))}</span>`
+    )
+  ].join("");
+}
+
 function renderMarket(row: HistoryRow): string {
   const { marketId } = row;
   const market = Markets.get(marketId);
   if (!market) return "";
   const name = Markets.getName(market);
+  const distance = carriageDistance(getDecimas(row));
   const zoomTip = isImport(row)
-    ? sentences(t("Import from {{market}}", { market: name }), t("Click to zoom"))
-    : t("Click to zoom");
+    ? sentences(t("Import from {{market}}", { market: name }), distance, t("Click to zoom"))
+    : sentences(distance, t("Click to zoom"));
   return `<span class="pointer" data-zoom-market="${marketId}" data-tip="${zoomTip}">${name}</span>`;
 }
+
+const getDecimas = ({ marketId }: HistoryRow) => {
+  const market = Markets.get(marketId);
+  const burg = pack.burgs[activeBurgId];
+  return market && burg ? Markets.getDecimas(market, burg) : 0;
+};
 
 const isImport = ({ goodId, marketId = 0, kind = DEAL_KINDS.sale }: HistoryRow) =>
   Markets.isImport([activeBurgId, marketId, goodId, kind, 0, 0, 0, 0, 0]);
@@ -379,7 +469,7 @@ function getCellTips(row: HistoryRow, good: Good) {
     carriage: row.carriage,
     tax: row.tax,
     tariff: row.tariff,
-    income: row.income ?? 0,
+    decimas: getDecimas(row),
     isImport: isImport(row),
     taxStateId: taxState,
     tariffStateId: tariffState,
@@ -413,11 +503,10 @@ function renderStats(burg: Burg): void {
   ensureEl(`${dialogId}Stats`).innerHTML = /* html */ `
     <div>
       <span><b>${t("Population")}:</b> ${population}</span>
-      <span><b>${t("Order")}:</b> ${t("{{rank}} of {{total}}", { rank: burgs.indexOf(burg) + 1, total: burgs.length })}</span>
+      ${burg.productionLog ? `<span><b>${t("Order")}:</b> ${t("{{rank}} of {{total}}", { rank: burgs.indexOf(burg) + 1, total: burgs.length })}</span>` : ""}
       <span><b>${t("Market")}:</b> ${market ? Markets.getName(market) : ""}</span>
     </div>
-    <div><b>${t("Initial Demand")}:</b> ${renderDemand(targets)}</div>
-    <div><b>${t("Uncovered Demand")}:</b> ${renderDemand(uncovered, true) || t("None")}</div>
+    <div data-tip="${t("Uncovered of initial demand, by category: what the burg still lacks after its demand purchases and kept goods, of what its people need")}"><b>${t("Demand")}:</b> ${renderDemand(uncovered, targets)}</div>
     <div><b>${t("Production")}:</b> ${renderProduction(burg) || t("None")}</div>
     <div>
       <span data-tip="${t("Gross Product: local sale revenue minus purchased ingredient costs during the production.")}"><b>${t("Product")}:</b> <span class="positive">${formatPrice(product)}</span></span>
@@ -427,11 +516,12 @@ function renderStats(burg: Burg): void {
     </div>`;
 }
 
-function renderDemand(values: number[], onlyShortage = false): string {
-  return DEMAND_PRIORITY.flatMap((category, index) => {
-    const value = rn(values[index] || 0, 2);
-    if (onlyShortage && value <= 0) return [];
-    return `<span data-tip="${DEMAND_CATEGORY_LABELS[category]}">${DEMAND_CATEGORY_ICONS[category]} ${value}</span>`;
+function renderDemand(uncovered: number[], targets: number[]): string {
+  return DEMAND_PRIORITY.map((category, index) => {
+    const lacks = rn(uncovered[index] || 0, 2);
+    const target = rn(targets[index] || 0, 2);
+    const tip = `${DEMAND_CATEGORY_LABELS[category]}: ${t("{{uncovered}} uncovered of {{target}}", { uncovered: lacks, target })}`;
+    return `<span data-tip="${tip}">${DEMAND_CATEGORY_ICONS[category]} <span class="${lacks > 0 ? "negative" : ""}">${lacks}</span>/${target}</span>`;
   }).join(" • ");
 }
 

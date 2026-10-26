@@ -1,13 +1,12 @@
+import type { Good } from "@/model/economy/goods-generator";
 import { Goods } from "@/model/economy/goods-generator";
 import type { Deal } from "@/model/economy/markets-generator";
 import { DEAL_KINDS, Markets } from "@/model/economy/markets-generator";
 import { Icons } from "@/model/icons";
-import type { Burg } from "@/model/political/burgs-generator";
 import { formatPrice } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
 import { Csv } from "@/services/io/csv";
 import { Dialog } from "@/ui/dialog/dialog";
-
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import {
   type EditorColumn,
@@ -22,58 +21,99 @@ import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
+import { money, splitDealPrice, tariffCell, tradeCellTips, tradeColumnTips } from "./deal-price";
 
 let activeMarketId = 0;
 
 const dialogId = "marketDeals" as const;
 const position = { my: "right top", at: "right bottom+10", of: "#marketOverview" };
-const columns: EditorColumn<Deal>[] = [
+
+/** A deal from the market's side: it buys what a burg sells and sells what a burg buys */
+type MarketDealRow = {
+  deal: Deal;
+  good: Good;
+  side: "buy" | "sell";
+  burg: string;
+  units: number;
+  net: number; // per unit, as carriage, tax and tariff: the goods' own price
+  carriage: number;
+  tax: number;
+  tariff: number;
+  income: number; // to the market: positive when it sells, negative when it buys
+  formula: string;
+};
+
+const tips = tradeColumnTips();
+const marketIncomeTip = sentences(t("Market income"), t("Positive when the market sells, negative when it buys"));
+const columns: EditorColumn<MarketDealRow>[] = [
   { key: "icon", width: "2em", permanent: true },
+  { key: "good", label: t("Good"), width: "6.8em", permanent: true, sortBy: row => row.good.name, sortType: "alpha" },
   {
-    key: "good",
-    label: t("Good"),
-    width: "6.8em",
-    permanent: true,
-    sortBy: ([, , goodId]) => Goods.get(goodId)?.name ?? "",
-    sortType: "alpha"
-  },
-  {
-    key: "direction",
+    key: "side",
     label: t("Type"),
-    width: "5em",
-    sortBy: deal => getDirection(deal),
-    sortType: "alpha"
+    tip: sentences(
+      t("Whether the market buys the goods from the burg or sells them to it"),
+      t("Click to sort by {{column}}", { column: t("Type") })
+    ),
+    width: "4em",
+    sortType: "alpha",
+    sortBy: row => row.side
   },
   {
-    key: "counterparty",
-    label: t("Counterparty"),
-    width: "8em",
-    sortBy: deal => getParty(deal)?.name ?? "",
-    sortType: "alpha"
+    key: "burg",
+    label: t("Burg"),
+    tip: sentences(t("The burg the market trades with"), t("Click to sort by {{column}}", { column: t("Burg") })),
+    width: "7em",
+    sortType: "alpha",
+    sortBy: row => row.burg
   },
   {
     key: "units",
     label: t("Units"),
+    tip: sentences(tips.units, t("Click to sort by {{column}}", { column: t("Units") })),
     width: "5em",
-    sortBy: ([, , , , units]) => units
+    sortBy: row => row.units
+  },
+  {
+    key: "net",
+    label: t("Net"),
+    tip: sentences(tips.net, t("Click to sort by {{column}}", { column: t("Net") })),
+    width: "5em",
+    sortBy: row => row.net
   },
   {
     key: "carriage",
     label: t("Carriage"),
+    tip: sentences(tips.carriage, t("Click to sort by {{column}}", { column: t("Carriage") })),
     width: "5em",
-    sortBy: ([, , , , , , , , carriage]) => carriage
+    sortBy: row => row.carriage
+  },
+  {
+    key: "tax",
+    label: t("Tax"),
+    tip: sentences(tips.tax, t("Click to sort by {{column}}", { column: t("Tax") })),
+    width: "5em",
+    sortBy: row => row.tax
+  },
+  {
+    key: "tariff",
+    label: t("Tariff"),
+    tip: sentences(tips.tariff, t("Click to sort by {{column}}", { column: t("Tariff") })),
+    width: "5em",
+    sortBy: row => row.tariff
   },
   {
     key: "income",
     label: t("Income"),
-    width: "5em",
+    tip: sentences(marketIncomeTip, t("Click to sort by {{column}}", { column: t("Income") })),
+    width: "6em",
     permanent: true,
-    sortBy: deal => getDealNet(deal)
+    sortBy: row => row.income
   }
 ];
 
-const marketDealsTable = initEditorTable<Deal>({
-  getData: getSortedMarketDeals,
+const marketDealsTable = initEditorTable<MarketDealRow>({
+  getData: getMarketDealRows,
   onUpdate: renderMarketDealsPage
 });
 
@@ -86,7 +126,6 @@ function open(marketId: number): void {
   }
 
   activeMarketId = marketId;
-
   renderDialog();
   marketDealsTable.reset();
 
@@ -100,15 +139,14 @@ function open(marketId: number): void {
 function renderDialog(): void {
   Dialog.destroy(dialogId);
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
+      <style>
+        #${dialogId} .positive { color: #2a6 }
+        #${dialogId} .negative { color: #a34a14 }
+      </style>
       <div>
         ${renderEditorHeader({ dialogId, columns })}
         <div id="marketDealsBody" class="table" style="max-height:30em"></div>
-
-        <div id="marketDealsFooter" class="totalLine">
-          <div style="margin-left: 5px" data-tip="${t("Deals count")}">${t("Deals")}: <span id="marketDealsFooterDeals">0</span></div>
-          <div data-col="income" style="margin-left: 12px" data-tip="${t("Net flow for this market")}">${t("Net Flow")}: <span id="marketDealsFooterNet">🟡 0</span></div>
-        </div>
-
+        <div id="marketDealsFooter" class="totalLine"></div>
         <div id="marketDealsBottom">
           <button id="marketDealsRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
           <button id="marketDealsExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
@@ -125,14 +163,12 @@ function renderDialog(): void {
 
   ensureEl("marketDealsRefresh").addEventListener("click", marketDealsTable.refresh);
   ensureEl("marketDealsExport").addEventListener("click", downloadDealsCsv);
-  ensureEl("marketDealsBody").addEventListener("click", ev => {
-    const el = ev.target as HTMLElement;
-    const dealId = el.closest<HTMLElement>(".marketDealParty")?.closest<HTMLElement>(".marketDeal")?.dataset.id;
-    const deal = pack.deals[Number(dealId)];
-    if (!deal) return;
-
-    const party = getParty(deal);
-    if (party) zoomTo(party.x, party.y, 8, 2000);
+  ensureEl("marketDealsBody").addEventListener("click", event => {
+    const line = (event.target as HTMLElement)
+      .closest<HTMLElement>(".marketDealBurg")
+      ?.closest<HTMLElement>(".marketDeal");
+    const burg = pack.burgs[pack.deals[Number(line?.dataset.id)]?.[0] ?? 0];
+    if (burg?.i) zoomTo(burg.x, burg.y, 8, 2000);
   });
 }
 
@@ -140,99 +176,177 @@ function closeMarketDeals(): void {
   Dialog.destroy(dialogId);
 }
 
-function getSortedMarketDeals(): Deal[] {
-  const market = Markets.get(activeMarketId);
-  if (!market) {
+function getMarketDealRows(): MarketDealRow[] {
+  if (!Markets.get(activeMarketId)) {
     tip(sentences(t("Invalid market"), t("The selected market does not exist")), true, "error", 5000);
     return [];
   }
-
-  return sortDataByColumns(dialogId, getMarketDeals(pack.deals, activeMarketId), columns);
+  const rows = getMarketDeals(pack.deals, activeMarketId).flatMap(deal => getMarketDealRow(deal) ?? []);
+  return sortDataByColumns(dialogId, rows, columns);
 }
 
-function renderMarketDealsPage(view: TableView<Deal>): void {
-  const lines = view.rows.map(renderDealLine).join("");
-  const netFlow = view.all.reduce((total, deal) => total + getDealNet(deal), 0);
-
-  ensureEl("marketDealsBody").innerHTML = lines || t("No market deals recorded");
-  ensureEl("marketDealsFooterDeals").innerHTML = String(view.all.length);
-  ensureEl("marketDealsFooterNet").innerHTML = formatPrice(netFlow);
-  renderEditorPagination(ensureEl("marketDealsFooter"), view, marketDealsTable.goto);
-  Dialog.update(dialogId, { width: "fit-content", position });
-}
-
-/** Deals the market traded: goods a burg kept back never left it */
+/** The market's trades with burgs; goods a burg kept never changed hands */
 export function getMarketDeals(deals: readonly Deal[], marketId: number): Deal[] {
   return deals.filter(([, dealMarket, , kind]) => dealMarket === marketId && kind !== DEAL_KINDS.kept);
 }
 
-/** From the market's side: a burg's sale comes in, its purchase goes out */
-export function getDirection([, , , kind]: Deal): "in" | "out" {
-  return kind === DEAL_KINDS.sale ? "in" : "out";
-}
-
-function renderDealLine(deal: Deal): string {
-  const [, , goodId, , units, , , , carriage] = deal;
-  const good = Goods.get(goodId);
-  if (!good) return "";
-
-  const dealNet = getDealNet(deal);
-  const party = getParty(deal);
-  const direction = getDirection(deal);
-  const incomeColor = dealNet >= 0 ? "#2a6" : "#c44";
-  const backColor = dealNet >= 0 ? "#dff0d8" : "#f2dede";
-
-  return /* html */ `<div class="states marketDeal" data-id="${pack.deals.indexOf(deal)}" data-good="${good.name}" data-direction="${direction}" data-units="${rn(units, 2)}" data-counterparty="${party?.name}" data-income="${dealNet}">
-      <svg data-col="icon" data-tip="${t("Good icon")}" width="1.3em" height="1.3em" class="goodIcon">
-        ${goodBadge(good)}
-      </svg>
-      <div data-col="good" data-tip="${t("Name")}" class="goodName">${good.name}</div>
-      <div data-col="direction"><span class="marketBadge" style="background:${backColor}; color:${incomeColor}">${direction.toUpperCase()}</span></div>
-      <div data-col="counterparty" class="marketDealParty pointer" data-tip="${t("Click to zoom")}">
-        <div class="icon-dot-circled" style="display:inline-block; width: 0.8em"></div>
-        <div style="display:inline-block; width: 6.8em;">${party?.name}</div>
-      </div>
-      <div data-col="units" class="marketDealUnits">${rn(units, 2)}</div>
-      <div data-col="carriage">${formatPrice(carriage)}</div>
-      <div data-col="income" class="marketDealIncome" style="color:${incomeColor}">${formatPrice(dealNet)}</div>
-    </div>`;
-}
-
-function getParty([burgId]: Deal): Burg | null {
-  return pack.burgs[burgId] || null;
+/** The market buys what a burg sells and sells what a burg buys */
+export function getMarketSide([, , , kind]: Deal): "buy" | "sell" {
+  return kind === DEAL_KINDS.sale ? "buy" : "sell";
 }
 
 /** The market's income from the deal: what the burg paid, or minus what the market paid the burg */
 export function getDealNet(deal: Deal): number {
   const [, , , , units, price] = deal;
   const value = rn(units * price, 2);
-  return getDirection(deal) === "out" ? value : -value;
+  return getMarketSide(deal) === "sell" ? value : -value;
+}
+
+function getMarketDealRow(deal: Deal): MarketDealRow | null {
+  const [burgId, , goodId, , units, price, tax, tariff, carriage] = deal;
+  const good = Goods.get(goodId);
+  if (!good) return null;
+
+  const side = getMarketSide(deal);
+  const split = splitDealPrice({ units, price, tax, tariff, carriage }, side === "buy");
+  const income = getDealNet(deal);
+  return {
+    deal,
+    good,
+    side,
+    burg: pack.burgs[burgId]?.name ?? "",
+    units,
+    net: split.goodsPrice,
+    carriage: split.carriage,
+    tax: split.tax,
+    tariff: split.tariff,
+    income,
+    formula: `${side === "buy" ? "−" : ""}${formatPrice(price)} × ${rn(units, 2)} = ${formatPrice(income)}`
+  };
+}
+
+function renderMarketDealsPage(view: TableView<MarketDealRow>): void {
+  ensureEl("marketDealsBody").innerHTML = view.rows.map(renderDealLine).join("") || t("No market deals recorded");
+  renderTotals(view.all);
+  renderEditorPagination(ensureEl("marketDealsFooter"), view, marketDealsTable.goto);
+  Dialog.update(dialogId, { width: "fit-content", position });
+}
+
+function renderDealLine(row: MarketDealRow): string {
+  const { deal, good, side, burg, units, net, carriage, tax, tariff, income, formula } = row;
+  const market = Markets.get(activeMarketId);
+  const burgData = pack.burgs[deal[0]];
+  const isImport = Markets.isImport(deal);
+  const { taxState, tariffState } = Markets.getTaxStates(deal);
+  const cellTips = tradeCellTips({
+    good,
+    units,
+    net,
+    carriage,
+    tax,
+    tariff,
+    decimas: market && burgData ? Markets.getDecimas(market, burgData) : 0,
+    isImport,
+    taxStateId: taxState,
+    tariffStateId: tariffState,
+    formula
+  });
+  const isSale = side === "sell";
+  const sideTip = isSale ? t("The market sells the goods to the burg") : t("The market buys the goods from the burg");
+
+  return /* html */ `<div class="states marketDeal" data-id="${pack.deals.indexOf(deal)}" data-good="${good.name}" data-side="${side}" data-burg="${burg}" data-units="${rn(units, 2)}" data-income="${rn(income, 2)}">
+      <svg data-col="icon" data-tip="${t("Good icon")}" width="1.3em" height="1.3em" class="goodIcon">
+        ${goodBadge(good)}
+      </svg>
+      <div data-col="good" data-tip="${t("Name")}" class="goodName">${good.name}</div>
+      <div data-col="side" data-tip="${sideTip}"><span class="marketBadge ${isSale ? "positive" : "negative"}">${(isSale ? t("Sell") : t("Buy")).toUpperCase()}</span></div>
+      <div data-col="burg" class="marketDealBurg pointer" data-tip="${t("Click to zoom")}">${burg}</div>
+      <div data-col="units" data-tip="${cellTips.units}">${rn(units, 2)}</div>
+      <div data-col="net" data-tip="${cellTips.net}">${money(net, isSale)}</div>
+      <div data-col="carriage" data-tip="${cellTips.carriage}">${money(carriage, false)}</div>
+      <div data-col="tax" data-tip="${cellTips.tax}">${money(tax, false)}</div>
+      <div data-col="tariff" data-tip="${cellTips.tariff}">${tariffCell(tariff, isImport)}</div>
+      <div data-col="income" class="${income >= 0 ? "positive" : "negative"}" data-tip="${t("Market income")}: ${formula}">${formatPrice(rn(income, 2))}</div>
+    </div>`;
+}
+
+/** Sums of the market's deals in money: what it paid and got, and the carriage and taxes inside */
+function renderTotals(rows: MarketDealRow[]): void {
+  const sum = (pick: (row: MarketDealRow) => number) => rows.reduce((total, row) => total + pick(row), 0);
+  const bought = -sum(row => (row.side === "buy" ? row.income : 0));
+  const sold = sum(row => (row.side === "sell" ? row.income : 0));
+  const income = sold - bought;
+  const total = (label: string, tip: string, amount: string) =>
+    `<div style="margin-left: 12px" data-tip="${tip}">${label}: ${amount}</div>`;
+
+  ensureEl("marketDealsFooter").innerHTML = [
+    total(t("Deals"), t("Deals count"), String(rows.length)),
+    total(t("Bought"), t("Paid to burgs for the goods the market bought"), money(bought, false) || formatPrice(0)),
+    total(t("Sold"), t("Got from burgs for the goods the market sold"), money(sold, true) || formatPrice(0)),
+    total(
+      t("Carriage"),
+      t("Carriage paid in all"),
+      formatPrice(
+        rn(
+          sum(row => row.carriage * row.units),
+          2
+        )
+      )
+    ),
+    total(
+      t("Tax"),
+      t("Sales tax paid in all"),
+      formatPrice(
+        rn(
+          sum(row => row.tax * row.units),
+          2
+        )
+      )
+    ),
+    total(
+      t("Tariff"),
+      t("Import tariffs paid in all"),
+      formatPrice(
+        rn(
+          sum(row => row.tariff * row.units),
+          2
+        )
+      )
+    ),
+    total(
+      t("Income"),
+      marketIncomeTip,
+      `<span class="${income >= 0 ? "positive" : "negative"}">${formatPrice(rn(income, 2))}</span>`
+    )
+  ].join("");
 }
 
 function downloadDealsCsv(): void {
-  const market = Markets.get(activeMarketId);
-  if (!market) return;
-
+  if (!Markets.get(activeMarketId)) return;
+  const perUnit = (amount: number) => (rn(amount, 2) ? rn(amount, 2) : "");
   const rows = getMarketDeals(pack.deals, activeMarketId).flatMap(deal => {
-    const [, , goodId, , units, price, , , carriage] = deal;
-    const good = Goods.get(goodId);
-    if (!good) return [];
+    const row = getMarketDealRow(deal);
+    if (!row) return [];
+    const { good, side, burg, units, net, carriage, tax, tariff, income } = row;
+    const id = pack.deals.indexOf(deal);
     return [
       [
-        pack.deals.indexOf(deal),
+        id,
         good.name,
-        getDirection(deal),
-        getParty(deal)?.name ?? "",
+        side,
+        burg,
         rn(units, 2),
-        rn(price, 2),
-        carriage,
-        rn(getDealNet(deal), 2)
+        rn(net, 2),
+        perUnit(carriage),
+        perUnit(tax),
+        perUnit(tariff),
+        rn(income, 2)
       ]
     ];
   });
   Csv.download(
     `Market_${activeMarketId}_Deals`,
-    ["Id", "Good", "Type", "Client", "Units", "Price", "Carriage", "Net"],
+    ["Id", "Good", "Type", "Burg", "Units", "Net Unit Price", "Carriage", "Tax", "Tariff", "Income"],
     rows
   );
 }

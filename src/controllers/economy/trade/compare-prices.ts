@@ -43,10 +43,10 @@ const columns: EditorColumn<Market>[] = [
     key: "price",
     label: t("Price"),
     width: "6em",
-    permanent: true,
     tip: sentences(t("Good price"), t("Click to sort")),
     sortBy: market => market.goods[activeGoodId]?.price ?? 0
-  }
+  },
+  { key: "actions", width: "1.4em", permanent: true, hidden: true }
 ];
 
 let activeGoodId = -1;

@@ -151,8 +151,8 @@ describe("getPath", () => {
     expect(result!.segments[0].type).toBe("land");
   });
 
-  it("does not cross a land↔sea boundary at a non-port cell", () => {
-    // route 0 = searoute (0→1→2), route 1 = roads (2→3); cell 2 has no port burg, so goods cannot be landed there
+  it("crosses a land↔sea boundary at a non-port cell when there is no other way", () => {
+    // route 0 = searoute (0→1→2), route 1 = roads (2→3); cell 2 has no port burg, but no road goes around it
     globalThis.pack = {
       cells: {
         h: [20, 20, 20, 20],
@@ -171,7 +171,9 @@ describe("getPath", () => {
         { i: 1, group: "roads" }
       ]
     } as any;
-    expect(ta.getPath(purchase)).toBeNull();
+    const result = ta.getPath(purchase);
+    expect(result).not.toBeNull();
+    expect(result!.segments.map(segment => segment.type)).toEqual(["water", "land"]);
   });
 
   it("routes through a land↔sea boundary when the crossing cell has a port burg", () => {

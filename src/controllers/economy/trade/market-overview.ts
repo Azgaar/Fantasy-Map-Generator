@@ -53,9 +53,9 @@ const columns: EditorColumn<MarketGoodRow>[] = [
     key: "price",
     label: t("Price"),
     width: "5em",
-    permanent: true,
     sortBy: item => item.price
-  }
+  },
+  { key: "actions", width: "1.4em", permanent: true, hidden: true }
 ];
 
 const marketOverviewTable = initEditorTable<MarketGoodRow>({
@@ -91,10 +91,7 @@ function open(marketId: number): void {
 function renderDialog(): void {
   Dialog.destroy(dialogId);
   const html = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
-      ${renderEditorHeader({ dialogId, columns })}
-      <div id="marketOverviewGoodsBody" class="table" style="max-height:40em"></div>
-      <div id="marketOverviewSummary" class="totalLine"></div>
-      <div id="marketOverviewNameLine" style="display: flex; align-items: center; margin-bottom: 0.4em">
+        <div id="marketOverviewNameLine" style="display: flex; align-items: center; margin-bottom: 0.4em">
         <div class="label">${t("Name")}:</div>
         <input
           id="marketOverviewName"
@@ -111,6 +108,9 @@ function renderDialog(): void {
         ></span>
       </div>
       <div id="marketOverviewInfo" style="margin-bottom: 0.3em"></div>
+      ${renderEditorHeader({ dialogId, columns })}
+      <div id="marketOverviewGoodsBody" class="table" style="max-height:40em"></div>
+      <div id="marketOverviewSummary" class="totalLine"></div>
       <div id="marketOverviewBottom">
         <button id="marketOverviewRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
         <button id="marketOverviewOpenDeals" data-tip="${t("View market deals")}" class="icon-list-bullet"></button>

@@ -18,17 +18,19 @@ import {
   type TableView
 } from "@/ui/dialog/table";
 import { zoomTo } from "@/ui/map/zoom";
-import { t } from "@/utils/i18n";
+import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
-import { money, sortableTip, splitDealPrice, tariffCell, tradeCellTips, tradeColumnTips } from "./deal-price";
+import { carriageDistance, money, splitDealPrice, tariffCell, tradeCellTips, tradeColumnTips } from "./deal-price";
 
 /** A burg's trades with one market in one direction: it sells to its market, or buys from a market */
 type Flow = { deals: Deal[]; burgId: number; marketId: number; isSale: boolean };
 let activeFlow: Flow | null = null;
 let activePoints: Point[] = [];
+
 const dialogId = "tradeDetails" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg" };
+
 type TradeDetailRow = {
   goodId: number;
   good: string;
@@ -41,17 +43,52 @@ type TradeDetailRow = {
   formula: string;
 };
 const tips = tradeColumnTips();
-const column = (key: keyof typeof tips, label: string, column: Omit<EditorColumn<TradeDetailRow>, "key" | "label">) =>
-  ({ key, label, tip: sortableTip(tips[key], label), width: "5em", ...column }) as EditorColumn<TradeDetailRow>;
 const columns: EditorColumn<TradeDetailRow>[] = [
   { key: "icon", width: "2.5em", permanent: true },
   { key: "good", label: t("Good"), width: "9em", permanent: true, sortBy: item => item.good, sortType: "alpha" },
-  column("units", t("Units"), { sortBy: item => item.units }),
-  column("net", t("Net"), { sortBy: item => item.price }),
-  column("carriage", t("Carriage"), { sortBy: item => item.carriage }),
-  column("tax", t("Tax"), { sortBy: item => item.tax }),
-  column("tariff", t("Tariff"), { sortBy: item => item.tariff }),
-  column("income", t("Income"), { sortBy: item => Math.abs(item.income), defaultSort: "desc" }),
+  {
+    key: "units",
+    label: t("Units"),
+    tip: sentences(tips.units, t("Click to sort by {{column}}", { column: t("Units") })),
+    width: "5em",
+    sortBy: item => item.units
+  },
+  {
+    key: "net",
+    label: t("Net"),
+    tip: sentences(tips.net, t("Click to sort by {{column}}", { column: t("Net") })),
+    width: "5em",
+    sortBy: item => item.price
+  },
+  {
+    key: "carriage",
+    label: t("Carriage"),
+    tip: sentences(tips.carriage, t("Click to sort by {{column}}", { column: t("Carriage") })),
+    width: "5em",
+    sortBy: item => item.carriage
+  },
+  {
+    key: "tax",
+    label: t("Tax"),
+    tip: sentences(tips.tax, t("Click to sort by {{column}}", { column: t("Tax") })),
+    width: "5em",
+    sortBy: item => item.tax
+  },
+  {
+    key: "tariff",
+    label: t("Tariff"),
+    tip: sentences(tips.tariff, t("Click to sort by {{column}}", { column: t("Tariff") })),
+    width: "5em",
+    sortBy: item => item.tariff
+  },
+  {
+    key: "income",
+    label: t("Income"),
+    tip: sentences(tips.income, t("Click to sort by {{column}}", { column: t("Income") })),
+    width: "5em",
+    sortBy: item => Math.abs(item.income),
+    defaultSort: "desc"
+  },
   { key: "actions", width: "1.4em", permanent: true, hidden: true }
 ];
 
@@ -174,11 +211,12 @@ function renderTradeDetailsPage(view: TableView<TradeDetailRow>): void {
   const burg = pack.burgs[burgId];
   const market = Markets.get(marketId);
   const isImport = Markets.isImport(deals[0]);
+  const decimas = market && burg ? Markets.getDecimas(market, burg) : 0;
   const zoom = (target: string) =>
     `<span class="icon-dot-circled pointer" data-zoom="${target}" data-tip="${t("Click to zoom")}"></span>`;
   ensureEl("tradeDetailsSummary").innerHTML = /* html */ `
     <span><b>${t("Burg")}</b>: ${burg?.name} ${zoom("burg")}</span>
-    <span style="margin-left:5px"><b>${isSale ? t("Sells to market") : isImport ? t("Imports from market") : t("Buys from market")}</b>: ${market ? Markets.getName(market) : ""} ${zoom("market")}</span>`;
+    <span style="margin-left:5px" data-tip="${carriageDistance(decimas)}"><b>${isSale ? t("Sells to market") : isImport ? t("Imports from market") : t("Buys from market")}</b>: ${market ? Markets.getName(market) : ""} ${zoom("market")}</span>`;
 
   const { taxState: taxStateId, tariffState: tariffStateId } = Markets.getTaxStates(deals[0]);
   const html = view.rows.map(({ goodId, units, price, carriage, tax, tariff, income, formula }) => {
@@ -190,7 +228,7 @@ function renderTradeDetailsPage(view: TableView<TradeDetailRow>): void {
       carriage,
       tax,
       tariff,
-      income,
+      decimas,
       isImport,
       taxStateId,
       tariffStateId,
