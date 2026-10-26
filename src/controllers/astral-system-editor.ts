@@ -9,7 +9,6 @@ import {
   destroyDialog,
   noteButton
 } from "@/components/dialog/dialog-helpers";
-import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
@@ -18,7 +17,6 @@ import { peopleOf, starClass } from "@/generators/astral-naming";
 import type { Market } from "@/generators/markets-generator";
 import { type StarClassId, starShape, writeAttrs } from "@/renderers/astral/system-markers";
 import { removeEmblem } from "@/renderers/draw-emblems";
-import { goodIconLines } from "@/renderers/draw-goods";
 import type { StylesData } from "@/types/styles";
 import { ensureEl, escapeHtml, getPointer, rand, rn, speak } from "@/utils";
 import { errorText } from "@/utils/stringUtils";
@@ -95,15 +93,11 @@ function renderDialog(): void {
               <span id="systemTemple" data-tip="Shrine. Click to toggle" data-feature="temple" class="burgFeature icon-chess-bishop" style="font-size: 1.1em; margin-left: 3px"></span>
               <span id="systemShanty" data-tip="Drift. Click to toggle" data-feature="shanty" class="burgFeature icon-campground"></span>
             </div>
-            <div data-tip="System average daily production">
-              <div class="label">Production:</div>
-              <span id="systemProduction" style="display: inline-flex; flex-wrap: wrap; column-gap: 0.3em; max-width: 110px;"></span>
-            </div>
             <div data-tip="Gross product per population point, daily average">
               <div class="label">Wealth</div>
               <span id="systemWealth"></span>
             </div>
-            <div data-tip="Set treasury balance. Production won't be changed automatically">
+            <div data-tip="Set treasury balance">
               <div class="label"><label for="systemTreasury">Treasury:</label></div>
               <input id="systemTreasury" type="number" step="0.01" style="width: 9em" /> 🟡
             </div>
@@ -180,7 +174,6 @@ function updateSystemValues(): void {
   ensureEl<HTMLInputElement>("systemPopulation").value = String(peopleOf(burg));
   ensureEl<HTMLInputElement>("systemTreasury").value = String(rn(burg.treasury || 0, 2));
   ensureEl("systemWealth").innerHTML = `🟡 ${rn(burg.population! > 0 ? (burg.product || 0) / burg.population! : 0, 2)}`;
-  ensureEl("systemProduction").innerHTML = getProduction(Production.getBurgProduction(burg));
 
   for (const feature of FEATURES) {
     ensureEl(featureId(feature)).classList.toggle("inactive", !burg[feature]);
@@ -429,23 +422,6 @@ function closeSystemEditor(): void {
   selectedId = null;
   $("#astralSystemEditor").dialog("destroy");
   ensureEl("astralSystemEditor").remove();
-}
-
-function getProduction(pool: Record<number, number>): string {
-  if (!pool) return "";
-  let html = "";
-  const sorted = Object.entries(pool).sort(([, a], [, b]) => b - a);
-  for (const [resourceId, production] of sorted) {
-    const resource = Goods.get(+resourceId);
-    if (!resource) continue;
-    const { name, unit, icon } = resource;
-    const unitName = production === 1 ? unit : `${unit}s`;
-    html += `<span data-tip="${name}: ${production} ${unitName} per day">
-      <svg class="resIcon" width="1em" height="1em"><use href="${Icons.href(icon)}"${goodIconLines()}></use></svg>
-      <span style="margin: 0 0.2em 0 -0.2em">${production}</span>
-    </span>`;
-  }
-  return html;
 }
 
 export const AstralSystemEditor = { open };

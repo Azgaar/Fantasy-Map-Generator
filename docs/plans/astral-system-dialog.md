@@ -80,9 +80,10 @@ A single-column form (no emblem column — the star preview takes that place):
   - The plaza-off confirm for a market center carries over unchanged.
   - **Capital** — same guarded toggle as the Burg Editor: only assignable by making this system the
     capital of its empire, never removable directly.
-- **Economy** — Production readout, Wealth, Treasury input; same sources and writes as the Burg
-  Editor (`Production.getBurgProduction`, `Burgs.setTreasury`). The goods economy is
-  view-agnostic and stays fully editable.
+- **Economy** — Wealth readout and Treasury input; same sources and writes as the Burg Editor
+  (`Burgs.setTreasury`). The goods economy is view-agnostic and stays editable elsewhere.
+  The goods **Production** readout (the icons and their counts) was removed on 2026-10-26: the
+  industry of a medieval burg has no place on a system's card.
 
 ### Bottom toolbar
 
