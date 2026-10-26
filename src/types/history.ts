@@ -23,6 +23,9 @@ export type HistoryEventType =
   | "coronation"
   | "succession";
 
+/** how the political past is made: dated backwards from the present, or generated epoch by epoch */
+export type HistoryMode = "archaeologist" | "epochs";
+
 export interface HistoryEvent {
   i: number;
   year: number;

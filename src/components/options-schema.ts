@@ -137,6 +137,7 @@ const lore = z.strictObject({
   calendar: z.strictObject({ year: z.number().int(), era: z.string(), eraShort: z.string() }),
   /** how deep a past the chronicle generates; see docs/plans/history-generation.md */
   history: z.strictObject({
+    mode: z.enum(["archaeologist", "epochs"]).default("archaeologist"), // how the political past is made
     span: positive, // years before the current year the chronicle reaches back to
     realms: count, // fallen empires to weave into the map
     density: nonNegative, // event density multiplier

@@ -3,7 +3,75 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { HistRefKind } from "@/types/history";
 import { emptyHistory } from "@/types/history";
 import "./pack-generator"; // Markers.place resolves cells through the global Pack
+import type { EpochArtifact } from "./epochs-generator";
 import { Chronicle } from "./history-generator";
+
+// The epoch engine is mocked: the engine's own behavior is epochs-generator.test.ts's business,
+// and these tests want a cast whose ids and years never move. The mock counts its calls so the
+// archaeologist tests can assert the engine is never consulted.
+const engine = vi.hoisted((): { calls: number; artifact: EpochArtifact } => ({
+  calls: 0,
+  artifact: {
+    epochs: [
+      { i: 0, from: 0, to: 500, era: "The Age of Broken Crowns", polities: [], snapshot: 0 },
+      { i: 1, from: 500, to: 1000, era: "Era", polities: [], snapshot: 1 }
+    ],
+    polities: [
+      { id: 1, name: "Old Empire", form: "Empire", capital: 1, cells: 30, color: "#123456", founded: 12, fallen: 500 },
+      {
+        id: 2,
+        name: "Heir Realm",
+        form: "Kingdom",
+        capital: 2,
+        cells: 40,
+        color: "#654321",
+        founded: 500,
+        successorOf: 1
+      }
+    ],
+    events: [
+      { i: 0, year: 12, type: "founding", actors: [{ kind: "polity", id: 1 }], text: "The Old Empire was proclaimed" },
+      {
+        i: 0,
+        year: 500,
+        type: "battle",
+        actors: [{ kind: "polity", id: 1 }],
+        loc: 7,
+        text: "The Old Empire fell in battle"
+      },
+      {
+        i: 0,
+        year: 500,
+        type: "collapse",
+        actors: [
+          { kind: "polity", id: 1 },
+          { kind: "polity", id: 2 }
+        ],
+        text: "In 500 the Old Empire collapsed; Heir Realm rose from its remains"
+      },
+      {
+        i: 0,
+        year: 501,
+        type: "independence",
+        actors: [
+          { kind: "polity", id: 2 },
+          { kind: "polity", id: 1 }
+        ],
+        text: "Heir Realm rose from the ruins of the Old Empire"
+      }
+    ],
+    snapshots: [Uint16Array.of(0, 1, 0, 1), Uint16Array.of(0, 2, 2, 1)]
+  }
+}));
+
+vi.mock("./epochs-generator", () => ({
+  Epochs: {
+    generate: () => {
+      engine.calls++;
+      return engine.artifact;
+    }
+  }
+}));
 
 beforeEach(() => {
   // 0.5 keeps every random draw on its middle branch, so assertions hold without knowing the tables
@@ -491,5 +559,84 @@ describe("Chronicle.generate fallen realms", () => {
     Chronicle.generate();
     expect(pack.markers).toHaveLength(0);
     expect(pack.states[1].note).toBeUndefined();
+  });
+});
+
+describe("Chronicle.generate in the epochs mode", () => {
+  beforeEach(() => {
+    options.map.lore.history.mode = "epochs";
+    engine.calls = 0;
+  });
+
+  it("installs the engine's cast and retires the invented realms", () => {
+    Chronicle.generate();
+    expect(engine.calls).toBe(1);
+    expect(pack.history.realms).toEqual([]);
+    expect(pack.history.snapshots).toEqual([Uint16Array.of(0, 1, 0, 1), Uint16Array.of(0, 2, 2, 1)]);
+    expect(pack.history.polities?.map(polity => polity.name)).toEqual(["Old Empire", "Heir Realm"]);
+    expect(pack.history.epochs).toEqual(engine.artifact.epochs);
+  });
+
+  it("derives the eras from the epochs: contiguous, ending at the present", () => {
+    Chronicle.generate();
+    const eras = pack.history.eras;
+    expect(eras[1]).toEqual({ name: "Era", from: 500, to: 1000 }); // the configured present age
+    for (let i = 1; i < eras.length; i++) expect(eras[i].from).toBe(eras[i - 1].to);
+  });
+
+  it("merges the deep-time events with the engine's and renumbers the log", () => {
+    Chronicle.generate();
+    const types = pack.history.events.map(event => event.type);
+    expect(types).toContain("schism"); // the faiths are deep time, dated backwards as always
+    expect(types).toContain("migration");
+    expect(types).toContain("collapse"); // what the engine really did
+    expect(types).toContain("independence");
+
+    const events = pack.history.events;
+    expect(events.map(event => event.i)).toEqual(events.map((_, i) => i));
+    for (let i = 1; i < events.length; i++) expect(events[i].year).toBeGreaterThanOrEqual(events[i - 1].year);
+  });
+
+  it("writes no invented political events of its own: the polities own that story", () => {
+    Chronicle.generate();
+    for (const event of pack.history.events) {
+      for (const actor of event.actors) expect(actor.kind).not.toBe("realm");
+      if (event.type === "founding") {
+        expect(event.actors.some(actor => actor.kind === "state")).toBe(false);
+        expect(event.actors.some(actor => actor.kind === "polity")).toBe(true);
+      }
+    }
+  });
+
+  it("keeps the dynasties until the figures are re-scoped to the epochs", () => {
+    Chronicle.generate();
+    const types = pack.history.events.map(event => event.type);
+    expect(types).toContain("coronation");
+    expect(types).toContain("succession");
+    expect(pack.history.figures?.length).toBeGreaterThan(0);
+  });
+
+  it("leaves the archaeologist path untouched in the default mode", () => {
+    delete (options.map.lore.history as { mode?: string }).mode; // an old file without the field loads as it always did
+    options.map.lore.history.echoes = false; // this bare world has no terrain to seed markers from
+    for (const state of pack.states) state.neighbors = [1, 2, 3].filter(id => id !== state.i); // an empire needs successors
+    globalThis.pack.cells = {
+      i: [],
+      culture: [],
+      state: new Uint16Array(0),
+      c: [],
+      p: []
+    } as unknown as typeof pack.cells;
+    globalThis.pack.burgs = [];
+
+    Chronicle.generate();
+    expect(engine.calls).toBe(0);
+    expect(pack.history.epochs).toBeUndefined();
+    expect(pack.history.polities).toBeUndefined();
+    expect(pack.history.snapshots).toBeUndefined();
+    expect(pack.history.realms.length).toBeGreaterThan(0); // the ghost realms return
+    expect(
+      pack.history.events.some(event => event.type === "founding" && event.actors.some(actor => actor.kind === "state"))
+    ).toBe(true); // and the states' own foundings are dated again
   });
 });

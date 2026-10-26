@@ -31,6 +31,7 @@ import {
 } from "@/types/history";
 import { last, minmax, P, ra, rand, rw } from "@/utils";
 import { Emblems } from "./emblems-generator";
+import { Epochs } from "./epochs-generator";
 import { Markers } from "./markers-generator";
 import { Names } from "./names-generator";
 import { Notes } from "./notes";
@@ -43,8 +44,14 @@ interface Footprint {
 }
 
 class ChronicleModel {
-  /** date what exists and write it into the event log; then weave in fallen realms and leave their traces */
+  /** date what exists and write it into the event log; then weave in fallen realms and leave their traces.
+   * In the epochs mode the political past is really generated instead: the chronicle keeps what the engine did */
   generate(): void {
+    if (options.map.lore.history.mode === "epochs") {
+      this.generateEpochs();
+      return;
+    }
+
     const events: HistoryEvent[] = [];
     const founded = this.dateFoundings(events);
     this.emitPastWars(events, founded);
@@ -71,6 +78,31 @@ class ChronicleModel {
     return pack.history;
   }
 
+  /** the epochs mode: the political events are what the epoch engine did, not an invention;
+   * culture and faith remain deep time, dated backwards as always */
+  private generateEpochs(): void {
+    const events: HistoryEvent[] = [];
+    const founded = this.dateFoundings(events, false); // dynasties still date from the state's age; the founding events belong to the polities
+    this.emitCultureDivergence(events);
+    this.emitReligionSchisms(events);
+    const figures = this.emitFigures(events, founded);
+    const { epochs, polities, events: political, snapshots } = Epochs.generate();
+    events.push(...political);
+    events.sort((a, b) => a.year - b.year);
+    events.forEach((event, i) => {
+      event.i = i;
+    });
+    pack.history = {
+      events,
+      realms: [], // the ghost realms are retired: the epochs are real
+      eras: epochs.map(epoch => ({ name: epoch.era, from: epoch.from, to: epoch.to })),
+      figures,
+      epochs,
+      polities,
+      snapshots
+    };
+  }
+
   private get year(): number {
     return options.map.lore.calendar.year;
   }
@@ -79,14 +111,16 @@ class ChronicleModel {
     return options.map.lore.history.span;
   }
 
-  /** date each state's founding, older on average the larger it is, and record the events */
-  private dateFoundings(events: HistoryEvent[]): number[] {
+  /** date each state's founding, older on average the larger it is, and record the events;
+   * `record` turns the events off, where the polities own the founding story */
+  private dateFoundings(events: HistoryEvent[], record = true): number[] {
     const valid = pack.states.filter(s => s.i && !s.removed);
     const largest = Math.max(...valid.map(s => s.area || 1), 1);
     const founded: number[] = [];
     for (const state of valid) {
       const age = this.span * (0.15 + 0.75 * Math.sqrt((state.area || 1) / largest)) * (0.85 + 0.3 * Math.random());
       founded[state.i] = Math.round(minmax(this.year - age, this.year - this.span, this.year - 5));
+      if (!record) continue;
       const culture = pack.cultures[state.culture]?.name ?? "an ancient people";
       events.push({
         i: 0,

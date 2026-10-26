@@ -82,7 +82,7 @@ function renderDialog(): void {
       <label for="legendsActor" data-tip="Show only events involving this kind of entity" style="grid-template-columns: 3.4em 7em">Actors:
         <select id="legendsActor">
           <option value="">All</option>
-          ${["state", "realm", "culture", "religion", "burg", "figure"].map(kind => `<option>${kind}</option>`).join("")}
+          ${["state", "realm", "culture", "religion", "burg", "figure", "polity"].map(kind => `<option>${kind}</option>`).join("")}
         </select>
       </label>
       <label for="legendsSearch" data-tip="Filter by the event text" style="grid-template-columns: 4em 10em">Search:
@@ -224,6 +224,7 @@ function actorLabel(ref: HistRef): string {
   if (ref.kind === "culture") return pack.cultures[ref.id]?.name ?? "an ancient people";
   if (ref.kind === "religion") return pack.religions[ref.id]?.name ?? "an old faith";
   if (ref.kind === "figure") return pack.history.figures?.[ref.id]?.name ?? "a nameless name";
+  if (ref.kind === "polity") return pack.history.polities?.[ref.id]?.name ?? "a fallen polity";
   return "unknown";
 }
 
