@@ -1,6 +1,6 @@
 # Plan — Epochs: Layered Political Regeneration
 
-Updated: 2026-10-26. Status: **slices 1–4 shipped**; slice 5 future work. Companions: the shipped retroactive
+Updated: 2026-10-26. Status: **all five slices shipped**. Companions: the shipped retroactive
 history in [history-generation.md](history-generation.md) (the Archaeologist), and the era concept
 that epochs would ground. The mod-merge plan's "Epochs" bullet in
 [history-generation.md](history-generation.md#future-phases-out-of-scope-for-now) is this document.
@@ -124,7 +124,7 @@ With epochs, the political events are written **as they happen**, not inferred:
 | `battle` | the war that decided a collapse, at a frontier cell |
 | `goldenAge` | a polity that survived the epoch and grew |
 | `migration`, `schism` | unchanged — these are deep time, still dated backwards |
-| `coronation`, `succession` | the figure events (shipped); deep time until slice 5 re-scopes their reigns |
+| `coronation`, `succession` | the figure events, scoped to the epoch a reign belongs to |
 
 State ids are **not stable across epochs**: the third epoch's state 3 is not the first epoch's
 state 3. Every reference needs an epoch, so `HistRef` gains one (see below).
@@ -255,8 +255,8 @@ belongs to an empire's age. That is a separate plan, and it needs the epochs fir
 
 - **Figures** (shipped, the history plan's slice 5): dynasties and generals are dated backwards
   from the present and tied to a state id that is not stable across epochs. With epochs a reign
-  must be scoped to the epoch and the lineage, and a ruler whose polity falls mid-reign needs an
-  end date at the collapse — build order slice 5.
+  is scoped to the epoch and the lineage (`polity` targets), and a ruler whose polity falls does
+  so with a reign that ends exactly at the collapse.
 - **Astral Cartographer**: the mapping is applied by hand to the present map, so it is unaffected.
   If the epochs ever grow era-flavored naming, the Astral names would follow the era.
 - **OpenConquest**: a campaign is compiled from the present world, so it is unaffected. The
@@ -282,7 +282,8 @@ The Lore editor exposes it as a `History mode` select, and greys out the fallen-
 The default stays `archaeologist` until the epochs are proven: a world with no epochs must look
 exactly as it does now. In `epochs` mode the political events come from the epoch engine and the
 cultural and religious events stay retroactive — those are deep time, and there is only one of
-them. The dynasties stay state-scoped retroactive figures until slice 5 re-scopes their reigns.
+them. The dynasties are lineage-scoped: each remembered lineage rules through every epoch of its
+presence, its reigns confined per epoch.
 
 ## Performance
 
@@ -331,7 +332,7 @@ the cost is not yet measured. Before committing to a default K:
 | 2 ✅ | The data model and the save format: epochs, polities, snapshot records | medium | A map with epochs round-trips; an old map loads unchanged |
 | 3 ✅ | The mode switch: `lore.history.mode`, the epochs as the eras | medium | `archaeologist` is untouched; `epochs` replaces the invented eras with real ones |
 | 4 ✅ | The historical view and the slider | large | Dragging the year shows the past borders, the past legend, and the past events |
-| 5 | The figures (shipped) in epoch scope: reigns per epoch, a reign ending at its polity's collapse | medium | Dynasties span epochs; a ruler's reign is epoch-scoped |
+| 5 ✅ | The figures (shipped) in epoch scope: reigns per epoch, a reign ending at its polity's collapse | medium | Dynasties span epochs; a ruler's reign is epoch-scoped |
 
 Slice 1 ships as `src/generators/epochs-generator.ts` (`Epochs.generate`): it returns the epochs,
 lineages, events and snapshots without touching the live pack. The per-epoch cast is expanded with
@@ -355,10 +356,9 @@ same code as before, and a new `generateEpochs()` runs the engine, merges its po
 under the retroactive cultural and religious ones, installs `epochs`, `polities` and `snapshots`
 on `pack.history`, retires the invented realms (no ghosts, no echoes, no realm events) and
 derives the eras from the epochs — each epoch's own `era` name, contiguous, with the configured
-`lore.calendar.era` as the present age. The dynasties keep their state-scoped reigns until the
-figures are re-scoped in slice 5. The Legends browser resolves `polity` actors and filters them.
-The pre-created state foundings, wars and vassalages are *not* recorded in this mode: the polities
-own that story.
+`lore.calendar.era` as the present age. The Legends browser resolves `polity` actors and filters
+them. The pre-created state foundings, wars and vassalages are *not* recorded in this mode: the
+polities own that story.
 
 Slice 4 ships the view: `src/controllers/historical-view.ts` swaps
 `pack.cells.state` and `pack.states` for the year's epoch — the snapshot remapped from lineage
@@ -376,6 +376,17 @@ the currently-viewed era's header is marked. A `Now` button returns the present;
 restores the live pack exactly (throwing renderer included). Follow-ups, in slice order: an event
 clickable to jump the map to its epoch, the "epoch" filter dimension browsers gain from it,
 markers and the `emblems` of a past epoch, provinces drawn from the epoch.
+
+Slice 5 re-scopes the figures: `Chronicle.generateEpochs()` runs the engine first, then
+`emitEpochFigures()` reads its cast. A lineage is remembered when its peak `cells` over all epochs
+rivals the greatest (the same `largest / 3` rule the archaeologist uses for `majorStates()`); each
+remembered lineage gets one dynasty whose reigns are confined to the epochs of its presence —
+1–3 rulers per epoch, `rand()`-chosen, successions chaining across epoch boundaries, a collapsed
+lineage's last reign ending exactly at `polity.fallen` and a survivor's left open. The shared
+emitter `ruleSegments()` replaces the old dynasty loop; the archaeologist calls it with a single
+open-ended segment, so that path is unchanged. Every engine `war` gains a general of the leading
+polity's capital people, targeted at `{kind: "polity"}` like every other figure role, and the
+Legends browser groups and resolves them through the polities list it already reads.
 
 ## Risks
 

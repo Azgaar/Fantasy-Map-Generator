@@ -20,10 +20,12 @@ import {
   WAR_GENERAL_TEMPLATES
 } from "@/data/history-events";
 import {
+  type EpochPolity,
   type Era,
   emptyHistory,
   type HistoricalFigure,
   type History,
+  type HistoryEpoch,
   type HistoryEvent,
   type HistRef,
   type Realm,
@@ -82,12 +84,11 @@ class ChronicleModel {
    * culture and faith remain deep time, dated backwards as always */
   private generateEpochs(): void {
     const events: HistoryEvent[] = [];
-    const founded = this.dateFoundings(events, false); // dynasties still date from the state's age; the founding events belong to the polities
     this.emitCultureDivergence(events);
     this.emitReligionSchisms(events);
-    const figures = this.emitFigures(events, founded);
     const { epochs, polities, events: political, snapshots } = Epochs.generate();
     events.push(...political);
+    const figures = this.emitEpochFigures(events, epochs, polities);
     events.sort((a, b) => a.year - b.year);
     events.forEach((event, i) => {
       event.i = i;
@@ -111,16 +112,14 @@ class ChronicleModel {
     return options.map.lore.history.span;
   }
 
-  /** date each state's founding, older on average the larger it is, and record the events;
-   * `record` turns the events off, where the polities own the founding story */
-  private dateFoundings(events: HistoryEvent[], record = true): number[] {
+  /** date each state's founding, older on average the larger it is, and record the events */
+  private dateFoundings(events: HistoryEvent[]): number[] {
     const valid = pack.states.filter(s => s.i && !s.removed);
     const largest = Math.max(...valid.map(s => s.area || 1), 1);
     const founded: number[] = [];
     for (const state of valid) {
       const age = this.span * (0.15 + 0.75 * Math.sqrt((state.area || 1) / largest)) * (0.85 + 0.3 * Math.random());
       founded[state.i] = Math.round(minmax(this.year - age, this.year - this.span, this.year - 5));
-      if (!record) continue;
       const culture = pack.cultures[state.culture]?.name ?? "an ancient people";
       events.push({
         i: 0,
@@ -263,8 +262,13 @@ class ChronicleModel {
     for (const stateId of this.majorStates()) this.emitDynasty(stateId, founded[stateId], figures, events);
     for (const event of events) {
       if (event.type !== "war") continue;
-      const servant = event.actors.find(ref => ref.kind === "state" && ref.id); // a state, not the wilds
-      if (servant) this.attachGeneral(event, servant.id, figures);
+      const patron = event.actors.find(ref => ref.kind === "state" && ref.id); // a state, not the wilds
+      if (patron)
+        this.attachGeneral(
+          event,
+          { ref: patron, name: this.displayName(patron.id), culture: pack.states[patron.id]?.culture ?? 0 },
+          figures
+        );
     }
     return figures;
   }
@@ -276,64 +280,143 @@ class ChronicleModel {
     return valid.filter(s => (s.area || 0) >= largest / 3).map(s => s.i);
   }
 
-  /** 2–5 rulers whose reigns span the state's founding to the present; each accession is an event */
+  /** dynasties for the lineages that history remembers, and a general for every war between them;
+   * a lineage is remembered when its peak rivaled the greatest power of any epoch */
+  private emitEpochFigures(
+    events: HistoryEvent[],
+    epochs: HistoryEpoch[],
+    polities: EpochPolity[]
+  ): HistoricalFigure[] {
+    const figures: HistoricalFigure[] = [];
+    const present = epochs.at(-1)!;
+    const peak = new Map<number, number>();
+    for (const epoch of epochs) {
+      for (const polity of epoch.polities) {
+        peak.set(polity.id, Math.max(peak.get(polity.id) ?? 0, polity.cells));
+      }
+    }
+    const largest = Math.max(...peak.values(), 1);
+    const remembered = polities
+      .filter(polity => (peak.get(polity.id) ?? 0) >= largest / 3)
+      .sort((a, b) => a.founded - b.founded);
+    for (const polity of remembered) {
+      const segments: { from: number; to?: number; reigns: number }[] = [];
+      for (const epoch of epochs) {
+        if (!epoch.polities.some(entry => entry.id === polity.id)) continue;
+        const ends = polity.fallen ?? epoch.to;
+        segments.push({
+          from: Math.max(polity.founded, epoch.from),
+          to: epoch === present && ends >= epoch.to ? undefined : Math.min(ends, epoch.to),
+          reigns: rand(1, 3)
+        });
+      }
+      if (!segments.length) continue;
+      this.ruleSegments(
+        { kind: "polity", id: polity.id },
+        { name: polity.name, culture: this.polityCulture(polity), formName: polity.form },
+        segments,
+        figures,
+        events
+      );
+    }
+    for (const event of events) {
+      if (event.type !== "war") continue;
+      const patron = event.actors.find(ref => ref.kind === "polity"); // id 0 is a real lineage: it was founded first
+      const lord = polities.find(polity => polity.id === patron?.id);
+      if (patron && lord)
+        this.attachGeneral(event, { ref: patron, name: lord.name, culture: this.polityCulture(lord) }, figures);
+    }
+    return figures;
+  }
+
+  /** a polity's people: its capital's, or whoever lives around the old seat */
+  private polityCulture(polity: EpochPolity): number {
+    const burg = pack.burgs[polity.capital];
+    if (!burg) return 0;
+    return burg.culture ?? pack.cells.culture[burg.cell] ?? 0;
+  }
+
+  /** each dynasty: 2–5 rulers spanning the state's founding to the present; each accession is an event */
   private emitDynasty(stateId: number, start: number, figures: HistoricalFigure[], events: HistoryEvent[]): void {
     const state = pack.states[stateId];
-    const stateRef: HistRef = { kind: "state", id: stateId };
-    const reigns = rand(2, 5);
-    const length = (this.year - start) / reigns;
+    this.ruleSegments(
+      { kind: "state", id: stateId },
+      { name: state.name, culture: state.culture, formName: state.formName },
+      [{ from: start, reigns: rand(2, 5) }],
+      figures,
+      events
+    );
+  }
+
+  /** one chain of rulers across one or more spanning segments; reigns never cross a segment's end,
+   * and succession joins the segments: a ruler of the next epoch inherits the crown of the last */
+  private ruleSegments(
+    target: HistRef,
+    subject: { name: string; culture: number; formName?: string },
+    segments: { from: number; to?: number; reigns: number }[],
+    figures: HistoricalFigure[],
+    events: HistoryEvent[]
+  ): void {
     let predecessor: HistoricalFigure | undefined;
-    for (let r = 0, from = start; r < reigns; r++, from += length) {
-      const accession = Math.round(from);
-      const end = r === reigns - 1 ? undefined : Math.max(accession + 1, Math.round(from + length));
-      const figure: HistoricalFigure = {
-        i: figures.length,
-        name: Names.getCulture(state.culture),
-        culture: state.culture,
-        birth: accession - rand(18, 40),
-        death: end, // reigns end with the ruler; the last figure has neither
-        roles: [{ type: "ruler", target: stateRef, from: accession, to: end }]
-      };
-      const figureRef: HistRef = { kind: "figure", id: figure.i };
-      events.push(
-        predecessor
-          ? {
-              i: 0,
-              year: accession,
-              type: "succession",
-              actors: [figureRef, { kind: "figure", id: predecessor.i }, stateRef],
-              text: ra(SUCCESSION_TEMPLATES)(figure.name, predecessor.name, state.name)
-            }
-          : {
-              i: 0,
-              year: accession,
-              type: "coronation",
-              actors: [figureRef, stateRef],
-              text: ra(CORONATION_TEMPLATES)(figure.name, this.rulerTitle(state), state.name)
-            }
-      );
-      figures.push(figure);
-      predecessor = figure;
+    for (const segment of segments) {
+      const reigns = segment.to !== undefined && segment.to <= segment.from ? 1 : segment.reigns;
+      const length = (Math.max(segment.to ?? this.year, segment.from) - segment.from) / reigns;
+      let from = segment.from;
+      for (let r = 0; r < reigns; r++, from += length) {
+        const accession = Math.round(from);
+        const end = r === reigns - 1 ? segment.to : Math.max(accession + 1, Math.round(from + length));
+        const figure: HistoricalFigure = {
+          i: figures.length,
+          name: Names.getCulture(subject.culture),
+          culture: subject.culture,
+          birth: accession - rand(18, 40),
+          death: end, // reigns end with the ruler; a living dynasty's last figure has neither
+          roles: [{ type: "ruler", target, from: accession, to: end }]
+        };
+        const figureRef: HistRef = { kind: "figure", id: figure.i };
+        events.push(
+          predecessor
+            ? {
+                i: 0,
+                year: accession,
+                type: "succession",
+                actors: [figureRef, { kind: "figure", id: predecessor.i }, target],
+                text: ra(SUCCESSION_TEMPLATES)(figure.name, predecessor.name, subject.name)
+              }
+            : {
+                i: 0,
+                year: accession,
+                type: "coronation",
+                actors: [figureRef, target],
+                text: ra(CORONATION_TEMPLATES)(figure.name, this.rulerTitle(subject), subject.name)
+              }
+        );
+        figures.push(figure);
+        predecessor = figure;
+      }
     }
   }
 
-  private rulerTitle(state: { formName?: string }): string {
-    const [masculine, feminine] = RULER_TITLES[state.formName ?? ""] ?? ["Lord", "Lady"];
+  private rulerTitle(subject: { formName?: string }): string {
+    const [masculine, feminine] = RULER_TITLES[subject.formName ?? ""] ?? ["Lord", "Lady"];
     return P(0.7) ? masculine : feminine;
   }
 
-  /** the war is remembered through the commander its leading state trusted it to */
-  private attachGeneral(event: HistoryEvent, stateId: number, figures: HistoricalFigure[]): void {
-    const culture = pack.states[stateId]?.culture ?? 0;
+  /** the war is remembered through the commander its leading power trusted it to */
+  private attachGeneral(
+    event: HistoryEvent,
+    leader: { ref: HistRef; name: string; culture: number },
+    figures: HistoricalFigure[]
+  ): void {
     const figure: HistoricalFigure = {
       i: figures.length,
-      name: Names.getCulture(culture),
-      culture,
+      name: Names.getCulture(leader.culture),
+      culture: leader.culture,
       birth: event.year - rand(20, 45),
-      roles: [{ type: "general", target: { kind: "state", id: stateId }, from: event.year }]
+      roles: [{ type: "general", target: leader.ref, from: event.year }]
     };
     event.actors.push({ kind: "figure", id: figure.i });
-    if (P(0.5)) event.text += ` ${ra(WAR_GENERAL_TEMPLATES)(figure.name, this.displayName(stateId))}`;
+    if (P(0.5)) event.text += ` ${ra(WAR_GENERAL_TEMPLATES)(figure.name, leader.name)}`;
     figures.push(figure);
   }
 
