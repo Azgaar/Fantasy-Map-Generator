@@ -1060,9 +1060,6 @@ export class GoodsModule {
 
     if (!pack.goods?.length) this.restoreDefaults();
 
-    // by default show the first good on the Goods layer
-    if (pack.goods.length && !pack.goods.some(good => good.visible)) pack.goods[0].visible = true;
-
     this.cells = pack.cells;
     this.cells.good = new Uint16Array(this.cells.i.length);
 
@@ -1183,6 +1180,11 @@ export class GoodsModule {
 
   getStroke(colorHex: string): string {
     return color(colorHex)!.darker(2).hex();
+  }
+
+  /** Shown on the Goods layer: a selected good, or every good while none is selected */
+  isDisplayed(good: Good | undefined): boolean {
+    return Boolean(good && (good.visible || !pack.goods.some(g => g.visible)));
   }
 
   get(i: number): Good | undefined {

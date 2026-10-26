@@ -30,6 +30,24 @@ import { clearMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, getPointer } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
+import { bindEconomyWiki, economyWikiButton } from "../economy-wiki";
+
+const CSV_COLUMNS = [
+  "Id",
+  "Good",
+  "Color",
+  "Type",
+  "Tags",
+  "Value",
+  "Carriage",
+  "Unit",
+  "Demand Coverage",
+  "Chance",
+  "Model",
+  "Cells",
+  "Produced",
+  "Stock"
+];
 
 let production: ReturnType<typeof getProduction> = {};
 let stockData: ReturnType<typeof getAllStockData> = {};
@@ -167,7 +185,7 @@ function renderDialog(): void {
       ${renderEditorHeader({ dialogId, columns })}
       <div id="goodsBody" class="table" style="max-height: 50vh;" data-type="absolute"></div>
       <div id="goodsFooter" class="totalLine hide">
-        <div data-tip="${t("Number of goods (displayed / total)")}" style="margin-left: 5px">${t("Goods")}:&nbsp;${t("{{- shown}} of {{- total}}", { shown: `<span id="goodsDisplayed">0</span>`, total: `<span id="goodsNumber">0</span>` })}</div>
+        <div data-tip="${t("Goods selected for the Goods layer, of all goods. With none selected, the layer shows an overview of all production")}" style="margin-left: 5px">${t("Goods")}:&nbsp;${t("{{- shown}} of {{- total}}", { shown: `<span id="goodsDisplayed">0</span>`, total: `<span id="goodsNumber">0</span>` })}</div>
         <div data-tip="${t("Total units produced daily by all cells and burgs")}" style="margin-left: 12px">${t("Produced")}:&nbsp;<span id="goodsProduced">0</span></div>
         <div data-tip="${t("Total units in stock across all markets and burg inventories")}" style="margin-left: 12px">${t("Stock")}:&nbsp;<span id="goodsStock">0</span></div>
       </div>
@@ -190,12 +208,14 @@ function renderDialog(): void {
           class="icon-history hide"
         ></button>
         <button id="goodsExport" data-tip="${t("Save data as a CSV file")}" class="icon-download hide"></button>
+        <button id="goodsImport" data-tip="${t("Upload data from a CSV file")}" class="icon-upload hide"></button>
+        ${economyWikiButton("goodsWiki")}
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
   ensureEl("goodsTagsFilter").classList.toggle("active", filterState.visibleTags.length > 0);
   ensureEl(`${dialogId}Header`).querySelector<HTMLElement>('[data-col="display"]')!.innerHTML = /* html */ `<input
-    type="checkbox" data-tip="${t("Show or hide all goods matching the current filter")}" class="native" id="goodsDisplayAll"
+    type="checkbox" data-tip="${t("Select or clear all goods matching the current filter. With none selected, the Goods layer shows an overview of all production")}" class="native" id="goodsDisplayAll"
     style="margin: 0; width: 1.2em;" />`;
   bindColumnSorting(dialogId, goodsTable.reset);
   initColumnVisibility({
@@ -205,12 +225,14 @@ function renderDialog(): void {
   });
 
   ensureEl("goodsEditorRefresh").addEventListener("click", goodsTable.refresh);
+  bindEconomyWiki("goodsWiki");
   ensureEl("goodsPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("goodsTagsFilter").addEventListener("click", openTagsVisibilityDialog);
   ensureEl("goodsAssign").addEventListener("click", enterResourceAssignMode);
   ensureEl("goodsAdd").addEventListener("click", () => Controllers.GoodEditor.open(undefined, refreshEditor));
   ensureEl("goodsRestore").addEventListener("click", goodsRestoreDefaults);
   ensureEl("goodsExport").addEventListener("click", downloadGoodsData);
+  ensureEl("goodsImport").addEventListener("click", () => Csv.pick(uploadGoodsCsv));
   ensureEl("goodsDisplayAll").addEventListener("change", toggleAllDisplayed);
   ensureEl("goodsChains").addEventListener("click", () => Controllers.ProductionChains.open());
   ensureEl("goodsRegenerateGoods").addEventListener("click", requestGoodsRegeneration);
@@ -268,7 +290,7 @@ function renderGoodsPage(view: TableView<Good>) {
       const stockTip = `${t("Total units in stock across all markets and burg inventories")}: ${stock}`;
 
       return /*html*/ `<div class="states goods" data-id=${good.i} data-produced="${produced}" data-stock="${stock}">
-        <div data-col="display"><input type="checkbox" data-tip="${t("Toggle this good on the Goods map")}" class="native goodDisplayed" style="margin: 0; width: 1.2em;" ${good.visible ? "checked" : ""} /></div>
+        <div data-col="display"><input type="checkbox" data-tip="${t("Show this good on the Goods layer. With none selected, the layer shows an overview of all production")}" class="native goodDisplayed" style="margin: 0; width: 1.2em;" ${good.visible ? "checked" : ""} /></div>
         <div data-col="name" style="display:flex; align-items:center"><svg data-tip="${t("Good icon")}" width="2em" height="2em" class="goodIcon">
           ${goodBadge(good)}
         </svg><span data-tip="${t("Name")}" class="goodName">${good.name}</span></div>
@@ -643,9 +665,7 @@ function downloadGoodsData() {
 
   const rows = pack.goods.map(good => {
     const types = [good.recipes && "MFG", good.distribution && "RAW"].filter(Boolean).join(";");
-    const demandCoverage = Object.entries(good.demandCoverage || {})
-      .map(([k, v]) => `${k}:${v}`)
-      .join(";");
+    const demandCoverage = formatDemandCoverage(good);
     const goodProduction = production[good.i] || { burg: 0, cell: 0 };
     return [
       good.i,
@@ -664,23 +684,59 @@ function downloadGoodsData() {
       stockData[good.i]?.total ?? 0
     ];
   });
-  const headers = [
-    "Id",
-    "Good",
-    "Color",
-    "Type",
-    "Tags",
-    "Value",
-    "Carriage",
-    "Unit",
-    "Demand Coverage",
-    "Chance",
-    "Model",
-    "Cells",
-    "Produced",
-    "Stock"
-  ];
-  Csv.download("Goods", headers, rows);
+  Csv.download("Goods", CSV_COLUMNS, rows);
+}
+
+/** Update existing goods from a CSV in the export format; derived columns and the Model code are skipped */
+async function uploadGoodsCsv(text: string): Promise<void> {
+  const find = (id: number) => pack.goods.find(good => good.i === id);
+  const list = (cell: string) =>
+    cell
+      .split(";")
+      .map(item => item.trim())
+      .filter(Boolean);
+  const updated = await Controllers.CsvUpload.update(
+    text,
+    CSV_COLUMNS,
+    { find, text: ["Good", "Tags", "Unit"] },
+    (id, row) => {
+      const good = find(id)!;
+      row.apply("Good", name => Goods.rename(id, name), good.name);
+      row.apply("Color", color => Goods.recolor(id, color), good.color);
+      row.assign("Tags", tags => Goods.setTags(id, list(tags)), good.tags.join(";"));
+      row.apply("Value", value => Goods.setPrice(id, +value), good.value);
+      row.apply("Carriage", value => Goods.setCarriage(id, +value), good.carriage);
+      row.assign("Unit", unit => Goods.setUnit(id, unit), good.unit);
+      row.assign(
+        "Demand Coverage",
+        cell => Goods.setProduction(id, { demandCoverage: cell.trim() ? parseDemandCoverage(cell) : null }),
+        formatDemandCoverage(good)
+      );
+      row.apply("Chance", value => Goods.setProduction(id, { chance: +value }), good.chance);
+    }
+  );
+  if (updated) refreshEditor();
+}
+
+const formatDemandCoverage = (good: Good) =>
+  Object.entries(good.demandCoverage || {})
+    .map(([category, share]) => `${category}:${share}`)
+    .join(";");
+
+/** "food:1;luxury:0.5" as the demand coverage record; Goods.setProduction checks the categories and shares */
+function parseDemandCoverage(cell: string): Record<string, number> {
+  const entries = cell
+    .split(";")
+    .map(entry => entry.trim())
+    .filter(Boolean);
+  return Object.fromEntries(
+    entries.map(entry => {
+      const [category, share, extra] = entry.split(":").map(part => part.trim());
+      if (!category || !share || extra !== undefined || Number.isNaN(+share))
+        throw new Error(t("Demand coverage is a list of category:share pairs, such as food:1;luxury:0.5"));
+      return [category, +share];
+    })
+  );
 }
 
 function toggleDisplayedGood(good: Good, el: HTMLInputElement) {

@@ -119,7 +119,7 @@ describe("MarketsModule", () => {
       const good = globalThis.pack.goods[0];
       const terms = marketsModule.getTradeTerms();
       const importGood = (units = 10, budget?: number) =>
-        marketsModule.importForBurg({ burg, source: exporter, good, units, kind: DEAL_KINDS.input, terms, budget });
+        marketsModule.buyFromSource({ burg, source: exporter, good, units, kind: DEAL_KINDS.input, terms, budget });
       return { exporter, importer, burg, good, terms, importGood };
     };
     // route cost from each market's center to burg 2
@@ -132,7 +132,7 @@ describe("MarketsModule", () => {
     const carriage = (cost: number) => cost / (Math.hypot(1000, 800) / 10); // one coin per unit and decima
     const transport = carriage(100);
 
-    it("importForBurg() records one deal of the burg with the source market at price plus margin and carriage", () => {
+    it("buyFromSource() records one deal of the burg with the source market at price plus margin and carriage", () => {
       const { exporter, importer, importGood } = setupImport();
       const trade = importGood();
 
@@ -142,29 +142,29 @@ describe("MarketsModule", () => {
       expect([exporter.goods[0].stock, importer.goods[0].stock]).toEqual([90, 0]);
     });
 
-    it("importForBurg() caps units by the budget at the delivered buy price", () => {
+    it("buyFromSource() caps units by the budget at the delivered buy price", () => {
       const { importGood } = setupImport();
       const trade = importGood(10, 13);
       expect(trade!.units * trade!.price).toBeLessThanOrEqual(13);
       expect(trade!.units).toBeCloseTo(13 / (5 * 1.05 + transport), 1);
     });
 
-    it("quoteImport() picks the source that delivers to the burg cheapest", () => {
+    it("quoteSource() picks the source that delivers to the burg cheapest", () => {
       const { burg, good, terms } = setupImport();
       const far: Market = { i: 3, centerBurgId: 3, color: "#00f", goods: { 0: { stock: 50, price: 4.5 } } };
       globalThis.pack.markets.push(far);
       globalThis.pack.burgs.push({ i: 3, x: 400, y: 100, market: 3 } as any);
       setRoutes({ 1: 100, 3: 300 });
       // the far market is cheaper but its carriage costs more than the price gap
-      expect(marketsModule.quoteImport(burg, good, terms)?.source.i).toBe(1);
+      expect(marketsModule.quoteSource(burg, good, terms)?.source.i).toBe(1);
       far.goods[0].price = 3;
-      expect(marketsModule.quoteImport(burg, good, terms)?.source.i).toBe(3);
+      expect(marketsModule.quoteSource(burg, good, terms)?.source.i).toBe(3);
     });
 
-    it("quoteImport() skips a market with no route to the burg", () => {
+    it("quoteSource() skips a market with no route to the burg", () => {
       const { burg, good, terms, importGood } = setupImport();
       setRoutes({ 1: Infinity });
-      expect(marketsModule.quoteImport(burg, good, terms)).toBeNull();
+      expect(marketsModule.quoteSource(burg, good, terms)).toBeNull();
       expect(importGood()).toBeNull();
     });
 
@@ -189,7 +189,7 @@ describe("MarketsModule", () => {
       expect(sold.price).toBeCloseTo(midPrice * 0.95 - carriage(200), 1);
     });
 
-    it("importForBurg() adds the exporter's sales tax after the margin and records it on the import", () => {
+    it("buyFromSource() adds the exporter's sales tax after the margin and records it on the import", () => {
       const { importGood } = setupImport([{ i: 0 }, { i: 1, salesTax: 0.2 }, { i: 2, salesTax: 0.1 }]);
       const trade = importGood()!;
       expect(trade.tax).toBeCloseTo(0.2 * 5 * 10, 2);
@@ -197,7 +197,7 @@ describe("MarketsModule", () => {
       expect(marketsModule.getTaxStates(globalThis.pack.deals[0]).taxState).toBe(1);
     });
 
-    it("importForBurg() applies the importer's tariff and records deal.tariff", () => {
+    it("buyFromSource() applies the importer's tariff and records deal.tariff", () => {
       const { importGood } = setupImport([
         { i: 0 },
         { i: 1, tariffs: [{ states: "all", goods: "all", rate: 0.1 }] },
@@ -220,7 +220,7 @@ describe("MarketsModule", () => {
       expect(marketsModule.isImport(remoteBuy)).toBe(false);
     });
 
-    it("importForBurg() applies no tariff or embargo between markets of one state", () => {
+    it("buyFromSource() applies no tariff or embargo between markets of one state", () => {
       const { burg, importGood } = setupImport([
         { i: 0 },
         { i: 1, tariffs: [{ states: "all", goods: "all", rate: "embargo" }] }
@@ -237,7 +237,7 @@ describe("MarketsModule", () => {
         [{ i: 0 }, { i: 1 }, { i: 2, tariffs: [{ states: [1], goods: "all", rate: "embargo" }] }]
       ]) {
         const { burg, good, terms, importGood } = setupImport(states);
-        expect(marketsModule.quoteImport(burg, good, terms)).toBeNull();
+        expect(marketsModule.quoteSource(burg, good, terms)).toBeNull();
         expect(importGood()).toBeNull();
       }
       expect(globalThis.pack.deals).toHaveLength(0);
@@ -430,5 +430,30 @@ describe("MarketsModule", () => {
       expect(() => marketsModule.sync()).not.toThrow();
       expect(marketsModule.get(2)).toBe(market2);
     });
+  });
+});
+
+describe("market placement", () => {
+  it("gives a portless landmass a market and lets a market across the water stand closer", () => {
+    options.map.graph = { width: 1000, height: 800, points: 10000, sampling: "square", jitter: 0.9 };
+    const burg = (i: number, x: number, feature: number, population: number, port = 0) =>
+      ({ i, x, y: 0, feature, population, port }) as Burg;
+    // the spacing is about 1,230 here: one market on the mainland, half that across the water
+    globalThis.pack = {
+      burgs: [
+        { i: 0 } as Burg,
+        burg(1, 0, 1, 100, 9),
+        burg(2, 100, 1, 50),
+        burg(3, 300, 2, 1), // a portless island next to the mainland
+        burg(4, 400, 3, 1, 9), // a port island within half the spacing
+        burg(5, 1200, 4, 1, 9) // a port island beyond it
+      ]
+    } as typeof pack;
+
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    const markets: Market[] = new MarketsModule()["createMarkets"]();
+    const centers = markets.map(market => market.centerBurgId).sort();
+
+    expect(centers).toEqual([1, 3, 5]);
   });
 });

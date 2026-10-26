@@ -116,6 +116,7 @@ function getSettings() {
     heightUnit: options.map.units.height.unit,
     heightExponent: options.map.units.height.exponent,
     temperatureScale: options.map.units.temperature.unit,
+    moneyUnit: options.map.units.money.unit,
     populationRate: options.map.units.population.scale,
     urbanization: options.map.units.population.urbanization.rate,
     urbanDensity: options.map.units.population.urbanization.density,

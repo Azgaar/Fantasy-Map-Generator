@@ -18,6 +18,7 @@ const PRICE_CEILING_FACTOR = 5.0;
 const LAPLACE_PRICE_SMOOTHING = 5;
 const MARKET_PRESSURE_FACTOR = 0.01;
 const MARKET_MARGIN = 0.05;
+const OTHER_LANDMASS_SPACING = 0.5; // share of the market spacing a market on another landmass keeps clear
 const MAX_DECIMAS = 10; // the map's diagonal: the most carriage, paid with no route to the burg's own market
 
 export type Market = {
@@ -43,7 +44,7 @@ export type Deal = [
   kind: DealKind,
   units: number,
   price: number, // average per unit
-  tax: number, // sales tax: the burg's on a sale, the exporter's on an import
+  tax: number, // sales tax: the burg's on a sale, the selling market's on a purchase
   tariff: number, // the importer's, on an import
   carriage: number // average per unit: cost of carrying the goods between the market's center and the burg, in the price
 ];
@@ -59,8 +60,8 @@ type TradePair = {
   importerStateId: number;
   tariffs: TariffRate[]; // by good
 };
-export type TradeTerms = (exporter: Market, importer: Market, good: Good, price: number) => TradeCosts | null;
-export type ImportQuote = { source: Market; stock: number; buyPrice: number };
+export type TradeTerms = (source: Market, market: Market, good: Good, price: number) => TradeCosts | null;
+export type SourceQuote = { source: Market; stock: number; buyPrice: number };
 type CompiledStateTariffs = {
   byStateAndGood: Map<number, Map<number, TariffRate>>;
   byStateAllGoods: Map<number, TariffRate>;
@@ -106,25 +107,39 @@ export class MarketsModule {
     let minSpacing = (((options.map.graph.width + options.map.graph.height) * 2) / pack.burgs.length ** 0.6) | 0;
 
     const markets: Market[] = [];
-    const tree = quadtree<[number, number, number]>(
-      [],
-      d => d[0],
-      d => d[1]
-    );
+    const newTree = () =>
+      quadtree<[number, number, number]>(
+        [],
+        d => d[0],
+        d => d[1]
+      );
+    const tree = newTree();
+    const treeByLandmass = new Map<number, ReturnType<typeof newTree>>();
+    const place = (burg: Burg) => {
+      const marketId = markets.length + 1;
+      const market = { i: marketId, centerBurgId: burg.i!, color: "", goods: {} };
+      markets.push(market);
+      this.marketById[marketId] = market;
+      tree.add([burg.x, burg.y, marketId]);
+      if (!treeByLandmass.has(burg.feature!)) treeByLandmass.set(burg.feature!, newTree());
+      treeByLandmass.get(burg.feature!)!.add([burg.x, burg.y, marketId]);
+      minSpacing += 1;
+    };
 
-    for (const { burg } of scored) {
-      if (!burg.i || burg.removed) continue;
+    const living = scored.filter(({ burg }) => burg.i && !burg.removed);
+    for (const { burg } of living) {
       const { x, y } = burg;
-      const nearest = tree.find(x, y, minSpacing);
-      if (!nearest) {
-        // Create a new market anchored at this burg
-        const marketId = markets.length + 1;
-        const market = { i: marketId, centerBurgId: burg.i, color: "", goods: {} };
-        markets.push(market);
-        this.marketById[marketId] = market;
-        tree.add([x, y, marketId]);
-        minSpacing += 1;
-      }
+      // a market across the water is a world apart: it blocks a new one only when much closer
+      const blocked =
+        treeByLandmass.get(burg.feature!)?.find(x, y, minSpacing) ||
+        tree.find(x, y, minSpacing * OTHER_LANDMASS_SPACING);
+      if (!blocked) place(burg);
+    }
+
+    // a landmass with burgs but no port has no sea routes to the rest: it trades within itself
+    const portLandmasses = new Set(living.filter(({ burg }) => burg.port).map(({ burg }) => burg.feature));
+    for (const { burg } of living) {
+      if (!portLandmasses.has(burg.feature) && !treeByLandmass.has(burg.feature!)) place(burg);
     }
 
     const colors = getColors(markets.length);
@@ -615,19 +630,19 @@ export class MarketsModule {
     };
   }
 
-  /** Per-unit taxes on a good moving between markets: the exporter's sales tax and the importer's tariff. Null under an embargo */
+  /** Per-unit taxes on a good bought from a source market for a burg of another market: the source's sales tax and, from another state, the importer's tariff. Null under an embargo */
   getTradeTerms(): TradeTerms {
     const resolveTariff = this.compileTariffs();
-    const pairs: (TradePair | null)[][] = []; // by exporter then importer id, filled on first use
+    const pairs: (TradePair | null)[][] = []; // by source then buyer's market id, filled on first use
 
-    const buildPair = (exporter: Market, importer: Market): TradePair | null => {
-      const exporterCenter = pack.burgs[exporter.centerBurgId];
-      const importerCenter = pack.burgs[importer.centerBurgId];
-      if (!exporterCenter || !importerCenter) return null;
+    const buildPair = (source: Market, market: Market): TradePair | null => {
+      const sourceCenter = pack.burgs[source.centerBurgId];
+      const marketCenter = pack.burgs[market.centerBurgId];
+      if (!sourceCenter || !marketCenter) return null;
       return {
-        taxRate: States.getSalesTax(exporterCenter),
-        exporterStateId: exporterCenter.state || 0,
-        importerStateId: importerCenter.state || 0,
+        taxRate: States.getSalesTax(sourceCenter),
+        exporterStateId: sourceCenter.state || 0,
+        importerStateId: marketCenter.state || 0,
         tariffs: []
       };
     };
@@ -638,11 +653,11 @@ export class MarketsModule {
       return importerPolicy === "embargo" || exporterPolicy === "embargo" ? "embargo" : importerPolicy;
     };
 
-    return (exporter, importer, good, price) => {
-      pairs[exporter.i] ??= [];
-      const row = pairs[exporter.i];
-      if (row[importer.i] === undefined) row[importer.i] = buildPair(exporter, importer);
-      const pair = row[importer.i];
+    return (source, market, good, price) => {
+      pairs[source.i] ??= [];
+      const row = pairs[source.i];
+      if (row[market.i] === undefined) row[market.i] = buildPair(source, market);
+      const pair = row[market.i];
       if (!pair) return null;
 
       let tariffRate: TariffRate = 0;
@@ -660,11 +675,11 @@ export class MarketsModule {
   }
 
   /** The market a good reaches the burg cheapest from, with its stock and the burg's buy price */
-  quoteImport(burg: Burg, good: Good, terms: TradeTerms): ImportQuote | null {
+  quoteSource(burg: Burg, good: Good, terms: TradeTerms): SourceQuote | null {
     const market = this.get(burg.market);
     if (!market) return null;
 
-    let best: ImportQuote | null = null;
+    let best: SourceQuote | null = null;
     for (const source of pack.markets) {
       const row = source.goods[good.i];
       if (source === market || !row || row.stock <= 0.01) continue;
@@ -680,7 +695,7 @@ export class MarketsModule {
   }
 
   /** Price with the margin, the source's sales tax, the tariff and the carriage from the source's center to the burg; null when it cannot come */
-  private getImportPrice(source: Market, market: Market, burg: Burg, good: Good, terms: TradeTerms): number | null {
+  private getSourcePrice(source: Market, market: Market, burg: Burg, good: Good, terms: TradeTerms): number | null {
     const price = source.goods[good.i]?.price ?? good.value;
     const costs = terms(source, market, good, price);
     const transport = this.getTransport(source, burg, good);
@@ -689,7 +704,7 @@ export class MarketsModule {
   }
 
   /** The burg buys a good from another market, paying taxes, margin and carriage */
-  importForBurg({
+  buyFromSource({
     burg,
     source,
     good,
@@ -711,7 +726,7 @@ export class MarketsModule {
     if (!market || !row) return null;
 
     const costs = terms(source, market, good, row.price);
-    const price = this.getImportPrice(source, market, burg, good, terms);
+    const price = this.getSourcePrice(source, market, burg, good, terms);
     if (!costs || price === null) return null;
 
     const actualUnits = rn(Math.min(units, row.stock, affordable(budget, price)), 2);

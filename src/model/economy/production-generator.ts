@@ -7,7 +7,7 @@ import { log } from "@/utils/logger";
 import { minmax, rn } from "@/utils/number-utils";
 import type { DemandCategory, Good } from "./goods-generator";
 import { DEMAND_PRIORITY, Goods, getDemandTargets } from "./goods-generator";
-import type { DealKind, ImportQuote, Market, Trade, TradeTerms } from "./markets-generator";
+import type { DealKind, Market, SourceQuote, Trade, TradeTerms } from "./markets-generator";
 import { DEAL_KINDS, Markets } from "./markets-generator";
 
 const RURAL_OUTPUT_FACTOR = 3;
@@ -50,6 +50,7 @@ export class ProductionModule {
 
     const states: BurgProductionState[] = [];
     for (const burg of sortedBurgs) {
+      burg.treasury = 0; // every run starts from a clean slate
       const market = burg.market ? Markets.get(burg.market) : undefined;
       if (market) states.push(this.createBurgProductionState(burg, market));
     }
@@ -125,14 +126,14 @@ export class ProductionModule {
       revenue: 0,
       workersUsed: 0,
       activeGoalGoodId: null,
-      imports: []
+      sources: []
     };
   }
 
   /** Spends up to `workers` of the burg's remaining workers; false once none are left or nothing is worth making */
   private runWorkerLoop(index: ProductionIndex, state: BurgProductionState, workers = state.population): boolean {
     let used = 0;
-    state.imports = []; // other burgs traded since the last turn
+    state.sources = []; // other burgs traded since the last turn
 
     while (used < workers - 0.001) {
       const workersLeft = state.population - state.workersUsed;
@@ -206,7 +207,7 @@ export class ProductionModule {
     }
   }
 
-  /** Buys from the burg's market while it stocks the good, otherwise imports from the turn's cheapest source */
+  /** Buys from the burg's market while it stocks the good, otherwise from the turn's cheapest other market */
   private acquire(
     index: ProductionIndex,
     state: BurgProductionState,
@@ -221,28 +222,28 @@ export class ProductionModule {
     if ((market.goods[good.i]?.stock || 0) > 0.01) {
       trade = Markets.buy({ burg, good, units, kind, budget });
     } else {
-      const quote = state.imports[good.i];
+      const quote = state.sources[good.i];
       if (!quote) return null;
-      state.imports[good.i] = undefined; // the source's stock and price moved
+      state.sources[good.i] = undefined; // the source's stock and price moved
       market = quote.source;
-      trade = Markets.importForBurg({ burg, source: market, good, units, kind, terms: index.tradeTerms, budget });
+      trade = Markets.buyFromSource({ burg, source: market, good, units, kind, terms: index.tradeTerms, budget });
     }
 
     if (trade) state.log?.push({ goodId: good.i, market: market.i, kind, ...trade });
     return trade;
   }
 
-  /** The local quote while the burg's market stocks the good, otherwise the turn's cheapest import */
+  /** The local quote while the burg's market stocks the good, otherwise the turn's cheapest other market */
   private quote(index: ProductionIndex, state: BurgProductionState, goodId: number): MarketQuote {
     const local = Markets.quoteMarket(state.market, goodId, state.burg);
     const good = Goods.get(goodId);
     if (local.stock > 0.01 || !good) return local;
 
-    if (state.imports[goodId] === undefined) {
-      state.imports[goodId] = Markets.quoteImport(state.burg, good, index.tradeTerms);
+    if (state.sources[goodId] === undefined) {
+      state.sources[goodId] = Markets.quoteSource(state.burg, good, index.tradeTerms);
     }
-    const imported = state.imports[goodId];
-    return imported ? { ...local, stock: imported.stock, buyPrice: imported.buyPrice } : local;
+    const source = state.sources[goodId];
+    return source ? { ...local, stock: source.stock, buyPrice: source.buyPrice } : local;
   }
 
   /** The burg sold only what it made, so only that can be kept */
@@ -326,7 +327,7 @@ export class ProductionModule {
     const { burg } = state;
     const demandTargets = getDemandTargets(burg.population || 0);
     const demandCoverage = new Array(DEMAND_PRIORITY.length).fill(0);
-    state.imports = []; // other burgs traded since its last turn
+    state.sources = []; // other burgs traded since its last turn
 
     for (let categoryIndex = 0; categoryIndex < DEMAND_PRIORITY.length; categoryIndex++) {
       let shortage = Math.max(0, demandTargets[categoryIndex] - demandCoverage[categoryIndex]);
@@ -781,7 +782,7 @@ type BurgProductionState = {
   revenue: number;
   workersUsed: number;
   activeGoalGoodId: number | null;
-  imports: (ImportQuote | null | undefined)[]; // cheapest import by good for the current turn, null when none
+  sources: (SourceQuote | null | undefined)[]; // cheapest other market by good for the current turn, null when none
 };
 
 type DemandGoodCandidate = { good: Good; goodId: number; coverageWeight: number };

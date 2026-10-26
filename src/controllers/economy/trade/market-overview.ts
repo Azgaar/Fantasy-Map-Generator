@@ -27,13 +27,14 @@ import { clearMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, getPointer } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
+import { bindEconomyWiki, economyWikiButton } from "../economy-wiki";
 
 let activeMarketId = 0;
 const dialogId = "marketOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 type MarketGoodRow = { goodId: number; good: string; stock: number; price: number };
 const columns: EditorColumn<MarketGoodRow>[] = [
-  { key: "icon", width: "2.5em", permanent: true },
+  { key: "icon", width: "1.8em", permanent: true },
   {
     key: "good",
     label: t("Good"),
@@ -121,6 +122,7 @@ function renderDialog(): void {
           class="icon-map-pin"
         ></button>
         <button id="marketOverviewExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
+        ${economyWikiButton("marketOverviewWiki")}
       </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
@@ -132,12 +134,17 @@ function renderDialog(): void {
   });
 
   ensureEl("marketOverviewRefresh").addEventListener("click", marketOverviewTable.refresh);
+  bindEconomyWiki("marketOverviewWiki");
   ensureEl("marketOverviewExport").addEventListener("click", downloadStockCsv);
   ensureEl("marketOverviewOpenDeals").addEventListener("click", () =>
     Controllers.MarketDealsOverview.open(activeMarketId)
   );
   ensureEl("marketOverviewRelocate").addEventListener("click", toggleRelocateMarket);
   ensureEl("marketOverviewLegend").addEventListener("click", editMarketNote);
+  ensureEl("marketOverviewGoodsBody").addEventListener("click", event => {
+    const goodId = (event.target as HTMLElement).closest<HTMLElement>(".marketGoodPrice")?.dataset.goodId;
+    if (goodId) Controllers.ComparePrices.open(+goodId, `#${dialogId}`);
+  });
   ensureEl("marketOverviewName").addEventListener("input", onRenameInput);
   ensureEl("marketOverviewNameReset").addEventListener("click", resetMarketName);
 }
@@ -188,6 +195,13 @@ function getMarketGoods(): MarketGoodRow[] {
   return sortDataByColumns(dialogId, rows, columns);
 }
 
+const priceTip = (price: number, basePrice: number) =>
+  sentences(
+    `${t("Market price")}: ${formatPrice(price)}`,
+    `${t("Base good price")}: ${formatPrice(basePrice)}`,
+    t("Click to compare prices across markets")
+  );
+
 function renderMarketOverviewPage(view: TableView<MarketGoodRow>): void {
   const market = Markets.get(activeMarketId);
   if (!market) return;
@@ -199,12 +213,12 @@ function renderMarketOverviewPage(view: TableView<MarketGoodRow>): void {
       data-good="${good.name}"
       data-stock="${rn(row.stock, 2)}"
       data-price="${rn(row.price, 2)}">
-      <svg data-col="icon" data-tip="${t("Good icon")}" width="2em" height="2em" class="goodIcon">
+      <svg data-col="icon" data-tip="${t("Good icon")}" width="1.6em" height="1.6em" class="goodIcon">
         ${goodBadge(good)}
       </svg>
       <div data-col="good" data-tip="${t("Name")}" class="goodName">${good.name}</div>
       <div data-col="stock" data-tip="${t("Good stock")}" class="marketGoodStock">${rn(row.stock, 2)}</div>
-      <div data-col="price" data-tip="${t("Good price")}" class="marketGoodPrice">${formatPrice(row.price)}</div>
+      <div data-col="price" data-tip="${priceTip(row.price, good.value)}" class="marketGoodPrice pointer" data-good-id="${good.i}">${formatPrice(row.price)}</div>
     </div>`;
   });
   ensureEl("marketOverviewGoodsBody").innerHTML = lines.join("") || t("No goods available");

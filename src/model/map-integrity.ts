@@ -34,6 +34,7 @@ const RULES = [
   "burg-positions", // a burg lies in its cell
   "burg-features", // feature and port water fit the cell
   "burg-routes", // a burg is on the route network, so it can trade
+  "burg-markets", // a burg belongs to the living market of its cell, so it takes part in the economy
   "cell-burgs", // cells.burg points at living burgs that point back
   "state-centers",
   "state-capitals", // a living state has a living capital
@@ -166,6 +167,7 @@ class MapIntegrityModule {
     }
 
     const burgsByCell = new Set<number>();
+    const marketIds = new Set((pack.markets ?? []).map(market => market.i));
     for (const burg of living(pack.burgs)) {
       if (!land(burg.cell) || cells.burg[burg.cell] !== burg.i || burgsByCell.has(burg.cell))
         fail("burg-cells", burg.i);
@@ -174,6 +176,8 @@ class MapIntegrityModule {
       const port = burg.port ? features[burg.port] : undefined;
       if (burg.feature !== cells.f[burg.cell] || (burg.port && (!port || port.land))) fail("burg-features", burg.i);
       if (valid(burg.cell) && !Object.keys(cells.routes?.[burg.cell] ?? {}).length) fail("burg-routes", burg.i);
+      if (!marketIds.has(burg.market ?? 0) || (valid(burg.cell) && cells.market?.[burg.cell] !== burg.market))
+        fail("burg-markets", burg.i);
     }
     for (let cell = 0; cell < n; cell++) {
       const burgId = cells.burg[cell];

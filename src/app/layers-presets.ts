@@ -29,6 +29,19 @@ const DEFAULT_PRESETS: Record<string, LayerId[]> = {
     "trade",
     "vignette"
   ],
+  economy: [
+    "borders",
+    "burgIcons",
+    "goods",
+    "ice",
+    "lakes",
+    "markets",
+    "rivers",
+    "routes",
+    "scaleBar",
+    "trade",
+    "vignette"
+  ],
   trade: ["borders", "burgIcons", "lakes", "rivers", "routes", "scaleBar", "states", "trade", "vignette"],
   military: [
     "borders",

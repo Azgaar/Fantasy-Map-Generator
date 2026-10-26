@@ -1,7 +1,9 @@
+import { interpolateYlOrBr } from "d3";
 import { Goods } from "@/model/economy/goods-generator";
 import { Production } from "@/model/economy/production-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
+import type { Burg } from "@/model/political/burgs-generator";
 import { Layers } from "@/renderers/layers";
 import {
   type Box,
@@ -18,6 +20,7 @@ const layer = ViewportLayers.register({ id: "goods", render: reconcileGoods });
 let cellProduction: CellProduction[] = [];
 let resourceIcons: ResourceIcon[] = [];
 let burgPlates: BurgPlate[] = [];
+let burgCircles: BurgCircle[] = [];
 let sourcePack: PackedGraph | null = null;
 
 const PLATE_ICON = 3;
@@ -30,6 +33,8 @@ const PLATE_PAD_Y = 0.6;
 const PLATE_RX = 1;
 const PLATE_FILL = "#f5f5f5";
 const ICON_FRAME = 100; // every goods icon is drawn in a 0 0 100 100 frame
+const OVERVIEW_SATURATION = 0.95; // percentile from which cells get the darkest color and burgs the biggest circle
+const BURG_FILL = "#1e88e5"; // blue stands out on the yellow-brown cells
 const LINEWORK = 0.4; // icon lines are this share of the circle outline
 
 /** A goods icon's `<use>` lines: the goods icons style, its width carried into the icon frame at the marker's
@@ -48,7 +53,7 @@ export function goodBadge({ color, icon }: { color: string; icon: string }): str
 /** a producing cell: the polygon points are re-read per frame, only the visible ones */
 interface CellProduction extends Box {
   cellId: number;
-  opacity: number;
+  opacity?: number; // relative output of the selected goods; the overview is solid, the group style dims both
   colors: string[];
 }
 
@@ -68,6 +73,14 @@ interface PlateEntry {
   icon: string;
 }
 
+/** a burg's output in the overview: the circle's area grows with its value, its size follows the plates style */
+interface BurgCircle {
+  burgId: number;
+  x: number;
+  y: number;
+  share: number; // of the saturation percentile's output value, at most 1
+}
+
 /** a burg plate: the entry list is style-independent, the geometry is laid out per frame */
 interface BurgPlate {
   burgId: number;
@@ -84,13 +97,26 @@ export async function drawGoods(): Promise<void> {
   log.timeEnd("drawGoods");
 }
 
+/** Selected goods in detail, or with none selected an overview of all output by value */
 function buildScene(): void {
-  const displayed = new Set(pack.goods.filter(good => good.visible).map(good => good.i));
-  buildCellProduction(displayed);
-  buildResourceIcons(displayed);
-  buildBurgPlates(displayed);
+  const selected = new Set(pack.goods.filter(good => good.visible).map(good => good.i));
+  resourceIcons = [];
+  burgPlates = [];
+  burgCircles = [];
+  if (selected.size) {
+    buildCellProduction(selected);
+    buildResourceIcons(selected);
+    buildBurgPlates(selected);
+  } else {
+    buildCellOverview();
+    buildBurgCircles();
+  }
   sourcePack = pack;
 }
+
+/** Output in money: units at the goods' base prices */
+const getOutputValue = (produced: Record<number, number>) =>
+  Object.entries(produced).reduce((total, [goodId, units]) => total + units * (Goods.get(+goodId)?.value ?? 0), 0);
 
 /** Layer teardown: drop the cached scene and the drawn content */
 export function removeGoods(): void {
@@ -98,6 +124,7 @@ export function removeGoods(): void {
   cellProduction = [];
   resourceIcons = [];
   burgPlates = [];
+  burgCircles = [];
 
   const root = findEl("goods");
   if (root) for (const child of Array.from(root.children)) child.replaceChildren();
@@ -114,7 +141,7 @@ function reconcileGoods({ root, bounds }: ViewportRenderContext): void {
   if (icons) icons.innerHTML = renderResourceIcons(bounds);
 
   const burgs = root.querySelector<SVGGElement>("#goodsBurgs");
-  if (burgs) burgs.innerHTML = renderBurgPlates(bounds);
+  if (burgs) burgs.innerHTML = renderBurgPlates(bounds) + renderBurgCircles(bounds);
 }
 
 function buildCellProduction(displayedGoods: Set<number>): void {
@@ -157,6 +184,47 @@ function buildCellProduction(displayedGoods: Set<number>): void {
   }
 }
 
+/** A high percentile of the values: a few outliers would leave everything else pale and small against the maximum */
+function getSaturation(values: number[]): number {
+  const sorted = values.toSorted((a, b) => a - b);
+  return sorted[Math.floor((sorted.length - 1) * OVERVIEW_SATURATION)] || 1;
+}
+
+/** Each producing cell colored by its output value, from pale to dark at the saturation percentile */
+function buildCellOverview(): void {
+  cellProduction = [];
+  const biomeProduction = Goods.getBiomesProduction();
+  const values: [number, number][] = [];
+  for (const cellId of pack.cells.i) {
+    const value = getOutputValue(Production.getCellProduction(cellId, biomeProduction));
+    if (value > 0) values.push([cellId, value]);
+  }
+
+  // square root spreads the many modest cells over the ramp
+  const saturation = getSaturation(values.map(([, value]) => value));
+  for (const [cellId, value] of values) {
+    const color = interpolateYlOrBr(Math.sqrt(Math.min(1, value / saturation)));
+    cellProduction.push({ cellId, colors: [color], ...getPolygonBox(cellId) });
+  }
+}
+
+/** Every producing burg as a circle sized by its output value */
+function buildBurgCircles(): void {
+  const values: [Burg, number][] = [];
+  for (const burg of pack.burgs) {
+    if (!burg.i || burg.removed || !burg.production) continue;
+    const value = getOutputValue(Production.getBurgProduction(burg));
+    if (value > 0) values.push([burg, value]);
+  }
+  const saturation = getSaturation(values.map(([, value]) => value));
+  burgCircles = values.map(([burg, value]) => ({
+    burgId: burg.i!,
+    x: burg.x,
+    y: burg.y,
+    share: Math.min(1, value / saturation)
+  }));
+}
+
 function buildResourceIcons(displayedGoods: Set<number>): void {
   resourceIcons = [];
   if (!displayedGoods.size || !pack.cells.good) return;
@@ -172,6 +240,7 @@ function buildResourceIcons(displayedGoods: Set<number>): void {
   }
 }
 
+/** Each burg's three most valuable products, shown in units */
 function buildBurgPlates(displayedGoods: Set<number>): void {
   burgPlates = [];
   if (!displayedGoods.size) return;
@@ -182,19 +251,17 @@ function buildBurgPlates(displayedGoods: Set<number>): void {
     const produced = Production.getBurgProduction(burg);
     const entries: PlateEntry[] = [];
 
-    // the three biggest producers, picked on value alone so the list survives style changes
-    for (const good of pack.goods) {
-      if (!displayedGoods.has(good.i)) continue;
-      const raw = produced[good.i];
-      if (!raw || raw <= 0) continue;
-
-      const value = rn(raw, 1);
-      if (entries.length === 3 && value <= entries[2].value) continue;
-
-      let i = entries.length;
-      while (i > 0 && entries[i - 1].value < value) i--;
-      entries.splice(i, 0, { value, color: good.color, stroke: Goods.getStroke(good.color), icon: good.icon });
-      if (entries.length > 3) entries.pop();
+    const top = pack.goods
+      .filter(good => displayedGoods.has(good.i) && produced[good.i] > 0)
+      .sort((a, b) => produced[b.i] * b.value - produced[a.i] * a.value)
+      .slice(0, 3);
+    for (const good of top) {
+      entries.push({
+        value: rn(produced[good.i], 1),
+        color: good.color,
+        stroke: Goods.getStroke(good.color),
+        icon: good.icon
+      });
     }
     if (!entries.length) continue;
 
@@ -209,7 +276,9 @@ function renderCellProduction(bounds: Box): string {
     if (!boundsIntersect(cell, bounds)) continue;
     const points = Pack.getPolygon(cell.cellId).join(" ");
     for (const color of cell.colors) {
-      markup.push(`<polygon points="${points}" fill="${color}" fill-opacity="${cell.opacity}"/>`);
+      markup.push(
+        `<polygon points="${points}" fill="${color}"${cell.opacity === undefined ? "" : ` fill-opacity="${cell.opacity}"`}/>`
+      );
     }
   }
 
@@ -277,6 +346,20 @@ function renderBurgPlates(bounds: Box): string {
     markup.push(`<g data-id="${burgId}">${content}</g>`);
   }
 
+  return markup.join("");
+}
+
+function renderBurgCircles(bounds: Box): string {
+  // the area grows with the output, the biggest circle half again the plate icon size across its radius
+  const maxRadius = styles.goods.groups.goodsBurgs.options.size * 1.5;
+  const markup: string[] = [];
+  for (const { burgId, x, y, share } of burgCircles) {
+    const r = Math.max(0.3, maxRadius * Math.sqrt(share));
+    if (!boundsIntersect({ x0: x - r, y0: y - r, x1: x + r, y1: y + r }, bounds)) continue;
+    markup.push(
+      `<g data-id="${burgId}"><circle cx="${rn(x, 1)}" cy="${rn(y, 1)}" r="${rn(r, 2)}" fill="${BURG_FILL}" fill-opacity="0.9"/></g>`
+    );
+  }
   return markup.join("");
 }
 

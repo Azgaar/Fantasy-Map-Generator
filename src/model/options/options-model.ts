@@ -78,6 +78,7 @@ class OptionsModel {
           area: { unit: "square" },
           height: { unit: isImperial() ? "ft" : "m", exponent: 2 },
           temperature: { unit: locale() === "en-US" ? "°F" : "°C" },
+          money: { unit: "uncia" },
           population: { scale: 1000, urbanization: { rate: 1, density: 10 } }
         },
         style: { preset: "default" },
@@ -312,6 +313,7 @@ class OptionsModel {
     units.height.unit = Pins.valueOr("heightUnit", units.height.unit);
     units.height.exponent = Pins.valueOr("heightExponent", units.height.exponent);
     units.temperature.unit = Pins.valueOr("temperatureScale", units.temperature.unit);
+    units.money.unit = Pins.valueOr("moneyUnit", units.money.unit);
     units.population.scale = Pins.valueOr("populationRate", units.population.scale);
     units.population.urbanization.rate = Pins.valueOr("urbanization", units.population.urbanization.rate);
     units.population.urbanization.density = Pins.valueOr("urbanDensity", units.population.urbanization.density);

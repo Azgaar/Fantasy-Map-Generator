@@ -21,6 +21,7 @@ import { zoomTo } from "@/ui/map/zoom";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
+import { bindEconomyWiki, economyWikiButton } from "../economy-wiki";
 import { carriageDistance, money, splitDealPrice, tariffCell, tradeCellTips, tradeColumnTips } from "./deal-price";
 
 /** A burg's trades with one market in one direction: it sells to its market, or buys from a market */
@@ -150,9 +151,11 @@ function renderDialog(): void {
           <div data-col="units" style="margin-left: 12px" data-tip="${t("Total traded units")}">${t("Units")}: <span id="tradeDetailsFooterUnits">0</span></div>
           <div data-col="income" style="margin-left: 12px" data-tip="${tips.income}">${t("Income")}: <span id="tradeDetailsFooterIncome">0</span></div>
         </div>
+        <div id="tradeDetailsBottom">${economyWikiButton("tradeDetailsWiki")}</div>
       </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
+  bindEconomyWiki("tradeDetailsWiki");
   bindColumnSorting(dialogId, tradeDetailsTable.reset);
   initColumnVisibility({
     dialogId,

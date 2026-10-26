@@ -9,6 +9,7 @@ import { tip } from "@/ui/tooltips";
 import { C_12 } from "@/utils/color-utils";
 import { t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
+import { bindEconomyWiki, economyWikiButton } from "./economy-wiki";
 
 const CARD_WIDTH = 98;
 const CARD_HEIGHT = 34;
@@ -152,8 +153,10 @@ function open(): void {
     width: dialogSize.width,
     height: dialogSize.height,
     position: { my: "center", at: "center", of: window },
+    footer: economyWikiButton("productionChainsWiki"),
     onClose: closeProductionChains
   });
+  bindEconomyWiki("productionChainsWiki");
 }
 
 function renderDialog(): void {

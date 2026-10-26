@@ -12,7 +12,7 @@ A `.map` file holds everything. Use it to move a map between browsers or to shar
 
 # Table data (CSV)
 
-The editors in _Tools_ that download their table as a CSV file can upload it back: States, Cultures, Religions, Provinces, Burgs, Rivers, Routes, Markers, Zones, Biomes and Features. The upload button sits next to the download button in the bottom line (_Upload data from a CSV file_). A CSV is a plain text table: edit it in a spreadsheet (LibreOffice Calc, Excel, Google Sheets) and save it as CSV with UTF-8 encoding (in Excel: _CSV UTF-8_). Downloads are marked as UTF-8, so spreadsheets open names with accents and other letters correctly. Keep the header row and the column names as they are in the downloaded file. A value with a comma inside must be quoted; spreadsheets do this on their own.
+The editors in _Tools_ that download their table as a CSV file can upload it back: States, Cultures, Religions, Provinces, Burgs, Rivers, Routes, Markers, Zones, Biomes, Features and Goods. The upload button sits next to the download button in the bottom line (_Upload data from a CSV file_). A CSV is a plain text table: edit it in a spreadsheet (LibreOffice Calc, Excel, Google Sheets) and save it as CSV with UTF-8 encoding (in Excel: _CSV UTF-8_). Downloads are marked as UTF-8, so spreadsheets open names with accents and other letters correctly. Keep the header row and the column names as they are in the downloaded file. A value with a comma inside must be quoted; spreadsheets do this on their own.
 
 Before anything is changed, the upload checks the file and stops with a message when:
 
@@ -28,7 +28,7 @@ Nothing changes until you confirm. The upload first works out what the file woul
 
 All uploads **update existing entries only**. Every row is matched by `Id`, and entries left out of the file are kept unchanged.
 
-- An empty cell keeps the current value, and a value equal to the current one is not touched (a number the spreadsheet reformatted, such as `2.50` for `2.5`, counts as equal). The exception is a column of flags or tags (`Tags`, and the building and `Port` columns of burgs): there an empty cell clears the value, so remove the column to keep them.
+- An empty cell keeps the current value, and a value equal to the current one is not touched (a number the spreadsheet reformatted, such as `2.50` for `2.5`, counts as equal). The exception is a column of flags or tags (`Tags`, the building and `Port` columns of burgs, and the `Unit` and `Demand Coverage` of goods): there an empty cell clears the value, so remove the column to keep them.
 - Columns are matched ignoring letter case and spaces around them; a column the upload does not know (a typo, for example) is listed in the message.
 - Columns calculated from the map (cells, area, burgs, length and so on) are ignored. Territory is not part of the file: re-draw it with the editor's brush.
 - A name in a cell that refers to something else (a capital, culture, state or origin) must match an existing name exactly.
@@ -52,6 +52,7 @@ Tags are separated by `;`. Colors are HEX like `#a1b2c3`; a hatched fill is kept
 | Zones | `Description`, `Color`, `Type`, `Population`, `Tags` |
 | Biomes | `Biome`, `Color`, `Habitability` (percent) |
 | Features | `Name`, `Subtype`, `Group` (lakes only), `Tags` |
+| Goods | `Good`, `Color`, `Tags`, `Value`, `Carriage`, `Unit`, `Demand Coverage` (`category:share` pairs separated by `;`, such as `food:1;luxury:0.5`), `Chance` (0 to 100). `Model` is code and is edited in the good's editor only. Prices and production follow on the next economy run |
 
 # Text data
 
@@ -72,4 +73,4 @@ Tags are separated by `;`. Colors are HEX like `#a1b2c3`; a hatched fill is kept
 
 # What cannot be uploaded
 
-Military, regiments, diplomacy, goods and markets have a CSV download but no upload. GeoJSON and JSON exports (_Tools_ → _Export_) are for other tools such as [GIS](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export) and cannot be loaded back.
+Military, regiments, diplomacy and markets have a CSV download but no upload. GeoJSON and JSON exports (_Tools_ → _Export_) are for other tools such as [GIS](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/GIS-data-export) and cannot be loaded back.

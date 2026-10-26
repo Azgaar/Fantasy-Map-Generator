@@ -43,7 +43,8 @@ describe("StatesEditor", () => {
         units: {
           distance: { scale: 1, unit: "mi" },
           population: { scale: 1000, urbanization: { rate: 0.2 } },
-          area: { scale: 1, unit: "mi2" }
+          area: { scale: 1, unit: "mi2" },
+          money: { unit: "uncia" }
         }
       }
     });

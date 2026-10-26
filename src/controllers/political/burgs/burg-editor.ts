@@ -9,7 +9,7 @@ import type { Burg } from "@/model/political/burgs-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
-import { convertTemperature, getHeight, getTemperatureLikeness } from "@/model/units";
+import { convertTemperature, getHeight, getMoneyUnit, getTemperatureLikeness } from "@/model/units";
 import { removeEmblem } from "@/renderers/draw-emblems";
 import { goodIconLines } from "@/renderers/draw-goods";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
@@ -189,7 +189,7 @@ function renderDialog(): void {
               <div class="label">${t("Wealth")}</div>
               <span id="burgWealth"></span>
             </div>
-            <div data-tip="${t("Set treasury balance. Production won't be changed automatically")}">
+            <div data-tip="${t("Set the burg's treasury in {{money}}. Production won't be changed automatically", { money: getMoneyUnit() })}">
               <div class="label"><label for="burgTreasury">${t("Treasury")}:</label></div>
               <input id="burgTreasury" type="number" step="0.01" style="width: 9em" /> 🟡
             </div>

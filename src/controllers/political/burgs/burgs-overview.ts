@@ -5,7 +5,7 @@ import type { Burg } from "@/model/political/burgs-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
-import { convertTemperature, getHeight, getTemperatureLikeness } from "@/model/units";
+import { convertTemperature, getHeight, getMoneyUnit, getTemperatureLikeness } from "@/model/units";
 import { removeEmblem } from "@/renderers/draw-emblems";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
@@ -368,6 +368,7 @@ function renderBurgsPage(view: TableView<Burg>): void {
     totalTreasury += treasury;
   }
 
+  const treasuryTip = t("Treasury: the burg's money after the day's trade, in {{money}}", { money: getMoneyUnit() });
   for (const b of view.rows) {
     const population =
       b.population! * options.map.units.population.scale * options.map.units.population.urbanization.rate;
@@ -413,8 +414,8 @@ function renderBurgsPage(view: TableView<Burg>): void {
           <input data-tip="${t("Wealth: gross product divided by population")}" value=${productPerCapita} disabled />
         </div>
         <div data-col="treasury">
-          <span data-tip="${t("Treasury: accumulated cash balance")}">🟡</span>
-          <input data-tip="${t("Treasury: accumulated cash balance")}" value=${treasury} disabled />
+          <span data-tip="${treasuryTip}">🟡</span>
+          <input data-tip="${treasuryTip}" value=${treasury} disabled />
         </div>
         <div data-col="features">
           <span

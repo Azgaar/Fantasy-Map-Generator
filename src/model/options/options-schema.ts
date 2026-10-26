@@ -166,6 +166,7 @@ const units = z.strictObject({
   area: z.strictObject({ unit: z.string() }),
   height: z.strictObject({ unit: z.string(), exponent: positive }),
   temperature: z.strictObject({ unit: z.string() }),
+  money: z.strictObject({ unit: z.string() }),
   population: z.strictObject({
     scale: positive,
     urbanization: z.strictObject({ rate: nonNegative, density: positive })
@@ -336,6 +337,7 @@ export const pinSchemas: Record<string, z.ZodType> = {
   heightUnit: units.shape.height.shape.unit,
   heightExponent: units.shape.height.shape.exponent,
   temperatureScale: units.shape.temperature.shape.unit,
+  moneyUnit: units.shape.money.shape.unit,
   populationRate: units.shape.population.shape.scale,
   urbanization: units.shape.population.shape.urbanization.shape.rate,
   urbanDensity: units.shape.population.shape.urbanization.shape.density

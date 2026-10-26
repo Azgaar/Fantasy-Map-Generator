@@ -85,8 +85,7 @@ Two constraints are easy to break when replicating a slice of this:
 - **Economy depends on the whole settlement chain.** Production reads `state.culture`,
   `state.provinces`, `cells.biome`, `cells.pop`, `cells.market` and `pack.routes`. Anything that
   rebuilds burgs, states or provinces must rebuild the economy too, or markets, deals and treasuries
-  reference stale or removed entities. See [`production_schema.md`](../domain/production_schema.md)
-  and [`trade_schema.md`](../domain/trade_schema.md).
+  reference stale or removed entities. See [`economy.md`](../domain/economy.md).
 
 ```mermaid
 flowchart TD

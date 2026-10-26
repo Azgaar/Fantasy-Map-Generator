@@ -27,6 +27,7 @@ import { clearMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl, getPointer } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
+import { bindEconomyWiki, economyWikiButton } from "../economy-wiki";
 
 const dialogId = "marketsOverview" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg" };
@@ -102,6 +103,7 @@ function renderDialog(): void {
         <button id="marketsAdd" data-tip="${sentences(t("Add"), t("Click on a burg on the map"), t("Hold Shift to add multiple"))}" class="icon-plus"></button>
         <button id="marketsRegenerate" data-tip="${t("Regenerate markets and their territories")}" class="icon-arrows-cw"></button>
         <button id="marketsRegenerateProduction" data-tip="${t("Regenerate production and trade deals")}" class="icon-retweet"></button>
+        ${economyWikiButton("marketsOverviewWiki")}
       </div>
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
@@ -113,6 +115,7 @@ function renderDialog(): void {
   });
 
   ensureEl("marketsOverviewRefresh").addEventListener("click", marketsTable.refresh);
+  bindEconomyWiki("marketsOverviewWiki");
   ensureEl("marketsOverviewExport").addEventListener("click", downloadMarketsCsv);
   ensureEl("marketsOverviewCompare").addEventListener("click", () => Controllers.ComparePrices.open());
   ensureEl("marketsOverviewPercentage").addEventListener("click", togglePercentageMode);

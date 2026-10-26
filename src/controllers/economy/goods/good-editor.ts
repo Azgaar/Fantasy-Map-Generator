@@ -6,7 +6,7 @@ import { Production } from "@/model/economy/production-generator";
 import { Icons } from "@/model/icons";
 import { CULTURE_TYPES } from "@/model/society/cultures-generator";
 import { Tags } from "@/model/tags";
-import { getDecima, getDistance } from "@/model/units";
+import { getDecima, getDistance, getMoneyUnit } from "@/model/units";
 import { goodIconLines } from "@/renderers/draw-goods";
 import { Layers } from "@/renderers/layers";
 import { Dialog } from "@/ui/dialog/dialog";
@@ -17,6 +17,7 @@ import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 import { capitalize, escapeHtml } from "@/utils/string-utils";
+import { bindEconomyWiki, economyWikiButton } from "../economy-wiki";
 
 function open(editedGood?: Good, onUpdate?: () => void): void {
   const demandCoverageState: Partial<Record<DemandCategory, number>> = { ...(editedGood?.demandCoverage || {}) };
@@ -71,12 +72,14 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
     width: "30em",
     title: editedGood ? t("Edit good") : t("Add"),
     // only edits can recompute the economy
-    footer: editedGood
-      ? /*html*/ `<div class="dontAsk" data-tip="${t("Re-place this good and recompute production, trade and taxes. Uncheck to update the good only, without disturbing the current economy.")}">
+    footer:
+      economyWikiButton("goodEditorWiki") +
+      (editedGood
+        ? /*html*/ `<div class="dontAsk" data-tip="${t("Re-place this good and recompute production, trade and taxes. Uncheck to update the good only, without disturbing the current economy.")}">
           <input id="goodRegenerateEconomy" class="checkbox" type="checkbox" checked />
           <label for="goodRegenerateEconomy" class="checkbox-label"><i>${t("regenerate economy on apply")}</i></label>
         </div>`
-      : undefined,
+        : ""),
     buttons: [
       {
         label: t("Cancel"),
@@ -209,6 +212,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
       }
     ]
   });
+  bindEconomyWiki("goodEditorWiki");
 
   function renderDialog(): void {
     Dialog.destroy("goodEditor");
@@ -252,7 +256,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
           <label for="newGoodTags">${t("Tags")}</label>
           <input id="newGoodTags" class="ge-field" value="${Tags.format(editedGood?.tags)}" placeholder="${t("comma separated")}" />
 
-          <label for="newGoodValue">${t("Base Price")}*</label>
+          <label for="newGoodValue" data-tip="${t("Price of one unit in {{money}}, the price markets start from", { money: getMoneyUnit() })}">${t("Base Price")}*</label>
           <span class="ge-inline"><input id="newGoodValue" class="ge-num" type="number" min="0" step="1" value="${editedGood?.value ?? 1}" /> 🟡</span>
 
           <label for="newGoodCarriage" data-tip="${t("Price of carrying one unit over 1 decima (a tenth of the map's diagonal, here {{distance}}) along roads and sea routes. Bulky goods cost more to carry, dear ones pay for the risk", { distance: getDistance(getDecima()) })}">${t("Carriage Price")}*</label>

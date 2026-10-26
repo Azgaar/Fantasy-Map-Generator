@@ -26,6 +26,7 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Emblems: Armoria pictures in older maps become COAs where possible
 - River style groups: regular, frozen, dry, lava and custom
 - Rivers: tributaries bend gently into the downstream flow
+- Economy: [TBU]
 
 # Releases
 

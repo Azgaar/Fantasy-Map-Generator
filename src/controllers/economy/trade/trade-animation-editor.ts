@@ -5,6 +5,7 @@ import { Dialog } from "@/ui/dialog/dialog";
 
 import { t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
+import { bindEconomyWiki, economyWikiButton } from "../economy-wiki";
 
 const DEFAULTS = TradeAnimation.getDefaultOptions();
 const INPUTS = [
@@ -69,8 +70,10 @@ function open(): void {
 
   Dialog.open("tradeAnimationEditor", {
     title: t("Trade Animation Editor"),
-    position: { my: "right top", at: "right-10 top+10", of: "svg" }
+    position: { my: "right top", at: "right-10 top+10", of: "svg" },
+    footer: economyWikiButton("tradeAnimationWiki")
   });
+  bindEconomyWiki("tradeAnimationWiki");
 }
 
 function renderDialog(): void {

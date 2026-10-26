@@ -21,6 +21,7 @@ import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
+import { bindEconomyWiki, economyWikiButton } from "../economy-wiki";
 import { money, splitDealPrice, tariffCell, tradeCellTips, tradeColumnTips } from "./deal-price";
 
 let activeMarketId = 0;
@@ -107,9 +108,9 @@ const columns: EditorColumn<MarketDealRow>[] = [
     label: t("Income"),
     tip: sentences(marketIncomeTip, t("Click to sort by {{column}}", { column: t("Income") })),
     width: "6em",
-    permanent: true,
     sortBy: row => row.income
-  }
+  },
+  { key: "actions", width: "1.4em", permanent: true, hidden: true }
 ];
 
 const marketDealsTable = initEditorTable<MarketDealRow>({
@@ -150,6 +151,7 @@ function renderDialog(): void {
         <div id="marketDealsBottom">
           <button id="marketDealsRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
           <button id="marketDealsExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
+          ${economyWikiButton("marketDealsWiki")}
         </div>
       </div>
   </div>`;
@@ -162,6 +164,7 @@ function renderDialog(): void {
   });
 
   ensureEl("marketDealsRefresh").addEventListener("click", marketDealsTable.refresh);
+  bindEconomyWiki("marketDealsWiki");
   ensureEl("marketDealsExport").addEventListener("click", downloadDealsCsv);
   ensureEl("marketDealsBody").addEventListener("click", event => {
     const line = (event.target as HTMLElement)

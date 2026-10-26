@@ -252,7 +252,7 @@ function getGoodsTip(target: SVGElement, cellId: number): string | undefined {
 
   const formatProduction = (produced: Record<string, number>) =>
     Object.entries(produced)
-      .filter(([goodId]) => Goods.get(Number(goodId))?.visible)
+      .filter(([goodId]) => Goods.isDisplayed(Goods.get(Number(goodId))))
       .map(([goodId, amount]) => {
         const name = (Goods.get(Number(goodId))?.name || "unknown").toLowerCase();
         return `${name} ${amount}${Number(goodId) === bonusGoodId ? " (bonus)" : ""}`;

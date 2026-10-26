@@ -1193,11 +1193,6 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
     States.collectTaxes();
   }
 
-  if (isOlderThan("1.127.0")) {
-    // goods visibility moved onto the good itself; default to showing the first good
-    if (pack.goods?.length && !pack.goods.some(good => good.visible)) pack.goods[0].visible = true;
-  }
-
   if (isOlderThan("1.138.0")) {
     // v1.138.0 migrated measurers from the global rulers string (data[33]) to pack.measurers
     const MEASURER_TYPES = ["Ruler", "Opisometer", "RouteOpisometer", "Planimeter"];

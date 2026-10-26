@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { interpolateYlOrBr } from "d3";
 import { beforeEach, expect, test, vi } from "vitest";
 import { setViewportSize, setViewportTransform } from "@/renderers/viewport/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
@@ -51,8 +52,8 @@ beforeEach(() => {
       ]
     },
     goods: [
-      { i: 1, name: "Grain", color: "#ff0000", icon: "goods-grain", visible: true },
-      { i: 2, name: "Iron", color: "#00ff00", icon: "goods-iron", visible: true }
+      { i: 1, name: "Grain", color: "#ff0000", icon: "goods-grain", value: 1, visible: true },
+      { i: 2, name: "Iron", color: "#00ff00", icon: "goods-iron", value: 1, visible: true }
     ],
     burgs: [{}, { i: 1, x: 50, y: 60, production: {} }, { i: 2, x: 550, y: 60, production: {} }]
   } as never;
@@ -131,7 +132,7 @@ test("icon lines follow the style at the marker's proportions, on markers and pl
   expect(document.querySelectorAll("#goodsBurgs use")).not.toHaveLength(0);
 });
 
-test("burg plates keep the three biggest producers, biggest first", async () => {
+test("burg plates keep the three most valuable products, most valuable first", async () => {
   getBurgProduction.mockImplementation(() => ({ 1: 1, 2: 9 }));
   await drawGoods();
   const circles = [...document.querySelectorAll("#goodsBurgs circle")].map(c => c.getAttribute("fill"));
@@ -147,10 +148,27 @@ test("hidden goods drop out of every sublayer", async () => {
   expect(document.querySelectorAll("#goodsCells polygon")).toHaveLength(0);
   expect(document.querySelectorAll("#goodsBurgs text")).toHaveLength(1);
   expect(document.querySelector("#goodsBurgs text")?.textContent).toBe("2");
+});
 
-  pack.goods[1].visible = false;
+test("with no good selected, cells and burgs show their whole output by value", async () => {
+  for (const good of pack.goods) good.visible = false;
+  getCellProduction.mockImplementation(cellId => (cellId === 0 ? { 1: 4, 2: 1 } : { 2: 8 }) as Output);
+  pack.goods[1].value = 10; // one iron is worth ten grain
+  setViewportTransform(0.1, 0, 0);
   await drawGoods();
-  expect(document.getElementById("goods")!.textContent).toBe("");
+
+  // cell values 14 and 80: of two, the 95th percentile is the lower one, so both reach the darkest color
+  const fills = [...document.querySelectorAll("#goodsCells polygon")].map(polygon => polygon.getAttribute("fill"));
+  expect(fills).toEqual([interpolateYlOrBr(1), interpolateYlOrBr(1)]);
+  expect(document.querySelector("#goodsCells polygon")?.hasAttribute("fill-opacity")).toBe(false); // the group style dims it
+  expect(document.querySelectorAll("#goodsIcons > g")).toHaveLength(0);
+
+  // burg values 25 and 90 both saturate too: circles of 1.5 times the plate icon setting
+  const radii = [...document.querySelectorAll("#goodsBurgs > g[data-id] circle")].map(circle =>
+    circle.getAttribute("r")
+  );
+  expect(radii).toEqual(["4.5", "4.5"]);
+  expect(document.querySelectorAll("#goodsBurgs text")).toHaveLength(0);
 });
 
 test("full-map export renders every good at once, leaving the live map culled", async () => {

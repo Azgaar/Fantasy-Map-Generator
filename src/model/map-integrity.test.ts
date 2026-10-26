@@ -11,8 +11,9 @@ function check(
     routes = [],
     journeys = [],
     burgs = [],
-    links = {}
-  }: { routes?: unknown[]; journeys?: unknown[]; burgs?: unknown[]; links?: object }
+    links = {},
+    markets = []
+  }: { routes?: unknown[]; journeys?: unknown[]; burgs?: unknown[]; links?: object; markets?: unknown[] }
 ) {
   globalThis.pack = {
     cells: {
@@ -26,6 +27,7 @@ function check(
       h: [30, 30, 30],
       f: [1, 1, 1],
       burg: [0, 0, 0],
+      market: [1, 1, 2],
       routes: links
     },
     features: [0, { i: 1, type: "island", land: true, name: "Isle", group: "isle" }],
@@ -34,6 +36,7 @@ function check(
     journeys,
     markers: [],
     burgs: [0, ...burgs],
+    markets,
     states: [],
     provinces: [],
     cultures: [],
@@ -91,4 +94,14 @@ it("flags a burg off the route network", () => {
     { i: 2, cell: 2, x: 10, y: 8, feature: 1 }
   ];
   expect(check("burg-routes", { routes, links, burgs })).toMatchObject({ count: 1, examples: ["2"] });
+});
+
+it("flags a burg with no market, a removed one or not the one of its cell", () => {
+  const burgs = [
+    { i: 1, cell: 0, x: 0, y: 0, feature: 1, market: 1 },
+    { i: 2, cell: 1, x: 10, y: 0, feature: 1 },
+    { i: 3, cell: 2, x: 10, y: 8, feature: 1, market: 1 }
+  ];
+  const markets = [{ i: 1, centerBurgId: 1, goods: {} }];
+  expect(check("burg-markets", { burgs, markets })).toMatchObject({ count: 2, examples: ["2", "3"] });
 });

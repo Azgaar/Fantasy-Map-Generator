@@ -1,7 +1,9 @@
 import { Goods } from "@/model/economy/goods-generator";
 import type { Market } from "@/model/economy/markets-generator";
 import { Markets } from "@/model/economy/markets-generator";
-import { formatPrice } from "@/model/units";
+import { Icons } from "@/model/icons";
+import { formatPrice, getMoneyUnit } from "@/model/units";
+import { goodBadge } from "@/renderers/draw-goods";
 import { Csv } from "@/services/io/csv";
 import { Dialog } from "@/ui/dialog/dialog";
 
@@ -17,6 +19,7 @@ import {
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
+import { bindEconomyWiki, economyWikiButton } from "../economy-wiki";
 
 const dialogId = "marketsGoodCompare" as const;
 const position = { my: "right top", at: "left-10 top" };
@@ -43,7 +46,10 @@ const columns: EditorColumn<Market>[] = [
     key: "price",
     label: t("Price"),
     width: "6em",
-    tip: sentences(t("Good price"), t("Click to sort")),
+    tip: sentences(
+      t("Good price in the market, or its share of the base price in percentage view"),
+      t("Click to sort")
+    ),
     sortBy: market => market.goods[activeGoodId]?.price ?? 0
   },
   { key: "actions", width: "1.4em", permanent: true, hidden: true }
@@ -58,6 +64,7 @@ const comparePricesTable = initEditorTable<Market>({
 });
 
 function open(goodId?: number, anchor = "#marketsOverview"): void {
+  void Icons.retry("goods");
   if (goodId !== undefined) activeGoodId = goodId;
   activeAnchor = anchor;
 
@@ -77,7 +84,9 @@ function renderDialog(): void {
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog editorDialog">
       <div style="display:flex; align-items:center; gap:.5em; padding:.2em 0 .4em; font-size:.9em;">
         <label for="marketsGoodCompareSelect" data-tip="${t("Select good to compare stock across markets")}">${t("Good")}:</label>
+        <svg id="marketsGoodCompareIcon" width="1.6em" height="1.6em"></svg>
         <select id="marketsGoodCompareSelect" style="flex:1; min-width:8em;"></select>
+        <span data-tip="${t("Base price of the good in {{money}}, the price markets start from", { money: getMoneyUnit() })}">${t("Base Price")}: <span id="marketsGoodCompareBase"></span></span>
       </div>
       ${renderEditorHeader({ dialogId, columns })}
       <div id="marketsGoodCompareBody" class="table" data-type="absolute" style="max-height:40em;"></div>
@@ -89,6 +98,7 @@ function renderDialog(): void {
         <button id="marketsGoodCompareRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
         <button id="marketsGoodComparePercentage" data-tip="${t("Toggle percentage / absolute values views")}" class="icon-percent"></button>
         <button id="marketsGoodCompareExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
+        ${economyWikiButton("marketsGoodCompareWiki")}
       </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
@@ -104,6 +114,7 @@ function renderDialog(): void {
     comparePricesTable.reset();
   });
   ensureEl("marketsGoodCompareRefresh").addEventListener("click", comparePricesTable.refresh);
+  bindEconomyWiki("marketsGoodCompareWiki");
   ensureEl("marketsGoodComparePercentage").addEventListener("click", togglePercentageMode);
   ensureEl("marketsGoodCompareExport").addEventListener("click", downloadCsv);
 }
@@ -116,9 +127,12 @@ function renderComparePricesPage(view: TableView<Market>): void {
   const body = ensureEl("marketsGoodCompareBody");
 
   const good = activeGoodId >= 0 ? Goods.get(activeGoodId) : undefined;
+  ensureEl("marketsGoodCompareIcon").innerHTML = good ? goodBadge(good) : "";
+  ensureEl("marketsGoodCompareBase").innerHTML = good ? formatPrice(good.value) : "";
   if (!good) {
     body.innerHTML = t("Select a good");
-    updateFooter(0, 0);
+    ensureEl("marketsGoodCompareFooterStock").innerHTML = "0";
+    ensureEl("marketsGoodCompareFooterPrice").innerHTML = formatPrice(0);
     renderEditorPagination(ensureEl("marketsGoodCompareFooter"), view, comparePricesTable.goto);
     return;
   }
@@ -126,6 +140,8 @@ function renderComparePricesPage(view: TableView<Market>): void {
   const totalStock = view.all.reduce((total, market) => total + rn(market.goods[good.i]?.stock ?? 0, 2), 0);
   const priceSum = view.all.reduce((total, market) => total + rn(market.goods[good.i]?.price ?? 0, 2), 0);
   const percentage = body.dataset.type === "percentage";
+  const ofBase = (price: number) => `${good.value ? rn((price / good.value) * 100) : 0}%`;
+  const priceText = (price: number) => (percentage ? ofBase(price) : formatPrice(price));
 
   const lines = view.rows.map(market => {
     const centerName = Markets.getName(market);
@@ -138,18 +154,15 @@ function renderComparePricesPage(view: TableView<Market>): void {
       <fill-box data-col="color" fill="${market.color}"></fill-box>
       <div data-col="market">${centerName}</div>
       <div data-col="stock" data-type="stock">${stockText}</div>
-      <div data-col="price">${formatPrice(price)}</div>
+      <div data-col="price" data-tip="${sentences(`${t("Market price")}: ${formatPrice(price)}`, t("{{percent}} of the base price", { percent: ofBase(price) }))}">${priceText(price)}</div>
     </div>`;
   });
   body.innerHTML = lines.join("");
-  updateFooter(rn(totalStock, 2), view.all.length ? rn(priceSum / view.all.length, 2) : 0);
+  const avgPrice = view.all.length ? rn(priceSum / view.all.length, 2) : 0;
+  ensureEl("marketsGoodCompareFooterStock").innerHTML = String(rn(totalStock, 2));
+  ensureEl("marketsGoodCompareFooterPrice").innerHTML = priceText(avgPrice);
   renderEditorPagination(ensureEl("marketsGoodCompareFooter"), view, comparePricesTable.goto);
   Dialog.update(dialogId, { width: "fit-content", position: { ...position, of: activeAnchor } });
-}
-
-function updateFooter(totalStock: number, avgPrice: number): void {
-  ensureEl("marketsGoodCompareFooterStock").innerHTML = String(totalStock);
-  ensureEl("marketsGoodCompareFooterPrice").innerHTML = formatPrice(avgPrice);
 }
 
 function togglePercentageMode(): void {

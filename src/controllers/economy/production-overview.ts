@@ -7,7 +7,7 @@ import type { ProductionCandidate, ProductionLogEntry } from "@/model/economy/pr
 import { isMfgEntry, isTradeEntry } from "@/model/economy/production-generator";
 import { Icons } from "@/model/icons";
 import type { Burg } from "@/model/political/burgs-generator";
-import { formatPrice } from "@/model/units";
+import { formatPrice, getMoneyUnit } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
 import { Csv } from "@/services/io/csv";
 import { Dialog } from "@/ui/dialog/dialog";
@@ -16,6 +16,7 @@ import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
+import { bindEconomyWiki, economyWikiButton } from "./economy-wiki";
 import {
   carriageDistance,
   money,
@@ -113,11 +114,13 @@ function renderDialog(): void {
       <div id="${dialogId}Bottom">
         <button id="${dialogId}Refresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
         <button id="${dialogId}Export" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>
+        ${economyWikiButton(`${dialogId}Wiki`)}
       </div>
   </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", html);
 
   ensureEl(`${dialogId}Refresh`).addEventListener("click", render);
+  bindEconomyWiki(`${dialogId}Wiki`);
   ensureEl(`${dialogId}Export`).addEventListener("click", downloadHistoryCsv);
   ensureEl(`${dialogId}Body`).addEventListener("click", onBodyClick);
 }
@@ -512,7 +515,7 @@ function renderStats(burg: Burg): void {
       <span data-tip="${t("Gross Product: local sale revenue minus purchased ingredient costs during the production.")}"><b>${t("Product")}:</b> <span class="positive">${formatPrice(product)}</span></span>
       <span data-tip="${t("Product per capita: gross product divided by population.")}"><b>${t("Wealth")}:</b> <span class="positive">${formatPrice(wealth)}</span></span>
       <span data-tip="${t("Sales tax and tariffs the burg paid: on its sales, deducted from the revenue; on its purchases, included in the price. Each goes to the treasury of the state that levies it")}"><b>${t("Total Tax")}:</b> <span class="negative">${formatPrice(totalTax)}</span></span>
-      <span data-tip="${t("Net burg treasury after local buying, local sales, and final local demand fill.")}"><b>${t("Treasury")}:</b> <span class="${treasury >= 0 ? "positive" : "negative"}">${formatPrice(treasury)}</span></span>
+      <span data-tip="${t("The burg's money after the day's buying and selling, in {{money}}", { money: getMoneyUnit() })}"><b>${t("Treasury")}:</b> <span class="${treasury >= 0 ? "positive" : "negative"}">${formatPrice(treasury)}</span></span>
     </div>`;
 }
 

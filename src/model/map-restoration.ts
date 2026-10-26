@@ -969,7 +969,7 @@ class MapRestorationModule {
       return;
     }
 
-    // a rerun adds a round of income: the burgs keep the balance they had
+    // the rerun starts every treasury from 0: the burgs keep the balance they had
     const treasuries = new Map(pack.burgs.map(burg => [burg, burg?.treasury]));
     if (pack.markets.length || !parent.markets?.length) Production.regenerateEconomy();
     else {

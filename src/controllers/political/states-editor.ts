@@ -1,5 +1,6 @@
 import { type HierarchyCircularNode, max, pack as packLayout, select, stratify } from "d3";
 import { Controllers } from "@/controllers";
+import { bindEconomyWiki, economyWikiButton } from "@/controllers/economy/economy-wiki";
 import { CULTURE_TYPE_LABELS } from "@/data/id-labels";
 import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
@@ -8,7 +9,7 @@ import { Burgs } from "@/model/political/burgs-generator";
 import { STATE_FORMS, type State, States, type TariffRule } from "@/model/political/states-generator";
 import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
-import { formatPrice, getArea, getAreaUnit } from "@/model/units";
+import { formatPrice, getArea, getAreaUnit, getMoneyUnit } from "@/model/units";
 import { redrawEmblem, removeEmblem } from "@/renderers/draw-emblems";
 import { goodBadge } from "@/renderers/draw-goods";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
@@ -400,9 +401,10 @@ function renderStatesPage(view: TableView<State>): void {
     );
     const focused = select("#deftemp").select(`#fog #focusState${s.i}`).size();
     const treasuryTip = t(
-      "Current treasury: 🟡 {{treasury}}. Sales Tax: {{salesTax}}%. Poll Tax: {{pollTax}}%. Click to view and edit taxes",
+      "Current treasury: {{treasury}} {{money}}. Sales Tax: {{salesTax}}%. Poll Tax: {{pollTax}}%. Click to view and edit taxes",
       {
         treasury: si(s.treasury),
+        money: getMoneyUnit(),
         salesTax: rn((s.salesTax || 0) * 100, 1),
         pollTax: rn((s.pollTax || 0) * 100, 1)
       }
@@ -899,7 +901,7 @@ function openTreasuryDialog(stateId: number): void {
       <input id="statePollTaxInput" type="number" min="0" max="10" step="0.01" value="${state.pollTax}" style="width: 6em"/> = ${formatPrice(pollTaxRevenue)}
       <label>${t("Tariffs")}:</label>
       <span></span> = ${formatPrice(tariffRevenue)}
-      <label for="stateTreasuryInput">${t("Treasury")}:</label>
+      <label for="stateTreasuryInput" data-tip="${t("The state's tax income for the day, in {{money}}", { money: getMoneyUnit() })}">${t("Treasury")}:</label>
       <input id="stateTreasuryInput" type="number" step="1" value="${state.treasury}" style="width: 6em" />
     </div>
     <hr />
@@ -913,6 +915,7 @@ function openTreasuryDialog(stateId: number): void {
     <div id="stateTariffsList" style="max-height: 15em; overflow-y: auto; display: flex; flex-direction: column; row-gap: 0.25em;"></div>`,
     title: t("Taxes and Treasury: {{- state}}", { state: state.name }),
     width: "32em",
+    footer: economyWikiButton("stateTaxesWiki"),
     buttons: [
       {
         label: t("Apply"),
@@ -937,6 +940,7 @@ function openTreasuryDialog(stateId: number): void {
     ]
   });
 
+  bindEconomyWiki("stateTaxesWiki");
   const listEl = ensureEl("stateTariffsList");
 
   const renderRules = (): void => {

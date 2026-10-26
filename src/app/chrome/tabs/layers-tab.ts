@@ -20,6 +20,7 @@ export const LAYER_PRESETS: Record<string, string> = {
   physical: t("Physical map"),
   poi: t("Places of interest"),
   goods: t("Goods map"),
+  economy: t("Economy map"),
   trade: t("Trade animation"),
   military: t("Military map"),
   emblems: t("Emblems"),

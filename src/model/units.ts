@@ -94,6 +94,12 @@ export function getCellPopulation(cellId: number, pack: PackedGraph): [number, n
   return [rural, urban];
 }
 
+/** The money unit selected in the Units editor, by default the uncia: a gold coin of a troy ounce, shown as 🟡 */
+export function getMoneyUnit(plural = true): string {
+  const name = options.map.units.money.unit || "uncia";
+  return plural && !name.endsWith("s") ? `${name}s` : name;
+}
+
 /**
  * Format price value with currency symbol
  * @param value - The price value to format
