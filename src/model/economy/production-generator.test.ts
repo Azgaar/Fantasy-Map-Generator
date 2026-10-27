@@ -74,7 +74,7 @@ describe("manufacturing work with stocked inputs", () => {
     const ship = plan(5, 2);
     expect(ship?.action.good.name).toBe("Engine");
     expect(ship?.workersNeeded).toBe(2);
-    expect(ship?.normalizedGain).toBeCloseTo((10000 * 0.95 - 14 * 1.05) / 2);
+    expect(ship?.normalizedGain).toBeCloseTo((10000 * 0.9 - 14 * 1.1) / 2);
     expect(plan(5, 100)?.workersNeeded).toBe(2);
   });
 
@@ -85,7 +85,8 @@ describe("manufacturing work with stocked inputs", () => {
     production["runWorkerLoop"](index, state);
     expect([state.produced[4], state.produced[5]]).toEqual([1, 1]);
     expect(state.inventory[4]).toBe(0);
-    expect(state.inventory[5]).toBe(1);
+    expect(state.inventory[5]).toBe(0); // the finished ship is sold at once
+    expect(pack.deals.find(([, , goodId, kind]) => goodId === 5 && kind === DEAL_KINDS.sale)?.[4]).toBe(1);
     expect([1, 2, 3].map(id => market.goods[id].stock)).toEqual([9998, 9998, 9990]);
     expect(plan(5, 2)?.workersNeeded).toBe(2);
   });
@@ -144,7 +145,7 @@ describe("manufacturing work with stocked inputs", () => {
     market.goods[1].stock = 4;
     const ship = plan(5, 3);
     expect(ship?.workersNeeded).toBe(3);
-    expect(ship?.marketCost).toBeCloseTo(28 * 1.05);
+    expect(ship?.marketCost).toBeCloseTo(28 * 1.1);
   });
 
   it("reserves shared inputs across the parent and its missing component", () => {
@@ -219,7 +220,7 @@ describe("freighter with 20 engines and a 700-steel hull", () => {
     // biome-ignore lint/complexity/useLiteralKeys: private test access
     production["runWorkerLoop"](index, state);
     expect([state.produced[3], state.produced[4], state.produced[5]]).toEqual([900, 20, 1]);
-    expect(state.inventory[5]).toBe(1);
+    expect(pack.deals.find(([, , goodId, kind]) => goodId === 5 && kind === DEAL_KINDS.sale)?.[4]).toBe(1);
     expect([1, 2, 6].map(id => market.goods[id].stock)).toEqual([0, 0, 0]);
   });
 });
@@ -319,6 +320,19 @@ describe("inputs missing in the burg's market", () => {
   });
 });
 
+describe("deposits", () => {
+  it("yield their cell's population, up to 10, scaled to the map's cells", () => {
+    const cells = (count: number) => {
+      globalThis.pack.cells = { i: Array.from({ length: count }, (_, i) => i), h: [30, 30], pop: [4, 25] } as never;
+    };
+    cells(5000);
+    expect(production.getDepositOutput(catalogue[0], 0)).toBeCloseTo(4);
+    expect(production.getDepositOutput(catalogue[0], 1)).toBeCloseTo(10);
+    cells(10000);
+    expect(production.getDepositOutput(catalogue[0], 0)).toBeCloseTo(8);
+  });
+});
+
 describe("workforce", () => {
   it("is the share of townspeople working in trades, capped", () => {
     vi.restoreAllMocks();
@@ -348,10 +362,10 @@ describe("division of labor", () => {
     expect(specialization(4)).toBeCloseTo(1.5, 5);
 
     index.worldWorkers[4] = 40; // a sixth of the world's: the market makes 1.5 times its share
-    expect(specialization(4)).toBeCloseTo(1 + 0.5 + 0.5 * 0.5, 5);
+    expect(specialization(4)).toBeCloseTo(1 + 0.5 + 1 * 0.5, 5);
 
     index.worldWorkers[4] = 10; // the market alone makes it: the bonus is capped
-    expect(specialization(4)).toBeCloseTo(1 + 0.5 + 0.5, 5);
+    expect(specialization(4)).toBeCloseTo(1 + 0.5 + 1, 5);
     expect(specialization(5)).toBe(1);
   });
 
@@ -386,8 +400,37 @@ describe("demand fill", () => {
     expect(bought[4]).toBe(6);
     expect(market.goods[3].stock).toBe(10);
     // the burg is its market's center: it takes the margin on its purchase and gives back the margin on the 4 kept
-    const margins = Markets.getMargin(bought) - (4 * 1 * 0.05) / 0.95;
+    const margins = Markets.getMargin(bought) - (4 * 1 * 0.1) / 0.9;
     expect(burg.treasury).toBeCloseTo(100 - 4 * 0.8 - 6 * bought[5] + margins, 1);
+  });
+
+  it("buys the share of the burg's needs due so far, and the rest on later turns", () => {
+    catalogue[2].demandCoverage = { construction: 1 }; // 10 steel cover the burg's construction demand
+    burg.treasury = 1000;
+    market.goods[3].stock = 100;
+    const { index, state } = prepare();
+    const bought = () => pack.deals.find(([, , goodId, kind]) => goodId === 3 && kind === DEAL_KINDS.demand)?.[4];
+
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    production["fillDemand"](index, state, 0.5);
+    expect(bought()).toBe(5);
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    production["fillDemand"](index, state, 1);
+    expect(bought()).toBe(10);
+  });
+
+  it("spends up to 85% of the burg's income on wants once its needs are met", () => {
+    catalogue[2].demandCoverage = { luxury: 1 };
+    market.goods[3] = { stock: 1000, price: 1 };
+    burg.treasury = 100;
+    const { index, state } = prepare();
+    state.spent = 0;
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    production["spendOnWants"](index, state);
+
+    expect(state.spent).toBeGreaterThan(0);
+    expect(state.spent).toBeLessThanOrEqual(85 + 0.01); // savings: 15% of the income
+    expect(burg.treasury).toBeGreaterThanOrEqual(15 - 0.01);
   });
 
   it("trims the sale and its tax by the share kept", () => {

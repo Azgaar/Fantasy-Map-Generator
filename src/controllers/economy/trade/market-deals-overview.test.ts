@@ -28,13 +28,13 @@ describe("market deals overview calculations", () => {
     for (const kind of [DEAL_KINDS.input, DEAL_KINDS.demand]) {
       const deal = createDeal(2, kind);
       expect(getMarketSide(deal)).toBe("sell");
-      expect(getDealNet(deal)).toBe(6.69); // 7.02 less the center burg's margin, 7.02 × 0.05 / 1.05
+      expect(getDealNet(deal)).toBe(6.38); // 7.02 less the center burg's margin, 7.02 × 0.1 / 1.1
     }
   });
 
   test("keeps the carriage in the price but passes the taxes to the states and the margin to the center burg", () => {
     const deal: Deal = [7, 2, 4, DEAL_KINDS.input, 2, 10, 3, 1, 1.5]; // the burg paid 20, carriage 3 of it
-    const margin = (2 * 6.5 * 0.05) / 1.05; // on the market's price with the margin: 10 less 2 of taxes and 1.5 of carriage
+    const margin = (2 * 6.5 * 0.1) / 1.1; // on the market's price with the margin: 10 less 2 of taxes and 1.5 of carriage
     expect(getDealNet(deal)).toBe(Math.round((20 - 3 - 1 - margin) * 100) / 100);
   });
 
@@ -46,6 +46,6 @@ describe("market deals overview calculations", () => {
     const deal = createDeal(2, DEAL_KINDS.sale);
 
     expect(getMarketSide(deal)).toBe("buy");
-    expect(getDealNet(deal)).toBe(-7.39); // the market pays the burg 7.02 and its center burg 7.02 × 0.05 / 0.95
+    expect(getDealNet(deal)).toBe(-7.8); // the market pays the burg 7.02 and its center burg 7.02 × 0.1 / 0.9
   });
 });

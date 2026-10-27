@@ -1,201 +1,135 @@
 # PRD — Regional Economy
 
-## Problem
+## Problems
 
-The generated economy is uniform. Every market makes roughly the same goods, and its output follows its population: a market with 5% of the world's people holds about 5% of the world's output, give or take a few points. There are no rich trade republics with a sliver of the population, no undeveloped hinterlands, no regions known for one product. The map reads as one economy cut into pieces, not as many.
+1. **The economy was uniform.** Every market made about the same goods, and its output followed its population. There were no rich trade hubs, no backward hinterlands, no regions known for one product.
+2. **The economy did not balance.** Most made goods piled up unsold while others were never made. Demand did not depend on income: people bought a fixed basket whatever they earned, rural people produced half the supply and earned nothing, and markets bought whatever burgs made. Taxes took about half of all income, and few burgs saved anything.
 
-Measured on six default maps (seeds 431087220, 98765, 55555, 123456789, 4242, 31337) before any change:
+Constraints: generation stays one pass and fast, with no iteration to equilibrium. Saved maps keep their own goods catalogue. Every change is measured on the same six default maps (seeds 431087220, 98765, 55555, 123456789, 4242, 31337), before and after.
 
-| Metric                                                                                                                 | Average  | A regional world would show |
-| ---------------------------------------------------------------------------------------------------------------------- | -------- | --------------------------- |
-| **Output follows people**: markets whose share of output is within ±25% of their share of people                       | 84%      | under 50%                   |
-| **Rich tenth**: the tenth of markets with the most output per person: share of people → share of output                | 8% → 11% | 8% → 25% or more            |
-| **Rich/poor gap**: output per person of the richest tenth of burgs ÷ the poorest tenth                                 | 2.2×     | 4× or more                  |
-| **Distinctiveness**: share of a typical market's production that would have to change to match the world's average mix | 43%      | 60% or more                 |
-| **Price gap**: a typical good's price in its dearest market ÷ its cheapest                                             | 3.4×     | 5× or more                  |
+## KPIs
 
-## Causes
+| KPI                   | Measure                                                           | Target      | At start | Now            |
+| --------------------- | ----------------------------------------------------------------- | ----------- | -------- | -------------- |
+| Every good made       | Made goods made on a map                                          | 32 of 32    | 17       | 31.2 ✗         |
+| Nothing underproduced | Consumer goods never made, or with half the buyers turned away    | ≤ 1         | 14 of 28 | 0.7 of 23 ✓    |
+| Nothing overproduced  | Made goods with half or more left unsold                          | ≤ 3         | 15 of 17 | 5.0 of 31 ✗    |
+| Little waste          | Made goods left unsold, by value                                  | ≤ 20%       | 87%      | 30% ✗          |
+| Needs covered         | Townspeople's needs met                                           | ≥ 97%       | 87–100%  | 98% ✓          |
+| No idle workers       | Workers with nothing to make, without a good reason               | ≤ 1%        | 0%       | 0% ✓           |
+| Reasonable taxes      | States' taxes, share of all income                                | 10–20%      | 55%      | 12% ✓          |
+| Burgs profitable      | Burgs ending the day with savings                                 | ≥ 80%       | 17%      | 87% ✓          |
+| Regions distinct      | Share of a market's production that differs from the world's mix  | ≥ 60%       | 43%      | 72% ✓          |
+| Rich and poor         | Income per person, richest ÷ poorest tenth: of burgs / of markets | ≥ 5× / ≥ 3× | 2.2×     | 10.5× / 3.6× ✓ |
+| Fast                  | Economy run per map                                               | ≤ 200 ms    | 113 ms   | 174 ms ✓       |
+| Controllable          | Each setting moves its own KPI predictably                        | –           | –        | ✓              |
 
-1. **Output is linear in workers.** A worker makes at most one unit a day of whatever pays best; there are no scale returns, skills or capital, and every recipe is open to every burg. Output ≈ population × margin.
-2. **The margin barely depends on place.** A manufactured good's starting price is its local input cost plus its value added, so making it pays about the same everywhere; buying from other markets when stock runs out flattens prices further.
-3. **Raw supply is thin and even.** Only 16 of 71 goods have biome output, most at 0.1 over four or five biomes, so every temperate market gets the same wood, grain and hemp. Bonus resources are placed cell by cell at 1–5% chance and capped at 5 units: salt and pepper, a sample of everything everywhere.
-4. **Regional multipliers are mild.** 41 goods carry culture-type multipliers, mostly 1.2–1.4, and most cultures are Generic.
-5. **Trade can't enrich anyone.** Burgs trade only with markets and turn to another market only when their own runs out. The 5% market margin and carriage are paid to no one, rural goods enter stock unpaid, and nothing is resold: a port at a crossroads earns what an inland burg of its size earns.
-6. **Demand is per head.** Every person wants the same basket; a rich burg wants no more luxury than a poor one.
-7. **Markets are alike in size**, placed by spacing; state tax rates vary only ±15%.
+"At start" is the game before this work, or its replay in the simulation where the game did not measure it.
 
-## Constraints
+## Progress
 
-- Generation stays one pass and fast: no iteration to equilibrium, no simulated years.
-- Saved maps keep their own goods catalogue; changes to the defaults reach new maps and catalogues restored to defaults.
-- Every change is scored with the metrics above on the same seeds, before and after.
+Ten of twelve KPIs are met. Regions are distinct, the circular flow works (sales are income, income is spent, rural people are paid), taxes are moderate, burgs save, and needs are covered.
 
-## Block A — Configuration
+Open: about 30% of made goods by value are left unsold, five goods are overproduced on a typical map, and a few goods are not made on every map. The surplus moves between goods with every price tweak but its total holds, because a market buys every unit offered at a price that only falls as it fills, whether anyone will buy it back or not.
 
-Changes to the default goods data and existing constants only; no new mechanics. They change what each region makes more than how much it earns, so they move distinctiveness and price gaps, and output-follows-people only a little.
+| Milestone                          | Made at all | Overproduced | Unsold | Covered | Distinct | Burg / market gap | Run    |
+| ---------------------------------- | ----------- | ------------ | ------ | ------- | -------- | ----------------- | ------ |
+| Start                              | 17 of 32    | 15 of 17     | 87%    | 87%     | 43%      | 2.2× / –          | 113 ms |
+| Economy v2, wants capped           | 25          | 11 of 25     | 57%    | 97%     | 62%      | 5.1× / 4.7×       | 174 ms |
+| Variety buying, faster prices      | 30.0        | 8 of 30      | 43%    | 97%     | 69%      | 8.5× / 5.0×       | 204 ms |
+| Military coverage, sell per worker | 30.8        | 7 of 31      | 40%    | 97%     | 69%      | 13.3× / 3.7×      | 218 ms |
+| Made goods reviewed                | 31.2        | 3.7 of 31    | 33%    | 98%     | 64%      | 11.8× / 4.1×      | 215 ms |
+| Ingredient opening, carriage cache | 31.2        | 5.0 of 31    | 30%    | 98%     | 72%      | 10.5× / 3.6×      | 174 ms |
 
-- **A1. Concentrate biome output.** Fewer biomes per good at higher yields: grain from grassland and temperate forest, timber from forests, dates and camels from deserts, furs from taiga and tundra.
-- **A2. Stronger culture-type multipliers.** 2–3× instead of 1.2–1.4, on more goods: Naval for fish, salt, pearls, ships, sails and ropes; Highland for metals, stone, gems and tools; Nomadic for horses, camels, cattle, leather and harnesses; River and Lake for grain, clay, hemp and cloth; Hunting for furs, game and wood. Cultures form continuous regions, which makes this the strongest configuration lever.
-- **A3. Coherent placement.** Placement rules that follow terrain belts: metals in the mountains, gems in hot mountains, pearls in warm shallows, and lower chances with richer deposits.
-- **A4. Richer deposits.** A higher cap and rate for bonus resources, so a mining district outweighs the biome output around it.
-- **A5. Wider value and carriage gaps.** Dear, light luxuries with low carriage travel; bulky staples with high carriage stay home. Values feed population suitability, so they move only with care.
-- **A6. Varied taxes.** Per-state jitter of ±50% instead of ±15%, so low-tax states draw buyers.
+The last row was measured after ships were revalued from 172 to 122.
 
-## Block B — Tweaks to existing mechanics
+## Ideas
 
-These break the link between people and output.
+Complexity: **L** low (constants or data), **M** medium (a rule in an existing mechanic), **H** high (a new mechanic).
 
-- **B1. Margin to merchants.** The 5% market margin goes to the market's center burg, or is shared among its burgs. Busy markets and crossroads ports get rich.
-- **B2. Scale returns.** Output per worker × (population ÷ median)^α, α ≈ 0.15–0.3: cities out-produce villages per head.
-- **B3. Learning by doing.** A burg grows more productive at a good the more it makes in the run; with goal stickiness, burgs specialize in one or two products.
-- **B4. Clustered deposits.** Placing a good raises the chance of the same good in neighboring cells: mining districts and fishing grounds.
-- **B5. Rent.** Rural goods sold through a market pay their value to the nearest burg or the state capital, so agrarian capitals with rich hinterlands prosper, and spending on raw goods reaches someone.
-- **B6. Demand follows wealth.** Luxury and part of military demand scale with a burg's money per head.
-- **B7. Wider price bounds** for rare goods: 0.05–10× instead of 0.1–5×.
-- **B8. Fertile valleys.** Rural output bonus on river cells by flow and on coastal fishing shelves.
+### Supply and regions
 
-## Block C — New features
+| Idea                                                                                            | Cx  | Status    | Result                                                                                              |
+| ----------------------------------------------------------------------------------------------- | --- | --------- | --------------------------------------------------------------------------------------------------- |
+| Concentrated biome output: fewer biomes per good, wood and sugar in the tropics                 | L   | Applied   | Small gain: a market's people live in several biomes, so biome output cannot get much more distinct |
+| Culture-type multipliers of 2–3 on 34 goods                                                     | L   | Applied   | With the two below: output no longer follows people (84% → 55% of markets), burg gap 2.2× → 3.6×    |
+| Deposits follow terrain: metals in mountains, pearls in warm shallows                           | L   | Applied   | Part of the row above                                                                               |
+| State tax jitter ±50%                                                                           | L   | Applied   | Part of the row above                                                                               |
+| Wider value gaps between goods                                                                  | L   | Discarded | Values feed population suitability, so they reshape the map itself                                  |
+| Deposits as a set number per map, clustered (each next one beside the last by 50%)              | M   | Applied   | Distinctiveness +11 points; the strongest regional lever                                            |
+| Deposits without biome output, or biome output for staples only                                 | L   | Discarded | Coverage fell 2–7 points; maps without deposits would have no rural economy                         |
+| Deposit yield from cell population (capped at 10) × map size; burg on a deposit gets free units | L   | Applied   | Supply scales with the map; few deposits stay meaningful                                            |
+| Goods editor: set a good's daily output, deposits re-placed to match                            | M   | Applied   | User control over supply on existing maps                                                           |
+| Biome output halved                                                                             | L   | Applied   | Less unused grain, wood and hemp                                                                    |
+| Carriage by weight and value: heavy goods ÷2, dear goods ×2, ×1.5 from another state            | L   | Applied   | Staples stay local, luxuries travel                                                                 |
+| Clay deposits 6–9, oil deposits 2–3                                                             | L   | Applied   | Ceramics made on every map; oil less oversupplied                                                   |
+| Coal valued as charcoal (12), metal deposits ×2                                                 | L   | Applied   | Coal, bronze, artillery, arms and tools made where they never were                                  |
+| Fertile valleys: more rural output along rivers and fishing shelves                             | M   | Pending   | –                                                                                                   |
+| Extraction sites: rich deposits worked as mines by the nearest burg                             | H   | Pending   | –                                                                                                   |
+| Development level: productivity from access to sea, rivers, roads, state age                    | H   | Pending   | –                                                                                                   |
 
-- **C1. Development level.** A per-region productivity factor (about 0.3–2) from access: distance to sea, rivers and roads, state age and form. Advanced cores, backward hinterlands.
-- **C2. Merchants trading between markets.** After production, one pass where wealthy port and market-center burgs buy where a good is cheap and sell where it is dear, paying carriage and tariffs and keeping the profit: small trade republics with an outsized share of the economy.
-- **C3. Regional specialties.** One to three signature goods per market or culture, chosen from what its inputs favor, with higher productivity and a price premium.
-- **C4. Extraction sites.** Rich deposits worked as mines and plantations by the nearest burg at high output: mining towns.
-- **C5. Burg capital.** A productivity factor from what a burg has: walls, plaza, citadel, temple, port, capital status.
+### Production
 
-## Order
+| Idea                                                                                | Cx  | Status    | Result                                                                                             |
+| ----------------------------------------------------------------------------------- | --- | --------- | -------------------------------------------------------------------------------------------------- |
+| Division of labor: more output for a good the burg puts more workers into           | M   | Applied   | Burgs specialize (top good 74% → 86% of their manufacturing), regions do not                       |
+| Regional bonus: up to ×2 for a good the market makes more of than the world's share | M   | Applied   | Distinctiveness of manufacturing 31% → 45%; most of the regional gain from production              |
+| Workforce: 35% of townspeople work in trades                                        | L   | Applied   | Brings output back to the typical-day scale with recipes kept literal; 20% tried, fewer goods made |
+| Scaled output per worker instead of a smaller workforce                             | L   | Discarded | Same totals, but recipes stopped being literal (10 steel → 0.55 engine)                            |
+| A finished good is sold as each worker makes it                                     | L   | Applied   | The next worker sees the moved price: fewer never-made goods, burg gap up                          |
+| Wage floor: workers take only work paying at least 1 or 3 a day                     | L   | Discarded | Unsold unchanged, 1% of workers idle                                                               |
+| Scale returns: cities out-produce villages per head                                 | M   | Pending   | –                                                                                                  |
+| Burg capital: productivity from walls, port, temple, capital status                 | M   | Pending   | –                                                                                                  |
+| Regional specialties: signature goods per market or culture                         | M   | Pending   | Partly covered by the regional bonus                                                               |
 
-1. Block A, measured.
-2. B1 and B2, which break proportionality from both sides.
-3. C2, which builds on B1.
-4. The rest by measured effect.
+### Prices
 
-## Measurements
+| Idea                                                                                                  | Cx  | Status    | Result                                                                                        |
+| ----------------------------------------------------------------------------------------------------- | --- | --------- | --------------------------------------------------------------------------------------------- |
+| A fixed price push per unit traded (1%, 3%)                                                           | L   | Discarded | Stronger push priced households out of their needs; made goods still piled up                 |
+| Prices from stock against estimated demand                                                            | M   | Discarded | Coverage held, but every market chased the same short goods: distinctiveness 63% → 45%        |
+| Demand re-estimated from purchases during the run                                                     | M   | Discarded | Worse on every measure                                                                        |
+| Prices move by expected daily sales: a day's sales moves a price e² times; floor 2%, ceiling 5× value | M   | Applied   | Overstocked goods stop paying; unsold 52% → 43%                                               |
+| Buyers turned away raise the price                                                                    | L   | Applied   | Short goods draw makers                                                                       |
+| Sales estimate spreads each need as buyers do, and follows whole production chains                    | M   | Applied   | Military goods no longer expected in bulk; ingredients counted for every product they go into |
+| Ingredients open at value × √(expected units) where their trades need under one a day                 | M   | Applied   | Fewer stray sails and ropes, distinctiveness 69% → 72%; unsold unchanged                      |
+| Consumer goods open by expected sales                                                                 | M   | Discarded | Ships opened at the floor and were never made on 5 of 6 maps                                  |
+| Sales estimate from even spending across a need's goods                                               | L   | Discarded | Arms, harnesses and artillery 82–93% unsold                                                   |
+| Trades at the average price across their move                                                         | L   | Discarded | Households priced out of their needs (coverage 71–77%)                                        |
+| Expected sales floor 0.1 unit instead of 1                                                            | L   | Discarded | Fewer unsold, but fewer goods made and distinctiveness 59%                                    |
+| Faster price response (e³)                                                                            | L   | Discarded | Fewer goods made, no gain in unsold                                                           |
+| Markets buy only what they expect to resell                                                           | M   | Pending   | Targets the remaining surplus                                                                 |
 
-Scored with `regional-metrics2.js` and `money-metrics.js` (kept with the session scratch scripts) on the six seeds above, averaged.
+### Demand and money
 
-| Metric                      | Before   | After Block A |
-| --------------------------- | -------- | ------------- |
-| Output follows people       | 84%      | 55%           |
-| Rich tenth: people → output | 8% → 11% | 9.5% → 14%    |
-| Rich/poor gap               | 2.2×     | 3.6×          |
-| Distinctiveness             | 43%      | 48%           |
-| Price gap                   | 3.4×     | 4.1×          |
+| Idea                                                                                                | Cx  | Status    | Result                                                                           |
+| --------------------------------------------------------------------------------------------------- | --- | --------- | -------------------------------------------------------------------------------- |
+| Needs bought each turn in step with the work done                                                   | M   | Applied   | Purchases push back against sales during the run                                 |
+| Rural demand mirroring the burgs' purchases                                                         | M   | Discarded | Less unsold, but rural shoppers drained the staples and coverage fell to 71–96%  |
+| Rural people paid when their produce sells, and spend it on wants                                   | H   | Applied   | Closes the circular flow                                                         |
+| Spending follows income: needs first, then wants up to 85% of income (15% saved)                    | H   | Applied   | The main fix for the surplus: without wants, 72% unsold in the simulation        |
+| Wants capped: one more day of each need, four of luxury                                             | L   | Applied   | Stopped the largest burgs buying out all food; coverage 59% → 97%, idle 14% → 0% |
+| Variety: spending spread over all goods covering a need by (price per coverage)⁻³                   | M   | Applied   | Every good finds some buyers; made at all 25 → 30                                |
+| Made goods valued at inputs + 10, coverage scaled so each good covers its need at a reference price | L   | Applied   | Every good competes at base prices                                               |
+| Military goods cover what a unit really equips: ships 4, artillery 2, arms 1, harnesses 0.5         | L   | Applied   | Not bought as cheap military coverage                                            |
+| Pure ingredients cover no need: cloth, ropes, tar, barrels, sails                                   | L   | Applied   | Overproduced 7.3 → 3.7 of 31, gunpowder 94% → 37% unsold                         |
+| Vinegar as an ingredient only                                                                       | L   | Discarded | Its unsold share rose to 76%                                                     |
+| Base taxes × 0.4                                                                                    | L   | Applied   | Taxes 55% → 12% of income                                                        |
+| State orders buying military goods                                                                  | M   | Pending   | Natural buyer for ships, arms and artillery                                      |
+| Wants favor quality goods as income rises                                                           | M   | Pending   | –                                                                                |
 
-Block A as applied: A1 (concentrated biome output for ten goods, sugar newly grown in tropical forests), A2 (culture-type multipliers of 2–3 on 34 goods), A3 (iron, grain and dye deposits follow terrain), A4 (bonus resources at 0.5 per person, capped at 10) and A6 (state tax jitter ±50%, within ¼× to 2× of the base). A5 was left out: good values feed population suitability, so changing them reshapes the map itself.
+### Trade
 
-Demand coverage stayed at 99.4–100%; trade between markets rose 5–20%. Because most multipliers are above 1, output per person rose 27–60% and treasuries with it, which moves the economy off the "typical day" calibration of [economy.md](../domain/economy.md) unless rural output or values are scaled back.
+| Idea                                                                        | Cx  | Status  | Result                                                                                           |
+| --------------------------------------------------------------------------- | --- | ------- | ------------------------------------------------------------------------------------------------ |
+| Market margin (10%) paid to the market's center burg                        | L   | Applied | Hubs get rich: center burgs hold 29% of burg money with 12% of the people                        |
+| Rent: 40% of rural sale income to the state's capital                       | L   | Applied | Moves money between markets, the way dues concentrate wealth in capitals; market gap 2.8× → 3.5× |
+| Exports: burgs sell where the price at their door is best                   | M   | Applied | Markets stop making only what they alone lack: distinctiveness 44% → 66% in the simulation       |
+| Carriage measured once a run                                                | L   | Applied | Run 235 → 170 ms, identical results                                                              |
+| Merchants: wealthy hubs buy where a good is cheap and sell where it is dear | H   | Pending | –                                                                                                |
 
-What moved: output no longer tracks population (84% → 55%) and the gap between rich and poor burgs widened. What barely moved: concentration of output in the richest markets and the distinctiveness of production mixes. Those need Block B: margin to merchants and scale returns for concentration, clustered deposits for distinctiveness.
+## Next
 
-### B1 — Margin to merchants
-
-Implemented: the 5% market margin goes to the market's center burg as each trade happens, and to the source market's center on purchases from other markets. It is trade income, kept out of the product, so the output metrics above do not move. Money does, measured on the same six maps with the margin on and switched off:
-
-| Money metric                                                                 | Margin kept by no one | Margin to the center burg |
-| ---------------------------------------------------------------------------- | --------------------- | ------------------------- |
-| Market center burgs: share of people → share of burg money                   | 12% → 19%             | 12% → 29%                 |
-| Richest tenth of burgs by money per person: share of people → share of money | 22% → 47%             | 23% → 53%                 |
-| Markets whose money is within ±25% of their population share                 | 48%                   | 50%                       |
-| Total burg money                                                             | 30.8k                 | 34.9k (+13%)              |
-
-The margin makes hubs rich but leaves the balance between markets as it was: it is earned at the market where the trade happens, which is mostly the burg's own. Moving wealth between regions needs B2 (scale returns) or C2 (merchants trading between markets).
-
-### B3 — Division of labor
-
-Implemented as a workforce share rather than units made (a worker makes about one unit a day, so units alone give at most +35%): output per worker × (1 + 1 × the burg's share of its workers in the good + 0.5 × the market's share), applied both when choosing and when making. Measured on the six maps with the factor on and pinned to 1:
-
-| Metric                                          | Off  | On          |
-| ----------------------------------------------- | ---- | ----------- |
-| Manufactured goods per burg (median)            | 2.7  | 2.0         |
-| Share of a burg's manufacturing in its top good | 74%  | 86%         |
-| Distinctiveness of a market's manufacturing     | 35%  | 38%         |
-| Distinctiveness, all production                 | 47%  | 47%         |
-| Output follows people                           | 54%  | 59%         |
-| Rich tenth: share of output                     | 12%  | 10%         |
-| Rich/poor gap                                   | 3.6× | 3.8×        |
-| Output per person                               | 8.5  | 10.3 (+22%) |
-
-Burgs specialize clearly. Regions do not: every burg gains about the same, so output follows people a little more, and the market term barely registers, because one good's share of a whole market's workforce stays small. Making it regional would need a bonus relative to the world's mix (only goods a market makes more of than the world average get it) or a larger market weight, and the +22% output on top of Block A's increase asks for a rebalance of rural output or worker productivity.
-
-#### B3, market term relative to the world
-
-The market term now rewards concentration, not size: × 0.5 × (the market's share of its workers in the good ÷ the world's share − 1), from 0 when the market makes the good in the world's proportion up to 0.5 at twice it. Measured on the six maps with the factor pinned to 1, with the first market term (absolute share), and with the relative one. The maps differ from the table above (market fill now charges for crossing state borders), so the "off" column is the new baseline:
-
-| Metric                                            | Off  | Absolute market share | Relative to world |
-| ------------------------------------------------- | ---- | --------------------- | ----------------- |
-| Distinctiveness of a market's manufacturing       | 31%  | 33%                   | 45%               |
-| Share of a market's manufacturing in its top good | 35%  | 36%                   | 40%               |
-| Distinctiveness, all production                   | 47%  | 47%                   | 51%               |
-| Price gap                                         | 3.8× | 3.9×                  | 4.1×              |
-| Share of a burg's manufacturing in its top good   | 76%  | 89%                   | 90%               |
-| Output follows people                             | 66%  | 67%                   | 67%               |
-| Rich tenth: share of output                       | 12%  | 11%                   | 13%               |
-| Rich/poor gap                                     | 3.2× | 3.3×                  | 3.2×              |
-| Output per person                                 | 8.8  | 10.9 (+23%)           | 13.4 (+53%)       |
-
-Regions now specialize: a market's manufacturing is half again as distinct from the world's mix, on every seed (+5 to +16 points). Concentration of wealth does not move, as expected from a productivity bonus every market can earn in its own specialties. Most goods are concentrated somewhere, so most workers earn part of the market bonus and output per person rises 53% over the baseline: a rebalance of worker productivity or rural output is now due.
-
-### Rebalance to the typical day
-
-Block A and B3 together raised value added per townsperson from 5.4 to 13.4, which broke the "typical day" calibration. Two constants bring it back, one per source of the increase:
-
-- **Rural output** (`RURAL_OUTPUT_FACTOR` 3 → 2) undoes Block A's raw-goods increase. On its own it barely moves value added (13.4 → 13.0), because value added is made by workers.
-- **Workforce share** (`WORKFORCE_SHARE` 0.35): 35% of townspeople work in trades; the rest serve, build, farm, or are too young or too old. This undoes the gain from B3. It shrinks the workforce rather than each worker's output, so recipes stay literal: a worker who works one recipe consumes one recipe's inputs. Scaling each worker's output to 0.55 was tried first and hit the same totals, but it turned "10 steel → 1 engine" into "10 steel → 0.55 engine".
-
-Measured against the last commit before Block A (same six seeds, the same in-page metrics):
-
-| Metric                                            | Before Block A | Before rebalance | Rebalanced |
-| ------------------------------------------------- | -------------- | ---------------- | ---------- |
-| Value added per townsperson                       | 5.37           | 13.42            | 5.39       |
-| Rural output value per townsperson                | 18.1           | 28.8             | 19.6       |
-| Units manufactured per townsperson                | 1.01           | 1.78             | 0.61       |
-| Demand coverage                                   | 99.9%          |                  | 99.95%     |
-| Idle workers                                      | 0%             | 0%               | 0%         |
-| Output follows people                             | 84%            | 67%              | 62%        |
-| Rich/poor gap                                     | 2.2×           | 3.2×             | 3.7×       |
-| Distinctiveness, all production                   | 44%            | 51%              | 55%        |
-| Distinctiveness of a market's manufacturing       | 40%            | 45%              | 58%        |
-| Share of a market's manufacturing in its top good | 25%            | 40%              | 47%        |
-| Manufactured goods per burg (median)              | 2.8            | 2.0              | 1.0        |
-
-Value added per townsperson is back where it was, and the regional gains hold or grow. Fewer workers make fewer units (0.61 per townsperson), but those units are dearer goods made from cheaper inputs. With fewer workers each, most burgs now settle on a single trade: their own sales no longer move prices enough to make a second good pay.
-
-#### Workforce share sweep
-
-The share was swept in-page on the six maps (the same map per seed, the share swapped and production regenerated). These maps carry later market changes, so rural value per townsperson is 23.5 at every share and the 0.35 row differs slightly from the table above.
-
-| Share | Value added per townsperson | Units made per townsperson | Demand coverage | Distinctiveness of market manufacturing | Manufactured goods per burg | Richest tenth of markets: share of output | Rich/poor gap | Run time |
-| ----- | --------------------------- | -------------------------- | --------------- | --------------------------------------- | --------------------------- | ----------------------------------------- | ------------- | -------- |
-| 0.2   | 3.1                         | 0.37                       | 99.5%           | 66%                                     | 1.0                         | 15%                                       | 3.7×          | 123 ms   |
-| 0.35  | 5.2                         | 0.64                       | 99.9%           | 66%                                     | 1.0                         | 19%                                       | 3.5×          | 136 ms   |
-| 0.5   | 7.1                         | 0.91                       | 100%            | 63%                                     | 1.2                         | 17%                                       | 3.2×          | 166 ms   |
-| 0.75  | 10.5                        | 1.36                       | 100%            | 56%                                     | 2.0                         | 13%                                       | 3.1×          | 219 ms   |
-| 1     | 13.0                        | 1.80                       | 100%            | 50%                                     | 2.3                         | 12%                                       | 3.1×          | 271 ms   |
-
-- **Scale.** Value added grows almost linearly with the share (about 13 × share), so the share is the dial for the "typical day" scale; 0.35 matches the calibration.
-- **Specialization.** Fewer workers per burg means a burg's own sales move prices less, so it has no reason to take up a second trade: at 0.5 and below the median burg makes one good, and markets are most distinct. Above 0.5 burgs diversify again and regional distinctiveness falls toward 50%.
-- **Concentration.** The richest tenth of markets peaks at 0.35; the rich/poor gap shrinks as the share rises.
-- **Demand** is covered at every share, 99.5% even at 0.2.
-- **Speed.** Fewer workers mean fewer worker steps: 0.35 runs in half the time of 1.
-
-### A1 revisited: biome output against clustered deposits
-
-Rural supply has two halves: biome output (population × a per-biome table) and bonus resources (deposits placed cell by cell), which make up about 54% of rural value. Measured on the six maps:
-
-- A market's people live in several biomes: its main biome holds about 60% of them. Its biome mix is 52% distinct from the world's, and biome output can be no more distinct than that. It is at 46% now.
-- Tropical forests hold 15–60% of the people on most maps, yet their biome output is almost nothing (game and sugar at 0.02–0.08).
-
-Two counterfactuals were measured on the same maps. The first is a "signature" biome table with no shared goods between biomes, and with output for the tropics (sugar, tobacco, mahogany, dyes). It even takes wood and grain out of temperate deciduous forest. The second is an estimate of B4: every sixth deposit seeds a district, and the other deposits take the good of the nearest seed (placement rules ignored, so this is an upper bound).
-
-| Metric                          | Current | Signature biome table | Clustered deposits | Both  |
-| ------------------------------- | ------- | --------------------- | ------------------ | ----- |
-| Distinctiveness, all production | 56%     | 57%                   | 63%                | 65%   |
-| Distinctiveness, rural supply   | 51%     | 51%                   | 60%                | 61%   |
-| Distinctiveness, biome output   | 46%     | 49%                   | 46%                | 49%   |
-| Distinctiveness, manufacturing  | 68%     | 71%                   | 68%                | 73%   |
-| Output follows people           | 61%     | 57%                   | 62%                | 55%   |
-| Richest tenth: share of output  | 14%     | 17%                   | 18%                | 19%   |
-| Price gap                       | 3.4×    | 3.9×                  | 2.8×               | 3.2×  |
-| Demand coverage                 | 99.9%   | 100%                  | 99.9%              | 99.9% |
-
-Sharper biome output is near its ceiling: even a table no real world would have adds one point. Clustered deposits add seven. A1 is worth a light pass to fill the tropical gap. B4 is the next lever for regionalism.
+1. **Markets buy only what they expect to resell**, so goods nobody will buy stop selling at all. This is the lever for the 30% unsold.
+2. **State orders for military goods**, their natural buyer.
+3. Pending regional ideas by measured effect: scale returns, merchants, development level.

@@ -97,7 +97,10 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
           const tags = Tags.parse(tagsInput);
           const value = +ensureEl<HTMLInputElement>("newGoodValue").value;
           const carriage = +ensureEl<HTMLInputElement>("newGoodCarriage").value;
-          const chance = +ensureEl<HTMLInputElement>("newGoodChance").value;
+          const deposits: [number, number] = [
+            +ensureEl<HTMLInputElement>("newGoodDepositsMin").value,
+            +ensureEl<HTMLInputElement>("newGoodDepositsMax").value
+          ];
           const unit = ensureEl<HTMLInputElement>("newGoodUnit").value.trim();
           const color = ensureEl<HTMLInputElement>("newGoodColor").value;
           const distribution = ensureEl("newGoodDistribution").textContent?.trim() ?? "";
@@ -106,8 +109,8 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
           if (!Number.isFinite(value) || value < 0) errors.push(t("Value must be a valid non-negative number"));
           if (!Number.isFinite(carriage) || carriage < 0)
             errors.push(t("Carriage price must be a valid non-negative number"));
-          if (!Number.isFinite(chance) || chance < 0 || chance > 100)
-            errors.push(t("Chance must be between 0 and 100"));
+          if (deposits.some(count => !Number.isFinite(count) || count < 0) || deposits[0] > deposits[1])
+            errors.push(t("Deposits must be a range of non-negative numbers, the minimum first"));
 
           if (distribution) {
             try {
@@ -153,6 +156,9 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
 
           if (editedGood) {
             const id = editedGood.i;
+            const placementChanged =
+              distribution !== (editedGood.distribution ?? "") ||
+              String(deposits) !== String(editedGood.deposits ?? [0, 0]);
             Goods.rename(id, name);
             Goods.setTags(id, tags);
             Goods.setIcon(id, icon);
@@ -161,7 +167,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             Goods.setCarriage(id, carriage);
             Goods.setUnit(id, unit);
             Goods.setProduction(id, {
-              chance,
+              deposits,
               demandCoverage: demandCoverageState,
               multipliers: buildFinalMultipliers() ?? null,
               biomeOutput: Object.keys(biomeOutputState).length ? biomeOutputState : null,
@@ -171,7 +177,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
 
             // opt-out: by default re-place the good and recompute the economy to reflect the change
             if (ensureEl<HTMLInputElement>("goodRegenerateEconomy").checked) {
-              Goods.regeneratePlacement(editedGood.i);
+              if (placementChanged) Goods.regeneratePlacement(editedGood.i); // keeps deposits placed by output
               Production.regenerateEconomy();
               Layers.draw("markets", "goods");
               Layers.draw("trade");
@@ -194,7 +200,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
               color,
               value,
               carriage,
-              chance,
+              deposits,
               unit,
               demandCoverage: demandCoverageState,
               multipliers: buildFinalMultipliers(),
@@ -262,9 +268,6 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
           <label for="newGoodCarriage" data-tip="${t("Price of carrying one unit over 1 decima (a tenth of the map's diagonal, here {{distance}}) along roads and sea routes. Bulky goods cost more to carry, dear ones pay for the risk", { distance: getDistance(getDecima()) })}">${t("Carriage Price")}*</label>
           <span class="ge-inline"><input id="newGoodCarriage" class="ge-num" type="number" min="0" step="0.1" value="${editedGood?.carriage ?? DEFAULT_CARRIAGE}" /> 🟡</span>
 
-          <label for="newGoodChance">${t("Chance")}</label>
-          <input id="newGoodChance" class="ge-num" type="number" min="0" max="100" step="0.1" value="${editedGood?.chance ?? 1}" />
-
           <label for="newGoodUnit">${t("Unit")}</label>
           <input id="newGoodUnit" class="ge-field" placeholder="${t("e.g. wagon, barrel")}" value="${editedGood?.unit || ""}" />
 
@@ -302,6 +305,24 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             <div id="newGoodDistribution" class="ge-dist">${editedGood?.distribution || ""}</div>
             <button id="newGoodDistributionEditor" class="icon-pencil ge-edit" data-tip="${t("Open the Distribution visual editor")}"></button>
           </div>
+
+          <label data-tip="${t("How many bonus resource deposits generation places on the map, from the minimum to the maximum. A deposit yields more on a bigger map, so the same count gives the same share of supply on any map size")}">${t("Deposits")}</label>
+          <span class="ge-inline">
+            <input id="newGoodDepositsMin" class="ge-num" type="number" min="0" step="1" value="${editedGood?.deposits?.[0] ?? 1}" />
+            –
+            <input id="newGoodDepositsMax" class="ge-num" type="number" min="0" step="1" value="${editedGood?.deposits?.[1] ?? 2}" />
+            ${t("on the map")}
+          </span>
+          ${
+            editedGood?.distribution
+              ? /*html*/ `<label data-tip="${t("What this good's deposits yield a day on this map. Set the total and click Place to re-place the deposits until they yield it, by the saved distribution; the economy is recomputed")}">${t("Deposit output")}</label>
+          <span class="ge-inline">
+            <span id="goodDepositOutput"></span>
+            <input id="goodDepositTarget" class="ge-num" type="number" min="0" step="1" />
+            <button id="goodPlaceOutput" type="button" data-tip="${t("Re-place the deposits to yield this many units a day")}">${t("Place")}</button>
+          </span>`
+              : ""
+          }
         </div>
         <div id="newGoodRawNote" class="ge-note"></div>
       </div>
@@ -485,6 +506,38 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
       recipes.push({ [defaultGoodId]: 1 });
       renderRecipes();
     });
+
+    if (editedGood?.distribution) {
+      const good = editedGood;
+      const showDepositOutput = () => {
+        let deposits = 0;
+        let units = 0;
+        for (const cellId of pack.cells.i) {
+          if (pack.cells.good[cellId] !== good.i) continue;
+          deposits++;
+          units += Production.getDepositOutput(good, cellId);
+        }
+        ensureEl("goodDepositOutput").textContent = t("{{units}} {{unit}} a day from {{deposits}} deposits", {
+          units: rn(units),
+          unit: good.unit,
+          deposits
+        });
+        ensureEl<HTMLInputElement>("goodDepositTarget").value = String(rn(units));
+      };
+      showDepositOutput();
+
+      ensureEl("goodPlaceOutput").addEventListener("click", () => {
+        const units = +ensureEl<HTMLInputElement>("goodDepositTarget").value;
+        if (!(units >= 0)) return;
+        const placed = Goods.placeOutput(good.i, units, cellId => Production.getDepositOutput(good, cellId));
+        Production.regenerateEconomy();
+        Layers.draw("markets", "goods");
+        Layers.draw("trade");
+        refreshEditors();
+        showDepositOutput();
+        tip(t("Placed {{deposits}} deposits", { deposits: placed }), false, "success", 4000);
+      });
+    }
 
     ensureEl("newGoodDistributionEditor").addEventListener("click", () => {
       const distEl = ensureEl("newGoodDistribution");

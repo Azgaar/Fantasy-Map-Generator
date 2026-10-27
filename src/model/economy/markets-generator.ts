@@ -9,17 +9,28 @@ import { t } from "@/utils/i18n";
 import { notify } from "@/utils/notices";
 import { minmax, rn } from "@/utils/number-utils";
 import type { DemandCategory, Good } from "./goods-generator";
-import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS, Goods } from "./goods-generator";
+import {
+  DEMAND_PRIORITY,
+  DEMAND_TARGET_FACTORS,
+  Goods,
+  getVarietyShares,
+  SAVINGS_RATE,
+  WANT_LIMITS,
+  WANT_SHARES
+} from "./goods-generator";
 import { Production } from "./production-generator";
 import { TradeRoutes } from "./trade-routes";
 
-const PRICE_FLOOR_FACTOR = 0.1;
+const PRICE_FLOOR_FACTOR = 0.02;
 const PRICE_CEILING_FACTOR = 5.0;
-const LAPLACE_PRICE_SMOOTHING = 5;
-const MARKET_PRESSURE_FACTOR = 0.01;
-const MARKET_MARGIN = 0.05;
+const PRICE_RESPONSE = 2; // a trade of a day's expected sales moves the price e^this times
+const WANTS_ESTIMATE = 1; // expected sales: what people buy beyond their needs, as a multiple of them
+const OPENING_ELASTICITY = 0.5; // how far below its value an ingredient opens where its trades need less than a unit a day
+const CAPITAL_RENT = 0.4; // share of rural sale income paid to the state's capital: dues and absentee landlords
+const MARKET_MARGIN = 0.1;
 const OTHER_LANDMASS_SPACING = 0.5; // share of the market spacing a market on another landmass keeps clear
 const MAX_DECIMAS = 10; // the map's diagonal: the most carriage, paid with no route to the burg's own market
+const IMPORT_CARRIAGE_FACTOR = 1.5; // carriage from another state's market: borders, tolls, longer hauls
 
 export type Market = {
   i: number;
@@ -32,6 +43,17 @@ export type Market = {
 
 /** Units the budget pays for at the price, rounded down to the hundredth so the cost stays within it */
 const affordable = (budget: number, price: number) => Math.floor((budget / price) * 100 + 1e-6) / 100;
+
+/** A market's day: how much of each good it expects to sell, how much of its stock is rural produce, and its rural people's money */
+type MarketDay = {
+  depth: number[];
+  rural: number[];
+  ruralPeople: number;
+  cash: number;
+  income: number;
+  spent: number;
+  covered: number[];
+};
 
 export const DEAL_KINDS = { sale: 0, input: 1, demand: 2, kept: 3 } as const;
 export type DealKind = (typeof DEAL_KINDS)[keyof typeof DEAL_KINDS];
@@ -87,6 +109,8 @@ export class MarketsModule {
   private dealIdsSource: Deal[] | null = null;
   private routeCosts: Float32Array[] | null = null; // by market then burg id, in map units
   private decima = 0; // a tenth of the map's diagonal, kept with the routes
+  private days: MarketDay[] = []; // by market, for the economy run
+  private carriage: Map<number, { decimas: Float64Array; imports: Uint8Array }> | null = null; // by burg then market, for the economy run
 
   regenerate(): Market[] {
     return this.generate(true);
@@ -245,12 +269,18 @@ export class MarketsModule {
     return cellMarket;
   }
 
+  /** The countryside brings its produce to its market; it is paid as the produce is bought */
   collectRuralProduction(): void {
     const biomeProduction = Goods.getBiomesProduction();
+    this.days = [];
+    for (const market of pack.markets)
+      this.days[market.i] = { depth: [], rural: [], ruralPeople: 0, cash: 0, income: 0, spent: 0, covered: [] };
 
     for (const cellId of pack.cells.i) {
       const market = this.marketById[pack.cells.market[cellId]];
       if (!market) continue;
+      const day = this.days[market.i];
+      day.ruralPeople += pack.cells.pop[cellId] || 0;
 
       const produced = Production.getCellProduction(cellId, biomeProduction);
       for (const [goodId, amount] of Object.entries(produced)) {
@@ -258,6 +288,7 @@ export class MarketsModule {
         if (!good) continue;
         const marketGood = this.getMarketGood(market, good);
         marketGood.stock = rn(marketGood.stock + amount, 2);
+        day.rural[good.i] = (day.rural[good.i] || 0) + amount;
       }
     }
   }
@@ -271,48 +302,123 @@ export class MarketsModule {
     return initial;
   }
 
+  /** Each market expects to sell a day's demand of its people and trades; an ingredient its trades need less than a unit of a day opens below its value */
   initializeMarketPrices(): void {
-    const consumerDemandFactors = this.collectConsumerDemand(pack.goods);
-    const industrialDemandFactors = this.collectIndustrialDemand(pack.goods, consumerDemandFactors);
-    const avgIngredientsCostByGood = this.calculateAverageBaseCostByGood(pack.goods);
+    const demandFactors = this.collectDemand(pack.goods);
     const populationByMarket = this.calculatePopulationByMarket();
 
     for (const market of pack.markets) {
-      const population = populationByMarket[market.i] || 0;
-
-      // First pass: raw goods - price from demand/supply ratio
+      const day = this.days[market.i];
+      if (!day) continue;
+      const people = (populationByMarket[market.i] || 0) + day.ruralPeople;
       for (const good of pack.goods) {
-        if (!good.distribution) continue;
-        const marketGood = this.getMarketGood(market, good);
-        const consumerDemand = consumerDemandFactors[good.i] || 0;
-        const industrialDemand = industrialDemandFactors[good.i] || 0;
-        const demand = population * (consumerDemand + industrialDemand);
-        const ratio = (demand + LAPLACE_PRICE_SMOOTHING) / (marketGood.stock + LAPLACE_PRICE_SMOOTHING);
-        marketGood.price = rn(good.value * minmax(ratio, PRICE_FLOOR_FACTOR, PRICE_CEILING_FACTOR), 2);
-      }
-
-      // Second pass: manufactured goods - average local ingredient cost + base value-added
-      for (const good of pack.goods) {
-        if (!good.recipes?.length) continue;
-        const marketGood = this.getMarketGood(market, good);
-        let totalMarketCost = 0;
-        for (const recipe of good.recipes) {
-          for (const [ingIdStr, amount] of Object.entries(recipe)) {
-            const ingId = +ingIdStr;
-            const ing = Goods.get(ingId);
-            if (!ing) continue;
-            totalMarketCost += amount * this.getMarketGood(market, ing).price;
-          }
-        }
-        const avgMarketCost = totalMarketCost / good.recipes.length;
-        const avgBaseCost = avgIngredientsCostByGood[good.i] ?? 0;
-        const demandPrice = avgMarketCost + Math.max(0, good.value - avgBaseCost);
-        marketGood.price = rn(
-          minmax(demandPrice, good.value * PRICE_FLOOR_FACTOR, good.value * PRICE_CEILING_FACTOR),
-          2
-        );
+        const expected = people * (demandFactors[good.i] || 0);
+        day.depth[good.i] = Math.max(1, expected);
+        const price = good.demandCoverage ? good.value : good.value * Math.min(1, expected) ** OPENING_ELASTICITY;
+        this.getMarketGood(market, good).price = rn(Math.max(price, good.value * PRICE_FLOOR_FACTOR), 2);
       }
     }
+  }
+
+  /** A trade of a day's expected sales moves the price e^PRICE_RESPONSE times: up on buying, down on selling */
+  private movePrice(market: Market, good: Good, units: number) {
+    const depth = this.days[market.i]?.depth[good.i];
+    if (!depth) return; // outside an economy run the price stays
+    const marketGood = this.getMarketGood(market, good);
+    const price = marketGood.price * Math.exp((PRICE_RESPONSE * units) / depth);
+    marketGood.price = rn(minmax(price, good.value * PRICE_FLOOR_FACTOR, good.value * PRICE_CEILING_FACTOR), 2);
+  }
+
+  /** Buyers turned away for lack of stock raise the price as if they had bought */
+  signalShortage(market: Market, good: Good, units: number) {
+    if (units > 0.01) this.movePrice(market, good, units);
+  }
+
+  /** Units taken from the market's stock: the share that is rural produce pays the market's rural people, less the margin and the capital's rent */
+  private takeStock(market: Market, good: Good, units: number) {
+    const marketGood = this.getMarketGood(market, good);
+    const day = this.days[market.i];
+    if (day && marketGood.stock > 0) {
+      const fromRural = Math.min(day.rural[good.i] || 0, (units * (day.rural[good.i] || 0)) / marketGood.stock);
+      if (fromRural > 0) {
+        day.rural[good.i] -= fromRural;
+        const earned = fromRural * this.customerSellPrice(marketGood.price);
+        const rent = earned * CAPITAL_RENT;
+        const capital = pack.burgs[pack.states[this.getMarketState(market)]?.capital || 0];
+        if (capital?.i && !capital.removed) capital.treasury = rn((capital.treasury || 0) + rent, 2);
+        else day.cash += rent; // no capital to pay: the countryside keeps it
+        day.cash += earned - rent;
+        day.income += earned - rent;
+      }
+    }
+    marketGood.stock = rn(Math.max(0, marketGood.stock - units), 2);
+    this.movePrice(market, good, units);
+  }
+
+  /** The market's rural people spend up to (1 - savings) of what they earned on goods at their market, cheapest coverage first, up to their wants; their needs come from their own fields */
+  spendRural(market: Market) {
+    const day = this.days[market.i];
+    if (!day) return;
+    const budget = Math.min(day.cash, (1 - SAVINGS_RATE) * day.income - day.spent);
+    if (budget <= 0.01) return;
+    const taxRate = States.getSalesTax(pack.burgs[market.centerBurgId]);
+    DEMAND_PRIORITY.forEach((category, categoryIndex) => {
+      let money = budget * WANT_SHARES[category];
+      const room = (good: Good) =>
+        (day.ruralPeople * DEMAND_TARGET_FACTORS[category] * WANT_LIMITS[category] -
+          (day.covered[categoryIndex] || 0)) /
+        good.demandCoverage![category]!;
+      const options = pack.goods
+        .filter(good => good.demandCoverage?.[category])
+        .map(good => ({ good, price: this.customerBuyPrice(this.getMarketGood(market, good).price) * (1 + taxRate) }));
+      const purchase = (good: Good, price: number, spend: number) => {
+        const units = Math.min(market.goods[good.i].stock, spend / price, room(good));
+        if (spend <= 0.01 || units < 0.01) return;
+        const cost = units * price;
+        money -= cost;
+        day.cash -= cost;
+        day.spent += cost;
+        for (const [other, share] of Object.entries(good.demandCoverage!)) {
+          const i = DEMAND_PRIORITY.indexOf(other as DemandCategory);
+          day.covered[i] = (day.covered[i] || 0) + units * (share || 0);
+        }
+        this.payMarginAmount(market, units * market.goods[good.i].price * MARKET_MARGIN);
+        this.takeStock(market, good, units);
+      };
+      // spread over every good covering the need, cheaper ones getting more; goods out of stock turn them away, raising their price
+      const shares = getVarietyShares(options.map(({ good, price }) => price / good.demandCoverage![category]!));
+      const total = money;
+      options.forEach(({ good, price }, k) => {
+        const spend = Math.min(money, total * shares[k]);
+        if (market.goods[good.i].stock > 0.01) purchase(good, price, spend);
+        else this.signalShortage(market, good, Math.min(spend / price, room(good)));
+      });
+      const stocked = options
+        .filter(({ good }) => market.goods[good.i].stock > 0.01)
+        .sort((a, b) => a.price / a.good.demandCoverage![category]! - b.price / b.good.demandCoverage![category]!);
+      for (const { good, price } of stocked) {
+        if (money <= 0.01) break;
+        purchase(good, price, money);
+      }
+    });
+  }
+
+  /** What the market's rural people earned and spent this run */
+  getRuralBalance(marketId: number): { people: number; income: number; spent: number } | null {
+    const day = this.days[marketId];
+    return day ? { people: day.ruralPeople, income: rn(day.income, 2), spent: rn(day.spent, 2) } : null;
+  }
+
+  /** The market where a unit of the good sells for the most at the burg's door, after carriage */
+  getOutlet(burg: Burg, good: Good): { market: Market; price: number } | null {
+    let best: { market: Market; price: number } | null = null;
+    for (const market of pack.markets) {
+      const transport = this.getTransport(market, burg, good);
+      if (transport === Infinity) continue;
+      const price = this.customerSellPrice(this.getMarketGood(market, good).price) - transport;
+      if (!best || price > best.price) best = { market, price };
+    }
+    return best;
   }
 
   public get(marketId: number | undefined): Market | undefined {
@@ -427,6 +533,12 @@ export class MarketsModule {
   measureRoutes(): void {
     this.routeCosts = TradeRoutes.measure();
     this.decima = getDecima() || 1;
+    this.carriage = new Map();
+  }
+
+  /** Drops the carriage kept for the run: edits to burgs and states may change it */
+  endRun(): void {
+    this.carriage = null;
   }
 
   /** Decimas a good is carried between the market's center and the burg along routes; Infinity with no route to another market */
@@ -439,10 +551,42 @@ export class MarketsModule {
     return Math.min(distance / this.decima, MAX_DECIMAS);
   }
 
-  /** Per-unit cost of carrying a good between the market's center and the burg; Infinity with no route to another market */
+  /** Per-unit cost of carrying a good between the market's center and the burg, dearer from another state's market; Infinity with no route to another market */
   getTransport(market: Market, burg: Burg, good: Good): number {
+    if (this.carriage) {
+      const { decimas, imports } = this.getCarriage(burg);
+      const distance = decimas[market.i];
+      return distance === Infinity
+        ? Infinity
+        : distance * good.carriage * (imports[market.i] ? IMPORT_CARRIAGE_FACTOR : 1);
+    }
     const decimas = this.getDecimas(market, burg);
-    return decimas === Infinity ? Infinity : decimas * good.carriage;
+    if (decimas === Infinity) return Infinity;
+    return decimas * good.carriage * (this.isImportFor(market, burg) ? IMPORT_CARRIAGE_FACTOR : 1);
+  }
+
+  /** Decimas and import flags from every market to the burg, measured once a run */
+  private getCarriage(burg: Burg) {
+    let carriage = this.carriage!.get(burg.i!);
+    if (carriage) return carriage;
+    const decimas = new Float64Array(this.marketById.length).fill(Infinity);
+    const imports = new Uint8Array(this.marketById.length);
+    for (const market of pack.markets) {
+      decimas[market.i] = this.getDecimas(market, burg);
+      imports[market.i] = Number(this.isImportFor(market, burg));
+    }
+    carriage = { decimas, imports };
+    this.carriage!.set(burg.i!, carriage);
+    return carriage;
+  }
+
+  private isImportFor(market: Market, burg: Burg): boolean {
+    const own = this.get(burg.market);
+    return Boolean(own && own !== market && this.getMarketState(market) !== this.getMarketState(own));
+  }
+
+  private getMarketState(market: Market): number {
+    return pack.burgs[market.centerBurgId]?.state || 0;
   }
 
   buy({
@@ -473,8 +617,7 @@ export class MarketsModule {
     this.recordDeal(burg.i!, market.i, good.i, kind, trade);
     this.payMargin(market, kind, trade);
 
-    marketGood.stock = rn(Math.max(0, marketGood.stock - actualUnits), 2);
-    marketGood.price = rn(this.applyMarketPressure(good.value, marketGood.price, actualUnits), 2);
+    this.takeStock(market, good, actualUnits);
     return trade;
   }
 
@@ -521,12 +664,24 @@ export class MarketsModule {
 
     const marketGood = this.getMarketGood(market, good);
     marketGood.stock = rn(Math.max(0, marketGood.stock - kept), 2);
-    marketGood.price = rn(this.applyMarketPressure(good.value, marketGood.price, kept), 2);
+    this.movePrice(market, good, kept);
     return { units: kept, price: rn(quote.price, 2), tax: 0 };
   }
 
-  sell({ burg, good, units, taxRate }: { burg: Burg; good: Good; units: number; taxRate: number }): Trade | null {
-    const market = this.get(burg.market);
+  /** The burg sells to a market, its own unless another is given */
+  sell({
+    burg,
+    good,
+    units,
+    taxRate,
+    market = this.get(burg.market)
+  }: {
+    burg: Burg;
+    good: Good;
+    units: number;
+    taxRate: number;
+    market?: Market;
+  }): Trade | null {
     if (!market || units <= 0) return null;
 
     const marketGood = this.getMarketGood(market, good);
@@ -539,7 +694,7 @@ export class MarketsModule {
     this.payMargin(market, DEAL_KINDS.sale, trade);
 
     marketGood.stock = rn(marketGood.stock + units, 2);
-    marketGood.price = rn(this.applyMarketPressure(good.value, marketGood.price, -units), 2);
+    this.movePrice(market, good, -units);
     return trade;
   }
 
@@ -597,9 +752,13 @@ export class MarketsModule {
 
   /** The center burg's merchants take the margin as the trade happens, so the hub can spend it the same day */
   private payMargin(market: Market, kind: DealKind, trade: Trade): void {
+    this.payMarginAmount(market, this.marginOf(kind, trade));
+  }
+
+  private payMarginAmount(market: Market, amount: number): void {
     const center = pack.burgs[market.centerBurgId];
     if (!center?.i || center.removed) return;
-    center.treasury = rn((center.treasury || 0) + this.marginOf(kind, trade), 2);
+    center.treasury = rn((center.treasury || 0) + amount, 2);
   }
 
   /** An import is a purchase from a market of another state than the burg's own market: only an import may pay a tariff */
@@ -726,12 +885,10 @@ export class MarketsModule {
     };
   }
 
-  /** The market a good reaches the burg cheapest from, with its stock and the burg's buy price */
   /** Every market as a source of the good for the burg, cheapest first, then those that cannot sell it. Debug only: it prunes nothing */
   listSources(burg: Burg, good: Good, terms: TradeTerms): SourceOption[] {
     const own = this.get(burg.market);
     if (!own) return [];
-    const stateOf = (market: Market) => pack.burgs[market.centerBurgId]?.state || 0;
 
     const options = pack.markets.map(source => {
       const row = source.goods[good.i];
@@ -746,7 +903,7 @@ export class MarketsModule {
         price: this.customerBuyPrice(midPrice),
         tax: rn(costs?.taxPerUnit ?? 0, 2),
         tariff: rn(costs?.tariffPerUnit ?? 0, 2),
-        isImport: stateOf(source) !== stateOf(own),
+        isImport: this.getMarketState(source) !== this.getMarketState(own),
         carriage: carriage === Infinity ? 0 : rn(carriage, 2),
         buyPrice: 0
       };
@@ -757,6 +914,7 @@ export class MarketsModule {
     return options.sort((a, b) => Number(!!a.excluded) - Number(!!b.excluded) || a.buyPrice - b.buyPrice);
   }
 
+  /** The market a good reaches the burg cheapest from, with its stock and the burg's buy price */
   quoteSource(burg: Burg, good: Good, terms: TradeTerms): SourceQuote | null {
     const market = this.get(burg.market);
     if (!market) return null;
@@ -824,8 +982,7 @@ export class MarketsModule {
     this.recordDeal(burg.i!, source.i, good.i, kind, trade);
     this.payMargin(source, kind, trade);
 
-    row.price = rn(this.applyMarketPressure(good.value, row.price, actualUnits), 2);
-    row.stock = rn(row.stock - actualUnits, 2);
+    this.takeStock(source, good, actualUnits);
     return trade;
   }
 
@@ -837,61 +994,39 @@ export class MarketsModule {
     return rn(midPrice * (1 - MARKET_MARGIN), 2);
   }
 
-  private applyMarketPressure(basePrice: number, currentPrice: number | undefined, units: number): number {
-    const price = currentPrice ?? basePrice;
-    const floor = basePrice * PRICE_FLOOR_FACTOR;
-    const ceiling = basePrice * PRICE_CEILING_FACTOR;
-    return minmax(floor, price + units * basePrice * MARKET_PRESSURE_FACTOR, ceiling);
-  }
-
-  private collectConsumerDemand(goods: Good[]): number[] {
-    const totalCoverageByCategory = Object.fromEntries(
-      DEMAND_PRIORITY.map(category => [
-        category,
-        goods.reduce((sum, g) => sum + (g?.demandCoverage?.[category] || 0), 0) || 1
-      ])
-    ) as Record<DemandCategory, number>;
-
-    const demandFactor: number[] = [];
-    for (const good of goods) {
-      demandFactor[good.i] = DEMAND_PRIORITY.reduce((sum, category) => {
-        const share = (good?.demandCoverage?.[category] || 0) / (totalCoverageByCategory[category] || 1);
-        return sum + share * DEMAND_TARGET_FACTORS[category];
-      }, 0);
+  /** Units a person buys of each good a day: as buyers spread each need at base prices, plus what the trades making its products need */
+  private collectDemand(goods: Good[]): number[] {
+    const consumer: number[] = [];
+    for (const category of DEMAND_PRIORITY) {
+      const covering = goods.filter(good => good.demandCoverage?.[category]);
+      const shares = getVarietyShares(covering.map(good => good.value / good.demandCoverage![category]!));
+      covering.forEach((good, k) => {
+        consumer[good.i] =
+          (consumer[good.i] || 0) + (DEMAND_TARGET_FACTORS[category] * shares[k]) / good.demandCoverage![category]!;
+      });
     }
-    return demandFactor;
-  }
 
-  private collectIndustrialDemand(goods: Good[], consumerDemandFactors: number[]): number[] {
-    // Per-capita demand for ingredients driven by consumer demand for their manufactured outputs.
-    const demandFactor: number[] = [];
-    for (const good of goods) {
-      if (!good.recipes?.length) continue;
-      const outputDemand = consumerDemandFactors[good.i] || 0;
-      for (const recipe of good.recipes) {
-        for (const [ingredientIdStr, amount] of Object.entries(recipe)) {
-          const ingredientId = +ingredientIdStr;
-          demandFactor[ingredientId] = (demandFactor[ingredientId] || 0) + amount * outputDemand;
+    const users = new Map<number, [output: Good, amount: number][]>();
+    for (const good of goods)
+      for (const recipe of good.recipes || [])
+        for (const [id, amount] of Object.entries(recipe)) {
+          if (!users.has(+id)) users.set(+id, []);
+          users.get(+id)!.push([good, amount / good.recipes!.length]);
         }
-      }
-    }
-    return demandFactor;
-  }
 
-  private calculateAverageBaseCostByGood(goods: Good[]): number[] {
-    const avgBaseCostByGood = new Array(goods.length);
-    for (const good of goods) {
-      if (!good.recipes?.length) continue;
-      let totalBaseCost = 0;
-      for (const recipe of good.recipes) {
-        for (const [ingIdStr, amount] of Object.entries(recipe)) {
-          const ing = Goods.get(+ingIdStr);
-          if (ing) totalBaseCost += amount * ing.value;
-        }
-      }
-      avgBaseCostByGood[good.i] = totalBaseCost / good.recipes.length;
-    }
-    return avgBaseCostByGood;
+    const demand: number[] = [];
+    const resolve = (good: Good, path: Set<number>): number => {
+      if (demand[good.i] !== undefined) return demand[good.i];
+      if (path.has(good.i)) return 0;
+      path.add(good.i);
+      let units = (consumer[good.i] || 0) * (1 + WANTS_ESTIMATE);
+      for (const [output, amount] of users.get(good.i) || []) units += amount * resolve(output, path);
+      path.delete(good.i);
+      demand[good.i] = units;
+      return units;
+    };
+    for (const good of goods) resolve(good, new Set());
+    return demand;
   }
 
   private calculatePopulationByMarket(): number[] {

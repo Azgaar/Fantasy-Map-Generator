@@ -93,7 +93,7 @@ Each bullet of the run summary gets one named test: in `map-restoration.scenario
 | Cultures    | origins and culture references                                                 | `culture-refs`                                                                                    |
 | Economy     | all market centers lost: `Markets.regenerate`, no reseed                       | scenario: a submap of an area with no market center; `Math.random` is not replaced, markets exist |
 | Economy     | markets the user removed stay removed                                          | scenario: `pack.markets = []` stays `[]`                                                          |
-| Economy     | markets expanded once                                                          | spy: `Markets.expandTerritories` is called once                                                   |
+| Economy     | markets expanded once, again only for a burg no kept market reaches            | spy: called once; unit: land cut off from every kept market gets one                              |
 | Economy     | map without goods                                                              | scenario: `pack.goods = []` gets goods generated, with no new violation                           |
 | Relief      | `parent.relief?.length` guard, Resample `relief: false`                        | unit (exists); browser B5                                                                         |
 | Routes      | longest part kept, cells follow the points                                     | `route-cells`; scenario: a shift that cuts a route at the edge                                    |

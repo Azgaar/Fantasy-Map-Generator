@@ -6,7 +6,7 @@ import { isDrawable } from "@/controllers/political/emblems/drawability";
 import { AddedLabels } from "@/model/annotations/added-labels";
 import { type Label, type LabelNameMode, Labels } from "@/model/annotations/labels-generator";
 import { type Measurer, Measurers, type MeasurerType } from "@/model/annotations/measurers-generator";
-import { Goods } from "@/model/economy/goods-generator";
+import { type Good, Goods } from "@/model/economy/goods-generator";
 import { DEAL_KINDS, Markets } from "@/model/economy/markets-generator";
 import { Production } from "@/model/economy/production-generator";
 import type { GraphOverrides } from "@/model/graph/graph-override";
@@ -2209,6 +2209,31 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
 
   // v1.157.0 charges carriage per good: goods saved before it take the default
   for (const good of pack.goods ?? []) good.carriage ??= Goods.getDefaultCarriage(good);
+
+  // v1.157.0 places a count of richer deposits per good instead of a chance per cell
+  if (pack.goods?.some(good => "chance" in good)) migrateDeposits();
+}
+
+/** Thin old deposits by their good's chance to the density of new maps, and read each good's range off the map */
+function migrateDeposits() {
+  const { cells } = pack;
+  const goods = pack.goods as (Good & { chance?: number })[];
+  const counts: number[] = [];
+  for (const cellId of cells.i) {
+    const good = goods.find(good => good.i === cells.good?.[cellId]);
+    if (!good) continue;
+    const keep = Math.min(1, (good.chance ?? 0) / 18); // about one in six: as sparse as new maps
+    if (((cellId * 2654435761) >>> 0) / 2 ** 32 < keep) counts[good.i] = (counts[good.i] || 0) + 1;
+    else cells.good[cellId] = 0;
+  }
+  for (const good of goods) {
+    const count = counts[good.i] || 0;
+    if (good.chance && good.distribution)
+      good.deposits = count
+        ? [Math.max(1, Math.round(count * 0.75)), Math.max(1, Math.round(count * 1.25))]
+        : Goods.getDefaultDeposits(good.name);
+    delete good.chance;
+  }
 }
 
 type LegacyDeal = {

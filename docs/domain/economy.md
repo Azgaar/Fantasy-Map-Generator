@@ -1,203 +1,202 @@
 # Economy
 
-How goods, markets, production, trade and taxes work together. This is the system view: the logic, the order things happen in and the traps. The user guide is the [Economy wiki page](../wiki/Economy.md).
+How goods, markets, production, trade and taxes work together: the logic, the order things happen in and the traps. The user guide is the [Economy wiki page](../wiki/Economy.md); design history and measurements are in the [regional economy PRD](../prd/regional-economy.md).
 
-The economy is **one frozen cycle: a typical day**, not a simulation over time. Each run, rural cells fill regional **markets** with raw **goods**; **burgs** take turns spending their population as workers to turn market goods into more valuable ones, selling everything they make back to their market; then every burg spends its cash on what its people need. Every exchange is a **deal** between one burg and one market, priced at the burg's door: the market's price with a margin, the **carriage** along the route network, the seller state's **sales tax** and, across a border, the importer's **tariff**. States collect their taxes from the deals afterwards. Nothing else moves money, and nothing ticks: the numbers change only when the economy is regenerated.
+The economy is **one frozen cycle: a typical day**, not a simulation over time. Rural cells fill regional **markets** with raw **goods**. **Burgs** take turns putting their workers to work, selling what they make where it fetches most, and buying what their people need and want with what they earned. Rural people are paid for their produce as it sells and spend it too. Every exchange between a burg and a market is a **deal**, priced at the burg's door: the market's price with a margin, the **carriage** along the route network, the seller state's **sales tax** and, across a border, the importer's **tariff**. States collect their taxes from the deals afterwards. Nothing ticks: the numbers change only when the economy is regenerated.
 
 ## Elements
 
-| Element                                           | Model                                                                                     | Persisted state                                                      |
-| ------------------------------------------------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| Goods: the catalogue and bonus resources on cells | `Goods` ([goods-generator.ts](../../src/model/economy/goods-generator.ts))                | `pack.goods`, `pack.cells.good`                                      |
-| Markets: regions, stock and prices                | `Markets` ([markets-generator.ts](../../src/model/economy/markets-generator.ts))          | `pack.markets`, `pack.cells.market`, `burg.market`                   |
-| Production and the demand fill                    | `Production` ([production-generator.ts](../../src/model/economy/production-generator.ts)) | `burg.production`, `burg.product`, `burg.treasury`                   |
-| Travel cost over routes                           | `TradeRoutes` ([trade-routes.ts](../../src/model/economy/trade-routes.ts))                | nothing: measured per run                                            |
-| The deal log                                      | `Markets.recordDeal`                                                                      | `pack.deals`                                                         |
-| Taxes and treasuries                              | `States` ([states-generator.ts](../../src/model/political/states-generator.ts))           | `state.salesTax`, `state.pollTax`, `state.tariffs`, `state.treasury` |
-| Trade animation                                   | `TradeAnimation` ([trade-animation.ts](../../src/renderers/trade-animation.ts))           | nothing: read-only view of the deals                                 |
+| Element                                    | Model                                                                                     | Persisted state                                                      |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Goods: the catalogue and deposits on cells | `Goods` ([goods-generator.ts](../../src/model/economy/goods-generator.ts))                | `pack.goods`, `pack.cells.good`                                      |
+| Markets: regions, stock and prices         | `Markets` ([markets-generator.ts](../../src/model/economy/markets-generator.ts))          | `pack.markets`, `pack.cells.market`, `burg.market`                   |
+| Production, buying and the run             | `Production` ([production-generator.ts](../../src/model/economy/production-generator.ts)) | `burg.production`, `burg.product`, `burg.treasury`                   |
+| Travel cost over routes                    | `TradeRoutes` ([trade-routes.ts](../../src/model/economy/trade-routes.ts))                | nothing: measured per run                                            |
+| The deal log                               | `Markets.recordDeal`                                                                      | `pack.deals`                                                         |
+| Taxes and treasuries                       | `States` ([states-generator.ts](../../src/model/political/states-generator.ts))           | `state.salesTax`, `state.pollTax`, `state.tariffs`, `state.treasury` |
+| Trade animation                            | `TradeAnimation` ([trade-animation.ts](../../src/renderers/trade-animation.ts))           | nothing: a read-only view of the deals                               |
 
 ## When it runs
 
-The generation pipeline runs `Goods.generate()` early (before population ranking, which reads good values) and, near the end, `Markets.generate()` → `Production.produce()` → `States.collectTaxes()`.
+Generation runs `Goods.generate()` early, before population ranking, which reads good values and deposits. Near the end it runs `Markets.generate()` → `Production.produce()` → `States.collectTaxes()`.
 
-The user reruns parts from Tools → Regenerate, the goods and markets editors, and the omnibar:
+The user reruns parts from Tools → Regenerate, the goods and markets editors and the omnibar:
 
-| Command    | Does                                                                                               |
-| ---------- | -------------------------------------------------------------------------------------------------- |
-| Goods      | Re-places bonus resources on cells (`Goods.regenerate`). The economy is not rerun                  |
-| Markets    | Rebuilds markets and their territories (`Markets.regenerate`). The economy is not rerun            |
-| Production | `Production.regenerate()`: clears deals and market stock, runs production, collects taxes          |
-| Economy    | `Production.regenerateEconomy()`: re-expands the existing markets' territories, then as Production |
+| Command    | Does                                                                                     |
+| ---------- | ---------------------------------------------------------------------------------------- |
+| Goods      | Re-places deposits (`Goods.regenerate`). The economy is not rerun                        |
+| Markets    | Rebuilds markets and their territories (`Markets.regenerate`). The economy is not rerun  |
+| Production | `Production.regenerate()`: clears deals and stock, runs the day, collects taxes          |
+| Economy    | `Production.regenerateEconomy()`: re-floods the markets' territories, then as Production |
 
-Loading a map does not rerun the economy, except when `auto-update.ts` migrates a save from before a change that needs it. A submap or resample reruns it for the new land (`map-restoration.ts`).
-
-The run is deterministic: production uses no randomness, so the same goods, markets and burgs give the same deals.
+Loading a map does not rerun the economy, unless `auto-update.ts` migrates a save that needs it. A submap or resample reruns it for the new land (`map-restoration.ts`). The run uses no randomness: the same goods, markets and burgs give the same deals.
 
 ## Goods
 
-A good is classified by what it carries:
-
-| Type         | `distribution` | `recipes` | Made by                         |
-| ------------ | -------------- | --------- | ------------------------------- |
-| Raw          | yes            | no        | rural cells and bonus resources |
-| Manufactured | no             | yes       | burg workers only               |
-| Hybrid       | yes            | yes       | both                            |
+| Type         | `distribution` | `recipes` | Made by                  |
+| ------------ | -------------- | --------- | ------------------------ |
+| Raw          | yes            | no        | rural cells and deposits |
+| Manufactured | no             | yes       | burg workers             |
+| Hybrid       | yes            | yes       | both                     |
 
 The fields that drive the economy:
 
-- **`value`**: the base price. Market prices float around it, clamped to 0.1×–5× of it. It also feeds cell suitability for population, so **changing default good values changes generated maps**.
-- **`biomeOutput`**: units per rural population point, by biome: the bulk of raw supply.
-- **`chance` and `distribution`**: where bonus resources are placed (see [Goods spread functions](../wiki/Goods-spread-functions.md)). A cell holds at most one; each good is capped at about 200 cells per 5,000.
+- **`value`**: the base price. Prices move within 0.02–5× of it. A made good is worth its inputs at base value plus 10, a worker-day's income, so making anything pays about the same at base prices. Values also feed cell suitability, so **changing default values changes generated maps**.
+- **`biomeOutput`**: units per rural population point, by biome.
+- **`deposits` and `distribution`**: how many deposits the map gets, a whole `[min, max]` range the same on any map size, and where they may land (see [Goods spread functions](../wiki/Goods-spread-functions.md)). Each next deposit lands beside the previous one with a 50% chance (`DEPOSIT_CLUSTERING`), so deposits form loose clusters. A cell holds at most one. `Goods.placeOutput` re-places a good's deposits until they yield a set amount, for the editor.
 - **`recipes`**: alternative input sets, each making one unit. Written with good names in `GOODS_DATA`, resolved to ids at load.
-- **`demandCoverage`**: how much one unit covers of each demand category.
-- **`carriage`**: the price of carrying one unit one decima (see Carriage). The default is the good's bulk by how it is packed. Bulky cheap goods pay about their value per decima and stay home; dear goods pay a few percent and travel.
-- **`multipliers`**: production factors by culture type, culture, state, religion, biome and zone, multiplied together (`getModifiers`). They apply to rural output, bonus resources and burg manufacture alike; for a burg the culture type is the burg's own type.
+- **`demandCoverage`**: how much of each need one unit covers. Defaults make a good's value buy its main need at a reference price per unit of need (food 1, utilities 2, construction 1, military 5, luxury 5). Exceptions: military equipment covers what a unit really equips (ships 4, artillery 2, arms 1, harnesses 0.5), and pure ingredients (leather, cloth, ropes, tar, barrels, sails, paper, ink, bronze) cover no need, so only the trades that use them buy them.
+- **`carriage`**: the price of carrying one unit one decima. Bulky cheap goods pay about half their value per decima and stay local; dear goods (value 10 or more) pay double for guards and insurance, but still travel.
+- **`multipliers`**: production factors by culture type, culture, state, religion, biome and zone, multiplied together (`getModifiers`). They apply to rural output, deposits and burg manufacture; for a burg the culture type is the burg's own.
 
-The catalogue (71 default goods) is map data: users add, remove and edit goods per map. A save from before a field existed gets it from the default good of the same name, otherwise a derived value: a good saved without `carriage` gets a tenth of its value.
+The catalogue (71 default goods) is map data: users add, remove and edit goods per map. A save missing a newer field gets it from the default good of the same name, or a derived value.
 
-### Demand
+### Needs and wants
 
-Five categories in priority order: 🍖 food, 🛠️ utilities, 🧱 construction, 🛡️ military, 💎 luxury. A burg's target in each is its population × a per-category factor (0.2, 0.15, 0.1, 0.08, 0.07). Demand plays two roles: it sets initial market prices, and it drives the demand fill. It does **not** steer production; burgs make whatever pays best, and market prices carry the demand signal.
+Five categories in priority order: 🍖 food, 🛠️ utilities, 🧱 construction, 🛡️ military, 💎 luxury. A burg's **needs** are its population × a per-category factor (0.2, 0.15, 0.1, 0.08, 0.07) a day. **Wants** are what it buys beyond them out of income: at most one more day of each need and four of luxury (`WANT_LIMITS`), split by `WANT_SHARES`, from up to 85% of income (`SAVINGS_RATE` 15%). Rural people's needs come from their own fields; they buy only wants.
+
+Buyers **spread their spending** over every good covering a need (`getVarietyShares`): a good gets a share by (price per coverage)^−3 (`VARIETY`), so cheaper coverage gets more but every good gets some. A good nobody stocks turns its share away and gets dearer (`signalShortage`); the rest goes to the cheapest good in stock. Demand does not steer production directly: burgs make what pays, and prices carry the signal.
 
 ## Markets
 
 ### Placement and territory
 
-Burgs are scored by population (capital ×2.5, port ×1.2, then random noise ×0.5–2.5) and walked best first; a burg becomes a market center when no other center on its landmass is within a spacing radius that grows with each market, and none on another landmass is within half of it (`OTHER_LANDMASS_SPACING`), so most inhabited islands get a market of their own. A landmass with burgs but no port, which has no sea route to anywhere, always gets one, at its best-scored burg. Each market then floods out from its center over cells by cost: crossing into another state's land and changing landmass cost extra, water costs much more (more again outside the center's own water body). Water cells only join a market when they hold a good. Every burg belongs to the market of its cell; the center burg gets a plaza. Users can also add, relocate and remove markets and paint territories by hand; cells left with no market (id 0) supply nothing, and their burgs are skipped by production entirely. The `burg-markets` integrity rule reports every burg that does not belong to the living market of its cell when a map loads.
+Burgs are scored by population (capital ×2.5, port ×1.2, then random noise ×0.5–2.5) and walked best first. A burg becomes a market center when no other center on its landmass is within a spacing radius that grows with each market, and none on another landmass within half of it (`OTHER_LANDMASS_SPACING`), so most inhabited islands get a market. A landmass with burgs but no port always gets one. Each market floods out from its center over cells by cost: entering another state's land or another landmass costs extra, water much more. Water cells join only when they hold a good. Every burg belongs to its cell's market, and the center burg gets a plaza. Users can add, relocate and remove markets and paint territories; cells with no market (id 0) supply nothing, and their burgs sit out the run. The `burg-markets` integrity rule reports burgs that do not belong to the living market of their cell.
 
 ### Stock and price
 
-A market holds no money, only per-good `{ stock, price }`; its figures in the market views are worked out from its deals (see The deal log). `price` is a midpoint: burgs buy at +5% (`MARKET_MARGIN`) and sell at −5%. The difference, the **market margin**, goes to the market's center burg as each trade happens (`payMargin`): its merchants. A purchase from another market pays the margin to that market's center, so a hub earns on what it sells abroad. The hub can spend the margin on its own demand the same day; it is trade income, so it stays out of `burg.product`, and no tax is charged on it. Each trade moves the price linearly by 1% of the good's base value per unit (up on buying, down on selling), clamped to 0.1–5 x of the value. Stock and prices are rebuilt from scratch by every run; what is saved is the state after the last run.
+A market holds no money, only per-good `{ stock, price }`. `price` is a midpoint: burgs buy at +10% (`MARKET_MARGIN`) and sell at −10%. The **margin** goes to the market's center burg as each trade happens (`payMargin`): its merchants. It is trade income, kept out of `burg.product` and untaxed.
+
+Each market expects to sell a day's demand of each good, its **depth** (`initializeMarketPrices`): its urban and rural people × what a person buys of the good a day, at least one unit. What a person buys counts consumers, spread over a need's goods as buyers spread it at base prices and doubled for wants (`WANTS_ESTIMATE`), plus what the trades making its products need, down whole production chains, split over alternative recipes (`collectDemand`).
+
+- **Opening.** Goods covering a need open at their value: some consumer always buys them once they are cheap enough. A pure ingredient opens at value × √(expected units) where its trades need less than a unit a day (`OPENING_ELASTICITY`), so a market with no use for it does not pay full price for the first units.
+- **Moving.** A trade of a day's expected sales moves the price e^2 times (`PRICE_RESPONSE`, `movePrice`): down on selling, up on buying, and up when buyers are turned away. The low floor (2%) lets an overstocked good stop paying, so its makers move on.
+
+Stock and prices are rebuilt by every run; what is saved is the state after the last run.
 
 ## The run
 
 `Production.produce()`:
 
-1. **Rural supply.** Every cell delivers its output to its market's stock: population × biome output, plus its bonus resource (population × 0.5, at most 5, × the good's `chance`, so rare deposits stay scarce), all × multipliers × `RURAL_OUTPUT_FACTOR` (2). A water cell counts its land neighbours' population, so fish and other sea goods have producers. Rural goods enter untaxed and cost nothing.
-2. **Initial prices**, per market. Raw goods: value × (demand + 5) / (stock + 5), where demand is the market's urban population × the good's consumer demand (its share of each category's coverage) plus industrial demand (from recipes that use it). Manufactured goods: the average recipe cost at this market's prices plus the good's value added over its inputs' base values.
-3. **Route measurement.** One route search from every market center prices all carriage for the run.
-4. **Burg turns.** Burgs are sorted by population, largest first. Each burg with a bonus resource on its cell starts with free units of it (population × 1, clamped to 1–5, × `chance` × multipliers). Then, round after round, each burg spends up to 5 workers (`WORKERS_PER_TURN`) and sells the round's output to its market, until its workers (35% of its population, `WORKFORCE_SHARE`, at most 1,000) are spent or nothing is worth making. Small turns let big burgs pick first without draining a market in one go; later burgs see the prices the earlier ones moved.
-5. **Demand fill.** Every burg, in the same order, spends its treasury on its demand.
-6. **Store.** `burg.production` (units made, bonus included), `burg.product` (sale revenue minus input costs) and, in debug mode, the step log, in memory only. Sales a burg kept back in full are dropped from the deals.
+1. **Rural supply** (`collectRuralProduction`). Every cell delivers to its market: population × biome output × multipliers × `RURAL_OUTPUT_FACTOR`, plus its deposit (`getDepositOutput`: population up to 10 × `DEPOSIT_RICHNESS` × the map's cells ÷ 5,000 × multipliers, so deposits yield more on bigger maps). A water cell counts its land neighbours' population. The market remembers which stock is rural.
+2. **Opening prices and depth**, per market, as above.
+3. **Routes.** One route search from every market center prices carriage for the run; each burg's carriage from every market is measured once and kept until the run ends (`endRun`).
+4. **Burg turns.** Burgs go largest first. A burg on a deposit starts with free units of it (population clamped to 1–5 × multipliers). Round after round, each burg:
+   - puts up to 5 workers to work (`WORKERS_PER_TURN`), out of 35% of its population (`WORKFORCE_SHARE`, at most 1,000), selling each finished good as soon as a worker makes it, so the next worker sees the moved price;
+   - sells what is left where it fetches most at its door (`getOutlet`: any market it reaches, after carriage);
+   - buys the share of its needs matching the work done so far (`fillDemand`);
+   - spends what it can spare on wants (`spendOnWants`).
 
-### How a burg decides what to make
+   It stops when its workers are spent or nothing is worth making. After each round, every market's rural people spend their earnings (`spendRural`).
 
-Each fraction of a worker, the burg plans every manufacturable good as a goal and takes the one with the best **gain per worker**: the sale price at its door × multipliers, less the burg's own sales tax on it, − the cost of inputs (whose prices already hold their sales tax and tariff), divided by the workers the whole chain needs. Taxes count on both sides, so a step that pays nothing after tax is not taken: under a heavy sales tax some workers stay idle. Planning is recursive: an input that is neither in the burg's inventory nor buyable is planned as its own manufacture, with a cycle guard, and its workers add to the chain. Raw goods are never made by workers. A step that makes an input makes only what the chain lacks and takes only the workers that needs, so the rest of the fraction goes on to the next step. The current goal is kept on ties, so a burg finishes chains instead of flickering between them.
+5. **Rural income.** When rural stock is bought, rural people are paid the price less the margin (`takeStock`), and 40% goes to the state's capital burg as rent (`CAPITAL_RENT`). Their purchases make no deals and pay no tax.
+6. **Store.** `burg.production` (units made, deposit bonus included), `burg.product` (sales less input costs) and, in debug mode, the step log in memory. Sales kept back in full are dropped from the deals.
 
-**Division of labor.** Output per worker grows with the share of workers already put into the good during the run: × (1 + 1 × the burg's share of its workers in the good, up to 1, + 0.5 × how far its market's share exceeds the world's, up to twice it) (`BURG_SPECIALIZATION`, `MARKET_SPECIALIZATION`, `getSpecialization`). The market term is relative: a good every market makes in the same proportion earns no market bonus, so it rewards regional clusters rather than size. The factor counts both when choosing (sale value per worker) and when making, so a burg keeps choosing what it is already good at, until selling more of it has pushed the price down far enough. The shares are counted during the run only; nothing is saved. In debug mode each manufacturing step shows its factor.
+### What a burg makes
 
-Consequences worth knowing:
+For each fraction of a worker, the burg plans every manufacturable good as a goal and takes the best **gain per worker**: the sale value at its door (the better of its own market and its best outlet) × output per worker, less its own sales tax, minus the inputs' cost (their prices hold their taxes), divided by the workers the whole chain needs. An input it can neither find in inventory nor buy is planned as its own step, recursively, with a cycle guard; a step makes only what the chain lacks. The current goal wins ties, so burgs finish chains. A step that pays nothing after tax is not taken, so a heavy sales tax idles workers.
 
-- Goods compete on gain per worker, so a good whose price barely beats its inputs loses to better options and is rarely or never made; long chains need a bigger margin because they take more workers. Default prices are tuned so most goods appear somewhere (checked by generating many maps); a good that never appears usually needs a higher value.
-- Inputs are bought as needed with **no budget cap**: a burg buys on credit within a round and is paid when it sells. The treasury can dip below zero mid-run and it's fine.
-- Burgs never hoard: all output is sold after every round, and a step that cannot buy every input is skipped whole.
+**Output per worker** = multipliers × (1 + the burg's share of its workers in the good, up to 1, + how far its market's share of workers in the good exceeds the world's, up to twice it) (`BURG_SPECIALIZATION`, `MARKET_SPECIALIZATION`, `getSpecialization`). Burgs settle on a trade, and a good a region makes more of than the world pays better there. The shares are counted during the run only.
 
-### Sourcing an input or a demand good
+Inputs are bought as needed, without a budget: a treasury can dip below zero mid-run and recover on the sale. A step that cannot buy every input is skipped whole.
 
-1. The burg's **own market**, whenever it stocks the good, even if importing would be cheaper.
-2. Otherwise **another market**: the one that delivers cheapest to the burg's door, if any can (`Markets.quoteSource`). The burg deals with that market directly; its own market's stock is untouched. It is an **import** only when that market belongs to another state (see Money and taxes). Quotes from other markets are cached per good for one burg turn, which is exact because only that burg trades during its turn.
+### Where a burg buys
 
-There is no market-to-market trade: every flow between regions is a burg buying something its own market lacks.
+1. Its **own market**, whenever it stocks the good, even if another would be cheaper.
+2. Otherwise the market that delivers cheapest to its door (`quoteSource`), counting price, margin, that market's sales tax, the tariff and carriage. Quotes are cached per good for the burg's turn, which is exact since only that burg trades in it.
 
-### Demand fill
-
-For each category in priority order, the burg quotes every good that covers it and buys the cheapest coverage first (price ÷ coverage per unit), within its treasury, until the category is met, the money runs out or the stock does. Goods the burg itself sold to its own market this run are quoted at what that sale earned it and taken back first when cheaper (`Markets.keep`): the sale and its tax shrink, the burg pays back what it earned, and a **kept** deal at price 0 records the units. So a burg covers its own needs from its own output without a round trip through the market and without paying sales tax on goods that never left. Only goods the burg produced can be kept.
+A burg's own output in its own market is taken back for its people when that is cheaper than buying (`Markets.keep`): the sale and its tax shrink and a **kept** deal records the units at price 0. Markets never trade with each other: every flow between regions is a burg buying or selling.
 
 ## Carriage and routes
 
-Goods pay for the path they actually travel, and it is the same path the trade animation draws.
+Goods pay for the path they travel, the one the trade animation draws.
 
-- **The network** is `pack.cells.routes`: roads, trails and sea routes. A route search (`TradeRoutes.search`) is a Dijkstra where each cell has a land and a water state, so arriving by ship and by wagon are tracked apart. A link costs its length (from burg positions where there are burgs, otherwise cell centers); sea links cost a fifth of that (`WATER_COST` 0.2). Switching between land and water costs 4 cell spacings at a port burg, and 40 anywhere else a road meets a river route, so landings happen only where there is no other way.
-- **A decima** is a tenth of the map's diagonal: a distance that scales with the map, so carriage costs feel the same on any map size. The good's editor shows it in the user's distance units.
-- **Carriage per unit** = min(route cost in decimas, 10) × `good.carriage`. Ten decimas, the whole diagonal, is the cap.
-- **Who pays**: every deal carries the carriage between the market's center and the burg, added to what a burg pays and taken off what it gets. A burg with no route to its own market pays the cap; another market with no route to the burg cannot sell to it at all.
-
-The search runs once per market center per run (`TradeRoutes.measure`); the animation searches single paths on demand.
+- **The network** is `pack.cells.routes`: roads, trails and sea routes. `TradeRoutes.search` is a Dijkstra with a land and a water state per cell. A link costs its length; sea links a fifth (`WATER_COST` 0.2). Switching between land and water costs 4 cell spacings at a port burg and 40 elsewhere.
+- **A decima** is a tenth of the map's diagonal, so carriage feels the same on any map size.
+- **Carriage per unit** = min(route cost in decimas, 10) × `good.carriage`, × 1.5 from another state's market (`IMPORT_CARRIAGE_FACTOR`).
+- **Who pays**: every deal carries the carriage between the market's center and the burg, added to what the burg pays and taken off what it gets. A burg with no route to its own market pays the cap; another market with no route to the burg cannot trade with it.
 
 ## Money and taxes
 
-Money exists only in `burg.treasury` and `state.treasury`. Markets hold none; burgs pay every tax, inside the prices they pay or get.
+Money exists only in `burg.treasury` and `state.treasury`. Markets hold none; burgs pay every tax inside the prices they pay or get.
 
-**Units.** Every amount is per day: rural output, worker output (a worker point, 1,000 workers at the default population scale, works one recipe a day, which makes one unit before multipliers and division of labor), demand targets, deals and treasuries. Money is 🟡 (`formatPrice`), named the **uncia** by default (`options.map.units.money.unit`, editable in the Units editor; `getMoneyUnit` adds an "s" for the plural). 🟡 1 is a gold coin of one troy ounce (31.1 g), anchored to the Gold good: a gold bullion of 15 troy ounces is 🟡 15, so 🟡 1 ≈ a pound of silver ≈ a wain of grain. The name is words only: no value depends on it. The defaults land near a medieval day: town food demand and marketed rural surplus within 2–3× of historical figures, value added about a penny per townsperson. Taxes are the outlier: at default rates states take about half of what towns produce, far above any medieval state. The scale was rebalanced after the regional-economy changes (see [the PRD](../prd/regional-economy.md)): rural output and the workforce share bring value added and units made per townsperson back to their earlier levels.
+**Units.** Every amount is per day. A worker point (1,000 workers at the default population scale) works one recipe a day, making one unit before multipliers. Money is 🟡 (`formatPrice`), the **uncia** by default (`options.map.units.money.unit`): a gold coin of one troy ounce, anchored to Gold (a 15-ounce bullion is 🟡 15), so 🟡 1 ≈ a pound of silver ≈ a wain of grain. The name is words only.
 
-**The rule: the seller's state levies sales tax.** A market's state is its center burg's state.
+**The seller's state levies sales tax.** A market's state is its center burg's state.
 
-| Deal                                                       | Seller     | Sales tax goes to   | Tariff goes to                     | Paid by the burg   |
-| ---------------------------------------------------------- | ---------- | ------------------- | ---------------------------------- | ------------------ |
-| Sale                                                       | the burg   | the burg's state    | —                                  | out of its revenue |
-| Purchase from a market of the same state as its own market | the market | the market's state  | —                                  | inside its price   |
-| Import: purchase from a market of another state            | the market | that market's state | the state of the burg's own market | inside its price   |
-| Kept                                                       | nobody     | —                   | —                                  | nothing            |
-| Poll tax                                                   | —          | the state, outright | —                                  | nobody is charged  |
+| Deal                                             | Sales tax goes to   | Tariff goes to                     | Paid by the burg   |
+| ------------------------------------------------ | ------------------- | ---------------------------------- | ------------------ |
+| Sale, to any market                              | the burg's state    | —                                  | out of its revenue |
+| Purchase from a market of its own market's state | the market's state  | —                                  | inside its price   |
+| Import: purchase from a market of another state  | that market's state | the state of the burg's own market | inside its price   |
+| Kept                                             | —                   | —                                  | nothing            |
+| Poll tax                                         | the state, outright | —                                  | nobody is charged  |
 
-Prices at the burg's door, per unit:
+Per unit, at the burg's door:
 
 ```
-sale:     price = market price × 0.95 − carriage;           tax = price × burg's state sales tax, off the revenue
-purchase: price = market price × 1.05 + tax + tariff + carriage
-          tax    = market price × seller state's sales tax
-          tariff = market price × importer's tariff rate      (imports only)
+sale:     price = market price × 0.9 − carriage;           tax = price × the burg's state sales tax, off the revenue
+purchase: price = market price × 1.1 + tax + tariff + carriage
+          tax    = market price × the seller state's sales tax
+          tariff = market price × the importer's tariff rate   (imports only)
 ```
 
-A good is taxed at every sale: once when its maker sells it to the market, again when a burg buys it. A high-tax state's markets lose buyers from other markets, since a burg picks the cheapest delivered price.
+**Tariffs** (`state.tariffs`) are rules by state and good, most specific first: this state and good, this state and all goods, all states and this good, all states and all goods (0 by default). They are seeded from diplomacy: allies, friends, vassals and suzerains 0%, suspicion 20%, rivals 30%, enemies an embargo. An embargo by either side rules a source out. The tariff follows the burg's own market, not the burg.
 
-**Tariffs** (`state.tariffs`) are rules by state and good, from most to least specific: this state and this good, this state and all goods, all states and this good, all states and all goods (0 by default). They are seeded from diplomacy: allies, friends, vassals and suzerains 0%, suspicion 20%, rivals 30%, enemies an embargo. An embargo by either side rules a source out. Markets of one state never pay tariffs to each other. The tariff follows the burg's own market, not the burg: a burg whose market is centered across a border pays that state's tariffs and counts as importing only from markets outside that state.
+**Rates** come from the state form, jittered per state within ¼× to 2× of the base: Monarchy 6% sales / 0.08 poll, Theocracy 10% / 0.04, Union 3% / 0.05, Republic 2% / 0.06, Anarchy nothing. Neutrals never tax. States take about an eighth of all income.
 
-**Rates** are seeded from the state form and jittered about ±50% per state (within ¼× to 2× of the base): Monarchy 15% sales / 0.2 poll, Theocracy 25% / 0.1, Union 7% / 0.13, Republic 5% / 0.15, Anarchy nothing. Neutrals never tax.
+**Collection** (`States.collectTaxes`) resets every state treasury, adds each deal's tax and tariff to the states `Markets.getTaxStates` names, then poll tax × the state's population.
 
-**Collection** (`States.collectTaxes`) resets every state treasury, adds each deal's tax and tariff to the states `Markets.getTaxStates` names, then adds poll tax × the state's population. It is the only writer of state treasuries besides the user.
+**Example.** States A and B tax sales at 15%; A's tariff on B is 20%. Ten units of a good priced 10 at the market, carried for 0.5 each:
 
-**Example.** States A and B tax sales at 15%; A's tariff on B is 20%. Ten units of a good priced 10 at the selling market, carried for 0.5 each:
-
-| Trade                            | Per unit                    | Burg                  | State A | State B |
-| -------------------------------- | --------------------------- | --------------------- | ------- | ------- |
-| A's burg buys at its A market    | 10.5 + 1.5 + 0.5 = 12.5     | pays 125              | 15      | —       |
-| A's burg imports from a B market | 10.5 + 1.5 + 2 + 0.5 = 14.5 | pays 145              | 20      | 15      |
-| A's burg sells to its A market   | 9.5 − 0.5 = 9               | gets 90 − 13.5 = 76.5 | 13.5    | —       |
+| Trade                            | Per unit                | Burg                    | State A | State B |
+| -------------------------------- | ----------------------- | ----------------------- | ------- | ------- |
+| A's burg buys at its A market    | 11 + 1.5 + 0.5 = 13     | pays 130                | 15      | —       |
+| A's burg imports from a B market | 11 + 1.5 + 2 + 0.5 = 15 | pays 150                | 20      | 15      |
+| A's burg sells to an A market    | 9 − 0.5 = 8.5           | gets 85 − 12.75 = 72.25 | 12.75   | —       |
 
 ## The deal log
 
-`pack.deals` is the economy's ledger and the only record of trade. One deal per burg, market, good and kind sums the run's trades (units summed, price and carriage averaged by volume, taxes summed). Its id is its array index.
+`pack.deals` is the only record of trade. One deal per burg, market, good and kind sums the run's trades: units and taxes summed, price and carriage averaged by volume. Its id is its array index.
 
-| Kind     | Meaning                                           | Market                      |
-| -------- | ------------------------------------------------- | --------------------------- |
-| `sale`   | the burg sold its output                          | always its own              |
-| `input`  | bought as a production input                      | its own, or a source market |
-| `demand` | bought for its people                             | its own, or a source market |
-| `kept`   | its own output taken back for its people, price 0 | its own                     |
+| Kind     | Meaning                                        | Market                               |
+| -------- | ---------------------------------------------- | ------------------------------------ |
+| `sale`   | the burg sold its output                       | where it fetched most, often its own |
+| `input`  | bought as a production input                   | its own, or a source market          |
+| `demand` | bought for its people's needs or wants         | its own, or a source market          |
+| `kept`   | its own output taken back for its people, free | its own                              |
 
 Invariants:
 
-- A burg's treasury change over a run equals its deals: sale revenue (price × units − tax) minus purchases (price × units), plus, for a market's center burg, the margin on every deal made at its market (`Markets.getMargin`, which the Economy Overview sums as Market margin). Kept deals are free because the sale was reduced instead, and their share of the margin is given back.
-- An **import** is a purchase from a market of another state (`Markets.isImport`); only an import may carry a tariff. A purchase from a different market of the same state is not an import.
-- A deal's money to its market (`Markets.getMarketIncome`) is what the burg paid, carriage included, less the sales tax and tariff passed to the states, when the market sells; minus price × units, when it buys (the price already excludes carriage, and the burg pays its own sales tax out of its share); 0 for a kept deal. The carriage stays with the market; the margin goes to its center burg, so it is taken out. The Markets overview sums it into **Sales** (positive) and **Buys** (negative), and **Value** is Sales − Buys + the stock at its prices. Burgs never read it: it only reports.
-- Deals are the input for state taxes, the trade animation, Trade Details, the Economy Overview, market views and the goods editor's stock view. Kept deals count as covered demand but are skipped wherever goods are shown moving: the animation, Trade Details and a market's deals.
-- Step-by-step trades are not stored. With Economy checked under Debugging in the Advanced options (`options.app.debug`), the run records each burg's steps in memory (`EconomyDebug`, never saved): manufacture with the candidates weighed, every trade with all the markets it could have used and their prices at the burg's door, and each demand category's shortage with the goods that could cover it. The Economy Overview shows that log instead of the deal summary; with debug mode off nothing is recorded.
+- A burg's treasury change equals its deals: sales (price × units − tax) minus purchases, plus, for a market's center, the margin on every deal at its market (`Markets.getMargin`), plus, for a state capital, the rural rent.
+- An **import** is a purchase from a market of another state (`Markets.isImport`); only an import may carry a tariff. A sale is never an import.
+- A deal's money to its market (`Markets.getMarketIncome`) is what the burg paid less the taxes passed to the states when the market sells, and minus price × units when it buys; 0 when kept. The Markets overview sums it into Sales and Buys; Value adds the stock at its prices. It only reports.
+- Rural purchases make no deals, so a market's stock falls by more than its deals explain.
+- With Economy checked under Debugging in the Advanced options (`options.app.debug`), the run records each burg's steps in memory (`EconomyDebug`, never saved): candidates weighed, every trade with all the sources it could have used, and each need's shortage. The Economy Overview shows that log instead of the deal summary.
 
 ## What the user sees
 
-- **Layers**: Goods (bonus resources and burg production plates), Markets (territories), Trade (animated deals, wagons on land and ships on sea, along the priced route).
-- **Goods editor and good editor**: the catalogue, value, carriage, demand, recipes, multipliers, distribution, painting goods on cells, production chains, stock by location.
-- **Markets overview and market dialogs**: stock and prices, compare prices across markets, a market's deals, relocating or removing markets.
-- **Economy Overview** (per burg): demand targets and what stayed uncovered, the run summarised from the deals (or the full step log in debug mode), each trade's net price, carriage, tax, tariff and income.
-- **Trade Details**: opened from an animated flow; the goods one burg sells to or buys from one market, with the route highlighted.
-- **States editor**: treasury, tax rates and tariff rules. **Burg editor**: the burg's treasury, which the user may overwrite.
+- **Layers**: Goods (deposits and burg production), Markets (territories), Trade (animated deals along the priced route).
+- **Goods editor and good editor**: the catalogue, values, carriage, coverage, recipes, multipliers, distribution and deposits, deposit output, painting goods on cells, production chains, stock by location.
+- **Markets overview and market dialogs**: stock and prices, prices compared across markets, a market's deals, adding, relocating and removing markets.
+- **Economy Overview** (per burg): needs and what stayed uncovered, the day summarised from the deals (or the step log in debug mode).
+- **Trade Details**: the goods one burg trades with one market, from an animated flow.
+- **States editor**: treasury, tax rates and tariffs. **Burg editor**: the burg's treasury.
 
 ## Gotchas
 
-- **No time.** A treasury is one day's net cash, not savings over years. There is no spending, upkeep, interest or growth.
-- **Every run starts from zero.** Production resets every burg's treasury before it runs, and tax collection resets every state's, so a treasury the user typed lasts only until the next run (keeping it would need a lock, which does not exist yet). A submap rerun restores the burgs' previous balances.
-- **Order matters.** Largest burgs move first and later burgs see moved prices; changing populations reshuffles who gets the cheap inputs.
-- **Local first.** A burg buys from other markets only what its own market has run out of, so a market with a trickle of stock blocks cheaper sources until it is empty.
-- **Initial prices count only urban population** for demand; rural people supply but do not consume.
-- **Prices stay in 0.1×–5× of the base value**, so a scarce good's price hits the ceiling instead of exploding, and a glut bottoms out at a tenth.
-- **No route, no sale.** Missing roads cut markets off from the burgs of other markets, and a burg with no road to its own market pays the full ten decimas. The Routes layer explains most odd trade patterns.
-- **Economy regeneration redraws territories.** `regenerateEconomy` re-floods every market's territory, discarding cells the user painted by hand; Production keeps them.
-- **Edits apply on the next run.** Changing goods, taxes, tariffs, markets or burgs does not update deals or treasuries until Production or Economy is regenerated.
-- **Good values shape the map.** They feed cell suitability during population ranking, so retuning default prices changes where people live on newly generated maps and can break tests pinned to seeds.
+- **No time.** A treasury is one day's net cash. There is no upkeep, interest or growth.
+- **Every run starts from zero.** Burg and state treasuries are reset each run, so a typed treasury lasts until the next one. A submap rerun restores burgs' previous balances.
+- **Order matters.** Largest burgs move first; later burgs see the prices they moved.
+- **Local first.** A burg buys from other markets only what its own market has run out of, so a trickle of local stock blocks cheaper sources until it is gone.
+- **The surplus is real.** Markets buy every unit offered, at a price that falls as stock piles up, so part of what is made stays unsold. About 30% of made goods' value does on default maps.
+- **No route, no trade.** Missing roads cut markets off; the Routes layer explains most odd trade patterns.
+- **Economy regeneration redraws territories**, discarding hand-painted market cells; Production keeps them.
+- **Edits apply on the next run.** Changing goods, taxes, tariffs, markets or burgs updates nothing until Production or Economy is regenerated.
+- **Good values and deposits shape the map.** They feed suitability during population ranking, so retuning defaults changes where people live and can break seed-pinned tests.
 
 ## Further reading
 
 - [Goods spread functions](../wiki/Goods-spread-functions.md): the distribution expression language.
-- [good-multipliers.md](../prd/good-multipliers.md) and [state-taxes-and-treasury.md](../prd/state-taxes-and-treasury.md): design records.
+- [regional-economy.md](../prd/regional-economy.md), [good-multipliers.md](../prd/good-multipliers.md) and [state-taxes-and-treasury.md](../prd/state-taxes-and-treasury.md): design records.
 - [generation-pipeline.md](../architecture/generation-pipeline.md): where the economy sits in map generation.

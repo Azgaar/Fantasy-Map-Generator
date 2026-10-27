@@ -5,7 +5,7 @@ import "@/model/annotations/added-labels";
 import "@/model/physical/biomes-generator"; // the 1.139 step reads the default biomes
 import "@/model/physical/features-generator"; // migrations call the Features module through its global
 import "@/model/political/burgs-generator"; // the burg sets that tell style icon references from text
-import "@/model/economy/goods-generator"; // the goods icon namespace the 1.154 step migrates into
+import { Goods } from "@/model/economy/goods-generator"; // also the goods icon namespace the 1.154 step migrates into
 import "@/model/physical/relief-generator"; // the relief set namespace the 1.154 step migrates into
 import { Pack } from "@/model/graph/pack-generator";
 import { Options } from "@/model/options/options-model";
@@ -1235,6 +1235,32 @@ describe("v1.157.0 carriage per good", () => {
 
     await resolveVersionConflicts(VERSION, []);
 
-    expect(pack.goods.map(good => good.carriage)).toEqual([1, 3, 2]);
+    expect(pack.goods.map(good => good.carriage)).toEqual([0.5, 3, 2]);
+  });
+});
+
+describe("v1.157.0 deposit counts", () => {
+  it("thins old deposits by their good's chance and reads the good's range off the map", async () => {
+    const cells = Array.from({ length: 900 }, (_, i) => i);
+    globalThis.pack = {
+      features: [],
+      cells: { i: cells, good: Uint16Array.from(cells, i => (i < 450 ? 1 : 2)) },
+      goods: [
+        { i: 1, name: "Rare ore", value: 5, carriage: 1, chance: 3, distribution: "true" },
+        { i: 2, name: "Common clay", value: 1, carriage: 1, chance: 18, distribution: "true" },
+        { i: 3, name: "Gold", value: 15, carriage: 2, chance: 2, distribution: "true" } // none left on the map
+      ]
+    } as unknown as typeof pack;
+
+    await resolveVersionConflicts(VERSION, []);
+
+    const kept = (id: number) => Array.from(pack.cells.good).filter(good => good === id).length;
+    expect(kept(1)).toBeGreaterThan(50); // a sixth of 450
+    expect(kept(1)).toBeLessThan(100);
+    expect(kept(2)).toBe(450);
+    expect(pack.goods[0].deposits).toEqual([Math.round(kept(1) * 0.75), Math.round(kept(1) * 1.25)]);
+    expect(pack.goods[1].deposits).toEqual([338, 563]);
+    expect(pack.goods[2].deposits).toEqual(Goods.getDefaultDeposits("Gold"));
+    expect(pack.goods.some(good => "chance" in good)).toBe(false);
   });
 });

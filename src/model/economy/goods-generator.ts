@@ -6,7 +6,6 @@ import { Tags } from "@/model/tags";
 import type { IconSet } from "@/types/icons";
 import type { PackedGraph } from "@/types/packed-graph";
 import { requireColor } from "@/utils/color-utils";
-import { log } from "@/utils/logger";
 import { rn } from "@/utils/number-utils";
 import { requireName } from "@/utils/validation-utils";
 
@@ -14,7 +13,7 @@ export interface Good {
   i: number;
 
   // generation
-  chance?: number;
+  deposits?: [number, number]; // bonus resource deposits on the map, min and max
   distribution?: string;
   biomeOutput?: Partial<Record<number, number>>;
   recipes?: Record<number, number>[];
@@ -48,7 +47,7 @@ export interface Good {
 }
 
 type ProductionRules = Partial<{
-  chance: number | null;
+  deposits: [number, number] | null;
   recipes: Record<number, number>[] | null;
   biomeOutput: Partial<Record<number, number>> | null;
   multipliers: Good["multipliers"] | null;
@@ -56,6 +55,7 @@ type ProductionRules = Partial<{
 }>;
 
 export const DEFAULT_CARRIAGE = 0.5; // carriage price of a new good
+const DEPOSIT_CLUSTERING = 0.5; // chance a deposit lands beside the previous one of its good
 export const DEMAND_PRIORITY = ["food", "utilities", "construction", "military", "luxury"] as const;
 export type DemandCategory = (typeof DEMAND_PRIORITY)[number];
 export const DEMAND_TARGET_FACTORS: Record<DemandCategory, number> = {
@@ -73,6 +73,31 @@ export const DEMAND_CATEGORY_ICONS: Record<DemandCategory, string> = {
   luxury: "💎"
 };
 
+export const WANT_SHARES: Record<DemandCategory, number> = {
+  food: 0.25,
+  utilities: 0.2,
+  construction: 0.15,
+  military: 0.1,
+  luxury: 0.3
+}; // how spare money is split once needs are met
+export const WANT_LIMITS: Record<DemandCategory, number> = {
+  food: 1,
+  utilities: 1,
+  construction: 1,
+  military: 1,
+  luxury: 4
+}; // the most a person buys beyond their needs, in days of need: richer people eat only so much more
+export const SAVINGS_RATE = 0.15; // share of a day's income households keep
+export const VARIETY = 3; // buyers spread their spending over the goods covering a need, by (price per coverage)^-VARIETY: higher buys only the cheapest
+
+/** Shares of spending each option gets: cheaper coverage gets more, but every option gets some */
+export function getVarietyShares(costs: number[]): number[] {
+  const cheapest = Math.min(...costs.filter(cost => cost > 0));
+  const weights = costs.map(cost => (cost > 0 ? (cost / cheapest) ** -VARIETY : 0));
+  const total = weights.reduce((sum, weight) => sum + weight, 0) || 1;
+  return weights.map(weight => weight / total);
+}
+
 export function getDemandTargets(population: number): number[] {
   return DEMAND_PRIORITY.map(category => population * DEMAND_TARGET_FACTORS[category]);
 }
@@ -85,13 +110,13 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-wood",
     color: "#966F33",
     value: 1,
-    carriage: 1,
-    chance: 4,
+    carriage: 0.5,
+    deposits: [2, 4],
     distribution: "biome(5, 6, 7, 8, 9)",
     unit: "pile",
-    demandCoverage: { construction: 1, utilities: 1 },
+    demandCoverage: { construction: 0.5, utilities: 0.5 },
     multipliers: { cultureType: { Hunting: 2 } },
-    biomeOutput: { 6: 0.1, 8: 0.2, 9: 0.25 }
+    biomeOutput: { 5: 0.05, 6: 0.03, 7: 0.08, 8: 0.08, 9: 0.1 }
   },
   {
     name: "Stone",
@@ -99,11 +124,11 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-stone",
     color: "#979EA2",
     value: 2,
-    carriage: 1.5,
-    chance: 4,
+    carriage: 0.7,
+    deposits: [3, 5],
     distribution: "(minHeight(40) || (minHeight(20) && elevation())) && biome(1, 2, 3, 4)",
     unit: "pallet",
-    demandCoverage: { construction: 1 },
+    demandCoverage: { construction: 2 },
     multipliers: { cultureType: { Highland: 2, Hunting: 0.6, Nomadic: 0.6 } },
     biomeOutput: { 1: 0.05, 2: 0.05 }
   },
@@ -113,11 +138,11 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-marble",
     color: "#d6d0bf",
     value: 6,
-    carriage: 2,
-    chance: 1,
+    carriage: 1,
+    deposits: [1, 2],
     distribution: "minHeight(60) || (minHeight(30) && elevation())",
     unit: "pallet",
-    demandCoverage: { construction: 0.5, luxury: 0.5 },
+    demandCoverage: { construction: 1.2, luxury: 1.2 },
     multipliers: { cultureType: { Highland: 2.5 } }
   },
   {
@@ -126,8 +151,8 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-iron",
     color: "#5D686E",
     value: 3,
-    carriage: 1.3,
-    chance: 2,
+    carriage: 0.7,
+    deposits: [2, 4],
     distribution: "minHeight(50) || (biome(12) && nth(5))",
     unit: "wagon",
     multipliers: { cultureType: { Highland: 2.5 } },
@@ -139,8 +164,8 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-copper",
     color: "#b87333",
     value: 4,
-    carriage: 1.3,
-    chance: 1,
+    carriage: 0.7,
+    deposits: [2, 2],
     distribution: "minHeight(60) || (minHeight(30) && elevation())",
     unit: "wagon",
     multipliers: { cultureType: { Highland: 2.5 } }
@@ -151,8 +176,8 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-tin",
     color: "#454343",
     value: 4,
-    carriage: 1.3,
-    chance: 1,
+    carriage: 0.7,
+    deposits: [2, 4],
     distribution: "minHeight(60) || (minHeight(30) && elevation())",
     unit: "wagon",
     multipliers: { cultureType: { Highland: 2.5 } }
@@ -164,7 +189,7 @@ const GOODS_DATA: GoodData[] = [
     color: "#C0C0C0",
     value: 8,
     carriage: 0.3,
-    chance: 1,
+    deposits: [2, 6],
     distribution: "minHeight(60) || (minHeight(30) && elevation())",
     unit: "bullion",
     multipliers: { cultureType: { Hunting: 0.5, Highland: 2.5, Nomadic: 0.5 } }
@@ -175,8 +200,8 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-gold",
     color: "#ffd700",
     value: 15,
-    carriage: 0.4,
-    chance: 2,
+    carriage: 0.8,
+    deposits: [2, 2],
     distribution: "river() && minHeight(40)",
     unit: "bullion",
     multipliers: { cultureType: { Highland: 2.5, Nomadic: 0.5 } }
@@ -187,13 +212,13 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-grain",
     color: "#F5DEB3",
     value: 1,
-    carriage: 1,
-    chance: 4,
+    carriage: 0.5,
+    deposits: [3, 5],
     distribution: "biome(4, 6) && (river() || random(30))",
     unit: "wain",
     demandCoverage: { food: 1 },
     multipliers: { cultureType: { River: 2, Lake: 1.5, Nomadic: 0.5 } },
-    biomeOutput: { 4: 0.25, 6: 0.15 }
+    biomeOutput: { 4: 0.1, 6: 0.06 }
   },
   {
     name: "Cattle",
@@ -202,12 +227,12 @@ const GOODS_DATA: GoodData[] = [
     color: "#56b000",
     value: 2,
     carriage: 0.3,
-    chance: 2,
+    deposits: [3, 4],
     distribution: "(biome(3, 4) && !elevation()) || (biome(6) && random(70)) || (biome(5) && nth(5))",
     unit: "head",
-    demandCoverage: { food: 1 },
+    demandCoverage: { food: 2 },
     multipliers: { cultureType: { Nomadic: 3 } },
-    biomeOutput: { 3: 0.1, 4: 0.1 }
+    biomeOutput: { 3: 0.03, 4: 0.04 }
   },
   {
     name: "Fish",
@@ -215,8 +240,8 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-fish",
     color: "#7fcdff",
     value: 1,
-    carriage: 1,
-    chance: 4,
+    carriage: 0.5,
+    deposits: [4, 6],
     distribution: 'shore(-1) && (type("ocean", "freshwater", "salt") || (river() && shore(1, 2)))',
     unit: "wain",
     demandCoverage: { food: 1 },
@@ -228,11 +253,11 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-game",
     color: "#c38a8a",
     value: 2,
-    carriage: 1,
-    chance: 2,
+    carriage: 0.5,
+    deposits: [2, 4],
     distribution: "biome(5, 6, 7, 8, 9)",
     unit: "wain",
-    demandCoverage: { food: 1 },
+    demandCoverage: { food: 2 },
     multipliers: { cultureType: { Naval: 0.6, Nomadic: 1.5, Hunting: 3 } },
     biomeOutput: { 5: 0.02, 7: 0.02, 8: 0.02, 9: 0.04, 10: 0.01 }
   },
@@ -242,13 +267,13 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-wine",
     color: "#963e48",
     value: 2,
-    carriage: 0.6,
-    chance: 3,
+    carriage: 0.3,
+    deposits: [3, 5],
     distribution: "biome(6) || (biome(4) && random(50) && river())",
     unit: "barrel",
-    demandCoverage: { food: 0.5, luxury: 0.5 },
+    demandCoverage: { food: 0.4, luxury: 0.4 },
     multipliers: { cultureType: { Highland: 1.2, Nomadic: 0.5 } },
-    biomeOutput: { 6: 0.1 }
+    biomeOutput: { 6: 0.03 }
   },
   {
     name: "Olives",
@@ -256,11 +281,11 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-olives",
     color: "#BDBD7D",
     value: 2,
-    carriage: 0.6,
-    chance: 3,
+    carriage: 0.3,
+    deposits: [1, 2],
     distribution: "biome(3) && shore(1, 2)",
     unit: "barrel",
-    demandCoverage: { food: 1 },
+    demandCoverage: { food: 2 },
     multipliers: { cultureType: { Generic: 0.8, Nomadic: 0.5 } },
     biomeOutput: { 3: 0.1 }
   },
@@ -270,13 +295,13 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-honey",
     color: "#DCBC66",
     value: 2,
-    carriage: 0.6,
-    chance: 3,
+    carriage: 0.3,
+    deposits: [3, 4],
     distribution: "biome(6, 8, 9)",
     unit: "barrel",
-    demandCoverage: { food: 0.5 },
+    demandCoverage: { food: 2 },
     multipliers: { cultureType: { Generic: 1.2 } },
-    biomeOutput: { 6: 0.05, 8: 0.03, 9: 0.03 }
+    biomeOutput: { 6: 0.03, 8: 0.02, 9: 0.02 }
   },
   {
     name: "Salt",
@@ -285,7 +310,7 @@ const GOODS_DATA: GoodData[] = [
     color: "#E5E4E5",
     value: 2,
     carriage: 0.4,
-    chance: 3,
+    deposits: [2, 4],
     distribution: 'shore(1) && type("salt", "dry") || (biome(1, 2) && random(70)) || (biome(12) && nth(10))',
     unit: "bag",
     demandCoverage: { utilities: 1 },
@@ -298,11 +323,11 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-dates",
     color: "#dbb2a3",
     value: 2,
-    carriage: 1,
-    chance: 2,
+    carriage: 0.5,
+    deposits: [1, 2],
     distribution: "biome(1)",
     unit: "wain",
-    demandCoverage: { food: 1 },
+    demandCoverage: { food: 2 },
     multipliers: { cultureType: { Hunting: 0.8, Highland: 0.8 } },
     biomeOutput: { 1: 0.15 }
   },
@@ -313,10 +338,10 @@ const GOODS_DATA: GoodData[] = [
     color: "#ba7447",
     value: 5,
     carriage: 0.4,
-    chance: 4,
+    deposits: [3, 5],
     distribution: "biome(3) || (biome(2) && nth(4))",
     unit: "head",
-    demandCoverage: { utilities: 0.6, military: 0.4 },
+    demandCoverage: { utilities: 1.5, military: 1 },
     multipliers: { cultureType: { Nomadic: 3 } },
     biomeOutput: { 2: 0.02, 4: 0.03 }
   },
@@ -326,11 +351,11 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-elephants",
     color: "#C5CACD",
     value: 7,
-    carriage: 0.2,
-    chance: 1,
+    carriage: 0.3,
+    deposits: [2, 3],
     distribution: "biome(1, 3, 5, 7)",
     unit: "tusk",
-    demandCoverage: { luxury: 1 },
+    demandCoverage: { luxury: 1.4 },
     multipliers: { cultureType: { Highland: 0.2 } }
   },
   {
@@ -340,10 +365,10 @@ const GOODS_DATA: GoodData[] = [
     color: "#C19A6B",
     value: 5,
     carriage: 0.4,
-    chance: 3,
+    deposits: [2, 4],
     distribution: "biome(1, 2)",
     unit: "head",
-    demandCoverage: { utilities: 0.7, military: 0.3 },
+    demandCoverage: { utilities: 2.33, military: 1 },
     multipliers: { cultureType: { Nomadic: 3, Generic: 0.8 } },
     biomeOutput: { 1: 0.05, 2: 0.05 }
   },
@@ -353,12 +378,12 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-hemp",
     color: "#069a06",
     value: 1,
-    carriage: 1,
-    chance: 3,
+    carriage: 0.5,
+    deposits: [2, 4],
     distribution: "biome(6, 7, 8)",
     unit: "wain",
     multipliers: { cultureType: { River: 2, Lake: 2 } },
-    biomeOutput: { 6: 0.1, 8: 0.15 }
+    biomeOutput: { 6: 0.02, 8: 0.03 }
   },
   {
     name: "Pearls",
@@ -366,11 +391,11 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-pearls",
     color: "#EAE0C8",
     value: 13,
-    carriage: 0.3,
-    chance: 2,
+    carriage: 0.6,
+    deposits: [2, 3],
     distribution: "shore(-1) && minTemp(18)",
     unit: "pearl",
-    demandCoverage: { luxury: 0.6 },
+    demandCoverage: { luxury: 2.6 },
     multipliers: { cultureType: { Naval: 2.5 } }
   },
   {
@@ -379,11 +404,11 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-gemstones",
     color: "#e463e4",
     value: 15,
-    carriage: 0.4,
-    chance: 1,
+    carriage: 0.8,
+    deposits: [1, 2],
     distribution: "minHeight(60) || (minHeight(30) && elevation() && nth(3))",
     unit: "gem",
-    demandCoverage: { luxury: 0.6 },
+    demandCoverage: { luxury: 3 },
     multipliers: { cultureType: { Highland: 2.5 } }
   },
   {
@@ -393,7 +418,7 @@ const GOODS_DATA: GoodData[] = [
     color: "#fecdea",
     value: 5,
     carriage: 0.5,
-    chance: 1,
+    deposits: [2, 3],
     distribution: "biome(3, 5, 7) || (shore(-1) && minTemp(18))",
     unit: "bag",
     multipliers: { cultureType: { Generic: 1.2 } }
@@ -404,11 +429,11 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-incense",
     color: "#ebe5a7",
     value: 10,
-    carriage: 0.4,
-    chance: 2,
+    carriage: 0.8,
+    deposits: [2, 3],
     distribution: "biome(1, 7)",
     unit: "chest",
-    demandCoverage: { luxury: 1 }
+    demandCoverage: { luxury: 2 }
   },
   {
     name: "Silk",
@@ -417,10 +442,10 @@ const GOODS_DATA: GoodData[] = [
     color: "#e0f0f8",
     value: 9,
     carriage: 0.4,
-    chance: 1,
+    deposits: [1, 2],
     distribution: "biome(7)",
     unit: "bolt",
-    demandCoverage: { luxury: 1 },
+    demandCoverage: { luxury: 1.8 },
     multipliers: { cultureType: { River: 2, Lake: 2 } }
   },
   {
@@ -429,11 +454,11 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-spices",
     color: "#e99c75",
     value: 15,
-    carriage: 0.5,
-    chance: 2,
+    carriage: 1,
+    deposits: [1, 2],
     distribution: "biome(7)",
     unit: "chest",
-    demandCoverage: { luxury: 1 },
+    demandCoverage: { luxury: 3 },
     multipliers: { cultureType: { Generic: 1.2 } }
   },
   {
@@ -443,10 +468,10 @@ const GOODS_DATA: GoodData[] = [
     color: "#e68200",
     value: 7,
     carriage: 0.2,
-    chance: 2,
+    deposits: [2, 2],
     distribution: "shore(1) && biome(6, 7, 8, 9)",
     unit: "stone",
-    demandCoverage: { luxury: 0.5 },
+    demandCoverage: { luxury: 1.4 },
     multipliers: { cultureType: { Generic: 1.2 } }
   },
   {
@@ -456,10 +481,10 @@ const GOODS_DATA: GoodData[] = [
     color: "#8a5e51",
     value: 4,
     carriage: 0.3,
-    chance: 2,
+    deposits: [1, 2],
     distribution: "biome(9) || (biome(10) && nth(2)) || (biome(6, 8) && nth(5)) || (biome(12) && nth(10))",
     unit: "pelt",
-    demandCoverage: { luxury: 0.5, utilities: 0.3 },
+    demandCoverage: { luxury: 0.8, utilities: 0.48 },
     multipliers: { cultureType: { Hunting: 3 } },
     biomeOutput: { 9: 0.06, 10: 0.06 }
   },
@@ -470,7 +495,7 @@ const GOODS_DATA: GoodData[] = [
     color: "#53b574",
     value: 2,
     carriage: 0.4,
-    chance: 3,
+    deposits: [3, 5],
     distribution: "(biome(3, 4) && !elevation()) || (biome(6) && random(70)) || (biome(5) && nth(5))",
     unit: "bale",
     multipliers: { cultureType: { Naval: 1.4, Highland: 2 } },
@@ -482,11 +507,11 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-slaves",
     color: "#757575",
     value: 6,
-    carriage: 2,
-    chance: 2,
+    carriage: 1,
+    deposits: [1, 2],
     distribution: "shore(1) && minHabitability(1) && !habitability()",
     unit: "slave",
-    demandCoverage: { utilities: 1 },
+    demandCoverage: { utilities: 3 },
     multipliers: { cultureType: { Naval: 1.4, Nomadic: 2, Hunting: 0.6, Highland: 0.4 } }
   },
   {
@@ -494,11 +519,9 @@ const GOODS_DATA: GoodData[] = [
     tags: ["naval"],
     icon: "goods-tar",
     color: "#727272",
-    value: 5,
+    value: 11,
     carriage: 0.6,
-    chance: 0,
     unit: "barrel",
-    demandCoverage: { utilities: 0.4, military: 0.1 },
     multipliers: { cultureType: { Hunting: 1.2 } },
     recipes: [{ Wood: 1 }]
   },
@@ -508,8 +531,8 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-saltpeter",
     color: "#e6e3e3",
     value: 2,
-    carriage: 0.6,
-    chance: 3,
+    carriage: 0.3,
+    deposits: [2, 4],
     distribution: "biome(1, 2) || (minHeight(50) && random(20))",
     unit: "barrel",
     demandCoverage: {}
@@ -519,12 +542,12 @@ const GOODS_DATA: GoodData[] = [
     tags: ["fuel", "mineral"],
     icon: "goods-coal",
     color: "#5a6a75",
-    value: 3,
-    carriage: 1.1,
-    chance: 3,
+    value: 12,
+    carriage: 0.6,
+    deposits: [4, 6],
     distribution: "minHeight(40) || (minHeight(20) && elevation(25))",
     unit: "wain",
-    demandCoverage: { utilities: 0.5 },
+    demandCoverage: { utilities: 6 },
     recipes: [{ Wood: 1.5 }]
   },
   {
@@ -534,10 +557,10 @@ const GOODS_DATA: GoodData[] = [
     color: "#565656",
     value: 5,
     carriage: 0.7,
-    chance: 2,
+    deposits: [2, 3],
     distribution: "biome(1, 2, 10) || (shore(-1) && minTemp(18) && random(15))",
     unit: "barrel",
-    demandCoverage: { utilities: 1 },
+    demandCoverage: { utilities: 2.5 },
     recipes: [{ Olives: 1 }, { Blubber: 1 }]
   },
   {
@@ -546,11 +569,11 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-tropicalTimber",
     color: "#a45a52",
     value: 7,
-    carriage: 1.1,
-    chance: 1,
+    carriage: 1,
+    deposits: [1, 2],
     distribution: "biome(5, 7) && random(50)",
     unit: "pile",
-    demandCoverage: { luxury: 1 }
+    demandCoverage: { luxury: 1.4 }
   },
   {
     name: "Blubber",
@@ -558,8 +581,8 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-whales",
     color: "#7fcdff",
     value: 1,
-    carriage: 0.6,
-    chance: 3,
+    carriage: 0.3,
+    deposits: [1, 3],
     distribution: "shore(-1) && type('ocean') && maxTemp(7)",
     unit: "barrel",
     demandCoverage: { food: 1, utilities: 0.2 },
@@ -572,11 +595,11 @@ const GOODS_DATA: GoodData[] = [
     color: "#7abf87",
     value: 4,
     carriage: 0.5,
-    chance: 3,
+    deposits: [1, 3],
     distribution: "biome(7)",
     unit: "bag",
-    demandCoverage: { food: 0.6, luxury: 0.4 },
-    biomeOutput: { 5: 0.04, 7: 0.08 }
+    demandCoverage: { food: 1.2, luxury: 0.8 },
+    biomeOutput: { 5: 0.02, 7: 0.04 }
   },
   {
     name: "Tea",
@@ -585,7 +608,7 @@ const GOODS_DATA: GoodData[] = [
     color: "#d0f0c0",
     value: 5,
     carriage: 0.5,
-    chance: 2,
+    deposits: [1, 2],
     distribution: "minHeight(40) && (biome(5) || (biome(7) || biome(8)))",
     unit: "bag",
     demandCoverage: { luxury: 1 },
@@ -598,7 +621,7 @@ const GOODS_DATA: GoodData[] = [
     color: "#6D5843",
     value: 5,
     carriage: 0.5,
-    chance: 1,
+    deposits: [1, 2],
     distribution: "random(20) && (biome(3) || (biome(5) || biome(6)))",
     unit: "bag",
     demandCoverage: { luxury: 1 }
@@ -609,8 +632,8 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-clay",
     color: "#b07c60",
     value: 1,
-    carriage: 1,
-    chance: 5,
+    carriage: 0.5,
+    deposits: [6, 9],
     distribution: "minTemp(8) && (shore(1) || river())",
     unit: "wain",
     demandCoverage: { construction: 1 },
@@ -622,8 +645,8 @@ const GOODS_DATA: GoodData[] = [
     icon: "goods-sand",
     color: "#e6d69c",
     value: 1,
-    carriage: 1,
-    chance: 2,
+    carriage: 0.5,
+    deposits: [3, 5],
     distribution: "minTemp(8) && (shore(1) || river())",
     unit: "wain",
     multipliers: { cultureType: { River: 2, Lake: 2 } }
@@ -633,9 +656,8 @@ const GOODS_DATA: GoodData[] = [
     tags: ["clothing", "military"],
     icon: "goods-leather",
     color: "#8b5a2b",
-    value: 4,
+    value: 14,
     carriage: 0.4,
-    chance: 0,
     recipes: [{ Cattle: 1 }, { Game: 1 }, { Horses: 1 }, { Camels: 1 }],
     unit: "roll",
     multipliers: { cultureType: { Naval: 0.6, Nomadic: 2 } }
@@ -645,12 +667,10 @@ const GOODS_DATA: GoodData[] = [
     tags: ["clothing"],
     icon: "goods-cloth",
     color: "#e8e69c",
-    value: 5,
+    value: 13,
     carriage: 0.3,
-    chance: 0,
     recipes: [{ Wool: 1 }, { Hemp: 1 }, { Silk: 0.5 }],
     unit: "bolt",
-    demandCoverage: { utilities: 0.2 },
     multipliers: { cultureType: { River: 1.5, Lake: 1.5 } }
   },
   {
@@ -658,39 +678,36 @@ const GOODS_DATA: GoodData[] = [
     tags: ["clothing"],
     icon: "goods-garments",
     color: "#bd21ec",
-    value: 12,
-    carriage: 0.5,
-    chance: 0,
+    value: 23,
+    carriage: 1,
     recipes: [
       { Cloth: 1, Dyes: 0.5 },
       { Cloth: 0.5, Furs: 1 }
     ],
     unit: "set",
-    demandCoverage: { utilities: 1 }
+    demandCoverage: { utilities: 11.5 }
   },
   {
     name: "Ceramics",
     tags: ["storage", "construction"],
     icon: "goods-ceramics",
     color: "#c1440e",
-    value: 6,
-    carriage: 1.1,
-    chance: 0,
+    value: 11,
+    carriage: 1,
     recipes: [{ Clay: 0.5 }],
     unit: "wain",
-    demandCoverage: { utilities: 1 }
+    demandCoverage: { utilities: 5.5 }
   },
   {
     name: "Glass",
     tags: ["storage", "construction"],
     icon: "goods-glass",
     color: "#a0c8e8",
-    value: 7,
-    carriage: 1.1,
-    chance: 0,
+    value: 11,
+    carriage: 1,
     recipes: [{ "White sand": 1 }],
     unit: "wain",
-    demandCoverage: { luxury: 1 },
+    demandCoverage: { luxury: 2.2 },
     multipliers: { cultureType: { Nomadic: 0.2 } }
   },
   {
@@ -698,12 +715,10 @@ const GOODS_DATA: GoodData[] = [
     tags: ["naval", "construction"],
     icon: "goods-ropes",
     color: "#ba9773",
-    value: 5,
+    value: 11,
     carriage: 0.5,
-    chance: 0,
     recipes: [{ Hemp: 1 }],
     unit: "coil",
-    demandCoverage: { utilities: 1 },
     multipliers: { cultureType: { Naval: 2 } }
   },
   {
@@ -711,9 +726,8 @@ const GOODS_DATA: GoodData[] = [
     tags: ["ritual", "educational"],
     icon: "goods-paper",
     color: "#f5f5dc",
-    value: 7,
+    value: 11,
     carriage: 0.3,
-    chance: 0,
     recipes: [{ Hemp: 1 }],
     unit: "ream",
     demandCoverage: {}
@@ -723,9 +737,8 @@ const GOODS_DATA: GoodData[] = [
     tags: ["ritual", "educational"],
     icon: "goods-ink",
     color: "#000000",
-    value: 5,
+    value: 14,
     carriage: 0.2,
-    chance: 0,
     recipes: [{ Oil: 1 }, { Dyes: 0.5 }],
     unit: "bottle",
     demandCoverage: {}
@@ -735,15 +748,14 @@ const GOODS_DATA: GoodData[] = [
     tags: ["ritual", "educational"],
     icon: "goods-books",
     color: "#deb887",
-    value: 20,
-    carriage: 0.3,
-    chance: 0,
+    value: 30,
+    carriage: 0.6,
     recipes: [
       { Paper: 1, Ink: 0.5 },
       { Leather: 1, Ink: 0.5 }
     ],
     unit: "volume",
-    demandCoverage: { luxury: 1 },
+    demandCoverage: { luxury: 6 },
     multipliers: { cultureType: { Nomadic: 0.2, Hunting: 0.5 } }
   },
   {
@@ -751,12 +763,10 @@ const GOODS_DATA: GoodData[] = [
     tags: ["naval"],
     icon: "goods-sails",
     color: "#ffffff",
-    value: 10,
-    carriage: 0.5,
-    chance: 0,
+    value: 23,
+    carriage: 1,
     recipes: [{ Cloth: 1 }],
     unit: "set",
-    demandCoverage: { military: 1 },
     multipliers: { cultureType: { Naval: 2 } }
   },
   {
@@ -764,12 +774,11 @@ const GOODS_DATA: GoodData[] = [
     tags: ["naval"],
     icon: "goods-ships",
     color: "#704a24",
-    value: 85,
-    carriage: 2.7,
-    chance: 0,
+    value: 122,
+    carriage: 2,
     recipes: [{ Wood: 4, Sails: 4, Ropes: 4, Tar: 2 }],
     unit: "ship",
-    demandCoverage: { military: 0.5 },
+    demandCoverage: { military: 4 },
     multipliers: { cultureType: { Naval: 3 } }
   },
   {
@@ -777,28 +786,26 @@ const GOODS_DATA: GoodData[] = [
     tags: ["clothing", "military"],
     icon: "goods-boots",
     color: "#654321",
-    value: 7,
+    value: 18,
     carriage: 0.3,
-    chance: 0,
     recipes: [{ Leather: 1 }, { Furs: 0.5 }],
     unit: "pair",
-    demandCoverage: { utilities: 1 }
+    demandCoverage: { utilities: 9 }
   },
   {
     name: "Harnesses",
     tags: ["military"],
     icon: "goods-harnesses",
     color: "#a0522d",
-    value: 8,
+    value: 20,
     carriage: 0.5,
-    chance: 0,
     recipes: [
       { Leather: 0.5, Iron: 0.25 },
       { Leather: 0.5, Bronze: 0.25 },
       { Leather: 0.5, Copper: 0.25 }
     ],
     unit: "set",
-    demandCoverage: { military: 1 },
+    demandCoverage: { military: 0.5 },
     multipliers: { cultureType: { Nomadic: 2 } }
   },
   {
@@ -806,21 +813,18 @@ const GOODS_DATA: GoodData[] = [
     tags: ["naval", "storage"],
     icon: "goods-barrels",
     color: "#b46e3b",
-    value: 4,
+    value: 11,
     carriage: 0.6,
-    chance: 0,
     recipes: [{ Wood: 1 }],
-    unit: "barrel",
-    demandCoverage: { utilities: 1 }
+    unit: "barrel"
   },
   {
     name: "Bronze",
     tags: ["military"],
     icon: "goods-bronze",
     color: "#e46f21",
-    value: 9,
+    value: 24,
     carriage: 1.4,
-    chance: 0,
     recipes: [
       { Copper: 0.5, Coal: 1 },
       { Tin: 0.5, Coal: 1 }
@@ -833,15 +837,14 @@ const GOODS_DATA: GoodData[] = [
     tags: ["construction", "military"],
     icon: "goods-tools",
     color: "#808080",
-    value: 17,
-    carriage: 0.6,
-    chance: 0,
+    value: 29,
+    carriage: 1.2,
     recipes: [
       { Iron: 0.5, Coal: 1 },
       { Bronze: 0.5, Coal: 1 }
     ],
     unit: "set",
-    demandCoverage: { utilities: 1 },
+    demandCoverage: { utilities: 14.5 },
     multipliers: { cultureType: { Highland: 2 } }
   },
   {
@@ -849,9 +852,8 @@ const GOODS_DATA: GoodData[] = [
     tags: ["military"],
     icon: "goods-arms",
     color: "#555555",
-    value: 22,
-    carriage: 0.8,
-    chance: 0,
+    value: 33,
+    carriage: 1.6,
     recipes: [
       { Iron: 0.5, Coal: 1, Leather: 0.5 },
       { Bronze: 0.25, Coal: 1, Leather: 0.5 }
@@ -865,51 +867,47 @@ const GOODS_DATA: GoodData[] = [
     tags: ["military"],
     icon: "goods-gunpowder",
     color: "#b0c4de",
-    value: 10,
-    carriage: 1,
-    chance: 0,
+    value: 17,
+    carriage: 2,
     recipes: [{ Saltpeter: 0.5, Coal: 0.5 }],
     unit: "barrel",
-    demandCoverage: { military: 2 }
+    demandCoverage: { military: 3.4 }
   },
   {
     name: "Artillery",
     tags: ["military"],
     icon: "goods-artillery",
     color: "#cd7f32",
-    value: 21,
-    carriage: 2.4,
-    chance: 0,
+    value: 37,
+    carriage: 4,
     recipes: [
       { Iron: 2, Coal: 1 },
       { Bronze: 1, Coal: 1 }
     ],
     unit: "cannon",
-    demandCoverage: { military: 1 }
+    demandCoverage: { military: 2 }
   },
   {
     name: "Coins",
     tags: ["currency"],
     icon: "goods-coins",
     color: "#ffd700",
-    value: 25,
-    carriage: 0.7,
-    chance: 0,
+    value: 30,
+    carriage: 1.4,
     recipes: [
       { Gold: 0.5, Coal: 1 },
       { Silver: 1, Coal: 1 }
     ],
     unit: "bag",
-    demandCoverage: { luxury: 1 }
+    demandCoverage: { luxury: 6 }
   },
   {
     name: "Jewelry",
     tags: ["luxury"],
     icon: "goods-jewelry",
     color: "#81D8D0",
-    value: 28,
-    carriage: 0.7,
-    chance: 0,
+    value: 32,
+    carriage: 1.4,
     recipes: [
       { Gemstones: 1, Gold: 0.5 },
       { Pearls: 1, Gold: 0.5 },
@@ -919,16 +917,15 @@ const GOODS_DATA: GoodData[] = [
       { Amber: 2, Silver: 1 }
     ],
     unit: "piece",
-    demandCoverage: { luxury: 1 }
+    demandCoverage: { luxury: 6.4 }
   },
   {
     name: "Preserved food",
     tags: ["food"],
     icon: "goods-salted-fish",
     color: "#c2b280",
-    value: 7,
-    carriage: 1.1,
-    chance: 0,
+    value: 15,
+    carriage: 1,
     recipes: [
       { Fish: 1, Salt: 1 },
       { Cattle: 1, Salt: 1 },
@@ -939,58 +936,54 @@ const GOODS_DATA: GoodData[] = [
       { Fish: 1, Wood: 1 }
     ],
     unit: "wain",
-    demandCoverage: { food: 1 }
+    demandCoverage: { food: 15 }
   },
   {
     name: "Vinegar",
     tags: ["food", "preservative"],
     icon: "goods-vinegar",
     color: "#9b111e",
-    value: 8,
+    value: 12,
     carriage: 0.6,
-    chance: 0,
+    demandCoverage: { utilities: 6 },
     recipes: [{ Wine: 1 }, { Honey: 1 }],
-    unit: "barrel",
-    demandCoverage: { utilities: 0.5 }
+    unit: "barrel"
   },
   {
     name: "Cheese",
     tags: ["food"],
     icon: "goods-cheese",
     color: "#f5e1a4",
-    value: 7,
-    carriage: 1.1,
-    chance: 0,
+    value: 13,
+    carriage: 1,
     recipes: [
       { Cattle: 0.5, Salt: 0.25 },
       { Cattle: 0.5, Vinegar: 0.25 }
     ],
     unit: "wain",
-    demandCoverage: { food: 1 }
+    demandCoverage: { food: 13 }
   },
   {
     name: "Beer",
     tags: ["food"],
     icon: "goods-beer",
     color: "#fbb117",
-    value: 14,
-    carriage: 0.6,
-    chance: 0,
+    value: 17,
+    carriage: 1.2,
     recipes: [
       { Grain: 1, Barrels: 0.5 },
       { Honey: 0.5, Barrels: 0.5 }
     ],
     unit: "barrel",
-    demandCoverage: { food: 1 }
+    demandCoverage: { food: 17 }
   },
   {
     name: "Liquor",
     tags: ["food", "luxury"],
     icon: "goods-liquor",
     color: "#8a0303",
-    value: 12,
-    carriage: 0.4,
-    chance: 0,
+    value: 17,
+    carriage: 0.8,
     recipes: [
       { Grain: 2, Wood: 1, Barrels: 0.5 },
       { Wine: 1, Wood: 1, Barrels: 0.5 },
@@ -1000,47 +993,44 @@ const GOODS_DATA: GoodData[] = [
       { Wine: 1, Wood: 1, Glass: 0.25 }
     ],
     unit: "vessel",
-    demandCoverage: { luxury: 1 }
+    demandCoverage: { luxury: 3.4 }
   },
   {
     name: "Candles",
     tags: ["luxury", "ritual"],
     icon: "goods-candles",
     color: "#fffacd",
-    value: 8,
+    value: 15,
     carriage: 0.4,
-    chance: 0,
     recipes: [{ Honey: 2 }, { Oil: 1 }],
     unit: "block",
-    demandCoverage: { utilities: 0.5, luxury: 0.5 }
+    demandCoverage: { utilities: 3, luxury: 3 }
   },
   {
     name: "Soap",
     tags: ["luxury", "ritual"],
     icon: "goods-soap",
     color: "#e0e4cc",
-    value: 5,
+    value: 12,
     carriage: 0.6,
-    chance: 0,
     recipes: [{ Olives: 1 }, { Cattle: 1 }],
     unit: "barrel",
-    demandCoverage: { utilities: 0.4, luxury: 0.6 }
+    demandCoverage: { utilities: 1.59, luxury: 2.4 }
   },
   {
     name: "Perfume",
     tags: ["luxury", "ritual"],
     icon: "goods-perfume",
     color: "#ff69b4",
-    value: 15,
-    carriage: 0.4,
-    chance: 0,
+    value: 24,
+    carriage: 0.8,
     recipes: [
       { Olives: 1, Incense: 0.5, Glass: 0.5 },
       { Olives: 1, Game: 3, Glass: 0.5 },
       { Liquor: 0.25, Incense: 0.5, Blubber: 0.5, Ceramics: 0.5 }
     ],
     unit: "bottle",
-    demandCoverage: { luxury: 2 }
+    demandCoverage: { luxury: 4.8 }
   }
 ];
 
@@ -1059,86 +1049,104 @@ export class GoodsModule {
     this.generate({ randomSeed: Math.random() });
   }
 
-  // Place a bonus good on every eligible cell based on the current catalogue
+  // Place every good's deposits, as many as its range gives
   generate(config: { randomSeed?: number } = {}) {
     Math.random = Alea(config.randomSeed ?? options.map.seed);
-    const shuffle = shuffler(() => Math.random());
-
     if (!pack.goods?.length) this.restoreDefaults();
 
     this.cells = pack.cells;
     this.cells.good = new Uint16Array(this.cells.i.length);
-
-    const resourceMaxCells = Math.ceil((200 * this.cells.i.length) / 5000);
-    const resources: Record<number, number> = {};
-
-    const methods = `{${Object.keys(this.getMethods()).join(", ")}}`;
-    const shuffledCells = shuffle(this.cells.i.slice());
-    const goods = [...pack.goods];
-
-    for (const cellId of shuffledCells) {
-      if (!(cellId % 10)) shuffle(goods);
-      if (this.cells.biome[cellId] === 11 && pack.biomes[11].habitability === 0) continue; // skip glaciers
-      this.cellId = cellId;
-
-      for (const good of goods) {
-        if (!good.distribution || !good.chance) continue;
-        if (resources[good.i] >= resourceMaxCells) continue;
-        if (Math.random() * 100 > good.chance) continue;
-
-        const spread = new Function(methods, `return ${good.distribution}`);
-        if (!spread(this.getMethods())) continue;
-
-        this.cells.good[cellId] = good.i;
-        resources[good.i] = (resources[good.i] || 0) + 1;
-        break;
-      }
+    for (const good of shuffler(() => Math.random())([...pack.goods])) {
+      this.placeDeposits(good, { count: this.getDepositCount(good) });
     }
-
     this.sync();
   }
 
   regeneratePlacement(goodId: number) {
+    const good = this.prepareDeposits(goodId);
+    if (good) this.placeDeposits(good, { count: this.getDepositCount(good) });
+  }
+
+  /** Re-place a good's deposits until they yield the units a day; output is what a deposit on the cell would yield. Returns the deposits placed */
+  placeOutput(goodId: number, units: number, output: (cellId: number) => number): number {
+    const good = this.prepareDeposits(goodId);
+    return good ? this.placeDeposits(good, { units, output }) : 0;
+  }
+
+  private prepareDeposits(goodId: number): Good | undefined {
     this.sync();
     const good = this.get(goodId);
     if (!good) return;
-
-    log.time("regenerateGoodPlacement");
     this.cells = pack.cells;
-    if (!this.cells.good || this.cells.good.length !== this.cells.i.length) {
-      this.cells.good = new Uint16Array(this.cells.i.length);
-    }
+    if (this.cells.good?.length !== this.cells.i.length) this.cells.good = new Uint16Array(this.cells.i.length);
+    for (const cellId of this.cells.i) if (this.cells.good[cellId] === goodId) this.cells.good[cellId] = 0;
+    return good;
+  }
 
-    for (const cellId of this.cells.i) {
-      if (this.cells.good[cellId] === goodId) this.cells.good[cellId] = 0;
-    }
+  private getDepositCount(good: Good): number {
+    if (!good.distribution || !good.deposits) return 0;
+    const [min, max] = good.deposits.map(Math.ceil);
+    return min + Math.floor(Math.random() * (max - min + 1));
+  }
 
-    if (!good.distribution || !good.chance) {
-      log.timeEnd("regenerateGoodPlacement");
-      return;
-    }
-
-    const resourceMaxCells = Math.ceil((200 * this.cells.i.length) / 5000);
-    const resources: Record<number, number> = {};
+  /** Deposits form loose clusters: each next one lands beside the previous one by chance, or anywhere the good fits */
+  private placeDeposits(
+    good: Good,
+    target: { count: number } | { units: number; output: (cellId: number) => number }
+  ): number {
+    if (!good.distribution) return 0;
+    const cells = this.cells;
     const methods = `{${Object.keys(this.getMethods()).join(", ")}}`;
-    const shuffledCells = shuffler(() => Math.random())(this.cells.i.slice());
     const spread = new Function(methods, `return ${good.distribution}`);
+    const output = "output" in target ? target.output : null;
+    const free = (cellId: number) =>
+      !cells.good[cellId] &&
+      !(cells.biome[cellId] === 11 && pack.biomes[11].habitability === 0) && // glaciers
+      (!output || output(cellId) > 0);
+    const fits = (cellId: number) => free(cellId) && spread(this.getMethods(cellId));
 
-    for (const cellId of shuffledCells) {
-      if (this.cells.biome[cellId] === 11 && pack.biomes[11].habitability === 0) continue; // skip glaciers
-      this.cellId = cellId;
+    let eligible: number[] | null = null; // listed once random draws keep missing
+    const pickAnywhere = () => {
+      if (!eligible) {
+        for (let tries = 0; tries < 100; tries++) {
+          const cellId = cells.i[Math.floor(Math.random() * cells.i.length)];
+          if (fits(cellId)) return cellId;
+        }
+        eligible = Array.from(cells.i).filter(fits);
+      }
+      while (eligible.length) {
+        const index = Math.floor(Math.random() * eligible.length);
+        const cellId = eligible[index];
+        eligible[index] = eligible[eligible.length - 1];
+        eligible.pop();
+        if (free(cellId)) return cellId;
+      }
+      return -1;
+    };
 
-      if (this.cells.good[cellId]) continue;
-      if (resources[good.i] >= resourceMaxCells) continue;
-      if (Math.random() * 100 > good.chance) continue;
+    let placed = 0;
+    let made = 0;
+    let previous = -1;
+    while ("count" in target ? placed < target.count : made < target.units) {
+      let cellId = -1;
+      if (previous >= 0 && Math.random() < DEPOSIT_CLUSTERING) {
+        const near = cells.c[previous].filter(fits);
+        if (near.length) cellId = near[Math.floor(Math.random() * near.length)];
+      }
+      if (cellId < 0) cellId = pickAnywhere();
+      if (cellId < 0) break;
 
-      if (!spread(this.getMethods())) continue;
-
-      this.cells.good[cellId] = good.i;
-      resources[good.i] = (resources[good.i] || 0) + 1;
+      cells.good[cellId] = good.i;
+      placed++;
+      if (output) made += output(cellId);
+      previous = cellId;
     }
+    return placed;
+  }
 
-    log.timeEnd("regenerateGoodPlacement");
+  /** The default deposit range of a good by its name, if it is one of the defaults */
+  getDefaultDeposits(name: string): [number, number] | undefined {
+    return this.defaultGoods.find(good => good.name === name)?.deposits;
   }
 
   restoreDefaults() {
@@ -1243,7 +1251,7 @@ export class GoodsModule {
     Tags.set(this.living(goodId), tags);
   }
 
-  /** Set how a good is produced: chance (0–100), recipes ([{ goodId: amount }]), biomeOutput ({ biomeId: amount }), multipliers ({ cultureType | culture | state | religion | biome | zone: { key: factor } }), demandCoverage ({ category: share }). A key set to null clears it. Takes effect on the next economy run */
+  /** Set how a good is produced: deposits ([min, max] on the map), recipes ([{ goodId: amount }]), biomeOutput ({ biomeId: amount }), multipliers ({ cultureType | culture | state | religion | biome | zone: { key: factor } }), demandCoverage ({ category: share }). A key set to null clears it. Takes effect on the next economy run */
   setProduction(goodId: number, rules: ProductionRules): void {
     const good = this.living(goodId);
     if (typeof rules !== "object" || rules === null) throw new Error("The production rules must be an object");
@@ -1266,9 +1274,11 @@ export class GoodsModule {
         next[key as keyof ProductionRules] = undefined;
         continue;
       }
-      if (key === "chance") {
-        nonNegative(value, "The chance");
-        if ((value as number) > 100) throw new Error("The chance must be from 0 to 100");
+      if (key === "deposits") {
+        if (!Array.isArray(value) || value.length !== 2) throw new Error("The deposits are a [min, max] range");
+        nonNegative(value[0], "The minimum deposits");
+        nonNegative(value[1], "The maximum deposits");
+        if (value[0] > value[1]) throw new Error("The minimum deposits must not exceed the maximum");
       } else if (key === "recipes") {
         if (!Array.isArray(value)) throw new Error("Recipes are a list of { goodId: amount }");
         for (const recipe of value) {
@@ -1296,7 +1306,7 @@ export class GoodsModule {
         }
       } else
         throw new Error(
-          `Unknown production rule ${key}; known: chance, recipes, biomeOutput, multipliers, demandCoverage`
+          `Unknown production rule ${key}; known: deposits, recipes, biomeOutput, multipliers, demandCoverage`
         );
       next[key as keyof ProductionRules] = structuredClone(value) as never;
     }

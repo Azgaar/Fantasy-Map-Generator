@@ -42,7 +42,7 @@ const CSV_COLUMNS = [
   "Carriage",
   "Unit",
   "Demand Coverage",
-  "Chance",
+  "Deposits",
   "Model",
   "Cells",
   "Produced",
@@ -50,6 +50,7 @@ const CSV_COLUMNS = [
 ];
 
 let production: ReturnType<typeof getProduction> = {};
+let depositsByGood: Record<number, number> = {};
 let stockData: ReturnType<typeof getAllStockData> = {};
 
 const dialogId = "goodsEditor" as const;
@@ -107,12 +108,14 @@ const columns: EditorColumn<Good>[] = [
     tip: sentences(t("Price of carrying one unit over a decima, a tenth of the map's diagonal"), t("Click to sort"))
   },
   {
-    key: "chance",
-    label: t("Chance"),
-    width: "4.6em",
-    hidden: true,
-    sortBy: good => (good.distribution ? (good.chance ?? 0) : -1),
-    tip: sentences(t("Chance of a cell to hold the good as a bonus resource"), t("Click to sort"))
+    key: "deposits",
+    label: t("Deposits"),
+    width: "5.6em",
+    sortBy: good => (good.distribution ? (depositsByGood[good.i] ?? 0) : -1),
+    tip: sentences(
+      t("Bonus resource deposits on the map, and in small type the range generation places"),
+      t("Click to sort")
+    )
   },
   {
     key: "coverage",
@@ -276,6 +279,7 @@ function onSearchInput(event: Event): void {
 }
 
 function renderGoodsPage(view: TableView<Good>) {
+  depositsByGood = countDeposits();
   const body = ensureEl("goodsBody");
   const percentage = body.dataset.type === "percentage";
   const totalProduced = Object.values(production).reduce((sum, value) => sum + value.burg + value.cell, 0);
@@ -319,7 +323,7 @@ function renderGoodsPage(view: TableView<Good>) {
         </div>
         <div data-col="price" data-tip="${sentences(t("Base (initial) price"), t("Click to compare prices across markets"))}" class="goodBasePrice pointer">🟡 ${good.value}</div>
         <div data-col="carriage" data-tip="${t("Price of carrying one unit over a decima, a tenth of the map's diagonal")}">🟡 ${good.carriage}</div>
-        <div data-col="chance" data-tip="${t("Chance of a cell to hold the good as a bonus resource")}">${good.distribution ? `${good.chance ?? 0}%` : ""}</div>
+        <div data-col="deposits" data-tip="${t("Bonus resource deposits on the map, and in small type the range generation places")}">${good.distribution ? `${depositsByGood[good.i] ?? 0} <small>${formatDeposits(good)}</small>` : ""}</div>
         <div data-col="coverage" data-tip="${t("How much of each demand category one unit covers")}">${renderCoverage(good)}</div>
         <div data-col="tags" data-tip="${t("Tags")}">${Tags.format(good.tags)}</div>
         ${noteIcon(t("Edit free text notes (legend)"))}
@@ -600,7 +604,7 @@ function enterResourceAssignMode(this: HTMLElement) {
     "stock",
     "price",
     "carriage",
-    "chance",
+    "deposits",
     "coverage",
     "tags",
     "note",
@@ -667,11 +671,14 @@ function exitResourceAssignMode(close?: string) {
   if (selected) selected.classList.remove("selected");
 }
 
+function countDeposits(): Record<number, number> {
+  const counts: Record<number, number> = {};
+  for (const goodId of pack.cells.good ?? []) if (goodId) counts[goodId] = (counts[goodId] || 0) + 1;
+  return counts;
+}
+
 function downloadGoodsData() {
-  const cellsByGood: Record<number, number> = {};
-  for (const goodId of pack.cells.good) {
-    if (goodId) cellsByGood[goodId] = (cellsByGood[goodId] || 0) + 1;
-  }
+  const cellsByGood = countDeposits();
 
   const production = getProduction();
   const stockData = getAllStockData();
@@ -690,7 +697,7 @@ function downloadGoodsData() {
       good.carriage,
       good.unit,
       demandCoverage,
-      good.chance,
+      formatDeposits(good),
       good.distribution,
       cellsByGood[good.i] || 0,
       rn(goodProduction.burg + goodProduction.cell),
@@ -725,10 +732,22 @@ async function uploadGoodsCsv(text: string): Promise<void> {
         cell => Goods.setProduction(id, { demandCoverage: cell.trim() ? parseDemandCoverage(cell) : null }),
         formatDemandCoverage(good)
       );
-      row.apply("Chance", value => Goods.setProduction(id, { chance: +value }), good.chance);
+      row.assign(
+        "Deposits",
+        cell => Goods.setProduction(id, { deposits: cell.trim() ? parseDeposits(cell) : null }),
+        formatDeposits(good)
+      );
     }
   );
   if (updated) refreshEditor();
+}
+
+/** "2-4" for two to four deposits on the map */
+const formatDeposits = (good: Good) => (good.deposits ? good.deposits.join("-") : "");
+
+function parseDeposits(cell: string): [number, number] {
+  const [min, max = min] = cell.split("-").map(Number);
+  return [min, max];
 }
 
 const formatDemandCoverage = (good: Good) =>

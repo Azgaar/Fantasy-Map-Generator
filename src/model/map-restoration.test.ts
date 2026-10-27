@@ -27,6 +27,7 @@ const internals = MapRestoration as unknown as {
   restoreZones(parent: PackedGraph, links: Links): void;
   fillPathGaps(points: [number, number, number][]): [number, number, number][];
   restoreJourneys(parent: PackedGraph, projection: Projection): void;
+  expandMarkets(): void;
 };
 
 const identity: Projection = (x, y) => [x, y];
@@ -859,5 +860,33 @@ describe("restoreLockedRivers", () => {
         { i: 5, cells: [0, 1, 2], widthFactor: 1 }
       ])
     ).toEqual([]);
+  });
+});
+
+describe("expandMarkets", () => {
+  it("gives land no kept market reaches a market centered at its most populous burg", () => {
+    // two strips of land the graph does not link, as across deep water
+    const cells = lineCells([25, 25, 25, 25, 25]);
+    cells.c = [[1], [0, 2], [1], [4], [3]];
+    const n = cells.i.length;
+    vi.stubGlobal(
+      "pack",
+      graph({
+        cells: { ...cells, f: new Uint16Array(n).fill(1), state: new Uint16Array(n), good: new Uint16Array(n) },
+        burgs: [
+          {},
+          { i: 1, cell: 0, population: 1 },
+          { i: 2, cell: 3, population: 2 },
+          { i: 3, cell: 4, population: 5 }
+        ],
+        markets: [{ i: 1, centerBurgId: 1, color: "", goods: {} }]
+      })
+    );
+
+    internals.expandMarkets();
+
+    expect(pack.markets.map(market => market.centerBurgId)).toEqual([1, 3]);
+    expect(Array.from(pack.cells.market)).toEqual([1, 1, 1, 2, 2]);
+    expect(pack.burgs.slice(1).map(burg => burg.market)).toEqual([1, 2, 2]);
   });
 });

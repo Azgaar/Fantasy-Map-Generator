@@ -52,7 +52,7 @@ Tags are separated by `;`. Colors are HEX like `#a1b2c3`; a hatched fill is kept
 | Zones | `Description`, `Color`, `Type`, `Population`, `Tags` |
 | Biomes | `Biome`, `Color`, `Habitability` (percent) |
 | Features | `Name`, `Subtype`, `Group` (lakes only), `Tags` |
-| Goods | `Good`, `Color`, `Tags`, `Value`, `Carriage`, `Unit`, `Demand Coverage` (`category:share` pairs separated by `;`, such as `food:1;luxury:0.5`), `Chance` (0 to 100). `Model` is code and is edited in the good's editor only. Prices and production follow on the next economy run |
+| Goods | `Good`, `Color`, `Tags`, `Value`, `Carriage`, `Unit`, `Demand Coverage` (`category:share` pairs separated by `;`, such as `food:1;luxury:0.5`), `Deposits` (deposits on the map as `min-max`, such as `2-4`). `Model` is code and is edited in the good's editor only. Prices and production follow on the next economy run |
 
 # Text data
 

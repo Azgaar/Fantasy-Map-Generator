@@ -2,14 +2,15 @@ A good **distribution** is an expression that decides whether the good can be pl
 
 # How placement works
 
-Cells are processed in random order. For every cell the generator walks the (reshuffled) list of goods and takes the first good that passes all of these checks:
+Every good with a distribution has a **deposits** range: how many bonus resource deposits it gets on the map, from a minimum to a maximum. On each run the generator picks a whole number in the range; the count does not depend on the map's size.
 
-1. the good has both a distribution and a non-zero **chance**;
-2. the good has not yet reached its cell cap of `ceil(200 × cells count / 5000)` cells;
-3. a random roll against the good `chance` (in percent) succeeds;
-4. the distribution expression evaluates to `true`.
+Goods are placed one by one in random order. The first deposit of a good lands on a random cell where its distribution is `true`. Each next one has a 50% chance to land next to the previous deposit, if the distribution allows one of its neighbours; otherwise it lands on another random cell where the distribution is `true`. Deposits therefore form loose clusters: mining districts and fishing grounds rather than single scattered cells.
 
-A cell holds at most one good. Glacier cells are skipped entirely while the Glacier biome habitability is `0`. Because goods are reshuffled as the generator walks the map, no good gets a systematic advantage over the others.
+A cell holds at most one good. Glacier cells are skipped entirely while the Glacier biome habitability is `0`.
+
+A deposit yields its cell's population in units a day, counting up to 10 population points, times the good's multipliers. Because the counts are per map, a deposit yields more on a bigger map: the yield is multiplied by the map's cells ÷ 5,000. Deposits raise their cells' attraction for settlers, so people tend to live near them. A deposit on an empty cell yields nothing.
+
+The good's editor can also place deposits by output: set how many units a day its deposits should yield, and they are re-placed the same way until they yield it.
 
 # Technical info
 Technically a distribution is an expression evaluated for each cell to return `true` or `false`. If `true` is returned, the good can be placed in the cell. The expression is plain JS, so you can use logical operators (`!` for NOT, `||` for OR, `&&` for AND) and parentheses.

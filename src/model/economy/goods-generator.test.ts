@@ -18,6 +18,7 @@ describe("GoodsModule", () => {
         r: Uint16Array.from([0, 0, 0, 0]),
         g: Uint16Array.from([0, 0, 0, 0]),
         f: Uint16Array.from([0, 0, 0, 0]),
+        c: [[1], [0, 2], [1, 3], [2]],
         good: Uint16Array.from([1, 2, 1, 2])
       },
       features: [{ type: "land" }],
@@ -30,7 +31,7 @@ describe("GoodsModule", () => {
           unit: "unit",
           icon: "icon-a",
           color: "#ffffff",
-          chance: 100,
+          deposits: [2, 2],
           distribution: "true"
         },
         {
@@ -41,7 +42,7 @@ describe("GoodsModule", () => {
           unit: "unit",
           icon: "icon-b",
           color: "#000000",
-          chance: 100,
+          deposits: [2, 2],
           distribution: "true"
         }
       ]
@@ -95,11 +96,61 @@ describe("GoodsModule", () => {
   });
 
   it("clears a single good when it is no longer placeable", () => {
-    globalThis.pack.goods[0].chance = 0;
+    globalThis.pack.goods[0].deposits = [0, 0];
     goodsModule.regeneratePlacement(1);
 
     const goodIds = Array.from(globalThis.pack.cells.good);
     expect(goodIds.some(id => id === 1)).toBe(false);
     expect(goodIds.filter(id => id === 2)).toHaveLength(2);
+  });
+
+  it("places as many deposits as the good's range gives", () => {
+    globalThis.pack.goods[1].deposits = [0, 0];
+    goodsModule.generate({ randomSeed: 1 });
+
+    expect(Array.from(globalThis.pack.cells.good).filter(id => id === 1)).toHaveLength(2);
+    expect(Array.from(globalThis.pack.cells.good)).not.toContain(2);
+  });
+
+  it("places deposits only where the distribution allows", () => {
+    globalThis.pack.cells.biome = Uint8Array.from([0, 1, 1, 0]);
+    globalThis.pack.goods[0].distribution = "biome(1)";
+    globalThis.pack.goods[1].deposits = [0, 0];
+    goodsModule.generate({ randomSeed: 2 });
+
+    expect(Array.from(globalThis.pack.cells.good)).toEqual([0, 1, 1, 0]);
+  });
+
+  it("picks a whole count within the range, rounding fractions up", () => {
+    globalThis.pack.goods[1].deposits = [0, 0];
+    const placed = (deposits: [number, number]) => {
+      globalThis.pack.goods[0].deposits = deposits;
+      return new Set(
+        Array.from({ length: 50 }, (_, seed) => {
+          goodsModule.generate({ randomSeed: seed });
+          return Array.from(globalThis.pack.cells.good).filter(id => id === 1).length;
+        })
+      );
+    };
+
+    expect(placed([1, 3])).toEqual(new Set([1, 2, 3]));
+    expect(placed([0.2, 0.4])).toEqual(new Set([1]));
+    expect(placed([0, 0])).toEqual(new Set([0]));
+  });
+
+  it("places deposits until they yield the units asked, leaving other goods in place", () => {
+    globalThis.pack.cells.good = Uint16Array.from([0, 0, 0, 2]);
+    const placed = goodsModule.placeOutput(1, 5, () => 2);
+
+    expect(placed).toBe(3);
+    expect(Array.from(globalThis.pack.cells.good)).toEqual([1, 1, 1, 2]);
+  });
+
+  it("spreads spending over options by price per coverage, cheaper ones getting more", async () => {
+    const { getVarietyShares } = await import("./goods-generator");
+    const [cheap, dear, none] = getVarietyShares([1, 2, 0]);
+    expect(cheap / dear).toBeCloseTo(8, 5); // (2 / 1)^3
+    expect(cheap + dear).toBeCloseTo(1, 5);
+    expect(none).toBe(0);
   });
 });

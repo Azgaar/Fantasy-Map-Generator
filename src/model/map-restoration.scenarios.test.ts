@@ -182,7 +182,7 @@ describe("Risk heightmap edit", () => {
   it("leaves the map as it was when the restore fails", async () => {
     await generateMap({ seed: "restoration-rollback" });
     const [previous, heights, before] = [pack, grid.cells.h.slice(), fingerprint()];
-    vi.spyOn(Production, "regenerateEconomy").mockImplementation(() => {
+    vi.spyOn(Production, "regenerate").mockImplementation(() => {
       throw new Error("injected");
     });
 
@@ -279,38 +279,41 @@ describe("Submap and Transform", () => {
     expect(violations().has("state-capitals")).toBe(false);
   }, 15000);
 
-  it("a submap founds a capital for a state left with land but no burg", async () => {
-    await generateMap({ seed: "restoration-founded-capital" });
-    const [x0, y0, scale] = [420, 230, 8];
-    const inWindow = ([x, y]: number[]) => x >= x0 && x <= x0 + width / scale && y >= y0 && y <= y0 + height / scale;
-    // the state with the most land in the window loses its burgs there, whatever the generated map looks like
-    const land: number[] = [];
-    for (const cell of pack.cells.i)
-      if (inWindow(pack.cells.p[cell])) land[pack.cells.state[cell]] = (land[pack.cells.state[cell]] ?? 0) + 1;
-    const stateId = land.reduce((best, count, id) => (id && count > (best ? land[best] : 0) ? id : best), 0);
-    for (const burg of living(pack.burgs)) {
-      if (burg.state !== stateId || !inWindow([burg.x, burg.y])) continue;
-      Object.assign(burg, { removed: true, capital: 0 });
-      pack.cells.burg[burg.cell] = 0;
-    }
-    const before = violations();
-    const firstNewBurg = pack.burgs.length;
+  // -2: a port capital off the window edge stays on the submap
+  for (const seed of ["founded-capital", "restoration-founded-capital-2"])
+    it(`a submap founds a capital for a state left with land but no burg (${seed})`, async () => {
+      await generateMap({ seed });
+      const [x0, y0, scale] = [420, 230, 8];
+      const inWindow = ([x, y]: number[]) => x >= x0 && x <= x0 + width / scale && y >= y0 && y <= y0 + height / scale;
+      // the state with the most land in the window loses its burgs there, whatever the generated map looks like
+      const land: number[] = [];
+      for (const cell of pack.cells.i)
+        if (inWindow(pack.cells.p[cell])) land[pack.cells.state[cell]] = (land[pack.cells.state[cell]] ?? 0) + 1;
+      const stateId = land.reduce((best, count, id) => (id && count > (best ? land[best] : 0) ? id : best), 0);
+      // a burg stays on the submap by its cell: a port can lie just off the window edge
+      for (const burg of living(pack.burgs)) {
+        if (burg.state !== stateId || !inWindow(pack.cells.p[burg.cell])) continue;
+        Object.assign(burg, { removed: true, capital: 0 });
+        pack.cells.burg[burg.cell] = 0;
+      }
+      const before = violations();
+      const firstNewBurg = pack.burgs.length;
 
-    resample(
-      (x, y) => [(x - x0) * scale, (y - y0) * scale],
-      (x, y) => [x / scale + x0, y / scale + y0],
-      scale
-    );
+      resample(
+        (x, y) => [(x - x0) * scale, (y - y0) * scale],
+        (x, y) => [x / scale + x0, y / scale + y0],
+        scale
+      );
 
-    expect(newViolations(before)).toEqual([]);
-    const founded = living(pack.states).filter(state => state.capital >= firstNewBurg);
-    expect(founded.map(state => state.i)).toContain(stateId);
-    for (const state of living(pack.states)) {
-      const capital = pack.burgs[state.capital];
-      expect(capital).toMatchObject({ capital: 1, state: state.i, cell: state.center });
-      expect(pack.cells.state[capital.cell]).toBe(state.i);
-    }
-  }, 15000);
+      expect(newViolations(before)).toEqual([]);
+      const founded = living(pack.states).filter(state => state.capital >= firstNewBurg);
+      expect(founded.map(state => state.i)).toContain(stateId);
+      for (const state of living(pack.states)) {
+        const capital = pack.burgs[state.capital];
+        expect(capital).toMatchObject({ capital: 1, state: state.i, cell: state.center });
+        expect(pack.cells.state[capital.cell]).toBe(state.i);
+      }
+    }, 15000);
 
   for (const [name, projection, inverse, scale] of [
     ["a ×2 submap", (x, y) => [(x - 240) * 2, (y - 135) * 2], (x, y) => [x / 2 + 240, y / 2 + 135], 2],

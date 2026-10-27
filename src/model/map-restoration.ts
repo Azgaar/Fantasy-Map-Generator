@@ -971,14 +971,27 @@ class MapRestorationModule {
 
     // the rerun starts every treasury from 0: the burgs keep the balance they had
     const treasuries = new Map(pack.burgs.map(burg => [burg, burg?.treasury]));
-    if (pack.markets.length || !parent.markets?.length) Production.regenerateEconomy();
-    else {
+    if (pack.markets.length || !parent.markets?.length) {
+      Goods.sync();
+      this.expandMarkets();
+      Production.regenerate();
+    } else {
       // every market center left the map
       Goods.sync();
       Markets.regenerate();
       Production.regenerate();
     }
     for (const [burg, treasury] of treasuries) if (burg?.i) burg.treasury = treasury;
+  }
+
+  /** a burg no kept market reaches, as on land cut off by deep water, centers a market of its own */
+  private expandMarkets() {
+    for (let cellMarket = Markets.expandTerritories(); pack.markets.length; ) {
+      const unreached = this.findMostPopulous(burg => !cellMarket[burg.cell]);
+      if (!unreached) return;
+      Markets.addMarket(unreached.i);
+      cellMarket = Markets.expandTerritories();
+    }
   }
 }
 
