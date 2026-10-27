@@ -328,11 +328,7 @@ interface FieldBattleOpts {
   winnerTakesCell?: boolean;
 }
 
-export function getMilitiaDefenseUnits(
-  ctx: EngineCtx,
-  regionId: number,
-  defenderFactionId: number
-): ArmyUnit[] {
+export function getMilitiaDefenseUnits(ctx: EngineCtx, regionId: number, defenderFactionId: number): ArmyUnit[] {
   const regionState = ctx.campaign.regions[String(regionId)];
   if (!regionState || regionState.owner !== defenderFactionId) return [];
   const buildingById = new Map(ctx.content.buildings.map(b => [b.id, b]));
@@ -456,7 +452,7 @@ function finalizeBattle(
           if (regionState.development?.settlementId === settlement.id) {
             regionState.development = null;
           }
-          const lootedGold = Math.max(10, Math.round(settlement.population * 2) || (settlement.tier * 25 + 25));
+          const lootedGold = Math.max(10, Math.round(settlement.population * 2) || settlement.tier * 25 + 25);
           const raider = campaign.factions[String(winnerFaction)];
           if (raider) {
             if (config.economy.capacityMode) raider.purse += lootedGold;
@@ -599,7 +595,7 @@ function assaultSettlement(
       }
       let gold = 0;
       let orderHit = 5;
-      const baseVal = Math.max(10, Math.round(settlement.population * 2) || (settlement.tier * 25 + 25));
+      const baseVal = Math.max(10, Math.round(settlement.population * 2) || settlement.tier * 25 + 25);
       if (policy === "occupy") {
         gold = baseVal;
         orderHit = 5;
@@ -913,7 +909,10 @@ function buildBuilding(ctx: EngineCtx, regionId: number, buildingId: string, act
   if (!building.kind || building.kind === "structure") {
     const sameChain = regionState.buildings
       .map(bid => content.buildings.find(b => b.id === bid))
-      .filter((b): b is NonNullable<typeof b> => b !== undefined && (!b.kind || b.kind === "structure") && b.chain === building.chain);
+      .filter(
+        (b): b is NonNullable<typeof b> =>
+          b !== undefined && (!b.kind || b.kind === "structure") && b.chain === building.chain
+      );
     const standing = sameChain.find(b => b.tier >= building.tier);
     if (standing) {
       return standing.tier === building.tier
@@ -1168,7 +1167,7 @@ function accumulateTreasureCmd(
 ): string | null {
   const { campaign, pack } = ctx;
   const state = campaign.factions[String(factionId)];
-  if (!state || !state.alive) return `faction ${factionId} is not alive or does not exist`;
+  if (!state?.alive) return `faction ${factionId} is not alive or does not exist`;
 
   let targetRegionId: number;
   if (regionId !== undefined) {
@@ -1231,19 +1230,12 @@ function accumulateTreasureCmd(
  * Consumes an established Scapegoat asset to fatally disband it and remove 1d4+2 Atrocity points.
  * Cooldown: once per year (4 turns).
  */
-function punishAtrocityCmd(
-  ctx: EngineCtx,
-  factionId: number,
-  regionId?: number
-): string | null {
+function punishAtrocityCmd(ctx: EngineCtx, factionId: number, regionId?: number): string | null {
   const { campaign, pack } = ctx;
   const state = campaign.factions[String(factionId)];
-  if (!state || !state.alive) return `faction ${factionId} is not alive or does not exist`;
+  if (!state?.alive) return `faction ${factionId} is not alive or does not exist`;
 
-  if (
-    state.lastPunishAtrocityTurn !== undefined &&
-    campaign.turn - state.lastPunishAtrocityTurn < 4
-  ) {
+  if (state.lastPunishAtrocityTurn !== undefined && campaign.turn - state.lastPunishAtrocityTurn < 4) {
     const left = 4 - (campaign.turn - state.lastPunishAtrocityTurn);
     return `Punish Atrocity may only be performed once per year (${left} turn${left === 1 ? "" : "s"} remaining)`;
   }

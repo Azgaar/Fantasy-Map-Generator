@@ -34,11 +34,11 @@ import {
   recomputeCapacity,
   settlementTier
 } from "@/conquest/engine/game/capacity";
-import { startSiege, siegeOf } from "@/conquest/engine/game/sieges";
 import { applyCommand, type Command, type EngineCtx, getMilitiaDefenseUnits } from "@/conquest/engine/game/commands";
 import { type CampaignConfig, DEFAULT_CONFIG, resolveConfig } from "@/conquest/engine/game/config";
 import { economyTick } from "@/conquest/engine/game/economy";
 import { regionValues } from "@/conquest/engine/game/saves";
+import { siegeOf, startSiege } from "@/conquest/engine/game/sieges";
 import { createCampaign, stateHash } from "@/conquest/engine/game/state";
 
 const SOURCE = path.resolve(testDir, "../test-data/sample-world.json");
@@ -632,7 +632,7 @@ describe("Phase 3: Domain Asset Mechanical Effects", () => {
 
     // One of the 1-upkeep buildings is waived.
     // custom_slavery adds +2 S load, but 1 upkeep is waived.
-    const netUpkeepChange = (afterLoad.w.load - beforeLoad.w.load) + (afterLoad.s.load - beforeLoad.s.load);
+    const netUpkeepChange = afterLoad.w.load - beforeLoad.w.load + (afterLoad.s.load - beforeLoad.s.load);
     // Before: 1 W + 1 S = 2 upkeep.
     // After: 1 waived + 1 remaining + 2 Slavery = 3 upkeep (net +1 instead of +2).
     expect(netUpkeepChange).toBeCloseTo(1, 4);

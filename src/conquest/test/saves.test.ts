@@ -21,8 +21,15 @@ import { currentContent } from "@/conquest/content/store";
 import { resolveForPack } from "@/conquest/engine/common/content";
 import type { MapPack } from "@/conquest/engine/common/types";
 import { compileAzgaar } from "@/conquest/engine/compiler/index";
+import {
+  addFactionAtrocity,
+  atrocityUpkeepPenalty,
+  effectiveAtrocity,
+  recomputeCapacity
+} from "@/conquest/engine/game/capacity";
 import { applyCommand, type Command, type EngineCtx } from "@/conquest/engine/game/commands";
 import { type CampaignConfig, DEFAULT_CONFIG } from "@/conquest/engine/game/config";
+import { economyTick } from "@/conquest/engine/game/economy";
 import {
   ACTIVITY_NAMES,
   assetCheckDifficulties,
@@ -38,8 +45,6 @@ import {
   SAVES,
   valueModifier
 } from "@/conquest/engine/game/saves";
-import { addFactionAtrocity, atrocityUpkeepPenalty, effectiveAtrocity, recomputeCapacity } from "@/conquest/engine/game/capacity";
-import { economyTick } from "@/conquest/engine/game/economy";
 import { type Campaign, createCampaign, stateHash } from "@/conquest/engine/game/state";
 import { checkRebellions } from "@/conquest/engine/game/world";
 
@@ -548,13 +553,22 @@ describe("Phase 2: 3-Check Establish an Asset & Disband", () => {
     expect(rs.buildings).not.toContain("walls1");
 
     // Disband custom without suppressCustom is refused
-    const disCustomRefused = applyCommand(ctx, { type: "DisbandBuilding", regionId, buildingId: "custom_spartan_culture" });
+    const disCustomRefused = applyCommand(ctx, {
+      type: "DisbandBuilding",
+      regionId,
+      buildingId: "custom_spartan_culture"
+    });
     expect(disCustomRefused.ok).toBe(false);
     expect(disCustomRefused.error).toContain("suppressCustom");
 
     // Disband custom with suppressCustom succeeds and inflicts order penalty
     const orderBefore = rs.order;
-    const disCustomOk = applyCommand(ctx, { type: "DisbandBuilding", regionId, buildingId: "custom_spartan_culture", suppressCustom: true });
+    const disCustomOk = applyCommand(ctx, {
+      type: "DisbandBuilding",
+      regionId,
+      buildingId: "custom_spartan_culture",
+      suppressCustom: true
+    });
     expect(disCustomOk.ok).toBe(true);
     expect(rs.buildings).not.toContain("custom_spartan_culture");
     expect(rs.order).toBe(Math.max(0, orderBefore - 15));
@@ -744,4 +758,3 @@ describe("Phase 4: Treasure & Atrocity Integration", () => {
     expect(state.atrocity).toBe(3);
   });
 });
-

@@ -554,12 +554,7 @@ export function atrocityUpkeepPenalty(effective: number): number {
 }
 
 /** Add Atrocity points to a faction, taking Brutal Tyranny (half gains) into account. */
-export function addFactionAtrocity(
-  ctx: EngineCtx,
-  factionId: number,
-  rawPoints: number,
-  reason = ""
-): number {
+export function addFactionAtrocity(ctx: EngineCtx, factionId: number, rawPoints: number, reason = ""): number {
   if (rawPoints <= 0) return 0;
   const { campaign, pack } = ctx;
   const state = campaign.factions[String(factionId)];

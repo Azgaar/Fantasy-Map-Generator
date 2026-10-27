@@ -961,7 +961,9 @@ function parseBuildingsDoc(
         ...(militiaDefense ? { militiaDefense } : {}),
         ...(chainMultiplier ? { chainMultiplier } : {}),
         ...(effectsRaw.freeBuildingUpkeepPerRegion !== undefined
-          ? { freeBuildingUpkeepPerRegion: v.num(`${file}#${id}.effects`, effectsRaw, "freeBuildingUpkeepPerRegion", 0) }
+          ? {
+              freeBuildingUpkeepPerRegion: v.num(`${file}#${id}.effects`, effectsRaw, "freeBuildingUpkeepPerRegion", 0)
+            }
           : {}),
         ...(conversion ? { conversion } : {}),
         ...(effectsRaw.siegeSupplies !== undefined
@@ -1513,7 +1515,12 @@ export function validateAndResolve(docs: RawContentDocs): {
   const seenChainTier = new Set<string>();
   const buildingIds = new Set(buildings.map(b => b.id));
   for (const b of buildings) {
-    if ((!b.kind || b.kind === "structure") && b.chain !== "custom" && b.chain !== "unchained" && b.chain !== "resource") {
+    if (
+      (!b.kind || b.kind === "structure") &&
+      b.chain !== "custom" &&
+      b.chain !== "unchained" &&
+      b.chain !== "resource"
+    ) {
       const key = `${b.group ?? ""}:${b.chain}:${b.tier}`;
       if (seenChainTier.has(key)) v.warn("buildings.yaml", `duplicate chain/tier ${b.chain}:${b.tier} on '${b.id}'`);
       seenChainTier.add(key);

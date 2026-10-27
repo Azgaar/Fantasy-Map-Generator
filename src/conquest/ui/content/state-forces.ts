@@ -830,10 +830,13 @@ export function openStateForcesDialog(): void {
           const badges: string[] = [];
           if (bDef?.effects.freeGarrisonUnits) badges.push(`Garrison Upkeep: -${bDef.effects.freeGarrisonUnits}`);
           if (bDef?.effects.militiaDefense) badges.push(`Militia: +${bDef.effects.militiaDefense.count}`);
-          if (bDef?.effects.chainMultiplier) badges.push(`${bDef.effects.chainMultiplier.chain} ×${bDef.effects.chainMultiplier.factor}`);
+          if (bDef?.effects.chainMultiplier)
+            badges.push(`${bDef.effects.chainMultiplier.chain} ×${bDef.effects.chainMultiplier.factor}`);
           if (bDef?.effects.siegeSupplies) badges.push(`Supplies: ${bDef.effects.siegeSupplies} HD`);
           if (bDef?.effects.atrocityIgnore) badges.push(`Ignore ${bDef.effects.atrocityIgnore} Atrocity`);
-          const badgeHtml = badges.length ? `<div style="font-size: 11px; color: #555; margin-top: 2px;">${badges.join(" · ")}</div>` : "";
+          const badgeHtml = badges.length
+            ? `<div style="font-size: 11px; color: #555; margin-top: 2px;">${badges.join(" · ")}</div>`
+            : "";
 
           return `<tr>
             <td style="font-weight: 600; color: #000;">

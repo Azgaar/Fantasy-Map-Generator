@@ -58,7 +58,7 @@ export function advanceConstructionStep(
 ): ConstructionStepResult | null {
   const { campaign, content, pack } = ctx;
   const rs = campaign.regions[String(regionId)];
-  if (!rs || !rs.construction) return null;
+  if (!rs?.construction) return null;
 
   const buildingId = rs.construction.buildingId;
   const building = content.buildings.find(b => b.id === buildingId);
@@ -69,7 +69,7 @@ export function advanceConstructionStep(
   const pools = ["m", "w", "s"] as const;
   const pool = pools.find(p => !checks[p]);
 
-  const isStructural = (b?: BuildingDef) => !b || !b.kind || b.kind === "structure";
+  const isStructural = (b?: BuildingDef) => !b?.kind || b.kind === "structure";
 
   if (!pool) {
     if (isStructural(building)) {
@@ -426,7 +426,7 @@ export function economyTick(ctx: EngineCtx): GameEvent[] {
           const done = rs.construction.buildingId;
           const built = buildingById.get(done);
           if (built) {
-            const isStructural = (b?: BuildingDef) => !b || !b.kind || b.kind === "structure";
+            const isStructural = (b?: BuildingDef) => !b?.kind || b.kind === "structure";
             if (isStructural(built)) {
               rs.buildings = rs.buildings.filter(bid => {
                 const other = buildingById.get(bid);

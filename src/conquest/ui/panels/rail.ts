@@ -233,7 +233,9 @@ function renderSettlement(summary: SettlementSummary, region: RegionSummary): st
   const campaign = session?.store?.state;
   const rs = campaign?.regions[String(region.id)];
   const isOccupied = rs?.occupiedSettlements?.includes(summary.id);
-  const statusHtml = isOccupied ? row("Status", `<span style="color:#e06c75; font-weight:bold;">Occupied by Enemy</span>`) : "";
+  const statusHtml = isOccupied
+    ? row("Status", `<span style="color:#e06c75; font-weight:bold;">Occupied by Enemy</span>`)
+    : "";
   return /* html */ `
     <button class="tw-link tw-back" data-tw-action="region">‹ ${escapeHtml(region.name)}</button>
     <p class="tw-title">${escapeHtml(summary.name)}</p>
