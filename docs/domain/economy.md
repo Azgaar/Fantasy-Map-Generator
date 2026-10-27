@@ -53,9 +53,9 @@ The catalogue (71 default goods) is map data: users add, remove and edit goods p
 
 ### Needs and wants
 
-Five categories in priority order: 🍖 food, 🛠️ utilities, 🧱 construction, 🛡️ military, 💎 luxury. A burg's **needs** are its population × a per-category factor (0.2, 0.15, 0.1, 0.08, 0.07) a day. **Wants** are what it buys beyond them out of income: at most one more day of each need and four of luxury (`WANT_LIMITS`), split by `WANT_SHARES`, from up to 85% of income (`SAVINGS_RATE` 15%). Rural people's needs come from their own fields; they buy only wants.
+Five categories in priority order: 🍖 food, 🛠️ utilities, 🧱 construction, 🛡️ military, 💎 luxury. A burg's **needs** are its population × a per-category factor (0.2, 0.15, 0.1, 0.08, 0.07) a day. **Wants** are what it buys beyond them out of income, from up to 85% of it (`SAVINGS_RATE` 15%), split by `WANT_SHARES`. Staples are capped at one more day of each need (`WANT_LIMITS`), since people eat only so much more; luxury grows with **affluence**, the days of needs a person earns (`getAffluence`: income so far per person ÷ a day's needs at the cheapest coverage at base prices): 4 × √affluence more days (`WEALTH_WANTS`). What the capped wants leave goes to luxury, so a rich burg spends on luxury, not on more bread. Rural people's needs come from their own fields; they buy only wants.
 
-Buyers **spread their spending** over every good covering a need (`getVarietyShares`): a good gets a share by (price per coverage)^−3 (`VARIETY`), so cheaper coverage gets more but every good gets some. A good nobody stocks turns its share away and gets dearer (`signalShortage`); the rest goes to the cheapest good in stock. Demand does not steer production directly: burgs make what pays, and prices carry the signal.
+Buyers **spread their spending** over every good covering a need (`getVarietyShares`): a good gets a share by (price per coverage)^−variety, so cheaper coverage gets more but every good gets some. Variety follows affluence (`getVariety`): 3 (`VARIETY`) for a burg earning just its needs, 2 less for each tenfold of affluence (`PRESTIGE`), down to −1 (`MIN_VARIETY`): the poor buy the cheapest, the rich spread over all goods, and the richest favor dear ones. A good nobody stocks turns its share away and gets dearer (`signalShortage`); the rest goes to the cheapest good in stock, or for wants to the goods the buyer favors most. Demand does not steer production directly: burgs make what pays, and prices carry the signal.
 
 ## Markets
 
@@ -189,7 +189,7 @@ Invariants:
 - **Every run starts from zero.** Burg and state treasuries are reset each run, so a typed treasury lasts until the next one. A submap rerun restores burgs' previous balances.
 - **Order matters.** Largest burgs move first; later burgs see the prices they moved.
 - **Local first.** A burg buys from other markets only what its own market has run out of, so a trickle of local stock blocks cheaper sources until it is gone.
-- **The surplus is real.** Markets buy every unit offered, at a price that falls as stock piles up, so part of what is made stays unsold. About 30% of made goods' value does on default maps.
+- **The surplus is real.** Markets buy every unit offered, at a price that falls as stock piles up, so part of what is made stays unsold. About a fifth of made goods' value does on default maps.
 - **No route, no trade.** Missing roads cut markets off; the Routes layer explains most odd trade patterns.
 - **Economy regeneration redraws territories**, discarding hand-painted market cells; Production keeps them.
 - **Edits apply on the next run.** Changing goods, taxes, tariffs, markets or burgs updates nothing until Production or Economy is regenerated.

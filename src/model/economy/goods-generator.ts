@@ -89,11 +89,14 @@ export const WANT_LIMITS: Record<DemandCategory, number> = {
 }; // the most a person buys beyond their needs, in days of need: richer people eat only so much more
 export const SAVINGS_RATE = 0.15; // share of a day's income households keep
 export const VARIETY = 3; // buyers spread their spending over the goods covering a need, by (price per coverage)^-VARIETY: higher buys only the cheapest
+export const PRESTIGE = 2; // how much each tenfold of affluence lowers a buyer's variety: the rich buy dearer goods
+export const MIN_VARIETY = -1; // the richest prefer dear goods
+export const WEALTH_WANTS: readonly DemandCategory[] = ["luxury"]; // wants that grow with affluence: the rich display; staples stay capped, or the first in line buy them out
 
-/** Shares of spending each option gets: cheaper coverage gets more, but every option gets some */
-export function getVarietyShares(costs: number[]): number[] {
+/** Shares of spending each option gets: cheaper coverage gets more, but every option gets some; a negative variety favors dear goods */
+export function getVarietyShares(costs: number[], variety = VARIETY): number[] {
   const cheapest = Math.min(...costs.filter(cost => cost > 0));
-  const weights = costs.map(cost => (cost > 0 ? (cost / cheapest) ** -VARIETY : 0));
+  const weights = costs.map(cost => (cost > 0 ? (cost / cheapest) ** -variety : 0));
   const total = weights.reduce((sum, weight) => sum + weight, 0) || 1;
   return weights.map(weight => weight / total);
 }

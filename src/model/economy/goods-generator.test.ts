@@ -153,4 +153,10 @@ describe("GoodsModule", () => {
     expect(cheap + dear).toBeCloseTo(1, 5);
     expect(none).toBe(0);
   });
+
+  it("favors dearer options when the variety is negative", async () => {
+    const { getVarietyShares } = await import("./goods-generator");
+    const [cheap, dear] = getVarietyShares([1, 2], -1);
+    expect(dear / cheap).toBeCloseTo(2, 5);
+  });
 });

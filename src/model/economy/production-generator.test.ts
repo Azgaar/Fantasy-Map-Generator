@@ -433,6 +433,32 @@ describe("demand fill", () => {
     expect(burg.treasury).toBeGreaterThanOrEqual(15 - 0.01);
   });
 
+  it("favors dearer goods the richer the burg is", () => {
+    const { index, state } = prepare();
+    index.needsCost = 1;
+    const variety = (treasury: number) => {
+      burg.treasury = treasury;
+      // biome-ignore lint/complexity/useLiteralKeys: private test access
+      return production["getVariety"](index, state);
+    };
+    expect(variety(0)).toBe(3); // earns no more than its needs: the cheapest coverage
+    expect(variety(1000)).toBeCloseTo(1, 5); // ten days of needs a person
+    expect(variety(1e6)).toBe(-1); // the richest prefer dear goods
+  });
+
+  it("lets luxury wants grow with the burg's wealth", () => {
+    catalogue[2].demandCoverage = { luxury: 1 };
+    market.goods[3] = { stock: 100000, price: 1 };
+    burg.treasury = 10000;
+    const { index, state } = prepare();
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    production["spendOnWants"](index, state);
+
+    const fixedCap = 100 * 0.07 * 5; // the needs and four more days of luxury
+    expect(state.demandCoverage[4]).toBeGreaterThan(fixedCap);
+    expect(state.spent).toBeLessThanOrEqual(8500 + 0.01); // still within 85% of the income
+  });
+
   it("trims the sale and its tax by the share kept", () => {
     market.goods[3].stock = 20;
     pack.deals.push([1, 1, 3, DEAL_KINDS.sale, 10, 1, 2, 0, 0]);
