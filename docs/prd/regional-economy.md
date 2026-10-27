@@ -2,46 +2,55 @@
 
 ## Problems
 
-1. **The economy was uniform.** Every market made about the same goods, and its output followed its population. There were no rich trade hubs, no backward hinterlands, no regions known for one product.
-2. **The economy did not balance.** Most made goods piled up unsold while others were never made. Demand did not depend on income: people bought a fixed basket whatever they earned, rural people produced half the supply and earned nothing, and markets bought whatever burgs made. Taxes took about half of all income, and few burgs saved anything.
+1. **Low regionalism.** Every market looked the same: the same goods, at about the same prices. There were no regions known for a product, no rich trade hubs, no backward hinterlands.
+2. **Output followed people.** A market's output was its population times a near-constant: more people, more output, in a straight line. A market with 5% of the world's people held about 5% of its output, so the economy was too predictable to tell a story.
+3. **Weak control.** Bonus resources were placed cell by cell by chance, and most raw supply came from biome tables. A user could not say "this region mines iron" or "gold is rare here" and get it.
 
-Constraints: generation stays one pass and fast, with no iteration to equilibrium. Saved maps keep their own goods catalogue. Every change is measured on the same six default maps (seeds 431087220, 98765, 55555, 123456789, 4242, 31337), before and after.
+Fixing these exposed how the day's economy worked underneath: demand did not depend on income, rural people earned nothing, markets bought whatever burgs made, and states took half of all income. Much of the work below rebuilt that, so the KPIs could hold at all.
+
+Constraints: saved maps keep their own goods catalogue. Every change is measured on the same six default maps (seeds 431087220, 98765, 55555, 123456789, 4242, 31337), averaged, and compared with master (v1.156.0). How the day is computed is open: today it is one pass of turns, and a different scheme is welcome if it scores better.
 
 ## KPIs
 
-| KPI                   | Measure                                                           | Target      | At start | Now            |
-| --------------------- | ----------------------------------------------------------------- | ----------- | -------- | -------------- |
-| Every good made       | Made goods made on a map                                          | 32 of 32    | 17       | 31.2 ✗         |
-| Nothing underproduced | Consumer goods never made, or with half the buyers turned away    | ≤ 1         | 14 of 28 | 0.7 of 23 ✓    |
-| Nothing overproduced  | Made goods with half or more left unsold                          | ≤ 3         | 15 of 17 | 5.0 of 31 ✗    |
-| Little waste          | Made goods left unsold, by value                                  | ≤ 20%       | 87%      | 30% ✗          |
-| Needs covered         | Townspeople's needs met                                           | ≥ 97%       | 87–100%  | 98% ✓          |
-| No idle workers       | Workers with nothing to make, without a good reason               | ≤ 1%        | 0%       | 0% ✓           |
-| Reasonable taxes      | States' taxes, share of all income                                | 10–20%      | 55%      | 12% ✓          |
-| Burgs profitable      | Burgs ending the day with savings                                 | ≥ 80%       | 17%      | 87% ✓          |
-| Regions distinct      | Share of a market's production that differs from the world's mix  | ≥ 60%       | 43%      | 72% ✓          |
-| Rich and poor         | Income per person, richest ÷ poorest tenth: of burgs / of markets | ≥ 5× / ≥ 3× | 2.2×     | 10.5× / 3.6× ✓ |
-| Fast                  | Economy run per map                                               | ≤ 200 ms    | 113 ms   | 174 ms ✓       |
-| Controllable          | Each setting moves its own KPI predictably                        | –           | –        | ✓              |
+Terms, as the burg's Economy Overview shows them:
 
-"At start" is the game before this work, or its replay in the simulation where the game did not measure it.
+- **Product**: what a burg's trades add in a day: its sales, less their sales tax and the ingredients it bought.
+- **Wealth**: a burg's product per person. A state's wealth is its burgs' product per townsperson.
+- **Treasury**: the money a burg holds at the end of the day.
+- **The economy's product**: all burgs' product, plus market margins and rural people's earnings.
+
+From most to least important:
+
+| #   | KPI                      | What it means                                                                                                                                            | How it is measured                                                                                                            | Target    | Master | Now      |
+| --- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | --------- | ------ | -------- |
+| 1   | All goods produced       | Every good appears on a typical map. A single map may miss some: a map with no hot climate has no spices                                                 | Share of the catalogue, raw and made, produced on a map                                                                       | ≥ 95%     | 93.4%  | 94.6% ✗  |
+| 2   | Balanced volumes         | Made goods are made in proportion: the commonest are made about ten times as much as the rarest, not a hundred. A map does not make 300 ships and 5 arms | Daily units of the tenth of made goods made most ÷ those of the tenth made least, among made goods produced on the map        | 10–20×    | 26×    | 15× ✓    |
+| 3   | Burgs in profit          | Burgs earn more than they spend                                                                                                                          | Share of burgs ending the day with a positive treasury                                                                        | ≥ 90%     | 96.5%  | 96.5% ✓  |
+| 4   | Fast                     | Regenerating the economy feels instant                                                                                                                   | Economy run on a default map                                                                                                  | ≤ 200 ms  | 141 ms | 168 ms ✓ |
+| 5   | Rich and poor regions    | Some regions' towns are rich and some poor                                                                                                               | A market's wealth is the average wealth of the burgs in its area. The richest tenth of markets ÷ the poorest tenth            | ≥ 5×      | 2.9×   | 4.8× ✗   |
+| 6   | Output apart from people | A region's output is not just its headcount: a market with 10% of the people may hold 30% of the output, or 5%                                           | Share of markets whose share of the world's output is more than 50% above or below their share of its people                  | ≥ 50%     | 2%     | 16% ✗    |
+| 7   | Specialization           | Markets differ in what they offer: 0% would be every market making the world's average mix, 100% no two markets sharing a good                           | The share of a typical market's output, by value, that would have to change to match the world's mix                          | ≥ 60%     | 47%    | 72% ✓    |
+| 8   | States' cut              | Taxes take a moderate share of what the economy makes                                                                                                    | States' taxes ÷ the economy's product                                                                                         | 10–20%    | 64%    | 13% ✓    |
+| 9   | States benefit           | A state whose people are wealthier collects more per head: a developed economy pays its state                                                            | Rank correlation across states between wealth and taxes per person (1: the wealthiest states always collect most; 0: no link) | ≥ 0.5     | 0.19   | 0.01 ✗   |
+| 10  | Wealth spread            | Burgs differ in wealth, some far richer per person than others, without a few owning everything                                                          | Gini coefficient of burg wealth across burgs (0: all equal; 1: one burg has it all)                                           | 0.35–0.55 | 0.28   | 0.46 ✓   |
+| 11  | Treasury concentration   | Money is not hoarded by a handful of burgs                                                                                                               | Share of all burg treasuries held by the tenth of burgs with the largest ones                                                 | ≤ 50%     | 30%    | 74% ✗    |
+| 12  | Employment               | Workers find something worth making; they stay idle only when nothing pays                                                                               | Share of workers who found work                                                                                               | ≥ 90%     | 100%   | 100% ✓   |
+| 13  | Goods sold               | What is made finds a buyer the same day rather than piling up in a market                                                                                | Share of made goods, by value, bought the same day by burgs or rural people                                                   | ≥ 50%     | 29%    | 70% ✓    |
 
 ## Progress
 
-Ten of twelve KPIs are met. Regions are distinct, the circular flow works (sales are income, income is spent, rural people are paid), taxes are moderate, burgs save, and needs are covered.
+Eight of thirteen KPIs are met. Two misses are close: all goods produced (94.6% against 95%) and rich and poor regions (4.8× against 5×).
 
-Open: about 30% of made goods by value are left unsold, five goods are overproduced on a typical map, and a few goods are not made on every map. The surplus moves between goods with every price tweak but its total holds, because a market buys every unit offered at a price that only falls as it fills, whether anyone will buy it back or not.
+Against master: regions are far more distinct (72% vs 47%), 16% of markets produce far more or far less than their headcount instead of 2%, wealth is unequal enough to tell rich burgs from poor ones (Gini 0.46 vs 0.28), states take 13% of the economy's product instead of 64%, and 70% of made goods sell instead of 29%, at 27 ms more per run. Control: deposits are a set number per map, with a range per good, and the Goods editor places them to a typed daily output.
 
-| Milestone                          | Made at all | Overproduced | Unsold | Covered | Distinct | Burg / market gap | Run    |
-| ---------------------------------- | ----------- | ------------ | ------ | ------- | -------- | ----------------- | ------ |
-| Start                              | 17 of 32    | 15 of 17     | 87%    | 87%     | 43%      | 2.2× / –          | 113 ms |
-| Economy v2, wants capped           | 25          | 11 of 25     | 57%    | 97%     | 62%      | 5.1× / 4.7×       | 174 ms |
-| Variety buying, faster prices      | 30.0        | 8 of 30      | 43%    | 97%     | 69%      | 8.5× / 5.0×       | 204 ms |
-| Military coverage, sell per worker | 30.8        | 7 of 31      | 40%    | 97%     | 69%      | 13.3× / 3.7×      | 218 ms |
-| Made goods reviewed                | 31.2        | 3.7 of 31    | 33%    | 98%     | 64%      | 11.8× / 4.1×      | 215 ms |
-| Ingredient opening, carriage cache | 31.2        | 5.0 of 31    | 30%    | 98%     | 72%      | 10.5× / 3.6×      | 174 ms |
+Open:
 
-The last row was measured after ships were revalued from 172 to 122.
+- **Output still mostly follows people** (16% of markets apart, against 50%): production is still spread by population, with a regional bonus of at most ×2.
+- **Treasuries are too concentrated** (74% in the richest tenth, against 50%): the richest tenth of burgs house 31% of the townspeople. Nearly every market center and state capital is among them (96%), as they also earn the market margins and rural rent; they make up about half of that tenth. No burg ended the day in debt on the six maps.
+- **Regions differ in wealth, but not quite enough** (4.8×, from 3 to 6.6 per map): the richest markets' burgs are about five times as wealthy as the poorest markets'.
+- **States do not profit from a wealthier economy** (0.01): sales tax rates vary up to eightfold between states (¼× to 2× of the form's base), far more than their people's wealth does, and a third of state income is a flat poll tax.
+- **Volumes are balanced on average but not on every map** (7–28× per map). Leather, harnesses, coal, sails and books are made most; jewelry, ceramics and oil least.
+- **Some goods are missing on some maps**: grain, wine and honey on seed 431087220; tropical goods on seed 123456789, which has no hot climate.
 
 ## Ideas
 
@@ -99,6 +108,7 @@ Complexity: **L** low (constants or data), **M** medium (a rule in an existing m
 | Expected sales floor 0.1 unit instead of 1                                                            | L   | Discarded | Fewer unsold, but fewer goods made and distinctiveness 59%                                    |
 | Faster price response (e³)                                                                            | L   | Discarded | Fewer goods made, no gain in unsold                                                           |
 | Markets buy only what they expect to resell                                                           | M   | Pending   | Targets the remaining surplus                                                                 |
+| Several passes a day, so prices settle before burgs choose their trades                               | H   | Pending   | Would replace the one-pass turns if it scores better on the KPIs                              |
 
 ### Demand and money
 
@@ -115,6 +125,7 @@ Complexity: **L** low (constants or data), **M** medium (a rule in an existing m
 | Pure ingredients cover no need: cloth, ropes, tar, barrels, sails                                   | L   | Applied   | Overproduced 7.3 → 3.7 of 31, gunpowder 94% → 37% unsold                         |
 | Vinegar as an ingredient only                                                                       | L   | Discarded | Its unsold share rose to 76%                                                     |
 | Base taxes × 0.4                                                                                    | L   | Applied   | Taxes 55% → 12% of income                                                        |
+| Taxes follow wealth: narrower rate jitter, less or wealth-scaled poll tax                           | L   | Pending   | Targets KPI 9: states' taxes per head do not follow their people's wealth (0.01) |
 | State orders buying military goods                                                                  | M   | Pending   | Natural buyer for ships, arms and artillery                                      |
 | Wants favor quality goods as income rises                                                           | M   | Pending   | –                                                                                |
 
@@ -130,6 +141,10 @@ Complexity: **L** low (constants or data), **M** medium (a rule in an existing m
 
 ## Next
 
-1. **Markets buy only what they expect to resell**, so goods nobody will buy stop selling at all. This is the lever for the 30% unsold.
-2. **State orders for military goods**, their natural buyer.
-3. Pending regional ideas by measured effect: scale returns, merchants, development level.
+In KPI order:
+
+1. **Goods missing on some maps** (KPI 1): grain, wine and honey on seed 431087220.
+2. **Rich and poor regions, output apart from people** (KPIs 5 and 6): scale returns, development level, merchants.
+3. **Taxes that follow wealth** (KPI 9): narrower rate jitter, less or wealth-scaled poll tax.
+4. **Treasury concentration** (KPI 11): the hubs' margins and the capitals' rent pile up in few treasuries.
+5. **Balanced volumes on every map** (KPI 2): ceramics and jewelry are rare everywhere; leather and harnesses common.
