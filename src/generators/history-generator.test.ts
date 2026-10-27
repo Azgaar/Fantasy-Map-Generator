@@ -3,7 +3,126 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { HistRefKind } from "@/types/history";
 import { emptyHistory } from "@/types/history";
 import "./pack-generator"; // Markers.place resolves cells through the global Pack
+import type { EpochArtifact } from "./epochs-generator";
 import { Chronicle } from "./history-generator";
+
+// The epoch engine is mocked: the engine's own behavior is epochs-generator.test.ts's business,
+// and these tests want a cast whose ids and years never move. The mock counts its calls so the
+// archaeologist tests can assert the engine is never consulted.
+const engine = vi.hoisted((): { calls: number; artifact: EpochArtifact } => ({
+  calls: 0,
+  artifact: {
+    epochs: [
+      {
+        i: 0,
+        from: 0,
+        to: 500,
+        era: "The Age of Broken Crowns",
+        polities: [
+          {
+            id: 1,
+            name: "Old Empire",
+            form: "Empire",
+            capital: 1,
+            cells: 30,
+            color: "#123456",
+            founded: 0,
+            fallen: 500
+          },
+          { id: 3, name: "High March", form: "Duchy", capital: 3, cells: 20, color: "#3366aa", founded: 0 }
+        ],
+        snapshot: 0
+      },
+      {
+        i: 1,
+        from: 500,
+        to: 1000,
+        era: "Era",
+        polities: [
+          {
+            id: 2,
+            name: "Heir Realm",
+            form: "Kingdom",
+            capital: 2,
+            cells: 40,
+            color: "#654321",
+            founded: 500,
+            successorOf: 1
+          },
+          { id: 3, name: "High March", form: "Duchy", capital: 3, cells: 25, color: "#3366aa", founded: 0 },
+          { id: 4, name: "Wardens", form: "Duchy", capital: 4, cells: 8, color: "#778899", founded: 500 }
+        ],
+        snapshot: 1
+      }
+    ],
+    polities: [
+      { id: 1, name: "Old Empire", form: "Empire", capital: 1, cells: 30, color: "#123456", founded: 12, fallen: 500 },
+      {
+        id: 2,
+        name: "Heir Realm",
+        form: "Kingdom",
+        capital: 2,
+        cells: 40,
+        color: "#654321",
+        founded: 500,
+        successorOf: 1
+      },
+      { id: 3, name: "High March", form: "Duchy", capital: 3, cells: 25, color: "#3366aa", founded: 0 },
+      { id: 4, name: "Wardens", form: "Duchy", capital: 4, cells: 8, color: "#778899", founded: 500 }
+    ],
+    events: [
+      { i: 0, year: 12, type: "founding", actors: [{ kind: "polity", id: 1 }], text: "The Old Empire was proclaimed" },
+      {
+        i: 0,
+        year: 500,
+        type: "battle",
+        actors: [{ kind: "polity", id: 1 }],
+        loc: 7,
+        text: "The Old Empire fell in battle"
+      },
+      {
+        i: 0,
+        year: 500,
+        type: "collapse",
+        actors: [
+          { kind: "polity", id: 1 },
+          { kind: "polity", id: 2 }
+        ],
+        text: "In 500 the Old Empire collapsed; Heir Realm rose from its remains"
+      },
+      {
+        i: 0,
+        year: 501,
+        type: "independence",
+        actors: [
+          { kind: "polity", id: 2 },
+          { kind: "polity", id: 1 }
+        ],
+        text: "Heir Realm rose from the ruins of the Old Empire"
+      },
+      {
+        i: 0,
+        year: 600,
+        type: "war",
+        actors: [
+          { kind: "polity", id: 2 },
+          { kind: "polity", id: 3 }
+        ],
+        text: "The Heir Realm warred on the High March"
+      }
+    ],
+    snapshots: [Uint16Array.of(0, 1, 0, 1), Uint16Array.of(0, 2, 2, 1)]
+  }
+}));
+
+vi.mock("./epochs-generator", () => ({
+  Epochs: {
+    generate: () => {
+      engine.calls++;
+      return engine.artifact;
+    }
+  }
+}));
 
 beforeEach(() => {
   // 0.5 keeps every random draw on its middle branch, so assertions hold without knowing the tables
@@ -67,6 +186,13 @@ beforeEach(() => {
       { i: 1, name: "Yalaism", type: "Folk", origins: [0] },
       { i: 2, name: "Church of Dawn", type: "Organized", origins: [1] },
       { i: 3, name: "Ashen Way", type: "Heresy", origins: [2] }
+    ],
+    burgs: [
+      0,
+      { i: 1, cell: 10, culture: 1 },
+      { i: 2, cell: 11, culture: 2 },
+      { i: 3, cell: 12, culture: 3 },
+      { i: 4, cell: 13, culture: 1 }
     ]
   } as unknown as typeof pack;
 });
@@ -157,7 +283,8 @@ describe("Chronicle.generate", () => {
       religion: pack.religions,
       realm: [],
       burg: [],
-      figure: pack.history.figures ?? []
+      figure: pack.history.figures ?? [],
+      polity: []
     };
     for (const event of pack.history.events) {
       expect(event.actors.length).toBeGreaterThan(0);
@@ -490,5 +617,157 @@ describe("Chronicle.generate fallen realms", () => {
     Chronicle.generate();
     expect(pack.markers).toHaveLength(0);
     expect(pack.states[1].note).toBeUndefined();
+  });
+});
+
+describe("Chronicle.generate in the epochs mode", () => {
+  beforeEach(() => {
+    options.map.lore.history.mode = "epochs";
+    engine.calls = 0;
+  });
+
+  it("installs the engine's cast and retires the invented realms", () => {
+    Chronicle.generate();
+    expect(engine.calls).toBe(1);
+    expect(pack.history.realms).toEqual([]);
+    expect(pack.history.snapshots).toEqual([Uint16Array.of(0, 1, 0, 1), Uint16Array.of(0, 2, 2, 1)]);
+    expect(pack.history.polities?.map(polity => polity.name)).toEqual([
+      "Old Empire",
+      "Heir Realm",
+      "High March",
+      "Wardens"
+    ]);
+    expect(pack.history.epochs).toEqual(engine.artifact.epochs);
+  });
+
+  it("derives the eras from the epochs: contiguous, ending at the present", () => {
+    Chronicle.generate();
+    const eras = pack.history.eras;
+    expect(eras[1]).toEqual({ name: "Era", from: 500, to: 1000 }); // the configured present age
+    for (let i = 1; i < eras.length; i++) expect(eras[i].from).toBe(eras[i - 1].to);
+  });
+
+  it("merges the deep-time events with the engine's and renumbers the log", () => {
+    Chronicle.generate();
+    const types = pack.history.events.map(event => event.type);
+    expect(types).toContain("schism"); // the faiths are deep time, dated backwards as always
+    expect(types).toContain("migration");
+    expect(types).toContain("collapse"); // what the engine really did
+    expect(types).toContain("independence");
+
+    const events = pack.history.events;
+    expect(events.map(event => event.i)).toEqual(events.map((_, i) => i));
+    for (let i = 1; i < events.length; i++) expect(events[i].year).toBeGreaterThanOrEqual(events[i - 1].year);
+  });
+
+  it("writes no invented political events of its own: the polities own that story", () => {
+    Chronicle.generate();
+    for (const event of pack.history.events) {
+      for (const actor of event.actors) expect(actor.kind).not.toBe("realm");
+      if (event.type === "founding") {
+        expect(event.actors.some(actor => actor.kind === "state")).toBe(false);
+        expect(event.actors.some(actor => actor.kind === "polity")).toBe(true);
+      }
+    }
+  });
+
+  const reigns = (polityId: number) =>
+    (pack.history.figures ?? [])
+      .map(figure => ({ figure, role: figure.roles[0]! }))
+      .filter(
+        entry => entry.role.type === "ruler" && entry.role.target.kind === "polity" && entry.role.target.id === polityId
+      );
+
+  it("remembers only the lineages that rivaled the greatest epoch power", () => {
+    Chronicle.generate();
+    const targeted = new Set<number>();
+    for (const figure of pack.history.figures ?? []) {
+      for (const role of figure.roles) targeted.add(role.target.id);
+    }
+    expect(targeted.has(1)).toBe(true);
+    expect(targeted.has(4)).toBe(false); // 8 cells against a peak of 40: history forgets the Wardens
+  });
+
+  it("confines every reign to a single epoch of its lineage's presence", () => {
+    Chronicle.generate();
+    const epochs = pack.history.epochs!;
+    for (const figure of pack.history.figures ?? []) {
+      const role = figure.roles[0]!;
+      if (role.type !== "ruler") continue;
+      const contained = epochs.some(
+        epoch => epoch.from <= role.from && (role.to === undefined ? epoch.to === 1000 : role.to <= epoch.to)
+      );
+      expect(contained).toBe(true); // no reign outlives the epoch it belongs to
+    }
+  });
+
+  it("ends a fallen lineage's last reign exactly at its collapse", () => {
+    Chronicle.generate();
+    const empire = reigns(1);
+    expect(empire).toHaveLength(2);
+    expect(empire.at(-1)!.role.to).toBe(500); // the collapse, at the epoch's end
+    expect(empire.at(-1)!.figure.death).toBe(500);
+  });
+
+  it("leaves a surviving lineage's last reign open", () => {
+    Chronicle.generate();
+    for (const polityId of [2, 3]) {
+      const last = reigns(polityId).at(-1)!;
+      expect(last.role.to).toBeUndefined();
+      expect(last.figure.death).toBeUndefined();
+    }
+  });
+
+  it("chains succession across the epoch boundaries", () => {
+    // the High March is present in both epochs: its crown passes at 500 within one dynasty
+    Chronicle.generate();
+    const handover = pack.history.events.find(
+      event =>
+        event.type === "succession" &&
+        event.year === 500 &&
+        event.actors.some(ref => ref.kind === "polity" && ref.id === 3)
+    );
+    expect(handover).toBeDefined();
+    const figures = pack.history.figures ?? [];
+    const outgoing = figures[handover!.actors[1]!.id]!;
+    const heir = figures[handover!.actors[0]!.id]!;
+    expect(outgoing.roles[0]!.to).toBe(500); // the old ruler closed the epoch as one of its reigns
+    expect(heir.roles[0]!.from).toBe(500);
+  });
+
+  it("sends a general with every epoch war", () => {
+    Chronicle.generate();
+    const war = pack.history.events.find(event => event.type === "war" && event.year === 600)!;
+    const general = (pack.history.figures ?? []).find(figure => figure.roles.some(role => role.type === "general"))!;
+    expect(general).toBeDefined();
+    expect(war.actors).toContainEqual({ kind: "figure", id: general.i });
+    const role = general.roles[0]!;
+    expect(role.target).toEqual({ kind: "polity", id: 2 }); // the war's leading power
+    expect(role.from).toBe(600);
+    expect(general.culture).toBe(2); // the capital burg's people
+  });
+
+  it("leaves the archaeologist path untouched in the default mode", () => {
+    delete (options.map.lore.history as { mode?: string }).mode; // an old file without the field loads as it always did
+    options.map.lore.history.echoes = false; // this bare world has no terrain to seed markers from
+    for (const state of pack.states) state.neighbors = [1, 2, 3].filter(id => id !== state.i); // an empire needs successors
+    globalThis.pack.cells = {
+      i: [],
+      culture: [],
+      state: new Uint16Array(0),
+      c: [],
+      p: []
+    } as unknown as typeof pack.cells;
+    globalThis.pack.burgs = [];
+
+    Chronicle.generate();
+    expect(engine.calls).toBe(0);
+    expect(pack.history.epochs).toBeUndefined();
+    expect(pack.history.polities).toBeUndefined();
+    expect(pack.history.snapshots).toBeUndefined();
+    expect(pack.history.realms.length).toBeGreaterThan(0); // the ghost realms return
+    expect(
+      pack.history.events.some(event => event.type === "founding" && event.actors.some(actor => actor.kind === "state"))
+    ).toBe(true); // and the states' own foundings are dated again
   });
 });

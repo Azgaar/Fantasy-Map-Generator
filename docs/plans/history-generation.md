@@ -1,9 +1,9 @@
 # Plan — History Generation (the Archaeologist)
 
-Updated: 2026-10-22. Decisions taken in brainstorming: **Archaeologist** approach (retroactive
-event log + ghost fallen realms), figures deferred to a later phase, primary consumption is an
-**in-app Legends browser**. This document is the implementation contract; slices in
-[Build Order](#build-order) are each shippable on their own.
+Updated: 2026-10-26. Decisions taken in brainstorming: **Archaeologist** approach (retroactive
+event log + ghost fallen realms), with figures shipped as slice 5 and primary consumption in the
+**in-app Legends browser**. All five slices below are shipped. This document is the implementation
+contract; slices in [Build Order](#build-order) were each shippable on their own.
 
 ## Problem Statement
 
@@ -76,7 +76,7 @@ additive — **no existing interface changes**.
 
 ```ts
 interface HistRef {
-  kind: "state" | "realm" | "burg" | "culture" | "religion";
+  kind: "state" | "realm" | "burg" | "culture" | "religion" | "figure";
   id: number;
 }
 
@@ -84,7 +84,7 @@ interface HistoryEvent {
   i: number;
   year: number;
   type: "founding" | "war" | "battle" | "collapse" | "schism" | "migration"
-      | "independence" | "goldenAge" | "sack" | "plague";
+      | "independence" | "goldenAge" | "sack" | "plague" | "coronation" | "succession";
   actors: HistRef[];
   loc?: number;   // cell id; the Legends browser zooms to it
   text: string;
@@ -114,7 +114,7 @@ interface History {
   events: HistoryEvent[];
   realms: Realm[];
   eras: Era[];
-  figures?: HistoricalFigure[]; // phase 5, see Future Phases
+  figures?: HistoricalFigure[];
 }
 ```
 
@@ -212,6 +212,7 @@ the Controllers registry, opened from the Tools tab.
   actor chips. Clicking a row with a `loc` zooms to it (existing `zoomTo` pattern).
 - **Realms tab**: fallen realms with COA, span, cause, successor links; current states with
   their joined events.
+- **Figures tab**: rulers and generals grouped by whom they served (shipped in slice 5).
 - **Filters**: actor kind, event type, free-text search.
 - **Entity links**: actor chips open the corresponding editor/overview or filter the browser to
   that entity. Later: a "History" link inside the state and burg editors opens the browser

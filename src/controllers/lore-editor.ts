@@ -5,6 +5,7 @@ import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers"
 import { Pins } from "@/components/pins";
 import { Lore } from "@/generators/lore";
 import { Names } from "@/generators/names-generator";
+import type { HistoryMode } from "@/types/history";
 import { ensureEl } from "../utils";
 
 const DIALOG_ID = "loreEditor";
@@ -60,6 +61,18 @@ const TEMPLATE = /* html */ `
       data-tip="Your own description of this world. Free text, carried in the map file"
       placeholder="Describe the map, its age, its peoples – whatever the map should carry with it."
     ></textarea>
+    <span></span>
+
+    <span></span>
+    <label for="loreHistoryMode">History mode:</label>
+    <span
+      data-tip="How the political past is made. The archaeologist infers it backwards from the present borders; epochs generate it for real, one political layer per age — the eras, events and fallen empires come from what actually happened. Regenerate history to apply"
+    >
+      <select id="loreHistoryMode">
+        <option value="archaeologist">Archaeologist</option>
+        <option value="epochs">Epochs</option>
+      </select>
+    </span>
     <span></span>
 
     <span></span>
@@ -156,12 +169,20 @@ function fillInputs(): void {
   ensureEl<HTMLInputElement>("loreEra").value = calendar.era;
   ensureEl<HTMLInputElement>("loreEraShort").value = calendar.eraShort;
   ensureEl<HTMLTextAreaElement>("loreDescription").value = description;
+  ensureEl<HTMLSelectElement>("loreHistoryMode").value = history.mode;
   ensureEl<HTMLInputElement>("loreHistorySpan").value = String(history.span);
   ensureEl<HTMLInputElement>("loreHistoryRealms").value = String(history.realms);
   ensureEl<HTMLInputElement>("loreHistoryDensity").value = String(history.density);
   ensureEl<HTMLInputElement>("loreHistoryEchoes").checked = history.echoes;
   ensureEl<HTMLInputElement>("loreHistoryRenames").checked = history.renames;
+
+  // the fallen realms and their echoes are the archaeologist's inventions; in the epochs mode they are inert
+  const epochs = history.mode === "epochs";
+  for (const id of REALM_CONTROLS) ensureEl<HTMLInputElement>(id).disabled = epochs;
 }
+
+/** the controls that only shape the invented-realm past */
+const REALM_CONTROLS = ["loreHistoryRealms", "loreHistoryEchoes", "loreHistoryRenames"];
 
 function addListeners(): void {
   ensureEl(DIALOG_ID).addEventListener("change", onLoreChange);
@@ -206,6 +227,11 @@ function onLoreChange(event: Event): void {
     // the description is the one lore value with no pin: nothing ever re-rolls an author's note
     case "loreDescription":
       Lore.setDescription(value);
+      break;
+
+    case "loreHistoryMode":
+      Lore.setHistory({ mode: value as HistoryMode });
+      fillInputs();
       break;
 
     case "loreHistorySpan":

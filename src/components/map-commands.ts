@@ -274,6 +274,12 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => Controllers.AstralNames.apply()
   },
   {
+    id: "convertAstralAnomalies",
+    name: "Convert Astral Anomalies",
+    aliases: "astral markers anomalies legends icons sci-fi",
+    run: () => Controllers.AstralMarkers.apply()
+  },
+  {
     id: "openStarSystems",
     name: "Open Star Systems Overview",
     aliases: "astral systems stars classes populations sci-fi",

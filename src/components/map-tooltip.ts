@@ -1,12 +1,14 @@
 import { select } from "d3";
 import { Layers } from "@/components/layers";
-import { MapEntities } from "@/components/map-entities";
+import { type EntityRef, MapEntities } from "@/components/map-entities";
 import { isAstralView } from "@/components/options/view-mode";
+import { ANOMALY_DIVIDER, astralLegend, readingOf } from "@/data/astral-markers";
 import { systemTip, toSystem } from "@/generators/astral-naming";
 import { Notes } from "@/generators/notes";
 import { highlightEmblemElement } from "@/renderers/overlays/highlight";
 import type { Point } from "@/types/global";
 import {
+  capitalize,
   convertTemperature,
   findEl,
   getCellPopulation,
@@ -35,13 +37,24 @@ export function handleMouseMove(event: MouseEvent | TouchEvent): void {
 
 let currentNoteId: string | null = null; // currently displayed note, to not rerender too often
 
+/** In Astral a marker's note box reads as its anomaly: the converted legend, or the reading before conversion */
+function displayedNote(ref: EntityRef): string | undefined {
+  const note = Notes.get(ref);
+  if (!isAstralView() || ref.type !== "marker") return note;
+
+  const marker = pack.markers.find(item => item.i === ref.id);
+  if (!marker) return note;
+  if (note?.includes(ANOMALY_DIVIDER)) return note.split(ANOMALY_DIVIDER)[0] || note;
+  return astralLegend(marker.type, `${marker.i}|${marker.name ?? ""}`) ?? note;
+}
+
 /** Show the note box for the hovered element, if it has a note */
 export function showNotes(event: Event): void {
   if (findEl("notesEditor")) return;
 
   const ref = MapEntities.resolveTarget(event.target instanceof Element ? event.target : null);
-  const id = ref && MapEntities.key(ref);
-  const note = ref && Notes.get(ref);
+  const id = ref && `${MapEntities.key(ref)}|${isAstralView()}`;
+  const note = ref && displayedNote(ref);
 
   if (ref && note) {
     if (currentNoteId === id) return;
@@ -145,7 +158,16 @@ function getElementTip({ group, target, event, path, cellId }: TipContext): stri
 
   if (group === "terrain") return "Click to edit the Relief Icon";
 
-  if (group === "markers") return "Click to edit the Marker. Hold Shift to not close the assosiated note";
+  if (group === "markers") {
+    const shiftHint = "Click to edit the Marker. Hold Shift to not close the associated note";
+    if (!isAstralView()) return shiftHint;
+    const ref = MapEntities.resolveTarget(target);
+    const marker = ref?.type === "marker" ? pack.markers.find(item => item.i === ref.id) : undefined;
+    const reading = readingOf(marker?.type);
+    const name = marker?.name ? `${marker.name}. ` : "";
+    const anomaly = reading ? `${capitalize(reading.reading)}. ` : "";
+    return `${name}${anomaly}${shiftHint}`;
+  }
 
   if (group === "ruler")
     return findEl("measurersEditor") ? "Drag the measurer or its points to edit" : "Click to open the Measurers Editor";

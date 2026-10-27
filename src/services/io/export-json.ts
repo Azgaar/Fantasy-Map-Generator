@@ -3,6 +3,7 @@ import { tip } from "@/components/tooltips";
 import { savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
 import { getFileName } from "@/utils";
+import { historyForJson } from "./epochs-format";
 
 type ExportJsonType = "Full" | "Minimal" | "PackCells" | "GridCells";
 
@@ -69,7 +70,7 @@ function getMinimalDataJson(): string {
     zones: pack.zones,
     measurers: pack.measurers,
     journeys: pack.journeys,
-    history: pack.history
+    history: historyForJson(pack.history)
   };
   return JSON.stringify({
     info,
@@ -196,7 +197,7 @@ function getPackCellsData() {
     zones: pack.zones,
     measurers: pack.measurers,
     journeys: pack.journeys,
-    history: pack.history
+    history: historyForJson(pack.history)
   };
 }
 

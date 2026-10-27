@@ -42,7 +42,7 @@ export type MilitaryCategory = "melee" | "ranged" | "cavalry" | "artillery" | "m
 
 export function getCategoryForUnit(unitId: string, unitTypes?: Record<string, UnitType>): MilitaryCategory {
   if (unitId === "fleet" || unitId === "naval") return "naval";
-  if (unitTypes && unitTypes[unitId]) {
+  if (unitTypes?.[unitId]) {
     const cat = unitTypes[unitId].category;
     if (cat === "cavalry") return "cavalry";
     if (cat === "artillery") return "artillery";

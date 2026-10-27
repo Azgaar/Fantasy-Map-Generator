@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, expect, test, vi } from "vitest";
+import { Icons } from "@/components/icons";
+import { setAstralView } from "@/components/options/view-mode";
 import { setViewportSize, setViewportTransform } from "@/components/viewport";
 import type { Marker } from "@/generators/markers-generator";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
@@ -11,6 +13,7 @@ import "@/generators/styles";
 import "@/generators/relief-generator"; // the models own the icon sets references resolve against
 import "@/generators/burgs-generator";
 import "@/generators/goods-generator";
+import "@/generators/markers-generator";
 import { drawMarkers, setEditedMarker, setMarkersFilter } from "./draw-markers";
 
 function marker(i: number, x = 50, y = 50): Marker {
@@ -19,6 +22,7 @@ function marker(i: number, x = 50, y = 50): Marker {
 
 beforeEach(() => {
   mocks.layerOn = true;
+  setAstralView(false);
   document.body.innerHTML = '<svg id="map"><g id="markers"></g></svg>';
   globalThis.pack = { markers: [marker(1), marker(2, 500)] } as never;
   setViewportSize(100, 100);
@@ -142,4 +146,24 @@ test("viewport rendering does not repopulate a disabled layer", () => {
   mocks.layerOn = true;
   drawMarkers();
   expect(document.getElementById("marker1")).not.toBeNull();
+});
+
+test("astral reads a default marker icon as its anomaly; a custom icon wins in both views", () => {
+  pack.markers = [
+    { ...marker(1), type: "volcanoes" }, // the default 🌋 icon is re-read as the anomaly icon
+    { ...marker(2, 95), type: "volcanoes", icon: "glyph-1f3f0" } // a user-picked icon stays in both views
+  ];
+  drawMarkers();
+  const fantasyIcon = document.querySelector("#marker1 use")?.getAttribute("href");
+
+  setAstralView(true);
+  drawMarkers();
+  const astralIcon = document.querySelector("#marker1 use")?.getAttribute("href");
+  expect(astralIcon).not.toBe(fantasyIcon);
+  expect(astralIcon).toBe(`#${Icons.reference("💥")}`);
+  expect(document.querySelector("#marker2 use")?.getAttribute("href")).toBe("#glyph-1f3f0");
+
+  setAstralView(false);
+  drawMarkers();
+  expect(document.querySelector("#marker1 use")?.getAttribute("href")).toBe(fantasyIcon);
 });

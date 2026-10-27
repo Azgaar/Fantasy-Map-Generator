@@ -3,7 +3,7 @@
 // mapping is meant to grow into a visual reskin. See docs/astral/README.md
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { dialogState } from "@/components/dialog/state";
-import { type StarSystem, starClass, systemsOf } from "@/generators/astral-naming";
+import { type StarSystem, systemsOf } from "@/generators/astral-naming";
 import { getCellPoint } from "@/generators/journeys/journey-places";
 import { ensureEl, escapeHtml } from "@/utils";
 
@@ -81,10 +81,9 @@ function renderBody(): void {
 
   let lines = "";
   for (const system of systems) {
-    const { class: letter, name: className } = starClass(system.population);
     lines += /* html */ `<div class="astralSystem" data-cell="${system.id}">
       <span class="astralName">${escapeHtml(system.name)}</span>
-      <span class="astralClass">${letter}-class ${escapeHtml(className)}</span>
+      <span class="astralClass">${system.class}-class ${escapeHtml(system.className)}</span>
       <span class="astralPop">${system.population.toLocaleString("en-US")}</span>
       <span class="astralTraits">${escapeHtml(system.traits.join(", "))}</span>
     </div>`;

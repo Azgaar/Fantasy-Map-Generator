@@ -7,7 +7,7 @@ import {
   pickFor,
   polityWordFor,
   sectorWordFor,
-  starClass,
+  starClassFor,
   systemTip,
   systemTraits,
   toSystem
@@ -23,6 +23,7 @@ beforeEach(() => {
   savedBases = Names.nameBases;
   globalThis.options = {
     map: {
+      seed: "test-seed",
       cultures: { set: "astralTrek" },
       units: { population: { scale: 1000, urbanization: { rate: 0.1 } } }
     }
@@ -108,28 +109,55 @@ describe("the Astral mapping", () => {
 });
 
 describe("the star classes", () => {
-  it("puts the biggest worlds on the most habitable stars", () => {
-    // a world of a million sits on a Sun-like yellow dwarf
-    expect(starClass(2_000_000).class).toBe("G");
-    expect(starClass(2_000_000).name).toBe("yellow dwarf");
-    expect(starClass(300_000).class).toBe("F");
+  const fringe = (i: number) => starClassFor({ i, population: 5 }); // 500 people
+  const core = (i: number) => starClassFor({ i, population: 100 }); // 10 000 people
+
+  it("rolls a stable star for each burg", () => {
+    expect(fringe(1)).toEqual(fringe(1));
+    expect(core(1)).toEqual(core(1));
+    // a population edit within a band does not reroll
+    expect(starClassFor({ i: 1, population: 5 })).toEqual(starClassFor({ i: 1, population: 50 }));
   });
 
-  it("puts the small worlds on the exotic, harsh ones", () => {
-    expect(starClass(30_000).class).toBe("A"); // a hot white star
-    expect(starClass(5_000).class).toBe("B"); // a blue giant
-    expect(starClass(500).class).toBe("M"); // a red dwarf: nobody's idea of a home
-    expect(starClass(500).name).toBe("red dwarf");
+  it("keeps the big worlds in the habitable band", () => {
+    for (let i = 0; i < 500; i += 1) expect(["F", "G", "K"]).toContain(core(i).class);
   });
 
-  it("walks down the ladder as the population falls", () => {
-    const ladder = [2_000_000, 300_000, 60_000, 30_000, 5_000, 500].map(population => starClass(population).class);
-    expect(ladder).toEqual(["G", "F", "K", "A", "B", "M"]);
+  it("rolls the standard distribution on the fringe", () => {
+    const SUPPORTED = ["M", "K", "G", "F", "A", "B"];
+    const rolled = new Set<string>();
+    let redDwarfs = 0;
+
+    for (let i = 0; i < 8000; i += 1) {
+      const { class: cls } = fringe(i);
+      expect(SUPPORTED).toContain(cls);
+      rolled.add(cls);
+      if (cls === "M") redDwarfs += 1;
+    }
+
+    expect(rolled.size).toBe(6); // every supported class is reachable, however rare
+    expect(redDwarfs / 8000).toBeGreaterThan(0.7); // the fringe is a red-dwarf galaxy
   });
 
-  it("gives the middle worlds the hardy stars", () => {
-    expect(starClass(60_000).class).toBe("K");
-    expect(starClass(60_000).name).toBe("orange dwarf");
+  it("names the classes in their own words", () => {
+    const names = new Map<string, string>();
+    for (let i = 0; i < 8000; i += 1) {
+      const { class: cls, name } = fringe(i);
+      names.set(cls, name);
+    }
+
+    expect(names.get("M")).toBe("red dwarf");
+    expect(names.get("K")).toBe("orange dwarf");
+    expect(names.get("G")).toBe("yellow dwarf");
+    expect(names.get("F")).toBe("white-yellow star");
+    expect(names.get("A")).toBe("white star");
+    expect(names.get("B")).toBe("blue giant");
+  });
+
+  it("rerolls when the population crosses the core threshold", () => {
+    // the bands seed independently: a fringe red dwarf can never keep its star up top
+    const crossed = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].some(i => fringe(i).class !== core(i).class);
+    expect(crossed).toBe(true);
   });
 
   it("names the installations in their own words", () => {
@@ -155,7 +183,7 @@ describe("the star systems", () => {
 
   it("writes the tooltip line from the class and the traits", () => {
     const system = toSystem(pack.burgs[1]);
-    expect(system.class).toBe("M"); // 500 people is a red dwarf
+    expect(system.class).toBe(starClassFor(pack.burgs[1]).class); // the system reads the burg's roll
     const homeworld = { ...system, class: "G", className: "yellow dwarf", traits: ["shipyard", "bastion"] };
     expect(systemTip(homeworld)).toBe("G-class yellow dwarf. Shipyard, bastion. Click to edit");
     expect(systemTip({ ...homeworld, traits: [] })).toBe("G-class yellow dwarf. Click to edit");

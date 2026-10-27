@@ -8,8 +8,10 @@ import {
 } from "@/components/dialog/dialog-helpers";
 import { Icons } from "@/components/icons";
 import { stopMapPlacement } from "@/components/map-placement";
+import { isAstralView } from "@/components/options/view-mode";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { Controllers } from "@/controllers";
+import { readingOf } from "@/data/astral-markers";
 import type { Marker, MarkerAppearance } from "@/generators/markers-generator";
 import { drawMarkers, setEditedMarker } from "@/renderers/draw-markers";
 import { ensureEl, findEl, minmax, rn } from "../utils";
@@ -49,13 +51,18 @@ function open(markerI?: number, target?: Element): void {
 function renderDialog(): void {
   destroyDialog("markerEditor");
 
+  const reading = readingOf(selectedMarker.type);
+  const typeTip = `Marker type. Style changes will apply to all markers of the same type. Leave blank if the marker is unique${
+    isAstralView() && reading ? `. On this chart: ${reading.reading}` : ""
+  }`;
+
   const html = /* html */ `<div id="markerEditor" class="dialog">
     <div id="markerBody" style="padding-bottom: 0.3em">
       <div data-tip="Marker name, shown in the notes editor and overviews">
         <div class="label">Name:</div>
         <input id="markerName" style="width: 10.3em" />
       </div>
-      <div data-tip="Marker type. Style changes will apply to all markers of the same type. Leave blank if the marker is unique">
+      <div data-tip="${typeTip}">
         <div class="label">Type:</div>
         <input id="markerType" style="width: 10.3em" />
       </div>

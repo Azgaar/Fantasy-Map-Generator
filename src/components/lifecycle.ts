@@ -14,6 +14,7 @@ import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { setViewportSize } from "@/components/viewport";
 import { invokeActiveZooming, resetZoom } from "@/components/zoom";
 import { Controllers } from "@/controllers";
+import { goToPresent, isInPast } from "@/controllers/historical-view";
 import { getPointsNumber } from "@/data/graph-density";
 import { GenerationPipeline } from "@/generators/generation-pipeline";
 import { adoptLegacyIconSlots } from "@/generators/styles-legacy";
@@ -124,6 +125,12 @@ export const regenerateMap = debounce(async (config?: GenerationConfig | string)
 
 /** Ask before throwing away a map the user has been working on for a while */
 export function regeneratePrompt(config?: GenerationConfig): void {
+  if (isInPast()) {
+    goToPresent(); // a past cannot be regenerated: leave the view and the prompt works as usual
+    regenerateMap(config);
+    return;
+  }
+
   if (customization) {
     tip("New map cannot be generated when edit mode is active, please exit the mode and retry", false, "error");
     return;

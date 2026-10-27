@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import type { HistoryMode } from "@/types/history";
 import { Emblems } from "./emblems-generator";
 import { Lore } from "./lore";
 
@@ -775,7 +776,7 @@ describe("Lore", () => {
       name: "",
       description: "",
       calendar: { year: 1000, era: "Era", eraShort: "E" },
-      history: { span: 1000, realms: 2, density: 1, echoes: true, renames: false }
+      history: { mode: "archaeologist" as HistoryMode, span: 1000, realms: 2, density: 1, echoes: true, renames: false }
     };
     vi.stubGlobal("options", { map: { lore } });
     Lore.setHistory({ span: 1500.7, realms: 3 });
@@ -784,6 +785,9 @@ describe("Lore", () => {
     Lore.setHistory({ echoes: false, renames: true });
     expect(lore.history.echoes).toBe(false);
     expect(lore.history.renames).toBe(true);
+    Lore.setHistory({ mode: "epochs" });
+    expect(lore.history.mode).toBe("epochs");
+    expect(() => Lore.setHistory({ mode: "timeless" as HistoryMode })).toThrow("archaeologist");
     expect(() => Lore.setHistory({ span: 50 })).toThrow("at least 100 years");
     expect(() => Lore.setHistory({ realms: 11 })).toThrow("from 0 to 10");
     expect(() => Lore.setHistory({ realms: -1 })).toThrow("from 0 to 10");
