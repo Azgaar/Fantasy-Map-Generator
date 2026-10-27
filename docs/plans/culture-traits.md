@@ -5,7 +5,8 @@ Citizens* (`VerseEras/.rules/FotF2e - 02 Settlements & Citizens.md`; alignment t
 290–306, cultural values ~308–327, virtue/vice table ~2167–2196). This document is the
 implementation contract; each slice in [Build Order](#build-order) is shippable on its own.
 Slice 1 shipped 2026-10-27: `src/data/culture-traits.ts`, the `Culture` fields, the generator
-wiring and the `generation.cultures.traits` switch. The three open questions were answered on
+wiring and the `generation.cultures.traits` switch. Slice 2 shipped the same day: figure traits
+in the two figure constructors and the Legends rows. The three open questions were answered on
 2026-10-27 (see [Decisions](#decisions)), and every codebase claim below was re-checked against
 the tree in the same pass — the corrections are folded in, not appended.
 
@@ -78,6 +79,9 @@ Additive, optional fields only — no existing interface changes, no new pack ke
 // src/data/culture-traits.ts
 export const ALIGNMENTS = ["good", "lawful", "neutral", "chaotic", "evil"] as const;
 export type Alignment = (typeof ALIGNMENTS)[number];
+
+/** the badge color per alignment, shared by the Legends rows and the editor column */
+export const ALIGNMENT_COLORS: Record<Alignment, string>;
 
 /** roll 1d12, index = result - 1; column = parent's alignment; NEUTRAL column = from scratch */
 export const PREVAILING_ALIGNMENT: Record<Alignment, Alignment[]>;
@@ -233,20 +237,20 @@ Figures are built in exactly two places — `ruleSegments` (rulers, shared by `e
 culture at construction time:
 
 ```ts
-const rng = traitsRng(options.map.seed, "figure", figures.length);
-const patronAlignment = pack.cultures[subject.culture]?.alignment ?? rollAlignment(rng); // state = authority
-figure.alignment = rollAlignment(rng, patronAlignment);   // individuals re-roll, skewed
-const { virtues, vices } = rollFigureTraits(rng, figure.alignment);
+// module-level `figureTraits(index, cultureId)`, spread into both figure literals
+const rng = traitsRng(options.map.seed, "figure", index);
+const alignment = rollAlignment(rng, pack.cultures[cultureId]?.alignment); // undefined → neutral column
+const { virtues, vices } = rollFigureTraits(rng, alignment);
 ```
 
-- `subject.culture` is already on both constructors (`ruleSegments(subject)`,
-  `attachGeneral(leader)`), and `0`/`removed` degenerates to the NEUTRAL column — the same
-  fallback as `Cultures.add()`.
+- `subject.culture` / `leader.culture` is already on both constructors, and a `0`
+  (Wildlands), removed or untyped culture gives `undefined`, which rolls the NEUTRAL column —
+  the same fallback as `Cultures.add()`.
 - Figures on maps generated before this change (no culture alignment) roll the patron
   alignment on the NEUTRAL column at need — no history regeneration required, but traits are
   written so they persist.
-- When `options.generation.cultures.traits` is `false`, figures get no traits either (the
-  toggle is read once in `Chronicle.generate()`), so a non-RPG map stays lean end to end.
+- When `options.generation.cultures.traits` is `false`, `figureTraits` returns `{}` and the
+  figure carries no fields at all, so a non-RPG map stays lean end to end.
 - `prophet` and `rebel` are declared in `HistoricalRole` but nothing emits them today, so the
   snippet lives inside the two constructors and any future role inherits it by construction. A
   rebel *against* an evil empire drawing "good" from the prevailing column is the system
@@ -262,8 +266,9 @@ const { virtues, vices } = rollFigureTraits(rng, figure.alignment);
 Two columns beside `base` — both row templates (the neutral `i: 0` line and the normal line)
 need the cells, or the columns render blank on that one row:
 
-- **Alignment** (`width: "6em"`, `mobileHidden`): a small colored badge — good `#2a9d4a`,
-  lawful `#3d6db5`, neutral `#8a8a8a`, chaotic `#c77b21`, evil `#a33d3d` — sorted by the
+- **Alignment** (`width: "6em"`, `mobileHidden`): a small colored badge — the colors are
+  `ALIGNMENT_COLORS` in the data module (good `#2a9d4a`, lawful `#3d6db5`, neutral `#8a8a8a`,
+  chaotic `#c77b21`, evil `#a33d3d`; the Legends rows already use them) — sorted by the
   canonical `ALIGNMENTS` order, not alphabetically. No new sort type is needed:
   `EditorColumn.sortBy` already returns `string | number` and only the header icon looks at
   `sortType`, so `sortBy: c => (c.alignment ? ALIGNMENTS.indexOf(c.alignment) : -1)` sorts
@@ -279,7 +284,8 @@ need the cells, or the columns render blank on that one row:
 ### Legends browser (`src/controllers/history-overview.ts`)
 
 - **Figures tab rows** (`renderFigure`): alignment badge + virtues (plain) and vices
-  (muted/red) after the figure's roles — `Ausa the Bold — lawful · just, loyal · cruel`.
+  (`.legendsVice`, muted red) after the figure's roles — `Ausa the Bold — lawful · just, loyal ·
+  cruel`. A figure with no traits (old chronicle, or the layer off) renders exactly as before.
 - There are **no figure or culture pages** to hang a definition line on: `openActor`'s
   `figure`/`realm` cases only switch tabs and `culture`/`religion` only zoom to the center. So
   the culture summary goes where a culture already heads a block — the Figures tab's group
@@ -347,7 +353,8 @@ Vitest, no Playwright:
   drawn from the patron culture's column; figures on trait-less (old-map / Wildlands) cultures
   still emit; with `generation.cultures.traits` off, no figure carries traits.
 - **IO**: `.map` round-trip preserves culture and figure traits exactly; a pre-traits save
-  loads with "—" traits and no errors.
+  loads with "—" traits and no errors. The figure half lives in `epochs-format.test.ts`, since
+  record 53 is the chronicle's only serializer.
 - **Editors**: alignment column sorts canonically; schema test covers the new option
   (mirror the `freeBurgs` test).
 
@@ -366,7 +373,7 @@ Runtime budget: O(cultures + figures) table lookups — unmeasurable.
 | Slice | Contents | Acceptance |
 |---|---|---|
 | 1 ✅ | `src/data/culture-traits.ts` (tables, authored word lists, helpers, contradiction list); `Culture.alignment/values` assignment in `Cultures.generate()` + `add()`; option + schema/model/tab wiring; data + generator tests | New maps: every living culture has alignment + 1–2 values; old maps unaffected; toggle honored |
-| 2 | Figure traits in `ruleSegments`/`attachGeneral` (covers dynastic and epoch emission); Legends figures-tab rows show them | Every figure has alignment + its alignment's traits; no contradictions or repeats; persists through save/load; seed-stable |
+| 2 ✅ | Figure traits in `ruleSegments`/`attachGeneral` (covers dynastic and epoch emission); Legends figures-tab rows show them | Every figure has alignment + its alignment's traits; no contradictions or repeats; persists through save/load; seed-stable |
 | 3 | Cultures editor columns + Re-roll traits button; Legends culture group-header summary line | Sortable, mobile-hidden columns; re-roll respects locks and leaves figures alone |
 | 4 (future) | See below | — |
 

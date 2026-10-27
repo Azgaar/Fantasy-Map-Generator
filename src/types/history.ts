@@ -1,4 +1,5 @@
 // The map's chronicle: dated events, fallen realms and eras. See docs/plans/history-generation.md
+import type { Alignment } from "@/data/culture-traits";
 import type { Emblem } from "@/types/emblems";
 
 export type HistRefKind = "state" | "realm" | "burg" | "culture" | "religion" | "figure" | "polity";
@@ -72,6 +73,12 @@ export interface HistoricalFigure {
   birth: number;
   death?: number;
   roles: HistoricalRole[];
+  /** the ethos the figure rolled on its culture's prevailing column; absent on old chronicles and
+   *  when `generation.cultures.traits` is off */
+  alignment?: Alignment;
+  /** 0–3 each, per TRAIT_COUNTS: a good figure is all virtues, an evil one all vices */
+  virtues?: string[];
+  vices?: string[];
 }
 
 /** a polity's stable identity: one lineage across epochs, even as its form and borders change */

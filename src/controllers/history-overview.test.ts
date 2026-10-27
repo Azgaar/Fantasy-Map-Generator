@@ -175,6 +175,54 @@ describe("LegendsOverview", () => {
     expect(document.getElementById("legendsTabRealms")!.classList.contains("active")).toBe(true);
   });
 
+  it("shows a figure's alignment, virtues and vices", () => {
+    globalThis.pack.history = {
+      ...history,
+      figures: [
+        {
+          i: 0,
+          name: "Ausa the Bold",
+          culture: 1,
+          birth: 940,
+          roles: [{ type: "ruler", target: { kind: "state", id: 1 }, from: 980 }],
+          alignment: "lawful",
+          virtues: ["just", "loyal"],
+          vices: ["harsh"]
+        }
+      ]
+    };
+    LegendsOverview.open();
+    (document.getElementById("legendsTabFigures") as HTMLElement).click();
+
+    const row = body().querySelector(".legendsEvent")!;
+    const alignment = row.querySelector(".legendsAlignment")!;
+    expect(alignment.textContent).toBe("lawful");
+    expect(alignment.getAttribute("style")).toContain("#3d6db5");
+    expect(row.textContent).toContain("just, loyal");
+    expect(row.querySelector(".legendsVice")!.textContent).toBe("harsh");
+  });
+
+  it("shows a figure without traits as before", () => {
+    globalThis.pack.history = {
+      ...history,
+      figures: [
+        {
+          i: 0,
+          name: "Old Ruler",
+          culture: 1,
+          birth: 900,
+          roles: [{ type: "ruler", target: { kind: "state", id: 1 }, from: 950 }]
+        }
+      ]
+    };
+    LegendsOverview.open();
+    (document.getElementById("legendsTabFigures") as HTMLElement).click();
+
+    const row = body().querySelector(".legendsEvent")!;
+    expect(row.querySelector(".legendsTraits")).toBeNull();
+    expect(row.textContent).toContain("Old Ruler");
+  });
+
   it("shows an empty state without a chronicle", () => {
     globalThis.pack.history = emptyHistory();
     LegendsOverview.open();

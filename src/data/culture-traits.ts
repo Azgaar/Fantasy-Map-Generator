@@ -12,6 +12,15 @@ import { createRng, type Rng } from "@/utils/rng";
 export const ALIGNMENTS = ["good", "lawful", "neutral", "chaotic", "evil"] as const;
 export type Alignment = (typeof ALIGNMENTS)[number];
 
+/** one badge color per alignment, muted enough for the Legends list and the editor column alike */
+export const ALIGNMENT_COLORS: Record<Alignment, string> = {
+  good: "#2a9d4a",
+  lawful: "#3d6db5",
+  neutral: "#8a8a8a",
+  chaotic: "#c77b21",
+  evil: "#a33d3d"
+};
+
 /** roll 1d12, index = result - 1; the column is the parent's alignment, neutral = from scratch */
 export const PREVAILING_ALIGNMENT: Record<Alignment, readonly Alignment[]> = {
   good: [

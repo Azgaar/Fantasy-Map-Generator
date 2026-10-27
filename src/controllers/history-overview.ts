@@ -5,6 +5,7 @@ import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers"
 import { dialogState } from "@/components/dialog/state";
 import { Controllers } from "@/controllers";
 import { goToPresent, isInPast, scrubRange, scrubToYear, viewedEpoch } from "@/controllers/historical-view";
+import { ALIGNMENT_COLORS } from "@/data/culture-traits";
 import { Chronicle } from "@/generators/history-generator";
 import { getCellPoint } from "@/generators/journeys/journey-places";
 import type { Era, HistoricalFigure, HistoryEvent, HistoryEventType, HistRef } from "@/types/history";
@@ -30,6 +31,9 @@ const TEMPLATE = /* html */ `
     #${dialogId} .legendsRealmHead { display: flex; gap: .8em; align-items: baseline; }
     #${dialogId} .legendsRealmLine { margin-top: .3em; }
     #${dialogId} .legendsRealm .legendsEvent { padding-left: .5em; }
+    #${dialogId} .legendsTraits { opacity: .95; }
+    #${dialogId} .legendsAlignment { font-weight: bold; }
+    #${dialogId} .legendsVice { color: #a33d3d; }
     #${dialogId} .legendsEmpty { padding: 1em; font-style: italic; opacity: .7; }
     #${dialogId} #legendsScrub { display: flex; gap: .5em; align-items: center; padding: .3em .5em; }
     #${dialogId} #legendsScrubRange { flex: 1; }
@@ -370,8 +374,23 @@ function renderFigure(figure: HistoricalFigure): string {
     .join("; ");
   return /* html */ `<div class="legendsEvent">
     <span class="legendsYear">${life}</span>
-    <span class="legendsText"><b>${escapeHtml(figure.name)}</b> — ${roles}</span>
+    <span class="legendsText"><b>${escapeHtml(figure.name)}</b> — ${roles}${renderTraits(figure)}</span>
   </div>`;
+}
+
+/** the figure's character after its roles: alignment, then the virtues and the vices it never
+ *  contradicts. Nothing when the chronicle predates the traits layer or the layer is off */
+function renderTraits(figure: HistoricalFigure): string {
+  const { alignment } = figure;
+  if (!alignment) return "";
+
+  const badge = `<span class="legendsAlignment" style="color:${ALIGNMENT_COLORS[alignment]}" data-tip="${capitalize(
+    alignment
+  )} alignment">${alignment}</span>`;
+  const virtues = (figure.virtues ?? []).map(virtue => escapeHtml(virtue)).join(", ");
+  const vices = (figure.vices ?? []).map(vice => `<span class="legendsVice">${escapeHtml(vice)}</span>`).join(", ");
+  const traits = [badge, virtues, vices].filter(Boolean).join(" · ");
+  return ` <span class="legendsTraits">— ${traits}</span>`;
 }
 
 function wireRows(body: HTMLElement): void {

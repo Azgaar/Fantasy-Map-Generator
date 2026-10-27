@@ -1,5 +1,15 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  ALIGNMENTS,
+  CONTRADICTIONS,
+  rollAlignment,
+  rollFigureTraits,
+  TRAIT_COUNTS,
+  traitsRng,
+  VICES,
+  VIRTUES
+} from "@/data/culture-traits";
 import type { HistRefKind } from "@/types/history";
 import { emptyHistory } from "@/types/history";
 import "./pack-generator"; // Markers.place resolves cells through the global Pack
@@ -130,6 +140,7 @@ beforeEach(() => {
   globalThis.options = {
     map: {
       graph: { width: 1280, height: 800 },
+      seed: "history-traits-seed",
       cultures: { set: "world" },
       lore: {
         name: "",
@@ -137,7 +148,8 @@ beforeEach(() => {
         calendar: { year: 1000, era: "Era", eraShort: "E" },
         history: { span: 1000, realms: 2, density: 1, echoes: true, renames: false }
       }
-    }
+    },
+    generation: { cultures: { traits: true } }
   } as unknown as typeof options;
   globalThis.pack = {
     states: [
@@ -439,6 +451,91 @@ describe("Chronicle.generate figures", () => {
       expect(roleOf(ref.id).from).toBe(event.year);
       expect(figures()[ref.id].birth).toBeLessThan(event.year);
     }
+  });
+});
+
+describe("figure traits", () => {
+  const figures = () => pack.history.figures ?? [];
+  const seed = "history-traits-seed";
+  const antonyms = new Map(
+    CONTRADICTIONS.flatMap(([virtue, vice]) => [
+      [virtue, vice],
+      [vice, virtue]
+    ])
+  );
+
+  it("gives every figure an alignment and the traits that alignment dictates", () => {
+    Chronicle.generate();
+    expect(figures().length).toBeGreaterThan(0);
+
+    for (const figure of figures()) {
+      expect(ALIGNMENTS).toContain(figure.alignment!);
+      const counts = TRAIT_COUNTS[figure.alignment!];
+      expect(figure.virtues).toHaveLength(counts.virtues);
+      expect(figure.vices).toHaveLength(counts.vices);
+      for (const virtue of figure.virtues!) expect(VIRTUES).toContain(virtue);
+      for (const vice of figure.vices!) expect(VICES).toContain(vice);
+    }
+  });
+
+  it("never puts a word twice on a figure, nor both halves of a contradiction", () => {
+    Chronicle.generate();
+    for (const figure of figures()) {
+      const drawn = [...(figure.virtues ?? []), ...(figure.vices ?? [])];
+      expect(new Set(drawn).size).toBe(drawn.length);
+      for (const word of drawn) expect(drawn).not.toContain(antonyms.get(word));
+    }
+  });
+
+  it("rolls each figure from its own stream, on the prevailing column of the culture it serves", () => {
+    for (const culture of pack.cultures) culture.alignment = "evil";
+
+    Chronicle.generate();
+    for (const figure of figures()) {
+      const rng = traitsRng(seed, "figure", figure.i);
+      const alignment = rollAlignment(rng, pack.cultures[figure.culture]?.alignment);
+      expect(figure.alignment).toBe(alignment);
+      expect({ virtues: figure.virtues, vices: figure.vices }).toEqual(rollFigureTraits(rng, alignment));
+    }
+  });
+
+  it("rolls a figure of an untyped culture — or the Wildlands — on the neutral column", () => {
+    // the fixture cultures carry no alignment, as on a map generated before the traits layer
+    Chronicle.generate();
+    for (const figure of figures()) {
+      const rng = traitsRng(seed, "figure", figure.i);
+      expect(figure.alignment).toBe(rollAlignment(rng));
+    }
+  });
+
+  it("leaves figures untyped when the layer is off", () => {
+    options.generation.cultures.traits = false;
+    Chronicle.generate();
+
+    expect(figures().length).toBeGreaterThan(0);
+    for (const figure of figures()) {
+      expect(figure).not.toHaveProperty("alignment");
+      expect(figure).not.toHaveProperty("virtues");
+      expect(figure).not.toHaveProperty("vices");
+    }
+  });
+
+  it("does not move a single name, birth or date of the chronicle", () => {
+    // a position-sensitive stream, so a draw taken anywhere would shift everything after it
+    let draw = 0;
+    const sequence = () => ((draw++ * 0.37 + 0.11) % 1) ** 2;
+    vi.spyOn(Math, "random").mockImplementation(sequence);
+
+    Chronicle.generate();
+    const withTraits = pack.history.figures!.map(figure => [figure.name, figure.birth, figure.death]);
+    const eventsWithTraits = pack.history.events.map(event => `${event.year}: ${event.text}`);
+
+    draw = 0;
+    options.generation.cultures.traits = false;
+    Chronicle.generate();
+
+    expect(pack.history.figures!.map(figure => [figure.name, figure.birth, figure.death])).toEqual(withTraits);
+    expect(pack.history.events.map(event => `${event.year}: ${event.text}`)).toEqual(eventsWithTraits);
   });
 });
 
