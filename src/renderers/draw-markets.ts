@@ -64,10 +64,21 @@ function reconcileMarkets({ root, bounds }: ViewportRenderContext): void {
   const radius = Math.max(rn(size + 1 / bounds.scale, 2), 2);
   const iconSize = Math.max(rn(baseSize + 1 / bounds.scale, 2), 2);
   const strokeWidth = rn(radius / 8, 2);
-  const padding = Math.max(radius + strokeWidth / 2, iconSize);
+  // a pin: an upside-down triangle with its tip on the center burg and the icon in its incircle of `radius`
+  const halfWidth = radius * Math.sqrt(3);
+  const pinHeight = radius * 3;
   const href = escapeHtml(Icons.href(icon));
   const paint = Icons.paintAttributes(icon);
   const markup: string[] = [];
+
+  const renderPin = (x: number, y: number, fill: string, stroke: string) => {
+    const top = rn(y - pinHeight, 2);
+    const pin = `M${x},${y}L${rn(x - halfWidth, 2)},${top}L${rn(x + halfWidth, 2)},${top}Z`;
+    const icon = href
+      ? `<use href="${href}" x="${rn(x - iconSize / 2, 2)}" y="${rn(y - 2 * radius - iconSize / 2, 2)}" width="${iconSize}" height="${iconSize}" fill-opacity="1"${paint}/>`
+      : "";
+    return /*html*/ `<path class="pin" d="${pin}" fill="${fill}" fill-opacity="1" stroke="${stroke}" stroke-width="${strokeWidth}"/>${icon}`;
+  };
 
   for (const market of pack.markets) {
     const territory = territories.get(market.i);
@@ -76,7 +87,7 @@ function reconcileMarkets({ root, bounds }: ViewportRenderContext): void {
     const showCenter =
       center &&
       boundsIntersect(
-        { x0: center.x - padding, y0: center.y - padding, x1: center.x + padding, y1: center.y + padding },
+        { x0: center.x - halfWidth, y0: center.y - pinHeight, x1: center.x + halfWidth, y1: center.y },
         bounds
       );
     if (!showTerritory && !showCenter) continue;
@@ -89,10 +100,7 @@ function reconcileMarkets({ root, bounds }: ViewportRenderContext): void {
         <path class="fill" d="${territory.path}" fill="${fill}" stroke="none"/>
         <path class="border" d="${territory.path}" fill="none" stroke="${stroke}" clip-path="url(#market-clip-${market.i})"/>`
       : "";
-    const centerMarkup = showCenter
-      ? /*html*/ `<circle cx="${center.x}" cy="${center.y}" r="${radius}" fill="${fill}" fill-opacity="1" stroke="${stroke}" stroke-width="${strokeWidth}"/>
-        ${href ? `<use href="${href}" x="${rn(center.x - iconSize / 2, 2)}" y="${rn(center.y - iconSize / 2, 2)}" width="${iconSize}" height="${iconSize}" fill-opacity="1"${paint}/>` : ""}`
-      : "";
+    const centerMarkup = showCenter ? renderPin(center.x, center.y, fill, stroke) : "";
 
     const marker = /*html*/ `<g id="market${market.i}" data-id="${market.i}">${territoryMarkup}${centerMarkup}</g>`;
     markup.push(marker);

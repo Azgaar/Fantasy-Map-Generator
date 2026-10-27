@@ -151,7 +151,7 @@ const DEBUG_LABELS: Record<DebugMode, { label: string; tip: string }> = {
   economy: {
     label: t("Economy"),
     tip: t(
-      "The Production Overview shows every step of the burg's run: what it weighed before making each good, every market it could have bought from with the price at its door, and the goods that could cover each need. Recorded from the next production run, about three times slower"
+      "The Economy Overview shows every step of the burg's run: what it weighed before making each good, every market it could have bought from with the price at its door, and the goods that could cover each need. Recorded from the next production run, about three times slower"
     )
   },
   temperature: {

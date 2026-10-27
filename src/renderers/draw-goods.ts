@@ -1,4 +1,3 @@
-import { interpolateYlOrBr } from "d3";
 import { Goods } from "@/model/economy/goods-generator";
 import { Production } from "@/model/economy/production-generator";
 import { Pack } from "@/model/graph/pack-generator";
@@ -34,7 +33,8 @@ const PLATE_RX = 1;
 const PLATE_FILL = "#f5f5f5";
 const ICON_FRAME = 100; // every goods icon is drawn in a 0 0 100 100 frame
 const OVERVIEW_SATURATION = 0.95; // percentile from which cells get the darkest color and burgs the biggest circle
-const BURG_FILL = "#1e88e5"; // blue stands out on the yellow-brown cells
+const PIE_GOODS = 5; // a burg pie shows its most valuable goods, the rest in one sector
+const OTHER_FILL = "#9e9e9e";
 const LINEWORK = 0.4; // icon lines are this share of the circle outline
 
 /** A goods icon's `<use>` lines: the goods icons style, its width carried into the icon frame at the marker's
@@ -73,12 +73,19 @@ interface PlateEntry {
   icon: string;
 }
 
-/** a burg's output in the overview: the circle's area grows with its value, its size follows the plates style */
+/** a burg's output in the overview: a pie of its goods by value, its area grows with the total, its size follows the plates style */
 interface BurgCircle {
   burgId: number;
   x: number;
   y: number;
   share: number; // of the saturation percentile's output value, at most 1
+  sectors: PieSector[];
+}
+
+interface PieSector {
+  goods: number[]; // one good, or the rest of the burg's goods
+  color: string;
+  share: number; // of the burg's output value
 }
 
 /** a burg plate: the entry list is style-independent, the geometry is laid out per frame */
@@ -97,7 +104,7 @@ export async function drawGoods(): Promise<void> {
   log.timeEnd("drawGoods");
 }
 
-/** Selected goods in detail, or with none selected an overview of all output by value */
+/** Selected goods in detail, or with none selected an overview: bonus resource cells and burg output */
 function buildScene(): void {
   const selected = new Set(pack.goods.filter(good => good.visible).map(good => good.i));
   resourceIcons = [];
@@ -113,10 +120,6 @@ function buildScene(): void {
   }
   sourcePack = pack;
 }
-
-/** Output in money: units at the goods' base prices */
-const getOutputValue = (produced: Record<number, number>) =>
-  Object.entries(produced).reduce((total, [goodId, units]) => total + units * (Goods.get(+goodId)?.value ?? 0), 0);
 
 /** Layer teardown: drop the cached scene and the drawn content */
 export function removeGoods(): void {
@@ -190,38 +193,50 @@ function getSaturation(values: number[]): number {
   return sorted[Math.floor((sorted.length - 1) * OVERVIEW_SATURATION)] || 1;
 }
 
-/** Each producing cell colored by its output value, from pale to dark at the saturation percentile */
+/** Cells with a bonus resource in its good's color: they far outproduce the rest */
 function buildCellOverview(): void {
   cellProduction = [];
-  const biomeProduction = Goods.getBiomesProduction();
-  const values: [number, number][] = [];
-  for (const cellId of pack.cells.i) {
-    const value = getOutputValue(Production.getCellProduction(cellId, biomeProduction));
-    if (value > 0) values.push([cellId, value]);
-  }
+  if (!pack.cells.good) return;
 
-  // square root spreads the many modest cells over the ramp
-  const saturation = getSaturation(values.map(([, value]) => value));
-  for (const [cellId, value] of values) {
-    const color = interpolateYlOrBr(Math.sqrt(Math.min(1, value / saturation)));
-    cellProduction.push({ cellId, colors: [color], ...getPolygonBox(cellId) });
+  for (const cellId of pack.cells.i) {
+    const good = Goods.get(pack.cells.good[cellId]);
+    if (good) cellProduction.push({ cellId, colors: [good.color], ...getPolygonBox(cellId) });
   }
 }
 
-/** Every producing burg as a circle sized by its output value */
+/** Every producing burg as a pie of its goods, sized by its output value */
 function buildBurgCircles(): void {
-  const values: [Burg, number][] = [];
+  const values: [Burg, number, PieSector[]][] = [];
   for (const burg of pack.burgs) {
     if (!burg.i || burg.removed || !burg.production) continue;
-    const value = getOutputValue(Production.getBurgProduction(burg));
-    if (value > 0) values.push([burg, value]);
+    // output in money: units at the goods' base prices
+    const goods = Object.entries(Production.getBurgProduction(burg))
+      .flatMap(([goodId, units]) => {
+        const good = Goods.get(+goodId);
+        const value = good ? units * good.value : 0;
+        return good && value > 0 ? [{ good, value }] : [];
+      })
+      .sort((a, b) => b.value - a.value);
+    const value = goods.reduce((total, good) => total + good.value, 0);
+    if (!value) continue;
+
+    const sectors: PieSector[] = goods
+      .slice(0, PIE_GOODS)
+      .map(({ good, value: goodValue }) => ({ goods: [good.i], color: good.color, share: goodValue / value }));
+    const rest = goods.slice(PIE_GOODS);
+    if (rest.length) {
+      const share = rest.reduce((total, good) => total + good.value, 0) / value;
+      sectors.push({ goods: rest.map(({ good }) => good.i), color: OTHER_FILL, share });
+    }
+    values.push([burg, value, sectors]);
   }
   const saturation = getSaturation(values.map(([, value]) => value));
-  burgCircles = values.map(([burg, value]) => ({
+  burgCircles = values.map(([burg, value, sectors]) => ({
     burgId: burg.i!,
     x: burg.x,
     y: burg.y,
-    share: Math.min(1, value / saturation)
+    share: Math.min(1, value / saturation),
+    sectors
   }));
 }
 
@@ -353,14 +368,32 @@ function renderBurgCircles(bounds: Box): string {
   // the area grows with the output, the biggest circle half again the plate icon size across its radius
   const maxRadius = styles.goods.groups.goodsBurgs.options.size * 1.5;
   const markup: string[] = [];
-  for (const { burgId, x, y, share } of burgCircles) {
+  for (const { burgId, x, y, share, sectors } of burgCircles) {
     const r = Math.max(0.3, maxRadius * Math.sqrt(share));
     if (!boundsIntersect({ x0: x - r, y0: y - r, x1: x + r, y1: y + r }, bounds)) continue;
-    markup.push(
-      `<g data-id="${burgId}"><circle cx="${rn(x, 1)}" cy="${rn(y, 1)}" r="${rn(r, 2)}" fill="${BURG_FILL}" fill-opacity="0.9"/></g>`
-    );
+    markup.push(`<g data-id="${burgId}">${renderPie(x, y, r, sectors)}</g>`);
   }
   return markup.join("");
+}
+
+/** Sectors clockwise from the top, the most valuable first */
+function renderPie(x: number, y: number, r: number, sectors: PieSector[]): string {
+  if (sectors.length === 1) {
+    const [{ goods, color }] = sectors;
+    return `<circle data-goods="${goods}" cx="${rn(x, 1)}" cy="${rn(y, 1)}" r="${rn(r, 2)}" fill="${color}"/>`;
+  }
+
+  const point = (angle: number) => `${rn(x + r * Math.sin(angle), 2)},${rn(y - r * Math.cos(angle), 2)}`;
+  let start = 0;
+  return sectors
+    .map(({ goods, color, share }) => {
+      const end = start + share * 2 * Math.PI;
+      const large = end - start > Math.PI ? 1 : 0;
+      const path = `M${rn(x, 2)},${rn(y, 2)}L${point(start)}A${rn(r, 2)},${rn(r, 2)} 0 ${large} 1 ${point(end)}Z`;
+      start = end;
+      return `<path data-goods="${goods}" d="${path}" fill="${color}"/>`;
+    })
+    .join("");
 }
 
 function getPolygonBox(cellId: number): Box {

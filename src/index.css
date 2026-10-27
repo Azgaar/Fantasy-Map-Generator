@@ -137,7 +137,7 @@ a {
   cursor: pointer;
 }
 
-#markets > g > path,
+#markets > g > path:not(.pin),
 #markets > g > use {
   user-select: none;
   pointer-events: none;

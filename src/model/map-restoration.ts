@@ -820,10 +820,10 @@ class MapRestorationModule {
         province.center = burgs[province.burg].cell;
         continue;
       }
-      // a province that had a capital takes the most populous burg left on its land
-      const successor =
-        province.burg &&
-        this.findMostPopulous(burg => cells.province[burg.cell] === province.i && !capitals.has(burg.i));
+      // the most populous burg left on its land takes over, even a capital founded there for its state
+      const successor = this.findMostPopulous(
+        burg => cells.province[burg.cell] === province.i && !capitals.has(burg.i)
+      );
       if (successor) {
         Provinces.setCapital(province.i, successor.i);
         capitals.add(successor.i);

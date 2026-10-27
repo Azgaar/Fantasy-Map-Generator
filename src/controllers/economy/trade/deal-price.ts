@@ -51,7 +51,7 @@ export function money(amount: number, adds: boolean): string {
   return `<span class="${adds ? "positive" : "negative"}">${formatPrice(rn(amount, 2))}</span>`;
 }
 
-/** Short tips for the trade columns of the Production Overview and Trade Details */
+/** Short tips for the trade columns of the Economy Overview and Trade Details */
 export const tradeColumnTips = () => ({
   units: t("Units traded"),
   net: sentences(t("Net unit price"), t("Market price before carriage and taxes")),

@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-import { interpolateYlOrBr } from "d3";
 import { beforeEach, expect, test, vi } from "vitest";
 import { setViewportSize, setViewportTransform } from "@/renderers/viewport/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
@@ -150,25 +149,43 @@ test("hidden goods drop out of every sublayer", async () => {
   expect(document.querySelector("#goodsBurgs text")?.textContent).toBe("2");
 });
 
-test("with no good selected, cells and burgs show their whole output by value", async () => {
+test("with no good selected, bonus resource cells show in their good's color and burgs their output by value", async () => {
   for (const good of pack.goods) good.visible = false;
-  getCellProduction.mockImplementation(cellId => (cellId === 0 ? { 1: 4, 2: 1 } : { 2: 8 }) as Output);
   pack.goods[1].value = 10; // one iron is worth ten grain
   setViewportTransform(0.1, 0, 0);
   await drawGoods();
 
-  // cell values 14 and 80: of two, the 95th percentile is the lower one, so both reach the darkest color
   const fills = [...document.querySelectorAll("#goodsCells polygon")].map(polygon => polygon.getAttribute("fill"));
-  expect(fills).toEqual([interpolateYlOrBr(1), interpolateYlOrBr(1)]);
+  expect(fills).toEqual(["#ff0000", "#00ff00"]);
   expect(document.querySelector("#goodsCells polygon")?.hasAttribute("fill-opacity")).toBe(false); // the group style dims it
   expect(document.querySelectorAll("#goodsIcons > g")).toHaveLength(0);
 
-  // burg values 25 and 90 both saturate too: circles of 1.5 times the plate icon setting
-  const radii = [...document.querySelectorAll("#goodsBurgs > g[data-id] circle")].map(circle =>
-    circle.getAttribute("r")
-  );
-  expect(radii).toEqual(["4.5", "4.5"]);
+  // burg values 25 and 90 both saturate: pies of 1.5 times the plate icon setting, a single good a full circle
+  const [mixed, single] = document.querySelectorAll<SVGGElement>("#goodsBurgs > g[data-id]");
+  const sectors = [...mixed.querySelectorAll("path")].map(path => [path.dataset.goods, path.getAttribute("fill")]);
+  expect(sectors).toEqual([
+    ["2", "#00ff00"], // 20 of 25: iron first
+    ["1", "#ff0000"]
+  ]);
+  expect(single.querySelector("circle")?.getAttribute("r")).toBe("4.5");
   expect(document.querySelectorAll("#goodsBurgs text")).toHaveLength(0);
+});
+
+test("a burg pie shows its five most valuable goods and the rest as one sector", async () => {
+  pack.goods = Array.from({ length: 7 }, (_, index) => ({
+    i: index + 1,
+    name: `Good ${index + 1}`,
+    color: `#00000${index + 1}`,
+    icon: "",
+    value: index + 1
+  })) as never;
+  getBurgProduction.mockImplementation(() => Object.fromEntries(pack.goods.map(good => [good.i, 1])));
+  await drawGoods();
+
+  const goods = [...document.querySelectorAll<SVGPathElement>('#goodsBurgs > g[data-id="1"] path')].map(
+    path => path.dataset.goods
+  );
+  expect(goods).toEqual(["7", "6", "5", "4", "3", "2,1"]);
 });
 
 test("full-map export renders every good at once, leaving the live map culled", async () => {

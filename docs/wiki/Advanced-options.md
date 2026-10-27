@@ -69,6 +69,6 @@ These apply immediately and are kept in the browser:
 
 Diagnostics for checking how the generator works, kept in the browser. They may show more in dialogs or the browser console and record extra data while you work, but they never change what is saved in the `.map` file, so turning them on is always safe.
 
-- **Economy**: the Production Overview of a burg lists every step of its production run instead of a summary: what it weighed before making each good, every market it could have bought each good from with the price at its door, and the goods that could cover each of its needs. It records from the next production run (Tools → Regenerate → Production), which runs about three times slower while it is on.
+- **Economy**: the Economy Overview of a burg lists every step of its production run instead of a summary: what it weighed before making each good, every market it could have bought each good from with the price at its door, and the goods that could cover each of its needs. It records from the next production run (Tools → Regenerate → Production), which runs about three times slower while it is on.
 - **Temperature**: logs sea temperatures by latitude to the browser console when the climate is generated.
 - **Cloud storage**: logs cloud storage responses to the browser console.

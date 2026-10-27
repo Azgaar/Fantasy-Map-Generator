@@ -5,7 +5,7 @@ import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS, Goods } 
 import type { Deal, DealKind, SourceOption, Trade } from "@/model/economy/markets-generator";
 import { DEAL_KINDS, Markets } from "@/model/economy/markets-generator";
 import type { ProductionCandidate, ProductionLogEntry } from "@/model/economy/production-generator";
-import { isDemandEntry, isMfgEntry, isTradeEntry } from "@/model/economy/production-generator";
+import { isDemandEntry, isMfgEntry, isTradeEntry, Production } from "@/model/economy/production-generator";
 import { Icons } from "@/model/icons";
 import type { Burg } from "@/model/political/burgs-generator";
 import { formatPrice, getMoneyUnit } from "@/model/units";
@@ -77,7 +77,7 @@ function open(burgId: number): void {
   render();
 
   Dialog.open(dialogId, {
-    title: t("Production Overview: {{- burg}}", { burg: burg.name }),
+    title: t("Economy Overview: {{- burg}}", { burg: burg.name }),
     width: "56em",
     resizable: true,
     onClose: () => Dialog.destroy(dialogId),
@@ -216,9 +216,12 @@ function getLogRow(entry: ProductionLogEntry): HistoryRow {
     modifier !== 1
       ? `. ${t("Culture type production modifier. Produced units are multiplied by this value.")}: x${rn(modifier, 2)}`
       : "";
+  const specializationNote = entry.specialization
+    ? `. ${t("Division of labor: the more of the burg's workers make this good, and the more its market makes of it than the world, the more each makes")}: x${entry.specialization}`
+    : "";
   return {
     ...getMfgRow(entry.goodId, entry.units),
-    details: `${t("Manufacturing from {{- inputs}}", { inputs })}${modifierNote}${renderDecision(entry.candidates)}`
+    details: `${t("Manufacturing from {{- inputs}}", { inputs })}${modifierNote}${specializationNote}${renderDecision(entry.candidates)}`
   };
 }
 
@@ -603,10 +606,22 @@ function renderStats(burg: Burg): void {
   const product = Math.max(0, burg.product || 0);
   const wealth = population > 0 ? product / population : 0;
   const treasury = burg.treasury || 0;
+  // a market center's merchants take the margin on every trade at its market, so its treasury is more than its deals
+  const isCenter = market?.centerBurgId === burg.i;
+  const margin = isCenter
+    ? pack.deals.reduce((sum, deal) => sum + (deal[1] === market.i ? Markets.getMargin(deal) : 0), 0)
+    : 0;
+  const treasuryTip = isCenter
+    ? t(
+        "The burg's money after the day's buying and selling, in {{money}}. As its market's center, it also takes the market margin on every trade made there",
+        { money: getMoneyUnit() }
+      )
+    : t("The burg's money after the day's buying and selling, in {{money}}", { money: getMoneyUnit() });
 
   ensureEl(`${dialogId}Stats`).innerHTML = /* html */ `
     <div>
       <span><b>${t("Population")}:</b> ${population}</span>
+      ${burg.idle ? `<span data-tip="${t("Workers left without work: nothing the burg could make paid more than its inputs after its sales tax")}"><b>${t("Unemployed")}:</b> <span class="negative">${t("{{idle}}/{{workers}} workers", { idle: burg.idle, workers: Production.getWorkers(burg) })}</span></span>` : ""}
       ${EconomyDebug.get(burg.i!) ? `<span><b>${t("Order")}:</b> ${t("{{rank}} of {{total}}", { rank: burgs.indexOf(burg) + 1, total: burgs.length })}</span>` : ""}
       <span><b>${t("Market")}:</b> ${market ? Markets.getName(market) : ""}</span>
     </div>
@@ -616,7 +631,8 @@ function renderStats(burg: Burg): void {
       <span data-tip="${t("Gross Product: local sale revenue minus purchased ingredient costs during the production.")}"><b>${t("Product")}:</b> <span class="positive">${formatPrice(product)}</span></span>
       <span data-tip="${t("Product per capita: gross product divided by population.")}"><b>${t("Wealth")}:</b> <span class="positive">${formatPrice(wealth)}</span></span>
       <span data-tip="${t("Sales tax and tariffs the burg paid: on its sales, deducted from the revenue; on its purchases, included in the price. Each goes to the treasury of the state that levies it")}"><b>${t("Total Tax")}:</b> <span class="negative">${formatPrice(totalTax)}</span></span>
-      <span data-tip="${t("The burg's money after the day's buying and selling, in {{money}}", { money: getMoneyUnit() })}"><b>${t("Treasury")}:</b> <span class="${treasury >= 0 ? "positive" : "negative"}">${formatPrice(treasury)}</span></span>
+      ${isCenter ? `<span data-tip="${t("What the burg's merchants took as the market margin, 5% of the market's price, on every trade made at its market today. Trade income, not part of the product")}"><b>${t("Market margin")}:</b> <span class="positive">${formatPrice(margin)}</span></span>` : ""}
+      <span data-tip="${treasuryTip}"><b>${t("Treasury")}:</b> <span class="${treasury >= 0 ? "positive" : "negative"}">${formatPrice(treasury)}</span></span>
     </div>`;
 }
 

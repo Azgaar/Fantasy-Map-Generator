@@ -166,6 +166,7 @@ Burgs (settlements) data is stored as an array of objects with strict element or
 - `market`: `number` - id of the market this burg belongs to (`0` if none). Derived from `cells.market[burg.cell]` during market territory expansion
 - `production`: `[good: number, units: number][]` - units of each good made in the last production run, local bonus included. The burg's trades are its `pack.deals`. Economy debug mode keeps every step of the run in memory, never in the burg (see `EconomyDebug` in the economy domain doc)
 - `product`: `number` - net product (gross sell revenue minus ingredient costs) from the last production run
+- `idle`: `number` - workers (35% of the population) left without work in the last production run; set only when some are, so the Economy Overview shows unemployment only where there is some
 - `treasury`: `number` - cash balance after the last economy run: reset to 0 when production starts, then changed by ingredient purchases, post-tax sale revenue, and demand-fill purchases. The Burg Editor can also set it by hand; production is not recalculated to match, and the next run starts from 0 again
 - `citadel`: `number` - `1` if burg has a castle, `0` if not. Used for MFCG
 - `plaza`: `number` - `1` if burg has a marketplace, `0` if not. Used for MFCG

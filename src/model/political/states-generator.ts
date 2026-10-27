@@ -959,8 +959,8 @@ class StatesModule {
   defineTaxRates(state: State) {
     const { salesTax, pollTax } = DEFAULT_TAX_BY_FORM[state.form || ""] || DEFAULT_TAX;
     return {
-      salesTax: rn(gauss(salesTax, salesTax * 0.15, salesTax * 0.5, salesTax * 1.5, 4), 2),
-      pollTax: rn(gauss(pollTax, pollTax * 0.15, pollTax * 0.5, pollTax * 1.5, 4), 2)
+      salesTax: rn(gauss(salesTax, salesTax * 0.5, salesTax * 0.25, salesTax * 2, 4), 2),
+      pollTax: rn(gauss(pollTax, pollTax * 0.5, pollTax * 0.25, pollTax * 2, 4), 2)
     };
   }
 

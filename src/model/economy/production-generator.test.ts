@@ -26,6 +26,7 @@ let burg: Burg;
 
 beforeEach(() => {
   production = new ProductionModule();
+  vi.spyOn(production, "getWorkers").mockImplementation(burg => burg.population || 0); // every townsperson works, as the expected units assume
   catalogue = [
     good(1, "Oil", 1),
     good(2, "Tool sets", 1),
@@ -211,6 +212,7 @@ describe("freighter with 20 engines and a 700-steel hull", () => {
   });
 
   it("executes the full steel, engine and ship chain within one burg's worker cap", () => {
+    vi.spyOn(production as any, "getSpecialization").mockReturnValue(1); // exact units, without division of labor
     market.goods[3].stock = 0;
     burg.population = 921;
     const { index, state } = prepare();
@@ -317,6 +319,47 @@ describe("inputs missing in the burg's market", () => {
   });
 });
 
+describe("division of labor", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("makes a good better the more of the burg's workers make it and the more its market makes of it than the world", () => {
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    const index = production["buildProductionIndex"](catalogue);
+    const { state } = prepare();
+    state.population = 10;
+    index.marketPopulation[market.i] = 40;
+    index.worldPopulation = 240;
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    const specialization = (goodId: number) => production["getSpecialization"](index, state, goodId);
+    expect(specialization(4)).toBe(1);
+
+    state.workersByGood[4] = 5; // half the burg's workers
+    index.marketWorkers[market.i] = [];
+    index.marketWorkers[market.i][4] = 10; // a quarter of the market's
+    index.worldWorkers[4] = 60; // as much as the world's quarter: no market bonus
+    expect(specialization(4)).toBeCloseTo(1.5, 5);
+
+    index.worldWorkers[4] = 40; // a sixth of the world's: the market makes 1.5 times its share
+    expect(specialization(4)).toBeCloseTo(1 + 0.5 + 0.5 * 0.5, 5);
+
+    index.worldWorkers[4] = 10; // the market alone makes it: the bonus is capped
+    expect(specialization(4)).toBeCloseTo(1 + 0.5 + 0.5, 5);
+    expect(specialization(5)).toBe(1);
+  });
+
+  it("raises the output of each worker as the burg keeps making the good", () => {
+    burg.population = 4;
+    market.goods[1].stock = 1000; // plenty of ore for steel
+    const { index, state } = prepare();
+    index.marketPopulation[market.i] = 4;
+    index.worldPopulation = 4;
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    production["runWorkerLoop"](index, state);
+    const made = state.produced.reduce((sum: number, units = 0) => sum + units, 0);
+    expect(made).toBeGreaterThan(state.workersUsed); // later workers make more than one unit each
+  });
+});
+
 describe("demand fill", () => {
   it("takes back what the burg sold to its market as if never sold, then buys the rest", () => {
     catalogue[2].demandCoverage = { construction: 1 }; // 10 steel cover the burg's construction demand
@@ -334,7 +377,9 @@ describe("demand fill", () => {
     expect([kept[4], kept[5], kept[6]]).toEqual([4, 0, 0]);
     expect(bought[4]).toBe(6);
     expect(market.goods[3].stock).toBe(10);
-    expect(burg.treasury).toBeCloseTo(100 - 4 * 0.8 - 6 * bought[5], 1);
+    // the burg is its market's center: it takes the margin on its purchase and gives back the margin on the 4 kept
+    const margins = Markets.getMargin(bought) - (4 * 1 * 0.05) / 0.95;
+    expect(burg.treasury).toBeCloseTo(100 - 4 * 0.8 - 6 * bought[5] + margins, 1);
   });
 
   it("trims the sale and its tax by the share kept", () => {
@@ -345,5 +390,75 @@ describe("demand fill", () => {
     expect(trade).toEqual({ units: 4, price: 0.8, tax: 0 });
     expect(pack.deals[0]).toEqual([1, 1, 3, DEAL_KINDS.sale, 6, 1, 1.2, 0, 0]);
     expect(market.goods[3].stock).toBe(16);
+  });
+});
+
+describe("sales tax in choosing work", () => {
+  // an engine sells at 95 and takes 14 inputs; the state taxes both the inputs bought and the engine sold
+  const engines = (salesTax: number) => {
+    burg.population = 1;
+    burg.state = 1;
+    globalThis.pack.states = [{ i: 0 }, { i: 1, salesTax }] as typeof pack.states;
+    const { index, state } = prepare();
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    production["runWorkerLoop"](index, state);
+    return state.produced[4] ?? 0;
+  };
+
+  it("makes what still pays after the burg's own sales tax", () => {
+    expect(engines(0.1)).toBe(1);
+  });
+
+  it("leaves the worker idle when the sales tax on the engine would eat its margin", () => {
+    expect(engines(0.8)).toBe(0); // 95 × 0.2 = 19 back, for inputs that cost 14 × (1.05 + 0.8)
+  });
+});
+
+describe("idle workers", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  const run = (salesTax: number) => {
+    catalogue[4].recipes = undefined; // engines only: a ship pays under any tax
+    burg.population = 2;
+    burg.state = 1;
+    globalThis.pack.states = [{ i: 0 }, { i: 1, salesTax }] as typeof pack.states;
+    for (const step of ["collectRuralProduction", "initializeMarketPrices", "measureRoutes"] as const) {
+      vi.spyOn(Markets, step).mockImplementation(() => {}); // the market is set up by hand
+    }
+    production.produce();
+    return burg.idle;
+  };
+
+  it("records the workers that found nothing worth making", () => {
+    expect(run(0.8)).toBe(2);
+  });
+
+  it("records none when everyone worked", () => {
+    expect(run(0.1)).toBeUndefined();
+  });
+});
+
+describe("a chain's steps", () => {
+  it("make only the input the chain lacks, leaving the rest of the worker for the goal", () => {
+    catalogue[0].recipes = [{ 3: 1 }]; // oil from steel
+    market.goods[1].stock = 1.96; // an engine takes 2 oil
+    burg.population = 1.045;
+    const { index, state } = prepare();
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    production["runWorkerLoop"](index, state);
+    expect(rn(state.produced[1], 2)).toBe(0.04);
+    expect(rn(state.produced[4], 2)).toBe(1);
+  });
+});
+
+describe("market stock in planning", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("counts a remainder too small to buy as no stock", () => {
+    vi.spyOn(Markets, "quoteSource").mockReturnValue(null);
+    market.goods[1].stock = 0.01;
+    const { index, state } = prepare();
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    expect(production["quote"](index, state, 1).stock).toBe(0);
   });
 });

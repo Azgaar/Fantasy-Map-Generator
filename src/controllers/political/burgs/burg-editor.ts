@@ -240,7 +240,7 @@ function renderDialog(): void {
         <button id="burgLocate" data-tip="${t("Zoom map and center view in the burg")}" class="icon-target"></button>
         <button
           id="burgProductionOverview"
-          data-tip="${t("Show production overview for this burg")}"
+          data-tip="${t("Show economy overview for this burg")}"
           class="icon-chart-bar"
         ></button>
         <button

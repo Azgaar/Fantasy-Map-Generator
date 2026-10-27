@@ -94,14 +94,14 @@ const columns: EditorColumn<Burg>[] = [
   {
     key: "state",
     label: t("State"),
-    width: "8em",
+    width: "7em",
     sortBy: b => pack.states[b.state!]?.name || "",
     sortType: "alpha"
   },
   {
     key: "culture",
     label: t("Culture"),
-    width: "10em",
+    width: "7em",
     mobileHidden: true,
     sortBy: b => pack.cultures[b.culture!]?.name || "",
     sortType: "alpha"
@@ -109,7 +109,7 @@ const columns: EditorColumn<Burg>[] = [
   {
     key: "group",
     label: t("Group"),
-    width: "6em",
+    width: "7em",
     mobileHidden: true,
     sortBy: b => b.group || "",
     sortType: "alpha"
@@ -147,10 +147,10 @@ const columns: EditorColumn<Burg>[] = [
   {
     key: "features",
     label: t("Features", { context: "burg" }),
-    width: "6em",
+    width: "5em",
     mobileHidden: true,
     sortType: "alpha",
-    sortBy: b => (b.capital && b.port ? "a-capital-port" : b.capital ? "c-capital" : b.port ? "p-port" : "z-burg")
+    sortBy: getFeaturesKey
   },
   {
     key: "tags",
@@ -375,7 +375,8 @@ function renderBurgsPage(view: TableView<Burg>): void {
     const grossProduct = rn(b.product || 0, 2);
     const productPerCapita = rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2);
     const treasury = rn(b.treasury || 0, 2);
-    const features = b.capital && b.port ? "a-capital-port" : b.capital ? "c-capital" : b.port ? "p-port" : "z-burg";
+    const features = getFeaturesKey(b);
+    const market = getCenteredMarket(b);
     const state = pack.states[b.state!].name;
     const prov = pack.cells.province[b.cell];
     const province = prov ? pack.provinces[prov].name : "";
@@ -423,6 +424,8 @@ function renderBurgsPage(view: TableView<Burg>): void {
             class="icon-star-empty${b.capital ? "" : " inactive"}" style="padding: 0 1px;"></span>
           <span data-tip="${b.port ? t("This burg is a port") : t("This burg is NOT a port")}"
           class="icon-anchor${b.port ? "" : " inactive"}" style="font-size: .9em; padding: 0 1px;"></span>
+          <span data-tip="${market ? t("This burg is the center of the {{market}} market. Click to open it", { market: Markets.getName(market) }) : t("This burg is NOT a market center")}"
+          class="icon-store${market ? " pointer" : " inactive"}" data-market="${market?.i ?? ""}" style="font-size: .85em; padding: 0 1px;"></span>
         </div>
         <div data-col="tags">
           <input
@@ -459,10 +462,23 @@ function renderBurgsPage(view: TableView<Burg>): void {
   body.querySelectorAll("div > span.icon-dot-circled").forEach(el => void el.addEventListener("click", zoomIntoBurg));
   body.querySelectorAll("div > span.locks").forEach(el => void el.addEventListener("click", toggleBurgLockStatus));
   body.querySelectorAll("div > span.icon-pencil").forEach(el => void el.addEventListener("click", openBurgEditor));
+  body.querySelectorAll<HTMLElement>("span.icon-store[data-market]").forEach(el => {
+    if (el.dataset.market) el.addEventListener("click", () => Controllers.MarketOverview.open(+el.dataset.market!));
+  });
   body.querySelectorAll("div > input.burgTags").forEach(el => void el.addEventListener("change", burgChangeTags));
   body
     .querySelectorAll("div > span.icon-trash-empty")
     .forEach(el => void el.addEventListener("click", triggerBurgRemove));
+}
+
+/** The market whose center the burg is, if any */
+function getCenteredMarket(burg: Burg) {
+  return pack.markets.find(market => market.centerBurgId === burg.i);
+}
+
+/** Sorts capitals first, then ports, then market centers */
+function getFeaturesKey(burg: Burg): string {
+  return [burg.capital, burg.port, getCenteredMarket(burg)].map(feature => (feature ? "a" : "z")).join("");
 }
 
 function burgChangeTags(this: HTMLInputElement): void {

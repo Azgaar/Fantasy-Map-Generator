@@ -91,6 +91,24 @@ describe("MarketsModule", () => {
       expect(deal).toBeNull();
     });
 
+    it("pays the margin to the market's center burg as each trade happens, and takes it back on goods kept", () => {
+      const market: Market = { i: 1, centerBurgId: 1, color: "#f00", goods: { 0: { stock: 100, price: 10 } } };
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      marketsModule["marketById"] = [market, market];
+      globalThis.pack.markets = [market];
+      const center: Burg = { i: 1, market: 1, treasury: 0 } as any;
+      globalThis.pack.burgs = [{ i: 0 } as any, center];
+      const good = globalThis.pack.goods[0];
+
+      marketsModule.buy({ burg: center, good, units: 2, kind: DEAL_KINDS.demand }); // at 10.5: 0.5 of it margin
+      expect(center.treasury).toBe(1);
+
+      marketsModule.sell({ burg: center, good, units: 4, taxRate: 0 });
+      marketsModule.keep({ burg: center, good, units: 1 });
+      const margins = globalThis.pack.deals.reduce((sum: number, deal: Deal) => sum + marketsModule.getMargin(deal), 0);
+      expect(center.treasury).toBeCloseTo(margins, 1);
+    });
+
     it("buy() adds the market's state sales tax to the price and records it for that state", () => {
       const market: Market = { i: 1, centerBurgId: 1, color: "#f00", goods: { 0: { stock: 100, price: 10 } } };
       // biome-ignore lint/complexity/useLiteralKeys: private access for testing

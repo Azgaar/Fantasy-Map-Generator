@@ -33,7 +33,7 @@ test.each([
   ["market overview", () => MarketOverview.open(-1)],
   ["market deals overview", () => MarketDealsOverview.open(-1)],
   ["trade details", () => TradeDetails.open([0, 0, 0, 0, 0, 0, 0, 0, 0])],
-  ["production overview", () => ProductionOverview.open(-1)],
+  ["economy overview", () => ProductionOverview.open(-1)],
   ["production chains", () => ProductionChains.open()],
   ["goods editor", () => GoodsEditor.open()]
 ])("%s requests the goods icons on entry", (_, open) => {

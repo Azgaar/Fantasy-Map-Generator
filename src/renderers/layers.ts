@@ -376,17 +376,17 @@ const mapLayers = [
   }),
   new Layer({ id: "ice", parent: "viewbox", draw: drawIce }),
   new Layer({
+    id: "markets",
+    parent: "viewbox",
+    draw: drawMarkets,
+    erase: removeMarkets
+  }),
+  new Layer({
     id: "goods",
     parent: "viewbox",
     children: ["goodsCells", "goodsIcons", "goodsBurgs"].map(id => ({ id, tag: "g" })),
     draw: drawGoods,
     erase: removeGoods
-  }),
-  new Layer({
-    id: "markets",
-    parent: "viewbox",
-    draw: drawMarkets,
-    erase: removeMarkets
   }),
   new Layer({
     id: "trade",

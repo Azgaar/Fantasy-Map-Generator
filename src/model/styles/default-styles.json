@@ -520,7 +520,7 @@
     "groups": {
       "goodsCells": {
         "attrs": {
-          "opacity": 0.5,
+          "opacity": 0.4,
           "filter": null
         }
       },
@@ -540,7 +540,7 @@
         "attrs": {
           "opacity": 1,
           "stroke": "#41414f",
-          "stroke-width": 0.2,
+          "stroke-width": 0.1,
           "filter": null
         },
         "options": {
@@ -1147,10 +1147,11 @@
       "stroke-width": 1,
       "stroke-dasharray": null,
       "stroke-linecap": null,
+      "stroke-linejoin": "miter",
       "filter": null
     },
     "options": {
-      "size": 3,
+      "size": 4,
       "iconSize": 5,
       "icon": "glyph-2696-fe0f"
     }

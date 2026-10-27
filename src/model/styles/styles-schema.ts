@@ -721,6 +721,7 @@ export const stylesSchema = z.strictObject({
       "stroke-width": variant(strokeWidth, { group: t("Stroke") }),
       "stroke-dasharray": variant(strokeDasharray, { group: t("Stroke") }),
       "stroke-linecap": variant(strokeLinecap, { group: t("Stroke") }),
+      "stroke-linejoin": variant(strokeLinejoin, { group: t("Stroke") }),
       filter
     }),
     options: z.strictObject({
@@ -728,7 +729,7 @@ export const stylesSchema = z.strictObject({
         label: t("Marker size"),
         range: [1, 12],
         step: 0.5,
-        tip: t("Set market marker (circle) size in pixels")
+        tip: t("Set market marker size in pixels")
       }),
       iconSize: number({
         label: t("Icon size"),

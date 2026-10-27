@@ -184,10 +184,12 @@ export class MarketsModule {
 
     const MIN_COST = 1;
     const BASE_COST = 10;
-    const DIFFERENT_STATE_COST = 100;
+    const DIFFERENT_STATE_COST = 200;
     const WATER_COST = 50;
     const WATER_COST_FOR_NON_PORTS = 50;
     const ISLAND_CHANGE_COST = 100;
+
+    const nativeOwner = new Uint8Array(cells.i.length); // cell is owned by a market of its own state
 
     const tradeCenters = {} as Record<number, boolean>;
     for (const market of markets) {
@@ -207,17 +209,19 @@ export class MarketsModule {
 
       for (const neighborId of cells.c[cellId]) {
         const isWater = cells.h[neighborId] < 20;
+        const isNative = Boolean(cells.state[neighborId]) && burg.state === cells.state[neighborId];
         let cost = BASE_COST;
         if (isWater) {
           cost += WATER_COST;
           if (burg.port !== cells.f[neighborId]) cost += WATER_COST_FOR_NON_PORTS;
         } else {
           if (cells.f[burg.cell] !== cells.f[neighborId]) cost += ISLAND_CHANGE_COST;
-          if (cells.state[neighborId] && burg.state !== cells.state[neighborId]) cost += DIFFERENT_STATE_COST;
+          if (cells.state[neighborId] && !isNative) cost += DIFFERENT_STATE_COST;
         }
 
         const totalCost = priority + cost;
-        if (!costs[neighborId] || totalCost < costs[neighborId]) {
+        const nativeTie = totalCost === costs[neighborId] && isNative && !nativeOwner[neighborId];
+        if (!costs[neighborId] || totalCost < costs[neighborId] || nativeTie) {
           costs[neighborId] = totalCost;
           queue.push({ cellId: neighborId, marketId, burg, priority: totalCost }, totalCost);
 
@@ -225,6 +229,7 @@ export class MarketsModule {
           if (isWater && !hasGood) continue; // exclude water cells without goods
 
           cellMarket[neighborId] = marketId;
+          nativeOwner[neighborId] = isNative ? 1 : 0;
         }
       }
     }
@@ -466,6 +471,7 @@ export class MarketsModule {
 
     const trade = { units: actualUnits, price, tax: rn(taxPerUnit * actualUnits, 2), carriage: rn(transport, 2) };
     this.recordDeal(burg.i!, market.i, good.i, kind, trade);
+    this.payMargin(market, kind, trade);
 
     marketGood.stock = rn(Math.max(0, marketGood.stock - actualUnits), 2);
     marketGood.price = rn(this.applyMarketPressure(good.value, marketGood.price, actualUnits), 2);
@@ -508,6 +514,7 @@ export class MarketsModule {
     if (kept < 0.01) return null;
 
     const sale = this.findDeal(burg.i!, market.i, good.i, DEAL_KINDS.sale)!;
+    this.payMargin(market, DEAL_KINDS.sale, { units: -kept, price: sale[5], tax: 0, carriage: sale[8] }); // undone with the sale
     sale[6] = rn(sale[6] * (1 - kept / sale[4]), 2);
     sale[4] = rn(sale[4] - kept, 2);
     this.recordDeal(burg.i!, market.i, good.i, DEAL_KINDS.kept, { units: kept, price: 0, tax: 0 });
@@ -529,6 +536,7 @@ export class MarketsModule {
     const tax = rn(units * price * taxRate, 2);
     const trade = { units: rn(units, 2), price, tax, carriage: rn(transport, 2) };
     this.recordDeal(burg.i!, market.i, good.i, DEAL_KINDS.sale, trade);
+    this.payMargin(market, DEAL_KINDS.sale, trade);
 
     marketGood.stock = rn(marketGood.stock + units, 2);
     marketGood.price = rn(this.applyMarketPressure(good.value, marketGood.price, -units), 2);
@@ -566,10 +574,32 @@ export class MarketsModule {
    * The deal's money to its market: what a burg pays for goods, carriage included, less the taxes and tariff the
    * market passes to the states; minus what the market pays a burg for its goods. Goods a burg kept never reach it
    */
-  getMarketIncome([, , , kind, units, price, tax, tariff]: Deal): number {
+  getMarketIncome(deal: Deal): number {
+    const [, , , kind, units, price, tax, tariff] = deal;
     if (kind === DEAL_KINDS.kept) return 0;
-    if (kind === DEAL_KINDS.sale) return -units * price;
-    return units * price - tax - tariff;
+    const margin = this.getMargin(deal); // the center burg's, not the market's
+    if (kind === DEAL_KINDS.sale) return -units * price - margin;
+    return units * price - tax - tariff - margin;
+  }
+
+  /** The market margin on the deal, earned by the center burg of the deal's market */
+  getMargin([, , , kind, units, price, tax, tariff, carriage]: Deal): number {
+    return this.marginOf(kind, { units, price, tax, tariff, carriage });
+  }
+
+  /** The margin in a trade: the market's spread between its own price and the price it buys or sells at, before taxes and carriage */
+  private marginOf(kind: DealKind, { units, price, tax, tariff = 0, carriage = 0 }: Trade): number {
+    if (kind === DEAL_KINDS.kept || !units) return 0;
+    if (kind === DEAL_KINDS.sale) return (units * (price + carriage) * MARKET_MARGIN) / (1 - MARKET_MARGIN);
+    const marketPrice = price - (tax + tariff) / units - carriage;
+    return (units * marketPrice * MARKET_MARGIN) / (1 + MARKET_MARGIN);
+  }
+
+  /** The center burg's merchants take the margin as the trade happens, so the hub can spend it the same day */
+  private payMargin(market: Market, kind: DealKind, trade: Trade): void {
+    const center = pack.burgs[market.centerBurgId];
+    if (!center?.i || center.removed) return;
+    center.treasury = rn((center.treasury || 0) + this.marginOf(kind, trade), 2);
   }
 
   /** An import is a purchase from a market of another state than the burg's own market: only an import may pay a tariff */
@@ -792,6 +822,7 @@ export class MarketsModule {
       carriage: rn(this.getTransport(source, burg, good), 2)
     };
     this.recordDeal(burg.i!, source.i, good.i, kind, trade);
+    this.payMargin(source, kind, trade);
 
     row.price = rn(this.applyMarketPressure(good.value, row.price, actualUnits), 2);
     row.stock = rn(row.stock - actualUnits, 2);

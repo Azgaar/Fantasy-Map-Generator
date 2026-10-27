@@ -61,7 +61,7 @@ const GRAND_EDITORS: Record<string, Opener> = {
   lakes: target => Controllers.LakesEditor.open(target),
   tradeAnimation: (_target, parent) => Controllers.TradeDetails.open(select<SVGElement, Deal>(parent).datum()),
   markets: (target, parent) => {
-    if (target.tagName !== "path") Controllers.MarketOverview.open(Number(parent.dataset.id));
+    if (target.classList.contains("pin")) Controllers.MarketOverview.open(Number(parent.dataset.id));
   }
 };
 

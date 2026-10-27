@@ -261,18 +261,19 @@ function getGoodsTip(target: SVGElement, cellId: number): string | undefined {
 
   if (target.closest("#goodsIcons")) {
     const good = Goods.get(Number(target.closest<SVGElement>("[data-i]")?.dataset.i));
-    return withHint(
-      t("{{good}} bonus resource", { good: good?.name }),
-      t("Click to open Goods Editor and select displayed goods")
-    );
+    return t("{{good}} bonus resource", { good: good?.name });
   }
 
   if (target.closest("#goodsCells")) {
     const produced = Production.getCellProduction(cellId, Goods.getBiomesProduction());
-    return withHint(
-      t("Cell rural production: {{production}}", { production: formatProduction(produced) }),
-      t("Click to select displayed goods in Goods Editor")
-    );
+    // the overview draws only the bonus resource cells
+    const good = !pack.goods.some(good => good.visible) && Goods.get(bonusGoodId);
+    if (good) {
+      const amount = produced[good.i] || 0;
+      const unit = amount === 1 ? good.unit : `${good.unit}s`;
+      return t("{{good}} bonus resource: {{amount}} {{unit}} per day", { good: good.name, amount, unit });
+    }
+    return t("Cell rural production: {{production}}", { production: formatProduction(produced) });
   }
 
   if (target.closest("#goodsBurgs")) {
@@ -281,11 +282,12 @@ function getGoodsTip(target: SVGElement, cellId: number): string | undefined {
     if (!burg || burg.removed) return undefined;
 
     select(burgEl).raise();
+    // an overview pie sector: only its goods
+    const sector = target.closest<SVGElement>("[data-goods]")?.dataset.goods?.split(",");
+    const produced = Production.getBurgProduction(burg);
+    const shown = sector ? Object.fromEntries(sector.map(goodId => [goodId, produced[+goodId]])) : produced;
     return withHint(
-      t("{{burg}} urban production: {{production}}", {
-        burg: burg.name,
-        production: formatProduction(Production.getBurgProduction(burg))
-      }),
+      t("{{burg}} urban production: {{production}}", { burg: burg.name, production: formatProduction(shown) }),
       t("Click to view")
     );
   }

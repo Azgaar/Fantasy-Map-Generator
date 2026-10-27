@@ -6,7 +6,7 @@ The economy is a **snapshot of one typical day**, not a running simulation. Ever
 
 1. Open the _Layers_ tab and turn on **Goods**, **Markets** and **Trade**.
 2. **Markets** colors the map by trade region. Click a market to see what is has in stock and at what is the local price.
-3. **Goods** shows resource icons on the cells that hold a bonus resource, and a plate on each burg with what it makes. Click a burg plate to open its **Production Overview**.
+3. **Goods** shows resource icons on the cells that hold a bonus resource, and a plate on each burg with what it makes. Click a burg plate to open its **Economy Overview**.
 4. **Trade** animates trade: wagons on roads, ships at sea. Click a moving marker to see what the burg sells or buys there and how the price adds up.
 5. Open _Tools_ → _States_ and look at the **Treasury** column to see which states got rich.
 
@@ -14,7 +14,7 @@ The economy is a **snapshot of one typical day**, not a running simulation. Ever
 
 Goods are everything that can be produced and traded: grain, wood, iron, cloth, jewelry and about 70 more. Open _Tools_ → _Goods_ (<kbd>Shift</kbd>+<kbd>G</kbd>) for the full list.
 
-- **Raw goods** (grain, wool, iron, timber) come from the land. Rural people produce them depending on the biome they live in, and some cells hold a **bonus resource**, a rich deposit of one good shown with an icon on the Goods layer. With no good selected in the _Goods Editor_, the Goods layer shows an overview of all production valued at base prices: cells shade from pale yellow to dark brown as their output grows, and every producing burg is a circle sized by its output. Select goods to see them in detail: cells in the goods' colors, their bonus resources, and up to three products on every burg plate.
+- **Raw goods** (grain, wool, iron, timber) come from the land. Rural people produce them depending on the biome they live in, and some cells hold a **bonus resource**, a rich deposit of one good shown with an icon on the Goods layer. With no good selected in the _Goods Editor_, the Goods layer shows an overview: cells with a bonus resource are colored in their good's color, as they produce far more than the rest, and every producing burg is a pie of its five most valuable goods, with the rest in a grey sector, sized by its output valued at base prices. Hover a cell or a sector to see how much it makes. Select goods to see them in detail: cells in the goods' colors, their bonus resources, and up to three products on every burg plate.
 - **Manufactured goods** (tools, cloth, weapons, ships) are made in burgs from **recipes**: for example cloth from wool, or a ship from wood, ropes and sails. Long chains like ore → steel → weapons need several workshops' worth of workers.
 - Some goods are both: they come from the land and can also be manufactured.
 
@@ -36,7 +36,7 @@ When you apply changes to a good, the dialog can re-place it and recalculate the
 
 A **market** is a regional trade hub. Markets are placed on the larger towns, with capitals and ports favored, and each market's region spreads over the land around it. Most inhabited islands get a market of their own, and an island with no port always does, since no ship can reach it. Regions prefer to stay within one state and one landmass. Every burg belongs to exactly one market.
 
-Each market keeps a stock and a price for every good. Prices depend on local supply and demand. The market buys a little below its price and sells a little above it (5% each way).
+Each market keeps a stock and a price for every good. Prices depend on local supply and demand. The market buys a little below its price and sells a little above it (5% each way). That difference, the market margin, goes to the merchants of the burg at the market's center, so busy markets make their hub rich.
 
 Open _Tools_ → _Markets_ for the overview. From there you can add a market on any burg, remove one, paint market regions by hand and **compare** a good's stock and price across all markets. Click a market to rename it, move its center to another burg or view its deals. Cells left without a market are counted in the overview: their rural and urban population (burgs) takes no part in the economy.
 
@@ -44,7 +44,7 @@ Open _Tools_ → _Markets_ for the overview. From there you can add a market on 
 
 1. **The countryside delivers.** Every cell sends its rural production to its market: grain from the farmland, timber from the forests, fish from the coast, plus whatever its bonus resource yields.
 2. **Prices are set.** Each market prices every good from how much it has against how much its burgs want.
-3. **Burgs work.** Burgs take turns, the largest first, each putting up to 5 workers to work per turn. A burg's workers are its population (1 worker = 1 popilation point). Each worker goes to whatever pays best at that moment: the good's sale price minus the cost of its ingredients, divided by the workers the whole chain needs. Ingredients come from the burg's own market or, when the market has none, from wherever they arrive cheapest. Everything made is sold back to the market, so later burgs see the prices the earlier ones moved.
+3. **Burgs work.** Burgs take turns, the largest first, each putting up to 5 workers to work per turn. About a third of a burg's people work in trades (35%); the rest serve, build, farm, or are too young or too old. A burg of 10 population points has 3.5 workers, and each worker works one recipe a day. Each worker goes to whatever pays best at that moment, and the more of a burg's workers already make a good, the more each of them makes, so burgs settle on a specialty or two. Workers are also better at a good their market makes more of than the rest of the world, so neighboring burgs cluster around regional trades. A worker's pay is the good's sale price, less the burg's own sales tax on it, minus the cost of its ingredients (taxes included), divided by the workers the whole chain needs. When nothing pays after taxes, the workers stay idle, so a very high sales tax leaves people without work. Ingredients come from the burg's own market or, when the market has none, from wherever they arrive cheapest. Everything made is sold back to the market, so later burgs see the prices the earlier ones moved.
 4. **Burgs fill their demand.** With the money they earned, burgs buy goods for their people: 🍖 food first, then 🛠️ utilities, 🧱 construction, 🛡️ military and 💎 luxury, cheapest coverage first. Goods a burg made itself are kept for its own people when that is cheaper than buying.
 5. **States collect taxes** on every trade.
 
@@ -88,9 +88,9 @@ Burgs and states have a **treasury**. Markets hold no money, but the Markets ove
 - **Buys**: what the market paid burgs for their goods. A burg's own sales tax comes out of what it receives.
 - **Value**: Sales minus Buys, plus what the market's unsold stock is worth at its prices.
 
-The market keeps its margin and the carriage, as if its merchants did the carrying. A market's deals list the same income deal by deal; hover it to see the sum. Goods a burg kept for its people never pass through the market and are not counted.
+The market keeps the carriage, as if its merchants did the carrying; the margin goes to the burg at its center. A market's deals list the same income deal by deal; hover it to see the sum. Goods a burg kept for its people never pass through the market and are not counted.
 
-- A burg earns money by selling what it makes and spends it on ingredients and on its people's needs. Its treasury is shown in the _Burg Editor_, and you can type any value there to make a burg rich or broke. Every time the economy is regenerated, it starts again from zero, so a value you type lasts until the next regeneration.
+- A burg earns money by selling what it makes and spends it on ingredients and on its people's needs. A market's center burg also earns the market margin on every trade made at its market, shown as Market margin in its Economy Overview. Its treasury is shown in the _Burg Editor_, and you can type any value there to make a burg rich or broke. Every time the economy is regenerated, it starts again from zero, so a value you type lasts until the next regeneration.
 - A state's treasury is what it collected that day: its taxes plus a **poll tax** per population point. It is recalculated from scratch each time the economy runs.
 
 Every state sets three things in its treasury dialog (_Tools_ → _States_, click a treasury value):
@@ -103,9 +103,9 @@ Starting tax rates depend on the state form: theocracies tax sales heavily, mona
 
 Example: a burg buys 10 units of a good priced 10 at its market, carried 0.5 per unit, in a state with 15% sales tax. It pays 10.5 (price with the market's 5%) + 1.5 (tax) + 0.5 (carriage) = 12.5 per unit, 125 in total, and its state collects 15.
 
-# Reading a burg's Production Overview
+# Reading a burg's Economy Overview
 
-Click a burg plate on the Goods layer, or the production button in the _Burg Editor_. The top shows the burg's population, its market, its initial demand and what stayed **uncovered**, its production, its gross product, wealth per person, the taxes it paid and its treasury. Below is the cycle in order:
+Click a burg plate on the Goods layer, or the production button in the _Burg Editor_. The top shows the burg's population, its unemployed workers (only when some found no work worth doing), its market, its initial demand and what stayed **uncovered**, its production, its gross product, wealth per person, the taxes it paid and its treasury. Below is the cycle in order:
 
 - **LOCAL**: the free output of a bonus resource on the burg's cell.
 - **BUY**: ingredients and goods for its people, bought from its own market or another one. The market column names where it came from; hover it to see whether it was an import from another state.
@@ -137,7 +137,7 @@ After Goods or Markets, run Production or Economy to see the effect on trade. Ke
 
 # Questions
 
-**Why does a burg not make an expensive product even though the ingredients exist?** Workers go wherever they earn most per worker. A long chain takes many workers, and a cheaper good with a better margin may win. Ingredients that are expensive locally or far away also eat the profit.
+**Why does a burg not make an expensive product even though the ingredients exist?** Workers go wherever they earn most per worker. A long chain takes many workers, and a cheaper good with a better margin may win. Ingredients that are expensive locally or far away, or a high sales tax in the burg's state, also eat the profit.
 
 **Why is a good never produced anywhere?** Its price is too close to the cost of its ingredients. Raise its base price a little and regenerate production.
 
