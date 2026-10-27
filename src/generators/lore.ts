@@ -1,5 +1,6 @@
 // The map's lore in `options.map.lore`: its name, calendar and the author's description. See docs/architecture/configuration.md
 import { Names } from "@/generators/names-generator";
+import type { HistoryMode } from "@/types/history";
 import { requireName } from "@/utils/validationUtils";
 
 class LoreModel {
@@ -27,9 +28,22 @@ class LoreModel {
     options.map.lore.description = text;
   }
 
-  /** Configure the chronicle generator: how deep a past it reaches, how many fallen realms it weaves, and whether they leave echoes on the map */
-  setHistory(config: { span?: number; realms?: number; density?: number; echoes?: boolean; renames?: boolean }): void {
+  /** Configure the chronicle generator: how its political past is made, how deep a past it reaches, how many
+   * fallen realms it weaves, and whether they leave echoes on the map */
+  setHistory(config: {
+    mode?: HistoryMode;
+    span?: number;
+    realms?: number;
+    density?: number;
+    echoes?: boolean;
+    renames?: boolean;
+  }): void {
     const history = options.map.lore.history;
+    if (config.mode !== undefined) {
+      if (config.mode !== "archaeologist" && config.mode !== "epochs")
+        throw new Error('The history mode must be "archaeologist" or "epochs"');
+      history.mode = config.mode;
+    }
     if (config.span !== undefined) {
       if (typeof config.span !== "number" || !Number.isFinite(config.span) || config.span < 100)
         throw new Error("The span must be a number of at least 100 years");

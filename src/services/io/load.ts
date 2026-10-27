@@ -23,8 +23,8 @@ import { Services } from "@/services";
 import { declareFont } from "@/services/fonts";
 import { logStats } from "@/services/logging";
 import { clearCache, compareVersions, isValidVersion, parseMapVersion, VERSION } from "@/services/versioning";
-import { emptyHistory } from "@/types/history";
 import { ensureEl, escapeHtml, last, link, parseError, rn, safeParseJSON } from "@/utils";
+import { FIRST_SNAPSHOT_RECORD, HISTORY_RECORD, parseHistory } from "./epochs-format";
 import { normalizeCultureBases, parseNameBases } from "./name-bases-format";
 
 async function quickLoad(): Promise<void> {
@@ -370,7 +370,14 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.addedLabels = data[47] ? JSON.parse(data[47]) : [];
     pack.relief = data[49] ? JSON.parse(data[49]) : [];
     pack.journeys = data[52] ? JSON.parse(data[52]) : [];
-    pack.history = data[53] ? JSON.parse(data[53]) : emptyHistory();
+    pack.history = parseHistory(
+      data[HISTORY_RECORD],
+      data.slice(FIRST_SNAPSHOT_RECORD),
+      pack.cells.i.length,
+      reason => {
+        ERROR && console.error(`[Data integrity] ${reason}`);
+      }
+    );
 
     // slot 31: id|name|min|max|d|m|names; legacy maps carry no id column
     Names.nameBases = parseNameBases(data[31]);

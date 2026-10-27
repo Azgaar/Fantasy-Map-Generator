@@ -4,6 +4,7 @@
 import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
 import { dialogState } from "@/components/dialog/state";
 import { Controllers } from "@/controllers";
+import { goToPresent, isInPast, scrubRange, scrubToYear, viewedEpoch } from "@/controllers/historical-view";
 import { Chronicle } from "@/generators/history-generator";
 import { getCellPoint } from "@/generators/journeys/journey-places";
 import type { Era, HistoricalFigure, HistoryEvent, HistoryEventType, HistRef } from "@/types/history";
@@ -30,6 +31,11 @@ const TEMPLATE = /* html */ `
     #${dialogId} .legendsRealmLine { margin-top: .3em; }
     #${dialogId} .legendsRealm .legendsEvent { padding-left: .5em; }
     #${dialogId} .legendsEmpty { padding: 1em; font-style: italic; opacity: .7; }
+    #${dialogId} #legendsScrub { display: flex; gap: .5em; align-items: center; padding: .3em .5em; }
+    #${dialogId} #legendsScrubRange { flex: 1; }
+    #${dialogId} #legendsScrubYear { font-weight: bold; white-space: nowrap; }
+    #${dialogId} #legendsScrubNow { flex: none; }
+    #${dialogId} .legendsEra.past { background-color: rgba(0, 0, 0, 0.08); }
   </style>
 `;
 
@@ -60,8 +66,9 @@ function open(): void {
   Chronicle.sync();
   renderDialog();
   renderBody();
+  goToPresent(); // a fresh browser always opens at the present (also a no-op when not scrubbing)
 
-  $(`#${dialogId}`).dialog({ title: "Legends", resizable: false, position, close: () => destroyDialog(dialogId) });
+  $(`#${dialogId}`).dialog({ title: "Legends", resizable: false, position, close: closeBrowser });
 }
 
 function renderDialog(): void {
@@ -82,7 +89,7 @@ function renderDialog(): void {
       <label for="legendsActor" data-tip="Show only events involving this kind of entity" style="grid-template-columns: 3.4em 7em">Actors:
         <select id="legendsActor">
           <option value="">All</option>
-          ${["state", "realm", "culture", "religion", "burg", "figure"].map(kind => `<option>${kind}</option>`).join("")}
+          ${["state", "realm", "culture", "religion", "burg", "figure", "polity"].map(kind => `<option>${kind}</option>`).join("")}
         </select>
       </label>
       <label for="legendsSearch" data-tip="Filter by the event text" style="grid-template-columns: 4em 10em">Search:
@@ -91,6 +98,14 @@ function renderDialog(): void {
     </div>
 
     <div id="legendsBody"></div>
+
+    <div id="legendsScrub" class="editorToolbar" hidden data-tip="Drag to see the past. The map shows the year the slider is at">
+      <label for="legendsScrubRange" style="grid-template-columns: auto 1fr">
+        <input id="legendsScrubRange" type="range" min="0" max="0" step="1" value="0" />
+      </label>
+      <span id="legendsScrubYear"></span>
+      <button id="legendsScrubNow" class="icon-history pointer" data-tip="Return to the present"></button>
+    </div>
 
     <div id="legendsFooter" class="totalLine">
       <div data-tip="Events shown" style="margin-left: 4px">Events:&nbsp;<span id="legendsCount">0</span></div>
@@ -115,6 +130,49 @@ function renderDialog(): void {
   ensureEl("legendsSearch").addEventListener("input", onFilterChange);
   ensureEl("legendsRefresh").addEventListener("click", renderBody);
   ensureEl("legendsExport").addEventListener("click", exportChronicle);
+  wireScrub();
+}
+
+function closeBrowser(): void {
+  goToPresent(); // the map comes back to the present, the dialog was maybe scrubbing a past
+  destroyDialog(dialogId);
+}
+
+/** the range input spanning the epochs; hidden when the map has no past to scrub */
+function wireScrub(): void {
+  const scrub = ensureEl("legendsScrub");
+  const range = ensureEl<HTMLInputElement>("legendsScrubRange");
+  const bounds = scrubRange();
+
+  if (!bounds) {
+    scrub.hidden = true;
+    return;
+  }
+
+  scrub.hidden = false;
+  range.min = String(bounds.min);
+  range.max = String(bounds.max);
+  range.value = String(options.map.lore.calendar.year);
+  updateScrubLabel();
+
+  range.addEventListener("input", onScrubInput);
+  ensureEl("legendsScrubNow").addEventListener("click", () => {
+    range.value = String(options.map.lore.calendar.year);
+    onScrubInput();
+  });
+}
+
+function onScrubInput(): void {
+  const range = ensureEl<HTMLInputElement>("legendsScrubRange");
+  scrubToYear(+range.value);
+  updateScrubLabel();
+  renderBody();
+}
+
+function updateScrubLabel(): void {
+  const range = ensureEl<HTMLInputElement>("legendsScrubRange");
+  const era = isInPast() ? viewedEpoch()?.era : options.map.lore.calendar.era;
+  ensureEl("legendsScrubYear").innerHTML = escapeHtml([range.value, era].filter(Boolean).join(" · "));
 }
 
 function switchTab(next: "timeline" | "realms" | "figures"): void {
@@ -163,9 +221,14 @@ function renderBody(): void {
   renderTimeline(body);
 }
 
-/** events under era headers; an event belongs to the last era that has begun by its year */
+/** events under era headers; an event belongs to the last era that has begun by its year.
+ *  While a year is scrubbed, only the events the chronicle records by then are shown */
 function renderTimeline(body: HTMLElement): void {
-  const events = pack.history.events.filter(matches);
+  const visibleUntil = getScrubRange();
+  const events = pack.history.events
+    .filter(matches)
+    .filter(event => visibleUntil === null || event.year <= visibleUntil);
+  const currentEra = viewedEpoch()?.era;
   const { eras } = pack.history;
   let current: string | undefined;
   let lines = "";
@@ -174,13 +237,22 @@ function renderTimeline(body: HTMLElement): void {
     const header = era ? `${era.name} (${formatSpan(era.from, era.to)})` : "Age unremembered";
     if (header !== current) {
       current = header;
-      lines += `<div class="legendsEra">${escapeHtml(header)}</div>`;
+      const isScrubbedEra = isInPast() && era?.name === currentEra;
+      lines += `<div class="legendsEra${isScrubbedEra ? " past" : ""}">${escapeHtml(header)}</div>`;
     }
     lines += renderEvent(event);
   }
   body.innerHTML = `<div class="legendsTimeline">${lines}</div>`;
   wireRows(body);
   ensureEl("legendsCount").textContent = String(events.length);
+}
+
+/** the year the slider shows, or null when the browser does not span the epochs */
+function getScrubRange(): number | null {
+  const row = document.getElementById("legendsScrub");
+  const range = row?.querySelector<HTMLInputElement>("input#legendsScrubRange");
+  if (!row || row.hidden || !range) return null;
+  return +range.value;
 }
 
 function eraFor(eras: Era[], year: number): Era | undefined {
@@ -224,6 +296,7 @@ function actorLabel(ref: HistRef): string {
   if (ref.kind === "culture") return pack.cultures[ref.id]?.name ?? "an ancient people";
   if (ref.kind === "religion") return pack.religions[ref.id]?.name ?? "an old faith";
   if (ref.kind === "figure") return pack.history.figures?.[ref.id]?.name ?? "a nameless name";
+  if (ref.kind === "polity") return pack.history.polities?.[ref.id]?.name ?? "a fallen polity";
   return "unknown";
 }
 

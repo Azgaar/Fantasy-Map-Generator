@@ -1,11 +1,12 @@
 // The map's chronicle: dated events, fallen realms and eras. See docs/plans/history-generation.md
 import type { Emblem } from "@/types/emblems";
 
-export type HistRefKind = "state" | "realm" | "burg" | "culture" | "religion" | "figure";
+export type HistRefKind = "state" | "realm" | "burg" | "culture" | "religion" | "figure" | "polity";
 
 export interface HistRef {
   kind: HistRefKind;
   id: number;
+  epoch?: number; // the epoch a state id belongs to; absent for stable, deep-time entities
 }
 
 export type HistoryEventType =
@@ -21,6 +22,9 @@ export type HistoryEventType =
   | "plague"
   | "coronation"
   | "succession";
+
+/** how the political past is made: dated backwards from the present, or generated epoch by epoch */
+export type HistoryMode = "archaeologist" | "epochs";
 
 export interface HistoryEvent {
   i: number;
@@ -70,11 +74,39 @@ export interface HistoricalFigure {
   roles: HistoricalRole[];
 }
 
+/** a polity's stable identity: one lineage across epochs, even as its form and borders change */
+export interface EpochPolity {
+  id: number;
+  name: string;
+  form: string;
+  capital: number; // burg id
+  cells: number; // cells held in the last epoch it appears in
+  color: string;
+  founded: number;
+  fallen?: number;
+  successorOf?: number; // the lineage it grew out of
+  parent?: number; // the lineage it split from
+}
+
+/** one political layer of the past: its cast, its borders and the years it spans */
+export interface HistoryEpoch {
+  i: number;
+  from: number;
+  to: number;
+  era: string;
+  polities: EpochPolity[];
+  snapshot: number; // index into history.snapshots
+}
+
 export interface History {
   events: HistoryEvent[];
   realms: Realm[];
   eras: Era[];
   figures?: HistoricalFigure[];
+  epochs?: HistoryEpoch[]; // the political layers of the past
+  polities?: EpochPolity[]; // the lineages, one list for the whole history
+  /** the borders per epoch, held at runtime and stored in .map records 54+; never JSON-stringified */
+  snapshots?: Uint16Array[];
 }
 
 export const emptyHistory = (): History => ({ events: [], realms: [], eras: [] });

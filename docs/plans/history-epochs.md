@@ -1,6 +1,6 @@
 # Plan — Epochs: Layered Political Regeneration
 
-Updated: 2026-10-21. Status: **future work**, not started. Companions: the shipped retroactive
+Updated: 2026-10-26. Status: **all five slices shipped**. Companions: the shipped retroactive
 history in [history-generation.md](history-generation.md) (the Archaeologist), and the era concept
 that epochs would ground. The mod-merge plan's "Epochs" bullet in
 [history-generation.md](history-generation.md#future-phases-out-of-scope-for-now) is this document.
@@ -38,12 +38,13 @@ The visible map does not change. The user sees the same world, with a deeper pas
 
 | Piece | State |
 |---|---|
-| The Archaeologist | shipped (slices 1–4): one political state, dated backwards |
+| The Archaeologist | shipped (slices 1–5): one political state, dated backwards |
 | Eras | one per fallen realm (`The Launceston Era`), plus the configured present age |
-| Events | founded, wars, subjugations, migrations, schisms, collapses, golden ages, battles |
+| Events | founded, wars, subjugations, migrations, schisms, collapses, golden ages, battles, coronations, successions |
 | Realms | 1–3 invented empires whose partition explains the present borders |
-| Legends browser | timeline grouped by era, realms tab, filters, zoom links |
-| Epochs | not implemented — the political layer is generated once, so there is nothing to replay |
+| Figures | dynasties for the major states, a general per war; reigns dated backwards |
+| Legends browser | timeline grouped by era, realms tab, figures tab, filters, zoom links |
+| Epochs | the engine (`Epochs.generate`, slice 1), the `.map` slots (slice 2), `lore.history.mode` with the epochs as the eras (slice 3), and the historical view (slice 4): the year slider under the Legends browser timeline scrubs `pack.cells.state`/`pack.states` to the epoch's snapshot and polity records, redraws states, borders, labels and the legend, and restores the pack on the way back |
 
 Two gaps this plan closes: the eras are derived from invented realms rather than from anything
 causal, and the events of a state's own past are inferred rather than remembered.
@@ -123,6 +124,7 @@ With epochs, the political events are written **as they happen**, not inferred:
 | `battle` | the war that decided a collapse, at a frontier cell |
 | `goldenAge` | a polity that survived the epoch and grew |
 | `migration`, `schism` | unchanged — these are deep time, still dated backwards |
+| `coronation`, `succession` | the figure events, scoped to the epoch a reign belongs to |
 
 State ids are **not stable across epochs**: the third epoch's state 3 is not the first epoch's
 state 3. Every reference needs an epoch, so `HistRef` gains one (see below).
@@ -181,7 +183,7 @@ interface History {
 
 ```ts
 interface HistRef {
-  kind: "state" | "realm" | "burg" | "culture" | "religion" | "polity";
+  kind: "state" | "realm" | "burg" | "culture" | "religion" | "figure" | "polity";
   id: number;
   epoch?: number;   // the epoch this id belongs to; absent for deep-time entities
 }
@@ -251,8 +253,10 @@ belongs to an empire's age. That is a separate plan, and it needs the epochs fir
 
 ## Interaction with the rest of the fork
 
-- **Figures** (deferred, the history plan's slice 5): a dynasty belongs to a lineage and spans
-  epochs, so its rulers' reigns are epoch-scoped. The epochs make slice 5 better, not harder.
+- **Figures** (shipped, the history plan's slice 5): dynasties and generals are dated backwards
+  from the present and tied to a state id that is not stable across epochs. With epochs a reign
+  is scoped to the epoch and the lineage (`polity` targets), and a ruler whose polity falls does
+  so with a reign that ends exactly at the collapse.
 - **Astral Cartographer**: the mapping is applied by hand to the present map, so it is unaffected.
   If the epochs ever grow era-flavored naming, the Astral names would follow the era.
 - **OpenConquest**: a campaign is compiled from the present world, so it is unaffected. The
@@ -263,17 +267,23 @@ belongs to an empire's age. That is a separate plan, and it needs the epochs fir
 
 ## Two modes
 
-`lore.history.mode` chooses between them:
+`lore.history.mode` chooses between them (shipped): an enum field on the strict `lore.history`
+schema, defaulting to `archaeologist`. Old files carry no mode at all — the schema default and the
+loader's repair both land them on `archaeologist`, and `Chronicle.generate()` itself treats
+anything but `"epochs"` as the archaeologist, so a missing field can never reach the epochs path.
+The Lore editor exposes it as a `History mode` select, and greys out the fallen-realms controls
+(they only shape the invented past) while the epochs mode holds.
 
 | Mode | What the political past is | Cost |
 |---|---|---|
 | `archaeologist` (shipped) | inferred backwards from the present borders | free |
-| `epochs` | really generated, K times | K × the political layer |
+| `epochs` (shipped) | really generated, K times | K × the political layer |
 
 The default stays `archaeologist` until the epochs are proven: a world with no epochs must look
 exactly as it does now. In `epochs` mode the political events come from the epoch engine and the
 cultural and religious events stay retroactive — those are deep time, and there is only one of
-them.
+them. The dynasties are lineage-scoped: each remembered lineage rules through every epoch of its
+presence, its reigns confined per epoch.
 
 ## Performance
 
@@ -318,11 +328,65 @@ the cost is not yet measured. Before committing to a default K:
 
 | # | Slice | Size | Acceptance |
 |---|---|---|---|
-| 1 | The engine: regenerate the political layer per epoch, with a collapse between | large | Two epochs produce different borders; the events describe what happened |
-| 2 | The data model and the save format: epochs, polities, snapshot records | medium | A map with epochs round-trips; an old map loads unchanged |
-| 3 | The mode switch: `lore.history.mode`, the epochs as the eras | medium | `archaeologist` is untouched; `epochs` replaces the invented eras with real ones |
-| 4 | The historical view and the slider | large | Dragging the year shows the past borders, the past legend, and the past events |
-| 5 | The figures, in epoch scope (the history plan's slice 5, done properly) | medium | Dynasties span epochs; a ruler's reign is epoch-scoped |
+| 1 ✅ | The engine: regenerate the political layer per epoch, with a collapse between | large | Two epochs produce different borders; the events describe what happened |
+| 2 ✅ | The data model and the save format: epochs, polities, snapshot records | medium | A map with epochs round-trips; an old map loads unchanged |
+| 3 ✅ | The mode switch: `lore.history.mode`, the epochs as the eras | medium | `archaeologist` is untouched; `epochs` replaces the invented eras with real ones |
+| 4 ✅ | The historical view and the slider | large | Dragging the year shows the past borders, the past legend, and the past events |
+| 5 ✅ | The figures (shipped) in epoch scope: reigns per epoch, a reign ending at its polity's collapse | medium | Dynasties span epochs; a ruler's reign is epoch-scoped |
+
+Slice 1 ships as `src/generators/epochs-generator.ts` (`Epochs.generate`): it returns the epochs,
+lineages, events and snapshots without touching the live pack. The per-epoch cast is expanded with
+the existing `States.expandStates()` cost model; a collapse empties the weakest polity's land and
+the next epoch's foundings flood it, recording the heirs as `successorOf`.
+
+Slice 2 ships as `src/services/io/epochs-format.ts`: `History` gains `epochs`, `polities` and the
+runtime-only `snapshots`; `serializeHistory` keeps record 53 as the chronicle JSON (runtime
+snapshots stripped, the epochs kept only when every one carries a full-length snapshot) and writes
+one comma-joined snapshot record per epoch from 54 on, exactly as `cells.state` is stored in
+record 25. `parseHistory` rebuilds `history.snapshots` on load and repairs a truncated or garbled
+snapshot tail by dropping the epochs — the chronicle and the polities stay, the slider is
+disabled, and an old map with no records past 53 is untouched. The JSON export carries the
+snapshots as plain arrays (`historyForJson`), and nothing generates epochs yet: wiring the mode is
+slice 3, the slider is slice 4.
+
+Slice 3 ships the mode: `lore.history.mode` joins the strict `lore.history` schema
+(`src/components/options-schema.ts`) with the `archaeologist` default, and `Lore.setHistory`
+validates and stores it. `Chronicle.generate()` branches on it: the archaeologist path is the
+same code as before, and a new `generateEpochs()` runs the engine, merges its political events
+under the retroactive cultural and religious ones, installs `epochs`, `polities` and `snapshots`
+on `pack.history`, retires the invented realms (no ghosts, no echoes, no realm events) and
+derives the eras from the epochs — each epoch's own `era` name, contiguous, with the configured
+`lore.calendar.era` as the present age. The Legends browser resolves `polity` actors and filters
+them. The pre-created state foundings, wars and vassalages are *not* recorded in this mode: the
+polities own that story.
+
+Slice 4 ships the view: `src/controllers/historical-view.ts` swaps
+`pack.cells.state` and `pack.states` for the year's epoch — the snapshot remapped from lineage
+ids to compact state ids, one pseudo-`State` per cast polity (name, form, colour, capital burg
+for the label pole, `getFullName`'s scheme) with the present neutral in slot 0 — then redraws the
+states, borders and labels layers. The present States legend, when open, is replaced by a box of
+the epoch's polities (largest first, empties skipped) and restored on the way back; emblems,
+military and every Conquest layer are hidden while the past is up and shown again after. The view
+is read-only through the `customization` guard every editor opens with (the same rule the battle
+screen uses); anything that replaces the world closes the dialog, and the new-map prompt first
+leaves the view and the world token discards a stale restore instead of
+overwriting the new map. The slider lives under the Legends browser's body: dragging the year
+moves both the map and the timeline, which filters to the events recorded by the viewed year, and
+the currently-viewed era's header is marked. A `Now` button returns the present; leaving always
+restores the live pack exactly (throwing renderer included). Follow-ups, in slice order: an event
+clickable to jump the map to its epoch, the "epoch" filter dimension browsers gain from it,
+markers and the `emblems` of a past epoch, provinces drawn from the epoch.
+
+Slice 5 re-scopes the figures: `Chronicle.generateEpochs()` runs the engine first, then
+`emitEpochFigures()` reads its cast. A lineage is remembered when its peak `cells` over all epochs
+rivals the greatest (the same `largest / 3` rule the archaeologist uses for `majorStates()`); each
+remembered lineage gets one dynasty whose reigns are confined to the epochs of its presence —
+1–3 rulers per epoch, `rand()`-chosen, successions chaining across epoch boundaries, a collapsed
+lineage's last reign ending exactly at `polity.fallen` and a survivor's left open. The shared
+emitter `ruleSegments()` replaces the old dynasty loop; the archaeologist calls it with a single
+open-ended segment, so that path is unchanged. Every engine `war` gains a general of the leading
+polity's capital people, targeted at `{kind: "polity"}` like every other figure role, and the
+Legends browser groups and resolves them through the polities list it already reads.
 
 ## Risks
 
