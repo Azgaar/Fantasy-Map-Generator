@@ -90,6 +90,14 @@ Terms every `uk.json` string uses the same way. Rules for all catalogs are in
 | wealth / gross product       | багатство / валовий продукт |
 | treasury                     | скарбниця                  |
 | sales tax / poll tax         | податок з продажів / подушний податок |
+| prosperity / living standards | добробут / рівень життя               |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | руїна / злидні / бідність / скромний достаток / достаток / процвітання / заможність / розкіш / пишнота / небувале багатство |
+| consumption / need / want    | споживання / потреба / забаганка      |
+| product (economy) / townspeople / rural people | продукт / городяни / сільські мешканці |
+| exports / imports / trade balance | вивіз / ввіз / торговий баланс        |
+| inequality / tax burden      | нерівність / податковий тягар         |
+| sector: rural / manufacturing / trade | село / ремесла / торгівля             |
+| economy type: agrarian / artisan / mercantile | аграрна / ремісницька / торговельна   |
 
 ## Interface
 

@@ -1,6 +1,8 @@
 import { type HierarchyCircularNode, pack as packLayout, select, stratify } from "d3";
 import { Controllers } from "@/controllers";
+import { prosperityTip, renderProsperityPercent } from "@/controllers/economy/prosperity-view";
 import { Markets } from "@/model/economy/markets-generator";
+import { Prosperity } from "@/model/economy/prosperity";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Names } from "@/model/society/names-generator";
@@ -47,6 +49,7 @@ const CSV_COLUMNS = [
   "Market",
   "Product",
   "Wealth",
+  "Prosperity",
   "Treasury",
   "X",
   "Y",
@@ -130,17 +133,26 @@ const columns: EditorColumn<Burg>[] = [
     sortBy: b => rn(b.product || 0, 2)
   },
   {
+    key: "prosperity",
+    label: t("Prosperity"),
+    width: "6.5em",
+    mobileHidden: true,
+    tip: t("Click to sort by prosperity: how well the burg's people live"),
+    sortBy: b => Prosperity.getBurg(b.i!)?.prosperity ?? -1
+  },
+  {
     key: "productpercapita",
     label: t("Wealth"),
     width: "6.5em",
     mobileHidden: true,
-    tip: t("Click to sort by burg wealth (gross product per capita)"),
+    tip: t("Click to sort by wealth: product per person"),
     sortBy: b => rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2)
   },
   {
     key: "treasury",
     label: t("Treasury"),
     width: "6.5em",
+    hidden: true,
     mobileHidden: true,
     sortBy: b => rn(b.treasury || 0, 2)
   },
@@ -215,13 +227,16 @@ function renderDialog(): void {
         <div data-tip="${t("Average population")}" style="margin-left: 12px" data-col="population">
           ${t("Avg population")}:&nbsp;<span id="burgsFooterPopulation">0</span>
         </div>
-        <div data-tip="${t("Average gross product")}" style="margin-left: 12px" data-col="grossproduct">
+        <div data-tip="${t("Average prosperity")}" style="margin-left: 12px" data-col="prosperity">
+          ${t("Avg prosperity")}:&nbsp;<span id="burgsFooterProsperity">0</span>
+        </div>
+        <div data-tip="${t("Average product: the day's sales, less their sales tax and the ingredients bought")}" style="margin-left: 12px" data-col="grossproduct">
           ${t("Avg product")}:&nbsp;<span id="burgsFooterGrossProduct">0</span> 🟡
         </div>
-        <div data-tip="${t("Average wealth (product per capita)")}" style="margin-left: 12px" data-col="productpercapita">
+        <div data-tip="${t("Average wealth: product per person")}" style="margin-left: 12px" data-col="productpercapita">
           ${t("Avg wealth")}:&nbsp;<span id="burgsFooterProductPerCapita">0</span> 🟡
         </div>
-        <div data-tip="${t("Average treasury")}" style="margin-left: 12px" data-col="treasury">
+        <div data-tip="${t("Average treasury: money at the end of the day")}" style="margin-left: 12px" data-col="treasury">
           ${t("Avg treasury")}:&nbsp;<span id="burgsFooterTreasury">0</span> 🟡
         </div>
       </div>
@@ -355,6 +370,8 @@ function renderBurgsPage(view: TableView<Burg>): void {
   let totalProduct = 0;
   let totalProductPerCapita = 0;
   let totalTreasury = 0;
+  let totalProsperity = 0;
+  let measured = 0;
 
   for (const b of view.all) {
     const population =
@@ -366,15 +383,22 @@ function renderBurgsPage(view: TableView<Burg>): void {
     totalProduct += grossProduct;
     totalProductPerCapita += productPerCapita;
     totalTreasury += treasury;
+    const living = Prosperity.getBurg(b.i!);
+    if (living) {
+      totalProsperity += living.prosperity;
+      measured++;
+    }
   }
 
-  const treasuryTip = t("Treasury: the burg's money after the day's trade, in {{money}}", { money: getMoneyUnit() });
+  const treasuryTip = t("Treasury: the burg's money at the end of the day, in {{money}}", { money: getMoneyUnit() });
+  const openTip = t("Click to open the burg's economy");
   for (const b of view.rows) {
     const population =
       b.population! * options.map.units.population.scale * options.map.units.population.urbanization.rate;
     const grossProduct = rn(b.product || 0, 2);
     const productPerCapita = rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2);
     const treasury = rn(b.treasury || 0, 2);
+    const living = Prosperity.getBurg(b.i!);
     const features = getFeaturesKey(b);
     const market = getCenteredMarket(b);
     const state = pack.states[b.state!].name;
@@ -393,6 +417,7 @@ function renderBurgsPage(view: TableView<Burg>): void {
         data-population=${population}
         data-grossproduct=${grossProduct}
         data-productpercapita=${productPerCapita}
+        data-prosperity=${living ? rn(living.prosperity * 100) : ""}
         data-treasury=${treasury}
         data-features="${features}"
       >
@@ -406,17 +431,20 @@ function renderBurgsPage(view: TableView<Burg>): void {
           <span data-tip="${t("Burg population")}" class="icon-male"></span>
           <input data-tip="${t("Burg population")}" value=${si(population)} disabled />
         </div>
-        <div data-col="grossproduct">
-          <span data-tip="${t("Gross Product: local sale revenue minus purchased ingredient costs during the production.")}">🟡</span>
-          <input data-tip="${t("Gross Product: local sale revenue minus purchased ingredient costs during the production.")}" value=${grossProduct} disabled />
+        <div data-col="grossproduct" class="burgEconomy pointer" data-tip="${sentences(t("Product: the day's sales, less their sales tax and the ingredients bought"), openTip)}">
+          <span>🟡</span>
+          <input class="pointer" value=${grossProduct} readonly />
         </div>
-        <div data-col="productpercapita">
-          <span data-tip="${t("Wealth: gross product divided by population")}">🟡</span>
-          <input data-tip="${t("Wealth: gross product divided by population")}" value=${productPerCapita} disabled />
+        <div data-col="prosperity" class="burgEconomy pointer" data-tip="${living ? sentences(prosperityTip(living.prosperity), openTip) : t("Prosperity: no economy data yet")}">
+          ${living ? renderProsperityPercent(living.prosperity) : "—"}
         </div>
-        <div data-col="treasury">
-          <span data-tip="${treasuryTip}">🟡</span>
-          <input data-tip="${treasuryTip}" value=${treasury} disabled />
+        <div data-col="productpercapita" class="burgEconomy pointer" data-tip="${sentences(t("Wealth: product per person"), openTip)}">
+          <span>🟡</span>
+          <input class="pointer" value=${productPerCapita} readonly />
+        </div>
+        <div data-col="treasury" class="burgEconomy pointer" data-tip="${sentences(treasuryTip, openTip)}">
+          <span>🟡</span>
+          <input class="pointer" value=${treasury} readonly />
         </div>
         <div data-col="features">
           <span
@@ -453,6 +481,7 @@ function renderBurgsPage(view: TableView<Burg>): void {
     ? String(rn(totalProductPerCapita / view.all.length, 2))
     : "0";
   ensureEl("burgsFooterTreasury").innerHTML = view.all.length ? String(rn(totalTreasury / view.all.length, 2)) : "0";
+  ensureEl("burgsFooterProsperity").innerHTML = measured ? renderProsperityPercent(totalProsperity / measured) : "—";
 
   renderEditorPagination(ensureEl("burgsFooter"), view, burgsTable.goto);
 
@@ -462,6 +491,11 @@ function renderBurgsPage(view: TableView<Burg>): void {
   body.querySelectorAll("div > span.icon-dot-circled").forEach(el => void el.addEventListener("click", zoomIntoBurg));
   body.querySelectorAll("div > span.locks").forEach(el => void el.addEventListener("click", toggleBurgLockStatus));
   body.querySelectorAll("div > span.icon-pencil").forEach(el => void el.addEventListener("click", openBurgEditor));
+  body.querySelectorAll<HTMLElement>(".burgEconomy").forEach(el => {
+    el.addEventListener("click", () =>
+      Controllers.ProductionOverview.open(+(el.closest(".states") as HTMLElement).dataset.id!)
+    );
+  });
   body.querySelectorAll<HTMLElement>("span.icon-store[data-market]").forEach(el => {
     if (el.dataset.market) el.addEventListener("click", () => Controllers.MarketOverview.open(+el.dataset.market!));
   });
@@ -796,6 +830,7 @@ function downloadBurgsData(): void {
         market ? Markets.getName(market) : "",
         rn(b.product || 0, 2),
         rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2),
+        Prosperity.getBurg(b.i!) ? rn(Prosperity.getBurg(b.i!)!.prosperity * 100) : "",
         rn(b.treasury || 0, 2),
         b.x,
         b.y,

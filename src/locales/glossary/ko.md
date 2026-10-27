@@ -87,6 +87,14 @@ Terms every `ko.json` string uses the same way. Rules for all catalogs are in
 | trade / price / wealth       | 무역 / 가격 / 부     |
 | treasury                     | 국고                 |
 | sales tax / poll tax         | 판매세 / 인두세      |
+| prosperity / living standards | 번영도 / 생활 수준    |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | 피폐 / 극빈 / 가난 / 소박 / 넉넉함 / 번성 / 유복 / 호화 / 찬란 / 무쌍 |
+| consumption / need / want    | 소비 / 필요 / 바람   |
+| product (economy) / townspeople / rural people | 생산액 / 도시민 / 농민 |
+| exports / imports / trade balance | 수출 / 수입 / 무역 수지 |
+| inequality / tax burden      | 불평등 / 세 부담     |
+| sector: rural / manufacturing / trade | 농촌 / 수공업 / 무역  |
+| economy type: agrarian / artisan / mercantile | 농업형 / 공예형 / 상업형 |
 
 ## Interface
 

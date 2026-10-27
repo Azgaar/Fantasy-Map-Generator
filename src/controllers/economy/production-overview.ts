@@ -6,8 +6,9 @@ import type { Deal, DealKind, SourceOption, Trade } from "@/model/economy/market
 import { DEAL_KINDS, Markets } from "@/model/economy/markets-generator";
 import type { ProductionCandidate, ProductionLogEntry } from "@/model/economy/production-generator";
 import { isDemandEntry, isMfgEntry, isTradeEntry } from "@/model/economy/production-generator";
+import { Prosperity } from "@/model/economy/prosperity";
 import { Icons } from "@/model/icons";
-import type { Burg } from "@/model/political/burgs-generator";
+import { type Burg, Burgs } from "@/model/political/burgs-generator";
 import { formatPrice, getMoneyUnit } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
 import { Csv } from "@/services/io/csv";
@@ -18,6 +19,7 @@ import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 import { bindEconomyWiki, economyWikiButton } from "./economy-wiki";
+import { prosperityTip, renderProsperity, renderProsperityParts } from "./prosperity-view";
 import {
   carriageDistance,
   money,
@@ -92,6 +94,9 @@ function renderDialog(): void {
         #${dialogId} > div { width: auto }
         #${dialogId}Stats { margin-bottom: 0.85em; line-height: 1.6em }
         #${dialogId}Stats > div > span { margin-right: 0.6em }
+        #${dialogId}Stats .oneLine { white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+        #${dialogId}Stats .parts { color: #666 }
+        #${dialogId}Treasury { width: 7em; margin-left: 0.2em }
         #${dialogId} .productionGood { display: inline-flex; align-items: center; gap: 0.2em; vertical-align: middle }
         #${dialogId} table { width: 100%; table-layout: fixed; border-collapse: collapse; line-height: 1 }
         #${dialogId} thead th { position: sticky; top: 0; background: #eee }
@@ -591,17 +596,14 @@ function renderStats(burg: Burg): void {
 
   const targets = DEMAND_PRIORITY.map(category => population * DEMAND_TARGET_FACTORS[category]);
   const covered = DEMAND_PRIORITY.map(() => 0);
-  let totalTax = 0;
-  for (const [dealBurg, , goodId, kind, units, , tax, tariff] of pack.deals) {
-    if (dealBurg !== burg.i) continue;
-    totalTax += tax + tariff;
-    if (kind !== DEAL_KINDS.demand && kind !== DEAL_KINDS.kept) continue;
+  const consumption = Prosperity.getConsumption(burg.i!);
+  consumption.forEach((units, goodId) => {
     const coverage = Goods.get(goodId)?.demandCoverage ?? {};
     DEMAND_PRIORITY.forEach((category, index) => {
       covered[index] += units * (coverage[category] || 0);
     });
-  }
-  const uncovered = targets.map((target, index) => Math.max(0, target - covered[index]));
+  });
+  const living = Prosperity.getBurg(burg.i!);
 
   const product = Math.max(0, burg.product || 0);
   const wealth = population > 0 ? product / population : 0;
@@ -613,10 +615,10 @@ function renderStats(burg: Burg): void {
     : 0;
   const treasuryTip = isCenter
     ? t(
-        "The burg's money after the day's buying and selling, in {{money}}. As its market's center, it also takes the market margin on every trade made there",
+        "Treasury: the burg's money at the end of the day, in {{money}}. As its market's center, it also takes the market margin",
         { money: getMoneyUnit() }
       )
-    : t("The burg's money after the day's buying and selling, in {{money}}", { money: getMoneyUnit() });
+    : t("Treasury: the burg's money at the end of the day, in {{money}}", { money: getMoneyUnit() });
 
   ensureEl(`${dialogId}Stats`).innerHTML = /* html */ `
     <div>
@@ -624,38 +626,57 @@ function renderStats(burg: Burg): void {
       ${EconomyDebug.get(burg.i!) ? `<span><b>${t("Order")}:</b> ${t("{{rank}} of {{total}}", { rank: burgs.indexOf(burg) + 1, total: burgs.length })}</span>` : ""}
       <span><b>${t("Market")}:</b> ${market ? Markets.getName(market) : ""}</span>
     </div>
-    <div data-tip="${t("Uncovered of initial demand, by category: what the burg still lacks after its demand purchases and kept goods, of what its people need")}"><b>${t("Demand")}:</b> ${renderDemand(uncovered, targets)}</div>
-    <div><b>${t("Production")}:</b> ${renderProduction(burg) || t("None")}</div>
+    <div data-tip="${t("Production: goods the burg made today, units a day")}"><b>${t("Production")}:</b> ${renderGoods(burg.production ?? []) || t("None")}</div>
+    <div data-tip="${t("Consumption: goods the burg's people bought or kept for themselves today, units a day")}"><b>${t("Consumption")}:</b> ${renderGoods(consumption.flatMap((units, goodId) => (units ? [[goodId, units] as [number, number]] : []))) || t("None")}</div>
+    <div data-tip="${t("Demand: of each need, what the burg's goods covered of what its people need, and the wants they bought beyond it")}"><b>${t("Demand")}:</b> ${renderDemand(covered, targets)}</div>
+    ${living ? `<div class="oneLine" data-tip="${prosperityTip(living.prosperity)}"><b>${t("Prosperity")}:</b> ${renderProsperity(living.prosperity)} <span class="parts">(${renderProsperityParts(living)})</span></div>` : ""}
     <div>
-      <span data-tip="${t("Gross Product: local sale revenue minus purchased ingredient costs during the production.")}"><b>${t("Product")}:</b> <span class="positive">${formatPrice(product)}</span></span>
-      <span data-tip="${t("Product per capita: gross product divided by population.")}"><b>${t("Wealth")}:</b> <span class="positive">${formatPrice(wealth)}</span></span>
-      <span data-tip="${t("Sales tax and tariffs the burg paid: on its sales, deducted from the revenue; on its purchases, included in the price. Each goes to the treasury of the state that levies it")}"><b>${t("Total Tax")}:</b> <span class="negative">${formatPrice(totalTax)}</span></span>
-      ${isCenter ? `<span data-tip="${t("What the burg's merchants took as the market margin, 5% of the market's price, on every trade made at its market today. Trade income, not part of the product")}"><b>${t("Market margin")}:</b> <span class="positive">${formatPrice(margin)}</span></span>` : ""}
-      <span data-tip="${treasuryTip}"><b>${t("Treasury")}:</b> <span class="${treasury >= 0 ? "positive" : "negative"}">${formatPrice(treasury)}</span></span>
+      <span data-tip="${t("Product: the day's sales, less their sales tax and the ingredients bought")}"><b>${t("Product")}:</b> <span class="positive">${formatPrice(product)}</span></span>
+      <span data-tip="${t("Wealth: product per person")}"><b>${t("Wealth")}:</b> <span class="positive">${formatPrice(wealth)}</span></span>
+      ${isCenter ? `<span data-tip="${t("Market margin: what the burg's merchants took today, 10% of every trade at its market. Trade income, not part of the product")}"><b>${t("Market margin")}:</b> <span class="positive">${formatPrice(margin)}</span></span>` : ""}
+      <span data-tip="${sentences(treasuryTip, t("Type to change. It lasts until the economy is regenerated"))}"><b><label for="${dialogId}Treasury">${t("Treasury")}</label>:</b> 🟡<input id="${dialogId}Treasury" type="number" step="0.01" value="${rn(treasury, 2)}" /></span>
     </div>`;
+  ensureEl<HTMLInputElement>(`${dialogId}Treasury`).addEventListener("change", function () {
+    if (Number.isFinite(this.valueAsNumber)) Burgs.setTreasury(burg.i!, this.valueAsNumber);
+  });
 }
 
-function renderDemand(uncovered: number[], targets: number[]): string {
+function renderDemand(covered: number[], targets: number[]): string {
   return DEMAND_PRIORITY.map((category, index) => {
-    const lacks = rn(uncovered[index] || 0, 2);
     const target = rn(targets[index] || 0, 2);
-    const tip = `${DEMAND_CATEGORY_LABELS[category]}: ${t("{{uncovered}} uncovered of {{target}}", { uncovered: lacks, target })}`;
-    return `<span data-tip="${tip}">${DEMAND_CATEGORY_ICONS[category]} <span class="${lacks > 0 ? "negative" : ""}">${lacks}</span>/${target}</span>`;
+    const met = rn(Math.min(covered[index] || 0, target), 2);
+    const wants = rn(Math.max(0, (covered[index] || 0) - target), 2);
+    const tip = `${DEMAND_CATEGORY_LABELS[category]}: ${t("{{covered}} of {{target}} needed", { covered: met, target })}${wants ? `, ${t("{{wants}} more as wants", { wants })}` : ""}`;
+    const extra = wants ? ` <span class="positive">+${wants}</span>` : "";
+    return `<span data-tip="${tip}">${DEMAND_CATEGORY_ICONS[category]} <span class="${met < target ? "negative" : ""}">${met}</span>/${target}${extra}</span>`;
   }).join(" • ");
 }
 
-// as in the Burg Editor, with the goods-layer badges
-function renderProduction(burg: Burg): string {
-  return (burg.production ?? [])
-    .toSorted((a, b) => b[1] - a[1])
-    .map(([goodId, units]) => {
+const SHOWN_GOODS = 8; // the rest are listed on hover
+
+/** Goods as the goods layer's badges with units a day, the most valuable first */
+function renderGoods(goods: [goodId: number, units: number][]): string {
+  const sorted = goods
+    .flatMap(([goodId, units]) => {
       const good = Goods.get(goodId);
-      if (!good) return "";
-      const unit = units === 1 ? good.unit : `${good.unit}s`;
-      const goodTip = t("{{good}}: {{amount}} {{unit}} per day", { good: good.name, amount: units, unit });
-      return `<span class="productionGood" data-tip="${goodTip}"><svg width="1.6em" height="1.6em">${goodBadge(good)}</svg>${rn(units, 2)}</span>`;
+      return good ? [{ good, amount: rn(units, 2) }] : [];
     })
+    .sort((a, b) => b.amount * b.good.value - a.amount * a.good.value);
+  const describe = ({ good, amount }: (typeof sorted)[number]) =>
+    t("{{good}}: {{amount}} {{unit}} per day", {
+      good: good.name,
+      amount,
+      unit: amount === 1 ? good.unit : `${good.unit}s`
+    });
+  const shown = sorted
+    .slice(0, SHOWN_GOODS)
+    .map(
+      item =>
+        `<span class="productionGood" data-tip="${describe(item)}"><svg width="1.6em" height="1.6em">${goodBadge(item.good)}</svg>${item.amount}</span>`
+    )
     .join(" ");
+  const rest = sorted.slice(SHOWN_GOODS);
+  return rest.length ? `${shown} +${t("{{count}} more", { count: rest.length })}` : shown;
 }
 
 function downloadHistoryCsv(): void {

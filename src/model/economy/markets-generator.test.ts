@@ -215,7 +215,7 @@ describe("MarketsModule", () => {
       marketsModule["days"] = [
         undefined,
         undefined,
-        { depth: [20], rural: [], ruralPeople: 0, cash: 0, income: 0, spent: 0, covered: [] }
+        { depth: [20], rural: [], ruralPeople: 0, cash: 0, income: 0, rent: 0, spent: 0, covered: [], bought: [] }
       ] as never;
 
       marketsModule.sell({ burg, good, units: 20, taxRate: 0 }); // a day's sales offered: down e^2 times
@@ -238,7 +238,7 @@ describe("MarketsModule", () => {
       marketsModule["days"] = [
         undefined,
         undefined,
-        { depth: [1e9], rural: [50], ruralPeople: 10, cash: 0, income: 0, spent: 0, covered: [] }
+        { depth: [1e9], rural: [50], ruralPeople: 10, cash: 0, income: 0, rent: 0, spent: 0, covered: [], bought: [] }
       ] as never;
 
       marketsModule.buy({ burg, good, units: 10, kind: DEAL_KINDS.demand }); // half the stock is rural: 5 of its units

@@ -1,9 +1,11 @@
 import { type HierarchyCircularNode, max, pack as packLayout, select, stratify } from "d3";
 import { Controllers } from "@/controllers";
 import { bindEconomyWiki, economyWikiButton } from "@/controllers/economy/economy-wiki";
+import { prosperityLevel, renderProsperityPercent } from "@/controllers/economy/prosperity-view";
 import { CULTURE_TYPE_LABELS } from "@/data/id-labels";
 import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
+import { StateEconomy } from "@/model/economy/state-economy";
 import { Pack } from "@/model/graph/pack-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import { STATE_FORMS, type State, States, type TariffRule } from "@/model/political/states-generator";
@@ -124,8 +126,36 @@ const columns: EditorColumn<State>[] = [
     label: t("Treasury"),
     width: "6em",
     mobileHidden: true,
-    tip: t("Click to sort by state treasury. Click on a value to view and edit taxes"),
+    tip: t("Click to sort by treasury: the state's taxes for the day. Click a value to open the state's economy"),
     sortBy: s => s.treasury || 0
+  },
+  {
+    key: "prosperity",
+    label: t("Prosperity"),
+    width: "6em",
+    mobileHidden: true,
+    tip: t("Click to sort by prosperity: how well the state's people live. Click a value to open the state's economy"),
+    sortBy: s => StateEconomy.getAccounts(s.i)?.prosperity ?? -1
+  },
+  {
+    key: "product",
+    label: t("Product"),
+    width: "6em",
+    hidden: true,
+    mobileHidden: true,
+    tip: t(
+      "Click to sort by product: what the state's people make in a day. Click a value to open the state's economy"
+    ),
+    sortBy: s => StateEconomy.getAccounts(s.i)?.product ?? 0
+  },
+  {
+    key: "wealth",
+    label: t("Wealth"),
+    width: "6em",
+    hidden: true,
+    mobileHidden: true,
+    tip: t("Click to sort by wealth: product per person. Click a value to open the state's economy"),
+    sortBy: s => StateEconomy.getAccounts(s.i)?.wealth ?? 0
   },
   {
     key: "type",
@@ -320,7 +350,7 @@ function renderDialog(): void {
     else if (classList.contains("icon-star-empty")) stateCapitalZoomIn(stateId);
     else if (classList.contains("icon-dot-circled")) Controllers.BurgsOverview.open({ stateId });
     else if (classList.contains("statePopulation")) changePopulation(stateId);
-    else if (classList.contains("stateTreasury")) openTreasuryDialog(stateId);
+    else if ($element.closest(".stateEconomy")) Controllers.StateEconomyOverview.open(stateId);
     else if (classList.contains("icon-book")) void Controllers.NotesEditor.open({ type: "state", id: stateId });
     else if (classList.contains("icon-pin")) toggleFog(stateId, classList);
     else if (classList.contains("icon-target"))
@@ -401,14 +431,15 @@ function renderStatesPage(view: TableView<State>): void {
     );
     const focused = select("#deftemp").select(`#fog #focusState${s.i}`).size();
     const treasuryTip = t(
-      "Current treasury: {{treasury}} {{money}}. Sales Tax: {{salesTax}}%. Poll Tax: {{pollTax}}%. Click to view and edit taxes",
+      "Treasury: the state's taxes for the day, {{treasury}} {{money}}. Sales tax: {{salesTax}}%. Poll tax: {{pollTax}} a head. Click to open the state's economy",
       {
         treasury: si(s.treasury),
         money: getMoneyUnit(),
         salesTax: rn((s.salesTax || 0) * 100, 1),
-        pollTax: rn((s.pollTax || 0) * 100, 1)
+        pollTax: rn(s.pollTax || 0, 2)
       }
     );
+    const accounts = s.i ? StateEconomy.getAccounts(s.i) : null;
 
     if (!s.i) {
       // Neutral line
@@ -457,6 +488,9 @@ function renderStatesPage(view: TableView<State>): void {
           <div data-tip="${populationTip}" class="statePopulation pointer">${si(population)}</div>
         </div>
         <div data-tip="${t("Neutrals collect no taxes")}" class="stateTreasury placeholder" data-col="treasury"></div>
+        <div class="placeholder" data-col="prosperity"></div>
+        <div class="placeholder" data-col="product"></div>
+        <div class="placeholder" data-col="wealth"></div>
         <select class="cultureType placeholder" data-col="type">${getTypeOptions(0)}</select>
         <div data-col="expansionism">
           <span class="icon-resize-full placeholder"></span>
@@ -486,6 +520,9 @@ function renderStatesPage(view: TableView<State>): void {
       data-population=${population}
       data-burgs=${s.burgs}
       data-treasury="${s.treasury}"
+      data-prosperity="${accounts?.prosperity ?? ""}"
+      data-product="${accounts?.product ?? ""}"
+      data-wealth="${accounts?.wealth ?? ""}"
       data-culture=${pack.cultures[s.culture].name}
       data-type=${s.type}
       data-expansionism=${s.expansionism}
@@ -518,7 +555,10 @@ function renderStatesPage(view: TableView<State>): void {
         <span data-tip="${populationTip}" class="icon-male"></span>
         <div data-tip="${populationTip}" class="statePopulation pointer">${si(population)}</div>
       </div>
-      <div data-tip="${treasuryTip}" class="stateTreasury pointer" data-col="treasury">🟡 ${si(s.treasury)}</div>
+      <div data-tip="${treasuryTip}" class="stateTreasury stateEconomy pointer" data-col="treasury">🟡 ${si(s.treasury)}</div>
+      <div data-tip="${accounts?.prosperity == null ? t("Prosperity: no economy data yet") : `${t("Prosperity: how well the people live, {{level}}", { level: prosperityLevel(accounts.prosperity) })}. ${t("Click to open the state's economy")}`}" class="stateEconomy stateProsperity pointer" data-col="prosperity">${accounts?.prosperity == null ? "—" : renderProsperityPercent(accounts.prosperity)}</div>
+      <div data-tip="${sentences(t("Product: what the state's people make in a day"), t("Click to open the state's economy"))}" class="stateEconomy stateProduct pointer" data-col="product">🟡 ${si(accounts?.product ?? 0)}</div>
+      <div data-tip="${sentences(t("Wealth: product per person"), t("Click to open the state's economy"))}" class="stateEconomy stateWealth pointer" data-col="wealth">🟡 ${rn(accounts?.wealth ?? 0, 2)}</div>
       <select data-tip="${sentences(t("State type"), t("Defines growth model"), t("Click to change"))}" class="cultureType" data-col="type">${getTypeOptions(
         s.type
       )}</select>
@@ -1235,6 +1275,7 @@ function togglePercentageMode(): void {
     const totalArea = +ensureEl("statesFooterArea").dataset.area!;
     const totalPopulation = +ensureEl("statesFooterPopulation").dataset.population!;
     const totalTreasury = pack.states.reduce((sum, s) => sum + (s.treasury || 0), 0);
+    const world = StateEconomy.getWorld();
     const totalCells = pack.states.reduce((sum, s) => sum + (s.i && !s.removed ? s.cells || 0 : 0), 0);
 
     ensureEl("statesBodySection")
@@ -1247,6 +1288,14 @@ function togglePercentageMode(): void {
         el.querySelector<HTMLElement>(".statePopulation")!.textContent =
           `${rn((+population! / totalPopulation) * 100)}%`;
         el.querySelector<HTMLElement>(".stateTreasury")!.textContent = `${rn((+treasury! / totalTreasury) * 100, 2)}%`;
+        // product is a share of the world's; wealth and prosperity are against the world's average
+        const { prosperity, product, wealth } = el.dataset;
+        const share = (value: string | undefined, total: number | null | undefined) =>
+          value && total ? `${rn((+value / total) * 100, 1)}%` : "—";
+        const cell = (name: string) => el.querySelector<HTMLElement>(name);
+        if (cell(".stateProduct")) cell(".stateProduct")!.textContent = share(product, world?.product);
+        if (cell(".stateWealth")) cell(".stateWealth")!.textContent = share(wealth, world?.wealth);
+        if (cell(".stateProsperity")) cell(".stateProsperity")!.textContent = share(prosperity, world?.prosperity);
       });
   } else {
     ensureEl("statesBodySection").dataset.type = "absolute";
@@ -1753,4 +1802,4 @@ function updateLockStatus(stateId: number, classList: DOMTokenList): void {
   classList.toggle("icon-lock");
 }
 
-export const StatesEditor = { open, showChart: showStatesChart };
+export const StatesEditor = { open, showChart: showStatesChart, openTaxes: openTreasuryDialog };

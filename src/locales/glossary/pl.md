@@ -108,6 +108,14 @@ Terms every `pl.json` string uses the same way. Rules for all catalogs are in
 | wealth / gross product           | bogactwo / produkt brutto                |
 | treasury                         | skarbiec                                 |
 | sales tax / poll tax             | podatek od sprzedaży / pogłówne          |
+| prosperity / living standards    | dobrobyt / poziom życia                  |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | skrajna nędza / nędza / bieda / skromny dostatek / dostatek / rozkwit / zamożność / przepych / wspaniałość / niezrównane bogactwo |
+| consumption / need / want        | konsumpcja / potrzeba / zachcianka       |
+| product (economy) / townspeople / rural people | produkt / mieszczanie / ludność wiejska  |
+| exports / imports / trade balance | wywóz / przywóz / bilans handlowy        |
+| inequality / tax burden          | nierówność / obciążenie podatkowe        |
+| sector: rural / manufacturing / trade | wieś / rzemiosło / handel                |
+| economy type: agrarian / artisan / mercantile | rolnicza / rzemieślnicza / kupiecka      |
 
 ## Interface
 

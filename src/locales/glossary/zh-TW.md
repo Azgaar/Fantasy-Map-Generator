@@ -35,6 +35,11 @@ catalog's terms are in [zh.md](zh.md); this file lists where Taiwan usage differ
 | procedure / engagement       | 程序            | 交戰進程 (procedure: 程序)   |
 | map                          | 地图            | 地圖                         |
 | view-only                    | 仅查看          | 僅供檢視                     |
+| cloud storage                | 云存储          | 雲端儲存                     |
+| debugging                    | 调试           | 偵錯                       |
+| console (developer)          | 控制台          | 主控台                      |
+| living standards             | 生活水平         | 生活水準                     |
+| Gini coefficient             | 基尼系数         | 吉尼係數                     |
 
 Terms that match Simplified in Taiwan too (生成, 更改, 配置, 文件 for documentation, 單元格 for cell)
 are kept as in `zh.md`.

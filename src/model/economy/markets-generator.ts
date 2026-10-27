@@ -38,8 +38,12 @@ export type Market = {
   color: string;
   name?: string;
   goods: Record<number, { stock: number; price: number }>;
+  rural?: RuralDay; // its rural people's last day, kept from the economy run
   note?: string;
 };
+
+/** A market's rural people's day: what their produce earned, the rent paid out of it, and what they bought with the rest */
+export type RuralDay = { earned: number; rent: number; spent: number; bought: [goodId: number, units: number][] };
 
 /** Units the budget pays for at the price, rounded down to the hundredth so the cost stays within it */
 const affordable = (budget: number, price: number) => Math.floor((budget / price) * 100 + 1e-6) / 100;
@@ -51,8 +55,10 @@ type MarketDay = {
   ruralPeople: number;
   cash: number;
   income: number;
+  rent: number;
   spent: number;
   covered: number[];
+  bought: number[];
 };
 
 export const DEAL_KINDS = { sale: 0, input: 1, demand: 2, kept: 3 } as const;
@@ -110,6 +116,8 @@ export class MarketsModule {
   private routeCosts: Float32Array[] | null = null; // by market then burg id, in map units
   private decima = 0; // a tenth of the map's diagonal, kept with the routes
   private days: MarketDay[] = []; // by market, for the economy run
+  private produce: Float32Array | null = null; // by cell: its rural produce at base prices, from the last run
+  private produceSource: unknown = null; // the cells it describes
   private carriage: Map<number, { decimas: Float64Array; imports: Uint8Array }> | null = null; // by burg then market, for the economy run
 
   regenerate(): Market[] {
@@ -273,8 +281,20 @@ export class MarketsModule {
   collectRuralProduction(): void {
     const biomeProduction = Goods.getBiomesProduction();
     this.days = [];
+    this.produce = new Float32Array(pack.cells.i.length);
+    this.produceSource = pack.cells;
     for (const market of pack.markets)
-      this.days[market.i] = { depth: [], rural: [], ruralPeople: 0, cash: 0, income: 0, spent: 0, covered: [] };
+      this.days[market.i] = {
+        depth: [],
+        rural: [],
+        ruralPeople: 0,
+        cash: 0,
+        income: 0,
+        rent: 0,
+        spent: 0,
+        covered: [],
+        bought: []
+      };
 
     for (const cellId of pack.cells.i) {
       const market = this.marketById[pack.cells.market[cellId]];
@@ -289,6 +309,7 @@ export class MarketsModule {
         const marketGood = this.getMarketGood(market, good);
         marketGood.stock = rn(marketGood.stock + amount, 2);
         day.rural[good.i] = (day.rural[good.i] || 0) + amount;
+        this.produce[cellId] += amount * good.value;
       }
     }
   }
@@ -345,10 +366,11 @@ export class MarketsModule {
         const earned = fromRural * this.customerSellPrice(marketGood.price);
         const rent = earned * CAPITAL_RENT;
         const capital = pack.burgs[pack.states[this.getMarketState(market)]?.capital || 0];
-        if (capital?.i && !capital.removed) capital.treasury = rn((capital.treasury || 0) + rent, 2);
-        else day.cash += rent; // no capital to pay: the countryside keeps it
-        day.cash += earned - rent;
-        day.income += earned - rent;
+        const paid = capital?.i && !capital.removed ? rent : 0; // no capital to pay: the countryside keeps it
+        if (paid) capital!.treasury = rn((capital!.treasury || 0) + paid, 2);
+        day.cash += earned - paid;
+        day.income += earned - paid;
+        day.rent += paid;
       }
     }
     marketGood.stock = rn(Math.max(0, marketGood.stock - units), 2);
@@ -378,6 +400,7 @@ export class MarketsModule {
         money -= cost;
         day.cash -= cost;
         day.spent += cost;
+        day.bought[good.i] = (day.bought[good.i] || 0) + units;
         for (const [other, share] of Object.entries(good.demandCoverage!)) {
           const i = DEMAND_PRIORITY.indexOf(other as DemandCategory);
           day.covered[i] = (day.covered[i] || 0) + units * (share || 0);
@@ -536,8 +559,19 @@ export class MarketsModule {
     this.carriage = new Map();
   }
 
-  /** Drops the carriage kept for the run: edits to burgs and states may change it */
+  /** Each cell's rural produce at base prices in the last run, while it describes the current cells */
+  getCellProduce(): Float32Array | null {
+    return this.produceSource === pack.cells ? this.produce : null;
+  }
+
+  /** Ends the run: keeps each market's rural day for the views, and drops the carriage, as edits to burgs and states may change it */
   endRun(): void {
+    for (const market of pack.markets) {
+      const day = this.days[market.i];
+      if (!day) continue;
+      const bought = day.bought.flatMap((units, goodId) => (units ? [[goodId, rn(units, 2)] as [number, number]] : []));
+      market.rural = { earned: rn(day.income + day.rent, 2), rent: rn(day.rent, 2), spent: rn(day.spent, 2), bought };
+    }
     this.carriage = null;
   }
 

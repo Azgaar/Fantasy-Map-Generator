@@ -59,6 +59,14 @@ Terms every `bn.json` string uses the same way. Rules for all catalogs are in
 | regiment / fleet                | রেজিমেন্ট / নৌবহর                |                                       |
 | market                          | বাজার                            |                                       |
 | good (trade)                    | পণ্য                             |                                       |
+| prosperity / living standards   | সমৃদ্ধি / জীবনযাত্রার মান        |                                       |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | বিধ্বস্ত / নিঃস্ব / দরিদ্র / সাধারণ / স্বাচ্ছন্দ্যপূর্ণ / সমৃদ্ধিশালী / সচ্ছল / ঐশ্বর্যময় / জাঁকজমকপূর্ণ / অতুলনীয় |  |
+| consumption / need / want       | ভোগ / প্রয়োজন / শখ              |                                       |
+| product (economy) / townspeople / rural people | উৎপাদ / নগরবাসী / গ্রামের মানুষ  |                                       |
+| exports / imports / trade balance | রপ্তানি / আমদানি / বাণিজ্য ভারসাম্য |                                       |
+| inequality / tax burden         | বৈষম্য / করের বোঝা               |                                       |
+| sector: rural / manufacturing / trade | গ্রামাঞ্চল / কারুশিল্প / বাণিজ্য |                                       |
+| economy type: agrarian / artisan / mercantile | কৃষিপ্রধান / কারিগরিপ্রধান / বণিকপ্রধান |                                       |
 
 ## Interface
 

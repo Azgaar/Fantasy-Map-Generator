@@ -51,6 +51,14 @@ Terms every `pt-BR.json` string uses the same way. Rules for all catalogs are in
 | transport                     | transporte                 |                                                     |
 | iceberg / glacier             | iceberg / geleira          |                                                     |
 | Armoria                       | Armoria                    | brand, kept                                         |
+| prosperity / living standards | prosperidade / padrão de vida |                                                     |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | miserável / indigente / pobre / modesto / confortável / próspero / abastado / opulento / esplêndido / sem igual |  |
+| consumption / need / want     | consumo / necessidade / desejo |                                                     |
+| product (economy) / townspeople / rural people | produto / habitantes dos povoados / camponeses |                                                     |
+| exports / imports / trade balance | exportações / importações / balança comercial |                                                     |
+| inequality / tax burden       | desigualdade / carga tributária; poll tax is “imposto por cabeça” |                                                     |
+| sector: rural / manufacturing / trade | campo / ofícios / comércio |                                                     |
+| economy type: agrarian / artisan / mercantile | agrária / artesã / mercantil |                                                     |
 
 ## Interface
 

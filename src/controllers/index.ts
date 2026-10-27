@@ -79,6 +79,8 @@ export const Controllers = createRegistry(
     RouteEditor: () => import("@/controllers/economy/routes/route-editor").then(m => m.RouteEditor),
     RouteGroupsEditor: () => import("@/controllers/economy/routes/route-groups-editor").then(m => m.RouteGroupsEditor),
     RoutesOverview: () => import("@/controllers/economy/routes/routes-overview").then(m => m.RoutesOverview),
+    StateEconomyOverview: () =>
+      import("@/controllers/economy/state-economy-overview").then(m => m.StateEconomyOverview),
     StatesEditor: () => import("@/controllers/political/states-editor").then(m => m.StatesEditor),
     StyleEditor: () => import("@/controllers/style").then(m => m.StyleEditor),
     StylePresetsEditor: () => import("@/controllers/style/style-preset").then(m => m.StylePreset),

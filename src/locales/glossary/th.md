@@ -79,6 +79,14 @@ Terms every `th.json` string uses the same way. Rules for all catalogs are in
 | deal / trade                    | ข้อตกลง / การค้า                 |
 | treasury                        | คลัง                             |
 | sales tax / poll tax            | ภาษีการขาย / ภาษีรายหัว          |
+| prosperity / living standards   | ความรุ่งเรือง / ความเป็นอยู่     |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | แร้นแค้น / อนาถา / ยากจน / พอประมาณ / สุขสบาย / รุ่งโรจน์ / มั่งมี / หรูหรา / โอ่อ่า / หาที่เปรียบมิได้ |
+| consumption / need / want       | การบริโภค / ความจำเป็น / สิ่งที่อยากได้ |
+| product (economy) / townspeople / rural people | ผลผลิต / ชาวเมือง / ชาวชนบท      |
+| exports / imports / trade balance | สินค้าออก / สินค้าเข้า / ดุลการค้า |
+| inequality / tax burden         | ความเหลื่อมล้ำ / ภาระภาษี        |
+| sector: rural / manufacturing / trade | ชนบท / งานช่าง / การค้า          |
+| economy type: agrarian / artisan / mercantile | เกษตรกรรม / หัตถกรรม / พาณิชย์   |
 
 ## Interface
 

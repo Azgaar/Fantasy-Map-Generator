@@ -78,6 +78,14 @@ Terms every `de.json` string uses the same way. Rules for all catalogs are in
 | deal / trade                 | Geschäft / Handel               |
 | treasury                     | Staatskasse                     |
 | sales tax / poll tax         | Umsatzsteuer / Kopfsteuer       |
+| prosperity / living standards | Wohlergehen / Lebensstandard    |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | verelendet / mittellos / arm / bescheiden / auskömmlich / blühend / wohlhabend / prachtvoll / glanzvoll / unvergleichlich |
+| consumption / need / want    | Verbrauch / Bedürfnis (nie „Bedarf“) / Wunsch |
+| product (economy) / townspeople / rural people | Produkt / Städter / Landvolk    |
+| exports / imports / trade balance | Ausfuhr / Einfuhr / Handelsbilanz |
+| inequality / tax burden      | Ungleichheit / Steuerlast       |
+| sector: rural / manufacturing / trade | Land / Handwerk / Handel        |
+| economy type: agrarian / artisan / mercantile | agrarisch / handwerklich / merkantil |
 
 ## Interface
 

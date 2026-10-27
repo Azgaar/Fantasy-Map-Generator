@@ -11,6 +11,7 @@ import {
   DEMAND_PRIORITY,
   Goods,
   getDemandTargets,
+  getNeedsCost,
   getVarietyShares,
   MIN_VARIETY,
   PRESTIGE,
@@ -22,6 +23,7 @@ import {
 } from "./goods-generator";
 import type { DealKind, Market, SourceOption, SourceQuote, Trade, TradeTerms } from "./markets-generator";
 import { DEAL_KINDS, Markets } from "./markets-generator";
+import { Prosperity } from "./prosperity";
 
 const RURAL_OUTPUT_FACTOR = 1;
 const DEPOSIT_RICHNESS = 1; // units a deposit yields a day per population point of its cell, on a map of DEPOSIT_MAP_CELLS
@@ -93,6 +95,7 @@ export class ProductionModule {
     }
     Markets.endRun();
     pack.deals = pack.deals.filter(deal => deal[4] > 0); // sales kept back whole
+    pack.cells.prosperity = Prosperity.getCellsProsperity();
 
     for (const { burg, produced, revenue, ingredientCosts, log } of states) {
       burg.product = rn(Math.max(0, revenue - ingredientCosts), 2);
@@ -119,7 +122,7 @@ export class ProductionModule {
       marketPopulation: [],
       worldWorkers: [],
       worldPopulation: 0,
-      needsCost: this.getNeedsCost(goods)
+      needsCost: getNeedsCost(goods)
     };
   }
 
@@ -472,16 +475,6 @@ export class ProductionModule {
         buy(candidate, shortage);
       }
     }
-  }
-
-  /** A person's daily needs at base prices, each covered the cheapest way */
-  private getNeedsCost(goods: Good[]): number {
-    return DEMAND_PRIORITY.reduce((sum, category, categoryIndex) => {
-      const costs = goods.flatMap(good =>
-        good.demandCoverage?.[category] ? [good.value / good.demandCoverage[category]!] : []
-      );
-      return sum + (costs.length ? getDemandTargets(1)[categoryIndex] * Math.min(...costs) : 0);
-    }, 0);
   }
 
   /** How many days of its needs a person of the burg earns so far, at least 1 */

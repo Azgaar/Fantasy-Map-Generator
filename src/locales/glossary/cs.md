@@ -85,6 +85,14 @@ Terms every `cs.json` string uses the same way. Rules for all catalogs are in
 | deal / trade                     | obchod / obchodování                     |
 | price / base price               | cena / základní cena                     |
 | wealth / treasury                | bohatství / pokladna                     |
+| prosperity / living standards    | blahobyt / životní úroveň                |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | zbídačení / bída / chudoba / skromný dostatek / dostatek / rozkvět / zámožnost / přepych / nádhera / nevídané bohatství |
+| consumption / need / want        | spotřeba / potřeba / choutka             |
+| product (economy) / townspeople / rural people | produkt / měšťané / venkované            |
+| exports / imports / trade balance | vývoz / dovoz / obchodní bilance         |
+| inequality / tax burden          | nerovnost / daňové břemeno               |
+| sector: rural / manufacturing / trade | venkov / řemesla / obchod                |
+| economy type: agrarian / artisan / mercantile | zemědělská / řemeslná / kupecká          |
 
 ## Interface
 

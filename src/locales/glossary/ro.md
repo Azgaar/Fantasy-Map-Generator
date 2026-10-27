@@ -74,6 +74,14 @@ Terms every `ro.json` string uses the same way. Rules for all catalogs are in
 | deal / trade                    | tranzacție / comerț              |
 | treasury                        | vistierie                        |
 | sales tax / poll tax            | taxă pe vânzări / impozit pe cap de locuitor |
+| prosperity / living standards   | bunăstare / nivel de trai                    |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | mizerie / sărăcie lucie / sărăcie / trai modest / trai îndestulat / propășire / înstărire / belșug / strălucire / fără seamăn |
+| consumption / need / want       | consum / nevoie / dorință                    |
+| product (economy) / townspeople / rural people | produs / orășeni / săteni                    |
+| exports / imports / trade balance | exporturi / importuri / balanță comercială   |
+| inequality / tax burden         | inegalitate / povară fiscală                 |
+| sector: rural / manufacturing / trade | sate / meșteșuguri / comerț                  |
+| economy type: agrarian / artisan / mercantile | agrară / meșteșugărească / negustorească     |
 
 ## Interface
 

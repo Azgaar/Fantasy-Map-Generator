@@ -78,6 +78,14 @@ Terms every `sv.json` string uses the same way. Rules for all catalogs are in
 | deal / trade                    | avtal / handel                   |
 | treasury                        | statskassa                       |
 | sales tax / poll tax            | omsättningsskatt / personskatt |
+| prosperity / living standards   | välmåga / levnadsstandard      |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | utarmad / utblottad / fattig / blygsam / välbärgad / blomstrande / förmögen / överdådig / praktfull / makalös |
+| consumption / need / want       | förbrukning / behov / önskemål |
+| product (economy) / townspeople / rural people | produkt / stadsbor / lantbefolkning |
+| exports / imports / trade balance | utförsel / införsel / handelsbalans |
+| inequality / tax burden         | ojämlikhet / skattetryck       |
+| sector: rural / manufacturing / trade | landsbygd / hantverk / handel  |
+| economy type: agrarian / artisan / mercantile | jordbruk / hantverk / köpmannaskap |
 
 ## Interface
 

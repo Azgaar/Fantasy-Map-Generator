@@ -103,6 +103,14 @@ Terms every `ru.json` string uses the same way. Rules for all catalogs are in
 | wealth / gross product       | богатство / валовой продукт           |
 | treasury                     | казна                                 |
 | sales tax / poll tax         | налог с продаж / подушный налог       |
+| prosperity / living standards | благосостояние / уровень жизни        |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | разорение / нищета / бедность / скромный достаток / достаток / процветание / зажиточность / роскошь / великолепие / небывалое изобилие |
+| consumption / need / want    | потребление / потребность (метка «Нужда») / прихоть |
+| product (economy) / townspeople / rural people | продукт / горожане / сельские жители  |
+| exports / imports / trade balance | вывоз / ввоз / торговый баланс        |
+| inequality / tax burden      | неравенство / налоговое бремя         |
+| sector: rural / manufacturing / trade | деревня / ремёсла / торговля          |
+| economy type: agrarian / artisan / mercantile | аграрная / ремесленная / торговая     |
 
 ## Interface
 

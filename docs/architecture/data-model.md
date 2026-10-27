@@ -106,6 +106,7 @@ World data is mainly stored in typed arrays within `cells` object in both `grid`
 - `pack.cells.religion`: `number[]` - cells religion index. `Uint16Array`
 - `pack.cells.good`: `number[]` - cells bonus resource good id (`0` if none). Marks the special good extracted on the cell. `Uint16Array`
 - `pack.cells.market`: `number[]` - cells market index (`0` if unassigned). Filled by the market territory flood-fill. `Uint16Array`
+- `pack.cells.prosperity`: `number[]` - cells rural prosperity in percent (`0` where no one lives or the economy has not run), kept by the economy run for quick reads. `Uint8Array`
 - `pack.cells.area`: `number[]` - cells area in pixels. `Uint16Array`
 - `pack.cells.pop`: `number[]` - cells population in population points (1 point = 1000 people by default). `Float32Array`, not rounded to not lose population of high population rate
 - `pack.cells.r`: `number[]` - cells river index. `Uint16Array`
@@ -488,6 +489,7 @@ Markets (regional economic hubs) are stored in `pack.markets: Market[]`. Note th
 - `color`: `string` - market color in hex, used for territory rendering
 - `goods`: `Record<goodId, {stock: number; price: number}>` - per-good state. A single midpoint `price` is stored; customer-facing `buyPrice` / `sellPrice` are derived on demand via `MARKET_MARGIN`
 - `name`: `string` - optional market name, derived from the center burg's name
+- `rural`: `{ earned: number; rent: number; spent: number; bought: [goodId, units][] }` - optional. Its rural people's last day, kept by the economy run: what their produce earned, the rent paid out of it to the state's capital, and what they spent and bought. Absent until the economy runs
 - `note`: `string` - optional. The user's note (legend) about the market, as html. Removed with it
 
 ## Biomes

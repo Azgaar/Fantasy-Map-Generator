@@ -504,6 +504,7 @@ class MapRestorationModule {
     cells.religion = new Uint16Array(n);
     cells.province = new Uint16Array(n);
     cells.good = new Uint16Array(n);
+    cells.prosperity = new Uint8Array(n); // the economy rerun fills it
 
     const unlinked: number[] = [];
     for (let cell = 0; cell < n; cell++) {

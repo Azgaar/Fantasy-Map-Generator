@@ -62,3 +62,11 @@ Terms every `bg.json` string uses the same way. Rules for all catalogs are in
 | good (trade)                    | стока                          |                                        |
 | treasury / taxes                | хазна / данъци                 |                                        |
 | view-only                       | само за преглед                |                                        |
+| prosperity / living standards   | благосъстояние / жизнено равнище |                                        |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | разорение / нищета / бедност / скромен достатък / достатък / процъфтяване / заможност / разкош / великолепие / несравнимо богатство |  |
+| consumption / need / want       | потребление / нужда / прищевка |                                        |
+| product (economy) / townspeople / rural people | продукт / граждани / селяни    |                                        |
+| exports / imports / trade balance | износ / внос / търговски баланс |                                        |
+| inequality / tax burden         | неравенство / данъчно бреме    |                                        |
+| sector: rural / manufacturing / trade | село / занаяти / търговия      |                                        |
+| economy type: agrarian / artisan / mercantile | земеделска / занаятчийска / търговска |                                        |

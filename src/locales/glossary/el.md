@@ -60,3 +60,11 @@ Terms every `el.json` string uses the same way. Rules for all catalogs are in
 | good (trade)                    | αγαθό                         |                                        |
 | treasury / taxes                | θησαυροφυλάκιο / φόροι        |                                        |
 | view-only                       | μόνο για προβολή              |                                        |
+| prosperity / living standards   | ευημερία / βιοτικό επίπεδο    |                                        |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | άθλια / εξαθλιωμένη / φτωχή / μέτρια / άνετη / ακμάζουσα / εύπορη / πλουσιοπάροχη / λαμπρή / απαράμιλλη |  |
+| consumption / need / want       | κατανάλωση / ανάγκη / επιθυμία |                                        |
+| product (economy) / townspeople / rural people | προϊόν / αστοί / αγρότες      |                                        |
+| exports / imports / trade balance | εξαγωγές / εισαγωγές / εμπορικό ισοζύγιο |                                        |
+| inequality / tax burden         | ανισότητα / φορολογικό βάρος  |                                        |
+| sector: rural / manufacturing / trade | ύπαιθρος / χειροτεχνίες / εμπόριο |                                        |
+| economy type: agrarian / artisan / mercantile | αγροτική / βιοτεχνική / εμπορική |                                        |

@@ -78,6 +78,14 @@ Terms every `vi.json` string uses the same way. Rules for all catalogs are in
 | deal / trade                    | giao dịch / thương mại           |
 | treasury                        | ngân khố                         |
 | sales tax / poll tax            | thuế bán hàng / thuế đầu người   |
+| prosperity / living standards   | thịnh vượng / mức sống           |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | khốn cùng / bần cùng / nghèo / khiêm tốn / đầy đủ / thịnh đạt / sung túc / xa hoa / huy hoàng / vô song |
+| consumption / need / want       | tiêu dùng / nhu cầu / mong muốn  |
+| product (economy) / townspeople / rural people | sản phẩm / thị dân / dân quê     |
+| exports / imports / trade balance | xuất khẩu / nhập khẩu / cán cân thương mại |
+| inequality / tax burden         | bất bình đẳng / gánh nặng thuế   |
+| sector: rural / manufacturing / trade | thôn quê / nghề thủ công / thương mại |
+| economy type: agrarian / artisan / mercantile | nông nghiệp / thủ công / thương nghiệp |
 
 ## Interface
 

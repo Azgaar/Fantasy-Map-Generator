@@ -87,7 +87,7 @@ Stock and prices are rebuilt by every run; what is saved is the state after the 
    - buys the share of its needs matching the work done so far (`fillDemand`);
    - spends what it can spare on wants (`spendOnWants`).
 
-   It stops when its workers are spent or nothing is worth making. After each round, every market's rural people spend their earnings (`spendRural`).
+   It stops when its workers are spent or nothing is worth making. After each round, every market's rural people spend their earnings (`spendRural`). At the end, each market keeps its rural people's day (`market.rural`: earned, rent paid, spent and goods bought; `endRun`), as it is not in the deals.
 
 5. **Rural income.** When rural stock is bought, rural people are paid the price less the margin (`takeStock`), and 40% goes to the state's capital burg as rent (`CAPITAL_RENT`). Their purchases make no deals and pay no tax.
 6. **Store.** `burg.production` (units made, deposit bonus included), `burg.product` (sales less input costs) and, in debug mode, the step log in memory. Sales kept back in full are dropped from the deals.
@@ -174,14 +174,30 @@ Invariants:
 - Rural purchases make no deals, so a market's stock falls by more than its deals explain.
 - With Economy checked under Debugging in the Advanced options (`options.app.debug`), the run records each burg's steps in memory (`EconomyDebug`, never saved): candidates weighed, every trade with all the sources it could have used, and each need's shortage. The Economy Overview shows that log instead of the deal summary.
 
+## Prosperity and state accounts
+
+Shown, not used by the run. Both are worked out on demand from the deals, burgs and markets, and cached per set of deals.
+
+**Consumption** is what a burg's people bought or kept for themselves (`demand` and `kept` deals). **Prosperity** (`Prosperity`, [prosperity.ts](../../src/model/economy/prosperity.ts)), from 0 to 100%, is how well a people live, from their consumption:
+
+- **Needs met** (0–1): each need's share covered, counted by its size. It multiplies the rest, so a people short of food are never prosperous.
+- **Comfort**: their consumption at base prices, in days of bare needs (a day's needs at the cheapest coverage, `getNeedsCost`). It counts both how much and how fine their goods are, and not local prices.
+- **Variety**: the effective number of goods they consume (the exponent of the entropy of their consumption by value).
+
+Prosperity = needs met × (0.2 + 0.4 × comfort score + 0.4 × variety score); the comfort score reaches 1 at 50 days of bare needs (log scale) and the variety score at 20 goods. Living on bare needs is about 20%, Poor. Ten levels of a tenth each (`PROSPERITY_LEVELS`): Desolate, Destitute, Poor, Modest, Comfortable, Thriving, Affluent, Opulent, Splendid and Peerless. On default maps townspeople are mostly Comfortable, rural people Poor. Rural people's needs come from their fields: their needs met are 1 and their fields count as one good worth bare needs. A market's rural earnings and purchases (`market.rural`) go to its peopled cells by the value of their produce at base prices (`getRuralCell`), so a cell on a rich deposit lives better than its neighbours. At the end of the run each cell keeps its rural prosperity in percent (`pack.cells.prosperity`, 0 where no one lives). Prosperity is not happiness: FMG has no data on health, safety or freedom, so it measures living standards only.
+
+**State accounts** (`StateEconomy`, [state-economy.ts](../../src/model/economy/state-economy.ts)) sum a state's economy. Its **product** has three sectors: rural (its cells' rural earnings), manufacturing (its burgs' product) and trade (the margins its market centers took). Its **economy type** is the sector whose share of its product most exceeds that sector's share of the world's: Agrarian, Artisan or Mercantile. Wealth is product per person, prosperity is its townspeople's and rural people's by their numbers (each group's needs met, comfort and variety averaged the same way, and its people counted by level), and the treasury's share of the product is its tax burden. Its trade with other states counts goods at market prices without carriage and taxes: a sale of its burg to a foreign market, or a foreign burg buying at its market, is an export; its burg buying at a foreign market is an import.
+
 ## What the user sees
 
 - **Layers**: Goods (deposits and burg production), Markets (territories), Trade (animated deals along the priced route).
 - **Goods editor and good editor**: the catalogue, values, carriage, coverage, recipes, multipliers, distribution and deposits, deposit output, painting goods on cells, production chains, stock by location.
 - **Markets overview and market dialogs**: stock and prices, prices compared across markets, a market's deals, adding, relocating and removing markets.
-- **Economy Overview** (per burg): needs and what stayed uncovered, the day summarised from the deals (or the step log in debug mode).
+- **Economy Overview** (per burg): production, consumption, each need's coverage and wants, prosperity with its parts, product, wealth and the treasury, which the user may overwrite; then the day summarised from the deals (or the step log in debug mode).
+- **Burgs overview**: prosperity and wealth (product and treasury on demand); a click on any of them opens the burg's Economy Overview. **Burg editor**: prosperity and wealth, with a button to the Economy Overview.
+- **State Economy Overview**: one dialog per state, opened from any economy column of the States editor: product, wealth, population, prosperity, treasury, trade balance and inequality, each with its world rank or figure; the sectors; taxes; foreign trade by state; main exports and imports; the most valuable goods made; and living standards: townspeople's and rural people's prosperity and the people at each level.
 - **Trade Details**: the goods one burg trades with one market, from an animated flow.
-- **States editor**: treasury, tax rates and tariffs. **Burg editor**: the burg's treasury.
+- **States editor**: treasury and prosperity by default, product and wealth on demand; in percent mode product is a share of the world's, wealth and prosperity a share of the world average. Tax rates and tariffs open from the State Economy Overview.
 
 ## KPIs
 
@@ -201,7 +217,7 @@ From most to least important:
 | 1   | All goods produced       | Every good appears on a typical map. A single map may miss some: a map with no hot climate has no spices                                                 | Share of the catalogue, raw and made, produced on a map                                                                       | ≥ 95%     | 93.4%             | 94.4% ✗  |
 | 2   | Balanced volumes         | Made goods are made in proportion: the commonest are made about ten times as much as the rarest, not a hundred. A map does not make 300 ships and 5 arms | Daily units of the tenth of made goods made most ÷ those of the tenth made least, among made goods produced on the map        | 10–20×    | 26×               | 15× ✓    |
 | 3   | Burgs in profit          | Burgs earn more than they spend                                                                                                                          | Share of burgs ending the day with a positive treasury                                                                        | ≥ 90%     | 96.5%             | 99.0% ✓  |
-| 4   | Fast                     | Regenerating the economy feels instant                                                                                                                   | Economy run on a default map, best of five runs per map                                                                       | ≤ 200 ms  | 121 ms            | 163 ms ✓ |
+| 4   | Fast                     | Regenerating the economy feels instant                                                                                                                   | Economy run on a default map, best of five runs per map                                                                       | ≤ 200 ms  | 121 ms            | 175 ms ✓ |
 | 5   | Rich and poor regions    | Some regions' towns are rich and some poor                                                                                                               | A market's wealth is the average wealth of the burgs in its area. The richest tenth of markets ÷ the poorest tenth            | ≥ 5×      | 2.9×              | 3.8× ✗   |
 | 6   | Output apart from people | A region's output is not just its headcount: a market with 10% of the people may hold 30% of the output, or 5%                                           | Share of markets whose share of the world's output is more than 50% above or below their share of its people                  | ≥ 50%     | 2%                | 19% ✗    |
 | 7   | Specialization           | Markets differ in what they offer: 0% would be every market making the world's average mix, 100% no two markets sharing a good                           | The share of a typical market's output, by value, that would have to change to match the world's mix                          | ≥ 60%     | 47%               | 71% ✓    |

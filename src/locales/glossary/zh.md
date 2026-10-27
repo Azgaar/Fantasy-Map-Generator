@@ -101,6 +101,14 @@ Terms every `zh.json` string uses the same way. Rules for all catalogs are in
 | wealth / gross product       | 财富 / 总产值                 |
 | treasury                     | 国库                          |
 | sales tax / poll tax         | 销售税 / 人头税               |
+| prosperity / living standards | 繁荣度 / 生活水平              |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | 凋敝 / 赤贫 / 贫困 / 温饱 / 安乐 / 兴旺 / 富足 / 奢华 / 辉煌 / 无双 |
+| consumption / need / want    | 消费 / 需要 / 想要之物          |
+| product (economy) / townspeople / rural people | 总产值 / 城镇居民 / 乡民         |
+| exports / imports / trade balance | 出口 / 进口 / 贸易差额          |
+| inequality / tax burden      | 不平等 / 税负                |
+| sector: rural / manufacturing / trade | 乡野 / 手工业 / 贸易           |
+| economy type: agrarian / artisan / mercantile | 农耕型 / 手艺型 / 商贸型         |
 
 ## Interface
 

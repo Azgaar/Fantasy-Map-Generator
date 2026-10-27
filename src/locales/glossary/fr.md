@@ -81,6 +81,14 @@ Terms every `fr.json` string uses the same way. Rules for all catalogs are in
 | deal / trade                     | transaction / commerce                  |
 | treasury                         | trésor                                  |
 | sales tax / poll tax             | taxe sur les ventes / capitation        |
+| prosperity / living standards    | prospérité / niveau de vie              |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | indigent / misérable / pauvre / modeste / aisé / florissant / prospère / opulent / fastueux / sans pareil |
+| consumption / need / want        | consommation / besoin / envie           |
+| product (economy) / townspeople / rural people | produit / citadins / ruraux             |
+| exports / imports / trade balance | exportations / importations / balance commerciale |
+| inequality / tax burden          | inégalité / charge fiscale              |
+| sector: rural / manufacturing / trade | campagne / artisanat / commerce         |
+| economy type: agrarian / artisan / mercantile | agraire / artisanale / marchande        |
 
 ## Interface
 

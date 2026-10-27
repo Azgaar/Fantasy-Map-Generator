@@ -101,6 +101,14 @@ Terms every `ja.json` string uses the same way. Rules for all catalogs are in
 | wealth / gross product       | 富 / 総生産              |
 | treasury                     | 国庫                    |
 | sales tax / poll tax         | 売上税 / 人頭税          |
+| prosperity / living standards | 繁栄度 / 生活水準         |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | 荒廃 / 赤貧 / 貧困 / 質素 / 安楽 / 繁盛 / 富裕 / 豪奢 / 絢爛 / 無双 |
+| consumption / need / want    | 消費 / 必要 / 欲しいもの    |
+| product (economy) / townspeople / rural people | 総生産 / 町人 / 農民      |
+| exports / imports / trade balance | 輸出 / 輸入 / 貿易収支     |
+| inequality / tax burden      | 不平等 / 税負担          |
+| sector: rural / manufacturing / trade | 田園 / 手工業 / 貿易      |
+| economy type: agrarian / artisan / mercantile | 農業型 / 工芸型 / 商業型    |
 
 ## Interface
 

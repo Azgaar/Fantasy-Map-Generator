@@ -81,13 +81,13 @@ So 🟡 1 is a lot of money for one person and modest for a town. The anchor is 
 
 ## Treasuries
 
-- A **burg's treasury** is what it ends the day with: sales, minus ingredients, minus what its people bought. A market's center burg also earns the market margin on every trade at its market, and a state's capital earns the rural rent. See it in the _Burg Editor_, where you can also type any value to make a burg rich or broke; it lasts until the next regeneration, which starts every treasury from zero.
+- A **burg's treasury** is what it ends the day with: sales, minus ingredients, minus what its people bought. A market's center burg also earns the market margin on every trade at its market, and a state's capital earns the rural rent. See it in the burg's Economy Overview, where you can also type any value to make a burg rich or broke; it lasts until the next regeneration, which starts every treasury from zero.
 - A **state's treasury** is what it collected that day: its taxes, plus a **poll tax** per population point.
 - **Markets hold no money**, but the Markets overview shows what passed through them. **Sales** is what burgs paid the market for its goods, carriage included, less the taxes handed to the states. **Buys** is what the market paid burgs for theirs. **Value** is Sales minus Buys, plus the unsold stock at its prices. The market keeps the carriage, as if its merchants did the carrying. Rural people's purchases and goods a burg kept for itself are not counted.
 
 ## Taxes and tariffs
 
-Every state sets three things in its treasury dialog (_Tools_ → _States_, click a treasury value):
+Every state sets three things in its taxes dialog (_Tools_ → _States_, click a treasury value, then the percent button):
 
 - **Sales tax**: charged on every sale by a seller of the state. A burg pays it out of what it earns from selling; a market adds it to the price it charges a burg.
 - **Poll tax**: a flat amount per person, collected outright.
@@ -99,7 +99,16 @@ Example: a burg buys 10 units of a good priced 10 at its market, carried 0.5 per
 
 # Reading a burg's Economy Overview
 
-Click a burg plate on the Goods layer, or the production button in the _Burg Editor_. The top shows the burg's population, idle workers (only when some found nothing worth doing), its market, its needs and what stayed **uncovered**, its production, gross product, wealth per person, the taxes it paid and its treasury. Below is the day in order:
+Click a burg plate on the Goods layer, or the production button in the _Burg Editor_. The top shows:
+
+- **Production**: what the burg made today. Most of it is sold, often to other markets.
+- **Consumption**: what its people bought or kept for themselves.
+- **Demand**: for each need, how much was covered of what its people need, and in green the wants they bought beyond it.
+- **Prosperity**: how well its people live (see below), with its parts: needs met, comfort and the number of goods.
+- **Product**: the day's sales, less their sales tax and the ingredients bought. **Wealth** is product per person.
+- The market margin if it is a market's center, and its **treasury**: its money at the end of the day. Type a value to change it; the taxes it paid are under the table.
+
+Below is the day in order:
 
 - **LOCAL**: the free output of a deposit on the burg's cell.
 - **BUY**: ingredients and goods for its people, from its own market or another one. Hover the market to see whether it was an import.
@@ -109,6 +118,31 @@ Click a burg plate on the Goods layer, or the production button in the _Burg Edi
 
 Each trade shows the net price, the carriage, tax and tariff per unit, the units and the income: green when the burg earned money, red when it spent it. Hover a cell to see how it adds up. With Economy checked under _Debugging_ in the Advanced options, the overview shows every step instead, with the options each decision weighed and a **NEED** row for each need the burg came to cover.
 
+# Prosperity
+
+**Prosperity** is how well a burg's people live, from 0% to 100%. It comes from what they consume, not what they make:
+
+- **Needs met**: how much of their food, utilities, construction, military and luxury needs is covered. A people going short is never prosperous.
+- **Comfort**: how much and how fine their goods are, compared with bare needs bought the cheapest way.
+- **Variety**: how many different goods they enjoy.
+
+Living on bare needs is about 20%. Ten levels of 10% each: **Desolate**, **Destitute**, **Poor**, **Modest**, **Comfortable**, **Thriving**, **Affluent**, **Opulent**, **Splendid** and **Peerless**. Most townspeople are Comfortable or Thriving; rural people, living mostly off their fields, are Poor. Rural people grow their own needs and buy their wants at their market with what their produce earns, so their prosperity counts too, and it varies from place to place: a valley on a rich deposit lives better than barren hills nearby.
+
+Wealth and prosperity differ: an export town makes a lot and saves it, while a market center lives well on its merchants' margins. Prosperity is not happiness either: the generator knows nothing of health, safety or freedom.
+
+Prosperity shows in the _Burgs overview_ (click it, or Wealth, to open the burg's Economy Overview), the _Burg Editor_ and the Economy Overview, and for states in the _States Editor_.
+
+# A state's economy
+
+A state's treasury only shows its cut. A trade republic with low taxes has a small treasury, while its people may be wealthy and prosperous. To see the whole picture, open _Tools_ → _States_ and click a **Treasury** or **Prosperity** value; the column menu can also show **Product** and **Wealth**. The state's **Economy** dialog shows:
+
+- **Product**: what its people make in a day, by sector: **rural** (rural people's earnings), **manufacturing** (its burgs' product) and **trade** (the margins its market centers take).
+- **Economy type**: the sector the state leans on more than the world does: **Agrarian**, **Artisan** or **Mercantile**.
+- **Wealth** (product per person), **population**, **prosperity**, **treasury** with its **tax burden** (treasury as a share of the product), the **trade balance** with other states, and **inequality** (how unequal its burgs' wealth is), each with the state's rank or the world's figure.
+- Its taxes, its **foreign trade** with each state, its main exports and imports, the most valuable goods it makes, and its **living standards**: how prosperous its townspeople and rural people are, and how many people live at each level.
+
+Open several states' dialogs to compare them side by side. The percent button at the bottom opens the state's taxes and tariffs. In the States Editor's percent mode, product shows as a share of the world's, and wealth and prosperity against the world average.
+
 # Shaping the economy for your world
 
 - **Make a region famous for a product**: give the good a multiplier for that culture, state, religion or a zone you draw, or paint deposits there.
@@ -116,7 +150,7 @@ Each trade shows the net price, the carriage, tax and tariff per unit, the units
 - **Make a good more or less worth making**: raise or lower its base price against its ingredients.
 - **Make trade local or far-reaching**: raise a good's carriage to keep it near its source, lower it to let it travel.
 - **Open or close a region**: build or remove roads and sea routes, or add a port.
-- **Start a trade war**: set tariffs or an embargo in a state's treasury dialog.
+- **Start a trade war**: set tariffs or an embargo in a state's taxes dialog.
 - **Redraw trade regions**: add, move or remove markets, or paint market cells by hand in the Markets overview.
 
 Changes take effect when you regenerate. _Tools_ → _Regenerate_ has four buttons:

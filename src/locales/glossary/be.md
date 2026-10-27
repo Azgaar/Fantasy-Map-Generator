@@ -104,6 +104,14 @@ Terms every `be.json` string uses the same way. Rules for all catalogs are in
 | wealth / gross product       | багацце / валавы прадукт           |
 | treasury                     | казна                              |
 | sales tax / poll tax         | падатак з продажаў / падушны падатак |
+| prosperity / living standards | дабрабыт / узровень жыцця            |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | разорэнне / галеча / беднасць / сціплы дастатак / дастатак / росквіт / заможнасць / раскоша / пышнасць / небывалае багацце |
+| consumption / need / want    | спажыванне / патрэба / забаўка       |
+| product (economy) / townspeople / rural people | прадукт / гараджане / сельскія жыхары |
+| exports / imports / trade balance | вываз / увоз / гандлёвы баланс       |
+| inequality / tax burden      | няроўнасць / падатковы цяжар         |
+| sector: rural / manufacturing / trade | вёска / рамёствы / гандаль           |
+| economy type: agrarian / artisan / mercantile | аграрная / рамесная / гандлёвая      |
 
 ## Interface
 

@@ -60,6 +60,14 @@ Terms every `hi.json` string uses the same way. Rules for all catalogs are in
 | market                          | बाज़ार                       |                                        |
 | good (trade)                    | वस्तु                        |                                        |
 | treasury / taxes                | कोषागार / कर                 |                                        |
+| prosperity / living standards   | समृद्धि / जीवन स्तर          |                                        |
+| desolate / destitute / poor / modest / comfortable / thriving / affluent / opulent / splendid / peerless | उजड़ा / कंगाल / निर्धन / साधारण / सुखी / फलता-फूलता / संपन्न / ऐश्वर्यपूर्ण / वैभवशाली / अद्वितीय |  |
+| consumption / need / want       | उपभोग / ज़रूरत / इच्छा       |                                        |
+| product (economy) / townspeople / rural people | उत्पाद / नगरवासी / ग्रामीण लोग |                                        |
+| exports / imports / trade balance | निर्यात / आयात / व्यापार संतुलन |                                        |
+| inequality / tax burden         | असमानता / कर का बोझ          |                                        |
+| sector: rural / manufacturing / trade | देहात / शिल्प / व्यापार      |                                        |
+| economy type: agrarian / artisan / mercantile | कृषि-प्रधान / शिल्प-प्रधान / व्यापार-प्रधान |                                        |
 
 ## Interface
 

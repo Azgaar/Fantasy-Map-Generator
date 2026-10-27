@@ -101,6 +101,16 @@ export function getVarietyShares(costs: number[], variety = VARIETY): number[] {
   return weights.map(weight => weight / total);
 }
 
+/** A person's daily needs at base prices, each covered the cheapest way */
+export function getNeedsCost(goods: Good[]): number {
+  return DEMAND_PRIORITY.reduce((sum, category) => {
+    const costs = goods.flatMap(good =>
+      good.demandCoverage?.[category] ? [good.value / good.demandCoverage[category]!] : []
+    );
+    return sum + (costs.length ? DEMAND_TARGET_FACTORS[category] * Math.min(...costs) : 0);
+  }, 0);
+}
+
 export function getDemandTargets(population: number): number[] {
   return DEMAND_PRIORITY.map(category => population * DEMAND_TARGET_FACTORS[category]);
 }
