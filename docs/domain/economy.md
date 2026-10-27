@@ -1,6 +1,6 @@
 # Economy
 
-How goods, markets, production, trade and taxes work together: the logic, the order things happen in and the traps. The user guide is the [Economy wiki page](../wiki/Economy.md); design history and measurements are in the [regional economy PRD](../prd/regional-economy.md).
+How goods, markets, production, trade and taxes work together: the logic, the order things happen in and the traps. The user guide is the [Economy wiki page](../wiki/Economy.md); the economy's KPIs are [below](#kpis), and its design history is in the [economy rework PRD](../prd/economy-rework.md).
 
 The economy is **one frozen cycle: a typical day**, not a simulation over time. Rural cells fill regional **markets** with raw **goods**. **Burgs** take turns putting their workers to work, selling what they make where it fetches most, and buying what their people need and want with what they earned. Rural people are paid for their produce as it sells and spend it too. Every exchange between a burg and a market is a **deal**, priced at the burg's door: the market's price with a margin, the **carriage** along the route network, the seller state's **sales tax** and, across a border, the importer's **tariff**. States collect their taxes from the deals afterwards. Nothing ticks: the numbers change only when the economy is regenerated.
 
@@ -183,6 +183,35 @@ Invariants:
 - **Trade Details**: the goods one burg trades with one market, from an animated flow.
 - **States editor**: treasury, tax rates and tariffs. **Burg editor**: the burg's treasury.
 
+## KPIs
+
+What the economy should achieve, scored on six default maps (seeds 431087220, 98765, 55555, 123456789, 4242, 31337), averaged, against master (v1.156.0). Re-measure after any change to the economy and update the table.
+
+Terms, as the burg's Economy Overview shows them:
+
+- **Product**: what a burg's trades add in a day: its sales, less their sales tax and the ingredients it bought.
+- **Wealth**: a burg's product per person. A state's wealth is its burgs' product per townsperson.
+- **Treasury**: the money a burg holds at the end of the day.
+- **The economy's product**: all burgs' product, plus market margins and rural people's earnings.
+
+From most to least important:
+
+| #   | KPI                      | What it means                                                                                                                                            | How it is measured                                                                                                            | Target    | Master (v1.156.0) | Now      |
+| --- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | --------- | ----------------- | -------- |
+| 1   | All goods produced       | Every good appears on a typical map. A single map may miss some: a map with no hot climate has no spices                                                 | Share of the catalogue, raw and made, produced on a map                                                                       | ≥ 95%     | 93.4%             | 94.4% ✗  |
+| 2   | Balanced volumes         | Made goods are made in proportion: the commonest are made about ten times as much as the rarest, not a hundred. A map does not make 300 ships and 5 arms | Daily units of the tenth of made goods made most ÷ those of the tenth made least, among made goods produced on the map        | 10–20×    | 26×               | 15× ✓    |
+| 3   | Burgs in profit          | Burgs earn more than they spend                                                                                                                          | Share of burgs ending the day with a positive treasury                                                                        | ≥ 90%     | 96.5%             | 99.0% ✓  |
+| 4   | Fast                     | Regenerating the economy feels instant                                                                                                                   | Economy run on a default map, best of five runs per map                                                                       | ≤ 200 ms  | 121 ms            | 163 ms ✓ |
+| 5   | Rich and poor regions    | Some regions' towns are rich and some poor                                                                                                               | A market's wealth is the average wealth of the burgs in its area. The richest tenth of markets ÷ the poorest tenth            | ≥ 5×      | 2.9×              | 3.8× ✗   |
+| 6   | Output apart from people | A region's output is not just its headcount: a market with 10% of the people may hold 30% of the output, or 5%                                           | Share of markets whose share of the world's output is more than 50% above or below their share of its people                  | ≥ 50%     | 2%                | 19% ✗    |
+| 7   | Specialization           | Markets differ in what they offer: 0% would be every market making the world's average mix, 100% no two markets sharing a good                           | The share of a typical market's output, by value, that would have to change to match the world's mix                          | ≥ 60%     | 47%               | 71% ✓    |
+| 8   | States' cut              | Taxes take a moderate share of what the economy makes                                                                                                    | States' taxes ÷ the economy's product                                                                                         | 10–20%    | 64%               | 13% ✓    |
+| 9   | States benefit           | A state whose people are wealthier collects more per head: a developed economy pays its state                                                            | Rank correlation across states between wealth and taxes per person (1: the wealthiest states always collect most; 0: no link) | ≥ 0.5     | 0.19              | 0.14 ✗   |
+| 10  | Wealth spread            | Burgs differ in wealth, some far richer per person than others, without a few owning everything                                                          | Gini coefficient of burg wealth across burgs (0: all equal; 1: one burg has it all)                                           | 0.35–0.55 | 0.28              | 0.39 ✓   |
+| 11  | Treasury concentration   | Money is not hoarded by a handful of burgs                                                                                                               | Share of all burg treasuries held by the tenth of burgs with the largest ones                                                 | ≤ 50%     | 30%               | 76% ✗    |
+| 12  | Employment               | Workers find something worth making; they stay idle only when nothing pays                                                                               | Share of workers who found work                                                                                               | ≥ 90%     | 100%              | 100% ✓   |
+| 13  | Goods sold               | What is made finds a buyer the same day rather than piling up in a market                                                                                | Share of made goods, by value, bought the same day by burgs or rural people                                                   | ≥ 50%     | 29%               | 82% ✓    |
+
 ## Gotchas
 
 - **No time.** A treasury is one day's net cash. There is no upkeep, interest or growth.
@@ -198,5 +227,5 @@ Invariants:
 ## Further reading
 
 - [Goods spread functions](../wiki/Goods-spread-functions.md): the distribution expression language.
-- [regional-economy.md](../prd/regional-economy.md), [good-multipliers.md](../prd/good-multipliers.md) and [state-taxes-and-treasury.md](../prd/state-taxes-and-treasury.md): design records.
+- [economy-rework.md](../prd/economy-rework.md), [good-multipliers.md](../prd/good-multipliers.md) and [state-taxes-and-treasury.md](../prd/state-taxes-and-treasury.md): design records.
 - [generation-pipeline.md](../architecture/generation-pipeline.md): where the economy sits in map generation.

@@ -1,4 +1,4 @@
-# PRD — Regional Economy
+# PRD — Economy Rework
 
 ## Problems
 
@@ -12,34 +12,11 @@ Constraints: saved maps keep their own goods catalogue. Every change is measured
 
 ## KPIs
 
-Terms, as the burg's Economy Overview shows them:
-
-- **Product**: what a burg's trades add in a day: its sales, less their sales tax and the ingredients it bought.
-- **Wealth**: a burg's product per person. A state's wealth is its burgs' product per townsperson.
-- **Treasury**: the money a burg holds at the end of the day.
-- **The economy's product**: all burgs' product, plus market margins and rural people's earnings.
-
-From most to least important:
-
-| #   | KPI                      | What it means                                                                                                                                            | How it is measured                                                                                                            | Target    | Master | Committed | Current  |
-| --- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | --------- | ------ | --------- | -------- |
-| 1   | All goods produced       | Every good appears on a typical map. A single map may miss some: a map with no hot climate has no spices                                                 | Share of the catalogue, raw and made, produced on a map                                                                       | ≥ 95%     | 93.4%  | 94.6%     | 94.4% ✗  |
-| 2   | Balanced volumes         | Made goods are made in proportion: the commonest are made about ten times as much as the rarest, not a hundred. A map does not make 300 ships and 5 arms | Daily units of the tenth of made goods made most ÷ those of the tenth made least, among made goods produced on the map        | 10–20×    | 26×    | 15×       | 15× ✓    |
-| 3   | Burgs in profit          | Burgs earn more than they spend                                                                                                                          | Share of burgs ending the day with a positive treasury                                                                        | ≥ 90%     | 96.5%  | 96.5%     | 99.0% ✓  |
-| 4   | Fast                     | Regenerating the economy feels instant                                                                                                                   | Economy run on a default map, best of five runs per map                                                                       | ≤ 200 ms  | 121 ms | 147 ms    | 163 ms ✓ |
-| 5   | Rich and poor regions    | Some regions' towns are rich and some poor                                                                                                               | A market's wealth is the average wealth of the burgs in its area. The richest tenth of markets ÷ the poorest tenth            | ≥ 5×      | 2.9×   | 4.8×      | 3.8× ✗   |
-| 6   | Output apart from people | A region's output is not just its headcount: a market with 10% of the people may hold 30% of the output, or 5%                                           | Share of markets whose share of the world's output is more than 50% above or below their share of its people                  | ≥ 50%     | 2%     | 16%       | 19% ✗    |
-| 7   | Specialization           | Markets differ in what they offer: 0% would be every market making the world's average mix, 100% no two markets sharing a good                           | The share of a typical market's output, by value, that would have to change to match the world's mix                          | ≥ 60%     | 47%    | 72%       | 71% ✓    |
-| 8   | States' cut              | Taxes take a moderate share of what the economy makes                                                                                                    | States' taxes ÷ the economy's product                                                                                         | 10–20%    | 64%    | 13%       | 13% ✓    |
-| 9   | States benefit           | A state whose people are wealthier collects more per head: a developed economy pays its state                                                            | Rank correlation across states between wealth and taxes per person (1: the wealthiest states always collect most; 0: no link) | ≥ 0.5     | 0.19   | 0.01      | 0.14 ✗   |
-| 10  | Wealth spread            | Burgs differ in wealth, some far richer per person than others, without a few owning everything                                                          | Gini coefficient of burg wealth across burgs (0: all equal; 1: one burg has it all)                                           | 0.35–0.55 | 0.28   | 0.46      | 0.39 ✓   |
-| 11  | Treasury concentration   | Money is not hoarded by a handful of burgs                                                                                                               | Share of all burg treasuries held by the tenth of burgs with the largest ones                                                 | ≤ 50%     | 30%    | 74%       | 76% ✗    |
-| 12  | Employment               | Workers find something worth making; they stay idle only when nothing pays                                                                               | Share of workers who found work                                                                                               | ≥ 90%     | 100%   | 100%      | 100% ✓   |
-| 13  | Goods sold               | What is made finds a buyer the same day rather than piling up in a market                                                                                | Share of made goods, by value, bought the same day by burgs or rural people                                                   | ≥ 50%     | 29%    | 70%       | 82% ✓    |
+The KPIs, their targets and current values are tracked in [the economy domain doc](../domain/economy.md#kpis). Each idea below is scored against them.
 
 ## Progress
 
-Eight of thirteen KPIs are met. "Committed" is this branch before rich burgs bought by wealth; "Current" is after.
+Eight of thirteen KPIs are met.
 
 Against master: regions are far more distinct (71% vs 47%), 19% of markets produce far more or far less than their headcount instead of 2%, wealth is unequal enough to tell rich burgs from poor ones (Gini 0.39 vs 0.28), states take 13% of the economy's product instead of 64%, and 82% of made goods sell instead of 29%, at 42 ms more per run. Control: deposits are a set number per map, with a range per good, and the Goods editor places them to a typed daily output.
 
