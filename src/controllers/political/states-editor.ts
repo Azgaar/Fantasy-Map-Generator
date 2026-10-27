@@ -1,7 +1,8 @@
 import { type HierarchyCircularNode, max, pack as packLayout, select, stratify } from "d3";
 import { Controllers } from "@/controllers";
+import { EconomyTerms } from "@/controllers/economy/economy-terms";
 import { bindEconomyWiki, economyWikiButton } from "@/controllers/economy/economy-wiki";
-import { prosperityLevel, renderProsperityPercent } from "@/controllers/economy/prosperity-view";
+import { prosperityTip, renderProsperityPercent } from "@/controllers/economy/prosperity-view";
 import { CULTURE_TYPE_LABELS } from "@/data/id-labels";
 import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
@@ -11,7 +12,7 @@ import { Burgs } from "@/model/political/burgs-generator";
 import { STATE_FORMS, type State, States, type TariffRule } from "@/model/political/states-generator";
 import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
-import { formatPrice, getArea, getAreaUnit, getMoneyUnit } from "@/model/units";
+import { formatPrice, getArea, getAreaUnit } from "@/model/units";
 import { redrawEmblem, removeEmblem } from "@/renderers/draw-emblems";
 import { goodBadge } from "@/renderers/draw-goods";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
@@ -126,7 +127,7 @@ const columns: EditorColumn<State>[] = [
     label: t("Treasury"),
     width: "6em",
     mobileHidden: true,
-    tip: t("Click to sort by treasury: the state's taxes for the day. Click a value to open the state's economy"),
+    tip: sentences(EconomyTerms.stateTreasury(), EconomyTerms.openValue()),
     sortBy: s => s.treasury || 0
   },
   {
@@ -134,7 +135,7 @@ const columns: EditorColumn<State>[] = [
     label: t("Prosperity"),
     width: "6em",
     mobileHidden: true,
-    tip: t("Click to sort by prosperity: how well the state's people live. Click a value to open the state's economy"),
+    tip: sentences(EconomyTerms.prosperity(), EconomyTerms.openValue()),
     sortBy: s => StateEconomy.getAccounts(s.i)?.prosperity ?? -1
   },
   {
@@ -143,9 +144,7 @@ const columns: EditorColumn<State>[] = [
     width: "6em",
     hidden: true,
     mobileHidden: true,
-    tip: t(
-      "Click to sort by product: what the state's people make in a day. Click a value to open the state's economy"
-    ),
+    tip: sentences(EconomyTerms.stateProduct(), EconomyTerms.openValue()),
     sortBy: s => StateEconomy.getAccounts(s.i)?.product ?? 0
   },
   {
@@ -154,7 +153,7 @@ const columns: EditorColumn<State>[] = [
     width: "6em",
     hidden: true,
     mobileHidden: true,
-    tip: t("Click to sort by wealth: product per person. Click a value to open the state's economy"),
+    tip: sentences(EconomyTerms.wealth(), EconomyTerms.openValue()),
     sortBy: s => StateEconomy.getAccounts(s.i)?.wealth ?? 0
   },
   {
@@ -275,6 +274,8 @@ function renderDialog(): void {
       <div data-tip="${t("Number of burgs")}" style="margin-left: 12px" data-col="burgs">${t("Burgs")}:&nbsp;<span id="statesFooterBurgs">0</span></div>
       <div data-tip="${t("Total land area")}" style="margin-left: 12px" data-col="area">${t("Land area")}:&nbsp;<span id="statesFooterArea">0</span></div>
       <div data-tip="${t("Total population")}" style="margin-left: 12px" data-col="population">${t("Population")}:&nbsp;<span id="statesFooterPopulation">0</span></div>
+      <div data-tip="${EconomyTerms.stateTreasury()}" style="margin-left: 12px" data-col="treasury">${t("Avg treasury")}:&nbsp;<span id="statesFooterTreasury">0</span></div>
+      <div data-tip="${EconomyTerms.prosperity()}" style="margin-left: 12px" data-col="prosperity">${t("Avg prosperity")}:&nbsp;<span id="statesFooterProsperity">—</span></div>
     </div>
 
     <div id="statesBottom" class="editorToolbar">
@@ -430,16 +431,14 @@ function renderStatesPage(view: TableView<State>): void {
       t("Click to edit")
     );
     const focused = select("#deftemp").select(`#fog #focusState${s.i}`).size();
-    const treasuryTip = t(
-      "Treasury: the state's taxes for the day, {{treasury}} {{money}}. Sales tax: {{salesTax}}%. Poll tax: {{pollTax}} a head. Click to open the state's economy",
-      {
-        treasury: si(s.treasury),
-        money: getMoneyUnit(),
-        salesTax: rn((s.salesTax || 0) * 100, 1),
-        pollTax: rn(s.pollTax || 0, 2)
-      }
+    const treasuryTip = sentences(
+      EconomyTerms.stateTreasury(),
+      t("Sales tax {{rate}}%", { rate: rn((s.salesTax || 0) * 100, 1) }),
+      t("Poll tax {{rate}} a head", { rate: rn(s.pollTax || 0, 2) }),
+      EconomyTerms.open()
     );
     const accounts = s.i ? StateEconomy.getAccounts(s.i) : null;
+    const neutrals = s.i ? null : StateEconomy.getAccounts(0);
 
     if (!s.i) {
       // Neutral line
@@ -452,6 +451,9 @@ function renderStatesPage(view: TableView<State>): void {
         data-population=${population}
         data-burgs=${s.burgs}
         data-treasury="0"
+        data-prosperity="${neutrals?.prosperity ?? ""}"
+        data-product="${neutrals?.product ?? ""}"
+        data-wealth="${neutrals?.wealth ?? ""}"
         data-color=""
         data-form=""
         data-capital=""
@@ -488,9 +490,9 @@ function renderStatesPage(view: TableView<State>): void {
           <div data-tip="${populationTip}" class="statePopulation pointer">${si(population)}</div>
         </div>
         <div data-tip="${t("Neutrals collect no taxes")}" class="stateTreasury placeholder" data-col="treasury"></div>
-        <div class="placeholder" data-col="prosperity"></div>
-        <div class="placeholder" data-col="product"></div>
-        <div class="placeholder" data-col="wealth"></div>
+        <div data-tip="${sentences(EconomyTerms.prosperity(), EconomyTerms.open())}" class="stateEconomy stateProsperity pointer" data-col="prosperity">${neutrals?.prosperity == null ? "—" : renderProsperityPercent(neutrals.prosperity)}</div>
+        <div data-tip="${sentences(EconomyTerms.stateProduct(), EconomyTerms.open())}" class="stateEconomy stateProduct pointer" data-col="product">🟡 ${si(neutrals?.product ?? 0)}</div>
+        <div data-tip="${sentences(EconomyTerms.wealth(), EconomyTerms.open())}" class="stateEconomy stateWealth pointer" data-col="wealth">🟡 ${rn(neutrals?.wealth ?? 0, 2)}</div>
         <select class="cultureType placeholder" data-col="type">${getTypeOptions(0)}</select>
         <div data-col="expansionism">
           <span class="icon-resize-full placeholder"></span>
@@ -556,9 +558,9 @@ function renderStatesPage(view: TableView<State>): void {
         <div data-tip="${populationTip}" class="statePopulation pointer">${si(population)}</div>
       </div>
       <div data-tip="${treasuryTip}" class="stateTreasury stateEconomy pointer" data-col="treasury">🟡 ${si(s.treasury)}</div>
-      <div data-tip="${accounts?.prosperity == null ? t("Prosperity: no economy data yet") : `${t("Prosperity: how well the people live, {{level}}", { level: prosperityLevel(accounts.prosperity) })}. ${t("Click to open the state's economy")}`}" class="stateEconomy stateProsperity pointer" data-col="prosperity">${accounts?.prosperity == null ? "—" : renderProsperityPercent(accounts.prosperity)}</div>
-      <div data-tip="${sentences(t("Product: what the state's people make in a day"), t("Click to open the state's economy"))}" class="stateEconomy stateProduct pointer" data-col="product">🟡 ${si(accounts?.product ?? 0)}</div>
-      <div data-tip="${sentences(t("Wealth: product per person"), t("Click to open the state's economy"))}" class="stateEconomy stateWealth pointer" data-col="wealth">🟡 ${rn(accounts?.wealth ?? 0, 2)}</div>
+      <div data-tip="${accounts?.prosperity == null ? EconomyTerms.noData() : sentences(prosperityTip(accounts.prosperity), EconomyTerms.open())}" class="stateEconomy stateProsperity pointer" data-col="prosperity">${accounts?.prosperity == null ? "—" : renderProsperityPercent(accounts.prosperity)}</div>
+      <div data-tip="${sentences(EconomyTerms.stateProduct(), EconomyTerms.open())}" class="stateEconomy stateProduct pointer" data-col="product">🟡 ${si(accounts?.product ?? 0)}</div>
+      <div data-tip="${sentences(EconomyTerms.wealth(), EconomyTerms.open())}" class="stateEconomy stateWealth pointer" data-col="wealth">🟡 ${rn(accounts?.wealth ?? 0, 2)}</div>
       <select data-tip="${sentences(t("State type"), t("Defines growth model"), t("Click to change"))}" class="cultureType" data-col="type">${getTypeOptions(
         s.type
       )}</select>
@@ -595,6 +597,18 @@ function renderStatesPage(view: TableView<State>): void {
   ensureEl("statesFooterArea").dataset.area = String(totalArea);
   ensureEl("statesFooterPopulation").innerHTML = si(totalPopulation);
   ensureEl("statesFooterPopulation").dataset.population = String(totalPopulation);
+  const shown = view.all.filter(s => s.i && !s.removed);
+  const treasury = shown.reduce((sum, s) => sum + (s.treasury || 0), 0);
+  ensureEl("statesFooterTreasury").innerHTML = `🟡 ${si(shown.length ? treasury / shown.length : 0)}`;
+  // by people, as a state's own prosperity is
+  const lived = shown.flatMap(s => {
+    const accounts = StateEconomy.getAccounts(s.i);
+    return accounts?.prosperity == null ? [] : [{ people: accounts.people, prosperity: accounts.prosperity }];
+  });
+  const people = lived.reduce((sum, row) => sum + row.people, 0);
+  ensureEl("statesFooterProsperity").innerHTML = people
+    ? renderProsperityPercent(lived.reduce((sum, row) => sum + row.people * row.prosperity, 0) / people)
+    : "—";
 
   renderEditorPagination(ensureEl("statesFooter"), view, statesTable.goto);
 
@@ -934,19 +948,23 @@ function openTreasuryDialog(stateId: number): void {
   };
 
   Dialog.message({
-    message: /* html */ `<div data-tip="${t("Sales tax is levied on every sale by a seller from the state: its burgs selling to their market, and its markets selling to burgs. Poll tax is levied on all population of the state. Tariffs are levied on goods that burgs of the state's markets import from foreign markets. Tax changes take effect on Production regeneration")}" style="margin: 0.6em 0; display: grid; grid-template-columns: 7em auto auto; row-gap: 0.4em; align-items: center">
+    message: /* html */ `<div data-tip="${t("State taxes. Changes apply on regeneration")}" style="margin: 0.4em 0; display: grid; grid-template-columns: max-content 6em 1fr; gap: 0.35em 0.6em; align-items: center">
       <label for="stateSalesTaxInput">${t("Sales Tax")}:</label>
-      <input id="stateSalesTaxInput" type="number" min="0" max="1" step="0.01" value="${state.salesTax}" style="width: 6em"/> = ${formatPrice(salesTaxRevenue)}
+      <input id="stateSalesTaxInput" type="number" min="0" max="1" step="0.01" value="${state.salesTax}" style="width: 100%"/>
+      <span>= ${formatPrice(salesTaxRevenue)}</span>
       <label for="statePollTaxInput">${t("Poll Tax")}:</label>
-      <input id="statePollTaxInput" type="number" min="0" max="10" step="0.01" value="${state.pollTax}" style="width: 6em"/> = ${formatPrice(pollTaxRevenue)}
+      <input id="statePollTaxInput" type="number" min="0" max="10" step="0.01" value="${state.pollTax}" style="width: 100%"/>
+      <span>= ${formatPrice(pollTaxRevenue)}</span>
       <label>${t("Tariffs")}:</label>
-      <span></span> = ${formatPrice(tariffRevenue)}
-      <label for="stateTreasuryInput" data-tip="${t("The state's tax income for the day, in {{money}}", { money: getMoneyUnit() })}">${t("Treasury")}:</label>
-      <input id="stateTreasuryInput" type="number" step="1" value="${state.treasury}" style="width: 6em" />
+      <span></span>
+      <span>= ${formatPrice(tariffRevenue)}</span>
+      <label for="stateTreasuryInput" data-tip="${EconomyTerms.stateTreasury()}">${t("Treasury")}:</label>
+      <input id="stateTreasuryInput" type="number" step="1" value="${state.treasury}" style="width: 100%" />
+      <span></span>
     </div>
     <hr />
     <div style="display: flex; justify-content: space-between; align-items: center; margin: 0.4em 0;">
-      <b data-tip="${t("More specific rules override general rules. Embargoes block trade in both directions")}">${t("Tariffs and Embargoes")}</b>
+      <b data-tip="${t("Specific rules override general ones")}">${t("Tariffs and Embargoes")}</b>
       <div style="display: flex; gap: 0.3em;">
         <button id="stateTariffReset" type="button" class="icon-arrows-cw" data-tip="${t("Reset tariffs based on current diplomatic relations")}"> ${t("Reset")}</button>
         <button id="stateTariffAdd" type="button" class="icon-plus" data-tip="${t("Add tariff or embargo rule")}"> ${t("Add")}</button>

@@ -126,7 +126,7 @@ Each trade shows the net price, the carriage, tax and tariff per unit, the units
 - **Comfort**: how much and how fine their goods are, compared with bare needs bought the cheapest way.
 - **Variety**: how many different goods they enjoy.
 
-Living on bare needs is about 20%. Ten levels of 10% each: **Desolate**, **Destitute**, **Poor**, **Modest**, **Comfortable**, **Thriving**, **Affluent**, **Opulent**, **Splendid** and **Peerless**. Most townspeople are Comfortable or Thriving; rural people, living mostly off their fields, are Poor. Rural people grow their own needs and buy their wants at their market with what their produce earns, so their prosperity counts too, and it varies from place to place: a valley on a rich deposit lives better than barren hills nearby.
+Living on bare needs is about 20%. Ten levels of 10% each: **Desolate**, **Destitute**, **Poor**, **Modest**, **Comfortable**, **Thriving**, **Affluent**, **Opulent**, **Splendid** and **Peerless**. Most townspeople are Thriving, the richest Splendid or Peerless; rural people, living mostly off their fields, are Poor. Rural people grow their own needs and buy their wants at their market with what their produce earns, so their prosperity counts too, and it varies from place to place: a valley on a rich deposit lives better than barren hills nearby.
 
 Wealth and prosperity differ: an export town makes a lot and saves it, while a market center lives well on its merchants' margins. Prosperity is not happiness either: the generator knows nothing of health, safety or freedom.
 
@@ -137,11 +137,11 @@ Prosperity shows in the _Burgs overview_ (click it, or Wealth, to open the burg'
 A state's treasury only shows its cut. A trade republic with low taxes has a small treasury, while its people may be wealthy and prosperous. To see the whole picture, open _Tools_ → _States_ and click a **Treasury** or **Prosperity** value; the column menu can also show **Product** and **Wealth**. The state's **Economy** dialog shows:
 
 - **Product**: what its people make in a day, by sector: **rural** (rural people's earnings), **manufacturing** (its burgs' product) and **trade** (the margins its market centers take).
-- **Economy type**: the sector the state leans on more than the world does: **Agrarian**, **Artisan** or **Mercantile**.
+- **Economy type**: the sector the state leans on more than the world does (**Agrarian**, **Artisan** or **Mercantile**), how far it leans, and the good it is **known for**: the one it makes most of compared with the rest of the world.
 - **Wealth** (product per person), **population**, **prosperity**, **treasury** with its **tax burden** (treasury as a share of the product), the **trade balance** with other states, and **inequality** (how unequal its burgs' wealth is), each with the state's rank or the world's figure.
-- Its taxes, its **foreign trade** with each state, its main exports and imports, the most valuable goods it makes, and its **living standards**: how prosperous its townspeople and rural people are, and how many people live at each level.
+- Its taxes, its **foreign trade** with its five main partners, its main exports and imports and the most valuable goods it makes (the list button shows all of them as a table you can download as CSV, and so does the one by foreign trade), and its **prosperity**: how well its urban and rural population live, and how many of each live at each level. Inequality ranks the most equal state first.
 
-Open several states' dialogs to compare them side by side. The percent button at the bottom opens the state's taxes and tariffs. In the States Editor's percent mode, product shows as a share of the world's, and wealth and prosperity against the world average.
+Open several states' dialogs to compare them side by side. The neutral lands have one too: click their Prosperity, Product or Wealth. The total line shows the average treasury and prosperity. The percent button at the bottom opens the state's taxes and tariffs. In the States Editor's percent mode, product shows as a share of the world's, and wealth and prosperity against the world average.
 
 # Shaping the economy for your world
 

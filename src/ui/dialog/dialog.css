@@ -197,27 +197,18 @@
 /* Button pane */
 
 .dialog-buttonpane {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
   margin-top: 0.5em;
-  padding: 0.3em 1em 0.5em 0.4em;
-  border: 1px solid #dddddd;
-  border-width: 1px 0 0 0;
+  padding: 0.3em 0.6em 0.3em 0.4em;
+  border-top: 1px solid #dddddd;
   color: #333333;
-  text-align: left;
 }
 
-.dialog-buttonpane::before,
-.dialog-buttonpane::after {
-  content: "";
-  display: table;
-  border-collapse: collapse;
-}
-
-.dialog-buttonpane::after {
-  clear: both;
-}
-
+/* the footer's own controls sit left, the buttons right, on one line */
 .dialog-buttonset {
-  float: right;
+  margin-left: auto;
 }
 
 .dialog-buttonpane .dialog-buttonset > button {

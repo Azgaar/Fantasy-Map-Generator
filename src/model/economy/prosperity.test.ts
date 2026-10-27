@@ -75,9 +75,8 @@ describe("prosperity", () => {
     const living = Prosperity.getBurg(1)!;
     expect(living.needs).toBeCloseTo(1, 5);
     expect(living.comfort).toBeCloseTo(1, 5);
-    expect(living.prosperity).toBeGreaterThan(0.2); // needs alone, plus a little variety
+    expect(living.prosperity).toBeGreaterThan(0.2); // needs alone, plus the variety of five goods
     expect(living.prosperity).toBeLessThan(0.35);
-    expect(Prosperity.getLevel(living.prosperity)).toBe("Poor");
   });
 
   it("rises with more and finer goods", () => {

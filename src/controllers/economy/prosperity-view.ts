@@ -2,31 +2,41 @@ import { type Living, Prosperity } from "@/model/economy/prosperity";
 import { t } from "@/utils/i18n";
 import { rn } from "@/utils/number-utils";
 
-const LEVELS: Record<string, { label: () => string; color: string }> = {
-  Desolate: { label: () => t("Desolate"), color: "#8a1f1f" },
-  Destitute: { label: () => t("Destitute"), color: "#a33" },
-  Poor: { label: () => t("Poor"), color: "#b65e1f" },
-  Modest: { label: () => t("Modest"), color: "#9a7a1a" },
-  Comfortable: { label: () => t("Comfortable"), color: "#6a8a2a" },
-  Thriving: { label: () => t("Thriving"), color: "#3a8a3a" },
-  Affluent: { label: () => t("Affluent"), color: "#2a7a6a" },
-  Opulent: { label: () => t("Opulent"), color: "#2a5a9a" },
-  Splendid: { label: () => t("Splendid"), color: "#5a3a9a" },
-  Peerless: { label: () => t("Peerless"), color: "#8a2a8a" }
+const LEVELS: Record<string, () => string> = {
+  Desolate: () => t("Desolate"),
+  Destitute: () => t("Destitute"),
+  Poor: () => t("Poor"),
+  Modest: () => t("Modest"),
+  Comfortable: () => t("Comfortable"),
+  Thriving: () => t("Thriving"),
+  Affluent: () => t("Affluent"),
+  Opulent: () => t("Opulent"),
+  Splendid: () => t("Splendid"),
+  Peerless: () => t("Peerless")
 };
 
-export const prosperityLevel = (prosperity: number) => LEVELS[Prosperity.getLevel(prosperity)].label();
-export const prosperityColor = (prosperity: number) => LEVELS[Prosperity.getLevel(prosperity)].color;
+// for charts of people by level only: prosperity itself is shown as text
+const COLORS: Record<string, string> = {
+  Desolate: "#8a1f1f",
+  Destitute: "#a33",
+  Poor: "#b65e1f",
+  Modest: "#9a7a1a",
+  Comfortable: "#6a8a2a",
+  Thriving: "#3a8a3a",
+  Affluent: "#2a7a6a",
+  Opulent: "#2a5a9a",
+  Splendid: "#5a3a9a",
+  Peerless: "#8a2a8a"
+};
 
-/** "57% Thriving", colored by level */
-export function renderProsperity(prosperity: number): string {
-  return `<span style="color: ${prosperityColor(prosperity)}">${rn(prosperity * 100)}% ${prosperityLevel(prosperity)}</span>`;
-}
+export const prosperityLevel = (prosperity: number) => LEVELS[Prosperity.getLevel(prosperity)]();
+export const prosperityColor = (prosperity: number) => COLORS[Prosperity.getLevel(prosperity)];
 
-/** "57%", colored by level, for narrow cells */
-export function renderProsperityPercent(prosperity: number): string {
-  return `<span style="color: ${prosperityColor(prosperity)}">${rn(prosperity * 100)}%</span>`;
-}
+/** "57% Thriving" */
+export const renderProsperity = (prosperity: number) => `${rn(prosperity * 100)}%, ${prosperityLevel(prosperity)}`;
+
+/** "57%", for narrow cells */
+export const renderProsperityPercent = (prosperity: number) => `${rn(prosperity * 100)}%`;
 
 /** Its three parts, for one line next to the level */
 export function renderProsperityParts(living: Living): string {

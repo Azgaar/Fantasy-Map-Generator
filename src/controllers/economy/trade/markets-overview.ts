@@ -56,10 +56,7 @@ const columns: EditorColumn<MarketRow>[] = [
     label: t("Sales"),
     width: "5em",
     sortBy: row => row.sales,
-    tip: sentences(
-      t("Got from burgs for the goods the market sold, less the taxes and tariffs passed to the states"),
-      t("Click to sort")
-    )
+    tip: sentences(t("Market income, less taxes and tariffs"), t("Click to sort"))
   },
   {
     key: "buys",
@@ -74,7 +71,7 @@ const columns: EditorColumn<MarketRow>[] = [
     width: "5em",
     sortBy: row => row.value,
     defaultSort: "desc",
-    tip: sentences(t("Market value: sales less buys, plus the value of unsold stock"), t("Click to sort"))
+    tip: sentences(t("Market value: sales less buys, plus stock"), t("Click to sort"))
   },
   { key: "note", width: "1.1em" },
   { key: "remove", width: "1.4em", permanent: true }
@@ -251,9 +248,9 @@ function renderMarketRow(
     <div data-col="cells" data-tip="${t("Number of cells in market territory")}" class="marketCells">${format("cells", cells)}</div>
     <div data-col="burgs" data-tip="${t("Number of burgs in market territory")}" class="marketBurgs">${format("burgs", burgs)}</div>
     <div data-col="stock" data-tip="${t("Total stock of all goods in this market")}" class="marketStock">${format("stock", stock)}</div>
-    <div data-col="sales" data-tip="${t("Got from burgs for the goods the market sold, less the taxes and tariffs passed to the states")}" class="marketSales">${format("sales", sales, true)}</div>
+    <div data-col="sales" data-tip="${t("Market income, less taxes and tariffs")}" class="marketSales">${format("sales", sales, true)}</div>
     <div data-col="buys" data-tip="${t("Paid to burgs for the goods the market bought")}" class="marketBuysCol">${format("buys", buys, true)}</div>
-    <div data-col="value" data-tip="${t("Market value: sales less buys, plus the value of unsold stock")}" class="marketValue">${format("value", value, true)}</div>
+    <div data-col="value" data-tip="${t("Market value: sales less buys, plus stock")}" class="marketValue">${format("value", value, true)}</div>
     ${noteIcon(t("Edit free text notes (legend)"))}
     <span data-col="remove" data-tip="${t("Remove")}" class="icon-trash-empty hiddenIcon" style="visibility:hidden"></span>
   </div>`;
@@ -287,7 +284,7 @@ function renderNoMarketRow(
   const burgs = getMarketBurgs(0);
   return /*html*/ `<div class="states market" data-id="0">
     <div data-col="color"><fill-box fill="none" data-tip="${t("Cells assigned to no market")}"></fill-box></div>
-    <div data-col="market" data-tip="${t("Cells with no market; their burgs are excluded from production")}" class="marketName">${t("No market")}</div>
+    <div data-col="market" data-tip="${t("Cells with no market, outside the economy")}" class="marketName">${t("No market")}</div>
     <div data-col="owner" class="marketOwner">—</div>
     <div data-col="cells" data-tip="${t("Number of cells with no market")}" class="marketCells">${format("cells", cells)}</div>
     <div data-col="burgs" data-tip="${t("Number of burgs with no market")}" class="marketBurgs">${format("burgs", burgs)}</div>

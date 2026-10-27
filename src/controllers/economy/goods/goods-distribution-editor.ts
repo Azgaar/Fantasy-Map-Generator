@@ -633,7 +633,7 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
 
     <div class="ded-wrap">
       <div class="ded-info">
-        ${t("Distribution controls where this raw good spawns. Leave empty for manufactured-only goods.")}
+        ${t("Where the good is produced; empty if only made")}
       </div>
       <div class="ded-body">
         <div class="ded-builder">

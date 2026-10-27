@@ -21,7 +21,7 @@ export type StateAccounts = {
   prosperity: number | null; // all people's, by their numbers
   towns: GroupLiving | null;
   country: GroupLiving | null;
-  levels: number[]; // people at each prosperity level
+  levels: Record<"towns" | "country", number[]>; // people at each prosperity level, by burgs and by cells
   burgWealth: number[]; // each burg's product per person
 };
 
@@ -31,6 +31,8 @@ export type StateTrade = {
   partners: Map<number, { exports: number; imports: number }>;
   exported: number[]; // value by good id
   imported: number[];
+  exportedUnits: number[]; // units by good id
+  importedUnits: number[];
 };
 
 /** A deal's goods at the market's price, without carriage and taxes */
@@ -40,6 +42,8 @@ const goodsValue = ([, , , kind, units, price, tax, tariff, carriage]: Deal) =>
 class StateEconomyModule {
   private source: unknown = null; // the deals the cache describes
   private accounts = new Map<number, StateAccounts>();
+  private outputSource: unknown = null; // the deals the outputs describe
+  private outputs = new Map<number, number[]>(); // by state, -1 for the world
 
   getAccounts(stateId: number): StateAccounts | null {
     this.index();
@@ -53,7 +57,15 @@ class StateEconomyModule {
   }
 
   getTrade(stateId: number): StateTrade {
-    const trade: StateTrade = { exports: 0, imports: 0, partners: new Map(), exported: [], imported: [] };
+    const trade: StateTrade = {
+      exports: 0,
+      imports: 0,
+      partners: new Map(),
+      exported: [],
+      imported: [],
+      exportedUnits: [],
+      importedUnits: []
+    };
     const marketState = (marketId: number) => pack.burgs[Markets.get(marketId)?.centerBurgId ?? 0]?.state || 0;
     for (const deal of pack.deals) {
       const [burgId, marketId, goodId, kind] = deal;
@@ -70,10 +82,12 @@ class StateEconomyModule {
         trade.exports += value;
         row.exports += value;
         trade.exported[goodId] = (trade.exported[goodId] || 0) + value;
+        trade.exportedUnits[goodId] = (trade.exportedUnits[goodId] || 0) + deal[4];
       } else {
         trade.imports += value;
         row.imports += value;
         trade.imported[goodId] = (trade.imported[goodId] || 0) + value;
+        trade.importedUnits[goodId] = (trade.importedUnits[goodId] || 0) + deal[4];
       }
       trade.partners.set(partner, row);
     }
@@ -94,23 +108,31 @@ class StateEconomyModule {
     return { salesTax, tariffs, pollTax };
   }
 
-  /** Value at base prices of each good the state's burgs and countryside made, by good id */
+  /** Value at base prices of each good the state's burgs and countryside made, by good id; -1 for the world's */
   getOutput(stateId: number): number[] {
-    const output: number[] = [];
-    const add = (goodId: number, units: number) => {
-      const good = Goods.get(goodId);
-      if (good) output[goodId] = (output[goodId] || 0) + units * good.value;
-    };
-    for (const burg of pack.burgs) {
-      if (burg.i && !burg.removed && burg.state === stateId)
-        for (const [goodId, units] of burg.production ?? []) add(goodId, units);
+    if (this.outputSource !== pack.deals) {
+      this.outputSource = pack.deals;
+      this.outputs.clear();
+      const add = (id: number, goodId: number, units: number) => {
+        const good = Goods.get(goodId);
+        if (!good) return;
+        for (const key of [id, -1]) {
+          const output = this.outputs.get(key) ?? [];
+          output[goodId] = (output[goodId] || 0) + units * good.value;
+          this.outputs.set(key, output);
+        }
+      };
+      for (const burg of pack.burgs)
+        if (burg.i && !burg.removed)
+          for (const [goodId, units] of burg.production ?? []) add(burg.state || 0, goodId, units);
+      const biomes = Goods.getBiomesProduction();
+      for (const cellId of pack.cells.i) {
+        if (!pack.cells.market[cellId]) continue;
+        const produced = Production.getCellProduction(cellId, biomes);
+        for (const [goodId, units] of Object.entries(produced)) add(pack.cells.state[cellId], +goodId, units);
+      }
     }
-    const biomes = Goods.getBiomesProduction();
-    for (const cellId of pack.cells.i) {
-      if (pack.cells.state[cellId] !== stateId || !pack.cells.market[cellId]) continue;
-      for (const [goodId, units] of Object.entries(Production.getCellProduction(cellId, biomes))) add(+goodId, units);
-    }
-    return output;
+    return this.outputs.get(stateId) ?? [];
   }
 
   /** Of each need, the share its townspeople had met; rural people live off their fields */
@@ -154,7 +176,7 @@ class StateEconomyModule {
           prosperity: null,
           towns: null,
           country: null,
-          levels: PROSPERITY_LEVELS.map(() => 0),
+          levels: { towns: PROSPERITY_LEVELS.map(() => 0), country: PROSPERITY_LEVELS.map(() => 0) },
           burgWealth: []
         };
         this.accounts.set(stateId, accounts);
@@ -174,7 +196,7 @@ class StateEconomyModule {
         row.variety += people * living.variety;
         row.prosperity += people * living.prosperity;
         sums.set(key, row);
-        of(id).levels[PROSPERITY_LEVELS.indexOf(Prosperity.getLevel(living.prosperity))] += people;
+        of(id).levels[group][PROSPERITY_LEVELS.indexOf(Prosperity.getLevel(living.prosperity))] += people;
       }
     };
 

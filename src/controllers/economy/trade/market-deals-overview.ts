@@ -52,10 +52,7 @@ const columns: EditorColumn<MarketDealRow>[] = [
   {
     key: "side",
     label: t("Type"),
-    tip: sentences(
-      t("Whether the market buys the goods from the burg or sells them to it"),
-      t("Click to sort by {{column}}", { column: t("Type") })
-    ),
+    tip: sentences(t("Whether the market buys or sells"), t("Click to sort by {{column}}", { column: t("Type") })),
     width: "4em",
     sortType: "alpha",
     sortBy: row => row.side
@@ -294,11 +291,7 @@ function renderTotals(rows: MarketDealRow[]): void {
   ensureEl("marketDealsFooter").innerHTML = [
     total(t("Deals"), t("Deals count"), String(rows.length)),
     total(t("Bought"), t("Paid to burgs for the goods the market bought"), money(bought, false) || formatPrice(0)),
-    total(
-      t("Sold"),
-      t("Got from burgs for the goods the market sold, less the taxes and tariffs passed to the states"),
-      money(sold, true) || formatPrice(0)
-    ),
+    total(t("Sold"), t("Market income, less taxes and tariffs"), money(sold, true) || formatPrice(0)),
     total(
       t("Carriage"),
       t("Carriage paid in all"),

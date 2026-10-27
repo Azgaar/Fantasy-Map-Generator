@@ -47,7 +47,7 @@ export interface PackedGraph {
     province: TypedArray; // cell province id
     good: Uint16Array; // cell good id
     market: Uint16Array; // cell market id
-    prosperity: Uint8Array; // cell rural prosperity in percent, 0 where no one lives or the economy has not run
+    prosperity: Uint8Array; // cell rural prosperity %, 0 if none
     routes: Record<number, Record<number, number>>;
   };
   vertices: {

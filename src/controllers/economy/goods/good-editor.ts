@@ -75,7 +75,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
     footer:
       economyWikiButton("goodEditorWiki") +
       (editedGood
-        ? /*html*/ `<div class="dontAsk" data-tip="${t("Re-place this good and recompute production, trade and taxes. Uncheck to update the good only, without disturbing the current economy.")}">
+        ? /*html*/ `<div class="dontAsk" data-tip="${t("Re-place the good and recompute the economy")}">
           <input id="goodRegenerateEconomy" class="checkbox" type="checkbox" checked />
           <label for="goodRegenerateEconomy" class="checkbox-label"><i>${t("regenerate economy on apply")}</i></label>
         </div>`
@@ -265,7 +265,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
           <label for="newGoodValue" data-tip="${t("Price of one unit in {{money}}, the price markets start from", { money: getMoneyUnit() })}">${t("Base Price")}*</label>
           <span class="ge-inline"><input id="newGoodValue" class="ge-num" type="number" min="0" step="1" value="${editedGood?.value ?? 1}" /> 🟡</span>
 
-          <label for="newGoodCarriage" data-tip="${t("Price of carrying one unit over 1 decima (a tenth of the map's diagonal, here {{distance}}) along roads and sea routes. Bulky goods cost more to carry, dear ones pay for the risk", { distance: getDistance(getDecima()) })}">${t("Carriage Price")}*</label>
+          <label for="newGoodCarriage" data-tip="${t("Carriage: price of one unit per decima ({{distance}})", { distance: getDistance(getDecima()) })}">${t("Carriage Price")}*</label>
           <span class="ge-inline"><input id="newGoodCarriage" class="ge-num" type="number" min="0" step="0.1" value="${editedGood?.carriage ?? DEFAULT_CARRIAGE}" /> 🟡</span>
 
           <label for="newGoodUnit">${t("Unit")}</label>
@@ -283,7 +283,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             <input id="newGoodColor" class="ge-color" type="color" data-tip="${t("Set stroke color")}" value="${editedGood?.color || "#ff5959"}" />
           </div>
 
-          <label data-tip="${t("How much of each demand category this good satisfies. Click the pencil icon to edit.")}">${t("Demand Coverage")}</label>
+          <label data-tip="${t("Needs one unit covers. Click the pencil to edit")}">${t("Demand Coverage")}</label>
           <div class="ge-edit-row">
             <span id="demandCoverageSummary" >${demandCoverageSummary()}</span>
             <button class="dcEdit icon-pencil ge-edit" data-tip="${t("Edit demand coverage")}"></button>
@@ -300,13 +300,13 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
             <button class="bpEdit icon-pencil ge-edit" data-tip="${t("Edit biome baseline production")}"></button>
           </div>
 
-          <label data-tip="${t("For raw resources: controls where and how this good is produced directly from the environment (e.g. biome, elevation, temperature)")}">${t("Bonus distribution")}</label>
+          <label data-tip="${t("Where the raw good is produced")}">${t("Bonus distribution")}</label>
           <div class="ge-edit-row">
             <div id="newGoodDistribution" class="ge-dist">${editedGood?.distribution || ""}</div>
             <button id="newGoodDistributionEditor" class="icon-pencil ge-edit" data-tip="${t("Open the Distribution visual editor")}"></button>
           </div>
 
-          <label data-tip="${t("How many bonus resource deposits generation places on the map, from the minimum to the maximum. A deposit yields more on a bigger map, so the same count gives the same share of supply on any map size")}">${t("Deposits")}</label>
+          <label data-tip="${t("Deposits placed on the map, minimum to maximum")}">${t("Deposits")}</label>
           <span class="ge-inline">
             <input id="newGoodDepositsMin" class="ge-num" type="number" min="0" step="1" value="${editedGood?.deposits?.[0] ?? 1}" />
             –
@@ -315,7 +315,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
           </span>
           ${
             editedGood?.distribution
-              ? /*html*/ `<label data-tip="${t("What this good's deposits yield a day on this map. Set the total and click Place to re-place the deposits until they yield it, by the saved distribution; the economy is recomputed")}">${t("Deposit output")}</label>
+              ? /*html*/ `<label data-tip="${t("Deposits' daily yield. Set it and click Place")}">${t("Deposit output")}</label>
           <span class="ge-inline">
             <span id="goodDepositOutput"></span>
             <input id="goodDepositTarget" class="ge-num" type="number" min="0" step="1" />
@@ -329,7 +329,7 @@ function open(editedGood?: Good, onUpdate?: () => void): void {
 
       <div>
         <div class="ge-section-title">
-          <span data-tip="${t("For manufactured goods: recipes define which other goods are required to produce this good")}">${t("Recipes")}</span>
+          <span data-tip="${t("Ingredients to make the good")}">${t("Recipes")}</span>
           <button id="newGoodAddRecipe" class="icon-plus" data-tip="${t("Add")}"></button>
         </div>
         <div id="newGoodRecipeList" class="ge-recipe-list"></div>

@@ -82,7 +82,7 @@ const columns: EditorColumn<Good>[] = [
     width: "6em",
     sortBy: good => rn((production[good.i]?.burg ?? 0) + (production[good.i]?.cell ?? 0)),
     defaultSort: "desc",
-    tip: sentences(t("Total units produced daily in cells (raw) and burgs (manufactured)"), t("Click to sort"))
+    tip: sentences(t("Units made a day, in cells and burgs"), t("Click to sort"))
   },
   {
     key: "stock",
@@ -105,17 +105,14 @@ const columns: EditorColumn<Good>[] = [
     width: "6em",
     hidden: true,
     sortBy: good => good.carriage,
-    tip: sentences(t("Price of carrying one unit over a decima, a tenth of the map's diagonal"), t("Click to sort"))
+    tip: sentences(t("Carriage: price of one unit per decima"), t("Click to sort"))
   },
   {
     key: "deposits",
     label: t("Deposits"),
     width: "5.6em",
     sortBy: good => (good.distribution ? (depositsByGood[good.i] ?? 0) : -1),
-    tip: sentences(
-      t("Bonus resource deposits on the map, and in small type the range generation places"),
-      t("Click to sort")
-    )
+    tip: sentences(t("Deposits placed, and their range"), t("Click to sort"))
   },
   {
     key: "coverage",
@@ -191,7 +188,7 @@ function renderDialog(): void {
         <label for="goodsSearch" data-tip="${t("Filter by name or tag")}">${t("Search")}: <input id="goodsSearch" type="search" autocomplete="off" /></label>
       </div>
       <div id="goodsFooter" class="totalLine hide">
-        <div data-tip="${t("Goods selected for the Goods layer, of all goods. With none selected, the layer shows an overview of all production")}" style="margin-left: 5px">${t("Goods")}:&nbsp;${t("{{- shown}} of {{- total}}", { shown: `<span id="goodsDisplayed">0</span>`, total: `<span id="goodsNumber">0</span>` })}</div>
+        <div data-tip="${t("Goods shown on the Goods layer")}" style="margin-left: 5px">${t("Goods")}:&nbsp;${t("{{- shown}} of {{- total}}", { shown: `<span id="goodsDisplayed">0</span>`, total: `<span id="goodsNumber">0</span>` })}</div>
         <div data-tip="${t("Total units produced daily by all cells and burgs")}" style="margin-left: 12px">${t("Produced")}:&nbsp;<span id="goodsProduced">0</span></div>
         <div data-tip="${t("Total units in stock across all markets and burg inventories")}" style="margin-left: 12px">${t("Stock")}:&nbsp;<span id="goodsStock">0</span></div>
       </div>
@@ -222,7 +219,7 @@ function renderDialog(): void {
   ensureEl("goodsTagsFilter").classList.toggle("active", filterState.visibleTags.length > 0);
   ensureEl<HTMLInputElement>("goodsSearch").value = filterState.search;
   ensureEl(`${dialogId}Header`).querySelector<HTMLElement>('[data-col="display"]')!.innerHTML = /* html */ `<input
-    type="checkbox" data-tip="${t("Select or clear all goods matching the current filter. With none selected, the Goods layer shows an overview of all production")}" class="native" id="goodsDisplayAll"
+    type="checkbox" data-tip="${t("Select or clear all filtered goods")}" class="native" id="goodsDisplayAll"
     style="margin: 0; width: 1.2em;" />`;
   bindColumnSorting(dialogId, goodsTable.reset);
   initColumnVisibility({
@@ -289,7 +286,7 @@ function renderGoodsPage(view: TableView<Good>) {
     const commonStyles =
       "display:inline-block;border-radius:3px;padding:0 .4em;font-size:0.8em;font-weight:bold;line-height:1.35";
     if (type === "RAW")
-      return `<span style="${commonStyles};background:#d0e7f5;color:#036" data-tip="${t("Raw goods are produced by rural population in cells based on biome availability and in cells and burgs when bonus resource is assigned to cells")}">${t("RAW")}</span>`;
+      return `<span style="${commonStyles};background:#d0e7f5;color:#036" data-tip="${t("Raw goods come from the land and deposits")}">${t("RAW")}</span>`;
     return `<span style="${commonStyles};background:#f8e7bf;color:#b67a00" data-tip="${t("Manufactured goods are produced in burgs")}">${t("MFG")}</span>`;
   };
 
@@ -298,7 +295,7 @@ function renderGoodsPage(view: TableView<Good>) {
       const types = [good.recipes && "MFG", good.distribution && "RAW"].filter(Boolean) as string[];
       const goodProduction = production[good.i] || { burg: 0, cell: 0 };
       const produced = rn(goodProduction.burg + goodProduction.cell);
-      const producedTip = t("Good daily production: {{total}}. Cells: {{cells}}. Burgs: {{burgs}}", {
+      const producedTip = t("Made a day: {{total}} (cells {{cells}}, burgs {{burgs}})", {
         total: `${produced}⚒`,
         cells: `${rn(goodProduction.cell, 2)}⚒`,
         burgs: `${rn(goodProduction.burg, 2)}⚒`
@@ -307,7 +304,7 @@ function renderGoodsPage(view: TableView<Good>) {
       const stockTip = `${t("Total units in stock across all markets and burg inventories")}: ${stock}`;
 
       return /*html*/ `<div class="states goods" data-id=${good.i} data-produced="${produced}" data-stock="${stock}">
-        <div data-col="display"><input type="checkbox" data-tip="${t("Show this good on the Goods layer. With none selected, the layer shows an overview of all production")}" class="native goodDisplayed" style="margin: 0; width: 1.2em;" ${good.visible ? "checked" : ""} /></div>
+        <div data-col="display"><input type="checkbox" data-tip="${t("Show this good on the Goods layer")}" class="native goodDisplayed" style="margin: 0; width: 1.2em;" ${good.visible ? "checked" : ""} /></div>
         <div data-col="name" style="display:flex; align-items:center"><svg data-tip="${t("Good icon")}" width="2em" height="2em" class="goodIcon">
           ${goodBadge(good)}
         </svg><span data-tip="${t("Name")}" class="goodName">${good.name}</span></div>
@@ -322,8 +319,8 @@ function renderGoodsPage(view: TableView<Good>) {
           <div style="display: inline-block; width: 0.4em; font-size: 1.2em;">⛁</div>
         </div>
         <div data-col="price" data-tip="${sentences(t("Base (initial) price"), t("Click to compare prices across markets"))}" class="goodBasePrice pointer">🟡 ${good.value}</div>
-        <div data-col="carriage" data-tip="${t("Price of carrying one unit over a decima, a tenth of the map's diagonal")}">🟡 ${good.carriage}</div>
-        <div data-col="deposits" data-tip="${t("Bonus resource deposits on the map, and in small type the range generation places")}">${good.distribution ? `${depositsByGood[good.i] ?? 0} <small>${formatDeposits(good)}</small>` : ""}</div>
+        <div data-col="carriage" data-tip="${t("Carriage: price of one unit per decima")}">🟡 ${good.carriage}</div>
+        <div data-col="deposits" data-tip="${t("Deposits placed, and their range")}">${good.distribution ? `${depositsByGood[good.i] ?? 0} <small>${formatDeposits(good)}</small>` : ""}</div>
         <div data-col="coverage" data-tip="${t("How much of each demand category one unit covers")}">${renderCoverage(good)}</div>
         <div data-col="tags" data-tip="${t("Tags")}">${Tags.format(good.tags)}</div>
         ${noteIcon(t("Edit free text notes (legend)"))}
@@ -531,7 +528,7 @@ function openTagsVisibilityDialog() {
 
   const text = Dialog.message({
     message: `
-    <div data-tip="${t("Only goods with at least one selected tag remain visible in the editor list")}" style="display: grid; grid-template-columns: 1fr 1fr 1fr; column-gap: 0.3em;">${tagsMarkup}</div>
+    <div data-tip="${t("Show only goods with a selected tag")}" style="display: grid; grid-template-columns: 1fr 1fr 1fr; column-gap: 0.3em;">${tagsMarkup}</div>
   `,
     title: t("Filter goods by tags"),
     buttons: [
@@ -615,7 +612,7 @@ function enterResourceAssignMode(this: HTMLElement) {
 
   Dialog.update(dialogId, { position });
 
-  tip(t("Select good line in editor, click on cells to remove or add a bonus resource"), true);
+  tip(t("Select a good, then click cells to paint deposits"), true);
   select<SVGElement, unknown>("#viewbox").on("click", changeResourceOnCellClick);
 }
 

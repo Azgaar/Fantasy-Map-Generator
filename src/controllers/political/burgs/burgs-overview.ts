@@ -1,5 +1,6 @@
 import { type HierarchyCircularNode, pack as packLayout, select, stratify } from "d3";
 import { Controllers } from "@/controllers";
+import { EconomyTerms } from "@/controllers/economy/economy-terms";
 import { prosperityTip, renderProsperityPercent } from "@/controllers/economy/prosperity-view";
 import { Markets } from "@/model/economy/markets-generator";
 import { Prosperity } from "@/model/economy/prosperity";
@@ -7,7 +8,7 @@ import type { Burg } from "@/model/political/burgs-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Names } from "@/model/society/names-generator";
 import { Tags } from "@/model/tags";
-import { convertTemperature, getHeight, getMoneyUnit, getTemperatureLikeness } from "@/model/units";
+import { convertTemperature, getHeight, getTemperatureLikeness } from "@/model/units";
 import { removeEmblem } from "@/renderers/draw-emblems";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
@@ -137,7 +138,7 @@ const columns: EditorColumn<Burg>[] = [
     label: t("Prosperity"),
     width: "6.5em",
     mobileHidden: true,
-    tip: t("Click to sort by prosperity: how well the burg's people live"),
+    tip: sentences(EconomyTerms.prosperity(), EconomyTerms.openValue()),
     sortBy: b => Prosperity.getBurg(b.i!)?.prosperity ?? -1
   },
   {
@@ -145,7 +146,7 @@ const columns: EditorColumn<Burg>[] = [
     label: t("Wealth"),
     width: "6.5em",
     mobileHidden: true,
-    tip: t("Click to sort by wealth: product per person"),
+    tip: sentences(EconomyTerms.wealth(), EconomyTerms.openValue()),
     sortBy: b => rn(b.population! > 0 ? (b.product || 0) / b.population! : 0, 2)
   },
   {
@@ -227,16 +228,16 @@ function renderDialog(): void {
         <div data-tip="${t("Average population")}" style="margin-left: 12px" data-col="population">
           ${t("Avg population")}:&nbsp;<span id="burgsFooterPopulation">0</span>
         </div>
-        <div data-tip="${t("Average prosperity")}" style="margin-left: 12px" data-col="prosperity">
+        <div data-tip="${EconomyTerms.prosperity()}" style="margin-left: 12px" data-col="prosperity">
           ${t("Avg prosperity")}:&nbsp;<span id="burgsFooterProsperity">0</span>
         </div>
-        <div data-tip="${t("Average product: the day's sales, less their sales tax and the ingredients bought")}" style="margin-left: 12px" data-col="grossproduct">
+        <div data-tip="${EconomyTerms.product()}" style="margin-left: 12px" data-col="grossproduct">
           ${t("Avg product")}:&nbsp;<span id="burgsFooterGrossProduct">0</span> 🟡
         </div>
-        <div data-tip="${t("Average wealth: product per person")}" style="margin-left: 12px" data-col="productpercapita">
+        <div data-tip="${EconomyTerms.wealth()}" style="margin-left: 12px" data-col="productpercapita">
           ${t("Avg wealth")}:&nbsp;<span id="burgsFooterProductPerCapita">0</span> 🟡
         </div>
-        <div data-tip="${t("Average treasury: money at the end of the day")}" style="margin-left: 12px" data-col="treasury">
+        <div data-tip="${EconomyTerms.treasury()}" style="margin-left: 12px" data-col="treasury">
           ${t("Avg treasury")}:&nbsp;<span id="burgsFooterTreasury">0</span> 🟡
         </div>
       </div>
@@ -390,8 +391,8 @@ function renderBurgsPage(view: TableView<Burg>): void {
     }
   }
 
-  const treasuryTip = t("Treasury: the burg's money at the end of the day, in {{money}}", { money: getMoneyUnit() });
-  const openTip = t("Click to open the burg's economy");
+  const treasuryTip = EconomyTerms.treasury();
+  const openTip = EconomyTerms.open();
   for (const b of view.rows) {
     const population =
       b.population! * options.map.units.population.scale * options.map.units.population.urbanization.rate;
@@ -431,14 +432,14 @@ function renderBurgsPage(view: TableView<Burg>): void {
           <span data-tip="${t("Burg population")}" class="icon-male"></span>
           <input data-tip="${t("Burg population")}" value=${si(population)} disabled />
         </div>
-        <div data-col="grossproduct" class="burgEconomy pointer" data-tip="${sentences(t("Product: the day's sales, less their sales tax and the ingredients bought"), openTip)}">
+        <div data-col="grossproduct" class="burgEconomy pointer" data-tip="${sentences(EconomyTerms.product(), openTip)}">
           <span>🟡</span>
           <input class="pointer" value=${grossProduct} readonly />
         </div>
-        <div data-col="prosperity" class="burgEconomy pointer" data-tip="${living ? sentences(prosperityTip(living.prosperity), openTip) : t("Prosperity: no economy data yet")}">
+        <div data-col="prosperity" class="burgEconomy pointer" data-tip="${living ? sentences(prosperityTip(living.prosperity), openTip) : EconomyTerms.noData()}">
           ${living ? renderProsperityPercent(living.prosperity) : "—"}
         </div>
-        <div data-col="productpercapita" class="burgEconomy pointer" data-tip="${sentences(t("Wealth: product per person"), openTip)}">
+        <div data-col="productpercapita" class="burgEconomy pointer" data-tip="${sentences(EconomyTerms.wealth(), openTip)}">
           <span>🟡</span>
           <input class="pointer" value=${productPerCapita} readonly />
         </div>
@@ -452,7 +453,7 @@ function renderBurgsPage(view: TableView<Burg>): void {
             class="icon-star-empty${b.capital ? "" : " inactive"}" style="padding: 0 1px;"></span>
           <span data-tip="${b.port ? t("This burg is a port") : t("This burg is NOT a port")}"
           class="icon-anchor${b.port ? "" : " inactive"}" style="font-size: .9em; padding: 0 1px;"></span>
-          <span data-tip="${market ? t("This burg is the center of the {{market}} market. Click to open it", { market: Markets.getName(market) }) : t("This burg is NOT a market center")}"
+          <span data-tip="${market ? t("Center of the {{market}} market. Click to open", { market: Markets.getName(market) }) : t("This burg is NOT a market center")}"
           class="icon-store${market ? " pointer" : " inactive"}" data-market="${market?.i ?? ""}" style="font-size: .85em; padding: 0 1px;"></span>
         </div>
         <div data-col="tags">

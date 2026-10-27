@@ -96,7 +96,7 @@ function renderDialog(): void {
         <div class="label">${t("Name")}:</div>
         <input
           id="marketOverviewName"
-          data-tip="${t("Type to rename the market. Clear the field to reset to the default name")}"
+          data-tip="${t("Market name. Clear to reset")}"
           autocorrect="off"
           spellcheck="false"
           style="width: 11em; margin-left: 0.3em;"
@@ -118,7 +118,7 @@ function renderDialog(): void {
         ${noteButton("marketOverviewLegend", t("Edit free text notes (legend)"))}
         <button
           id="marketOverviewRelocate"
-          data-tip="${t("Relocate market. Click on a burg on the map to move the market center")}"
+          data-tip="${t("Relocate the market: click a burg")}"
           class="icon-map-pin"
         ></button>
         <button id="marketOverviewExport" data-tip="${t("Save data as a CSV file")}" class="icon-download"></button>

@@ -9,7 +9,7 @@ import { isDemandEntry, isMfgEntry, isTradeEntry } from "@/model/economy/product
 import { Prosperity } from "@/model/economy/prosperity";
 import { Icons } from "@/model/icons";
 import { type Burg, Burgs } from "@/model/political/burgs-generator";
-import { formatPrice, getMoneyUnit } from "@/model/units";
+import { formatPrice } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
 import { Csv } from "@/services/io/csv";
 import { Dialog } from "@/ui/dialog/dialog";
@@ -18,6 +18,7 @@ import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
+import { EconomyTerms } from "./economy-terms";
 import { bindEconomyWiki, economyWikiButton } from "./economy-wiki";
 import { prosperityTip, renderProsperity, renderProsperityParts } from "./prosperity-view";
 import {
@@ -217,13 +218,8 @@ function getLogRow(entry: ProductionLogEntry): HistoryRow {
 
   const inputs = entry.recipe.map(item => `${rn(item.units, 2)} ${goodDot(item.goodId)}`).join(` ${t("and")} `);
   const modifier = entry.cultureModifier ?? 1;
-  const modifierNote =
-    modifier !== 1
-      ? `. ${t("Culture type production modifier. Produced units are multiplied by this value.")}: x${rn(modifier, 2)}`
-      : "";
-  const specializationNote = entry.specialization
-    ? `. ${t("Division of labor: the more of the burg's workers make this good, and the more its market makes of it than the world, the more each makes")}: x${entry.specialization}`
-    : "";
+  const modifierNote = modifier !== 1 ? `. ${t("Production multiplier")}: x${rn(modifier, 2)}` : "";
+  const specializationNote = entry.specialization ? `. ${t("Division of labor bonus")}: x${entry.specialization}` : "";
   return {
     ...getMfgRow(entry.goodId, entry.units),
     details: `${t("Manufacturing from {{- inputs}}", { inputs })}${modifierNote}${specializationNote}${renderDecision(entry.candidates)}`
@@ -382,16 +378,13 @@ function renderDemandOptions(options: DemandEntry["options"]): string {
     return `<li>${goodDot(goodId)}${Goods.get(goodId)?.name}: ${formatPrice(costPerCoverage)} ${t("per covered need")}${per}, ${where}</li>`;
   });
   const more = options.length > 10 ? `<li>${t("and {{count}} more", { count: options.length - 10 })}</li>` : "";
-  return `<div>${t("Goods that could cover it, cheapest first; the burg buys down the list until the need is met or its money runs out")}:</div><ul>${items.join("")}${more}</ul>`;
+  return `<div>${t("Goods that could cover the need")}:</div><ul>${items.join("")}${more}</ul>`;
 }
 
 /** Every market the burg could have bought the good from, at its door, with the one it chose */
 function renderSources(chosen: number, sources: SourceOption[]): string {
   const own = pack.burgs[activeBurgId]?.market;
-  const reason =
-    chosen === own
-      ? t("Its own market had the good in stock, and a burg buys there first")
-      : t("Its own market had none, so it bought from the market that delivers cheapest to its door");
+  const reason = chosen === own ? t("Bought at its own market") : t("Bought from the cheapest other market");
   const open = sources.filter(source => !source.excluded);
   const shown = open.slice(0, 6);
   const picked = open.find(source => source.market === chosen);
@@ -476,7 +469,7 @@ function renderHistoryLine(row: HistoryRow, expandable: boolean): string {
 
 // a row about no single good: only the label, the units and the details
 function renderLabelLine(row: HistoryRow, expandable: boolean): string {
-  const tip = t("A need the burg came to cover, with what was left of it. Expand to see the goods it could buy");
+  const tip = t("A need the burg covered. Expand for options");
   const badge = `<span class="typeBadge ${row.type.toLowerCase()}">${TYPE_LABELS[row.type]()}</span>`;
   return /* html */ `<tr${row.details ? " data-expandable" : ""}>
       ${expandable ? `<td>${row.details ? '<span class="icon-right-open"></span>' : ""}</td>` : ""}
@@ -614,11 +607,8 @@ function renderStats(burg: Burg): void {
     ? pack.deals.reduce((sum, deal) => sum + (deal[1] === market.i ? Markets.getMargin(deal) : 0), 0)
     : 0;
   const treasuryTip = isCenter
-    ? t(
-        "Treasury: the burg's money at the end of the day, in {{money}}. As its market's center, it also takes the market margin",
-        { money: getMoneyUnit() }
-      )
-    : t("Treasury: the burg's money at the end of the day, in {{money}}", { money: getMoneyUnit() });
+    ? sentences(EconomyTerms.treasury(), t("As its market's center, it also takes the market margin"))
+    : EconomyTerms.treasury();
 
   ensureEl(`${dialogId}Stats`).innerHTML = /* html */ `
     <div>
@@ -627,13 +617,13 @@ function renderStats(burg: Burg): void {
       <span><b>${t("Market")}:</b> ${market ? Markets.getName(market) : ""}</span>
     </div>
     <div data-tip="${t("Production: goods the burg made today, units a day")}"><b>${t("Production")}:</b> ${renderGoods(burg.production ?? []) || t("None")}</div>
-    <div data-tip="${t("Consumption: goods the burg's people bought or kept for themselves today, units a day")}"><b>${t("Consumption")}:</b> ${renderGoods(consumption.flatMap((units, goodId) => (units ? [[goodId, units] as [number, number]] : []))) || t("None")}</div>
-    <div data-tip="${t("Demand: of each need, what the burg's goods covered of what its people need, and the wants they bought beyond it")}"><b>${t("Demand")}:</b> ${renderDemand(covered, targets)}</div>
+    <div data-tip="${t("Consumption: goods the people bought or kept")}"><b>${t("Consumption")}:</b> ${renderGoods(consumption.flatMap((units, goodId) => (units ? [[goodId, units] as [number, number]] : []))) || t("None")}</div>
+    <div data-tip="${t("Demand: needs covered, plus wants")}"><b>${t("Demand")}:</b> ${renderDemand(covered, targets)}</div>
     ${living ? `<div class="oneLine" data-tip="${prosperityTip(living.prosperity)}"><b>${t("Prosperity")}:</b> ${renderProsperity(living.prosperity)} <span class="parts">(${renderProsperityParts(living)})</span></div>` : ""}
     <div>
-      <span data-tip="${t("Product: the day's sales, less their sales tax and the ingredients bought")}"><b>${t("Product")}:</b> <span class="positive">${formatPrice(product)}</span></span>
-      <span data-tip="${t("Wealth: product per person")}"><b>${t("Wealth")}:</b> <span class="positive">${formatPrice(wealth)}</span></span>
-      ${isCenter ? `<span data-tip="${t("Market margin: what the burg's merchants took today, 10% of every trade at its market. Trade income, not part of the product")}"><b>${t("Market margin")}:</b> <span class="positive">${formatPrice(margin)}</span></span>` : ""}
+      <span data-tip="${EconomyTerms.product()}"><b>${t("Product")}:</b> <span class="positive">${formatPrice(product)}</span></span>
+      <span data-tip="${EconomyTerms.wealth()}"><b>${t("Wealth")}:</b> <span class="positive">${formatPrice(wealth)}</span></span>
+      ${isCenter ? `<span data-tip="${t("Market margin: 10% of trade at its market")}"><b>${t("Market margin")}:</b> <span class="positive">${formatPrice(margin)}</span></span>` : ""}
       <span data-tip="${sentences(treasuryTip, t("Type to change. It lasts until the economy is regenerated"))}"><b><label for="${dialogId}Treasury">${t("Treasury")}</label>:</b> 🟡<input id="${dialogId}Treasury" type="number" step="0.01" value="${rn(treasury, 2)}" /></span>
     </div>`;
   ensureEl<HTMLInputElement>(`${dialogId}Treasury`).addEventListener("change", function () {

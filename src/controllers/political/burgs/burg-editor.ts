@@ -1,5 +1,6 @@
 import { type Selection, select } from "d3";
 import { Controllers } from "@/controllers";
+import { EconomyTerms } from "@/controllers/economy/economy-terms";
 import { prosperityTip, renderProsperity } from "@/controllers/economy/prosperity-view";
 import type { Market } from "@/model/economy/markets-generator";
 import { Markets } from "@/model/economy/markets-generator";
@@ -183,10 +184,10 @@ function renderDialog(): void {
               <div class="label">${t("Prosperity")}:</div>
               <span id="burgProsperity"></span>
             </div>
-            <div data-tip="${t("Wealth: product per person. Product: the day's sales, less their sales tax and the ingredients bought")}">
+            <div data-tip="${sentences(EconomyTerms.wealth(), EconomyTerms.product())}">
               <div class="label">${t("Wealth")}:</div>
               <span id="burgWealth"></span>
-              <span id="burgEconomyOverview" data-tip="${t("Open the burg's economy")}" class="icon-chart-bar pointer" style="margin-left: 0.3em"></span>
+              <span id="burgEconomyOverview" data-tip="${EconomyTerms.open()}" class="icon-chart-bar pointer" style="margin-left: 0.3em"></span>
             </div>
             <div data-tip="${t("Burg tags (comma-separated)")}">
               <div class="label"><label for="burgTags">${t("Tags")}:</label></div>
@@ -235,7 +236,7 @@ function renderDialog(): void {
         <button id="burgLocate" data-tip="${t("Zoom map and center view in the burg")}" class="icon-target"></button>
         <button
           id="burgProductionOverview"
-          data-tip="${t("Show economy overview for this burg")}"
+          data-tip="${EconomyTerms.open()}"
           class="icon-chart-bar"
         ></button>
         <button
@@ -344,9 +345,7 @@ function updateBurgValues(): void {
   ensureEl("burgShanty").classList.toggle("inactive", !b.shanty);
   const living = Prosperity.getBurg(b.i!);
   ensureEl("burgProsperity").innerHTML = living ? renderProsperity(living.prosperity) : "—";
-  ensureEl("burgProsperityLine").dataset.tip = living
-    ? prosperityTip(living.prosperity)
-    : t("Prosperity: no economy data yet");
+  ensureEl("burgProsperityLine").dataset.tip = living ? prosperityTip(living.prosperity) : EconomyTerms.noData();
 
   updateBurgLockIcon();
 

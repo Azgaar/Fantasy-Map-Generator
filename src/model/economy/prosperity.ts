@@ -1,6 +1,3 @@
-// How well people live: their needs met, how much and how fine their goods are, and how varied.
-// Worked out from the last economy run's deals and markets; cells keep their rural prosperity for quick reads
-
 import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS, Goods, getNeedsCost } from "./goods-generator";
 import { DEAL_KINDS, Markets } from "./markets-generator";
 import { Production } from "./production-generator";
@@ -8,8 +5,9 @@ import { Production } from "./production-generator";
 const NEEDS_SHARE = 0.2; // what needs met alone are worth, living on bare needs: the rest comes from comfort and variety
 const COMFORT_SHARE = 0.4;
 const VARIETY_SHARE = 0.4;
-const COMFORT_TOP = 50; // consuming this many times bare needs at the cheapest is full comfort
-const VARIETY_TOP = 20; // consuming this many goods in even measure is full variety
+const COMFORT_TOP = 15; // consuming this many times bare needs at the cheapest is full comfort
+const VARIETY_TOP = 14; // consuming this many goods in even measure is full variety
+
 export const PROSPERITY_LEVELS = [
   "Desolate",
   "Destitute",
@@ -21,7 +19,7 @@ export const PROSPERITY_LEVELS = [
   "Opulent",
   "Splendid",
   "Peerless"
-] as const; // a tenth of the scale each
+] as const;
 
 /** A people's living: needs met (0–1), consumption at base prices in days of bare needs, the effective number of goods, and prosperity (0–1) */
 export type Living = { needs: number; comfort: number; variety: number; prosperity: number };

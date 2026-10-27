@@ -46,10 +46,7 @@ const columns: EditorColumn<Market>[] = [
     key: "price",
     label: t("Price"),
     width: "6em",
-    tip: sentences(
-      t("Good price in the market, or its share of the base price in percentage view"),
-      t("Click to sort")
-    ),
+    tip: sentences(t("Price, or its share of the base price"), t("Click to sort")),
     sortBy: market => market.goods[activeGoodId]?.price ?? 0
   },
   { key: "actions", width: "1.4em", permanent: true, hidden: true }
@@ -86,7 +83,7 @@ function renderDialog(): void {
         <label for="marketsGoodCompareSelect" data-tip="${t("Select good to compare stock across markets")}">${t("Good")}:</label>
         <svg id="marketsGoodCompareIcon" width="1.6em" height="1.6em"></svg>
         <select id="marketsGoodCompareSelect" style="flex:1; min-width:8em;"></select>
-        <span data-tip="${t("Base price of the good in {{money}}, the price markets start from", { money: getMoneyUnit() })}">${t("Base Price")}: <span id="marketsGoodCompareBase"></span></span>
+        <span data-tip="${t("Base price in {{money}}", { money: getMoneyUnit() })}">${t("Base Price")}: <span id="marketsGoodCompareBase"></span></span>
       </div>
       ${renderEditorHeader({ dialogId, columns })}
       <div id="marketsGoodCompareBody" class="table" data-type="absolute" style="max-height:40em;"></div>
