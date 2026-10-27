@@ -1,6 +1,10 @@
-// Pure geometry for the star markers: the class grouping and the population-driven size ladder.
-// The DOM writer is draw-systems.ts; this module holds no markup.
+// Pure geometry for the star markers: the class grouping, the population-driven size ladder, and the
+// shape of one star. The DOM writer is draw-systems.ts; it owns grouping and positioning, this module
+// owns what a single marker is drawn from. The system editor's preview emits the same shapes.
+
 import type { StarSystem } from "@/generators/astral-naming";
+import { rn } from "@/utils/numberUtils";
+import { escapeHtml } from "@/utils/stringUtils";
 
 /** The spectral classes, hottest to coolest; the layer draws one data-group per class */
 export const STAR_CLASSES = ["G", "F", "K", "A", "B", "M"] as const;
@@ -31,4 +35,40 @@ export function groupByClass(systems: StarSystem[]): Record<StarClassId, StarSys
   const groups = { G: [], F: [], K: [], A: [], B: [], M: [] } as Record<StarClassId, StarSystem[]>;
   for (const system of systems) groups[system.class as StarClassId]?.push(system);
   return groups;
+}
+
+/** One style attr value: an SVG presentation attribute, or null when unset */
+type StyleAttr = string | number | boolean | null | undefined;
+
+/** Style attrs serialized to markup; unset values are skipped */
+export function writeAttrs(attrs: Record<string, StyleAttr> | undefined): string {
+  const written: string[] = [];
+  for (const [name, value] of Object.entries(attrs ?? {})) {
+    if (value !== null && value !== undefined) written.push(` ${name}="${escapeHtml(String(value))}"`);
+  }
+  return written.join("");
+}
+
+/** One star's shape, at its population's size: the star itself plus the accents its traits earn */
+export function starShape(population: number, capital: boolean, port: boolean, glow: boolean): string {
+  const radius = starRadiusEm(population);
+  return [
+    glow ? halo(radius) : "",
+    `<circle class="star" r="${rn(radius, 3)}em"/>`,
+    capital ? capitalRing(radius) : "",
+    port ? portTick(radius) : ""
+  ].join("");
+}
+
+function halo(radius: number): string {
+  return `<circle class="glow" r="${rn(radius * GLOW_RADIUS, 3)}em" fill-opacity="${GLOW_OPACITY}" stroke="none"/>`;
+}
+
+function capitalRing(radius: number): string {
+  return `<circle class="capital" r="${rn(radius + CAPITAL_GAP_EM, 3)}em" fill="none" stroke-width="${CAPITAL_RING_EM}em"/>`;
+}
+
+function portTick(radius: number): string {
+  const orbit = rn((radius + PORT_ORBIT_EM) * Math.SQRT1_2, 3); // the tick hangs on a 45° orbit
+  return `<circle class="port" cx="${orbit}em" cy="-${orbit}em" r="${PORT_TICK_EM}em"/>`;
 }

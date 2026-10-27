@@ -37,12 +37,11 @@ Inherited from the overhaul plan, restated where they bite:
 
 - **No generator changes.** Every layer below is a read-only reinterpretation of `pack`/`grid`.
   Nothing is written back to the world.
-- **Rivers are not a layer.** Currents are drawn by the Hyperlanes (`routes`) layer. There is no
-  new button, no new preset entry, no new id for them.
+- **Rivers are not a layer.** They are not drawn in Astral at all: the presets leave the rivers
+  layer off and no river-derived line is emitted (the currents re-read was removed on 2026-10-26).
 - **No standard-mode regression.** The four new ids are absent from `LAYER_TOGGLES`, off by
-  default, and the standard layer buttons do not change. `drawRoutes` emits currents only while
-  `isAstralView()` — mode-aware branching in renderers is established precedent (`draw-scalebar`
-  relabels to `ly`; the state halo gates on the mode).
+  default, and the standard layer buttons do not change. Mode-aware branching in renderers is
+  established precedent (`draw-scalebar` relabels to `ly`; the state halo gates on the mode).
 - **Renderers stay read-only and idempotent.** Same `pack`, `grid`, `styles`, seed → same SVG.
   Repeated draws replace, never append.
 - **No new `.map` records.** Layers stay in `data[50]`, styles in `data[48]`.
@@ -184,7 +183,12 @@ Style element:
 |---|---|---|---|
 | `coreRim` | `opacity`, `filter`, `mask` | `flip` (flag), `intensity` (0–1) | — |
 
-### 5. Currents — inside the Hyperlanes layer
+### 5. Currents — inside the Hyperlanes layer (removed 2026-10-26)
+
+> **Removed.** The currents re-read drew every river as a flow line inside Hyperlanes. It made
+> the chart read as a river map, so it was dropped: the Astral presets leave the rivers layer off
+> and nothing river-derived is drawn. The Hyperlanes layer carries only routes. Everything below
+> is kept as the record of the design.
 
 Rivers flow downhill to the sea and burgs sit on them. In the chart: **currents flow to the void,
 and the systems that sit on them are trade hubs.** The routes generator is already river-aware, so
@@ -249,17 +253,16 @@ src/renderers/astral/draw-composition.ts
 src/renderers/astral/composition-map.ts      biome id → composition class, pure
 src/renderers/astral/draw-remnants.ts
 src/renderers/astral/remnant-classes.ts      relief icon + height → class, pure
-src/renderers/astral/draw-currents.ts
 docs/plans/astral-terrain-layers.md          this plan
 ```
 
 ### Modified
 
 ```
-src/components/layers.ts                  four new ids at their z positions; currents child group
+src/components/layers.ts                  four new ids at their z positions
 src/data/astral-layer-labels.ts           three new buttons
 src/data/astral-layers.ts                 survey / systems preset membership
-src/renderers/draw-routes.ts              calls draw-currents in Astral
+src/renderers/draw-routes.ts              (the currents call was removed on 2026-10-26)
 src/generators/styles-schema.ts           four elements + routes.groups.currents
 src/generators/default-styles.json        their defaults
 public/styles/astral.json                 values for all new sections

@@ -161,8 +161,9 @@ git fetch upstream && git merge upstream/master
 - **`src/components/map-entities.ts`**: `/^system(\d+)$/` maps to the burg ref, the
   `#burgIcons` target special case extends to `#systems`, the burg reveal layers are mode-aware
   (`systems` in Astral), and the burg highlight covers `#burg{id}` and `#system{id}`.
-- **`src/components/viewbox-events.ts`**: a `systems` entry opens the Burg Editor for the marker's
-  burg.
+- **`src/components/viewbox-events.ts`**: a `systems` entry opens the System Editor for the
+  marker's burg (the Burg Editor at the time; the routing since became the System Editor's — see
+  _The system dialog_ below).
 - *Conflict resolution strategy*: the renderer seams mirror the `burgIcons` paths — if upstream
   changes how burgs resolve, click or highlight, re-apply the same change to the `system{id}`
   element path.
@@ -190,9 +191,8 @@ git fetch upstream && git merge upstream/master
 - **`src/components/layers.ts`**: four Astral layer ids at their z-positions — `coreRim` (after
   `landmass`), `composition` (after `texture`), `dustDensity` (after `starDensity`) and `remnants`
   (after `systems`) — plus their renderer imports.
-- **`src/renderers/draw-routes.ts`**: `drawRoutes` calls `drawCurrents()` (Astral-only; it creates
-  or drops the `#currents` group inside `#routes`), and the reconcile loop skips that group — the
-  route scene owns trails/roads/searoutes, not the currents.
+- **`src/renderers/draw-routes.ts`**: the currents call and the reconcile skip were removed on
+  2026-10-26 — the route scene owns only trails/roads/searoutes; the Astral chart draws no rivers.
 - **`src/components/viewport.ts`**: the `remnants` zoom curve in `ZOOM_CURVES` (near-natural, like
   `systems`).
 - **`src/components/map-tooltip.ts`**: the path-depth guard runs before `tip("")`, so stale detached
@@ -202,22 +202,19 @@ git fetch upstream && git merge upstream/master
 - **`src/utils/registry.ts`**: `trackLoad` clears only its own "Loading…" message (the load-vs-hover
   race that blanked tooltips after a load).
 - **`src/generators/styles-schema.ts`**: four elements — `coreRim`, `composition`, `dustDensity`,
-  `remnants`. `routes.groups` stays an open record, so the `currents` group is plain data.
-- **`src/generators/default-styles.json`**: the same four elements' defaults — no `currents`
-  section, the group ships only in the Astral presets.
-- **`public/styles/*.json`**: the converter injects the four elements into every shipped preset;
-  `astral.json` and `astralSchematic.json` additionally carry the `currents` group in
-  `routes.groups` (gold / acid flow, long dash).
+  `remnants`. `routes.groups` stays an open record; the shipped Astral presets no longer carry a
+  `currents` group (removed 2026-10-26).
+- **`src/generators/default-styles.json`**: the same four elements' defaults.
+- **`public/styles/*.json`**: the converter injects the four elements into every shipped preset.
 - **`scripts/convert-style-presets.mjs`**: the icon-owning models (relief, burgs, goods) are
   imported before `normalizeStyles` runs, so references resolve during conversion.
 - **New**: `src/renderers/astral/{dust-bands, draw-dust-density, biome-classes, draw-composition,
-  remnants, draw-remnants, core-rim, draw-core-rim, currents, draw-currents}.ts`, the Astral button
+  remnants, draw-remnants, core-rim, draw-core-rim}.ts`, the Astral button
   and preset rows in `src/data/astral-layer-labels.ts` / `astral-layers.ts`, and the plan at
   `docs/plans/astral-terrain-layers.md`.
 - *Conflict resolution strategy*: the four layer entries sit at fixed z-positions between stock
-  entries — re-place them if upstream reorders the registry; the `draw-routes.ts` seam is two lines
-  (the hook and the reconcile skip) — re-apply both; the tooltip fixes are small guards, keep them
-  even if upstream rewrites the functions.
+  entries — re-place them if upstream reorders the registry; the tooltip fixes are small guards,
+  keep them even if upstream rewrites the functions.
 
 ### Sector colors (provinces/sectors hue rotation)
 
@@ -273,6 +270,83 @@ saved cultures and a rename keeps its corpus.
   - Dedicated unit tests for schema validation, RPG namebase content rules, habitat scoring, acceptance, polity naming, and controller register selection.
 - *Conflict resolution strategy*: keep the 11 bases appended with their permanent ids; keep the `case "rpgFantasy"` in `cultures-generator.ts` and the `rpgFantasy` entry in `CULTURE_SETS`.
 
+### The system dialog (Astral System Editor)
+
+- **`src/controllers/astral-system-editor.ts`** (new): the System Editor — a burg read as a star
+  system, edited in the astral vocabulary. Every write goes through the `Burgs` model (rename,
+  population, culture, installations, capital, treasury, lock, move, remove); the spectral class
+  stays a readout derived from population; the star preview is emitted by the same shape code as
+  the layer. In Astral it is the only dialog a system has.
+- **`src/renderers/astral/system-markers.ts`**: `starShape()` and `writeAttrs()` moved here from
+  `draw-systems.ts`, so the layer and the dialog emit identical markers.
+- **`src/renderers/astral/draw-systems.ts`**: imports the shape emission from `system-markers.ts`.
+- **`src/components/viewbox-events.ts`**: `#systems` marker clicks always open the System Editor;
+  burg label and `#burgIcons` clicks open it in Astral (`isAstralView()`) and the Burg Editor in
+  Standard; the label re-open trick (an editor already open for the same burg → LabelsEditor)
+  covers both dialogs.
+- **`src/controllers/index.ts`**: one registry entry (`AstralSystemEditor`).
+- **`tests/e2e/astral-systems.spec.ts`**: the click seam expects the System Editor; editing
+  coverage — label routing, rename, a class-threshold crossing, a capital toggle, removal.
+- **`src/services/assistant/provider/context.generated.ts`**: regenerated (the snapshot carries the
+  new controller).
+- **`docs/astral/README.md`** / **`docs/plans/astral-system-dialog.md`**: the editor section and
+  the plan.
+- *Conflict resolution strategy*: the routing seams stay mode-aware — if upstream reshapes the click
+  dispatch, keep the Astral branch beside the stock Burg Editor branch; the marker emission must
+  stay shared between the layer and the dialog; the class remains derived (no per-system state).
+
+### The system readout (generated stars and planets)
+
+- **`src/generators/astral-system/`** (new): the astro port, one file per source module — `rng`
+  (the `createRng` surface over the repo's `alea`), `util`, `astrophysics`, `palette`, `layout`,
+  `stars`, `planet`, `system`, plus `details` (the `SystemDetails`/`StarRow`/`PlanetRow` readout
+  model, `generateSystemDetails(...)` and `systemDetailsFor(burg)`) and `index`. Stateless: the
+  readout is generated when the dialog opens from
+  `${options.map.seed}/astral/system/${burg.i}` and never stored — no burg field, no `.map`
+  record. The chart's population-derived class forces the primary, with `lumClass` "V"; the astro
+  pre-classification rides along as `planet.subtype`.
+- **`src/generators/astral-naming.ts`**: `starClassFor(burg)` — the spectral class is a seeded roll
+  from the astro spectral distribution (the standard table, minus the unstyled O, below the 10k
+  core threshold; the habitable F/G/K 25/45/30 pick at or above it). Stable per burg and across
+  save/load; an edit within a band changes nothing, crossing the threshold rerolls the star.
+- **`src/controllers/astral-system-editor.ts`**: the readout block in `renderDialog()` (stars
+  table, totals line, scrollable planets table) and `renderSystemDetails()`, called from
+  `updateSystemValues()` and `changeName()`. Render-only: no listeners, no cache.
+- **`tests/e2e/astral-systems.spec.ts`**: the readout coverage — tables on open, the class line and
+  the star table agreeing, close/reopen stability, the class-threshold crossing updating the
+  readout, and the no-new-burg-keys guard.
+- **`docs/astral/README.md`** / **`docs/plans/astral-system-dialog.md`** /
+  **`docs/plans/astral-system-details.md`** (new): the editor section, the follow-up link beside
+  the superseded "no generator changes" note, and the plan.
+- *Conflict resolution strategy*: the port is leaf modules with no generation-path callers — keep
+  it out of the pipeline; the editor seam is render-only, so an upstream dialog restyle only moves
+  the block. The burg record must never gain a system field; a reroll on a class-threshold
+  population edit is expected behaviour, not a bug.
+
+### The anomalies (markers read and converted)
+
+- **`src/data/astral-markers.ts`** (new): `MARKER_READINGS` — one astral name and icon per default
+  marker config type; `ANOMALY_FAMILIES` and the seeded legend prose; `ANOMALY_DIVIDER`; `readingOf`.
+  Readings are space phenomena or interstellar-scale concerns, never planetary micro-features.
+- **`src/controllers/astral-markers.ts`** (new): the conversion action — rewrites each marker's
+  legend (original kept below the divider) and sets its anomaly icon in the record. Names survive;
+  applying twice is a no-op. Notes are written directly, like the generator's own notes, because
+  dungeon and encounter legends carry iframes the notes editor subset rejects.
+- **`src/renderers/draw-markers.ts`**: while Astral is on, a type's *default* icon draws as its
+  reading icon; a user-picked icon wins in both views.
+- **`src/components/map-tooltip.ts`**: the markers tip names the anomaly in Astral.
+- **`src/controllers/markers-editor.ts`**: the type field's tip appends the reading in Astral; the
+  field itself keeps the raw type string (the state key).
+- **`src/components/map-commands.ts`** / **`src/components/options/tabs/tools-tab.ts`**: the
+  `convertAstralAnomalies` command and its Tools button.
+- **`src/controllers/index.ts`**: one registry entry (`AstralMarkers`).
+- **`tests/e2e/astral-markers.spec.ts`** (new): the reading swaps and restores without touching the
+  record; the conversion keeps the original legend and converts idempotently.
+- **`docs/astral/README.md`** / **`docs/plans/astral-anomalies.md`**: the anomalies section and the
+  plan.
+- *Conflict resolution strategy*: the reading is a view — keep `draw-markers` resolving default
+  icons only; generation stays untouched, so a regenerated world needs the conversion re-applied.
+
 ### Toolchain & Windows Environment Compatibility
 
 - **`package.json`**:
@@ -280,3 +354,5 @@ saved cultures and a rename keeps its corpus.
   - Added package overrides mapping `rollup` to `@rollup/wasm-node` and `esbuild` to `esbuild-wasm` (pure WebAssembly, zero native C++ DLL bindings).
   - Added `scripts/patch-esbuild.mjs` running on `postinstall` to adapt Go WASM runtime process spawning for Windows `cmd.exe`.
   - Provided `dev.cmd` and `dev.ps1` dev server launchers.
+  - **`scripts/generate-assistant-context.mjs`**: `read()` normalizes CRLF to LF, so a CRLF checkout
+    (`git autocrlf`) matches the script's LF-only regexes instead of failing the `METHODS` lookup.

@@ -1450,19 +1450,6 @@
   },
   "routes": {
     "groups": {
-      "currents": {
-        "attrs": {
-          "opacity": 0.75,
-          "stroke": "#f5ff64",
-          "stroke-opacity": null,
-          "stroke-width": 1,
-          "stroke-dasharray": "14 6",
-          "stroke-linecap": "round",
-          "stroke-linejoin": null,
-          "filter": null,
-          "mask": null
-        }
-      },
       "roads": {
         "attrs": {
           "opacity": 0.9,
