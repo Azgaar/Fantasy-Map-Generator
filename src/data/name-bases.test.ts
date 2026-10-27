@@ -214,7 +214,7 @@ describe("RPG Fantasy name bases content rules", () => {
 
 describe("RPG Fantasy culture set", () => {
   it("registers rpgFantasy in CULTURE_SETS", () => {
-    expect(CULTURE_SETS.rpgFantasy).toEqual({ name: "RPG Fantasy", max: 24, probability: 4 });
+    expect(CULTURE_SETS.rpgFantasy).toEqual({ name: "RPG Fantasy", max: 100, probability: 4 });
   });
 
   const ALL_SHIELDS = Object.entries(shields)
@@ -326,7 +326,7 @@ describe("RPG Fantasy culture set", () => {
   });
 
   it("set acceptance: places 24 cultures with set max 24, and options tab select renders it", async () => {
-    expect(CULTURE_SETS.rpgFantasy.max).toBe(24);
+    expect(CULTURE_SETS.rpgFantasy.max).toBe(100);
     expect(pinSchemas.culturesSet.safeParse("rpgFantasy").success).toBe(true);
 
     const { readFileSync } = await import("node:fs");
@@ -338,9 +338,9 @@ describe("RPG Fantasy culture set", () => {
 
 describe("Astral culture sets", () => {
   it("registers astralTrek, astralJammer, and grimdark in CULTURE_SETS", () => {
-    expect(CULTURE_SETS.astralTrek).toEqual({ name: "AstralTrek", max: 8, probability: 5 });
-    expect(CULTURE_SETS.astralJammer).toEqual({ name: "AstralJammer", max: 8, probability: 4 });
-    expect(CULTURE_SETS.grimdark).toEqual({ name: "Grimdark", max: 8, probability: 3 });
+    expect(CULTURE_SETS.astralTrek).toEqual({ name: "AstralTrek", max: 100, probability: 5 });
+    expect(CULTURE_SETS.astralJammer).toEqual({ name: "AstralJammer", max: 100, probability: 4 });
+    expect(CULTURE_SETS.grimdark).toEqual({ name: "Grimdark", max: 100, probability: 3 });
   });
 
   const ALL_SHIELDS = Object.entries(shields)
