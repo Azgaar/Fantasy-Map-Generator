@@ -89,11 +89,24 @@ const OPTION_BINDINGS: Record<string, OptionBinding> = {
     pin: "culturesSet",
     effect: syncCultures
   }),
+  // no pin and no roll: a plain on/off the generator reads, not a template-randomized number.
+  // The panel has no boolean control, so the binding answers in the select's own vocabulary
+  cultureTraits: {
+    read: o => (o.generation.cultures.traits ? "on" : "off"),
+    update: value => Options.set(o => (o.generation.cultures.traits = value === "on")),
+    event: "change"
+  },
   statesNumber: option({
     read: o => o.generation.states.limit,
     write: (o, value) => (o.generation.states.limit = value),
     parse: Number,
     pin: "statesNumber"
+  }),
+  freeBurgs: option({
+    read: o => o.generation.states.freeBurgs,
+    write: (o, value) => (o.generation.states.freeBurgs = value),
+    parse: Number,
+    pin: "freeBurgs"
   }),
   provincesRatio: option({
     read: o => o.generation.provinces.ratio,
@@ -292,6 +305,19 @@ const TEMPLATE = /* html */ `
       </td>
       <td></td>
     </tr>
+    <tr
+      data-tip="Give every culture an alignment and core values, and every historical figure its virtues and vices. Off keeps a map for plain cartography lean"
+    >
+      <td></td>
+      <td>Culture traits</td>
+      <td>
+        <select id="cultureTraits" data-option="cultureTraits">
+          <option value="on" selected>Alignment and values</option>
+          <option value="off">None</option>
+        </select>
+      </td>
+      <td></td>
+    </tr>
     <tr data-tip="Define how many states and capitals should be generated">
       <td>
         <i data-locked="0" id="lock_statesNumber" class="icon-lock-open"></i>
@@ -299,6 +325,17 @@ const TEMPLATE = /* html */ `
       <td>States number</td>
       <td colspan="2">
         <slider-input id="statesNumber" data-option="statesNumber" min="0" max="100"></slider-input>
+      </td>
+    </tr>
+    <tr
+      data-tip="Set what share of burgs stay free: outside every state, holding neutral lands around them. 0 lets states fill the whole map"
+    >
+      <td>
+        <i data-locked="0" id="lock_freeBurgs" class="icon-lock-open"></i>
+      </td>
+      <td>Free burgs</td>
+      <td colspan="2">
+        <slider-input id="freeBurgs" data-option="freeBurgs" min="0" max="100"></slider-input>
       </td>
     </tr>
     <tr

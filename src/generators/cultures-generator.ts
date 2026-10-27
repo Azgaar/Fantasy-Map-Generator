@@ -1,4 +1,5 @@
 import { max, quadtree, range } from "d3";
+import { type Alignment, rollAlignment, rollValues, traitsRng } from "@/data/culture-traits";
 import { Emblems } from "@/generators/emblems-generator";
 import type { Emblem } from "@/types/emblems";
 import { requireColor } from "@/utils/colorUtils";
@@ -13,13 +14,13 @@ export const CULTURE_SETS: Record<string, { name: string; max: number; probabili
   oriental: { name: "Oriental", max: 13, probability: 2 },
   english: { name: "English", max: 10, probability: 5 },
   antique: { name: "Antique", max: 10, probability: 3 },
-  highFantasy: { name: "High Fantasy", max: 17, probability: 11 },
-  darkFantasy: { name: "Dark Fantasy", max: 18, probability: 3 },
+  highFantasy: { name: "High Fantasy", max: 100, probability: 11 },
+  darkFantasy: { name: "Dark Fantasy", max: 100, probability: 3 },
   random: { name: "Random", max: 100, probability: 1 },
-  astralTrek: { name: "AstralTrek", max: 8, probability: 5 },
-  astralJammer: { name: "AstralJammer", max: 8, probability: 4 },
-  grimdark: { name: "Grimdark", max: 8, probability: 3 },
-  rpgFantasy: { name: "RPG Fantasy", max: 24, probability: 4 }
+  astralTrek: { name: "AstralTrek", max: 100, probability: 5 },
+  astralJammer: { name: "AstralJammer", max: 100, probability: 4 },
+  grimdark: { name: "Grimdark", max: 100, probability: 3 },
+  rpgFantasy: { name: "RPG Fantasy", max: 100, probability: 4 }
 };
 
 declare global {
@@ -42,6 +43,10 @@ export interface Culture {
   color?: string;
   type: CultureType;
   expansionism?: number;
+  /** the ethos its authorities share; absent on old maps and when the traits layer is off */
+  alignment?: Alignment;
+  /** 1 entry = a dominant value "held above all others", 2 = paired values */
+  values?: string[];
   origins?: (number | null)[];
   removed?: boolean;
   cells?: number;
@@ -1289,6 +1294,7 @@ class CulturesGenerator {
     options.map.cultures.set = options.generation.cultures.set;
     this.cells = pack.cells;
     const cultureIds = new Uint16Array(this.cells.i.length); // cell cultures
+    const withTraits = options.generation.cultures.traits; // one switch for the whole social layer
 
     const culturesInputNumber = options.generation.cultures.limit;
     const culturesInSetNumber = CULTURE_SETS[options.map.cultures.set]?.max ?? 0;
@@ -1448,6 +1454,14 @@ class CulturesGenerator {
       c.origins = [0];
       c.code = abbreviate(c.name, codes);
       codes.push(c.code);
+
+      // a culture starts from scratch: the neutral column, not its parent's
+      if (withTraits) {
+        const rng = traitsRng(options.map.seed, "culture", newId);
+        c.alignment = rollAlignment(rng);
+        c.values = rollValues(rng, c.alignment);
+      }
+
       cultureIds[center] = newId;
       if (emblemShape === "random") c.shield = this.getRandomShield();
     });
@@ -1500,7 +1514,7 @@ class CulturesGenerator {
     const i = pack.cultures.length;
     const color = getRandomColor();
 
-    pack.cultures.push({
+    const created: Culture = {
       name,
       color,
       base,
@@ -1515,7 +1529,18 @@ class CulturesGenerator {
       origins: [pack.cells.culture[center]],
       code,
       shield: Emblems.shape === "random" ? this.getRandomShield() : ""
-    });
+    };
+
+    // a founded culture diverges from its parent: it rolls the parent's prevailing column. The
+    // parent can be Wildlands, removed or unknown (old map/founded on the sea), which reads the
+    // neutral column - the same default a culture from scratch gets
+    if (options.generation.cultures.traits) {
+      const rng = traitsRng(options.map.seed, "culture", i);
+      created.alignment = rollAlignment(rng, pack.cultures[pack.cells.culture[center]]?.alignment);
+      created.values = rollValues(rng, created.alignment);
+    }
+
+    pack.cultures.push(created);
     return i;
   }
 
@@ -1643,6 +1668,25 @@ class CulturesGenerator {
     if (typeof expansionism !== "number" || !(expansionism >= 0 && expansionism <= 99))
       throw new Error("The expansionism must be a number from 0 to 99");
     this.living(cultureId).expansionism = expansionism;
+  }
+
+  /** Re-roll the alignment and values of every unlocked, living culture; returns how many were
+   *  rolled. An explicit user action, so the dice are salted — the map seed must not hand the same
+   *  traits back. Figures keep theirs: they are people who already lived. The Wildlands and locked
+   *  cultures are left alone, and nothing happens while the traits layer is off */
+  rerollTraits(): number {
+    if (!options.generation.cultures.traits) return 0;
+
+    const salt = `${Date.now()}:${Math.random()}`;
+    let rolled = 0;
+    for (const culture of pack.cultures) {
+      if (!culture.i || culture.removed || culture.lock) continue;
+      const rng = traitsRng(`${options.map.seed}:reroll:${salt}`, "culture", culture.i);
+      culture.alignment = rollAlignment(rng);
+      culture.values = rollValues(rng, culture.alignment);
+      rolled += 1;
+    }
+    return rolled;
   }
 
   /** Redraw culture borders from their centers, types and expansionism; burgs take their cell's culture */

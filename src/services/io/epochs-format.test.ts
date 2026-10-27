@@ -101,6 +101,43 @@ describe("the epochs save format", () => {
   });
 });
 
+describe("the chronicle's figures", () => {
+  it("keeps figure traits through a save and a load", () => {
+    const figures = [
+      {
+        i: 0,
+        name: "Ausa the Bold",
+        culture: 1,
+        birth: 940,
+        roles: [{ type: "ruler" as const, target: { kind: "polity" as const, id: 1 }, from: 980 }],
+        alignment: "lawful" as const,
+        virtues: ["just", "loyal"],
+        vices: ["harsh"]
+      }
+    ];
+    const { record53 } = save(historyWith({ figures }));
+
+    expect(parseHistory(record53, [], CELLS).figures).toEqual(figures);
+  });
+
+  it("loads a chronicle whose figures predate the traits layer", () => {
+    const figures = [
+      {
+        i: 0,
+        name: "Old Ruler",
+        culture: 1,
+        birth: 900,
+        roles: [{ type: "general" as const, target: { kind: "polity" as const, id: 1 }, from: 920 }]
+      }
+    ];
+    const { record53 } = save(historyWith({ figures }));
+
+    const loaded = parseHistory(record53, [], CELLS).figures!;
+    expect(loaded[0]).not.toHaveProperty("alignment");
+    expect(loaded[0].name).toBe("Old Ruler");
+  });
+});
+
 describe("the epochs load", () => {
   it("loads an old map unchanged", () => {
     const old = { events: [], realms: [], eras: [{ name: "Era", from: 0, to: 1000 }] };

@@ -25,7 +25,10 @@ export const hasLegend = (name: string): boolean => Boolean(getBox(name));
 export function getLegendData(name: string): LegendItem[] | undefined {
   const stored = getBox(name)?.getAttribute("data");
   if (!stored) return undefined;
-  return stored.split("|").filter(Boolean).map(line => line.split(","));
+  return stored
+    .split("|")
+    .filter(Boolean)
+    .map(line => line.split(","));
 }
 
 /** Draw the named legend box with the given items, replacing that box alone if it is already shown */

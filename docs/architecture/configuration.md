@@ -63,6 +63,7 @@ behaving like itself).
 | -------------------- | ------------------------------------------------------ | ------------ |
 | `states.growthRate`  | only the states generator, whenever it is asked to run | `generation` |
 | heightmap template   | the generators that raise the terrain, while they run  | `generation` |
+| `cultures.traits`    | the cultures and history generators, when they run     | `generation` |
 | `cultures.set`       | marker generation branches on it long after generation | `map`        |
 | `coastline`          | building a feature path at render time                 | `map`        |
 | `relief.rules`       | re-placing a pool's relief long after generation       | `map`        |
@@ -92,7 +93,8 @@ computed on load. A derived value must stay recomputable, so nothing is lost if 
 dropped.
 
 **`options.generation`** is the requests: the graph to build, entity counts, ratios, rates and
-varieties, culture set and template for the next map. Note the deliberate pair —
+varieties, culture set and template for the next map, and `cultures.traits` — whether cultures and
+historical figures get an alignment and traits at all. Note the deliberate pair —
 `generation.graph.{width,height,density}` is the graph asked for and `map.graph.{width,height,points}`
 is the one that was built. Changing the request does not touch the map on screen. World-position
 requests are nullable: `null` means automatic, a number fixes that input, and the resolved numbers

@@ -175,6 +175,83 @@ describe("LegendsOverview", () => {
     expect(document.getElementById("legendsTabRealms")!.classList.contains("active")).toBe(true);
   });
 
+  it("reads a culture's ethos on its actor chip", () => {
+    pack.cultures[3].alignment = "lawful";
+    pack.cultures[3].values = ["truth", "justice"];
+
+    LegendsOverview.open();
+    (document.getElementById("legendsTabRealms") as HTMLElement).click();
+    const chip = body().querySelector<HTMLElement>('.legendActor[data-kind="culture"][data-id="3"]')!;
+
+    expect(chip.dataset.tip).toContain("A lawful people prizing truth and justice");
+    expect(chip.dataset.tip).toContain("Open it on the map");
+  });
+
+  it("reads a dominant value as held above all, and says nothing when the culture is untyped", () => {
+    pack.cultures[3].alignment = "chaotic";
+    pack.cultures[3].values = ["passion"];
+
+    LegendsOverview.open();
+    (document.getElementById("legendsTabRealms") as HTMLElement).click();
+    const chip = () => body().querySelector<HTMLElement>('.legendActor[data-kind="culture"][data-id="3"]')!;
+    expect(chip().dataset.tip).toContain("prizing passion above all");
+
+    // an old map, or the traits layer turned off: the chip reads exactly as it did before
+    delete pack.cultures[3].alignment;
+    delete pack.cultures[3].values;
+    LegendsOverview.open();
+    (document.getElementById("legendsTabRealms") as HTMLElement).click();
+    expect(chip().dataset.tip).toBe("Open it on the map");
+  });
+
+  it("shows a figure's alignment, virtues and vices", () => {
+    globalThis.pack.history = {
+      ...history,
+      figures: [
+        {
+          i: 0,
+          name: "Ausa the Bold",
+          culture: 1,
+          birth: 940,
+          roles: [{ type: "ruler", target: { kind: "state", id: 1 }, from: 980 }],
+          alignment: "lawful",
+          virtues: ["just", "loyal"],
+          vices: ["harsh"]
+        }
+      ]
+    };
+    LegendsOverview.open();
+    (document.getElementById("legendsTabFigures") as HTMLElement).click();
+
+    const row = body().querySelector(".legendsEvent")!;
+    const alignment = row.querySelector(".legendsAlignment")!;
+    expect(alignment.textContent).toBe("lawful");
+    expect(alignment.getAttribute("style")).toContain("#3d6db5");
+    expect(row.textContent).toContain("just, loyal");
+    expect(row.querySelector(".legendsVice")!.textContent).toBe("harsh");
+  });
+
+  it("shows a figure without traits as before", () => {
+    globalThis.pack.history = {
+      ...history,
+      figures: [
+        {
+          i: 0,
+          name: "Old Ruler",
+          culture: 1,
+          birth: 900,
+          roles: [{ type: "ruler", target: { kind: "state", id: 1 }, from: 950 }]
+        }
+      ]
+    };
+    LegendsOverview.open();
+    (document.getElementById("legendsTabFigures") as HTMLElement).click();
+
+    const row = body().querySelector(".legendsEvent")!;
+    expect(row.querySelector(".legendsTraits")).toBeNull();
+    expect(row.textContent).toContain("Old Ruler");
+  });
+
   it("shows an empty state without a chronicle", () => {
     globalThis.pack.history = emptyHistory();
     LegendsOverview.open();

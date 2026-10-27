@@ -1,5 +1,6 @@
 // The map's chronicle in `pack.history`: dated events, fallen realms and eras. See docs/plans/history-generation.md
 // The model is `Chronicle`, not `History`: the DOM owns that global name
+import { rollAlignment, rollFigureTraits, traitsRng } from "@/data/culture-traits";
 import {
   COLLAPSE_TEMPLATES,
   CORONATION_TEMPLATES,
@@ -43,6 +44,18 @@ interface Footprint {
   core: number;
   states: number[];
   score: number;
+}
+
+/** the character of the figure at `index`: one of the three traits its alignment dictates, rolled on
+ *  the prevailing column of the culture it serves. Not assigned when the traits layer is off, and
+ *  a culture that predates the layer (or the Wildlands) reads the neutral column */
+function figureTraits(index: number, cultureId: number): Pick<HistoricalFigure, "alignment" | "virtues" | "vices"> {
+  if (!options.generation.cultures.traits) return {};
+
+  const rng = traitsRng(options.map.seed, "figure", index);
+  const alignment = rollAlignment(rng, pack.cultures[cultureId]?.alignment);
+  const { virtues, vices } = rollFigureTraits(rng, alignment);
+  return { alignment, virtues, vices };
 }
 
 class ChronicleModel {
@@ -371,7 +384,8 @@ class ChronicleModel {
           culture: subject.culture,
           birth: accession - rand(18, 40),
           death: end, // reigns end with the ruler; a living dynasty's last figure has neither
-          roles: [{ type: "ruler", target, from: accession, to: end }]
+          roles: [{ type: "ruler", target, from: accession, to: end }],
+          ...figureTraits(figures.length, subject.culture)
         };
         const figureRef: HistRef = { kind: "figure", id: figure.i };
         events.push(
@@ -413,7 +427,8 @@ class ChronicleModel {
       name: Names.getCulture(leader.culture),
       culture: leader.culture,
       birth: event.year - rand(20, 45),
-      roles: [{ type: "general", target: leader.ref, from: event.year }]
+      roles: [{ type: "general", target: leader.ref, from: event.year }],
+      ...figureTraits(figures.length, leader.culture)
     };
     event.actors.push({ kind: "figure", id: figure.i });
     if (P(0.5)) event.text += ` ${ra(WAR_GENERAL_TEMPLATES)(figure.name, leader.name)}`;

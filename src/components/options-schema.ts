@@ -205,9 +205,10 @@ export const optionsSchema = z.strictObject({
       limit: count,
       set: cultureSetId,
       sizeVariety: nonNegative,
-      growthRate: nonNegative
+      growthRate: nonNegative,
+      traits: z.boolean() // alignments and values; off keeps maps for non-RPG purposes lean
     }),
-    states: z.strictObject({ limit: count, sizeVariety: nonNegative, growthRate: nonNegative }),
+    states: z.strictObject({ limit: count, sizeVariety: nonNegative, growthRate: nonNegative, freeBurgs: percent }),
     provinces: z.strictObject({ ratio: percent }),
     religions: z.strictObject({ limit: count }),
     burgs: z.strictObject({ limit: count }) // AUTO_BURG_LIMIT means "as many as the land supports"
@@ -303,6 +304,7 @@ export const pinSchemas: Record<string, z.ZodType> = {
   culturesSet: generation.cultures.shape.set,
   sizeVariety: generation.states.shape.sizeVariety,
   growthRate: generation.states.shape.growthRate,
+  freeBurgs: generation.states.shape.freeBurgs,
   mapName: lore.shape.name,
   year: lore.shape.calendar.shape.year,
   era: lore.shape.calendar.shape.era,
