@@ -45,6 +45,7 @@ To report a problem or propose a feature, see [Reporting bugs and suggesting ide
 **World building**
 [Culture sets](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-sets) ·
 [Culture types](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-types) ·
+[Culture traits](https://github.com/0xPaladin/Fantasy-Map-Generator/wiki/Culture-traits) ·
 [Markers](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Markers) ·
 [Journeys](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Journeys) ·
 [Goods spread functions](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Goods-spread-functions) ·

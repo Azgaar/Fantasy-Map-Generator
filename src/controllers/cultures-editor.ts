@@ -22,6 +22,7 @@ import type { FillBoxElement } from "@/components/shared/fill-box";
 import { clearMainTip, tip } from "@/components/tooltips";
 import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
+import { ALIGNMENT_COLORS, alignmentRank, valuesText } from "@/data/culture-traits";
 import { CULTURE_TYPES, type Culture } from "@/generators/cultures-generator";
 import { Emblems } from "@/generators/emblems-generator";
 import { clearLegend, drawLegend, hasLegend } from "@/renderers/draw-legend";
@@ -35,6 +36,7 @@ import {
   createFileInput,
   debounce,
   ensureEl,
+  escapeHtml,
   getPointer,
   isLand,
   parseTransform,
@@ -72,6 +74,22 @@ const columns: EditorColumn<Culture>[] = [
     width: "9em",
     mobileHidden: true,
     sortBy: culture => Names.getNameBase(culture.base)?.i ?? 0
+  },
+  {
+    key: "alignment",
+    label: "Alignment",
+    width: "6em",
+    mobileHidden: true,
+    tip: "Click to sort by Alignment, in the canonical good-to-evil order",
+    sortBy: culture => alignmentRank(culture.alignment)
+  },
+  {
+    key: "values",
+    label: "Values",
+    width: "9em",
+    mobileHidden: true,
+    sortBy: culture => valuesText(culture.values),
+    sortType: "alpha"
   },
   {
     key: "cells",
@@ -164,6 +182,11 @@ function renderDialog(): void {
 
     <div id="culturesBottom" class="editorToolbar">
       <button id="culturesEditorRefresh" data-tip="Refresh the Editor" class="icon-cw"></button>
+      <button
+        id="culturesRerollTraits"
+        data-tip="Re-roll the alignment and values of every unlocked culture. Historical figures keep the traits they were given"
+        class="icon-shuffle"
+      ></button>
       <button id="culturesEditStyle" data-tip="Edit cultures style in Style Editor" class="icon-adjust"></button>
       <button id="culturesLegend" data-tip="Toggle Legend box" class="icon-list-bullet"></button>
       <button id="culturesPercentage" data-tip="Toggle percentage / absolute values display mode" class="icon-percent"></button>
@@ -190,6 +213,7 @@ function renderDialog(): void {
   applyLineHighlighting(dialogId, ({ cellId }) => pack.cells.culture[cellId]);
 
   ensureEl("culturesEditorRefresh").addEventListener("click", refreshCulturesEditor);
+  ensureEl("culturesRerollTraits").addEventListener("click", rerollTraits);
   initColumnVisibility({
     dialogId,
     columns,
@@ -211,6 +235,18 @@ function refreshCulturesEditor(): void {
   culturesCollectStatistics();
   culturesTable.refresh();
   drawCultureCenters();
+}
+
+/** re-roll the social layer for the cultures that are not locked; the figures who already lived keep theirs */
+function rerollTraits(): void {
+  if (!options.generation.cultures.traits) {
+    tip("Culture traits are off: turn them on under Culture traits in the Map settings", false, "error");
+    return;
+  }
+
+  const rolled = Cultures.rerollTraits();
+  culturesTable.reset();
+  tip(`Re-rolled the traits of ${rolled} cultures. Historical figures keep theirs`, false, "info");
 }
 
 function culturesCollectStatistics(): void {
@@ -281,6 +317,8 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
             <select data-tip="Culture namesbase. Click to change. Click on arrows to re-generate names"
               class="cultureBase">${getBaseOptions(c.base)}</select>
           </div>
+          ${getAlignmentCell(c)}
+          ${getValuesCell(c)}
           <div data-col="cells">
             <span data-tip="Cells count" class="icon-check-empty"></span>
             <div data-tip="Cells count" class="cultureCells">${c.cells}</div>
@@ -332,6 +370,8 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
           <select data-tip="Culture namesbase. Click to change. Click on arrows to re-generate names"
             class="cultureBase">${getBaseOptions(c.base)}</select>
         </div>
+        ${getAlignmentCell(c)}
+        ${getValuesCell(c)}
         <div data-col="cells">
           <span data-tip="Cells count" class="icon-check-empty"></span>
           <div data-tip="Cells count" class="cultureCells">${c.cells}</div>
@@ -435,6 +475,29 @@ function culturesEditorAddLines(view: TableView<Culture>): void {
     togglePercentageMode();
   }
   updateDialog(dialogId, { width: "fit-content", position });
+}
+
+/** the ethos badge, or an em dash when the culture predates the traits layer or the layer is off */
+function getAlignmentCell(culture: Culture): string {
+  const { alignment } = culture;
+  if (!alignment) return /* html */ `<div data-col="alignment" class="cultureTraitsEmpty">—</div>`;
+  const color = ALIGNMENT_COLORS[alignment];
+  return /* html */ `<div data-col="alignment"><span
+    class="cultureAlignment"
+    style="color:${color}"
+    data-tip="${capitalize(alignment)} alignment"
+  >${alignment}</span></div>`;
+}
+
+/** "truth · justice", or the dominant "truth above all", emphasized as a whole */
+function getValuesCell(culture: Culture): string {
+  const values = culture.values ?? [];
+  if (!values.length) return /* html */ `<div data-col="values" class="cultureTraitsEmpty">—</div>`;
+
+  const text = escapeHtml(valuesText(values));
+  const rendered = values.length === 1 ? `<b>${text}</b>` : text;
+  const hint = values.length === 1 ? "The value this culture holds above all others" : "The values this culture prizes";
+  return /* html */ `<div data-col="values" data-tip="${hint}"><span class="cultureValues">${rendered}</span></div>`;
 }
 
 function getTypeOptions(type: string): string {

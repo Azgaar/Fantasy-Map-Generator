@@ -342,6 +342,17 @@ export function traitsRng(seed: string, kind: "culture" | "figure", id: number):
   return createRng(`${seed}:traits:${kind}:${id}`);
 }
 
+/** the canonical sort rank of an alignment; an untyped culture sorts after every real one */
+export function alignmentRank(alignment: Alignment | undefined): number {
+  return alignment ? ALIGNMENTS.indexOf(alignment) : ALIGNMENTS.length;
+}
+
+/** how a culture's values read on one line: "truth · justice", or "truth above all" when dominant */
+export function valuesText(values: readonly string[] | undefined): string {
+  if (!values?.length) return "";
+  return values.length === 1 ? `${values[0]} above all` : values.join(" · ");
+}
+
 /** 1d12 down the parent's column; no parent (a culture from scratch) rolls the neutral column */
 export function rollAlignment(rng: Rng, prevailing: Alignment = "neutral"): Alignment {
   return PREVAILING_ALIGNMENT[prevailing][rng.d(12) - 1];

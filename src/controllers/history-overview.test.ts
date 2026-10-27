@@ -175,6 +175,35 @@ describe("LegendsOverview", () => {
     expect(document.getElementById("legendsTabRealms")!.classList.contains("active")).toBe(true);
   });
 
+  it("reads a culture's ethos on its actor chip", () => {
+    pack.cultures[3].alignment = "lawful";
+    pack.cultures[3].values = ["truth", "justice"];
+
+    LegendsOverview.open();
+    (document.getElementById("legendsTabRealms") as HTMLElement).click();
+    const chip = body().querySelector<HTMLElement>('.legendActor[data-kind="culture"][data-id="3"]')!;
+
+    expect(chip.dataset.tip).toContain("A lawful people prizing truth and justice");
+    expect(chip.dataset.tip).toContain("Open it on the map");
+  });
+
+  it("reads a dominant value as held above all, and says nothing when the culture is untyped", () => {
+    pack.cultures[3].alignment = "chaotic";
+    pack.cultures[3].values = ["passion"];
+
+    LegendsOverview.open();
+    (document.getElementById("legendsTabRealms") as HTMLElement).click();
+    const chip = () => body().querySelector<HTMLElement>('.legendActor[data-kind="culture"][data-id="3"]')!;
+    expect(chip().dataset.tip).toContain("prizing passion above all");
+
+    // an old map, or the traits layer turned off: the chip reads exactly as it did before
+    delete pack.cultures[3].alignment;
+    delete pack.cultures[3].values;
+    LegendsOverview.open();
+    (document.getElementById("legendsTabRealms") as HTMLElement).click();
+    expect(chip().dataset.tip).toBe("Open it on the map");
+  });
+
   it("shows a figure's alignment, virtues and vices", () => {
     globalThis.pack.history = {
       ...history,

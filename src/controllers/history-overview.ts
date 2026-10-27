@@ -285,8 +285,24 @@ function renderActor(ref: HistRef): string {
   const label = actorLabel(ref);
   const tip =
     ref.kind === "burg" ? "its editor" : ref.kind === "figure" || ref.kind === "realm" ? "its page" : "it on the map";
+  const ethos = ref.kind === "culture" ? cultureEthos(ref.id) : "";
+  const hint = ethos ? `${ethos}. Open ${tip}` : `Open ${tip}`;
   return /* html */ `<span class="legendActor pointer" data-kind="${ref.kind}" data-id="${ref.id}"
-    data-tip="Open ${tip}">${escapeHtml(label)}</span>`;
+    data-tip="${escapeHtml(hint)}">${escapeHtml(label)}</span>`;
+}
+
+/** "A lawful people prizing truth and justice", or "" for a culture with no traits: an old map, or
+ *  the traits layer turned off. Culture actors have no page of their own, so this is where a
+ *  culture's ethos is readable */
+function cultureEthos(cultureId: number): string {
+  const culture = pack.cultures[cultureId];
+  const alignment = culture?.alignment;
+  const values = culture?.values ?? [];
+  if (!alignment || !values.length) return "";
+
+  const prized =
+    values.length === 1 ? `${values[0]} above all` : `${values.slice(0, -1).join(", ")} and ${values.at(-1)}`;
+  return `A ${alignment} people prizing ${prized}`;
 }
 
 function renderLocate(cell: number): string {

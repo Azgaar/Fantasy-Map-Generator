@@ -184,3 +184,55 @@ describe("culture traits", () => {
     expect(pack.cultures[founded].alignment).toBe(rollAlignment(traitsRng(SEED, "culture", founded)));
   });
 });
+
+describe("re-rolling culture traits", () => {
+  /** a living culture with traits, so a re-roll has something to change */
+  const alive = () => pack.cultures.filter(culture => culture.i && !culture.removed);
+
+  it("re-rolls every unlocked living culture, and none else", () => {
+    stubWorld();
+    Cultures.generate();
+    pack.cultures[2].lock = true;
+    const locked = { alignment: pack.cultures[2].alignment, values: pack.cultures[2].values };
+
+    const rolled = Cultures.rerollTraits();
+
+    expect(rolled).toBe(alive().length - 1); // the locked one is skipped
+    expect(pack.cultures[0]).not.toHaveProperty("alignment"); // the Wildlands stay wild
+    expect({ alignment: pack.cultures[2].alignment, values: pack.cultures[2].values }).toEqual(locked);
+    for (const culture of alive()) {
+      if (culture.lock) continue;
+      expect(ALIGNMENTS).toContain(culture.alignment!);
+      expect(culture.values!.length === 1 || culture.values!.length === 2).toBe(true);
+    }
+  });
+
+  it("gives the same culture different traits than the seed handed out", () => {
+    stubWorld();
+    Cultures.generate();
+    const before = alive().map(culture => [culture.alignment, culture.values]);
+
+    Cultures.rerollTraits();
+
+    expect(alive().map(culture => [culture.alignment, culture.values])).not.toEqual(before);
+  });
+
+  it("does nothing while the traits layer is off", () => {
+    stubWorld({ traits: false });
+    Cultures.generate();
+
+    expect(Cultures.rerollTraits()).toBe(0);
+    for (const culture of pack.cultures) expect(culture).not.toHaveProperty("alignment");
+  });
+
+  it("leaves a removed culture alone", () => {
+    stubWorld();
+    Cultures.generate();
+    const living = alive().length;
+    const removed = { alignment: pack.cultures[2].alignment, values: pack.cultures[2].values };
+    pack.cultures[2].removed = true;
+
+    expect(Cultures.rerollTraits()).toBe(living - 1);
+    expect({ alignment: pack.cultures[2].alignment, values: pack.cultures[2].values }).toEqual(removed);
+  });
+});

@@ -3,6 +3,7 @@ import type { Rng } from "@/utils/rng";
 import {
   ALIGNMENTS,
   type Alignment,
+  alignmentRank,
   CONTRADICTIONS,
   CULTURAL_VALUES,
   PREVAILING_ALIGNMENT,
@@ -12,7 +13,8 @@ import {
   TRAIT_COUNTS,
   traitsRng,
   VICES,
-  VIRTUES
+  VIRTUES,
+  valuesText
 } from "./culture-traits";
 
 /** an rng that answers the dice in a fixed order and the word draws from the start of a list */
@@ -109,6 +111,20 @@ describe("the word lists", () => {
       paired.add(virtue);
       paired.add(vice);
     }
+  });
+});
+
+describe("how the traits read", () => {
+  it("ranks alignments in the canonical order and sorts the untyped after them", () => {
+    expect(ALIGNMENTS.map(alignment => alignmentRank(alignment))).toEqual([0, 1, 2, 3, 4]);
+    expect(alignmentRank(undefined)).toBe(ALIGNMENTS.length);
+  });
+
+  it("reads two values as a pair and a lone one as dominant", () => {
+    expect(valuesText(["truth", "justice"])).toBe("truth · justice");
+    expect(valuesText(["truth"])).toBe("truth above all");
+    expect(valuesText(undefined)).toBe("");
+    expect(valuesText([])).toBe("");
   });
 });
 

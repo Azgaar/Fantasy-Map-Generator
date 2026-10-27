@@ -6,7 +6,8 @@ Citizens* (`VerseEras/.rules/FotF2e - 02 Settlements & Citizens.md`; alignment t
 implementation contract; each slice in [Build Order](#build-order) is shippable on its own.
 Slice 1 shipped 2026-10-27: `src/data/culture-traits.ts`, the `Culture` fields, the generator
 wiring and the `generation.cultures.traits` switch. Slice 2 shipped the same day: figure traits
-in the two figure constructors and the Legends rows. The three open questions were answered on
+in the two figure constructors and the Legends rows. Slice 3 closed the loop: the editor columns,
+`Cultures.rerollTraits()` and the culture ethos on its actor chip. The three open questions were answered on
 2026-10-27 (see [Decisions](#decisions)), and every codebase claim below was re-checked against
 the tree in the same pass — the corrections are folded in, not appended.
 
@@ -114,6 +115,10 @@ export function rollFigureTraits(rng: Rng, alignment: Alignment): { virtues: str
 // draws TRAIT_COUNTS[alignment] of each, never the same word twice on one figure and never a
 // CONTRADICTIONS pair; every draw retries a bounded number of times (5) and then takes the next
 // free word, so a short word list can never hang the generator
+
+// the two readings every surface shares (the editor column, the Legends chip)
+export function alignmentRank(alignment: Alignment | undefined): number; // canonical index, or ALIGNMENTS.length when untyped
+export function valuesText(values: readonly string[] | undefined): string; // "truth · justice" | "truth above all"
 ```
 
 ```ts
@@ -271,15 +276,21 @@ need the cells, or the columns render blank on that one row:
   chaotic `#c77b21`, evil `#a33d3d`; the Legends rows already use them) — sorted by the
   canonical `ALIGNMENTS` order, not alphabetically. No new sort type is needed:
   `EditorColumn.sortBy` already returns `string | number` and only the header icon looks at
-  `sortType`, so `sortBy: c => (c.alignment ? ALIGNMENTS.indexOf(c.alignment) : -1)` sorts
-  numerically and `sorting.ts` stays untouched. Missing trait → "—".
-- **Values** (`width: "9em"`, `mobileHidden`): `truth · justice`, sorted alpha by that string;
-  a dominant single value reads `truth above all` (bold).
-- Toolbar: a **Re-roll traits** button (`icon-shuffle`; `icon-cw` is taken by Refresh) rolling
-  alignment+values for all unlocked, living cultures — the same blast-radius convention as
-  the editor's existing refresh, going through `Cultures.living()` so removed entries are
-  skipped. It does **not** touch figure traits: figures are individuals who already rolled
-  theirs, and regenerating history stays the only way to re-roll those (stated in the tooltip).
+  `sortType`, so `sortBy: c => alignmentRank(c.alignment)` sorts numerically and `sorting.ts`
+  stays untouched. `alignmentRank` returns `ALIGNMENTS.length` for an untyped culture, so the
+  em-dash rows sort after every real alignment (ascending), not before it.
+- **Values** (`width: "9em"`, `mobileHidden`): `valuesText()` in the data module → `truth ·
+  justice`, sorted alpha by that string; a dominant single value reads `truth above all`,
+  emphasized as a whole.
+- Toolbar: a **Re-roll traits** button (`icon-shuffle`; `icon-cw` is taken by Refresh) calling
+  `Cultures.rerollTraits()`, which rolls alignment+values for every unlocked, living culture
+  and returns the count for the tooltip. The dice are **salted** (`Date.now()` + a draw), so an
+  explicit re-roll does not hand back the same traits the seed produced — the one place
+  `Math.random` is right, since this runs long after generation. It leaves the Wildlands,
+  removed and locked cultures alone, and it does **not** touch figure traits: figures are
+  individuals who already rolled theirs, and regenerating history stays the only way to re-roll
+  those (stated in the tooltip). With the layer off the button only tips "Culture traits are
+  off" rather than minting traits the switch says should not exist.
 
 ### Legends browser (`src/controllers/history-overview.ts`)
 
@@ -287,11 +298,13 @@ need the cells, or the columns render blank on that one row:
   (`.legendsVice`, muted red) after the figure's roles — `Ausa the Bold — lawful · just, loyal ·
   cruel`. A figure with no traits (old chronicle, or the layer off) renders exactly as before.
 - There are **no figure or culture pages** to hang a definition line on: `openActor`'s
-  `figure`/`realm` cases only switch tabs and `culture`/`religion` only zoom to the center. So
-  the culture summary goes where a culture already heads a block — the Figures tab's group
-  header (`renderFigures` groups by `roles[0].target`) gains "a *lawful* people prizing *truth*
-  and *justice*" when that target is a culture. The timeline and the Realms tab stay untouched.
-- A culture with no alignment (old map, or the toggle was off) renders "—" and no summary line.
+  `figure`/`realm` cases only switch tabs and `culture`/`religion` only zoom to the center, and
+  a Figures-tab group is headed by a state or polity, never by a culture. So the ethos rides
+  the surface a culture actually has: the **actor chip's tooltip** — `A lawful people prizing
+  truth and justice. Open it on the map`, or `prizing truth above all` for a dominant value.
+  The timeline, the Realms tab and actor labels are otherwise untouched.
+- A culture with no alignment (old map, or the layer off) keeps the plain `Open it on the map`
+  tip: no ethos, no stray separator.
 
 No map rendering changes: traits are data, not geometry — the layering rules are respected by
 construction (data file + generator fields + editor/overview text only).
@@ -355,18 +368,31 @@ Vitest, no Playwright:
 - **IO**: `.map` round-trip preserves culture and figure traits exactly; a pre-traits save
   loads with "—" traits and no errors. The figure half lives in `epochs-format.test.ts`, since
   record 53 is the chronicle's only serializer.
-- **Editors**: alignment column sorts canonically; schema test covers the new option
-  (mirror the `freeBurgs` test).
+- **Editors** (`cultures-editor.test.ts`, jsdom with the heavy collaborators mocked): the badge
+  and value cells render, a dominant value is emphasized, an untyped culture shows "—", the
+  alignment column sorts canonically (ascending puts good first and the untyped last), the
+  toolbar re-roll skips a locked culture and redraws, and the button refuses while the layer is
+  off. `rerollTraits()` itself is covered in the generator suite (locks, removed, Wildlands,
+  off, and "not the same traits the seed handed out").
 
 Runtime budget: O(cultures + figures) table lookups — unmeasurable.
 
 ## Glossary & Docs
 
+All shipped with slice 3:
+
 - `docs/domain/glossary.md`: **Alignment** (five-point ethos: good/lawful/neutral/chaotic/evil),
   **Prevailing Alignment** (the column sub-entities roll on), **Cultural Value** (with
-  *dominant* defined), **Virtue/Vice** (figure traits).
-- `docs/architecture/configuration.md`: the `generation.cultures.traits` toggle.
-- Wiki page deferred until the display slice ships.
+  *dominant* defined), **Virtue/Vice** (figure traits), plus the traits on the **Historical
+  Figure**, **Culture** and **Legends Browser** entries.
+- `docs/architecture/configuration.md`: the `generation.cultures.traits` request, in the
+  "is it a map value or a request?" table and the `options.generation` paragraph.
+- `docs/architecture/data-model.md`: `culture.alignment` and `culture.values` in the Cultures
+  object structure. This file also feeds `npm run generate:assistant-context`, so the
+  regenerated `context.generated.ts` teaches the Azgaar Assistant the two fields.
+- `docs/wiki/Culture-traits.md` — the user-facing page (alignments, values, figure traits, the
+  editor and Legends surfaces, the switch, determinism, old maps, where the rules come from),
+  linked from the wiki **Home** index.
 
 ## Build Order
 
@@ -374,7 +400,7 @@ Runtime budget: O(cultures + figures) table lookups — unmeasurable.
 |---|---|---|
 | 1 ✅ | `src/data/culture-traits.ts` (tables, authored word lists, helpers, contradiction list); `Culture.alignment/values` assignment in `Cultures.generate()` + `add()`; option + schema/model/tab wiring; data + generator tests | New maps: every living culture has alignment + 1–2 values; old maps unaffected; toggle honored |
 | 2 ✅ | Figure traits in `ruleSegments`/`attachGeneral` (covers dynastic and epoch emission); Legends figures-tab rows show them | Every figure has alignment + its alignment's traits; no contradictions or repeats; persists through save/load; seed-stable |
-| 3 | Cultures editor columns + Re-roll traits button; Legends culture group-header summary line | Sortable, mobile-hidden columns; re-roll respects locks and leaves figures alone |
+| 3 ✅ | Cultures editor columns + Re-roll traits button; the culture ethos on its Legends actor chip | Sortable, mobile-hidden columns; re-roll respects locks and leaves figures alone |
 | 4 (future) | See below | — |
 
 ## Future Phases (out of scope for now)

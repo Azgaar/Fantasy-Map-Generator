@@ -133,6 +133,8 @@ Cultures (races, language zones) data is stored as an array of objects with stri
 - `color`: `string` - culture color in hex (e.g. `#45ff12`) or link to hatching pattern (e.g. `url(#hatch7)`)
 - `expansionism`: `number` - culture growth multiplier. Used mainly during cultures generation to spread cultures not uniformly
 - `type`: `string` - culture type, see [culture types](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Culture-types)
+- `alignment`: `string` - optional. One of `good`, `lawful`, `neutral`, `chaotic`, `evil` (the canonical order). Shared by the culture's authorities: a state's alignment is its dominant culture's, derived on read, never stored on the state. Absent on maps that predate the traits layer and when `generation.cultures.traits` is off
+- `values`: `string[]` - optional. One or two core values (e.g. `["truth", "justice"]`). A single entry is a **dominant** value, held above all others. Same presence rules as `alignment`
 - `area`: `number` - culture area in pixels
 - `cells`: `number` - number of cells assigned to culture
 - `rural`: `number` - rural (non-burg) population of cells assigned to culture. In population points

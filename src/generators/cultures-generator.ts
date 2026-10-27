@@ -1669,6 +1669,25 @@ class CulturesGenerator {
     this.living(cultureId).expansionism = expansionism;
   }
 
+  /** Re-roll the alignment and values of every unlocked, living culture; returns how many were
+   *  rolled. An explicit user action, so the dice are salted — the map seed must not hand the same
+   *  traits back. Figures keep theirs: they are people who already lived. The Wildlands and locked
+   *  cultures are left alone, and nothing happens while the traits layer is off */
+  rerollTraits(): number {
+    if (!options.generation.cultures.traits) return 0;
+
+    const salt = `${Date.now()}:${Math.random()}`;
+    let rolled = 0;
+    for (const culture of pack.cultures) {
+      if (!culture.i || culture.removed || culture.lock) continue;
+      const rng = traitsRng(`${options.map.seed}:reroll:${salt}`, "culture", culture.i);
+      culture.alignment = rollAlignment(rng);
+      culture.values = rollValues(rng, culture.alignment);
+      rolled += 1;
+    }
+    return rolled;
+  }
+
   /** Redraw culture borders from their centers, types and expansionism; burgs take their cell's culture */
   recalculate(): void {
     this.expand();
