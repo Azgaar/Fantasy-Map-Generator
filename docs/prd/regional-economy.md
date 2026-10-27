@@ -159,3 +159,43 @@ Measured against the last commit before Block A (same six seeds, the same in-pag
 | Manufactured goods per burg (median)              | 2.8            | 2.0              | 1.0        |
 
 Value added per townsperson is back where it was, and the regional gains hold or grow. Fewer workers make fewer units (0.61 per townsperson), but those units are dearer goods made from cheaper inputs. With fewer workers each, most burgs now settle on a single trade: their own sales no longer move prices enough to make a second good pay.
+
+#### Workforce share sweep
+
+The share was swept in-page on the six maps (the same map per seed, the share swapped and production regenerated). These maps carry later market changes, so rural value per townsperson is 23.5 at every share and the 0.35 row differs slightly from the table above.
+
+| Share | Value added per townsperson | Units made per townsperson | Demand coverage | Distinctiveness of market manufacturing | Manufactured goods per burg | Richest tenth of markets: share of output | Rich/poor gap | Run time |
+| ----- | --------------------------- | -------------------------- | --------------- | --------------------------------------- | --------------------------- | ----------------------------------------- | ------------- | -------- |
+| 0.2   | 3.1                         | 0.37                       | 99.5%           | 66%                                     | 1.0                         | 15%                                       | 3.7×          | 123 ms   |
+| 0.35  | 5.2                         | 0.64                       | 99.9%           | 66%                                     | 1.0                         | 19%                                       | 3.5×          | 136 ms   |
+| 0.5   | 7.1                         | 0.91                       | 100%            | 63%                                     | 1.2                         | 17%                                       | 3.2×          | 166 ms   |
+| 0.75  | 10.5                        | 1.36                       | 100%            | 56%                                     | 2.0                         | 13%                                       | 3.1×          | 219 ms   |
+| 1     | 13.0                        | 1.80                       | 100%            | 50%                                     | 2.3                         | 12%                                       | 3.1×          | 271 ms   |
+
+- **Scale.** Value added grows almost linearly with the share (about 13 × share), so the share is the dial for the "typical day" scale; 0.35 matches the calibration.
+- **Specialization.** Fewer workers per burg means a burg's own sales move prices less, so it has no reason to take up a second trade: at 0.5 and below the median burg makes one good, and markets are most distinct. Above 0.5 burgs diversify again and regional distinctiveness falls toward 50%.
+- **Concentration.** The richest tenth of markets peaks at 0.35; the rich/poor gap shrinks as the share rises.
+- **Demand** is covered at every share, 99.5% even at 0.2.
+- **Speed.** Fewer workers mean fewer worker steps: 0.35 runs in half the time of 1.
+
+### A1 revisited: biome output against clustered deposits
+
+Rural supply has two halves: biome output (population × a per-biome table) and bonus resources (deposits placed cell by cell), which make up about 54% of rural value. Measured on the six maps:
+
+- A market's people live in several biomes: its main biome holds about 60% of them. Its biome mix is 52% distinct from the world's, and biome output can be no more distinct than that. It is at 46% now.
+- Tropical forests hold 15–60% of the people on most maps, yet their biome output is almost nothing (game and sugar at 0.02–0.08).
+
+Two counterfactuals were measured on the same maps. The first is a "signature" biome table with no shared goods between biomes, and with output for the tropics (sugar, tobacco, mahogany, dyes). It even takes wood and grain out of temperate deciduous forest. The second is an estimate of B4: every sixth deposit seeds a district, and the other deposits take the good of the nearest seed (placement rules ignored, so this is an upper bound).
+
+| Metric                          | Current | Signature biome table | Clustered deposits | Both  |
+| ------------------------------- | ------- | --------------------- | ------------------ | ----- |
+| Distinctiveness, all production | 56%     | 57%                   | 63%                | 65%   |
+| Distinctiveness, rural supply   | 51%     | 51%                   | 60%                | 61%   |
+| Distinctiveness, biome output   | 46%     | 49%                   | 46%                | 49%   |
+| Distinctiveness, manufacturing  | 68%     | 71%                   | 68%                | 73%   |
+| Output follows people           | 61%     | 57%                   | 62%                | 55%   |
+| Richest tenth: share of output  | 14%     | 17%                   | 18%                | 19%   |
+| Price gap                       | 3.4×    | 3.9×                  | 2.8×               | 3.2×  |
+| Demand coverage                 | 99.9%   | 100%                  | 99.9%              | 99.9% |
+
+Sharper biome output is near its ceiling: even a table no real world would have adds one point. Clustered deposits add seven. A1 is worth a light pass to fill the tropical gap. B4 is the next lever for regionalism.

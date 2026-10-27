@@ -3605,8 +3605,5 @@
   "Set how the image fits the map": "Ange hur bilden anpassas till kartan",
   "Stretch": "Sträck ut",
   "Whole image": "Hela bilden",
-  "Unemployed": "Arbetslösa",
-  "{{idle}}/{{workers}} workers": "{{idle}}/{{workers}} arbetare",
-  "Workers left without work: nothing the burg could make paid more than its inputs after its sales tax": "Arbetare utan arbete: inget som bosättningen kunde tillverka gav mer än råvarorna efter dess försäljningsskatt",
   "{{good}} bonus resource: {{amount}} {{unit}} per day": "Bonusresurs {{good}}: {{amount}} {{unit}} per dag"
 }

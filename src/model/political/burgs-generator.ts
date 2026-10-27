@@ -54,7 +54,6 @@ export interface Burg {
   MFCG?: string;
   production?: BurgProduction; // units of each good made in the last production run
   product?: number; // gross product from the last production run
-  idle?: number; // workers left without work in the last production run, set only when some
   treasury?: number; // cash balance from the last economy run
   market?: number;
   label?: Label;

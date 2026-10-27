@@ -3605,8 +3605,5 @@
   "Set how the image fits the map": "设置图片如何适应地图",
   "Stretch": "拉伸",
   "Whole image": "完整图片",
-  "Unemployed": "失业",
-  "{{idle}}/{{workers}} workers": "{{idle}}/{{workers}} 名工人",
-  "Workers left without work: nothing the burg could make paid more than its inputs after its sales tax": "没有工作的工人：扣除销售税后，城镇能制造的任何东西都赚不回原料成本",
   "{{good}} bonus resource: {{amount}} {{unit}} per day": "{{good}}奖励资源：每天{{amount}}{{unit}}"
 }

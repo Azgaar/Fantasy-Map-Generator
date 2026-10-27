@@ -3605,8 +3605,5 @@
   "Set how the image fits the map": "Definir como a imagem se ajusta ao mapa",
   "Stretch": "Esticar",
   "Whole image": "Imagem inteira",
-  "Unemployed": "Desempregados",
-  "{{idle}}/{{workers}} workers": "{{idle}}/{{workers}} trabalhadores",
-  "Workers left without work: nothing the burg could make paid more than its inputs after its sales tax": "Trabalhadores sem trabalho: nada do que o burgo podia fabricar rendia mais do que os seus insumos depois do imposto sobre as vendas",
   "{{good}} bonus resource: {{amount}} {{unit}} per day": "recurso de bónus {{good}}: {{amount}} {{unit}} por dia"
 }

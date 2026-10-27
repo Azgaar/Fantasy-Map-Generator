@@ -3605,8 +3605,5 @@
   "Set how the image fits the map": "Как изображение вписывается в карту",
   "Stretch": "Растянуть",
   "Whole image": "Изображение целиком",
-  "Unemployed": "Безработные",
-  "{{idle}}/{{workers}} workers": "{{idle}}/{{workers}} работников",
-  "Workers left without work: nothing the burg could make paid more than its inputs after its sales tax": "Работники без дела: ничто из того, что поселение могло произвести, не приносило больше затрат на сырьё после налога с продаж",
   "{{good}} bonus resource: {{amount}} {{unit}} per day": "Бонусный ресурс {{good}}: {{amount}} {{unit}} в день"
 }

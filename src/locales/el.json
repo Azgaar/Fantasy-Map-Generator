@@ -3605,8 +3605,5 @@
   "Set how the image fits the map": "Ορισμός του τρόπου προσαρμογής της εικόνας στον χάρτη",
   "Stretch": "Τέντωμα",
   "Whole image": "Ολόκληρη η εικόνα",
-  "Unemployed": "Άνεργοι",
-  "{{idle}}/{{workers}} workers": "{{idle}}/{{workers}} εργάτες",
-  "Workers left without work: nothing the burg could make paid more than its inputs after its sales tax": "Εργάτες χωρίς δουλειά: τίποτα από όσα μπορούσε να φτιάξει ο οικισμός δεν απέφερε περισσότερα από τις πρώτες ύλες του μετά τον φόρο πωλήσεων",
   "{{good}} bonus resource: {{amount}} {{unit}} per day": "Πρόσθετος πόρος {{good}}: {{amount}} {{unit}} ανά ημέρα"
 }

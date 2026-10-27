@@ -5,7 +5,7 @@ import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS, Goods } 
 import type { Deal, DealKind, SourceOption, Trade } from "@/model/economy/markets-generator";
 import { DEAL_KINDS, Markets } from "@/model/economy/markets-generator";
 import type { ProductionCandidate, ProductionLogEntry } from "@/model/economy/production-generator";
-import { isDemandEntry, isMfgEntry, isTradeEntry, Production } from "@/model/economy/production-generator";
+import { isDemandEntry, isMfgEntry, isTradeEntry } from "@/model/economy/production-generator";
 import { Icons } from "@/model/icons";
 import type { Burg } from "@/model/political/burgs-generator";
 import { formatPrice, getMoneyUnit } from "@/model/units";
@@ -621,7 +621,6 @@ function renderStats(burg: Burg): void {
   ensureEl(`${dialogId}Stats`).innerHTML = /* html */ `
     <div>
       <span><b>${t("Population")}:</b> ${population}</span>
-      ${burg.idle ? `<span data-tip="${t("Workers left without work: nothing the burg could make paid more than its inputs after its sales tax")}"><b>${t("Unemployed")}:</b> <span class="negative">${t("{{idle}}/{{workers}} workers", { idle: burg.idle, workers: Production.getWorkers(burg) })}</span></span>` : ""}
       ${EconomyDebug.get(burg.i!) ? `<span><b>${t("Order")}:</b> ${t("{{rank}} of {{total}}", { rank: burgs.indexOf(burg) + 1, total: burgs.length })}</span>` : ""}
       <span><b>${t("Market")}:</b> ${market ? Markets.getName(market) : ""}</span>
     </div>

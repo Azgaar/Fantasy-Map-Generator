@@ -3605,8 +3605,5 @@
   "Set how the image fits the map": "画像を地図に合わせる方法を設定",
   "Stretch": "引き伸ばす",
   "Whole image": "画像全体",
-  "Unemployed": "失業者",
-  "{{idle}}/{{workers}} workers": "{{idle}}/{{workers}} 人の労働者",
-  "Workers left without work: nothing the burg could make paid more than its inputs after its sales tax": "仕事のない労働者：売上税を差し引くと、都市が作れるものはどれも材料費を上回る利益を生まなかった",
   "{{good}} bonus resource: {{amount}} {{unit}} per day": "{{good}} のボーナス資源：1日あたり {{amount}} {{unit}}"
 }

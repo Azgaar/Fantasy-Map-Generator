@@ -319,6 +319,14 @@ describe("inputs missing in the burg's market", () => {
   });
 });
 
+describe("workforce", () => {
+  it("is the share of townspeople working in trades, capped", () => {
+    vi.restoreAllMocks();
+    expect(production.getWorkers({ population: 10 } as Burg)).toBe(3.5);
+    expect(production.getWorkers({ population: 5000 } as Burg)).toBe(1000);
+  });
+});
+
 describe("division of labor", () => {
   afterEach(() => vi.restoreAllMocks());
 
@@ -411,30 +419,6 @@ describe("sales tax in choosing work", () => {
 
   it("leaves the worker idle when the sales tax on the engine would eat its margin", () => {
     expect(engines(0.8)).toBe(0); // 95 × 0.2 = 19 back, for inputs that cost 14 × (1.05 + 0.8)
-  });
-});
-
-describe("idle workers", () => {
-  afterEach(() => vi.restoreAllMocks());
-
-  const run = (salesTax: number) => {
-    catalogue[4].recipes = undefined; // engines only: a ship pays under any tax
-    burg.population = 2;
-    burg.state = 1;
-    globalThis.pack.states = [{ i: 0 }, { i: 1, salesTax }] as typeof pack.states;
-    for (const step of ["collectRuralProduction", "initializeMarketPrices", "measureRoutes"] as const) {
-      vi.spyOn(Markets, step).mockImplementation(() => {}); // the market is set up by hand
-    }
-    production.produce();
-    return burg.idle;
-  };
-
-  it("records the workers that found nothing worth making", () => {
-    expect(run(0.8)).toBe(2);
-  });
-
-  it("records none when everyone worked", () => {
-    expect(run(0.1)).toBeUndefined();
   });
 });
 

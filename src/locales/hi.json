@@ -3605,8 +3605,5 @@
   "Set how the image fits the map": "सेट करें कि छवि नक्शे में कैसे फ़िट हो",
   "Stretch": "खींचकर फैलाएँ",
   "Whole image": "पूरी छवि",
-  "Unemployed": "बेरोज़गार",
-  "{{idle}}/{{workers}} workers": "{{idle}}/{{workers}} श्रमिक",
-  "Workers left without work: nothing the burg could make paid more than its inputs after its sales tax": "बिना काम के श्रमिक: बिक्री कर के बाद बस्ती जो कुछ भी बना सकती थी, उसमें से कुछ भी अपने कच्चे माल से अधिक नहीं कमाता था",
   "{{good}} bonus resource: {{amount}} {{unit}} per day": "{{good}} बोनस संसाधन: प्रतिदिन {{amount}} {{unit}}"
 }

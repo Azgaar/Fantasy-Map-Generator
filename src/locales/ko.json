@@ -3605,8 +3605,5 @@
   "Set how the image fits the map": "이미지를 지도에 맞추는 방식 설정",
   "Stretch": "늘이기",
   "Whole image": "이미지 전체",
-  "Unemployed": "실업자",
-  "{{idle}}/{{workers}} workers": "{{idle}}/{{workers}} 노동자",
-  "Workers left without work: nothing the burg could make paid more than its inputs after its sales tax": "일자리가 없는 노동자: 판매세를 빼고 나면 도시가 만들 수 있는 어떤 것도 재료비보다 많은 수익을 내지 못했습니다",
   "{{good}} bonus resource: {{amount}} {{unit}} per day": "{{good}} 보너스 자원: 하루 {{amount}} {{unit}}"
 }

@@ -56,7 +56,6 @@ export class ProductionModule {
     const states: BurgProductionState[] = [];
     for (const burg of sortedBurgs) {
       burg.treasury = 0; // every run starts from a clean slate
-      delete burg.idle;
       const market = burg.market ? Markets.get(burg.market) : undefined;
       if (market) states.push(this.createBurgProductionState(burg, market, recording));
     }
@@ -78,11 +77,9 @@ export class ProductionModule {
     for (const state of states) this.fillDemand(index, state);
     pack.deals = pack.deals.filter(deal => deal[4] > 0); // sales kept back whole
 
-    for (const { burg, population, produced, workersByGood, revenue, ingredientCosts, log } of states) {
+    for (const { burg, produced, revenue, ingredientCosts, log } of states) {
       burg.product = rn(Math.max(0, revenue - ingredientCosts), 2);
       burg.production = produced.flatMap((units, goodId) => (units ? [[goodId, rn(units, 2)]] : []));
-      const idle = population - workersByGood.reduce((sum, workers) => sum + (workers || 0), 0);
-      if (rn(idle, 2) > 0) burg.idle = rn(idle, 2);
       if (log) EconomyDebug.set(burg.i!, log);
     }
   }

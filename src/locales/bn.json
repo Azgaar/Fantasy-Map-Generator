@@ -3605,8 +3605,5 @@
   "Set how the image fits the map": "ছবিটি মানচিত্রে কীভাবে বসবে তা সেট করুন",
   "Stretch": "প্রসারিত করুন",
   "Whole image": "পুরো ছবি",
-  "Unemployed": "বেকার",
-  "{{idle}}/{{workers}} workers": "{{idle}}/{{workers}} শ্রমিক",
-  "Workers left without work: nothing the burg could make paid more than its inputs after its sales tax": "কাজহীন শ্রমিক: বিক্রয় কর বাদে বসতিটি যা কিছু তৈরি করতে পারত, তার কোনোটিই উপকরণের খরচের চেয়ে বেশি আয় দেয়নি",
   "{{good}} bonus resource: {{amount}} {{unit}} per day": "{{good}} বোনাস সম্পদ: প্রতিদিন {{amount}} {{unit}}"
 }

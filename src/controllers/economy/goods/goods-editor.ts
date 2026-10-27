@@ -54,7 +54,7 @@ let stockData: ReturnType<typeof getAllStockData> = {};
 
 const dialogId = "goodsEditor" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg" };
-let filterState: { visibleTags: string[] };
+let filterState: { visibleTags: string[]; search: string };
 
 const columns: EditorColumn<Good>[] = [
   { key: "display", width: "1.6em" },
@@ -140,13 +140,13 @@ const goodsTable = initEditorTable<Good>({ getData: getGoodsData, onUpdate: rend
 function open(goodId?: number): void {
   void Icons.retry("goods");
   if (options.app.mode) return;
-  filterState = dialogState.get(dialogId, "filters", () => ({ visibleTags: [] as string[] }));
+  filterState = { search: "", ...dialogState.get(dialogId, "filters", () => ({ visibleTags: [] as string[] })) };
   Dialog.closeAll("#goodsEditor, .stable");
 
   if (goodId !== undefined) {
     for (const good of pack.goods) good.visible = good.i === goodId;
-    if (filterState.visibleTags.length) {
-      filterState.visibleTags = [];
+    if (filterState.visibleTags.length || filterState.search) {
+      filterState = { visibleTags: [], search: "" };
       dialogState.set(dialogId, "filters", filterState);
     }
     if (Layers.has("goods")) Layers.draw("goods");
@@ -184,6 +184,9 @@ function renderDialog(): void {
   const editorHtml = /* html */ `<div id="goodsEditor" class="dialog stable editorDialog">
       ${renderEditorHeader({ dialogId, columns })}
       <div id="goodsBody" class="table" style="max-height: 50vh;" data-type="absolute"></div>
+      <div id="goodsFilters" class="editorFilters">
+        <label for="goodsSearch" data-tip="${t("Filter by name or tag")}">${t("Search")}: <input id="goodsSearch" type="search" autocomplete="off" /></label>
+      </div>
       <div id="goodsFooter" class="totalLine hide">
         <div data-tip="${t("Goods selected for the Goods layer, of all goods. With none selected, the layer shows an overview of all production")}" style="margin-left: 5px">${t("Goods")}:&nbsp;${t("{{- shown}} of {{- total}}", { shown: `<span id="goodsDisplayed">0</span>`, total: `<span id="goodsNumber">0</span>` })}</div>
         <div data-tip="${t("Total units produced daily by all cells and burgs")}" style="margin-left: 12px">${t("Produced")}:&nbsp;<span id="goodsProduced">0</span></div>
@@ -214,6 +217,7 @@ function renderDialog(): void {
     </div>`;
   ensureEl("dialogs").insertAdjacentHTML("beforeend", editorHtml);
   ensureEl("goodsTagsFilter").classList.toggle("active", filterState.visibleTags.length > 0);
+  ensureEl<HTMLInputElement>("goodsSearch").value = filterState.search;
   ensureEl(`${dialogId}Header`).querySelector<HTMLElement>('[data-col="display"]')!.innerHTML = /* html */ `<input
     type="checkbox" data-tip="${t("Select or clear all goods matching the current filter. With none selected, the Goods layer shows an overview of all production")}" class="native" id="goodsDisplayAll"
     style="margin: 0; width: 1.2em;" />`;
@@ -224,6 +228,7 @@ function renderDialog(): void {
     onUpdate: () => Dialog.update(dialogId, { width: "fit-content", position })
   });
 
+  ensureEl("goodsSearch").addEventListener("input", onSearchInput);
   ensureEl("goodsEditorRefresh").addEventListener("click", goodsTable.refresh);
   bindEconomyWiki("goodsWiki");
   ensureEl("goodsPercentage").addEventListener("click", togglePercentageMode);
@@ -255,11 +260,19 @@ function renderDialog(): void {
 function getGoodsData(): Good[] {
   production = getProduction();
   stockData = getAllStockData();
-  const hasFilter = filterState.visibleTags.length > 0;
-  const goods = hasFilter
-    ? pack.goods.filter(good => good.tags?.some(tag => filterState.visibleTags.includes(tag)))
-    : [...pack.goods];
+  const { visibleTags, search } = filterState;
+  const goods = pack.goods.filter(
+    good =>
+      (!visibleTags.length || good.tags?.some(tag => visibleTags.includes(tag))) &&
+      Tags.matches(search, good.name, good.tags)
+  );
   return sortDataByColumns(dialogId, goods, columns);
+}
+
+function onSearchInput(event: Event): void {
+  filterState.search = (event.target as HTMLInputElement).value;
+  dialogState.set(dialogId, "filters", filterState);
+  goodsTable.reset();
 }
 
 function renderGoodsPage(view: TableView<Good>) {

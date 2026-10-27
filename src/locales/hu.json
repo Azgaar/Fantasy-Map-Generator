@@ -3605,8 +3605,5 @@
   "Set how the image fits the map": "Annak megadása, hogyan illeszkedjen a kép a térképre",
   "Stretch": "Nyújtás",
   "Whole image": "Teljes kép",
-  "Unemployed": "Munkanélküliek",
-  "{{idle}}/{{workers}} workers": "{{idle}}/{{workers}} munkás",
-  "Workers left without work: nothing the burg could make paid more than its inputs after its sales tax": "Munka nélküli munkások: semmi, amit a település előállíthatott, nem hozott többet az alapanyagainál a forgalmi adó után",
   "{{good}} bonus resource: {{amount}} {{unit}} per day": "{{good}} bónusz erőforrás: {{amount}} {{unit}} naponta"
 }

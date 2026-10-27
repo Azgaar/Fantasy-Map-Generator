@@ -3605,8 +3605,5 @@
   "Set how the image fits the map": "Görselin haritaya nasıl sığacağını ayarla",
   "Stretch": "Uzat",
   "Whole image": "Görselin tamamı",
-  "Unemployed": "İşsiz",
-  "{{idle}}/{{workers}} workers": "{{idle}}/{{workers}} işçi",
-  "Workers left without work: nothing the burg could make paid more than its inputs after its sales tax": "İşsiz kalan işçiler: satış vergisinden sonra yerleşimin yapabileceği hiçbir şey girdilerinden fazla kazandırmadı",
   "{{good}} bonus resource: {{amount}} {{unit}} per day": "{{good}} bonus kaynağı: günde {{amount}} {{unit}}"
 }

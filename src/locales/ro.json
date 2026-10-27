@@ -3605,8 +3605,5 @@
   "Set how the image fits the map": "Setează cum se potrivește imaginea pe hartă",
   "Stretch": "Întinde",
   "Whole image": "Întreaga imagine",
-  "Unemployed": "Șomeri",
-  "{{idle}}/{{workers}} workers": "{{idle}}/{{workers}} muncitori",
-  "Workers left without work: nothing the burg could make paid more than its inputs after its sales tax": "Muncitori fără lucru: nimic din ce putea produce așezarea nu aducea mai mult decât materiile prime după taxa pe vânzări",
   "{{good}} bonus resource: {{amount}} {{unit}} per day": "Resursă de bonus {{good}}: {{amount}} {{unit}} pe zi"
 }

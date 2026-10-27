@@ -127,7 +127,7 @@ const GOODS_DATA: GoodData[] = [
     color: "#5D686E",
     value: 3,
     carriage: 1.3,
-    chance: 4,
+    chance: 2,
     distribution: "minHeight(50) || (biome(12) && nth(5))",
     unit: "wagon",
     multipliers: { cultureType: { Highland: 2.5 } },
@@ -140,7 +140,7 @@ const GOODS_DATA: GoodData[] = [
     color: "#b87333",
     value: 4,
     carriage: 1.3,
-    chance: 2,
+    chance: 1,
     distribution: "minHeight(60) || (minHeight(30) && elevation())",
     unit: "wagon",
     multipliers: { cultureType: { Highland: 2.5 } }
@@ -152,7 +152,7 @@ const GOODS_DATA: GoodData[] = [
     color: "#454343",
     value: 4,
     carriage: 1.3,
-    chance: 2,
+    chance: 1,
     distribution: "minHeight(60) || (minHeight(30) && elevation())",
     unit: "wagon",
     multipliers: { cultureType: { Highland: 2.5 } }
@@ -207,7 +207,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "head",
     demandCoverage: { food: 1 },
     multipliers: { cultureType: { Nomadic: 3 } },
-    biomeOutput: { 3: 0.15, 4: 0.2 }
+    biomeOutput: { 3: 0.1, 4: 0.1 }
   },
   {
     name: "Fish",
@@ -229,12 +229,12 @@ const GOODS_DATA: GoodData[] = [
     color: "#c38a8a",
     value: 2,
     carriage: 1,
-    chance: 3,
+    chance: 2,
     distribution: "biome(5, 6, 7, 8, 9)",
     unit: "wain",
     demandCoverage: { food: 1 },
     multipliers: { cultureType: { Naval: 0.6, Nomadic: 1.5, Hunting: 3 } },
-    biomeOutput: { 5: 0.04, 7: 0.03, 8: 0.03, 9: 0.06, 10: 0.04 }
+    biomeOutput: { 5: 0.02, 7: 0.02, 8: 0.02, 9: 0.04, 10: 0.01 }
   },
   {
     name: "Wine",
@@ -849,7 +849,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["military"],
     icon: "goods-arms",
     color: "#555555",
-    value: 23,
+    value: 22,
     carriage: 0.8,
     chance: 0,
     recipes: [
