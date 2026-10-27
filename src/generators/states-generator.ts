@@ -170,6 +170,19 @@ const DEFAULT_TAX_BY_FORM: Record<string, TaxBases> = {
 };
 const DEFAULT_TAX: TaxBases = DEFAULT_TAX_BY_FORM.Monarchy;
 
+/** FNV-1a of the map seed, folded into the free-burgs ranking */
+const seedHash = (seed: string): number =>
+  [...seed].reduce((hash, char) => Math.imul(hash ^ char.charCodeAt(0), 0x01000193), 0x811c9dc5);
+
+/** a stable pseudo-random score in [0, 1): the same map keeps the same burgs free wherever states are redrawn */
+const stableScore = (burgId: number, hash: number): number => {
+  let score = Math.imul(burgId ^ hash, 0x9e3779b1);
+  score ^= score >>> 15;
+  score = Math.imul(score, 0x85ebca6b);
+  score ^= score >>> 13;
+  return (score >>> 0) / 2 ** 32;
+};
+
 class StatesModule {
   regenerate(): { warning?: string; error?: string } {
     const { warning, error, states } = this.recreate();
@@ -225,8 +238,9 @@ class StatesModule {
       }
     }
 
+    const freeBurgs = new Set(this.getFreeBurgs().map(burg => burg.i));
     const sortedBurgs = validBurgs
-      .filter(burg => !lockedStateIds.includes(burg.state ?? 0))
+      .filter(burg => !lockedStateIds.includes(burg.state ?? 0) && !freeBurgs.has(burg.i))
       .map((burg): [typeof burg, number] => [burg, (burg.population ?? 0) * Math.random()])
       .sort((a, b) => b[1] - a[1])
       .map(([burg]) => burg);
@@ -375,6 +389,23 @@ class StatesModule {
     this.generateDiplomacy();
   }
 
+  /** Burgs the Free Burgs option keeps outside every state: a percent of the candidates, ranked by a stable score */
+  private getFreeBurgs() {
+    const percent = options.generation.states.freeBurgs;
+    if (!percent) return [];
+
+    const locked = new Set(pack.states.filter(state => state.lock && !state.removed).map(state => state.i));
+    const candidates = pack.burgs.filter(
+      burg => burg.i && !burg.removed && !burg.capital && !locked.has(pack.cells.state[burg.cell])
+    );
+    const hash = seedHash(options.map.seed);
+    return candidates
+      .map(burg => ({ burg, score: stableScore(burg.i, hash) }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, Math.round((candidates.length * percent) / 100))
+      .map(({ burg }) => burg);
+  }
+
   expandStates() {
     TIME && console.time("expandStates");
     const { cells, states, cultures, burgs } = pack;
@@ -404,6 +435,20 @@ class StatesModule {
       cost[state.center] = 1;
     }
 
+    // free burgs grow neutral land of their own, competing with the states for territory
+    const freeBurgs = this.getFreeBurgs();
+    const freeCells = new Set(freeBurgs.map(burg => burg.cell));
+    const landTotal = cells.i.filter(cellId => cells.h[cellId] >= 20).length;
+    // the free lands hold about the free burgs' share, so the option sets both its burgs and its land
+    const neutralQuota = Math.round((landTotal * options.generation.states.freeBurgs) / 100);
+    let neutralClaimed = 0;
+    for (const burg of freeBurgs) {
+      const c = burg.culture ?? 0;
+      const b = cells.biome[cultures[c].center!];
+      queue.push({ e: burg.cell, p: 0, s: 0, b, c, growth: 1 }, 0);
+      cost[burg.cell] = 1;
+    }
+
     while (queue.length) {
       const next = queue.pop();
 
@@ -411,25 +456,30 @@ class StatesModule {
       const { type, culture } = states[s];
 
       cells.c[e].forEach(e => {
+        if (freeCells.has(e)) return; // do not overwrite free burgs' cells
         const state = states[cells.state[e]];
         if (state.lock) return; // do not overwrite cell of locked states
         if (cells.state[e] && e === state.center) return; // do not overwrite capital cells
 
-        const cultureCost = culture === cells.culture[e] ? -9 : 100;
+        const cultureCost = (next.c ?? culture) === cells.culture[e] ? -9 : 100;
         const populationCost = cells.h[e] < 20 ? 0 : cells.s[e] ? Math.max(20 - cells.s[e], 0) : 5000;
         const biomeCost = this.getBiomeCost(b, cells.biome[e], type);
         const heightCost = this.getHeightCost(pack.features[cells.f[e]], cells.h[e], type);
         const riverCost = this.getRiverCost(cells.r[e], e, type);
         const typeCost = this.getTypeCost(cells.t[e], type);
         const cellCost = Math.max(cultureCost + populationCost + biomeCost + heightCost + riverCost + typeCost, 0);
-        const totalCost = p + 10 + cellCost / states[s].expansionism;
+        const totalCost = p + 10 + cellCost / (next.growth ?? states[s].expansionism ?? 1);
 
         if (totalCost > growthRate) return;
 
         if (!cost[e] || totalCost < cost[e]) {
-          if (cells.h[e] >= 20) cells.state[e] = s; // assign state to cell
+          if (cells.h[e] >= 20) {
+            if (s === 0 && neutralClaimed >= neutralQuota) return; // the free share is in, the states fill the rest
+            if (s === 0) neutralClaimed++;
+            cells.state[e] = s; // assign state to cell
+          }
           cost[e] = totalCost;
-          queue.push({ e, p: totalCost, s, b }, totalCost);
+          queue.push({ e, p: totalCost, s, b, c: next.c, growth: next.growth }, totalCost);
         }
       });
     }

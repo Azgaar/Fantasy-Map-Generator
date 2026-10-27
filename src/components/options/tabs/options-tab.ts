@@ -95,6 +95,12 @@ const OPTION_BINDINGS: Record<string, OptionBinding> = {
     parse: Number,
     pin: "statesNumber"
   }),
+  freeBurgs: option({
+    read: o => o.generation.states.freeBurgs,
+    write: (o, value) => (o.generation.states.freeBurgs = value),
+    parse: Number,
+    pin: "freeBurgs"
+  }),
   provincesRatio: option({
     read: o => o.generation.provinces.ratio,
     write: (o, value) => (o.generation.provinces.ratio = value),
@@ -299,6 +305,17 @@ const TEMPLATE = /* html */ `
       <td>States number</td>
       <td colspan="2">
         <slider-input id="statesNumber" data-option="statesNumber" min="0" max="100"></slider-input>
+      </td>
+    </tr>
+    <tr
+      data-tip="Set what share of burgs stay free: outside every state, holding neutral lands around them. 0 lets states fill the whole map"
+    >
+      <td>
+        <i data-locked="0" id="lock_freeBurgs" class="icon-lock-open"></i>
+      </td>
+      <td>Free burgs</td>
+      <td colspan="2">
+        <slider-input id="freeBurgs" data-option="freeBurgs" min="0" max="100"></slider-input>
       </td>
     </tr>
     <tr

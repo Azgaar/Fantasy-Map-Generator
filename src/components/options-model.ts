@@ -99,7 +99,7 @@ class OptionsModel {
         resolveDepressionsSteps: 250,
         lakeElevationLimit: 20,
         cultures: { limit: 12, set: "world", sizeVariety: 4, growthRate: 1 },
-        states: { limit: 18, sizeVariety: 4, growthRate: 1 },
+        states: { limit: 18, sizeVariety: 4, growthRate: 1, freeBurgs: 0 },
         provinces: { ratio: 20 },
         religions: { limit: 6 },
         burgs: { limit: 1000 }
@@ -244,6 +244,7 @@ class OptionsModel {
       ? this.randomTemplate()
       : Pins.valueOr("template", generation.template);
     states.limit = Pins.rolls("statesNumber") ? gauss(18, 5, 2, 30) : Pins.valueOr("statesNumber", states.limit);
+    states.freeBurgs = Pins.valueOr("freeBurgs", states.freeBurgs);
     provinces.ratio = Pins.rolls("provincesRatio")
       ? gauss(20, 10, 20, 100)
       : Pins.valueOr("provincesRatio", provinces.ratio);

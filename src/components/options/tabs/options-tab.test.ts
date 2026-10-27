@@ -175,6 +175,15 @@ describe("options tab bindings", () => {
     }
   });
 
+  it("writes and pins the free-burgs share", () => {
+    edit(control("freeBurgs"), "30");
+    expect(options.generation.states.freeBurgs).toBe(30);
+    expect(Pins.valueOr("freeBurgs", 0)).toBe(30);
+
+    tab.syncOptionInputs();
+    expect(control("freeBurgs").value).toBe("30");
+  });
+
   it("preserves the automatic burg readout alongside the legacy panel listener", () => {
     edit(control("manors"), "400");
     expect(output("manors").value).toBe("400");

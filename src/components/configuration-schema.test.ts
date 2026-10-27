@@ -24,6 +24,7 @@ describe("options schema", () => {
   it("holds the requests generation consumes", () => {
     const { generation } = Options.getDefaultOptions();
     expect(generation.states.limit).toBeTypeOf("number");
+    expect(generation.states.freeBurgs).toBe(0);
     expect(generation.cultures.limit).toBeTypeOf("number");
     expect(generation.religions.limit).toBeTypeOf("number");
     expect(generation.provinces.ratio).toBeTypeOf("number");
@@ -71,6 +72,17 @@ describe("the schema describes the value, not merely its type", () => {
 
     expect(parsed.generation.graph.density).toBe(Options.getDefaultOptions().generation.graph.density);
     expect(parsed.generation.graph.width).toBe(800); // the step alone was wrong
+  });
+
+  it("repairs a free-burgs share outside the percent range", () => {
+    const generation = {
+      ...Options.getDefaultOptions().generation,
+      states: { ...Options.getDefaultOptions().generation.states, freeBurgs: 140 }
+    };
+
+    expect(repair("generation", generation).generation.states.freeBurgs).toBe(0);
+    expect(pinSchemas.freeBurgs.safeParse(30).success).toBe(true);
+    expect(pinSchemas.freeBurgs.safeParse(101).success).toBe(false);
   });
 
   it("repairs an extent nothing could be generated on", () => {
