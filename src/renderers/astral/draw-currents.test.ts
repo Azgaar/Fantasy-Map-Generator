@@ -2,12 +2,14 @@
 import { beforeEach, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ astral: true, subscribed: [] as (() => void)[] }));
-vi.mock("@/components/options/view-mode", () => ({
-  isAstralView: () => mocks.astral,
+vi.mock("@/components/options/astral-view", () => ({
   subscribeAstralView: (listener: () => void) => {
     mocks.subscribed.push(listener);
     return () => {};
   }
+}));
+vi.mock("@/components/options/view-mode", () => ({
+  isAstralView: () => mocks.astral
 }));
 
 import { drawCurrents } from "./draw-currents";

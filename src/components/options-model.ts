@@ -73,7 +73,7 @@ class OptionsModel {
           name: "",
           description: "",
           calendar: { year: 1000, era: "Era", eraShort: "E" },
-          history: { span: 1000, realms: 2, density: 1, echoes: true, renames: false }
+          history: { mode: "archaeologist", span: 1000, realms: 2, density: 1, echoes: true, renames: false }
         },
         units: {
           distance: { unit: isImperial() ? "mi" : "km", scale: 3 },

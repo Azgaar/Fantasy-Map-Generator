@@ -128,6 +128,15 @@ describe("the schema describes the value, not merely its type", () => {
     expect(repair("map", map).map.climate.winds).toEqual(defaults().climate.winds);
   });
 
+  it("repairs a history mode no version has written", () => {
+    const map = defaults();
+    map.lore = { ...map.lore, history: { ...map.lore.history, mode: "timeless" as "archaeologist" } };
+
+    const parsed = repair("map", map);
+    expect(parsed.map.lore.history.mode).toBe("archaeologist");
+    expect(parsed.map.lore.history.span).toBe(map.lore.history.span); // the settings around it survive
+  });
+
   it("recovers a map whose climate section is corrupt without losing the rest", () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     const file = { ...defaults(), seed: "12345", climate: "corrupt" };
@@ -144,6 +153,14 @@ describe("the schema describes the value, not merely its type", () => {
 
     const parsed = parseSections<MapData>(mapSchema, defaults(), file, "test");
     expect(parsed.coastline).toEqual(defaults().coastline);
+  });
+
+  it("loads an older file that has no history mode as the archaeologist", () => {
+    const file = structuredClone(defaults()) as unknown as Record<string, any>;
+    delete file.lore.history.mode;
+
+    const parsed = parseSections<MapData>(mapSchema, defaults(), file, "test");
+    expect(parsed.lore.history.mode).toBe("archaeologist");
   });
 });
 

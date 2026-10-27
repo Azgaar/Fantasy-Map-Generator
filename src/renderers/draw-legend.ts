@@ -21,6 +21,13 @@ const getBBox = (node: SVGGElement) => node.getBBox();
 /** Whether the named legend box is currently shown on the map */
 export const hasLegend = (name: string): boolean => Boolean(getBox(name));
 
+/** The items the named box was drawn with, or undefined when the box is not on the map */
+export function getLegendData(name: string): LegendItem[] | undefined {
+  const stored = getBox(name)?.getAttribute("data");
+  if (!stored) return undefined;
+  return stored.split("|").filter(Boolean).map(line => line.split(","));
+}
+
 /** Draw the named legend box with the given items, replacing that box alone if it is already shown */
 export function drawLegend(name: string, data: LegendItem[]): void {
   const layer = getLayer();

@@ -1,7 +1,8 @@
 // Currents: the rivers re-read as flow toward the void — Astral only, inside the Hyperlanes layer.
 // The group is emitted on demand instead of declared in the registry: declared children are created
 // at init and recreated on every restore, which would leak a #currents node into standard maps
-import { isAstralView, subscribeAstralView } from "@/components/options/view-mode";
+import { subscribeAstralView } from "@/components/options/astral-view";
+import { isAstralView } from "@/components/options/view-mode";
 import { createEl } from "@/utils/nodeUtils";
 import { rn } from "@/utils/numberUtils";
 import { currentPath, currentWidth } from "./currents";

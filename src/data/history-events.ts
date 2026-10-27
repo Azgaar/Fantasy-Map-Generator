@@ -159,3 +159,24 @@ export const WAR_GENERAL_TEMPLATES: GeneralTemplate[] = [
   (general, state) => `${general} commanded the hosts of ${state}`,
   (general, state) => `${state} trusted its fortunes in the war to ${general}`
 ];
+
+export type EpochWarTemplate = (attacker: string, defender: string) => string;
+export const EPOCH_WAR_TEMPLATES: EpochWarTemplate[] = [
+  (attacker, defender) => `${attacker} and ${defender} warred over their common border`,
+  (attacker, defender) => `Raiders from ${attacker} and ${defender} burned the marches between them`,
+  (attacker, defender) => `A long war between ${attacker} and ${defender} ended in stalemate`
+];
+
+export type EpochIndependenceTemplate = (successor: string, fallen: string) => string;
+export const EPOCH_INDEPENDENCE_TEMPLATES: EpochIndependenceTemplate[] = [
+  (successor, fallen) => `${successor} rose from the ruins of the ${fallen}`,
+  (successor, fallen) => `As the ${fallen} fell, ${successor} declared itself its heir`,
+  (successor, fallen) => `${successor} grew out of lands the ${fallen} could no longer hold`
+];
+
+/** era names by the character of an epoch */
+export const EPOCH_ERAS = {
+  ruin: ["The Age of Broken Crowns", "The Age of Ruin", "The Age of Ashes"],
+  division: ["The Age of Division", "The Age of Many Crowns", "The Age of Warring States"],
+  dominion: ["The Age of Dominion", "The Age of Empires", "The Age of Great Kingdoms"]
+};
