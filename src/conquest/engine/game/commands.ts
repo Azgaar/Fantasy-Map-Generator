@@ -15,19 +15,28 @@ import type { EngineCtx } from "./context";
 export type { EngineCtx } from "./context";
 
 import type { BuildingDef, UnitType } from "../common/content";
-import type { CapacityPoints } from "../common/types";
+import type { ArmyUnit, CapacityPoints } from "../common/types";
 import { atWar } from "./ai";
 import { type BattleModifiers, type BattleOutcome, type BattleSide, estimateOdds, resolveBattle } from "./battle";
-import { capacityRefusal, developmentCap, freeCapacity, recomputeCapacity, settlementDevelopment } from "./capacity";
+import {
+  addFactionAtrocity,
+  capacityRefusal,
+  developmentCap,
+  freeCapacity,
+  recomputeCapacity,
+  settlementDevelopment
+} from "./capacity";
 import { agentAction, grantXp, lordCombatBonus, moveCharacter, recruitCharacter, spendSkillPoint } from "./characters";
 import { aiAcceptsConfederation, declareWarCore, hasTreaty, offerTreaty, setRelation } from "./diplomacy";
+import { advanceConstructionStep } from "./economy";
 import type { CapturePolicy, GameEvent, TreatyType } from "./events";
 import { graphIndex } from "./graph";
 import { edgeCost, findPath, riverCrossing } from "./movement";
+import { effectiveValue, rollValueCheck } from "./saves";
 import { applyCapturePolicy, garrisonWeakenFactor, siegeOf, startSiege } from "./sieges";
-import { type Campaign, isPlayerFaction, type Stance } from "./state";
+import { type Campaign, isPlayerFaction, type RegionState, rng, type Stance } from "./state";
 import { endTurn } from "./turn";
-import { garrisonUnits } from "./units";
+import { garrisonUnits, minorGarrisonUnits } from "./units";
 import { checkElimination, checkVictory } from "./victory";
 import { answerEvent, discoverPoisAt } from "./world";
 
@@ -73,10 +82,18 @@ function dispatch(ctx: EngineCtx, cmd: Command, internal: boolean): string | nul
       return recruitUnit(ctx, cmd.armyId, cmd.unitType, internal);
     case "BuildBuilding":
       return buildBuilding(ctx, cmd.regionId, cmd.buildingId);
+    case "DisbandBuilding":
+      return disbandBuilding(ctx, cmd.regionId, cmd.buildingId, cmd.suppressCustom);
+    case "EstablishAssetStep":
+      return establishAssetStep(ctx, cmd.regionId, cmd.spendTreasure, cmd.useAtrocity);
     case "Develop":
       return developSettlement(ctx, cmd.regionId, cmd.settlementId);
     case "WithdrawTreasure":
       return withdrawTreasure(ctx);
+    case "AccumulateTreasure":
+      return accumulateTreasureCmd(ctx, cmd.factionId, cmd.regionId, cmd.rerollWithGold);
+    case "PunishAtrocity":
+      return punishAtrocityCmd(ctx, cmd.factionId, cmd.regionId);
     case "ResearchTech":
       return researchTech(ctx, cmd.techId);
     case "DeclareWar":
@@ -131,8 +148,8 @@ function armiesAt(campaign: Campaign, cell: number): import("./state").Army[] {
   return Object.values(campaign.armies).filter(a => a.cell === cell);
 }
 
-function majorSettlementAt(pack: import("../common/types").MapPack, cell: number) {
-  return pack.settlements.find(s => s.kind === "major" && s.cell === cell) ?? null;
+function settlementAt(pack: import("../common/types").MapPack, cell: number) {
+  return pack.settlements.find(s => s.cell === cell) ?? null;
 }
 
 function hasPair(between: [number, number], a: number, b: number): boolean {
@@ -264,6 +281,19 @@ function moveArmy(ctx: EngineCtx, armyId: string, path: number[], internal: bool
       distance: Math.round(distance * 10) / 10
     });
     discoverPoisAt(ctx, army.factionId, after.cell);
+    const arrivedSettlement = settlementAt(pack, after.cell);
+    if (arrivedSettlement && arrivedSettlement.kind === "minor") {
+      const rs = campaign.regions[String(arrivedSettlement.regionId)];
+      if (rs && rs.owner === army.factionId && rs.occupiedSettlements?.includes(arrivedSettlement.id)) {
+        rs.occupiedSettlements = rs.occupiedSettlements.filter(id => id !== arrivedSettlement.id);
+        campaign.log.push({
+          type: "SettlementLiberated",
+          settlementId: arrivedSettlement.id,
+          regionId: arrivedSettlement.regionId,
+          byFaction: army.factionId
+        });
+      }
+    }
   } else {
     campaign.log.push({
       type: "MovementBlocked",
@@ -298,6 +328,28 @@ interface FieldBattleOpts {
   winnerTakesCell?: boolean;
 }
 
+export function getMilitiaDefenseUnits(ctx: EngineCtx, regionId: number, defenderFactionId: number): ArmyUnit[] {
+  const regionState = ctx.campaign.regions[String(regionId)];
+  if (!regionState || regionState.owner !== defenderFactionId) return [];
+  const buildingById = new Map(ctx.content.buildings.map(b => [b.id, b]));
+  const militiaUnits: ArmyUnit[] = [];
+  for (const bid of regionState.buildings) {
+    const md = buildingById.get(bid)?.effects.militiaDefense;
+    if (!md) continue;
+    const ut = ctx.resolved.pack.unitTypes[md.unitType] ?? ctx.content.unitTypes[md.unitType];
+    const men = ut?.men ?? 100;
+    for (let i = 0; i < md.count; i++) {
+      militiaUnits.push({
+        type: md.unitType,
+        count: men,
+        exp: 0,
+        temporaryMilitia: true
+      });
+    }
+  }
+  return militiaUnits;
+}
+
 function runFieldBattle(
   ctx: EngineCtx,
   attacker: import("./state").Army,
@@ -306,21 +358,25 @@ function runFieldBattle(
 ): BattleOutcome {
   const { campaign, pack, config, resolved } = ctx;
   const idx = graphIndex(pack);
-  const settlement = majorSettlementAt(pack, defender.cell);
+  const settlement = settlementAt(pack, defender.cell);
   const regionId = idx.cellRegion.get(defender.cell) ?? 0;
+  const militia = getMilitiaDefenseUnits(ctx, regionId, defender.factionId);
 
   const modifiers: BattleModifiers = {
-    walls: (settlement?.walls ?? 0) + regionWalls(ctx, regionId),
+    walls: (settlement?.walls ?? 0) + (settlement?.kind === "major" ? regionWalls(ctx, regionId) : 0),
     defenderEncamped: defender.stance === "encamp",
     defenderAmbushed: attacker.stance === "ambush",
     attackerCrossedRiver: opts.river,
-    labels: [],
+    labels: [
+      ...(settlement ? [`defending ${settlement.name} (walls ${settlement.walls})`] : []),
+      ...(militia.length > 0 ? [`militia defense (${militia.length} units)`] : [])
+    ],
     attackerLordMult: lordCombatBonus(ctx, attacker.id),
     defenderLordMult: lordCombatBonus(ctx, defender.id)
   };
   const sides: { attacker: BattleSide; defender: BattleSide } = {
     attacker: { factionId: attacker.factionId, armyId: attacker.id, units: attacker.units },
-    defender: { factionId: defender.factionId, armyId: defender.id, units: defender.units }
+    defender: { factionId: defender.factionId, armyId: defender.id, units: [...defender.units, ...militia] }
   };
 
   const outcome = resolveBattle(campaign, {
@@ -333,6 +389,7 @@ function runFieldBattle(
     assault: false,
     modifiers
   });
+  if (settlement) outcome.summary.settlementId = settlement.id;
 
   finalizeBattle(ctx, attacker, defender, outcome, opts);
   grantBattleXp(ctx, attacker.id, outcome.summary.winner === "attacker");
@@ -354,12 +411,12 @@ function finalizeBattle(
   outcome: BattleOutcome,
   opts: FieldBattleOpts
 ): void {
-  const { campaign } = ctx;
+  const { campaign, pack, config } = ctx;
   attacker.movementLeft = 0;
   defender.movementLeft = 0;
 
-  attacker.units = outcome.attacker.units.filter(u => u.count > 0);
-  defender.units = outcome.defender.units.filter(u => u.count > 0);
+  attacker.units = outcome.attacker.units.filter(u => u.count > 0 && !u.temporaryMilitia);
+  defender.units = outcome.defender.units.filter(u => u.count > 0 && !u.temporaryMilitia);
 
   const loser = outcome.summary.winner === "attacker" ? defender : attacker;
   if (loser.units.length === 0) {
@@ -371,6 +428,49 @@ function finalizeBattle(
 
   if (opts.winnerTakesCell && outcome.summary.winner === "attacker" && campaign.armies[attacker.id]) {
     attacker.cell = defender.cell;
+  }
+
+  const settlement = settlementAt(pack, defender.cell);
+  if (settlement && settlement.kind === "minor") {
+    const regionState = campaign.regions[String(settlement.regionId)];
+    if (regionState) {
+      if (!regionState.occupiedSettlements) regionState.occupiedSettlements = [];
+      const winnerFaction = outcome.summary.winner === "attacker" ? attacker.factionId : defender.factionId;
+      if (winnerFaction === regionState.owner) {
+        if (regionState.occupiedSettlements.includes(settlement.id)) {
+          regionState.occupiedSettlements = regionState.occupiedSettlements.filter(id => id !== settlement.id);
+          campaign.log.push({
+            type: "SettlementLiberated",
+            settlementId: settlement.id,
+            regionId: settlement.regionId,
+            byFaction: winnerFaction
+          });
+        }
+      } else {
+        if (!regionState.occupiedSettlements.includes(settlement.id)) {
+          regionState.occupiedSettlements.push(settlement.id);
+          if (regionState.development?.settlementId === settlement.id) {
+            regionState.development = null;
+          }
+          const lootedGold = Math.max(10, Math.round(settlement.population * 2) || settlement.tier * 25 + 25);
+          const raider = campaign.factions[String(winnerFaction)];
+          if (raider) {
+            if (config.economy.capacityMode) raider.purse += lootedGold;
+            else raider.treasury += lootedGold;
+          }
+          regionState.order = Math.max(0, regionState.order - 10);
+          campaign.log.push({
+            type: "SettlementOccupied",
+            settlementId: settlement.id,
+            regionId: settlement.regionId,
+            byFaction: winnerFaction,
+            byArmy: attacker.id,
+            policy: "occupy",
+            gold: lootedGold
+          });
+        }
+      }
+    }
   }
 
   campaign.log.push({ type: "BattleResolved", battle: outcome.summary });
@@ -431,31 +531,135 @@ function assaultSettlement(
   const army = campaign.armies[armyId]!;
   if (army.stance === "march") return "armies in march stance cannot assault";
 
-  const settlement = majorSettlementAt(pack, army.cell);
-  if (!settlement) return `no major settlement at cell ${army.cell}`;
+  const settlement = settlementAt(pack, army.cell);
+  if (!settlement) return `no settlement at cell ${army.cell}`;
   const regionState = campaign.regions[String(settlement.regionId)]!;
   const owner = regionState.owner;
   if (owner === army.factionId) return "you already own this region";
   if (!atWar(campaign, army.factionId, owner)) return `not at war with faction ${owner}`;
 
+  if (settlement.kind === "minor") {
+    if (!regionState.occupiedSettlements) regionState.occupiedSettlements = [];
+    if (regionState.occupiedSettlements.includes(settlement.id)) {
+      return `settlement '${settlement.name}' is already occupied`;
+    }
+    const ownerRoster = resolved.factions[String(owner)]!.roster;
+    const militia = getMilitiaDefenseUnits(ctx, settlement.regionId, owner);
+    const garrisonUnitsList = minorGarrisonUnits(
+      ownerRoster,
+      resolved.pack.unitTypes,
+      settlement.tier,
+      settlement.walls
+    );
+    const garrison: BattleSide = {
+      factionId: owner,
+      armyId: null,
+      units: [...garrisonUnitsList, ...militia]
+    };
+    const modifiers: BattleModifiers = {
+      walls: settlement.walls,
+      defenderEncamped: false,
+      defenderAmbushed: false,
+      attackerCrossedRiver: false,
+      labels: [
+        `minor settlement assault (${settlement.name}, walls ${settlement.walls})`,
+        ...(militia.length > 0 ? [`militia defense (${militia.length} units)`] : [])
+      ],
+      attackerLordMult: lordCombatBonus(ctx, army.id),
+      defenderLordMult: 1
+    };
+    const outcome = resolveBattle(campaign, {
+      config,
+      unitTypes: resolved.pack.unitTypes,
+      attacker: { factionId: army.factionId, armyId: army.id, units: army.units },
+      defender: garrison,
+      cell: army.cell,
+      regionId: settlement.regionId,
+      assault: true,
+      modifiers
+    });
+    outcome.summary.settlementId = settlement.id;
+    outcome.summary.regionCaptured = false;
+
+    army.movementLeft = 0;
+    army.units = outcome.attacker.units.filter(u => u.count > 0 && !u.temporaryMilitia);
+    if (army.units.length === 0) {
+      delete campaign.armies[army.id];
+      campaign.log.push({ type: "ArmyDisbanded", armyId: army.id, reason: "destroyed in the assault" });
+    }
+
+    if (outcome.winner === "attacker") {
+      regionState.occupiedSettlements.push(settlement.id);
+      if (regionState.development?.settlementId === settlement.id) {
+        regionState.development = null;
+      }
+      let gold = 0;
+      let orderHit = 5;
+      const baseVal = Math.max(10, Math.round(settlement.population * 2) || settlement.tier * 25 + 25);
+      if (policy === "occupy") {
+        gold = baseVal;
+        orderHit = 5;
+      } else if (policy === "sack") {
+        gold = Math.round(baseVal * 2);
+        orderHit = 15;
+      } else if (policy === "loot") {
+        gold = Math.round(baseVal * 1.5);
+        orderHit = 10;
+      } else if (policy === "raze") {
+        gold = Math.round(baseVal * 2.5);
+        orderHit = 25;
+        settlement.population = Math.max(0, settlement.population - 1);
+      }
+      const victim = campaign.factions[String(owner)];
+      const raider = campaign.factions[String(army.factionId)];
+      if (gold > 0 && raider) {
+        if (config.economy.capacityMode && victim) {
+          const taken = Math.min(gold, victim.purse);
+          victim.purse = Math.round((victim.purse - taken) * 100) / 100;
+          raider.purse = Math.round((raider.purse + taken) * 100) / 100;
+        } else {
+          raider.treasury += gold;
+        }
+      }
+      regionState.order = Math.max(0, regionState.order - orderHit);
+      outcome.summary.policy = policy;
+      campaign.log.push({
+        type: "SettlementOccupied",
+        settlementId: settlement.id,
+        regionId: settlement.regionId,
+        byFaction: army.factionId,
+        byArmy: armyId,
+        policy,
+        gold
+      });
+    }
+    campaign.log.push({ type: "BattleResolved", battle: outcome.summary });
+    return null;
+  }
+
+  // Major settlement assault:
   // Garrison from the owner's roster (militia replenish — total-war/.plans/PLAN.md §5.5), weakened
   // by siege escalation when the settlement is under siege (§5.5).
   const ownerRoster = resolved.factions[String(owner)]!.roster;
   const weaken = garrisonWeakenFactor(ctx, settlement.regionId);
+  const militia = getMilitiaDefenseUnits(ctx, settlement.regionId, owner);
   const garrison: BattleSide = {
     factionId: owner,
     armyId: null,
-    units: garrisonUnits(ownerRoster, resolved.pack.unitTypes, settlement.walls).map(u => ({
-      ...u,
-      count: Math.max(1, Math.round(u.count * weaken))
-    }))
+    units: [
+      ...garrisonUnits(ownerRoster, resolved.pack.unitTypes, settlement.walls).map(u => ({
+        ...u,
+        count: Math.max(1, Math.round(u.count * weaken))
+      })),
+      ...militia
+    ]
   };
   const modifiers: BattleModifiers = {
     walls: settlement.walls + regionWalls(ctx, settlement.regionId),
     defenderEncamped: false,
     defenderAmbushed: false,
     attackerCrossedRiver: false,
-    labels: [],
+    labels: militia.length > 0 ? [`militia defense (${militia.length} units)`] : [],
     attackerLordMult: lordCombatBonus(ctx, army.id),
     defenderLordMult: 1
   };
@@ -473,9 +677,10 @@ function assaultSettlement(
     assault: true,
     modifiers
   });
+  outcome.summary.settlementId = settlement.id;
 
   army.movementLeft = 0;
-  army.units = outcome.attacker.units.filter(u => u.count > 0);
+  army.units = outcome.attacker.units.filter(u => u.count > 0 && !u.temporaryMilitia);
   if (army.units.length === 0) {
     delete campaign.armies[army.id];
     campaign.log.push({ type: "ArmyDisbanded", armyId: army.id, reason: "destroyed in the assault" });
@@ -486,6 +691,7 @@ function assaultSettlement(
     const payout = applyCapturePolicy(ctx, settlement.regionId, policy);
     regionState.owner = army.factionId;
     regionState.order = payout.order;
+    regionState.occupiedSettlements = [];
     // CAPACITY-PLAN Phase 5: booty is purse gold in the capacity model, and it
     // comes *out of the victim's purse* rather than being minted — a realm's
     // gold is only ever as much as some realm converted out of its Wealth.
@@ -590,6 +796,16 @@ function recruitUnit(ctx: EngineCtx, armyId: string, unitTypeId: string, interna
   }
   army.units.push({ type: unitTypeId, count: type.men, exp: 0 });
   campaign.log.push({ type: "UnitRecruited", armyId, unitType: unitTypeId, cost: type.cost });
+
+  // Phase 4: Necromantic Cult penalty (+2 Atrocity per recruited undead unit)
+  const holdsNecro = ctx.pack.regions.some(r => {
+    const rs = campaign.regions[String(r.id)];
+    return rs?.owner === army.factionId && rs.buildings.includes("necromantic_cult");
+  });
+  if (holdsNecro && (unitTypeId === "necromancer" || unitTypeId === "undead_swarm" || unitTypeId === "dead_legion")) {
+    addFactionAtrocity(ctx, army.factionId, 2, `Recruiting undead ${type.name}`);
+  }
+
   return null;
 }
 
@@ -613,24 +829,96 @@ function buildBuilding(ctx: EngineCtx, regionId: number, buildingId: string, act
   if (!available.some(b => b.id === buildingId)) {
     return `'${building.name}' is not available to this faction`;
   }
-  if (regionState.buildings.includes(buildingId)) return `'${building.name}' already built here`;
+
+  const maxInstances = building.maxInstances ?? 1;
+  const standingCount = regionState.buildings.filter(bid => bid === buildingId).length;
+  if (standingCount >= maxInstances) return `'${building.name}' already built here`;
   if (regionState.construction) return "a building is already under construction here";
+
+  // Customs are unique across the whole domain (faction).
+  if (building.kind === "custom") {
+    for (const r of pack.regions) {
+      const rs = campaign.regions[String(r.id)];
+      if (rs && rs.owner === factionId) {
+        if (rs.buildings.includes(buildingId)) {
+          return `'${building.name}' custom has already been established in your domain`;
+        }
+        if (rs.construction?.buildingId === buildingId) {
+          return `'${building.name}' custom is already being established in your domain`;
+        }
+      }
+    }
+  }
+
+  // Mutually incompatible assets (e.g. Slavery vs Dwarf Friend).
+  if (building.incompatibleWith && building.incompatibleWith.length > 0) {
+    for (const r of pack.regions) {
+      const rs = campaign.regions[String(r.id)];
+      if (rs && rs.owner === factionId) {
+        for (const incId of building.incompatibleWith) {
+          if (rs.buildings.includes(incId) || rs.construction?.buildingId === incId) {
+            const inc = content.buildings.find(b => b.id === incId);
+            return `'${building.name}' is incompatible with '${inc?.name ?? incId}'`;
+          }
+        }
+      }
+    }
+  }
+  for (const r of pack.regions) {
+    const rs = campaign.regions[String(r.id)];
+    if (rs && rs.owner === factionId) {
+      for (const standingId of rs.buildings) {
+        const standing = content.buildings.find(b => b.id === standingId);
+        if (standing?.incompatibleWith?.includes(buildingId)) {
+          return `'${building.name}' is incompatible with standing '${standing.name}'`;
+        }
+      }
+      const con = rs.construction;
+      if (con) {
+        const underCon = content.buildings.find(b => b.id === con.buildingId);
+        if (underCon?.incompatibleWith?.includes(buildingId)) {
+          return `'${building.name}' is incompatible with '${underCon.name}' under construction`;
+        }
+      }
+    }
+  }
+
+  // Resource locations: Processing Camp and Resource Extractor require specialties or resource/mine POIs.
+  if (building.kind === "resource") {
+    const region = pack.regions.find(r => r.id === regionId);
+    const hasSpecialty = (region?.stats.specialties.length ?? 0) > 0;
+    const idx = graphIndex(pack);
+    const hasResourcePoi = pack.pois.some(poi => {
+      const poiRegion = idx.cellRegion.get(poi.cell);
+      return (
+        poiRegion === regionId &&
+        (poi.type.toLowerCase().includes("mine") ||
+          poi.type.toLowerCase().includes("resource") ||
+          poi.capacityType === "w")
+      );
+    });
+    if (!hasSpecialty && !hasResourcePoi) {
+      return `'${building.name}' can only be established in a resource location`;
+    }
+  }
 
   // AER p1591: *"only one structure of a given type can exist in a location"*,
   // and *"assets with a level higher than 1 ... consume the lesser asset"*. So
   // a region holds **one asset per chain**, and an upgrade replaces its
-  // predecessor rather than joining it. Before this rule the engine let a
-  // Stone Walls be built beside a Palisade, which silently summed their
-  // capacity, their upkeep and their fortification — the same word meaning
-  // two things in one region.
-  const sameChain = regionState.buildings
-    .map(bid => content.buildings.find(b => b.id === bid))
-    .filter((b): b is NonNullable<typeof b> => b !== undefined && b.chain === building.chain);
-  const standing = sameChain.find(b => b.tier >= building.tier);
-  if (standing) {
-    return standing.tier === building.tier
-      ? `'${building.name}' is already built here`
-      : `'${building.name}' cannot be built here — the ${standing.name} already standing is better`;
+  // predecessor rather than joining it.
+  if (!building.kind || building.kind === "structure") {
+    const sameChain = regionState.buildings
+      .map(bid => content.buildings.find(b => b.id === bid))
+      .filter(
+        (b): b is NonNullable<typeof b> =>
+          b !== undefined && (!b.kind || b.kind === "structure") && b.chain === building.chain
+      );
+    const standing = sameChain.find(b => b.tier >= building.tier);
+    if (standing) {
+      return standing.tier === building.tier
+        ? `'${building.name}' is already built here`
+        : `'${building.name}' cannot be built here — the ${standing.name} already standing is better`;
+    }
   }
 
   const settlement = pack.settlements.find(s => s.kind === "major" && s.regionId === regionId);
@@ -657,8 +945,99 @@ function buildBuilding(ctx: EngineCtx, regionId: number, buildingId: string, act
   }
 
   const turns = building.turns ?? 1;
-  regionState.construction = { buildingId, turnsLeft: turns };
+  regionState.construction = {
+    buildingId,
+    turnsLeft: turns,
+    ...(config.saves.enabled ? { checks: { m: false, w: false, s: false }, pityBonus: 0 } : {})
+  };
   campaign.log.push({ type: "BuildingQueued", regionId, buildingId, cost: building.cost, turns });
+  return null;
+}
+
+function disbandBuilding(
+  ctx: EngineCtx,
+  regionId: number,
+  buildingId: string,
+  suppressCustom?: boolean,
+  actingFaction?: number
+): string | null {
+  const { campaign, content, pack } = ctx;
+  const regionState = campaign.regions[String(regionId)];
+  if (!regionState) return `unknown region ${regionId}`;
+  const factionId =
+    actingFaction ??
+    (isPlayerFaction(campaign, regionState.owner, ctx.resolved) ? regionState.owner : campaign.factionId);
+  if (regionState.owner !== factionId) return `region ${regionId} is not yours`;
+
+  const idx = regionState.buildings.indexOf(buildingId);
+  const isUnderCon = regionState.construction?.buildingId === buildingId;
+  if (idx < 0 && !isUnderCon) {
+    return `'${buildingId}' is neither standing nor under construction in region ${regionId}`;
+  }
+
+  const building = content.buildings.find(b => b.id === buildingId);
+  if (building?.kind === "custom") {
+    if (!suppressCustom) {
+      const cap = campaign.factions[String(factionId)]?.capacity;
+      const up = building.effects.upkeep;
+      const inDeficit =
+        cap &&
+        up &&
+        (((up.m ?? 0) > 0 && cap.m.load > cap.m.gen) ||
+          ((up.w ?? 0) > 0 && cap.w.load > cap.w.gen) ||
+          ((up.s ?? 0) > 0 && cap.s.load > cap.s.gen) ||
+          ((up.c ?? 0) > 0 && cap.c.load > cap.c.gen));
+      if (!inDeficit) {
+        return `cannot disband custom '${building.name}' without suppression penalty (suppressCustom: true)`;
+      }
+    } else {
+      for (const r of pack.regions) {
+        const rs = campaign.regions[String(r.id)];
+        if (rs && rs.owner === factionId) {
+          rs.order = Math.max(0, rs.order - 15);
+        }
+      }
+    }
+  }
+
+  if (idx >= 0) {
+    regionState.buildings.splice(idx, 1);
+  } else if (isUnderCon) {
+    regionState.construction = null;
+  }
+  campaign.log.push({ type: "BuildingDisbanded", regionId, buildingId });
+  return null;
+}
+
+function establishAssetStep(
+  ctx: EngineCtx,
+  regionId: number,
+  spendTreasure?: number,
+  useAtrocity?: boolean,
+  actingFaction?: number
+): string | null {
+  const { campaign, config } = ctx;
+  if (!config.saves.enabled) {
+    return "Domain value checks are disabled (config.saves.enabled is false)";
+  }
+  const regionState = campaign.regions[String(regionId)];
+  if (!regionState) return `unknown region ${regionId}`;
+  const factionId =
+    actingFaction ??
+    (isPlayerFaction(campaign, regionState.owner, ctx.resolved) ? regionState.owner : campaign.factionId);
+  if (regionState.owner !== factionId) return `region ${regionId} is not yours`;
+  if (!regionState.construction) return "no building under construction in this region";
+
+  const res = advanceConstructionStep(ctx, regionId, { spendTreasure, useAtrocity });
+  if (!res) return "failed to advance construction";
+
+  if (regionState.construction) {
+    regionState.construction.stepTakenThisTurn = true;
+  }
+  campaign.log.push(res.event);
+  if (res.completed) {
+    campaign.log.push({ type: "BuildingCompleted", regionId, buildingId: res.buildingId });
+  }
   return null;
 }
 
@@ -772,6 +1151,136 @@ function withdrawTreasure(ctx: EngineCtx, actingFaction?: number): string | null
     gold,
     purse: state.purse
   });
+  return null;
+}
+
+/**
+ * AER p1581: Accumulate Treasure.
+ * Wealth check against DC = 8 + current Treasure. On success, +1d4 Treasure points.
+ * Optionally spend 1,000 gp per point of Wealth to reroll if failed.
+ */
+function accumulateTreasureCmd(
+  ctx: EngineCtx,
+  factionId: number,
+  regionId?: number,
+  rerollWithGold?: boolean
+): string | null {
+  const { campaign, pack } = ctx;
+  const state = campaign.factions[String(factionId)];
+  if (!state?.alive) return `faction ${factionId} is not alive or does not exist`;
+
+  let targetRegionId: number;
+  if (regionId !== undefined) {
+    const rState = campaign.regions[String(regionId)];
+    if (!rState || rState.owner !== factionId) return `region ${regionId} is not owned by faction ${factionId}`;
+    targetRegionId = regionId;
+  } else {
+    const capital = pack.factions.find(f => f.id === factionId)?.capitalRegion;
+    const capOwner = capital ? campaign.regions[String(capital)]?.owner : undefined;
+    if (capOwner === factionId && capital !== undefined) {
+      targetRegionId = capital;
+    } else {
+      const owned = pack.regions.find(r => campaign.regions[String(r.id)]?.owner === factionId);
+      if (!owned) return `faction ${factionId} owns no regions`;
+      targetRegionId = owned.id;
+    }
+  }
+
+  const dc = 8 + (state.treasure ?? 0);
+  let check = rollValueCheck(ctx, targetRegionId, "w");
+  let total = check.roll + check.modifier;
+
+  if (rerollWithGold && total < dc) {
+    const wealthVal = effectiveValue(ctx, targetRegionId, "w");
+    const goldCost = Math.max(1000, 1000 * wealthVal);
+    const purse = ctx.config.economy.capacityMode;
+    const have = purse ? state.purse : state.treasury;
+    if (have >= goldCost) {
+      if (purse) state.purse = Math.round((state.purse - goldCost) * 100) / 100;
+      else state.treasury = Math.round((state.treasury - goldCost) * 100) / 100;
+      check = rollValueCheck(ctx, targetRegionId, "w");
+      total = check.roll + check.modifier;
+    }
+  }
+
+  const success = total >= dc;
+  let gain = 0;
+  if (success) {
+    gain = 1 + Math.floor(rng(campaign) * 4);
+    state.treasure = (state.treasure ?? 0) + gain;
+  }
+
+  campaign.log.push({
+    type: "TreasureAccumulated",
+    factionId,
+    regionId: targetRegionId,
+    roll: check.roll,
+    modifier: check.modifier,
+    dc,
+    success,
+    gain,
+    newTreasure: state.treasure ?? 0
+  });
+
+  return null;
+}
+
+/**
+ * AER p1583: Punish Atrocity.
+ * Consumes an established Scapegoat asset to fatally disband it and remove 1d4+2 Atrocity points.
+ * Cooldown: once per year (4 turns).
+ */
+function punishAtrocityCmd(ctx: EngineCtx, factionId: number, regionId?: number): string | null {
+  const { campaign, pack } = ctx;
+  const state = campaign.factions[String(factionId)];
+  if (!state?.alive) return `faction ${factionId} is not alive or does not exist`;
+
+  if (state.lastPunishAtrocityTurn !== undefined && campaign.turn - state.lastPunishAtrocityTurn < 4) {
+    const left = 4 - (campaign.turn - state.lastPunishAtrocityTurn);
+    return `Punish Atrocity may only be performed once per year (${left} turn${left === 1 ? "" : "s"} remaining)`;
+  }
+
+  let targetRegionState: RegionState | undefined;
+  if (regionId) {
+    const rs = campaign.regions[String(regionId)];
+    if (rs && rs.owner === factionId && rs.buildings.includes("scapegoat")) {
+      targetRegionState = rs;
+    } else {
+      return `region ${regionId} does not contain an established Scapegoat asset`;
+    }
+  } else {
+    for (const r of pack.regions) {
+      const rs = campaign.regions[String(r.id)];
+      if (rs && rs.owner === factionId && rs.buildings.includes("scapegoat")) {
+        targetRegionState = rs;
+        break;
+      }
+    }
+  }
+
+  if (!targetRegionState) {
+    return `faction ${factionId} has no established Scapegoat asset to punish`;
+  }
+
+  const idx = targetRegionState.buildings.indexOf("scapegoat");
+  if (idx >= 0) {
+    targetRegionState.buildings.splice(idx, 1);
+  }
+
+  const reduction = 2 + (1 + Math.floor(rng(campaign) * 4));
+  const oldAtrocity = state.atrocity ?? 0;
+  state.atrocity = Math.max(0, oldAtrocity - reduction);
+  state.lastPunishAtrocityTurn = campaign.turn;
+
+  campaign.log.push({
+    type: "AtrocityPunished",
+    factionId,
+    regionId: targetRegionState.id,
+    sacrificedAssetId: "scapegoat",
+    reduction,
+    newAtrocity: state.atrocity
+  });
+
   return null;
 }
 
@@ -1088,10 +1597,10 @@ export function oddsFor(
   if (!attacker || !defender) return { error: "unknown army" };
   if (attacker.stance === "march") return { error: "march stance cannot attack" };
   const idx = graphIndex(pack);
-  const settlement = majorSettlementAt(pack, defender.cell);
+  const settlement = settlementAt(pack, defender.cell);
   const regionId = idx.cellRegion.get(defender.cell) ?? 0;
   const modifiers: BattleModifiers = {
-    walls: (settlement?.walls ?? 0) + regionWalls(ctx, regionId),
+    walls: (settlement?.walls ?? 0) + (settlement?.kind === "major" ? regionWalls(ctx, regionId) : 0),
     defenderEncamped: defender.stance === "encamp",
     defenderAmbushed: attacker.stance === "ambush",
     attackerCrossedRiver: riverCrossing(pack, attacker.cell, defender.cell),

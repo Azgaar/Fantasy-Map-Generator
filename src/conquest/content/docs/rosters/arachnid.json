@@ -1,0 +1,258 @@
+{
+  "id": "arachnidBase",
+  "name": "Brood-Hive of the Chitin-Spiders",
+  "roster": {
+    "id": "arachnidBase",
+    "units": {
+      "spiderling_swarm": {
+        "name": "Swarming Brood-Spiderlings",
+        "category": "melee",
+        "blocks": 0.24,
+        "attack": 4,
+        "defense": 6,
+        "charge": 3,
+        "missile": 0,
+        "cost": 140,
+        "upkeep": 18,
+        "capacityCost": {
+          "m": 1,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "chitin_guard": {
+        "name": "Chitin-Carapace Web-Spinners",
+        "category": "melee",
+        "blocks": 0.16,
+        "attack": 8,
+        "defense": 12,
+        "charge": 4,
+        "missile": 0,
+        "cost": 320,
+        "upkeep": 38,
+        "capacityCost": {
+          "m": 2,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        },
+        "resistArcane": 0.1
+      },
+      "pincer_guardians": {
+        "name": "Venom-Fang Brood-Guardians",
+        "category": "melee",
+        "blocks": 0.12,
+        "attack": 12,
+        "defense": 11,
+        "charge": 7,
+        "missile": 0,
+        "cost": 450,
+        "upkeep": 54,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 0,
+          "c": 1
+        },
+        "powers": {
+          "hex": 0.06
+        }
+      },
+      "web_spitters": {
+        "name": "Acid-Venom Web-Spitters",
+        "category": "ranged",
+        "blocks": 0.12,
+        "attack": 4,
+        "defense": 7,
+        "charge": 2,
+        "missile": 13,
+        "cost": 380,
+        "upkeep": 46,
+        "capacityCost": {
+          "m": 1,
+          "w": 2,
+          "s": 0,
+          "c": 1
+        },
+        "powers": {
+          "hex": 0.08
+        }
+      },
+      "trapdoor_stalkers": {
+        "name": "Ambush Trapdoor Stalkers",
+        "category": "cavalry",
+        "blocks": 0.07,
+        "attack": 12,
+        "defense": 9,
+        "charge": 14,
+        "missile": 0,
+        "cost": 560,
+        "upkeep": 68,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 0,
+          "c": 1
+        },
+        "powers": {
+          "terror": 0.04
+        }
+      },
+      "wolf_spider_riders": {
+        "name": "Giant Wolf-Spider Skitter-Lancers",
+        "category": "cavalry",
+        "blocks": 0.06,
+        "attack": 13,
+        "defense": 11,
+        "charge": 15,
+        "missile": 0,
+        "cost": 640,
+        "upkeep": 75,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 0,
+          "c": 1
+        },
+        "powers": {
+          "ward": 0.06,
+          "terror": 0.04
+        }
+      },
+      "brood_mother": {
+        "name": "Colossal Dread-Weaver Broodmother",
+        "category": "monster",
+        "blocks": 0.02,
+        "attack": 18,
+        "defense": 16,
+        "charge": 14,
+        "missile": 10,
+        "cost": 1150,
+        "upkeep": 135,
+        "capacityCost": {
+          "m": 4,
+          "w": 4,
+          "s": 2,
+          "c": 1
+        },
+        "resistArcane": 0.25,
+        "powers": {
+          "terror": 0.09,
+          "ward": 0.08,
+          "heal": 10
+        }
+      },
+      "silk_weavers": {
+        "name": "Silk-Weaver Brood-Witches",
+        "category": "spellcaster",
+        "blocks": 0.02,
+        "attack": 4,
+        "defense": 7,
+        "charge": 1,
+        "missile": 16,
+        "cost": 920,
+        "upkeep": 110,
+        "capacityCost": {
+          "m": 1,
+          "w": 2,
+          "s": 3,
+          "c": 2
+        },
+        "resistArcane": 0.2,
+        "powers": {
+          "hex": 0.14,
+          "ward": 0.08,
+          "arcaneSiege": 1
+        }
+      },
+      "acid_catapult": {
+        "name": "Cocoon-Tension Acid Catapult",
+        "category": "artillery",
+        "blocks": 0.03,
+        "attack": 3,
+        "defense": 5,
+        "charge": 0,
+        "missile": 17,
+        "cost": 820,
+        "upkeep": 84,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 1,
+          "c": 1
+        },
+        "powers": {
+          "hex": 0.06,
+          "arcaneSiege": 1
+        }
+      },
+      "hive_watch": {
+        "name": "Hive-Tunnel Chitin Watch",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 3,
+        "defense": 6,
+        "charge": 1,
+        "missile": 0,
+        "cost": 50,
+        "upkeep": 6,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "spitter_nymphs": {
+        "name": "Spitter Nymph Guardians",
+        "category": "ranged",
+        "blocks": 0.1,
+        "attack": 2,
+        "defense": 4,
+        "charge": 1,
+        "missile": 7,
+        "cost": 60,
+        "upkeep": 7,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      }
+    },
+    "recruitable": [
+      "spiderling_swarm",
+      "chitin_guard",
+      "pincer_guardians",
+      "web_spitters",
+      "trapdoor_stalkers",
+      "wolf_spider_riders",
+      "brood_mother",
+      "silk_weavers",
+      "acid_catapult"
+    ],
+    "garrison": {
+      "melee": "hive_watch",
+      "ranged": "spitter_nymphs"
+    },
+    "regimentMap": {
+      "infantry": "chitin_guard",
+      "archers": "web_spitters",
+      "cavalry": "trapdoor_stalkers",
+      "artillery": "acid_catapult"
+    },
+    "caps": {
+      "pincer_guardians": 4,
+      "web_spitters": 4,
+      "trapdoor_stalkers": 3,
+      "wolf_spider_riders": 3,
+      "brood_mother": 2,
+      "silk_weavers": 2,
+      "acid_catapult": 3
+    }
+  },
+  "tech": [],
+  "buildings": []
+}

@@ -1,0 +1,256 @@
+{
+  "id": "constructBase",
+  "name": "Clockwork & Golem Foundries",
+  "roster": {
+    "id": "constructBase",
+    "units": {
+      "cog_infantry": {
+        "name": "Clockwork Cog-Infantry",
+        "category": "melee",
+        "blocks": 0.16,
+        "attack": 6,
+        "defense": 12,
+        "charge": 3,
+        "missile": 0,
+        "cost": 220,
+        "upkeep": 28,
+        "capacityCost": {
+          "m": 2,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        },
+        "resistArcane": 0.15
+      },
+      "ironwrought_cohorts": {
+        "name": "Ironwrought Bulwark Cohorts",
+        "category": "melee",
+        "blocks": 0.14,
+        "requiresGood": 4,
+        "attack": 8,
+        "defense": 16,
+        "charge": 3,
+        "missile": 0,
+        "cost": 460,
+        "upkeep": 54,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 0,
+          "c": 0
+        },
+        "resistArcane": 0.25
+      },
+      "runeblade_juggernauts": {
+        "name": "Heavy Piston-Glaive Juggernauts",
+        "category": "melee",
+        "blocks": 0.1,
+        "requiresGood": 4,
+        "attack": 13,
+        "defense": 15,
+        "charge": 7,
+        "missile": 0,
+        "cost": 650,
+        "upkeep": 75,
+        "capacityCost": {
+          "m": 3,
+          "w": 2,
+          "s": 0,
+          "c": 0
+        },
+        "resistArcane": 0.25
+      },
+      "arbalest_automatons": {
+        "name": "Integrated Repeater-Arm Automatons",
+        "category": "ranged",
+        "blocks": 0.12,
+        "requiresGood": 4,
+        "attack": 4,
+        "defense": 9,
+        "charge": 1,
+        "missile": 14,
+        "cost": 450,
+        "upkeep": 54,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 0,
+          "c": 0
+        },
+        "resistArcane": 0.2
+      },
+      "clockwork_chargers": {
+        "name": "Brass-Steed Lancer Constructs",
+        "category": "cavalry",
+        "blocks": 0.06,
+        "requiresGood": 4,
+        "attack": 12,
+        "defense": 14,
+        "charge": 14,
+        "missile": 0,
+        "cost": 700,
+        "upkeep": 82,
+        "capacityCost": {
+          "m": 3,
+          "w": 3,
+          "s": 0,
+          "c": 0
+        },
+        "resistArcane": 0.2
+      },
+      "shield_guardians": {
+        "name": "Runic Shield-Guardian Golems",
+        "category": "monster",
+        "blocks": 0.05,
+        "attack": 13,
+        "defense": 17,
+        "charge": 9,
+        "missile": 0,
+        "cost": 760,
+        "upkeep": 88,
+        "capacityCost": {
+          "m": 3,
+          "w": 3,
+          "s": 1,
+          "c": 0
+        },
+        "resistArcane": 0.3,
+        "powers": {
+          "ward": 0.12
+        }
+      },
+      "adamantine_colossus": {
+        "name": "Foundry-Forged Adamantine Colossus",
+        "category": "monster",
+        "blocks": 0.02,
+        "attack": 18,
+        "defense": 19,
+        "charge": 14,
+        "missile": 8,
+        "cost": 1250,
+        "upkeep": 140,
+        "capacityCost": {
+          "m": 4,
+          "w": 4,
+          "s": 1,
+          "c": 0
+        },
+        "resistArcane": 0.35,
+        "powers": {
+          "ward": 0.1,
+          "terror": 0.08,
+          "arcaneSiege": 1
+        }
+      },
+      "artificer_forgemasters": {
+        "name": "Grand Artificers & Repair Drones",
+        "category": "spellcaster",
+        "blocks": 0.02,
+        "attack": 6,
+        "defense": 10,
+        "charge": 2,
+        "missile": 13,
+        "cost": 900,
+        "upkeep": 105,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 1,
+          "c": 1
+        },
+        "resistArcane": 0.25,
+        "powers": {
+          "heal": 14,
+          "ward": 0.12
+        }
+      },
+      "steam_mortar": {
+        "name": "High-Pressure Foundry Bombard",
+        "category": "artillery",
+        "blocks": 0.04,
+        "requiresGood": 4,
+        "attack": 2,
+        "defense": 6,
+        "charge": 0,
+        "missile": 19,
+        "cost": 880,
+        "upkeep": 90,
+        "capacityCost": {
+          "m": 2,
+          "w": 4,
+          "s": 0,
+          "c": 0
+        },
+        "powers": {
+          "arcaneSiege": 1
+        }
+      },
+      "sentry_automatons": {
+        "name": "Foundry Sentry Automatons",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 4,
+        "defense": 7,
+        "charge": 1,
+        "missile": 0,
+        "cost": 75,
+        "upkeep": 9,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "bolt_turrets": {
+        "name": "Automated Bolt Turrets",
+        "category": "ranged",
+        "blocks": 0.1,
+        "attack": 2,
+        "defense": 5,
+        "charge": 1,
+        "missile": 8,
+        "cost": 85,
+        "upkeep": 10,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      }
+    },
+    "recruitable": [
+      "cog_infantry",
+      "ironwrought_cohorts",
+      "runeblade_juggernauts",
+      "arbalest_automatons",
+      "clockwork_chargers",
+      "shield_guardians",
+      "adamantine_colossus",
+      "artificer_forgemasters",
+      "steam_mortar"
+    ],
+    "garrison": {
+      "melee": "sentry_automatons",
+      "ranged": "bolt_turrets"
+    },
+    "regimentMap": {
+      "infantry": "ironwrought_cohorts",
+      "archers": "arbalest_automatons",
+      "cavalry": "clockwork_chargers",
+      "artillery": "steam_mortar"
+    },
+    "caps": {
+      "runeblade_juggernauts": 4,
+      "arbalest_automatons": 4,
+      "clockwork_chargers": 3,
+      "shield_guardians": 3,
+      "adamantine_colossus": 2,
+      "artificer_forgemasters": 2,
+      "steam_mortar": 3
+    }
+  },
+  "tech": [],
+  "buildings": []
+}

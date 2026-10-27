@@ -27,8 +27,9 @@
  * threshold — and never touches a die, so flag-off runs stay bit-identical.
  */
 
+import type { BuildingDef } from "../common/content";
 import type { CapacityPoints } from "../common/types";
-import { developmentBonus } from "./capacity";
+import { addFactionAtrocity, developmentBonus, factionCustoms, isGarrisoned, POOLS } from "./capacity";
 import type { EngineCtx } from "./context";
 import { rng } from "./state";
 
@@ -223,25 +224,55 @@ export function regionValues(ctx: EngineCtx, regionId: number): CapacityPoints {
   const region = pack.regions.find(r => r.id === regionId);
   if (!region) return { m: 0, w: 0, s: 0, c: 0 };
 
-  const out: CapacityPoints = { ...region.stats.capacity };
   const rs = campaign.regions[String(regionId)];
-  if (!rs) return out;
+  if (!rs) return { ...region.stats.capacity };
 
-  const buildingById = new Map(content.buildings.map(b => [b.id, b]));
-  for (const bid of rs.buildings) {
-    const cap = buildingById.get(bid)?.effects.capacity;
-    if (!cap) continue;
-    out.m += cap.m;
-    out.w += cap.w;
-    out.s += cap.s;
-    out.c += cap.c;
+  const customs = rs.owner > 0 ? factionCustoms(ctx, rs.owner) : [];
+  const reqGarrison = customs.some(c => c.effects.requiresGarrisonToProduce);
+  if (reqGarrison && !isGarrisoned(ctx, regionId, rs.owner)) {
+    return { m: 0, w: 0, s: 0, c: 0 };
   }
-  // CAPACITY-PLAN Phase 3: a developed settlement generates, so the Domain's
-  // value rises with it — the same +1 W and +1 S the ledger counts. A grown
-  // town is a *bigger* town, and AER scores a Domain on what it generates.
+
+  const out: CapacityPoints = { ...region.stats.capacity };
   const bonus = developmentBonus(ctx, regionId);
   out.w += bonus;
   out.s += bonus;
+
+  const buildingById = new Map(content.buildings.map(b => [b.id, b]));
+  const multipliers = customs.map(c => c.effects.chainMultiplier).filter(Boolean);
+
+  for (const bid of rs.buildings) {
+    const b = buildingById.get(bid);
+    if (!b || b.kind === "custom") continue;
+    const e = b.effects;
+    if (e.conversion) {
+      if (out[e.conversion.from] >= e.conversion.ratio) {
+        if (b.id === "processing_camp") {
+          out.w += e.capacity?.w ?? 2;
+          out.m += 1;
+        } else if (e.capacity) {
+          for (const p of POOLS) {
+            let val = e.capacity[p] ?? 0;
+            for (const cm of multipliers) {
+              if (cm!.chain === b.chain && cm!.pool === p) val *= cm!.factor;
+            }
+            out[p] += val;
+          }
+        }
+      }
+      continue;
+    }
+    if (e.capacity) {
+      for (const p of POOLS) {
+        let val = e.capacity[p] ?? 0;
+        for (const cm of multipliers) {
+          if (cm!.chain === b.chain && cm!.pool === p) val *= cm!.factor;
+        }
+        out[p] += val;
+      }
+    }
+  }
+
   return out;
 }
 
@@ -283,6 +314,18 @@ export function rollSave(ctx: EngineCtx, regionId: number, kind: SaveKind, dcOve
   const modifier = valueModifier(value, cfg.bands, cfg.bandStep);
   const roll = 1 + Math.floor(rng(ctx.campaign) * 20);
   const dc = dcOverride ?? cfg.defaultDc;
+  if (roll === 1 && regionId > 0) {
+    const owner = ctx.campaign.regions[String(regionId)]?.owner;
+    if (owner && owner > 0) {
+      const holdsHellShrine = ctx.pack.regions.some(r => {
+        const rs = ctx.campaign.regions[String(r.id)];
+        return rs?.owner === owner && rs.buildings.includes("hell_shrine");
+      });
+      if (holdsHellShrine) {
+        addFactionAtrocity(ctx, owner, 2, "Hell Shrine natural 1 on saving throw");
+      }
+    }
+  }
   return {
     kind,
     pool,
@@ -322,6 +365,18 @@ export function rollValueCheck(ctx: EngineCtx, regionId: number, pool: Pool): Va
   const activity = regionActivity(ctx, regionId);
   const modifier = valueModifier(value, cfg.bands, cfg.bandStep);
   const roll = 1 + Math.floor(rng(ctx.campaign) * 20);
+  if (roll === 1 && regionId > 0) {
+    const owner = ctx.campaign.regions[String(regionId)]?.owner;
+    if (owner && owner > 0) {
+      const holdsHellShrine = ctx.pack.regions.some(r => {
+        const rs = ctx.campaign.regions[String(r.id)];
+        return rs?.owner === owner && rs.buildings.includes("hell_shrine");
+      });
+      if (holdsHellShrine) {
+        addFactionAtrocity(ctx, owner, 2, "Hell Shrine natural 1 on value check");
+      }
+    }
+  }
   return {
     pool,
     raw,
@@ -330,4 +385,35 @@ export function rollValueCheck(ctx: EngineCtx, regionId: number, pool: Pool): Va
     modifier,
     roll
   };
+}
+
+/**
+ * Difficulty class for each Domain value check required to establish an asset.
+ *
+ * AER p1583 / p1719: establishing an asset requires three value checks (M, W, S)
+ * against DC = 12 + max(benefit, upkeep in that pool).
+ * Each failed check for this project grants a cumulative pity bonus (-1 DC).
+ * Minimum DC is 2 (a natural 1 on 1d20 always misses unless DC <= 1).
+ */
+export function assetCheckDifficulties(
+  building: BuildingDef,
+  pityBonus = 0,
+  domainAtrocity = 0
+): { m: number; w: number; s: number } {
+  const pools = ["m", "w", "s"] as const;
+  const out = { m: 12, w: 12, s: 12 };
+  if (building.id === "scapegoat") {
+    const baseDc = 5 + domainAtrocity;
+    for (const p of pools) {
+      out[p] = Math.max(2, baseDc - pityBonus);
+    }
+    return out;
+  }
+  for (const p of pools) {
+    const gen = building.effects.capacity?.[p] ?? 0;
+    const up = building.effects.upkeep?.[p] ?? 0;
+    const mag = Math.max(gen, up);
+    out[p] = Math.max(2, 12 + mag - pityBonus);
+  }
+  return out;
 }

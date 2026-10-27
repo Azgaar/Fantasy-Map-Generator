@@ -21,10 +21,18 @@ import { currentContent } from "@/conquest/content/store";
 import { resolveForPack } from "@/conquest/engine/common/content";
 import type { MapPack } from "@/conquest/engine/common/types";
 import { compileAzgaar } from "@/conquest/engine/compiler/index";
-import type { Command, EngineCtx } from "@/conquest/engine/game/commands";
+import {
+  addFactionAtrocity,
+  atrocityUpkeepPenalty,
+  effectiveAtrocity,
+  recomputeCapacity
+} from "@/conquest/engine/game/capacity";
+import { applyCommand, type Command, type EngineCtx } from "@/conquest/engine/game/commands";
 import { type CampaignConfig, DEFAULT_CONFIG } from "@/conquest/engine/game/config";
+import { economyTick } from "@/conquest/engine/game/economy";
 import {
   ACTIVITY_NAMES,
+  assetCheckDifficulties,
   DEFAULT_BAND_STEP,
   DEFAULT_BANDS,
   domainValue,
@@ -186,7 +194,7 @@ describe("Domain scope is the region (CAPACITY-PLAN Phase 4)", () => {
     // M is the one that grew, and it grew on purpose (§4.5).
     expect(worst.m).toBe(18);
     expect(worst.s).toBe(6);
-    expect(worst.w).toBe(7);
+    expect(worst.w).toBe(8);
     expect(worst.c).toBe(5);
   });
 
@@ -462,5 +470,291 @@ describe("region activities (AER line 467)", () => {
     for (const r of pack.regions) {
       expect(regionActivity(a, r.id)?.name ?? null).toBe(regionActivity(b, r.id)?.name ?? null);
     }
+  });
+});
+
+describe("Phase 2: 3-Check Establish an Asset & Disband", () => {
+  test("assetCheckDifficulties matches AER formula: 12 + max(benefit, upkeep) - pity", () => {
+    const palisade = content.buildings.find(b => b.id === "walls1")!;
+    const temple3 = content.buildings.find(b => b.id === "temple3")!;
+    expect(assetCheckDifficulties(palisade, 0)).toEqual({ m: 14, w: 12, s: 12 });
+    expect(assetCheckDifficulties(temple3, 0)).toEqual({ m: 12, w: 14, s: 20 });
+    // Pity bonus reduces DC by 1 per point down to min 2
+    expect(assetCheckDifficulties(palisade, 1)).toEqual({ m: 13, w: 11, s: 11 });
+    expect(assetCheckDifficulties(temple3, 10)).toEqual({ m: 2, w: 4, s: 10 });
+  });
+
+  test("maxInstances allows multiple copies up to limit (Siege Supplies: 2)", () => {
+    const { ctx } = boot(savesConfig(false));
+    const factionId = 1;
+    const regionId = pack.regions.find(r => ctx.campaign.regions[String(r.id)]!.owner === factionId)!.id;
+    const rs = ctx.campaign.regions[String(regionId)]!;
+    rs.buildings = [];
+    rs.construction = null;
+    ctx.campaign.factions[String(factionId)]!.treasury += 5000;
+
+    // First instance of siege_supplies
+    expect(applyCommand(ctx, { type: "BuildBuilding", regionId, buildingId: "siege_supplies" }).ok).toBe(true);
+    rs.buildings.push("siege_supplies");
+    rs.construction = null;
+
+    // Second instance allowed (maxInstances: 2)
+    expect(applyCommand(ctx, { type: "BuildBuilding", regionId, buildingId: "siege_supplies" }).ok).toBe(true);
+    rs.buildings.push("siege_supplies");
+    rs.construction = null;
+
+    // Third instance rejected
+    const third = applyCommand(ctx, { type: "BuildBuilding", regionId, buildingId: "siege_supplies" });
+    expect(third.ok).toBe(false);
+    expect(third.error).toContain("already built here");
+  });
+
+  test("incompatibleWith prevents conflicting assets (Slavery vs Dwarf Friend)", () => {
+    const { ctx } = boot(savesConfig(false));
+    const factionId = 1;
+    const regionId = pack.regions.find(r => ctx.campaign.regions[String(r.id)]!.owner === factionId)!.id;
+    const rs = ctx.campaign.regions[String(regionId)]!;
+    rs.buildings = ["custom_slavery"];
+    rs.construction = null;
+
+    // Trying to build custom_dwarf_friend when slavery is standing fails
+    const res = applyCommand(ctx, { type: "BuildBuilding", regionId, buildingId: "custom_dwarf_friend" });
+    expect(res.ok).toBe(false);
+    expect(res.error).toContain("incompatible");
+  });
+
+  test("customs are unique across the entire faction domain", () => {
+    const { ctx } = boot(savesConfig(false));
+    const factionId = 1;
+    const owned = pack.regions.filter(r => ctx.campaign.regions[String(r.id)]!.owner === factionId);
+    expect(owned.length).toBeGreaterThanOrEqual(2);
+    const r1 = owned[0]!.id;
+    const r2 = owned[1]!.id;
+
+    const rs1 = ctx.campaign.regions[String(r1)]!;
+    rs1.buildings.push("custom_mercantile");
+
+    // Building the same custom in a second region is rejected
+    const res = applyCommand(ctx, { type: "BuildBuilding", regionId: r2, buildingId: "custom_mercantile" });
+    expect(res.ok).toBe(false);
+    expect(res.error).toContain("already been established in your domain");
+  });
+
+  test("disbanding removes assets; customs require suppressCustom penalty unless in deficit", () => {
+    const { ctx } = boot(savesConfig(false));
+    const factionId = 1;
+    const regionId = pack.regions.find(r => ctx.campaign.regions[String(r.id)]!.owner === factionId)!.id;
+    const rs = ctx.campaign.regions[String(regionId)]!;
+    rs.buildings = ["walls1", "custom_spartan_culture"];
+
+    // Disband normal building
+    const disWalls = applyCommand(ctx, { type: "DisbandBuilding", regionId, buildingId: "walls1" });
+    expect(disWalls.ok).toBe(true);
+    expect(rs.buildings).not.toContain("walls1");
+
+    // Disband custom without suppressCustom is refused
+    const disCustomRefused = applyCommand(ctx, {
+      type: "DisbandBuilding",
+      regionId,
+      buildingId: "custom_spartan_culture"
+    });
+    expect(disCustomRefused.ok).toBe(false);
+    expect(disCustomRefused.error).toContain("suppressCustom");
+
+    // Disband custom with suppressCustom succeeds and inflicts order penalty
+    const orderBefore = rs.order;
+    const disCustomOk = applyCommand(ctx, {
+      type: "DisbandBuilding",
+      regionId,
+      buildingId: "custom_spartan_culture",
+      suppressCustom: true
+    });
+    expect(disCustomOk.ok).toBe(true);
+    expect(rs.buildings).not.toContain("custom_spartan_culture");
+    expect(rs.order).toBe(Math.max(0, orderBefore - 15));
+  });
+
+  test("3-check construction lifecycle with saves.enabled", () => {
+    const { ctx } = boot(savesConfig(true));
+    const factionId = 1;
+    const regionId = pack.regions.find(r => ctx.campaign.regions[String(r.id)]!.owner === factionId)!.id;
+    const rs = ctx.campaign.regions[String(regionId)]!;
+    rs.buildings = [];
+    rs.construction = null;
+
+    // Queue palisade
+    const buildRes = applyCommand(ctx, { type: "BuildBuilding", regionId, buildingId: "walls1" });
+    expect(buildRes.ok).toBe(true);
+    expect(rs.construction).toBeDefined();
+    expect(rs.construction!.checks).toEqual({ m: false, w: false, s: false });
+    expect(rs.construction!.pityBonus).toBe(0);
+
+    // Explicit step advances checks
+    let stepCount = 0;
+    while (rs.construction && stepCount < 20) {
+      stepCount++;
+      const step = applyCommand(ctx, { type: "EstablishAssetStep", regionId, spendTreasure: 10 });
+      expect(step.ok).toBe(true);
+    }
+    // Completed building moves into buildings array
+    expect(rs.construction).toBeNull();
+    expect(rs.buildings).toContain("walls1");
+  });
+});
+
+describe("Phase 4: Treasure & Atrocity Integration", () => {
+  test("AccumulateTreasure rolls against 8 + treasure and increments on success", () => {
+    const { ctx } = boot(savesConfig(true));
+    const factionId = 1;
+    const state = ctx.campaign.factions[String(factionId)]!;
+    state.treasure = 2;
+
+    const res = applyCommand(ctx, { type: "AccumulateTreasure", factionId });
+    expect(res.ok).toBe(true);
+    const event = ctx.campaign.log.find(e => e.type === "TreasureAccumulated");
+    expect(event).toBeDefined();
+    if (event && event.type === "TreasureAccumulated") {
+      expect(event.dc).toBe(10); // 8 + 2
+      if (event.success) {
+        expect(state.treasure).toBeGreaterThanOrEqual(3);
+      } else {
+        expect(state.treasure).toBe(2);
+      }
+    }
+  });
+
+  test("Scapegoat DC scales with Domain Atrocity (5 + atrocity)", () => {
+    const building = content.buildings.find(b => b.id === "scapegoat")!;
+    expect(building).toBeDefined();
+    const dcsLow = assetCheckDifficulties(building, 0, 3);
+    expect(dcsLow).toEqual({ m: 8, w: 8, s: 8 });
+
+    const dcsHigh = assetCheckDifficulties(building, 1, 10);
+    expect(dcsHigh).toEqual({ m: 14, w: 14, s: 14 });
+  });
+
+  test("PunishAtrocity consumes Scapegoat asset, reduces Atrocity by 1d4+2, and enforces 4-turn cooldown", () => {
+    const { ctx } = boot(savesConfig(true));
+    const factionId = 1;
+    const state = ctx.campaign.factions[String(factionId)]!;
+    state.atrocity = 10;
+    ctx.campaign.turn = 5;
+
+    // Fail if no scapegoat asset exists
+    const failRes = applyCommand(ctx, { type: "PunishAtrocity", factionId });
+    expect(failRes.ok).toBe(false);
+    expect(failRes.error).toContain("no established Scapegoat");
+
+    // Establish scapegoat
+    const regionId = pack.regions.find(r => ctx.campaign.regions[String(r.id)]!.owner === factionId)!.id;
+    const rs = ctx.campaign.regions[String(regionId)]!;
+    rs.buildings.push("scapegoat");
+
+    // Punish Atrocity succeeds
+    const okRes = applyCommand(ctx, { type: "PunishAtrocity", factionId, regionId });
+    expect(okRes.ok).toBe(true);
+    expect(rs.buildings).not.toContain("scapegoat");
+    expect(state.atrocity).toBeLessThanOrEqual(7); // 10 - (1d4+2) <= 7
+    expect(state.lastPunishAtrocityTurn).toBe(5);
+
+    // Immediate re-use is blocked by yearly cooldown
+    rs.buildings.push("scapegoat");
+    const cdRes = applyCommand(ctx, { type: "PunishAtrocity", factionId, regionId });
+    expect(cdRes.ok).toBe(false);
+    expect(cdRes.error).toContain("once per year");
+
+    // After 4 turns, allowed again
+    ctx.campaign.turn = 9;
+    const allowRes = applyCommand(ctx, { type: "PunishAtrocity", factionId, regionId });
+    expect(allowRes.ok).toBe(true);
+  });
+
+  test("Forced asset check via useAtrocity guarantees check success and adds deficit to Atrocity", () => {
+    const { ctx } = boot(savesConfig(true));
+    const factionId = 1;
+    const regionId = pack.regions.find(r => ctx.campaign.regions[String(r.id)]!.owner === factionId)!.id;
+    const rs = ctx.campaign.regions[String(regionId)]!;
+    rs.buildings = [];
+    rs.construction = null;
+    const state = ctx.campaign.factions[String(factionId)]!;
+    state.atrocity = 0;
+
+    applyCommand(ctx, { type: "BuildBuilding", regionId, buildingId: "walls1" });
+    const step = applyCommand(ctx, { type: "EstablishAssetStep", regionId, useAtrocity: true });
+    expect(step.ok).toBe(true);
+    const event = step.events.find(e => e.type === "AssetCheckRolled");
+    expect(event).toBeDefined();
+    if (event && event.type === "AssetCheckRolled") {
+      expect(event.success).toBe(true);
+    }
+  });
+
+  test("Atrocity upkeep penalty applies (2 + floor(effAtrocity/4)) to M, W, and S load; Hell Shrine ignores 5 points", () => {
+    const { ctx } = boot(savesConfig(true));
+    const factionId = 1;
+    const state = ctx.campaign.factions[String(factionId)]!;
+    const ownedRegions = pack.regions.filter(r => ctx.campaign.regions[String(r.id)]!.owner === factionId);
+
+    // Base with 0 atrocity
+    state.atrocity = 0;
+    recomputeCapacity(ctx);
+    const baseCap = {
+      m: state.capacity!.m.load,
+      w: state.capacity!.w.load,
+      s: state.capacity!.s.load
+    };
+
+    // With 3 atrocity -> penalty is 2 + floor(3/4) = 2
+    state.atrocity = 3;
+    recomputeCapacity(ctx);
+    expect(state.capacity!.m.load).toBe(baseCap.m + 2);
+    expect(state.capacity!.w.load).toBe(baseCap.w + 2);
+    expect(state.capacity!.s.load).toBe(baseCap.s + 2);
+
+    // With 8 atrocity -> penalty is 2 + floor(8/4) = 4
+    state.atrocity = 8;
+    recomputeCapacity(ctx);
+    expect(state.capacity!.m.load).toBe(baseCap.m + 4);
+    expect(state.capacity!.w.load).toBe(baseCap.w + 4);
+    expect(state.capacity!.s.load).toBe(baseCap.s + 4);
+
+    // With Hell Shrine (ignores 5 atrocity) -> effective is 8 - 5 = 3 -> penalty is 2
+    const firstRs = ctx.campaign.regions[String(ownedRegions[0]!.id)]!;
+    firstRs.buildings.push("hell_shrine");
+    recomputeCapacity(ctx);
+    expect(effectiveAtrocity(ctx, factionId)).toBe(3);
+    expect(atrocityUpkeepPenalty(effectiveAtrocity(ctx, factionId))).toBe(2);
+  });
+
+  test("Brutal Tyranny halves Atrocity point gains", () => {
+    const { ctx } = boot(savesConfig(true));
+    const factionId = 1;
+    const state = ctx.campaign.factions[String(factionId)]!;
+    state.atrocity = 0;
+
+    // Normal gain
+    addFactionAtrocity(ctx, factionId, 5, "test");
+    expect(state.atrocity).toBe(5);
+
+    // With Brutal Tyranny
+    const regionId = pack.regions.find(r => ctx.campaign.regions[String(r.id)]!.owner === factionId)!.id;
+    ctx.campaign.regions[String(regionId)]!.buildings.push("custom_brutal_tyranny");
+
+    addFactionAtrocity(ctx, factionId, 5, "test2");
+    // 5 halved rounded down = 2. Total becomes 5 + 2 = 7
+    expect(state.atrocity).toBe(7);
+  });
+
+  test("Devil Worshipers decreases Atrocity by 1 on economyTick", () => {
+    const { ctx } = boot(savesConfig(true));
+    const factionId = 1;
+    const state = ctx.campaign.factions[String(factionId)]!;
+    state.atrocity = 4;
+
+    const regionId = pack.regions.find(r => ctx.campaign.regions[String(r.id)]!.owner === factionId)!.id;
+    ctx.campaign.regions[String(regionId)]!.buildings.push("custom_devil_worshipers");
+
+    economyTick(ctx);
+    expect(state.atrocity).toBe(3);
   });
 });

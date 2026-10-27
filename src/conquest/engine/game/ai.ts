@@ -19,7 +19,7 @@ import { graphIndex, regionDistance } from "./graph";
 import { findPath } from "./movement";
 import { siegeOf } from "./sieges";
 import { BRIGAND_FACTION, isPlayerFaction, rng } from "./state";
-import { garrisonUnits } from "./units";
+import { garrisonUnits, minorGarrisonUnits } from "./units";
 
 export function enemiesOf(campaign: import("./state").Campaign, factionId: number): Set<number> {
   const set = new Set<number>();
@@ -257,10 +257,9 @@ function actAtWar(ctx: EngineCtx, factionId: number, enemies: Set<number>): void
   // 3. Focused offense with the armies that didn't spend the turn defending.
   if (defended) return;
   const focus = focusTarget(ctx, factionId, enemies);
-  const majorByCell = new Map<number, { regionId: number; walls: number }>();
+  const settlementsByCell = new Map<number, import("../common/types").Settlement>();
   for (const s of pack.settlements) {
-    if (s.kind !== "major") continue;
-    majorByCell.set(s.cell, { regionId: s.regionId, walls: s.walls });
+    settlementsByCell.set(s.cell, s);
   }
 
   const armies = Object.values(campaign.armies)
@@ -282,33 +281,47 @@ function actAtWar(ctx: EngineCtx, factionId: number, enemies: Set<number>): void
       continue;
     }
 
-    // On an enemy settlement: assault when strong or siege-worn, else besiege.
-    const settlement = majorByCell.get(army.cell);
-    const regionOwner = settlement ? (campaign.regions[String(settlement.regionId)]?.owner ?? 0) : 0;
+    // On an enemy settlement: assault when strong or siege-worn, else besiege (major).
+    const settlement = settlementsByCell.get(army.cell);
+    const regionState = settlement ? campaign.regions[String(settlement.regionId)] : undefined;
+    const regionOwner = regionState?.owner ?? 0;
     if (settlement && enemies.has(regionOwner)) {
       const ownerRoster = resolved.factions[String(regionOwner)]!.roster;
-      const siege = siegeOf(campaign, settlement.regionId);
-      const weaken = siege
-        ? Math.max(config.sieges.garrisonWeakenFloor, 1 - siege.progress * config.sieges.garrisonWeakenPerTick)
-        : 1;
-      const garrisonPower =
-        armyPower(garrisonUnits(ownerRoster, types, settlement.walls), types) *
-        (1 + settlement.walls * config.battle.wallBonusPerTier) *
-        weaken;
-      const myPower = armyPower(army.units, types);
-      if (myPower > garrisonPower * 1.4 || (siege?.byArmyId === army.id && siege.progress >= 2)) {
-        apply(ctx, { type: "AssaultSettlement", armyId: army.id });
-        continue;
-      }
-      if (!siege) {
-        rationale(
-          ctx,
-          factionId,
-          "siege",
-          `${army.id} lays siege (garrison ${Math.round(garrisonPower)}, ours ${Math.round(myPower)})`
-        );
-        apply(ctx, { type: "SiegeSettlement", armyId: army.id });
-        continue;
+      if (settlement.kind === "minor") {
+        if (!regionState?.occupiedSettlements?.includes(settlement.id)) {
+          const minorGarrison = minorGarrisonUnits(ownerRoster, types, settlement.tier, settlement.walls);
+          const garrisonPower =
+            armyPower(minorGarrison, types) * (1 + settlement.walls * config.battle.wallBonusPerTier);
+          const myPower = armyPower(army.units, types);
+          if (myPower > garrisonPower * 1.1) {
+            apply(ctx, { type: "AssaultSettlement", armyId: army.id });
+            continue;
+          }
+        }
+      } else {
+        const siege = siegeOf(campaign, settlement.regionId);
+        const weaken = siege
+          ? Math.max(config.sieges.garrisonWeakenFloor, 1 - siege.progress * config.sieges.garrisonWeakenPerTick)
+          : 1;
+        const garrisonPower =
+          armyPower(garrisonUnits(ownerRoster, types, settlement.walls), types) *
+          (1 + settlement.walls * config.battle.wallBonusPerTier) *
+          weaken;
+        const myPower = armyPower(army.units, types);
+        if (myPower > garrisonPower * 1.4 || (siege?.byArmyId === army.id && siege.progress >= 2)) {
+          apply(ctx, { type: "AssaultSettlement", armyId: army.id });
+          continue;
+        }
+        if (!siege) {
+          rationale(
+            ctx,
+            factionId,
+            "siege",
+            `${army.id} lays siege (garrison ${Math.round(garrisonPower)}, ours ${Math.round(myPower)})`
+          );
+          apply(ctx, { type: "SiegeSettlement", armyId: army.id });
+          continue;
+        }
       }
     }
 

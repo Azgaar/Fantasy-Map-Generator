@@ -177,26 +177,39 @@ describe("the shipped ruleset (total-war/content/docs)", () => {
     expect(loaded.warnings).toEqual([]);
   });
 
-  test("expected inventory: 19 rosters, and nothing state-specific", () => {
+  test("expected inventory: 32 rosters, and nothing state-specific", () => {
     expect(Object.keys(content.rosters).sort()).toEqual(
       [
+        "arachnidBase",
+        "beastfolkBase",
+        "celestialBase",
         "chaosBase",
         "chivalricBase",
         "commonBase",
+        "constructBase",
         "darkElfBase",
+        "demonBase",
+        "dragonbornBase",
         "dwarfBase",
         "eastAsiaBase",
+        "eldritchBase",
+        "elementalBase",
         "elfBase",
         "empireBase",
+        "feyBase",
+        "halflingBase",
         "infernalDwarfBase",
         "lizardmenBase",
+        "merfolkBase",
         "mughalBase",
+        "ogreBase",
         "orcBase",
         "ottomanBase",
         "renaissanceBase",
         "skavenBase",
         "steppeBase",
         "tombKingsBase",
+        "tribalBase",
         "vampireBase",
         "woodElfBase"
       ].sort()
@@ -227,7 +240,7 @@ describe("the shipped ruleset (total-war/content/docs)", () => {
     expect(resolved.factions["6"]!.rosterId).toBe("elfBase"); // Eldar (Elfish)
     expect(resolved.factions["14"]!.rosterId).toBe("orcBase"); // Ugluk (Orkish)
     expect(resolved.factions["15"]!.rosterId).toBe("orcBase"); // Uruk (Orkish)
-    expect(resolved.factions["10"]!.rosterId).toBe("skavenBase"); // Arago (Arachnid)
+    expect(resolved.factions["10"]!.rosterId).toBe("arachnidBase"); // Arago (Arachnid)
     expect(resolved.factions["8"]!.rosterId).toBe("dwarfBase"); // Khazadur (Dwarven)
     expect(resolved.factions["2"]!.rosterId).toBe("commonBase"); // Dulandir (Human)
     expect(resolved.factions["7"]!.rosterId).toBe("commonBase"); // Anor (Human)
@@ -256,7 +269,20 @@ describe("the shipped ruleset (total-war/content/docs)", () => {
       "darkElfBase",
       "skavenBase",
       "lizardmenBase",
-      "infernalDwarfBase"
+      "infernalDwarfBase",
+      "ogreBase",
+      "demonBase",
+      "beastfolkBase",
+      "halflingBase",
+      "feyBase",
+      "dragonbornBase",
+      "celestialBase",
+      "merfolkBase",
+      "elementalBase",
+      "constructBase",
+      "eldritchBase",
+      "tribalBase",
+      "arachnidBase"
     ];
 
     for (const rId of oldWorldRosters) {
@@ -311,6 +337,11 @@ describe("the shipped ruleset (total-war/content/docs)", () => {
     expect(empire.units.demigryph_knights?.category).toBe("monster");
     expect(empire.units.collegiate_wizards?.category).toBe("spellcaster");
     expect(empire.units.steam_behemoth?.category).toBe("monster");
+
+    const arachnid = content.rosters.arachnidBase!;
+    expect(arachnid.units.brood_mother?.category).toBe("monster");
+    expect(arachnid.units.silk_weavers?.category).toBe("spellcaster");
+    expect(arachnid.units.brood_mother?.powers?.heal).toBe(10);
   });
 
   test("Old World culture name inference maps to appropriate base rosters", () => {
@@ -322,7 +353,9 @@ describe("the shipped ruleset (total-war/content/docs)", () => {
       ["Khazadur (Dwarven)", "dwarfBase"],
       ["Aj'Snaga (Serpents)", "lizardmenBase"],
       ["Trow (Dark Elfish)", "darkElfBase"],
-      ["Arago (Arachnid)", "skavenBase"],
+      ["Arago (Arachnid)", "arachnidBase"],
+      ["Rakhnid", "arachnidBase"],
+      ["Skaven (Ratmen)", "skavenBase"],
       ["Ugluk (Orkish)", "orcBase"],
       ["Sylvan Weald", "woodElfBase"],
       ["Khemri Dynasties", "tombKingsBase"],
@@ -334,6 +367,61 @@ describe("the shipped ruleset (total-war/content/docs)", () => {
     for (const [cultureName, expectedRoster] of testCases) {
       const rosterId = inferRosterForCulture(cultureName, content.rosters, "commonBase");
       expect(rosterId, `culture '${cultureName}' should resolve to '${expectedRoster}'`).toBe(expectedRoster);
+    }
+  });
+
+  test("RPG Fantasy cultures resolve to dedicated force rosters with zero fallbacks", () => {
+    const rpgCultures: [string, string][] = [
+      ["Quenar (High Elf)", "elfBase"],
+      ["Sylvan (Wood Elf)", "woodElfBase"],
+      ["Drow (Dark Elf)", "darkElfBase"],
+      ["Aelvar (Sea Elf)", "merfolkBase"],
+      ["Khazad (Mountain Dwarf)", "dwarfBase"],
+      ["Hearthdwarf (Hill Dwarf)", "dwarfBase"],
+      ["Duergar (Deep Dwarf)", "infernalDwarfBase"],
+      ["Halfling (Hobbit)", "halflingBase"],
+      ["Gnome (Tinker)", "halflingBase"],
+      ["Orc", "orcBase"],
+      ["Goblin", "orcBase"],
+      ["Hobgoblin (Legion)", "orcBase"],
+      ["Skaven (Ratmen)", "skavenBase"],
+      ["Troll", "ogreBase"],
+      ["Ogre", "ogreBase"],
+      ["Dragonborn", "dragonbornBase"],
+      ["Kobold", "orcBase"],
+      ["Lizardfolk", "lizardmenBase"],
+      ["Lionkin (Catfolk)", "beastfolkBase"],
+      ["Wolfkin (Werefolk)", "beastfolkBase"],
+      ["Aarakocra (Birdfolk)", "beastfolkBase"],
+      ["Minotaur (Bullkin)", "beastfolkBase"],
+      ["Fey (Fair Folk)", "feyBase"],
+      ["Sidhe (Lake Fey)", "feyBase"],
+      ["Genasi (Elemental)", "elementalBase"],
+      ["Tiefling (Fiendblood)", "demonBase"],
+      ["Demon (Fiend)", "demonBase"],
+      ["Vampire (Nightblood)", "vampireBase"],
+      ["Lich (Necromancer)", "tombKingsBase"],
+      ["Aasimar (Celestial)", "celestialBase"],
+      ["Chosen (Oracle)", "celestialBase"],
+      ["Warforged (Construct)", "constructBase"],
+      ["Aboleth (Eldritch)", "eldritchBase"],
+      ["Mindflayer (Eldritch)", "eldritchBase"],
+      ["Imperial (Human)", "empireBase"],
+      ["Feudal (Human)", "chivalricBase"],
+      ["Nordlander (Human)", "chaosBase"],
+      ["Steppe Rider (Human)", "steppeBase"],
+      ["Desert Nomad (Human)", "ottomanBase"],
+      ["Islander (Human)", "tribalBase"],
+      ["Jungle Tribe (Human)", "tribalBase"],
+      ["Tundra Tribe (Human)", "tribalBase"],
+      ["Eastern Empire (Human)", "eastAsiaBase"],
+      ["Southern Kingdom (Human)", "mughalBase"]
+    ];
+
+    expect(rpgCultures).toHaveLength(44);
+    for (const [cultureName, expectedRoster] of rpgCultures) {
+      const rosterId = inferRosterForCulture(cultureName, content.rosters, "commonBase");
+      expect(rosterId, `rpg culture '${cultureName}' should resolve to '${expectedRoster}'`).toBe(expectedRoster);
     }
   });
 

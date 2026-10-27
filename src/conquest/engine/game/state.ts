@@ -76,16 +76,42 @@ interface FactionState {
    */
   withdrawalsThisTurn: number;
   eliminatedOnTurn?: number;
+  /**
+   * AER Domain Treasure points. Stored portable domain wealth accumulated via
+   * AccumulateTreasure domain actions, spent to boost asset checks or auto-rescue missed rolls.
+   */
+  treasure?: number;
+  /**
+   * AER Domain Atrocity score. Accumulates from ruthless ruler acts, forced checks,
+   * or dark cult assets; inflicts domain-wide capacity load penalties.
+   */
+  atrocity?: number;
+  /**
+   * Turn when PunishAtrocity scapegoat action was last used (cooldown: 4 turns / 1 year).
+   */
+  lastPunishAtrocityTurn?: number;
 }
 
-interface RegionState {
+export interface ConstructionProject {
+  buildingId: string;
+  /** Legacy turn countdown when `config.saves.enabled` is false. */
+  turnsLeft: number;
+  /** Three required AER value checks (M, W, S). */
+  checks?: { m: boolean; w: boolean; s: boolean };
+  /** Cumulative difficulty reduction (+1 per failed check while continuously establishing). */
+  pityBonus?: number;
+  /** Whether an EstablishAssetStep was already performed this turn. */
+  stepTakenThisTurn?: boolean;
+}
+
+export interface RegionState {
   id: number;
   owner: number;
   order: number;
   /** Completed building ids. */
   buildings: string[];
   /** Single-slot construction queue. */
-  construction: { buildingId: string; turnsLeft: number } | null;
+  construction: ConstructionProject | null;
   /**
    * A development in progress (CAPACITY-PLAN Phase 3): the settlement being
    * grown, and the turns left. It commits Wealth for as long as it runs — the
@@ -116,6 +142,8 @@ interface RegionState {
   lastIncome?: number;
   /** Corruption fraction applied last tick (§5.6) — for the region panel. */
   corruption?: number;
+  /** IDs of minor settlements currently occupied by foreign factions. */
+  occupiedSettlements?: number[];
 }
 
 interface ActiveWar {
@@ -151,6 +179,8 @@ export interface Siege {
   sinceTurn: number;
   /** Escalation ticks — each weakens the garrison (§5.5). */
   progress: number;
+  /** Remaining siege supplies in Hit Dice buffering the siege. */
+  suppliesRemaining?: number;
 }
 
 export type SkillBranch = "combat" | "campaign" | "economy";
@@ -300,7 +330,9 @@ export function createCampaign(opts: CreateOptions): Campaign {
       victorySetId: rf.victorySetId,
       reliability: 100,
       lastIncome: 0,
-      lastExpenses: 0
+      lastExpenses: 0,
+      treasure: 0,
+      atrocity: 0
     };
   }
   // Synthetic brigand faction — hostile to everyone, never in victory/AI scans.
@@ -316,7 +348,9 @@ export function createCampaign(opts: CreateOptions): Campaign {
     victorySetId: resolved.pack.defaultVictory,
     reliability: 100,
     lastIncome: 0,
-    lastExpenses: 0
+    lastExpenses: 0,
+    treasure: 0,
+    atrocity: 0
   };
 
   const regions: Record<string, RegionState> = {};
@@ -330,7 +364,8 @@ export function createCampaign(opts: CreateOptions): Campaign {
       development: null,
       stability: 0,
       unrestTurns: 0,
-      populationScale: 1
+      populationScale: 1,
+      occupiedSettlements: []
     };
   }
 
@@ -343,6 +378,7 @@ export function createCampaign(opts: CreateOptions): Campaign {
   const tier1ByChain = new Map<string, string>();
   for (const b of opts.content?.buildings ?? []) {
     if (b.tier !== 1) continue;
+    if (b.kind && b.kind !== "structure") continue;
     if (tier1ByChain.has(b.chain)) continue;
     tier1ByChain.set(b.chain, b.id);
   }
@@ -355,6 +391,8 @@ export function createCampaign(opts: CreateOptions): Campaign {
     harbor: "maritime",
     temple: "order",
     shadows: "shadows",
+    school: "school",
+    militia: "militia",
     // "walls" and "barracks" are not recipe chains: since §4.5 they are a
     // province's *footing*, a tier resolved below against the content.
     walls: "defense",

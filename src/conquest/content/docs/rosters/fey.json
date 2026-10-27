@@ -1,0 +1,262 @@
+{
+  "id": "feyBase",
+  "name": "Seelie & Twilight Fey Courts",
+  "roster": {
+    "id": "feyBase",
+    "units": {
+      "gossamer_dancers": {
+        "name": "Gossamer Thorn-Bladedancers",
+        "category": "melee",
+        "blocks": 0.12,
+        "attack": 12,
+        "defense": 11,
+        "charge": 7,
+        "missile": 0,
+        "cost": 460,
+        "upkeep": 56,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 1,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.12
+        }
+      },
+      "sidhe_spears": {
+        "name": "Silver-Mist Sidhe Phalanx",
+        "category": "melee",
+        "blocks": 0.14,
+        "attack": 9,
+        "defense": 14,
+        "charge": 4,
+        "missile": 0,
+        "cost": 420,
+        "upkeep": 50,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 1,
+          "c": 0
+        },
+        "resistArcane": 0.2,
+        "powers": {
+          "ward": 0.08
+        }
+      },
+      "pixie_dartswarms": {
+        "name": "Glamour-Wing Pixie Dart Swarms",
+        "category": "ranged",
+        "blocks": 0.14,
+        "attack": 3,
+        "defense": 8,
+        "charge": 2,
+        "missile": 13,
+        "cost": 390,
+        "upkeep": 48,
+        "capacityCost": {
+          "m": 1,
+          "w": 2,
+          "s": 1,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.1,
+          "hex": 0.06
+        }
+      },
+      "starlight_archers": {
+        "name": "Twilight Gossamer Longbows",
+        "category": "ranged",
+        "blocks": 0.1,
+        "attack": 5,
+        "defense": 7,
+        "charge": 2,
+        "missile": 16,
+        "cost": 480,
+        "upkeep": 58,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 1,
+          "c": 0
+        }
+      },
+      "kelpie_lancers": {
+        "name": "Lake-Kelpie & Stag Courser Knights",
+        "category": "cavalry",
+        "blocks": 0.06,
+        "attack": 13,
+        "defense": 12,
+        "charge": 15,
+        "missile": 0,
+        "cost": 680,
+        "upkeep": 80,
+        "capacityCost": {
+          "m": 3,
+          "w": 3,
+          "s": 1,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.08
+        }
+      },
+      "unicorn_monarchs": {
+        "name": "Silverhorn Unicorn & Briar-Nymphs",
+        "category": "monster",
+        "blocks": 0.04,
+        "attack": 14,
+        "defense": 14,
+        "charge": 14,
+        "missile": 0,
+        "cost": 760,
+        "upkeep": 88,
+        "capacityCost": {
+          "m": 3,
+          "w": 3,
+          "s": 2,
+          "c": 0
+        },
+        "resistArcane": 0.25,
+        "powers": {
+          "ward": 0.1,
+          "heal": 8
+        }
+      },
+      "faerie_drake": {
+        "name": "Prismatic Dream-Drake",
+        "category": "monster",
+        "blocks": 0.02,
+        "attack": 16,
+        "defense": 15,
+        "charge": 13,
+        "missile": 12,
+        "cost": 1050,
+        "upkeep": 120,
+        "capacityCost": {
+          "m": 4,
+          "w": 3,
+          "s": 2,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.1,
+          "hex": 0.08,
+          "terror": 0.06
+        }
+      },
+      "glamour_weavers": {
+        "name": "Archfey Enchanters of the Court",
+        "category": "spellcaster",
+        "blocks": 0.02,
+        "attack": 4,
+        "defense": 7,
+        "charge": 1,
+        "missile": 16,
+        "cost": 960,
+        "upkeep": 110,
+        "capacityCost": {
+          "m": 1,
+          "w": 2,
+          "s": 3,
+          "c": 2
+        },
+        "resistArcane": 0.25,
+        "powers": {
+          "ward": 0.14,
+          "hex": 0.12,
+          "heal": 10
+        }
+      },
+      "moonbeam_arc": {
+        "name": "Moonlight Crystal Arc-Thrower",
+        "category": "artillery",
+        "blocks": 0.04,
+        "attack": 2,
+        "defense": 5,
+        "charge": 0,
+        "missile": 15,
+        "cost": 720,
+        "upkeep": 78,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 1,
+          "c": 0
+        },
+        "powers": {
+          "hex": 0.05
+        }
+      },
+      "thorn_sentinels": {
+        "name": "Thorn Sentinel Watch",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 4,
+        "defense": 7,
+        "charge": 2,
+        "missile": 0,
+        "cost": 75,
+        "upkeep": 9,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "sprite_archers": {
+        "name": "Sprite Archer Sentry",
+        "category": "ranged",
+        "blocks": 0.1,
+        "attack": 2,
+        "defense": 4,
+        "charge": 1,
+        "missile": 7,
+        "cost": 80,
+        "upkeep": 10,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      }
+    },
+    "recruitable": [
+      "gossamer_dancers",
+      "sidhe_spears",
+      "pixie_dartswarms",
+      "starlight_archers",
+      "kelpie_lancers",
+      "unicorn_monarchs",
+      "faerie_drake",
+      "glamour_weavers",
+      "moonbeam_arc"
+    ],
+    "garrison": {
+      "melee": "thorn_sentinels",
+      "ranged": "sprite_archers"
+    },
+    "regimentMap": {
+      "infantry": "sidhe_spears",
+      "archers": "starlight_archers",
+      "cavalry": "kelpie_lancers",
+      "artillery": "moonbeam_arc"
+    },
+    "caps": {
+      "gossamer_dancers": 5,
+      "pixie_dartswarms": 4,
+      "starlight_archers": 4,
+      "kelpie_lancers": 3,
+      "unicorn_monarchs": 3,
+      "faerie_drake": 2,
+      "glamour_weavers": 2,
+      "moonbeam_arc": 3
+    }
+  },
+  "tech": [],
+  "buildings": []
+}

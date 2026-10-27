@@ -19,23 +19,36 @@
 import { type ContentPack, type RawContentDocs, validateAndResolve } from "../engine/common/content";
 import eventSample from "./docs/events/sample.json" with { type: "json" };
 import gameDoc from "./docs/game.json" with { type: "json" };
+import rosterArachnid from "./docs/rosters/arachnid.json" with { type: "json" };
+import rosterBeastfolk from "./docs/rosters/beastfolk.json" with { type: "json" };
+import rosterCelestial from "./docs/rosters/celestial.json" with { type: "json" };
 import rosterChaos from "./docs/rosters/chaos.json" with { type: "json" };
 import rosterChivalric from "./docs/rosters/chivalric.json" with { type: "json" };
+import rosterConstruct from "./docs/rosters/construct.json" with { type: "json" };
 import rosterDarkElf from "./docs/rosters/dark_elf.json" with { type: "json" };
 import rosterdefault from "./docs/rosters/default.json" with { type: "json" };
+import rosterDemon from "./docs/rosters/demon.json" with { type: "json" };
+import rosterDragonborn from "./docs/rosters/dragonborn.json" with { type: "json" };
 import rosterdwarf from "./docs/rosters/dwarf.json" with { type: "json" };
 import rosterEastAsia from "./docs/rosters/east_asia.json" with { type: "json" };
+import rosterEldritch from "./docs/rosters/eldritch.json" with { type: "json" };
+import rosterelemental from "./docs/rosters/elemental.json" with { type: "json" };
 import rosterelf from "./docs/rosters/elf.json" with { type: "json" };
 import rosterEmpire from "./docs/rosters/empire.json" with { type: "json" };
+import rosterFey from "./docs/rosters/fey.json" with { type: "json" };
+import rosterHalfling from "./docs/rosters/halfling.json" with { type: "json" };
 import rosterInfernalDwarf from "./docs/rosters/infernal_dwarf.json" with { type: "json" };
 import rosterLizardmen from "./docs/rosters/lizardmen.json" with { type: "json" };
+import rosterMerfolk from "./docs/rosters/merfolk.json" with { type: "json" };
 import rosterMughal from "./docs/rosters/mughal.json" with { type: "json" };
+import rosterOgre from "./docs/rosters/ogre.json" with { type: "json" };
 import rosterorc from "./docs/rosters/orc.json" with { type: "json" };
 import rosterOttoman from "./docs/rosters/ottoman.json" with { type: "json" };
 import rosterRenaissance from "./docs/rosters/renaissance.json" with { type: "json" };
 import rosterSkaven from "./docs/rosters/skaven.json" with { type: "json" };
 import rostersteppe from "./docs/rosters/steppe.json" with { type: "json" };
 import rosterTombKings from "./docs/rosters/tomb_kings.json" with { type: "json" };
+import rosterTribal from "./docs/rosters/tribal.json" with { type: "json" };
 import rosterVampire from "./docs/rosters/vampire.json" with { type: "json" };
 import rosterWoodElf from "./docs/rosters/wood_elf.json" with { type: "json" };
 import victoryStandard from "./docs/victory/standard.json" with { type: "json" };
@@ -61,7 +74,20 @@ export const BUNDLED_DOCS: RawContentDocs = {
     { file: "rosters/dark_elf.json", doc: rosterDarkElf },
     { file: "rosters/skaven.json", doc: rosterSkaven },
     { file: "rosters/lizardmen.json", doc: rosterLizardmen },
-    { file: "rosters/infernal_dwarf.json", doc: rosterInfernalDwarf }
+    { file: "rosters/infernal_dwarf.json", doc: rosterInfernalDwarf },
+    { file: "rosters/ogre.json", doc: rosterOgre },
+    { file: "rosters/demon.json", doc: rosterDemon },
+    { file: "rosters/beastfolk.json", doc: rosterBeastfolk },
+    { file: "rosters/halfling.json", doc: rosterHalfling },
+    { file: "rosters/fey.json", doc: rosterFey },
+    { file: "rosters/dragonborn.json", doc: rosterDragonborn },
+    { file: "rosters/celestial.json", doc: rosterCelestial },
+    { file: "rosters/merfolk.json", doc: rosterMerfolk },
+    { file: "rosters/elemental.json", doc: rosterelemental },
+    { file: "rosters/construct.json", doc: rosterConstruct },
+    { file: "rosters/eldritch.json", doc: rosterEldritch },
+    { file: "rosters/tribal.json", doc: rosterTribal },
+    { file: "rosters/arachnid.json", doc: rosterArachnid }
   ],
   culturesDocs: [],
   factionDocs: [],

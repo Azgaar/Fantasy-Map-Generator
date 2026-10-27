@@ -11,6 +11,13 @@ export function siegeOf(campaign: Campaign, regionId: number): Siege | undefined
   return campaign.sieges.find(s => s.regionId === regionId);
 }
 
+export function regionSiegeSupplies(ctx: EngineCtx, regionId: number): number {
+  const rs = ctx.campaign.regions[String(regionId)];
+  if (!rs) return 0;
+  const buildingById = new Map(ctx.content.buildings.map(b => [b.id, b]));
+  return rs.buildings.reduce((acc, bid) => acc + (buildingById.get(bid)?.effects.siegeSupplies ?? 0), 0);
+}
+
 export function startSiege(ctx: EngineCtx, armyId: string): string | null {
   const { campaign, pack } = ctx;
   const army = campaign.armies[armyId];
@@ -24,12 +31,14 @@ export function startSiege(ctx: EngineCtx, armyId: string): string | null {
     if (existing.byArmyId === armyId) return "already besieging";
     return "another army is besieging this settlement";
   }
+  const supplies = regionSiegeSupplies(ctx, settlement.regionId);
   campaign.sieges.push({
     regionId: settlement.regionId,
     byArmyId: armyId,
     byFaction: army.factionId,
     sinceTurn: campaign.turn,
-    progress: 0
+    progress: 0,
+    suppliesRemaining: supplies
   });
   campaign.log.push({
     type: "SiegeStarted",

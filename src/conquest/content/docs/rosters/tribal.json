@@ -1,0 +1,244 @@
+{
+  "id": "tribalBase",
+  "name": "Primal Wildland Confederacies",
+  "roster": {
+    "id": "tribalBase",
+    "units": {
+      "hide_warriors": {
+        "name": "Hide-Shield Club & Spear Braves",
+        "category": "melee",
+        "blocks": 0.18,
+        "attack": 7,
+        "defense": 10,
+        "charge": 5,
+        "missile": 0,
+        "cost": 220,
+        "upkeep": 28,
+        "capacityCost": {
+          "m": 2,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "jaguar_stalkers": {
+        "name": "Obsidian-Macuahuitl Ambushers",
+        "category": "melee",
+        "blocks": 0.14,
+        "attack": 12,
+        "defense": 9,
+        "charge": 8,
+        "missile": 0,
+        "cost": 450,
+        "upkeep": 55,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 1,
+          "c": 0
+        }
+      },
+      "blowpipe_hunters": {
+        "name": "Venom-Dart & Bone-Bow Hunters",
+        "category": "ranged",
+        "blocks": 0.15,
+        "attack": 4,
+        "defense": 6,
+        "charge": 2,
+        "missile": 12,
+        "cost": 320,
+        "upkeep": 38,
+        "capacityCost": {
+          "m": 1,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        },
+        "powers": {
+          "hex": 0.05
+        }
+      },
+      "outrigger_harpoons": {
+        "name": "Whalebone Harpoon Javelineers",
+        "category": "ranged",
+        "blocks": 0.12,
+        "attack": 6,
+        "defense": 7,
+        "charge": 4,
+        "missile": 11,
+        "cost": 400,
+        "upkeep": 48,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "beast_outriders": {
+        "name": "Raptor & Reindeer-Stag Outriders",
+        "category": "cavalry",
+        "blocks": 0.08,
+        "attack": 10,
+        "defense": 9,
+        "charge": 12,
+        "missile": 4,
+        "cost": 480,
+        "upkeep": 58,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "totem_warbeasts": {
+        "name": "Great White-Bear & Jungle Tiger Pack",
+        "category": "monster",
+        "blocks": 0.05,
+        "attack": 14,
+        "defense": 11,
+        "charge": 12,
+        "missile": 0,
+        "cost": 640,
+        "upkeep": 75,
+        "capacityCost": {
+          "m": 3,
+          "w": 2,
+          "s": 1,
+          "c": 0
+        },
+        "powers": {
+          "terror": 0.05
+        }
+      },
+      "thunder_mammoth": {
+        "name": "Tundra War-Mammoth & Behemoth",
+        "category": "monster",
+        "blocks": 0.02,
+        "attack": 17,
+        "defense": 16,
+        "charge": 15,
+        "missile": 6,
+        "cost": 1100,
+        "upkeep": 125,
+        "capacityCost": {
+          "m": 4,
+          "w": 3,
+          "s": 1,
+          "c": 0
+        },
+        "powers": {
+          "terror": 0.08
+        }
+      },
+      "spirit_shamans": {
+        "name": "Totem Spirit-Walkers & Witch-Doctors",
+        "category": "spellcaster",
+        "blocks": 0.02,
+        "attack": 4,
+        "defense": 6,
+        "charge": 1,
+        "missile": 13,
+        "cost": 860,
+        "upkeep": 98,
+        "capacityCost": {
+          "m": 1,
+          "w": 2,
+          "s": 3,
+          "c": 1
+        },
+        "resistArcane": 0.15,
+        "powers": {
+          "ward": 0.12,
+          "heal": 12,
+          "hex": 0.08
+        }
+      },
+      "pitch_throwers": {
+        "name": "Fire-Pitch Tension Catapults",
+        "category": "artillery",
+        "blocks": 0.04,
+        "attack": 2,
+        "defense": 4,
+        "charge": 0,
+        "missile": 14,
+        "cost": 680,
+        "upkeep": 72,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "tribal_spears": {
+        "name": "Tribal Spear Levy",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 4,
+        "defense": 6,
+        "charge": 2,
+        "missile": 0,
+        "cost": 60,
+        "upkeep": 8,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "tribal_bows": {
+        "name": "Tribal Sentry Bows",
+        "category": "ranged",
+        "blocks": 0.1,
+        "attack": 2,
+        "defense": 4,
+        "charge": 1,
+        "missile": 6,
+        "cost": 70,
+        "upkeep": 8,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      }
+    },
+    "recruitable": [
+      "hide_warriors",
+      "jaguar_stalkers",
+      "blowpipe_hunters",
+      "outrigger_harpoons",
+      "beast_outriders",
+      "totem_warbeasts",
+      "thunder_mammoth",
+      "spirit_shamans",
+      "pitch_throwers"
+    ],
+    "garrison": {
+      "melee": "tribal_spears",
+      "ranged": "tribal_bows"
+    },
+    "regimentMap": {
+      "infantry": "hide_warriors",
+      "archers": "blowpipe_hunters",
+      "cavalry": "beast_outriders",
+      "artillery": "pitch_throwers"
+    },
+    "caps": {
+      "jaguar_stalkers": 5,
+      "blowpipe_hunters": 4,
+      "outrigger_harpoons": 4,
+      "beast_outriders": 4,
+      "totem_warbeasts": 3,
+      "thunder_mammoth": 2,
+      "spirit_shamans": 2,
+      "pitch_throwers": 3
+    }
+  },
+  "tech": [],
+  "buildings": []
+}

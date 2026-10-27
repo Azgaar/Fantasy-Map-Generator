@@ -81,3 +81,20 @@ export function garrisonUnits(roster: ResolvedRoster, unitTypes: Record<string, 
   for (let i = 0; i < archers; i++) units.push({ type: ranged.id, count: ranged.men, exp: 0 });
   return units;
 }
+
+/** Local militia garrison for an undefended minor settlement. */
+export function minorGarrisonUnits(
+  roster: ResolvedRoster,
+  unitTypes: Record<string, UnitType>,
+  tier: number,
+  walls: number
+): ArmyUnit[] {
+  const units: ArmyUnit[] = [];
+  const melee = unitTypes[roster.garrison.melee] ?? Object.values(unitTypes)[0]!;
+  const ranged = unitTypes[roster.garrison.ranged] ?? melee;
+  const spears = 1 + Math.max(0, walls);
+  const archers = tier >= 2 || walls > 0 ? 1 : 0;
+  for (let i = 0; i < spears; i++) units.push({ type: melee.id, count: melee.men, exp: 0 });
+  for (let i = 0; i < archers; i++) units.push({ type: ranged.id, count: ranged.men, exp: 0 });
+  return units;
+}

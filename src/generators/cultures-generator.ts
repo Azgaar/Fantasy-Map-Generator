@@ -998,6 +998,7 @@ class CulturesGenerator {
         { name: "Orc", base: "ORCIS", odd: 1, sort: habitat.highland, shield: "urukHai" },
         { name: "Goblin", base: "GOBLI", odd: 1, sort: habitat.underworld, shield: "moriaOrc" },
         { name: "Hobgoblin (Legion)", base: "ORCIS", odd: 0.6, sort: habitat.open, shield: "targe" },
+        { name: "Skaven (Ratmen)", base: "GOBLI", odd: 0.65, sort: habitat.underworld, shield: "pavise" },
         { name: "Troll", base: "GIANT", odd: 0.5, sort: habitat.polar, shield: "swiss" },
         { name: "Ogre", base: "GIANT", odd: 0.4, sort: habitat.highland, shield: "horsehead2" },
         { name: "Dragonborn", base: "DRACO", odd: 0.6, sort: habitat.highland, shield: "fantasy2" },

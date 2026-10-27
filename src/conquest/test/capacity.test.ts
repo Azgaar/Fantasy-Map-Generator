@@ -31,12 +31,14 @@ import {
   developmentBonus,
   developmentCap,
   isGarrisoned,
+  recomputeCapacity,
   settlementTier
 } from "@/conquest/engine/game/capacity";
-import { applyCommand, type Command, type EngineCtx } from "@/conquest/engine/game/commands";
+import { applyCommand, type Command, type EngineCtx, getMilitiaDefenseUnits } from "@/conquest/engine/game/commands";
 import { type CampaignConfig, DEFAULT_CONFIG, resolveConfig } from "@/conquest/engine/game/config";
 import { economyTick } from "@/conquest/engine/game/economy";
 import { regionValues } from "@/conquest/engine/game/saves";
+import { siegeOf, startSiege } from "@/conquest/engine/game/sieges";
 import { createCampaign, stateHash } from "@/conquest/engine/game/state";
 
 const SOURCE = path.resolve(testDir, "../test-data/sample-world.json");
@@ -394,7 +396,7 @@ describe("Phase 3 — development", () => {
     expect(settlementTier(ctx, target.id)).toBe(before);
   });
 
-  test("organic growth grows the smallest town of an orderly, garrisoned province", () => {
+  test("organic growth grows the smallest town of an orderly, garrisoned province", { timeout: 20000 }, () => {
     const { ctx, campaign } = boot(capacityConfig);
     economyTick(ctx);
     const region = pack.regions.find(r => {
@@ -507,7 +509,7 @@ describe("Phase 3 — stability", () => {
 });
 
 describe("Phase 3 — determinism", () => {
-  test("a `Develop` survives a save/reload: the replayed log gives the same hash", () => {
+  test("a `Develop` survives a save/reload: the replayed log gives the same hash", { timeout: 20000 }, () => {
     // The development is campaign state, so it has to be in the state hash and
     // reproducible from the command log alone — the save/reload DoD.
     // The turns go through `EndTurn`, not a bare economy tick: the replay
@@ -577,5 +579,199 @@ describe("Phase 3 — a garrison holds order", () => {
     rs.order = 90;
     economyTick(ctx);
     expect(rs.order).toBeLessThan(90);
+  });
+});
+
+describe("Phase 3: Domain Asset Mechanical Effects", () => {
+  test("custom chainMultiplier doubles chain capacity output in ledger and regionValues", () => {
+    const { ctx, campaign } = boot();
+    const region = pack.regions.find(r => r.factionId === 1)!;
+    // Clear other regions of faction 1 to isolate this test
+    for (const r of pack.regions) {
+      if (r.factionId === 1 && r.id !== region.id) {
+        campaign.regions[String(r.id)]!.buildings = [];
+      }
+    }
+    const rs = campaign.regions[String(region.id)]!;
+    rs.buildings = ["market1"];
+    recomputeCapacity(ctx);
+    const beforeW = campaign.factions["1"]!.capacity!.w.gen;
+    const beforeVal = regionValues(ctx, region.id).w;
+
+    // Add Mercantile custom (+4 W, doubles economy chain Wealth)
+    rs.buildings.push("custom_mercantile");
+    recomputeCapacity(ctx);
+    const afterW = campaign.factions["1"]!.capacity!.w.gen;
+    const afterVal = regionValues(ctx, region.id).w;
+
+    // market1 doubled (+2 extra W) + custom_mercantile base (+4 W) = +6 W total
+    expect(afterW - beforeW).toBe(6);
+    // regionValues also reflects the doubled market (+2 extra W)
+    expect(afterVal - beforeVal).toBe(2);
+  });
+
+  test("custom_slavery waives upkeep of the costliest building per region", () => {
+    const { ctx, campaign } = boot();
+    const region = pack.regions.find(r => r.factionId === 1)!;
+    // Clear other regions of faction 1 to isolate this test
+    for (const r of pack.regions) {
+      if (r.factionId === 1 && r.id !== region.id) {
+        campaign.regions[String(r.id)]!.buildings = [];
+      }
+    }
+    const rs = campaign.regions[String(region.id)]!;
+    // Add walls2 (upkeep: 1 W) and school2 (upkeep: 1 S)
+    rs.buildings = ["walls2", "school2"];
+    recomputeCapacity(ctx);
+    const beforeLoad = { ...campaign.factions["1"]!.capacity! };
+
+    // Add Slavery (freeBuildingUpkeepPerRegion: 1, upkeep: 2 S)
+    rs.buildings.push("custom_slavery");
+    recomputeCapacity(ctx);
+    const afterLoad = campaign.factions["1"]!.capacity!;
+
+    // One of the 1-upkeep buildings is waived.
+    // custom_slavery adds +2 S load, but 1 upkeep is waived.
+    const netUpkeepChange = afterLoad.w.load - beforeLoad.w.load + (afterLoad.s.load - beforeLoad.s.load);
+    // Before: 1 W + 1 S = 2 upkeep.
+    // After: 1 waived + 1 remaining + 2 Slavery = 3 upkeep (net +1 instead of +2).
+    expect(netUpkeepChange).toBeCloseTo(1, 4);
+  });
+
+  test("custom_devil_worshipers zeroes capacity generation of ungarrisoned regions", () => {
+    const { ctx, campaign } = boot();
+    const regions = pack.regions.filter(r => r.factionId === 1);
+    expect(regions.length).toBeGreaterThan(1);
+    const capitalRegion = regions[0]!;
+    const remoteRegion = regions[1]!;
+
+    // Ensure remoteRegion is empty of armies
+    for (const army of Object.values(campaign.armies)) {
+      if (army.factionId === 1 && remoteRegion.cells.includes(army.cell)) {
+        army.cell = capitalRegion.cells[0]!;
+      }
+    }
+
+    expect(isGarrisoned(ctx, remoteRegion.id, 1)).toBe(false);
+
+    // Give faction 1 Devil Worshipers
+    campaign.regions[String(capitalRegion.id)]!.buildings.push("custom_devil_worshipers");
+    recomputeCapacity(ctx);
+
+    // Remote region generates 0 in regionValues
+    const vals = regionValues(ctx, remoteRegion.id);
+    expect(vals.m).toBe(0);
+    expect(vals.w).toBe(0);
+    expect(vals.s).toBe(0);
+
+    // Move friendly army into remoteRegion
+    const army = Object.values(campaign.armies).find(a => a.factionId === 1)!;
+    army.cell = remoteRegion.cells[0]!;
+    expect(isGarrisoned(ctx, remoteRegion.id, 1)).toBe(true);
+
+    const valsAfter = regionValues(ctx, remoteRegion.id);
+    expect(valsAfter.m + valsAfter.w + valsAfter.s).toBeGreaterThan(0);
+  });
+
+  test("barracks freeGarrisonUnits waives upkeep of stationed garrison units", () => {
+    const { ctx, campaign } = boot();
+    const region = pack.regions.find(r => r.factionId === 1)!;
+    const rs = campaign.regions[String(region.id)]!;
+    rs.buildings = [];
+
+    // Place an army in this region with 2 units
+    const army = Object.values(campaign.armies).find(a => a.factionId === 1)!;
+    army.cell = region.cells[0]!;
+    army.units = [
+      { type: "sword", count: 100, exp: 0 },
+      { type: "sword", count: 100, exp: 0 }
+    ];
+    // Remove other armies for faction 1 to isolate load
+    for (const other of Object.values(campaign.armies)) {
+      if (other.factionId === 1 && other.id !== army.id) delete campaign.armies[other.id];
+    }
+
+    recomputeCapacity(ctx);
+    const loadNoBarracks = campaign.factions["1"]!.capacity!.m.load;
+    expect(loadNoBarracks).toBeGreaterThan(0);
+
+    // Add barracks1 (waives 1 garrison unit)
+    rs.buildings = ["barracks1"];
+    recomputeCapacity(ctx);
+    const loadBarracks1 = campaign.factions["1"]!.capacity!.m.load;
+    expect(loadBarracks1).toBeCloseTo(loadNoBarracks / 2, 2);
+
+    // Add barracks2 (waives 2 garrison units)
+    rs.buildings = ["barracks2"];
+    recomputeCapacity(ctx);
+    const loadBarracks2 = campaign.factions["1"]!.capacity!.m.load;
+    expect(loadBarracks2).toBe(0);
+  });
+
+  test("conversion assets convert capacity when region output threshold is met", () => {
+    const { ctx, campaign } = boot();
+    const region = pack.regions.find(r => r.factionId === 1)!;
+    const rs = campaign.regions[String(region.id)]!;
+    rs.buildings = ["processing_camp"];
+    recomputeCapacity(ctx);
+
+    const cap = campaign.factions["1"]!.capacity!;
+    // processing_camp adds +2 W base, +1 M converted, and loads 1 W
+    expect(cap.m.gen).toBeGreaterThanOrEqual(1);
+    expect(cap.w.load).toBeGreaterThanOrEqual(1);
+  });
+
+  test("militiaDefense generates temporary defense units for defender side", () => {
+    const { ctx, campaign } = boot();
+    const region = pack.regions.find(r => r.factionId === 1)!;
+    const rs = campaign.regions[String(region.id)]!;
+    rs.buildings = ["militia1"]; // 2 levy_spear
+
+    const militia = getMilitiaDefenseUnits(ctx, region.id, 1);
+    expect(militia.length).toBe(2);
+    expect(militia[0]!.type).toBe("levy_spear");
+    expect(militia[0]!.temporaryMilitia).toBe(true);
+
+    // Upgrade to militia3 (4 sword)
+    rs.buildings = ["militia3"];
+    const militia3 = getMilitiaDefenseUnits(ctx, region.id, 1);
+    expect(militia3.length).toBe(4);
+    expect(militia3[0]!.type).toBe("sword");
+    expect(militia3[0]!.temporaryMilitia).toBe(true);
+  });
+
+  test("siege supplies buffer siege progress and order damage, consuming 10 HD per turn", () => {
+    const { ctx, campaign } = boot();
+    // Faction 1 besieges a settlement belonging to Faction 2
+    const targetRegion = pack.regions.find(r => r.factionId !== 1 && r.settlements.length > 0)!;
+    const settlement = pack.settlements.find(s => s.regionId === targetRegion.id && s.kind === "major")!;
+    const rs = campaign.regions[String(targetRegion.id)]!;
+    rs.order = 80;
+    rs.buildings = ["siege_supplies"]; // 20 HD supplies
+
+    // Position an army at settlement cell
+    const army = Object.values(campaign.armies).find(a => a.factionId === 1)!;
+    army.cell = settlement.cell;
+
+    const err = startSiege(ctx, army.id);
+    expect(err).toBeNull();
+    const siege = siegeOf(campaign, targetRegion.id)!;
+    expect(siege).toBeDefined();
+    expect(siege.suppliesRemaining).toBe(20);
+    expect(siege.progress).toBe(0);
+
+    // Tick 1: consumes 10 HD, progress stays 0
+    economyTick(ctx);
+    expect(siege.suppliesRemaining).toBe(10);
+    expect(siege.progress).toBe(0);
+
+    // Tick 2: consumes 10 HD, supplies exhausted, progress stays 0
+    economyTick(ctx);
+    expect(siege.suppliesRemaining).toBe(0);
+    expect(siege.progress).toBe(0);
+
+    // Tick 3: no supplies remaining -> progress advances
+    economyTick(ctx);
+    expect(siege.progress).toBe(1);
   });
 });

@@ -27,6 +27,8 @@ export interface BattleSummary {
   modifiers: string[];
   /** True when the battle was an assault on a settlement's garrison. */
   assault: boolean;
+  /** Settlement involved in the assault or defense, if any. */
+  settlementId?: number;
   regionCaptured: boolean;
   /** Capture policy applied on success (§5.5). */
   policy?: CapturePolicy;
@@ -61,6 +63,21 @@ export type GameEvent =
       policy: CapturePolicy;
       gold: number;
     }
+  | {
+      type: "SettlementOccupied";
+      settlementId: number;
+      regionId: number;
+      byFaction: number;
+      byArmy: string;
+      policy: CapturePolicy;
+      gold: number;
+    }
+  | {
+      type: "SettlementLiberated";
+      settlementId: number;
+      regionId: number;
+      byFaction: number;
+    }
   // -- diplomacy (Phase 3) ----------------------------------------------------
   | { type: "TreatyOffered"; offerId: number; from: number; to: number; treaty: TreatyType; gold?: number }
   | { type: "TreatyAccepted"; offerId: number; from: number; to: number; treaty: TreatyType }
@@ -88,11 +105,49 @@ export type GameEvent =
     }
   | { type: "BuildingQueued"; regionId: number; buildingId: string; cost: number; turns: number }
   | { type: "BuildingCompleted"; regionId: number; buildingId: string }
+  | { type: "BuildingDisbanded"; regionId: number; buildingId: string }
+  | {
+      type: "AssetCheckRolled";
+      regionId: number;
+      buildingId: string;
+      pool: string;
+      roll: number;
+      modifier: number;
+      dc: number;
+      success: boolean;
+      pityBonus: number;
+    }
   // CAPACITY-PLAN Phase 3: a development queued and a settlement promoted.
   | { type: "DevelopmentQueued"; regionId: number; settlementId: number; turns: number }
   | { type: "SettlementDeveloped"; regionId: number; settlementId: number; tier: number }
   // CAPACITY-PLAN Phase 5: Wealth converted into purse gold.
   | { type: "TreasureWithdrawn"; factionId: number; wealth: number; gold: number; purse: number }
+  | {
+      type: "TreasureAccumulated";
+      factionId: number;
+      regionId: number;
+      roll: number;
+      modifier: number;
+      dc: number;
+      success: boolean;
+      gain: number;
+      newTreasure: number;
+    }
+  | {
+      type: "AtrocityPunished";
+      factionId: number;
+      regionId: number;
+      sacrificedAssetId: string;
+      reduction: number;
+      newAtrocity: number;
+    }
+  | {
+      type: "AtrocityChanged";
+      factionId: number;
+      delta: number;
+      reason: string;
+      newAtrocity: number;
+    }
   | { type: "TechResearched"; factionId: number; techId: string; cost: number }
   // -- world (Phase 3) ---------------------------------------------------------
   | { type: "RebellionSpawned"; regionId: number; armyId: string }

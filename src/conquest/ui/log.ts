@@ -111,10 +111,10 @@ function describeBattle(battle: BattleSummary): string {
   const defender = factionName(battle.defender.factionId);
   const winner = battle.winner === "attacker" ? attacker : defender;
   const loser = battle.winner === "attacker" ? defender : attacker;
-  const where = regionName(battle.regionId);
-  const what = battle.assault ? `assault on ${where}` : `field battle for ${where}`;
+  const where = battle.settlementId ? settlementName(battle.settlementId) : regionName(battle.regionId);
+  const what = battle.assault ? `assault on ${where}` : `battle for ${where}`;
   const modifiers = battle.modifiers.length ? ` [${battle.modifiers.join(", ")}]` : "";
-  const taken = battle.regionCaptured ? `; ${where} changed hands` : "";
+  const taken = battle.regionCaptured ? `; ${regionName(battle.regionId)} changed hands` : "";
   return `${winner} won the ${what} against ${loser}${modifiers}${taken}`;
 }
 
@@ -169,6 +169,14 @@ function describe(event: GameEvent, campaign: Campaign): string | null {
       return `The siege of ${regionName(event.regionId)} was lifted — ${event.reason}.`;
     case "RegionCaptured":
       return `${factionName(event.to)} took ${regionName(event.regionId)} from ${factionName(event.from)} and ${policyLabel(event.policy)} it (${num(event.gold)} gold).`;
+    case "SettlementOccupied":
+      return `${factionName(event.byFaction)} occupied ${settlementName(event.settlementId)} in ${regionName(
+        event.regionId
+      )} and ${policyLabel(event.policy)} it (${num(event.gold)} gold).`;
+    case "SettlementLiberated":
+      return `${factionName(event.byFaction)} liberated ${settlementName(event.settlementId)} in ${regionName(
+        event.regionId
+      )}.`;
 
     // -- diplomacy
     case "TreatyOffered":
@@ -215,6 +223,10 @@ function describe(event: GameEvent, campaign: Campaign): string | null {
       )} (${num(event.cost)} gold, ${event.turns} turn${event.turns === 1 ? "" : "s"}).`;
     case "BuildingCompleted":
       return `${buildingName(event.buildingId)} finished in ${regionName(event.regionId)}.`;
+    case "BuildingDisbanded":
+      return `${buildingName(event.buildingId)} in ${regionName(event.regionId)} was disbanded.`;
+    case "AssetCheckRolled":
+      return `${buildingName(event.buildingId)} in ${regionName(event.regionId)} rolled ${event.pool.toUpperCase()} check: d20 ${event.roll} +${event.modifier} = ${event.roll + event.modifier} vs DC ${event.dc} — ${event.success ? "passed" : "failed"}.`;
     case "DevelopmentQueued":
       return `${factionName(campaign.regions[event.regionId]?.owner ?? 0)} began developing ${settlementName(
         event.settlementId
@@ -225,6 +237,12 @@ function describe(event: GameEvent, campaign: Campaign): string | null {
       return `${factionName(event.factionId)} withdrew ${num(event.wealth)} Wealth into ${num(
         event.gold
       )} purse gold (purse ${num(event.purse)}).`;
+    case "TreasureAccumulated":
+      return `${factionName(event.factionId)} attempted to accumulate treasure in ${regionName(event.regionId)}: roll ${event.roll} +${event.modifier} vs DC ${event.dc} — ${event.success ? `success (+${event.gain} treasure, total ${event.newTreasure})` : "failed"}.`;
+    case "AtrocityPunished":
+      return `${factionName(event.factionId)} punished atrocity via ${buildingName(event.sacrificedAssetId)} in ${regionName(event.regionId)}: -${event.reduction} atrocity (current ${event.newAtrocity}).`;
+    case "AtrocityChanged":
+      return `${factionName(event.factionId)} atrocity ${event.delta > 0 ? `+${event.delta}` : event.delta} (${event.reason}): current ${event.newAtrocity}.`;
     case "TechResearched":
       return `${factionName(event.factionId)} researched ${techName(event.techId)} for ${num(event.cost)} gold.`;
 
@@ -278,6 +296,8 @@ const KIND: Record<GameEvent["type"], LogRow["kind"]> = {
   SiegeStarted: "battle",
   SiegeLifted: "battle",
   RegionCaptured: "battle",
+  SettlementOccupied: "battle",
+  SettlementLiberated: "battle",
   TreatyOffered: "diplomacy",
   TreatyAccepted: "diplomacy",
   TreatyRejected: "diplomacy",
@@ -294,9 +314,14 @@ const KIND: Record<GameEvent["type"], LogRow["kind"]> = {
   TreasuryTicked: "economy",
   BuildingQueued: "economy",
   BuildingCompleted: "economy",
+  BuildingDisbanded: "economy",
+  AssetCheckRolled: "economy",
   DevelopmentQueued: "economy",
   SettlementDeveloped: "economy",
   TreasureWithdrawn: "economy",
+  TreasureAccumulated: "economy",
+  AtrocityPunished: "economy",
+  AtrocityChanged: "economy",
   TechResearched: "economy",
   RebellionSpawned: "world",
   DomainSave: "world",

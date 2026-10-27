@@ -1,0 +1,245 @@
+{
+  "id": "merfolkBase",
+  "name": "Pelagic Reef-Thalassocracies",
+  "roster": {
+    "id": "merfolkBase",
+    "units": {
+      "tide_marines": {
+        "name": "Shore-Breaker Tide Marines",
+        "category": "melee",
+        "blocks": 0.16,
+        "attack": 8,
+        "defense": 10,
+        "charge": 4,
+        "missile": 0,
+        "cost": 250,
+        "upkeep": 32,
+        "capacityCost": {
+          "m": 2,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "coral_glaives": {
+        "name": "Coral-Clad Trident Phalanx",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 7,
+        "defense": 14,
+        "charge": 3,
+        "missile": 0,
+        "cost": 320,
+        "upkeep": 40,
+        "capacityCost": {
+          "m": 2,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "abyssal_reavers": {
+        "name": "Trench-Blade Shock Marines",
+        "category": "melee",
+        "blocks": 0.12,
+        "attack": 13,
+        "defense": 11,
+        "charge": 7,
+        "missile": 0,
+        "cost": 490,
+        "upkeep": 60,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 1,
+          "c": 0
+        }
+      },
+      "riptide_bows": {
+        "name": "Pelagic Spine-Bowmen",
+        "category": "ranged",
+        "blocks": 0.12,
+        "attack": 4,
+        "defense": 7,
+        "charge": 1,
+        "missile": 14,
+        "cost": 410,
+        "upkeep": 50,
+        "capacityCost": {
+          "m": 1,
+          "w": 2,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "hippocampus_lancers": {
+        "name": "Crested Hippocampus & Eel Knights",
+        "category": "cavalry",
+        "blocks": 0.07,
+        "attack": 12,
+        "defense": 12,
+        "charge": 14,
+        "missile": 0,
+        "cost": 640,
+        "upkeep": 75,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 1,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.06
+        }
+      },
+      "leviathan_turtle": {
+        "name": "Armored Reef-Leviathan Shell",
+        "category": "monster",
+        "blocks": 0.03,
+        "attack": 14,
+        "defense": 18,
+        "charge": 11,
+        "missile": 10,
+        "cost": 850,
+        "upkeep": 95,
+        "capacityCost": {
+          "m": 3,
+          "w": 3,
+          "s": 1,
+          "c": 0
+        },
+        "powers": {
+          "ward": 0.08,
+          "terror": 0.06
+        }
+      },
+      "abyssal_kraken": {
+        "name": "Trench-Spawned War-Kraken",
+        "category": "monster",
+        "blocks": 0.02,
+        "attack": 18,
+        "defense": 15,
+        "charge": 14,
+        "missile": 0,
+        "cost": 1150,
+        "upkeep": 130,
+        "capacityCost": {
+          "m": 4,
+          "w": 3,
+          "s": 2,
+          "c": 0
+        },
+        "powers": {
+          "heal": 8,
+          "terror": 0.08
+        }
+      },
+      "tide_weavers": {
+        "name": "Maelstrom Tide-Caller Mystics",
+        "category": "spellcaster",
+        "blocks": 0.02,
+        "attack": 4,
+        "defense": 6,
+        "charge": 1,
+        "missile": 15,
+        "cost": 920,
+        "upkeep": 105,
+        "capacityCost": {
+          "m": 1,
+          "w": 2,
+          "s": 3,
+          "c": 1
+        },
+        "powers": {
+          "ward": 0.12,
+          "hex": 0.1,
+          "heal": 8,
+          "arcaneSiege": 1
+        }
+      },
+      "harpoon_ballista": {
+        "name": "Torsion Reef-Harpoon Battery",
+        "category": "artillery",
+        "blocks": 0.04,
+        "attack": 2,
+        "defense": 5,
+        "charge": 0,
+        "missile": 16,
+        "cost": 740,
+        "upkeep": 80,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 1,
+          "c": 0
+        }
+      },
+      "reef_spears": {
+        "name": "Reef Sentry Spearmen",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 4,
+        "defense": 6,
+        "charge": 1,
+        "missile": 0,
+        "cost": 65,
+        "upkeep": 8,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "shell_skirmishers": {
+        "name": "Shell-Slinger Skirmishers",
+        "category": "ranged",
+        "blocks": 0.1,
+        "attack": 2,
+        "defense": 4,
+        "charge": 1,
+        "missile": 6,
+        "cost": 75,
+        "upkeep": 9,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      }
+    },
+    "recruitable": [
+      "tide_marines",
+      "coral_glaives",
+      "abyssal_reavers",
+      "riptide_bows",
+      "hippocampus_lancers",
+      "leviathan_turtle",
+      "abyssal_kraken",
+      "tide_weavers",
+      "harpoon_ballista"
+    ],
+    "garrison": {
+      "melee": "reef_spears",
+      "ranged": "shell_skirmishers"
+    },
+    "regimentMap": {
+      "infantry": "coral_glaives",
+      "archers": "riptide_bows",
+      "cavalry": "hippocampus_lancers",
+      "artillery": "harpoon_ballista"
+    },
+    "caps": {
+      "abyssal_reavers": 4,
+      "riptide_bows": 4,
+      "hippocampus_lancers": 3,
+      "leviathan_turtle": 2,
+      "abyssal_kraken": 2,
+      "tide_weavers": 2,
+      "harpoon_ballista": 3
+    }
+  },
+  "tech": [],
+  "buildings": []
+}

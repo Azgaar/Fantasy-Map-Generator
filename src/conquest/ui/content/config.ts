@@ -512,6 +512,18 @@ export function openConfigDialog(): void {
       { kind: "text", label: "id", read: () => String(record.id ?? ""), write: v => (record.id = v) },
       { kind: "text", label: "name", read: () => String(record.name ?? ""), write: v => (record.name = v) },
       {
+        kind: "select",
+        label: "kind",
+        read: () => String(record.kind ?? "structure"),
+        options: () => [
+          { value: "structure", label: "structure (tiered)" },
+          { value: "custom", label: "custom (domain-wide)" },
+          { value: "unchained", label: "unchained" },
+          { value: "resource", label: "resource" }
+        ],
+        write: v => (record.kind = v)
+      },
+      {
         kind: "text",
         label: "chain",
         tip: "Upgrades run along a chain",
@@ -566,6 +578,27 @@ export function openConfigDialog(): void {
           groupsOf(draft).flatMap(r => Object.keys(r.units ?? {}).map(id => ({ value: id, label: id }))),
         read: () => (effects.unlock as string[]) ?? [],
         write: values => setEffect("unlock", values)
+      },
+      {
+        kind: "number",
+        label: "free garrison units",
+        min: 0,
+        read: () => Number(effects.freeGarrisonUnits ?? 0),
+        write: v => setEffect("freeGarrisonUnits", v)
+      },
+      {
+        kind: "number",
+        label: "siege supplies (HD)",
+        min: 0,
+        read: () => Number(effects.siegeSupplies ?? 0),
+        write: v => setEffect("siegeSupplies", v)
+      },
+      {
+        kind: "number",
+        label: "atrocity ignore",
+        min: 0,
+        read: () => Number(effects.atrocityIgnore ?? 0),
+        write: v => setEffect("atrocityIgnore", v)
       },
       groupField(record)
     ];

@@ -222,6 +222,8 @@ interface FactionMechanics {
   confederation: "cultureGroup" | "never";
 }
 
+export type AssetKind = "structure" | "custom" | "unchained" | "resource";
+
 interface BuildingEffects {
   /** Adds fortification tiers in assaults (§5.5). */
   walls?: number;
@@ -231,6 +233,8 @@ interface BuildingEffects {
   orderPerTurn?: number;
   /** Unit ids recruitable only while this building stands in the region (§5.3 pools). */
   unlock?: string[];
+  /** Roster IDs accessible for recruitment while this asset stands (e.g. Burning Creed -> elfBase). */
+  unlockRoster?: string[];
   /**
    * Capacity this building *generates* for its holder, per pool (CAPACITY-PLAN
    * §1). Omitted keys default to 0, so a barracks writes `{"m": 2}` and nothing
@@ -248,14 +252,56 @@ interface BuildingEffects {
    * spam self-limiting: without it, assets only ever add capacity.
    */
   upkeep?: CapacityPoints;
+  /** Number of military units stationed in this region whose capacity upkeep is waived (Barracks 1/2/4). */
+  freeGarrisonUnits?: number;
+  /** Temporary defensive units spawned automatically when this location is attacked (Militia 1/2/3). */
+  militiaDefense?: {
+    unitType: string;
+    count: number;
+  };
+  /** Scales the capacity output of all buildings in a target chain across the Domain (Customs). */
+  chainMultiplier?: {
+    chain: string;
+    pool: "m" | "w" | "s" | "c";
+    factor: number;
+  };
+  /** Waives the upkeep of N building assets per region across the Domain (Slavery = 1). */
+  freeBuildingUpkeepPerRegion?: number;
+  /** Converts location capacity from one pool into another (Community Aid, Military Spending, Processing Camp, United Efforts). */
+  conversion?: {
+    from: "w" | "s";
+    to: "m" | "w" | "s";
+    ratio: number;
+  };
+  /** Siege supply hit dice stored (Siege Supplies = 20 HD). */
+  siegeSupplies?: number;
+  /** Atrocity points ignored by the Domain while this asset stands (Hell Shrine = 5). */
+  atrocityIgnore?: number;
+  /** Atrocity modifiers (Brutal Tyranny, Devil Worshipers, Necromantic Cult). */
+  atrocityMod?: {
+    gainMultiplier?: number;
+    revoltMultiplier?: number;
+    perTurnDelta?: number;
+    perRecruitPenalty?: number;
+  };
+  /** If true, regions in the Domain generate 0 capacity unless garrisoned by a friendly army (Devil Worshipers). */
+  requiresGarrisonToProduce?: boolean;
+  /** Bonus available once per turn to a Domain value check or save (Democratic Traditions = +3). */
+  rollBonusPerTurn?: number;
 }
 
 export interface BuildingDef {
   id: string;
   name: string;
+  /** Asset kind: "structure" (default chain building), "custom" (Domain-wide), "unchained" (standalone), or "resource". */
+  kind?: AssetKind;
   chain: string;
   tier: number;
   settlementKinds: ("major" | "minor")[];
+  /** Maximum copies allowed in a single region (default 1; 2 for Siege Supplies). */
+  maxInstances?: number;
+  /** Mutually exclusive asset IDs (e.g. Dwarf Friend vs. Slavery). */
+  incompatibleWith?: string[];
   cost: number;
   /** Turns to construct (default 1). */
   turns?: number;
@@ -487,6 +533,15 @@ class Validator {
       return [];
     }
     return v as number[];
+  }
+  bool(file: string, obj: Record<string, unknown>, key: string, fallback = false): boolean {
+    const v = obj[key];
+    if (v === undefined) return fallback;
+    if (typeof v !== "boolean") {
+      this.warn(file, `field '${key}' must be a boolean`);
+      return fallback;
+    }
+    return v;
   }
   unknownKeys(file: string, obj: Record<string, unknown>, allowed: string[], warnings: string[]): void {
     for (const key of Object.keys(obj)) {
@@ -765,7 +820,21 @@ function parseBuildingsDoc(
     v.warn(file, "expected top-level 'buildings:' list");
     return [];
   }
-  const allowed = ["id", "name", "chain", "tier", "settlementKinds", "cost", "turns", "requires", "group", "effects"];
+  const allowed = [
+    "id",
+    "name",
+    "kind",
+    "chain",
+    "tier",
+    "settlementKinds",
+    "maxInstances",
+    "incompatibleWith",
+    "cost",
+    "turns",
+    "requires",
+    "group",
+    "effects"
+  ];
   const out: BuildingDef[] = [];
   for (const entry of list) {
     const b = (entry ?? {}) as Record<string, unknown>;
@@ -775,19 +844,98 @@ function parseBuildingsDoc(
     v.unknownKeys(
       `${file}#${id}.effects`,
       effectsRaw,
-      ["walls", "incomePct", "orderPerTurn", "unlock", "capacity", "upkeep"],
+      [
+        "walls",
+        "incomePct",
+        "orderPerTurn",
+        "unlock",
+        "unlockRoster",
+        "capacity",
+        "upkeep",
+        "freeGarrisonUnits",
+        "militiaDefense",
+        "chainMultiplier",
+        "freeBuildingUpkeepPerRegion",
+        "conversion",
+        "siegeSupplies",
+        "atrocityIgnore",
+        "atrocityMod",
+        "requiresGarrisonToProduce",
+        "rollBonusPerTurn"
+      ],
       warnings
     );
     const kinds = v
       .strList(file, b, "settlementKinds")
       .filter((k): k is "major" | "minor" => k === "major" || k === "minor");
+
+    let militiaDefense: BuildingEffects["militiaDefense"];
+    if (effectsRaw.militiaDefense !== undefined) {
+      const md = (effectsRaw.militiaDefense ?? {}) as Record<string, unknown>;
+      v.unknownKeys(`${file}#${id}.effects.militiaDefense`, md, ["unitType", "count"], warnings);
+      militiaDefense = {
+        unitType: v.str(`${file}#${id}.effects.militiaDefense`, md, "unitType"),
+        count: v.num(`${file}#${id}.effects.militiaDefense`, md, "count", 1)
+      };
+    }
+
+    let chainMultiplier: BuildingEffects["chainMultiplier"];
+    if (effectsRaw.chainMultiplier !== undefined) {
+      const cm = (effectsRaw.chainMultiplier ?? {}) as Record<string, unknown>;
+      v.unknownKeys(`${file}#${id}.effects.chainMultiplier`, cm, ["chain", "pool", "factor"], warnings);
+      chainMultiplier = {
+        chain: v.str(`${file}#${id}.effects.chainMultiplier`, cm, "chain"),
+        pool: v.str(`${file}#${id}.effects.chainMultiplier`, cm, "pool") as "m" | "w" | "s" | "c",
+        factor: v.num(`${file}#${id}.effects.chainMultiplier`, cm, "factor", 1)
+      };
+    }
+
+    let conversion: BuildingEffects["conversion"];
+    if (effectsRaw.conversion !== undefined) {
+      const cv = (effectsRaw.conversion ?? {}) as Record<string, unknown>;
+      v.unknownKeys(`${file}#${id}.effects.conversion`, cv, ["from", "to", "ratio"], warnings);
+      conversion = {
+        from: v.str(`${file}#${id}.effects.conversion`, cv, "from") as "w" | "s",
+        to: v.str(`${file}#${id}.effects.conversion`, cv, "to") as "m" | "w" | "s",
+        ratio: v.num(`${file}#${id}.effects.conversion`, cv, "ratio", 1)
+      };
+    }
+
+    let atrocityMod: BuildingEffects["atrocityMod"];
+    if (effectsRaw.atrocityMod !== undefined) {
+      const am = (effectsRaw.atrocityMod ?? {}) as Record<string, unknown>;
+      v.unknownKeys(
+        `${file}#${id}.effects.atrocityMod`,
+        am,
+        ["gainMultiplier", "revoltMultiplier", "perTurnDelta", "perRecruitPenalty"],
+        warnings
+      );
+      atrocityMod = {
+        ...(am.gainMultiplier !== undefined
+          ? { gainMultiplier: v.num(`${file}#${id}.effects.atrocityMod`, am, "gainMultiplier", 0) }
+          : {}),
+        ...(am.revoltMultiplier !== undefined
+          ? { revoltMultiplier: v.num(`${file}#${id}.effects.atrocityMod`, am, "revoltMultiplier", 0) }
+          : {}),
+        ...(am.perTurnDelta !== undefined
+          ? { perTurnDelta: v.numSigned(`${file}#${id}.effects.atrocityMod`, am, "perTurnDelta") }
+          : {}),
+        ...(am.perRecruitPenalty !== undefined
+          ? { perRecruitPenalty: v.num(`${file}#${id}.effects.atrocityMod`, am, "perRecruitPenalty", 0) }
+          : {})
+      };
+    }
+
     out.push({
       id,
       name: v.str(file, b, "name"),
+      ...(b.kind !== undefined ? { kind: v.str(file, b, "kind") as AssetKind } : {}),
       chain: v.str(file, b, "chain"),
       tier: v.num(file, b, "tier", 1),
       settlementKinds: kinds,
       cost: v.num(file, b, "cost"),
+      ...(b.maxInstances !== undefined ? { maxInstances: v.num(file, b, "maxInstances", 1) } : {}),
+      ...(b.incompatibleWith !== undefined ? { incompatibleWith: v.strList(file, b, "incompatibleWith") } : {}),
       ...(b.turns !== undefined ? { turns: v.num(file, b, "turns", 1) } : {}),
       ...(b.requires !== undefined ? { requires: v.str(file, b, "requires") } : {}),
       ...(b.group !== undefined ? { group: v.str(file, b, "group") } : defaultGroup ? { group: defaultGroup } : {}),
@@ -798,11 +946,38 @@ function parseBuildingsDoc(
           ? { orderPerTurn: v.num(`${file}#${id}`, effectsRaw, "orderPerTurn") }
           : {}),
         ...(effectsRaw.unlock !== undefined ? { unlock: v.strList(`${file}#${id}`, effectsRaw, "unlock") } : {}),
+        ...(effectsRaw.unlockRoster !== undefined
+          ? { unlockRoster: v.strList(`${file}#${id}`, effectsRaw, "unlockRoster") }
+          : {}),
         ...(effectsRaw.capacity !== undefined
           ? { capacity: parseCapacity(`${file}#${id}.effects`, "capacity", effectsRaw.capacity, v, warnings) }
           : {}),
         ...(effectsRaw.upkeep !== undefined
           ? { upkeep: parseCapacity(`${file}#${id}.effects`, "upkeep", effectsRaw.upkeep, v, warnings) }
+          : {}),
+        ...(effectsRaw.freeGarrisonUnits !== undefined
+          ? { freeGarrisonUnits: v.num(`${file}#${id}.effects`, effectsRaw, "freeGarrisonUnits", 0) }
+          : {}),
+        ...(militiaDefense ? { militiaDefense } : {}),
+        ...(chainMultiplier ? { chainMultiplier } : {}),
+        ...(effectsRaw.freeBuildingUpkeepPerRegion !== undefined
+          ? {
+              freeBuildingUpkeepPerRegion: v.num(`${file}#${id}.effects`, effectsRaw, "freeBuildingUpkeepPerRegion", 0)
+            }
+          : {}),
+        ...(conversion ? { conversion } : {}),
+        ...(effectsRaw.siegeSupplies !== undefined
+          ? { siegeSupplies: v.num(`${file}#${id}.effects`, effectsRaw, "siegeSupplies", 0) }
+          : {}),
+        ...(effectsRaw.atrocityIgnore !== undefined
+          ? { atrocityIgnore: v.num(`${file}#${id}.effects`, effectsRaw, "atrocityIgnore", 0) }
+          : {}),
+        ...(atrocityMod ? { atrocityMod } : {}),
+        ...(effectsRaw.requiresGarrisonToProduce !== undefined
+          ? { requiresGarrisonToProduce: v.bool(`${file}#${id}.effects`, effectsRaw, "requiresGarrisonToProduce") }
+          : {}),
+        ...(effectsRaw.rollBonusPerTurn !== undefined
+          ? { rollBonusPerTurn: v.num(`${file}#${id}.effects`, effectsRaw, "rollBonusPerTurn", 0) }
           : {})
       }
     });
@@ -1340,9 +1515,16 @@ export function validateAndResolve(docs: RawContentDocs): {
   const seenChainTier = new Set<string>();
   const buildingIds = new Set(buildings.map(b => b.id));
   for (const b of buildings) {
-    const key = `${b.group ?? ""}:${b.chain}:${b.tier}`;
-    if (seenChainTier.has(key)) v.warn("buildings.yaml", `duplicate chain/tier ${b.chain}:${b.tier} on '${b.id}'`);
-    seenChainTier.add(key);
+    if (
+      (!b.kind || b.kind === "structure") &&
+      b.chain !== "custom" &&
+      b.chain !== "unchained" &&
+      b.chain !== "resource"
+    ) {
+      const key = `${b.group ?? ""}:${b.chain}:${b.tier}`;
+      if (seenChainTier.has(key)) v.warn("buildings.yaml", `duplicate chain/tier ${b.chain}:${b.tier} on '${b.id}'`);
+      seenChainTier.add(key);
+    }
     if (b.requires && !buildingIds.has(b.requires)) {
       v.warn(
         "buildings.yaml",
@@ -1368,6 +1550,34 @@ export function validateAndResolve(docs: RawContentDocs): {
       for (const uid of b.effects.unlock) {
         if (!allUnitIds.has(uid))
           v.warn("buildings.yaml", `unlock references unknown unit '${uid}'${didYouMean(uid, [...allUnitIds])}`);
+      }
+    }
+    if (b.effects.militiaDefense) {
+      if (!allUnitIds.has(b.effects.militiaDefense.unitType)) {
+        v.warn(
+          "buildings.yaml",
+          `militiaDefense references unknown unit '${b.effects.militiaDefense.unitType}'${didYouMean(b.effects.militiaDefense.unitType, [...allUnitIds])}`
+        );
+      }
+    }
+    if (b.effects.unlockRoster) {
+      for (const rId of b.effects.unlockRoster) {
+        if (!rosters[rId]) {
+          v.warn(
+            "buildings.yaml",
+            `unlockRoster references unknown roster '${rId}'${didYouMean(rId, Object.keys(rosters))}`
+          );
+        }
+      }
+    }
+    if (b.incompatibleWith) {
+      for (const otherId of b.incompatibleWith) {
+        if (!buildingIds.has(otherId)) {
+          v.warn(
+            "buildings.yaml",
+            `incompatibleWith references unknown building '${otherId}'${didYouMean(otherId, [...buildingIds])}`
+          );
+        }
       }
     }
   }
@@ -1470,7 +1680,20 @@ export const DEFAULT_ROSTER_MAP: Record<string, boolean> = {
   darkElfBase: true,
   skavenBase: true,
   lizardmenBase: true,
-  infernalDwarfBase: true
+  infernalDwarfBase: true,
+  ogreBase: true,
+  demonBase: true,
+  beastfolkBase: true,
+  halflingBase: true,
+  feyBase: true,
+  dragonbornBase: true,
+  celestialBase: true,
+  merfolkBase: true,
+  elementalBase: true,
+  constructBase: true,
+  eldritchBase: true,
+  tribalBase: true,
+  arachnidBase: true
 };
 
 /**
@@ -1488,86 +1711,122 @@ export function inferRosterForCulture(
   if (!cultureName && !cultureType && !stateType) return defaultRoster;
   const race = raceOf(cultureName) || (cultureName ? cultureName.toLowerCase() : "");
   const name = cultureName ? cultureName.toLowerCase() : "";
+  const matches = (rx: RegExp) => rx.test(race) || rx.test(name);
 
   for (const id of Object.keys(rosters)) {
     if (name?.includes(id.toLowerCase())) return id;
   }
 
-  // 1. Undead factions (check before Sylvan to avoid Sylvania collision)
-  if (
-    /(vampir|undead|sylvania|sylvanian|barrow|necromanc)/i.test(race) ||
-    /(vampir|undead|sylvania|sylvanian|barrow|necromanc)/i.test(name)
-  ) {
-    if (rosters.vampireBase) return "vampireBase";
+  // 1. Undead factions (Tomb Kings / Lich before Vampire)
+  if (matches(/(tomb|khemri|nehekhar|mummy|pharaoh|lich|necromanc)/i) && rosters.tombKingsBase) {
+    return "tombKingsBase";
   }
-  if (/(tomb|khemri|nehekhar|mummy|pharaoh)/i.test(race) || /(tomb|khemri|nehekhar|mummy|pharaoh)/i.test(name)) {
-    if (rosters.tombKingsBase) return "tombKingsBase";
+  if (matches(/(vampir|nightblood|undead|sylvania|sylvanian|barrow)/i) && rosters.vampireBase) {
+    return "vampireBase";
   }
 
   // 2. Specialized Dwarfs & Elves before generic archetypes
-  if (/(infernal|chaos dwarf|hashut|zharr)/i.test(race) || /(infernal|chaos dwarf|hashut|zharr)/i.test(name)) {
-    if (rosters.infernalDwarfBase) return "infernalDwarfBase";
+  if (matches(/(infernal|chaos dwarf|hashut|zharr|duergar|deep dwarf)/i) && rosters.infernalDwarfBase) {
+    return "infernalDwarfBase";
   }
-  if (
-    /(dark elf|dark elvish|trow|lothian|drow|corsair)/i.test(race) ||
-    /(dark elf|dark elvish|trow|lothian|drow|corsair)/i.test(name)
-  ) {
-    if (rosters.darkElfBase) return "darkElfBase";
+  if (matches(/(dark elf|dark elvish|trow|lothian|drow|corsair|druchii)/i) && rosters.darkElfBase) {
+    return "darkElfBase";
   }
-  if (
-    /(wood elf|wood elvish|sylvan|weald|glade)/i.test(race) ||
-    /(wood elf|wood elvish|sylvan|weald|glade)/i.test(name)
-  ) {
-    if (rosters.woodElfBase) return "woodElfBase";
+  if (matches(/(wood elf|wood elvish|sylvan|weald|glade|asrai)/i) && rosters.woodElfBase) {
+    return "woodElfBase";
+  }
+  if (matches(/(sea elf|pelagic|merfolk|aelvar|triton|aquatic)/i) && rosters.merfolkBase) {
+    return "merfolkBase";
   }
 
-  // 3. Specialized Under-Empire & Beast/Monster factions
-  if (
-    /(skaven|ratmen|vermin|blight|arachnid|arago)/i.test(race) ||
-    /(skaven|ratmen|vermin|blight|arachnid|arago)/i.test(name)
-  ) {
+  // 3. Specialized Under-Empire, Dragonborn & Beast/Monster factions
+  if (matches(/(arachnid|arago|rakhnid|spider|brood hive|chitin)/i)) {
+    if (rosters.arachnidBase) return "arachnidBase";
     if (rosters.skavenBase) return "skavenBase";
   }
-  if (
-    /(lizard|saurian|serpent|snaga|drakonic|rake)/i.test(race) ||
-    /(lizard|saurian|serpent|snaga|drakonic|rake)/i.test(name)
-  ) {
-    if (rosters.lizardmenBase) return "lizardmenBase";
+  if (matches(/(skaven|ratmen|vermin|blight|under-empire|thaggoraki)/i) && rosters.skavenBase) {
+    return "skavenBase";
   }
-
-  // 3. Specialized Human / Chaos Realms
-  if (/(chivalr|breton|grail|luarian)/i.test(race) || /(chivalr|breton|grail|luarian)/i.test(name)) {
-    if (rosters.chivalricBase) return "chivalricBase";
+  if (matches(/(dragonborn|drakonic|wyrm|dragon)/i) && rosters.dragonbornBase) {
+    return "dragonbornBase";
   }
-  if (/(empire|elector|sigmar|schwarzen)/i.test(race) || /(empire|elector|sigmar|schwarzen)/i.test(name)) {
-    if (rosters.empireBase) return "empireBase";
+  if (matches(/(lizard|saurian|serpent|snaga|rake)/i) && rosters.lizardmenBase) {
+    return "lizardmenBase";
   }
-  if (/(chaos|yotunn|giant|wasteland|ruin)/i.test(race) || /(chaos|yotunn|giant|wasteland|ruin)/i.test(name)) {
-    if (rosters.chaosBase) return "chaosBase";
-  }
-
-  // 4. Core Fantasy & Historical Fallbacks
-  if (/(dwarf|dwarv|dunirr|khazad)/i.test(race) || /(dwarf|dwarv|dunirr|khazad)/i.test(name)) {
-    if (rosters.dwarfBase) return "dwarfBase";
-  }
-  if (/(elf|elv|eldar|quenian)/i.test(race) || /(elf|elv|eldar|quenian)/i.test(name)) {
-    if (rosters.elfBase) return "elfBase";
-  }
-  if (/(orc|ork|goblin|uruk|ugluk|kobold)/i.test(race) || /(orc|ork|goblin|uruk|ugluk|kobold)/i.test(name)) {
-    if (rosters.orcBase) return "orcBase";
+  if (matches(/(ogre|troll|stonehorn|mournfang|gutbuster)/i) && rosters.ogreBase) {
+    return "ogreBase";
   }
   if (
-    /(steppe|nomad)/i.test(race) ||
-    /(steppe|nomad)/i.test(name) ||
-    cultureType === "Nomadic" ||
-    stateType === "Nomadic"
+    matches(/(beastfolk|beastmen|minotaur|bullkin|lionkin|catfolk|wolfkin|werefolk|aarakocra|birdfolk|brayherd)/i) &&
+    rosters.beastfolkBase
   ) {
+    return "beastfolkBase";
+  }
+  if (matches(/(demon|daemon|fiend|tiefling|hellblade|abyssal)/i) && rosters.demonBase) {
+    return "demonBase";
+  }
+  if (matches(/(halfling|hobbit|gnome|tinker|moot)/i) && rosters.halflingBase) {
+    return "halflingBase";
+  }
+  if (matches(/(fey|fae|fair folk|sidhe|sprite|pixie|seelie|unseelie)/i) && rosters.feyBase) {
+    return "feyBase";
+  }
+  if (matches(/(celestial|aasimar|chosen|oracle|angelic|seraph)/i) && rosters.celestialBase) {
+    return "celestialBase";
+  }
+  if (matches(/(elemental|genasi|primordial)/i) && rosters.elementalBase) {
+    return "elementalBase";
+  }
+  if (matches(/(construct|warforged|automaton|golem|clockwork)/i) && rosters.constructBase) {
+    return "constructBase";
+  }
+  if (matches(/(eldritch|aboleth|mindflayer|illithid|aberration)/i) && rosters.eldritchBase) {
+    return "eldritchBase";
+  }
+
+  // 4. Specialized Human Realms & Regional Traditions
+  if (
+    matches(/(eastern empire|east asia|cathay|yamoto|hantzu|koryo|guantzu|oriental|nihon)/i) &&
+    rosters.eastAsiaBase
+  ) {
+    return "eastAsiaBase";
+  }
+  if (matches(/(empire|imperial|elector|sigmar|schwarzen)/i) && rosters.empireBase) {
+    return "empireBase";
+  }
+  if (matches(/(chivalr|feudal|breton|grail|luarian)/i) && rosters.chivalricBase) {
+    return "chivalricBase";
+  }
+  if (matches(/(ottoman|desert nomad|arabi|eurabic|turchian|turan)/i) && rosters.ottomanBase) {
+    return "ottomanBase";
+  }
+  if (matches(/(mughal|southern kingdom|kiswaili|yoruba|indus)/i) && rosters.mughalBase) {
+    return "mughalBase";
+  }
+  if (matches(/(renaissance|pike and shot|condottieri|borgia)/i) && rosters.renaissanceBase) {
+    return "renaissanceBase";
+  }
+  if (matches(/(tribal|jungle tribe|tundra tribe|islander)/i) && rosters.tribalBase) {
+    return "tribalBase";
+  }
+  if (matches(/(chaos|yotunn|norse|norsca|nordlander|wasteland|ruin)/i) && rosters.chaosBase) {
+    return "chaosBase";
+  }
+
+  // 5. Core Fantasy & Historical Fallbacks
+  if (matches(/(dwarf|dwarv|dunirr|khazad)/i) && rosters.dwarfBase) {
+    return "dwarfBase";
+  }
+  if (matches(/(elf|elv|eldar|quenian|quenar)/i) && rosters.elfBase) {
+    return "elfBase";
+  }
+  if (matches(/(orc|ork|goblin|uruk|ugluk|kobold)/i) && rosters.orcBase) {
+    return "orcBase";
+  }
+  if (matches(/(steppe|nomad)/i) || cultureType === "Nomadic" || stateType === "Nomadic") {
     if (rosters.steppeBase) return "steppeBase";
   }
-  if (
-    (cultureType === "Highland" || stateType === "Highland") &&
-    (/(mountain|hill|stone|rock)/i.test(name) || /(mountain|hill|stone|rock)/i.test(race))
-  ) {
+  if ((cultureType === "Highland" || stateType === "Highland") && matches(/(mountain|hill|stone|rock)/i)) {
     if (rosters.dwarfBase) return "dwarfBase";
   }
 

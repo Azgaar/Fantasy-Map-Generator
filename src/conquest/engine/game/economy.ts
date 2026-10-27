@@ -5,7 +5,9 @@
  * seasonal movement/income, elimination + victory checks, YAML event scan.
  */
 
+import type { BuildingDef } from "../common/content";
 import {
+  addFactionAtrocity,
   developmentCap,
   isGarrisoned,
   recomputeCapacity,
@@ -19,7 +21,8 @@ import { setRelation } from "./diplomacy";
 import type { GameEvent } from "./events";
 import { graphIndex, regionDistance } from "./graph";
 import { maxMovement } from "./movement";
-import { cleanupSieges } from "./sieges";
+import { assetCheckDifficulties, rollValueCheck } from "./saves";
+import { cleanupSieges, regionSiegeSupplies } from "./sieges";
 import { season } from "./state";
 import { checkElimination, checkVictory } from "./victory";
 import { checkRebellions, scanEvents, seasonMovementMult } from "./world";
@@ -39,6 +42,158 @@ import { checkRebellions, scanEvents, seasonMovementMult } from "./world";
 export function salesTaxFactor(salesTax: number): number {
   if (!Number.isFinite(salesTax)) return 1;
   return Math.min(1.4, Math.max(0.7, 0.8 + salesTax * 2));
+}
+
+export interface ConstructionStepResult {
+  completed: boolean;
+  buildingId: string;
+  event: GameEvent;
+}
+
+/** Advance an in-progress construction project by rolling the next AER value check. */
+export function advanceConstructionStep(
+  ctx: EngineCtx,
+  regionId: number,
+  opts: { spendTreasure?: number; useAtrocity?: boolean } = {}
+): ConstructionStepResult | null {
+  const { campaign, content, pack } = ctx;
+  const rs = campaign.regions[String(regionId)];
+  if (!rs?.construction) return null;
+
+  const buildingId = rs.construction.buildingId;
+  const building = content.buildings.find(b => b.id === buildingId);
+  if (!building) return null;
+
+  rs.construction.checks ??= { m: false, w: false, s: false };
+  const checks = rs.construction.checks;
+  const pools = ["m", "w", "s"] as const;
+  const pool = pools.find(p => !checks[p]);
+
+  const isStructural = (b?: BuildingDef) => !b?.kind || b.kind === "structure";
+
+  if (!pool) {
+    if (isStructural(building)) {
+      rs.buildings = rs.buildings.filter(bid => {
+        const other = content.buildings.find(b => b.id === bid);
+        if (!other || !isStructural(other)) return true;
+        return other.chain !== building.chain || other.tier >= building.tier;
+      });
+    }
+    rs.buildings.push(buildingId);
+    rs.construction = null;
+    return {
+      completed: true,
+      buildingId,
+      event: {
+        type: "AssetCheckRolled",
+        regionId,
+        buildingId,
+        pool: "s",
+        roll: 20,
+        modifier: 0,
+        dc: 0,
+        success: true,
+        pityBonus: 0
+      }
+    };
+  }
+
+  const pityBonus = rs.construction.pityBonus ?? 0;
+  const factionId = rs.owner;
+  const factionState = campaign.factions[String(factionId)];
+  const currentAtrocity = factionState?.atrocity ?? 0;
+  const dcs = assetCheckDifficulties(building, pityBonus, currentAtrocity);
+  const dc = dcs[pool];
+
+  const check = rollValueCheck(ctx, regionId, pool);
+  let total = check.roll + check.modifier;
+
+  // Democratic Traditions custom bonus (+3 to one check per turn across Domain).
+  const factionHoldsDemocratic = pack.regions.some(r => {
+    const rState = campaign.regions[String(r.id)];
+    return rState?.owner === factionId && rState.buildings.includes("custom_democratic");
+  });
+  if (factionHoldsDemocratic) {
+    total += 3;
+  }
+
+  // Pre-spent Treasure (max 5 points, +1 per point spent).
+  if (opts.spendTreasure && opts.spendTreasure > 0 && factionState) {
+    const toSpend = Math.min(Math.min(opts.spendTreasure, 5), factionState.treasure ?? 0);
+    if (toSpend > 0) {
+      factionState.treasure = (factionState.treasure ?? 0) - toSpend;
+      total += toSpend;
+    }
+  }
+
+  // Post-roll auto-rescue with reserve Treasure: 2 Treasure per +1 needed, up to +2 (max 4 Treasure).
+  if (total < dc && factionState && (factionState.treasure ?? 0) >= 2) {
+    const deficit = dc - total;
+    if (deficit <= 2) {
+      const neededTreasure = deficit * 2;
+      if ((factionState.treasure ?? 0) >= neededTreasure) {
+        factionState.treasure = (factionState.treasure ?? 0) - neededTreasure;
+        total += deficit;
+      }
+    }
+  }
+
+  // Forced check via Atrocity override: adds (dc - total) Atrocity points.
+  if (opts.useAtrocity && total < dc) {
+    const deficit = dc - total;
+    addFactionAtrocity(ctx, factionId, deficit, `Forced asset check for ${building.name}`);
+    total = dc;
+  }
+
+  const success = total >= dc;
+
+  if (success) {
+    checks[pool] = true;
+    const completed = checks.m && checks.w && checks.s;
+    if (completed) {
+      if (isStructural(building)) {
+        rs.buildings = rs.buildings.filter(bid => {
+          const other = content.buildings.find(b => b.id === bid);
+          if (!other || !isStructural(other)) return true;
+          return other.chain !== building.chain || other.tier >= building.tier;
+        });
+      }
+      rs.buildings.push(buildingId);
+      rs.construction = null;
+    }
+    return {
+      completed,
+      buildingId,
+      event: {
+        type: "AssetCheckRolled",
+        regionId,
+        buildingId,
+        pool,
+        roll: check.roll,
+        modifier: check.modifier,
+        dc,
+        success: true,
+        pityBonus
+      }
+    };
+  } else {
+    rs.construction.pityBonus = pityBonus + 1;
+    return {
+      completed: false,
+      buildingId,
+      event: {
+        type: "AssetCheckRolled",
+        regionId,
+        buildingId,
+        pool,
+        roll: check.roll,
+        modifier: check.modifier,
+        dc,
+        success: false,
+        pityBonus: rs.construction.pityBonus
+      }
+    };
+  }
 }
 
 export function economyTick(ctx: EngineCtx): GameEvent[] {
@@ -224,6 +379,21 @@ export function economyTick(ctx: EngineCtx): GameEvent[] {
     }
     state.lastIncome = Math.round(income);
     state.lastExpenses = Math.round(expenses);
+    // Phase 4: Atrocity per-turn delta (Devil Worshipers -1/turn).
+    const holdsDevilWorshipers = pack.regions.some(r => {
+      const rs = campaign.regions[String(r.id)];
+      return rs?.owner === f.id && rs.buildings.includes("custom_devil_worshipers");
+    });
+    if (holdsDevilWorshipers && (state.atrocity ?? 0) > 0) {
+      state.atrocity = Math.max(0, (state.atrocity ?? 0) - 1);
+      events.push({
+        type: "AtrocityChanged",
+        factionId: f.id,
+        delta: -1,
+        reason: "Devil Worshipers natural decay",
+        newAtrocity: state.atrocity
+      });
+    }
     events.push({
       type: "TreasuryTicked",
       factionId: f.id,
@@ -238,23 +408,37 @@ export function economyTick(ctx: EngineCtx): GameEvent[] {
   for (const r of pack.regions) {
     const rs = campaign.regions[String(r.id)]!;
     if (rs.construction) {
-      rs.construction.turnsLeft--;
-      if (rs.construction.turnsLeft <= 0) {
-        const done = rs.construction.buildingId;
-        // AER p1591: an upgrade *consumes* the lesser asset — it does not join
-        // it. Without this, a Stone Walls went up beside the Palisade it
-        // replaced and the region counted both their capacity, their upkeep
-        // and their fortification.
-        const built = buildingById.get(done);
-        if (built) {
-          rs.buildings = rs.buildings.filter(bid => {
-            const other = buildingById.get(bid);
-            return other === undefined || other.chain !== built.chain || other.tier >= built.tier;
-          });
+      if (config.saves.enabled && rs.construction.checks) {
+        if (rs.construction.stepTakenThisTurn) {
+          rs.construction.stepTakenThisTurn = false;
+        } else {
+          const res = advanceConstructionStep(ctx, r.id);
+          if (res) {
+            events.push(res.event);
+            if (res.completed) {
+              events.push({ type: "BuildingCompleted", regionId: r.id, buildingId: res.buildingId });
+            }
+          }
         }
-        rs.buildings.push(done);
-        rs.construction = null;
-        events.push({ type: "BuildingCompleted", regionId: r.id, buildingId: done });
+      } else {
+        rs.construction.turnsLeft--;
+        if (rs.construction.turnsLeft <= 0) {
+          const done = rs.construction.buildingId;
+          const built = buildingById.get(done);
+          if (built) {
+            const isStructural = (b?: BuildingDef) => !b?.kind || b.kind === "structure";
+            if (isStructural(built)) {
+              rs.buildings = rs.buildings.filter(bid => {
+                const other = buildingById.get(bid);
+                if (!other || !isStructural(other)) return true;
+                return other.chain !== built.chain || other.tier >= built.tier;
+              });
+            }
+          }
+          rs.buildings.push(done);
+          rs.construction = null;
+          events.push({ type: "BuildingCompleted", regionId: r.id, buildingId: done });
+        }
       }
     }
     if (rs.owner === 0) continue;
@@ -298,9 +482,17 @@ export function economyTick(ctx: EngineCtx): GameEvent[] {
   }
 
   for (const siege of campaign.sieges) {
-    siege.progress++;
-    const rs = campaign.regions[String(siege.regionId)];
-    if (rs) rs.order = Math.max(0, rs.order - config.sieges.orderDamagePerTick);
+    if (siege.suppliesRemaining === undefined && siege.progress === 0) {
+      siege.suppliesRemaining = regionSiegeSupplies(ctx, siege.regionId);
+    }
+    if ((siege.suppliesRemaining ?? 0) > 0) {
+      const consumed = Math.min(10, siege.suppliesRemaining!);
+      siege.suppliesRemaining! -= consumed;
+    } else {
+      siege.progress++;
+      const rs = campaign.regions[String(siege.regionId)];
+      if (rs) rs.order = Math.max(0, rs.order - config.sieges.orderDamagePerTick);
+    }
   }
   cleanupSieges(ctx);
 

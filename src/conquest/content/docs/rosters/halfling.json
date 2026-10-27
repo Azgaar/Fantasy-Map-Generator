@@ -1,0 +1,246 @@
+{
+  "id": "halflingBase",
+  "name": "Shire-Moot & Tinker Guilds",
+  "roster": {
+    "id": "halflingBase",
+    "units": {
+      "shire_wardens": {
+        "name": "Mootland Pitchfork & Halberd Watch",
+        "category": "melee",
+        "blocks": 0.16,
+        "attack": 6,
+        "defense": 12,
+        "charge": 2,
+        "missile": 0,
+        "cost": 190,
+        "upkeep": 24,
+        "capacityCost": {
+          "m": 1,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        },
+        "resistArcane": 0.15
+      },
+      "burrow_billmen": {
+        "name": "Badger-Gate Heavy Billmen",
+        "category": "melee",
+        "blocks": 0.14,
+        "requiresGood": 4,
+        "attack": 8,
+        "defense": 14,
+        "charge": 3,
+        "missile": 0,
+        "cost": 380,
+        "upkeep": 48,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 1,
+          "c": 0
+        },
+        "resistArcane": 0.15
+      },
+      "master_slingers": {
+        "name": "Skipper-Stone Master Slingers",
+        "category": "ranged",
+        "blocks": 0.15,
+        "attack": 3,
+        "defense": 7,
+        "charge": 1,
+        "missile": 12,
+        "cost": 260,
+        "upkeep": 32,
+        "capacityCost": {
+          "m": 1,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        },
+        "resistArcane": 0.15
+      },
+      "tinker_arbalests": {
+        "name": "Gnome Clockwork Repeater-Crossbows",
+        "category": "ranged",
+        "blocks": 0.12,
+        "requiresGood": 4,
+        "attack": 4,
+        "defense": 8,
+        "charge": 1,
+        "missile": 15,
+        "cost": 420,
+        "upkeep": 52,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 0,
+          "c": 1
+        }
+      },
+      "pony_bounders": {
+        "name": "Shire Pony & Ram-Rider Outriders",
+        "category": "cavalry",
+        "blocks": 0.08,
+        "attack": 9,
+        "defense": 10,
+        "charge": 10,
+        "missile": 5,
+        "cost": 460,
+        "upkeep": 56,
+        "capacityCost": {
+          "m": 2,
+          "w": 2,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "clockwork_knights": {
+        "name": "Gnomish Steam-Suit Striders",
+        "category": "monster",
+        "blocks": 0.05,
+        "requiresGood": 4,
+        "attack": 12,
+        "defense": 15,
+        "charge": 10,
+        "missile": 6,
+        "cost": 650,
+        "upkeep": 75,
+        "capacityCost": {
+          "m": 3,
+          "w": 3,
+          "s": 0,
+          "c": 1
+        }
+      },
+      "war_wagon_pot": {
+        "name": "Armored Cook-Wagon & Steam Calliope",
+        "category": "monster",
+        "blocks": 0.03,
+        "attack": 11,
+        "defense": 16,
+        "charge": 9,
+        "missile": 12,
+        "cost": 780,
+        "upkeep": 88,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 2,
+          "c": 0
+        },
+        "powers": {
+          "heal": 8,
+          "ward": 0.08
+        }
+      },
+      "illusion_tinkers": {
+        "name": "Gnome Illusionists & Alchemists",
+        "category": "spellcaster",
+        "blocks": 0.02,
+        "attack": 3,
+        "defense": 7,
+        "charge": 1,
+        "missile": 14,
+        "cost": 820,
+        "upkeep": 95,
+        "capacityCost": {
+          "m": 1,
+          "w": 2,
+          "s": 2,
+          "c": 2
+        },
+        "resistArcane": 0.2,
+        "powers": {
+          "ward": 0.14,
+          "hex": 0.1
+        }
+      },
+      "hotpot_catapult": {
+        "name": "Mootland Boiling Hot-Pot & Bombards",
+        "category": "artillery",
+        "blocks": 0.04,
+        "attack": 2,
+        "defense": 5,
+        "charge": 0,
+        "missile": 16,
+        "cost": 700,
+        "upkeep": 75,
+        "capacityCost": {
+          "m": 2,
+          "w": 3,
+          "s": 1,
+          "c": 0
+        },
+        "powers": {
+          "hex": 0.06
+        }
+      },
+      "moot_militia": {
+        "name": "Mootland Field Militia",
+        "category": "melee",
+        "blocks": 0.15,
+        "attack": 3,
+        "defense": 6,
+        "charge": 1,
+        "missile": 0,
+        "cost": 60,
+        "upkeep": 7,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "hedge_slingers": {
+        "name": "Hedgerow Slinger Watch",
+        "category": "ranged",
+        "blocks": 0.1,
+        "attack": 2,
+        "defense": 4,
+        "charge": 1,
+        "missile": 6,
+        "cost": 70,
+        "upkeep": 8,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      }
+    },
+    "recruitable": [
+      "shire_wardens",
+      "burrow_billmen",
+      "master_slingers",
+      "tinker_arbalests",
+      "pony_bounders",
+      "clockwork_knights",
+      "war_wagon_pot",
+      "illusion_tinkers",
+      "hotpot_catapult"
+    ],
+    "garrison": {
+      "melee": "moot_militia",
+      "ranged": "hedge_slingers"
+    },
+    "regimentMap": {
+      "infantry": "shire_wardens",
+      "archers": "master_slingers",
+      "cavalry": "pony_bounders",
+      "artillery": "hotpot_catapult"
+    },
+    "caps": {
+      "burrow_billmen": 5,
+      "tinker_arbalests": 4,
+      "pony_bounders": 4,
+      "clockwork_knights": 3,
+      "war_wagon_pot": 2,
+      "illusion_tinkers": 2,
+      "hotpot_catapult": 3
+    }
+  },
+  "tech": [],
+  "buildings": []
+}
