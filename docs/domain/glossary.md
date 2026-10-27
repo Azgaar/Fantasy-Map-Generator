@@ -26,7 +26,11 @@ This glossary covers core terminology, data structures, and concepts used throug
 
 ## World Data & State
 
-- **Culture**: A group of cells sharing cultural traits and modifiers.
+- **Culture**: A group of cells sharing cultural traits and modifiers. Since the traits layer it also carries an **Alignment** and 1–2 **Cultural Values** (optional: old maps and `generation.cultures.traits: false` have neither).
+- **Alignment**: A Culture's or a Historical Figure's ethos, one of `good`, `lawful`, `neutral`, `chaotic`, `evil`, in that canonical order. A State has none stored: it shares its dominant Culture's, the way the rules give authority the culture's alignment. Data and rolls in `src/data/culture-traits.ts`.
+- **Prevailing Alignment**: The 1d12 column an entity rolls its own Alignment on, chosen by its parent's Alignment. A Culture from scratch rolls the `neutral` column (6/12 neutral); a founded Culture rolls its parent's; a Historical Figure rolls its ruler's Culture's. This is what makes a good character rare in an evil realm, rather than a coin flip.
+- **Cultural Value**: What a people prizes, e.g. `truth`, `justice`, `power`. A Culture rolls two on its Alignment's 1d12 column; a duplicate roll collapses to one **dominant** value, held above all others. Faces 11–12 redirect to another Alignment's column.
+- **Virtue** / **Vice**: The character traits of a Historical Figure, `VIRTUES` and `VICES` (50 each). An Alignment dictates how many of each (3/0 good … 0/3 evil, 1/1 neutral); no word repeats on one figure and no **Contradiction** pair (a direct antonym such as `just`↔`unjust`) is ever drawn together.
 - **Burg**: A settlement or city on the map, with population, culture, production, and so on.
 - **State**: A political entity (country, kingdom, etc.) grouping multiple burgs.
 - **Province**: A political or administrative subdivision of a State.

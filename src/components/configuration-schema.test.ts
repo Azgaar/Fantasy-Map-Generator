@@ -26,6 +26,7 @@ describe("options schema", () => {
     expect(generation.states.limit).toBeTypeOf("number");
     expect(generation.states.freeBurgs).toBe(0);
     expect(generation.cultures.limit).toBeTypeOf("number");
+    expect(generation.cultures.traits).toBe(true);
     expect(generation.religions.limit).toBeTypeOf("number");
     expect(generation.provinces.ratio).toBeTypeOf("number");
   });
@@ -126,6 +127,23 @@ describe("the schema describes the value, not merely its type", () => {
       expect(repair("map", map).map.cultures.set).toBe(setId);
       expect(pinSchemas.culturesSet.safeParse(setId).success).toBe(true);
     }
+  });
+
+  it("reads the culture-traits request as a plain on/off, defaulting to on", () => {
+    const defaults = Options.getDefaultOptions();
+    const generation = { ...defaults.generation, cultures: { ...defaults.generation.cultures, traits: "yes" } };
+
+    expect(repair("generation", generation).generation.cultures.traits).toBe(true);
+
+    const off = { ...defaults.generation, cultures: { ...defaults.generation.cultures, traits: false } };
+    expect(repair("generation", off).generation.cultures.traits).toBe(false);
+  });
+
+  it("leaves a generation section without the culture-traits switch at its default", () => {
+    const generation = structuredClone(Options.getDefaultOptions().generation) as Record<string, any>;
+    delete generation.cultures.traits;
+
+    expect(repair("generation", generation).generation.cultures.traits).toBe(true);
   });
 
   it("repairs a zoom extent whose ends are the wrong way round", () => {

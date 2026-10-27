@@ -205,7 +205,8 @@ export const optionsSchema = z.strictObject({
       limit: count,
       set: cultureSetId,
       sizeVariety: nonNegative,
-      growthRate: nonNegative
+      growthRate: nonNegative,
+      traits: z.boolean() // alignments and values; off keeps maps for non-RPG purposes lean
     }),
     states: z.strictObject({ limit: count, sizeVariety: nonNegative, growthRate: nonNegative, freeBurgs: percent }),
     provinces: z.strictObject({ ratio: percent }),

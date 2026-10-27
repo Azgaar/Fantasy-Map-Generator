@@ -89,6 +89,13 @@ const OPTION_BINDINGS: Record<string, OptionBinding> = {
     pin: "culturesSet",
     effect: syncCultures
   }),
+  // no pin and no roll: a plain on/off the generator reads, not a template-randomized number.
+  // The panel has no boolean control, so the binding answers in the select's own vocabulary
+  cultureTraits: {
+    read: o => (o.generation.cultures.traits ? "on" : "off"),
+    update: value => Options.set(o => (o.generation.cultures.traits = value === "on")),
+    event: "change"
+  },
   statesNumber: option({
     read: o => o.generation.states.limit,
     write: (o, value) => (o.generation.states.limit = value),
@@ -294,6 +301,19 @@ const TEMPLATE = /* html */ `
                 `<option value="${key}" data-max="${set.max}"${key === "world" ? " selected" : ""}>${set.name}</option>`
             )
             .join("\n          ")}
+        </select>
+      </td>
+      <td></td>
+    </tr>
+    <tr
+      data-tip="Give every culture an alignment and core values, and every historical figure its virtues and vices. Off keeps a map for plain cartography lean"
+    >
+      <td></td>
+      <td>Culture traits</td>
+      <td>
+        <select id="cultureTraits" data-option="cultureTraits">
+          <option value="on" selected>Alignment and values</option>
+          <option value="off">None</option>
         </select>
       </td>
       <td></td>

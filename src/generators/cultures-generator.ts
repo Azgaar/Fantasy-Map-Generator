@@ -1,4 +1,5 @@
 import { max, quadtree, range } from "d3";
+import { type Alignment, rollAlignment, rollValues, traitsRng } from "@/data/culture-traits";
 import { Emblems } from "@/generators/emblems-generator";
 import type { Emblem } from "@/types/emblems";
 import { requireColor } from "@/utils/colorUtils";
@@ -42,6 +43,10 @@ export interface Culture {
   color?: string;
   type: CultureType;
   expansionism?: number;
+  /** the ethos its authorities share; absent on old maps and when the traits layer is off */
+  alignment?: Alignment;
+  /** 1 entry = a dominant value "held above all others", 2 = paired values */
+  values?: string[];
   origins?: (number | null)[];
   removed?: boolean;
   cells?: number;
@@ -1288,6 +1293,7 @@ class CulturesGenerator {
     options.map.cultures.set = options.generation.cultures.set;
     this.cells = pack.cells;
     const cultureIds = new Uint16Array(this.cells.i.length); // cell cultures
+    const withTraits = options.generation.cultures.traits; // one switch for the whole social layer
 
     const culturesInputNumber = options.generation.cultures.limit;
     const culturesInSetNumber = CULTURE_SETS[options.map.cultures.set]?.max ?? 0;
@@ -1447,6 +1453,14 @@ class CulturesGenerator {
       c.origins = [0];
       c.code = abbreviate(c.name, codes);
       codes.push(c.code);
+
+      // a culture starts from scratch: the neutral column, not its parent's
+      if (withTraits) {
+        const rng = traitsRng(options.map.seed, "culture", newId);
+        c.alignment = rollAlignment(rng);
+        c.values = rollValues(rng, c.alignment);
+      }
+
       cultureIds[center] = newId;
       if (emblemShape === "random") c.shield = this.getRandomShield();
     });
@@ -1499,7 +1513,7 @@ class CulturesGenerator {
     const i = pack.cultures.length;
     const color = getRandomColor();
 
-    pack.cultures.push({
+    const created: Culture = {
       name,
       color,
       base,
@@ -1514,7 +1528,18 @@ class CulturesGenerator {
       origins: [pack.cells.culture[center]],
       code,
       shield: Emblems.shape === "random" ? this.getRandomShield() : ""
-    });
+    };
+
+    // a founded culture diverges from its parent: it rolls the parent's prevailing column. The
+    // parent can be Wildlands, removed or unknown (old map/founded on the sea), which reads the
+    // neutral column - the same default a culture from scratch gets
+    if (options.generation.cultures.traits) {
+      const rng = traitsRng(options.map.seed, "culture", i);
+      created.alignment = rollAlignment(rng, pack.cultures[pack.cells.culture[center]]?.alignment);
+      created.values = rollValues(rng, created.alignment);
+    }
+
+    pack.cultures.push(created);
     return i;
   }
 

@@ -184,6 +184,19 @@ describe("options tab bindings", () => {
     expect(control("freeBurgs").value).toBe("30");
   });
 
+  it("turns the culture traits layer on and off", () => {
+    expect(control("cultureTraits").value).toBe("on");
+
+    edit(control("cultureTraits"), "off", "change");
+    expect(options.generation.cultures.traits).toBe(false);
+
+    tab.syncOptionInputs();
+    expect(control("cultureTraits").value).toBe("off");
+
+    edit(control("cultureTraits"), "on", "change");
+    expect(options.generation.cultures.traits).toBe(true);
+  });
+
   it("preserves the automatic burg readout alongside the legacy panel listener", () => {
     edit(control("manors"), "400");
     expect(output("manors").value).toBe("400");
