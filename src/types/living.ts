@@ -68,6 +68,20 @@ export interface BurgSimState {
   originalReligion?: number;
 }
 
+export interface ProvinceSimState {
+  provinceId: number;
+  /** Public order, 0..100 */
+  order: number;
+  /** Stability points, spent to purchase development */
+  stability: number;
+  /** Earned development points, each adds +1 W and +1 S to the region */
+  development: number;
+  developmentProgress: {
+    settlementId: number;
+    turnsLeft: number;
+  } | null;
+}
+
 export interface StatePolitySim {
   stateId: number;
   rulerId?: number;
@@ -111,6 +125,7 @@ export interface LivingWorldState {
   snapshotIntervalYears: number;
   promptOnPlayerBattles: boolean;
   states: Record<number, StatePolitySim>;
+  provinces: Record<number, ProvinceSimState>;
   burgs: Record<number, BurgSimState>;
   recentNews: LivingNewsItem[];
 }

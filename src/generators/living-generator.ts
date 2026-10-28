@@ -1,23 +1,29 @@
 // Living World seasonal simulation engine. See docs/plans/living-world.md
 import { currentContent } from "@/conquest/content/store";
 import { assignStateRoster, type BuildingDef, MEN_PER_BLOCK, type UnitType } from "@/conquest/engine/common/content";
+import type { CapacityPoints } from "@/conquest/engine/common/types";
 import { REGION_TIER_STEPS, SETTLEMENT_TIER_STEPS } from "@/conquest/engine/compiler";
+import { assetCheckDifficulties, valueModifier } from "@/conquest/engine/game/saves";
 import { rollAlignment, rollFigureTraits, traitsRng } from "@/data/culture-traits";
 import type { HistoricalFigure } from "@/types/history";
 import {
+  type BurgSimState,
   type CapacityLedger,
   type LivingNewsItem,
   type LivingNewsKind,
   type LivingWorldState,
   SEASON_NAMES,
-  type SeasonId
+  type SeasonId,
+  type StateAgenda,
+  type StatePolitySim
 } from "@/types/living";
 import { minmax } from "@/utils";
 import { createRng, type Rng } from "@/utils/rng";
 import type { Burg } from "./burgs-generator";
 import { Chronicle } from "./history-generator";
-import { Military, reconcileRegimentBlocks } from "./military-generator";
+import { Military, type Regiment, reconcileRegimentBlocks, syncRegimentTotals } from "./military-generator";
 import { Names } from "./names-generator";
+import type { Province } from "./provinces-generator";
 import type { State } from "./states-generator";
 
 const MAX_RECENT_NEWS = 50;
@@ -109,9 +115,13 @@ class LivingModel {
       snapshotIntervalYears: opts?.snapshotIntervalYears ?? 10,
       promptOnPlayerBattles: false,
       states: {},
+      provinces: {},
       burgs: {},
       recentNews: []
     };
+
+    history.living.provinces ??= {};
+    history.living.recentNews ??= [];
 
     if (opts?.seed !== undefined) history.living.seed = String(opts.seed);
     if (opts?.snapshotIntervalYears !== undefined) {
@@ -150,6 +160,7 @@ class LivingModel {
 
       this.syncWorld();
       this.stepBurgUnrest(living);
+      this.stepProvinces(living);
       this.stepStates(living);
       this.recomputeAllCapacities(living);
     }
@@ -163,7 +174,10 @@ class LivingModel {
     const living = history.living;
     if (!living) return;
 
+    living.provinces ??= {};
+    living.recentNews ??= [];
     this.syncBurgs(living);
+    this.syncProvinces(living);
     this.syncStates(living);
     this.recomputeAllCapacities(living);
   }
@@ -196,7 +210,8 @@ class LivingModel {
     if (!state?.i || state.removed) return ledger;
 
     const living = pack.history?.living;
-    const { content } = currentContent();
+    const { content, config } = currentContent();
+    const capacityConfig = config.capacity;
     const buildingById = new Map<string, BuildingDef>(content.buildings.map(b => [b.id, b]));
     const unitTypes: Record<string, UnitType> = Military.getUnitTypes();
 
@@ -226,6 +241,19 @@ class LivingModel {
       ledger.s.gen += rTier;
     });
 
+    // Earned province development adds +1 W and +1 S per point; a running
+    // development commits `developWPerTurn` Wealth until it completes.
+    for (const provId of provincePop.keys()) {
+      if (provId <= 0) continue;
+      const pSim = living?.provinces?.[provId];
+      if (!pSim) continue;
+      if (pSim.development > 0) {
+        ledger.w.gen += pSim.development;
+        ledger.s.gen += pSim.development;
+      }
+      if (pSim.developmentProgress) ledger.w.load += capacityConfig.developWPerTurn;
+    }
+
     // Capital court grants +2 C
     if (state.capital && pack.burgs[state.capital]?.state === stateId) {
       ledger.c.gen += 2;
@@ -237,6 +265,9 @@ class LivingModel {
       if (!burg?.i || burg.removed || burg.state !== stateId) continue;
       const bSim = living?.burgs[burg.i];
       if (!bSim) continue;
+
+      // A running construction commits Wealth until it completes.
+      if (bSim.construction) ledger.w.load += capacityConfig.constructionWPerTurn;
 
       // Occupation unrest drains -1 S and suppresses earned W bonus while unrest > 4
       if (bSim.unrest > 0) {
@@ -390,6 +421,27 @@ class LivingModel {
     }
   }
 
+  private syncProvinces(living: LivingWorldState): void {
+    const startOrder = currentContent().config.economy.startOrder;
+
+    for (const province of pack.provinces ?? []) {
+      if (!province?.i || province.removed || !province.state || pack.states[province.state]?.removed) {
+        if (province?.i && living.provinces[province.i]) delete living.provinces[province.i];
+        continue;
+      }
+
+      if (!living.provinces[province.i]) {
+        living.provinces[province.i] = {
+          provinceId: province.i,
+          order: startOrder,
+          stability: 0,
+          development: 0,
+          developmentProgress: null
+        };
+      }
+    }
+  }
+
   private ensureStateRuler(state: State, living: LivingWorldState): number {
     const history = Chronicle.sync();
     history.figures ??= [];
@@ -487,16 +539,556 @@ class LivingModel {
     }
   }
 
-  /** Step each active state's seasonal agenda clock */
+  /** Start a development project in an owned province. */
+  startDevelop(stateId: number, provinceId: number): boolean {
+    const living = this.getState();
+    const state = pack.states[stateId];
+    const province = pack.provinces?.[provinceId];
+    if (!state?.i || state.removed || !province?.i || province.removed || province.state !== stateId) return false;
+
+    const sSim = living.states[stateId];
+    const pSim = living.provinces?.[provinceId];
+    if (!sSim || !pSim || pSim.developmentProgress) return false;
+
+    const capacityConfig = currentContent().config.capacity;
+    if (pSim.stability < capacityConfig.developStabilityCost) return false;
+    if (pSim.development >= this.provinceDevelopmentCap(provinceId)) return false;
+
+    const settlementId = this.pickProvinceSettlement(provinceId, stateId);
+    if (!settlementId) return false;
+    if (this.freeCapacity(sSim).w < capacityConfig.developWPerTurn) return false;
+
+    pSim.stability -= capacityConfig.developStabilityCost;
+    pSim.developmentProgress = { settlementId, turnsLeft: capacityConfig.developTurns };
+    const settlement = pack.burgs[settlementId];
+    sSim.agenda = {
+      kind: "develop",
+      label: `Developing ${settlement?.name ?? province.name ?? "a settlement"}`,
+      targetProvinceId: provinceId,
+      targetBurgId: settlementId,
+      progress: 0,
+      required: capacityConfig.developTurns
+    };
+    return true;
+  }
+
+  /** Begin constructing an asset in one of the state's burgs. */
+  startBuild(stateId: number, burgId: number, buildingId: string): boolean {
+    const living = this.getState();
+    const state = pack.states[stateId];
+    const burg = pack.burgs[burgId];
+    if (!state?.i || state.removed || !burg?.i || burg.removed || burg.state !== stateId) return false;
+
+    const sSim = living.states[stateId];
+    const bSim = living.burgs[burgId];
+    if (!sSim || !bSim || bSim.construction) return false;
+
+    const { content } = currentContent();
+    const building = content.buildings.find(b => b.id === buildingId);
+    if (!building || !this.canBuild(state, burg, bSim, building)) return false;
+
+    bSim.construction = {
+      buildingId,
+      turnsLeft: building.turns ?? 1,
+      checks: { m: false, w: false, s: false },
+      pityBonus: 0
+    };
+    sSim.agenda = {
+      kind: "build",
+      label: `Building ${building.name}`,
+      targetBurgId: burgId,
+      targetProvinceId: pack.cells.province?.[burg.cell] || undefined,
+      buildingId,
+      progress: 0,
+      required: 3
+    };
+    return true;
+  }
+
+  /** Muster one roster unit into a state's field regiment. */
+  muster(stateId: number): boolean {
+    const state = pack.states[stateId];
+    if (!state?.i || state.removed) return false;
+
+    const choice = this.pickMusterUnit(state);
+    if (!choice) return false;
+
+    const regiment = choice.regiment ?? this.createRegiment(state);
+    regiment.units ??= [];
+    regiment.units.push({ type: choice.unit.id, count: choice.unit.men, exp: 0 });
+    syncRegimentTotals(regiment, Military.getUnitTypes());
+
+    const living = this.getState();
+    const burg = pack.burgs[pack.cells.burg?.[regiment.cell] ?? 0];
+    this.pushNews(living, {
+      kind: "muster",
+      text: `${state.name} mustered ${choice.unit.name} in ${burg?.name ?? "the field"}.`,
+      cell: regiment.cell,
+      stateId,
+      burgId: burg?.i
+    });
+    return true;
+  }
+
+  /** Development cap for a province: floor(average biome habitability / growthPerHabitability). */
+  provinceDevelopmentCap(provinceId: number): number {
+    const cells = this.provinceCells(provinceId);
+    if (cells.length === 0) return 0;
+
+    let total = 0;
+    for (const cell of cells) {
+      const biomeId = pack.cells.biome?.[cell];
+      total += (biomeId !== undefined ? pack.biomes?.[biomeId]?.habitability : undefined) ?? 50;
+    }
+    const perPoint = Math.max(1, currentContent().config.capacity.growthPerHabitability);
+    return Math.floor(total / cells.length / perPoint);
+  }
+
+  private provinceCells(provinceId: number): number[] {
+    const cells: number[] = [];
+    const provinces = pack.cells.province;
+    if (!provinces) return cells;
+    for (let cell = 0; cell < provinces.length; cell++) {
+      if (provinces[cell] === provinceId) cells.push(cell);
+    }
+    return cells;
+  }
+
+  private ownedProvinces(stateId: number): Province[] {
+    return (pack.provinces ?? []).filter(province => province?.i && !province.removed && province.state === stateId);
+  }
+
+  private isProvinceGarrisoned(stateId: number, provinceId: number): boolean {
+    const military = pack.states[stateId]?.military ?? [];
+    return military.some(
+      regiment =>
+        regiment.a > 0 &&
+        (pack.cells.province?.[regiment.cell] ?? 0) === provinceId &&
+        (pack.cells.state?.[regiment.cell] ?? 0) === stateId
+    );
+  }
+
+  private pickProvinceSettlement(provinceId: number, stateId: number): number | undefined {
+    const province = pack.provinces?.[provinceId];
+    const capital = province?.burg ? pack.burgs[province.burg] : undefined;
+    if (capital && !capital.removed && capital.state === stateId) return capital.i;
+
+    for (const burg of pack.burgs) {
+      if (!burg?.i || burg.removed || burg.state !== stateId) continue;
+      if ((pack.cells.province?.[burg.cell] ?? 0) === provinceId) return burg.i;
+    }
+    return undefined;
+  }
+
+  private freeCapacity(sSim: { capacity: CapacityLedger }): CapacityPoints {
+    const out = { m: 0, w: 0, s: 0, c: 0 };
+    for (const pool of ["m", "w", "s", "c"] as const) {
+      out[pool] = sSim.capacity[pool].gen - sSim.capacity[pool].load;
+    }
+    return out;
+  }
+
+  private hasFreeCapacity(sSim: { capacity: CapacityLedger }, load?: CapacityPoints): boolean {
+    if (!load) return true;
+    const free = this.freeCapacity(sSim);
+    for (const pool of ["m", "w", "s", "c"] as const) {
+      if (free[pool] - (load[pool] ?? 0) < 0) return false;
+    }
+    return true;
+  }
+
+  private pickMusterUnit(state: State): { unit: UnitType; regiment: Regiment | null } | null {
+    const roster = Military.getRoster(state);
+    const unitTypes = Military.getUnitTypes();
+    if (!roster) return null;
+
+    const living = this.getState();
+    const sSim = living.states[state.i];
+    if (!sSim) return null;
+
+    const { content, config } = currentContent();
+    const maxUnits = config.military.maxUnitsPerArmy;
+    const free = this.freeCapacity(sSim);
+    const heldBuildings = this.heldBuildings(state.i);
+    const unlockSources = new Map<string, string[]>();
+    for (const building of content.buildings) {
+      for (const unitId of building.effects.unlock ?? []) {
+        const sources = unlockSources.get(unitId) ?? [];
+        sources.push(building.id);
+        unlockSources.set(unitId, sources);
+      }
+    }
+    const heldGoods = this.heldGoods(state.i);
+    const maxWalls = this.maxOwnedWallTier(state.i);
+
+    for (const unitId of roster.recruitable) {
+      const unit = unitTypes[unitId];
+      if (!unit) continue;
+      const sources = unlockSources.get(unitId);
+      if (sources && !sources.some(id => heldBuildings.has(id))) continue;
+      if (unit.requiresGood !== undefined && !heldGoods.has(unit.requiresGood)) continue;
+      if (unit.requiresWallTier !== undefined && maxWalls < unit.requiresWallTier) continue;
+
+      const cost = unit.capacityCost;
+      if (cost) {
+        let refused = false;
+        for (const pool of ["m", "w", "s", "c"] as const) {
+          if (free[pool] - (cost[pool] ?? 0) * unit.blocks < 0) {
+            refused = true;
+            break;
+          }
+        }
+        if (refused) continue;
+      }
+
+      const regiment = this.findRegimentForUnit(state, unitId, maxUnits, roster.caps[unitId]);
+      return { unit, regiment };
+    }
+    return null;
+  }
+
+  private findRegimentForUnit(state: State, unitId: string, maxUnits: number, cap?: number): Regiment | null {
+    const unitTypes = Military.getUnitTypes();
+    for (const regiment of state.military ?? []) {
+      if (regiment.n) continue;
+      if (!regiment.units) reconcileRegimentBlocks(regiment, unitTypes);
+      const slots = regiment.units ?? [];
+      if (slots.length >= maxUnits) continue;
+      if (cap !== undefined && slots.filter(slot => slot.type === unitId).length >= cap) continue;
+      return regiment;
+    }
+    return null;
+  }
+
+  private createRegiment(state: State): Regiment {
+    state.military ??= [];
+    const military = state.military;
+    const i = military.length ? Math.max(...military.map(regiment => regiment.i)) + 1 : 0;
+    const capital = state.capital ? pack.burgs[state.capital] : undefined;
+    const cell = capital?.cell ?? state.center ?? 0;
+    const point = pack.cells.p?.[cell];
+    const x = point?.[0] ?? capital?.x ?? 0;
+    const y = point?.[1] ?? capital?.y ?? 0;
+    const regiment: Regiment = {
+      i,
+      name: `${state.name} Levy`,
+      a: 0,
+      cell,
+      x,
+      y,
+      bx: x,
+      by: y,
+      u: {},
+      units: [],
+      n: 0,
+      icon: "⚔️",
+      state: state.i
+    };
+    military.push(regiment);
+    return regiment;
+  }
+
+  private heldBuildings(stateId: number): Set<string> {
+    const ids = new Set<string>();
+    const living = pack.history?.living;
+    for (const burg of pack.burgs) {
+      if (!burg?.i || burg.removed || burg.state !== stateId) continue;
+      for (const id of living?.burgs[burg.i]?.buildings ?? []) ids.add(id);
+    }
+    return ids;
+  }
+
+  private heldGoods(stateId: number): Set<number> {
+    const goods = new Set<number>();
+    if (!pack.cells.good) return goods;
+    for (let cell = 0; cell < pack.cells.good.length; cell++) {
+      if (pack.cells.state?.[cell] !== stateId) continue;
+      const good = pack.cells.good[cell];
+      if (good) goods.add(good);
+    }
+    return goods;
+  }
+
+  private maxOwnedWallTier(stateId: number): number {
+    let best = 0;
+    for (const burg of pack.burgs) {
+      if (!burg?.i || burg.removed || burg.state !== stateId) continue;
+      best = Math.max(best, Number(burg.walls ?? 0));
+    }
+    return best;
+  }
+
+  private canBuild(state: State, burg: Burg, bSim: BurgSimState, building: BuildingDef): boolean {
+    const { content, config } = currentContent();
+    if (building.kind && building.kind !== "structure") return false;
+    if (building.group && building.group !== state.rosterId) return false;
+
+    const kind = burg.capital ? "major" : "minor";
+    if (!building.settlementKinds.includes(kind)) return false;
+    if (building.requires && !bSim.buildings.includes(building.requires)) return false;
+
+    const sameChain = bSim.buildings
+      .map(id => content.buildings.find(entry => entry.id === id))
+      .filter(
+        (entry): entry is BuildingDef =>
+          entry !== undefined && (!entry.kind || entry.kind === "structure") && entry.chain === building.chain
+      );
+    if (sameChain.some(entry => entry.tier >= building.tier)) return false;
+
+    const sSim = pack.history?.living?.states[state.i];
+    if (!sSim) return false;
+    if (!this.hasFreeCapacity(sSim, building.effects.upkeep)) return false;
+    return this.freeCapacity(sSim).w >= config.capacity.constructionWPerTurn;
+  }
+
+  private pickBuildTarget(state: State): { burgId: number; buildingId: string } | null {
+    const { content } = currentContent();
+    for (const burg of pack.burgs) {
+      if (!burg?.i || burg.removed || burg.state !== state.i) continue;
+      const bSim = pack.history?.living?.burgs[burg.i];
+      if (!bSim || bSim.construction) continue;
+      for (const building of content.buildings) {
+        if (this.canBuild(state, burg, bSim, building)) return { burgId: burg.i, buildingId: building.id };
+      }
+    }
+    return null;
+  }
+
+  private hasDevelopment(living: LivingWorldState, stateId: number): boolean {
+    return this.ownedProvinces(stateId).some(province => Boolean(living.provinces[province.i]?.developmentProgress));
+  }
+
+  private hasConstruction(living: LivingWorldState, stateId: number): boolean {
+    for (const burg of pack.burgs) {
+      if (!burg?.i || burg.removed || burg.state !== stateId) continue;
+      if (living.burgs[burg.i]?.construction) return true;
+    }
+    return false;
+  }
+
+  private pickDevelopProvince(stateId: number, sSim: StatePolitySim, living: LivingWorldState): number | undefined {
+    const capacityConfig = currentContent().config.capacity;
+    for (const province of this.ownedProvinces(stateId)) {
+      const pSim = living.provinces[province.i];
+      if (!pSim || pSim.developmentProgress) continue;
+      if (pSim.stability < capacityConfig.developStabilityCost) continue;
+      if (pSim.development >= this.provinceDevelopmentCap(province.i)) continue;
+      if (!this.pickProvinceSettlement(province.i, stateId)) continue;
+      if (this.freeCapacity(sSim).w < capacityConfig.developWPerTurn) continue;
+      return province.i;
+    }
+    return undefined;
+  }
+
+  private chooseAgenda(state: State, sSim: StatePolitySim, living: LivingWorldState): StateAgenda | null {
+    const capacityConfig = currentContent().config.capacity;
+    const hasFieldArmy = (state.military ?? []).some(regiment => (regiment.a ?? 0) > 0);
+    if (!hasFieldArmy && this.pickMusterUnit(state)) {
+      return { kind: "muster", label: "Mustering troops", progress: 0, required: 1 };
+    }
+
+    const provinceId = this.pickDevelopProvince(state.i, sSim, living);
+    if (provinceId !== undefined) {
+      const province = pack.provinces?.[provinceId];
+      return {
+        kind: "develop",
+        label: `Developing ${province?.name ?? "a province"}`,
+        targetProvinceId: provinceId,
+        progress: 0,
+        required: capacityConfig.developTurns
+      };
+    }
+
+    const build = this.pickBuildTarget(state);
+    if (build) {
+      const building = currentContent().content.buildings.find(entry => entry.id === build.buildingId);
+      return {
+        kind: "build",
+        label: `Building ${building?.name ?? build.buildingId}`,
+        targetBurgId: build.burgId,
+        buildingId: build.buildingId,
+        progress: 0,
+        required: 3
+      };
+    }
+
+    if (this.pickMusterUnit(state)) {
+      return { kind: "muster", label: "Mustering troops", progress: 0, required: 1 };
+    }
+    return null;
+  }
+
+  private stepAgenda(state: State, sSim: StatePolitySim, living: LivingWorldState): void {
+    const agenda = sSim.agenda;
+    if (!agenda) return;
+
+    switch (agenda.kind) {
+      case "develop": {
+        if (this.hasDevelopment(living, state.i)) return;
+        const provinceId = agenda.targetProvinceId ?? this.pickDevelopProvince(state.i, sSim, living);
+        if (provinceId === undefined || !this.startDevelop(state.i, provinceId)) sSim.agenda = null;
+        return;
+      }
+      case "build": {
+        if (this.hasConstruction(living, state.i)) return;
+        const target =
+          agenda.targetBurgId !== undefined && agenda.buildingId
+            ? { burgId: agenda.targetBurgId, buildingId: agenda.buildingId }
+            : this.pickBuildTarget(state);
+        if (!target || !this.startBuild(state.i, target.burgId, target.buildingId)) sSim.agenda = null;
+        return;
+      }
+      case "muster": {
+        if (this.muster(state.i)) agenda.progress = Math.min(agenda.required, agenda.progress + 1);
+        if (agenda.progress >= agenda.required) sSim.agenda = null;
+        return;
+      }
+      default:
+        sSim.agenda = null;
+    }
+  }
+
+  private advanceDevelopment(state: State, sSim: StatePolitySim, living: LivingWorldState): void {
+    for (const province of this.ownedProvinces(state.i)) {
+      const pSim = living.provinces[province.i];
+      const progress = pSim?.developmentProgress;
+      if (!pSim || !progress) continue;
+
+      progress.turnsLeft = Math.max(0, progress.turnsLeft - 1);
+      if (sSim.agenda?.kind === "develop" && sSim.agenda.targetProvinceId === province.i) {
+        sSim.agenda.progress = Math.min(sSim.agenda.required, sSim.agenda.required - progress.turnsLeft);
+      }
+      if (progress.turnsLeft > 0) continue;
+
+      pSim.development += 1;
+      const burg = pack.burgs[progress.settlementId];
+      if (burg && !burg.removed) {
+        const growth = this.rng("develop:growth", burg.i).range(0.05, 0.15);
+        burg.population = Math.round((burg.population ?? 0) * (1 + growth) * 100) / 100;
+        const bSim = living.burgs[burg.i];
+        if (bSim) bSim.baseTier = settlementTierFromPop(burg.population);
+      }
+      pSim.developmentProgress = null;
+      if (sSim.agenda?.kind === "develop" && sSim.agenda.targetProvinceId === province.i) {
+        sSim.agenda = null;
+      }
+
+      this.pushNews(living, {
+        kind: "develop",
+        text: `${state.name} completed development in ${province.name ?? "a province"}${
+          burg?.name ? ` (${burg.name})` : ""
+        }.`,
+        cell: burg?.cell,
+        stateId: state.i,
+        burgId: burg?.i
+      });
+    }
+  }
+
+  private advanceConstructions(state: State, sSim: StatePolitySim, living: LivingWorldState): void {
+    const { content } = currentContent();
+    for (const burg of pack.burgs) {
+      if (!burg?.i || burg.removed || burg.state !== state.i) continue;
+      const bSim = living.burgs[burg.i];
+      const construction = bSim?.construction;
+      if (!bSim || !construction) continue;
+
+      const building = content.buildings.find(entry => entry.id === construction.buildingId);
+      if (!building) {
+        bSim.construction = null;
+        continue;
+      }
+
+      construction.turnsLeft = Math.max(0, construction.turnsLeft - 1);
+      const checks = construction.checks;
+      // One value check per season: pass the next unfinished pool.
+      const pool = (["m", "w", "s"] as const).find(entry => !checks[entry]);
+      if (pool) {
+        const dcs = assetCheckDifficulties(building, construction.pityBonus);
+        const modifier = valueModifier(sSim.capacity[pool].gen);
+        const roll = this.rng(
+          "build-check",
+          state.i * 10000 + burg.i * 10 + (pool === "m" ? 1 : pool === "w" ? 2 : 3)
+        ).d(20);
+
+        if (roll + modifier >= dcs[pool]) {
+          checks[pool] = true;
+          if (sSim.agenda?.kind === "build" && sSim.agenda.targetBurgId === burg.i) {
+            sSim.agenda.progress = Math.min(sSim.agenda.required, sSim.agenda.progress + 1);
+          }
+        } else {
+          construction.pityBonus += 1;
+        }
+      }
+
+      // Building time is a floor: all three saves and the advertised turns must pass.
+      if (checks.m && checks.w && checks.s && construction.turnsLeft === 0) {
+        this.completeConstruction(state, sSim, living, burg, bSim, building);
+      }
+    }
+  }
+
+  private completeConstruction(
+    state: State,
+    sSim: StatePolitySim,
+    living: LivingWorldState,
+    burg: Burg,
+    bSim: BurgSimState,
+    building: BuildingDef
+  ): void {
+    const { content } = currentContent();
+    bSim.buildings = bSim.buildings.filter(id => {
+      const other = content.buildings.find(entry => entry.id === id);
+      if (!other || other.kind === "custom") return true;
+      return other.chain !== building.chain || other.tier > building.tier;
+    });
+    bSim.buildings.push(building.id);
+    syncBurgFlagsFromBuildings(burg, bSim.buildings);
+    bSim.construction = null;
+
+    if (sSim.agenda?.kind === "build" && sSim.agenda.targetBurgId === burg.i) sSim.agenda = null;
+
+    this.pushNews(living, {
+      kind: "build",
+      text: `${state.name} completed ${building.name} in ${burg.name ?? "a settlement"}.`,
+      cell: burg.cell,
+      stateId: state.i,
+      burgId: burg.i
+    });
+  }
+
+  /** Step province order and stability. */
+  private stepProvinces(living: LivingWorldState): void {
+    const { config } = currentContent();
+    for (const province of pack.provinces ?? []) {
+      if (!province?.i || province.removed) continue;
+      const pSim = living.provinces[province.i];
+      if (!pSim || !province.state || pack.states[province.state]?.removed) continue;
+
+      if (this.isProvinceGarrisoned(province.state, province.i)) {
+        pSim.stability += config.capacity.stabilityPerGarrison;
+        pSim.order = Math.min(100, pSim.order + 2);
+      } else if (pSim.order < config.economy.startOrder) {
+        pSim.order = Math.min(config.economy.startOrder, pSim.order + 1);
+      } else {
+        pSim.order = Math.max(config.economy.startOrder, pSim.order - 1);
+      }
+    }
+  }
+
+  /** Step each active state's projects and seasonal agenda. */
   private stepStates(living: LivingWorldState): void {
     for (const state of pack.states) {
       if (!state?.i || state.removed) continue;
       const sSim = living.states[state.i];
       if (!sSim) continue;
 
-      if (sSim.agenda) {
-        sSim.agenda.progress = Math.min(sSim.agenda.required, sSim.agenda.progress + 1);
-      }
+      this.advanceDevelopment(state, sSim, living);
+      this.advanceConstructions(state, sSim, living);
+
+      if (!sSim.agenda) sSim.agenda = this.chooseAgenda(state, sSim, living);
+      if (!sSim.agenda) continue;
+      this.stepAgenda(state, sSim, living);
     }
   }
 }

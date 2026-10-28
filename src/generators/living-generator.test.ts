@@ -9,7 +9,7 @@ import {
   syncBurgFlagsFromBuildings
 } from "./living-generator";
 
-describe("Living (Slice 1: Data Model, Initialization & Seasonal Tick)", () => {
+describe("Living (Slices 1-2: Data Model, Seasonal Tick, Capacity & Projects)", () => {
   beforeEach(() => {
     globalThis.options = {
       map: {
@@ -282,5 +282,71 @@ describe("Living (Slice 1: Data Model, Initialization & Seasonal Tick)", () => {
     expect(restored.living?.season).toBe(2);
     expect(restored.living?.recentNews[0].text).toBe("Outcast Hold resisted annexation!");
     expect(restored.living?.states[1].rulerId).toBe(living.states[1].rulerId);
+    expect(restored.living?.provinces[1].stability).toBe(living.provinces[1].stability);
+  });
+
+  it("accrues province stability from friendly garrisons", () => {
+    const living = Living.init();
+
+    Living.tick(1);
+
+    // State 1 keeps its regiment in province 1; state 2 has no field army.
+    expect(living.provinces[1].stability).toBe(1);
+    expect(living.provinces[2].stability).toBe(0);
+  });
+
+  it("spends stability and wealth to develop a province and grow its settlement", () => {
+    const living = Living.init();
+    const populationBefore = pack.burgs[1].population!;
+
+    living.provinces[1].stability = 4;
+    expect(Living.startDevelop(1, 1)).toBe(true);
+    expect(living.provinces[1].stability).toBe(0);
+    expect(living.provinces[1].developmentProgress).toMatchObject({ settlementId: 1, turnsLeft: 4 });
+
+    Living.tick(4);
+
+    expect(living.provinces[1].development).toBe(1);
+    expect(pack.burgs[1].population!).toBeGreaterThan(populationBefore);
+  });
+
+  it("stops development at the province habitability cap", () => {
+    const living = Living.init();
+    expect(Living.provinceDevelopmentCap(1)).toBe(2);
+
+    living.provinces[1].stability = 8;
+    living.provinces[1].development = 2;
+    expect(Living.startDevelop(1, 1)).toBe(false);
+  });
+
+  it("completes a 3-check build and syncs burg flags", () => {
+    const living = Living.init();
+
+    expect(Living.startBuild(1, 1, "walls3")).toBe(true);
+    living.burgs[1].construction!.checks = { m: true, w: true, s: true };
+
+    Living.tick(3);
+
+    expect(living.burgs[1].buildings).toContain("walls3");
+    expect(living.burgs[1].buildings).not.toContain("walls2");
+    expect(pack.burgs[1].walls).toBe(3);
+    expect(pack.burgs[1].citadel).toBe(1);
+  });
+
+  it("rejects a build whose chain prerequisite is missing", () => {
+    Living.init();
+    expect(Living.startBuild(1, 1, "market3")).toBe(false);
+  });
+
+  it("musters roster units into a state's military", () => {
+    const living = Living.init();
+    const regiment = pack.states[1].military![0];
+    const slotsBefore = regiment.units!.length;
+
+    expect(Living.muster(1)).toBe(true);
+
+    expect(regiment.units!.length).toBe(slotsBefore + 1);
+    expect(regiment.a).toBeGreaterThan(0);
+    expect(living.recentNews[0].kind).toBe("muster");
   });
 });
