@@ -116,6 +116,14 @@ export const FALLEN_CAPITAL_TEMPLATES: FallenCapitalTemplate[] = [
   (polity, year) => `Abandoned in ${year} with the fall of the ${polity}.`
 ];
 
+/** what a fallen polity's seat keeps as its own burg note */
+export type FallenSeatTemplate = (polity: string, year: number) => string;
+export const FALLEN_SEAT_TEMPLATES: FallenSeatTemplate[] = [
+  (polity, year) => `Once the pride of the ${polity}, the city fell with it in ${year}.`,
+  (polity, year) => `The seat of the ${polity} until its fall in ${year}.`,
+  (polity, year) => `What remains of the ${polity}'s capital, lost in ${year}.`
+];
+
 /** what a fallen polity's lesser burgs keep of it */
 export type FallenBurgTemplate = (burg: string, polity: string, year: number) => string;
 export const FALLEN_BURG_TEMPLATES: FallenBurgTemplate[] = [

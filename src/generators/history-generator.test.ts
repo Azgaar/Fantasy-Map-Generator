@@ -903,7 +903,9 @@ describe("Chronicle.generate fall markers", () => {
     globalThis.pack = {
       cells: {
         burg,
-        p: Array.from({ length: 26 }, (_, cell) => [cell * 10 + 10, 10])
+        p: Array.from({ length: 26 }, (_, cell) => [cell * 10 + 10, 10]),
+        state: Array.from({ length: 26 }, (_, cell) => (cell === 7 ? 1 : 0)),
+        culture: Array<number>(26).fill(1)
       },
       burgs: [
         0,
@@ -911,6 +913,10 @@ describe("Chronicle.generate fall markers", () => {
         { i: 2, cell: 2, name: "Hillfort", x: 30, y: 10, population: 8, culture: 1 },
         { i: 3, cell: 3, name: "Dale", x: 40, y: 10, population: 6, culture: 2 },
         { i: 4, cell: 6, name: "Grange", x: 70, y: 10, population: 4, culture: 2 }
+      ],
+      states: [
+        { i: 0, name: "Neutrals", diplomacy: [] },
+        { i: 1, name: "Heir Realm", campaigns: [{ name: "The Fall War", start: 490, end: 500 }] }
       ],
       markers: [],
       cultures: [
@@ -939,28 +945,54 @@ describe("Chronicle.generate fall markers", () => {
 
   it("marks the greater burgs with it, naming the burg", () => {
     Chronicle.generate();
-    expect(pack.markers.map(marker => marker.name)).toEqual(["Ruins of Old Empire", "Ruins of Dale"]);
-    expect(pack.markers[1].note).toContain("Old Empire"); // the provinces fell with it, and the note says so
+    const ruins = pack.markers.filter(marker => marker.type !== "battlefields");
+    expect(ruins.map(marker => marker.name)).toEqual(["Ruins of Old Empire", "Ruins of Dale"]);
+    expect(ruins[1].note).toContain("Old Empire"); // the provinces fell with it, and the note says so
+  });
+
+  it("places a battlefield where the epoch's last battle was fought", () => {
+    Chronicle.generate();
+    const [battle] = pack.markers.filter(marker => marker.type === "battlefields");
+    expect(battle.cell).toBe(7); // the battle event's loc
+    expect(battle.name).toBe("Battle of the Fall of Old Empire");
+    expect(battle.note).toBe("The Old Empire fell in battle");
+    expect(battle.year).toBe(500); // the historical view hides it before the fall
+  });
+
+  it("remembers the fall on the seat burg, unless the user already told its story", () => {
+    Chronicle.generate();
+    expect(pack.burgs[1].note).toContain("Old Empire");
+    expect(pack.burgs[1].note).toContain("500");
+
+    pack.burgs[1].note = "A market town";
+    Chronicle.generate();
+    expect(pack.burgs[1].note).toBe("A market town");
+  });
+
+  it("stamps every fall marker with the year it belongs to", () => {
+    Chronicle.generate();
+    for (const marker of pack.markers) expect(marker.year).toBe(500);
   });
 
   it("lets the ruins slider strip the provinces back to the capital", () => {
     options.map.lore.history.ruins = 1;
     Chronicle.generate();
-    expect(pack.markers).toHaveLength(1);
+    expect(pack.markers.filter(marker => marker.type !== "battlefields")).toHaveLength(1);
     expect(pack.markers[0].name).toBe("Ruins of Old Empire");
   });
 
   it("multiplies the province ruins at the slider's top", () => {
     options.map.lore.history.ruins = 5;
     Chronicle.generate();
-    expect(pack.markers).toHaveLength(3); // the seat plus both greater burgs: sqrt(20) / 2 asks for two
+    expect(pack.markers.filter(marker => marker.type !== "battlefields")).toHaveLength(3); // the seat plus both greater burgs: sqrt(20) / 2 asks for two
   });
 
   it("skips burgs that already host a marker", () => {
     pack.markers.push({ i: 9, name: "The Old Fair", type: "fairs", cell: 3 } as typeof pack.markers[number]); // Dale's cell is taken
     options.map.lore.history.ruins = 5;
     Chronicle.generate();
-    expect(pack.markers.map(marker => marker.name)).toEqual(["The Old Fair", "Ruins of Old Empire", "Ruins of Hillfort"]);
+    const names = pack.markers.filter(marker => marker.type !== "battlefields").map(marker => marker.name);
+    expect(names).toEqual(["The Old Fair", "Ruins of Old Empire", "Ruins of Hillfort"]);
   });
 
   it("places nothing when echoes are off", () => {

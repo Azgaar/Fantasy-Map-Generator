@@ -96,6 +96,8 @@ export interface Marker {
   note?: string;
   /** placed by the chronicle: cleared and re-placed when history regenerates */
   chronicle?: boolean;
+  /** the historical year the marker belongs to: the historical view hides it before then */
+  year?: number;
 }
 
 type MarkerConfig = {
@@ -115,7 +117,13 @@ type MarkerConfig = {
   add: (marker: Marker, cell: number) => void;
 };
 
-export type MarkerDetails = { name?: string; note?: string; icon?: string; chronicle?: boolean };
+export type MarkerDetails = {
+  name?: string;
+  note?: string;
+  icon?: string;
+  chronicle?: boolean;
+  year?: number;
+};
 
 export type MarkerAppearance = Partial<
   Record<"size" | "px" | "dx" | "dy", number | null> &
@@ -262,16 +270,18 @@ class MarkersModule {
     return marker;
   }
 
-  /** Place a marker at a map point with details: its name, legend note (HTML, as Notes.write takes), icon (an emoji or icon id), and chronicle, to mark it as the chronicle's own (cleared on the next history regeneration). A type from the markers config, such as volcanoes or ruins, generates all three, each replaced by the one given; any other type needs a note. Returns its id */
+  /** Place a marker at a map point with details: its name, legend note (HTML, as Notes.write takes), icon (an emoji or icon id), chronicle, to mark it as the chronicle's own (cleared on the next history regeneration), and year, the historical year it belongs to (the historical view hides it before then). A type from the markers config, such as volcanoes or ruins, generates all three, each replaced by the one given; any other type needs a note. Returns its id */
   place(x: number, y: number, type: string, details: MarkerDetails = {}): number {
     if (typeof details !== "object" || details === null || Array.isArray(details))
-      throw new Error("The marker details must be an object: { name, note, icon }");
-    const unknown = Object.keys(details).find(key => !["name", "note", "icon", "chronicle"].includes(key));
-    if (unknown) throw new Error(`Unknown marker detail ${unknown}; known: name, note, icon`);
-    const { name, note, icon } = details;
+      throw new Error("The marker details must be an object: { name, note, icon, chronicle, year }");
+    const unknown = Object.keys(details).find(key => !["name", "note", "icon", "chronicle", "year"].includes(key));
+    if (unknown) throw new Error(`Unknown marker detail ${unknown}; known: name, note, icon, chronicle, year`);
+    const { name, note, icon, year } = details;
+    if (year !== undefined && typeof year !== "number") throw new Error("The marker year must be a number");
     const cell = Pack.requireCell(x, y);
     const marker = { x: rn(x, 2), y: rn(y, 2), cell, type: requireName(type) } as Marker;
     if (details.chronicle) marker.chronicle = true;
+    if (year !== undefined) marker.year = year;
     const configured = this.config.some(config => config.type === marker.type);
     if (!configured && !note) throw new Error(`Marker type ${marker.type} generates no legend; give the marker a note`);
     if (name !== undefined) marker.name = requireName(name);
@@ -677,12 +687,10 @@ class MarkersModule {
   private generateTypes() {
     // when the chronicle echoes history onto the map, it places the ruins and battlefields itself
     const { mode, echoes, realms } = options.map.lore.history;
-    const ownsRuins = echoes && (mode === "epochs" || realms > 0); // the epochs' fall markers replace them too
-    const ownsBattlefields = echoes && mode !== "epochs" && realms > 0; // the epochs' battles get theirs in a later slice
+    const ownsHistoryMarkers = echoes && (mode === "epochs" || realms > 0);
     this.config.forEach(({ type, icon, dx, dy, px, size, pin, fill, stroke, min, each, multiplier, list, add }) => {
       if (multiplier === 0) return;
-      if (ownsRuins && type === "ruins") return;
-      if (ownsBattlefields && type === "battlefields") return;
+      if (ownsHistoryMarkers && (type === "ruins" || type === "battlefields")) return;
 
       const candidates = Array.from(list(pack));
       let quantity = this.getQuantity(candidates, min, each, multiplier);

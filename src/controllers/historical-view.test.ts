@@ -29,6 +29,7 @@ vi.mock("@/conquest/ui/layers/index", () => ({ twLayerIds: () => ["twArmies", "t
 
 import { Layers } from "@/components/layers";
 import { drawLegend, hasLegend } from "@/renderers/draw-legend";
+import { getViewedEpochStart } from "./historical-time";
 import { goToPresent, isInPast, scrubRange, scrubToYear, showEpoch, viewedEpoch } from "./historical-view";
 
 const CELLS = 10;
@@ -129,7 +130,8 @@ describe("showEpoch", () => {
     expect(pack.states[2].type).toBe("Generic");
     expect(pack.states).toHaveLength(4); // neutral + the epoch's cast (including the empty one)
     expect(customization).toBe(100);
-    expect(Layers.draw).toHaveBeenCalledWith("states", "borders", "labels");
+    expect(Layers.draw).toHaveBeenCalledWith("states", "borders", "labels", "markers");
+    expect(getViewedEpochStart()).toBe(100); // the renderer hides the markers of later falls
     expect(viewedEpoch()?.era).toBe("Age of Ruins");
   });
 
@@ -175,6 +177,7 @@ describe("showEpoch", () => {
     expect(Array.from(presentState)).toEqual(Array.from(PRESENT_STATE));
     expect(customization).toBe(0);
     expect(isInPast()).toBe(false);
+    expect(getViewedEpochStart()).toBeNull();
     expect(viewedEpoch()).toBeNull();
   });
 

@@ -1,8 +1,8 @@
 # Plan — Fall Markers: the Ruins of Fallen Polities
 
-Updated: 2026-10-28. Status: **slices 1, 1b and 2 shipped** (the shared pass, the ruins slider,
-the mode fix, the archaeologist unified, the marker lifecycle); slice 3 open. Companions: the
-epochs engine in
+Updated: 2026-10-28. Status: **slices 1–3 shipped** (the shared pass, the ruins slider, the mode
+fix, the archaeologist unified, the marker lifecycle, the battlefields, the burg notes and the
+historical view filter). Companions: the epochs engine in
 [history-epochs.md](history-epochs.md), whose slice 4 lists "markers of a past epoch" as a
 follow-up; the Archaeologist's echoes in [history-generation.md](history-generation.md).
 
@@ -112,10 +112,29 @@ name, the burg name and the fall year: *"The seat of the Old Empire, which fell 
 
 ### The gap fix
 
-`markers-generator.generateTypes()` learns the mode: the chronicle places its own ruins whenever
-`echoes` is on in the epochs mode, not only when `realms > 0`. Standard `battlefields` stay
-generated in the epochs mode until battle markers arrive (slice 3), so only the archaeologist
-suppresses them.
+`markers-generator.generateTypes()` learns the mode: the chronicle places its own ruins and
+battlefields whenever `echoes` is on in the epochs mode, not only when `realms > 0`, so the
+standard generators skip both in either mode when the chronicle owns them.
+
+### The battlefields
+
+The epochs' `battle` events carry the cell the last battle was fought at (`loc`). The pass places
+one `battlefields` marker there, named "Battle of the Fall of *Polity*" and noted with the event's
+own text, exactly as the archaeologist does. Sea battles (no `loc`) get none.
+
+### The burg notes
+
+The seat burg remembers the fall in its own note, unless the user already wrote one: *"Once the
+pride of the Old Empire, the city fell with it in 500."* The marker notes stay on the markers; the
+burg note is what the burg editor shows. Province burgs keep their story on the markers alone.
+
+### The historical view
+
+Every chronicle marker carries the historical `year` it belongs to. While the map shows an epoch,
+`draw-markers` hides the markers whose year is later than the epoch's start: a fall that has not
+happened yet cannot be seen. Leaving the past draws the full set again. The year is published by
+`controllers/historical-time.ts`, a tiny module the renderer can read without importing the view
+controller, which imports the renderers.
 
 ## Lifecycle
 
@@ -134,9 +153,9 @@ suppresses them.
 
 ## Save format
 
-No change. The markers, epochs, polities and snapshots are already stored; the `chronicle` flag
-is one more optional field on markers, which are saved as-is. Old maps load unchanged: no
-epochs means no pass.
+No change. The markers, epochs, polities and snapshots are already stored; the `chronicle` and
+`year` fields are optional additions on markers, which are saved as-is. Old maps load unchanged:
+no epochs means no pass.
 
 ## Build order
 
@@ -145,16 +164,21 @@ epochs means no pass.
 | 1 ✅ | The pass: `placeFallRemains` — capital marker, size-scaled extras, the Ruins slider, templates, the markers-generator mode fix, the Lore editor un-grey | medium | Every fallen polity's capital carries a marker; the slider runs from capitals alone to numerous; `echoes` off leaves none; the archaeologist path is byte-identical |
 | 1b ✅ | The archaeologist joins: the invented realms run the same pass over their footprint, the slider governs both modes | small | An archaeologist realm leaves a seat marker plus scaled extras; the old single-ruin behavior is gone by design (saved maps keep their stored markers) |
 | 2 ✅ | The lifecycle: `chronicle` marker flag, dedup on generate, `Layers.draw("markers")` in `regenerateHistory` | small | Regenerating history twice leaves one set of markers, in both modes; turning echoes off clears them; the user's own markers survive |
-| 3 | Follow-ups: battlefields from epoch `battle` events (their `loc` cells), burg notes ("once the pride of…"), the historical view hiding fall markers younger than the viewed epoch | small | Optional, in that order |
+| 3 ✅ | The follow-ups: battlefields from epoch `battle` events, the seat burg's note, the historical view hiding falls younger than the viewed epoch | small | A battlefield sits at every epoch `battle`'s `loc`; the seat burg keeps "once the pride of…" unless the user wrote one; a past epoch shows only the falls that had happened by its start |
 
 ## Testing
 
 - Epochs tests (the mocked engine artifact in `history-generator.test.ts`): the fallen polity's
   capital always marked; the marker count within the formula's bounds for its `cells`; extras
   drawn only from the snapshot's burgs; `echoes: false` places nothing; names and notes reference
-  the polity and the fall year.
-- `markers-generator` tests: standard `ruins` skipped when `echoes` in the epochs mode;
-  `battlefields` per the Open Question 2 decision.
+  the polity and the fall year; a battlefield at the `battle` event's `loc`; the seat burg's note,
+  and the user's own note left alone; every marker carries its year.
+- `markers-generator` tests: standard `ruins` and `battlefields` skipped when `echoes` in the
+  epochs mode.
+- `draw-markers` tests: a marker later than the viewed epoch's start is hidden, one at or before it
+  is drawn; the present shows everything again.
+- `historical-view` tests: the view publishes the epoch's start and redraws the markers with the
+  political layers.
 - Regression: the archaeologist suite unchanged, including its own echoes tests.
 - Determinism: same seed, same fall markers (they draw from the generation's seeded stream).
 

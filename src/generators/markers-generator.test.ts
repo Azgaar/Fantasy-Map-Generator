@@ -173,14 +173,14 @@ describe("MarkersModule chronicle-owned types", () => {
   const history = (over: Record<string, unknown>) =>
     ({ mode: "archaeologist", span: 1000, realms: 2, density: 1, echoes: true, ruins: 3, renames: false, ...over });
 
-  it("leaves the ruins to the epochs' chronicle, but keeps the battlefields", async () => {
+  it("leaves both to the epochs' chronicle", async () => {
     await import("./markers-generator");
     const markers = globalThis.Markers as any;
     options.map.lore.history = history({ mode: "epochs" }) as any;
     world();
     markers.setConfig(twoTypes);
     markers.regenerate();
-    expect(pack.markers.map((marker: Marker) => marker.type)).toEqual(["battlefields"]);
+    expect(pack.markers).toHaveLength(0); // the chronicle places the ruins and the fall battlefields
   });
 
   it("hides both from the archaeologist's chronicle, as before", async () => {
