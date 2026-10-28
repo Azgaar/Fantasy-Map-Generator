@@ -776,7 +776,15 @@ describe("Lore", () => {
       name: "",
       description: "",
       calendar: { year: 1000, era: "Era", eraShort: "E" },
-      history: { mode: "archaeologist" as HistoryMode, span: 1000, realms: 2, density: 1, echoes: true, renames: false }
+      history: {
+        mode: "archaeologist" as HistoryMode,
+        span: 1000,
+        realms: 2,
+        density: 1,
+        echoes: true,
+        ruins: 3,
+        renames: false
+      }
     };
     vi.stubGlobal("options", { map: { lore } });
     Lore.setHistory({ span: 1500.7, realms: 3 });
@@ -792,6 +800,10 @@ describe("Lore", () => {
     expect(() => Lore.setHistory({ realms: 11 })).toThrow("from 0 to 10");
     expect(() => Lore.setHistory({ realms: -1 })).toThrow("from 0 to 10");
     expect(() => Lore.setHistory({ density: 99 })).toThrow("from 0 to 10");
+    Lore.setHistory({ ruins: 5 });
+    expect(lore.history.ruins).toBe(5);
+    expect(() => Lore.setHistory({ ruins: 0 })).toThrow("from 1 to 5");
+    expect(() => Lore.setHistory({ ruins: 2.5 })).toThrow("from 1 to 5");
   });
 });
 

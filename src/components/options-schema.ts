@@ -142,6 +142,7 @@ const lore = z.strictObject({
     realms: count, // fallen empires to weave into the map
     density: nonNegative, // event density multiplier
     echoes: z.boolean(), // place ruins and battlefield markers from events
+    ruins: count.default(3), // how much the fallen polities leave on the map, 1–5; see docs/plans/history-fall-markers.md
     renames: z.boolean() // let a successor state inherit the fallen realm's name
   })
 });
