@@ -39,7 +39,7 @@ When you apply changes to a good, the dialog can re-place its deposits and recal
 
 A **market** is a regional trade hub. Markets are placed on the larger towns, favoring capitals and ports, and each market's region spreads over the land around it, preferring to stay within one state and one landmass. Most inhabited islands get a market of their own, and an island with no port always does. Every burg belongs to exactly one market.
 
-Each market keeps a stock and a price for every good. It buys 2% below its price and sells 2% above it. That difference, the **market margin**, goes to the merchants of the burg at the market's center, so busy markets make their hub rich.
+Each market keeps a stock and a price for every good. It buys 6% below its price and sells 6% above it. That difference, the **market margin**, goes to the merchants of the burg at the market's center, so busy markets make their hub rich.
 
 Open _Tools_ → _Markets_ for the overview. There you can add a market on any burg, remove one, paint market regions by hand and **compare** a good's stock and price across all markets. Click a market to rename it, move its center to another burg or see its deals. Cells left without a market take no part in the economy.
 
@@ -95,7 +95,7 @@ Every state sets three things in its taxes dialog (_Tools_ → _States_, click a
 
 Starting rates depend on the state form: theocracies tax sales most, monarchies tax people more, republics and unions tax lightly, and anarchies collect nothing. Neutral lands never tax. A state with high taxes makes its markets expensive, so neighbors buy elsewhere.
 
-Example: a burg buys 10 units of a good priced 10 at its market, carried 0.5 per unit, in a state with 15% sales tax. It pays 10.2 (price with the market's 2%) + 1.5 (tax) + 0.5 (carriage) = 12.2 per unit, 122 in total, and its state collects 15.
+Example: a burg buys 10 units of a good priced 10 at its market, carried 0.5 per unit, in a state with 15% sales tax. It pays 10.6 (price with the market's 6%) + 1.5 (tax) + 0.5 (carriage) = 12.6 per unit, 126 in total, and its state collects 15.
 
 # Reading a burg's Economy Overview
 

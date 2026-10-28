@@ -53,9 +53,9 @@ The catalogue (71 default goods) is map data: users add, remove and edit goods p
 
 ### Needs and wants
 
-Five categories in priority order: 🍖 food, 🛠️ utilities, 🧱 construction, 🛡️ military, 💎 luxury. A burg's **needs** are its population × a per-category factor (0.2, 0.15, 0.1, 0.08, 0.07) a day. **Wants** are what it buys beyond them out of income, from up to 72% of it (`SAVINGS_RATE` 28%), split by `WANT_SHARES`. Staples are capped at one more day of each need (`WANT_LIMITS`), since people eat only so much more; luxury grows with **affluence**, the days of needs a person earns (`getAffluence`: income so far per person ÷ a day's needs at the cheapest coverage at base prices): 4 × √affluence more days (`WEALTH_WANTS`). What the capped wants leave goes to luxury, so a rich burg spends on luxury, not on more bread. Rural people's needs come from their own fields; they buy only wants.
+Five categories in priority order: 🍖 food, 🛠️ utilities, 🧱 construction, 🛡️ military, 💎 luxury. A burg's **needs** are its population × a per-category factor (0.2, 0.15, 0.1, 0.08, 0.07) a day. **Wants** are what it buys beyond them out of income, from up to 62% of it (`SAVINGS_RATE` 38%), split by `WANT_SHARES`. Staples are capped at one more day of each need (`WANT_LIMITS`), since people eat only so much more; luxury grows with **affluence**, the days of needs a person earns (`getAffluence`: income so far per person ÷ a day's needs at the cheapest coverage at base prices): 4 × √affluence more days (`WEALTH_WANTS`). What the capped wants leave goes to luxury, so a rich burg spends on luxury, not on more bread. Rural people's needs come from their own fields; they buy only wants.
 
-Buyers **spread their spending** over every good covering a need (`getVarietyShares`): a good gets a share by (price per coverage)^−3.4 (`VARIETY`), so cheaper coverage gets more but every good gets some. Affluence adds a novelty bonus (`getShares`): a burg pays up to 1 + `NOVELTY` × log10(affluence) times the price for a good it has had none of this run, less the more of the need that good already covered. The poor buy by price alone; the rich still prefer cheap coverage but spread over goods they lack. A good nobody stocks turns its share away and gets dearer (`signalShortage`); the rest goes to the cheapest good in stock, or for wants to the goods the buyer favors most. Demand does not steer production directly: burgs make what pays, and prices carry the signal.
+Buyers **spread their spending** over every good covering a need (`getVarietyShares`): a good gets a share by (price per coverage)^−2.92 (`VARIETY`), so cheaper coverage gets more but every good gets some. Affluence adds a novelty bonus (`getShares`): a burg pays up to 1 + `NOVELTY` × log10(affluence) times the price for a good it has had none of this run, less the more of the need that good already covered. The poor buy by price alone; the rich still prefer cheap coverage but spread over goods they lack. A good nobody stocks turns its share away and gets dearer (`signalShortage`); the rest goes to the cheapest good in stock, or for wants to the goods the buyer favors most. Demand does not steer production directly: burgs make what pays, and prices carry the signal.
 
 ## Markets
 
@@ -65,12 +65,12 @@ Burgs are scored by population (capital ×2.5, port ×1.2, then random noise ×0
 
 ### Stock and price
 
-A market holds no money, only per-good `{ stock, price }`. `price` is a midpoint: burgs buy at +2% (`MARKET_MARGIN`) and sell at −2%. The **margin** goes to the market's center burg as each trade happens (`payMargin`): its merchants. It is trade income, kept out of `burg.product` and untaxed.
+A market holds no money, only per-good `{ stock, price }`. `price` is a midpoint: burgs buy at +6% (`MARKET_MARGIN`) and sell at −6%. The **margin** goes to the market's center burg as each trade happens (`payMargin`): its merchants. It is trade income, kept out of `burg.product` and untaxed.
 
 Each market expects to sell a day's demand of each good, its **depth** (`initializeMarketPrices`): its urban and rural people × what a person buys of the good a day, at least one unit. What a person buys counts consumers, spread over a need's goods as buyers spread it at base prices plus a third more for wants (`WANTS_ESTIMATE`), plus what the trades making its products need, down whole production chains, split over alternative recipes (`collectDemand`).
 
-- **Opening.** Goods covering a need open at their value: some consumer always buys them once they are cheap enough. A pure ingredient opens at value × (expected units)^0.26 where its trades need less than a unit a day (`OPENING_ELASTICITY`), so a market with no use for it does not pay full price for the first units.
-- **Moving.** A trade of a day's expected sales moves the price e^0.5 times (`PRICE_RESPONSE`, `movePrice`): down on selling, up on buying, and up when buyers are turned away. The low floor (2%) lets an overstocked good stop paying, so its makers move on.
+- **Opening.** Goods covering a need open at their value: some consumer always buys them once they are cheap enough. A pure ingredient opens at value × (expected units)^0.07 where its trades need less than a unit a day (`OPENING_ELASTICITY`), so a market with no use for it does not pay full price for the first units.
+- **Moving.** A trade of a day's expected sales moves the price e^0.56 times (`PRICE_RESPONSE`, `movePrice`): down on selling, up on buying, and up when buyers are turned away. The low floor (2%) lets an overstocked good stop paying, so its makers move on.
 
 Stock and prices are rebuilt by every run; what is saved is the state after the last run.
 
@@ -81,7 +81,7 @@ Stock and prices are rebuilt by every run; what is saved is the state after the 
 1. **Rural supply** (`collectRuralProduction`). Every cell delivers to its market: population × biome output × multipliers × `RURAL_OUTPUT_FACTOR`, plus its deposit (`getDepositOutput`: population up to 10 × `DEPOSIT_RICHNESS` × the map's cells ÷ 5,000 × multipliers, so deposits yield more on bigger maps). A water cell counts its land neighbours' population. The market remembers which stock is rural.
 2. **Opening prices and depth**, per market, as above.
 3. **Routes.** One route search from every market center prices carriage for the run; each burg's carriage from every market is measured once and kept until the run ends (`endRun`).
-4. **Burg turns.** Burgs go largest first. A burg on a deposit starts with free units of it (population clamped to 1–5 × 2.26 (`BONUS_URBAN_PRODUCTION`) × multipliers). Round after round, each burg:
+4. **Burg turns.** Burgs go largest first. A burg on a deposit starts with free units of it (population clamped to 1–5 × 3 (`BONUS_URBAN_PRODUCTION`) × multipliers). Round after round, each burg:
    - puts up to 5 workers to work (`WORKERS_PER_TURN`), out of 39% of its population (`WORKFORCE_SHARE`, at most 1,000), selling each finished good as soon as a worker makes it, so the next worker sees the moved price;
    - sells what is left where it fetches most at its door (`getOutlet`: any market it reaches, after carriage);
    - buys the share of its needs matching the work done so far (`fillDemand`);
@@ -89,14 +89,14 @@ Stock and prices are rebuilt by every run; what is saved is the state after the 
 
    It stops when its workers are spent or nothing is worth making. After each round, every market's rural people spend their earnings (`spendRural`). At the end, each market keeps its rural people's day (`market.rural`: earned, rent paid, spent and goods bought; `endRun`), as it is not in the deals.
 
-5. **Rural income.** When rural stock is bought, rural people are paid the price less the margin (`takeStock`), and 44% goes to the state's capital burg as rent (`CAPITAL_RENT`). Their purchases make no deals and pay no tax.
+5. **Rural income.** When rural stock is bought, rural people are paid the price less the margin (`takeStock`), and 21% goes to the state's capital burg as rent (`CAPITAL_RENT`). Their purchases make no deals and pay no tax.
 6. **Store.** `burg.production` (units made, deposit bonus included), `burg.product` (sales less input costs) and, in debug mode, the step log in memory. Sales kept back in full are dropped from the deals.
 
 ### What a burg makes
 
 For each fraction of a worker, the burg plans every manufacturable good as a goal and takes the best **gain per worker**: the sale value at its door (the better of its own market and its best outlet) × output per worker, less its own sales tax, minus the inputs' cost (their prices hold their taxes), divided by the workers the whole chain needs. An input it can neither find in inventory nor buy is planned as its own step, recursively, with a cycle guard; a step makes only what the chain lacks. The current goal wins ties, so burgs finish chains. A step that pays nothing after tax is not taken, so a heavy sales tax idles workers.
 
-**Output per worker** = multipliers × (1 + 1.1 × the burg's share of its workers in the good, up to 1, + 0.51 × how far its market's share of workers in the good exceeds the world's, up to twice it) (`BURG_SPECIALIZATION`, `MARKET_SPECIALIZATION`, `getSpecialization`). Burgs settle on a trade, and a good a region makes more of than the world pays better there. The shares are counted during the run only.
+**Output per worker** = multipliers × (1 + 1.93 × the burg's share of its workers in the good, up to 1, + 0.5 × how far its market's share of workers in the good exceeds the world's, up to twice it) (`BURG_SPECIALIZATION`, `MARKET_SPECIALIZATION`, `getSpecialization`). Burgs settle on a trade, and a good a region makes more of than the world pays better there. The shares are counted during the run only.
 
 Inputs are bought as needed, without a budget: a treasury can dip below zero mid-run and recover on the sale. A step that cannot buy every input is skipped whole.
 
@@ -113,7 +113,7 @@ Goods pay for the path they travel, the one the trade animation draws.
 
 - **The network** is `pack.cells.routes`: roads, trails and sea routes. `TradeRoutes.search` is a Dijkstra with a land and a water state per cell. A link costs its length; sea links a fifth (`WATER_COST` 0.2). Switching between land and water costs 4 cell spacings at a port burg and 40 elsewhere.
 - **A decima** is a tenth of the map's diagonal, so carriage feels the same on any map size.
-- **Carriage per unit** = min(route cost in decimas, 10) × `good.carriage`, × 2.4 from another state's market (`IMPORT_CARRIAGE_FACTOR`).
+- **Carriage per unit** = min(route cost in decimas, 10) × `good.carriage`, × 2.8 from another state's market (`IMPORT_CARRIAGE_FACTOR`).
 - **Who pays**: every deal carries the carriage between the market's center and the burg, added to what the burg pays and taken off what it gets. A burg with no route to its own market pays the cap; another market with no route to the burg cannot trade with it.
 
 ## Money and taxes
@@ -135,15 +135,15 @@ Money exists only in `burg.treasury` and `state.treasury`. Markets hold none; bu
 Per unit, at the burg's door:
 
 ```
-sale:     price = market price × 0.9 − carriage;           tax = price × the burg's state sales tax, off the revenue
-purchase: price = market price × 1.1 + tax + tariff + carriage
+sale:     price = market price × 0.94 − carriage;          tax = price × the burg's state sales tax, off the revenue
+purchase: price = market price × 1.06 + tax + tariff + carriage
           tax    = market price × the seller state's sales tax
           tariff = market price × the importer's tariff rate   (imports only)
 ```
 
 **Tariffs** (`state.tariffs`) are rules by state and good, most specific first: this state and good, this state and all goods, all states and this good, all states and all goods (0 by default). They are seeded from diplomacy: allies, friends, vassals and suzerains 0%, suspicion 20%, rivals 30%, enemies an embargo. An embargo by either side rules a source out. The tariff follows the burg's own market, not the burg.
 
-**Rates** come from the state form, jittered per state within ¼× to 2× of the base: Monarchy 6% sales / 0.08 poll, Theocracy 10% / 0.04, Union 3% / 0.05, Republic 2% / 0.06, Anarchy nothing. Neutrals never tax. States take about an eighth of all income.
+**Rates** come from the state form, jittered per state within ¼× to 2× of the base: Monarchy 6% sales / 0.08 poll, Theocracy 10% / 0.04, Union 3% / 0.05, Republic 2% / 0.06, Anarchy nothing. Neutrals never tax. States take about a fifth of all income.
 
 **Collection** (`States.collectTaxes`) resets every state treasury, adds each deal's tax and tariff to the states `Markets.getTaxStates` names, then poll tax × the state's population.
 
@@ -151,9 +151,9 @@ purchase: price = market price × 1.1 + tax + tariff + carriage
 
 | Trade                            | Per unit                    | Burg                    | State A | State B |
 | -------------------------------- | --------------------------- | ----------------------- | ------- | ------- |
-| A's burg buys at its A market    | 10.2 + 1.5 + 0.5 = 12.2     | pays 122                | 15      | —       |
-| A's burg imports from a B market | 10.2 + 1.5 + 2 + 0.5 = 14.2 | pays 142                | 20      | 15      |
-| A's burg sells to an A market    | 9.8 − 0.5 = 9.3             | gets 93 − 13.95 = 79.05 | 13.95   | —       |
+| A's burg buys at its A market    | 10.6 + 1.5 + 0.5 = 12.6     | pays 126                | 15      | —       |
+| A's burg imports from a B market | 10.6 + 1.5 + 2 + 0.5 = 14.6 | pays 146                | 20      | 15      |
+| A's burg sells to an A market    | 9.4 − 0.5 = 8.9             | gets 89 − 13.35 = 75.65 | 13.35   | —       |
 
 ## The deal log
 
@@ -216,19 +216,19 @@ From most to least important:
 
 | #   | KPI                      | What it means                                                                                                                  | How it is measured                                                                                                            | Target   | Tuner fee                               | Master (v1.156.0) | Now      |
 | --- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- | -------- | --------------------------------------- | ----------------- | -------- |
-| 1   | Made goods in proportion | Each made good is made about as much as its commonness says: beer and cloth by the cartload, jewelry and boats by the piece    | Share of made goods whose share of made units is within ½–2× of its commonness target (below)                                 | ≥ 85%    | 0.10 per 1%, plus how far goods are off | —                 | 63% ✗    |
-| 2   | All goods produced       | Every good appears on a typical map. A single map may miss some: a map with no hot climate has no spices                       | Share of the catalogue, raw and made, produced on a map                                                                       | ≥ 95%    | 0.10 per 1%                             | 93.4%             | 93.8% ✗  |
-| 3   | Burgs in profit          | Burgs earn more than they spend                                                                                                | Share of burgs ending the day with a positive treasury                                                                        | ≥ 90%    | 0.02 per 1%                             | 96.5%             | 84.1% ✗  |
+| 1   | Made goods in proportion | Each made good is made about as much as its commonness says: beer and cloth by the cartload, jewelry and boats by the piece    | Share of made goods whose share of made units is within ½–2× of its commonness target (below)                                 | ≥ 85%    | 0.10 per 1%, plus how far goods are off | —                 | 82% ✗    |
+| 2   | All goods produced       | Every good appears on a typical map. A single map may miss some: a map with no hot climate has no spices                       | Share of the catalogue, raw and made, produced on a map                                                                       | ≥ 95%    | 0.10 per 1%                             | 93.4%             | 94.5% ✗  |
+| 3   | Burgs in profit          | Burgs earn more than they spend                                                                                                | Share of burgs ending the day with a positive treasury                                                                        | ≥ 90%    | 0.02 per 1%                             | 96.5%             | 80.0% ✗  |
 | 4   | Fast                     | Regenerating the economy feels instant                                                                                         | Economy run on a default map, best of five runs per map                                                                       | ≤ 200 ms | —                                       | 121 ms            | 175 ms ✓ |
-| 5   | Rich and poor regions    | Some regions' towns are rich and some poor                                                                                     | A market's wealth is the average wealth of the burgs in its area. The richest tenth of markets ÷ the poorest tenth            | ≥ 5×     | 0.5 × log of the shortfall              | 2.9×              | 4.7× ✗   |
-| 6   | Output apart from people | A region's output is not just its headcount: a market with 10% of the people may hold 30% of the output, or 5%                 | Share of markets whose share of the world's output is more than 50% above or below their share of its people                  | ≥ 30%    | 0.01 per 1%                             | 2%                | 18% ✗    |
-| 7   | Specialization           | Markets differ in what they offer: 0% would be every market making the world's average mix, 100% no two markets sharing a good | The share of a typical market's output, by value, that would have to change to match the world's mix                          | ≥ 60%    | 0.02 per 1%                             | 47%               | 69% ✓    |
-| 8   | States' cut              | Taxes take a moderate share of what the economy makes                                                                          | States' taxes ÷ the economy's product                                                                                         | 10–20%   | 0.01 per 1%                             | 64%               | 23% ✗    |
-| 9   | States benefit           | A state whose people are wealthier collects more per head: a developed economy pays its state                                  | Rank correlation across states between wealth and taxes per person (1: the wealthiest states always collect most; 0: no link) | ≥ 0.2    | 0.01 per 0.01                           | 0.19              | 0.05 ✗   |
-| 10  | Wealth spread            | Burgs differ in wealth, some far richer per person than others, without a few owning everything                                | Gini coefficient of burg wealth across burgs (0: all equal; 1: one burg has it all)                                           | 0.4–0.6  | 0.03 per 0.01                           | 0.28              | 0.44 ✓   |
+| 5   | Rich and poor regions    | Some regions' towns are rich and some poor                                                                                     | A market's wealth is the average wealth of the burgs in its area. The richest tenth of markets ÷ the poorest tenth            | ≥ 5×     | 0.5 × log of the shortfall              | 2.9×              | 9.0× ✓   |
+| 6   | Output apart from people | A region's output is not just its headcount: a market with 10% of the people may hold 30% of the output, or 5%                 | Share of markets whose share of the world's output is more than 50% above or below their share of its people                  | ≥ 30%    | 0.01 per 1%                             | 2%                | 16% ✗    |
+| 7   | Specialization           | Markets differ in what they offer: 0% would be every market making the world's average mix, 100% no two markets sharing a good | The share of a typical market's output, by value, that would have to change to match the world's mix                          | ≥ 60%    | 0.02 per 1%                             | 47%               | 66% ✓    |
+| 8   | States' cut              | Taxes take a moderate share of what the economy makes                                                                          | States' taxes ÷ the economy's product                                                                                         | 10–20%   | 0.01 per 1%                             | 64%               | 19% ✓    |
+| 9   | States benefit           | A state whose people are wealthier collects more per head: a developed economy pays its state                                  | Rank correlation across states between wealth and taxes per person (1: the wealthiest states always collect most; 0: no link) | ≥ 0.2    | 0.01 per 0.01                           | 0.19              | 0.19 ✗   |
+| 10  | Wealth spread            | Burgs differ in wealth, some far richer per person than others, without a few owning everything                                | Gini coefficient of burg wealth across burgs (0: all equal; 1: one burg has it all)                                           | 0.4–0.6  | 0.03 per 0.01                           | 0.28              | 0.57 ✓   |
 | 11  | Treasury concentration   | Money is not hoarded by a handful of burgs                                                                                     | Share of all burg treasuries held by the tenth of burgs with the largest ones                                                 | ≤ 70%    | 0.01 per 1%                             | 30%               | 80% ✗    |
 | 12  | Employment               | Workers find something worth making; they stay idle only when nothing pays                                                     | Share of workers who found work                                                                                               | ≥ 90%    | —                                       | 100%              | 100% ✓   |
-| 13  | Goods sold               | What is made finds a buyer the same day rather than piling up in a market                                                      | Share of made goods, by value, bought the same day by burgs or rural people                                                   | ≥ 50%    | 0.02 per 1%                             | 29%               | 63% ✓    |
+| 13  | Goods sold               | What is made finds a buyer the same day rather than piling up in a market                                                      | Share of made goods, by value, bought the same day by burgs or rural people                                                   | ≥ 50%    | 0.02 per 1%                             | 29%               | 61% ✓    |
 | 14  | Prosperity               | Townspeople live comfortably on average: some burgs thrive, others scrape by                                                   | Average prosperity of burgs, weighted by their people                                                                         | 40–60%   | 0.10 per 1%                             | —                 | 52% ✓    |
 
 ### Commonness of made goods
