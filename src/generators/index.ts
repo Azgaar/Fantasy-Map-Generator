@@ -32,6 +32,7 @@ import "./markets-generator";
 import "./transports-generator";
 import "./journeys/journeys-generator";
 import "./history-generator";
+import "./living-generator";
 import "./astral-naming";
 import "./resample";
 import "./generation-pipeline";

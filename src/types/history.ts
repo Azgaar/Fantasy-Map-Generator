@@ -1,6 +1,7 @@
 // The map's chronicle: dated events, fallen realms and eras. See docs/plans/history-generation.md
 import type { Alignment } from "@/data/culture-traits";
 import type { Emblem } from "@/types/emblems";
+import type { LivingWorldState } from "@/types/living";
 
 export type HistRefKind = "state" | "realm" | "burg" | "culture" | "religion" | "figure" | "polity";
 
@@ -14,6 +15,7 @@ export type HistoryEventType =
   | "founding"
   | "war"
   | "battle"
+  | "conquest"
   | "collapse"
   | "schism"
   | "migration"
@@ -114,6 +116,8 @@ export interface History {
   polities?: EpochPolity[]; // the lineages, one list for the whole history
   /** the borders per epoch, held at runtime and stored in .map records 54+; never JSON-stringified */
   snapshots?: Uint16Array[];
+  /** optional Living World seasonal simulation state */
+  living?: LivingWorldState;
 }
 
 export const emptyHistory = (): History => ({ events: [], realms: [], eras: [] });

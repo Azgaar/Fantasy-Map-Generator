@@ -221,6 +221,9 @@ const TEMPLATE = /* html */ `
     >
       Charts
     </button>
+    <button id="openLivingWorld" data-tip="Click to open the Living World HUD, inspector and god-mode controls">
+      Living World
+    </button>
     <button id="openMinimapButton" data-tip="Click to open minimap overview. Click minimap to center view">
       Minimap
     </button>

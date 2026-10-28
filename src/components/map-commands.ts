@@ -268,6 +268,12 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => Controllers.LegendsOverview.open()
   },
   {
+    id: "openLivingWorld",
+    name: "Open Living World",
+    aliases: "living world simulation hud seasons news rulers god mode",
+    run: () => Controllers.LivingHud.open()
+  },
+  {
     id: "applyAstralNaming",
     name: "Apply Astral Naming",
     aliases: "astral polities sectors star systems names sci-fi",

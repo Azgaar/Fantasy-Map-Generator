@@ -55,6 +55,7 @@ To report a problem or propose a feature, see [Reporting bugs and suggesting ide
 
 **Fork features**
 [Legends browser](https://github.com/0xPaladin/Fantasy-Map-Generator/wiki/Legends) ·
+[Living World](https://github.com/0xPaladin/Fantasy-Map-Generator/wiki/Living-World) ·
 [OpenConquest: Atlas Invictus](https://github.com/0xPaladin/Fantasy-Map-Generator/wiki/OpenConquest) ·
 [Astral Cartographer](https://github.com/0xPaladin/Fantasy-Map-Generator/wiki/Astral-Cartographer)
 
