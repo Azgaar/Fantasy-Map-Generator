@@ -416,10 +416,10 @@ function renderRuler(ruler: HistoricalFigure | undefined, age: number | undefine
 
 function renderCapacity(sSim: StatePolitySim): string {
   const pools = [
-    ["m", "Muster"],
+    ["m", "Military"],
     ["w", "Wealth"],
     ["s", "Stability"],
-    ["c", "Command"]
+    ["c", "Culture"]
   ] as const;
 
   const rows = pools
