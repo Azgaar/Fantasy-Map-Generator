@@ -11,7 +11,13 @@ import { ensureEl } from "@/utils/node-utils";
 import { rn, si } from "@/utils/number-utils";
 import { EconomyTerms } from "./economy-terms";
 import { bindEconomyWiki, economyWikiButton } from "./economy-wiki";
-import { prosperityColor, prosperityLevel, renderProsperity, renderProsperityParts } from "./prosperity-view";
+import {
+  prosperityColor,
+  prosperityLevel,
+  renderProsperity,
+  renderProsperityParts,
+  renderProsperityPercent
+} from "./prosperity-view";
 import { type GoodsKind, openGoodsTable, openPartnersTable, openProsperityTable } from "./state-economy-tables";
 
 const dialogPrefix = "stateEconomy";
@@ -155,7 +161,7 @@ function renderCards(
   const share = world.product ? rn((accounts.product / world.product) * 100, 1) : 0;
   const worldProsperity =
     world.prosperity === null ? "—" : `${rn(world.prosperity * 100)}% ${prosperityLevel(world.prosperity)}`;
-  const prosperity = accounts.prosperity === null ? "—" : renderProsperity(accounts.prosperity);
+  const prosperity = accounts.prosperity === null ? "—" : renderProsperityPercent(accounts.prosperity);
 
   const treasuryCard = stateId
     ? card(
@@ -189,7 +195,7 @@ function economyNotes(stateId: number, accounts: StateAccounts, world: StateAcco
   const sector = leaningSector(accounts, world);
   const labels: Record<Sector, string> = { rural: t("Rural"), manufacturing: t("Manufacturing"), trade: t("Trade") };
   const lean = sector ? rn(sectorShare(accounts, sector) / (sectorShare(world, sector) || 1), 1) : 0;
-  const notes = sector ? [t("{{sector}}: ×{{lean}} the world's share", { sector: labels[sector], lean })] : [];
+  const notes = sector ? [t("{{sector}}: ×{{lean}}", { sector: labels[sector], lean })] : [];
   const known = knownFor(stateId);
   if (known) notes.push(t("Known for: {{good}}", { good: known }));
   return notes;

@@ -30,6 +30,7 @@
     "generate:assistant-context": "node scripts/generate-assistant-context.mjs",
     "extract-strings": "node scripts/extract-strings.mjs",
     "lint-locales": "node scripts/lint-locales.mjs",
+    "tune-economy": "node scripts/economy-tuner/search.mjs",
     "prepare": "simple-git-hooks"
   },
   "simple-git-hooks": {

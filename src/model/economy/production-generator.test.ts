@@ -433,17 +433,23 @@ describe("demand fill", () => {
     expect(burg.treasury).toBeGreaterThanOrEqual(15 - 0.01);
   });
 
-  it("favors dearer goods the richer the burg is", () => {
+  it("pays more for goods it has had little of, the richer the burg is", () => {
     const { index, state } = prepare();
     index.needsCost = 1;
-    const variety = (treasury: number) => {
+    const [oil, tools] = [catalogue[0], catalogue[1]].map(good => ({
+      candidate: { good, goodId: good.i, coverageWeight: 1 },
+      costPerCoverage: 1
+    }));
+    state.consumed[1] = 10;
+    state.demandCoverage[4] = 10; // all its luxury so far came from oil
+    const shares = (treasury: number) => {
       burg.treasury = treasury;
       // biome-ignore lint/complexity/useLiteralKeys: private test access
-      return production["getVariety"](index, state);
+      return production["getShares"](index, state, 4, [oil, tools]);
     };
-    expect(variety(0)).toBe(3); // earns no more than its needs: the cheapest coverage
-    expect(variety(1000)).toBeCloseTo(1, 5); // ten days of needs a person
-    expect(variety(1e6)).toBe(-1); // the richest prefer dear goods
+    expect(shares(0)).toEqual([0.5, 0.5]); // earns no more than its needs: price alone decides
+    const [oilShare, toolsShare] = shares(1000); // ten days of needs a person: tool sets are worth 3.7 times their price
+    expect(toolsShare / oilShare).toBeCloseTo(3.7 ** 3, 5);
   });
 
   it("lets luxury wants grow with the burg's wealth", () => {

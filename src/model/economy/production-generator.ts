@@ -13,10 +13,8 @@ import {
   getDemandTargets,
   getNeedsCost,
   getVarietyShares,
-  MIN_VARIETY,
-  PRESTIGE,
+  NOVELTY,
   SAVINGS_RATE,
-  VARIETY,
   WANT_LIMITS,
   WANT_SHARES,
   WEALTH_WANTS
@@ -165,6 +163,7 @@ export class ProductionModule {
       spent: 0,
       outlets: [],
       demandCoverage: new Array(DEMAND_PRIORITY.length).fill(0),
+      consumed: [],
       workersByGood: [],
       activeGoalGoodId: null,
       sources: []
@@ -460,10 +459,7 @@ export class ProductionModule {
 
       // every good covering the need gets its share; a good nobody stocks turns its buyers away, raising its price
       const options = [...sortedCandidates, ...missing];
-      const shares = getVarietyShares(
-        options.map(option => option.costPerCoverage),
-        this.getVariety(index, state)
-      );
+      const shares = this.getShares(index, state, categoryIndex, options);
       const wanted = shortage;
       options.forEach(({ candidate }, k) => {
         if (k >= sortedCandidates.length)
@@ -484,9 +480,23 @@ export class ProductionModule {
     return index.needsCost ? Math.max(1, perPerson / index.needsCost) : 1;
   }
 
-  /** The poor buy the cheapest coverage; the richer a burg, the dearer the goods it favors */
-  private getVariety(index: ProductionIndex, state: BurgProductionState): number {
-    return Math.max(MIN_VARIETY, VARIETY - PRESTIGE * Math.log10(this.getAffluence(index, state)));
+  /** Shares of the need's spending by price per coverage; the richer the burg, the more it pays for goods it has had little of */
+  private getShares(
+    index: ProductionIndex,
+    state: BurgProductionState,
+    category: number,
+    options: { candidate: DemandGoodCandidate; costPerCoverage: number }[]
+  ): number[] {
+    const bonus = NOVELTY * Math.log10(this.getAffluence(index, state));
+    const covered = state.demandCoverage[category];
+    return getVarietyShares(
+      options.map(({ candidate, costPerCoverage }) => {
+        const had = covered
+          ? Math.min(1, ((state.consumed[candidate.goodId] || 0) * candidate.coverageWeight) / covered)
+          : 0;
+        return costPerCoverage / (1 + bonus * (1 - had));
+      })
+    );
   }
 
   /** Spends what the burg can spare beyond its needs, up to (1 - savings) of its income, spread over the goods of every category as its needs are */
@@ -498,7 +508,6 @@ export class ProductionModule {
 
     const targets = getDemandTargets(burg.population || 0);
     const affluence = this.getAffluence(index, state);
-    const variety = this.getVariety(index, state);
     let left = budget;
     DEMAND_PRIORITY.forEach((category, categoryIndex) => {
       // what the capped wants leave goes to those that grow with affluence: the rich spend on luxury, not on more bread
@@ -511,14 +520,11 @@ export class ProductionModule {
           const quote = this.quote(index, state, candidate.goodId);
           const price =
             quote.stock > 0.01 ? quote.buyPrice : Markets.quoteMarket(state.market, candidate.goodId, burg).buyPrice;
-          return { candidate, stocked: quote.stock > 0.01, price };
+          return { candidate, stocked: quote.stock > 0.01, price, costPerCoverage: price / candidate.coverageWeight };
         })
         .filter(({ price }) => price > 0);
       if (!options.length) return;
-      const shares = getVarietyShares(
-        options.map(({ candidate, price }) => price / candidate.coverageWeight),
-        variety
-      );
+      const shares = this.getShares(index, state, categoryIndex, options);
       const total = money;
       const purchase = (candidate: DemandGoodCandidate, price: number, spend: number) => {
         const units = Math.min(spend / price, cap() / candidate.coverageWeight);
@@ -554,6 +560,7 @@ export class ProductionModule {
     const cost = trade.units * trade.price;
     state.burg.treasury = rn((state.burg.treasury || 0) - cost, 2);
     state.spent += cost;
+    state.consumed[goodId] = (state.consumed[goodId] || 0) + trade.units;
     const coverage = index.demandCoverageByGood[goodId];
     for (let i = 0; i < DEMAND_PRIORITY.length; i++) state.demandCoverage[i] += trade.units * (coverage[i] || 0);
     return cost;
@@ -998,6 +1005,7 @@ type BurgProductionState = {
   spent: number; // on the burg's needs and wants this run
   outlets: (number | undefined)[]; // by good: the best price at the burg's door this turn
   demandCoverage: number[]; // by demand category: what the burg's purchases covered so far this run
+  consumed: number[]; // by good: units the burg bought or kept for itself this run
   workersByGood: number[]; // workers put into each good this run, for division of labor
   activeGoalGoodId: number | null;
   sources: (SourceQuote | null | undefined)[]; // cheapest other market by good for the current turn, null when none

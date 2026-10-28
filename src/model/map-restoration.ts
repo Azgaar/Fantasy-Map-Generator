@@ -198,6 +198,13 @@ class MapRestorationModule {
     return x >= 0 && x <= options.map.graph.width && y >= 0 && y <= options.map.graph.height;
   }
 
+  /** the map plus a cell spacing around it: a route, and a journey along it, can end at a port just off the edge */
+  private routeBox(): [number, number, number, number] {
+    const margin = grid.spacing;
+    const { width, height } = options.map.graph;
+    return [-margin, -margin, width + margin, height + margin];
+  }
+
   /** on the map and off its edge */
   private isInside(x: number, y: number) {
     return x > 0 && x < options.map.graph.width && y > 0 && y < options.map.graph.height;
@@ -853,10 +860,7 @@ class MapRestorationModule {
   /** a point cut at the map edge takes the cell under it */
   private restoreRoutes(parent: PackedGraph, projection: Projection, featureIds: Map<number, number>) {
     const { cells } = pack;
-    // a route can end at a port just off the map edge: a cell spacing of margin keeps it whole
-    const margin = grid.spacing;
-    const { width, height } = options.map.graph;
-    const bbox: [number, number, number, number] = [-margin, -margin, width + margin, height + margin];
+    const bbox = this.routeBox();
     const routes = parent.routes.map(route => {
       const projected = route.points.map(([x, y, cell]) => [...projection(x, y), cell]);
       // lineclip keeps the inner points as given and adds [x, y] points where the line is cut; of the parts the longest stays
@@ -912,12 +916,13 @@ class MapRestorationModule {
 
   private restoreJourneys(parent: PackedGraph, projection: Projection) {
     let dropped = 0;
+    const [minX, minY, maxX, maxY] = this.routeBox();
     const restoreSegment = (segment: JourneySegment): JourneySegment | null => {
       let points: JourneyPoint[] = [];
       for (const [parentX, parentY, cell] of segment.points) {
         const [x, y] = projection(parentX, parentY).map(value => rn(value, 2));
-        // a clipped path can't stay valid cell-by-cell, so a segment leaving the map goes whole
-        if (!this.isInMap(x, y)) return null;
+        // a clipped path can't stay valid cell-by-cell, so a segment leaving the routes' box goes whole
+        if (x < minX || x > maxX || y < minY || y > maxY) return null;
         points.push([x, y, this.findPathCell(parent, projection, cell, x, y)]);
       }
       if (!points.length) return null;

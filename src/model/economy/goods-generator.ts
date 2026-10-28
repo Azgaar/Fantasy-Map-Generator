@@ -89,11 +89,10 @@ export const WANT_LIMITS: Record<DemandCategory, number> = {
 }; // the most a person buys beyond their needs, in days of need: richer people eat only so much more
 export const SAVINGS_RATE = 0.15; // share of a day's income households keep
 export const VARIETY = 3; // buyers spread their spending over the goods covering a need, by (price per coverage)^-VARIETY: higher buys only the cheapest
-export const PRESTIGE = 2; // how much each tenfold of affluence lowers a buyer's variety: the rich buy dearer goods
-export const MIN_VARIETY = -1; // the richest prefer dear goods
+export const NOVELTY = 2.7; // how much more a buyer pays per tenfold of affluence for a good it has had none of yet
 export const WEALTH_WANTS: readonly DemandCategory[] = ["luxury"]; // wants that grow with affluence: the rich display; staples stay capped, or the first in line buy them out
 
-/** Shares of spending each option gets: cheaper coverage gets more, but every option gets some; a negative variety favors dear goods */
+/** Shares of spending each option gets: cheaper coverage gets more, but every option gets some */
 export function getVarietyShares(costs: number[], variety = VARIETY): number[] {
   const cheapest = Math.min(...costs.filter(cost => cost > 0));
   const weights = costs.map(cost => (cost > 0 ? (cost / cheapest) ** -variety : 0));
@@ -122,12 +121,12 @@ const GOODS_DATA: GoodData[] = [
     tags: ["construction", "fuel"],
     icon: "goods-wood",
     color: "#966F33",
-    value: 1,
+    value: 0.5,
     carriage: 0.5,
     deposits: [2, 4],
     distribution: "biome(5, 6, 7, 8, 9)",
     unit: "pile",
-    demandCoverage: { construction: 0.5, utilities: 0.5 },
+    demandCoverage: { utilities: 1, construction: 1 },
     multipliers: { cultureType: { Hunting: 2 } },
     biomeOutput: { 5: 0.05, 6: 0.03, 7: 0.08, 8: 0.08, 9: 0.1 }
   },
@@ -136,12 +135,12 @@ const GOODS_DATA: GoodData[] = [
     tags: ["construction"],
     icon: "goods-stone",
     color: "#979EA2",
-    value: 2,
+    value: 3.5,
     carriage: 0.7,
     deposits: [3, 5],
     distribution: "(minHeight(40) || (minHeight(20) && elevation())) && biome(1, 2, 3, 4)",
     unit: "pallet",
-    demandCoverage: { construction: 2 },
+    demandCoverage: { construction: 1 },
     multipliers: { cultureType: { Highland: 2, Hunting: 0.6, Nomadic: 0.6 } },
     biomeOutput: { 1: 0.05, 2: 0.05 }
   },
@@ -150,12 +149,12 @@ const GOODS_DATA: GoodData[] = [
     tags: ["construction", "luxury"],
     icon: "goods-marble",
     color: "#d6d0bf",
-    value: 6,
+    value: 7,
     carriage: 1,
     deposits: [1, 2],
     distribution: "minHeight(60) || (minHeight(30) && elevation())",
     unit: "pallet",
-    demandCoverage: { construction: 1.2, luxury: 1.2 },
+    demandCoverage: { construction: 0.35, luxury: 1 },
     multipliers: { cultureType: { Highland: 2.5 } }
   },
   {
@@ -163,7 +162,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["ore", "military"],
     icon: "goods-iron",
     color: "#5D686E",
-    value: 3,
+    value: 3.5,
     carriage: 0.7,
     deposits: [2, 4],
     distribution: "minHeight(50) || (biome(12) && nth(5))",
@@ -176,7 +175,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["ore"],
     icon: "goods-copper",
     color: "#b87333",
-    value: 4,
+    value: 2.5,
     carriage: 0.7,
     deposits: [2, 2],
     distribution: "minHeight(60) || (minHeight(30) && elevation())",
@@ -188,7 +187,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["ore"],
     icon: "goods-tin",
     color: "#454343",
-    value: 4,
+    value: 4.5,
     carriage: 0.7,
     deposits: [2, 4],
     distribution: "minHeight(60) || (minHeight(30) && elevation())",
@@ -200,7 +199,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["ore", "luxury"],
     icon: "goods-silver",
     color: "#C0C0C0",
-    value: 8,
+    value: 12,
     carriage: 0.3,
     deposits: [2, 6],
     distribution: "minHeight(60) || (minHeight(30) && elevation())",
@@ -212,7 +211,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["ore", "luxury"],
     icon: "goods-gold",
     color: "#ffd700",
-    value: 15,
+    value: 24,
     carriage: 0.8,
     deposits: [2, 2],
     distribution: "river() && minHeight(40)",
@@ -238,12 +237,12 @@ const GOODS_DATA: GoodData[] = [
     tags: ["food"],
     icon: "goods-cattle",
     color: "#56b000",
-    value: 2,
+    value: 1,
     carriage: 0.3,
     deposits: [3, 4],
     distribution: "(biome(3, 4) && !elevation()) || (biome(6) && random(70)) || (biome(5) && nth(5))",
     unit: "head",
-    demandCoverage: { food: 2 },
+    demandCoverage: { food: 1 },
     multipliers: { cultureType: { Nomadic: 3 } },
     biomeOutput: { 3: 0.03, 4: 0.04 }
   },
@@ -252,12 +251,12 @@ const GOODS_DATA: GoodData[] = [
     tags: ["food", "aquatic"],
     icon: "goods-fish",
     color: "#7fcdff",
-    value: 1,
+    value: 2,
     carriage: 0.5,
     deposits: [4, 6],
     distribution: 'shore(-1) && (type("ocean", "freshwater", "salt") || (river() && shore(1, 2)))',
     unit: "wain",
-    demandCoverage: { food: 1 },
+    demandCoverage: { food: 0.95 },
     multipliers: { cultureType: { River: 2, Lake: 2.5, Naval: 2.5, Nomadic: 0.2 } }
   },
   {
@@ -265,12 +264,12 @@ const GOODS_DATA: GoodData[] = [
     tags: ["food"],
     icon: "goods-game",
     color: "#c38a8a",
-    value: 2,
+    value: 1,
     carriage: 0.5,
     deposits: [2, 4],
     distribution: "biome(5, 6, 7, 8, 9)",
     unit: "wain",
-    demandCoverage: { food: 2 },
+    demandCoverage: { food: 1 },
     multipliers: { cultureType: { Naval: 0.6, Nomadic: 1.5, Hunting: 3 } },
     biomeOutput: { 5: 0.02, 7: 0.02, 8: 0.02, 9: 0.04, 10: 0.01 }
   },
@@ -279,12 +278,12 @@ const GOODS_DATA: GoodData[] = [
     tags: ["food", "luxury"],
     icon: "goods-wine",
     color: "#963e48",
-    value: 2,
+    value: 1.5,
     carriage: 0.3,
     deposits: [3, 5],
     distribution: "biome(6) || (biome(4) && random(50) && river())",
     unit: "barrel",
-    demandCoverage: { food: 0.4, luxury: 0.4 },
+    demandCoverage: { food: 1, luxury: 0.1 },
     multipliers: { cultureType: { Highland: 1.2, Nomadic: 0.5 } },
     biomeOutput: { 6: 0.03 }
   },
@@ -293,12 +292,12 @@ const GOODS_DATA: GoodData[] = [
     tags: ["food"],
     icon: "goods-olives",
     color: "#BDBD7D",
-    value: 2,
+    value: 2.5,
     carriage: 0.3,
     deposits: [1, 2],
     distribution: "biome(3) && shore(1, 2)",
     unit: "barrel",
-    demandCoverage: { food: 2 },
+    demandCoverage: { food: 0.75 },
     multipliers: { cultureType: { Generic: 0.8, Nomadic: 0.5 } },
     biomeOutput: { 3: 0.1 }
   },
@@ -307,12 +306,12 @@ const GOODS_DATA: GoodData[] = [
     tags: ["food", "preservative"],
     icon: "goods-honey",
     color: "#DCBC66",
-    value: 2,
+    value: 1,
     carriage: 0.3,
     deposits: [3, 4],
     distribution: "biome(6, 8, 9)",
     unit: "barrel",
-    demandCoverage: { food: 2 },
+    demandCoverage: { food: 1 },
     multipliers: { cultureType: { Generic: 1.2 } },
     biomeOutput: { 6: 0.03, 8: 0.02, 9: 0.02 }
   },
@@ -321,12 +320,12 @@ const GOODS_DATA: GoodData[] = [
     tags: ["preservative", "mineral"],
     icon: "goods-salt",
     color: "#E5E4E5",
-    value: 2,
+    value: 1,
     carriage: 0.4,
     deposits: [2, 4],
     distribution: 'shore(1) && type("salt", "dry") || (biome(1, 2) && random(70)) || (biome(12) && nth(10))',
     unit: "bag",
-    demandCoverage: { utilities: 1 },
+    demandCoverage: { utilities: 0.3 },
     multipliers: { cultureType: { Naval: 2 } },
     biomeOutput: { 1: 0.1, 2: 0.1 }
   },
@@ -335,12 +334,12 @@ const GOODS_DATA: GoodData[] = [
     tags: ["food"],
     icon: "goods-dates",
     color: "#dbb2a3",
-    value: 2,
+    value: 1.5,
     carriage: 0.5,
     deposits: [1, 2],
     distribution: "biome(1)",
     unit: "wain",
-    demandCoverage: { food: 2 },
+    demandCoverage: { food: 1 },
     multipliers: { cultureType: { Hunting: 0.8, Highland: 0.8 } },
     biomeOutput: { 1: 0.15 }
   },
@@ -349,12 +348,12 @@ const GOODS_DATA: GoodData[] = [
     tags: ["supply", "military"],
     icon: "goods-horses",
     color: "#ba7447",
-    value: 5,
+    value: 6,
     carriage: 0.4,
     deposits: [3, 5],
     distribution: "biome(3) || (biome(2) && nth(4))",
     unit: "head",
-    demandCoverage: { utilities: 1.5, military: 1 },
+    demandCoverage: { utilities: 0.35, military: 1 },
     multipliers: { cultureType: { Nomadic: 3 } },
     biomeOutput: { 2: 0.02, 4: 0.03 }
   },
@@ -363,12 +362,12 @@ const GOODS_DATA: GoodData[] = [
     tags: ["luxury"],
     icon: "goods-elephants",
     color: "#C5CACD",
-    value: 7,
+    value: 14,
     carriage: 0.3,
     deposits: [2, 3],
     distribution: "biome(1, 3, 5, 7)",
     unit: "tusk",
-    demandCoverage: { luxury: 1.4 },
+    demandCoverage: { luxury: 0.1 },
     multipliers: { cultureType: { Highland: 0.2 } }
   },
   {
@@ -381,7 +380,7 @@ const GOODS_DATA: GoodData[] = [
     deposits: [2, 4],
     distribution: "biome(1, 2)",
     unit: "head",
-    demandCoverage: { utilities: 2.33, military: 1 },
+    demandCoverage: { utilities: 0.5, military: 1 },
     multipliers: { cultureType: { Nomadic: 3, Generic: 0.8 } },
     biomeOutput: { 1: 0.05, 2: 0.05 }
   },
@@ -390,7 +389,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["clothing", "naval"],
     icon: "goods-hemp",
     color: "#069a06",
-    value: 1,
+    value: 0.5,
     carriage: 0.5,
     deposits: [2, 4],
     distribution: "biome(6, 7, 8)",
@@ -403,12 +402,12 @@ const GOODS_DATA: GoodData[] = [
     tags: ["luxury", "aquatic"],
     icon: "goods-pearls",
     color: "#EAE0C8",
-    value: 13,
+    value: 18,
     carriage: 0.6,
     deposits: [2, 3],
     distribution: "shore(-1) && minTemp(18)",
     unit: "pearl",
-    demandCoverage: { luxury: 2.6 },
+    demandCoverage: { luxury: 0.2 },
     multipliers: { cultureType: { Naval: 2.5 } }
   },
   {
@@ -416,12 +415,12 @@ const GOODS_DATA: GoodData[] = [
     tags: ["luxury", "mineral"],
     icon: "goods-gemstones",
     color: "#e463e4",
-    value: 15,
+    value: 19,
     carriage: 0.8,
     deposits: [1, 2],
     distribution: "minHeight(60) || (minHeight(30) && elevation() && nth(3))",
     unit: "gem",
-    demandCoverage: { luxury: 3 },
+    demandCoverage: { luxury: 0.35 },
     multipliers: { cultureType: { Highland: 2.5 } }
   },
   {
@@ -429,7 +428,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["luxury"],
     icon: "goods-dyes",
     color: "#fecdea",
-    value: 5,
+    value: 3,
     carriage: 0.5,
     deposits: [2, 3],
     distribution: "biome(3, 5, 7) || (shore(-1) && minTemp(18))",
@@ -441,24 +440,24 @@ const GOODS_DATA: GoodData[] = [
     tags: ["luxury", "ritual"],
     icon: "goods-incense",
     color: "#ebe5a7",
-    value: 10,
+    value: 15,
     carriage: 0.8,
     deposits: [2, 3],
     distribution: "biome(1, 7)",
     unit: "chest",
-    demandCoverage: { luxury: 2 }
+    demandCoverage: { luxury: 0.1 }
   },
   {
     name: "Silk",
     tags: ["luxury", "clothing"],
     icon: "goods-silk",
     color: "#e0f0f8",
-    value: 9,
+    value: 4.5,
     carriage: 0.4,
     deposits: [1, 2],
     distribution: "biome(7)",
     unit: "bolt",
-    demandCoverage: { luxury: 1.8 },
+    demandCoverage: { luxury: 1 },
     multipliers: { cultureType: { River: 2, Lake: 2 } }
   },
   {
@@ -466,12 +465,12 @@ const GOODS_DATA: GoodData[] = [
     tags: ["luxury"],
     icon: "goods-spices",
     color: "#e99c75",
-    value: 15,
+    value: 14,
     carriage: 1,
     deposits: [1, 2],
     distribution: "biome(7)",
     unit: "chest",
-    demandCoverage: { luxury: 3 },
+    demandCoverage: { luxury: 0.1 },
     multipliers: { cultureType: { Generic: 1.2 } }
   },
   {
@@ -479,12 +478,12 @@ const GOODS_DATA: GoodData[] = [
     tags: ["luxury"],
     icon: "goods-amber",
     color: "#e68200",
-    value: 7,
+    value: 4,
     carriage: 0.2,
     deposits: [2, 2],
     distribution: "shore(1) && biome(6, 7, 8, 9)",
     unit: "stone",
-    demandCoverage: { luxury: 1.4 },
+    demandCoverage: { luxury: 1 },
     multipliers: { cultureType: { Generic: 1.2 } }
   },
   {
@@ -492,12 +491,12 @@ const GOODS_DATA: GoodData[] = [
     tags: ["clothing", "luxury"],
     icon: "goods-furs",
     color: "#8a5e51",
-    value: 4,
+    value: 2,
     carriage: 0.3,
     deposits: [1, 2],
     distribution: "biome(9) || (biome(10) && nth(2)) || (biome(6, 8) && nth(5)) || (biome(12) && nth(10))",
     unit: "pelt",
-    demandCoverage: { luxury: 0.8, utilities: 0.48 },
+    demandCoverage: { utilities: 0.6, luxury: 0.2 },
     multipliers: { cultureType: { Hunting: 3 } },
     biomeOutput: { 9: 0.06, 10: 0.06 }
   },
@@ -506,25 +505,25 @@ const GOODS_DATA: GoodData[] = [
     tags: ["clothing"],
     icon: "goods-sheep",
     color: "#53b574",
-    value: 2,
+    value: 3.5,
     carriage: 0.4,
     deposits: [3, 5],
     distribution: "(biome(3, 4) && !elevation()) || (biome(6) && random(70)) || (biome(5) && nth(5))",
     unit: "bale",
     multipliers: { cultureType: { Naval: 1.4, Highland: 2 } },
-    biomeOutput: { 2: 0.05, 4: 0.15 }
+    biomeOutput: { 2: 0.03, 4: 0.08 }
   },
   {
     name: "Slaves",
     tags: ["supply"],
     icon: "goods-slaves",
     color: "#757575",
-    value: 6,
+    value: 4,
     carriage: 1,
     deposits: [1, 2],
     distribution: "shore(1) && minHabitability(1) && !habitability()",
     unit: "slave",
-    demandCoverage: { utilities: 3 },
+    demandCoverage: { utilities: 1 },
     multipliers: { cultureType: { Naval: 1.4, Nomadic: 2, Hunting: 0.6, Highland: 0.4 } }
   },
   {
@@ -532,7 +531,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["naval"],
     icon: "goods-tar",
     color: "#727272",
-    value: 11,
+    value: 13,
     carriage: 0.6,
     unit: "barrel",
     multipliers: { cultureType: { Hunting: 1.2 } },
@@ -555,12 +554,12 @@ const GOODS_DATA: GoodData[] = [
     tags: ["fuel", "mineral"],
     icon: "goods-coal",
     color: "#5a6a75",
-    value: 12,
+    value: 6,
     carriage: 0.6,
     deposits: [4, 6],
     distribution: "minHeight(40) || (minHeight(20) && elevation(25))",
     unit: "wain",
-    demandCoverage: { utilities: 6 },
+    demandCoverage: { utilities: 0.95 },
     recipes: [{ Wood: 1.5 }]
   },
   {
@@ -568,12 +567,12 @@ const GOODS_DATA: GoodData[] = [
     tags: ["fuel"],
     icon: "goods-oil",
     color: "#565656",
-    value: 5,
+    value: 8,
     carriage: 0.7,
     deposits: [2, 3],
     distribution: "biome(1, 2, 10) || (shore(-1) && minTemp(18) && random(15))",
     unit: "barrel",
-    demandCoverage: { utilities: 2.5 },
+    demandCoverage: { utilities: 0.2 },
     recipes: [{ Olives: 1 }, { Blubber: 1 }]
   },
   {
@@ -581,12 +580,12 @@ const GOODS_DATA: GoodData[] = [
     tags: ["luxury"],
     icon: "goods-tropicalTimber",
     color: "#a45a52",
-    value: 7,
+    value: 6,
     carriage: 1,
     deposits: [1, 2],
     distribution: "biome(5, 7) && random(50)",
     unit: "pile",
-    demandCoverage: { luxury: 1.4 }
+    demandCoverage: { luxury: 0.65 }
   },
   {
     name: "Blubber",
@@ -598,7 +597,7 @@ const GOODS_DATA: GoodData[] = [
     deposits: [1, 3],
     distribution: "shore(-1) && type('ocean') && maxTemp(7)",
     unit: "barrel",
-    demandCoverage: { food: 1, utilities: 0.2 },
+    demandCoverage: { food: 1, utilities: 0.3 },
     multipliers: { cultureType: { Naval: 2.5, Nomadic: 0.5 } }
   },
   {
@@ -606,12 +605,12 @@ const GOODS_DATA: GoodData[] = [
     tags: ["preservative", "food"],
     icon: "goods-sugar",
     color: "#7abf87",
-    value: 4,
+    value: 3.5,
     carriage: 0.5,
     deposits: [1, 3],
     distribution: "biome(7)",
     unit: "bag",
-    demandCoverage: { food: 1.2, luxury: 0.8 },
+    demandCoverage: { food: 0.15, luxury: 0.7 },
     biomeOutput: { 5: 0.02, 7: 0.04 }
   },
   {
@@ -619,12 +618,12 @@ const GOODS_DATA: GoodData[] = [
     tags: ["luxury"],
     icon: "goods-tea",
     color: "#d0f0c0",
-    value: 5,
+    value: 3.5,
     carriage: 0.5,
     deposits: [1, 2],
     distribution: "minHeight(40) && (biome(5) || (biome(7) || biome(8)))",
     unit: "bag",
-    demandCoverage: { luxury: 1 },
+    demandCoverage: { luxury: 0.8 },
     multipliers: { cultureType: { Highland: 2 } }
   },
   {
@@ -632,12 +631,12 @@ const GOODS_DATA: GoodData[] = [
     tags: ["luxury"],
     icon: "goods-tobacco",
     color: "#6D5843",
-    value: 5,
+    value: 2.5,
     carriage: 0.5,
     deposits: [1, 2],
     distribution: "random(20) && (biome(3) || (biome(5) || biome(6)))",
     unit: "bag",
-    demandCoverage: { luxury: 1 }
+    demandCoverage: { luxury: 0.2 }
   },
   {
     name: "Clay",
@@ -657,7 +656,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["mineral"],
     icon: "goods-sand",
     color: "#e6d69c",
-    value: 1,
+    value: 0.5,
     carriage: 0.5,
     deposits: [3, 5],
     distribution: "minTemp(8) && (shore(1) || river())",
@@ -669,7 +668,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["clothing", "military"],
     icon: "goods-leather",
     color: "#8b5a2b",
-    value: 14,
+    value: 7,
     carriage: 0.4,
     recipes: [{ Cattle: 1 }, { Game: 1 }, { Horses: 1 }, { Camels: 1 }],
     unit: "roll",
@@ -680,7 +679,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["clothing"],
     icon: "goods-cloth",
     color: "#e8e69c",
-    value: 13,
+    value: 4,
     carriage: 0.3,
     recipes: [{ Wool: 1 }, { Hemp: 1 }, { Silk: 0.5 }],
     unit: "bolt",
@@ -691,36 +690,36 @@ const GOODS_DATA: GoodData[] = [
     tags: ["clothing"],
     icon: "goods-garments",
     color: "#bd21ec",
-    value: 23,
+    value: 19,
     carriage: 1,
     recipes: [
       { Cloth: 1, Dyes: 0.5 },
       { Cloth: 0.5, Furs: 1 }
     ],
     unit: "set",
-    demandCoverage: { utilities: 11.5 }
+    demandCoverage: { utilities: 1 }
   },
   {
     name: "Ceramics",
     tags: ["storage", "construction"],
     icon: "goods-ceramics",
     color: "#c1440e",
-    value: 11,
+    value: 6,
     carriage: 1,
     recipes: [{ Clay: 0.5 }],
     unit: "wain",
-    demandCoverage: { utilities: 5.5 }
+    demandCoverage: { utilities: 1 }
   },
   {
     name: "Glass",
     tags: ["storage", "construction"],
     icon: "goods-glass",
     color: "#a0c8e8",
-    value: 11,
+    value: 16,
     carriage: 1,
     recipes: [{ "White sand": 1 }],
     unit: "wain",
-    demandCoverage: { luxury: 2.2 },
+    demandCoverage: { luxury: 0.95 },
     multipliers: { cultureType: { Nomadic: 0.2 } }
   },
   {
@@ -728,7 +727,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["naval", "construction"],
     icon: "goods-ropes",
     color: "#ba9773",
-    value: 11,
+    value: 2.5,
     carriage: 0.5,
     recipes: [{ Hemp: 1 }],
     unit: "coil",
@@ -739,7 +738,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["ritual", "educational"],
     icon: "goods-paper",
     color: "#f5f5dc",
-    value: 11,
+    value: 9,
     carriage: 0.3,
     recipes: [{ Hemp: 1 }],
     unit: "ream",
@@ -750,7 +749,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["ritual", "educational"],
     icon: "goods-ink",
     color: "#000000",
-    value: 14,
+    value: 7,
     carriage: 0.2,
     recipes: [{ Oil: 1 }, { Dyes: 0.5 }],
     unit: "bottle",
@@ -761,14 +760,14 @@ const GOODS_DATA: GoodData[] = [
     tags: ["ritual", "educational"],
     icon: "goods-books",
     color: "#deb887",
-    value: 30,
+    value: 20,
     carriage: 0.6,
     recipes: [
       { Paper: 1, Ink: 0.5 },
       { Leather: 1, Ink: 0.5 }
     ],
     unit: "volume",
-    demandCoverage: { luxury: 6 },
+    demandCoverage: { luxury: 1 },
     multipliers: { cultureType: { Nomadic: 0.2, Hunting: 0.5 } }
   },
   {
@@ -776,22 +775,22 @@ const GOODS_DATA: GoodData[] = [
     tags: ["naval"],
     icon: "goods-sails",
     color: "#ffffff",
-    value: 23,
+    value: 5,
     carriage: 1,
     recipes: [{ Cloth: 1 }],
     unit: "set",
     multipliers: { cultureType: { Naval: 2 } }
   },
   {
-    name: "Ships",
+    name: "Boats",
     tags: ["naval"],
     icon: "goods-ships",
     color: "#704a24",
-    value: 122,
+    value: 44,
     carriage: 2,
-    recipes: [{ Wood: 4, Sails: 4, Ropes: 4, Tar: 2 }],
-    unit: "ship",
-    demandCoverage: { military: 4 },
+    recipes: [{ Wood: 4, Sails: 2, Ropes: 2, Tar: 2 }],
+    unit: "boat",
+    demandCoverage: { military: 1.3 },
     multipliers: { cultureType: { Naval: 3 } }
   },
   {
@@ -799,18 +798,18 @@ const GOODS_DATA: GoodData[] = [
     tags: ["clothing", "military"],
     icon: "goods-boots",
     color: "#654321",
-    value: 18,
+    value: 8,
     carriage: 0.3,
     recipes: [{ Leather: 1 }, { Furs: 0.5 }],
     unit: "pair",
-    demandCoverage: { utilities: 9 }
+    demandCoverage: { utilities: 0.2 }
   },
   {
     name: "Harnesses",
     tags: ["military"],
     icon: "goods-harnesses",
     color: "#a0522d",
-    value: 20,
+    value: 11,
     carriage: 0.5,
     recipes: [
       { Leather: 0.5, Iron: 0.25 },
@@ -818,7 +817,7 @@ const GOODS_DATA: GoodData[] = [
       { Leather: 0.5, Copper: 0.25 }
     ],
     unit: "set",
-    demandCoverage: { military: 0.5 },
+    demandCoverage: { military: 0.1 },
     multipliers: { cultureType: { Nomadic: 2 } }
   },
   {
@@ -826,7 +825,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["naval", "storage"],
     icon: "goods-barrels",
     color: "#b46e3b",
-    value: 11,
+    value: 15,
     carriage: 0.6,
     recipes: [{ Wood: 1 }],
     unit: "barrel"
@@ -836,7 +835,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["military"],
     icon: "goods-bronze",
     color: "#e46f21",
-    value: 24,
+    value: 23,
     carriage: 1.4,
     recipes: [
       { Copper: 0.5, Coal: 1 },
@@ -850,14 +849,14 @@ const GOODS_DATA: GoodData[] = [
     tags: ["construction", "military"],
     icon: "goods-tools",
     color: "#808080",
-    value: 29,
+    value: 16,
     carriage: 1.2,
     recipes: [
       { Iron: 0.5, Coal: 1 },
       { Bronze: 0.5, Coal: 1 }
     ],
     unit: "set",
-    demandCoverage: { utilities: 14.5 },
+    demandCoverage: { utilities: 0.65 },
     multipliers: { cultureType: { Highland: 2 } }
   },
   {
@@ -865,7 +864,7 @@ const GOODS_DATA: GoodData[] = [
     tags: ["military"],
     icon: "goods-arms",
     color: "#555555",
-    value: 33,
+    value: 16,
     carriage: 1.6,
     recipes: [
       { Iron: 0.5, Coal: 1, Leather: 0.5 },
@@ -884,42 +883,42 @@ const GOODS_DATA: GoodData[] = [
     carriage: 2,
     recipes: [{ Saltpeter: 0.5, Coal: 0.5 }],
     unit: "barrel",
-    demandCoverage: { military: 3.4 }
+    demandCoverage: { military: 1 }
   },
   {
     name: "Artillery",
     tags: ["military"],
     icon: "goods-artillery",
     color: "#cd7f32",
-    value: 37,
+    value: 24,
     carriage: 4,
     recipes: [
       { Iron: 2, Coal: 1 },
       { Bronze: 1, Coal: 1 }
     ],
     unit: "cannon",
-    demandCoverage: { military: 2 }
+    demandCoverage: { military: 0.4 }
   },
   {
     name: "Coins",
     tags: ["currency"],
     icon: "goods-coins",
     color: "#ffd700",
-    value: 30,
+    value: 24,
     carriage: 1.4,
     recipes: [
       { Gold: 0.5, Coal: 1 },
       { Silver: 1, Coal: 1 }
     ],
     unit: "bag",
-    demandCoverage: { luxury: 6 }
+    demandCoverage: { luxury: 0.35 }
   },
   {
     name: "Jewelry",
     tags: ["luxury"],
     icon: "goods-jewelry",
     color: "#81D8D0",
-    value: 32,
+    value: 29,
     carriage: 1.4,
     recipes: [
       { Gemstones: 1, Gold: 0.5 },
@@ -930,14 +929,14 @@ const GOODS_DATA: GoodData[] = [
       { Amber: 2, Silver: 1 }
     ],
     unit: "piece",
-    demandCoverage: { luxury: 6.4 }
+    demandCoverage: { luxury: 1.6 }
   },
   {
     name: "Preserved food",
     tags: ["food"],
     icon: "goods-salted-fish",
     color: "#c2b280",
-    value: 15,
+    value: 11,
     carriage: 1,
     recipes: [
       { Fish: 1, Salt: 1 },
@@ -949,16 +948,16 @@ const GOODS_DATA: GoodData[] = [
       { Fish: 1, Wood: 1 }
     ],
     unit: "wain",
-    demandCoverage: { food: 15 }
+    demandCoverage: { food: 0.95 }
   },
   {
     name: "Vinegar",
     tags: ["food", "preservative"],
     icon: "goods-vinegar",
     color: "#9b111e",
-    value: 12,
+    value: 3,
     carriage: 0.6,
-    demandCoverage: { utilities: 6 },
+    demandCoverage: { utilities: 1 },
     recipes: [{ Wine: 1 }, { Honey: 1 }],
     unit: "barrel"
   },
@@ -967,36 +966,36 @@ const GOODS_DATA: GoodData[] = [
     tags: ["food"],
     icon: "goods-cheese",
     color: "#f5e1a4",
-    value: 13,
+    value: 10,
     carriage: 1,
     recipes: [
       { Cattle: 0.5, Salt: 0.25 },
       { Cattle: 0.5, Vinegar: 0.25 }
     ],
     unit: "wain",
-    demandCoverage: { food: 13 }
+    demandCoverage: { food: 0.6 }
   },
   {
     name: "Beer",
     tags: ["food"],
     icon: "goods-beer",
     color: "#fbb117",
-    value: 17,
-    carriage: 1.2,
+    value: 14,
+    carriage: 0.6,
     recipes: [
       { Grain: 1, Barrels: 0.5 },
       { Honey: 0.5, Barrels: 0.5 }
     ],
     unit: "barrel",
-    demandCoverage: { food: 17 }
+    demandCoverage: { food: 0.6, luxury: 0.15 }
   },
   {
     name: "Liquor",
     tags: ["food", "luxury"],
     icon: "goods-liquor",
     color: "#8a0303",
-    value: 17,
-    carriage: 0.8,
+    value: 13,
+    carriage: 0.6,
     recipes: [
       { Grain: 2, Wood: 1, Barrels: 0.5 },
       { Wine: 1, Wood: 1, Barrels: 0.5 },
@@ -1006,36 +1005,36 @@ const GOODS_DATA: GoodData[] = [
       { Wine: 1, Wood: 1, Glass: 0.25 }
     ],
     unit: "vessel",
-    demandCoverage: { luxury: 3.4 }
+    demandCoverage: { luxury: 0.65 }
   },
   {
     name: "Candles",
     tags: ["luxury", "ritual"],
     icon: "goods-candles",
     color: "#fffacd",
-    value: 15,
+    value: 6,
     carriage: 0.4,
     recipes: [{ Honey: 2 }, { Oil: 1 }],
     unit: "block",
-    demandCoverage: { utilities: 3, luxury: 3 }
+    demandCoverage: { utilities: 1, luxury: 0.9 }
   },
   {
     name: "Soap",
     tags: ["luxury", "ritual"],
     icon: "goods-soap",
     color: "#e0e4cc",
-    value: 12,
+    value: 8,
     carriage: 0.6,
     recipes: [{ Olives: 1 }, { Cattle: 1 }],
     unit: "barrel",
-    demandCoverage: { utilities: 1.59, luxury: 2.4 }
+    demandCoverage: { utilities: 0.15, luxury: 0.1 }
   },
   {
     name: "Perfume",
     tags: ["luxury", "ritual"],
     icon: "goods-perfume",
     color: "#ff69b4",
-    value: 24,
+    value: 21,
     carriage: 0.8,
     recipes: [
       { Olives: 1, Incense: 0.5, Glass: 0.5 },
@@ -1043,7 +1042,7 @@ const GOODS_DATA: GoodData[] = [
       { Liquor: 0.25, Incense: 0.5, Blubber: 0.5, Ceramics: 0.5 }
     ],
     unit: "bottle",
-    demandCoverage: { luxury: 4.8 }
+    demandCoverage: { luxury: 2 }
   }
 ];
 

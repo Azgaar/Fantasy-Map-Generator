@@ -41,11 +41,11 @@ Loading a map does not rerun the economy, unless `auto-update.ts` migrates a sav
 
 The fields that drive the economy:
 
-- **`value`**: the base price. Prices move within 0.02–5× of it. A made good is worth its inputs at base value plus 10, a worker-day's income, so making anything pays about the same at base prices. Values also feed cell suitability, so **changing default values changes generated maps**.
+- **`value`**: the base price. Prices move within 0.02–5× of it. A made good is worth the average of its recipes' inputs at base value plus a margin of about 5, more for goods whose markets need a stronger pull (1–15). Default values and coverage were tuned by annealing against the KPIs, running the game's own economy headless on the six KPI maps. Values also feed cell suitability, so **changing default values changes generated maps**.
 - **`biomeOutput`**: units per rural population point, by biome.
 - **`deposits` and `distribution`**: how many deposits the map gets, a whole `[min, max]` range the same on any map size, and where they may land (see [Goods spread functions](../wiki/Goods-spread-functions.md)). Each next deposit lands beside the previous one with a 50% chance (`DEPOSIT_CLUSTERING`), so deposits form loose clusters. A cell holds at most one. `Goods.placeOutput` re-places a good's deposits until they yield a set amount, for the editor.
 - **`recipes`**: alternative input sets, each making one unit. Written with good names in `GOODS_DATA`, resolved to ids at load.
-- **`demandCoverage`**: how much of each need one unit covers. Defaults make a good's value buy its main need at a reference price per unit of need (food 1, utilities 2, construction 1, military 5, luxury 5). Exceptions: military equipment covers what a unit really equips (ships 4, artillery 2, arms 1, harnesses 0.5), and pure ingredients (leather, cloth, ropes, tar, barrels, sails, paper, ink, bronze) cover no need, so only the trades that use them buy them.
+- **`demandCoverage`**: how much of each need one unit covers. At most 1 per need, and 2 for dear goods (value 20 or more) such as boats, books or jewelry, so price, not coverage, decides what people buy: a dearer good costs more per unit of need. Townspeople earn about 0.35 × the margin a head, so the cheapest coverage of each need must stay well below that: staples such as grain, game or clay cover 1 at a value of about 1. Pure ingredients (leather, cloth, ropes, tar, barrels, sails, paper, ink, bronze) cover no need, so only the trades that use them buy them.
 - **`carriage`**: the price of carrying one unit one decima. Bulky cheap goods pay about half their value per decima and stay local; dear goods (value 10 or more) pay double for guards and insurance, but still travel.
 - **`multipliers`**: production factors by culture type, culture, state, religion, biome and zone, multiplied together (`getModifiers`). They apply to rural output, deposits and burg manufacture; for a burg the culture type is the burg's own.
 
@@ -55,7 +55,7 @@ The catalogue (71 default goods) is map data: users add, remove and edit goods p
 
 Five categories in priority order: 🍖 food, 🛠️ utilities, 🧱 construction, 🛡️ military, 💎 luxury. A burg's **needs** are its population × a per-category factor (0.2, 0.15, 0.1, 0.08, 0.07) a day. **Wants** are what it buys beyond them out of income, from up to 85% of it (`SAVINGS_RATE` 15%), split by `WANT_SHARES`. Staples are capped at one more day of each need (`WANT_LIMITS`), since people eat only so much more; luxury grows with **affluence**, the days of needs a person earns (`getAffluence`: income so far per person ÷ a day's needs at the cheapest coverage at base prices): 4 × √affluence more days (`WEALTH_WANTS`). What the capped wants leave goes to luxury, so a rich burg spends on luxury, not on more bread. Rural people's needs come from their own fields; they buy only wants.
 
-Buyers **spread their spending** over every good covering a need (`getVarietyShares`): a good gets a share by (price per coverage)^−variety, so cheaper coverage gets more but every good gets some. Variety follows affluence (`getVariety`): 3 (`VARIETY`) for a burg earning just its needs, 2 less for each tenfold of affluence (`PRESTIGE`), down to −1 (`MIN_VARIETY`): the poor buy the cheapest, the rich spread over all goods, and the richest favor dear ones. A good nobody stocks turns its share away and gets dearer (`signalShortage`); the rest goes to the cheapest good in stock, or for wants to the goods the buyer favors most. Demand does not steer production directly: burgs make what pays, and prices carry the signal.
+Buyers **spread their spending** over every good covering a need (`getVarietyShares`): a good gets a share by (price per coverage)^−3 (`VARIETY`), so cheaper coverage gets more but every good gets some. Affluence adds a novelty bonus (`getShares`): a burg pays up to 1 + `NOVELTY` × log10(affluence) times the price for a good it has had none of this run, less the more of the need that good already covered. The poor buy by price alone; the rich still prefer cheap coverage but spread over goods they lack. A good nobody stocks turns its share away and gets dearer (`signalShortage`); the rest goes to the cheapest good in stock, or for wants to the goods the buyer favors most. Demand does not steer production directly: burgs make what pays, and prices carry the signal.
 
 ## Markets
 
@@ -227,6 +227,27 @@ From most to least important:
 | 11  | Treasury concentration   | Money is not hoarded by a handful of burgs                                                                                                               | Share of all burg treasuries held by the tenth of burgs with the largest ones                                                 | ≤ 50%     | 30%               | 76% ✗    |
 | 12  | Employment               | Workers find something worth making; they stay idle only when nothing pays                                                                               | Share of workers who found work                                                                                               | ≥ 90%     | 100%              | 100% ✓   |
 | 13  | Goods sold               | What is made finds a buyer the same day rather than piling up in a market                                                                                | Share of made goods, by value, bought the same day by burgs or rural people                                                   | ≥ 50%     | 29%               | 82% ✓    |
+| 14  | Prosperity               | Townspeople live comfortably on average: some burgs thrive, others scrape by                                                                             | Average prosperity of burgs, weighted by their people                                                                         | 45–55%    | —                 | —        |
+| 15  | Made goods in proportion | Each made good is made about as much as its commonness says: beer and cloth by the cartload, jewelry and boats by the piece                              | Share of made goods whose share of made units is within ½–2× of its commonness target (below)                                 | ≥ 75%     | —                 | —        |
+
+### Commonness of made goods
+
+KPI 15 compares each made good's share of all made units with a target from its tier: the tier's weight over the sum of all made goods' weights. Tiers are a judgement of how common the good was, not a rule the generator follows; the economy tuner (`scripts/economy-tuner`) reads this table.
+
+| Tier     | Weight | Goods                                                                                                                                   |
+| -------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Staple   | 4      | Beer, Ceramics, Coal, Barrels                                                                                                           |
+| Common   | 3      | Cloth, Leather, Cheese, Preserved food, Candles, Soap, Garments, Boots, Tools, Ropes, Vinegar, Oil, Tar, Arms, Harnesses, Liquor, Glass |
+| Uncommon | 2      | Paper, Sails, Bronze, Gunpowder                                                                                                         |
+| Rare     | 1      | Ink, Books, Boats, Artillery, Coins, Jewelry, Perfume                                                                                   |
+
+### Tuning
+
+`scripts/economy-tuner` tunes default goods values, coverage and the economy constants it lists as tunable against these KPIs, by simulated annealing on the game's own economy run headless in Node (its results match the game burg by burg). With the dev server running:
+
+1. `node scripts/economy-tuner/export-maps.mjs` saves the six KPI maps.
+2. `npm run tune-economy -- --budget=100000` searches; each 30 s it reports the best and checks it on a held-out map in the game. The best is saved to `.cache/best.json` on every improvement and on failure; a `.cache/STOP` file ends the run.
+3. `node scripts/economy-tuner/apply.mjs` writes the best into the source.
 
 ## Gotchas
 

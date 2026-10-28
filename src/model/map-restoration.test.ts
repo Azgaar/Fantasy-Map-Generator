@@ -598,6 +598,7 @@ describe("restoreJourneys", () => {
     // cells 20 apart are neighbors too, so the points below need no filling
     const c = Array.from({ length: 101 }, (_, i) => [i - 1, i + 1, i - 20, i + 20]);
     vi.stubGlobal("pack", graph({ cells: { c } }));
+    vi.stubGlobal("grid", { spacing: 10 });
   });
 
   // parent point (30, 30) lands at (10, 10); parent point (10, 10) lands off-map at (-30, -30)
@@ -654,6 +655,33 @@ describe("restoreJourneys", () => {
       to: 30,
       distance: 2
     });
+  });
+
+  it("keeps a segment that ends at a port just off the edge, as its route keeps it", () => {
+    Object.assign(Pack, { findCell: (x: number) => (x < 0 ? 9 : Math.round(x)) }); // off the edge, the edge cell by 10
+    const parent = graph({
+      cells: { p: { 7: [30, 30], 11: [22, 30] } },
+      journeys: [
+        {
+          i: 0,
+          name: "to the edge port",
+          segments: [
+            segment(0, [
+              [30, 30, 7],
+              [22, 30, 11] // projects to (-6, 10): off the map, within a cell spacing
+            ])
+          ]
+        }
+      ]
+    });
+
+    internals.restoreJourneys(parent, projection);
+
+    expect(pack.journeys[0].segments).toHaveLength(1);
+    expect(pack.journeys[0].segments[0].points.map(([x, y]) => [x, y])).toEqual([
+      [10, 10],
+      [-6, 10]
+    ]);
   });
 
   it("restores an empty array when the snapshot has no journeys", () => {
