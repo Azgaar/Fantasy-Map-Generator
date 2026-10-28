@@ -286,6 +286,8 @@ export interface ArmyUnit {
   exp: number;
   /** Temporary militia unit spawned for local defense. */
   temporaryMilitia?: boolean;
+  /** Disruption points accrued from failed obstacle/trouble checks or fatigue (0..3) */
+  disruption?: number;
 }
 
 export interface StartingArmy {

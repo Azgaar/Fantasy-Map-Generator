@@ -6,10 +6,11 @@ import { zoomTo } from "@/components/zoom";
 import { currentContent } from "@/conquest/content/store";
 import { Controllers } from "@/controllers";
 import { ALIGNMENT_COLORS } from "@/data/culture-traits";
+import { getTroubleDef, SAVE_KIND_LABELS, UNIT_ROLE_LABELS } from "@/data/living-troubles";
 import { getCellPoint } from "@/generators/journeys/journey-places";
 import { Living } from "@/generators/living-generator";
 import type { HistoricalFigure } from "@/types/history";
-import { type LivingNewsItem, SEASON_NAMES, type StatePolitySim } from "@/types/living";
+import { type LivingNewsItem, type ProvinceSimState, SEASON_NAMES, type StatePolitySim } from "@/types/living";
 import { escapeHtml, findEl, getPointer } from "@/utils";
 
 const HUD_ID = "livingWorldHud";
@@ -360,6 +361,9 @@ function renderStateCard(stateId: number): string {
   const year = options.map?.lore?.calendar?.year ?? 1000;
   const ruler = pack.history?.figures?.find(figure => figure.i === sSim.rulerId);
   const age = ruler ? Math.max(0, year - ruler.birth) : undefined;
+  const hasTroubled = (pack.provinces ?? []).some(
+    p => p?.i && !p.removed && p.state === stateId && living.provinces?.[p.i]?.trouble
+  );
 
   return /* html */ `
     <div class="livingInspectorTitle">${escapeHtml(state.fullName ?? state.name ?? "State")}</div>
@@ -376,6 +380,7 @@ function renderStateCard(stateId: number): string {
       ${renderClaims(sSim)}
       ${renderGrudges(sSim)}
       ${renderRestiveBurgs(stateId)}
+      ${renderProvincesTroubles(stateId)}
     </div>
     <div class="livingButtons">
       <button type="button" data-open="state" data-id="${stateId}">States Editor</button>
@@ -386,6 +391,7 @@ function renderStateCard(stateId: number): string {
       <button type="button" data-god="spark" data-state="${stateId}">Spark Rebellion</button>
       <button type="button" data-god="smite" data-state="${stateId}">Smite Ruler</button>
       <button type="button" data-god="war" data-state="${stateId}">Force War</button>
+      ${hasTroubled ? `<button type="button" data-god="resolve-state-trouble" data-state="${stateId}">Resolve Trouble</button>` : ""}
     </div>`;
 }
 
@@ -498,6 +504,27 @@ function renderRestiveBurgs(stateId: number): string {
   return `<div class="livingMuted">Restive burgs</div><ul>${rows}</ul>`;
 }
 
+function renderProvincesTroubles(stateId: number): string {
+  const living = Living.getState();
+  const ownedProvinces = (pack.provinces ?? []).filter(p => p?.i && !p.removed && p.state === stateId);
+  const troubled = ownedProvinces
+    .map(p => ({ province: p, pSim: living.provinces?.[p.i] }))
+    .filter((entry): entry is { province: (typeof pack.provinces)[number]; pSim: ProvinceSimState } =>
+      Boolean(entry.pSim?.trouble)
+    );
+
+  if (troubled.length === 0) return `<div class="livingMuted">No provincial troubles</div>`;
+
+  const rows = troubled
+    .map(({ province, pSim }) => {
+      const t = pSim.trouble!;
+      const def = getTroubleDef(t.id);
+      return `<li>${escapeHtml(province.name ?? "Province")} — <strong>${escapeHtml(def.name)}</strong> (Lv ${t.level}, ${t.theme}, Save: ${SAVE_KIND_LABELS[def.save]}, Unit: ${UNIT_ROLE_LABELS[def.requiredRole]})</li>`;
+    })
+    .join("");
+  return `<div class="livingMuted">Troubles</div><ul>${rows}</ul>`;
+}
+
 function renderBurgCard(burgId: number): string {
   const living = Living.getState();
   const burg = pack.burgs[burgId];
@@ -508,6 +535,12 @@ function renderBurgCard(burgId: number): string {
   const state = stateId ? pack.states[stateId] : undefined;
   const owner = state && !state.removed ? state.name : "Free Burg";
   const building = bSim.construction ? currentBuildingName(bSim.construction.buildingId) : "No construction";
+
+  const provId = pack.cells.province?.[burg.cell] ?? 0;
+  const province = provId ? pack.provinces?.[provId] : undefined;
+  const pSim = provId ? living.provinces?.[provId] : undefined;
+  const trouble = pSim?.trouble;
+  const tDef = trouble ? getTroubleDef(trouble.id) : undefined;
 
   return /* html */ `
     <div class="livingInspectorTitle">${escapeHtml(burg.name ?? "Burg")}</div>
@@ -522,6 +555,20 @@ function renderBurgCard(burgId: number): string {
       ${bSim.construction ? `<div class="livingMuted">${bSim.construction.turnsLeft} turns left</div>` : ""}
       <div class="livingMuted">${bSim.buildings.length} standing structures</div>
     </div>
+    ${
+      province && pSim
+        ? `<div class="livingSection">
+            <div class="livingSectionTitle">Province: ${escapeHtml(province.name ?? "Province")}</div>
+            <div class="livingMuted">Order ${Math.round(pSim.order)}% · Stability ${pSim.stability} · Dev ${pSim.development}</div>
+            ${
+              trouble && tDef
+                ? `<div style="margin-top:0.3em;color:#a33d3d;"><strong>Trouble:</strong> ${escapeHtml(tDef.name)} (Lv ${trouble.level}, ${trouble.theme})</div>
+                   <div class="livingMuted">Save: ${SAVE_KIND_LABELS[tDef.save]} · Specialist: ${UNIT_ROLE_LABELS[tDef.requiredRole]}</div>`
+                : `<div class="livingMuted" style="margin-top:0.2em;">No active trouble</div>`
+            }
+          </div>`
+        : ""
+    }
     <div class="livingButtons">
       <button type="button" data-open="burg" data-id="${burgId}">Burg Editor</button>
       ${stateId ? `<button type="button" data-open="regiments" data-id="${stateId}">Regiments</button>` : ""}
@@ -531,6 +578,14 @@ function renderBurgCard(burgId: number): string {
       ${stateId ? `<button type="button" data-god="spark" data-state="${stateId}" data-burg="${burgId}">Spark Rebellion</button>` : ""}
       <button type="button" data-god="pacify" data-burg="${burgId}">Pacify Unrest</button>
       <button type="button" data-god="complete" data-burg="${burgId}">Complete Asset</button>
+      ${
+        provId && trouble
+          ? `<button type="button" data-god="quell-trouble" data-province="${provId}">Quell Trouble</button>
+             ${stateId ? `<button type="button" data-god="resolve-trouble" data-state="${stateId}" data-province="${provId}">Resolve Trouble</button>` : ""}`
+          : provId
+            ? `<button type="button" data-god="spawn-trouble" data-province="${provId}">Spawn Trouble</button>`
+            : ""
+      }
     </div>`;
 }
 
@@ -564,6 +619,7 @@ function bindInspectorButtons(panel: HTMLElement): void {
 function runIntervention(button: HTMLElement): void {
   const stateId = Number(button.dataset.state ?? 0);
   const burgId = Number(button.dataset.burg ?? 0);
+  const provId = Number(button.dataset.province ?? 0);
   let ok = false;
   let message = "";
 
@@ -588,6 +644,36 @@ function runIntervention(button: HTMLElement): void {
       ok = Living.completeAsset(burgId);
       message = ok ? "The asset has been completed." : "No asset can be completed here.";
       break;
+    case "spawn-trouble": {
+      const res = Living.spawnTrouble(provId);
+      ok = Boolean(res);
+      message = ok ? "Trouble has arisen in the province." : "Failed to spawn trouble.";
+      break;
+    }
+    case "quell-trouble":
+      ok = Living.quellTrouble(provId);
+      message = ok ? "The provincial trouble has been quelled." : "No trouble to quell.";
+      break;
+    case "resolve-trouble":
+      ok = Living.resolveTrouble(stateId, provId);
+      message = ok ? "The domain quashed the trouble!" : "The domain's effort failed.";
+      break;
+    case "resolve-state-trouble": {
+      const living = Living.getState();
+      const prov = (pack.provinces ?? []).find(
+        p => p?.i && !p.removed && p.state === stateId && living.provinces?.[p.i]?.trouble
+      );
+      if (prov) {
+        ok = Living.resolveTrouble(stateId, prov.i);
+        message = ok
+          ? `The domain quashed the trouble in ${prov.name}!`
+          : `The domain's effort in ${prov.name} failed.`;
+      } else {
+        ok = false;
+        message = "No active trouble in the state.";
+      }
+      break;
+    }
     default:
       return;
   }

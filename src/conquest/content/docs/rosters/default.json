@@ -204,6 +204,96 @@
         "powers": {
           "terror": 0.05
         }
+      },
+      "guardsmen": {
+        "name": "Watchmen",
+        "category": "melee",
+        "troubleRole": "guardsmen",
+        "blocks": 0.1,
+        "attack": 4,
+        "defense": 8,
+        "charge": 2,
+        "missile": 0,
+        "cost": 150,
+        "upkeep": 20,
+        "capacityCost": {
+          "m": 1,
+          "w": 1,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "merchant_company": {
+        "name": "Merchant Factors",
+        "category": "melee",
+        "troubleRole": "merchant",
+        "blocks": 0.05,
+        "attack": 2,
+        "defense": 4,
+        "charge": 1,
+        "missile": 0,
+        "cost": 200,
+        "upkeep": 25,
+        "capacityCost": {
+          "m": 0,
+          "w": 2,
+          "s": 0,
+          "c": 0
+        }
+      },
+      "sage_coven": {
+        "name": "Learned Sages",
+        "category": "spellcaster",
+        "troubleRole": "sage",
+        "blocks": 0.05,
+        "attack": 3,
+        "defense": 4,
+        "charge": 1,
+        "missile": 6,
+        "cost": 300,
+        "upkeep": 35,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 1
+        }
+      },
+      "prophet_band": {
+        "name": "Zealot Prophets",
+        "category": "spellcaster",
+        "troubleRole": "prophet",
+        "blocks": 0.05,
+        "attack": 4,
+        "defense": 5,
+        "charge": 2,
+        "missile": 4,
+        "cost": 250,
+        "upkeep": 30,
+        "capacityCost": {
+          "m": 0,
+          "w": 0,
+          "s": 2,
+          "c": 0
+        }
+      },
+      "magistrates": {
+        "name": "Royal Magistrates",
+        "category": "melee",
+        "troubleRole": "magistrate",
+        "blocks": 0.05,
+        "attack": 3,
+        "defense": 6,
+        "charge": 1,
+        "missile": 0,
+        "cost": 250,
+        "upkeep": 30,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 1,
+          "c": 0
+        }
       }
     },
     "recruitable": [
@@ -211,7 +301,12 @@
       "spear",
       "archers",
       "cavalry",
-      "artillery"
+      "artillery",
+      "guardsmen",
+      "merchant_company",
+      "sage_coven",
+      "prophet_band",
+      "magistrates"
     ],
     "garrison": {
       "melee": "levy_spear",
@@ -229,7 +324,12 @@
       "archers": 6,
       "cavalry": 6,
       "artillery": 4,
-      "balbenGuard": 2
+      "balbenGuard": 2,
+      "guardsmen": 4,
+      "merchant_company": 4,
+      "sage_coven": 4,
+      "prophet_band": 4,
+      "magistrates": 4
     }
   },
   "tech": [
@@ -355,7 +455,10 @@
         "incomePct": 0.05,
         "capacity": {
           "w": 2
-        }
+        },
+        "unlock": [
+          "merchant_company"
+        ]
       }
     },
     {
@@ -416,7 +519,10 @@
         "orderPerTurn": 2,
         "capacity": {
           "s": 2
-        }
+        },
+        "unlock": [
+          "prophet_band"
+        ]
       }
     },
     {
@@ -535,7 +641,10 @@
       "effects": {
         "capacity": {
           "w": 2
-        }
+        },
+        "unlock": [
+          "sage_coven"
+        ]
       }
     },
     {
@@ -596,7 +705,10 @@
         "militiaDefense": {
           "unitType": "levy_spear",
           "count": 2
-        }
+        },
+        "unlock": [
+          "guardsmen"
+        ]
       }
     },
     {
@@ -682,7 +794,10 @@
         },
         "upkeep": {
           "w": 1
-        }
+        },
+        "unlock": [
+          "magistrates"
+        ]
       }
     },
     {

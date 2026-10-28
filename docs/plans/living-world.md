@@ -338,6 +338,46 @@ conquered by force:
     militia regiment from its native `burg.culture` roster, and breaks away as a Free Burg again
     (or rejoins its former homeland state).
 
+### 4. Provincial Obstacles & Troubles (Adapted from *An Echo Resounding*)
+
+Every province can become afflicted by an **Obstacle / Trouble**—a local crisis or hindrance originating
+from the province's burgs, ancient ruins, or extracted resources.
+
+#### Themes & Archetypes
+- **37 Generic Fantasy Tropes** categorized across 3 20-entry random tables:
+  - **Burg Troubles**: Corrupt leadership, riotous thugs, demagogues, factional disunity, epidemic sickness, exceptional poverty, cults, xenophobia.
+  - **Ruin Troubles**: Ancient curses, restless dead, relic golems, subterranean horrors, dark cabals, conquering heirs, severe structural collapse.
+  - **Resource Troubles**: Leyline blights, hazardous extraction, recalcitrant local labor, toxic processes, undeveloped veins, waste.
+
+#### Simulation Impacts
+- **Capacity Load**: Adds $\lceil \text{level} / 2 \rceil$ to the owning state's **Military, Wealth, and Stability load** (`ledger.m.load`, `ledger.w.load`, `ledger.s.load`). Upkeep load increases without directly penalizing generation scores.
+- **Public Order & Stability**: Drains province order by $\text{level} \times 2$ each season. Freezes friendly garrison stability accrual (`stabilityPerGarrison`) while Trouble is active.
+- **Burg Unrest Floor**: Burgs in afflicted provinces cannot decay their occupation unrest below the active Trouble level.
+- **Resource Suppression**: When `trouble.theme === "resource"`, the province's trade goods are suppressed from `heldGoods(stateId)`.
+- **Escalation**: Unchecked trouble increases in severity (+1 level every 2 seasons). At level $\ge 8$ unchecked, it provokes state unravel and cancels ongoing development projects.
+
+#### Resolution & Specialist Units
+Trouble is resolved via a domain saving throw against one of the 6 *An Echo Resounding* banes:
+
+| Saving Throw | Pool | Required Unit Role | Roster Specialist |
+|---|---|---|---|
+| **Disorder** | Military | `guardsmen` | Guardsmen (`guardsmen`, unlocked by `militia1`) |
+| **Uprising** | Military | `military` | Any standard combat military unit |
+| **Poverty** | Wealth | `merchant` | Merchant Company (`merchant_company`, unlocked by `market1`) |
+| **Ignorance** | Wealth | `sage` | Sage Coven (`sage_coven`, unlocked by `school1`) |
+| **Despair** | Stability | `prophet` | Prophet Band (`prophet_band`, unlocked by `temple1`) |
+| **Corruption** | Stability | `magistrate` | Magistrates (`magistrates`, unlocked by `informants1`) |
+
+- **Save Difficulty (DC)**: $\text{DC} = 16 + M_{\text{pen}} \times \text{level}$.
+  - $M_{\text{pen}} = 1$ for an exact specialist match.
+  - $M_{\text{pen}} = 2$ for a same-pool mismatch (e.g. combat military tackling disorder).
+  - $M_{\text{pen}} = 3$ for a wrong-pool mismatch (e.g. military tackling ignorance).
+- **Roll**: $1\text{d}20 + \text{valueModifier}(\text{pool.gen}) - \text{unit.disruption}$.
+- **Outcomes**:
+  - **Success**: Trouble level is reduced by $1\text{d}4$. If reduced to $\le 0$, the Trouble is eliminated, granting $+10$ order and $+1$ stability.
+  - **Failure**: The attempting unit gains $+1$ Disruption (capped at 3).
+- **Recovery**: Resting units stationed in peaceful (trouble-free) provinces recover 1 point of Disruption per season.
+
 ---
 
 ## Data model & persistence

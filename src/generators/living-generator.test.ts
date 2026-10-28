@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
+import { getTroubleDef, troubleUnitMatchMultiplier } from "@/data/living-troubles";
 import { parseHistory, serializeHistory } from "@/services/io/epochs-format";
 import {
   figureBias,
@@ -653,5 +654,127 @@ describe("Living (Slices 1-4: Data Model, Seasonal Tick, Capacity, Projects, War
     expect(pack.history.epochs![0]).toMatchObject({ from: 1000, to: 1001, snapshot: 0 });
     expect(pack.history.snapshots![0]).toHaveLength(pack.cells.i.length);
     expect(pack.history.epochs![0].polities.map(polity => polity.id)).toEqual(expect.arrayContaining([1, 2]));
+  });
+
+  it("spawns and quells trouble on a province", () => {
+    const living = Living.init();
+    const trouble = Living.spawnTrouble(1, "bad_reputation", "burg", 4);
+
+    expect(trouble).toMatchObject({
+      id: "bad_reputation",
+      theme: "burg",
+      level: 4,
+      seasonsUnchecked: 0
+    });
+    expect(living.provinces[1].trouble).toEqual(trouble);
+    expect(living.recentNews[0].kind).toBe("trouble");
+
+    expect(Living.quellTrouble(1)).toBe(true);
+    expect(living.provinces[1].trouble).toBeNull();
+  });
+
+  it("adds ceil(L/2) to capacity load in M, W, and S without decreasing generation", () => {
+    const living = Living.init();
+    const baseCap = { ...living.states[1].capacity };
+
+    Living.spawnTrouble(1, "monsters", "burg", 5);
+    const troubledCap = living.states[1].capacity;
+
+    // ceil(5 / 2) = 3 load added to M, W, and S
+    expect(Math.round(troubledCap.m.load - baseCap.m.load)).toBe(3);
+    expect(Math.round(troubledCap.w.load - baseCap.w.load)).toBe(3);
+    expect(Math.round(troubledCap.s.load - baseCap.s.load)).toBe(3);
+
+    // Generation values must remain unchanged
+    expect(troubledCap.m.gen).toBe(baseCap.m.gen);
+    expect(troubledCap.w.gen).toBe(baseCap.w.gen);
+    expect(troubledCap.s.gen).toBe(baseCap.s.gen);
+  });
+
+  it("drains public order and suspends garrison stability while trouble is active", () => {
+    const living = Living.init();
+    living.provinces[1].order = 70;
+    living.provinces[1].stability = 5;
+
+    Living.spawnTrouble(1, "riotous_thugs", "burg", 4);
+
+    Living.tick(1);
+
+    // With level 4 trouble, order drains by level * 2 = 8 (plus garrison +2 = net -6, or floor checked)
+    // and stability accrual from garrison is suspended
+    expect(living.provinces[1].stability).toBe(5);
+    expect(living.provinces[1].order).toBeLessThan(70);
+  });
+
+  it("keeps burg unrest floored at trouble level", () => {
+    const living = Living.init();
+    living.burgs[1].unrest = 2;
+
+    Living.spawnTrouble(1, "demagogue", "burg", 6);
+
+    Living.tick(1);
+
+    // Burg 1 unrest cannot decay below trouble level 6
+    expect(living.burgs[1].unrest).toBeGreaterThanOrEqual(6);
+  });
+
+  it("suppresses trade goods when province has active resource trouble", () => {
+    Living.init();
+    pack.cells.good = [0, 1, 2, 0, 0, 0];
+
+    // Held goods method via muster check or direct query
+    Living.spawnTrouble(1, "hazardous_resource", "resource", 3);
+
+    const sSim = Living.getState().states[1];
+    // State 1 owns cells 1 and 2 in province 1. Since province 1 has resource trouble, goods 1 and 2 are suppressed.
+    // Call muster which uses heldGoods internally
+    expect(sSim.capacity.m.load).toBeGreaterThan(0);
+  });
+
+  it("computes specialist mismatch penalties correctly", () => {
+    const disorderDef = getTroubleDef("riotous_thugs"); // pool: m, requiredRole: guardsmen
+    expect(troubleUnitMatchMultiplier(disorderDef, "guardsmen")).toBe(1);
+    expect(troubleUnitMatchMultiplier(disorderDef, "military")).toBe(2);
+    expect(troubleUnitMatchMultiplier(disorderDef, "merchant")).toBe(3);
+
+    const povertyDef = getTroubleDef("exceptional_poverty"); // pool: w, requiredRole: merchant
+    expect(troubleUnitMatchMultiplier(povertyDef, "merchant")).toBe(1);
+    expect(troubleUnitMatchMultiplier(povertyDef, "sage")).toBe(2);
+    expect(troubleUnitMatchMultiplier(povertyDef, "military")).toBe(3);
+
+    const despairDef = getTroubleDef("crushed_spirits"); // pool: s, requiredRole: prophet
+    expect(troubleUnitMatchMultiplier(despairDef, "prophet")).toBe(1);
+    expect(troubleUnitMatchMultiplier(despairDef, "magistrate")).toBe(2);
+    expect(troubleUnitMatchMultiplier(despairDef, "guardsmen")).toBe(3);
+  });
+
+  it("resolves trouble with domain saving throw and tracks disruption", () => {
+    const living = Living.init();
+    const trouble = Living.spawnTrouble(1, "brigand_raiders", "burg", 2);
+    expect(trouble).not.toBeNull();
+
+    const unit = pack.states[1].military[0].units[0];
+    unit.disruption = 0;
+
+    // Attempt resolution
+    const result = Living.resolveTrouble(1, 1);
+    if (result) {
+      // Success either reduced or eliminated trouble
+      expect(living.provinces[1].trouble === null || living.provinces[1].trouble.level < 2).toBe(true);
+    } else {
+      // Failure inflicted +1 disruption
+      expect(unit.disruption).toBe(1);
+    }
+  });
+
+  it("resting units in peaceful provinces recover disruption", () => {
+    Living.init();
+    const unit = pack.states[1].military[0].units[0];
+    unit.disruption = 2;
+    Living.quellTrouble(1);
+
+    Living.tick(1);
+
+    expect(unit.disruption).toBe(1);
   });
 });

@@ -9,6 +9,7 @@
  * Principle §6.1: base → culture → faction inheritance; unbound states fall back
  * to the default roster so *any* Azgaar map works.
  */
+import type { TroubleUnitRole } from "@/types/living";
 import { canonicalHash } from "./prng";
 import type { CapacityPoints } from "./types";
 
@@ -145,6 +146,8 @@ export interface UnitType {
   powers?: UnitPowers;
   /** 0..1 damping of enemy `hex`, `terror` and `arcaneSiege`. */
   resistArcane?: number;
+  /** Role in resolving provincial obstacles and troubles */
+  troubleRole?: TroubleUnitRole;
 }
 
 /** A roster: a unit pool + how Azgaar regiment categories map onto it. */
@@ -623,7 +626,8 @@ function parseRoster(file: string, doc: unknown, v: Validator, warnings: string[
     "requiresGood",
     "requiresWallTier",
     "powers",
-    "resistArcane"
+    "resistArcane",
+    "troubleRole"
   ];
   for (const [uid, def] of Object.entries(unitsRaw)) {
     const d = (def ?? {}) as Record<string, unknown>;
@@ -686,7 +690,8 @@ function parseRoster(file: string, doc: unknown, v: Validator, warnings: string[
         ? { requiresWallTier: v.num(`${file}#${uid}`, d, "requiresWallTier", 1) }
         : {}),
       ...(d.powers !== undefined ? { powers: parsePowers(`${file}#${uid}`, d.powers, v, warnings) } : {}),
-      ...(d.resistArcane !== undefined ? { resistArcane: unitFraction(`${file}#${uid}`, d, "resistArcane", v) } : {})
+      ...(d.resistArcane !== undefined ? { resistArcane: unitFraction(`${file}#${uid}`, d, "resistArcane", v) } : {}),
+      ...(typeof d.troubleRole === "string" ? { troubleRole: d.troubleRole as TroubleUnitRole } : {})
     };
     units[uid] = unit;
   }
