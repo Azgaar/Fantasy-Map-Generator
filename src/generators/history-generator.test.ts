@@ -716,6 +716,23 @@ describe("Chronicle.generate fallen realms", () => {
     expect(pack.markers).toHaveLength(0);
     expect(pack.states[1].note).toBeUndefined();
   });
+
+  it("replaces its markers when history regenerates", () => {
+    Chronicle.generate();
+    expect(pack.markers.length).toBeGreaterThan(0);
+    const first = pack.markers.length;
+    Chronicle.generate();
+    expect(pack.markers).toHaveLength(first); // one set, not two
+    expect(pack.markers.every(marker => marker.chronicle)).toBe(true); // the chronicle owns every one
+  });
+
+  it("clears its markers when echoes are turned off", () => {
+    Chronicle.generate();
+    expect(pack.markers.length).toBeGreaterThan(0);
+    options.map.lore.history.echoes = false;
+    Chronicle.generate();
+    expect(pack.markers).toHaveLength(0);
+  });
 });
 
 describe("Chronicle.generate in the epochs mode", () => {
@@ -950,6 +967,24 @@ describe("Chronicle.generate fall markers", () => {
     options.map.lore.history.echoes = false;
     Chronicle.generate();
     expect(pack.markers).toHaveLength(0);
+  });
+
+  it("clears its markers when echoes are turned off", () => {
+    Chronicle.generate();
+    expect(pack.markers.length).toBeGreaterThan(0);
+    options.map.lore.history.echoes = false;
+    Chronicle.generate();
+    expect(pack.markers).toHaveLength(0);
+  });
+
+  it("replaces its own markers when history regenerates, and keeps the user's", () => {
+    pack.markers.push({ i: 99, name: "The Old Fair", type: "fairs", cell: 9 } as typeof pack.markers[number]);
+    Chronicle.generate();
+    const count = pack.markers.length;
+    Chronicle.generate();
+    expect(pack.markers).toHaveLength(count); // one set of chronicle markers plus the fair
+    expect(pack.markers.some(marker => marker.name === "The Old Fair")).toBe(true); // the fair is not the chronicle's
+    expect(pack.markers.filter(marker => marker.chronicle)).toHaveLength(count - 1);
   });
 
   it("tells the fallen polity's story at its greatest survivor when the capital is gone", () => {

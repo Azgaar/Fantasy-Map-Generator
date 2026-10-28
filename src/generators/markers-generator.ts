@@ -94,6 +94,8 @@ export interface Marker {
   pinned?: boolean;
   name: string;
   note?: string;
+  /** placed by the chronicle: cleared and re-placed when history regenerates */
+  chronicle?: boolean;
 }
 
 type MarkerConfig = {
@@ -113,7 +115,7 @@ type MarkerConfig = {
   add: (marker: Marker, cell: number) => void;
 };
 
-export type MarkerDetails = { name?: string; note?: string; icon?: string };
+export type MarkerDetails = { name?: string; note?: string; icon?: string; chronicle?: boolean };
 
 export type MarkerAppearance = Partial<
   Record<"size" | "px" | "dx" | "dy", number | null> &
@@ -260,15 +262,16 @@ class MarkersModule {
     return marker;
   }
 
-  /** Place a marker at a map point with details: its name, legend note (HTML, as Notes.write takes) and icon (an emoji or icon id). A type from the markers config, such as volcanoes or ruins, generates all three, each replaced by the one given; any other type needs a note. Returns its id */
+  /** Place a marker at a map point with details: its name, legend note (HTML, as Notes.write takes), icon (an emoji or icon id), and chronicle, to mark it as the chronicle's own (cleared on the next history regeneration). A type from the markers config, such as volcanoes or ruins, generates all three, each replaced by the one given; any other type needs a note. Returns its id */
   place(x: number, y: number, type: string, details: MarkerDetails = {}): number {
     if (typeof details !== "object" || details === null || Array.isArray(details))
       throw new Error("The marker details must be an object: { name, note, icon }");
-    const unknown = Object.keys(details).find(key => !["name", "note", "icon"].includes(key));
+    const unknown = Object.keys(details).find(key => !["name", "note", "icon", "chronicle"].includes(key));
     if (unknown) throw new Error(`Unknown marker detail ${unknown}; known: name, note, icon`);
     const { name, note, icon } = details;
     const cell = Pack.requireCell(x, y);
     const marker = { x: rn(x, 2), y: rn(y, 2), cell, type: requireName(type) } as Marker;
+    if (details.chronicle) marker.chronicle = true;
     const configured = this.config.some(config => config.type === marker.type);
     if (!configured && !note) throw new Error(`Marker type ${marker.type} generates no legend; give the marker a note`);
     if (name !== undefined) marker.name = requireName(name);

@@ -1,7 +1,8 @@
 # Plan — Fall Markers: the Ruins of Fallen Polities
 
-Updated: 2026-10-28. Status: **slices 1 and 1b shipped** (the shared pass, the ruins slider, the
-mode fix, the archaeologist unified); slice 2 and 3 open. Companions: the epochs engine in
+Updated: 2026-10-28. Status: **slices 1, 1b and 2 shipped** (the shared pass, the ruins slider,
+the mode fix, the archaeologist unified, the marker lifecycle); slice 3 open. Companions: the
+epochs engine in
 [history-epochs.md](history-epochs.md), whose slice 4 lists "markers of a past epoch" as a
 follow-up; the Archaeologist's echoes in [history-generation.md](history-generation.md).
 
@@ -143,7 +144,7 @@ epochs means no pass.
 |---|---|---|---|
 | 1 ✅ | The pass: `placeFallRemains` — capital marker, size-scaled extras, the Ruins slider, templates, the markers-generator mode fix, the Lore editor un-grey | medium | Every fallen polity's capital carries a marker; the slider runs from capitals alone to numerous; `echoes` off leaves none; the archaeologist path is byte-identical |
 | 1b ✅ | The archaeologist joins: the invented realms run the same pass over their footprint, the slider governs both modes | small | An archaeologist realm leaves a seat marker plus scaled extras; the old single-ruin behavior is gone by design (saved maps keep their stored markers) |
-| 2 | The lifecycle: `chronicle` marker flag, dedup on generate, `Layers.draw("markers")` in `regenerateHistory` | small | Regenerating history twice leaves one set of markers, in both modes |
+| 2 ✅ | The lifecycle: `chronicle` marker flag, dedup on generate, `Layers.draw("markers")` in `regenerateHistory` | small | Regenerating history twice leaves one set of markers, in both modes; turning echoes off clears them; the user's own markers survive |
 | 3 | Follow-ups: battlefields from epoch `battle` events (their `loc` cells), burg notes ("once the pride of…"), the historical view hiding fall markers younger than the viewed epoch | small | Optional, in that order |
 
 ## Testing

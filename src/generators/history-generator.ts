@@ -636,15 +636,25 @@ class ChronicleModel {
 
   /** leave the realm's traces on the map: ruins, battlefields, notes, a name */
   private echoes(realms: Realm[], events: HistoryEvent[]): void {
+    this.clearChronicleMarkers();
     if (!realms.length || !options.map.lore.history.echoes) return;
     for (const realm of realms) this.placeRealmRemains(realm);
     for (const event of events) {
       if (event.type !== "battle" || event.loc === undefined) continue; // sea battles get no marker
       const [x, y] = pack.cells.p[event.loc];
-      Markers.place(x, y, "battlefields", { name: `Battle of the Fall of ${this.proper(event)}`, note: event.text });
+      Markers.place(x, y, "battlefields", {
+        name: `Battle of the Fall of ${this.proper(event)}`,
+        note: event.text,
+        chronicle: true
+      });
     }
     for (const realm of realms) this.writeRealmNotes(realm);
     if (options.map.lore.history.renames) States.rename(realms[0].successors[0], `New ${this.properRealm(realms[0])}`);
+  }
+
+  /** the chronicle owns its markers: a previous run's set goes before the new one is placed */
+  private clearChronicleMarkers(): void {
+    pack.markers = pack.markers?.filter(marker => !marker.chronicle) ?? [];
   }
 
   /** the invented realm's remains, by the same method the epochs use: the seat and a share of its burgs */
@@ -680,6 +690,7 @@ class ChronicleModel {
 
   /** the epochs' own echoes: what the really fallen polities left on the map. See docs/plans/history-fall-markers.md */
   private epochEchoes(polities: EpochPolity[], epochs: HistoryEpoch[], snapshots: Uint16Array[]): void {
+    this.clearChronicleMarkers();
     if (!options.map.lore.history.echoes) return;
 
     // a polity is in the cast of the epoch it fell in, and never after: its last epoch is the fall
@@ -740,7 +751,7 @@ class ChronicleModel {
     const [x, y] = pack.cells.p[cell];
     const type = P(0.25) ? "necropolises" : "ruins";
     const name = type === "ruins" ? `Ruins of ${subject.name}` : `${subject.name} ${rw(NECROPOLIS_TYPES)}`;
-    Markers.place(x, y, type, { name, note: ra(FALLEN_CAPITAL_TEMPLATES)(subject.name, subject.fallen) });
+    Markers.place(x, y, type, { name, note: ra(FALLEN_CAPITAL_TEMPLATES)(subject.name, subject.fallen), chronicle: true });
   }
 
   /** a fallen province marker over a burg: ruins, a necropolis, or worse */
@@ -754,7 +765,11 @@ class ChronicleModel {
         : type === "necropolises"
           ? `${burg.name} ${rw(NECROPOLIS_TYPES)}`
           : `Disturbed Burial of ${burg.name}`;
-    Markers.place(x, y, type, { name, note: ra(FALLEN_BURG_TEMPLATES)(burg.name!, subject.name, subject.fallen) });
+    Markers.place(x, y, type, {
+      name,
+      note: ra(FALLEN_BURG_TEMPLATES)(burg.name!, subject.name, subject.fallen),
+      chronicle: true
+    });
   }
 
   /** the realm's name without its form word: "Vhælen Empire" -> "Vhælen" */

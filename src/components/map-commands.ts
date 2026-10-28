@@ -813,7 +813,7 @@ function regenerateGoods(): void {
 
 function regenerateHistory(): void {
   Chronicle.generate();
-  refreshEditors();
+  Layers.draw("markers");
 }
 
 function regenerateMarkets(): void {
