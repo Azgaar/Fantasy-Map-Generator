@@ -64,6 +64,8 @@ export interface BurgSimState {
   construction: BurgConstructionState | null;
   unrest: number;
   conqueredBy?: number;
+  /** the state that held the burg before its first conquest in this simulation (0 = free) */
+  originalOwner?: number;
   originalCulture?: number;
   originalReligion?: number;
 }
@@ -123,6 +125,8 @@ export interface LivingWorldState {
   season: SeasonId;
   seed: string;
   snapshotIntervalYears: number;
+  /** tick of the last Legends border snapshot; absent on old saves (treated as 0) */
+  lastSnapshotTick?: number;
   promptOnPlayerBattles: boolean;
   states: Record<number, StatePolitySim>;
   provinces: Record<number, ProvinceSimState>;

@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { parseHistory, serializeHistory } from "@/services/io/epochs-format";
 import {
+  figureBias,
   Living,
   regionTierFromPop,
   settlementTierFromPop,
@@ -9,7 +10,7 @@ import {
   syncBurgFlagsFromBuildings
 } from "./living-generator";
 
-describe("Living (Slices 1-3: Data Model, Seasonal Tick, Capacity, Projects & War)", () => {
+describe("Living (Slices 1-4: Data Model, Seasonal Tick, Capacity, Projects, War & Unravel)", () => {
   beforeEach(() => {
     globalThis.options = {
       map: {
@@ -246,13 +247,13 @@ describe("Living (Slices 1-3: Data Model, Seasonal Tick, Capacity, Projects & Wa
     pack.cells.state[5] = 1;
     living.burgs[4].unrest = 10;
 
-    // Tick 1: Summer 1000 (not garrisoned, no temple -> unrest decays by 1 to 9, unravel increases by 3)
+    // Tick 1: Summer 1000 (not garrisoned, no temple -> unrest decays by 1 to 9, unravel increases by 4)
     Living.tick(1);
     expect(living.tick).toBe(1);
     expect(living.season).toBe(1);
     expect(options.map.lore.calendar.year).toBe(1000);
     expect(living.burgs[4].unrest).toBe(9);
-    expect(living.states[1].unravel).toBe(3);
+    expect(living.states[1].unravel).toBe(4);
 
     // Station State 1's regiment at Outcast Hold (cell 5) -> unrest decays by 2 per season
     pack.states[1].military![0].cell = 5;
@@ -393,7 +394,7 @@ describe("Living (Slices 1-3: Data Model, Seasonal Tick, Capacity, Projects & Wa
     expect(pack.burgs[4].state).toBe(0);
     expect(pack.cells.state[5]).toBe(0);
     expect(living.states[1].grudges).toEqual(
-      expect.arrayContaining([expect.objectContaining({ reason: "repulsed", targetBurgId: 4 })])
+      expect.arrayContaining([expect.objectContaining({ reason: "repulsed", targetBurgId: 4, weight: 20 })])
     );
     expect(living.recentNews[0].kind).toBe("resist");
   });
@@ -412,6 +413,9 @@ describe("Living (Slices 1-3: Data Model, Seasonal Tick, Capacity, Projects & Wa
     expect(pack.states[2].diplomacy?.[1]).toBe("Enemy");
     expect(living.states[2].claims).toEqual(
       expect.arrayContaining([expect.objectContaining({ burgId: 2, heldByStateId: 1 })])
+    );
+    expect(living.states[2].grudges).toEqual(
+      expect.arrayContaining([expect.objectContaining({ reason: "conquest", targetBurgId: 2, weight: 40 })])
     );
 
     pack.states[2].military = [
@@ -436,5 +440,155 @@ describe("Living (Slices 1-3: Data Model, Seasonal Tick, Capacity, Projects & Wa
 
     expect(pack.burgs[2].state).toBe(2);
     expect(living.states[2].claims.some(claim => claim.burgId === 2)).toBe(false);
+    expect(living.states[2].grudges.some(grudge => grudge.targetBurgId === 2)).toBe(false);
+  });
+
+  it("weights agenda pressure from ruler traits and culture values", () => {
+    const base = figureBias({});
+
+    expect(figureBias({ virtues: ["brave"], vices: ["wrathful"] }, ["power"]).martial).toBeGreaterThan(base.martial);
+    expect(figureBias({ virtues: ["just", "diligent"], alignment: "lawful" }, ["investment"]).civic).toBeGreaterThan(
+      base.civic
+    );
+    expect(figureBias({ vices: ["cruel"], alignment: "evil" }).cruel).toBeGreaterThan(base.cruel);
+    expect(figureBias({}, ["order"]).pious).toBeGreaterThan(base.pious);
+  });
+
+  it("ages rulers and crowns a successor when the old ruler dies", () => {
+    const living = Living.init();
+    const rulerId = living.states[1].rulerId!;
+    const ruler = pack.history.figures!.find(figure => figure.i === rulerId)!;
+    ruler.birth = options.map.lore.calendar.year - 200;
+
+    Living.tick(4);
+
+    expect(ruler.death).toBe(1001);
+    expect(living.states[1].rulerId).not.toBe(rulerId);
+    const successor = pack.history.figures!.find(figure => figure.i === living.states[1].rulerId)!;
+    expect(successor.death).toBeUndefined();
+    expect(living.recentNews.some(item => item.kind === "succession")).toBe(true);
+  });
+
+  it("turns a succession into a crisis when stability is over capacity", () => {
+    pack.states[2].military = [
+      {
+        i: 0,
+        a: 1000,
+        cell: 3,
+        x: 30,
+        y: 30,
+        bx: 30,
+        by: 30,
+        u: { balbenGuard: 1000 },
+        units: [{ type: "balbenGuard", count: 1000, exp: 0 }],
+        n: 0,
+        name: "Khazad Guard",
+        state: 2,
+        icon: "⚔️"
+      }
+    ];
+
+    const living = Living.init();
+    const ruler = pack.history.figures!.find(figure => figure.i === living.states[2].rulerId)!;
+    ruler.birth = options.map.lore.calendar.year - 200;
+    living.states[2].agenda = { kind: "muster", label: "Mustering troops", progress: 0, required: 999 };
+    living.states[2].unravel = 0;
+
+    expect(living.states[2].capacity.s.load).toBeGreaterThan(living.states[2].capacity.s.gen);
+
+    Living.tick(4);
+
+    expect(living.states[2].unravel).toBeGreaterThanOrEqual(10);
+    expect(living.recentNews.some(item => item.kind === "succession" && item.text.includes("crisis"))).toBe(true);
+  });
+
+  it("raises a rebel and restores a Free Burg when unravel fills", () => {
+    const living = Living.init();
+    const army = pack.states[1].military![0];
+    army.units = [{ type: "spear", count: 2000, exp: 0 }];
+    army.a = 2000;
+
+    expect(Living.colonize(1, 4)).toBe(true);
+    living.burgs[4].unrest = 10;
+    living.states[1].unravel = 100;
+    const figuresBefore = pack.history.figures!.length;
+
+    Living.tick(1);
+
+    expect(pack.burgs[4].state).toBe(0);
+    expect(pack.cells.state[5]).toBe(0);
+    expect(living.burgs[4].unrest).toBe(0);
+    expect(pack.history.figures!.length).toBe(figuresBefore + 1);
+    expect(pack.history.figures!.at(-1)?.roles[0]).toMatchObject({
+      type: "rebel",
+      target: { kind: "burg", id: 4 }
+    });
+    expect(living.recentNews[0].kind).toBe("revolt");
+  });
+
+  it("returns a rebel burg to its former owner when one is remembered", () => {
+    const living = Living.init();
+    pack.burgs[4].state = 1;
+    pack.cells.state[5] = 1;
+    living.burgs[4].originalOwner = 2;
+    living.burgs[4].unrest = 10;
+    living.states[1].unravel = 100;
+
+    Living.tick(1);
+
+    expect(pack.burgs[4].state).toBe(2);
+    expect(pack.cells.state[5]).toBe(2);
+    expect(pack.states[2].military?.some(regiment => regiment.name.startsWith("Rebels of"))).toBe(true);
+  });
+
+  it("founds a secessionist state when a core burg rebels", () => {
+    const living = Living.init();
+    pack.burgs[4].state = 1;
+    pack.cells.state[5] = 1;
+    living.burgs[4].originalOwner = 1;
+    living.burgs[4].unrest = 10;
+    living.states[1].unravel = 100;
+    const statesBefore = pack.states.length;
+
+    Living.tick(1);
+
+    expect(pack.states.length).toBe(statesBefore + 1);
+    const secession = pack.states.at(-1)!;
+    expect(secession.i).toBe(statesBefore);
+    expect(secession.capital).toBe(4);
+    expect(pack.burgs[4].state).toBe(secession.i);
+    expect(living.states[1].grudges.some(grudge => grudge.reason === "repulsed")).toBe(true);
+  });
+
+  it("keeps a pacify agenda until the burg calms and clears it", () => {
+    const living = Living.init();
+    pack.burgs[4].state = 1;
+    pack.cells.state[5] = 1;
+    living.burgs[4].unrest = 2;
+    living.states[1].agenda = {
+      kind: "pacify",
+      label: "Pacifying Outcast Hold",
+      targetBurgId: 4,
+      progress: 0,
+      required: 1
+    };
+
+    Living.tick(1);
+
+    expect(living.burgs[4].unrest).toBe(0);
+    expect(living.states[1].agenda).toBeNull();
+  });
+
+  it("captures an epoch snapshot for the Legends time slider", () => {
+    const living = Living.init();
+    living.snapshotIntervalYears = 1;
+
+    Living.tick(4);
+
+    expect(pack.history.snapshots).toHaveLength(1);
+    expect(pack.history.epochs).toHaveLength(1);
+    expect(pack.history.epochs![0]).toMatchObject({ from: 1000, to: 1001, snapshot: 0 });
+    expect(pack.history.snapshots![0]).toHaveLength(pack.cells.i.length);
+    expect(pack.history.epochs![0].polities.map(polity => polity.id)).toEqual(expect.arrayContaining([1, 2]));
   });
 });

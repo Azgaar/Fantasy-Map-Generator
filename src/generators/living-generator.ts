@@ -20,6 +20,7 @@ import {
 } from "@/conquest/engine/game/battle";
 import { assetCheckDifficulties, valueModifier } from "@/conquest/engine/game/saves";
 import { garrisonUnits, minorGarrisonUnits } from "@/conquest/engine/game/units";
+import type { Alignment } from "@/data/culture-traits";
 import { rollAlignment, rollFigureTraits, traitsRng } from "@/data/culture-traits";
 import type { HistoricalFigure, HistoryEventType, HistRef } from "@/types/history";
 import {
@@ -68,6 +69,64 @@ export function emptyCapacityLedger(): CapacityLedger {
     s: { gen: 0, load: 0 },
     c: { gen: 0, load: 0 }
   };
+}
+
+/** how much each remembered humiliation weighs on the casus belli ledger */
+const GRUDGE_WEIGHTS: Record<GrudgeReason, number> = {
+  conquest: 40,
+  sacked: 30,
+  slain_ruler: 35,
+  slain_general: 35,
+  repulsed: 20
+};
+
+export interface FigureBias {
+  martial: number;
+  civic: number;
+  pious: number;
+  cruel: number;
+}
+
+const MARTIAL_TRAITS = ["brave", "daring", "decisive", "wrathful", "vengeful", "boastful", "reckless"];
+const CIVIC_TRAITS = ["just", "diligent", "temperate", "thrifty", "methodical", "prudent"];
+const PIOUS_TRAITS = ["reverent", "zealous", "faithful", "tolerant", "merciful"];
+const CRUEL_TRAITS = ["cruel", "greedy", "merciless", "callous", "domineering", "paranoid", "selfish", "bigoted"];
+
+/** Weight a ruler's traits and their culture's values towards war, works, faith or cruelty. */
+export function figureBias(
+  figure: { alignment?: Alignment; virtues?: string[]; vices?: string[] },
+  values: readonly string[] = []
+): FigureBias {
+  const words = new Set([...(figure.virtues ?? []), ...(figure.vices ?? [])]);
+  const held = new Set(values);
+  const bias: FigureBias = { martial: 0.1, civic: 0.1, pious: 0.1, cruel: 0 };
+
+  const add = (key: keyof FigureBias, list: string[], cultural: string[]) => {
+    for (const word of list) if (words.has(word)) bias[key] += 0.12;
+    for (const value of cultural) if (held.has(value)) bias[key] += 0.1;
+  };
+
+  add("martial", MARTIAL_TRAITS, ["conflict", "power", "subjugation", "hatred"]);
+  add("civic", CIVIC_TRAITS, ["investment", "advancement", "knowledge", "balance"]);
+  add("pious", PIOUS_TRAITS, ["order", "honor", "loyalty", "truth"]);
+  add("cruel", CRUEL_TRAITS, ["greed", "control", "subjugation"]);
+
+  if (figure.alignment === "evil") {
+    bias.martial += 0.15;
+    bias.cruel += 0.15;
+  } else if (figure.alignment === "chaotic") {
+    bias.martial += 0.1;
+  } else if (figure.alignment === "lawful") {
+    bias.civic += 0.1;
+  } else if (figure.alignment === "good") {
+    bias.civic += 0.05;
+    bias.pious += 0.05;
+  }
+
+  for (const key of ["martial", "civic", "pious", "cruel"] as const) {
+    bias[key] = Math.min(0.8, Math.round(bias[key] * 100) / 100);
+  }
+  return bias;
 }
 
 /** Reconcile Conquest building IDs from FMG Burg feature flags (walls, plaza, temple, citadel) */
@@ -173,12 +232,16 @@ class LivingModel {
         options.map.lore.calendar.year += 1;
         const currentEra = pack.history?.eras?.at(-1);
         if (currentEra) currentEra.to = options.map.lore.calendar.year;
+        this.stepRulers(living);
+        this.stepGrudges(living);
+        this.captureSnapshot(living);
       }
 
       this.syncWorld();
       this.stepBurgUnrest(living);
       this.stepProvinces(living);
       this.stepStates(living);
+      this.stepRebellions(living);
       this.recomputeAllCapacities(living);
     }
 
@@ -394,6 +457,7 @@ class LivingModel {
           buildings: syncBurgBuildingsFromFlags(burg, []),
           construction: null,
           unrest: 0,
+          originalOwner: burg.state ?? 0,
           originalCulture: burg.culture,
           originalReligion: pack.cells.religion?.[burg.cell] ?? 0
         };
@@ -463,7 +527,6 @@ class LivingModel {
     const history = Chronicle.sync();
     history.figures ??= [];
 
-    // Check if there is already a living ruler for this state
     const active = history.figures.find(
       fig =>
         fig.death === undefined &&
@@ -473,13 +536,19 @@ class LivingModel {
         )
     );
     if (active) return active.i;
+    return this.spawnRuler(state, living);
+  }
+
+  /** A new ruler for the state; called at init and after a death. */
+  private spawnRuler(state: State, living: LivingWorldState, accession?: number): number {
+    const history = Chronicle.sync();
+    history.figures ??= [];
 
     const year = options.map?.lore?.calendar?.year ?? 1000;
     const figIndex = history.figures.length;
     const rng = traitsRng(living.seed, "figure", figIndex + state.i * 1000);
     const age = rng.int(20, 50);
-    const reignYears = Math.min(age - 16, rng.int(1, 12));
-    const accession = year - reignYears;
+    const from = accession ?? year - Math.min(age - 16, rng.int(1, 12));
 
     const cultureId = state.culture ?? 0;
     const alignment = rollAlignment(rng, pack.cultures[cultureId]?.alignment);
@@ -490,13 +559,138 @@ class LivingModel {
       name: Names.getCulture(cultureId),
       culture: cultureId,
       birth: year - age,
-      roles: [{ type: "ruler", target: { kind: "state", id: state.i }, from: accession }],
+      roles: [{ type: "ruler", target: { kind: "state", id: state.i }, from }],
       alignment,
       virtues,
       vices
     };
     history.figures.push(figure);
     return figure.i;
+  }
+
+  /** Once a year: rulers age, die and are succeeded; a weak court turns a funeral into a crisis. */
+  private stepRulers(living: LivingWorldState): void {
+    const history = Chronicle.sync();
+    const year = options.map?.lore?.calendar?.year ?? 1000;
+
+    for (const state of pack.states) {
+      if (!state?.i || state.removed) continue;
+      const sSim = living.states[state.i];
+      if (!sSim) continue;
+
+      const ruler = history.figures?.find(figure => figure.i === sSim.rulerId);
+      if (!ruler || ruler.death !== undefined) {
+        sSim.rulerId = this.ensureStateRuler(state, living);
+        continue;
+      }
+
+      const age = year - ruler.birth;
+      const lifespan = createRng(`${living.seed}:living:lifespan:${ruler.i}`).int(55, 95);
+      if (age < lifespan) continue;
+      this.succeedRuler(state, sSim, ruler, living, year);
+    }
+  }
+
+  private succeedRuler(
+    state: State,
+    sSim: StatePolitySim,
+    ruler: HistoricalFigure,
+    living: LivingWorldState,
+    year: number
+  ): void {
+    const history = Chronicle.sync();
+    ruler.death = year;
+    for (const role of ruler.roles) {
+      if (
+        role.type === "ruler" &&
+        role.to === undefined &&
+        role.target.kind === "state" &&
+        role.target.id === state.i
+      ) {
+        role.to = year;
+      }
+    }
+
+    const successorId = this.spawnRuler(state, living, year);
+    const successor = history.figures?.find(figure => figure.i === successorId);
+    sSim.rulerId = successorId;
+
+    const crisis = this.successionCrisis(sSim, successor);
+    let text = `${ruler.name} of ${state.name} died; ${successor?.name ?? "a successor"} took the crown.`;
+    if (crisis) {
+      sSim.unravel = minmax(sSim.unravel + 10, 0, 100);
+      for (const province of this.ownedProvinces(state.i)) {
+        const pSim = living.provinces[province.i];
+        if (pSim) pSim.order = Math.max(0, pSim.order - 10);
+      }
+      text += " A succession crisis follows.";
+    }
+
+    this.pushNews(living, { kind: "succession", text, cell: state.center, stateId: state.i });
+    this.pushHistory(
+      "succession",
+      [
+        { kind: "figure", id: ruler.i },
+        ...(successor ? [{ kind: "figure", id: successor.i } as HistRef] : []),
+        { kind: "state", id: state.i }
+      ],
+      state.center,
+      text
+    );
+  }
+
+  private successionCrisis(sSim: StatePolitySim, successor: HistoricalFigure | undefined): boolean {
+    if (sSim.capacity.s.load > sSim.capacity.s.gen) return true;
+    const vices = new Set(successor?.vices ?? []);
+    return ["cruel", "greedy", "slothful", "cowardly", "vengeful", "wrathful", "paranoid"].some(vice =>
+      vices.has(vice)
+    );
+  }
+
+  /** Once a year: old grudges fade and the war weariness of the court eases. */
+  private stepGrudges(living: LivingWorldState): void {
+    for (const sSim of Object.values(living.states)) {
+      for (const grudge of sSim.grudges) grudge.weight -= 1;
+      sSim.grudges = sSim.grudges.filter(grudge => grudge.weight > 0);
+      sSim.warExhaustion = minmax(sSim.warExhaustion - 5, 0, 100);
+    }
+  }
+
+  /** Every `snapshotIntervalYears`, keep the borders as an epoch for the Legends time slider. */
+  private captureSnapshot(living: LivingWorldState): void {
+    const interval = Math.max(1, Math.floor(living.snapshotIntervalYears || 10));
+    if (living.tick - (living.lastSnapshotTick ?? 0) < interval * 4) return;
+
+    const history = Chronicle.sync();
+    history.snapshots ??= [];
+    history.epochs ??= [];
+    const year = options.map?.lore?.calendar?.year ?? 1000;
+
+    const owned = new Map<number, number>();
+    for (const owner of pack.cells.state) owned.set(owner, (owned.get(owner) ?? 0) + 1);
+
+    const polities = pack.states
+      .filter(state => state?.i && !state.removed)
+      .map(state => ({
+        id: state.i,
+        name: state.name,
+        form: state.formName ?? state.form ?? "State",
+        capital: state.capital ?? 0,
+        cells: owned.get(state.i) ?? 0,
+        color: state.color ?? "#8a8a8a",
+        founded: year - interval
+      }));
+
+    history.snapshots.push(new Uint16Array(pack.cells.state));
+    history.epochs.push({
+      i: history.epochs.length,
+      from: year - interval,
+      to: year,
+      era: options.map?.lore?.calendar?.era ?? "Present Age",
+      polities,
+      snapshot: history.snapshots.length - 1
+    });
+    living.lastSnapshotTick = living.tick;
   }
 
   private recomputeAllCapacities(living: LivingWorldState): void {
@@ -531,13 +725,17 @@ class LivingModel {
 
       restiveCountByState.set(burg.state, (restiveCountByState.get(burg.state) ?? 0) + 1);
 
+      const agenda = living.states[ownerState.i]?.agenda;
+      const pacifying = agenda?.kind === "pacify" && agenda.targetBurgId === burg.i;
+
       let decay = 1;
       const isGarrisoned = (ownerState.military ?? []).some(reg => reg.cell === burg.cell && reg.a > 0);
       if (isGarrisoned) decay += 1;
       if (bSim.buildings.some(id => id.startsWith("temple"))) decay += 1;
-      if (living.states[ownerState.i]?.agenda?.kind === "pacify") decay += 1;
+      if (pacifying) decay += 2;
 
       bSim.unrest = Math.max(0, bSim.unrest - decay);
+      if (pacifying && bSim.unrest === 0) this.assimilateBurg(ownerState, burg, bSim);
     }
 
     // Apply seasonal unravel clock changes from unrest & stability balance
@@ -549,11 +747,28 @@ class LivingModel {
       const sDeficit = sSim.capacity.s.load > sSim.capacity.s.gen;
 
       let delta = 0;
-      if (restiveCount > 0) delta += restiveCount * 3;
+      if (restiveCount > 0) delta += restiveCount * 4;
       if (sDeficit) delta += 4;
+      if (sSim.warExhaustion >= 50) delta += 2;
       if (restiveCount === 0 && !sDeficit && sSim.unravel > 0) delta -= 2;
 
       sSim.unravel = minmax(sSim.unravel + delta, 0, 100);
+      sSim.warExhaustion = minmax(sSim.warExhaustion - 1, 0, 100);
+    }
+  }
+
+  /** A pacified burg may adopt its conqueror's faith and, over time, its culture. */
+  private assimilateBurg(state: State, burg: Burg, bSim: BurgSimState): void {
+    const rng = this.rng("pacify:assimilate", burg.i);
+    const religion = pack.cells.religion?.[state.center] ?? 0;
+    if (religion && pack.cells.religion?.[burg.cell] !== religion && rng.chance(0.5)) {
+      pack.cells.religion[burg.cell] = religion;
+      bSim.originalReligion = religion;
+    }
+    if (burg.culture !== state.culture && rng.chance(0.25)) {
+      burg.culture = state.culture;
+      for (const cell of this.burgHinterland(burg)) pack.cells.culture[cell] = state.culture;
+      bSim.originalCulture = state.culture;
     }
   }
 
@@ -694,6 +909,9 @@ class LivingModel {
     if (!this.assaultBurg(pack.states[stateId], burg)) return false;
 
     sSim.claims = sSim.claims.filter(claim => claim.burgId !== burgId);
+    sSim.grudges = sSim.grudges.filter(
+      grudge => !(grudge.againstStateId === defenderId && grudge.targetBurgId === burgId)
+    );
     this.recordClaim(defenderId, burg, stateId);
     return true;
   }
@@ -731,6 +949,9 @@ class LivingModel {
     const outcome = this.resolveAssault(state.i, burg, army, defenders);
     this.applyArmySurvivors(state, army, outcome.attacker.units);
     this.addBattleMarker(burg);
+
+    const sSim = this.getState().states[state.i];
+    if (sSim) sSim.warExhaustion = minmax(sSim.warExhaustion + (outcome.winner === "attacker" ? 2 : 8), 0, 100);
 
     if (outcome.winner === "attacker") {
       this.annexBurg(state.i, burg, true);
@@ -838,12 +1059,14 @@ class LivingModel {
 
   /** Flip the burg and its hinterland to the state and seed occupation unrest. */
   private annexBurg(stateId: number, burg: Burg, restless: boolean): void {
+    const bSim = this.getState().burgs[burg.i];
+    if (bSim) bSim.originalOwner ??= burg.state ?? 0;
+
     const cells = this.burgHinterland(burg);
     this.transferCells(stateId, cells);
     burg.state = stateId;
     this.assignProvince(stateId, cells);
 
-    const bSim = this.getState().burgs[burg.i];
     if (!bSim) return;
     bSim.originalCulture ??= burg.culture;
     bSim.originalReligion ??= pack.cells.religion?.[burg.cell] ?? 0;
@@ -903,8 +1126,191 @@ class LivingModel {
       }
       if (provinceId) break;
     }
-    if (!provinceId) return;
+    if (!provinceId) {
+      for (const cell of cells) {
+        if (pack.cells.province) pack.cells.province[cell] = 0;
+      }
+      return;
+    }
     for (const cell of cells) pack.cells.province[cell] = provinceId;
+  }
+
+  /** When a state's unravel clock fills, its most restive burg breaks away. */
+  private stepRebellions(living: LivingWorldState): void {
+    for (const state of pack.states.slice()) {
+      if (!state?.i || state.removed) continue;
+      const sSim = living.states[state.i];
+      if (!sSim || sSim.unravel < 100) continue;
+
+      const target = this.mostRestiveBurg(state.i, true);
+      if (!target) {
+        sSim.unravel = 50;
+        continue;
+      }
+      this.breakAway(state, target, living);
+      sSim.unravel = 30;
+    }
+  }
+
+  /** Highest-unrest burg of the state; capitals are only allowed when asked for. */
+  private mostRestiveBurg(stateId: number, excludeCapital: boolean): Burg | null {
+    let best: Burg | null = null;
+    let bestUnrest = 0;
+    for (const burg of pack.burgs) {
+      if (!burg?.i || burg.removed || burg.state !== stateId) continue;
+      if (excludeCapital && burg.capital) continue;
+      const unrest = this.getState().burgs[burg.i]?.unrest ?? 0;
+      if (unrest <= bestUnrest) continue;
+      best = burg;
+      bestUnrest = unrest;
+    }
+    return best;
+  }
+
+  /** Restore a Free Burg, rejoin its homeland, defect to kin, or found a secessionist state. */
+  private breakAway(state: State, burg: Burg, living: LivingWorldState): void {
+    const bSim = living.burgs[burg.i];
+    const cells = this.burgHinterland(burg);
+    const original = bSim?.originalOwner ?? 0;
+    const kin = this.kinNeighborState(state.i, burg);
+    const rebel = this.spawnRebel(state, burg, living);
+
+    let heir = 0;
+    if (original > 0 && original !== state.i) {
+      if (pack.states[original]?.i && !pack.states[original].removed) heir = original;
+    } else if (kin) {
+      heir = kin;
+    } else if (original > 0) {
+      heir = this.foundSecessionState(state, burg);
+    }
+
+    if (heir) {
+      this.transferCells(heir, cells);
+      burg.state = heir;
+      this.assignProvince(heir, cells);
+      this.raiseRebelRegiment(heir, burg);
+    } else {
+      this.transferCells(0, cells);
+      burg.state = 0;
+      for (const cell of cells) pack.cells.province[cell] = 0;
+    }
+
+    if (bSim) {
+      bSim.unrest = 0;
+      bSim.conqueredBy = undefined;
+    }
+    this.recordClaim(state.i, burg, heir);
+    this.recordGrudge(state.i, burg, "repulsed", `${burg.name ?? "The burg"} broke away from ${state.name}`);
+
+    const heirState = heir ? pack.states[heir] : undefined;
+    const text = heirState
+      ? `${burg.name ?? "The burg"} rose in revolt and joined ${heirState.name}.`
+      : `${burg.name ?? "The burg"} rose in revolt and restored its independence.`;
+    this.pushNews(living, { kind: "revolt", text, cell: burg.cell, stateId: state.i, burgId: burg.i });
+    this.pushHistory(
+      "independence",
+      [
+        { kind: "figure", id: rebel.i },
+        { kind: "burg", id: burg.i },
+        { kind: "state", id: state.i }
+      ],
+      burg.cell,
+      text
+    );
+  }
+
+  private spawnRebel(state: State, burg: Burg, living: LivingWorldState): HistoricalFigure {
+    const history = Chronicle.sync();
+    history.figures ??= [];
+    const year = options.map?.lore?.calendar?.year ?? 1000;
+    const culture = living.burgs[burg.i]?.originalCulture ?? burg.culture ?? state.culture ?? 0;
+    const index = history.figures.length;
+    const rng = traitsRng(living.seed, "figure", index + state.i * 1000);
+    const alignment = rollAlignment(rng, pack.cultures[culture]?.alignment);
+    const { virtues, vices } = rollFigureTraits(rng, alignment);
+    const figure: HistoricalFigure = {
+      i: index,
+      name: Names.getCulture(culture),
+      culture,
+      birth: year - rng.int(20, 50),
+      roles: [{ type: "rebel", target: { kind: "burg", id: burg.i }, from: year }],
+      alignment,
+      virtues,
+      vices
+    };
+    history.figures.push(figure);
+    return figure;
+  }
+
+  /** A state on a neighbouring cell that shares the burg's culture. */
+  private kinNeighborState(ownerId: number, burg: Burg): number {
+    const culture = this.getState().burgs[burg.i]?.originalCulture ?? burg.culture ?? 0;
+    for (const cell of pack.cells.c?.[burg.cell] ?? []) {
+      const stateId = pack.cells.state?.[cell] ?? 0;
+      if (!stateId || stateId === ownerId) continue;
+      const state = pack.states[stateId];
+      if (state?.i && !state.removed && state.culture === culture) return stateId;
+    }
+    return 0;
+  }
+
+  private foundSecessionState(oldOwner: State, burg: Burg): number {
+    const i = pack.states.length;
+    const culture = burg.culture ?? oldOwner.culture ?? 0;
+    const relations: string[] = [];
+    for (const other of pack.states) {
+      if (!other) continue;
+      if (!other.i || other.removed) {
+        relations[other.i] = "x";
+        continue;
+      }
+      const relation = other.i === oldOwner.i ? "Enemy" : "Neutral";
+      other.diplomacy ??= [];
+      other.diplomacy[i] = relation;
+      relations[other.i] = relation;
+    }
+    relations[i] = "x";
+
+    pack.states.push({
+      i,
+      name: Names.getState(burg.name ?? Names.getCulture(culture), culture),
+      diplomacy: relations,
+      provinces: [],
+      color: oldOwner.color ?? "#8a8a8a",
+      expansionism: 0.5,
+      capital: burg.i,
+      type: "Generic",
+      center: burg.cell,
+      culture,
+      rosterId: assignStateRoster({ culture, type: "Generic" }, pack.cultures),
+      military: [],
+      coa: oldOwner.coa ?? ({} as State["coa"]),
+      salesTax: oldOwner.salesTax ?? 0,
+      pollTax: oldOwner.pollTax ?? 0,
+      treasury: 0
+    });
+    burg.capital = 1;
+    return i;
+  }
+
+  /** Raise a rebel militia at the burg from the local culture's roster. */
+  private raiseRebelRegiment(stateId: number, burg: Burg): Regiment | null {
+    const state = pack.states[stateId];
+    if (!state?.i || state.removed) return null;
+    const roster = this.burgDefenderRoster(burg) ?? Military.getRoster(state);
+    const unitTypes = Military.getUnitTypes();
+    const unitId = roster?.recruitable.find(id => unitTypes[id]) ?? Object.keys(unitTypes)[0];
+    const unit = unitId ? unitTypes[unitId] : undefined;
+    if (!unit) return null;
+
+    const tier = settlementTierFromPop(burg.population ?? 0);
+    const count = Math.max(unit.men, Math.round(unit.men * (1 + tier * 0.5)));
+    const regiment = this.createRegiment(state);
+    regiment.name = `Rebels of ${burg.name ?? "the wilds"}`;
+    this.moveArmy(regiment, burg);
+    regiment.units = [{ type: unitId, count, exp: 0 }];
+    syncRegimentTotals(regiment, unitTypes);
+    return regiment;
   }
 
   private initialUnrest(stateId: number, burg: Burg): number {
@@ -1006,7 +1412,7 @@ class LivingModel {
       targetBurgId: burg.i,
       reason,
       year: options.map.lore.calendar.year,
-      weight: 2,
+      weight: GRUDGE_WEIGHTS[reason],
       summary
     });
   }
@@ -1288,14 +1694,26 @@ class LivingModel {
     return undefined;
   }
 
-  /** War options: press an ongoing war, retake a claim, absorb a free burg, or expand. */
+  /** War options: press an ongoing war, calm a restive burg, retake a claim, absorb a free burg, or expand. */
   private warAgenda(state: State, sSim: StatePolitySim): StateAgenda | null {
     const army = this.fieldArmy(state);
+    const bias = this.traitBias(state, sSim);
     const target = army ? this.pickWarTarget(state, army) : null;
     if (target) return this.conquerAgenda(target);
 
+    const restive = this.mostRestiveBurg(state.i, false);
+    if (restive && this.rng("agenda:pacify", state.i).chance(0.15 + bias.pious * 0.35 + bias.civic * 0.15)) {
+      return {
+        kind: "pacify",
+        label: `Pacifying ${restive.name ?? "a burg"}`,
+        targetBurgId: restive.i,
+        progress: 0,
+        required: 1
+      };
+    }
+
     const reclaim = army ? this.pickReclaimTarget(state, sSim, army) : null;
-    if (reclaim && this.rng("agenda:reclaim", state.i).chance(0.6)) {
+    if (reclaim && this.rng("agenda:reclaim", state.i).chance(0.45 + bias.martial * 0.3)) {
       return {
         kind: "reclaim",
         label: `Reclaiming ${reclaim.name ?? "a burg"}`,
@@ -1306,7 +1724,7 @@ class LivingModel {
     }
 
     const free = this.pickFreeBurgTarget(state, army);
-    if (free && this.rng("agenda:colonize", state.i).chance(0.4)) {
+    if (free && this.rng("agenda:colonize", state.i).chance(0.25 + bias.civic * 0.3 + bias.pious * 0.1)) {
       return {
         kind: "colonize",
         label: `Colonizing ${free.name ?? "a free town"}`,
@@ -1317,8 +1735,26 @@ class LivingModel {
     }
 
     const neighbour = army ? this.pickConquerTarget(state, army) : null;
-    if (neighbour && this.rng("agenda:conquer", state.i).chance(0.25)) return this.conquerAgenda(neighbour);
+    if (neighbour && this.rng("agenda:conquer", state.i).chance(0.12 + bias.martial * 0.5)) {
+      return this.conquerAgenda(neighbour);
+    }
     return null;
+  }
+
+  private traitBias(state: State, sSim: StatePolitySim): FigureBias {
+    const figure = pack.history?.figures?.find(entry => entry.i === sSim.rulerId);
+    return figureBias(figure ?? {}, pack.cultures?.[state.culture ?? 0]?.values);
+  }
+
+  /** Grudges and claims against a state weigh its burgs up in target selection. */
+  private casusBelli(stateId: number, otherId: number): number {
+    const sSim = this.getState().states[stateId];
+    if (!sSim || !otherId) return 0;
+    const grudges = sSim.grudges
+      .filter(grudge => grudge.againstStateId === otherId)
+      .reduce((sum, grudge) => sum + grudge.weight, 0);
+    const claims = sSim.claims.filter(claim => claim.heldByStateId === otherId).length * 20;
+    return grudges + claims;
   }
 
   private conquerAgenda(burg: Burg): StateAgenda {
@@ -1338,7 +1774,8 @@ class LivingModel {
       state,
       army,
       burg => this.isAtWar(state.i, burg.state ?? 0) && this.bordersState(state.i, burg),
-      50
+      50,
+      burg => this.casusBelli(state.i, burg.state ?? 0)
     );
   }
 
@@ -1348,7 +1785,8 @@ class LivingModel {
       state,
       army,
       burg => !this.isAtWar(state.i, burg.state ?? 0) && this.bordersState(state.i, burg),
-      50
+      50,
+      burg => this.casusBelli(state.i, burg.state ?? 0)
     );
   }
 
@@ -1356,17 +1794,20 @@ class LivingModel {
     state: State,
     army: Regiment,
     accept: (burg: Burg) => boolean,
-    minOdds: number
+    minOdds: number,
+    score: (burg: Burg) => number = () => 0
   ): Burg | null {
     let best: Burg | null = null;
-    let bestOdds = 0;
+    let bestValue = 0;
     for (const burg of pack.burgs) {
       if (!burg?.i || burg.removed || !burg.state || burg.state === state.i || burg.capital) continue;
       if (!accept(burg)) continue;
       const odds = this.assaultOdds(state.i, burg, army);
-      if (odds < minOdds || odds <= bestOdds) continue;
+      if (odds < minOdds) continue;
+      const value = odds + score(burg);
+      if (value <= bestValue) continue;
       best = burg;
-      bestOdds = odds;
+      bestValue = value;
     }
     return best;
   }
@@ -1477,6 +1918,12 @@ class LivingModel {
       case "reclaim": {
         if (agenda.targetBurgId !== undefined) this.reclaimBurg(state.i, agenda.targetBurgId);
         sSim.agenda = null;
+        return;
+      }
+      case "pacify": {
+        const burg = agenda.targetBurgId !== undefined ? pack.burgs[agenda.targetBurgId] : undefined;
+        const unrest = burg ? (living.burgs[burg.i]?.unrest ?? 0) : 0;
+        if (!burg || burg.removed || burg.state !== state.i || unrest <= 0) sSim.agenda = null;
         return;
       }
       default:
