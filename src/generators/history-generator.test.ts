@@ -564,8 +564,8 @@ describe("Chronicle.generate fallen realms", () => {
       },
       burgs: [
         0,
-        { i: 1, cell: 2, x: at(2)[0], y: at(2)[1], population: 10, capital: 1 },
-        { i: 2, cell: 10, x: at(10)[0], y: at(10)[1], population: 8 }
+        { i: 1, cell: 2, name: "Aldgate", x: at(2)[0], y: at(2)[1], population: 10, capital: 1 },
+        { i: 2, cell: 10, name: "Fairholm", x: at(10)[0], y: at(10)[1], population: 8 }
       ],
       markers: [],
       states: [
@@ -655,10 +655,11 @@ describe("Chronicle.generate fallen realms", () => {
   it("places ruins and battlefield markers where history says they happened", () => {
     Chronicle.generate();
     const ruins = pack.markers.filter(marker => marker.type === "ruins");
-    const battlefields = pack.markers.filter(marker => marker.type === "battlefields");
-    expect(ruins).toHaveLength(1);
+    expect(ruins).toHaveLength(2); // the realm's seat plus a province burg, as the epochs do it
     expect(ruins[0].name).toContain("Ruins of");
-    expect(ruins[0].cell).toBe(10);
+    expect(ruins[0].cell).toBe(10); // Fairholm, the grandest burg that is not a capital today
+    expect(ruins[1].name).toBe("Ruins of Aldgate"); // the footprint's one remaining burg fell with it
+    const battlefields = pack.markers.filter(marker => marker.type === "battlefields");
     expect(battlefields).toHaveLength(1);
     expect(battlefields[0].cell).toBe(pack.history.events.find(event => event.type === "battle")!.loc);
   });
@@ -875,18 +876,24 @@ describe("Chronicle.generate fall markers", () => {
   beforeEach(() => {
     options.map.lore.history.mode = "epochs";
     engine.calls = 0;
-    engine.artifact.snapshots[0] = Uint16Array.of(0, 1, 1, 1, 1, 0, 1, 0); // the empire's territory at its death
+    // the empire's territory at its death: every cell but the multiples of 5
+    engine.artifact.snapshots[0] = Uint16Array.from({ length: 26 }, (_, cell) => (cell && cell % 5 ? 1 : 0));
+    const burg = Array<number>(26).fill(0);
+    burg[1] = 1;
+    burg[2] = 2;
+    burg[3] = 3;
+    burg[6] = 4;
     globalThis.pack = {
       cells: {
-        burg: [0, 1, 2, 3, 0, 0, 4, 0],
-        p: [[10, 10], [110, 10], [210, 10], [310, 10], [410, 10], [510, 10], [610, 10], [710, 10]]
+        burg,
+        p: Array.from({ length: 26 }, (_, cell) => [cell * 10 + 10, 10])
       },
       burgs: [
         0,
-        { i: 1, cell: 1, name: "Oldtown", x: 110, y: 10, population: 10, culture: 1 },
-        { i: 2, cell: 2, name: "Hillfort", x: 210, y: 10, population: 8, culture: 1 },
-        { i: 3, cell: 3, name: "Dale", x: 310, y: 10, population: 6, culture: 2 },
-        { i: 4, cell: 6, name: "Grange", x: 610, y: 10, population: 4, culture: 2 }
+        { i: 1, cell: 1, name: "Oldtown", x: 20, y: 10, population: 10, culture: 1 },
+        { i: 2, cell: 2, name: "Hillfort", x: 30, y: 10, population: 8, culture: 1 },
+        { i: 3, cell: 3, name: "Dale", x: 40, y: 10, population: 6, culture: 2 },
+        { i: 4, cell: 6, name: "Grange", x: 70, y: 10, population: 4, culture: 2 }
       ],
       markers: [],
       cultures: [
@@ -929,7 +936,7 @@ describe("Chronicle.generate fall markers", () => {
   it("multiplies the province ruins at the slider's top", () => {
     options.map.lore.history.ruins = 5;
     Chronicle.generate();
-    expect(pack.markers).toHaveLength(3); // the seat plus two of the three surviving burgs
+    expect(pack.markers).toHaveLength(3); // the seat plus both greater burgs: sqrt(20) / 2 asks for two
   });
 
   it("skips burgs that already host a marker", () => {
@@ -950,5 +957,12 @@ describe("Chronicle.generate fall markers", () => {
     Chronicle.generate();
     const seat = pack.markers.find(marker => marker.name === "Ruins of Old Empire")!;
     expect(seat.cell).toBe(2); // Hillfort, the largest survivor
+  });
+
+  it("marks the empty heartland when no burg survives the fall", () => {
+    for (const burg of pack.burgs) if (burg) burg.removed = true;
+    Chronicle.generate();
+    const seat = pack.markers.find(marker => marker.name === "Ruins of Old Empire")!;
+    expect(seat.cell).toBe(1); // the first cell of the dead territory
   });
 });

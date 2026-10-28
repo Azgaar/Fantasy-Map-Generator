@@ -1,7 +1,7 @@
 # Plan — Fall Markers: the Ruins of Fallen Polities
 
-Updated: 2026-10-28. Status: **slice 1 shipped** (the pass, the ruins slider, the mode fix), slice 2
-and 3 open. Companions: the epochs engine in
+Updated: 2026-10-28. Status: **slices 1 and 1b shipped** (the shared pass, the ruins slider, the
+mode fix, the archaeologist unified); slice 2 and 3 open. Companions: the epochs engine in
 [history-epochs.md](history-epochs.md), whose slice 4 lists "markers of a past epoch" as a
 follow-up; the Archaeologist's echoes in [history-generation.md](history-generation.md).
 
@@ -36,29 +36,38 @@ This plan makes the fall visible, and causal:
 
 ## The pass
 
-One new private method on `Chronicle`, called at the end of `generateEpochs()`:
-`epochEchoes(epochs, polities, snapshots)` — the epochs twin of `echoes()`, gated on the same
-`options.map.lore.history.echoes`. It runs after the pipeline's `markers` step (history is the
+One shared placement on `Chronicle` — `placeFallRemains(subject, territory)` — used by **both**
+modes. The subject is the small face a fallen realm turns to the map: its proper name, its
+capital burg, a fallback cell, its fall year. The territory is the cell list it died holding.
+The epochs take theirs from the saved snapshot; the archaeologist takes the invented realm's
+footprint (the cells of its successor states). It is gated on the same
+`options.map.lore.history.echoes`, and runs after the pipeline's `markers` step (history is the
 last step), so it lands on the finished marker set.
 
 ### Whose burgs
 
-A fallen polity (`polity.fallen` set) appears in the cast of the epoch it fell in — the collapse
-happens after that epoch's cast was recorded — and never after. So:
+**The epochs.** A fallen polity (`polity.fallen` set) appears in the cast of the epoch it fell
+in — the collapse happens after that epoch's cast was recorded — and never after. So:
 
 1. The last epoch whose `polities` include the lineage is the epoch of the fall.
 2. That epoch's snapshot, filtered to the lineage id, is the territory at the moment of death.
 3. The burgs of the territory are `pack.cells.burg[cell]` for those cells, minus removed and
    unpopulated burgs, minus the capital (which is placed first, always).
-4. Fallback: if the capital burg no longer exists, place on the largest surviving territory burg;
-   if the polity left no burg at all, on its first territory cell (the archaeologist's
-   `realm.center` rule).
+
+**The archaeologist.** The invented realm's footprint is `realm.successors` — the states it was
+partitioned into — so its territory is the cells of those states, exactly what `buildRealm` used
+to pick the realm's seat. The seat rules line up with what the archaeologist already did: the
+realm capital (the grandest non-capital burg of the footprint) is the seat; if the realm left no
+burg at all, its `center` cell carries the story.
+
+Fallback, both modes: the capital burg → the greatest surviving territory burg → the territory's
+first cell.
 
 ### How many
 
-The capital is fixed; the extras scale with the polity's final extent (`polity.cells`, exactly
-what the `largest / 3` lineage rule already reads), under a **Ruins slider** in Set Lore — five
-steps from min to numerous, stored as `lore.history.ruins` (default 3, epochs mode only):
+The capital is fixed; the extras scale with the territory the realm died holding — its length in
+both modes, which is what the epochs' `polity.cells` records — under a **Ruins slider** in Set
+Lore: five steps from min to numerous, stored as `lore.history.ruins` (default 3, both modes):
 
 | Slider | Step | Extra-cap formula |
 |---|---|---|
@@ -119,8 +128,8 @@ suppresses them.
   archaeologist's echoes today; regenerating history brings them back. Re-placing them from the
   saved chronicle inside `Markers.regenerate()` is a follow-up if the loss feels wrong.
 - **The Lore editor** un-greys `Echoes` in the epochs mode (it now means "leave the falls on the
-  map"); `loreHistoryRealms` and `loreHistoryRenames` stay disabled, and the Ruins slider is
-  enabled only in the epochs mode.
+  map"); `loreHistoryRealms` and `loreHistoryRenames` stay disabled. The Ruins slider is enabled
+  in both modes — the invented realms leave size-scaled remains too.
 
 ## Save format
 
@@ -132,7 +141,8 @@ epochs means no pass.
 
 | # | Slice | Size | Acceptance |
 |---|---|---|---|
-| 1 ✅ | The pass: `epochEchoes` — capital marker, size-scaled extras, the Ruins slider, templates, the markers-generator mode fix, the Lore editor un-grey | medium | Every fallen polity's capital carries a marker; the slider runs from capitals alone to numerous; `echoes` off leaves none; the archaeologist path is byte-identical |
+| 1 ✅ | The pass: `placeFallRemains` — capital marker, size-scaled extras, the Ruins slider, templates, the markers-generator mode fix, the Lore editor un-grey | medium | Every fallen polity's capital carries a marker; the slider runs from capitals alone to numerous; `echoes` off leaves none; the archaeologist path is byte-identical |
+| 1b ✅ | The archaeologist joins: the invented realms run the same pass over their footprint, the slider governs both modes | small | An archaeologist realm leaves a seat marker plus scaled extras; the old single-ruin behavior is gone by design (saved maps keep their stored markers) |
 | 2 | The lifecycle: `chronicle` marker flag, dedup on generate, `Layers.draw("markers")` in `regenerateHistory` | small | Regenerating history twice leaves one set of markers, in both modes |
 | 3 | Follow-ups: battlefields from epoch `battle` events (their `loc` cells), burg notes ("once the pride of…"), the historical view hiding fall markers younger than the viewed epoch | small | Optional, in that order |
 

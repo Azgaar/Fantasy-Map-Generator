@@ -121,7 +121,7 @@ const TEMPLATE = /* html */ `
     <label for="loreHistoryRuins">Ruins:</label>
     <input
       id="loreHistoryRuins"
-      data-tip="How much the fallen polities leave on the map: from their capitals alone to their greater towns too. Epochs mode only. Regenerate history to apply"
+      data-tip="How much the fallen polities leave on the map: from their capitals alone to their greater towns too. Regenerate history to apply"
       type="range"
       min="1"
       max="5"
@@ -189,9 +189,8 @@ function fillInputs(): void {
   ensureEl<HTMLInputElement>("loreHistoryRuins").value = String(history.ruins ?? 3);
   ensureEl<HTMLInputElement>("loreHistoryRenames").checked = history.renames;
 
-  // the invented-realm controls shape the archaeologist's past; the ruins slider shapes the epochs' real falls
+  // the invented-realm controls shape the archaeologist's past only; the rest means the same in both modes
   const epochs = history.mode === "epochs";
-  ensureEl<HTMLInputElement>("loreHistoryRuins").disabled = !epochs;
   for (const id of REALM_CONTROLS) ensureEl<HTMLInputElement>(id).disabled = epochs;
 }
 

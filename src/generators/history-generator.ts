@@ -50,6 +50,14 @@ interface Footprint {
   score: number;
 }
 
+/** what a fallen realm carries onto the map; both history modes provide it */
+interface FallSubject {
+  name: string; // the proper name, without the form word
+  capital?: number; // burg id
+  center?: number; // a cell to fall back to when no burg survives
+  fallen: number;
+}
+
 /** the character of the figure at `index`: one of the three traits its alignment dictates, rolled on
  *  the prevailing column of the culture it serves. Not assigned when the traits layer is off, and
  *  a culture that predates the layer (or the Wildlands) reads the neutral column */
@@ -629,7 +637,7 @@ class ChronicleModel {
   /** leave the realm's traces on the map: ruins, battlefields, notes, a name */
   private echoes(realms: Realm[], events: HistoryEvent[]): void {
     if (!realms.length || !options.map.lore.history.echoes) return;
-    for (const realm of realms) this.placeRuins(realm);
+    for (const realm of realms) this.placeRealmRemains(realm);
     for (const event of events) {
       if (event.type !== "battle" || event.loc === undefined) continue; // sea battles get no marker
       const [x, y] = pack.cells.p[event.loc];
@@ -639,13 +647,17 @@ class ChronicleModel {
     if (options.map.lore.history.renames) States.rename(realms[0].successors[0], `New ${this.properRealm(realms[0])}`);
   }
 
-  private placeRuins(realm: Realm): void {
-    const cell = realm.capital !== undefined ? pack.burgs[realm.capital].cell : realm.center;
-    const [x, y] = pack.cells.p[cell];
-    Markers.place(x, y, "ruins", {
-      name: `Ruins of ${this.properRealm(realm)}`,
-      note: `Once the seat of the ${realm.name}, which fell in ${realm.fallen}.`
-    });
+  /** the invented realm's remains, by the same method the epochs use: the seat and a share of its burgs */
+  private placeRealmRemains(realm: Realm): void {
+    const inside = new Set(realm.successors);
+    const territory: number[] = [];
+    for (const cellId of pack.cells.i) {
+      if (inside.has(pack.cells.state[cellId])) territory.push(cellId);
+    }
+    this.placeFallRemains(
+      { name: this.properRealm(realm), capital: realm.capital, center: realm.center, fallen: realm.fallen },
+      territory
+    );
   }
 
   /** the realm's story, carried by the entities it explains */
@@ -679,19 +691,23 @@ class ChronicleModel {
     for (const polity of polities) {
       const epoch = lastSeen.get(polity.id);
       if (polity.fallen === undefined || epoch === undefined) continue;
-      this.placeFallRemains(polity, snapshots[epoch]);
+      const territory: number[] = [];
+      const snapshot = snapshots[epoch];
+      for (let cell = 0; cell < snapshot.length; cell++) {
+        if (snapshot[cell] === polity.id) territory.push(cell);
+      }
+      this.placeFallRemains(
+        { name: polity.name, capital: polity.capital, center: territory[0], fallen: polity.fallen },
+        territory
+      );
     }
   }
 
   /** the ruins slider's five steps, min to numerous: how far below sqrt(cells) a polity's extra ruins reach; 0 leaves the capital alone */
   private static readonly RUINS_DIVISORS = [0, 16, 8, 4, 2];
 
-  /** a fallen polity's remains: its capital always, plus a size-scaled share of its other burgs */
-  private placeFallRemains(polity: EpochPolity, snapshot: Uint16Array): void {
-    const territory: number[] = [];
-    for (let cell = 0; cell < snapshot.length; cell++) {
-      if (snapshot[cell] === polity.id) territory.push(cell);
-    }
+  /** a fallen realm's remains: its capital always, plus a size-scaled share of its other burgs */
+  private placeFallRemains(subject: FallSubject, territory: number[]): void {
     if (!territory.length) return;
 
     const living = (cell: number): Burg | undefined => {
@@ -701,34 +717,35 @@ class ChronicleModel {
     const bySize = (a: Burg, b: Burg) => (b.population ?? 0) - (a.population ?? 0);
 
     const survivors = territory.map(living).filter((burg): burg is Burg => Boolean(burg));
-    const seat = survivors.find(burg => burg.i === polity.capital) ?? [...survivors].sort(bySize)[0];
-    if (seat) this.placeFall(seat, polity, true);
+    const seat = survivors.find(burg => burg.i === subject.capital) ?? [...survivors].sort(bySize)[0];
+    if (seat) this.placeSeatMarker(seat.cell, subject);
+    else if (subject.center !== undefined) this.placeSeatMarker(subject.center, subject);
 
     // the provinces fall with it: a random share, drawn from the greater towns
     const divisor = ChronicleModel.RUINS_DIVISORS[options.map.lore.history.ruins - 1] ?? 8;
     if (!divisor) return; // the slider's minimum: the capital alone
     const pool = survivors.filter(burg => burg !== seat).sort(bySize);
     pool.length = Math.min(pool.length, Math.ceil(pool.length * 0.6));
-    let wants = rand(0, 1 + Math.floor(Math.sqrt(polity.cells) / divisor));
+    let wants = rand(0, 1 + Math.floor(Math.sqrt(territory.length) / divisor));
     while (wants > 0 && pool.length) {
       const [burg] = pool.splice(rand(0, pool.length - 1), 1);
       if (pack.markers.some(marker => marker.cell === burg.cell)) continue; // a burg hosts one marker
-      this.placeFall(burg, polity, false);
+      this.placeBurgMarker(burg, subject);
       wants--;
     }
   }
 
-  /** one fall marker over a burg: the seat's names the polity, a province's the burg */
-  private placeFall(burg: Burg, polity: EpochPolity, seat: boolean): void {
-    const [x, y] = pack.cells.p[burg.cell];
-    const year = polity.fallen ?? 0;
-    if (seat) {
-      const type = P(0.25) ? "necropolises" : "ruins";
-      const name = type === "ruins" ? `Ruins of ${polity.name}` : `${polity.name} ${rw(NECROPOLIS_TYPES)}`;
-      Markers.place(x, y, type, { name, note: ra(FALLEN_CAPITAL_TEMPLATES)(polity.name, year) });
-      return;
-    }
+  /** the fallen's seat marker: usually ruins, sometimes a necropolis */
+  private placeSeatMarker(cell: number, subject: FallSubject): void {
+    const [x, y] = pack.cells.p[cell];
+    const type = P(0.25) ? "necropolises" : "ruins";
+    const name = type === "ruins" ? `Ruins of ${subject.name}` : `${subject.name} ${rw(NECROPOLIS_TYPES)}`;
+    Markers.place(x, y, type, { name, note: ra(FALLEN_CAPITAL_TEMPLATES)(subject.name, subject.fallen) });
+  }
 
+  /** a fallen province marker over a burg: ruins, a necropolis, or worse */
+  private placeBurgMarker(burg: Burg, subject: FallSubject): void {
+    const [x, y] = pack.cells.p[burg.cell];
     const fantasy = options.map.cultures.set.includes("Fantasy");
     const type = rw(fantasy ? { ruins: 55, necropolises: 30, "disturbed-burials": 15 } : { ruins: 65, necropolises: 35 });
     const name =
@@ -737,7 +754,7 @@ class ChronicleModel {
         : type === "necropolises"
           ? `${burg.name} ${rw(NECROPOLIS_TYPES)}`
           : `Disturbed Burial of ${burg.name}`;
-    Markers.place(x, y, type, { name, note: ra(FALLEN_BURG_TEMPLATES)(burg.name!, polity.name, year) });
+    Markers.place(x, y, type, { name, note: ra(FALLEN_BURG_TEMPLATES)(burg.name!, subject.name, subject.fallen) });
   }
 
   /** the realm's name without its form word: "Vhælen Empire" -> "Vhælen" */
