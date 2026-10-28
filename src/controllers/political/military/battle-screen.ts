@@ -629,6 +629,7 @@ function addSide(): void {
     width: "fit-content",
     title: t("Add regiment to the battle"),
     position: { my: "left center", at: "right+10 center", of: "#battleScreen" },
+    persistent: true, // markup is built with the battle screen, so it must survive closing
     onClose: addSideClosed,
     buttons: [
       { label: t("Add to attackers"), onClick: () => addSideClicked("attackers") },
