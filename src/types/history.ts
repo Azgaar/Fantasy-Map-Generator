@@ -15,6 +15,7 @@ export type HistoryEventType =
   | "founding"
   | "war"
   | "battle"
+  | "conquest"
   | "collapse"
   | "schism"
   | "migration"

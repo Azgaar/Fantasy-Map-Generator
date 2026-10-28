@@ -1,14 +1,31 @@
 // Living World seasonal simulation engine. See docs/plans/living-world.md
 import { currentContent } from "@/conquest/content/store";
-import { assignStateRoster, type BuildingDef, MEN_PER_BLOCK, type UnitType } from "@/conquest/engine/common/content";
-import type { CapacityPoints } from "@/conquest/engine/common/types";
+import {
+  assignStateRoster,
+  type BuildingDef,
+  inferRosterForCulture,
+  MEN_PER_BLOCK,
+  type ResolvedRoster,
+  type UnitType
+} from "@/conquest/engine/common/content";
+import type { ArmyUnit, CapacityPoints } from "@/conquest/engine/common/types";
 import { REGION_TIER_STEPS, SETTLEMENT_TIER_STEPS } from "@/conquest/engine/compiler";
+import {
+  type BattleModifiers,
+  type BattleOutcome,
+  estimateOdds,
+  finalizeBattle,
+  initBattleSession,
+  stepBattleRound
+} from "@/conquest/engine/game/battle";
 import { assetCheckDifficulties, valueModifier } from "@/conquest/engine/game/saves";
+import { garrisonUnits, minorGarrisonUnits } from "@/conquest/engine/game/units";
 import { rollAlignment, rollFigureTraits, traitsRng } from "@/data/culture-traits";
-import type { HistoricalFigure } from "@/types/history";
+import type { HistoricalFigure, HistoryEventType, HistRef } from "@/types/history";
 import {
   type BurgSimState,
   type CapacityLedger,
+  type GrudgeReason,
   type LivingNewsItem,
   type LivingNewsKind,
   type LivingWorldState,
@@ -24,7 +41,7 @@ import { Chronicle } from "./history-generator";
 import { Military, type Regiment, reconcileRegimentBlocks, syncRegimentTotals } from "./military-generator";
 import { Names } from "./names-generator";
 import type { Province } from "./provinces-generator";
-import type { State } from "./states-generator";
+import { type State, States } from "./states-generator";
 
 const MAX_RECENT_NEWS = 50;
 
@@ -518,6 +535,7 @@ class LivingModel {
       const isGarrisoned = (ownerState.military ?? []).some(reg => reg.cell === burg.cell && reg.a > 0);
       if (isGarrisoned) decay += 1;
       if (bSim.buildings.some(id => id.startsWith("temple"))) decay += 1;
+      if (living.states[ownerState.i]?.agenda?.kind === "pacify") decay += 1;
 
       bSim.unrest = Math.max(0, bSim.unrest - decay);
     }
@@ -628,6 +646,396 @@ class LivingModel {
       burgId: burg?.i
     });
     return true;
+  }
+
+  /** Annex a Free Burg: peacefully when it shares the state's culture or faith, else by assault. */
+  colonize(stateId: number, burgId: number): boolean {
+    const state = pack.states[stateId];
+    const burg = pack.burgs[burgId];
+    if (!state?.i || state.removed || !burg?.i || burg.removed || burg.state !== 0) return false;
+
+    if (this.sharesKinshipOrFaith(stateId, burgId)) {
+      this.annexBurg(stateId, burg, false);
+      this.logConquest(state, burg, false);
+      return true;
+    }
+    return this.assaultBurg(state, burg);
+  }
+
+  /** Declare war on a rival and storm one of its border burgs. */
+  conquerBurg(stateId: number, burgId: number): boolean {
+    const state = pack.states[stateId];
+    const burg = pack.burgs[burgId];
+    if (!state?.i || state.removed || !burg?.i || burg.removed) return false;
+
+    const defenderId = burg.state;
+    if (!defenderId || defenderId === stateId) return false;
+    if (!pack.states[defenderId]?.i || pack.states[defenderId].removed || burg.capital) return false;
+    if (!this.bordersState(stateId, burg)) return false;
+
+    if (!this.isAtWar(stateId, defenderId)) this.declareWar(stateId, defenderId);
+    if (!this.assaultBurg(state, burg)) return false;
+
+    this.removeClaim(stateId, burg.i);
+    this.recordClaim(defenderId, burg, stateId);
+    this.recordGrudge(defenderId, burg, "conquest", `${state.name} took ${burg.name}`, stateId);
+    return true;
+  }
+
+  /** Retake a burg recorded on the state's claim list. */
+  reclaimBurg(stateId: number, burgId: number): boolean {
+    const sSim = this.getState().states[stateId];
+    const burg = pack.burgs[burgId];
+    if (!sSim || !burg?.i || burg.removed || !burg.state || burg.state === stateId) return false;
+    if (!sSim.claims.some(claim => claim.burgId === burgId)) return false;
+
+    const defenderId = burg.state;
+    if (!this.isAtWar(stateId, defenderId)) this.declareWar(stateId, defenderId);
+    if (!this.assaultBurg(pack.states[stateId], burg)) return false;
+
+    sSim.claims = sSim.claims.filter(claim => claim.burgId !== burgId);
+    this.recordClaim(defenderId, burg, stateId);
+    return true;
+  }
+
+  /** Strongest land regiment with living troops, reconciling legacy compositions on the way. */
+  private fieldArmy(state: State): Regiment | null {
+    const unitTypes = Military.getUnitTypes();
+    let best: Regiment | null = null;
+    let bestMen = 0;
+    for (const regiment of state.military ?? []) {
+      if (regiment.n) continue;
+      if (!regiment.units?.length) reconcileRegimentBlocks(regiment, unitTypes);
+      const men = (regiment.units ?? []).reduce((sum, unit) => sum + Math.max(0, unit.count), 0);
+      if (men > bestMen) {
+        best = regiment;
+        bestMen = men;
+      }
+    }
+    return best;
+  }
+
+  /** Attack a settlement with the state's strongest field regiment. */
+  private assaultBurg(state: State, burg: Burg): boolean {
+    const army = this.fieldArmy(state);
+    if (!army) return false;
+
+    const defenders = this.burgDefenders(burg);
+    if (defenders.length === 0) {
+      this.annexBurg(state.i, burg, false);
+      this.moveArmy(army, burg);
+      this.logConquest(state, burg, true);
+      return true;
+    }
+
+    const outcome = this.resolveAssault(state.i, burg, army, defenders);
+    this.applyArmySurvivors(state, army, outcome.attacker.units);
+    this.addBattleMarker(burg);
+
+    if (outcome.winner === "attacker") {
+      this.annexBurg(state.i, burg, true);
+      if (army.a > 0) this.moveArmy(army, burg);
+      this.logConquest(state, burg, true);
+      return true;
+    }
+
+    this.recordGrudge(state.i, burg, "repulsed", `${burg.name} repulsed ${state.name}`);
+    this.pushNews(this.getState(), {
+      kind: "resist",
+      text: `${burg.name ?? "The free town"} repulsed ${state.name}'s assault.`,
+      cell: burg.cell,
+      stateId: state.i,
+      burgId: burg.i
+    });
+    this.pushHistory(
+      "battle",
+      [
+        { kind: "state", id: state.i },
+        { kind: "burg", id: burg.i }
+      ],
+      burg.cell,
+      `${burg.name ?? "The free town"} repulsed ${state.name}'s assault.`
+    );
+    return false;
+  }
+
+  private resolveAssault(stateId: number, burg: Burg, army: Regiment, defenders: ArmyUnit[]): BattleOutcome {
+    const { config } = currentContent();
+    const session = initBattleSession({
+      config,
+      unitTypes: Military.getUnitTypes(),
+      attacker: { factionId: stateId, armyId: null, units: army.units ?? [] },
+      defender: { factionId: burg.state ?? 0, armyId: null, units: defenders },
+      cell: burg.cell,
+      regionId: pack.cells.province?.[burg.cell] ?? 0,
+      assault: Number(burg.walls ?? 0) > 0,
+      modifiers: this.assaultModifiers(burg)
+    });
+    const rng = this.rng("battle", stateId * 10000 + burg.i);
+    while (session.status === "active" && session.round < config.battle.maxRounds) {
+      stepBattleRound(session, rng.next);
+    }
+    return finalizeBattle(session, rng.next);
+  }
+
+  private assaultModifiers(burg: Burg): BattleModifiers {
+    return {
+      walls: Number(burg.walls ?? 0),
+      defenderEncamped: false,
+      defenderAmbushed: false,
+      attackerCrossedRiver: Boolean(pack.cells.r?.[burg.cell]),
+      labels: [`${burg.name ?? "settlement"} (walls ${burg.walls ?? 0})`]
+    };
+  }
+
+  /** Win chance for the AI's war picking; 100 when the settlement is undefended. */
+  private assaultOdds(stateId: number, burg: Burg, army: Regiment): number {
+    const defenders = this.burgDefenders(burg);
+    if (defenders.length === 0) return 100;
+    return estimateOdds(
+      currentContent().config,
+      { factionId: stateId, armyId: null, units: army.units ?? [] },
+      { factionId: burg.state ?? 0, armyId: null, units: defenders },
+      this.assaultModifiers(burg),
+      Military.getUnitTypes()
+    ).attackerWinPct;
+  }
+
+  /** The burg's roster and its Conquest militia garrison. */
+  private burgDefenders(burg: Burg): ArmyUnit[] {
+    const roster = this.burgDefenderRoster(burg);
+    const unitTypes = Military.getUnitTypes();
+    if (!roster) return [];
+    const tier = settlementTierFromPop(burg.population ?? 0);
+    const walls = Number(burg.walls ?? 0);
+    return burg.capital ? garrisonUnits(roster, unitTypes, walls) : minorGarrisonUnits(roster, unitTypes, tier, walls);
+  }
+
+  private burgDefenderRoster(burg: Burg): ResolvedRoster | undefined {
+    if (burg.state) {
+      const owner = pack.states[burg.state];
+      if (owner?.i && !owner.removed) return Military.getRoster(owner);
+    }
+    const { content } = currentContent();
+    const culture = pack.cultures?.[burg.culture ?? 0];
+    const rosterId = inferRosterForCulture(culture?.name, content.rosters, content.defaultRoster, culture?.type);
+    return content.rosters[rosterId] ?? content.rosters[content.defaultRoster] ?? Object.values(content.rosters)[0];
+  }
+
+  private applyArmySurvivors(state: State, regiment: Regiment, units: ArmyUnit[]): void {
+    regiment.units = units.filter(unit => unit.count > 0).map(unit => ({ ...unit }));
+    syncRegimentTotals(regiment, Military.getUnitTypes());
+    if (regiment.a <= 0) state.military = (state.military ?? []).filter(entry => entry !== regiment);
+  }
+
+  private moveArmy(regiment: Regiment, burg: Burg): void {
+    regiment.cell = burg.cell;
+    regiment.x = burg.x;
+    regiment.y = burg.y;
+    regiment.bx = burg.x;
+    regiment.by = burg.y;
+  }
+
+  /** Flip the burg and its hinterland to the state and seed occupation unrest. */
+  private annexBurg(stateId: number, burg: Burg, restless: boolean): void {
+    const cells = this.burgHinterland(burg);
+    this.transferCells(stateId, cells);
+    burg.state = stateId;
+    this.assignProvince(stateId, cells);
+
+    const bSim = this.getState().burgs[burg.i];
+    if (!bSim) return;
+    bSim.originalCulture ??= burg.culture;
+    bSim.originalReligion ??= pack.cells.religion?.[burg.cell] ?? 0;
+    bSim.conqueredBy = restless ? stateId : undefined;
+    bSim.unrest = restless ? this.initialUnrest(stateId, burg) : 0;
+  }
+
+  /** The burg cell plus adjacent cells of the same (wild or defending) owner. */
+  private burgHinterland(burg: Burg): number[] {
+    const from = burg.state ?? 0;
+    const cells = [burg.cell];
+    const burgCells = new Set<number>();
+    for (const entry of pack.burgs ?? []) {
+      if (entry?.i && !entry.removed) burgCells.add(entry.cell);
+    }
+    const centers = new Set<number>();
+    for (const state of pack.states ?? []) {
+      if (state?.i && !state.removed) centers.add(state.center);
+    }
+
+    for (const neighbor of pack.cells.c?.[burg.cell] ?? []) {
+      if (pack.cells.state?.[neighbor] !== from) continue;
+      if (pack.cells.h && pack.cells.h[neighbor] < 20) continue;
+      if (burgCells.has(neighbor) || centers.has(neighbor)) continue;
+      cells.push(neighbor);
+    }
+    return cells;
+  }
+
+  /** Prefer the state's own SetCells (provinces, statistics); fall back on stripped packs. */
+  private transferCells(stateId: number, cells: number[]): void {
+    if (cells.length === 0) return;
+    try {
+      States.setCells(stateId, cells);
+      return;
+    } catch {
+      // Stub packs (tests, stripped saves) have no full grid to validate against.
+    }
+    for (const cell of cells) {
+      if (pack.cells.state[cell] === stateId) continue;
+      pack.cells.state[cell] = stateId;
+      const burgId = pack.cells.burg?.[cell];
+      if (burgId) pack.burgs[burgId].state = stateId;
+    }
+  }
+
+  /** Put annexed cells in an adjacent province of the conquering state, if it has one. */
+  private assignProvince(stateId: number, cells: number[]): void {
+    let provinceId = 0;
+    for (const cell of cells) {
+      for (const neighbor of pack.cells.c?.[cell] ?? []) {
+        const candidate = pack.cells.province?.[neighbor] ?? 0;
+        if (candidate && pack.provinces?.[candidate]?.state === stateId) {
+          provinceId = candidate;
+          break;
+        }
+      }
+      if (provinceId) break;
+    }
+    if (!provinceId) return;
+    for (const cell of cells) pack.cells.province[cell] = provinceId;
+  }
+
+  private initialUnrest(stateId: number, burg: Burg): number {
+    const tier = settlementTierFromPop(burg.population ?? 0);
+    const rulerId = this.getState().states[stateId]?.rulerId;
+    const alignment = pack.history?.figures?.find(figure => figure.i === rulerId)?.alignment;
+    const cruelty = alignment === "evil" ? 4 : alignment === "chaotic" ? 2 : 0;
+    return minmax(8 + tier + cruelty, 8, 16);
+  }
+
+  private bordersState(stateId: number, burg: Burg): boolean {
+    return (pack.cells.c?.[burg.cell] ?? []).some(cell => pack.cells.state?.[cell] === stateId);
+  }
+
+  private isAtWar(stateId: number, otherId: number): boolean {
+    return pack.states[stateId]?.diplomacy?.[otherId] === "Enemy";
+  }
+
+  private declareWar(stateId: number, otherId: number): void {
+    const subject = pack.states[stateId];
+    const object = pack.states[otherId];
+    if (!subject?.i || subject.removed || !object?.i || object.removed) return;
+
+    subject.diplomacy ??= [];
+    object.diplomacy ??= [];
+    subject.diplomacy[otherId] = "Enemy";
+    object.diplomacy[stateId] = "Enemy";
+
+    const text = `${subject.name} declared war on ${object.name}.`;
+    this.pushNews(this.getState(), {
+      kind: "war",
+      text,
+      cell: object.center,
+      stateId,
+      burgId: object.capital
+    });
+    this.pushHistory(
+      "war",
+      [
+        { kind: "state", id: stateId },
+        { kind: "state", id: otherId }
+      ],
+      object.center,
+      text
+    );
+  }
+
+  private logConquest(state: State, burg: Burg, forced: boolean): void {
+    const text = forced
+      ? `${state.name} stormed ${burg.name ?? "a settlement"} and annexed it.`
+      : `${state.name} peacefully annexed ${burg.name ?? "a free settlement"}.`;
+    this.pushNews(this.getState(), {
+      kind: forced ? "conquest" : "colonize",
+      text,
+      cell: burg.cell,
+      stateId: state.i,
+      burgId: burg.i
+    });
+    this.pushHistory(
+      "conquest",
+      [
+        { kind: "state", id: state.i },
+        { kind: "burg", id: burg.i }
+      ],
+      burg.cell,
+      text
+    );
+  }
+
+  private recordClaim(stateId: number, burg: Burg, heldByStateId: number): void {
+    const sSim = this.getState().states[stateId];
+    if (!sSim || stateId === heldByStateId) return;
+    sSim.claims = sSim.claims.filter(claim => claim.burgId !== burg.i);
+    sSim.claims.push({
+      provinceId: pack.cells.province?.[burg.cell] || undefined,
+      burgId: burg.i,
+      lostYear: options.map.lore.calendar.year,
+      heldByStateId
+    });
+  }
+
+  private removeClaim(stateId: number, burgId: number): void {
+    const sSim = this.getState().states[stateId];
+    if (sSim) sSim.claims = sSim.claims.filter(claim => claim.burgId !== burgId);
+  }
+
+  private recordGrudge(
+    stateId: number,
+    burg: Burg,
+    reason: GrudgeReason,
+    summary: string,
+    againstStateId?: number
+  ): void {
+    const sSim = this.getState().states[stateId];
+    if (!sSim) return;
+    sSim.grudges.push({
+      id: sSim.grudges.length,
+      againstStateId,
+      targetBurgId: burg.i,
+      reason,
+      year: options.map.lore.calendar.year,
+      weight: 2,
+      summary
+    });
+  }
+
+  private addBattleMarker(burg: Burg): void {
+    pack.markers ??= [];
+    const markers = pack.markers;
+    markers.push({
+      i: markers.length,
+      type: "battlefields",
+      icon: "⚔️",
+      x: burg.x,
+      y: burg.y,
+      cell: burg.cell,
+      name: `Battle of ${burg.name ?? "the wilds"}`
+    });
+  }
+
+  private pushHistory(type: HistoryEventType, actors: HistRef[], cell: number | undefined, text: string): void {
+    const history = Chronicle.sync();
+    history.events ??= [];
+    history.events.push({
+      i: history.events.length,
+      year: options.map.lore.calendar.year,
+      type,
+      actors,
+      loc: cell,
+      text
+    });
   }
 
   /** Development cap for a province: floor(average biome habitability / growthPerHabitability). */
@@ -880,12 +1288,125 @@ class LivingModel {
     return undefined;
   }
 
+  /** War options: press an ongoing war, retake a claim, absorb a free burg, or expand. */
+  private warAgenda(state: State, sSim: StatePolitySim): StateAgenda | null {
+    const army = this.fieldArmy(state);
+    const target = army ? this.pickWarTarget(state, army) : null;
+    if (target) return this.conquerAgenda(target);
+
+    const reclaim = army ? this.pickReclaimTarget(state, sSim, army) : null;
+    if (reclaim && this.rng("agenda:reclaim", state.i).chance(0.6)) {
+      return {
+        kind: "reclaim",
+        label: `Reclaiming ${reclaim.name ?? "a burg"}`,
+        targetBurgId: reclaim.i,
+        progress: 0,
+        required: 1
+      };
+    }
+
+    const free = this.pickFreeBurgTarget(state, army);
+    if (free && this.rng("agenda:colonize", state.i).chance(0.4)) {
+      return {
+        kind: "colonize",
+        label: `Colonizing ${free.name ?? "a free town"}`,
+        targetBurgId: free.i,
+        progress: 0,
+        required: 1
+      };
+    }
+
+    const neighbour = army ? this.pickConquerTarget(state, army) : null;
+    if (neighbour && this.rng("agenda:conquer", state.i).chance(0.25)) return this.conquerAgenda(neighbour);
+    return null;
+  }
+
+  private conquerAgenda(burg: Burg): StateAgenda {
+    return {
+      kind: "conquer",
+      label: `Attacking ${burg.name ?? "a burg"}`,
+      targetBurgId: burg.i,
+      targetStateId: burg.state,
+      progress: 0,
+      required: 1
+    };
+  }
+
+  /** Best defended border burg of a state already at war. */
+  private pickWarTarget(state: State, army: Regiment): Burg | null {
+    return this.pickAssaultTarget(
+      state,
+      army,
+      burg => this.isAtWar(state.i, burg.state ?? 0) && this.bordersState(state.i, burg),
+      50
+    );
+  }
+
+  /** Best border burg of a neighbour the state has not fought yet. */
+  private pickConquerTarget(state: State, army: Regiment): Burg | null {
+    return this.pickAssaultTarget(
+      state,
+      army,
+      burg => !this.isAtWar(state.i, burg.state ?? 0) && this.bordersState(state.i, burg),
+      50
+    );
+  }
+
+  private pickAssaultTarget(
+    state: State,
+    army: Regiment,
+    accept: (burg: Burg) => boolean,
+    minOdds: number
+  ): Burg | null {
+    let best: Burg | null = null;
+    let bestOdds = 0;
+    for (const burg of pack.burgs) {
+      if (!burg?.i || burg.removed || !burg.state || burg.state === state.i || burg.capital) continue;
+      if (!accept(burg)) continue;
+      const odds = this.assaultOdds(state.i, burg, army);
+      if (odds < minOdds || odds <= bestOdds) continue;
+      best = burg;
+      bestOdds = odds;
+    }
+    return best;
+  }
+
+  /** A burg on the state's claim list still held by its conqueror. */
+  private pickReclaimTarget(state: State, sSim: StatePolitySim, army: Regiment): Burg | null {
+    let best: Burg | null = null;
+    let bestOdds = 0;
+    for (const claim of sSim.claims) {
+      const burg = pack.burgs[claim.burgId];
+      if (!burg?.i || burg.removed || !burg.state || burg.state !== claim.heldByStateId) continue;
+      if (burg.state === state.i) continue;
+      const odds = this.assaultOdds(state.i, burg, army);
+      if (odds < 45 || odds <= bestOdds) continue;
+      best = burg;
+      bestOdds = odds;
+    }
+    return best;
+  }
+
+  /** Adjacent Free Burg: kin or co-religionists always, strangers only if the army can win. */
+  private pickFreeBurgTarget(state: State, army: Regiment | null): Burg | null {
+    for (const burg of pack.burgs) {
+      if (!burg?.i || burg.removed || burg.state !== 0) continue;
+      if (!this.bordersState(state.i, burg)) continue;
+      if (this.sharesKinshipOrFaith(state.i, burg.i)) return burg;
+      if (army && this.assaultOdds(state.i, burg, army) >= 50) return burg;
+    }
+    return null;
+  }
+
   private chooseAgenda(state: State, sSim: StatePolitySim, living: LivingWorldState): StateAgenda | null {
     const capacityConfig = currentContent().config.capacity;
-    const hasFieldArmy = (state.military ?? []).some(regiment => (regiment.a ?? 0) > 0);
+    const hasFieldArmy = this.fieldArmy(state) !== null;
     if (!hasFieldArmy && this.pickMusterUnit(state)) {
       return { kind: "muster", label: "Mustering troops", progress: 0, required: 1 };
     }
+
+    const war = this.warAgenda(state, sSim);
+    if (war) return war;
 
     const provinceId = this.pickDevelopProvince(state.i, sSim, living);
     if (provinceId !== undefined) {
@@ -941,6 +1462,21 @@ class LivingModel {
       case "muster": {
         if (this.muster(state.i)) agenda.progress = Math.min(agenda.required, agenda.progress + 1);
         if (agenda.progress >= agenda.required) sSim.agenda = null;
+        return;
+      }
+      case "colonize": {
+        if (agenda.targetBurgId !== undefined) this.colonize(state.i, agenda.targetBurgId);
+        sSim.agenda = null;
+        return;
+      }
+      case "conquer": {
+        if (agenda.targetBurgId !== undefined) this.conquerBurg(state.i, agenda.targetBurgId);
+        sSim.agenda = null;
+        return;
+      }
+      case "reclaim": {
+        if (agenda.targetBurgId !== undefined) this.reclaimBurg(state.i, agenda.targetBurgId);
+        sSim.agenda = null;
         return;
       }
       default:
@@ -1060,6 +1596,17 @@ class LivingModel {
   /** Step province order and stability. */
   private stepProvinces(living: LivingWorldState): void {
     const { config } = currentContent();
+    const unrestByProvince = new Map<number, number>();
+    for (const key of Object.keys(living.burgs)) {
+      const bSim = living.burgs[Number(key)];
+      if (!bSim || bSim.unrest <= 0) continue;
+      const burg = pack.burgs[bSim.burgId];
+      if (!burg?.i || burg.removed || !burg.state) continue;
+      const provinceId = pack.cells.province?.[burg.cell] ?? 0;
+      if (!provinceId) continue;
+      unrestByProvince.set(provinceId, (unrestByProvince.get(provinceId) ?? 0) + bSim.unrest);
+    }
+
     for (const province of pack.provinces ?? []) {
       if (!province?.i || province.removed) continue;
       const pSim = living.provinces[province.i];
@@ -1073,6 +1620,10 @@ class LivingModel {
       } else {
         pSim.order = Math.max(config.economy.startOrder, pSim.order - 1);
       }
+
+      const unrest = unrestByProvince.get(province.i) ?? 0;
+      if (unrest > 0) pSim.order = Math.max(0, pSim.order - Math.round((15 * unrest) / 12));
+      pSim.order = minmax(pSim.order, 0, 100);
     }
   }
 

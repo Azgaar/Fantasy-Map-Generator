@@ -9,7 +9,7 @@ import {
   syncBurgFlagsFromBuildings
 } from "./living-generator";
 
-describe("Living (Slices 1-2: Data Model, Seasonal Tick, Capacity & Projects)", () => {
+describe("Living (Slices 1-3: Data Model, Seasonal Tick, Capacity, Projects & War)", () => {
   beforeEach(() => {
     globalThis.options = {
       map: {
@@ -348,5 +348,93 @@ describe("Living (Slices 1-2: Data Model, Seasonal Tick, Capacity & Projects)", 
     expect(regiment.units!.length).toBe(slotsBefore + 1);
     expect(regiment.a).toBeGreaterThan(0);
     expect(living.recentNews[0].kind).toBe("muster");
+  });
+
+  it("annexes a kin Free Burg peacefully with no unrest", () => {
+    const living = Living.init();
+
+    expect(Living.colonize(1, 3)).toBe(true);
+
+    expect(pack.burgs[3].state).toBe(1);
+    expect(pack.cells.state[4]).toBe(1);
+    expect(living.burgs[3].unrest).toBe(0);
+    expect(living.burgs[3].conqueredBy).toBeUndefined();
+    expect(living.recentNews[0]).toMatchObject({ kind: "colonize", burgId: 3 });
+  });
+
+  it("storms a resisting Free Burg and applies occupation unrest", () => {
+    const living = Living.init();
+    const army = pack.states[1].military![0];
+    army.units = [{ type: "spear", count: 2000, exp: 0 }];
+    army.a = 2000;
+    pack.cells.province[5] = 1;
+    living.provinces[1].order = 80;
+
+    expect(Living.colonize(1, 4)).toBe(true);
+
+    expect(pack.burgs[4].state).toBe(1);
+    expect(pack.cells.state[5]).toBe(1);
+    expect(living.burgs[4].unrest).toBeGreaterThanOrEqual(8);
+    expect(living.burgs[4].conqueredBy).toBe(1);
+    expect(living.recentNews[0]).toMatchObject({ kind: "conquest", burgId: 4 });
+
+    Living.tick(1);
+    expect(living.provinces[1].order).toBeLessThan(80);
+  });
+
+  it("repulses a weak assault and records a grudge", () => {
+    const living = Living.init();
+    const army = pack.states[1].military![0];
+    army.units = [{ type: "spear", count: 10, exp: 0 }];
+    army.a = 10;
+
+    expect(Living.colonize(1, 4)).toBe(false);
+
+    expect(pack.burgs[4].state).toBe(0);
+    expect(pack.cells.state[5]).toBe(0);
+    expect(living.states[1].grudges).toEqual(
+      expect.arrayContaining([expect.objectContaining({ reason: "repulsed", targetBurgId: 4 })])
+    );
+    expect(living.recentNews[0].kind).toBe("resist");
+  });
+
+  it("declares war, records a claim, and lets the loser reclaim its burg", () => {
+    const living = Living.init();
+    pack.burgs[2].capital = 0;
+    const army = pack.states[1].military![0];
+    army.units = [{ type: "spear", count: 2000, exp: 0 }];
+    army.a = 2000;
+
+    expect(Living.conquerBurg(1, 2)).toBe(true);
+
+    expect(pack.burgs[2].state).toBe(1);
+    expect(pack.states[1].diplomacy?.[2]).toBe("Enemy");
+    expect(pack.states[2].diplomacy?.[1]).toBe("Enemy");
+    expect(living.states[2].claims).toEqual(
+      expect.arrayContaining([expect.objectContaining({ burgId: 2, heldByStateId: 1 })])
+    );
+
+    pack.states[2].military = [
+      {
+        i: 0,
+        a: 2000,
+        cell: 3,
+        x: 30,
+        y: 30,
+        bx: 30,
+        by: 30,
+        u: { spear: 2000 },
+        units: [{ type: "spear", count: 2000, exp: 0 }],
+        n: 0,
+        name: "2nd Khazadia Regiment",
+        state: 2,
+        icon: "⚔️"
+      }
+    ];
+
+    expect(Living.reclaimBurg(2, 2)).toBe(true);
+
+    expect(pack.burgs[2].state).toBe(2);
+    expect(living.states[2].claims.some(claim => claim.burgId === 2)).toBe(false);
   });
 });
