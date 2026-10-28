@@ -509,6 +509,12 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => confirmRegeneration(regenerateGoods)
   },
   {
+    id: "regenerateHistory",
+    name: "Regenerate History",
+    aliases: "generate chronicle events eras figures",
+    run: () => confirmRegeneration(regenerateHistory)
+  },
+  {
     id: "regenerateMarkets",
     name: "Regenerate Markets",
     aliases: "generate economy",
@@ -803,6 +809,11 @@ function regenerateBurgs(): void {
 function regenerateGoods(): void {
   Goods.regenerate();
   Layers.draw("goods");
+}
+
+function regenerateHistory(): void {
+  Chronicle.generate();
+  refreshEditors();
 }
 
 function regenerateMarkets(): void {

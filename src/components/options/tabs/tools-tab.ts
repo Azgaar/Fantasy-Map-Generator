@@ -118,6 +118,7 @@ const TEMPLATE = /* html */ `
     </button>
     <button id="regenerateEmblems" data-tip="Click to regenerate all emblems">Emblems</button>
     <button id="regenerateGoods" data-tip="Click to regenerate bonus goods placement">Goods</button>
+    <button id="regenerateHistory" data-tip="Regenerate the chronicle: events, eras and figures. Required after changing the history mode in Set Lore">History</button>
     <button id="regenerateIce" data-tip="Click to regenerate icebergs and glaciers">Ice</button>
     <button
       id="regenerateStateLabels"
