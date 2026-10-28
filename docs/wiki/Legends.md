@@ -28,5 +28,7 @@ The download button saves the chronicle as a plain text file, one event per line
 ### Where the chronicle comes from
 The chronicle is generated with the world, not simulated over centuries: the generator inspects the finished map and dates what it finds — the founding of every state, the wars in the states' campaign lists, the vassalages, the splits in the culture and religion trees — then weaves in the configured number of fallen empires whose partition explains the current borders, and remembers dynasties and generals where the story needs people. In the epochs mode the political past is generated for real instead, one layer per age, and the timeline's year slider can show it. See [History](History) for both modes.
 
+The optional [Living World](https://github.com/0xPaladin/Fantasy-Map-Generator/wiki/Living-World) simulation keeps extending the same chronicle as you step seasons, and its periodic border snapshots become the time slider's past epochs.
+
 ### Settings
 _Options_ → _Map settings_ → _Set Lore_ has a history section: the history mode, how many years back the chronicle reaches, how many fallen empires to weave in, how dense the event log is, whether the fallen empires leave ruins and battlefields on the map, and whether a successor state may inherit the fallen empire's name. Run _Tools_ → _Regenerate_ → _History_ to apply the changes; see [History](History#set-lore-controls).

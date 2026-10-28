@@ -47,6 +47,7 @@ const EVENT_ICONS: Record<HistoryEventType, string> = {
   founding: "🏛️",
   war: "⚔️",
   battle: "🛡️",
+  conquest: "🚩",
   collapse: "🏚️",
   schism: "✝️",
   migration: "🧭",
