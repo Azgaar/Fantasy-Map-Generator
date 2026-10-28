@@ -42,6 +42,7 @@ export const Controllers = createRegistry({
   LabelsOverview: () => import("@/controllers/labels-overview").then(m => m.LabelsOverview),
   LakesEditor: () => import("@/controllers/lakes-editor").then(m => m.LakesEditor),
   LegendsOverview: () => import("@/controllers/history-overview").then(m => m.LegendsOverview),
+  LivingHud: () => import("@/controllers/living-hud").then(m => m.LivingHud),
   LoreEditor: () => import("@/controllers/lore-editor").then(m => m.LoreEditor),
   MarkersEditor: () => import("@/controllers/markers-editor").then(m => m.MarkersEditor),
   MarkersSettings: () => import("@/controllers/markers-settings").then(m => m.MarkersSettings),

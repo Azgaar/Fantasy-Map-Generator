@@ -579,6 +579,69 @@ describe("Living (Slices 1-4: Data Model, Seasonal Tick, Capacity, Projects, War
     expect(living.states[1].agenda).toBeNull();
   });
 
+  it("smites a ruler and plays out the succession", () => {
+    const living = Living.init();
+    const rulerId = living.states[1].rulerId!;
+    const ruler = pack.history.figures!.find(figure => figure.i === rulerId)!;
+
+    expect(Living.smiteRuler(1)).toBe(true);
+
+    expect(ruler.death).toBe(1000);
+    expect(living.states[1].rulerId).not.toBe(rulerId);
+    expect(living.recentNews.some(item => item.kind === "succession")).toBe(true);
+  });
+
+  it("forces a war on a neighbour and refuses to declare it twice", () => {
+    const living = Living.init();
+
+    expect(Living.forceWar(1)).toBe(true);
+    expect(pack.states[1].diplomacy?.[2]).toBe("Enemy");
+    expect(living.recentNews.some(item => item.kind === "war")).toBe(true);
+    expect(Living.forceWar(1, 2)).toBe(false);
+  });
+
+  it("sparks a rebellion in a non-capital burg", () => {
+    const living = Living.init();
+    pack.burgs[4].state = 1;
+    pack.cells.state[5] = 1;
+
+    expect(Living.sparkRebellion(1, 1)).toBe(false);
+    expect(Living.sparkRebellion(1, 4)).toBe(true);
+
+    expect(pack.burgs[4].state).toBe(0);
+    expect(pack.cells.state[5]).toBe(0);
+    expect(living.burgs[4].unrest).toBe(0);
+    expect(living.states[1].unravel).toBe(30);
+    expect(living.recentNews[0].kind).toBe("revolt");
+  });
+
+  it("pacifies a burg at once and eases the state's unravel", () => {
+    const living = Living.init();
+    pack.burgs[4].state = 1;
+    pack.cells.state[5] = 1;
+    living.burgs[4].unrest = 10;
+    living.states[1].unravel = 50;
+
+    expect(Living.pacifyBurg(4)).toBe(true);
+
+    expect(living.burgs[4].unrest).toBe(0);
+    expect(living.states[1].unravel).toBe(30);
+    expect(living.recentNews[0].kind).toBe("pacify");
+  });
+
+  it("completes a burg's construction with a single intervention", () => {
+    const living = Living.init();
+    expect(Living.startBuild(1, 1, "walls3")).toBe(true);
+
+    expect(Living.completeAsset(1)).toBe(true);
+
+    expect(living.burgs[1].buildings).toContain("walls3");
+    expect(living.burgs[1].buildings).not.toContain("walls2");
+    expect(living.burgs[1].construction).toBeNull();
+    expect(pack.burgs[1].walls).toBe(3);
+    expect(living.recentNews[0].kind).toBe("build");
+  });
+
   it("captures an epoch snapshot for the Legends time slider", () => {
     const living = Living.init();
     living.snapshotIntervalYears = 1;

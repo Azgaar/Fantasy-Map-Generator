@@ -916,6 +916,112 @@ class LivingModel {
     return true;
   }
 
+  /** God mode: set a state's most restive burg (or the given one) on the path to secession. */
+  sparkRebellion(stateId: number, burgId?: number): boolean {
+    const living = this.getState();
+    const state = pack.states[stateId];
+    const sSim = living.states[stateId];
+    if (!state?.i || state.removed || !sSim) return false;
+
+    const burg =
+      burgId !== undefined
+        ? pack.burgs[burgId]
+        : pack.burgs.find(
+            candidate => candidate?.i && !candidate.removed && candidate.state === stateId && !candidate.capital
+          );
+    if (!burg?.i || burg.removed || burg.state !== stateId || burg.capital) return false;
+
+    const bSim = living.burgs[burg.i];
+    if (bSim) bSim.unrest = 100;
+    sSim.unravel = 100;
+    this.stepRebellions(living);
+    return true;
+  }
+
+  /** God mode: kill the current ruler and let the succession play out. */
+  smiteRuler(stateId: number): boolean {
+    const living = this.getState();
+    const state = pack.states[stateId];
+    const sSim = living.states[stateId];
+    if (!state?.i || state.removed || !sSim) return false;
+
+    const ruler = pack.history?.figures?.find(figure => figure.i === sSim.rulerId);
+    if (!ruler || ruler.death !== undefined) return false;
+
+    this.succeedRuler(state, sSim, ruler, living, options.map?.lore?.calendar?.year ?? 1000);
+    return true;
+  }
+
+  /** God mode: declare war on a rival, or on the first neighbour not already at war. */
+  forceWar(stateId: number, otherId?: number): boolean {
+    const state = pack.states[stateId];
+    if (!state?.i || state.removed) return false;
+
+    const other = otherId !== undefined ? pack.states[otherId] : this.pickWarRival(state);
+    if (!other?.i || other.removed || other.i === stateId) return false;
+    if (this.isAtWar(stateId, other.i)) return false;
+
+    this.declareWar(stateId, other.i);
+    return true;
+  }
+
+  /** God mode: end a burg's unrest at once and start its assimilation. */
+  pacifyBurg(burgId: number): boolean {
+    const living = this.getState();
+    const burg = pack.burgs[burgId];
+    const bSim = living.burgs[burgId];
+    if (!burg?.i || burg.removed || !burg.state || !bSim || bSim.unrest <= 0) return false;
+
+    const state = pack.states[burg.state];
+    if (!state?.i || state.removed) return false;
+
+    bSim.unrest = 0;
+    const sSim = living.states[state.i];
+    if (sSim) sSim.unravel = Math.max(0, sSim.unravel - 20);
+    this.assimilateBurg(state, burg, bSim);
+
+    this.pushNews(living, {
+      kind: "pacify",
+      text: `${state.name} pacified ${burg.name ?? "a restive burg"}.`,
+      cell: burg.cell,
+      stateId: state.i,
+      burgId
+    });
+    return true;
+  }
+
+  /** God mode: finish the burg's construction, or start and finish the best available asset. */
+  completeAsset(burgId: number): boolean {
+    const living = this.getState();
+    const burg = pack.burgs[burgId];
+    const bSim = living.burgs[burgId];
+    if (!burg?.i || burg.removed || !burg.state || !bSim) return false;
+
+    const state = pack.states[burg.state];
+    const sSim = state?.i && !state.removed ? living.states[state.i] : undefined;
+    if (!state?.i || state.removed || !sSim) return false;
+
+    const { content } = currentContent();
+    const construction = bSim.construction;
+    const built = construction ? content.buildings.find(entry => entry.id === construction.buildingId) : undefined;
+    const candidates = content.buildings.filter(entry => this.canBuild(state, burg, bSim, entry));
+    const building = built ?? candidates.find(entry => entry.id === sSim.agenda?.buildingId) ?? candidates[0];
+    if (!building) return false;
+
+    this.completeConstruction(state, sSim, living, burg, bSim, building);
+    return true;
+  }
+
+  private pickWarRival(state: State): State | undefined {
+    for (const burg of pack.burgs) {
+      if (!burg?.i || burg.removed || !burg.state || burg.state === state.i) continue;
+      if (!this.bordersState(state.i, burg) || this.isAtWar(state.i, burg.state)) continue;
+      const rival = pack.states[burg.state];
+      if (rival?.i && !rival.removed) return rival;
+    }
+    return undefined;
+  }
+
   /** Strongest land regiment with living troops, reconciling legacy compositions on the way. */
   private fieldArmy(state: State): Regiment | null {
     const unitTypes = Military.getUnitTypes();
