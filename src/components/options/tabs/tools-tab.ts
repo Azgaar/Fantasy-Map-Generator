@@ -1,6 +1,7 @@
 // Tools tab: buttons dispatch the same commands as global search.
 import { MAP_COMMANDS } from "@/components/map-commands";
 import { tip } from "@/components/tooltips";
+import { isAstralView, subscribeAstralView } from "@/components/options/view-mode";
 import { ensureEl } from "@/utils";
 
 const TEMPLATE = /* html */ `
@@ -83,13 +84,13 @@ const TEMPLATE = /* html */ `
     <button id="openLegendsBrowser" data-tip="Click to open the Legends browser: the map's chronicle">
       Legends
     </button>
-    <button id="applyAstralNaming" data-tip="Click to give the polities their own words and the provinces their sectors">
+    <button id="applyAstralNaming" class="astral-only" data-tip="Click to give the polities their own words and the provinces their sectors">
       Astral Names
     </button>
-    <button id="convertAstralAnomalies" data-tip="Click to rewrite the markers' legends and icons in the astral register">
+    <button id="convertAstralAnomalies" class="astral-only" data-tip="Click to rewrite the markers' legends and icons in the astral register">
       Astral Anomalies
     </button>
-    <button id="openStarSystems" data-tip="Click to open the Star Systems overview">
+    <button id="openStarSystems" class="astral-only" data-tip="Click to open the Star Systems overview">
       Star Systems
     </button>
     <button id="editStatesButton" data-tip="Click to open States Editor" data-shortcut="Shift + S">
@@ -235,6 +236,16 @@ const TEMPLATE = /* html */ `
 `;
 
 ensureEl("toolsContent").innerHTML = TEMPLATE;
+
+function syncAstralVisibility(): void {
+  const astral = isAstralView();
+  document.querySelectorAll("#toolsContent .astral-only").forEach(el => {
+    (el as HTMLElement).hidden = !astral;
+  });
+}
+
+syncAstralVisibility();
+subscribeAstralView(syncAstralVisibility);
 
 ensureEl("toolsContent").addEventListener("click", event => {
   if (customization) return tip("Please exit the customization mode first", false, "error");
