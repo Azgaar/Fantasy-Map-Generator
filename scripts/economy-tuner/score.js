@@ -73,12 +73,6 @@ export function score(pack, { Goods, Markets, Production, Prosperity }) {
   const goods = pack.goods;
   const produced = goods.filter(g => (units[g.i] || 0) >= 0.5).length / goods.length;
   const madeGoods = goods.filter(g => g.recipes?.length);
-  const volumes = madeGoods
-    .map(g => made[g.i] || 0)
-    .filter(u => u >= 0.5)
-    .sort((a, b) => b - a);
-  const vt = Math.max(1, Math.round(volumes.length / 10));
-  const volume = mean(volumes.slice(0, vt)) / Math.max(1e-9, mean(volumes.slice(-vt)));
   const people = m =>
     (ruralPeople.get(m.i) || 0) + burgs.filter(b => b.market === m.i).reduce((s, b) => s + b.population, 0);
   const out = new Map(markets.map(m => [m.i, Object.values(mix.get(m.i)).reduce((a, b) => a + b, 0)]));
@@ -151,7 +145,6 @@ export function score(pack, { Goods, Markets, Production, Prosperity }) {
   }
   return {
     produced,
-    volume,
     positive: treasuries.filter(t => t > 0).length / treasuries.length,
     regions: tenths(wealthByMarket),
     apart,

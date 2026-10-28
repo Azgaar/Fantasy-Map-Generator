@@ -10,8 +10,8 @@ const SCORE = readFileSync(new URL("./score.js", import.meta.url), "utf8").repla
   "function score"
 );
 
-/** Opens a map by seed with default options; resolves once its economy has run */
-export async function openGame(seed, url = DEFAULT_URL) {
+/** Opens a map by seed with default options, its heightmap template pinned if given; resolves once its economy has run */
+export async function openGame(seed, url = DEFAULT_URL, template = null) {
   const browser = await chromium.launch();
   const context = await browser.newContext({
     viewport: { width: 1280, height: 800 }
@@ -27,8 +27,11 @@ export async function openGame(seed, url = DEFAULT_URL) {
       });
     }
   );
+  // a pin is how a user fixes the template; ?options=default would ignore it, and a fresh browser has no other options
+  if (template)
+    await context.addInitScript(id => localStorage.setItem("fmg-locks", JSON.stringify({ template: id })), template);
   const page = await context.newPage();
-  await page.goto(`${url}?seed=${seed}&options=default&width=1280&height=800`);
+  await page.goto(`${url}?seed=${seed}${template ? "" : "&options=default"}&width=1280&height=800`);
   await page.waitForFunction(() => window.pack?.deals?.length > 0, null, {
     timeout: 120000
   });
@@ -47,7 +50,10 @@ export function exportSnapshot(page) {
       }
       return typeof v === "function" ? undefined : v;
     };
-    return JSON.stringify({ seed: options.map.seed, snapshot: { pack, grid, options } }, encode);
+    return JSON.stringify(
+      { seed: options.map.seed, template: options.generation.template, snapshot: { pack, grid, options } },
+      encode
+    );
   });
 }
 
