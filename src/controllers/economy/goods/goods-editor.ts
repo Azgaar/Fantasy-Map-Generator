@@ -320,7 +320,7 @@ function renderGoodsPage(view: TableView<Good>) {
         </div>
         <div data-col="price" data-tip="${sentences(t("Base (initial) price"), t("Click to compare prices across markets"))}" class="goodBasePrice pointer">🟡 ${good.value}</div>
         <div data-col="carriage" data-tip="${t("Carriage: price of one unit per decima")}">🟡 ${good.carriage}</div>
-        <div data-col="deposits" data-tip="${t("Deposits placed, and their range")}">${good.distribution ? `${depositsByGood[good.i] ?? 0} <small>${formatDeposits(good)}</small>` : ""}</div>
+        <div data-col="deposits" data-tip="${t("Deposits placed, and their range")} (${formatDeposits(good)})">${good.distribution ? (depositsByGood[good.i] ?? 0) : ""}</div>
         <div data-col="coverage" data-tip="${t("How much of each demand category one unit covers")}">${renderCoverage(good)}</div>
         <div data-col="tags" data-tip="${t("Tags")}">${Tags.format(good.tags)}</div>
         ${noteIcon(t("Edit free text notes (legend)"))}

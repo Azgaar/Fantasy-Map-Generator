@@ -686,7 +686,7 @@
     "data-left": 10
   },
   "#goodsCells": {
-    "opacity": 0.5,
+    "opacity": 0.4,
     "filter": null
   },
   "#markets": {
@@ -710,7 +710,7 @@
   "#goodsBurgs": {
     "opacity": 1,
     "stroke": "#41414f",
-    "stroke-width": 0.2,
+    "stroke-width": 0.1,
     "data-size": 3
   },
   "#tradeAnimation": {

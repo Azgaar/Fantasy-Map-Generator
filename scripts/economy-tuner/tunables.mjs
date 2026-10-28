@@ -16,11 +16,11 @@ export const TUNABLES = {
     RURAL_OUTPUT_FACTOR: [0.5, 3]
   },
   "src/model/economy/markets-generator.ts": {
-    PRICE_RESPONSE: [0.5, 4],
+    PRICE_RESPONSE: [0, 4],
     WANTS_ESTIMATE: [0, 3],
     OPENING_ELASTICITY: [0, 1],
     CAPITAL_RENT: [0, 0.7],
-    MARKET_MARGIN: [0.02, 0.25],
+    MARKET_MARGIN: [0.05, 0.25],
     IMPORT_CARRIAGE_FACTOR: [1, 3]
   }
 };

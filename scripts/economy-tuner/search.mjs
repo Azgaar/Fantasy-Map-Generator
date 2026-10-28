@@ -11,17 +11,18 @@ import {
   readdirSync,
   readFileSync,
   renameSync,
+  statSync,
   unlinkSync,
   writeFileSync
 } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { Worker } from "node:worker_threads";
 import { build } from "./build.mjs";
-import { overridesOf, readCatalogue, readCommonness, ROOT, thetaOf } from "./catalogue.mjs";
+import { GOODS_FILE, overridesOf, readCatalogue, readCommonness, ROOT, thetaOf } from "./catalogue.mjs";
 import { MAPS_DIR } from "./export-maps.mjs";
 import { checkOverrides, DEFAULT_URL, openGame, registeredTunables } from "./game.mjs";
 import { objective, summary } from "./objective.mjs";
-import { RANGES, readTunables } from "./tunables.mjs";
+import { RANGES, readTunables, TUNABLES } from "./tunables.mjs";
 
 const arg = (name, fallback) => process.argv.find(a => a.startsWith(`--${name}=`))?.split("=")[1] ?? fallback;
 const budget = +arg("budget", 1000),
@@ -42,9 +43,24 @@ const say = line => {
 
 const maps = existsSync(MAPS_DIR) ? readdirSync(MAPS_DIR).filter(f => f.endsWith(".json")) : [];
 if (!maps.length) throw new Error("No exported maps: run scripts/economy-tuner/export-maps.mjs first");
+// maps are generated with the values in the source: after an apply, export them again
+const exported = Math.min(...maps.map(file => statSync(`${MAPS_DIR}${file}`).mtimeMs));
+const changed = [...new Set([GOODS_FILE, ...Object.keys(TUNABLES).map(file => `${ROOT}${file}`)])].filter(
+  file => statSync(file).mtimeMs > exported
+);
+if (changed.length)
+  say(
+    `STALE maps: exported before ${changed.map(file => file.replace(ROOT, "")).join(", ")} changed; run export-maps.mjs again`
+  );
 const catalogue = readCatalogue();
 const weights = readCommonness();
-const defaults = readTunables(file => readFileSync(`${ROOT}${file}`, "utf8"));
+// the source's values, brought into their ranges: a range may have been narrowed since they were applied
+const defaults = Object.fromEntries(
+  Object.entries(readTunables(file => readFileSync(`${ROOT}${file}`, "utf8"))).map(([name, value]) => {
+    const [lo, hi] = RANGES[name];
+    return [name, Math.min(hi, Math.max(lo, value))];
+  })
+);
 const start = thetaOf(catalogue, defaults);
 
 // ---- state; the best is written whole or not at all, so a crash never leaves a broken file

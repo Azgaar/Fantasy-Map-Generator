@@ -36,6 +36,7 @@ export function objective(results, theta, weights) {
     treasuryTop: avg("treasuryTop"),
     sold: avg("sold"),
     prosperity: avg("prosperity"),
+    stateLink: avg("stateLink"),
     proportion
   };
   const share = {};
@@ -55,6 +56,7 @@ export function objective(results, theta, weights) {
     treasuryTop: Math.max(0, kpi.treasuryTop - 0.5) * 2,
     sold: Math.max(0, 0.5 - kpi.sold) * 2,
     prosperity: outside(kpi.prosperity, 0.45, 0.55) * 10,
+    stateLink: Math.max(0, 0.5 - kpi.stateLink),
     proportion: Math.max(0, 0.75 - kpi.proportion) * 4 + offBy * 0.5,
     outsized: Object.values(share).reduce((s, x) => s + Math.max(0, x - 0.05) * 20, 0),
     margins: (margins.reduce((s, m) => s + Math.abs(Math.log(m / 5)), 0) / margins.length) * 0.2
@@ -70,5 +72,5 @@ export function objective(results, theta, weights) {
 
 export const summary = k =>
   `prosperity ${pct(k.prosperity)} produced ${pct(k.produced)} volume ${k.volume.toFixed(0)}× proportion ${pct(k.proportion)} ` +
-  `sold ${pct(k.sold)} spec ${pct(k.specialization)} profit ${pct(k.positive)} top ${k.top} ${(k.topShare * 100).toFixed(1)}%`;
+  `sold ${pct(k.sold)} spec ${pct(k.specialization)} profit ${pct(k.positive)} link ${k.stateLink.toFixed(2)} top ${k.top} ${(k.topShare * 100).toFixed(1)}%`;
 const pct = x => `${(x * 100).toFixed(0)}%`;

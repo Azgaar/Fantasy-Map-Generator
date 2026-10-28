@@ -147,9 +147,9 @@ describe("GoodsModule", () => {
   });
 
   it("spreads spending over options by price per coverage, cheaper ones getting more", async () => {
-    const { getVarietyShares } = await import("./goods-generator");
+    const { getVarietyShares, VARIETY } = await import("./goods-generator");
     const [cheap, dear, none] = getVarietyShares([1, 2, 0]);
-    expect(cheap / dear).toBeCloseTo(8, 5); // (2 / 1)^3
+    expect(cheap / dear).toBeCloseTo(2 ** VARIETY, 5); // (2 / 1)^VARIETY
     expect(cheap + dear).toBeCloseTo(1, 5);
     expect(none).toBe(0);
   });

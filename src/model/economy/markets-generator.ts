@@ -23,14 +23,14 @@ import { TradeRoutes } from "./trade-routes";
 
 const PRICE_FLOOR_FACTOR = 0.02;
 const PRICE_CEILING_FACTOR = 5.0;
-const PRICE_RESPONSE = 2; // a trade of a day's expected sales moves the price e^this times
-const WANTS_ESTIMATE = 1; // expected sales: what people buy beyond their needs, as a multiple of them
-const OPENING_ELASTICITY = 0.5; // how far below its value an ingredient opens where its trades need less than a unit a day
-const CAPITAL_RENT = 0.4; // share of rural sale income paid to the state's capital: dues and absentee landlords
-const MARKET_MARGIN = 0.1;
+export const PRICE_RESPONSE = 0.5; // a trade of a day's expected sales moves the price e^this times
+const WANTS_ESTIMATE = 0.33; // expected sales: what people buy beyond their needs, as a multiple of them
+const OPENING_ELASTICITY = 0.26; // how far below its value an ingredient opens where its trades need less than a unit a day
+export const CAPITAL_RENT = 0.44; // share of rural sale income paid to the state's capital: dues and absentee landlords
+export const MARKET_MARGIN = 0.02;
 const OTHER_LANDMASS_SPACING = 0.5; // share of the market spacing a market on another landmass keeps clear
 const MAX_DECIMAS = 10; // the map's diagonal: the most carriage, paid with no route to the burg's own market
-const IMPORT_CARRIAGE_FACTOR = 1.5; // carriage from another state's market: borders, tolls, longer hauls
+export const IMPORT_CARRIAGE_FACTOR = 2.4; // carriage from another state's market: borders, tolls, longer hauls
 
 export type Market = {
   i: number;

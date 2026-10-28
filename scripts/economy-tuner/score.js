@@ -6,6 +6,30 @@ const tenths = a => {
     t = Math.max(1, Math.floor(v.length / 10));
   return mean(v.slice(-t)) / Math.max(1e-9, mean(v.slice(0, t)));
 };
+const ranks = a => {
+  const r = [];
+  a.map((v, i) => [v, i])
+    .sort((x, y) => x[0] - y[0])
+    .forEach(([, i], k) => {
+      r[i] = k;
+    });
+  return r;
+};
+const spearman = (a, b) => {
+  const ra = ranks(a),
+    rb = ranks(b),
+    ma = mean(ra),
+    mb = mean(rb);
+  let n = 0,
+    da = 0,
+    db = 0;
+  ra.forEach((x, i) => {
+    n += (x - ma) * (rb[i] - mb);
+    da += (x - ma) ** 2;
+    db += (rb[i] - mb) ** 2;
+  });
+  return n / Math.sqrt(da * db || 1);
+};
 const gini = xs => {
   const v = xs.map(x => Math.max(0, x)).sort((a, b) => a - b);
   const total = v.reduce((s, x) => s + x, 0);
@@ -113,6 +137,12 @@ export function score(pack, { Goods, Markets, Production, Prosperity }) {
       pw += b.population;
     }
   }
+  // KPI 9: across states, the rank correlation of their townspeople's wealth and the taxes they collect per head
+  const stateRows = living.flatMap(state => {
+    const own = burgs.filter(b => b.state === state.i);
+    const people = own.reduce((s, b) => s + b.population, 0);
+    return people > 0 ? [[own.reduce((s, b) => s + (b.product || 0), 0) / people, (state.treasury || 0) / people]] : [];
+  });
   const madeShare = {},
     madeUnits = {};
   for (const g of madeGoods) {
@@ -131,6 +161,13 @@ export function score(pack, { Goods, Markets, Production, Prosperity }) {
     treasuryTop: byTreasury.reduce((s, b) => s + Math.max(0, b.treasury || 0), 0) / pos,
     sold: 1 - lv / (mv || 1),
     prosperity: pw ? pp / pw : 0,
+    stateLink:
+      stateRows.length > 2
+        ? spearman(
+            stateRows.map(r => r[0]),
+            stateRows.map(r => r[1])
+          )
+        : 0,
     madeShare,
     madeUnits
   };

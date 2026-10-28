@@ -2,9 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Burg } from "@/model/political/burgs-generator";
 import { rn } from "@/utils/number-utils";
 import type { Good } from "./goods-generator";
-import { Goods } from "./goods-generator";
-import { DEAL_KINDS, type Market, Markets, type SourceOption } from "./markets-generator";
-import { ProductionModule } from "./production-generator";
+import { Goods, NOVELTY, VARIETY } from "./goods-generator";
+import { DEAL_KINDS, MARKET_MARGIN, type Market, Markets, type SourceOption } from "./markets-generator";
+import {
+  BURG_SPECIALIZATION,
+  DEPOSIT_RICHNESS,
+  MARKET_SPECIALIZATION,
+  ProductionModule,
+  WORKFORCE_SHARE
+} from "./production-generator";
 import { TradeRoutes } from "./trade-routes";
 
 const good = (i: number, name: string, value: number, recipes?: Good["recipes"]): Good => ({
@@ -74,7 +80,7 @@ describe("manufacturing work with stocked inputs", () => {
     const ship = plan(5, 2);
     expect(ship?.action.good.name).toBe("Engine");
     expect(ship?.workersNeeded).toBe(2);
-    expect(ship?.normalizedGain).toBeCloseTo((10000 * 0.9 - 14 * 1.1) / 2);
+    expect(ship?.normalizedGain).toBeCloseTo((10000 * (1 - MARKET_MARGIN) - 14 * (1 + MARKET_MARGIN)) / 2);
     expect(plan(5, 100)?.workersNeeded).toBe(2);
   });
 
@@ -145,7 +151,7 @@ describe("manufacturing work with stocked inputs", () => {
     market.goods[1].stock = 4;
     const ship = plan(5, 3);
     expect(ship?.workersNeeded).toBe(3);
-    expect(ship?.marketCost).toBeCloseTo(28 * 1.1);
+    expect(ship?.marketCost).toBeCloseTo(28 * (1 + MARKET_MARGIN));
   });
 
   it("reserves shared inputs across the parent and its missing component", () => {
@@ -254,7 +260,7 @@ describe("inputs missing in the burg's market", () => {
     // biome-ignore lint/complexity/useLiteralKeys: private test access
     production["runWorkerLoop"](index, state);
 
-    const deliveredPrice = rn(1 * 1.05 + 100 / Math.hypot(1000, 800), 2);
+    const deliveredPrice = rn(1 * (1 + MARKET_MARGIN) + 100 / Math.hypot(1000, 800), 2);
     const imports = pack.deals.filter(([, marketId]) => marketId === 2);
     expect(imports.map(([burgId, , goodId, kind, units]) => [burgId, goodId, kind, units])).toEqual([
       [1, 3, DEAL_KINDS.input, 20]
@@ -326,17 +332,17 @@ describe("deposits", () => {
       globalThis.pack.cells = { i: Array.from({ length: count }, (_, i) => i), h: [30, 30], pop: [4, 25] } as never;
     };
     cells(5000);
-    expect(production.getDepositOutput(catalogue[0], 0)).toBeCloseTo(4);
-    expect(production.getDepositOutput(catalogue[0], 1)).toBeCloseTo(10);
+    expect(production.getDepositOutput(catalogue[0], 0)).toBeCloseTo(4 * DEPOSIT_RICHNESS);
+    expect(production.getDepositOutput(catalogue[0], 1)).toBeCloseTo(10 * DEPOSIT_RICHNESS);
     cells(10000);
-    expect(production.getDepositOutput(catalogue[0], 0)).toBeCloseTo(8);
+    expect(production.getDepositOutput(catalogue[0], 0)).toBeCloseTo(8 * DEPOSIT_RICHNESS);
   });
 });
 
 describe("workforce", () => {
   it("is the share of townspeople working in trades, capped", () => {
     vi.restoreAllMocks();
-    expect(production.getWorkers({ population: 10 } as Burg)).toBe(3.5);
+    expect(production.getWorkers({ population: 10 } as Burg)).toBe(rn(10 * WORKFORCE_SHARE, 2));
     expect(production.getWorkers({ population: 5000 } as Burg)).toBe(1000);
   });
 });
@@ -359,13 +365,13 @@ describe("division of labor", () => {
     index.marketWorkers[market.i] = [];
     index.marketWorkers[market.i][4] = 10; // a quarter of the market's
     index.worldWorkers[4] = 60; // as much as the world's quarter: no market bonus
-    expect(specialization(4)).toBeCloseTo(1.5, 5);
+    expect(specialization(4)).toBeCloseTo(1 + BURG_SPECIALIZATION * 0.5, 5);
 
     index.worldWorkers[4] = 40; // a sixth of the world's: the market makes 1.5 times its share
-    expect(specialization(4)).toBeCloseTo(1 + 0.5 + 1 * 0.5, 5);
+    expect(specialization(4)).toBeCloseTo(1 + BURG_SPECIALIZATION * 0.5 + MARKET_SPECIALIZATION * 0.5, 5);
 
     index.worldWorkers[4] = 10; // the market alone makes it: the bonus is capped
-    expect(specialization(4)).toBeCloseTo(1 + 0.5 + 1, 5);
+    expect(specialization(4)).toBeCloseTo(1 + BURG_SPECIALIZATION * 0.5 + MARKET_SPECIALIZATION, 5);
     expect(specialization(5)).toBe(1);
   });
 
@@ -400,7 +406,7 @@ describe("demand fill", () => {
     expect(bought[4]).toBe(6);
     expect(market.goods[3].stock).toBe(10);
     // the burg is its market's center: it takes the margin on its purchase and gives back the margin on the 4 kept
-    const margins = Markets.getMargin(bought) - (4 * 1 * 0.1) / 0.9;
+    const margins = Markets.getMargin(bought) - (4 * 1 * MARKET_MARGIN) / (1 - MARKET_MARGIN);
     expect(burg.treasury).toBeCloseTo(100 - 4 * 0.8 - 6 * bought[5] + margins, 1);
   });
 
@@ -448,8 +454,8 @@ describe("demand fill", () => {
       return production["getShares"](index, state, 4, [oil, tools]);
     };
     expect(shares(0)).toEqual([0.5, 0.5]); // earns no more than its needs: price alone decides
-    const [oilShare, toolsShare] = shares(1000); // ten days of needs a person: tool sets are worth 3.7 times their price
-    expect(toolsShare / oilShare).toBeCloseTo(3.7 ** 3, 5);
+    const [oilShare, toolsShare] = shares(1000); // ten days of needs a person: tool sets are worth 1 + NOVELTY times their price
+    expect(toolsShare / oilShare).toBeCloseTo((1 + NOVELTY) ** VARIETY, 5);
   });
 
   it("lets luxury wants grow with the burg's wealth", () => {

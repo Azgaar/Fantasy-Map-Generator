@@ -23,18 +23,18 @@ import type { DealKind, Market, SourceOption, SourceQuote, Trade, TradeTerms } f
 import { DEAL_KINDS, Markets } from "./markets-generator";
 import { Prosperity } from "./prosperity";
 
-const RURAL_OUTPUT_FACTOR = 1;
-const DEPOSIT_RICHNESS = 1; // units a deposit yields a day per population point of its cell, on a map of DEPOSIT_MAP_CELLS
+const RURAL_OUTPUT_FACTOR = 1.36;
+export const DEPOSIT_RICHNESS = 1.82; // units a deposit yields a day per population point of its cell, on a map of DEPOSIT_MAP_CELLS
 const DEPOSIT_MAP_CELLS = 5000; // deposit counts are per map: their yield grows with the map's cells
 const DEPOSIT_MAX_POPULATION = 10; // a deposit's yield stops growing past this population
-const BONUS_URBAN_PRODUCTION = 1; // free units per population point of a burg on a deposit
+const BONUS_URBAN_PRODUCTION = 2.26; // free units per population point of a burg on a deposit
 const MIN_BONUS_PRODUCTION = 1;
 const MAX_BONUS_PRODUCTION = 5;
 const MAX_WORKERS = 1000;
-const WORKFORCE_SHARE = 0.35; // townspeople working in trades; the rest serve, build, farm or are too young or old
+export const WORKFORCE_SHARE = 0.39; // townspeople working in trades; the rest serve, build, farm or are too young or old
 const WORKERS_PER_TURN = 5;
-const BURG_SPECIALIZATION = 1;
-const MARKET_SPECIALIZATION = 1;
+export const BURG_SPECIALIZATION = 1.1;
+export const MARKET_SPECIALIZATION = 0.51;
 
 export class ProductionModule {
   private zoneCellSets: Map<number, Set<number>> | null = null; // lazy zoneId -> cells lookup, built only when a good uses zone multipliers
