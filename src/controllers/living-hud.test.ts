@@ -24,7 +24,14 @@ const mocks = vi.hoisted(() => {
     smiteRuler: vi.fn(() => true),
     forceWar: vi.fn(() => true),
     pacifyBurg: vi.fn(() => true),
-    completeAsset: vi.fn(() => true)
+    completeAsset: vi.fn(() => true),
+    spawnTrouble: vi.fn(() => ({ id: "monsters", level: 5 })),
+    quellTrouble: vi.fn(() => true),
+    resolveTrouble: vi.fn(() => true),
+    spawnLair: vi.fn(() => ({ id: "bandit_camp", name: "Bandit Camp", level: 6 })),
+    smiteLair: vi.fn(() => true),
+    assaultLair: vi.fn(() => true),
+    sendAdventurersToLair: vi.fn(() => true)
   };
 
   return { state, living };
@@ -90,7 +97,7 @@ function makePack() {
       { i: 1, name: "Aelor", cell: 1, state: 1, population: 18, capital: 1 },
       { i: 2, name: "Oakford", cell: 2, state: 1, population: 4, capital: 0 }
     ],
-    provinces: [{ i: 0 }, { i: 1, state: 1, burg: 1, center: 1 }],
+    provinces: [{ i: 0 }, { i: 1, name: "Northmarch", state: 1, burg: 1, center: 1 }],
     history: {
       living: mocks.state,
       events: [],
@@ -293,6 +300,122 @@ describe("LivingHud", () => {
 
     document.querySelector<HTMLElement>('#livingInspector [data-god="complete"]')?.click();
     expect(Living.completeAsset).toHaveBeenCalledWith(2);
+  });
+
+  it("shows provincial lairs in the state inspector and runs lair god-mode actions", () => {
+    mocks.state.provinces = {
+      1: {
+        provinceId: 1,
+        order: 75,
+        stability: 2,
+        development: 1,
+        lair: {
+          id: "bandit_camp",
+          name: "Forest Hideout",
+          level: 6,
+          theme: "ruin",
+          originCell: 1,
+          raidThreshold: 5,
+          defenders: [{ type: "infantry", count: 25 }],
+          fortified: true,
+          raidPending: true,
+          seasonsActive: 2
+        }
+      }
+    };
+    mocks.state.recentNews = [
+      { tick: 1, year: 1000, season: 2, kind: "succession", text: "A new ruler.", cell: 1, stateId: 1 }
+    ];
+    LivingHud.open();
+    document.querySelector<HTMLElement>("button.livingNewsItem")?.click();
+
+    const inspector = document.getElementById("livingInspector");
+    expect(inspector?.textContent).toContain("Forest Hideout");
+    expect(inspector?.textContent).toContain("Lv 6");
+    expect(inspector?.textContent).toContain("Raid: 5+");
+    expect(inspector?.textContent).toContain("Defenders: 25");
+    expect(inspector?.textContent).toContain("🏰 Fortified");
+    expect(inspector?.textContent).toContain("⚠️ Raid Imminent");
+
+    inspector?.querySelector<HTMLElement>('[data-god="assault-state-lair"]')?.click();
+    expect(Living.assaultLair).toHaveBeenCalledWith(1, 1);
+    expect(document.getElementById("livingHudStatus")?.textContent).toContain("Northmarch");
+
+    inspector?.querySelector<HTMLElement>('[data-god="delve-state-lair"]')?.click();
+    expect(Living.sendAdventurersToLair).toHaveBeenCalledWith(1, 1);
+
+    inspector?.querySelector<HTMLElement>('[data-god="smite-state-lair"]')?.click();
+    expect(Living.smiteLair).toHaveBeenCalledWith(1);
+  });
+
+  it("shows provincial lair on burg card and triggers burg lair interventions", () => {
+    mocks.state.provinces = {
+      1: {
+        provinceId: 1,
+        order: 60,
+        stability: 1,
+        development: 0,
+        lair: {
+          id: "ancient_evil",
+          name: "Abyssal Rift",
+          level: 8,
+          theme: "ruin",
+          originCell: 1,
+          raidThreshold: 6,
+          defenders: [{ type: "cavalry", count: 15 }],
+          fortified: false,
+          raidPending: false,
+          seasonsActive: 4
+        }
+      }
+    };
+    mocks.state.recentNews = [
+      { tick: 1, year: 1000, season: 0, kind: "lair", text: "Abyssal Rift active.", cell: 1, burgId: 1 }
+    ];
+    LivingHud.open();
+    document.querySelector<HTMLElement>("button.livingNewsItem")?.click();
+
+    const inspector = document.getElementById("livingInspector");
+    expect(inspector?.textContent).toContain("Abyssal Rift");
+    expect(inspector?.textContent).toContain("Lv 8");
+    expect(inspector?.textContent).toContain("Raid: 6+");
+    expect(inspector?.textContent).toContain("15 men");
+
+    inspector?.querySelector<HTMLElement>('[data-god="assault-lair"]')?.click();
+    expect(Living.assaultLair).toHaveBeenCalledWith(1, 1);
+
+    inspector?.querySelector<HTMLElement>('[data-god="delve-lair"]')?.click();
+    expect(Living.sendAdventurersToLair).toHaveBeenCalledWith(1, 1);
+
+    inspector?.querySelector<HTMLElement>('[data-god="smite-lair"]')?.click();
+    expect(Living.smiteLair).toHaveBeenCalledWith(1);
+    expect(document.getElementById("livingHudStatus")?.textContent).toBe("The lair was smitten by divine wrath.");
+  });
+
+  it("allows spawning a lair when province has no active lair", () => {
+    mocks.state.provinces = {
+      1: {
+        provinceId: 1,
+        order: 90,
+        stability: 3,
+        development: 2,
+        lair: null
+      }
+    };
+    mocks.state.recentNews = [
+      { tick: 1, year: 1000, season: 0, kind: "peace", text: "Peace in Aelor.", cell: 1, burgId: 1 }
+    ];
+    LivingHud.open();
+    document.querySelector<HTMLElement>("button.livingNewsItem")?.click();
+
+    const inspector = document.getElementById("livingInspector");
+    expect(inspector?.textContent).toContain("No active lair");
+
+    const spawnBtn = inspector?.querySelector<HTMLElement>('[data-god="spawn-lair"]');
+    expect(spawnBtn).toBeTruthy();
+    spawnBtn?.click();
+    expect(Living.spawnLair).toHaveBeenCalledWith(1);
+    expect(document.getElementById("livingHudStatus")?.textContent).toBe("A lair has arisen in the province.");
   });
 
   it("opens the Legends browser from the date badge and toggles the HUD", () => {

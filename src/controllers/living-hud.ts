@@ -364,6 +364,12 @@ function renderStateCard(stateId: number): string {
   const hasTroubled = (pack.provinces ?? []).some(
     p => p?.i && !p.removed && p.state === stateId && living.provinces?.[p.i]?.trouble
   );
+  const hasLairs = (pack.provinces ?? []).some(
+    p => p?.i && !p.removed && p.state === stateId && living.provinces?.[p.i]?.lair
+  );
+  const canSpawnStateLair = (pack.provinces ?? []).some(
+    p => p?.i && !p.removed && p.state === stateId && !living.provinces?.[p.i]?.lair
+  );
 
   return /* html */ `
     <div class="livingInspectorTitle">${escapeHtml(state.fullName ?? state.name ?? "State")}</div>
@@ -381,6 +387,7 @@ function renderStateCard(stateId: number): string {
       ${renderGrudges(sSim)}
       ${renderRestiveBurgs(stateId)}
       ${renderProvincesTroubles(stateId)}
+      ${renderProvincesLairs(stateId)}
     </div>
     <div class="livingButtons">
       <button type="button" data-open="state" data-id="${stateId}">States Editor</button>
@@ -392,6 +399,10 @@ function renderStateCard(stateId: number): string {
       <button type="button" data-god="smite" data-state="${stateId}">Smite Ruler</button>
       <button type="button" data-god="war" data-state="${stateId}">Force War</button>
       ${hasTroubled ? `<button type="button" data-god="resolve-state-trouble" data-state="${stateId}">Resolve Trouble</button>` : ""}
+      ${hasLairs ? `<button type="button" data-god="assault-state-lair" data-state="${stateId}">Assault Lair</button>` : ""}
+      ${hasLairs ? `<button type="button" data-god="delve-state-lair" data-state="${stateId}">Send Adventurers</button>` : ""}
+      ${hasLairs ? `<button type="button" data-god="smite-state-lair" data-state="${stateId}">Smite Lair</button>` : ""}
+      ${canSpawnStateLair ? `<button type="button" data-god="spawn-state-lair" data-state="${stateId}">Spawn Lair</button>` : ""}
     </div>`;
 }
 
@@ -525,6 +536,30 @@ function renderProvincesTroubles(stateId: number): string {
   return `<div class="livingMuted">Troubles</div><ul>${rows}</ul>`;
 }
 
+function renderProvincesLairs(stateId: number): string {
+  const living = Living.getState();
+  const ownedProvinces = (pack.provinces ?? []).filter(p => p?.i && !p.removed && p.state === stateId);
+  const laired = ownedProvinces
+    .map(p => ({ province: p, pSim: living.provinces?.[p.i] }))
+    .filter((entry): entry is { province: (typeof pack.provinces)[number]; pSim: ProvinceSimState } =>
+      Boolean(entry.pSim?.lair)
+    );
+
+  if (laired.length === 0) return `<div class="livingMuted">No provincial lairs</div>`;
+
+  const rows = laired
+    .map(({ province, pSim }) => {
+      const lair = pSim.lair!;
+      const defenderCount = lair.defenders.reduce((sum, u) => sum + (u.count ?? 0), 0);
+      const statusFlags = [lair.fortified ? "🏰 Fortified" : "", lair.raidPending ? "⚠️ Raid Imminent" : ""]
+        .filter(Boolean)
+        .join(" ");
+      return `<li>${escapeHtml(province.name ?? "Province")} — <strong>${escapeHtml(lair.name)}</strong> (Lv ${lair.level}, Raid: ${lair.raidThreshold}+, Defenders: ${defenderCount}${statusFlags ? ` · ${statusFlags}` : ""})</li>`;
+    })
+    .join("");
+  return `<div class="livingMuted">Lairs</div><ul>${rows}</ul>`;
+}
+
 function renderBurgCard(burgId: number): string {
   const living = Living.getState();
   const burg = pack.burgs[burgId];
@@ -541,6 +576,7 @@ function renderBurgCard(burgId: number): string {
   const pSim = provId ? living.provinces?.[provId] : undefined;
   const trouble = pSim?.trouble;
   const tDef = trouble ? getTroubleDef(trouble.id) : undefined;
+  const lair = pSim?.lair;
 
   return /* html */ `
     <div class="livingInspectorTitle">${escapeHtml(burg.name ?? "Burg")}</div>
@@ -566,6 +602,12 @@ function renderBurgCard(burgId: number): string {
                    <div class="livingMuted">Save: ${SAVE_KIND_LABELS[tDef.save]} · Specialist: ${UNIT_ROLE_LABELS[tDef.requiredRole]}</div>`
                 : `<div class="livingMuted" style="margin-top:0.2em;">No active trouble</div>`
             }
+            ${
+              lair
+                ? `<div style="margin-top:0.3em;color:#8b0000;"><strong>Lair:</strong> ${escapeHtml(lair.name)} (Lv ${lair.level}, ${lair.theme})</div>
+                   <div class="livingMuted">Raid: ${lair.raidThreshold}+ · Defenders: ${lair.defenders.reduce((sum, u) => sum + (u.count ?? 0), 0)} men${lair.fortified ? " · 🏰 Fortified" : ""}${lair.raidPending ? " · ⚠️ Raid Imminent" : ""}</div>`
+                : `<div class="livingMuted" style="margin-top:0.2em;">No active lair</div>`
+            }
           </div>`
         : ""
     }
@@ -582,8 +624,17 @@ function renderBurgCard(burgId: number): string {
         provId && trouble
           ? `<button type="button" data-god="quell-trouble" data-province="${provId}">Quell Trouble</button>
              ${stateId ? `<button type="button" data-god="resolve-trouble" data-state="${stateId}" data-province="${provId}">Resolve Trouble</button>` : ""}`
-          : provId
+          : provId && !lair
             ? `<button type="button" data-god="spawn-trouble" data-province="${provId}">Spawn Trouble</button>`
+            : ""
+      }
+      ${
+        provId && lair
+          ? `${stateId ? `<button type="button" data-god="assault-lair" data-state="${stateId}" data-province="${provId}">Assault Lair</button>` : ""}
+             ${stateId ? `<button type="button" data-god="delve-lair" data-state="${stateId}" data-province="${provId}">Send Adventurers</button>` : ""}
+             <button type="button" data-god="smite-lair" data-province="${provId}">Smite Lair</button>`
+          : provId
+            ? `<button type="button" data-god="spawn-lair" data-province="${provId}">Spawn Lair</button>`
             : ""
       }
     </div>`;
@@ -671,6 +722,85 @@ function runIntervention(button: HTMLElement): void {
       } else {
         ok = false;
         message = "No active trouble in the state.";
+      }
+      break;
+    }
+    case "spawn-lair": {
+      const res = Living.spawnLair(provId);
+      ok = Boolean(res);
+      message = ok ? "A lair has arisen in the province." : "Failed to spawn lair.";
+      break;
+    }
+    case "smite-lair":
+      ok = Living.smiteLair(provId);
+      message = ok ? "The lair was smitten by divine wrath." : "No lair to smite.";
+      break;
+    case "assault-lair":
+      ok = Living.assaultLair(stateId, provId);
+      message = ok ? "The military expedition destroyed the lair!" : "The expedition failed to destroy the lair.";
+      break;
+    case "delve-lair":
+      ok = Living.sendAdventurersToLair(stateId, provId);
+      message = ok ? "The adventuring party vanquished the lair!" : "The adventuring party failed to destroy the lair.";
+      break;
+    case "spawn-state-lair": {
+      const living = Living.getState();
+      const prov = (pack.provinces ?? []).find(
+        p => p?.i && !p.removed && p.state === stateId && !living.provinces?.[p.i]?.lair
+      );
+      if (prov) {
+        const res = Living.spawnLair(prov.i);
+        ok = Boolean(res);
+        message = ok ? `A lair arose in ${prov.name}!` : `Failed to spawn lair in ${prov.name}.`;
+      } else {
+        ok = false;
+        message = "All provinces already harbor lairs.";
+      }
+      break;
+    }
+    case "assault-state-lair": {
+      const living = Living.getState();
+      const prov = (pack.provinces ?? []).find(
+        p => p?.i && !p.removed && p.state === stateId && living.provinces?.[p.i]?.lair
+      );
+      if (prov) {
+        ok = Living.assaultLair(stateId, prov.i);
+        message = ok
+          ? `The expedition destroyed the lair in ${prov.name}!`
+          : `The expedition against the lair in ${prov.name} failed.`;
+      } else {
+        ok = false;
+        message = "No active lair in the state.";
+      }
+      break;
+    }
+    case "delve-state-lair": {
+      const living = Living.getState();
+      const prov = (pack.provinces ?? []).find(
+        p => p?.i && !p.removed && p.state === stateId && living.provinces?.[p.i]?.lair
+      );
+      if (prov) {
+        ok = Living.sendAdventurersToLair(stateId, prov.i);
+        message = ok
+          ? `The adventuring party vanquished the lair in ${prov.name}!`
+          : `The adventurers in ${prov.name} failed to destroy the lair.`;
+      } else {
+        ok = false;
+        message = "No active lair in the state.";
+      }
+      break;
+    }
+    case "smite-state-lair": {
+      const living = Living.getState();
+      const prov = (pack.provinces ?? []).find(
+        p => p?.i && !p.removed && p.state === stateId && living.provinces?.[p.i]?.lair
+      );
+      if (prov) {
+        ok = Living.smiteLair(prov.i);
+        message = ok ? `The lair in ${prov.name} was smitten!` : `Failed to smite lair in ${prov.name}.`;
+      } else {
+        ok = false;
+        message = "No active lair in the state.";
       }
       break;
     }
