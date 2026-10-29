@@ -869,4 +869,69 @@ describe("Living (Slices 1-4: Data Model, Seasonal Tick, Capacity, Projects, War
     // News should record lair activity
     expect(living.recentNews.some(item => item.kind === "lair")).toBe(true);
   });
+
+  it("mounts military expedition to assault and clear a lair", () => {
+    const living = Living.init();
+    Living.quellTrouble(1);
+    const lair = Living.spawnLair(1, "bandit_camp", 4);
+    expect(lair).not.toBeNull();
+
+    // Give state 1 a strong field army to ensure victory
+    const army = pack.states[1].military[0];
+    army.units = [
+      { type: "cavalry", count: 300, exp: 5 },
+      { type: "spear", count: 400, exp: 3 },
+      { type: "archers", count: 300, exp: 3 }
+    ];
+
+    const result = Living.assaultLair(1, 1);
+    expect(result).toBe(true);
+    expect(living.provinces[1].lair).toBeNull();
+    expect(living.recentNews.some(item => item.kind === "lair" && item.text.includes("conquered and destroyed"))).toBe(
+      true
+    );
+  });
+
+  it("dispatches adventurers on a decapitation delve creating an adventurer figure", () => {
+    const living = Living.init();
+    Living.quellTrouble(1);
+    const lair = Living.spawnLair(1, "monster_nest", 5);
+    expect(lair).not.toBeNull();
+
+    const _figuresBefore = pack.history.figures?.length ?? 0;
+    Living.sendAdventurersToLair(1, 1);
+
+    // Should create or use an adventurer figure
+    const adventurers = pack.history.figures?.filter(f => f.roles.some(r => r.type === "adventurer")) ?? [];
+    expect(adventurers.length).toBeGreaterThan(0);
+
+    // Delve result processed
+    expect(living.recentNews.some(item => item.kind === "lair")).toBe(true);
+  });
+
+  it("selects lair agendas and loads Wealth capacity during adventurer contract", () => {
+    const living = Living.init();
+    Living.quellTrouble(1);
+    Living.spawnLair(1, "ancient_fort", 6);
+
+    const sSim = living.states[1];
+    sSim.agenda = null;
+
+    // Advance 1 tick so chooseAgenda and stepAgenda run
+    Living.tick(1);
+
+    // Agenda should have targeted the lair (either clear_lair or hire_adventurers) or processed it
+    expect(living.recentNews.some(item => item.kind === "lair")).toBe(true);
+
+    // Active adventurer contract commits +1 W load
+    sSim.agenda = {
+      kind: "hire_adventurers",
+      label: "Hiring adventurers against Ruined Keep",
+      targetProvinceId: 1,
+      progress: 0,
+      required: 1
+    };
+    const cap = Living.recomputeStateCapacity(1);
+    expect(cap.w.load).toBeGreaterThan(0);
+  });
 });

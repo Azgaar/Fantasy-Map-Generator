@@ -303,6 +303,7 @@ class LivingModel {
     if (!state?.i || state.removed) return ledger;
 
     const living = pack.history?.living;
+    const sSim = living?.states?.[stateId];
     const { content, config } = currentContent();
     const capacityConfig = config.capacity;
     const buildingById = new Map<string, BuildingDef>(content.buildings.map(b => [b.id, b]));
@@ -362,6 +363,11 @@ class LivingModel {
     // Capital court grants +2 C
     if (state.capital && pack.burgs[state.capital]?.state === stateId) {
       ledger.c.gen += 2;
+    }
+
+    // Active adventurer contract commits +1 Wealth load
+    if (sSim?.agenda?.kind === "hire_adventurers") {
+      ledger.w.load += 1;
     }
 
     // 2. Burgs: earned development, standing buildings, and occupation unrest
@@ -1223,6 +1229,225 @@ class LivingModel {
     return true;
   }
 
+  /** Send the state's field army to storm and destroy a provincial lair. */
+  assaultLair(stateId: number, provinceId: number): boolean {
+    const province = pack.provinces?.[provinceId];
+    if (!province?.i || province.removed || province.state !== stateId) return false;
+    const living = this.getState();
+    const pSim = living.provinces[provinceId];
+    if (!pSim?.lair) return false;
+
+    const state = pack.states[stateId];
+    const sSim = living.states[stateId];
+    if (!state?.i || state.removed || !sSim) return false;
+
+    const army = this.fieldArmy(state);
+    if (!army) return false;
+
+    const lair = pSim.lair;
+    const { config } = currentContent();
+    const attackerUnits = (army.units ?? []).filter(u => u.count > 0).map(u => ({ ...u }));
+    const defenderUnits = lair.defenders.filter(u => u.count > 0).map(u => ({ ...u }));
+
+    if (attackerUnits.length === 0) return false;
+
+    const session = initBattleSession({
+      config,
+      unitTypes: Military.getUnitTypes(),
+      attacker: { factionId: stateId, armyId: null, units: attackerUnits },
+      defender: { factionId: 0, armyId: null, units: defenderUnits },
+      cell: lair.cell,
+      regionId: provinceId,
+      assault: lair.fortified,
+      modifiers: {
+        walls: lair.fortified ? 1 : 0,
+        defenderEncamped: lair.fortified,
+        defenderAmbushed: false,
+        attackerCrossedRiver: false,
+        labels: [lair.fortified ? `${lair.name} (fortified walls)` : lair.name]
+      }
+    });
+
+    const rng = this.rng("lair:assault", stateId * 1000 + provinceId, living.tick);
+    while (session.status === "active" && session.round < config.battle.maxRounds) {
+      stepBattleRound(session, rng.next);
+    }
+    const outcome = finalizeBattle(session, rng.next);
+
+    this.applyArmySurvivors(state, army, outcome.attacker.units);
+    this.addBattleMarker(lair.cell, lair.name);
+
+    if (outcome.winner === "attacker") {
+      this.removeLairMarker(lair.markerId);
+      const lairName = lair.name;
+      pSim.lair = null;
+      pSim.order = Math.min(100, pSim.order + 15);
+      pSim.stability += 2;
+      sSim.warExhaustion = Math.max(0, sSim.warExhaustion - 2);
+      sSim.capacity = this.recomputeStateCapacity(stateId);
+
+      this.pushNews(living, {
+        kind: "lair",
+        text: `${state.name}'s army conquered and destroyed ${lairName} in ${province.name}!`,
+        cell: lair.cell,
+        stateId
+      });
+      this.pushHistory(
+        "conquest",
+        [{ kind: "state", id: stateId }],
+        lair.cell,
+        `${state.name}'s legions conquered and dismantled the ${lairName} in ${province.name}.`
+      );
+      return true;
+    }
+
+    // Defenders repulsed the assault: surviving defenders persist for attrition
+    lair.defenders = outcome.defender.units.filter(u => u.count > 0).map(u => ({ ...u }));
+    if (lair.defenders.length === 0) {
+      this.removeLairMarker(lair.markerId);
+      const lairName = lair.name;
+      pSim.lair = null;
+      pSim.order = Math.min(100, pSim.order + 10);
+      sSim.capacity = this.recomputeStateCapacity(stateId);
+      this.pushNews(living, {
+        kind: "lair",
+        text: `${state.name}'s army destroyed ${lairName} in ${province.name} at immense cost!`,
+        cell: lair.cell,
+        stateId
+      });
+      return true;
+    }
+
+    for (const u of army.units ?? []) {
+      u.disruption = Math.min(3, (u.disruption ?? 0) + 1);
+    }
+    sSim.warExhaustion = Math.min(100, sSim.warExhaustion + 4);
+
+    this.pushNews(living, {
+      kind: "lair",
+      text: `${state.name}'s assault on ${lair.name} was repulsed with heavy losses!`,
+      cell: lair.cell,
+      stateId
+    });
+    this.pushHistory(
+      "battle",
+      [{ kind: "state", id: stateId }],
+      lair.cell,
+      `${state.name}'s expedition against ${lair.name} was repulsed.`
+    );
+    return false;
+  }
+
+  /** Dispatch an adventuring band to execute a decapitation delve into a lair. */
+  sendAdventurersToLair(stateId: number, provinceId: number): boolean {
+    const province = pack.provinces?.[provinceId];
+    if (!province?.i || province.removed || province.state !== stateId) return false;
+    const living = this.getState();
+    const pSim = living.provinces[provinceId];
+    if (!pSim?.lair) return false;
+
+    const state = pack.states[stateId];
+    const sSim = living.states[stateId];
+    if (!state?.i || state.removed || !sSim) return false;
+
+    const lair = pSim.lair;
+    const history = Chronicle.sync();
+    history.figures ??= [];
+
+    let adventurer = history.figures.find(
+      f =>
+        !f.death && f.roles.some(r => r.type === "adventurer" && r.target.kind === "state" && r.target.id === stateId)
+    );
+
+    const year = options.map?.lore?.calendar?.year ?? 1000;
+    if (!adventurer) {
+      const culture = state.culture ?? 0;
+      const index = history.figures.length;
+      const rng = traitsRng(living.seed, "adventurer", index + state.i * 500);
+      const alignment = rollAlignment(rng, pack.cultures[culture]?.alignment);
+      const { virtues, vices } = rollFigureTraits(rng, alignment);
+      adventurer = {
+        i: index,
+        name: Names.getCulture(culture),
+        culture,
+        birth: year - rng.int(22, 40),
+        roles: [{ type: "adventurer", target: { kind: "state", id: state.i }, from: year }],
+        alignment,
+        virtues,
+        vices
+      };
+      history.figures.push(adventurer);
+    }
+
+    const domainMod = valueModifier(Math.max(sSim.capacity.w.gen, sSim.capacity.c.gen));
+    const traitBonus = (adventurer.virtues?.length ?? 0) - (adventurer.vices?.length ?? 0);
+    const rng = this.rng("adventurer:delve", stateId * 500 + provinceId, living.tick);
+    const roll = rng.d(20);
+    const total = roll + domainMod + traitBonus;
+    const dc = 14 + lair.level;
+
+    if (total >= dc) {
+      // Full Success: decapitation strike slays the lair master
+      this.removeLairMarker(lair.markerId);
+      const lairName = lair.name;
+      pSim.lair = null;
+      pSim.order = Math.min(100, pSim.order + 12);
+      pSim.stability += 1;
+      sSim.capacity = this.recomputeStateCapacity(stateId);
+
+      this.pushNews(living, {
+        kind: "lair",
+        text: `${adventurer.name} and their adventuring band purged ${lairName} in ${province.name}!`,
+        cell: lair.cell,
+        stateId
+      });
+      this.pushHistory(
+        "conquest",
+        [
+          { kind: "figure", id: adventurer.i },
+          { kind: "state", id: stateId }
+        ],
+        lair.cell,
+        `${adventurer.name} and their adventuring band slew the master of ${lairName} in ${province.name}.`
+      );
+      return true;
+    }
+
+    if (total >= dc - 3) {
+      // Partial Success / Near Miss: thinned defenders and retreated
+      for (const u of lair.defenders) {
+        u.count = Math.max(1, Math.round(u.count * (0.5 + rng.next() * 0.25)));
+      }
+      lair.level = Math.max(4, lair.level - 1);
+      sSim.capacity = this.recomputeStateCapacity(stateId);
+
+      this.pushNews(living, {
+        kind: "lair",
+        text: `${adventurer.name}'s band struck deep into ${lair.name}, culling defenders before withdrawing (reduced to level ${lair.level}).`,
+        cell: lair.cell,
+        stateId
+      });
+      return false;
+    }
+
+    // Failure: disastrous delve, potential death, triggers retaliatory raid
+    if (rng.d(2) === 1) {
+      adventurer.death = year;
+      for (const role of adventurer.roles) {
+        if (role.type === "adventurer" && role.to === undefined) role.to = year;
+      }
+    }
+    lair.raidPending = true;
+
+    this.pushNews(living, {
+      kind: "lair",
+      text: `${adventurer.name}'s delve into ${lair.name} failed disastrously!`,
+      cell: lair.cell,
+      stateId
+    });
+    return false;
+  }
+
   /** Metastasize an active trouble into a full lair stronghold. */
   metastasizeTroubleToLair(provinceId: number, lairId?: string): ProvinceLair | null {
     const province = pack.provinces?.[provinceId];
@@ -1881,18 +2106,31 @@ class LivingModel {
     });
   }
 
-  private addBattleMarker(burg: Burg): void {
+  private addBattleMarker(burgOrCell: Burg | number, label?: string): void {
     pack.markers ??= [];
     const markers = pack.markers;
-    markers.push({
-      i: markers.length,
-      type: "battlefields",
-      icon: "⚔️",
-      x: burg.x,
-      y: burg.y,
-      cell: burg.cell,
-      name: `Battle of ${burg.name ?? "the wilds"}`
-    });
+    if (typeof burgOrCell === "number") {
+      const [x, y] = pack.cells.p[burgOrCell] ?? [0, 0];
+      markers.push({
+        i: markers.length,
+        type: "battlefields",
+        icon: "⚔️",
+        x,
+        y,
+        cell: burgOrCell,
+        name: `Battle of ${label ?? "the wilds"}`
+      });
+    } else {
+      markers.push({
+        i: markers.length,
+        type: "battlefields",
+        icon: "⚔️",
+        x: burgOrCell.x,
+        y: burgOrCell.y,
+        cell: burgOrCell.cell,
+        name: `Battle of ${label ?? burgOrCell.name ?? "the wilds"}`
+      });
+    }
   }
 
   private pushHistory(type: HistoryEventType, actors: HistRef[], cell: number | undefined, text: string): void {
@@ -2314,6 +2552,35 @@ class LivingModel {
       return { kind: "muster", label: "Mustering troops", progress: 0, required: 1 };
     }
 
+    const lairProvince = this.ownedProvinces(state.i)
+      .map(p => ({ province: p, lair: living.provinces[p.i]?.lair }))
+      .filter((entry): entry is { province: Province; lair: ProvinceLair } => Boolean(entry.lair))
+      .sort((a, b) => b.lair.level - a.lair.level)[0];
+
+    if (lairProvince) {
+      const army = this.fieldArmy(state);
+      const armyMen = army ? (army.units ?? []).reduce((s, u) => s + u.count, 0) : 0;
+      const defMen = lairProvince.lair.defenders.reduce((s, u) => s + u.count, 0);
+      if (army && (armyMen >= defMen * 0.85 || sSim.warExhaustion < 40)) {
+        return {
+          kind: "clear_lair",
+          label: `Marching against ${lairProvince.lair.name} in ${lairProvince.province.name}`,
+          targetProvinceId: lairProvince.province.i,
+          progress: 0,
+          required: 1
+        };
+      }
+      if (sSim.capacity.w.gen >= sSim.capacity.w.load || sSim.capacity.c.gen >= 4) {
+        return {
+          kind: "hire_adventurers",
+          label: `Hiring adventurers against ${lairProvince.lair.name} in ${lairProvince.province.name}`,
+          targetProvinceId: lairProvince.province.i,
+          progress: 0,
+          required: 1
+        };
+      }
+    }
+
     const troubledProvince = this.ownedProvinces(state.i)
       .map(p => ({ province: p, trouble: living.provinces[p.i]?.trouble }))
       .filter((entry): entry is { province: Province; trouble: ProvinceTrouble } => Boolean(entry.trouble))
@@ -2369,6 +2636,42 @@ class LivingModel {
     if (!agenda) return;
 
     switch (agenda.kind) {
+      case "clear_lair": {
+        const provinceId = agenda.targetProvinceId;
+        if (provinceId === undefined) {
+          sSim.agenda = null;
+          return;
+        }
+        const pSim = living.provinces[provinceId];
+        if (!pSim?.lair) {
+          sSim.agenda = null;
+          return;
+        }
+        this.assaultLair(state.i, provinceId);
+        agenda.progress += 1;
+        if (agenda.progress >= agenda.required || !pSim.lair) {
+          sSim.agenda = null;
+        }
+        return;
+      }
+      case "hire_adventurers": {
+        const provinceId = agenda.targetProvinceId;
+        if (provinceId === undefined) {
+          sSim.agenda = null;
+          return;
+        }
+        const pSim = living.provinces[provinceId];
+        if (!pSim?.lair) {
+          sSim.agenda = null;
+          return;
+        }
+        this.sendAdventurersToLair(state.i, provinceId);
+        agenda.progress += 1;
+        if (agenda.progress >= agenda.required || !pSim.lair) {
+          sSim.agenda = null;
+        }
+        return;
+      }
       case "resolve_trouble": {
         const provinceId = agenda.targetProvinceId;
         if (provinceId === undefined) {
