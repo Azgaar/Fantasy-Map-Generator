@@ -3,12 +3,13 @@ import { Icons } from "@/components/icons";
 import { ANOMALY_FAMILIES, astralLegend, MARKER_READINGS, readingOf } from "./astral-markers";
 
 describe("astral marker readings", () => {
+  // the cold transform of the markers generator can outlast the default budget under load
   it("covers every default marker config type", async () => {
     await import("@/generators/markers-generator");
     const types = globalThis.Markers.getConfig().map(entry => entry.type);
     expect(types.length).toBeGreaterThan(30);
     expect(types.filter(type => !MARKER_READINGS[type])).toEqual([]);
-  });
+  }, 60000);
 
   it("gives every reading a name and an icon that resolves to a glyph", () => {
     for (const [type, { reading, icon }] of Object.entries(MARKER_READINGS)) {

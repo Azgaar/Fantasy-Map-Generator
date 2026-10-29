@@ -7,7 +7,8 @@ const mocks = vi.hoisted(() => ({
   regenerate: vi.fn(),
   dialog: vi.fn(),
   applyPreset: vi.fn(),
-  save: vi.fn()
+  save: vi.fn(),
+  chronicle: vi.fn()
 }));
 vi.mock("@/components/layers", () => ({ Layers: { draw: mocks.draw, toggle: vi.fn() } }));
 vi.mock("@/components/dialog/dialog-helpers", () => ({ refreshEditors: mocks.refresh }));
@@ -71,6 +72,15 @@ describe("shared regeneration commands", () => {
     MAP_COMMANDS.find(command => command.id === "regenerateRivers")!.run();
     expect(mocks.regenerate).toHaveBeenCalledOnce();
     expect(mocks.dialog).not.toHaveBeenCalled();
+  });
+
+  it("regenerates history and redraws the markers the chronicle replaces", () => {
+    vi.stubGlobal("Chronicle", { generate: mocks.chronicle });
+    MAP_COMMANDS.find(command => command.id === "regenerateHistory")!.run();
+    confirmation().buttons.Proceed.call(document.getElementById("alert"));
+    expect(mocks.chronicle).toHaveBeenCalledOnce();
+    expect(mocks.draw).toHaveBeenCalledWith("markers");
+    expect(mocks.refresh).toHaveBeenCalledOnce();
   });
 
   it("offers every built-in layers preset as a command", () => {

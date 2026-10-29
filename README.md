@@ -14,7 +14,7 @@ Azgaar's *Fantasy Map Generator* is the premier open-source tool for procedural 
 2. **[Astral Cartographer](docs/astral/README.md)** *(Integrated)*  
    Reimagines the procedural engine for science-fiction star sector cartography. Ships 12 sci-fi name bases and 3 culture sets (AstralTrek, AstralJammer, Grimdark) in core data, on-demand polity/sector naming and star classes, and an **Astral view** that turns any map into an immersive star-sector chart — featuring nebulae, a stellar-density heatmap, and class-coloured star systems in place of burgs.
 
-3. **[History Generator & Legends Browser](docs/history/README.md)** *(Shipped)*  
+3. **[History Generator & Legends Browser](docs/wiki/History.md)** *(Shipped)*  
    Retroactively reconstructs the chronological history of generated worlds. Dates state foundings, wars, migrations, and schisms, seeds the ruins and battlefields of fallen empires, and provides an interactive in-app chronicle browser with time-slider epochs.
 
 ---

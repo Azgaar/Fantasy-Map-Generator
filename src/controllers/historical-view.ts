@@ -12,6 +12,7 @@ import type { Point } from "@/types/global";
 import type { EpochPolity, HistoryEpoch } from "@/types/history";
 import type { TypedArray } from "@/types/PackedGraph";
 import { getAdjective } from "@/utils";
+import { setViewedEpochStart } from "./historical-time";
 
 // a past is a read-only world: the truthy guard every editor opens with. Tools own 1-18
 const PAST_VIEW = 100;
@@ -83,7 +84,8 @@ export function showEpoch(index: number): void {
     hidePresentOnlyLayers();
     drawPastLegend(epoch);
     shownEpoch = index;
-    Layers.draw("states", "borders", "labels");
+    setViewedEpochStart(epoch.from);
+    Layers.draw("states", "borders", "labels", "markers");
   } catch (error) {
     restorePresent();
     throw error;
@@ -94,7 +96,7 @@ export function showEpoch(index: number): void {
 export function goToPresent(): void {
   const wasShown = Boolean(installation);
   restorePresent();
-  if (wasShown) Layers.draw("states", "borders", "labels");
+  if (wasShown) Layers.draw("states", "borders", "labels", "markers");
 }
 
 /** everything present-day politics puts on the map that a past must not wear */
@@ -221,6 +223,7 @@ function restorePresent(): void {
   const saved = installation;
   installation = null;
   shownEpoch = null;
+  setViewedEpochStart(null);
   if (!saved) return;
 
   // a new world owns its own arrays: a stale restore would overwrite it

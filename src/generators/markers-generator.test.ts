@@ -137,3 +137,69 @@ describe("MarkersModule migrations", () => {
     );
   });
 });
+
+describe("MarkersModule chronicle-owned types", () => {
+  /** one cell every ruins and battlefield list accepts; the arrays are indexed by cell id */
+  const world = () => {
+    globalThis.pack = {
+      markers: [],
+      cells: { i: [1], burg: [0, 0], culture: [0, 1], h: [0, 40], state: [0, 1], pop: [0, 5], p: [[0, 0], [50, 50]] }
+    } as any;
+  };
+  const twoTypes = [
+    {
+      type: "ruins",
+      icon: "🏺",
+      min: 1,
+      each: 1200,
+      multiplier: 1,
+      list: (pack: any) =>
+        pack.cells.i.filter((i: number) => pack.cells.culture[i] && pack.cells.h[i] >= 20 && pack.cells.h[i] < 60),
+      add: () => {}
+    },
+    {
+      type: "battlefields",
+      icon: "⚔️",
+      min: 1,
+      each: 700,
+      multiplier: 1,
+      list: (pack: any) =>
+        pack.cells.i.filter(
+          (i: number) => pack.cells.state[i] && pack.cells.pop[i] > 2 && pack.cells.h[i] < 50 && pack.cells.h[i] > 25
+        ),
+      add: () => {}
+    }
+  ];
+  const history = (over: Record<string, unknown>) =>
+    ({ mode: "archaeologist", span: 1000, realms: 2, density: 1, echoes: true, ruins: 3, renames: false, ...over });
+
+  it("leaves both to the epochs' chronicle", async () => {
+    await import("./markers-generator");
+    const markers = globalThis.Markers as any;
+    options.map.lore.history = history({ mode: "epochs" }) as any;
+    world();
+    markers.setConfig(twoTypes);
+    markers.regenerate();
+    expect(pack.markers).toHaveLength(0); // the chronicle places the ruins and the fall battlefields
+  });
+
+  it("hides both from the archaeologist's chronicle, as before", async () => {
+    await import("./markers-generator");
+    const markers = globalThis.Markers as any;
+    options.map.lore.history = history({}) as any;
+    world();
+    markers.setConfig(twoTypes);
+    markers.regenerate();
+    expect(pack.markers).toHaveLength(0);
+  });
+
+  it("keeps every standard marker when echoes are off", async () => {
+    await import("./markers-generator");
+    const markers = globalThis.Markers as any;
+    options.map.lore.history = history({ mode: "epochs", echoes: false }) as any;
+    world();
+    markers.setConfig(twoTypes);
+    markers.regenerate();
+    expect(pack.markers.map((marker: Marker) => marker.type)).toEqual(["ruins", "battlefields"]);
+  });
+});

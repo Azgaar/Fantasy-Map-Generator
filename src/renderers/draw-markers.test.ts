@@ -3,6 +3,7 @@ import { beforeEach, expect, test, vi } from "vitest";
 import { Icons } from "@/components/icons";
 import { setAstralView } from "@/components/options/view-mode";
 import { setViewportSize, setViewportTransform } from "@/components/viewport";
+import { setViewedEpochStart } from "@/controllers/historical-time";
 import type { Marker } from "@/generators/markers-generator";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 
@@ -29,6 +30,7 @@ beforeEach(() => {
   setViewportTransform(1, 0, 0);
   setMarkersFilter(null);
   setEditedMarker(null);
+  setViewedEpochStart(null);
 });
 
 test("panning culls markers and repeated rendering produces the same markup", () => {
@@ -146,6 +148,23 @@ test("viewport rendering does not repopulate a disabled layer", () => {
   mocks.layerOn = true;
   drawMarkers();
   expect(document.getElementById("marker1")).not.toBeNull();
+});
+
+test("the historical view hides markers from after the epoch's start", () => {
+  pack.markers = [
+    { ...marker(1), year: 300 }, // already happened
+    { ...marker(2), year: 500 }, // happens exactly as the epoch begins
+    { ...marker(3), year: 700 } // still in the future
+  ];
+  setViewedEpochStart(500);
+  drawMarkers();
+  expect(document.getElementById("marker1")).not.toBeNull();
+  expect(document.getElementById("marker2")).not.toBeNull();
+  expect(document.getElementById("marker3")).toBeNull();
+
+  setViewedEpochStart(null); // back in the present
+  drawMarkers();
+  expect(document.getElementById("marker3")).not.toBeNull();
 });
 
 test("astral reads a default marker icon as its anomaly; a custom icon wins in both views", () => {

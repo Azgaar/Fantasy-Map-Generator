@@ -564,8 +564,8 @@ describe("Chronicle.generate fallen realms", () => {
       },
       burgs: [
         0,
-        { i: 1, cell: 2, x: at(2)[0], y: at(2)[1], population: 10, capital: 1 },
-        { i: 2, cell: 10, x: at(10)[0], y: at(10)[1], population: 8 }
+        { i: 1, cell: 2, name: "Aldgate", x: at(2)[0], y: at(2)[1], population: 10, capital: 1 },
+        { i: 2, cell: 10, name: "Fairholm", x: at(10)[0], y: at(10)[1], population: 8 }
       ],
       markers: [],
       states: [
@@ -655,10 +655,11 @@ describe("Chronicle.generate fallen realms", () => {
   it("places ruins and battlefield markers where history says they happened", () => {
     Chronicle.generate();
     const ruins = pack.markers.filter(marker => marker.type === "ruins");
-    const battlefields = pack.markers.filter(marker => marker.type === "battlefields");
-    expect(ruins).toHaveLength(1);
+    expect(ruins).toHaveLength(2); // the realm's seat plus a province burg, as the epochs do it
     expect(ruins[0].name).toContain("Ruins of");
-    expect(ruins[0].cell).toBe(10);
+    expect(ruins[0].cell).toBe(10); // Fairholm, the grandest burg that is not a capital today
+    expect(ruins[1].name).toBe("Ruins of Aldgate"); // the footprint's one remaining burg fell with it
+    const battlefields = pack.markers.filter(marker => marker.type === "battlefields");
     expect(battlefields).toHaveLength(1);
     expect(battlefields[0].cell).toBe(pack.history.events.find(event => event.type === "battle")!.loc);
   });
@@ -715,11 +716,29 @@ describe("Chronicle.generate fallen realms", () => {
     expect(pack.markers).toHaveLength(0);
     expect(pack.states[1].note).toBeUndefined();
   });
+
+  it("replaces its markers when history regenerates", () => {
+    Chronicle.generate();
+    expect(pack.markers.length).toBeGreaterThan(0);
+    const first = pack.markers.length;
+    Chronicle.generate();
+    expect(pack.markers).toHaveLength(first); // one set, not two
+    expect(pack.markers.every(marker => marker.chronicle)).toBe(true); // the chronicle owns every one
+  });
+
+  it("clears its markers when echoes are turned off", () => {
+    Chronicle.generate();
+    expect(pack.markers.length).toBeGreaterThan(0);
+    options.map.lore.history.echoes = false;
+    Chronicle.generate();
+    expect(pack.markers).toHaveLength(0);
+  });
 });
 
 describe("Chronicle.generate in the epochs mode", () => {
   beforeEach(() => {
     options.map.lore.history.mode = "epochs";
+    options.map.lore.history.echoes = false; // the fall markers have their own describe
     engine.calls = 0;
   });
 
@@ -866,5 +885,151 @@ describe("Chronicle.generate in the epochs mode", () => {
     expect(
       pack.history.events.some(event => event.type === "founding" && event.actors.some(actor => actor.kind === "state"))
     ).toBe(true); // and the states' own foundings are dated again
+  });
+});
+
+describe("Chronicle.generate fall markers", () => {
+  /** the mock engine's Old Empire (polity 1, fallen in 500) over a world whose burgs can fall with it */
+  beforeEach(() => {
+    options.map.lore.history.mode = "epochs";
+    engine.calls = 0;
+    // the empire's territory at its death: every cell but the multiples of 5
+    engine.artifact.snapshots[0] = Uint16Array.from({ length: 26 }, (_, cell) => (cell && cell % 5 ? 1 : 0));
+    const burg = Array<number>(26).fill(0);
+    burg[1] = 1;
+    burg[2] = 2;
+    burg[3] = 3;
+    burg[6] = 4;
+    globalThis.pack = {
+      cells: {
+        burg,
+        p: Array.from({ length: 26 }, (_, cell) => [cell * 10 + 10, 10]),
+        state: Array.from({ length: 26 }, (_, cell) => (cell === 7 ? 1 : 0)),
+        culture: Array<number>(26).fill(1)
+      },
+      burgs: [
+        0,
+        { i: 1, cell: 1, name: "Oldtown", x: 20, y: 10, population: 10, culture: 1 },
+        { i: 2, cell: 2, name: "Hillfort", x: 30, y: 10, population: 8, culture: 1 },
+        { i: 3, cell: 3, name: "Dale", x: 40, y: 10, population: 6, culture: 2 },
+        { i: 4, cell: 6, name: "Grange", x: 70, y: 10, population: 4, culture: 2 }
+      ],
+      states: [
+        { i: 0, name: "Neutrals", diplomacy: [] },
+        { i: 1, name: "Heir Realm", campaigns: [{ name: "The Fall War", start: 490, end: 500 }] }
+      ],
+      markers: [],
+      cultures: [
+        { i: 0, name: "Wildlings", base: 1 },
+        { i: 1, name: "Aeloran", base: "ENGLI", origins: [0] },
+        { i: 2, name: "Velic", base: "ENGLI", origins: [1] }
+      ],
+      religions: [{ i: 0, name: "No religion", origins: null }]
+    } as unknown as typeof pack;
+  });
+
+  afterEach(() => {
+    engine.artifact.snapshots[0] = Uint16Array.of(0, 1, 0, 1); // the shared mock artifact restored
+  });
+
+  it("marks the fallen polity's capital, and leaves the living polities alone", () => {
+    Chronicle.generate();
+    const seats = pack.markers.filter(marker => marker.name === "Ruins of Old Empire");
+    expect(seats).toHaveLength(1);
+    expect(seats[0].type).toBe("ruins"); // the fixed draw stays under the necropolis chance
+    expect(seats[0].note).toContain("Old Empire");
+    expect(seats[0].note).toContain("500");
+    for (const living of ["Heir Realm", "High March", "Wardens"])
+      expect(pack.markers.some(marker => marker.name.includes(living))).toBe(false);
+  });
+
+  it("marks the greater burgs with it, naming the burg", () => {
+    Chronicle.generate();
+    const ruins = pack.markers.filter(marker => marker.type !== "battlefields");
+    expect(ruins.map(marker => marker.name)).toEqual(["Ruins of Old Empire", "Ruins of Dale"]);
+    expect(ruins[1].note).toContain("Old Empire"); // the provinces fell with it, and the note says so
+  });
+
+  it("places a battlefield where the epoch's last battle was fought", () => {
+    Chronicle.generate();
+    const [battle] = pack.markers.filter(marker => marker.type === "battlefields");
+    expect(battle.cell).toBe(7); // the battle event's loc
+    expect(battle.name).toBe("Battle of the Fall of Old Empire");
+    expect(battle.note).toBe("The Old Empire fell in battle");
+    expect(battle.year).toBe(500); // the historical view hides it before the fall
+  });
+
+  it("remembers the fall on the seat burg, unless the user already told its story", () => {
+    Chronicle.generate();
+    expect(pack.burgs[1].note).toContain("Old Empire");
+    expect(pack.burgs[1].note).toContain("500");
+
+    pack.burgs[1].note = "A market town";
+    Chronicle.generate();
+    expect(pack.burgs[1].note).toBe("A market town");
+  });
+
+  it("stamps every fall marker with the year it belongs to", () => {
+    Chronicle.generate();
+    for (const marker of pack.markers) expect(marker.year).toBe(500);
+  });
+
+  it("lets the ruins slider strip the provinces back to the capital", () => {
+    options.map.lore.history.ruins = 1;
+    Chronicle.generate();
+    expect(pack.markers.filter(marker => marker.type !== "battlefields")).toHaveLength(1);
+    expect(pack.markers[0].name).toBe("Ruins of Old Empire");
+  });
+
+  it("multiplies the province ruins at the slider's top", () => {
+    options.map.lore.history.ruins = 5;
+    Chronicle.generate();
+    expect(pack.markers.filter(marker => marker.type !== "battlefields")).toHaveLength(3); // the seat plus both greater burgs: sqrt(20) / 2 asks for two
+  });
+
+  it("skips burgs that already host a marker", () => {
+    pack.markers.push({ i: 9, name: "The Old Fair", type: "fairs", cell: 3 } as typeof pack.markers[number]); // Dale's cell is taken
+    options.map.lore.history.ruins = 5;
+    Chronicle.generate();
+    const names = pack.markers.filter(marker => marker.type !== "battlefields").map(marker => marker.name);
+    expect(names).toEqual(["The Old Fair", "Ruins of Old Empire", "Ruins of Hillfort"]);
+  });
+
+  it("places nothing when echoes are off", () => {
+    options.map.lore.history.echoes = false;
+    Chronicle.generate();
+    expect(pack.markers).toHaveLength(0);
+  });
+
+  it("clears its markers when echoes are turned off", () => {
+    Chronicle.generate();
+    expect(pack.markers.length).toBeGreaterThan(0);
+    options.map.lore.history.echoes = false;
+    Chronicle.generate();
+    expect(pack.markers).toHaveLength(0);
+  });
+
+  it("replaces its own markers when history regenerates, and keeps the user's", () => {
+    pack.markers.push({ i: 99, name: "The Old Fair", type: "fairs", cell: 9 } as typeof pack.markers[number]);
+    Chronicle.generate();
+    const count = pack.markers.length;
+    Chronicle.generate();
+    expect(pack.markers).toHaveLength(count); // one set of chronicle markers plus the fair
+    expect(pack.markers.some(marker => marker.name === "The Old Fair")).toBe(true); // the fair is not the chronicle's
+    expect(pack.markers.filter(marker => marker.chronicle)).toHaveLength(count - 1);
+  });
+
+  it("tells the fallen polity's story at its greatest survivor when the capital is gone", () => {
+    pack.burgs[1].removed = true;
+    Chronicle.generate();
+    const seat = pack.markers.find(marker => marker.name === "Ruins of Old Empire")!;
+    expect(seat.cell).toBe(2); // Hillfort, the largest survivor
+  });
+
+  it("marks the empty heartland when no burg survives the fall", () => {
+    for (const burg of pack.burgs) if (burg) burg.removed = true;
+    Chronicle.generate();
+    const seat = pack.markers.find(marker => marker.name === "Ruins of Old Empire")!;
+    expect(seat.cell).toBe(1); // the first cell of the dead territory
   });
 });
