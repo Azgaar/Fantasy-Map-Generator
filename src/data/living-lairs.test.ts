@@ -4,9 +4,11 @@ import {
   createProvinceLair,
   getLairDef,
   instantiateLairUnits,
+  isLairStateCapable,
   LAIR_CATALOG,
   LAIR_NATURE_IDS,
   pickLairForTrouble,
+  STATE_CAPABLE_LAIR_IDS,
   TROUBLE_TO_LAIR_MAPPINGS
 } from "./living-lairs";
 
@@ -28,6 +30,40 @@ describe("living-lairs (Slice 1: Lair Catalog, Unit Templates, and Trouble Mappi
       expect(def.defenderUnits.length).toBeGreaterThan(0);
       expect(["burg", "ruin", "resource"]).toContain(def.defaultTheme);
       expect(def.markerIcon).toBeTruthy();
+    }
+  });
+
+  it("classifies exactly 15 state-capable Lairs and 5 non-state hazards", () => {
+    expect(STATE_CAPABLE_LAIR_IDS).toHaveLength(15);
+    const capableSet = new Set(STATE_CAPABLE_LAIR_IDS);
+
+    const nonCapableIds = LAIR_NATURE_IDS.filter(id => !capableSet.has(id));
+    expect(nonCapableIds).toEqual([
+      "cursed_earth",
+      "mad_wizard",
+      "monster_nest",
+      "blight_infestation",
+      "vicious_humanoids"
+    ]);
+
+    const { rosters } = currentContent().content;
+
+    for (const id of LAIR_NATURE_IDS) {
+      const def = LAIR_CATALOG[id];
+      if (capableSet.has(id)) {
+        expect(def.canFormState).toBe(true);
+        expect(isLairStateCapable(id)).toBe(true);
+        expect(def.stateForm).toBeTruthy();
+        expect(def.stateRosterId).toBeTruthy();
+        expect(["good", "lawful", "neutral", "chaotic", "evil"]).toContain(def.defaultAlignment);
+        if (def.stateRosterId !== "local") {
+          expect(rosters[def.stateRosterId!], `Roster ${def.stateRosterId} exists in Conquest rosters`).toBeDefined();
+        }
+      } else {
+        expect(def.canFormState).toBe(false);
+        expect(isLairStateCapable(id)).toBe(false);
+        expect(def.stateRosterId).toBeUndefined();
+      }
     }
   });
 

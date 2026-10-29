@@ -1,6 +1,7 @@
 import { currentContent } from "@/conquest/content/store";
 import { MEN_PER_BLOCK, type UnitType } from "@/conquest/engine/common/content";
 import type { ArmyUnit } from "@/conquest/engine/common/types";
+import type { Alignment } from "@/data/culture-traits";
 import type { ProvinceLair, TroubleTheme } from "@/types/living";
 
 export interface LairUnitTemplate {
@@ -19,6 +20,10 @@ export interface LairDef {
   fortified: boolean;
   markerIcon: string;
   defaultTheme: TroubleTheme;
+  canFormState: boolean;
+  stateRosterId?: string;
+  stateForm?: string;
+  defaultAlignment?: Alignment;
 }
 
 export const LAIR_CATALOG: Record<string, LairDef> = {
@@ -35,7 +40,11 @@ export const LAIR_CATALOG: Record<string, LairDef> = {
     ],
     fortified: false,
     markerIcon: "☠️",
-    defaultTheme: "ruin"
+    defaultTheme: "ruin",
+    canFormState: true,
+    stateRosterId: "tombKingsBase",
+    stateForm: "Necropolis",
+    defaultAlignment: "evil"
   },
   ancient_fort: {
     id: "ancient_fort",
@@ -50,7 +59,11 @@ export const LAIR_CATALOG: Record<string, LairDef> = {
     ],
     fortified: true,
     markerIcon: "🏰",
-    defaultTheme: "ruin"
+    defaultTheme: "ruin",
+    canFormState: true,
+    stateRosterId: "local",
+    stateForm: "Iron Barony",
+    defaultAlignment: "lawful"
   },
   aspiring_warlord: {
     id: "aspiring_warlord",
@@ -66,7 +79,11 @@ export const LAIR_CATALOG: Record<string, LairDef> = {
     ],
     fortified: false,
     markerIcon: "⚔️",
-    defaultTheme: "burg"
+    defaultTheme: "burg",
+    canFormState: true,
+    stateRosterId: "local",
+    stateForm: "Despotate",
+    defaultAlignment: "chaotic"
   },
   bandit_camp: {
     id: "bandit_camp",
@@ -81,7 +98,11 @@ export const LAIR_CATALOG: Record<string, LairDef> = {
     ],
     fortified: false,
     markerIcon: "🗡️",
-    defaultTheme: "burg"
+    defaultTheme: "burg",
+    canFormState: true,
+    stateRosterId: "tribalBase",
+    stateForm: "Outlaw Confederacy",
+    defaultAlignment: "chaotic"
   },
   corrupt_monastery: {
     id: "corrupt_monastery",
@@ -96,7 +117,11 @@ export const LAIR_CATALOG: Record<string, LairDef> = {
     ],
     fortified: false,
     markerIcon: "⛩️",
-    defaultTheme: "burg"
+    defaultTheme: "burg",
+    canFormState: true,
+    stateRosterId: "chaosBase",
+    stateForm: "Dread Cloister",
+    defaultAlignment: "evil"
   },
   cult_shrine: {
     id: "cult_shrine",
@@ -111,7 +136,11 @@ export const LAIR_CATALOG: Record<string, LairDef> = {
     ],
     fortified: false,
     markerIcon: "🩸",
-    defaultTheme: "burg"
+    defaultTheme: "burg",
+    canFormState: true,
+    stateRosterId: "chaosBase",
+    stateForm: "Blood-Covenant",
+    defaultAlignment: "chaotic"
   },
   cursed_earth: {
     id: "cursed_earth",
@@ -125,7 +154,8 @@ export const LAIR_CATALOG: Record<string, LairDef> = {
     ],
     fortified: false,
     markerIcon: "🌑",
-    defaultTheme: "resource"
+    defaultTheme: "resource",
+    canFormState: false
   },
   demonic_master: {
     id: "demonic_master",
@@ -140,7 +170,11 @@ export const LAIR_CATALOG: Record<string, LairDef> = {
     ],
     fortified: false,
     markerIcon: "😈",
-    defaultTheme: "ruin"
+    defaultTheme: "ruin",
+    canFormState: true,
+    stateRosterId: "demonBase",
+    stateForm: "Infernal Dominion",
+    defaultAlignment: "evil"
   },
   dwarven_outcasts: {
     id: "dwarven_outcasts",
@@ -155,7 +189,11 @@ export const LAIR_CATALOG: Record<string, LairDef> = {
     ],
     fortified: false,
     markerIcon: "⛏️",
-    defaultTheme: "resource"
+    defaultTheme: "resource",
+    canFormState: true,
+    stateRosterId: "infernalDwarfBase",
+    stateForm: "Outcast Thanehood",
+    defaultAlignment: "lawful"
   },
   mad_wizard: {
     id: "mad_wizard",
@@ -171,7 +209,8 @@ export const LAIR_CATALOG: Record<string, LairDef> = {
     ],
     fortified: false,
     markerIcon: "🔮",
-    defaultTheme: "ruin"
+    defaultTheme: "ruin",
+    canFormState: false
   },
   magical_gate: {
     id: "magical_gate",
@@ -186,7 +225,11 @@ export const LAIR_CATALOG: Record<string, LairDef> = {
     ],
     fortified: false,
     markerIcon: "🌀",
-    defaultTheme: "ruin"
+    defaultTheme: "ruin",
+    canFormState: true,
+    stateRosterId: "demonBase",
+    stateForm: "Rift-Kingdom",
+    defaultAlignment: "chaotic"
   },
   malevolent_creed: {
     id: "malevolent_creed",
@@ -201,7 +244,11 @@ export const LAIR_CATALOG: Record<string, LairDef> = {
     ],
     fortified: false,
     markerIcon: "🏹",
-    defaultTheme: "burg"
+    defaultTheme: "burg",
+    canFormState: true,
+    stateRosterId: "darkElfBase",
+    stateForm: "Purist Dominion",
+    defaultAlignment: "evil"
   },
   monster_nest: {
     id: "monster_nest",
@@ -212,7 +259,8 @@ export const LAIR_CATALOG: Record<string, LairDef> = {
     defenderUnits: [{ unitTypeId: "gorgon_behemoth", count: 2 }],
     fortified: false,
     markerIcon: "🐉",
-    defaultTheme: "resource"
+    defaultTheme: "resource",
+    canFormState: false
   },
   renegade_outpost: {
     id: "renegade_outpost",
@@ -228,7 +276,11 @@ export const LAIR_CATALOG: Record<string, LairDef> = {
     ],
     fortified: true,
     markerIcon: "🛡️",
-    defaultTheme: "burg"
+    defaultTheme: "burg",
+    canFormState: true,
+    stateRosterId: "local",
+    stateForm: "Renegade Junta",
+    defaultAlignment: "chaotic"
   },
   school_of_dark_sorcery: {
     id: "school_of_dark_sorcery",
@@ -244,7 +296,11 @@ export const LAIR_CATALOG: Record<string, LairDef> = {
     ],
     fortified: false,
     markerIcon: "📖",
-    defaultTheme: "ruin"
+    defaultTheme: "ruin",
+    canFormState: true,
+    stateRosterId: "vampireBase",
+    stateForm: "Cabal",
+    defaultAlignment: "evil"
   },
   marauder_warcamp: {
     id: "marauder_warcamp",
@@ -259,7 +315,11 @@ export const LAIR_CATALOG: Record<string, LairDef> = {
     ],
     fortified: true,
     markerIcon: "🪓",
-    defaultTheme: "resource"
+    defaultTheme: "resource",
+    canFormState: true,
+    stateRosterId: "orcBase",
+    stateForm: "Orc Warcamp",
+    defaultAlignment: "chaotic"
   },
   splinter_group: {
     id: "splinter_group",
@@ -275,7 +335,11 @@ export const LAIR_CATALOG: Record<string, LairDef> = {
     ],
     fortified: false,
     markerIcon: "⛺",
-    defaultTheme: "burg"
+    defaultTheme: "burg",
+    canFormState: true,
+    stateRosterId: "local",
+    stateForm: "Partisan League",
+    defaultAlignment: "neutral"
   },
   thieves_stronghold: {
     id: "thieves_stronghold",
@@ -290,7 +354,11 @@ export const LAIR_CATALOG: Record<string, LairDef> = {
     ],
     fortified: false,
     markerIcon: "🗝️",
-    defaultTheme: "burg"
+    defaultTheme: "burg",
+    canFormState: true,
+    stateRosterId: "skavenBase",
+    stateForm: "Shadow Syndicate",
+    defaultAlignment: "evil"
   },
   blight_infestation: {
     id: "blight_infestation",
@@ -306,7 +374,8 @@ export const LAIR_CATALOG: Record<string, LairDef> = {
     ],
     fortified: false,
     markerIcon: "🕸️",
-    defaultTheme: "ruin"
+    defaultTheme: "ruin",
+    canFormState: false
   },
   vicious_humanoids: {
     id: "vicious_humanoids",
@@ -320,7 +389,8 @@ export const LAIR_CATALOG: Record<string, LairDef> = {
     ],
     fortified: false,
     markerIcon: "🦴",
-    defaultTheme: "resource"
+    defaultTheme: "resource",
+    canFormState: false
   }
 };
 
@@ -347,6 +417,29 @@ export const LAIR_NATURE_IDS: readonly string[] = [
   "blight_infestation",
   "vicious_humanoids"
 ];
+
+/** 15 state-capable Lair Nature IDs */
+export const STATE_CAPABLE_LAIR_IDS: readonly string[] = [
+  "ancient_evil",
+  "ancient_fort",
+  "aspiring_warlord",
+  "bandit_camp",
+  "corrupt_monastery",
+  "cult_shrine",
+  "demonic_master",
+  "dwarven_outcasts",
+  "magical_gate",
+  "malevolent_creed",
+  "renegade_outpost",
+  "school_of_dark_sorcery",
+  "marauder_warcamp",
+  "splinter_group",
+  "thieves_stronghold"
+];
+
+export function isLairStateCapable(id: string): boolean {
+  return LAIR_CATALOG[id]?.canFormState ?? false;
+}
 
 /** Mapping from 37 Trouble archetypes to candidate Lair Natures */
 export const TROUBLE_TO_LAIR_MAPPINGS: Record<string, readonly string[]> = {
