@@ -1,4 +1,6 @@
 // Living World simulation state types. See docs/plans/living-world.md
+import type { ArmyUnit } from "@/conquest/engine/common/types";
+
 export type SeasonId = 0 | 1 | 2 | 3;
 
 export const SEASON_NAMES = ["Spring", "Summer", "Autumn", "Winter"] as const;
@@ -11,7 +13,9 @@ export type AgendaKind =
   | "conquer"
   | "reclaim"
   | "pacify"
-  | "resolve_trouble";
+  | "resolve_trouble"
+  | "clear_lair"
+  | "hire_adventurers";
 
 export type TroubleTheme = "burg" | "ruin" | "resource";
 export type TroublePool = "m" | "w" | "s";
@@ -31,6 +35,22 @@ export interface ProvinceTrouble {
   burgId?: number;
   markerId?: number;
   goodId?: number;
+}
+
+export interface ProvinceLair {
+  id: string;
+  name: string;
+  level: number;
+  theme: TroubleTheme;
+  cell: number;
+  burgId?: number;
+  markerId?: number;
+  raidThreshold: number;
+  raidUnits: ArmyUnit[];
+  defenders: ArmyUnit[];
+  fortified: boolean;
+  raidPending: boolean;
+  seasonsActive: number;
 }
 
 export interface StateAgenda {
@@ -112,6 +132,8 @@ export interface ProvinceSimState {
   } | null;
   /** Active obstacle/trouble afflicting the province */
   trouble?: ProvinceTrouble | null;
+  /** Active lair entrenched in the province */
+  lair?: ProvinceLair | null;
 }
 
 export interface StatePolitySim {
@@ -137,7 +159,8 @@ export type LivingNewsKind =
   | "muster"
   | "colonize"
   | "pacify"
-  | "trouble";
+  | "trouble"
+  | "lair";
 
 export interface LivingNewsItem {
   tick: number;

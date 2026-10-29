@@ -61,8 +61,10 @@ export interface Era {
   to: number;
 }
 
+export type HistoricalRoleType = "ruler" | "general" | "prophet" | "rebel" | "adventurer";
+
 export interface HistoricalRole {
-  type: "ruler" | "general" | "prophet" | "rebel";
+  type: HistoricalRoleType;
   target: HistRef;
   from: number;
   to?: number;
