@@ -68,9 +68,9 @@ export function checkOverrides(page, over) {
           .filter(n => n.includes(s))
           .pop() || `/Fantasy-Map-Generator/${s}`;
       const { Goods } = await import(find("model/economy/goods-generator.ts"));
-      const { Markets } = await import(find("model/economy/markets-generator.ts"));
       const { Production } = await import(find("model/economy/production-generator.ts"));
       const { Prosperity } = await import(find("model/economy/prosperity.ts"));
+      const { StateEconomy } = await import(find("model/economy/state-economy.ts"));
       for (const g of pack.goods) {
         if (over.value?.[g.name] !== undefined) g.value = over.value[g.name];
         if (over.coverage?.[g.name]) g.demandCoverage = { ...over.coverage[g.name] };
@@ -81,9 +81,9 @@ export function checkOverrides(page, over) {
       Production.regenerate();
       return new Function(`${scoreSource}\nreturn score;`)()(pack, {
         Goods,
-        Markets,
         Production,
-        Prosperity
+        Prosperity,
+        StateEconomy
       });
     },
     { over, scoreSource: SCORE }

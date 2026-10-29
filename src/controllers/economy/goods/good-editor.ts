@@ -11,13 +11,13 @@ import { goodIconLines } from "@/renderers/draw-goods";
 import { Layers } from "@/renderers/layers";
 import { Dialog } from "@/ui/dialog/dialog";
 import { refreshEditors } from "@/ui/dialog/dialog-helpers";
+import { bindEconomyWiki, economyWikiButton } from "@/ui/economy-view";
 import { tip } from "@/ui/tooltips";
 import { getRandomColor } from "@/utils/color-utils";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
 import { capitalize, escapeHtml } from "@/utils/string-utils";
-import { bindEconomyWiki, economyWikiButton } from "../economy-wiki";
 
 function open(editedGood?: Good, onUpdate?: () => void): void {
   const demandCoverageState: Partial<Record<DemandCategory, number>> = { ...(editedGood?.demandCoverage || {}) };

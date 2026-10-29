@@ -24,6 +24,7 @@ let sourcePack: PackedGraph | null = null;
 const ICON_FRAME = 100; // every goods icon is drawn in a 0 0 100 100 frame
 const OVERVIEW_SATURATION = 0.95; // percentile from which cells get the darkest color and burgs the biggest circle
 const PIE_GOODS = 5; // a burg pie shows its most valuable goods, the rest in one sector
+const MIN_SECTOR = 0.04; // a sector thinner than this (about 14°) is a sliver under its outline: such goods join the rest, drawn at least this wide
 const OTHER_FILL = "#9e9e9e";
 const LINEWORK = 0.4; // icon lines are this share of the circle outline
 
@@ -203,14 +204,17 @@ function buildBurgCircles(shown: Set<number>): void {
     const value = goods.reduce((total, good) => total + good.value, 0);
     if (!value) continue;
 
-    const sectors: PieSector[] = goods
-      .slice(0, PIE_GOODS)
-      .map(({ good, value: goodValue }) => ({ goods: [good.i], color: good.color, share: goodValue / value }));
-    const rest = goods.slice(PIE_GOODS);
-    if (rest.length) {
-      const share = rest.reduce((total, good) => total + good.value, 0) / value;
-      sectors.push({ goods: rest.map(({ good }) => good.i), color: OTHER_FILL, share });
-    }
+    const own = goods.slice(0, PIE_GOODS).filter(({ value: goodValue }) => goodValue / value >= MIN_SECTOR);
+    const rest = goods.slice(own.length);
+    const restShare = rest.reduce((total, good) => total + good.value, 0) / value;
+    const restDrawn = rest.length ? Math.max(restShare, MIN_SECTOR) : 0;
+    const scale = (1 - restDrawn) / (1 - restShare); // the others give up what a widened rest takes
+    const sectors: PieSector[] = own.map(({ good, value: goodValue }) => ({
+      goods: [good.i],
+      color: good.color,
+      share: (goodValue / value) * scale
+    }));
+    if (rest.length) sectors.push({ goods: rest.map(({ good }) => good.i), color: OTHER_FILL, share: restDrawn });
     values.push([burg, value, sectors]);
   }
   const saturation = getSaturation(values.map(([, value]) => value));

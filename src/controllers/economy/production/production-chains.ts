@@ -4,12 +4,11 @@ import { Goods } from "@/model/economy/goods-generator";
 import { Icons } from "@/model/icons";
 import { goodIconLines } from "@/renderers/draw-goods";
 import { Dialog } from "@/ui/dialog/dialog";
-
+import { bindEconomyWiki, economyWikiButton } from "@/ui/economy-view";
 import { tip } from "@/ui/tooltips";
 import { C_12 } from "@/utils/color-utils";
 import { t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
-import { bindEconomyWiki, economyWikiButton } from "./economy-wiki";
 
 const CARD_WIDTH = 98;
 const CARD_HEIGHT = 34;

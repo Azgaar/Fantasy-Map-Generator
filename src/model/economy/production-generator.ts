@@ -265,7 +265,7 @@ export class ProductionModule {
     index.worldWorkers[good.i] = (index.worldWorkers[good.i] || 0) + actualYield;
 
     if (state.log) {
-      const entry: MfgEntry = { goodId: good.i, units: produced, recipe, candidates: decision.candidates };
+      const entry: ManufacturingEntry = { goodId: good.i, units: produced, recipe, candidates: decision.candidates };
       if (cultureModifier !== 1) entry.cultureModifier = cultureModifier;
       if (specialization !== 1) entry.specialization = rn(specialization, 2);
       state.log.push(entry);
@@ -440,7 +440,7 @@ export class ProductionModule {
     return demandGoodsByCategory;
   }
 
-  /** Buys the share of the burg's daily needs due so far: spread over the goods covering each need, cheaper ones getting more, then the cheapest for what is left; what it could not get waits for its next turn */
+  /** Buys the share of the burg's daily needs due so far, cheaper goods getting more; what it could not get waits for its next turn */
   private fillDemand(index: ProductionIndex, state: BurgProductionState, share = 1): void {
     const { burg, demandCoverage } = state;
     const demandTargets = getDemandTargets(burg.population || 0).map(target => target * share);
@@ -1009,7 +1009,7 @@ export class ProductionModule {
   }
 }
 
-export const isMfgEntry = (entry: ProductionLogEntry): entry is MfgEntry => "recipe" in entry;
+export const isManufacturingEntry = (entry: ProductionLogEntry): entry is ManufacturingEntry => "recipe" in entry;
 export const isTradeEntry = (entry: ProductionLogEntry): entry is TradeEntry => "kind" in entry;
 export const isDemandEntry = (entry: ProductionLogEntry): entry is DemandEntry => "category" in entry;
 
@@ -1098,7 +1098,7 @@ export type BurgProduction = [good: number, units: number][];
 
 type LocalEntry = { goodId: number; units: number };
 
-type MfgEntry = {
+type ManufacturingEntry = {
   goodId: number;
   units: number;
   recipe: ProductionRecipeEntry[];
@@ -1117,6 +1117,6 @@ type DemandEntry = {
 };
 
 /** One step of a burg's production run, logged in debug mode */
-export type ProductionLogEntry = LocalEntry | MfgEntry | TradeEntry | DemandEntry;
+export type ProductionLogEntry = LocalEntry | ManufacturingEntry | TradeEntry | DemandEntry;
 
 export const Production = new ProductionModule();

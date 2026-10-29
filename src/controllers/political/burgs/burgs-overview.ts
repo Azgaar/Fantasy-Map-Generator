@@ -1,7 +1,5 @@
 import { type HierarchyCircularNode, pack as packLayout, select, stratify } from "d3";
 import { Controllers } from "@/controllers";
-import { EconomyTerms } from "@/controllers/economy/economy-terms";
-import { prosperityTip, renderProsperityPercent } from "@/controllers/economy/prosperity-view";
 import { Markets } from "@/model/economy/markets-generator";
 import { Prosperity } from "@/model/economy/prosperity";
 import type { Burg } from "@/model/political/burgs-generator";
@@ -24,6 +22,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
+import { EconomyTerms, prosperityTip, renderProsperityPercent } from "@/ui/economy-view";
 import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { getLatitude, getLongitude } from "@/utils/common-utils";

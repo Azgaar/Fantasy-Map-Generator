@@ -73,7 +73,7 @@
 - **Drive the UI**: `await FMG.Controllers.BurgsOverview.open()`, `FMG.Layers.show("relief")`, `FMG.Layers.drawAll()`, `FMG.zoomTo(x, y, scale, 0)`, `FMG.Dialog.closeAll()`.
 - **Debug drawing**: `FMG.drawCellsValue(FMG.pack.cells.h)`, `FMG.drawPolygons(values)`, `FMG.drawPoint([x, y], {})` draw into the `#debug` layer.
 - **Anything not on FMG**: in dev, import the module by its served path, `await import("/Fantasy-Map-Generator/model/physical/coastline-generator.ts")` (the path under `src/`, without `src/`); it is the same instance the app uses.
-- **Logging**: `FMG.log.enabled.time = false` silences a level (`time`, `info`, `warn`, `error`); `localStorage.debug = '{"production":true}'` turns on a feature's diagnostics after a reload.
+- **Logging**: `FMG.log.enabled.time = false` silences a level (`time`, `info`, `warn`, `error`); the Debugging section of the Advanced options (`options.app.debug`) turns on a feature's diagnostics.
 - **Viewport**: a browser pane can open at zero width, and then the map fails to generate. Resize the window and reload before trusting a result.
 
 # Domain Knowledge

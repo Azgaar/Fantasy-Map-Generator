@@ -16,10 +16,10 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
+import { bindEconomyWiki, economyWikiButton } from "@/ui/economy-view";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
-import { bindEconomyWiki, economyWikiButton } from "../economy-wiki";
 
 const dialogId = "marketsGoodCompare" as const;
 const position = { my: "right top", at: "left-10 top" };

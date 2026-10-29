@@ -1,4 +1,5 @@
 import { Controllers } from "@/controllers";
+import { EXPENSE_LABELS } from "@/data/id-labels";
 import { Goods } from "@/model/economy/goods-generator";
 import { PROSPERITY_LEVELS } from "@/model/economy/prosperity";
 import { type GroupLiving, type StateAccounts, StateEconomy } from "@/model/economy/state-economy";
@@ -6,20 +7,23 @@ import { EXPENSES } from "@/model/political/states-generator";
 import { formatPrice } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
 import { Dialog } from "@/ui/dialog/dialog";
-import { tip } from "@/ui/tooltips";
-import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/node-utils";
-import { rn, si } from "@/utils/number-utils";
-import { budgetBackground, ECONOMY_COLORS, tone } from "./economy-config";
-import { EconomyTerms } from "./economy-terms";
-import { bindEconomyWiki, economyWikiButton } from "./economy-wiki";
 import {
+  bindEconomyWiki,
+  budgetBackground,
+  ECONOMY_COLORS,
+  EconomyTerms,
+  economyWikiButton,
   prosperityColor,
   prosperityLevel,
   renderProsperity,
   renderProsperityParts,
-  renderProsperityPercent
-} from "./prosperity-view";
+  renderProsperityPercent,
+  tone
+} from "@/ui/economy-view";
+import { tip } from "@/ui/tooltips";
+import { sentences, t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/node-utils";
+import { rn, si } from "@/utils/number-utils";
 import { type GoodsKind, openGoodsTable, openPartnersTable, openProsperityTable } from "./state-economy-tables";
 
 const dialogPrefix = "stateEconomy";
@@ -94,7 +98,7 @@ function open(stateId: number): void {
     if (button) openGoodsTable(stateId, button.dataset.kind as GoodsKind);
     if (target.closest(".partnersTable")) openPartnersTable(stateId);
     if (target.closest(".prosperityTable")) openProsperityTable(stateId);
-    if (target.closest(".taxes")) Controllers.StatesEditor.openTaxes(stateId);
+    if (target.closest(".taxes")) Controllers.StatesEditor.openTaxes(stateId, render);
   });
   bindEconomyWiki(`${id}Wiki`);
   render();
@@ -158,7 +162,7 @@ function renderCards(
   imports: number
 ): string {
   const treasury = pack.states[stateId].economy.treasury || 0;
-  const burden = accounts.product ? rn((pack.states[stateId].economy.collected / accounts.product) * 100, 1) : 0;
+  const burden = accounts.product ? rn((accounts.taxes / accounts.product) * 100, 1) : 0;
   const balance = exports - imports;
   const population = people(accounts);
   const share = world.product ? rn((accounts.product / world.product) * 100, 1) : 0;
@@ -207,7 +211,7 @@ function economyNotes(stateId: number, accounts: StateAccounts, world: StateAcco
 /** The good whose share of the state's output most exceeds its share of the world's, of those it makes in some measure */
 function knownFor(stateId: number): string | null {
   const output = StateEconomy.getOutput(stateId);
-  const worldOutput = StateEconomy.getOutput(-1);
+  const worldOutput = StateEconomy.getWorldOutput();
   const total = output.reduce((sum, value) => sum + (value || 0), 0);
   const worldTotal = worldOutput.reduce((sum, value) => sum + (value || 0), 0);
   if (!total || !worldTotal) return null;
@@ -267,7 +271,7 @@ function renderRevenue(stateId: number, accounts: StateAccounts): string {
   const { salesTax, tariffs, pollTax, pollTaxOwed, marketFees, otherRevenue } = StateEconomy.getBudget(stateId);
   const { economy } = pack.states[stateId];
   const taxes = salesTax + tariffs + pollTax + marketFees;
-  const share = accounts.product ? rn((taxes / accounts.product) * 100, 1) : 0;
+  const share = accounts.product ? rn((accounts.taxes / accounts.product) * 100, 1) : 0;
   return `<div><h4 data-tip="${t("What the state collected today")}"><span>${t("Revenue")}</span>${budgetButton()}</h4>
     ${line(t("Sales tax: {{rate}}%", { rate: rn((economy.salesTax || 0) * 100, 1) }), salesTax, "", "positive")}
     ${line(t("Import tariffs"), tariffs, "", "positive")}
@@ -288,7 +292,7 @@ function renderExpenses(stateId: number): string {
     `<div data-tip="${tip}" class="row budget"><span class="name">${name}</span><span class="right">${share}%</span>${bar}<span class="right ${tone}">${formatPrice(value)}</span></div>`;
   const swatch = `<span class="swatch" style="background: ${ECONOMY_COLORS.pocketed}"></span>`;
   return `<div><h4 data-tip="${EconomyTerms.budget()}"><span>${t("Expenses")}</span>${budgetButton()}</h4>
-    ${EXPENSES.map(expense => row(EconomyTerms.expense(expense), budget[expense], `<div class="bar" style="background: ${budgetBackground(budget[expense], budget.corruption)}"></div>`, -economy.spent[expense], EconomyTerms.expenseTip(expense), "negative")).join("")}
+    ${EXPENSES.map(expense => row(EXPENSE_LABELS[expense], budget[expense], `<div class="bar" style="background: ${budgetBackground(budget[expense], budget.corruption)}"></div>`, -economy.spent[expense], EconomyTerms.expenseTip(expense), "negative")).join("")}
     <div class="total">${row(t("Balance"), balance, "<span></span>", economy.treasury, EconomyTerms.stateTreasury(), tone(economy.treasury))}</div>
     <div data-tip="${EconomyTerms.corruption()}" class="row plain muted"><span class="name">${swatch}${t("Corruption: {{rate}}%", { rate: budget.corruption })}</span><span class="right negative">${formatPrice(-economy.pocketed)}</span></div>
   </div>`;

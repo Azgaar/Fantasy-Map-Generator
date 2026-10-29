@@ -1,11 +1,14 @@
 // A state's economy from the last run: what its people make and how well they live, its budget and its trade.
 // Worked out from burgs, deals and markets on demand, so it needs nothing saved of its own
 
+import { sum } from "d3";
 import { States } from "@/model/political/states-generator";
 import { Goods } from "./goods-generator";
 import { DEAL_KINDS, type Deal, Markets } from "./markets-generator";
 import { Production } from "./production-generator";
 import { type Living, PROSPERITY_LEVELS, Prosperity } from "./prosperity";
+
+type Group = "towns" | "country";
 
 /** A group of people's living, averaged by their numbers */
 export type GroupLiving = Living & { people: number };
@@ -18,11 +21,12 @@ export type StateAccounts = {
   manufacturing: number; // its burgs' product
   trade: number; // market margins its market centers took
   product: number;
+  taxes: number; // taxes and fees it collected, other revenue aside
   wealth: number; // product per person
   prosperity: number | null; // all people's, by their numbers
   towns: GroupLiving | null;
   country: GroupLiving | null;
-  levels: Record<"towns" | "country", number[]>; // people at each prosperity level, by burgs and by cells
+  levels: Record<Group, number[]>; // people at each prosperity level, by burgs and by cells
   burgWealth: number[]; // each burg's product per person
 };
 
@@ -36,15 +40,38 @@ export type StateTrade = {
   importedUnits: number[];
 };
 
-/** A deal's goods at the market's price, without carriage and taxes */
-const goodsValue = ([, , , kind, units, price, tax, tariff, carriage]: Deal) =>
-  kind === DEAL_KINDS.sale ? units * (price + carriage) : units * price - tax - tariff - units * carriage;
+/** A deal's goods at the market's price: without carriage, taxes and the margin */
+const goodsValue = (deal: Deal) => {
+  const [, , , kind, units, price, tax, tariff, carriage] = deal;
+  const margin = Markets.getMargin(deal);
+  return kind === DEAL_KINDS.sale
+    ? units * (price + carriage) + margin
+    : units * price - tax - tariff - units * carriage - margin;
+};
+
+const emptyAccounts = (): StateAccounts => ({
+  people: 0,
+  townspeople: 0,
+  rural: 0,
+  manufacturing: 0,
+  trade: 0,
+  product: 0,
+  taxes: 0,
+  wealth: 0,
+  prosperity: null,
+  towns: null,
+  country: null,
+  levels: { towns: PROSPERITY_LEVELS.map(() => 0), country: PROSPERITY_LEVELS.map(() => 0) },
+  burgWealth: []
+});
 
 class StateEconomyModule {
   private source: unknown = null; // the deals the cache describes
   private accounts = new Map<number, StateAccounts>();
+  private world: StateAccounts | null = null;
   private outputSource: unknown = null; // the deals the outputs describe
-  private outputs = new Map<number, number[]>(); // by state, -1 for the world
+  private outputs = new Map<number, number[]>();
+  private worldOutput: number[] = [];
 
   getAccounts(stateId: number): StateAccounts | null {
     this.index();
@@ -54,7 +81,7 @@ class StateEconomyModule {
   /** The world's: all states, neutrals included */
   getWorld(): StateAccounts | null {
     this.index();
-    return this.accounts.get(-1) ?? null;
+    return this.world;
   }
 
   getTrade(stateId: number): StateTrade {
@@ -105,101 +132,90 @@ class StateEconomyModule {
     otherRevenue: number;
     corruption: number;
   } {
-    let salesTax = 0;
-    let tariffs = 0;
-    for (const deal of pack.deals) {
-      const { taxState, tariffState } = Markets.getTaxStates(deal);
-      if (taxState === stateId) salesTax += deal[6];
-      if (tariffState === stateId) tariffs += deal[7] || 0;
-    }
+    const { salesTax, tariffs } = Markets.getTaxesByState();
     const { owed, paid } = States.getPollTax();
-    const markets = pack.markets.filter(market => market.feePaid && pack.burgs[market.centerBurgId]?.state === stateId);
-    const marketFees = markets.reduce((total, market) => total + (market.feePaid || 0), 0);
-    const pollTax = paid[stateId] || 0;
     return {
-      salesTax,
-      tariffs,
-      pollTax,
+      salesTax: salesTax[stateId] || 0,
+      tariffs: tariffs[stateId] || 0,
+      pollTax: paid[stateId] || 0,
       pollTaxOwed: owed[stateId] || 0,
-      marketFees,
-      markets: markets.length,
+      marketFees: States.getMarketFees()[stateId] || 0,
+      markets: pack.markets.filter(market => market.feePaid && Markets.getState(market) === stateId).length,
       otherRevenue: pack.states[stateId]?.economy.otherRevenue || 0,
       corruption: pack.states[stateId]?.economy.pocketed || 0
     };
   }
 
-  /** Value at base prices of each good the state's burgs and countryside made, by good id; -1 for the world's */
+  /** Value at base prices of each good the state's burgs and countryside made, by good id */
   getOutput(stateId: number): number[] {
-    if (this.outputSource !== pack.deals) {
-      this.outputSource = pack.deals;
-      this.outputs.clear();
-      const add = (id: number, goodId: number, units: number) => {
-        const good = Goods.get(goodId);
-        if (!good) return;
-        for (const key of [id, -1]) {
-          const output = this.outputs.get(key) ?? [];
-          output[goodId] = (output[goodId] || 0) + units * good.value;
-          this.outputs.set(key, output);
-        }
-      };
-      for (const burg of pack.burgs)
-        if (burg.i && !burg.removed)
-          for (const [goodId, units] of burg.production ?? []) add(burg.state || 0, goodId, units);
-      Production.getRuralOutput().forEach((produced, cellId) => {
-        if (!pack.cells.market[cellId]) return;
-        for (const [goodId, units] of Object.entries(produced)) add(pack.cells.state[cellId], +goodId, units);
-      });
-    }
+    this.indexOutputs();
     return this.outputs.get(stateId) ?? [];
+  }
+
+  /** The world's output, by good id */
+  getWorldOutput(): number[] {
+    this.indexOutputs();
+    return this.worldOutput;
+  }
+
+  private indexOutputs(): void {
+    if (this.outputSource === pack.deals) return;
+    this.outputSource = pack.deals;
+    this.outputs.clear();
+    const world: number[] = [];
+    this.worldOutput = world;
+    const add = (stateId: number, goodId: number, units: number) => {
+      const good = Goods.get(goodId);
+      if (!good) return;
+      const output = this.outputs.get(stateId) ?? [];
+      this.outputs.set(stateId, output);
+      for (const values of [output, world]) values[goodId] = (values[goodId] || 0) + units * good.value;
+    };
+    for (const burg of pack.burgs)
+      if (burg.i && !burg.removed)
+        for (const [goodId, units] of burg.production ?? []) add(burg.state || 0, goodId, units);
+    Production.getRuralOutput().forEach((produced, cellId) => {
+      if (!pack.cells.market[cellId]) return;
+      for (const [goodId, units] of Object.entries(produced)) add(pack.cells.state[cellId], +goodId, units);
+    });
   }
 
   private index(): void {
     if (this.source === pack.deals) return;
     this.source = pack.deals;
     this.accounts.clear();
+    this.world = null;
     if (!pack.deals?.length) return; // no economy run: nothing to sum
+    const world = emptyAccounts();
+    this.world = world;
     const of = (stateId: number) => {
-      let accounts = this.accounts.get(stateId);
-      if (!accounts) {
-        accounts = {
-          people: 0,
-          townspeople: 0,
-          rural: 0,
-          manufacturing: 0,
-          trade: 0,
-          product: 0,
-          wealth: 0,
-          prosperity: null,
-          towns: null,
-          country: null,
-          levels: { towns: PROSPERITY_LEVELS.map(() => 0), country: PROSPERITY_LEVELS.map(() => 0) },
-          burgWealth: []
-        };
-        this.accounts.set(stateId, accounts);
-      }
+      const accounts = this.accounts.get(stateId) ?? emptyAccounts();
+      this.accounts.set(stateId, accounts);
       return accounts;
     };
+    const andWorld = (stateId: number) => [of(stateId), world];
     for (const state of pack.states) if (!state.removed) of(state.i); // a state with no people, the neutral lands too, has empty accounts
     // people-weighted sums of each group's living, averaged at the end
-    const sums = new Map<string, GroupLiving>();
-    const live = (stateId: number, group: "towns" | "country", people: number, living: Living | null) => {
+    const sums = new Map<StateAccounts, Partial<Record<Group, GroupLiving>>>();
+    const live = (stateId: number, group: Group, people: number, living: Living | null) => {
       if (!living || !people) return;
-      for (const id of [stateId, -1]) {
-        const key = `${id}-${group}`;
-        const row = sums.get(key) ?? { people: 0, needs: 0, comfort: 0, variety: 0, prosperity: 0 };
+      for (const accounts of andWorld(stateId)) {
+        const groups = sums.get(accounts) ?? {};
+        sums.set(accounts, groups);
+        const row = groups[group] ?? { people: 0, needs: 0, comfort: 0, variety: 0, prosperity: 0 };
+        groups[group] = row;
         row.people += people;
         row.needs += people * living.needs;
         row.comfort += people * living.comfort;
         row.variety += people * living.variety;
         row.prosperity += people * living.prosperity;
-        sums.set(key, row);
-        of(id).levels[group][PROSPERITY_LEVELS.indexOf(Prosperity.getLevel(living.prosperity))] += people;
+        accounts.levels[group][PROSPERITY_LEVELS.indexOf(Prosperity.getLevel(living.prosperity))] += people;
       }
     };
 
     for (const burg of pack.burgs) {
       if (!burg.i || burg.removed || !burg.population) continue;
-      for (const accounts of [of(burg.state || 0), of(-1)]) {
+      for (const accounts of andWorld(burg.state || 0)) {
         accounts.people += burg.population;
         accounts.townspeople += burg.population;
         accounts.manufacturing += burg.product || 0;
@@ -214,7 +230,7 @@ class StateEconomyModule {
       if (!people) continue;
       const stateId = pack.cells.state[cellId];
       const rural = Prosperity.getRuralCell(cellId);
-      for (const accounts of [of(stateId), of(-1)]) {
+      for (const accounts of andWorld(stateId)) {
         accounts.people += people;
         accounts.rural += rural?.earned || 0;
       }
@@ -224,13 +240,13 @@ class StateEconomyModule {
     for (const deal of pack.deals) {
       const margin = Markets.getMargin(deal);
       if (!margin) continue;
-      for (const accounts of [of(Markets.getState(Markets.get(deal[1]))), of(-1)]) accounts.trade += margin;
+      for (const accounts of andWorld(Markets.getState(Markets.get(deal[1])))) accounts.trade += margin;
     }
     // rural purchases make no deals, but their margin goes to the center too
     for (const market of pack.markets) {
       const margin = market.rural?.margin;
       if (!margin) continue;
-      for (const accounts of [of(Markets.getState(market)), of(-1)]) accounts.trade += margin;
+      for (const accounts of andWorld(Markets.getState(market))) accounts.trade += margin;
     }
 
     const average = (row: GroupLiving | undefined): GroupLiving | null =>
@@ -243,17 +259,26 @@ class StateEconomyModule {
             prosperity: row.prosperity / row.people
           }
         : null;
-    for (const [stateId, accounts] of this.accounts) {
+    const { salesTax, tariffs } = Markets.getTaxesByState();
+    const taxes = [salesTax, tariffs, States.getPollTax().paid, States.getMarketFees()];
+    const close = (accounts: StateAccounts, collected: number) => {
       accounts.product = accounts.rural + accounts.manufacturing + accounts.trade;
+      accounts.taxes = collected;
       accounts.wealth = accounts.people ? accounts.product / accounts.people : 0;
-      accounts.towns = average(sums.get(`${stateId}-towns`));
-      accounts.country = average(sums.get(`${stateId}-country`));
+      accounts.towns = average(sums.get(accounts)?.towns);
+      accounts.country = average(sums.get(accounts)?.country);
       const lived = [accounts.towns, accounts.country].filter(group => group !== null);
       const people = lived.reduce((sum, group) => sum + group.people, 0);
       accounts.prosperity = people
         ? lived.reduce((sum, group) => sum + group.prosperity * group.people, 0) / people
         : null;
-    }
+    };
+    for (const [stateId, accounts] of this.accounts)
+      close(
+        accounts,
+        sum(taxes, byState => byState[stateId] || 0)
+      );
+    close(world, sum(taxes.flat()));
   }
 }
 

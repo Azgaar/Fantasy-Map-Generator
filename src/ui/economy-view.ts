@@ -1,8 +1,129 @@
+// What the economy dialogs and the economy columns of the political editors share
+
+import { PROSPERITY_LEVEL_LABELS } from "@/data/id-labels";
 import type { Good } from "@/model/economy/goods-generator";
 import { type Deal, type DealKind, Markets, type Trade } from "@/model/economy/markets-generator";
+import { type Living, Prosperity, type ProsperityLevel } from "@/model/economy/prosperity";
+import type { Expense } from "@/model/political/states-generator";
 import { formatPrice, getDecima, getDistance } from "@/model/units";
+import { wiki } from "@/utils/common-utils";
 import { Catalog, sentences, t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
+
+// Colors and tones
+
+export const ECONOMY_COLORS = {
+  positive: "#1b7a43", // money gained: income, surpluses, exports; the .positive class in index.css
+  negative: "#a34a14", // money paid out: costs, deficits, imports; the .negative class in index.css
+  spent: "var(--header)", // a share of a state's taxes its expenses spend
+  pocketed: "#b4b4b4", // the part officials pocket
+  empty: "#e8e8e8"
+};
+
+/** Badge colors by kind, [background, text]: where goods come from and what a burg did with them */
+export const BADGE_COLORS = {
+  local: ["#d9e7f5", "#346"],
+  buy: ["#f5d9d6", "#a33"],
+  manufactured: ["#f8e7bf", "#b67a00"],
+  sell: ["#dff0e2", "#2f8a46"],
+  keep: ["#e6e0f2", "#5a4a8a"],
+  need: ["#e4e4e4", "#555"]
+} as const;
+
+/** The tone class of an amount: positive for a gain, negative for a loss */
+export const tone = (value: number) => (value >= 0 ? "positive" : "negative");
+
+/** CSS background for a share of the taxes on a 0–100% track: the part spent, the part officials pocket grayed, the rest empty */
+export function budgetBackground(share: number, corruption: number, color = ECONOMY_COLORS.spent): string {
+  const kept = (share * (100 - corruption)) / 100;
+  const { pocketed, empty } = ECONOMY_COLORS;
+  return `linear-gradient(to right, ${color} 0 ${kept}%, ${pocketed} ${kept}% ${share}%, ${empty} ${share}% 100%)`;
+}
+
+// One definition per economy term, shared by every view's tooltips
+
+export const EconomyTerms = {
+  product: () => t("Product: sales less taxes and ingredients"),
+  stateProduct: () => t("Product: what the state's people make in a day"),
+  wealth: () => t("Wealth: product per person"),
+  treasury: () => t("Treasury: money at the end of the day"),
+  stateTreasury: () =>
+    t("Treasury balance: the day's taxes less the state's expenses, below zero when it spends more than it collects"),
+  otherRevenue: () =>
+    t(
+      "Other revenue: the state's income a day besides taxes, such as tribute or crown estates; negative for debts or tribute it pays"
+    ),
+  budget: () =>
+    t("Expenses: the shares of its taxes the state spends; together they may pass 100% and put the treasury in debt"),
+  expenseTip: (expense: Expense) =>
+    ({
+      court: t("Court and clergy: luxuries the state buys at its capital"),
+      administration: t("Administration: utilities the state buys at its provinces' seats"),
+      infrastructure: t("Infrastructure: construction goods the state buys at its provinces' seats"),
+      military: t("Military: military goods and food the state buys at its capital")
+    })[expense],
+  prosperity: () => t("Prosperity: how well the people live"),
+  open: () => t("Click to open the economy overview"),
+  openValue: () => t("Click a value to open the economy overview"),
+  noData: () => t("No economy data yet. Regenerate the economy first"),
+  table: () => t("Show all as a table"),
+  corruption: () =>
+    t(
+      "Corruption: the share of each expense officials pocket. It comes from the state's form, its size and the peoples of other cultures and faiths it rules"
+    ),
+  collected: (paid: number, owed: number) =>
+    t("{{share}}% of {{owed}} collected", { share: rn((paid / owed) * 100), owed: formatPrice(owed) })
+};
+
+// The Economy wiki page, opened from the bottom of every economy dialog
+
+export const economyWikiButton = (id: string) =>
+  /* html */ `<button id="${id}" type="button" data-tip="${t("Open the Economy wiki page")}" class="icon-info"></button>`;
+
+/** Call once the button is in the page */
+export const bindEconomyWiki = (id: string) => ensureEl(id).addEventListener("click", () => wiki("Economy"));
+
+// Prosperity as text, and its colors for charts of people by level
+
+const PROSPERITY_COLORS: Record<ProsperityLevel, string> = {
+  Desolate: "#8a1f1f",
+  Destitute: "#a33",
+  Poor: "#b65e1f",
+  Modest: "#9a7a1a",
+  Comfortable: "#6a8a2a",
+  Thriving: "#3a8a3a",
+  Affluent: "#2a7a6a",
+  Opulent: "#2a5a9a",
+  Splendid: "#5a3a9a",
+  Peerless: "#8a2a8a"
+};
+
+export const prosperityLevel = (prosperity: number) => PROSPERITY_LEVEL_LABELS[Prosperity.getLevel(prosperity)];
+export const prosperityColor = (prosperity: number) => PROSPERITY_COLORS[Prosperity.getLevel(prosperity)];
+
+/** "57%, Thriving" */
+export const renderProsperity = (prosperity: number) => `${rn(prosperity * 100)}%, ${prosperityLevel(prosperity)}`;
+
+/** "57%", for narrow cells */
+export const renderProsperityPercent = (prosperity: number) => `${rn(prosperity * 100)}%`;
+
+/** Its three parts, for one line next to the level */
+export function renderProsperityParts(living: Living): string {
+  return t("needs met {{needs}}%, comfort ×{{comfort}}, {{variety}} goods", {
+    needs: rn(living.needs * 100),
+    comfort: rn(living.comfort, 1),
+    variety: rn(living.variety, 1)
+  });
+}
+
+export function prosperityTip(prosperity: number): string {
+  return t("Prosperity: {{level}}. Defined by consumption fulfillment, quality and variety", {
+    level: prosperityLevel(prosperity)
+  });
+}
+
+// A deal's price broken down for the trade tables
 
 /**
  * A trade's price split per unit: goods' price, carriage, sales tax and tariff, with the trade's total value. The recorded price already holds carriage and, on an import, the taxes:
@@ -140,10 +261,13 @@ export function tradeCellTips(cell: TradeCell) {
   };
 }
 
-/** A count with the good's unit; unit names are English data, so only an English interface pluralizes them */
+/** The good's unit for a count; unit names are English data, so only an English interface pluralizes them */
+export function unitFor(count: number, unit: string): string {
+  if (!unit || count === 1 || Catalog.language !== "en") return unit;
+  return `${unit}${/(s|x|z|ch|sh)$/.test(unit) ? "es" : "s"}`;
+}
+
 function countUnits(units: number, unit: string): string {
   const count = rn(units, 2);
-  if (!unit) return String(count);
-  if (count === 1 || Catalog.language !== "en") return `${count} ${unit}`;
-  return `${count} ${unit}${/(s|x|z|ch|sh)$/.test(unit) ? "es" : "s"}`;
+  return unit ? `${count} ${unitFor(count, unit)}` : String(count);
 }

@@ -367,9 +367,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.markets = data[42] ? JSON.parse(data[42]) : [];
     pack.deals = data[43] ? JSON.parse(data[43]) : [];
     pack.cells.market = data[44] ? Uint16Array.from(data[44].split(","), Number) : new Uint16Array(pack.cells.i.length);
-    pack.cells.prosperity = data[54]
-      ? Uint8Array.from(data[54].split(","), Number)
-      : new Uint8Array(pack.cells.i.length);
+    if (data[54]) pack.cells.prosperity = Uint8Array.from(data[54].split(","), Number); // auto-update adds it to older maps
     pack.measurers = data[46] ? JSON.parse(data[46]) : [];
     pack.addedLabels = data[47] ? JSON.parse(data[47]) : [];
     pack.relief = data[49] ? JSON.parse(data[49]) : [];

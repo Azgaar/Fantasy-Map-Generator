@@ -27,14 +27,13 @@ import {
   setModeHiddenColumns,
   type TableView
 } from "@/ui/dialog/table";
+import { BADGE_COLORS, bindEconomyWiki, economyWikiButton } from "@/ui/economy-view";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { zoomTo } from "@/ui/map/zoom";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, getPointer } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
-import { BADGE_COLORS } from "../economy-config";
-import { bindEconomyWiki, economyWikiButton } from "../economy-wiki";
 
 const CSV_COLUMNS = [
   "Id",
@@ -304,7 +303,7 @@ function renderGoodsPage(view: TableView<Good>) {
   const renderTypeBadge = (type: string) => {
     const commonStyles =
       "display:inline-block;border-radius:3px;padding:0 .4em;font-size:0.8em;font-weight:bold;line-height:1.35";
-    const [background, color] = BADGE_COLORS[type === "RAW" ? "local" : "mfg"];
+    const [background, color] = BADGE_COLORS[type === "RAW" ? "local" : "manufactured"];
     const style = `${commonStyles};background:${background};color:${color}`;
     if (type === "RAW")
       return `<span style="${style}" data-tip="${t("Raw goods come from the land and deposits")}">${t("RAW")}</span>`;

@@ -2,7 +2,9 @@
 
 import type { LabelType } from "@/model/annotations/labels-generator";
 import type { DemandCategory } from "@/model/economy/goods-generator";
+import type { ProsperityLevel } from "@/model/economy/prosperity";
 import type { Sampling } from "@/model/graph/lattice";
+import type { Expense } from "@/model/political/states-generator";
 import type { TransportDomain } from "@/model/story/journeys/transports-generator";
 import { t } from "@/utils/i18n";
 
@@ -146,6 +148,26 @@ export const DEMAND_CATEGORY_LABELS: Record<DemandCategory, string> = {
   construction: t("construction"),
   military: t("military"),
   luxury: t("luxury")
+};
+
+export const EXPENSE_LABELS: Record<Expense, string> = {
+  court: t("Court and clergy"),
+  administration: t("Administration"),
+  infrastructure: t("Infrastructure"),
+  military: t("Military")
+};
+
+export const PROSPERITY_LEVEL_LABELS: Record<ProsperityLevel, string> = {
+  Desolate: t("Desolate"),
+  Destitute: t("Destitute"),
+  Poor: t("Poor"),
+  Modest: t("Modest"),
+  Comfortable: t("Comfortable"),
+  Thriving: t("Thriving"),
+  Affluent: t("Affluent"),
+  Opulent: t("Opulent"),
+  Splendid: t("Splendid"),
+  Peerless: t("Peerless")
 };
 
 /** the map's SVG filters, by element id */

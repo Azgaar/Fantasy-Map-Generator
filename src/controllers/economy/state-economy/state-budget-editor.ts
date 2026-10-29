@@ -1,19 +1,18 @@
 // A state's budget editor: its taxes, how it spends them, and its tariffs and embargoes
 
 import { sum } from "d3";
+import { EXPENSE_LABELS } from "@/data/id-labels";
 import { Goods } from "@/model/economy/goods-generator";
 import { StateEconomy } from "@/model/economy/state-economy";
 import { EXPENSES, type Expense, type StateBudget, States, type TariffRule } from "@/model/political/states-generator";
 import { formatPrice } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
 import { Dialog } from "@/ui/dialog/dialog";
+import { bindEconomyWiki, budgetBackground, EconomyTerms, economyWikiButton, tone } from "@/ui/economy-view";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { minmax, rn } from "@/utils/number-utils";
-import { budgetBackground, tone } from "./economy-config";
-import { EconomyTerms } from "./economy-terms";
-import { bindEconomyWiki, economyWikiButton } from "./economy-wiki";
 
 const STYLE = /* css */ `
   #stateBudgetForm { margin: 0.2em 0 0.4em }
@@ -66,14 +65,14 @@ export function openStateBudget(stateId: number, onApply: () => void): void {
         <tr><th colspan="4" data-tip="${t("State taxes. Changes apply on regeneration")}">${t("Revenue")}</th></tr>
         <tr><td>${t("Sales Tax")}</td><td></td>${percent("stateSalesTax", rn(state.economy.salesTax * 100, 2), 0.5)}${amount(salesTax, "positive")}</tr>
         <tr><td>${t("Poll Tax")}</td><td></td><td><input id="statePollTax" type="number" min="0" max="10" step="0.01" value="${state.economy.pollTax}"/></td>${amount(pollTax, "positive", pollTaxOwed ? EconomyTerms.collected(pollTax, pollTaxOwed) : "")}</tr>
-        <tr><td data-tip="${t("Paid a day by each market centered in the state, from its margin")}">${t("Market License")}</td><td class="muted">${t("{{count}} markets", { count: markets })}</td><td><input id="stateMarketFee" type="number" min="0" step="1" value="${state.economy.marketFee || 0}"/></td>${amount(marketFees, "positive")}</tr>
+        <tr><td data-tip="${t("Paid a day by each market centered in the state, from its margin")}">${t("Market License")}</td><td class="muted">${t("Markets: {{markets}}", { markets })}</td><td><input id="stateMarketFee" type="number" min="0" step="1" value="${state.economy.marketFee || 0}"/></td>${amount(marketFees, "positive")}</tr>
         <tr><td>${t("Import Tariffs")}</td><td></td><td></td>${amount(tariffs, "positive")}</tr>
         <tr><td data-tip="${EconomyTerms.otherRevenue()}">${t("Other revenue")}</td><td></td><td></td><td class="amount"><input id="stateOtherRevenue" type="number" step="1" value="${state.economy.otherRevenue}" data-tip="${EconomyTerms.otherRevenue()}"/></td></tr>
         <tr class="total"><td colspan="3">${t("Collected")}</td>${amount(salesTax + tariffs + pollTax + marketFees + otherRevenue)}</tr>
       </tbody>
       <tbody id="stateBudget">
         <tr><th colspan="3" data-tip="${EconomyTerms.budget()}">${t("Expenses")}</th><th class="actions"><button id="stateBudgetReset" type="button" class="icon-arrows-cw" data-tip="${t("Reset the budget to the state's defaults")}">${t("Reset")}</button></th></tr>
-        ${EXPENSES.map(expense => shareRow(expense, EconomyTerms.expense(expense), EconomyTerms.expenseTip(expense), budget[expense], amount(-state.economy.spent[expense], "negative"))).join("")}
+        ${EXPENSES.map(expense => shareRow(expense, EXPENSE_LABELS[expense], EconomyTerms.expenseTip(expense), budget[expense], amount(-state.economy.spent[expense], "negative"))).join("")}
         <tr class="total"><td data-tip="${EconomyTerms.stateTreasury()}">${t("Balance")}</td><td></td><td id="stateBudgetBalance"></td>${amount(state.economy.treasury, tone(state.economy.treasury), EconomyTerms.stateTreasury())}</tr>
         ${shareRow("corruption", t("Corruption"), EconomyTerms.corruption(), budget.corruption, amount(-corruption, "negative"))}
       </tbody>

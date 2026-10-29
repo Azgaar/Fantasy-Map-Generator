@@ -65,7 +65,7 @@ class StateOrdersModule {
     }
   }
 
-  /** A turn: each seat spends its share of its expenses' shares of what the state collected so far. The day's last, with the rural poll tax to come, spends the rest on what the markets have left */
+  /** A turn: each seat spends its expenses' share of what the state collected so far; the day's last spends the rest */
   place(last = false): void {
     const ruralPollTax = last ? Markets.getRuralPollTax() : [];
     const least = last ? 0.01 : MIN_ORDER;
@@ -95,7 +95,7 @@ class StateOrdersModule {
     this.goodsFor.clear();
   }
 
-  /** The seat spreads the money over the goods covering the need, cheaper ones getting more, then spends the rest on the cheapest it finds; during the day, goods it cannot find raise their price. Like a burg, it buys at its own market while that stocks enough, otherwise at the cheapest other. Returns what it spent */
+  /** Spends on the goods covering the need, cheaper ones getting more, at the seat's market or the cheapest other. Returns what it spent */
   private order(burg: Burg, need: DemandCategory, money: number, terms: TradeTerms, signal: boolean): number {
     const market = Markets.ofBurg(burg);
     if (!market) return 0;

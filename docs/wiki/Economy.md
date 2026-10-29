@@ -18,7 +18,7 @@ Goods are everything that can be produced and traded: grain, wood, iron, cloth, 
 - **Manufactured goods** (tools, cloth, weapons, ships) are made in burgs from **recipes**: cloth from wool, a ship from wood, sails, ropes and tar. Some, like cloth, ropes or leather, are only ingredients: nobody buys them for themselves, only the trades that use them.
 - Some goods are both: they come from the land and can also be made.
 
-With no good selected in the _Goods Editor_, the Goods layer shows an overview: every producing cell in the color of its most valuable good, darker the more it makes, an icon on each deposit, and every producing burg as a pie of its five most valuable goods, sized by its output. Select goods to see only them: cells shaded by how much of them they make, their deposits, and burg pies of those goods alone. Hover a cell or a sector to see how much it makes. In _Style_, each part of the layer (cells, icons, burgs) can be switched off from its section's checkbox.
+With no good selected in the _Goods Editor_, the Goods layer shows an overview: every producing cell in the color of its most valuable good, darker the more it makes, an icon on each deposit, and every producing burg as a pie of its five most valuable goods, sized by its output. Goods worth under 4% of a burg's output join a grey sector with the rest; hover a sector to see its goods and their shares. Select goods to see only them: cells shaded by how much of them they make, their deposits, and burg pies of those goods alone. Hover a cell or a sector to see how much it makes. In _Style_, each part of the layer (cells, icons, burgs) can be switched off from its section's checkbox.
 
 Click a good in the editor to change it:
 

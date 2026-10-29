@@ -6,6 +6,7 @@ import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
 import { Production } from "@/model/economy/production-generator";
 import { Prosperity } from "@/model/economy/prosperity";
+import { StateEconomy } from "@/model/economy/state-economy";
 import { log } from "@/utils/logger";
 import { score } from "./score.js";
 import { setTunables } from "./tunables.mjs";
@@ -54,6 +55,6 @@ export function runEconomy(snap: Snapshot, over: Overrides = {}) {
   Production.regenerate();
   return {
     ms: performance.now() - start,
-    ...score(pack, { Goods, Markets, Production, Prosperity })
+    ...score(pack, { Goods, Production, Prosperity, StateEconomy })
   };
 }

@@ -469,7 +469,7 @@ Measurers (rulers and other measuring tools drawn on top of the map) are stored 
 
 ## Goods
 
-Goods (tradable resources and products) are stored in `pack.goods: Good[]`. Good `i` starts at `1` and is **not** the array index — use `Goods.get(i)` (backed by a sparse `goodById`) for lookups. The default catalogue is built from `GOODS_DATA`. Stored in .map file. A good is _raw_ if it has a `distribution`, _manufactured_ if it has `recipes`, or _hybrid_ if it has both. Object structure:
+Goods (tradable resources and products) are stored in `pack.goods: Good[]`. Good `i` starts at `1` and is **not** the array index — use `Goods.get(i)` (backed by a sparse `goodById`) for lookups. The default catalogue is built from `GOODS_DATA` (`src/data/goods.ts`). Stored in .map file. A good is _raw_ if it has a `distribution`, _manufactured_ if it has `recipes`, or _hybrid_ if it has both. Object structure:
 
 - `i`: `number` - good id (starts at 1, not the array index)
 - `name`: `string` - good name

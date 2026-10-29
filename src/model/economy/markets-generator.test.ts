@@ -277,6 +277,67 @@ describe("MarketsModule", () => {
       expect(importer.goods[0].price).toBe(0.2);
     });
 
+    it("adds up small trades at a cheap price and rounds it when the run ends", () => {
+      const { importer, burg, good } = setupImport();
+      importer.centerBurgId = 1;
+      setRoutes({ 2: 0 });
+      good.value = 0.5;
+      importer.goods[0] = { stock: 0, price: 0.5 };
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      marketsModule["days"] = [
+        undefined,
+        undefined,
+        {
+          depth: [100],
+          rural: [],
+          ruralPeople: 0,
+          cash: 0,
+          income: 0,
+          rent: 0,
+          spent: 0,
+          margin: 0,
+          covered: [],
+          bought: [],
+          pollTaxDue: []
+        }
+      ] as never;
+
+      for (let sale = 0; sale < 50; sale++) marketsModule.sell({ burg, good, units: 1, taxRate: 0 });
+      expect(importer.goods[0].price).toBeCloseTo(0.5 * Math.exp((-PRICE_RESPONSE * 50) / 100), 4);
+      marketsModule.endRun();
+      expect(importer.goods[0].price).toBe(0.38);
+    });
+
+    it("keep() takes back only the burg's own goods, never the rural produce in stock", () => {
+      const { importer, burg, good } = setupImport();
+      globalThis.pack.burgs[3] = { i: 3, cell: 2, state: 2, treasury: 1000 } as Burg; // another burg of the market
+      setRoutes({ 2: 0 });
+      importer.goods[0] = { stock: 10, price: 10 };
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      marketsModule["days"] = [
+        undefined,
+        undefined,
+        {
+          depth: [1e9],
+          rural: [10],
+          ruralPeople: 0,
+          cash: 0,
+          income: 0,
+          rent: 0,
+          spent: 0,
+          margin: 0,
+          covered: [],
+          bought: [],
+          pollTaxDue: []
+        }
+      ] as never;
+
+      marketsModule.sell({ burg, good, units: 5, taxRate: 0 }); // 15 in stock, 10 of them rural
+      marketsModule.buy({ burg: pack.burgs[3], good, units: 9, kind: DEAL_KINDS.demand }); // 6 rural units, 3 of the burg's
+      expect(marketsModule.keep({ burg, good, units: 5 })?.units).toBe(2);
+      expect(ruralDay(2).rural[0]).toBeCloseTo(importer.goods[0].stock, 2);
+    });
+
     it("pays the countryside for its produce as it is bought, less the margin and its capital's rent", () => {
       const { importer, burg, good } = setupImport();
       importer.centerBurgId = 1;

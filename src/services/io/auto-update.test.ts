@@ -1243,3 +1243,19 @@ describe("v1.157.0 deposit counts", () => {
     expect(pack.goods.some(good => "chance" in good)).toBe(false);
   });
 });
+
+describe("v1.157.0 maps without markets", () => {
+  it("drops the deals and production in their old shape, as no market reruns them", async () => {
+    globalThis.pack = {
+      features: [],
+      markets: [],
+      burgs: [{ i: 0 }, { i: 1, production: [{ goodId: 1, units: 2 }] }],
+      deals: [{ seller: 1, sellerType: "burg" }]
+    } as unknown as typeof pack;
+
+    await resolveVersionConflicts("1.156.0", []);
+
+    expect(pack.deals).toEqual([]);
+    expect(pack.burgs[1].production).toEqual([]);
+  });
+});

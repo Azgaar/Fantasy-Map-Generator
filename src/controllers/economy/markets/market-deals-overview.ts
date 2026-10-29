@@ -16,14 +16,22 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
+import {
+  bindEconomyWiki,
+  economyWikiButton,
+  getTradeContext,
+  money,
+  splitDealPrice,
+  tariffCell,
+  tone,
+  tradeCellTips,
+  tradeColumnTips
+} from "@/ui/economy-view";
 import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
-import { tone } from "../economy-config";
-import { bindEconomyWiki, economyWikiButton } from "../economy-wiki";
-import { getTradeContext, money, splitDealPrice, tariffCell, tradeCellTips, tradeColumnTips } from "./deal-price";
 
 let activeMarketId = 0;
 
@@ -139,6 +147,7 @@ function renderDialog(): void {
   Dialog.destroy(dialogId);
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
       <style>
+        #${dialogId} .marketBadge { display: inline-block; border-radius: 3px; padding: 0 0.4em; font-size: 0.8em; font-weight: bold; line-height: 1.35 }
       </style>
       <div>
         ${renderEditorHeader({ dialogId, columns })}
@@ -222,15 +231,18 @@ function getMarketDealRow(deal: Deal): MarketDealRow | null {
   };
 }
 
-/** price × units, less the sales tax and tariff a sale passes to the states: what the market keeps */
-function getIncomeFormula([, , , kind, units, price, tax, tariff]: Deal, income: number): string {
+/** price × units, less the sales tax and tariff a sale passes to the states and the center burg's margin: what the market keeps */
+function getIncomeFormula(deal: Deal, income: number): string {
+  const [, , , kind, units, price, tax, tariff] = deal;
+  const margin = Markets.getMargin(deal);
+  const marginTerm = margin ? ` − ${t("Market margin")} ${formatPrice(rn(margin, 2))}` : "";
   const paid = `${formatPrice(price)} × ${rn(units, 2)}`;
-  if (kind === DEAL_KINDS.sale) return `−${paid} = ${formatPrice(income)}`;
+  if (kind === DEAL_KINDS.sale) return `−${paid}${marginTerm} = ${formatPrice(income)}`;
   const passed = [
     tax ? ` − ${t("Sales Tax")} ${formatPrice(rn(tax, 2))}` : "",
     tariff ? ` − ${t("Tariff")} ${formatPrice(rn(tariff, 2))}` : ""
   ].join("");
-  return `${paid}${passed} = ${formatPrice(income)}`;
+  return `${paid}${passed}${marginTerm} = ${formatPrice(income)}`;
 }
 
 function renderMarketDealsPage(view: TableView<MarketDealRow>): void {

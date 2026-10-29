@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { splitDealPrice } from "./deal-price";
+import { splitDealPrice } from "./economy-view";
 
 describe("splitDealPrice", () => {
   it("leaves the goods' price of an import once carriage and taxes paid per unit are taken out", () => {

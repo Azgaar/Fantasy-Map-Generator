@@ -5,7 +5,7 @@ import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS, Goods } 
 import type { Deal, DealKind, SourceOption, Trade } from "@/model/economy/markets-generator";
 import { DEAL_KINDS, Markets } from "@/model/economy/markets-generator";
 import type { ProductionCandidate, ProductionLogEntry } from "@/model/economy/production-generator";
-import { isDemandEntry, isMfgEntry, isTradeEntry } from "@/model/economy/production-generator";
+import { isDemandEntry, isManufacturingEntry, isTradeEntry } from "@/model/economy/production-generator";
 import { Prosperity } from "@/model/economy/prosperity";
 import { Icons } from "@/model/icons";
 import { type Burg, Burgs } from "@/model/political/burgs-generator";
@@ -13,24 +13,29 @@ import { formatPrice } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
 import { Csv } from "@/services/io/csv";
 import { Dialog } from "@/ui/dialog/dialog";
+import {
+  BADGE_COLORS,
+  bindEconomyWiki,
+  carriageDistance,
+  EconomyTerms,
+  economyWikiButton,
+  getTradeContext,
+  money,
+  prosperityTip,
+  renderProsperity,
+  renderProsperityParts,
+  splitDealPrice,
+  tariffCell,
+  tone,
+  tradeCellTips,
+  tradeColumnTips,
+  unitFor
+} from "@/ui/economy-view";
 import { zoomTo } from "@/ui/map/zoom";
 import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
-import { BADGE_COLORS, tone } from "./economy-config";
-import { EconomyTerms } from "./economy-terms";
-import { bindEconomyWiki, economyWikiButton } from "./economy-wiki";
-import { prosperityTip, renderProsperity, renderProsperityParts } from "./prosperity-view";
-import {
-  carriageDistance,
-  getTradeContext,
-  money,
-  splitDealPrice,
-  tariffCell,
-  tradeCellTips,
-  tradeColumnTips
-} from "./trade/deal-price";
 
 type RowType = "LOCAL" | "BUY" | "MFG" | "SELL" | "KEEP" | "NEED";
 type HistoryRow = {
@@ -199,7 +204,7 @@ function getSummaryRows(burg: Burg): HistoryRow[] {
       .filter(([goodId]) => !isLocal(goodId))
       .toSorted((a, b) => b[1] - a[1])
       .map(([goodId, units]) => ({
-        ...getMfgRow(goodId, units),
+        ...getManufacturingRow(goodId, units),
         goodTip: t("Manufacturing from {{- inputs}}", { inputs: recipeInputs(goodId) })
       })),
     ...dealRows(DEAL_KINDS.sale),
@@ -214,14 +219,14 @@ function getLogRow(entry: ProductionLogEntry): HistoryRow {
     const row = getTradeRow(entry.goodId, entry.market, entry.kind, entry);
     return entry.sources ? { ...row, details: renderSources(entry.market, entry.sources) } : row;
   }
-  if (!isMfgEntry(entry)) return getLocalRow(entry.goodId, entry.units);
+  if (!isManufacturingEntry(entry)) return getLocalRow(entry.goodId, entry.units);
 
   const inputs = entry.recipe.map(item => `${rn(item.units, 2)} ${goodDot(item.goodId)}`).join(` ${t("and")} `);
   const modifier = entry.cultureModifier ?? 1;
   const modifierNote = modifier !== 1 ? `. ${t("Production multiplier")}: x${rn(modifier, 2)}` : "";
   const specializationNote = entry.specialization ? `. ${t("Division of labor bonus")}: x${entry.specialization}` : "";
   return {
-    ...getMfgRow(entry.goodId, entry.units),
+    ...getManufacturingRow(entry.goodId, entry.units),
     details: `${t("Manufacturing from {{- inputs}}", { inputs })}${modifierNote}${specializationNote}${renderDecision(entry.candidates)}`
   };
 }
@@ -236,7 +241,7 @@ const getLocalRow = (goodId: number, units: number): HistoryRow => ({
   details: ""
 });
 
-const getMfgRow = (goodId: number, units: number): HistoryRow => ({
+const getManufacturingRow = (goodId: number, units: number): HistoryRow => ({
   type: "MFG",
   goodId,
   units,
@@ -642,7 +647,7 @@ function renderGoods(goods: [goodId: number, units: number][]): string {
     t("{{good}}: {{amount}} {{unit}} per day", {
       good: good.name,
       amount,
-      unit: amount === 1 ? good.unit : `${good.unit}s`
+      unit: unitFor(amount, good.unit)
     });
   const shown = sorted
     .slice(0, SHOWN_GOODS)

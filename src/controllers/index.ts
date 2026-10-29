@@ -14,7 +14,7 @@ export const Controllers = createRegistry(
     ChartsOverview: () => import("@/controllers/charts-overview").then(m => m.ChartsOverview),
     CoastlineEditor: () => import("@/controllers/physical/coastline-editor").then(m => m.CoastlineEditor),
     ColorPicker: () => import("@/controllers/color-picker").then(m => m.ColorPicker),
-    ComparePrices: () => import("@/controllers/economy/trade/compare-prices").then(m => m.ComparePrices),
+    ComparePrices: () => import("@/controllers/economy/markets/compare-prices").then(m => m.ComparePrices),
     ContextMenu: () => import("@/controllers/context-menu").then(m => m.ContextMenu),
     CsvUpload: () => import("@/controllers/csv-upload").then(m => m.CsvUpload),
     CulturesEditor: () => import("@/controllers/society/cultures-editor").then(m => m.CulturesEditor),
@@ -49,9 +49,9 @@ export const Controllers = createRegistry(
     MarkersInRadius: () => import("@/controllers/story/markers/markers-in-radius").then(m => m.MarkersInRadius),
     MarkersOverview: () => import("@/controllers/story/markers/markers-overview").then(m => m.MarkersOverview),
     MarketDealsOverview: () =>
-      import("@/controllers/economy/trade/market-deals-overview").then(m => m.MarketDealsOverview),
-    MarketOverview: () => import("@/controllers/economy/trade/market-overview").then(m => m.MarketOverview),
-    MarketsOverview: () => import("@/controllers/economy/trade/markets-overview").then(m => m.MarketsOverview),
+      import("@/controllers/economy/markets/market-deals-overview").then(m => m.MarketDealsOverview),
+    MarketOverview: () => import("@/controllers/economy/markets/market-overview").then(m => m.MarketOverview),
+    MarketsOverview: () => import("@/controllers/economy/markets/markets-overview").then(m => m.MarketsOverview),
     MeasurersEditor: () => import("@/controllers/annotations/measurers-editor").then(m => m.MeasurersEditor),
     MilitaryOverview: () => import("@/controllers/political/military/military-overview").then(m => m.MilitaryOverview),
     Minimap: () => import("@/controllers/minimap").then(m => m.Minimap),
@@ -59,8 +59,9 @@ export const Controllers = createRegistry(
     NotesEditor: () => import("@/controllers/story/notes-editor").then(m => m.NotesEditor),
     Omnibar: () => import("@/controllers/omnibar").then(m => m.Omnibar),
     PaintEditor: () => import("@/controllers/paint-editor").then(m => m.PaintEditor),
-    ProductionChains: () => import("@/controllers/economy/production-chains").then(m => m.ProductionChains),
-    ProductionOverview: () => import("@/controllers/economy/production-overview").then(m => m.ProductionOverview),
+    ProductionChains: () => import("@/controllers/economy/production/production-chains").then(m => m.ProductionChains),
+    ProductionOverview: () =>
+      import("@/controllers/economy/production/production-overview").then(m => m.ProductionOverview),
     ProvincesEditor: () => import("@/controllers/political/provinces-editor").then(m => m.ProvincesEditor),
     ProvincesRegeneration: () =>
       import("@/controllers/political/provinces-regeneration").then(m => m.ProvincesRegeneration),
@@ -80,7 +81,7 @@ export const Controllers = createRegistry(
     RouteGroupsEditor: () => import("@/controllers/economy/routes/route-groups-editor").then(m => m.RouteGroupsEditor),
     RoutesOverview: () => import("@/controllers/economy/routes/routes-overview").then(m => m.RoutesOverview),
     StateEconomyOverview: () =>
-      import("@/controllers/economy/state-economy-overview").then(m => m.StateEconomyOverview),
+      import("@/controllers/economy/state-economy/state-economy-overview").then(m => m.StateEconomyOverview),
     StatesEditor: () => import("@/controllers/political/states-editor").then(m => m.StatesEditor),
     StyleEditor: () => import("@/controllers/style").then(m => m.StyleEditor),
     StylePresetsEditor: () => import("@/controllers/style/style-preset").then(m => m.StylePreset),

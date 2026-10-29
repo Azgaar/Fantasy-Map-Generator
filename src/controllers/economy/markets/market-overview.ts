@@ -22,12 +22,12 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
+import { bindEconomyWiki, economyWikiButton } from "@/ui/economy-view";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { clearMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, getPointer } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
-import { bindEconomyWiki, economyWikiButton } from "../economy-wiki";
 
 let activeMarketId = 0;
 const dialogId = "marketOverview" as const;

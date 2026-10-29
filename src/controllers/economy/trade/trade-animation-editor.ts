@@ -2,10 +2,9 @@ import { DEFAULT_TRADE_ANIMATION } from "@/data/trade-animation-options";
 import { Options } from "@/model/options/options-model";
 import { Layers } from "@/renderers/layers";
 import { Dialog } from "@/ui/dialog/dialog";
-
+import { bindEconomyWiki, economyWikiButton } from "@/ui/economy-view";
 import { t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
-import { bindEconomyWiki, economyWikiButton } from "../economy-wiki";
 
 const DEFAULTS = DEFAULT_TRADE_ANIMATION;
 const INPUTS = [

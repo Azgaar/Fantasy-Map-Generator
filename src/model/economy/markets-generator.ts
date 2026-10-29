@@ -27,7 +27,7 @@ export const PRICE_RESPONSE = 0.56; // a trade of a day's expected sales moves t
 const WANTS_ESTIMATE = 1.94; // expected sales: what people buy beyond their needs, as a multiple of them
 const OPENING_ELASTICITY = 0.07; // how far below its value an ingredient opens where its trades need less than a unit a day
 export const CAPITAL_RENT = 0.21; // share of rural sale income paid to the state's capital: dues and absentee landlords
-export const MARKET_MARGIN = 0.035; // a market's margin before its license: merchants pass the fee on, by the fee factor's root, so a typical monarchy's market (fee 25) takes 5%
+export const MARKET_MARGIN = 0.035; // a market's margin before its license fee raises it
 const OTHER_LANDMASS_SPACING = 0.5; // share of the market spacing a market on another landmass keeps clear
 const MAX_DECIMAS = 10; // the map's diagonal: the most carriage, paid with no route to the burg's own market
 export const MIN_LOCAL_STOCK = 1; // a buyer buys at its own market while it stocks this much, otherwise from the cheapest market
@@ -216,7 +216,7 @@ export class MarketsModule {
     return markets;
   }
 
-  /** How far a burg must be from other market centers to become one: closer where burgs crowd and licenses are cheap, farther in empty land and greedy states. A market needs land in proportion to its fee factor and inverse to the burgs around it; both are relative to the world's average, so the number of markets stays about the same */
+  /** How far a burg must be from other market centers to become one: closer where burgs crowd and licenses are cheap */
   private getSpacing(burgs: Burg[], feeFactor: (burg: Burg) => number): Map<number, number> {
     const base = ((options.map.graph.width + options.map.graph.height) * 2.5) / pack.burgs.length ** 0.6;
     const tree = quadtree<Burg>(
@@ -389,18 +389,18 @@ export class MarketsModule {
         day.depth[good.i] = Math.max(1, expected);
         const coversNeeds = Object.keys(good.demandCoverage ?? {}).length > 0;
         const price = coversNeeds ? good.value : good.value * Math.min(1, expected) ** OPENING_ELASTICITY;
-        this.getMarketGood(market, good).price = rn(Math.max(price, good.value * PRICE_FLOOR_FACTOR), 2);
+        this.getMarketGood(market, good).price = Math.max(price, good.value * PRICE_FLOOR_FACTOR);
       }
     }
   }
 
-  /** A trade of a day's expected sales moves the price e^PRICE_RESPONSE times: up on buying, down on selling */
+  /** A trade of a day's expected sales moves the price e^PRICE_RESPONSE times: up on buying, down on selling. Unrounded until the run ends, so small trades add up */
   private movePrice(market: Market, good: Good, units: number) {
     const depth = this.days[market.i]?.depth[good.i];
     if (!depth) return; // outside an economy run the price stays
     const marketGood = this.getMarketGood(market, good);
     const price = marketGood.price * Math.exp((PRICE_RESPONSE * units) / depth);
-    marketGood.price = rn(minmax(price, good.value * PRICE_FLOOR_FACTOR, good.value * PRICE_CEILING_FACTOR), 2);
+    marketGood.price = minmax(price, good.value * PRICE_FLOOR_FACTOR, good.value * PRICE_CEILING_FACTOR);
   }
 
   /** Buyers turned away for lack of stock raise the price as if they had bought */
@@ -430,7 +430,7 @@ export class MarketsModule {
     this.movePrice(market, good, units);
   }
 
-  /** The market's rural people spend up to (1 - savings) of what they earned on goods at their market, keeping back their poll tax, cheapest coverage first, up to their wants; their needs come from their own fields */
+  /** The market's rural people spend what they earned, less savings and their poll tax, on goods at their market up to their wants */
   spendRural(market: Market) {
     const day = this.days[market.i];
     if (!day) return;
@@ -655,9 +655,10 @@ export class MarketsModule {
     return this.routeCosts;
   }
 
-  /** Ends the run: rural people pay their poll tax from what they kept, as far as it goes; keeps each market's rural day for the views, and drops the carriage, as edits to burgs and states may change it */
+  /** Ends the run: prices are rounded, rural people pay their poll tax as far as it goes, each market keeps its rural day for the views */
   endRun(): void {
     for (const market of pack.markets) {
+      for (const marketGood of Object.values(market.goods)) marketGood.price = rn(marketGood.price, 2);
       const day = this.days[market.i];
       if (!day) continue;
       const bought = day.bought.flatMap((units, goodId) => (units ? [[goodId, rn(units, 2)] as [number, number]] : []));
@@ -783,13 +784,14 @@ export class MarketsModule {
     return States.getSalesTax(pack.burgs[market.centerBurgId]) * price;
   }
 
-  /** Units the burg sold to its own market this run and can still take back, at what the sale earned it per unit */
+  /** Units the burg sold to its own market this run and can still take back, at what the sale earned it per unit; the rural produce in stock is not its own */
   quoteKeep(burg: Burg, good: Good): { units: number; price: number } | null {
     const market = this.ofBurg(burg);
     const sale = market && this.findDeal(burg.i!, market.i, good.i, DEAL_KINDS.sale);
     if (!market || !sale) return null;
 
-    const units = Math.min(sale[4], this.getMarketGood(market, good).stock);
+    const rural = this.days[market.i]?.rural[good.i] || 0;
+    const units = Math.min(sale[4], this.getMarketGood(market, good).stock - rural);
     if (units < 0.01) return null;
     return { units, price: sale[5] - sale[6] / sale[4] };
   }
@@ -967,6 +969,18 @@ export class MarketsModule {
       taxState: kind === DEAL_KINDS.sale ? burg?.state || 0 : this.getState(this.get(marketId)),
       tariffState: this.getState(burg && this.ofBurg(burg))
     };
+  }
+
+  /** Sales tax and tariffs of the run's deals, by the state collecting them */
+  getTaxesByState(): { salesTax: number[]; tariffs: number[] } {
+    const salesTax: number[] = [];
+    const tariffs: number[] = [];
+    for (const deal of pack.deals ?? []) {
+      const { taxState, tariffState } = this.getTaxStates(deal);
+      if (deal[6]) salesTax[taxState] = (salesTax[taxState] || 0) + deal[6];
+      if (deal[7]) tariffs[tariffState] = (tariffs[tariffState] || 0) + deal[7];
+    }
+    return { salesTax, tariffs };
   }
 
   /** The tariff rate the importer state levies on the good from the exporter state, 0 under an embargo */

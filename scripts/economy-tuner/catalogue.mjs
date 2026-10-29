@@ -4,10 +4,10 @@ import { fileURLToPath } from "node:url";
 import { RANGES } from "./tunables.mjs";
 
 export const ROOT = fileURLToPath(new URL("../../", import.meta.url));
-export const GOODS_FILE = `${ROOT}src/model/economy/goods-generator.ts`;
+export const GOODS_FILE = `${ROOT}src/data/goods.ts`;
 export const CATEGORIES = ["food", "utilities", "construction", "military", "luxury"];
 
-/** GOODS_DATA from goods-generator.ts: name, value, recipes by input name, demand coverage */
+/** GOODS_DATA from data/goods.ts: name, value, recipes by input name, demand coverage */
 export function readCatalogue(source = readFileSync(GOODS_FILE, "utf8")) {
   const data = source.slice(
     source.indexOf("const GOODS_DATA"),

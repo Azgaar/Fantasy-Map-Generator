@@ -868,13 +868,26 @@ function regenerateStates(): void {
   if (error) return void tip(error, false, "error");
   if (warning) tip(warning, false, "warn");
 
+  Production.regenerateEconomy(); // the new states tax the deals
   unfog();
-  Layers.draw("states", "borders", "provinces", "labels", "burgIcons", "military", "goods", "emblems");
+  Layers.draw(
+    "states",
+    "borders",
+    "provinces",
+    "labels",
+    "burgIcons",
+    "military",
+    "markets",
+    "goods",
+    "trade",
+    "emblems"
+  );
 }
 
 function regenerateBurgs(): void {
   Burgs.regenerate();
-  Layers.draw("burgIcons", "labels", "routes", "population", "goods", "emblems");
+  Production.regenerateEconomy(); // the deals named the old burg ids
+  Layers.draw("burgIcons", "labels", "routes", "population", "markets", "goods", "trade", "emblems");
 }
 
 function regenerateGoods(): void {

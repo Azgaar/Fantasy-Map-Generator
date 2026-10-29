@@ -3,16 +3,16 @@
 
 export const TUNABLES = {
   "src/model/economy/goods-generator.ts": {
-    SAVINGS_RATE: [0.05, 0.4],
+    SAVINGS_RATE: [0.05, 0.6],
     VARIETY: [1.5, 5],
     NOVELTY: [0, 10]
   },
   "src/model/economy/production-generator.ts": {
     WORKFORCE_SHARE: [0.2, 0.6],
-    BURG_SPECIALIZATION: [0, 2],
+    BURG_SPECIALIZATION: [0, 4],
     MARKET_SPECIALIZATION: [0, 2],
     DEPOSIT_RICHNESS: [0.25, 4],
-    BONUS_URBAN_PRODUCTION: [0, 3],
+    BONUS_URBAN_PRODUCTION: [0, 6],
     RURAL_OUTPUT_FACTOR: [0.5, 3]
   },
   "src/model/economy/markets-generator.ts": {

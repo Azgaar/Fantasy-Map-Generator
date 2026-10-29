@@ -1,4 +1,4 @@
-// Writes a tuning result into the source: goods' values and coverage into goods-generator.ts, tunables into their modules.
+// Writes a tuning result into the source: goods' values and coverage into data/goods.ts, tunables into their modules.
 //   node scripts/economy-tuner/apply.mjs [result.json = .cache/best.json]
 // Values round to 0.5 below 5 and to whole numbers above; coverage to 0.05; tunables to two decimals
 import { readFileSync, writeFileSync } from "node:fs";

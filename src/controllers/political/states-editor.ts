@@ -1,9 +1,7 @@
 import { type HierarchyCircularNode, max, pack as packLayout, select, stratify } from "d3";
 import { Controllers } from "@/controllers";
-import { EconomyTerms } from "@/controllers/economy/economy-terms";
-import { prosperityTip, renderProsperityPercent } from "@/controllers/economy/prosperity-view";
-import { openStateBudget } from "@/controllers/economy/state-budget-editor";
-import { CULTURE_TYPE_LABELS } from "@/data/id-labels";
+import { openStateBudget } from "@/controllers/economy/state-economy/state-budget-editor";
+import { CULTURE_TYPE_LABELS, EXPENSE_LABELS } from "@/data/id-labels";
 import { StateEconomy } from "@/model/economy/state-economy";
 import { Pack } from "@/model/graph/pack-generator";
 import { Burgs } from "@/model/political/burgs-generator";
@@ -32,6 +30,7 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
+import { EconomyTerms, prosperityTip, renderProsperityPercent } from "@/ui/economy-view";
 import type { FillBoxElement } from "@/ui/elements/fill-box";
 import { createAnnexMode } from "@/ui/map/annex-mode";
 import { highlightElement, highlightOutline } from "@/ui/map/highlight";
@@ -52,10 +51,10 @@ const LEGEND_NAME = "States"; // the legend box this editor toggles
 const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 let filterState: { search: string };
 
-/** Treasury as a percentage of the state's product; null for the neutral lands or before an economy run */
+/** Taxes as a percentage of the state's product; null for the neutral lands or before an economy run */
 const taxBurden = (s: State): number | null => {
-  const product = s.i ? StateEconomy.getAccounts(s.i)?.product : 0;
-  return product ? ((s.economy.collected - s.economy.otherRevenue) / product) * 100 : null;
+  const accounts = s.i ? StateEconomy.getAccounts(s.i) : null;
+  return accounts?.product ? (accounts.taxes / accounts.product) * 100 : null;
 };
 
 const columns: EditorColumn<State>[] = [
@@ -154,7 +153,7 @@ const columns: EditorColumn<State>[] = [
   ...EXPENSES.map(
     (expense): EditorColumn<State> => ({
       key: expense,
-      label: EconomyTerms.expense(expense),
+      label: EXPENSE_LABELS[expense],
       width: "6em",
       hidden: true,
       mobileHidden: true,
@@ -1597,5 +1596,9 @@ function updateLockStatus(stateId: number, classList: DOMTokenList): void {
 export const StatesEditor = {
   open,
   showChart: showStatesChart,
-  openTaxes: (stateId: number) => openStateBudget(stateId, refreshStatesEditor)
+  openTaxes: (stateId: number, onApply?: () => void) =>
+    openStateBudget(stateId, () => {
+      refreshStatesEditor();
+      onApply?.();
+    })
 };

@@ -20,6 +20,7 @@ export const PROSPERITY_LEVELS = [
   "Splendid",
   "Peerless"
 ] as const;
+export type ProsperityLevel = (typeof PROSPERITY_LEVELS)[number];
 
 /** A people's living: needs met (0–1), consumption at base prices in days of bare needs, the effective number of goods, and prosperity (0–1) */
 export type Living = { needs: number; comfort: number; variety: number; prosperity: number };
@@ -60,7 +61,7 @@ class ProsperityModule {
     return prosperity;
   }
 
-  getLevel(prosperity: number): (typeof PROSPERITY_LEVELS)[number] {
+  getLevel(prosperity: number): ProsperityLevel {
     return PROSPERITY_LEVELS[Math.min(PROSPERITY_LEVELS.length - 1, Math.max(0, Math.floor(prosperity * 10)))];
   }
 

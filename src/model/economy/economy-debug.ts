@@ -1,5 +1,4 @@
-// What the last economy run did and why, by burg: recorded only when `log.debug.economy` is on.
-// Kept in memory for the pack it describes and never saved, so a loaded map has none until production runs again
+// What the last economy run did and why, by burg; in memory only
 
 import { log } from "@/utils/logger";
 import type { ProductionLogEntry } from "./production-generator";

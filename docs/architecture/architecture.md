@@ -255,17 +255,19 @@ Inside the two large role folders, `model/` and `controllers/`, files are groupe
 | `physical/`    | heightmap, climate, features, coastline, lakes, rivers, ice, biomes, relief |
 | `society/`     | population, cultures, religions, names                                      |
 | `political/`   | states, provinces, burgs, diplomacy, military, zones, emblems               |
-| `economy/`     | goods, production, markets and trade, transports, routes                    |
-| `story/`       | markers, notes, lore, journeys                                              |
+| `economy/`     | goods, production, markets and trade, state economies, routes               |
+| `story/`       | markers, notes, lore, journeys and their transports                         |
 | `annotations/` | labels, rulers, the legend: what the map adds on top of the world           |
 | `styles/`      | the style record, its schema and formats (`model/` only)                    |
 | `style/`       | the Style editor and presets (`controllers/` only)                          |
 
 Inside a domain, an entity gets its own folder once it has **three or more files** there
-(`controllers/political/burgs/`, `controllers/economy/routes/`); below that the files sit in the
-domain folder. A module that serves the whole map rather than one domain (`map-entities`,
-`pipeline`, `omnibar`, `context-menu`) stays at the role's root. `renderers/`, `ui/` and `app/` are
-small enough to stay flat, with a subject folder only for a cluster such as `renderers/heightmap/`.
+(`controllers/political/burgs/`); below that the files sit in the domain folder. A domain with many
+entities may give each its own folder, so its root holds no loose files (`controllers/economy/`:
+goods, markets, production, routes, state economy, trade). A module that serves the whole map rather
+than one domain (`map-entities`, `pipeline`, `omnibar`, `context-menu`) stays at the role's root.
+`renderers/`, `ui/` and `app/` are small enough to stay flat, with a subject folder only for a cluster
+such as `renderers/heightmap/`; what a domain's dialogs share is one file there (`ui/economy-view.ts`).
 
 ## What the model is
 

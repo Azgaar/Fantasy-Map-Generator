@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 
 import { beforeEach, expect, test, vi } from "vitest";
-import { ProductionChains } from "@/controllers/economy/production-chains";
-import { ProductionOverview } from "@/controllers/economy/production-overview";
-import { MarketDealsOverview } from "@/controllers/economy/trade/market-deals-overview";
-import { MarketOverview } from "@/controllers/economy/trade/market-overview";
+import { MarketDealsOverview } from "@/controllers/economy/markets/market-deals-overview";
+import { MarketOverview } from "@/controllers/economy/markets/market-overview";
+import { ProductionChains } from "@/controllers/economy/production/production-chains";
+import { ProductionOverview } from "@/controllers/economy/production/production-overview";
 import { TradeDetails } from "@/controllers/economy/trade/trade-details";
 import { Markets } from "@/model/economy/markets-generator";
 import { Icons } from "@/model/icons";

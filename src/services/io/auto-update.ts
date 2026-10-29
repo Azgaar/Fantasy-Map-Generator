@@ -2220,6 +2220,11 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       Goods.sync();
       Markets.sync();
       Production.regenerate();
+    } else {
+      // no market to rerun them: drop the deals and production in their old shape
+      pack.deals = [];
+      for (const burg of pack.burgs ?? []) if (burg?.i) burg.production = [];
+      if (pack.cells) pack.cells.prosperity = new Uint8Array(pack.cells.i.length);
     }
   }
 }

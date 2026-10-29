@@ -202,6 +202,20 @@ test("a burg pie shows its five most valuable goods and the rest as one sector",
   expect(goods).toEqual(["7", "6", "5", "4", "3", "2,1"]);
 });
 
+test("a sliver joins the rest, drawn wide enough to read", async () => {
+  getBurgProduction.mockImplementation(() => ({ 1: 99, 2: 1 }));
+  await drawGoods();
+  const paths = [...document.querySelectorAll<SVGPathElement>('#goodsBurgs > g[data-id="1"] path')];
+  expect(paths.map(path => [path.dataset.goods, path.getAttribute("fill")])).toEqual([
+    ["1", "#ff0000"],
+    ["2", "#9e9e9e"] // 1% of the value: grey, as the rest
+  ]);
+  // the rest spans 4% of the circle: its arc ends 14.4° short of the top
+  const [, end] = paths[0].getAttribute("d")!.match(/ 0 1 1 ([\d.-]+,[\d.-]+)Z/)!;
+  const [x, y] = end.split(",").map(Number);
+  expect(Math.atan2(x - 50, -(y - 60)) * (180 / Math.PI)).toBeCloseTo(-14.4, 0);
+});
+
 test("full-map export renders every good at once, leaving the live map culled", async () => {
   await drawGoods();
   const clone = document.getElementById("map")!.cloneNode(true) as SVGSVGElement;

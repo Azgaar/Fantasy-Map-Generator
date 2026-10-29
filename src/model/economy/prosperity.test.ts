@@ -129,13 +129,17 @@ describe("state trade", () => {
     pack.markets.push({ i: 2, centerBurgId: 2, color: "#fff", goods: {} });
     Markets.sync();
     pack.deals = [
-      [1, 2, 1, DEAL_KINDS.sale, 10, 1, 0, 0, 0], // sells abroad: 10
-      [2, 1, 1, DEAL_KINDS.demand, 5, 2, 0, 0, 0], // a foreign burg buys here: 10
-      [1, 2, 2, DEAL_KINDS.input, 4, 3, 0, 1, 0.5] // buys abroad: 12 less the tariff and carriage
+      [1, 2, 1, DEAL_KINDS.sale, 10, 1, 0, 0, 0], // sells abroad: 10 to the burg, the market's margin on top
+      [2, 1, 1, DEAL_KINDS.demand, 5, 2, 0, 0, 0], // a foreign burg buys here: 10 with the margin
+      [1, 2, 2, DEAL_KINDS.input, 4, 3, 0, 1, 0.5] // buys abroad: 12 less the tariff, carriage and margin
     ];
+    const rate = Markets.getMarginRate();
+    const exports = 10 / (1 - rate) + 10 / (1 + rate);
+    const imports = 9 / (1 + rate);
     const trade = StateEconomy.getTrade(1);
-    expect(trade.exports).toBeCloseTo(20, 5);
-    expect(trade.imports).toBeCloseTo(9, 5);
-    expect(trade.partners.get(2)).toEqual({ exports: 20, imports: 9 });
+    expect(trade.exports).toBeCloseTo(exports, 5);
+    expect(trade.imports).toBeCloseTo(imports, 5);
+    expect(trade.partners.get(2)!.exports).toBeCloseTo(exports, 5);
+    expect(trade.partners.get(2)!.imports).toBeCloseTo(imports, 5);
   });
 });

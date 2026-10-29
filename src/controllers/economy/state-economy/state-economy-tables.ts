@@ -16,12 +16,17 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
+import {
+  bindEconomyWiki,
+  ECONOMY_COLORS,
+  economyWikiButton,
+  prosperityLevel,
+  renderProsperityPercent,
+  tone
+} from "@/ui/economy-view";
 import { t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn, si } from "@/utils/number-utils";
-import { ECONOMY_COLORS, tone } from "./economy-config";
-import { bindEconomyWiki, economyWikiButton } from "./economy-wiki";
-import { prosperityLevel, renderProsperityPercent } from "./prosperity-view";
 
 type TableSpec<T> = {
   id: string;

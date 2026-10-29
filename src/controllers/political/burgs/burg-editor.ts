@@ -1,7 +1,5 @@
 import { type Selection, select } from "d3";
 import { Controllers } from "@/controllers";
-import { EconomyTerms } from "@/controllers/economy/economy-terms";
-import { prosperityTip, renderProsperity } from "@/controllers/economy/prosperity-view";
 import type { Market } from "@/model/economy/markets-generator";
 import { Markets } from "@/model/economy/markets-generator";
 import { Prosperity } from "@/model/economy/prosperity";
@@ -16,6 +14,7 @@ import { Layers } from "@/renderers/layers";
 import { speak } from "@/services/speech";
 import { Dialog } from "@/ui/dialog/dialog";
 import { noteButton } from "@/ui/dialog/dialog-helpers";
+import { EconomyTerms, prosperityTip, renderProsperity } from "@/ui/economy-view";
 
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
 import { zoomTo } from "@/ui/map/zoom";

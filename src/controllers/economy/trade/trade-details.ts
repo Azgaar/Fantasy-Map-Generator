@@ -17,21 +17,22 @@ import {
   renderEditorPagination,
   type TableView
 } from "@/ui/dialog/table";
-import { zoomTo } from "@/ui/map/zoom";
-import { sentences, t } from "@/utils/i18n";
-import { ensureEl } from "@/utils/node-utils";
-import { rn } from "@/utils/number-utils";
-import { tone } from "../economy-config";
-import { bindEconomyWiki, economyWikiButton } from "../economy-wiki";
 import {
+  bindEconomyWiki,
   carriageDistance,
+  economyWikiButton,
   getTradeContext,
   money,
   splitDealPrice,
   tariffCell,
+  tone,
   tradeCellTips,
   tradeColumnTips
-} from "./deal-price";
+} from "@/ui/economy-view";
+import { zoomTo } from "@/ui/map/zoom";
+import { sentences, t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
 
 /** A burg's trades with one market in one direction: it sells to its market, or buys from a market */
 type Flow = { deals: Deal[]; burgId: number; marketId: number; isSale: boolean };

@@ -14,7 +14,7 @@ import { highlightEmblemElement } from "@/ui/map/highlight";
 import { showMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { findEl, getPointer } from "@/utils/node-utils";
-import { si } from "@/utils/number-utils";
+import { rn, si } from "@/utils/number-utils";
 import { escapeHtml } from "@/utils/string-utils";
 
 /**
@@ -275,12 +275,24 @@ function getGoodsTip(target: SVGElement, cellId: number): string | undefined {
     if (!burg || burg.removed) return undefined;
 
     select(burgEl).raise();
-    // a pie sector: only its goods
-    const sector = target.closest<SVGElement>("[data-goods]")?.dataset.goods?.split(",");
-    const produced = Production.getBurgProduction(burg);
-    const shown = sector ? Object.fromEntries(sector.map(goodId => [goodId, produced[+goodId]])) : produced;
+    // a pie sector: only its goods, each with its share of the burg's output value
+    const sector = target.closest<SVGElement>("[data-goods]")?.dataset.goods?.split(",").map(Number);
+    const produced = Object.entries(Production.getBurgProduction(burg)).filter(([goodId]) =>
+      Goods.isDisplayed(Goods.get(+goodId))
+    );
+    const worth = (goodId: string | number, units: number) => units * (Goods.get(+goodId)?.value ?? 0);
+    const total = produced.reduce((sum, [goodId, units]) => sum + worth(goodId, units), 0) || 1;
+    const production = produced
+      .filter(([goodId]) => !sector || sector.includes(+goodId))
+      .sort(([a, unitsA], [b, unitsB]) => worth(b, unitsB) - worth(a, unitsA))
+      .map(([goodId, units]) => {
+        const name = (Goods.get(+goodId)?.name || "unknown").toLowerCase();
+        const percent = (worth(goodId, units) / total) * 100;
+        return `${name} ${units} (${percent < 1 ? "<1" : rn(percent)}%)`;
+      })
+      .join(", ");
     return withHint(
-      t("{{burg}} urban production: {{production}}", { burg: burg.name, production: formatProduction(shown) }),
+      t("{{burg}} urban production: {{production}}", { burg: burg.name, production }),
       t("Click to view")
     );
   }

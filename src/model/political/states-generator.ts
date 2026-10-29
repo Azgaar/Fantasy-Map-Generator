@@ -93,6 +93,9 @@ export const noExpenses = (): Record<Expense, number> => ({
   military: 0
 });
 
+/** Anarchies levy nothing, like the neutral lands */
+const levies = (state: State) => Boolean(state.i && !state.removed && state.form !== "Anarchy");
+
 /** No taxes, fees, tariffs or money: a new state's until its form sets them, and the neutral lands' for good */
 export const noFinance = (): StateFinance => ({
   salesTax: 0,
@@ -830,7 +833,7 @@ class StatesModule {
   }
 
   defineTariffs(state: State): TariffRule[] {
-    if (!state.i || state.removed || state.form === "Anarchy") return []; // anarchies levy none, like the neutral lands
+    if (!levies(state)) return [];
     const rules: TariffRule[] = [{ states: "all", goods: "all", rate: 0.05 }];
     const diplomacy = state.diplomacy;
     if (!Array.isArray(diplomacy)) return rules;
@@ -1014,7 +1017,7 @@ class StatesModule {
     }
   }
 
-  /** How ready for war the state is, from 0.1 to 5: how far its expansionism is realized, its own relations and its neighbors' to it. Its forces and military spending scale with it */
+  /** How ready for war the state is, from 0.1 to 5 */
   defineAlert(state: State): number {
     const valid = pack.states.filter(s => s.i && !s.removed);
     const expansionism = sum(valid.map(s => s.expansionism));
@@ -1049,9 +1052,9 @@ class StatesModule {
     return { ...this.defineExpenses(state), corruption };
   }
 
-  /** The default expenses, in whole percents of the taxes: the form's share for each, grown by the capital, burgs, towns and war alert. A warlike state may spend beyond its taxes */
+  /** The default expenses, in whole percents of the taxes */
   defineExpenses(state: State): Record<Expense, number> {
-    if (!state.i || state.removed || state.form === "Anarchy") return noExpenses();
+    if (!levies(state)) return noExpenses();
     const base = EXPENSES_BY_FORM[state.form || ""] ?? EXPENSES_BY_FORM.Monarchy;
     const urban = state.urban || 0;
     const people = urban + (state.rural || 0);
@@ -1065,9 +1068,9 @@ class StatesModule {
     };
   }
 
-  /** Percent of each expense officials pocket: the form's share, doubled for despots, plus more for a large state and for people of other cultures and faiths than the state's and its capital's. Anarchies collect nothing to steal */
+  /** Percent of each expense officials pocket */
   defineCorruption(state: State): number {
-    if (!state.i || state.removed || state.form === "Anarchy") return 0;
+    if (!levies(state)) return 0;
     const form =
       (CORRUPTION_BY_FORM[state.form || ""] ?? CORRUPTION_BY_FORM.Monarchy) *
       (DESPOTIC_FORMS.includes(state.formName || "") ? 2 : 1);
@@ -1706,15 +1709,9 @@ class StatesModule {
   }
 
   collectTaxes() {
-    const { states, deals } = pack;
+    const { states } = pack;
     if (!states?.length) return;
-    const taxes: number[] = []; // sales tax and tariffs by state
-    for (const deal of deals ?? []) {
-      const [, , , , , , tax, tariff] = deal;
-      const { taxState, tariffState } = Markets.getTaxStates(deal);
-      if (tax) taxes[taxState] = (taxes[taxState] || 0) + tax;
-      if (tariff) taxes[tariffState] = (taxes[tariffState] || 0) + tariff;
-    }
+    const { salesTax, tariffs } = Markets.getTaxesByState();
 
     const pollTax = this.getPollTax().paid;
     const marketFees = this.getMarketFees();
@@ -1722,7 +1719,11 @@ class StatesModule {
       if (!state.i || state.removed) continue;
       const { budget, otherRevenue } = state.economy;
       const collected = rn(
-        (taxes[state.i] || 0) + (pollTax[state.i] || 0) + (marketFees[state.i] || 0) + otherRevenue,
+        (salesTax[state.i] || 0) +
+          (tariffs[state.i] || 0) +
+          (pollTax[state.i] || 0) +
+          (marketFees[state.i] || 0) +
+          otherRevenue,
         2
       );
       const expenses = sum(EXPENSES.map(expense => budget[expense]));
@@ -1744,7 +1745,7 @@ class StatesModule {
     const paid: number[] = [];
     for (const market of pack.markets ?? []) {
       if (!market?.feePaid) continue;
-      const stateId = pack.burgs[market.centerBurgId]?.state || 0;
+      const stateId = Markets.getState(market);
       paid[stateId] = (paid[stateId] || 0) + market.feePaid;
     }
     return paid;
