@@ -2,14 +2,14 @@
 // and the fallen realms with their stories. Read-only: it presents pack.history. See
 // docs/plans/history-generation.md and docs/domain/glossary.md
 import { Controllers } from "@/controllers";
-import { Dialog } from "@/ui/dialog/dialog";
-import { dialogState } from "@/ui/dialog/state";
-import { zoomTo } from "@/ui/map/zoom";
 import { goToPresent, isInPast, scrubRange, scrubToYear, viewedEpoch } from "@/controllers/historical-view";
 import { ALIGNMENT_COLORS } from "@/data/culture-traits";
 import { Chronicle } from "@/model/physical/history-generator";
 import { getCellPoint } from "@/model/story/journeys/journey-places";
 import type { Era, HistoricalFigure, HistoryEvent, HistoryEventType, HistRef } from "@/types/history";
+import { Dialog } from "@/ui/dialog/dialog";
+import { dialogState } from "@/ui/dialog/state";
+import { zoomTo } from "@/ui/map/zoom";
 import { capitalize, downloadFile, ensureEl, escapeHtml, getFileName } from "@/utils";
 
 const dialogId = "legendsBrowser" as const;
@@ -57,7 +57,8 @@ const EVENT_ICONS: Record<HistoryEventType, string> = {
   sack: "🔥",
   plague: "☠️",
   coronation: "👑",
-  succession: "🤝"
+  succession: "🤝",
+  deed: "🕯️"
 };
 
 let tab: "timeline" | "realms" | "figures" = "timeline";

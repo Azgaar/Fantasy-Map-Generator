@@ -21,7 +21,7 @@ import {
 import { assetCheckDifficulties, valueModifier } from "@/conquest/engine/game/saves";
 import { garrisonUnits, minorGarrisonUnits } from "@/conquest/engine/game/units";
 import type { Alignment } from "@/data/culture-traits";
-import { rollAlignment, rollFigureTraits, traitsRng } from "@/data/culture-traits";
+import { drawVice, rollAlignment, rollFigureTraits, traitsRng } from "@/data/culture-traits";
 import { createProvinceLair, getLairDef, LAIR_NATURE_IDS, pickLairForTrouble } from "@/data/living-lairs";
 import {
   BURG_TROUBLE_IDS,
@@ -1160,6 +1160,7 @@ class LivingModel {
     const unitTypes = Military.getUnitTypes();
 
     let bestUnit: ArmyUnit | null = null;
+    let bestReg: Regiment | null = null;
     let bestMult = 3;
     let bestDisruption = 999;
 
@@ -1174,17 +1175,32 @@ class LivingModel {
           bestMult = mult;
           bestDisruption = dis;
           bestUnit = unit;
+          bestReg = reg;
         }
       }
     }
+
+    // unified-figures slice 2: when the state fields a matching specialist, its
+    // named commander leads the attempt and the roll carries the person.
+    const history = Chronicle.sync();
+    const figures = (history.figures ??= []);
+    const commander = bestReg?.crew
+      ?.map(id => figures[id])
+      .find(
+        f => f && !f.death && f.roles.some(r => r.type === "specialist" && r.specialty === troubleDef.requiredRole)
+      );
 
     const rng = this.rng("trouble:resolve", provinceId, living.tick);
     const roll = rng.d(20);
     const poolGen = sSim.capacity[troubleDef.pool]?.gen ?? 0;
     const domainMod = valueModifier(poolGen);
+    const skillBonus = commander?.skills?.[troubleDef.pool] ?? 0;
+    const traitBonus = commander ? (commander.virtues?.length ?? 0) - (commander.vices?.length ?? 0) : 0;
     const unitDisruption = bestUnit?.disruption ?? 0;
-    const total = roll + domainMod - unitDisruption;
+    const total = roll + skillBonus + domainMod + traitBonus - unitDisruption;
     const dc = 16 + bestMult * pSim.trouble.level;
+    const year = options.map?.lore?.calendar?.year ?? 1000;
+    const cell = province.center ?? state.center;
 
     const success = total >= dc;
     if (success) {
@@ -1194,23 +1210,44 @@ class LivingModel {
         pSim.trouble = null;
         pSim.order = Math.min(100, pSim.order + 10);
         pSim.stability += 1;
-        this.pushNews(living, {
-          kind: "trouble",
-          text: `${state.name} overcame ${troubleDef.name} in ${province.name}!`,
-          cell: province.center ?? state.center,
-          stateId
-        });
-        this.pushHistory(
-          "conquest",
-          [{ kind: "state", id: stateId }],
-          province.center ?? state.center,
-          `${state.name} eliminated the ${troubleDef.name} affliction in ${province.name}.`
-        );
+        if (commander) {
+          commander.xp = (commander.xp ?? 0) + 25;
+          this.pushNews(living, {
+            kind: "trouble",
+            text: `${commander.name} overcame ${troubleDef.name} in ${province.name}!`,
+            cell,
+            stateId
+          });
+          this.pushHistory(
+            "deed",
+            [
+              { kind: "figure", id: commander.i },
+              { kind: "state", id: stateId }
+            ],
+            cell,
+            `${commander.name} eliminated the ${troubleDef.name} affliction in ${province.name}.`
+          );
+        } else {
+          this.pushNews(living, {
+            kind: "trouble",
+            text: `${state.name} overcame ${troubleDef.name} in ${province.name}!`,
+            cell,
+            stateId
+          });
+          this.pushHistory(
+            "conquest",
+            [{ kind: "state", id: stateId }],
+            cell,
+            `${state.name} eliminated the ${troubleDef.name} affliction in ${province.name}.`
+          );
+        }
       } else {
+        if (commander) commander.xp = (commander.xp ?? 0) + 10;
+        const who = commander ? commander.name : state.name;
         this.pushNews(living, {
           kind: "trouble",
-          text: `${state.name} quelled ${troubleDef.name} in ${province.name} (reduced to level ${pSim.trouble.level}).`,
-          cell: province.center ?? state.center,
+          text: `${who} quelled ${troubleDef.name} in ${province.name} (reduced to level ${pSim.trouble.level}).`,
+          cell,
           stateId
         });
       }
@@ -1218,10 +1255,28 @@ class LivingModel {
       if (bestUnit) {
         bestUnit.disruption = Math.min(3, (bestUnit.disruption ?? 0) + 1);
       }
+      // unified-figures: a disastrous attempt (≤ dc − 6) breaks or slays the commander
+      let aftermath = "";
+      if (commander && total <= dc - 6) {
+        if (rng.d(2) === 1) {
+          commander.death = year;
+          for (const role of commander.roles) if (role.to === undefined) role.to = year;
+          if (bestReg?.crew) bestReg.crew = bestReg.crew.filter(id => id !== commander.i);
+          aftermath = ` ${commander.name} did not survive the attempt.`;
+        } else {
+          const vice = drawVice(rng, commander);
+          if (vice) {
+            commander.vices ??= [];
+            commander.vices.push(vice);
+            aftermath = ` The struggle left ${commander.name} ${vice}.`;
+          }
+        }
+      }
+      const who = commander ? `${commander.name}'s attempt` : `${state.name}'s attempt`;
       this.pushNews(living, {
         kind: "trouble",
-        text: `${state.name}'s attempt to resolve ${troubleDef.name} in ${province.name} failed (rolled ${total} vs DC ${dc}).`,
-        cell: province.center ?? state.center,
+        text: `${who} to resolve ${troubleDef.name} in ${province.name} failed (rolled ${total} vs DC ${dc}).${aftermath}`,
+        cell,
         stateId
       });
     }

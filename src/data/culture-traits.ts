@@ -415,3 +415,10 @@ export function rollFigureTraits(rng: Rng, alignment: Alignment): { virtues: str
     vices: drawWords(rng, VICES, counts.vices, taken, isFree)
   };
 }
+
+/** one vice a broken figure gains: never one it holds, never the antonym of a virtue it keeps */
+export function drawVice(rng: Rng, figure: { virtues?: string[]; vices?: string[] }): string | undefined {
+  const taken = new Set([...(figure.virtues ?? []), ...(figure.vices ?? [])]);
+  const isFree = (word: string) => !taken.has(ANTONYMS.get(word) ?? "");
+  return drawWords(rng, VICES, 1, taken, isFree)[0];
+}

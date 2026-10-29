@@ -1056,3 +1056,145 @@ describe("Unified Figures slice 1: specialist commanders", () => {
     expect(crew.find(f => f.roles.some(r => r.specialty === "magistrate"))!.skills!.s).toBe(1);
   });
 });
+
+describe("Unified Figures slice 2: named dispatch", () => {
+  beforeEach(() => {
+    globalThis.options = {
+      map: {
+        seed: "test-living-seed",
+        population: { ruralFactor: 1, urbanization: 1 },
+        lore: {
+          name: "Test World",
+          description: "",
+          calendar: { year: 1000, era: "Age of Dawn", eraShort: "AD" },
+          history: { span: 500, realms: 0, density: 1, echoes: false, renames: false, mode: "archaeologist" }
+        }
+      },
+      generation: { cultures: { traits: true }, states: { limit: 4, sizeVariety: 2, growthRate: 1 } }
+    } as unknown as typeof options;
+
+    globalThis.pack = {
+      cells: {
+        i: [0, 1, 2, 3],
+        state: new Uint16Array([0, 1, 1, 0]),
+        province: new Uint16Array([0, 1, 1, 0]),
+        pop: [0, 120, 100, 20],
+        culture: [0, 1, 1, 1],
+        religion: [0, 1, 1, 1],
+        c: [[1], [0, 2], [1], [2]],
+        p: [
+          [0, 0],
+          [10, 10],
+          [20, 20],
+          [30, 30]
+        ],
+        r: [0, 0, 0, 0]
+      },
+      cultures: [
+        { i: 0, name: "Wildlands", base: 0, center: 0 },
+        { i: 1, name: "Aeloran (Human)", base: 0, center: 1, alignment: "good" }
+      ],
+      religions: [{ i: 0, name: "No religion" }],
+      burgs: [
+        { i: 0 },
+        {
+          i: 1,
+          name: "Aelor",
+          cell: 1,
+          x: 10,
+          y: 10,
+          state: 1,
+          culture: 1,
+          population: 18,
+          capital: 1,
+          walls: 1,
+          plaza: 1,
+          temple: 1,
+          citadel: 1
+        }
+      ],
+      states: [
+        { i: 0, name: "Neutrals" },
+        {
+          i: 1,
+          name: "Aeloria",
+          culture: 1,
+          capital: 1,
+          center: 1,
+          military: [
+            {
+              i: 0,
+              a: 300,
+              cell: 1,
+              x: 10,
+              y: 10,
+              bx: 10,
+              by: 10,
+              u: { spear: 300 },
+              units: [
+                { type: "spear", count: 150, exp: 0 },
+                { type: "sage_coven", count: 8, exp: 0 }
+              ],
+              n: 0,
+              name: "1st Aeloria Regiment",
+              state: 1,
+              icon: "⚔️"
+            }
+          ]
+        }
+      ],
+      provinces: [{ i: 0 }, { i: 1, name: "Ems", state: 1, burg: 1, center: 1 }],
+      history: { events: [], realms: [], eras: [{ name: "Age of Dawn", from: 500, to: 1000 }], figures: [] }
+    } as unknown as typeof pack;
+  });
+
+  it("names the matching specialist commander in the dispatch news", () => {
+    Living.init();
+    const living = Living.getState();
+    const commander = pack.history.figures!.find(f => f.roles.some(r => r.specialty === "sage"))!;
+    Living.spawnTrouble(1, "ancient_curse", "burg", 2); // pool w, requiredRole sage
+    const beforeXp = commander.xp ?? 0;
+    const success = Living.resolveTrouble(1, 1);
+    const news = living.recentNews[0]!;
+    expect(news.text).toContain(commander.name);
+    expect(news.text).toContain("Ancient Curse");
+    if (success) {
+      expect(commander.xp).toBeGreaterThan(beforeXp);
+      if (living.provinces[1].trouble === null) {
+        const event = pack.history.events!.at(-1)!;
+        expect(event.type).toBe("deed");
+        expect(event.actors).toContainEqual({ kind: "figure", id: commander.i });
+      }
+    }
+  });
+
+  it("a disastrous resolution breaks or slays the commander", () => {
+    Living.init();
+    const commander = pack.history.figures!.find(f => f.roles.some(r => r.specialty === "sage"))!;
+    commander.virtues = [];
+    commander.vices = ["cruel", "greedy", "wrathful"]; // traitBonus −3
+    commander.skills!.w = 0;
+    const regiment = pack.states[1].military![0];
+    for (const unit of regiment.units!) unit.disruption = 3;
+    Living.spawnTrouble(1, "ancient_curse", "burg", 10); // dc 26: total ≤ 20 is a guaranteed fumble
+    const vicesBefore = commander.vices.length;
+    Living.resolveTrouble(1, 1);
+    const broken = commander.death !== undefined || commander.vices.length > vicesBefore;
+    expect(broken).toBe(true);
+    if (commander.death !== undefined) {
+      expect(regiment.crew).not.toContain(commander.i); // the fallen commander is uncrewed
+    }
+  });
+
+  it("falls back to the anonymous state voice when no specialist is fielded", () => {
+    Living.init();
+    const living = Living.getState();
+    const state = pack.states[1];
+    state.military![0].units = state.military![0].units!.filter(u => u.type !== "sage_coven");
+    state.military![0].crew = [];
+    Living.spawnTrouble(1, "ancient_curse", "burg", 2);
+    Living.resolveTrouble(1, 1);
+    const news = living.recentNews[0]!;
+    expect(news.text).toContain("Aeloria");
+  });
+});
