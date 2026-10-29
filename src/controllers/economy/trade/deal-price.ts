@@ -45,7 +45,7 @@ export const carriageDistance = (decimas: number) =>
 export const tariffCell = (tariff: number, isImport: boolean) =>
   isImport ? money(tariff, false) || formatPrice(0) : "—";
 
-/** A per-unit amount in green when it adds to the burg's money, in the negative color when it takes from it; blank when zero */
+/** A per-unit amount in the positive tone when it adds to the burg's money, the negative when it takes from it; blank when zero */
 export function money(amount: number, adds: boolean): string {
   if (!rn(amount, 2)) return "";
   return `<span class="${adds ? "positive" : "negative"}">${formatPrice(rn(amount, 2))}</span>`;

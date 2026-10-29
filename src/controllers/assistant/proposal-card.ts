@@ -211,7 +211,7 @@ class ProposalCardView {
       if (field === "urban") return si(getPeople(0, value));
       if (MONEY_FIELDS.has(field) || (field === "value" && type === "good")) return formatPrice(value);
       if (field === "salesTax") return `${rn(value * 100, 2)}%`;
-      if (field === "corruption") return `${value}%`;
+      if (field.startsWith("budget.")) return `${value}%`;
       if ((field === "capital" || field === "port") && type === "burg") return value ? "yes" : "no";
       if (field === "area") return `${si(getArea(value))} ${getAreaUnit()}`;
       const idType = MapEntities.referenceType(type, field);

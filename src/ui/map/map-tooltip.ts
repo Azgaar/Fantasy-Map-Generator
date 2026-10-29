@@ -248,31 +248,24 @@ function getMarketTip(target: SVGElement): string | undefined {
 }
 
 function getGoodsTip(target: SVGElement, cellId: number): string | undefined {
-  const bonusGoodId = pack.cells.good[cellId];
-
   const formatProduction = (produced: Record<string, number>) =>
     Object.entries(produced)
       .filter(([goodId]) => Goods.isDisplayed(Goods.get(Number(goodId))))
-      .map(([goodId, amount]) => {
-        const name = (Goods.get(Number(goodId))?.name || "unknown").toLowerCase();
-        return `${name} ${amount}${Number(goodId) === bonusGoodId ? " (bonus)" : ""}`;
-      })
+      .map(([goodId, amount]) => `${(Goods.get(Number(goodId))?.name || "unknown").toLowerCase()} ${amount}`)
       .join(", ");
 
-  if (target.closest("#goodsIcons")) {
-    const good = Goods.get(Number(target.closest<SVGElement>("[data-i]")?.dataset.i));
-    return t("{{good}} bonus resource", { good: good?.name });
+  const icon = target.closest<SVGElement>("#goodsIcons [data-i]");
+  if (icon) {
+    const good = Goods.get(Number(icon.dataset.i));
+    if (!good) return undefined;
+    const produced = Production.getCellProduction(Number(icon.dataset.cell), Goods.getBiomesProduction());
+    const amount = produced[good.i] || 0;
+    const unit = amount === 1 ? good.unit : `${good.unit}s`;
+    return t("{{good}} deposit: {{amount}} {{unit}} per day", { good: good.name, amount, unit });
   }
 
   if (target.closest("#goodsCells")) {
     const produced = Production.getCellProduction(cellId, Goods.getBiomesProduction());
-    // the overview draws only the bonus resource cells
-    const good = !pack.goods.some(good => good.visible) && Goods.get(bonusGoodId);
-    if (good) {
-      const amount = produced[good.i] || 0;
-      const unit = amount === 1 ? good.unit : `${good.unit}s`;
-      return t("{{good}} bonus resource: {{amount}} {{unit}} per day", { good: good.name, amount, unit });
-    }
     return t("Cell rural production: {{production}}", { production: formatProduction(produced) });
   }
 
@@ -282,7 +275,7 @@ function getGoodsTip(target: SVGElement, cellId: number): string | undefined {
     if (!burg || burg.removed) return undefined;
 
     select(burgEl).raise();
-    // an overview pie sector: only its goods
+    // a pie sector: only its goods
     const sector = target.closest<SVGElement>("[data-goods]")?.dataset.goods?.split(",");
     const produced = Production.getBurgProduction(burg);
     const shown = sector ? Object.fromEntries(sector.map(goodId => [goodId, produced[+goodId]])) : produced;

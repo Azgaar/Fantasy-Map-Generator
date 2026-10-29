@@ -18,6 +18,7 @@ import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
+import { BADGE_COLORS, tone, toneStyle } from "./economy-config";
 import { EconomyTerms } from "./economy-terms";
 import { bindEconomyWiki, economyWikiButton } from "./economy-wiki";
 import { prosperityTip, renderProsperity, renderProsperityParts } from "./prosperity-view";
@@ -108,17 +109,16 @@ function renderDialog(): void {
         #${dialogId} .historyDetails td { padding: 0.3em 0.5em 0.8em; line-height: 1.4; white-space: normal }
         #${dialogId} .historyDetails ul { margin: 0.2em 0 0 1.1em; padding: 0 }
         #${dialogId} .typeBadge { margin-left: 4px; border-radius: 3px; padding: 0 0.4em; font-size: 0.8em; font-weight: bold; line-height: 1.35 }
-        #${dialogId} .typeBadge.local { background: #d9e7f5; color: #346 }
-        #${dialogId} .typeBadge.buy { background: #f5d9d6; color: #a33 }
-        #${dialogId} .typeBadge.mfg { background: #f8e7bf; color: #b67a00 }
-        #${dialogId} .typeBadge.sell { background: #dff0e2; color: #2f8a46 }
-        #${dialogId} .typeBadge.keep { background: #e6e0f2; color: #5a4a8a }
-        #${dialogId} .typeBadge.need { background: #e4e4e4; color: #555 }
+        ${Object.entries(BADGE_COLORS)
+          .map(
+            ([kind, [background, color]]) =>
+              `#${dialogId} .typeBadge.${kind} { background: ${background}; color: ${color} }`
+          )
+          .join("\n")}
         #${dialogId} .sources { border-collapse: collapse; margin: 0.3em 0; width: auto; table-layout: auto }
         #${dialogId} .sources td, #${dialogId} .sources th { padding: 0.1em 0.5em; border: 0 }
         #${dialogId} .sources .chosen { font-weight: bold; background: #eef6ee }
-        #${dialogId} .positive { color: #2a6 }
-        #${dialogId} .negative { color: #a34a14 }
+        ${toneStyle(`#${dialogId}`)}
       </style>
       <div id="${dialogId}Stats"></div>
       <div id="${dialogId}Body" class="table"></div>
@@ -463,7 +463,7 @@ function renderHistoryLine(row: HistoryRow, expandable: boolean): string {
       ${cell(money(row.tax, false), tips?.tax)}
       ${cell(isTrade ? tariffCell(row.tariff, isImport(row)) : "", tips?.tariff)}
       ${cell(String(rn(row.units, 2)), tips?.units)}
-      <td class="right ${(row.income ?? 0) >= 0 ? "positive" : "negative"}" data-tip="${tips?.income ?? ""}">${income}</td>
+      <td class="right ${tone(row.income ?? 0)}" data-tip="${tips?.income ?? ""}">${income}</td>
     </tr>${row.details ? `<tr class="historyDetails" hidden><td></td><td colspan="8">${row.details}</td></tr>` : ""}`;
 }
 
@@ -535,11 +535,7 @@ function renderTotals(rows: HistoryRow[]): void {
         )
       )
     ),
-    total(
-      t("Income"),
-      tradeColumnTips().income,
-      `<span class="${income >= 0 ? "positive" : "negative"}">${formatPrice(rn(income, 2))}</span>`
-    )
+    total(t("Income"), tradeColumnTips().income, `<span class="${tone(income)}">${formatPrice(rn(income, 2))}</span>`)
   ].join("");
 }
 

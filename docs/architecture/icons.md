@@ -145,7 +145,7 @@ source credits when redrawing an icon.
 
 The goods icons style sets the lines: `stroke` is their colour and `stroke-width` the circle outline, the icon
 lines drawn at 40% of it. `goodIconLines()` (`renderers/draw-goods.ts`) carries that width into the icon frame
-at the marker's proportions and writes both on every goods `<use>` — markers, burg plates and the interface,
+at the marker's proportions and writes both on every goods `<use>` — markers and the interface,
 where `goodBadge(good)` draws a good on its circle — so a good looks the same wherever it is drawn.
 
 ## Editing artwork

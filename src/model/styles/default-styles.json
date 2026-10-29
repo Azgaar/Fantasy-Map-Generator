@@ -522,17 +522,21 @@
         "attrs": {
           "opacity": 0.4,
           "filter": null
+        },
+        "options": {
+          "render": true
         }
       },
       "goodsIcons": {
         "attrs": {
-          "opacity": 1,
-          "stroke": "#000000",
-          "stroke-width": 0.3,
-          "filter": "url(#dropShadow01)"
+          "opacity": 0.9,
+          "stroke": "#41414f",
+          "stroke-width": 0.1,
+          "filter": null
         },
         "options": {
-          "size": 6,
+          "render": true,
+          "size": 2.5,
           "circle": true
         }
       },
@@ -544,6 +548,7 @@
           "filter": null
         },
         "options": {
+          "render": true,
           "size": 3
         }
       }

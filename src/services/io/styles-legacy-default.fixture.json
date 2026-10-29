@@ -701,11 +701,11 @@
     "filter": null
   },
   "#goodsIcons": {
-    "opacity": 1,
-    "stroke-width": 0.3,
+    "opacity": 0.9,
+    "stroke": "#41414f",
+    "stroke-width": 0.1,
     "data-circle": 1,
-    "data-size": 6,
-    "filter": "url(#dropShadow01)"
+    "data-size": 2.5
   },
   "#goodsBurgs": {
     "opacity": 1,

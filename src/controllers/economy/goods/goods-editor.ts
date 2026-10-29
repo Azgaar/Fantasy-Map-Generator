@@ -10,7 +10,9 @@ import { States } from "@/model/political/states-generator";
 import { Tags } from "@/model/tags";
 import { goodBadge } from "@/renderers/draw-goods";
 import { Layers } from "@/renderers/layers";
+import { LegendBoxes } from "@/renderers/legend-boxes";
 import { Csv } from "@/services/io/csv";
+import type { LegendItem } from "@/types/legend";
 import { Dialog } from "@/ui/dialog/dialog";
 import { noteIcon, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
@@ -30,6 +32,7 @@ import { clearMainTip, tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl, getPointer } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
+import { BADGE_COLORS } from "../economy-config";
 import { bindEconomyWiki, economyWikiButton } from "../economy-wiki";
 
 const CSV_COLUMNS = [
@@ -54,6 +57,7 @@ let depositsByGood: Record<number, number> = {};
 let stockData: ReturnType<typeof getAllStockData> = {};
 
 const dialogId = "goodsEditor" as const;
+const LEGEND_NAME = "Goods"; // the legend box this editor toggles
 const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 let filterState: { visibleTags: string[]; search: string };
 
@@ -111,6 +115,7 @@ const columns: EditorColumn<Good>[] = [
     key: "deposits",
     label: t("Deposits"),
     width: "5.6em",
+    hidden: true,
     sortBy: good => (good.distribution ? (depositsByGood[good.i] ?? 0) : -1),
     tip: sentences(t("Deposits placed, and their range"), t("Click to sort"))
   },
@@ -174,6 +179,17 @@ function getVisibleCount(goods = pack.goods): number {
   return goods.reduce((count, good) => count + (good.visible ? 1 : 0), 0);
 }
 
+/** The goods selected for the Goods layer, or with none selected all goods */
+function toggleLegend(): void {
+  const getItems = () => {
+    const selected = pack.goods.filter(good => good.visible);
+    return (selected.length ? selected : [...pack.goods])
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((good): LegendItem => [good.i, good.color, good.name]);
+  };
+  LegendBoxes.toggle(LEGEND_NAME, getItems, t("No goods to show"));
+}
+
 function refreshEditor() {
   goodsTable.refresh();
   Layers.draw("goods");
@@ -200,9 +216,10 @@ function renderDialog(): void {
           class="icon-percent"
         ></button>
         <button id="goodsTagsFilter" data-tip="${t("Filter goods by tags")}" class="icon-tags"></button>
+        <button id="goodsLegend" data-tip="${t("Toggle Legend box")}" class="icon-list-bullet"></button>
         <button id="goodsAssign" data-tip="${t("Manually assign goods to cells")}" class="icon-brush"></button>
         <button id="goodsAdd" data-tip="${t("Add")}" class="icon-plus hide"></button>
-        <button id="goodsRegenerateGoods" data-tip="${t("Regenerate bonus goods placement")}" class="icon-arrows-cw hide"></button>
+        <button id="goodsRegenerateGoods" data-tip="${t("Regenerate deposits")}" class="icon-arrows-cw hide"></button>
         <button id="goodsRegenerateProduction" data-tip="${t("Regenerate production and trade deals")}" class="icon-retweet hide"></button>
         <button id="goodsChains" data-tip="${t("Show production chains graph")}" class="icon-chart-line hide"></button>
         <button
@@ -233,6 +250,7 @@ function renderDialog(): void {
   bindEconomyWiki("goodsWiki");
   ensureEl("goodsPercentage").addEventListener("click", togglePercentageMode);
   ensureEl("goodsTagsFilter").addEventListener("click", openTagsVisibilityDialog);
+  ensureEl("goodsLegend").addEventListener("click", toggleLegend);
   ensureEl("goodsAssign").addEventListener("click", enterResourceAssignMode);
   ensureEl("goodsAdd").addEventListener("click", () => Controllers.GoodEditor.open(undefined, refreshEditor));
   ensureEl("goodsRestore").addEventListener("click", goodsRestoreDefaults);
@@ -285,9 +303,11 @@ function renderGoodsPage(view: TableView<Good>) {
   const renderTypeBadge = (type: string) => {
     const commonStyles =
       "display:inline-block;border-radius:3px;padding:0 .4em;font-size:0.8em;font-weight:bold;line-height:1.35";
+    const [background, color] = BADGE_COLORS[type === "RAW" ? "local" : "mfg"];
+    const style = `${commonStyles};background:${background};color:${color}`;
     if (type === "RAW")
-      return `<span style="${commonStyles};background:#d0e7f5;color:#036" data-tip="${t("Raw goods come from the land and deposits")}">${t("RAW")}</span>`;
-    return `<span style="${commonStyles};background:#f8e7bf;color:#b67a00" data-tip="${t("Manufactured goods are produced in burgs")}">${t("MFG")}</span>`;
+      return `<span style="${style}" data-tip="${t("Raw goods come from the land and deposits")}">${t("RAW")}</span>`;
+    return `<span style="${style}" data-tip="${t("Manufactured goods are produced in burgs")}">${t("MFG")}</span>`;
   };
 
   const lines = view.rows
@@ -310,7 +330,7 @@ function renderGoodsPage(view: TableView<Good>) {
         </svg><span data-tip="${t("Name")}" class="goodName">${good.name}</span></div>
         <div data-col="type" data-tip="${t("Good types")}" class="goodType">${types.map(renderTypeBadge).join(" ")}</div>
         <div data-col="unit" data-tip="${t("Unit of production")}" class="goodUnit">${good.unit ?? ""}</div>
-        <div data-col="produced" data-tip="${sentences(producedTip, t("Click to see burgs producing this good"))}" class="goodProduced pointer" style="text-align: right">
+        <div data-col="produced" data-tip="${sentences(producedTip, t("Click to see states, provinces and burgs producing this good"))}" class="goodProduced pointer" style="text-align: right">
           <div style="display: inline-block; width: 3em">${percentage ? `${rn(totalProduced ? (produced / totalProduced) * 100 : 0, 2)}%` : produced}</div>
           <div style="display: inline-block; width: 0.4em; font-size: 1.5em;">⚒</div>
         </div>
@@ -364,31 +384,66 @@ function renderGoodsPage(view: TableView<Good>) {
   Dialog.update(dialogId, { width: "fit-content", position });
 }
 
+type Producer = { type: string; name: string; units: number; x: number; y: number };
+
+/** States and provinces by their cells' output, then burgs by their own, each type largest first */
+function getProducers(goodId: number): Producer[] {
+  const { cells, states, provinces, burgs } = pack;
+  const byState: number[] = [];
+  const byProvince: number[] = [];
+  const biomeProduction = Goods.getBiomesProduction();
+  for (const cellId of cells.i) {
+    const units = Production.getCellProduction(cellId, biomeProduction)[goodId];
+    if (!units) continue;
+    byState[cells.state[cellId]] = (byState[cells.state[cellId]] || 0) + units;
+    const provinceId = cells.province?.[cellId];
+    if (provinceId) byProvince[provinceId] = (byProvince[provinceId] || 0) + units;
+  }
+
+  type Region = { name: string; center?: number; pole?: [number, number]; removed?: boolean };
+  const regions = (type: string, list: Region[], units: number[]): Producer[] =>
+    units.flatMap((amount, id) => {
+      const region = list[id];
+      if (!amount || !region || region.removed) return [];
+      const [x, y] = region.pole ?? cells.p[region.center ?? 0];
+      return [{ type, name: region.name, units: amount, x, y }];
+    });
+  const burgProducers = burgs.flatMap(burg => {
+    const units = burg.i && !burg.removed ? Production.getBurgProduction(burg)[goodId] : 0;
+    return units ? [{ type: t("Burg"), name: burg.name ?? "", units, x: burg.x, y: burg.y }] : [];
+  });
+
+  const largestFirst = (a: Producer, b: Producer) => b.units - a.units;
+  return [
+    ...regions(t("State"), states, byState).sort(largestFirst),
+    ...regions(t("Province"), provinces, byProvince).sort(largestFirst),
+    ...burgProducers.sort(largestFirst)
+  ];
+}
+
 function openProducersDialog(goodId: number) {
   const good = Goods.get(goodId);
   if (!good) return;
 
-  const producers = pack.burgs
-    .filter(b => b.i && !b.removed)
-    .map(b => ({ burg: b, units: Production.getBurgProduction(b)[goodId] ?? 0 }))
-    .filter(({ units }) => units > 0)
-    .sort((a, b) => b.units - a.units);
-
-  let message = `<i style="color:#888">${t("No burgs produced {{good}}.", { good: good.name })}</i>`;
+  const producers = getProducers(goodId);
+  let message = `<i style="color:#888">${t("Nothing produces {{good}}", { good: good.name })}</i>`;
   if (producers.length) {
+    const columns = "grid-template-columns: 1.6em 5em 9em 4em;";
     const header = /*html*/ `
-          <div class="header" style="grid-template-columns: 1.6em 7em 4em;">
+          <div class="header" style="${columns}">
             <div></div>
-            <div>${t("Burg")}</div>
+            <div>${t("Type")}</div>
+            <div>${t("Name")}</div>
             <div>${t("Units")}</div>
          </div>`;
     const rows = producers
       .map(
-        ({ burg, units }) => /*html*/ `
-          <div data-tip="${t("Click to zoom")}" class="states pointer" data-x="${burg.x} " data-y="${burg.y}" data-id="${burg.i}">
-            <div class="icon-dot-circled" style="width:1em"></div>
-            <div style="width:7em;">${burg.name}</div>
-            <div style="width:4em;">${units}</div>
+        ({ type, name, units, x, y }) => /*html*/ `
+          <div data-tip="${t("Click to zoom")}" class="states pointer" data-x="${x}" data-y="${y}">
+            <div class="icon-dot-circled" style="width:1.6em"></div>
+            <div style="width:5em">${type}</div>
+            <div style="width:9em">${name}</div>
+            <div style="width:4em">${rn(units, 1)}</div>
           </div>`
       )
       .join("");
@@ -802,9 +857,9 @@ function updateDisplayAllCheckbox() {
 
 function requestGoodsRegeneration() {
   Dialog.confirm({
-    title: t("Regenerate bonus goods placement"),
+    title: t("Regenerate deposits"),
     message: t(
-      "Are you sure you want to regenerate bonus goods placement? Generation will be based on the current Goods settings and won't affect production or trade"
+      "Are you sure you want to regenerate deposits? Generation will be based on the current Goods settings and won't affect production or trade"
     ),
     confirm: t("Regenerate"),
     onConfirm: () => {
@@ -819,7 +874,7 @@ function requestProductionRegeneration() {
   Dialog.confirm({
     title: t("Regenerate Production"),
     message: t(
-      "Are you sure you want to regenerate production and trade for all goods? Generation will be based on the current Goods settings and bonus goods placement"
+      "Are you sure you want to regenerate production and trade for all goods? Generation will be based on the current Goods settings and deposits"
     ),
     confirm: t("Regenerate"),
     onConfirm: () => {

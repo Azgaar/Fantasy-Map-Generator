@@ -19,6 +19,7 @@ import {
 import { t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn, si } from "@/utils/number-utils";
+import { ECONOMY_COLORS, tone } from "./economy-config";
 import { bindEconomyWiki, economyWikiButton } from "./economy-wiki";
 import { prosperityLevel, renderProsperityPercent } from "./prosperity-view";
 
@@ -90,7 +91,8 @@ export function openGoodsTable(stateId: number, kind: GoodsKind): void {
     { key: "good", label: t("Good"), width: "11em", permanent: true, sortBy: name, sortType: "alpha" },
     { key: "units", label: t("Units"), width: "5em", sortBy: row => row.units },
     { key: "value", label: t("Value"), width: "6em", sortBy: row => row.value, defaultSort: "desc" },
-    { key: "share", label: t("Share"), width: "4em", sortBy: row => row.share }
+    { key: "share", label: t("Share"), width: "4em", sortBy: row => row.share },
+    { key: "actions", width: "1.4em", permanent: true }
   ];
   const title = { exports: t("Exports"), imports: t("Imports"), made: t("Goods made") }[kind];
   openTable({
@@ -135,7 +137,8 @@ export function openPartnersTable(stateId: number): void {
     { key: "exports", label: t("Exports"), width: "6em", sortBy: row => row.exports },
     { key: "imports", label: t("Imports"), width: "6em", sortBy: row => row.imports },
     { key: "balance", label: t("Balance"), width: "6em", sortBy: row => row.balance },
-    { key: "share", label: t("Share"), width: "4em", sortBy: row => row.share, defaultSort: "desc" }
+    { key: "share", label: t("Share"), width: "4em", sortBy: row => row.share, defaultSort: "desc" },
+    { key: "actions", width: "1.4em", permanent: true }
   ];
   openTable({
     id: "stateEconomyPartnersTable",
@@ -146,7 +149,7 @@ export function openPartnersTable(stateId: number): void {
       <div data-col="state">${name(row)}</div>
       <div data-col="exports">${money(row.exports)}</div>
       <div data-col="imports">${money(row.imports)}</div>
-      <div data-col="balance" style="color: ${row.balance >= 0 ? "#2a6" : "#a34a14"}">${money(row.balance)}</div>
+      <div data-col="balance" style="color: ${ECONOMY_COLORS[tone(row.balance)]}">${money(row.balance)}</div>
       <div data-col="share">${rn(row.share, 1)}%</div>`,
     csv: {
       headers: ["State", "Exports", "Imports", "Balance", "Share"],

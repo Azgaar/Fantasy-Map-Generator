@@ -21,6 +21,7 @@ import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
+import { tone, toneStyle } from "../economy-config";
 import { bindEconomyWiki, economyWikiButton } from "../economy-wiki";
 import { money, splitDealPrice, tariffCell, tradeCellTips, tradeColumnTips } from "./deal-price";
 
@@ -138,8 +139,7 @@ function renderDialog(): void {
   Dialog.destroy(dialogId);
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
       <style>
-        #${dialogId} .positive { color: #2a6 }
-        #${dialogId} .negative { color: #a34a14 }
+        ${toneStyle(`#${dialogId}`)}
       </style>
       <div>
         ${renderEditorHeader({ dialogId, columns })}
@@ -262,21 +262,27 @@ function renderDealLine(row: MarketDealRow): string {
     formula
   });
   const isSale = side === "sell";
-  const sideTip = isSale ? t("The market sells the goods to the burg") : t("The market buys the goods from the burg");
+  const isOrder = deal[3] === DEAL_KINDS.order;
+  const sideTip = isOrder
+    ? t("The market sells the goods to the state, delivered to the burg")
+    : isSale
+      ? t("The market sells the goods to the burg")
+      : t("The market buys the goods from the burg");
+  const badge = isOrder ? t("State") : isSale ? t("Sell") : t("Buy");
 
   return /* html */ `<div class="states marketDeal" data-id="${pack.deals.indexOf(deal)}" data-good="${good.name}" data-side="${side}" data-burg="${burg}" data-units="${rn(units, 2)}" data-income="${rn(income, 2)}">
       <svg data-col="icon" data-tip="${t("Good icon")}" width="1.3em" height="1.3em" class="goodIcon">
         ${goodBadge(good)}
       </svg>
       <div data-col="good" data-tip="${t("Name")}" class="goodName">${good.name}</div>
-      <div data-col="side" data-tip="${sideTip}"><span class="marketBadge ${isSale ? "positive" : "negative"}">${(isSale ? t("Sell") : t("Buy")).toUpperCase()}</span></div>
+      <div data-col="side" data-tip="${sideTip}"><span class="marketBadge ${isSale ? "positive" : "negative"}">${badge.toUpperCase()}</span></div>
       <div data-col="burg" class="marketDealBurg pointer" data-tip="${t("Click to zoom")}">${burg}</div>
       <div data-col="units" data-tip="${cellTips.units}">${rn(units, 2)}</div>
       <div data-col="net" data-tip="${cellTips.net}">${money(net, isSale)}</div>
       <div data-col="carriage" data-tip="${cellTips.carriage}">${money(carriage, false)}</div>
       <div data-col="tax" data-tip="${cellTips.tax}">${money(tax, false)}</div>
       <div data-col="tariff" data-tip="${cellTips.tariff}">${tariffCell(tariff, isImport)}</div>
-      <div data-col="income" class="${income >= 0 ? "positive" : "negative"}" data-tip="${t("Market income")}: ${formula}">${formatPrice(rn(income, 2))}</div>
+      <div data-col="income" class="${tone(income)}" data-tip="${t("Market income")}: ${formula}">${formatPrice(rn(income, 2))}</div>
     </div>`;
 }
 
@@ -323,11 +329,7 @@ function renderTotals(rows: MarketDealRow[]): void {
         )
       )
     ),
-    total(
-      t("Income"),
-      marketIncomeTip,
-      `<span class="${income >= 0 ? "positive" : "negative"}">${formatPrice(rn(income, 2))}</span>`
-    )
+    total(t("Income"), marketIncomeTip, `<span class="${tone(income)}">${formatPrice(rn(income, 2))}</span>`)
   ].join("");
 }
 

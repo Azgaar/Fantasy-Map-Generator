@@ -20,14 +20,15 @@ import {
   WEALTH_WANTS
 } from "./goods-generator";
 import type { DealKind, Market, SourceOption, SourceQuote, Trade, TradeTerms } from "./markets-generator";
-import { DEAL_KINDS, Markets } from "./markets-generator";
+import { DEAL_KINDS, Markets, MIN_LOCAL_STOCK } from "./markets-generator";
 import { Prosperity } from "./prosperity";
+import { StateOrders } from "./state-orders";
 
 const RURAL_OUTPUT_FACTOR = 1.88;
 export const DEPOSIT_RICHNESS = 1.25; // units a deposit yields a day per population point of its cell, on a map of DEPOSIT_MAP_CELLS
 const DEPOSIT_MAP_CELLS = 5000; // deposit counts are per map: their yield grows with the map's cells
 const DEPOSIT_MAX_POPULATION = 10; // a deposit's yield stops growing past this population
-const BONUS_URBAN_PRODUCTION = 3; // free units per population point of a burg on a deposit
+export const BONUS_URBAN_PRODUCTION = 3; // free units per population point of a burg on a deposit
 const MIN_BONUS_PRODUCTION = 1;
 const MAX_BONUS_PRODUCTION = 5;
 export const MAX_BONUS_VALUE = 200; // a burg's free units are worth at most this at base value, so a rich deposit can't flood its treasury
@@ -36,7 +37,6 @@ export const WORKFORCE_SHARE = 0.39; // townspeople working in trades; the rest 
 const WORKERS_PER_TURN = 5;
 export const BURG_SPECIALIZATION = 1.93;
 export const MARKET_SPECIALIZATION = 0.5;
-const MIN_LOCAL_STOCK = 1; // a burg buys at its own market while it stocks this much, otherwise from the cheapest market
 
 export class ProductionModule {
   private zoneCellSets: Map<number, Set<number>> | null = null; // lazy zoneId -> cells lookup, built only when a good uses zone multipliers
@@ -89,13 +89,15 @@ export class ProductionModule {
         burg.production = [];
       }
     }
+    StateOrders.start();
     for (const { market, population } of states) {
       index.marketPopulation[market.i] = (index.marketPopulation[market.i] || 0) + population;
       index.worldPopulation += population;
     }
 
     // burgs take turns, largest first, so the first in line cannot drain a market alone; each turn a burg works, sells,
-    // buys its needs in step with the work done, then spends what it can spare; rural people spend what their produce earned
+    // buys its needs in step with the work done, then spends what it can spare; rural people spend what their produce earned,
+    // states what their taxes brought in
     let working = states;
     while (working.length) {
       working = working.filter(state => {
@@ -108,8 +110,11 @@ export class ProductionModule {
         return hasWork;
       });
       for (const market of pack.markets) Markets.spendRural(market);
+      StateOrders.place();
     }
+    StateOrders.place(true);
     Markets.endRun();
+    StateOrders.end();
     pack.deals = pack.deals.filter(deal => deal[4] > 0); // sales kept back whole
     pack.cells.prosperity = Prosperity.getCellsProsperity();
 

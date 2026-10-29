@@ -463,7 +463,7 @@ function regenerateProduction() {
   Dialog.confirm({
     title: t("Regenerate Production"),
     message: t(
-      "Are you sure you want to regenerate production and trade for all goods? Generation will be based on the current Goods settings and bonus goods placement"
+      "Are you sure you want to regenerate production and trade for all goods? Generation will be based on the current Goods settings and deposits"
     ),
     confirm: t("Regenerate"),
     onConfirm: () => {

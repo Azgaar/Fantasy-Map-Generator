@@ -21,6 +21,7 @@ import { zoomTo } from "@/ui/map/zoom";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
+import { tone, toneStyle } from "../economy-config";
 import { bindEconomyWiki, economyWikiButton } from "../economy-wiki";
 import { carriageDistance, money, splitDealPrice, tariffCell, tradeCellTips, tradeColumnTips } from "./deal-price";
 
@@ -110,8 +111,14 @@ function open(deal: Deal): void {
   if (!burg || !market) return;
 
   const isSale = kind === DEAL_KINDS.sale;
+  const isOrder = kind === DEAL_KINDS.order; // the state's, apart from the burg's own purchases
   const deals = pack.deals.filter(
-    ([b, m, , k]) => b === burgId && m === marketId && k !== DEAL_KINDS.kept && (k === DEAL_KINDS.sale) === isSale
+    ([b, m, , k]) =>
+      b === burgId &&
+      m === marketId &&
+      k !== DEAL_KINDS.kept &&
+      (k === DEAL_KINDS.sale) === isSale &&
+      (k === DEAL_KINDS.order) === isOrder
   );
   activeFlow = { deals, burgId, marketId, isSale };
 
@@ -123,13 +130,15 @@ function open(deal: Deal): void {
   tradeDetailsTable.reset();
   highlight(path.points);
 
-  const names = { burg: burg.name, market: Markets.getName(market) };
+  const names = { burg: burg.name, market: Markets.getName(market), state: pack.states[burg.state || 0]?.name };
   Dialog.open(dialogId, {
-    title: isSale
-      ? t("Trade: {{- burg}} sells to {{- market}}", names)
-      : !Markets.isImport(deal)
-        ? t("Trade: {{- burg}} buys from {{- market}}", names)
-        : t("Trade: {{- burg}} imports from {{- market}}", names),
+    title: isOrder
+      ? t("State order: {{- state}} buys from {{- market}} for {{- burg}}", names)
+      : isSale
+        ? t("Trade: {{- burg}} sells to {{- market}}", names)
+        : !Markets.isImport(deal)
+          ? t("Trade: {{- burg}} buys from {{- market}}", names)
+          : t("Trade: {{- burg}} imports from {{- market}}", names),
     position,
     onClose: closeTradeDetails
   });
@@ -139,8 +148,7 @@ function renderDialog(): void {
   Dialog.destroy(dialogId);
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
       <style>
-        #${dialogId} .positive { color: #2a6 }
-        #${dialogId} .negative { color: #a34a14 }
+        ${toneStyle(`#${dialogId}`)}
       </style>
       <div>
         <div id="tradeDetailsSummary" class="totalLine"></div>
@@ -249,7 +257,7 @@ function renderTradeDetailsPage(view: TableView<TradeDetailRow>): void {
     <div data-col="carriage" data-tip="${cellTips.carriage}">${money(carriage, false)}</div>
     <div data-col="tax" data-tip="${cellTips.tax}">${money(tax, false)}</div>
     <div data-col="tariff" data-tip="${cellTips.tariff}">${tariffCell(tariff, isImport)}</div>
-    <div data-col="income" class="${income >= 0 ? "positive" : "negative"}" data-tip="${cellTips.income}">${formatPrice(rn(income, 2))}</div>
+    <div data-col="income" class="${tone(income)}" data-tip="${cellTips.income}">${formatPrice(rn(income, 2))}</div>
   </div>`;
   });
 
@@ -266,7 +274,7 @@ function renderTradeDetailsPage(view: TableView<TradeDetailRow>): void {
     `${rn(length * options.map.units.distance.scale)} ${options.map.units.distance.unit}`;
   ensureEl("tradeDetailsFooterUnits").innerHTML = String(rn(totalUnits, 2));
   ensureEl("tradeDetailsFooterIncome").innerHTML =
-    `<span class="${totalIncome >= 0 ? "positive" : "negative"}">${formatPrice(rn(totalIncome, 2))}</span>`;
+    `<span class="${tone(totalIncome)}">${formatPrice(rn(totalIncome, 2))}</span>`;
 
   renderEditorPagination(ensureEl("tradeDetailsFooter"), view, tradeDetailsTable.goto);
   Dialog.update(dialogId, { width: "fit-content", position });

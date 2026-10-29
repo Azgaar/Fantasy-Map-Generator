@@ -16,8 +16,8 @@ const DEFAULT_PRESETS: Record<string, LayerId[]> = {
   heightmap: ["heightmap", "lakes", "rivers", "vignette"],
   physical: ["coordinates", "heightmap", "ice", "lakes", "rivers", "scaleBar", "vignette"],
   poi: ["borders", "burgIcons", "heightmap", "ice", "lakes", "markers", "rivers", "routes", "scaleBar", "vignette"],
-  economy: ["borders", "goods", "ice", "lakes", "markets", "rivers", "routes", "scaleBar", "trade", "vignette"],
-  trade: ["borders", "burgIcons", "lakes", "rivers", "routes", "scaleBar", "states", "trade", "vignette"],
+  goods: ["borders", "goods", "ice", "lakes", "rivers", "scaleBar", "vignette"],
+  trade: ["borders", "burgIcons", "ice", "lakes", "markets", "rivers", "routes", "scaleBar", "trade", "vignette"],
   military: [
     "borders",
     "burgIcons",

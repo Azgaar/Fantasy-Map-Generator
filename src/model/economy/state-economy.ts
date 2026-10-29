@@ -103,6 +103,7 @@ class StateEconomyModule {
     pollTaxOwed: number;
     marketFees: number;
     markets: number;
+    otherRevenue: number;
     corruption: number;
   } {
     let salesTax = 0;
@@ -123,6 +124,7 @@ class StateEconomyModule {
       pollTaxOwed: owed[stateId] || 0,
       marketFees,
       markets: markets.length,
+      otherRevenue: pack.states[stateId]?.economy.otherRevenue || 0,
       corruption: pack.states[stateId]?.economy.pocketed || 0
     };
   }

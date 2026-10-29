@@ -43,9 +43,10 @@ const say = line => {
 
 const maps = existsSync(MAPS_DIR) ? readdirSync(MAPS_DIR).filter(f => f.endsWith(".json")) : [];
 if (!maps.length) throw new Error("No exported maps: run scripts/economy-tuner/export-maps.mjs first");
-// maps are generated with the values in the source: after an apply, export them again
+// maps are generated with the values in the source and keep their states' taxes and budgets: after an apply, export them again
 const exported = Math.min(...maps.map(file => statSync(`${MAPS_DIR}${file}`).mtimeMs));
-const changed = [...new Set([GOODS_FILE, ...Object.keys(TUNABLES).map(file => `${ROOT}${file}`)])].filter(
+const STATES_FILE = `${ROOT}src/model/political/states-generator.ts`;
+const changed = [...new Set([GOODS_FILE, STATES_FILE, ...Object.keys(TUNABLES).map(file => `${ROOT}${file}`)])].filter(
   file => statSync(file).mtimeMs > exported
 );
 if (changed.length)
@@ -62,6 +63,13 @@ const defaults = Object.fromEntries(
   })
 );
 const start = thetaOf(catalogue, defaults);
+// a made good priced outside its margin range starts at the nearest bound, so the search never scores the source as it is
+const startValues = overridesOf(catalogue, start).value;
+for (const good of catalogue)
+  if (Math.abs(startValues[good.name] - good.value) > 0.01)
+    say(
+      `START ${good.name} is valued ${good.value} in the source but ${+startValues[good.name].toFixed(2)} in the search: its margin over its inputs is out of range`
+    );
 
 // ---- state; the best is written whole or not at all, so a crash never leaves a broken file
 const t0 = Date.now();

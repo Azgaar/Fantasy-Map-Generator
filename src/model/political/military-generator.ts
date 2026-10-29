@@ -3,11 +3,11 @@ import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
 import type { MilitaryUnit } from "@/types/military";
 import { nth } from "@/utils/language-utils";
-import { minmax, rn, si } from "@/utils/number-utils";
+import { rn, si } from "@/utils/number-utils";
 import { gauss, ra, rand } from "@/utils/probability-utils";
 import { findAllInQuadtree } from "@/utils/quadtree";
 import { requireName, requireOneOf } from "@/utils/validation-utils";
-import type { State } from "./states-generator";
+import { type State, States } from "./states-generator";
 
 export interface Regiment {
   i: number;
@@ -58,21 +58,6 @@ class MilitaryModule {
     const { cells, states } = pack;
     const { p } = cells;
     const valid = states.filter(s => s.i && !s.removed); // valid states
-
-    const expn = sum(valid.map(s => s.expansionism)); // total expansion
-    const area = sum(valid.map(s => s.area)); // total area
-    const rate = {
-      x: 0,
-      Ally: -0.2,
-      Friendly: -0.1,
-      Neutral: 0,
-      Suspicion: 0.1,
-      Enemy: 1,
-      Unknown: 0,
-      Rival: 0.5,
-      Vassal: 0.5,
-      Suzerain: -0.5
-    };
 
     const stateModifier = {
       melee: {
@@ -212,21 +197,7 @@ class MilitaryModule {
     valid.forEach(s => {
       const draft = { modifiers: {} as Record<string, number>, platoons: [] as Platoon[] };
       drafts.set(s.i, draft);
-      const d = s.diplomacy!;
-
-      const expansionRate = minmax(s.expansionism / expn / (s.area! / area), 0.25, 4); // how much state expansionism is realized
-      const diplomacyRate = d.some(d => d === "Enemy")
-        ? 1
-        : d.some(d => d === "Rival")
-          ? 0.8
-          : d.some(d => d === "Suspicion")
-            ? 0.5
-            : 0.1; // peacefulness
-      const neighborsRateRaw = s
-        .neighbors!.map(n => (n ? pack.states[n].diplomacy![s.i] : "Suspicion"))
-        .reduce((s, r) => s + rate[r as keyof typeof rate], 0.5);
-      const neighborsRate = minmax(neighborsRateRaw, 0.3, 3); // neighbors rate
-      s.alert = minmax(rn(expansionRate * diplomacyRate * neighborsRate, 2), 0.1, 5); // alert rate (area modifier)
+      s.alert = States.defineAlert(s);
       // apply overall state modifiers for unit types based on state features
       for (const unit of options.map.military.units) {
         if (!stateModifier[unit.type as keyof typeof stateModifier]) continue;

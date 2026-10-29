@@ -106,7 +106,7 @@ const TEMPLATE = /* html */ `
       ${t("Economy")}
     </button>
     <button id="regenerateEmblems" data-tip="${t("Click to regenerate all emblems")}">${t("Emblems")}</button>
-    <button id="regenerateGoods" data-tip="${t("Regenerate bonus goods placement")}">${t("Goods")}</button>
+    <button id="regenerateGoods" data-tip="${t("Regenerate deposits")}">${t("Goods")}</button>
     <button id="regenerateIce" data-tip="${t("Click to regenerate icebergs and glaciers")}">${t("Ice")}</button>
     <button
       id="regenerateStateLabels"

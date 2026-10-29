@@ -656,15 +656,7 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
     </div>
   `;
 
-  renderGroupList();
-  updateOutput();
-
-  ensureEl<HTMLButtonElement>("distAddGroup").addEventListener("click", () => {
-    groups.push([createDefaultCondition()]);
-    renderGroupList();
-    updateOutput();
-  });
-
+  // the builder looks its elements up by id: they must be in the page first
   Dialog.message({
     id: "distributionEditor",
     message: popupEl,
@@ -681,6 +673,15 @@ function open(onApply: (distribution: string) => void, initialExpression = "") {
         }
       }
     ]
+  });
+
+  renderGroupList();
+  updateOutput();
+
+  ensureEl<HTMLButtonElement>("distAddGroup").addEventListener("click", () => {
+    groups.push([createDefaultCondition()]);
+    renderGroupList();
+    updateOutput();
   });
 }
 

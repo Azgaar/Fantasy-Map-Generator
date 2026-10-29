@@ -104,7 +104,7 @@ World data is mainly stored in typed arrays within `cells` object in both `grid`
 - `pack.cells.state`: `number[]` - cells state index. `Uint16Array`
 - `pack.cells.province`: `number[]` - cells province index. `Uint16Array`
 - `pack.cells.religion`: `number[]` - cells religion index. `Uint16Array`
-- `pack.cells.good`: `number[]` - cells bonus resource good id (`0` if none). Marks the special good extracted on the cell. `Uint16Array`
+- `pack.cells.good`: `number[]` - the good of the deposit on the cell (`0` if none). Marks the special good extracted on the cell. `Uint16Array`
 - `pack.cells.market`: `number[]` - cells market index (`0` if unassigned). Filled by the market territory flood-fill. `Uint16Array`
 - `pack.cells.prosperity`: `number[]` - cells rural prosperity in percent (`0` where no one lives or the economy has not run), kept by the economy run for quick reads. `Uint8Array`
 - `pack.cells.area`: `number[]` - cells area in pixels. `Uint16Array`
@@ -202,17 +202,20 @@ States (countries) data is stored as an array of objects with strict element ord
 - `provinces`: `number[]` - ids of state provinces
 - `diplomacy`: `string[]` - relation to each state by its id: `Ally`, `Friendly`, `Neutral`, `Suspicion`, `Enemy` (at war), `Unknown`, `Rival`, `Vassal` (of that state) or `Suzerain` (to that state); both sides hold the same relation except a vassal pair. 'x' for self and neutrals. Element 0 (neutrals) `diplomacy` is used differently and contains wars story as `string[][]`
 - `campaigns`: `object[]` - wars the state participated in. The was is defined as `start`: `number` (year), `end`: `number` (year), `name`: `string`
-- `alert`: `number` - state war alert, see [military forces page](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Military-Forces)
+- `alert`: `number` - state war alert, 0.1–5, set with the forms (`States.defineAlert`) from realized expansionism and relations; its forces and default military spending scale with it. See [military forces page](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Military-Forces)
 - `military`: `Regiment[]` - list of state regiments, see [military forces page](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Military-Forces)
 - `label`: `Label` - optional state-label data. If absent, the renderer derives the text, path, and relative size from the State data and label mode
 - `coa`: `object` - heraldic emblem in [Armoria's COA format](https://github.com/Azgaar/armoria-api#readme), or picture emblem `{ icon: string, shield?: string }` referring to an icon in the library. Both forms may have optional `size`, `x` and `y` fields for map placement. A picture emblem can be clipped to a shield, but cannot be edited as heraldry in Armoria
-- `economy`: `StateFinance` - the state's taxes, fees, tariffs and treasury; all zero, with no tariffs, for neutrals:
+- `economy`: `StateFinance` - the state's taxes, fees, tariffs, budget and treasury; all zero, with no tariffs and the whole budget to the treasury, for neutrals:
   - `salesTax`: `number` - sales tax rate `0..1` charged on deals where this state is the seller. Generated from `form` (Monarchy 0.1, Union 0.1, Theocracy and Republic 0.05, Anarchy 0), jittered per state. Always `0` for neutrals
   - `pollTax`: `number` - flat poll tax per population point: burgs pay it first from their sales, rural people from what their produce earns, as far as it goes. Generated from `form` (Monarchy 0.1, Theocracy 0.1, Republic 0.05, Union and Anarchy 0), jittered per state. Always `0` for neutrals
   - `marketFee`: `number` - license fee a day the center burg of each market in the state pays it, whatever the market's trade. Generated from `form` (Monarchy 25, Theocracy 50, Republic 10, Union and Anarchy 0), as far above or below the base as the state's sales tax is (¼× to 2×). `0` for neutrals and for states added by hand
-  - `corruption`: `number` - percent (0–100, whole) of collected taxes officials pocket. Generated with the forms (`States.defineCorruption`): the form's share (Monarchy 10, Theocracy 7.5, Republic 5, Union 2.5, Anarchy 0, doubled for despotic form names) plus up to 15 for size in cells and up to 10 for people of other cultures and faiths. `0` for neutrals and for states added by hand
+  - `otherRevenue`: `number` - the state's income a day besides taxes, set by the user (`States.setOtherRevenue`): tribute, crown estates, loans; negative for debts or tribute paid. Added to what it collects and kept on regeneration. `0` by default
+  - `budget`: `{ court, administration, infrastructure, military, corruption }` - each expense in whole percents (0–100) of the taxes the state collects, free to sum past 100 into debt, and `corruption` (0–100, whole), the share of each expense officials pocket. Generated with the forms: corruption by `States.defineCorruption` (the form's share, Monarchy 10, Theocracy 7.5, Republic 5, Union 2.5, Anarchy 0, doubled for despotic form names, plus up to 15 for size in cells and up to 10 for people of other cultures and faiths), the expenses by `States.defineExpenses` (the form's base, grown by the capital's share of the townspeople, the burgs ruled, urbanization and war alert). Set by `States.setBudget` and `States.setCorruption`
+  - `collected`: `number` - all the taxes collected in the last economy run, before corruption and expenses, set by `States.collectTaxes()`; the tax burden reads it
+  - `spent`: `{ court, administration, infrastructure, military }` - what each expense bought in the last economy run, set by `StateOrders`
   - `pocketed`: `number` - what officials pocketed of the taxes collected in the last economy run, set by `States.collectTaxes()`. The Taxes panels show it, so a corruption rate changed since stays out of it until the next run. `0` for maps saved before v1.157.0
-  - `treasury`: `number` - state currency balance from the last economy run. Reset and refilled by `States.collectTaxes()` from `deal.tax` (sales tax) plus `deal.tariff` (import tariffs) plus the poll tax its burgs and rural people paid (`States.getPollTax`) plus the market fees of markets centered in it (`States.getMarketFees`), less corruption. Always `0` for neutrals
+  - `treasury`: `number` - the treasury balance from the last economy run, the taxes less the expenses, negative for a state spending beyond them. Reset and refilled by `States.collectTaxes()` from `deal.tax` (sales tax) plus `deal.tariff` (import tariffs) plus the poll tax its burgs and rural people paid (`States.getPollTax`) plus the market fees of markets centered in it (`States.getMarketFees`), less corruption and what its expenses spent. Always `0` for neutrals
   - `tariffs`: `TariffRule[]` - list of import tariff and embargo rules `{ states: number[] | "all", goods: number[] | "all", rate: number | "embargo" }`. Procedurally seeded from diplomacy relations with a `0.05` baseline for all foreign states and goods. Empty array `[]` for neutrals
 - `lock`: `boolean` - `true` if state is locked (not affected by regeneration)
 - `removed`: `boolean` - `true` if state is removed
@@ -477,7 +480,7 @@ Goods (tradable resources and products) are stored in `pack.goods: Good[]`. Good
 - `unit`: `string` - unit of measure label (e.g. `kg`, `barrel`)
 - `icon`: `string` - icon reference used for the good's map/UI icon: usually `goods-<file>` from the goods icon set, or any other icon, including a custom one (see `icons.md`)
 - `color`: `string` - good color in hex
-- `deposits`: `[number, number]` - bonus resource deposits on the map, min and max (whole numbers), for goods with a `distribution`. The same on any map size; a deposit's yield scales with the map's cells instead. Optional
+- `deposits`: `[number, number]` - deposits on the map, min and max (whole numbers), for goods with a `distribution`. The same on any map size; a deposit's yield scales with the map's cells instead. Optional
 - `distribution`: `string` - JS expression evaluated per cell to decide where the raw good is placed (see [Goods spread functions](../wiki/Goods-spread-functions.md)). Optional
 - `biomeOutput`: `Record<biomeId, number>` - units produced per rural population point per production cycle, per biome. Optional
 - `recipes`: `Record<goodId, number>[]` - array of alternative recipes; each maps input good id → units consumed per 1 unit of output. Optional
@@ -521,10 +524,10 @@ A burg's trades with a market, stored in `pack.deals: Deal[]` and rebuilt on reg
 - `burg`: `number` - burg id
 - `market`: `number` - market id: the burg's own market, or another market it bought from
 - `good`: `number` - good id
-- `kind`: `0 | 1 | 2 | 3` - sale, input purchase for production, purchase for demand, or own sale kept back for demand at price 0 (`DEAL_KINDS`)
+- `kind`: `0 | 1 | 2 | 3 | 4` - sale, input purchase for production, purchase for demand, own sale kept back for demand at price 0, or a state's order delivered to the burg, its seat, and paid by the state (`DEAL_KINDS`)
 - `units`: `number` - traded amount, rounded to 2 decimals
 - `price`: `number` - average price per unit at the burg's door, rounded to 2 decimals: a purchase includes the carriage from the market's center along routes, a sale is net of it. A purchase is the market's price plus margin, that market's sales tax, the tariff on an import from another state, and carriage
-- `tax`: `number` - absolute sales tax: the burg's on a sale, the selling market's on a purchase. `States.collectTaxes()` sums it into the seller's state treasury
+- `tax`: `number` - absolute sales tax: the burg's on a sale, the selling market's on a purchase; none on an order at the ordering state's own market. `States.collectTaxes()` sums it into the seller's state treasury
 - `tariff`: `number` - absolute import tariff, charged by the state of the burg's own market. `States.collectTaxes()` sums it into that state's treasury
 - `carriage`: `number` - average cost per unit of carrying the goods between the market's center and the burg, already in `price`: added to a purchase, taken off a sale. 0 for the market's center burg
 

@@ -2,7 +2,7 @@ A good **distribution** is an expression that decides whether the good can be pl
 
 # How placement works
 
-Every good with a distribution has a **deposits** range: how many bonus resource deposits it gets on the map, from a minimum to a maximum. On each run the generator picks a whole number in the range; the count does not depend on the map's size.
+Every good with a distribution has a **deposits** range: how many deposits it gets on the map, from a minimum to a maximum. On each run the generator picks a whole number in the range; the count does not depend on the map's size.
 
 Goods are placed one by one in random order. The first deposit of a good lands on a random cell where its distribution is `true`. Each next one has a 50% chance to land next to the previous deposit, if the distribution allows one of its neighbours; otherwise it lands on another random cell where the distribution is `true`. Deposits therefore form loose clusters: mining districts and fishing grounds rather than single scattered cells.
 

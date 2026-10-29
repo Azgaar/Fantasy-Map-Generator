@@ -36,18 +36,18 @@ describe("StatesModule.collectTaxes", () => {
 
   it("credits sales-tax deal.tax to the seller's state and adds poll tax", () => {
     globalThis.pack.states = [
-      { i: 0, name: "Neutrals", economy: { salesTax: 0, pollTax: 0, treasury: 0 } },
+      { i: 0, name: "Neutrals", economy: { ...noFinance(), salesTax: 0, pollTax: 0, treasury: 0 } },
       {
         i: 1,
         name: "A",
-        economy: { salesTax: 0.2, pollTax: 0.5, treasury: 0 },
+        economy: { ...noFinance(), salesTax: 0.2, pollTax: 0.5, treasury: 0 },
         rural: 100,
         urban: 50
       },
       {
         i: 2,
         name: "B",
-        economy: { salesTax: 0.1, pollTax: 0.1, treasury: 0 },
+        economy: { ...noFinance(), salesTax: 0.1, pollTax: 0.1, treasury: 0 },
         rural: 200,
         urban: 100
       }
@@ -83,9 +83,9 @@ describe("StatesModule.collectTaxes", () => {
 
   it("credits the poll tax burgs and rural people paid, not rate × people", () => {
     globalThis.pack.states = [
-      { i: 0, name: "Neutrals", economy: { salesTax: 0, pollTax: 0, treasury: 0 } },
-      { i: 1, name: "A", economy: { salesTax: 0, pollTax: 0.5, treasury: 0 }, rural: 100, urban: 50 },
-      { i: 2, name: "B", economy: { salesTax: 0, pollTax: 0.1, treasury: 0 }, rural: 200, urban: 100 }
+      { i: 0, name: "Neutrals", economy: { ...noFinance(), salesTax: 0, pollTax: 0, treasury: 0 } },
+      { i: 1, name: "A", economy: { ...noFinance(), salesTax: 0, pollTax: 0.5, treasury: 0 }, rural: 100, urban: 50 },
+      { i: 2, name: "B", economy: { ...noFinance(), salesTax: 0, pollTax: 0.1, treasury: 0 }, rural: 200, urban: 100 }
     ] as any;
     globalThis.pack.burgs = [{ i: 0 }, { i: 1, state: 1, pollTaxPaid: 25 }, { i: 2, state: 2, pollTaxPaid: 0 }] as any;
     // the market's rural people paid part of what they owed, split between the states of their cells
@@ -118,10 +118,15 @@ describe("StatesModule.collectTaxes", () => {
 
   it("credits the market fees market centers paid to their state, and sets the fee by form and sales tax", () => {
     globalThis.pack.states = [
-      { i: 0, name: "Neutrals", economy: { salesTax: 0, pollTax: 0, treasury: 0 } },
-      { i: 1, name: "A", form: "Monarchy", economy: { salesTax: 0.2, pollTax: 0, marketFee: 30, treasury: 0 } },
-      { i: 2, name: "B", form: "Republic", economy: { salesTax: 0.005, pollTax: 0, treasury: 0 } },
-      { i: 3, name: "C", form: "Anarchy", economy: { salesTax: 0, pollTax: 0, treasury: 0 } }
+      { i: 0, name: "Neutrals", economy: { ...noFinance(), salesTax: 0, pollTax: 0, treasury: 0 } },
+      {
+        i: 1,
+        name: "A",
+        form: "Monarchy",
+        economy: { ...noFinance(), salesTax: 0.2, pollTax: 0, marketFee: 30, treasury: 0 }
+      },
+      { i: 2, name: "B", form: "Republic", economy: { ...noFinance(), salesTax: 0.005, pollTax: 0, treasury: 0 } },
+      { i: 3, name: "C", form: "Anarchy", economy: { ...noFinance(), salesTax: 0, pollTax: 0, treasury: 0 } }
     ] as any;
     globalThis.pack.burgs = [{ i: 0 }, { i: 1, state: 1 }, { i: 2, state: 1 }, { i: 3, state: 0 }] as any;
     globalThis.pack.markets = [
@@ -142,10 +147,10 @@ describe("StatesModule.collectTaxes", () => {
     expect(StatesModule.defineMarketFee(globalThis.pack.states[3])).toBe(0);
   });
 
-  it("keeps what corrupt officials leave of the taxes, and what they pocketed", () => {
+  it("lets officials pocket their share of each expense", () => {
     globalThis.pack.states = [
-      { i: 0, name: "Neutrals", economy: { salesTax: 0, pollTax: 0, treasury: 0 } },
-      { i: 1, name: "A", economy: { salesTax: 0, pollTax: 0, corruption: 25, treasury: 0 } }
+      { i: 0, name: "Neutrals", economy: { ...noFinance() } },
+      { i: 1, name: "A", economy: { ...noFinance(), budget: { ...noFinance().budget, court: 40, corruption: 25 } } }
     ] as any;
     globalThis.pack.burgs = [{ i: 0 }, { i: 1, state: 1 }] as any;
     globalThis.pack.markets = [{ i: 1, centerBurgId: 1, color: "", goods: {}, feePaid: 40 }] as any;
@@ -153,14 +158,72 @@ describe("StatesModule.collectTaxes", () => {
 
     StatesModule.collectTaxes();
 
-    expect(globalThis.pack.states[1].economy.treasury).toBe(30);
-    expect(globalThis.pack.states[1].economy.pocketed).toBe(10);
+    // the court's 40% of 40 is 16, a quarter of it pocketed; nothing bought, so the rest stays
+    expect(globalThis.pack.states[1].economy.pocketed).toBe(4);
+    expect(globalThis.pack.states[1].economy.treasury).toBe(36);
+  });
+
+  it("keeps what the expenses did not spend", () => {
+    globalThis.pack.states = [
+      { i: 0, name: "Neutrals", economy: noFinance() },
+      {
+        i: 1,
+        name: "A",
+        economy: { ...noFinance(), spent: { court: 10, administration: 5, infrastructure: 0, military: 15 } }
+      }
+    ] as any;
+    globalThis.pack.burgs = [{ i: 0 }, { i: 1, state: 1 }] as any;
+    globalThis.pack.markets = [{ i: 1, centerBurgId: 1, color: "", goods: {}, feePaid: 40 }] as any;
+    globalThis.pack.deals = [];
+
+    StatesModule.collectTaxes();
+
+    expect(globalThis.pack.states[1].economy.collected).toBe(40);
+    expect(globalThis.pack.states[1].economy.treasury).toBe(10);
+  });
+
+  it("sets expenses that may pass 100 together, and corruption apart from them", () => {
+    globalThis.pack.states = [
+      { i: 0, name: "Neutrals", economy: noFinance() },
+      { i: 1, name: "A", economy: noFinance() }
+    ] as any;
+    StatesModule.setBudget(1, { court: 60, military: 70 });
+    StatesModule.setCorruption(1, 20);
+
+    expect(globalThis.pack.states[1].economy.budget).toEqual({
+      court: 60,
+      administration: 0,
+      infrastructure: 0,
+      military: 70,
+      corruption: 20
+    });
+    expect(() => StatesModule.setBudget(1, { administration: 101 })).toThrow("from 0 to 100");
+  });
+
+  it("defines a budget from the form, the state and its war alert", () => {
+    globalThis.pack.burgs = [{ i: 0 }, { i: 1, population: 10 }] as any;
+    globalThis.pack.states = [
+      { i: 0, name: "Neutrals", economy: noFinance() },
+      { i: 1, form: "Monarchy", capital: 1, burgs: 4, urban: 20, rural: 80, alert: 0.25, economy: noFinance() },
+      { i: 2, form: "Monarchy", capital: 1, burgs: 4, urban: 20, rural: 80, alert: 100, economy: noFinance() }
+    ] as any;
+
+    // court 30 × (0.5 + half the townspeople in the capital), administration 15 + 15, infrastructure 10 + 25 × 0.2, military 32 × 0.5
+    expect(StatesModule.defineBudget(globalThis.pack.states[1], 10)).toEqual({
+      court: 30,
+      administration: 30,
+      infrastructure: 15,
+      military: 16,
+      corruption: 10
+    });
+    // at war alert 100 the military takes all the taxes, and the state runs into debt
+    expect(StatesModule.defineBudget(globalThis.pack.states[2], 0).military).toBe(100);
   });
 
   it("leaves neutrals at zero even with deals from neutral burgs", () => {
     globalThis.pack.states = [
-      { i: 0, name: "Neutrals", economy: { salesTax: 0, pollTax: 0, treasury: 0 } },
-      { i: 1, name: "A", economy: { salesTax: 0.1, pollTax: 0, treasury: 0 }, rural: 10, urban: 0 }
+      { i: 0, name: "Neutrals", economy: { ...noFinance(), salesTax: 0, pollTax: 0, treasury: 0 } },
+      { i: 1, name: "A", economy: { ...noFinance(), salesTax: 0.1, pollTax: 0, treasury: 0 }, rural: 10, urban: 0 }
     ] as any;
     globalThis.pack.burgs = [
       { i: 0 },
@@ -178,9 +241,9 @@ describe("StatesModule.collectTaxes", () => {
 
   it("credits deal.tariff to the buyer market's state treasury", () => {
     globalThis.pack.states = [
-      { i: 0, name: "Neutrals", economy: { salesTax: 0, pollTax: 0, treasury: 0 } },
-      { i: 1, name: "A", economy: { salesTax: 0, pollTax: 0, treasury: 0 } },
-      { i: 2, name: "B", economy: { salesTax: 0, pollTax: 0, treasury: 0 } }
+      { i: 0, name: "Neutrals", economy: { ...noFinance(), salesTax: 0, pollTax: 0, treasury: 0 } },
+      { i: 1, name: "A", economy: { ...noFinance(), salesTax: 0, pollTax: 0, treasury: 0 } },
+      { i: 2, name: "B", economy: { ...noFinance(), salesTax: 0, pollTax: 0, treasury: 0 } }
     ] as any;
 
     globalThis.pack.burgs = [
@@ -432,7 +495,7 @@ describe("StatesModule.tariffs", () => {
     globalThis.pack = {
       states: [
         { i: 0, name: "Neutrals" },
-        { i: 1, name: "A", economy: { tariffs: [] } },
+        { i: 1, name: "A", economy: { ...noFinance(), tariffs: [] } },
         { i: 2, name: "B" },
         { i: 3, name: "C", removed: true }
       ],

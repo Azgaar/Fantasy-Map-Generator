@@ -90,5 +90,6 @@
 
 - **Ambient state**: `pack`, `grid`, `options` and `styles` are still globals, read bare across the app; everything else is imported. Be cautious when turning them into explicit parameters.
 - **Edit mode**: `options.app.mode` names the edit mode the user is in (`"heightmap"`, `"paint"`, `"addState"`…) or is `null`. While it is set, other editors, saving, loading and regeneration stay off. It is never stored, so a reload starts outside any mode.
+- **Editor tables**: `initColumnVisibility` puts the column controls into the last visible header cell. End a table's `columns` with an empty `{ key: "actions", width: "1.4em", permanent: true }`, with no cell in the rows, so they sit there and the last data column keeps its header untrimmed.
 - **`index.html`**: The shared app-shell and map SVG template. It can easily break if structural tags are accidentally nested incorrectly.
 - **Playwright**: Never automatically run Playwright tests when developing, they are too slow and cause PC freezes.

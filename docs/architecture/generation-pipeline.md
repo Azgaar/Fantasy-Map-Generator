@@ -80,7 +80,7 @@ the pipeline, since it depends only on name bases and the seeded random source.
 Two constraints are easy to break when replicating a slice of this:
 
 - **Goods depend on nothing pack-side** but must exist before `markets`. `Goods.generate()` keeps an
-  existing catalogue (it restores the defaults only when `pack.goods` is empty) and places bonus goods
+  existing catalogue (it restores the defaults only when `pack.goods` is empty) and places deposits
   on the cells; `Goods.regenerate()` reshuffles that placement with a fresh random seed.
 - **Economy depends on the whole settlement chain.** Production reads `state.culture`,
   `state.provinces`, `cells.biome`, `cells.pop`, `cells.market` and `pack.routes`. Anything that

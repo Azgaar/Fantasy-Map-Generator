@@ -13,7 +13,7 @@ export interface Good {
   i: number;
 
   // generation
-  deposits?: [number, number]; // bonus resource deposits on the map, min and max
+  deposits?: [number, number]; // deposits on the map, min and max
   distribution?: string;
   biomeOutput?: Partial<Record<number, number>>;
   recipes?: Record<number, number>[];

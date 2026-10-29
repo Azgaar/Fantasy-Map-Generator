@@ -65,8 +65,9 @@ beforeEach(() => {
   Object.assign(Pack, { getPolygon: (cellId: number) => pack.cells.v[cellId].map(v => pack.vertices.p[v]) });
   getCellProduction.mockReset().mockImplementation(cellId => (cellId === 0 ? { 1: 4 } : { 2: 8 }) as Output);
   getBurgProduction.mockReset().mockImplementation(burg => (burg.i === 1 ? { 1: 5, 2: 2 } : { 2: 9 }) as Output);
-  styles.goods.groups.goodsIcons.options = { size: 4, circle: true };
-  styles.goods.groups.goodsBurgs.options = { size: 3 };
+  styles.goods.groups.goodsCells.options = { render: true };
+  styles.goods.groups.goodsIcons.options = { render: true, size: 4, circle: true };
+  styles.goods.groups.goodsBurgs.options = { render: true, size: 3 };
   setViewportSize(100, 100);
   setViewportTransform(1, 0, 0);
 });
@@ -114,51 +115,66 @@ test("style options are applied on the next frame, without rebuilding the scene"
   ViewportLayers.renderNow();
   expect(document.querySelector("#goodsIcons circle")).toBeNull();
   expect(document.querySelector("#goodsIcons use")?.getAttribute("width")).toBe("10");
-  expect(document.querySelector("#goodsBurgs rect")?.getAttribute("height")).toBe("8.4");
+  expect(document.querySelector("#goodsBurgs path")?.getAttribute("d")).toContain("A9,9"); // 1.5 times the size
   expect(getCellProduction).toHaveBeenCalledTimes(2);
 });
 
-test("icon lines follow the style at the marker's proportions, on markers and plates alike", async () => {
-  getBurgProduction.mockImplementation(() => ({ 1: 1 }));
+test("icon lines follow the style at the marker's proportions", async () => {
   styles.goods.groups.goodsIcons.attrs.stroke = "#123456";
   styles.goods.groups.goodsIcons.attrs["stroke-width"] = 0.3;
   styles.goods.groups.goodsIcons.options.size = 6;
   await drawGoods();
-  for (const use of document.querySelectorAll("#goodsIcons use, #goodsBurgs use")) {
-    expect(use.getAttribute("stroke")).toBe("#123456");
-    expect(use.getAttribute("stroke-width")).toBe("2"); // 40% of 0.3 map units, in a 100-unit frame 6 units wide
-  }
-  expect(document.querySelectorAll("#goodsBurgs use")).not.toHaveLength(0);
+  const use = document.querySelector("#goodsIcons use");
+  expect(use?.getAttribute("stroke")).toBe("#123456");
+  expect(use?.getAttribute("stroke-width")).toBe("2"); // 40% of 0.3 map units, in a 100-unit frame 6 units wide
 });
 
-test("burg plates keep the three most valuable products, most valuable first", async () => {
-  getBurgProduction.mockImplementation(() => ({ 1: 1, 2: 9 }));
-  await drawGoods();
-  const circles = [...document.querySelectorAll("#goodsBurgs circle")].map(c => c.getAttribute("fill"));
-  const values = [...document.querySelectorAll("#goodsBurgs text")].map(t => t.textContent);
-  expect(circles).toEqual(["#00ff00", "#ff0000"]);
-  expect(values).toEqual(["9", "1"]);
-});
-
-test("hidden goods drop out of every sublayer", async () => {
+test("hidden goods drop out of every sublayer, burg pies included", async () => {
   pack.goods[0].visible = false;
   await drawGoods();
   expect(document.querySelectorAll("#goodsIcons > g")).toHaveLength(0); // cell 0's good is hidden
   expect(document.querySelectorAll("#goodsCells polygon")).toHaveLength(0);
-  expect(document.querySelectorAll("#goodsBurgs text")).toHaveLength(1);
-  expect(document.querySelector("#goodsBurgs text")?.textContent).toBe("2");
+  const pie = document.querySelector('#goodsBurgs > g[data-id="1"] circle'); // only iron is left: a full circle
+  expect(pie?.getAttribute("data-goods")).toBe("2");
+  expect(pie?.getAttribute("fill")).toBe("#00ff00");
 });
 
-test("with no good selected, bonus resource cells show in their good's color and burgs their output by value", async () => {
+test("an icon sits at its cell's center, or on a burg's cell at the burg, in the middle of its pie", async () => {
+  pack.cells.burg = [1, 0] as never;
+  setViewportTransform(0.1, 0, 0);
+  await drawGoods();
+  const [onBurg, plain] = document.querySelectorAll<SVGGElement>("#goodsIcons > g");
+  expect(onBurg.querySelector("circle")?.getAttribute("cy")).toBe("60"); // burg 1 stands at 50,60
+  expect(onBurg.dataset.cell).toBe("0");
+  expect(plain.querySelector("circle")?.getAttribute("cy")).toBe("50");
+});
+
+test("each sublayer can be switched off in the style", async () => {
+  await drawGoods();
+  styles.goods.groups.goodsCells.options.render = false;
+  styles.goods.groups.goodsBurgs.options.render = false;
+  ViewportLayers.renderNow();
+  expect(document.querySelectorAll("#goodsCells polygon")).toHaveLength(0);
+  expect(document.querySelectorAll("#goodsBurgs > g")).toHaveLength(0);
+  expect(document.querySelectorAll("#goodsIcons > g")).toHaveLength(1);
+});
+
+test("with no good selected, cells show their output value in their most valuable good's color, with every icon and burg", async () => {
   for (const good of pack.goods) good.visible = false;
   pack.goods[1].value = 10; // one iron is worth ten grain
+  getCellProduction.mockImplementation(cellId => (cellId === 0 ? { 1: 4 } : { 1: 20, 2: 8 }) as Output);
   setViewportTransform(0.1, 0, 0);
   await drawGoods();
 
-  const fills = [...document.querySelectorAll("#goodsCells polygon")].map(polygon => polygon.getAttribute("fill"));
-  expect(fills).toEqual(["#ff0000", "#00ff00"]);
-  expect(document.querySelector("#goodsCells polygon")?.hasAttribute("fill-opacity")).toBe(false); // the group style dims it
-  expect(document.querySelectorAll("#goodsIcons > g")).toHaveLength(0);
+  const cells = [...document.querySelectorAll("#goodsCells polygon")].map(polygon => [
+    polygon.getAttribute("fill"),
+    polygon.getAttribute("fill-opacity")
+  ]);
+  expect(cells).toEqual([
+    ["#ff0000", "1"], // 4 saturates: the 95th percentile of two cells is the lower
+    ["#00ff00", "1"] // 80 of iron outweighs 20 of grain
+  ]);
+  expect(document.querySelectorAll("#goodsIcons > g")).toHaveLength(2);
 
   // burg values 25 and 90 both saturate: pies of 1.5 times the plate icon setting, a single good a full circle
   const [mixed, single] = document.querySelectorAll<SVGGElement>("#goodsBurgs > g[data-id]");
@@ -168,7 +184,6 @@ test("with no good selected, bonus resource cells show in their good's color and
     ["1", "#ff0000"]
   ]);
   expect(single.querySelector("circle")?.getAttribute("r")).toBe("4.5");
-  expect(document.querySelectorAll("#goodsBurgs text")).toHaveLength(0);
 });
 
 test("a burg pie shows its five most valuable goods and the rest as one sector", async () => {

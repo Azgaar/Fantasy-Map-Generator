@@ -26,7 +26,7 @@ import { Burgs } from "@/model/political/burgs-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import { Military } from "@/model/political/military-generator";
 import { Provinces } from "@/model/political/provinces-generator";
-import { noFinance, type State, type StateFinance, States } from "@/model/political/states-generator";
+import { noExpenses, noFinance, type State, type StateFinance, States } from "@/model/political/states-generator";
 import { Zones } from "@/model/political/zones-generator";
 import { Cultures } from "@/model/society/cultures-generator";
 import { Religions } from "@/model/society/religions-generator";
@@ -2185,16 +2185,20 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
     // debug step logs were saved with burgs; they are kept in memory now (EconomyDebug)
     for (const burg of pack.burgs ?? []) delete (burg as { productionLog?: unknown } | undefined)?.productionLog;
 
-    // v1.157.0 moves state finances to state.economy and adds market fees and corruption
-    const FINANCE_KEYS = ["salesTax", "pollTax", "marketFee", "corruption", "treasury", "tariffs"] as const;
+    // v1.157.0 moves state finances to state.economy and adds market fees, corruption and the state budget
+    const FINANCE_KEYS = ["salesTax", "pollTax", "marketFee", "treasury", "tariffs"] as const;
     for (const state of pack.states ?? []) {
       if (!state) continue;
       const legacy = state as State & Partial<StateFinance>;
       const { salesTax = 0, pollTax = 0, treasury = 0, tariffs = [] } = legacy;
       for (const key of FINANCE_KEYS) delete legacy[key];
-      state.economy ??= { ...noFinance(), salesTax, pollTax, treasury, tariffs };
+      state.economy ??= { ...noFinance(), salesTax, pollTax, treasury, tariffs, collected: treasury }; // no corruption or spending yet
+      state.economy.collected ??= state.economy.treasury;
       state.economy.marketFee = States.defineMarketFee(state);
-      state.economy.corruption = States.defineCorruption(state);
+      state.economy.budget = States.defineBudget(state, States.defineCorruption(state));
+      state.economy.spent = noExpenses();
+      state.economy.otherRevenue ??= 0;
+      delete (state.economy as { corruption?: number }).corruption; // a development map's, now in the budget
     }
   }
 

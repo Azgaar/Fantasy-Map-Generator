@@ -538,21 +538,33 @@ export const stylesSchema = z.strictObject({
   fogging: z.strictObject({ attrs: z.strictObject({ opacity, fill, mask, filter }) }),
   goods: z.strictObject({
     groups: z.strictObject({
-      goodsCells: meta(z.strictObject({ attrs: z.strictObject({ opacity, filter }) }), { label: t("Goods cells") }),
+      goodsCells: meta(
+        z.strictObject({
+          attrs: z.strictObject({ opacity, filter }),
+          options: z
+            .strictObject({
+              render: flag({ label: t("Cells"), tip: t("Color the cells by what they produce") }).default(true)
+            })
+            .default({ render: true })
+        }),
+        { gate: "options.render", label: t("Cells") }
+      ),
       goodsIcons: meta(
         z.strictObject({
           attrs: z.strictObject({
             opacity,
-            stroke: variant(stroke, { label: t("Icon Lines"), tip: t("Color of the icon lines") }),
+            stroke: variant(stroke, { group: t("Stroke"), label: t("Color"), tip: t("Color of the icon lines") }),
             "stroke-width": variant(strokeWidth, {
-              label: t("Stroke width"),
+              group: t("Stroke"),
+              label: t("Width"),
               tip: t("Width of the circle outline; the icon lines are drawn at 40% of it")
             }),
             filter
           }),
           options: z.strictObject({
+            render: flag({ label: t("Icons"), tip: t("Mark the deposit cells") }).default(true),
             size: number({
-              label: t("Marker size"),
+              label: t("Size"),
               range: [1, 20],
               step: 0.5,
               tip: t("Set good marker (icon and circle) size in pixels")
@@ -560,7 +572,7 @@ export const stylesSchema = z.strictObject({
             circle: flag({ label: t("Show circle") })
           })
         }),
-        { label: t("Goods icons") }
+        { gate: "options.render", label: t("Icons") }
       ),
       goodsBurgs: meta(
         z.strictObject({
@@ -571,17 +583,16 @@ export const stylesSchema = z.strictObject({
             filter
           }),
           options: z.strictObject({
+            render: flag({ label: t("Burgs"), tip: t("Show burgs' output as pies of their goods") }).default(true),
             size: number({
               label: t("Size"),
               range: [1, 12],
               step: 0.5,
-              tip: t(
-                "Size of the burg production marks: the plates' icons, their font scaling with them, and the overview circles"
-              )
+              tip: t("Size of the burg production circles: the largest has 1.5 times this radius")
             })
           })
         }),
-        { label: t("Goods burgs") }
+        { gate: "options.render", label: t("Burgs") }
       )
     })
   }),

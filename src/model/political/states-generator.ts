@@ -65,23 +65,43 @@ export interface State {
   note?: string;
 }
 
-/** A state's taxes, fees, tariffs and treasury; all zero for the neutral lands */
+/** What a state spends its taxes on, buying goods during the economy run */
+export const EXPENSES = ["court", "administration", "infrastructure", "military"] as const;
+export type Expense = (typeof EXPENSES)[number];
+
+/** Each expense in whole percents of the taxes the state collects, summing to more than 100 for a state that spends beyond them, and the percent of each that officials pocket */
+export type StateBudget = Record<Expense | "corruption", number>;
+
+/** A state's taxes, fees, tariffs, budget and treasury; all zero for the neutral lands */
 export interface StateFinance {
   salesTax: number;
   pollTax: number;
   marketFee: number; // license fee a day from each market centered in the state
-  corruption: number; // percent of the taxes collected that officials pocket
+  otherRevenue: number; // a day's income besides taxes, such as tribute or crown estates; negative for debts or tribute paid. The user's, kept on regeneration
+  budget: StateBudget;
+  collected: number; // all the taxes collected in the last run
+  spent: Record<Expense, number>; // what each expense bought in the last run
   pocketed: number; // what officials pocketed in the last run
   treasury: number;
   tariffs: TariffRule[];
 }
+
+export const noExpenses = (): Record<Expense, number> => ({
+  court: 0,
+  administration: 0,
+  infrastructure: 0,
+  military: 0
+});
 
 /** No taxes, fees, tariffs or money: a new state's until its form sets them, and the neutral lands' for good */
 export const noFinance = (): StateFinance => ({
   salesTax: 0,
   pollTax: 0,
   marketFee: 0,
-  corruption: 0,
+  otherRevenue: 0,
+  budget: { ...noExpenses(), corruption: 0 },
+  collected: 0,
+  spent: noExpenses(),
   pocketed: 0,
   treasury: 0,
   tariffs: []
@@ -197,6 +217,18 @@ const CORRUPTION_BY_FORM: Record<string, number> = {
 const DESPOTIC_FORMS = ["Despotate", "Horde", "Junta", "Satrapy", "Shogunate"]; // double their form's corruption
 const SIZE_CORRUPTION = 15; // what the largest state's size adds; a city-state's adds nothing
 const DIVERSITY_CORRUPTION = 10; // what ruling no one of the state's culture and faith would add, half for each
+
+// percents of the taxes before corruption: the court's grows with the capital's share of the townspeople, administration with the burgs ruled, infrastructure with urbanization
+const EXPENSES_BY_FORM: Record<string, Record<"court" | "administration" | "infrastructure", number>> = {
+  Monarchy: { court: 30, administration: 15, infrastructure: 10 },
+  Theocracy: { court: 40, administration: 15, infrastructure: 10 },
+  Republic: { court: 10, administration: 25, infrastructure: 15 },
+  Union: { court: 10, administration: 25, infrastructure: 15 },
+  Anarchy: { court: 0, administration: 0, infrastructure: 0 }
+};
+const SIZE_ADMINISTRATION = 15; // what ruling the most burgs adds
+const URBAN_INFRASTRUCTURE = 25; // what an all-urban state adds
+const MILITARY_SPENDING = 32; // at war alert 1, by its root: 10 at the calmest, 72 at the most alert. The four leave the treasury about a tenth
 
 class StatesModule {
   regenerate(): { warning?: string; error?: string } {
@@ -977,11 +1009,63 @@ class StatesModule {
       s.economy.pollTax = taxes.pollTax;
       s.economy.marketFee = this.defineMarketFee(s);
       s.economy.tariffs = this.defineTariffs(s);
-      s.economy.corruption = this.defineCorruption(s);
+      s.alert = this.defineAlert(s);
+      s.economy.budget = this.defineBudget(s, this.defineCorruption(s));
     }
   }
 
-  /** Percent of collected taxes officials pocket: the form's share, doubled for despots, plus more for a large state and for people of other cultures and faiths than the state's and its capital's. Anarchies collect nothing to steal */
+  /** How ready for war the state is, from 0.1 to 5: how far its expansionism is realized, its own relations and its neighbors' to it. Its forces and military spending scale with it */
+  defineAlert(state: State): number {
+    const valid = pack.states.filter(s => s.i && !s.removed);
+    const expansionism = sum(valid.map(s => s.expansionism));
+    const area = sum(valid.map(s => s.area || 0));
+    const relationRate: Record<string, number> = {
+      Ally: -0.2,
+      Friendly: -0.1,
+      Suspicion: 0.1,
+      Enemy: 1,
+      Rival: 0.5,
+      Vassal: 0.5,
+      Suzerain: -0.5
+    };
+
+    const relations = state.diplomacy ?? [];
+    const expansionRate = minmax(state.expansionism / expansionism / ((state.area || 0) / area), 0.25, 4);
+    const diplomacyRate = relations.includes("Enemy")
+      ? 1
+      : relations.includes("Rival")
+        ? 0.8
+        : relations.includes("Suspicion")
+          ? 0.5
+          : 0.1; // peacefulness
+    const neighborsRate = (state.neighbors ?? [])
+      .map(n => (n ? pack.states[n].diplomacy?.[state.i] : "Suspicion"))
+      .reduce((total, relation) => total + (relationRate[relation || ""] || 0), 0.5);
+    return minmax(rn(expansionRate * diplomacyRate * minmax(neighborsRate, 0.3, 3), 2), 0.1, 5);
+  }
+
+  /** The default budget: the default expenses and the corruption */
+  defineBudget(state: State, corruption: number): StateBudget {
+    return { ...this.defineExpenses(state), corruption };
+  }
+
+  /** The default expenses, in whole percents of the taxes: the form's share for each, grown by the capital, burgs, towns and war alert. A warlike state may spend beyond its taxes */
+  defineExpenses(state: State): Record<Expense, number> {
+    if (!state.i || state.removed || state.form === "Anarchy") return noExpenses();
+    const base = EXPENSES_BY_FORM[state.form || ""] ?? EXPENSES_BY_FORM.Monarchy;
+    const urban = state.urban || 0;
+    const people = urban + (state.rural || 0);
+    const primacy = urban ? (pack.burgs[state.capital]?.population || 0) / urban : 1;
+    const mostBurgs = Math.max(1, ...pack.states.filter(s => s.i && !s.removed).map(s => s.burgs || 0));
+    return {
+      court: Math.round(base.court * (0.5 + Math.min(1, primacy))),
+      administration: Math.round(base.administration + SIZE_ADMINISTRATION * Math.sqrt((state.burgs || 0) / mostBurgs)),
+      infrastructure: Math.round(base.infrastructure + URBAN_INFRASTRUCTURE * (people ? urban / people : 0)),
+      military: Math.min(100, Math.round(MILITARY_SPENDING * Math.sqrt(state.alert ?? 1)))
+    };
+  }
+
+  /** Percent of each expense officials pocket: the form's share, doubled for despots, plus more for a large state and for people of other cultures and faiths than the state's and its capital's. Anarchies collect nothing to steal */
   defineCorruption(state: State): number {
     if (!state.i || state.removed || state.form === "Anarchy") return 0;
     const form =
@@ -1348,12 +1432,23 @@ class StatesModule {
     state.economy.pollTax = rn(pollTax, 4);
   }
 
-  /** Set the percent of the taxes a state collects that its officials pocket, from 0 to 100; it takes effect when production is regenerated */
+  /** Set the percent of each expense a state's officials pocket, from 0 to 100; it takes effect when production is regenerated */
   setCorruption(stateId: number, percent: number): void {
     const state = this.ruled(stateId);
     if (typeof percent !== "number" || !(percent >= 0 && percent <= 100))
       throw new Error("Corruption must be a number from 0 to 100");
-    state.economy.corruption = Math.round(percent);
+    state.economy.budget.corruption = Math.round(percent);
+  }
+
+  /** Set a state's expenses in whole percents of its taxes, from 0 to 100 each; together they may pass 100 and run the treasury into debt. It takes effect when production is regenerated */
+  setBudget(stateId: number, expenses: Partial<Record<Expense, number>>): void {
+    const { budget } = this.ruled(stateId).economy;
+    for (const [expense, percent] of Object.entries(expenses)) {
+      if (!EXPENSES.includes(expense as Expense)) throw new Error(`Unknown expense: ${expense}`);
+      if (typeof percent !== "number" || !(percent >= 0 && percent <= 100))
+        throw new Error("An expense must be a number from 0 to 100");
+    }
+    for (const [expense, percent] of Object.entries(expenses)) budget[expense as Expense] = Math.round(percent);
   }
 
   /** Set the license fee a state charges each market centered in it a day, in the map's currency; it takes effect when production is regenerated */
@@ -1439,10 +1534,10 @@ class StatesModule {
     }
   }
 
-  /** Set a state's treasury, in the map's currency */
-  setTreasury(stateId: number, amount: number): void {
-    if (typeof amount !== "number" || !Number.isFinite(amount)) throw new Error("The treasury must be a number");
-    this.ruled(stateId).economy.treasury = rn(amount, 2);
+  /** Set a state's income a day besides taxes, in the map's currency: tribute or crown estates, negative for debts or tribute paid. It takes effect when production is regenerated */
+  setOtherRevenue(stateId: number, amount: number): void {
+    if (typeof amount !== "number" || !Number.isFinite(amount)) throw new Error("The other revenue must be a number");
+    this.ruled(stateId).economy.otherRevenue = rn(amount, 2);
   }
 
   /** Lock a state so regeneration keeps it, or unlock it */
@@ -1629,10 +1724,16 @@ class StatesModule {
     const marketFees = this.getMarketFees();
     for (const state of states) {
       if (!state.i || state.removed) continue;
-      const collected = state.economy.treasury + (pollTax[state.i] || 0) + (marketFees[state.i] || 0);
-      const pocketed = rn((collected * (state.economy.corruption || 0)) / 100, 2);
+      const { budget, otherRevenue } = state.economy;
+      const collected = rn(
+        state.economy.treasury + (pollTax[state.i] || 0) + (marketFees[state.i] || 0) + otherRevenue,
+        2
+      );
+      const expenses = sum(EXPENSES.map(expense => budget[expense]));
+      const pocketed = rn((Math.max(0, collected) * expenses * budget.corruption) / 10000, 2); // officials' cut of each expense
+      state.economy.collected = collected;
       state.economy.pocketed = pocketed;
-      state.economy.treasury = rn(collected - pocketed, 2);
+      state.economy.treasury = rn(collected - pocketed - sum(Object.values(state.economy.spent)), 2);
     }
   }
 

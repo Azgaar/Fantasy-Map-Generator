@@ -30,6 +30,7 @@ export const CAPITAL_RENT = 0.21; // share of rural sale income paid to the stat
 export const MARKET_MARGIN = 0.035; // a market's margin before its license: merchants pass the fee on, by the fee factor's root, so a typical monarchy's market (fee 25) takes 5%
 const OTHER_LANDMASS_SPACING = 0.5; // share of the market spacing a market on another landmass keeps clear
 const MAX_DECIMAS = 10; // the map's diagonal: the most carriage, paid with no route to the burg's own market
+export const MIN_LOCAL_STOCK = 1; // a buyer buys at its own market while it stocks this much, otherwise from the cheapest market
 export const IMPORT_CARRIAGE_FACTOR = 2; // carriage from another state's market: borders, tolls, longer hauls
 const MARKET_FEE_DETERRENCE = 25; // a state's market fee a day that halves a burg's chance to be a market center and doubles the area each market needs
 const CROSSROADS_BONUS = 0.25; // score a burg gains for each route beyond a road through it, up to 4 more
@@ -78,7 +79,7 @@ type MarketDay = {
   pollTaxDue: number[]; // by the state of the rural people's cells
 };
 
-export const DEAL_KINDS = { sale: 0, input: 1, demand: 2, kept: 3 } as const;
+export const DEAL_KINDS = { sale: 0, input: 1, demand: 2, kept: 3, order: 4 } as const; // an order is a state's purchase, the burg its seat
 export type DealKind = (typeof DEAL_KINDS)[keyof typeof DEAL_KINDS];
 
 /** A burg's trade with a market in one good and kind, summed over the run; its id is its index in pack.deals */
@@ -134,6 +135,7 @@ export class MarketsModule {
   private routeCostsSource: unknown[] = []; // the route links, markets and burg count they were measured on
   private decima = 0; // a tenth of the map's diagonal, kept with the routes
   private days: MarketDay[] = []; // by market, for the economy run
+  private taxes: number[] = []; // by state: sales tax and tariffs collected so far in the economy run
   private produce: Float32Array | null = null; // by cell: its rural produce at base prices, from the last run
   private produceSource: unknown = null; // the cells it describes
   private carriage: Map<number, { decimas: Float64Array; imports: Uint8Array }> | null = null; // by burg then market, for the economy run
@@ -340,6 +342,7 @@ export class MarketsModule {
   collectRuralProduction(): void {
     const biomeProduction = Goods.getBiomesProduction();
     this.days = [];
+    this.taxes = [];
     this.produce = new Float32Array(pack.cells.i.length);
     this.produceSource = pack.cells;
     for (const market of pack.markets)
@@ -495,6 +498,26 @@ export class MarketsModule {
         purchase(good, money);
       }
     });
+  }
+
+  /** The share of their poll tax rural people can pay from what they kept */
+  private getPollTaxShare(day: MarketDay): number {
+    const due = day.pollTaxDue.reduce((total, amount) => total + (amount || 0), 0);
+    return due > 0 ? Math.min(1, Math.max(0, day.cash) / due) : 0;
+  }
+
+  /** By state: the poll tax rural people could pay now, as the run's end will collect it */
+  getRuralPollTax(): number[] {
+    const paid: number[] = [];
+    for (const market of pack.markets) {
+      const day = this.days[market.i];
+      if (!day) continue;
+      const share = this.getPollTaxShare(day);
+      day.pollTaxDue.forEach((owed, stateId) => {
+        if (owed) paid[stateId] = (paid[stateId] || 0) + owed * share;
+      });
+    }
+    return paid;
   }
 
   /** What the market's rural people earned and spent this run */
@@ -657,8 +680,7 @@ export class MarketsModule {
       const day = this.days[market.i];
       if (!day) continue;
       const bought = day.bought.flatMap((units, goodId) => (units ? [[goodId, rn(units, 2)] as [number, number]] : []));
-      const due = day.pollTaxDue.reduce((total, amount) => total + (amount || 0), 0);
-      const share = due > 0 ? Math.min(1, Math.max(0, day.cash) / due) : 0;
+      const share = this.getPollTaxShare(day);
       const pollTax = day.pollTaxDue.flatMap((owed, stateId) =>
         owed ? [[stateId, rn(owed, 2), rn(owed * share, 2)] as [number, number, number]] : []
       );
@@ -794,7 +816,9 @@ export class MarketsModule {
 
     const sale = this.findDeal(burg.i!, market.i, good.i, DEAL_KINDS.sale)!;
     this.payMargin(market, DEAL_KINDS.sale, { units: -kept, price: sale[5], tax: 0, carriage: sale[8] }); // undone with the sale
-    sale[6] = rn(sale[6] * (1 - kept / sale[4]), 2);
+    const tax = rn(sale[6] * (1 - kept / sale[4]), 2);
+    this.creditTaxes(sale, tax - sale[6], 0);
+    sale[6] = tax;
     sale[4] = rn(sale[4] - kept, 2);
     this.recordDeal(burg.i!, market.i, good.i, DEAL_KINDS.kept, { units: kept, price: 0, tax: 0 });
 
@@ -840,9 +864,12 @@ export class MarketsModule {
     const deal = this.findDeal(burgId, marketId, goodId, kind);
     if (!deal) {
       this.dealIds.set(`${burgId}-${marketId}-${goodId}-${kind}`, pack.deals.length);
-      pack.deals.push([burgId, marketId, goodId, kind, trade.units, trade.price, trade.tax, tariff, carriage]);
+      const added: Deal = [burgId, marketId, goodId, kind, trade.units, trade.price, trade.tax, tariff, carriage];
+      pack.deals.push(added);
+      this.creditTaxes(added, trade.tax, tariff);
       return;
     }
+    this.creditTaxes(deal, trade.tax, tariff);
 
     const units = deal[4] + trade.units;
     deal[5] = rn((deal[4] * deal[5] + trade.units * trade.price) / units, 2);
@@ -850,6 +877,19 @@ export class MarketsModule {
     deal[4] = rn(units, 2);
     deal[6] = rn(deal[6] + trade.tax, 2);
     deal[7] = rn(deal[7] + tariff, 2);
+  }
+
+  /** The states' taxes so far in the run, which they spend as they come */
+  private creditTaxes(deal: Deal, tax: number, tariff: number) {
+    if (!tax && !tariff) return;
+    const { taxState, tariffState } = this.getTaxStates(deal);
+    if (tax) this.taxes[taxState] = (this.taxes[taxState] || 0) + tax;
+    if (tariff) this.taxes[tariffState] = (this.taxes[tariffState] || 0) + tariff;
+  }
+
+  /** Sales tax and tariffs the state collected so far in the economy run */
+  getTaxesSoFar(stateId: number): number {
+    return this.taxes[stateId] || 0;
   }
 
   private findDeal(burgId: number, marketId: number, goodId: number, kind: DealKind): Deal | undefined {

@@ -6,6 +6,7 @@ import type { Good } from "./goods-generator";
 import { Goods, NOVELTY, VARIETY } from "./goods-generator";
 import { DEAL_KINDS, type Market, Markets, type SourceOption } from "./markets-generator";
 import {
+  BONUS_URBAN_PRODUCTION,
   BURG_SPECIALIZATION,
   DEPOSIT_RICHNESS,
   MARKET_SPECIALIZATION,
@@ -359,7 +360,7 @@ describe("deposits", () => {
   });
 
   it("give a burg on them free units worth at most a set value", () => {
-    expect(production.getLocalBonus(catalogue[0], burg)).toBe(15); // cheap: population up to 5 × 3
+    expect(production.getLocalBonus(catalogue[0], burg)).toBeCloseTo(5 * BONUS_URBAN_PRODUCTION); // cheap: population up to 5 × the bonus
     expect(production.getLocalBonus(catalogue[3], burg)).toBe(MAX_BONUS_VALUE / 100);
   });
 });
