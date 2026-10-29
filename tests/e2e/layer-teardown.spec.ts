@@ -15,24 +15,18 @@ test.describe("layer teardown keeps user data", () => {
   });
 
   test("routes keep custom groups and their styles across a hide/show round trip", async ({ page }) => {
-    const custom = page.locator("#routes > #caravans");
+    const custom = page.locator('#routes > [data-group="caravans"]');
 
-    // the Route Groups editor seeds the store entry, appends a styled <g> under #routes and assigns routes to it
+    // the Route Groups editor seeds the store entry and assigns routes to it; the layer makes the <g> from the store
     await page.evaluate(() => {
       styles.routes.groups.caravans = structuredClone(styles.routes.groups.roads);
       Object.assign(styles.routes.groups.caravans.attrs, { stroke: "#aa3333", "stroke-width": 0.7 });
-      const routes = document.getElementById("routes")!;
-      const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      group.id = "caravans";
-      group.setAttribute("stroke", "#aa3333");
-      group.setAttribute("stroke-width", "0.7");
-      routes.append(group);
       for (const route of (window as any).pack.routes.slice(0, 5)) route.group = "caravans";
       (window as any).FMG.Layers.draw("routes");
     });
 
     await expect(custom).toBeAttached();
-    expect(await page.locator("#routes > #caravans path").count()).toBe(5);
+    expect(await page.locator('#routes > [data-group="caravans"] path').count()).toBe(5);
 
     await page.evaluate(() => (window as any).FMG.Layers.hide("routes"));
 
@@ -41,7 +35,7 @@ test.describe("layer teardown keeps user data", () => {
     expect(await page.locator("#routes path").count()).toBe(0);
 
     await page.evaluate(() => (window as any).FMG.Layers.show("routes"));
-    expect(await page.locator("#routes > #caravans path").count()).toBe(5);
+    expect(await page.locator('#routes > [data-group="caravans"] path').count()).toBe(5);
   });
 
   test("precipitation rebuilds the wind direction group with the layer", async ({ page }) => {
@@ -65,19 +59,19 @@ test.describe("layer teardown keeps user data", () => {
   });
 
   test("burg icons keep group styles edited while the layer is on", async ({ page }) => {
-    const capitals = page.locator('#burgIcons > #capital > [data-group="icons"]');
+    const capitals = page.locator('#burgIcons > [data-group="capital"] > [data-group="icons"]');
     await expect(capitals).toBeAttached();
 
     // the Style editor writes the store; the groups fully recreate from it on every draw
     await page.evaluate(() => {
       styles.burgIcons.groups.capital.groups.icons.attrs.fill = "#123456";
-      document.querySelector('#burgIcons > #capital > [data-group="icons"]')!.setAttribute("fill", "#123456");
+      document.querySelector('#burgIcons > [data-group="capital"] > [data-group="icons"]')!.setAttribute("fill", "#123456");
     });
 
     await page.evaluate(() => (window as any).FMG.Layers.hide("burgIcons"));
     await page.evaluate(() => (window as any).FMG.Layers.show("burgIcons"));
     expect(await capitals.getAttribute("fill")).toBe("#123456");
-    expect(await page.locator("#burgIcons > #capital use").count()).toBeGreaterThan(0);
+    expect(await page.locator('#burgIcons > [data-group="capital"] use').count()).toBeGreaterThan(0);
   });
 
   test("showing a layer that is already on does not redraw it", async ({ page }) => {

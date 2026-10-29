@@ -1,6 +1,6 @@
 import type { River } from "@/model/physical/river-generator";
-import { Rivers } from "@/model/physical/river-generator";
-import { Layers } from "@/renderers/layers";
+import { DEFAULT_RIVER_GROUP, Rivers } from "@/model/physical/river-generator";
+import { type Layer, Layers } from "@/renderers/layers";
 import {
   boundsIntersect,
   Scene,
@@ -9,10 +9,11 @@ import {
 } from "@/renderers/viewport/viewport-renderer";
 import type { Point } from "@/types/global";
 import { log } from "@/utils/logger";
-import { findEl } from "@/utils/node-utils";
+import { syncStyleGroups } from "./style-groups";
 
 interface RiverShape {
   id: string;
+  group: string;
   path: string;
   x0: number;
   y0: number;
@@ -21,13 +22,13 @@ interface RiverShape {
 }
 
 const scene = new Scene<RiverShape>();
-const layer = ViewportLayers.register({ id: "rivers", render: reconcileRivers });
+const viewportLayer = ViewportLayers.register({ id: "rivers", render: reconcileRivers });
 const rendered = new WeakMap<Element, { shape: RiverShape; fill: string | null }>();
 
 let editedRiverId: string | null = null; // edited river is rendered even when off-screen
 let basinColors: Map<string, string> | null = null;
 
-export function drawRivers(): void {
+export function drawRivers(layer: Layer): void {
   log.time("drawRivers");
   const shapes: RiverShape[] = [];
   for (const river of pack.rivers) {
@@ -35,15 +36,16 @@ export function drawRivers(): void {
     if (shape) shapes.push(shape);
   }
   scene.replace(shapes);
+  syncStyleGroups(layer.getEl(), styles.rivers.groups);
   if (basinColors) basinColors = getBasinColors();
-  layer.render();
+  viewportLayer.render();
   log.timeEnd("drawRivers");
 }
 
-/** Drop the paths and the scene behind them: a hidden layer must not keep a map's worth of geometry */
+/** Drop the paths and the scene behind them; the group elements stay, styled from the store */
 export function removeRivers(): void {
   scene.invalidate();
-  findEl("rivers")?.replaceChildren();
+  for (const path of Array.from(document.querySelectorAll("#rivers path"))) path.remove();
 }
 
 /** Re-render a single edited river, keeping its element (and its editor handlers) in place */
@@ -51,12 +53,12 @@ export function redrawRiver(river: River): void {
   const shape = buildShape(river);
   if (!shape || !scene.valid) return;
   scene.set(shape);
-  layer.render();
+  viewportLayer.render();
 }
 
 export function setEditedRiver(riverId: number | null): void {
   editedRiverId = riverId === null ? null : `river${riverId}`;
-  layer.render();
+  viewportLayer.render();
 }
 
 /** Bounding box of the rendered river, available whether or not the river is currently materialized */
@@ -67,7 +69,7 @@ export function getRiverBox(riverId: number): DOMRect | null {
 
 export function toggleBasinHighlight(): boolean {
   basinColors = basinColors ? null : getBasinColors();
-  layer.render();
+  viewportLayer.render();
   return basinColors !== null;
 }
 
@@ -91,7 +93,7 @@ function getBasinColors(): Map<string, string> {
 }
 
 function buildShape(river: River): RiverShape | null {
-  const { i, cells, widthFactor, sourceWidth } = river;
+  const { i, cells, group, widthFactor, sourceWidth } = river;
   if (!cells || cells.length < 2) return null;
 
   let points: Point[] | undefined = river.points;
@@ -124,13 +126,28 @@ function buildShape(river: River): RiverShape | null {
     startingWidth: sourceWidth
   });
 
-  return { id: `river${i}`, path, x0: x0 - halfWidth, y0: y0 - halfWidth, x1: x1 + halfWidth, y1: y1 + halfWidth };
+  return {
+    id: `river${i}`,
+    group,
+    path,
+    x0: x0 - halfWidth,
+    y0: y0 - halfWidth,
+    x1: x1 + halfWidth,
+    y1: y1 + halfWidth
+  };
 }
 
 function reconcileRivers({ root, bounds }: ViewportRenderContext): void {
   if (!scene.valid || !Layers.isOn("rivers")) return;
   const container = root.querySelector<SVGGElement>("#rivers");
   if (!container) return;
+
+  const groups = new Map<string, SVGGElement>();
+  for (const group of Array.from(container.querySelectorAll<SVGGElement>(":scope > g"))) {
+    groups.set(group.dataset.group!, group);
+  }
+  const fallback = groups.get(DEFAULT_RIVER_GROUP);
+  if (!fallback) return;
 
   const visible: RiverShape[] = [];
   for (const shape of scene.values()) {
@@ -139,18 +156,19 @@ function reconcileRivers({ root, bounds }: ViewportRenderContext): void {
   const visibleIds = new Set(visible.map(shape => shape.id));
 
   const elements = new Map<string, Element>();
-  for (const child of Array.from(container.children)) {
+  for (const child of Array.from(container.querySelectorAll(":scope > g > path"))) {
     if (visibleIds.has(child.id)) elements.set(child.id, child);
     else child.remove();
   }
 
   for (const shape of visible) {
+    const group = groups.get(shape.group) ?? fallback; // the group may have been removed
     let element = elements.get(shape.id);
     if (!element) {
       element = container.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "path");
       element.id = shape.id;
-      container.appendChild(element);
     }
+    if (element.parentNode !== group) group.appendChild(element); // a moved river keeps its node and handlers
 
     const fill = basinColors?.get(shape.id) ?? null;
     const previous = rendered.get(element);

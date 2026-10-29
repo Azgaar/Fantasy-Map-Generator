@@ -355,6 +355,13 @@ export const MAP_COMMANDS: MapCommand[] = [
     run: () => Controllers.RouteGroupsEditor.open()
   },
   {
+    id: "riverGroups",
+    name: t("Edit river groups"),
+    link: true,
+    aliases: "rivers streams frozen dry lava types",
+    run: () => Controllers.RiverGroupsEditor.open()
+  },
+  {
     id: "world",
     name: t("World Configurator"),
     link: true,
@@ -842,7 +849,7 @@ function regenerateReliefIcons(): void {
 
 function regenerateRoutes(): void {
   Routes.regenerate();
-  Layers.draw("routes");
+  Layers.draw("routes", "trade");
 }
 
 function regenerateRivers(): void {

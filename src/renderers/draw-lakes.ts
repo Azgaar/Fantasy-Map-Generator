@@ -5,8 +5,8 @@ import { syncStyleGroups } from "./style-groups";
 
 export function drawLakes(layer: Layer): void {
   syncStyleGroups(layer.getEl(), styles.lakes.groups);
-  const groups = Array.from(layer.getEl().children);
-  const groupIds = new Set(groups.map(group => group.id));
+  const groups = Array.from(layer.getEl().querySelectorAll<SVGGElement>(":scope > g"));
+  const groupNames = new Set(groups.map(group => group.dataset.group));
   const existing = new Map(
     Array.from(layer.getEl().querySelectorAll("use[data-f]"), use => [use.getAttribute("data-f"), use])
   );
@@ -14,7 +14,7 @@ export function drawLakes(layer: Layer): void {
 
   for (const feature of pack.features) {
     if (feature?.type !== "lake") continue;
-    const group = groupIds.has(feature.group) ? feature.group : "freshwater"; // the group may have been removed
+    const group = groupNames.has(feature.group) ? feature.group : "freshwater"; // the group may have been removed
 
     const use = existing.get(String(feature.i)) ?? document.createElementNS("http://www.w3.org/2000/svg", "use");
     use.setAttribute("href", `#feature_${feature.i}`);
@@ -23,7 +23,7 @@ export function drawLakes(layer: Layer): void {
     uses[group].push(use);
   }
 
-  for (const group of groups) group.replaceChildren(...(uses[group.id] || []));
+  for (const group of groups) group.replaceChildren(...(uses[group.dataset.group!] || []));
   drawLakeEmbellishments(layer);
 }
 
@@ -42,7 +42,7 @@ function drawLakeEmbellishments(layer: Layer): void {
     .join("");
 
   for (const use of layer.getEl().querySelectorAll(":scope > g > use[data-f]")) {
-    const style = styles.lakes.groups[use.parentElement!.id]?.options;
+    const style = styles.lakes.groups[use.parentElement!.dataset.group!]?.options;
     if (!style || style.embellishment === "none") continue;
     const feature = pack.features[Number(use.getAttribute("data-f"))];
     const points = feature.vertices.map(vertex => pack.vertices.p[vertex]);

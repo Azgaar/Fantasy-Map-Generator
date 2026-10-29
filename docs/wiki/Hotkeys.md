@@ -4,12 +4,12 @@ This page covers hotkeys available in _Fantasy Map Generator_. Hotkeys are ignor
 
 General:
 
-- <kbd>Space</kbd> - open the [Omnibar](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Omnibar)
-- <kbd>F1</kbd> - show info
+- <kbd>Space</kbd> - open the Omnibar
+- <kbd>F1</kbd> - show what's new dialog
 - <kbd>F2</kbd> - generate new map
 - <kbd>F6</kbd> - quick save
 - <kbd>F9</kbd> - quick load
-- <kbd>Tab</kbd> - toggle options pane
+- <kbd>Tab</kbd> - toggle options panes
 - <kbd>Escape</kbd> - close dialogs and hide the options pane; decline confirmation dialogs
 - <kbd>Enter</kbd> - confirm in confirmation dialogs
 - <kbd>Delete</kbd> - remove selected element

@@ -1,7 +1,6 @@
 // The cell structure under a vertex brush, drawn on #debug while the tool is active
 
 import { Pack } from "@/model/graph/pack-generator";
-import { viewport } from "@/renderers/viewport/viewport";
 import { unique } from "@/utils/array-utils";
 import { createEl, ensureEl, findEl } from "@/utils/node-utils";
 
@@ -16,13 +15,12 @@ const getGroup = (): SVGGElement => {
 /** Show the given vertices and the cells they shape */
 export function drawMesh(vertexIds: number[]): void {
   const { cells, vertices } = pack;
-  const scale = viewport.scale; // the structure stays equally visible at any zoom
   const cellIds = unique(vertexIds.flatMap(id => vertices.c[id])).filter(id => id >= 0 && id < cells.i.length);
 
-  const polygons = cellIds.map(id => `<polygon points="${Pack.getPolygon(id)}" stroke-width="${1 / scale}"></polygon>`);
+  const polygons = cellIds.map(id => `<polygon points="${Pack.getPolygon(id)}"></polygon>`);
   const circles = vertexIds.map(id => {
     const [x, y] = vertices.p[id];
-    return `<circle cx="${x}" cy="${y}" r="${2.5 / scale}"></circle>`;
+    return `<circle cx="${x}" cy="${y}"></circle>`;
   });
   getGroup().innerHTML = polygons.join("") + circles.join("");
 }

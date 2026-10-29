@@ -6,7 +6,7 @@ import type { Layer } from "@/renderers/layers";
 import { drawLakes } from "./draw-lakes";
 
 const createLayer = (groups: string[]) => {
-  document.body.innerHTML = /* html */ `<svg><g id="lakes">${groups.map(id => `<g id="${id}"></g>`).join("")}</g></svg>`;
+  document.body.innerHTML = /* html */ `<svg><g id="lakes">${groups.map(id => `<g data-group="${id}"></g>`).join("")}</g></svg>`;
   return { getEl: () => document.getElementById("lakes") } as unknown as Layer;
 };
 
@@ -31,7 +31,7 @@ describe("drawLakes", () => {
 
     drawLakes(layer);
 
-    const groupOf = (i: number) => document.querySelector(`use[data-f="${i}"]`)?.parentElement?.id;
+    const groupOf = (i: number) => document.querySelector(`use[data-f="${i}"]`)?.parentElement?.dataset.group;
     expect(groupOf(1)).toBe("salt");
     expect(groupOf(2)).toBe("my_lakes");
     expect(groupOf(3)).toBe("freshwater"); // the group is gone, the lake falls back instead of vanishing
@@ -47,11 +47,11 @@ describe("lake groups", () => {
 
     drawLakes(layer);
 
-    const ids = Array.from(layer.getEl().children, group => group.id);
-    expect(ids).toEqual(["freshwater", "salt", "sinkhole", "frozen", "lava", "dry", "my_lakes"]);
-    expect(document.getElementById("my_lakes")?.getAttribute("fill")).toBe("#123456");
-    expect(document.getElementById("my_lakes")?.dataset.group).toBe("my_lakes");
-    expect(document.querySelector('use[data-f="2"]')?.parentElement?.id).toBe("my_lakes");
+    const names = Array.from(layer.getEl().children, group => (group as SVGGElement).dataset.group);
+    expect(names).toEqual(["freshwater", "salt", "sinkhole", "frozen", "lava", "dry", "my_lakes"]);
+    expect(layer.getEl().querySelector("g[id]")).toBeNull(); // user-named groups carry no ids
+    expect(document.querySelector('[data-group="my_lakes"]')?.getAttribute("fill")).toBe("#123456");
+    expect(document.querySelector<SVGElement>('use[data-f="2"]')?.parentElement?.dataset.group).toBe("my_lakes");
   });
 });
 
@@ -82,7 +82,7 @@ describe("lake embellishment rendering", () => {
 
   it("masks the real shoreline and islands, preserving lake selection", () => {
     drawLakes(setup());
-    const path = document.querySelector("#freshwater path")!;
+    const path = document.querySelector('[data-group="freshwater"] path')!;
     expect(path.getAttribute("pointer-events")).toBe("none");
     expect(path.getAttribute("mask")).toBe("url(#lake-ripples-1)");
     expect(document.querySelector('#lake-ripples-1 use[href="#feature_1"]')?.getAttribute("fill")).toBe("white");
@@ -110,6 +110,6 @@ describe("lake embellishment rendering", () => {
     pack.features[1].group = "dry";
     drawLakes(layer);
     expect(document.querySelectorAll("[data-lake-embellishment]")).toHaveLength(0);
-    expect(document.querySelector('#dry use[data-f="1"]')).not.toBeNull();
+    expect(document.querySelector('[data-group="dry"] use[data-f="1"]')).not.toBeNull();
   });
 });

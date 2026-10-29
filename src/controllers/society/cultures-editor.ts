@@ -558,7 +558,7 @@ const cultureHighlightOn = debounce((event: HighlightSource) => {
         .select(`#cultureCenter${c.i}`)
         .raise()
         .transition(animate)
-        .attr("r", 3)
+        .attr("r", "6em")
         .attr("stroke", "#d0240f");
     }
     return;
@@ -575,7 +575,7 @@ const cultureHighlightOn = debounce((event: HighlightSource) => {
     .select(`#cultureCenter${cultureId}`)
     .raise()
     .transition(animate)
-    .attr("r", 3)
+    .attr("r", "6em")
     .attr("stroke", "#d0240f");
 }, 200);
 
@@ -587,14 +587,14 @@ function cultureHighlightOff(event: HighlightSource): void {
     const matching = pack.cultures.filter(c => c.i && !c.removed && c.ancestry?.trim() === ancestry);
     for (const c of matching) {
       select("#cults").select(`#culture${c.i}`).transition().attr("stroke-width", null).attr("stroke", null);
-      select("#debug").select(`#cultureCenter${c.i}`).transition().attr("r", 2).attr("stroke", null);
+      select("#debug").select(`#cultureCenter${c.i}`).transition().attr("r", "4em").attr("stroke", null);
     }
     return;
   }
 
   const cultureId = highlightedId(event);
   select("#cults").select(`#culture${cultureId}`).transition().attr("stroke-width", null).attr("stroke", null);
-  select("#debug").select(`#cultureCenter${cultureId}`).transition().attr("r", 2).attr("stroke", null);
+  select("#debug").select(`#cultureCenter${cultureId}`).transition().attr("r", "4em").attr("stroke", null);
 }
 
 function cultureChangeColor(this: FillBoxElement): void {
@@ -806,7 +806,6 @@ function drawCultureCenters(): void {
   const cultureCenters = debugLayer
     .append("g")
     .attr("id", "cultureCenters")
-    .attr("stroke-width", 0.8)
     .attr("stroke", "#444444")
     .style("cursor", "move");
 
@@ -818,7 +817,7 @@ function drawCultureCenters(): void {
     .append("circle")
     .attr("id", d => `cultureCenter${d.i}`)
     .attr("data-id", d => d.i)
-    .attr("r", 2)
+    .attr("r", "4em")
     .attr("fill", d => d.color ?? null)
     .attr("cx", d => pack.cells.p[d.center!][0])
     .attr("cy", d => pack.cells.p[d.center!][1])

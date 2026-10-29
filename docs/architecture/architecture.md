@@ -319,7 +319,8 @@ Heraldry is the current example:
 
 - `src/data/emblems/` — static heraldry catalogs
 - `src/model/political/emblems-generator.ts` — emblem generation
-- `src/controllers/political/emblems/` — the Emblems editor and the Armoria bridge
+- `src/model/political/armoria.ts` — `Armoria`, reading Armoria's COA format from links, pictures and files
+- `src/controllers/political/emblems/` — the Emblems editor and its Armoria editing sessions
 - `src/renderers/emblems/` — SVG drawing of emblems. Its shields, lines,
   patterns, templates and diapers are ported from [Armoria](https://github.com/Azgaar/Armoria), and `public/charges/`
   is a verbatim copy of Armoria's charges: sync both from Armoria rather than editing them here
@@ -472,11 +473,30 @@ A renderer is a pure projection of state into visuals.
   DOM — assemble an HTML/SVG string and inject it in one write. No virtual DOM, no component
   runtime, no diffing layer: the renderer keeps full, granular control over exactly what is
   emitted.
-- **Vanilla JS first.** d3.js carries a real memory cost and is
-  easy to over-reach for. Reserve it for what it is genuinely good at — geometry, paths,
-  scales, projections, quadtrees — and use plain strings / `createElement` for node creation,
-  attributes, and event wiring. Rerouting simple DOM work through d3 selections is a common,
-  avoidable source of bloat.
+- **Vanilla JS first.** Reserve d3 for what it is genuinely good at — geometry, paths, curves,
+  colors, scales, projections, quadtrees — and use plain strings / `createElement` for node
+  creation, attributes, and event wiring. Never commit a layer to the DOM through d3 selections
+  (see [Renderers](#renderers-dom--svg--the-usual-bottleneck) below for why).
+
+### Sizes under zoom
+
+The map zooms as one transform on `#viewbox`, so a size in map units grows with the zoom. That is
+the default, and right for most content. Two kinds of drawing should not grow fully, and each has one
+mechanism, both driven from `ui/map/zoom.ts`:
+
+- **Content that grows slower than the map**: labels, markers and burg icons. The zoom writes each
+  layer's `font-size` along its curve in `ZOOM_CURVES` (`renderers/viewport/viewport.ts`), and the
+  content sizes in `%` or `em` under it. It follows the zoom per frame or once the gesture settles, as
+  `viewportRedraw` says, because these layers are big. See [the style record](style.md#the-record).
+- **UI that keeps its screen size**: editing handles, the regiment base and rotation control, and
+  measurer lines and labels. The zoom sets `--px`, one screen pixel in map units (`1 / scale`), on the
+  control containers (`CONTROL_CONTAINERS`), and CSS or the renderer sizes them as
+  `calc(N * var(--px))`. It updates every frame, since it restyles only those few nodes. Measurer
+  dashes stay in map units: stripes that hold still on screen look like they slide while you zoom.
+
+Both values are inherited, so the cost of a change is the subtree under the element it is set on.
+Never divide by `viewport.scale` while drawing: the value is out of date after the next zoom. An export
+that rescales the map sets both values on its clone for the export scale.
 
 ## Controllers (Editors)
 
@@ -654,10 +674,13 @@ reflow. **Minimising element count is the single biggest rendering lever.**
 
 - **Build once, attach once.** Assemble a layer as one string and write it with a single
   injection, rather than appending nodes in a loop — one parse, one reflow.
-- **Don't build DOM with d3.** One cached selection doing a single `.html(str)` write is fine;
-  per-node `selectAll().data().enter().append()` chains retain data joins and closures at a
-  real per-element cost. Create nodes from strings / `createElement` and reserve d3 for
-  geometry, scales, and projections.
+- **Don't build DOM with d3.** A data join (`.data()` / `.datum()`) stores each datum on its node
+  as `__data__`, and `.on()` keeps its handlers on `__on`: both live as long as the node, so a
+  joined layer holds a second copy of its data in memory. A plain `.append().attr()` chain retains
+  nothing, but it is one live-DOM call per node and per attribute plus a throwaway selection per
+  step. Assemble the layer's markup as a string and write it once (`el.innerHTML = markup`), as
+  `drawBiomes` and `drawHeightmap` do; d3 stays for the pure helpers (`line` and curves, `color`,
+  scales, `quadtree`).
 - **Fewer, bigger paths.** Merge adjacent same-valued cells into a few region polygons /
   isolines instead of one path per cell.
 - **Reuse, don't duplicate.** Define a glyph once in `<defs>` and stamp it with

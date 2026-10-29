@@ -15,6 +15,7 @@ import {
 } from "d3";
 import RgbQuant from "rgbquant";
 import { Controllers } from "@/controllers";
+import { placeImage } from "@/controllers/physical/image-placement";
 import { heightmapTemplates } from "@/data/heightmap-templates";
 import { ErasePipeline } from "@/model/generation-pipeline";
 import { Grid } from "@/model/graph/grid-generator";
@@ -35,7 +36,7 @@ import { refreshEditors } from "@/ui/dialog/dialog-helpers";
 
 import { dialogState } from "@/ui/dialog/state";
 import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
-import { resetZoom } from "@/ui/map/zoom";
+import { redrawTracedImage, resetZoom } from "@/ui/map/zoom";
 import { sortableList } from "@/ui/sortable-list";
 import { clearMainTip, showMainTip, tip } from "@/ui/tooltips";
 import { changeViewMode } from "@/ui/view-mode-switch";
@@ -471,10 +472,6 @@ async function finalizeHeightmap(): Promise<void> {
     tip(t("Insufficient land area. There should be at least 200 land cells!"), false, "error");
     return;
   }
-  if (findEl("imageConverter")) {
-    tip(t("Please exit the Image Conversion mode first"), false, "error");
-    return;
-  }
 
   edits = Object.assign([], { n: 0 });
   setHistoryButtonsDisabled(true, true);
@@ -895,12 +892,10 @@ function placeLinearFeature(this: SVGElement, event: MouseEvent): void {
       .append("circle")
       .attr("data-cell", toCell)
       .attr("class", "lineCircle")
-      .attr("r", 6)
       .attr("cx", x)
       .attr("cy", y)
       .attr("fill", "yellow")
-      .attr("stroke", "#333")
-      .attr("stroke-width", 2);
+      .attr("stroke", "#333");
     return;
   }
 
@@ -1582,6 +1577,7 @@ function openImageConverter(): void {
   document.body.insertBefore(canvas, ensureEl("optionsContainer"));
 
   setOverlayOpacity(0);
+  lockEditTools(true);
   clearMainTip();
   tip(t("Image Converter is opened. Upload image and assign height value for each color"), false, "warn"); // main tip
 
@@ -1589,6 +1585,16 @@ function openImageConverter(): void {
   grid.cells.h = new Uint8Array(grid.cells.i.length);
   select<SVGElement, unknown>("#viewbox").select("#heights").selectAll("*").remove();
   updateHistory();
+}
+
+/** The edit tools redraw the heights the converter paints its colors on, so they wait until the conversion ends */
+function lockEditTools(locked: boolean): void {
+  for (const id of ["customizeTools", "customizeOptions"]) {
+    const tools = ensureEl(id);
+    tools.inert = locked;
+    tools.style.opacity = locked ? "0.5" : "";
+  }
+  ensureEl("heightmapFinalize").style.display = locked ? "none" : "block";
 }
 
 function showPalleteHeight(this: HTMLElement): void {
@@ -1606,13 +1612,20 @@ function loadImage(this: HTMLInputElement): void {
   const reader = new FileReader();
 
   const img = new Image();
-  img.id = "imageToConvert";
-  img.style.display = "none";
-  document.body.appendChild(img);
+  img.onload = async () => {
+    const placed = await placeImage(img);
+    if (!findEl("imageConverter")) return; // the conversion ended meanwhile
+    const current = findEl("imageToConvert");
+    if (!placed) {
+      if (!current) cancelConversion(); // cancelling the first upload cancels the conversion
+      return;
+    }
 
-  img.onload = () => {
-    const ctx = ensureEl<HTMLCanvasElement>("canvas").getContext("2d")!;
-    ctx.drawImage(img, 0, 0, options.map.graph.width, options.map.graph.height);
+    placed.id = "imageToConvert";
+    placed.style.display = "none";
+    if (current) current.replaceWith(placed);
+    else document.body.appendChild(placed);
+    redrawTracedImage();
     heightsFromImage(+ensureEl<HTMLInputElement>("convertColors").value);
     resetZoom();
   };
@@ -1624,7 +1637,8 @@ function loadImage(this: HTMLInputElement): void {
 }
 
 function heightsFromImage(count: number): void {
-  const sourceImage = ensureEl<HTMLCanvasElement>("canvas");
+  const sourceImage = findEl<HTMLCanvasElement>("imageToConvert");
+  if (!sourceImage) return;
   const sampleCanvas = document.createElement("canvas");
   sampleCanvas.width = grid.cellsX;
   sampleCanvas.height = grid.cellsY;
@@ -1818,6 +1832,7 @@ function setOverlayOpacity(v: number): void {
   ensureEl<HTMLInputElement>("convertOverlay").value = ensureEl<HTMLInputElement>("convertOverlayNumber").value =
     String(v);
   ensureEl("canvas").style.opacity = String(v);
+  redrawTracedImage();
 }
 
 function applyConversion(): void {
@@ -1849,6 +1864,7 @@ function cancelConversion(): void {
 function restoreImageConverterState(): void {
   findEl("canvas")?.remove();
   findEl("imageToConvert")?.remove();
+  lockEditTools(false);
 
   select("#imageConverter").selectAll("div.color-div").remove();
   ensureEl("colorsAssigned").style.display = "none";

@@ -315,12 +315,41 @@ i.icon-lock {
   stroke-width: 2;
 }
 
+#regimentBase {
+  stroke-width: var(--px);
+}
+
+#regimentBase circle {
+  r: calc(5 * var(--px));
+}
+
 .regimentDragLine {
   marker-end: url(#end-arrow);
   stroke: #333333;
-  stroke-dasharray: 5;
-  stroke-dashoffset: 1000;
+  stroke-dasharray: calc(5 * var(--px));
+  stroke-dashoffset: calc(1000 * var(--px));
   animation: dash 80s linear backwards;
+}
+
+#rotationControl {
+  r: calc(4 * var(--px));
+  stroke-width: var(--px);
+}
+
+#cultureCenters,
+#religionCenters {
+  font-size: var(--px);
+  stroke-width: calc(1.5 * var(--px));
+}
+
+#journeyOverlay circle {
+  r: calc(3 * var(--px));
+  stroke-width: var(--px);
+}
+
+.lineCircle {
+  r: calc(6 * var(--px));
+  stroke-width: calc(2 * var(--px));
 }
 
 .arrow {
@@ -1010,7 +1039,7 @@ fieldset {
 #controlPoints {
   fill: #ff0000;
   stroke: #841f1f;
-  stroke-width: 0.25;
+  stroke-width: var(--px);
   cursor: move;
   opacity: 0.8;
 }
@@ -1018,7 +1047,7 @@ fieldset {
 #controlPoints > path {
   fill: none;
   stroke: #0a0909;
-  stroke-width: 2;
+  stroke-width: calc(2 * var(--px));
   opacity: 0.4;
   cursor: pointer;
 }
@@ -1029,10 +1058,15 @@ fieldset {
   stroke: none;
 }
 
+#controlPoints > circle {
+  r: calc(3 * var(--px));
+}
+
 #vertices > circle {
+  r: calc(2.5 * var(--px));
   fill: #ff0000;
   stroke: #841f1f;
-  stroke-width: 0.1;
+  stroke-width: calc(0.5 * var(--px));
   cursor: move;
   opacity: 0.8;
 }
@@ -1040,7 +1074,7 @@ fieldset {
 #vertices > polygon {
   fill: none;
   stroke: #808080;
-  stroke-width: 0.1;
+  stroke-width: var(--px);
 }
 
 #controlPoints > circle:hover,
@@ -1060,6 +1094,13 @@ fieldset {
 
 #battleBody > table .regiment {
   width: 13em;
+  max-width: 13em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#battleBody > table .battleInitial .regiment {
   font-weight: bold;
 }
 
@@ -1336,6 +1377,20 @@ div.header {
   background: #f3f4f7;
   border: 1px solid transparent;
   padding: 0 0.2em;
+}
+
+/* a long label is cut with an ellipsis instead of spilling over the next column; the sort icon stays visible */
+.editorDialog .header > [data-col] {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.editorDialog .header > [data-col] > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: normal;
 }
 
 /* cells size to their grid track, not their own content, so long values shrink instead of widening the row */
@@ -1668,6 +1723,8 @@ div.editorLine {
 }
 
 #ruler .rulerPoints {
+  font-size: calc(4 * var(--px));
+  stroke-width: var(--px);
   stroke: #4e5a69;
   fill: yellow;
   cursor: pointer;
@@ -2183,55 +2240,6 @@ svg.button {
 }
 .separator:not(:empty)::after {
   margin-left: 0.25em;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: var(--bg-opacity);
-  }
-}
-
-#tourPromptButton {
-  position: fixed;
-  bottom: 116px; /* stacked above the assistant bubble, sharing its column */
-  right: 18px;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background-color: var(--bg-main);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  user-select: none;
-  opacity: 0;
-  animation: fadeIn 1s ease-in 1s forwards;
-  z-index: 99;
-}
-
-#tourPromptButton button {
-  all: unset;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-#tourPromptButton svg path {
-  fill: #000000;
-  stroke: #000000;
-  fill-opacity: 1;
-  stroke-width: 0;
-  transition: all 0.3s ease-out;
-  stroke-linejoin: round;
-}
-
-#tourPromptButton:hover svg path {
-  fill-opacity: 0;
-  stroke-width: 5;
 }
 
 @media print {

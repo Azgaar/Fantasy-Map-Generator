@@ -12,6 +12,22 @@ Check out [Dev board](https://github.com/users/Azgaar/projects/3/views/1?sumFiel
 
 Current version of the Fantasy Map Generator is the latest `master` branch. You can download it here: https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip. Also see [the wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#can-i-use-the-generator-offline).
 
+**[1.157.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.157.0) - 2026-10-30**:
+
+- Editors: cut too long column names
+- Hovering a cut value shows its text in the tooltip
+- Trade animation follows edited and custom routes
+- Heightmap: elevation labels
+- Heightmap: contours are spaced in round height units
+- Measurers, regiment controls and editing handles keep their size on zoom
+- Image Converter: fit, zoom and move the image before converting it
+- Update window: the latest releases info; F1 opens it again
+- The tour button on the map is removed: start the tour from the update window or the About tab
+- Emblems: Armoria pictures in older maps become COAs where possible
+- Rivers: style groups: regular, frozen, dry, lava and custom
+
+# Releases
+
 **[1.156.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.156.0) - 2026-10-25**:
 
 - Migration: folders are reworked
@@ -19,8 +35,6 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Migration: jQuery is no longer used
 - Loading draws the map from its data; the stored SVG is read only to update older maps
 - Legend boxes are saved as map data
-
-# Releases
 
 **[1.155.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.155.0) - 2026-10-23**:
 

@@ -29,10 +29,11 @@ const ENTITY_LAYERS: Record<string, Record<string, readonly LayerId[]>> = {
     "": ["rivers", "labels"],
     name: ["labels"],
     type: ["labels"],
+    group: ["rivers"],
     sourceWidth: ["rivers"],
     widthFactor: ["rivers"]
   },
-  route: { "*": ["routes", "labels"] },
+  route: { "*": ["routes", "labels", "trade"] },
   feature: { group: ["lakes"], coastline: ["landmass", "coastline", "lakes"] },
   zone: { "*": ["zones"] },
   marker: { "*": ["markers"] },

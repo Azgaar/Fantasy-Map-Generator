@@ -270,6 +270,10 @@ describe("renderEditorHeader", () => {
     expect(custom.includes("Click to sort by Value")).toBe(false);
   });
 
+  it("wraps the label in a span so a long label can be cut", () => {
+    expect(html.includes("<span>Route</span>")).toBe(true);
+  });
+
   it("leaves structural columns unsortable", () => {
     const locateCell = html.slice(html.indexOf('data-col="locate"'), html.indexOf('data-col="name"'));
     expect(locateCell.includes("sortable")).toBe(false);

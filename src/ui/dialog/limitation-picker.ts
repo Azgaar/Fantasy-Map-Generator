@@ -40,7 +40,7 @@ export function pickLimitation({
   onApply: (allowed: number[]) => void; // empty when every entity is checked
 }): void {
   const rows = choices(items).map(
-    ({ i, name, fullName, color }) => /* html */ `<tr data-tip="${escapeHtml(name)}">
+    ({ i, name, fullName, color }) => /* html */ `<tr>
       <td><span style="color:${escapeHtml(color ?? "")}">⬤</span></td>
       <td>
         <input data-i="${i}" id="limitation${i}" type="checkbox" class="checkbox" ${!allowed?.length || allowed.includes(i) ? "checked" : ""}>

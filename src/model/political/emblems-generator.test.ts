@@ -39,4 +39,11 @@ describe("EmblemsGenerator", () => {
     expect(emblems.getShield(1, 1, "state")).toBe("hessen");
     expect(emblems.getShield(1, undefined, "french")).toBe("french");
   });
+
+  it("keeps only the placement fields an emblem has", () => {
+    const emblems = new EmblemsGenerator();
+    expect(emblems.placement({ t1: "gules", size: 0, x: 12 })).toStrictEqual({ size: 0, x: 12 });
+    expect(emblems.placement({ icon: "custom-00000000" })).toStrictEqual({});
+    expect(emblems.placement(undefined)).toStrictEqual({});
+  });
 });

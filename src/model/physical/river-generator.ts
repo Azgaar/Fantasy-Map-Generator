@@ -10,12 +10,13 @@ import { rn } from "@/utils/number-utils";
 import { meander, projectToNearestEdge } from "@/utils/path-utils";
 import { each, rw } from "@/utils/probability-utils";
 import { round } from "@/utils/string-utils";
-import { requireName } from "@/utils/validation-utils";
+import { requireName, requireOneOf } from "@/utils/validation-utils";
 import { Features } from "./features-generator";
 import { Lakes } from "./lakes";
 
 export const MIN_FLUX_TO_FORM_RIVER = 30;
 export const MIN_NAVIGABLE_FLUX = 100;
+export const DEFAULT_RIVER_GROUP = "regular";
 
 export interface River {
   i: number; // river id
@@ -30,6 +31,7 @@ export interface River {
   sourceWidth: number; // source width in km
   name: string; // river name
   type: string; // river type
+  group: string; // rendering group, a key of styles.rivers.groups
   cells: number[]; // cells forming the river path
   points?: Point[]; // river points (for meandering)
   label?: Label;
@@ -176,7 +178,7 @@ class RiverModule {
     );
 
     if (river) {
-      Object.assign(river, { source, length, discharge, width, cells: riverCells });
+      Object.assign(river, { source, length, discharge, width, cells: riverCells, group: this.pickGroup(riverCells) });
     } else {
       const basin = this.getBasin(parent);
       const name = this.getName(mouth);
@@ -195,9 +197,12 @@ class RiverModule {
         basin,
         name,
         type,
+        group: this.pickGroup(riverCells),
         tags: []
       });
     }
+    const tributaries = rivers.filter(candidate => candidate.parent === riverId && candidate.i !== riverId);
+    this.unifyGroups([...tributaries, rivers.find(candidate => candidate.i === riverId)!]);
 
     return {};
   }
@@ -401,6 +406,7 @@ class RiverModule {
           sourceWidth,
           parent,
           cells: riverCells,
+          group: this.pickGroup(riverCells),
           tags: [] as string[]
         } as River);
       }
@@ -448,6 +454,7 @@ class RiverModule {
     drainWater();
     defineRivers();
     if (locked.length) this.mergeLocked(locked);
+    this.unifyGroups(pack.rivers);
 
     calculateConfluenceFlux();
     Lakes.cleanupLakeData();
@@ -715,6 +722,34 @@ class RiverModule {
     return rw(this.riverTypes[isFork ? "fork" : "main"][isSmall ? "small" : "big"]);
   }
 
+  /** The stock group the whole land course suits */
+  pickGroup(riverCells: number[]): string {
+    const { h, g } = pack.cells;
+    const { temp, prec } = grid.cells;
+    const land = riverCells.filter(cell => cell >= 0 && h[cell] >= 20);
+    if (!land.length) return DEFAULT_RIVER_GROUP;
+
+    const temperatures = land.map(cell => temp[g[cell]]);
+    if (Math.max(...temperatures) <= 0) return "frozen";
+    if (h[riverCells[0]] >= 60 && Math.min(...land.map(cell => h[cell])) >= 45) return "lava";
+    const isArid = Math.max(...land.map(cell => prec[g[cell]])) <= 4;
+    if (isArid && Math.min(...temperatures) >= 20) return "dry";
+    return DEFAULT_RIVER_GROUP;
+  }
+
+  /** A river whose tributary is of another group falls back to the default one, and so on downstream */
+  private unifyGroups(tributaries: River[]): void {
+    const byId = new Map(pack.rivers.map(river => [river.i, river]));
+    const queue = [...tributaries];
+    for (let river = queue.pop(); river; river = queue.pop()) {
+      const parent = byId.get(river.parent);
+      if (!parent || parent === river || parent.lock) continue;
+      if (parent.group === DEFAULT_RIVER_GROUP || parent.group === river.group) continue;
+      parent.group = DEFAULT_RIVER_GROUP;
+      queue.push(parent);
+    }
+  }
+
   getApproximateLength(points: Point[] = []) {
     const length = points.reduce((s, v, i, p) => s + (i ? Math.hypot(v[0] - p[i - 1][0], v[1] - p[i - 1][1]) : 0), 0);
     return rn(length, 2);
@@ -745,6 +780,19 @@ class RiverModule {
   /** Set a river's type, a free label such as River, Creek or Fork */
   setType(riverId: number, type: string): void {
     this.living(riverId).type = requireName(type);
+  }
+
+  /** Move a river to another river group, which sets how it is drawn */
+  setGroup(riverId: number, group: string): void {
+    this.living(riverId).group = requireOneOf(group, Object.keys(styles.rivers.groups), "The river group");
+  }
+
+  /** presets are applied before any map exists; custom groups live on the rivers, stock ones in the defaults */
+  ensureRiverGroupStyles(): void {
+    const { groups } = styles.rivers;
+    const template = groups[DEFAULT_RIVER_GROUP];
+    if (!template) return;
+    for (const river of pack.rivers ?? []) groups[river.group] ??= structuredClone(template);
   }
 
   /** Make a river a tributary of another, or a mainstem when the parent is itself; the basin follows */
@@ -802,10 +850,12 @@ class RiverModule {
       basin: this.getBasin(parent),
       name: this.getName(mouth),
       type: "River",
+      group: this.pickGroup(cellIds),
       tags: []
     } as River;
     this.updateWidth(river);
     rivers.push(river);
+    this.unifyGroups([river]);
     return riverId;
   }
 

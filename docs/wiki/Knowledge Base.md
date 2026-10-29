@@ -754,7 +754,7 @@ You cannot import it, but you can set it up using the Biomes Editor in Tools
 
 ### Can I draw contour lines or hachures on the heightmap?
 
-Yes. Open Style -> Heightmap. The Contours option draws elevation contours over the heightmap colors or as lines only, with configurable spacing and color (every fifth contour is heavier). The Hachures option adds short strokes along the slopes, with density, length and color settings. Both are rendering styles, they don't change the heights
+Yes. Open Style -> Heightmap. The Contours option draws elevation contours over the heightmap colors or as lines only, with configurable spacing in the map's height unit and color (every fifth contour is heavier). Set its Font size above 0 to write the elevation along every fifth contour, as on a topographic map. The Hachures option adds short strokes along the slopes, with density, length and color settings. Both are rendering styles, they don't change the heights
 
 ### How do I use the new Ink, Cinderwood and Frostbite styles?
 
@@ -942,7 +942,7 @@ Yes, use the focus (pin) icon. Open Tools -> States (or Provinces) and click on 
 
 ### Are there any keyboard shortcuts?
 
-Yes, plenty. The full list is on the Hotkeys wiki page: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys (F1 in the app opens the info dialog that links to it). The most used ones are Tab (toggle the menu), F2 (new map), Ctrl + S (save to machine as a new file), Ctrl + Shift + S (overwrite the last saved file), F6 and F9 (quick save to browser storage and quick load), single letters to toggle layers, and Shift + letter to open editors. Hold Shift while clicking a button that asks for confirmation (remove, restore, recalculate, load) to act immediately without the dialog; Enter confirms and Escape cancels an open confirmation
+Yes, plenty. The full list is on the Hotkeys wiki page: https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Hotkeys (F1 in the app opens the What's new window that links to it). The most used ones are Tab (toggle the menu), F2 (new map), Ctrl + S (save to machine as a new file), Ctrl + Shift + S (overwrite the last saved file), F6 and F9 (quick save to browser storage and quick load), single letters to toggle layers, and Shift + letter to open editors. Hold Shift while clicking a button that asks for confirmation (remove, restore, recalculate, load) to act immediately without the dialog; Enter confirms and Escape cancels an open confirmation
 
 ### Where can I find the documentation?
 
@@ -950,7 +950,7 @@ The wiki is the main documentation: https://github.com/Azgaar/Fantasy-Map-Genera
 
 ### Is there a guided tour for beginners?
 
-Yes. Open the About tab in the menu and click on 'Take an Interactive Tour'. It walks you through the map, the menu tabs, layers and presets, and the main tools step by step
+Yes. Press F1 or open the About tab in the menu, then click 'Interactive Tour'. It walks you through the map, the menu tabs, layers and presets, and the main tools step by step
 
 ### How do I generate the same map again? What is the seed?
 

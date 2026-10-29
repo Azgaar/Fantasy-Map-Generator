@@ -1,7 +1,8 @@
 // Update an old map file to the current version
 
-import { min, select } from "d3";
+import { extent, min, select } from "d3";
 import { IconPictures } from "@/controllers/icon-picker/pictures";
+import { isDrawable } from "@/controllers/political/emblems/drawability";
 import { AddedLabels } from "@/model/annotations/added-labels";
 import { type Label, type LabelNameMode, Labels } from "@/model/annotations/labels-generator";
 import { type Measurer, Measurers, type MeasurerType } from "@/model/annotations/measurers-generator";
@@ -11,7 +12,7 @@ import { Production } from "@/model/economy/production-generator";
 import type { GraphOverrides } from "@/model/graph/graph-override";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Point } from "@/model/graph/voronoi";
-import { CustomIcons, IMAGE_FRAME } from "@/model/icons";
+import { CustomIcons, Icons, IMAGE_FRAME } from "@/model/icons";
 import { type EntityRef, MapEntities } from "@/model/map-entities";
 import { normalizeLegacyBurgGroupFilters } from "@/model/options/options-legacy";
 import type { MapData } from "@/model/options/options-schema";
@@ -20,6 +21,7 @@ import { type Feature, Features, LAKE_SUBTYPES, OCEAN_SUBTYPES } from "@/model/p
 import { Lakes } from "@/model/physical/lakes";
 import { Relief, type ReliefIcon, type ReliefIconType, type ReliefSet } from "@/model/physical/relief-generator";
 import { Rivers } from "@/model/physical/river-generator";
+import { Armoria } from "@/model/political/armoria";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import { Military } from "@/model/political/military-generator";
@@ -31,11 +33,15 @@ import { Religions } from "@/model/society/religions-generator";
 import { getDefaultMarkerName, type Marker, Markers } from "@/model/story/markers-generator";
 import { Notes } from "@/model/story/notes";
 import { Styles } from "@/model/styles/styles";
+import { getHeightUnitRatio, heightToMeters } from "@/model/units";
 import { Hatches } from "@/renderers/hatches";
+import { getContourInterval } from "@/renderers/heightmap/heightmap-contours";
 import { getGroupStyle } from "@/renderers/labels/label-groups";
 import { type LayerId, Layers, type LayersState } from "@/renderers/layers";
 import {
   adoptLegacyIconSlots,
+  groupRiverStyles,
+  LEGACY_LAYER_CHILDREN,
   type LegacySvg,
   labelGroupFromLegacy,
   lakeGroupFromSvg,
@@ -52,6 +58,7 @@ import type { StylesData } from "@/types/styles";
 import { Dialog } from "@/ui/dialog/dialog";
 import { unique } from "@/utils/array-utils";
 import { sanitizeSvgIcon, scopeSvgIcon } from "@/utils/file-utils";
+import { SEA_LEVEL } from "@/utils/height-utils";
 import { t } from "@/utils/i18n";
 import { log } from "@/utils/logger";
 import { minmax, rn } from "@/utils/number-utils";
@@ -1606,6 +1613,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
     for (const layer of Layers.all) {
       declared.add(layer.elementId);
       for (const child of layer.children) declared.add(child.id);
+      for (const id of LEGACY_LAYER_CHILDREN[layer.id] ?? []) declared.add(id);
     }
 
     const isEmpty = (group: SVGGElement) => group.childElementCount === 0;
@@ -2018,7 +2026,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
           const definition = findInSvg(`${type}COA${entity.i}`);
           // a removed entity is never drawn again, so its picture would only clutter the Custom icons
           const icon = entity.removed ? "" : legacyEmblemIcon(definition, pictures);
-          entity.coa = { icon, size: coa.size, x: coa.x, y: coa.y };
+          entity.coa = { icon, ...Emblems.placement(coa) };
           if (icon) used.add(icon);
         }
       }
@@ -2149,6 +2157,51 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       name,
       items: (data || "").split("|").filter(Boolean).map(toItem)
     }));
+  }
+
+  if (isOlderThan("1.157.0")) {
+    // v1.157.0 spaces contours in height units, not generator heights (1 to 20): keep about as many lines
+    const record = data[48] ? safeParseJSON(data[48]) : undefined;
+    const land = record?.heightmap?.groups?.landHeights?.options?.contours;
+    const ocean = record?.heightmap?.groups?.oceanHeights?.options?.contours;
+    const isLegacy = (contours?: { interval?: number }) => Number(contours?.interval) >= 1 && contours!.interval! <= 20;
+    if (isLegacy(land) || isLegacy(ocean)) {
+      const [low = SEA_LEVEL, high = SEA_LEVEL] = extent(grid.cells.h);
+      const ratio = getHeightUnitRatio();
+      // the old levels ran from sea level in steps of the interval, up to 100 or down to 0
+      if (isLegacy(land)) {
+        const count = Math.ceil((Math.min(high, 100) - SEA_LEVEL) / land.interval) - 1;
+        land.interval = getContourInterval(count, heightToMeters(high) * ratio);
+      }
+      if (isLegacy(ocean)) {
+        const count = Math.ceil((SEA_LEVEL - Math.max(low, 0)) / ocean.interval) - 1;
+        ocean.interval = getContourInterval(count, -heightToMeters(low) * ratio);
+      }
+    }
+
+    // v1.157.0 draws rivers in style groups, as routes are: they all start in the default one
+    for (const river of pack.rivers ?? []) river.group ??= "regular";
+    if (record) {
+      groupRiverStyles(record);
+      data[48] = JSON.stringify(record);
+    }
+
+    // v1.157.0 draws Armoria API pictures as blazons where it can; the rest follow the API
+    const pictures = new Set<string>();
+    for (const entity of [...(pack.states ?? []), ...(pack.provinces ?? []), ...(pack.burgs ?? [])]) {
+      if (!entity?.coa || !("icon" in entity.coa)) continue;
+      const { icon } = entity.coa;
+      const blazon = Armoria.pictureCoa(CustomIcons.get(icon));
+      if (!blazon || !isDrawable(blazon)) continue;
+      entity.coa = { ...blazon, ...Emblems.placement(entity.coa) };
+      pictures.add(icon);
+    }
+    for (const icon of CustomIcons.all) {
+      if (icon.kind !== "image") continue;
+      const content = Armoria.migrateLink(icon.content);
+      if (pictures.has(icon.id) && !Object.keys(Icons.uses(icon.id)).length) CustomIcons.remove(icon.id);
+      else if (content !== icon.content) CustomIcons.update(icon.id, { content });
+    }
   }
 }
 

@@ -2,7 +2,8 @@ import { type D3DragEvent, drag, select } from "d3";
 import { IconPicker } from "@/controllers/icon-picker";
 import { IconPictures } from "@/controllers/icon-picker/pictures";
 import { tinctures } from "@/data/emblems/tinctures";
-import { CustomIcons, Icons, IMAGE_FRAME } from "@/model/icons";
+import { CustomIcons, Icons } from "@/model/icons";
+import { Armoria } from "@/model/political/armoria";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import type { Province } from "@/model/political/provinces-generator";
@@ -23,7 +24,6 @@ import { t } from "@/utils/i18n";
 import { ensureEl, findEl } from "@/utils/node-utils";
 import { minmax, rn } from "@/utils/number-utils";
 import { capitalize, escapeHtml } from "@/utils/string-utils";
-import { ARMORIA_API, ARMORIA_GUI, armoriaRenderUrl, parseArmoria } from "./armoria";
 import { ArmoriaSessions } from "./armoria-sessions";
 import { isDrawable } from "./drawability";
 
@@ -60,6 +60,8 @@ const STYLE = /* css */ `
   #emblemEditor .control input[type="number"] { width: 4.6em; margin: 0; }
   #emblemEditor .control button { margin: 0; }
   #emblemEditor #emblemDownloadControl button { flex: 1; }
+  #emblemEditor #emblemPasteControl { flex-direction: column; align-items: stretch; }
+  #emblemPaste { box-sizing: border-box; width: 100%; height: 18em; margin: 0; resize: vertical; font: .85em/1.3 monospace; white-space: pre; tab-size: 2; }
 `;
 
 interface EmblemEl {
@@ -76,17 +78,16 @@ let currentType: EmblemType;
 let currentId: string;
 let currentEl: EmblemEl;
 let unsubscribeFromReconciliation: (() => void) | undefined;
-/** an emblem open in Armoria: its updates apply in order, and a blazon FMG cannot draw keeps one picture */
+/** an emblem open in Armoria: its updates apply in order */
 interface ArmoriaTarget {
   type: EmblemType;
   id: number;
   entity: EmblemEl;
-  picture?: string;
   queue: Promise<void>;
 }
 const armoriaSessions = new ArmoriaSessions<ArmoriaTarget>();
 const armoriaGui =
-  import.meta.env.DEV && import.meta.env.VITE_ARMORIA_GUI ? import.meta.env.VITE_ARMORIA_GUI : ARMORIA_GUI;
+  import.meta.env.DEV && import.meta.env.VITE_ARMORIA_GUI ? import.meta.env.VITE_ARMORIA_GUI : Armoria.GUI;
 
 async function openDefault(): Promise<void> {
   const firstState = pack.states.find(state => state.i && !state.removed && state.coa);
@@ -234,7 +235,7 @@ function renderDialog(): void {
         <button id="emblemsArmoria" type="button" data-tip="${t("Open the emblem in Armoria, the heraldry editor: your changes show on the map as you make them")}"><span class="icon-font"></span> ${t("Edit in Armoria")}</button>
       </div>
       <div class="toolbar">
-        <button id="emblemsPaste" data-tip="${t("Edit the COA string by hand, or paste an Armoria edit link, API link or COA string")}" class="icon-link"></button>
+        <button id="emblemsPaste" data-tip="${t("Edit the COA string by hand, or paste an Armoria edit link, API link or COA string")}" class="icon-pencil"></button>
         <button id="emblemsCharge" data-tip="${t("Set the charge: choose, link or upload a picture to place on the field")}" class="icon-chess-knight"></button>
         <button id="emblemsUpload" data-tip="${t("Replace the whole emblem with a picture: choose, link or upload an image, such as a ready coat of arms")}" class="icon-shield-alt"></button>
         <button id="emblemsDownload" data-tip="${t("Download the emblem as an image")}" class="icon-download"></button>
@@ -243,8 +244,8 @@ function renderDialog(): void {
         <button id="emblemsFocus" data-tip="${t("Show the area or place of the emblem")}" class="icon-target"></button>
       </div>
       <div id="emblemPasteControl" class="control hidden">
-        <input id="emblemPaste" type="text" placeholder="${t("Armoria link or COA string")}" data-tip="${t("The emblem's COA string: edit it, or replace it with an Armoria link or COA string, then Apply")}" />
-        <button id="emblemPasteApply" type="button" data-tip="${t("Apply the pasted emblem")}">${t("Apply")}</button>
+        <textarea id="emblemPaste" spellcheck="false" placeholder="${t("Armoria link or COA string")}" data-tip="${t("The emblem's COA string: edit it, or replace it with an Armoria link or COA string, then Apply")}"></textarea>
+        <button id="emblemPasteApply" type="button" data-tip="${t("Apply the pasted emblem")} (Ctrl+Enter)">${t("Apply")}</button>
       </div>
       <div id="emblemDownloadControl" class="control hidden">
         <input id="emblemsDownloadSize" data-tip="${t("Image size in pixels")}" type="number" value="500" step="100" min="100" max="10000" />
@@ -272,9 +273,12 @@ function renderDialog(): void {
   ensureEl("emblemsUpload").onclick = () => pickPicture("whole");
   ensureEl("emblemsPaste").onclick = () => toggleControl("emblemPasteControl");
   ensureEl("emblemPasteApply").onclick = () => void pasteEmblem();
-  ensureEl<HTMLInputElement>("emblemPaste").onkeydown = event => {
-    if (event.key === "Enter") void pasteEmblem();
+  const paste = ensureEl<HTMLTextAreaElement>("emblemPaste");
+  paste.onkeydown = event => {
+    if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) void pasteEmblem();
   };
+  paste.onpaste = () => setTimeout(formatPaste);
+  paste.onchange = formatPaste;
   ensureEl("emblemsDownload").onclick = () => toggleControl("emblemDownloadControl");
   ensureEl("emblemsDownloadSVG").onclick = () => download("svg");
   ensureEl("emblemsDownloadPNG").onclick = () => download("png");
@@ -382,10 +386,10 @@ function updateEmblemData(): void {
   }
 
   // the COA string to edit by hand, kept current unless it is being edited
-  const paste = ensureEl<HTMLInputElement>("emblemPaste");
+  const paste = ensureEl<HTMLTextAreaElement>("emblemPaste");
   if (document.activeElement !== paste) {
     const blazon = armoriaCoa(coa);
-    paste.value = blazon ? JSON.stringify(blazon) : "";
+    paste.value = blazon ? JSON.stringify(blazon, null, 2) : "";
   }
 
   const size = el.coa.size ?? 1;
@@ -441,8 +445,9 @@ function changeShape(): void {
       tip(t("Only an emblem with a charge can show it without a shield"), false, "warn");
       return;
     }
-    currentEl.coa = { icon, size: coa.size, x: coa.x, y: coa.y };
+    currentEl.coa = { icon, ...Emblems.placement(coa) };
   }
+  releasePicture(coa);
   findEl(currentId)?.remove();
   void EmblemRenderer.trigger(currentId, currentEl.coa);
   redrawEmblem(currentType, currentEl.i);
@@ -450,14 +455,12 @@ function changeShape(): void {
 }
 
 /** a picture as the charge of a plain field, coloured so it stands out */
-function pictureAsCharge(icon: string, shield: string, { size, x, y }: Emblem): HeraldicEmblem {
+function pictureAsCharge(icon: string, shield: string, coa: Emblem): HeraldicEmblem {
   return {
     t1: "argent",
     shield,
     charges: [{ charge: Emblems.chargeOf(icon), t: "gules", p: "e", size: 1.5 }],
-    size,
-    x,
-    y
+    ...Emblems.placement(coa)
   };
 }
 
@@ -551,7 +554,9 @@ function changeSize(ev: Event): void {
 }
 
 function regenerate(): void {
+  const previous = currentEl.coa;
   Emblems.regenerateOne(`${currentType}:${currentEl.i}`);
+  releasePicture(previous);
   EmblemRenderer.trigger(currentId, currentEl.coa);
   redrawEmblem(currentType, currentEl.i);
   updateEmblemData();
@@ -559,15 +564,7 @@ function regenerate(): void {
 
 /** the emblem as an Armoria COA: its blazon without the map placement, a linked Armoria picture's blazon, else none */
 function armoriaCoa(emblem: Emblem): HeraldicEmblem | null {
-  if ("icon" in emblem) {
-    const linked = CustomIcons.get(emblem.icon);
-    if (linked?.kind !== "image" || !linked.content.startsWith(ARMORIA_API)) return null;
-    try {
-      return parseArmoria(linked.content);
-    } catch {
-      return null;
-    }
-  }
+  if ("icon" in emblem) return Armoria.pictureCoa(CustomIcons.get(emblem.icon));
   const { size: _size, x: _x, y: _y, ...blazon } = emblem;
   return blazon;
 }
@@ -590,52 +587,70 @@ function openInArmoria(): void {
   openURL(url.href);
 }
 
+/** a pasted Armoria link or COA string shown as its readable JSON; anything else is left to fix */
+function formatPaste(): void {
+  const paste = ensureEl<HTMLTextAreaElement>("emblemPaste");
+  try {
+    paste.value = JSON.stringify(Armoria.parse(paste.value), null, 2);
+  } catch {
+    // not a COA yet: Apply reports why
+  }
+}
+
 async function pasteEmblem(): Promise<void> {
   try {
-    await applyInput(currentType, currentEl.i, parseArmoria(ensureEl<HTMLInputElement>("emblemPaste").value));
-    toggleControl("emblemPasteControl");
+    const value = ensureEl<HTMLTextAreaElement>("emblemPaste").value;
+    await applyInput(currentType, currentEl.i, Armoria.parse(value));
   } catch (error) {
     tip((error as Error).message, false, "error", 6000);
   }
 }
 
-/** A drawable COA becomes the blazon. Any other shows as Armoria's picture: its render linked, or the SVG Armoria
- * sent, stored in `picture` when given so repeated updates replace one icon. Returns the picture it shows, if any */
-async function applyInput(
-  type: EmblemType,
-  id: number,
-  coa: HeraldicEmblem,
-  svg?: string,
-  picture?: string
-): Promise<string | undefined> {
+/** A drawable COA becomes the blazon. Any other shows as the SVG Armoria sent, kept with its COA as a Custom icon;
+ * without that SVG it throws */
+async function applyInput(type: EmblemType, id: number, coa: HeraldicEmblem, svg?: string): Promise<void> {
   const entity = getEmblemEntity(type, id);
-  if (!entity) return picture;
+  if (!entity) return;
   const map = options.map;
-  const { size, x, y } = entity.coa;
-  let shown: string | undefined;
+  const previous = entity.coa;
   if (isDrawable(coa)) {
-    entity.coa = { ...coa, size, x, y };
-    // the picture an earlier update needed goes once nothing shows it
-    if (picture && CustomIcons.get(picture) && !Object.keys(Icons.uses(picture)).length) CustomIcons.remove(picture);
+    entity.coa = { ...coa, ...Emblems.placement(previous) };
   } else {
-    const reused = picture && CustomIcons.get(picture) ? picture : undefined;
-    const iconId = reused ?? CustomIcons.newId();
-    const art = svg
-      ? await IconPictures.fromFile(new File([svg], "armoria.svg", { type: "image/svg+xml" }), iconId, "emblem")
-      : { kind: "image" as const, content: armoriaRenderUrl(coa), viewBox: IMAGE_FRAME };
-    if (options.map !== map || getEmblemEntity(type, entity.i) !== entity) return picture;
-    if (reused) CustomIcons.update(reused, art);
-    else CustomIcons.add({ id: iconId, ...art });
-    entity.coa = { icon: iconId, size, x, y };
-    shown = iconId;
-    if (!reused) tip(t("This COA uses art FMG cannot draw; it shows as Armoria's picture"), false, "warn", 5000);
+    if (!svg) throw new Error(t("This COA uses art FMG cannot draw"));
+    const own = soleArmoriaPicture(previous); // repeated updates redraw one picture
+    const iconId = own ?? CustomIcons.newId();
+    const file = new File([svg], "armoria.svg", { type: "image/svg+xml" });
+    const art = await IconPictures.fromFile(file, iconId, "emblem");
+    if (options.map !== map || getEmblemEntity(type, entity.i) !== entity) return;
+    if (own) CustomIcons.update(own, { ...art, coa });
+    else CustomIcons.add({ id: iconId, ...art, coa });
+    entity.coa = { icon: iconId, ...Emblems.placement(entity.coa) };
+    if (!own) tip(t("This COA uses art FMG cannot draw"), false, "warn", 5000);
   }
-  if (currentType === type && currentEl.i === id) {
+  releasePicture(previous);
+  if (isEditing(type, id)) {
     void EmblemRenderer.trigger(currentId, entity.coa);
     updateEmblemData();
   }
   redrawEmblem(type, id);
-  return shown;
+}
+
+/** the Armoria picture an emblem shows, when no other slot uses it */
+function soleArmoriaPicture(emblem: Emblem): string | undefined {
+  if (!("icon" in emblem) || !Armoria.pictureCoa(CustomIcons.get(emblem.icon))) return;
+  const uses = Object.values(Icons.uses(emblem.icon)).reduce((sum, count) => sum + (count ?? 0), 0);
+  return uses === 1 ? emblem.icon : undefined;
+}
+
+/** an Armoria picture an emblem showed goes once nothing shows it: FMG made it, so it is not the author's upload */
+function releasePicture(previous: Emblem): void {
+  if (!("icon" in previous) || !Armoria.pictureCoa(CustomIcons.get(previous.icon))) return;
+  if (!Object.keys(Icons.uses(previous.icon)).length) CustomIcons.remove(previous.icon);
+}
+
+/** the editor is open on this emblem */
+function isEditing(type: EmblemType, id: number): boolean {
+  return Dialog.isOpen("emblemEditor") && currentType === type && currentEl.i === id;
 }
 
 // an Armoria tab opened from the editor sends the blazon after every edit
@@ -646,7 +661,7 @@ window.addEventListener("message", event => {
   target.queue = target.queue
     .then(async () => {
       if (getEmblemEntity(target.type, target.id) !== target.entity) return;
-      target.picture = await applyInput(target.type, target.id, update.coa, update.svg, target.picture);
+      await applyInput(target.type, target.id, update.coa, update.svg);
     })
     .catch(error => tip((error as Error).message, false, "error", 6000));
 });
@@ -666,8 +681,12 @@ function pickPicture(use: "charge" | "whole"): void {
     onPick: icon => {
       if (!icon || options.map !== map || getEmblemEntity(type, entity.i) !== entity) return;
       const coa = entity.coa;
-      if (use === "whole") {
-        entity.coa = { icon, size: coa.size, x: coa.x, y: coa.y };
+      const blazon = Armoria.pictureCoa(CustomIcons.get(icon)); // an image from Armoria is a whole coat of arms
+      if (blazon && isDrawable(blazon)) {
+        entity.coa = { ...blazon, ...Emblems.placement(coa) };
+        releasePicture({ icon }); // drawn from its COA, the picture is not needed
+      } else if (use === "whole" || blazon) {
+        entity.coa = { icon, ...Emblems.placement(coa) };
       } else if ("icon" in coa) {
         const shield = coa.shield ?? Emblems.getShield(entity.culture ?? 0, entity.state);
         entity.coa = pictureAsCharge(icon, shield, coa);
@@ -676,9 +695,10 @@ function pickPicture(use: "charge" | "whole"): void {
         if (coa.charges?.length) coa.charges[0] = { ...coa.charges[0], charge };
         else coa.charges = [{ charge, t: /^(argent|or)$/.test(coa.t1) ? "gules" : "or", p: "e", size: 1.5 }];
       }
+      releasePicture(coa);
       void EmblemRenderer.trigger(id, entity.coa);
       redrawEmblem(type, entity.i);
-      if (currentEl === entity) updateEmblemData();
+      if (isEditing(type, entity.i)) updateEmblemData();
     }
   });
 }
@@ -690,7 +710,10 @@ function toggleControl(id: "emblemPasteControl" | "emblemDownloadControl"): void
     const shown = control === id && ensureEl(control).classList.contains("hidden");
     ensureEl(control).classList.toggle("hidden", !shown);
     ensureEl(button).classList.toggle("pressed", shown);
-    if (shown) ensureEl(control).querySelector("input")?.focus();
+    if (!shown) continue;
+    const field = ensureEl(control).querySelector<HTMLElement>("input, textarea");
+    if (field instanceof HTMLTextAreaElement) field.setSelectionRange(0, 0); // open at the top of the COA
+    field?.focus();
   }
 }
 

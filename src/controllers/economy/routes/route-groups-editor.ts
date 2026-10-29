@@ -2,7 +2,6 @@ import { Controllers } from "@/controllers";
 import type { Route } from "@/model/economy/routes-generator";
 import { Routes } from "@/model/economy/routes-generator";
 import { Layers } from "@/renderers/layers";
-import { isGroupNameFree } from "@/renderers/style-groups";
 import { Dialog } from "@/ui/dialog/dialog";
 
 import { tip } from "@/ui/tooltips";
@@ -78,7 +77,7 @@ function addGroup(): void {
 
     if (!group) return tip(t("Invalid group name"), false, "error");
     if (!group.startsWith("route-")) group = `route-${group}`;
-    if (!isGroupNameFree(styles.routes.groups, group))
+    if (Object.hasOwn(styles.routes.groups, group))
       return tip(t("Element with this name already exists. Provide a unique name"), false, "error");
     if (Number.isFinite(+group.charAt(0))) return tip(t("Group name should start with a letter"), false, "error");
 
@@ -106,13 +105,9 @@ function removeGroup(group: string): void {
     message: `${t("Are you sure you want to remove the entire route group? All routes in this group will be removed.")}<br>${t("This action cannot be reverted")}`,
     confirm: t("Remove"),
     onConfirm: () => {
-      pack.routes
-        .filter((r: Route) => r.group === group)
-        .forEach(route => {
-          Routes.remove(route.i);
-        });
+      Routes.remove(...pack.routes.filter((r: Route) => r.group === group).map(route => route.i));
       if (!DEFAULT_GROUPS.includes(group)) delete styles.routes.groups[group];
-      Layers.draw("routes", "labels");
+      Layers.draw("routes", "labels", "trade");
       addLines();
     }
   });

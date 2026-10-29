@@ -563,10 +563,11 @@
           "curve": "curveBasisClosed",
           "contours": {
             "mode": "off",
-            "interval": 5,
+            "interval": 200,
             "color": "#5c513e",
             "width": 0.35,
-            "opacity": 0.5
+            "opacity": 0.5,
+            "fontSize": 0
           },
           "hachures": {
             "mode": "off",
@@ -592,10 +593,11 @@
           "curve": "curveBasisClosed",
           "contours": {
             "mode": "off",
-            "interval": 5,
+            "interval": 100,
             "color": "#5c513e",
             "width": 0.35,
-            "opacity": 0.5
+            "opacity": 0.5,
+            "fontSize": 0
           },
           "hachures": {
             "mode": "off",
@@ -1255,10 +1257,63 @@
     }
   },
   "rivers": {
-    "attrs": {
-      "opacity": 1,
-      "fill": "#111111",
-      "filter": null
+    "groups": {
+      "regular": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#111111",
+          "fill-opacity": null,
+          "stroke": null,
+          "stroke-opacity": null,
+          "stroke-width": null,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "stroke-linejoin": null,
+          "filter": null
+        }
+      },
+      "frozen": {
+        "attrs": {
+          "opacity": 0.95,
+          "fill": "#000000",
+          "fill-opacity": null,
+          "stroke": null,
+          "stroke-opacity": null,
+          "stroke-width": null,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "stroke-linejoin": null,
+          "filter": null
+        }
+      },
+      "dry": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#c9bfa7",
+          "fill-opacity": null,
+          "stroke": null,
+          "stroke-opacity": null,
+          "stroke-width": null,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "stroke-linejoin": null,
+          "filter": null
+        }
+      },
+      "lava": {
+        "attrs": {
+          "opacity": 1,
+          "fill": "#5d5d5d",
+          "fill-opacity": null,
+          "stroke": "#000000",
+          "stroke-opacity": null,
+          "stroke-width": 0.15,
+          "stroke-dasharray": null,
+          "stroke-linecap": null,
+          "stroke-linejoin": null,
+          "filter": null
+        }
+      }
     }
   },
   "routes": {

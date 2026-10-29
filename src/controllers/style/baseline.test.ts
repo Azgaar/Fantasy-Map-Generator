@@ -12,7 +12,7 @@ import { StylePresetsService } from "@/services/style-presets";
 import { Baseline } from "./baseline";
 
 const PRESET = {
-  rivers: { attrs: { opacity: null, fill: "#5d97bb", filter: null } },
+  landmass: { attrs: { opacity: null, fill: "#5d97bb", filter: null } },
   labels: { groups: { capital: { attrs: { opacity: 1, "stroke-linecap": null } } } },
   burgIcons: {
     groups: {
@@ -34,7 +34,7 @@ async function baseline(): Promise<Baseline> {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubGlobal("styles", {
-    rivers: { attrs: { opacity: null, fill: "#5d97bb", filter: null } },
+    landmass: { attrs: { opacity: null, fill: "#5d97bb", filter: null } },
     labels: {
       groups: {
         capital: { attrs: { opacity: 1, "stroke-linecap": null } },
@@ -58,17 +58,17 @@ describe("Baseline.diffAt", () => {
   test("is undefined for a path the preset does not define: a missing container or a missing key", async () => {
     const preset = await baseline();
     expect(preset.diffAt(["labels", "groups", "mine", "attrs", "opacity"])).toBeUndefined();
-    expect(preset.diffAt(["rivers", "attrs", "mask"])).toBeUndefined();
+    expect(preset.diffAt(["landmass", "attrs", "mask"])).toBeUndefined();
     expect(preset.diffAt(["zones", "attrs", "opacity"])).toBeUndefined();
   });
 
   test("compares by value, null and undefined alike, and carries the preset value", async () => {
     const preset = await baseline();
-    expect(preset.diffAt(["rivers", "attrs", "fill"])).toEqual({ changed: false, presetValue: "#5d97bb" });
-    styles.rivers.attrs.fill = "#000000";
-    expect(preset.diffAt(["rivers", "attrs", "fill"])).toEqual({ changed: true, presetValue: "#5d97bb" });
-    delete (styles.rivers.attrs as Record<string, unknown>).filter; // removed attr vs preset null: the same
-    expect(preset.diffAt(["rivers", "attrs", "filter"])).toEqual({ changed: false, presetValue: null });
+    expect(preset.diffAt(["landmass", "attrs", "fill"])).toEqual({ changed: false, presetValue: "#5d97bb" });
+    styles.landmass.attrs.fill = "#000000";
+    expect(preset.diffAt(["landmass", "attrs", "fill"])).toEqual({ changed: true, presetValue: "#5d97bb" });
+    delete (styles.landmass.attrs as Record<string, unknown>).filter; // removed attr vs preset null: the same
+    expect(preset.diffAt(["landmass", "attrs", "filter"])).toEqual({ changed: false, presetValue: null });
     styles.labels.groups.capital.attrs["stroke-linecap"] = "round";
     expect(preset.diffAt(["labels", "groups", "capital", "attrs", "stroke-linecap"])?.changed).toBe(true);
   });

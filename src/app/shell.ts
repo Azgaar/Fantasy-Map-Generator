@@ -21,7 +21,6 @@ export function initShell(): void {
   window.addEventListener("resize", onResize);
   window.addEventListener("vite:preloadError", onChunkLoadError);
   addDragToUpload();
-  initTourPromptButton();
   initAssistantBubble();
 
   if (!isLocalhost() && !isElectron()) window.onbeforeunload = () => t("Are you sure you want to navigate away?");
@@ -48,8 +47,7 @@ const SHELL_TEXT: [string, string | null, string | null][] = [
   ["#heightmapFinalize > div", null, t("Drag to move the pane")],
   ["#finalizeHeightmap", t("Exit Customization"), t("Finalize the heightmap and exit the edit mode")],
   ["#assistantBubble", null, t("Azgaar Assistant")],
-  ["#mapOverlay", t("Drop a map file to open"), null],
-  ["#tourPromptButton", null, t("Take an interactive tour of the map generator")]
+  ["#mapOverlay", t("Drop a map file to open"), null]
 ];
 
 function translateShell(): void {
@@ -60,7 +58,6 @@ function translateShell(): void {
     if (tip !== null) element.dataset.tip = tip;
   }
   findEl("assistantBubble")?.setAttribute("aria-label", t("Azgaar Assistant"));
-  document.querySelector("#tourPromptButton button")?.setAttribute("aria-label", t("Launch UI Tour"));
   const tooltip = findEl("tooltip");
   if (tooltip) tooltip.dataset.main = t("Click the arrow button for options. Zoom in to see the map in details");
   const loading = findEl("loading-text")?.firstChild;
@@ -153,28 +150,6 @@ function addDragToUpload(): void {
       mapOverlay.innerHTML = t("Drop a map file to open");
     });
   });
-}
-
-/**
- * Offer the tour to newcomers with a floating button. Shown on the first few visits only, and never
- * again once the user has taken it. The tour itself stays lazy: it is a chunk of its own
- */
-function initTourPromptButton(): void {
-  const MAX_SHOWS = 2;
-  const STORAGE_KEY = "fmg-tour-prompt-count";
-
-  const count = Number.parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
-  if (count >= MAX_SHOWS) return;
-
-  const button = findEl("tourPromptButton");
-  if (!button) return;
-
-  button.style.display = "flex";
-  button.addEventListener("click", () => {
-    Services.UiTour.start();
-    localStorage.setItem(STORAGE_KEY, String(MAX_SHOWS));
-  });
-  localStorage.setItem(STORAGE_KEY, String(count + 1));
 }
 
 /** The app is a static site, but it fetches assets: opening index.html from disk cannot work */

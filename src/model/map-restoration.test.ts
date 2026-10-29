@@ -668,16 +668,16 @@ describe("restoreRiverData", () => {
       graph({
         cells: { r: Uint16Array.from([1, 1, 1, 2, 2, 0]) },
         rivers: [
-          { i: 1, name: "Generated", type: "River", tags: [] },
-          { i: 2, name: "Other", type: "Creek", tags: [] }
+          { i: 1, name: "Generated", type: "River", group: "regular", tags: [] },
+          { i: 2, name: "Other", type: "Creek", group: "regular", tags: [] }
         ]
       })
     );
     const parent = graph({
       cells: { r: Uint16Array.from([7, 7, 7, 7, 0, 8]) },
       rivers: [
-        { i: 7, name: "Seven", type: "Brook", note: "Old", label: { pathPoints: [[0, 0]] } },
-        { i: 8, name: "Eight", type: "Fork" }
+        { i: 7, name: "Seven", type: "Brook", group: "lava", note: "Old", label: { pathPoints: [[0, 0]] } },
+        { i: 8, name: "Eight", type: "Fork", group: "frozen" }
       ]
     });
 
@@ -687,11 +687,12 @@ describe("restoreRiverData", () => {
       i: 1,
       name: "Seven",
       type: "Brook",
+      group: "lava",
       note: "Old",
       tags: [],
       label: { pathPoints: [[5, 0]] }
     });
-    expect(pack.rivers[1]).toMatchObject({ name: "Other", type: "Creek" }); // only a bit of Seven's course
+    expect(pack.rivers[1]).toMatchObject({ name: "Other", type: "Creek", group: "regular" }); // only a bit of Seven's course
   });
 
   it("leaves locked rivers out: they keep their own data", () => {

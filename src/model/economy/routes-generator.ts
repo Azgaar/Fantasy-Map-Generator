@@ -975,25 +975,16 @@ class RoutesModule {
     return route;
   }
 
-  /** Remove a route and its cell connections */
-  remove(routeId: number) {
-    const route = this.living(routeId);
-    const routes = pack.cells.routes;
+  /** Rebuild the cell links from the routes' points */
+  relink(): void {
+    pack.cells.routes = this.buildLinks(pack.routes);
+  }
 
-    for (const point of route.points) {
-      const from = point[2];
-      if (!routes[from]) continue;
-
-      for (const [to, routeId] of Object.entries(routes[from])) {
-        if (routeId === route.i) {
-          const toCell = parseInt(to, 10);
-          delete routes[from][toCell];
-          if (routes[toCell]) delete routes[toCell][from];
-        }
-      }
-    }
-
-    pack.routes = pack.routes.filter(r => r.i !== route.i);
+  /** Remove routes and their cell connections */
+  remove(...routeIds: number[]) {
+    const removed = new Set(routeIds.map(routeId => this.living(routeId).i));
+    pack.routes = pack.routes.filter(r => !removed.has(r.i));
+    this.relink(); // a cell pair links one route, so other routes through the same cells must be relinked
   }
 
   getConnectivityRate(cellId: number): number {

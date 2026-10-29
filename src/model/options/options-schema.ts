@@ -7,6 +7,7 @@ import { LANGUAGE_CODES } from "@/data/languages";
 import { MAX_JITTER, SAMPLINGS } from "@/model/graph/lattice";
 import { Icons } from "@/model/icons";
 import type { LayerId } from "@/renderers/layers";
+import type { HeraldicEmblem } from "@/types/emblems";
 import { log } from "@/utils/logger";
 import { count, degrees, hexColor, ids, nonNegative, percent, positive, ratio } from "@/utils/schema-utils";
 
@@ -93,7 +94,8 @@ export const customIcon = z.strictObject({
   id: z.string().regex(/^custom-[\w-]+$/),
   kind: z.enum(["svg", "image"]),
   content: z.string(),
-  viewBox: z.string().refine(viewBox => Icons.parseFrame(viewBox) !== null)
+  viewBox: z.string().refine(viewBox => Icons.parseFrame(viewBox) !== null),
+  coa: z.custom<HeraldicEmblem>(value => z.looseObject({ t1: z.string() }).safeParse(value).success).optional()
 });
 
 /** a broken icon is dropped on its own, so it never costs the map its other icons; absent in older maps */

@@ -179,7 +179,6 @@ function drawBase(): void {
   const base = select<SVGGElement, unknown>("#viewbox")
     .insert("g", "g#armies")
     .attr("id", "regimentBase")
-    .attr("stroke-width", 0.3)
     .attr("stroke", "#000")
     .attr("cursor", "move")
     .on("mouseenter", () => tip(t("Regiment base. Drag to re-base the regiment"), true))
@@ -196,7 +195,6 @@ function drawBase(): void {
     .append("circle")
     .attr("cx", reg.bx)
     .attr("cy", reg.by)
-    .attr("r", 2)
     .attr("fill", clr ?? null)
     .call(drag<SVGCircleElement, unknown>().on("drag", dragBase));
 }
@@ -212,10 +210,8 @@ function drawRotationControl(): void {
     .attr("id", "rotationControl")
     .attr("cx", x1 + w)
     .attr("cy", reg.y)
-    .attr("r", 1)
     .attr("opacity", 1)
     .attr("fill", "yellow")
-    .attr("stroke-width", 0.3)
     .attr("stroke", "black")
     .attr("cursor", "alias")
     .attr("transform", `rotate(${reg.angle || 0})`)

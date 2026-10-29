@@ -17,10 +17,16 @@ To show contour lines on a finished map, enable the **Heightmap** layer, then op
 Choose the **landHeights** or **oceanHeights** group and set **Contours** to **Over colors** or **Lines only**.
 Ocean contours also require **Render ocean heights** to be enabled.
 
-Adjust **Contour spacing**, **color**, **width**, and **opacity** independently for each group. Lower spacing
-shows more detail; every fifth contour is twice as thick. Spacing uses the map's elevation scale, not meters
-or feet. The lines interpolate a gently smoothed surface without changing the terrain. These settings are
-saved with maps and custom style presets; contours are off by default.
+Adjust **Spacing**, **color**, **width**, and **opacity** independently for each group. Spacing is a round
+height in the map's height unit (Tools → Units), counted from sea level: land contours mark heights, ocean
+contours mark depths. Every fifth contour is twice as thick. Contours follow the height unit and exponent, so
+they crowd together on steep high ground as on a real map. The lines interpolate a gently smoothed surface
+without changing the terrain. These settings are saved with maps and custom style presets; contours are off
+by default.
+
+Set **Font size** above 0 to write the elevation along every fifth contour. As on a topographic map, a white
+halo breaks the line under the number, and the top of the number faces uphill, so some labels read upside
+down. Labels go on straight stretches of longer lines and keep clear of each other.
 
 ### Hachures
 
@@ -102,7 +108,7 @@ The Heightmap Editor includes tools to help you create and customize your map. B
   - Simulate water erosion effects on the terrain.
   - Adds realism to the map by shaping the landscape according to water flow.
 
-Once you are satisfied with the heightmap, click **Exit Customization** in the bottom right. The map must have at least 200 land cells, and the Image Converter must be closed first.
+Once you are satisfied with the heightmap, click **Exit Customization** in the bottom right. The map must have at least 200 land cells. The button is hidden while the Image Converter is open.
 
 <details>
 <summary>Show Image</summary>
@@ -156,6 +162,15 @@ Please see [Template Editor](https://github.com/Azgaar/Fantasy-Map-Generator/wik
 ## Image Converter
 
 Once opened, you'll be asked to select an image from your files.
+
+After you pick an image, the _Place image_ window shows how it will cover the map:
+
+- _Fit_: _Whole image_ keeps the entire image with its proportions, _Fill map_ covers the map and crops the excess, _Stretch_ distorts the image to the map size.
+- _Zoom_ resizes the image; drag the preview to move it, scroll over it to zoom, and click _Center_ to put it back in the middle.
+- The black area not covered by the image becomes ocean.
+- _Apply_ converts the placed image into colors to assign. _Cancel_ discards the upload; cancelling the first upload cancels the whole conversion.
+
+While the converter is open, the other heightmap tools and options are disabled and _Exit Customization_ is hidden. Complete or cancel the conversion to use them again.
 
 - **Upload Image**:
   - Here you can upload a different image you’d like to convert into a heightmap.

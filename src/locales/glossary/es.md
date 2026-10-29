@@ -7,9 +7,9 @@ Terms every `es.json` string uses the same way. Rules for all catalogs are in
 
 - Neutral Spanish for both Spain and Latin America: no _vosotros_, no regionalisms (_ordenador_ /
   _computadora_ are avoided by wording around them).
-- Address the user with **tú**: “¿Seguro que quieres eliminar el asentamiento?”.
+- Address the user with **tú**: “¿Seguro que quieres eliminar el poblado?”.
 - Buttons and menu items take the infinitive: “Guardar mapa”, “Eliminar todo”.
-- Tooltips take the imperative: “Haz clic para editar el asentamiento”, “Haz clic para ordenar por …”.
+- Tooltips take the imperative: “Haz clic para editar el poblado”, “Haz clic para ordenar por …”.
 - Questions and exclamations open with ¿ and ¡. Quotes are «…».
 - Capitalize only the first word of a label: “Editor de culturas”, not “Editor de Culturas”.
 - **Estado** (the polity) is always capitalized, so it is never read as “state, condition”.
@@ -22,7 +22,7 @@ Terms every `es.json` string uses the same way. Rules for all catalogs are in
 | English                         | Spanish                               | Note                                   |
 | ------------------------------- | ------------------------------------- | -------------------------------------- |
 | map                             | mapa                                  |                                        |
-| burg                            | asentamiento (m.)                     | any settlement, from hamlet to capital |
+| burg                            | poblado (m.)                          | any settlement, from hamlet to capital |
 | capital                         | capital                               |                                        |
 | port                            | puerto                                |                                        |
 | state                           | Estado                                | capitalized                            |
@@ -50,8 +50,9 @@ Terms every `es.json` string uses the same way. Rules for all catalogs are in
 | hachures                        | líneas de achurado                    |                                        |
 | relief pool / relief rule       | conjunto de relieves / regla de relieve |                                      |
 | marker                          | marcador                              |                                        |
-| label / added label             | etiqueta / etiqueta añadida           |                                        |
-| label group                     | grupo de etiquetas                    |                                        |
+| label / added label             | rótulo (m.) / rótulo añadido          | never _etiqueta_, that is a tag        |
+| label group                     | grupo de rótulos                      |                                        |
+| tag                             | etiqueta                              |                                        |
 | zone                            | zona                                  |                                        |
 | emblem / coat of arms           | emblema / escudo de armas             |                                        |
 | heraldic / picture emblem       | emblema heráldico / emblema ilustrado |                                        |

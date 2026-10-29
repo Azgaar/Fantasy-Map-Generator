@@ -228,13 +228,14 @@ function onUnitChange(event: Event): void {
       }
       units.height.unit = value;
       Pins.set("heightUnit", value);
+      Layers.draw("heightmap");
       break;
 
     case "heightExponentInput":
       units.height.exponent = +value;
       Pins.set("heightExponent", +value);
       Temperature.generate();
-      Layers.draw("temperature");
+      Layers.draw("temperature", "heightmap");
       break;
 
     case "temperatureScale":
@@ -284,6 +285,7 @@ function askForCustomUnit(select: HTMLInputElement, kind: "distance" | "height")
       } else {
         options.map.units.height.unit = name;
         Pins.set("heightUnit", name);
+        Layers.draw("heightmap");
         LegendBoxes.refreshAltitude();
       }
       Options.save();
@@ -305,6 +307,7 @@ function restoreDefaultUnits(): void {
   fillInputs();
   Temperature.generate();
   redrawDistances();
+  Layers.draw("temperature", "heightmap");
   LegendBoxes.refreshAltitude();
 }
 
