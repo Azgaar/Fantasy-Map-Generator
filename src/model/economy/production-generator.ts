@@ -795,11 +795,12 @@ export class ProductionModule {
           break;
         }
 
+        // the step's workers: a worker makes more or less than a unit of the input
         const subPlan = this.planGoodAction(
           index,
           state,
           ingredientGood,
-          ingredient.amount,
+          ingredient.amount / this.getWorkerOutput(index, state, ingredientGood),
           stepUnits,
           workersLeft - workersNeeded,
           path,

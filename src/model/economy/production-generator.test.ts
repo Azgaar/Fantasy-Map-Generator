@@ -544,6 +544,19 @@ describe("a chain's steps", () => {
     expect(rn(state.produced[1], 2)).toBe(0.04);
     expect(rn(state.produced[4], 2)).toBe(1);
   });
+
+  it("take the workers that make the input the chain lacks, not one per unit of it", () => {
+    catalogue[0].recipes = [{ 3: 1 }]; // oil from steel
+    catalogue[0].multipliers = { biome: { 0: 2 } }; // a worker makes 2 oil, what an engine takes
+    Object.assign(pack.cells, { biome: [0], burg: [1], culture: [0], state: [0], religion: [0] });
+    market.goods[1].stock = 0;
+    burg.population = 2;
+    expect(plan(4, 2)?.workersNeeded).toBe(2);
+    const { index, state } = prepare();
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    production["runWorkerLoop"](index, state);
+    expect([state.produced[1], state.produced[4]]).toEqual([2, 1]);
+  });
 });
 
 describe("a chain's inputs", () => {

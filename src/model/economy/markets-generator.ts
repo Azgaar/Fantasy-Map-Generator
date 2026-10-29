@@ -11,7 +11,7 @@ import { notify } from "@/utils/notices";
 import { minmax } from "@/utils/number-utils";
 
 const OTHER_LANDMASS_SPACING = 0.5; // share of the market spacing a market on another landmass keeps clear
-export const MARKET_FEE_DETERRENCE = 25; // a state's market fee a day that halves a burg's chance to be a market center and doubles the area each market needs
+export const MARKET_FEE_DETERRENCE = 50; // a state's market fee a day that halves a burg's chance to be a market center and doubles the area each market needs
 const CROSSROADS_BONUS = 0.25; // score a burg gains for each route beyond a road through it, up to 4 more
 const SPACING_RANGE = [0.5, 2.5]; // the spacing a burg needs, as a share of the base, from the busiest land to the emptiest
 const DENSITY_PULL = 0.6; // how far markets follow burgs: 1 gives every market about as many burgs, 0 spaces them evenly
@@ -32,7 +32,7 @@ export type RuralDay = {
   earned: number;
   spent: number;
   bought: [goodId: number, units: number][];
-  margin?: number; // what the market's center took on their purchases, in no deal
+  margin?: number; // what the market's center took on their produce sold and their purchases, in no deal
   pollTax?: [stateId: number, owed: number, paid: number][];
 };
 

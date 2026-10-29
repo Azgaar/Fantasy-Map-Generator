@@ -351,7 +351,7 @@ describe("TradeModule", () => {
       expect(ruralDay(2).rural[0]).toBeCloseTo(importer.goods[0].stock, 2);
     });
 
-    it("pays the countryside for its produce as it is bought, less the margin", () => {
+    it("pays the countryside for its produce as it is bought, less the margin its market's center takes", () => {
       const { importer, burg, good } = setupImport();
       importer.centerBurgId = 1;
       importer.goods[0] = { stock: 100, price: 10 };
@@ -378,6 +378,9 @@ describe("TradeModule", () => {
       const earned = 5 * 10 * (1 - MARGIN);
       expect(ruralDay(2).income).toBeCloseTo(earned, 2);
       expect(ruralDay(2).spent).toBe(0);
+      // the center takes the margin on both sides: the buyer's on all 10 units, the rural sellers' on their 5
+      expect(ruralDay(2).margin).toBeCloseTo(5 * 10 * MARGIN, 2);
+      expect(globalThis.pack.burgs[1].treasury).toBeCloseTo(15 * 10 * MARGIN, 2);
 
       tradeModule.spendRural(importer); // they spend what they don't save on what the market has
       expect(ruralDay(2).spent).toBeGreaterThan(0);
@@ -630,9 +633,9 @@ describe("market margin", () => {
   it("rises with the license fee the market's center paid, by the fee factor's root, in whole percents", () => {
     const market = { i: 1, centerBurgId: 1, color: "", goods: {} } as Market;
     expect(Trade.getMarginRate(market)).toBe(Math.round(MARKET_MARGIN * 100) / 100);
-    market.feePaid = 25; // a typical monarchy's
+    market.feePaid = 50; // a typical monarchy's
     expect(Trade.getMarginRate(market)).toBe(0.05);
-    market.feePaid = 75; // a fee factor of 4
+    market.feePaid = 150; // a fee factor of 4
     expect(Trade.getMarginRate(market)).toBe(Math.round(MARKET_MARGIN * 200) / 100);
   });
 });

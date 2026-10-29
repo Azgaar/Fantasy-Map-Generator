@@ -182,7 +182,7 @@ export class TradeModule {
     if (units > 0.01) this.movePrice(market, good, units);
   }
 
-  /** Units taken from the market's stock: the share that is rural produce pays the market's rural people, less the margin */
+  /** Units taken from the market's stock: the share that is rural produce pays the market's rural people, less the margin its center takes */
   private takeStock(market: Market, good: Good, units: number) {
     const marketGood = this.getMarketGood(market, good);
     const day = this.days[market.i];
@@ -193,6 +193,9 @@ export class TradeModule {
         const earned = fromRural * this.customerSellPrice(market, marketGood.price);
         day.cash += earned;
         day.income += earned;
+        const margin = fromRural * marketGood.price * this.getMarginRate(market);
+        this.payMarginAmount(market, margin);
+        day.margin += margin;
       }
     }
     marketGood.stock = rn(Math.max(0, marketGood.stock - units), 2);

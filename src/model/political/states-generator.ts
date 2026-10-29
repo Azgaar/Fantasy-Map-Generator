@@ -203,10 +203,10 @@ const getStateForm = (formName: string): StateForm | undefined =>
 type TaxBases = { salesTax: number; pollTax: number; marketFee: number };
 
 const DEFAULT_TAX_BY_FORM: Record<string, TaxBases> = {
-  Monarchy: { salesTax: 0.1, pollTax: 0.1, marketFee: 25 },
-  Theocracy: { salesTax: 0.05, pollTax: 0.1, marketFee: 50 },
+  Monarchy: { salesTax: 0.1, pollTax: 0.1, marketFee: 50 },
+  Theocracy: { salesTax: 0.05, pollTax: 0.1, marketFee: 100 },
   Union: { salesTax: 0.1, pollTax: 0, marketFee: 0 },
-  Republic: { salesTax: 0.05, pollTax: 0.05, marketFee: 10 },
+  Republic: { salesTax: 0.05, pollTax: 0.05, marketFee: 20 },
   Anarchy: { salesTax: 0, pollTax: 0, marketFee: 0 }
 };
 const DEFAULT_TAX: TaxBases = DEFAULT_TAX_BY_FORM.Monarchy;

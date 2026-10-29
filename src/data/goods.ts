@@ -795,7 +795,7 @@ export const GOODS_DATA: GoodData[] = [
     tags: ["currency"],
     icon: "goods-coins",
     color: "#ffd700",
-    value: 20,
+    value: 25,
     carriage: 1.4,
     recipes: [
       { Gold: 0.5, Coal: 1 },
