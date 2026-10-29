@@ -7,7 +7,7 @@ Regiments are displayed as state-colored boxes in a separate layer called _Milit
 ## Military overview
 ![](https://cdn.discordapp.com/attachments/587406457725779968/719203701180596779/military_overview.png)
 
-Military overview shows the army each state has. _Total_ is the sum of all military personnel, taking unit crew into account (see the next section). _Population_ is the state population, and _Rate_ is the percentage of military personnel to it (militarization index), normally about 1–2%. _War Alert_ defines how willing a state is to wage a war and acts as a multiplier to the unit numbers; it is editable here. The icon in the last column shows the list of the state's regiments and allows adding new ones.
+Military overview shows the army each state has. _Total_ is the sum of all military personnel, taking unit crew into account (see the next section). _Population_ is the state population, and _Rate_ is the percentage of military personnel to it (militarization index), ranging from ~0.5% in peacetime up to 10% under total mobilization. _War Alert_ defines how willing a state is to wage a war and acts as a multiplier to the unit numbers; it is editable here. The icon in the last column shows the list of the state's regiments and allows adding new ones.
 
 The footer sums up states number, total and average forces, average rate and average alert. The bottom toolbar lets you refresh the screen, open the Units Editor (cog icon), show the regiments list, toggle between absolute and percentage values, recalculate the military forces, export the data as a `.csv` file and open this wiki page.
 
@@ -44,13 +44,13 @@ The available types are melee, ranged, mounted, machinery, naval, armored, aviat
 ## Generation logic
 Fantasy Map Generator regiments creation logic is pretty advanced and considers different aspects such as state diplomacy, type, culture and religion, cell biome and elevation, as well as military unit specific.
 
-For each state a _War Alert_ is calculated. It shows how much the state is willing to wage a war and acts as a multiplier to all its military forces — a state with 1000 infantry and a War Alert of 2 ends up with 2000. It is the product of three factors, and the result is clamped to the `0.1 – 5` range:
+For each state a _War Alert_ is calculated. It shows how much the state is willing to wage a war and acts as a multiplier to all its military forces — a state with 1000 infantry and a War Alert of 2 ends up with 2000. It is the product of three factors, and the result is clamped to the `1 – 20` range (yielding ~0.5% in peacetime up to 10% at max alert):
 
 `War Alert = Expansion rate × Diplomacy rate × Neighbors rate`
 
 * **Expansion rate** — how much of the state expansionism is realized: `(state expansionism / total expansionism) / (state area / total area)`, clamped to `0.25 – 4`. Expansionist states with a relatively small area get a higher rate than big states with moderate expansionism
-* **Diplomacy rate** — the state's own peacefulness, based on the most hostile relation it holds: `1` if it has any Enemy, otherwise `0.8` with any Rival, `0.5` with any Suspicion, `0.1` otherwise
-* **Neighbors rate** — how the neighbors feel about this state. Start from `0.5` and add the modifier for each neighbor's stance, then clamp to `0.3 – 3`:
+* **Diplomacy rate** — the state's own peacefulness, based on the most hostile relation it holds: `3` if it has any Enemy, otherwise `2` with any Rival, `1.5` with any Suspicion, `1` otherwise
+* **Neighbors rate** — how the neighbors feel about this state. Start from `0.5` and add the modifier for each neighbor's stance, then clamp to `0.5 – 3`:
 
 `Ally: -0.2, Friendly: -0.1, Neutral: 0, Suspicion: 0.1, Enemy: 1, Unknown: 0, Rival: 0.5, Vassal: 0.5, Suzerain: -0.5`
 
@@ -115,7 +115,9 @@ Rural cells produce no machinery or naval troops with the default units, since b
 
 Please also note that rural naval units are generated only in cells that have a haven (an adjacent water cell), while burg naval units require the burg to be a port *and* to have a haven. Naval platoons are placed on the haven water cell rather than on the land cell itself.
 
-Troops for each cell and burg form a _platoon_. As the number of platoons is far too high, they are sorted starting from the smallest and merged into _regiments_ based on the distance between platoons and an expected regiment size of `3 × Population rate`. Platoons of a _separate_ unit can only merge with platoons of the same unit. Once a regiment reaches the expected size it stops absorbing others. The system then generates names, emblems and legends for the regiments and places them on the map.
+Troops for each cell and burg form a _platoon_. Conscription and platoon clustering are partitioned by province so regiments stay rooted in their province of birth. Within each province, platoons are sorted starting from the smallest and merged into _regiments_ based on distance and an expected regiment size of `6 × Population rate`. Platoons of a _separate_ unit can only merge with platoons of the same unit.
+
+Once formed, land regiments are stationed and based out of their province capital (with multiple regiments slightly offset around the capital to prevent visual overlap), while naval fleets are based at the province's port or coastal waters. Regiments are named for their province of birth with province-scoped numbering (e.g. *1st (Northmark) Regiment*, *2nd (Northmark) Regiment*). If a state has no provinces, regiments are based out of the state capital and named after the state.
 
 ## Regiment Editor
 ![](https://cdn.discordapp.com/attachments/587406457725779968/720385818694254602/regiment_editor.png)

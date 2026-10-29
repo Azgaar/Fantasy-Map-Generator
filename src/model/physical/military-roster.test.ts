@@ -300,4 +300,110 @@ describe("Phase 2: Roster Units & Regiment Blocks", () => {
       expect(Military.getCategoryCount(reg, "artillery")).toBe(0);
     });
   });
+
+  describe("Provincial Regiment Basing & Naming", () => {
+    it("names regiments for their province of birth with province-scoped numbering", () => {
+      (globalThis as any).pack = {
+        cells: {
+          province: [0, 1, 1, 2, 2],
+          burg: [0, 10, 0, 20, 0]
+        },
+        provinces: [
+          0,
+          { i: 1, name: "Northmark", fullName: "Northmark Duchy", center: 1, burg: 10, state: 1 },
+          { i: 2, name: "Southreach", fullName: "Southreach County", center: 3, burg: 20, state: 1 }
+        ],
+        states: [0, { i: 1, name: "Ardenia" }],
+        burgs: [
+          0,
+          ...Array.from({ length: 9 }, () => null),
+          { i: 10, name: "Norwich" },
+          ...Array.from({ length: 9 }, () => null),
+          { i: 20, name: "Southampton" }
+        ]
+      };
+
+      const reg1: Regiment = {
+        i: 0,
+        a: 500,
+        cell: 1,
+        province: 1,
+        x: 100,
+        y: 100,
+        bx: 100,
+        by: 100,
+        u: { spear: 500 },
+        n: 0,
+        name: "",
+        state: 1,
+        icon: "⚔️"
+      };
+
+      const reg2: Regiment = {
+        i: 1,
+        a: 500,
+        cell: 1,
+        province: 1,
+        x: 105,
+        y: 105,
+        bx: 100,
+        by: 100,
+        u: { spear: 500 },
+        n: 0,
+        name: "",
+        state: 1,
+        icon: "⚔️"
+      };
+
+      const reg3: Regiment = {
+        i: 2,
+        a: 400,
+        cell: 3,
+        province: 2,
+        x: 200,
+        y: 200,
+        bx: 200,
+        by: 200,
+        u: { archers: 400 },
+        n: 0,
+        name: "",
+        state: 1,
+        icon: "🏹"
+      };
+
+      const all = [reg1, reg2, reg3];
+      expect(Military.getName(reg1, all)).toBe("1st (Northmark) Regiment");
+      expect(Military.getName(reg2, all)).toBe("2nd (Northmark) Regiment");
+      expect(Military.getName(reg3, all)).toBe("1st (Southreach) Regiment");
+    });
+
+    it("generates notes indicating regiment is stationed at province capital", () => {
+      const reg: Regiment = {
+        i: 0,
+        a: 500,
+        cell: 1,
+        province: 1,
+        x: 100,
+        y: 100,
+        bx: 100,
+        by: 100,
+        u: { spear: 500 },
+        n: 0,
+        name: "1st (Northmark) Regiment",
+        state: 1,
+        icon: "⚔️"
+      };
+
+      (globalThis as any).options = {
+        map: {
+          lore: {
+            calendar: { year: 1200, era: "After Fall", eraShort: "AF" }
+          }
+        }
+      };
+
+      Military.generateNote(reg, (globalThis as any).pack.states[1]);
+      expect(reg.note).toContain("1st (Northmark) Regiment is stationed in Norwich.");
+    });
+  });
 });
