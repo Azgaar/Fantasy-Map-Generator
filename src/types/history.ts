@@ -24,7 +24,8 @@ export type HistoryEventType =
   | "sack"
   | "plague"
   | "coronation"
-  | "succession";
+  | "succession"
+  | "deed"; // a figure's act that is not a war: a purge, a quelling, a mercy
 
 /** how the political past is made: dated backwards from the present, or generated epoch by epoch */
 export type HistoryMode = "archaeologist" | "epochs";

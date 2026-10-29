@@ -191,13 +191,19 @@ spend); conquest UI (log, battle-screen lord panels) reads through the overlay.
 **Acceptance**: campaign recruits and Living figures are the same objects; Legends browser lists
 conquest agents; old campaigns and maps load unchanged; same seed → same figures.
 
-### Slice 2 — Named Dispatch
+### Slice 2 — Named Dispatch ✅
 
 `resolveTrouble()` dispatches the specialist commander instead of an anonymous unit. Success: XP,
 event and news name the figure (`"Loremaster Etien quelled the Ancient Curse in Ems"`). Failure:
 unit disruption as today, fumble (roll ≤ DC − 6) risks a vice gained or the figure's death.
 **Acceptance**: every trouble resolution names a figure when the state fields a matching
 specialist; specialists gain XP; fumbles produce chronicle events.
+
+*Shipped 2026-10-29: the roll is now `1d20 + commander pool skill + domain + (virtues − vices) −
+disruption` vs DC; a cleared trouble writes a `deed` chronicle event naming the figure (new
+`HistoryEventType`), +25 xp (clear) / +10 (partial); a fumble draws a vice via `drawVice()` or
+slays the commander (role spans closed, crew freed for a replacement on the next sync). Legacy
+maps without a matching specialist resolve anonymously, unchanged.*
 
 ### Slice 3 — The Cast Layer
 

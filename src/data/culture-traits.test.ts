@@ -6,6 +6,7 @@ import {
   alignmentRank,
   CONTRADICTIONS,
   CULTURAL_VALUES,
+  drawVice,
   PREVAILING_ALIGNMENT,
   rollAlignment,
   rollFigureTraits,
@@ -226,5 +227,25 @@ describe("rollFigureTraits", () => {
     } finally {
       random.mockRestore();
     }
+  });
+});
+
+describe("drawVice", () => {
+  it("never returns a vice the figure holds or the antonym of a virtue it keeps", () => {
+    const rng = fixedRng([1], 0);
+    const figure = { virtues: ["just", "serene"], vices: ["cruel"] };
+    for (let i = 0; i < 50; i++) {
+      const vice = drawVice(rng, figure);
+      expect(vice).toBeDefined();
+      expect(vice).not.toBe("cruel");
+      expect(vice).not.toBe("unjust"); // the antonym of the kept virtue
+      expect(vice).not.toBe("wrathful"); // the antonym of the kept virtue
+    }
+  });
+
+  it("steps past held words to draw from the rest of the vice list", () => {
+    const rng = fixedRng([1], 0); // the first candidate is always "deceitful"
+    expect(drawVice(rng, { vices: ["deceitful"] })).not.toBe("deceitful");
+    expect(VICES).toContain(drawVice(rng, {})!);
   });
 });
