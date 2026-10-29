@@ -19,7 +19,7 @@ import type { MapPack } from "@/conquest/engine/common/types";
 import { compileAzgaar } from "@/conquest/engine/compiler/index";
 import { grantXp, recruitCharacter, spendSkillPoint } from "@/conquest/engine/game/characters";
 import { applyCommand, type Command, type EngineCtx } from "@/conquest/engine/game/commands";
-import { DEFAULT_CONFIG } from "@/conquest/engine/game/config";
+import { type CampaignConfig, DEFAULT_CONFIG } from "@/conquest/engine/game/config";
 import { syncCharacterFigure } from "@/conquest/engine/game/figures";
 import { type Campaign, createCampaign } from "@/conquest/engine/game/state";
 import type { HistoricalFigure } from "@/types/history";
@@ -155,6 +155,38 @@ describe("character → figure mirroring", () => {
     const figure = figures[character.figureId!]!;
     expect(figure.death).toBe(ctx.campaign.year);
     expect(figure.roles.every(r => r.to !== undefined)).toBe(true);
+  });
+});
+
+describe("capacity mode: figures recruit on pools, not gold", () => {
+  // docs/plans/unified-figures.md slice 1 rides the existing recruiting gates:
+  // the pools are the economy, and gold only prices the flag-off legacy game.
+  const capacityConfig: CampaignConfig = {
+    ...DEFAULT_CONFIG,
+    economy: { ...DEFAULT_CONFIG.economy, capacityMode: true }
+  };
+
+  test("a character recruits on free Social with an empty treasury", () => {
+    const { ctx, figures } = bootstrap();
+    ctx.config = capacityConfig;
+    ctx.campaign.factions["1"]!.treasury = 0;
+    const result = recruitCharacter(ctx, 1, "diplomat");
+    expect(result.error ?? "ok").toBe("ok");
+    const character = Object.values(ctx.campaign.characters).find(c => c.figureId !== undefined)!;
+    expect(figures[character.figureId!]!.roles[0]!.specialty).toBe("diplomat");
+    expect(ctx.campaign.factions["1"]!.treasury).toBe(0); // no gold moved
+  });
+
+  test("a specialist unit musters a commander on free pools with an empty treasury", () => {
+    const { ctx, figures } = bootstrap();
+    ctx.config = capacityConfig;
+    ctx.campaign.factions["1"]!.treasury = 0;
+    const army = Object.values(ctx.campaign.armies).find(a => a.factionId === 1)!;
+    if (army.units.length > 15) army.units.splice(0, army.units.length - 15);
+    const first = applyCommand(ctx, { type: "RecruitUnit", armyId: army.id, unitType: "guardsmen" });
+    expect(first.error ?? "ok").toBe("ok");
+    expect(figures.filter(f => f.roles.some(r => r.type === "specialist" && r.specialty === "guardsmen"))).toHaveLength(1);
+    expect(ctx.campaign.factions["1"]!.treasury).toBe(0); // no gold moved
   });
 });
 
