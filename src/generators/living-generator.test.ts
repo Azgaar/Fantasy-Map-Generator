@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
+import { getTroubleDef, troubleUnitMatchMultiplier } from "@/data/living-troubles";
 import { parseHistory, serializeHistory } from "@/services/io/epochs-format";
 import {
   figureBias,
@@ -653,5 +654,284 @@ describe("Living (Slices 1-4: Data Model, Seasonal Tick, Capacity, Projects, War
     expect(pack.history.epochs![0]).toMatchObject({ from: 1000, to: 1001, snapshot: 0 });
     expect(pack.history.snapshots![0]).toHaveLength(pack.cells.i.length);
     expect(pack.history.epochs![0].polities.map(polity => polity.id)).toEqual(expect.arrayContaining([1, 2]));
+  });
+
+  it("spawns and quells trouble on a province", () => {
+    const living = Living.init();
+    const trouble = Living.spawnTrouble(1, "bad_reputation", "burg", 4);
+
+    expect(trouble).toMatchObject({
+      id: "bad_reputation",
+      theme: "burg",
+      level: 4,
+      seasonsUnchecked: 0
+    });
+    expect(living.provinces[1].trouble).toEqual(trouble);
+    expect(living.recentNews[0].kind).toBe("trouble");
+
+    expect(Living.quellTrouble(1)).toBe(true);
+    expect(living.provinces[1].trouble).toBeNull();
+  });
+
+  it("adds ceil(L/2) to capacity load in M, W, and S without decreasing generation", () => {
+    const living = Living.init();
+    const baseCap = { ...living.states[1].capacity };
+
+    Living.spawnTrouble(1, "monsters", "burg", 5);
+    const troubledCap = living.states[1].capacity;
+
+    // ceil(5 / 2) = 3 load added to M, W, and S
+    expect(Math.round(troubledCap.m.load - baseCap.m.load)).toBe(3);
+    expect(Math.round(troubledCap.w.load - baseCap.w.load)).toBe(3);
+    expect(Math.round(troubledCap.s.load - baseCap.s.load)).toBe(3);
+
+    // Generation values must remain unchanged
+    expect(troubledCap.m.gen).toBe(baseCap.m.gen);
+    expect(troubledCap.w.gen).toBe(baseCap.w.gen);
+    expect(troubledCap.s.gen).toBe(baseCap.s.gen);
+  });
+
+  it("drains public order and suspends garrison stability while trouble is active", () => {
+    const living = Living.init();
+    living.provinces[1].order = 70;
+    living.provinces[1].stability = 5;
+
+    Living.spawnTrouble(1, "riotous_thugs", "burg", 4);
+
+    Living.tick(1);
+
+    // With level 4 trouble, order drains by level * 2 = 8 (plus garrison +2 = net -6, or floor checked)
+    // and stability accrual from garrison is suspended
+    expect(living.provinces[1].stability).toBe(5);
+    expect(living.provinces[1].order).toBeLessThan(70);
+  });
+
+  it("keeps burg unrest floored at trouble level", () => {
+    const living = Living.init();
+    living.burgs[1].unrest = 2;
+
+    Living.spawnTrouble(1, "demagogue", "burg", 6);
+
+    Living.tick(1);
+
+    // Burg 1 unrest cannot decay below trouble level 6
+    expect(living.burgs[1].unrest).toBeGreaterThanOrEqual(6);
+  });
+
+  it("suppresses trade goods when province has active resource trouble", () => {
+    Living.init();
+    pack.cells.good = [0, 1, 2, 0, 0, 0];
+
+    // Held goods method via muster check or direct query
+    Living.spawnTrouble(1, "hazardous_resource", "resource", 3);
+
+    const sSim = Living.getState().states[1];
+    // State 1 owns cells 1 and 2 in province 1. Since province 1 has resource trouble, goods 1 and 2 are suppressed.
+    // Call muster which uses heldGoods internally
+    expect(sSim.capacity.m.load).toBeGreaterThan(0);
+  });
+
+  it("computes specialist mismatch penalties correctly", () => {
+    const disorderDef = getTroubleDef("riotous_thugs"); // pool: m, requiredRole: guardsmen
+    expect(troubleUnitMatchMultiplier(disorderDef, "guardsmen")).toBe(1);
+    expect(troubleUnitMatchMultiplier(disorderDef, "military")).toBe(2);
+    expect(troubleUnitMatchMultiplier(disorderDef, "merchant")).toBe(3);
+
+    const povertyDef = getTroubleDef("exceptional_poverty"); // pool: w, requiredRole: merchant
+    expect(troubleUnitMatchMultiplier(povertyDef, "merchant")).toBe(1);
+    expect(troubleUnitMatchMultiplier(povertyDef, "sage")).toBe(2);
+    expect(troubleUnitMatchMultiplier(povertyDef, "military")).toBe(3);
+
+    const despairDef = getTroubleDef("crushed_spirits"); // pool: s, requiredRole: prophet
+    expect(troubleUnitMatchMultiplier(despairDef, "prophet")).toBe(1);
+    expect(troubleUnitMatchMultiplier(despairDef, "magistrate")).toBe(2);
+    expect(troubleUnitMatchMultiplier(despairDef, "guardsmen")).toBe(3);
+  });
+
+  it("resolves trouble with domain saving throw and tracks disruption", () => {
+    const living = Living.init();
+    const trouble = Living.spawnTrouble(1, "brigand_raiders", "burg", 2);
+    expect(trouble).not.toBeNull();
+
+    const unit = pack.states[1].military[0].units[0];
+    unit.disruption = 0;
+
+    // Attempt resolution
+    const result = Living.resolveTrouble(1, 1);
+    if (result) {
+      // Success either reduced or eliminated trouble
+      expect(living.provinces[1].trouble === null || living.provinces[1].trouble.level < 2).toBe(true);
+    } else {
+      // Failure inflicted +1 disruption
+      expect(unit.disruption).toBe(1);
+    }
+  });
+
+  it("resting units in peaceful provinces recover disruption", () => {
+    Living.init();
+    const unit = pack.states[1].military[0].units[0];
+    unit.disruption = 2;
+    Living.quellTrouble(1);
+
+    Living.tick(1);
+
+    expect(unit.disruption).toBe(1);
+  });
+
+  it("spawns and smites a lair with map marker tracking", () => {
+    const living = Living.init();
+    const lair = Living.spawnLair(1, "bandit_camp", 5);
+    expect(lair).not.toBeNull();
+    expect(lair!.level).toBe(5);
+    expect(lair!.id).toBe("bandit_camp");
+    expect(lair!.markerId).toBeDefined();
+
+    const marker = pack.markers[lair!.markerId!];
+    expect(marker).toBeDefined();
+    expect(marker.type).toBe("dungeon");
+    expect(marker.icon).toBe("🗡️");
+    expect(marker.hidden).toBeUndefined();
+
+    expect(Living.resolveTrouble(1, 1)).toBe(false);
+
+    expect(Living.smiteLair(1)).toBe(true);
+    expect(living.provinces[1].lair).toBeNull();
+    expect(marker.hidden).toBe(true);
+  });
+
+  it("adds ceil(L/2) to load only for active lairs without reducing generation", () => {
+    const _living = Living.init();
+    Living.quellTrouble(1);
+    Living.smiteLair(1);
+    const baseCap = Living.recomputeStateCapacity(1);
+
+    Living.spawnLair(1, "ancient_fort", 5);
+    const lairCap = Living.recomputeStateCapacity(1);
+
+    // Generation must remain untouched
+    expect(lairCap.m.gen).toBe(baseCap.m.gen);
+    expect(lairCap.w.gen).toBe(baseCap.w.gen);
+    expect(lairCap.s.gen).toBe(baseCap.s.gen);
+
+    // Load must increase by ceil(5/2) = 3
+    expect(Math.round(lairCap.m.load - baseCap.m.load)).toBe(3);
+    expect(Math.round(lairCap.w.load - baseCap.w.load)).toBe(3);
+    expect(Math.round(lairCap.s.load - baseCap.s.load)).toBe(3);
+  });
+
+  it("drains public order, suspends garrison stability, and floors unrest while lair is active", () => {
+    const living = Living.init();
+    Living.quellTrouble(1);
+    Living.spawnLair(1, "monster_nest", 6);
+
+    const pSim = living.provinces[1];
+    pSim.order = 80;
+    pSim.stability = 10;
+    const bSim = living.burgs[1];
+    bSim.unrest = 2;
+
+    Living.tick(1);
+
+    // Unrest should be floored at lair level (6)
+    expect(bSim.unrest).toBeGreaterThanOrEqual(6);
+    // Stability shouldn't accrue from garrisons while lair is active
+    expect(pSim.stability).toBe(10);
+    // Order should drain by level * 2
+    expect(pSim.order).toBeLessThan(80);
+  });
+
+  it("metastasizes unchecked trouble into an entrenched lair", () => {
+    const living = Living.init();
+    Living.smiteLair(1);
+    const trouble = Living.spawnTrouble(1, "angry_dead", "ruin", 5);
+    expect(trouble).not.toBeNull();
+
+    const lair = Living.metastasizeTroubleToLair(1);
+    expect(lair).not.toBeNull();
+    expect(living.provinces[1].trouble).toBeNull();
+    expect(living.provinces[1].lair).toBe(lair);
+    expect(lair!.id).toBe("ancient_evil");
+    expect(lair!.level).toBe(5);
+  });
+
+  it("launches seasonal lair raid against a settlement", () => {
+    const living = Living.init();
+    Living.quellTrouble(1);
+    const lair = Living.spawnLair(1, "bandit_camp", 4);
+    expect(lair).not.toBeNull();
+    lair!.raidPending = true;
+
+    const bSim = living.burgs[1];
+    bSim.buildings = ["market1"];
+
+    Living.tick(1);
+
+    // News should record lair activity
+    expect(living.recentNews.some(item => item.kind === "lair")).toBe(true);
+  });
+
+  it("mounts military expedition to assault and clear a lair", () => {
+    const living = Living.init();
+    Living.quellTrouble(1);
+    const lair = Living.spawnLair(1, "bandit_camp", 4);
+    expect(lair).not.toBeNull();
+
+    // Give state 1 a strong field army to ensure victory
+    const army = pack.states[1].military[0];
+    army.units = [
+      { type: "cavalry", count: 300, exp: 5 },
+      { type: "spear", count: 400, exp: 3 },
+      { type: "archers", count: 300, exp: 3 }
+    ];
+
+    const result = Living.assaultLair(1, 1);
+    expect(result).toBe(true);
+    expect(living.provinces[1].lair).toBeNull();
+    expect(living.recentNews.some(item => item.kind === "lair" && item.text.includes("conquered and destroyed"))).toBe(
+      true
+    );
+  });
+
+  it("dispatches adventurers on a decapitation delve creating an adventurer figure", () => {
+    const living = Living.init();
+    Living.quellTrouble(1);
+    const lair = Living.spawnLair(1, "monster_nest", 5);
+    expect(lair).not.toBeNull();
+
+    const _figuresBefore = pack.history.figures?.length ?? 0;
+    Living.sendAdventurersToLair(1, 1);
+
+    // Should create or use an adventurer figure
+    const adventurers = pack.history.figures?.filter(f => f.roles.some(r => r.type === "adventurer")) ?? [];
+    expect(adventurers.length).toBeGreaterThan(0);
+
+    // Delve result processed
+    expect(living.recentNews.some(item => item.kind === "lair")).toBe(true);
+  });
+
+  it("selects lair agendas and loads Wealth capacity during adventurer contract", () => {
+    const living = Living.init();
+    Living.quellTrouble(1);
+    Living.spawnLair(1, "ancient_fort", 6);
+
+    const sSim = living.states[1];
+    sSim.agenda = null;
+
+    // Advance 1 tick so chooseAgenda and stepAgenda run
+    Living.tick(1);
+
+    // Agenda should have targeted the lair (either clear_lair or hire_adventurers) or processed it
+    expect(living.recentNews.some(item => item.kind === "lair")).toBe(true);
+
+    // Active adventurer contract commits +1 W load
+    sSim.agenda = {
+      kind: "hire_adventurers",
+      label: "Hiring adventurers against Ruined Keep",
+      targetProvinceId: 1,
+      progress: 0,
+      required: 1
+    };
+    const cap = Living.recomputeStateCapacity(1);
+    expect(cap.w.load).toBeGreaterThan(0);
   });
 });

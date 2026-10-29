@@ -81,8 +81,8 @@ const TEMPLATE = /* html */ `
       3D scene
     </button>
     <button data-tip="Project map on globe. Cannot be used for editing" id="viewGlobe">Globe</button>
+    <button data-tip="Living World simulation: seasonal clock, news ticker, inspector and god mode" id="viewLivingWorld">Living World</button>
     <button data-tip="Astral view: star chart layers, nebulae and systems" id="viewAstral">Astral</button>
-    <button data-tip="OpenConquest campaign simulation" id="viewConquest">⚔️ Conquest</button>
   </div>
 `;
 

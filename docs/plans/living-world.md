@@ -338,6 +338,109 @@ conquered by force:
     militia regiment from its native `burg.culture` roster, and breaks away as a Free Burg again
     (or rejoins its former homeland state).
 
+### 4. Provincial Obstacles & Troubles (Adapted from *An Echo Resounding*)
+
+Every province can become afflicted by an **Obstacle / Trouble**—a local crisis or hindrance originating
+from the province's burgs, ancient ruins, or extracted resources.
+
+#### Themes & Archetypes
+- **37 Generic Fantasy Tropes** categorized across 3 20-entry random tables:
+  - **Burg Troubles**: Corrupt leadership, riotous thugs, demagogues, factional disunity, epidemic sickness, exceptional poverty, cults, xenophobia.
+  - **Ruin Troubles**: Ancient curses, restless dead, relic golems, subterranean horrors, dark cabals, conquering heirs, severe structural collapse.
+  - **Resource Troubles**: Leyline blights, hazardous extraction, recalcitrant local labor, toxic processes, undeveloped veins, waste.
+
+#### Simulation Impacts
+- **Capacity Load**: Adds $\lceil \text{level} / 2 \rceil$ to the owning state's **Military, Wealth, and Stability load** (`ledger.m.load`, `ledger.w.load`, `ledger.s.load`). Upkeep load increases without directly penalizing generation scores.
+- **Public Order & Stability**: Drains province order by $\text{level} \times 2$ each season. Freezes friendly garrison stability accrual (`stabilityPerGarrison`) while Trouble is active.
+- **Burg Unrest Floor**: Burgs in afflicted provinces cannot decay their occupation unrest below the active Trouble level.
+- **Resource Suppression**: When `trouble.theme === "resource"`, the province's trade goods are suppressed from `heldGoods(stateId)`.
+- **Escalation**: Unchecked trouble increases in severity (+1 level every 2 seasons). At level $\ge 8$ unchecked, it provokes state unravel and cancels ongoing development projects.
+
+#### Resolution & Specialist Units
+Trouble is resolved via a domain saving throw against one of the 6 *An Echo Resounding* banes:
+
+| Saving Throw | Pool | Required Unit Role | Roster Specialist |
+|---|---|---|---|
+| **Disorder** | Military | `guardsmen` | Guardsmen (`guardsmen`, unlocked by `militia1`) |
+| **Uprising** | Military | `military` | Any standard combat military unit |
+| **Poverty** | Wealth | `merchant` | Merchant Company (`merchant_company`, unlocked by `market1`) |
+| **Ignorance** | Wealth | `sage` | Sage Coven (`sage_coven`, unlocked by `school1`) |
+| **Despair** | Stability | `prophet` | Prophet Band (`prophet_band`, unlocked by `temple1`) |
+| **Corruption** | Stability | `magistrate` | Magistrates (`magistrates`, unlocked by `informants1`) |
+
+- **Save Difficulty (DC)**: $\text{DC} = 16 + M_{\text{pen}} \times \text{level}$.
+  - $M_{\text{pen}} = 1$ for an exact specialist match.
+  - $M_{\text{pen}} = 2$ for a same-pool mismatch (e.g. combat military tackling disorder).
+  - $M_{\text{pen}} = 3$ for a wrong-pool mismatch (e.g. military tackling ignorance).
+- **Roll**: $1\text{d}20 + \text{valueModifier}(\text{pool.gen}) - \text{unit.disruption}$.
+- **Outcomes**:
+  - **Success**: Trouble level is reduced by $1\text{d}4$. If reduced to $\le 0$, the Trouble is eliminated, granting $+10$ order and $+1$ stability.
+  - **Failure**: The attempting unit gains $+1$ Disruption (capped at 3).
+- **Recovery**: Resting units stationed in peaceful (trouble-free) provinces recover 1 point of Disruption per season.
+
+### 5. Provincial Lairs, Seasonal Raids & Expeditions (Adapted from *An Echo Resounding*)
+
+When a **Trouble** lingers unchecked for too long, it can metastasize into a **Lair**—an entrenched
+stronghold of raiders, monsters, dark sorcerers, or fanatics that actively preys upon surrounding
+settlements.
+
+#### Metastasis Lifecycle (Trouble $\rightarrow$ Lair)
+- Once an active Trouble reaches `seasonsUnchecked >= 3` or `level >= 5`, each seasonal escalation tick rolls for metastasis:
+  $$\text{Chance} = \max\bigl(0,\; (\text{seasonsUnchecked} - 2) \times 0.06 + \max(0,\; \text{level} - 4) \times 0.04\bigr)$$
+  (or $100\%$ if `trouble.level` reaches `10`).
+- On metastasis:
+  - The Trouble transforms into a **Lair** (`pSim.lair: ProvinceLair`, clearing `pSim.trouble = null`), mapped thematically from the triggering Trouble (or rolled on the 20-entry generic Lair Natures table).
+  - The Lair inherits `level = Math.max(4, trouble.level)`, populates its standing `defenders: ArmyUnit[]` from `content.unitTypes`, and spawns a visible map marker in `pack.markers` at its origin cell.
+  - Any active `resolve_trouble` agenda targeting the province is canceled.
+  - **Cannot Be Solved by Civic Action**: `resolveTrouble()` cannot target a Lair; the state must either launch a **Military Expedition** (`clear_lair`) or dispatch **Adventurers** (`hire_adventurers`).
+
+#### 20 Generic Fantasy Lair Natures
+All setting-specific Sunset Isles / Red Tide references (*Cruel Vowed*, *Red Jade Templar*, *Mother Below / Repenters*, *Tien Lung / Kitaminato*, *feng shui*, *Shou Tribe / godbone*, *Tidespawn / Creepers*) are reskinned into 20 generic fantasy Lair Natures mapped directly to unit archetypes in `src/conquest/content/docs/rosters/*.json`:
+
+| 1d20 | ID | Name | Raid Roll (`1d6`) & Unit | Garrison Defenders | Fortified |
+|---|---|---|---|---|---|
+| 1 | `ancient_evil` | Ancient Evil | `6+`: `1 × dead_legion` | `3 × dead_legion`, `1 × gorgon_behemoth`, `1 × necromancer` | No |
+| 2 | `ancient_fort` | Ruined Keep | `5+`: `1 × spear` | `3 × spear`, `2 × archers`, `1 × balbenGuard` | Yes (`walls: 1`) |
+| 3 | `aspiring_warlord` | Aspiring Warlord | `5+`: `1 × cavalry` | `2 × cavalry`, `1 × marauder_horsemen`, `1 × knights_errant`, `1 × pikemen` | No |
+| 4 | `bandit_camp` | Bandit Camp | `4+`: `1 × north_marauders` | `3 × north_marauders`, `1 × archers`, `2 × glade_scouts` | No |
+| 5 | `corrupt_monastery` | Corrupt Monastery | `6+`: `1 × battle_pilgrims` | `4 × battle_pilgrims`, `1 × collegiate_wizards`, `2 × witch_furies` | No |
+| 6 | `cult_shrine` | Blood-Cult Shrine | `5+`: `1 × cultist_thralls` | `4 × cultist_thralls`, `1 × templar_priests`, `2 × sword` | No |
+| 7 | `cursed_earth` | Accursed Grove | `6+`: `1 × undead_swarm` | `2 × totem_warbeasts`, `2 × beast_outriders` | No |
+| 8 | `demonic_master` | Infernal Fane | `5+`: `1 × cultist_thralls` | `1 × tiefling_hellblades`, `1 × hellpact_warlocks`, `3 × cultist_thralls` | No |
+| 9 | `dwarven_outcasts` | Exiled Clan Hold | `5+`: `1 × dwarf_axe` | `3 × dwarf_axe`, `2 × dwarf_crossbow`, `1 × runesmith_anvil` | No |
+| 10 | `mad_wizard` | Renegade Arcanist's Tower | `6+`: `1 × totem_warbeasts` | `1 × totem_warbeasts`, `1 × necromancer`, `1 × collegiate_wizards`, `2 × dead_legion` | No |
+| 11 | `magical_gate` | Planar Rift | `6+`: `1 × dead_legion` | `1 × fiend_stalkers`, `1 × hellpact_warlocks`, `1 × dead_legion` | No |
+| 12 | `malevolent_creed` | Xenophobic Enclave | `6+`: `1 × dreadspears` | `2 × elf_spears`, `2 × elf_archers`, `1 × high_archmage` | No |
+| 13 | `monster_nest` | Monster Nest | `6+`: `1 × minotaur_herd` | `2 × gorgon_behemoth` | No |
+| 14 | `renegade_outpost` | Mutinous Garrison | `5+`: `1 × spear` | `2 × spear`, `1 × archers`, `1 × sword`, `1 × pikemen` | Yes (`walls: 1`) |
+| 15 | `school_of_dark_sorcery` | Cabal of Dark Sorcery | `6+`: `1 × dead_legion` | `6 × levy_spear`, `3 × ruin_sorcerers`, `2 × collegiate_wizards`, `1 × necromancer` | No |
+| 16 | `marauder_warcamp` | Marauder Warcamp | `4+`: `1 × orc_boyz` | `5 × orc_boyz`, `1 × black_orcs`, `1 × waaagh_shaman` | Yes (`walls: 1`) |
+| 17 | `splinter_group` | Bitter Exiles | `5+`: `1 × spear` | `4 × levy_spear`, `1 × spear`, `1 × sword`, `1 × balbenGuard` | No |
+| 18 | `thieves_stronghold` | Syndicate Stronghold | `5+`: `1 × north_marauders` | `2 × north_marauders`, `2 × waywatchers`, `2 × witch_furies` | No |
+| 19 | `blight_infestation` | Eldritch Blight-Hive | `5+`: `3 × crypt_ghouls` | `5 × crypt_ghouls`, `3 × cultist_thralls`, `1 × chuul_aberrations`, `1 × illithid_savants` | No |
+| 20 | `vicious_humanoids` | Savage Humanoid Warband | `5+`: `1 × saurus_cohorts` | `1 × ogre_bulls`, `4 × saurus_cohorts` | No |
+
+#### Ongoing Provincial Drain & Seasonal Raids
+- **Capacity Load Only**: Like Trouble, an active Lair adds $\lceil \text{level} / 2 \rceil$ strictly to the owning state's **Military, Wealth, and Stability load** (`ledger.m.load`, `ledger.w.load`, `ledger.s.load`), without subtracting from generation scores.
+- **Public Order & Unrest**: Drains province order by $\text{level} \times 2$ each season, freezes garrison stability gain, floors burg unrest at `lair.level`, and suppresses province trade goods when originating from a resource site.
+- **Seasonal `1d6` Raid Cycle**:
+  - Each season, every active Lair rolls `1d6` against its `raidThreshold` (or strikes automatically if `raidPending` was queued when no plausible target was available).
+  - Raiders select a vulnerable burg in the same or an adjacent province (avoiding heavily fortified citadels unless no softer target exists; if all nearby burgs are overwhelmingly defended, sets `raidPending = true`).
+  - **Raid Battle & Plunder**: The raid force fights the target burg's standing garrison + stationed regiment via `initBattleSession()`. If the raiders win, they **destroy one standing asset** in `bSim.buildings` (syncing `pack.burgs` flags via `syncBurgFlagsFromBuildings()`) or, if the burg has no buildings, reduce `pSim.development` by 1 and add $+2$ burg `unrest`, before disbanding.
+
+#### Resolution Paths: Military Expedition vs. Adventurers
+1. **Military Expedition (`clear_lair` agenda / `assaultLair(stateId, provinceId)`)**:
+   - The state marches its strongest field regiment to storm `lair.defenders` using `initBattleSession()` (applying `walls: 1` defender modifier when `lair.fortified` is true).
+   - **Victory**: `pSim.lair` is cleared (`null`), the map marker is removed, and the province gains $+15$ Order and $+2$ Stability.
+   - **Defeat**: Surviving lair defenders persist on `lair.defenders` (allowing multi-wave attrition), the state's regiment takes casualties and $+1$ Disruption, and the state suffers $+4$ War Exhaustion.
+2. **Adventurer Decapitation Delve (`hire_adventurers` agenda / `sendAdventurersToLair(stateId, provinceId)`)**:
+   - When the state's field army is outmatched or committed elsewhere, the state can hire an `"adventurer"` party (`HistoricalFigure` with `role: "adventurer"`, adding $+1$ Wealth load while active).
+   - **Decapitation Check**:
+     $$\text{Roll} = 1\text{d}20 + \text{valueModifier}\bigl(\max(W_{\text{gen}}, C_{\text{gen}})\bigr) + \text{traitBonus} \quad\text{vs}\quad \text{DC} = 14 + \text{lair.level}$$
+   - **Success (`roll >= DC`)**: The adventurers slay the lair's leadership; the headless defenders scatter, clearing `pSim.lair = null`, removing the marker, and granting $+12$ Order and $+1$ Stability.
+   - **Partial Success (`DC - 3 <= roll < DC`)**: The party slays $25\text{–}50\%$ of `lair.defenders` and reduces `lair.level` by 1 before retreating.
+   - **Failure (`roll < DC - 3`)**: The delve is repulsed (50% chance the lead adventurer perishes in `pack.history.figures`) and `lair.raidPending = true` triggers an immediate retaliatory raid next season.
+
 ---
 
 ## Data model & persistence
@@ -356,7 +459,10 @@ export type AgendaKind =
   | "colonize"
   | "conquer"
   | "reclaim"
-  | "pacify";
+  | "pacify"
+  | "resolve_trouble"
+  | "clear_lair"
+  | "hire_adventurers";
 
 export interface StateAgenda {
   kind: AgendaKind;
@@ -370,21 +476,33 @@ export interface StateAgenda {
   required: number;
 }
 
-export interface GrudgeRecord {
-  id: number;
-  againstStateId?: number; // undefined if against a Free Burg
-  targetBurgId?: number;
-  reason: "conquest" | "sacked" | "slain_ruler" | "slain_general" | "repulsed";
-  year: number;
-  weight: number; // decays slowly or cleared when avenged
-  summary: string;
+export interface ProvinceTrouble {
+  id: string;
+  name: string;
+  theme: TroubleTheme;
+  level: number;
+  save: TroubleSaveKind;
+  pool: TroublePool;
+  unitRole: TroubleUnitRole;
+  originCell: number;
+  originBurgId?: number;
+  seasonsUnchecked: number;
 }
 
-export interface ClaimRecord {
-  provinceId?: number;
-  burgId: number;
-  lostYear: number;
-  heldByStateId: number;
+export interface ProvinceLair {
+  id: string;                    // Archetype ID (e.g. "ancient_evil", "bandit_camp")
+  name: string;                  // Display name (e.g. "Ruined Keep")
+  level: number;                 // Threat severity (4..10)
+  theme: TroubleTheme;           // Inherited origin theme ("burg" | "ruin" | "resource")
+  originCell: number;
+  originBurgId?: number;
+  markerId?: number;             // Linked marker i in pack.markers
+  raidThreshold: number;         // 1d6 roll threshold (4, 5, or 6)
+  raidUnits: ArmyUnit[];         // Raider detachment template
+  defenders: ArmyUnit[];         // Current garrison units inside the lair
+  fortified: boolean;            // True if defenders fight behind walls/barriers
+  raidPending: boolean;          // Queued raid waiting for a vulnerable target
+  seasonsActive: number;
 }
 
 export interface ProvinceSimState {
@@ -396,67 +514,14 @@ export interface ProvinceSimState {
     settlementId: number;
     turnsLeft: number;
   } | null;
-}
-
-export interface BurgSimState {
-  burgId: number;
-  development: number;           // earned development points allocated to this burg
-  buildings: string[];           // standing Conquest asset IDs (e.g. ["walls1", "market1"])
-  construction?: {
-    buildingId: string;
-    checks: { m: boolean; w: boolean; s: boolean };
-    pityBonus: number;
-  } | null;
-  unrest: number;                // remaining seasons of post-conquest occupation unrest
-  conqueredBy?: number;          // stateId that conquered this burg
-  originalCulture?: number;
-  originalReligion?: number;
-}
-
-export interface StatePolitySim {
-  stateId: number;
-  rulerId?: number;              // -> pack.history.figures
-  agenda: StateAgenda | null;
-  unravel: number;               // 0..100 rebellion/collapse pressure clock
-  warExhaustion: number;         // 0..100
-  capacity: {
-    m: { gen: number; load: number };
-    w: { gen: number; load: number };
-    s: { gen: number; load: number };
-    c: { gen: number; load: number };
-  };
-  claims: ClaimRecord[];
-  grudges: GrudgeRecord[];
-}
-
-export interface LivingNewsItem {
-  tick: number;
-  year: number;
-  season: SeasonId;
-  kind: "war" | "battle" | "conquest" | "resist" | "revolt" | "succession" | "build" | "colonize";
-  text: string;
-  cell?: number;
-  stateId?: number;
-  burgId?: number;
-}
-
-export interface LivingWorldState {
-  enabled: boolean;
-  tick: number;                  // total elapsed seasons
-  season: SeasonId;              // 0..3
-  seed: string;
-  snapshotIntervalYears: number; // default: 10
-  promptOnPlayerBattles: boolean;
-  states: Record<number, StatePolitySim>;
-  provinces: Record<number, ProvinceSimState>;
-  burgs: Record<number, BurgSimState>;
-  recentNews: LivingNewsItem[];  // ring buffer of last 50 seasonal ticker items
+  trouble?: ProvinceTrouble | null;
+  lair?: ProvinceLair | null;
 }
 ```
 
-`History` in `src/types/history.ts` gains `living?: LivingWorldState`. Old `.map` files without
-`living` load unchanged and initialize `LivingWorldState` lazily the first time the user opens or
-steps the Living World HUD.
+`History` in `src/types/history.ts` gains `living?: LivingWorldState`, and `HistoricalFigure["role"]`
+includes `"adventurer"`. Old `.map` files without `living` load unchanged and initialize
+`LivingWorldState` lazily the first time the user opens or steps the Living World HUD.
 
 ---
 
@@ -479,13 +544,16 @@ steps the Living World HUD.
      - **Capacity Bar**: Live `M` / `W` / `S` / `C` pools (`gen / load`).
      - **Active Agenda & Unravel Clock**: Progress bar for current goal (`Reclaiming Eastmarch: 3/4`)
        and Stability/Unravel meter.
+     - **Provincial Troubles & Lairs**: Displays active Troubles (level, required save/specialist)
+       and entrenched Lairs (nature, raid roll threshold, defender strength, fortified badge).
      - **Claims & Grudges**: List of active casus belli and restive burgs (`unrest` countdown).
    - **Sandbox / God-Mode Interventions**:
      - *Spark Rebellion*, *Smite Ruler (Trigger Succession)*, *Add Grudge / Force War*,
-       *Pacify Unrest*, *Complete Asset*.
+       *Pacify Unrest*, *Complete Asset*, *Spawn Trouble*, *Resolve Trouble*, *Spawn Lair*,
+       *Assault Lair*, *Send Adventurers*, *Smite Lair*.
 3. **Map Visual Feedback**:
    - Reuses existing FMG layers (`states`, `provinces`, `burgs`, `military`, `markers`) so borders,
-     regiments, and battle markers move live on the canvas each season.
+     regiments, lair markers, and battle markers move live on the canvas each season.
 
 ---
 
@@ -501,10 +569,14 @@ steps the Living World HUD.
   if conquered, receive `unrest > 0`.
 - **Unrest Lifecycle**: A burg with `unrest > 0` decays each season (faster when garrisoned or
   pacified) and contributes to state `unravel` while `S` is strained.
+- **Trouble & Lair Capacity Rule**: Both active Troubles and Lairs add $\lceil \text{level} / 2 \rceil$
+  strictly to `m.load`, `w.load`, and `s.load` without subtracting from `gen`. Lairs reject
+  `resolveTrouble()` and can only be cleared via military assault (`assaultLair`) or adventurer delve
+  (`sendAdventurersToLair`).
 - **Determinism**: Given the same starting `pack` and `seed`, stepping $N$ seasons produces
   identical borders, battles, unit counts, and chronicle events.
 - **Save Round-Trip**: Saving and reloading a `.map` file mid-simulation preserves `pack.history.living`,
-  active agendas, unrest counters, grudges, and epoch snapshots.
+  active agendas, unrest counters, grudges, troubles, lairs, and epoch snapshots.
 
 ---
 
@@ -517,3 +589,5 @@ steps the Living World HUD.
 | **3** ✅ | **Free Burgs Resistance, Conquest Battles & Unrest** | Large | `src/generators/living-generator.ts`<br>`src/conquest/engine/game/battle.ts`<br>`src/conquest/engine/game/units.ts` | **Completed**: frontier colonization annexes kin/co-religionist Free Burgs peacefully; resisting Free Burgs are fought with `minorGarrisonUnits` garrisons in seeded Conquest battles, annexing on victory and recording a `repulsed` grudge on defeat; post-conquest `unrest` drains province order and suppresses output; `conquer`/`reclaim` agendas declare state-vs-state wars and record claims |
 | **4** ✅ | **Rulers, Grudges, Claims, Unravel & Rebellions** | Medium | `src/generators/living-generator.ts`<br>`src/data/culture-traits.ts` | **Completed**: rulers age and succeed on a seeded lifespan, with trait- or capacity-driven succession crises; ruler virtues, vices and culture values reweight `reclaim`/`colonize`/`conquer`/`pacify` agendas; wars, repulses and breakaways record weighted `GrudgeRecord`/`ClaimRecord` entries and drive casus belli; a full `unravel` clock raises a `rebel` figure and militia, restoring a Free Burg, rejoining the former owner, defecting to kin or founding a secessionist state; pacified burgs may assimilate culture/religion; `snapshotIntervalYears` epochs feed the Legends time slider |
 | **5** ✅ | **Living World HUD, Inspector & God-Mode Actions** | Medium | `src/controllers/living-hud.ts`<br>`src/generators/living-generator.ts`<br>`src/components/options/tabs/tools-tab.ts` | **Completed**: the Tools menu opens a draggable HUD bar with Pause / Step Season / Step Year / Play 1× / Play 4× controls, a date badge that opens the Legends browser, and a clickable news ticker that zooms to the dispatch cell; clicking a state or burg on the map fills a diorama inspector with its ruler and traits, live `M`/`W`/`S`/`C` capacity, agenda progress, unravel/exhaustion meters, claims, grudges and restive burgs; god-mode buttons spark rebellions, smite rulers, force wars, pacify unrest and complete assets |
+| **6** ✅ | **Provincial Obstacles & Troubles** | Medium | `src/data/living-troubles.ts`<br>`src/types/living.ts`<br>`src/generators/living-generator.ts`<br>`src/controllers/living-hud.ts` | **Completed**: 37 reskinned Trouble archetypes across Burg, Ruin, and Resource tables; $\lceil L/2 \rceil$ load penalty on `M`, `W`, `S`; order drain, garrison stability freeze, unrest floor, and resource good suppression; 5 specialist roster units (`guardsmen`, `merchant_company`, `sage_coven`, `prophet_band`, `magistrates`), $1\times/2\times/3\times$ save DC mismatch multipliers, and unit `disruption` tracking |
+| **7** ✅ | **Provincial Lairs, Seasonal Raids & Expeditions** | Medium | `src/data/living-lairs.ts`<br>`src/types/living.ts`<br>`src/generators/living-generator.ts`<br>`src/controllers/living-hud.ts` | **Completed**: Unchecked Troubles metastasize into 20 generic Lair Natures (`ProvinceLair`) with map markers and roster-backed `defenders`; Lairs apply $\lceil L/2 \rceil$ load to `M`, `W`, `S`, drain order, and roll seasonal `1d6` raids that fight local garrisons and destroy burg buildings/development on victory; Lairs block `resolveTrouble` and require either a military expedition (`clear_lair` / `assaultLair`) or an adventurer decapitation delve (`hire_adventurers` / `sendAdventurersToLair`); State and Burg diorama cards display lair stats, raid threshold, defenders, and God-mode intervention buttons |

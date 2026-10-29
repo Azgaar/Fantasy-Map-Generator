@@ -24,20 +24,24 @@ A **state** card shows:
 * **Capacity** — the live `M` / `W` / `S` / `C` pools, each with its current generation and load.
 * **Agenda** — the state's current project and its `progress / required` clock.
 * **Stability** — the unravel and war-exhaustion meters.
-* **Claims & grudges** — outstanding casus belli, remembered wrongs, and any restive burgs with their unrest.
+* **Claims & grudges** — outstanding casus belli, remembered wrongs, restive burgs, active provincial troubles, and entrenched provincial lairs.
 * Quick buttons open the full _States Editor_ or _Regiments Overview_.
 
-A **burg** card shows its owner, tier and population, its unrest, its current construction, and how many assets it holds. Quick buttons open the _Burg Editor_ or the owning state's regiments.
+A **burg** card shows its owner, tier and population, its unrest, its current construction, its standing assets, and its province's public order, stability, development, active **Trouble** (with required save bane and specialist role), and active **Lair** (with threat level, raid threshold, defenders, and fortification status). Quick buttons open the _Burg Editor_ or the owning state's regiments.
 
 ### What the simulation does
-The Living World uses the Conquest capacity rules and the map's existing history and military data. It does not generate a separate game world.
+The Living World uses domain capacity rules and the map's existing history and military data. It does not generate a separate game world.
 
 * **Seasons and years** — one tick is one season; four seasons make a year. Rulers age and the world's chronicle advances at each spring boundary.
-* **Capacity** — every state draws `M` (military), `W` (wealth), `S` (stability) and `C` (culture/magic) from its territory, buildings and regiments. Assets and standing armies add load. A pool whose load exceeds its generation constrains what the state can do and feeds its unravel clock.
-* **Agendas** — a state chooses one project at a time: `muster`, `develop`, `build`, `colonize`, `conquer`, `reclaim` or `pacify`. Ruler traits and culture values weight that choice, so a martial ruler is more likely to look for a war while a pious one prefers to pacify a restive burg.
+* **Capacity** — every state draws `M` (military), `W` (wealth), `S` (stability) and `C` (culture/magic) from its territory, buildings and regiments. Assets, standing armies, active Troubles, and entrenched Lairs add load. A pool whose load exceeds its generation constrains what the state can do and feeds its unravel clock.
+* **Provincial Troubles** — each season (or upon restless conquest), local obstacles can crop up from a province's burgs, ruins, or resources (37 fantasy archetypes). Trouble adds $\lceil \text{level} / 2 \rceil$ strictly to the state's `M`, `W`, and `S` upkeep load, drains order by $\text{level} \times 2$, establishes a floor on burg unrest, freezes garrison stability, and suppresses resource trade goods. If unchecked, Trouble escalates every 2 seasons. States address Trouble via the `resolve_trouble` agenda, sending units to roll against one of six domain saving throws (`disorder`, `uprising`, `poverty`, `ignorance`, `despair`, `corruption`). Matching specialists (Guardsmen, Merchants, Sages, Prophets, Magistrates) roll at normal DC ($16 + \text{level}$), while mismatching units suffer double or triple level penalties. Failed attempts inflict unit Disruption, while success reduces Trouble severity.
+* **Provincial Lairs & Seasonal Raids** — troubles left lingering unchecked (for $\ge 3$ seasons or reaching level $\ge 5$) fester and metastasize into permanent, fortified Lairs (or spawn directly from ancient wilderness perils across 20 generic fantasy archetypes). Lairs place a dungeon marker on the map, maintain an entrenched garrison of defender units, and apply $\lceil \text{level} / 2 \rceil$ load strictly to `M`, `W`, and `S` while draining public order and freezing stability accrual. Each season, active lairs roll $1\text{d}6$ against their raid threshold ($4+$, $5+$, or $6+$) to launch marauding raids against nearby vulnerable settlements. Raiders bypass heavily garrisoned citadels to assault targets, clashing with local garrisons in simulated battles; on victory, raiders tear down burg buildings or pillage development points. Lairs block civic resolution (`resolve_trouble`) and demand direct martial intervention:
+  - **Military Expeditions (`clear_lair` / `assaultLair`)**: A state's field army marches to storm the lair in an encamped/fortified battle against its defender roster. Victory smites the lair, recovers public order ($+15$), restores stability ($+2$), and relieves war exhaustion ($-2$); defeat repulses the army with casualties, unit disruption, and heightened war exhaustion.
+  - **Adventurer Decapitation Delves (`hire_adventurers` / `sendAdventurersToLair`)**: An adventuring company is recruited ($+1\text{ W}$ load contract) to infiltrate the lair. Delves roll $1\text{d}20 + \text{modifier}(\max(W, C)) + \text{traits}$ against $\text{DC} = 14 + \text{level}$. Full success slays the master and clears the lair; near misses cull 25–50% of the defenders and reduce lair level; critical failures carry mortal risks for named adventurers and trigger retaliatory raids.
+* **Agendas** — a state chooses one project at a time: `muster`, `develop`, `build`, `colonize`, `conquer`, `reclaim`, `pacify`, `resolve_trouble`, `clear_lair`, or `hire_adventurers`. Ruler traits and culture values weight that choice, so a martial ruler is more likely to hunt lairs or declare war, while a cautious or wealthy ruler may contract adventurers or develop their realm.
 * **Development** — provinces spend stability and wealth to raise their development, growing their settlements and adding capacity.
 * **Assets** — burgs construct buildings through the three-check value roll. Completed assets change burg flags such as walls, plazas, temples and citadels.
-* **Muster** — states recruit roster units into field regiments, subject to capacity, goods and building requirements.
+* **Muster** — states recruit roster units and specialists into field regiments, subject to capacity, goods and building requirements.
 * **Diplomacy and war** — states declare war, assault border burgs and annex them. Free Burgs are integrated peacefully when they share the state's culture or religion; otherwise they fight with their own garrison and become restive after conquest.
 * **Unrest** — occupied burgs carry unrest, which drains province order and contributes to the owner's unravel clock. Garrisoning a burg or building a temple helps it decay; a `pacify` agenda speeds it up and may assimilate the burg's culture or faith.
 * **Rulers** — every state has a ruler with a seeded lifespan. On death a successor is crowned. A weak court or an unsuitable heir can turn a funeral into a succession crisis.
@@ -55,6 +59,13 @@ The inspector's _God Mode_ section lets you intervene without waiting for the si
 * **Force War** — declares war on a neighbouring rival.
 * **Pacify Unrest** — clears a burg's unrest at once, eases its owner's unravel and begins assimilation.
 * **Complete Asset** — finishes the burg's current construction, or starts and finishes the best available asset.
+* **Spawn Trouble** — seeds a procedural trouble crisis in the selected province.
+* **Quell Trouble** — immediately quashes an active provincial trouble.
+* **Resolve Trouble** — triggers a domain saving throw attempt by the province's owning state.
+* **Spawn Lair** — creates an entrenched lair stronghold with defenders and a map marker in the province.
+* **Assault Lair** — orders the state's field army to launch an immediate assault on the lair.
+* **Send Adventurers** — dispatches an adventuring party to delve into the lair.
+* **Smite Lair** — strikes down the lair and its defenders by divine intervention.
 
 Every intervention is written to the same chronicle and news ticker as a normal seasonal step.
 
