@@ -915,6 +915,5 @@ describe("expandMarkets", () => {
 
     expect(pack.markets.map(market => market.centerBurgId)).toEqual([1, 3]);
     expect(Array.from(pack.cells.market)).toEqual([1, 1, 1, 2, 2]);
-    expect(pack.burgs.slice(1).map(burg => burg.market)).toEqual([1, 2, 2]);
   });
 });

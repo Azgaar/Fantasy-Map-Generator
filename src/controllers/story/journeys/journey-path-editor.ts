@@ -1,10 +1,10 @@
 // On-map interaction modes for journey segments
 import { type D3DragEvent, drag, select } from "d3";
-import type { TransportDomain } from "@/model/economy/transports-generator";
-import { Transports } from "@/model/economy/transports-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import type { CellKind } from "@/model/story/journeys/journeys-generator";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
+import type { TransportDomain } from "@/model/story/journeys/transports-generator";
+import { Transports } from "@/model/story/journeys/transports-generator";
 import { Layers } from "@/renderers/layers";
 import type { Journey, JourneyPoint, JourneySegment } from "@/types/journey";
 import { Dialog } from "@/ui/dialog/dialog";

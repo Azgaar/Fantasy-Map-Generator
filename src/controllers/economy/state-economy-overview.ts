@@ -10,7 +10,7 @@ import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn, si } from "@/utils/number-utils";
-import { budgetBackground, ECONOMY_COLORS, tone, toneStyle } from "./economy-config";
+import { budgetBackground, ECONOMY_COLORS, tone } from "./economy-config";
 import { EconomyTerms } from "./economy-terms";
 import { bindEconomyWiki, economyWikiButton } from "./economy-wiki";
 import {
@@ -53,7 +53,6 @@ const STYLE = /* html */ `<style>
   .stateEconomyDialog .bar > div { height: 100% }
   .stateEconomyDialog .bar.stack { display: flex }
   .stateEconomyDialog .right { text-align: right }
-  ${toneStyle(".stateEconomyDialog")}
   .stateEconomyDialog .total { font-weight: bold; border-top: 1px solid #ccc }
   .stateEconomyDialog .muted { font-size: 0.85em; color: #666 }
   .stateEconomyDialog h4 { display: flex; justify-content: space-between; align-items: center }

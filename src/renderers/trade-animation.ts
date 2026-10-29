@@ -14,6 +14,7 @@ export class TradeAnimationModule {
   private generation = 0;
   private cachedDeals: Deal[] | null = null;
   private pathCache = new Map<string, TradePath | null>();
+  private routeById: Map<number, { points: number[][] }> | null = null; // for the paths of the animation's run
 
   start(): void {
     if (!Layers.isOn("trade")) return;
@@ -29,6 +30,7 @@ export class TradeAnimationModule {
     this.activeCount = 0;
     this.cachedDeals = null;
     this.pathCache.clear();
+    this.routeById = null;
     clear();
   }
 
@@ -71,20 +73,6 @@ export class TradeAnimationModule {
       return true;
     }
     return false;
-  }
-
-  trigger(deals: Deal[]): void {
-    if (!deals.length) return;
-    if (!Layers.isOn("trade")) {
-      clear();
-      return;
-    }
-
-    for (const deal of deals) {
-      const path = this.getPath(deal);
-      if (!path) continue;
-      draw(deal, path.segments);
-    }
   }
 
   /** Burgs the goods travel between: the market's center and the burg, in the direction of the deal */
@@ -141,9 +129,8 @@ export class TradeAnimationModule {
 
     if (cells.length < 2) return { points: [], segments: [] };
 
-    // Build a fast routeId→route lookup to avoid repeated linear scans.
-    const routeById = new Map<number, { points: number[][] }>();
-    for (const route of pack.routes) routeById.set(route.i, route);
+    this.routeById ??= new Map(pack.routes.map(route => [route.i, route]));
+    const routeById = this.routeById;
 
     // Process the path edge-by-edge, extracting actual stored route geometry so the
     // animation follows the same adjusted/meandered points that the renderer draws.
@@ -267,10 +254,6 @@ export class TradeAnimationModule {
     }
 
     return fallback();
-  }
-
-  getDefaultOptions() {
-    return DEFAULT_TRADE_ANIMATION;
   }
 }
 

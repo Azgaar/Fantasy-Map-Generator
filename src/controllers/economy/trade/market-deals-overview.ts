@@ -21,9 +21,9 @@ import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
-import { tone, toneStyle } from "../economy-config";
+import { tone } from "../economy-config";
 import { bindEconomyWiki, economyWikiButton } from "../economy-wiki";
-import { money, splitDealPrice, tariffCell, tradeCellTips, tradeColumnTips } from "./deal-price";
+import { getTradeContext, money, splitDealPrice, tariffCell, tradeCellTips, tradeColumnTips } from "./deal-price";
 
 let activeMarketId = 0;
 
@@ -139,7 +139,6 @@ function renderDialog(): void {
   Dialog.destroy(dialogId);
   const editorHtml = /* html */ `<div id="${dialogId}" class="dialog stable editorDialog">
       <style>
-        ${toneStyle(`#${dialogId}`)}
       </style>
       <div>
         ${renderEditorHeader({ dialogId, columns })}
@@ -243,24 +242,9 @@ function renderMarketDealsPage(view: TableView<MarketDealRow>): void {
 
 function renderDealLine(row: MarketDealRow): string {
   const { deal, good, side, burg, units, net, carriage, tax, tariff, income, formula } = row;
-  const market = Markets.get(activeMarketId);
-  const burgData = pack.burgs[deal[0]];
-  const isImport = Markets.isImport(deal);
-  const { taxState, tariffState } = Markets.getTaxStates(deal);
-  const cellTips = tradeCellTips({
-    good,
-    units,
-    net,
-    carriage,
-    tax,
-    tariff,
-    decimas: market && burgData ? Markets.getDecimas(market, burgData) : 0,
-    carriageFactor: market && burgData ? Markets.getCarriageFactor(market, burgData) : 1,
-    isImport,
-    taxStateId: taxState,
-    tariffStateId: tariffState,
-    formula
-  });
+  const context = getTradeContext(deal[0], deal[1], deal[2], deal[3]);
+  const { isImport } = context;
+  const cellTips = tradeCellTips({ good, units, net, carriage, tax, tariff, formula, ...context });
   const isSale = side === "sell";
   const isOrder = deal[3] === DEAL_KINDS.order;
   const sideTip = isOrder

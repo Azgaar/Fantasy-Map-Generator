@@ -3,15 +3,15 @@ import { Controllers } from "@/controllers";
 import { ColorPicker } from "@/controllers/color-picker";
 import type { Market } from "@/model/economy/markets-generator";
 import { Markets } from "@/model/economy/markets-generator";
-import { Production } from "@/model/economy/production-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import { formatPrice } from "@/model/units";
 import { highlightMarketOff, highlightMarketOn } from "@/renderers/draw-markets";
 import { Layers } from "@/renderers/layers";
 import { Csv } from "@/services/io/csv";
+import { runMapCommand } from "@/ui/app-commands";
 import { Dialog } from "@/ui/dialog/dialog";
-import { noteIcon, refreshEditors } from "@/ui/dialog/dialog-helpers";
+import { noteIcon } from "@/ui/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
 import {
   type EditorColumn,
@@ -136,8 +136,8 @@ function renderDialog(): void {
     if (options.app.mode === "addMarket") exitAddMarketMode();
     else enterAddMarketMode();
   });
-  ensureEl("marketsRegenerate").addEventListener("click", regenerateMarkets);
-  ensureEl("marketsRegenerateProduction").addEventListener("click", regenerateProduction);
+  ensureEl("marketsRegenerate").addEventListener("click", () => runMapCommand("regenerateMarkets"));
+  ensureEl("marketsRegenerateProduction").addEventListener("click", () => runMapCommand("regenerateProduction"));
   ensureEl("marketsOverviewBody").addEventListener("click", (ev: Event) => {
     const target = ev.target as HTMLElement;
 
@@ -298,11 +298,7 @@ function renderNoMarketRow(
 }
 
 function applyMarketPaint(changes: ReadonlyMap<number, number>): void {
-  for (const [cell, market] of changes) {
-    pack.cells.market[cell] = market;
-    const burg = pack.cells.burg[cell];
-    if (burg) (pack.burgs as Burg[])[burg].market = market;
-  }
+  for (const [cell, market] of changes) pack.cells.market[cell] = market;
 
   Layers.draw("markets");
   if (findEl(dialogId)) marketsTable.refresh();
@@ -435,44 +431,6 @@ function getOwnerStateName(market: Market): string {
   if (!center) return t("Unknown");
   if (!center.state) return t("Independent");
   return pack.states[center.state]?.name || `State ${center.state}`;
-}
-
-function regenerateMarkets() {
-  Dialog.confirm({
-    title: t("Regenerate Markets"),
-    message: /* html */ `${t("Are you sure you want to regenerate markets and their territories?")}
-      <label style="display:flex; align-items:center; gap:.4em; margin-top:.6em;">
-        <input id="marketsRegenerateProductionToggle" type="checkbox" class="native" checked />
-        ${t("Regenerate production and trade deals")}
-      </label>`,
-    confirm: t("Regenerate"),
-    onConfirm: () => {
-      const regenProduction = ensureEl<HTMLInputElement>("marketsRegenerateProductionToggle").checked;
-      Markets.regenerate();
-      if (regenProduction) {
-        Production.regenerate();
-      }
-      Layers.draw("markets", "goods");
-      Layers.draw("trade");
-      refreshEditors();
-    }
-  });
-}
-
-function regenerateProduction() {
-  Dialog.confirm({
-    title: t("Regenerate Production"),
-    message: t(
-      "Are you sure you want to regenerate production and trade for all goods? Generation will be based on the current Goods settings and deposits"
-    ),
-    confirm: t("Regenerate"),
-    onConfirm: () => {
-      Production.regenerate();
-      Layers.draw("goods");
-      Layers.draw("trade");
-      refreshEditors();
-    }
-  });
 }
 
 function downloadMarketsCsv(): void {

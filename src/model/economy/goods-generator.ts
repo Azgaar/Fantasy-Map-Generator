@@ -4,7 +4,6 @@ import { Icons } from "@/model/icons";
 import { CULTURE_TYPES, type CultureType } from "@/model/society/cultures-generator";
 import { Tags } from "@/model/tags";
 import type { IconSet } from "@/types/icons";
-import type { PackedGraph } from "@/types/packed-graph";
 import { requireColor } from "@/utils/color-utils";
 import { rn } from "@/utils/number-utils";
 import { requireName } from "@/utils/validation-utils";
@@ -251,10 +250,10 @@ const GOODS_DATA: GoodData[] = [
     tags: ["food", "aquatic"],
     icon: "goods-fish",
     color: "#7fcdff",
-    value: 3,
+    value: 2,
     carriage: 0.5,
-    deposits: [4, 6],
-    distribution: 'shore(-1) && (type("ocean", "freshwater", "salt") || (river() && shore(1, 2)))',
+    deposits: [4, 8],
+    distribution: 'shore(-1) && type("ocean", "freshwater", "salt") || river()',
     unit: "wain",
     demandCoverage: { food: 0.7 },
     multipliers: { cultureType: { River: 2, Lake: 2.5, Naval: 2.5, Nomadic: 0.2 } }
@@ -285,7 +284,7 @@ const GOODS_DATA: GoodData[] = [
     unit: "barrel",
     demandCoverage: { food: 1, luxury: 0.1 },
     multipliers: { cultureType: { Highland: 1.2, Nomadic: 0.5 } },
-    biomeOutput: { 6: 0.03 }
+    biomeOutput: { 6: 0.01 }
   },
   {
     name: "Olives",
@@ -350,7 +349,7 @@ const GOODS_DATA: GoodData[] = [
     color: "#ba7447",
     value: 3,
     carriage: 0.4,
-    deposits: [3, 5],
+    deposits: [3, 6],
     distribution: "biome(3) || (biome(2) && nth(4))",
     unit: "head",
     demandCoverage: { utilities: 0.1, military: 0.95 },
@@ -1050,8 +1049,6 @@ export class GoodsModule {
     paint: { stroke: "#000000", strokeWidth: 2 } // the linework of the default goods style
   } as const satisfies IconSet;
 
-  private cells!: PackedGraph["cells"];
-  private cellId: number = 0;
   private goodById: Good[] = [];
 
   regenerate(): void {
@@ -1063,8 +1060,7 @@ export class GoodsModule {
     Math.random = Alea(config.randomSeed ?? options.map.seed);
     if (!pack.goods?.length) this.restoreDefaults();
 
-    this.cells = pack.cells;
-    this.cells.good = new Uint16Array(this.cells.i.length);
+    pack.cells.good = new Uint16Array(pack.cells.i.length);
     for (const good of shuffler(() => Math.random())([...pack.goods])) {
       this.placeDeposits(good, { count: this.getDepositCount(good) });
     }
@@ -1086,9 +1082,9 @@ export class GoodsModule {
     this.sync();
     const good = this.get(goodId);
     if (!good) return;
-    this.cells = pack.cells;
-    if (this.cells.good?.length !== this.cells.i.length) this.cells.good = new Uint16Array(this.cells.i.length);
-    for (const cellId of this.cells.i) if (this.cells.good[cellId] === goodId) this.cells.good[cellId] = 0;
+    const { cells } = pack;
+    if (cells.good?.length !== cells.i.length) cells.good = new Uint16Array(cells.i.length);
+    for (const cellId of cells.i) if (cells.good[cellId] === goodId) cells.good[cellId] = 0;
     return good;
   }
 
@@ -1104,7 +1100,7 @@ export class GoodsModule {
     target: { count: number } | { units: number; output: (cellId: number) => number }
   ): number {
     if (!good.distribution) return 0;
-    const cells = this.cells;
+    const { cells } = pack;
     const methods = `{${Object.keys(this.getMethods()).join(", ")}}`;
     const spread = new Function(methods, `return ${good.distribution}`);
     const output = "output" in target ? target.output : null;
@@ -1163,12 +1159,12 @@ export class GoodsModule {
     this.sync();
   }
 
-  getMethods(cellId: number = this.cellId) {
+  getMethods(cellId = 0) {
     return {
       random: (number: number) => number >= 100 || (number > 0 && number / 100 > Math.random()),
       nth: (number: number) => !(cellId % number),
       minHabitability: (min: number) => pack.biomes[pack.cells.biome[cellId]].habitability >= min,
-      habitability: () => pack.biomes[this.cells.biome[cellId]].habitability > Math.random() * 100,
+      habitability: () => pack.biomes[pack.cells.biome[cellId]].habitability > Math.random() * 100,
       elevation: () => pack.cells.h[cellId] / 100 > Math.random(),
       biome: (...biomes: number[]) => biomes.includes(pack.cells.biome[cellId]),
       minHeight: (heigh: number) => pack.cells.h[cellId] >= heigh,

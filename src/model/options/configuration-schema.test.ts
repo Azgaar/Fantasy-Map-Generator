@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import type { LabelGroup } from "@/model/annotations/labels-generator";
-import type { Transport } from "@/model/economy/transports-generator";
 import type { CoastlineSettings } from "@/model/physical/coastline-generator";
+import type { Transport } from "@/model/story/journeys/transports-generator";
 import type { BurgGroup } from "@/types/burg-groups";
 import type { MilitaryUnit } from "@/types/military";
 import { parseSections } from "@/utils/schema-utils";

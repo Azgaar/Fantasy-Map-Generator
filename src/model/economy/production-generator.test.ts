@@ -50,10 +50,10 @@ beforeEach(() => {
     color: "#ffffff",
     goods: Object.fromEntries(catalogue.map(g => [g.i, { stock: g.i <= 3 ? 10000 : 0, price: g.value }]))
   };
-  burg = { i: 1, cell: 0, population: 100, market: 1 } as Burg;
+  burg = { i: 1, cell: 0, population: 100 } as Burg;
   globalThis.pack = {
     goods: catalogue,
-    cells: { good: [0] },
+    cells: { good: [0], market: [1, 2] },
     burgs: [{ i: 0 }, burg],
     markets: [market],
     deals: []
@@ -244,7 +244,7 @@ describe("inputs missing in the burg's market", () => {
     source = { i: 2, centerBurgId: 2, color: "#000000", goods: { 3: { stock: 100, price: 1 } } };
     Object.assign(burg, { x: 0, y: 0 });
     pack.markets.push(source);
-    pack.burgs = [{ i: 0 } as Burg, burg, { i: 2, x: 100, y: 0, market: 2 } as Burg];
+    pack.burgs = [{ i: 0 } as Burg, burg, { i: 2, cell: 1, x: 100, y: 0 } as Burg];
     Markets.sync();
     // the two market centers are 100 apart along a route
     vi.spyOn(TradeRoutes, "measure").mockReturnValue([

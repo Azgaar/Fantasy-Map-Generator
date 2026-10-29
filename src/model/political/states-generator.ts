@@ -1519,7 +1519,7 @@ class StatesModule {
     if (!stateSet?.size && !goodSet?.size) return;
 
     for (const state of pack.states ?? []) {
-      if (!state?.i || state.removed || !Array.isArray(state.economy.tariffs)) continue;
+      if (!state?.i || state.removed) continue;
       state.economy.tariffs = state.economy.tariffs.filter(rule => {
         if (Array.isArray(rule.states)) {
           rule.states = rule.states.filter(id => id !== state.i && !stateSet?.has(id));
@@ -1708,16 +1708,12 @@ class StatesModule {
   collectTaxes() {
     const { states, deals } = pack;
     if (!states?.length) return;
-    for (const state of states) {
-      if (!state.i || state.removed) continue;
-      state.economy.treasury = 0;
-    }
-
+    const taxes: number[] = []; // sales tax and tariffs by state
     for (const deal of deals ?? []) {
       const [, , , , , , tax, tariff] = deal;
       const { taxState, tariffState } = Markets.getTaxStates(deal);
-      if (tax && taxState && !states[taxState]?.removed) states[taxState].economy.treasury += tax;
-      if (tariff && tariffState && !states[tariffState]?.removed) states[tariffState].economy.treasury += tariff;
+      if (tax) taxes[taxState] = (taxes[taxState] || 0) + tax;
+      if (tariff) taxes[tariffState] = (taxes[tariffState] || 0) + tariff;
     }
 
     const pollTax = this.getPollTax().paid;
@@ -1726,7 +1722,7 @@ class StatesModule {
       if (!state.i || state.removed) continue;
       const { budget, otherRevenue } = state.economy;
       const collected = rn(
-        state.economy.treasury + (pollTax[state.i] || 0) + (marketFees[state.i] || 0) + otherRevenue,
+        (taxes[state.i] || 0) + (pollTax[state.i] || 0) + (marketFees[state.i] || 0) + otherRevenue,
         2
       );
       const expenses = sum(EXPENSES.map(expense => budget[expense]));
@@ -1768,15 +1764,6 @@ class StatesModule {
       owed[stateId] = (owed[stateId] || 0) + owes;
       paid[stateId] = (paid[stateId] || 0) + pays;
     };
-    // a map saved before the poll tax was charged credited states its rate × people until its economy is regenerated
-    if (!pack.burgs?.some(burg => burg?.i && burg.pollTaxPaid !== undefined)) {
-      for (const state of pack.states ?? []) {
-        if (!state?.i || state.removed) continue;
-        const due = this.getPollTaxDue(state.i, (state.rural || 0) + (state.urban || 0));
-        add(state.i, due, due);
-      }
-      return { owed, paid };
-    }
     for (const burg of pack.burgs ?? [])
       if (burg?.i && !burg.removed && burg.pollTaxPaid) add(burg.state || 0, burg.pollTaxPaid, burg.pollTaxPaid);
     for (const market of pack.markets ?? [])

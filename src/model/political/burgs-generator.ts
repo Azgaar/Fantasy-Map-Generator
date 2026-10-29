@@ -56,7 +56,6 @@ export interface Burg {
   product?: number; // gross product from the last production run
   treasury?: number; // cash balance from the last economy run
   pollTaxPaid?: number; // poll tax paid to its state in the last economy run
-  market?: number;
   label?: Label;
   note?: string;
   tags?: string[];
@@ -808,7 +807,6 @@ class BurgModule {
       culture,
       name: Names.getCulture(culture),
       feature: cells.f[cellId],
-      market: cells.market?.[cellId] || 0,
       capital: 0,
       port: 0,
       tags: []
@@ -910,8 +908,7 @@ class BurgModule {
 
       const culture = cells.culture[cell];
       const name = Names.getCulture(culture);
-      const market = cells.market?.[cell] || 0;
-      newBurgs.push({ cell, x, y, state: stateId, i: id, culture, name, capital, feature: cells.f[cell], market });
+      newBurgs.push({ cell, x, y, state: stateId, i: id, culture, name, capital, feature: cells.f[cell] });
       burgsTree.add([x, y]);
       cells.burg[cell] = id;
     }
@@ -1052,8 +1049,8 @@ class BurgModule {
     if (burg.capital) pack.states[state].center = cell;
     if (province) province.center = cell;
     // a market center takes its market along, any other burg joins the market of its new cell
-    if (pack.markets?.some(market => market.centerBurgId === burgId)) cells.market[cell] = burg.market!;
-    else burg.market = cells.market?.[cell] || 0;
+    const centered = pack.markets?.find(market => market.centerBurgId === burgId);
+    if (centered) cells.market[cell] = centered.i;
     if (burg.port) burg.port = this.getPortWater(cell); // a port moved inland stops being one
     if (burg.label) Object.assign(burg.label, { dx: 0, dy: 0, pathPoints: undefined }); // a custom path no longer fits
   }

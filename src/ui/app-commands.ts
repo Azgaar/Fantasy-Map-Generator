@@ -28,3 +28,8 @@ export const App = {} as AppCommands;
 export function bindApp(commands: AppCommands): void {
   Object.assign(App, commands);
 }
+
+/** Runs a Tools command by its id, as its button does */
+export function runMapCommand(id: string): void {
+  App.mapCommands.find(command => command.id === id)?.run();
+}

@@ -1,8 +1,8 @@
 // Colors and tones every economy view shares
 
 export const ECONOMY_COLORS = {
-  positive: "#1b7a43", // money gained: income, surpluses, exports
-  negative: "#a34a14", // money paid out: costs, deficits, imports
+  positive: "#1b7a43", // money gained: income, surpluses, exports; the .positive class in index.css
+  negative: "#a34a14", // money paid out: costs, deficits, imports; the .negative class in index.css
   spent: "var(--header)", // a share of a state's taxes its expenses spend
   pocketed: "#b4b4b4", // the part officials pocket
   empty: "#e8e8e8"
@@ -20,10 +20,6 @@ export const BADGE_COLORS = {
 
 /** The tone class of an amount: positive for a gain, negative for a loss */
 export const tone = (value: number) => (value >= 0 ? "positive" : "negative");
-
-/** The tone classes' colors, for a dialog's own style block */
-export const toneStyle = (scope: string) =>
-  `${scope} .positive { color: ${ECONOMY_COLORS.positive} } ${scope} .negative { color: ${ECONOMY_COLORS.negative} }`;
 
 /** CSS background for a share of the taxes on a 0–100% track: the part spent, the part officials pocket grayed, the rest empty */
 export function budgetBackground(share: number, corruption: number, color = ECONOMY_COLORS.spent): string {

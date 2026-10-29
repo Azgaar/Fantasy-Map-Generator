@@ -48,7 +48,7 @@ const gini = xs => {
 export function score(pack, { Goods, Markets, Production, Prosperity }) {
   const value = id => Goods.get(id)?.value || 0;
   const markets = pack.markets.filter(m => m.i);
-  const burgs = pack.burgs.filter(b => b.i && !b.removed && b.market && b.population > 0);
+  const burgs = pack.burgs.filter(b => b.i && !b.removed && pack.cells.market[b.cell] && b.population > 0);
   const units = [],
     made = [];
   const mix = new Map(markets.map(m => [m.i, {}]));
@@ -67,14 +67,14 @@ export function score(pack, { Goods, Markets, Production, Prosperity }) {
     for (const [gid, u] of b.production || []) {
       units[gid] = (units[gid] || 0) + u;
       if (Goods.get(gid)?.recipes?.length) made[gid] = (made[gid] || 0) + u;
-      const v = mix.get(b.market);
+      const v = mix.get(pack.cells.market[b.cell]);
       if (v) v[gid] = (v[gid] || 0) + u * value(gid);
     }
   const goods = pack.goods;
   const produced = goods.filter(g => (units[g.i] || 0) >= 0.5).length / goods.length;
   const madeGoods = goods.filter(g => g.recipes?.length);
   const people = m =>
-    (ruralPeople.get(m.i) || 0) + burgs.filter(b => b.market === m.i).reduce((s, b) => s + b.population, 0);
+    (ruralPeople.get(m.i) || 0) + burgs.filter(b => pack.cells.market[b.cell] === m.i).reduce((s, b) => s + b.population, 0);
   const out = new Map(markets.map(m => [m.i, Object.values(mix.get(m.i)).reduce((a, b) => a + b, 0)]));
   const totalPeople = markets.reduce((s, m) => s + people(m), 0);
   const totalOut = [...out.values()].reduce((a, b) => a + b, 0);
@@ -99,7 +99,7 @@ export function score(pack, { Goods, Markets, Production, Prosperity }) {
   const wealth = burgs.map(b => (b.product || 0) / b.population);
   const wealthByMarket = markets
     .map(m => {
-      const w = burgs.filter(b => b.market === m.i).map(b => (b.product || 0) / b.population);
+      const w = burgs.filter(b => pack.cells.market[b.cell] === m.i).map(b => (b.product || 0) / b.population);
       return w.length ? mean(w) : null;
     })
     .filter(v => v !== null && v > 0);
@@ -110,7 +110,7 @@ export function score(pack, { Goods, Markets, Production, Prosperity }) {
   // the taxes a state keeps from its officials, for its treasury and its orders; other revenue is no tax
   const kept = ({ economy }) => (economy.collected || 0) - (economy.otherRevenue || 0) - (economy.pocketed || 0);
   const taxes = living.reduce((s, x) => s + kept(x), 0);
-  const rural = markets.reduce((s, m) => s + (Markets.getRuralBalance(m.i)?.income || 0), 0);
+  const rural = markets.reduce((s, m) => s + (m.rural?.earned || 0) - (m.rural?.rent || 0), 0);
   const margins = pack.deals.reduce((s, d) => s + Markets.getMargin(d), 0);
   const economy = burgs.reduce((s, b) => s + (b.product || 0), 0) + margins + rural;
   const left = [];

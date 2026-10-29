@@ -11,7 +11,7 @@ import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { minmax, rn } from "@/utils/number-utils";
-import { budgetBackground, tone, toneStyle } from "./economy-config";
+import { budgetBackground, tone } from "./economy-config";
 import { EconomyTerms } from "./economy-terms";
 import { bindEconomyWiki, economyWikiButton } from "./economy-wiki";
 
@@ -28,7 +28,6 @@ const STYLE = /* css */ `
   #stateBudgetForm button { font-size: 0.8em; padding: 0 0.4em; }
   #stateBudgetForm button::before { margin-right: 0.2em; }
   #stateBudgetForm .muted { color: #666 }
-  ${toneStyle("#stateBudgetForm")}
   #stateBudgetForm tr.total td { font-weight: bold; border-top: 1px solid #ccc }
   #stateBudgetForm tr.minor td { font-size: 0.9em; color: #666; border-top: 1px dashed #ccc }
   #stateBudgetForm input[type="range"] { appearance: none; width: 100%; height: 0.7em; margin: 0; padding: 0; border: 0; border-radius: 2px; vertical-align: middle }

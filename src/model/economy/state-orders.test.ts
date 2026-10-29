@@ -30,7 +30,7 @@ beforeEach(() => {
     color: "#ffffff",
     goods: Object.fromEntries(catalogue.map(g => [g.i, { stock: 1000, price: g.value }]))
   };
-  capital = { i: 1, cell: 0, state: 1, market: 1, population: 10, pollTaxPaid: 100 } as Burg;
+  capital = { i: 1, cell: 0, state: 1, population: 10, pollTaxPaid: 100 } as Burg;
   state = {
     i: 1,
     capital: 1,
@@ -42,7 +42,7 @@ beforeEach(() => {
   } as State;
   globalThis.pack = {
     goods: catalogue,
-    cells: { i: [0], state: [1], pop: [0], burg: [1], province: [0] },
+    cells: { i: [0], state: [1], pop: [0], burg: [1], province: [0], market: [1, 1] },
     burgs: [{ i: 0 }, capital],
     states: [{ i: 0, economy: noFinance() }, state],
     provinces: [],
@@ -88,7 +88,7 @@ describe("state orders", () => {
   });
 
   it("pay another state's sales tax at its market", () => {
-    const foreign = { i: 2, cell: 1, state: 2, market: 1 } as Burg;
+    const foreign = { i: 2, cell: 1, state: 2 } as Burg;
     market.centerBurgId = 2;
     pack.burgs.push(foreign);
     pack.states.push({ i: 2, capital: 2, economy: { ...noFinance(), salesTax: 0.1 } } as State);

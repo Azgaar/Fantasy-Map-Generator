@@ -1,8 +1,8 @@
 // Checks that every stored cell id and every link between entities still holds. A broken id never throws
 
 import { Routes } from "@/model/economy/routes-generator";
-import { Transports } from "@/model/economy/transports-generator";
 import { Pack } from "@/model/graph/pack-generator";
+import { Transports } from "@/model/story/journeys/transports-generator";
 import { isWater } from "@/utils/height-utils";
 
 export type IntegrityRule = (typeof RULES)[number];
@@ -34,7 +34,7 @@ const RULES = [
   "burg-positions", // a burg lies in its cell
   "burg-features", // feature and port water fit the cell
   "burg-routes", // a burg is on the route network, so it can trade
-  "burg-markets", // a burg belongs to the living market of its cell, so it takes part in the economy
+  "burg-markets", // a burg's cell belongs to a living market, so it takes part in the economy
   "cell-burgs", // cells.burg points at living burgs that point back
   "state-centers",
   "state-capitals", // a living state has a living capital
@@ -176,8 +176,7 @@ class MapIntegrityModule {
       const port = burg.port ? features[burg.port] : undefined;
       if (burg.feature !== cells.f[burg.cell] || (burg.port && (!port || port.land))) fail("burg-features", burg.i);
       if (valid(burg.cell) && !Object.keys(cells.routes?.[burg.cell] ?? {}).length) fail("burg-routes", burg.i);
-      if (!marketIds.has(burg.market ?? 0) || (valid(burg.cell) && cells.market?.[burg.cell] !== burg.market))
-        fail("burg-markets", burg.i);
+      if (!marketIds.has(cells.market?.[burg.cell] ?? 0)) fail("burg-markets", burg.i);
     }
     for (let cell = 0; cell < n; cell++) {
       const burgId = cells.burg[cell];

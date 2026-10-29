@@ -16,6 +16,7 @@ describe("StatesModule.collectTaxes", () => {
     globalThis.pack = {
       states: [],
       burgs: [],
+      cells: { market: [0, 1, 2, 3] }, // cell k lies in market k
       markets: [],
       deals: [],
       biomes: []
@@ -55,8 +56,8 @@ describe("StatesModule.collectTaxes", () => {
 
     globalThis.pack.burgs = [
       { i: 0 },
-      { i: 1, state: 1, cell: 1, market: 1 },
-      { i: 2, state: 2, cell: 2, market: 2 }
+      { i: 1, state: 1, cell: 1, pollTaxPaid: 75 },
+      { i: 2, state: 2, cell: 2, pollTaxPaid: 30 }
     ] as any;
 
     globalThis.pack.markets = [
@@ -73,9 +74,9 @@ describe("StatesModule.collectTaxes", () => {
 
     StatesModule.collectTaxes();
 
-    // State 1: sales tax 10 + 2 = 12; poll tax 0.5 * (100+50) = 75; treasury = 87
+    // State 1: sales tax 10 + 2 = 12; poll tax 75; treasury = 87
     expect(globalThis.pack.states[1].economy.treasury).toBeCloseTo(87, 2);
-    // State 2: sales tax 1.2; poll tax 0.1 * (200+100) = 30; treasury = 31.2
+    // State 2: sales tax 1.2; poll tax 30; treasury = 31.2
     expect(globalThis.pack.states[2].economy.treasury).toBeCloseTo(31.2, 2);
     // Neutrals always 0
     expect(globalThis.pack.states[0].economy.treasury).toBe(0);
@@ -246,11 +247,7 @@ describe("StatesModule.collectTaxes", () => {
       { i: 2, name: "B", economy: { ...noFinance(), salesTax: 0, pollTax: 0, treasury: 0 } }
     ] as any;
 
-    globalThis.pack.burgs = [
-      { i: 0 },
-      { i: 1, state: 1, cell: 1, market: 1 },
-      { i: 2, state: 2, cell: 2, market: 2 }
-    ] as any;
+    globalThis.pack.burgs = [{ i: 0 }, { i: 1, state: 1, cell: 1 }, { i: 2, state: 2, cell: 2 }] as any;
 
     globalThis.pack.markets = [
       { i: 1, centerBurgId: 1, color: "", goods: {} },

@@ -231,7 +231,7 @@ function renderMarketOverviewPage(view: TableView<MarketGoodRow>): void {
   ensureEl("marketOverviewInfo").innerHTML =
     `<svg class="coaIcon" viewBox="0 0 200 200"><use href="#${coaId}"></use></svg><b>${t("Owner")}:</b> ${state.fullName || state.name}`;
 
-  const burgs = pack.burgs.filter(b => !b.removed && b.market === market.i);
+  const burgs = pack.burgs.filter(b => b.i && !b.removed && pack.cells.market[b.cell] === market.i);
   const totalUnits = view.all.reduce((sum, row) => sum + row.stock, 0);
   ensureEl("marketOverviewSummary").innerHTML = /*html*/ `
     <div style="margin-left:5px">${t("Cells")}: ${pack.cells.market.reduce((count, m) => count + (m === market.i ? 1 : 0), 0)}</div>

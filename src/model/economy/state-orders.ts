@@ -6,7 +6,7 @@ import type { Burg } from "@/model/political/burgs-generator";
 import { EXPENSES, type Expense, noExpenses, States } from "@/model/political/states-generator";
 import { rn } from "@/utils/number-utils";
 import { type DemandCategory, type Good, getVarietyShares } from "./goods-generator";
-import { DEAL_KINDS, type Market, Markets, MIN_LOCAL_STOCK, type TradeTerms } from "./markets-generator";
+import { DEAL_KINDS, type Market, Markets, type TradeTerms } from "./markets-generator";
 
 /** The needs each expense buys for, with the share of its money */
 const EXPENSE_NEEDS: Record<Expense, [DemandCategory, number][]> = {
@@ -53,7 +53,7 @@ class StateOrdersModule {
       if (!state.i || state.removed) continue;
       const capital = pack.burgs[state.capital];
       const atCapital = () =>
-        capital?.i && !capital.removed && capital.market ? [{ burg: capital, share: 1, spent: 0 }] : [];
+        capital?.i && !capital.removed && Markets.ofBurg(capital) ? [{ burg: capital, share: 1, spent: 0 }] : [];
       const atSeats = () =>
         provinceSeats[state.i]?.length ? provinceSeats[state.i].map(seat => ({ ...seat, spent: 0 })) : atCapital();
       this.runs.push({
@@ -97,7 +97,7 @@ class StateOrdersModule {
 
   /** The seat spreads the money over the goods covering the need, cheaper ones getting more, then spends the rest on the cheapest it finds; during the day, goods it cannot find raise their price. Like a burg, it buys at its own market while that stocks enough, otherwise at the cheapest other. Returns what it spent */
   private order(burg: Burg, need: DemandCategory, money: number, terms: TradeTerms, signal: boolean): number {
-    const market = Markets.get(burg.market);
+    const market = Markets.ofBurg(burg);
     if (!market) return 0;
     const options = (this.goodsFor.get(need) ?? []).map(good => ({
       good,
@@ -107,26 +107,17 @@ class StateOrdersModule {
     const shares = getVarietyShares(options.map(costPerCoverage));
 
     let spent = 0;
-    const sources = new Map<number, Market>(); // by good: where the seat found it, kept for the rest of the order
+    const sources = new Map<number, Market | null>(); // by good: where the seat found it, kept for the rest of the order
     const buy = (good: Good, budget: number) => {
       if (budget < 0.01) return 0;
-      let source = sources.get(good.i);
-      if (!source) {
-        source = market;
-        if ((market.goods[good.i]?.stock || 0) < MIN_LOCAL_STOCK)
-          source = Markets.quoteSource(burg, good, terms)?.source ?? market;
-        sources.set(good.i, source);
-      }
-      if ((source.goods[good.i]?.stock || 0) <= 0.01) return 0;
-      const trade = Markets.buyFromSource({
-        burg,
-        source,
-        good,
-        units: Infinity,
-        kind: DEAL_KINDS.order,
-        terms,
-        budget
-      });
+      if (!sources.has(good.i))
+        sources.set(
+          good.i,
+          Markets.getSupplier(market, good, () => Markets.quoteSource(burg, good, terms)?.source)
+        );
+      const source = sources.get(good.i);
+      if (!source || (source.goods[good.i]?.stock || 0) <= 0.01) return 0;
+      const trade = Markets.buy({ burg, source, good, units: Infinity, kind: DEAL_KINDS.order, terms, budget });
       return trade ? trade.units * trade.price : 0;
     };
     options.forEach((option, k) => {
@@ -144,13 +135,12 @@ class StateOrdersModule {
 
   /** A state pays no sales tax or tariff to itself */
   private exempt(terms: TradeTerms, stateId: number): TradeTerms {
-    const stateOf = (market: Market) => pack.burgs[market.centerBurgId]?.state || 0;
     return (source, market, good, price) => {
       const costs = terms(source, market, good, price);
       if (!costs) return null;
       return {
-        taxPerUnit: stateOf(source) === stateId ? 0 : costs.taxPerUnit,
-        tariffPerUnit: stateOf(market) === stateId ? 0 : costs.tariffPerUnit
+        taxPerUnit: Markets.getState(source) === stateId ? 0 : costs.taxPerUnit,
+        tariffPerUnit: Markets.getState(market) === stateId ? 0 : costs.tariffPerUnit
       };
     };
   }
@@ -167,13 +157,15 @@ class StateOrdersModule {
       const province = provinces?.[cells.province?.[cellId] || 0];
       const seat = province && !province.removed ? burgs[province.burg] : undefined;
       const seatId =
-        seat?.i && !seat.removed && seat.market && seat.state === stateId ? seat.i : states[stateId].capital;
+        seat?.i && !seat.removed && Markets.ofBurg(seat) && seat.state === stateId ? seat.i : states[stateId].capital;
       people[stateId] ??= new Map();
       people[stateId].set(seatId, (people[stateId].get(seatId) || 0) + count);
     }
 
     return people.map(seats => {
-      const valid = [...seats].filter(([burgId]) => burgs[burgId]?.i && !burgs[burgId].removed && burgs[burgId].market);
+      const valid = [...seats].filter(
+        ([burgId]) => burgs[burgId]?.i && !burgs[burgId].removed && Markets.ofBurg(burgs[burgId])
+      );
       const total = valid.reduce((sum, [, count]) => sum + count, 0);
       return valid.map(([burgId, count]) => ({ burg: burgs[burgId], share: count / total }));
     });

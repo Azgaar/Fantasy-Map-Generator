@@ -815,7 +815,7 @@ function downloadBurgsData(): void {
     .map(b => {
       const province = pack.provinces[pack.cells.province[b.cell]];
       const temperature = grid.cells.temp[pack.cells.g[b.cell]];
-      const market = Markets.get(b.market);
+      const market = Markets.ofBurg(b);
       return [
         b.i,
         b.name,

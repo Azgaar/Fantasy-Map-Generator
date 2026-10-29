@@ -9,7 +9,6 @@ vi.mock("./draw-trade-animation", () => ({
 
 import { DEAL_KINDS, type Deal, Markets } from "@/model/economy/markets-generator";
 import { Routes } from "@/model/economy/routes-generator";
-import * as drawTrade from "./draw-trade-animation";
 import { TradeAnimationModule } from "./trade-animation";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -206,33 +205,5 @@ describe("getPath", () => {
     expect(result!.segments).toHaveLength(2);
     expect(result!.segments[0].type).toBe("water");
     expect(result!.segments[1].type).toBe("land");
-  });
-});
-
-// ─── trigger ─────────────────────────────────────────────────────────────────
-
-describe("trigger", () => {
-  it("does nothing when given no deals", () => {
-    ta.trigger([]);
-    expect(drawTrade.draw).not.toHaveBeenCalled();
-  });
-
-  it("clears animations and returns when the layer is disabled", () => {
-    isTradeLayerOn = false;
-    ta.trigger([purchase]);
-    expect(drawTrade.clear).toHaveBeenCalled();
-    expect(drawTrade.draw).not.toHaveBeenCalled();
-  });
-
-  it("draws animation when the layer is active and a route path exists", () => {
-    globalThis.pack = makePack({ 0: { 1: 0 }, 1: { 0: 0 } }, [{ i: 0, group: "roads" }]) as any;
-    ta.trigger([purchase]);
-    expect(drawTrade.draw).toHaveBeenCalledWith(purchase, expect.any(Array));
-  });
-
-  it("does not draw when no route path can be found", () => {
-    // cellRoutes = {} — no connections
-    ta.trigger([purchase]);
-    expect(drawTrade.draw).not.toHaveBeenCalled();
   });
 });

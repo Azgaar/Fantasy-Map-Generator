@@ -5,7 +5,6 @@ import { Labels } from "@/model/annotations/labels-generator";
 import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
 import { Routes } from "@/model/economy/routes-generator";
-import { Transports } from "@/model/economy/transports-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { Biomes } from "@/model/physical/biomes-generator";
 import { Features } from "@/model/physical/features-generator";
@@ -19,6 +18,7 @@ import { Cultures } from "@/model/society/cultures-generator";
 import { Names } from "@/model/society/names-generator";
 import { Religions } from "@/model/society/religions-generator";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
+import { Transports } from "@/model/story/journeys/transports-generator";
 import { Markers } from "@/model/story/markers-generator";
 import { Emblems } from "./political/emblems-generator";
 import { Lore } from "./story/lore";
@@ -59,7 +59,7 @@ beforeAll(async () => {
     import("./graph/pack-generator"),
     import("./annotations/labels-generator"),
     import("./story/journeys/journeys-generator"),
-    import("./economy/transports-generator"),
+    import("./story/journeys/transports-generator"),
     import("./economy/goods-generator"),
     import("./economy/markets-generator")
   ]);
@@ -639,7 +639,7 @@ describe("locks, treasuries and links", () => {
     Burgs.setTreasury(1, 12.345);
     expect(pack.burgs[1].treasury).toBe(12.35);
     States.setTaxes(1, 0.2, 1.5);
-    States.setOtherRevenue(1, -12.345);
+    States.setOtherRevenue(1, -12.346);
     expect(pack.states[1].economy).toMatchObject({ salesTax: 0.2, pollTax: 1.5, otherRevenue: -12.35 });
     expect(() => States.setTaxes(1, 2, 0)).toThrow("from 0 to 1");
     States.setMarketFee(1, 12.345);

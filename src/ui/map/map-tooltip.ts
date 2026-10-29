@@ -258,14 +258,14 @@ function getGoodsTip(target: SVGElement, cellId: number): string | undefined {
   if (icon) {
     const good = Goods.get(Number(icon.dataset.i));
     if (!good) return undefined;
-    const produced = Production.getCellProduction(Number(icon.dataset.cell), Goods.getBiomesProduction());
+    const produced = Production.getCellProduction(Number(icon.dataset.cell));
     const amount = produced[good.i] || 0;
     const unit = amount === 1 ? good.unit : `${good.unit}s`;
     return t("{{good}} deposit: {{amount}} {{unit}} per day", { good: good.name, amount, unit });
   }
 
   if (target.closest("#goodsCells")) {
-    const produced = Production.getCellProduction(cellId, Goods.getBiomesProduction());
+    const produced = Production.getCellProduction(cellId);
     return t("Cell rural production: {{production}}", { production: formatProduction(produced) });
   }
 

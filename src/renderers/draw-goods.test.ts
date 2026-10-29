@@ -22,7 +22,7 @@ const CELLS = [
 ];
 
 type Output = Record<number, number>;
-const getCellProduction = vi.fn<(cellId: number) => Output>();
+const cellOutput = vi.fn<(cellId: number) => Output>(); // each cell's rural output
 const getBurgProduction = vi.fn<(burg: { i: number }) => Output>();
 
 beforeEach(() => {
@@ -58,12 +58,11 @@ beforeEach(() => {
   } as never;
   Object.assign(Goods, {
     get: (id: number) => pack.goods.find(good => good.i === id),
-    getBiomesProduction: () => ({}),
     getStroke: () => "#333"
   });
-  Object.assign(Production, { getCellProduction, getBurgProduction });
+  Object.assign(Production, { getRuralOutput: () => Array.from(pack.cells.i, cellOutput), getBurgProduction });
   Object.assign(Pack, { getPolygon: (cellId: number) => pack.cells.v[cellId].map(v => pack.vertices.p[v]) });
-  getCellProduction.mockReset().mockImplementation(cellId => (cellId === 0 ? { 1: 4 } : { 2: 8 }) as Output);
+  cellOutput.mockReset().mockImplementation(cellId => (cellId === 0 ? { 1: 4 } : { 2: 8 }) as Output);
   getBurgProduction.mockReset().mockImplementation(burg => (burg.i === 1 ? { 1: 5, 2: 2 } : { 2: 9 }) as Output);
   styles.goods.groups.goodsCells.options = { render: true };
   styles.goods.groups.goodsIcons.options = { render: true, size: 4, circle: true };
@@ -89,7 +88,7 @@ test("panning culls each sublayer without recomputing production", async () => {
   expect(document.querySelector("#goodsIcons > g")?.getAttribute("data-i")).toBe("2");
   expect(document.querySelector("#goodsBurgs > g")?.getAttribute("data-id")).toBe("2");
   expect(document.querySelector("#goodsCells polygon")?.getAttribute("fill")).toBe("#00ff00");
-  expect(getCellProduction).toHaveBeenCalledTimes(2); // once per cell, at build time only
+  expect(cellOutput).toHaveBeenCalledTimes(2); // once per cell, at build time only
   expect(getBurgProduction).toHaveBeenCalledTimes(2);
 });
 
@@ -116,7 +115,7 @@ test("style options are applied on the next frame, without rebuilding the scene"
   expect(document.querySelector("#goodsIcons circle")).toBeNull();
   expect(document.querySelector("#goodsIcons use")?.getAttribute("width")).toBe("10");
   expect(document.querySelector("#goodsBurgs path")?.getAttribute("d")).toContain("A9,9"); // 1.5 times the size
-  expect(getCellProduction).toHaveBeenCalledTimes(2);
+  expect(cellOutput).toHaveBeenCalledTimes(2);
 });
 
 test("icon lines follow the style at the marker's proportions", async () => {
@@ -162,7 +161,7 @@ test("each sublayer can be switched off in the style", async () => {
 test("with no good selected, cells show their output value in their most valuable good's color, with every icon and burg", async () => {
   for (const good of pack.goods) good.visible = false;
   pack.goods[1].value = 10; // one iron is worth ten grain
-  getCellProduction.mockImplementation(cellId => (cellId === 0 ? { 1: 4 } : { 1: 20, 2: 8 }) as Output);
+  cellOutput.mockImplementation(cellId => (cellId === 0 ? { 1: 4 } : { 1: 20, 2: 8 }) as Output);
   setViewportTransform(0.1, 0, 0);
   await drawGoods();
 
@@ -218,7 +217,7 @@ test("a replacement map invalidates the cached production", async () => {
   globalThis.pack = { ...pack, goods: [{ ...pack.goods[0], color: "#0000ff" }] } as never;
   ViewportLayers.renderNow();
   expect(document.querySelector("#goodsCells polygon")?.getAttribute("fill")).toBe("#0000ff");
-  expect(getCellProduction).toHaveBeenCalledTimes(4);
+  expect(cellOutput).toHaveBeenCalledTimes(4);
 });
 
 test("viewport rendering leaves a disabled layer empty", async () => {

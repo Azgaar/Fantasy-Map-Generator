@@ -1,5 +1,5 @@
 import type { Good } from "@/model/economy/goods-generator";
-import { Markets, type Trade } from "@/model/economy/markets-generator";
+import { type Deal, type DealKind, Markets, type Trade } from "@/model/economy/markets-generator";
 import { formatPrice, getDecima, getDistance } from "@/model/units";
 import { Catalog, sentences, t } from "@/utils/i18n";
 import { rn } from "@/utils/number-utils";
@@ -61,18 +61,28 @@ export const tradeColumnTips = () => ({
   income: sentences(t("Burg total income"), t("Positive on a sale, negative on a purchase"))
 });
 
-type TradeCell = {
+/** Where a burg's trade with a market stands: the route it is carried along, whether it is an import, and the states its taxes go to */
+export function getTradeContext(burgId: number, marketId: number, goodId: number, kind: DealKind) {
+  const burg = pack.burgs[burgId];
+  const market = Markets.get(marketId);
+  const deal: Deal = [burgId, marketId, goodId, kind, 0, 0, 0, 0, 0];
+  const { taxState, tariffState } = Markets.getTaxStates(deal);
+  return {
+    decimas: market && burg ? Markets.getDecimas(market, burg) : 0, // carried between the market and the burg
+    carriageFactor: market && burg ? Markets.getCarriageFactor(market, burg) : 1, // dearer from another state's market
+    isImport: Markets.isImport(deal),
+    taxStateId: taxState,
+    tariffStateId: tariffState
+  };
+}
+
+type TradeCell = ReturnType<typeof getTradeContext> & {
   good: Good;
   units: number;
   net: number; // the rest per unit
   carriage: number;
   tax: number;
   tariff: number;
-  decimas: number; // carried between the market and the burg
-  carriageFactor: number; // dearer from another state's market
-  isImport: boolean;
-  taxStateId: number;
-  tariffStateId: number;
   formula: string;
 };
 

@@ -8,27 +8,11 @@
 
 Fixing these exposed how the day's economy worked underneath: demand did not depend on income, rural people earned nothing, markets bought whatever burgs made, and states took half of all income. Much of the work below rebuilt that, so the KPIs could hold at all.
 
-Constraints: saved maps keep their own goods catalogue. Every change is measured on the same six default maps (seeds 431087220, 98765, 55555, 123456789, 4242, 31337), averaged, and compared with master (v1.156.0). How the day is computed is open: today it is one pass of turns, and a different scheme is welcome if it scores better.
+Constraints: saved maps keep their own goods catalogue. Every change is measured on the KPI maps of the domain doc, averaged, and compared with master (v1.156.0). How the day is computed is open: today it is one pass of turns, and a different scheme is welcome if it scores better.
 
 ## KPIs
 
 The KPIs, their targets and current values are tracked in [the economy domain doc](../domain/economy.md#kpis). Each idea below is scored against them.
-
-## Progress
-
-Eight of thirteen KPIs are met.
-
-Against master: regions are far more distinct (71% vs 47%), 19% of markets produce far more or far less than their headcount instead of 2%, wealth is unequal enough to tell rich burgs from poor ones (Gini 0.39 vs 0.28), states take 13% of the economy's product instead of 64%, and 82% of made goods sell instead of 29%, at 42 ms more per run. Control: deposits are a set number per map, with a range per good, and the Goods editor places them to a typed daily output.
-
-Rich burgs now spend by their wealth: the richest tenth spend a quarter of their income (a tenth before), mostly on luxury, and favor dear goods. More goods sell and more burgs end in profit, but the spending reaches poorer regions' makers, so regions converge and wealth evens out.
-
-Open:
-
-- **Treasuries are too concentrated** (76% in the richest tenth, against 50%): they house 31% of the townspeople, and nearly every market center and state capital is among them (96%), earning the market margins and rural rent. Spending by wealth did not move it: luxury goods run out before the rich run out of money.
-- **Rich and poor regions** (3.8×, against 5×) fell as the rich spent more.
-- **Output still mostly follows people** (19% of markets apart, against 50%): production is spread by population, with a regional bonus of at most ×2.
-- **States barely profit from a wealthier economy** (0.14): sales tax rates vary up to eightfold between states (¼× to 2× of the form's base), more than their people's wealth does, and a third of state income is a flat poll tax.
-- **Some goods are missing on some maps**: grain, wine and honey on seed 431087220; tropical goods on seed 123456789, which has no hot climate.
 
 ## Ideas
 

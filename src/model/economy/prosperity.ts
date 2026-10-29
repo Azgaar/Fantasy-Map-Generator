@@ -1,5 +1,5 @@
 import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS, Goods, getNeedsCost } from "./goods-generator";
-import { DEAL_KINDS, Markets } from "./markets-generator";
+import { DEAL_KINDS } from "./markets-generator";
 import { Production } from "./production-generator";
 
 const NEEDS_SHARE = 0.2; // what needs met alone are worth, living on bare needs: the rest comes from comfort and variety
@@ -52,8 +52,8 @@ class ProsperityModule {
   }
 
   /** Each cell's rural prosperity as a percent, 0 where no one lives or the economy has not run, to keep in the cells */
-  getCellsProsperity(): Uint8Array {
-    this.indexRural();
+  getCellsProsperity(output: Record<number, number>[]): Uint8Array {
+    this.indexRural(output);
     const prosperity = new Uint8Array(pack.cells.i.length);
     for (const [cellId, { living }] of this.rural)
       prosperity[cellId] = Math.max(1, Math.round(living.prosperity * 100));
@@ -78,30 +78,27 @@ class ProsperityModule {
       this.consumed.set(burgId, goods);
     }
     for (const burg of pack.burgs) {
-      if (!burg.i || burg.removed || !burg.population || !burg.market) continue;
+      if (!burg.i || burg.removed || !burg.population || !pack.cells.market[burg.cell]) continue;
       const goods = this.consumed.get(burg.i) ?? [];
       this.burgs.set(burg.i, this.measure({ people: burg.population, goods, needsCost }));
     }
   }
 
   /** A market's rural earnings and purchases go to its peopled cells by the value of their produce, or by their people where none */
-  private indexRural(): void {
-    if (this.cellsSource === pack.deals) return;
+  private indexRural(output?: Record<number, number>[]): void {
+    if (!output && this.cellsSource === pack.deals) return;
     this.cellsSource = pack.deals;
     this.rural.clear();
     if (!pack.deals?.length) return;
     const needsCost = getNeedsCost(pack.goods);
-    const kept = Markets.getCellProduce(); // the run's, or worked out again for a loaded map
-    const biomes = kept ? null : Goods.getBiomesProduction();
+    output ??= Production.getRuralOutput();
     const byMarket = new Map<number, { cellId: number; people: number; produce: number }[]>();
     for (const cellId of pack.cells.i) {
       const people = pack.cells.pop[cellId] || 0;
       const marketId = pack.cells.market[cellId];
       if (!people || !marketId) continue;
-      let produce = kept?.[cellId] ?? 0;
-      if (biomes)
-        for (const [goodId, units] of Object.entries(Production.getCellProduction(cellId, biomes)))
-          produce += units * (Goods.get(+goodId)?.value || 0);
+      let produce = 0;
+      for (const [goodId, units] of Object.entries(output[cellId])) produce += units * (Goods.get(+goodId)?.value || 0);
       const cells = byMarket.get(marketId) ?? [];
       cells.push({ cellId, people, produce });
       byMarket.set(marketId, cells);

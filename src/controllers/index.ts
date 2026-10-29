@@ -91,7 +91,7 @@ export const Controllers = createRegistry(
     TradeDetails: () => import("@/controllers/economy/trade/trade-details").then(m => m.TradeDetails),
     WrapTool: () => import("@/controllers/graph/wrap-tool").then(m => m.WrapTool),
     TransformTool: () => import("@/controllers/graph/transform-tool").then(m => m.TransformTool),
-    TransportEditor: () => import("@/controllers/economy/transport-editor").then(m => m.TransportEditor),
+    TransportEditor: () => import("@/controllers/story/journeys/transport-editor").then(m => m.TransportEditor),
     UnitsEditor: () => import("@/controllers/units-editor").then(m => m.UnitsEditor),
     View3d: () => import("@/controllers/view-3d").then(m => m.View3d),
     WorldConfigurator: () => import("@/controllers/world-configurator").then(m => m.WorldConfigurator),

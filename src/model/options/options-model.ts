@@ -6,7 +6,6 @@ import { heightmapTemplates } from "@/data/heightmap-templates";
 import { DEFAULT_TRADE_ANIMATION } from "@/data/trade-animation-options";
 import { DEFAULT_THREE_D } from "@/data/view-3d-options";
 import { Labels } from "@/model/annotations/labels-generator";
-import { Transports } from "@/model/economy/transports-generator";
 import { DEFAULT_JITTER } from "@/model/graph/lattice";
 import { adoptLegacyOptions } from "@/model/options/options-legacy";
 import {
@@ -24,6 +23,7 @@ import { Relief } from "@/model/physical/relief-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Military } from "@/model/political/military-generator";
 import { Names } from "@/model/society/names-generator";
+import { Transports } from "@/model/story/journeys/transports-generator";
 import { LocalDB } from "@/services/local-db";
 import { t } from "@/utils/i18n";
 import { log } from "@/utils/logger";

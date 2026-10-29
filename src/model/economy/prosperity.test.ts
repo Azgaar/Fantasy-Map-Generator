@@ -42,7 +42,7 @@ const consume = (goods: [number, number][]) =>
   goods.map(([goodId, units]): Deal => [1, 1, goodId, DEAL_KINDS.demand, units, 1, 0, 0, 0]);
 
 beforeEach(() => {
-  burg = { i: 1, cell: 0, population: 10, market: 1, state: 1 } as Burg;
+  burg = { i: 1, cell: 0, population: 10, state: 1 } as Burg;
   market = { i: 1, centerBurgId: 1, color: "#fff", goods: {} };
   globalThis.pack = {
     goods: catalogue,
@@ -95,8 +95,8 @@ describe("prosperity", () => {
       market: [1, 1, 1],
       state: [1, 1, 1]
     } as unknown as typeof pack.cells;
-    vi.spyOn(Goods, "getBiomesProduction").mockReturnValue({});
-    vi.spyOn(Production, "getCellProduction").mockImplementation(cellId => (cellId === 1 ? { 1: 30 } : { 1: 10 }));
+    const output = [{ 1: 10 }, { 1: 30 }, { 1: 10 }];
+    vi.spyOn(Production, "getRuralOutput").mockReturnValue(output);
     market.rural = { earned: 40, rent: 0, spent: 20, bought: [[5, 4]] };
     pack.deals = consume(bareNeeds);
 
@@ -106,7 +106,7 @@ describe("prosperity", () => {
     expect(poor.earned).toBeCloseTo(10, 5);
     expect(rich.living.needs).toBe(1); // their fields feed them
     expect(rich.living.comfort).toBeGreaterThan(poor.living.comfort);
-    const kept = Array.from(Prosperity.getCellsProsperity());
+    const kept = Array.from(Prosperity.getCellsProsperity(output));
     expect(kept[0]).toBe(0); // no one lives there
     expect(kept[1]).toBe(Math.round(rich.living.prosperity * 100));
   });
@@ -122,7 +122,8 @@ describe("prosperity", () => {
 
 describe("state trade", () => {
   it("counts selling abroad and foreign buying here as exports, buying abroad as imports", () => {
-    const foreign = { i: 2, cell: 0, population: 10, market: 2, state: 2 } as Burg;
+    const foreign = { i: 2, cell: 2, population: 10, state: 2 } as Burg;
+    pack.cells.market[2] = 2;
     pack.burgs.push(foreign);
     pack.states.push({ i: 2 } as (typeof pack.states)[number]);
     pack.markets.push({ i: 2, centerBurgId: 2, color: "#fff", goods: {} });

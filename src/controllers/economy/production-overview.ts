@@ -18,12 +18,13 @@ import { tip } from "@/ui/tooltips";
 import { sentences, t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { rn } from "@/utils/number-utils";
-import { BADGE_COLORS, tone, toneStyle } from "./economy-config";
+import { BADGE_COLORS, tone } from "./economy-config";
 import { EconomyTerms } from "./economy-terms";
 import { bindEconomyWiki, economyWikiButton } from "./economy-wiki";
 import { prosperityTip, renderProsperity, renderProsperityParts } from "./prosperity-view";
 import {
   carriageDistance,
+  getTradeContext,
   money,
   splitDealPrice,
   tariffCell,
@@ -67,7 +68,7 @@ function open(burgId: number): void {
     tip(t("Invalid burg. The selected burg does not exist or was removed."), true, "error", 5000);
     return;
   }
-  if (!Markets.get(burg.market)) {
+  if (!Markets.ofBurg(burg)) {
     tip(sentences(t("No market"), t("This burg is not connected to any market")), true, "error", 5000);
     return;
   }
@@ -118,7 +119,6 @@ function renderDialog(): void {
         #${dialogId} .sources { border-collapse: collapse; margin: 0.3em 0; width: auto; table-layout: auto }
         #${dialogId} .sources td, #${dialogId} .sources th { padding: 0.1em 0.5em; border: 0 }
         #${dialogId} .sources .chosen { font-weight: bold; background: #eef6ee }
-        ${toneStyle(`#${dialogId}`)}
       </style>
       <div id="${dialogId}Stats"></div>
       <div id="${dialogId}Body" class="table"></div>
@@ -367,7 +367,7 @@ const getNeedRow = ({ category, shortage, options }: DemandEntry): HistoryRow =>
 
 function renderDemandOptions(options: DemandEntry["options"]): string {
   if (!options.length) return `<i>${t("No good that covers it is for sale anywhere")}</i>`;
-  const own = pack.burgs[activeBurgId]?.market;
+  const own = pack.cells.market[pack.burgs[activeBurgId]?.cell];
   const items = options.slice(0, 10).map(({ goodId, coverage, costPerCoverage, market, kept }) => {
     const where = kept
       ? t("kept from its own sales")
@@ -383,7 +383,7 @@ function renderDemandOptions(options: DemandEntry["options"]): string {
 
 /** Every market the burg could have bought the good from, at its door, with the one it chose */
 function renderSources(chosen: number, sources: SourceOption[]): string {
-  const own = pack.burgs[activeBurgId]?.market;
+  const own = pack.cells.market[pack.burgs[activeBurgId]?.cell];
   const reason = chosen === own ? t("Bought at its own market") : t("Bought from the cheapest other market");
   const open = sources.filter(source => !source.excluded);
   const shown = open.slice(0, 6);
@@ -451,7 +451,8 @@ function renderHistoryLine(row: HistoryRow, expandable: boolean): string {
   const isSale = row.type === "SELL";
   const isTrade = row.price !== undefined;
   const income = row.income === undefined ? "" : formatPrice(row.income);
-  const tips = isTrade ? getCellTips(row, good) : undefined;
+  const context = isTrade ? getContext(row) : undefined;
+  const tips = context && tradeCellTips({ ...getFigures(row), good, ...context });
   const cell = (content: string, tip?: string) => `<td class="right"${tip ? ` data-tip="${tip}"` : ""}>${content}</td>`;
 
   return /* html */ `<tr${row.details ? " data-expandable" : ""}>
@@ -461,7 +462,7 @@ function renderHistoryLine(row: HistoryRow, expandable: boolean): string {
       ${cell(isTrade ? money(row.price!, isSale) : "", tips?.net)}
       ${cell(isTrade ? money(row.carriage, false) || formatPrice(0) : "", tips?.carriage)}
       ${cell(money(row.tax, false), tips?.tax)}
-      ${cell(isTrade ? tariffCell(row.tariff, isImport(row)) : "", tips?.tariff)}
+      ${cell(context ? tariffCell(row.tariff, context.isImport) : "", tips?.tariff)}
       ${cell(String(rn(row.units, 2)), tips?.units)}
       <td class="right ${tone(row.income ?? 0)}" data-tip="${tips?.income ?? ""}">${income}</td>
     </tr>${row.details ? `<tr class="historyDetails" hidden><td></td><td colspan="8">${row.details}</td></tr>` : ""}`;
@@ -544,51 +545,30 @@ function renderMarket(row: HistoryRow): string {
   const market = Markets.get(marketId);
   if (!market) return "";
   const name = Markets.getName(market);
-  const distance = carriageDistance(getDecimas(row));
-  const zoomTip = isImport(row)
+  const { decimas, isImport } = getContext(row);
+  const distance = carriageDistance(decimas);
+  const zoomTip = isImport
     ? sentences(t("Import from {{market}}", { market: name }), distance, t("Click to zoom"))
     : sentences(distance, t("Click to zoom"));
   return `<span class="pointer" data-zoom-market="${marketId}" data-tip="${zoomTip}">${name}</span>`;
 }
 
-const getDecimas = ({ marketId }: HistoryRow) => {
-  const market = Markets.get(marketId);
-  const burg = pack.burgs[activeBurgId];
-  return market && burg ? Markets.getDecimas(market, burg) : 0;
-};
+const getContext = ({ goodId, marketId = 0, kind = DEAL_KINDS.sale }: HistoryRow) =>
+  getTradeContext(activeBurgId, marketId, goodId, kind);
 
-const getCarriageFactor = ({ marketId }: HistoryRow) => {
-  const market = Markets.get(marketId);
-  const burg = pack.burgs[activeBurgId];
-  return market && burg ? Markets.getCarriageFactor(market, burg) : 1;
-};
-
-const isImport = ({ goodId, marketId = 0, kind = DEAL_KINDS.sale }: HistoryRow) =>
-  Markets.isImport([activeBurgId, marketId, goodId, kind, 0, 0, 0, 0, 0]);
-
-function getCellTips(row: HistoryRow, good: Good) {
-  const { goodId, marketId = 0, kind = DEAL_KINDS.sale } = row;
-  const { taxState, tariffState } = Markets.getTaxStates([activeBurgId, marketId, goodId, kind, 0, 0, 0, 0, 0]);
-  return tradeCellTips({
-    good,
-    units: row.units,
-    net: row.price ?? 0,
-    carriage: row.carriage,
-    tax: row.tax,
-    tariff: row.tariff,
-    decimas: getDecimas(row),
-    carriageFactor: getCarriageFactor(row),
-    isImport: isImport(row),
-    taxStateId: taxState,
-    tariffStateId: tariffState,
-    formula: row.formula ?? ""
-  });
-}
+const getFigures = ({ units, price, carriage, tax, tariff, formula }: HistoryRow) => ({
+  units,
+  net: price ?? 0,
+  carriage,
+  tax,
+  tariff,
+  formula: formula ?? ""
+});
 
 function renderStats(burg: Burg): void {
   const population = burg.population || 0;
   const burgs = pack.burgs.filter(b => b.i && !b.removed).sort((a, b) => (b.population || 0) - (a.population || 0));
-  const market = Markets.get(burg.market);
+  const market = Markets.ofBurg(burg);
 
   const targets = DEMAND_PRIORITY.map(category => population * DEMAND_TARGET_FACTORS[category]);
   const covered = DEMAND_PRIORITY.map(() => 0);

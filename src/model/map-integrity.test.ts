@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import "./graph/pack-generator";
 import "./economy/routes-generator";
-import "./economy/transports-generator";
+import "./story/journeys/transports-generator";
 import { type IntegrityRule, MapIntegrity } from "./map-integrity";
 
 // cells 0 and 1 lie on a line; cell 2 borders cell 1 only
@@ -27,7 +27,7 @@ function check(
       h: [30, 30, 30],
       f: [1, 1, 1],
       burg: [0, 0, 0],
-      market: [1, 1, 2],
+      market: [1, 0, 2],
       routes: links
     },
     features: [0, { i: 1, type: "island", land: true, name: "Isle", group: "isle" }],
@@ -96,11 +96,11 @@ it("flags a burg off the route network", () => {
   expect(check("burg-routes", { routes, links, burgs })).toMatchObject({ count: 1, examples: ["2"] });
 });
 
-it("flags a burg with no market, a removed one or not the one of its cell", () => {
+it("flags a burg on a cell of no market or of a removed one", () => {
   const burgs = [
-    { i: 1, cell: 0, x: 0, y: 0, feature: 1, market: 1 },
+    { i: 1, cell: 0, x: 0, y: 0, feature: 1 },
     { i: 2, cell: 1, x: 10, y: 0, feature: 1 },
-    { i: 3, cell: 2, x: 10, y: 8, feature: 1, market: 1 }
+    { i: 3, cell: 2, x: 10, y: 8, feature: 1 }
   ];
   const markets = [{ i: 1, centerBurgId: 1, goods: {} }];
   expect(check("burg-markets", { burgs, markets })).toMatchObject({ count: 2, examples: ["2", "3"] });

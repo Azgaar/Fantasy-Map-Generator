@@ -1,13 +1,13 @@
+import { DEFAULT_TRADE_ANIMATION } from "@/data/trade-animation-options";
 import { Options } from "@/model/options/options-model";
 import { Layers } from "@/renderers/layers";
-import { TradeAnimation } from "@/renderers/trade-animation";
 import { Dialog } from "@/ui/dialog/dialog";
 
 import { t } from "@/utils/i18n";
 import { ensureEl } from "@/utils/node-utils";
 import { bindEconomyWiki, economyWikiButton } from "../economy-wiki";
 
-const DEFAULTS = TradeAnimation.getDefaultOptions();
+const DEFAULTS = DEFAULT_TRADE_ANIMATION;
 const INPUTS = [
   {
     id: "tradeAnimConcurrent",

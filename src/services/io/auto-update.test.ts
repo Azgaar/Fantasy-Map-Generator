@@ -6,6 +6,7 @@ import "@/model/physical/biomes-generator"; // the 1.139 step reads the default 
 import "@/model/physical/features-generator"; // migrations call the Features module through its global
 import "@/model/political/burgs-generator"; // the burg sets that tell style icon references from text
 import { Goods } from "@/model/economy/goods-generator"; // also the goods icon namespace the 1.154 step migrates into
+import { Production } from "@/model/economy/production-generator";
 import "@/model/physical/relief-generator"; // the relief set namespace the 1.154 step migrates into
 import { Pack } from "@/model/graph/pack-generator";
 import { Options } from "@/model/options/options-model";
@@ -1174,51 +1175,29 @@ describe("v1.157.0 contour spacing in height units", () => {
   });
 });
 
-describe("v1.157.0 deal tuples", () => {
-  const legacyDeal = (i: number, burgSells: boolean, good: number, units: number, price: number, tax = 0) => ({
-    i,
-    seller: 1,
-    sellerType: burgSells ? "burg" : "market",
-    buyer: 1,
-    buyerType: burgSells ? "market" : "burg",
-    good,
-    units,
-    price,
-    tax
-  });
-
-  it("sums a burg's deals by market, good and kind, and keeps its production as totals", async () => {
-    const records = [
-      { goodId: 5, units: 2 },
-      { dealId: 0 },
-      { goodId: 6, units: 1, recipe: [{ goodId: 3, units: 2 }] },
-      { dealId: 1 },
-      { dealId: 2 },
-      { dealId: 3 }
-    ];
+describe("v1.157.0 economy", () => {
+  it("moves state finances, drops burg markets and runs the day again", async () => {
     globalThis.pack = {
       features: [],
-      burgs: [0, { i: 1, market: 1, production: records }],
-      deals: [
-        legacyDeal(0, false, 3, 2, 1), // an input bought before the sale
-        legacyDeal(1, true, 6, 1, 9, 0.9),
-        legacyDeal(2, false, 4, 1, 2), // demand fill comes after the last sale
-        legacyDeal(3, false, 4, 3, 4),
-        { ...legacyDeal(4, false, 3, 5, 1), buyerType: "market", buyer: 2 } // market-to-market trade
-      ]
+      cells: { i: [0], state: [1], culture: [1], religion: [1], pop: [1], burg: [1] },
+      burgs: [0, { i: 1, cell: 0, state: 1, population: 1, market: 1 }],
+      states: [
+        { i: 0, name: "Neutrals" },
+        { i: 1, capital: 1, form: "Monarchy", salesTax: 0.15, pollTax: 0.2, treasury: 40, tariffs: [] }
+      ],
+      goods: [{ i: 1, name: "Wood", value: 1, carriage: 0.5 }],
+      markets: [{ i: 1, centerBurgId: 1, color: "#fff", goods: {} }],
+      deals: [{ i: 0, seller: 1, sellerType: "burg", buyer: 1, buyerType: "market", good: 1, units: 1, price: 1 }]
     } as unknown as typeof pack;
+    const regenerate = vi.spyOn(Production, "regenerate").mockImplementation(() => {});
 
-    await resolveVersionConflicts(VERSION, []);
+    await resolveVersionConflicts("1.156.0", []);
 
-    expect(pack.deals).toEqual([
-      [1, 1, 3, 1, 2, 1, 0, 0, 0],
-      [1, 1, 6, 0, 1, 9, 0.9, 0, 0],
-      [1, 1, 4, 2, 4, 3.5, 0, 0, 0]
-    ]);
-    expect(pack.burgs[1].production).toEqual([
-      [5, 2],
-      [6, 1]
-    ]);
+    expect(regenerate).toHaveBeenCalledOnce();
+    regenerate.mockRestore();
+    expect(pack.burgs[1]).not.toHaveProperty("market");
+    expect(pack.states[1]).not.toHaveProperty("treasury");
+    expect(pack.states[1].economy).toMatchObject({ salesTax: 0.15, pollTax: 0.2, tariffs: [] });
   });
 });
 
@@ -1233,7 +1212,7 @@ describe("v1.157.0 carriage per good", () => {
       ]
     } as unknown as typeof pack;
 
-    await resolveVersionConflicts(VERSION, []);
+    await resolveVersionConflicts("1.156.0", []);
 
     expect(pack.goods.map(good => good.carriage)).toEqual([0.5, 3, 2]);
   });
@@ -1252,7 +1231,7 @@ describe("v1.157.0 deposit counts", () => {
       ]
     } as unknown as typeof pack;
 
-    await resolveVersionConflicts(VERSION, []);
+    await resolveVersionConflicts("1.156.0", []);
 
     const kept = (id: number) => Array.from(pack.cells.good).filter(good => good === id).length;
     expect(kept(1)).toBeGreaterThan(50); // a sixth of 450

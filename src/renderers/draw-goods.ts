@@ -123,12 +123,11 @@ function buildCellProduction(displayedGoods: Set<number>): void {
 
   // First pass: accumulate total production per cell to find the global max
   const cellTotals = new Map<number, { produced: Map<number, number>; total: number }>();
-  const biomeProduction = Goods.getBiomesProduction();
+  const rural = Production.getRuralOutput();
   let maxTotal = 0;
   for (const cellId of pack.cells.i) {
     let total = 0;
-    const produced = Production.getCellProduction(cellId, biomeProduction);
-    const filteredProduced = Object.entries(produced).reduce((map, [goodId, amount]) => {
+    const filteredProduced = Object.entries(rural[cellId]).reduce((map, [goodId, amount]) => {
       if (displayedGoods.has(+goodId)) {
         map.set(+goodId, amount);
         total += amount;
@@ -166,12 +165,12 @@ function getSaturation(values: number[]): number {
 /** Every producing cell in its most valuable good's color, its opacity following its output value */
 function buildCellOverview(): void {
   cellProduction = [];
-  const biomeProduction = Goods.getBiomesProduction();
+  const rural = Production.getRuralOutput();
   const cells: [number, number, string][] = [];
   for (const cellId of pack.cells.i) {
     let value = 0;
     let top: { color: string; value: number } | null = null;
-    for (const [goodId, units] of Object.entries(Production.getCellProduction(cellId, biomeProduction))) {
+    for (const [goodId, units] of Object.entries(rural[cellId])) {
       const good = Goods.get(+goodId);
       const goodValue = good ? units * good.value : 0;
       if (!good || goodValue <= 0) continue;

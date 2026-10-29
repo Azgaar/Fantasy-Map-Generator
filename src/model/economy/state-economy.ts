@@ -2,7 +2,7 @@
 // Worked out from burgs, deals and markets on demand, so it needs nothing saved of its own
 
 import { States } from "@/model/political/states-generator";
-import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS, Goods } from "./goods-generator";
+import { Goods } from "./goods-generator";
 import { DEAL_KINDS, type Deal, Markets } from "./markets-generator";
 import { Production } from "./production-generator";
 import { type Living, PROSPERITY_LEVELS, Prosperity } from "./prosperity";
@@ -67,12 +67,11 @@ class StateEconomyModule {
       exportedUnits: [],
       importedUnits: []
     };
-    const marketState = (marketId: number) => pack.burgs[Markets.get(marketId)?.centerBurgId ?? 0]?.state || 0;
     for (const deal of pack.deals) {
       const [burgId, marketId, goodId, kind] = deal;
       if (kind === DEAL_KINDS.kept) continue;
       const burgState = pack.burgs[burgId]?.state || 0;
-      const market = marketState(marketId);
+      const market = Markets.getState(Markets.get(marketId));
       if (burgState === market || (burgState !== stateId && market !== stateId)) continue;
       // a burg selling abroad or a foreign burg buying here is an export; a burg buying abroad, an import
       const isExport = kind === DEAL_KINDS.sale ? burgState === stateId : market === stateId;
@@ -146,36 +145,12 @@ class StateEconomyModule {
       for (const burg of pack.burgs)
         if (burg.i && !burg.removed)
           for (const [goodId, units] of burg.production ?? []) add(burg.state || 0, goodId, units);
-      const biomes = Goods.getBiomesProduction();
-      for (const cellId of pack.cells.i) {
-        if (!pack.cells.market[cellId]) continue;
-        const produced = Production.getCellProduction(cellId, biomes);
+      Production.getRuralOutput().forEach((produced, cellId) => {
+        if (!pack.cells.market[cellId]) return;
         for (const [goodId, units] of Object.entries(produced)) add(pack.cells.state[cellId], +goodId, units);
-      }
+      });
     }
     return this.outputs.get(stateId) ?? [];
-  }
-
-  /** Of each need, the share its townspeople had met; rural people live off their fields */
-  getNeedsMet(stateId: number): number[] {
-    const needed = DEMAND_PRIORITY.map(() => 0);
-    const met = DEMAND_PRIORITY.map(() => 0);
-    for (const burg of pack.burgs) {
-      if (!burg.i || burg.removed || burg.state !== stateId || !burg.population || !burg.market) continue;
-      const covered = DEMAND_PRIORITY.map(() => 0);
-      Prosperity.getConsumption(burg.i).forEach((units, goodId) => {
-        const coverage = Goods.get(goodId)?.demandCoverage ?? {};
-        DEMAND_PRIORITY.forEach((category, index) => {
-          covered[index] += units * (coverage[category] || 0);
-        });
-      });
-      DEMAND_PRIORITY.forEach((category, index) => {
-        const target = burg.population! * DEMAND_TARGET_FACTORS[category];
-        needed[index] += target;
-        met[index] += Math.min(target, covered[index]);
-      });
-    }
-    return needed.map((target, index) => (target ? met[index] / target : 1));
   }
 
   private index(): void {
@@ -249,15 +224,13 @@ class StateEconomyModule {
     for (const deal of pack.deals) {
       const margin = Markets.getMargin(deal);
       if (!margin) continue;
-      const center = pack.burgs[Markets.get(deal[1])?.centerBurgId ?? 0];
-      for (const accounts of [of(center?.state || 0), of(-1)]) accounts.trade += margin;
+      for (const accounts of [of(Markets.getState(Markets.get(deal[1]))), of(-1)]) accounts.trade += margin;
     }
     // rural purchases make no deals, but their margin goes to the center too
     for (const market of pack.markets) {
       const margin = market.rural?.margin;
       if (!margin) continue;
-      const center = pack.burgs[market.centerBurgId];
-      for (const accounts of [of(center?.state || 0), of(-1)]) accounts.trade += margin;
+      for (const accounts of [of(Markets.getState(market)), of(-1)]) accounts.trade += margin;
     }
 
     const average = (row: GroupLiving | undefined): GroupLiving | null =>

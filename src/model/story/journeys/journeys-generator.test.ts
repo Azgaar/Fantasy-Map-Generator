@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { Transports } from "@/model/economy/transports-generator";
 import { Rivers } from "@/model/physical/river-generator";
+import { Transports } from "@/model/story/journeys/transports-generator";
 import type { Journey, JourneySegment } from "@/types/journey";
 import { Journeys } from "./journeys-generator";
 
@@ -24,7 +24,7 @@ const makeSeg = (
 
 describe("journey metrics", () => {
   beforeEach(async () => {
-    await import("@/model/economy/transports-generator");
+    await import("@/model/story/journeys/transports-generator");
     options.map.units.distance = { unit: "km", scale: 1 };
     options.map.transports = Transports.getDefaults();
     await import("./journeys-generator");
@@ -358,7 +358,7 @@ describe("land pathfinding respects terrain", () => {
 
   beforeEach(async () => {
     (globalThis as any).pack = makeTerrainPack();
-    await import("@/model/economy/transports-generator");
+    await import("@/model/story/journeys/transports-generator");
     options.map.units.distance = { unit: "km", scale: 1 };
     options.map.transports = Transports.getDefaults();
     await import("./journeys-generator");

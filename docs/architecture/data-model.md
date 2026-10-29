@@ -164,11 +164,10 @@ Burgs (settlements) data is stored as an array of objects with strict element or
 - `link`: `string` - custom link to burg in MFCG. `MFCG` seed is not used if link is provided
 - `capital`: `number` - `1` if burg is a capital, `0` if not (each state has only 1 capital)
 - `port`: `number` - if burg is not a port, then `0`, otherwise feature id of the water body the burg trades by. For coastal burgs this is the adjacent sea/lake; for burgs on a navigable river it is the water body the river ultimately drains into (the ocean, or a closed lake for endorheic basins), so river burgs join that body's sea-route network
-- `market`: `number` - id of the market this burg belongs to (`0` if none). Derived from `cells.market[burg.cell]` during market territory expansion
 - `production`: `[good: number, units: number][]` - units of each good made in the last production run, local bonus included. The burg's trades are its `pack.deals`. Economy debug mode keeps every step of the run in memory, never in the burg (see `EconomyDebug` in the economy domain doc)
 - `product`: `number` - net product (gross sell revenue minus ingredient costs) from the last production run
 - `treasury`: `number` - cash balance after the last economy run, below zero when the burg is in debt: reset to minus the burg's poll tax, and a market center's license fee, when production starts, then changed by ingredient purchases, post-tax sale revenue, and demand-fill purchases. The Burg Editor can also set it by hand; production is not recalculated to match, and the next run starts over
-- `pollTaxPaid`: `number` - poll tax paid to its state in the last economy run: its state's `pollTax` × its population, 0 for a burg with no market or of the neutrals. Absent on maps saved before the poll tax was charged
+- `pollTaxPaid`: `number` - poll tax paid to its state in the last economy run: its state's `pollTax` × its population, 0 for a burg with no market or of the neutrals
 - `citadel`: `number` - `1` if burg has a castle, `0` if not. Used for MFCG
 - `plaza`: `number` - `1` if burg has a marketplace, `0` if not. Used for MFCG
 - `shanty`: `number` - `1` if burg has a shanty town, `0` if not. Used for MFCG
@@ -490,7 +489,7 @@ Goods (tradable resources and products) are stored in `pack.goods: Good[]`. Good
 
 ## Markets
 
-Markets (regional economic hubs) are stored in `pack.markets: Market[]`. Note the market `i` starts at `1` and is **not** the array index — use `Markets.get(i)` (backed by a sparse `marketById`) for lookups. A `cells.market` value of `0` means the cell is unassigned. Stored in .map file. Object structure:
+Markets (regional economic hubs) are stored in `pack.markets: Market[]`. Note the market `i` starts at `1` and is **not** the array index — use `Markets.get(i)` (backed by a sparse `marketById`) for lookups. A `cells.market` value of `0` means the cell is unassigned. A burg belongs to its cell's market (`Markets.ofBurg`). Stored in .map file. Object structure:
 
 - `i`: `number` - market id (starts at 1, not the array index)
 - `centerBurgId`: `number` - id of the burg the market is anchored at

@@ -1,12 +1,12 @@
 import { TRANSPORT_DOMAIN_LABELS } from "@/data/id-labels";
+import { Options } from "@/model/options/options-model";
+import { Journeys } from "@/model/story/journeys/journeys-generator";
 import {
   MAX_HOURS_PER_DAY,
   type Transport,
   type TransportDomain,
   Transports
-} from "@/model/economy/transports-generator";
-import { Options } from "@/model/options/options-model";
-import { Journeys } from "@/model/story/journeys/journeys-generator";
+} from "@/model/story/journeys/transports-generator";
 import { convertSpeed, getDistanceUnit, parseSpeed } from "@/model/units";
 import { Dialog } from "@/ui/dialog/dialog";
 

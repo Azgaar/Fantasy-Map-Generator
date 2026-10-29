@@ -50,10 +50,8 @@ export class ProductionModule {
   }
 
   regenerateEconomy(): void {
-    if (!pack.goods?.length) Goods.generate();
-    else Goods.sync();
-
-    Markets.expandTerritories(pack.markets);
+    Goods.sync();
+    Markets.expandTerritories();
     this.regenerate();
   }
 
@@ -67,7 +65,8 @@ export class ProductionModule {
       marketFees[market.centerBurgId] = (marketFees[market.centerBurgId] || 0) + market.feePaid;
     }
 
-    Markets.collectRuralProduction();
+    const rural = this.getRuralOutput();
+    Markets.collectRuralProduction(rural);
     Markets.initializeMarketPrices();
     Markets.measureRoutes();
     const recording = EconomyDebug.start();
@@ -79,7 +78,7 @@ export class ProductionModule {
 
     const states: BurgProductionState[] = [];
     for (const burg of sortedBurgs) {
-      const market = burg.market ? Markets.get(burg.market) : undefined;
+      const market = Markets.ofBurg(burg);
       // the poll tax is the day's first claim: the burg starts owing it and pays it from its first sales
       burg.pollTaxPaid = market ? rn(States.getPollTaxDue(burg.state || 0, burg.population || 0), 2) : 0;
       burg.treasury = -burg.pollTaxPaid - (marketFees[burg.i!] || 0);
@@ -116,7 +115,7 @@ export class ProductionModule {
     Markets.endRun();
     StateOrders.end();
     pack.deals = pack.deals.filter(deal => deal[4] > 0); // sales kept back whole
-    pack.cells.prosperity = Prosperity.getCellsProsperity();
+    pack.cells.prosperity = Prosperity.getCellsProsperity(rural);
 
     for (const { burg, produced, revenue, ingredientCosts, log } of states) {
       burg.product = rn(Math.max(0, revenue - ingredientCosts), 2);
@@ -133,7 +132,6 @@ export class ProductionModule {
     const productiveGoods = goods.filter(good => recipesByOutput[good.i]?.length);
 
     return {
-      goods,
       demandCoverageByGood,
       demandGoodsByCategory,
       recipesByOutput,
@@ -285,19 +283,12 @@ export class ProductionModule {
     budget = Infinity
   ): Trade | null {
     const { burg } = state;
-    let market = state.market;
-    let trade: Trade | null;
     const sources = state.log && Markets.listSources(burg, good, index.tradeTerms); // before the trade moves them
-    const localStock = market.goods[good.i]?.stock || 0;
-    const source = localStock < MIN_LOCAL_STOCK ? this.getSource(index, state, good) : null;
-    if (source) {
-      state.sources[good.i] = undefined; // the source's stock and price moved
-      market = source.source;
-      trade = Markets.buyFromSource({ burg, source: market, good, units, kind, terms: index.tradeTerms, budget });
-    } else if (localStock > 0.01) {
-      trade = Markets.buy({ burg, good, units, kind, budget });
-    } else return null;
+    const market = this.getSupplier(index, state, good);
+    if (!market) return null;
+    if (market !== state.market) state.sources[good.i] = undefined; // the source's stock and price moved
 
+    const trade = Markets.buy({ burg, good, units, kind, source: market, terms: index.tradeTerms, budget });
     if (trade) state.log?.push({ goodId: good.i, market: market.i, kind, ...trade, sources: sources || undefined });
     return trade;
   }
@@ -305,12 +296,17 @@ export class ProductionModule {
   /** The local quote while the burg's market stocks enough of the good, otherwise the turn's cheapest other market, or what its own has left */
   private quote(index: ProductionIndex, state: BurgProductionState, goodId: number): MarketQuote {
     const local = Markets.quoteMarket(state.market, goodId, state.burg);
-    if (local.stock >= MIN_LOCAL_STOCK) return local;
-
     const good = Goods.get(goodId);
-    const source = good && this.getSource(index, state, good);
-    if (source) return { ...local, stock: source.stock, buyPrice: source.buyPrice };
-    return local.stock > 0.01 ? local : { ...local, stock: 0 }; // a remainder too small to buy is no stock
+    const supplier = good && this.getSupplier(index, state, good);
+    if (!supplier) return { ...local, stock: 0 }; // a remainder too small to buy is no stock
+    if (supplier === state.market) return local;
+    const source = state.sources[goodId]!;
+    return { ...local, stock: source.stock, buyPrice: source.buyPrice };
+  }
+
+  /** Where the burg buys the good this turn */
+  private getSupplier(index: ProductionIndex, state: BurgProductionState, good: Good): Market | null {
+    return Markets.getSupplier(state.market, good, () => this.getSource(index, state, good)?.source);
   }
 
   /** The turn's cheapest other market for the good, null when none sells it */
@@ -818,7 +814,7 @@ export class ProductionModule {
       if (!feasible || !nextActionPlan || workersNeeded > workersLeft + 0.001) continue;
 
       const projectedGain = totalProjectedGain - marketCost;
-      const normalizedGain = workersNeeded > 0 ? projectedGain / workersNeeded : projectedGain;
+      const normalizedGain = projectedGain / workersNeeded;
       const action = nextActionPlan.action;
       const candidate: ProductionCandidate = {
         ...nextActionPlan.candidate,
@@ -867,7 +863,7 @@ export class ProductionModule {
     for (const good of index.productiveGoods) {
       const goalPlan = this.planGoodAction(index, state, good, fraction, fraction, workersLeft, [], undefined, quotes);
       if (!goalPlan || goalPlan.projectedGain <= 0) continue;
-      candidates.push(goalPlan.candidate);
+      if (state.log) candidates.push(goalPlan.candidate); // only the debug log reads them
       if (good.i === activeGoalGoodId) activeGoal = goalPlan;
       if (!chosenGoal || goalPlan.normalizedGain > chosenGoal.normalizedGain + 0.001) chosenGoal = goalPlan;
     }
@@ -916,11 +912,18 @@ export class ProductionModule {
     return Object.fromEntries(burg.production ?? []);
   }
 
-  // Rural production for a single land cell
-  getCellProduction(
-    cellId: number,
-    biomeProduction: Record<number, { goodId: number; production: number }[]>
-  ): Record<number, number> {
+  /** Each cell's rural output a day, units by good id */
+  getRuralOutput(): Record<number, number>[] {
+    const biomes = Goods.getBiomesProduction();
+    return Array.from(pack.cells.i, cellId => this.getCellOutput(cellId, biomes));
+  }
+
+  /** A cell's rural output a day, units by good id */
+  getCellProduction(cellId: number): Record<number, number> {
+    return this.getCellOutput(cellId, Goods.getBiomesProduction());
+  }
+
+  private getCellOutput(cellId: number, biomes: ReturnType<typeof Goods.getBiomesProduction>): Record<number, number> {
     const produced: Record<number, number> = {};
 
     const modifier = (good: Good) => this.getModifiers(good, cellId);
@@ -930,7 +933,7 @@ export class ProductionModule {
 
     const pop = this.getCellPopulation(cellId);
     if (pop > 0) {
-      for (const { goodId, production } of biomeProduction[pack.cells.biome[cellId]] || []) {
+      for (const { goodId, production } of biomes[pack.cells.biome[cellId]] || []) {
         const good = Goods.get(goodId);
         if (good) add(goodId, pop * production * modifier(good));
       }
@@ -1020,7 +1023,6 @@ type Recipe = { good: Good; ingredients: Ingredient[] };
 type Ingredient = { goodId: number; amount: number };
 
 type ProductionIndex = {
-  goods: Good[];
   demandCoverageByGood: number[][];
   demandGoodsByCategory: DemandGoodCandidate[][];
   recipesByOutput: Recipe[][];

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { expect, it } from "vitest";
-import "@/model/economy/transports-generator";
+import "@/model/story/journeys/transports-generator";
 import { MapRepair } from "./map-repair";
 
 it("unassigns each invalid cell owner from its own array only", () => {

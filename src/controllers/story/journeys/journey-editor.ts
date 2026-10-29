@@ -1,5 +1,4 @@
 import { Controllers } from "@/controllers";
-import { Transports } from "@/model/economy/transports-generator";
 import {
   type CellPlace,
   cellEndpointLabel,
@@ -7,6 +6,7 @@ import {
   resolveCellPlace
 } from "@/model/story/journeys/journey-places";
 import { Journeys } from "@/model/story/journeys/journeys-generator";
+import { Transports } from "@/model/story/journeys/transports-generator";
 import { convertSpeed, formatSpeed, getDistanceUnit, parseSpeed } from "@/model/units";
 import { startJourneyTravel, stopJourneyTravel } from "@/renderers/journey-travel";
 import { Layers } from "@/renderers/layers";

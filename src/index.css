@@ -2269,6 +2269,15 @@ svg.button {
   }
 }
 
+/* Economy amounts: money gained and money paid out, as ECONOMY_COLORS */
+.dialog-window .positive {
+  color: #1b7a43;
+}
+
+.dialog-window .negative {
+  color: #a34a14;
+}
+
 /* Market Deals */
 div.states > .marketDealUnits {
   width: 4em;

@@ -2,8 +2,8 @@
 
 import type { LabelType } from "@/model/annotations/labels-generator";
 import type { DemandCategory } from "@/model/economy/goods-generator";
-import type { TransportDomain } from "@/model/economy/transports-generator";
 import type { Sampling } from "@/model/graph/lattice";
+import type { TransportDomain } from "@/model/story/journeys/transports-generator";
 import { t } from "@/utils/i18n";
 
 export const FEATURE_SUBTYPE_LABELS: Record<string, string> = {

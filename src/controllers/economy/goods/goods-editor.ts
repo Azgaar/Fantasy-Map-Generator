@@ -2,7 +2,7 @@ import { select } from "d3";
 import { Controllers } from "@/controllers";
 import type { Good } from "@/model/economy/goods-generator";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, Goods } from "@/model/economy/goods-generator";
-import { DEAL_KINDS, Markets } from "@/model/economy/markets-generator";
+import { Markets } from "@/model/economy/markets-generator";
 import { Production } from "@/model/economy/production-generator";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
@@ -13,6 +13,7 @@ import { Layers } from "@/renderers/layers";
 import { LegendBoxes } from "@/renderers/legend-boxes";
 import { Csv } from "@/services/io/csv";
 import type { LegendItem } from "@/types/legend";
+import { runMapCommand } from "@/ui/app-commands";
 import { Dialog } from "@/ui/dialog/dialog";
 import { noteIcon, refreshEditors } from "@/ui/dialog/dialog-helpers";
 import { bindColumnSorting, sortDataByColumns } from "@/ui/dialog/sorting";
@@ -94,7 +95,7 @@ const columns: EditorColumn<Good>[] = [
     width: "6em",
     sortBy: good => stockData[good.i]?.total ?? 0,
     marginLeft: ".7em",
-    tip: sentences(t("Total units in stock across all markets and burg inventories"), t("Click to sort"))
+    tip: sentences(t("Units left in stock across all markets"), t("Click to sort"))
   },
   {
     key: "price",
@@ -206,7 +207,7 @@ function renderDialog(): void {
       <div id="goodsFooter" class="totalLine hide">
         <div data-tip="${t("Goods shown on the Goods layer")}" style="margin-left: 5px">${t("Goods")}:&nbsp;${t("{{- shown}} of {{- total}}", { shown: `<span id="goodsDisplayed">0</span>`, total: `<span id="goodsNumber">0</span>` })}</div>
         <div data-tip="${t("Total units produced daily by all cells and burgs")}" style="margin-left: 12px">${t("Produced")}:&nbsp;<span id="goodsProduced">0</span></div>
-        <div data-tip="${t("Total units in stock across all markets and burg inventories")}" style="margin-left: 12px">${t("Stock")}:&nbsp;<span id="goodsStock">0</span></div>
+        <div data-tip="${t("Units left in stock across all markets")}" style="margin-left: 12px">${t("Stock")}:&nbsp;<span id="goodsStock">0</span></div>
       </div>
       <div id="goodsBottom">
         <button id="goodsEditorRefresh" data-tip="${t("Refresh")}" class="icon-cw"></button>
@@ -258,8 +259,8 @@ function renderDialog(): void {
   ensureEl("goodsImport").addEventListener("click", () => Csv.pick(uploadGoodsCsv));
   ensureEl("goodsDisplayAll").addEventListener("change", toggleAllDisplayed);
   ensureEl("goodsChains").addEventListener("click", () => Controllers.ProductionChains.open());
-  ensureEl("goodsRegenerateGoods").addEventListener("click", requestGoodsRegeneration);
-  ensureEl("goodsRegenerateProduction").addEventListener("click", requestProductionRegeneration);
+  ensureEl("goodsRegenerateGoods").addEventListener("click", () => runMapCommand("regenerateGoods"));
+  ensureEl("goodsRegenerateProduction").addEventListener("click", () => runMapCommand("regenerateProduction"));
 
   ensureEl("goodsBody").addEventListener("click", ev => {
     const el = ev.target as HTMLElement;
@@ -321,7 +322,7 @@ function renderGoodsPage(view: TableView<Good>) {
         burgs: `${rn(goodProduction.burg, 2)}⚒`
       });
       const stock = rn(stockData[good.i]?.total ?? 0);
-      const stockTip = `${t("Total units in stock across all markets and burg inventories")}: ${stock}`;
+      const stockTip = `${t("Units left in stock across all markets")}: ${stock}`;
 
       return /*html*/ `<div class="states goods" data-id=${good.i} data-produced="${produced}" data-stock="${stock}">
         <div data-col="display"><input type="checkbox" data-tip="${t("Show this good on the Goods layer")}" class="native goodDisplayed" style="margin: 0; width: 1.2em;" ${good.visible ? "checked" : ""} /></div>
@@ -391,14 +392,13 @@ function getProducers(goodId: number): Producer[] {
   const { cells, states, provinces, burgs } = pack;
   const byState: number[] = [];
   const byProvince: number[] = [];
-  const biomeProduction = Goods.getBiomesProduction();
-  for (const cellId of cells.i) {
-    const units = Production.getCellProduction(cellId, biomeProduction)[goodId];
-    if (!units) continue;
+  Production.getRuralOutput().forEach((produced, cellId) => {
+    const units = produced[goodId];
+    if (!units) return;
     byState[cells.state[cellId]] = (byState[cells.state[cellId]] || 0) + units;
     const provinceId = cells.province?.[cellId];
     if (provinceId) byProvince[provinceId] = (byProvince[provinceId] || 0) + units;
-  }
+  });
 
   type Region = { name: string; center?: number; pole?: [number, number]; removed?: boolean };
   const regions = (type: string, list: Region[], units: number[]): Producer[] =>
@@ -460,48 +460,24 @@ function openProducersDialog(goodId: number) {
   }
 }
 
-type StockSource = { name: string; type: "market" | "burg"; x: number; y: number; id: number; stock: number };
+type StockSource = { name: string; x: number; y: number; stock: number };
 
+/** Each good's stock left in the markets after the last run */
 function getAllStockData(): Record<number, { total: number; sources: StockSource[] }> {
   const result: Record<number, { total: number; sources: StockSource[] }> = {};
   for (const good of pack.goods) result[good.i] = { total: 0, sources: [] };
 
   for (const market of pack.markets || []) {
-    const centerBurg = pack.burgs[market.centerBurgId];
-    if (!centerBurg) continue;
-    const x = centerBurg.x ?? 0;
-    const y = centerBurg.y ?? 0;
-    const marketName = Markets.getName(market);
-
-    for (const [goodIdStr, { stock }] of Object.entries(market.goods)) {
-      const goodId = +goodIdStr;
-      if (!result[goodId] || stock <= 0) continue;
-      result[goodId].total += stock;
-      result[goodId].sources.push({ name: marketName, type: "market", x, y, id: market.i, stock });
+    const center = pack.burgs[market.centerBurgId];
+    if (!center) continue;
+    for (const [goodId, { stock }] of Object.entries(market.goods)) {
+      if (!result[+goodId] || stock <= 0) continue;
+      result[+goodId].total += stock;
+      result[+goodId].sources.push({ name: Markets.getName(market), x: center.x, y: center.y, stock });
     }
-  }
-
-  // a burg sells or uses up all it makes and buys for production, so it holds only what covers its demand
-  const burgStocks = new Map<string, StockSource>();
-  for (const [burgId, , goodId, kind, units] of pack.deals || []) {
-    const burg = pack.burgs[burgId];
-    const covers = kind === DEAL_KINDS.demand || kind === DEAL_KINDS.kept;
-    if (!covers || !result[goodId] || !burg?.i || burg.removed) continue;
-    result[goodId].total += units;
-
-    const source = burgStocks.get(`${burgId}-${goodId}`);
-    if (source) {
-      source.stock = rn(source.stock + units, 2);
-      continue;
-    }
-    const name = burg.name || `Burg ${burg.i}`;
-    const stock: StockSource = { name, type: "burg", x: burg.x ?? 0, y: burg.y ?? 0, id: burg.i, stock: units };
-    burgStocks.set(`${burgId}-${goodId}`, stock);
-    result[goodId].sources.push(stock);
   }
 
   for (const good of pack.goods) result[good.i].total = rn(result[good.i].total, 2);
-
   return result;
 }
 
@@ -509,11 +485,9 @@ function openStockDialog(goodId: number) {
   const good = Goods.get(goodId);
   if (!good) return;
 
-  const stockData = getAllStockData();
-  const data = stockData[goodId];
-  const sources = data?.sources ?? [];
+  const sources = stockData[goodId]?.sources ?? [];
 
-  let message = `<i style="color:#888">${t("No stock of {{good}} found in any market or burg inventory.", { good: good.name })}</i>`;
+  let message = `<i style="color:#888">${t("No stock of {{good}} in any market", { good: good.name })}</i>`;
   if (sources.length) {
     const header = /*html*/ `
       <div class="header" style="grid-template-columns: 1.6em 7em 4em;">
@@ -525,8 +499,8 @@ function openStockDialog(goodId: number) {
       .sort((a, b) => b.stock - a.stock)
       .map(
         source => /*html*/ `
-        <div data-tip="${t("Click to zoom")}" class="states pointer" data-x="${source.x}" data-y="${source.y}" data-id="${source.id}">
-          <div class="${source.type === "market" ? "icon-store" : "icon-dot-circled"}" style="width:1em"></div>
+        <div data-tip="${t("Click to zoom")}" class="states pointer" data-x="${source.x}" data-y="${source.y}">
+          <div class="icon-store" style="width:1em"></div>
           <div style="width:7em;">${source.name}</div>
           <div style="width:4em;">${source.stock}</div>
         </div>`
@@ -552,14 +526,8 @@ function getProduction() {
     production[goodId][type] += amount;
   };
 
-  // rural production
-  const productionByBiome = Goods.getBiomesProduction();
-  for (const cellId of pack.cells.i) {
-    const produced = Production.getCellProduction(cellId, productionByBiome);
-    for (const goodId in produced) {
-      addProduction(Number(goodId), produced[goodId] || 0, "cell");
-    }
-  }
+  for (const produced of Production.getRuralOutput())
+    for (const goodId in produced) addProduction(Number(goodId), produced[goodId] || 0, "cell");
 
   // burg production
   for (const burg of pack.burgs) {
@@ -733,7 +701,7 @@ function downloadGoodsData() {
   const cellsByGood = countDeposits();
 
   const production = getProduction();
-  const stockData = getAllStockData();
+  const stock = getAllStockData();
 
   const rows = pack.goods.map(good => {
     const types = [good.recipes && "MFG", good.distribution && "RAW"].filter(Boolean).join(";");
@@ -753,7 +721,7 @@ function downloadGoodsData() {
       good.distribution,
       cellsByGood[good.i] || 0,
       rn(goodProduction.burg + goodProduction.cell),
-      stockData[good.i]?.total ?? 0
+      stock[good.i]?.total ?? 0
     ];
   });
   Csv.download("Goods", CSV_COLUMNS, rows);
@@ -853,37 +821,6 @@ function updateDisplayAllCheckbox() {
   master.checked = total > 0 && visibleCount === total;
   master.indeterminate = visibleCount > 0 && visibleCount < total;
   ensureEl("goodsDisplayed").innerHTML = String(getVisibleCount());
-}
-
-function requestGoodsRegeneration() {
-  Dialog.confirm({
-    title: t("Regenerate deposits"),
-    message: t(
-      "Are you sure you want to regenerate deposits? Generation will be based on the current Goods settings and won't affect production or trade"
-    ),
-    confirm: t("Regenerate"),
-    onConfirm: () => {
-      Goods.regenerate();
-      Layers.draw("goods");
-      refreshEditors();
-    }
-  });
-}
-
-function requestProductionRegeneration() {
-  Dialog.confirm({
-    title: t("Regenerate Production"),
-    message: t(
-      "Are you sure you want to regenerate production and trade for all goods? Generation will be based on the current Goods settings and deposits"
-    ),
-    confirm: t("Regenerate"),
-    onConfirm: () => {
-      Production.regenerate();
-      Layers.draw("goods");
-      Layers.draw("trade");
-      refreshEditors();
-    }
-  });
 }
 
 function removeGood(good: Good) {

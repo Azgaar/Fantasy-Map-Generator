@@ -884,6 +884,7 @@ function regenerateGoods(): void {
 
 function regenerateMarkets(): void {
   Markets.regenerate();
+  Production.regenerate();
   Layers.draw("markets", "goods", "trade");
 }
 

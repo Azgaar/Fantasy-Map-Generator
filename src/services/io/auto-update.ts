@@ -7,7 +7,7 @@ import { AddedLabels } from "@/model/annotations/added-labels";
 import { type Label, type LabelNameMode, Labels } from "@/model/annotations/labels-generator";
 import { type Measurer, Measurers, type MeasurerType } from "@/model/annotations/measurers-generator";
 import { type Good, Goods } from "@/model/economy/goods-generator";
-import { DEAL_KINDS, Markets } from "@/model/economy/markets-generator";
+import { Markets } from "@/model/economy/markets-generator";
 import { Production } from "@/model/economy/production-generator";
 import type { GraphOverrides } from "@/model/graph/graph-override";
 import { Pack } from "@/model/graph/pack-generator";
@@ -26,7 +26,7 @@ import { Burgs } from "@/model/political/burgs-generator";
 import { Emblems } from "@/model/political/emblems-generator";
 import { Military } from "@/model/political/military-generator";
 import { Provinces } from "@/model/political/provinces-generator";
-import { noExpenses, noFinance, type State, type StateFinance, States } from "@/model/political/states-generator";
+import { noFinance, type State, type StateFinance, States } from "@/model/political/states-generator";
 import { Zones } from "@/model/political/zones-generator";
 import { Cultures } from "@/model/society/cultures-generator";
 import { Religions } from "@/model/society/religions-generator";
@@ -1171,7 +1171,6 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       .style("display", "none");
     selectInSvg("#viewbox").insert("g", "#goods").attr("id", "tradeAnimation").style("display", "none");
 
-    // the economy runs below read state finances in their current place
     for (const state of pack.states) {
       if (!state) continue;
       const rates = state.i && !state.removed ? States.defineTaxRates(state) : {};
@@ -1179,9 +1178,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
     }
 
     Goods.generate();
-    Markets.generate();
-    Production.produce();
-    States.collectTaxes();
+    Markets.generate(); // the v1.157.0 step runs the economy
   }
 
   if (isOlderThan("1.138.0")) {
@@ -2182,99 +2179,50 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       else if (content !== icon.content) CustomIcons.update(icon.id, { content });
     }
 
-    // debug step logs were saved with burgs; they are kept in memory now (EconomyDebug)
-    for (const burg of pack.burgs ?? []) delete (burg as { productionLog?: unknown } | undefined)?.productionLog;
-
     // v1.157.0 moves state finances to state.economy and adds market fees, corruption and the state budget
     const FINANCE_KEYS = ["salesTax", "pollTax", "marketFee", "treasury", "tariffs"] as const;
     for (const state of pack.states ?? []) {
       if (!state) continue;
       const legacy = state as State & Partial<StateFinance>;
-      const { salesTax = 0, pollTax = 0, treasury = 0, tariffs = [] } = legacy;
+      const { salesTax = 0, pollTax = 0, tariffs = [] } = legacy;
       for (const key of FINANCE_KEYS) delete legacy[key];
-      state.economy ??= { ...noFinance(), salesTax, pollTax, treasury, tariffs, collected: treasury }; // no corruption or spending yet
-      state.economy.collected ??= state.economy.treasury;
+      state.economy ??= { ...noFinance(), salesTax, pollTax, tariffs }; // the v1.124.0 step sets it for older maps
       state.economy.marketFee = States.defineMarketFee(state);
       state.economy.budget = States.defineBudget(state, States.defineCorruption(state));
-      state.economy.spent = noExpenses();
-      state.economy.otherRevenue ??= 0;
-      delete (state.economy as { corruption?: number }).corruption; // a development map's, now in the budget
+    }
+
+    // v1.157.0 charges carriage per good and places a count of richer deposits per good instead of a chance per cell
+    for (const good of pack.goods ?? []) good.carriage ??= Goods.getDefaultCarriage(good);
+    function migrateDeposits() {
+      const { cells } = pack;
+      const goods = pack.goods as (Good & { chance?: number })[];
+      const counts: number[] = [];
+      for (const cellId of cells.i) {
+        const good = goods.find(good => good.i === cells.good?.[cellId]);
+        if (!good) continue;
+        const keep = Math.min(1, (good.chance ?? 0) / 18); // about one in six: as sparse as new maps
+        if (((cellId * 2654435761) >>> 0) / 2 ** 32 < keep) counts[good.i] = (counts[good.i] || 0) + 1;
+        else cells.good[cellId] = 0;
+      }
+      for (const good of goods) {
+        const count = counts[good.i] || 0;
+        if (good.chance && good.distribution)
+          good.deposits = count
+            ? [Math.max(1, Math.round(count * 0.75)), Math.max(1, Math.round(count * 1.25))]
+            : Goods.getDefaultDeposits(good.name);
+        delete good.chance;
+      }
+    }
+    if (pack.goods?.some(good => "chance" in good)) migrateDeposits();
+
+    for (const burg of pack.burgs ?? []) delete (burg as { market?: number } | undefined)?.market;
+    if (pack.markets?.length) {
+      Goods.sync();
+      Markets.sync();
+      Production.regenerate();
     }
   }
-
-  // v1.157.0 keeps deals as burg-market tuples summed by good and kind, and a burg's production as totals
-  function migrateLegacyEconomy() {
-    const legacyDeals = pack.deals as unknown as LegacyDeal[];
-    const dealById = new Map(legacyDeals.map(deal => [deal.i, deal]));
-    const demandDealIds = new Set<number>(); // a burg filled its demand after its last sale
-
-    for (const burg of pack.burgs) {
-      const records = burg?.production as unknown as LegacyProductionRecord[] | undefined;
-      if (!records || Array.isArray(records[0])) continue;
-
-      const lastSale = records.findLastIndex(
-        record => "dealId" in record && dealById.get(record.dealId)?.sellerType === "burg"
-      );
-      const produced: number[] = [];
-      records.forEach((record, index) => {
-        if ("dealId" in record) {
-          if (index > lastSale) demandDealIds.add(record.dealId);
-        } else produced[record.goodId] = (produced[record.goodId] || 0) + record.units;
-      });
-      burg.production = produced.flatMap((units, goodId) => (units ? [[goodId, rn(units, 2)]] : []));
-    }
-
-    pack.deals = [];
-    for (const { i, seller, sellerType, buyer, buyerType, good, units, price, tax = 0 } of legacyDeals) {
-      if (sellerType === buyerType) continue; // market-to-market trade has no burg side
-      const isSale = sellerType === "burg";
-      const [burgId, marketId] = isSale ? [seller, buyer] : [buyer, seller];
-      const kind = isSale ? DEAL_KINDS.sale : demandDealIds.has(i) ? DEAL_KINDS.demand : DEAL_KINDS.input;
-      Markets.recordDeal(burgId, marketId, good, kind, { units, price, tax });
-    }
-  }
-  if (pack.deals?.some(deal => !Array.isArray(deal))) migrateLegacyEconomy();
-  for (const deal of pack.deals ?? []) if (deal.length < 9) deal.push(0);
-
-  // v1.157.0 charges carriage per good: goods saved before it take the default
-  for (const good of pack.goods ?? []) good.carriage ??= Goods.getDefaultCarriage(good);
-
-  // v1.157.0 places a count of richer deposits per good instead of a chance per cell
-  function migrateDeposits() {
-    const { cells } = pack;
-    const goods = pack.goods as (Good & { chance?: number })[];
-    const counts: number[] = [];
-    for (const cellId of cells.i) {
-      const good = goods.find(good => good.i === cells.good?.[cellId]);
-      if (!good) continue;
-      const keep = Math.min(1, (good.chance ?? 0) / 18); // about one in six: as sparse as new maps
-      if (((cellId * 2654435761) >>> 0) / 2 ** 32 < keep) counts[good.i] = (counts[good.i] || 0) + 1;
-      else cells.good[cellId] = 0;
-    }
-    for (const good of goods) {
-      const count = counts[good.i] || 0;
-      if (good.chance && good.distribution)
-        good.deposits = count
-          ? [Math.max(1, Math.round(count * 0.75)), Math.max(1, Math.round(count * 1.25))]
-          : Goods.getDefaultDeposits(good.name);
-      delete good.chance;
-    }
-  }
-  if (pack.goods?.some(good => "chance" in good)) migrateDeposits();
 }
-
-type LegacyDeal = {
-  i: number;
-  seller: number;
-  sellerType: "burg" | "market";
-  buyer: number;
-  buyerType: "burg" | "market";
-  good: number;
-  units: number;
-  price: number;
-  tax?: number;
-};
-type LegacyProductionRecord = { dealId: number } | { goodId: number; units: number };
 
 // rendered for the geometry the steps measure, in a shadow root so its ids never meet the live map's
 function parseLegacySvg(markup: string): ShadowRoot {

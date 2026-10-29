@@ -11,7 +11,7 @@ The economy is **one frozen cycle: a typical day**, not a simulation over time. 
 | Element                                    | Model                                                                                     | Persisted state                                          |
 | ------------------------------------------ | ----------------------------------------------------------------------------------------- | -------------------------------------------------------- |
 | Goods: the catalogue and deposits on cells | `Goods` ([goods-generator.ts](../../src/model/economy/goods-generator.ts))                | `pack.goods`, `pack.cells.good`                          |
-| Markets: regions, stock and prices         | `Markets` ([markets-generator.ts](../../src/model/economy/markets-generator.ts))          | `pack.markets`, `pack.cells.market`, `burg.market`       |
+| Markets: regions, stock and prices         | `Markets` ([markets-generator.ts](../../src/model/economy/markets-generator.ts))          | `pack.markets`, `pack.cells.market`                      |
 | Production, buying and the run             | `Production` ([production-generator.ts](../../src/model/economy/production-generator.ts)) | `burg.production`, `burg.product`, `burg.treasury`       |
 | Travel cost over routes                    | `TradeRoutes` ([trade-routes.ts](../../src/model/economy/trade-routes.ts))                | nothing: measured per run                                |
 | The deal log                               | `Markets.recordDeal`                                                                      | `pack.deals`                                             |
@@ -28,11 +28,11 @@ The user reruns parts from Tools → Regenerate, the goods and markets editors a
 | Command    | Does                                                                                     |
 | ---------- | ---------------------------------------------------------------------------------------- |
 | Goods      | Re-places deposits (`Goods.regenerate`). The economy is not rerun                        |
-| Markets    | Rebuilds markets and their territories (`Markets.regenerate`). The economy is not rerun  |
+| Markets    | Rebuilds markets and their territories (`Markets.regenerate`), then as Production        |
 | Production | `Production.regenerate()`: clears deals and stock, runs the day, collects taxes          |
 | Economy    | `Production.regenerateEconomy()`: re-floods the markets' territories, then as Production |
 
-Loading a map does not rerun the economy, unless `auto-update.ts` migrates a save that needs it. A submap or resample reruns it for the new land (`map-restoration.ts`). The run uses no randomness: the same goods, markets and burgs give the same deals.
+Loading a map does not rerun the economy, except a map saved before v1.157.0, whose economy `auto-update.ts` runs again. A submap or resample reruns it for the new land (`map-restoration.ts`). The run uses no randomness: the same goods, markets and burgs give the same deals.
 
 ## Goods
 
@@ -64,7 +64,7 @@ Buyers **spread their spending** over every good covering a need (`getVarietySha
 
 ### Placement and territory
 
-Burgs are scored by population (capital ×2.5, port ×1.2, +25% for each route beyond a road through it, up to +100% at a big crossroads, ÷ the fee factor, then random noise ×0.5–2.5) and walked best first. The **fee factor** is 1 + the state's market fee ÷ `MARKET_FEE_DETERRENCE` (25). A burg becomes a market center when no other center on its landmass is within its own spacing, and none on another landmass within half of it (`OTHER_LANDMASS_SPACING`), so most inhabited islands get a market. **Spacing** (`getSpacing`) is a base from the map size and burg count, times √(area a market needs), kept within ½× to 2.5× of the base. That area is (the world's average count of burgs within the base ÷ the count around the burg)^`DENSITY_PULL` (0.6), × the burg's fee factor ÷ the world's average: busy land and cheap licenses pack markets closer, steppes, deserts and greedy states spread them out, and the world keeps about as many markets as even spacing would give. A landmass with burgs but no port always gets one. Each market floods out from its center over cells by cost: entering another state's land or another landmass costs extra, water much more. Water cells join only when they hold a good. Every burg belongs to its cell's market, and the center burg gets a plaza. Users can add, relocate and remove markets and paint territories; cells with no market (id 0) supply nothing, and their burgs sit out the run. The `burg-markets` integrity rule reports burgs that do not belong to the living market of their cell.
+Burgs are scored by population (capital ×2.5, port ×1.2, +25% for each route beyond a road through it, up to +100% at a big crossroads, ÷ the fee factor, then random noise ×0.5–2.5) and walked best first. The **fee factor** is 1 + the state's market fee ÷ `MARKET_FEE_DETERRENCE` (25). A burg becomes a market center when no other center on its landmass is within its own spacing, and none on another landmass within half of it (`OTHER_LANDMASS_SPACING`), so most inhabited islands get a market. **Spacing** (`getSpacing`) is a base from the map size and burg count, times √(area a market needs), kept within ½× to 2.5× of the base. That area is (the world's average count of burgs within the base ÷ the count around the burg)^`DENSITY_PULL` (0.6), × the burg's fee factor ÷ the world's average: busy land and cheap licenses pack markets closer, steppes, deserts and greedy states spread them out, and the world keeps about as many markets as even spacing would give. A landmass with burgs but no port always gets one. Each market floods out from its center over cells by cost: entering another state's land or another landmass costs extra, water much more. Water cells join only when they hold a good. Every burg belongs to its cell's market (`Markets.ofBurg`), and the center burg gets a plaza. Users can add, relocate and remove markets and paint territories; cells with no market (id 0) supply nothing, and their burgs sit out the run. The `burg-markets` integrity rule reports burgs whose cell belongs to no living market.
 
 ### Stock and price
 
@@ -306,5 +306,5 @@ KPI 1 compares each made good's share of all made units with a target from its t
 ## Further reading
 
 - [Goods spread functions](../wiki/Goods-spread-functions.md): the distribution expression language.
-- [economy-rework.md](../prd/economy-rework.md), [good-multipliers.md](../prd/good-multipliers.md) and [state-taxes-and-treasury.md](../prd/state-taxes-and-treasury.md): design records.
+- [economy-rework.md](../prd/economy-rework.md): the design record.
 - [generation-pipeline.md](../architecture/generation-pipeline.md): where the economy sits in map generation.
