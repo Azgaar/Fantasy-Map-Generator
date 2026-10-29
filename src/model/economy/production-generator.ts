@@ -19,10 +19,19 @@ import {
   WANT_SHARES,
   WEALTH_WANTS
 } from "./goods-generator";
-import type { DealKind, Market, SourceOption, SourceQuote, Trade, TradeTerms } from "./markets-generator";
-import { DEAL_KINDS, Markets, MIN_LOCAL_STOCK } from "./markets-generator";
+import { type Market, Markets } from "./markets-generator";
 import { Prosperity } from "./prosperity";
 import { StateOrders } from "./state-orders";
+import {
+  DEAL_KINDS,
+  type DealKind,
+  MIN_LOCAL_STOCK,
+  type SourceOption,
+  type SourceQuote,
+  Trade,
+  type TradeTerms,
+  type Transaction
+} from "./trade";
 
 const RURAL_OUTPUT_FACTOR = 1.88;
 export const DEPOSIT_RICHNESS = 1.25; // units a deposit yields a day per population point of its cell, on a map of DEPOSIT_MAP_CELLS
@@ -66,9 +75,9 @@ export class ProductionModule {
     }
 
     const rural = this.getRuralOutput();
-    Markets.collectRuralProduction(rural);
-    Markets.initializeMarketPrices();
-    Markets.measureRoutes();
+    Trade.collectRuralProduction(rural);
+    Trade.initializeMarketPrices();
+    Trade.measureRoutes();
     const recording = EconomyDebug.start();
 
     const index = this.buildProductionIndex(pack.goods);
@@ -108,11 +117,11 @@ export class ProductionModule {
         this.spendOnWants(index, state);
         return hasWork;
       });
-      for (const market of pack.markets) Markets.spendRural(market);
+      for (const market of pack.markets) Trade.spendRural(market);
       StateOrders.place();
     }
     StateOrders.place(true);
-    Markets.endRun();
+    Trade.endRun();
     StateOrders.end();
     pack.deals = pack.deals.filter(deal => deal[4] > 0); // sales kept back whole
     pack.cells.prosperity = Prosperity.getCellsProsperity(rural);
@@ -136,7 +145,7 @@ export class ProductionModule {
       demandGoodsByCategory,
       recipesByOutput,
       productiveGoods,
-      tradeTerms: Markets.getTradeTerms(),
+      tradeTerms: Trade.getTradeTerms(),
       chainInputs: new Map(),
       marketWorkers: [],
       marketPopulation: [],
@@ -281,21 +290,21 @@ export class ProductionModule {
     units: number,
     kind: DealKind,
     budget = Infinity
-  ): Trade | null {
+  ): Transaction | null {
     const { burg } = state;
-    const sources = state.log && Markets.listSources(burg, good, index.tradeTerms); // before the trade moves them
+    const sources = state.log && Trade.listSources(burg, good, index.tradeTerms); // before the trade moves them
     const market = this.getSupplier(index, state, good);
     if (!market) return null;
     if (market !== state.market) state.sources[good.i] = undefined; // the source's stock and price moved
 
-    const trade = Markets.buy({ burg, good, units, kind, source: market, terms: index.tradeTerms, budget });
+    const trade = Trade.buy({ burg, good, units, kind, source: market, terms: index.tradeTerms, budget });
     if (trade) state.log?.push({ goodId: good.i, market: market.i, kind, ...trade, sources: sources || undefined });
     return trade;
   }
 
   /** The local quote while the burg's market stocks enough of the good, otherwise the turn's cheapest other market, or what its own has left */
   private quote(index: ProductionIndex, state: BurgProductionState, goodId: number): MarketQuote {
-    const local = Markets.quoteMarket(state.market, goodId, state.burg);
+    const local = Trade.quoteMarket(state.market, goodId, state.burg);
     const good = Goods.get(goodId);
     const supplier = good && this.getSupplier(index, state, good);
     if (!supplier) return { ...local, stock: 0 }; // a remainder too small to buy is no stock
@@ -306,25 +315,25 @@ export class ProductionModule {
 
   /** Where the burg buys the good this turn */
   private getSupplier(index: ProductionIndex, state: BurgProductionState, good: Good): Market | null {
-    return Markets.getSupplier(state.market, good, () => this.getSource(index, state, good)?.source);
+    return Trade.getSupplier(state.market, good, () => this.getSource(index, state, good)?.source);
   }
 
   /** The turn's cheapest other market for the good, null when none sells it */
   private getSource(index: ProductionIndex, state: BurgProductionState, good: Good): SourceQuote | null {
     if (state.sources[good.i] === undefined)
-      state.sources[good.i] = Markets.quoteSource(state.burg, good, index.tradeTerms);
+      state.sources[good.i] = Trade.quoteSource(state.burg, good, index.tradeTerms);
     return state.sources[good.i] ?? null;
   }
 
   /** The best price at the burg's door for a unit of the good, in any market it reaches */
   private getOutletPrice(state: BurgProductionState, good: Good): number {
-    state.outlets[good.i] ??= Markets.getOutlet(state.burg, good)?.price ?? 0;
+    state.outlets[good.i] ??= Trade.getOutlet(state.burg, good)?.price ?? 0;
     return state.outlets[good.i]!;
   }
 
   /** The burg sold only what it made, so only that can be kept */
   private quoteKeep(state: BurgProductionState, good: Good) {
-    return state.produced[good.i] ? Markets.quoteKeep(state.burg, good) : null;
+    return state.produced[good.i] ? Trade.quoteKeep(state.burg, good) : null;
   }
 
   /** The category's shortage and every good that could cover it, cheapest coverage first, as the burg saw them */
@@ -360,8 +369,8 @@ export class ProductionModule {
       state.inventory[goodId] = 0;
 
       const good = Goods.get(goodId)!;
-      const market = Markets.getOutlet(state.burg, good)?.market ?? state.market; // where it fetches the most
-      const trade = Markets.sell({ burg: state.burg, good, units, taxRate, market });
+      const market = Trade.getOutlet(state.burg, good)?.market ?? state.market; // where it fetches the most
+      const trade = Trade.sell({ burg: state.burg, good, units, taxRate, market });
       if (!trade) continue;
 
       const revenue = trade.units * trade.price - trade.tax;
@@ -457,7 +466,7 @@ export class ProductionModule {
         const quote = this.quote(index, state, candidate.goodId);
         if (!own && quote.stock <= 0.01) {
           const costPerCoverage =
-            Markets.quoteMarket(state.market, candidate.goodId, burg).buyPrice / candidate.coverageWeight;
+            Trade.quoteMarket(state.market, candidate.goodId, burg).buyPrice / candidate.coverageWeight;
           if (costPerCoverage > 0) missing.push({ candidate, costPerCoverage });
           continue;
         }
@@ -468,7 +477,7 @@ export class ProductionModule {
       sortedCandidates.sort((a, b) => a.costPerCoverage - b.costPerCoverage);
       if (state.log) this.logDemand(state, categoryIndex, shortage, sortedCandidates);
 
-      const cover = (candidate: DemandGoodCandidate, trade: Trade | null) => {
+      const cover = (candidate: DemandGoodCandidate, trade: Transaction | null) => {
         if (!trade) return;
         this.consume(index, state, candidate.goodId, trade);
         shortage = Math.max(0, demandTargets[categoryIndex] - demandCoverage[categoryIndex]);
@@ -480,7 +489,7 @@ export class ProductionModule {
         let units = coverageWanted / candidate.coverageWeight;
         const own = this.quoteKeep(state, candidate.good);
         if (own && own.price <= this.quote(index, state, candidate.goodId).buyPrice) {
-          const kept = Markets.keep({ burg, good: candidate.good, units, budget });
+          const kept = Trade.keep({ burg, good: candidate.good, units, budget });
           if (kept) {
             state.log?.push({ goodId: candidate.goodId, market: state.market.i, kind: DEAL_KINDS.kept, ...kept });
             units -= kept.units;
@@ -497,7 +506,7 @@ export class ProductionModule {
       const wanted = shortage;
       options.forEach(({ candidate }, k) => {
         if (k >= sortedCandidates.length)
-          Markets.signalShortage(state.market, candidate.good, (wanted * shares[k]) / candidate.coverageWeight);
+          Trade.signalShortage(state.market, candidate.good, (wanted * shares[k]) / candidate.coverageWeight);
         else buy(candidate, Math.min(shortage, wanted * shares[k]));
       });
       for (const { candidate } of sortedCandidates) {
@@ -553,7 +562,7 @@ export class ProductionModule {
         .map(candidate => {
           const quote = this.quote(index, state, candidate.goodId);
           const price =
-            quote.stock > 0.01 ? quote.buyPrice : Markets.quoteMarket(state.market, candidate.goodId, burg).buyPrice;
+            quote.stock > 0.01 ? quote.buyPrice : Trade.quoteMarket(state.market, candidate.goodId, burg).buyPrice;
           return { candidate, stocked: quote.stock > 0.01, price, costPerCoverage: price / candidate.coverageWeight };
         })
         .filter(({ price }) => price > 0);
@@ -572,7 +581,7 @@ export class ProductionModule {
       options.forEach(({ candidate, stocked, price }, k) => {
         if (stocked) purchase(candidate, price, Math.min(money, total * shares[k]));
         else
-          Markets.signalShortage(
+          Trade.signalShortage(
             state.market,
             candidate.good,
             Math.min((total * shares[k]) / price, cap() / candidate.coverageWeight)
@@ -590,7 +599,7 @@ export class ProductionModule {
   }
 
   /** Pays for what the burg bought for its own use and counts the needs it covers; returns the cost */
-  private consume(index: ProductionIndex, state: BurgProductionState, goodId: number, trade: Trade): number {
+  private consume(index: ProductionIndex, state: BurgProductionState, goodId: number, trade: Transaction): number {
     const cost = trade.units * trade.price;
     state.burg.treasury = rn((state.burg.treasury || 0) - cost, 2);
     state.spent += cost;
@@ -1037,7 +1046,7 @@ type ProductionIndex = {
 };
 
 type PlanningStock = { inventory: number[]; market: number[] };
-type MarketQuote = ReturnType<typeof Markets.quoteMarket>;
+type MarketQuote = ReturnType<typeof Trade.quoteMarket>;
 
 type BurgProductionState = {
   burg: Burg;
@@ -1107,7 +1116,7 @@ type ManufacturingEntry = {
   candidates: readonly ProductionCandidate[];
 };
 
-type TradeEntry = { goodId: number; market: number; kind: DealKind; sources?: SourceOption[] } & Trade;
+type TradeEntry = { goodId: number; market: number; kind: DealKind; sources?: SourceOption[] } & Transaction;
 
 /** A demand category's shortage when the burg came to fill it, and the goods it could use, cheapest coverage first */
 type DemandEntry = {

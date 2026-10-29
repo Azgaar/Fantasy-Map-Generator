@@ -2,7 +2,7 @@
 import { drag, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { LabelType } from "@/model/annotations/labels-generator";
-import type { Deal } from "@/model/economy/markets-generator";
+import type { Deal } from "@/model/economy/trade";
 import { dragLegendBox, legendBoxFromEvent } from "@/renderers/draw-legend";
 import { LegendBoxes } from "@/renderers/legend-boxes";
 import { tip } from "@/ui/tooltips";

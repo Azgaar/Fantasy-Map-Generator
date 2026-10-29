@@ -18,7 +18,16 @@ import {
 import { fileURLToPath } from "node:url";
 import { Worker } from "node:worker_threads";
 import { build } from "./build.mjs";
-import { GOODS_FILE, overridesOf, readCatalogue, readCommonness, ROOT, thetaOf } from "./catalogue.mjs";
+import {
+  checkReference,
+  GOODS_FILE,
+  overridesOf,
+  readCatalogue,
+  readReference,
+  ROOT,
+  snapToReference,
+  thetaOf
+} from "./catalogue.mjs";
 import { MAPS_DIR } from "./export-maps.mjs";
 import { checkOverrides, DEFAULT_URL, openGame, registeredTunables } from "./game.mjs";
 import { objective, summary } from "./objective.mjs";
@@ -54,7 +63,8 @@ if (changed.length)
     `STALE maps: exported before ${changed.map(file => file.replace(ROOT, "")).join(", ")} changed; run export-maps.mjs again`
   );
 const catalogue = readCatalogue();
-const weights = readCommonness();
+const reference = readReference();
+for (const issue of checkReference(catalogue, reference)) say(`REFERENCE ${issue}`);
 // the source's values, brought into their ranges: a range may have been narrowed since they were applied
 const defaults = Object.fromEntries(
   Object.entries(readTunables(file => readFileSync(`${ROOT}${file}`, "utf8"))).map(([name, value]) => {
@@ -62,13 +72,26 @@ const defaults = Object.fromEntries(
     return [name, Math.min(hi, Math.max(lo, value))];
   })
 );
-const start = thetaOf(catalogue, defaults);
+// the search starts from the reference: values and coverage outside it at its nearest bound, coverage entries as it has them
+const snapped = snapToReference(catalogue, reference);
+const moved = [],
+  covers = [];
+catalogue.forEach((good, i) => {
+  const { value, coverage } = snapped[i];
+  if (value !== good.value) moved.push(`${good.name} ${good.value} → ${value}`);
+  for (const c of new Set([...Object.keys(good.coverage), ...Object.keys(coverage)]))
+    if (good.coverage[c] !== coverage[c])
+      covers.push(`${good.name} ${c} ${good.coverage[c] ?? "none"} → ${coverage[c] ?? "none"}`);
+});
+if (moved.length) say(`START values brought into their price category: ${moved.join(", ")}`);
+if (covers.length) say(`START coverage brought to the reference: ${covers.join(", ")}`);
+const start = thetaOf(snapped, defaults);
 // a made good priced outside its margin range starts at the nearest bound, so the search never scores the source as it is
 const startValues = overridesOf(catalogue, start).value;
-for (const good of catalogue)
+for (const good of snapped)
   if (Math.abs(startValues[good.name] - good.value) > 0.01)
     say(
-      `START ${good.name} is valued ${good.value} in the source but ${+startValues[good.name].toFixed(2)} in the search: its margin over its inputs is out of range`
+      `START ${good.name} is valued ${+startValues[good.name].toFixed(2)}, not ${+good.value.toFixed(2)}: its margin over its inputs is out of range`
     );
 
 // ---- state; the best is written whole or not at all, so a crash never leaves a broken file
@@ -167,7 +190,7 @@ async function evaluate(theta) {
     const results = await Promise.all(pool.map(({ worker }) => runOn(worker, over)));
     runs += results.length;
     evals++;
-    return { ...objective(results, theta, weights), overrides: over };
+    return { ...objective(results, theta, reference, over), overrides: over };
   } finally {
     inflight -= pool.length;
   }
@@ -178,9 +201,9 @@ game = await openGame(testSeed, url);
 const tunablesInGame = await registeredTunables(game.page);
 const gameLine = (label, theta, over) =>
   checkOverrides(game.page, over).then(
-    r => `${label} on game ${testSeed}: ${summary(objective([r], theta, weights).kpi)}`
+    r => `${label} on game ${testSeed}: ${summary(objective([r], theta, reference, over).kpi)}`
   );
-check = await gameLine("current source", start, overridesOf(catalogue, start));
+check = await gameLine("start", start, overridesOf(catalogue, start));
 say(
   `BEGIN budget ${budget} runs, ${chainCount} chains on ${pool.length} maps in parallel; tunables in game: ${tunablesInGame.length}/${Object.keys(RANGES).length}`
 );
@@ -219,6 +242,13 @@ function mulberry(seed) {
   };
 }
 const evalsPerChain = Math.max(1, Math.floor(budget / pool.length / chainCount));
+// a raw value moves within half its price category's low bound and twice its high bound, or ¼–4× the source if it has none
+const rawBounds = Object.fromEntries(
+  Object.entries(start.raw).map(([n, v]) => {
+    const [lo, hi] = reference.price[n] ?? [v / 2, v * 2];
+    return [n, [lo / 2, hi * 2]];
+  })
+);
 const rawNames = Object.keys(start.raw),
   madeNames = Object.keys(start.margin),
   paramNames = Object.keys(RANGES);
@@ -230,7 +260,8 @@ function mutate(theta, rand, gauss) {
     const kind = rand();
     if (kind < 0.25) {
       const n = rawNames[Math.floor(rand() * rawNames.length)];
-      next.raw[n] = Math.min(start.raw[n] * 4, Math.max(start.raw[n] / 4, next.raw[n] * Math.exp(0.2 * gauss())));
+      const [lo, hi] = rawBounds[n];
+      next.raw[n] = Math.min(hi, Math.max(lo, next.raw[n] * Math.exp(0.2 * gauss())));
     } else if (kind < 0.5) {
       const n = madeNames[Math.floor(rand() * madeNames.length)];
       next.margin[n] = Math.min(15, Math.max(1, next.margin[n] * Math.exp(0.25 * gauss())));

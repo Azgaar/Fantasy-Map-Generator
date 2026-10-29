@@ -1,5 +1,5 @@
 import { FEATURE_SUBTYPE_LABELS } from "@/data/id-labels";
-import { DEAL_KINDS } from "@/model/economy/markets-generator";
+import { DEAL_KINDS } from "@/model/economy/trade";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import type { Regiment } from "@/model/political/military-generator";

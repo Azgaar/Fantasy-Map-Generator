@@ -1,8 +1,8 @@
 import { select } from "d3";
 import { Controllers } from "@/controllers";
 import { ColorPicker } from "@/controllers/color-picker";
-import type { Market } from "@/model/economy/markets-generator";
-import { Markets } from "@/model/economy/markets-generator";
+import { type Market, Markets } from "@/model/economy/markets-generator";
+import { Trade } from "@/model/economy/trade";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Burg } from "@/model/political/burgs-generator";
 import { formatPrice } from "@/model/units";
@@ -399,7 +399,7 @@ function getMarketFinancials(market: Market): {
   let buys = 0;
   for (const deal of pack.deals || []) {
     if (deal[1] !== market.i) continue;
-    const income = Markets.getMarketIncome(deal);
+    const income = Trade.getMarketIncome(deal);
     if (income > 0) sales += income;
     else buys -= income;
   }

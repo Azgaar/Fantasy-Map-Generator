@@ -1,8 +1,9 @@
 import type { AddedLabel } from "@/model/annotations/added-labels";
 import type { Measurer } from "@/model/annotations/measurers-generator";
 import type { Good } from "@/model/economy/goods-generator";
-import type { Deal, Market } from "@/model/economy/markets-generator";
+import type { Market } from "@/model/economy/markets-generator";
 import type { Route } from "@/model/economy/routes-generator";
+import type { Deal } from "@/model/economy/trade";
 import type { Biome } from "@/model/physical/biomes-generator";
 import type { Feature } from "@/model/physical/features-generator";
 import type { Ice } from "@/model/physical/ice-generator";

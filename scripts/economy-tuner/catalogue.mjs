@@ -28,14 +28,73 @@ export function readCatalogue(source = readFileSync(GOODS_FILE, "utf8")) {
   });
 }
 
-/** Tier weight of each made good from the Commonness table in the economy doc */
-export function readCommonness() {
-  const doc = readFileSync(`${ROOT}docs/domain/economy.md`, "utf8");
-  const table = doc.slice(doc.indexOf("### Commonness of made goods"), doc.indexOf("## Gotchas"));
-  const weights = {};
-  for (const [, weight, goods] of table.matchAll(/^\| [A-Za-z]+ +\| (\d+) +\| (.+?) +\|$/gm))
-    for (const name of goods.split(",")) weights[name.trim()] = +weight;
-  return weights;
+/** The goods reference table of the economy doc: kind, commonness weight, price range and coverage ranges by good */
+export function readReference(doc = readFileSync(`${ROOT}docs/domain/economy.md`, "utf8")) {
+  const section = doc.slice(doc.indexOf("### Goods reference"), doc.indexOf("### Tuning"));
+  // each table by its first header cell, as rows of trimmed cells
+  const tables = {};
+  for (const block of section.split("\n\n").filter(b => b.startsWith("|"))) {
+    const [header, , ...rows] = block.split("\n").map(line =>
+      line
+        .slice(1, -1)
+        .split("|")
+        .map(cell => cell.trim())
+    );
+    tables[header[0]] = { header, rows };
+  }
+  const ranges = table =>
+    Object.fromEntries(
+      tables[table].rows.map(([name, text]) => {
+        const [, lo, hi = Infinity] = text.match(/([\d.]+)(?:–([\d.]+))?/);
+        return [name, [+lo, +hi]];
+      })
+    );
+  const prices = ranges("Price"),
+    levels = ranges("Coverage");
+  const { header, rows } = tables.Good;
+  const needs = header.slice(4).map(n => n.toLowerCase());
+  const reference = { kind: {}, made: {}, raw: {}, price: {}, coverage: {} };
+  for (const [name, kind, weight, price, ...cover] of rows) {
+    reference.kind[name] = kind.toLowerCase();
+    reference[kind === "Made" ? "made" : "raw"][name] = +weight;
+    reference.price[name] = prices[price];
+    reference.coverage[name] = Object.fromEntries(
+      needs.flatMap((need, i) => (cover[i] ? [[need, levels[cover[i]]]] : []))
+    );
+  }
+  return reference;
+}
+
+/** Mismatches of the reference with the catalogue: goods missing from either, the wrong kind, an unknown category */
+export function checkReference(catalogue, reference) {
+  const issues = [];
+  const names = new Set(catalogue.map(g => g.name));
+  for (const g of catalogue) {
+    const kind = reference.kind[g.name];
+    if (!kind) issues.push(`${g.name} is not in the reference`);
+    else if (kind !== (g.made ? "made" : "raw")) issues.push(`${g.name} is ${g.made ? "made" : "raw"}, not ${kind}`);
+    else if (!reference.price[g.name]) issues.push(`${g.name} has an unknown price category`);
+  }
+  for (const name of Object.keys(reference.kind)) if (!names.has(name)) issues.push(`${name} is not in the catalogue`);
+  return issues;
+}
+
+/** The catalogue as the search starts it: values brought within their price range, coverage entries as the reference
+ * has them, each the source's brought within its level, or the level's middle if the source has none */
+export function snapToReference(catalogue, reference) {
+  const clamp = (x, [lo, hi]) => Math.min(hi, Math.max(lo, x));
+  return catalogue.map(g => {
+    const price = reference.price[g.name];
+    const levels = reference.coverage[g.name];
+    if (!price || !levels) return g;
+    return {
+      ...g,
+      value: clamp(g.value, price),
+      coverage: Object.fromEntries(
+        Object.entries(levels).map(([c, [lo, hi]]) => [c, clamp(g.coverage[c] ?? (lo + Math.min(hi, 1)) / 2, [lo, hi])])
+      )
+    };
+  });
 }
 
 /** Parameters: raw goods' values, made goods' margins over their recipes' average inputs, coverage entries, tunables */

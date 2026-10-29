@@ -1,6 +1,6 @@
 import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS, Goods, getNeedsCost } from "./goods-generator";
-import { DEAL_KINDS } from "./markets-generator";
 import { Production } from "./production-generator";
+import { DEAL_KINDS } from "./trade";
 
 const NEEDS_SHARE = 0.2; // what needs met alone are worth, living on bare needs: the rest comes from comfort and variety
 const COMFORT_SHARE = 0.4;

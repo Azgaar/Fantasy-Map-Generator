@@ -1,6 +1,5 @@
 import { Goods } from "@/model/economy/goods-generator";
-import type { Market } from "@/model/economy/markets-generator";
-import { Markets } from "@/model/economy/markets-generator";
+import { type Market, Markets } from "@/model/economy/markets-generator";
 import { Icons } from "@/model/icons";
 import { formatPrice, getMoneyUnit } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";

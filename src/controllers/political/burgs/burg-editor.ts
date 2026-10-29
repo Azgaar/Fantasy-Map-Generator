@@ -1,7 +1,6 @@
 import { type Selection, select } from "d3";
 import { Controllers } from "@/controllers";
-import type { Market } from "@/model/economy/markets-generator";
-import { Markets } from "@/model/economy/markets-generator";
+import { type Market, Markets } from "@/model/economy/markets-generator";
 import { Prosperity } from "@/model/economy/prosperity";
 import type { Burg } from "@/model/political/burgs-generator";
 import { Burgs } from "@/model/political/burgs-generator";

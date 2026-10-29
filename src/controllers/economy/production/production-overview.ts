@@ -2,11 +2,18 @@ import { DEMAND_CATEGORY_LABELS } from "@/data/id-labels";
 import { EconomyDebug } from "@/model/economy/economy-debug";
 import type { Good } from "@/model/economy/goods-generator";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY, DEMAND_TARGET_FACTORS, Goods } from "@/model/economy/goods-generator";
-import type { Deal, DealKind, SourceOption, Trade } from "@/model/economy/markets-generator";
-import { DEAL_KINDS, Markets } from "@/model/economy/markets-generator";
+import { Markets } from "@/model/economy/markets-generator";
 import type { ProductionCandidate, ProductionLogEntry } from "@/model/economy/production-generator";
 import { isDemandEntry, isManufacturingEntry, isTradeEntry } from "@/model/economy/production-generator";
 import { Prosperity } from "@/model/economy/prosperity";
+import {
+  DEAL_KINDS,
+  type Deal,
+  type DealKind,
+  type SourceOption,
+  Trade,
+  type Transaction
+} from "@/model/economy/trade";
 import { Icons } from "@/model/icons";
 import { type Burg, Burgs } from "@/model/political/burgs-generator";
 import { formatPrice } from "@/model/units";
@@ -251,7 +258,7 @@ const getManufacturingRow = (goodId: number, units: number): HistoryRow => ({
   details: ""
 });
 
-function getTradeRow(goodId: number, marketId: number, kind: DealKind, trade: Trade): HistoryRow {
+function getTradeRow(goodId: number, marketId: number, kind: DealKind, trade: Transaction): HistoryRow {
   if (kind === DEAL_KINDS.kept) return getKeepRow(goodId, trade.units);
   const isSale = kind === DEAL_KINDS.sale;
   const { units } = trade;
@@ -592,7 +599,7 @@ function renderStats(burg: Burg): void {
   // a market center's merchants take the margin on every trade at its market, so its treasury is more than its deals
   const isCenter = market?.centerBurgId === burg.i;
   const margin = isCenter
-    ? pack.deals.reduce((sum, deal) => sum + (deal[1] === market.i ? Markets.getMargin(deal) : 0), 0) +
+    ? pack.deals.reduce((sum, deal) => sum + (deal[1] === market.i ? Trade.getMargin(deal) : 0), 0) +
       (market.rural?.margin || 0)
     : 0;
   const treasuryTip = isCenter
@@ -613,7 +620,7 @@ function renderStats(burg: Burg): void {
       <span data-tip="${EconomyTerms.product()}"><b>${t("Product")}:</b> <span class="positive">${formatPrice(product)}</span></span>
       <span data-tip="${EconomyTerms.wealth()}"><b>${t("Wealth")}:</b> <span class="positive">${formatPrice(wealth)}</span></span>
       ${isCenter && market.feePaid ? `<span data-tip="${t("The license its state charges a market's center a day")}"><b>${t("Market License")}:</b> <span class="negative">${formatPrice(market.feePaid)}</span></span>` : ""}
-      ${isCenter ? `<span data-tip="${t("Market margin: {{rate}}% of every trade at its market", { rate: rn(Markets.getMarginRate(market) * 100, 1) })}"><b>${t("Market margin")}:</b> <span class="positive">${formatPrice(margin)}</span></span>` : ""}
+      ${isCenter ? `<span data-tip="${t("Market margin: {{rate}}% of every trade at its market", { rate: rn(Trade.getMarginRate(market) * 100, 1) })}"><b>${t("Market margin")}:</b> <span class="positive">${formatPrice(margin)}</span></span>` : ""}
       ${burg.pollTaxPaid ? `<span data-tip="${t("Poll tax: {{rate}} a head", { rate: pack.states[burg.state || 0]?.economy.pollTax || 0 })}"><b>${t("Poll Tax")}:</b> ${formatPrice(burg.pollTaxPaid)}</span>` : ""}
       <span data-tip="${sentences(treasuryTip, t("Type to change. It lasts until the economy is regenerated"))}"><b><label for="${dialogId}Treasury">${t("Treasury")}</label>:</b> 🟡<input id="${dialogId}Treasury" type="number" step="0.01" value="${rn(treasury, 2)}" /></span>
     </div>`;

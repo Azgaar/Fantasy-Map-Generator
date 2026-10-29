@@ -19,10 +19,15 @@ const data = source.slice(start, end).replace(/ {2}\{\n {4}name: "([^"]+)",[\s\S
   let next = block;
   const value = overrides.value?.[name];
   if (value !== undefined) next = next.replace(/value: [\d.]+/, `value: ${roundValue(value)}`);
+  // coverage as the result has it: an entry line replaced, added after the unit, or removed with its comma
   const coverage = overrides.coverage?.[name];
-  if (coverage && Object.keys(coverage).length && /demandCoverage: \{[^}]*\}/.test(next)) {
+  if (coverage) {
     const entries = Object.entries(coverage).map(([c, x]) => `${c}: ${roundCoverage(x)}`);
-    next = next.replace(/demandCoverage: \{[^}]*\}/, `demandCoverage: { ${entries.join(", ")} }`);
+    const line = `demandCoverage: { ${entries.join(", ")} }`;
+    if (!entries.length)
+      next = next.replace(/(,?)\n {4}demandCoverage: \{[^}]*\}(,?)/, (_, before, after) => (after ? before : ""));
+    else if (/demandCoverage: \{[^}]*\}/.test(next)) next = next.replace(/demandCoverage: \{[^}]*\}/, line);
+    else next = next.replace(/(\n {4}unit: "[^"]*")(,?)/, `$1,\n    ${line}$2`);
   }
   if (next !== block) changed++;
   return next;

@@ -44,7 +44,7 @@ const gini = xs => {
   return 1 - area / v.length;
 };
 
-/** The doc's KPIs, per-good made output and townspeople's prosperity; modules passed in so the game page can run it too */
+/** The doc's KPIs, per-good raw and made output and townspeople's prosperity; modules passed in for the game page */
 export function score(pack, { Goods, Production, Prosperity, StateEconomy }) {
   const value = id => Goods.get(id)?.value || 0;
   const markets = pack.markets.filter(m => m.i);
@@ -74,7 +74,8 @@ export function score(pack, { Goods, Production, Prosperity, StateEconomy }) {
   const produced = goods.filter(g => (units[g.i] || 0) >= 0.5).length / goods.length;
   const madeGoods = goods.filter(g => g.recipes?.length);
   const people = m =>
-    (ruralPeople.get(m.i) || 0) + burgs.filter(b => pack.cells.market[b.cell] === m.i).reduce((s, b) => s + b.population, 0);
+    (ruralPeople.get(m.i) || 0) +
+    burgs.filter(b => pack.cells.market[b.cell] === m.i).reduce((s, b) => s + b.population, 0);
   const out = new Map(markets.map(m => [m.i, Object.values(mix.get(m.i)).reduce((a, b) => a + b, 0)]));
   const totalPeople = markets.reduce((s, m) => s + people(m), 0);
   const totalOut = [...out.values()].reduce((a, b) => a + b, 0);
@@ -106,7 +107,7 @@ export function score(pack, { Goods, Production, Prosperity, StateEconomy }) {
   const top = Math.max(1, Math.floor(burgs.length / 10));
   const byTreasury = [...burgs].sort((a, b) => (b.treasury || 0) - (a.treasury || 0)).slice(0, top);
   const pos = treasuries.filter(t => t > 0).reduce((a, b) => a + b, 0) || 1;
-  // KPIs 8 and 9 read the state accounts the States Editor shows: taxes, other revenue aside, and product
+  // KPIs 11 and 12 read the state accounts the States Editor shows: taxes, other revenue aside, and product
   const accounts = StateEconomy.getWorld();
   const left = [];
   for (const m of markets)
@@ -128,17 +129,19 @@ export function score(pack, { Goods, Production, Prosperity, StateEconomy }) {
       pw += b.population;
     }
   }
-  // KPI 9: across states, the rank correlation of their wealth and the taxes they collect per person
+  // KPI 12: across states, the rank correlation of their wealth and the taxes they collect per person
   const stateRows = pack.states.flatMap(state => {
     const own = state.i && !state.removed ? StateEconomy.getAccounts(state.i) : null;
     return own?.people ? [[own.wealth, own.taxes / own.people]] : [];
   });
   const madeShare = {},
-    madeUnits = {};
+    madeUnits = {},
+    rawUnits = {};
   for (const g of madeGoods) {
     madeShare[g.name] = ((made[g.i] || 0) * g.value) / (wt || 1);
     madeUnits[g.name] = made[g.i] || 0;
   }
+  for (const g of goods) if (!g.recipes?.length) rawUnits[g.name] = units[g.i] || 0;
   return {
     produced,
     positive: treasuries.filter(t => t > 0).length / (treasuries.length || 1),
@@ -158,6 +161,7 @@ export function score(pack, { Goods, Production, Prosperity, StateEconomy }) {
           )
         : 0,
     madeShare,
-    madeUnits
+    madeUnits,
+    rawUnits
   };
 }

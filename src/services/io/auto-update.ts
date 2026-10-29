@@ -2224,7 +2224,7 @@ async function migrateLegacyMap(mapVersion: string, data: string[], svg: LegacyS
       // no market to rerun them: drop the deals and production in their old shape
       pack.deals = [];
       for (const burg of pack.burgs ?? []) if (burg?.i) burg.production = [];
-      if (pack.cells) pack.cells.prosperity = new Uint8Array(pack.cells.i.length);
+      if (pack.cells?.i) pack.cells.prosperity = new Uint8Array(pack.cells.i.length);
     }
   }
 }

@@ -2,8 +2,9 @@
 
 import { PROSPERITY_LEVEL_LABELS } from "@/data/id-labels";
 import type { Good } from "@/model/economy/goods-generator";
-import { type Deal, type DealKind, Markets, type Trade } from "@/model/economy/markets-generator";
+import { Markets } from "@/model/economy/markets-generator";
 import { type Living, Prosperity, type ProsperityLevel } from "@/model/economy/prosperity";
+import { type Deal, type DealKind, Trade, type Transaction } from "@/model/economy/trade";
 import type { Expense } from "@/model/political/states-generator";
 import { formatPrice, getDecima, getDistance } from "@/model/units";
 import { wiki } from "@/utils/common-utils";
@@ -129,7 +130,7 @@ export function prosperityTip(prosperity: number): string {
  * A trade's price split per unit: goods' price, carriage, sales tax and tariff, with the trade's total value. The recorded price already holds carriage and, on an import, the taxes:
  * the goods' own price is what is left, and the formula adds them back up to the burg's income from the trade
  */
-export function splitDealPrice({ units, price, tax, tariff = 0, carriage = 0 }: Trade, isSale: boolean) {
+export function splitDealPrice({ units, price, tax, tariff = 0, carriage = 0 }: Transaction, isSale: boolean) {
   const perUnit = (total: number) => (units ? total / units : 0);
   const unitCarriage = carriage;
   const unitTax = perUnit(tax);
@@ -187,11 +188,11 @@ export function getTradeContext(burgId: number, marketId: number, goodId: number
   const burg = pack.burgs[burgId];
   const market = Markets.get(marketId);
   const deal: Deal = [burgId, marketId, goodId, kind, 0, 0, 0, 0, 0];
-  const { taxState, tariffState } = Markets.getTaxStates(deal);
+  const { taxState, tariffState } = Trade.getTaxStates(deal);
   return {
-    decimas: market && burg ? Markets.getDecimas(market, burg) : 0, // carried between the market and the burg
-    carriageFactor: market && burg ? Markets.getCarriageFactor(market, burg) : 1, // dearer from another state's market
-    isImport: Markets.isImport(deal),
+    decimas: market && burg ? Trade.getDecimas(market, burg) : 0, // carried between the market and the burg
+    carriageFactor: market && burg ? Trade.getCarriageFactor(market, burg) : 1, // dearer from another state's market
+    isImport: Trade.isImport(deal),
     taxStateId: taxState,
     tariffStateId: tariffState
   };
@@ -226,7 +227,7 @@ export function tradeCellTips(cell: TradeCell) {
   const price = (amount: number) => formatPrice(rn(amount, 2));
   const state = (stateId: number) => pack.states[stateId]?.name || "";
   const rate = (value: number) => `${t("Rate")}: ${rn(value * 100, 1)}%`;
-  const tariffRate = tariff ? Markets.getTariffRate(tariffStateId, taxStateId, good.i) : 0;
+  const tariffRate = tariff ? Trade.getTariffRate(tariffStateId, taxStateId, good.i) : 0;
 
   return {
     units: `${t("Units traded")}: ${countUnits(units, good.unit)}`,

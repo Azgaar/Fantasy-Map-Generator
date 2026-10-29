@@ -3,8 +3,9 @@ import type { Burg } from "@/model/political/burgs-generator";
 import { noFinance, type State } from "@/model/political/states-generator";
 import type { Good } from "./goods-generator";
 import { Goods } from "./goods-generator";
-import { DEAL_KINDS, type Market, Markets } from "./markets-generator";
+import { type Market, Markets } from "./markets-generator";
 import { StateOrders } from "./state-orders";
+import { DEAL_KINDS, Trade } from "./trade";
 
 const good = (i: number, name: string, value: number, need: string): Good => ({
   i,
@@ -52,7 +53,7 @@ beforeEach(() => {
   Goods.sync();
   Markets.sync();
   // biome-ignore lint/complexity/useLiteralKeys: a new run's taxes
-  Markets["taxes"] = [];
+  Trade["taxes"] = [];
 });
 
 afterEach(() => vi.restoreAllMocks());
@@ -79,7 +80,7 @@ describe("state orders", () => {
   it("spend more as more taxes come in during the run", () => {
     StateOrders.start();
     StateOrders.place();
-    Markets.recordDeal(1, 1, 3, DEAL_KINDS.sale, { units: 10, price: 5, tax: 50 });
+    Trade.recordDeal(1, 1, 3, DEAL_KINDS.sale, { units: 10, price: 5, tax: 50 });
     StateOrders.place();
     StateOrders.end();
 
@@ -92,13 +93,13 @@ describe("state orders", () => {
     market.centerBurgId = 2;
     pack.burgs.push(foreign);
     pack.states.push({ i: 2, capital: 2, economy: { ...noFinance(), salesTax: 0.1 } } as State);
-    vi.spyOn(Markets, "getTransport").mockReturnValue(0);
+    vi.spyOn(Trade, "getTransport").mockReturnValue(0);
 
     StateOrders.start();
     StateOrders.place();
 
     const orders = pack.deals.filter(deal => deal[3] === DEAL_KINDS.order);
     expect(orders.every(deal => deal[6] > 0)).toBe(true);
-    expect(Markets.getTaxesSoFar(2)).toBeGreaterThan(0);
+    expect(Trade.getTaxesSoFar(2)).toBeGreaterThan(0);
   });
 });

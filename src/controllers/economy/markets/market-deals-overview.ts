@@ -1,7 +1,7 @@
 import type { Good } from "@/model/economy/goods-generator";
 import { Goods } from "@/model/economy/goods-generator";
-import type { Deal } from "@/model/economy/markets-generator";
-import { DEAL_KINDS, Markets } from "@/model/economy/markets-generator";
+import { Markets } from "@/model/economy/markets-generator";
+import { DEAL_KINDS, type Deal, Trade } from "@/model/economy/trade";
 import { Icons } from "@/model/icons";
 import { formatPrice } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
@@ -205,7 +205,7 @@ export function getMarketSide([, , , kind]: Deal): "buy" | "sell" {
 
 /** The market's income from the deal: what the burg paid less the taxes passed on, or minus what it paid the burg */
 export function getDealNet(deal: Deal): number {
-  return rn(Markets.getMarketIncome(deal), 2);
+  return rn(Trade.getMarketIncome(deal), 2);
 }
 
 function getMarketDealRow(deal: Deal): MarketDealRow | null {
@@ -234,7 +234,7 @@ function getMarketDealRow(deal: Deal): MarketDealRow | null {
 /** price × units, less the sales tax and tariff a sale passes to the states and the center burg's margin: what the market keeps */
 function getIncomeFormula(deal: Deal, income: number): string {
   const [, , , kind, units, price, tax, tariff] = deal;
-  const margin = Markets.getMargin(deal);
+  const margin = Trade.getMargin(deal);
   const marginTerm = margin ? ` − ${t("Market margin")} ${formatPrice(rn(margin, 2))}` : "";
   const paid = `${formatPrice(price)} × ${rn(units, 2)}`;
   if (kind === DEAL_KINDS.sale) return `−${paid}${marginTerm} = ${formatPrice(income)}`;

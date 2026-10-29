@@ -4,7 +4,7 @@ import { noFinance } from "@/model/political/states-generator";
 import { rn } from "@/utils/number-utils";
 import type { Good } from "./goods-generator";
 import { Goods, NOVELTY, VARIETY } from "./goods-generator";
-import { DEAL_KINDS, type Market, Markets, type SourceOption } from "./markets-generator";
+import { type Market, Markets } from "./markets-generator";
 import {
   BONUS_URBAN_PRODUCTION,
   BURG_SPECIALIZATION,
@@ -14,6 +14,7 @@ import {
   ProductionModule,
   WORKFORCE_SHARE
 } from "./production-generator";
+import { DEAL_KINDS, type SourceOption, Trade } from "./trade";
 import { TradeRoutes } from "./trade-routes";
 
 const good = (i: number, name: string, value: number, recipes?: Good["recipes"]): Good => ({
@@ -28,7 +29,7 @@ const good = (i: number, name: string, value: number, recipes?: Good["recipes"])
   color: "#ffffff"
 });
 
-const MARGIN = Markets.getMarginRate(); // a market that paid no license fee
+const MARGIN = Trade.getMarginRate(); // a market that paid no license fee
 let production: ProductionModule;
 let catalogue: Good[];
 let market: Market;
@@ -252,7 +253,7 @@ describe("inputs missing in the burg's market", () => {
       Float32Array.from([Infinity, 0, 100]),
       Float32Array.from([Infinity, 100, 0])
     ]);
-    Markets.measureRoutes();
+    Trade.measureRoutes();
   });
 
   afterEach(() => vi.restoreAllMocks());
@@ -432,7 +433,7 @@ describe("demand fill", () => {
     expect(bought[4]).toBe(6);
     expect(market.goods[3].stock).toBe(10);
     // the burg is its market's center: it takes the margin on its purchase and gives back the margin on the 4 kept
-    const margins = Markets.getMargin(bought) - (4 * 1 * MARGIN) / (1 - MARGIN);
+    const margins = Trade.getMargin(bought) - (4 * 1 * MARGIN) / (1 - MARGIN);
     expect(burg.treasury).toBeCloseTo(100 - 4 * 0.8 - 6 * bought[5] + margins, 1);
   });
 
@@ -500,7 +501,7 @@ describe("demand fill", () => {
   it("trims the sale and its tax by the share kept", () => {
     market.goods[3].stock = 20;
     pack.deals.push([1, 1, 3, DEAL_KINDS.sale, 10, 1, 2, 0, 0]);
-    const trade = Markets.keep({ burg, good: catalogue[2], units: 4 })!;
+    const trade = Trade.keep({ burg, good: catalogue[2], units: 4 })!;
 
     expect(trade).toEqual({ units: 4, price: 0.8, tax: 0 });
     expect(pack.deals[0]).toEqual([1, 1, 3, DEAL_KINDS.sale, 6, 1, 1.2, 0, 0]);
@@ -564,7 +565,7 @@ describe("market stock in planning", () => {
   afterEach(() => vi.restoreAllMocks());
 
   it("counts a remainder too small to buy as no stock", () => {
-    vi.spyOn(Markets, "quoteSource").mockReturnValue(null);
+    vi.spyOn(Trade, "quoteSource").mockReturnValue(null);
     market.goods[1].stock = 0.01;
     const { index, state } = prepare();
     // biome-ignore lint/complexity/useLiteralKeys: private test access

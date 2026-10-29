@@ -1,6 +1,6 @@
 import { Goods } from "@/model/economy/goods-generator";
-import type { Deal } from "@/model/economy/markets-generator";
-import { DEAL_KINDS, Markets } from "@/model/economy/markets-generator";
+import { Markets } from "@/model/economy/markets-generator";
+import { DEAL_KINDS, type Deal, Trade } from "@/model/economy/trade";
 import type { Point } from "@/model/graph/voronoi";
 import { Icons } from "@/model/icons";
 import { formatPrice } from "@/model/units";
@@ -145,7 +145,7 @@ function open(deal: Deal): void {
       ? t("State order: {{- state}} buys from {{- market}} for {{- burg}}", names)
       : isSale
         ? t("Trade: {{- burg}} sells to {{- market}}", names)
-        : !Markets.isImport(deal)
+        : !Trade.isImport(deal)
           ? t("Trade: {{- burg}} buys from {{- market}}", names)
           : t("Trade: {{- burg}} imports from {{- market}}", names),
     position,

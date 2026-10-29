@@ -7,8 +7,9 @@ vi.mock("./draw-trade-animation", () => ({
   clearHighlight: vi.fn()
 }));
 
-import { DEAL_KINDS, type Deal, Markets } from "@/model/economy/markets-generator";
+import { Markets } from "@/model/economy/markets-generator";
 import { Routes } from "@/model/economy/routes-generator";
+import { DEAL_KINDS, type Deal } from "@/model/economy/trade";
 import { TradeAnimationModule } from "./trade-animation";
 
 // ─── helpers ────────────────────────────────────────────────────────────────

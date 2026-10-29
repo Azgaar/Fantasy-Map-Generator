@@ -3,6 +3,7 @@ import { mean, median, quadtree, sum } from "d3";
 import { getInverseRelation, RELATIONS } from "@/data/diplomacy";
 import type { Label } from "@/model/annotations/labels-generator";
 import { Markets } from "@/model/economy/markets-generator";
+import { Trade } from "@/model/economy/trade";
 import { Pack } from "@/model/graph/pack-generator";
 import type { Feature } from "@/model/physical/features-generator";
 import { Emblems } from "@/model/political/emblems-generator";
@@ -1711,7 +1712,7 @@ class StatesModule {
   collectTaxes() {
     const { states } = pack;
     if (!states?.length) return;
-    const { salesTax, tariffs } = Markets.getTaxesByState();
+    const { salesTax, tariffs } = Trade.getTaxesByState();
 
     const pollTax = this.getPollTax().paid;
     const marketFees = this.getMarketFees();

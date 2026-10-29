@@ -141,7 +141,7 @@ export const GOODS_DATA: GoodData[] = [
     color: "#7fcdff",
     value: 2,
     carriage: 0.5,
-    deposits: [4, 8],
+    deposits: [5, 10],
     distribution: 'shore(-1) && type("ocean", "freshwater", "salt") || river()',
     unit: "wain",
     demandCoverage: { food: 0.7 },
@@ -290,12 +290,12 @@ export const GOODS_DATA: GoodData[] = [
     tags: ["luxury", "aquatic"],
     icon: "goods-pearls",
     color: "#EAE0C8",
-    value: 37,
+    value: 15,
     carriage: 0.6,
-    deposits: [2, 3],
+    deposits: [1, 3],
     distribution: "shore(-1) && minTemp(18)",
     unit: "pearl",
-    demandCoverage: { luxury: 0.4 },
+    demandCoverage: { luxury: 0.7 },
     multipliers: { cultureType: { Naval: 2.5 } }
   },
   {
@@ -675,7 +675,7 @@ export const GOODS_DATA: GoodData[] = [
     carriage: 2,
     recipes: [{ Wood: 4, Sails: 2, Ropes: 2, Tar: 2, Tools: 1.5 }],
     unit: "boat",
-    demandCoverage: { military: 0.65 },
+    demandCoverage: { military: 1 },
     multipliers: { cultureType: { Naval: 3 } }
   },
   {
@@ -872,7 +872,7 @@ export const GOODS_DATA: GoodData[] = [
       { Honey: 0.5, Barrels: 0.5 }
     ],
     unit: "barrel",
-    demandCoverage: { food: 1, luxury: 0.2 }
+    demandCoverage: { food: 1 }
   },
   {
     name: "Liquor",

@@ -15,7 +15,7 @@ export const TUNABLES = {
     BONUS_URBAN_PRODUCTION: [0, 6],
     RURAL_OUTPUT_FACTOR: [0.5, 3]
   },
-  "src/model/economy/markets-generator.ts": {
+  "src/model/economy/trade.ts": {
     PRICE_RESPONSE: [0, 4],
     WANTS_ESTIMATE: [0, 3],
     OPENING_ELASTICITY: [0, 1],

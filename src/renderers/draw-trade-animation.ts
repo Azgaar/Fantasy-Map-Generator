@@ -1,5 +1,5 @@
 import { curveCatmullRom, easeLinear, line, select } from "d3";
-import type { Deal } from "@/model/economy/markets-generator";
+import type { Deal } from "@/model/economy/trade";
 import type { Point } from "@/model/graph/voronoi";
 import { ensureEl } from "@/utils/node-utils";
 import { minmax } from "@/utils/number-utils";

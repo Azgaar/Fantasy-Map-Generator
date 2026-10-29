@@ -4,9 +4,10 @@
 import { sum } from "d3";
 import { States } from "@/model/political/states-generator";
 import { Goods } from "./goods-generator";
-import { DEAL_KINDS, type Deal, Markets } from "./markets-generator";
+import { Markets } from "./markets-generator";
 import { Production } from "./production-generator";
 import { type Living, PROSPERITY_LEVELS, Prosperity } from "./prosperity";
+import { DEAL_KINDS, type Deal, Trade } from "./trade";
 
 type Group = "towns" | "country";
 
@@ -43,7 +44,7 @@ export type StateTrade = {
 /** A deal's goods at the market's price: without carriage, taxes and the margin */
 const goodsValue = (deal: Deal) => {
   const [, , , kind, units, price, tax, tariff, carriage] = deal;
-  const margin = Markets.getMargin(deal);
+  const margin = Trade.getMargin(deal);
   return kind === DEAL_KINDS.sale
     ? units * (price + carriage) + margin
     : units * price - tax - tariff - units * carriage - margin;
@@ -132,7 +133,7 @@ class StateEconomyModule {
     otherRevenue: number;
     corruption: number;
   } {
-    const { salesTax, tariffs } = Markets.getTaxesByState();
+    const { salesTax, tariffs } = Trade.getTaxesByState();
     const { owed, paid } = States.getPollTax();
     return {
       salesTax: salesTax[stateId] || 0,
@@ -238,7 +239,7 @@ class StateEconomyModule {
     }
 
     for (const deal of pack.deals) {
-      const margin = Markets.getMargin(deal);
+      const margin = Trade.getMargin(deal);
       if (!margin) continue;
       for (const accounts of andWorld(Markets.getState(Markets.get(deal[1])))) accounts.trade += margin;
     }
@@ -259,7 +260,7 @@ class StateEconomyModule {
             prosperity: row.prosperity / row.people
           }
         : null;
-    const { salesTax, tariffs } = Markets.getTaxesByState();
+    const { salesTax, tariffs } = Trade.getTaxesByState();
     const taxes = [salesTax, tariffs, States.getPollTax().paid, States.getMarketFees()];
     const close = (accounts: StateAccounts, collected: number) => {
       accounts.product = accounts.rural + accounts.manufacturing + accounts.trade;

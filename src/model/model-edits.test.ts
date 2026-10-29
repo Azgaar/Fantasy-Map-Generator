@@ -61,7 +61,8 @@ beforeAll(async () => {
     import("./story/journeys/journeys-generator"),
     import("./story/journeys/transports-generator"),
     import("./economy/goods-generator"),
-    import("./economy/markets-generator")
+    import("./economy/markets-generator"),
+    import("./economy/trade")
   ]);
 });
 

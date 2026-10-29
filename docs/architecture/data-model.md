@@ -494,7 +494,7 @@ Markets (regional economic hubs) are stored in `pack.markets: Market[]`. Note th
 - `i`: `number` - market id (starts at 1, not the array index)
 - `centerBurgId`: `number` - id of the burg the market is anchored at
 - `color`: `string` - market color in hex, used for territory rendering
-- `goods`: `Record<goodId, {stock: number; price: number}>` - per-good state. A single midpoint `price` is stored; customer-facing `buyPrice` / `sellPrice` are derived on demand from the market's margin rate (`Markets.getMarginRate`: `MARKET_MARGIN`, raised by its `feePaid`)
+- `goods`: `Record<goodId, {stock: number; price: number}>` - per-good state. A single midpoint `price` is stored; customer-facing `buyPrice` / `sellPrice` are derived on demand from the market's margin rate (`Trade.getMarginRate`: `MARKET_MARGIN`, raised by its `feePaid`)
 - `name`: `string` - optional market name, derived from the center burg's name
 - `rural`: `{ earned: number; rent: number; spent: number; bought: [goodId, units][]; pollTax?: [stateId, owed, paid][] }` - optional. Its rural people's last day, kept by the economy run: what their produce earned, the rent paid out of it to the state's capital, what they spent and bought, and the poll tax they owed and paid to the states of their cells. Absent until the economy runs
 - `feePaid`: `number` - optional. The license fee its center burg paid its state in the last economy run: the state's `marketFee`, 0 in neutral lands. The market's margin rises with it. Absent until the economy runs

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { DEAL_KINDS, type Deal, type DealKind, Markets } from "@/model/economy/markets-generator";
+import { DEAL_KINDS, type Deal, type DealKind, Trade } from "@/model/economy/trade";
 import { getDealNet, getMarketDeals, getMarketSide } from "./market-deals-overview";
 
 const createDeal = (market: number, kind: DealKind, units = 2.34, price = 3): Deal => [
@@ -15,7 +15,7 @@ const createDeal = (market: number, kind: DealKind, units = 2.34, price = 3): De
 ];
 
 const cents = (value: number) => Math.round(value * 100) / 100;
-const MARGIN = Markets.getMarginRate(); // a market that paid no license fee
+const MARGIN = Trade.getMarginRate(); // a market that paid no license fee
 
 describe("market deals overview calculations", () => {
   test("selects the deals made with the market, leaving out goods a burg kept", () => {

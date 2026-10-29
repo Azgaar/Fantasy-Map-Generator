@@ -1,8 +1,8 @@
 import { select } from "d3";
 import { Controllers } from "@/controllers";
 import { Goods } from "@/model/economy/goods-generator";
-import type { Market } from "@/model/economy/markets-generator";
-import { Markets } from "@/model/economy/markets-generator";
+import { type Market, Markets } from "@/model/economy/markets-generator";
+import { Trade } from "@/model/economy/trade";
 import { Pack } from "@/model/graph/pack-generator";
 import { Icons } from "@/model/icons";
 import type { Burg } from "@/model/political/burgs-generator";
@@ -237,7 +237,7 @@ function renderMarketOverviewPage(view: TableView<MarketGoodRow>): void {
     <div style="margin-left:5px">${t("Cells")}: ${pack.cells.market.reduce((count, m) => count + (m === market.i ? 1 : 0), 0)}</div>
     <div style="margin-left:12px">${t("Burgs")}: ${burgs.length}</div>
     <div data-col="stock" style="margin-left:12px">${t("Stock")}: ${rn(totalUnits, 2)}</div>
-    <div data-tip="${t("It buys this much below its prices and sells this much above; a dear market license raises it")}" style="margin-left:12px">${t("Market margin")}: ${rn(Markets.getMarginRate(market) * 100, 1)}%</div>`;
+    <div data-tip="${t("It buys this much below its prices and sells this much above; a dear market license raises it")}" style="margin-left:12px">${t("Market margin")}: ${rn(Trade.getMarginRate(market) * 100, 1)}%</div>`;
 
   renderEditorPagination(ensureEl("marketOverviewSummary"), view, marketOverviewTable.goto);
   Dialog.update(dialogId, { width: "fit-content", position });
@@ -297,8 +297,8 @@ function downloadStockCsv() {
   const rows = Object.entries(market.goods).flatMap(([goodId, marketGood]) => {
     const good = Goods.get(Number(goodId));
     if (!good) return [];
-    const buyPrice = rn(Markets.customerBuyPrice(market, marketGood.price), 2);
-    const sellPrice = rn(Markets.customerSellPrice(market, marketGood.price), 2);
+    const buyPrice = rn(Trade.customerBuyPrice(market, marketGood.price), 2);
+    const sellPrice = rn(Trade.customerSellPrice(market, marketGood.price), 2);
     return [[good.name, rn(marketGood.stock, 2), buyPrice, sellPrice]];
   });
   Csv.download("Market", ["Good", "Stock", "Buy Price", "Sell Price"], rows);

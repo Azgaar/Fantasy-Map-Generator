@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { DEAL_KINDS, Markets } from "@/model/economy/markets-generator";
+import { Markets } from "@/model/economy/markets-generator";
 import { Routes } from "@/model/economy/routes-generator";
+import { DEAL_KINDS } from "@/model/economy/trade";
 import { Names } from "@/model/society/names-generator";
 import { noFinance, States } from "./states-generator";
 

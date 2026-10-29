@@ -16,6 +16,7 @@ import { Goods } from "@/model/economy/goods-generator";
 import { Markets } from "@/model/economy/markets-generator";
 import { Production } from "@/model/economy/production-generator";
 import { Routes } from "@/model/economy/routes-generator";
+import { Trade } from "@/model/economy/trade";
 import { ErasePipeline, GenerationPipeline } from "@/model/generation-pipeline";
 import { GraphOverride } from "@/model/graph/graph-override";
 import { Grid } from "@/model/graph/grid-generator";
@@ -177,6 +178,7 @@ const FMG = {
   Styles,
   Tags,
   Temperature,
+  Trade,
   Transports,
   Zones,
 

@@ -6,7 +6,8 @@ import type { Burg } from "@/model/political/burgs-generator";
 import { EXPENSES, type Expense, noExpenses, States } from "@/model/political/states-generator";
 import { rn } from "@/utils/number-utils";
 import { type DemandCategory, type Good, getVarietyShares } from "./goods-generator";
-import { DEAL_KINDS, type Market, Markets, type TradeTerms } from "./markets-generator";
+import { type Market, Markets } from "./markets-generator";
+import { DEAL_KINDS, Trade, type TradeTerms } from "./trade";
 
 /** The needs each expense buys for, with the share of its money */
 const EXPENSE_NEEDS: Record<Expense, [DemandCategory, number][]> = {
@@ -34,7 +35,7 @@ class StateOrdersModule {
 
   /** Starts the run, once burgs owe their poll tax: what each state has at dawn and where it buys */
   start(): void {
-    const terms = Markets.getTradeTerms();
+    const terms = Trade.getTradeTerms();
     const fees = States.getMarketFees();
     const dawn: number[] = [];
     for (const burg of pack.burgs)
@@ -67,11 +68,11 @@ class StateOrdersModule {
 
   /** A turn: each seat spends its expenses' share of what the state collected so far; the day's last spends the rest */
   place(last = false): void {
-    const ruralPollTax = last ? Markets.getRuralPollTax() : [];
+    const ruralPollTax = last ? Trade.getRuralPollTax() : [];
     const least = last ? 0.01 : MIN_ORDER;
     for (const run of this.runs) {
       const { budget } = pack.states[run.stateId].economy;
-      const collected = run.dawn + Markets.getTaxesSoFar(run.stateId) + (ruralPollTax[run.stateId] || 0);
+      const collected = run.dawn + Trade.getTaxesSoFar(run.stateId) + (ruralPollTax[run.stateId] || 0);
       for (const expense of EXPENSES) {
         const allowance = (collected * budget[expense] * (100 - budget.corruption)) / 10000; // officials pocket the rest
         for (const seat of run.seats[expense]) {
@@ -101,7 +102,7 @@ class StateOrdersModule {
     if (!market) return 0;
     const options = (this.goodsFor.get(need) ?? []).map(good => ({
       good,
-      price: Markets.customerBuyPrice(market, market.goods[good.i]?.price ?? good.value)
+      price: Trade.customerBuyPrice(market, market.goods[good.i]?.price ?? good.value)
     }));
     const costPerCoverage = ({ good, price }: { good: Good; price: number }) => price / good.demandCoverage![need]!;
     const shares = getVarietyShares(options.map(costPerCoverage));
@@ -113,17 +114,17 @@ class StateOrdersModule {
       if (!sources.has(good.i))
         sources.set(
           good.i,
-          Markets.getSupplier(market, good, () => Markets.quoteSource(burg, good, terms)?.source)
+          Trade.getSupplier(market, good, () => Trade.quoteSource(burg, good, terms)?.source)
         );
       const source = sources.get(good.i);
       if (!source || (source.goods[good.i]?.stock || 0) <= 0.01) return 0;
-      const trade = Markets.buy({ burg, source, good, units: Infinity, kind: DEAL_KINDS.order, terms, budget });
+      const trade = Trade.buy({ burg, source, good, units: Infinity, kind: DEAL_KINDS.order, terms, budget });
       return trade ? trade.units * trade.price : 0;
     };
     options.forEach((option, k) => {
       const spend = money * shares[k];
       const cost = buy(option.good, spend);
-      if (signal && cost < spend - 0.01) Markets.signalShortage(market, option.good, (spend - cost) / option.price);
+      if (signal && cost < spend - 0.01) Trade.signalShortage(market, option.good, (spend - cost) / option.price);
       spent += cost;
     });
     for (const { good } of options.toSorted((a, b) => costPerCoverage(a) - costPerCoverage(b))) {
