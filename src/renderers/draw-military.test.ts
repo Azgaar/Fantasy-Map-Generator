@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { beforeEach, expect, test, vi } from "vitest";
-import "@/generators/styles";
-import type { Regiment } from "@/generators/military-generator";
+import "@/model/styles/styles";
+import type { Regiment } from "@/model/political/military-generator";
 import { drawMilitary, drawRegiment, moveRegiment, updateRegimentIcon } from "./draw-military";
 
-vi.mock("@/components/icons", () => ({
+vi.mock("@/model/icons", () => ({
   Icons: { href: (id: string) => `#${id}`, kind: (id: string) => (id.startsWith("glyph-") ? "glyph" : "set") }
 }));
 
@@ -48,3 +48,46 @@ test.each(["custom-image", "glyph-2694-fe0f"])(
     await vi.waitFor(() => check(51, 51));
   }
 );
+
+test("keeps regiment counter compact and places regiment name as label below unit when showNames is enabled", () => {
+  styles.military.options.showNames = true;
+  const regiment = {
+    i: 1,
+    state: 1,
+    name: "1st Royal Army",
+    icon: "custom-image",
+    x: 100,
+    y: 100,
+    n: 0,
+    a: 10,
+    u: {}
+  } as Regiment;
+  drawRegiment(regiment, 1);
+
+  const rects = document.querySelectorAll<SVGRectElement>("#armies g rect");
+  const baseRect = rects[0];
+  const iconRect = rects[1];
+  const use = document.querySelector<SVGUseElement>("use.regimentIcon")!;
+  const totalText = document.querySelector<SVGTextElement>("#armies g text.regimentTotal")!;
+  const nameText = document.querySelector<SVGTextElement>("#armies g text.regimentName")!;
+
+  // Counter remains compact: land unit width is size * 6 = 30
+  expect(Number(baseRect.getAttribute("width"))).toBe(30);
+  expect(totalText.textContent).toBe("10");
+
+  // Name is placed below the counter
+  expect(nameText.textContent).toBe("1st Royal Army");
+  expect(Number(nameText.getAttribute("y"))).toBeGreaterThan(
+    Number(baseRect.getAttribute("y")) + Number(baseRect.getAttribute("height"))
+  );
+
+  const baseX = Number(baseRect.getAttribute("x"));
+  const iconBoxX = Number(iconRect.getAttribute("x"));
+  const iconX = Number(use.getAttribute("x"));
+  const iconW = Number(use.getAttribute("width"));
+
+  // Icon rect is strictly to the left of base rect
+  expect(iconBoxX + Number(iconRect.getAttribute("width"))).toBeCloseTo(baseX, 1);
+  // Icon use element is inside the icon rect, to the left of the base text rect
+  expect(iconX + iconW).toBeLessThanOrEqual(baseX);
+});

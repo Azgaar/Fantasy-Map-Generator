@@ -1,6 +1,6 @@
 // Remnant classification: where matter piled thickest, it collapsed.
 // Positions come for free — the relief generator already places the mount family on the highest cells
-import type { ReliefIcon } from "@/generators/relief-generator";
+import type { ReliefIcon } from "@/model/physical/relief-generator";
 
 export const REMNANT_CLASSES = ["blackHole", "pulsar", "neutron"] as const;
 export type RemnantClassId = (typeof REMNANT_CLASSES)[number];

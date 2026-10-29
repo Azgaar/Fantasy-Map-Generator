@@ -55,8 +55,10 @@ The heightmap editor offers three different modes to choose from. Its recommende
    - However, it does not allow changes to the coastline.
 
 3. **Risk**:
-   - This mode allows you to keep most of the map's data while also allowing changes to the coastline.
-   - Note that using this mode can potentially cause some errors.
+   - This mode allows you to change the coastline and keeps the map's data: burgs, states, provinces, cultures, religions, routes, markers, regiments, zones, journeys and labels are carried over to the new coastline.
+   - What was on land you sink is lost, but the land under a burg is never sunk: the burg keeps its cell as a small island.
+   - With _Allow water erosion_ checked, rivers are generated again: each new river takes the name and notes of the old river it follows, and locked rivers keep their course. Unchecked, the rivers are kept, ending at the new coast where their land went under the sea.
+   - Islands, lakes and oceans keep their names, notes and tags. Relief icons on land that went under the sea are removed, and land raised from the sea gets relief of its own.
 
 <details>
 <summary>Show Image</summary>

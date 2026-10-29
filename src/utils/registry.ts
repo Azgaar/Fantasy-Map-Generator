@@ -1,30 +1,37 @@
-// The lazy module registry. Note it calls `tip`/`clearMainTip` through the window bridge, not an
-// import: utils sits below the UI layer and must never import from components/
-
+// The lazy module registry. The caller passes the loading feedback: utils sits below the UI layer
 type Loader<T> = () => Promise<T>;
 type DispatchFn = (...args: unknown[]) => unknown;
 
 const LOADING_TIP = "Loading…";
 
 let pendingLoads = 0;
-function trackLoad<T>(promise: Promise<T>): Promise<T> {
-  pendingLoads++;
-  window.tip(LOADING_TIP, false, "info");
-  return promise.finally(() => {
+
+interface LoadProgress {
+  start(): void;
+  end(): void;
+}
+
+/** The default feedback when a caller passes none; utils sits below the UI, so it goes through the window seams */
+const defaultProgress: LoadProgress = {
+  start() {
+    pendingLoads++;
+    window.tip?.(LOADING_TIP, false, "info");
+  },
+  end() {
     if (--pendingLoads > 0) return;
     pendingLoads = 0;
     // clear only our own message: a hover tip that replaced it while we loaded must stay up
     if (typeof document !== "undefined" && document.getElementById("tooltip")?.innerHTML === LOADING_TIP)
-      window.clearMainTip();
-  });
-}
+      window.clearMainTip?.();
+  }
+};
 
 // Every method of a registered module becomes async
 type AsyncMethods<T> = {
   [K in keyof T]: T[K] extends (...args: infer A) => infer R ? (...args: A) => Promise<Awaited<R>> : T[K];
 };
 
-export type Registry<T> = {
+type Registry<T> = {
   [K in keyof T]: AsyncMethods<T[K]>;
 };
 
@@ -36,7 +43,8 @@ export const eager =
 export function createRegistry<T extends Record<string, object>>(
   loaders: {
     [K in keyof T]: Loader<T[K]>;
-  }
+  },
+  progress: LoadProgress = defaultProgress
 ): Registry<T> {
   const modulePromises = new Map<string, Promise<unknown>>();
   const entryProxies = new Map<string, object>();
@@ -47,7 +55,8 @@ export function createRegistry<T extends Record<string, object>>(
   const load = (name: string): Promise<unknown> => {
     let promise = modulePromises.get(name);
     if (!promise) {
-      promise = trackLoad(loaderByName[name]());
+      progress.start();
+      promise = loaderByName[name]().finally(() => progress.end());
       modulePromises.set(name, promise);
     }
     return promise;

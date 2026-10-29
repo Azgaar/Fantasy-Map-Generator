@@ -82,22 +82,27 @@ After global trade, each burg fills personal demand via `Markets.buy(...)` with 
 
 ## Global redistribution
 
-`Markets.runGlobalTrade()` runs after every burg has produced and sold. For each good:
+`Markets.runGlobalTrade()` runs after every burg has produced and sold. Tariff and embargo policies are compiled once into an $O(1)$ pre-indexed lookup prior to iterating goods. For each good:
 
 1. Computes a per-market safety reserve = `population × (consumerDemand + industrialDemand) × (1 + TRADE_RESERVE_FACTOR)`.
 2. Splits markets into **exporters** (stock above reserve) and **importers** (stock below reserve). Skips the good entirely if either side is empty.
-3. For each (exporter, importer) pair, builds an opportunity with:
+3. For each (exporter, importer) pair, checks tariffs and embargoes:
+   - Domestic inter-market trade (`exporterStateId === importerStateId`): 0 tariff, never embargoed.
+   - Cross-state trade: evaluates bidirected embargo (`resolve(importerState, exporterState, good)` and `resolve(exporterState, importerState, good)`). If either side is `"embargo"`, the opportunity is skipped.
+   - Otherwise resolves `tariffRate` from the importer state's most specific rule (0 fallback).
    - `transportCost = (octileDistance / mapDiagonal) × DISTANCE_COST_FACTOR × good.value` (a precomputed Chebyshev-octile straight-line cost between market center burgs).
    - `exporterTaxPerUnit = exporterState.salesTax × exporterPrice` (0 for neutral exporters).
-   - `unitProfit = importerPrice − (exporterPrice + transportCost + exporterTaxPerUnit)`
-   - `units = min(exporterAvailable, importerNeeded)`
-   - Skips if `unitProfit × units < MIN_PROFIT` or `units < MIN_UNIT`. High-tax exporters drop out of opportunities they would otherwise win.
+   - `tariffPerUnit = tariffRate × exporterPrice`.
+   - `landedCost = exporterPrice + transportCost + exporterTaxPerUnit + tariffPerUnit`.
+   - `unitProfit = importerPrice − landedCost`.
+   - `units = min(exporterAvailable, importerNeeded)`.
+   - Skips if `unitProfit × units < MIN_PROFIT` or `units < MIN_UNIT`. High tariffs or taxes drop opportunities that become unprofitable.
 4. Sorts opportunities by total profit descending and executes them greedily, recomputing available / needed at execution time.
-5. Each executed transfer records a market-to-market deal at `price = exporterPrice + transportCost + exporterTaxPerUnit` (the importer's landed cost) with `tax = exporterTaxPerUnit × units`, moves stock, and applies market pressure:
+5. Each executed transfer records a market-to-market deal at `price = landedCost` with `tax = exporterTaxPerUnit × units` and `tariff = tariffPerUnit × units` (omitted if 0), moves stock, and applies market pressure:
    - **Exporter price rises** (lost stock → applyMarketPressure with positive `units`).
    - **Importer price falls** (gained stock → applyMarketPressure with negative `units`).
 
-The recorded `deal.tax` flows to the exporter state's treasury via `States.collectTaxes()`. Markets have no treasury, so the deal price (gross of exporter tax) is what the importer effectively paid.
+The recorded `deal.tax` flows to the exporter state's treasury, and `deal.tariff` flows to the importer market's state treasury via `States.collectTaxes()`. Markets have no treasury, so the deal price (gross of exporter tax and import tariff) is what the importer effectively paid.
 
 ## Demand model
 
@@ -164,7 +169,7 @@ A read-only visualization layer that turns the deal log into moving markers on t
 - **Lifecycle**: `start / stop / restart / sync` follow the `toggleTrade` layer flag. Batches are computed once per `start()` and cached. A `concurrent`-sized pool of active animations is maintained via `topUp()`; each animation calls back on completion to immediately spawn a replacement. `trigger(batches)` is a one-shot variant that draws a specific set of batches without the pool lifecycle. `clear()` removes every animation SVG, and the cloned `tradeAnimation` group is wiped before `.map` save.
 - **Interaction**: clicking a marker opens `TradeDetails.open(batch)` — a dialog that groups the batch's deals by good, shows units / unit price / total value, and highlights the route in red. Endpoint zoom buttons recenter on the seller or buyer burg.
 - **Style controls**: `TradeAnimationEditor` exposes display type, concurrency, timing and size — `displayType` (`"both"` / `"local"` / `"global"`), `concurrent`, `duration`, `landDurationModifier`, `segmentChangePause`, `markerSize`. Path stroke color / dash live in the layer style editor.
-- **Sources**: [src/renderers/trade-animation.ts](../../src/renderers/trade-animation.ts), [src/renderers/draw-trade-animation.ts](../../src/renderers/draw-trade-animation.ts), [src/controllers/trade-details.ts](../../src/controllers/trade-details.ts), [src/controllers/trade-animation-editor.ts](../../src/controllers/trade-animation-editor.ts).
+- **Sources**: [src/renderers/trade-animation.ts](../../src/renderers/trade-animation.ts), [src/renderers/draw-trade-animation.ts](../../src/renderers/draw-trade-animation.ts), [src/controllers/economy/trade/trade-details.ts](../../src/controllers/economy/trade/trade-details.ts), [src/controllers/economy/trade/trade-animation-editor.ts](../../src/controllers/economy/trade/trade-animation-editor.ts).
 
 ## Architectural intent
 
@@ -177,4 +182,4 @@ A read-only visualization layer that turns the deal log into moving markers on t
 
 - No `Map` / `Set` / `Record` lookups in the hot path; market state is keyed by integer good id.
 - A single midpoint `price` is stored per market good; `buyPrice` and `sellPrice` are derived via `MARKET_MARGIN`.
-- Sources: [src/generators/markets-generator.ts](../../src/generators/markets-generator.ts), [src/generators/goods-generator.ts](../../src/generators/goods-generator.ts).
+- Sources: [src/model/economy/markets-generator.ts](../../src/model/economy/markets-generator.ts), [src/model/economy/goods-generator.ts](../../src/model/economy/goods-generator.ts).

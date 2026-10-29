@@ -1,13 +1,13 @@
 // Browser-mode test (vitest.browser.config.ts): drawTexture derives the image from the store
 // and clamps out-of-range shifts instead of emitting invalid negative sizes.
 import { beforeEach, expect, test } from "vitest";
-import "@/components/options-model"; // installs the options global
-import "@/generators/styles";
+import "@/model/options/options-defaults"; // sets the default options
+import "@/model/styles/styles";
 import { drawTexture } from "./draw-texture";
 
 beforeEach(() => {
   document.body.innerHTML = `<svg id="map"><g id="texture"></g></svg>`;
-  options.map.graph = { width: 800, height: 600, points: 10000 };
+  options.map.graph = { width: 800, height: 600, points: 10000, sampling: "square", jitter: 0.9 };
 });
 
 const layer = { getEl: () => document.getElementById("texture") } as never;

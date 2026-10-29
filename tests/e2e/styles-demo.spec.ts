@@ -1,28 +1,9 @@
 import { test, expect } from "@playwright/test";
-import defaultStyles from "../../src/generators/default-styles.json";
-import { stylesSchema } from "../../src/generators/styles-schema";
 import { waitForMap } from "./wait-for-map";
-
-const DEFAULT_STYLES = stylesSchema.parse(defaultStyles);
 
 // The data-layer/data-group addressing contract between src/styles and the app:
 // every address the styles schema can produce must resolve in the real DOM.
 // Run alone with two screenshots: npx playwright test styles-demo
-
-// [layer] and [layer, subgroup] addresses from the default styles; dynamic
-// `groups` records are checked separately (their names are per-map)
-const ADDRESSES: string[][] = [];
-for (const [layer, node] of Object.entries(DEFAULT_STYLES)) {
-  ADDRESSES.push([layer]);
-  for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
-    if (key === "attrs" || key === "options") continue;
-    if (key === "groups") {
-      for (const name of Object.keys(value as Record<string, unknown>)) ADDRESSES.push([layer, name]);
-      continue;
-    }
-    ADDRESSES.push([layer, key]);
-  }
-}
 
 // created on draw, not by the registry - absent until their layer renders
 const LAZY = new Set(["legend/box", "scaleBar/back"]);
@@ -36,7 +17,22 @@ async function generateMap(page: import("@playwright/test").Page) {
 test("every styles address resolves in the generated map's DOM", async ({ page }) => {
   await generateMap(page);
 
-  const result = await page.evaluate(addresses => {
+  // [layer] and [layer, subgroup] addresses from the app's parsed styles, read in the page:
+  // the schema source needs Vite, so the spec cannot import it
+  const result = await page.evaluate(() => {
+    const addresses: string[][] = [];
+    for (const [layer, node] of Object.entries(globalThis.styles as Record<string, Record<string, unknown>>)) {
+      addresses.push([layer]);
+      for (const [key, value] of Object.entries(node)) {
+        if (key === "attrs" || key === "options") continue;
+        if (key === "groups") {
+          for (const name of Object.keys(value as Record<string, unknown>)) addresses.push([layer, name]);
+          continue;
+        }
+        addresses.push([layer, key]);
+      }
+    }
+
     const resolved: string[] = [];
     const absentRoot: string[] = [];
     const missing: string[] = [];
@@ -55,7 +51,7 @@ test("every styles address resolves in the generated map's DOM", async ({ page }
       else missing.push(key);
     }
     return { resolved, absentRoot, missing };
-  }, ADDRESSES);
+  });
 
   // a schema key with no stamped element under an existing layer is a contract break
   expect(result.missing.filter(key => !LAZY.has(key))).toEqual([]);
@@ -77,7 +73,7 @@ test("the library styles the live map through the contract", async ({ page }, te
   await page.screenshot({ path: testInfo.outputPath("styles-demo-before.png") });
 
   const result = await page.evaluate(async () => {
-    const { Styles } = await import("/Fantasy-Map-Generator/generators/styles.ts");
+    const { Styles } = await import("/Fantasy-Map-Generator/model/styles/styles.ts");
     const styles = globalThis.styles;
     styles.rivers.attrs.fill = "#ff00aa";
     styles.routes.groups.roads.attrs.stroke = "#00e5ff";

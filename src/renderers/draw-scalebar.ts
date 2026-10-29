@@ -1,14 +1,9 @@
-import { range, type Selection, select } from "d3";
-import { isAstralView } from "@/components/options/view-mode";
-import { tip } from "@/components/tooltips";
-import { viewport } from "@/components/viewport";
-import { Controllers } from "@/controllers";
-import { ensureEl, rn } from "../utils";
-
-// TODO: a renderer should not own controls. Move this to a proper scale-bar component once one exists
-function addScaleBarControls(scaleBar: Selection<SVGGElement, unknown, null, undefined>): void {
-  scaleBar.on("mousemove", () => tip("Click to open Units Editor")).on("click", () => Controllers.UnitsEditor.open());
-}
+import { range, select } from "d3";
+import { viewport } from "@/renderers/viewport/viewport";
+import { isAstralView } from "@/renderers/view-mode";
+import { log } from "@/utils/logger";
+import { ensureEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
 
 export function drawScaleBar(
   parent?: SVGSVGElement,
@@ -23,11 +18,9 @@ export function drawScaleBar(
   const scaleBarEl = scaleBar.node();
   if (!scaleBarEl || getComputedStyle(scaleBarEl).display === "none") return;
 
-  if (!parent) addScaleBarControls(scaleBar); // the on-map bar is clickable, an exported copy is not
-
   const renderedContent = scaleBar.select("#scaleBarContent");
   const isRendered = Boolean(renderedContent.size());
-  TIME && !isRendered && console.time("drawScaleBar");
+  !isRendered && log.time("drawScaleBar");
 
   // in Astral the map reads as a sector of space, so the bar is labelled in light years;
   // the numbers still come from the map's own distance scale, and the saved units are untouched
@@ -113,7 +106,7 @@ export function drawScaleBar(
     scaleBar.attr("transform", `translate(${x},${y})`);
   }
 
-  TIME && !isRendered && console.timeEnd("drawScaleBar");
+  !isRendered && log.timeEnd("drawScaleBar");
 
   function getLength(): number {
     const init = 100;

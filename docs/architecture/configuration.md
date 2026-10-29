@@ -37,7 +37,7 @@ the way they do, not a copy of what they contain.
    one value, and never two forms of one — a density step and the cell count it stands for are the
    same request said twice, so only the step is stored.
 4. **A value belongs in `map` if and only if the map cannot be operated correctly without it.**
-5. **The model is the store.** `options` is a global the model declares and initializes, written
+5. **The model is the store.** `options` is the ambient object the model declares, written
    plainly — `options.map.units.area.unit = …` — because a value takes effect where it is written.
    What remembers it is `Options.save()` (debounced) or `Options.persist()` for the few places that
    must not wait: boot, reset, and the end of a generation or a load.
@@ -82,8 +82,9 @@ template raised the terrain and is never consulted again.
 
 **`options.map`** is cell-independent map data: the seed, the graph extent, where the map sits on
 the globe and the climate that produced its per-cell values, the culture set, lore, units, the
-style preset, the definition sets, the coastline settings the renderer reads, and the relief rules. Everything keyed
-by cell lives in `data` instead.
+style preset, the definition sets, the coastline settings the renderer reads, the relief rules, and `viewOnly`
+when the file opens for browsing only (written only by a view-only save). Everything keyed by cell lives in `data`
+instead.
 
 Some of it is **derived** — `geography.coordinates` is computed from `mapSize`, `latitude`,
 `longitude` and the aspect ratio. A derived value is re-derived **the moment any of its inputs
@@ -106,6 +107,9 @@ Two rules keep the boundary sharp. **"Show all regardless of zoom" is a preferen
 style record. And **a preference the user has not set
 is `null`, not a guess** — interface size follows the screen and the viewport follows the window
 until someone chooses otherwise, so a control's reset writes `null` rather than today's number.
+One value lives here for the session only: `app.mode`, the edit mode the user is in (`"heightmap"`,
+`"paint"`, `"addState"`…, or `null`). While it is set, other editors, saving, loading and regeneration
+stay off. It is never written to localStorage, so a reload always starts outside any mode.
 
 The **viewport** is the clearest case of the last rule, and the one most often confused with the
 extent: the extent is the coordinate space the map's geometry lives in, fixed for the life of its

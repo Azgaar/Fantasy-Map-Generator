@@ -1,20 +1,20 @@
 // @vitest-environment jsdom
 import { beforeEach, expect, test, vi } from "vitest";
-import { Icons } from "@/components/icons";
-import { setAstralView } from "@/components/options/view-mode";
-import { setViewportSize, setViewportTransform } from "@/components/viewport";
 import { setViewedEpochStart } from "@/controllers/historical-time";
-import type { Marker } from "@/generators/markers-generator";
+import { Icons } from "@/model/icons";
+import type { Marker } from "@/model/story/markers-generator";
+import { setViewportSize, setViewportTransform } from "@/renderers/viewport/viewport";
+import { setAstralView } from "@/renderers/view-mode";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 
 const mocks = vi.hoisted(() => ({ layerOn: true }));
-vi.mock("@/components/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
+vi.mock("@/renderers/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
 
-import "@/generators/styles";
-import "@/generators/relief-generator"; // the models own the icon sets references resolve against
-import "@/generators/burgs-generator";
-import "@/generators/goods-generator";
-import "@/generators/markers-generator";
+import "@/model/styles/styles";
+import "@/model/physical/relief-generator"; // the models own the icon sets references resolve against
+import "@/model/political/burgs-generator";
+import "@/model/economy/goods-generator";
+import "@/model/story/markers-generator";
 import { drawMarkers, setEditedMarker, setMarkersFilter } from "./draw-markers";
 
 function marker(i: number, x = 50, y = 50): Marker {

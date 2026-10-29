@@ -2,9 +2,9 @@
 // shape of one star. The DOM writer is draw-systems.ts; it owns grouping and positioning, this module
 // owns what a single marker is drawn from. The system editor's preview emits the same shapes.
 
-import type { StarSystem } from "@/generators/astral-naming";
-import { rn } from "@/utils/numberUtils";
-import { escapeHtml } from "@/utils/stringUtils";
+import type { StarSystem } from "@/model/physical/astral-naming";
+import { rn } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 /** The spectral classes, hottest to coolest; the layer draws one data-group per class */
 export const STAR_CLASSES = ["G", "F", "K", "A", "B", "M"] as const;

@@ -1,13 +1,14 @@
 // The Legends browser: the map's chronicle made readable. A timeline of events grouped by era,
 // and the fallen realms with their stories. Read-only: it presents pack.history. See
 // docs/plans/history-generation.md and docs/domain/glossary.md
-import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
-import { dialogState } from "@/components/dialog/state";
 import { Controllers } from "@/controllers";
+import { Dialog } from "@/ui/dialog/dialog";
+import { dialogState } from "@/ui/dialog/state";
+import { zoomTo } from "@/ui/map/zoom";
 import { goToPresent, isInPast, scrubRange, scrubToYear, viewedEpoch } from "@/controllers/historical-view";
 import { ALIGNMENT_COLORS } from "@/data/culture-traits";
-import { Chronicle } from "@/generators/history-generator";
-import { getCellPoint } from "@/generators/journeys/journey-places";
+import { Chronicle } from "@/model/physical/history-generator";
+import { getCellPoint } from "@/model/story/journeys/journey-places";
 import type { Era, HistoricalFigure, HistoryEvent, HistoryEventType, HistRef } from "@/types/history";
 import { capitalize, downloadFile, ensureEl, escapeHtml, getFileName } from "@/utils";
 
@@ -63,21 +64,21 @@ let tab: "timeline" | "realms" | "figures" = "timeline";
 let filters: { type: string; actor: string; search: string };
 
 function open(): void {
-  if (customization) return;
+  if (options.app.mode) return;
   filters = dialogState.get(dialogId, "filters", () => ({ type: "", actor: "", search: "" }));
   tab = "timeline";
-  closeDialogs(`#${dialogId}, .stable`);
+  Dialog.closeAll(`#${dialogId}, .stable`);
 
   Chronicle.sync();
   renderDialog();
   renderBody();
   goToPresent(); // a fresh browser always opens at the present (also a no-op when not scrubbing)
 
-  $(`#${dialogId}`).dialog({ title: "Legends", resizable: false, position, close: closeBrowser });
+  Dialog.open(dialogId, { title: "Legends", resizable: false, position, onClose: closeBrowser });
 }
 
 function renderDialog(): void {
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
 
   const types = [...new Set(pack.history.events.map(event => event.type))].sort();
   const html = /* html */ `<div id="${dialogId}" class="dialog stable">${TEMPLATE}
@@ -140,7 +141,7 @@ function renderDialog(): void {
 
 function closeBrowser(): void {
   goToPresent(); // the map comes back to the present, the dialog was maybe scrubbing a past
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
 }
 
 /** the range input spanning the epochs; hidden when the map has no past to scrub */

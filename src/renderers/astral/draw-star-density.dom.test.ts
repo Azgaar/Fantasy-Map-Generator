@@ -1,18 +1,18 @@
-// Browser-mode test (vitest.browser.config.ts): drawStarDensity writes each band's isolines into
+﻿// Browser-mode test (vitest.browser.config.ts): drawStarDensity writes each band's isolines into
 // its own group, caps at the level count, and empties a map with no burgs. The isoline pass is
 // mocked: the field builder has its own suite and getIsolines is stock code.
 import { beforeEach, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ isolines: {} as Record<number, { fill?: string }> }));
-vi.mock("@/utils/pathUtils", async importOriginal => ({
-  ...(await importOriginal<typeof import("@/utils/pathUtils")>()),
+vi.mock("@/utils/path-utils", async importOriginal => ({
+  ...(await importOriginal<typeof import("@/utils/path-utils")>()),
   getIsolines: vi.fn(() => mocks.isolines)
 }));
 
-import "@/components/options-model"; // installs the options global
-import "@/generators/styles";
-import "@/services/logging"; // installs the TIME/INFO globals the renderers gate their timers on
-import { getIsolines } from "@/utils/pathUtils";
+import "@/model/options/options-model"; // installs the options global
+import "@/model/styles/styles";
+import "@/utils/logger"; // installs the TIME/INFO globals the renderers gate their timers on
+import { getIsolines } from "@/utils/path-utils";
 import { drawStarDensity } from "./draw-star-density";
 
 beforeEach(() => {
@@ -20,7 +20,7 @@ beforeEach(() => {
   document.body.innerHTML = `<svg id="map"><g id="viewbox"><g id="starDensity" data-layer="starDensity">
       ${[1, 2, 3, 4, 5, 6].map(band => `<g id="band${band}" data-group="band${band}"></g>`).join("")}
     </g></g></svg>`;
-  options.map.graph = { width: 1000, height: 100, points: 10000 };
+  options.map.graph = { width: 1000, height: 100, points: 10000, sampling: "square", jitter: 0 };
   styles.starDensity.options = { levels: 5, reach: 150, populationWeight: 0.5 };
   vi.mocked(getIsolines).mockClear();
   globalThis.pack = {

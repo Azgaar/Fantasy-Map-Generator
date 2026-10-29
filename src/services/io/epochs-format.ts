@@ -5,8 +5,8 @@
 // snapshot — the same "never lose the world over a broken extra" rule the mod slot uses.
 import { emptyHistory, type History, type HistoryEpoch } from "@/types/history";
 
-export const HISTORY_RECORD = 53;
-export const FIRST_SNAPSHOT_RECORD = 54;
+export const HISTORY_RECORD = 54;
+export const FIRST_SNAPSHOT_RECORD = 55;
 
 interface SerializedHistory {
   json: string; // record 53

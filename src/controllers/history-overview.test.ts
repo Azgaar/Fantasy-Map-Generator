@@ -1,13 +1,18 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { dialogState } from "@/components/dialog/state";
+import { dialogState } from "@/ui/dialog/state";
 import { emptyHistory, type History } from "@/types/history";
 
-vi.mock("@/generators/history-generator", () => ({ Chronicle: { sync: () => globalThis.pack.history } }));
-vi.mock("@/generators/journeys/journey-places", () => ({
+vi.mock("@/model/physical/history-generator", () => ({ Chronicle: { sync: () => globalThis.pack.history } }));
+vi.mock("@/model/story/journeys/journey-places", () => ({
   getCellPoint: (cell: number) => (cell === 9 ? [450, 150] : undefined)
 }));
-vi.mock("@/components/dialog/dialog-helpers", () => ({ closeDialogs: vi.fn(), destroyDialog: vi.fn() }));
+const { zoomToMock } = vi.hoisted(() => ({ zoomToMock: vi.fn() }));
+vi.mock("@/ui/map/zoom", () => ({ zoomTo: zoomToMock }));
+vi.mock("@/ui/dialog/dialog", () => ({
+  Dialog: { open: vi.fn(), closeAll: vi.fn(), destroy: vi.fn(), confirm: vi.fn(), message: vi.fn() }
+}));
+vi.mock("@/ui/dialog/dialog-helpers", () => ({}));
 vi.mock("@/controllers", () => ({ Controllers: { BurgEditor: { open: vi.fn() } } }));
 
 import { LegendsOverview } from "./history-overview";
@@ -56,14 +61,11 @@ const history: History = {
   ]
 };
 
-const zoomToMock = vi.fn();
-
 beforeEach(() => {
   dialogState.clear(); // filters persist in a module cache; a leaked filter would fail the next test
   document.body.innerHTML = '<div id="dialogs"></div>';
-  vi.stubGlobal("customization", 0);
-  vi.stubGlobal("zoomTo", zoomToMock);
-  vi.stubGlobal("$", () => ({ dialog: vi.fn() }));
+  options.app.mode = null;
+  zoomToMock.mockClear();
   globalThis.pack = {
     cells: {
       p: [
@@ -260,7 +262,7 @@ describe("LegendsOverview", () => {
   });
 
   it("does not open in customization mode", () => {
-    vi.stubGlobal("customization", 1);
+    options.app.mode = "edit" as typeof options.app.mode;
     LegendsOverview.open();
     expect(document.getElementById("legendsBrowser")).toBeNull();
   });

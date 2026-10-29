@@ -70,7 +70,7 @@ Subtype / Group):
 
 ## UI
 
-Controller `src/controllers/features-overview.ts`, `Controllers.FeaturesOverview`, dialog id
+Controller `src/controllers/physical/features-overview.ts`, `Controllers.FeaturesOverview`, dialog id
 `featuresOverview`. Built on `initEditorTable` / `renderEditorHeader` / `applyLineHighlighting`
 like `rivers-overview.ts`.
 

@@ -1,10 +1,12 @@
-// Remnants: collapse-classed objects where matter piled thickest, drawn as a viewport layer like the systems
-import { Layers } from "@/components/layers";
-import { zoomFontSize } from "@/components/viewport";
+﻿// Remnants: collapse-classed objects where matter piled thickest, drawn as a viewport layer like the systems
+import { Pack } from "@/model/graph/pack-generator";
+import { Relief } from "@/model/physical/relief-generator";
+import { Layers } from "@/renderers/layers";
+import { zoomFontSize } from "@/renderers/viewport/viewport";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import type { StylesData } from "@/types/styles";
-import { rn } from "@/utils/numberUtils";
-import { escapeHtml } from "@/utils/stringUtils";
+import { rn } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 import { collectRemnants, REMNANT_CLASSES, type Remnant, type RemnantClassId } from "./remnants";
 
 const layer = ViewportLayers.register({ id: "remnants", render: reconcileRemnants });

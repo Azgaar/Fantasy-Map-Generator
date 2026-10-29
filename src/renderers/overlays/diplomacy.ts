@@ -1,7 +1,8 @@
 // Diplomacy view: states colored by their relation to one state
 import { color as d3Color } from "d3";
 import { NO_RELATION_COLOR, RELATIONS } from "@/data/diplomacy";
-import { getVertexPath } from "@/utils";
+import { findEl } from "@/utils/node-utils";
+import { getVertexPath } from "@/utils/path-utils";
 
 const MARK_ID = "diplomacyMark";
 
@@ -14,9 +15,9 @@ export function showRelations(stateId: number): void {
     const relation = state.diplomacy?.[stateId];
     const color = (relation && RELATIONS[relation]?.color) || NO_RELATION_COLOR;
 
-    document.getElementById(`state${state.i}`)?.setAttribute("fill", color);
-    document.getElementById(`state-gap${state.i}`)?.setAttribute("stroke", color);
-    document.getElementById(`state-border${state.i}`)?.setAttribute("stroke", d3Color(color)!.darker().hex());
+    findEl(`state${state.i}`)?.setAttribute("fill", color);
+    findEl(`state-gap${state.i}`)?.setAttribute("stroke", color);
+    findEl(`state-border${state.i}`)?.setAttribute("stroke", d3Color(color)!.darker().hex());
   }
 
   markState(stateId);
@@ -24,7 +25,7 @@ export function showRelations(stateId: number): void {
 
 // the outline only changes with the marked state
 function markState(stateId: number): void {
-  if (stateId === markedState && document.getElementById(MARK_ID)) return;
+  if (stateId === markedState && findEl(MARK_ID)) return;
   removeRelationsMark();
   markedState = stateId;
 
@@ -34,7 +35,7 @@ function markState(stateId: number): void {
   const d = getVertexPath(stateCells, pack);
   if (!d) return;
 
-  document.getElementById("debug")?.insertAdjacentHTML(
+  findEl("debug")?.insertAdjacentHTML(
     "beforeend",
     /* html */ `<g id="${MARK_ID}" pointer-events="none" fill="none">
       <path d="${d}" stroke="#fff" stroke-width="3" stroke-opacity=".8" />
@@ -47,5 +48,5 @@ function markState(stateId: number): void {
 
 export function removeRelationsMark(): void {
   markedState = 0;
-  document.getElementById(MARK_ID)?.remove();
+  findEl(MARK_ID)?.remove();
 }

@@ -1,4 +1,5 @@
-import type { TypedArray } from "@/types/PackedGraph";
+import { Pack } from "@/model/graph/pack-generator";
+import type { TypedArray } from "@/types/packed-graph";
 
 export interface Ray {
   angle: number;

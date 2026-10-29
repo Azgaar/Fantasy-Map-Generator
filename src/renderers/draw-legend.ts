@@ -1,15 +1,14 @@
-// The legend boxes: titled, multi-column lists of color swatches drawn over the map.
-// Several boxes can be shown at once - one per source (States, Zones, ...). Each lives in its own
-// group inside the #legend layer, is keyed by its title and carries its own position in the store
+// The legend boxes of pack.legends: titled, multi-column lists of color swatches, one group per box.
+// A box is keyed by its title; where it sits is the viewer's own (legend-positions)
 
 import { type D3DragEvent, select } from "d3";
-import { tip } from "@/components/tooltips";
-import { viewport } from "@/components/viewport";
-import { minmax, parseTransform, rn } from "@/utils";
+import { Legends } from "@/model/annotations/legends";
+import { viewport } from "@/renderers/viewport/viewport";
+import type { LegendItem } from "@/types/legend";
+import { findEl } from "@/utils/node-utils";
+import { minmax, rn } from "@/utils/number-utils";
+import { parseTransform } from "@/utils/string-utils";
 import { type LegendPosition, legendPositions } from "./legend-positions";
-
-// [id, color, label] as stored in the legend `data` attribute
-export type LegendItem = (string | number | undefined)[];
 
 const STACK_GAP = 10; // px kept between the boxes when a new one is placed automatically
 
@@ -18,21 +17,40 @@ const getBoxes = () => Array.from(document.querySelectorAll<SVGGElement>("#legen
 const getBox = (name: string) => getBoxes().find(node => node.dataset.legend === name);
 const getBBox = (node: SVGGElement) => node.getBBox();
 
+/** Draw every legend box of the map with the current style settings, dropping the boxes it no longer has */
+export function redrawLegend(): void {
+  const names = new Set(pack.legends.map(legend => legend.name));
+  for (const node of Array.from(findEl("legend")?.children ?? []) as SVGGElement[]) {
+    if (!names.has(node.dataset.legend ?? "")) node.remove();
+  }
+  for (const { name, items } of pack.legends) drawBox(name, items);
+}
+
 /** Whether the named legend box is currently shown on the map */
-export const hasLegend = (name: string): boolean => Boolean(getBox(name));
+export const hasLegend = (name: string): boolean => Legends.has(name);
 
 /** The items the named box was drawn with, or undefined when the box is not on the map */
 export function getLegendData(name: string): LegendItem[] | undefined {
-  const stored = getBox(name)?.getAttribute("data");
-  if (!stored) return undefined;
-  return stored
-    .split("|")
-    .filter(Boolean)
-    .map(line => line.split(","));
+  return pack.legends.find(legend => legend.name === name)?.items;
 }
 
 /** Draw the named legend box with the given items, replacing that box alone if it is already shown */
 export function drawLegend(name: string, data: LegendItem[]): void {
+  Legends.set(name, data);
+  drawBox(name, data);
+}
+
+/** Remove the named legend box, or every box when no name is given */
+export function clearLegend(name?: string): void {
+  if (name === undefined) pack.legends = [];
+  else {
+    Legends.remove(name);
+    legendPositions.release(name); // an auto-placed box gives its slot back, a dragged one keeps it
+  }
+  redrawLegend();
+}
+
+function drawBox(name: string, items: LegendItem[]): void {
   const layer = getLayer();
 
   // the store owns the box styling and the column count; the box is redrawn from it every time
@@ -40,16 +58,11 @@ export function drawLegend(name: string, data: LegendItem[]): void {
   const backColor = styles.legend.groups.box.attrs.fill;
   const opacity = Number(styles.legend.groups.box.attrs["fill-opacity"]);
   const fontSize = Number.parseFloat(styles.legend.attrs["font-size"]); // the texts size by inheritance
-
-  // TODO: a renderer should not own controls. Move this to a proper legend component once one exists
-  layer
-    .on("mousemove", () => tip("Drag to change the position. Click to hide the legend box"))
-    .on("click", event => onLegendClick(event));
+  layer.attr("fill", styles.legend.attrs.fill || "#000000");
 
   const node = getBox(name) ?? (layer.append("g").attr("data-legend", name).node() as SVGGElement);
   const box = select(node);
   box.selectAll("*").remove(); // fully redraw every time
-  box.attr("data", data.join("|")); // store data to redraw on style change
 
   const lineHeight = Math.round(fontSize * 1.7);
   const colorBoxSize = Math.round(fontSize / 1.7);
@@ -57,18 +70,18 @@ export function drawLegend(name: string, data: LegendItem[]): void {
   const vOffset = fontSize / 2;
 
   const boxes = box.append("g").attr("stroke-width", 0.5).attr("stroke", "#111111").attr("stroke-dasharray", "none");
-  const labels = box.append("g").attr("fill", "#000000").attr("stroke", "none");
+  const labels = box.append("g").attr("stroke", "none");
 
-  const columns = Math.ceil(data.length / itemsInCol);
-  const linesInColumn = Math.ceil(data.length / columns);
+  const columns = Math.ceil(items.length / itemsInCol);
+  const linesInColumn = Math.ceil(items.length / columns);
 
   for (let column = 0, i = 0; column < columns; column++) {
     const offset = column ? colOffset * 2 + getBBox(node).width : colOffset;
 
-    for (let line = 0; line < linesInColumn && data[i]; line++, i++) {
+    for (let line = 0; line < linesInColumn && items[i]; line++, i++) {
       boxes
         .append("rect")
-        .attr("fill", String(data[i][1]))
+        .attr("fill", items[i][1])
         .attr("x", offset)
         .attr("y", lineHeight + line * lineHeight + vOffset)
         .attr("width", colorBoxSize)
@@ -77,22 +90,24 @@ export function drawLegend(name: string, data: LegendItem[]): void {
       labels
         .append("text")
         .attr("text-rendering", "optimizeSpeed")
-        .text(String(data[i][2]))
+        .text(items[i][2])
         .attr("x", offset + colorBoxSize * 1.6)
         .attr("y", fontSize / 1.6 + lineHeight + line * lineHeight + vOffset);
     }
   }
 
-  labels
+  // measured before the title is in, so it centres over the wider of itself and the items
+  const itemsWidth = items.length ? getBBox(node).width : 0;
+  const title = labels
     .append("text")
     .attr("text-rendering", "optimizeSpeed")
     .attr("text-anchor", "middle")
     .attr("font-weight", "bold")
     .attr("font-size", "1.2em")
     .attr("class", "legendLabel")
-    .text(name)
-    .attr("x", colOffset + getBBox(node).width / 2)
-    .attr("y", fontSize * 1.1 + vOffset / 2);
+    .text(name);
+  const titleWidth = (title.node() as SVGTextElement).getComputedTextLength();
+  title.attr("x", colOffset + Math.max(itemsWidth, titleWidth) / 2).attr("y", fontSize * 1.1 + vOffset / 2);
 
   const bbox = getBBox(node);
   box
@@ -111,19 +126,6 @@ export function drawLegend(name: string, data: LegendItem[]): void {
   if (!legendPositions.get(name)) legendPositions.set(name, placeNewBox(node));
 
   fitLegendBox();
-}
-
-/** Redraw every shown legend box with the same data but current style settings */
-export function redrawLegend(): void {
-  adoptLegacyLegend();
-
-  for (const node of getBoxes()) {
-    const name = node.dataset.legend ?? "";
-    // a box with no items stores an empty string, which splits into one blank row
-    const stored = (node.getAttribute("data") || "").split("|").filter(Boolean);
-    const data: LegendItem[] = stored.map(line => line.split(","));
-    drawLegend(name, data);
-  }
 }
 
 /** Keep every legend box within the canvas, at its stored relative position */
@@ -154,23 +156,6 @@ export function dragLegendBox(event: D3DragEvent<SVGGElement, unknown, unknown>)
     node.setAttribute("transform", `translate(${x + dragEvent.x},${y + dragEvent.y})`);
     legendPositions.set(name, { x: px, y: py, dragged: true });
   });
-}
-
-/** Click handler hiding the clicked legend box alone */
-export function onLegendClick(event: Event): void {
-  const name = legendBoxFromEvent(event)?.dataset.legend;
-  if (name) clearLegend(name);
-}
-
-/** Remove the named legend box, or every box when no name is given */
-export function clearLegend(name?: string): void {
-  if (name === undefined) {
-    getLayer().html("").attr("data", null); // pre-multi-box maps kept the items on the layer itself
-    return;
-  }
-
-  getBox(name)?.remove();
-  legendPositions.release(name); // an auto-placed box gives its slot back, a dragged one keeps it
 }
 
 // where a new box goes: its bottom-right corner, in % of the canvas
@@ -233,25 +218,9 @@ function placeNewBox(node: SVGGElement): LegendPosition {
   return { x: anchorX, y: anchorY }; // canvas is full: overlap and let the user drag it away
 }
 
-// maps saved before the legend could hold several boxes keep their single box in the layer group itself
-function adoptLegacyLegend(): void {
-  const layer = document.getElementById("legend");
-  if (!layer?.hasAttribute("data")) return;
-
-  const name = layer.querySelector("#legendLabel")?.textContent || "Legend";
-  const data = layer.getAttribute("data") || "";
-  layer.removeAttribute("data");
-  layer.removeAttribute("transform");
-
-  getLayer().html("").append("g").attr("data-legend", name).attr("data", data);
-}
-
-function legendBoxFromEvent(event: Event | undefined): SVGGElement | null {
+/** The legend box an event happened on */
+export function legendBoxFromEvent(event: Event | undefined): SVGGElement | null {
   const target = event?.target;
   if (!(target instanceof Element)) return null;
   return target.closest<SVGGElement>("#legend > g[data-legend]");
 }
-
-export const Legend = { draw: drawLegend, redraw: redrawLegend, fit: fitLegendBox, clear: clearLegend, has: hasLegend };
-
-window.fitLegendBox = fitLegendBox;

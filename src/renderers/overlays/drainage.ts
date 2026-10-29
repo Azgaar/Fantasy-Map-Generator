@@ -1,8 +1,13 @@
 // Water drainage over a raw heightmap: flow arrows, the depressions that get filled and the lakes to be
-import { MIN_FLUX_TO_FORM_RIVER } from "@/generators/river-generator";
-import { minmax, rn } from "@/utils";
-import { SEA_LEVEL } from "@/utils/heightUtils";
-import { createEl, ensureEl, findEl } from "@/utils/nodeUtils";
+
+import { Grid } from "@/model/graph/grid-generator";
+import { Precipitation } from "@/model/physical/precipitation-generator";
+import { MIN_FLUX_TO_FORM_RIVER } from "@/model/physical/river-generator";
+import { Temperature } from "@/model/physical/temperature-generator";
+import { FlatQueue } from "@/utils/flat-queue";
+import { SEA_LEVEL } from "@/utils/height-utils";
+import { createEl, ensureEl, findEl } from "@/utils/node-utils";
+import { minmax, rn } from "@/utils/number-utils";
 
 // arrow style per flux class: two below the river threshold in faint gray, three rivers in solid blue. Widths are at the reference spacing
 const ARROW_CLASSES = [

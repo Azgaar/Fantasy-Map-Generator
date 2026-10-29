@@ -1,4 +1,4 @@
-import type { getIsolines } from "@/utils";
+import type { getIsolines } from "@/utils/path-utils";
 
 type Isolines = ReturnType<typeof getIsolines>;
 

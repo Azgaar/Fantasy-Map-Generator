@@ -2,22 +2,13 @@ import { expect, test } from "@playwright/test";
 import { waitForMap } from "./wait-for-map";
 
 // page globals, resolved inside page.evaluate
-declare let customization: number;
 declare const styles: any;
 
 // Turning a layer off erases its content. Some sub-groups are user data rather than render output —
 // custom route groups, burg icon groups — and must survive the erasure. The wind arrows are the
 // counter-example: they are render output and must be rebuilt identically when the layer comes back.
 test.describe("layer teardown keeps user data", () => {
-  test.beforeEach(async ({ context, page }) => {
-    await context.clearCookies();
-
-    await page.goto("/");
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-
+  test.beforeEach(async ({ page }) => {
     await page.goto("/?seed=test-seed&width=1280&height=720");
     await waitForMap(page);
     await page.waitForTimeout(500);
@@ -26,8 +17,10 @@ test.describe("layer teardown keeps user data", () => {
   test("routes keep custom groups and their styles across a hide/show round trip", async ({ page }) => {
     const custom = page.locator("#routes > #caravans");
 
-    // the Route Groups editor appends a styled <g> under #routes and assigns routes to it
+    // the Route Groups editor seeds the store entry, appends a styled <g> under #routes and assigns routes to it
     await page.evaluate(() => {
+      styles.routes.groups.caravans = structuredClone(styles.routes.groups.roads);
+      Object.assign(styles.routes.groups.caravans.attrs, { stroke: "#aa3333", "stroke-width": 0.7 });
       const routes = document.getElementById("routes")!;
       const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
       group.id = "caravans";
@@ -35,19 +28,19 @@ test.describe("layer teardown keeps user data", () => {
       group.setAttribute("stroke-width", "0.7");
       routes.append(group);
       for (const route of (window as any).pack.routes.slice(0, 5)) route.group = "caravans";
-      (window as any).Layers.draw("routes");
+      (window as any).FMG.Layers.draw("routes");
     });
 
     await expect(custom).toBeAttached();
     expect(await page.locator("#routes > #caravans path").count()).toBe(5);
 
-    await page.evaluate(() => (window as any).Layers.hide("routes"));
+    await page.evaluate(() => (window as any).FMG.Layers.hide("routes"));
 
     await expect(custom).toBeAttached(); // the group is user data, only the paths are render output
     expect(await custom.getAttribute("stroke")).toBe("#aa3333");
     expect(await page.locator("#routes path").count()).toBe(0);
 
-    await page.evaluate(() => (window as any).Layers.show("routes"));
+    await page.evaluate(() => (window as any).FMG.Layers.show("routes"));
     expect(await page.locator("#routes > #caravans path").count()).toBe(5);
   });
 
@@ -55,18 +48,18 @@ test.describe("layer teardown keeps user data", () => {
     const wind = page.locator("#prec > #wind");
     await expect(wind).toHaveCount(0); // render output: generation no longer touches the DOM
 
-    await page.evaluate(() => (window as any).Layers.show("precipitation"));
+    await page.evaluate(() => (window as any).FMG.Layers.show("precipitation"));
     await expect(wind).toBeAttached();
     const arrows = await page.locator("#prec > #wind text").count();
     expect(arrows).toBeGreaterThan(0);
     expect(await page.locator("#prec > circle").count()).toBeGreaterThan(0);
 
-    await page.evaluate(() => (window as any).Layers.hide("precipitation"));
+    await page.evaluate(() => (window as any).FMG.Layers.hide("precipitation"));
     expect(await page.locator("#prec > circle").count()).toBe(0);
     await expect(wind).toHaveCount(0);
 
     // Precipitation.getWinds() is free of randomness, so the redraw restores the same arrows
-    await page.evaluate(() => (window as any).Layers.show("precipitation"));
+    await page.evaluate(() => (window as any).FMG.Layers.show("precipitation"));
     await expect(wind).toBeAttached();
     expect(await page.locator("#prec > #wind text").count()).toBe(arrows);
   });
@@ -81,18 +74,18 @@ test.describe("layer teardown keeps user data", () => {
       document.querySelector('#burgIcons > #capital > [data-group="icons"]')!.setAttribute("fill", "#123456");
     });
 
-    await page.evaluate(() => (window as any).Layers.hide("burgIcons"));
-    await page.evaluate(() => (window as any).Layers.show("burgIcons"));
+    await page.evaluate(() => (window as any).FMG.Layers.hide("burgIcons"));
+    await page.evaluate(() => (window as any).FMG.Layers.show("burgIcons"));
     expect(await capitals.getAttribute("fill")).toBe("#123456");
     expect(await page.locator("#burgIcons > #capital use").count()).toBeGreaterThan(0);
   });
 
   test("showing a layer that is already on does not redraw it", async ({ page }) => {
     // a redraw rebuilds every burg <use>, so a marker set on one of them would not survive it
-    await page.evaluate(() => (window as any).Layers.show("burgIcons"));
+    await page.evaluate(() => (window as any).FMG.Layers.show("burgIcons"));
     await page.evaluate(() => document.querySelector("#burgIcons use")!.setAttribute("data-probe", "1"));
 
-    await page.evaluate(() => (window as any).Layers.show("burgIcons", "labels"));
+    await page.evaluate(() => (window as any).FMG.Layers.show("burgIcons", "labels"));
 
     expect(await page.locator("#burgIcons use[data-probe]").count()).toBe(1);
   });
@@ -100,7 +93,7 @@ test.describe("layer teardown keeps user data", () => {
   test("texture renders nothing when no image is set", async ({ page }) => {
     await page.evaluate(() => {
       styles.texture.options.href = ""; // pre-1.94 maps saved with texture off
-      (window as any).Layers.show("texture");
+      (window as any).FMG.Layers.show("texture");
     });
 
     expect(await page.locator("#texture image").count()).toBe(0);
@@ -111,16 +104,16 @@ test.describe("layer teardown keeps user data", () => {
     const landHeights = page.locator("#landHeights > *");
 
     await page.evaluate(() => {
-      customization = 1;
-      (window as any).Layers.show("heightmap");
+      (window as any).options.app.mode = "heightmap";
+      (window as any).FMG.Layers.show("heightmap");
     });
 
     expect(await landHeights.count()).toBe(0);
     await expect(page.locator("#tooltip")).toHaveText(/not available in the heightmap edit mode/);
 
     await page.evaluate(() => {
-      customization = 0;
-      (window as any).Layers.draw("heightmap");
+      (window as any).options.app.mode = null;
+      (window as any).FMG.Layers.draw("heightmap");
     });
 
     expect(await landHeights.count()).toBeGreaterThan(0);
@@ -129,13 +122,13 @@ test.describe("layer teardown keeps user data", () => {
   // the whole edit view is #heights: the heightmap layer stays off and the landmass is emptied.
   // the landmass is permanent, so it keeps its on state and its visibility -- only the content goes
   test("heightmap keep mode clears the landmass content and redraws it on exit", async ({ page }) => {
-    await page.evaluate(() => (window as any).Controllers.HeightmapEditor.open({ mode: "keep" }));
+    await page.evaluate(() => (window as any).FMG.Controllers.HeightmapEditor.open({ mode: "keep" }));
     await expect(page.locator("#heights polygon").first()).toBeAttached();
 
     const state = await page.evaluate(() => ({
-      landmass: (window as any).Layers.isOn("landmass"),
-      heightmap: (window as any).Layers.isOn("heightmap"),
-      lakes: (window as any).Layers.isOn("lakes"),
+      landmass: (window as any).FMG.Layers.isOn("landmass"),
+      heightmap: (window as any).FMG.Layers.isOn("heightmap"),
+      lakes: (window as any).FMG.Layers.isOn("lakes"),
       landmassRects: document.querySelectorAll("#landmass rect").length,
       landmassDisplay: document.getElementById("landmass")!.style.display,
       lakesDisplay: document.getElementById("lakes")!.style.display
@@ -156,11 +149,11 @@ test.describe("layer teardown keeps user data", () => {
     await expect(page.locator("#heights")).toHaveCount(0);
 
     const restored = await page.evaluate(() => ({
-      landmass: (window as any).Layers.isOn("landmass"),
+      landmass: (window as any).FMG.Layers.isOn("landmass"),
       landmassDisplay: document.getElementById("landmass")!.style.display,
       // the layer state and the element used to drift apart: display cleared behind the registry's back
       lakesMatchesState:
-        (window as any).Layers.isOn("lakes") === (document.getElementById("lakes")!.style.display !== "none")
+        (window as any).FMG.Layers.isOn("lakes") === (document.getElementById("lakes")!.style.display !== "none")
     }));
 
     expect(restored).toEqual({ landmass: true, landmassDisplay: "", lakesMatchesState: true });
@@ -178,14 +171,14 @@ test.describe("layer teardown keeps user data", () => {
 
     await page.evaluate(() => {
       styles.ocean.groups.oceanLayers.options.outline = "none";
-      (window as any).Layers.draw("ocean");
+      (window as any).FMG.Layers.draw("ocean");
     });
     expect(await rings.count()).toBe(0); // the renderer clears its own content, style.js no longer does
     await expect(base).toBeAttached(); // the base rect is not outline content
 
     await page.evaluate(() => {
       styles.ocean.groups.oceanLayers.options.outline = "-6,-3,-1";
-      (window as any).Layers.draw("ocean");
+      (window as any).FMG.Layers.draw("ocean");
     });
     expect(await rings.count()).toBe(drawn);
   });
@@ -194,17 +187,17 @@ test.describe("layer teardown keeps user data", () => {
   test("the compass rose exists while the layer is off and outlives eraseAll", async ({ page }) => {
     const rose = page.locator("#compass > #compassRose");
 
-    expect(await page.evaluate(() => (window as any).Layers.isOn("compass"))).toBe(false);
+    expect(await page.evaluate(() => (window as any).FMG.Layers.isOn("compass"))).toBe(false);
     await expect(rose).toBeAttached();
     expect(await rose.getAttribute("href")).toBe("#defs-compass-rose");
 
     // the Style editor writes the rose transform even when the compass is hidden
     await page.evaluate(() => document.querySelector("#compass > use")!.setAttribute("transform", "scale(2)"));
 
-    await page.evaluate(() => (window as any).Layers.eraseAll()); // what a regeneration does
+    await page.evaluate(() => (window as any).FMG.Layers.eraseAll()); // what a regeneration does
     await expect(rose).toBeAttached();
 
-    await page.evaluate(() => (window as any).Layers.show("compass"));
+    await page.evaluate(() => (window as any).FMG.Layers.show("compass"));
     await expect(page.locator("#compass")).toBeVisible();
     expect(await page.locator("#compass use").count()).toBe(1); // not duplicated by the show
   });
@@ -215,16 +208,16 @@ test.describe("layer teardown keeps user data", () => {
     const renderedShield = () =>
       page.evaluate(() => {
         const d = document.querySelector("#coas > #stateCOA1 #shield_stateCOA1 path")?.getAttribute("d");
-        const paths: Record<string, string> = (window as any).EmblemRenderer.shieldPaths;
+        const paths: Record<string, string> = (window as any).FMG.EmblemRenderer.shieldPaths;
         return d ? (Object.keys(paths).find(name => paths[name] === d) ?? null) : null;
       });
     const setArms = (shield: string) =>
       page.evaluate((value: string) => {
         (window as any).pack.states[1].coa.shield = value;
-        (window as any).Layers.draw("emblems");
+        (window as any).FMG.Layers.draw("emblems");
       }, shield);
 
-    await page.evaluate(() => (window as any).Layers.show("emblems"));
+    await page.evaluate(() => (window as any).FMG.Layers.show("emblems"));
     await expect.poll(renderedShield).not.toBeNull();
 
     // give state 1 different arms, the way a states regeneration does
@@ -235,19 +228,19 @@ test.describe("layer teardown keeps user data", () => {
     // the same holds when the arms change while the layer is off: the old code skipped the purge
     // entirely in that case, so showing the layer brought the stale shield back. The teardown now frees
     // the shield outright, since with the layer down nothing references it any more
-    await page.evaluate(() => (window as any).Layers.hide("emblems"));
+    await page.evaluate(() => (window as any).FMG.Layers.hide("emblems"));
     await setArms("swiss"); // the draw is a no-op while the layer is off
     expect(await renderedShield()).toBeNull();
 
-    await page.evaluate(() => (window as any).Layers.show("emblems"));
+    await page.evaluate(() => (window as any).FMG.Layers.show("emblems"));
     await expect.poll(renderedShield).toBe("swiss");
   });
 
   // the editor used to call the renderers straight, drawing into layers the user has turned off
   test("a style change does not render into a layer that is off", async ({ page }) => {
-    expect(await page.evaluate(() => (window as any).Layers.isOn("goods"))).toBe(false);
+    expect(await page.evaluate(() => (window as any).FMG.Layers.isOn("goods"))).toBe(false);
 
-    await page.evaluate(() => (window as any).showOptions());
+    await page.evaluate(() => document.getElementById("optionsTrigger")!.click());
     await page.locator("#styleTab").click();
     await page.locator("#styleElementSelect").selectOption("goods");
     await page.locator('#styleForm [data-field="groups.goodsIcons.options.size"] input[type=number]').fill("2");

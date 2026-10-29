@@ -15,51 +15,61 @@ A rate in `[0, 1]` applied to deals where the state is the seller.
 
 A flat per-population-point levy applied once per cycle: `revenue = state.pollTax × (state.rural + state.urban)`. No deduction from any burg or rural source — the money simply appears, matching the frozen-cycle economy.
 
+### Import Tariffs (`state.tariffs`)
+
+An array of tariff and embargo rules `TariffRule[]` applied to foreign goods imported into the state's markets during `Markets.runGlobalTrade()`.
+
+- **Baseline rate**: Defaults to `0` for all foreign states and goods (`{ states: "all", goods: "all", rate: 0 }`).
+- **Seeding from diplomacy**: Allied/Friendly/Vassal/Suzerain states seed `0%`, Suspicion seeds `20%`, Rival seeds `30%`, and Enemy seeds `"embargo"`.
+- **Bidirected embargoes**: If either the importing or exporting state resolves to `"embargo"` for a good, trade of that good between their markets is blocked in both directions.
+- **Precedence**: Specific state + specific good > specific state + all goods > all states + specific good > all states + all goods.
+- **Collection**: `deal.tariff = units × tariffPerUnit` is credited to the importing market's state treasury in `States.collectTaxes()`.
+
 ## Rate generation
 
-Rates are seeded from `state.form` at state form assignment (in `States.defineStateForms`) and jittered per state via `gauss(base, base × 0.15, base × 0.5, base × 1.5)` rounded to 2 decimals.
+Rates are seeded from `state.form` at state form assignment (in `States.defineStateForms`) and jittered per state via `gauss(base, base × 0.15, base × 0.5, base × 1.5)` rounded to 2 decimals. Tariffs are seeded in `States.defineTariffs(state)` based on diplomatic relations.
 
-| Form | Sales Tax base | Poll Tax base |
-|---|---|---|
-| Monarchy | 0.15 | 0.20 |
-| Theocracy | 0.25 | 0.10 |
-| Union | 0.07 | 0.13 |
-| Republic | 0.05 | 0.15 |
-| Anarchy | 0.00 | 0.00 |
+| Form      | Sales Tax base | Poll Tax base | Base Tariff |
+| --------- | -------------- | ------------- | ----------- |
+| Monarchy  | 0.15           | 0.20          | 0.00        |
+| Theocracy | 0.25           | 0.10          | 0.00        |
+| Union     | 0.07           | 0.13          | 0.00        |
+| Republic  | 0.05           | 0.15          | 0.00        |
+| Anarchy   | 0.00           | 0.00          | 0.00        |
 
-Anarchy collapses to exactly 0. Neutrals (state 0) always have rates 0 and treasury 0.
+Anarchy collapses to exactly 0 for taxes. Neutrals (state 0) always have tax rates 0, empty tariffs `[]`, and treasury 0.
 
 ## Collection (`States.collectTaxes`)
 
 Run by the generation pipeline after `Production.produce()` and `Markets.runGlobalTrade()`:
 
 1. Reset every non-neutral state's `treasury` to 0.
-2. For each `deal` with a `tax` field, look up the seller state (burg's state for burg sellers; the market's center burg's state for market sellers) and credit `state.treasury += deal.tax`.
-3. For each non-neutral state, add `pollTax × (rural + urban)` to its treasury.
+2. For each `deal` with a `tax` field, look up the seller state and credit `state.treasury += deal.tax`.
+3. For each `deal` with a `tariff` field (and buyerType `"market"`), look up the buyer market's state and credit `state.treasury += deal.tariff`.
+4. For each non-neutral state, add `pollTax × (rural + urban)` to its treasury.
 
 This is the only writer of `state.treasury` outside the editor (which can also write via the Treasury dialog manual override).
 
 ## Editor surface
 
-The States Editor exposes a Treasury column. Clicking a treasury value opens a dialog with editable `salesTax`, `pollTax`, and `treasury` fields plus a read-only revenue breakdown. Rate edits do not retroactively change deals — they take effect on the next production regeneration.
+The States Editor exposes a Treasury column. Clicking a treasury value opens a dialog with editable `salesTax`, `pollTax`, `treasury`, read-only revenue breakdown (including collected tariffs), and a **Tariffs and Embargoes** rule list with multi-select state and good popups. Edits take effect on the next production/trade regeneration.
 
 The Burg Editor exposes `burg.treasury` the same way: the field is editable, and the value the user enters stands until the next production run overwrites it. Nothing recalculates production, deals or the owning state's treasury to match — a hand-set balance is an assertion about the burg, not a transaction.
 
 ## Backward compatibility
 
-When loading an older save (`auto-update.ts`), the migration runs `States.defineTaxRates(state)` for every non-neutral state and resets `treasury = 0`. The migrated rates are jittered exactly like newly generated states (same gauss formula on the form-based base) — so the same world reloaded twice keeps stable rates after the first migration, but loading a pre-1.123 file produces rates that differ from the legacy hard-coded `0.2` salesTax. Any custom per-state tax edits made under the old regime are overwritten.
+When loading an older save (`auto-update.ts`), the migration runs `States.defineTaxRates(state)` and `States.defineTariffs(state)` for every non-neutral state and resets `treasury = 0`. Custom rules can subsequently be configured in the Treasury dialog.
 
 ## Out of scope
 
 - Recurring economy ticks / yearly cycle accumulation.
 - Spending (administration cost, military upkeep, corruption).
 - Per-`formName` modifiers or per-state-type modifiers.
-- Import-side tariffs (only exporter-side sales tax is applied to inter-market trade).
 
 ## Sources
 
-- [`src/generators/states-generator.ts`](../../src/generators/states-generator.ts) — rate generation, `collectTaxes`
-- [`src/generators/markets-generator.ts`](../../src/generators/markets-generator.ts) — `sell`, `runGlobalTrade` tax wiring
-- [`src/generators/production-generator.ts`](../../src/generators/production-generator.ts) — burg-sell deduction
-- [`src/controllers/states-editor.ts`](../../src/controllers/states-editor.ts) — Treasury column + dialog
+- [`src/model/political/states-generator.ts`](../../src/model/political/states-generator.ts) — rate generation, `collectTaxes`
+- [`src/model/economy/markets-generator.ts`](../../src/model/economy/markets-generator.ts) — `sell`, `runGlobalTrade` tax wiring
+- [`src/model/economy/production-generator.ts`](../../src/model/economy/production-generator.ts) — burg-sell deduction
+- [`src/controllers/political/states-editor.ts`](../../src/controllers/political/states-editor.ts) — Treasury column + dialog
 - [`src/services/io/auto-update.ts`](../../src/services/io/auto-update.ts) — migration

@@ -16,8 +16,8 @@ declare const Layers: {
   state: { order: string[]; active: string[] };
   draw(...ids: string[]): void;
 };
-declare const pack: import("@/types/PackedGraph").PackedGraph;
-declare const grid: import("@/types/GridGraph").GridGraph;
+declare const pack: import("@/types/packed-graph").PackedGraph;
+declare const grid: import("@/types/grid-graph").GridGraph;
 declare const Services: { ExportMap: { getMapURL(type: string): Promise<string> } };
 
 const layerItem = (id: string) => `#mapLayers > li[data-layer="${id}"]`;

@@ -1,11 +1,11 @@
-// The anomaly conversion: rewrite every marker's legend and icon in the sector register, keeping
+﻿// The anomaly conversion: rewrite every marker's legend and icon in the sector register, keeping
 // the original text. One-way and idempotent. See docs/plans/astral-anomalies.md
-import { confirmationDialog } from "@/components/dialog/dialog-helpers";
-import { Icons } from "@/components/icons";
-import { Layers } from "@/components/layers";
-import { tip } from "@/components/tooltips";
+import { Dialog } from "@/ui/dialog/dialog";
+import { Icons } from "@/model/icons";
+import { Layers } from "@/renderers/layers";
+import { tip } from "@/ui/tooltips";
 import { ANOMALY_DIVIDER, astralLegend, MARKER_READINGS } from "@/data/astral-markers";
-import { capitalize } from "@/utils/stringUtils";
+import { capitalize } from "@/utils/string-utils";
 
 function isConverted(marker: { note?: string }): boolean {
   return marker.note?.includes(ANOMALY_DIVIDER) ?? false;
@@ -22,7 +22,7 @@ function apply(): void {
     return;
   }
 
-  confirmationDialog({
+  Dialog.confirm({
     title: "Convert anomalies",
     message:
       `The ${count} markers of this map will take their anomaly legends and icons.` +

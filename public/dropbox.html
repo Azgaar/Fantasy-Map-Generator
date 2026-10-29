@@ -2,62 +2,28 @@
 <html lang="en" dir="ltr">
   <head>
     <meta charset="utf-8" />
-    <script type="text/javascript" src="https://unpkg.com/dropbox@10.8.0/dist/Dropbox-sdk.min.js"></script>
     <title>FMG Dropbox Auth</title>
   </head>
   <body>
+    <p>Connecting to Dropbox…</p>
     <script>
-      // open this page in a new window without query parameter to start auth
-      // setDropBoxToken(token) will be called on the opener window
-      const REDIRECT_URI = window.location.origin + window.location.pathname;
-      const auth = new Dropbox.DropboxAuth({clientId: "pdr9ae64ip0qno4"});
-
+      // The app opens this page, sends it to Dropbox sign-in and trades the code for tokens itself.
+      // Dropbox redirects back here with ?code= or ?error=; pass it to the app and close
       const params = new URLSearchParams(window.location.search);
       const code = params.get("code");
       const error = params.get("error");
 
-      if (code) getToken();
-      else if (error) returnError(params.get("error_description"));
-      else startAuth();
-
-      function startAuth() {
-        auth
-          .getAuthenticationUrl(REDIRECT_URI, undefined, "code", "offline", undefined, undefined, true)
-          .then(authUrl => {
-            window.sessionStorage.clear();
-            window.sessionStorage.setItem("codeVerifier", auth.codeVerifier);
-            window.location.href = authUrl;
-          })
-          .catch(error => {
-            console.error(error);
-            returnError("Cannot start Dropbox authentication: " + error.message);
-          });
-      }
-
-      function returnError(description) {
+      if (code || error) {
         const channel = new BroadcastChannel("dropbox-auth");
-        channel.postMessage({type: "error", description});
+        const description = params.get("error_description") || error;
+        channel.postMessage(code ? { type: "code", code } : { type: "error", description });
         channel.close();
         window.close();
-      }
-
-      function getToken() {
-        auth.setCodeVerifier(window.sessionStorage.getItem("codeVerifier"));
-        auth
-          .getAccessTokenFromCode(REDIRECT_URI, code)
-          .then(resp => {
-            const token = resp.result.access_token;
-            const refreshToken = resp.result.refresh_token;
-            const expiresAt = resp.result.expires_in ? Date.now() + resp.result.expires_in * 1000 : undefined;
-            const channel = new BroadcastChannel("dropbox-auth");
-            channel.postMessage({type: "token", token, refreshToken, expiresAt});
-            channel.close();
-            window.close();
-          })
-          .catch(error => {
-            console.error(error);
-            returnError("Cannot get Dropbox access token: " + error.message);
-          });
+      } else {
+        // the app sends this window on to Dropbox at once; an app tab older than this page never does
+        setTimeout(() => {
+          document.querySelector("p").textContent = "Reload the map tab and connect to Dropbox again.";
+        }, 10000);
       }
     </script>
   </body>

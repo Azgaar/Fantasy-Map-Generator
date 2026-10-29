@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { StarSystem } from "@/generators/astral-naming";
+import type { StarSystem } from "@/model/physical/astral-naming";
 import { groupByClass, STAR_CLASSES, starRadiusEm } from "./system-markers";
 
 describe("star sizes", () => {

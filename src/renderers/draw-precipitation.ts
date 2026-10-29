@@ -1,8 +1,11 @@
 import { easeSinIn, select, transition } from "d3";
-import { ensureEl, rn } from "@/utils";
+import { Precipitation } from "@/model/physical/precipitation-generator";
+import { log } from "@/utils/logger";
+import { ensureEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
 
 export function drawPrecipitation(): void {
-  TIME && console.time("drawPrecipitation");
+  log.time("drawPrecipitation");
   const { cells, points } = grid;
 
   const prec = select(ensureEl<SVGGElement>("prec"));
@@ -27,7 +30,7 @@ export function drawPrecipitation(): void {
     .transition(show)
     .attr("r", cellId => getRadius(cells.prec[cellId]));
 
-  TIME && console.timeEnd("drawPrecipitation");
+  log.timeEnd("drawPrecipitation");
 }
 
 /** arrows showing where the prevailing winds enter the map */

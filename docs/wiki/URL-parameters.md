@@ -2,6 +2,7 @@ Here is a list of parameters you can add to URL in order to set generator option
 
 ## Azgaar's Fantasy Map Generator parameters:
 * `maplink` - open .map file from the provided URL, use like [`https://azgaar.github.io/Fantasy-Map-Generator/?maplink=https://dl.dropboxusercontent.com/s/xgs3y1awlokio7x/Atlas%20046.map`](https://azgaar.github.io/Fantasy-Map-Generator/?maplink=https://dl.dropboxusercontent.com/s/xgs3y1awlokio7x/Atlas%20046.map). Due to browser security restrictions, it works only for servers that allow CORS (e.g. DropBox, but not Google Drive)
+* `view` - set to `1` to open loaded maps view-only: every map loaded in that tab, by `maplink`, Load or browser storage, can be browsed but not edited. A newly generated map stays editable. Try `?maplink=<file URL>&view=1`
 * `seed` - generate a map from the supplied seed. The seed is applied only on the very first generation of the session. The result also depends on the generation options and the map size, so add `options=default` and `width`/`height` to make it reproducible. Even then a different generator version will produce a different map, so to share exactly the same map send a `.map` file (e.g. via `maplink`)
 * `options` - set to `default` to allow generator to ignore options set by user. It's required for sharing the same map, see above
 * `width`, `height` - map canvas size in pixels

@@ -88,7 +88,7 @@ Controllers it primarily serves and is exposed on `window` for legacy JavaScript
 - **What makes a good test here:** assert only external behavior of the registry factory — that calling `Registry.Name.method(args)` invokes the resolved object's method with those exact args and resolves to its return value; that the contract is async regardless of lazy vs eager; and that symbol/unknown access yields `undefined` (so the registry is not thenable). Do not assert Proxy internals or call counts of the runtime import cache.
 - **Module under test:** the `createRegistry` factory only. The Controllers and Services buckets are configuration (data), and the individual controllers already have their own behavior; they are not re-tested here.
 - **Representative cases:** dispatch forwards arguments and propagates the resolved return value; a method that takes a required argument is exercised with it; an `eager(value)` entry resolves without performing a dynamic import; a second call to the same entry reuses the resolved object; accessing an unknown name or a symbol key returns `undefined` and `await`-ing an entry does not dispatch a method.
-- **Prior art:** the existing Vitest unit suites under `src/utils/*.test.ts` and `src/generators/*.test.ts` — plain `describe/test/expect`, no DOM. The factory test follows the same style, feeding in fake loaders (e.g. `() => Promise.resolve({ open: vi.fn() })`) rather than real modules.
+- **Prior art:** the existing Vitest unit suites under `src/utils/*.test.ts` and `src/model/*.test.ts` — plain `describe/test/expect`, no DOM. The factory test follows the same style, feeding in fake loaders (e.g. `() => Promise.resolve({ open: vi.fn() })`) rather than real modules.
 
 ## Out of Scope
 

@@ -5,7 +5,7 @@ import { waitForMap } from "./wait-for-map";
 // the tooltip names it. The marker record keeps its fantasy type and icon — leaving the view
 // restores the chart exactly.
 
-declare const pack: import("@/types/PackedGraph").PackedGraph;
+declare const pack: import("@/types/packed-graph").PackedGraph;
 declare const Layers: { show(...ids: string[]): void };
 declare const Controllers: {
   AstralMarkers: { apply: () => void };

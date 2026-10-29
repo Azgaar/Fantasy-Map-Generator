@@ -1,4 +1,4 @@
-export interface RequestedMapSize {
+interface RequestedMapSize {
   width?: number;
   height?: number;
 }

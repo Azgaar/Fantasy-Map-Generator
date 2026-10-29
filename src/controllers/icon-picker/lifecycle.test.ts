@@ -1,28 +1,24 @@
 // @vitest-environment jsdom
 
 import { beforeEach, expect, test, vi } from "vitest";
-import { CustomIcons, type IconPicture, Icons } from "@/components/icons";
-import { ReliefPoolEditor } from "@/controllers/relief-pool-editor";
+import { ReliefPoolEditor } from "@/controllers/physical/relief/relief-pool-editor";
+import { CustomIcons, type IconPicture, Icons } from "@/model/icons";
+import { dialogButton } from "@/ui/dialog/dialog-testing";
 import { IconPicker } from ".";
 import { openPositioner } from "./positioner";
-import "@/generators/relief-generator";
-import "@/generators/burgs-generator";
-import "@/generators/goods-generator";
-import "@/components/shared/slider-input";
-import Alea from "alea";
+import "@/model/physical/relief-generator";
+import "@/model/political/burgs-generator";
+import "@/model/economy/goods-generator";
+import "@/ui/elements/slider-input";
 
 const pictures = vi.hoisted(() => ({ fromLink: vi.fn(), fromFile: vi.fn(), fit: vi.fn() }));
 vi.mock("./pictures", () => ({ IconPictures: pictures }));
-vi.mock("@/components/icon-sets", () => ({ IconSets: { sets: () => [], setForId: () => undefined } }));
+vi.mock("@/model/icon-sets", () => ({ IconSets: { sets: () => [], setForId: () => undefined } }));
 vi.mock("@/controllers", async () => ({ Controllers: { IconPicker: (await import(".")).IconPicker } }));
 
-type DialogSettings = { close?: () => void; buttons?: Record<string, (this: HTMLElement) => void> };
-const dialogs = new Map<HTMLElement, DialogSettings>();
 const PICTURE: IconPicture = { kind: "image", content: "https://example.com/icon.png", viewBox: "0 0 100 100" };
 
 beforeEach(() => {
-  vi.stubGlobal("aleaPRNG", Alea);
-  dialogs.clear();
   vi.clearAllMocks();
   vi.spyOn(Icons, "syncCustom").mockImplementation(() => {}); // the fixture's symbols stand for the synced ones
   options.map.customIcons = ["custom-a", "custom-b"].map(id => ({ id, ...PICTURE }));
@@ -30,22 +26,9 @@ beforeEach(() => {
     <symbol id="custom-a" viewBox="0 0 100 100"><path d="M0 0h100v100z"/></symbol>
     <symbol id="custom-b" viewBox="0 0 100 100"><path d="M0 0h100v100z"/></symbol>
     </defs></svg>`;
-  (globalThis as Record<string, unknown>).$ = (element: HTMLElement) => ({
-    dialog(settings: DialogSettings | string) {
-      if (settings === "close") dialogs.get(element)?.close?.();
-      else if (settings === "destroy") dialogs.delete(element);
-      else if (typeof settings !== "string") {
-        element.classList.add("ui-dialog-content");
-        dialogs.set(element, settings);
-      }
-    }
-  });
 });
 
-function press(dialogId: string, button: string): void {
-  const dialog = document.getElementById(dialogId)!;
-  dialogs.get(dialog)!.buttons![button].call(dialog);
-}
+const press = (dialogId: string, label: string) => dialogButton(label, dialogId).click();
 
 function deferred<T>() {
   let resolve!: (value: T) => void;

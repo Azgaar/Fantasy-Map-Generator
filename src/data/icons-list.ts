@@ -614,5 +614,3 @@ const NAMES = new Map(
 
 /** the name an offered emoji is listed under */
 export const emojiName = (text: string): string | undefined => NAMES.get(bare(text));
-
-export const ICONS_PER_ROW = 17;

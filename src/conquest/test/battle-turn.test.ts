@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type Regiment, syncRegimentTotals } from "../../generators/military-generator";
+import { type Regiment, syncRegimentTotals } from "@/model/political/military-generator";
 import type { UnitType } from "../engine/common/content";
 import {
   aggregateSideMagic,

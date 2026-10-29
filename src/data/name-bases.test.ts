@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { pinSchemas } from "@/components/options-schema";
+import { pinSchemas } from "@/model/options/options-schema";
 import { shields } from "@/data/emblems/shields";
 import { getDefaultNameBases, isAstralBase, type NameBase } from "@/data/name-bases";
-import { CULTURE_SETS, Cultures } from "@/generators/cultures-generator";
+import { CULTURE_SETS } from "@/data/culture-sets";
+import { Cultures } from "@/model/society/cultures-generator";
 
 const ASTRAL_SETS = {
   astralTrek: ["Trek Core", "Trek Terran", "Trek Continental", "Trek Synthetic"],
@@ -330,7 +331,7 @@ describe("RPG Fantasy culture set", () => {
     expect(pinSchemas.culturesSet.safeParse("rpgFantasy").success).toBe(true);
 
     const { readFileSync } = await import("node:fs");
-    const source = readFileSync("src/components/options/tabs/options-tab.ts", "utf8");
+    const source = readFileSync("src/app/chrome/tabs/options-tab.ts", "utf8");
     expect(source).toContain("CULTURE_SETS");
     expect(CULTURE_SETS.rpgFantasy).toBeDefined();
   });
@@ -502,7 +503,7 @@ describe("Phase A acceptance", () => {
 
   it("options tab culturesSet select renders all CULTURE_SETS including Astral sets", async () => {
     const { readFileSync } = await import("node:fs");
-    const source = readFileSync("src/components/options/tabs/options-tab.ts", "utf8");
+    const source = readFileSync("src/app/chrome/tabs/options-tab.ts", "utf8");
     expect(source).toContain("CULTURE_SETS");
     expect(source).toContain('data-option="culturesSet"');
     for (const key of ["astralTrek", "astralJammer", "grimdark"]) {

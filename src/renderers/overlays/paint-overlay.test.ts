@@ -1,9 +1,8 @@
 // @vitest-environment jsdom
 
 import { beforeEach, describe, expect, it } from "vitest";
-import type { PackedGraph } from "@/types/PackedGraph";
+import type { PackedGraph } from "@/types/packed-graph";
 import { openPaintOverlay, removePaintOverlay, removePaintOverlayCells, updatePaintOverlay } from "./paint-overlay";
-import "@/generators/pack-generator"; // registers the Pack global the overlay builds polygons with
 
 const graph = {
   cells: {

@@ -1,6 +1,9 @@
 import {expect, test} from "@playwright/test";
 import { waitForMap } from "./wait-for-map";
 
+// the app's console surface, see src/app/fmg.ts
+declare const FMG: any;
+
 test.describe("controller launchers", () => {
   test.beforeEach(async ({page}) => {
     await page.goto("/?seed=test-controller-launchers&width=1280&height=720");
@@ -20,7 +23,8 @@ test.describe("controller launchers", () => {
 
   test("opens Goods Editor when some goods have no production", async ({page}) => {
     await page.evaluate(() => {
-      const {Goods, pack} = window as any;
+      const { pack, FMG } = window as any;
+      const { Goods } = FMG;
       const good = structuredClone(pack.goods[0]);
       good.i = Math.max(...pack.goods.map(({i}: {i: number}) => i)) + 1;
       good.name = "No Production";
@@ -42,7 +46,7 @@ test.describe("controller launchers", () => {
   test("opens Relief Editor by clicking a relief icon", async ({page}) => {
     await page.click("#optionsTrigger");
     await page.click("#layersTab");
-    const reliefToggle = page.locator("#mapLayers > li[data-layer='relief']");
+    const reliefToggle = page.locator("#mapLayers > button[data-layer='relief']");
     if (await reliefToggle.evaluate(element => element.classList.contains("buttonoff"))) {
       await reliefToggle.click();
     }
@@ -66,7 +70,7 @@ test.describe("controller launchers", () => {
   test("builds the Units Editor from the map options on open", async ({page}) => {
     // a unit the user named themselves is not among the select's options until the editor puts it back
     await page.evaluate(() => {
-      Options.set(options => {
+      FMG.Options.set(options => {
         options.map.units.distance.unit = "leagues";
         options.map.units.distance.scale = 7;
       });

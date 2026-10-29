@@ -1,9 +1,9 @@
-// The Layers tab buttons shown in Astral view. Standard labels stay in layer-labels.ts
-import type { LayerId } from "@/components/layers";
+﻿// The Layers tab buttons shown in Astral view. Standard labels stay in layer-labels.ts
+import type { LayerId } from "@/renderers/layers";
 import type { LayerButton } from "./layer-labels";
 
 export const ASTRAL_LAYER_TOGGLES = new Map<LayerId, LayerButton>([
-  ["coreRim", { label: "Core–R<u>i</u>m" }],
+  ["coreRim", { label: "Coreâ€“R<u>i</u>m" }],
   ["texture", { label: "Sector <u>D</u>ust", shortcut: "KeyD" }],
   ["composition", { label: "<u>C</u>omposition", shortcut: "KeyC" }],
   ["nebulae", { label: "<u>N</u>ebulae", shortcut: "KeyN" }],

@@ -1,8 +1,9 @@
 import { select } from "d3";
-import type { Ice } from "@/generators/ice-generator";
+import type { Ice } from "@/model/physical/ice-generator";
+import { log } from "@/utils/logger";
 
 export const drawIce = (): void => {
-  TIME && console.time("drawIce");
+  log.time("drawIce");
 
   select("#ice").selectAll("*").remove();
   let html = "";
@@ -17,7 +18,7 @@ export const drawIce = (): void => {
 
   select("#ice").html(html);
 
-  TIME && console.timeEnd("drawIce");
+  log.timeEnd("drawIce");
 };
 
 export const redrawIceberg = (id: number): void => {

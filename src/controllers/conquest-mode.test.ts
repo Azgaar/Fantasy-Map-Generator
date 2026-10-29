@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+﻿import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { mockLayersState, mockLayers } = vi.hoisted(() => {
   const state = {
@@ -30,8 +30,8 @@ const { mockLayersState, mockLayers } = vi.hoisted(() => {
   return { mockLayersState: state, mockLayers: layers };
 });
 
-vi.mock("@/components/layers", () => ({ Layers: mockLayers }));
-vi.mock("@/components/options/view-mode", () => ({
+vi.mock("@/renderers/layers", () => ({ Layers: mockLayers }));
+vi.mock("@/renderers/view-mode", () => ({
   is3dView: vi.fn(() => false),
   isAstralView: vi.fn(() => false)
 }));

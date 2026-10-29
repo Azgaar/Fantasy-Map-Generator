@@ -1,6 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import { waitForMap } from "./wait-for-map";
 
+// the app's console surface, see src/app/fmg.ts
+declare const FMG: any;
+
 // Each row action has a column of its own, so the icons line up down the table. That makes the cells
 // positional: a row that emits a different number of cells than the header shifts every column after it
 const TABLES: [dialogId: string, controller: string][] = [
@@ -33,7 +36,7 @@ const ACTION_COLUMNS: Record<string, string[]> = {
   militaryOverview: ["regiments"],
   provincesEditor: ["note", "independence", "locate", "focus", "lock", "remove"],
   religionsEditor: ["note", "locate", "lock", "remove"],
-  riversOverview: ["edit", "remove"],
+  riversOverview: ["edit", "lock", "remove"],
   routesOverview: ["edit", "lock", "remove"],
   statesEditor: ["note", "locate", "focus", "lock", "remove"],
   zonesEditor: ["note", "reorder", "focus", "visibility", "remove"]
@@ -42,7 +45,7 @@ const ACTION_COLUMNS: Record<string, string[]> = {
 async function survey(page: import("@playwright/test").Page, dialogId: string, controller: string) {
   const actions = ACTION_COLUMNS[dialogId] ?? [];
   return page.evaluate(async ([id, name, actionKeys]) => {
-    await (window as any).Controllers[name].open();
+    await (window as any).FMG.Controllers[name].open();
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const dialog = document.getElementById(id);
@@ -147,12 +150,12 @@ test("the note icon opens the Notes Editor on the row's entity", async ({ page }
   await waitForMap(page);
 
   // the Notes Editor is a lazily imported module: pay for the fetch before timing any click
-  await page.evaluate(() => (window as any).Controllers.NotesEditor.open({ type: "state", id: 1 }));
+  await page.evaluate(() => (window as any).FMG.Controllers.NotesEditor.open({ type: "state", id: 1 }));
   await page.waitForSelector("#notesEditor", { timeout: 30000 });
 
   for (const [dialogId, controller, noteType] of NOTE_TABLES) {
     const opened = await page.evaluate(async ([id, name]) => {
-      const controllers = (window as any).Controllers;
+      const controllers = (window as any).FMG.Controllers;
       document.getElementById("notesEditor")?.remove();
       await controllers[name].open();
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -175,8 +178,7 @@ test("the note icon opens the Notes Editor on the row's entity", async ({ page }
   }
 });
 
-declare const pack: import("@/types/PackedGraph").PackedGraph;
-declare const Controllers: { GoodsEditor: { open: () => Promise<void> } };
+declare const pack: import("@/types/packed-graph").PackedGraph;
 
 test.describe("Goods display filter", () => {
   let initial: { i: number; visible: boolean; matches: boolean }[];
@@ -184,9 +186,9 @@ test.describe("Goods display filter", () => {
 
   async function filterGoods(page: Page) {
     await page.click("#goodsTagsFilter");
-    await page.locator('#alert input[value="batch-a"]').check();
-    await page.locator('#alert input[value="batch-b"]').check();
-    await page.locator(".ui-dialog:has(#alert)").getByRole("button", { name: "Apply", exact: true }).click();
+    await page.locator('.message input[value="batch-a"]').check();
+    await page.locator('.message input[value="batch-b"]').check();
+    await page.locator(".dialog-window:has(.message)").getByRole("button", { name: "Apply", exact: true }).click();
   }
 
   async function expectFilteredVisibility(page: Page, visible: boolean) {
@@ -237,7 +239,7 @@ test.describe("Goods display filter", () => {
         matches: good.tags[0] !== "unrelated"
       }));
     });
-    await page.evaluate(() => Controllers.GoodsEditor.open());
+    await page.evaluate(() => FMG.Controllers.GoodsEditor.open());
     await expect(page.locator("#goodsEditor")).toBeVisible();
   });
 
@@ -276,7 +278,7 @@ test.describe("Goods display filter", () => {
   test("clearing the filter restores bulk actions and counts for the whole catalogue", async ({ page }) => {
     await filterGoods(page);
     await page.click("#goodsTagsFilter");
-    await page.locator(".ui-dialog:has(#alert)").getByRole("button", { name: "Clear filter", exact: true }).click();
+    await page.locator(".dialog-window:has(.message)").getByRole("button", { name: "Clear filter", exact: true }).click();
     await page.locator("#goodsDisplayAll").check();
     expect(await page.evaluate(() => pack.goods.every(good => good.visible))).toBe(true);
     await expect(page.locator("#goodsDisplayed")).toHaveText(String(initial.length));

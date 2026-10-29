@@ -1,17 +1,19 @@
-import { type IconSetId, IconSets } from "@/components/icon-sets";
-import { Icons } from "@/components/icons";
-import { Layers } from "@/components/layers";
-import { zoomFontSize } from "@/components/viewport";
-import type { Burg } from "@/generators/burgs-generator";
+import { type IconSetId, IconSets } from "@/model/icon-sets";
+import { Icons } from "@/model/icons";
+import type { Burg } from "@/model/political/burgs-generator";
+import { Burgs } from "@/model/political/burgs-generator";
+import { Layers } from "@/renderers/layers";
+import { zoomFontSize } from "@/renderers/viewport/viewport";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import type { StylesData } from "@/types/styles";
-import { rn } from "@/utils/numberUtils";
-import { escapeHtml } from "@/utils/stringUtils";
+import { log } from "@/utils/logger";
+import { rn } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 const layer = ViewportLayers.register({ id: "burgIcons", render: reconcileBurgIcons });
 
 export async function drawBurgIcons(): Promise<void> {
-  TIME && console.time("drawBurgIcons");
+  log.time("drawBurgIcons");
   const icons = Object.values(styles.burgIcons.groups).flatMap(({ groups }) => [
     groups.icons.options.icon,
     groups.anchors.options.icon
@@ -22,7 +24,7 @@ export async function drawBurgIcons(): Promise<void> {
   ];
   await Icons.loadAll(setIds);
   layer.render();
-  TIME && console.timeEnd("drawBurgIcons");
+  log.timeEnd("drawBurgIcons");
 }
 
 type BurgPart =

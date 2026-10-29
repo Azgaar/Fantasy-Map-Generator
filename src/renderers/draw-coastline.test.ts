@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
-import type { Layer } from "@/components/layers";
+import type { Layer } from "@/renderers/layers";
 import { drawCoastline } from "./draw-coastline";
 
 const createLayer = (groups: string[]) => {

@@ -1,6 +1,6 @@
-// Star density: the banded heatmap of where systems cluster, masked to the land by the style
-import type { Layer } from "@/components/layers";
-import { getIsolines } from "@/utils/pathUtils";
+﻿// Star density: the banded heatmap of where systems cluster, masked to the land by the style
+import type { Layer } from "@/renderers/layers";
+import { getIsolines } from "@/utils/path-utils";
 import { buildDensityField } from "./star-density-field";
 
 const BANDS = 6; // fixed band groups declared in the layer registry

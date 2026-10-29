@@ -1,6 +1,7 @@
 // The brush radius circle, drawn on #debug while a brush tool is active
 
-import { rn } from "@/utils";
+import { findEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
 
 const DASHES = 16; // dashes and gaps around the circle, whatever its radius
 
@@ -11,9 +12,7 @@ const DASHES = 16; // dashes and gaps around the circle, whatever its radius
  * @param {number} r - The circle radius
  */
 export function moveCircle(x: number, y: number, r = 20): void {
-  const circle =
-    document.getElementById("brushCircle") ??
-    document.getElementById("debug")?.insertAdjacentElement("afterbegin", createCircle());
+  const circle = findEl("brushCircle") ?? findEl("debug")?.insertAdjacentElement("afterbegin", createCircle());
   if (!circle) return;
 
   circle.setAttribute("cx", String(x));
@@ -33,5 +32,5 @@ function createCircle(): SVGCircleElement {
 
 /** Remove the brush radius circle */
 export function removeCircle(): void {
-  document.getElementById("brushCircle")?.remove();
+  findEl("brushCircle")?.remove();
 }

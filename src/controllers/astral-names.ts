@@ -1,9 +1,10 @@
-// The Polity naming action: give the map's polities their own words and its provinces their
+﻿// The Polity naming action: give the map's polities their own words and its provinces their
 // regional titles or sectors. See docs/plans/rpg-fantasy-cultures.md and docs/astral/README.md
-import { confirmationDialog, refreshEditors } from "@/components/dialog/dialog-helpers";
-import { Layers } from "@/components/layers";
-import { tip } from "@/components/tooltips";
-import { applyNaming, groupsOf, isRpgMap } from "@/generators/polity-naming";
+import { Dialog } from "@/ui/dialog/dialog";
+import { refreshEditors } from "@/ui/dialog/dialog-helpers";
+import { Layers } from "@/renderers/layers";
+import { tip } from "@/ui/tooltips";
+import { applyNaming, groupsOf, isRpgMap } from "@/model/physical/polity-naming";
 
 function apply(): void {
   const isRpg = isRpgMap();
@@ -24,7 +25,7 @@ function apply(): void {
     : `The ${qualifying} Astral polities of this map will take their own words, and their provinces become sectors.` +
       "<br><br>Stock peoples keep their own names. The change can be undone by renaming the states and provinces.";
 
-  confirmationDialog({
+  Dialog.confirm({
     title,
     message,
     confirm: "Apply",

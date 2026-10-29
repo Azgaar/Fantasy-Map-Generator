@@ -1,6 +1,6 @@
-// Core–Rim: one full-extent wash on the axis the grid's temperature dictates — O(1), no isolines
-import type { Layer } from "@/components/layers";
-import { rn } from "@/utils/numberUtils";
+﻿// Coreâ€“Rim: one full-extent wash on the axis the grid's temperature dictates â€” O(1), no isolines
+import type { Layer } from "@/renderers/layers";
+import { rn } from "@/utils/number-utils";
 import { coreRimAxis } from "./core-rim";
 
 /** the wash ramp, core heat to rim cold; each stop's opacity scales with the style's intensity */

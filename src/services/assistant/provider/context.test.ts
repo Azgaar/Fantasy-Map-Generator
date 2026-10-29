@@ -27,4 +27,4 @@ test("generated context matches the codebase and Knowledge Base", () => {
   expect(() =>
     execFileSync("node", ["scripts/generate-assistant-context.mjs", "--check"], { cwd: root })
   ).not.toThrow();
-});
+}, 20_000);

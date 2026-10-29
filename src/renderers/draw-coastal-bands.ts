@@ -1,5 +1,5 @@
 import type { StylesData } from "@/types/styles";
-import { createEl, ensureEl } from "@/utils/nodeUtils";
+import { createEl, ensureEl, findEl } from "@/utils/node-utils";
 
 import { cacheOceanLayer, clearOceanCache } from "./ocean-cache";
 
@@ -17,7 +17,7 @@ export function removeCoastalBands(): void {
   clearOceanCache("oceanBands");
   ensureEl("oceanBands").replaceChildren();
   for (const id of ["coastal-bands-mask", "coastal-bands-lines", "coastal-bands-shade"]) {
-    document.getElementById(id)?.remove();
+    findEl(id)?.remove();
   }
 }
 

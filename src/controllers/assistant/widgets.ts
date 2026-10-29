@@ -1,18 +1,21 @@
 import { schemeTableau10 } from "d3";
-import { isLinkable, MAP_COMMANDS } from "@/components/map-commands";
-import { ENTITY_TYPES, type EntityRef, isEntityType, MapEntities, RECORD_TYPES } from "@/components/map-entities";
-import { clearEntityMarks, markEntities, reveal, revealEntity } from "@/components/reveal";
-import { tip } from "@/components/tooltips";
-import type { State } from "@/generators/states-generator";
+import { ENTITY_TYPES, type EntityRef, isEntityType, MapEntities, RECORD_TYPES } from "@/model/map-entities";
+import type { State } from "@/model/political/states-generator";
+import { formatPrice, getArea, getAreaUnit, getPeople } from "@/model/units";
 import { goodBadge } from "@/renderers/draw-goods";
+import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import type { ChartRow, Widget } from "@/services/assistant/chats";
 import type { Region } from "@/services/io/export";
 import type { Emblem } from "@/types/emblems";
 import type { Point } from "@/types/global";
+import { App } from "@/ui/app-commands";
+import { clearEntityMarks, markEntities, openEntity as openEditor, reveal, revealEntity } from "@/ui/map/reveal";
+import { tip } from "@/ui/tooltips";
+import { t } from "@/utils/i18n";
 import { type LinkResolver, renderMarkdown } from "@/utils/markdown";
-import { rn } from "@/utils/numberUtils";
-import { escapeHtml } from "@/utils/stringUtils";
-import { formatPrice, getArea, getAreaUnit, getPeople, si } from "@/utils/unitUtils";
+import { findEl } from "@/utils/node-utils";
+import { rn, si } from "@/utils/number-utils";
+import { escapeHtml } from "@/utils/string-utils";
 import { frameRegion } from "./region";
 
 // Widgets: links in answers and the items the show tool places. See docs/prd/assistant.md
@@ -43,11 +46,11 @@ let insetCount = 0;
 let marked: Of<"entities"> | null = null;
 
 /** The Assistant panel over the map: what it reveals is centred beside it */
-const panel = () => document.getElementById("assistant")?.closest(".ui-dialog")?.getBoundingClientRect();
+const panel = () => findEl("assistant")?.getBoundingClientRect();
 
 function linkableCommand(id: string) {
-  const command = MAP_COMMANDS.find(command => command.id === id);
-  return command && isLinkable(command) ? command : undefined;
+  const command = App.mapCommands.find(command => command.id === id);
+  return command && App.isLinkable(command) ? command : undefined;
 }
 
 /** A good shows its own badge, as the map draws it; other entities their type's icon */
@@ -58,7 +61,7 @@ function entityIcon(ref: EntityRef): string {
 }
 
 const entityButton = (ref: EntityRef, label: string) =>
-  `<button type="button" class="assistantEntity" data-action="entity" data-id="${MapEntities.key(ref)}" data-tip="Show on the map">${entityIcon(ref)}${label}</button>`;
+  `<button type="button" class="assistantEntity" data-action="entity" data-id="${MapEntities.key(ref)}" data-tip="${t("Show on map")}">${entityIcon(ref)}${label}</button>`;
 
 /** A live entity as a link named after it, otherwise its fallback as text */
 function entityLink(key: string | undefined, live: boolean, fallback = ""): string {
@@ -129,7 +132,7 @@ const commandButton = (id: string, label: string, className = "assistantCommand"
 
 const frame = (header: string, body: string, live: boolean) => /* html */ `<div class="assistantItem assistantWidget">
     <div class="assistantWidgetHeader">${header}</div>
-    ${live ? "" : `<div class="assistantWidgetNote">Its map is not open</div>`}
+    ${live ? "" : `<div class="assistantWidgetNote">${t("Its map is not open")}</div>`}
     ${body}
   </div>`;
 
@@ -154,7 +157,7 @@ function entitiesHtml(widget: Of<"entities">, { index, live }: WidgetContext): s
     })
     .join("");
   const on = marked === widget;
-  const toggle = `<button type="button" class="assistantButton" data-action="mark" data-index="${index}" aria-pressed="${on}" ${live ? "" : "disabled"}>${on ? "Hide on map" : "Show on map"}</button>`;
+  const toggle = `<button type="button" class="assistantButton" data-action="mark" data-index="${index}" aria-pressed="${on}" ${live ? "" : "disabled"}>${on ? t("Hide on map") : t("Show on map")}</button>`;
   return frame(`<span>${escapeHtml(widget.title)}</span>${toggle}`, `<ul>${rows}</ul>`, live);
 }
 
@@ -170,7 +173,7 @@ function cardHtml(widget: Of<"card">, live: boolean): string {
   if (!ref || !state)
     return frame(
       `<span>${escapeHtml(widget.entity)}</span>`,
-      live ? `<div class="assistantWidgetNote">No longer on this map</div>` : "",
+      live ? `<div class="assistantWidgetNote">${t("No longer on this map")}</div>` : "",
       live
     );
 
@@ -201,7 +204,7 @@ function cardHtml(widget: Of<"card">, live: boolean): string {
       .join("")}</dl>
     ${excerpt ? `<p class="assistantCardNote">${escapeHtml(excerpt)}</p>` : ""}
     <div class="assistantActions">
-      <button type="button" class="assistantButton" data-action="entity" data-id="${MapEntities.key(ref)}">Locate</button>
+      <button type="button" class="assistantButton" data-action="entity" data-id="${MapEntities.key(ref)}">${t("Locate")}</button>
       ${commandButton("editStatesButton", "Edit", "assistantButton")}
     </div>
   </div>`;
@@ -209,7 +212,7 @@ function cardHtml(widget: Of<"card">, live: boolean): string {
 
 /** An emblem shown by reference, rendered on first use */
 function emblemSvg(id: string, coa: Emblem | undefined, className = ""): string {
-  if (coa) void window.EmblemRenderer?.trigger(id, coa);
+  if (coa) void EmblemRenderer?.trigger(id, coa);
   return `<svg${className && ` class="${className}"`} viewBox="0 0 200 200" aria-hidden="true"><use href="#${id}"></use></svg>`;
 }
 
@@ -226,7 +229,7 @@ const WIKI = "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/";
 function sourceHtml({ page }: Of<"source">): string {
   const href = WIKI + encodeURIComponent(page.replace(/ /g, "-"));
   const link = `<a href="${href}" target="_blank" rel="noopener noreferrer">${escapeHtml(page.replace(/-/g, " "))}</a>`;
-  return frame(`<span>Source</span>`, `<div class="assistantSource">📖 ${link}</div>`, true);
+  return frame(`<span>${t("Source")}</span>`, `<div class="assistantSource">📖 ${link}</div>`, true);
 }
 
 function formatValue(value: number, unit?: string): string {
@@ -281,7 +284,7 @@ function pieHtml(widget: Of<"chart">, live: boolean): string {
       </li>`
     )
     .join("");
-  const caption = percent ? "Share of the total" : `Share of ${formatValue(total, widget.unit)}`;
+  const caption = percent ? t("Share of the total") : `Share of ${formatValue(total, widget.unit)}`;
   return `<div class="assistantPie"><svg viewBox="-1 -1 2 2" aria-hidden="true">${slices}</svg><ul>${legend}</ul></div><div class="assistantChartCaption">${caption}</div>`;
 }
 
@@ -290,7 +293,7 @@ function choicesHtml(widget: Of<"choices">, { index, live, canAsk }: WidgetConte
     .map((choice, number) => {
       const picked = widget.picked === number;
       const enabled = widget.picked === undefined && (choice.operations ? live : canAsk);
-      const hint = choice.operations ? "Propose this change" : "Ask this";
+      const hint = choice.operations ? t("Propose this change") : "Ask this";
       return `<button type="button" class="assistantButton${picked ? " assistantPrimary" : ""}" data-action="choose" data-index="${index}" data-choice="${number}" data-tip="${hint}" aria-pressed="${picked}" ${enabled ? "" : "disabled"}>${escapeHtml(choice.label)}</button>`;
     })
     .join("");
@@ -321,7 +324,7 @@ function insetMark(widget: Of<"inset">, { x0, y0, x1, y1 }: Region): string {
 const insetBody = (widget: Of<"inset">, { region, image, failed }: Inset) =>
   image && region
     ? `<img src="${image}" alt="" />${insetMark(widget, region)}`
-    : `<span>${failed ? "Could not draw this part of the map" : "Drawing the map…"}</span>`;
+    : `<span>${failed ? t("Could not draw this part of the map") : t("Drawing the map…")}</span>`;
 
 async function drawInset(widget: Of<"inset">, inset: Inset): Promise<void> {
   try {
@@ -331,7 +334,7 @@ async function drawInset(widget: Of<"inset">, inset: Inset): Promise<void> {
   } catch {
     inset.failed = true;
   }
-  const button = document.getElementById(inset.id);
+  const button = findEl(inset.id);
   if (button) button.innerHTML = insetBody(widget, inset);
 }
 
@@ -346,7 +349,7 @@ function insetHtml(widget: Of<"inset">, { index, live }: WidgetContext): string 
   }
   return frame(
     header,
-    `<button type="button" id="${inset.id}" class="assistantInset" data-action="inset" data-index="${index}" data-tip="Show on the map">${insetBody(widget, inset)}</button>`,
+    `<button type="button" id="${inset.id}" class="assistantInset" data-action="inset" data-index="${index}" data-tip="${t("Show on map")}">${insetBody(widget, inset)}</button>`,
     true
   );
 }
@@ -362,8 +365,8 @@ function revealInset(widget: Of<"inset">): void {
 function openEntity(key: string): void {
   const ref = MapEntities.resolveKey(key);
   if (!ref) return;
-  if (revealEntity(ref, panel()) || MapEntities.open(ref)) return;
-  tip("This element has no map location", false, "warn", 4000);
+  if (revealEntity(ref, panel()) || openEditor(ref)) return;
+  tip(t("This element has no map location"), false, "warn", 4000);
 }
 
 function runCommand(id: string): void {
@@ -377,7 +380,7 @@ function toggleMarks(widget: Of<"entities">): void {
   }
   const refs = widget.entities.flatMap(key => MapEntities.resolveKey(key) ?? []);
   marked = markEntities(refs, panel()) ? widget : null;
-  if (!marked) tip("These entities have no map location", false, "warn", 4000);
+  if (!marked) tip(t("These entities have no map location"), false, "warn", 4000);
 }
 
 function clearMarks(): void {

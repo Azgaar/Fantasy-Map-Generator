@@ -1,10 +1,10 @@
-// Browser-mode test (vitest.browser.config.ts): drawSystems draws one class-coloured marker per
+﻿// Browser-mode test (vitest.browser.config.ts): drawSystems draws one class-coloured marker per
 // live burg, styles each class group from its record, and culls to the viewport bounds.
 import { beforeEach, expect, test } from "vitest";
-import { Layers } from "@/components/layers";
-import "@/components/options-model"; // installs the options global
-import "@/generators/styles";
-import "@/services/logging"; // installs the TIME/INFO globals the renderers gate their timers on
+import { Layers } from "@/renderers/layers";
+import "@/model/options/options-model"; // installs the options global
+import "@/model/styles/styles";
+import "@/utils/logger"; // installs the TIME/INFO globals the renderers gate their timers on
 import { drawSystems } from "./draw-systems";
 
 beforeEach(() => {
@@ -74,7 +74,7 @@ test("replaces instead of appends on a second draw", () => {
 
 test("the registry erase clears the markers with the layer", () => {
   Layers.hide("systems");
-  Layers.show("systems"); // off → on draws the markers through the registry
+  Layers.show("systems"); // off â†’ on draws the markers through the registry
   expect(markers().length).toBeGreaterThan(0);
   Layers.hide("systems");
   expect(markers().length).toBe(0);

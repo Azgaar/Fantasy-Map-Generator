@@ -1,15 +1,25 @@
 // Save the whole .map project to storage, machine or cloud
-import { closeDialogs } from "@/components/dialog/dialog-helpers";
-import { Layers } from "@/components/layers";
-import { tip } from "@/components/tooltips";
-import { GraphOverride } from "@/generators/graph-override";
-import { Notes } from "@/generators/notes";
+
+import { GraphOverride } from "@/model/graph/graph-override";
+import { mapHistory } from "@/model/map-history";
+import { Names } from "@/model/society/names-generator";
+import { Notes } from "@/model/story/notes";
+import { Layers } from "@/renderers/layers";
 import { restoreOceanVectors } from "@/renderers/ocean-cache";
 import { Services } from "@/services";
 import { getUsedFonts } from "@/services/fonts";
-import { isElectron, savedMessage } from "@/services/platform";
+import { getFileName } from "@/services/io/file-name";
+import { LocalDB } from "@/services/local-db";
+import { savedMessage } from "@/services/platform";
 import { VERSION } from "@/services/versioning";
-import { ensureEl, escapeHtml, getFileName, link, parseError, rn } from "@/utils";
+import { Dialog } from "@/ui/dialog/dialog";
+import { tip } from "@/ui/tooltips";
+import { link, parseError } from "@/utils/common-utils";
+import { isElectron } from "@/utils/environment";
+import { sentences, t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
+import { ensureEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
 import { serializeHistory } from "./epochs-format";
 import { serializeNameBases } from "./name-bases-format";
 import { type SaveOutcome, saveToFileSystem } from "./save-to-file";
@@ -17,45 +27,50 @@ import { type SaveOutcome, saveToFileSystem } from "./save-to-file";
 type Writer = () => Promise<void>;
 
 const toStorage = (): Promise<void> => save(() => writeToStorage(prepareMapData(), true));
-const toMachine = (saveAs = false): Promise<void> => save(() => writeToMachine(saveAs));
-const toDropbox = (): Promise<void> => save(() => writeToDropbox(prepareMapData(), `${getFileName()}.map`));
+const toMachine = (overwrite = false, viewOnly = false): Promise<void> =>
+  save(() => writeToMachine(overwrite, viewOnly));
+const toDropbox = (viewOnly = false): Promise<void> =>
+  save(() => writeToDropbox(prepareMapData(viewOnly), mapFileName(viewOnly)));
+
+// a view-only copy never takes the editable file's name
+const mapFileName = (viewOnly: boolean): string => `${getFileName()}${viewOnly ? " view" : ""}.map`;
 
 async function save(write: Writer): Promise<void> {
-  if (customization) return tip("Map cannot be saved in EDIT mode, please complete the edit and retry", false, "error");
-  closeDialogs("#alert");
+  if (options.app.mode)
+    return tip(t("Map cannot be saved in EDIT mode, please complete the edit and retry"), false, "error");
+  if (options.map.viewOnly) return tip(t("The map is in view-only mode and cannot be saved"), false, "warn");
+  Dialog.closeAll(undefined, { keepMessages: true }); // save may be asked from a message
 
   try {
     await write();
   } catch (error) {
-    ERROR && console.error(error);
+    log.error(error);
     const saveError = error instanceof Error ? error : new Error(String(error));
-    alertMessage.innerHTML = /* html */ `An error occurred while saving the map. If the issue persists, please copy the message below and report it on ${link(
-      "https://github.com/Azgaar/Fantasy-Map-Generator/issues",
-      "GitHub"
-    )}. <p id="errorBox">${parseError(saveError)}</p>`;
-
-    $("#alert").dialog({
-      resizable: false,
-      title: "Saving error",
+    Dialog.message({
+      message: /* html */ `${t(
+        "An error occurred while saving the map. If the issue persists, please copy the message below and report it on {{- github}}.",
+        { github: link("https://github.com/Azgaar/Fantasy-Map-Generator/issues", "GitHub") }
+      )} <p id="errorBox">${parseError(saveError)}</p>`,
+      title: t("Saving error"),
       width: "28em",
-      buttons: {
-        Retry: function (this: HTMLElement) {
-          $(this).dialog("close");
-          save(write);
+      buttons: [
+        {
+          label: t("Retry"),
+          onClick: () => {
+            save(write);
+          }
         },
-        Close: function (this: HTMLElement) {
-          $(this).dialog("close");
-        }
-      },
-      position: { my: "center", at: "center", of: "svg" }
+        { label: t("Close") }
+      ]
     });
   }
 }
 
-function prepareMapData(): string {
+/** `viewOnly` saves a copy that opens for browsing only */
+function prepareMapData(viewOnly = false): string {
   const date = new Date();
   const dateString = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
-  const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator";
+  const license = "File can be loaded in azgaar.github.io/Fantasy-Map-Generator"; // file format text: never translated
   const params = [
     VERSION,
     license,
@@ -66,20 +81,21 @@ function prepareMapData(): string {
     mapHistory.at(-1)?.created ?? Date.now() // the map id: when the map on screen was created
   ].join("|");
 
-  const settings = JSON.stringify(options.map); // what the map is; the requests and preferences stay out
+  const settings = JSON.stringify(viewOnly ? { ...options.map, viewOnly } : options.map); // the requests and preferences stay out
   const measurers = JSON.stringify(pack.measurers ?? []);
   const journeys = JSON.stringify(pack.journeys ?? []);
-  const { json: history, snapshotRecords } = serializeHistory(pack.history, pack.cells.i.length);
+const { json: history, snapshotRecords } = serializeHistory(pack.history, pack.cells.i.length);
+  const legends = JSON.stringify(pack.legends);
   const fonts = JSON.stringify(
     getUsedFonts(
-      ensureEl("map") as Element as SVGSVGElement,
+      styles,
       Notes.list().map(entry => entry.note)
     )
   );
   const layers = JSON.stringify(Layers.state);
   const graphOverride = JSON.stringify(GraphOverride.state);
 
-  // save svg
+  // TEMPORARY SAFETY MEASURE for the next few versions: record 5 keeps the svg no current map reads; drop this block then
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
 
   restoreOceanVectors(cloneEl);
@@ -139,7 +155,7 @@ function prepareMapData(): string {
     "", // deprecated separate mapCoordinates, now options.map.geography.coordinates
     biomes,
     "", // deprecated notes array, now a note field on the entity it describes
-    serializedSVG,
+    serializedSVG, // temporary, see above
     gridGeneral,
     grid.cells.h,
     grid.cells.prec,
@@ -187,8 +203,9 @@ function prepareMapData(): string {
     layers,
     graphOverride,
     journeys,
+legends,
     history,
-    ...snapshotRecords // records 54 and up: one border snapshot per epoch
+    ...snapshotRecords // records 55 and up: one border snapshot per epoch
   ].join("\r\n");
   return mapData;
 }
@@ -196,28 +213,31 @@ function prepareMapData(): string {
 // save map file to indexedDB
 async function writeToStorage(mapData: string, showTip = false): Promise<void> {
   const blob = new Blob([mapData], { type: "text/plain" });
-  await ldb.set("lastMap", blob);
-  showTip && tip("Map is saved to the browser storage", false, "success");
+  await LocalDB.set("lastMap", blob);
+  showTip && tip(t("Map is saved to the browser storage"), false, "success");
 }
 
-async function writeToMachine(saveAs: boolean): Promise<void> {
-  notifySaveOutcome(await saveToFileSystem(prepareMapData, `${getFileName()}.map`, saveAs));
+// a view-only copy never becomes the file an overwrite updates: that is the author's editable map
+async function writeToMachine(overwrite: boolean, viewOnly: boolean): Promise<void> {
+  notifySaveOutcome(await saveToFileSystem(() => prepareMapData(viewOnly), mapFileName(viewOnly), overwrite, viewOnly));
 }
 
 export function notifySaveOutcome(outcome: SaveOutcome): void {
   if (outcome.type === "cancelled") return;
   if (outcome.type === "saved") {
-    tip(`Map is saved to "${escapeHtml(outcome.filename)}"`, true, "success", 8000);
+    tip(t("Map is saved to “{{file}}”", { file: outcome.filename }), true, "success", 8000);
     return;
   }
 
-  let message = savedMessage("Map");
+  let message = savedMessage(t("Map"));
   if (!isElectron()) {
     const noticeKey = "savePickerFallbackNoticeShown";
     try {
       if (!localStorage.getItem(noticeKey)) {
-        message +=
-          ". A save-location picker is unavailable here; your browser's download settings control the location.";
+        message = sentences(
+          message,
+          t("A save-location picker is unavailable here; your browser's download settings control the location.")
+        );
         localStorage.setItem(noticeKey, "true");
       }
     } catch {
@@ -229,7 +249,7 @@ export function notifySaveOutcome(outcome: SaveOutcome): void {
 
 async function writeToDropbox(mapData: string, filename: string): Promise<void> {
   await Services.Cloud.save(filename, mapData);
-  tip("Map is saved to your Dropbox", true, "success", 8000);
+  tip(t("Map is saved to your Dropbox"), true, "success", 8000);
 }
 
 export const Save = { toStorage, toMachine, toDropbox, prepareMapData, writeToStorage };

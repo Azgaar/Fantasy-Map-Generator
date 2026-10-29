@@ -4,22 +4,14 @@ import { waitForMap } from "./wait-for-map";
 // The legend can hold one box per source at a time: turning on a second box must not drop the first,
 // and each box is toggled, positioned and hidden on its own.
 test.describe("legend boxes", () => {
-  test.beforeEach(async ({ context, page }) => {
-    await context.clearCookies();
-
-    await page.goto("/");
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-
+  test.beforeEach(async ({ page }) => {
     await page.goto("/?seed=test-seed&width=1280&height=720");
     await waitForMap(page);
     await page.waitForTimeout(500);
   });
 
   const openEditor = async (page: any, controller: string) => {
-    await page.evaluate((name: string) => (window as any).Controllers[name].open(), controller);
+    await page.evaluate((name: string) => (window as any).FMG.Controllers[name].open(), controller);
   };
 
   test("states and zones legends are shown side by side and hidden one at a time", async ({ page }) => {
@@ -54,7 +46,7 @@ test.describe("legend boxes", () => {
     await page.locator("#culturesLegend").click();
     await expect(page.locator("#legend > g[data-legend]")).toHaveCount(2);
 
-    await page.evaluate(() => (window as any).closeDialogs());
+    await page.evaluate(() => (window as any).FMG.Dialog.closeAll());
     // the item and title texts are siblings of the background rect and paint over it, so clicking
     // the rect's centre can land on a glyph and fail the hit-target check; the group owns them all
     await page.locator('#legend > g[data-legend="Cultures"]').click();

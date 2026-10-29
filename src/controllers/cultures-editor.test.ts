@@ -1,17 +1,18 @@
-// @vitest-environment jsdom
+﻿// @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Layers } from "@/components/layers";
-import { tip } from "@/components/tooltips";
+import { Layers } from "@/renderers/layers";
+import { tip } from "@/ui/tooltips";
 import { ALIGNMENTS, alignmentRank } from "@/data/culture-traits";
-import type { Culture } from "@/generators/cultures-generator";
+import { Options } from "@/model/options/options-model";
+import type { Culture } from "@/model/society/cultures-generator";
 
-vi.mock("@/components/layers", () => ({ Layers: { show: vi.fn(), hide: vi.fn(), draw: vi.fn() } }));
-vi.mock("@/components/tooltips", () => ({ tip: vi.fn(), clearMainTip: vi.fn() }));
-vi.mock("@/components/dialog/highlighting", () => ({ applyLineHighlighting: vi.fn() }));
-vi.mock("@/components/viewbox-events", () => ({ applyDefaultViewboxEvents: vi.fn() }));
+vi.mock("@/renderers/layers", () => ({ Layers: { show: vi.fn(), hide: vi.fn(), draw: vi.fn() } }));
+vi.mock("@/ui/tooltips", () => ({ tip: vi.fn(), clearMainTip: vi.fn() }));
+vi.mock("@/ui/dialog/highlighting", () => ({ applyLineHighlighting: vi.fn() }));
+vi.mock("@/ui/map/viewbox-events", () => ({ applyDefaultViewboxEvents: vi.fn() }));
 vi.mock("@/renderers/draw-legend", () => ({ clearLegend: vi.fn(), drawLegend: vi.fn(), hasLegend: () => false }));
-vi.mock("@/components/dialog/dialog-helpers", async importOriginal => ({
-  ...(await importOriginal<typeof import("@/components/dialog/dialog-helpers")>()),
+vi.mock("@/ui/dialog/dialog-helpers", async importOriginal => ({
+  ...(await importOriginal<typeof import("@/ui/dialog/dialog-helpers")>()),
   closeDialogs: vi.fn(),
   destroyDialog: vi.fn(),
   updateDialog: vi.fn(),
@@ -21,7 +22,7 @@ vi.mock("@/controllers", () => ({
   Controllers: { StyleEditor: { open: vi.fn() }, NamesbaseEditor: { open: vi.fn() } }
 }));
 
-import { CulturesEditor } from "./cultures-editor";
+import { CulturesEditor } from "@/controllers/society/cultures-editor";
 
 /** a fresh cast per test: the editor mutates the cultures it is given, and a re-roll must not leak */
 const makeCultures = (): Culture[] => [
@@ -140,7 +141,7 @@ describe("the Cultures editor's trait columns", () => {
 
     expect({ alignment: fixture("Velic").alignment, values: fixture("Velic").values }).toEqual(locked);
     expect({ alignment: fixture("Aeloran").alignment, values: fixture("Aeloran").values }).not.toEqual(before);
-    expect(row(1).querySelector('[data-col="alignment"]')!.textContent).not.toBe("—"); // the table redrew
+    expect(row(1).querySelector('[data-col="alignment"]')!.textContent).not.toBe("â€”"); // the table redrew
     expect(tip).toHaveBeenCalledWith(expect.stringContaining("Re-rolled the traits of 2 cultures"), false, "info");
   });
 

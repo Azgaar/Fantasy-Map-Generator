@@ -1,8 +1,8 @@
 # Generation Pipeline
 
 Building a world is one long, strictly ordered sequence of generator calls. The generators talk to
-each other almost entirely through the two shared globals — `grid` (the raw jittered-square graph,
-typed as [`GridGraph`](../../src/types/GridGraph.ts)) and `pack` (the repacked graph everything
+each other almost entirely through the two shared globals — `grid` (the raw graph on a sampling lattice,
+typed as [`GridGraph`](../../src/types/grid-graph.ts)) and `pack` (the repacked graph everything
 downstream is indexed against) — so **the execution order _is_ the dependency graph**: a step depends
 on every earlier step that last wrote a global it reads.
 
@@ -11,11 +11,11 @@ rebuilds part of a map. It is now declared once, as data:
 
 | File                                                                                                          | Role                                                                                               |
 | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| [`src/generators/pipeline.ts`](../../src/generators/pipeline.ts)                                              | The runner. Generic, knows nothing about generators, `pack` or `grid`                              |
-| [`src/generators/grid-generator.ts`](../../src/generators/grid-generator.ts)                                  | The `Grid` module and its siblings `Temperature`, `Precipitation` and `Pack` (see below)           |
-| [`src/generators/generation-pipeline.ts`](../../src/generators/generation-pipeline.ts)                        | The configuration: `GenerationPipeline` and `ErasePipeline` step lists                             |
-| [`src/components/lifecycle.ts`](../../src/components/lifecycle.ts) → `generate()`                             | Drives `GenerationPipeline` and owns everything around it (seed, sizing, statistics, error dialog) |
-| [`src/controllers/heightmap-editor.ts`](../../src/controllers/heightmap-editor.ts) → `regenerateErasedData()` | Drives `ErasePipeline`                                                                             |
+| [`src/model/pipeline.ts`](../../src/model/pipeline.ts)                                                        | The runner. Generic, knows nothing about generators, `pack` or `grid`                              |
+| [`src/model/graph/grid-generator.ts`](../../src/model/graph/grid-generator.ts)                                            | The `Grid` module and its siblings `Temperature`, `Precipitation` and `Pack` (see below)           |
+| [`src/model/generation-pipeline.ts`](../../src/model/generation-pipeline.ts)                                  | The configuration: `GenerationPipeline` and `ErasePipeline` step lists                             |
+| [`src/app/lifecycle.ts`](../../src/app/lifecycle.ts) → `generate()`                                           | Drives `GenerationPipeline` and owns everything around it (seed, sizing, statistics, error dialog) |
+| [`src/controllers/physical/heightmap-editor.ts`](../../src/controllers/physical/heightmap-editor.ts) → `regenerateErasedData()` | Drives `ErasePipeline`                                                                             |
 
 ## The runner
 
@@ -35,14 +35,14 @@ new Pipeline<Id, TContext>(name, steps).run(context): Promise<void>;
 - **Per-call parameters arrive through `context`**, not through closure state — see `GenerationContext`
   and `EraseContext`. A step that behaves differently between paths reads a flag off the context
   instead of being conditionally omitted from the list.
-- **Logging and timing belong to the runner.** Each run is an `INFO`-gated `console.group(name)` with a
-  `TIME`-gated timer per step id, and every step is recorded as a `performance.measure` (the DevTools
+- **Logging and timing belong to the runner.** Each run is a `log.group(name)` with a `log.time` timer
+  per step id, and every step is recorded as a `performance.measure` (the DevTools
   Performance panel shows them). Generators no longer time themselves at the top level; the timers
   that remain inside them (`expandStates`, `generateTrails`, `calculateVoronoi`, …) are sub-phase
   detail nested under their step.
 - **Failures name the phase.** A throwing step is rethrown as
   `` `${pipelineName} failed at step "${id}": ${reason}` `` with the original error as `cause`.
-  [`parseError`](../../src/utils/commonUtils.ts) walks the `cause` chain, so the generation error
+  [`parseError`](../../src/utils/common-utils.ts) walks the `cause` chain, so the generation error
   dialog shows both the phase and the underlying stack.
 
 There is deliberately no declared dependency graph. An earlier design gave each step a `dependsOn`
@@ -56,27 +56,26 @@ map implicitly. A grid explicitly selected in the heightmap gallery is used as s
 heights cleared before terrain generation. Map naming belongs to `Options.randomize()` before
 the pipeline, since it depends only on name bases and the seeded random source.
 
-`generate(config)` in `components/lifecycle.ts` resolves what the pipeline doesn't own (`setSeed`, `Options.randomize`, `applyGraphSize`), calls `await GenerationPipeline.run({graph})`, then reports (`logStats`,
-`TOTAL` timing) or shows the generation error dialog. The pipeline is exposed as
-`window.GenerationPipeline` because `main.js` is a classic script.
+`generate(config)` in `app/lifecycle.ts` resolves what the pipeline doesn't own (`setSeed`, `Options.randomize`, `applyGraphSize`), calls `await GenerationPipeline.run({graph})`, then registers the map (`registerMap` logs its summary and fires `map:generated`,
+`TOTAL` timing) or shows the generation error dialog.
 
-| Phase                    | Step ids                                                      | Writes (selection)                                                              |
-| ------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Grid + heightmap         | `grid`, `heightmap`                                           | `grid`, `grid.cells.h`; resets `pack`                                           |
-| Hydrology base           | `markupGrid`, `depressionLakes`, `nearSeaLakes`               | `grid.cells.f/t/b`, lake and ocean topology                                     |
-| World position & climate | `mapSize`, `temperatures`, `precipitation`  | `options.map.geography.*` (incl. `coordinates`), `grid.cells.temp/prec`             |
-| Repack                   | `regraph`, `markupPack`, `defaultRuler`                       | `pack.cells.*` (**invalidates every earlier `pack` cell index**), default ruler |
-| Rivers & biomes          | `rivers`, `biomes`, `featureGroups`                           | `pack.rivers`, `cells.r/fl/conf`, `pack.biomes`, `cells.biome`                  |
-| Climate art              | `ice`                                                         | `pack.ice`                                                                      |
-| Goods catalogue          | `goods`                                                       | `pack.goods` (map-independent), `cells.good`                                    |
-| Ranking & cultures       | `rankCells`, `cultures`, `culturesExpand`                     | `cells.s`, `cells.pop`, `pack.cultures`, `cells.culture`                        |
-| Settlement & politics    | `burgs`, `states`, `routes`, `religions`                      | `pack.burgs`, `pack.states`, `pack.routes`, `pack.religions`                    |
-| Specification            | `burgsSpecify`, `stateStatistics`, `stateForms`               | burg types, state stats and forms                                               |
-| Provinces                | `provinces`, `provincePoles`                                  | `pack.provinces`                                                                |
-| Naming polish            | `riversSpecify`, `featureNames`                               | river and feature (island, ocean, lake) names                                   |
-| Economy                  | `markets`, `production`, `taxes`                              | `pack.markets`, `cells.market`, `pack.deals`, burg/state treasuries             |
-| Overlays                 | `military`, `markers`, `zones`, `addedLabels`                 | regiments, markers, zones, labels                                               |
-| Finalise                 | `journeys`                                                    | journeys                                                                        |
+| Phase                    | Step ids                                        | Writes (selection)                                                              |
+| ------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------- |
+| Grid + heightmap         | `grid`, `heightmap`                             | `grid`, `grid.cells.h`; resets `pack`                                           |
+| Hydrology base           | `markupGrid`, `depressionLakes`, `nearSeaLakes` | `grid.cells.f/t/b`, lake and ocean topology                                     |
+| World position & climate | `mapSize`, `temperatures`, `precipitation`      | `options.map.geography.*` (incl. `coordinates`), `grid.cells.temp/prec`         |
+| Repack                   | `regraph`, `markupPack`, `defaultRuler`         | `pack.cells.*` (**invalidates every earlier `pack` cell index**), default ruler |
+| Rivers & biomes          | `rivers`, `biomes`, `featureGroups`             | `pack.rivers`, `cells.r/fl/conf`, `pack.biomes`, `cells.biome`                  |
+| Climate art              | `ice`                                           | `pack.ice`                                                                      |
+| Goods catalogue          | `goods`                                         | `pack.goods` (map-independent), `cells.good`                                    |
+| Ranking & cultures       | `rankCells`, `cultures`, `culturesExpand`       | `cells.s`, `cells.pop`, `pack.cultures`, `cells.culture`                        |
+| Settlement & politics    | `burgs`, `states`, `routes`, `religions`        | `pack.burgs`, `pack.states`, `pack.routes`, `pack.religions`                    |
+| Specification            | `burgsSpecify`, `stateStatistics`, `stateForms` | burg types, state stats and forms                                               |
+| Provinces                | `provinces`, `provincePoles`                    | `pack.provinces`                                                                |
+| Naming polish            | `riversSpecify`, `featureNames`                 | river and feature (island, ocean, lake) names                                   |
+| Economy                  | `markets`, `production`, `taxes`                | `pack.markets`, `cells.market`, `pack.deals`, burg/state treasuries             |
+| Overlays                 | `military`, `markers`, `zones`, `addedLabels`   | regiments, markers, zones, labels                                               |
+| Finalise                 | `journeys`, `legends`                           | journeys, empty legend boxes                                                    |
 
 Two constraints are easy to break when replicating a slice of this:
 
@@ -123,7 +122,7 @@ flowchart TD
     names["riversSpecify + featureNames"]
     econ["markets + production + taxes<br/><i>writes: pack.markets, deals, cells.market</i>"]
     mil["military + markers + zones + addedLabels"]
-    journeys["journeys"]
+    journeys["journeys + legends"]
 
     gg --> hm --> mg --> lakes --> coord --> temp --> prec --> repack --> ruler --> rivers --> biomes --> fg --> ice --> goods --> rank --> cult --> burgs --> states --> routes --> relig --> spec --> prov --> names --> econ --> mil --> journeys
 
@@ -163,7 +162,7 @@ a step id that does not exist in the canonical list is a compile error, but the 
 sync by hand. Differences, all deliberate:
 
 - **Dropped:** `grid`, `heightmap` (the user just edited the heights), `mapSize`
-  and `defaultRuler` (map bounds don't change on an edit), `addedLabels` and `journeys` (not touched).
+  and `defaultRuler` (map bounds don't change on an edit), `addedLabels`, `journeys` and `legends` (not touched).
 - **`erosion` context:** `addLakesInDeepDepressions` and `openNearSeaLakes` run only when erosion is
   allowed; `rivers` calls `Rivers.generate(erosion)` and, when it isn't, snaps `pack.cells.h` back to
   the grid heights wherever the land/water side didn't flip.
@@ -177,29 +176,65 @@ sync by hand. Differences, all deliberate:
 Three other places rebuild a large slice of a map by hand. They are not (yet) expressed as pipelines,
 and each one is a site that can silently fall behind when a generation step is added.
 
-| Concern                       | Full generate              | Erase                      | [Keep](../../src/controllers/heightmap-editor.ts) | [Risk](../../src/controllers/heightmap-editor.ts) | [Resample](../../src/generators/resample.ts)      |
-| ----------------------------- | -------------------------- | -------------------------- | ------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------- |
-| Driver                        | `GenerationPipeline`       | `ErasePipeline`            | `restoreKeptData()`                               | `restoreRiskedData()`                             | `Resampler.process()`                             |
-| Grid rebuilt                  | ✅                         | ❌                         | ❌                                                | ❌                                                | ✅ (new dimensions)                               |
-| `markupGrid`                  | ✅                         | ✅                         | ❌                                                | ✅                                                | ✅                                                |
-| `regraph` (pack rebuilt)      | ✅                         | ✅                         | ❌                                                | ✅                                                | ✅                                                |
-| Rivers                        | generate                   | generate (parameterized)   | keep                                              | generate _or_ restore                             | restored from parent meanders                     |
-| Biomes                        | `generate` (new catalogue) | `define` (reuse catalogue) | keep                                              | recompute where missing                           | restored per cell                                 |
-| Cultures / burgs / states / … | generate                   | generate                   | keep                                              | **remap onto the new pack**                       | restored from parent                              |
-| Economy                       | generate                   | generate                   | keep                                              | rebuild (cell ids changed)                        | rebuild (`restoreEconomy` + `Production.produce`) |
-| Coastline can change          | ✅                         | ✅                         | ❌                                                | ✅                                                | ✅                                                |
+| Concern                       | Full generate              | Erase                      | [Keep](../../src/controllers/physical/heightmap-editor.ts) | [Risk](../../src/controllers/physical/heightmap-editor.ts) | [Resample](../../src/model/resample.ts) |
+| ----------------------------- | -------------------------- | -------------------------- | ------------------------------------------------- | ------------------------------------------------- | --------------------------------------- |
+| Driver                        | `GenerationPipeline`       | `ErasePipeline`            | `restoreKeptData()`                               | `MapRestoration.applyHeights()`                   | `Resampler.process()`                   |
+| Grid rebuilt                  | ✅                         | ❌                         | ❌                                                | ❌                                                | ✅ (new dimensions)                     |
+| `markupGrid`                  | ✅                         | ✅                         | ❌                                                | ✅                                                | ✅                                      |
+| `regraph` (pack rebuilt)      | ✅                         | ✅                         | ❌                                                | ✅                                                | ✅                                      |
+| Rivers                        | generate                   | generate (parameterized)   | keep                                              | generate _or_ restore                             | restore                                 |
+| Biomes                        | `generate` (new catalogue) | `define` (reuse catalogue) | keep                                              | restore, compute where new                        | restore, compute where new              |
+| Cultures / burgs / states / … | generate                   | generate                   | keep                                              | restore                                           | restore                                 |
+| Economy                       | generate                   | generate                   | keep                                              | rebuild                                           | rebuild                                 |
+| Coastline can change          | ✅                         | ✅                         | ❌                                                | ✅                                                | ✅                                      |
 
 - **Keep** is the minimal path: it copies edited grid heights into the existing pack cells via
   `pack.cells.g` and touches nothing else, which is why the coastline cannot change.
-- **Risk** rebuilds the graph but _preserves entities_: it snapshots every per-cell array against grid
-  indices, re-runs hydrology/climate/repack, calls `GraphOverride.restore()`, then re-attaches the
-  snapshot and re-locates each burg, culture and province centre in the new pack. The economy is
-  rebuilt because cell ids no longer match.
-- **Resample** (transform and submap tools) generates a fresh grid for the target size, resamples
-  height/temp/prec from the parent by inverse projection, re-runs `markupGrid` → `markupPack` → `ice`
-  → `defaultRuler`, then restores cells, entities and notes from the parent. Only the map-independent
-  parts of the economy survive: the goods catalogue and market anchors are carried over, territories
-  are re-flooded via `Markets.expandTerritories`, and `Production.produce()` is re-run.
+- **Risk** and **Resample** rebuild the graph, so every stored pack cell id becomes meaningless. Both
+  take a `MapRestoration.snapshot()` before the rebuild and hand it to `MapRestoration.restore()`
+  after it ([`map-restoration.ts`](../../src/model/map-restoration.ts)). Both run inside
+  `MapRestoration.transaction()`: if anything throws, `grid`, `pack`, `options.map` and the graph
+  overrides are put back as they were, and the caller tells the user the map is unchanged. A rebuild
+  must therefore build a new `pack` object, never change the old one. Risk restores with the
+  identity projection on the same grid; Resample generates a fresh grid for the target size,
+  resamples height/temp/prec from the parent by inverse projection and restores through the
+  transform or submap projection.
+
+### Map restoration
+
+`restore` finds every cell id again by position, never by index:
+
+- **Heights**: in Risk mode without water erosion, a cell whose grid height the edit did not change
+  keeps the snapshot's eroded height at its place; edited cells take the heights as drawn.
+- **Cells**: a cell takes its data from the nearest snapshot cell of the same land/water type within
+  two cell spacings. New land too far from old land is left unclaimed and gets a computed biome.
+- **Matching**: features and regenerated rivers are matched to old ones by shared cells, one to one and
+  best overlap first. A pair matches when the overlap is most of the old one as it lies now or most of
+  the new one, so an entity that shrank or grew is found again, and of a split one the biggest part.
+- **Features**: a new feature takes the user data (name, note, coastline, tags, chosen subtype and
+  group) of the matched old feature of its type. The matches map old feature ids to new ones for the
+  entities that refer to a feature.
+- **Burgs** keep their place or move to the nearest free land cell, capitals first; a burg is removed
+  only when no land is left for it. Feature and port water are found again.
+- **Centers**: states and provinces center on their capital. One whose capital left the map takes its
+  most populous burg as the new capital. A state with no burg left founds one at its center; a province
+  with none keeps its center while it is its own, else moves to its pole. Cultures and religions
+  keep their origin while it is land on the map. An entity left without cells is removed.
+- **Paths**: route and journey points keep the cell they were routed through while it is under or next
+  to the point, else they take the cell under it. Where two consecutive cells are no longer neighbors,
+  the cells between are filled in, on the line the path is drawn along where it crosses them. Rivers keep
+  their anchors and pass each cell once. They start and end where their course leaves and reaches the sea,
+  so a river whose land sank ends at the new coast; one with no land left is dropped. A river ends with -1
+  only off the map: an old outlet the map now shows becomes its last cell. With `rivers: "generate"`
+  they are generated for the new graph around the locked ones, which keep their course up to where it
+  now runs into the sea; each generated river takes the name, type, note, tags and label of the matched
+  old river.
+- **Labels**: a custom label path and offset follow the projection; a default label stays default.
+- **Relief**: icons stay, except where land went under the sea, unless the icon is in the marine biome's
+  pool; land raised from the sea gets relief placed. Resample places all relief anew for its scale.
+- **Zones** take every cell whose snapshot cell was in the zone, markers the cell under them and regiments
+  the cell under their old one.
+- **Economy**: goods and markets with a living center burg are kept, everything cell-bound is rebuilt.
 
 Partial regenerations triggered from the UI (`regenerate` methods on the generator modules,
 [`auto-update.ts`](../../src/services/io/auto-update.ts) migrations,
@@ -210,48 +245,50 @@ reaches a phase you change.
 ## Adding a new generation step
 
 1. Add a `{id, run}` entry to `pipelineSteps` in `generation-pipeline.ts`, at the correct phase
-   boundary. `generate()` in `components/lifecycle.ts` does not sequence generator calls any more.
+   boundary. `generate()` in `app/lifecycle.ts` does not sequence generator calls any more.
 2. If the step runs **after `regraph`**, add it to `erasePipelineSteps` at the matching boundary —
    otherwise the feature is missing from every map that went through the heightmap editor.
-3. If the step's output is cell-indexed or belongs to an entity the risk path re-maps, handle it in
-   `restoreRiskedData()`.
-4. For `resample.ts`: per-cell arrays go into `restoreCellData` (parent-quadtree mapping);
-   entity-keyed lists go into `restoreEconomy` (or a sibling) with a validity filter for removed
-   entities. Call the generator directly only when the output cannot be recovered from the parent —
-   and prefer a partial method (cf. `Markets.expandTerritories`) over a full regeneration.
+3. If the step's output is cell-indexed or stores a cell id, restore it in `MapRestoration.restore()`:
+   per-cell arrays in `restoreCells`, entities in their own step, each id found again by position.
+   Call the generator directly only when the output cannot be recovered from the snapshot, and prefer
+   a partial method (cf. `Markets.expandTerritories`) over a full regeneration.
+4. Teach [`MapIntegrity`](../../src/model/map-integrity.ts) the step's ids and run
+   `map-restoration.scenarios.test.ts`, which restores real maps and fails on any id the restore breaks: a
+   missed id does not throw, it silently points at an unrelated cell. See
+   [the test plan](../prd/map-restoration-tests.md).
 5. Add a version-bump migration in [`auto-update.ts`](../../src/services/io/auto-update.ts) so older
    saves gain the new fields on load.
 6. Update the phase table above.
 
 ## The grid modules
 
-Everything that builds or reads the raw graph lives in five sibling modules, each reachable as a
-global the same way `Features`, `Rivers` and the other generators are:
+Everything that builds or reads the raw graph lives in five sibling modules, each an exported
+singleton like `Features`, `Rivers` and the other generators:
 
-### `Grid` — [`grid-generator.ts`](../../src/generators/grid-generator.ts)
+### `Grid` — [`grid-generator.ts`](../../src/model/graph/grid-generator.ts)
 
-| Method                                                       | Role                                                                 |
-| ------------------------------------------------------------ | -------------------------------------------------------------------- |
-| `prepare(graph?)`                                            | set the generation grid, creating a fresh graph or clearing a supplied preview's heights |
-| `generate(seed, width, height)`                              | jittered points, boundary and Voronoi diagram for a fresh graph      |
-| `rebuildGraph(graph)`                                        | restore cells and vertices of a saved graph from its points          |
-| `resetHeights(graph)`                                        | blank the heightmap, keeping the graph                               |
-| `getCellsDesired()`                                          | the cell count requested in the options                              |
-| `findCell(x, y)` / `findAll(x, y, radius)` / `getPolygon(id)` | lookups on the regular square grid; all take an optional graph       |
-| `addDeepDepressionLakes()` / `openNearSeaLakes()`            | lake topology over `grid.cells.h/t/f` and `grid.features`            |
+| Method                                                        | Role                                                                                                    |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `prepare(graph?)`                                             | set the generation grid, creating a fresh graph or clearing a supplied preview's heights                |
+| `generate(seed, settings?)`                                   | lattice points, boundary and Voronoi diagram for a fresh graph; settings default to `options.map.graph` |
+| `rebuildGraph(graph)`                                         | restore cells and vertices of a saved graph from its points                                             |
+| `resetHeights(graph)`                                         | blank the heightmap, keeping the graph                                                                  |
+| `getCellsDesired()`                                           | the cell count requested in the options                                                                 |
+| `findCell(x, y)` / `findAll(x, y, radius)` / `getPolygon(id)` | exact Voronoi lookups, starting from the lattice slot; all take an optional graph                       |
+| `addDeepDepressionLakes()` / `openNearSeaLakes()`             | lake topology over `grid.cells.h/t/f` and `grid.features`                                               |
 
-### `Temperature` — [`temperature-generator.ts`](../../src/generators/temperature-generator.ts)
+### `Temperature` — [`temperature-generator.ts`](../../src/model/physical/temperature-generator.ts)
 
 `generate()` fills `grid.cells.temp` from each row's latitude and each cell's altitude.
 
-### `Precipitation` — [`precipitation-generator.ts`](../../src/generators/precipitation-generator.ts)
+### `Precipitation` — [`precipitation-generator.ts`](../../src/model/physical/precipitation-generator.ts)
 
 `generate()` passes the winds over the cells, filling `grid.cells.prec`. `getWinds()` returns the
 bands they enter through; it is free of randomness — derived from `options.map.climate.winds` and the map
 position — so [`drawPrecipitation`](../../src/renderers/draw-precipitation.ts) calls it to draw the
 wind arrows whenever the layer is rendered. The generators never touch the DOM.
 
-### `Coordinates` — [`coordinates.ts`](../../src/generators/coordinates.ts)
+### `Coordinates` — [`coordinates.ts`](../../src/model/physical/coordinates.ts)
 
 `generate()` is the `mapSize` pipeline step. It combines `options.generation.geography` with
 the template and terrain, writes `options.map.geography`, then calls `calculate()` to derive
@@ -260,7 +297,7 @@ a numeric request fixes the value. Pins have already been resolved by `Options.r
 the generator depends only on generation inputs and world data. `calculate()` also serves map
 edits and loading a file that has no coordinate box.
 
-### `Pack` — [`pack-generator.ts`](../../src/generators/pack-generator.ts)
+### `Pack` — [`pack-generator.ts`](../../src/model/graph/pack-generator.ts)
 
 `generate()` is the `regraph` step: it repacks the grid into `pack`, dropping deep ocean points and
 splitting coastal cells so the packed graph is denser exactly where the map needs it.
@@ -269,12 +306,12 @@ It also owns the spatial lookups against the packed graph, mirroring `Grid`'s: `
 and `findAll(x, y, radius)` (both backed by one cached quadtree per graph, rebuilt when the cell points
 are replaced) and `getPolygon(cellId)`. Each takes an optional graph, defaulting to the global `pack`.
 
-## `Population` — [`population-generator.ts`](../../src/generators/population-generator.ts)
+## `Population` — [`population-generator.ts`](../../src/model/society/population-generator.ts)
 
 `rankCells()` is the `rankCells` step: it scores every land cell — biome habitability, river flux,
 elevation, what it is coastal to and the goods around it — into `cells.s`, then turns that score into
 rural population in `cells.pop`. Everything placed by population (cultures, burgs, states) reads it,
 so it has to run after `biomes` and `goods` and before `cultures`.
 
-Unlike the grid modules it is imported rather than global, and it runs outside the pipeline too:
+It runs outside the pipeline too:
 `Burgs.regenerate()` and `Population.regenerate()` re-rank the cells before replacing burgs.

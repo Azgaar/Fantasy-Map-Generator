@@ -3,11 +3,14 @@ import { describe, expect, it, vi } from "vitest";
 
 // fonts populates the font selector at import time, which needs the real app dom
 vi.mock("@/services/fonts", () => ({ getUsedFonts: vi.fn(), loadFontsAsDataURI: vi.fn() }));
-vi.mock("@/utils", async original => ({ ...(await original<typeof import("@/utils")>()), getBase64: vi.fn() }));
+vi.mock("@/utils/file-utils", async original => ({
+  ...(await original<typeof import("@/utils/file-utils")>()),
+  getBase64: vi.fn()
+}));
 
-import "@/generators/relief-generator"; // the models own the set namespaces a custom icon id is told apart from
-import "@/generators/burgs-generator";
-import "@/generators/goods-generator";
+import "@/model/physical/relief-generator"; // the models own the set namespaces a custom icon id is told apart from
+import "@/model/political/burgs-generator";
+import "@/model/economy/goods-generator";
 import { flattenSymbolReferences, inlineLinkedImages, relocateRootFilter } from "./export";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -240,7 +243,7 @@ describe("flattenSymbolReferences", () => {
 
 describe("inlineLinkedImages", () => {
   it("inlines linked custom icons the host serves and drops those it does not, leaving other images alone", async () => {
-    const { getBase64 } = await import("@/utils");
+    const { getBase64 } = await import("@/utils/file-utils");
     const svg = document.createElementNS(SVG_NS, "svg");
     svg.innerHTML = `<defs>
         <symbol id="custom-a"><image href="https://ok.test/a.png"/></symbol>

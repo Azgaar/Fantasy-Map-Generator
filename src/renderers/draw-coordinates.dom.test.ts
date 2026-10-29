@@ -1,9 +1,9 @@
 // Browser-mode test (vitest.browser.config.ts): the coordinates renderer takes its base label
 // size from the store, not the retired data-size attribute.
 import { beforeEach, expect, test } from "vitest";
-import "@/components/options-model"; // installs the options global
-import "@/generators/styles";
-import { setViewportTransform } from "@/components/viewport";
+import "@/model/options/options-defaults"; // sets the default options
+import "@/model/styles/styles";
+import { setViewportTransform } from "@/renderers/viewport/viewport";
 import { drawCoordinates } from "./draw-coordinates";
 
 beforeEach(() => {
@@ -11,7 +11,7 @@ beforeEach(() => {
       <g id="viewbox"><g id="coordinates"></g></g>
     </svg>`;
   setViewportTransform(4, 0, 0);
-  options.map.graph = { width: 800, height: 600, points: 10000 };
+  options.map.graph = { width: 800, height: 600, points: 10000, sampling: "square", jitter: 0.9 };
   options.map.geography.coordinates = { lonT: 100, lonW: -50, lonE: 50, latN: 40, latS: -40, latT: 80 };
 });
 

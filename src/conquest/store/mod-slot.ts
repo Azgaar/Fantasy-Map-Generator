@@ -19,6 +19,7 @@
  * session once the compile lands (see `store/session.ts`).
  */
 
+import { LocalDB } from "@/services/local-db";
 import type { SlotContent } from "../content/store";
 import type { Command } from "../engine/game/commandTypes";
 import { fmg, twWarn } from "../ui/fmg";
@@ -157,7 +158,7 @@ function persist(): void {
       const payload: TotalWarSlot = { v: SLOT_VERSION, ...(Object.keys(ui).length ? { ui } : {}) };
       if (slot.campaign) payload.campaign = slot.campaign;
       if (slot.settings) payload.settings = slot.settings;
-      void ldb.set(`conquest-${id}`, JSON.stringify(payload)).catch(error => twWarn("slot persistence failed", error));
+      void LocalDB.set(`conquest-${id}`, JSON.stringify(payload)).catch(error => twWarn("slot persistence failed", error));
     } catch (error) {
       twWarn("slot serialization failed", error);
     }
@@ -192,8 +193,7 @@ export function loadSlot(): Promise<void> {
   currentMapId = id;
   slot = { v: SLOT_VERSION };
   pending = null;
-  loaded = ldb
-    .get<string>(`conquest-${id}`)
+  loaded = LocalDB.get<string>(`conquest-${id}`)
     .then(stored => {
       if (!stored) return;
       try {

@@ -1,5 +1,5 @@
 // ported from Armoria (https://github.com/Azgaar/Armoria), keep in sync
-export interface ShieldShape {
+interface ShieldShape {
   path: string;
   box?: string; // viewBox, "0 0 200 200" by default
   size?: number; // charge size modifier

@@ -1,21 +1,22 @@
-// The historical view: the map scrubbed to a past epoch. The states renderer reads
+﻿// The historical view: the map scrubbed to a past epoch. The states renderer reads
 // pack.cells.state and pack.states, so a past is shown by swapping those two for the epoch's
 // snapshot (lineage ids, remapped to compact state ids) and polity records, redrawing the
 // political layers, and restoring the live pack exactly on the way back. The swap is wrapped:
 // leave through goToPresent() whatever happened. See docs/plans/history-epochs.md (slice 4)
 
-import { Layers } from "@/components/layers";
-import { twLayerIds } from "@/conquest/ui/layers/index";
-import type { State } from "@/generators/states-generator";
-import { clearLegend, drawLegend, getLegendData, hasLegend, type LegendItem } from "@/renderers/draw-legend";
+import { twLayerIds } from "@/conquest/ui/layers";
+import { mapHistory } from "@/model/map-history";
+import { Layers } from "@/renderers/layers";
+import type { State } from "@/model/political/states-generator";
+import { clearLegend, drawLegend, getLegendData, hasLegend } from "@/renderers/draw-legend";
+import type { LegendItem } from "@/types/legend";
 import type { Point } from "@/types/global";
 import type { EpochPolity, HistoryEpoch } from "@/types/history";
-import type { TypedArray } from "@/types/PackedGraph";
+import type { TypedArray } from "@/types/packed-graph";
 import { getAdjective } from "@/utils";
 import { setViewedEpochStart } from "./historical-time";
 
-// a past is a read-only world: the truthy guard every editor opens with. Tools own 1-18
-const PAST_VIEW = 100;
+// a past is a read-only world: the truthy guard every editor opens with
 const PRESENT_LEGEND = "States";
 
 interface Installation {
@@ -80,7 +81,7 @@ export function showEpoch(index: number): void {
 
     pack.cells.state = past.cellState;
     pack.states = past.states;
-    customization = PAST_VIEW;
+    options.app.mode = "past" as typeof options.app.mode;
     hidePresentOnlyLayers();
     drawPastLegend(epoch);
     shownEpoch = index;
@@ -214,7 +215,7 @@ function drawPastLegend(epoch: HistoryEpoch): void {
     .map(polity => [polity.id, polity.color, polity.name]);
   if (!items.length) return;
 
-  const name = `${PRESENT_LEGEND} · ${epoch.era}`;
+  const name = `${PRESENT_LEGEND} Â· ${epoch.era}`;
   drawLegend(name, items);
   installation!.pastLegend = name;
 }
@@ -234,7 +235,7 @@ function restorePresent(): void {
   for (const id of saved.hidden) Layers.show(id);
   if (saved.pastLegend) clearLegend(saved.pastLegend);
   if (saved.hadLegend && saved.legendItems) drawLegend(PRESENT_LEGEND, saved.legendItems);
-  customization = 0;
+  options.app.mode = null;
 }
 
 /** which map the installation belongs to; a load or a generation changes it */

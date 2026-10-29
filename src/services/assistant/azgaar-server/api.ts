@@ -1,9 +1,10 @@
+import { t } from "@/utils/i18n";
 import { clearToken, getToken, signInAt } from "./auth";
 
 export const AZGAAR_SERVER_URL = "https://ask.azgaarsfmg.com";
 export const OFFICIAL_ORIGIN = "https://azgaar.github.io";
 
-export interface AskResponse {
+interface AskResponse {
   // always present on a 200, refusals included — always adopt the returned id
   conversationId: string;
   requestId: number | null;
@@ -18,7 +19,7 @@ export interface Limits {
   resetsAt: string;
 }
 
-export type AzgaarServerErrorCode =
+type AzgaarServerErrorCode =
   | "rate_limited"
   | "quota"
   | "cap_reached"
@@ -80,7 +81,7 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
   }
 
   let code: AzgaarServerErrorCode = "provider_error";
-  let message = `The assistant returned an error (${response.status}).`;
+  let message = t("The assistant returned an error ({{status}}).", { status: response.status });
   let retryAfter: number | undefined;
   try {
     const body = await response.json();
@@ -109,7 +110,7 @@ export const ask = async (question: string, conversationId?: string, signal?: Ab
   return result;
 };
 
-export type FeedbackRating = "up" | "down";
+type FeedbackRating = "up" | "down";
 
 // Idempotent per requestId server-side: a second rating replaces the first.
 export const sendFeedback = (requestId: number, rating: FeedbackRating): Promise<void> =>

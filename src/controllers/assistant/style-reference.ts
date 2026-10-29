@@ -1,10 +1,11 @@
 // The map style as the model reads it through read_docs: elements, formats and choices, then each element's paths
 import type { z } from "zod";
-import { type FieldSpec, SchemaForm } from "@/controllers/style-editor/schema-form";
+import { type FieldSpec, SchemaForm } from "@/controllers/style/schema-form";
 import { layerLabel } from "@/data/layer-labels";
 import { TEXTURES } from "@/data/textures";
-import { styleMeta, stylesSchema } from "@/generators/styles-schema";
-import { HeightmapColorSchemes } from "@/renderers/heightmap-color-schemes";
+import { styleMeta, stylesSchema } from "@/model/styles/styles-schema";
+import { HeightmapColorSchemes } from "@/renderers/heightmap/heightmap-color-schemes";
+import { fonts } from "@/services/fonts";
 import { SYSTEM_PRESETS } from "@/services/style-presets";
 import type { StyleElement } from "@/types/styles";
 
@@ -66,7 +67,7 @@ export function styleOverview(): string {
   const filters = [...document.querySelectorAll("#filters filter[id][name]")].map(
     filter => `url(#${filter.id}) ${filter.getAttribute("name")}`
   );
-  const fonts = (globalThis.fonts ?? []).map(font => font.family);
+  const families = fonts.map(font => font.family);
   return [
     "The map style, `styles`: one record by element (map layer, or `map` for the whole map). A node holds `attrs` (SVG attributes), `options` (renderer inputs) and `groups` (named child nodes). Change one value per op: `Styles.setValue(path, value)`.",
     'Paths, types and current values of elements: `read_docs(["Styles: ocean, landmass, labels"])`.',
@@ -74,7 +75,7 @@ export function styleOverview(): string {
       .map(element => `${element} (${layerLabel(element)})`)
       .join(", ")}.`,
     `Filters: "none", CSS functions such as "sepia(0.6) contrast(1.1)", or one of: ${filters.join(", ")}.`,
-    `Fonts: ${fonts.join(", ")}.`,
+    `Fonts: ${families.join(", ")}.`,
     `Textures: ${Object.entries(TEXTURES)
       .map(([href, label]) => `"${href}" (${label})`)
       .join(", ")}.`,

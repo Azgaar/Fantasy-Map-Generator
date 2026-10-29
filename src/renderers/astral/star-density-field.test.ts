@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import type { Burg } from "@/generators/burgs-generator";
+import type { Burg } from "@/model/political/burgs-generator";
 import { buildDensityField } from "./star-density-field";
 
 /** a row of cells along x, spaced 100 apart, each 100 wide */

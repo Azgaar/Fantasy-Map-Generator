@@ -11,7 +11,7 @@ declare const styles: {
   systems: { options: { glow: boolean }; groups: Record<string, { attrs: { fill: string } }> };
 };
 declare const Layers: { isOn(id: string): boolean; hide(...ids: string[]): void };
-declare const pack: import("@/types/PackedGraph").PackedGraph;
+declare const pack: import("@/types/packed-graph").PackedGraph;
 declare const Controllers: {
   AstralMode: { enter: () => Promise<void> };
   AstralSystemEditor: { open: (id: number) => void };

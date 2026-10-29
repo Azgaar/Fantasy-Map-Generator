@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+﻿import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   draw: vi.fn(),
@@ -6,12 +6,10 @@ const mocks = vi.hoisted(() => ({
   tip: vi.fn(),
   dialog: vi.fn()
 }));
-vi.mock("@/components/layers", () => ({ Layers: { draw: mocks.draw } }));
-vi.mock("@/components/tooltips", () => ({ tip: mocks.tip, clearMainTip: vi.fn() }));
-vi.mock("@/components/dialog/dialog-helpers", () => ({
-  confirmationDialog: mocks.dialog,
-  refreshEditors: mocks.refresh
-}));
+vi.mock("@/renderers/layers", () => ({ Layers: { draw: mocks.draw } }));
+vi.mock("@/ui/tooltips", () => ({ tip: mocks.tip, clearMainTip: vi.fn() }));
+vi.mock("@/ui/dialog/dialog", () => ({ Dialog: { confirm: mocks.dialog, message: vi.fn() } }));
+vi.mock("@/ui/dialog/dialog-helpers", () => ({ refreshEditors: mocks.refresh }));
 
 import { AstralNames } from "./astral-names";
 

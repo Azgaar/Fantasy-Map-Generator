@@ -1,6 +1,6 @@
 // The stellar density field: population-weighted system counts spread over land cells, banded for the heatmap
-import type { Burg } from "@/generators/burgs-generator";
-import type { PackedGraph } from "@/types/PackedGraph";
+import type { Burg } from "@/model/political/burgs-generator";
+import type { PackedGraph } from "@/types/packed-graph";
 
 export interface DensityFieldOptions {
   reach: number; // kernel radius, percent of the map's smaller side

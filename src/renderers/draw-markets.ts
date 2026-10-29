@@ -1,11 +1,13 @@
 import { color, curveBasisClosed, line } from "d3";
-import { Icons } from "@/components/icons";
-import { Layers } from "@/components/layers";
+import { Icons } from "@/model/icons";
+import { Layers } from "@/renderers/layers";
 import { boundsIntersect, ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
-import type { PackedGraph } from "@/types/PackedGraph";
-import { rn } from "@/utils/numberUtils";
-import { getIsolines } from "@/utils/pathUtils";
-import { escapeHtml } from "@/utils/stringUtils";
+import type { PackedGraph } from "@/types/packed-graph";
+import { log } from "@/utils/logger";
+import { findEl } from "@/utils/node-utils";
+import { rn } from "@/utils/number-utils";
+import { getIsolines } from "@/utils/path-utils";
+import { escapeHtml } from "@/utils/string-utils";
 
 type Bounds = Omit<ViewportRenderContext["bounds"], "scale">;
 
@@ -15,10 +17,10 @@ let sourcePack: PackedGraph | null = null;
 let sourceMarkets: Uint16Array | null = null;
 
 export function drawMarkets(): void {
-  TIME && console.time("drawMarkets");
+  log.time("drawMarkets");
   buildTerritories();
   layer.render();
-  TIME && console.timeEnd("drawMarkets");
+  log.timeEnd("drawMarkets");
 }
 
 function buildTerritories(): void {
@@ -50,7 +52,7 @@ export function removeMarkets(): void {
   sourcePack = null;
   sourceMarkets = null;
   territories.clear();
-  document.getElementById("markets")?.replaceChildren();
+  findEl("markets")?.replaceChildren();
 }
 
 function reconcileMarkets({ root, bounds }: ViewportRenderContext): void {

@@ -93,7 +93,7 @@ gain the set and are renumbered from 1 in every set: colored `mount-2..7` → `m
 `hill-1..4`, `dune-2` → `dune-1`, `deciduous-2,3` → `deciduous-1,2`, `conifer/acacia/palm/grass-2` →
 `-1`, `swamp-2,3` → `swamp-1,2`. The other types already start at 1.
 
-No per-set index module: `components/icon-sets.ts` globs every SVG with
+No per-set index module: `model/icon-sets.ts` globs every SVG with
 `import.meta.glob("@/assets/icons/**/*.svg", { query: "?raw", import: "default" })` and a
 `manualChunks` rule in `vite.config.ts` groups the per-file lazy loaders into one chunk per set (a relief
 set is a subdirectory, every other family one directory). The set definitions come from the models, so
@@ -116,7 +116,7 @@ a new relief set is a directory plus one name in `Relief.sets` — no second lis
   artwork, so the registry carries no size override. Shrink the `100 × 100` viewBox by `1.2` around
   its center `(50, 50)`. The migration below compensates existing instances to preserve their appearance.
 
-### Model (`src/generators/relief-generator.ts`)
+### Model (`src/model/physical/relief-generator.ts`)
 
 The model is one class, `ReliefModel`, instantiated on the `Relief` global like `Goods`, `Markets` and
 `Production`; callers use that global and do not import the class. Nothing hangs off the module as a
@@ -205,7 +205,7 @@ name-to-name map is stored in the catalog. `src/data/burg-icons.ts` is deleted: 
 the catalog, `Burgs.iconSets` declares the `burgs` and `ports` sets, and the pickers list
 `IconSets.files(set)`.
 
-### Definitions and loader (`src/types/icons.ts`, `src/components/icon-sets.ts`)
+### Definitions and loader (`src/types/icons.ts`, `src/model/icon-sets.ts`)
 
 Every set is one `IconSet`, and the model that draws it owns it; the loader is family-agnostic:
 

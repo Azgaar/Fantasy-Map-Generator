@@ -42,8 +42,8 @@ function save(history: History | undefined): { record53: string; records: string
 
 describe("the epochs save format", () => {
   it("reserves the planned records", () => {
-    expect(HISTORY_RECORD).toBe(53);
-    expect(FIRST_SNAPSHOT_RECORD).toBe(54);
+    expect(HISTORY_RECORD).toBe(54);
+    expect(FIRST_SNAPSHOT_RECORD).toBe(55);
   });
 
   it("round-trips epochs, polities and snapshots through the map records", () => {

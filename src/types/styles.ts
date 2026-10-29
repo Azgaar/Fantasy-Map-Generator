@@ -1,6 +1,6 @@
 import type { z } from "zod";
-import type { LayerId } from "@/components/layers";
-import type { stylesSchema } from "@/generators/styles-schema";
+import type { stylesSchema } from "@/model/styles/styles-schema";
+import type { LayerId } from "@/renderers/layers";
 
 /** The controls the form engine ships; a caller registers more under its own names */
 export type StandardControl = "checkbox" | "select" | "slider" | "number" | "text" | "color" | "percent" | "px";
@@ -8,7 +8,7 @@ export type StandardControl = "checkbox" | "select" | "slider" | "number" | "tex
 /** How a schema field is edited, registered on the zod node */
 export type FieldMeta<Control extends string = StandardControl> = {
   control?: Control; // overrides the derived control
-  label?: string; // default: key → sentence case ("stroke-width" → "Stroke width")
+  label?: string; // default: the key; the styles schema labels every field it shows
   tip?: string; // the row's data-tip
   step?: number; // sliders; default 1 for int, 0.01 for a range ≤ 2, else 0.1
   range?: [number, number]; // slider bounds for a number the schema leaves unbounded; widened to hold the stored value
@@ -20,9 +20,7 @@ export type FieldMeta<Control extends string = StandardControl> = {
   group?: string; // a caption over the consecutive fields sharing it; their labels read under it ("Stroke" → "Width")
 };
 
-// --- the style form (src/generators/styles-schema.ts) -------------------------------------------------
-
-/** The controls the style editor registers over the standard ones (src/controllers/style-editor/controls.ts) */
+/** The controls the style editor registers over the standard ones (src/controllers/style/controls.ts) */
 export type StyleControl =
   | StandardControl
   | "filter"
@@ -36,7 +34,7 @@ export type StyleControl =
   | "icon";
 
 /** What the style editor runs after a value changes; set on a field or on a whole node, the nearest wins.
- * Unset: an attr is written to its element, an option redraws the layer (src/controllers/style-editor/effects.ts) */
+ * Unset: an attr is written to its element, an option redraws the layer (src/controllers/style/effects.ts) */
 export type StyleEffect =
   | "write" // the one attr onto its element, nothing redrawn
   | "draw" // redraw the element's layer; an attr is written first
@@ -53,8 +51,6 @@ export type StyleElement = keyof StylesData;
 
 /** The bags every style node may carry; reserved, so a group name may never be one of them */
 export const NODE_KEYS: ReadonlySet<string> = new Set(["attrs", "options", "groups"]);
-
-// --- the editor (src/controllers/style-editor) --------------------------------------------------------
 
 /** What the Style tab shows: an element, its group when it has a record of them, and the layer it is drawn on */
 export type StyleSelection = { element: StyleElement; group?: string; layer?: LayerId };

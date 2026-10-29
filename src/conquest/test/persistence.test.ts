@@ -3,6 +3,10 @@
 // campaign survive a browser restart.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Command } from "@/conquest/engine/game/commandTypes";
+
+const { dbMock } = vi.hoisted(() => ({ dbMock: { get: vi.fn(), set: vi.fn() } }));
+vi.mock("@/services/local-db", () => ({ LocalDB: dbMock }));
+
 import { campaignSlotOf, getSlot, SLOT_VERSION, setSlot } from "@/conquest/store/mod-slot";
 
 const MAP_ID = 42;
@@ -18,11 +22,9 @@ const campaign = campaignSlotOf(
 
 beforeEach(() => {
   store = new Map();
-  vi.stubGlobal("ldb", {
-    get: vi.fn(async (key: string) => store.get(key)),
-    set: vi.fn(async (key: string, value: string) => {
-      store.set(key, value);
-    })
+  dbMock.get.mockImplementation(async (key: string) => store.get(key) ?? null);
+  dbMock.set.mockImplementation(async (key: string, value: string) => {
+    store.set(key, value);
   });
   vi.stubGlobal("Layers", { state: { active: ["states", "military", "twArmies"] } });
   vi.stubGlobal("mapHistory", [{ created: MAP_ID }]);

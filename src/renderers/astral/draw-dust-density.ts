@@ -1,6 +1,6 @@
-// Dust density: elevation bands over the sector — the chart's read of where the dust is thick
-import type { Layer } from "@/components/layers";
-import { getIsolines } from "@/utils/pathUtils";
+﻿// Dust density: elevation bands over the sector â€” the chart's read of where the dust is thick
+import type { Layer } from "@/renderers/layers";
+import { getIsolines } from "@/utils/path-utils";
 import { buildDustBands } from "./dust-bands";
 
 const BANDS = 6; // fixed band groups declared in the layer registry

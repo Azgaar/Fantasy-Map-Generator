@@ -1,0 +1,262 @@
+// Tools tab: buttons dispatch the same commands as global search.
+import { MAP_COMMANDS } from "@/app/map-commands";
+import { isAstralView, subscribeAstralView } from "@/renderers/view-mode";
+import { tip } from "@/ui/tooltips";
+import { sentences, t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/node-utils";
+
+const TEMPLATE = /* html */ `
+  <div class="separator">${t("Edit")}</div>
+  <div class="grid">
+    <button id="editBiomesButton" data-tip="${t("Biomes Editor")}" data-shortcut="Shift + B">
+      ${t("Biomes")}
+    </button>
+    <button id="overviewBurgsButton" data-tip="${t("Burgs Overview")}" data-shortcut="Shift + T">
+      ${t("Burgs")}
+    </button>
+    <button
+      id="editCoastlineSettings"
+      data-tip="${t("Coastline Settings")}"
+    >
+      ${t("Coastlines")}
+    </button>
+    <button id="editCulturesButton" data-tip="${t("Cultures Editor")}" data-shortcut="Shift + C">
+      ${t("Cultures")}
+    </button>
+    <button
+      id="editDiplomacyButton"
+      data-tip="${t("Diplomacy Overview")}"
+      data-shortcut="Shift + D"
+    >
+      ${t("Diplomacy")}
+    </button>
+    <button id="editEmblemButton" data-tip="${t("Edit Emblem")}" data-shortcut="Shift + Y">
+      ${t("Emblems")}
+    </button>
+    <button id="overviewFeaturesButton" data-tip="${t("Geographical Features Overview")}" data-shortcut="Shift + F">
+      ${t("Features")}
+    </button>
+    <button id="editGoods" data-tip="${t("Goods Editor")}" data-shortcut="Shift + G">${t("Goods")}</button>
+    <button
+      id="editHeightmapButton"
+      data-tip="${t("Click to open Heightmap customization menu")}"
+      data-shortcut="Shift + H"
+    >
+      ${t("Heightmap")}
+    </button>
+    <button id="overviewMarkersButton" data-tip="${t("Markers Overview")}" data-shortcut="Shift + K">
+      ${t("Markers")}
+    </button>
+    <button id="overviewMarketsButton" data-tip="${t("Markets Overview")}">
+      ${t("Markets")}
+    </button>
+    <button id="editMeasurersButton" data-tip="${t("Measurers Editor")}" data-shortcut="Shift + =">
+      ${t("Measurers")}
+    </button>
+    <button id="overviewLabelsButton" data-tip="${t("Labels Overview")}" data-shortcut="Shift + L">
+      ${t("Labels")}
+    </button>
+    <button
+      id="overviewMilitaryButton"
+      data-tip="${t("Military Overview")}"
+      data-shortcut="Shift + M"
+    >
+      ${t("Military")}
+    </button>
+    <button id="editNamesBaseButton" data-tip="${t("Namesbase Editor")}" data-shortcut="Shift + N">
+      ${t("Namesbase")}
+    </button>
+    <button id="editNotesButton" data-tip="${t("Notes Editor")}" data-shortcut="Shift + O">${t("Notes")}</button>
+    <button id="editProvincesButton" data-tip="${t("Provinces Editor")}" data-shortcut="Shift + P">
+      ${t("Provinces")}
+    </button>
+    <button id="editReligions" data-tip="${t("Religions Editor")}" data-shortcut="Shift + R">
+      ${t("Religions")}
+    </button>
+    <button id="overviewRiversButton" data-tip="${t("Rivers Overview")}" data-shortcut="Shift + V">
+      ${t("Rivers")}
+    </button>
+    <button id="overviewRoutesButton" data-tip="${t("Routes Overview")}" data-shortcut="Shift + U">
+      ${t("Routes")}
+    </button>
+    <button id="overviewJourneysButton" data-tip="${t("Journeys Overview")}" data-shortcut="Shift + J">
+      ${t("Journeys")}
+    </button>
+    <button id="openLegendsBrowser" data-tip="${t("Click to open the Legends browser: the map's chronicle")}">
+      ${t("Legends")}
+    </button>
+    <button id="applyAstralNaming" class="astral-only" data-tip="${t("Click to give the polities their own words and the provinces their sectors")}">
+      ${t("Astral Names")}
+    </button>
+    <button id="convertAstralAnomalies" class="astral-only" data-tip="${t("Click to rewrite the markers' legends and icons in the astral register")}">
+      ${t("Astral Anomalies")}
+    </button>
+    <button id="openStarSystems" class="astral-only" data-tip="${t("Click to open the Star Systems overview")}">
+      ${t("Star Systems")}
+    </button>
+    <button id="editStatesButton" data-tip="${t("States Editor")}" data-shortcut="Shift + S">
+      ${t("States")}
+    </button>
+    <button id="editTradeAnimationButton" data-tip="${t("Trade Animation Editor")}">
+      ${t("Trade")}
+    </button>
+    <button id="editUnitsButton" data-tip="${t("Units Editor")}" data-shortcut="Shift + Q">${t("Units")}</button>
+    <button id="editZonesButton" data-tip="${t("Zones Editor")}" data-shortcut="Shift + Z">${t("Zones")}</button>
+  </div>
+  <div class="separator">${t("Regenerate")}</div>
+  <div id="regenerateFeature" class="grid">
+    <button
+      id="regenerateBurgs"
+      data-tip="${sentences(t("Click to regenerate all unlocked burgs and routes"), t("States will remain as they are"), t("Note: burgs are only generated in populated areas with culture assigned"))}"
+    >
+      ${t("Burgs")}
+    </button>
+    <button id="regenerateCultures" data-tip="${t("Click to regenerate non-locked cultures")}">${t("Cultures")}</button>
+    <button
+      id="regenerateEconomy"
+      data-tip="${t("Rebuild market territories, production, trade deals, and taxes from the current goods and markets")}"
+    >
+      ${t("Economy")}
+    </button>
+    <button id="regenerateEmblems" data-tip="${t("Click to regenerate all emblems")}">${t("Emblems")}</button>
+    <button id="regenerateGoods" data-tip="${t("Regenerate bonus goods placement")}">${t("Goods")}</button>
+    <button id="regenerateHistory" data-tip="${t("Regenerate the chronicle: events, eras and figures. Required after changing the history mode in Set Lore")}">
+      ${t("History")}
+    </button>
+    <button id="regenerateIce" data-tip="${t("Click to regenerate icebergs and glaciers")}">${t("Ice")}</button>
+    <button
+      id="regenerateStateLabels"
+      data-tip="${t("Click to update state labels placement based on current borders")}"
+    >
+      ${t("State Labels")}
+    </button>
+    <button id="regenerateMarkers" data-tip="${t("Click to configure markers generation and regenerate unlocked markers")}">
+      ${t("Markers")}
+    </button>
+    <button id="regenerateMarkets" data-tip="${t("Regenerate markets and their territories")}">
+      ${t("Markets")}
+    </button>
+    <button
+      id="regenerateMilitary"
+      data-tip="${t("Recalculate military forces based on current options")}"
+    >
+      ${t("Military")}
+    </button>
+    <button id="regeneratePopulation" data-tip="${t("Click to recalculate rural and urban population")}">
+      ${t("Population")}
+    </button>
+    <button
+      id="regenerateProduction"
+      data-tip="${t("Regenerate production and trade deals")}"
+    >
+      ${t("Production")}
+    </button>
+    <button
+      id="regenerateProvinces"
+      data-tip="${sentences(t("Click to select states and regenerate their non-locked provinces"), t("States will remain as they are"))}"
+    >
+      ${t("Provinces")}
+    </button>
+    <button
+      id="regenerateReliefIcons"
+      data-tip="${t("Click to regenerate all relief icons based on current cell biome and elevation")}"
+    >
+      ${t("Relief")}
+    </button>
+    <button id="regenerateReligions" data-tip="${t("Click to regenerate non-locked religions")}">${t("Religions")}</button>
+    <button id="regenerateRivers" data-tip="${t("Click to regenerate all rivers (restore default state)")}">
+      ${t("Rivers")}
+    </button>
+    <button id="regenerateRoutes" data-tip="${t("Click to regenerate all unlocked routes")}">${t("Routes")}</button>
+    <button
+      id="regenerateStates"
+      data-tip="${t("Click to regenerate non-locked states. Emblems and military forces will be regenerated as well, burgs will remain as they are, but capitals will be different")}"
+    >
+      ${t("States")}
+    </button>
+    <button
+      id="regenerateZones"
+      data-tip="${t("Click to regenerate zones. Hold Ctrl and click to set zones number multiplier")}"
+    >
+      ${t("Zones")}
+    </button>
+  </div>
+  <div class="separator">${t("Add")}</div>
+  <div id="addFeature" class="grid">
+    <button
+      id="addBurgTool"
+      data-tip="${sentences(t("Click on map to place a burg"), t("Hold Shift to add multiple"))}"
+      data-shortcut="Shift + 1"
+    >
+      ${t("Burg")}
+    </button>
+    <button
+      id="addLabel"
+      data-tip="${sentences(t("Click on map to place label"), t("Hold Shift to add multiple"))}"
+      data-shortcut="Shift + 2"
+    >
+      ${t("Label")}
+    </button>
+    <button
+      id="addMarker"
+      data-tip="${sentences(t("Click on map to place a marker"), t("Hold Shift to add multiple"))}"
+      data-shortcut="Shift + 3"
+    >
+      ${t("Marker")}
+    </button>
+    <input type="hidden" id="addedMarkerType" name="addedMarkerType" value="" />
+    <button
+      id="addRiver"
+      data-tip="${sentences(t("Click on map to place a river"), t("Hold Shift to add multiple"))}"
+      data-shortcut="Shift + 4"
+    >
+      ${t("River")}
+    </button>
+    <button id="addRoute" data-tip="${t("Open route creation dialog")}" data-shortcut="Shift + 5">${t("Route")}</button>
+  </div>
+  <div class="separator">${t("Show")}</div>
+  <div class="grid">
+    <button id="overviewCellsButton" data-tip="${t("Cell Details")}" data-shortcut="Shift + E">
+      ${t("Cells")}
+    </button>
+    <button
+      id="overviewChartsButton"
+      data-tip="${t("Data Charts")}"
+      data-shortcut="Shift + A"
+    >
+      ${t("Charts")}
+    </button>
+    <button id="openLivingWorld" data-tip="${t("Click to open the Living World HUD, inspector and god-mode controls")}">
+      ${t("Living World")}
+    </button>
+    <button id="openMinimapButton" data-tip="${t("Click to open minimap overview. Click minimap to center view")}">
+      ${t("Minimap")}
+    </button>
+  </div>
+  <div class="separator">${t("Create")}</div>
+  <div class="grid">
+    <button id="openSubmapTool" data-tip="${t("Click to generate a submap from the current viewport")}">${t("Submap")}</button>
+    <button id="openTransformTool" data-tip="${t("Click to transform the map")}">${t("Transform")}</button>
+    <button id="openWrapTool" data-tip="${t("Adjust cell shapes with a brush")}">${t("Wrap")}</button>
+  </div>
+`;
+
+ensureEl("toolsContent").innerHTML = TEMPLATE;
+
+function syncAstralVisibility(): void {
+  const astral = isAstralView();
+  document.querySelectorAll("#toolsContent .astral-only").forEach(el => {
+    (el as HTMLElement).hidden = !astral;
+  });
+}
+
+syncAstralVisibility();
+subscribeAstralView(syncAstralVisibility);
+
+ensureEl("toolsContent").addEventListener("click", event => {
+  if (options.app.mode) return tip(t("Exit customization mode first"), false, "error");
+  if (!(event instanceof MouseEvent) || !(event.target instanceof HTMLElement)) return;
+  if (event.target.tagName !== "BUTTON") return;
+  const command = MAP_COMMANDS.find(command => command.id === (event.target as HTMLElement).id);
+  if (command) void command.run(event);
+});

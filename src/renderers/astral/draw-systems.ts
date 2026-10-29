@@ -1,10 +1,10 @@
-// Star systems: one class-coloured marker per burg, drawn as a viewport layer like the burg icons
-import { Layers } from "@/components/layers";
-import { zoomFontSize } from "@/components/viewport";
-import { type StarSystem, systemsOf } from "@/generators/astral-naming";
+﻿// Star systems: one class-coloured marker per burg, drawn as a viewport layer like the burg icons
+import { Layers } from "@/renderers/layers";
+import { zoomFontSize } from "@/renderers/viewport/viewport";
+import { type StarSystem, systemsOf } from "@/model/physical/astral-naming";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
 import type { StylesData } from "@/types/styles";
-import { rn } from "@/utils/numberUtils";
+import { rn } from "@/utils/number-utils";
 import { groupByClass, STAR_CLASSES, type StarClassId, starShape, writeAttrs } from "./system-markers";
 
 const layer = ViewportLayers.register({ id: "systems", render: reconcileSystems });

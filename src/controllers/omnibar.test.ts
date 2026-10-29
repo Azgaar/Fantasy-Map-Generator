@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   open: vi.fn(),
+  ask: vi.fn(),
   highlight: vi.fn(),
   highlightArea: vi.fn(),
   show: vi.fn(),
@@ -11,38 +12,46 @@ const mocks = vi.hoisted(() => ({
   labels: vi.fn(() => []),
   tip: vi.fn()
 }));
-vi.mock("@/components/layers", () => ({
+vi.mock("@/renderers/layers", () => ({
   Layers: { draw: vi.fn(), show: mocks.show, toggle: mocks.toggle, has: () => true, isOn: () => false }
 }));
-vi.mock("@/components/options/tabs/layers-tab", () => ({
-  LAYER_TOGGLES: new Map([["rivers", { label: "Ri<u>v</u>ers" }]]),
+vi.mock("@/app/chrome/tabs/layers-tab", () => ({
+  LAYER_TOGGLES: new Map([["rivers", { label: "Rivers" }]]),
   LAYER_PRESETS: {}
 }));
-vi.mock("@/components/app-info", () => ({ showInfo: vi.fn() }));
-vi.mock("@/components/layers-presets", () => ({ applyPreset: vi.fn(), savePreset: vi.fn() }));
-vi.mock("@/components/lifecycle", () => ({ regeneratePrompt: vi.fn() }));
-vi.mock("@/components/options/io-panes", () => ({}));
-vi.mock("@/components/options/options-panel", () => ({ openTab: vi.fn(), toggleOptions: vi.fn() }));
-vi.mock("@/components/seed", () => ({ showSeedHistoryDialog: vi.fn() }));
+vi.mock("@/app/chrome/app-info", () => ({ showInfo: vi.fn() }));
+vi.mock("@/app/layers-presets", () => ({ applyPreset: vi.fn(), savePreset: vi.fn() }));
+vi.mock("@/app/lifecycle", () => ({ regeneratePrompt: vi.fn() }));
+vi.mock("@/app/chrome/io-panes", () => ({}));
+vi.mock("@/app/chrome/options-panel", () => ({ openTab: vi.fn(), toggleOptions: vi.fn() }));
+vi.mock("@/app/seed", () => ({ showSeedHistoryDialog: vi.fn() }));
 vi.mock("@/services", () => ({ Services: {} }));
 vi.mock("@/services/autosave", () => ({ toggleSaveReminder: vi.fn() }));
 vi.mock("@/services/url-params", () => ({ copyMapURL: vi.fn() }));
 vi.mock("@/services/versioning", () => ({ cleanupData: vi.fn() }));
-vi.mock("@/renderers/overlays/highlight", () => ({
+vi.mock("@/ui/map/highlight", () => ({
   highlightElement: mocks.highlight,
   highlightArea: mocks.highlightArea
 }));
-vi.mock("@/components/zoom", () => ({ zoomTo: mocks.zoom }));
-vi.mock("@/components/viewport", () => ({ viewport: { width: 1000, height: 800, scale: 1 } }));
+vi.mock("@/ui/map/zoom", () => ({ zoomTo: mocks.zoom }));
+vi.mock("@/renderers/viewport/viewport", () => ({ viewport: { width: 1000, height: 800, scale: 1 } }));
 vi.mock("@/renderers/labels/label-data", () => ({ getLabelsIndex: mocks.labels }));
-vi.mock("@/components/dialog/dialog-helpers", () => ({ refreshEditors: vi.fn() }));
-vi.mock("@/components/tooltips", () => ({ tip: mocks.tip }));
+vi.mock("@/ui/dialog/dialog-helpers", () => ({ refreshEditors: vi.fn() }));
+vi.mock("@/ui/tooltips", () => ({ tip: mocks.tip, loadingTip: { start: vi.fn(), end: vi.fn() } }));
 vi.mock("@/controllers", () => ({
-  Controllers: new Proxy({}, { get: () => ({ open: mocks.open, toggle: mocks.open, openDefault: mocks.open }) })
+  Controllers: new Proxy(
+    {},
+    { get: () => ({ open: mocks.open, toggle: mocks.open, openDefault: mocks.open, ask: mocks.ask }) }
+  )
 }));
 
-import { MAP_COMMANDS } from "@/components/map-commands";
+import { isLinkable, MAP_COMMANDS } from "@/app/map-commands";
+import { Routes } from "@/model/economy/routes-generator";
+import { Rivers } from "@/model/physical/river-generator";
+import { bindApp } from "@/ui/app-commands";
 import { Omnibar } from "./omnibar";
+
+bindApp({ mapCommands: MAP_COMMANDS, isLinkable } as Parameters<typeof bindApp>[0]);
 
 function input(): HTMLInputElement {
   return document.querySelector<HTMLInputElement>("#omnibar-input")!;
@@ -70,7 +79,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.open.mockResolvedValue(undefined);
   mocks.labels.mockReturnValue([]);
-  globalThis.customization = 0;
+  options.app.mode = null;
   globalThis.pack = {
     cells: {
       i: [0, 1],
@@ -197,7 +206,15 @@ describe("Omnibar public behavior", () => {
     expect(rows()).toHaveLength(1);
     key("Enter");
     await vi.runAllTimersAsync();
+    expect(mocks.ask).toHaveBeenCalledExactlyOnceWith("How do I add a river?");
+    expect(mocks.open).not.toHaveBeenCalled();
+
+    Omnibar.open();
+    search("assistant");
+    key("Enter");
+    await vi.runAllTimersAsync();
     expect(mocks.open).toHaveBeenCalledOnce();
+    expect(mocks.ask).toHaveBeenCalledOnce();
   });
 
   it("shows the river basin name instead of an internal ID", () => {
@@ -230,7 +247,7 @@ describe("Omnibar public behavior", () => {
   });
 
   it("keeps disabled commands visible without activating them", () => {
-    globalThis.customization = 1;
+    options.app.mode = "heightmap";
     Omnibar.open();
     search("> add burg");
     expect(rows()[0].getAttribute("aria-disabled")).toBe("true");
@@ -242,7 +259,8 @@ describe("Omnibar public behavior", () => {
 
   it("calls generation directly and remembers only command IDs", async () => {
     const action = vi.fn();
-    vi.stubGlobal("Rivers", { regenerate: action });
+    Object.assign(Rivers, { regenerate: action });
+    Object.assign(Routes, { sync: () => {} });
     sessionStorage.setItem("regenerateFeatureDontAsk", "true");
     document.getElementById("regenerateRivers")!.remove();
     Omnibar.open();
@@ -252,7 +270,7 @@ describe("Omnibar public behavior", () => {
     expect(JSON.parse(localStorage.getItem("fmg-omnibar-history")!)).toEqual(["regenerateRivers"]);
     Omnibar.open();
     expect(input().value).toBe("");
-    expect(rows()[0].textContent).toContain("Regenerate Rivers");
+    expect(rows()[0].textContent).toContain("Regenerate: Rivers");
   });
 
   it("runs creation commands without a corresponding button", async () => {
@@ -337,7 +355,9 @@ describe("Omnibar public behavior", () => {
 
     Omnibar.open();
     search("Silverwater");
-    expect(rows()[0].querySelector(".omnibar-detail")?.textContent).toBe(`${type} · Freshwater`);
+    expect(rows()[0].querySelector(".omnibar-detail")?.textContent).toBe(
+      `${type === "lake" ? "Lake" : "Island"} · Freshwater`
+    );
     key("Enter");
     expect(mocks.show).toHaveBeenCalledWith(type === "lake" ? "lakes" : "coastline");
     expect(mocks.zoom).toHaveBeenCalledWith(30, 40, 3, 1500);
@@ -454,7 +474,7 @@ describe("Omnibar public behavior", () => {
     Omnibar.open();
     search("burg");
     expect(rows()).toHaveLength(50);
-    expect(document.getElementById("omnibar-status")?.textContent).toMatch(/^50 of \d+ results/);
+    expect(document.getElementById("omnibar-status")?.textContent).toMatch(/^Results: 50 of \d+ /);
   });
 
   it("keeps the browser's save dialog and help keys out while it is open", () => {

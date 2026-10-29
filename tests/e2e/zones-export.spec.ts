@@ -2,15 +2,7 @@ import { test, expect } from "@playwright/test";
 import { waitForMap } from "./wait-for-map";
 
 test.describe("Zone Export", () => {
-  test.beforeEach(async ({ context, page }) => {
-    await context.clearCookies();
-
-    await page.goto("/");
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-
+  test.beforeEach(async ({ page }) => {
     // Navigate with seed parameter and wait for full load
     await page.goto("/?seed=test-zones-export&width=1280&height=720");
 
@@ -97,7 +89,7 @@ test.describe("Zone Export", () => {
 
     // Call the production code (loaded on demand via the service registry)
     await page.evaluate(async () => {
-      await (window as any).Services.ExportMap.saveGeoJsonZones();
+      await (window as any).FMG.Services.ExportMap.saveGeoJsonZones();
     });
 
     const download = await downloadPromise;

@@ -1,13 +1,13 @@
-// Enter and leave the Astral view: swap the layer profile and, when available, the chart style
-import { Layers, type LayersState } from "@/components/layers";
-import { is3dView, isAstralView, setAstralView } from "@/components/options/view-mode";
-import { Options } from "@/components/options-model";
-import { applyPerformanceSettings, setHaloOwnedByBorders } from "@/components/performance";
-import { tip } from "@/components/tooltips";
-import { invokeActiveZooming } from "@/components/zoom";
+﻿// Enter and leave the Astral view: swap the layer profile and, when available, the chart style
+import { Layers, type LayersState } from "@/renderers/layers";
+import { is3dView, isAstralView, setAstralView } from "@/renderers/view-mode";
+import { Options } from "@/model/options/options-model";
+import { applyPerformanceSettings, setHaloOwnedByBorders } from "@/renderers/performance";
+import { tip } from "@/ui/tooltips";
+import { invokeActiveZooming } from "@/ui/map/zoom";
 import { Controllers } from "@/controllers";
 import { ASTRAL_DEFAULT_PRESET, ASTRAL_PRESETS } from "@/data/astral-layers";
-import { groupsOf } from "@/generators/astral-naming";
+import { groupsOf } from "@/model/physical/astral-naming";
 import { StylePresetsService } from "@/services/style-presets";
 import type { StylesData } from "@/types/styles";
 import { findEl } from "@/utils";
@@ -107,7 +107,7 @@ async function applyStyle(styles: unknown, current: number): Promise<void> {
 
 async function enter(): Promise<void> {
   if (isAstralView()) return;
-  if (customization) return void tip("Finish editing before entering Astral view", false, "error");
+  if (options.app.mode) return void tip("Finish editing before entering Astral view", false, "error");
   if (is3dView()) await Controllers.View3d.enterStandard();
 
   const styled = StylePresetsService.isSystem("astral");

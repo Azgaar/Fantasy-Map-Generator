@@ -10,7 +10,7 @@ test("every style element and group renders a complete form", async ({ page }) =
 
   await page.goto("/?seed=style-editor-coverage&width=1280&height=720");
   await waitForMap(page);
-  await page.evaluate(() => (window as any).showOptions());
+  await page.evaluate(() => document.getElementById("optionsTrigger")!.click());
   await page.locator("#styleTab").click();
   await page.locator("#styleForm .row").first().waitFor();
 

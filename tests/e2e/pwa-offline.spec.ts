@@ -73,7 +73,7 @@ test.describe("PWA offline", () => {
     await context.setOffline(true);
     await page.evaluate(() => window.dispatchEvent(new Event("vite:preloadError")));
 
-    await expect(page.locator(".ui-dialog-title", { hasText: "offline" })).toBeVisible();
+    await expect(page.locator(".dialog-title", { hasText: "offline" })).toBeVisible();
     await expect(page.getByText("New version released")).toHaveCount(0);
   });
 });

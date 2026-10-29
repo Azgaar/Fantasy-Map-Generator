@@ -1,5 +1,5 @@
-// Astral view profiles: which layers the star chart shows. See docs/plans/astral-ui-overhaul.md
-import type { LayerId } from "@/components/layers";
+﻿// Astral view profiles: which layers the star chart shows. See docs/plans/astral-ui-overhaul.md
+import type { LayerId } from "@/renderers/layers";
 
 export interface AstralPreset {
   name: string;

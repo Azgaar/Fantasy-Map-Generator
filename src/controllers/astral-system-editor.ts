@@ -1,27 +1,25 @@
-// The System Editor: a burg read as a star system, edited in the astral vocabulary. Every write goes
+﻿// The System Editor: a burg read as a star system, edited in the astral vocabulary. Every write goes
 // through the Burgs model, so the world stays one world; the spectral class stays a readout derived
-// from population. The generated star/planet readout is a pure calculation opened with the dialog —
+// from population. The generated star/planet readout is a pure calculation opened with the dialog â€”
 // see docs/plans/astral-system-dialog.md and docs/plans/astral-system-details.md
 import { select } from "d3";
-import {
-  alertDialog,
-  closeDialogs,
-  confirmationDialog,
-  destroyDialog,
-  noteButton
-} from "@/components/dialog/dialog-helpers";
-import { Layers } from "@/components/layers";
-import { clearMainTip, tip } from "@/components/tooltips";
-import { applyDefaultViewboxEvents } from "@/components/viewbox-events";
 import { Controllers } from "@/controllers";
-import { peopleOf, starClassFor } from "@/generators/astral-naming";
-import { type SystemDetails, systemDetailsFor } from "@/generators/astral-system";
-import type { Market } from "@/generators/markets-generator";
+import { Markets, type Market } from "@/model/economy/markets-generator";
+import { peopleOf, starClassFor } from "@/model/physical/astral-naming";
+import { type SystemDetails, systemDetailsFor } from "@/model/physical/astral-system";
+import { Burgs } from "@/model/political/burgs-generator";
+import { Names } from "@/model/society/names-generator";
 import { type StarClassId, starShape, writeAttrs } from "@/renderers/astral/system-markers";
 import { removeEmblem } from "@/renderers/draw-emblems";
+import { Layers } from "@/renderers/layers";
 import type { StylesData } from "@/types/styles";
+import { Dialog } from "@/ui/dialog/dialog";
+import { noteButton } from "@/ui/dialog/dialog-helpers";
+import { applyDefaultViewboxEvents } from "@/ui/map/viewbox-events";
+import { zoomTo } from "@/ui/map/zoom";
+import { clearMainTip, tip } from "@/ui/tooltips";
 import { ensureEl, escapeHtml, getPointer, rand, rn, speak } from "@/utils";
-import { errorText } from "@/utils/stringUtils";
+import { errorText } from "@/utils/string-utils";
 
 type ClassStyle = StylesData["systems"]["groups"][StarClassId];
 type Feature = "capital" | "port" | "citadel" | "walls" | "plaza" | "temple" | "shanty";
@@ -31,10 +29,10 @@ let selectedId: number | null = null;
 let isCellsLayerForced = false; // the cells layer is turned on for the relocation mode
 
 function open(id: number | string): void {
-  if (customization) return;
+  if (options.app.mode) return;
   const burg = pack.burgs[+id];
   if (!burg || burg.removed) return;
-  closeDialogs(".stable");
+  Dialog.closeAll(".stable");
   Layers.show("systems", "labels");
 
   selectedId = +id;
@@ -42,16 +40,16 @@ function open(id: number | string): void {
   ensureEl("astralSystemEditor").dataset.entity = `burg:${selectedId}`;
   updateSystemValues();
 
-  $("#astralSystemEditor").dialog({
+  Dialog.open("astralSystemEditor", {
     title: "Edit System",
     resizable: false,
-    close: closeSystemEditor,
-    position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" }
+    onClose: closeSystemEditor,
+    position: { my: "left top", at: "left+10 top+10", of: "svg" }
   });
 }
 
 function renderDialog(): void {
-  destroyDialog("astralSystemEditor");
+  Dialog.destroy("astralSystemEditor");
   const editorHtml = /* html */ `<div id="astralSystemEditor" class="dialog">
       <div id="astralSystemBody" style="padding-bottom: 0.3em">
         <div style="display: flex; align-items: center">
@@ -69,7 +67,7 @@ function renderDialog(): void {
             <div>
               <div class="label">Name:</div>
               <input id="systemName" data-tip="Type to rename the system" autocorrect="off" spellcheck="false" style="width: 9em" />
-              <span id="systemNameSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">🔊</span>
+              <span id="systemNameSpeak" data-tip="Speak the name. You can change voice and language in options" class="speaker">ðŸ”Š</span>
               <span id="systemNameReRandom" data-tip="Generate random name for the system" class="icon-globe pointer"></span>
               <span id="systemNameReCulture" data-tip="Generate people-specific name for the system" class="icon-book pointer"></span>
             </div>
@@ -101,7 +99,7 @@ function renderDialog(): void {
             </div>
             <div data-tip="Set treasury balance">
               <div class="label"><label for="systemTreasury">Treasury:</label></div>
-              <input id="systemTreasury" type="number" step="0.01" style="width: 9em" /> 🟡
+              <input id="systemTreasury" type="number" step="0.01" style="width: 9em" /> ðŸŸ¡
             </div>
           </div>
         </div>
@@ -116,8 +114,8 @@ function renderDialog(): void {
             <tr style="opacity: 0.75; border-bottom: 1px solid rgba(0, 0, 0, 0.08)">
               <th style="text-align: left">Star</th>
               <th style="text-align: left">Class</th>
-              <th style="text-align: right">Mass (M☉)</th>
-              <th style="text-align: right">Lum (L☉)</th>
+              <th style="text-align: right">Mass (Mâ˜‰)</th>
+              <th style="text-align: right">Lum (Lâ˜‰)</th>
               <th style="text-align: right">Separation (AU)</th>
               <th style="text-align: right">Period (yr)</th>
             </tr>
@@ -133,7 +131,7 @@ function renderDialog(): void {
                 <th style="text-align: left">Planet</th>
                 <th style="text-align: left">Type</th>
                 <th style="text-align: right">Orbit (AU)</th>
-                <th style="text-align: right">Radius (R⊕)</th>
+                <th style="text-align: right">Radius (RâŠ•)</th>
                 <th style="text-align: right">Gravity (g)</th>
                 <th style="text-align: left">Temp</th>
                 <th style="text-align: left">Atmosphere</th>
@@ -215,7 +213,7 @@ function updateSystemValues(): void {
 
   ensureEl<HTMLInputElement>("systemPopulation").value = String(peopleOf(burg));
   ensureEl<HTMLInputElement>("systemTreasury").value = String(rn(burg.treasury || 0, 2));
-  ensureEl("systemWealth").innerHTML = `🟡 ${rn(burg.population! > 0 ? (burg.product || 0) / burg.population! : 0, 2)}`;
+  ensureEl("systemWealth").innerHTML = `ðŸŸ¡ ${rn(burg.population! > 0 ? (burg.product || 0) / burg.population! : 0, 2)}`;
 
   for (const feature of FEATURES) {
     ensureEl(featureId(feature)).classList.toggle("inactive", !burg[feature]);
@@ -243,7 +241,7 @@ function updateStar(): void {
 }
 
 const CELL_STYLE = "padding: 0.1em 0.9em 0.1em 0";
-const NO_VALUE = "—";
+const NO_VALUE = "â€”";
 const DOT_STYLE =
   "display: inline-block; width: 0.65em; height: 0.65em; margin-right: 0.35em; border-radius: 50%; background:";
 
@@ -269,12 +267,12 @@ function renderSystemDetails(details: SystemDetails): void {
   ensureEl("systemStarsBody").innerHTML = stars;
 
   const totals = [
-    `Total mass ${rn(details.totalMassSolar, 2)} M☉`,
+    `Total mass ${rn(details.totalMassSolar, 2)} Mâ˜‰`,
     `Snow line ${rn(details.snowLineAU, 2)} AU`,
     `${details.planetCount} planet${details.planetCount === 1 ? "" : "s"}`
   ];
   if (details.habitableCandidate) totals.push("Habitable candidate");
-  ensureEl("systemReadoutTotals").textContent = totals.join(" · ");
+  ensureEl("systemReadoutTotals").textContent = totals.join(" Â· ");
 
   const planets = details.planets
     .map(planet => {
@@ -288,7 +286,7 @@ function renderSystemDetails(details: SystemDetails): void {
         )}</td>
         <td style="${CELL_STYLE}; text-align: right">${rn(planet.radiusEarth, 2)}</td>
         <td style="${CELL_STYLE}; text-align: right">${escapeHtml(planet.gravity)}</td>
-        <td style="${CELL_STYLE}" data-tip="${escapeHtml(planet.temperatureC)} °C">${escapeHtml(planet.temperature)}</td>
+        <td style="${CELL_STYLE}" data-tip="${escapeHtml(planet.temperatureC)} Â°C">${escapeHtml(planet.temperature)}</td>
         <td style="${CELL_STYLE}">${escapeHtml(planet.atmosphere)}</td>
         <td style="${CELL_STYLE}; text-align: right">${rn(planet.water)}%</td>
         <td style="${CELL_STYLE}" data-tip="HI ${planet.hi}">${escapeHtml(planet.habitability)}</td>
@@ -368,7 +366,7 @@ function toggleFeature(this: HTMLElement): void {
 }
 
 function confirmRemoveMarket(market: Market): void {
-  confirmationDialog({
+  Dialog.confirm({
     title: "Remove market",
     message: `This system is the center of the market "${escapeHtml(Markets.getName(market))}". Remove the market?<br>This action cannot be reverted`,
     confirm: "Remove",
@@ -432,19 +430,19 @@ function hideStyleSection(): void {
 
 function editLabelStyle(): void {
   const burg = pack.burgs[getSelectedId()];
-  closeDialogs(".stable");
+  Dialog.closeAll(".stable");
   void Controllers.StyleEditor.open("labels", burg.label?.group || burg.group);
 }
 
 function editClassStyle(): void {
   const burg = pack.burgs[getSelectedId()];
-  closeDialogs(".stable");
+  Dialog.closeAll(".stable");
   void Controllers.StyleEditor.open("systems", starClassFor(burg).class);
 }
 
 function editLabel(): void {
   const id = getSelectedId();
-  $("#astralSystemEditor").dialog("close");
+  Dialog.close("astralSystemEditor");
   Controllers.LabelsEditor.open("burg", id);
 }
 
@@ -497,17 +495,17 @@ function removeSelectedSystem(): void {
   const burg = pack.burgs[burgId];
 
   if (burg.capital) {
-    alertDialog({
+    Dialog.message({
       title: "Remove system",
       message: "You cannot remove the capital. You must change the empire capital first"
     });
   } else if (pack.markets?.some(m => m.centerBurgId === burgId)) {
-    alertDialog({
+    Dialog.message({
       title: "Remove system",
       message: "You cannot remove a market center system. Please remove the market first"
     });
   } else {
-    confirmationDialog({
+    Dialog.confirm({
       title: "Remove system",
       message: "Are you sure you want to remove the system? <br>This action cannot be reverted",
       confirm: "Remove",
@@ -515,7 +513,7 @@ function removeSelectedSystem(): void {
         Burgs.remove(burgId);
         removeEmblem("burg", burgId);
         Layers.draw("burgIcons", "labels", "systems");
-        $("#astralSystemEditor").dialog("close");
+        Dialog.close("astralSystemEditor");
       }
     });
   }
@@ -524,7 +522,7 @@ function removeSelectedSystem(): void {
 function closeSystemEditor(): void {
   if (ensureEl("systemRelocate").classList.contains("pressed")) toggleRelocateSystem();
   selectedId = null;
-  $("#astralSystemEditor").dialog("destroy");
+  Dialog.destroy("astralSystemEditor");
   ensureEl("astralSystemEditor").remove();
 }
 

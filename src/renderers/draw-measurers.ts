@@ -1,8 +1,11 @@
 import { curveCatmullRom, curveCatmullRomClosed, line, polygonArea, select } from "d3";
 import polylabel from "polylabel";
-import type { Measurer, MeasurerType } from "@/generators/measurers-generator";
-import type { Point } from "@/generators/voronoi";
-import { getArea, getAreaUnit, getDistance, last, rn, round, si } from "@/utils";
+import type { Measurer, MeasurerType } from "@/model/annotations/measurers-generator";
+import type { Point } from "@/model/graph/voronoi";
+import { getArea, getAreaUnit, getDistance } from "@/model/units";
+import { last } from "@/utils/array-utils";
+import { rn, si } from "@/utils/number-utils";
+import { round } from "@/utils/string-utils";
 
 const openCurveGen = line<Point>().curve(curveCatmullRom.alpha(0.5));
 const closedCurveGen = line<Point>().curve(curveCatmullRomClosed.alpha(0.5));

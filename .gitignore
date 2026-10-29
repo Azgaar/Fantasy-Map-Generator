@@ -6,6 +6,7 @@
 /dist
 /coverage
 /playwright-report
+/blob-report
 /test-results
 /_bmad
 /_bmad-output
@@ -20,3 +21,4 @@
 # nix build output
 /result
 /result-*
+.vitest/

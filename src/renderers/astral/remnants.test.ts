@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ReliefIcon, ReliefIconRef } from "@/generators/relief-generator";
+import type { ReliefIcon, ReliefIconRef } from "@/model/physical/relief-generator";
 import { collectRemnants, isMountFamily, remnantClass } from "./remnants";
 
 describe("remnant classification", () => {

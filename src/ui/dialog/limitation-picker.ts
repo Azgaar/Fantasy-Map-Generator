@@ -1,0 +1,83 @@
+// Pick which entities (biomes, states, cultures, religions) something is limited to; an empty list allows all
+
+import { Dialog } from "@/ui/dialog/dialog";
+
+import { tip } from "@/ui/tooltips";
+import { t } from "@/utils/i18n";
+import { ensureEl } from "@/utils/node-utils";
+import { escapeHtml } from "@/utils/string-utils";
+
+export interface LimitationItem {
+  i: number;
+  name: string;
+  fullName?: string;
+  color?: string;
+  removed?: boolean;
+}
+
+const DIALOG_ID = "limitationPicker";
+
+/** the entities a limitation can name: id 0 (marine, neutrals, no religion) and removed ones never */
+const choices = (items: readonly LimitationItem[]) => items.filter(item => item.i && !item.removed);
+
+/** "all" for no limitation, else the allowed names */
+export function limitationTip(allowed: readonly number[] | undefined, items: readonly LimitationItem[]): string {
+  if (!allowed?.length) return "all";
+  return allowed.map(i => items.find(item => item.i === i)?.name ?? "").join(", ");
+}
+
+export function pickLimitation({
+  title,
+  heading,
+  items,
+  allowed,
+  onApply
+}: {
+  title: string;
+  heading: string;
+  items: readonly LimitationItem[];
+  allowed: readonly number[] | undefined;
+  onApply: (allowed: number[]) => void; // empty when every entity is checked
+}): void {
+  const rows = choices(items).map(
+    ({ i, name, fullName, color }) => /* html */ `<tr data-tip="${escapeHtml(name)}">
+      <td><span style="color:${escapeHtml(color ?? "")}">⬤</span></td>
+      <td>
+        <input data-i="${i}" id="limitation${i}" type="checkbox" class="checkbox" ${!allowed?.length || allowed.includes(i) ? "checked" : ""}>
+        <label for="limitation${i}" class="checkbox-label">${escapeHtml(fullName || name)}</label>
+      </td>
+    </tr>`
+  );
+  Dialog.destroy(DIALOG_ID);
+  ensureEl("dialogs").insertAdjacentHTML(
+    "beforeend",
+    /* html */ `<div id="${DIALOG_ID}" class="dialog"><b>${escapeHtml(heading)}:</b>
+      <table style="margin-top:.3em"><tbody>${rows.join("")}</tbody></table>
+    </div>`
+  );
+  const inputs = () => Array.from(ensureEl(DIALOG_ID).querySelectorAll<HTMLInputElement>("input"));
+
+  Dialog.open(DIALOG_ID, {
+    width: "fit-content",
+    title,
+    position: { my: "center", at: "center", of: "svg" },
+    buttons: [
+      {
+        label: t("Invert"),
+        onClick: () => {
+          for (const input of inputs()) input.checked = !input.checked;
+        }
+      },
+      {
+        label: t("Apply"),
+        onClick: () => {
+          const checked = inputs().filter(input => input.checked);
+          if (!checked.length) return tip(t("Select at least one element"), false, "error");
+          onApply(checked.length === inputs().length ? [] : checked.map(input => Number(input.dataset.i)));
+          Dialog.close(DIALOG_ID);
+        }
+      },
+      { label: t("Cancel"), onClick: () => Dialog.close(DIALOG_ID) }
+    ]
+  });
+}

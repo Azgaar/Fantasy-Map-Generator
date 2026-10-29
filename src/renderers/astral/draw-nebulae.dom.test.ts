@@ -1,10 +1,10 @@
-// Browser-mode test (vitest.browser.config.ts): drawNebulae replaces its clouds and defs on a
+﻿// Browser-mode test (vitest.browser.config.ts): drawNebulae replaces its clouds and defs on a
 // redraw, and the speed performance preset swaps the turbulence filters for fade gradients.
 import { beforeEach, expect, test } from "vitest";
-import { Layers } from "@/components/layers";
-import "@/components/options-model"; // installs the options global
-import "@/generators/styles";
-import "@/services/logging"; // installs the TIME/INFO globals the renderers gate their timers on
+import { Layers } from "@/renderers/layers";
+import "@/model/options/options-model"; // installs the options global
+import "@/model/styles/styles";
+import "@/utils/logger"; // installs the TIME/INFO globals the renderers gate their timers on
 import { drawNebulae } from "./draw-nebulae";
 
 beforeEach(() => {
@@ -13,7 +13,7 @@ beforeEach(() => {
       <g id="dust" data-group="dust"></g>
       <g id="neutral" data-group="neutral"></g>
     </g></g></svg>`;
-  options.map.graph = { width: 800, height: 600, points: 10000 };
+  options.map.graph = { width: 800, height: 600, points: 10000, sampling: "square", jitter: 0 };
   options.map.seed = "nebula-dom";
   options.app.performance = { shapeRendering: "geometricPrecision", stateHalos: true, viewportRedraw: "continuous" };
   styles.nebulae.options = { count: 4, size: 18, softness: 4 };

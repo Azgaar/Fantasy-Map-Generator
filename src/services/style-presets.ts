@@ -1,8 +1,11 @@
-import { Styles } from "@/generators/styles";
-import { isLegacyPreset, isStoreStyles, normalizeStyles, presetFromLegacy } from "@/generators/styles-legacy";
+import { STYLE_PRESET_LABELS } from "@/data/id-labels";
+import { Styles } from "@/model/styles/styles";
+import { isLegacyPreset, isStoreStyles, normalizeStyles, presetFromLegacy } from "@/services/io/styles-legacy";
 import { VERSION } from "@/services/versioning";
 import type { StylesData } from "@/types/styles";
-import { isValidJSON } from "@/utils/stringUtils";
+import { t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
+import { isValidJSON } from "@/utils/string-utils";
 
 export const SYSTEM_PRESETS = [
   "default",
@@ -39,9 +42,9 @@ function current(): string {
 }
 
 function displayName(name: string): string {
-  if (name.startsWith(CUSTOM_PREFIX)) return `${name.slice(CUSTOM_PREFIX.length)} [custom]`;
-  if (name.startsWith(LEGACY_PREFIX)) return `${name.slice(LEGACY_PREFIX.length)} [custom]`;
-  return name;
+  if (name.startsWith(CUSTOM_PREFIX)) return `${name.slice(CUSTOM_PREFIX.length)} [${t("custom")}]`;
+  if (name.startsWith(LEGACY_PREFIX)) return `${name.slice(LEGACY_PREFIX.length)} [${t("custom")}]`;
+  return STYLE_PRESET_LABELS[name] ?? name;
 }
 
 const isPreset = (json: unknown): boolean =>
@@ -58,7 +61,7 @@ function parse(json: unknown): StylesData | undefined {
 }
 
 async function fetchSystem(name: string): Promise<unknown> {
-  // the default preset ships in the bundle (src/generators/default-styles.json)
+  // the default preset ships in the bundle (src/model/styles/default-styles.json)
   if (name === "default") return Styles.defaults;
   const response = await fetch(`./styles/${name}.json?v=${VERSION}`);
   if (!response.ok) throw new Error(`Style preset ${name} is not available (${response.status})`);
@@ -71,8 +74,8 @@ async function load(name: string): Promise<{ name: string; styles: unknown; erro
     try {
       return { name, styles: await fetchSystem(name) };
     } catch (error) {
-      const message = `Cannot fetch style preset ${name}`;
-      ERROR && console.error(`${message}. Applying default style`, error);
+      const message = t("Cannot fetch style preset {{- name}}", { name });
+      log.error(`${message}. Applying default style`, error);
       return { name: "default", styles: Styles.defaults, error: message };
     }
   }
@@ -81,9 +84,9 @@ async function load(name: string): Promise<{ name: string; styles: unknown; erro
   if (stored && isValidJSON(stored)) return { name, styles: normalizeStyles(JSON.parse(stored)) };
 
   const error = stored
-    ? `Custom style ${name} stored in localStorage is not valid`
-    : `Custom style ${name} is not found in localStorage`;
-  ERROR && console.error(error);
+    ? t("Custom style {{- name}} stored in localStorage is not valid", { name })
+    : t("Custom style {{- name}} is not found in localStorage", { name });
+  log.error(error);
   return { name: "default", styles: await fetchSystem("default"), error };
 }
 

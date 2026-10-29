@@ -1,4 +1,4 @@
-// @vitest-environment jsdom
+﻿// @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => {
@@ -23,11 +23,12 @@ const mocks = vi.hoisted(() => {
   return { layers, legend, on };
 });
 
-vi.mock("@/components/layers", () => ({ Layers: mocks.layers }));
+vi.mock("@/renderers/layers", () => ({ Layers: mocks.layers }));
 vi.mock("@/renderers/draw-legend", () => mocks.legend);
-vi.mock("@/conquest/ui/layers/index", () => ({ twLayerIds: () => ["twArmies", "twFronts"] }));
+vi.mock("@/conquest/ui/layers", () => ({ twLayerIds: () => ["twArmies", "twFronts"] }));
 
-import { Layers } from "@/components/layers";
+import { mapHistory } from "@/model/map-history";
+import { Layers } from "@/renderers/layers";
 import { drawLegend, hasLegend } from "@/renderers/draw-legend";
 import { getViewedEpochStart } from "./historical-time";
 import { goToPresent, isInPast, scrubRange, scrubToYear, showEpoch, viewedEpoch } from "./historical-view";
@@ -45,9 +46,10 @@ const snapshot0 = Uint16Array.from([9, 9, 17, 0, 17, 0, 0, 9, 17, 9]);
 const snapshot1 = Uint16Array.from([17, 17, 0, 0, 0, 0, 0, 0, 0, 0]);
 
 beforeEach(() => {
-  globalThis.customization = 0;
-  globalThis.mapHistory = [mapEntry(5)];
+  mapHistory.length = 0;
+  mapHistory.push(mapEntry(5));
   globalThis.options = {
+    app: { mode: null },
     map: { seed: "s1", lore: { calendar: { year: 1000, era: "Present Age" } } }
   } as unknown as typeof options;
 
@@ -129,7 +131,7 @@ describe("showEpoch", () => {
     expect(pack.states[2].pole).toEqual([33, 44]);
     expect(pack.states[2].type).toBe("Generic");
     expect(pack.states).toHaveLength(4); // neutral + the epoch's cast (including the empty one)
-    expect(customization).toBe(100);
+    expect(options.app.mode).toBe("past");
     expect(Layers.draw).toHaveBeenCalledWith("states", "borders", "labels", "markers");
     expect(getViewedEpochStart()).toBe(100); // the renderer hides the markers of later falls
     expect(viewedEpoch()?.era).toBe("Age of Ruins");
@@ -139,7 +141,7 @@ describe("showEpoch", () => {
     showEpoch(0);
 
     expect(vi.mocked(drawLegend).mock.calls[0]).toEqual([
-      "States · Age of Ruins",
+      "States Â· Age of Ruins",
       [
         [9, "#00aa00", "Bren"],
         [17, "#aa0000", "Aleth"]
@@ -153,13 +155,13 @@ describe("showEpoch", () => {
 
     showEpoch(0);
     expect(mocks.legend.clearLegend).toHaveBeenCalledWith("States");
-    expect(drawLegend).toHaveBeenCalledWith("States · Age of Ruins", [
+    expect(drawLegend).toHaveBeenCalledWith("States Â· Age of Ruins", [
       [9, "#00aa00", "Bren"],
       [17, "#aa0000", "Aleth"]
     ]);
 
     goToPresent();
-    expect(mocks.legend.clearLegend).toHaveBeenCalledWith("States · Age of Ruins");
+    expect(mocks.legend.clearLegend).toHaveBeenCalledWith("States Â· Age of Ruins");
     expect(drawLegend).toHaveBeenLastCalledWith("States", [["1", "#111111", "The old landmark"]]);
   });
 
@@ -175,7 +177,7 @@ describe("showEpoch", () => {
     expect(pack.cells.state).toBe(presentState);
     expect(pack.states).toBe(presentStates);
     expect(Array.from(presentState)).toEqual(Array.from(PRESENT_STATE));
-    expect(customization).toBe(0);
+    expect(options.app.mode).toBeNull();
     expect(isInPast()).toBe(false);
     expect(getViewedEpochStart()).toBeNull();
     expect(viewedEpoch()).toBeNull();
@@ -197,7 +199,7 @@ describe("showEpoch", () => {
 
     showEpoch(0);
     expect(isInPast()).toBe(false);
-    expect(customization).toBe(0);
+    expect(options.app.mode).toBeNull();
     expect(mocks.layers.draw).not.toHaveBeenCalled();
   });
 
@@ -211,7 +213,7 @@ describe("showEpoch", () => {
     expect(pack.cells.state).toBe(presentState);
     expect(Array.from(presentState)).toEqual(Array.from(PRESENT_STATE));
     expect(isInPast()).toBe(false);
-    expect(customization).toBe(0);
+    expect(options.app.mode).toBeNull();
   });
 });
 
@@ -258,17 +260,17 @@ describe("a world replaced under a scrubbing view", () => {
     showEpoch(0);
     const pastState = pack.cells.state;
 
-    globalThis.mapHistory.push(mapEntry(99)); // a new world registered
+    mapHistory.push(mapEntry(99)); // a new world registered
     goToPresent();
 
     expect(pack.cells.state).toBe(pastState); // the new world owns its arrays
-    expect(customization).toBe(0);
+    expect(options.app.mode).toBeNull();
     expect(isInPast()).toBe(false);
   });
 
   it("leaving when the map is already at the present is a no-op", () => {
     goToPresent();
-    expect(customization).toBe(0);
+    expect(options.app.mode).toBeNull();
     expect(isInPast()).toBe(false);
   });
 });

@@ -1,5 +1,6 @@
-import type { LabelGroup, LabelType } from "@/generators/labels-generator";
+import type { LabelGroup, LabelType } from "@/model/annotations/labels-generator";
 import type { StylesData } from "@/types/styles";
+import { log } from "@/utils/logger";
 
 type LabelGroupStyle = StylesData["labels"]["groups"][string];
 
@@ -13,7 +14,7 @@ export function renderLabelGroups(root: ParentNode = document): void {
   }
 }
 
-export function renderLabelGroup(labels: SVGGElement, groupOptions: LabelGroup): SVGGElement {
+function renderLabelGroup(labels: SVGGElement, groupOptions: LabelGroup): SVGGElement {
   const group = labels.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "g");
   group.id = `labels-${groupOptions.name}`;
   group.dataset.group = groupOptions.name;
@@ -49,6 +50,7 @@ const BASE_ATTRS: LabelGroupStyle["attrs"] = {
   "font-family": "Almendra SC",
   "font-style": null,
   "font-weight": null,
+  "text-decoration": null,
   style: null,
   filter: null
 };
@@ -67,7 +69,7 @@ export function getGroupStyle(group: { name: string; type: LabelType }): LabelGr
   if (stored) return stored;
 
   const fontSize = FALLBACK_FONT_SIZES[group.type];
-  if (!fontSize) ERROR && console.error(`No fallback style for label group ${group.name} of type ${group.type}`);
+  if (!fontSize) log.error(`No fallback style for label group ${group.name} of type ${group.type}`);
   return {
     attrs: { ...BASE_ATTRS, "font-size": fontSize ?? BASE_ATTRS["font-size"] }
   };

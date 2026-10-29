@@ -1,7 +1,9 @@
 import { color, easeSinInOut, select, transition } from "d3";
-import { Icons } from "@/components/icons";
-import type { Regiment } from "../generators/military-generator";
-import { rn } from "../utils";
+import { Icons } from "@/model/icons";
+import type { Regiment } from "@/model/political/military-generator";
+import { Military } from "@/model/political/military-generator";
+import { log } from "@/utils/logger";
+import { rn } from "@/utils/number-utils";
 
 /** the icon box inside the square left of a regiment box at x1, y1 of height h */
 export const regimentIconBox = (x1: number, y1: number, h: number, icon: string) => {
@@ -9,9 +11,15 @@ export const regimentIconBox = (x1: number, y1: number, h: number, icon: string)
   return { x: rn(x1 - h + inset, 2), y: rn(y1 + inset, 2), size: rn(h - 2 * inset, 2) };
 };
 
+export function getRegimentWidth(regiment: Regiment): number {
+  const size = styles.military.options.boxSize;
+  return regiment.n ? size * 4 : size * 6;
+}
+
 export function updateRegimentIcon(use: SVGUseElement, regiment: Regiment): void {
   const size = styles.military.options.boxSize;
-  const x = rn(regiment.x - size * (regiment.n ? 2 : 3), 2);
+  const w = getRegimentWidth(regiment);
+  const x = rn(regiment.x - w / 2, 2);
   const y = rn(regiment.y - size, 2);
   const icon = regiment.icon ?? "";
   const box = regimentIconBox(x, y, size * 2, icon);
@@ -21,7 +29,7 @@ export function updateRegimentIcon(use: SVGUseElement, regiment: Regiment): void
 }
 
 export const drawMilitary = (): void => {
-  TIME && console.time("drawMilitary");
+  log.time("drawMilitary");
 
   select<SVGGElement, unknown>("#armies").selectAll("g").remove();
   // regiment labels size by inheritance from the group, in step with the box
@@ -31,12 +39,16 @@ export const drawMilitary = (): void => {
     drawRegimentsRenderer(state.military || [], state.i);
   }
 
-  TIME && console.timeEnd("drawMilitary");
+  log.timeEnd("drawMilitary");
 };
 
 const drawRegimentsRenderer = (regiments: Regiment[], s: number): void => {
+  const visible = regiments.filter(d => !d.hidden);
+  if (!visible.length) return;
+
   const size = styles.military.options.boxSize;
-  const w = (d: Regiment) => (d.n ? size * 4 : size * 6);
+  const showNames = styles.military.options.showNames;
+  const w = (d: Regiment) => getRegimentWidth(d);
   const h = size * 2;
   const x = (d: Regiment) => rn(d.x - w(d) / 2, 2);
   const y = (d: Regiment) => rn(d.y - size, 2);
@@ -52,7 +64,7 @@ const drawRegimentsRenderer = (regiments: Regiment[], s: number): void => {
 
   const g = army
     .selectAll("g")
-    .data(regiments)
+    .data(visible)
     .enter()
     .append("g")
     .attr("id", d => `regiment${s}-${d.i}`)
@@ -68,6 +80,7 @@ const drawRegimentsRenderer = (regiments: Regiment[], s: number): void => {
     .attr("width", d => w(d))
     .attr("height", h);
   g.append("text")
+    .attr("class", "regimentTotal")
     .attr("x", d => d.x)
     .attr("y", d => d.y)
     .attr("text-rendering", "optimizeSpeed")
@@ -83,16 +96,32 @@ const drawRegimentsRenderer = (regiments: Regiment[], s: number): void => {
     .each(function (d) {
       updateRegimentIcon(this, d);
     });
+
+  if (showNames) {
+    g.append("text")
+      .attr("class", "regimentName")
+      .attr("x", d => rn(d.x - size, 2))
+      .attr("y", d => rn(d.y + size * 2.3, 2))
+      .attr("font-size", `${rn(size * 1.6, 2)}px`)
+      .attr("text-rendering", "optimizeSpeed")
+      .text(d => d.name);
+  }
 };
 
 export const drawRegiment = (reg: Regiment, stateId: number): void => {
+  let army = select<SVGGElement, unknown>("#armies").select<SVGGElement>(`g#army${stateId}`);
+  if (reg.hidden) {
+    if (army.size()) army.select(`g#regiment${stateId}-${reg.i}`).remove();
+    return;
+  }
+
   const size = styles.military.options.boxSize;
-  const w = reg.n ? size * 4 : size * 6;
+  const showNames = styles.military.options.showNames;
+  const w = getRegimentWidth(reg);
   const h = size * 2;
   const x1 = rn(reg.x - w / 2, 2);
   const y1 = rn(reg.y - size, 2);
 
-  let army = select<SVGGElement, unknown>("#armies").select<SVGGElement>(`g#army${stateId}`);
   if (!army.size()) {
     const stateColor = pack.states[stateId]?.color;
     const baseColor = stateColor && stateColor[0] === "#" ? stateColor : "#999";
@@ -104,6 +133,8 @@ export const drawRegiment = (reg: Regiment, stateId: number): void => {
       .attr("color", darkerColor);
   }
 
+  army.select(`g#regiment${stateId}-${reg.i}`).remove();
+
   const g = army
     .append("g")
     .attr("id", `regiment${stateId}-${reg.i}`)
@@ -111,9 +142,11 @@ export const drawRegiment = (reg: Regiment, stateId: number): void => {
     .attr("data-state", stateId)
     .attr("data-id", reg.i)
     .attr("transform", `rotate(${reg.angle || 0})`)
+    .attr("font-size", size * 2)
     .attr("transform-origin", `${reg.x}px ${reg.y}px`);
   g.append("rect").attr("x", x1).attr("y", y1).attr("width", w).attr("height", h);
   g.append("text")
+    .attr("class", "regimentTotal")
     .attr("x", reg.x)
     .attr("y", reg.y)
     .attr("text-rendering", "optimizeSpeed")
@@ -126,6 +159,16 @@ export const drawRegiment = (reg: Regiment, stateId: number): void => {
     .attr("height", h);
   const use = g.append("use").attr("class", "regimentIcon").node()!;
   updateRegimentIcon(use, reg);
+
+  if (showNames) {
+    g.append("text")
+      .attr("class", "regimentName")
+      .attr("x", rn(reg.x - size, 2))
+      .attr("y", rn(reg.y + size * 2.3, 2))
+      .attr("font-size", `${rn(size * 1.6, 2)}px`)
+      .attr("text-rendering", "optimizeSpeed")
+      .text(reg.name);
+  }
 };
 
 // move one regiment to another
@@ -139,27 +182,22 @@ export const moveRegiment = (reg: Regiment, x: number, y: number): void => {
   reg.x = x;
   reg.y = y;
   const size = styles.military.options.boxSize;
-  const w = reg.n ? size * 4 : size * 6;
+  const w = getRegimentWidth(reg);
   const h = size * 2;
   const x1 = (x: number) => rn(x - w / 2, 2);
   const y1 = (y: number) => rn(y - size, 2);
 
   const move = transition().duration(duration).ease(easeSinInOut);
-  el.select("rect")
-    .transition(move as any)
-    .attr("x", x1(x))
-    .attr("y", y1(y));
-  el.select("text")
-    .transition(move as any)
-    .attr("x", x)
-    .attr("y", y);
+  el.select("rect").transition(move).attr("x", x1(x)).attr("y", y1(y));
+  el.select("text.regimentTotal").transition(move).attr("x", x).attr("y", y);
   el.selectAll("rect:nth-of-type(2)")
-    .transition(move as any)
+    .transition(move)
     .attr("x", x1(x) - h)
     .attr("y", y1(y));
   const box = regimentIconBox(x1(x), y1(y), h, reg.icon);
-  el.select(".regimentIcon")
-    .transition(move as any)
-    .attr("x", box.x)
-    .attr("y", box.y);
+  el.select(".regimentIcon").transition(move).attr("x", box.x).attr("y", box.y);
+  el.select("text.regimentName")
+    .transition(move)
+    .attr("x", rn(x - size, 2))
+    .attr("y", rn(y + size * 2.3, 2));
 };

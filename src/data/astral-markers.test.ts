@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { Icons } from "@/components/icons";
+import { Icons } from "@/model/icons";
+import { Markers } from "@/model/story/markers-generator";
 import { ANOMALY_FAMILIES, astralLegend, MARKER_READINGS, readingOf } from "./astral-markers";
 
 describe("astral marker readings", () => {
   // the cold transform of the markers generator can outlast the default budget under load
   it("covers every default marker config type", async () => {
-    await import("@/generators/markers-generator");
-    const types = globalThis.Markers.getConfig().map(entry => entry.type);
+    await import("@/model/story/markers-generator");
+    const types = Markers.getConfig().map(entry => entry.type);
     expect(types.length).toBeGreaterThan(30);
     expect(types.filter(type => !MARKER_READINGS[type])).toEqual([]);
   }, 60000);

@@ -1,27 +1,27 @@
-import { AddedLabels } from "@/generators/added-labels";
-import { Biomes } from "@/generators/biomes-generator";
-import { Burgs } from "@/generators/burgs-generator";
-import { Cultures } from "@/generators/cultures-generator";
-import { Emblems } from "@/generators/emblems-generator";
-import { Features } from "@/generators/features-generator";
-import { Goods } from "@/generators/goods-generator";
-import { Journeys } from "@/generators/journeys/journeys-generator";
-import { Labels } from "@/generators/labels-generator";
-import { Lore } from "@/generators/lore";
-import { Markers } from "@/generators/markers-generator";
-import { Markets } from "@/generators/markets-generator";
-import { Military } from "@/generators/military-generator";
-import { Notes } from "@/generators/notes";
-import { Provinces } from "@/generators/provinces-generator";
-import { Religions } from "@/generators/religions-generator";
-import { Rivers } from "@/generators/river-generator";
-import { Routes } from "@/generators/routes-generator";
-import { States } from "@/generators/states-generator";
-import { Styles } from "@/generators/styles";
-import { Zones } from "@/generators/zones-generator";
+import { AddedLabels } from "@/model/annotations/added-labels";
+import { Labels } from "@/model/annotations/labels-generator";
+import { Goods } from "@/model/economy/goods-generator";
+import { Markets } from "@/model/economy/markets-generator";
+import { Routes } from "@/model/economy/routes-generator";
+import { Biomes } from "@/model/physical/biomes-generator";
+import { Features } from "@/model/physical/features-generator";
+import { Rivers } from "@/model/physical/river-generator";
+import { Burgs } from "@/model/political/burgs-generator";
+import { Emblems } from "@/model/political/emblems-generator";
+import { Military } from "@/model/political/military-generator";
+import { Provinces } from "@/model/political/provinces-generator";
+import { States } from "@/model/political/states-generator";
+import { Zones } from "@/model/political/zones-generator";
+import { Cultures } from "@/model/society/cultures-generator";
+import { Religions } from "@/model/society/religions-generator";
+import { Journeys } from "@/model/story/journeys/journeys-generator";
+import { Lore } from "@/model/story/lore";
+import { Markers } from "@/model/story/markers-generator";
+import { Notes } from "@/model/story/notes";
+import { Styles } from "@/model/styles/styles";
 import { StylePresets } from "./style-presets";
 
-const MODELS = {
+export const MODELS = {
   AddedLabels,
   Biomes,
   Burgs,
@@ -137,7 +137,7 @@ export const METHODS = {
     "setPopulation"
   ],
   Biomes: ["rename", "recolor", "setHabitability", "add", "remove", "setCells", "restore"],
-  Rivers: ["rename", "setType", "add", "remove", "setParent", "setWidth", "create"],
+  Rivers: ["rename", "setType", "add", "remove", "setParent", "setWidth", "setLocked", "create"],
   Routes: ["rename", "setGroup", "add", "remove", "setLocked", "create", "split", "join"],
   Features: ["rename", "setSubtype", "setGroup", "setCoastline"],
   Zones: ["rename", "recolor", "setType", "setHidden", "setCells", "add", "remove", "setPopulation"],

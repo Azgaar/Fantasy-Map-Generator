@@ -7,6 +7,8 @@ vi.mock("./draw-trade-animation", () => ({
   clearHighlight: vi.fn()
 }));
 
+import { Markets } from "@/model/economy/markets-generator";
+import { Routes } from "@/model/economy/routes-generator";
 import * as drawTrade from "./draw-trade-animation";
 import { TradeAnimationModule } from "./trade-animation";
 
@@ -43,30 +45,9 @@ function makePack(
 
 let ta: TradeAnimationModule;
 
-// Minimal FlatQueue polyfill (correct, not optimised — tests only).
-class TestFlatQueue {
-  private items: Array<{ id: number; value: number }> = [];
-  get length() {
-    return this.items.length;
-  }
-  push(id: number, value: number) {
-    this.items.push({ id, value });
-    this.items.sort((a, b) => a.value - b.value);
-  }
-  pop() {
-    return this.items.shift()?.id;
-  }
-  peek() {
-    return this.items[0]?.id;
-  }
-  peekValue() {
-    return this.items[0]?.value;
-  }
-}
-
 let isTradeLayerOn = true;
 
-vi.mock("@/components/layers", () => ({
+vi.mock("@/renderers/layers", () => ({
   Layers: { isOn: (id: string) => id === "trade" && isTradeLayerOn }
 }));
 
@@ -75,20 +56,19 @@ beforeEach(() => {
   ta = new TradeAnimationModule();
   globalThis.pack = makePack() as any;
   isTradeLayerOn = true;
-  (globalThis as any).FlatQueue = TestFlatQueue;
-  globalThis.Markets = {
+  Object.assign(Markets, {
     get: vi.fn((id: number) => {
       if (id === 1) return { centerBurgId: 1 } as any;
       if (id === 2) return { centerBurgId: 2 } as any;
       return undefined;
     })
-  } as any;
+  });
   // Trade animation calls Routes.addMeandering for water spans. In these tests
   // there are no rivers, so we just pass anchors through with their cellIds.
-  globalThis.Routes = {
+  Object.assign(Routes, {
     addMeandering: (cells: number[], anchors: [number, number][]) =>
       cells.map((c, i) => [anchors[i][0], anchors[i][1], c])
-  } as any;
+  });
 });
 
 // ─── getPathCost ─────────────────────────────────────────────────────────────

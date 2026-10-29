@@ -1,13 +1,21 @@
-import type * as THREE from "three";
-import { Layers } from "@/components/layers";
-import { isGlobeView, setViewMode } from "@/components/options/view-mode";
-import type { Burg } from "@/generators/burgs-generator";
-import type { State } from "@/generators/states-generator";
-import { Services } from "@/services";
-import { savedMessage } from "@/services/platform";
-import { downloadFile, getFileName } from "@/utils";
+import * as THREE from "three";
+import { MapControls } from "three/addons/controls/MapControls.js";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { OBJExporter } from "three/addons/exporters/OBJExporter.js";
+import { LoopSubdivision } from "three-subdivide";
+import { Grid } from "@/model/graph/grid-generator";
+import { Options } from "@/model/options/options-model";
+import type { Burg } from "@/model/political/burgs-generator";
+import type { State } from "@/model/political/states-generator";
+import { Layers } from "@/renderers/layers";
+import { isGlobeView, setViewMode } from "@/renderers/view-mode";
+import { throttle } from "@/utils/common-utils";
+import { t } from "@/utils/i18n";
+import { log } from "@/utils/logger";
+import { findEl } from "@/utils/node-utils";
+import { notify } from "@/utils/notices";
+import { rn } from "@/utils/number-utils";
 import { clampTextureResolution, timeOfDayPresets } from "../data/view-3d-options";
-import { rn, throttle } from "../utils";
 import {
   disposeRiverFlowTexture,
   disposeSatelliteTexture,
@@ -19,30 +27,24 @@ import { getGroupStyle } from "./labels/label-groups";
 
 export { heightAt, isCached } from "./erosion-bake";
 
-let Three!: typeof import("three");
-let threeLoadPromise: Promise<boolean> | null = null;
+// keep the look tuned on three r140: no color management, and light intensities in its legacy units
+THREE.ColorManagement.enabled = false;
+const LEGACY_LIGHT_SCALE = Math.PI;
 
-type Controls = {
-  dispose: () => void;
-  update?: () => void;
-  addEventListener: (type: string, listener: () => void) => void;
-  autoRotate: boolean;
-  autoRotateSpeed: number;
-  target?: { set: (x: number, y: number, z: number) => void };
-  enableDamping?: boolean;
-  dampingFactor?: number;
-  screenSpacePanning?: boolean;
-  minDistance?: number;
-  maxDistance?: number;
-  minZoom?: number;
-  maxZoom?: number;
-  zoomSpeed?: number;
-  panSpeed?: number;
-  enableRotate?: boolean;
-  rotateSpeed?: number;
-  maxPolarAngle?: number;
-  minPolarAngle?: number;
-  mouseButtons?: { LEFT: number; MIDDLE: number; RIGHT: number };
+type MapImage = (type: "mesh", options: Record<string, boolean>) => Promise<string>;
+let mapImage: MapImage = () => Promise.reject(new Error("The 3D view has no map image source"));
+
+/** The controller passes the map export the scene textures are drawn from */
+const setMapImageSource = (source: MapImage): void => {
+  mapImage = source;
+};
+
+type BuildListener = (building: boolean) => void;
+let onBuild: BuildListener = () => {};
+
+/** The controller hears when a scene (re)build starts and when the latest one is on screen */
+const setBuildListener = (listener: BuildListener): void => {
+  onBuild = listener;
 };
 
 type LabelOptions = {
@@ -60,7 +62,7 @@ type LabeledSprite = THREE.Sprite & { size: number };
 let Renderer!: THREE.WebGLRenderer,
   scene!: THREE.Scene,
   camera!: THREE.PerspectiveCamera,
-  controls!: Controls,
+  controls!: MapControls | OrbitControls,
   animationFrame = 0,
   material!: THREE.MeshLambertMaterial | THREE.MeshBasicMaterial,
   texture: THREE.Texture | null = null,
@@ -82,6 +84,7 @@ let erosionBakeData: ErosionBake.ErosionBakeResult | null = null; // last bake, 
 let waterAnimationFrame: number | null = null; // render loop for the satellite water shimmer
 let isAnimating = false; // one animation chain at a time
 let active = false; // the scene is alive between create() and stop()
+let sceneBuild = 0; // bumped by every rebuild: an async step that finds it changed is stale and stops
 const waterTime = { value: 0 }; // uTime uniform shared with the mesh material
 
 const context2d = document.createElement("canvas").getContext("2d")!;
@@ -92,26 +95,29 @@ const create = async (canvas: HTMLCanvasElement, type = "viewMesh") => {
   setViewMode(isGlobe ? "globe" : "mesh"); // the builders below read the mode they are building for
   active = true;
 
-  const started = await (isGlobe ? newGlobe(canvas) : newMesh(canvas));
-  if (!started) {
-    active = false;
-    setViewMode("standard"); // the scene never came up, so the flat map is what is on screen
-  }
+  const started = await (isGlobe ? newGlobe(canvas) : newMesh(canvas)).catch(error => {
+    log.error("3D view failed to start:", error); // three needs WebGL 2
+    notify(t("Cannot load 3d library"), "error", 4000);
+    return false;
+  });
+  if (!started) stop(); // free what was built before the failure; the flat map is what is on screen
   return started;
 };
 
 // redraw 3d scene
 const redraw = () => {
+  if (!active) return;
   deleteLabels();
   scene.remove(mesh);
   Renderer.setSize(Renderer.domElement.width, Renderer.domElement.height);
   if (isGlobeView()) updateGlobeTexure(true);
-  else createMesh(options.map.graph.width, options.map.graph.height, grid.cellsX, grid.cellsY);
+  else createMesh(options.map.graph.width, options.map.graph.height);
   render();
 };
 
 // update 3d texture
 const update = () => {
+  if (!active) return;
   if (isGlobeView()) updateGlobeTexure();
   else update3dTexture();
 };
@@ -119,6 +125,10 @@ const update = () => {
 // try to clean the memory as much as possible
 const stop = () => {
   active = false;
+  sceneBuild++;
+  setViewMode("standard");
+  onBuild(false);
+  if (!Renderer) return; // never started, or stopped already
   if (controls) controls.dispose();
   stopAnimation();
   if (texture) texture.dispose();
@@ -127,7 +137,7 @@ const stop = () => {
   if (waterPlane) waterPlane.dispose();
   if (waterMaterial) waterMaterial.dispose();
   if (spotLight?.shadow?.map) spotLight.shadow.map.dispose(); // three keeps the shadow render target on the light
-  if (scene.background instanceof Three.Texture) scene.background.dispose();
+  if (scene.background instanceof THREE.Texture) scene.background.dispose();
   ErosionBake.dispose();
   disposeSatelliteTexture();
   disposeRiverFlowTexture();
@@ -147,36 +157,26 @@ const stop = () => {
   scene.remove(ambientLight);
   scene.remove(waterMesh);
 
+  // dispose() frees GPU memory only: drop the scene graph so geometry arrays, texture images and the canvas can be collected
   texture = null;
-
-  setViewMode("standard");
+  Renderer = undefined!;
+  scene = undefined!;
+  camera = undefined!;
+  controls = undefined!;
+  material = undefined!;
+  geometry = undefined!;
+  mesh = undefined!;
 };
 
 const setScale = (scale: number) => {
   Options.set(o => (o.app.threeD.scale = scale));
-
-  // dense eroded mesh: vertices don't map to grid cells; redraw rebuilds the
-  // geometry from the cached bake (the bake key excludes scale, so no re-bake)
-  if (erosionBakeActive) {
-    redraw();
-    return;
-  }
-
-  if (!geometry) return;
-  const vertices = geometry.getAttribute("position");
-  for (let i = 0; i < vertices.count; i++) {
-    vertices.setZ(i, getMeshHeight(i));
-  }
-  geometry.setAttribute("position", vertices);
-  geometry.computeVertexNormals();
-
-  redraw();
+  if (geometry) redraw(); // the rebuild reads the new scale; the bake key excludes it, so no re-bake
 };
 
 const setSunColor = (color: string) => {
   if (!spotLight) return;
   Options.set(o => (o.app.threeD.sunColor = color));
-  spotLight.color = new Three.Color(color);
+  spotLight.color = new THREE.Color(color);
   render();
 };
 
@@ -193,7 +193,7 @@ const setResolutionScale = (scale: number) => {
 const setLightness = (intensity: number) => {
   if (!ambientLight) return;
   Options.set(o => (o.app.threeD.lightness = intensity));
-  ambientLight.intensity = intensity;
+  ambientLight.intensity = intensity * LEGACY_LIGHT_SCALE;
   render();
 };
 
@@ -246,14 +246,26 @@ const toggle3dSubdivision = () => {
   redraw();
 };
 
+// Keep r140's mouse feel. r186 scales the wheel step by deltaY, which crawls on trackpads and macOS wheels;
+// r140 zoomed a fixed step per event. r186 MapControls drags the ground point under the cursor 1:1, ignoring
+// panSpeed; r140 panned by the screen delta times panSpeed, as OrbitControls still does
+const orbitMousePan = (OrbitControls.prototype as unknown as { _handleMouseMovePan: (event: PointerEvent) => void })
+  ._handleMouseMovePan;
+function withR140Input<T extends OrbitControls>(controls: T): T {
+  return Object.assign(controls, {
+    _getZoomScale: () => 0.95 ** controls.zoomSpeed,
+    _handleMouseMovePan: orbitMousePan
+  });
+}
+
 function syncErosionUI() {
-  const checkbox = document.getElementById("options3dErosion") as HTMLInputElement | null;
+  const checkbox = findEl<HTMLInputElement>("options3dErosion");
   if (checkbox) checkbox.checked = options.app.threeD.erosion;
 
-  const section = document.getElementById("options3dErosionSection") as HTMLElement | null;
+  const section = findEl("options3dErosionSection");
   if (section) section.style.display = options.app.threeD.erosion ? "block" : "none";
 
-  const subdivide = document.getElementById("options3dSubdivide") as HTMLInputElement | null;
+  const subdivide = findEl<HTMLInputElement>("options3dSubdivide");
   if (subdivide) subdivide.disabled = options.app.threeD.erosion;
 }
 
@@ -297,10 +309,10 @@ const toggleWireframe = () => {
 const setColors = (sky: string, water: string) => {
   if (!scene) return;
   Options.set(o => (o.app.threeD.skyColor = sky));
-  scene.background = new Three.Color(sky);
-  if (scene.fog) scene.fog.color = new Three.Color(sky);
+  scene.background = new THREE.Color(sky);
+  if (scene.fog) scene.fog.color = new THREE.Color(sky);
   Options.set(o => (o.app.threeD.waterColor = water));
-  if (waterMaterial) waterMaterial.color = new Three.Color(water);
+  if (waterMaterial) waterMaterial.color = new THREE.Color(water);
   render();
 };
 
@@ -321,57 +333,43 @@ const setResolution = (resolution: number) => {
   redraw();
 };
 
-// download screenshot
-const saveScreenshot = async () => {
-  const URL = Renderer.domElement.toDataURL("image/jpeg");
-  const link = document.createElement("a");
-  link.download = `${getFileName()}.jpeg`;
-  link.href = URL;
-  link.click();
-  window.tip(savedMessage("Screenshot"), true, "success", 7000);
-  window.setTimeout(() => window.URL.revokeObjectURL(URL), 5000);
-};
+/** The scene as a JPEG data URL */
+const screenshotUrl = (): string => Renderer.domElement.toDataURL("image/jpeg");
 
-const saveOBJ = async () => {
-  const objexporter = await OBJExporter();
-  const obj = await objexporter.parse(mesh);
-
-  downloadFile(obj, `${getFileName()}.obj`, "text/plain;charset=UTF-8");
-};
+/** The mesh as Wavefront OBJ text */
+const exportOBJ = async (): Promise<string> => new OBJExporter().parse(mesh);
 
 // start 3d view and heightmap edit preview
 async function newMesh(canvas: HTMLCanvasElement) {
-  const loaded = await loadTHREE();
-  if (!loaded) return window.tip("Cannot load 3d library", false, "error", 4000);
-  scene = new Three.Scene();
+  scene = new THREE.Scene();
 
   // light
-  ambientLight = new Three.AmbientLight(0xcccccc, options.app.threeD.lightness);
+  ambientLight = new THREE.AmbientLight(0xcccccc, options.app.threeD.lightness * LEGACY_LIGHT_SCALE);
   scene.add(ambientLight);
-  spotLight = new Three.SpotLight(options.app.threeD.sunColor, 0.8, 2000, 0.8, 0, 0);
+  spotLight = new THREE.SpotLight(options.app.threeD.sunColor, 0.8 * LEGACY_LIGHT_SCALE, 0, 0.8, 0, 0);
   spotLight.position.set(options.app.threeD.sun.x, options.app.threeD.sun.y, options.app.threeD.sun.z);
   spotLight.castShadow = true;
+  spotLight.shadow.camera.far = 2000; // the light has no range to take it from
   spotLight.shadow.mapSize.width = 2048;
   spotLight.shadow.mapSize.height = 2048;
   scene.add(spotLight);
 
   // Renderer
-  Renderer = new Three.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+  Renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+  Renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
   Renderer.setSize(canvas.width, canvas.height);
   Renderer.shadowMap.enabled = true;
-  Renderer.shadowMap.type = Three.PCFSoftShadowMap;
+  Renderer.shadowMap.type = THREE.PCFShadowMap;
 
   // texture sizes (mesh render, satellite, erosion bake) must fit the GPU's limit
   Options.set(o => (o.app.threeD.resolutionScale = clampToRendererLimit(o.app.threeD.resolutionScale)));
 
   if (options.app.threeD.extendedWater) extendWater(options.map.graph.width, options.map.graph.height);
-  createMesh(options.map.graph.width, options.map.graph.height, grid.cellsX, grid.cellsY);
+  createMesh(options.map.graph.width, options.map.graph.height);
 
-  camera = new Three.PerspectiveCamera(70, canvas.width / canvas.height, 0.1, 2000);
+  camera = new THREE.PerspectiveCamera(70, canvas.width / canvas.height, 0.1, 2000);
   camera.position.set(0, 400, 500); // Set initial camera position for isometric view
-  const mapControls = await MapControls(camera, canvas);
-  if (!mapControls) return false;
-  controls = mapControls; // Google Maps-style navigation
+  controls = withR140Input(new MapControls(camera, canvas)); // Google Maps-style navigation
 
   // Set initial target at map center
   if (controls.target) controls.target.set(0, 0, 0);
@@ -400,11 +398,11 @@ async function newMesh(canvas: HTMLCanvasElement) {
 }
 
 function textureToSprite(texture: string, width: number, height: number) {
-  const map = new Three.TextureLoader().load(texture);
+  const map = new THREE.TextureLoader().load(texture);
   map.anisotropy = Renderer.capabilities.getMaxAnisotropy();
-  const material = new Three.SpriteMaterial({ map });
+  const material = new THREE.SpriteMaterial({ map });
 
-  const sprite = new Three.Sprite(material);
+  const sprite = new THREE.Sprite(material);
   sprite.scale.set(width, height, 1);
   sprite.renderOrder = 1;
   return sprite as LabeledSprite;
@@ -441,7 +439,7 @@ function get3dCoords(baseX: number, baseY: number) {
   const x = baseX - options.map.graph.width / 2;
   const z = baseY - options.map.graph.height / 2;
 
-  // eroded mesh is too dense to raycast per label (no BVH in three r140):
+  // eroded mesh is too dense to raycast per label (three has no BVH):
   // sample the baked height field instead
   if (erosionBakeActive) {
     const y = ErosionBake.heightAt(baseX, baseY, options.app.threeD.scale);
@@ -457,8 +455,8 @@ function get3dCoords(baseX: number, baseY: number) {
 }
 
 async function createLabels() {
-  raycaster = new Three.Raycaster();
-  raycaster.set(new Three.Vector3(0, 1000, 0), new Three.Vector3(0, -1, 0));
+  raycaster = new THREE.Raycaster();
+  raycaster.set(new THREE.Vector3(0, 1000, 0), new THREE.Vector3(0, -1, 0));
 
   // Cache icon materials and geometries by group to avoid recreating them
   const iconMaterials: Record<string, THREE.MeshPhongMaterial> = {};
@@ -501,7 +499,7 @@ async function createLabels() {
   // Helper function to get or create icon material for a group
   function getIconMaterial(groupName: string, iconColor: string) {
     if (!iconMaterials[groupName]) {
-      const material = new Three.MeshPhongMaterial({ color: iconColor });
+      const material = new THREE.MeshPhongMaterial({ color: iconColor });
       material.wireframe = options.app.threeD.wireframe;
       iconMaterials[groupName] = material;
     }
@@ -512,7 +510,7 @@ async function createLabels() {
   function getIconGeometry(groupName: string, iconSize: number) {
     const key = `${groupName}_${iconSize.toFixed(2)}`;
     if (!iconGeometries[key]) {
-      iconGeometries[key] = new Three.CylinderGeometry(iconSize * 2, iconSize * 2, iconSize, 16, 1);
+      iconGeometries[key] = new THREE.CylinderGeometry(iconSize * 2, iconSize * 2, iconSize, 16, 1);
     }
     return iconGeometries[key];
   }
@@ -520,7 +518,7 @@ async function createLabels() {
   // Helper function to get or create line material for a group
   function getLineMaterial(groupName: string, iconColor: string) {
     if (!lineMaterials[groupName]) {
-      lineMaterials[groupName] = new Three.LineBasicMaterial({ color: iconColor });
+      lineMaterials[groupName] = new THREE.LineBasicMaterial({ color: iconColor });
     }
     return lineMaterials[groupName];
   }
@@ -547,7 +545,7 @@ async function createLabels() {
     if (Layers.isOn("burgIcons")) {
       const geometry = getIconGeometry(burg.group!, burgOptions.iconSize);
       const material = getIconMaterial(burg.group!, burgOptions.iconColor);
-      const iconMesh = new Three.Mesh(geometry, material);
+      const iconMesh = new THREE.Mesh(geometry, material);
       iconMesh.position.set(x, y, z);
 
       icons.push(iconMesh);
@@ -557,9 +555,9 @@ async function createLabels() {
       // Line starts from top of icon (iconSize/2 above ground) and goes to just below label
       const lineStart = y + burgOptions.iconSize / 2;
       const lineEnd = y + burgOptions.elevation - burgOptions.size * 0.5;
-      const points = [new Three.Vector3(x, lineStart, z), new Three.Vector3(x, lineEnd, z)];
-      const line_geometry = new Three.BufferGeometry().setFromPoints(points);
-      const line = new Three.Line(line_geometry, line_material);
+      const points = [new THREE.Vector3(x, lineStart, z), new THREE.Vector3(x, lineEnd, z)];
+      const line_geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const line = new THREE.Line(line_geometry, line_material);
 
       lines.push(line);
       scene.add(line);
@@ -614,7 +612,7 @@ function deleteLabels() {
 }
 
 async function createMeshTextureUrl(): Promise<string> {
-  const url = await Services.ExportMap.getMapURL("mesh", {
+  const url = await mapImage("mesh", {
     noLabels: options.app.threeD.labels3d,
     noWater: options.app.threeD.extendedWater,
     noViewbox: true,
@@ -643,30 +641,41 @@ async function createMeshTextureUrl(): Promise<string> {
   });
 }
 
-// (re)load the 2D map render into the module-level texture
-async function loadMapTexture() {
-  if (!Renderer) return null;
-  if (texture) texture.dispose();
+// the 2D map render as a texture; the caller adopts it with setMapTexture or disposes it
+async function loadMapTexture(): Promise<THREE.Texture | null> {
   const url = await createMeshTextureUrl();
-  await new Promise(resolve => {
-    texture = new Three.TextureLoader().load(
-      url,
-      (t: THREE.Texture) => {
-        resolve(t);
-      },
-      undefined,
-      () => resolve(null)
-    );
-  });
-  if (texture) {
-    texture.anisotropy = Renderer.capabilities.getMaxAnisotropy();
-  }
-  return texture;
+  const loaded = await new THREE.TextureLoader().loadAsync(url).catch(() => null);
+  if (loaded && Renderer) loaded.anisotropy = Renderer.capabilities.getMaxAnisotropy();
+  return loaded;
+}
+
+function setMapTexture(next: THREE.Texture | null) {
+  if (texture) texture.dispose();
+  texture = next;
 }
 
 // create a mesh from pixel data
-async function createMesh(width: number, height: number, segmentsX: number, segmentsY: number) {
+async function createMesh(width: number, height: number) {
   if (!scene || !Renderer) return;
+  const build = ++sceneBuild;
+  onBuild(true);
+  try {
+    await paintedFrame(); // the bake blocks the main thread: let the loading tip show first
+    if (build !== sceneBuild) return;
+    await buildMesh(build, width, height);
+  } finally {
+    if (build === sceneBuild) onBuild(false); // a newer build reports for itself
+  }
+}
+
+// a rendered frame, or a short timeout where a background tab holds animation frames back
+const paintedFrame = () =>
+  new Promise<void>(resolve => {
+    requestAnimationFrame(() => setTimeout(resolve));
+    setTimeout(resolve, 100);
+  });
+
+async function buildMesh(build: number, width: number, height: number) {
   stopWaterAnimation(); // restarted below if the satellite texture applies
 
   // Build lookup map from grid cell index to pack cell index
@@ -683,10 +692,14 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
   // satellite texture is independent of erosion: it replaces the SVG map
   // render entirely, so the render is only loaded when satellite is off
   const useSatellite = Boolean(options.app.threeD.satellite && !isGlobeView() && !options.app.threeD.wireframe);
-  if (!options.app.threeD.wireframe && !useSatellite) await loadMapTexture();
+  if (!options.app.threeD.wireframe && !useSatellite) {
+    const mapTexture = await loadMapTexture();
+    if (build !== sceneBuild) return mapTexture?.dispose();
+    setMapTexture(mapTexture);
+  }
 
   if (material) material.dispose();
-  material = new Three.MeshLambertMaterial();
+  material = new THREE.MeshLambertMaterial();
 
   if (options.app.threeD.wireframe) {
     material.wireframe = true;
@@ -716,8 +729,8 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
       bakeResolution: Math.min(desiredBakeResolution, maxBakeResolution)
     });
     if (!bakeResult && options.app.threeD.erosion) {
-      console.warn("3D erosion bake failed, falling back to standard mesh");
-      window.tip("Eroded terrain is not supported on this device", false, "warn", 4000);
+      log.warn("3D erosion bake failed, falling back to standard mesh");
+      notify(t("Eroded terrain is not supported on this device"), "warn", 4000);
       Options.set(o => (o.app.threeD.erosion = false));
       syncErosionUI();
     }
@@ -737,7 +750,7 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
     const segLong = options.app.threeD.erosionDetail;
     const segX = width >= height ? segLong : Math.max(2, Math.round((segLong * width) / height));
     const segY = width >= height ? Math.max(2, Math.round((segLong * height) / width)) : segLong;
-    geometry = new Three.PlaneGeometry(width, height, segX - 1, segY - 1);
+    geometry = new THREE.PlaneGeometry(width, height, segX - 1, segY - 1);
 
     const vertices = geometry.getAttribute("position");
     for (let i = 0; i < vertices.count; i++) {
@@ -746,19 +759,19 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
       vertices.setZ(i, ErosionBake.heightAt(mapX, mapY, options.app.threeD.scale));
     }
     geometry.computeVertexNormals();
-    mesh = new Three.Mesh(geometry, material); // geometry is dense already, subdivision is ignored
+    mesh = new THREE.Mesh(geometry, material); // geometry is dense already, subdivision is ignored
   } else {
-    geometry = new Three.PlaneGeometry(width, height, segmentsX - 1, segmentsY - 1);
+    const raster = Grid.getRaster(); // a vertex per raster pixel: square spacing on every sampling
+    geometry = new THREE.PlaneGeometry(width, height, raster.width - 1, raster.height - 1);
 
     const vertices = geometry.getAttribute("position");
     for (let i = 0; i < vertices.count; i++) {
-      vertices.setZ(i, getMeshHeight(i));
+      vertices.setZ(i, getMeshHeight(raster.cells[i]));
     }
 
     geometry.setAttribute("position", vertices);
     geometry.computeVertexNormals();
     if (options.app.threeD.subdivide) {
-      await loadLoopSubdivision();
       const subdivideParams = {
         split: true,
         uvSmooth: false,
@@ -766,10 +779,12 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
         flatOnly: false,
         maxTriangles: Infinity
       };
-      const smoothGeometry = (window as any).loopSubdivision.modify(geometry, 1, subdivideParams);
-      mesh = new Three.Mesh(smoothGeometry, material);
+      const smoothGeometry = LoopSubdivision.modify(geometry, 1, subdivideParams);
+      geometry.dispose();
+      geometry = smoothGeometry; // tracked so the next rebuild or stop() disposes it
+      mesh = new THREE.Mesh(geometry, material);
     } else {
-      mesh = new Three.Mesh(geometry, material);
+      mesh = new THREE.Mesh(geometry, material);
     }
   }
 
@@ -788,7 +803,10 @@ async function createMesh(width: number, height: number, segmentsX: number, segm
       applyWaterAnimation(material as THREE.MeshLambertMaterial, generateRiverFlowTexture());
       startWaterAnimation();
     } else {
-      material.map = await loadMapTexture();
+      const mapTexture = await loadMapTexture();
+      if (build !== sceneBuild) return mapTexture?.dispose();
+      setMapTexture(mapTexture);
+      material.map = texture;
       material.transparent = true;
     }
   }
@@ -825,7 +843,7 @@ function getMeshHeight(i: number) {
     const featureId = pack.cells.f[packCellIndex];
     if (featureId === undefined) return 0;
 
-    const feature: any = pack.features[featureId];
+    const feature = pack.features[featureId];
     const waterHeight = feature.type === "lake" && feature.height ? feature.height : 20;
     return ((waterHeight - LOWER_BY_WATER) / DIVIDER) * options.app.threeD.scale;
   }
@@ -836,13 +854,13 @@ function getMeshHeight(i: number) {
 
 function extendWater(width: number, height: number) {
   if (!scene) return;
-  scene.background = new Three.Color(options.app.threeD.skyColor);
+  scene.background = new THREE.Color(options.app.threeD.skyColor);
 
-  waterPlane = new Three.PlaneGeometry(width * 10, height * 10, 1);
-  waterMaterial = new Three.MeshBasicMaterial({ color: options.app.threeD.waterColor });
-  scene.fog = new Three.Fog(scene.background, 500, 3000);
+  waterPlane = new THREE.PlaneGeometry(width * 10, height * 10, 1);
+  waterMaterial = new THREE.MeshBasicMaterial({ color: options.app.threeD.waterColor });
+  scene.fog = new THREE.Fog(scene.background, 500, 3000);
 
-  waterMesh = new Three.Mesh(waterPlane, waterMaterial);
+  waterMesh = new THREE.Mesh(waterPlane, waterMaterial);
   waterMesh.rotation.x = -Math.PI / 2;
   waterMesh.position.y -= 3;
   scene.add(waterMesh);
@@ -862,29 +880,25 @@ async function update3dTexture() {
     }
   }
 
-  if (texture) texture.dispose();
+  const build = sceneBuild;
   const url = await createMeshTextureUrl();
   window.setTimeout(() => window.URL.revokeObjectURL(url), 4000);
-  texture = new Three.TextureLoader().load(url, render);
+  if (build !== sceneBuild) return;
+  setMapTexture(new THREE.TextureLoader().load(url, render));
   material.map = texture;
 }
 
 async function newGlobe(canvas: HTMLCanvasElement) {
-  const loaded = await loadTHREE();
-  if (!loaded) {
-    window.tip("Cannot load 3d library", false, "error", 4000);
-    return false;
-  }
-
   // scene
-  scene = new Three.Scene();
-  scene.background = new Three.TextureLoader().load(
+  scene = new THREE.Scene();
+  scene.background = new THREE.TextureLoader().load(
     "https://i0.wp.com/azgaar.files.wordpress.com/2019/10/stars-1.png",
     render
   );
 
   // Renderer
-  Renderer = new Three.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+  Renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+  Renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
   Renderer.setSize(canvas.width, canvas.height);
 
   // texture size must fit the GPU's limit
@@ -892,16 +906,14 @@ async function newGlobe(canvas: HTMLCanvasElement) {
 
   // material
   if (material) material.dispose();
-  material = new Three.MeshBasicMaterial();
+  material = new THREE.MeshBasicMaterial();
   updateGlobeTexure(true);
 
   // camera
-  camera = new Three.PerspectiveCamera(45, canvas.width / canvas.height, 0.1, 1000);
+  camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height, 0.1, 1000);
   camera.translateZ(5);
 
-  const orbitControls = await OrbitControls(camera, Renderer.domElement);
-  if (!orbitControls) return false;
-  controls = orbitControls; // OrbitControls for globe view
+  controls = withR140Input(new OrbitControls(camera, Renderer.domElement));
   controls.zoomSpeed = 0.25;
   controls.minDistance = 1.5;
   controls.maxDistance = 10;
@@ -910,9 +922,9 @@ async function newGlobe(canvas: HTMLCanvasElement) {
 
   // ensure OrbitControls behavior (reset potentially changed defaults by MapControls)
   controls.mouseButtons = {
-    LEFT: Three.MOUSE.ROTATE,
-    MIDDLE: Three.MOUSE.DOLLY,
-    RIGHT: Three.MOUSE.PAN
+    LEFT: THREE.MOUSE.ROTATE,
+    MIDDLE: THREE.MOUSE.DOLLY,
+    RIGHT: THREE.MOUSE.PAN
   };
   controls.screenSpacePanning = true;
   controls.minPolarAngle = 0;
@@ -923,33 +935,9 @@ async function newGlobe(canvas: HTMLCanvasElement) {
   return true;
 }
 
-async function OrbitControls(camera: THREE.Camera, domElement: HTMLElement): Promise<Controls | false> {
-  if ((Three as any).OrbitControls) return new (Three as any).OrbitControls(camera, domElement);
-
-  return new Promise(resolve => {
-    const script = document.createElement("script");
-    script.src = "libs/orbitControls.min.js";
-    document.head.append(script);
-    script.onload = () =>
-      resolve((Three as any).OrbitControls ? new (Three as any).OrbitControls(camera, domElement) : false);
-    script.onerror = () => resolve(false);
-  });
-}
-
-async function MapControls(camera: THREE.Camera, domElement: HTMLElement): Promise<Controls | false> {
-  if ((Three as any).MapControls) return new (Three as any).MapControls(camera, domElement);
-
-  return new Promise(resolve => {
-    const script = document.createElement("script");
-    script.src = "libs/mapControls.min.js";
-    document.head.append(script);
-    script.onload = () =>
-      resolve((Three as any).MapControls ? new (Three as any).MapControls(camera, domElement) : false);
-    script.onerror = () => resolve(false);
-  });
-}
-
 async function updateGlobeTexure(addMesh?: boolean) {
+  const build = addMesh ? ++sceneBuild : sceneBuild; // a texture refresh must not cancel a pending rebuild
+  if (addMesh) onBuild(true);
   const world = options.map.geography.coordinates.latT > 179; // define if map covers whole world
 
   // texture size
@@ -981,21 +969,30 @@ async function updateGlobeTexure(addMesh?: boolean) {
   // fill canvas segment with map texture
   const img2 = new Image();
   img2.onload = () => {
+    if (build !== sceneBuild) return;
     ctx.drawImage(img2, dx, dy, mapWidth, mapHeight);
-    if (texture) texture.dispose();
-    texture = new Three.CanvasTexture(ctx.canvas);
+    setMapTexture(new THREE.CanvasTexture(ctx.canvas));
     material.map = texture;
-    if (addMesh) addGlobe3dMesh();
+    if (!addMesh) return;
+    addGlobe3dMesh();
+    onBuild(false);
   };
-  img2.src = await Services.ExportMap.getMapURL("mesh", { noScaleBar: true, fullMap: true, noVignette: true });
+  const failed = () => {
+    if (addMesh && build === sceneBuild) onBuild(false);
+  };
+  img2.onerror = failed;
+  img2.src = await mapImage("mesh", { noScaleBar: true, fullMap: true, noVignette: true }).catch(error => {
+    failed();
+    throw error;
+  });
 }
 
 function addGlobe3dMesh() {
   if (!active || !scene || !material) return;
   if (mesh) scene.remove(mesh);
   if (geometry) geometry.dispose(); // three frees the GL buffers only on the geometry's dispose event
-  geometry = new Three.SphereGeometry(1, 64, 64);
-  mesh = new Three.Mesh(geometry, material);
+  geometry = new THREE.SphereGeometry(1, 64, 64);
+  mesh = new THREE.Mesh(geometry, material);
   scene.add(mesh);
   if (controls?.autoRotate) animate();
   else render();
@@ -1089,24 +1086,24 @@ function applyWaterAnimation(mat: THREE.MeshLambertMaterial, flowTexture: THREE.
           if (waterMask > 0.001) {
             // two octaves of value noise drifting in different directions:
             // organic moving glitter instead of a static interference lattice
-            vec2 wp = vUv * vec2(140.0, 100.0);
+            vec2 wp = vMapUv * vec2(140.0, 100.0);
             float n1 = fmgWaterNoise(wp + vec2(uTime * 0.6, uTime * 0.25));
             float n2 = fmgWaterNoise(wp * 2.3 - vec2(uTime * 0.45, -uTime * 0.7));
             float waves = n1 * 0.65 + n2 * 0.35;
             float crest = pow(waves, 4.0); // rare bright patches = sun glitter
-            float swell = sin(dot(vUv, vec2(36.0, 28.0)) + uTime * 0.6) * 0.025;
+            float swell = sin(dot(vMapUv, vec2(36.0, 28.0)) + uTime * 0.6) * 0.025;
             diffuseColor.rgb *= 1.0 + waterMask * ((waves - 0.5) * 0.12 + swell);
             diffuseColor.rgb += waterMask * crest * vec3(0.04, 0.09, 0.09);
             // surf lapping the shore, driven by the baked shore-proximity hint
             float shoreGlow = smoothstep(0.02, 0.3, diffuseColor.a) * waterMask;
-            float surf = shoreGlow * (0.5 + 0.5 * sin(uTime * 1.5 + (n1 - 0.5) * 9.0 + dot(vUv, vec2(420.0, 380.0))));
+            float surf = shoreGlow * (0.5 + 0.5 * sin(uTime * 1.5 + (n1 - 0.5) * 9.0 + dot(vMapUv, vec2(420.0, 380.0))));
             diffuseColor.rgb += surf * 0.08 * vec3(0.9, 1.0, 1.0);
           }
           // enclosed lakes (fresh/salt/sinkhole): a slow calm ripple, far
           // gentler than the ocean shimmer — no surf line, no sun glitter
           float lakeBand = smoothstep(0.64, 0.69, diffuseColor.a) * (1.0 - smoothstep(0.71, 0.78, diffuseColor.a));
           if (lakeBand > 0.001) {
-            vec2 lp = vUv * vec2(160.0, 115.0);
+            vec2 lp = vMapUv * vec2(160.0, 115.0);
             float l1 = fmgWaterNoise(lp + vec2(uTime * 0.18, uTime * 0.12));
             float l2 = fmgWaterNoise(lp * 2.1 - vec2(uTime * 0.14, -uTime * 0.21));
             diffuseColor.rgb *= 1.0 + lakeBand * (l1 * 0.6 + l2 * 0.4 - 0.5) * 0.05;
@@ -1119,7 +1116,7 @@ function applyWaterAnimation(mat: THREE.MeshLambertMaterial, flowTexture: THREE.
           // harmonics of the phase stay seam-free across the sin/cos wrap
           float riverBand = smoothstep(0.36, 0.42, diffuseColor.a) * (1.0 - smoothstep(0.50, 0.58, diffuseColor.a));
           if (riverBand > 0.001) {
-            vec4 flow = texture2D(uFlow, vUv);
+            vec4 flow = texture2D(uFlow, vMapUv);
             if (flow.b > 0.1) {
               float steep = clamp(flow.b * 1.186 - 0.186, 0.0, 1.0); // byte 40..255 -> 0..1
               float flowPhase = atan(flow.r - 0.5, flow.g - 0.5);
@@ -1128,8 +1125,8 @@ function applyWaterAnimation(mat: THREE.MeshLambertMaterial, flowTexture: THREE.
               // from waves traveling in +phase (downstream) — a noise field
               // drifting in uv has one fixed direction for the whole map and
               // reads as upstream flow on rivers oriented against it
-              float texNoise = fmgWaterNoise(vUv * vec2(380.0, 280.0));
-              float fineNoise = fmgWaterNoise(vUv * vec2(880.0, 640.0));
+              float texNoise = fmgWaterNoise(vMapUv * vec2(380.0, 280.0));
+              float fineNoise = fmgWaterNoise(vMapUv * vec2(880.0, 640.0));
               // noise-offset phases break the ripple bands into irregular
               // tongues while keeping the motion strictly down-course
               float flowWave = sin(flowPhase - uTime * 2.2 * speedMul + texNoise * 2.5) * 0.6
@@ -1157,59 +1154,19 @@ function applyWaterAnimation(mat: THREE.MeshLambertMaterial, flowTexture: THREE.
   };
 }
 
-function loadTHREE() {
-  if (Three) return Promise.resolve(true);
-  if (!threeLoadPromise) {
-    threeLoadPromise = new Promise(resolve => {
-      const script = document.createElement("script");
-      script.src = "libs/three.min.js";
-      document.head.append(script);
-      script.onload = () => {
-        Three = window.THREE as unknown as typeof import("three");
-        resolve(true);
-      };
-      script.onerror = () => resolve(false);
-    });
-  }
-
-  return threeLoadPromise;
-}
-
-function loadLoopSubdivision() {
-  if ((window as any).loopSubdivision) return Promise.resolve(true);
-
-  return new Promise(resolve => {
-    const script = document.createElement("script");
-    script.src = "libs/loopsubdivison.min.js";
-    document.head.append(script);
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-  });
-}
-
-function OBJExporter(): any {
-  if ((Three as any).OBJExporter) return new (Three as any).OBJExporter();
-
-  return new Promise(resolve => {
-    const script = document.createElement("script");
-    script.src = "libs/objexporter.min.js?v=1.89.35";
-    document.head.append(script);
-    script.onload = () => resolve((Three as any).OBJExporter ? new (Three as any).OBJExporter() : false);
-    script.onerror = () => resolve(false);
-  });
-}
-
 export {
   create,
+  exportOBJ,
   redraw,
-  saveOBJ,
-  saveScreenshot,
+  screenshotUrl,
+  setBuildListener,
   setColors,
   setErosionDetail,
   setErosionOctaves,
   setErosionRiverDepth,
   setErosionStrength,
   setLightness,
+  setMapImageSource,
   setResolution,
   setResolutionScale,
   setRotation,

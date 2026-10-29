@@ -1,13 +1,11 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
   mapId: 1,
   send: vi.fn(),
-  note: null as string | null,
-  close: undefined as (() => void) | undefined
+  note: null as string | null
 }));
-vi.mock("@/components/map-commands", () => ({ MAP_COMMANDS: [], isLinkable: () => false })); // its import touches the DOM
 vi.mock("./map", () => ({
   AssistantMap: {
     id: () => state.mapId,
@@ -31,12 +29,20 @@ vi.mock("@/controllers", () => ({
 }));
 vi.mock("@/services/assistant/azgaar-server/answerer", () => ({ askServer: state.send }));
 
+import { Dialog } from "@/ui/dialog/dialog";
+import { Catalog } from "@/utils/i18n";
 import { Assistant } from "./index";
+
+vi.mock("@/services/local-db", () => ({
+  LocalDB: { isSupported: () => true, get: vi.fn(async () => []), set: vi.fn(async () => {}) }
+}));
+
+// English plural forms live in the English catalog
+beforeAll(() => Catalog.load("en"));
 
 beforeEach(() => {
   state.mapId++;
   state.note = null;
-  state.close = undefined;
   localStorage.clear();
   state.send.mockReset();
   state.send.mockImplementation(
@@ -54,19 +60,6 @@ beforeEach(() => {
   );
   document.body.innerHTML = '<div id="dialogs"></div>';
   localStorage.setItem("fmg-help-gateway", "http://localhost:9876");
-  vi.stubGlobal("ldb", { get: vi.fn(async () => []), set: vi.fn(async () => {}) });
-  window.$ = vi.fn(() => ({
-    dialog: (options: string | { close?: () => void }) => {
-      if (typeof options === "string") return;
-      state.close = options.close;
-      const panel = document.getElementById("assistant")!;
-      const wrapper = document.createElement("div");
-      wrapper.className = "ui-dialog";
-      wrapper.innerHTML = '<div class="ui-dialog-titlebar"></div>';
-      panel.replaceWith(wrapper);
-      wrapper.append(panel);
-    }
-  })) as unknown as typeof window.$;
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => new Response(JSON.stringify({ tier: "anonymous", remaining: 5, resetsAt: "" }), { status: 200 }))
@@ -74,7 +67,7 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
-  state.close?.();
+  Dialog.close("assistant");
   const ask = document.getElementById("assistantAsk");
   if (ask?.classList.contains("busy")) ask.click(); // closing no longer stops an answer
   await new Promise(resolve => setTimeout(resolve, 0));
@@ -198,7 +191,7 @@ it("keeps a selected read-only chat when reopening the panel or reloading the sa
   clickText("Read-only history");
   const count = chats.list().length;
   window.dispatchEvent(new Event("map:generated"));
-  state.close?.();
+  Dialog.close("assistant");
   Assistant.open();
   await vi.waitFor(() =>
     expect(document.getElementById("assistantTranscript")?.textContent).toContain("Read-only history")
@@ -224,13 +217,13 @@ it("keeps the panel, its draft and a running answer when closed", async () => {
   const input = document.getElementById("assistantQuestion") as HTMLTextAreaElement;
   input.value = "Read";
   document.getElementById("assistantAsk")!.click();
-  const close = state.close;
-  close?.();
+  const frame = document.getElementById("assistant")!.closest(".dialog-window");
+  Dialog.close("assistant");
   input.value = "draft";
   finish?.();
   await vi.waitFor(() => expect(document.getElementById("assistantAsk")?.classList.contains("busy")).toBe(false));
   Assistant.open();
-  expect(state.close).toBe(close); // reopened, not rebuilt
+  expect(document.getElementById("assistant")!.closest(".dialog-window")).toBe(frame); // reopened, not rebuilt
   expect(document.getElementById("assistantQuestion")).toBe(input);
   expect(input.value).toBe("draft");
   expect(document.getElementById("assistantTranscript")?.textContent).toContain("Read");
@@ -309,10 +302,10 @@ it("renders every transcript item type and never renders user text as HTML", asy
   expect(proposed.querySelectorAll(".assistantChangeField")).toHaveLength(8);
   expect(proposed.querySelector(".assistantChangeName")?.innerHTML).toBe("Burg &lt;0&gt;");
   expect(proposed.querySelector(".assistantChangeField del")?.innerHTML).toBe("&lt;0&gt;");
-  expect(proposed.textContent).toContain("… 2 more changes");
-  expect(proposed.textContent).toContain("10 changes · 10 entities");
+  expect(proposed.textContent).toContain("… 2 more");
+  expect(proposed.textContent).toContain("Changes: 10 · Entities: 10");
   expect([...proposed.querySelectorAll("button")].map(button => button.textContent)).toEqual(["Discard", "Apply"]);
-  expect(applied.querySelector("summary")?.textContent).toBe("Show 1 change");
+  expect(applied.querySelector("summary")?.textContent).toBe("Show changes (1)");
   expect(applied.querySelector("button")?.textContent).toBe("Undo");
   expect(log.querySelector(".assistantDivider")).not.toBeNull();
   expect(log.querySelector(".assistantNoticeItem")?.textContent).toContain("Earlier notice");
@@ -347,7 +340,7 @@ it("shows an added or removed entity as one row and cell changes as a count", as
     "assistantChangeTag remove",
     "assistantChangeTag add"
   ]);
-  expect(card.textContent).toContain("3 changes · 3 entities");
+  expect(card.textContent).toContain("Changes: 3 · Entities: 3");
 });
 
 it("renders entity links in answers and an entities widget", async () => {
@@ -473,4 +466,21 @@ it("refreshes limits after an unauthorized rating", async () => {
   rate("Good answer");
   await vi.waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/v1/limits"))).toBe(true));
   expect(item.rating).toBeUndefined();
+});
+
+it("sends a question asked from elsewhere, keeping the draft, and holds the next one while answering", async () => {
+  Assistant.open();
+  const input = await vi.waitFor(() => document.getElementById("assistantQuestion") as HTMLTextAreaElement);
+  input.value = "my draft";
+  void Assistant.ask("What's there? cell:4");
+  await vi.waitFor(() => expect(state.send).toHaveBeenCalledTimes(1));
+  expect(state.send.mock.calls[0][1]).toBe("What's there? cell:4");
+  expect(input.value).toBe("my draft");
+
+  await Assistant.ask("What's there? cell:9");
+  expect(state.send).toHaveBeenCalledTimes(1);
+  expect(input.value).toBe("my draft");
+  input.value = "";
+  await Assistant.ask("What's there? cell:9");
+  expect(input.value).toBe("What's there? cell:9");
 });

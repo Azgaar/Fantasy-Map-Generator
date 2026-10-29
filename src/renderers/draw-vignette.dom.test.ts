@@ -1,7 +1,7 @@
 // Browser-mode test (vitest.browser.config.ts): drawVignette applies the store's geometry to
 // the #vignette-rect defs resource - the projection rows' old job.
 import { beforeEach, expect, test } from "vitest";
-import "@/generators/styles";
+import "@/model/styles/styles";
 import { drawVignette } from "./draw-vignette";
 
 beforeEach(() => {

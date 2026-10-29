@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { HeraldicEmblem } from "@/types/emblems";
-import "@/generators/relief-generator"; // the icon set catalog lists every family
-import "@/generators/burgs-generator";
-import "@/generators/goods-generator";
+import "@/model/physical/relief-generator"; // the icon set catalog lists every family
+import "@/model/political/burgs-generator";
+import "@/model/economy/goods-generator";
 
 import { EmblemRenderer } from "./renderer";
 

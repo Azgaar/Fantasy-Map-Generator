@@ -1,4 +1,4 @@
-// @vitest-environment jsdom
+﻿// @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => {
@@ -37,10 +37,10 @@ const mocks = vi.hoisted(() => {
   return { state, living };
 });
 
-vi.mock("@/generators/living-generator", () => ({ Living: mocks.living }));
-vi.mock("@/components/layers", () => ({ Layers: { draw: vi.fn() } }));
-vi.mock("@/components/zoom", () => ({ zoomTo: vi.fn() }));
-vi.mock("@/generators/journeys/journey-places", () => ({ getCellPoint: vi.fn(() => [10, 10]) }));
+vi.mock("@/model/physical/living-generator", () => ({ Living: mocks.living }));
+vi.mock("@/renderers/layers", () => ({ Layers: { draw: vi.fn() } }));
+vi.mock("@/ui/map/zoom", () => ({ zoomTo: vi.fn() }));
+vi.mock("@/model/story/journeys/journey-places", () => ({ getCellPoint: vi.fn(() => [10, 10]) }));
 vi.mock("@/conquest/content/store", () => ({
   currentContent: () => ({ content: { buildings: [{ id: "market1", name: "Market" }] }, config: {} })
 }));
@@ -53,10 +53,10 @@ vi.mock("@/controllers", () => ({
   }
 }));
 
-import { Layers } from "@/components/layers";
-import { zoomTo } from "@/components/zoom";
+import { Layers } from "@/renderers/layers";
+import { zoomTo } from "@/ui/map/zoom";
 import { Controllers } from "@/controllers";
-import { Living } from "@/generators/living-generator";
+import { Living } from "@/model/physical/living-generator";
 import { LivingHud } from "./living-hud";
 
 function makePack() {
@@ -191,8 +191,8 @@ describe("LivingHud", () => {
     expect(document.getElementById("livingHudPause")?.textContent).toBe("Pause");
     expect(document.getElementById("livingHudStepSeason")?.textContent).toBe("Step +1 Season");
     expect(document.getElementById("livingHudStepYear")?.textContent).toBe("Step +1 Year");
-    expect(document.getElementById("livingHudPlay")?.textContent).toBe("Play 1×");
-    expect(document.getElementById("livingHudPlay4")?.textContent).toBe("Play 4×");
+    expect(document.getElementById("livingHudPlay")?.textContent).toBe("Play 1Ã—");
+    expect(document.getElementById("livingHudPlay4")?.textContent).toBe("Play 4Ã—");
     expect(Living.getState).toHaveBeenCalled();
   });
 
@@ -334,8 +334,8 @@ describe("LivingHud", () => {
     expect(inspector?.textContent).toContain("Lv 6");
     expect(inspector?.textContent).toContain("Raid: 5+");
     expect(inspector?.textContent).toContain("Defenders: 25");
-    expect(inspector?.textContent).toContain("🏰 Fortified");
-    expect(inspector?.textContent).toContain("⚠️ Raid Imminent");
+    expect(inspector?.textContent).toContain("ðŸ° Fortified");
+    expect(inspector?.textContent).toContain("âš ï¸ Raid Imminent");
 
     inspector?.querySelector<HTMLElement>('[data-god="assault-state-lair"]')?.click();
     expect(Living.assaultLair).toHaveBeenCalledWith(1, 1);

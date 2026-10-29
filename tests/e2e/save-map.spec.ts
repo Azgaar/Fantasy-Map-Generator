@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { waitForMap } from "./wait-for-map";
 
-declare const Services: { Save: { prepareMapData: () => Promise<string> } };
+// the app's console surface, see src/app/fmg.ts
+declare const FMG: any;
+
 declare const options: { map: { lore: { name: string } } };
 
 declare global {
@@ -38,50 +40,49 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-test("Ctrl+S reuses the chosen file and Ctrl+Shift+S switches to a separate copy", async ({ page }) => {
+test("Ctrl+S saves a new file each time and Ctrl+Shift+S overwrites the last one", async ({ page }) => {
   // the tip shows once the write is closed; reading the file mid-write can throw NotFoundError
   const save = async (keys: string, filename: string) => {
     await page.evaluate(() => {
       document.getElementById("tooltip")!.textContent = "";
     });
     await page.keyboard.press(keys);
-    await expect(page.locator("#tooltip")).toContainText(`Map is saved to "${filename}"`);
+    await expect(page.locator("#tooltip")).toContainText(`Map is saved to “${filename}”`);
   };
   const read = (index: number) =>
     page.evaluate(async i => (await window.saveTest.handles[i].getFile()).text(), index);
 
-  const initial = await page.evaluate(() => Services.Save.prepareMapData());
+  const initial = await page.evaluate(() => FMG.Services.Save.prepareMapData());
   await save("Control+s", "Chosen-1.map");
   expect(await read(0)).toBe(initial);
 
   const edited = await page.evaluate(async () => {
     options.map.lore.name = "Edited after saving";
-    return Services.Save.prepareMapData();
+    return FMG.Services.Save.prepareMapData();
   });
-  await save("Control+s", "Chosen-1.map");
+  await save("Control+Shift+s", "Chosen-1.map");
   expect(await read(0)).toBe(edited);
   expect(await page.evaluate(() => window.saveTest.picks)).toBe(1);
 
-  await save("Control+Shift+s", "Chosen-2.map");
-  const copy = await page.evaluate(async () => {
-    options.map.lore.name = "Edited copy";
-    return Services.Save.prepareMapData();
+  const backup = await page.evaluate(async () => {
+    options.map.lore.name = "Edited again";
+    return FMG.Services.Save.prepareMapData();
   });
   await save("Control+s", "Chosen-2.map");
-  expect(await read(1)).toBe(copy);
+  expect(await read(1)).toBe(backup);
   expect(await read(0)).toBe(edited);
   expect(await page.evaluate(() => window.saveTest.picks)).toBe(2);
   expect(await page.evaluate(() => window.saveTest.activations)).toEqual([true, true]);
 });
 
-test("cancelling Save As retains the destination and loading a map clears it", async ({ page }) => {
+test("cancelling a save retains the overwrite destination and loading a map clears it", async ({ page }) => {
   await page.keyboard.press("Control+s");
-  await expect(page.locator("#tooltip")).toContainText('Map is saved to "Chosen-1.map"');
+  await expect(page.locator("#tooltip")).toContainText('Map is saved to “Chosen-1.map”');
   await page.evaluate(() => {
     window.saveTest.cancel = true;
     document.getElementById("tooltip")!.textContent = "";
   });
-  await page.keyboard.press("Control+Shift+s");
+  await page.keyboard.press("Control+s");
   await expect.poll(() => page.evaluate(() => window.saveTest.picks)).toBe(2);
   await expect(page.locator("#tooltip")).not.toContainText("Map is saved");
   await expect(page.getByText("Saving error", { exact: true })).not.toBeVisible();
@@ -89,18 +90,18 @@ test("cancelling Save As retains the destination and loading a map clears it", a
   await page.evaluate(() => {
     window.saveTest.cancel = false;
   });
-  await page.keyboard.press("Control+s");
-  await expect(page.locator("#tooltip")).toContainText('Map is saved to "Chosen-1.map"');
+  await page.keyboard.press("Control+Shift+s");
+  await expect(page.locator("#tooltip")).toContainText('Map is saved to “Chosen-1.map”');
   expect(await page.evaluate(() => window.saveTest.picks)).toBe(2);
 
-  const data = await page.evaluate(() => Services.Save.prepareMapData());
+  const data = await page.evaluate(() => FMG.Services.Save.prepareMapData());
   await page.locator("#mapToLoad").setInputFiles({
     name: "Reloaded.map",
     mimeType: "text/plain",
     buffer: Buffer.from(data)
   });
   await expect(page.locator("#tooltip")).toContainText("Map is successfully loaded");
-  await page.keyboard.press("Control+s");
-  await expect(page.locator("#tooltip")).toContainText('Map is saved to "Chosen-3.map"');
+  await page.keyboard.press("Control+Shift+s");
+  await expect(page.locator("#tooltip")).toContainText('Map is saved to “Chosen-3.map”');
   expect(await page.evaluate(() => window.saveTest.picks)).toBe(3);
 });

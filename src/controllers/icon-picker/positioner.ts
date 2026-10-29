@@ -1,9 +1,12 @@
 // The icon picker's positioner: zoom and pan a custom icon's picture inside its frame
 
-import { destroyDialog } from "@/components/dialog/dialog-helpers";
-import { CustomIcons, Icons } from "@/components/icons";
-import { tip } from "@/components/tooltips";
-import { ensureEl, escapeHtml } from "@/utils";
+import { CustomIcons, Icons } from "@/model/icons";
+import { Dialog } from "@/ui/dialog/dialog";
+
+import { tip } from "@/ui/tooltips";
+import { t } from "@/utils/i18n";
+import { ensureEl, findEl } from "@/utils/node-utils";
+import { escapeHtml } from "@/utils/string-utils";
 import { IconPictures } from "./pictures";
 
 const DIALOG = "iconPositioner";
@@ -29,15 +32,15 @@ type Frame = { x: number; y: number; side: number };
 
 /** Cancel the positioner, or only the one positioning icon `id`: its frame is stale once the picture changes */
 export function closePositioner(id?: string): void {
-  const dialog = document.getElementById(DIALOG);
-  if (dialog && (!id || dialog.dataset.icon === id)) $(dialog).dialog("close");
+  const dialog = findEl(DIALOG);
+  if (dialog && (!id || dialog.dataset.icon === id)) Dialog.close(DIALOG);
 }
 
 export function openPositioner(id: string): void {
   const icon = CustomIcons.get(id);
-  if (!icon || !document.getElementById(id)) return;
+  if (!icon || !findEl(id)) return;
   // looked up on every change: a sync of the custom icons replaces the symbol
-  const setSymbolFrame = (viewBox: string) => document.getElementById(id)?.setAttribute("viewBox", viewBox);
+  const setSymbolFrame = (viewBox: string) => findEl(id)?.setAttribute("viewBox", viewBox);
 
   const original = icon.viewBox;
   const reference = toFrame(original);
@@ -48,15 +51,15 @@ export function openPositioner(id: string): void {
     "beforeend",
     /* html */ `<div id="${DIALOG}" class="dialog" data-icon="${escapeHtml(id)}">
       <style>${STYLE}</style>
-      <div class="stage" data-tip="Drag to pan, scroll to zoom">
-        <svg><g class="art"${Icons.paintAttributes(id)}>${document.getElementById(id)!.innerHTML}</g><path class="shade" fill="#000" fill-opacity=".45" fill-rule="evenodd"/><rect class="edge" fill="none" stroke="#d0240f" vector-effect="non-scaling-stroke" stroke-dasharray="4 3"/></svg>
+      <div class="stage" data-tip="${t("Drag to pan, scroll to zoom")}">
+        <svg><g class="art"${Icons.paintAttributes(id)}>${ensureEl(id).innerHTML}</g><path class="shade" fill="#000" fill-opacity=".45" fill-rule="evenodd"/><rect class="edge" fill="none" stroke="#d0240f" vector-effect="non-scaling-stroke" stroke-dasharray="4 3"/></svg>
       </div>
       <div class="controls">
-        <span>Zoom</span>
+        <span>${t("Zoom")}</span>
         <slider-input min="${MIN_ZOOM}" max="${MAX_ZOOM}" value="100"></slider-input>
-        <button type="button" class="fit" data-tip="Fit the frame to the picture's visible content">Fit</button>
+        <button type="button" class="fit" data-tip="${t("Fit the frame to the picture's visible content")}">${t("Fit")}</button>
       </div>
-      <div class="previews" data-tip="The icon at map sizes">
+      <div class="previews" data-tip="${t("The icon at map sizes")}">
         <span class="small">${Icons.html(id)}</span>
         <span>${Icons.html(id)}</span>
         <span class="circle">${Icons.html(id)}</span>
@@ -132,28 +135,34 @@ export function openPositioner(id: string): void {
     const fitted = await IconPictures.fit(icon);
     if (!dialog.isConnected) return;
     show(toFrame(fitted));
-    tip("The frame is fitted to the picture", false, "success", 2000);
+    tip(t("The frame is fitted to the picture"), false, "success", 2000);
   });
 
   let applied = false;
-  $(dialog).dialog({
-    title: "Position icon",
+  Dialog.open(DIALOG, {
+    title: t("Position icon"),
     width: "20em",
     position: { my: "center", at: "center", of: "svg" },
-    close: () => {
+    onClose: () => {
       if (!applied) setSymbolFrame(original);
-      destroyDialog(DIALOG);
+      Dialog.destroy(DIALOG);
     },
-    buttons: {
-      Apply: function (this: HTMLElement) {
-        applied = true;
-        CustomIcons.update(id, { viewBox: toViewBox(frame) });
-        $(this).dialog("close");
+    buttons: [
+      {
+        label: t("Apply"),
+        onClick: () => {
+          applied = true;
+          CustomIcons.update(id, { viewBox: toViewBox(frame) });
+          Dialog.close(DIALOG);
+        }
       },
-      Cancel: function (this: HTMLElement) {
-        $(this).dialog("close");
+      {
+        label: t("Cancel"),
+        onClick: () => {
+          Dialog.close(DIALOG);
+        }
       }
-    }
+    ]
   });
 }
 

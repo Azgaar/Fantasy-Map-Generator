@@ -102,7 +102,7 @@ A `Layer` is a value: an identity, an SVG group and how to render it. On/off sta
 registry, so a layer needs no back-reference to it.
 
 ```ts
-// src/components/layers.ts
+// src/renderers/layers.ts
 interface LayerParams<Id extends string = string> {
   id: Id; // canonical identity, persisted in the .map file
   element?: string; // id of the svg group holding the content, defaults to the layer id
@@ -256,7 +256,7 @@ authoritative for order and a layer without an entry simply has no button.
 
 ### Presets
 
-`src/components/layers-presets.ts` keeps presets as arrays of layer ids in localStorage; only the
+`src/app/layers-presets.ts` keeps presets as arrays of layer ids in localStorage; only the
 application path changed. A stored preset is loaded only if every id in it is a layer this build has
 (`Layers.has`); one naming an unknown id is dropped, and the user recreates it — presets are cheap to
 rebuild and not worth a migration path. Stored presets from before the change hold `toggle*` ids, so
@@ -312,7 +312,7 @@ Untranslated `public/modules/**/*.js` reads state through `window.Layers`; the D
 - **What makes a good test here:** assert external behaviour of the registry against fake layers —
   what ends up active, in what order the SVG groups sit, which `draw`/`erase` callbacks ran. Do not
   assert on private fields or listener call counts.
-- **Module under test:** `LayersRegistry` and `Layer` (`src/components/layers.test.ts`). The class is
+- **Module under test:** `LayersRegistry` and `Layer` (`src/renderers/layers.test.ts`). The class is
   exported so the test builds its own instance over fake layers instead of resetting the singleton's
   module; the real layer list is configuration, and renderers keep their own tests. The test builds
   its own `#map`/`#viewbox` fixture and needs no `pack`/`grid`.

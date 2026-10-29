@@ -1,6 +1,6 @@
 _The current stable version is available [here](https://azgaar.github.io/Fantasy-Map-Generator)._
 
-Notable user-facing changes to the project should be documented in this file. The purpose of a changelog entry is to document only the noteworthy difference and communicate it clearly to end users. Keep the updates short and simple.
+Notable user-facing changes to the project should be documented in this file. The purpose of a changelog entry is to document only the noteworthy difference and communicate it clearly to end users. Keep the updates very short (oneliners) and simple.
 
 Compatible `.gz` and `.map` files from `v0.70.0` onward are checked and auto-updated when loaded. Maps older than `v0.70.0` are considered ancient and require the matching old Generator version. To use an old version click on a link to download an archive. Unzip all files and [run the Tool locally](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Run-FMG-locally).
 
@@ -11,6 +11,48 @@ Check out [Dev board](https://github.com/users/Azgaar/projects/3/views/1?sumFiel
 # Current version
 
 Current version of the Fantasy Map Generator is the latest `master` branch. You can download it here: https://github.com/Azgaar/Fantasy-Map-Generator/archive/refs/heads/master.zip. Also see [the wiki](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Q&A#can-i-use-the-generator-offline).
+
+**[1.156.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.156.0) - 2026-10-25**:
+
+- Migration: folders are reworked
+- Migration: libraries are loaded from NPM
+- Migration: jQuery is no longer used
+- Loading draws the map from its data; the stored SVG is read only to update older maps
+- Legend boxes are saved as map data
+
+# Releases
+
+**[1.155.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.155.0) - 2026-10-23**:
+
+- Interface translation: 29 languages besides English
+- The Google Translate widget removed
+- Map context menu
+- Options: Advanced options dialog
+- Advanced options: configurable map lattice
+- Trade tariffs and embargoes
+- View-only mode for saved maps
+- Free-text tags for states and other entities
+- CSV upload for most entities
+- Color picker rework
+- Regenerate provinces for selected states
+- Heightmap Risk mode: map restoration algorithm rework
+- Rivers: lock a river to keep it through regeneration
+- Submap and Transform fixes,
+- Save to machine creates a new file each time
+- Population layer: Shading land by population density by _[inviktos](https://github.com/inviktos)_
+- Altitude legend: heightmap colors by _[Avengium](https://github.com/Avengium)_
+- Rulers style: line and dash colors and a toggle to hide the measured values by _[Avengium](https://github.com/Avengium)_
+- Confirmations: Enter to confirm; Shift+Click on the button to act immediately without the confirmation dialog
+- Labels style: underlined parameter in label style editor
+- Cells layer: optionally render cell indexes with their own style (color, halo, font, size, shift, clip), and show cell/grid IDs in map tooltip
+- Travel Builder: directional arrow markers on journey paths and per-segment notes editable in Notes Editor
+- Paint editor: lock elements from being painted over
+- Military forces: hide/show individual regiments and toggle to show regiment names below units
+- Population layer: adjustable 3D bar height multiplier
+- Journey arrows and per-segment notes
+- Enter or Shift+Click to delete
+- Underlined labels
+- Cell id display
 
 **[1.154.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.154.0) - 2026-10-05**:
 
@@ -25,8 +67,6 @@ Current version of the Fantasy Map Generator is the latest `master` branch. You 
 - Saving: choose the map file destination by _[spencerpruitt](https://github.com/spencerpruitt)_
 - States Editor: merged states can be kept as provinces by _[barrulus](https://github.com/barrulus)_
 - Diplomacy Overview: set relations on map click by _[WebHead89](https://github.com/WebHead89)_
-
-# Releases
 
 **[1.153.0](https://github.com/Azgaar/Fantasy-Map-Generator/releases/tag/v1.153.0) - 2026-09-16**:
 

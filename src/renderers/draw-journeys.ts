@@ -1,14 +1,16 @@
 import { curveCatmullRom, line } from "d3";
-import type { Journey, JourneyPoint, JourneySegment } from "@/types/Journey";
-import { ensureEl, round } from "@/utils";
+import type { Journey, JourneyPoint, JourneySegment } from "@/types/journey";
+import { log } from "@/utils/logger";
+import { ensureEl } from "@/utils/node-utils";
+import { round } from "@/utils/string-utils";
 
 export function drawJourneys(): void {
-  TIME && console.time("drawJourneys");
+  log.time("drawJourneys");
 
   const journeys = (pack.journeys ?? []).filter(j => j.visible !== false);
   ensureEl("journeys").innerHTML = journeys.map(getJourneyPaths).join("");
 
-  TIME && console.timeEnd("drawJourneys");
+  log.timeEnd("drawJourneys");
 }
 
 const curve = line<JourneyPoint>()
@@ -22,11 +24,12 @@ export function getSegmentPathData(segment: JourneySegment): string {
 }
 
 function getJourneyPaths(journey: Journey): string {
+  const arrowAttr = styles.journeys.options?.arrows ? ' marker-end="url(#journey-arrow)"' : "";
   const paths = journey.segments
     .filter(segment => segment.visible !== false && segment.points.length > 1)
     .map(segment => {
       const d = getSegmentPathData(segment);
-      return /* html */ `<path id="segment${journey.i}_${segment.i}" d="${d}" stroke="${segment.color || journey.color}"/>`;
+      return /* html */ `<path id="segment${journey.i}_${segment.i}" d="${d}" stroke="${segment.color || journey.color}"${arrowAttr}/>`;
     })
     .join("");
 

@@ -1,8 +1,9 @@
-import { IconSets } from "@/components/icon-sets";
-import { Icons } from "@/components/icons";
+import { IconSets } from "@/model/icon-sets";
+import { Icons } from "@/model/icons";
 import { EmblemRenderer } from "@/renderers/emblems/renderer";
 import { inlineLinkedImages } from "@/services/io/export";
 import type { Emblem } from "@/types/emblems";
+import { findEl } from "@/utils/node-utils";
 
 // An emblem as a standalone picture: for downloads, and for the Assistant to look at
 
@@ -27,7 +28,7 @@ export function cloneEmblem(svg: Element, size: number): SVGSVGElement {
     visited.add(id);
     let definition = clone.querySelector(`[id="${CSS.escape(id)}"]`);
     if (!definition) {
-      const original = document.getElementById(id);
+      const original = findEl(id);
       if (!original) return; // removed art draws nothing on the map either
       definition = defs.appendChild(original.cloneNode(true) as Element);
     }
@@ -56,7 +57,7 @@ export async function emblemURL(svg: Element, size: number, raster: boolean): Pr
 /** The emblem rendered under this id, as a PNG data URL */
 export async function emblemPng(id: string, coa: Emblem, size: number): Promise<string> {
   await EmblemRenderer.trigger(id, coa);
-  const svg = document.getElementById(id);
+  const svg = findEl(id);
   if (!svg) throw new Error("The emblem could not be drawn");
   await loadEmblemIcons([svg]);
   const url = await emblemURL(svg, size, true);

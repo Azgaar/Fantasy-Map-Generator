@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { Layers } from "@/components/layers";
+﻿import { describe, expect, it } from "vitest";
+import { Layers } from "@/renderers/layers";
 import { ASTRAL_LAYER_TOGGLES } from "./astral-layer-labels";
 import { ASTRAL_DEFAULT_PRESET, ASTRAL_PRESETS } from "./astral-layers";
 
@@ -19,7 +19,7 @@ describe("the Astral layer profiles", () => {
     expect(new Set(shortcuts).size).toBe(shortcuts.length);
   });
 
-  it("puts Core–Rim in the Survey scan profile", () => {
+  it("puts Coreâ€“Rim in the Survey scan profile", () => {
     expect(ASTRAL_PRESETS.survey.layers).toContain("coreRim");
   });
 

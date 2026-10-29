@@ -2,7 +2,7 @@
 
 import type { Region } from "@/services/io/export";
 import type { Point } from "@/types/global";
-import { getBounds } from "@/utils/pathUtils";
+import { getBounds } from "@/utils/path-utils";
 
 const MIN_SPAN = 80; // map units shown around a point-like entity
 

@@ -177,15 +177,15 @@ Thirty-four cultures are defined, but at most 18 are placed on a map. Real-world
 
 **Fantasy races**
 
-- Eldar
-- Trow
-- Durinn
-- Kobblin
-- Uruk
-- Yotunn
-- Drake
-- Rakhnid
-- Aj'Snaga
+- Eldar (Elfish)
+- Trow (Dark Elfish)
+- Durinn (Dwarven)
+- Kobblin (Goblin)
+- Uruk (Orkish)
+- Yotunn (Giants)
+- Drake (Drakonic)
+- Rakhnid (Arachnid)
+- Aj'Snaga (Serpents)
 
 ### Random
 

@@ -21,6 +21,10 @@ These elements appear in many places in the UI, for example in the various windo
 
 Editors and overviews open in dialogs. Their positions and sizes are remembered in the browser. When a dialog has a saved position, column layout or sort, a circular-arrow **Reset** button appears in its title bar beside minimize and close. It restores the default position, columns and sorting. It leaves table filters and map data in place.
 
+### Confirmations
+
+Actions that cannot be reverted, such as removing an element, restoring default data or recalculating regiments, ask for confirmation first. <kbd>Enter</kbd> confirms and <kbd>Escape</kbd> cancels. Hold <kbd>Shift</kbd> while clicking the button to skip the confirmation and act immediately, handy for fast edits.
+
 ### Legends
 
 A panel that displays a description of a certain element.
@@ -90,6 +94,8 @@ In general, whoever wants to generate a map with fixed characteristics, he shoul
 ### Map
 
 The map, that can be presented in several view mode.
+
+Click an element on the map to open its editor. Right-click a spot to open the context menu: it lists everything at that spot across all layers — what is drawn there first (emblems, relief icons, ice, goods and measurers included), then what the cell holds (burg, river, routes, markers, zones, journeys, regiments, its resource and the goods its burg produces) and the areas it belongs to (feature, market, province, state, culture, religion, biome). Click a row to open its editor or, for an entity without one, to show it on the map. Rows on hidden layers are dimmed; clicking one turns its layer on and shows the entity. With your own AI key or a local model connected, **What's there?** asks the [Assistant](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Assistant) about the place. Shift + right-click opens the browser's own menu. The menu doesn't open in customization modes such as heightmap editing or annexing.
 
 ### Bottom label tooltip
 
@@ -190,7 +196,7 @@ Saving a file in .map format, which contains the current state of the map, so th
 
 #### Machine
 
-Save to local PC. The first save asks for a file name and location; later saves (<kbd>Ctrl</kbd> + <kbd>S</kbd>) write straight to that file until another map is generated or loaded. Shift-click the button or press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> to save a copy elsewhere. Browsers without a save-location picker (e.g. Firefox and Safari) download the file instead, to the folder set in the browser's download settings.
+Save to local PC. Each save (<kbd>Ctrl</kbd> + <kbd>S</kbd>) asks for a file name and location and creates a new file, so earlier saves stay as backups. Shift-click the button or press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> to overwrite the last saved file instead, until another map is generated or loaded. Browsers without a save-location picker (e.g. Firefox and Safari) download the file instead, to the folder set in the browser's download settings.
 
 #### Dropbox
 
@@ -199,6 +205,10 @@ Saving to the dropbox account, if connected.
 #### Browser
 
 Saving to the browser's memory.
+
+#### View-only mode
+
+Tick **View-only mode** to save a copy that opens for browsing only. It works for machine and Dropbox saves: a machine copy always asks for a new file, and a Dropbox copy gets "view" at the end of its name, so neither replaces your editable map. Browser storage holds the map that autosave and quick load use, so it is off while the box is ticked.
 
 ## Load
 
@@ -226,7 +236,7 @@ For example, the "Rivers" layer will display the rivers on the map. Clicking aga
 
 Some full-map layers, such as Heightmap, Biomes, and Texture, compete for the same visual area; opacity, clipping, and layer order determine how they combine.
 
-You can drag the different layers and thus change their display order.
+The sort button at the end of the *Layers preset* row opens the layer order, where you drag the layers to change their display order.
 
 When a certain layer is pressed, and you hover over some element in the map that is relevant to the layer, the lower label will display relevant information. For example, if the Heightmap layer is on, hovering over a cell will display its height.
 
@@ -242,7 +252,7 @@ Texture, Heightmap, Biomes.
 
 These layers cover the map area and can obscure other layers depending on their current opacity and clipping settings.
 
-The one that will be displayed is the one that appears last in the order of the layers (to change, you can drag the layers and change their display order).
+The one that will be displayed is the one that appears last in the order of the layers (to change it, open the layer order and drag the layers).
 
 The other layers can hide parts of other layers, but they cannot hide the entire map.
 
@@ -302,7 +312,7 @@ Biomes, their colors, habitability and movement cost can be edited in the Biomes
 
 Hills, mountains and any other relief placed by elevation follow the relief rules, opened with the mountain button in the Biomes Editor or the Relief Editor. Each rule has a height range, an optional temperature range in °C (an empty bound is open), the biomes it applies to (all by default, so e.g. desert hills can differ from forest hills), an icon size that grows with height, and its own relief pool. A land cell takes the first rule it matches, top to bottom (drag a rule by its handle to reorder); a cell no rule claims takes its biome's pool. Click a rule's relief to edit its pool, the size of each entry and the rule's size range; its sample grows the icons from the rule's lowest height on the left to its highest on the right. Rules are kept when a new map is generated. Editing them changes nothing on the map until you press the re-place button, which re-places the relief on every cell a rule claims.
 
-In general, the biomes are derived from the topographical map (which can be edited in tools or options), and from the temperature (which can be edited in configure world).
+In general, the biomes are derived from the topographical map (which can be edited in tools or options), and from the temperature (which can be edited in the World Configurator: Options → Configure → Climate).
 
 ## Icons
 
@@ -542,8 +552,6 @@ Available color schemes: bright, light, natural, green, olive, livid and monochr
 
 These settings are applied when you generate a new map.
 
-- Map size: The coordinate extent the next map is generated on, in pixels. The button on the left resets it to the browser window size. Note: There is no way to change the map size after the map is created, and it is always recommended to use the default value. This is not the same as the Viewport size below, which is only how much of that extent you see at once.
-
 - Map seed: A number that defines the generation of random values. Every time you generate a new map, a new seed number is set here, which together with the size of the map and the options in the map settings menu, creates a random map. Please note – for 2 maps that have the same map size and the same options and the same number of seed, the maps will be identical. The button on the left side allows you to browse between seed values ​​of previous generators.
 
 - Points number: A slider that defines the number of points (cells), from 1K up to the largest step on the slider. The higher the number of points, the more detailed the map and the smaller each cell, but the worse the performance. The default is 10K. If your computer is powerful and you do not experience performance issues, choose a higher value.
@@ -556,15 +564,11 @@ These settings are applied when you generate a new map.
 
 - States number: A slider that determines the number of countries.
 
-- Provinces ratio: A slider that determines the percentage of burgs who have their own districts. A province is a sub-unit of a country, and can be edited in the province editor.
-
-- Size variety: A slider that determines the degree of variation in the territory of the countries. The lower the value, the more uniform the country regions.
-
-- Growth rate: A slider that defines how far countries and civilizations will expand into neutral lands after a generation. The lower its value, the more land will remain politically neutral.
-
 - Burgs number: A slider that determines the number of burgs (settlements). Set it to `auto` to let the generator decide.
 
 - Religions number: A slider that determines the number of religions and sects.
+
+Map size, the cell grid, Provinces ratio, Size variety and Growth rate are in [Advanced options](#advanced-options).
 
 # UI settings
 
@@ -572,23 +576,42 @@ Below the map settings, the Options tab holds settings that apply immediately an
 
 - Interface size and Tooltip size: scale the menu and the bottom tooltip.
 - Theme color and Transparency: the color and opacity of the dialogs.
-- Autosave interval: how often the map is saved to browser storage.
-- On load: generate a new map or load the last saved one when the page opens.
 - Azgaar Assistant: show or hide the call bubble in the bottom right corner. The panel answers questions about the Generator and, with your own key or local model, the open map.
-- Speaker voice: the voice used by the speaker buttons next to names.
-- Emblem shape: the default coat of arms shield shape.
-- Viewport size: the size of the map window on screen, in pixels. It is independent of the map size above: it is how much of the map you see at once. The button on the left fits it back to the browser window, which is what it follows until you set a size by hand.
+- Viewport size: the size of the map window on screen, in pixels. It is independent of the map size (in Advanced options): it is how much of the map you see at once. The button on the left fits it back to the browser window, which is what it follows until you set a size by hand.
 - Zoom extent: minimal and maximal zoom levels, `[1, 20]` by default.
 - Performance: a rendering preset, _Quality_, _Balance_ or _Speed_, trading visual quality for speed. The cog button next to it opens the Performance Settings, where each parameter is set on its own; the preset then reads _Custom_ unless the parameters happen to match one:
   - Shape rendering: a browser hint for drawing edges. The effect varies by browser; _Optimize speed_ does not guarantee faster rendering, and _Crisp edges_ can remove edge smoothing.
   - State halos: the blurred glow along state borders. It is an SVG blur filter, which is costly on big maps.
   - Redraw on zoom: when labels, icons and relief are redrawn during a zoom or pan. _After zoom_ redraws once per gesture: faster on big maps, but new content appears all at once.
-- Language: the **Init Google Translate** button loads Google Translate so you can pick a language. It is a machine translation and can break some page functions; the reset icon returns to English.
+- Language: the interface language: English, Russian, Ukrainian, German, French, Spanish, Portuguese (Portugal and Brazil), Italian, Dutch, Polish, Czech, Hungarian, Swedish, Danish, Afrikaans, Turkish, Indonesian, Vietnamese, Thai, Chinese (Simplified), Japanese and Korean. It follows the browser's language until you pick one, and applies after a reload, so save unsaved changes first. Only the interface is translated; map content is not changed.
 
 See [Performance settings](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Performance-settings) for the preset comparison and how to restore the default **Balance** settings.
 
-The **Configure World** button opens a separate dialog where you set the map size relative to the world, its latitude and longitude shift on the globe, the temperature at the equator and both poles, and the global precipitation.
+The **Configure** row at the bottom holds four buttons.
 
-The **Set Lore** button opens the Lore Editor, where you name the map, set the current year, era and era abbreviation, and write a description of the world — the year and era date state history and battle reports, and FMG does not run a time simulation.
+**Climate** opens the World Configurator, a separate dialog where you set the map size relative to the world, its latitude and longitude shift on the globe, the temperature at the equator and both poles, and the global precipitation.
 
-The **Reset Options** button restores the default options and reloads the page.
+**Lore** opens the Lore Editor, where you name the map, set the current year, era and era abbreviation, and write a description of the world — the year and era date state history and battle reports, and FMG does not run a time simulation.
+
+**Advanced** opens Advanced options, described below.
+
+**Reset** restores the default options and reloads the page. It asks for confirmation first, so save the map before you confirm.
+
+# Advanced options
+
+Settings that are easy to misread live in the **Advanced Options** dialog (Options → Configure → Advanced). Hover a setting to see its explanation. See the [Advanced options](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Advanced-options) page for details.
+
+Map settings, applied when you generate a new map:
+
+- Map size: the coordinate extent the next map is generated on, in pixels. The button on the left resets it to the browser window size. It cannot be changed after the map is created, and the default is recommended. It is not the Viewport size, which is only how much of that extent you see at once.
+- Lattice, Sampling and Jitter: the grid the map cells are built on, for example hexagons or squares for game boards. Lattice is a preset that sets the other two.
+- Provinces ratio: the share of eligible burgs in each state that become province centers. Higher values create more provinces.
+- Size variety: how much states and cultures can differ in size. Lower values make them more uniform.
+- Growth rate: how far states and cultures expand into neutral lands. Lower values leave more land neutral.
+
+Interface settings, applied immediately:
+
+- Autosave interval: how often, in minutes, the map is saved to browser storage. 0 turns autosave off.
+- On load: generate a new map or open the last saved one when the page opens.
+- Speaker voice: the voice used by the speaker buttons next to names.
+- Emblem shape: the default coat of arms shield shape.

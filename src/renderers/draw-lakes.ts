@@ -1,7 +1,10 @@
-import type { Layer } from "@/components/layers";
+import type { Layer } from "@/renderers/layers";
+import { findEl } from "@/utils/node-utils";
 import { getLakeRipples } from "./lake-ripples";
+import { syncStyleGroups } from "./style-groups";
 
 export function drawLakes(layer: Layer): void {
+  syncStyleGroups(layer.getEl(), styles.lakes.groups);
   const groups = Array.from(layer.getEl().children);
   const groupIds = new Set(groups.map(group => group.id));
   const existing = new Map(
@@ -29,9 +32,9 @@ export function removeLakeEmbellishments(): void {
   for (const node of document.querySelectorAll("[data-lake-embellishment]")) node.remove();
 }
 
-export function drawLakeEmbellishments(layer: Layer): void {
+function drawLakeEmbellishments(layer: Layer): void {
   removeLakeEmbellishments();
-  const defs = document.getElementById("deftemp");
+  const defs = findEl("deftemp");
   if (!defs) return;
   const islands = pack.features
     .filter(feature => feature?.land && feature.subtype === "lake_island")

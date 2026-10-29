@@ -1,67 +1,69 @@
 // The Cell Info panel: everything known about the cell under the cursor
 import { select } from "d3";
-import { destroyDialog } from "@/components/dialog/dialog-helpers";
-import type { Feature } from "@/generators/features-generator";
-import type { Point } from "@/generators/voronoi";
+import { Goods } from "@/model/economy/goods-generator";
+import { Markets } from "@/model/economy/markets-generator";
+import { Production } from "@/model/economy/production-generator";
+import { Grid } from "@/model/graph/grid-generator";
+import { Pack } from "@/model/graph/pack-generator";
+import type { Point } from "@/model/graph/voronoi";
+import type { Feature } from "@/model/physical/features-generator";
 import {
   convertTemperature,
-  debounce,
-  ensureEl,
   getArea,
   getAreaUnit,
   getCellPopulation,
   getFriendlyPrecipitation,
-  getHeight,
-  getLatitude,
-  getLongitude,
-  getPointer,
-  rn,
-  si
-} from "@/utils";
+  getHeight
+} from "@/model/units";
+import { Dialog } from "@/ui/dialog/dialog";
+
+import { debounce, getLatitude, getLongitude } from "@/utils/common-utils";
+import { t } from "@/utils/i18n";
+import { ensureEl, getPointer } from "@/utils/node-utils";
+import { rn, si } from "@/utils/number-utils";
 
 function open(): void {
   cleanup();
   renderDialog();
   select<SVGGElement, unknown>("#viewbox").on("touchmove.cellInfo mousemove.cellInfo", updateCellInfo);
 
-  $("#cellInfo").dialog({
-    resizable: false,
+  Dialog.open("cellInfo", {
     width: "22em",
-    title: "Cell Details",
-    position: { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" },
-    close: cleanup
+    title: t("Cell Details"),
+    position: { my: "right top", at: "right-10 top+10", of: "svg" },
+    onClose: cleanup
   });
 }
 
 function cleanup(): void {
   select<SVGGElement, unknown>("#viewbox").on(".cellInfo", null);
-  destroyDialog("cellInfo");
+  Dialog.destroy("cellInfo");
 }
 
 function renderDialog(): void {
   const HTML = /* html */ `<div id="cellInfo" class="dialog stable">
-    <p><b>Cell:</b> <span id="infoCell"></span> <b>X:</b> <span id="infoX"></span> <b>Y:</b> <span id="infoY"></span></p>
-    <p><b>Latitude:</b> <span id="infoLat"></span></p>
-    <p><b>Longitude:</b> <span id="infoLon"></span></p>
-    <p><b>Geozone:</b> <span id="infoGeozone"></span></p>
-    <p><b>Area:</b> <span id="infoArea">0</span></p>
-    <p><b>Type:</b> <span id="infoFeature">n/a</span></p>
-    <p><b>Precipitation:</b> <span id="infoPrec">0</span></p>
-    <p><b>River:</b> <span id="infoRiver">no</span></p>
-    <p><b>Population:</b> <span id="infoPopulation">0</span></p>
-    <p><b>Elevation:</b> <span id="infoElevation">0</span></p>
-    <p><b>Depth:</b> <span id="infoDepth">0</span></p>
-    <p><b>Temperature:</b> <span id="infoTemp">0</span></p>
-    <p><b>Biome:</b> <span id="infoBiome">n/a</span></p>
-    <p><b>State:</b> <span id="infoState">n/a</span></p>
-    <p><b>Province:</b> <span id="infoProvince">n/a</span></p>
-    <p><b>Culture:</b> <span id="infoCulture">n/a</span></p>
-    <p><b>Religion:</b> <span id="infoReligion">n/a</span></p>
-    <p><b>Burg:</b> <span id="infoBurg">n/a</span></p>
-    <p><b>Good:</b> <span id="infoGood">n/a</span></p>
-    <p><b>Market:</b> <span id="infoMarket">n/a</span></p>
-    <p><b>Cell Production:</b> <span id="infoCellProduction">n/a</span></p>
-    <p><b>Burg Production:</b> <span id="infoBurgProduction">n/a</span></p>
+    <p><b>${t("Cell")}:</b> <span id="infoCell"></span> <b>X:</b> <span id="infoX"></span> <b>Y:</b> <span id="infoY"></span></p>
+    <p><b>${t("Latitude")}:</b> <span id="infoLat"></span></p>
+    <p><b>${t("Longitude")}:</b> <span id="infoLon"></span></p>
+    <p><b>${t("Geozone")}:</b> <span id="infoGeozone"></span></p>
+    <p><b>${t("Area")}:</b> <span id="infoArea">0</span></p>
+    <p><b>${t("Type")}:</b> <span id="infoFeature">n/a</span></p>
+    <p><b>${t("Precipitation")}:</b> <span id="infoPrec">0</span></p>
+    <p><b>${t("River")}:</b> <span id="infoRiver">${t("No")}</span></p>
+    <p><b>${t("Population")}:</b> <span id="infoPopulation">0</span></p>
+    <p><b>${t("Elevation")}:</b> <span id="infoElevation">0</span></p>
+    <p><b>${t("Depth")}:</b> <span id="infoDepth">0</span></p>
+    <p><b>${t("Temperature")}:</b> <span id="infoTemp">0</span></p>
+    <p><b>${t("Biome")}:</b> <span id="infoBiome">n/a</span></p>
+    <p><b>${t("State")}:</b> <span id="infoState">n/a</span></p>
+    <p><b>${t("Province")}:</b> <span id="infoProvince">n/a</span></p>
+    <p><b>${t("Culture")}:</b> <span id="infoCulture">n/a</span></p>
+    <p><b>${t("Religion")}:</b> <span id="infoReligion">n/a</span></p>
+    <p><b>${t("Burg")}:</b> <span id="infoBurg">n/a</span></p>
+    <p><b>${t("Good")}:</b> <span id="infoGood">n/a</span></p>
+    <p><b>${t("Market")}:</b> <span id="infoMarket">n/a</span></p>
+    <p><b>${t("Cell Production")}:</b> <span id="infoCellProduction">n/a</span></p>
+    <p><b>${t("Burg Production")}:</b> <span id="infoBurgProduction">n/a</span></p>
   </div>`;
 
   ensureEl("dialogs").insertAdjacentHTML("beforeend", HTML);
@@ -103,7 +105,7 @@ function updateFields(point: Point, cellId: number, gridCellId: number): void {
   set("infoRiver", cells.h[cellId] >= 20 && cells.r[cellId] ? getRiverInfo(cells.r[cellId]) : "no");
   set("infoState", getStateInfo(cellId));
   set("infoProvince", getNamedInfo(pack.provinces, cells.province[cellId], "fullName"));
-  set("infoCulture", getNamedInfo(pack.cultures, cells.culture[cellId], "name"));
+  set("infoCulture", getCultureInfo(cells.culture[cellId]));
   set("infoReligion", getNamedInfo(pack.religions, cells.religion[cellId], "name"));
   set("infoPopulation", getFriendlyPopulation(cellId));
   set("infoBurg", getNamedInfo(pack.burgs, cells.burg[cellId], "name"));
@@ -120,6 +122,14 @@ function updateFields(point: Point, cellId: number, gridCellId: number): void {
 
 function set(id: string, value: string | number) {
   ensureEl(id).innerHTML = String(value);
+}
+
+export function getCultureInfo(cultureId: number): string {
+  if (!cultureId) return "no";
+  const culture = pack.cultures[cultureId];
+  if (!culture) return "no";
+  const ancestry = culture.ancestry?.trim();
+  return ancestry ? `${culture.name} (${ancestry}) (${cultureId})` : `${culture.name} (${cultureId})`;
 }
 
 function getNamedInfo<T, K extends keyof T>(elements: T[], id: number, key: K): string {
@@ -151,15 +161,15 @@ function listProduction(produced: Record<string, number>): string {
 
 /** Get the climate zone name for a latitude */
 export function getGeozone(latitude: number): string {
-  if (latitude > 66.5) return "Arctic";
-  if (latitude > 35) return "Temperate North";
-  if (latitude > 23.5) return "Subtropical North";
-  if (latitude > 1) return "Tropical North";
-  if (latitude > -1) return "Equatorial";
-  if (latitude > -23.5) return "Tropical South";
-  if (latitude > -35) return "Subtropical South";
-  if (latitude > -66.5) return "Temperate South";
-  return "Antarctic";
+  if (latitude > 66.5) return t("Arctic");
+  if (latitude > 35) return t("Temperate North");
+  if (latitude > 23.5) return t("Subtropical North");
+  if (latitude > 1) return t("Tropical North");
+  if (latitude > -1) return t("Equatorial");
+  if (latitude > -23.5) return t("Tropical South");
+  if (latitude > -35) return t("Subtropical South");
+  if (latitude > -66.5) return t("Temperate South");
+  return t("Antarctic");
 }
 
 /** Convert a coordinate to degrees-minutes-seconds format */

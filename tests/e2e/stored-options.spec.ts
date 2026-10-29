@@ -26,9 +26,7 @@ async function generateMap(page: import("@playwright/test").Page) {
 }
 
 test("a stale stored group registry does not leave a new map without labels", async ({ page }) => {
-  await page.goto("/");
-  await page.evaluate(stale => {
-    localStorage.clear();
+  await page.addInitScript(stale => {
     for (const [key, value] of Object.entries(stale)) localStorage.setItem(key, value);
   }, STALE);
 

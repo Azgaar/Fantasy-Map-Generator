@@ -73,7 +73,7 @@ function getReliefState(page: Page) {
     return {
       relief: (window as any).pack.relief,
       style: (window as any).styles.relief.options,
-      layerIsOn: (window as any).Layers.isOn("relief"),
+      layerIsOn: (window as any).FMG.Layers.isOn("relief"),
       terrainStyle: terrain?.getAttribute("style") ?? null
     };
   });
@@ -84,7 +84,7 @@ test.describe("Map loading", () => {
     await context.clearCookies();
     // With no stored version the app raises its "updated to version ..." dialog 6 seconds after the
     // page loads (services/versioning.ts), which on a slow runner lands inside a test and trips the
-    // "no #alert is open" guards below. "99.99.99" rather than the real VERSION so this cannot drift:
+    // "no message is open" guards below. "99.99.99" rather than the real VERSION so this cannot drift:
     // the announcement fires only for a stored version older than the build's.
     await context.addInitScript(() => localStorage.setItem("version", "99.99.99"));
 
@@ -94,8 +94,8 @@ test.describe("Map loading", () => {
       sessionStorage.clear();
     });
 
-    // Wait for the hidden file input to be available
-    await page.waitForSelector("#mapToLoad", { state: "attached" });
+    // the boot map must finish first: its generation logs into the error checks of a test that uploads over it
+    await waitForMap(page);
   });
 
   test("should load a saved map file", async ({ page }) => {
@@ -114,10 +114,11 @@ test.describe("Map loading", () => {
     // Get the file input element and upload the map file
     const fileInput = page.locator("#mapToLoad");
     const mapFilePath = path.join(__dirname, "../fixtures/1.112.1.map");
+    const maps = await countMaps(page);
     await fileInput.setInputFiles(mapFilePath);
 
     // Wait for map to be fully loaded
-    await waitForMap(page);
+    await waitForNextMap(page, maps);
 
     // Additional wait for rendering to settle
     await page.waitForTimeout(500);
@@ -130,7 +131,7 @@ test.describe("Map loading", () => {
         hasBurgs: pack.burgs && pack.burgs.length > 1,
         hasCells: pack.cells && pack.cells.i && pack.cells.i.length > 0,
         hasRivers: pack.rivers && pack.rivers.length > 0,
-        mapsGenerated: (window as any).mapHistory.length
+        mapsGenerated: (window as any).FMG.mapHistory.length
       };
     });
 
@@ -166,9 +167,10 @@ test.describe("Map loading", () => {
 
     const fileInput = page.locator("#mapToLoad");
     const mapFilePath = path.join(__dirname, "../fixtures/1.112.1.map");
+    const maps = await countMaps(page);
     await fileInput.setInputFiles(mapFilePath);
 
-    await waitForMap(page);
+    await waitForNextMap(page, maps);
     await page.waitForTimeout(500);
 
     // Check essential SVG layers exist
@@ -216,9 +218,10 @@ test.describe("Map loading", () => {
 
     const fileInput = page.locator("#mapToLoad");
     const mapFilePath = path.join(__dirname, "../fixtures/1.112.1.map");
+    const maps = await countMaps(page);
     await fileInput.setInputFiles(mapFilePath);
 
-    await waitForMap(page);
+    await waitForNextMap(page, maps);
     await page.waitForTimeout(500);
 
     // Verify states have proper structure
@@ -270,6 +273,23 @@ test.describe("Map loading", () => {
     ]);
   });
 
+  test("an old map is migrated from its saved svg without replacing the live map", async ({ page }) => {
+    await page.evaluate(() => {
+      (window as any).liveMap = document.getElementById("map");
+    });
+    await page.locator("#mapToLoad").setInputFiles(path.join(__dirname, "../fixtures/1.139.4.map"));
+    await expect(page.locator("#tooltip")).toContainText("Map is successfully loaded", { timeout: 120000 });
+
+    const state = await page.evaluate(() => ({
+      sameMap: (window as any).liveMap === document.getElementById("map"),
+      maps: document.querySelectorAll("svg#map").length,
+      sandboxes: Array.from(document.body.children).filter(el => el.shadowRoot).length,
+      addedLabels: (window as any).pack.addedLabels.length // read from the saved svg
+    }));
+    expect(state).toMatchObject({ sameMap: true, maps: 1, sandboxes: 0 });
+    expect(state.addedLabels).toBeGreaterThan(0);
+  });
+
   // 1.112.1.map wraps its fogging layer into the pre-1.143 masked #fogging-cont container. Unwrapping it must
   // leave the layer in its own slot — right before the ruler — not at the end of the z-order
   test("legacy fogging container should be unwrapped in place", async ({ page }) => {
@@ -283,7 +303,7 @@ test.describe("Map loading", () => {
       hasContainer: Boolean(document.getElementById("fogging-cont")),
       parent: document.getElementById("fogging")?.parentElement?.id,
       mask: document.getElementById("fogging")?.getAttribute("mask"),
-      order: (window as any).Layers.state.order as string[],
+      order: (window as any).FMG.Layers.state.order as string[],
       groups: Array.from(document.querySelectorAll("#viewbox > *"), node => node.id),
       rects: document.querySelectorAll("#fogging rect").length,
       revealed: document.querySelectorAll("#fog path").length
@@ -292,6 +312,8 @@ test.describe("Map loading", () => {
     expect(fogging.hasContainer).toBe(false);
     expect(fogging.parent).toBe("viewbox");
     expect(fogging.mask).toBe("url(#fog)");
+    // the saved slot is after markers, the registration one before them
+    expect(fogging.order.indexOf("fogging")).toBeGreaterThan(fogging.order.indexOf("markers"));
     expect(fogging.order.indexOf("fogging")).toBeLessThan(fogging.order.indexOf("rulers"));
     expect(fogging.groups.indexOf("fogging")).toBeLessThan(fogging.groups.indexOf("ruler"));
 
@@ -332,7 +354,7 @@ test.describe("Map loading", () => {
         notedMarkers: (window as any).pack.markers.filter((marker: any) => marker.note).length,
         notedRegiments: (window as any).pack.states.flatMap((state: any) => state.military || [])
           .filter((regiment: any) => regiment.note).length,
-        unattachedPrompt: document.getElementById("alert")?.offsetParent !== null
+        unattachedPrompt: document.querySelector(".message") !== null
       };
     });
 
@@ -364,7 +386,7 @@ test.describe("Map loading", () => {
     const migrated = await page.evaluate(() => ({
       notes: (window as any).pack.addedLabels.map((added: any) => added.note).filter(Boolean),
       // an id the rename map failed to translate would be reported as belonging to no element
-      unattachedPrompt: document.getElementById("alert")?.offsetParent !== null
+      unattachedPrompt: document.querySelector(".message") !== null
     }));
 
     expect(migrated.unattachedPrompt).toBe(false);
@@ -405,11 +427,11 @@ test.describe("Map loading", () => {
 
     const borders = page.locator("#borders");
     expect(await borders.getAttribute("display")).toBeNull(); // converted to inline style on migration
-    expect(await page.evaluate(() => (window as any).Layers.isOn("borders"))).toBe(false);
+    expect(await page.evaluate(() => (window as any).FMG.Layers.isOn("borders"))).toBe(false);
     await expect(borders).toBeHidden();
 
     // the layer used to migrate as active while staying invisible, with no way to reveal it
-    await page.evaluate(() => (window as any).Layers.show("borders"));
+    await page.evaluate(() => (window as any).FMG.Layers.show("borders"));
     await expect(borders).toBeVisible();
   });
 
@@ -426,7 +448,7 @@ test.describe("Map loading", () => {
         count: uses.length,
         id: uses[0]?.id,
         transform: uses[0]?.getAttribute("transform"),
-        layerIsOn: (window as any).Layers.isOn("compass")
+        layerIsOn: (window as any).FMG.Layers.isOn("compass")
       };
     });
 
@@ -511,9 +533,9 @@ test.describe("Map loading", () => {
     await page.waitForFunction(() => Boolean((window as any).pack?.cells?.i?.length), { timeout: 120000 });
 
     const savedLayers = await page.evaluate(async () => {
-      (window as any).Layers.show("labels");
+      (window as any).FMG.Layers.show("labels");
       document.getElementById("labels")?.replaceChildren();
-      const mapData = await (window as any).Services.Save.prepareMapData();
+      const mapData = await (window as any).FMG.Services.Save.prepareMapData();
       return JSON.parse(mapData.split("\r\n")[50]);
     });
 
@@ -570,9 +592,10 @@ test.describe("Map loading", () => {
 
     const fileInput = page.locator("#mapToLoad");
     const mapFilePath = path.join(__dirname, "../fixtures/1.112.1.map");
+    const maps = await countMaps(page);
     await fileInput.setInputFiles(mapFilePath);
 
-    await waitForMap(page);
+    await waitForNextMap(page, maps);
     await page.waitForTimeout(500);
 
     // Verify burgs have proper structure
@@ -608,7 +631,7 @@ test.describe("Map loading", () => {
   test("loading a map should restore default namebases over the session's ones", async ({ page }) => {
     await waitForMap(page);
     await page.evaluate(() => {
-      const Names = (window as any).Names;
+      const Names = (window as any).FMG.Names;
       Names.nameBases = [{ name: "Custom", i: 0, min: 4, max: 8, d: "", m: 0, b: "Aaa,Bbb,Ccc" }];
       Names.getBase(0); // caches the custom chain
     });
@@ -618,7 +641,7 @@ test.describe("Map loading", () => {
     await waitForNextMap(page, maps);
 
     const result = await page.evaluate(() => {
-      const Names = (window as any).Names;
+      const Names = (window as any).FMG.Names;
       const defaults = Names.getNameBases();
       return {
         count: Names.nameBases.length,

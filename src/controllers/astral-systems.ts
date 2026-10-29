@@ -1,11 +1,12 @@
 // The Star Systems overview: every burg on the map read as a star system — its class, its
 // people, the installations that make it what it is. Read-only, and the place the Astral
 // mapping is meant to grow into a visual reskin. See docs/astral/README.md
-import { closeDialogs, destroyDialog } from "@/components/dialog/dialog-helpers";
-import { dialogState } from "@/components/dialog/state";
-import { type StarSystem, systemsOf } from "@/generators/astral-naming";
-import { getCellPoint } from "@/generators/journeys/journey-places";
+import { Dialog } from "@/ui/dialog/dialog";
+import { dialogState } from "@/ui/dialog/state";
+import { type StarSystem, systemsOf } from "@/model/physical/astral-naming";
+import { getCellPoint } from "@/model/story/journeys/journey-places";
 import { ensureEl, escapeHtml } from "@/utils";
+import { zoomTo } from "@/ui/map/zoom";
 
 const dialogId = "astralSystems" as const;
 const position = { my: "right top", at: "right-10 top+10", of: "svg", collision: "fit" };
@@ -27,18 +28,23 @@ const TEMPLATE = /* html */ `
 `;
 
 function open(): void {
-  if (customization) return;
+  if (options.app.mode) return;
   filterState = dialogState.get(dialogId, "filters", () => ({ search: "" }));
-  closeDialogs(`#${dialogId}, .stable`);
+  Dialog.closeAll(`#${dialogId}, .stable`);
 
   renderDialog();
   renderBody();
 
-  $(`#${dialogId}`).dialog({ title: "Star Systems", resizable: false, position, close: () => destroyDialog(dialogId) });
+  Dialog.open(dialogId, {
+    title: "Star Systems",
+    resizable: false,
+    position,
+    onClose: () => Dialog.destroy(dialogId)
+  });
 }
 
 function renderDialog(): void {
-  destroyDialog(dialogId);
+  Dialog.destroy(dialogId);
 
   const html = /* html */ `<div id="${dialogId}" class="dialog stable">${TEMPLATE}
     <div id="astralFilters" class="editorFilters">

@@ -1,6 +1,6 @@
-// Nebulae: seeded gas clouds over the sector; the layer is decorative, so no pointer events
-import type { Layer } from "@/components/layers";
-import { resolvePerformancePreset } from "@/components/performance";
+﻿// Nebulae: seeded gas clouds over the sector; the layer is decorative, so no pointer events
+import type { Layer } from "@/renderers/layers";
+import { resolvePerformancePreset } from "@/renderers/performance";
 import { getNebulae, NEBULA_GROUPS, type NebulaCluster, type NebulaEllipse, type NebulaGroup } from "./nebula-shapes";
 
 export function drawNebulae(layer: Layer): void {

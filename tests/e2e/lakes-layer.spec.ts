@@ -2,15 +2,7 @@ import { test, expect } from "@playwright/test";
 import { waitForMap } from "./wait-for-map";
 
 test.describe("Lakes layer", () => {
-  test.beforeEach(async ({ context, page }) => {
-    await context.clearCookies();
-
-    await page.goto("/");
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-
+  test.beforeEach(async ({ page }) => {
     await page.goto("/?seed=test-seed&width=1280&height=720");
 
     // Wait for map generation to complete
@@ -26,17 +18,17 @@ test.describe("Lakes layer", () => {
     const lakes = page.locator("#lakes");
 
     // Open the options panel (layers tab) so the toggle button is reachable
-    await page.evaluate(() => (window as any).showOptions());
+    await page.evaluate(() => document.getElementById("optionsTrigger")!.click());
 
     // Lakes should be visible by default
     await expect(lakes).toBeVisible();
 
-    // Click the toggle button to hide; wait for jQuery fadeOut to complete
-    await page.locator("#mapLayers > li[data-layer='lakes']").click();
+    // Click the toggle button to hide; wait for the fade-out to complete
+    await page.locator("#mapLayers > button[data-layer='lakes']").click();
     await expect(lakes).toBeHidden();
 
-    // Click again to show; wait for jQuery fadeIn to complete
-    await page.locator("#mapLayers > li[data-layer='lakes']").click();
+    // Click again to show; wait for the fade-in to complete
+    await page.locator("#mapLayers > button[data-layer='lakes']").click();
     await expect(lakes).toBeVisible();
   });
 
@@ -46,11 +38,11 @@ test.describe("Lakes layer", () => {
     // Lakes should be visible by default
     await expect(lakes).toBeVisible();
 
-    // Press Q to hide lakes; wait for jQuery fadeOut to complete
+    // Press Q to hide lakes; wait for the fade-out to complete
     await page.keyboard.press("q");
     await expect(lakes).toBeHidden();
 
-    // Press Q again to show lakes; wait for jQuery fadeIn to complete
+    // Press Q again to show lakes; wait for the fade-in to complete
     await page.keyboard.press("q");
     await expect(lakes).toBeVisible();
   });
@@ -60,7 +52,7 @@ test.describe("Lakes layer", () => {
   }) => {
     const [lakesIndex, heightmapIndex] = await page.evaluate(() => {
       const items = Array.from(
-        document.querySelectorAll("#mapLayers > li")
+        document.querySelectorAll("#mapLayers > button")
       ) as HTMLElement[];
       return [
         items.findIndex((li) => li.dataset.layer === "lakes"),
@@ -86,7 +78,7 @@ test.describe("Lakes layer", () => {
 
     // Simulate the drag of Lakes above Heightmap in the panel
     await page.evaluate(() => {
-      const Layers = (window as any).Layers;
+      const Layers = (window as any).FMG.Layers;
       Layers.move("lakes", "heightmap");
     });
 
@@ -108,7 +100,7 @@ test.describe("Lakes layer", () => {
       const featureId = Number(use.dataset.f);
       const subtypeBefore = win.pack.features[featureId].subtype;
 
-      await win.Controllers.LakesEditor.open(use);
+      await win.FMG.Controllers.LakesEditor.open(use);
 
       // create a custom group for the lake, as the editor's "+" flow does
       const nameInput = document.getElementById("lakeGroupName") as HTMLInputElement;
@@ -132,7 +124,7 @@ test.describe("Lakes layer", () => {
     // the placement has to survive a redraw of the layer, which is what happens on load
     const parentAfterRedraw = await page.evaluate(featureId => {
       const win = window as any;
-      win.Layers.draw("lakes");
+      win.FMG.Layers.draw("lakes");
       return document.querySelector(`#lakes use[data-f="${featureId}"]`)?.parentElement?.id;
     }, moved.featureId);
 

@@ -1,15 +1,18 @@
 // @vitest-environment jsdom
 import { beforeEach, expect, test, vi } from "vitest";
-import { setViewportSize, setViewportTransform } from "@/components/viewport";
+import { setViewportSize, setViewportTransform } from "@/renderers/viewport/viewport";
 import { ViewportLayers } from "@/renderers/viewport/viewport-renderer";
 
 const mocks = vi.hoisted(() => ({ layerOn: true }));
-vi.mock("@/components/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
-vi.mock("@/components/icons", () => ({
+vi.mock("@/renderers/layers", () => ({ Layers: { isOn: () => mocks.layerOn } }));
+vi.mock("@/model/icons", () => ({
   Icons: { load: vi.fn().mockResolvedValue(undefined), href: (id: string) => `#${id}` }
 }));
 
-import "@/generators/styles";
+import "@/model/styles/styles";
+import { Goods } from "@/model/economy/goods-generator";
+import { Production } from "@/model/economy/production-generator";
+import { Pack } from "@/model/graph/pack-generator";
 import { drawGoods } from "./draw-goods";
 
 // two cells, one at the origin and one far to the right, each producing one good
@@ -18,9 +21,9 @@ const CELLS = [
   [550, 50]
 ];
 
-type Production = Record<number, number>;
-const getCellProduction = vi.fn<(cellId: number) => Production>();
-const getBurgProduction = vi.fn<(burg: { i: number }) => Production>();
+type Output = Record<number, number>;
+const getCellProduction = vi.fn<(cellId: number) => Output>();
+const getBurgProduction = vi.fn<(burg: { i: number }) => Output>();
 
 beforeEach(() => {
   mocks.layerOn = true;
@@ -53,15 +56,15 @@ beforeEach(() => {
     ],
     burgs: [{}, { i: 1, x: 50, y: 60, production: {} }, { i: 2, x: 550, y: 60, production: {} }]
   } as never;
-  globalThis.Goods = {
+  Object.assign(Goods, {
     get: (id: number) => pack.goods.find(good => good.i === id),
     getBiomesProduction: () => ({}),
     getStroke: () => "#333"
-  } as never;
-  globalThis.Production = { getCellProduction, getBurgProduction } as never;
-  globalThis.Pack = { getPolygon: (cellId: number) => pack.cells.v[cellId].map(v => pack.vertices.p[v]) } as never;
-  getCellProduction.mockReset().mockImplementation(cellId => (cellId === 0 ? { 1: 4 } : { 2: 8 }) as Production);
-  getBurgProduction.mockReset().mockImplementation(burg => (burg.i === 1 ? { 1: 5, 2: 2 } : { 2: 9 }) as Production);
+  });
+  Object.assign(Production, { getCellProduction, getBurgProduction });
+  Object.assign(Pack, { getPolygon: (cellId: number) => pack.cells.v[cellId].map(v => pack.vertices.p[v]) });
+  getCellProduction.mockReset().mockImplementation(cellId => (cellId === 0 ? { 1: 4 } : { 2: 8 }) as Output);
+  getBurgProduction.mockReset().mockImplementation(burg => (burg.i === 1 ? { 1: 5, 2: 2 } : { 2: 9 }) as Output);
   styles.goods.groups.goodsIcons.options = { size: 4, circle: true };
   styles.goods.groups.goodsBurgs.options = { size: 3 };
   setViewportSize(100, 100);
