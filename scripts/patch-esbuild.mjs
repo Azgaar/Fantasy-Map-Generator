@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const esbuildPath = path.resolve("node_modules/esbuild/lib/main.js");
-if (fs.existsSync(esbuildPath)) {
+if (process.platform === "win32" && fs.existsSync(esbuildPath)) {
   let content = fs.readFileSync(esbuildPath, "utf8");
   const target = 'return ["node", [path2.join(__dirname, "..", "bin", "esbuild")]];';
   const replacement = 'return [process.env.ComSpec || "cmd.exe", ["/c", "bun", path2.join(__dirname, "..", "bin", "esbuild")]];';
