@@ -171,7 +171,7 @@ describe("capacity mode: figures recruit on pools, not gold", () => {
     ctx.config = capacityConfig;
     ctx.campaign.factions["1"]!.treasury = 0;
     const result = recruitCharacter(ctx, 1, "diplomat");
-    expect(result.error ?? "ok").toBe("ok");
+    expect(result.ok ? "ok" : result.error).toBe("ok");
     const character = Object.values(ctx.campaign.characters).find(c => c.figureId !== undefined)!;
     expect(figures[character.figureId!]!.roles[0]!.specialty).toBe("diplomat");
     expect(ctx.campaign.factions["1"]!.treasury).toBe(0); // no gold moved
@@ -185,7 +185,9 @@ describe("capacity mode: figures recruit on pools, not gold", () => {
     if (army.units.length > 15) army.units.splice(0, army.units.length - 15);
     const first = applyCommand(ctx, { type: "RecruitUnit", armyId: army.id, unitType: "guardsmen" });
     expect(first.error ?? "ok").toBe("ok");
-    expect(figures.filter(f => f.roles.some(r => r.type === "specialist" && r.specialty === "guardsmen"))).toHaveLength(1);
+    expect(figures.filter(f => f.roles.some(r => r.type === "specialist" && r.specialty === "guardsmen"))).toHaveLength(
+      1
+    );
     expect(ctx.campaign.factions["1"]!.treasury).toBe(0); // no gold moved
   });
 });
