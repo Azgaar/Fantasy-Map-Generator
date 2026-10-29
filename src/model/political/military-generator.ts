@@ -23,6 +23,7 @@ export interface Regiment {
   y: number;
   bx: number; // base x (for movement)
   by: number; // base y (for movement)
+  province?: number; // province id of birth
   u: Record<string, number>; // units composition (unitId -> count)
   units?: ArmyUnit[]; // concrete roster unit blocks
   rosterId?: string; // state's assigned roster identifier
@@ -377,7 +378,7 @@ class MilitaryModule {
       { modifiers: Record<string, number>; platoons: Platoon[]; roster: ResolvedRoster | undefined }
     >();
     valid.forEach(s => {
-const draft = {
+      const draft = {
         modifiers: {} as Record<string, number>,
         platoons: [] as Platoon[],
         roster: this.getRoster(s)
@@ -387,17 +388,17 @@ const draft = {
 
       const expansionRate = minmax(s.expansionism / expn / (s.area! / area), 0.25, 4); // how much state expansionism is realized
       const diplomacyRate = d.some(d => d === "Enemy")
-        ? 1
+        ? 3
         : d.some(d => d === "Rival")
-          ? 0.8
+          ? 2
           : d.some(d => d === "Suspicion")
-            ? 0.5
-            : 0.1; // peacefulness
+            ? 1.5
+            : 1; // peacefulness
       const neighborsRateRaw = s
         .neighbors!.map(n => (n ? pack.states[n].diplomacy![s.i] : "Suspicion"))
         .reduce((s, r) => s + rate[r as keyof typeof rate], 0.5);
-      const neighborsRate = minmax(neighborsRateRaw, 0.3, 3); // neighbors rate
-      s.alert = minmax(rn(expansionRate * diplomacyRate * neighborsRate, 2), 0.1, 5); // alert rate (area modifier)
+      const neighborsRate = minmax(neighborsRateRaw, 0.5, 3); // neighbors rate
+      s.alert = minmax(rn(expansionRate * diplomacyRate * neighborsRate, 2), 1, 20); // alert rate (area modifier)
       // apply overall state modifiers for unit types based on state features
       for (const unit of options.map.military.units) {
         if (!stateModifier[unit.type as keyof typeof stateModifier]) continue;
@@ -474,7 +475,7 @@ const draft = {
           n = 1;
         }
 
-const rosterUnitName = selectRosterUnitForCategory(unit.type as any, draft.roster, false, false, 0);
+        const rosterUnitName = selectRosterUnitForCategory(unit.type as any, draft.roster, false, false, 0);
 
         draft.platoons.push({
           cell: i,
@@ -535,7 +536,7 @@ const rosterUnitName = selectRosterUnitForCategory(unit.type as any, draft.roste
           n = 1;
         }
 
-const rosterUnitName = selectRosterUnitForCategory(
+        const rosterUnitName = selectRosterUnitForCategory(
           unit.type as any,
           draft.roster,
           true,
@@ -558,9 +559,9 @@ const rosterUnitName = selectRosterUnitForCategory(
       }
     }
 
-    const expected = 3 * options.map.units.population.scale; // expected regiment size
+    const expected = 6 * options.map.units.population.scale; // expected regiment size
     const mergeable = (n0: { s: number; u: string }, n1: { s: number; u: string }) => (!n0.s && !n1.s) || n0.u === n1.u; // check if regiments can be merged
-    const createRegiments = (nodes: Platoon[], s: State): Regiment[] => {
+    const createRegimentsForProvince = (nodes: Platoon[], s: State, provId: number): Regiment[] => {
       if (!nodes.length) return [];
       nodes.sort((a, b) => a.a - b.a); // form regiments starting from cells with fewest troops
       const tree = quadtree(
@@ -601,40 +602,82 @@ const rosterUnitName = selectRosterUnitForCategory(
 
       // parse regiments data
       const unitTypes = this.getUnitTypes();
-      const regiments: Regiment[] = nodes
-        .filter(n => n.t)
-        .sort((a, b) => b.t - a.t)
-        .map((r, i) => {
-          const u: Record<string, number> = {};
-          u[r.u] = r.a;
-          (r.children ?? []).forEach(n => {
-            u[n.u] = (u[n.u] ?? 0) + n.a;
-          });
-          const reg: Regiment = {
-            i,
-            a: r.t,
-            cell: r.cell,
-            x: r.x,
-            y: r.y,
-            bx: r.x,
-            by: r.y,
-            u,
-            rosterId: s.rosterId,
-            n: r.n,
-            name: "",
-            icon: "",
-            state: s.i,
-            tags: []
-          };
-          reconcileRegimentBlocks(reg, unitTypes);
-          return reg;
+      const prov = provId && pack.provinces ? pack.provinces[provId] : undefined;
+      const capitalCell = prov ? prov.center : s.center;
+      const [capX, capY] = p[capitalCell];
+      const provBurg =
+        prov?.burg && pack.burgs
+          ? pack.burgs[prov.burg]
+          : cells.burg?.[capitalCell] && pack.burgs
+            ? pack.burgs[cells.burg[capitalCell]]
+            : undefined;
+
+      const surviving = nodes.filter(n => n.t).sort((a, b) => b.t - a.t);
+      const landCount = surviving.filter(n => !n.n).length;
+      let landIdx = 0;
+      let fleetIdx = 0;
+
+      const regiments: Regiment[] = surviving.map((r, i) => {
+        const u: Record<string, number> = {};
+        u[r.u] = r.a;
+        (r.children ?? []).forEach(n => {
+          u[n.u] = (u[n.u] ?? 0) + n.a;
         });
 
-      // generate name for regiments
-      regiments.forEach(r => {
-        r.name = this.getName(r, regiments);
-        r.icon = this.getEmblem(r);
-        this.generateNote(r, s);
+        let regCell = capitalCell;
+        let regBx = capX;
+        let regBy = capY;
+        let regX = capX;
+        let regY = capY;
+
+        if (!r.n) {
+          if (landIdx > 0) {
+            const angle = ((landIdx - 1) * (2 * Math.PI)) / Math.max(landCount - 1, 1);
+            regX = rn(capX + Math.cos(angle) * 10, 2);
+            regY = rn(capY + Math.sin(angle) * 10, 2);
+          }
+          landIdx++;
+        } else {
+          let havenCell = provBurg?.port && cells.haven?.[provBurg.cell] ? cells.haven[provBurg.cell] : 0;
+          if (!havenCell && provId && pack.burgs) {
+            const portBurg = pack.burgs.find(
+              b => b?.i && !b.removed && cells.province?.[b.cell] === provId && b.port && cells.haven?.[b.cell]
+            );
+            if (portBurg) havenCell = cells.haven[portBurg.cell];
+          }
+          if (havenCell) {
+            regCell = havenCell;
+            regBx = p[havenCell][0];
+            regBy = p[havenCell][1];
+          } else {
+            regCell = r.cell;
+            regBx = r.x;
+            regBy = r.y;
+          }
+          regX = rn(regBx + fleetIdx * 6, 2);
+          regY = rn(regBy + fleetIdx * 6, 2);
+          fleetIdx++;
+        }
+
+        const reg: Regiment = {
+          i,
+          a: r.t,
+          cell: regCell,
+          x: regX,
+          y: regY,
+          bx: regBx,
+          by: regBy,
+          u,
+          rosterId: s.rosterId,
+          n: r.n,
+          name: "",
+          icon: "",
+          state: s.i,
+          province: provId || undefined,
+          tags: []
+        };
+        reconcileRegimentBlocks(reg, unitTypes);
+        return reg;
       });
 
       return regiments;
@@ -642,7 +685,43 @@ const rosterUnitName = selectRosterUnitForCategory(
 
     // get regiments for each state
     valid.forEach(s => {
-      s.military = createRegiments(drafts.get(s.i)!.platoons, s);
+      const stateProvIds = (s.provinces ?? []).filter(
+        pId => pId && pack.provinces?.[pId] && !pack.provinces[pId].removed
+      );
+      const capitalProvId =
+        cells.province?.[s.center] && stateProvIds.includes(cells.province[s.center])
+          ? cells.province[s.center]
+          : stateProvIds[0] || 0;
+
+      const byProvince = new Map<number, Platoon[]>();
+      for (const pl of drafts.get(s.i)!.platoons) {
+        let provId = cells.province?.[pl.cell] || 0;
+        if ((!provId || !stateProvIds.includes(provId)) && capitalProvId) provId = capitalProvId;
+        if (!byProvince.has(provId)) byProvince.set(provId, []);
+        byProvince.get(provId)!.push(pl);
+      }
+
+      const sortedProvIds = Array.from(byProvince.keys()).sort((a, b) => {
+        if (a === capitalProvId) return -1;
+        if (b === capitalProvId) return 1;
+        return a - b;
+      });
+
+      const stateRegiments: Regiment[] = [];
+      for (const provId of sortedProvIds) {
+        const provPlatoons = byProvince.get(provId) ?? [];
+        const provRegs = createRegimentsForProvince(provPlatoons, s, provId);
+        stateRegiments.push(...provRegs);
+      }
+
+      stateRegiments.forEach((r, idx) => {
+        r.i = idx;
+        r.name = this.getName(r, stateRegiments);
+        r.icon = this.getEmblem(r);
+        this.generateNote(r, s);
+      });
+
+      s.military = stateRegiments;
     });
   }
 
@@ -739,14 +818,16 @@ const rosterUnitName = selectRosterUnitForCategory(
 
   getName(r: Regiment, regiments: Regiment[]) {
     const cells = pack.cells;
-    const proper = r.n
-      ? null
-      : cells.province[r.cell] && pack.provinces[cells.province[r.cell]]
-        ? pack.provinces[cells.province[r.cell]].name
-        : cells.burg[r.cell] && pack.burgs[cells.burg[r.cell]]
-          ? pack.burgs[cells.burg[r.cell]].name
-          : null;
-    const number = nth(regiments.filter(reg => reg.n === r.n && reg.i < r.i).length + 1);
+    const provId = r.province ?? cells.province?.[r.cell] ?? 0;
+    const prov = provId && pack.provinces ? pack.provinces[provId] : undefined;
+    const proper = prov
+      ? prov.name
+      : pack.states?.[r.state]?.name || (cells.burg?.[r.cell] && pack.burgs?.[cells.burg[r.cell]]?.name) || null;
+    const number = nth(
+      regiments.filter(
+        reg => reg.n === r.n && (reg.province ?? cells.province?.[reg.cell] ?? 0) === provId && reg.i < r.i
+      ).length + 1
+    );
     const form = r.n ? "Fleet" : "Regiment";
     return `${number}${proper ? ` (${proper}) ` : ` `}${form}`;
   }
@@ -758,12 +839,16 @@ const rosterUnitName = selectRosterUnitForCategory(
 
   generateNote(r: Regiment, s: State) {
     const cells = pack.cells;
+    const provId = r.province ?? cells.province?.[r.cell] ?? 0;
+    const prov = provId && pack.provinces ? pack.provinces[provId] : undefined;
     const base =
-      cells.burg[r.cell] && pack.burgs[cells.burg[r.cell]]
+      cells.burg?.[r.cell] && pack.burgs?.[cells.burg[r.cell]]
         ? pack.burgs[cells.burg[r.cell]].name
-        : cells.province[r.cell] && pack.provinces[cells.province[r.cell]]
-          ? pack.provinces[cells.province[r.cell]].fullName
-          : null;
+        : prov?.burg && pack.burgs?.[prov.burg]
+          ? pack.burgs[prov.burg].name
+          : prov
+            ? prov.fullName
+            : null;
     const station = base ? `${r.name} is ${r.n ? "based" : "stationed"} in ${base}. ` : "";
 
     const composition = r.a
@@ -804,9 +889,11 @@ const rosterUnitName = selectRosterUnitForCategory(
     state.military ??= [];
     const military = state.military;
     const i = military.length ? Math.max(...military.map(regiment => regiment.i)) + 1 : 0;
+    const provId = pack.cells.province?.[cell] || undefined;
     const regiment: Regiment = {
       a: 0,
       cell,
+      province: provId,
       i,
       n: +(pack.cells.h[cell] < 20),
       u: {},
@@ -848,7 +935,7 @@ const rosterUnitName = selectRosterUnitForCategory(
     syncRegimentTotals(regiment, this.getUnitTypes());
   }
 
-  /** Set a state's war alert, the modifier of its forces (generated from 0.1 to 5): every regiment's troops scale with it */
+  /** Set a state's war alert, the modifier of its forces (generated from 1 to 20): every regiment's troops scale with it */
   setAlert(stateId: number, alert: number): void {
     const state = pack.states[stateId];
     if (!stateId || !state || state.removed) throw new Error(`State ${stateId} does not exist`);
@@ -915,6 +1002,7 @@ const rosterUnitName = selectRosterUnitForCategory(
     const added: Regiment = {
       a,
       cell: regiment.cell,
+      province: regiment.province,
       i,
       n: regiment.n,
       u: half,
