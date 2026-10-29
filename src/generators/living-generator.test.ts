@@ -777,4 +777,96 @@ describe("Living (Slices 1-4: Data Model, Seasonal Tick, Capacity, Projects, War
 
     expect(unit.disruption).toBe(1);
   });
+
+  it("spawns and smites a lair with map marker tracking", () => {
+    const living = Living.init();
+    const lair = Living.spawnLair(1, "bandit_camp", 5);
+    expect(lair).not.toBeNull();
+    expect(lair!.level).toBe(5);
+    expect(lair!.id).toBe("bandit_camp");
+    expect(lair!.markerId).toBeDefined();
+
+    const marker = pack.markers[lair!.markerId!];
+    expect(marker).toBeDefined();
+    expect(marker.type).toBe("dungeon");
+    expect(marker.icon).toBe("🗡️");
+    expect(marker.hidden).toBeUndefined();
+
+    expect(Living.resolveTrouble(1, 1)).toBe(false);
+
+    expect(Living.smiteLair(1)).toBe(true);
+    expect(living.provinces[1].lair).toBeNull();
+    expect(marker.hidden).toBe(true);
+  });
+
+  it("adds ceil(L/2) to load only for active lairs without reducing generation", () => {
+    const _living = Living.init();
+    Living.quellTrouble(1);
+    Living.smiteLair(1);
+    const baseCap = Living.recomputeStateCapacity(1);
+
+    Living.spawnLair(1, "ancient_fort", 5);
+    const lairCap = Living.recomputeStateCapacity(1);
+
+    // Generation must remain untouched
+    expect(lairCap.m.gen).toBe(baseCap.m.gen);
+    expect(lairCap.w.gen).toBe(baseCap.w.gen);
+    expect(lairCap.s.gen).toBe(baseCap.s.gen);
+
+    // Load must increase by ceil(5/2) = 3
+    expect(Math.round(lairCap.m.load - baseCap.m.load)).toBe(3);
+    expect(Math.round(lairCap.w.load - baseCap.w.load)).toBe(3);
+    expect(Math.round(lairCap.s.load - baseCap.s.load)).toBe(3);
+  });
+
+  it("drains public order, suspends garrison stability, and floors unrest while lair is active", () => {
+    const living = Living.init();
+    Living.quellTrouble(1);
+    Living.spawnLair(1, "monster_nest", 6);
+
+    const pSim = living.provinces[1];
+    pSim.order = 80;
+    pSim.stability = 10;
+    const bSim = living.burgs[1];
+    bSim.unrest = 2;
+
+    Living.tick(1);
+
+    // Unrest should be floored at lair level (6)
+    expect(bSim.unrest).toBeGreaterThanOrEqual(6);
+    // Stability shouldn't accrue from garrisons while lair is active
+    expect(pSim.stability).toBe(10);
+    // Order should drain by level * 2
+    expect(pSim.order).toBeLessThan(80);
+  });
+
+  it("metastasizes unchecked trouble into an entrenched lair", () => {
+    const living = Living.init();
+    Living.smiteLair(1);
+    const trouble = Living.spawnTrouble(1, "angry_dead", "ruin", 5);
+    expect(trouble).not.toBeNull();
+
+    const lair = Living.metastasizeTroubleToLair(1);
+    expect(lair).not.toBeNull();
+    expect(living.provinces[1].trouble).toBeNull();
+    expect(living.provinces[1].lair).toBe(lair);
+    expect(lair!.id).toBe("ancient_evil");
+    expect(lair!.level).toBe(5);
+  });
+
+  it("launches seasonal lair raid against a settlement", () => {
+    const living = Living.init();
+    Living.quellTrouble(1);
+    const lair = Living.spawnLair(1, "bandit_camp", 4);
+    expect(lair).not.toBeNull();
+    lair!.raidPending = true;
+
+    const bSim = living.burgs[1];
+    bSim.buildings = ["market1"];
+
+    Living.tick(1);
+
+    // News should record lair activity
+    expect(living.recentNews.some(item => item.kind === "lair")).toBe(true);
+  });
 });
