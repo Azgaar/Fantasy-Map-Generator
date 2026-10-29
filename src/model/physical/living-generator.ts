@@ -28,8 +28,19 @@ import {
   getTroubleDef,
   RESOURCE_TROUBLE_IDS,
   RUIN_TROUBLE_IDS,
-  troubleUnitMatchMultiplier
+  troubleUnitMatchMultiplier,
+  UNIT_ROLE_POOLS
 } from "@/data/living-troubles";
+import type { Burg } from "@/model/political/burgs-generator";
+import {
+  Military,
+  type Regiment,
+  reconcileRegimentBlocks,
+  syncRegimentTotals
+} from "@/model/political/military-generator";
+import type { Province } from "@/model/political/provinces-generator";
+import { type State, States } from "@/model/political/states-generator";
+import { Names } from "@/model/society/names-generator";
 import type { HistoricalFigure, HistoryEventType, HistRef } from "@/types/history";
 import {
   type BurgSimState,
@@ -50,12 +61,7 @@ import {
 } from "@/types/living";
 import { minmax } from "@/utils";
 import { createRng, type Rng } from "@/utils/rng";
-import type { Burg } from "@/model/political/burgs-generator";
 import { Chronicle } from "./history-generator";
-import { Military, type Regiment, reconcileRegimentBlocks, syncRegimentTotals } from "@/model/political/military-generator";
-import { Names } from "@/model/society/names-generator";
-import type { Province } from "@/model/political/provinces-generator";
-import { type State, States } from "@/model/political/states-generator";
 
 const MAX_RECENT_NEWS = 50;
 
@@ -218,6 +224,7 @@ class LivingModel {
     }
 
     this.syncWorld();
+    this.ensureCommanders();
     return history.living;
   }
 
@@ -273,6 +280,7 @@ class LivingModel {
     this.syncBurgs(living);
     this.syncProvinces(living);
     this.syncStates(living);
+    this.ensureCommanders();
     this.recomputeAllCapacities(living);
   }
 
@@ -900,6 +908,7 @@ class LivingModel {
     regiment.units ??= [];
     regiment.units.push({ type: choice.unit.id, count: choice.unit.men, exp: 0 });
     syncRegimentTotals(regiment, Military.getUnitTypes());
+    if (choice.unit.troubleRole) this.commanderFor(state, regiment, choice.unit.troubleRole);
 
     const living = this.getState();
     const burg = pack.burgs[pack.cells.burg?.[regiment.cell] ?? 0];
@@ -911,6 +920,79 @@ class LivingModel {
       burgId: burg?.i
     });
     return true;
+  }
+
+  /**
+   * unified-figures slice 1: every specialist unit in the field serves under a
+   * named commander figure. Backfills on init and each sync, and is what a
+   * fresh muster calls; idempotent through `regiment.crew`.
+   */
+  ensureCommanders(): void {
+    const unitTypes = Military.getUnitTypes();
+    for (const state of pack.states) {
+      if (!state?.i || state.removed || !state.military) continue;
+      for (const regiment of state.military) {
+        for (const unit of regiment.units ?? []) {
+          const specialty = unitTypes[unit.type]?.troubleRole;
+          if (!specialty) continue;
+          this.commanderFor(state, regiment, specialty);
+        }
+      }
+    }
+  }
+
+  /** The living commander figure for a regiment's specialty, minting one on first need. */
+  private commanderFor(state: State, regiment: Regiment, specialty: TroubleUnitRole): number | undefined {
+    if (specialty === "military") return undefined;
+    const history = Chronicle.sync();
+    history.figures ??= [];
+    const figures = history.figures;
+    regiment.crew ??= [];
+
+    const crewed = regiment.crew.find(id => {
+      const figure = figures[id];
+      return figure && !figure.death && figure.roles.some(r => r.type === "specialist" && r.specialty === specialty);
+    });
+    if (crewed !== undefined) return crewed;
+
+    // a commander of the same state and specialty may already serve elsewhere (a merged-away regiment)
+    const existing = figures.find(
+      figure =>
+        !figure.death &&
+        figure.roles.some(
+          r =>
+            r.type === "specialist" && r.specialty === specialty && r.target.kind === "state" && r.target.id === state.i
+        )
+    );
+    if (existing) {
+      regiment.crew.push(existing.i);
+      return existing.i;
+    }
+
+    const index = figures.length;
+    const culture = state.culture ?? 0;
+    const year = options.map?.lore?.calendar?.year ?? 1000;
+    const rng = traitsRng(this.getState().seed, "figure", index);
+    const alignment = rollAlignment(rng, pack.cultures[culture]?.alignment);
+    const { virtues, vices } = rollFigureTraits(rng, alignment);
+    const skills = { m: 0, w: 0, s: 0, c: 0 };
+    skills[UNIT_ROLE_POOLS[specialty]] = 1;
+    const figure: HistoricalFigure = {
+      i: index,
+      name: Names.getCulture(culture),
+      culture,
+      birth: year - rng.int(25, 45),
+      roles: [{ type: "specialist", specialty, target: { kind: "state", id: state.i }, from: year }],
+      alignment,
+      virtues,
+      vices,
+      cell: regiment.cell,
+      xp: 0,
+      skills
+    };
+    figures.push(figure);
+    regiment.crew.push(figure.i);
+    return figure.i;
   }
 
   /** Annex a Free Burg: peacefully when it shares the state's culture or faith, else by assault. */

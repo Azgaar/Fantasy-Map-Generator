@@ -19,6 +19,7 @@
  *    function the server uses, and the same function the parity harness checks.
  */
 
+import type { HistoricalFigure } from "@/types/history";
 import { type ContentPack, type ResolvedContent, resolveForPack } from "../engine/common/content";
 import type { MapPack } from "../engine/common/types";
 import { applyCommand } from "../engine/game/commands";
@@ -42,6 +43,8 @@ interface CampaignStoreOptions {
   /** Defaults to the resolved content for this pack. */
   resolved?: ResolvedContent;
   mapPackId?: string;
+  /** The map's figure roster (pack.history.figures) — unified-figures slice 1. */
+  figures?: HistoricalFigure[];
 }
 
 export interface CommandOutcome {
@@ -87,6 +90,7 @@ export class CampaignStore {
 
   private campaign: Campaign | null = null;
   private commands: Command[] = [];
+  private figures?: HistoricalFigure[];
   private hash = "";
   private listeners = new Set<Listener>();
 
@@ -97,6 +101,7 @@ export class CampaignStore {
     this.resolved = options.resolved ?? resolveForPack(options.pack, options.content);
     this.mapPackId = options.mapPackId ?? options.pack.meta.mapId;
     this.packContentHash = options.pack.meta.contentHash;
+    this.figures = options.figures;
   }
 
   get attached(): boolean {
@@ -173,7 +178,8 @@ export class CampaignStore {
       config: this.config,
       content: this.content,
       resolved: this.resolved,
-      commands: this.commands
+      commands: this.commands,
+      ...(this.figures !== undefined ? { figures: this.figures } : {})
     };
   }
 

@@ -26,6 +26,7 @@ export interface Regiment {
   u: Record<string, number>; // units composition (unitId -> count)
   units?: ArmyUnit[]; // concrete roster unit blocks
   rosterId?: string; // state's assigned roster identifier
+  crew?: number[]; // attached figure ids (pack.history.figures): commanders of specialist units (unified-figures)
   n: number; // 0 = land regiment, 1 = naval fleet
   type?: string; // unit type
   icon: string;
@@ -377,7 +378,7 @@ class MilitaryModule {
       { modifiers: Record<string, number>; platoons: Platoon[]; roster: ResolvedRoster | undefined }
     >();
     valid.forEach(s => {
-const draft = {
+      const draft = {
         modifiers: {} as Record<string, number>,
         platoons: [] as Platoon[],
         roster: this.getRoster(s)
@@ -474,7 +475,7 @@ const draft = {
           n = 1;
         }
 
-const rosterUnitName = selectRosterUnitForCategory(unit.type as any, draft.roster, false, false, 0);
+        const rosterUnitName = selectRosterUnitForCategory(unit.type as any, draft.roster, false, false, 0);
 
         draft.platoons.push({
           cell: i,
@@ -535,7 +536,7 @@ const rosterUnitName = selectRosterUnitForCategory(unit.type as any, draft.roste
           n = 1;
         }
 
-const rosterUnitName = selectRosterUnitForCategory(
+        const rosterUnitName = selectRosterUnitForCategory(
           unit.type as any,
           draft.roster,
           true,

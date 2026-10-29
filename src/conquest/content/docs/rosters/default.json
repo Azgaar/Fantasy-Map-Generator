@@ -294,6 +294,40 @@
           "s": 1,
           "c": 0
         }
+      },
+      "assassins": {
+        "name": "Guild Assassins",
+        "category": "melee",
+        "blocks": 0.05,
+        "attack": 5,
+        "defense": 5,
+        "charge": 2,
+        "missile": 0,
+        "cost": 300,
+        "upkeep": 40,
+        "capacityCost": {
+          "m": 0,
+          "w": 0,
+          "s": 0,
+          "c": 2
+        }
+      },
+      "envoys": {
+        "name": "Court Envoys",
+        "category": "melee",
+        "blocks": 0.05,
+        "attack": 2,
+        "defense": 3,
+        "charge": 0,
+        "missile": 0,
+        "cost": 250,
+        "upkeep": 30,
+        "capacityCost": {
+          "m": 0,
+          "w": 1,
+          "s": 0,
+          "c": 1
+        }
       }
     },
     "recruitable": [
@@ -306,7 +340,9 @@
       "merchant_company",
       "sage_coven",
       "prophet_band",
-      "magistrates"
+      "magistrates",
+      "assassins",
+      "envoys"
     ],
     "garrison": {
       "melee": "levy_spear",
@@ -329,7 +365,9 @@
       "merchant_company": 4,
       "sage_coven": 4,
       "prophet_band": 4,
-      "magistrates": 4
+      "magistrates": 4,
+      "assassins": 2,
+      "envoys": 2
     }
   },
   "tech": [

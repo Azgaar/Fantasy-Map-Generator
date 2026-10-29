@@ -9,6 +9,7 @@
  * FMG type knowledge at all.
  */
 
+import type { HistoricalFigure } from "@/types/history";
 import type { ArmyUnit } from "../engine/common/types";
 
 /** The subset of FMG's `Layer` we use. `getEl()` is the SVG group we render into. */
@@ -155,6 +156,8 @@ export interface FmgPack {
   zones?: unknown[];
   routes?: Record<string, unknown>;
   nameBases?: unknown[];
+  /** The map's chronicle; `figures` is the unified figure roster (unified-figures). */
+  history?: { events?: unknown[]; realms?: unknown[]; eras?: unknown[]; figures?: HistoricalFigure[] };
 }
 
 /** FMG's page-global d3 (v5.8, `libs/d3.min.js`) — only the Voronoi bits are used. */
@@ -216,6 +219,15 @@ export function fmg(): FmgGlobals | null {
 export function fmgPack(): FmgPack | null {
   const p = fmg()?.pack;
   return p?.cells?.p ? p : null;
+}
+
+/** The map's figure roster, creating the chronicle shell if absent. Null outside the page. */
+export function fmgFigures(): HistoricalFigure[] | null {
+  const pack = fmgPack();
+  if (!pack) return null;
+  pack.history ??= { events: [], realms: [], eras: [], figures: [] };
+  pack.history.figures ??= [];
+  return pack.history.figures;
 }
 
 /** Map dimensions, or null before a map is loaded. */

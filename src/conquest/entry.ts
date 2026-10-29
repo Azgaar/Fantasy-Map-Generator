@@ -50,7 +50,7 @@ import {
   type TwSession
 } from "./store/session";
 import { installButton, registerCommands, toggleTotalWarMenu } from "./ui/button";
-import { fmg, twWarn, whenFmgReady } from "./ui/fmg";
+import { fmg, fmgFigures, twWarn, whenFmgReady } from "./ui/fmg";
 import {
   installZoomRedraw,
   onWorldReplaced,
@@ -343,7 +343,8 @@ async function compileWorldImpl(): Promise<void> {
       pack: result.pack,
       content: live.content,
       config: live.config,
-      mapPackId: packId
+      mapPackId: packId,
+      figures: fmgFigures() ?? undefined
     });
 
     let report: RebaseResult | null = null;

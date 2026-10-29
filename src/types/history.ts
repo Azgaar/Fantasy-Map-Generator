@@ -61,13 +61,30 @@ export interface Era {
   to: number;
 }
 
-export type HistoricalRoleType = "ruler" | "general" | "prophet" | "rebel" | "adventurer";
+export type HistoricalRoleType =
+  | "ruler"
+  | "general"
+  | "prophet"
+  | "rebel"
+  | "adventurer"
+  | "specialist" // a trouble-solving retainer; specialty carries the TroubleUnitRole
+  | "agent"; // a conquest operative; specialty carries the kind
 
 export interface HistoricalRole {
   type: HistoricalRoleType;
   target: HistRef;
   from: number;
   to?: number;
+  /** specialists: "guardsmen"|"merchant"|"sage"|"prophet"|"magistrate"; agents: "assassin"|"diplomat"|"bodyguard" */
+  specialty?: string;
+}
+
+/** the figure's four pool ratings (unified-figures): force, wealth, order, cunning */
+export interface FigureSkills {
+  m: number;
+  w: number;
+  s: number;
+  c: number;
 }
 
 export interface HistoricalFigure {
@@ -83,6 +100,12 @@ export interface HistoricalFigure {
   /** 0–3 each, per TRAIT_COUNTS: a good figure is all virtues, an evil one all vices */
   virtues?: string[];
   vices?: string[];
+  /** last known position; the Figures layer draws it (unified-figures) */
+  cell?: number;
+  /** lifetime experience; the conquest overlay mirrors it (unified-figures) */
+  xp?: number;
+  /** pool ratings 0..5, raised on level-up and skill spend (unified-figures) */
+  skills?: FigureSkills;
 }
 
 /** a polity's stable identity: one lineage across epochs, even as its form and borders change */

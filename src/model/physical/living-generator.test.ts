@@ -934,3 +934,125 @@ describe("Living (Slices 1-4: Data Model, Seasonal Tick, Capacity, Projects, War
     expect(cap.w.load).toBeGreaterThan(0);
   });
 });
+
+describe("Unified Figures slice 1: specialist commanders", () => {
+  beforeEach(() => {
+    globalThis.options = {
+      map: {
+        seed: "test-living-seed",
+        population: { ruralFactor: 1, urbanization: 1 },
+        lore: {
+          name: "Test World",
+          description: "",
+          calendar: { year: 1000, era: "Age of Dawn", eraShort: "AD" },
+          history: { span: 500, realms: 0, density: 1, echoes: false, renames: false, mode: "archaeologist" }
+        }
+      },
+      generation: { cultures: { traits: true }, states: { limit: 4, sizeVariety: 2, growthRate: 1 } }
+    } as unknown as typeof options;
+
+    globalThis.pack = {
+      cells: {
+        i: [0, 1, 2, 3],
+        state: new Uint16Array([0, 1, 1, 0]),
+        province: new Uint16Array([0, 1, 1, 0]),
+        pop: [0, 120, 100, 20],
+        culture: [0, 1, 1, 1],
+        religion: [0, 1, 1, 1],
+        c: [[1], [0, 2], [1], [2]],
+        p: [
+          [0, 0],
+          [10, 10],
+          [20, 20],
+          [30, 30]
+        ],
+        r: [0, 0, 0, 0]
+      },
+      cultures: [
+        { i: 0, name: "Wildlands", base: 0, center: 0 },
+        { i: 1, name: "Aeloran (Human)", base: 0, center: 1, alignment: "good" }
+      ],
+      religions: [{ i: 0, name: "No religion" }],
+      burgs: [
+        { i: 0 },
+        {
+          i: 1,
+          name: "Aelor",
+          cell: 1,
+          x: 10,
+          y: 10,
+          state: 1,
+          culture: 1,
+          population: 18,
+          capital: 1,
+          walls: 1,
+          plaza: 1,
+          temple: 1,
+          citadel: 1
+        }
+      ],
+      states: [
+        { i: 0, name: "Neutrals" },
+        {
+          i: 1,
+          name: "Aeloria",
+          culture: 1,
+          capital: 1,
+          center: 1,
+          military: [
+            {
+              i: 0,
+              a: 300,
+              cell: 1,
+              x: 10,
+              y: 10,
+              bx: 10,
+              by: 10,
+              u: { spear: 300 },
+              units: [
+                { type: "spear", count: 150, exp: 0 },
+                { type: "sage_coven", count: 8, exp: 0 }
+              ],
+              n: 0,
+              name: "1st Aeloria Regiment",
+              state: 1,
+              icon: "⚔️"
+            }
+          ]
+        }
+      ],
+      provinces: [{ i: 0 }, { i: 1, state: 1, burg: 1, center: 1 }],
+      history: { events: [], realms: [], eras: [{ name: "Age of Dawn", from: 500, to: 1000 }], figures: [] }
+    } as unknown as typeof pack;
+  });
+
+  it("backfills a named commander for a fielded specialist unit on init", () => {
+    Living.init();
+    const figures = pack.history.figures!;
+    const commanders = figures.filter(f => f.roles.some(r => r.type === "specialist" && r.specialty === "sage"));
+    expect(commanders).toHaveLength(1);
+    expect(commanders[0]!.name).toBeTruthy();
+    expect(commanders[0]!.alignment).toBeDefined(); // rolled on the culture's prevailing column
+    expect(commanders[0]!.skills!.w).toBe(1);
+    expect(pack.states[1].military![0].crew).toContain(commanders[0]!.i);
+  });
+
+  it("re-init does not mint duplicate commanders", () => {
+    Living.init();
+    Living.init();
+    const commanders = pack.history.figures!.filter(f => f.roles.some(r => r.type === "specialist"));
+    expect(commanders).toHaveLength(1);
+  });
+
+  it("ensureCommanders crews a freshly added specialist unit", () => {
+    Living.init();
+    const figures = pack.history.figures!;
+    const regiment = pack.states[1].military![0];
+    regiment.crew = [];
+    regiment.units!.push({ type: "magistrates", count: 5, exp: 0 });
+    Living.ensureCommanders();
+    const crew = (regiment.crew ?? []).map(id => figures[id]!);
+    expect(crew.some(f => f.roles.some(r => r.type === "specialist" && r.specialty === "magistrate"))).toBe(true);
+    expect(crew.find(f => f.roles.some(r => r.specialty === "magistrate"))!.skills!.s).toBe(1);
+  });
+});

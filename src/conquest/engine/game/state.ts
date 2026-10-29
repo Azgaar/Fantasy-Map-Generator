@@ -187,6 +187,8 @@ export type SkillBranch = "combat" | "campaign" | "economy";
 
 export interface Character {
   id: string;
+  /** unified-figures: this person's index in the map's figure roster (ctx.figures). */
+  figureId?: number;
   factionId: number;
   name: string;
   /**

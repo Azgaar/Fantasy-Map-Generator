@@ -30,6 +30,7 @@ import { agentAction, grantXp, lordCombatBonus, moveCharacter, recruitCharacter,
 import { aiAcceptsConfederation, declareWarCore, hasTreaty, offerTreaty, setRelation } from "./diplomacy";
 import { advanceConstructionStep } from "./economy";
 import type { CapturePolicy, GameEvent, TreatyType } from "./events";
+import { mintSpecialistCommander } from "./figures";
 import { graphIndex } from "./graph";
 import { edgeCost, findPath, riverCrossing } from "./movement";
 import { effectiveValue, rollValueCheck } from "./saves";
@@ -796,6 +797,11 @@ function recruitUnit(ctx: EngineCtx, armyId: string, unitTypeId: string, interna
   }
   army.units.push({ type: unitTypeId, count: type.men, exp: 0 });
   campaign.log.push({ type: "UnitRecruited", armyId, unitType: unitTypeId, cost: type.cost });
+
+  // unified-figures: a specialist roster unit musters under its named commander
+  if (type.troubleRole && type.troubleRole !== "military") {
+    mintSpecialistCommander(ctx, army.factionId, type.troubleRole, army.cell);
+  }
 
   // Phase 4: Necromantic Cult penalty (+2 Atrocity per recruited undead unit)
   const holdsNecro = ctx.pack.regions.some(r => {
