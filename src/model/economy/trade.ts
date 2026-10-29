@@ -20,10 +20,9 @@ import { TradeRoutes } from "./trade-routes";
 
 const PRICE_FLOOR_FACTOR = 0.02;
 const PRICE_CEILING_FACTOR = 5.0;
-export const PRICE_RESPONSE = 0.56; // a trade of a day's expected sales moves the price e^this times
-const WANTS_ESTIMATE = 1.94; // expected sales: what people buy beyond their needs, as a multiple of them
-const OPENING_ELASTICITY = 0.07; // how far below its value an ingredient opens where its trades need less than a unit a day
-export const CAPITAL_RENT = 0.21; // share of rural sale income paid to the state's capital: dues and absentee landlords
+export const PRICE_RESPONSE = 0.74; // a trade of a day's expected sales moves the price e^this times
+const WANTS_ESTIMATE = 1.5; // expected sales: what people buy beyond their needs, as a multiple of them
+const OPENING_ELASTICITY = 0.08; // how far below its value an ingredient opens where its trades need less than a unit a day
 export const MARKET_MARGIN = 0.035; // a market's margin before its license fee raises it
 const MAX_DECIMAS = 10; // the map's diagonal: the most carriage, paid with no route to the burg's own market
 export const MIN_LOCAL_STOCK = 1; // a buyer buys at its own market while it stocks this much, otherwise from the cheapest market
@@ -44,7 +43,6 @@ type MarketDay = {
   ruralPeople: number;
   cash: number;
   income: number;
-  rent: number;
   spent: number;
   margin: number;
   covered: number[];
@@ -116,7 +114,6 @@ export class TradeModule {
         ruralPeople: 0,
         cash: 0,
         income: 0,
-        rent: 0,
         spent: 0,
         margin: 0,
         covered: [],
@@ -185,7 +182,7 @@ export class TradeModule {
     if (units > 0.01) this.movePrice(market, good, units);
   }
 
-  /** Units taken from the market's stock: the share that is rural produce pays the market's rural people, less the margin and the capital's rent */
+  /** Units taken from the market's stock: the share that is rural produce pays the market's rural people, less the margin */
   private takeStock(market: Market, good: Good, units: number) {
     const marketGood = this.getMarketGood(market, good);
     const day = this.days[market.i];
@@ -194,13 +191,8 @@ export class TradeModule {
       if (fromRural > 0) {
         day.rural[good.i] -= fromRural;
         const earned = fromRural * this.customerSellPrice(market, marketGood.price);
-        const rent = earned * CAPITAL_RENT;
-        const capital = pack.burgs[pack.states[Markets.getState(market)]?.capital || 0];
-        const paid = capital?.i && !capital.removed ? rent : 0; // no capital to pay: the countryside keeps it
-        if (paid) capital!.treasury = rn((capital!.treasury || 0) + paid, 2);
-        day.cash += earned - paid;
-        day.income += earned - paid;
-        day.rent += paid;
+        day.cash += earned;
+        day.income += earned;
       }
     }
     marketGood.stock = rn(Math.max(0, marketGood.stock - units), 2);
@@ -349,8 +341,7 @@ export class TradeModule {
         owed ? [[stateId, rn(owed, 2), rn(owed * share, 2)] as [number, number, number]] : []
       );
       market.rural = {
-        earned: rn(day.income + day.rent, 2),
-        rent: rn(day.rent, 2),
+        earned: rn(day.income, 2),
         spent: rn(day.spent, 2),
         bought,
         margin: rn(day.margin, 2)

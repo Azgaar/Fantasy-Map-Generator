@@ -5,7 +5,6 @@ import { rn } from "@/utils/number-utils";
 import { Goods, SAVINGS_RATE } from "./goods-generator";
 import { type Market, Markets, MarketsModule } from "./markets-generator";
 import {
-  CAPITAL_RENT,
   DEAL_KINDS,
   type Deal,
   IMPORT_CARRIAGE_FACTOR,
@@ -277,7 +276,6 @@ describe("TradeModule", () => {
           ruralPeople: 0,
           cash: 0,
           income: 0,
-          rent: 0,
           spent: 0,
           margin: 0,
           covered: [],
@@ -310,7 +308,6 @@ describe("TradeModule", () => {
           ruralPeople: 0,
           cash: 0,
           income: 0,
-          rent: 0,
           spent: 0,
           margin: 0,
           covered: [],
@@ -322,7 +319,7 @@ describe("TradeModule", () => {
       for (let sale = 0; sale < 50; sale++) tradeModule.sell({ burg, good, units: 1, taxRate: 0 });
       expect(importer.goods[0].price).toBeCloseTo(0.5 * Math.exp((-PRICE_RESPONSE * 50) / 100), 4);
       tradeModule.endRun();
-      expect(importer.goods[0].price).toBe(0.38);
+      expect(importer.goods[0].price).toBe(rn(0.5 * Math.exp((-PRICE_RESPONSE * 50) / 100), 2));
     });
 
     it("keep() takes back only the burg's own goods, never the rural produce in stock", () => {
@@ -340,7 +337,6 @@ describe("TradeModule", () => {
           ruralPeople: 0,
           cash: 0,
           income: 0,
-          rent: 0,
           spent: 0,
           margin: 0,
           covered: [],
@@ -355,14 +351,11 @@ describe("TradeModule", () => {
       expect(ruralDay(2).rural[0]).toBeCloseTo(importer.goods[0].stock, 2);
     });
 
-    it("pays the countryside for its produce as it is bought, less the margin and its capital's rent", () => {
+    it("pays the countryside for its produce as it is bought, less the margin", () => {
       const { importer, burg, good } = setupImport();
       importer.centerBurgId = 1;
       importer.goods[0] = { stock: 100, price: 10 };
-      const capital = { i: 3, treasury: 0 } as Burg;
-      globalThis.pack.burgs[3] = capital;
-      setRoutes({ 2: 0 }); // after the capital: a new burg is measured again
-      globalThis.pack.states = withFinance([{ i: 0 }, { i: 1, capital: 3 }, { i: 2 }]); // the market's center (burg 1) is in state 1
+      globalThis.pack.states = withFinance([{ i: 0 }, { i: 1 }, { i: 2 }]); // the market's center (burg 1) is in state 1
       // biome-ignore lint/complexity/useLiteralKeys: private access for testing
       tradeModule["days"] = [
         undefined,
@@ -373,7 +366,6 @@ describe("TradeModule", () => {
           ruralPeople: 10,
           cash: 0,
           income: 0,
-          rent: 0,
           spent: 0,
           margin: 0,
           covered: [],
@@ -384,13 +376,12 @@ describe("TradeModule", () => {
 
       tradeModule.buy({ burg, good, units: 10, kind: DEAL_KINDS.demand }); // half the stock is rural: 5 of its units
       const earned = 5 * 10 * (1 - MARGIN);
-      expect(capital.treasury).toBeCloseTo(earned * CAPITAL_RENT, 1);
-      expect(ruralDay(2).income).toBeCloseTo(earned * (1 - CAPITAL_RENT), 2);
+      expect(ruralDay(2).income).toBeCloseTo(earned, 2);
       expect(ruralDay(2).spent).toBe(0);
 
       tradeModule.spendRural(importer); // they spend what they don't save on what the market has
       expect(ruralDay(2).spent).toBeGreaterThan(0);
-      expect(ruralDay(2).spent).toBeLessThanOrEqual(earned * (1 - CAPITAL_RENT) * (1 - SAVINGS_RATE) + 0.01);
+      expect(ruralDay(2).spent).toBeLessThanOrEqual(earned * (1 - SAVINGS_RATE) + 0.01);
     });
 
     it("rural people keep back their poll tax and pay it at the end of the run, as far as their money goes", () => {
@@ -403,7 +394,6 @@ describe("TradeModule", () => {
         ruralPeople: 10,
         cash: income,
         income,
-        rent: 0,
         spent: 0,
         margin: 0,
         covered: [],
@@ -440,7 +430,7 @@ describe("TradeModule", () => {
       globalThis.pack.markets = [importer];
       const center = globalThis.pack.burgs[2];
       center.treasury = 0;
-      const day = { depth: [1e9], rural: [], ruralPeople: 1000, cash: 100, income: 100, rent: 0, spent: 0, margin: 0 };
+      const day = { depth: [1e9], rural: [], ruralPeople: 1000, cash: 100, income: 100, spent: 0, margin: 0 };
       // biome-ignore lint/complexity/useLiteralKeys: private access for testing
       tradeModule["days"] = [undefined, undefined, { ...day, covered: [], bought: [], pollTaxDue: [] }] as never;
 

@@ -33,19 +33,19 @@ import {
   type Transaction
 } from "./trade";
 
-const RURAL_OUTPUT_FACTOR = 1.88;
-export const DEPOSIT_RICHNESS = 1.25; // units a deposit yields a day per population point of its cell, on a map of DEPOSIT_MAP_CELLS
+const RURAL_OUTPUT_FACTOR = 1.23;
+export const DEPOSIT_RICHNESS = 2.52; // units a deposit yields a day per population point of its cell, on a map of DEPOSIT_MAP_CELLS
 const DEPOSIT_MAP_CELLS = 5000; // deposit counts are per map: their yield grows with the map's cells
 const DEPOSIT_MAX_POPULATION = 10; // a deposit's yield stops growing past this population
-export const BONUS_URBAN_PRODUCTION = 3; // free units per population point of a burg on a deposit
+export const BONUS_URBAN_PRODUCTION = 3.59; // free units per population point of a burg on a deposit
 const MIN_BONUS_PRODUCTION = 1;
 const MAX_BONUS_PRODUCTION = 5;
 export const MAX_BONUS_VALUE = 200; // a burg's free units are worth at most this at base value, so a rich deposit can't flood its treasury
 const MAX_WORKERS = 1000;
-export const WORKFORCE_SHARE = 0.39; // townspeople working in trades; the rest serve, build, farm or are too young or old
+export const WORKFORCE_SHARE = 0.32; // townspeople working in trades; the rest serve, build, farm or are too young or old
 const WORKERS_PER_TURN = 5;
-export const BURG_SPECIALIZATION = 1.93;
-export const MARKET_SPECIALIZATION = 0.5;
+export const BURG_SPECIALIZATION = 0.87;
+export const MARKET_SPECIALIZATION = 0.6;
 
 export class ProductionModule {
   private zoneCellSets: Map<number, Set<number>> | null = null; // lazy zoneId -> cells lookup, built only when a good uses zone multipliers

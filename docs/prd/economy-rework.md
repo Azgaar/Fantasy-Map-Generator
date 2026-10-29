@@ -124,4 +124,4 @@ In KPI order:
 1. **Goods missing on some maps** (KPI 1): grain, wine and honey on seed 431087220.
 2. **Rich and poor regions, output apart from people** (KPIs 5 and 6): scale returns, development level, merchants.
 3. **Taxes that follow wealth** (KPI 9): narrower rate jitter, less or wealth-scaled poll tax.
-4. **Treasury concentration** (KPI 11): the hubs' margins and the capitals' rent pile up in few treasuries; luxury supply limits what the rich can spend.
+4. **Treasury concentration** (KPI 11): the hubs' margins pile up in few treasuries (the capitals' rural rent was removed); luxury supply limits what the rich can spend.

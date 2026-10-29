@@ -99,7 +99,6 @@ describe("StatesModule.collectTaxes", () => {
         goods: {},
         rural: {
           earned: 0,
-          rent: 0,
           spent: 0,
           bought: [],
           pollTax: [

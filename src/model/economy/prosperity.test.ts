@@ -98,7 +98,7 @@ describe("prosperity", () => {
     } as unknown as typeof pack.cells;
     const output = [{ 1: 10 }, { 1: 30 }, { 1: 10 }];
     vi.spyOn(Production, "getRuralOutput").mockReturnValue(output);
-    market.rural = { earned: 40, rent: 0, spent: 20, bought: [[5, 4]] };
+    market.rural = { earned: 40, spent: 20, bought: [[5, 4]] };
     pack.deals = consume(bareNeeds);
 
     const rich = Prosperity.getRuralCell(1)!;

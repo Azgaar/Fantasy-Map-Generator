@@ -18,8 +18,7 @@ export const TUNABLES = {
   "src/model/economy/trade.ts": {
     PRICE_RESPONSE: [0, 4],
     WANTS_ESTIMATE: [0, 3],
-    OPENING_ELASTICITY: [0, 1],
-    CAPITAL_RENT: [0, 0.7]
+    OPENING_ELASTICITY: [0, 1]
   }
 };
 

@@ -87,9 +87,9 @@ export const WANT_LIMITS: Record<DemandCategory, number> = {
   military: 1,
   luxury: 4
 }; // the most a person buys beyond their needs, in days of need: richer people eat only so much more
-export const SAVINGS_RATE = 0.38; // share of a day's income households keep
-export const VARIETY = 2.92; // buyers spread their spending over the goods covering a need, by (price per coverage)^-VARIETY: higher buys only the cheapest
-export const NOVELTY = 6.94; // how much more a buyer pays per tenfold of affluence for a good it has had none of yet
+export const SAVINGS_RATE = 0.32; // share of a day's income households keep
+export const VARIETY = 2.4; // buyers spread their spending over the goods covering a need, by (price per coverage)^-VARIETY: higher buys only the cheapest
+export const NOVELTY = 5.17; // how much more a buyer pays per tenfold of affluence for a good it has had none of yet
 export const WEALTH_WANTS: readonly DemandCategory[] = ["luxury"]; // wants that grow with affluence: the rich display; staples stay capped, or the first in line buy them out
 
 /** Shares of spending each option gets: cheaper coverage gets more, but every option gets some */
