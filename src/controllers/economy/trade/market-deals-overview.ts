@@ -255,6 +255,7 @@ function renderDealLine(row: MarketDealRow): string {
     tax,
     tariff,
     decimas: market && burgData ? Markets.getDecimas(market, burgData) : 0,
+    carriageFactor: market && burgData ? Markets.getCarriageFactor(market, burgData) : 1,
     isImport,
     taxStateId: taxState,
     tariffStateId: tariffState,

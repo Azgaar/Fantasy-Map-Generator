@@ -107,7 +107,7 @@ export function score(pack, { Goods, Markets, Production, Prosperity }) {
   const byTreasury = [...burgs].sort((a, b) => (b.treasury || 0) - (a.treasury || 0)).slice(0, top);
   const pos = treasuries.filter(t => t > 0).reduce((a, b) => a + b, 0) || 1;
   const living = pack.states.filter(s => s.i && !s.removed);
-  const taxes = living.reduce((s, x) => s + (x.treasury || 0), 0);
+  const taxes = living.reduce((s, x) => s + (x.economy.treasury || 0), 0);
   const rural = markets.reduce((s, m) => s + (Markets.getRuralBalance(m.i)?.income || 0), 0);
   const margins = pack.deals.reduce((s, d) => s + Markets.getMargin(d), 0);
   const economy = burgs.reduce((s, b) => s + (b.product || 0), 0) + margins + rural;
@@ -135,7 +135,7 @@ export function score(pack, { Goods, Markets, Production, Prosperity }) {
   const stateRows = living.flatMap(state => {
     const own = burgs.filter(b => b.state === state.i);
     const people = own.reduce((s, b) => s + b.population, 0);
-    return people > 0 ? [[own.reduce((s, b) => s + (b.product || 0), 0) / people, (state.treasury || 0) / people]] : [];
+    return people > 0 ? [[own.reduce((s, b) => s + (b.product || 0), 0) / people, (state.economy.treasury || 0) / people]] : [];
   });
   const madeShare = {},
     madeUnits = {};

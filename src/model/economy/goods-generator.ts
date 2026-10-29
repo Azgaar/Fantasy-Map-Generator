@@ -546,8 +546,7 @@ const GOODS_DATA: GoodData[] = [
     carriage: 0.3,
     deposits: [2, 4],
     distribution: "biome(1, 2) || (minHeight(50) && random(20))",
-    unit: "barrel",
-    demandCoverage: {}
+    unit: "barrel"
   },
   {
     name: "Coal",
@@ -741,8 +740,7 @@ const GOODS_DATA: GoodData[] = [
     value: 3,
     carriage: 0.3,
     recipes: [{ Hemp: 1 }],
-    unit: "ream",
-    demandCoverage: {}
+    unit: "ream"
   },
   {
     name: "Ink",
@@ -752,8 +750,7 @@ const GOODS_DATA: GoodData[] = [
     value: 7,
     carriage: 0.2,
     recipes: [{ Oil: 1 }, { Dyes: 0.5 }],
-    unit: "bottle",
-    demandCoverage: {}
+    unit: "bottle"
   },
   {
     name: "Books",

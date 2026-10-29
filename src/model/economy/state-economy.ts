@@ -1,6 +1,7 @@
 // A state's economy from the last run: what its people make and how well they live, its budget and its trade.
 // Worked out from burgs, deals and markets on demand, so it needs nothing saved of its own
 
+import { States } from "@/model/political/states-generator";
 import { DEMAND_PRIORITY, DEMAND_TARGET_FACTORS, Goods } from "./goods-generator";
 import { DEAL_KINDS, type Deal, Markets } from "./markets-generator";
 import { Production } from "./production-generator";
@@ -94,9 +95,16 @@ class StateEconomyModule {
     return trade;
   }
 
-  /** Sales tax, tariffs and poll tax the state collected in the last run */
-  getBudget(stateId: number): { salesTax: number; tariffs: number; pollTax: number } {
-    const state = pack.states[stateId];
+  /** Sales tax, tariffs, poll tax and market fees the state collected in the last run, the poll tax it was owed, and what its officials pocketed of it all */
+  getBudget(stateId: number): {
+    salesTax: number;
+    tariffs: number;
+    pollTax: number;
+    pollTaxOwed: number;
+    marketFees: number;
+    markets: number;
+    corruption: number;
+  } {
     let salesTax = 0;
     let tariffs = 0;
     for (const deal of pack.deals) {
@@ -104,8 +112,19 @@ class StateEconomyModule {
       if (taxState === stateId) salesTax += deal[6];
       if (tariffState === stateId) tariffs += deal[7] || 0;
     }
-    const pollTax = (state?.pollTax || 0) * ((state?.rural || 0) + (state?.urban || 0));
-    return { salesTax, tariffs, pollTax };
+    const { owed, paid } = States.getPollTax();
+    const markets = pack.markets.filter(market => market.feePaid && pack.burgs[market.centerBurgId]?.state === stateId);
+    const marketFees = markets.reduce((total, market) => total + (market.feePaid || 0), 0);
+    const pollTax = paid[stateId] || 0;
+    return {
+      salesTax,
+      tariffs,
+      pollTax,
+      pollTaxOwed: owed[stateId] || 0,
+      marketFees,
+      markets: markets.length,
+      corruption: pack.states[stateId]?.economy.pocketed || 0
+    };
   }
 
   /** Value at base prices of each good the state's burgs and countryside made, by good id; -1 for the world's */
@@ -183,6 +202,7 @@ class StateEconomyModule {
       }
       return accounts;
     };
+    for (const state of pack.states) if (!state.removed) of(state.i); // a state with no people, the neutral lands too, has empty accounts
     // people-weighted sums of each group's living, averaged at the end
     const sums = new Map<string, GroupLiving>();
     const live = (stateId: number, group: "towns" | "country", people: number, living: Living | null) => {
@@ -228,6 +248,13 @@ class StateEconomyModule {
       const margin = Markets.getMargin(deal);
       if (!margin) continue;
       const center = pack.burgs[Markets.get(deal[1])?.centerBurgId ?? 0];
+      for (const accounts of [of(center?.state || 0), of(-1)]) accounts.trade += margin;
+    }
+    // rural purchases make no deals, but their margin goes to the center too
+    for (const market of pack.markets) {
+      const margin = market.rural?.margin;
+      if (!margin) continue;
+      const center = pack.burgs[market.centerBurgId];
       for (const accounts of [of(center?.state || 0), of(-1)]) accounts.trade += margin;
     }
 

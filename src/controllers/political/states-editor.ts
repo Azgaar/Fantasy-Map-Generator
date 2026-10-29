@@ -5,7 +5,6 @@ import { bindEconomyWiki, economyWikiButton } from "@/controllers/economy/econom
 import { prosperityTip, renderProsperityPercent } from "@/controllers/economy/prosperity-view";
 import { CULTURE_TYPE_LABELS } from "@/data/id-labels";
 import { Goods } from "@/model/economy/goods-generator";
-import { Markets } from "@/model/economy/markets-generator";
 import { StateEconomy } from "@/model/economy/state-economy";
 import { Pack } from "@/model/graph/pack-generator";
 import { Burgs } from "@/model/political/burgs-generator";
@@ -46,7 +45,7 @@ import { isLand } from "@/utils/height-utils";
 import { sentences, t } from "@/utils/i18n";
 import { getAdjective } from "@/utils/language-utils";
 import { applyOption, ensureEl, findEl, getPointer } from "@/utils/node-utils";
-import { rn, si } from "@/utils/number-utils";
+import { minmax, rn, si } from "@/utils/number-utils";
 import { rand } from "@/utils/probability-utils";
 import { errorText } from "@/utils/string-utils";
 
@@ -54,6 +53,12 @@ const dialogId = "statesEditor" as const;
 const LEGEND_NAME = "States"; // the legend box this editor toggles
 const position = { my: "right top", at: "right-10 top+10", of: "svg" };
 let filterState: { search: string };
+
+/** Treasury as a percentage of the state's product; null for the neutral lands or before an economy run */
+const taxBurden = (s: State): number | null => {
+  const product = s.i ? StateEconomy.getAccounts(s.i)?.product : 0;
+  return product ? ((s.economy.treasury || 0) / product) * 100 : null;
+};
 
 const columns: EditorColumn<State>[] = [
   { key: "color", width: "1.2em", permanent: true },
@@ -128,7 +133,25 @@ const columns: EditorColumn<State>[] = [
     width: "6em",
     mobileHidden: true,
     tip: sentences(EconomyTerms.stateTreasury(), EconomyTerms.openValue()),
-    sortBy: s => s.treasury || 0
+    sortBy: s => s.economy.treasury || 0
+  },
+  {
+    key: "burden",
+    label: t("Tax burden"),
+    width: "6em",
+    hidden: true,
+    mobileHidden: true,
+    tip: sentences(t("Tax burden: the treasury's share of the product"), EconomyTerms.openValue()),
+    sortBy: s => taxBurden(s) ?? -1
+  },
+  {
+    key: "corruption",
+    label: t("Corruption"),
+    width: "6em",
+    hidden: true,
+    mobileHidden: true,
+    tip: sentences(EconomyTerms.corruption(), EconomyTerms.openValue()),
+    sortBy: s => s.economy.corruption || 0
   },
   {
     key: "prosperity",
@@ -206,6 +229,8 @@ const CSV_COLUMNS = [
   "Neighbors",
   "Sales Tax",
   "Poll Tax",
+  "Market License",
+  "Corruption",
   "Treasury",
   "Tags"
 ];
@@ -219,6 +244,8 @@ const RULED_COLUMNS = [
   "Expansionism",
   "Sales Tax",
   "Poll Tax",
+  "Market License",
+  "Corruption",
   "Treasury",
   "Tags"
 ];
@@ -433,11 +460,14 @@ function renderStatesPage(view: TableView<State>): void {
     const focused = select("#deftemp").select(`#fog #focusState${s.i}`).size();
     const treasuryTip = sentences(
       EconomyTerms.stateTreasury(),
-      t("Sales tax {{rate}}%", { rate: rn((s.salesTax || 0) * 100, 1) }),
-      t("Poll tax {{rate}} a head", { rate: rn(s.pollTax || 0, 2) }),
+      t("Sales tax: {{rate}}%", { rate: rn((s.economy.salesTax || 0) * 100, 1) }),
+      t("Poll tax: {{rate}} a head", { rate: rn(s.economy.pollTax || 0, 2) }),
+      t("Market license: {{fee}}", { fee: rn(s.economy.marketFee || 0, 2) }),
+      t("Corruption: {{rate}}%", { rate: s.economy.corruption || 0 }),
       EconomyTerms.open()
     );
     const accounts = s.i ? StateEconomy.getAccounts(s.i) : null;
+    const burden = taxBurden(s);
     const neutrals = s.i ? null : StateEconomy.getAccounts(0);
 
     if (!s.i) {
@@ -490,9 +520,17 @@ function renderStatesPage(view: TableView<State>): void {
           <div data-tip="${populationTip}" class="statePopulation pointer">${si(population)}</div>
         </div>
         <div data-tip="${t("Neutrals collect no taxes")}" class="stateTreasury placeholder" data-col="treasury"></div>
-        <div data-tip="${sentences(EconomyTerms.prosperity(), EconomyTerms.open())}" class="stateEconomy stateProsperity pointer" data-col="prosperity">${neutrals?.prosperity == null ? "—" : renderProsperityPercent(neutrals.prosperity)}</div>
+        <div data-tip="${t("Neutrals collect no taxes")}" class="placeholder" data-col="burden"></div>
+        <div data-tip="${t("Neutrals collect no taxes")}" class="placeholder" data-col="corruption"></div>
+        ${
+          s.cells || s.burgs
+            ? /* html */ `<div data-tip="${sentences(EconomyTerms.prosperity(), EconomyTerms.open())}" class="stateEconomy stateProsperity pointer" data-col="prosperity">${neutrals?.prosperity == null ? "—" : renderProsperityPercent(neutrals.prosperity)}</div>
         <div data-tip="${sentences(EconomyTerms.stateProduct(), EconomyTerms.open())}" class="stateEconomy stateProduct pointer" data-col="product">🟡 ${si(neutrals?.product ?? 0)}</div>
-        <div data-tip="${sentences(EconomyTerms.wealth(), EconomyTerms.open())}" class="stateEconomy stateWealth pointer" data-col="wealth">🟡 ${rn(neutrals?.wealth ?? 0, 2)}</div>
+        <div data-tip="${sentences(EconomyTerms.wealth(), EconomyTerms.open())}" class="stateEconomy stateWealth pointer" data-col="wealth">🟡 ${rn(neutrals?.wealth ?? 0, 2)}</div>`
+            : `<div class="stateProsperity placeholder" data-col="prosperity"></div>
+        <div class="stateProduct placeholder" data-col="product"></div>
+        <div class="stateWealth placeholder" data-col="wealth"></div>`
+        }
         <select class="cultureType placeholder" data-col="type">${getTypeOptions(0)}</select>
         <div data-col="expansionism">
           <span class="icon-resize-full placeholder"></span>
@@ -521,7 +559,7 @@ function renderStatesPage(view: TableView<State>): void {
       data-area=${area}
       data-population=${population}
       data-burgs=${s.burgs}
-      data-treasury="${s.treasury}"
+      data-treasury="${s.economy.treasury}"
       data-prosperity="${accounts?.prosperity ?? ""}"
       data-product="${accounts?.product ?? ""}"
       data-wealth="${accounts?.wealth ?? ""}"
@@ -557,7 +595,9 @@ function renderStatesPage(view: TableView<State>): void {
         <span data-tip="${populationTip}" class="icon-male"></span>
         <div data-tip="${populationTip}" class="statePopulation pointer">${si(population)}</div>
       </div>
-      <div data-tip="${treasuryTip}" class="stateTreasury stateEconomy pointer" data-col="treasury">🟡 ${si(s.treasury)}</div>
+      <div data-tip="${treasuryTip}" class="stateTreasury stateEconomy pointer" data-col="treasury">🟡 ${si(s.economy.treasury)}</div>
+      <div data-tip="${sentences(t("Tax burden: the treasury's share of the product"), EconomyTerms.open())}" class="stateEconomy pointer" data-col="burden">${burden === null ? "—" : `${rn(burden, 1)}%`}</div>
+      <div data-tip="${sentences(EconomyTerms.corruption(), EconomyTerms.open())}" class="stateEconomy pointer" data-col="corruption">${s.economy.corruption || 0}%</div>
       <div data-tip="${accounts?.prosperity == null ? EconomyTerms.noData() : sentences(prosperityTip(accounts.prosperity), EconomyTerms.open())}" class="stateEconomy stateProsperity pointer" data-col="prosperity">${accounts?.prosperity == null ? "—" : renderProsperityPercent(accounts.prosperity)}</div>
       <div data-tip="${sentences(EconomyTerms.stateProduct(), EconomyTerms.open())}" class="stateEconomy stateProduct pointer" data-col="product">🟡 ${si(accounts?.product ?? 0)}</div>
       <div data-tip="${sentences(EconomyTerms.wealth(), EconomyTerms.open())}" class="stateEconomy stateWealth pointer" data-col="wealth">🟡 ${rn(accounts?.wealth ?? 0, 2)}</div>
@@ -598,7 +638,7 @@ function renderStatesPage(view: TableView<State>): void {
   ensureEl("statesFooterPopulation").innerHTML = si(totalPopulation);
   ensureEl("statesFooterPopulation").dataset.population = String(totalPopulation);
   const shown = view.all.filter(s => s.i && !s.removed);
-  const treasury = shown.reduce((sum, s) => sum + (s.treasury || 0), 0);
+  const treasury = shown.reduce((sum, s) => sum + (s.economy.treasury || 0), 0);
   ensureEl("statesFooterTreasury").innerHTML = `🟡 ${si(shown.length ? treasury / shown.length : 0)}`;
   // by people, as a state's own prosperity is
   const lived = shown.flatMap(s => {
@@ -916,17 +956,9 @@ function openTreasuryDialog(stateId: number): void {
   const state = pack.states[stateId];
   if (!stateId || !state || state.removed) return;
 
-  const pollTaxRevenue = rn((state.pollTax || 0) * ((state.rural || 0) + (state.urban || 0)), 2);
-  let salesTaxRevenue = 0;
-  let tariffRevenue = 0;
-  for (const deal of pack.deals ?? []) {
-    const [, , , , , , tax, tariff] = deal;
-    const { taxState, tariffState } = Markets.getTaxStates(deal);
-    if (taxState === stateId) salesTaxRevenue += tax;
-    if (tariffState === stateId) tariffRevenue += tariff;
-  }
+  const { salesTax, tariffs, pollTax, pollTaxOwed, marketFees, markets, corruption } = StateEconomy.getBudget(stateId);
 
-  let draftRules: TariffRule[] = (state.tariffs ?? []).map(rule => ({
+  let draftRules: TariffRule[] = (state.economy.tariffs ?? []).map(rule => ({
     states: Array.isArray(rule.states) ? [...rule.states] : "all",
     goods: Array.isArray(rule.goods) ? [...rule.goods] : "all",
     rate: rule.rate
@@ -950,16 +982,22 @@ function openTreasuryDialog(stateId: number): void {
   Dialog.message({
     message: /* html */ `<div data-tip="${t("State taxes. Changes apply on regeneration")}" style="margin: 0.4em 0; display: grid; grid-template-columns: max-content 6em 1fr; gap: 0.35em 0.6em; align-items: center">
       <label for="stateSalesTaxInput">${t("Sales Tax")}:</label>
-      <input id="stateSalesTaxInput" type="number" min="0" max="1" step="0.01" value="${state.salesTax}" style="width: 100%"/>
-      <span>= ${formatPrice(salesTaxRevenue)}</span>
+      <input id="stateSalesTaxInput" type="number" min="0" max="1" step="0.01" value="${state.economy.salesTax}" style="width: 100%"/>
+      <span>= ${formatPrice(salesTax)}</span>
       <label for="statePollTaxInput">${t("Poll Tax")}:</label>
-      <input id="statePollTaxInput" type="number" min="0" max="10" step="0.01" value="${state.pollTax}" style="width: 100%"/>
-      <span>= ${formatPrice(pollTaxRevenue)}</span>
-      <label>${t("Tariffs")}:</label>
+      <input id="statePollTaxInput" type="number" min="0" max="10" step="0.01" value="${state.economy.pollTax}" style="width: 100%"/>
+      <span>= ${formatPrice(pollTax)}${pollTaxOwed ? ` <span style="color: #666">(${EconomyTerms.collected(pollTax, pollTaxOwed)})</span>` : ""}</span>
+      <label for="stateMarketFeeInput" data-tip="${t("Paid a day by each market centered in the state, from its margin")}">${t("Market License")}:</label>
+      <input id="stateMarketFeeInput" type="number" min="0" step="1" value="${state.economy.marketFee || 0}" style="width: 100%"/>
+      <span>= ${formatPrice(marketFees)} <span style="color: #666">(${t("{{count}} markets", { count: markets })})</span></span>
+      <label>${t("Import Tariffs")}:</label>
       <span></span>
-      <span>= ${formatPrice(tariffRevenue)}</span>
+      <span>= ${formatPrice(tariffs)}</span>
+      <label for="stateCorruptionInput" data-tip="${EconomyTerms.corruption()}">${t("Corruption")}:</label>
+      <input id="stateCorruptionInput" type="number" min="0" max="100" step="1" value="${state.economy.corruption || 0}" style="width: 100%"/>
+      <span>= ${formatPrice(-corruption)}</span>
       <label for="stateTreasuryInput" data-tip="${EconomyTerms.stateTreasury()}">${t("Treasury")}:</label>
-      <input id="stateTreasuryInput" type="number" step="1" value="${state.treasury}" style="width: 100%" />
+      <input id="stateTreasuryInput" type="number" step="1" value="${state.economy.treasury}" style="width: 100%" />
       <span></span>
     </div>
     <hr />
@@ -972,7 +1010,7 @@ function openTreasuryDialog(stateId: number): void {
     </div>
     <div id="stateTariffsList" style="max-height: 15em; overflow-y: auto; display: flex; flex-direction: column; row-gap: 0.25em;"></div>`,
     title: t("Taxes and Treasury: {{- state}}", { state: state.name }),
-    width: "32em",
+    width: "34em",
     footer: economyWikiButton("stateTaxesWiki"),
     buttons: [
       {
@@ -981,14 +1019,18 @@ function openTreasuryDialog(stateId: number): void {
           const salesInput = ensureEl<HTMLInputElement>("stateSalesTaxInput");
           const pollInput = ensureEl<HTMLInputElement>("statePollTaxInput");
           const treasuryInput = ensureEl<HTMLInputElement>("stateTreasuryInput");
+          const newFee = Math.max(0, +ensureEl<HTMLInputElement>("stateMarketFeeInput").value);
+          const newCorruption = minmax(+ensureEl<HTMLInputElement>("stateCorruptionInput").value, 0, 100);
           const newSales = Math.max(0, Math.min(1, +salesInput.value));
           const newPoll = Math.max(0, +pollInput.value);
           const newTreasury = +treasuryInput.value;
           States.setTaxes(
             stateId,
-            Number.isFinite(newSales) ? newSales : state.salesTax,
-            Number.isFinite(newPoll) ? newPoll : state.pollTax
+            Number.isFinite(newSales) ? newSales : state.economy.salesTax,
+            Number.isFinite(newPoll) ? newPoll : state.economy.pollTax
           );
+          if (Number.isFinite(newFee)) States.setMarketFee(stateId, newFee);
+          if (Number.isFinite(newCorruption)) States.setCorruption(stateId, newCorruption);
           States.setTariffs(stateId, draftRules);
           if (Number.isFinite(newTreasury)) States.setTreasury(stateId, newTreasury);
           refreshStatesEditor();
@@ -1292,7 +1334,7 @@ function togglePercentageMode(): void {
     const totalBurgs = +ensureEl("statesFooterBurgs").textContent;
     const totalArea = +ensureEl("statesFooterArea").dataset.area!;
     const totalPopulation = +ensureEl("statesFooterPopulation").dataset.population!;
-    const totalTreasury = pack.states.reduce((sum, s) => sum + (s.treasury || 0), 0);
+    const totalTreasury = pack.states.reduce((sum, s) => sum + (s.economy.treasury || 0), 0);
     const world = StateEconomy.getWorld();
     const totalCells = pack.states.reduce((sum, s) => sum + (s.i && !s.removed ? s.cells || 0 : 0), 0);
 
@@ -1753,9 +1795,11 @@ function downloadStatesCsv(): void {
       urban,
       s.i ? (s.provinces || []).filter(p => !pack.provinces[p]?.removed).length : "",
       s.i ? neighbors.map(n => pack.states[n].name).join(";") : "",
-      s.i ? s.salesTax || 0 : "",
-      s.i ? s.pollTax || 0 : "",
-      s.i ? s.treasury || 0 : "",
+      s.i ? s.economy.salesTax || 0 : "",
+      s.i ? s.economy.pollTax || 0 : "",
+      s.i ? s.economy.marketFee || 0 : "",
+      s.i ? s.economy.corruption || 0 : "",
+      s.i ? s.economy.treasury || 0 : "",
       s.i ? (s.tags || []).join(";") : ""
     ];
   });
@@ -1791,9 +1835,19 @@ async function uploadStatesCsv(text: string): Promise<void> {
         );
         row.apply("Type", type => States.setType(id, type), state.type);
         row.apply("Expansionism", value => States.setExpansionism(id, +value), state.expansionism);
-        row.apply("Sales Tax", value => States.setTaxes(id, +value, state.pollTax || 0), state.salesTax || 0);
-        row.apply("Poll Tax", value => States.setTaxes(id, state.salesTax || 0, +value), state.pollTax || 0);
-        row.apply("Treasury", value => States.setTreasury(id, +value), state.treasury || 0);
+        row.apply(
+          "Sales Tax",
+          value => States.setTaxes(id, +value, state.economy.pollTax || 0),
+          state.economy.salesTax || 0
+        );
+        row.apply(
+          "Poll Tax",
+          value => States.setTaxes(id, state.economy.salesTax || 0, +value),
+          state.economy.pollTax || 0
+        );
+        row.apply("Market License", value => States.setMarketFee(id, +value), state.economy.marketFee || 0);
+        row.apply("Corruption", value => States.setCorruption(id, +value), state.economy.corruption || 0);
+        row.apply("Treasury", value => States.setTreasury(id, +value), state.economy.treasury || 0);
         row.assign("Tags", tags => States.setTags(id, tags), (state.tags ?? []).join(";"));
       } else {
         for (const column of RULED_COLUMNS)

@@ -561,6 +561,12 @@ const getDecimas = ({ marketId }: HistoryRow) => {
   return market && burg ? Markets.getDecimas(market, burg) : 0;
 };
 
+const getCarriageFactor = ({ marketId }: HistoryRow) => {
+  const market = Markets.get(marketId);
+  const burg = pack.burgs[activeBurgId];
+  return market && burg ? Markets.getCarriageFactor(market, burg) : 1;
+};
+
 const isImport = ({ goodId, marketId = 0, kind = DEAL_KINDS.sale }: HistoryRow) =>
   Markets.isImport([activeBurgId, marketId, goodId, kind, 0, 0, 0, 0, 0]);
 
@@ -575,6 +581,7 @@ function getCellTips(row: HistoryRow, good: Good) {
     tax: row.tax,
     tariff: row.tariff,
     decimas: getDecimas(row),
+    carriageFactor: getCarriageFactor(row),
     isImport: isImport(row),
     taxStateId: taxState,
     tariffStateId: tariffState,
@@ -604,7 +611,8 @@ function renderStats(burg: Burg): void {
   // a market center's merchants take the margin on every trade at its market, so its treasury is more than its deals
   const isCenter = market?.centerBurgId === burg.i;
   const margin = isCenter
-    ? pack.deals.reduce((sum, deal) => sum + (deal[1] === market.i ? Markets.getMargin(deal) : 0), 0)
+    ? pack.deals.reduce((sum, deal) => sum + (deal[1] === market.i ? Markets.getMargin(deal) : 0), 0) +
+      (market.rural?.margin || 0)
     : 0;
   const treasuryTip = isCenter
     ? sentences(EconomyTerms.treasury(), t("As its market's center, it also takes the market margin"))
@@ -623,7 +631,9 @@ function renderStats(burg: Burg): void {
     <div>
       <span data-tip="${EconomyTerms.product()}"><b>${t("Product")}:</b> <span class="positive">${formatPrice(product)}</span></span>
       <span data-tip="${EconomyTerms.wealth()}"><b>${t("Wealth")}:</b> <span class="positive">${formatPrice(wealth)}</span></span>
-      ${isCenter ? `<span data-tip="${t("Market margin: 10% of trade at its market")}"><b>${t("Market margin")}:</b> <span class="positive">${formatPrice(margin)}</span></span>` : ""}
+      ${isCenter && market.feePaid ? `<span data-tip="${t("The license its state charges a market's center a day")}"><b>${t("Market License")}:</b> <span class="negative">${formatPrice(market.feePaid)}</span></span>` : ""}
+      ${isCenter ? `<span data-tip="${t("Market margin: {{rate}}% of every trade at its market", { rate: rn(Markets.getMarginRate(market) * 100, 1) })}"><b>${t("Market margin")}:</b> <span class="positive">${formatPrice(margin)}</span></span>` : ""}
+      ${burg.pollTaxPaid ? `<span data-tip="${t("Poll tax: {{rate}} a head", { rate: pack.states[burg.state || 0]?.economy.pollTax || 0 })}"><b>${t("Poll Tax")}:</b> ${formatPrice(burg.pollTaxPaid)}</span>` : ""}
       <span data-tip="${sentences(treasuryTip, t("Type to change. It lasts until the economy is regenerated"))}"><b><label for="${dialogId}Treasury">${t("Treasury")}</label>:</b> 🟡<input id="${dialogId}Treasury" type="number" step="0.01" value="${rn(treasury, 2)}" /></span>
     </div>`;
   ensureEl<HTMLInputElement>(`${dialogId}Treasury`).addEventListener("change", function () {

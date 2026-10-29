@@ -236,7 +236,8 @@ function renderMarketOverviewPage(view: TableView<MarketGoodRow>): void {
   ensureEl("marketOverviewSummary").innerHTML = /*html*/ `
     <div style="margin-left:5px">${t("Cells")}: ${pack.cells.market.reduce((count, m) => count + (m === market.i ? 1 : 0), 0)}</div>
     <div style="margin-left:12px">${t("Burgs")}: ${burgs.length}</div>
-    <div data-col="stock" style="margin-left:12px">${t("Stock")}: ${rn(totalUnits, 2)}</div>`;
+    <div data-col="stock" style="margin-left:12px">${t("Stock")}: ${rn(totalUnits, 2)}</div>
+    <div data-tip="${t("It buys this much below its prices and sells this much above; a dear market license raises it")}" style="margin-left:12px">${t("Market margin")}: ${rn(Markets.getMarginRate(market) * 100, 1)}%</div>`;
 
   renderEditorPagination(ensureEl("marketOverviewSummary"), view, marketOverviewTable.goto);
   Dialog.update(dialogId, { width: "fit-content", position });
@@ -296,8 +297,8 @@ function downloadStockCsv() {
   const rows = Object.entries(market.goods).flatMap(([goodId, marketGood]) => {
     const good = Goods.get(Number(goodId));
     if (!good) return [];
-    const buyPrice = rn(Markets.customerBuyPrice(marketGood.price), 2);
-    const sellPrice = rn(Markets.customerSellPrice(marketGood.price), 2);
+    const buyPrice = rn(Markets.customerBuyPrice(market, marketGood.price), 2);
+    const sellPrice = rn(Markets.customerSellPrice(market, marketGood.price), 2);
     return [[good.name, rn(marketGood.stock, 2), buyPrice, sellPrice]];
   });
   Csv.download("Market", ["Good", "Stock", "Buy Price", "Sell Price"], rows);

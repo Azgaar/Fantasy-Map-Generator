@@ -69,6 +69,7 @@ type TradeCell = {
   tax: number;
   tariff: number;
   decimas: number; // carried between the market and the burg
+  carriageFactor: number; // dearer from another state's market
   isImport: boolean;
   taxStateId: number;
   tariffStateId: number;
@@ -77,7 +78,20 @@ type TradeCell = {
 
 /** A trade row's cell tips: the row's own figures with what they mean */
 export function tradeCellTips(cell: TradeCell) {
-  const { good, units, net, carriage, tax, tariff, decimas, isImport, taxStateId, tariffStateId, formula } = cell;
+  const {
+    good,
+    units,
+    net,
+    carriage,
+    tax,
+    tariff,
+    decimas,
+    carriageFactor,
+    isImport,
+    taxStateId,
+    tariffStateId,
+    formula
+  } = cell;
   const price = (amount: number) => formatPrice(rn(amount, 2));
   const state = (stateId: number) => pack.states[stateId]?.name || "";
   const rate = (value: number) => `${t("Rate")}: ${rn(value * 100, 1)}%`;
@@ -93,13 +107,18 @@ export function tradeCellTips(cell: TradeCell) {
     carriage: sentences(
       `${t("Carriage per unit")}: ${price(carriage)}`,
       t("Transportation price between the market and the burg"),
-      t("{{decimas}} decima × {{price}} per decima", { decimas: rn(decimas, 2), price: price(good.carriage) })
+      t("{{decimas}} decima × {{price}} per decima", {
+        decimas: rn(decimas, 2),
+        price: price(good.carriage * carriageFactor)
+      })
     ),
-    tax: sentences(
-      `${t("Sales tax per unit")}: ${price(tax)}`,
-      t("Paid by seller to state: {{- state}}", { state: state(taxStateId) }),
-      rate(pack.states[taxStateId]?.salesTax || 0)
-    ),
+    tax: taxStateId
+      ? sentences(
+          `${t("Sales tax per unit")}: ${price(tax)}`,
+          t("Paid by seller to state: {{- state}}", { state: state(taxStateId) }),
+          rate(pack.states[taxStateId]?.economy.salesTax || 0)
+        )
+      : t("No sales tax: neutral lands levy none"),
     tariff: isImport
       ? sentences(
           `${t("Import tariff per unit")}: ${price(tariff)}`,

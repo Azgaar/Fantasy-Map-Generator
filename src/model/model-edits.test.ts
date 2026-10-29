@@ -13,7 +13,7 @@ import { Rivers } from "@/model/physical/river-generator";
 import { Burgs } from "@/model/political/burgs-generator";
 import { Military } from "@/model/political/military-generator";
 import { Provinces } from "@/model/political/provinces-generator";
-import { States } from "@/model/political/states-generator";
+import { noFinance, States } from "@/model/political/states-generator";
 import { Zones } from "@/model/political/zones-generator";
 import { Cultures } from "@/model/society/cultures-generator";
 import { Names } from "@/model/society/names-generator";
@@ -22,6 +22,10 @@ import { Journeys } from "@/model/story/journeys/journeys-generator";
 import { Markers } from "@/model/story/markers-generator";
 import { Emblems } from "./political/emblems-generator";
 import { Lore } from "./story/lore";
+
+/** States as the model keeps them: each with its finances, zero but for the given ones */
+const withFinance = (states: any[]) =>
+  states.map(state => ({ ...state, economy: { ...noFinance(), ...state.economy } }));
 
 // each test calls the model method its row names
 const MODELS: Record<string, any> = {
@@ -298,12 +302,17 @@ describe("Burgs: capital, move, remove", () => {
     expect(() => Burgs.setCapital(2)).toThrow("neutral lands");
   });
 
-  it("remove refuses capitals and clears the province capital", () => {
+  it("remove refuses capitals and clears the province capital and the burg's deals", () => {
+    pack.deals = [
+      [1, 1, 1, 0, 5, 2, 0, 0, 0],
+      [2, 1, 1, 0, 5, 2, 0, 0, 0]
+    ];
     expect(() => Burgs.remove(1)).toThrow("is a capital");
     Burgs.remove(2);
     expect(pack.burgs[2].removed).toBe(true);
     expect(pack.cells.burg[2]).toBe(0);
     expect(pack.provinces[1].burg).toBe(0);
+    expect(pack.deals.map(([burg]) => burg)).toEqual([1]);
   });
 
   it("move takes a free land cell and keeps a capital in its state and province", () => {
@@ -325,11 +334,11 @@ describe("Burgs: capital, move, remove", () => {
 describe("States", () => {
   beforeEach(() => {
     vi.stubGlobal("pack", {
-      states: [
+      states: withFinance([
         { i: 0, diplomacy: [] },
         { i: 1, name: "Orwin", diplomacy: ["x", "x", "Neutral"], provinces: [1], military: [{ i: 0, name: "1st" }] },
         { i: 2, name: "Kahor", diplomacy: ["x", "Neutral", "x"], provinces: [], military: [{ i: 0, name: "Guard" }] }
-      ],
+      ]),
       provinces: [{ i: 0 }, { i: 1, state: 1 }],
       burgs: [0, { i: 1, state: 1, capital: 1 }, { i: 2, state: 2, capital: 1 }],
       cells: { state: [0, 1, 1, 2], province: [0, 1, 0, 0] }
@@ -598,7 +607,7 @@ describe("locks, treasuries and links", () => {
   beforeEach(() => {
     vi.stubGlobal("pack", {
       burgs: [0, { i: 1, name: "Vel" }],
-      states: [{ i: 0 }, { i: 1, salesTax: 0, pollTax: 0, treasury: 0 }],
+      states: withFinance([{ i: 0 }, { i: 1 }]),
       provinces: [{ i: 0 }, { i: 1 }],
       cultures: [{ i: 0 }, { i: 1 }],
       religions: [{ i: 0 }, { i: 1 }],
@@ -631,8 +640,14 @@ describe("locks, treasuries and links", () => {
     expect(pack.burgs[1].treasury).toBe(12.35);
     States.setTaxes(1, 0.2, 1.5);
     States.setTreasury(1, 900);
-    expect(pack.states[1]).toMatchObject({ salesTax: 0.2, pollTax: 1.5, treasury: 900 });
+    expect(pack.states[1].economy).toMatchObject({ salesTax: 0.2, pollTax: 1.5, treasury: 900 });
     expect(() => States.setTaxes(1, 2, 0)).toThrow("from 0 to 1");
+    States.setMarketFee(1, 12.345);
+    expect(pack.states[1].economy.marketFee).toBe(12);
+    expect(() => States.setMarketFee(1, -1)).toThrow("non-negative");
+    States.setCorruption(1, 33.4);
+    expect(pack.states[1].economy.corruption).toBe(33);
+    expect(() => States.setCorruption(1, 101)).toThrow("from 0 to 100");
     expect(() => States.setTreasury(0, 1)).toThrow("Neutral lands");
     Burgs.setLink(1, "https://example.com/map.png");
     expect(pack.burgs[1].link).toBe("https://example.com/map.png");
@@ -645,11 +660,11 @@ describe("locks, treasuries and links", () => {
 describe("States: chronicle, painting and merging as provinces", () => {
   beforeEach(() => {
     vi.stubGlobal("pack", {
-      states: [
+      states: withFinance([
         { i: 0, diplomacy: [["Old war", "It ended"]] },
         { i: 1, name: "Orwin", center: 1, capital: 1, color: "#aa0000", provinces: [1], military: [] },
         { i: 2, name: "Kahor", center: 3, capital: 2, color: "#0000aa", formName: "Duchy", provinces: [], military: [] }
-      ],
+      ]),
       provinces: [{ i: 0 }, { i: 1, state: 1, center: 1, name: "Vel" }],
       burgs: [0, { i: 1, cell: 1, state: 1, capital: 1 }, { i: 2, cell: 3, state: 2, capital: 1 }],
       cells: {

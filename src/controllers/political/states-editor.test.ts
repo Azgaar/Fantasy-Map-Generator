@@ -22,7 +22,7 @@ vi.mock("@/renderers/emblems/renderer", () => ({ EmblemRenderer: { trigger: vi.f
 vi.mock("@/renderers/overlays/fogging", () => ({ fog: vi.fn(), unfog: vi.fn() }));
 vi.mock("@/ui/map/highlight", () => ({ highlightElement: vi.fn(), highlightOutline: vi.fn() }));
 
-import { States } from "@/model/political/states-generator";
+import { noFinance, States } from "@/model/political/states-generator";
 import { dialogState } from "@/ui/dialog/state";
 import { StatesEditor } from "./states-editor";
 
@@ -65,7 +65,7 @@ describe("StatesEditor", () => {
         { i: 2, name: "Culture Two" }
       ],
       states: [
-        { i: 0, name: "Neutrals", cells: 5, area: 50, burgs: 0, tags: [] },
+        { i: 0, name: "Neutrals", cells: 5, area: 50, burgs: 0, economy: noFinance(), tags: [] },
         {
           i: 1,
           name: "Valoria",
@@ -79,7 +79,7 @@ describe("StatesEditor", () => {
           burgs: 1,
           rural: 10,
           urban: 5,
-          treasury: 100,
+          economy: { ...noFinance(), treasury: 100 },
           type: "Generic",
           expansionism: 1,
           tags: ["coastal", "naval"]
@@ -97,7 +97,7 @@ describe("StatesEditor", () => {
           burgs: 1,
           rural: 8,
           urban: 2,
-          treasury: 50,
+          economy: { ...noFinance(), treasury: 50 },
           type: "Generic",
           expansionism: 1.2,
           tags: ["inland", "trade"]

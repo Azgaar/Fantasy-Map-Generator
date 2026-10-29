@@ -20,7 +20,6 @@ export const TUNABLES = {
     WANTS_ESTIMATE: [0, 3],
     OPENING_ELASTICITY: [0, 1],
     CAPITAL_RENT: [0, 0.7],
-    MARKET_MARGIN: [0.05, 0.25],
     IMPORT_CARRIAGE_FACTOR: [1, 3]
   }
 };

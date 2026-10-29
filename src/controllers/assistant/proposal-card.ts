@@ -20,7 +20,8 @@ const STATE_LABELS: Record<string, string> = {
   undone: t("Undone"),
   discarded: t("Discarded")
 };
-const MONEY_FIELDS = new Set(["treasury", "pollTax"]);
+const MONEY_FIELDS = new Set(["treasury", "pollTax", "marketFee"]);
+const unnest = (field: string) => field.replace(/^economy\./, ""); // a state's taxes read as its own fields
 // bookkeeping that operations keep in sync, shown only when a change has nothing else
 const DERIVED_FIELDS = new Set(["pole", "center", "cells", "neighbors"]);
 // what an added entity is shown with, beside its name
@@ -190,7 +191,7 @@ class ProposalCardView {
     return (
       FIELD_LABELS[row.field] ??
       capitalize(
-        row.field
+        unnest(row.field)
           .replace(/\./g, " ")
           .replace(/([a-z])([A-Z])/g, "$1 $2")
           .toLowerCase()
@@ -200,7 +201,8 @@ class ProposalCardView {
 
   /** A value as the app shows it: people, money and names rather than stored points and ids; null for none */
   private valueText(row: ChangeRow, value: unknown): string | null {
-    const { key, field } = row;
+    const { key } = row;
+    const field = unnest(row.field);
     if (value === undefined || value === null || value === "") return null;
     const type = key.slice(0, key.indexOf(":"));
     if (typeof value === "number") {
@@ -209,6 +211,7 @@ class ProposalCardView {
       if (field === "urban") return si(getPeople(0, value));
       if (MONEY_FIELDS.has(field) || (field === "value" && type === "good")) return formatPrice(value);
       if (field === "salesTax") return `${rn(value * 100, 2)}%`;
+      if (field === "corruption") return `${value}%`;
       if ((field === "capital" || field === "port") && type === "burg") return value ? "yes" : "no";
       if (field === "area") return `${si(getArea(value))} ${getAreaUnit()}`;
       const idType = MapEntities.referenceType(type, field);

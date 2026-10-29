@@ -55,6 +55,7 @@ export interface Burg {
   production?: BurgProduction; // units of each good made in the last production run
   product?: number; // gross product from the last production run
   treasury?: number; // cash balance from the last economy run
+  pollTaxPaid?: number; // poll tax paid to its state in the last economy run
   market?: number;
   label?: Label;
   note?: string;
@@ -1100,6 +1101,7 @@ class BurgModule {
     delete burg.note;
     delete burg.coa;
     for (const province of pack.provinces ?? []) if (province.burg === burgId) province.burg = 0;
+    if (pack.deals) pack.deals = pack.deals.filter(([dealBurg]) => dealBurg !== burgId); // its trade is gone too
   }
 }
 

@@ -22,24 +22,24 @@ With no good selected in the _Goods Editor_, the Goods layer shows an overview: 
 
 Click a good in the editor to change it:
 
-| Field                             | What it does                                                                                                                                                                                                                                                               |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Base Price**                    | The good's list value. Market prices move around it, from a fiftieth of it to five times it                                                                                                                                                                                |
-| **Carriage Price**                | What it costs to carry one unit one _decima_, a tenth of the map's diagonal. Bulky goods like wood or stone are expensive to carry for their value and stay local; gold, spices or jewelry travel far. Goods bought from another state's market pay 2.4 times the carriage |
-| **Demand Coverage**               | Which needs one unit covers: 🍖 food, 🛠️ utilities, 🧱 construction, 🛡️ military or 💎 luxury, and how much. A good with no coverage is only an ingredient                                                                                                                 |
-| **Recipes**                       | What it is made from. A good can have several alternative recipes                                                                                                                                                                                                          |
-| **Biome Baseline Production**     | How much rural people produce per population point in each biome                                                                                                                                                                                                           |
-| **Multipliers**                   | Production bonuses or penalties by culture type, culture, state, religion, biome or zone. Make one culture famous for its wine, or one zone a mining district                                                                                                              |
-| **Distribution** and **Deposits** | Where deposits can appear, and how many the map gets, whatever its size. The Goods Editor shows how many are placed, with the range in small type. See [Goods spread functions](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Goods-spread-functions)               |
-| **Deposit output**                | What the good's deposits yield a day on this map. Type a new total and click _Place_ to re-place them until they yield it. This is the direct way to make a good scarce or plentiful                                                                                       |
+| Field                             | What it does                                                                                                                                                                                                                                                           |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Base Price**                    | The good's list value. Market prices move around it, from a fiftieth of it to five times it                                                                                                                                                                            |
+| **Carriage Price**                | What it costs to carry one unit one _decima_, a tenth of the map's diagonal. Bulky goods like wood or stone are expensive to carry for their value and stay local; gold, spices or jewelry travel far. Goods bought from another state's market pay twice the carriage |
+| **Demand Coverage**               | Which needs one unit covers: 🍖 food, 🛠️ utilities, 🧱 construction, 🛡️ military or 💎 luxury, and how much. A good with no coverage is only an ingredient                                                                                                             |
+| **Recipes**                       | What it is made from. A good can have several alternative recipes                                                                                                                                                                                                      |
+| **Biome Baseline Production**     | How much rural people produce per population point in each biome                                                                                                                                                                                                       |
+| **Multipliers**                   | Production bonuses or penalties by culture type, culture, state, religion, biome or zone. Make one culture famous for its wine, or one zone a mining district                                                                                                          |
+| **Distribution** and **Deposits** | Where deposits can appear, and how many the map gets, whatever its size. The Goods Editor shows how many are placed, with the range in small type. See [Goods spread functions](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Goods-spread-functions)           |
+| **Deposit output**                | What the good's deposits yield a day on this map. Type a new total and click _Place_ to re-place them until they yield it. This is the direct way to make a good scarce or plentiful                                                                                   |
 
 When you apply changes to a good, the dialog can re-place its deposits and recalculate the economy right away (_regenerate economy on apply_); uncheck it to edit without disturbing the current numbers. You can also add your own goods, change icons, paint deposits onto cells with the brush, and open the **production chains** view to see how goods depend on each other.
 
 # Markets
 
-A **market** is a regional trade hub. Markets are placed on the larger towns, favoring capitals and ports, and each market's region spreads over the land around it, preferring to stay within one state and one landmass. Most inhabited islands get a market of their own, and an island with no port always does. Every burg belongs to exactly one market.
+A **market** is a regional trade hub. Markets are placed on the larger towns, favoring capitals, ports, crossroads and states that charge little for a market license. Where burgs crowd, markets sit closer together; steppes, deserts and states with dear licenses get few, far apart. Each market's region spreads over the land around it, preferring to stay within one state and one landmass. Most inhabited islands get a market of their own, and an island with no port always does. Every burg belongs to exactly one market.
 
-Each market keeps a stock and a price for every good. It buys 6% below its price and sells 6% above it. That difference, the **market margin**, goes to the merchants of the burg at the market's center, so busy markets make their hub rich.
+Each market keeps a stock and a price for every good. It buys below its price and sells above it by its **market margin**, which goes to the merchants of the burg at the market's center, so busy markets make their hub rich. The margin is a whole percent: 4% where the market pays little or no license, rising with the state's license fee as merchants pass it on, 5% under a typical monarchy and up to 8% under a greedy theocracy. See it in the Market Overview. A greedy state's markets are dearer, so its trade and its people suffer.
 
 Open _Tools_ → _Markets_ for the overview. There you can add a market on any burg, remove one, paint market regions by hand and **compare** a good's stock and price across all markets. Click a market to rename it, move its center to another burg or see its deals. Cells left without a market take no part in the economy.
 
@@ -81,21 +81,23 @@ So 🟡 1 is a lot of money for one person and modest for a town. The anchor is 
 
 ## Treasuries
 
-- A **burg's treasury** is what it ends the day with: sales, minus ingredients, minus what its people bought. A market's center burg also earns the market margin on every trade at its market, and a state's capital earns the rural rent. See it in the burg's Economy Overview, where you can also type any value to make a burg rich or broke; it lasts until the next regeneration, which starts every treasury from zero.
-- A **state's treasury** is what it collected that day: its taxes, plus a **poll tax** per population point.
+- A **burg's treasury** is what it ends the day with: sales, minus ingredients, minus what its people bought, minus the poll tax. It can be below zero: a burg that sold too little to cover its poll tax ends the day in debt, and keeps working. A market's center also pays its state a **market license** every day, so a quiet market in a greedy state can end the day in debt. A market's center burg also earns the market margin on every trade at its market, and a state's capital earns the rural rent. See it in the burg's Economy Overview, where you can also type any value to make a burg rich or broke; it lasts until the next regeneration, which starts every treasury from zero.
+- A **state's treasury** is what it collected that day: its sales taxes and tariffs, plus the **poll tax** its people paid and the **market licenses** of its markets. The poll tax collected can be less than the poll tax they owed; the state's Taxes card shows the share collected. Then **corruption** takes its share: what officials pocket never reaches the treasury.
 - **Markets hold no money**, but the Markets overview shows what passed through them. **Sales** is what burgs paid the market for its goods, carriage included, less the taxes handed to the states. **Buys** is what the market paid burgs for theirs. **Value** is Sales minus Buys, plus the unsold stock at its prices. The market keeps the carriage, as if its merchants did the carrying. Rural people's purchases and goods a burg kept for itself are not counted.
 
 ## Taxes and tariffs
 
-Every state sets three things in its taxes dialog (_Tools_ → _States_, click a treasury value, then the percent button):
+Every state sets five things in its taxes dialog (_Tools_ → _States_, click a treasury value to open the state's Economy dialog, then the bank button on its Taxes card):
 
 - **Sales tax**: charged on every sale by a seller of the state. A burg pays it out of what it earns from selling; a market adds it to the price it charges a burg.
-- **Poll tax**: a flat amount per person, collected outright.
-- **Tariffs and embargoes**: charges on imports from other states, by state and by good. An embargo stops that trade completely, both ways. Tariffs start from diplomacy: allies and friends trade freely, suspicious states pay 20%, rivals 30%, and enemies are under embargo.
+- **Poll tax**: a flat amount per person. A burg pays it first, out of its first sales of the day, so it never stops work; it only delays what its people buy. Rural people set it aside from what their produce earns and pay what they can, so a poor countryside pays less than the rate asks. The Taxes card and the taxes dialog show how much of what was owed the state collected, such as "96% of 🟡107 collected".
+- **Market license**: a fixed fee a day from the center burg of each market in the state, whatever its trade. Unions and anarchies charge nothing, trade republics little, monarchies more and theocracies the most. States with dear licenses get fewer markets, farther apart, and a quiet market under a greedy state goes into debt.
+- **Corruption**: the share of collected taxes its officials pocket, from 0 to 100%. It starts from the form of government (monarchies 10%, theocracies 7.5%, republics 5%, unions 2.5%, twice that for despotates, hordes, juntas, satrapies and shogunates), grows with the state's size, up to 15% more for the largest state, and with the share of its people of other cultures and faiths, up to 10% more. Anarchies collect nothing, so nothing is stolen. A large, diverse despotate keeps little of what it taxes.
+- **Tariffs and embargoes**: charges on imports from other states, by state and by good. An embargo stops that trade completely, both ways. Tariffs start from diplomacy: allies and friends trade freely, other states pay 5%, suspicious states 20%, rivals 30%, and enemies are under embargo. An anarchy starts with no tariffs at all. The neutral lands are no state: trade with them is never an import, so it pays no tariff and no embargo stops it.
 
-Starting rates depend on the state form: theocracies tax sales most, monarchies tax people more, republics and unions tax lightly, and anarchies collect nothing. Neutral lands never tax. A state with high taxes makes its markets expensive, so neighbors buy elsewhere.
+Starting rates depend on the state form: monarchies take a tenth of every sale and a poll tax, theocracies a twentieth of sales and the same poll tax, unions a tenth of sales but no poll tax, republics tax lightly, and anarchies collect nothing. Neutral lands never tax. A state with high taxes makes its markets expensive, so neighbors buy elsewhere.
 
-Example: a burg buys 10 units of a good priced 10 at its market, carried 0.5 per unit, in a state with 15% sales tax. It pays 10.6 (price with the market's 6%) + 1.5 (tax) + 0.5 (carriage) = 12.6 per unit, 126 in total, and its state collects 15.
+Example: a burg buys 10 units of a good priced 10 at its market, carried 0.5 per unit, in a state with 15% sales tax. It pays 10.5 (price with a 5% margin) + 1.5 (tax) + 0.5 (carriage) = 12.5 per unit, 125 in total, and its state collects 15.
 
 # Reading a burg's Economy Overview
 
@@ -106,11 +108,11 @@ Click a burg plate on the Goods layer, or the production button in the _Burg Edi
 - **Demand**: for each need, how much was covered of what its people need, and in green the wants they bought beyond it.
 - **Prosperity**: how well its people live (see below), with its parts: needs met, comfort and the number of goods.
 - **Product**: the day's sales, less their sales tax and the ingredients bought. **Wealth** is product per person.
-- The market margin if it is a market's center, and its **treasury**: its money at the end of the day. Type a value to change it; the taxes it paid are under the table.
+- The market margin and the market license it pays if it is a market's center, and its **treasury**: its money at the end of the day. Type a value to change it; the taxes it paid are under the table.
 
 Below is the day in order:
 
-- **LOCAL**: the free output of a deposit on the burg's cell.
+- **LOCAL**: the free output of a deposit on the burg's cell. It grows with the burg's population, but is capped by value: at most 200 worth at the good's base price. So a big burg on cheap clay (base price 2) gets about 15 units, while a burg on gemstones (base price 25) gets at most 8, and a rich deposit cannot make a burg absurdly wealthy.
 - **BUY**: ingredients and goods for its people, from its own market or another one. Hover the market to see whether it was an import.
 - **MFG**: what its workers made. Expand the row to see the inputs.
 - **SELL**: what it sold, and to which market.

@@ -47,11 +47,11 @@ export function objective(results, theta, weights) {
   const parts = {
     proportion: Math.max(0, 0.85 - kpi.proportion) * 10 + offBy * 0.5,
     produced: Math.max(0, 0.95 - kpi.produced) * 10,
-    positive: Math.max(0, 0.9 - kpi.positive) * 2,
+    positive: Math.max(0, 0.75 - kpi.positive) * 2,
     regions: Math.max(0, Math.log(5 / Math.max(kpi.regions, 1e-6))) * 0.5,
     apart: Math.max(0, 0.3 - kpi.apart),
     specialization: Math.max(0, 0.6 - kpi.specialization) * 2,
-    taxShare: outside(kpi.taxShare, 0.1, 0.2),
+    taxShare: outside(kpi.taxShare, 0.15, 0.35),
     stateLink: Math.max(0, 0.2 - kpi.stateLink),
     wealthGini: outside(kpi.wealthGini, 0.4, 0.6) * 3,
     treasuryTop: Math.max(0, kpi.treasuryTop - 0.7),

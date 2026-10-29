@@ -80,6 +80,8 @@ export const METHODS = {
     "add",
     "remove",
     "setTaxes",
+    "setMarketFee",
+    "setCorruption",
     "setTreasury",
     "setLocked",
     "setChronicleEntry",

@@ -623,7 +623,7 @@ class RiverModule {
     if (end < 0 || pack.cells.h[end] < 20) return;
 
     for (const river of pack.rivers) {
-      const index = river.cells.indexOf(end);
+      const index = river.cells?.indexOf(end) ?? -1; // old maps hold rivers without cells
       if (index === -1 || index === river.cells.length - 1) continue;
       const anchors = this.getRiverPoints(river.cells, river.points);
       const [x0, y0] = anchors[Math.max(index - 1, 0)];

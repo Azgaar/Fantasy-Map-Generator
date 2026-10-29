@@ -215,6 +215,7 @@ function renderTradeDetailsPage(view: TableView<TradeDetailRow>): void {
   const market = Markets.get(marketId);
   const isImport = Markets.isImport(deals[0]);
   const decimas = market && burg ? Markets.getDecimas(market, burg) : 0;
+  const carriageFactor = market && burg ? Markets.getCarriageFactor(market, burg) : 1;
   const zoom = (target: string) =>
     `<span class="icon-dot-circled pointer" data-zoom="${target}" data-tip="${t("Click to zoom")}"></span>`;
   ensureEl("tradeDetailsSummary").innerHTML = /* html */ `
@@ -232,6 +233,7 @@ function renderTradeDetailsPage(view: TableView<TradeDetailRow>): void {
       tax,
       tariff,
       decimas,
+      carriageFactor,
       isImport,
       taxStateId,
       tariffStateId,

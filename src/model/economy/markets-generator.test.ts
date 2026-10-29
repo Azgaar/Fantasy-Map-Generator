@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Burg } from "@/model/political/burgs-generator";
-import { States } from "@/model/political/states-generator";
+import { noFinance, States } from "@/model/political/states-generator";
 import { rn } from "@/utils/number-utils";
 import { Goods, SAVINGS_RATE } from "./goods-generator";
 import {
@@ -15,6 +15,13 @@ import {
   PRICE_RESPONSE
 } from "./markets-generator";
 import { Production } from "./production-generator";
+import { TradeRoutes } from "./trade-routes";
+
+const MARGIN = Markets.getMarginRate(); // a market that paid no license fee
+
+/** States as the model keeps them: each with its finances, zero but for the given ones */
+const withFinance = (states: any[]) =>
+  states.map(state => ({ ...state, economy: { ...noFinance(), ...state.economy } }));
 
 describe("MarketsModule", () => {
   describe("buy logic and budget constraints", () => {
@@ -27,7 +34,7 @@ describe("MarketsModule", () => {
         getSalesTax: (burg: { state?: number }) => {
           const stateId = burg?.state || 0;
           if (!stateId) return 0;
-          return globalThis.pack.states?.[stateId]?.salesTax ?? 0;
+          return globalThis.pack.states?.[stateId]?.economy.salesTax ?? 0;
         }
       });
       // Minimal valid Good
@@ -72,7 +79,7 @@ describe("MarketsModule", () => {
         kind: DEAL_KINDS.demand,
         budget: 15
       });
-      const price = rn(10 * (1 + MARKET_MARGIN), 2);
+      const price = rn(10 * (1 + MARGIN), 2);
       const units = Math.floor((15 / price) * 100) / 100; // floored to the hundredth: the cost stays within the budget
       expect(deal).not.toBeNull();
       expect(deal!.units).toBe(units);
@@ -113,7 +120,7 @@ describe("MarketsModule", () => {
       const good = globalThis.pack.goods[0];
 
       marketsModule.buy({ burg: center, good, units: 2, kind: DEAL_KINDS.demand });
-      expect(center.treasury).toBeCloseTo(2 * 10 * MARKET_MARGIN, 5);
+      expect(center.treasury).toBeCloseTo(2 * 10 * MARGIN, 5);
 
       marketsModule.sell({ burg: center, good, units: 4, taxRate: 0 });
       marketsModule.keep({ burg: center, good, units: 1 });
@@ -128,10 +135,10 @@ describe("MarketsModule", () => {
       globalThis.pack.markets = [market];
       const burg: Burg = { i: 1, market: 1, state: 1 } as any;
       globalThis.pack.burgs = [{ i: 0 } as any, burg];
-      globalThis.pack.states = [{ i: 0 }, { i: 1, salesTax: 0.2 }] as any;
+      globalThis.pack.states = withFinance([{ i: 0 }, { i: 1, economy: { salesTax: 0.2 } }]);
 
       const trade = marketsModule.buy({ burg, good: globalThis.pack.goods[0], units: 2, kind: DEAL_KINDS.demand })!;
-      expect(trade.price).toBeCloseTo(10 * (1 + MARKET_MARGIN) + 0.2 * 10, 2);
+      expect(trade.price).toBeCloseTo(10 * (1 + MARGIN) + 0.2 * 10, 2);
       expect(trade.tax).toBeCloseTo(0.2 * 10 * 2, 2);
       expect(marketsModule.getTaxStates(globalThis.pack.deals[0]).taxState).toBe(1);
     });
@@ -142,7 +149,7 @@ describe("MarketsModule", () => {
       const burg: Burg = { i: 2, x: 200, y: 100, population: 100, market: 2, state: 2, treasury: 1000 } as any;
       globalThis.pack.markets = [exporter, importer];
       globalThis.pack.burgs = [{ i: 0 } as any, { i: 1, x: 100, y: 100, market: 1, state: 1 } as any, burg];
-      globalThis.pack.states = states ?? [{ i: 0 }, { i: 1 }, { i: 2 }];
+      globalThis.pack.states = withFinance(states ?? [{ i: 0 }, { i: 1 }, { i: 2 }]);
       // biome-ignore lint/complexity/useLiteralKeys: private access for testing
       marketsModule["marketById"] = [exporter, exporter, importer];
       setRoutes({ 1: 100 });
@@ -156,8 +163,13 @@ describe("MarketsModule", () => {
     const setRoutes = (costs: Record<number, number>) => {
       const rows: Float32Array[] = [];
       for (const [marketId, cost] of Object.entries(costs)) rows[+marketId] = Float32Array.from([Infinity, 0, cost]);
+      globalThis.pack.cells ??= { routes: {} } as any;
       // biome-ignore lint/complexity/useLiteralKeys: private access for testing
       marketsModule["routeCosts"] = rows;
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      marketsModule["routeCostsSource"] = [pack.cells.routes, pack.markets, pack.burgs.length];
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      marketsModule["decima"] = Math.hypot(1000, 800) / 10;
     };
     const carriage = (cost: number) => cost / (Math.hypot(1000, 800) / 10); // one coin per unit and decima
     const transport = carriage(100) * IMPORT_CARRIAGE_FACTOR; // the exporter is another state's market
@@ -167,7 +179,7 @@ describe("MarketsModule", () => {
       const trade = importGood();
 
       expect(trade?.units).toBe(10);
-      expect(trade?.price).toBeCloseTo(5 * (1 + MARKET_MARGIN) + transport, 2);
+      expect(trade?.price).toBeCloseTo(rn(5 * (1 + MARGIN), 2) + transport, 2);
       expect(globalThis.pack.deals).toEqual([[2, 1, 0, DEAL_KINDS.input, 10, trade!.price, 0, 0, trade!.carriage]]);
       expect([exporter.goods[0].stock, importer.goods[0].stock]).toEqual([90, 0]);
     });
@@ -176,14 +188,14 @@ describe("MarketsModule", () => {
       const { importGood } = setupImport();
       const trade = importGood(10, 13);
       expect(trade!.units * trade!.price).toBeLessThanOrEqual(13);
-      expect(trade!.units).toBeCloseTo(13 / (5 * (1 + MARKET_MARGIN) + transport), 1);
+      expect(trade!.units).toBeCloseTo(13 / (5 * (1 + MARGIN) + transport), 1);
     });
 
     it("quoteSource() picks the source that delivers to the burg cheapest", () => {
       const { burg, good, terms } = setupImport();
       const far: Market = { i: 3, centerBurgId: 3, color: "#00f", goods: { 0: { stock: 50, price: 4.5 } } };
       globalThis.pack.markets.push(far);
-      globalThis.pack.burgs.push({ i: 3, x: 400, y: 100, market: 3 } as any);
+      globalThis.pack.burgs.push({ i: 3, x: 400, y: 100, market: 3, state: 1 } as any);
       setRoutes({ 1: 100, 3: 300 });
       // the far market is cheaper but its carriage costs more than the price gap
       expect(marketsModule.quoteSource(burg, good, terms)?.source.i).toBe(1);
@@ -200,6 +212,19 @@ describe("MarketsModule", () => {
       expect(marketsModule.getTransport(exporter, burg, good)).toBeCloseTo(carriage(100) * IMPORT_CARRIAGE_FACTOR, 5);
       globalThis.pack.burgs[1].state = 2; // the same state: no longer an import
       expect(marketsModule.getTransport(exporter, burg, good)).toBeCloseTo(carriage(100), 5);
+    });
+
+    it("treats trade with the neutral lands as no import: no import carriage, tariff or embargo", () => {
+      const embargoAll = { states: "all", goods: "all", rate: "embargo" };
+      const { exporter, importer, burg, good, terms } = setupImport([
+        { i: 0 },
+        { i: 1 },
+        { i: 2, economy: { tariffs: [embargoAll] } }
+      ]);
+      expect(terms(exporter, importer, good, 5)).toBeNull();
+      globalThis.pack.burgs[1].state = 0; // the exporter's center in the neutral lands
+      expect(marketsModule.getTransport(exporter, burg, good)).toBeCloseTo(carriage(100), 5);
+      expect(marketsModule.getTradeTerms()(exporter, importer, good, 5)).toEqual({ taxPerUnit: 0, tariffPerUnit: 0 });
     });
 
     it("quoteSource() skips a market with no route to the burg", () => {
@@ -227,7 +252,19 @@ describe("MarketsModule", () => {
       marketsModule["days"] = [
         undefined,
         undefined,
-        { depth: [20], rural: [], ruralPeople: 0, cash: 0, income: 0, rent: 0, spent: 0, covered: [], bought: [] }
+        {
+          depth: [20],
+          rural: [],
+          ruralPeople: 0,
+          cash: 0,
+          income: 0,
+          rent: 0,
+          spent: 0,
+          margin: 0,
+          covered: [],
+          bought: [],
+          pollTaxDue: []
+        }
       ] as never;
 
       marketsModule.sell({ burg, good, units: 20, taxRate: 0 }); // a day's sales offered
@@ -241,20 +278,32 @@ describe("MarketsModule", () => {
     it("pays the countryside for its produce as it is bought, less the margin and its capital's rent", () => {
       const { importer, burg, good } = setupImport();
       importer.centerBurgId = 1;
-      setRoutes({ 2: 0 });
       importer.goods[0] = { stock: 100, price: 10 };
       const capital = { i: 3, treasury: 0 } as Burg;
       globalThis.pack.burgs[3] = capital;
-      globalThis.pack.states = [{ i: 0 }, { i: 1, capital: 3 }, { i: 2 }] as never; // the market's center (burg 1) is in state 1
+      setRoutes({ 2: 0 }); // after the capital: a new burg is measured again
+      globalThis.pack.states = withFinance([{ i: 0 }, { i: 1, capital: 3 }, { i: 2 }]); // the market's center (burg 1) is in state 1
       // biome-ignore lint/complexity/useLiteralKeys: private access for testing
       marketsModule["days"] = [
         undefined,
         undefined,
-        { depth: [1e9], rural: [50], ruralPeople: 10, cash: 0, income: 0, rent: 0, spent: 0, covered: [], bought: [] }
+        {
+          depth: [1e9],
+          rural: [50],
+          ruralPeople: 10,
+          cash: 0,
+          income: 0,
+          rent: 0,
+          spent: 0,
+          margin: 0,
+          covered: [],
+          bought: [],
+          pollTaxDue: []
+        }
       ] as never;
 
       marketsModule.buy({ burg, good, units: 10, kind: DEAL_KINDS.demand }); // half the stock is rural: 5 of its units
-      const earned = 5 * 10 * (1 - MARKET_MARGIN);
+      const earned = 5 * 10 * (1 - MARGIN);
       expect(capital.treasury).toBeCloseTo(earned * CAPITAL_RENT, 1);
       expect(marketsModule.getRuralBalance(2)).toMatchObject({
         income: +(earned * (1 - CAPITAL_RENT)).toFixed(2),
@@ -266,6 +315,77 @@ describe("MarketsModule", () => {
       expect(marketsModule.getRuralBalance(2)!.spent).toBeLessThanOrEqual(
         earned * (1 - CAPITAL_RENT) * (1 - SAVINGS_RATE) + 0.01
       );
+    });
+
+    it("rural people keep back their poll tax and pay it at the end of the run, as far as their money goes", () => {
+      const { importer } = setupImport();
+      importer.goods[0] = { stock: 100, price: 1 };
+      globalThis.pack.markets = [importer];
+      const day = (income: number, pollTaxDue: number[]) => ({
+        depth: [1e9],
+        rural: [],
+        ruralPeople: 10,
+        cash: income,
+        income,
+        rent: 0,
+        spent: 0,
+        margin: 0,
+        covered: [],
+        bought: [],
+        pollTaxDue
+      });
+
+      // they owe 8 of the 20 they earned: they spend at most 12, not 62% of 20, and pay in full
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      marketsModule["days"] = [undefined, undefined, day(20, [0, 6, 2])] as never;
+      marketsModule.spendRural(importer);
+      expect(marketsModule.getRuralBalance(2)!.spent).toBeLessThanOrEqual(12 + 0.01);
+      marketsModule.endRun();
+      expect(importer.rural?.pollTax).toEqual([
+        [1, 6, 6],
+        [2, 2, 2]
+      ]);
+
+      // they earned 5 and owe 8: they buy nothing and pay what they have, split by what each state charged
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      marketsModule["days"] = [undefined, undefined, day(5, [0, 6, 2])] as never;
+      marketsModule.spendRural(importer);
+      expect(marketsModule.getRuralBalance(2)!.spent).toBe(0);
+      marketsModule.endRun();
+      expect(importer.rural?.pollTax).toEqual([
+        [1, 6, 3.75],
+        [2, 2, 1.25]
+      ]);
+    });
+
+    it("rural people pay their market's center its margin, kept in their day, and no sales tax", () => {
+      const { importer } = setupImport([{ i: 0 }, { i: 1 }, { i: 2, economy: { salesTax: 0.5 } }]);
+      importer.goods[0] = { stock: 100, price: 10 };
+      globalThis.pack.markets = [importer];
+      const center = globalThis.pack.burgs[2];
+      center.treasury = 0;
+      const day = { depth: [1e9], rural: [], ruralPeople: 1000, cash: 100, income: 100, rent: 0, spent: 0, margin: 0 };
+      // biome-ignore lint/complexity/useLiteralKeys: private access for testing
+      marketsModule["days"] = [undefined, undefined, { ...day, covered: [], bought: [], pollTaxDue: [] }] as never;
+
+      marketsModule.spendRural(importer);
+      marketsModule.endRun();
+      const [[, units]] = importer.rural!.bought;
+      expect(importer.rural!.spent).toBeCloseTo(units * 10 * (1 + MARGIN), 1); // the buy price, untaxed
+      expect(importer.rural!.margin).toBeCloseTo(units * 10 * MARGIN, 1);
+      expect(center.treasury).toBeCloseTo(importer.rural!.margin!, 1);
+    });
+
+    it("measures routes again once the route network changes", () => {
+      setupImport();
+      const measure = vi.spyOn(TradeRoutes, "measure").mockReturnValue([]);
+      const [market, burg] = [globalThis.pack.markets[0], globalThis.pack.burgs[2]];
+      marketsModule.getDecimas(market, burg);
+      expect(measure).not.toHaveBeenCalled(); // the routes set for the test still hold
+      globalThis.pack.cells.routes = {};
+      marketsModule.getDecimas(market, burg);
+      expect(measure).toHaveBeenCalledTimes(1);
+      measure.mockRestore();
     });
 
     it("sells where the price at the burg's door is best, carriage paid", () => {
@@ -285,25 +405,29 @@ describe("MarketsModule", () => {
       importer.centerBurgId = 1;
       setRoutes({ 2: 200 });
       const bought = marketsModule.buy({ burg, good, units: 1, kind: DEAL_KINDS.demand })!;
-      expect(bought.price).toBeCloseTo(20 * (1 + MARKET_MARGIN) + carriage(200), 2);
+      expect(bought.price).toBeCloseTo(20 * (1 + MARGIN) + carriage(200), 2);
       const midPrice = importer.goods[0].price; // raised by the purchase
       const sold = marketsModule.sell({ burg, good, units: 1, taxRate: 0 })!;
-      expect(sold.price).toBeCloseTo(midPrice * (1 - MARKET_MARGIN) - carriage(200), 1);
+      expect(sold.price).toBeCloseTo(midPrice * (1 - MARGIN) - carriage(200), 1);
     });
 
     it("buyFromSource() adds the exporter's sales tax after the margin and records it on the import", () => {
-      const { importGood } = setupImport([{ i: 0 }, { i: 1, salesTax: 0.2 }, { i: 2, salesTax: 0.1 }]);
+      const { importGood } = setupImport([
+        { i: 0 },
+        { i: 1, economy: { salesTax: 0.2 } },
+        { i: 2, economy: { salesTax: 0.1 } }
+      ]);
       const trade = importGood()!;
       expect(trade.tax).toBeCloseTo(0.2 * 5 * 10, 2);
-      expect(trade.price).toBeCloseTo(5 * (1 + MARKET_MARGIN) + 0.2 * 5 + transport, 2);
+      expect(trade.price).toBeCloseTo(rn(5 * (1 + MARGIN), 2) + 0.2 * 5 + transport, 2);
       expect(marketsModule.getTaxStates(globalThis.pack.deals[0]).taxState).toBe(1);
     });
 
     it("buyFromSource() applies the importer's tariff and records deal.tariff", () => {
       const { importGood } = setupImport([
         { i: 0 },
-        { i: 1, tariffs: [{ states: "all", goods: "all", rate: 0.1 }] },
-        { i: 2, tariffs: [{ states: "all", goods: "all", rate: 0.2 }] }
+        { i: 1, economy: { tariffs: [{ states: "all", goods: "all", rate: 0.1 }] } },
+        { i: 2, economy: { tariffs: [{ states: "all", goods: "all", rate: 0.2 }] } }
       ]);
       importGood();
       const [deal] = globalThis.pack.deals;
@@ -325,7 +449,7 @@ describe("MarketsModule", () => {
     it("buyFromSource() applies no tariff or embargo between markets of one state", () => {
       const { burg, importGood } = setupImport([
         { i: 0 },
-        { i: 1, tariffs: [{ states: "all", goods: "all", rate: "embargo" }] }
+        { i: 1, economy: { tariffs: [{ states: "all", goods: "all", rate: "embargo" }] } }
       ]);
       burg.state = 1;
       globalThis.pack.burgs[2].state = 1;
@@ -335,8 +459,8 @@ describe("MarketsModule", () => {
 
     it("an embargo by either state blocks the import", () => {
       for (const states of [
-        [{ i: 0 }, { i: 1, tariffs: [{ states: [2], goods: "all", rate: "embargo" }] }, { i: 2 }],
-        [{ i: 0 }, { i: 1 }, { i: 2, tariffs: [{ states: [1], goods: "all", rate: "embargo" }] }]
+        [{ i: 0 }, { i: 1, economy: { tariffs: [{ states: [2], goods: "all", rate: "embargo" }] } }, { i: 2 }],
+        [{ i: 0 }, { i: 1 }, { i: 2, economy: { tariffs: [{ states: [1], goods: "all", rate: "embargo" }] } }]
       ]) {
         const { burg, good, terms, importGood } = setupImport(states);
         expect(marketsModule.quoteSource(burg, good, terms)).toBeNull();
@@ -351,11 +475,13 @@ describe("MarketsModule", () => {
         { i: 1 },
         {
           i: 2,
-          tariffs: [
-            { states: "all", goods: "all", rate: 0.5 },
-            { states: [1], goods: "all", rate: 0.3 },
-            { states: [1], goods: [0], rate: 0.05 }
-          ]
+          economy: {
+            tariffs: [
+              { states: "all", goods: "all", rate: 0.5 },
+              { states: [1], goods: "all", rate: 0.3 },
+              { states: [1], goods: [0], rate: 0.05 }
+            ]
+          }
         }
       ]);
       importGood();
@@ -436,7 +562,12 @@ describe("MarketsModule", () => {
       marketsModule["marketById"] = index;
 
       // Three land cells: cells 0 and 2 belong to market 1, cell 1 has no market.
-      globalThis.pack.cells = { i: [0, 1, 2], market: Uint16Array.from([1, 0, 1]), pop: [1, 1, 1] } as any;
+      globalThis.pack.cells = {
+        i: [0, 1, 2],
+        market: Uint16Array.from([1, 0, 1]),
+        state: Uint16Array.from([0, 0, 0]),
+        pop: [1, 1, 1]
+      } as any;
 
       const good = globalThis.pack.goods[0];
       Object.assign(Goods, {
@@ -480,7 +611,7 @@ describe("MarketsModule", () => {
       globalThis.pack.markets = [market1];
       const burg: Burg = { i: 1, market: 1, state: 1 } as any;
       globalThis.pack.burgs = [{ i: 0 } as any, burg];
-      globalThis.pack.states = [{ i: 0, salesTax: 0 } as any, { i: 1, salesTax: 0.2 } as any];
+      globalThis.pack.states = withFinance([{ i: 0 }, { i: 1, economy: { salesTax: 0.2 } }]);
       const taxRate = States.getSalesTax(burg);
       const deal = marketsModule.sell({ burg, good: globalThis.pack.goods[0], units: 5, taxRate });
       expect(deal).not.toBeNull();
@@ -535,13 +666,25 @@ describe("MarketsModule", () => {
   });
 });
 
+describe("market margin", () => {
+  it("rises with the license fee the market's center paid, by the fee factor's root, in whole percents", () => {
+    const market = { i: 1, centerBurgId: 1, color: "", goods: {} } as Market;
+    expect(Markets.getMarginRate(market)).toBe(Math.round(MARKET_MARGIN * 100) / 100);
+    market.feePaid = 25; // a typical monarchy's
+    expect(Markets.getMarginRate(market)).toBe(0.05);
+    market.feePaid = 75; // a fee factor of 4
+    expect(Markets.getMarginRate(market)).toBe(Math.round(MARKET_MARGIN * 200) / 100);
+  });
+});
+
 describe("market placement", () => {
   it("gives a portless landmass a market and lets a market across the water stand closer", () => {
     options.map.graph = { width: 1000, height: 800, points: 10000, sampling: "square", jitter: 0.9 };
     const burg = (i: number, x: number, feature: number, population: number, port = 0) =>
       ({ i, x, y: 0, feature, population, port }) as Burg;
-    // the spacing is about 1,230 here: one market on the mainland, half that across the water
+    // all burgs crowd alike, so the spacing is the base, about 1,700 here: one market on the mainland, half that across the water
     globalThis.pack = {
+      cells: { routes: {} },
       burgs: [
         { i: 0 } as Burg,
         burg(1, 0, 1, 100, 9),
@@ -557,5 +700,18 @@ describe("market placement", () => {
     const centers = markets.map(market => market.centerBurgId).sort();
 
     expect(centers).toEqual([1, 3, 5]);
+  });
+
+  it("spaces markets closer where burgs crowd and wider where the license is dear", () => {
+    options.map.graph = { width: 1000, height: 800, points: 10000, sampling: "square", jitter: 0.9 };
+    const burgs = [0, 10, 20, 30, 40, 50, 5000].map((x, index) => ({ i: index + 1, x, y: 0 }) as Burg);
+    globalThis.pack = { burgs: [{ i: 0 } as Burg, ...burgs] } as typeof pack;
+    const greedy = (burg: Burg) => (burg.i === 1 ? 3 : 1);
+
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    const spacing: Map<number, number> = new MarketsModule()["getSpacing"](burgs, greedy);
+
+    expect(spacing.get(7)!).toBeGreaterThan(spacing.get(2)! * 1.5); // the lone burg needs far more room
+    expect(spacing.get(1)!).toBeGreaterThan(spacing.get(2)! * 1.5); // so does its neighbor under a dear license
   });
 });

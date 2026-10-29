@@ -1,13 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Burg } from "@/model/political/burgs-generator";
+import { noFinance } from "@/model/political/states-generator";
 import { rn } from "@/utils/number-utils";
 import type { Good } from "./goods-generator";
 import { Goods, NOVELTY, VARIETY } from "./goods-generator";
-import { DEAL_KINDS, MARKET_MARGIN, type Market, Markets, type SourceOption } from "./markets-generator";
+import { DEAL_KINDS, type Market, Markets, type SourceOption } from "./markets-generator";
 import {
   BURG_SPECIALIZATION,
   DEPOSIT_RICHNESS,
   MARKET_SPECIALIZATION,
+  MAX_BONUS_VALUE,
   ProductionModule,
   WORKFORCE_SHARE
 } from "./production-generator";
@@ -25,6 +27,7 @@ const good = (i: number, name: string, value: number, recipes?: Good["recipes"])
   color: "#ffffff"
 });
 
+const MARGIN = Markets.getMarginRate(); // a market that paid no license fee
 let production: ProductionModule;
 let catalogue: Good[];
 let market: Market;
@@ -80,7 +83,7 @@ describe("manufacturing work with stocked inputs", () => {
     const ship = plan(5, 2);
     expect(ship?.action.good.name).toBe("Engine");
     expect(ship?.workersNeeded).toBe(2);
-    expect(ship?.normalizedGain).toBeCloseTo((10000 * (1 - MARKET_MARGIN) - 14 * (1 + MARKET_MARGIN)) / 2);
+    expect(ship?.normalizedGain).toBeCloseTo((10000 * (1 - MARGIN) - 14 * rn(1 + MARGIN, 2)) / 2);
     expect(plan(5, 100)?.workersNeeded).toBe(2);
   });
 
@@ -151,7 +154,7 @@ describe("manufacturing work with stocked inputs", () => {
     market.goods[1].stock = 4;
     const ship = plan(5, 3);
     expect(ship?.workersNeeded).toBe(3);
-    expect(ship?.marketCost).toBeCloseTo(28 * (1 + MARKET_MARGIN));
+    expect(ship?.marketCost).toBeCloseTo(28 * rn(1 + MARGIN, 2));
   });
 
   it("reserves shared inputs across the parent and its missing component", () => {
@@ -260,7 +263,7 @@ describe("inputs missing in the burg's market", () => {
     // biome-ignore lint/complexity/useLiteralKeys: private test access
     production["runWorkerLoop"](index, state);
 
-    const deliveredPrice = rn(1 * (1 + MARKET_MARGIN) + 100 / Math.hypot(1000, 800), 2);
+    const deliveredPrice = rn(1 * (1 + MARGIN) + 100 / Math.hypot(1000, 800), 2);
     const imports = pack.deals.filter(([, marketId]) => marketId === 2);
     expect(imports.map(([burgId, , goodId, kind, units]) => [burgId, goodId, kind, units])).toEqual([
       [1, 3, DEAL_KINDS.input, 20]
@@ -281,6 +284,19 @@ describe("inputs missing in the burg's market", () => {
     expect([source.goods[3].stock, market.goods[3].stock]).toEqual([100, 10]);
   });
 
+  it("are imported when the burg's market has less than a unit left", () => {
+    market.goods[3] = { stock: 0.5, price: 1 };
+    burg.population = 1;
+    const { index, state } = prepare();
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    production["runWorkerLoop"](index, state);
+
+    expect(
+      pack.deals.some(([, marketId, goodId, kind]) => marketId === 2 && goodId === 3 && kind === DEAL_KINDS.input)
+    ).toBe(true);
+    expect(market.goods[3].stock).toBe(0.5);
+  });
+
   it("are imported for the burg's demand within its treasury", () => {
     catalogue[2].demandCoverage = { construction: 1 };
     burg.treasury = 5;
@@ -297,7 +313,11 @@ describe("inputs missing in the burg's market", () => {
   it("are not imported under an embargo", () => {
     burg.state = 1;
     pack.burgs[2].state = 2;
-    pack.states = [{ i: 0 }, { i: 1, tariffs: [{ states: [2], goods: "all", rate: "embargo" }] }, { i: 2 }] as any;
+    pack.states = [
+      { i: 0, economy: noFinance() },
+      { i: 1, economy: { ...noFinance(), tariffs: [{ states: [2], goods: "all", rate: "embargo" }] } },
+      { i: 2, economy: noFinance() }
+    ] as any;
     expect(plan(4, 1)).toBeNull();
   });
 
@@ -336,6 +356,11 @@ describe("deposits", () => {
     expect(production.getDepositOutput(catalogue[0], 1)).toBeCloseTo(10 * DEPOSIT_RICHNESS);
     cells(10000);
     expect(production.getDepositOutput(catalogue[0], 0)).toBeCloseTo(8 * DEPOSIT_RICHNESS);
+  });
+
+  it("give a burg on them free units worth at most a set value", () => {
+    expect(production.getLocalBonus(catalogue[0], burg)).toBe(15); // cheap: population up to 5 × 3
+    expect(production.getLocalBonus(catalogue[3], burg)).toBe(MAX_BONUS_VALUE / 100);
   });
 });
 
@@ -406,7 +431,7 @@ describe("demand fill", () => {
     expect(bought[4]).toBe(6);
     expect(market.goods[3].stock).toBe(10);
     // the burg is its market's center: it takes the margin on its purchase and gives back the margin on the 4 kept
-    const margins = Markets.getMargin(bought) - (4 * 1 * MARKET_MARGIN) / (1 - MARKET_MARGIN);
+    const margins = Markets.getMargin(bought) - (4 * 1 * MARGIN) / (1 - MARGIN);
     expect(burg.treasury).toBeCloseTo(100 - 4 * 0.8 - 6 * bought[5] + margins, 1);
   });
 
@@ -487,7 +512,10 @@ describe("sales tax in choosing work", () => {
   const engines = (salesTax: number) => {
     burg.population = 1;
     burg.state = 1;
-    globalThis.pack.states = [{ i: 0 }, { i: 1, salesTax }] as typeof pack.states;
+    globalThis.pack.states = [
+      { i: 0, economy: noFinance() },
+      { i: 1, economy: { ...noFinance(), salesTax } }
+    ] as typeof pack.states;
     const { index, state } = prepare();
     // biome-ignore lint/complexity/useLiteralKeys: private test access
     production["runWorkerLoop"](index, state);
@@ -513,6 +541,21 @@ describe("a chain's steps", () => {
     production["runWorkerLoop"](index, state);
     expect(rn(state.produced[1], 2)).toBe(0.04);
     expect(rn(state.produced[4], 2)).toBe(1);
+  });
+});
+
+describe("a chain's inputs", () => {
+  it("are every good down the goal's recipes", () => {
+    const { index } = prepare();
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    expect([...production["getChainInputs"](index, 5)].sort()).toEqual([1, 2, 3, 4]);
+  });
+
+  it("wait in the inventory between turns while the chain is under way", () => {
+    const { state } = prepare([0, 3, 0, 0, 2]);
+    // biome-ignore lint/complexity/useLiteralKeys: private test access
+    production["sellInventoryToMarket"](state, (goodId: number) => goodId !== 4);
+    expect([state.inventory[1], state.inventory[4]]).toEqual([0, 2]);
   });
 });
 

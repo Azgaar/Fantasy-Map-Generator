@@ -61,7 +61,7 @@ const STYLE = /* html */ `<style>
 /** Opens one dialog per state, so states can be compared side by side */
 function open(stateId: number): void {
   const state = pack.states[stateId];
-  if (!state || state.removed) return; // 0 is the neutral lands
+  if (!state || state.removed || (!state.cells && !state.burgs)) return; // 0 is the neutral lands, often empty
   if (!StateEconomy.getAccounts(stateId)) {
     tip(EconomyTerms.noData(), true, "error", 5000);
     return;
@@ -154,7 +154,7 @@ function renderCards(
   exports: number,
   imports: number
 ): string {
-  const treasury = pack.states[stateId].treasury || 0;
+  const treasury = pack.states[stateId].economy.treasury || 0;
   const burden = accounts.product ? rn((treasury / accounts.product) * 100, 1) : 0;
   const balance = exports - imports;
   const population = people(accounts);
@@ -167,7 +167,7 @@ function renderCards(
     ? card(
         t("Treasury"),
         formatPrice(treasury),
-        [rank(stateId, id => pack.states[id].treasury || 0), t("Tax burden: {{burden}}%", { burden })],
+        [rank(stateId, id => pack.states[id].economy.treasury || 0), t("Tax burden: {{burden}}%", { burden })],
         sentences(EconomyTerms.stateTreasury(), t("Tax burden: the treasury's share of the product"))
       )
     : card(t("Treasury"), "—", [t("Neutrals collect no taxes")], EconomyTerms.stateTreasury());
@@ -253,20 +253,22 @@ function renderSectors(accounts: StateAccounts, world: StateAccounts): string {
   return `<h4>${t("Economic sectors")}</h4><div class="stack" style="margin: 0.3em 0">${bar}</div><div class="legend">${legend}</div>`;
 }
 
-const line = (name: string, value: number) =>
-  `<div class="row plain"><span class="name">${name}</span><span class="right">${formatPrice(value)}</span></div>`;
+const line = (name: string, value: number, tip = "", tone = "") =>
+  `<div data-tip="${tip}" class="row plain"><span class="name">${name}</span><span class="right ${tone}">${formatPrice(value)}</span></div>`;
 
 function renderTaxes(stateId: number, accounts: StateAccounts): string {
   if (!stateId) return `<div><h4>${t("Taxes")}</h4><i>${t("Neutrals collect no taxes")}</i></div>`;
-  const { salesTax, tariffs, pollTax } = StateEconomy.getBudget(stateId);
-  const total = salesTax + tariffs + pollTax;
+  const { salesTax, tariffs, pollTax, pollTaxOwed, marketFees, corruption } = StateEconomy.getBudget(stateId);
+  const total = salesTax + tariffs + pollTax + marketFees - corruption;
   const state = pack.states[stateId];
   const share = accounts.product ? rn((total / accounts.product) * 100, 1) : 0;
   const button = `<button type="button" class="icon-bank taxes" data-tip="${t("Set the state's taxes and tariffs")}"></button>`;
   return `<div><h4 data-tip="${t("What the state collected today")}"><span>${t("Taxes")}</span>${button}</h4>
-    ${line(t("Sales tax {{rate}}%", { rate: rn((state.salesTax || 0) * 100, 1) }), salesTax)}
-    ${line(t("Tariffs"), tariffs)}
-    ${line(t("Poll tax {{rate}} a head", { rate: state.pollTax || 0 }), pollTax)}
+    ${line(t("Sales tax: {{rate}}%", { rate: rn((state.economy.salesTax || 0) * 100, 1) }), salesTax, "", "positive")}
+    ${line(t("Import tariffs"), tariffs, "", "positive")}
+    ${line(t("Poll tax: {{rate}} a head", { rate: state.economy.pollTax || 0 }), pollTax, pollTax ? EconomyTerms.collected(pollTax, pollTaxOwed) : "", "positive")}
+    ${line(t("Market licenses: {{fee}} each", { fee: state.economy.marketFee || 0 }), marketFees, "", "positive")}
+    ${line(t("Corruption: {{rate}}%", { rate: state.economy.corruption || 0 }), -corruption, EconomyTerms.corruption(), "negative")}
     <div class="total">${line(t("Treasury"), total)}</div>
     <div class="muted">${t("{{share}}% of the product", { share })}</div>
   </div>`;
@@ -343,6 +345,7 @@ function renderLiving(accounts: StateAccounts): string {
     ${group(t("Total population"), combine(accounts.towns, accounts.country), people)}
     ${group(t("Urban population"), accounts.towns, accounts.levels.towns)}
     ${group(t("Rural population"), accounts.country, accounts.levels.country)}
+    ${accounts.towns || accounts.country ? "" : `<i>${t("None")}</i>`}
   </div>`;
 }
 
