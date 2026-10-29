@@ -25,8 +25,8 @@ import {
   readCatalogue,
   readReference,
   ROOT,
-  snapToReference,
-  thetaOf
+  thetaOf,
+  withReferenceCoverage
 } from "./catalogue.mjs";
 import { MAPS_DIR } from "./export-maps.mjs";
 import { checkOverrides, DEFAULT_URL, openGame, registeredTunables } from "./game.mjs";
@@ -72,19 +72,22 @@ const defaults = Object.fromEntries(
     return [name, Math.min(hi, Math.max(lo, value))];
   })
 );
-// the search starts from the reference: values and coverage outside it at its nearest bound, coverage entries as it has them
-const snapped = snapToReference(catalogue, reference);
-const moved = [],
+// coverage entries as the reference has them; values and coverage away from it are logged, as the search pays for them
+const snapped = withReferenceCoverage(catalogue, reference);
+const away = [],
   covers = [];
 catalogue.forEach((good, i) => {
-  const { value, coverage } = snapped[i];
-  if (value !== good.value) moved.push(`${good.name} ${good.value} → ${value}`);
-  for (const c of new Set([...Object.keys(good.coverage), ...Object.keys(coverage)]))
-    if (good.coverage[c] !== coverage[c])
-      covers.push(`${good.name} ${c} ${good.coverage[c] ?? "none"} → ${coverage[c] ?? "none"}`);
+  const { coverage } = snapped[i];
+  const value = reference.value[good.name];
+  if (value && value !== good.value) away.push(`${good.name} ${good.value} (${value})`);
+  for (const c of new Set([...Object.keys(good.coverage), ...Object.keys(coverage)])) {
+    const x = good.coverage[c] ?? "none",
+      ref = reference.coverage[good.name]?.[c] ?? "none";
+    if (x !== ref) covers.push(`${good.name} ${c} ${x} (${ref})`);
+  }
 });
-if (moved.length) say(`START values brought into their price category: ${moved.join(", ")}`);
-if (covers.length) say(`START coverage brought to the reference: ${covers.join(", ")}`);
+if (away.length) say(`START values away from the reference: ${away.join(", ")}`);
+if (covers.length) say(`START coverage away from the reference: ${covers.join(", ")}`);
 const start = thetaOf(snapped, defaults);
 // a made good priced outside its margin range starts at the nearest bound, so the search never scores the source as it is
 const startValues = overridesOf(catalogue, start).value;
@@ -190,7 +193,7 @@ async function evaluate(theta) {
     const results = await Promise.all(pool.map(({ worker }) => runOn(worker, over)));
     runs += results.length;
     evals++;
-    return { ...objective(results, theta, reference, over), overrides: over };
+    return { ...objective(results, reference, over), overrides: over };
   } finally {
     inflight -= pool.length;
   }
@@ -199,11 +202,11 @@ async function evaluate(theta) {
 // ---- the held-out map in the real game, checked against the best every 30 s
 game = await openGame(testSeed, url);
 const tunablesInGame = await registeredTunables(game.page);
-const gameLine = (label, theta, over) =>
+const gameLine = (label, over) =>
   checkOverrides(game.page, over).then(
-    r => `${label} on game ${testSeed}: ${summary(objective([r], theta, reference, over).kpi)}`
+    r => `${label} on game ${testSeed}: ${summary(objective([r], reference, over).kpi)}`
   );
-check = await gameLine("start", start, overridesOf(catalogue, start));
+check = await gameLine("start", overridesOf(catalogue, start));
 say(
   `BEGIN budget ${budget} runs, ${chainCount} chains on ${pool.length} maps in parallel; tunables in game: ${tunablesInGame.length}/${Object.keys(RANGES).length}`
 );
@@ -219,8 +222,8 @@ tick = setInterval(() => {
   );
   if (!best || checking) return;
   checking = true;
-  const { loss, theta, overrides } = best;
-  gameLine(`best ${loss.toFixed(3)}`, theta, overrides)
+  const { loss, overrides } = best;
+  gameLine(`best ${loss.toFixed(3)}`, overrides)
     .then(line => {
       check = line;
     })
@@ -242,12 +245,9 @@ function mulberry(seed) {
   };
 }
 const evalsPerChain = Math.max(1, Math.floor(budget / pool.length / chainCount));
-// a raw value moves within half its price category's low bound and twice its high bound, or ¼–4× the source if it has none
+// a raw value moves within ¼–4× of its reference value, or of the source's if it has none
 const rawBounds = Object.fromEntries(
-  Object.entries(start.raw).map(([n, v]) => {
-    const [lo, hi] = reference.price[n] ?? [v / 2, v * 2];
-    return [n, [lo / 2, hi * 2]];
-  })
+  Object.entries(start.raw).map(([n, v]) => [n, [(reference.value[n] ?? v) / 4, (reference.value[n] ?? v) * 4]])
 );
 const rawNames = Object.keys(start.raw),
   madeNames = Object.keys(start.margin),
@@ -304,7 +304,7 @@ async function chain(index) {
 
 await Promise.all(Array.from({ length: chainCount }, (_, i) => chain(i)));
 try {
-  check = await gameLine(`final best ${best.loss.toFixed(3)}`, best.theta, best.overrides);
+  check = await gameLine(`final best ${best.loss.toFixed(3)}`, best.overrides);
 } catch (error) {
   check = `final game check failed: ${error.message}`;
 }

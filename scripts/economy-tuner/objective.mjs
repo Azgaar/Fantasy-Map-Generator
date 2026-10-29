@@ -1,10 +1,9 @@
 // What the tuner minimizes: misses against the KPI targets of docs/domain/economy.md, goods out of proportion to their
-// commonness (KPIs 1 and 2), values and coverage off the goods reference (KPIs 3 and 4), outsized goods, and made goods'
-// margins far from the default 5
+// commonness (KPIs 1 and 2), values and coverage away from the goods reference (KPIs 3 and 4), and outsized goods
 
 const outside = (x, lo, hi) => Math.max(0, lo - x, x - hi);
-/** Doublings a value lies outside a range */
-const off = (x, [lo, hi]) => Math.max(0, Math.log2(lo / Math.max(x, 1e-9)), Math.log2(x / hi));
+/** Doublings between a value and its reference */
+const doublings = (x, ref) => Math.abs(Math.log2(Math.max(x, 1e-9) / ref));
 
 /** Per map, goods whose share of the units is within ½–2× of their commonness target, and how far they are off */
 function proportion(results, key, weights) {
@@ -26,46 +25,35 @@ function proportion(results, key, weights) {
   return { share, offBy, unitShare, target };
 }
 
-/** Share of values and coverage entries within the reference, and the doublings they are off in all */
-function sense(over, reference) {
-  let prices = 0,
+/** Doublings values and coverage entries lie from the reference in all, and the typical deviation of each */
+function deviation(over, reference) {
+  let priceOff = 0,
     priced = 0,
-    priceOff = 0,
-    covers = 0,
-    covered = 0,
-    coverageOff = 0;
-  for (const [name, value] of Object.entries(over.value)) {
-    const range = reference.price[name];
-    if (!range) continue;
-    const d = off(value, range);
-    priced++;
-    if (!d) prices++;
-    priceOff += d;
-  }
-  for (const [name, entries] of Object.entries(over.coverage))
-    for (const [need, x] of Object.entries(entries)) {
-      const range = reference.coverage[name]?.[need];
-      if (!range) continue;
-      const d = off(x, range);
-      covered++;
-      if (!d) covers++;
-      coverageOff += d;
+    coverageOff = 0,
+    covered = 0;
+  for (const [name, value] of Object.entries(over.value))
+    if (reference.value[name]) {
+      priceOff += doublings(value, reference.value[name]);
+      priced++;
     }
-  return {
-    prices: prices / (priced || 1),
-    priceOff,
-    coverage: covers / (covered || 1),
-    coverageOff
-  };
+  for (const [name, entries] of Object.entries(over.coverage))
+    for (const [need, x] of Object.entries(entries))
+      if (reference.coverage[name]?.[need]) {
+        coverageOff += doublings(x, reference.coverage[name][need]);
+        covered++;
+      }
+  // typical deviation: the geometric mean of each ratio, as a share off, 0.25 for 25%
+  const typical = (off, n) => 2 ** (off / (n || 1)) - 1;
+  return { priceOff, coverageOff, prices: typical(priceOff, priced), coverage: typical(coverageOff, covered) };
 }
 
 /** results: score.js output per map; reference: the goods reference (catalogue.mjs); over: the candidate's overrides */
-export function objective(results, theta, reference, over) {
+export function objective(results, reference, over) {
   const avg = k => results.reduce((s, r) => s + r[k], 0) / results.length;
   const geo = k => Math.exp(results.reduce((s, r) => s + Math.log(Math.max(1e-9, r[k])), 0) / results.length);
   const made = proportion(results, "madeUnits", reference.made);
   const raw = proportion(results, "rawUnits", reference.raw);
-  const fit = sense(over, reference);
+  const fit = deviation(over, reference);
   const kpi = {
     produced: avg("produced"),
     positive: avg("positive"),
@@ -87,13 +75,12 @@ export function objective(results, theta, reference, over) {
   for (const r of results)
     for (const [n, s] of Object.entries(r.madeShare)) share[n] = (share[n] || 0) + s / results.length;
   const [top, topShare] = Object.entries(share).sort((a, b) => b[1] - a[1])[0];
-  const margins = Object.values(theta.margin);
   // fees per unit of miss, set in docs/domain/economy.md#kpis; KPI 1 is the most important
   const parts = {
     proportion: Math.max(0, 0.85 - kpi.proportion) * 10 + made.offBy * 0.5,
     rawProportion: Math.max(0, 0.6 - kpi.rawProportion) * 2 + raw.offBy * 0.1,
-    prices: fit.priceOff * 0.2,
-    coverage: fit.coverageOff * 0.1,
+    prices: fit.priceOff * 0.1,
+    coverage: fit.coverageOff * 0.05,
     produced: Math.max(0, 0.95 - kpi.produced) * 10,
     positive: Math.max(0, 0.75 - kpi.positive) * 2,
     regions: Math.max(0, Math.log(5 / Math.max(kpi.regions, 1e-6))) * 0.5,
@@ -105,8 +92,7 @@ export function objective(results, theta, reference, over) {
     treasuryTop: Math.max(0, kpi.treasuryTop - 0.7),
     sold: Math.max(0, 0.5 - kpi.sold) * 2,
     prosperity: outside(kpi.prosperity, 0.4, 0.6) * 10,
-    outsized: Object.values(share).reduce((s, x) => s + Math.max(0, x - 0.05) * 20, 0),
-    margins: (margins.reduce((s, m) => s + Math.abs(Math.log(m / 5)), 0) / margins.length) * 0.2
+    outsized: Object.values(share).reduce((s, x) => s + Math.max(0, x - 0.05) * 20, 0)
   };
   return {
     loss: Object.values(parts).reduce((s, x) => s + x, 0),
@@ -118,6 +104,6 @@ export function objective(results, theta, reference, over) {
 }
 
 export const summary = k =>
-  `prosperity ${pct(k.prosperity)} proportion ${pct(k.proportion)} raw ${pct(k.rawProportion)} prices ${pct(k.prices)} coverage ${pct(k.coverage)} produced ${pct(k.produced)} ` +
+  `prosperity ${pct(k.prosperity)} proportion ${pct(k.proportion)} raw ${pct(k.rawProportion)} prices ±${pct(k.prices)} coverage ±${pct(k.coverage)} produced ${pct(k.produced)} ` +
   `sold ${pct(k.sold)} spec ${pct(k.specialization)} profit ${pct(k.positive)} link ${k.stateLink.toFixed(2)} top ${k.top} ${(k.topShare * 100).toFixed(1)}%`;
 const pct = x => `${(x * 100).toFixed(0)}%`;

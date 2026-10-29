@@ -45,7 +45,7 @@ Loading a map does not rerun the economy, except a map saved before v1.157.0, wh
 
 The fields that drive the economy:
 
-- **`value`**: the base price. Prices move within 0.02–5× of it. A made good is worth the average of its recipes' inputs at base value plus a margin of about 5, more for goods whose markets need a stronger pull (1–15). Default values and coverage were tuned by annealing against the KPIs, running the game's own economy headless on the KPI maps, and kept near the [goods reference](#goods-reference): the price category and coverage level that make sense for each good. Values also feed cell suitability, so **changing default values changes generated maps**.
+- **`value`**: the base price. Prices move within 0.02–5× of it. The tuner prices a made good as the average of its recipes' inputs at base value plus a margin (1–15). Default values and coverage are the [goods reference](#goods-reference)'s, the values that make sense for each good; the [tuner](#tuning) moves them only as far as the KPIs pay for. Values also feed cell suitability, so **changing default values changes generated maps**.
 - **`biomeOutput`**: units per rural population point, by biome.
 - **`deposits` and `distribution`**: how many deposits the map gets, a whole `[min, max]` range the same on any map size, and where they may land (see [Goods spread functions](../wiki/Goods-spread-functions.md)). Each next deposit lands beside the previous one with a 50% chance (`DEPOSIT_CLUSTERING`), so deposits form loose clusters. A cell holds at most one. `Goods.placeOutput` re-places a good's deposits until they yield a set amount, for the editor.
 - **`recipes`**: alternative input sets, each making one unit. Written with good names in the catalogue (`GOODS_DATA`, [data/goods.ts](../../src/data/goods.ts)), resolved to ids at load.
@@ -241,122 +241,107 @@ Terms, as the burg's Economy Overview shows them:
 
 From most to least important:
 
-| #   | KPI                      | What it means                                                                                                                  | How it is measured                                                                                                            | Target   | Tuner fee                               | Master (v1.156.0) | Now      |
-| --- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- | -------- | --------------------------------------- | ----------------- | -------- |
-| 1   | Made goods in proportion | Each made good is made about as much as its commonness says: beer and cloth by the cartload, jewelry and boats by the piece    | Share of made goods whose share of made units is within ½–2× of its commonness target ([reference](#goods-reference))         | ≥ 85%    | 0.10 per 1%, plus how far goods are off | —                 | 81% ✗    |
-| 2   | Raw goods in proportion  | Each raw good is gathered about as much as its commonness says: grain and wood by the wain, pearls and gold by the handful     | Share of raw goods whose share of raw units is within ½–2× of its commonness target ([reference](#goods-reference))           | ≥ 60%    | 0.02 per 1%, plus how far goods are off | —                 | 40% ✗    |
-| 3   | Prices make sense        | A good costs what a reader expects: grain and wood are cheap, tools costly, jewelry and boats precious                         | Share of goods valued within their price category ([reference](#goods-reference))                                             | 100%     | 0.2 per doubling a value lies outside   | 100%              | 46% ✗    |
-| 4   | Coverage makes sense     | A good meets the needs a reader expects, as much as expected: grain feeds, wood builds and warms, incense is a luxury          | Share of `demandCoverage` entries within their level ([reference](#goods-reference))                                          | 100%     | 0.1 per doubling an entry lies outside  | 100%              | 32% ✗    |
-| 5   | All goods produced       | Every good appears on a typical map. A single map may miss some: a map with no hot climate has no spices                       | Share of the catalogue, raw and made, produced on a map                                                                       | ≥ 95%    | 0.10 per 1%                             | 93.4%             | 94.4% ✗  |
-| 6   | Burgs in profit          | Burgs earn more than they spend                                                                                                | Share of burgs ending the day with a positive treasury                                                                        | ≥ 75%    | 0.02 per 1%                             | 96.5%             | 77% ✓    |
-| 7   | Fast                     | Regenerating the economy feels instant                                                                                         | Economy run on a default map, best of five runs per map                                                                       | ≤ 200 ms | —                                       | 121 ms            | 199 ms ✓ |
-| 8   | Rich and poor regions    | Some regions' towns are rich and some poor                                                                                     | A market's wealth is the average wealth of the burgs in its area. The richest tenth of markets ÷ the poorest tenth            | ≥ 5×     | 0.5 × log of the shortfall              | 2.9×              | 7.2× ✓   |
-| 9   | Output apart from people | A region's output is not just its headcount: a market with 10% of the people may hold 30% of the output, or 5%                 | Share of markets whose share of the world's output is more than 50% above or below their share of its people                  | ≥ 30%    | 0.01 per 1%                             | 2%                | 13% ✗    |
-| 10  | Specialization           | Markets differ in what they offer: 0% would be every market making the world's average mix, 100% no two markets sharing a good | The share of a typical market's output, by value, that would have to change to match the world's mix                          | ≥ 60%    | 0.02 per 1%                             | 47%               | 68% ✓    |
-| 11  | States' cut              | Taxes take a moderate share of what the economy makes                                                                          | The world's state taxes ÷ its product, as the state accounts sum them                                                         | 15–35%   | 0.01 per 1%                             | 64%               | 23% ✓    |
-| 12  | States benefit           | A state whose people are wealthier collects more per head: a developed economy pays its state                                  | Rank correlation across states between wealth and taxes per person (1: the wealthiest states always collect most; 0: no link) | ≥ 0.2    | 0.01 per 0.01                           | 0.19              | 0.21 ✓   |
-| 13  | Wealth spread            | Burgs differ in wealth, some far richer per person than others, without a few owning everything                                | Gini coefficient of burg wealth across burgs (0: all equal; 1: one burg has it all)                                           | 0.4–0.6  | 0.03 per 0.01                           | 0.28              | 0.58 ✓   |
-| 14  | Treasury concentration   | Money is not hoarded by a handful of burgs                                                                                     | Share of all burg treasuries held by the tenth of burgs with the largest ones                                                 | ≤ 70%    | 0.01 per 1%                             | 30%               | 75% ✗    |
-| 15  | Employment               | Workers find something worth making; they stay idle only when nothing pays                                                     | Share of workers who found work                                                                                               | ≥ 90%    | —                                       | 100%              | 100% ✓   |
-| 16  | Goods sold               | What is made finds a buyer the same day rather than piling up in a market                                                      | Share of made goods, by value, bought the same day by burgs, rural people or states                                           | ≥ 50%    | 0.02 per 1%                             | 29%               | 67% ✓    |
-| 17  | Prosperity               | Townspeople live comfortably on average: some burgs thrive, others scrape by                                                   | Average prosperity of burgs, weighted by their people                                                                         | 40–60%   | 0.10 per 1%                             | —                 | 55% ✓    |
+| #   | KPI                      | What it means                                                                                                                  | How it is measured                                                                                                               | Target   | Tuner fee                                          | Master (v1.156.0) | Now      |
+| --- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------- | ----------------- | -------- |
+| 1   | Made goods in proportion | Each made good is made about as much as its commonness says: beer and cloth by the cartload, jewelry and boats by the piece    | Share of made goods whose share of made units is within ½–2× of its commonness target ([reference](#goods-reference))            | ≥ 85%    | 0.10 per 1%, plus how far goods are off            | —                 | 31% ✗    |
+| 2   | Raw goods in proportion  | Each raw good is gathered about as much as its commonness says: grain and wood by the wain, pearls and gold by the handful     | Share of raw goods whose share of raw units is within ½–2× of its commonness target ([reference](#goods-reference))              | ≥ 60%    | 0.02 per 1%, plus how far goods are off            | —                 | 49% ✗    |
+| 3   | Prices make sense        | A good costs what a reader expects: grain and wood cheap, tools dear, jewelry and boats the dearest                            | Typical deviation of goods' values from their reference values: the geometric mean of each ratio ([reference](#goods-reference)) | 0%       | 0.1 per doubling a value lies from its reference   | 0%                | 0% ✓     |
+| 4   | Coverage makes sense     | A good meets the needs a reader expects, as much as expected: grain feeds, wood builds and warms, incense is a luxury          | Typical deviation of `demandCoverage` entries from their reference ([reference](#goods-reference))                               | 0%       | 0.05 per doubling an entry lies from its reference | 0%                | 0% ✓     |
+| 5   | All goods produced       | Every good appears on a typical map. A single map may miss some: a map with no hot climate has no spices                       | Share of the catalogue, raw and made, produced on a map                                                                          | ≥ 95%    | 0.10 per 1%                                        | 93.4%             | 90.1% ✗  |
+| 6   | Burgs in profit          | Burgs earn more than they spend                                                                                                | Share of burgs ending the day with a positive treasury                                                                           | ≥ 75%    | 0.02 per 1%                                        | 96.5%             | 96% ✓    |
+| 7   | Fast                     | Regenerating the economy feels instant                                                                                         | Economy run on a default map, best of five runs per map                                                                          | ≤ 200 ms | —                                                  | 121 ms            | 199 ms ✓ |
+| 8   | Rich and poor regions    | Some regions' towns are rich and some poor                                                                                     | A market's wealth is the average wealth of the burgs in its area. The richest tenth of markets ÷ the poorest tenth               | ≥ 5×     | 0.5 × log of the shortfall                         | 2.9×              | 3.5× ✗   |
+| 9   | Output apart from people | A region's output is not just its headcount: a market with 10% of the people may hold 30% of the output, or 5%                 | Share of markets whose share of the world's output is more than 50% above or below their share of its people                     | ≥ 30%    | 0.01 per 1%                                        | 2%                | 17% ✗    |
+| 10  | Specialization           | Markets differ in what they offer: 0% would be every market making the world's average mix, 100% no two markets sharing a good | The share of a typical market's output, by value, that would have to change to match the world's mix                             | ≥ 60%    | 0.02 per 1%                                        | 47%               | 57% ✗    |
+| 11  | States' cut              | Taxes take a moderate share of what the economy makes                                                                          | The world's state taxes ÷ its product, as the state accounts sum them                                                            | 15–35%   | 0.01 per 1%                                        | 64%               | 21% ✓    |
+| 12  | States benefit           | A state whose people are wealthier collects more per head: a developed economy pays its state                                  | Rank correlation across states between wealth and taxes per person (1: the wealthiest states always collect most; 0: no link)    | ≥ 0.2    | 0.01 per 0.01                                      | 0.19              | 0.32 ✓   |
+| 13  | Wealth spread            | Burgs differ in wealth, some far richer per person than others, without a few owning everything                                | Gini coefficient of burg wealth across burgs (0: all equal; 1: one burg has it all)                                              | 0.4–0.6  | 0.03 per 0.01                                      | 0.28              | 0.41 ✓   |
+| 14  | Treasury concentration   | Money is not hoarded by a handful of burgs                                                                                     | Share of all burg treasuries held by the tenth of burgs with the largest ones                                                    | ≤ 70%    | 0.01 per 1%                                        | 30%               | 72% ✗    |
+| 15  | Employment               | Workers find something worth making; they stay idle only when nothing pays                                                     | Share of workers who found work                                                                                                  | ≥ 90%    | —                                                  | 100%              | 100% ✓   |
+| 16  | Goods sold               | What is made finds a buyer the same day rather than piling up in a market                                                      | Share of made goods, by value, bought the same day by burgs, rural people or states                                              | ≥ 50%    | 0.02 per 1%                                        | 29%               | 71% ✓    |
+| 17  | Prosperity               | Townspeople live comfortably on average: some burgs thrive, others scrape by                                                   | Average prosperity of burgs, weighted by their people                                                                            | 40–60%   | 0.10 per 1%                                        | —                 | 52% ✓    |
 
 ### Goods reference
 
-The catalogue as it should be, the source the economy tuner (`scripts/economy-tuner/catalogue.mjs`) tunes against: how common each good is, what it costs and which needs it covers. The price categories and coverage levels follow the pre-tuning values of master (v1.156.0). They are judgements, not rules the generator follows. Keep one row per good of the default catalogue.
+The catalogue as it should be, the source the economy tuner (`scripts/economy-tuner/catalogue.mjs`) tunes against: how common each good is, what it costs and which needs it covers. They are judgements of what makes sense, not rules the generator follows, and the default catalogue holds the same values and coverage. Keep one row per good of the default catalogue.
 
-- **Commonness**: a weight. KPI 1 compares each made good's share of all made units with its weight over the sum of all made goods' weights; KPI 2 does the same for raw goods over raw units. Raw output spreads far wider than made output, a map yielding a hundred times more grain than pearls, so raw weights spread wider too. The tuner barely moves raw output, only through the balance of deposits and rural output: a KPI 2 miss is a cue to edit a good's `deposits`, `distribution` or `biomeOutput`.
-- **Price**: the category the good's value stays within (KPI 3). Categories about double, so a made good's category leaves room for its inputs and a margin.
-- **Food** to **Luxury**: how much of each need one unit covers (KPI 4). An empty cell is no coverage, and the tuner writes the entries as the table has them. Full coverage reaches up to the cap: 1, or 2 for goods valued 20 or more. Pure ingredients (leather, cloth, ropes, tar, barrels, sails, paper, ink, bronze) cover no need, unlike master, so only the trades that use them buy them.
+- **Commonness**: the units of the good a typical economy makes or gathers a day, relative to the other goods of its kind. KPI 1 compares each made good's share of all made units with its weight over the sum of made goods' weights; KPI 2 does the same for raw goods over raw units. A good is common when people need much of it or many recipes use it: grain and wood feed, warm and build everyone and go into beer, charcoal, tar, barrels and boats, while stone only builds and pearls only adorn. Raw weights run a hundredfold, made a fortyfold: a cannon or a boat is a rare thing next to a barrel of beer. The tuner barely moves raw output, only through the balance of deposits and rural output: a KPI 2 miss is a cue to edit a good's `deposits`, `distribution` or `biomeOutput`.
+- **Value**: the base price that makes sense for the good (KPI 3). Raw goods take master's (v1.156.0), wine raised to 8. A made good is worth its recipes' average inputs plus a worker's wage of 5: a worker makes about one unit a day and takes the best gain per worker ([What a burg makes](#what-a-burg-makes)), so a trade paying more draws every worker and one paying less stays idle. A good is rare by its demand and inputs, not by its wage, and each step of a chain adds its wage: beer carries half a barrel and the barrel a quarter of a tool set, so beer is dearer than wine.
+- **Food** to **Luxury**: how much of each need one unit covers (KPI 4), within the caps: at most 1, or 2 for goods valued 20 or more, such as jewelry. An empty cell is no coverage, and the tuner writes the entries as the table has them. Pure ingredients (leather, cloth, ropes, tar, barrels, sails, paper, ink, bronze) cover no need, so only the trades that use them buy them. Military coverage stays affordable: a burg's bare needs at the cheapest coverage must stay well under what its people earn (about 1.75 a head), and military is the dearest need.
 
-| Price    | Value   |
-| -------- | ------- |
-| Cheap    | 0.5–1.4 |
-| Low      | 1.4–2.8 |
-| Moderate | 2.8–5.6 |
-| Costly   | 5.6–11  |
-| Dear     | 11–22   |
-| Precious | ≥ 22    |
-
-| Coverage | Units of need |
-| -------- | ------------- |
-| Full     | ≥ 0.75        |
-| Partial  | 0.35–0.75     |
-| Minor    | 0.1–0.35      |
-
-| Good           | Kind | Commonness | Price    | Food    | Utilities | Construction | Military | Luxury  |
-| -------------- | ---- | ---------- | -------- | ------- | --------- | ------------ | -------- | ------- |
-| Wood           | Raw  | 27         | Cheap    |         | Full      | Full         |          |         |
-| Stone          | Raw  | 27         | Low      |         |           | Full         |          |         |
-| Marble         | Raw  | 3          | Costly   |         |           | Partial      |          | Partial |
-| Iron           | Raw  | 9          | Moderate |         |           |              |          |         |
-| Copper         | Raw  | 3          | Moderate |         |           |              |          |         |
-| Tin            | Raw  | 3          | Moderate |         |           |              |          |         |
-| Silver         | Raw  | 3          | Costly   |         |           |              |          |         |
-| Gold           | Raw  | 1          | Dear     |         |           |              |          |         |
-| Grain          | Raw  | 27         | Cheap    | Full    |           |              |          |         |
-| Cattle         | Raw  | 27         | Low      | Full    |           |              |          |         |
-| Fish           | Raw  | 27         | Cheap    | Full    |           |              |          |         |
-| Game           | Raw  | 9          | Low      | Full    |           |              |          |         |
-| Wine           | Raw  | 9          | Low      | Partial |           |              |          | Partial |
-| Olives         | Raw  | 9          | Low      | Full    |           |              |          |         |
-| Honey          | Raw  | 9          | Low      | Partial |           |              |          |         |
-| Salt           | Raw  | 9          | Low      |         | Full      |              |          |         |
-| Dates          | Raw  | 9          | Low      | Full    |           |              |          |         |
-| Horses         | Raw  | 9          | Moderate |         | Partial   |              | Partial  |         |
-| Ivory          | Raw  | 1          | Dear     |         |           |              |          | Partial |
-| Camels         | Raw  | 3          | Moderate |         | Partial   |              | Minor    |         |
-| Hemp           | Raw  | 9          | Cheap    |         |           |              |          |         |
-| Pearls         | Raw  | 1          | Dear     |         |           |              |          | Partial |
-| Gemstones      | Raw  | 1          | Dear     |         |           |              |          | Partial |
-| Dyes           | Raw  | 3          | Moderate |         |           |              |          |         |
-| Incense        | Raw  | 1          | Costly   |         |           |              |          | Full    |
-| Silk           | Raw  | 1          | Costly   |         |           |              |          | Full    |
-| Spices         | Raw  | 1          | Dear     |         |           |              |          | Full    |
-| Amber          | Raw  | 3          | Costly   |         |           |              |          | Partial |
-| Furs           | Raw  | 9          | Moderate |         | Minor     |              |          | Partial |
-| Wool           | Raw  | 9          | Low      |         |           |              |          |         |
-| Slaves         | Raw  | 3          | Costly   |         | Full      |              |          |         |
-| Tar            | Made | 3          | Moderate |         |           |              |          |         |
-| Saltpeter      | Raw  | 3          | Low      |         |           |              |          |         |
-| Coal           | Made | 4          | Moderate |         | Partial   |              |          |         |
-| Oil            | Made | 3          | Moderate |         | Full      |              |          |         |
-| Mahogany       | Raw  | 3          | Costly   |         |           |              |          | Full    |
-| Blubber        | Raw  | 3          | Cheap    | Full    | Minor     |              |          |         |
-| Sugar          | Raw  | 3          | Moderate | Partial |           |              |          | Partial |
-| Tea            | Raw  | 3          | Moderate |         |           |              |          | Full    |
-| Tobacco        | Raw  | 3          | Moderate |         |           |              |          | Full    |
-| Clay           | Raw  | 27         | Cheap    |         |           | Full         |          |         |
-| White sand     | Raw  | 9          | Cheap    |         |           |              |          |         |
-| Leather        | Made | 3          | Moderate |         |           |              |          |         |
-| Cloth          | Made | 3          | Moderate |         |           |              |          |         |
-| Garments       | Made | 3          | Costly   |         | Full      |              |          |         |
-| Ceramics       | Made | 4          | Costly   |         | Full      |              |          |         |
-| Glass          | Made | 3          | Costly   |         |           |              |          | Full    |
-| Ropes          | Made | 3          | Moderate |         |           |              |          |         |
-| Paper          | Made | 2          | Moderate |         |           |              |          |         |
-| Ink            | Made | 1          | Moderate |         |           |              |          |         |
-| Books          | Made | 1          | Dear     |         |           |              |          | Full    |
-| Sails          | Made | 2          | Costly   |         |           |              |          |         |
-| Boats          | Made | 1          | Precious |         |           |              | Full     |         |
-| Boots          | Made | 3          | Costly   |         | Full      |              |          |         |
-| Harnesses      | Made | 3          | Costly   |         |           |              | Full     |         |
-| Barrels        | Made | 4          | Moderate |         |           |              |          |         |
-| Bronze         | Made | 2          | Costly   |         |           |              |          |         |
-| Tools          | Made | 3          | Dear     |         | Full      |              |          |         |
-| Arms           | Made | 3          | Precious |         |           |              | Full     |         |
-| Gunpowder      | Made | 2          | Costly   |         |           |              | Full     |         |
-| Artillery      | Made | 1          | Dear     |         |           |              | Full     |         |
-| Coins          | Made | 1          | Precious |         |           |              |          | Full    |
-| Jewelry        | Made | 1          | Precious |         |           |              |          | Full    |
-| Preserved food | Made | 3          | Moderate | Full    |           |              |          |         |
-| Vinegar        | Made | 3          | Low      |         | Partial   |              |          |         |
-| Cheese         | Made | 3          | Moderate | Full    |           |              |          |         |
-| Beer           | Made | 4          | Costly   | Full    |           |              |          |         |
-| Liquor         | Made | 3          | Costly   |         |           |              |          | Full    |
-| Candles        | Made | 3          | Costly   |         | Partial   |              |          | Partial |
-| Soap           | Made | 3          | Moderate |         | Partial   |              |          | Partial |
-| Perfume        | Made | 1          | Dear     |         |           |              |          | Full    |
+| Good           | Kind | Commonness | Value | Food | Utilities | Construction | Military | Luxury |
+| -------------- | ---- | ---------- | ----- | ---- | --------- | ------------ | -------- | ------ |
+| Wood           | Raw  | 100        | 1     |      | 1         | 1            |          |        |
+| Stone          | Raw  | 10         | 2     |      |           | 1            |          |        |
+| Marble         | Raw  | 3          | 6     |      |           | 0.5          |          | 0.5    |
+| Iron           | Raw  | 12         | 3     |      |           |              |          |        |
+| Copper         | Raw  | 3          | 4     |      |           |              |          |        |
+| Tin            | Raw  | 3          | 4     |      |           |              |          |        |
+| Silver         | Raw  | 2          | 8     |      |           |              |          |        |
+| Gold           | Raw  | 1          | 15    |      |           |              |          |        |
+| Grain          | Raw  | 90         | 1     | 1    |           |              |          |        |
+| Cattle         | Raw  | 20         | 2     | 1    |           |              |          |        |
+| Fish           | Raw  | 40         | 1     | 1    |           |              |          |        |
+| Game           | Raw  | 20         | 2     | 1    |           |              |          |        |
+| Wine           | Raw  | 15         | 8     | 0.5  |           |              |          | 0.5    |
+| Olives         | Raw  | 12         | 2     | 0.5  |           |              |          |        |
+| Honey          | Raw  | 10         | 2     | 0.5  |           |              |          |        |
+| Salt           | Raw  | 15         | 2     |      | 1         |              |          |        |
+| Dates          | Raw  | 6          | 2     | 1    |           |              |          |        |
+| Horses         | Raw  | 6          | 5     |      | 0.6       |              | 0.4      |        |
+| Ivory          | Raw  | 1          | 12    |      |           |              |          | 0.6    |
+| Camels         | Raw  | 3          | 5     |      | 0.7       |              | 0.3      |        |
+| Hemp           | Raw  | 12         | 1     |      |           |              |          |        |
+| Pearls         | Raw  | 1          | 13    |      |           |              |          | 0.6    |
+| Gemstones      | Raw  | 1          | 15    |      |           |              |          | 0.6    |
+| Dyes           | Raw  | 4          | 5     |      |           |              |          |        |
+| Incense        | Raw  | 1.5        | 10    |      |           |              |          | 1      |
+| Silk           | Raw  | 1.5        | 9     |      |           |              |          | 1      |
+| Spices         | Raw  | 1.5        | 15    |      |           |              |          | 1      |
+| Amber          | Raw  | 1.5        | 7     |      |           |              |          | 0.5    |
+| Furs           | Raw  | 6          | 4     |      | 0.3       |              |          | 0.5    |
+| Wool           | Raw  | 20         | 2     |      |           |              |          |        |
+| Slaves         | Raw  | 1.5        | 8     |      | 1         |              |          |        |
+| Tar            | Made | 4          | 6     |      |           |              |          |        |
+| Saltpeter      | Raw  | 3          | 2     |      |           |              |          |        |
+| Coal           | Made | 25         | 7     |      | 0.5       |              |          |        |
+| Oil            | Made | 8          | 7     |      | 1         |              |          |        |
+| Mahogany       | Raw  | 2          | 7     |      |           |              |          | 1      |
+| Blubber        | Raw  | 3          | 1     | 0.5  | 0.5       |              |          |        |
+| Sugar          | Raw  | 3          | 4     | 0.4  |           |              |          | 0.6    |
+| Tea            | Raw  | 3          | 5     |      |           |              |          | 1      |
+| Tobacco        | Raw  | 3          | 5     |      |           |              |          | 1      |
+| Clay           | Raw  | 20         | 1     |      |           | 1            |          |        |
+| White sand     | Raw  | 5          | 1     |      |           |              |          |        |
+| Leather        | Made | 12         | 9     |      |           |              |          |        |
+| Cloth          | Made | 16         | 8     |      |           |              |          |        |
+| Garments       | Made | 15         | 14    |      | 1         |              |          |        |
+| Ceramics       | Made | 15         | 9     |      | 1         |              |          |        |
+| Glass          | Made | 4          | 6     |      |           |              |          | 1      |
+| Ropes          | Made | 4          | 6     |      |           |              |          |        |
+| Paper          | Made | 2          | 6     |      |           |              |          |        |
+| Ink            | Made | 1          | 10    |      |           |              |          |        |
+| Books          | Made | 1          | 21    |      |           |              |          | 1      |
+| Sails          | Made | 3          | 13    |      |           |              |          |        |
+| Boats          | Made | 1          | 80    |      |           |              | 1        |        |
+| Boots          | Made | 8          | 11    |      | 1         |              |          |        |
+| Harnesses      | Made | 5          | 11    |      |           |              | 1        |        |
+| Barrels        | Made | 10         | 10    |      |           |              |          |        |
+| Bronze         | Made | 4          | 14    |      |           |              |          |        |
+| Tools          | Made | 8          | 16    |      | 1         |              |          |        |
+| Arms           | Made | 5          | 19    |      |           |              | 1        |        |
+| Gunpowder      | Made | 3          | 10    |      |           |              | 1        |        |
+| Artillery      | Made | 1          | 22    |      |           |              | 1        |        |
+| Coins          | Made | 1          | 20    |      |           |              |          | 1      |
+| Jewelry        | Made | 1          | 27    |      |           |              |          | 2      |
+| Preserved food | Made | 12         | 10    | 1    |           |              |          |        |
+| Vinegar        | Made | 6          | 10    |      | 0.5       |              |          |        |
+| Cheese         | Made | 10         | 8     | 1    |           |              |          |        |
+| Beer           | Made | 20         | 11    | 1    |           |              |          |        |
+| Liquor         | Made | 6          | 14    |      |           |              |          | 1      |
+| Candles        | Made | 8          | 11    |      | 0.5       |              |          | 0.5    |
+| Soap           | Made | 6          | 7     |      | 0.6       |              |          | 0.4    |
+| Perfume        | Made | 1          | 17    |      |           |              |          | 1      |
 
 ### Tuning
 
@@ -364,12 +349,12 @@ The catalogue as it should be, the source the economy tuner (`scripts/economy-tu
 
 **What it changes.** Each candidate is a set of overrides, never a source edit:
 
-- raw goods' values, within half the low bound and twice the high bound of their price category;
+- raw goods' values, within ¼–4× of their reference value;
 - made goods' margins over their recipes' average inputs (1–15), so a value follows its inputs;
 - every `demandCoverage` entry the [goods reference](#goods-reference) lists, within the caps (made at most 1, or 2 from value 20; raw at least 0.1). The reference decides which entries exist: `apply.mjs` adds and removes entries to match it;
 - the economy constants listed with their ranges in `tunables.mjs`. `makeTunable` turns each into a settable variable, in the Node bundle and, through a Playwright route, in the game page. `PRICE_RESPONSE` may reach 0 (prices fixed at opening), so a search can show whether price movement earns its logic. A source value outside its range starts at the nearest bound. `MARKET_MARGIN` is not tuned: a typical monarchy's market taking 5% is a design choice, and the license fees set the rest. Nor is `IMPORT_CARRIAGE_FACTOR`, settled at 2. The maps keep their own markets and fees, so market placement is not tuned either: re-export them after changing it.
 
-**What it minimizes** (`objective.mjs`): the misses against each KPI target above, weighted, plus made goods over 5% of all output value and margins far from 5. The fees are in the KPI table. KPIs 1–4 read the [goods reference](#goods-reference), so a value or coverage entry can drift only as far as the KPIs it wins pay for. A source value or coverage entry outside its range starts the search at the nearest bound, and the search logs each one. Speed and employment are not scored.
+**What it minimizes** (`objective.mjs`): the misses against each KPI target above, weighted, plus made goods over 5% of all output value. The fees are in the KPI table. KPIs 1–4 read the [goods reference](#goods-reference), so a value or coverage entry moves from its reference only as far as the KPIs it wins pay for. The search starts from the source and logs each value and coverage entry away from the reference. Speed and employment are not scored.
 
 **How it searches** (`search.mjs`). Simulated annealing: several chains share a pool of workers, one per exported map, and every candidate runs on all maps at once. The run stops at its budget of economy runs. Every 30 s it logs a PROGRESS line and checks the best on a held-out map in the real game. The best is saved to `.cache/best.json`, written whole, on every improvement and on any failure or interrupt. A `.cache/STOP` file ends the run after the evaluations in flight. About 9 runs a second on 8 cores with ten maps, so 100K runs take about 3 hours.
 
