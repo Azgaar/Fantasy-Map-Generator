@@ -3,10 +3,13 @@ import { currentContent } from "@/conquest/content/store";
 import {
   createProvinceLair,
   getLairDef,
+  growLair,
   instantiateLairUnits,
   isLairStateCapable,
   LAIR_CATALOG,
   LAIR_NATURE_IDS,
+  MAX_LAIR_DEFENDERS,
+  MAX_LAIR_LEVEL,
   pickLairForTrouble,
   STATE_CAPABLE_LAIR_IDS,
   TROUBLE_TO_LAIR_MAPPINGS
@@ -128,5 +131,28 @@ describe("living-lairs (Slice 1: Lair Catalog, Unit Templates, and Trouble Mappi
     // Unmapped fallback
     const fallback = pickLairForTrouble("non_existent_trouble");
     expect(LAIR_CATALOG[fallback]).toBeDefined();
+  });
+
+  it("grows a lair by one level and one raider block", () => {
+    const lair = createProvinceLair("bandit_camp", 1, 5);
+    const defenders = lair.defenders.length;
+
+    expect(growLair(lair)).toBe(true);
+    expect(lair.level).toBe(6);
+    expect(lair.defenders).toHaveLength(defenders + 1);
+    expect(lair.defenders.at(-1)!.type).toBe(getLairDef("bandit_camp").raidUnits[0]!.unitTypeId);
+  });
+
+  it("caps lair growth at max level and max defenders", () => {
+    const maxed = createProvinceLair("bandit_camp", 1, MAX_LAIR_LEVEL);
+    const defenders = maxed.defenders.length;
+    expect(growLair(maxed)).toBe(false);
+    expect(maxed.defenders).toHaveLength(defenders);
+
+    const full = createProvinceLair("bandit_camp", 1, 5);
+    while (full.defenders.length < MAX_LAIR_DEFENDERS) full.defenders.push({ ...full.defenders[0]! });
+    expect(growLair(full)).toBe(true);
+    expect(full.level).toBe(6);
+    expect(full.defenders).toHaveLength(MAX_LAIR_DEFENDERS);
   });
 });

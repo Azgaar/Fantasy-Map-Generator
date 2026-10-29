@@ -22,7 +22,7 @@ import { assetCheckDifficulties, valueModifier } from "@/conquest/engine/game/sa
 import { garrisonUnits, minorGarrisonUnits } from "@/conquest/engine/game/units";
 import type { Alignment } from "@/data/culture-traits";
 import { drawVice, rollAlignment, rollFigureTraits, traitsRng } from "@/data/culture-traits";
-import { createProvinceLair, getLairDef, LAIR_NATURE_IDS, pickLairForTrouble } from "@/data/living-lairs";
+import { createProvinceLair, getLairDef, growLair, LAIR_NATURE_IDS, pickLairForTrouble } from "@/data/living-lairs";
 import {
   BURG_TROUBLE_IDS,
   getTroubleDef,
@@ -3232,6 +3232,23 @@ class LivingModel {
         `Raiders from ${lair.name} plundered ${target.name} and terrorized the populace.`
       );
     }
+    this.escalateLair(province, lair, living);
+  }
+
+  /** A successful raid grows the lair: higher level, more defenders, refreshed marker and owner load. */
+  private escalateLair(province: Province, lair: ProvinceLair, living: LivingWorldState): void {
+    if (!growLair(lair, Military.getUnitTypes())) return;
+    const marker = lair.markerId !== undefined ? pack.markers?.[lair.markerId] : undefined;
+    if (marker) marker.name = `${lair.name} (Lair Lvl ${lair.level})`;
+    if (province.state && living.states[province.state]) {
+      living.states[province.state].capacity = this.recomputeStateCapacity(province.state);
+    }
+    this.pushNews(living, {
+      kind: "lair",
+      text: `${lair.name} in ${province.name} grew bolder after its raid (level ${lair.level}).`,
+      cell: lair.cell,
+      stateId: province.state
+    });
   }
 
   /** Step each active state's projects and seasonal agenda. */

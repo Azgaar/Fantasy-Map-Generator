@@ -543,6 +543,22 @@ export function createProvinceLair(
   };
 }
 
+export const MAX_LAIR_LEVEL = 10;
+export const MAX_LAIR_DEFENDERS = 8;
+
+/** A successful raid emboldens the lair: +1 level and one more raider block among its defenders. Returns whether the level rose. */
+export function growLair(lair: ProvinceLair, unitTypes?: Record<string, UnitType>): boolean {
+  if (lair.level >= MAX_LAIR_LEVEL) return false;
+  lair.level += 1;
+  const raiders = getLairDef(lair.id).raidUnits;
+  const live = lair.defenders.filter(unit => unit.count > 0).length;
+  if (raiders.length > 0 && live < MAX_LAIR_DEFENDERS) {
+    const template = raiders[lair.defenders.length % raiders.length]!;
+    lair.defenders.push(...instantiateLairUnits([{ unitTypeId: template.unitTypeId, count: 1 }], unitTypes));
+  }
+  return true;
+}
+
 /** Selects an appropriate Lair Nature when a Trouble metastasizes */
 export function pickLairForTrouble(
   troubleId: string,

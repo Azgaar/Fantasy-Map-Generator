@@ -870,6 +870,36 @@ describe("Living (Slices 1-4: Data Model, Seasonal Tick, Capacity, Projects, War
     expect(living.recentNews.some(item => item.kind === "lair")).toBe(true);
   });
 
+  it("grows a lair after a victorious raid: level, defenders, marker and news", () => {
+    const living = Living.init();
+    Living.quellTrouble(1);
+    const lair = Living.spawnLair(1, "bandit_camp", 5)!;
+    lair.raidPending = true;
+    lair.raidUnits = Array.from({ length: 10 }, () => ({ type: "north_marauders", count: 1000, exp: 5 }));
+    const defenders = lair.defenders.length;
+
+    Living.tick(1);
+
+    expect(lair.level).toBe(6);
+    expect(lair.defenders).toHaveLength(defenders + 1);
+    expect(pack.markers![lair.markerId!]!.name).toContain("Lair Lvl 6");
+    expect(living.recentNews.some(item => item.kind === "lair" && item.text.includes("grew bolder"))).toBe(true);
+  });
+
+  it("does not grow a lair past level 10", () => {
+    Living.init();
+    Living.quellTrouble(1);
+    const lair = Living.spawnLair(1, "bandit_camp", 10)!;
+    lair.raidPending = true;
+    lair.raidUnits = Array.from({ length: 10 }, () => ({ type: "north_marauders", count: 1000, exp: 5 }));
+    const defenders = lair.defenders.length;
+
+    Living.tick(1);
+
+    expect(lair.level).toBe(10);
+    expect(lair.defenders).toHaveLength(defenders);
+  });
+
   it("mounts military expedition to assault and clear a lair", () => {
     const living = Living.init();
     Living.quellTrouble(1);
