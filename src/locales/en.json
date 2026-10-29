@@ -3065,6 +3065,7 @@
   "This segment has no path yet: set both endpoints first": "This segment has no path yet: set both endpoints first",
   "This transport type is land — endpoints must be on land (coastal is fine).": "This transport type is land — endpoints must be on land (coastal is fine).",
   "This transport type is water — endpoints must be in water, on a coast touching water, or on a navigable river.": "This transport type is water — endpoints must be in water, on a coast touching water, or on a navigable river.",
+  "Tile size": "Tile size",
   "Tiles export failed": "Tiles export failed",
   "Timber Cut big": "Timber Cut big",
   "Timber Cut small": "Timber Cut small",

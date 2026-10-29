@@ -44,6 +44,8 @@ const STYLE = /* css */ `
   #${DIALOG} .expand { padding: 0; }
   #${DIALOG} .swatches svg, #${DIALOG} .preview svg { display: block; width: 100%; height: 100%; }
   #${DIALOG} .patterns { position: absolute; }
+  #${DIALOG} .tile-size { display: flex; grid-column: 1 / -1; align-items: center; gap: .4em; }
+  #${DIALOG} .tile-size input { width: 4.5em; }
 `;
 
 const EYEDROPPER_ICON = /* html */ `<svg viewBox="0 0 16 16"><path d="M13.4 2.6a2 2 0 0 0-2.8 0L8.9 4.3 8.2 3.6 7.1 4.7l.7.7L2.5 10.7V13.5h2.8l5.3-5.3.7.7 1.1-1.1-.7-.7 1.7-1.7a2 2 0 0 0 0-2.8ZM4.7 12H4v-.7l5-5 .7.7Z"/></svg>`;
@@ -58,20 +60,28 @@ function open(fill: string, callback: (fill: string) => void): void {
   close();
   const hatched = Hatches.parse(fill);
   let pattern = hatched?.hatch ?? ""; // "" for a solid color
+  let tileSize = hatched?.size ?? 100;
   let { h: hue, s: saturation, v: value } = toHsv(hatched?.color || normalize(fill) || PRESETS[0]);
   if (Number.isNaN(hue)) hue = 0;
 
   ensureEl("dialogs").insertAdjacentHTML("beforeend", renderDialog());
   const dialog = ensureEl(DIALOG);
   const find = <T extends Element = HTMLElement>(selector: string) => dialog.querySelector<T>(selector)!;
-  const [area, handle, hueSlider, preview, inputs, patterns] = [
+  const [area, handle, hueSlider, preview, inputs, patterns, tileSizeInput] = [
     find(".area"),
     find(".handle"),
     find<HTMLInputElement>(".hue"),
     find<SVGRectElement>(".preview rect"),
     find(".inputs"),
-    find<SVGSVGElement>(".patterns")
+    find<SVGSVGElement>(".patterns"),
+    find<HTMLInputElement>(".tile-size input")
   ];
+  const baseTransforms = new Map(
+    Array.from(patterns.querySelectorAll<SVGPatternElement>("pattern"), previewPattern => [
+      previewPattern.id,
+      previewPattern.getAttribute("patternTransform") ?? ""
+    ])
+  );
 
   const render = (fields = true) => {
     const hex = toHex(hue, saturation, value);
@@ -80,6 +90,16 @@ function open(fill: string, callback: (fill: string) => void): void {
     hueSlider.value = String(Math.round(hue));
     patterns.style.color = hex; // the hatching swatches draw in the current color
     preview.setAttribute("fill", pattern ? `url(#picker-${pattern})` : hex);
+    tileSizeInput.disabled = !pattern;
+    if (document.activeElement !== tileSizeInput) tileSizeInput.value = String(tileSize);
+    for (const previewPattern of patterns.querySelectorAll<SVGPatternElement>("pattern")) {
+      const transform = baseTransforms.get(previewPattern.id) ?? "";
+      const selectedPattern = pattern === previewPattern.id.slice("picker-".length);
+      const scale = selectedPattern && tileSize !== 100 ? `scale(${tileSize / 100})` : "";
+      const nextTransform = [transform, scale].filter(Boolean).join(" ");
+      if (nextTransform) previewPattern.setAttribute("patternTransform", nextTransform);
+      else previewPattern.removeAttribute("patternTransform");
+    }
     if (fields) {
       const elements = inputs.querySelectorAll("input");
       getFields(hex, hue).forEach((field, i) => {
@@ -96,7 +116,7 @@ function open(fill: string, callback: (fill: string) => void): void {
 
   const pick = (fields = true) => {
     const hex = toHex(hue, saturation, value);
-    const picked = pattern ? Hatches.fill(pattern, hex) : hex;
+    const picked = pattern ? Hatches.fill(pattern, hex, tileSize) : hex;
     render(fields);
     Hatches.ensure(picked);
     callback(picked);
@@ -127,6 +147,15 @@ function open(fill: string, callback: (fill: string) => void): void {
   hueSlider.addEventListener("input", () => {
     hue = hueSlider.valueAsNumber;
     pick();
+  });
+
+  tileSizeInput.addEventListener("input", () => {
+    if (!tileSizeInput.validity.valid) return;
+    tileSize = tileSizeInput.valueAsNumber;
+    pick(false);
+  });
+  tileSizeInput.addEventListener("change", () => {
+    if (!tileSizeInput.validity.valid) tileSizeInput.value = String(tileSize);
   });
 
   // typing updates the map live but leaves the fields alone; committing a field normalizes them in place
@@ -228,6 +257,7 @@ function renderDialog(): string {
     <div class="swatches hatches">
       ${BASIC_HATCHES.map(hatch).join("")}
       <button class="expand"></button>${extras.map(hatch).join("")}
+      <label class="tile-size">${t("Tile size")} <input type="number" min="50" max="200" step="1" value="100" /><span>%</span></label>
     </div>
   </div>`;
 }
