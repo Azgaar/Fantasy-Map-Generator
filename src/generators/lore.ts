@@ -29,13 +29,14 @@ class LoreModel {
   }
 
   /** Configure the chronicle generator: how its political past is made, how deep a past it reaches, how many
-   * fallen realms it weaves, and whether they leave echoes on the map */
+   * fallen realms it weaves, and what the fallen leave on the map */
   setHistory(config: {
     mode?: HistoryMode;
     span?: number;
     realms?: number;
     density?: number;
     echoes?: boolean;
+    ruins?: number;
     renames?: boolean;
   }): void {
     const history = options.map.lore.history;
@@ -70,6 +71,16 @@ class LoreModel {
       history.density = config.density;
     }
     if (config.echoes !== undefined) history.echoes = Boolean(config.echoes);
+    if (config.ruins !== undefined) {
+      if (
+        typeof config.ruins !== "number" ||
+        !Number.isInteger(config.ruins) ||
+        config.ruins < 1 ||
+        config.ruins > 5
+      )
+        throw new Error("The ruins setting must be a whole number from 1 to 5");
+      history.ruins = config.ruins;
+    }
     if (config.renames !== undefined) history.renames = Boolean(config.renames);
   }
 }

@@ -118,6 +118,18 @@ const TEMPLATE = /* html */ `
     <span></span>
 
     <span></span>
+    <label for="loreHistoryRuins">Ruins:</label>
+    <input
+      id="loreHistoryRuins"
+      data-tip="How much the fallen polities leave on the map: from their capitals alone to their greater towns too. Regenerate history to apply"
+      type="range"
+      min="1"
+      max="5"
+      step="1"
+    />
+    <span></span>
+
+    <span></span>
     <label for="loreHistoryRenames">Renames:</label>
     <span data-tip="Let a successor state inherit the fallen realm's name (New X)">
       <input id="loreHistoryRenames" type="checkbox" />
@@ -174,15 +186,16 @@ function fillInputs(): void {
   ensureEl<HTMLInputElement>("loreHistoryRealms").value = String(history.realms);
   ensureEl<HTMLInputElement>("loreHistoryDensity").value = String(history.density);
   ensureEl<HTMLInputElement>("loreHistoryEchoes").checked = history.echoes;
+  ensureEl<HTMLInputElement>("loreHistoryRuins").value = String(history.ruins ?? 3);
   ensureEl<HTMLInputElement>("loreHistoryRenames").checked = history.renames;
 
-  // the fallen realms and their echoes are the archaeologist's inventions; in the epochs mode they are inert
+  // the invented-realm controls shape the archaeologist's past only; the rest means the same in both modes
   const epochs = history.mode === "epochs";
   for (const id of REALM_CONTROLS) ensureEl<HTMLInputElement>(id).disabled = epochs;
 }
 
 /** the controls that only shape the invented-realm past */
-const REALM_CONTROLS = ["loreHistoryRealms", "loreHistoryEchoes", "loreHistoryRenames"];
+const REALM_CONTROLS = ["loreHistoryRealms", "loreHistoryRenames"];
 
 function addListeners(): void {
   ensureEl(DIALOG_ID).addEventListener("change", onLoreChange);
@@ -251,6 +264,10 @@ function onLoreChange(event: Event): void {
 
     case "loreHistoryEchoes":
       Lore.setHistory({ echoes: (input as HTMLInputElement).checked });
+      break;
+
+    case "loreHistoryRuins":
+      Lore.setHistory({ ruins: +value });
       break;
 
     case "loreHistoryRenames":

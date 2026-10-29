@@ -2,6 +2,7 @@ import { Icons } from "@/components/icons";
 import { Layers } from "@/components/layers";
 import { isAstralView } from "@/components/options/view-mode";
 import { zoomFontSize } from "@/components/viewport";
+import { getViewedEpochStart } from "@/controllers/historical-time";
 import { readingOf } from "@/data/astral-markers";
 import type { Marker } from "@/generators/markers-generator";
 import { ViewportLayers, type ViewportRenderContext } from "@/renderers/viewport/viewport-renderer";
@@ -64,6 +65,7 @@ function reconcileMarkers({ root, bounds }: ViewportRenderContext): void {
 
   const fontSize = zoomFontSize("markers", bounds.scale); // a marker is sized in em of the layer font
   const anyPinned = pack.markers.some(marker => marker.pinned);
+  const epochStart = getViewedEpochStart();
   const selected = root === document && editedMarker ? container.querySelector(`#marker${editedMarker.i}`) : null;
   const markup: string[] = [];
   let selectedMarkup = "";
@@ -71,6 +73,8 @@ function reconcileMarkers({ root, bounds }: ViewportRenderContext): void {
   for (const marker of pack.markers) {
     const edited = root === document && marker === editedMarker;
     if (marker.hidden) continue;
+    // the historical view shows only what had happened by the epoch's start
+    if (!edited && epochStart !== null && marker.year !== undefined && marker.year > epochStart) continue;
     if (!edited && ((anyPinned && !marker.pinned) || (visibleMarkerIds && !visibleMarkerIds.has(marker.i)))) continue;
     const { x, y, size = 30 } = marker;
     const drawn = (size / 100) * fontSize; // the box in map units, for culling

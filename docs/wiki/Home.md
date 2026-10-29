@@ -54,6 +54,7 @@ To report a problem or propose a feature, see [Reporting bugs and suggesting ide
 [Scale and distance](https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Scale-and-distance)
 
 **Fork features**
+[History](https://github.com/0xPaladin/Fantasy-Map-Generator/wiki/History) ·
 [Legends browser](https://github.com/0xPaladin/Fantasy-Map-Generator/wiki/Legends) ·
 [Living World](https://github.com/0xPaladin/Fantasy-Map-Generator/wiki/Living-World) ·
 [OpenConquest: Atlas Invictus](https://github.com/0xPaladin/Fantasy-Map-Generator/wiki/OpenConquest) ·

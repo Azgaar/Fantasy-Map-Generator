@@ -108,6 +108,30 @@ export const INDEPENDENCE_TEMPLATES: IndependenceTemplate[] = [
   (vassal, realm) => `${vassal} won its freedom from the ${realm} by the sword`
 ];
 
+/** what a fallen polity's capital keeps of it; see docs/plans/history-fall-markers.md */
+export type FallenCapitalTemplate = (polity: string, year: number) => string;
+export const FALLEN_CAPITAL_TEMPLATES: FallenCapitalTemplate[] = [
+  (polity, year) => `Once the seat of the ${polity}, which fell in ${year}.`,
+  (polity, year) => `The ${polity} fell in ${year}; this place keeps what was lost with it.`,
+  (polity, year) => `Abandoned in ${year} with the fall of the ${polity}.`
+];
+
+/** what a fallen polity's seat keeps as its own burg note */
+export type FallenSeatTemplate = (polity: string, year: number) => string;
+export const FALLEN_SEAT_TEMPLATES: FallenSeatTemplate[] = [
+  (polity, year) => `Once the pride of the ${polity}, the city fell with it in ${year}.`,
+  (polity, year) => `The seat of the ${polity} until its fall in ${year}.`,
+  (polity, year) => `What remains of the ${polity}'s capital, lost in ${year}.`
+];
+
+/** what a fallen polity's lesser burgs keep of it */
+export type FallenBurgTemplate = (burg: string, polity: string, year: number) => string;
+export const FALLEN_BURG_TEMPLATES: FallenBurgTemplate[] = [
+  (burg, polity, year) => `${burg} was sacked when the ${polity} fell in ${year}.`,
+  (burg, polity, year) => `With the ${polity} undone in ${year}, ${burg} was left to the wilds.`,
+  (burg, polity, year) => `The wars that ended the ${polity} ended ${burg} too, in ${year}.`
+];
+
 export type RemnantTemplate = (culture: string, realm: string) => string;
 export const REMNANT_TEMPLATES: RemnantTemplate[] = [
   (culture, realm) =>
